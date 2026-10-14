@@ -22,6 +22,9 @@ const IDLE_BLOCKS: u32 = 4;
 /// ahead, and where its side ambience spreads (azimuth, degrees).
 const FRONT_SPEAKERS: f32 = 30.0;
 const REAR_SPEAKERS: f32 = 110.0;
+/// The estimate's four loudspeakers (azimuth, degrees, all level): front
+/// left and right, rear left and right.
+pub const UPMIX_SPEAKERS: [f32; 4] = [-FRONT_SPEAKERS, FRONT_SPEAKERS, -REAR_SPEAKERS, REAR_SPEAKERS];
 /// The share of the side signal the estimate moves behind at full immersion.
 const MAX_REAR_SHARE: f32 = 0.6;
 /// Delays of the rear speakers (samples), unequal so they do not image.
@@ -334,7 +337,7 @@ impl Renderer {
     pub fn new() -> Self {
         let hrtf = Hrtf::kemar();
         let mut speakers: [Filter; 4] = Default::default();
-        for (filter, azimuth) in speakers.iter_mut().zip([-FRONT_SPEAKERS, FRONT_SPEAKERS, -REAR_SPEAKERS, REAR_SPEAKERS]) {
+        for (filter, azimuth) in speakers.iter_mut().zip(UPMIX_SPEAKERS) {
             hrtf.filter(azimuth, 0.0, filter);
         }
         Renderer {

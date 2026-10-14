@@ -107,7 +107,20 @@ pub struct Placement {
 
 /// The stereo arc: the original pan as a direction ahead, within 30
 /// degrees either side.
-const ARC: f32 = 30.0;
+pub const ARC: f32 = 30.0;
+/// Where supporting parts go at full immersion (azimuth, degrees): taking
+/// the next of these on the side the music panned them to (mirrored on the
+/// left), or of the rear ones when it left them near the centre; all at
+/// [`SUPPORT_ELEVATION`].
+pub const SUPPORT_SIDES: [f32; 3] = [70.0, 100.0, 130.0];
+pub const SUPPORT_REAR: [f32; 5] = [180.0, 160.0, -160.0, 140.0, -140.0];
+pub const SUPPORT_ELEVATION: f32 = 5.0;
+/// Where pads go: to a side ([`PAD_SIDE_ELEVATION`] up), or ahead and then
+/// behind, higher ([`PAD_CENTRE_ELEVATION`]).
+pub const PAD_SIDES: [f32; 3] = [90.0, 110.0, 70.0];
+pub const PAD_SIDE_ELEVATION: f32 = 25.0;
+pub const PAD_CENTRES: [f32; 2] = [0.0, 180.0];
+pub const PAD_CENTRE_ELEVATION: f32 = 40.0;
 /// A pan this far from the centre (a quarter of the way to an edge) puts a
 /// supporting part or pad on that side.
 const SIDE_PAN: f32 = 4096.0;
@@ -195,9 +208,9 @@ pub fn arrange(parts: &[PartProfile], overrides: &[(usize, Role)]) -> Vec<Placem
             };
             let (azimuth, elevation, spread) = match role {
                 Role::Lead | Role::Bass | Role::Rhythm | Role::Uncertain => (arc(pan), 0.0, ARC),
-                Role::Pad if lean == 0 => (take(&[], &[0.0, 180.0]), 40.0, 20.0),
-                Role::Pad => (take(&[90.0, 110.0, 70.0], &[]), 25.0, 20.0),
-                Role::Support => (take(&[70.0, 100.0, 130.0], &[180.0, 160.0, -160.0, 140.0, -140.0]), 5.0, 20.0),
+                Role::Pad if lean == 0 => (take(&[], &PAD_CENTRES), PAD_CENTRE_ELEVATION, 20.0),
+                Role::Pad => (take(&PAD_SIDES, &[]), PAD_SIDE_ELEVATION, 20.0),
+                Role::Support => (take(&SUPPORT_SIDES, &SUPPORT_REAR), SUPPORT_ELEVATION, 20.0),
             };
             Placement { role, azimuth, elevation, home_pan: pan, spread }
         })

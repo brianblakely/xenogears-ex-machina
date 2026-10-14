@@ -54,12 +54,58 @@ pub fn loudness_energy(spectrum: &[Complex]) -> f32 {
 }
 
 const DATA: &[u8] = include_bytes!("../hrtf/kemar-diffuse.hrir");
-const FRAMES: usize = 128;
+/// Samples of each measured response.
+pub const FRAMES: usize = 128;
 
 /// One measured direction: its aligned spectra and the delay of each ear.
 struct Entry {
     spectra: [[Complex; BINS]; 2],
     delay: [f32; 2],
+}
+
+/// A measured direction's responses as the set holds them, before the
+/// renderer prepares them (no alignment, delay or levelling): azimuth
+/// clockwise from ahead and elevation in degrees, and each ear's samples
+/// (left, right) at full scale 1.
+pub struct Measured {
+    pub azimuth: f32,
+    pub elevation: f32,
+    pub ears: [[f32; FRAMES]; 2],
+}
+
+/// One of the file's entries: elevation, azimuth (0 to 180, the right
+/// half) and each ear's samples.
+type Record = (i16, i16, [[f32; FRAMES]; 2]);
+
+/// The file's entries, in its order.
+fn records(data: &[u8]) -> Result<Vec<Record>, String> {
+    let u16_at = |at: usize| data.get(at..at + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
+    if data.get(..4) != Some(b"KEMR") || u16_at(4) != Some(1) {
+        return Err("not a version 1 KEMR file".into());
+    }
+    let count = usize::from(u16_at(6).ok_or("truncated")?);
+    let size = 4 + FRAMES * 4;
+    if data.len() != 8 + count * size {
+        return Err("wrong size".into());
+    }
+    let mut records = Vec::with_capacity(count);
+    for i in 0..count {
+        let record = &data[8 + i * size..8 + (i + 1) * size];
+        let elevation = i16::from_le_bytes([record[0], record[1]]);
+        let azimuth = i16::from_le_bytes([record[2], record[3]]);
+        if !(-40..=90).contains(&elevation) || !(0..=180).contains(&azimuth) {
+            return Err(format!("entry {i}: direction out of range"));
+        }
+        let mut ears = [[0f32; FRAMES]; 2];
+        for n in 0..FRAMES {
+            for (e, ear) in ears.iter_mut().enumerate() {
+                let at = 4 + n * 4 + e * 2;
+                ear[n] = f32::from(i16::from_le_bytes([record[at], record[at + 1]])) / 32768.0;
+            }
+        }
+        records.push((elevation, azimuth, ears));
+    }
+    Ok(records)
 }
 
 /// A measured direction on its elevation's ring, over the whole circle:
@@ -201,32 +247,11 @@ impl Hrtf {
     }
 
     fn parse(data: &[u8]) -> Result<Hrtf, String> {
-        let u16_at = |at: usize| data.get(at..at + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
-        if data.get(..4) != Some(b"KEMR") || u16_at(4) != Some(1) {
-            return Err("not a version 1 KEMR file".into());
-        }
-        let count = usize::from(u16_at(6).ok_or("truncated")?);
-        let size = 4 + FRAMES * 4;
-        if data.len() != 8 + count * size {
-            return Err("wrong size".into());
-        }
+        let records = records(data)?;
         let fft = Fft::new(FFT_SIZE);
-        let mut entries = Vec::with_capacity(count);
-        let mut directions = Vec::with_capacity(count);
-        for i in 0..count {
-            let record = &data[8 + i * size..8 + (i + 1) * size];
-            let elevation = i16::from_le_bytes([record[0], record[1]]);
-            let azimuth = i16::from_le_bytes([record[2], record[3]]);
-            if !(-40..=90).contains(&elevation) || !(0..=180).contains(&azimuth) {
-                return Err(format!("entry {i}: direction out of range"));
-            }
-            let mut ears = [[0f32; FRAMES]; 2];
-            for n in 0..FRAMES {
-                for (e, ear) in ears.iter_mut().enumerate() {
-                    let at = 4 + n * 4 + e * 2;
-                    ear[n] = f32::from(i16::from_le_bytes([record[at], record[at + 1]])) / 32768.0;
-                }
-            }
+        let mut entries = Vec::with_capacity(records.len());
+        let mut directions = Vec::with_capacity(records.len());
+        for (elevation, azimuth, ears) in records {
             let onsets = [onset(&ears[0]), onset(&ears[1])];
             let first = onsets[0].min(onsets[1]);
             let mut spectra = [[Complex::ZERO; BINS]; 2];
@@ -310,6 +335,22 @@ impl Hrtf {
     /// clockwise from ahead over the whole circle.
     pub fn directions(&self) -> Vec<(f32, f32)> {
         self.rings.iter().flat_map(|ring| ring.points.iter().map(|p| (p.azimuth, ring.elevation))).collect()
+    }
+
+    /// The measured responses as the set holds them, in the order of
+    /// [`directions`](Self::directions): each direction measured on the
+    /// right, and its mirror image on the left (the ears swapped).
+    pub fn measured(&self) -> Vec<Measured> {
+        let records = records(DATA).expect("the KEMAR file is well formed");
+        self.rings
+            .iter()
+            .flat_map(|ring| {
+                ring.points.iter().map(|point| {
+                    let ears = records[usize::from(point.entry)].2;
+                    Measured { azimuth: point.azimuth, elevation: ring.elevation, ears: if point.mirrored { [ears[1], ears[0]] } else { ears } }
+                })
+            })
+            .collect()
     }
 
     /// The two points of `ring` around `azimuth` and the second's weight.
@@ -417,6 +458,22 @@ mod tests {
         assert_eq!(hrtf.rings.len(), 14);
         // 368 measured, mirrored to 710 over the whole sphere.
         assert_eq!(hrtf.directions().len(), 710);
+    }
+
+    #[test]
+    fn the_measured_responses_follow_the_directions_and_mirror_the_ears() {
+        let hrtf = Hrtf::kemar();
+        let measured = hrtf.measured();
+        let directions = hrtf.directions();
+        assert_eq!(measured.len(), directions.len());
+        for (m, &(azimuth, elevation)) in measured.iter().zip(&directions) {
+            assert_eq!((m.azimuth, m.elevation), (azimuth, elevation));
+        }
+        let at = |azimuth: f32| measured.iter().find(|m| m.azimuth == azimuth && m.elevation == 0.0).expect("measured");
+        let (right, left) = (at(90.0), at(270.0));
+        assert_eq!((left.ears[0], left.ears[1]), (right.ears[1], right.ears[0]), "the left is the right's mirror image");
+        let energy = |ear: &[f32; FRAMES]| ear.iter().map(|s| s * s).sum::<f32>();
+        assert!(energy(&right.ears[1]) > 5.0 * energy(&right.ears[0]), "on the right the right ear is the near one");
     }
 
     #[test]

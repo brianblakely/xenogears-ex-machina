@@ -614,6 +614,172 @@ or on the game's own Sound screen, turns it off.
   `--binaural-config JSON`) with `--wav` writes the output to a file and
   prints the status.
 
+**Calibrated computational listeners.** Nobody has listened to the mode
+yet. In people's place, localization models fitted to listeners' own
+localization experiments (the Auditory Modeling Toolbox's) hear the
+renderer's measured responses: they predict how those listeners would hear
+the KEMAR head's cues as the renderer delivers them, for static broadband
+sounds, the conditions the models are validated in. They do not replace
+people.
+
+- *The responses.* `cargo run --release -p xem-binaural --example
+  rendered_hrirs` measures what the renderer does to a voice placed in a
+  direction, through `Renderer` as the game's voices reach it: a voice at
+  the pan law's centre plays a periodic noise (a flat spectrum with random
+  phases, 8 192 samples a period); the output's average over five periods,
+  after a first in which the filters' tails and the bass shelf settle,
+  divided by the noise's spectrum is the response, per unit of the
+  source's signal at its gain before panning, kept for 2 048 samples from
+  64 before the voice's sample (the fractional interaural delay rings on
+  both sides of it, and a block's convolution can put it ahead). The output
+  peaks at 0.133 of full scale, far under the soft knee (0.85); the noise
+  floor is at least 83.7 dB under each response's peak, and at most
+  1.3e-5 of a period's energy, that floor included, falls outside the
+  samples kept (7 s for all of it on this machine). It writes
+  `build/binaural/` (`hrirs.json` and one float32 file a set): the 710
+  measured directions, a 5-degree grid (1 873: azimuth 0 to 355, elevation
+  -40 to 85, and straight up), the arrangement's 24 places at full
+  immersion (`music::ARC` and half of it either way, `SUPPORT_SIDES` on
+  both sides and `SUPPORT_REAR` 5 degrees up, `PAD_SIDES` on both sides 25
+  up, `PAD_CENTRES` 40 up) and the estimate's four loudspeakers
+  (`UPMIX_SPEAKERS`); the KEMAR set's own responses at its measured
+  directions (`Hrtf::measured`); and a control, the original Stereo pan law
+  over headphones (a direction's lateral position, sin(azimuth)
+  cos(elevation), as the pan: two gains, no other cue). At the measured
+  directions the rendered responses keep the raw ones' cues: the
+  interaural delay the same to an eighth of a sample (broadband
+  cross-correlation), the level difference between the ears within 0.75 dB
+  (median 0.19; broadband, the bass shelf included), each ear's spectral
+  shape from 700 Hz to 16 kHz within 1.65 dB (the standard deviation over
+  frequency of their level difference; median 0.15, 0.60 at the 95th
+  percentile), and their level moved -4.5 to +0.4 dB (median -2.4) by the
+  levelling.
+- *The toolchain.* `nix develop path:./nix/amt` pins Octave 11.3.0 (the
+  runtime shell's nixpkgs) with its io, netcdf, signal and statistics
+  packages, and AMT 1.6.0's full package (GPL-3.0+, with LTFAT 2.6.0, the
+  SOFA Toolbox 2.2.0, SFS 2.5.0 and Circular Statistics), with what its
+  models would download on first use, fetched by hash from the AMT's
+  server: the baumgartner2014 pool's own directional transfer functions
+  (23 listeners, ARI, 48 kHz), their localization experiments (goupell2010,
+  majdak2010, majdak2013, majdak2013ctc) and the toolbox's calibration of
+  their sensitivities. It is a local test tool, like FreeSurround: nothing
+  in the runtime uses it, and none of its data enters the repository. Two
+  changes let it run from the read-only store: SFS's `rms.m`, which
+  `amt_start` deletes under Octave, is left out, and the SOFA Toolbox
+  counts the compiled conventions it ships as compiled when their time
+  equals their tables' (the store gives every file one time). Run
+  `nix develop path:./nix/amt -c octave-cli --no-init-file
+  tools/binaural_models/evaluate.m` from the repository's root: it puts the
+  toolboxes on the path before `amt_start` (which would otherwise save the
+  path to `~/.octaverc`), starts it offline (`localonly`), writes
+  `build/binaural/models.json`, keeps what it computes once
+  (`models-cache/`: each listener's lookup takes a minute or two) and
+  exits with status 1 when a check fails.
+- *The toolchain's check.* First the pool hears its own ears: each
+  listener's predictions (baumgartner2014 with their own DTFs as target
+  and template, their own sensitivity, their experiments' targets within
+  30 degrees of the median plane in three lateral segments, weighted by
+  their targets) against the published ones (Baumgartner, Majdak and
+  Laback 2014, JASA 136(2):791-802, Table 1). The targets' counts are
+  equal, the actual errors equal as rounded, the toolbox's sensitivities
+  within 0.013 of the table's, and the predictions within 0.17 points of
+  quadrant error and 0.27 degrees of local polar error (0.23 and 0.22 with
+  the table's own sensitivities, which it rounds to two places); the
+  bounds are 0.5 each. Nothing else runs otherwise.
+- *What the models hear.* baumgartner2014 for the sagittal planes, at
+  lateral angles -30 to 30 in steps of 10 (the pool's calibrated range),
+  each plane's targets weighted alike: quadrant errors, local polar error
+  and front/back confusions (of the targets at least 30 degrees from the
+  frontal plane, the probability of a response on its other side). It takes
+  a response's band levels over the response's own length, so the shorter
+  sets (the KEMAR set's 128 samples, which would cut its low bands' filters
+  short, more or less by where an onset falls) are zero-padded to the
+  rendered ones' 2 048, which is what they are beyond their samples.
+  dietz2011 for the lateral angle: half a second of white noise through a
+  direction's responses, the model's interaural delays read through an
+  ITD-to-angle lookup made from the listener's own ears
+  (`itd2angle_lookuptable`, the pool's resampled to 44.1 kHz), as
+  `wierstorf2013_estimateazimuth` does (its own result is checked equal for
+  a direction): lateral RMS error and bias (positive further out than the
+  target). The listeners: the pool's 23, each through their own ears at
+  their own sensitivity, and the KEMAR head itself through its own (the
+  measured set, at the pool's median sensitivity, 0.754), for whom the
+  raw targets are its template and the rendered ones differ from it only
+  by what the renderer does.
+- *Sagittal planes.* The pool, hearing the KEMAR head's cues (others'
+  ears), confuses much: quadrant errors 33.9% (pool median; 30.1 to 40.8)
+  with the renderer's responses and 33.6% with the raw ones, local polar
+  errors 43.9 and 43.8 degrees, front/back confusions 41.9 and 41.7%
+  (people listening through others' ears confuse front and back often
+  too: Wenzel et al. 1993; the paper checks the model against such
+  listening, Middlebrooks 1999, in its Fig. 9). The renderer adds 0.06 to
+  0.60 points of quadrant error (median 0.24), -0.03 to 0.17 degree of
+  polar error (median 0.06) and -0.05 to 0.44 points of front/back
+  confusions (median 0.24) to what the raw responses get, listener by
+  listener; the model's own prediction error against people is about 3
+  points and 3 degrees (the paper's Table 2). The KEMAR head through its
+  own ears hears the renderer as it hears the raw set (-0.14, -0.07 and
+  -0.22): 26.8 against 26.9% quadrant errors, 36.4 against 36.5 degrees,
+  32.7 against 32.9% front/back confusions. The Stereo control is near
+  chance for front and back (49.2%
+  confusions, pool median; 49.3 for the KEMAR head; a pan cannot tell
+  them) with 41.2% quadrant errors and 53.1 degrees: Binaural confuses
+  front and back less for 22 of the 23 listeners (NH71, 48.8 against
+  48.6%, is the exception) and for the KEMAR head (32.7 against 49.3%).
+  On the 5-degree grid's directions (other targets in each plane,
+  between the measured ones) the pool's quadrant errors are 29.1% and the
+  polar errors 43.4 degrees.
+- *Lateral angles.* The pool hears the renderer's responses with a
+  lateral RMS error of 7.2 degrees (pool median; 4.6 to 12.7) and a bias
+  of -2.9 (towards the middle; -8.9 to +7.3), the raw ones with 7.5 and
+  -3.1: listener by listener the renderer changes the error by -0.35 to
+  +0.44 degrees (median -0.07) and the bias by -0.12 to +0.64 (median
+  +0.29). The KEMAR head through its own ears: 2.9 against 3.1 degrees,
+  bias +1.9 against +2.2. Both are compared over the 684 directions both
+  have an estimate for: at the median plane's 26 the raw set's two ears
+  are the same samples (its left half mirrors the right, and the median
+  plane is its own mirror), a signal alike at both ears whose interaural
+  coherence never rises, so the model's gate takes nothing and gives no
+  estimate, where the rendered responses differ by a little noise (2e-5
+  of their peak) and get one. The model reads only interaural delays, so
+  it hears the Stereo control at the centre wherever it is panned (42.3
+  degrees RMS, bias -41.1); people would hear that pan's level
+  difference inside the head, so the lateral comparison with the control
+  says nothing about them.
+- *The music's places and the estimate's loudspeakers.* The pool hears
+  each where it is to the side: the arc's five places within 1.4 degrees
+  of their lateral angle, the rear supports within 3.3 and those behind
+  the sides (130 degrees) within 7, and the places further out than 60
+  degrees (the side supports, the pads at 90 degrees, the rear
+  loudspeakers, 65 to 79 degrees out) at 56.8 to 62.0 degrees: the model
+  compresses everything beyond 60 degrees alike (pool medians). Front and
+  back, for the places within 60 degrees of the median plane
+  (baumgartner2014's range): through others' ears the arc ahead is heard
+  behind half the time (51 to 62%), the rear supports behind 67 to 81% of
+  the time and those at 130 degrees 72 to 79%, the pads 25 degrees up at
+  70 and 110 degrees across the frontal plane 45 to 51% of the time, and
+  the pads above (40 up) ahead heard behind 51% of the time and behind
+  heard there 69%.
+- *barumerli2023 is not run.* AMT 1.6.0 returns from `barumerli2023` and
+  `barumerli2023_featureextraction` under Octave with "barumerli2023 is
+  not supported by Octave": both build their directions with
+  `barumerli2023_coordinates`, a MATLAB handle class deriving from
+  `matlab.mixin.Copyable`, with typed properties (`pos double`). Octave
+  11.3 cannot parse the class ("syntax error near line 60, column 18",
+  the typed property) and has no such base class ("class not found:
+  matlab.mixin.Copyable", for a class deriving from it and nothing else);
+  the toolbox's ticket 345 asks for the class to become a function. The
+  script records both messages. Its full-sphere predictions need MATLAB
+  or that rewrite, so its data is not fetched.
+- *Acceptance, relative.* The rendered responses are heard within the
+  models' noise of the raw ones (pool medians and the KEMAR head within 2
+  points of quadrant errors and front/back confusions and 2 degrees of
+  polar and lateral error and lateral bias: 0.33 at most here), and
+  Binaural confuses front and back less than the Stereo control (pool
+  median and the KEMAR head): the script exits with status 0. With its
+  cache filled a run takes 4 minutes here; filling it takes about an hour
+  once (the 24 lookups 30 to 40 minutes, the lateral estimates 22).
+
 Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
 `xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
 gains, crossfades, resets, the knee, the stage's rotation; a 300 Hz tone
@@ -622,7 +788,8 @@ difference within one and a half times the tone's held still at either
 end, 79 and 116 against 55 and 91 on the two sides, where without the
 filters' fade a block boundary steps, 4 568; a source's status says where
 it heads and how its voices pan; a journal mixes again exactly what was
-mixed, its parts adding up) and
+mixed, its parts adding up; the set's raw responses come in its
+directions' order, the left the right's mirror image) and
 `tests/directions.rs`, where noise placed in 48 directions between the
 measured ones is recovered from the rendered ears alone (spectra and delay,
 matched against every measured direction) within 1.5 degrees (median), 3.5
@@ -762,7 +929,34 @@ on the Wide route in the field after the opening movie, Binaural turned
 on through the settings service (the game in Stereo) and off again four
 seconds later gives back the never-enabled Wide run's output sample for
 sample 4 393 samples (99.6 ms, the fade) after it went off, and leaves game
-memory and the SPU as that run's. `web/tests/binaural.test.mjs`: one state
+memory and the SPU as that run's. `tests/coherence.rs` (musical coherence
+by proxies that are not calibrated against listeners: regression guards,
+not predictions of what people hear): Lahan's opening scene (field 2 from
+its entry, 17 parts of the village's song sounding, nothing else placed)
+presented at music immersion 0, 35, 70 and 100, a tap capture over ten
+seconds (frames 300 to 900 after the entry) each. The mix's BS.1770-4 loudness is
+the original Stereo mix's within 0.3 LU at every immersion (+0.09, +0.19,
++0.11 and +0.29 against -13.74 LUFS; each ear alone within 0.41); ear by
+ear its long-term third octaves are the original's within 1.6 dB from
+100 Hz to 4 kHz, and above that the frontal pairs lower 5 to 8 kHz by up
+to 5.7 dB (the bounds: 1 LU, 3 dB to 4 kHz, 8 dB above). The interaural
+cross-correlation of each octave from 125 Hz to 8 kHz, in the original
+0.58 to 0.75, is 0.51 to 0.75 at immersion 0 up to 4 kHz and 0.13 at 8
+kHz, and every immersion above 0 is more diffuse than that in every octave (from 1
+kHz up 0.09 to 0.26 at 35, 70 and 100), but not step by step: from 70 to
+100 it rises again in some octaves (500 Hz 0.13 to 0.23, 4 kHz 0.21 to
+0.26), because the three supports placed behind on the median plane (180,
+180 and -160 degrees), which the ears hear alike, pass the sides on their
+way there (alone, from 250 Hz up, 0.32 to 0.76 at 70 and 0.53 to 1.0 at
+100); the ears stay correlated far above chance (0.09 at least, against
+about 0.01 for unrelated signals; the bound 0.05). The lead, the bass and
+the rhythm, each alone (its voices replayed from the capture), are heard
+where the original pans them on the stereo arc at every immersion alike:
+the interaural delay of each 93 ms window (200 Hz to 1.4 kHz) read through
+the KEMAR head's own delays, against the arc angle of the original's left
+and right levels, within 0.0, 2.4 and 1.4 degrees (RMS; the bass, panned
+at +26.3 degrees, is heard at +28.6; the bound 5).
+`web/tests/binaural.test.mjs`: one state
 restored natively and in Chromium presents the same mix (99.6% of the
 samples identical, the rest within 1; the declared tolerance is 2, each
 host's own sin, cos and atan2 making the filters), and the presentation
@@ -787,9 +981,19 @@ of the head leaves the music's four parts where they were against the head
 without head-tracked music, and with it turns each by 90 degrees the other
 way (within 2), the stage staying put.
 
-Not done or not measured: no listening tests with people (direction and
-musical coherence were checked with the measured head as the listener, and
-the arrangement rules are not tuned by ear); a generic head, so a listener's
+Not done or not measured: no listening tests with people. Direction is
+predicted by models calibrated on 23 people's own localization, for how
+they would hear the KEMAR head's cues, not measured on anyone; the models
+are validated for static broadband sounds, so moving sounds, the game's
+effects and music lie outside them, and the lateral model reads only
+interaural delays, so the Stereo control's level differences go unheard
+there (people hear those inside the head). barumerli2023's full-sphere
+predictions are not run (Octave, above), and no regression port of the
+models' numbers runs in the suite (the AMT is a local tool). Musical
+coherence is measured only by proxies not calibrated against anyone, and
+the arrangement rules are not tuned by ear; the immersion control does not
+make the music more diffuse step by step (the supports placed behind cross
+the sides on their way there). A generic head, so a listener's
 own front and back may differ; positional effects cover the field's
 emitters, the arena's voices and sprites' animation sounds (each effect left out is reported, not
 guessed), and sounds that event scripts start (field and battle) are left

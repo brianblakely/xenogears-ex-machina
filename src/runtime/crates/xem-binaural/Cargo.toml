@@ -9,3 +9,6 @@ publish.workspace = true
 
 [dependencies]
 xem-spu = { path = "../xem-spu" }
+
+[dev-dependencies]
+serde_json.workspace = true
