@@ -4,9 +4,10 @@
 // XR-compatible WebGL2 context, Enter VR starts an immersive session whose
 // frames run the game as the canvas's do (never per view) and draw it on a
 // flat screen in each view; head tracking continues while the game is
-// paused (and with it the Binaural mode's listener); leaving returns to the
-// canvas; and the game's RAM after the same frames is the same in and out of
-// the headset.
+// paused (and with it the Binaural mode's listener, the music's stage
+// turning with the head, or staying put and heard against it with
+// head-tracked music); leaving returns to the canvas; and the game's RAM
+// after the same frames is the same in and out of the headset.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -30,10 +31,13 @@ const xr = async (page) => (await status(page)).page.xr;
 describe('immersive play in a headset browser', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
   test('the game runs on a virtual screen in both views', { timeout: 600_000 }, async () => {
     const state = join(SHOTS, 'xr-field12.state');
-    execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
-      input: [{ cmd: 'enter_field', map: 12 }, { cmd: 'frames', count: 400 }, { cmd: 'state_save', path: state }]
-        .map((c) => JSON.stringify(c)).join('\n') + '\n',
-    });
+    const musicState = join(SHOTS, 'xr-field15.state');
+    for (const [map, frames, path] of [[12, 400, state], [15, 600, musicState]]) {
+      execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+        input: [{ cmd: 'enter_field', map }, { cmd: 'frames', count: frames }, { cmd: 'state_save', path }]
+          .map((c) => JSON.stringify(c)).join('\n') + '\n',
+      });
+    }
     const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
     try {
       // A quarter-size layer: software WebGL draws it fast enough to show the
@@ -105,6 +109,38 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.notDeepEqual(moved.page.xr.viewer, paused.page.xr.viewer, 'the head is tracked');
       const head = (await page.evaluate(() => window.xem.command({ cmd: 'binaural' }))).head;
       assert.ok(Math.abs(head.yaw - 90) < 2, `the listener turned with the head, the game paused: ${JSON.stringify(head)}`);
+
+      // The music's stage in field 15 (its song plays; field 12 has none),
+      // the game paused: without head-tracked music it turns with the head
+      // (each part where it was against the head); with it the stage stays
+      // put and is heard turned the other way. Each part's target is where
+      // it heads, at once, no sound being mixed.
+      await page.evaluate(load, readFileSync(musicState).toString('base64'));
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.command({ cmd: 'binaural' }).sources?.filter((s) => s.kind === 'music').length >= 4, null, { timeout: 30_000 });
+      await page.evaluate(() => window.xem.setRunning(false));
+      const AHEAD = [0, 0, 0, 1];
+      const RIGHT = [0, -Math.SQRT1_2, 0, Math.SQRT1_2];
+      const look = async (quaternion) => {
+        await page.evaluate((q) => window.xrDevice.quaternion.set(...q), quaternion);
+        await page.waitForTimeout(500);
+        const status = await page.evaluate(() => window.xem.command({ cmd: 'binaural' }));
+        return status.sources.filter((s) => s.kind === 'music' && s.target)
+          .map((s) => [`${s.song}/${s.part}`, s.target.azimuth]).sort(([a], [b]) => a.localeCompare(b));
+      };
+      const turnedBy = (from, to, degrees) => from.length > 0 && from.length === to.length
+        && from.every(([part, azimuth], i) => part === to[i][0] && Math.abs(((to[i][1] - azimuth - degrees + 540) % 360) - 180) < 2);
+      const [still, turnedHead] = [await look(AHEAD), await look(RIGHT)];
+      assert.ok(turnedBy(still, turnedHead, 0), `music turns with the head: ${JSON.stringify([still, turnedHead])}`);
+      const tracked = await page.evaluate(() => window.xem.settings.apply({ Binaural: { ...window.xem.settings.get().settings.binaural, head_tracked_music: true } }));
+      assert.equal(tracked.ok, true, JSON.stringify(tracked));
+      // The hosts apply settings with each frame batch, the game running.
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.command({ cmd: 'binaural' }).config.head_tracked_music, null, { timeout: 30_000 });
+      await page.evaluate(() => window.xem.setRunning(false));
+      const [stage, againstHead] = [await look(AHEAD), await look(RIGHT)];
+      assert.ok(turnedBy(stage, againstHead, -90), `head-tracked music stays put, heard a quarter to the left: ${JSON.stringify([stage, againstHead])}`);
+      console.log(`music parts: ${still.length} turning with the head, ${stage.length} staying put`);
 
       // Leaving returns to the canvas (the emulator's overlay covers the
       // page's button while a session runs).

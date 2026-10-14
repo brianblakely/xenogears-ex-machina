@@ -639,9 +639,25 @@ quarter pans where the levelled filters do not), and the arranged music
 leans the way the original does; each part keeps one source, every emitter is placed and on the side
 the original pans it to; the opening movie's sound stays within 1 of the
 original mix; fast-forward and rewind keep presenting; a restored state
-sounds the same every time; in the forest's battle (the slice's route) the
-combatants' sounds are placed at their sprites (8 effects) around the
-formation's centre, which stays put through the battle. Along a walk through
+sounds the same every time, and a restore, which jumps from one moment's
+sound to another's in the original too, stands out no more there (the
+click measure below: 1.0 and 1.5 dB less than the original's). In the
+forest's battle (the slice's route, two sessions from one state at frame
+6 000, plain and under Binaural) the combatants' sounds are placed at their
+sprites (9 effects) around the formation's centre, which stays put through
+the battle; read apart from the presenter, each sprite's position from
+that centre through the sprites' view (`sprite_view_matrix`, the battle
+camera's) is where it is heard within 0.11 degree, 1 899 times. That
+battle's camera turns only in its opening sweep, before any combatant
+sounds, so both sessions turn the yaw it frames the party from
+(`battle_camera_framing_angles`) six times, and the game's own framing and
+easing swing the camera over 97 frames: 196 placed directions follow it,
+703 degrees in all. The battle's scripts start 16 effects no sprite's
+command started: each is a coverage gap of the battle mode, heard in its
+original mix (9 022 voice frames). The battle music's 20 parts keep their
+places through the swings, and the swings and the 83 source switches stand
+out at most 0.61 and 1.10 dB more than the original's in the high band.
+Along a walk through
 field 509 (`tests/reference-inputs/binaural-field509-walk.json`, a session
 log: six emitter actors playing three sounds, of which the original keeps
 the three nearest the character sounding, a set that changes nine times on
@@ -737,7 +753,11 @@ findings say; the bypass is engaged and plays Stereo's output; Binaural
 presents halfway (in the field 92 572 of the 92 738 samples to the end of
 its fade differ from Stereo's), and from the end of its fade the output is
 Stereo's again. `xr-game.test.mjs`: the listener turns with the emulated headset
-while the game is paused, and has no head after the session.
+while the game is paused, and has no head after the session; in field 15
+(a field 15 state imported in the headset, the game paused), a quarter turn
+of the head leaves the music's four parts where they were against the head
+without head-tracked music, and with it turns each by 90 degrees the other
+way (within 2), the stage staying put.
 
 Not done or not measured: no listening tests with people (direction and
 musical coherence were checked with the measured head as the listener, and
@@ -748,7 +768,10 @@ guessed), and sounds that event scripts start (field and battle) are left
 out, since the actor running a script is not necessarily the emitter; no
 per-song overrides were reviewed; the arena path is tested on synthetic
 memory, not reached in the game; headsets and phones only through IWER and a
-throttled processor. The interaural delay, applied as a phase ramp, leaves
+throttled processor (OpenXR's Monado run does not check the presented
+head). The battle camera's swings the battle test hears are its own (the
+framing yaw turned in both sessions): the retained battle's camera turns
+only before any combatant sounds. The interaural delay, applied as a phase ramp, leaves
 up to 1e-4 of a filter's energy (-40 dB) past the 128 samples a block
 convolves without wrapping; it wraps into the start of the block (a 300 Hz
 tone held to one side shows a second difference of 55 where its own is

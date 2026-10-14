@@ -2,7 +2,11 @@
 //! user's disc 1 and a game module build): it reads and never writes, its
 //! bypass is the original output sample for sample, it knows the music's
 //! parts and the field's emitters, it places the emitters on the side the
-//! original pans them to, and a restored state starts its sound afresh.
+//! original pans them to, and a restored state starts its sound afresh
+//! without a click. In the forest's battle the combatants' sounds come from
+//! their sprites through the battle camera's view as it swings, sounds the
+//! battle's scripts start are reported and keep their mix, the music keeps
+//! its places, and neither swings nor switches click.
 //! Along a walk among field 509's emitters (the session log
 //! tests/reference-inputs/binaural-field509-walk.json), every presentation
 //! setting leaves the game, the driver's voice volumes and the SPU as they
@@ -178,20 +182,42 @@ fn music_parts_and_field_emitters_are_known_and_placed_on_the_original_side() {
 
 #[test]
 fn a_restored_state_starts_its_sound_afresh() {
-    let Some(mut session) = field(Some(on())) else {
+    let Some(mut placed) = field(Some(on())) else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    frames(&mut session, 300);
-    let state = session.snapshot_bytes().unwrap();
-    session.restore_bytes(&state).unwrap();
-    let first = frames(&mut session, 240);
-    // Somewhere else in the timeline, with other sound under way.
-    frames(&mut session, 500);
-    session.restore_bytes(&state).unwrap();
-    let again = frames(&mut session, 240);
+    let mut plain = field(None).unwrap();
+    // Each session's output through two restores of one state, and where
+    // in it each restore came.
+    let run = |session: &mut Session<NativeModule>| {
+        frames(session, 300);
+        let state = session.snapshot_bytes().unwrap();
+        let mut stream = frames(session, 120);
+        let mut restores = Vec::new();
+        session.restore_bytes(&state).unwrap();
+        restores.push(stream.len() / 2);
+        let first = frames(session, 240);
+        stream.extend(&first);
+        // Somewhere else in the timeline, with other sound under way.
+        stream.extend(frames(session, 500));
+        session.restore_bytes(&state).unwrap();
+        restores.push(stream.len() / 2);
+        let again = frames(session, 240);
+        stream.extend(&again);
+        (first, again, stream, restores)
+    };
+    let (first, again, stream, restores) = run(&mut placed);
     assert_eq!(first, again, "nothing of the abandoned timeline is heard, and the rest is deterministic");
     assert!(first.iter().any(|s| *s != 0));
+    // A restore jumps from one moment's sound to another's, in the original
+    // as in the presentation, which adds no click of its own there.
+    let (_, _, original, original_restores) = run(&mut plain);
+    let window = |at: usize| (at, at + 1);
+    let rises = clicks_between(&stream, &original, &restores.iter().map(|&at| window(at)).collect::<Vec<_>>(), &original_restores.iter().map(|&at| window(at)).collect::<Vec<_>>());
+    eprintln!("restores at {restores:?} (the original's at {original_restores:?}): the high band stands out {:?} dB more than the original's in all its parts", rises.iter().map(|r| r.0).collect::<Vec<_>>());
+    for (excess, _) in rises {
+        assert!(excess <= 3.0, "a restore stands out at most 3 dB more than the original's: {excess:+.2} dB");
+    }
 }
 
 /// Pad 1 by frame from a retained route (tests/reference-inputs), as a
@@ -277,53 +303,257 @@ fn fast_forward_and_rewind_keep_presenting() {
     assert!(status["sources"].as_array().unwrap().iter().any(|s| s["kind"] == "effect"), "the emitters are placed again: {status}");
 }
 
+/// The slice's forest route, whose encounter's battle runs from frame 5886
+/// to 9514: the battle's sessions start at 6000 from one state.
+const FOREST: &str = "slice-forest.json";
+const BATTLE_FROM: u64 = 6000;
+const BATTLE_FRAMES: u64 = 3600;
+/// This battle's camera turns only in its opening sweep (frames 6156 to
+/// 6204), before any combatant sounds: both sessions turn the yaw it frames
+/// the party from (`battle_camera_framing_angles.vy`, 800C3742) at these
+/// frames, and the game's own framing and easing swing the camera there.
+const SWINGS: [(u64, u16); 6] = [(6700, 0x0200), (7000, 0xFE00), (7300, 0x0400), (7700, 0x0000), (8100, 0xFD00), (8600, 0x0100)];
+
+/// What a battle session left after each frame: the mode; the output as
+/// presented and where each frame's ended in it; with Binaural, its status,
+/// the sprites' view (`sprite_view_matrix`, 4.12 rows as floats) and the
+/// positions of the sprites its sources follow, read apart from the
+/// presenter.
+struct Fought {
+    modes: Vec<Option<u32>>,
+    audio: Vec<i16>,
+    ends: Vec<usize>,
+    statuses: Vec<Value>,
+    views: Vec<[[f32; 3]; 3]>,
+    sprites: Vec<std::collections::HashMap<String, [f32; 3]>>,
+}
+
+fn fight(disc: &Path, state: &[u8], log: &Log, binaural: bool) -> Fought {
+    let (mut session, _) = boot(disc, &BootOptions { audio_output: true, ..Default::default() }).expect("boot");
+    session.set_sound_mode(1).unwrap();
+    session.restore_bytes(state).unwrap();
+    if binaural {
+        session.set_binaural(ON);
+    }
+    let mut commands = log.commands(BATTLE_FROM, false).as_array().unwrap().clone();
+    for (at, yaw) in SWINGS {
+        commands.push(json!([at, {"cmd": "write_memory", "address": 0x800C_3742u32, "hex": hex(&yaw.to_le_bytes())}]));
+    }
+    commands.sort_by_key(|c| c[0].as_u64());
+    execute(&mut session, json!({"cmd": "schedule", "commands": commands}));
+    let mut fought = Fought { modes: Vec::new(), audio: Vec::new(), ends: Vec::new(), statuses: Vec::new(), views: Vec::new(), sprites: Vec::new() };
+    for _ in 0..BATTLE_FRAMES {
+        assert!(session.frame().expect("a frame"));
+        let spu = &mut session.runtime.services().spu;
+        let start = fought.audio.len();
+        fought.audio.resize(start + spu.audio_queued(), 0);
+        spu.take_audio(&mut fought.audio[start..]);
+        fought.ends.push(fought.audio.len());
+        fought.modes.push(session.runtime.services().mode);
+        if binaural {
+            let status = execute(&mut session, json!({"cmd": "binaural"}));
+            let memory = session.runtime.memory();
+            fought.views.push([0, 1, 2].map(|r| [0, 1, 2].map(|c| f32::from(driver::s16_at(memory, 0x8004_FBB8 + 2 * (r * 3 + c))) / 4096.0)));
+            let mut sprites = std::collections::HashMap::new();
+            for source in status["sources"].as_array().unwrap().iter().filter(|s| s["emitter"] == "sprite") {
+                let follows = source["follows"].as_str().unwrap().to_owned();
+                let sprite = u32::from_str_radix(follows.trim_start_matches("0x"), 16).unwrap();
+                sprites.insert(follows, [0, 4, 8].map(|k| driver::u32_at(memory, sprite + k) as i32 as f32 / 65536.0));
+            }
+            fought.sprites.push(sprites);
+            fought.statuses.push(status);
+        }
+    }
+    fought
+}
+
+/// The forest's battle, plain and under Binaural, played once for the
+/// tests that read it.
+struct Battle {
+    plain: Fought,
+    placed: Fought,
+}
+
+static BATTLE: std::sync::OnceLock<Result<Battle, String>> = std::sync::OnceLock::new();
+
+fn battle() -> Option<&'static Battle> {
+    let disc = disc()?;
+    let battle = BATTLE.get_or_init(|| {
+        let played = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let log = Log::read(FOREST);
+            let (mut session, _) = boot(&disc, &BootOptions::default()).expect("boot");
+            execute(&mut session, json!({"cmd": "schedule", "commands": log.commands(BATTLE_FROM, true)}));
+            while session.runtime.frames() < BATTLE_FROM {
+                assert!(session.frame().expect("a frame"));
+            }
+            let state = session.snapshot_bytes().unwrap();
+            let (plain, placed) = std::thread::scope(|scope| {
+                let plain = scope.spawn(|| fight(&disc, &state, &log, false));
+                let placed = scope.spawn(|| fight(&disc, &state, &log, true));
+                let join = |run: std::thread::ScopedJoinHandle<'_, Fought>| run.join().unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+                (join(plain), join(placed))
+            });
+            Battle { plain, placed }
+        }));
+        played.map_err(|panic| panic.downcast_ref::<String>().cloned().or_else(|| panic.downcast_ref::<&str>().map(|s| (*s).to_owned())).unwrap_or_default())
+    });
+    match battle {
+        Ok(battle) => Some(battle),
+        Err(error) => panic!("the battle's sessions failed: {error}"),
+    }
+}
+
+/// The battle frames whose camera swung: the sprites' view turned more than
+/// a degree from one frame to the next.
+fn swings(placed: &Fought) -> Vec<usize> {
+    (1..placed.views.len()).filter(|&n| placed.modes[n] == Some(2) && between(placed.views[n - 1][2], placed.views[n][2]) > 1.0).collect()
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 #[test]
 fn battle_sounds_come_from_their_combatants_around_a_fixed_centre() {
-    let Some(disc) = disc() else {
+    let Some(Battle { placed, .. }) = battle() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    // The slice's forest route: its encounter's battle runs from about
-    // frame 6000.
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/slice-forest.json");
-    let log: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
-    let (mut session, _) = boot(&disc, &BootOptions { audio_output: true, ..Default::default() }).expect("boot");
-    session.set_sound_mode(1).unwrap();
-    session.set_binaural(on());
-    execute(&mut session, json!({"cmd": "schedule", "commands": log["commands"]}));
-    frames(&mut session, 6000);
     let mut anchors = Vec::new();
-    let mut placed = std::collections::HashSet::new();
-    for _ in 0..180 {
-        frames(&mut session, 20);
-        if session.runtime.services().mode != Some(2) {
-            continue;
-        }
-        let status = execute(&mut session, json!({"cmd": "binaural"}));
-        if status["listening_position"].is_null() {
-            // The battle is placing its combatants, or has removed them.
+    let mut effects = std::collections::BTreeSet::new();
+    let (mut checked, mut worst, mut swings, mut swung) = (0, 0f32, 0, 0f32);
+    let mut previous: std::collections::HashMap<u64, [f32; 3]> = std::collections::HashMap::new();
+    for (n, status) in placed.statuses.iter().enumerate() {
+        // The battle placing its combatants or gone: no listener.
+        if placed.modes[n] != Some(2) || status["listening_position"].is_null() {
+            previous.clear();
             continue;
         }
         assert!(status["listener"].as_str().unwrap().starts_with("battle"), "{status}");
-        anchors.push(status["listening_position"].clone());
+        let anchor: Vec<f32> = status["listening_position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap() as f32).collect();
+        anchors.push(anchor.clone());
+        let mut heard = std::collections::HashMap::new();
         for source in status["sources"].as_array().unwrap().iter().filter(|s| s["emitter"] == "sprite") {
-            // Where the sprite is now, as the scene read it at the frame's end.
-            let sprite = u32::from_str_radix(source["follows"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
-            let mut bytes = [0u8; 12];
-            session.runtime.memory().read(sprite, &mut bytes).unwrap();
-            let at: Vec<f64> = bytes.chunks(4).map(|c| f64::from(i32::from_le_bytes([c[0], c[1], c[2], c[3]])) / 65536.0).collect();
-            let position: Vec<f64> = source["position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+            // Where the sprite is, read apart from the presenter, as the
+            // scene read it at the frame's end.
+            let at = placed.sprites[n][source["follows"].as_str().unwrap()];
+            let position: Vec<f32> = source["position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap() as f32).collect();
             assert_eq!(position, at, "{source}");
-            placed.insert(source["effect"].as_str().unwrap().to_owned());
+            effects.insert(source["effect"].as_str().unwrap().to_owned());
+            // Heard from the formation's centre in the sprites' view.
+            let Some(t) = target(source) else { continue };
+            let v = apply(&placed.views[n], [0, 1, 2].map(|i| at[i] - anchor[i]));
+            let off = between(v, t);
+            worst = worst.max(off);
+            checked += 1;
+            assert!(off < 0.5, "battle frame {n}: {source} heard {off} degrees from the sprite in the camera's view");
+            let id = source["id"].as_u64().unwrap();
+            if let Some(&earlier) = previous.get(&id)
+                && placed.views[n] != placed.views[n - 1]
+            {
+                swings += 1;
+                swung += between(earlier, t);
+            }
+            heard.insert(id, t);
         }
+        previous = heard;
     }
-    assert!(anchors.len() > 50, "the battle ran");
+    eprintln!("battle: {} frames with a listener, {} effects placed at their sprites ({effects:?}); {checked} directions within {worst} degrees of the sprites in the camera's view, {swings} of them as the camera moved, {swung:.0} degrees in all; the camera swung in {} frames",
+        anchors.len(), effects.len(), self::swings(placed).len());
+    assert!(anchors.len() > 1000, "the battle ran");
     // The listener stays at the formation's centre on the floor (its height
     // follows the combatants' average) whoever acts.
-    let floor = |a: &Value| (a[0].as_f64().unwrap(), a[2].as_f64().unwrap());
+    let floor = |a: &[f32]| (a[0], a[2]);
     assert!(anchors.iter().all(|a| floor(a) == floor(&anchors[0])), "{anchors:?}");
-    assert!(placed.len() >= 5, "the combatants' sounds are placed at them: {placed:?}");
-    eprintln!("battle: {} effects placed at their sprites: {placed:?}", placed.len());
+    assert!(effects.len() >= 5, "the combatants' sounds are placed at them: {effects:?}");
+    assert!(checked > 100 && swings > 20 && swung > 30.0, "the camera swung while placed sounds played");
+}
+
+#[test]
+fn in_a_battle_sounds_its_scripts_start_are_reported_and_mixed_as_the_original() {
+    let Some(Battle { placed, .. }) = battle() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut original = 0;
+    for (n, status) in placed.statuses.iter().enumerate() {
+        let gone: std::collections::HashSet<u64> = status["sources"].as_array().unwrap().iter()
+            .filter(|s| s["emitter"].as_str().is_some_and(|e| e.starts_with("gone"))).filter_map(|s| s["id"].as_u64()).collect();
+        for voice in status["voices"].as_array().unwrap() {
+            if voice.get("owner").is_some() {
+                assert_eq!(voice["route"], "original", "battle frame {n}: a voice no channel holds keeps its mix: {voice}");
+            }
+            if voice.get("effect_channel").is_none() || voice["unresolved"].is_null() {
+                continue;
+            }
+            // An effect without a place keeps its mix, unless it was placed
+            // at a sprite since gone (its tail keeps its last direction).
+            if voice["route"] == "original" {
+                original += 1;
+            } else {
+                assert!(voice["route"].as_u64().is_some_and(|id| gone.contains(&id)), "battle frame {n}: an unresolved voice is routed to a placed source: {voice} in {status}");
+            }
+        }
+    }
+    let gaps = placed.statuses.last().unwrap()["coverage_gaps"].as_array().unwrap().clone();
+    let battle: Vec<&Value> = gaps.iter().filter(|g| g["mode"] == 2).collect();
+    eprintln!("battle: {original} voice frames of unplaced effects in their original mix; the battle's coverage gaps: {battle:?}");
+    assert!(!battle.is_empty() && original > 100, "the battle's scripts played sounds nobody's sprite started, reported and in their original mix");
+}
+
+#[test]
+fn in_a_battle_the_music_keeps_its_places_as_the_camera_swings() {
+    let Some(Battle { placed, .. }) = battle() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let swings = swings(placed);
+    let mut places: std::collections::HashMap<(String, u64), Value> = std::collections::HashMap::new();
+    let (mut checked, mut through) = (0, 0);
+    for (n, status) in placed.statuses.iter().enumerate().filter(|(n, _)| placed.modes[*n] == Some(2)) {
+        let mut playing = false;
+        for source in status["sources"].as_array().unwrap().iter().filter(|s| s["kind"] == "music") {
+            let part = (source["song"].as_str().unwrap().to_owned(), source["part"].as_u64().unwrap());
+            assert_eq!(*places.entry(part.clone()).or_insert_with(|| source["placement"].clone()), source["placement"], "battle frame {n}: part {part:?} keeps its place");
+            let p = &source["placement"];
+            let (azimuth, home, spread) = (p["azimuth"].as_f64().unwrap(), p["home_pan"].as_f64().unwrap(), p["spread"].as_f64().unwrap());
+            let turned = azimuth + (source["pan"].as_f64().unwrap_or(home) - home) / 16384.0 * spread;
+            let off = between(direction_of(turned, p["elevation"].as_f64().unwrap()), target(source).expect("a place"));
+            assert!(off < 0.01, "battle frame {n}: part {part:?} heard {off} degrees from its place turned by its own pan");
+            checked += 1;
+            playing = true;
+        }
+        through += usize::from(playing && swings.contains(&n));
+    }
+    eprintln!("battle music: {} parts, {checked} part frames at their places, through {through} of the {} frames the camera swung in", places.len(), swings.len());
+    assert!(places.len() >= 4 && through > 20, "the battle's music played as the camera swung");
+}
+
+#[test]
+fn in_a_battle_camera_swings_and_switching_sources_add_no_clicks() {
+    let Some(Battle { plain, placed }) = battle() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let frame = |n: usize| (placed.ends[n - 1] / 2, placed.ends[n] / 2);
+    let routes = |status: &Value| -> Vec<(u64, Value)> {
+        status["voices"].as_array().unwrap().iter().map(|v| (v["voice"].as_u64().unwrap(), v["route"].clone())).collect()
+    };
+    let swung: Vec<_> = swings(placed).into_iter().map(frame).collect();
+    let switches: Vec<_> = (1..placed.statuses.len()).filter(|&n| placed.modes[n] == Some(2) && routes(&placed.statuses[n]) != routes(&placed.statuses[n - 1])).map(frame).collect();
+    let mut worst = Vec::new();
+    for (name, events) in [("the camera swung", &swung), ("sources switched", &switches)] {
+        let rises = clicks(&placed.audio, &plain.audio, events);
+        let most = rises.iter().map(|r| r.0).fold(f64::MIN, f64::max);
+        let level = rises.iter().map(|r| r.1).fold(f64::MIN, f64::max);
+        eprintln!("battle clicks: {} frames where {name}; the high band stands out at most {most:+.2} dB more than the original's in all its parts, its level at most {level:+.2} dB over it",
+            events.len());
+        worst.push((name, events.len(), most));
+    }
+    for (name, count, most) in worst {
+        assert!(count > 0, "{name} in the battle");
+        assert!(most <= 3.0, "where {name}, the high band stands out at most 3 dB more than the original's: {most:+.2} dB");
+    }
 }
 
 /// The walk through field 509, whose six emitter actors play three sounds
@@ -1547,6 +1777,12 @@ const HIGH_PARTS: [(f64, f64); 3] = [(8000.0, 11_000.0), (11_000.0, 15_000.0), (
 /// for as long as it sounds and reshapes it part by part (its HRTF pair's
 /// spectrum), its attack and its end included.
 fn clicks(presented: &[i16], original: &[i16], events: &[(usize, usize)]) -> Vec<(f64, f64)> {
+    clicks_between(presented, original, events, events)
+}
+
+/// As [`clicks`], for outputs whose timelines differ: each event's samples
+/// in the presentation's (`at`) and in the original's (`original_at`).
+fn clicks_between(presented: &[i16], original: &[i16], at: &[(usize, usize)], original_at: &[(usize, usize)]) -> Vec<(f64, f64)> {
     let floor = (xem_binaural::BLOCK * 2 * 16) as f64;
     let standing = |e: &[f64]| -> Vec<f64> {
         let median = |range: std::ops::Range<usize>| {
@@ -1564,13 +1800,14 @@ fn clicks(presented: &[i16], original: &[i16], events: &[(usize, usize)]) -> Vec
     let parts: Vec<(Vec<f64>, Vec<f64>)> =
         HIGH_PARTS.iter().map(|&(low, high)| (standing(&band(presented, low, Some(high))), standing(&band(original, low, Some(high))))).collect();
     let (b, o) = (high_band(presented), high_band(original));
-    events
-        .iter()
-        .map(|&(start, end)| {
-            let blocks = (start / xem_binaural::BLOCK).saturating_sub(2)..(end / xem_binaural::BLOCK + 21).min(b.len()).min(o.len());
-            let peak = |e: &[f64]| blocks.clone().map(|k| e[k]).fold(0.0, f64::max);
-            let excess = parts.iter().map(|(p, q)| 10.0 * (peak(p) / peak(q)).log10()).fold(f64::MAX, f64::min);
-            (excess, 10.0 * ((peak(&b) + floor) / (peak(&o) + floor)).log10())
+    let blocks = |(start, end): (usize, usize), len: usize| (start / xem_binaural::BLOCK).saturating_sub(2)..(end / xem_binaural::BLOCK + 21).min(len);
+    let peak = |e: &[f64], blocks: std::ops::Range<usize>| blocks.map(|k| e[k]).fold(0.0, f64::max);
+    at.iter()
+        .zip(original_at)
+        .map(|(&event, &original_event)| {
+            let (here, there) = (blocks(event, b.len()), blocks(original_event, o.len()));
+            let excess = parts.iter().map(|(p, q)| 10.0 * (peak(p, here.clone()) / peak(q, there.clone())).log10()).fold(f64::MAX, f64::min);
+            (excess, 10.0 * ((peak(&b, here) + floor) / (peak(&o, there) + floor)).log10())
         })
         .collect()
 }
@@ -1821,5 +2058,6 @@ fn through_pair(signal: &[f32], filter: &xem_binaural::hrtf::Filter) -> f64 {
     }
     energy / n as f64
 }
+
 
 
