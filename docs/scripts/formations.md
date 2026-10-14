@@ -131,6 +131,10 @@ bundles, area files and discs. On the user's discs:
 - **Stages:** 73 are used, the highest 74; directory (12, 3) holds 75 pairs of a stage
   file and its scene data.
 
+Which of the maps that arm the draw are platforming-heavy, from their walkmeshes and these
+sets (`python3 -m tools.analysis.platforming`), and the enemies only their draws meet:
+[Random battles in platforming areas](../runtime.md#random-battles-in-platforming-areas).
+
 ## Open
 
 - The six script tables and battle 58 that no formation places: a starter other than

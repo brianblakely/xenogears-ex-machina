@@ -2268,6 +2268,151 @@ the stand-in states hold, so a variant added to the format is outside it
 until a stand-in state holds one, and device semantics changed without a
 layout change pass it.
 
+## Gameplay options
+
+### Random battles in platforming areas
+
+The field's random battles come from one draw, `field_encounter_count_down`,
+which player control runs while a direction is held on a map whose scripts
+armed it (event f7; [formations](scripts/formations.md)). Phase 7 (plan.md)
+turns them off by default in platforming-heavy areas, and
+`xem_core::encounters::PLATFORMING_AREAS` is the reviewed list of those
+areas: a name and the maps there that arm the draw, `platforming_maps()`
+their union, ascending. No setting reads it yet. `python3 -m
+tools.analysis.platforming` classifies both discs' maps (disc 2's 205 map
+bundles are disc 1's of the same numbers): `--table` (the default) prints
+every area with its maps' metrics and the reason, `--map N` one map's
+layers, regions, links and entrances, `--rust` the table, and `--check`
+fails unless `src/runtime/crates/xem-core/src/encounters.rs` holds exactly
+that table. It reads `.local/extract` and `.local/discs`; a run takes about
+22 s here (16 threads, one process).
+
+**The jump**, measured headless (`xem-headless --control`, suite profile,
+disc 1): the party leader's `FieldActor` position (16.16) every vertical
+blank of a jump with Run and a direction held over open floor. A field
+update takes two vertical blanks; distances are from where the leader left
+the floor.
+
+| Party | Where | Rise | Flat reach | Arc |
+| --- | --- | --- | --- | --- |
+| Fei on foot | map 22, `enter_field` | 118.25 | 240 | up 20.75 an update less 2.0 each (analysis/formats/jump-physics.md), 11 updates up and 11 down |
+| The party in its gears | map 414, `game_data.inGear` set | 131.25 | 204 | up 24.75 less 2.0 for 7 updates, one still update, then a fall from rest, 11 updates |
+
+Both go straight up for two updates, then 12 units an update in the air
+with Run held and 6 without; on the floor Fei runs 16 units an update and
+walks 5, a gear 12 and 6. A jump lands nearer the higher it lands: at a
+rise of 100 Fei reaches 156 units and a gear 132. `enter_field` alone
+leaves `game_data.inGear` clear, so on map 414 the leader is then its pilot
+on foot with the gears' alternate sprite set (fe 1e), which hops 31.5
+units; the gear measurement takes `enter_field`'s kernel-menu recipe with
+`inGear` set for the three slots before the field loads.
+
+**Slides.** On a floor of attribute 0x400000 the leader has no direction:
+`field_actor_apply_additive_motion` sets bit 15 of its heading before
+`field_actor_move` moves it, so only the slope's push moves it, down, and
+`field_collision_walk_attribute_aware` refuses a step onto one whose floor
+is above it. Placed on map 22's slide triangle 1118 with the D-pad held up
+the slope, the leader slid down from y -23 through -21, -18, -14, -9 and -5
+to the floor at 0 in seven updates and could not step back onto it. The
+assisted movement's planner (`xem_core::field`) walks ledges to ledges
+freely; the classifier does not.
+
+**Method**, per map and actor layer, from the walkmesh and the scripts:
+
+- **Party.** In its gears when the map's scripts reach fe 1e, else on
+  foot. On foot attribute bit 7 blocks walking and bit 4 airborne moves
+  and jump starts, in a gear bits 6 and 3 (the leader's flag bits 8-10,
+  `field_event_become_party_character`); 0x800000 blocks layer 0. Actors
+  stand on layers 0 to count - 2; the top layer is the camera's floor.
+- **Walk graph and regions.** The leader walks from a floor to any
+  neighbouring floor and onto a slide not more than 8 units above it
+  (centroids, as `xem_core::field` compares them); from a slide it only
+  goes on to neighbours not more than 8 above. Regions are the strongly
+  connected components of the floors, a slide joining the floor it starts
+  from to the floors it ends on. A walk link between regions that leads
+  down a slide is a **fall** when its way back needs a jump.
+- **Jump links.** From a floor's edge into a slide, over slides, to a floor
+  of another region: every edge crossed (its midpoint) within the measured
+  arc, as far and as high, and no triangle the party may not cross in the
+  air. A jump starts on no slide.
+- **Entrances** are the entry records (the bytecode opens with ff; record
+  n at 1 + 7n holds x, z and the layer) that other maps' map changes name
+  (12, 47, 98, fe 84, fe cf with immediate operands; the debug maps 720-729
+  aside) and the world map's path regions (four tables per area file and
+  `worldmap_fixed_path_regions`; a region of kind 4 only names a
+  destination), each on the first triangle whose edges wind around it as
+  `field_collision_find_floor_triangle` tests them.
+- **Traversal jumps.** For each ordered pair of a map's entrances on one
+  layer, the fewest jump links on the way (a 0-1 breadth-first search,
+  walk links free); the map's figure is the most any pair needs.
+
+**Areas and the rule.** An area is the armed maps whose draws start the
+same encounters (the battle and enemy ids of each formation with a weight;
+sets that differ only in a stage, a weight or an undrawn formation are one
+area's, as maps 444-450's are) that doors join, through maps that are not
+armed with other encounters. An area is platforming-heavy when at least
+half of its armed maps need at least one traversal jump and its maps'
+traversal jumps sum to at least 3; an area heavy on either disc is listed.
+Its name is the world map's for the entrance fewest door steps away (at
+most two); the later areas' name tables are Japanese and name nothing.
+
+| Area | Maps | Party | Maps needing a jump | Traversal jumps | Reason |
+| --- | --- | --- | --- | --- | --- |
+| Blackmoon Forest | 22 | foot | 1 of 1 | 3 | From the world-map entrance (entry 0) up to entry 1, where map 23's door arrives, the floor rises 150-250 units over a staircase of eight stumps 50-95 units across (-40 to -257 high): 3 jumps up, none down. An actor there hops up the same stones ahead of the party (`arc_jump`), and a scripted battle waits at the top. 72 jump links, 27 falls. |
+| Babel Tower | 407, 409, 412-416 | gears | 5 of 7 | 13 | 412: 3, 413: 3, 414: 2, 415: 3, 416: 2; 407: 0; 409: 0 (its second entrance finds no floor on its layer 2). 89 jump links, 39 falls. |
+| Anima Relic 2 | 641, 642, 644, 650, 651 | gears | 3 of 5 | 3 | 641, 642 and 650: 1 each; 644 and 651: 0. 77 jump links, 37 falls. |
+
+Reviewed and not listed (disc 1; disc 2 holds no other):
+
+| Area | Maps needing a jump | Traversal jumps | Why not |
+| --- | --- | --- | --- |
+| Maps 444-450 | 3 of 7 (444: 1, 447: 1, 448: 2) | 4 | fewer than half its maps |
+| Maps 64-68 (gears) | 2 of 5 (64: 3, 66: 5) | 8 | fewer than half its maps |
+| Map 69 (gears) | 0 of 1 | 0 | its two entrances are on different layers (44 jump links) |
+| Maps 172, 173, 175 (gears) | 0 of 3 | 0 | 172 has one entrance; 173's and 175's first entrance reaches the second by no walk or jump on its layer, the way back needs none |
+| Goliath Factory, maps 262-266 (gears) | 1 of 5 (266: 1) | 1 | fewer than half, fewer than 3 jumps |
+| Map 241 | 1 of 1 | 1 | fewer than 3 jumps |
+| Mountain Path, map 15 | 0 of 1 | 0 | its joined entrances need none |
+| Blackmoon Forest, maps 23, 24 | 1 of 2 (23: 2) | 2 | fewer than 3 jumps |
+| Maps 546-590 (32 maps) | 1 of 32 (551: 3) | 3 | fewer than half its maps |
+| Anima Relic 1, maps 632-634 | 1 of 3 (633: 1) | 1 | fewer than half, fewer than 3 jumps |
+| Deus, map 703 (gears) | 0 of 1 | 0 | 108 jump links, none between its two entrances |
+
+**Enemies met only in these random battles.** `--table` ends with the
+(battle, enemy id) pairs some formation starts on either disc
+(`formations.reach`: drawn, named or chained) that none starts once the
+listed maps' draws stop: battle 59's enemy 2 (Babel Tower, formation 6 of
+maps 407, 409 and 412-416 on disc 1 and 412-416 on disc 2) and battle 71's
+enemy 4 (Anima Relic 2, formation 0 of its five maps on both discs). With
+random battles off there, these two are not met at all.
+
+Tests: `tests/test_platforming.py` (`python3 -m unittest
+tests.test_platforming`, suite.sh's port stage) checks the classifier on
+invented walkmeshes, scripts, area files and two invented discs: a slide
+up needs a jump and its way down is a fall, floors join at any height, a
+slide entered level is no stair, a jump links the sides of a valley of
+slides, the arc lets a gear but not Fei land 125 up and Fei but not a gear
+150 on at 100 up, the party's blocking bits and layer 0's, the game's floor
+search (its winding, a negative z's borrow, the first triangle on an
+edge), entry records, doors and fe 1e, path regions without destinations,
+`worldmap_fixed_path_regions`, encounter keys that ignore stages and
+weights, area grouping, the rule, names, a two-map dungeon classified,
+listed and its lost enemy found, and `--rust`, `--check` and `--map`.
+`encounters.rs`'s unit test checks that each area's maps ascend and that
+no map is in two areas. With the user's discs extracted, `python3 -m
+tools.analysis.platforming --check` proves the shipped table.
+
+Not done or not measured: the classification is a static approximation of
+the walkmesh. It follows one layer at a time (scripted layer changes, lifts,
+zone-triggered moves and falls are not followed), takes heights from
+centroids and jumps between edge midpoints, lets a slide end on any
+neighbour not above it rather than where its push leads, finds entrances
+only through immediate map-change operands and the world map's path
+regions (not variables or other scripted placements), and takes the party
+kind from a reachable fe 1e alone. Each party's jump was measured once, on
+one map, with `enter_field`'s game data (Fei, and the gears the kernel
+menu's setup gives); other characters' and gears' jumps are not measured.
+
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
