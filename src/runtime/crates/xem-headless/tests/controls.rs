@@ -549,7 +549,7 @@ fn pointer_frame(session: &mut Session<NativeModule>, player: &mut xem_settings:
     host_frame(session, player, bindings);
 }
 
-/// A point on entry `index` that no smaller entry overlaps there.
+/// A point on entry `index` that no other entry takes (`Targets::at`).
 fn point_on(targets: &xem_core::menu::Targets, index: usize) -> (f32, f32) {
     let rect = targets.entries[index].rect;
     (0..20).flat_map(|i| (0..20).map(move |j| (rect.x + rect.width * (i as f32 + 0.5) / 20.0, rect.y + rect.height * (j as f32 + 0.5) / 20.0)))
