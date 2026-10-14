@@ -2359,7 +2359,7 @@ most two); the later areas' name tables are Japanese and name nothing.
 
 | Area | Maps | Party | Maps needing a jump | Traversal jumps | Reason |
 | --- | --- | --- | --- | --- | --- |
-| Blackmoon Forest | 22 | foot | 1 of 1 | 3 | From the world-map entrance (entry 0) up to entry 1, where map 23's door arrives, the floor rises 150-250 units over a staircase of eight stumps 50-95 units across (-40 to -257 high): 3 jumps up, none down. An actor there hops up the same stones ahead of the party (`arc_jump`), and a scripted battle waits at the top. 72 jump links, 27 falls. |
+| Blackmoon Forest | 22 | foot | 1 of 1 | 3 | From the early world map's entrance (entry 0) up to entry 1, where map 23's door and the later world map arrive, the floor rises 150-250 units over a staircase of eight stumps 50-95 units across (-40 to -257 high): 3 jumps up, none down. An actor there hops up the same stones ahead of the party (`arc_jump`), and a scripted battle waits at the top. 72 jump links, 27 falls. |
 | Babel Tower | 407, 409, 412-416 | gears | 5 of 7 | 13 | 412: 3, 413: 3, 414: 2, 415: 3, 416: 2; 407: 0; 409: 0 (its second entrance finds no floor on its layer 2). 89 jump links, 39 falls. |
 | Anima Relic 2 | 641, 642, 644, 650, 651 | gears | 3 of 5 | 3 | 641, 642 and 650: 1 each; 644 and 651: 0. 77 jump links, 37 falls. |
 
