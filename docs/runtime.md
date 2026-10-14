@@ -1728,9 +1728,10 @@ and binding controls, and windowed play their file pickers. On desktop,
 Android and in the browser these operations also take keyboard and gamepad
 chords. Native headset play (OpenXR) reaches them only through its Settings
 panel: its controllers and hands do not reach the app bindings. In a WebXR
-session the controllers' chords queue their operations, which run at the
-page's next key, pointer or window-frame input (after the session, or a key
-of an attached keyboard). Fast-forward is an
+session the operations asked for there, from the Settings panel or a
+controller's chord, queue: they run at the page's next key, pointer or
+window-frame input (after the session, or a key of an attached keyboard).
+Fast-forward is an
 on/off toggle, bound to backtick (`Backquote`) or Back+RT by default, with no
 Settings checkbox for the toggle. Its separate
 saved rate defaults to 10×. The slider snaps to 1×, 5×, 10×, 15×, 20× and
@@ -1848,25 +1849,40 @@ disc from them); queued future audio is discarded. App pacing is omitted
 from the state and reapplied after restoring the game's music phase. The
 game state format is version 9 (`snapshot::VERSION`); a state of another
 version is refused, never converted. `snapshot::FORMAT_FINGERPRINT` beside
-it is the SHA-256 of a stand-in state with the format's parts in use
-(`format_fingerprint_matches_version`): a change to what a state holds or
-how it is written fails that test until the version changes with it.
+it is the SHA-256 of three stand-in states
+(`format_fingerprint_matches_version`) that between them hold each part of
+the format and each variant it writes: every kind of fiber (the game's
+fresh after a restart and suspended, the arena task's beside it), drive
+state (reading, seeking, idle with the lid open), drive event (a response,
+a sector, a seek's end, the story's disc change waiting, the lid's closing)
+and GPU receiver (a partial command, an image load, a polyline), a VRAM
+read, queued sectors and a sector buffer, decoded XA audio, a macroblock's
+output in flight, sound transfers and CD audio for the SPU, open card
+files, a listing and a check, the dispatcher's mode, a dispatch write and
+the module's globals. A change to what a state holds or to how any of these
+is written fails that test until the version changes with it.
 
 Card device protocol state is saved, but persistent card contents are
 excluded. Loading, importing and rewinding never roll back or write ordinary
 card saves; card backups are separate explicit operations. The protocol
 state is the calls under way: the open files, a directory search and a
-pending check. Each open file carries the directory frame of its first block
-as the device last left it (recorded when it opens, kept in step as the
-device's own calls change the directory), and the search the digest of the
-directory it lists. Restored over the inserted cards, a file whose first
-block's frame reads otherwise there is closed: its calls fail as on a removed
-card, and the game takes its own retry and failure path (the save command's
-failed-save notice, 0x35) instead of writing the rest of an old save over
-what the block holds now, a newer save that reused it or another card's
-file. A search over a directory that differs ends, and a pending check
-reports the card inserted now. Over the same card a state goes on as it
-would have.
+pending check. Each open file carries what its calls depend on as the device
+last left it (recorded when it opens, kept in step as the device's own calls
+change the card): the directory frame of its first block and a digest of
+its bytes, all of them for a file open only to read, those before its
+position for one open to write (what it has written; it writes the rest).
+The search carries the digest of the directory it lists. Restored over the
+inserted cards, a file whose frame or bytes read otherwise there is closed:
+its calls fail as on a removed card, and the game takes its own retry and
+failure path (the save command's failed-save notice, 0x35; the load's, 0x3e)
+instead of writing the rest of an old save over what the block holds now (a
+newer save that reused it, a later save's temporary file, another card's
+file) or reading the rest of a load from a save written over it (the same
+save made again, whose directory frame reads the same). A search over a
+directory that differs ends, and a pending check reports the card inserted
+now. Over the same card a state goes on as it would have, also after a
+rewind inside a save: the bytes it wrote are still there, and it writes the
+rest again.
 
 Rewind expires states beyond the configured history length and discards the
 future after stepping back. Retained allocations also stay within 2 GiB
@@ -1932,7 +1948,11 @@ of a state's content, resealed: a bit flipped, a word overwritten, inserted
 or deleted, anywhere or where the structure is dense; 98 refused with
 nothing changed, 102 accepted whole, each saving as given or restoring as
 itself; an unoptimised build runs the first 20, about six seconds here);
-`format_fingerprint_matches_version`;
+`format_fingerprint_matches_version` (the three stand-in states, each also
+restoring as itself; measured here, it fails when the way a drive's disc
+change, the lid's closing, a seek's end, a macroblock's output in flight or
+its order, a fresh fiber, XA audio's channels, a polyline or a card file is
+written changes and the version does not);
 `rewinding_into_a_save_never_changes_another_file_and_the_same_card_goes_on_identically`
 (the stand-in saving as the game does, a card call a frame: rewound into its
 writes after a newer save took the block, its remaining writes and its
@@ -1940,27 +1960,34 @@ rename are refused and the newer save and its stored copy stay; over the
 card as the state left it, the save and the state end as the first time);
 `a_recording_reports_the_restores_it_spans_and_a_replay_refuses_them`. The
 card device's tests: a restored save writes on over the same card and never
-over another file, a file the device changed while it was open (the game's
-failure path leaves one open) restores over the same card, and a restored
-listing and check follow the inserted card; the drive's: a state waiting for
-a disc takes it where the session holds it, as when the host adds it.
-`web/tests/persistence.test.mjs`: a state another game module build saved
-(the fixture with one custom section more) is refused with the module
-message, the running state and the stored state unchanged, besides the
-storage failures above. `xem-ui/tests/hud.rs` shows a refusal in the failure
-chip.
+over another file, a restored save writes on where its bytes are (a rewind
+inside it makes the save it would have made) and never over a later save's
+temporary file in its block, a restored load reads on over the same save
+and never from the same save made again over it, a file the device changed
+while it was open (the game's failure path leaves one open) restores over
+the same card, and a restored listing and check follow the inserted card;
+the drive's: a state waiting for a disc takes it where the session holds
+it, as when the host adds it. `web/tests/persistence.test.mjs`: a state
+another game module build saved (the fixture with one custom section more)
+is refused with the module message, the running state and the stored state
+unchanged, besides the storage failures above. `xem-host`'s
+`a_refused_state_load_reports_the_runtimes_message_as_it_is` (the game
+module, nothing booted): a state naming another build, loaded through
+`Game::command` and through the panel's Load state, is refused with the
+runtime's text, unquoted. `xem-ui/tests/hud.rs` shows a refusal in the
+failure chip.
 
-Not done or not measured: only the first block's directory frame of an open
-file is compared (the game's saves are one block; a longer file's later
-blocks are not checked); two temporary files in one block have the same
-frame, so a state taken inside one save and restored inside a later save
-that reused the block (once that save deleted the first one) writes on over
-it; a state taken inside a save is tested with the stand-in and the card
-device's bench, not the original game's save menu; sealed but crafted values
-for the entry, the stack pointer, fiber areas, the clock and the pads are
-accepted and fail later in the bounds-checked module; the fingerprint guards
-the layout of the stand-in's state, not device semantics changed without a
-layout change.
+Not done or not measured: an open file's later blocks' directory frames are
+not compared (the bytes it depends on there are; the game's saves are one
+block); a writer whose bytes so far match a later save's (the same save
+made again) writes on, making the save it would have made; states taken
+inside a save or a load are tested with the stand-in and the card device's
+bench, not the original game's save menu; sealed but crafted values for the
+entry, the stack pointer, fiber areas, the clock and the pads are accepted
+and fail later in the bounds-checked module; the fingerprint sees only what
+the stand-in states hold, so a variant added to the format is outside it
+until a stand-in state holds one, and device semantics changed without a
+layout change pass it.
 
 ## Desktop host and settings panel
 

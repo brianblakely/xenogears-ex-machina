@@ -15,11 +15,14 @@ use sha2::{Digest, Sha256};
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
 /// The state format. A state of another version is refused, never converted.
 pub const VERSION: u32 = 9;
-/// The SHA-256 of the stand-in state xem-core's tests/persistence.rs builds
-/// (`format_fingerprint_matches_version`), as this format lays it out: a
-/// change to what a state holds or how it is written changes it, and the
-/// test fails until [`VERSION`] and this change together.
-pub const FORMAT_FINGERPRINT: &str = "47555b501b4b842567e388f4e891aea9dcf549a46fb6d16300f3a7aa1c659956";
+/// The SHA-256 of the three stand-in states xem-core's tests/persistence.rs
+/// builds (`format_fingerprint_matches_version`), as this format lays them
+/// out. Between them they hold each part of the format and each variant it
+/// writes (every fiber, drive, event, receiver and queue kind), so a change
+/// to what a state holds or to how any of these is written changes it, and
+/// the test fails until [`VERSION`] and this change together. A variant
+/// none of them holds (one added later) is outside it.
+pub const FORMAT_FINGERPRINT: &str = "9ddf2d36321229279f8aea05ce3bda2acbcbea0d4e14b15d59c0ce7da4a9880e";
 /// Hard bound on any decoded snapshot region/device buffer.
 pub const MAX_BUFFER: usize = 32 * 1024 * 1024;
 pub const MAX_STATE: usize = 64 * 1024 * 1024;

@@ -92,8 +92,11 @@ fn disc_2_alone(disc2: &std::path::Path) -> PathBuf {
     let alone = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("disc-2-alone");
     std::fs::create_dir_all(&alone).unwrap();
     let link = alone.join(disc2.file_name().unwrap());
-    if !link.exists() {
-        std::os::unix::fs::symlink(std::fs::canonicalize(disc2).unwrap(), &link).unwrap();
+    // Tests running at once ask for it together: one makes it, the others
+    // find it made.
+    match std::os::unix::fs::symlink(std::fs::canonicalize(disc2).unwrap(), &link) {
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+        made => made.unwrap(),
     }
     link
 }

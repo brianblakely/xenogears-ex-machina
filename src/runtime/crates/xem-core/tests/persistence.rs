@@ -30,6 +30,11 @@ const SAVE_NAME: u32 = 0x8000_0320;
 const SAVE_ENTRY: u32 = 0x8000_0340;
 const SAVE_DATA: u32 = 0x8000_1000;
 const SAVE_STEPS: u32 = 34;
+/// The stand-in's fibers, as the port switches them: 1 makes the game's next
+/// step restart it into the dispatcher (a fresh game fiber), 2 makes it start
+/// the arena task, which then waits a frame at a time.
+const FIBERS: u32 = 0x8000_0214;
+const TASK_STACK_TOP: u32 = 0x100C_0000;
 
 /// Card images shared with the test, as a host's storage.
 #[derive(Clone)]
@@ -73,46 +78,56 @@ struct Counter {
     handler: Option<*mut dyn ImportHandler>,
     state: AsyncState,
     sp: u32,
+    /// The module's own globals (none unless a test gives it some).
+    globals: Vec<u32>,
 }
 impl Counter {
     fn new() -> Self {
         Self { memory: Memory(REGIONS.iter().map(|(_, size)| vec![0; *size as usize]).collect()),
-            handler: None, state: AsyncState::Normal, sp: 0x1010_0000 }
+            handler: None, state: AsyncState::Normal, sp: 0x1010_0000, globals: Vec::new() }
     }
 
-    /// A card import, as the port's BIOS calls make it.
-    fn card(&mut self, name: &str, args: &[u32]) -> u32 {
+    /// An import that returns, as the port's calls make it.
+    fn import(&mut self, name: &str, args: &[u32]) -> u32 {
         match unsafe { (*self.handler.unwrap()).import(Import { name, args }, &mut self.memory) } {
             Action::Return(value) => value,
             other => panic!("{name}: {other:?}"),
         }
     }
 
+    /// An import that unwinds the module: a wait, a restart, a fiber switch.
+    fn unwind(&mut self, name: &str, args: &[u32]) -> Result<(), Trap> {
+        let action = unsafe { (*self.handler.unwrap()).import(Import { name, args }, &mut self.memory) };
+        assert_eq!(action, Action::Unwind);
+        self.state = AsyncState::Unwinding;
+        Ok(())
+    }
+
     fn save_step(&mut self, step: u32) {
         let count = |memory: &mut Memory, at: u32| memory.write_u32(at, memory.read_u32(at).unwrap() + 1).unwrap();
         match step {
             1 => {
-                self.card("card_start", &[]);
-                self.card("card_info", &[0]);
-                self.card("card_firstfile", &[SAVE_DEVICE, SAVE_ENTRY]);
-                self.card("card_delete", &[SAVE_NAME]);
-                self.card("card_delete", &[SAVE_TEMP]);
-                let created = self.card("card_open", &[SAVE_TEMP, 1 << 16 | 0x200]);
-                self.card("card_close", &[created]);
-                let fd = self.card("card_open", &[SAVE_TEMP, 2]);
+                self.import("card_start", &[]);
+                self.import("card_info", &[0]);
+                self.import("card_firstfile", &[SAVE_DEVICE, SAVE_ENTRY]);
+                self.import("card_delete", &[SAVE_NAME]);
+                self.import("card_delete", &[SAVE_TEMP]);
+                let created = self.import("card_open", &[SAVE_TEMP, 1 << 16 | 0x200]);
+                self.import("card_close", &[created]);
+                let fd = self.import("card_open", &[SAVE_TEMP, 2]);
                 for (at, value) in [(SAVE_FD, fd), (SAVE_WRITTEN, 0), (SAVE_REFUSED, 0), (SAVE_RENAMED, 0)] {
                     self.memory.write_u32(at, value).unwrap();
                 }
             }
             2..SAVE_STEPS => {
                 let fd = self.memory.read_u32(SAVE_FD).unwrap();
-                let wrote = self.card("card_write", &[fd, SAVE_DATA + (step - 2) * 0x100, 0x100]);
+                let wrote = self.import("card_write", &[fd, SAVE_DATA + (step - 2) * 0x100, 0x100]);
                 count(&mut self.memory, if wrote == 0x100 { SAVE_WRITTEN } else { SAVE_REFUSED });
             }
             _ => {
                 let fd = self.memory.read_u32(SAVE_FD).unwrap();
-                self.card("card_close", &[fd]);
-                let renamed = self.card("card_rename", &[SAVE_TEMP, SAVE_NAME]);
+                self.import("card_close", &[fd]);
+                let renamed = self.import("card_rename", &[SAVE_TEMP, SAVE_NAME]);
                 self.memory.write_u32(SAVE_RENAMED, renamed).unwrap();
             }
         }
@@ -132,12 +147,18 @@ impl GameModule for Counter {
         self.memory.write_u32(0x8000_0000, count + 1).unwrap();
         let step = self.memory.read_u32(SAVE_STEP).unwrap();
         if step != 0 { self.save_step(step); }
-        let action = unsafe { (*self.handler.unwrap()).import(Import { name: "yield", args: &[1] }, &mut self.memory) };
-        assert_eq!(action, Action::Unwind);
-        self.state = AsyncState::Unwinding;
-        Ok(())
+        let fibers = self.memory.read_u32(FIBERS).unwrap();
+        self.memory.write_u32(FIBERS, 0).unwrap();
+        match fibers {
+            1 => self.unwind("restart", &[xem_core::runtime::RESTART_DISPATCH, 0]),
+            2 => self.unwind("task_switch", &[1, TASK_STACK_TOP]),
+            _ => self.unwind("yield", &[1]),
+        }
     }
-    fn run_task(&mut self) -> Result<(), Trap> { unreachable!() }
+    fn run_task(&mut self) -> Result<(), Trap> {
+        self.state = AsyncState::Normal;
+        self.unwind("yield", &[1])
+    }
     fn call(&mut self, _: u32) -> Result<(), Trap> { Ok(()) }
     fn interrupt(&mut self, irq: u32, _: u32) -> Result<(), Trap> {
         if irq == xem_core::runtime::IRQ_RCNT0+2 {
@@ -153,8 +174,8 @@ impl GameModule for Counter {
     fn stack_pointer(&mut self) -> u32 { self.sp }
     fn set_stack_pointer(&mut self, value: u32) { self.sp = value; }
     fn memory(&mut self) -> &mut dyn GameMemory { &mut self.memory }
-    fn globals(&mut self) -> Vec<u32> { vec![] }
-    fn set_globals(&mut self, _: &[u32]) {}
+    fn globals(&mut self) -> Vec<u32> { self.globals.clone() }
+    fn set_globals(&mut self, values: &[u32]) { self.globals = values.to_vec(); }
 }
 fn session() -> Session<Counter> {
     let started = std::time::Instant::now();
@@ -506,17 +527,58 @@ fn random_damage_never_panics_or_half_restores() {
     assert!(refused * 4 > mutations && restored * 10 > mutations, "both outcomes: {refused} refused, {restored} restored");
 }
 
+/// A disc of XA audio sectors (stereo, 37800 Hz), as a movie's or a scene's,
+/// its left channel unlike its right.
+fn xa_disc() -> Box<dyn xem_disc::SectorSource> {
+    use xem_disc::sector::{Subheader, build_mode2_sector, submode};
+    let audio = Subheader { file: 1, channel: 1, submode: submode::AUDIO | submode::REAL_TIME | submode::FORM2, coding: 0x01 };
+    let mut group = [0u8; 128];
+    group[..4].copy_from_slice(&[0x0C; 4]);
+    group[16..].fill(0x37);
+    let adpcm: Vec<u8> = group.iter().copied().cycle().take(0x900).collect();
+    Box::new(xem_disc::MemorySource::from_sectors((0..16).map(|lba| build_mode2_sector(lba, audio, &adpcm))))
+}
+
+/// The MDEC's input for one 15-bit macroblock of four greys: its command
+/// word, then six blocks (Cr and Cb flat, each luma block another DC; each
+/// ends at once) padded to 32 words.
+fn macroblock() -> Vec<u8> {
+    use xem_media::mdec::{Depth, decode_command};
+    let mut halfwords: Vec<u16> = [0x0400, 0x0400, 0x0410, 0x0420, 0x0430, 0x0440].iter().flat_map(|&dc| [dc, 0xFE00]).collect();
+    halfwords.resize(64, 0xFE00);
+    let mut bytes = decode_command(Depth::Bits15, false, false, 32).to_le_bytes().to_vec();
+    bytes.extend(halfwords.iter().flat_map(|h| h.to_le_bytes()));
+    bytes
+}
+
+/// The content of `s`'s state, which restores as itself.
+fn whole_state(s: &mut Session<Counter>) -> Vec<u8> {
+    let state = s.runtime.snapshot().unwrap();
+    s.runtime.restore(&state).unwrap();
+    assert!(s.runtime.snapshot().unwrap() == state, "the state restores as itself");
+    checked(&state).unwrap().to_vec()
+}
+
 #[test]
 fn format_fingerprint_matches_version() {
+    use xem_core::devices::cd::{com, intr};
     use xem_core::snapshot::{FORMAT_FINGERPRINT, VERSION, digest};
-    // A deterministic stand-in state with the format's parts in use: game
-    // memory in each region, a sound timer, pads, the GPU's VRAM, settings
-    // and a partial command, the SPU's registers, a read under way, a card
-    // with a save half written (an open file, a listing, a check), raised
-    // interrupts and a dispatch write.
-    let mut s = session();
+    const MOVIE: u32 = 0x8000_3000;
+    // Three deterministic stand-in states that between them hold each part
+    // of the format and each variant it writes, each restoring as itself.
+    let counter = Counter { globals: vec![0x1234_5678, 7], ..Counter::new() };
+    let mut s = Session::new(Runtime::new(counter), None, || Duration::ZERO);
+    let mut states = Vec::new();
+
+    // A save half written (an open file, a listing and a check), a read
+    // under way and the story's disc change waiting, a macroblock's output
+    // on its way, a sound transfer and CD audio queued for the SPU, a
+    // partial GPU command, game memory in each region and the module's
+    // globals, a sound timer, pads, raised interrupts, a dispatch write, the
+    // game's fiber fresh after a restart.
     s.runtime.services().card.attach_storage(Box::new(Storage(Rc::new(RefCell::new([formatted(), formatted()]))))).unwrap();
     s.runtime.services().insert_disc(1, disc());
+    s.runtime.services().add_disc(2, xa_disc());
     s.runtime.services().clock.set_counter(2, 0x44e8, xem_core::clock::RCNT_MODE_INTERRUPT);
     s.runtime.services().clock.start_counter(2);
     for (at, value) in [(0x0000_0400, 1), (0x1000_0100, 2), (0x1F80_0010, 3), (0x1F80_1D80, 0x3FFF_3FFF), (0x8000_0040, 0x1234_5678)] {
@@ -528,13 +590,64 @@ fn format_fingerprint_matches_version() {
     gpu.write_gp0_words(&[0xE100_0208, 0x0212_3456, 0x0010_0020, 0x0008_0010, 0x2800_FF00, 0x0004_0004]);
     s.execute(&json!({"cmd":"frames", "count":3}));
     begin_save(&mut s, 0x3C);
-    s.runtime.step().unwrap();
+    s.runtime.memory().write_u32(FIBERS, 1).unwrap();
+    assert_eq!(s.runtime.step(), Ok(xem_core::Stop::Restart { kind: xem_core::runtime::RESTART_DISPATCH, arg: 0 }));
     let now = s.runtime.services().clock.now;
-    s.runtime.services().cd.command(xem_core::devices::cd::com::READN, &[], now);
+    s.runtime.services().cd.command(com::READN, &[], now);
+    let counter = s.runtime.module();
+    counter.import("cd_wanted", &[2, 1]);
+    counter.memory.write(MOVIE, &macroblock()).unwrap();
+    counter.import("mdec_control", &[0x6000_0000]);
+    counter.import("mdec_in", &[MOVIE, 32]);
+    counter.import("mdec_out", &[MOVIE + 0x400, 128]);
+    counter.import("spu_transfer", &[0x1010, SAVE_DATA, 0x400, 0]);
+    s.runtime.services().spu.push_cd_audio(&[0x100, -0x100, 0x200, -0x200]);
     s.runtime.services().raised.push((5, 0x20));
     s.runtime.write_before_next_dispatch(0x8000_0400, 7);
-    let content = checked(&s.runtime.snapshot().unwrap()).unwrap().to_vec();
-    let fingerprint: String = digest(&content).iter().map(|b| format!("{b:02x}")).collect();
+    assert!(s.runtime.services().cd.change_due().is_some(), "the story's change waits");
+    states.push(whole_state(&mut s));
+
+    // The arena task's fiber beside the game's, sectors waiting for the
+    // game and one in its buffer, the changer's lid open on disc 2 with the
+    // game's poll seen, a CPU-to-VRAM image half sent and a VRAM-to-CPU one
+    // asked for, the dispatcher's mode.
+    s.runtime.memory().write_u32(FIBERS, 2).unwrap();
+    s.execute(&json!({"cmd":"frames", "count":80}));
+    let cd = &mut s.runtime.services().cd;
+    assert!(cd.take_interrupt().is_some_and(|(kind, _)| kind == intr::ACKNOWLEDGE), "the read's first response");
+    assert!(cd.take_interrupt().is_some_and(|(kind, _)| kind == intr::DATA_READY), "its first sector, into the buffer");
+    cd.read_buffer(0x10);
+    s.runtime.module().import("cd_wanted", &[2, 0]);
+    let now = s.runtime.services().clock.now;
+    s.runtime.services().cd.command(com::GETSTAT, &[], now);
+    s.runtime.module().import("mode", &[1]);
+    let gpu = s.runtime.services().gpu.device_mut();
+    gpu.write_gp0_words(&[0x0014_0004, 0x0014_0014, 0x0004_0014]);
+    gpu.write_gp0_words(&[0xC000_0000, 0x0000_0000, 0x0001_0002, 0xA000_0000, 0x0000_0010, 0x0002_0002, 0x1234_5678]);
+    assert_eq!(s.runtime.services().cd.inserted(), 2);
+    states.push(whole_state(&mut s));
+
+    // A seek under way on the disc the changer closed the lid on, the next
+    // target set and the XA audio it read decoded, the arena task waiting,
+    // a gouraud polyline half drawn.
+    s.execute(&json!({"cmd":"frames", "count":2}));
+    let now = s.runtime.services().clock.now;
+    let cd = &mut s.runtime.services().cd;
+    cd.command(com::SETMODE, &[0x40], now);
+    cd.command(com::READS, &[], now);
+    let played = cd.xa_sectors;
+    while s.runtime.services().cd.xa_sectors == played {
+        assert_eq!(s.runtime.module().import("poll_now", &[]), 1, "the drive's next event");
+    }
+    let now = s.runtime.services().clock.now;
+    let cd = &mut s.runtime.services().cd;
+    cd.command(com::SEEKL, &[], now);
+    cd.command(com::SETLOC, &[0x00, 0x02, 0x10], now);
+    let gpu = s.runtime.services().gpu.device_mut();
+    gpu.write_gp0_words(&[0x9ABC_DEF0, 0x5800_00FF, 0x0000_0000, 0x0000_FF00, 0x0010_0010, 0x00FF_0000]);
+    states.push(whole_state(&mut s));
+
+    let fingerprint: String = digest(&states.concat()).iter().map(|b| format!("{b:02x}")).collect();
     assert_eq!(fingerprint, FORMAT_FINGERPRINT,
         "the state format changed: bump snapshot::VERSION (now {VERSION}) and set FORMAT_FINGERPRINT to {fingerprint}");
 }

@@ -492,6 +492,35 @@ mod tests {
     use xem_settings::FastForwardRate;
 
     #[test]
+    fn a_refused_state_load_reports_the_runtimes_message_as_it_is() {
+        use serde_json::json;
+        use xem_core::snapshot::{Writer, checked, seal};
+        use xem_settings::{AppAction, AppRequest, MemoryStore, SettingsService};
+        // The game module with nothing booted, and its state as another
+        // build's: the identity record after the magic and the version.
+        let mut game = Game::new(Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default));
+        let module = game.session.runtime.identity.module.clone();
+        let content = checked(&game.snapshot_bytes().unwrap()).unwrap().to_vec();
+        let length = u32::from_le_bytes(content[12..16].try_into().unwrap()) as usize;
+        let mut foreign = Writer(content[..12].to_vec());
+        foreign.bytes(br#"{"module":"another build","disc":"","packages":[]}"#);
+        foreign.0.extend_from_slice(&content[16 + length..]);
+        let directory = std::env::temp_dir().join(format!("xem-host-refused-state-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("state.xemstate");
+        std::fs::write(&path, seal(foreign.0)).unwrap();
+        let expected = format!(r#"incompatible state: the state's game module is "another build", this session's is "{module}""#);
+        assert_eq!(game.command(&json!({"cmd":"state_load","path":path})), Err(expected.clone()));
+        // The panel's Load state, whose result the HUD shows, has it so too.
+        let mut operations = crate::operations::Operations::default();
+        operations.directory = Some(directory.clone());
+        let mut settings = SettingsService::with_defaults(MemoryStore::default());
+        let loaded = operations.execute(AppRequest::Action(AppAction::LoadState), None, Some(&mut game), &mut settings);
+        std::fs::remove_dir_all(&directory).unwrap();
+        assert_eq!(loaded, Err(expected));
+    }
+
+    #[test]
     #[ignore = "needs the original disc 1 and built game module"]
     fn original_game_rewind_frame_latency_and_scheduled_setup() {
         use serde_json::json;

@@ -43,22 +43,29 @@
 //! # Restoring over the inserted cards
 //!
 //! A state keeps the calls under way: the open files, a directory search and
-//! a pending `_card_info`. Each open file carries the directory frame of its
-//! first block as this device last left it (recorded at `open`, kept in step
-//! as its own calls change the directory), and the search the digest of the
-//! directory it lists. Restored over the inserted cards, a file whose first
-//! block's frame reads otherwise there is closed: its calls fail as on a
-//! removed card, and the game takes its own retry or failure path instead of
-//! writing the rest of an old save over whatever that block holds now (a
-//! newer save that reused it, another card). A search over a directory that
-//! differs ends; a pending check reports the card inserted now. Over the same
-//! card the state goes on as it would have.
+//! a pending `_card_info`. Each open file carries what its calls depend on as
+//! this device last left it (recorded at `open`, kept in step as its own
+//! calls change the card): the directory frame of its first block and a
+//! digest of its bytes, all of them for a file open only to read, those
+//! before its position for one open to write (what it has written; it writes
+//! the rest). The search carries the digest of the directory it lists.
+//! Restored over the inserted cards, a file whose frame or bytes read
+//! otherwise there is closed: its calls fail as on a removed card, and the
+//! game takes its own retry or failure path instead of writing the rest of an
+//! old save over whatever its block holds now (a newer save that reused it, a
+//! later save's temporary file, another card) or reading the rest of a load
+//! from a save written over it (the same save made again, whose frame reads
+//! the same). A search over a directory that differs ends; a pending check
+//! reports the card inserted now. Over the same card the state goes on as it
+//! would have, also after a rewind inside a save: the bytes it wrote are
+//! still there, and it writes the rest again.
 
 use super::{Context, Device, unknown};
 use crate::clock::CPU_HZ;
 use crate::memory::GameMemory;
 use crate::module::Action;
 use crate::snapshot::{Reader, SnapshotError, Writer};
+use sha2::{Digest, Sha256};
 
 pub const CARD_SIZE: usize = 0x2_0000;
 pub const BLOCK_SIZE: usize = 0x2000;
@@ -192,6 +199,25 @@ fn directory_digest(image: Option<&[u8]>) -> [u8; 32] {
     crate::snapshot::digest(image.map_or(&[][..], |image| &image[..DIRECTORY_SIZE]))
 }
 
+/// The digest of the bytes of `file` its calls depend on, as `image` holds
+/// them: all of them for a file open only to read, those before its
+/// position for one open to write (none without a card).
+fn file_digest(image: Option<&[u8]>, file: &OpenFile) -> [u8; 32] {
+    let mut hash = Sha256::new();
+    if let Some(image) = image {
+        let mut left = if file.flags & 2 == 0 { file.size } else { file.position } as usize;
+        for block in chain(image, file.first) {
+            let take = left.min(BLOCK_SIZE);
+            hash.update(&image[block * BLOCK_SIZE..block * BLOCK_SIZE + take]);
+            left -= take;
+            if left == 0 {
+                break;
+            }
+        }
+    }
+    hash.finalize().into()
+}
+
 /// The first block of the file named `name`.
 fn find(image: &[u8], name: &[u8]) -> Option<usize> {
     (1..BLOCKS).find(|&b| state(image, b) == STATE_FIRST && entry_name(image, b) == name)
@@ -251,9 +277,11 @@ struct OpenFile {
     size: u32,
     position: u32,
     flags: u32,
-    /// The directory frame of the file's first block as this device last
-    /// left it: a restored file stays open only where the card has it.
+    /// The directory frame of the file's first block and the digest of its
+    /// bytes its calls depend on ([`file_digest`]) as this device last left
+    /// them: a restored file stays open only where the card has them.
     frame: [u8; FRAME_SIZE],
+    data: [u8; 32],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -295,8 +323,13 @@ impl Card {
         state.images = std::mem::take(&mut self.images);
         state.pending = self.pending;
         state.errors = std::mem::take(&mut self.errors);
+        let images = &state.images;
         for file in &mut state.files {
-            if file.as_ref().is_some_and(|f| directory_frame(state.images[f.slot].as_deref(), f.first) != Some(f.frame)) {
+            let elsewhere = |f: &OpenFile| {
+                let image = images[f.slot].as_deref();
+                directory_frame(image, f.first) != Some(f.frame) || file_digest(image, f) != f.data
+            };
+            if file.as_ref().is_some_and(elsewhere) {
                 *file = None;
             }
         }
@@ -310,12 +343,14 @@ impl Card {
     }
 
     /// Keep what the open files and the search expect of `slot`'s card in
-    /// step with a change this device made there (a file created, renamed or
-    /// deleted, the card formatted or another inserted).
-    fn directory_changed(&mut self, slot: usize) {
+    /// step with a change this device made there (a file created, written,
+    /// renamed or deleted, a writer's position moved, the card formatted or
+    /// another inserted).
+    fn card_changed(&mut self, slot: usize) {
         let image = self.images[slot].as_deref();
         for file in self.files.iter_mut().flatten().filter(|file| file.slot == slot) {
             file.frame = directory_frame(image, file.first).unwrap_or([0; FRAME_SIZE]);
+            file.data = file_digest(image, file);
         }
         if let Some(search) = self.search.as_mut().filter(|search| search.slot == slot) {
             search.directory = directory_digest(image);
@@ -335,8 +370,8 @@ impl Card {
         }
         self.images = images;
         self.storage = Some(storage);
-        self.directory_changed(0);
-        self.directory_changed(1);
+        self.card_changed(0);
+        self.card_changed(1);
         Ok(())
     }
 
@@ -351,7 +386,7 @@ impl Card {
                 *file = None;
             }
         }
-        self.directory_changed(slot);
+        self.card_changed(slot);
     }
 
     pub fn image(&self, slot: usize) -> Option<&[u8]> {
@@ -459,7 +494,7 @@ impl Card {
                 seal(f);
             }
             first = free[0];
-            self.directory_changed(slot);
+            self.card_changed(slot);
             self.busy(now, count as u64);
             if !self.persist(slot) {
                 return u32::MAX;
@@ -468,9 +503,11 @@ impl Card {
             let Some(found) = find(image, &name) else { return u32::MAX };
             first = found;
         }
-        let frame = directory_frame(self.images[slot].as_deref(), first).expect("a formatted card");
-        let size = get_u32(&frame, 4);
-        self.files[fd] = Some(OpenFile { slot, first, size, position: 0, flags, frame });
+        let image = self.images[slot].as_deref();
+        let frame = directory_frame(image, first).expect("a formatted card");
+        let mut file = OpenFile { slot, first, size: get_u32(&frame, 4), position: 0, flags, frame, data: [0; 32] };
+        file.data = file_digest(image, &file);
+        self.files[fd] = Some(file);
         fd as u32 + FIRST_FD
     }
 
@@ -504,7 +541,12 @@ impl Card {
             data.extend_from_slice(&image[at..at + FRAME_SIZE]);
         }
         context.memory.write(buffer, &data).map_err(|e| e.to_string())?;
-        self.file(fd).unwrap().position += length;
+        let file = self.file(fd).unwrap();
+        file.position += length;
+        if file.flags & 2 != 0 {
+            // A file open to write depends on the bytes before its position.
+            self.card_changed(slot);
+        }
         self.busy(context.now, offsets.len() as u64);
         Ok(length)
     }
@@ -518,6 +560,7 @@ impl Card {
             image[at..at + FRAME_SIZE].copy_from_slice(chunk);
         }
         self.file(fd).unwrap().position += length;
+        self.card_changed(slot);
         self.busy(context.now, offsets.len() as u64);
         Ok(if self.persist(slot) { length } else { u32::MAX })
     }
@@ -570,7 +613,7 @@ impl Card {
         f[NAME_OFFSET..NAME_OFFSET + 21].fill(0);
         f[NAME_OFFSET..NAME_OFFSET + new.len()].copy_from_slice(&new);
         seal(f);
-        self.directory_changed(slot);
+        self.card_changed(slot);
         self.busy(now, 1);
         self.persist(slot) as u32
     }
@@ -587,7 +630,7 @@ impl Card {
             put_u32(f, 0, (s & 0x0F) | 0xA0);
             seal(f);
         }
-        self.directory_changed(slot);
+        self.card_changed(slot);
         self.busy(now, blocks.len() as u64);
         self.persist(slot) as u32
     }
@@ -601,7 +644,7 @@ impl Card {
                 *file = None;
             }
         }
-        self.directory_changed(slot);
+        self.card_changed(slot);
         self.busy(now, 64);
         self.persist(slot) as u32
     }
@@ -714,6 +757,7 @@ impl Device for Card {
                         w.u32(v);
                     }
                     w.bytes(&f.frame);
+                    w.bytes(&f.data);
                 }
                 None => w.u32(0),
             }
@@ -760,7 +804,8 @@ impl Device for Card {
                     }
                     let (size, position, flags) = (r.u32()?, r.u32()?, r.u32()?);
                     let frame = r.bytes()?.try_into().map_err(|_| SnapshotError::Format("card file frame"))?;
-                    *file = Some(OpenFile { slot, first, size, position, flags, frame });
+                    let data = r.bytes()?.try_into().map_err(|_| SnapshotError::Format("card file data"))?;
+                    *file = Some(OpenFile { slot, first, size, position, flags, frame, data });
                 }
             }
             let search = if r.u32()? != 0 {
@@ -908,6 +953,21 @@ mod tests {
         }).collect()
     }
 
+    /// The load's 0x100-byte reads of `sectors`: what each returned; those
+    /// that read find `fill` mixed with the sector's number.
+    fn read_sectors(b: &mut Bench, fd: u32, sectors: std::ops::Range<u8>, fill: u8) -> Vec<u32> {
+        sectors.map(|n| {
+            b.memory.write(BUFFER, &[0; 0x100]).unwrap();
+            let read = b.call("read", &[fd, BUFFER, 0x100]);
+            if read == 0x100 {
+                let mut back = [0u8; 0x100];
+                b.memory.read(BUFFER, &mut back).unwrap();
+                assert!(back.iter().all(|&x| x == fill ^ n), "sector {n} holds another save's bytes");
+            }
+            read
+        }).collect()
+    }
+
     /// The save's commit: close, then rename to its name.
     fn commit_save(b: &mut Bench, fd: u32) -> u32 {
         b.call("close", &[fd]);
@@ -973,6 +1033,78 @@ mod tests {
         restore(&mut b, &state);
         assert_eq!(b.card.save(), state, "the leaked descriptor stays open, as it would have");
         assert_eq!(b.call("close", &[fd]), fd);
+    }
+
+    #[test]
+    fn a_restored_save_writes_on_where_its_bytes_are_and_never_over_a_later_save_in_its_block() {
+        let mut b = Bench::new(storage_with_formatted_card());
+        let fd = begin_save(&mut b);
+        assert!(write_sectors(&mut b, fd, 0..4, 0xA0).iter().all(|&n| n == 0x100));
+        let state = b.card.save();
+        let temporary = frame(b.card.image(0).unwrap(), 1).to_vec();
+        // Rewound after more of its writes, the save finds the bytes it had
+        // written and writes on: the save it would have made.
+        assert!(write_sectors(&mut b, fd, 4..10, 0xA0).iter().all(|&n| n == 0x100));
+        restore(&mut b, &state);
+        assert_eq!(b.card.save(), state, "nothing of the state is dropped");
+        assert!(write_sectors(&mut b, fd, 4..0x20, 0xA0).iter().all(|&n| n == 0x100));
+        assert_eq!(commit_save(&mut b, fd), 1);
+        let mut straight = Bench::new(storage_with_formatted_card());
+        let once = begin_save(&mut straight);
+        write_sectors(&mut straight, once, 0..0x20, 0xA0);
+        assert_eq!(commit_save(&mut straight, once), 1);
+        assert_eq!(b.card.image(0), straight.card.image(0));
+
+        // A later save deletes it, and its temporary file takes the block
+        // with the same directory frame. Restored inside that save's writes,
+        // the first save's writes are refused: the later save's bytes stay.
+        let old = b.string(NAME2, "bu00:BASLUS-00664");
+        assert_eq!(b.call("delete", &[old]), 1);
+        let later = begin_save(&mut b);
+        assert!(write_sectors(&mut b, later, 0..6, 0x5B).iter().all(|&n| n == 0x100));
+        let card_now = b.card.image(0).unwrap().to_vec();
+        assert_eq!(frame(&card_now, 1), &temporary[..], "the same directory frame");
+        restore(&mut b, &state);
+        assert_eq!(write_sectors(&mut b, fd, 4..0x20, 0xA0), vec![u32::MAX; 0x1C]);
+        assert_eq!(b.card.image(0).unwrap(), card_now);
+    }
+
+    #[test]
+    fn a_restored_load_reads_on_over_the_same_save_and_never_from_one_made_over_it() {
+        let mut b = Bench::new(storage_with_formatted_card());
+        let fd = begin_save(&mut b);
+        write_sectors(&mut b, fd, 0..0x20, 0xA0);
+        assert_eq!(commit_save(&mut b, fd), 1);
+        let card_then = b.card.image(0).unwrap().to_vec();
+        // The game's load: the save opened to read, a sector a call.
+        let save = b.string(NAME2, "bu00:BASLUS-00664");
+        let fd = b.call("open", &[save, 1]);
+        assert!(read_sectors(&mut b, fd, 0..9, 0xA0).iter().all(|&n| n == 0x100));
+        let state = b.card.save();
+        // The same save made again: deleted, its temporary file in the freed
+        // block, renamed back. The block's directory frame reads the same,
+        // its bytes are the newer save's.
+        assert_eq!(b.call("close", &[fd]), fd);
+        assert_eq!(b.call("delete", &[save]), 1);
+        let newer = begin_save(&mut b);
+        write_sectors(&mut b, newer, 0..0x20, 0x5B);
+        assert_eq!(commit_save(&mut b, newer), 1);
+        let card_now = b.card.image(0).unwrap().to_vec();
+        assert_eq!(frame(&card_now, 1), frame(&card_then, 1));
+        assert_ne!(&card_now[BLOCK_SIZE..2 * BLOCK_SIZE], &card_then[BLOCK_SIZE..2 * BLOCK_SIZE]);
+
+        // Rewound into the load over the newer save, its reads are refused
+        // as on a removed card (the game shows its failed load, 3e) rather
+        // than reading the rest from the newer save.
+        restore(&mut b, &state);
+        assert_eq!(read_sectors(&mut b, fd, 9..0x20, 0xA0), vec![u32::MAX; 0x17]);
+        assert_eq!(b.card.image(0).unwrap(), card_now);
+
+        // Over the card as the state left it, the load reads on.
+        b.card.import_image(0, card_then).unwrap();
+        restore(&mut b, &state);
+        assert_eq!(b.card.save(), state, "nothing of the state is dropped");
+        assert!(read_sectors(&mut b, fd, 9..0x20, 0xA0).iter().all(|&n| n == 0x100));
     }
 
     #[test]
