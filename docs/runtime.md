@@ -147,7 +147,8 @@ movement](#assisted-movement)),
 `connect_pad`, `inspect {path, depth}`, `write {path, value}`, `globals
 {prefix}`, `read_memory`/`write_memory`, `snapshot`/`restore {name}`,
 `memory_hash`, `record`/`stop_recording`/`replay {changes}` (pad states per
-vertical blank) and `scenario {writes, mode}`, which writes values through the
+vertical blank; a log that spans a restore is refused, [Saves and time
+controls](#saves-and-time-controls)) and `scenario {writes, mode}`, which writes values through the
 schema and enters a mode through the original dispatcher on an empty stack.
 Pads are set as the BIOS driver reports them; nothing simulates lower-level
 input.
