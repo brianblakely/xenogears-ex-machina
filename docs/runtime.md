@@ -3398,9 +3398,11 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   list), and keys beside the screen. Seraph Glass is drawn on the
   processor (faceted silver shells, halos, fins, dark recesses, gold
   accents, solid outlined symbols; state by shape and contrast; reduced
-  transparency makes bodies dark and opaque) and composited as room or
-  screen quads; `cargo run -p xem-render --example glass` draws a review
-  sheet. Settings and other application interface stay plain.
+  transparency makes bodies dark and opaque; a key's label too long for
+  it, such as the world map deck's THROTTLE, drawn smaller to stay on the
+  key's glass, as `glass`'s tests check of the longest) and composited as
+  room or screen quads; `cargo run -p xem-render --example glass` draws a
+  review sheet. Settings and other application interface stay plain.
 
 Agents never need any of this: they send the commands the gestures
 resolve to.

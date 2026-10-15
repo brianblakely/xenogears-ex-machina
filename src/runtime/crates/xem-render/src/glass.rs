@@ -216,6 +216,15 @@ fn text_distance(text: &str, x: f32, y: f32, cx: f32, cy: f32, h: f32) -> f32 {
     best
 }
 
+/// The largest half size `r` at which `text` (drawn as [`icon_distance`]
+/// draws a label) spans at most `half_width` either side of its centre.
+fn text_fit(text: &str, half_width: f32) -> f32 {
+    // `text_distance`'s layout at height r * 1.1: letters 5.5 units of a
+    // sixth of it apart, the last one 4 wide.
+    let count = text.chars().count().max(1) as f32;
+    2.0 * half_width * 6.0 / (1.1 * (5.5 * count - 1.5))
+}
+
 /// A symbol's distance (negative inside), centred, `r` its half size.
 fn icon_distance(icon: &Icon, x: f32, y: f32, r: f32, stroke: f32) -> f32 {
     match icon {
@@ -367,9 +376,14 @@ fn shade(widget: &Widget, style: Style, x: f32, y: f32, size: f32) -> Rgba {
                 let accent = segment(x, y, -hw * 0.35, -hh * 0.97, hw * 0.35, -hh * 0.97) - c * 0.025;
                 over(&mut p, if matches!(state, State::Hover | State::Active) { GOLD } else { COPPER }, cover(accent, aa) * if disabled { 0.3 } else { 0.9 });
             }
-            // The symbol, solid.
+            // The symbol, solid; a key's long label (THROTTLE) smaller, to
+            // stay on its glass.
             let colour = if disabled { SILVER_DARK } else if pressed { [1.0, 0.97, 0.9] } else { [1.0; 3] };
             let r = if wide { hh * 0.62 } else { c * 0.46 };
+            let r = match icon {
+                Icon::Text(text) if wide => r.min(text_fit(text, hw * 0.85)),
+                _ => r,
+            };
             paint_icon(&mut p, icon, x, y, r, c * 0.06, aa, colour);
             if disabled {
                 let strike = segment(x, y, -hw * 0.6, hh * 0.6, hw * 0.6, -hh * 0.6) - c * 0.035;
@@ -496,5 +510,18 @@ mod tests {
         }
         let key = draw(&Widget::Key(Icon::Text("ALL".into()), State::Hover), 96, Style::default());
         assert!(key.chunks(4).filter(|p| p[0] > 240 && p[1] > 240 && p[3] > 240).count() > 50, "a white label");
+    }
+
+    #[test]
+    fn a_keys_longest_labels_stay_on_its_glass() {
+        // The world map deck's THROTTLE (a headset tour showed it cut to
+        // HROTTL) and the longest of the others, on a 128-pixel key (its
+        // glass within 55 pixels of the middle across).
+        for label in ["THROTTLE", "SPECIAL", "CHARGE", "OK"] {
+            let key = draw(&Widget::Key(Icon::Text(label.into()), State::Normal), 128, Style::default());
+            let xs: Vec<usize> = key.chunks(4).enumerate().filter(|(_, p)| p[0] > 240 && p[1] > 240 && p[2] > 240 && p[3] > 240).map(|(i, _)| i % 128).collect();
+            let (left, right) = (*xs.iter().min().unwrap(), *xs.iter().max().unwrap());
+            assert!(left >= 64 - 55 && right <= 64 + 55, "{label}: its letters span pixels {left} to {right}");
+        }
     }
 }
