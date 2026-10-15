@@ -3490,14 +3490,16 @@ no dialogue window open (`field_work.open_windows` 0).
 from each scene's start: Confirm held for one vertical blank and released
 for one only while a dialogue window waits (flag 8, wait state 1-3, no
 choice shown, the owner's next opcode not `a9`) or an actor rests on a
-`31 0x0020` loop; choices answered with their first option, battles fought
-with Cross, menus left with Circle; the marker read every vertical blank.
-A scene's real end is where the marker then holds without input to the end
-of the run (1 800 vertical blanks for the new game, 3 600 for the story
-routes, 600 for the two map openings). Frames are vertical blanks since
-boot. The story routes start as `tools/memcard_routes.json`'s saves do,
-from the user's first save patched to the route's start and loaded through
-the title's Continue (`tools/memcard_saves.py`).
+`31 0x0020` loop; a choice answered with its first option, or with its
+last once an answer has opened a menu (as `tools/memcard_saves.py`
+answers), battles fought with Cross, menus left with Circle; the marker
+read every vertical blank. A scene's real end is where the marker then
+holds without input to the end of the run (1 800 vertical blanks for the
+new game, 3 600 for the story routes, 600 for the two map openings).
+Frames are vertical blanks since boot. The story routes start as
+`tools/memcard_routes.json`'s saves do, from the user's first save patched
+to the route's start and loaded through the title's Continue
+(`tools/memcard_saves.py`).
 
 | Scene (start) | Maps | Marker set | Real end |
 | --- | --- | --- | --- |
@@ -3506,25 +3508,35 @@ the title's Continue (`tools/memcard_saves.py`).
 | The pirates' lair (`pirates-lair`: story 54, map 80) | 80, 79, 74 | 13 110 | 13 110 (map 74, story 56) |
 | Shevat (`sky-city-shevat`: story 174, map 421) | 421, 420, 273, 437 | 6 998-7 107 on map 420, then 15 047 | 15 047 (map 437, story 176) |
 | Into Solaris (`into-solaris`: story 207, map 453) | 453, 456, 452, 466 | 10 912 | 10 912 (map 466, story 209) |
-| The soul vessel (disc 2, `soul-vessel`: story 258, map 622) | 622 | not before a choice at 7 279 (its first answer opens the field menu) | at the choice |
+| The soul vessel (disc 2, `soul-vessel`: story 258, map 622) | 622 (a choice at 7 279: its first option opens the field menu, its last goes on to a battle 7 783-14 190), 618, 273, 618, 628 | 34 393 | 34 393 (map 628, story 263) |
 | First and last (disc 2, `first-and-last`: story 330, map 687) | 687 | 4 135 | 4 135 (story 340) |
 | Map 286's opening (`enter_field`, story 147) | 286 | 7 193 | 7 193 |
 | Map 197's opening (`enter_field`) | 197 | 2 676 | 2 676 |
 
-In two of the seven story scenes the grant comes in the middle. On map
-218 the scene's director (actor 0's event 1, +0x017D) fades the screen out
-(`b4 fade_out #1`), brings in party member 5 (`fe 18`, `fe 1a`, which wait
-for the character's files) and only then takes the field (`fe 54` at
-+0x0187, frame 9 618): the player's `a7` grants control for the 92
-vertical blanks between (about 1.5 s), and the scene goes on with dialogue
-from 10 418 to 12 346, moves to map 199 at 12 554 and talks on there until
-15 847; control comes at 15 853. On map 420 actor 18's event 1 (+0x49CA) fades out, waits for the
-music to fade (`fe 0e music_fade #0, #0`) and takes the field at +0x49DB
-(frame 7 108) after 110 vertical blanks of grant; with Up held the leader
-walks from (x, z) (-2184, 256) to (-2048, 280) in the dark before the
-scene takes over again. A skip stopping at the first frame would stop
-6 327 and 8 049 vertical blanks before these scenes end. The runs are
-deterministic: Kislev's again from its start gives the same frames.
+In two of the seven story scenes the grant comes in the middle, each time
+on a map a scripted map change has just entered, while that map loads its
+music (and, on map 218, a party member's sprite file). On map 218
+(map 213's scene changes to it at 9 419) the scene's director (actor 0's
+event 1, at +0x017D) fades the screen out (`b4 fade_out #1`) and adds
+party member 5: `fe 18 join_party_byte` waits until the stream of the
+map's music (track 0x2f) has stopped and the disc is idle (9 526-9 583)
+and starts reading the member's sprite file, and
+`fe 1a apply_party_sprite` waits for that file (9 584-9 615). Only then
+does the director take the field (`fe 54` at +0x0187, frame 9 618): the
+player's `a7` grants control for the 92 vertical blanks between (about
+1.5 s), and the scene goes on with dialogue from 10 418 to 12 346, moves
+to map 199 at 12 554 and talks on there until 15 847; control comes at
+15 853. On map 420 (map 421's scene changes to it at 6 698) actor 18's
+event 1 (+0x49CA) fades out and runs `fe 0e music_fade #0, #0`, which
+waits while the map's music (track 0x15) is selected but has not started:
+its stream loads from 6 998 to 7 065 and the music starts at 7 106, when
+`fe 0e` fades it to level 0 over 0 frames, silencing it at once. The
+scene takes the field at +0x49DB (frame 7 108) after 110 vertical blanks
+of grant; with Up held the leader walks from (x, z) (-2184, 256) to
+(-2048, 280) in the dark before the scene takes over again. A skip
+stopping at the first frame would stop 6 327 and 8 049 vertical blanks
+before these scenes end. The runs are deterministic: Kislev's again from
+its start gives the same frames.
 
 **Refinements.** Both early grants come with the screen faded out
 (`field_faded_out` 1, fade channel 0 at full), and also requiring the
@@ -3548,6 +3560,17 @@ telling them apart takes a time threshold or reading ahead in the scripts,
 the heuristics the direction rules out. (`tools/memcard_saves.py`, which
 plays routes to a story value, takes the field's control as the player's
 only after 16 checks 8 vertical blanks apart for the same reason.)
+
+Tests: nothing is implemented, so no test covers this section. The frames
+and the sweep come from a local harness that is not in the repository
+(`.local/p678/scratch/p7/gate/`, with the soul vessel's run and the probe
+of the two waits in `fix3/` beside it). It drives `xem-headless --control`
+one vertical blank at a time through `tools/native_scenario.py`, builds
+each route's start with `tools/memcard_saves.py`'s functions, reads the
+waits and holds Up from states saved just before the early grants, and
+walks both discs' scripts with `tools.analysis.events`. It needs discs 1
+and 2 (the sweep reads them extracted, `.local/extract`) and the first
+save on the user's memory card 1, read from a copy.
 
 Not done or not measured: the scenes at map 197 +0x0AF9 and map 286
 +0x05DE were not reached on the game (at `enter_field`'s story, map 197's
