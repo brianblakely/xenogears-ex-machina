@@ -76,15 +76,19 @@ const finite = (status) => [status.head, status.first_person].filter(Boolean).ev
     && (!s.target || (Number.isFinite(s.target.azimuth) && Number.isFinite(s.target.elevation))));
 
 describe('the Binaural listener in a headset browser', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
-  const state = join(SHOTS, 'xr-binaural-field15.state');
+  // Field 15's state, made natively once a run (a state of another build
+  // of the game module is refused).
+  let state;
   const made = () => {
-    if (!existsSync(state)) {
+    if (!state) {
+      const path = join(SHOTS, 'xr-binaural-field15.state');
       execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
-        input: [{ cmd: 'enter_field', map: 15 }, { cmd: 'frames', count: 600 }, { cmd: 'state_save', path: state }]
+        input: [{ cmd: 'enter_field', map: 15 }, { cmd: 'frames', count: 600 }, { cmd: 'state_save', path }]
           .map((c) => JSON.stringify(c)).join('\n') + '\n',
       });
+      state = readFileSync(path).toString('base64');
     }
-    return readFileSync(state).toString('base64');
+    return state;
   };
 
   /** A headset page with the state loaded and Binaural on (the diorama's

@@ -1302,10 +1302,14 @@ the head, recentring, lost tracking and the diorama's scales are heard
 only headlessly, through the hosts' own seat and view code. A state taken in
 the browser while a headset's diorama presents differs from run to run
 at one scale too, after the same frames from the same state, in two
-words of the module's own memory outside the game's (wasm addresses
-0x10001024 and 0x10001068, growing from run to run like a host's counter
-kept in a suspended frame), its game memory, scratchpad and sound alike;
-it is not investigated further, and the scales are compared by those.
+words of the module's own memory outside the game's: in the suspended
+game fiber's asyncify area (wasm 0x10001024 and 0x10001068, 0x4c and
+0x90 into it), they grow by exactly 9 640 and 408 every game frame while
+the diorama presents, across restores (0xc00 and 0x8 without a
+diorama), as a copy of a running count the state does not hold would
+(the presentation rings' counts, outside the state, run so); game
+memory, scratchpad and sound are alike. The cause is not established,
+and the scales are compared by those.
 The battle camera's swings the battle test hears are its own (the
 framing yaw turned in both sessions): the retained battle's camera turns
 only before any combatant sounds. No placed effect sounds across a camera
