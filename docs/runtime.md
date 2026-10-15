@@ -2325,7 +2325,7 @@ is drawn with where it is set:
 | --- | --- | --- | --- |
 | field | `field_draw_models`, with either bit (then the controlled character, `XEM_PROJECTION_EYE`) | `field_view.scaled_world` | `field_view.target` |
 | battle | `sprite_set_view_matrix` (WRAPPED), when the battle sets it from `battle_camera.matrix` once a frame, after drawing its stage; its stage just before (below) | the look-at matrix with the quake's offset | `battle_camera_view_target` |
-| world map | `worldmap_objects_draw`, which every world-map frame calls (the actors' sprite pass that also sets the sprites' view matrix runs in the open map only) | `worldmap_camera_matrix`, which maps points relative to the camera's target with z negated, as the world map places its objects | (0, the target's height, 0), the point the orbit and look-at cameras look at |
+| world map | `worldmap_objects_draw`, which every world-map frame calls (the actors' sprite pass that also sets the sprites' view matrix runs in the open map only); the ground under its target just before (below) | `worldmap_camera_matrix`, which maps points relative to the camera's target with z negated, as the world map places its objects | (0, the target's height, 0), the point the orbit and look-at cameras look at |
 
 Before a battle's camera the port records its stage (`battle_present.c`,
 `XEM_PROJECTION_STAGE`), what a diorama stands the battle on its table by
@@ -2336,11 +2336,19 @@ a person's about 96 units, a Gear's about 500, the debug battle's boss
 1523), owned by its slot; then the scene data's camera 0, the start view
 `battle_enter` begins the battle with, its look-at (its depth 1 once the
 battle's turns run, `battle_turns_active`: its opening is over, its
-combatants have entered and stand) and its eye. The trace hands each one
+combatants have entered and stand) and its eye. Before the world map's
+camera it records the ground's height under the camera's target (a STAGE
+entry owned by `XEM_STAGE_GROUND`, `worldmap_present.c`): the plane of the
+terrain triangle there, the cell split along one diagonal as
+`worldmap_terrain_get_normal` splits it, which `worldmap_terrain_get_height`
+takes with the GTE and the scratchpad; the port only reads the cell's
+corners (none where no terrain block is loaded). The vehicle boot mode 3
+begins in hovers 136 units above it there, and the terrain the frame draws
+passes over the target within a unit and a half of it. The trace hands each one
 over in order with the commands (`TraceOp::Camera`: `xem_gpu::Camera` with
 its axes, translation, target, focus depth and `CameraMode`, a battle's with
-its `Stage`; `Camera::world_point` inverts it, `Camera::view_point` applies
-it). A buffer's log keeps the records current
+its `Stage`, the world map's with its `ground`; `Camera::world_point`
+inverts it, `Camera::view_point` applies it). A buffer's log keeps the records current
 when its frame's first primitive is drawn (`FrameLog::camera` and `eye`,
 the newest within four vertical blanks), and `FrameRenderer::camera` the
 shown frame's: the port makes a frame's records while the game builds it,
@@ -2408,12 +2416,20 @@ takes the world map's last frame shown with `ANYWHERE` back through its
 camera: of the 2 828 cells of 50 units within 1 500 of the target (a
 diorama's reach at 25%) all are covered by its terrain (with the
 triangles behind its camera dropped, as before, 2 095).
+`the_world_maps_camera_carries_the_ground_under_its_target_in_flight_too`
+(the vehicle boot mode 3 begins in, 30 frames hovering, then 200 with its
+throttle, Triangle, held: it climbs): the world map's camera carries its
+ground, and the terrain the frame drew passes over the target at that
+height within 4 units (measured: the target at -256, the ground -120, the
+triangles at -120.5 and -121.3; driven on, -452, -142, -142.4 and
+-142.9), the vehicle 136 units above it, then 310.
 `camera_records_leave_ram_vram_sound_and_time_unchanged` runs 240 frames
 from the same state in each of the four with `around` 0, 1 and 2 and
-without a trace (with `ANYWHERE`, the battles' stages too): one RAM hash,
-VRAM, sound and clock each (field fd3154d0f8c7dc47, battle
-ff78fb7899ba79a4, desert 2c9cfe67bf5c6dcb, world map 9b83d31eba10763f, as
-before the stages and the terrain behind the camera were recorded). One
+without a trace (with `ANYWHERE`, the battles' stages and the world map's
+ground too): one RAM hash, VRAM, sound and clock each (field
+fd3154d0f8c7dc47, battle ff78fb7899ba79a4, desert 2c9cfe67bf5c6dcb, world
+map 9b83d31eba10763f, as before the stages, the ground and the terrain
+behind the camera were recorded). One
 desert battle frame drawn with `ANYWHERE` held 8 262 primitives, 4 654 of
 them culled faces. `xem-headless/tests/render.rs`
 `first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged`
@@ -2428,12 +2444,13 @@ of a presentation, the last of two frames drawn over kept the first one's
 camera and 142 primitives instead of its own 71),
 `xem-gpu/tests/gpu.rs`
 `a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`,
-`a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does`,
+`a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other_camera_does`,
 `polygons_the_backdrop_projects_are_the_world_marked_as_the_backdrop`
 and `tests/test_port_presentation.py` (the entries `xem_present_camera`
 writes) check the format and the logs without the game (the stage's port
-code reads `battle_area`, whose pointers a native build would widen, so it
-is checked on the game only).
+code reads `battle_area`, whose pointers a native build would widen, and
+the ground's the world map's block pointers, so they are checked on the
+game only).
 
 Not done or not measured: the [Diorama](#diorama) presents these records
 in both headset hosts ([In a headset](#in-a-headset)), where only field 30
@@ -2528,9 +2545,19 @@ camera of `--example motion` and the tests below drive it too.
   most, within the terrain's 5x5 window of blocks (at least 4 096 units
   from the target every way) and the game's draw distances (scene objects
   to 3 456 deep, terrain to 3 840): at every scale the table's edges bound
-  what it shows, not the game's. The table's volume is x and z within
-  0.45 m of its centre and y from 0.25 m below its top to 0.55 m above:
-  what lies outside is not drawn (draw.wgsl discards it).
+  what it shows, not the game's. A target in flight keeps the ground
+  under it ([Camera records](#camera-records)) in view: the table stands
+  below the target as far as that ground, settling there with a 3 s time
+  constant (the map rises and falls with the target, not with each hill
+  it passes over), at once as far as keeps the ground within eight tenths
+  of the volume below the table's top, and never so far that the target
+  stands beyond eight tenths of the volume above it (the debug world
+  map's vehicle hovers 136 units above its ground and climbs to 310 above
+  it: at 100%, with the target on the top, the ground lay 0.35 m below
+  it, beyond the volume, and the table showed the vehicle and the clouds
+  alone). The table's volume is x and z within 0.45 m of its centre and y
+  from 0.25 m below its top to 0.55 m above: what lies outside is not
+  drawn (draw.wgsl discards it).
 - **Sprites** stand as upright billboards facing the seat's way, built once
   a game frame for both eyes: each part's offset from its sprite's floor
   point on the game's screen laid along the billboards' right and the
@@ -2729,6 +2756,25 @@ second runs end at one memory hash, the one the review's runs ended at.
 Profiled over 120 frames of Lahan (`perf record
 --all-user`), the diorama's own code takes 1.1% of the run and lavapipe
 70%. The same RAM and VRAM hash end every review angle of a scene.
+Battles and the world map were reviewed again (640x480, from the seat's
+side 40 degrees up, 70 degrees round, behind and from the left 70 degrees
+up; the world map 120 degrees round and from the left 75 degrees up):
+the Mountain Path's random battle (map 15) and a Gear battle at map 414,
+700 frames each from the field's last frame with Cross every 30, and the
+world map's vehicle driven on (Triangle held) for 300 frames at 25% and
+100%. The battles' openings stand on the start view's look-at, the whole
+stage small; then the combatants stand large on their ground (a person
+about 13 cm tall), the Mountain Path's panorama on the wall behind them;
+the Gears are models, whole from every side; the people are billboards
+facing the seat's way, edge-on from 70 degrees round and from above, their
+mirrored picture from behind (as the pane's numbers are); the room's walls
+at map 414's far corners stand cut by the volume. The world map's terrain
+covers the table at both scales, the vehicle at its centre and its shadow
+on the ground, at 100% climbing above it with the ground still on the
+table. RAM and VRAM hashes were the same at every angle:
+95acd663240213e4 and 40b93bcf4b861613 (map 15), 1c484f7a4beb17d4 and
+67464e9990d7ac20 (map 414), da2b9da103c59614 and 895666ed33a9237a (the
+world map).
 
 Tests: `xem-render/tests/ps1.rs` with synthetic GTE frames:
 `a_diorama_eye_at_the_game_cameras_pose_shows_the_flat_frames_scene` (an
@@ -2800,7 +2846,15 @@ once the turns run (a jump) and staying should the turns pause, and placed
 again for another start view; a tall enemy (the debug battle's 1523)
 within nine tenths of the volume's height and a small formation (the
 Mountain Path's, 241 across) spanning two projection distances' screen;
-a new scene beginning its own point and scale (half at twice the depth).
+the world map's target on the table's top on its ground, with no ground
+recorded or one above it; beginning 136 and 600 units up, the ground on
+the top, or the target eight tenths of the volume above it where it would
+stand higher (600 units at 400%); at 100%, climbing 100 units a second for
+5 s, the ground at most eight tenths of the volume below the top (and the
+followed point's ease), settled back on the top within 25 s of holding its
+height, and a hill 100 units high coming under the target moving the
+table by less than a twentieth of it; a new scene beginning its own point
+and scale (half at twice the depth).
 `xem-headless/tests/render.rs`
 `a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged` presents
 240 frames of field 12 from the same state as a diorama for two eyes of a
@@ -2809,9 +2863,14 @@ RAM hash of the same frames drawn by nothing.
 
 Not done or not measured (the headsets' own: [In a headset](#in-a-headset)):
 the pane's place is a first choice, not one tried by anyone seated; HD-2D
-effects per eye were not attempted; battles and the world map were
-reviewed in one scene each, not their camera modes, cuts or scripted
-scenes; the one-sided rule drops a double-sided face the game showed from
+effects per eye were not attempted (What it does not draw, above, says
+why); battles were reviewed in four (the debug battle on foot and in
+Gears, the Mountain Path's random battle, a Gear battle at map 414) and
+the world map in the vehicle boot mode 3 begins in, not their scripted
+scenes (an event battle's, the world map's) nor the world map walking,
+on its sea or in its other vehicles; the table's slow settling on the
+ground under a target in flight is a first choice (comfort not measured);
+the one-sided rule drops a double-sided face the game showed from
 its front once an eye sees it from behind; surfaces the game never models
 stay holes; the world map's distant terrain lies beyond the volume at
 scale 1; the cost on a headset's CPU (Quest's) and GPU is not measured;

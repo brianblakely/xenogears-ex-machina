@@ -433,6 +433,61 @@ fn the_world_maps_terrain_lies_all_around_its_target_for_a_view_from_anywhere() 
     assert!(bare * 100 <= within.len(), "{bare} of {} cells bare", within.len());
 }
 
+/// The heights (y down) at which the world triangles a frame drew pass over
+/// the world map's target, (0, y, 0) in its camera's world.
+fn heights_over_target(ops: &[TraceOp], camera: &Camera) -> Vec<f32> {
+    let mut heights = Vec::new();
+    for op in ops {
+        let TraceOp::Draw(p) = op else { continue };
+        if p.class != Class::World || p.backdrop {
+            continue;
+        }
+        let Some(points) = (0..p.vertex_count()).map(|i| p.vertices[i].view.and_then(|v| camera.world_point(v))).collect::<Option<Vec<_>>>() else { continue };
+        let triangles: &[[usize; 3]] = if points.len() == 4 { &[[0, 1, 2], [1, 3, 2]] } else if points.len() == 3 { &[[0, 1, 2]] } else { &[] };
+        for t in triangles {
+            let [a, b, c] = t.map(|i| points[i]);
+            let area = (b[0] - a[0]) * (c[2] - a[2]) - (c[0] - a[0]) * (b[2] - a[2]);
+            if area.abs() < 1e-3 {
+                continue;
+            }
+            // Barycentric weights of (0, 0) across x and z.
+            let wb = ((0.0 - a[0]) * (c[2] - a[2]) - (c[0] - a[0]) * (0.0 - a[2])) / area;
+            let wc = ((b[0] - a[0]) * (0.0 - a[2]) - (0.0 - a[0]) * (b[2] - a[2])) / area;
+            if wb >= 0.0 && wc >= 0.0 && wb + wc <= 1.0 {
+                heights.push(a[1] + wb * (b[1] - a[1]) + wc * (c[1] - a[1]));
+            }
+        }
+    }
+    heights
+}
+
+#[test]
+fn the_world_maps_camera_carries_the_ground_under_its_target_in_flight_too() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut session = Mode::Worldmap.enter(&disc);
+    // The vehicle boot mode 3 begins in, hovering, then driven on by its
+    // throttle (Triangle, the control deck's THROTTLE): it climbs as it goes.
+    let mut above = Vec::new();
+    for (what, buttons, frames) in [("hovering", vec![], 30), ("driven on", vec!["triangle"], 200)] {
+        let shown = present(&mut session, &gpu, frames, 1, |_| buttons.clone());
+        let frame = shown.iter().rev().find(|f| f.camera.is_some_and(|c| c.mode == CameraMode::Worldmap)).expect("a world map frame");
+        let camera = frame.camera.unwrap();
+        let ground = camera.ground.expect("the world map's camera carries its ground");
+        let target = camera.target[1];
+        // The terrain the frame drew passes over the target at the ground's
+        // height (within 4 units: the original's rounding and fixed point).
+        let surface = heights_over_target(&frame.ops, &camera);
+        eprintln!("{what}: the target at {target}, the ground under it at {ground}; the world triangles over it at {surface:?}");
+        assert!(surface.iter().any(|h| (h - ground).abs() <= 4.0), "{what}: no terrain drawn at the ground {ground}: {surface:?}");
+        above.push(ground - target);
+    }
+    assert!(above[0] > 50.0 && above[1] > above[0] + 100.0, "the vehicle above its ground: {above:?} units");
+}
+
 /// `battle_area` (battle/area.h): its slots (0x1C bytes each, `hidden` at
 /// +3) and the slots' sprites (x, y and z in 16.16, `height` at +0x36).
 const BATTLE_AREA: u32 = 0x800C_3EB0;

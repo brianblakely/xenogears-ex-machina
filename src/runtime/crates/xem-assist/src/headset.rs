@@ -793,6 +793,7 @@ pub(crate) mod tests {
             focus: 1200.0,
             mode: xem_render::xem_gpu::CameraMode::Field,
             stage: None,
+            ground: None,
         }
     }
 

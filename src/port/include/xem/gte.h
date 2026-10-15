@@ -210,13 +210,15 @@ typedef struct {
  * controlled character's position through the camera (EYE, its sprite the
  * owner). The world map's camera maps points relative to the camera's
  * target, its z negated, as the world map places its objects
- * (worldmap_present.c): its target is (0, the target's height, 0). Before a
- * battle's camera comes its stage (battle_present.c), in the battle's world:
- * each combatant the battle shows (STAGE: `view` its sprite's place, `sz`
- * its height, `owner` its slot, 0-10), then the scene's start view, the
- * camera the battle begins with (STAGE entries owned by XEM_STAGE_LOOK_AT,
- * its look-at, `sz` 1 once the battle's turns run after its opening, and
- * XEM_STAGE_EYE, its eye). */
+ * (worldmap_present.c): its target is (0, the target's height, 0), and
+ * before it comes the ground under the target (a STAGE entry owned by
+ * XEM_STAGE_GROUND: `view` (0, the ground's height, 0)), which lies below
+ * a target in flight. Before a battle's camera comes its stage
+ * (battle_present.c), in the battle's world: each combatant the battle
+ * shows (STAGE: `view` its sprite's place, `sz` its height, `owner` its
+ * slot, 0-10), then the scene's start view, the camera the battle begins
+ * with (STAGE entries owned by XEM_STAGE_LOOK_AT, its look-at, `sz` 1 once
+ * the battle's turns run after its opening, and XEM_STAGE_EYE, its eye). */
 enum {
     XEM_PROJECTION_GROUND = 3,
     XEM_PROJECTION_FOCUS = 4,
@@ -234,10 +236,11 @@ enum {
 };
 
 /* The start view's points among a battle's STAGE entries (owners past the
- * eleven slots). */
+ * eleven slots), and the world map's ground under its camera's target. */
 enum {
     XEM_STAGE_LOOK_AT = 16,
     XEM_STAGE_EYE = 17,
+    XEM_STAGE_GROUND = 18,
 };
 
 #ifdef __psx__

@@ -23,10 +23,47 @@ void xem_original_worldmap_terrain_draw(u_long *ot, s32 packets, Camera *camera)
 void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u32 *vertices);
 void xem_reveal_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode, XemGte *placed);
 void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode);
+void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z);
+
+/* The ground's height (world units, y down) at (x, z) (20.12) into
+ * `ground`: the plane of the terrain triangle there, its cell split along
+ * one diagonal as worldmap_terrain_get_normal splits it, which
+ * worldmap_terrain_get_height takes with the GTE and the scratchpad; here
+ * only read, without its rounding. 0 where no terrain block is loaded. */
+static s32 xem_worldmap_ground(s32 x, s32 z, s32 *ground) {
+    s32 block, u, v, h00, h10, h01, h11, h;
+    u8 *cell;
+
+    if (x < 0 || z < 0) {
+        return 0;
+    }
+    block = ((z >> 20) / 8) * worldmap_area_blocks_x + (x >> 20) / 8;
+    if (block >= 0x100 || worldmap_terrain_blocks[block] == NULL) {
+        return 0;
+    }
+    cell = worldmap_terrain_get_cell(x, z);
+    /* The point across its cell (0x10000 each way) and the heights of the
+     * cell's corners, in steps of 8 units: x, then z, then both. */
+    u = (u16)(x / 8);
+    v = (u16)(z / 8);
+    h00 = (s8)cell[0];
+    h10 = (s8)cell[4];
+    h01 = (s8)cell[0x24];
+    h11 = (s8)cell[0x28];
+    if (cell[1] & 0x80) {
+        h = u < v ? h00 * 0x10000 + u * (h11 - h01) + v * (h01 - h00) : h00 * 0x10000 + u * (h10 - h00) + v * (h11 - h10);
+    } else {
+        h = u + v < 0x10000 ? h00 * 0x10000 + u * (h10 - h00) + v * (h01 - h00)
+                            : (h10 + h01 - h11) * 0x10000 + u * (h11 - h01) + v * (h11 - h10);
+    }
+    *ground = h / 0x2000;
+    return 1;
+}
 
 /* The scene objects: the original, then, while a camera pulled back or a
  * view looking from around the scene wants culled faces (xem/gte.h), first
- * (a view from anywhere) the camera every world-map frame draws its scene
+ * (a view from anywhere) the ground under the camera's target (a STAGE
+ * entry, xem/gte.h), the camera every world-map frame draws its scene
  * objects and terrain with (worldmap_camera_matrix, which places points
  * relative to the camera's target, z negated) and the point it looks at
  * (the target, at (0, its height, 0) there: worldmap_camera_place_orbit),
@@ -47,13 +84,16 @@ void worldmap_objects_draw(void) {
     SVECTOR origin;
     long sxy, interpolation, flag;
     u32 fifo[3];
-    s32 i, x, z, radius;
+    s32 i, x, z, radius, ground;
 
     xem_original_worldmap_objects_draw();
     if (!xem_present_reveals->wanted || xem_present_capture->active || !xem_present_elsewhere()) {
         return;
     }
     if (xem_present_reveals->around & XEM_AROUND_ANYWHERE) {
+        if (xem_worldmap_ground(worldmap_camera.target.vx, worldmap_camera.target.vz, &ground)) {
+            xem_record_entry(XEM_PROJECTION_STAGE, 0, XEM_STAGE_GROUND, 0, ground, 0);
+        }
         xem_present_camera(&worldmap_camera_matrix, 0, worldmap_camera.target.vy >> 12, 0, XEM_CAMERA_WORLDMAP);
     }
     gte = xem_gte;

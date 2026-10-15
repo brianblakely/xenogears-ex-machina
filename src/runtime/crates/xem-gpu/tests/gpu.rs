@@ -978,7 +978,7 @@ fn polygons_the_backdrop_projects_are_the_world_marked_as_the_backdrop() {
 }
 
 #[test]
-fn a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does() {
+fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other_camera_does() {
     use xem_gpu::{CameraMode, Combatant, Projection, Reveals, Stage, TraceOp};
     let mut gpu = fresh();
     gpu.set_trace(true);
@@ -991,7 +991,8 @@ fn a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_doe
     };
     // A battle's stage (combatants in slots 0 and 4, the start view's
     // look-at, its turns running, and eye), then its camera; then a field's
-    // camera, after a stage no camera of a battle took.
+    // camera, after a stage and a ground no battle's or world map's camera
+    // took; then the world map's ground under its target and its camera.
     let mut records = vec![
         entry(9, 96, 0, [2288, -562, 1095]),
         entry(9, 451, 4, [1075, -175, 28]),
@@ -1001,17 +1002,22 @@ fn a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_doe
     axes(&mut records);
     records.push(entry(8, 3000, 2, [2230, -540, 1010]));
     records.push(entry(9, 60, 1, [10, 0, 10]));
+    records.push(entry(9, 0, 18, [0, -40, 0]));
     axes(&mut records);
     records.push(entry(8, 3000, 1, [0, 0, 0]));
+    records.push(entry(9, 0, 18, [0, -256, 0]));
+    axes(&mut records);
+    records.push(entry(8, 640, 3, [0, -472, 0]));
     gpu.trace_projections(0, &records, &[], &[]);
     let trace = gpu.take_trace();
     let cameras: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Camera(c) = op { Some(*c) } else { None }).collect();
-    assert_eq!(cameras.len(), 2);
+    assert_eq!(cameras.len(), 3);
     let mut stage = Stage { look_at: [1632.0, -96.0, 2368.0], eye: [1632.0, -1800.0, -900.0], turns: true, ..Stage::default() };
     stage.combatants[0] = Some(Combatant { position: [2288.0, -562.0, 1095.0], height: 96.0 });
     stage.combatants[4] = Some(Combatant { position: [1075.0, -175.0, 28.0], height: 451.0 });
-    assert_eq!((cameras[0].mode, cameras[0].stage), (CameraMode::Battle, Some(stage)), "the battle's camera takes its stage");
-    assert_eq!((cameras[1].mode, cameras[1].stage), (CameraMode::Field, None), "a field's camera carries none");
+    assert_eq!((cameras[0].mode, cameras[0].stage, cameras[0].ground), (CameraMode::Battle, Some(stage), None), "the battle's camera takes its stage");
+    assert_eq!((cameras[1].mode, cameras[1].stage, cameras[1].ground), (CameraMode::Field, None, None), "a field's camera carries none");
+    assert_eq!((cameras[2].mode, cameras[2].stage, cameras[2].ground), (CameraMode::Worldmap, None, Some(-256.0)), "the world map's takes its ground");
 }
 
 /// FNV-1a over bytes, as the MDEC keys a macroblock's output.

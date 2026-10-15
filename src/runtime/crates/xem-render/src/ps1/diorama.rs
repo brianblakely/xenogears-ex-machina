@@ -391,6 +391,9 @@ struct Placement {
     at: Option<f64>,
     /// A battle's table, which its stage places for the whole battle.
     battle: Option<BattleTable>,
+    /// How far the world map's table stands below its camera's target
+    /// (world units), settling towards the ground under it.
+    flight: Option<f32>,
 }
 
 /// Where a battle's stage put the table ([`battle_table`]): for the start
@@ -412,6 +415,15 @@ const BATTLE_SPAN: f32 = 2.0 * 320.0;
 /// A battle's tallest combatant stands within this share of the table's
 /// volume above its top.
 const BATTLE_HEADROOM: f32 = 0.9;
+/// The ground under the world map's camera target, in flight above it, lies
+/// within this share of the table's volume below its top, and the target
+/// within this share of the volume above it.
+const GROUND_DEPTH: f32 = 0.8;
+const FLIGHT_HEADROOM: f32 = 0.8;
+/// How slowly the world map's table settles on the ground under a target in
+/// flight (time constant, seconds): the map rises and falls with the
+/// target, not with every hill it passes over.
+const FLIGHT_EASE: f64 = 3.0;
 
 /// Where a battle's table stands for the whole battle (docs/runtime.md,
 /// Diorama), from its `stage` (`flip` the world's y and z to the table's,
@@ -564,13 +576,27 @@ impl Placement {
     /// `camera` (looking at `target`, `yaw` its heading, `units` view-space
     /// units per world unit): the original screen's width at the target's
     /// depth spans the table, at the scene's beginning; the point eases
-    /// towards the target and the heading turns as `table` says, both at once
-    /// at a cut.
+    /// towards the target (the world map's below it as far as the ground
+    /// under a target in flight, settling there over [`FLIGHT_EASE`], at
+    /// once as far as keeps that ground within [`GROUND_DEPTH`] of the
+    /// volume below the table's top, and never so far that the target
+    /// stands beyond [`FLIGHT_HEADROOM`] of the volume above it) and the
+    /// heading turns as `table` says, both at once at a cut.
     #[allow(clippy::too_many_arguments)]
     fn follow(&mut self, camera: &Camera, target: Vec3, yaw: f32, units: f32, h: f32, new_frame: bool, now: f64, dt: f64, table: &Table) -> (Vec3, f32, f32) {
         let focus = if camera.focus > 1.0 { camera.focus } else { 4000.0 };
         let width = 320.0 * focus / h.max(1.0) / units;
         let base = *self.base.get_or_insert((VOLUME_MAX.x - VOLUME_MIN.x) / width.max(1.0));
+        // y down: the ground lies `clearance` below a target in flight.
+        self.flight = camera.ground.map(|ground| {
+            let scale = (base * table.scale).max(1e-9);
+            let headroom = FLIGHT_HEADROOM * VOLUME_MAX.y / scale;
+            let clearance = ground - target.y;
+            let settled = clearance.clamp(0.0, headroom);
+            let eased = self.flight.map_or(settled, |below| below + (settled - below) * (1.0 - (-dt / FLIGHT_EASE).exp()) as f32);
+            eased.max(clearance + GROUND_DEPTH * VOLUME_MIN.y / scale).max(0.0).min(headroom)
+        });
+        let target = target + Vec3::Y * self.flight.unwrap_or(0.0);
         let cut = new_frame
             && self.last.is_some_and(|(at, heading)| (target - at).length() * base > (VOLUME_MAX.x - VOLUME_MIN.x) / 3.0 || wrap(yaw - heading).abs() > CUT_TURN);
         if new_frame {
@@ -1528,6 +1554,7 @@ mod tests {
         focus: 1200.0,
         mode: CameraMode::Field,
         stage: None,
+        ground: None,
     };
 
     const AREA: DisplayArea = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -1786,7 +1813,7 @@ mod tests {
         // view = R · world; R's rows are the camera's axes in the world.
         let r = Mat3::from_rotation_z(roll.to_radians()) * Mat3::from_rotation_x(pitch.to_radians()) * Mat3::from_rotation_y(-yaw.to_radians());
         let columns = (r * 4096.0).to_cols_array_2d();
-        Camera { axes: columns, translation: [0.0; 3], target, focus: 1200.0, mode, stage: None }
+        Camera { axes: columns, translation: [0.0; 3], target, focus: 1200.0, mode, stage: None, ground: None }
     }
 
     /// The world's direction `d` on the table.
@@ -1980,6 +2007,66 @@ mod tests {
         // the table spans two projection distances' screen width.
         let small = place(&[([2288.0, -562.0, 1095.0], 60.0), ([2333.0, -514.0, 932.0], 96.0), ([2131.0, -560.0, 1095.0], 62.0), ([2092.0, -519.0, 963.0], 62.0)]);
         assert!(((VOLUME_MAX.x - VOLUME_MIN.x) / small.scale - BATTLE_SPAN).abs() < 0.5);
+    }
+
+    #[test]
+    fn the_world_maps_table_settles_on_the_ground_under_a_target_in_flight() {
+        // The world map's frame: its target at (0, its height, 0), y down,
+        // and the ground under it as the port records it.
+        let world = |height: f32, ground: Option<f32>| Camera { ground, ..camera(0.0, 30.0, 0.0, [0.0, height, 0.0], CameraMode::Worldmap) };
+        // How high above the table's top a world point (0, y, 0) stands (m).
+        let above = |placed: &Placed, y: f32| placed.table_from_world.transform_point3(Vec3::new(0.0, y, 0.0)).y;
+        let (depth, headroom) = (GROUND_DEPTH * -VOLUME_MIN.y, FLIGHT_HEADROOM * VOLUME_MAX.y);
+        for scale in [0.25, 1.0, 4.0] {
+            let table = Table { scale, ..Table::default() };
+            let place = |height: f32, ground: Option<f32>| Placement::default().update(&world(height, ground), 256.0, "worldmap", true, 0.0, &table).expect("a placement");
+            // The target on the top on its ground, without a ground (none
+            // recorded: no block loaded there) or with one above it (the
+            // target within the terrain).
+            for (height, ground) in [(-256.0, Some(-256.0)), (-256.0, Some(-300.0)), (-472.0, None)] {
+                let at = place(height, ground);
+                assert!(above(&at, height).abs() < 1e-5, "scale {scale}: the target {} m above the top for the ground {ground:?}", above(&at, height));
+            }
+            // Beginning in flight, 136 units up (the debug world map's
+            // vehicle) and 600: the ground on the top and the target above
+            // it, or, where that would put the target beyond the headroom,
+            // the target at the headroom.
+            for clearance in [136.0, 600.0] {
+                let at = place(-256.0 - clearance, Some(-256.0));
+                let (target, ground) = (above(&at, -256.0 - clearance), above(&at, -256.0));
+                assert!((target - ground - clearance * at.scale).abs() < 1e-5, "scale {scale}: {target} and {ground} m");
+                if clearance * at.scale <= headroom {
+                    assert!(ground.abs() < 1e-5, "scale {scale}, {clearance} up: the ground {ground} m above the top");
+                } else {
+                    assert!((target - headroom).abs() < 1e-5, "scale {scale}, {clearance} up: the target {target} m above the top");
+                }
+            }
+        }
+        // At 100%, the vehicle on its ground climbing 100 units a second
+        // for 5 s (the debug world map's climbs about 35): the table comes
+        // down with it as far as keeps the ground at the depth (and the
+        // followed point's ease behind), then, the vehicle holding its
+        // height, settles on the ground; a hill 100 units high coming
+        // under it in a tenth of a second barely moves it.
+        let table = Table::default();
+        let mut placement = Placement::default();
+        let mut t = 0.0;
+        let mut placed = placement.update(&world(-256.0, Some(-256.0)), 256.0, "worldmap", true, t, &table).expect("a placement");
+        let mut deepest = 0.0f32;
+        while t < 5.0 {
+            t += 0.05;
+            placed = placement.update(&world(-256.0 - 100.0 * t as f32, Some(-256.0)), 256.0, "worldmap", true, t, &table).expect("a placement");
+            deepest = deepest.min(above(&placed, -256.0));
+        }
+        assert!(deepest > -depth - 0.03, "climbing: the ground {deepest} m above the top at its deepest");
+        while t < 30.0 {
+            t += 0.05;
+            placed = placement.update(&world(-756.0, Some(-256.0)), 256.0, "worldmap", true, t, &table).expect("a placement");
+        }
+        assert!(above(&placed, -256.0).abs() < 1e-3, "settled: the ground {} m above the top", above(&placed, -256.0));
+        let hill = placement.update(&world(-756.0, Some(-356.0)), 256.0, "worldmap", true, t + 0.1, &table).expect("a placement");
+        let rise = above(&hill, -256.0) - above(&placed, -256.0);
+        assert!(rise.abs() < 0.05 * 100.0 * hill.scale, "the hill moved the table {rise} m");
     }
 
     #[test]
