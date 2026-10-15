@@ -199,11 +199,12 @@ def records(name):
     return rows
 
 def final_hash(name):
-    for line in open(f"{out}/{name}"):
-        m = re.search(r"memory_hash ([0-9a-f]{16})", line)
-        if m:
-            return m.group(1)
-    sys.exit(f"xr-game-smoke: no memory hash in {name}")
+    # The RAM the run ended with: its last memory hash (each app
+    # operation's line before it carries the RAM just after that operation).
+    hashes = [m.group(1) for line in open(f"{out}/{name}") if (m := re.search(r"memory_hash ([0-9a-f]{16})", line))]
+    if not hashes:
+        sys.exit(f"xr-game-smoke: no memory hash in {name}")
+    return hashes[-1]
 
 problems = []
 def check(ok, message):
