@@ -13,12 +13,14 @@
 //! Ordinary progression through a suppressed area: from map 413's entrance
 //! from map 412, in its gears, the party climbs Babel Tower through the
 //! original's doors (413, 414, 415 and 416, all armed, all off under the
-//! default) to its top, map 418, with no random battle on the way, as a
-//! player walks it (the assisted route, Jump pressed at each takeoff and a
-//! running jump where the route found none), and the top's fixed battle
-//! still starts when the party touches it; under the original the same walk
-//! meets a random battle on map 414. Local only: it needs the user's disc 1
-//! and a game module build.
+//! default) to map 418, the floor past the tower's platforming maps where
+//! the Self-repairing Robot resupplies (two maps below the top, map 420),
+//! with no random battle on the way, as a player walks it (the assisted
+//! route, Jump pressed at each takeoff and a running jump where the route
+//! found none), and map 418's fixed battle still starts when the party
+//! touches its actor; under the original the same walk meets a random
+//! battle on map 414. Local only: it needs the user's disc 1 and a game
+//! module build.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test encounters
 
@@ -340,7 +342,7 @@ const TOWER: [(u16, [f64; 2], u16); 4] =
     [(413, [44.0, 922.0], 414), (414, [13.0, -3086.0], 415), (415, [13.0, -1576.0], 416), (416, [0.0, -760.0], 418)];
 
 #[test]
-fn the_default_setting_climbs_babel_tower_through_its_doors_and_the_tops_fixed_battle_still_starts() {
+fn the_default_setting_climbs_babel_tower_through_its_doors_and_map_418s_fixed_battle_still_starts() {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
@@ -359,9 +361,10 @@ fn the_default_setting_climbs_babel_tower_through_its_doors_and_the_tops_fixed_b
         assert!(settle(&mut climb), "map {to}: the player walks");
     }
     let climbed = climb.runtime.frames() - began;
-    // The top's fixed battles: map 418 arms no draw; its actors 19-24 start
-    // battles when touched. Actor 20 stands at (-160, 0) on layer 0.
-    assert_eq!(draw(&mut climb)["period"], json!(0), "the top arms no random draw");
+    // Map 418's fixed battles: it arms no draw (nor do maps 419 and 420
+    // above it, the climb to the top); its actors 19-24 start battles when
+    // touched. Actor 20 stands at (-160, 0) on layer 0.
+    assert_eq!(draw(&mut climb)["period"], json!(0), "map 418 arms no random draw");
     assert!(matches!(reach(&mut climb, [-160.0, 0.0]), Walked::Battle | Walked::Ended(_)), "the walk to actor 20 ends at its touch");
     let started = (0..60).any(|_| {
         run(&mut climb, json!({"cmd": "frames", "count": 10}));

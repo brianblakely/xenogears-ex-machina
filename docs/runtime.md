@@ -4238,9 +4238,11 @@ are. Android has no agent channel.
   (where map 412's door leads once the tower's gate is open), in the
   party's gears, a walk as a player makes it climbs Babel Tower through
   the original's doors of maps 413, 414, 415 and 416, each arming its
-  draw and each turned off by the default, to the tower's top, map 418,
-  after 3 266 frames with no battle; touching the top's actor 20 still
-  starts its fixed battle (formation 2, 4 740 frames in). The walk is the
+  draw and each turned off by the default, to map 418, the floor past the
+  tower's platforming maps where the Self-repairing Robot resupplies (two
+  maps below the top, map 420), after 3 266 frames with no battle;
+  touching map 418's actor 20 still starts its fixed battle (formation 2,
+  4 740 frames in). The walk is the
   assisted route to each map's door with Jump pressed at each takeoff, and
   a running jump toward the door each time the route stops short: the
   route plans a jump only where it enters a ledge (attribute bit 22, the
@@ -4289,7 +4291,7 @@ running page gives the session the default maps, `xem.settings.apply`
 acknowledges each option's change in turn and refuses a dwell out of
 range, the session shows each, and a reload and an exported backup's
 import keep them. On the game,
-`the_default_setting_climbs_babel_tower_through_its_doors_and_the_tops_fixed_battle_still_starts`
+`the_default_setting_climbs_babel_tower_through_its_doors_and_map_418s_fixed_battle_still_starts`
 (`xem-headless/tests/encounters.rs`, about 11 s here) and
 `the_opening_chapter_reaches_feis_room_with_the_defaults_as_the_original_and_with_every_scene_option`
 (`xem-headless/tests/text_and_movies.rs`, about 31 s here, its three runs
@@ -4308,8 +4310,12 @@ platforming areas' random battles (battle 32's enemy 0 and battle 59's
 enemy 2) are not met ([below](#how-the-areas-are-classified)). The climb
 does not cross Babel Tower's maps 407, 409 and 412 (map 412's door to map
 413 opens only once map 417's switch, reached on foot, sets the tower's
-flag, which an `enter_field` start does not), and no run crossed
-Blackmoon Forest or the Aveh-Kislev border mountains end to end. The
+flag, which an `enter_field` start does not), and it stops at map 418:
+the climb on to the top (map 419, whose Climb or Stop choice leads up,
+and map 420, the top, neither arming a random draw) and the top's battle
+(the Mystery Girl's, `request_battle #14` on map 420) were not played. No
+run crossed Blackmoon Forest or the Aveh-Kislev border mountains end to
+end. The
 climb starts from `enter_field`'s game data with
 the gears set, not from a story save, and its route is the assist's with
 running jumps where it stops short, not a person's. The chapter is the
@@ -4450,8 +4456,8 @@ scripted battle (formation 3) under them; and that on the Mountain Path
 (map 15, left on) the same walk brings its battle at the same frame and to
 the same RAM with them as without, and halved the same draw counts half
 as far in 60 frames of walk and its battle comes later; and that under
-them the party climbs Babel Tower from map 413 through its doors to the
-top with no random battle, where the top's fixed battle still starts,
+them the party climbs Babel Tower from map 413 through its doors to map
+418 with no random battle, where map 418's fixed battle still starts,
 while the original's random battle interrupts the same walk on map 414
 ([Gameplay options](#gameplay-options)). The slice logs
 replay to their recorded
