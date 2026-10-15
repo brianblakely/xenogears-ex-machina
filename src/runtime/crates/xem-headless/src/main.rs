@@ -118,6 +118,7 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     let boot = xem_game::BootOptions {
         cards: options.cards.clone(),
         bios: options.bios.clone(),
+        stored_bios: None,
         stubs: Some(options.stubs.clone()),
         audio_output: options.wav.is_some(),
     };

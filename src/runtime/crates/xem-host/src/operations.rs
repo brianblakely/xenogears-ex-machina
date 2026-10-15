@@ -53,11 +53,18 @@ impl Operations {
                     let game = game.as_deref_mut().ok_or("Boot a game before importing a card.")?;
                     return game.import_card(slot,&read(&path,MAX_FILE)?,&file_name(&path));
                 }
-                AppAction::ImportBios => return self.import_bios(game.as_deref_mut(),&read(&path,xem_core::bios::MAX_FILE)?),
+                AppAction::ImportBios => return self.import_bios_file(game.as_deref_mut(),&path),
                 _ => return Err("Unexpected file operation.".into()),
             }
             Ok("Backup imported.".into())
         })()))
+    }
+
+    /// Import BIOS once the player picked `path` (a file, or an Android
+    /// document), or an agent named it (`xem-desktop --control`'s
+    /// `bios_import`): [`Self::import_bios`] of what it holds.
+    pub(crate) fn import_bios_file(&self, game: Option<&mut Game>, path: &str) -> Result<String,String> {
+        self.import_bios(game,&read(path,xem_core::bios::MAX_FILE)?)
     }
 
     /// Import BIOS's work once the player picked `rom`: checked

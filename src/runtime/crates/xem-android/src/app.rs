@@ -557,10 +557,11 @@ impl Host {
                 let reader = xem_disc::FileReadAt::new(disc).map_err(|e| e.to_string())?;
                 let disc = xem_disc::open_reader(reader).map_err(|e| e.to_string())?;
                 // The Kanji font of the BIOS image imported into the files
-                // directory (Import BIOS), else the substitute glyphs.
+                // directory (Import BIOS; the storage line says why when it
+                // is not used), else the substitute glyphs.
                 let options = xem_game::BootOptions {
                     cards: Some(self.cards.clone()),
-                    bios: self.cards.parent().and_then(xem_game::storage::stored_bios),
+                    stored_bios: self.cards.parent().and_then(xem_game::storage::stored_bios),
                     audio_output: true,
                     ..Default::default()
                 };
@@ -569,7 +570,15 @@ impl Host {
         let mut live = self.live.borrow_mut();
         live.game = None;
         match booted {
-            Ok((session, identity)) => {
+            Ok((mut session, identity)) => {
+                // Where the save titles' font came from (android-smoke.sh
+                // checks an imported image's), and why an imported one is
+                // not used.
+                let services = session.runtime.services();
+                let font = match &services.kanji_font_notice {
+                    Some(notice) => format!("substitute ({notice})"),
+                    None => serde_json::json!(services.kanji_font).as_str().unwrap_or("none").to_string(),
+                };
                 let mut game = Game::new(session);
                 // A session log pushed beside the cards (tools/native_scenario.py
                 // --log) plays instead of the player: android-smoke.sh's slice.
@@ -590,7 +599,7 @@ impl Host {
                     }
                 }
                 log(&format!(
-                    "game booted source={source} boot={} cards={} audio={}",
+                    "game booted source={source} boot={} cards={} font={font} audio={}",
                     identity.boot_path,
                     self.cards.display(),
                     if game.has_audio() {

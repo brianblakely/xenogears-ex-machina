@@ -21,9 +21,16 @@ use crate::NativeModule;
 pub struct BootOptions {
     /// Where card1.mcd and card2.mcd live; no card is inserted without it.
     pub cards: Option<PathBuf>,
-    /// A BIOS image for the Kanji font (`xem_core::bios::check` must accept
-    /// it); the substitute glyphs without one.
+    /// A BIOS image named for this run (`--bios FILE`) for the Kanji font:
+    /// one that cannot be read or that `xem_core::bios::check` refuses fails
+    /// the boot, naming it.
     pub bios: Option<PathBuf>,
+    /// Without `bios`, the BIOS image the player imported
+    /// (`storage::stored_bios`): one that cannot be read or that the check
+    /// refuses stays as it is, the substitute glyphs are placed as without
+    /// one, and `Services::kanji_font_notice` says why (the storage line), as
+    /// a card file that does not load leaves its slot empty and says why.
+    pub stored_bios: Option<PathBuf>,
     /// build/game/stubs.txt, to name functions the port does not define.
     pub stubs: Option<PathBuf>,
     /// Keep the SPU's samples for the host to play (or record).
@@ -68,16 +75,26 @@ pub fn boot_source(
         runtime.services().card.attach_storage(Box::new(FileStorage { dir: dir.clone() }))?;
         for error in &runtime.services().card.errors { eprintln!("{error}"); }
     }
-    let rom = match &options.bios {
-        Some(path) => Some(xem_storage::read(path, bios::MAX_FILE).map_err(|e| format!("BIOS image {}: {e}", path.display()))?),
-        None => None,
+    let install = |runtime: &mut Runtime<NativeModule>, path: &Path| {
+        let rom = xem_storage::read(path, bios::MAX_FILE).map_err(|e| e.to_string())?;
+        runtime.install_kanji_font(Some(&rom))
     };
-    let font = runtime.install_kanji_font(rom.as_deref()).map_err(|e| match &options.bios {
-        Some(path) => format!("BIOS image {}: {e}", path.display()),
-        None => e,
-    })?;
-    if font == bios::KanjiFont::Substitute {
-        eprintln!("kanji font: substitute glyphs for save titles (no BIOS image)");
+    match (&options.bios, &options.stored_bios) {
+        (Some(path), _) => {
+            install(&mut runtime, path).map_err(|e| format!("BIOS image {}: {e}", path.display()))?;
+        }
+        (None, Some(path)) => {
+            if let Err(error) = install(&mut runtime, path) {
+                let notice = format!("Imported BIOS image {} not used: {error}; save titles use the substitute glyphs.", path.display());
+                eprintln!("{notice}");
+                runtime.install_kanji_font(None)?;
+                runtime.services().kanji_font_notice = Some(notice);
+            }
+        }
+        (None, None) => {
+            runtime.install_kanji_font(None)?;
+            eprintln!("kanji font: substitute glyphs for save titles (no BIOS image)");
+        }
     }
     runtime.services().spu.set_output(options.audio_output);
     // The BIOS copies the executable's text to its address and jumps to pc0.

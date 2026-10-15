@@ -7,7 +7,7 @@ use xem_core::devices::card_file::MAX_FILE;
 
 /// The BIOS image the player imported (Import BIOS, `xem_core::bios`), kept
 /// in the app's directory beside its settings and its `cards` directory:
-/// every boot takes its Kanji font (`BootOptions::bios`).
+/// every boot takes its Kanji font (`BootOptions::stored_bios`).
 pub const BIOS_FILE: &str = "bios.bin";
 
 /// The BIOS image imported into the app's directory `directory`, when one
@@ -45,10 +45,18 @@ impl CardStorage for FileStorage {
 /// Explicit commands submitted by the native caller, outside the scheduled game log.
 pub fn command<M: GameModule>(session: &mut Session<M>, command: &Value) -> Value {
     let cmd = command.get("cmd").and_then(Value::as_str).unwrap_or("");
-    if !matches!(cmd, "state_save" | "state_load" | "card_export" | "card_import") { return session.execute(command); }
+    if !matches!(cmd, "state_save" | "state_load" | "card_export" | "card_import" | "bios_import") { return session.execute(command); }
     let result = (|| -> Result<Value,String> {
         let path = Path::new(command.get("path").and_then(Value::as_str).ok_or("file operation needs path")?);
         match cmd {
+            "bios_import" => {
+                // A BIOS image's Kanji font for the running game, as Import
+                // BIOS gives one (xem-desktop's --control also keeps it for
+                // its boots, as its panel does).
+                let rom = xem_storage::read(path,xem_core::bios::MAX_FILE).map_err(|e| format!("BIOS not imported: {}: {e}.",path.display()))?;
+                let font = session.runtime.install_kanji_font(Some(&rom)).map_err(|e| format!("BIOS not imported: {e}."))?;
+                Ok(json!({"ok":true,"message":"BIOS imported: save titles use its Kanji font.","kanji_font":font}))
+            }
             "state_save" => {
                 let data = session.snapshot_bytes()?;
                 xem_storage::replace(path, &data).map_err(|e| e.to_string())?;

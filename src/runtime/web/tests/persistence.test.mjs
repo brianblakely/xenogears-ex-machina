@@ -242,6 +242,24 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       await (await picker).setFiles({ name: 'SCPH1001.BIN', mimeType: 'application/octet-stream', buffer: rom });
       await page.waitForFunction(() => window.xem.status().page.operationStatus?.startsWith('BIOS imported'));
       assert.equal(await page.evaluate(async () => (await window.xem.bios.stored())[0]), 3);
+      assert.equal(await page.evaluate(() => window.xem.status().page.biosNotice), null);
+
+      // A stored image the check refuses (written past the import's check,
+      // as a damaged one would be) stays stored and is reported, and boots
+      // take the substitute glyphs; importing an image ends the notice.
+      await page.evaluate(async () => (await import('/storage.js')).put('cards', 'bios', new Uint8Array(1000).fill(7)));
+      await page.reload(); await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      const kept = await page.evaluate(async () => {
+        const x = window.xem;
+        const refused = { bios: x.status().bios, notice: x.status().page.biosNotice, stored: (await x.bios.stored()).length };
+        const rom = new Uint8Array(0x80000);
+        for (let glyph = 147; glyph <= 208; glyph++) rom[0x66000 + glyph * 30 + 2] = glyph - 146;
+        await x.bios.import(rom);
+        return { refused, imported: { bios: x.status().bios, notice: x.status().page.biosNotice } };
+      });
+      assert.deepEqual(kept.refused, { bios: false, stored: 1000,
+        notice: 'Imported BIOS image not used: a PS1 BIOS image is 512 KiB (524288 bytes), not 1000 bytes; save titles use the substitute glyphs.' });
+      assert.deepEqual(kept.imported, { bios: true, notice: null });
       assert.deepEqual(page.errors, []);
     } finally { await browser.close(); }
   });
@@ -353,6 +371,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       assert.match(result.before.error, /Storage|storage/);
       assert.match(result.saveError, /denied/i);
       assert.match(result.status.page.cards.error, /denied/i);
+      assert.equal(result.status.page.biosNotice, null, 'storage that cannot be read is the cards\' error, not a BIOS image\'s');
       assert.ok(result.status.renderer.frames >= 0);
       assert.deepEqual(page.errors, []);
     } finally { await browser.close(); }

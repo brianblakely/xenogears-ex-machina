@@ -122,8 +122,9 @@ fn options() -> Result<Options, String> {
                      each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
                      the command layer's (status, context, navigate, act, ...), settings, \
-                     settings_apply {{change}} (the panel's own typed change), panel {{visible}} and \
-                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer).\n\
+                     settings_apply {{change}} (the panel's own typed change), panel {{visible}}, \
+                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer) and \
+                     bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
                      Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app); its \
@@ -283,7 +284,8 @@ fn open_game(_options: &Options, _disc: &std::path::Path) -> Result<Game, String
 /// Boots the user's disc and plays it, with cards under the settings'
 /// directory unless `--cards` names one, and the Kanji font of the BIOS
 /// image `--bios` names, else of the one imported into the settings'
-/// directory (Import BIOS), else the substitute glyphs.
+/// directory (Import BIOS; the storage line says why when it is not used),
+/// else the substitute glyphs.
 #[cfg(has_game_module)]
 fn open_game(options: &Options, disc: &std::path::Path) -> Result<Game, String> {
     let directory = FileStore::default_path().and_then(|p| p.parent().map(std::path::Path::to_path_buf));
@@ -293,7 +295,8 @@ fn open_game(options: &Options, disc: &std::path::Path) -> Result<Game, String> 
     }
     let boot = xem_game::BootOptions {
         cards,
-        bios: options.bios.clone().or_else(|| directory.as_deref().and_then(xem_game::storage::stored_bios)),
+        bios: options.bios.clone(),
+        stored_bios: directory.as_deref().and_then(xem_game::storage::stored_bios),
         audio_output: true,
         ..Default::default()
     };
@@ -505,6 +508,18 @@ impl Host {
                 let options = self.options.clone();
                 match self.play_disc(std::path::Path::new(path), &options) {
                     Ok(text) => serde_json::json!({ "status": text }),
+                    Err(error) => serde_json::json!({ "error": error }),
+                }
+            }
+            Some("bios_import") => {
+                // As the panel's Import BIOS does once its dialog chose a
+                // file: kept beside the settings for every boot and given to
+                // the running game at once.
+                let Some(path) = command.get("path").and_then(serde_json::Value::as_str) else {
+                    return serde_json::json!({ "error": "bios_import needs path" });
+                };
+                match self.view.import_bios(self.game.as_mut(), path) {
+                    Ok(message) => serde_json::json!({ "ok": true, "message": message }),
                     Err(error) => serde_json::json!({ "error": error }),
                 }
             }

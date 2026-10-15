@@ -91,6 +91,11 @@ pub struct Services {
     /// Where the Kanji font in game memory came from
     /// ([`Runtime::install_kanji_font`]); none before one is placed.
     pub kanji_font: Option<crate::bios::KanjiFont>,
+    /// Why the BIOS image the player imported is not used: the native boot
+    /// could not read it or `bios::check` refused it, and placed the
+    /// substitute glyphs (xem_game `BootOptions::stored_bios`). The native
+    /// hosts show it on their storage line until an image is installed.
+    pub kanji_font_notice: Option<String>,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -450,10 +455,15 @@ impl<M: GameModule> Runtime<M> {
     /// image `bios::check` accepts (refused, nothing changed, otherwise), or
     /// the substitute glyphs without one (`bios::install_kanji_font`). Hosts
     /// do at every boot and when the player imports a BIOS image; the game
-    /// draws from it the next time it draws a title.
+    /// draws from it the next time it draws a title. An image installed
+    /// ends the notice that an imported one was not used.
     pub fn install_kanji_font(&mut self, bios: Option<&[u8]>) -> Result<crate::bios::KanjiFont, String> {
         let font = crate::bios::install_kanji_font(self.memory(), bios)?;
-        self.services().kanji_font = Some(font);
+        let services = self.services();
+        services.kanji_font = Some(font);
+        if bios.is_some() {
+            services.kanji_font_notice = None;
+        }
         Ok(font)
     }
 

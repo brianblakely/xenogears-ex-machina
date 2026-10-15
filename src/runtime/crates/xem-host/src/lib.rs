@@ -428,6 +428,16 @@ impl View {
 
     pub fn set_state_directory(&mut self, path: std::path::PathBuf) { self.operations.directory = Some(path); }
 
+    /// Import BIOS of a file an agent names (`xem-desktop --control`'s
+    /// `bios_import {path}`), as the panel's picker gives one: checked, kept
+    /// in the app's directory for every boot and given to `game` if one
+    /// runs; the outcome shows on the status line as the panel's does.
+    pub fn import_bios(&self, game: Option<&mut Game>, path: &str) -> Result<String,String> {
+        let result = self.operations.import_bios_file(game,path);
+        self.show_result(result.clone());
+        result
+    }
+
     /// Runs Settings requests and bound actions under the host's one game owner.
     /// Returns false while the platform file picker has paused play.
     pub fn update_app(&mut self, window: &sdl::Window, game: &mut Option<Game>) -> bool {

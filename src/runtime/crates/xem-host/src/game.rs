@@ -207,9 +207,12 @@ impl Game {
             rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default());
         (self.session.fast_forward,time)
     }
+    /// The storage line: card writes pending, the cards' storage errors and
+    /// why the BIOS image the player imported is not used.
     pub fn storage_status(&mut self) -> String {
-        let card = &self.session.runtime.services().card;
-        format!("{} card writes pending. {}",card.pending_writes(),card.errors.join("; "))
+        let services = self.session.runtime.services();
+        let problems: Vec<&str> = services.card.errors.iter().chain(&services.kanji_font_notice).map(String::as_str).collect();
+        format!("{} card writes pending. {}",services.card.pending_writes(),problems.join("; "))
     }
 
     /// Give the drive's changer the game's other disc `number`.

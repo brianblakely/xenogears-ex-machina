@@ -14,7 +14,9 @@
 # (surface dropped and recreated, simulation time not advanced), low memory,
 # rotation, activity recreation (teardown and a new SDL_main run) and restart
 # (settings and the persisted document grant survive). With the user's disc
-# 1 the game boots from it and plays for ~25 s (screenshots), with its frame
+# 1 the game boots from it, taking the Kanji font of a BIOS image made here
+# where Import BIOS keeps one (files/bios.bin), and plays for ~25 s
+# (screenshots), with its frame
 # rate measured, a pad press, a touch on the control deck, and a background and return during which the
 # game's frame count does not move, plus repeated Home/return at 20x FF.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
@@ -313,6 +315,19 @@ PY
     "${adb[@]}" push "$out/ff-settings.json" /data/local/tmp/xem-ff-settings.json >/dev/null
     "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-ff-settings.json files/settings.json
     "${adb[@]}" shell rm /data/local/tmp/xem-ff-settings.json
+    # A BIOS image where Import BIOS keeps it, whose font the boot takes: a
+    # plausible font made here (glyphs 147-208, the full-width digits and
+    # Latin letters, each different), no original content.
+    python3 - "$out/bios.bin" <<'PY'
+import sys
+rom = bytearray(0x80000)
+for glyph in range(147, 209):
+    rom[0x66000 + glyph * 30 + 2] = glyph - 146
+open(sys.argv[1], "wb").write(rom)
+PY
+    "${adb[@]}" push "$out/bios.bin" /data/local/tmp/xem-bios.bin >/dev/null
+    "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-bios.bin files/bios.bin
+    "${adb[@]}" shell rm /data/local/tmp/xem-bios.bin
     "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
     wait_for "xem: settings .*fast_forward_rate: Fixed\(20\)" 60
     wait_for "xem: disc picker opened" 60
@@ -321,6 +336,9 @@ PY
     booted=$(wait_for "xem: game booted source=content://.*boot=SLUS_006\.64;1" 60)
     echo "$booted"
     [[ $booted == *"audio=stream opened"* ]] || fail "no audio stream for the game"
+    [[ $booted == *" font=bios "* ]] || fail "the boot did not take the stored BIOS image's font"
+    # Later boots (the slice's) without it, as natively.
+    "${adb[@]}" shell run-as "$package" rm files/bios.bin
     wait_for "xem: frame rendered .*game_vblank=" 60
     for at in 03 08 15 25; do
         sleep $((10#$at - ${previous:-0}))

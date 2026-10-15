@@ -5,7 +5,10 @@
 //! content), and its title is drawn, pixel for pixel as slot39
 //! menu_save_title_render composes it, from the substitute glyphs without a
 //! BIOS image and from a BIOS image's font with one (an image made here,
-//! whose glyphs are the substitute's drawn bold). With both cards taken out
+//! whose glyphs are the substitute's drawn bold). An imported image the
+//! check refuses leaves a boot the substitute glyphs and says why, and the
+//! native `bios_import` gives a running game an image's font, from which
+//! the next title is drawn. With both cards taken out
 //! (`card_present`) the Load shows the game's "No Memory Card" notice and
 //! returns to the title; a card put back is listed, and at the file screen
 //! a card taken out and put back is listed anew, as after a physical swap.
@@ -203,6 +206,63 @@ fn the_file_screen_draws_save_titles_from_the_substitute_glyphs_or_a_bios_image(
     std::fs::write(&path, &rom[..0x40000]).unwrap();
     let refused = boot(&disc, &BootOptions { cards: Some(cards.clone()), bios: Some(path.clone()), ..Default::default() }).err().unwrap();
     assert!(refused.to_string().ends_with("a PS1 BIOS image is 512 KiB (524288 bytes), not 262144 bytes"), "{refused}");
+    let _ = std::fs::remove_dir_all(cards);
+}
+
+fn font_status(s: &mut Session<NativeModule>) -> (Value, Option<String>) {
+    let font = s.execute(&json!({ "cmd": "status" }))["kanji_font"].clone();
+    (font, s.runtime.services().kanji_font_notice.clone())
+}
+
+#[test]
+fn an_imported_bios_the_check_refuses_is_reported_and_bios_import_gives_the_running_game_a_font() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let save = game_save(0, "Lahan Village");
+    let title = save.1[4..4 + 0x5C].to_vec();
+    let cards = scratch("imported");
+    std::fs::write(cards.join("card1.mcd"), card_holding(&save)).unwrap();
+    let rom = bold_bios();
+    let stored = cards.join("bios.bin");
+    let imported = |stored: &Path| BootOptions { cards: Some(cards.clone()), stored_bios: Some(stored.to_path_buf()), ..Default::default() };
+
+    // The image Import BIOS kept gives a boot its font.
+    std::fs::write(&stored, &rom).unwrap();
+    {
+        let mut s = boot(&disc, &imported(&stored)).expect("boot").0;
+        assert_eq!(font_status(&mut s), (json!("bios"), None));
+    }
+
+    // Damaged since: the boot goes on with the substitute glyphs, says why
+    // (the storage line), and leaves the file as it is.
+    std::fs::write(&stored, &rom[..0x40000]).unwrap();
+    let mut s = boot(&disc, &imported(&stored)).expect("a boot despite the image").0;
+    let notice = format!(
+        "Imported BIOS image {} not used: a PS1 BIOS image is 512 KiB (524288 bytes), not 262144 bytes; save titles use the substitute glyphs.",
+        stored.display()
+    );
+    assert_eq!(font_status(&mut s), (json!("substitute"), Some(notice.clone())));
+    assert!(std::fs::read(&stored).unwrap() == rom[..0x40000], "the file left as it is");
+
+    // bios_import before the Load's cursor reaches the save: a file that is
+    // not an image is refused by name, changing nothing; an image's font is
+    // the running game's at once (the notice ends), and the next title is
+    // drawn from it.
+    ok(&mut s, json!({ "cmd": "schedule", "commands": title_inputs(3004) }));
+    run_to(&mut s, 2900);
+    assert!(drawn_title(&mut s).iter().all(|&p| p == 0), "no title yet");
+    let refused = xem_game::storage::command(&mut s, &json!({ "cmd": "bios_import", "path": stored }));
+    assert_eq!(refused, json!({ "error": "BIOS not imported: a PS1 BIOS image is 512 KiB (524288 bytes), not 262144 bytes." }));
+    assert_eq!(font_status(&mut s), (json!("substitute"), Some(notice)));
+    let image = cards.join("image.bin");
+    std::fs::write(&image, &rom).unwrap();
+    let reply = xem_game::storage::command(&mut s, &json!({ "cmd": "bios_import", "path": image }));
+    assert_eq!(reply, json!({ "ok": true, "message": "BIOS imported: save titles use its Kanji font.", "kanji_font": "bios" }));
+    assert_eq!(font_status(&mut s), (json!("bios"), None));
+    run_to(&mut s, 3040);
+    assert!(drawn_title(&mut s) == title_image(&title, &rom[KANJI_FONT_ROM_OFFSET..]), "the next title from the imported font");
     let _ = std::fs::remove_dir_all(cards);
 }
 

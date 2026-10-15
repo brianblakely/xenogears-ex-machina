@@ -3059,8 +3059,11 @@ game outlives it (its sound driver's tick event would otherwise go on beside
 the new one's, the music at twice its tempo): the boot sounds as it does
 after power-on.
 
-Native file commands are `state_save`/`state_load` with `path`, and
-`card_import`/`card_export` with `path` and `slot` (0 or 1). `card_import`
+Native file commands are `state_save`/`state_load` with `path`,
+`card_import`/`card_export` with `path` and `slot` (0 or 1), and
+`bios_import` with `path`, which gives the running game a BIOS image's Kanji
+font as Import BIOS does ([Save titles and the Kanji
+font](#save-titles-and-the-kanji-font)). `card_import`
 reads any memory card or save file as Import original card 1/2 does
 ([Original saves and memory cards](#original-saves-and-memory-cards)) and
 replies with what
@@ -3332,7 +3335,21 @@ it, so a failed write changes nothing. Every boot then installs its font
 (`Runtime::install_kanji_font`), drawing its next title from it.
 `xem-desktop --bios FILE` and `xem-headless --bios FILE` name an image for
 that run instead; a file `check` refuses fails the boot, naming the file and
-the reason.
+the reason. A kept image is an attachment like a kept card: one that cannot
+be read or that the check refuses when it is taken (a file damaged since)
+stays as it is, the session places the substitute glyphs, and the storage
+line says why ("Imported BIOS image … not used: …; save titles use the
+substitute glyphs."), on every host, as a card file that does not load
+leaves its slot empty and says why. Natively the boot reads it
+(`BootOptions::stored_bios`; the reason is `Services::kanji_font_notice`).
+The browser page reads IndexedDB's when it starts (the reason is
+`status().page.biosNotice`, which the line shows after the cards' own
+error: IndexedDB that cannot be read at all is the cards' error, as they
+share its store). Importing an image ends the notice. Agents import as the
+panel does: the native file command `bios_import {path}` gives the running
+game an image's font (`xem-headless --control`), and
+`xem-desktop --control`'s also keeps it as `bios.bin` for every boot, as
+Import BIOS does; the browser's automation has `bios.import(bytes)`.
 
 Without an image the substitute glyphs (`xem-core/font/substitute.txt`,
 described in its `README.md`) stand where the BIOS keeps those characters,
@@ -3385,24 +3402,38 @@ refused by name, nothing kept; a plausible image made here kept as
 (the title's Load over a card holding a save made here: the title image in
 VRAM is, halfword for halfword, what `menu_save_title_render` composes from
 the substitute font, and from the font of a BIOS image made here, the
-substitute glyphs drawn bold; a 256 KiB file fails the boot by name).
+substitute glyphs drawn bold; a 256 KiB file named for the run fails the
+boot by name) and
+`an_imported_bios_the_check_refuses_is_reported_and_bios_import_gives_the_running_game_a_font`
+(a kept image gives the boot its font; kept as 256 KiB, the boot places the
+substitute glyphs with the notice naming the file and the reason, the file
+unchanged; then, before the Load's cursor reaches the save, `bios_import`
+refuses that file by name and takes the bold image, ending the notice, and
+the title drawn next is the bold image's).
 `web/tests/persistence.test.mjs`'s "a BIOS image imports beside the cards
 for every boot, and a file that is not one changes nothing" (a 1000-byte
 file and a blank font refused by name, nothing kept; IndexedDB's write
 failing on quota; the image there after a reload; Import BIOS on a key
-opening the page's picker) and `web/tests/disc.test.mjs`'s "boots with an
+opening the page's picker; a 1000-byte image written to IndexedDB past the
+check, after a reload: kept, not used, reported by name, the notice ending
+with an import) and "denied storage remains usable and refuses to
+acknowledge unsaved settings" (no BIOS notice: the cards' error says it);
+`web/tests/disc.test.mjs`'s "boots with an
 imported BIOS image's Kanji font, else the substitute glyphs" (disc 1: the
 font's Ａ without an image, then from an imported one at once and after a
 boot); its comparison with `xem-headless` reads the substitute's Ａ on both.
+The Android emulator's smoke (`android-smoke.sh`, with disc 1) boots the
+game with a plausible image made there in `<files dir>/bios.bin` and checks
+that the boot took its font (`font=bios` in the boot's log line).
 
 Not done or not measured: no BIOS image exists on this machine, so no title
 has been drawn from a real BIOS's font: the BIOS path is tested with images
 made here, and the plausibility check is reasoned from the font's layout
 (a blank space, distinct letters), not run on BIOS versions; the desktop's
 and Android's pickers are not driven by a test, only what follows a pick
-(`import_bios`), and no Android boot has taken a stored image (the
-emulator's smoke imports none); the substitute's look is its author's
-judgement from the file screen's screenshots (no people tests).
+(`import_bios`), nor is `xem-desktop --control`'s `bios_import` (the
+panel's `import_bios` of the named file); the substitute's look is its
+author's judgement from the file screen's screenshots (no people tests).
 
 ### Cards in and out
 
@@ -4043,9 +4074,10 @@ right stick and the mouse (under the mouse camera setting) look around
 `--control` answers agents' JSON commands on stdin, a line each, between
 frames while the game plays: the command layer's (`status`, `context`,
 `navigate`, `act`, ...), `settings`, `settings_apply {change}` (the panel's
-own typed, validated, persisted change), `panel {visible}` and
-`import_disc {path}` (the launcher's path); nothing passes through the
-window system.
+own typed, validated, persisted change), `panel {visible}`,
+`import_disc {path}` (the launcher's path) and `bios_import {path}` (Import
+BIOS's: kept beside the settings for every boot and given to the running
+game); nothing passes through the window system.
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
@@ -4094,7 +4126,8 @@ as JSON text or bytes.
   substitute glyphs, the memory cards, the user's disc in the drive read in
   place through `DiscImport::game_source`) and takes the game's `stubs.txt`
   and `schema.json` from beside `game.wasm`. The page hands the runtime that
-  image before any boot (`set_bios`); Import BIOS checks a picked file
+  image before any boot (`set_bios`; one it refuses is reported,
+  `status().page.biosNotice`); Import BIOS checks a picked file
   (`check_bios`), writes it to IndexedDB, then sets it, and the automation's
   `bios.import(bytes)` and `bios.stored()` do and read the same.
 - **Blocked frames.** The page reads the disc only asynchronously, so a frame
@@ -4450,7 +4483,9 @@ In `nix develop path:./nix/runtime#android`:
   x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
   screenshots in `build/android/smoke`). With the user's disc 1 at
   `discs/Xenogears disc 1.chd` (or `XEM_DISC1`) it imports it through the
-  picker and plays the game: boot logo, opening movie and title screenshots,
+  picker and plays the game, whose boot takes the Kanji font of a BIOS image
+  made there in `<files dir>/bios.bin` (`font=bios` in its log line): boot
+  logo, opening movie and title screenshots,
   frame rates, a pad press, and a background and return across which the
   game's vertical-blank count stays put. `XEM_SMOKE_GAME_ONLY=1` skips the
   synthetic-disc and lifecycle sections. The game module must be built first

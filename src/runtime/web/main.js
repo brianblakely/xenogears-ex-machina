@@ -27,6 +27,8 @@ const page = {
   hidden: document.hidden,
   deviceLosses: [],
   storageError: null,
+  // Why the BIOS image IndexedDB keeps is not used (the check refuses it).
+  biosNotice: null,
   operationStatus: null,
   storage: await storage.status(),
   // An immersive session (WebXR) while one runs; its frames replace the
@@ -61,13 +63,19 @@ try {
 } catch (error) {
   cards.error = String(error);
 }
-// The player's BIOS image (Import BIOS), whose Kanji font every boot takes
-// for save titles; the substitute glyphs without one.
+// The player's BIOS image beside them (Import BIOS), whose Kanji font every
+// boot takes for save titles; the substitute glyphs without one. One the
+// check refuses stays stored, is reported on the storage line and boots
+// place the substitute glyphs, as natively; storage that cannot be read is
+// the cards' error (their store).
 try {
   const bios = await storage.get('cards', 'bios');
-  if (bios) app.set_bios(bios);
+  if (bios) {
+    try { app.set_bios(bios); }
+    catch (error) { page.biosNotice = `Imported BIOS image not used: ${error.message ?? error}; save titles use the substitute glyphs.`; }
+  }
 } catch (error) {
-  page.storageError = `Stored BIOS not used: ${error.message ?? error}`;
+  cards.error ??= String(error);
 }
 
 // --- Canvas renderer: WebGPU, else WebGL2 -----------------------------------
@@ -184,6 +192,7 @@ const host = {
     catch (error) { throw new Error(`BIOS not imported: ${error.message ?? error}.`); }
     await storage.put('cards', 'bios', bytes);
     app.set_bios(bytes);
+    page.biosNotice = null;
     return 'BIOS imported: save titles use its Kanji font.';
   },
   storedBios: () => storage.get('cards', 'bios'),
@@ -232,6 +241,7 @@ const host = {
       audio: audio.status(),
       cards: cards.status(),
       storage: { ...page.storage, error: page.storageError },
+      biosNotice: page.biosNotice,
       operationStatus: page.operationStatus,
       gamepad: gamepadName,
       fileSystemAccess: disc.fileSystemAccess,
@@ -789,6 +799,6 @@ function describe(status) {
 }
 setInterval(() => {
   $('status').textContent = describe(JSON.parse(app.status()));
-  app.set_storage_status(`${page.storageError ?? cards.status().error ?? JSON.parse(app.settings()).error ?? cards.status().notice ?? page.storage.notice ?? page.storage.error ?? ''}\n${cards.status().pending} card writes pending. Ordinary saves use the game save menu.`);
+  app.set_storage_status(`${page.storageError ?? cards.status().error ?? JSON.parse(app.settings()).error ?? page.biosNotice ?? cards.status().notice ?? page.storage.notice ?? page.storage.error ?? ''}\n${cards.status().pending} card writes pending. Ordinary saves use the game save menu.`);
 }, 250);
 document.body.dataset.ready = 'true';
