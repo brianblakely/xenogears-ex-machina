@@ -882,6 +882,9 @@ impl GameView {
     ) -> Option<HeadsetPresented<'_>> {
         let config = self.config?;
         self.draw_pending(encoder, display, scene, config);
+        // No diorama drawn this time: once drawn again (inspection over, the
+        // view the diorama), its table eases on from where it stood.
+        self.diorama.undrawn();
         if let Some(output) = config.movies.filter(|_| self.movie.shows(display)) {
             self.headset = false;
             let flat = self.present_movie(encoder, display, output)?;

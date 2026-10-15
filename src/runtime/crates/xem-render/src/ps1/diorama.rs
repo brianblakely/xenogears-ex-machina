@@ -1526,8 +1526,16 @@ impl Diorama {
     /// The last presentation showed no diorama: the screen alone, from which
     /// the diorama eases in again.
     pub(crate) fn hide(&mut self) {
+        self.undrawn();
         self.space = None;
         self.screen = 1.0;
+    }
+
+    /// Nothing drew the diorama this time (first-person inspection's eyes or
+    /// the screen alone): drawn again, the table eases on from where it
+    /// stood, its first step none, not one for the time it was not drawn.
+    pub(crate) fn undrawn(&mut self) {
+        self.placement.at = None;
     }
 
     /// Nothing presented the diorama this time (the host showed something

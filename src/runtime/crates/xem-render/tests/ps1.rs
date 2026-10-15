@@ -2048,6 +2048,52 @@ fn the_diorama_is_built_once_a_game_frame_while_the_table_turns() {
 }
 
 #[test]
+fn after_inspection_the_table_eases_on_from_where_it_stood_at_a_frames_step() {
+    use xem_render::ps1::HeadsetEye;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    let mut view = shown_diorama(&gpu, &FIELD, Table::default());
+    // The table's heading in the room (the world's x axis seen from above).
+    let heading = |view: &GameView| {
+        let x = view.diorama_space().expect("a diorama").room_from_world.transform_vector3(Vec3::X);
+        x.z.atan2(x.x).to_degrees()
+    };
+    present_diorama(&gpu, &mut view, &eye, (640, 480), 1.1);
+    let before = heading(&view);
+    // First-person inspection takes the eyes for a second (the hosts present
+    // through `present_headset`) while the camera turns 20 degrees.
+    view.set_first_person(true);
+    let head = [HeadsetEye { orientation: [0.0, 0.0, 0.0, 1.0], position: [0.0; 3], fov: [-1.0, 1.0, 1.0, -1.0] }];
+    for k in 1..=10 {
+        view.push(next_frame(6, turned(2.0 * k as f32), true, true));
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        view.present_headset(&mut encoder, &DISPLAY, "field:1", 1.1 + 0.1 * k as f64, &head).expect("presented");
+        gpu.queue.submit([encoder.finish()]);
+    }
+    view.set_first_person(false);
+    // The diorama back at once where it stood, then easing towards the
+    // camera a frame's step at a time (72 Hz).
+    let mut now = 2.2;
+    let (_, screen, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+    let back = heading(&view);
+    now += 1.0 / 72.0;
+    present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+    let next = heading(&view);
+    for _ in 0..144 {
+        now += 1.0 / 72.0;
+        present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+    }
+    let settled = heading(&view);
+    eprintln!("the table's heading {before} before inspection, {back} back, {next} a frame later, {settled} two seconds on");
+    assert_eq!(screen, 0.0, "the diorama back at once");
+    assert!((back - before).abs() < 1e-3, "the table where it stood ({before} then {back})");
+    // An ordinary frame's step: 20 degrees times 1 - e^(-1/72/0.3), 0.9.
+    let step = (next - back).abs();
+    assert!(step > 0.5 && step < 1.5, "a frame's step towards the camera: {step} degrees");
+    assert!(((settled - before).abs() - 20.0).abs() < 0.2, "the table faces the turned camera: {before} to {settled}");
+}
+
+#[test]
 fn nothing_outside_the_tables_volume_is_drawn() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     // A floor far wider than the table at this scale.

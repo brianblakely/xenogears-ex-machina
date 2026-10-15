@@ -2852,7 +2852,10 @@ give the screen);
 `leaving_the_diorama_eases_to_the_screen_as_the_last_diorama_fades_out`
 (a menu's frame, a 24-bit movie frame and first-person inspection after a
 diorama: the screen's share 1/3, 2/3 and 1 at 0.1, 0.2 and 0.35 s, the
-floor of the last diorama in the eye at one minus it, and its pane);
+floor of the last diorama in the eye at one minus it, and its pane;
+inspection there through `present_diorama`, a path neither headset host
+takes: they present inspection through `present_headset`, which takes
+the eyes at once, [In a headset](#in-a-headset));
 `frames_without_a_camera_record_or_a_scene_keep_the_diorama_for_two_frames_then_ease_to_the_screen`
 (frames of a fade without the scene a vertical blank after the last
 record, which they take, and field frames five blanks after it: the
@@ -2861,7 +2864,13 @@ diorama before for two frames, not an empty table, then the share rising
 `the_diorama_is_built_once_a_game_frame_while_the_table_turns` (the
 camera turning 3 degrees a frame, each frame presented three times at
 90 Hz: 10 builds for 10 frames; paused, one build in 90 presentations as
-the table turns on); `nothing_outside_the_tables_volume_is_drawn`;
+the table turns on);
+`after_inspection_the_table_eases_on_from_where_it_stood_at_a_frames_step`
+(inspection presented through `present_headset` for a second while the
+camera turns 20 degrees; back, the table stands where it stood, 0.90
+degrees on a frame later at 72 Hz and 19.98 two seconds on; with the
+table's ease clock left running through inspection, its first step back
+took it 11.3 degrees at once); `nothing_outside_the_tables_volume_is_drawn`;
 `a_subtracting_interface_quad_takes_its_colour_off_the_pane_as_off_the_screen`
 (a grey window, 132 as the interface's 15 bits show 128, under a quad
 subtracting 64, 66 in those bits: 66 on the screen and on the pane,
@@ -3020,8 +3029,14 @@ inspection takes the eyes over while it is on, at once, from its first
 frame, and when it ends gives the diorama back at once (no crossfade
 between two views of the scene from different places), at the scale it
 had and, the camera still, where it stood; had the camera moved
-meanwhile, the table goes on easing to it from where it stood (its first
-step, its time held to 0.25 s, more than half the way).
+meanwhile, the table eases on to it from where it stood, a frame's step
+at a time (a presentation that draws no diorama, inspection's or the
+screen's alone, stops the table's ease clock: `Diorama::undrawn`; before,
+the first step back, its time held to 0.25 s, took the table 56% of the
+way at once). Graphics' headset view set to the screen in a session
+shows the screen at once (the diorama begins again from the screen), and
+set to the diorama again the view eases in from the screen as a scene's
+start does.
 
 - **Settings** (`Graphics::xr`, the panel's Headset card in Graphics, the
   same panel in a browser): the view, Screen (the default) or Diorama; the
