@@ -543,11 +543,17 @@ or on the game's own Sound screen, turns it off.
 - **The rest.** The reverb return is the SPU's own (the original sends,
   type and depth changes), mixed once as it came. Voices nobody owns keep
   their mix. CD input keeps its mix while a movie plays (the MDEC decoded
-  within the last half second); otherwise it is premixed music (the title
-  screen's) and is presented as a labelled estimate, `estimated
-  arrangement`: its pair as two loudspeakers 30 degrees either side of
-  ahead and part of its side signal moved to two at 110 degrees, delayed
-  apart so they stay diffuse, the mid and the side's energy kept.
+  within the last half second); otherwise it is taken for premixed music
+  and presented as a labelled estimate, `estimated arrangement`: its pair
+  as two loudspeakers 30 degrees either side of ahead and part of its side
+  signal moved to two at 110 degrees, delayed apart so they stay diffuse,
+  the mid and the side's energy kept. On the routes checked no CD input
+  sounds outside a movie: the title movie's music (frames 360 to 1 350
+  from boot) keeps its mix as every movie's does, and the title screen is
+  silent once that movie ends (from frame 1 380 to 3 360 with no input,
+  when the opening movie begins); the sound-mode findings' "title music"
+  window holds the title menu's sounds. The listening test below hears the
+  estimate on the title movie's music, mixed again.
 - **The renderer** (`xem-binaural`, the same Rust natively and in the
   browser) works in blocks of 128 samples (2.9 ms, its only delay): each
   heard source's block is convolved with its direction's HRTF pair by FFT
@@ -796,6 +802,87 @@ people.
   cache filled a run takes 4 minutes here; filling it takes about an hour
   once (the 24 lookups 30 to 40 minutes, the lateral estimates 22 to 27).
 
+**The self-administered listening test.** `tools/listening` is a test the
+user can take alone over headphones (its README gives the steps): a local
+page (`index.html`, `listening.js`) that `serve.py` serves on the loopback
+address and that saves every answer at once under
+`.local/listening/results`, and `analyse.py`, which reads the answers (both
+Python's standard library only). `cargo run --release -p xem-headless
+--example listening -- localization` and `-- music` make the stimuli and
+plan the sessions into `.local/listening` (ignored: the music is the
+disc's), every random choice from a seed (2026) and each manifest naming the
+commit it came from; answers given to other stimuli than the current
+manifest's are left out of the analysis. Nobody has taken the test yet.
+
+- *Localization.* Half-second bursts of seeded Gaussian noise from 48
+  measured directions (elevations -30, 0, 30 and 60 degrees, azimuths every
+  30) in three conditions: placed by the renderer (a voice at the Stereo
+  pan law's centre routed to one source, as the game's voices are), the
+  KEMAR set's raw responses, and the Stereo pan law (the direction's
+  lateral position as the pan). Each condition is scaled so that its
+  bursts' median loudness (BS.1770-4) is -23 LUFS (+1.59, -0.49 and +0.61
+  dB), keeping the level differences its directions have (-25.7 to -21.5
+  LUFS rendered, -27.8 to -19.9 raw, -23.3 to -22.4 panned), and the page
+  roves each trial's level by up to 3 dB either way; nothing reaches 0.33
+  of full scale before the rove. Each of three sessions holds every
+  direction twice per condition (96 trials a condition, 288 over the
+  three), 32 moving sounds (rendered and panned: 60 degrees in 1.5 s across
+  the front, the sides and the back, and from 30 degrees below to 30 above
+  at four azimuths, each way; the renderer's source glides 1.35 degrees
+  behind its target at the end, which the manifest records; the raw set
+  has no directions between its measured ones, so it does not move) and 8
+  catch trials (one ear only), shuffled into four blocks, after 24 training
+  trials (12 in later sessions) that show where each sound was. The answer
+  is a dial seen from above and an elevation slider, a start and an end
+  for a moving sound; each test sound plays once. Every session first sets
+  the level (pink noise at -23 LUFS) and checks left and right and the
+  headphones' polarity (the same low noise in and out of phase). 1 032
+  files (110 MB), made in 6 s.
+- *Musical coherence.* Eight excerpts (12 s; the title's 10), each reached
+  from boot by a fixed recipe and saved as a state (the hosts' format;
+  `--state` takes one of the user's instead), then presented from it four
+  times at Spatial Music immersion 0, 35, 70 and 100, Positional Effects
+  off (effects keep their original mix in every condition), each with a
+  tap capture: Lahan village (field 1), Kislev (fields 213 and 199),
+  Solaris (field 466), the world map, a battle (the debug battle
+  selector's: the ordinary battle theme), Weltall's battle in burning Lahan
+  (field 2, the game's opening scene, Cross at every dialogue until the
+  battle starts, about 2 000 frames: an event battle that keeps its scene's
+  music, in place of a boss, which no retained route reaches) and the title
+  movie's music; 9 to 22 parts sound in the sequenced ones. The conditions:
+  the original Stereo output (the SPU's own, which the generator checks is
+  the same in the four presentations), the four immersions as presented,
+  and a disintegrated low anchor mixed again from the captured voices with
+  every part at a random place of its own. Each condition's loudness, the
+  gain to -23 LUFS the page applies (every peak stays under 0.4 of full
+  scale after it), its peak and its interaural cross-correlation by octave
+  go to the manifest; the eight excerpts take 3 minutes here. Two
+  sessions rate every excerpt once per question (coherence, lead and
+  foundation, envelopment, tone colour, preference), MUSHRA-style: the
+  labelled reference and six versions, the reference hidden among them,
+  playing in step and looping, each to be played and rated.
+- *The CD estimate.* As no premixed CD music sounds outside a movie on the
+  routes checked (the rest, above), the title movie's immersions are its
+  capture mixed again through the estimate (`CdRoute::Upmix` at each
+  immersion): what the estimate does to the game's premixed music, not
+  what the title presents. Its anchor places the CD pair's frequency bands
+  (to 250, 500, 1 000, 2 000 and 4 000 Hz, and above) at random places.
+- *The analysis.* Per condition, over the static test trials, in the model
+  evaluation's interaural-polar coordinates: the lateral RMS error and bias,
+  the quadrant errors and local polar error (targets within 30 degrees of
+  the median plane), front/back confusions (evaluate.m's targets at least
+  30 degrees from the frontal plane, answered on its other side), up/down
+  confusions (targets at least 30 degrees from the horizontal plane) and
+  the elevation gain, each with a 95% bootstrap interval over trials
+  (seeded); the moving trials' start and end errors and whether they moved
+  the right way; the catch trials; beside the model listeners' pool median
+  and range and the KEMAR head (theirs over every measured direction).
+  Coherence: the ratings by question and condition and against the hidden
+  reference, BS.1534-3's post-screening (the hidden reference at 90 or more
+  in at least 85% of the trials of the questions the reference tops), the
+  two sessions' agreement, and the envelopment ratings against the
+  measured decorrelation from 500 Hz to 4 kHz (a proxy, not a model).
+
 Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
 `xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
 gains, crossfades, resets, the knee, the stage's rotation; a 300 Hz tone
@@ -805,7 +892,9 @@ end, 79 and 116 against 55 and 91 on the two sides, where without the
 filters' fade a block boundary steps, 4 568; a source's status says where
 it heads and how its voices pan; a journal mixes again exactly what was
 mixed, its parts adding up; the set's raw responses come in its
-directions' order, the left the right's mirror image) and
+directions' order, the left the right's mirror image; the BS.1770-4
+loudness reads the standard's own calibration, a full-scale 997 Hz sine in
+one channel at -3.01 LUFS, and identical sides correlate fully) and
 `tests/directions.rs`, where noise placed in 48 directions between the
 measured ones is recovered from the rendered ears alone (spectra and delay,
 matched against every measured direction) within 1.5 degrees (median), 3.5
@@ -1002,9 +1091,27 @@ while the game is paused, and has no head after the session; in field 15
 (a field 15 state imported in the headset, the game paused), a quarter turn
 of the head leaves the music's four parts where they were against the head
 without head-tracked music, and with it turns each by 90 degrees the other
-way (within 2), the stage staying put.
+way (within 2), the stage staying put. `tests/test_listening.py`: the
+listening test's analysis on answers with known errors (exact ones, front/
+back mirror images, negated and halved elevations, answers further out),
+its seeded bootstrap, the model comparison and the coherence summary, and
+answers to other stimuli left out. `web/tests/listening.test.mjs`: the page
+in headless Chromium, a script answering every planned session through the
+page's own controls (the checks, the dial, the slider and the markers, the
+MUSHRA buttons and sliders; a session left mid-block and resumed, each
+trial saved once); `analyse.py` then reads the answers back as the test
+works them out apart from it: the rendered ones exact (no error, elevation
+gain 1), every other front/back-eligible raw one mirrored (that many
+front/back confusions, no lateral error), the panned ones level (gain 0,
+the lateral error their targets' elevations make), every catch and moving
+trial right, and each condition's mean rating; 65 s on its own synthetic
+set. With `XEM_LISTENING_STIMULI` it runs the generated stimuli's every
+session. It shows the page and the analysis work, not what anyone hears.
 
-Not done or not measured: no listening tests with people. Direction is
+Not done or not measured: no listening tests with people: the
+self-administered test is ready and has been answered only by a script,
+and whether one listener beside the models makes the plan's calibrated
+listening comparisons is the user's to judge. Direction is
 predicted by models calibrated on 23 people's own localization, for how
 they would hear the KEMAR head's cues, not measured on anyone; the models
 are validated for static broadband sounds, so moving sounds, the game's
@@ -1016,7 +1123,10 @@ models' numbers runs in the suite (the AMT is a local tool). Musical
 coherence is measured only by proxies not calibrated against anyone, and
 the arrangement rules are not tuned by ear; the immersion control does not
 make the music more diffuse step by step (the supports placed behind cross
-the sides on their way there). A generic head, so a listener's
+the sides on their way there). The listening test's music has no boss
+battle (an event battle that keeps its scene's music stands in) and hears
+the premixed-music estimate only on the title movie's music mixed again,
+since no other premixed music was found. A generic head, so a listener's
 own front and back may differ; positional effects cover the field's
 emitters, the arena's voices and sprites' animation sounds (each effect left out is reported, not
 guessed), and sounds that event scripts start (field and battle) are left

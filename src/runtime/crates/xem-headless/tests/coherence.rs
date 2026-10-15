@@ -38,6 +38,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use xem_binaural::fft::{Complex, Fft};
+use xem_binaural::measure::{self, OCTAVES};
 use xem_binaural::{BLOCK, Journal, Renderer, Route, Target, hrtf};
 use xem_core::binaural::Config;
 use xem_core::control::Session;
@@ -183,51 +184,9 @@ fn spectrum(fft: &Fft, x: &[f32], n: usize) -> Vec<Complex> {
     data
 }
 
-/// ITU-R BS.1770-4's K-weighting at 44.1 kHz (the analogue design of
-/// libebur128: the head's shelf and the high pass), then the integrated
-/// loudness of the channels (LUFS): 400 ms blocks overlapping by 75%, the
-/// absolute gate at -70 and the relative one 10 LU under.
+/// ITU-R BS.1770-4 integrated loudness (LUFS) of the channels.
 fn loudness(channels: &[&[f32]]) -> f64 {
-    let biquad = |b: [f64; 3], a: [f64; 3], x: &[f32]| -> Vec<f64> {
-        let (mut x1, mut x2, mut y1, mut y2) = (0.0, 0.0, 0.0, 0.0);
-        x.iter()
-            .map(|&s| {
-                let s = f64::from(s);
-                let y = b[0] * s + b[1] * x1 + b[2] * x2 - a[1] * y1 - a[2] * y2;
-                (x2, x1, y2, y1) = (x1, s, y1, y);
-                y
-            })
-            .collect()
-    };
-    let (f0, gain, q) = (1681.974450955533, 3.999843853973347, 0.7071752369554196);
-    let k = (std::f64::consts::PI * f0 / RATE).tan();
-    let (vh, vb) = (10f64.powf(gain / 20.0), 10f64.powf(gain / 20.0).powf(0.4996667741545416));
-    let a0 = 1.0 + k / q + k * k;
-    let shelf_b = [(vh + vb * k / q + k * k) / a0, 2.0 * (k * k - vh) / a0, (vh - vb * k / q + k * k) / a0];
-    let shelf_a = [1.0, 2.0 * (k * k - 1.0) / a0, (1.0 - k / q + k * k) / a0];
-    let (f0, q) = (38.13547087602444, 0.5003270373238773);
-    let k = (std::f64::consts::PI * f0 / RATE).tan();
-    let a0 = 1.0 + k / q + k * k;
-    let pass_a = [1.0, 2.0 * (k * k - 1.0) / a0, (1.0 - k / q + k * k) / a0];
-    let weighted: Vec<Vec<f64>> = channels
-        .iter()
-        .map(|x| {
-            let shelved: Vec<f32> = biquad(shelf_b, shelf_a, x).iter().map(|&y| y as f32).collect();
-            biquad([1.0, -2.0, 1.0], pass_a, &shelved)
-        })
-        .collect();
-    let (size, hop) = ((0.4 * RATE) as usize, (0.1 * RATE) as usize);
-    let len = weighted[0].len();
-    let blocks: Vec<f64> = (0..)
-        .map(|b| b * hop)
-        .take_while(|&at| at + size <= len)
-        .map(|at| weighted.iter().map(|y| y[at..at + size].iter().map(|v| v * v).sum::<f64>() / size as f64).sum::<f64>())
-        .collect();
-    let level = |z: f64| -0.691 + 10.0 * z.log10();
-    let gated: Vec<f64> = blocks.iter().copied().filter(|&z| level(z) > -70.0).collect();
-    let relative = level(gated.iter().sum::<f64>() / gated.len() as f64) - 10.0;
-    let kept: Vec<f64> = gated.into_iter().filter(|&z| level(z) > relative).collect();
-    level(kept.iter().sum::<f64>() / kept.len() as f64)
+    measure::loudness(channels, RATE)
 }
 
 /// Third-octave bands, 100 Hz to 10 kHz (centres).
@@ -257,35 +216,10 @@ fn third_octaves(x: &[f32]) -> Vec<f64> {
         .collect()
 }
 
-/// Octave bands' centres for the interaural cross-correlation.
-const OCTAVES: [f64; 7] = [125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0];
-
-/// The interaural cross-correlation coefficient of each octave band: the
-/// largest normalized cross-correlation of the two sides, band-passed (an
-/// ideal band in the whole signal's transform), within a millisecond either
-/// way.
+/// The interaural cross-correlation coefficient of each octave band of
+/// [`OCTAVES`] (xem_binaural::measure::iacc).
 fn iacc(sides: &[Vec<f32>; 2]) -> Vec<f64> {
-    let n = sides[0].len().next_power_of_two() * 2;
-    let fft = Fft::new(n);
-    let [l, r] = [spectrum(&fft, &sides[0], n), spectrum(&fft, &sides[1], n)];
-    OCTAVES
-        .iter()
-        .map(|&c| {
-            let (lo, hi) = ((c / 2f64.sqrt() * n as f64 / RATE) as usize, (c * 2f64.sqrt() * n as f64 / RATE) as usize);
-            let mut cross = vec![Complex::ZERO; n];
-            let (mut el, mut er) = (0f64, 0f64);
-            for k in lo..=hi {
-                cross[k] = l[k].mul(r[k].conj());
-                cross[n - k] = cross[k].conj();
-                el += 2.0 * f64::from(l[k].norm_sqr());
-                er += 2.0 * f64::from(r[k].norm_sqr());
-            }
-            fft.inverse(&mut cross);
-            let lags = 44;
-            let best = (0..=lags).chain(n - lags..n).map(|t| f64::from(cross[t].re) * n as f64).fold(f64::MIN, f64::max);
-            best / (el * er).sqrt()
-        })
-        .collect()
+    measure::iacc(sides, RATE)
 }
 
 /// The delay of the left side behind the right (samples, between samples)

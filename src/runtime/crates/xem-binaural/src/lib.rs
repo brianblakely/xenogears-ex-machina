@@ -19,10 +19,12 @@
 //! presentation on or off, or a source between placed and original,
 //! crossfades. It is the same Rust on every host (native and WebAssembly);
 //! [`music`] holds the rules that arrange a sequence's parts around the
-//! listener.
+//! listener, and [`measure`] the measurements tests and tools take of what
+//! it gives (loudness, interaural correlation).
 
 pub mod fft;
 pub mod hrtf;
+pub mod measure;
 pub mod music;
 pub mod pan;
 mod render;
