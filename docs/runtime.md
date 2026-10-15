@@ -4295,11 +4295,14 @@ and true with it, `null` on map 23) and at map 172's choice (`dialogue` a
 choice, `auto_advance_waited` 0). The slice logs replay to their recorded
 hashes (`xem-headless/tests/slice.rs`).
 
-Not done or not measured: the climb does not cross Babel Tower's maps 407,
-409 and 412 (map 412's door to map 413 opens only once map 417's switch,
-reached on foot, sets the tower's flag, which an `enter_field` start does
-not), and no run crossed Blackmoon Forest or the Aveh-Kislev border
-mountains end to end. The climb starts from `enter_field`'s game data with
+Not done or not measured: under the default, the enemies met only in the
+platforming areas' random battles (battle 32's enemy 0 and battle 59's
+enemy 2) are not met ([below](#how-the-areas-are-classified)). The climb
+does not cross Babel Tower's maps 407, 409 and 412 (map 412's door to map
+413 opens only once map 417's switch, reached on foot, sets the tower's
+flag, which an `enter_field` start does not), and no run crossed
+Blackmoon Forest or the Aveh-Kislev border mountains end to end. The
+climb starts from `enter_field`'s game data with
 the gears set, not from a story save, and its route is the assist's with
 running jumps where it stops short, not a person's. The chapter is the
 game's opening only and holds no story movie; no later chapter was played
