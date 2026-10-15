@@ -1284,13 +1284,11 @@ every session: here 1 032 localization trials and 80 coherence screens in
 set's front/back confusions read back as scripted (60 of 120). It shows
 the page and the analysis work, not what anyone hears.
 
-Not done or not measured: no listening tests with people: the
-self-administered test is ready and has been answered only by a script,
-and whether one listener beside the models makes the plan's calibrated
-listening comparisons is the user's to judge; its analysis sets a person's
-numbers over the test's 48 directions beside the models' over every
-measured direction (the models' output holds no direction-by-direction
-predictions). Direction is
+Not done or not measured: no listening tests with people (the plan asks
+for none): the optional self-administered test is ready and has been
+answered only by a script; its analysis sets a person's numbers over the
+test's 48 directions beside the models' over every measured direction (the
+models' output holds no direction-by-direction predictions). Direction is
 predicted by models calibrated on 23 people's own localization, for how
 they would hear the KEMAR head's cues, not measured on anyone; the models
 are validated for static broadband sounds, so moving sounds, the game's

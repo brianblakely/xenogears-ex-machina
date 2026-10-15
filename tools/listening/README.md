@@ -12,8 +12,8 @@ the answers afterwards, beside the calibrated model listeners' predictions
 (tools/binaural_models/evaluate.m).
 
 One person's answers describe that person with those headphones, not
-listeners at large. Whether they, with the models, settle the plan's
-"calibrated listening comparisons" is yours to decide.
+listeners at large. The test is optional: the plan's verification uses
+the model listeners and objective measures, not people.
 
 ## What you need
 

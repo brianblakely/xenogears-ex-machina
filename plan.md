@@ -678,6 +678,15 @@ for original playback, not as the enhanced mix's input specification.
   Wide-Stereo independently selectable and unmodified; do not force Wide as the
   enhanced mode's source. Restore the previous original preference on disable,
   and use smooth, level-consistent transitions without duplicated dry audio.
+- [ ] Verify raw/original playback separately from the enhanced renderer using
+  retained captures and targeted native/browser routes. Test front/back, left/
+  right, elevation, moving/unknown/multi-voice emitters, voice reuse, camera orbit
+  versus character turns, inspection/head tracking and fixed music placement.
+  Assert unchanged original effect eligibility and pre-pan gains across feature
+  toggles and matched character trajectories; zoom/pull-back/scale must add no
+  attenuation. Compare direction with calibrated computational listener models and
+  musical coherence with objective measures, not claims of a recovered original
+  surround mix.
 - [x] Verify music/effect/reverb/FMV routing, device and sample-rate changes,
   pause/resume, fast-forward, rewind, snapshot restore and XR transitions. Reset
   or restore presentation/filter history without playing the abandoned timeline.
