@@ -25,11 +25,13 @@
 % from the repository's root (the AMT is GPL-3.0+, a local test tool: see
 % nix/amt/flake.nix). Writes build/binaural/models.json and prints a
 % summary; computed lookups and lateral estimates are kept in
-% build/binaural/models-cache. Exits with status 1 when an acceptance check
-% fails: the rendered responses heard within the models' noise of the raw
-% ones (pool median differences within 2 points of quadrant error and of
-% front/back confusion, 2 degrees of polar and of lateral error), and
-% Binaural confused front and back less often than the Stereo control.
+% build/binaural/models-cache (every noise comes from a fixed state of the
+% generator, so a run with an empty cache computes the same). Exits with
+% status 1 when an acceptance check fails: the rendered responses heard
+% within the models' noise of the raw ones (pool median differences within
+% 2 points of quadrant error and of front/back confusion, 2 degrees of
+% polar and of lateral error), and Binaural confused front and back less
+% often than the Stereo control.
 
 1; % a script with functions
 
@@ -157,13 +159,17 @@ function Obj = at_44k(Obj)
 end
 
 % The ITD-to-angle lookup of a listener's ears (itd2angle_lookuptable,
-% dietz2011), kept in the cache under `key`.
-function lookup = lookup_of(Obj, key, cache)
+% dietz2011), kept in the cache under `key`. The toolbox makes it from a
+% second of white noise it draws itself (LTFAT's noise, that is randn):
+% the generator is set to `state` first, so every lookup hears the same
+% noise and a run with an empty cache makes the same lookups.
+function lookup = lookup_of(Obj, key, cache, state)
   path = fullfile(cache, ['lookup-' key '.mat']);
   if exist(path, 'file')
     load(path, 'lookup');
     return;
   end
+  randn('state', state);
   lookup = itd2angle_lookuptable(at_44k(Obj), 44100, 'dietz2011');
   save('-binary', path, 'lookup');
 end
@@ -446,14 +452,17 @@ for t = 1:numel(listeners)
 end
 
 % 4. Lateral angles (dietz2011 with each listener's ITD-to-angle lookup):
-% half a second of white noise through each direction's responses.
+% half a second of white noise through each direction's responses. The
+% lookups' noise and this noise come from fixed states of the generator,
+% different ones, so the lookups are not made from the noise they hear.
 printf('\n4. Lateral angles (dietz2011 and an ITD-to-angle lookup from each listener''s ears)\n');
+lookup_state = 2011;
 lookups = cell(1, numel(listeners));
 lookup_names = cell(1, numel(listeners));
 for t = 1:numel(listeners)
   ears = listeners(t).ears;
-  lookup_names{t} = sprintf('%s-%d-%d', listeners(t).name, ears.Data.SamplingRate, size(ears.Data.IR, 3));
-  lookups{t} = lookup_of(ears, lookup_names{t}, cache);
+  lookup_names{t} = sprintf('%s-%d-%d-state%d', listeners(t).name, ears.Data.SamplingRate, size(ears.Data.IR, 3), lookup_state);
+  lookups{t} = lookup_of(ears, lookup_names{t}, cache, lookup_state);
 end
 randn('state', 2014);
 noise = randn(round(0.5 * fs), 1);
@@ -491,8 +500,12 @@ for g = 1:3
     lat_errors.(lat_sets{g})(t) = lateral_errors(phi.(lat_sets{g})(:, t), lat_true, kept);
   end
 end
-printf('  compared: rendered and raw over %d directions (the raw set has no estimate for %d), the control over %d\n', ...
-       min(sum(both)), max(sum(isnan(phi.kemar_raw))), min(sum(~isnan(phi.stereo_measured))));
+% A lookup gives no angle beyond 95 degrees (itd2angle), so how many
+% directions have an estimate can also differ from listener to listener.
+counts = @(x) sprintf('%d to %d', min(x), max(x));
+printf('  compared, over the listeners: rendered and raw over %s directions (no estimate: raw %s, rendered %s), the control over %s\n', ...
+       counts(sum(both)), counts(sum(isnan(phi.kemar_raw))), counts(sum(isnan(phi.rendered_measured))), ...
+       counts(sum(~isnan(phi.stereo_measured))));
 for t = 1:numel(listeners)
   printf('  %-5s rendered RMS %5.1f bias %+5.1f | raw %5.1f %+5.1f | stereo %5.1f %+5.1f\n', listeners(t).name, ...
          lat_errors.rendered_measured(t).rms, lat_errors.rendered_measured(t).bias, lat_errors.kemar_raw(t).rms, ...

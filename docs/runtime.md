@@ -698,14 +698,18 @@ people.
   dietz2011 for the lateral angle: half a second of white noise through a
   direction's responses, the model's interaural delays read through an
   ITD-to-angle lookup made from the listener's own ears
-  (`itd2angle_lookuptable`, the pool's resampled to 44.1 kHz), as
+  (`itd2angle_lookuptable`, the pool's resampled to 44.1 kHz, from a
+  second of white noise the toolbox draws itself), as
   `wierstorf2013_estimateazimuth` does (its own result is checked equal for
   a direction): lateral RMS error and bias (positive further out than the
-  target). The listeners: the pool's 23, each through their own ears at
-  their own sensitivity, and the KEMAR head itself through its own (the
-  measured set, at the pool's median sensitivity, 0.754), for whom the
-  raw targets are its template and the rendered ones differ from it only
-  by what the renderer does.
+  target). Both noises come from fixed states of Octave's generator (2011
+  for every lookup, 2014 for the half second heard from each direction),
+  so a run with an empty cache computes the same lookups and estimates
+  (two such runs here wrote the same `models.json`). The listeners: the
+  pool's 23, each through their own ears at their own sensitivity, and the
+  KEMAR head itself through its own (the measured set, at the pool's
+  median sensitivity, 0.754), for whom the raw targets are its template
+  and the rendered ones differ from it only by what the renderer does.
 - *Sagittal planes.* The pool, hearing the KEMAR head's cues (others'
   ears), confuses much: quadrant errors 33.9% (pool median; 30.1 to 40.8)
   with the renderer's responses and 33.6% with the raw ones, local polar
@@ -730,36 +734,45 @@ people.
   between the measured ones) the pool's quadrant errors are 29.1% and the
   polar errors 43.4 degrees.
 - *Lateral angles.* The pool hears the renderer's responses with a
-  lateral RMS error of 7.2 degrees (pool median; 4.6 to 12.7) and a bias
-  of -2.9 (towards the middle; -8.9 to +7.3), the raw ones with 7.5 and
-  -3.1: listener by listener the renderer changes the error by -0.35 to
-  +0.44 degrees (median -0.07) and the bias by -0.12 to +0.64 (median
-  +0.29). The KEMAR head through its own ears: 2.9 against 3.1 degrees,
-  bias +1.9 against +2.2. Both are compared over the 684 directions both
-  have an estimate for: at the median plane's 26 the raw set's two ears
-  are the same samples (its left half mirrors the right, and the median
-  plane is its own mirror), a signal alike at both ears whose interaural
-  coherence never rises, so the model's gate takes nothing and gives no
-  estimate, where the rendered responses differ by a little noise (2e-5
-  of their peak) and get one. The model reads only interaural delays, so
-  it hears the Stereo control at the centre wherever it is panned (42.3
-  degrees RMS, bias -41.1); people would hear that pan's level
-  difference inside the head, so the lateral comparison with the control
-  says nothing about them.
-- *The music's places and the estimate's loudspeakers.* The pool hears
-  each where it is to the side: the arc's five places within 1.4 degrees
-  of their lateral angle, the rear supports within 3.3 and those behind
-  the sides (130 degrees) within 7, and the places further out than 60
-  degrees (the side supports, the pads at 90 degrees, the rear
-  loudspeakers, 65 to 79 degrees out) at 56.8 to 62.0 degrees: the model
-  compresses everything beyond 60 degrees alike (pool medians). Front and
-  back, for the places within 60 degrees of the median plane
-  (baumgartner2014's range): through others' ears the arc ahead is heard
-  behind half the time (51 to 62%), the rear supports behind 67 to 81% of
-  the time and those at 130 degrees 72 to 79%, the pads 25 degrees up at
-  70 and 110 degrees across the frontal plane 45 to 51% of the time, and
-  the pads above (40 up) ahead heard behind 51% of the time and behind
-  heard there 69%.
+  lateral RMS error of 7.9 degrees (pool median; 4.9 to 12.7) and a bias
+  of -2.9 (towards the middle; -8.8 to +6.6), the raw ones with 7.9 and
+  -3.2: listener by listener the renderer changes the error by -0.52 to
+  +0.38 degrees (median -0.07) and the bias by -0.14 to +0.76 (median
+  +0.26). The KEMAR head through its own ears: 2.9 against 3.1 degrees,
+  bias +1.9 against +2.2. The lookups' noise moves the errors themselves
+  more than the renderer does: with another draw of it (the lookups
+  before their noise was seeded) the pool's medians were 7.2 and 7.5
+  degrees and a listener's errors differed by up to 2.0 degrees, while the
+  renderer's change moved by 0.034 at most in the medians (0.37 for a
+  listener), so the comparison with the raw set is steady where the
+  errors themselves are not. Both are compared over the 684 directions
+  both have an estimate for, for every listener: at the median plane's 26
+  the raw set's two ears are the same samples (its left half mirrors the
+  right, and the median plane is its own mirror), a signal alike at both
+  ears whose interaural coherence never rises, so the model's gate takes
+  nothing and gives no estimate, where the rendered responses differ by a
+  little noise (2e-5 of their peak) and get one. The model reads only
+  interaural delays, so it hears the Stereo control at the centre
+  wherever it is panned (42.3 degrees RMS, bias -41.1); people would hear
+  that pan's level difference inside the head, so the lateral comparison
+  with the control says nothing about them.
+- *The music's places and the estimate's loudspeakers.* In lateral angle
+  (pool medians), the pool hears the arc's five places (the front
+  loudspeakers among them, at its ends) within 1.6 degrees of where they
+  are, the pads above on the median plane within 0.2 and the rear
+  supports within 3.6, but those behind the sides (130 degrees, 50
+  degrees out) 3.7 and 7.2 degrees towards the middle and the pads 25
+  degrees up at 70 and 110 degrees (58 degrees out) 4.7 to 7.3 towards
+  it; the places further out than 60 degrees (the side supports, the pads
+  at 90 degrees, the rear loudspeakers, 65 to 79 degrees out) are heard
+  at 55.2 to 61.9 degrees: the model compresses everything beyond 60
+  degrees alike. Front and back, for the places within 60 degrees of the
+  median plane (baumgartner2014's range): through others' ears the arc
+  ahead is heard behind half the time (51 to 62%), the rear supports
+  behind 67 to 81% of the time and those at 130 degrees 72 to 79%, the
+  pads 25 degrees up at 70 and 110 degrees across the frontal plane 45 to
+  51% of the time, and the pads above (40 up) ahead heard behind 51% of
+  the time and behind heard there 69%.
 - *barumerli2023 is not run.* AMT 1.6.0 returns from `barumerli2023` and
   `barumerli2023_featureextraction` under Octave with "barumerli2023 is
   not supported by Octave": both build their directions with
@@ -774,11 +787,11 @@ people.
 - *Acceptance, relative.* The rendered responses are heard within the
   models' noise of the raw ones (pool medians and the KEMAR head within 2
   points of quadrant errors and front/back confusions and 2 degrees of
-  polar and lateral error and lateral bias: 0.33 at most here), and
+  polar and lateral error and lateral bias: 0.32 at most here), and
   Binaural confuses front and back less than the Stereo control (pool
   median and the KEMAR head): the script exits with status 0. With its
   cache filled a run takes 4 minutes here; filling it takes about an hour
-  once (the 24 lookups 30 to 40 minutes, the lateral estimates 22).
+  once (the 24 lookups 30 to 40 minutes, the lateral estimates 22 to 27).
 
 Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
 `xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
@@ -942,20 +955,27 @@ ear its long-term third octaves are the original's within 1.6 dB from
 to 5.7 dB (the bounds: 1 LU, 3 dB to 4 kHz, 8 dB above). The interaural
 cross-correlation of each octave from 125 Hz to 8 kHz, in the original
 0.58 to 0.75, is 0.51 to 0.75 at immersion 0 up to 4 kHz and 0.13 at 8
-kHz, and every immersion above 0 is more diffuse than that in every octave (from 1
-kHz up 0.09 to 0.26 at 35, 70 and 100), but not step by step: from 70 to
-100 it rises again in some octaves (500 Hz 0.13 to 0.23, 4 kHz 0.21 to
-0.26), because the three supports placed behind on the median plane (180,
-180 and -160 degrees), which the ears hear alike, pass the sides on their
-way there (alone, from 250 Hz up, 0.32 to 0.76 at 70 and 0.53 to 1.0 at
-100); the ears stay correlated far above chance (0.09 at least, against
-about 0.01 for unrelated signals; the bound 0.05). The lead, the bass and
+kHz, where the pairs already decorrelate the arc. Every immersion above 0
+makes the music much more diffuse than that from 500 Hz to 4 kHz (0.11
+to 0.26 at 35, 70 and 100, against 0.51 to 0.66; the bound: at least 0.2
+under immersion 0's) and changes it little in the other octaves (at 125
+and 250 Hz 0.52 to 0.74, against 0.75 and 0.59; at 8 kHz 0.09 to 0.13,
+against 0.13, where immersion 35's 0.126 against 0.125 is the only value
+not under immersion 0's; the bound: at most 0.02 over it). It does not
+do so step by step: from 70 to 100 it rises again in some octaves (500
+Hz 0.13 to 0.23, 4 kHz 0.21 to 0.26), because the three supports placed
+behind on or near the median plane (180, 180 and -160 degrees), which
+the ears hear alike, pass the sides on their way there (alone, from 250
+Hz up, 0.32 to 0.76 at 70 and 0.53 to 1.0 at 100); the ears stay
+correlated far above chance (0.09 at least, against about 0.01 for
+unrelated signals; the bound 0.05). The lead, the bass and
 the rhythm, each alone (its voices replayed from the capture), are heard
 where the original pans them on the stereo arc at every immersion alike:
 the interaural delay of each 93 ms window (200 Hz to 1.4 kHz) read through
 the KEMAR head's own delays, against the arc angle of the original's left
 and right levels, within 0.0, 2.4 and 1.4 degrees (RMS; the bass, panned
-at +26.3 degrees, is heard at +28.6; the bound 5).
+at +26.3 degrees, is heard at +28.6; the bounds: 5, and 2 between
+immersions, where the deviations are the same to a tenth).
 `web/tests/binaural.test.mjs`: one state
 restored natively and in Chromium presents the same mix (99.6% of the
 samples identical, the rest within 1; the declared tolerance is 2, each

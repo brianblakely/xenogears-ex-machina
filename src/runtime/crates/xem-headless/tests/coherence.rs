@@ -11,20 +11,23 @@
 //!   gated) and, ear by ear, its long-term spectrum in third octaves but
 //!   for the HRTF pairs' colouring (within 3 dB to 4 kHz; above, the
 //!   frontal pairs lower 5 to 8 kHz);
-//! - every immersion above 0 is more diffuse than the stereo arc (the
-//!   interaural cross-correlation of each octave no higher), though not
-//!   step by step: the parts placed behind on the median plane, which the
-//!   ears hear alike, pass the sides on their way there and correlate
-//!   again at full immersion (each group alone shows it); the ears stay
-//!   correlated far above chance;
+//! - every immersion above 0 is much more diffuse than the stereo arc from
+//!   500 Hz to 4 kHz (the interaural cross-correlation of each octave there
+//!   well under immersion 0's), though not step by step: the parts placed
+//!   behind on or near the median plane, which the ears hear alike, pass
+//!   the sides on their way there and correlate again at full immersion
+//!   (each group alone shows it); the other octaves stay about as at
+//!   immersion 0 (at 125 and 250 Hz the places matter little, and at 8 kHz
+//!   the HRTF pairs already decorrelate the arc); the ears stay correlated
+//!   far above chance;
 //! - the lead, the bass and the rhythm, each alone (its voices replayed
 //!   from the capture), are heard where the original pans them on the
 //!   stereo arc at every immersion: the interaural delay of each 93 ms
 //!   window (200 Hz to 1.4 kHz) read through the KEMAR head's own delays,
 //!   against the arc angle of the original's left and right levels.
 //!
-//! The bounds are regression guards set above what this scene measured,
-//! not perceptual criteria.
+//! The bounds are regression guards with some room around what this scene
+//! measured, not perceptual criteria.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test coherence
 
@@ -159,7 +162,7 @@ fn stem(heard: &Heard, ids: &[u32]) -> ([Vec<f32>; 2], [Vec<f32>; 2]) {
     let presented = heard.journal.replay(|routes, frame| {
         let ours = |v: usize| matches!(routes[v], Route::Source(id) if ids.contains(&id));
         for (e, side) in plain.iter_mut().enumerate() {
-            side.push(mixed(frame, e, &ours, false));
+            side.push(mixed(frame, e, ours, false));
         }
         for v in 0..VOICES {
             if !ours(v) {
@@ -398,7 +401,7 @@ fn the_binaural_mix_keeps_the_originals_loudness_and_its_spectrum_but_for_the_pa
 }
 
 #[test]
-fn immersion_makes_the_music_more_diffuse_than_the_arc_and_the_ears_stay_correlated() {
+fn immersion_makes_the_music_more_diffuse_than_the_arc_from_500_hz_to_4_khz_and_the_ears_stay_correlated() {
     let Some(heard) = heard() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
@@ -431,13 +434,22 @@ fn immersion_makes_the_music_more_diffuse_than_the_arc_and_the_ears_stay_correla
         let groups = [&sides_ids, &median_ids].map(|ids| iacc(&stem(h, ids).0));
         eprintln!("  immersion {:3}: {c:.3?}; the parts moving to the sides {:.3?}, behind or above {:.3?}", h.immersion, groups[0], groups[1]);
     }
-    // Every immersion above 0 is more diffuse than the stereo arc in every
-    // octave, and the ears stay correlated far above chance (a hundredth
-    // for unrelated ten-second signals).
-    for b in 0..OCTAVES.len() {
-        for c in &presented[1..] {
-            assert!(c[b] <= presented[0][b] + 0.02, "{} Hz: immersion makes the music no less diffuse than the arc: {:.3} against {:.3}", OCTAVES[b], c[b], presented[0][b]);
-            assert!(c[b] >= 0.05, "{} Hz: the ears stay correlated: {:.3}", OCTAVES[b], c[b]);
+    // Every immersion above 0 is much more diffuse than the stereo arc from
+    // 500 Hz to 4 kHz (each octave's correlation at least 0.2 under
+    // immersion 0's: an immersion that moved nothing would fail); the other
+    // octaves stay about as at immersion 0, at most 0.02 over it (at 125
+    // and 250 Hz the places matter little, and at 8 kHz the pairs already
+    // decorrelate the arc); the ears stay correlated far above chance (a
+    // hundredth for unrelated ten-second signals).
+    for (b, &centre) in OCTAVES.iter().enumerate() {
+        let arc = presented[0][b];
+        for (h, c) in heard[1..].iter().zip(&presented[1..]) {
+            let i = h.immersion;
+            assert!(c[b] <= arc + 0.02, "immersion {i}, {centre} Hz: at most a little more correlated than the arc: {:.3} against {arc:.3}", c[b]);
+            if (500.0..=4000.0).contains(&centre) {
+                assert!(c[b] <= arc - 0.2, "immersion {i}, {centre} Hz: much more diffuse than the arc: {:.3} against {arc:.3}", c[b]);
+            }
+            assert!(c[b] >= 0.05, "immersion {i}, {centre} Hz: the ears stay correlated: {:.3}", c[b]);
         }
     }
 }
