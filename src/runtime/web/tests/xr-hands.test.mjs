@@ -397,7 +397,7 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
         return seen;
       };
       const revision = async () => (await status(page)).settingsRevision;
-      const pinches = (await xr()).pinches;
+      const pinches = (await xr()).counts.pinch;
 
       // The screen as the view: the screen scales for the session, nothing
       // is committed.
@@ -435,7 +435,7 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
       // Nothing else: no Pause, no pinch, no settings.
       assert.equal(state.pauses.player, false, 'no grab toggled Pause');
       assert.equal(state.settings, false);
-      assert.equal(state.pinches, pinches, 'no pinch');
+      assert.equal(state.counts.pinch, pinches, 'no pinch');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

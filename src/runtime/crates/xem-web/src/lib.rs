@@ -17,6 +17,9 @@
 //! Methods take and return JSON text where the value is structured;
 //! [`XemApp::command`] takes the control layer's JSON commands as they are.
 #![cfg(target_arch = "wasm32")]
+// `XemApp::status`'s one `json!` literal expands deeper than the default
+// limit (128).
+#![recursion_limit = "256"]
 
 mod audio;
 mod disc;

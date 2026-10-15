@@ -2812,8 +2812,8 @@ frames, intervals p50 50.40 ms and p99 60.71 ms, 1 of 276 late, presenting
 p50 1.32 ms and p95 2.09 ms (load average falling from 27 to 4 over the
 smoke). In IWER's Quest 3 (field 30, the game stopped) ten steps of
 1.5 cm per hand showed 1.152 to 2.518 and committed 252%, the anchor
-within 0.003 to 0.14 mm (four runs; the eased point settling after Fei's
-walk) and a key 0.1002 m wide throughout.
+within 0.003 to 0.16 mm (several runs; the eased point settling after
+Fei's walk) and a key 0.1002 m wide throughout.
 
 Tests: `xr-game-smoke.sh`'s scaling run (Monado; the inspection run's log,
 scripted `spread` at headset frame 110 and `contract` at 150): exactly two
@@ -2942,18 +2942,18 @@ the canvas's own framebuffer, which takes no alpha of its own, so only the
 request shows what a headset's browser gets); the AR session's blend mode
 is `alpha-blend` and the room shows. Over a grid of 40x30 points across
 both views, the points that showed the room's backdrop in VR (its clear,
-rgb(3, 4, 5) as the layer holds it) are transparent black in AR for 98% or
-more; of those that showed black in VR (the wall's clear, and the scene's
-black texels, which AR draws) there are at least 5% of the grid, 85% or
-more of them transparent in AR; the others, the diorama, its pane or the
-keys, are drawn for 98% or more, and the opaque ones show VR's colour
-within 4 levels for 95% or more. Measured: 773 room points, 769
-transparent (the other 4 black at alpha 1 to 25, coverage VR's 8-bit
-composite rounds back to the backdrop); 111 black, 102 transparent in AR
-(the 9 others opaque black scene texels along the layer's bottom row;
-with the wall's clear kept in AR none was: 0 of 111, measured once with
-the web host's room flag forced off); 316 drawn of 316, all 308 opaque
-ones as in VR (median and 90th percentile 0 levels off).
+sRGB 29, 31, 39 as the layer holds it) are transparent black in AR for 98%
+or more; of those that showed black in VR (the wall's clear, and the
+scene's black texels, which AR draws) there are at least 5% of the grid,
+85% or more of them transparent in AR; the others, the diorama, its pane
+or the keys, are drawn for 98% or more, and the opaque ones show VR's
+colour within 4 levels for 95% or more. Measured: 771 room points, 769
+transparent (the other 2 black at alpha 1, coverage VR's 8-bit composite
+rounds back to the backdrop); 111 black, 102 transparent in AR (the 9
+others opaque black scene texels along the layer's bottom row; with the
+wall's clear kept in AR none was: 0 of 111, measured once with the web
+host's room flag forced off); 318 drawn of 318, all 308 opaque ones as in
+VR (median and 90th percentile 0 levels off).
 `web/tests/xr-hands.test.mjs` (the fixture): IWER's Quest 3 offers Enter
 VR and Enter AR, the same headset without immersive AR Enter VR alone
 (`arSupported` false, no XR error), and a device offering immersive AR

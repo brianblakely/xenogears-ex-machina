@@ -147,7 +147,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       assert.ok(rows.every((row) => row.every((v, i) => i % 4 !== 3 || v === 255)), 'in VR the layer is opaque (the context\'s alpha is for AR)');
       await page.screenshot({ path: join(SHOTS, 'xr-diorama.png') });
       // The room's backdrop: the layer's top left corner, above everything
-      // the view shows (the layer holds the clear's values as they are).
+      // the view shows (the clear's colour encoded, as OpenXR's is).
       const backdrop = Array.from(await page.evaluate((point) => window.xem.xr.readback([point]), [1, layer[1] - 2])).slice(0, 3);
       const lit = rows.map((row) => Array.from({ length: count }, (_, i) => i).filter((i) => [0, 1, 2].some((k) => Math.abs(row[4 * i + k] - backdrop[k]) > 3)).length / count);
       console.log(`rows covered by the table (the backdrop ${backdrop}): ${lit.map((l) => l.toFixed(2))}`);
@@ -265,7 +265,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       await page.evaluate(() => window.xem.setRunning(false));
       await page.evaluate(() => window.xrDevice.quaternion.set(0, 0, 0, 1));
       await frames(6);
-      const scaling = { pauses: (await status(page)).xr.pauses, pinches: (await status(page)).xr.pinches, revision: (await status(page)).settingsRevision };
+      const scaling = { pauses: (await status(page)).xr.pauses, pinches: (await status(page)).xr.counts.pinch, revision: (await status(page)).settingsRevision };
       const at = (x) => page.evaluate((x) => {
         window.xrDevice.hands.left.position.set(-x, 1.4, -0.3);
         window.xrDevice.hands.right.position.set(x, 1.4, -0.3);
@@ -300,7 +300,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       assert.equal(committed, Math.round(seen[seen.length - 1].dioramaScale * 100), 'the scale shown last is the setting');
       assert.equal(info.settingsRevision, scaling.revision + 1, 'committed once');
       assert.equal(info.xr.scaling, false);
-      assert.deepEqual([info.xr.pauses, info.xr.pinches], [scaling.pauses, scaling.pinches], 'no pause and no pinch');
+      assert.deepEqual([info.xr.pauses, info.xr.counts.pinch], [scaling.pauses, scaling.pinches], 'no pause and no pinch');
       // The automation's frames at the new scale end at the same RAM.
       await page.evaluate(load, base64);
       await page.evaluate(() => window.xem.runFrames(120));
