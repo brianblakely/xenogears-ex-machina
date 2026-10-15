@@ -8,8 +8,9 @@ use std::sync::{Arc, Mutex};
 
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, XrWebGlLayer};
+use xem_assist::headset::Seat;
 use xem_render::glam::{Mat4, Vec2, Vec3, Vec4};
-use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig, headset_movie_output};
+use xem_render::ps1::{DioramaSpace, GameView, HeadsetEye, HostClass, ViewConfig, XrView as HeadsetView, headset_movie_output, xr_view};
 use xem_render::xem_gpu::{DisplayInfo, Reveals, Trace};
 use xem_render::{Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
@@ -35,13 +36,31 @@ pub struct Overlay {
 }
 
 /// The settings panel's place in a headset (as the OpenXR host's): below
-/// the screen, tilted toward the player, 55 cm wide.
-pub fn xr_panel_quad(panel_px: (u32, u32)) -> xem_assist::headset::Quad {
-    use xem_render::glam::Quat;
-    let width = 0.55;
-    xem_assist::headset::Quad {
-        pose: xem_assist::headset::Pose { position: Vec3::new(0.0, -0.75, -1.1), orientation: Quat::from_rotation_x(-25f32.to_radians()) },
-        size: (width, width * panel_px.1.max(1) as f32 / panel_px.0.max(1) as f32),
+/// the screen, tilted toward the player, 55 cm wide; above the diorama's
+/// table while it is the view (`xem_assist::draw::panel`).
+pub fn xr_panel_quad(seat: &Seat, settings: &SettingsService, panel_px: (u32, u32)) -> xem_assist::headset::Quad {
+    // (The Original renderer never shows the diorama.)
+    let graphics = settings.settings().graphics;
+    let table = match xr_view(&graphics.xr) {
+        HeadsetView::Diorama(table) if graphics.renderer == xem_settings::Renderer::ExMachina => Some(table),
+        _ => None,
+    };
+    xem_assist::draw::panel(seat, table.as_ref(), panel_px.1.max(1) as f32 / panel_px.0.max(1) as f32)
+}
+
+/// Clears `views` to nothing (transparent black).
+fn clear(encoder: &mut wgpu::CommandEncoder, views: &[&wgpu::TextureView]) {
+    for view in views {
+        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("diorama view clear"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                depth_slice: None,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+            })],
+            ..Default::default()
+        });
     }
 }
 
@@ -88,6 +107,12 @@ pub struct WebRenderer {
     /// The last immersive frame looked from within the scene through each
     /// view (first-person inspection), the screen showing the interface.
     pub xr_within: bool,
+    /// Where everything stands in front of the player in a headset.
+    pub xr_seat: Seat,
+    /// What the last immersive frame's diorama showed: the screen's share
+    /// of the view, and where the diorama lay while it showed.
+    pub xr_share: f32,
+    pub xr_space: Option<DioramaSpace>,
     /// The assisted controls to draw this frame, and their textures.
     pub overlay: Overlay,
     atlas: xem_render::glass::Atlas,
@@ -103,27 +128,32 @@ pub struct XrView {
 
 impl XrView {
     /// The view as the renderer looks through it from within the scene: its
-    /// pose in the session's 'local' space (whose -Z faces the screen) and
-    /// its field of view's tangents, from its projection (an OpenGL frustum's
-    /// x and y rows, which wgpu's depth leaves as they are).
-    pub fn eye(&self) -> HeadsetEye {
+    /// pose as `seat` sees it (in the session's 'local' space moved by
+    /// recentring; its -Z faces the screen) and its field of view's
+    /// tangents, from its projection (an OpenGL frustum's x and y rows,
+    /// which wgpu's depth leaves as they are).
+    pub fn eye(&self, seat: &Seat) -> HeadsetEye {
         let (_, rotation, position) = self.view.inverse().to_scale_rotation_translation();
         let p = self.proj;
         let tangents = |scale: f32, skew: f32| ((skew - 1.0) / scale, (skew + 1.0) / scale);
         let (left, right) = tangents(p.x_axis.x, p.z_axis.x);
         let (down, up) = tangents(p.y_axis.y, p.z_axis.y);
-        HeadsetEye { orientation: rotation.to_array(), position: position.to_array(), fov: [left, right, up, down] }
+        let position = seat.pose.inverse().transform_point3(position);
+        HeadsetEye { orientation: seat.relative(rotation).to_array(), position: position.to_array(), fov: [left, right, up, down] }
     }
 }
 
 /// The immersive layer wrapped as a wgpu target, the eye buffers and the
-/// layer-sized buffer they are assembled in (top row first).
+/// layer-sized buffer they are assembled in (top row first), and each
+/// view's picture of the diorama (drawn over it cleared, composited into
+/// the eye under the pane).
 struct XrTargets {
     framebuffer: Option<WebGlFramebuffer>,
     size: (u32, u32),
     layer: wgpu::TextureView,
     assembled: wgpu::TextureView,
     eyes: Vec<((u32, u32), wgpu::TextureView)>,
+    dioramas: Vec<((u32, u32), wgpu::TextureView)>,
 }
 
 /// The room around the virtual screen.
@@ -229,6 +259,9 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         xr_eye: (1080, [-1.0, 1.0, 1.0, -1.0]),
         xr_scale: 1.0,
         xr_within: false,
+        xr_seat: Seat::default(),
+        xr_share: 1.0,
+        xr_space: None,
         overlay: Overlay::default(),
         atlas: Default::default(),
     })
@@ -442,7 +475,14 @@ impl WebRenderer {
         };
         config.movies = config.movies.map(|_| shown);
         self.renderer.configure(config);
+        // A headset shows the screen or the diorama; the canvas the screen.
+        self.renderer.set_xr_view(if headset { xr_view(&graphics.xr) } else { HeadsetView::Screen });
         self.renderer.take_restart()
+    }
+
+    /// The game's view, for what anchors it again (`xem_assist::headset`).
+    pub fn view_mut(&mut self) -> &mut GameView {
+        &mut self.renderer
     }
 
     /// The display as the device holds it (the Original renderer).
@@ -545,9 +585,11 @@ impl WebRenderer {
         if let Some(picture) = self.picture {
             let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
             for mark in &self.overlay.marks {
+                // The canvas's marks lie on its picture.
+                let xem_assist::overlay::Place::Screen { centre, x, y } = mark.place else { continue };
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone();
-                glass.push((view, Some((picture.from_screen(mark.centre), (mark.x.0 * scale, mark.x.1 * scale), (mark.y.0 * scale, mark.y.1 * scale))), None));
+                glass.push((view, Some((picture.from_screen(centre), (x.0 * scale, x.1 * scale), (y.0 * scale, y.1 * scale))), None));
             }
         }
         if !self.panel_visible && let Some(ui) = self.overlay.ui {
@@ -592,8 +634,12 @@ impl WebRenderer {
 }
 
 impl WebRenderer {
-    /// The headset's screen as the last immersive frame drew it.
+    /// The headset's screen as the last immersive frame drew it: while the
+    /// diorama showed, its pane and where its table lay.
     pub fn xr_screen(&self, settings: &SettingsService) -> Option<xem_assist::headset::Screen> {
+        if let Some(space) = self.xr_space {
+            return Some(xem_assist::headset::Screen::pane(space, self.xr_seat.position()));
+        }
         let xr = settings.settings().graphics.xr;
         let side = if self.movie { 0.0 } else { self.renderer.config().map_or(0, |c| c.side) as f32 };
         let (display, side) = match (&self.game_frame, &self.game_image) {
@@ -603,14 +649,8 @@ impl WebRenderer {
         };
         let width = f32::from(xr.width_cm) / 100.0 * self.xr_scale;
         let aspect = (display.1) / (display.0 + 2.0 * side);
-        Some(xem_assist::headset::Screen {
-            quad: xem_assist::headset::Quad {
-                pose: xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -f32::from(xr.distance_cm) / 100.0), orientation: xem_render::glam::Quat::IDENTITY },
-                size: (width, width * aspect),
-            },
-            display,
-            side,
-        })
+        let pose = self.xr_seat.place(xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -f32::from(xr.distance_cm) / 100.0), orientation: xem_render::glam::Quat::IDENTITY });
+        Some(xem_assist::headset::Screen::flat(xem_assist::headset::Quad { pose, size: (width, width * aspect) }, display, side))
     }
 
     /// The height of the immersive views, for the automatic internal scale.
@@ -624,7 +664,7 @@ impl WebRenderer {
     /// sized for (`configure_game`).
     pub fn set_xr_eye(&mut self, view: &XrView) {
         if view.viewport[2] > 0 {
-            self.xr_eye = (view.viewport[2] as u32, view.eye().fov);
+            self.xr_eye = (view.viewport[2] as u32, view.eye(&self.xr_seat).fov);
         }
     }
 
@@ -635,11 +675,14 @@ impl WebRenderer {
 
     /// Draws one immersive frame into `layer`: the game (presented once,
     /// whatever the number of views) on a flat virtual screen `width` metres
-    /// wide, `distance` metres in front of the reference space's origin, as
-    /// each view sees it. Monoscopic content, shown as a screen; while
-    /// first-person inspection looks from within the scene, each view's own
-    /// picture from the character's eye over its whole buffer and the game's
-    /// interface alone on the screen (`GameView::present_headset`).
+    /// wide, `distance` metres in front of the seat, as each view sees it.
+    /// Monoscopic content, shown as a screen; while first-person inspection
+    /// looks from within the scene, each view's own picture from the
+    /// character's eye over its whole buffer and the game's interface alone
+    /// on the screen (`GameView::present_headset`); with the diorama as the
+    /// view, each view's picture of it, its interface on a pane above the
+    /// table, and the screen where it gives way to it
+    /// (`GameView::present_diorama`).
     pub fn render_xr(
         &mut self,
         layer: &XrWebGlLayer,
@@ -666,26 +709,72 @@ impl WebRenderer {
         if let Some(hud) = &mut self.frame_rate {
             hud.frame(std::time::Duration::from_secs_f64(time), self.scale, presentation.show_fps).map_err(|e| e.to_string())?;
         }
+        // The headset view as the settings have it now, the game paused or not.
+        self.renderer.set_xr_view(xr_view(&graphics.xr));
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         // First-person inspection looks from within the scene through each
         // view, every immersive frame, paused or not.
-        let eyes: Vec<HeadsetEye> = if self.renderer.first_person() { views.iter().map(XrView::eye).collect() } else { Vec::new() };
+        let seat = self.xr_seat;
+        let eyes: Vec<HeadsetEye> = if self.renderer.first_person() { views.iter().map(|view| view.eye(&seat)).collect() } else { Vec::new() };
         let mut within: Vec<wgpu::TextureView> = Vec::new();
+        // A movie frame rebuilt from what the MDEC decoded (Enhanced movies).
         let mut movie = false;
+        // The diorama, unless inspection looks from within the scene: each
+        // view's picture over its own target (cleared to nothing first).
+        let diorama = self.game_frame.is_some() && matches!(self.renderer.xr_view(), HeadsetView::Diorama(_)) && !self.renderer.first_person();
+        if diorama {
+            let targets = self.xr.as_mut().expect("made above");
+            while targets.dioramas.len() < views.len() {
+                targets.dioramas.push(((0, 0), targets.layer.clone()));
+            }
+            for (picture, view) in targets.dioramas.iter_mut().zip(views) {
+                let wanted = (view.viewport[2].max(1) as u32, view.viewport[3].max(1) as u32);
+                if picture.0 != wanted {
+                    *picture = (wanted, eye_texture(&self.gpu.device, wanted, wgpu::TextureFormat::Rgba8Unorm));
+                }
+            }
+            clear(&mut encoder, &targets.dioramas[..views.len()].iter().map(|(_, view)| view).collect::<Vec<_>>());
+        }
+        // What the view presents: the screen's picture and its size (none
+        // while the diorama shows alone) and the screen's share of the view,
+        // and the diorama's pane and space while it shows.
+        let mut pane: Option<(wgpu::TextureView, DioramaSpace)> = None;
         let presented = match &self.game_frame {
+            Some((display, scene)) if diorama => {
+                let targets = self.xr.as_ref().expect("made above");
+                let targets: Vec<ViewTarget> = views.iter().zip(&targets.dioramas).map(|(view, (size, picture))| ViewTarget {
+                    view: view.view,
+                    proj: view.proj,
+                    target: picture,
+                    viewport: Viewport::full(size.0, size.1),
+                }).collect();
+                self.renderer.present_diorama(&mut encoder, display, scene, time, &targets, seat.pose).map(|p| {
+                    pane = p.pane.cloned().zip(p.space);
+                    // (The screen a diorama gives way to may show one.)
+                    movie = p.frame.as_ref().is_some_and(|frame| frame.movie);
+                    let share = p.screen;
+                    let frame = p.frame.map(|frame| (frame.view.clone(), frame.size));
+                    (frame, share)
+                })
+            }
             Some((display, scene)) => self.renderer.present_headset(&mut encoder, display, scene, time, &eyes).map(|p| {
                 within = p.eyes.iter().map(|&eye| eye.clone()).collect();
                 movie = p.screen.movie;
-                (p.screen.view, p.screen.size, true)
+                (Some((p.screen.view.clone(), p.screen.size)), 1.0)
             }),
             None => None,
         };
         self.xr_within = !within.is_empty();
         self.movie = movie;
+        self.xr_space = pane.as_ref().map(|(_, space)| *space);
+        self.xr_share = presented.as_ref().map_or(1.0, |(_, share)| *share);
+        let share = self.xr_share;
         let (screen, screen_size, encoded) = match (presented, &self.game_image) {
-            (Some(presented), _) => (Some(presented.0), presented.1, presented.2),
-            (None, Some((_, view, size))) => (Some(view), *size, false),
-            (None, None) => (None, (4, 3), false),
+            (Some((Some((view, size)), _)), _) => (Some(view), size, true),
+            // The diorama alone: no screen this frame.
+            (Some((None, _)), _) => (None, (4, 3), true),
+            (None, Some((_, view, size))) if !diorama => (Some(view.clone()), *size, false),
+            (None, _) => (None, (4, 3), false),
         };
         let targets = self.xr.as_mut().expect("made above");
         // Eye buffers, one per view, sized as its viewport.
@@ -705,20 +794,25 @@ impl WebRenderer {
             .map(|p| (self.atlas.view(&self.gpu.device, &self.gpu.queue, &p.widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone(), p.pose, p.size))
             .collect();
         let panel_quad = self.panel.as_ref().filter(|_| self.panel_visible).map(|panel| {
-            let quad = xr_panel_quad(panel.size());
+            let quad = xr_panel_quad(&seat, settings, panel.size());
             (panel.view().clone(), Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position), Vec2::new(quad.size.0, quad.size.1))
         });
         let targets = self.xr.as_ref().expect("made above");
         let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale;
         let height = width * screen_size.1 as f32 / screen_size.0 as f32;
-        let pose = Mat4::from_translation(Vec3::new(0.0, 0.0, -f32::from(graphics.xr.distance_cm) / 100.0));
-        // The HUD is anchored inside the virtual screen, at a readable size
-        // shared by both eyes, and stays visible with Settings closed.
+        let pose = {
+            let pose = seat.place(xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -f32::from(graphics.xr.distance_cm) / 100.0), orientation: xem_render::glam::Quat::IDENTITY });
+            Mat4::from_rotation_translation(pose.orientation, pose.position)
+        };
+        // The HUD is anchored inside the virtual screen (or the diorama's
+        // pane), at a readable size shared by both eyes, and stays visible
+        // with Settings closed.
+        let (anchor, anchor_size) = match &pane {
+            Some((_, space)) => (space.pane, space.pane_size),
+            None => (pose, Vec2::new(width, height)),
+        };
         let hud_quad = self.frame_rate.as_ref().filter(|hud| hud.visible()).map(|hud| {
-            let (w,h) = hud.size();
-            let unit = width / 640.0 / self.scale;
-            let size = Vec2::new(w as f32 * unit,h as f32 * unit);
-            let position = pose * Mat4::from_translation(Vec3::new(-width/2.0+size.x/2.0+width/80.0,height/2.0-size.y/2.0-width/80.0,0.002));
+            let (position, size) = xem_assist::draw::hud(anchor, anchor_size, hud.size(), self.scale);
             (hud.view().clone(),position,size)
         });
         let filter = match presentation.filter {
@@ -731,10 +825,27 @@ impl WebRenderer {
             .map(|(i, view)| {
                 // Looking from within the scene: the view's picture over its whole buffer.
                 let size = (view.viewport[2].max(1) as u32, view.viewport[3].max(1) as u32);
+                let whole_rect = Rect { x: 0.0, y: 0.0, width: size.0 as f32, height: size.1 as f32 };
                 let whole = within.get(i).map(|picture| {
-                    let mut quad = Quad::screen(picture, Rect { x: 0.0, y: 0.0, width: size.0 as f32, height: size.1 as f32 }, size);
+                    let mut quad = Quad::screen(picture, whole_rect, size);
                     quad.srgb_encoded = true;
                     quad.opaque = true;
+                    quad.filter = filter;
+                    quad
+                });
+                // The diorama's picture of this view (premultiplied, faded and
+                // dimmed already) over the screen it eases with, then its pane
+                // at the diorama's share.
+                let diorama = targets.dioramas.get(i).filter(|_| pane.is_some()).map(|(_, picture)| {
+                    let mut quad = Quad::screen(picture, whole_rect, size);
+                    quad.srgb_encoded = true;
+                    quad.filter = wgpu::FilterMode::Nearest;
+                    quad
+                });
+                let pane_quad = pane.as_ref().map(|(texture, space)| {
+                    let mut quad = Quad::world(texture, view.proj * view.view, space.pane, space.pane_size);
+                    quad.srgb_encoded = true;
+                    quad.opacity = 1.0 - share;
                     quad.filter = filter;
                     quad
                 });
@@ -747,12 +858,15 @@ impl WebRenderer {
                         let mut quad = Quad::world(screen, view.proj * view.view, pose, Vec2::new(width, height));
                         quad.srgb_encoded = encoded;
                         quad.opaque = within.is_empty();
+                        quad.opacity = share;
                         quad.filter = filter;
                         if !encoded && graphics.renderer == xem_settings::Renderer::ExMachina {
                             quad.filter = wgpu::FilterMode::Nearest;
                         }
                         quad
                     }))
+                    .chain(diorama)
+                    .chain(pane_quad)
                     .chain(room.iter().chain(hud_quad.iter()).chain(panel_quad.iter()).map(|(texture, pose, size)| {
                         let mut quad = Quad::world(texture, view.proj * view.view, *pose, *size);
                         quad.srgb_encoded = true;
@@ -817,10 +931,13 @@ impl WebRenderer {
         Ok(pixels)
     }
 
-    /// Forgets the targets of an ended session.
+    /// Forgets the targets of an ended session (and its seat).
     pub fn release_xr(&mut self) {
         self.xr = None;
         self.xr_within = false;
+        self.xr_space = None;
+        self.xr_share = 1.0;
+        self.xr_seat = Seat::default();
     }
 
     fn xr_targets(&self, framebuffer: Option<WebGlFramebuffer>, size: (u32, u32)) -> XrTargets {
@@ -868,6 +985,7 @@ impl WebRenderer {
             layer: texture.create_view(&Default::default()),
             assembled: eye_texture(&self.gpu.device, size, self.compositor.format()),
             eyes: Vec::new(),
+            dioramas: Vec::new(),
         }
     }
 }

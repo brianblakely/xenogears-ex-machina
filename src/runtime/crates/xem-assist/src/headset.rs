@@ -28,13 +28,14 @@
 //! none) play as a pointer: the pinch clicks where it aims (as a touch's
 //! tap does) and a column of keys left of the screen presses what the
 //! swipes would (directions, OK, BACK, MENU, JUMP, the camera's turns).
-use crate::dispatch::{self, Aim, Out};
+use crate::dispatch::{self, Aim, Out, Pointed, WorldRay};
 use crate::gesture::{Frame, Gesture, Recognizer};
-use glam::{Quat, Vec3};
+use glam::{Mat4, Quat, Vec3};
 use serde::{Deserialize, Serialize};
 use xem_core::context::Context;
-use xem_core::field::Field;
+use xem_core::field::{Field, V3};
 use xem_core::menu::Targets;
+use xem_render::ps1::DioramaSpace;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PointerSource {
@@ -88,19 +89,53 @@ impl Quad {
 }
 
 /// The game's screen as a quad: the display pixels it spans (with the wider
-/// framing's sides).
+/// framing's sides), and the scale of the keys beside it
+/// ([`crate::draw::KEY_SIZE`] times it). While a diorama shows, the quad is
+/// its interface's pane, and `diorama` where the table lies.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Screen {
     pub quad: Quad,
     pub display: (f32, f32),
     pub side: f32,
+    pub keys: f32,
+    pub diorama: Option<DioramaSpace>,
 }
 
+/// How near a ray through a diorama an actor counts as pointed at (metres
+/// on the table, whatever its scale: a pointer's own steadiness).
+pub const ACTOR_REACH_METRES: f32 = 0.04;
+
 impl Screen {
+    /// A flat screen (not a diorama's pane) with keys of scale 1 beside it.
+    pub fn flat(quad: Quad, display: (f32, f32), side: f32) -> Screen {
+        Screen { quad, display, side, keys: 1.0, diorama: None }
+    }
+
+    /// The pane of a diorama as `space` places it, the keys beside its
+    /// edges as large as a screen's look from the seat (`seat`: the seat's
+    /// place in the room).
+    pub fn pane(space: DioramaSpace, seat: Vec3) -> Screen {
+        let (_, orientation, position) = space.pane.to_scale_rotation_translation();
+        let quad = Quad { pose: Pose { position, orientation }, size: (space.pane_size.x, space.pane_size.y) };
+        let edge = position + orientation * Vec3::new(space.pane_size.x / 2.0, 0.0, 0.0);
+        let keys = crate::draw::key_scale(edge.distance(seat));
+        Screen { quad, display: (space.display.x, space.display.y), side: 0.0, keys, diorama: Some(space) }
+    }
+
     /// The game screen pixel a ray meets.
     pub fn aim(&self, origin: Vec3, direction: Vec3) -> Option<(f32, f32)> {
         let ((u, v), _) = self.quad.hit(origin, direction)?;
         Some((u * (self.display.0 + 2.0 * self.side) - self.side, v * self.display.1))
+    }
+
+    /// What a ray in the room meets: the screen (or the diorama's pane),
+    /// else the diorama's table, where the ray's part inside the table's
+    /// volume becomes a ray in the game's world.
+    pub fn pointed(&self, origin: Vec3, direction: Vec3) -> Option<Pointed> {
+        if let Some(at) = self.aim(origin, direction) {
+            return Some(if self.diorama.is_some() { Pointed::Pane(at) } else { Pointed::Screen(at) });
+        }
+        world_ray(&self.diorama?, origin, direction).map(Pointed::World)
     }
 
     /// The room point of a game screen pixel.
@@ -109,6 +144,120 @@ impl Screen {
         let v = 0.5 - y / self.display.1;
         self.quad.pose.position + self.quad.pose.orientation * Vec3::new(u * self.quad.size.0, v * self.quad.size.1, 0.0)
     }
+}
+
+/// A ray in the room through a diorama's table: its part inside the
+/// table's volume (where the scene is drawn) as a ray in the game's world,
+/// if it meets the volume ahead.
+pub fn world_ray(space: &DioramaSpace, origin: Vec3, direction: Vec3) -> Option<WorldRay> {
+    let table = space.table_from_room();
+    let (o, d) = (table.transform_point3(origin), table.transform_vector3(direction));
+    let (min, max) = space.volume;
+    // The volume's slabs, axis by axis: where the ray is inside all three.
+    let (mut near, mut far) = (0.0f32, f32::INFINITY);
+    for axis in 0..3 {
+        if d[axis].abs() < 1e-9 {
+            if o[axis] < min[axis] || o[axis] > max[axis] {
+                return None;
+            }
+            continue;
+        }
+        let (a, b) = ((min[axis] - o[axis]) / d[axis], (max[axis] - o[axis]) / d[axis]);
+        near = near.max(a.min(b));
+        far = far.min(a.max(b));
+    }
+    if !(far > near) {
+        return None;
+    }
+    let world = space.world_from_room();
+    let start = world.transform_point3(origin + direction * near);
+    let end = world.transform_point3(origin + direction * far);
+    let v = |p: Vec3| V3::new(p.x, p.y, p.z);
+    Some(WorldRay { origin: v(start), direction: v(end - start), within: 1.0, reach: ACTOR_REACH_METRES / space.scale.max(f32::EPSILON) })
+}
+
+/// Where a seated player's view stands in the session's reference space:
+/// the screen, the diorama's table, the settings panel and the keys stand in
+/// front of it, and the head's turns are the head's from it (the Binaural
+/// listener). The reference's own origin at first and whenever the runtime
+/// moves the reference ([`reference_changed`]); the head's place, facing
+/// the head's way about the vertical, when the player recentres.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Seat {
+    pub pose: Mat4,
+}
+
+impl Default for Seat {
+    fn default() -> Self {
+        Seat { pose: Mat4::IDENTITY }
+    }
+}
+
+impl Seat {
+    /// The seat at the head: where it is, turned as it faces about the
+    /// vertical (its pitch and roll left out).
+    pub fn at(head: Pose) -> Seat {
+        let forward = head.forward();
+        let level = Vec3::new(forward.x, 0.0, forward.z);
+        let yaw = if level.length_squared() > 1e-8 { (-level.x).atan2(-level.z) } else { 0.0 };
+        Seat { pose: Mat4::from_rotation_translation(Quat::from_rotation_y(yaw), head.position) }
+    }
+
+    /// Its turn about the vertical.
+    pub fn orientation(&self) -> Quat {
+        self.pose.to_scale_rotation_translation().1
+    }
+
+    pub fn position(&self) -> Vec3 {
+        self.pose.w_axis.truncate()
+    }
+
+    /// A pose given in front of the seat (its space), in the room.
+    pub fn place(&self, local: Pose) -> Pose {
+        Pose { position: self.pose.transform_point3(local.position), orientation: self.orientation() * local.orientation }
+    }
+
+    /// An orientation in the room as the seat sees it (a head's turn from it).
+    pub fn relative(&self, orientation: Quat) -> Quat {
+        self.orientation().inverse() * orientation
+    }
+}
+
+/// What a moved reference or a recentring anchors again besides the seat:
+/// the view's diorama, whose table then takes the camera's point and
+/// heading at once, without easing from where it stood.
+pub trait Anchored {
+    fn anchor_again(&mut self);
+}
+
+impl Anchored for xem_render::ps1::GameView {
+    fn anchor_again(&mut self) {
+        self.recenter_diorama();
+    }
+}
+
+/// The runtime moved the session's reference space (OpenXR's
+/// `ReferenceSpaceChangePending`, WebXR's `reset`), the same on every host:
+/// the seat is the reference's origin again (the runtime recentred it on the
+/// head already), gestures in progress are cancelled (every hand opens again
+/// before the next), a control deck's captured stick is let go, two-hand
+/// scaling ends, and the view's diorama is anchored again ([`Anchored`]).
+pub fn reference_changed(headset: &mut Headset, scaling: &mut Scaling, seat: &mut Seat, view: &mut impl Anchored) {
+    headset.recognizer.cancel();
+    headset.arcade.release();
+    scaling.end();
+    *seat = Seat::default();
+    view.anchor_again();
+}
+
+/// The player's Recenter (an app action, the panel's button): the seat
+/// moves to the head (`head`, where the session tracks it), and the view's
+/// diorama is anchored again. Refused without a tracked head.
+pub fn recenter(seat: &mut Seat, head: Option<Pose>, view: &mut impl Anchored) -> Result<String, String> {
+    let head = head.ok_or("The head is not tracked: nothing to recenter on.")?;
+    *seat = Seat::at(head);
+    view.anchor_again();
+    Ok("The view is in front of you again.".into())
 }
 
 /// One headset frame's input.
@@ -195,10 +344,11 @@ pub struct Headset {
 }
 
 impl Headset {
-    /// The game screen pixel the chosen source aims at, if available.
+    /// What the chosen source aims at, if available: a pixel of the game's
+    /// screen (or of a diorama's pane), or a ray through the diorama.
     pub fn aim(&self, input: &Input, screen: &Screen) -> Aim {
         let (origin, direction) = ray(self.source, input)?;
-        screen.aim(origin, direction)
+        screen.pointed(origin, direction)
     }
 
     /// Any room quad the chosen source meets (the settings panel), with
@@ -385,12 +535,12 @@ impl Headset {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::synthetic::{THUMB_REST, right_hand};
 
     fn screen() -> Screen {
-        Screen { quad: Quad { pose: Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY }, size: (3.2, 2.24) }, display: (320.0, 224.0), side: 0.0 }
+        Screen::flat(Quad { pose: Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY }, size: (3.2, 2.24) }, (320.0, 224.0), 0.0)
     }
 
     fn head() -> Pose {
@@ -402,7 +552,7 @@ mod tests {
         let screen = screen();
         let input = Input { head: Some(head()), focused: true, ..Input::default() };
         let headset = Headset::default();
-        let aim = headset.aim(&input, &screen).unwrap();
+        let Some(Pointed::Screen(aim)) = headset.aim(&input, &screen) else { panic!("the screen's centre") };
         assert!((aim.0 - 160.0).abs() < 0.01 && (aim.1 - 112.0).abs() < 0.01, "{aim:?}");
         let point = screen.point((40.0, 200.0));
         let again = screen.aim(Vec3::ZERO, point.normalize()).unwrap();
@@ -598,6 +748,152 @@ mod tests {
             assert_eq!(scaling.scale != 1.0, scaled, "inspecting={inspecting}: scale {}", scaling.scale);
         }
     }
+
+    /// A level field camera at the world's origin looking along +z at the
+    /// floor point (0, 0, 1200) (world y down).
+    pub(crate) fn level_camera() -> xem_render::xem_gpu::Camera {
+        xem_render::xem_gpu::Camera {
+            axes: [[4096.0, 0.0, 0.0], [0.0, 4096.0, 0.0], [0.0, 0.0, 4096.0]],
+            translation: [0.0; 3],
+            target: [0.0, 0.0, 1200.0],
+            focus: 1200.0,
+            mode: xem_render::xem_gpu::CameraMode::Field,
+        }
+    }
+
+    /// The diorama of [`level_camera`]'s frame on `table` from `seat`.
+    pub(crate) fn diorama(table: &xem_render::ps1::Table, seat: Mat4) -> DioramaSpace {
+        DioramaSpace::first(&level_camera(), 256.0, glam::Vec2::new(320.0, 224.0), table, seat).expect("a camera that spans space")
+    }
+
+    #[test]
+    fn a_ray_through_the_table_becomes_the_worlds_and_one_at_the_pane_its_pixel() {
+        let table = xem_render::ps1::Table::default();
+        let space = diorama(&table, Mat4::IDENTITY);
+        let screen = Screen::pane(space, Vec3::ZERO);
+        let eye = Vec3::ZERO;
+        // The floor point (100, 0, 1300) as the table shows it: a ray at it
+        // reaches it in the world, within the ray's part inside the volume.
+        let goal = Vec3::new(100.0, 0.0, 1300.0);
+        let target = space.room_from_world.transform_point3(goal);
+        let Some(Pointed::World(ray)) = screen.pointed(eye, (target - eye).normalize()) else { panic!("through the table") };
+        let t = -ray.origin.y / ray.direction.y;
+        let at = Vec3::new(ray.origin.x + ray.direction.x * t, 0.0, ray.origin.z + ray.direction.z * t);
+        assert!(at.distance(goal) < 0.5 && (0.0..=ray.within).contains(&t), "{ray:?} meets the floor at {at} (t {t})");
+        assert!((ray.reach - ACTOR_REACH_METRES / space.scale).abs() < 1e-3, "four centimetres on the table: {} world units", ray.reach);
+        // The pane's centre is its picture's centre (a pane's pixel, which
+        // shows no floor), and a ray above it all meets nothing.
+        let middle = space.pane.transform_point3(Vec3::ZERO);
+        let Some(Pointed::Pane(pixel)) = screen.pointed(eye, (middle - eye).normalize()) else { panic!("on the pane") };
+        assert!((pixel.0 - 160.0).abs() < 0.01 && (pixel.1 - 112.0).abs() < 0.01, "{pixel:?}");
+        assert_eq!(screen.pointed(eye, Vec3::Y), None);
+        assert_eq!(Screen { diorama: None, ..screen }.pointed(eye, (target - eye).normalize()), None, "no table, no world");
+    }
+
+    #[test]
+    fn through_the_diorama_the_listener_hears_the_table_where_it_lies_from_the_head() {
+        // The Binaural presenter hears a direction of the game camera's view
+        // space through the listener's axes, then the head's (each applied as
+        // the axes' components, xem_core::binaural).
+        let apply = |axes: [[f32; 3]; 3], v: Vec3| Vec3::new(v.dot(Vec3::from(axes[0])), v.dot(Vec3::from(axes[1])), v.dot(Vec3::from(axes[2])));
+        let seat_pose = Pose { position: Vec3::new(0.1, 0.0, -0.05), orientation: Quat::from_rotation_y(0.4) };
+        let seat = Seat::at(seat_pose);
+        for tilt in [0.0f32, 30.0] {
+            let table = xem_render::ps1::Table { tilt: tilt.to_radians(), ..xem_render::ps1::Table::default() };
+            let space = DioramaSpace::first(&level_camera(), 256.0, glam::Vec2::new(320.0, 224.0), &table, seat.pose).unwrap();
+            let listener = space.listener_axes().unwrap();
+            let head = Quat::from_rotation_y(0.9) * Quat::from_rotation_x(-0.3);
+            let heard = xem_core::binaural::head_axes(seat.relative(head).to_array());
+            for world in [Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(-0.6, -0.2, 0.5).normalize()] {
+                // As heard: the camera's view of the direction (its camera is
+                // the identity), through the listener's axes, then the head's.
+                let got = apply(heard, apply(listener, world));
+                // Where it lies: the direction on the table in the room, in the
+                // head's own axes (right, down, forward).
+                let room = space.room_from_world.transform_vector3(world).normalize();
+                let local = head.inverse() * room;
+                let want = Vec3::new(local.x, -local.y, -local.z);
+                assert!((got - want).length() < 1e-4, "tilt {tilt}, {world}: heard {got}, lies {want}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_seat_stands_at_the_head_facing_its_way_about_the_vertical_only() {
+        let head = Pose { position: Vec3::new(0.3, 0.1, -0.2), orientation: Quat::from_rotation_y(0.7) * Quat::from_rotation_x(-0.4) * Quat::from_rotation_z(0.2) };
+        let seat = Seat::at(head);
+        assert!(seat.position().distance(head.position) < 1e-6);
+        let forward = seat.orientation() * Vec3::NEG_Z;
+        assert!(forward.y.abs() < 1e-6, "level: {forward}");
+        assert!((seat.orientation().angle_between(Quat::from_rotation_y(0.7))) < 1e-3, "the head's yaw, its pitch and roll left out");
+        // Things in front of it, and the head's turn from it.
+        let ahead = seat.place(Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY });
+        assert!(ahead.position.distance(head.position + Quat::from_rotation_y(0.7) * Vec3::new(0.0, 0.0, -2.5)) < 1e-5);
+        assert!(seat.relative(Quat::from_rotation_y(0.7)).angle_between(Quat::IDENTITY) < 1e-3, "facing as it does: ahead");
+        assert_eq!(Seat::default().pose, Mat4::IDENTITY);
+    }
+
+    /// Counts the times a view was anchored again.
+    #[derive(Default)]
+    struct View(u32);
+
+    impl Anchored for View {
+        fn anchor_again(&mut self) {
+            self.0 += 1;
+        }
+    }
+
+    #[test]
+    fn a_moved_reference_cancels_gestures_lets_the_stick_go_ends_scaling_and_resets_the_seat() {
+        use crate::synthetic::{Runtime, Step, fist, half, in_front, left, open, place, pinch, whole_pinch};
+        let mut headset = Headset::default();
+        let mut scaling = Scaling::default();
+        let mut time = 0.0;
+        let mut step = |headset: &mut Headset, step: Step, ui: Context| {
+            let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+            let signals = step.frame(time, hands, Vec3::X, Runtime::HORIZON);
+            time += 1.0 / 72.0;
+            let input = Input { time, head: Some(head()), hands, pinch: signals.pinch, micro: signals.micro, micro_capable: signals.micro_capable, focused: true, ..Input::default() };
+            headset.update(&input, &screen(), ui, None, None).outs
+        };
+        let at = |x: f32, hand| place(hand, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
+        let both = |l, r| Step::of([Some(at(-0.12, left(l))), Some(at(0.12, r))]);
+        // A grab half closed, then the reference moves: the grab never fires.
+        for shape in [open(), open(), half()] {
+            step(&mut headset, both(open(), shape), Context::Walk);
+        }
+        let mut seat = Seat::at(Pose { position: Vec3::new(0.2, 0.0, 0.1), orientation: Quat::from_rotation_y(1.0) });
+        let mut view = View::default();
+        reference_changed(&mut headset, &mut scaling, &mut seat, &mut view);
+        assert_eq!((seat, view.0), (Seat::default(), 1), "the seat is the reference's origin; the view anchored again");
+        assert!(step(&mut headset, both(open(), fist()), Context::Walk).is_empty(), "the grab in progress is cancelled");
+        // Two-hand scaling under way ends.
+        for _ in 0..3 {
+            step(&mut headset, both(open(), open()), Context::Walk);
+        }
+        let outs: Vec<Out> = [both(whole_pinch(), whole_pinch()), Step::of([Some(at(-0.2, left(whole_pinch()))), Some(at(0.2, whole_pinch()))])]
+            .into_iter().flat_map(|hands| step(&mut headset, hands, Context::Walk)).collect();
+        carry(outs, &mut Ignored, &mut scaling);
+        assert!(scaling.scaling(), "scaling");
+        reference_changed(&mut headset, &mut scaling, &mut seat, &mut view);
+        assert!(!scaling.scaling() && scaling.scale > 1.0, "ended where it reached: {scaling:?}");
+        // A bout's deck: a pinch captures its stick; the move lets it go.
+        let bout = Context::Arena { state: 1 };
+        for _ in 0..3 {
+            step(&mut headset, both(open(), open()), bout);
+        }
+        for (shape, pinching) in [(pinch(), true), (pinch(), true), (open(), false)] {
+            step(&mut headset, Step { pinch: [false, pinching], ..both(open(), shape) }, bout);
+        }
+        assert!(headset.arcade.steering(), "the pinch captured the stick");
+        reference_changed(&mut headset, &mut scaling, &mut seat, &mut view);
+        assert!(!headset.arcade.steering(), "the move let the stick go");
+        // Recentring needs a tracked head.
+        assert!(recenter(&mut seat, None, &mut view).is_err());
+        assert_eq!(view.0, 3);
+        recenter(&mut seat, Some(Pose { position: Vec3::new(0.0, 0.0, 0.5), orientation: Quat::from_rotation_y(-0.5) }), &mut view).unwrap();
+        assert!(seat.position().distance(Vec3::new(0.0, 0.0, 0.5)) < 1e-6 && view.0 == 4);
+    }
 }
 
 /// What carries a headset's effects out on a host: the command layer and
@@ -628,6 +924,18 @@ pub struct Scaling {
 impl Default for Scaling {
     fn default() -> Self {
         Self { scale: 1.0, start: None }
+    }
+}
+
+impl Scaling {
+    /// Whether a two-hand scaling is under way.
+    pub fn scaling(&self) -> bool {
+        self.start.is_some()
+    }
+
+    /// Ends the scaling under way at the scale it reached.
+    pub fn end(&mut self) {
+        self.start = None;
     }
 }
 

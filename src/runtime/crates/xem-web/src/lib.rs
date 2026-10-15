@@ -151,6 +151,10 @@ pub struct XemApp {
     xr_select: Option<usize>,
     /// The hands' standard pinches recognised in the session (for tests).
     xr_pinches: u32,
+    /// The session's reference space resets (the runtime's recentring) and
+    /// the player's Recenter actions.
+    xr_resets: u32,
+    xr_recenters: u32,
     /// What a headset's control deck holds.
     xr_held: std::collections::BTreeSet<xem_core::action::GameAction>,
     /// Where the pointer last met the panel in the session (u, v), and
@@ -273,6 +277,8 @@ impl XemApp {
             xr_gestures: Vec::new(),
             xr_select: None,
             xr_pinches: 0,
+            xr_resets: 0,
+            xr_recenters: 0,
             xr_held: Default::default(),
             xr_panel_hit: None,
             xr_panel_click: None,
@@ -357,6 +363,23 @@ impl XemApp {
     /// floats, column major; `viewports` its layer rectangle (x, y from the
     /// bottom, width, height).
     pub fn xr_frame(&mut self, now: f64, layer: web_sys::XrWebGlLayer, matrices: &[f32], viewports: &[i32]) -> Result<(), JsValue> {
+        // The panel's Recenter places this session's view (the page's
+        // operations take the rest of the app's requests).
+        let recentring = {
+            let mut requests = self.app_requests.borrow_mut();
+            let before = requests.len();
+            requests.retain(|request| *request != AppRequest::Action(xem_settings::AppAction::Recenter));
+            requests.len() != before
+        };
+        if recentring {
+            let outcome = self.recenter();
+            if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
+                match outcome {
+                    Ok(text) => panel.set_operation_status(&text),
+                    Err(error) => panel.set_operation_error(&error),
+                }
+            }
+        }
         self.assist_xr();
         self.step(now)?;
         let eye_height = viewports.chunks_exact(4).map(|v| v[3]).max().unwrap_or(0).max(0) as u32;
@@ -400,9 +423,10 @@ impl XemApp {
         use xem_render::glam::{Quat, Vec3};
         const HAND: usize = 8 + 1 + 75 + 2;
         // In the session, the Controls section lists first-person
-        // inspection's headset controls.
+        // inspection's headset controls, and Graphics offers Recenter.
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
             panel.set_first_person_headset(true);
+            panel.set_in_headset(true);
         }
         if data.len() < 8 + 2 * HAND {
             self.xr_input = None;
@@ -428,11 +452,41 @@ impl XemApp {
         if (0..2).contains(&select) {
             self.xr_select = Some(select as usize);
         }
-        // The Binaural listener turns with the head (presentation only).
+        // The Binaural listener turns with the head as the seat sees it
+        // (presentation only).
+        let seat = self.renderer.as_ref().map(|r| r.xr_seat).unwrap_or_default();
         if let (Some(session), Some(head)) = (self.session.as_mut(), input.head) {
-            session.set_head(Some(xem_core::binaural::head_axes(head.orientation.to_array())));
+            session.set_head(Some(xem_core::binaural::head_axes(seat.relative(head.orientation).to_array())));
         }
         self.xr_input = Some(input);
+    }
+
+    /// The runtime reset the session's reference space (its `reset` event:
+    /// the system recentred it), as OpenXR's hosts take theirs
+    /// (`xem_assist::headset::reference_changed`).
+    pub fn xr_reference_reset(&mut self) {
+        if let Some(renderer) = self.renderer.as_mut() {
+            let mut seat = renderer.xr_seat;
+            xem_assist::headset::reference_changed(&mut self.headset, &mut self.xr_scaling, &mut seat, renderer.view_mut());
+            renderer.xr_seat = seat;
+        }
+        self.xr_resets += 1;
+    }
+
+    /// The Recenter action: in a session, the view placed in front of the
+    /// head as it is now; refused out of one.
+    pub fn xr_recenter(&mut self) -> Result<String, JsValue> {
+        self.recenter().map_err(error)
+    }
+
+    fn recenter(&mut self) -> Result<String, String> {
+        let head = self.xr_input.as_ref().and_then(|input| input.head).ok_or("Recentering places a headset's view: enter VR first.")?;
+        let renderer = self.renderer.as_mut().ok_or("no renderer")?;
+        let mut seat = renderer.xr_seat;
+        let text = xem_assist::headset::recenter(&mut seat, Some(head), renderer.view_mut())?;
+        renderer.xr_seat = seat;
+        self.xr_recenters += 1;
+        Ok(text)
     }
 
     /// RGBA bytes at `points` (x, y pairs, layer pixels from the bottom left)
@@ -457,6 +511,7 @@ impl XemApp {
             renderer.release_xr();
             if let Some(panel) = renderer.panel() {
                 panel.set_first_person_headset(false);
+                panel.set_in_headset(false);
             }
         }
         self.display_dirty = true;
@@ -487,7 +542,7 @@ impl XemApp {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
             // A tap on the paused game resumes it, as a click does.
             if self.input.unpause() { continue; }
-            let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
+            let outs = xem_assist::dispatch::tap_at(xem_assist::dispatch::Pointed::Screen(at), ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
             xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input, inspect: false, auto_advance: false }, &mut self.xr_scaling);
         }
         for key in std::mem::take(&mut self.quantity) {
@@ -497,7 +552,7 @@ impl XemApp {
             Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
             _ => None,
         };
-        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None);
+        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         let held = self.deck.held();
@@ -578,11 +633,12 @@ impl XemApp {
                 Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
                 _ => None,
             };
-            let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref()) } else { vec![] };
+            let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref(), screen.diorama.is_some()) } else { vec![] };
             renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui));
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
+            let seat = renderer.xr_seat;
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
-                let quad = render::xr_panel_quad(panel.size());
+                let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), panel.size());
                 // A controller's select clicks where that controller points;
                 // otherwise the pointer source aims and a pinch clicks.
                 let selected_ray = self.xr_select.and_then(|hand| input.rays[hand]);
@@ -1619,6 +1675,25 @@ impl XemApp {
                 // drawn from within the scene through each view.
                 "inspecting": self.first_person(),
                 "within": self.renderer.as_ref().is_some_and(|r| r.xr_within),
+                // The diorama: whether the last immersive frame showed it, the
+                // screen's share of the view (1 the screen alone), and where it
+                // lay: the room from the game's world (column major) and metres
+                // per world unit; the seat (its place and turn, radians to the
+                // left) and how often the runtime reset the reference space and
+                // the player recentred.
+                "diorama": self.renderer.as_ref().is_some_and(|r| r.xr_space.is_some()),
+                "share": self.renderer.as_ref().map_or(1.0, |r| r.xr_share),
+                "space": self.renderer.as_ref().and_then(|r| r.xr_space).map(|space| json!({
+                    "roomFromWorld": space.room_from_world.to_cols_array(),
+                    "scale": space.scale,
+                    "pane": space.pane.w_axis.truncate().to_array(),
+                })),
+                "seat": self.renderer.as_ref().map(|r| {
+                    let (at, forward) = (r.xr_seat.position(), r.xr_seat.orientation() * xem_render::glam::Vec3::NEG_Z);
+                    json!({"position": at.to_array(), "yaw": (-forward.x).atan2(-forward.z)})
+                }),
+                "resets": self.xr_resets,
+                "recenters": self.xr_recenters,
                 "panelHit": self.xr_panel_hit,
                 "panelClick": self.xr_panel_click,
                 // The panel's logical size (where its controls are).

@@ -342,6 +342,9 @@ async function enterVr() {
   const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: false, framebufferScaleFactor });
   session.updateRenderState({ baseLayer: layer });
   const space = await session.requestReferenceSpace('local');
+  // The runtime recentred the space (the system's recentring): everything
+  // stands in front of its new origin again, as OpenXR's hosts do it.
+  space.addEventListener('reset', () => app.xr_reference_reset());
   page.xr = { session, layer, space, frames: 0, views: 0, select: -1, pinching: [false, false], pinched: [false, false] };
   vrButton.textContent = 'Exit VR';
   // A controller's select (trigger) clicks on the settings panel. A hand's
@@ -747,6 +750,8 @@ async function executeAppOperation(request) {
       operationStatus(granted ? 'Browser persistence granted. Keep exported backups.' : 'Browser persistence was not granted. Export backups.');
       return { granted };
     }
+    // The headset's view in front of the head again (in a session).
+    case 'Recenter': operationStatus(app.xr_recenter()); break;
     default: throw new Error(`Unknown app operation ${action}`);
   }
   return { ok: true };

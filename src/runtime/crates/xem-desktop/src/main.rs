@@ -36,6 +36,8 @@ struct Options {
     xr_capture_at: Vec<u64>,
     /// Headset tests: scripted hand gestures (headset frame, gesture name).
     xr_hands: Vec<(u64, String)>,
+    /// Headset tests: Recenter at these headset frames, as the app action does.
+    xr_recenter_at: Vec<u64>,
     /// Agents' commands on stdin while the game plays (`--control`).
     control: bool,
 }
@@ -55,6 +57,7 @@ fn options() -> Result<Options, String> {
         xr_capture: None,
         xr_capture_at: Vec::new(),
         xr_hands: Vec::new(),
+        xr_recenter_at: Vec::new(),
         control: false,
     };
     let mut args = std::env::args().skip(1);
@@ -94,6 +97,12 @@ fn options() -> Result<Options, String> {
                     options.xr_capture_at.push(item.parse().map_err(|_| format!("bad --xr-capture-at frame {item:?}"))?);
                 }
             }
+            "--xr-recenter-at" => {
+                let value = args.next().ok_or("--xr-recenter-at needs FRAME,...")?;
+                for item in value.split(',') {
+                    options.xr_recenter_at.push(item.parse().map_err(|_| format!("bad --xr-recenter-at frame {item:?}"))?);
+                }
+            }
             "--xr-hands" => {
                 let value = args.next().ok_or("--xr-hands needs FRAME:GESTURE,...")?;
                 for item in value.split(',') {
@@ -107,7 +116,7 @@ fn options() -> Result<Options, String> {
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...]]] [--show-settings] \
+                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...]]] [--show-settings] \
                      [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
@@ -117,7 +126,10 @@ fn options() -> Result<Options, String> {
                      in a field the underhand grab (or the right stick's click released alone) looks around \
                      from the character's eyes, the head looking and the right stick turning in steps; \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
-                     prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking; \
+                     prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel, NAME@panel:X/Y at the settings panel's \
+                     logical pixel, NAME@world:X/Y/Z at that point of the game's world on the diorama's table) at headset frames, \
+                     for tests without hand tracking; --xr-recenter-at recenters the view at those headset frames \
+                     (as the panel's Recenter does); \
                      --xr-capture-at saves both eyes at those headset frames (looking from within the scene, \
                      each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
@@ -265,6 +277,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
         capture: options.xr_capture.clone(),
         capture_at: options.xr_capture_at.clone(),
         hands: options.xr_hands.clone(),
+        recenter_at: options.xr_recenter_at.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,
     };

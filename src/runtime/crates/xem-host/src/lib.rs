@@ -994,7 +994,7 @@ impl View {
                 let Some(at) = self.picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
                 // A tap on the paused game resumes it, as a click does.
                 if self.player.unpause() { continue; }
-                match xem_assist::dispatch::tap_at(at, ui, field.as_ref(), targets.as_ref()) {
+                match xem_assist::dispatch::tap_at(xem_assist::dispatch::Pointed::Screen(at), ui, field.as_ref(), targets.as_ref()) {
                     Some(xem_assist::dispatch::Out::Command { command }) => {
                         let _ = game.command(&command);
                     }
@@ -1008,7 +1008,7 @@ impl View {
             let _ = game.command(&serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
         }
         let destination = if inspecting { None } else { game.destination() };
-        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None);
+        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
         self.player.touch = self.deck.actions();
     }
 
@@ -1123,10 +1123,12 @@ impl View {
         if let Some(picture) = self.picture {
             let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
             for mark in &self.marks {
+                // A flat picture's marks lie on its screen.
+                let xem_assist::overlay::Place::Screen { centre, x, y } = mark.place else { continue };
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
-                let centre = picture.from_screen(mark.centre);
-                glass.push((view, Some((centre, (mark.x.0 * scale, mark.x.1 * scale), (mark.y.0 * scale, mark.y.1 * scale))), None));
+                let centre = picture.from_screen(centre);
+                glass.push((view, Some((centre, (x.0 * scale, x.1 * scale), (y.0 * scale, y.1 * scale))), None));
             }
         }
         if touch_shown && !visible {

@@ -499,6 +499,67 @@ fn graphics_choices_go_through_the_settings_service() {
 }
 
 #[test]
+fn a_headset_shows_the_screen_or_the_diorama_and_recenters_through_the_shared_services() {
+    use xem_settings::{AppAction, AppRequest, DioramaTurns, GraphicsProfile, HeadsetView, SettingChange, XrScreen};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    // Tall enough that every row of the section is made.
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 4000), 1.0).unwrap();
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    section(&mut ui, "Graphics", 1);
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    assert!(shown(&ui, "Headset view") && shown(&ui, "Headset screen distance in centimetres"), "the screen by default");
+    assert!(!shown(&ui, "Diorama scale") && !shown(&ui, "Reset diorama") && !shown(&ui, "Recenter"), "no diorama rows, no Recenter out of a headset");
+    ui.component().invoke_graphics_edited("xr-view".into(), 1);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.xr.view, HeadsetView::Diorama);
+    for label in ["Diorama scale", "Diorama table height from the head in centimetres", "Diorama table distance in centimetres", "Diorama table tilt", "Diorama table turns", "Reset diorama"] {
+        assert!(shown(&ui, label), "the diorama's {label}");
+    }
+    assert!(shown(&ui, "Headset screen distance in centimetres"), "the screen it gives way to keeps its rows");
+    assert!(!shown(&ui, "Passthrough") && !shown(&ui, "Recenter"), "passthrough only where offered, Recenter in a headset");
+    // Every row through the settings service, within its bounds.
+    for (key, value) in [("xr-scale", 250), ("xr-height", -60), ("xr-table-distance", 90), ("xr-tilt", 15), ("xr-turns", 2)] {
+        ui.component().invoke_graphics_edited(key.into(), value);
+    }
+    let xr = settings.borrow().settings().graphics.xr;
+    assert_eq!((xr.diorama_scale, xr.diorama_height_cm, xr.diorama_distance_cm, xr.diorama_tilt_deg, xr.diorama_turns), (250, -60, 90, 15, DioramaTurns::Fixed));
+    ui.component().invoke_graphics_edited("xr-scale".into(), 401);
+    assert_eq!(settings.borrow().settings().graphics.xr.diorama_scale, 250, "beyond 400% is refused");
+    assert_eq!(ui.component().get_gfx_xr_scale(), 250, "and the panel shows the kept scale");
+    // The note: HD-2D's effects are not drawn in the diorama.
+    assert_eq!(ui.component().get_gfx_xr_note(), "", "Modern has none to leave out");
+    ui.component().invoke_graphics_edited("profile".into(), 1);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.profile, GraphicsProfile::Hd2d);
+    assert!(ui.component().get_gfx_xr_note().contains("does not draw"), "{}", ui.component().get_gfx_xr_note());
+    // Reset diorama: its size, place and turns, the view kept.
+    press(&ui, &element(&ui, "Reset diorama", AccessibleRole::Button));
+    assert_eq!(settings.borrow().settings().graphics.xr, XrScreen { view: HeadsetView::Diorama, ..XrScreen::default() });
+    // In a headset: Recenter is an app request, and passthrough a row where offered.
+    ui.set_in_headset(true);
+    ui.set_passthrough_offered(true);
+    ui.update().unwrap();
+    press(&ui, &element(&ui, "Recenter", AccessibleRole::Button));
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::Recenter)]);
+    press(&ui, &element(&ui, "Passthrough", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().graphics.xr.passthrough);
+    // The screen again: Recenter stays (it places the screen too).
+    ui.component().invoke_graphics_edited("xr-view".into(), 0);
+    ui.update().unwrap();
+    assert!(!shown(&ui, "Diorama scale") && shown(&ui, "Recenter"));
+    assert!(acks.borrow().iter().all(|change| matches!(change, SettingChange::Graphics(_))));
+}
+
+#[test]
 fn quit_asks_first_and_fullscreen_is_a_setting_where_hosts_offer_them() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));

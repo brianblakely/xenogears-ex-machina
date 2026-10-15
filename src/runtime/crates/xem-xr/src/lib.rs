@@ -387,7 +387,10 @@ pub enum SessionEvent {
     InstanceLossPending,
     EventsLost(u32),
     InteractionProfileChanged,
-    ReferenceSpaceChangePending,
+    /// The runtime moves the session's reference space (LOCAL: a recentring,
+    /// the system's or `monado-ctl -c`'s) at `time` (nanoseconds): what was
+    /// placed in it moves with it.
+    ReferenceSpaceChangePending { time: i64 },
 }
 
 /// One eye's view at a frame's predicted display time.
@@ -659,8 +662,11 @@ impl XrSession {
                 Event::InteractionProfileChanged(_) => {
                     events.push(SessionEvent::InteractionProfileChanged);
                 }
-                Event::ReferenceSpaceChangePending(_) => {
-                    events.push(SessionEvent::ReferenceSpaceChangePending);
+                // Only the space the session places everything in.
+                Event::ReferenceSpaceChangePending(change)
+                    if change.session() == self.session.as_raw() && change.reference_space_type() == xr::ReferenceSpaceType::LOCAL =>
+                {
+                    events.push(SessionEvent::ReferenceSpaceChangePending { time: change.change_time().as_nanos() });
                 }
                 _ => {}
             }

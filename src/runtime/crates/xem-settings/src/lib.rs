@@ -14,7 +14,7 @@ pub mod controls;
 pub mod graphics;
 pub mod look;
 pub mod player;
-pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
+pub use graphics::{DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 /// The platforming areas whose random battles NotWhilePlatforming turns off.

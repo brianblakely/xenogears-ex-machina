@@ -79,6 +79,25 @@ pub fn headset_movie_output(width: f32, distance: f32, eye: u32, fov: [f32; 4]) 
     (across, across)
 }
 
+/// What a headset shows as the settings choose it (`Graphics::xr`): the
+/// screen, or the diorama on its table as placed there.
+pub fn xr_view(xr: &xem_settings::XrScreen) -> XrView {
+    match xr.view {
+        xem_settings::HeadsetView::Screen => XrView::Screen,
+        xem_settings::HeadsetView::Diorama => XrView::Diorama(super::Table {
+            scale: f32::from(xr.diorama_scale) / 100.0,
+            height: f32::from(xr.diorama_height_cm) / 100.0,
+            distance: f32::from(xr.diorama_distance_cm) / 100.0,
+            tilt: f32::from(xr.diorama_tilt_deg).to_radians(),
+            turns: match xr.diorama_turns {
+                xem_settings::DioramaTurns::Smooth => super::Turns::Smooth,
+                xem_settings::DioramaTurns::Snap => super::Turns::Snap,
+                xem_settings::DioramaTurns::Fixed => super::Turns::Fixed,
+            },
+        }),
+    }
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
@@ -581,10 +600,24 @@ impl GameView {
     /// headset's head, which the session turns the listener by once more
     /// (`Session::set_head`): in a headset they are level on the view's
     /// heading (the head does the pitching), the base its eyes turn from.
+    /// While the diorama shows, the seat's axes through the table
+    /// ([`super::DioramaSpace::listener_axes`]): the head turns from the
+    /// seat, whose forward the table's heading and tilt take elsewhere in
+    /// the game's world.
     pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
+        if self.first_person.is_none() && let Some(space) = self.diorama.space().filter(|_| self.diorama_scene()) {
+            return space.listener_axes();
+        }
         let headset = self.headset;
         let base = self.base(headset)?;
         Some(base.axes(if headset { 0.0 } else { base.pitch }))
+    }
+
+    /// The diorama's table takes the camera's point and heading at once at
+    /// the next presentation, without easing there (a headset recentred, or
+    /// its runtime moved the reference space).
+    pub fn recenter_diorama(&mut self) {
+        self.diorama.recenter();
     }
 
     /// How far the first-person view has turned from the heading it began

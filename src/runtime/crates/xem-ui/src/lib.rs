@@ -12,8 +12,8 @@ use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 use xem_settings::{
-    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
-    GraphicsProfile, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
+    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, DioramaTurns, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
+    GraphicsProfile, HeadsetView, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
     GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS, TextSpeed, EncounterRate,
 };
 
@@ -264,6 +264,10 @@ impl SettingsUi {
             let f = f.clone();
             move || f.borrow_mut()(AppRequest::Action(AppAction::Reset))
         });
+        self.panel.on_xr_recenter_requested({
+            let f = f.clone();
+            move || f.borrow_mut()(AppRequest::Action(AppAction::Recenter))
+        });
         self.panel.on_app_action_requested({
             let f = f.clone();
             move |index| {
@@ -330,6 +334,18 @@ impl SettingsUi {
     /// as inspection's toggles, and their right stick as its look.
     pub fn set_first_person_headset(&self, headset: bool) {
         self.panel.set_first_person_headset(headset);
+    }
+
+    /// Whether the panel shows in a headset: Graphics' headset card offers
+    /// Recenter (the view placed in front of the head again).
+    pub fn set_in_headset(&self, headset: bool) {
+        self.panel.set_in_headset(headset);
+    }
+
+    /// Whether the headset offers passthrough: the diorama's Passthrough
+    /// row shows.
+    pub fn set_passthrough_offered(&self, offered: bool) {
+        self.panel.set_xr_passthrough_offered(offered);
     }
     pub fn text_editor_focused(&self) -> bool {
         self.panel.get_text_editor_focused()
@@ -420,9 +436,30 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "xr-distance" => next.xr.distance_cm = u16::try_from(value).ok()?,
         "xr-width" => next.xr.width_cm = u16::try_from(value).ok()?,
         "xr-dof" => next.xr.depth_of_field = value != 0,
+        "xr-view" => next.xr.view = *HEADSET_VIEWS.get(index?)?,
+        "xr-scale" => next.xr.diorama_scale = u16::try_from(value).ok()?,
+        "xr-height" => next.xr.diorama_height_cm = i16::try_from(value).ok()?,
+        "xr-table-distance" => next.xr.diorama_distance_cm = u16::try_from(value).ok()?,
+        "xr-tilt" => next.xr.diorama_tilt_deg = u8::try_from(value).ok()?,
+        "xr-turns" => next.xr.diorama_turns = *DIORAMA_TURNS.get(index?)?,
+        "xr-passthrough" => next.xr.passthrough = value != 0,
+        "xr-diorama-reset" => next.xr = next.xr.diorama_reset(),
         _ => return None,
     }
     Some(next)
+}
+
+const HEADSET_VIEWS: [HeadsetView; 2] = [HeadsetView::Screen, HeadsetView::Diorama];
+const DIORAMA_TURNS: [DioramaTurns; 3] = [DioramaTurns::Smooth, DioramaTurns::Snap, DioramaTurns::Fixed];
+
+/// What the headset card says of the diorama: that it leaves out the
+/// profile's HD-2D effects (the screen it gives way to keeps them).
+fn diorama_note(graphics: &Graphics) -> &'static str {
+    if graphics.xr.view == HeadsetView::Diorama && graphics.headset_effects() {
+        "The diorama does not draw the profile's HD-2D effects; the screen it gives way to keeps them."
+    } else {
+        ""
+    }
 }
 
 fn index_of<T: PartialEq>(options: &[T], value: &T) -> i32 {
@@ -466,6 +503,14 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_xr_distance(i32::from(graphics.xr.distance_cm));
     panel.set_gfx_xr_width(i32::from(graphics.xr.width_cm));
     panel.set_gfx_xr_dof(graphics.xr.depth_of_field);
+    panel.set_gfx_xr_view(index_of(&HEADSET_VIEWS, &graphics.xr.view));
+    panel.set_gfx_xr_scale(i32::from(graphics.xr.diorama_scale));
+    panel.set_gfx_xr_height(i32::from(graphics.xr.diorama_height_cm));
+    panel.set_gfx_xr_table_distance(i32::from(graphics.xr.diorama_distance_cm));
+    panel.set_gfx_xr_tilt(i32::from(graphics.xr.diorama_tilt_deg));
+    panel.set_gfx_xr_turns(index_of(&DIORAMA_TURNS, &graphics.xr.diorama_turns));
+    panel.set_gfx_xr_passthrough(graphics.xr.passthrough);
+    panel.set_gfx_xr_note(diorama_note(graphics).into());
     panel.set_pause_on_focus_loss(settings.pause_on_focus_loss);
     panel.set_fast_forward_rate(index_of(&FAST_FORWARD_RATES, &settings.fast_forward_rate));
     panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);

@@ -11,6 +11,9 @@ pub enum AppAction {
     ExportState, ImportState, ExportCard1, ImportCard1, ExportCard2, ImportCard2,
     ExportSettings, ImportSettings, RetryStorage, RequestPersistence, ImportBios,
     ToggleFps, TogglePauseOnFocusLoss, ToggleAutoAdvance, Reset,
+    /// A headset's view placed again in front of the head as it is now
+    /// (where it stands, turned as it faces about the vertical).
+    Recenter,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -19,7 +22,7 @@ pub enum AppRequest {
     Rewind(bool),
     UiRewind(bool),
 }
-pub const APP_ACTIONS: [(AppAction, &str); 27] = [
+pub const APP_ACTIONS: [(AppAction, &str); 28] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
@@ -40,6 +43,7 @@ pub const APP_ACTIONS: [(AppAction, &str); 27] = [
     (AppAction::TogglePauseOnFocusLoss, "Toggle pause on focus loss"),
     (AppAction::ToggleAutoAdvance, "Toggle auto-advance dialogue"),
     (AppAction::Reset, "Reset"),
+    (AppAction::Recenter, "Recenter headset view"),
 ];
 pub const PAD_NAMES: [&str; 16] = ["South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right"];
 

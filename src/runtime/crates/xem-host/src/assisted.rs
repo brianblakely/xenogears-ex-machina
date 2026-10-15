@@ -7,7 +7,7 @@
 use crate::Game;
 use xem_assist::draw::{Placed, WIDGET_PIXELS};
 use xem_assist::gesture::{Gesture, JOINTS, Micro, Swipe};
-use xem_assist::headset::{Carry, Headset, Input, PointerSource, Pose, Scaling, Screen};
+use xem_assist::headset::{Carry, Headset, Input, PointerSource, Pose, Scaling, Screen, Seat};
 use xem_assist::overlay;
 use xem_render::glass::{self, Style, Widget};
 use xem_render::ps1::GameView;
@@ -106,6 +106,8 @@ pub struct Assisted {
     pub headset: Headset,
     pub atlas: glass::Atlas,
     pub scaling: Scaling,
+    /// Where everything stands in front of the player.
+    pub seat: Seat,
     /// The last frame's gestures, for the frame log.
     pub gestures: Vec<Gesture>,
     /// App operations the gestures asked for (AUTO), for the host to carry
@@ -159,7 +161,7 @@ impl Assisted {
         let aim = self.headset.aim(input, screen);
         let targets = game.targets();
         let destination = if inspecting { None } else { game.destination() };
-        let marks = overlay::marks(ui, aim, field.as_ref(), destination, targets.as_ref());
+        let marks = overlay::marks(ui, aim, field.as_ref(), destination, targets.as_ref(), screen.diorama.is_some());
         xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui))
     }
 

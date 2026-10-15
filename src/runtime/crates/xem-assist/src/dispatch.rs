@@ -20,7 +20,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use xem_core::action::GameAction;
 use xem_core::context::Context;
-use xem_core::field::{Field, Reach};
+use xem_core::field::{Field, Reach, V3};
 use xem_core::menu::{Targets, ring_slot};
 
 /// What a gesture does.
@@ -52,9 +52,46 @@ pub enum Out {
     ToggleAutoAdvance,
 }
 
-/// The screen pixels (320x224) the active pointer (eye gaze, head or a
-/// hand's ray) meets on the game's picture, if it does.
-pub type Aim = Option<(f32, f32)>;
+/// Where the active pointer (eye gaze, head or a hand's ray) meets the
+/// game, if it does.
+pub type Aim = Option<Pointed>;
+
+/// What a pointer meets.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Pointed {
+    /// A pixel (320x224, with the wider framing's sides) of the game's
+    /// picture: the floor and the actors are where the game's camera shows
+    /// them there.
+    Screen((f32, f32)),
+    /// A pixel of the game's interface alone (a diorama's pane): its
+    /// windows, lists and choices, with no scene under it.
+    Pane((f32, f32)),
+    /// A ray through a diorama's table, in the game's world.
+    World(WorldRay),
+}
+
+impl Pointed {
+    /// The pixel of the picture or the pane pointed at.
+    pub fn screen(self) -> Option<(f32, f32)> {
+        match self {
+            Pointed::Screen(at) | Pointed::Pane(at) => Some(at),
+            Pointed::World(_) => None,
+        }
+    }
+}
+
+/// A ray through a diorama in the game's world (world units, y down): its
+/// part inside the table's volume, from `origin` to `within` lengths of
+/// `direction` (the scene is drawn there only), and how near it an actor
+/// counts as pointed at (`reach` world units: a few centimetres on the
+/// table, whatever its scale).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WorldRay {
+    pub origin: V3,
+    pub direction: V3,
+    pub within: f32,
+    pub reach: f32,
+}
 
 /// Screen pixels within which an actor counts as pointed at.
 const ACTOR_REACH: f32 = 18.0;
@@ -87,16 +124,16 @@ pub fn dispatch(gestures: &[Gesture], ui: Context, aim: Aim, field: Option<&Fiel
     out
 }
 
-/// A touch screen's tap (or a click that stands for one) on the picture at
-/// screen pixel `at`: walking, an actor is approached and talked to, the
-/// floor walked to (a tap is both the pointer's pinch and its tap there);
-/// an entry of a menu, a choice or a battle is chosen ([`choose`]); a
-/// dialogue advances. Elsewhere the deck's controls play.
-pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
+/// A touch screen's tap (or a click that stands for one, or a headset's
+/// pointer pinching) where `at` points: walking, an actor is approached and
+/// talked to, the floor walked to (a tap is both the pointer's pinch and
+/// its tap there); an entry of a menu, a choice or a battle is chosen
+/// ([`choose`]); a dialogue advances. Elsewhere the deck's controls play.
+pub fn tap_at(at: Pointed, ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
     match ui {
         Context::Walk => {
             let field = field?;
-            if let Some(actor) = field.actor_at(at, ACTOR_REACH) {
+            if let Some(actor) = actor_pointed(field, at) {
                 return Some(Out::Command { command: json!({"cmd": "interact", "actor": actor}) });
             }
             pinch(ui, Some(at), Some(field))
@@ -104,9 +141,28 @@ pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Optio
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
         Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { .. } => {
             let targets = targets?;
-            Some(Out::Select { index: targets.at(at)?, confirm: targets.confirm })
+            Some(Out::Select { index: targets.at(at.screen()?)?, confirm: targets.confirm })
         }
         _ => None,
+    }
+}
+
+/// The floor point `at` picks: on the game's picture through its camera, or
+/// along a ray through a diorama (a pane shows no floor).
+fn floor_pointed(field: &Field, at: Pointed) -> Option<xem_core::field::Hit> {
+    match at {
+        Pointed::Screen(at) => field.pick(at),
+        Pointed::World(ray) => field.pick_ray(ray.origin, ray.direction, ray.within),
+        Pointed::Pane(_) => None,
+    }
+}
+
+/// The actor `at` points at, as [`floor_pointed`] finds the floor.
+fn actor_pointed(field: &Field, at: Pointed) -> Option<usize> {
+    match at {
+        Pointed::Screen(at) => field.actor_at(at, ACTOR_REACH),
+        Pointed::World(ray) => field.actor_near_ray(ray.origin, ray.direction, ray.within, ray.reach),
+        Pointed::Pane(_) => None,
     }
 }
 
@@ -115,15 +171,16 @@ fn pinch(ui: Context, aim: Aim, field: Option<&Field>) -> Option<Out> {
     if ui != Context::Walk {
         return None;
     }
-    let hit = field?.pick(aim?)?;
+    let hit = floor_pointed(field?, aim?)?;
     (hit.reach != Reach::Invalid).then(|| Out::Command { command: json!({"cmd": "navigate", "to": [hit.point.x, hit.point.z]}) })
 }
 
 fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
+    let at = aim.and_then(Pointed::screen);
     match ui {
         Context::Walk => {
             let field = field?;
-            match aim.and_then(|aim| field.actor_at(aim, ACTOR_REACH)) {
+            match aim.and_then(|aim| actor_pointed(field, aim)) {
                 Some(actor) => Some(Out::Command { command: json!({"cmd": "interact", "actor": actor}) }),
                 // Ground (or nothing): stop the route, choose nothing new.
                 None => Some(Out::Command { command: json!({"cmd": "assist_stop"}) }),
@@ -132,10 +189,10 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
         // A choice answers only the one gazed at.
         Context::Dialogue { choice: Some(_) } => {
-            let index = targets.zip(aim).and_then(|(t, aim)| t.at(aim))?;
+            let index = targets.zip(at).and_then(|(t, at)| t.at(at))?;
             Some(Out::Select { index, confirm: true })
         }
-        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| Some((t, t.at(aim)?))) {
+        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(at).and_then(|(t, at)| Some((t, t.at(at)?))) {
             Some((targets, index)) => Out::Select { index, confirm: targets.confirm },
             None => press([GameAction::Confirm]),
         }),
@@ -151,6 +208,7 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
 }
 
 fn swipe(direction: Swipe, ui: Context, aim: Aim, targets: Option<&Targets>) -> Vec<Out> {
+    let aim = aim.and_then(Pointed::screen);
     match ui {
         Context::Walk => match direction {
             Swipe::Up => vec![press([GameAction::Jump])],
@@ -299,11 +357,11 @@ mod tests {
             steps: Steps::Compass,
             confirm: false,
         };
-        assert_eq!(tap_at((5.0, 5.0), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 0, confirm: false }), "an attack is chosen (pressed)");
-        assert_eq!(tap_at((25.0, 5.0), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 1, confirm: false }), "its target only selected");
-        assert_eq!(tap_at((50.0, 5.0), battle(5, true), None, Some(&attack)), None, "nothing there");
+        assert_eq!(tap_at(Pointed::Screen((5.0, 5.0)), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 0, confirm: false }), "an attack is chosen (pressed)");
+        assert_eq!(tap_at(Pointed::Screen((25.0, 5.0)), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 1, confirm: false }), "its target only selected");
+        assert_eq!(tap_at(Pointed::Screen((50.0, 5.0)), battle(5, true), None, Some(&attack)), None, "nothing there");
         let ring = Targets { what: "battle_ring", entries: vec![Entry { select: Some(GameAction::Down), ..entry(0.0, None, None) }], selected: None, steps: Steps::Direct, confirm: true };
-        assert_eq!(tap_at((5.0, 5.0), battle(1, false), None, Some(&ring)), Some(Out::Select { index: 0, confirm: true }), "a slot is activated");
+        assert_eq!(tap_at(Pointed::Screen((5.0, 5.0)), battle(1, false), None, Some(&ring)), Some(Out::Select { index: 0, confirm: true }), "a slot is activated");
     }
 
     #[test]
@@ -339,22 +397,62 @@ mod tests {
         let tap = [Gesture::Tap { hand: HAND }];
         assert_eq!(dispatch(&tap, Context::Dialogue { choice: None }, None, None, None), [press([GameAction::Confirm])]);
         let choice = Context::Dialogue { choice: Some(xem_core::context::Choice { count: 2, index: 0 }) };
-        assert_eq!(dispatch(&tap, choice, Some((150.0, 120.0)), None, Some(&list())), [Out::Select { index: 1, confirm: true }]);
-        assert!(dispatch(&tap, choice, Some((10.0, 10.0)), None, Some(&list())).is_empty(), "no gaze, no answer");
+        assert_eq!(dispatch(&tap, choice, Some(Pointed::Screen((150.0, 120.0))), None, Some(&list())), [Out::Select { index: 1, confirm: true }]);
+        assert!(dispatch(&tap, choice, Some(Pointed::Screen((10.0, 10.0))), None, Some(&list())).is_empty(), "no gaze, no answer");
     }
 
     #[test]
     fn menus_scroll_under_the_gaze_and_switch_characters_beside_it() {
         let menu = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: true, switch: true, quantities: false };
         let swipe = |d, aim| dispatch(&[Gesture::Swipe { hand: HAND, direction: d }], menu, aim, None, Some(&list()));
-        assert_eq!(swipe(Swipe::Up, Some((150.0, 105.0))), [press([GameAction::Down])], "up: later entries");
-        assert_eq!(swipe(Swipe::Down, Some((150.0, 105.0))), [press([GameAction::Up])]);
-        assert_eq!(swipe(Swipe::Up, Some((10.0, 200.0))), [press([GameAction::CameraRight])], "next character");
-        assert_eq!(swipe(Swipe::Down, Some((10.0, 200.0))), [press([GameAction::CameraLeft])]);
+        assert_eq!(swipe(Swipe::Up, Some(Pointed::Screen((150.0, 105.0)))), [press([GameAction::Down])], "up: later entries");
+        assert_eq!(swipe(Swipe::Down, Some(Pointed::Screen((150.0, 105.0)))), [press([GameAction::Up])]);
+        assert_eq!(swipe(Swipe::Up, Some(Pointed::Screen((10.0, 200.0)))), [press([GameAction::CameraRight])], "next character");
+        assert_eq!(swipe(Swipe::Down, Some(Pointed::Screen((10.0, 200.0)))), [press([GameAction::CameraLeft])]);
         assert_eq!(swipe(Swipe::Right, None), [press([GameAction::Cancel])], "back");
         // Without character switching the gaze outside the list still scrolls.
         let plain = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: true, switch: false, quantities: false };
-        assert_eq!(dispatch(&[Gesture::Swipe { hand: HAND, direction: Swipe::Up }], plain, Some((10.0, 200.0)), None, Some(&list())), [press([GameAction::Down])]);
+        assert_eq!(dispatch(&[Gesture::Swipe { hand: HAND, direction: Swipe::Up }], plain, Some(Pointed::Screen((10.0, 200.0))), None, Some(&list())), [press([GameAction::Down])]);
+    }
+
+    /// A floor 400 units across, the player near its front, a villager at
+    /// (0, 0, 300) (world y down).
+    fn floor() -> Field {
+        use xem_core::field::{Actor, Camera, Layer, Triangle};
+        let layer = Layer {
+            vertices: vec![V3::new(-200.0, 0.0, 0.0), V3::new(200.0, 0.0, 0.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0)],
+            triangles: vec![Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 }, Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0 }],
+        };
+        let actor = |index: usize, z: f32| Actor { index, position: V3::new(0.0, 0.0, z), layer: 0, triangle: [0; 4], flags: 0, layer_flags: 0, radius: 16, height: 60, heading: 0, heading_goal: 0 };
+        Field {
+            camera: Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0, -100.0, 0.0], h: 256.0, angle: 0 },
+            layers: vec![layer], attributes: vec![0], actors: vec![Some(actor(0, 20.0)), Some(actor(1, 300.0))], player: Some(0),
+            alt_dpad: false, party_processing: false, dialogue_open: false,
+        }
+    }
+
+    #[test]
+    fn through_a_diorama_a_pinch_walks_to_the_floor_under_the_ray_and_a_tap_talks_to_the_actor_by_it() {
+        let field = floor();
+        let down = |x: f32, z: f32| Some(Pointed::World(WorldRay { origin: V3::new(x, -300.0, z), direction: V3::new(0.0, 400.0, 0.0), within: 1.0, reach: 25.0 }));
+        let pinch = [Gesture::Pinch { hand: HAND }];
+        let tap = [Gesture::Tap { hand: HAND }];
+        let walked = dispatch(&pinch, Context::Walk, down(-80.0, 150.0), Some(&field), None);
+        assert_eq!(walked, [Out::Command { command: json!({"cmd": "navigate", "to": [-80.0, 150.0]}) }]);
+        // Beside the villager: a tap talks to them; away from anyone it stops.
+        assert_eq!(dispatch(&tap, Context::Walk, down(10.0, 310.0), Some(&field), None), [Out::Command { command: json!({"cmd": "interact", "actor": 1}) }]);
+        assert_eq!(dispatch(&tap, Context::Walk, down(-150.0, 100.0), Some(&field), None), [Out::Command { command: json!({"cmd": "assist_stop"}) }]);
+        // The pointer's pinch (no microgestures) is a tap there: the villager.
+        assert_eq!(tap_at(down(10.0, 310.0).unwrap(), Context::Walk, Some(&field), None), Some(Out::Command { command: json!({"cmd": "interact", "actor": 1}) }));
+        // A ray whose part on the table stops short of the floor picks nothing.
+        let short = Some(Pointed::World(WorldRay { origin: V3::new(-80.0, -300.0, 150.0), direction: V3::new(0.0, 100.0, 0.0), within: 1.0, reach: 25.0 }));
+        assert!(dispatch(&pinch, Context::Walk, short, Some(&field), None).is_empty());
+        // The pane shows no floor: nothing walks there; its choices answer.
+        assert!(dispatch(&pinch, Context::Walk, Some(Pointed::Pane((160.0, 112.0))), Some(&field), None).is_empty());
+        assert_eq!(dispatch(&tap, Context::Walk, Some(Pointed::Pane((160.0, 112.0))), Some(&field), None), [Out::Command { command: json!({"cmd": "assist_stop"}) }]);
+        let choice = Context::Dialogue { choice: Some(xem_core::context::Choice { count: 2, index: 0 }) };
+        assert_eq!(dispatch(&tap, choice, Some(Pointed::Pane((150.0, 120.0))), None, Some(&list())), [Out::Select { index: 1, confirm: true }]);
+        assert!(dispatch(&tap, choice, down(150.0, 120.0), None, Some(&list())).is_empty(), "a ray through the table answers no choice");
     }
 
     #[test]
@@ -366,6 +464,6 @@ mod tests {
             assert_eq!(dispatch(&[Gesture::Pause { hand: HAND }, Gesture::Settings], ui, None, None, None), [Out::TogglePause, Out::ToggleSettings]);
         }
         // A pinch outside walking commits nothing.
-        assert!(dispatch(&[Gesture::Pinch { hand: HAND }], Context::Dialogue { choice: None }, Some((1.0, 1.0)), None, None).is_empty());
+        assert!(dispatch(&[Gesture::Pinch { hand: HAND }], Context::Dialogue { choice: None }, Some(Pointed::Screen((1.0, 1.0))), None, None).is_empty());
     }
 }

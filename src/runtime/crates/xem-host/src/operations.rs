@@ -151,6 +151,8 @@ impl Operations {
                 Ok("Pending card writes completed.".into())
             }
             AppAction::RequestPersistence => Ok("Native saves use application files. Export backups for another device.".into()),
+            // A headset's loop takes it before it comes here (xr_play).
+            AppAction::Recenter => Err("Recentering places a headset's view; play in a headset to use it.".into()),
             _ => {
                 let window = window.ok_or("File pickers are available in windowed play.")?;
                 self.export = match action {

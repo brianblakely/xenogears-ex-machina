@@ -73,13 +73,12 @@ struct Player {
     runtime: Runtime,
 }
 
+/// Where the harness's head is (the room's floor at y 0).
+const EYES: Vec3 = Vec3::new(0.0, 1.6, 0.0);
+
 impl Player {
     fn new(session: Session<NativeModule>) -> Player {
-        let screen = Screen {
-            quad: Quad { pose: Pose { position: Vec3::new(0.0, 1.6, -2.5), orientation: Quat::IDENTITY }, size: (3.2, 2.24) },
-            display: (320.0, 224.0),
-            side: 0.0,
-        };
+        let screen = Screen::flat(Quad { pose: Pose { position: Vec3::new(0.0, 1.6, -2.5), orientation: Quat::IDENTITY }, size: (3.2, 2.24) }, (320.0, 224.0), 0.0);
         let mut headset = Headset::default();
         headset.source = PointerSource::Eye;
         Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0, ui: None, runtime: Runtime::HORIZON }
@@ -89,15 +88,49 @@ impl Player {
         self.session.execute(&json!({"cmd": "context"}))
     }
 
+    /// The diorama of the frame the game draws next, from a seat at the
+    /// eyes, as a headset shows it: the port records the frame's camera
+    /// (the diorama's view from anywhere asks it to), and the table takes
+    /// that camera's point and heading at once. From then on gestures aim
+    /// at its pane and through its table.
+    fn diorama(&mut self) -> xem_render::ps1::DioramaSpace {
+        let device = self.session.runtime.services().gpu.device_mut();
+        device.set_trace(true);
+        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE }));
+        // The port takes the bits with the frame after they change.
+        let mut camera = None;
+        for _ in 0..4 {
+            run(&mut self.session, json!({"cmd": "frames", "count": 1}));
+            let trace = self.session.runtime.services().gpu.device_mut().take_trace();
+            camera = trace.ops.iter().rev().find_map(|op| match op {
+                xem_render::xem_gpu::TraceOp::Camera(camera) => Some(*camera),
+                _ => None,
+            }).or(camera);
+        }
+        self.session.runtime.services().gpu.device_mut().set_trace(false);
+        let camera = camera.expect("the field's camera recorded");
+        let h = self.field().camera.h;
+        let seat = xem_render::glam::Mat4::from_translation(EYES);
+        let space = xem_render::ps1::DioramaSpace::first(&camera, h, xem_render::glam::Vec2::new(320.0, 224.0), &xem_render::ps1::Table::default(), seat).expect("a camera that spans space");
+        self.screen = Screen::pane(space, EYES);
+        space
+    }
+
     /// One headset frame of this step (its hands, and the runtime's
     /// standard signals as `self.runtime` reports them) with the pointer on
-    /// `aim`.
+    /// `aim` (a pixel of the screen).
     fn frame(&mut self, step: Step, aim: Option<(f32, f32)>) {
+        let toward = aim.map(|aim| self.screen.point(aim));
+        self.frame_toward(step, toward);
+    }
+
+    /// One headset frame with the pointer toward the room point `toward`.
+    fn frame_toward(&mut self, step: Step, toward: Option<Vec3>) {
         // The aim comes from the pointer source chosen: the eyes, the head
         // turned toward it, or a hand's ray (a controller's or the
         // runtime's) from beside the body.
-        let eyes = Vec3::new(0.0, 1.6, 0.0);
-        let toward = |from: Vec3| aim.map(|aim| Pose { position: from, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, (self.screen.point(aim) - from).normalize()) });
+        let eyes = EYES;
+        let toward = |from: Vec3| toward.map(|target| Pose { position: from, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, (target - from).normalize()) });
         let (head, gaze, rays) = match self.headset.source {
             PointerSource::Eye => (Pose { position: eyes, orientation: Quat::IDENTITY }, toward(eyes), [None, None]),
             PointerSource::Head => (toward(eyes).unwrap_or(Pose { position: eyes, orientation: Quat::IDENTITY }), None, [None, None]),
@@ -153,12 +186,18 @@ impl Player {
 
     /// A gesture's frames with the gaze on `aim`, then a few at rest.
     fn gesture(&mut self, name: &str, aim: Option<(f32, f32)>) {
+        let toward = aim.map(|aim| self.screen.point(aim));
+        self.gesture_toward(name, toward);
+    }
+
+    /// A gesture's frames with the gaze toward the room point `toward`.
+    fn gesture_toward(&mut self, name: &str, toward: Option<Vec3>) {
         for hands in synthetic::gesture(name).unwrap() {
-            self.frame(hands, aim);
+            self.frame_toward(hands, toward);
         }
         let open = synthetic::gesture("pause").unwrap()[0];
         for _ in 0..4 {
-            self.frame(open, aim);
+            self.frame_toward(open, toward);
         }
     }
 
@@ -229,6 +268,77 @@ fn pinch_walks_where_the_gaze_is_and_pause_holds_the_route() {
     assert!(player.session.assist.is_some());
     player.gesture("tap", Some(ground));
     assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Stopped));
+}
+
+/// Whether the world point `p` stands on the diorama's table (inside its
+/// volume, `margin` metres in from its sides).
+fn on_table(space: &xem_render::ps1::DioramaSpace, p: xem_core::field::V3, margin: f32) -> bool {
+    let at = (space.table_from_room() * space.room_from_world).transform_point3(Vec3::new(p.x, p.y, p.z));
+    let (min, max) = space.volume;
+    at.cmpge(min + Vec3::splat(margin)).all() && at.cmple(max - Vec3::splat(margin)).all()
+}
+
+/// Through a diorama of field 30 (its table placed from the frame's own
+/// camera record, the seat at the eyes), a pinch with the gaze on a floor
+/// point of the table walks there (the same `navigate` the screen's pinch
+/// sends, to that world point), and one on the table's pane walks nowhere:
+/// it shows no floor.
+#[test]
+fn through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none() {
+    let Some(mut player) = walking(30) else { return };
+    let space = player.diorama();
+    let field = player.field();
+    let me = *field.player().unwrap();
+    // A floor point the player walks to, on the table, away from everyone.
+    let mesh = &field.layers[me.layer];
+    let goal = (0..mesh.triangles.len())
+        .map(|t| (t, mesh.centroid(t)))
+        .filter(|(t, c)| field.reach(&me, *t, *c) == xem_core::field::Reach::Walk && on_table(&space, *c, 0.05))
+        .filter(|(_, c)| (60.0..220.0).contains(&c.planar(me.position)))
+        .filter(|(_, c)| field.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
+        .max_by(|a, b| a.1.planar(me.position).total_cmp(&b.1.planar(me.position)))
+        .map(|(_, c)| c)
+        .expect("walkable floor on the table");
+    let room = space.room_from_world.transform_point3(Vec3::new(goal.x, goal.y, goal.z));
+    player.gesture_toward("pinch", Some(room));
+    let Some(xem_core::assist::Intent::Walk { to, .. }) = player.session.assist.as_ref().map(|a| a.intent.clone()) else {
+        panic!("walking: {:?}", player.session.assist_outcome)
+    };
+    assert!(to.planar(goal) < 2.0, "the walk heads for the floor gazed at: {to:?} for {goal:?}");
+    for _ in 0..400 {
+        if player.session.assist.is_none() { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Arrived));
+    let at = player.field().player().unwrap().position;
+    assert!(at.planar(goal) < 16.0, "arrived at {at:?} for {goal:?}");
+    eprintln!("through the diorama: walked {:.0} units to {goal:?} ({:.2} m from the eyes)", me.position.planar(goal), room.distance(EYES));
+    // The pane shows the interface alone: a pinch there walks nowhere.
+    let pane = space.pane.transform_point3(Vec3::ZERO);
+    player.gesture_toward("pinch", Some(pane));
+    assert!(player.session.assist.is_none(), "nothing walks to the pane: {:?}", player.session.assist.as_ref().map(|a| &a.intent));
+}
+
+/// Through a diorama of Lahan (map 5), a thumb tap with the gaze beside a
+/// villager on the table approaches and talks to them, as on the screen.
+#[test]
+fn through_a_diorama_a_tap_by_a_villager_talks_to_them() {
+    let Some(mut player) = walking(5) else { return };
+    let space = player.diorama();
+    let field = player.field();
+    let villager = field.actors[11].unwrap();
+    let middle = xem_core::field::V3::new(villager.position.x, villager.position.y - f32::from(villager.height.max(0)) / 2.0, villager.position.z);
+    assert!(on_table(&space, villager.position, 0.0), "the villager stands on the table");
+    let room = space.room_from_world.transform_point3(Vec3::new(middle.x, middle.y, middle.z));
+    player.gesture_toward("tap", Some(room));
+    assert!(matches!(player.session.assist.as_ref().map(|a| &a.intent), Some(xem_core::assist::Intent::Interact { actor: 11 })), "approaching the villager: {:?}", player.session.assist.as_ref().map(|a| &a.intent));
+    for _ in 0..600 {
+        if player.session.assist.is_none() { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Confirmed));
+    player.rest(30);
+    assert_eq!(player.context()["kind"], "dialogue");
 }
 
 /// A thumb tap on a villager approaches and talks to them; taps advance

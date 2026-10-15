@@ -18,6 +18,20 @@
 //! screen was (`GameView::present_headset`), every headset frame, paused
 //! or not; the right stick turns the view in 30-degree steps.
 //!
+//! With the diorama as the view (Graphics' headset view), each eye sees
+//! the scene as a miniature on a table in front of the seat instead, from
+//! where it is (`GameView::present_diorama`), and the game's interface on
+//! a pane above the table's far edge; the screen shows where the diorama
+//! gives way to it (movies, menus). The keys stand beside the pane, the
+//! settings panel where it floats. The pointer aims through the table at
+//! the game's world: a pinch walks to the floor it meets, a tap talks to
+//! the actor beside it.
+//!
+//! Everything stands in front of the seat (`xem_assist::headset::Seat`):
+//! LOCAL's origin, moved to the head by Recenter (the panel's button, an
+//! app action) and back when the runtime recentres LOCAL itself
+//! (`ReferenceSpaceChangePending`).
+//!
 //! The controllers are the game bindings' gamepad ([`gamepad`]): by default
 //! the left stick moves, A confirms, B cancels and runs, Y jumps, X opens
 //! the menu, the triggers and the right stick turn the camera.
@@ -28,17 +42,17 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
 use crate::Game;
+use xem_assist::headset::Seat;
 use xem_render::glam::{Mat4, Quat, Vec2, Vec3};
-use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig, headset_movie_output};
-use xem_render::{Compositor, Quad, Rect, wgpu};
-use xem_settings::{Filter, SettingsService};
+use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig, XrView, headset_movie_output, xr_view};
+use xem_render::{Compositor, Quad, Rect, ViewTarget, Viewport, wgpu};
+use xem_settings::{AppAction, AppRequest, Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
 use xem_xr::{HandInput, InputState, PanelPlacement, Pose, SessionConfig, SessionEvent, XrContext, XrSession};
 use crate::assisted::{self, Assisted};
 
 const PANEL_LOGICAL: (f32, f32) = (440.0, 560.0);
 const PANEL_SCALE: f32 = 2.0;
-const PANEL_WIDTH: f32 = 0.55;
 /// The room around the screen.
 const BACKDROP: wgpu::Color = wgpu::Color { r: 0.012, g: 0.014, b: 0.02, a: 1.0 };
 
@@ -161,20 +175,104 @@ impl MovieFrame {
     }
 }
 
-/// The game screen's pose: `distance` metres in front of the LOCAL origin
-/// (the head at entry), at eye height.
-fn screen_pose(distance: f32) -> Pose {
-    Pose { position: Vec3::new(0.0, 0.0, -distance), orientation: Quat::IDENTITY }
+/// The game screen's pose: `distance` metres in front of the seat (LOCAL's
+/// origin, the head at entry, until recentred), at eye height.
+fn screen_pose(seat: &Seat, distance: f32) -> Mat4 {
+    let pose = seat.place(xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -distance), orientation: Quat::IDENTITY });
+    Mat4::from_rotation_translation(pose.orientation, pose.position)
 }
 
 /// An eye as the renderer looks through it from within the scene: its pose
-/// in LOCAL (whose -Z faces the screen) and its field of view's tangents.
-fn headset_eye(eye: &xem_xr::EyeView) -> HeadsetEye {
+/// as the seat sees it (whose -Z faces the screen) and its field of view's
+/// tangents.
+fn headset_eye(eye: &xem_xr::EyeView, seat: &Seat) -> HeadsetEye {
     let fov = eye.fov;
     HeadsetEye {
-        orientation: eye.pose.orientation.to_array(),
-        position: eye.pose.position.to_array(),
+        orientation: seat.relative(eye.pose.orientation).to_array(),
+        position: seat.pose.inverse().transform_point3(eye.pose.position).to_array(),
         fov: [fov.left.tan(), fov.right.tan(), fov.up.tan(), fov.down.tan()],
+    }
+}
+
+fn assist_pose(pose: Pose) -> xem_assist::headset::Pose {
+    xem_assist::headset::Pose { position: pose.position, orientation: pose.orientation }
+}
+
+/// Where a scripted gesture aims (`--xr-hands NAME@...`): a pixel of the
+/// screen (or the diorama's pane), a logical pixel of the settings panel,
+/// or a point of the game's world through the diorama.
+#[derive(Clone, Copy, Debug)]
+enum ScriptedAim {
+    Screen((f32, f32)),
+    Panel((f32, f32)),
+    World(Vec3),
+}
+
+impl ScriptedAim {
+    /// `x/y`, `panel:x/y` or `world:x/y/z`.
+    fn parse(aim: &str) -> Option<ScriptedAim> {
+        let numbers = |text: &str| text.split('/').map(str::parse::<f32>).collect::<Result<Vec<_>, _>>().ok();
+        if let Some(rest) = aim.strip_prefix("world:") {
+            let [x, y, z] = numbers(rest)?[..] else { return None };
+            return Some(ScriptedAim::World(Vec3::new(x, y, z)));
+        }
+        let (panel, rest) = match aim.strip_prefix("panel:") {
+            Some(rest) => (true, rest),
+            None => (false, aim),
+        };
+        let [x, y] = numbers(rest)?[..] else { return None };
+        Some(if panel { ScriptedAim::Panel((x, y)) } else { ScriptedAim::Screen((x, y)) })
+    }
+}
+
+/// The diorama's pictures for each eye (the renderer draws them over these,
+/// cleared to nothing first), composited into the eyes under the pane.
+struct DioramaEyes {
+    textures: [wgpu::Texture; 2],
+    views: [wgpu::TextureView; 2],
+}
+
+impl DioramaEyes {
+    fn new(device: &wgpu::Device, (width, height): (u32, u32)) -> DioramaEyes {
+        let textures = [0, 1].map(|_| device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("diorama eye"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        }));
+        let views = [0, 1].map(|i| textures[i].create_view(&Default::default()));
+        DioramaEyes { textures, views }
+    }
+}
+
+/// What a diorama presentation gave this headset frame: the screen's share
+/// of the view (0 the diorama alone, 1 the screen alone), the screen's
+/// picture and its size while it shows, the pane, and where the diorama lies
+/// while it shows.
+struct DioramaShown {
+    share: f32,
+    frame: Option<(wgpu::TextureView, (u32, u32))>,
+    pane: Option<wgpu::TextureView>,
+    space: Option<xem_render::ps1::DioramaSpace>,
+}
+
+/// Clears `views` to nothing (transparent black).
+fn clear(encoder: &mut wgpu::CommandEncoder, views: &[wgpu::TextureView]) {
+    for view in views {
+        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("diorama eye clear"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                depth_slice: None,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+            })],
+            ..Default::default()
+        });
     }
 }
 
@@ -197,6 +295,8 @@ pub struct XrPlay {
     /// gesture name) for runtimes without hand tracking: from the first,
     /// the hands rest open in front of the head between gestures.
     pub hands: Vec<(u64, String)>,
+    /// Recenter at these headset frames, as the app action does.
+    pub recenter_at: Vec<u64>,
 }
 
 /// How a headset run ended.
@@ -222,9 +322,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         PANEL_SCALE,
     )
     .map_err(|e| e.to_string())?;
-    // The Controls section lists first-person inspection's headset controls.
+    // The Controls section lists first-person inspection's headset controls;
+    // Graphics offers Recenter. No OpenXR passthrough is used yet.
     ui.set_first_person(true);
     ui.set_first_person_headset(true);
+    ui.set_in_headset(true);
     let panel_visible = Rc::new(RefCell::new(options.show_settings));
     ui.on_close({
         let visible = panel_visible.clone();
@@ -250,10 +352,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         .map_err(|e| e.to_string())?;
     let mut compositor = Compositor::new(&gpu.device, &gpu.queue, session.eye_format());
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-    let panel = PanelPlacement {
-        pose: Pose { position: Vec3::new(0.0, -0.75, -1.1), orientation: Quat::from_rotation_x(-25f32.to_radians()) },
-        size: (PANEL_WIDTH, PANEL_WIDTH * panel_px.1 as f32 / panel_px.0 as f32),
-    };
+    // The diorama's pictures of each eye, made when first drawn; how often
+    // the runtime moved LOCAL and the player recentred.
+    let mut diorama_eyes: Option<DioramaEyes> = None;
+    let (mut resets, mut recenters) = (0u32, 0u32);
     let mut pointer = PanelPointer::default();
     let mut menu_held = false;
     let mut player = xem_settings::player::PlayerInput::default();
@@ -268,7 +370,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut last_screen: Option<xem_assist::headset::Screen> = None;
     let mut scripted = std::collections::VecDeque::new();
     let mut pinched = [false; 2];
-    let mut scripted_aim: Option<(bool, (f32, f32))> = None;
+    let mut scripted_aim: Option<ScriptedAim> = None;
     let mut wanted_disc = None;
     let start = Instant::now();
     let mut frames = 0u64;
@@ -279,8 +381,15 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut movie = MovieFrame::default();
     loop {
         for event in session.poll_events().map_err(|e| e.to_string())? {
-            if let SessionEvent::StateChanged { state, .. } = event {
-                println!("event state={state:?}");
+            match event {
+                SessionEvent::StateChanged { state, .. } => println!("event state={state:?}"),
+                // The runtime recentred LOCAL: the seat is its origin again.
+                SessionEvent::ReferenceSpaceChangePending { time } => {
+                    xem_assist::headset::reference_changed(&mut assist.headset, &mut assist.scaling, &mut assist.seat, &mut view);
+                    resets += 1;
+                    println!("event reference_space_change time_ns={time}");
+                }
+                _ => {}
             }
         }
         if session.should_exit() {
@@ -297,12 +406,23 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let should_render = frame.should_render;
         let eyes = frame.eyes;
         if frame.views_valid {
-            tracked_eyes = Some(eyes.each_ref().map(headset_eye));
+            tracked_eyes = Some(eyes.each_ref().map(|eye| headset_eye(eye, &assist.seat)));
         }
         let input = frame.input.clone();
         let head = frame.head;
         let period = frame.predicted_display_period.as_nanos();
         let display_time = frame.predicted_display_time.as_nanos();
+        // The settings panel: below the screen, or above the diorama's table
+        // (which the Original renderer never shows).
+        let graphics = settings.borrow().settings().graphics;
+        let table = match xr_view(&graphics.xr) {
+            XrView::Diorama(table) if graphics.renderer == xem_settings::Renderer::ExMachina => Some(table),
+            _ => None,
+        };
+        let panel = {
+            let quad = xem_assist::draw::panel(&assist.seat, table.as_ref(), panel_px.1 as f32 / panel_px.0 as f32);
+            PanelPlacement { pose: Pose { position: quad.pose.position, orientation: quad.pose.orientation }, size: quad.size }
+        };
 
         // The panel: left menu toggles it; while it shows, the pad is idle.
         if input.hands[0].menu && !menu_held {
@@ -320,27 +440,30 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if !options.hands.is_empty() {
             for (_, entry) in options.hands.iter().filter(|(at, _)| *at == frames) {
                 // `name@x/y` also aims eye gaze at that screen pixel (the
-                // scripted gaze stands in for eye tracking from then on).
+                // scripted gaze stands in for eye tracking from then on);
+                // `name@panel:x/y` at the settings panel's logical pixel,
+                // `name@world:x/y/z` at that point of the game's world on the
+                // diorama's table.
                 let (name, aim) = entry.split_once('@').map_or((entry.as_str(), None), |(n, a)| (n, Some(a)));
-                // `name@panel:x/y` aims at the settings panel's logical pixel.
-                let (on_panel, aim) = match aim.and_then(|a| a.strip_prefix("panel:")) {
-                    Some(rest) => (true, Some(rest)),
-                    None => (false, aim),
-                };
-                if let Some((x, y)) = aim.and_then(|a| a.split_once('/')) {
-                    scripted_aim = x.parse().ok().zip(y.parse().ok()).map(|p| (on_panel, p));
+                if let Some(aim) = aim {
+                    scripted_aim = Some(ScriptedAim::parse(aim).expect("an aim: x/y, panel:x/y or world:x/y/z"));
                 }
                 scripted.extend(xem_assist::synthetic::gesture(name).expect("a known gesture"));
             }
-            if let (Some((on_panel, aim)), Some(screen), Some(head)) = (scripted_aim, last_screen, head) {
-                let target = if on_panel {
-                    let (u, v) = (aim.0 / PANEL_LOGICAL.0, aim.1 / PANEL_LOGICAL.1);
-                    panel.pose.position + panel.pose.orientation * Vec3::new((u - 0.5) * panel.size.0, (0.5 - v) * panel.size.1, 0.0)
-                } else {
-                    screen.point(aim)
+            if let (Some(aim), Some(screen), Some(head)) = (scripted_aim, last_screen, head) {
+                let target = match aim {
+                    ScriptedAim::Panel((x, y)) => {
+                        let (u, v) = (x / PANEL_LOGICAL.0, y / PANEL_LOGICAL.1);
+                        Some(panel.pose.position + panel.pose.orientation * Vec3::new((u - 0.5) * panel.size.0, (0.5 - v) * panel.size.1, 0.0))
+                    }
+                    ScriptedAim::Screen(at) => Some(screen.point(at)),
+                    // Where the diorama shows that point (none while it does not).
+                    ScriptedAim::World(point) => screen.diorama.map(|space| space.room_from_world.transform_point3(point)),
                 };
-                let direction = (target - head.position).normalize();
-                assisted_input.gaze = Some(xem_assist::headset::Pose { position: head.position, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, direction) });
+                if let Some(target) = target {
+                    let direction = (target - head.position).normalize();
+                    assisted_input.gaze = Some(xem_assist::headset::Pose { position: head.position, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, direction) });
+                }
             }
             if let Some(head) = head {
                 // The scripted hands stand in for a runtime with the
@@ -379,8 +502,22 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
 
+        if options.recenter_at.contains(&frames) {
+            requests.borrow_mut().push(AppRequest::Action(AppAction::Recenter));
+        }
         for request in std::mem::take(&mut *requests.borrow_mut()) {
-            let result = operations.execute(request,None,Some(&mut game),&mut settings.borrow_mut());
+            // Recenter places this loop's view: the seat moves to the head.
+            let result = if request == AppRequest::Action(AppAction::Recenter) {
+                let result = xem_assist::headset::recenter(&mut assist.seat, head.map(assist_pose), &mut view);
+                if result.is_ok() {
+                    recenters += 1;
+                    let seat = assist.seat.position();
+                    println!("recenter seat={:.4},{:.4},{:.4}", seat.x, seat.y, seat.z);
+                }
+                result
+            } else {
+                operations.execute(request,None,Some(&mut game),&mut settings.borrow_mut())
+            };
             if let xem_settings::AppRequest::Action(action) = request {
                 use xem_settings::AppAction::*;
                 let saved = match action { SaveState | ExportState => Some(true), LoadState | ImportState => Some(false), _ => None };
@@ -414,10 +551,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
         let current = settings.borrow().settings().clone();
-        // The Binaural listener turns with the head, paused or not (lost
-        // tracking keeps the last turn); the game never sees it.
+        // The Binaural listener turns with the head as the seat sees it,
+        // paused or not (lost tracking keeps the last turn); the game never
+        // sees it.
         if let Some(head) = head {
-            game.set_head(Some(xem_core::binaural::head_axes(head.orientation.to_array())));
+            game.set_head(Some(xem_core::binaural::head_axes(assist.seat.relative(head.orientation).to_array())));
         }
         // First-person inspection, paused or not: the controllers' Back (the
         // right stick's click) released alone toggles it in a field, as a
@@ -462,10 +600,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // width scaled by two-hand scaling, over its distance).
         let mut config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
         let xr = current.graphics.xr;
-        let fov = headset_eye(&eyes[0]).fov;
+        let fov = headset_eye(&eyes[0], &assist.seat).fov;
         let spanned = headset_movie_output(f32::from(xr.width_cm) / 100.0 * assist.scaling.scale, f32::from(xr.distance_cm) / 100.0, session.eye_size().0, fov);
         config.movies = config.movies.map(|_| spanned);
         view.configure(config);
+        // The screen or the diorama, before the frame is taken: the diorama
+        // asks the trace for every face and the camera.
+        view.set_xr_view(xr_view(&current.graphics.xr));
         let restart = view.take_restart();
         // The Original renderer shows the display as the device holds it
         // (nothing to look around in).
@@ -474,8 +615,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             view.set_first_person(false);
         }
         game.want_actor_view(if !original && current.graphics.actors_in_view { view.actor_view() } else { 0 });
-        // The Binaural listener looks where inspection looks; the head turns
-        // it once more (`set_head` above).
+        // The Binaural listener looks where inspection looks, or from the
+        // seat through the diorama's table; the head turns it once more
+        // (`set_head` above).
         game.want_listener_view(view.listener_axes());
         let (display, scene) = if original {
             game.stop_trace();
@@ -492,12 +634,37 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // frame, paused or not; the screen's picture is then the interface's.
         let looking: Vec<HeadsetEye> = tracked_eyes.filter(|_| view.first_person()).map_or_else(Vec::new, |eyes| eyes.to_vec());
         let mut inside: Vec<wgpu::TextureView> = Vec::new();
+        // The diorama, unless inspection looks from within the scene: each
+        // eye's picture drawn over its own target (cleared to nothing), the
+        // screen while it eases between the two, and the pane.
+        let diorama_view = from_view && matches!(view.xr_view(), XrView::Diorama(_)) && !view.first_person();
+        let mut shown: Option<DioramaShown> = None;
         // The presentation's own time on this thread (the frame log's).
         let presenting = Instant::now();
+        let now = start.elapsed().as_secs_f64();
         // A movie frame rebuilt from what the MDEC decoded (Enhanced movies).
         let mut movie_rebuilt = false;
-        let picture = if from_view {
-            view.present_headset(&mut encoder, &display, &scene, start.elapsed().as_secs_f64(), &looking).map(|p| {
+        let picture = if diorama_view {
+            let eye_size = session.eye_size();
+            if diorama_eyes.as_ref().is_none_or(|d| (d.textures[0].width(), d.textures[0].height()) != eye_size) {
+                diorama_eyes = Some(DioramaEyes::new(&gpu.device, eye_size));
+            }
+            let targets = diorama_eyes.as_ref().expect("made above");
+            clear(&mut encoder, &targets.views);
+            let views = [0, 1].map(|eye| ViewTarget { view: eyes[eye].view, proj: eyes[eye].proj, target: &targets.views[eye], viewport: Viewport::full(eye_size.0, eye_size.1) });
+            shown = view.present_diorama(&mut encoder, &display, &scene, now, &views, assist.seat.pose).map(|p| {
+                // (The screen a diorama gives way to may show one.)
+                movie_rebuilt = p.frame.as_ref().is_some_and(|frame| frame.movie);
+                DioramaShown {
+                    share: p.screen,
+                    frame: p.frame.map(|frame| (frame.view.clone(), frame.size)),
+                    pane: p.pane.cloned(),
+                    space: p.space,
+                }
+            });
+            shown.as_ref().and_then(|s| s.frame.as_ref().map(|(_, size)| *size)).or(shown.as_ref().map(|_| presented_size))
+        } else if from_view {
+            view.present_headset(&mut encoder, &display, &scene, now, &looking).map(|p| {
                 inside = p.eyes.iter().map(|&eye| eye.clone()).collect();
                 movie_rebuilt = p.screen.movie;
                 p.screen.size
@@ -522,19 +689,22 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 .map_err(|e| e.to_string())?;
         }
 
-        // The virtual screen: its size (the setting's, scaled by two-hand
-        // scaling) and the display pixels it spans (a rebuilt movie frame
-        // without wider framing's sides).
+        // The virtual screen in front of the seat: its size (the setting's,
+        // scaled by two-hand scaling) and the display pixels it spans (a
+        // rebuilt movie frame without wider framing's sides). While the
+        // diorama shows, gestures aim at its pane and through its table.
         let width = f32::from(xr.width_cm) / 100.0 * assist.scaling.scale;
         let height = width * presented_size.1 as f32 / presented_size.0 as f32;
+        let pose = screen_pose(&assist.seat, f32::from(xr.distance_cm) / 100.0);
         let side = if from_view && !movie_rebuilt { view.config().map_or(0, |c| c.side) as f32 } else { 0.0 };
-        let screen = xem_assist::headset::Screen {
-            quad: xem_assist::headset::Quad {
-                pose: xem_assist::headset::Pose { position: screen_pose(f32::from(xr.distance_cm) / 100.0).position, orientation: Quat::IDENTITY },
-                size: (width, height),
-            },
-            display: if from_view { (display.width as f32, display.height as f32) } else { (presented_size.0 as f32, presented_size.1 as f32) },
-            side,
+        let space = shown.as_ref().and_then(|s| s.space);
+        let screen = match space {
+            Some(space) => xem_assist::headset::Screen::pane(space, assist.seat.position()),
+            None => xem_assist::headset::Screen::flat(
+                xem_assist::headset::Quad { pose: xem_assist::headset::Pose { position: pose.w_axis.truncate(), orientation: assist.seat.orientation() }, size: (width, height) },
+                if from_view { (display.width as f32, display.height as f32) } else { (presented_size.0 as f32, presented_size.1 as f32) },
+                side,
+            ),
         };
         last_screen = Some(screen);
         let style = Assisted::style(&current);
@@ -543,28 +713,42 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             .collect();
 
         if should_render {
-            let pose = screen_pose(f32::from(xr.distance_cm) / 100.0).matrix();
+            // The HUD inside the screen's corner, or the pane's.
+            let (anchor, anchor_size) = match space {
+                Some(space) => (space.pane, space.pane_size),
+                None => (pose, Vec2::new(width, height)),
+            };
             let hud_quad = hud.visible().then(|| {
-                let (w,h) = hud.size();
-                let unit = width / 640.0 / PANEL_SCALE;
-                let size = Vec2::new(w as f32*unit,h as f32*unit);
-                let placement = pose * Mat4::from_translation(Vec3::new(-width/2.0+size.x/2.0+width/80.0,height/2.0-size.y/2.0-width/80.0,0.002));
+                let (placement, size) = xem_assist::draw::hud(anchor, anchor_size, hud.size(), PANEL_SCALE);
                 (hud.view().clone(),placement,size)
             });
             let filter = match current.presentation.filter {
                 Filter::Nearest => wgpu::FilterMode::Nearest,
                 Filter::Linear => wgpu::FilterMode::Linear,
             };
-            let texture = match (picture, from_view) {
-                (None, _) => None,
-                (Some(_), true) => view.presented_texture().cloned(),
-                (Some(_), false) => movie.texture.clone(),
+            // The screen's picture: the diorama's while the screen shares the
+            // view with it, else the frame presented (or the movie's).
+            let (texture, share) = if diorama_view {
+                match &shown {
+                    Some(shown) => (shown.frame.as_ref().filter(|_| shown.share > 0.0).map(|(view, _)| view.clone()), shown.share),
+                    None => (None, 1.0),
+                }
+            } else {
+                let texture = match (picture, from_view) {
+                    (None, _) => None,
+                    (Some(_), true) => view.presented_texture().map(|t| t.create_view(&Default::default())),
+                    (Some(_), false) => movie.texture.as_ref().map(|t| t.create_view(&Default::default())),
+                };
+                (texture, 1.0)
             };
+            // The diorama's picture of each eye and its pane, while it shows.
+            let pictures_drawn = space.is_some();
+            let pane = shown.as_ref().and_then(|s| s.pane.clone()).zip(space).filter(|_| pictures_drawn);
             // Capture once, in the run's last third, facing the screen (or
             // at the headset frames asked for).
             let late = options.exit_after_frames.is_some_and(|n| frames * 3 >= n * 2)
                 || options.exit_at_frame.is_some_and(|at| game.frames_run() * 3 >= at * 2);
-            let facing = head.is_some_and(|head| (head.orientation * Vec3::NEG_Z).dot(Vec3::NEG_Z) > 0.95);
+            let facing = head.is_some_and(|head| (assist.seat.relative(head.orientation) * Vec3::NEG_Z).dot(Vec3::NEG_Z) > 0.95);
             let capture = match options.capture_at.is_empty() {
                 true => options.capture.clone().filter(|_| late && facing && !captured),
                 false => options.capture.as_ref().filter(|_| options.capture_at.contains(&frames)).map(|dir| dir.join(frames.to_string())),
@@ -574,15 +758,48 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let mut pictures = Vec::new();
             session
                 .render_eyes(|encoder, target| {
-                    let screen = texture.as_ref().map(|t| t.create_view(&Default::default()));
                     let quads: [Vec<Quad>; 2] = [0, 1].map(|eye| {
                         let view_proj: Mat4 = eyes[eye].proj * eyes[eye].view;
-                        // Looking from within the scene: the eye's picture over its whole view.
                         let whole = Rect { x: 0.0, y: 0.0, width: eye_size.0 as f32, height: eye_size.1 as f32 };
+                        // Looking from within the scene: the eye's picture over its whole view.
                         let within = inside.get(eye).map(|picture| {
                             let mut quad = Quad::screen(picture, whole, eye_size);
                             quad.srgb_encoded = true;
                             quad.opaque = true;
+                            quad.filter = filter;
+                            quad
+                        });
+                        let screen = texture.as_ref().map(|screen| {
+                            // The screen, or beside the eyes' pictures the
+                            // interface's pane where it was.
+                            let mut quad = Quad::world(screen, view_proj, pose, Vec2::new(width, height));
+                            // The renderer's frames hold sRGB-encoded values in a linear
+                            // format; movie frames are an sRGB texture. The game's
+                            // picture covers the room; the pane covers by its alpha.
+                            quad.srgb_encoded = from_view;
+                            quad.opaque = inside.is_empty();
+                            quad.opacity = share;
+                            quad.filter = filter;
+                            // Movie frames the device shows itself stay as the
+                            // decoder made them, each pixel a block.
+                            if !from_view && !original {
+                                quad.filter = wgpu::FilterMode::Nearest;
+                            }
+                            quad
+                        });
+                        // The diorama over the screen it eases with (its
+                        // picture premultiplied, faded and dimmed already),
+                        // then its pane at the diorama's share.
+                        let diorama = diorama_eyes.as_ref().filter(|_| pictures_drawn).map(|targets| {
+                            let mut quad = Quad::screen(&targets.views[eye], whole, eye_size);
+                            quad.srgb_encoded = true;
+                            quad.filter = wgpu::FilterMode::Nearest;
+                            quad
+                        });
+                        let pane = pane.as_ref().map(|(pane, space)| {
+                            let mut quad = Quad::world(pane, view_proj, space.pane, space.pane_size);
+                            quad.srgb_encoded = true;
+                            quad.opacity = 1.0 - share;
                             quad.filter = filter;
                             quad
                         });
@@ -591,27 +808,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                             quad.srgb_encoded = true;
                             quad
                         });
-                        within
-                            .into_iter()
-                            .chain(screen.iter().map(|screen| {
-                                // The screen, or beside the eyes' pictures
-                                // the interface's pane where it was.
-                                let mut quad = Quad::world(screen, view_proj, pose, Vec2::new(width, height));
-                                // The renderer's frames hold sRGB-encoded values in a linear
-                                // format; movie frames are an sRGB texture. The game's
-                                // picture covers the room; the pane covers by its alpha.
-                                quad.srgb_encoded = from_view;
-                                quad.opaque = inside.is_empty();
-                                quad.filter = filter;
-                                // Movie frames the device shows itself stay as the
-                                // decoder made them, each pixel a block.
-                                if !from_view && !original {
-                                    quad.filter = wgpu::FilterMode::Nearest;
-                                }
-                                quad
-                            }))
-                            .chain(glass)
-                            .collect()
+                        within.into_iter().chain(screen).chain(diorama).chain(pane).chain(glass).collect()
                     });
                     // The room around the screen; the eyes' pictures cover it.
                     let clear = Some(if inside.is_empty() { BACKDROP } else { wgpu::Color::BLACK });
@@ -619,8 +816,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                     if capture.is_some() {
                         readback = Some(crate::readback::Readback::record(&gpu.device, encoder, target.texture));
                         // From within the scene, each eye's picture as the
-                        // renderer drew it too (what the eyes should show).
+                        // renderer drew it too (what the eyes should show);
+                        // with the diorama, its pictures of each eye.
                         pictures = (0..inside.len()).filter_map(|eye| view.eye_texture(eye))
+                            .chain(diorama_eyes.iter().filter(|_| pictures_drawn).flat_map(|targets| targets.textures.iter()))
                             .map(|picture| crate::readback::Readback::record(&gpu.device, encoder, picture))
                             .collect();
                     }
@@ -628,7 +827,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 .map_err(|e| e.to_string())?;
             if let (Some(dir), Some(readback)) = (capture, readback) {
                 readback.save(&gpu.device, &[dir.join("left.png"), dir.join("right.png")])?;
-                for (picture, name) in pictures.into_iter().zip(["left-picture.png", "right-picture.png"]) {
+                let names = if inside.is_empty() { ["left-diorama.png", "right-diorama.png"] } else { ["left-picture.png", "right-picture.png"] };
+                for (picture, name) in pictures.into_iter().zip(names) {
                     picture.save(&gpu.device, &[dir.join(name)])?;
                 }
                 println!("capture dir={}", dir.display());
@@ -644,8 +844,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // own), its wider framing's sides (display pixels each side), and
         // the first eye's field of view's tangents (left, right, up, down).
         let fov = format!("{:.4},{:.4},{:.4},{:.4}", fov[0], fov[1], fov[2], fov[3]);
+        // The seat: where it stands and its turn (radians, left positive).
+        let seat = {
+            let (at, forward) = (assist.seat.position(), assist.seat.orientation() * Vec3::NEG_Z);
+            format!("{:.4},{:.4},{:.4};{:.4}", at.x, at.y, at.z, (-forward.x).atan2(-forward.z))
+        };
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -664,6 +869,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             u8::from(view.first_person()),
             u8::from(!inside.is_empty()),
             assist.scaling.scale,
+            if matches!(view.xr_view(), XrView::Diorama(_)) { "diorama" } else { "screen" },
+            u8::from(space.is_some()),
+            shown.as_ref().map_or(1.0, |s| s.share),
+            view.diorama_stats().builds,
         );
         frames += 1;
         if quit.get() && !exit_requested {

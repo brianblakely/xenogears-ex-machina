@@ -168,6 +168,7 @@ persistence.test.mjs Start pause freezes rewind history
 page.test.mjs drops missed time
 binaural.test.mjs phone-class processor
 xr-game.test.mjs .
+xr-diorama.test.mjs .
 TESTS
     return $status
 }

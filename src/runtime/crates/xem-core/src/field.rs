@@ -413,14 +413,21 @@ impl Field {
     /// The floor point a screen point picks on the player's layer: the
     /// nearest walkmesh triangle the ray meets.
     pub fn pick(&self, screen: (f32, f32)) -> Option<Hit> {
+        let (origin, direction) = self.camera.ray(screen)?;
+        self.pick_ray(origin, direction, f32::INFINITY)
+    }
+
+    /// The floor point a ray in the world picks on the player's layer (a
+    /// ray through a diorama of the field): the nearest walkmesh triangle it
+    /// meets from `origin` to `within` lengths of `direction` along it.
+    pub fn pick_ray(&self, origin: V3, direction: V3, within: f32) -> Option<Hit> {
         let player = self.player()?;
         let layer = player.layer;
         let mesh = self.layers.get(layer)?;
-        let (origin, direction) = self.camera.ray(screen)?;
         let mut best: Option<(f32, usize)> = None;
         for t in 0..mesh.triangles.len() {
             let [a, b, c] = mesh.corners(t);
-            if let Some(distance) = intersect(origin, direction, a, b, c)
+            if let Some(distance) = intersect(origin, direction, a, b, c).filter(|d| *d <= within)
                 && best.is_none_or(|(d, _)| distance < d)
             {
                 best = Some((distance, t));
@@ -429,6 +436,35 @@ impl Field {
         let (distance, triangle) = best?;
         let point = origin.add(direction.scale(distance));
         Some(Hit { point, triangle, layer, reach: self.reach(player, triangle, point) })
+    }
+
+    /// The other actor nearest a ray in the world (a ray through a diorama
+    /// of the field), within `reach` world units of it at its feet or its
+    /// middle, from `origin` to `within` lengths of `direction` along it:
+    /// actors the game skips, and those standing where the player stands
+    /// (followers), are not pointed at, as with [`Field::actor_at`].
+    pub fn actor_near_ray(&self, origin: V3, direction: V3, within: f32, reach: f32) -> Option<usize> {
+        let player = self.player()?;
+        let length = direction.dot(direction);
+        if length <= 0.0 {
+            return None;
+        }
+        // How far `p` lies from the ray's part in reach.
+        let away = |p: V3| {
+            let along = (p.sub(origin).dot(direction) / length).clamp(0.0, within);
+            let nearest = origin.add(direction.scale(along));
+            let d = p.sub(nearest);
+            d.dot(d).sqrt()
+        };
+        self.actors.iter().flatten()
+            .filter(|a| a.index != player.index && a.flags & 1 == 0 && a.position.planar(player.position) > 2.0)
+            .filter_map(|a| {
+                let middle = V3::new(a.position.x, a.position.y - f32::from(a.height.max(0)) / 2.0, a.position.z);
+                let d = away(a.position).min(away(middle));
+                (d <= reach).then_some((d, a.index))
+            })
+            .min_by(|a, b| a.0.total_cmp(&b.0))
+            .map(|(_, index)| index)
     }
 
     /// Whether the player can walk to `point` on `goal`, must jump on the
@@ -872,6 +908,29 @@ mod tests {
         let hit = f.pick(screen).unwrap();
         assert!(hit.point.planar(point) < 0.5, "{hit:?}");
         assert_eq!(hit.reach, Reach::Walk);
+    }
+
+    #[test]
+    fn world_rays_pick_the_floor_within_their_reach_and_the_actor_beside_them() {
+        let mut f = field(strip(5), vec![0]);
+        // From above the strip and ahead of it, down at (300, 0, 70) (y down).
+        let goal = V3::new(300.0, 0.0, 70.0);
+        let origin = V3::new(100.0, -400.0, 70.0);
+        let direction = goal.sub(origin).scale(0.5);
+        let hit = f.pick_ray(origin, direction, 4.0).unwrap();
+        assert!(hit.point.planar(goal) < 0.5 && hit.reach == Reach::Walk, "{hit:?}");
+        assert!(f.pick_ray(origin, direction, 1.9).is_none(), "the floor lies beyond the ray's part in reach");
+        assert!(f.pick_ray(origin, direction.scale(-1.0), 10.0).is_none(), "nothing behind it");
+        // An actor standing beside the ray's way down, another far off.
+        let other = |index: usize, at: V3| Actor { index, ..actor(at) };
+        f.actors.push(Some(other(1, V3::new(310.0, 0.0, 85.0))));
+        f.actors.push(Some(other(2, V3::new(480.0, 0.0, 20.0))));
+        assert_eq!(f.actor_near_ray(origin, direction, 4.0, 20.0), Some(1));
+        assert_eq!(f.actor_near_ray(origin, direction, 4.0, 5.0), None, "beyond its reach");
+        assert_eq!(f.actor_near_ray(origin, direction, 1.0, 20.0), None, "its part of the ray stops short of them");
+        // The player is not pointed at, nor an actor the game skips.
+        f.actors[1] = Some(Actor { flags: 1, ..f.actors[1].unwrap() });
+        assert_eq!(f.actor_near_ray(V3::new(50.0, -400.0, 50.0), V3::new(0.0, 100.0, 0.0), 10.0, 20.0), None);
     }
 
     #[test]

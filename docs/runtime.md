@@ -588,10 +588,12 @@ or on the game's own Sound screen, turns it off.
   presentation starting reads the scene at once, so the voices sounding
   then are placed by their emitters at the next register sync rather than
   counted as gaps), with the
-  first-person view's axes (`GameView::listener_axes`) and a headset's head
-  (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose, the
-  screen's forward its reference; lost tracking keeps the last; leaving the
-  headset clears it). The hosts' audio stays plain two-channel stereo at
+  first-person view's axes (`GameView::listener_axes`; while a headset's
+  diorama shows, the seat's axes through its table) and a headset's head
+  (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose as
+  the seat sees it, the seat's forward its reference, so a recentred seat
+  is ahead again; lost tracking keeps the last; leaving the headset clears
+  it). The hosts' audio stays plain two-channel stereo at
   the SPU's 44.1 kHz (SDL and the browser resample to the device), so no
   platform spatializer is stacked on it, and an audio device or its rate
   changing, pausing and resuming reach the presented sound exactly as they
@@ -1568,7 +1570,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled; a first-person view shows it either way), back faces (both off) |
-| headset screen | distance, width, depth of field in a headset (off) |
+| headset | the view: the screen (default) or the diorama; the screen's distance and width; the diorama's scale (25-400%, 100), the table's height (-100 to 30 cm, -45), distance (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed); passthrough (off; no host offers it yet); depth of field in a headset (off) |
 
 Modern draws at high resolution, perspective-correct and sub-pixel, in full
 colour, in the original's drawing order. PS1 keeps every limit at the native
@@ -2197,10 +2199,9 @@ its own view and projection (`ps1::diorama`, `GameView::present_diorama`).
 It is presentation only: nothing it does reaches the game but the records
 it asks the port for ([Camera records](#camera-records)) and, in a field,
 the widest view the characters keep moving in (the recorded `actor_view`
-of first-person inspection). No headset host shows it yet: its settings,
-recentering, reference-space resets, scaling gestures and passthrough are
-the next part of Phase 8; the review camera of `--example motion` and the
-tests below drive it.
+of first-person inspection). Both headset hosts show it when Graphics'
+headset view is the diorama ([In a headset](#in-a-headset)); the review
+camera of `--example motion` and the tests below drive it too.
 
 - **Asking for it.** `GameView::set_xr_view(XrView::Diorama(table))` (or
   `XrView::Screen`, the default). While the frame shown is a field's, a
@@ -2353,15 +2354,21 @@ tests below drive it.
   `DioramaPresented`: the screen's share and the flat frame for it (as
   `present` gives it, for the host's screen quad), the pane and the
   `DioramaSpace`: the room from the world and from the table, the volume,
-  the pane's pose and size (0.6 m wide, its lower edge 2 cm above the
-  volume's far top edge, facing the seat) and the camera and scale of the
-  frame shown (`diorama_space` gives the last). The host draws its screen
-  (at the screen's share), the pane (at one minus it), its HUD and panels
-  after. A presentation that shows no flat picture leaves none for a
-  screen the game takes next (it takes the native pixels).
+  the pane's pose and size (`Table::pane`: 0.6 m wide whatever the scale,
+  its lower edge 2 cm above the middle of the volume's far top edge,
+  upright and facing the seat whatever the table's tilt, so it stays
+  outside the volume) and the display pixels its picture spans, the
+  camera and scale of the frame shown, and the seat (`diorama_space`
+  gives the last; `DioramaSpace::first` the space a camera's frame lies in
+  as the first of its scene, for tests). The host draws its screen (at the
+  screen's share), the pane (at one minus it), its HUD and panels after.
+  A presentation that shows no flat picture leaves none for a screen the
+  game takes next (it takes the native pixels).
 - **What it does not draw.** HD-2D effects are not drawn in the diorama
-  (`effects_unavailable`, for a host's panel to say so; the profile stays
-  as chosen). The screen's limits have no place in a view from anywhere:
+  (`effects_unavailable`; Graphics' headset card says so while the view is
+  the diorama and the profile has effects a headset draws, and the profile
+  stays as chosen: the screen the diorama gives way to keeps them). The
+  screen's limits have no place in a view from anywhere:
   affine textures, vertex snapping, native resolution, dithering and the
   painter's order are not applied (15-bit colour and filtering are);
   viewport culling keeps what the game drew. The world map's terrain is not
@@ -2457,9 +2464,7 @@ beginning its own point and scale (half at twice the depth).
 swaying head, the scale and the turns changing midway, and ends at the
 RAM hash of the same frames drawn by nothing.
 
-Not done or not measured: no host shows the diorama (settings, the
-headset loops, recentering, reference-space resets, scaling gestures and
-passthrough come next), so nothing was seen in a headset or an emulator;
+Not done or not measured (the headsets' own: [In a headset](#in-a-headset)):
 the pane's place is a first choice, not one tried by anyone seated; HD-2D
 effects per eye were not attempted; battles and the world map were
 reviewed in one scene each, not their camera modes, cuts or scripted
@@ -2474,6 +2479,174 @@ eases in); close up, a one-pixel column of the layers beneath shows down
 the middle of Fei's head in field 30 (640x480, scale 3, 0.5 m, from the
 seat's side and from behind), which the game's picture does not have and
 a tenfold lift does not change: its cause is not established.
+
+#### In a headset
+
+OpenXR's loop (`xr_play`) and WebXR's (`render_xr`) show the diorama when
+Graphics' headset view is Diorama, and the screen otherwise; first-person
+inspection takes the eyes over while it is on (the diorama gives way to
+the screen then).
+
+- **Settings** (`Graphics::xr`, the panel's Headset card in Graphics, the
+  same panel in a browser): the view, Screen (the default) or Diorama; the
+  diorama's scale (25-400%, one value for every scene, 100% by default),
+  the table's height (-100 to 30 cm from the seated head, -45), distance
+  (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed);
+  and passthrough (off; its row shows only where a headset offers it, and
+  none does yet). The settings service validates them (`diorama scale must
+  be 25-400 percent`, ...). Reset diorama puts the scale, place and turns
+  back (the view, the screen and passthrough stay). The screen's distance
+  and width stay in the card under the diorama: the screen it gives way
+  to. While the view is the diorama and the profile has effects a headset
+  draws (`Graphics::headset_effects`), the card says the diorama does not
+  draw them.
+- **The seat** (`xem_assist::headset::Seat`). Everything stands in front of
+  it: the screen 2.5 m ahead, the table, its pane, the settings panel and
+  the keys; first-person inspection's eyes and the Binaural head are taken
+  as the seat sees them. It is the reference space's origin (OpenXR's
+  LOCAL, WebXR's `local`: the head as the session began) until the player
+  recentres: Recenter (an app action; Graphics' button while the panel is
+  in a headset, `xem.appOperation({Action: 'Recenter'})` in a browser,
+  `--xr-recenter-at N,...` on OpenXR) puts it at the head, facing the
+  head's way about the vertical (its pitch and roll left out). When the
+  runtime recentres the reference space itself (OpenXR's
+  `ReferenceSpaceChangePending` for LOCAL; the `reset` event of WebXR's
+  `local` space), the handler both hosts share
+  (`headset::reference_changed`) puts the seat back at the origin (the
+  runtime moved the space to the head already), cancels the gestures in
+  progress (each hand opens again before the next), lets go of a control
+  deck's captured stick and ends two-hand scaling. Both make the table take
+  the camera's point and heading at once rather than ease from where it
+  stood (`GameView::recenter_diorama`).
+- **Each eye** is drawn every headset frame, paused or not: the renderer
+  draws the diorama into a picture per eye (the host's, cleared first: the
+  renderer composites premultiplied over it, faded and dimmed), and the
+  host composes the eye: the room's backdrop, the screen at its share, the
+  eye's diorama picture, the pane at the diorama's share, then the marks,
+  keys and HUD; OpenXR's settings panel is a quad layer over all of it,
+  WebXR's a quad drawn last.
+- **Around the table**, outside its volume whatever the scale: the HUD
+  inside the pane's top left corner, as inside the screen's (`draw::hud`,
+  both hosts); the keys
+  (a control deck's, a shop's quantity keys and a battle's targets right of
+  the pane, the pointer's left of it) beside the pane's edges, scaled to
+  look as large from the seat as the screen's do from 2.5 m
+  (`draw::key_scale` from the pane edge's distance), their columns standing
+  on the pane's lower edge where they are taller than the pane; and the
+  settings panel where the pane floats, its lower edge there (over the pane
+  while it shows: the game is paused), as wide seen from the seat as below
+  the screen (`draw::panel`). The keys beside the pane look 0.72 to 1.19
+  times as large as the screen's from 2.5 m over the settings' range of
+  height, distance and tilt (the screen's own, off its middle, 0.81-0.83),
+  and the same at every scale.
+- **Aiming** at the diorama: the pointer source's ray meets the pane (its
+  pixels are the screen's: menus, dialogue, choices, battle lists and the
+  keys; walking, the pane shows no floor, so a pinch there walks nowhere and
+  a tap stops a route) or the table, where the ray's part inside the volume
+  becomes a ray in the game's world (`headset::world_ray`;
+  `dispatch::Pointed::World`) with an actor's reach of 4 cm on the table
+  (`ACTOR_REACH_METRES`, in world units at the table's scale). Walking, a
+  pinch walks to the floor that part meets first (`Field::pick_ray`, the
+  player's layer) and a tap, or a pointer's pinch, approaches and talks to
+  the actor nearest it at its feet or middle (`Field::actor_near_ray`):
+  the same `navigate` and `interact` commands as on the screen. Floor marks
+  (the cursor's and the destination's) lie on the table's floor at their
+  world points, 3 mm above it (`overlay::Place::Floor`); a ray that meets
+  no floor shows none, and on the pane the cursor is flat. Battles take
+  their targets from the pane and the target keys.
+- **The listener.** The Binaural head is the head as the seat sees it.
+  While the diorama shows, the listener's axes are the seat's right, down
+  and forward taken through the table into the game camera's view space
+  (`DioramaSpace::listener_axes`), so the head's turn composes once with
+  the table's heading and tilt; the music's stage, turned by the head
+  alone, stays put in the room. The listener stays at the character.
+- **Logs.** OpenXR's `xrframe` line adds `xr_view=` (`screen` or
+  `diorama`, the setting's view), `diorama=` (shown),
+  `share=` (the screen's), `builds=`, `seat=` (its place; its turn,
+  radians), `resets=` and `recenters=`, and an `event
+  reference_space_change` line; a capture in the diorama saves each eye's
+  diorama picture beside it (`left-diorama.png`, `right-diorama.png`).
+  WebXR's `status().xr` has `diorama`, `share`, `space` (the room from the
+  world, column major; metres per world unit; the pane's centre), `seat`,
+  `resets` and `recenters`.
+
+Measured on Monado's simulated HMD (20 Hz, 320x240 eyes, this machine's
+CPU and lavapipe; the smoke's diorama run in field 30 under HD-2D, a load
+average of about 6): the diorama shown in 277 of 297 headset frames (the
+first are the boot's), intervals p50 49.88 ms and p99 57.06 ms, none of 276
+late (beyond 1.5 periods), and the presentation's time on the loop's
+thread p50 1.20 ms, p95 1.63 ms (the same smoke's screen under HD-2D, its
+effects drawn: p50 8.37 ms). In IWER's Quest 3 (a quarter-scale layer on
+SwiftShader; the browser runs at most four game frames a session frame),
+the web tier's timed stage, one test after another, measured the session
+at 11.6 frames a second and the game at 46.5 with the diorama, against
+27.2 and 60.7 as the screen and 10.9 and 43.7 from within the scene; the
+diorama runs while developing gave 7.2 to 11.6 and 28.7 to 46.4 (seven
+runs, load averages of 5 to 14).
+
+Tests: `xr-game-smoke.sh`'s diorama runs (Monado; field 30, Fei walked
+into the room by the inspection run's log): the diorama shows in most
+headset frames and alone at the two captures; the eyes' disparity, the
+horizontal shift that best maps one eye's picture on the other's per band
+of rows, grows from the far rows to the near ones by 5 pixels or more
+(measured, top band first: 11, 10, 16, 17 and 20 pixels at headset frame
+150; 11, 10, 15, 16 and 18 at 250), where the screen's (field 12) is one
+shift in every band (4 pixels in each of four); each eye shows its
+diorama picture in the renderer's colours (over the blocks of a 16x12
+grid the picture covers whole, 35 to 38 of them, the median mean colour
+difference at most 4 levels: 0.0 measured); `monado-ctl -c` reaches the session as an `event
+reference_space_change` and the seat is LOCAL's origin from the frame it
+does; Recenter at headset frame 220 puts the seat at the head of that
+frame; the RAM at game frame 1200 equals `xem-headless`'s for the same
+log (23da911a1e0e26bc); and a scripted pinch with the gaze through the table at
+the world point (88.67, 0, -55.33) of field 30 walks Fei there (moving,
+then arrived). `web/tests/xr-diorama.test.mjs` (IWER's Quest 3; field 30):
+the automation's 120 frames end at the same RAM in and out of the headset
+with the diorama on; the table covers rows of the left view; moving the
+head 10 cm sideways shifts the rows with texture the move matches by
+their depth, the nearest at least 5 points (0.2% of the layer's width
+each) more than the farthest (measured: 38, 35, 30 and 30 near the near
+edge, 25 across the far part; the uniform backdrop wall's rows are left
+out), and the head back gives the same picture;
+turned 30 degrees, the view changes, Recenter turns the seat with the
+head and puts the table in front again (the same picture); IWER's own
+`recenter()` reaches the app as `local`'s `reset` (`resets` 1), the seat
+is the origin again and the picture the first; and a pinch (the hand's
+select) with the head aimed through the table at a floor point walks Fei
+to it (the walk heading within 4 units of it, then arrived).
+`xem-headless/tests/gestures.rs`
+`through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none`
+(field 30, the table placed from the frame's own camera record as a
+headset places it: a pinch at a walkable floor point on the table heads
+the walk within 2 units of it and arrives within 16; one on the pane walks
+nowhere) and `through_a_diorama_a_tap_by_a_villager_talks_to_them` (Lahan:
+the villager approached and talked to). Unit tests: the settings' bounds,
+defaults, old files and Reset diorama (`xem-settings` graphics.rs); the
+panel's Headset rows, Recenter and Reset diorama through the settings
+service (`xem-ui/tests/panel.rs`
+`a_headset_shows_the_screen_or_the_diorama_and_recenters_through_the_shared_services`);
+`Field::pick_ray` within a ray's reach and `actor_near_ray`
+(`xem-core` field.rs); world and pane aims in `dispatch`, floor marks at
+their world points, the pane, keys and HUD outside the volume and the same
+at every scale, the keys as large as the screen's over the settings' range
+of height, distance and tilt, the panel likewise,
+a ray through the table becoming the world's, the seat, and the shared
+reference handler cancelling a grab in progress, ending scaling and
+letting a bout's stick go (`xem-assist`); the pane upright above the far
+edge at every tilt and scale, the listener's axes through the table, and
+the settings' mapping (`xem-render` diorama.rs).
+
+Not done or not measured: passthrough and immersive AR (the setting exists,
+no host offers it yet); scaling the diorama with two whole-hand pinches
+(two-hand scaling still scales the screen, which the diorama gives way to);
+battle targets through the table (they come from the pane and the keys);
+the world map and battles were not run in a headset; on Monado's simulated
+HMD `monado-ctl -c` delivers the event but the head's poses do not jump
+(nothing visible moves LOCAL there), and no controller binding recentres
+by default; comfort is not measured (no people tests) and nothing ran on a
+Quest; marks are drawn over the diorama whatever stands in front of them;
+a ray through the table meets the floor through scenery standing in front
+of it (no depth test: a floor behind a wall can be pointed at).
 
 ### HD-2D effects
 
@@ -2594,8 +2767,12 @@ changes the game's RAM or the software GPU's VRAM (`memory_hash`,
 
 The game is shown as a flat, monoscopic virtual screen in front of a seated
 player: each eye or view draws the same presented frame with its own view and
-projection; nothing claims reconstructed 3D. (The renderer also draws the
-[Diorama](#diorama), which no headset host shows yet.) The game runs from the host's
+projection; nothing claims reconstructed 3D there. With Graphics' headset
+view set to the diorama, each eye sees the scene in 3D on a table in front
+of the seat instead, the interface on a pane above it, and the screen where
+the diorama gives way to it ([In a headset](#in-a-headset)). Everything
+stands in front of the seat, which Recenter moves to the head and the
+runtime's own recentring puts back at the reference space's origin. The game runs from the host's
 clock (at most four catch-up frames per host frame, so a 15 Hz session still
 runs all 60), once per headset frame, never per eye; the settings use the
 Headset class (Low tier, depth of field off unless enabled).
@@ -2604,7 +2781,7 @@ Headset class (Low tier, depth of field off unless enabled).
   argument, for a standalone headset such as Horizon OS, enters the same loop
   once the game is booted, with the activity and JavaVM as the loader's
   platform data; `crates/xem-host/src/xr_play.rs`): the
-  screen 2.5 m ahead (Settings: headset screen), the settings panel a quad
+  screen 2.5 m ahead (Settings: headset), the settings panel a quad
   layer (left menu button), movie frames on the same screen (rebuilt as
   wide as the screen spans in an eye: [Movies](#movies)); controllers
   are the game bindings' gamepad ([Controls](#controls)). One
@@ -2641,7 +2818,11 @@ Headset class (Low tier, depth of field off unless enabled).
   frame itself, whose alpha is the mask bit) turns the view off and on
   with the underhand grab at 195 and 210 while the Pause grab holds the
   game (`fp=0` only between them, the game's frames still, `within=1`
-  again at once) and checks its eyes captured at 230 the same way.
+  again at once) and checks its eyes captured at 230 the same way. Its
+  diorama runs check the diorama in field 30: depth in the eyes'
+  disparity, Monado's recentring of LOCAL (`monado-ctl -c`) and Recenter,
+  the RAM against `xem-headless`, and a pinch through the table walking Fei
+  ([In a headset](#in-a-headset)).
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs
@@ -2669,13 +2850,16 @@ Headset class (Low tier, depth of field off unless enabled).
   ends it with the Original renderer and turns it on again under Ex
   Machina, the game's frames still throughout; it resumes, turns it off
   (the screen again at its size), turns it on again and exits, the canvas
-  going on with the view. The session asks for `hand-tracking`;
+  going on with the view. `web/tests/xr-diorama.test.mjs` checks the
+  diorama: parallax, Recenter, IWER's own recentring and a pinch through
+  the table ([In a headset](#in-a-headset)). The session asks for `hand-tracking`;
   each frame the page passes the viewer's pose, the session's visibility,
   each hand's target ray and its 25 joints to the headset core
   ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)),
   whose Pause and settings hold the game's clock; the settings panel is a
   quad below the screen in the session (0.55 m wide, tilted toward the
-  player) that takes the pointer source's ray with a pinch, or a
+  player; above the table with the diorama as the view) that takes the
+  pointer source's ray with a pinch, or a
   controller's ray with its trigger (`select`). The button reads Enter VR
   or Exit VR; a hidden session (the browser's own menu) or its end lets go
   of held input.
@@ -2939,7 +3123,10 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   left or right hand ray; a hand's ray is the runtime's aim, a
   controller's or the hand's own: `XR_EXT_hand_interaction`'s aim pose,
   WebXR's target ray) aims at the virtual screen (`Screen`: game screen pixels, sides included) and the panel and
-  keys beside it. An unavailable source aims at nothing; nothing else
+  keys beside it; while a diorama shows, at its interface's pane (the
+  screen's pixels, no floor under them) and through its table into the
+  game's world (`dispatch::Pointed`: `Screen`, `Pane` or `World`; [In a
+  headset](#in-a-headset)). An unavailable source aims at nothing; nothing else
   stands in.
 - **Gestures** (`xem_assist::gesture`). The standard ones are the
   runtime's, never imitated from joints: the pinch (OpenXR's
@@ -4645,7 +4832,9 @@ note, done, or a problem in red). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
 (hand gestures, the headset pointer, Stop at ledges, touch controls,
 reduced transparency and motion); Shortcuts lists every app operation with
-its bindings and edits the chosen one in place; Gameplay holds the options
+its bindings and edits the chosen one in place (Recenter headset view among
+them, with no default binding: the headset card's Recenter button and the
+automation reach it); Gameplay holds the options
 that change the game itself ([Random battles in platforming
 areas](#random-battles-in-platforming-areas); [Text speed, auto-advance and
 movie skipping](#text-speed-auto-advance-and-movie-skipping)). Cancel closes either binding

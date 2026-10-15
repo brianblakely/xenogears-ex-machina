@@ -23,7 +23,15 @@
 #   follow the head while the player's Pause holds the game, and the eyes
 #   show them in the renderer's own colours, under HD-2D and under the
 #   default Modern profile), the grab toggles it while the game is paused,
-#   the screen keeps its size, and the game's RAM is xem-headless's.
+#   the screen keeps its size, and the game's RAM is xem-headless's;
+# - the seated diorama (the headset view setting) in field 30: the eyes see
+#   the room on the table in 3D (their disparity grows from the far rows to
+#   the near ones, where the screen's is the same in every row, and each
+#   eye shows its diorama picture in the renderer's colours), Monado's
+#   recentring of LOCAL (`monado-ctl -c`) reaches the session and puts the
+#   seat at LOCAL's origin, the app's Recenter puts it at the head, the
+#   game's RAM is xem-headless's, and a pinch with the gaze through the
+#   table on a floor point walks Fei there.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -113,6 +121,23 @@ printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1
 echo '{"graphics": {"profile": "Modern"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-after-frames 240 \
     --xr-hands "150:inspect,180:pause,195:inspect,210:inspect" --xr-capture "$out/modern" --xr-capture-at 230 >"$out/modern.log" 2>"$out/modern.err"
+# The diorama, with the same log as the inspection run (its RAM checked
+# against the same headless run): both eyes captured at headset frames 150
+# and 250, Monado's recentring once the session has drawn 100 frames, the
+# app's Recenter at 220. Then a pinch through the table at a floor point of
+# field 30 (a world point: the gaze aims where the table shows it).
+echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+(
+    for _ in $(seq 600); do grep -q '^xrframe n=100 ' "$out/diorama.log" 2>/dev/null && break; sleep 0.1; done
+    monado-ctl -c >"$out/monado-ctl.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl.log"
+) &
+recentring=$!
+"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-recenter-at 220 \
+    --xr-capture "$out/diorama" --xr-capture-at 150,250 >"$out/diorama.log" 2>"$out/diorama.err"
+wait "$recentring"
+echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
+    --xr-hands "150:pinch@world:88.67/0/-55.33" >"$out/diorama-walk.log" 2>"$out/diorama-walk.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -334,6 +359,84 @@ check(bool(gone) and 195 <= gone[0] <= 208 and 209 <= gone[-1] <= 222 and len(go
       f"Modern: the grabs while paused turned the view off and on again: off {gone[:1]}..{gone[-1:]}")
 check(all(by[n]["fp"] == "1" and by[n]["within"] == "1" for n in range(225, 235)), "Modern: the view was not back from within the scene while paused")
 print(f"modern: paused from frame {paused[0]['n'] if paused else '-'}, off while paused {gone[:1]}..{gone[-1:]}")
+
+# The diorama.
+def luma(image):
+    w, h, rows_ = image
+    return w, h, [[(rows_[y][4 * x] * 3 + rows_[y][4 * x + 1] * 6 + rows_[y][4 * x + 2]) / 10 for x in range(w)] for y in range(h)]
+def disparities(left, right, bands=8, reach=40):
+    # Per band of rows with texture: the horizontal shift that maps the
+    # right eye's picture on the left's best (right[x] ~ left[x + s]; a
+    # nearer point shifts more), where the best is a clear one.
+    w, h, l = luma(left)
+    _, _, r = luma(right)
+    shifts = []
+    for b in range(bands):
+        ys, xs = range(b * h // bands, (b + 1) * h // bands), range(reach, w - reach)
+        values = [l[y][x] for y in ys for x in xs]
+        mean = sum(values) / len(values)
+        spread = (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5
+        sad = [sum(abs(r[y][x] - l[y][x + s]) for y in ys for x in xs) / (len(ys) * len(xs)) for s in range(-reach, reach + 1)]
+        best = min(range(len(sad)), key=lambda i: sad[i])
+        if spread > 5 and sorted(sad)[0] < 0.6 * sorted(sad)[len(sad) // 2]:
+            shifts.append((b, best - reach))
+    return shifts
+rows = records("diorama.log")
+by = {int(r["n"]): r for r in rows}
+shown = [r for r in rows if r["diorama"] == "1"]
+check(len(shown) >= len(rows) // 2, f"the diorama showed in only {len(shown)} of {len(rows)} headset frames")
+check(all(r["xr_view"] == "diorama" for r in rows), "the headset view was not the diorama")
+check(final_hash("diorama.log") == inspected, f"diorama.log: RAM at game frame 1200 {final_hash('diorama.log')} != headless {inspected}")
+def covered_off(eye, picture, n=(16, 12)):
+    # Over the blocks the eye's diorama picture covers whole (alpha 255):
+    # how many, and the median of the eye's mean colour difference from it.
+    w, h, e = eye
+    _, _, p = picture
+    diffs = []
+    for j in range(n[1]):
+        for i in range(n[0]):
+            xs, ys = range(i * w // n[0], (i + 1) * w // n[0]), range(j * h // n[1], (j + 1) * h // n[1])
+            if all(p[y][4 * x + 3] == 255 for y in ys for x in xs):
+                mean = lambda rows_, k: sum(rows_[y][4 * x + k] for y in ys for x in xs) / (len(xs) * len(ys))
+                diffs.append(sum(abs(mean(e, k) - mean(p, k)) for k in range(3)) / 3)
+    diffs.sort()
+    return len(diffs), diffs[len(diffs) // 2] if diffs else 255
+for n in (150, 250):
+    check(by[n]["diorama"] == "1" and by[n]["share"] == "0.000", f"frame {n}: the diorama alone was not shown ({by[n]['diorama']}, {by[n]['share']})")
+    d = disparities(png(f"{out}/diorama/{n}/left.png"), png(f"{out}/diorama/{n}/right.png"))
+    shifts = [s for _, s in d]
+    check(len(d) >= 3 and max(shifts) - min(shifts) >= 5 and d[-1][1] > d[0][1],
+          f"frame {n}: the eyes' disparity does not grow with nearness: {d}")
+    # Each eye shows its diorama picture in the renderer's colours.
+    for side in ("left", "right"):
+        blocks, levels = covered_off(png(f"{out}/diorama/{n}/{side}.png"), png(f"{out}/diorama/{n}/{side}-diorama.png"))
+        check(blocks >= 20 and levels <= 4, f"frame {n} {side}: the eye shows its diorama {levels:.1f} levels off over {blocks} covered blocks")
+    print(f"diorama {n}: disparity by band of rows (top first) {d}; the eyes {covered_off(png(f'{out}/diorama/{n}/left.png'), png(f'{out}/diorama/{n}/left-diorama.png'))} (covered blocks, levels off)")
+flat = disparities(png(f"{out}/field/left.png"), png(f"{out}/field/right.png"))
+check(len(flat) >= 3 and max(s for _, s in flat) - min(s for _, s in flat) <= 1, f"the screen's disparity is not one in every row: {flat}")
+print(f"screen (field 12): disparity by band of rows {flat}")
+# Monado's recentring: the session hears it and the seat is LOCAL's origin
+# from then on; the app's Recenter puts the seat at the head.
+events = [l for l in open(f"{out}/diorama.log") if l.startswith("event reference_space_change")]
+check(len(events) >= 1, f"Monado's recentring did not reach the session ({open(f'{out}/monado-ctl.log').read().strip()!r})")
+reset = next((r for r in rows if r["resets"] != "0"), None)
+check(reset is not None and reset["seat"].startswith("0.0000,0.0000,0.0000;"), f"the seat after the reference changed: {reset and reset['seat']}")
+recentred = next((r for r in rows if r["recenters"] == "1"), None)
+if recentred:
+    head = [float(v) for v in recentred["head"].split(";")[0].split(",")]
+    seat = [float(v) for v in recentred["seat"].split(";")[0].split(",")]
+    check(int(recentred["n"]) == 220 and all(abs(a - b) < 0.001 for a, b in zip(head, seat)), f"Recenter at frame 220: seat {seat} for the head {head} at {recentred['n']}")
+check(recentred is not None, "the app's Recenter did not run")
+print(f"diorama: shown in {len(shown)} of {len(rows)} headset frames, {len(events)} recentring of LOCAL (seat {reset and reset['seat']}), "
+      f"Recenter at {recentred and recentred['n']} (seat {recentred and recentred['seat']}); RAM {final_hash('diorama.log')}")
+print(f"diorama pacing: {pace(lambda r: r['diorama'] == '1')}")
+# A pinch through the table walks Fei to the floor point gazed at.
+rows = records("diorama-walk.log")
+walked = [r["assist"] for r in rows if int(r["n"]) >= 150]
+pinch = [int(r["n"]) for r in rows if "Pinch" in r["gestures"]]
+check(bool(pinch) and all(r["diorama"] == "1" for r in rows if int(r["n"]) in pinch), f"the pinch did not come while the diorama showed: {pinch}")
+check("moving" in walked and walked[-1] == "arrived", f"the pinch through the diorama did not walk Fei there: {walked[:5]}..{walked[-3:]}")
+print(f"diorama walk: pinch at {pinch}, {walked[:2]}..{walked[-1:]}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

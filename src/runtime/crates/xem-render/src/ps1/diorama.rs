@@ -110,11 +110,37 @@ impl Default for Table {
 }
 
 impl Table {
+    /// The table's volume in its space (metres, its least and greatest
+    /// corners): nothing of the diorama is drawn outside it, whatever the
+    /// scale, and controls stand outside it.
+    pub const VOLUME: (Vec3, Vec3) = (VOLUME_MIN, VOLUME_MAX);
+
     /// The room from the table's space (its top's centre, x right, y up, z
     /// towards the seat; metres) for a seat at `seat` (a pose in the room,
     /// turned about its up only).
     pub fn room_from_table(&self, seat: Mat4) -> Mat4 {
         seat * Mat4::from_translation(Vec3::new(0.0, self.height, -self.distance)) * Mat4::from_rotation_x(self.tilt)
+    }
+
+    /// Where things float above the table for a seat at `seat` (the pane, a
+    /// host's settings panel): the middle of the volume's far top edge,
+    /// raised a little, upright and facing the seat whatever the table's
+    /// tilt (x right, y up, facing +z), in the room. What stands on it stays
+    /// outside the volume: up from that edge is outside it at every tilt.
+    pub fn above(&self, seat: Mat4) -> Mat4 {
+        let (_, facing, _) = seat.to_scale_rotation_translation();
+        let edge = self.room_from_table(seat).transform_point3(Vec3::new(0.0, VOLUME_MAX.y, VOLUME_MIN.z));
+        Mat4::from_rotation_translation(facing, edge + facing * Vec3::new(0.0, PANE_LIFT, 0.0))
+    }
+
+    /// Where the interface's pane floats for a seat at `seat` and a picture
+    /// `aspect` (its height over its width): standing on [`Table::above`],
+    /// at a fixed size (the player's scale scales the world on the table,
+    /// never the pane). Its pose in the room (its centre) and its size
+    /// (metres).
+    pub fn pane(&self, seat: Mat4, aspect: f32) -> (Mat4, Vec2) {
+        let size = Vec2::new(PANE_WIDTH, PANE_WIDTH * aspect);
+        (self.above(seat) * Mat4::from_translation(Vec3::new(0.0, size.y / 2.0, 0.0)), size)
     }
 }
 
@@ -174,10 +200,65 @@ pub struct DioramaSpace {
     /// facing +z) and its size (metres).
     pub pane: Mat4,
     pub pane_size: Vec2,
+    /// The pane's picture: the display's pixels it spans.
+    pub display: Vec2,
     /// The camera the frame shown was drawn with.
     pub camera: Camera,
     /// Metres per world unit.
     pub scale: f32,
+    /// The seat the table was placed from (a pose in the room, turned about
+    /// its up only).
+    pub seat: Mat4,
+}
+
+impl DioramaSpace {
+    /// The space a frame drawn with `camera` (its scene's projection
+    /// distance `h`, its display `display` pixels) lies in on `table` from a
+    /// seat at `seat`, as the first frame of its scene (the camera's target
+    /// and heading taken at once, as after a recentring): for hosts' tests
+    /// and agents placing things without a presentation.
+    pub fn first(camera: &Camera, h: f32, display: Vec2, table: &Table, seat: Mat4) -> Option<DioramaSpace> {
+        let placed = Placement::default().update(camera, h, "", false, 0.0, table)?;
+        Some(DioramaSpace::of(&placed, camera, display, table, seat))
+    }
+
+    fn of(placed: &Placed, camera: &Camera, display: Vec2, table: &Table, seat: Mat4) -> DioramaSpace {
+        let room_from_table = table.room_from_table(seat);
+        let (pane, pane_size) = table.pane(seat, display.y / display.x.max(1.0));
+        DioramaSpace {
+            room_from_world: room_from_table * placed.table_from_world,
+            room_from_table,
+            volume: Table::VOLUME,
+            pane,
+            pane_size,
+            display,
+            camera: *camera,
+            scale: placed.scale,
+            seat,
+        }
+    }
+
+    /// The game's world from the room (world units, its y down).
+    pub fn world_from_room(&self) -> Mat4 {
+        self.room_from_world.inverse()
+    }
+
+    /// The table's space from the room.
+    pub fn table_from_room(&self) -> Mat4 {
+        self.room_from_table.inverse()
+    }
+
+    /// The listener's axes for the Binaural mode while the diorama shows:
+    /// the seat's right, down and forward (the presentation's, which a
+    /// headset's head turns from) in the game camera's view space, through
+    /// the table: the head's turn, given in the seat's space, is composed
+    /// with them once (`xem_core::binaural`).
+    pub fn listener_axes(&self) -> Option<[[f32; 3]; 3]> {
+        let view_from_room = rotation(&self.camera) * Mat3::from_mat4(self.world_from_room());
+        let seat = Mat3::from_mat4(self.seat);
+        let axes = [seat * Vec3::X, seat * Vec3::NEG_Y, seat * Vec3::NEG_Z].map(|axis| (view_from_room * axis).normalize_or_zero());
+        axes.iter().all(|axis| axis.length_squared() > 0.5).then(|| axes.map(|axis| axis.to_array()))
+    }
 }
 
 /// What a diorama presentation shows ([`super::GameView::present_diorama`]).
@@ -1250,19 +1331,17 @@ impl Diorama {
             gpu.compositor.as_mut().expect("made above").draw_targets(encoder, &targets);
         }
         // The pane floats above the table's far edge, facing the seat.
-        let aspect = built.area.height as f32 / built.area.width.max(1) as f32;
-        let pane_size = Vec2::new(PANE_WIDTH, PANE_WIDTH * aspect);
-        let pane = room_from_table * Mat4::from_translation(Vec3::new(0.0, VOLUME_MAX.y + PANE_LIFT + pane_size.y / 2.0, VOLUME_MIN.z));
-        self.space = Some(DioramaSpace {
-            room_from_world: room_from_table * placed.table_from_world,
-            room_from_table,
-            volume: (VOLUME_MIN, VOLUME_MAX),
-            pane,
-            pane_size,
-            camera: built.camera,
-            scale: placed.scale,
-        });
+        let display = Vec2::new(built.area.width as f32, built.area.height as f32);
+        self.space = Some(DioramaSpace::of(&placed, &built.camera, display, table, seat));
         true
+    }
+
+    /// The table takes the camera's point and heading at once at the next
+    /// presentation, as a new scene's does (a recentring, a reference space
+    /// the runtime moved): no easing from where it stood.
+    pub(crate) fn recenter(&mut self) {
+        let placement = &mut self.placement;
+        (placement.target, placement.heading, placement.last) = (None, None, None);
     }
 
     /// The last presentation showed no diorama: the screen alone, from which
@@ -1596,5 +1675,62 @@ mod tests {
         let field = placement.update(&far, 256.0, "field:2", true, 10.0, &table).expect("a placement");
         assert!((field.scale * 2.0 - first.scale).abs() < 1e-9, "half the scale at twice the depth: {} against {}", field.scale, first.scale);
         assert!(field.table_from_world.transform_point3(Vec3::new(0.0, 0.0, 2400.0)).length() < 1e-4, "its own target at the table's centre");
+    }
+
+    #[test]
+    fn the_pane_stands_upright_facing_the_seat_above_the_far_edge_at_every_tilt_and_scale() {
+        let seat = Mat4::from_rotation_translation(glam::Quat::from_rotation_y(0.6), Vec3::new(0.2, 0.0, -0.1));
+        let mut panes = Vec::new();
+        for tilt in [0.0f32, 20.0, 45.0] {
+            for scale in [0.25, 1.0, 4.0] {
+                let table = Table { scale, tilt: tilt.to_radians(), ..Table::default() };
+                let space = DioramaSpace::first(&LEVEL, 256.0, Vec2::new(320.0, 224.0), &table, seat).expect("a space");
+                let (_, facing, centre) = space.pane.to_scale_rotation_translation();
+                assert!(facing.angle_between(glam::Quat::from_rotation_y(0.6)) < 1e-5, "tilt {tilt}: upright, facing the seat");
+                // Its lower edge is above the volume's top and beyond its far side.
+                let bottom = space.table_from_room().transform_point3(centre - facing * Vec3::Y * space.pane_size.y / 2.0);
+                assert!(bottom.y > VOLUME_MAX.y && bottom.z <= VOLUME_MIN.z + 1e-5, "tilt {tilt}: {bottom}");
+                assert_eq!((space.pane_size, space.display), (Vec2::new(PANE_WIDTH, PANE_WIDTH * 0.7), Vec2::new(320.0, 224.0)));
+                panes.push((tilt, space.pane));
+            }
+        }
+        for (tilt, pane) in &panes {
+            assert!(panes.iter().filter(|(t, _)| t == tilt).all(|(_, p)| p == pane), "tilt {tilt}: the player's scale leaves the pane where it is");
+        }
+    }
+
+    #[test]
+    fn the_listener_faces_the_seats_way_through_the_table() {
+        let seat = Mat4::from_rotation_translation(glam::Quat::from_rotation_y(0.6), Vec3::new(0.2, 0.0, -0.1));
+        let close = |a: [f32; 3], b: [f32; 3]| (Vec3::from(a) - Vec3::from(b)).length() < 1e-4;
+        // A table turned to the camera's heading: the seat's axes are the
+        // camera's own, whatever its yaw and the seat's.
+        for yaw in [0.0, 70.0, -130.0] {
+            let space = DioramaSpace::first(&camera(yaw, 25.0, 0.0, [0.0, 0.0, 1200.0], CameraMode::Field), 256.0, Vec2::new(320.0, 224.0), &Table::default(), seat).unwrap();
+            let [right, down, forward] = space.listener_axes().unwrap();
+            // The camera pitched 25 degrees; the table is level: its forward
+            // is the camera's level heading, 25 degrees up in its view.
+            let (s, c) = 25f32.to_radians().sin_cos();
+            assert!(close(right, [1.0, 0.0, 0.0]) && close(forward, [0.0, -s, c]) && close(down, [0.0, c, s]), "yaw {yaw}: {:?}", [right, down, forward]);
+        }
+        // Tilted, the table turns its world towards the seat: the listener
+        // (the seat's level forward) looks that much down into it.
+        let tilted = Table { tilt: 20f32.to_radians(), ..Table::default() };
+        let space = DioramaSpace::first(&LEVEL, 256.0, Vec2::new(320.0, 224.0), &tilted, Mat4::IDENTITY).unwrap();
+        let (s, c) = 20f32.to_radians().sin_cos();
+        let [_, _, forward] = space.listener_axes().unwrap();
+        assert!(close(forward, [0.0, s, c]), "{forward:?}");
+    }
+
+    #[test]
+    fn the_settings_choose_the_screen_or_the_diorama_as_placed() {
+        use xem_settings::{DioramaTurns, HeadsetView, XrScreen};
+        assert_eq!(super::super::xr_view(&XrScreen::default()), XrView::Screen);
+        let xr = XrScreen { view: HeadsetView::Diorama, diorama_scale: 250, diorama_height_cm: -30, diorama_distance_cm: 80, diorama_tilt_deg: 15, diorama_turns: DioramaTurns::Fixed, ..XrScreen::default() };
+        let XrView::Diorama(table) = super::super::xr_view(&xr) else { panic!("a diorama") };
+        assert_eq!((table.scale, table.height, table.distance, table.turns), (2.5, -0.3, 0.8, Turns::Fixed));
+        assert!((table.tilt - 15f32.to_radians()).abs() < 1e-6);
+        let XrView::Diorama(default) = super::super::xr_view(&XrScreen { view: HeadsetView::Diorama, ..XrScreen::default() }) else { panic!("a diorama") };
+        assert_eq!(default, Table::default(), "the settings' defaults are the renderer's");
     }
 }

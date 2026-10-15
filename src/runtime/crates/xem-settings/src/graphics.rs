@@ -232,8 +232,34 @@ pub struct Culling {
     pub back_faces: bool,
 }
 
-/// The game screen in a headset: a flat virtual screen in front of a seated
-/// player.
+/// What a headset shows of the game (docs/runtime.md, Diorama).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum HeadsetView {
+    /// A flat virtual screen in front of the seated player (the default).
+    #[default]
+    Screen,
+    /// The scene as a miniature on a table in front of the seated player,
+    /// each eye seeing it from where it is; the game's interface on a pane
+    /// above the table's far edge. Movies, menus and other moments without
+    /// a scene to stand on the table show the screen.
+    Diorama,
+}
+
+/// How the diorama's table turns with the game's camera (fields and the
+/// world map; a battle's table keeps the heading it began with).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DioramaTurns {
+    /// Eased towards the camera's heading.
+    #[default]
+    Smooth,
+    /// In 30-degree steps, dimmed briefly at each.
+    Snap,
+    /// The heading the scene began with.
+    Fixed,
+}
+
+/// The game in a headset: a flat virtual screen in front of a seated
+/// player, or the seated diorama.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct XrScreen {
@@ -243,11 +269,77 @@ pub struct XrScreen {
     pub width_cm: u16,
     /// Depth of field in a headset (off by default: it fights the eyes' own focus).
     pub depth_of_field: bool,
+    /// The screen or the diorama.
+    pub view: HeadsetView,
+    /// The diorama's size, percent ([`DIORAMA_SCALE`]; 100: the original
+    /// screen's width at the camera's target spans the table).
+    pub diorama_scale: u16,
+    /// The table top's height above the seated head, its distance ahead of
+    /// it (centimetres) and its tilt (degrees, raising its far edge).
+    pub diorama_height_cm: i16,
+    pub diorama_distance_cm: u16,
+    pub diorama_tilt_deg: u8,
+    pub diorama_turns: DioramaTurns,
+    /// The diorama over the room around the player, where the headset offers
+    /// passthrough (no host offers it yet; off by default).
+    pub passthrough: bool,
 }
+
+/// The diorama's scale, height, distance and tilt within their bounds.
+pub const DIORAMA_SCALE: std::ops::RangeInclusive<u16> = 25..=400;
+pub const DIORAMA_HEIGHT_CM: std::ops::RangeInclusive<i16> = -100..=30;
+pub const DIORAMA_DISTANCE_CM: std::ops::RangeInclusive<u16> = 30..=200;
+pub const DIORAMA_TILT_DEG: std::ops::RangeInclusive<u8> = 0..=45;
 
 impl Default for XrScreen {
     fn default() -> Self {
-        XrScreen { distance_cm: 250, width_cm: 300, depth_of_field: false }
+        XrScreen {
+            distance_cm: 250,
+            width_cm: 300,
+            depth_of_field: false,
+            view: HeadsetView::Screen,
+            diorama_scale: 100,
+            diorama_height_cm: -45,
+            diorama_distance_cm: 60,
+            diorama_tilt_deg: 0,
+            diorama_turns: DioramaTurns::Smooth,
+            passthrough: false,
+        }
+    }
+}
+
+impl XrScreen {
+    /// The diorama's size, placement and turns as they are by default (the
+    /// panel's Reset diorama); the view, the screen and passthrough stay.
+    pub fn diorama_reset(&self) -> XrScreen {
+        let defaults = XrScreen::default();
+        XrScreen {
+            diorama_scale: defaults.diorama_scale,
+            diorama_height_cm: defaults.diorama_height_cm,
+            diorama_distance_cm: defaults.diorama_distance_cm,
+            diorama_tilt_deg: defaults.diorama_tilt_deg,
+            diorama_turns: defaults.diorama_turns,
+            ..*self
+        }
+    }
+
+    fn validate(&self) -> Result<(), String> {
+        if !(50..=2000).contains(&self.distance_cm) || !(50..=2000).contains(&self.width_cm) {
+            return Err("headset screen distance and width must be 50-2000 cm".into());
+        }
+        if !DIORAMA_SCALE.contains(&self.diorama_scale) {
+            return Err(format!("diorama scale must be {}-{} percent", DIORAMA_SCALE.start(), DIORAMA_SCALE.end()));
+        }
+        if !DIORAMA_HEIGHT_CM.contains(&self.diorama_height_cm) {
+            return Err(format!("diorama height must be {} to {} cm", DIORAMA_HEIGHT_CM.start(), DIORAMA_HEIGHT_CM.end()));
+        }
+        if !DIORAMA_DISTANCE_CM.contains(&self.diorama_distance_cm) {
+            return Err(format!("diorama distance must be {}-{} cm", DIORAMA_DISTANCE_CM.start(), DIORAMA_DISTANCE_CM.end()));
+        }
+        if !DIORAMA_TILT_DEG.contains(&self.diorama_tilt_deg) {
+            return Err(format!("diorama tilt must be {}-{} degrees", DIORAMA_TILT_DEG.start(), DIORAMA_TILT_DEG.end()));
+        }
+        Ok(())
     }
 }
 
@@ -341,6 +433,15 @@ impl Graphics {
         }
     }
 
+    /// Whether a headset draws any of the profile's effects on its screen
+    /// (depth of field only where [`XrScreen::depth_of_field`] asks for it):
+    /// the diorama shows them as unavailable.
+    pub fn headset_effects(&self) -> bool {
+        let e = self.effects();
+        [e.lighting, e.shadows, e.ambient_occlusion, e.fog, e.light_shafts, e.bloom, e.color_grading].iter().any(|level| *level > 0)
+            || (self.xr.depth_of_field && e.depth_of_field > 0)
+    }
+
     pub(crate) fn validate(&self) -> Result<(), String> {
         self.hd2d.validate()?;
         self.custom_effects.validate()?;
@@ -350,10 +451,7 @@ impl Graphics {
         if !(100..=MAX_ZOOM_OUT).contains(&self.zoom_out) {
             return Err(format!("zoom out must be 100 to {MAX_ZOOM_OUT} percent"));
         }
-        if !(50..=2000).contains(&self.xr.distance_cm) || !(50..=2000).contains(&self.xr.width_cm) {
-            return Err("headset screen distance and width must be 50-2000 cm".into());
-        }
-        Ok(())
+        self.xr.validate()
     }
 }
 
@@ -425,6 +523,60 @@ mod tests {
         assert_eq!(graphics.zoomed(2).zoom_out, 150);
         assert_eq!(graphics.zoomed(-1).zoom_out, 100, "1x is the nearest");
         assert_eq!(graphics.zoomed(100).zoom_out, MAX_ZOOM_OUT);
+    }
+
+    #[test]
+    fn a_headset_shows_the_screen_unless_the_diorama_is_chosen_within_its_bounds() {
+        let xr = XrScreen::default();
+        assert_eq!(xr.view, HeadsetView::Screen, "the screen by default");
+        assert_eq!((xr.diorama_scale, xr.diorama_height_cm, xr.diorama_distance_cm, xr.diorama_tilt_deg), (100, -45, 60, 0));
+        assert_eq!((xr.diorama_turns, xr.passthrough), (DioramaTurns::Smooth, false));
+        // Settings saved before the diorama existed keep their screen.
+        let older: Graphics = serde_json::from_str(r#"{"xr":{"distance_cm":300,"width_cm":400,"depth_of_field":true}}"#).unwrap();
+        assert_eq!(older.xr, XrScreen { distance_cm: 300, width_cm: 400, depth_of_field: true, ..XrScreen::default() });
+        let diorama = Graphics {
+            xr: XrScreen { view: HeadsetView::Diorama, diorama_scale: 250, diorama_turns: DioramaTurns::Snap, passthrough: true, ..xr },
+            ..Graphics::default()
+        };
+        let text = serde_json::to_string(&diorama).unwrap();
+        assert!(text.contains(r#""view":"Diorama""#) && text.contains(r#""diorama_turns":"Snap""#), "{text}");
+        assert_eq!(serde_json::from_str::<Graphics>(&text).unwrap(), diorama);
+        assert!(diorama.validate().is_ok());
+        let bounded = |edit: fn(&mut XrScreen)| {
+            let mut xr = XrScreen::default();
+            edit(&mut xr);
+            Graphics { xr, ..Graphics::default() }.validate()
+        };
+        for (edit, ok) in [
+            ((|x: &mut XrScreen| x.diorama_scale = 25) as fn(&mut XrScreen), true),
+            (|x| x.diorama_scale = 400, true),
+            (|x| x.diorama_scale = 24, false),
+            (|x| x.diorama_scale = 401, false),
+            (|x| x.diorama_height_cm = -100, true),
+            (|x| x.diorama_height_cm = 31, false),
+            (|x| x.diorama_height_cm = -101, false),
+            (|x| x.diorama_distance_cm = 29, false),
+            (|x| x.diorama_distance_cm = 201, false),
+            (|x| x.diorama_tilt_deg = 45, true),
+            (|x| x.diorama_tilt_deg = 46, false),
+        ] {
+            assert_eq!(bounded(edit).is_ok(), ok, "{:?}", bounded(edit));
+        }
+        assert_eq!(bounded(|x| x.diorama_tilt_deg = 46).unwrap_err(), "diorama tilt must be 0-45 degrees");
+        // Reset diorama: its size, place and turns, not the view, the screen
+        // or passthrough.
+        let moved = XrScreen { diorama_scale: 300, diorama_height_cm: -20, diorama_distance_cm: 90, diorama_tilt_deg: 10, diorama_turns: DioramaTurns::Fixed, ..diorama.xr };
+        assert_eq!(moved.diorama_reset(), XrScreen { view: HeadsetView::Diorama, passthrough: true, ..XrScreen::default() });
+    }
+
+    #[test]
+    fn a_headset_draws_effects_its_profile_has_but_depth_of_field_only_when_asked() {
+        assert!(!Graphics::default().headset_effects(), "Modern draws none");
+        let hd2d = Graphics { profile: GraphicsProfile::Hd2d, ..Graphics::default() };
+        assert!(hd2d.headset_effects());
+        let only_dof = Graphics { profile: GraphicsProfile::Custom, custom_effects: EffectLevels { depth_of_field: 50, focus: 20, ..EffectLevels::OFF }, ..Graphics::default() };
+        assert!(!only_dof.headset_effects(), "a headset leaves depth of field out by default");
+        assert!(Graphics { xr: XrScreen { depth_of_field: true, ..XrScreen::default() }, ..only_dof }.headset_effects());
     }
 
     #[test]

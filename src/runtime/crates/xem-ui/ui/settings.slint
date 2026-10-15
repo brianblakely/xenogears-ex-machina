@@ -674,6 +674,22 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-xr-distance;
     in-out property <int> gfx-xr-width;
     in-out property <bool> gfx-xr-dof;
+    // What a headset shows (0 the screen, 1 the diorama) and the diorama's
+    // scale (percent), table height and distance (cm), tilt (degrees), turns
+    // (0 smooth, 1 snap, 2 fixed) and passthrough; a note on what the
+    // diorama does not draw.
+    in-out property <int> gfx-xr-view;
+    in-out property <int> gfx-xr-scale: 100;
+    in-out property <int> gfx-xr-height: -45;
+    in-out property <int> gfx-xr-table-distance: 60;
+    in-out property <int> gfx-xr-tilt;
+    in-out property <int> gfx-xr-turns;
+    in-out property <bool> gfx-xr-passthrough;
+    in property <string> gfx-xr-note;
+    // The host shows the panel in a headset (Recenter places its view), and
+    // its headset offers passthrough.
+    in property <bool> in-headset;
+    in property <bool> xr-passthrough-offered;
     in property <string> gfx-status;
     private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
     private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];
@@ -802,8 +818,12 @@ export component SettingsPanel inherits Window {
     callback show-fps-edited(bool);
     // A graphics choice by name (renderer, profile, scale, quality, rate, interpolation,
     // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
-    // xr-distance, xr-width, xr-dof) and value.
+    // xr-distance, xr-width, xr-dof, xr-view, xr-scale, xr-height,
+    // xr-table-distance, xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset)
+    // and value.
     callback graphics-edited(string, int);
+    // Recenter: the headset's view placed in front of the head again.
+    callback xr-recenter-requested();
     callback fidelity-edited(int, bool);
     callback effect-edited(int, int);
     callback pause-on-focus-loss-edited(bool);
@@ -1109,11 +1129,17 @@ export component SettingsPanel inherits Window {
                                 }
                             }
                             if root.selected-section == 1: Card {
-                                title: "Headset screen";
+                                title: "Headset";
                                 Text { text: "VR"; font-size: 12px; font-weight: 600; color: Theme.text-secondary; }
 
                                 Row {
-                                    label: "Distance";
+                                    label: "View";
+                                    Segmented { accessible-label: "Headset view"; options: ["Screen", "Diorama"]; current <=> root.gfx-xr-view; selected(index) => { root.graphics-edited("xr-view", index); } }
+                                }
+                                Divider { }
+                                // The screen (also where the diorama gives way to it).
+                                Row {
+                                    label: root.gfx-xr-view == 1 ? "Screen distance" : "Distance";
                                     HorizontalLayout {
                                         spacing: 8px;
                                         SpinBox { accessible-label: "Headset screen distance in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-distance; edited(value) => { root.graphics-edited("xr-distance", value); } }
@@ -1122,12 +1148,67 @@ export component SettingsPanel inherits Window {
                                 }
                                 Divider { }
                                 Row {
-                                    label: "Width";
+                                    label: root.gfx-xr-view == 1 ? "Screen width" : "Width";
                                     HorizontalLayout {
                                         spacing: 8px;
                                         SpinBox { accessible-label: "Headset screen width in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
                                         Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
+                                }
+                                if root.gfx-xr-view == 1: Divider { }
+                                if root.gfx-xr-view == 1: SliderRow {
+                                    label: "Diorama scale";
+                                    value-text: "\{root.gfx-xr-scale}%";
+                                    Slider {
+                                        accessible-label: "Diorama scale";
+                                        minimum: 25;
+                                        maximum: 400;
+                                        value: root.gfx-xr-scale;
+                                        changed(value) => { root.graphics-edited("xr-scale", round(value / 5) * 5); }
+                                    }
+                                }
+                                if root.gfx-xr-view == 1: Row {
+                                    label: "Table height";
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        SpinBox { accessible-label: "Diorama table height from the head in centimetres"; width: 104px; minimum: -100; maximum: 30; step-size: 5; value <=> root.gfx-xr-height; edited(value) => { root.graphics-edited("xr-height", value); } }
+                                        Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
+                                    }
+                                }
+                                if root.gfx-xr-view == 1: Row {
+                                    label: "Table distance";
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        SpinBox { accessible-label: "Diorama table distance in centimetres"; width: 104px; minimum: 30; maximum: 200; step-size: 5; value <=> root.gfx-xr-table-distance; edited(value) => { root.graphics-edited("xr-table-distance", value); } }
+                                        Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
+                                    }
+                                }
+                                if root.gfx-xr-view == 1: SliderRow {
+                                    label: "Table tilt";
+                                    value-text: "\{root.gfx-xr-tilt}°";
+                                    Slider {
+                                        accessible-label: "Diorama table tilt";
+                                        minimum: 0;
+                                        maximum: 45;
+                                        value: root.gfx-xr-tilt;
+                                        changed(value) => { root.graphics-edited("xr-tilt", round(value)); }
+                                    }
+                                }
+                                if root.gfx-xr-view == 1: Row {
+                                    label: "Table turns";
+                                    Segmented { accessible-label: "Diorama table turns"; options: ["Smooth", "Snap", "Fixed"]; current <=> root.gfx-xr-turns; selected(index) => { root.graphics-edited("xr-turns", index); } }
+                                }
+                                if root.gfx-xr-view == 1 && root.xr-passthrough-offered: ToggleRow {
+                                    label: "Passthrough";
+                                    checked <=> root.gfx-xr-passthrough;
+                                    toggled(on) => { root.graphics-edited("xr-passthrough", on ? 1 : 0); }
+                                }
+                                if root.gfx-xr-view == 1 && root.gfx-xr-note != "": Text { text: root.gfx-xr-note; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                                if root.in-headset || root.gfx-xr-view == 1: HorizontalLayout {
+                                    spacing: 8px;
+                                    alignment: end;
+                                    if root.in-headset: Button { text: "Recenter"; clicked => { root.xr-recenter-requested(); } }
+                                    if root.gfx-xr-view == 1: Button { text: "Reset diorama"; clicked => { root.graphics-edited("xr-diorama-reset", 0); } }
                                 }
                                 if root.gfx-renderer == 1: Divider { }
                                 if root.gfx-renderer == 1: ToggleRow {
