@@ -1584,7 +1584,10 @@ impl<M: GameModule> Session<M> {
                 // kernel menu does (tools/reference/scenario.py used the same
                 // recipe in the emulator): after boot, enter mode 0, put the
                 // map in the game data, select mode 1 and let the kernel menu
-                // finish into the original dispatcher.
+                // finish into the original dispatcher. `entry` is the
+                // entrance (`game_data.entry[2]`, which the field reads as
+                // its v0002, as a door's map change leaves it; `entry[0]` is
+                // the heading).
                 let map = arg_u64("map").ok_or("enter_field needs map")?;
                 let budget = arg_u64("max_frames").unwrap_or(6000);
                 self.run_until_value("cd_movie_request_kind", 1, budget)?;
@@ -1593,7 +1596,7 @@ impl<M: GameModule> Session<M> {
                 self.run_until_value("mode_kernel_menu_running", 1, budget)?;
                 self.write_path("game_data.map", &json!(map))?;
                 if let Some(entry) = command.get("entry") {
-                    self.write_path("game_data.entry[0]", entry)?;
+                    self.write_path("game_data.entry[2]", entry)?;
                 }
                 self.write_path("mode_next_mode", &json!(1))?;
                 self.write_path("mode_kernel_menu_running", &json!(0))?;

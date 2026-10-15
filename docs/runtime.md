@@ -209,11 +209,15 @@ input.
 - **Go anywhere.** `enter_field {map, entry?}` enters a field map the way the
   original's development kernel menu does: once the boot reaches the opening
   movie request, it restarts the dispatcher into mode 0 (the kernel menu),
-  writes the map (and entry) into `game_data`, selects mode 1 and lets the
-  menu finish into the original dispatcher. `enter_field {map: 23}` reaches the
+  writes the map (and the entrance, `entry`) into `game_data`, selects mode 1
+  and lets the menu finish into the original dispatcher. The entrance is
+  `game_data.entry[2]`, which the field reads as its v0002 and places the
+  party by, as a door's map change leaves it (`entry[0]` is the heading).
+  `enter_field {map: 23}` reaches the
   forest map's opening dialogue (`tests/route.rs`) and matches the original
   capture of the same recipe (tools/reference/scenario.py) within 0.013 mean
-  colour difference.
+  colour difference; on map 414 each `entry` puts the party on the map's
+  entry record of that number (`tests/route.rs`).
 - **Routes and regression.** `tests/reference-inputs/*.json` are pad routes
   (frame ranges and buttons) played identically by `xem-headless --inputs`
   and the reference emulator (`tools/reference/observe.py`); the captures of

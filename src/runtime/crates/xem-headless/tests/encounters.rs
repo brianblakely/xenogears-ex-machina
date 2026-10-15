@@ -144,9 +144,10 @@ fn a_door_and_a_scripted_battle_still_work_where_random_battles_are_off() {
     };
     let off = Settings::default().random_battles_off();
     assert!(off.contains(&172) && off.contains(&414) && off.contains(&415));
-    // Map 414's entry 1 is at its door from map 415: down through it.
+    // Map 414's entrance 0, where map 415's door leads, is beside its own
+    // door to map 415: down through it.
     let mut doors = session(&disc, off);
-    enter(&mut doors, 414, 1);
+    enter(&mut doors, 414, 0);
     assert_eq!(draw(&mut doors)["off_here"], json!(true));
     run(&mut doors, json!({"cmd": "hold", "actions": ["Down"]}));
     let mut through = false;

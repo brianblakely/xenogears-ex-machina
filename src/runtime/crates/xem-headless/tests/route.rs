@@ -1,7 +1,8 @@
 //! The original game's new-game route through the real native services
 //! (local only: it needs the user's disc 1 and a game module build). The
 //! authoritative outcome (RAM and scratchpad) must not depend on presentation
-//! capture or on a snapshot taken and restored on the way.
+//! capture or on a snapshot taken and restored on the way. `enter_field`
+//! reaches the forest map and puts the party at the entrance it names.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test route
 
@@ -91,4 +92,40 @@ fn enter_field_reaches_the_forest_map() {
     // The map's opening dialogue window is up (field_dialogue_windows[0] has a message).
     let window = session.execute(&serde_json::json!({ "cmd": "inspect", "path": "field_dialogue_windows[0].message", "depth": 0 }));
     assert_ne!(window, serde_json::json!(0), "{window}");
+}
+
+/// `enter_field`'s `entry` is the entrance the party arrives at, as a
+/// door's map change names it (`game_data.entry[2]`): on map 414 the
+/// leader stands at the map's entry record of that number (the event
+/// bytecode opens with ff; record n at 1 + 7n holds x and z).
+#[test]
+fn enter_field_places_the_party_at_the_entrance_it_names() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let placed: Vec<([f64; 2], [f64; 2])> = [0u32, 1].into_iter().map(|entry| {
+        let mut session = session(&disc);
+        let reply = session.execute(&serde_json::json!({ "cmd": "enter_field", "map": 414, "entry": entry }));
+        assert_eq!(reply["map"], 414, "{reply}");
+        for _ in 0..3000 {
+            assert!(session.frame().expect("frame"));
+            if session.runtime.context() == xem_core::context::Context::Walk {
+                break;
+            }
+        }
+        let mut word = [0; 4];
+        session.runtime.memory().read(0x800A_DC00, &mut word).expect("field_event_bytecode");
+        let mut record = [0; 5];
+        session.runtime.memory().read(u32::from_le_bytes(word) + 1 + 7 * entry, &mut record).expect("the entry record");
+        let half = |at: usize| f64::from(i16::from_le_bytes([record[at], record[at + 1]]));
+        let field = session.execute(&serde_json::json!({ "cmd": "field" }));
+        let leader = field["actors"].as_array().expect("actors").iter().find(|a| a["index"] == field["player"]).expect("the leader").clone();
+        let at = |axis: &str| leader["position"][axis].as_f64().expect("a coordinate");
+        ([at("x"), at("z")], [half(0), half(2)])
+    }).collect();
+    for (entry, (leader, record)) in placed.iter().enumerate() {
+        assert_eq!(leader, record, "entrance {entry}: the leader stands on its entry record");
+    }
+    assert_ne!(placed[0].0, placed[1].0, "the two entrances are different places");
 }
