@@ -748,6 +748,91 @@ fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from
     }
 }
 
+/// First-person inspection begins only on a frame that draws the field's
+/// scene: over a field's frame of its interface alone (the title screen's
+/// field draws its logo, the game culling its map whole) it ends at the
+/// next presentation; over [`FIELD`] it stays. A headset's eyes then never
+/// hold an earlier inspection's picture: turned on again over another
+/// frame, they show that frame, not the one they drew before.
+#[test]
+fn inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew() {
+    use xem_render::ps1::HeadsetEye;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let view_of = |traces: &(xem_gpu::Trace, xem_gpu::Trace), host: HostClass| {
+        let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+        view.configure(ViewConfig::resolve(&xem_settings::Graphics::default(), host, (640, 480), view.max_scale()));
+        let _ = view.take_restart();
+        for trace in [&traces.0, &traces.1] {
+            view.push(trace.clone());
+        }
+        view
+    };
+    let present = |view: &mut GameView| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        view.present(&mut encoder, &DISPLAY, "field:490", 0.0).expect("a picture");
+        gpu.queue.submit([encoder.finish()]);
+    };
+    // A field's frame of its camera's record and its interface alone, two
+    // of them; inspection waits for a frame with the camera's record.
+    let interface = traced(|gpu| {
+        for _ in 0..2 {
+            gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+            gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+            gpu.trace_projections(0, &camera_entries(LEVEL, [0; 3], [0, 200, 1200], 1200), &[], &[]);
+            gpu.write_gp0_words(&[0x6000_FFFF, xy(100, 80), 60 << 16 | 120]);
+        }
+    });
+    let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+    view.configure(ViewConfig::resolve(&xem_settings::Graphics::default(), HostClass::Desktop, (640, 480), view.max_scale()));
+    let _ = view.take_restart();
+    view.push(interface.0.clone());
+    view.set_first_person(true);
+    present(&mut view);
+    assert!(view.first_person(), "no frame with the field camera's record yet (the trace's start): inspection waits");
+    view.push(interface.1.clone());
+    present(&mut view);
+    assert!(!view.first_person(), "nothing of the field's scene to look around in: inspection ends");
+    // FIELD, the sprite as the controlled character (its eye record at its
+    // feet, as the port records it before the next frame's drawing), its
+    // floor in `floor`'s colour, two frames of it.
+    let field = |floor: u32| traced(move |gpu| {
+        let mut faces = FIELD;
+        faces[0].command = 0x2800_0000 | floor;
+        for _ in 0..2 {
+            gte_frame(gpu, LEVEL, &faces, true);
+            gpu.trace_projections(0, &[projection(FEET, 7, SPRITE)], &[], &[]);
+        }
+    });
+    let mut view = view_of(&field(0x00FF00), HostClass::Desktop);
+    view.set_first_person(true);
+    present(&mut view);
+    assert!(view.first_person(), "over the field's scene it stays");
+    // A headset's eye looking ahead and down at the floor (green), then the
+    // view off, another frame (the floor blue) and the view on again.
+    let eye = HeadsetEye { orientation: [-0.3826834, 0.0, 0.0, 0.9238795], position: [0.0; 3], fov: [-1.0, 1.0, 1.0, -1.0] };
+    let floor_seen = |view: &mut GameView| -> [u8; 3] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let picture = view.present_headset(&mut encoder, &DISPLAY, "field:490", 0.0, &[eye]).expect("presented").eyes.len();
+        gpu.queue.submit([encoder.finish()]);
+        assert_eq!(picture, 1, "the eye looks from within the scene");
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, view.eye_texture(0).expect("the eye's picture"));
+        let (w, h) = (view.eye_texture(0).unwrap().width() as usize, view.eye_texture(0).unwrap().height() as usize);
+        let i = (h * 3 / 4 * w + w / 2) * 4;
+        [pixels[i], pixels[i + 1], pixels[i + 2]]
+    };
+    let mut view = view_of(&field(0x00FF00), HostClass::Headset);
+    view.set_first_person(true);
+    assert_eq!(floor_seen(&mut view), [0, 255, 0], "the green floor below the eye");
+    view.set_first_person(false);
+    let blue = field(0xFF0000);
+    for trace in [&blue.0, &blue.1] {
+        view.push(trace.clone());
+    }
+    present(&mut view);
+    view.set_first_person(true);
+    assert_eq!(floor_seen(&mut view), [0, 0, 255], "the frame shown, not the earlier inspection's picture");
+}
+
 #[test]
 fn interface_pixels_bypass_the_effects() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");

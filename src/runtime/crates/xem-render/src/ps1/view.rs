@@ -100,6 +100,13 @@ pub fn xr_view(graphics: &Graphics) -> XrView {
     }
 }
 
+/// Whether a frame's ops draw a scene as the game drew it (its map, models
+/// or sprites through the GTE), not only its interface and the faces the
+/// port records for a wider view.
+fn draws_scene(ops: &[TraceOp]) -> bool {
+    ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.class.is_scene() && !p.revealed))
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
@@ -603,9 +610,15 @@ impl GameView {
 
     /// Turns first-person inspection on (looking along the field camera's
     /// heading, level, from the controlled character's eyes, once a frame
-    /// shows where it stands) or off. It shows only in a field and ends
-    /// when the field (or its map) is left.
+    /// shows where it stands) or off. It shows only in a field, begins only
+    /// on a frame drawing the field's scene and ends when the field (or its
+    /// map) is left. A headset's eyes begin anew with it: what they hold
+    /// through frames without the field is a picture of this inspection's,
+    /// never an earlier one's.
     pub fn set_first_person(&mut self, on: bool) {
+        if on && self.first_person.is_none() {
+            self.eyes.clear();
+        }
         self.first_person = on.then(FirstPerson::default);
     }
 
@@ -882,7 +895,8 @@ impl GameView {
         // does not draw the field (a field's menu has the screen: the port
         // records the character's place as the field draws its models, and
         // a frame may keep a record of the one before it) leaves the eyes
-        // on the last that did, seen as the head now is.
+        // on the last that did, seen as the head now is (one they drew in
+        // this inspection: they are made anew as it begins).
         self.show_screen(encoder, area, now, new_frame, None, Interface::Only);
         let alpha = self.alpha(now);
         let hold = self.main.frame.eye().is_none() || projection_centre(self.main.frame.newest()).is_none();
@@ -986,12 +1000,19 @@ impl GameView {
             self.recorded_focus = None;
             self.focus = None;
         }
-        // First-person inspection is the field's it began in.
+        // First-person inspection is the field's it began in, and begins
+        // only where the first frame shown with the field camera's record
+        // (the port records it from the frame after the view asks, as the
+        // field draws its models) draws the field's scene: a field whose
+        // camera shows none of it (the title screen's: its logo over a map
+        // the game culls whole) has nothing to look around in.
         if let Some(view) = &mut self.first_person {
             match &view.field {
                 _ if !self.scene.starts_with("field") => self.first_person = None,
                 Some(field) if *field != self.scene => self.first_person = None,
                 Some(_) => {}
+                None if self.main.frame.camera().is_none() => {}
+                None if !draws_scene(self.main.frame.newest()) => self.first_person = None,
                 None => view.field = Some(self.scene.clone()),
             }
         }

@@ -1810,7 +1810,18 @@ while the view shows (it would leave Run pressed alone once the directions
 are held back). A menu (the field's own, with the view as the screen it
 takes, or a script's) keeps every button, and the view does not turn under
 it (`xem_settings::look`). It ends when toggled again, when the field or its
-map is left, and under the Original renderer.
+map is left, and under the Original renderer. It begins only where the
+first frame shown with the field camera's record (the port records it
+from the frame after the view asks) draws the field's scene as the game
+drew it (its map, models or sprites, not only faces recorded for a wider
+view): the title screen is field 490, whose camera shows none of its map
+(the game culls it whole behind the logo), so a toggle there ends at the
+next frame instead of looking around a room the game never shows or
+holding back the title's D-pad. A headset's eye pictures begin anew with
+each inspection: what they hold through frames that draw no field (its
+menu) is a picture of this inspection's, never an earlier one's (a
+headset tour found the title showing field 12's room, held from a
+dialogue inspected minutes before).
 
 The player's inputs all keep the character where it stands: the keys,
 buttons, mouse and touch deck above, the taps below and a headset's
@@ -2023,8 +2034,17 @@ hash is the run's without any view; through 240 frames of the field's menu
 (more than 30 with its commands) the eyes keep the room every frame and
 the pane shows the menu (over 30% of it covered); a state loaded then,
 with no frame since, leaves the pane empty and the eyes on the room.
+`xem-render`'s `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew`
+turns the view on over a field's frames of its interface alone: it waits
+through the trace's start (no camera record) and ends at the first frame
+with one; over a field's scene it stays; an eye that saw a green floor,
+the view off, another frame with the floor blue and the view on again,
+sees blue (held from before, it saw green: the tour's title).
 `xr-game-smoke.sh` plays it on Monado ([Headsets](#headsets)) and
-`web/tests/xr-game.test.mjs` on IWER.
+`web/tests/xr-game.test.mjs` on IWER, whose scene tour toggles it with
+the left hand's underhand grab in each scene (only in field 30 and
+field 12's dialogue does it look from within, the title included among
+the rest).
 `web/tests/first-person.test.mjs` (local, disc 1) runs field 30 in a page
 with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
 `navigate` is refused; W and Space reach no pad and the character stays;
@@ -2952,9 +2972,20 @@ Headset class (Low tier, depth of field off unless enabled).
   ends it with the Original renderer and turns it on again under Ex
   Machina, the game's frames still throughout; it resumes, turns it off
   (the screen again at its size), turns it on again and exits, the canvas
-  going on with the view. `web/tests/xr-diorama.test.mjs` checks the
-  diorama: parallax, Recenter, IWER's own recentring and a pinch through
-  the table heading the walk for the floor point gazed at
+  going on with the view. Its scene tour loads natively made states of
+  field 30, field 12's dialogue, the field's menu, the world map, a
+  battle on foot and one in Gears, the title movie and the title screen
+  with the game running: each shows on the screen in front of both views
+  (at least 12 of 18 points about the views' centres unlike the room;
+  17 or 18 measured), the left hand's underhand grab is recognised in
+  each and looks from within the scene in the field and the dialogue
+  only, and a battle loaded after the field ends the view (pictures in
+  `build/web-test/xr-tour-*.png`, read for this qualification: the
+  pointer's keys beside the screen, the world map's deck on its right,
+  the title's Start key, the menu's list region and the dialogue's
+  window as the game draws them). `web/tests/xr-diorama.test.mjs` checks
+  the diorama: parallax, Recenter, IWER's own recentring and a pinch
+  through the table heading the walk for the floor point gazed at
   ([In a headset](#in-a-headset)). The session asks for `hand-tracking`;
   each frame the page passes the viewer's pose, the session's visibility,
   each hand's target ray and its 25 joints to the headset core

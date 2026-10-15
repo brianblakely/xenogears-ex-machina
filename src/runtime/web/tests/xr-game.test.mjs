@@ -18,13 +18,20 @@
 // (status().renderer.movie), the device's own picture under Original, on the
 // screen in both views, the screen without wider framing's sides
 // (status().xr.screen) in the display's shape, the game's RAM the same; the
-// title's 15-bit screen after it has the sides. Saves and time controls in
-// the session: the game's own save to card 2 (the slice's save route, its
-// last frames played in the headset) reaches IndexedDB during the session,
-// the panel's Save state and Load state by a controller's ray, fast-forward
-// by the controllers' Back+RT and off by the panel's button, Back+LT
-// rewinding through Settings' pause under the HUD's icon, and the backups'
-// pickers refused.
+// title's 15-bit screen after it has the sides. A tour of the game's scenes
+// (states made natively: field 30, field 12's dialogue, the field's menu,
+// the world map, a battle on foot and in Gears, the title movie and the
+// title screen, each shown with the game running): the screen in front in
+// both views, the left hand's underhand grab recognised everywhere and
+// looking from within the scene only in the field and its dialogue
+// (pictures to build/web-test/xr-tour-*.png), and leaving the field for a
+// battle ending the view. Saves and time controls in the session: the
+// game's own save to card 2 (the slice's save route, its last frames played
+// in the headset) reaches IndexedDB during the session, the panel's Save
+// state and Load state by a controller's ray, fast-forward by the
+// controllers' Back+RT and off by the panel's button, Back+LT rewinding
+// through Settings' pause under the HUD's icon, and the backups' pickers
+// refused.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -340,6 +347,131 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(info.renderer.firstPerson, true, 'the view carries out of the headset');
       await page.waitForTimeout(300);
       assert.ok((await status(page)).loop.animationFrames > info.loop.animationFrames, 'the canvas draws it');
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('a tour of the game\'s scenes on the screen and, where it shows, from within the scene', { timeout: 900_000 }, async () => {
+    // Each scene reached natively by the game's own commands (as the
+    // validation sheet reaches them), saved, then shown in the headset.
+    const press = (button) => [{ cmd: 'press', buttons: [button], frames: 1 }, { cmd: 'frames', count: 20 }];
+    const battle = (gears) => [{ cmd: 'frames', count: 60 }, { cmd: 'write', path: 'mode_battle_standalone', value: 1 }, { cmd: 'boot_mode', mode: 2 },
+      { cmd: 'frames', count: 900 }, ...(gears ? ['down', 'down', 'cross', 'right', 'cross', 'right', 'cross'].flatMap(press) : []),
+      ...press('start'), { cmd: 'frames', count: 1500 }];
+    const field = (map) => [{ cmd: 'enter_field', map }, { cmd: 'frames', count: 400 }];
+    // Whether first-person inspection shows there (a field but its menu).
+    const scenes = [
+      ['field', [...field(30), { cmd: 'press', buttons: ['down'], frames: 60 }, { cmd: 'frames', count: 30 }], true],
+      ['dialogue', field(12), true],
+      ['menu', [...field(30), ...press('square'), { cmd: 'frames', count: 90 }], false],
+      ['world-map', [{ cmd: 'boot_mode', mode: 3 }, { cmd: 'frames', count: 900 }], false],
+      ['battle-on-foot', battle(false), false],
+      ['battle-gear', battle(true), false],
+      ['movie', [{ cmd: 'frames', count: 840 }], false],
+      ['title', [{ cmd: 'frames', count: 1500 }], false],
+    ];
+    const states = new Map(scenes.map(([name, commands]) => {
+      const path = join(SHOTS, `xr-tour-${name}.state`);
+      execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+        input: [...commands, { cmd: 'state_save', path }].map((c) => JSON.stringify(c)).join('\n') + '\n',
+      });
+      return [name, readFileSync(path).toString('base64')];
+    }));
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    try {
+      const page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().page.xr.frames > 10, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      // The left hand's underhand grab (IWER's tracked hands), the right
+      // hand resting open.
+      await page.evaluate(() => {
+        const device = window.xrDevice;
+        device.primaryInputMode = 'hand';
+        window.handModel.install(device);
+        device.hands.left.position.set(-0.15, 1.4, -0.3);
+        device.hands.right.position.set(0.15, 1.4, -0.3);
+        window.handModel.set(device, 'left', 'open');
+        window.handModel.set(device, 'right', 'open');
+      });
+      await frames(6);
+      const underhand = async () => {
+        await page.evaluate(() => window.xrDevice.hands.left.quaternion.set(0, 0, 1, 0));
+        await frames(3);
+        for (const name of ['open', 'half', 'fist', 'open']) {
+          await page.evaluate((name) => window.handModel.set(window.xrDevice, 'left', name), name);
+          await frames(3);
+        }
+        await page.evaluate(() => window.xrDevice.hands.left.quaternion.set(0, 0, 0, 1));
+        await frames(3);
+      };
+      const layer = await page.evaluate(() => {
+        const gl = document.querySelector('canvas').getContext('webgl2');
+        return [gl.drawingBufferWidth, gl.drawingBufferHeight];
+      });
+      // Nine points about each view's centre (layer pixels from the bottom left).
+      const points = [0.25, 0.75].flatMap((u) => [-0.06, 0, 0.06].flatMap((dx) => [-0.1, 0, 0.1]
+        .map((dy) => [Math.floor((u + dx) * layer[0]), Math.floor((0.5 + dy) * layer[1])])));
+      const backdrop = (p) => Math.abs(p[0] - 26) + Math.abs(p[1] - 30) + Math.abs(p[2] - 38) < 24;
+      const shown = async () => {
+        const bytes = await page.evaluate((points) => window.xem.xr.readback(points), points);
+        return Array.from({ length: points.length }, (_, i) => bytes.slice(i * 4, i * 4 + 4));
+      };
+      const load = (base64) => page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))), base64);
+      const seen = [];
+      await page.evaluate(() => window.xem.setRunning(true));
+      for (const [name, , inspectable] of scenes) {
+        await load(states.get(name));
+        // The game runs on from the restore, drawing the scene.
+        await frames(10);
+        const screen = await shown();
+        let info = await status(page);
+        await page.screenshot({ path: join(SHOTS, `xr-tour-${name}.png`) });
+        const visible = screen.filter((p) => !backdrop(p)).length;
+        assert.ok(visible >= 12, `${name}: the screen shows in front of the viewer (${visible} of 18 points: ${screen.map((p) => p.slice(0, 3)).join(' ')})`);
+        assert.equal(info.xr.within, false, `${name}: the screen`);
+        // The underhand grab: from within the scene in a field, nothing
+        // elsewhere (counted as the grab all the same).
+        const grabs = info.xr.counts.inspect;
+        await underhand();
+        info = await status(page);
+        assert.equal(info.xr.counts.inspect, grabs + 1, `${name}: the left hand's underhand grab was recognised`);
+        assert.equal(info.xr.inspecting, inspectable, `${name}: first-person inspection ${inspectable ? 'shows' : 'does not show'} here`);
+        let within = false;
+        if (inspectable) {
+          // From within once a game frame records where the character stands.
+          await page.waitForFunction(() => window.xem.status().xr.within, null, { timeout: 30_000 });
+          await frames(3);
+          info = await status(page);
+          within = info.xr.within;
+          assert.notDeepEqual(await shown(), screen, `${name}: not the screen`);
+          await page.screenshot({ path: join(SHOTS, `xr-tour-${name}-within.png`) });
+          await underhand();
+          assert.equal((await status(page)).xr.inspecting, false, `${name}: the grab again gives the screen back`);
+        }
+        seen.push(`${name}: screen ${visible}/18${inspectable ? `, from within ${within}` : ''}, movie ${info.renderer.movie}`);
+      }
+      console.log(`tour: ${seen.join('; ')}`);
+      // On from within the field, then a battle: the field is left, so is
+      // the view; the battle shows on the screen.
+      await load(states.get('field'));
+      await frames(10);
+      await underhand();
+      assert.equal((await status(page)).xr.inspecting, true);
+      await page.waitForFunction(() => window.xem.status().xr.within, null, { timeout: 30_000 });
+      await load(states.get('battle-on-foot'));
+      await frames(10);
+      const info = await status(page);
+      assert.equal(info.xr.inspecting, false, 'leaving the field ends first-person inspection');
+      assert.equal(info.xr.within, false, 'the battle shows on the screen');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();
