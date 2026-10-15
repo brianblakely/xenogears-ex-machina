@@ -1217,34 +1217,53 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     } finally { await browser.close(); }
   });
 
-  test('original-game state and raw card files interchange between native and browser', {
+  test('original-game states and raw card files interchange between native and browser', {
     skip: ![USER_DISC, HEADLESS, join(WEB, 'game/game.wasm')].every(existsSync) && 'needs original disc and native/browser builds',
   }, async () => {
     const dir = mkdtempSync(join(tmpdir(), 'xem-interchange-'));
-    const state = join(dir,'native.xemstate'); const again = join(dir,'browser.xemstate');
     const card = join(dir,'card1.mcd');
     const native = (commands) => JSON.parse(execFileSync(HEADLESS, ['--disc',USER_DISC,'--control','--cards',join(dir,'cards')], {
       cwd: ROOT, input: commands.map((command) => JSON.stringify(command)).join('\n')+'\n', encoding: 'utf8', maxBuffer: 1<<26,
     }).trim().split('\n').at(-1));
-    const saved = native([{cmd:'frames',count:600},{cmd:'state_save',path:state},{cmd:'card_export',slot:0,path:card}]);
-    assert.equal(saved.ok,true);
+    // Native states inside the opening movie (frame 600) and on the world map
+    // out of Lahan's south exit, at the end of its session log.
+    const route = JSON.parse(readFileSync(join(ROOT,'tests/reference-inputs/world-map-lahan-exit.json'),'utf8'));
+    const places = [
+      { place: 'the opening movie', commands: [{cmd:'frames',count:600}] },
+      { place: 'the world map', commands: [{cmd:'schedule',commands:route.commands},{cmd:'run_until',max_frames:route.frames,until:{frames:route.frames}}],
+        hash: route.memory_hash },
+    ].map(({place,commands,hash},i) => {
+      const state = join(dir,`native-${i}.xemstate`);
+      assert.equal(native([...commands,{cmd:'state_save',path:state},{cmd:'card_export',slot:0,path:card}]).ok,true,place);
+      if (hash) assert.equal(native([{cmd:'state_load',path:state},{cmd:'memory_hash'}]),hash,`${place}: the route's end`);
+      return { place, state };
+    });
     const browser = await start({ args: NO_WEBGPU });
     try {
       const page = await browser.page(); await page.setInputFiles('#file',USER_DISC);
       await page.waitForFunction(() => window.xem.status().disc?.state === 'identified');
-      const result = await page.evaluate(async ({state,card}) => {
+      const results = await page.evaluate(async ({states,card}) => {
         const x = window.xem; await x.cards.store(0,Uint8Array.from(card)); await x.boot();
-        x.importSnapshot(Uint8Array.from(state));
-        const exact = Array.from(x.exportSnapshot());
-        await x.runFrames(30);
-        return { exact, bytes: Array.from(x.exportSnapshot()), hash: x.memoryHash(), card: Array.from(x.cards.image(0)) };
-      }, {state:Array.from(readFileSync(state)),card:Array.from(readFileSync(card))});
-      assert.deepEqual(result.exact,Array.from(readFileSync(state)));
-      assert.deepEqual(result.card,Array.from(readFileSync(card)));
-      writeFileSync(again,Uint8Array.from(result.bytes));
-      assert.equal(native([{cmd:'state_load',path:again},{cmd:'memory_hash'}]),result.hash);
-      assert.equal(native([{cmd:'state_load',path:state},{cmd:'frames',count:30},{cmd:'state_save',path:state}]).saved,true);
-      assert.deepEqual(readFileSync(state),Buffer.from(result.bytes));
+        const results = [];
+        for (const state of states) {
+          x.importSnapshot(Uint8Array.from(state));
+          const exact = Array.from(x.exportSnapshot());
+          await x.runFrames(30);
+          results.push({ exact, bytes: Array.from(x.exportSnapshot()), hash: x.memoryHash(), scene: x.command({cmd:'readiness'}).mode_name, card: Array.from(x.cards.image(0)) });
+        }
+        return results;
+      }, {states:places.map(({state}) => Array.from(readFileSync(state))),card:Array.from(readFileSync(card))});
+      assert.deepEqual(results.map(({scene}) => scene), ['movie', 'world map'], 'where the states were saved');
+      for (const [i,{place,state}] of places.entries()) {
+        const result = results[i];
+        assert.deepEqual(result.exact,Array.from(readFileSync(state)),`${place}: imported exactly`);
+        assert.deepEqual(result.card,Array.from(readFileSync(card)));
+        const again = join(dir,`browser-${i}.xemstate`);
+        writeFileSync(again,Uint8Array.from(result.bytes));
+        assert.equal(native([{cmd:'state_load',path:again},{cmd:'memory_hash'}]),result.hash,`${place}: the browser's state natively`);
+        assert.equal(native([{cmd:'state_load',path:state},{cmd:'frames',count:30},{cmd:'state_save',path:state}]).saved,true);
+        assert.deepEqual(readFileSync(state),Buffer.from(result.bytes),`${place}: the same 30 frames natively`);
+      }
       assert.deepEqual(page.errors, []);
     } finally { await browser.close(); }
   });

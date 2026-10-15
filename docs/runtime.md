@@ -253,7 +253,15 @@ input.
   (local, release) replays them to the recorded RAM/scratchpad hashes,
   stepped and unthrottled, with spectator output (presentation capture,
   sound output, screenshots) attached, changed and detached on the way, from
-  a snapshot restored in battle and from a pad recording. The runtime counts
+  a snapshot restored in battle and from a pad recording.
+  `tests/reference-inputs/world-map-lahan-exit.json` leaves Lahan by its
+  south exit for the world map (`enter_field {map: 1}`, two assisted walks
+  kept as the `assist` intents they resolved to, and two presses), ending on
+  foot on the world map at frame 2560; `xem-headless/tests/saves.rs`,
+  `states.rs` and the browser's state interchange start there. A log that
+  enters a field runs frames inside that command, so it is replayed to its
+  frame count from boot (`run_until {frames}`), not by a `frames` count.
+  The runtime counts
   the frames it completed (kept in snapshots), which `status` reports and
   `run_until {frames}` waits for. The slice's media is checked at the
   opening movie's own frames: `tests/reference-inputs/new-game-movie-frames.program.json`
@@ -333,7 +341,13 @@ waits until it is added; a state saved in that wait, restored in a session
 booted from disc 1, takes disc 1 and the new game begins; the story's
 change waits five seconds; and
 `web/tests/disc.test.mjs`: in the browser, disc 1 imported while the game
-waits for it goes in).
+waits for it goes in). A state saved in the story's five-second wait by a
+session that holds disc 2 keeps the change due at its cycle: restored in a
+fresh session booted from disc 1 with disc 2 beside it, disc 2 goes in at
+the same frame and cycle and the game goes on to the same RAM
+(`xem-headless/tests/states.rs`). The save the story's change offers asks
+for disc 2 (its vars\[82\] is 1), and loaded from disc 1's title the
+changer puts disc 2 in at once (`xem-headless/tests/saves.rs`).
 
 ## Sound and memory cards
 
@@ -4262,7 +4276,35 @@ unchanged, besides the storage failures above. `xem-host`'s
 module, nothing booted): a state naming another build, loaded through
 `Game::command` and through the panel's Load state, is refused with the
 runtime's text, unquoted. `xem-ui/tests/hud.rs` shows a refusal in the
-failure chip. Every host's save states and time controls:
+failure chip. `xem-headless/tests/states.rs` (local: the user's discs; its
+five tests 54 s here, 39 s of them the held rewind's, which renders on
+lavapipe) takes the original game's states where each kind of progress is
+under way and checks that they go on identically (`continues_identically`:
+a state taken, frames run keeping each frame's RAM/scratchpad hash, the
+SPU's samples, the data sectors the drive delivers and the XA sectors it
+plays, the state restored, whose own snapshot is then the state byte for
+byte, the same frames run again: the same hashes, samples and sectors and
+the same state at the end, byte for byte): the new game's opening movie
+with its XA sound (600 frames from frames 4000 and 9000 of
+`new-game-sound-mode-stereo.json`, then 1200 frames at 10× fast-forward,
+whose 2 s of sound are the divided music clock's), the world map while the
+party walks and the drive streams its terrain (600 frames from the end of
+`world-map-lahan-exit.json`), a Battling bout whose state holds the arena's
+task fiber (150 frames; the bout launched by writes, as `gestures.rs`
+launches it) and the story's five-second disc change wait (restored in a
+fresh two-disc session, disc 2 goes in at the same frame and cycle, and the
+RAM 300 frames on is the same). A held rewind from the forest battle of
+`slice-forest.json` (frame 6400) steps back into its field (ten steps, to
+frame 5826), each step showing a frame the game drew after its state as the
+renderer draws it (`GameView`) but the one landing in the battle's opening
+while it loads (frame 5953), which draws nothing new, and the field goes on
+identically from there. `web/tests/persistence.test.mjs`'s "original-game
+states and raw card files interchange between native and browser": native
+states inside the opening movie (frame 600) and on the world map (the end
+of `world-map-lahan-exit.json`, at its recorded hash) import into the
+browser exactly; 30 frames there give a state that loads natively to the
+browser's RAM hash, and the same 30 frames natively end byte for byte in
+the browser's state. Every host's save states and time controls:
 `xem-ui/tests/panel.rs`'s
 `time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_press_it`
 (Start fast-forward sends Toggle fast-forward and changes no setting, the
@@ -4304,7 +4346,15 @@ not compared (the bytes it depends on there are; the game's saves are one
 block); a writer whose bytes so far match a later save's (the same save
 made again) writes on, making the save it would have made; states taken
 inside a save or a load are tested with the stand-in and the card device's
-bench, not the original game's save menu; sealed but crafted values for the
+bench, not the original game's save menu; the arena is reached only by a
+debug launch (the bout's task and parameters written), whose bout stops at
+frame 724 on its own, with or without input and with no state taken (the
+GPU's display list links to address 0; not investigated, and whether the
+original does the same with these writes is unknown), so `states.rs`
+covers its first 150 frames, not a bout the story starts; held rewind is
+tested from a battle into its field, not inside a movie or on the world
+map; the drive's tally of XA sectors played (`Cd::xa_sectors`, the host's,
+for verification) starts afresh at a restore; sealed but crafted values for the
 entry, the stack pointer, fiber areas, the clock and the pads are accepted
 and fail later in the bounds-checked module; the fingerprint sees only what
 the stand-in states hold, so a variant added to the format is outside it
@@ -4446,6 +4496,28 @@ the save the game made as its first file of disc 1 passing the game's
 checks, imports it as a `.mcs` through `card_import` (a fresh card 1, byte
 for byte the card the game made) and plays the title's load from it to the
 recorded hash (52 s for the test here, beside other builds).
+`xem-headless/tests/saves.rs` (local: both discs; its five tests 29 s
+here) plays the game's own file screens, pressing along the cursor paths
+their screens show (the box cursor read from slot39's `MenuCard`: five
+columns of three boxes a card, Right a column, Down a row), and checks each
+card through `card_list` and its bytes (names, file digits, the disc each
+save asks for, blocks, directory frames and the payload's checksum). After
+the slice's save at field 22, that save point saves No.02 (the first free
+digit, in the first free block), overwrites No.01 in its block (a later
+play time, No.02 untouched), deletes No.02 (its frame marked deleted,
+0xA1), copies No.01 to card 1 (the same directory frame and block) and,
+asked again, shows a third notice instead (the screenshots read "The same
+file exists on the Memory Card in Slot 1. Cannot copy.", message 0x4d)
+and writes nothing. On the world map (`world-map-lahan-exit.json`; the
+menu on Square, the world map's button 0x10) the file screen shows "No
+Memory Card" while both cards are out (`card_present`), and with them in
+saves to card 1; the title's Load puts the party back on the world map
+where it was saved (`game_data.worldmap`, and the items). The story's disc
+change (its menu requested as `discs.rs` requests it) saves a file that
+asks for disc 2, which disc 1's title loads with disc 2 put in at once and
+disc 2's index read. Map 687's save point on disc 2 (where
+`tools/memcard_routes.json`'s "first-and-last" saves; the map entered as
+the kernel menu does) saves a disc-2 file that disc 2's title loads there.
 `web/tests/persistence.test.mjs`'s "a card or save file imports into a card
 by its contents, and a refused one changes nothing" (the fixture module: a
 `.mcs` before a boot, in IndexedDB and then in the session, listed by
@@ -4470,8 +4542,12 @@ test, only the command and the file name rule they share; the browser's
 take-back of IndexedDB when frames run during an import is not tested; the
 game's file screens keep their listing across an import made while they
 show (described above; the host does not take the card out and put it back
-for them); a file screen's own operations over imported saves are tested
-only through the slice's load, not its copy or delete.
+for them); a file screen's copy and delete are tested over the game's own
+saves (`saves.rs`), over imported saves only the slice's load; the disc
+change's save is made where its menu is requested by a write, not after the
+story's last event of disc 1, and the disc-2 save point is reached from the
+kernel menu's field entry, not from a story save; the refusals for a full
+card (0xac) and another game's file under Save (0xc4) are not driven.
 
 ### Save titles and the Kanji font
 
