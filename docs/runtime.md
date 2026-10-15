@@ -2988,7 +2988,7 @@ on this machine's lavapipe:
 Throughout, between two presentations the screen's share moves by no
 more than the time passed over the 0.3 s switch, and the diorama is drawn
 at no more than one minus it. The harness runs 87 s on two threads (the
-suite profile).
+suite profile), 73 s in the desktop tier beside the other tests.
 
 Not done or not measured (the headsets' own: [In a headset](#in-a-headset)):
 the pane's place is a first choice, not one tried by anyone seated; HD-2D
@@ -4620,7 +4620,9 @@ so nothing downstream rebuilds (play.sh compares the sources with
 `build/game/stamp`, which each finished module build touches). The
 desktop tier's Rust tests include the original game's long run
 (`xem-headless/tests/long_run.rs`, 36 000 frames twice: 138 s of the
-tier's 866 s in a run here beside other tracks' work) and `xem-host`'s original-game tests (rewind frame latency, the
+tier's 866 s in a run here beside other tracks' work), the diorama's
+qualification on the game (`xem-headless/tests/diorama.rs`: 73 s in a
+desktop tier of 946 s, its Rust stage 817 s) and `xem-host`'s original-game tests (rewind frame latency, the
 focus pause's recording, the held rewind), which skip without the disc as
 the others do. The Android smoke compares states with `xem-headless`: the
 android stage builds it (the suite profile, the native target directory:
