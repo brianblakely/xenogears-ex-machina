@@ -315,7 +315,7 @@ fn a_headsets_eyes_and_its_diorama_play_a_restored_state_as_a_plain_session_give
         view.set_room(false);
         let restart = view.take_restart();
         game.want_actor_view(if current.graphics.actors_in_view { view.actor_view() } else { 0 });
-        game.want_listener_view(view.listener_axes());
+        game.set_listener_view(view.listener_axes());
         let (trace, display, scene) = game.take_frame(restart, view.reveals());
         view.push(trace);
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
