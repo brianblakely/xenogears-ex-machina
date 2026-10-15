@@ -11,9 +11,12 @@
 # - both eyes show the same game picture from their own views (a flat screen
 #   with stereo disparity, not reconstructed 3D);
 # - the title movie's frames (from boot) are rebuilt from what the MDEC
-#   decoded (movie=1), as wide as the screen spans in an eye, under the
-#   Enhanced movies setting, and are the device's own 320x216 pictures under
-#   Original (movie=0), which changes nothing in the game either;
+#   decoded (movie=1), as many pixels across as the 3 m screen 2.5 m ahead
+#   spans in an eye (from its field of view), under the Enhanced movies
+#   setting, and with wider framing on the screen has no sides for them
+#   (the renderer's own frames before the movie have them); under Original
+#   they are the device's own 320x216 pictures (movie=0), which changes
+#   nothing in the game either;
 # - first-person inspection in field 30: the underhand grab turns it on and
 #   off, each eye then looks from the character's eye with the head (their
 #   pictures cover the view, show the room, differ between the eyes and
@@ -66,7 +69,12 @@ monado=$!
 for _ in $(seq 100); do [[ -S $rundir/monado_comp_ipc ]] && break; sleep 0.1; done
 [[ -S $rundir/monado_comp_ipc ]] || { echo "xr-game-smoke: Monado did not start" >&2; tail "$out/monado.log" >&2; exit 1; }
 
+# The boot run with wider framing on (the title movie's frames rebuilt
+# without its sides).
+cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
+echo '{"graphics": {"profile": "Hd2d", "widescreen": true}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-capture "$out/eyes" >"$out/running.log" 2>"$out/running.err"
+cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-pause 60,120 >"$out/paused.log" 2>"$out/paused.err"
 # The title movie under the Original movies setting.
 cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
@@ -141,13 +149,27 @@ def movie_rows(name):
 rebuilt, original = movie_rows("running.log"), movie_rows("original.log")
 check(len(rebuilt) >= 30 and all(r["movie"] == "1" for r in rebuilt),
       f"Enhanced: {sum(r['movie'] == '1' for r in rebuilt)} of {len(rebuilt)} movie frames rebuilt")
+# As many pixels across as the default screen (3 m wide, 2.5 m ahead)
+# spans in the 320-pixel eye, whose field of view's tangents the log gives,
+# the display's 320x216 shape kept.
+left_, right_ = (float(t) for t in rebuilt[0]["fov"].split(",")[:2]) if rebuilt else (-1.0, 1.0)
+across = min(320, round(3.0 / 2.5 * 320 / (right_ - left_)))
+spanned = f"{across}x{round(across * 216 / 320)}"
 sizes = {r["picture"] for r in rebuilt}
-shapes = [tuple(map(int, s.split("x"))) for s in sizes]
-check(len(sizes) == 1 and all(abs(w / h - 320 / 216) < 0.02 and (w, h) != (320, 216) for w, h in shapes),
-      f"Enhanced: rebuilt movie frames are made at the screen's span in the shape of the display, not {sizes}")
+check(sizes == {spanned}, f"Enhanced: rebuilt movie frames are made at the screen's span in an eye, {spanned}, not {sizes}")
+# Wider framing is on in this run: the renderer's own frames before the
+# movie (view=1) have its sides (39 display pixels each side of a 16:9
+# screen), a rebuilt movie frame and the device's own pictures (view=0)
+# none.
+booting = records("running.log")
+sides = {r["side"] for r in booting if r["view"] == "1" and r["movie"] == "0"}
+check(sides == {"39"}, f"wider framing: the renderer's frames before the movie have sides of 39, not {sides}")
+check(all(r["side"] == "0" for r in rebuilt), f"wider framing: rebuilt movie frames have no sides: {sorted({r['side'] for r in rebuilt})}")
+check(all(r["side"] == "0" for r in booting if r["view"] == "0"), "wider framing: the device's own pictures have no sides")
 check(len(original) >= 30 and all(r["movie"] == "0" and r["picture"] == "320x216" for r in original),
       f"Original: movie frames are the device's own pictures: {[(r['movie'], r['picture']) for r in original][:3]}")
-print(f"movies: {len(rebuilt)} headset frames rebuilt at {', '.join(sizes)}; under Original {len(original)} at 320x216")
+print(f"movies: {len(rebuilt)} headset frames rebuilt at {', '.join(sizes)} (the screen's span: {spanned}), sides {sorted({r['side'] for r in rebuilt})} "
+      f"(the renderer's frames before: {sorted(sides)}); under Original {len(original)} at 320x216")
 
 rows = records("running.log")
 period = sorted(int(r["period_ns"]) for r in rows)[len(rows) // 2]

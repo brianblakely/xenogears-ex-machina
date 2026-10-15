@@ -1594,6 +1594,11 @@ impl XemApp {
                 "pauses": self.headset.pauses,
                 "settings": self.headset.settings_open,
                 "scale": self.xr_scaling.scale,
+                // The virtual screen as the last immersive frame drew it: its
+                // size (metres), the display pixels it shows and the wider
+                // framing's sides (display pixels each side; none for a
+                // rebuilt movie frame).
+                "screen": self.xr_screen.map(|s| json!({"size": [s.quad.size.0, s.quad.size.1], "display": [s.display.0, s.display.1], "side": s.side})),
                 // First-person inspection on, and the last immersive frame
                 // drawn from within the scene through each view.
                 "inspecting": self.first_person(),

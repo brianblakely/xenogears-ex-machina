@@ -639,8 +639,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // First-person inspection: on, drawn from within the scene (the
         // eyes' pictures), and the view's turn (yaw, pitch; radians).
         let look = view.look_angles().map_or("-".into(), |(yaw, pitch)| format!("{yaw:.4},{pitch:.4}"));
+        // Whose picture the screen shows (the renderer's, or the device's
+        // own), its wider framing's sides (display pixels each side), and
+        // the first eye's field of view's tangents (left, right, up, down).
+        let fov = format!("{:.4},{:.4},{:.4},{:.4}", fov[0], fov[1], fov[2], fov[3]);
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} movie={} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -648,7 +652,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             game.vblanks(),
             u8::from(game_paused),
             picture.map_or("-".into(), |(w, h)| format!("{w}x{h}")),
+            u8::from(from_view),
             u8::from(movie_rebuilt),
+            screen.side,
             serde_json::to_string(&assist.gestures).unwrap_or_default(),
             u8::from(assist.headset.pauses.player),
             marks.len(),

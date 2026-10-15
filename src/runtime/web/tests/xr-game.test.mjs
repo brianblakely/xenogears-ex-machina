@@ -12,11 +12,13 @@
 // within the scene through each view, a head turn changes the view while the
 // player's Pause holds the game, the controllers' click and stick toggle and
 // turn it then too and the Original renderer ends it, and the grab again
-// gives the screen back at its size. The title movie in the headset, the
-// same frame shown twice from one snapshot: rebuilt from what the MDEC
-// decoded under the Enhanced movies setting (status().renderer.movie), the
-// device's own picture under Original, on the screen in both views, the
-// game's RAM the same.
+// gives the screen back at its size. The title movie in the headset with
+// wider framing on, the same frame shown twice from one snapshot: rebuilt
+// from what the MDEC decoded under the Enhanced movies setting
+// (status().renderer.movie), the device's own picture under Original, on the
+// screen in both views, the screen without wider framing's sides
+// (status().xr.screen) in the display's shape, the game's RAM the same; the
+// title's 15-bit screen after it has the sides.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -344,6 +346,11 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await page.setInputFiles('#file', USER_DISC);
       await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
       await page.evaluate(() => window.xem.boot());
+      // Wider framing on (before the snapshot below: a new configuration
+      // restarts the draw trace): a rebuilt movie frame's screen has no
+      // sides.
+      const wide = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      assert.equal((await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), { ...wide, widescreen: true })).error, undefined);
       // The title movie, bright from about frame 840.
       await page.evaluate(() => window.xem.runFrames(840));
       await page.click('#vr');
@@ -371,19 +378,33 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         await page.evaluate(() => window.xem.runFrames(12));
         await frames(3);
         const pixels = await page.evaluate((points) => window.xem.xr.readback(points), centres);
+        const info = await status(page);
         shown[movies] = {
-          movie: (await status(page)).renderer.movie,
+          movie: info.renderer.movie,
+          screen: info.xr.screen,
           centres: [pixels.slice(0, 4), pixels.slice(4, 8)],
           hash: await page.evaluate(() => window.xem.memoryHash()),
         };
       }
       console.log(`view centres: Enhanced ${shown.Enhanced.centres.join(' / ')}, Original ${shown.Original.centres.join(' / ')}`);
+      console.log(`screens: Enhanced ${JSON.stringify(shown.Enhanced.screen)}, Original ${JSON.stringify(shown.Original.screen)}`);
       assert.equal(shown.Enhanced.movie, true, 'Enhanced shows the movie frame rebuilt in the headset');
       assert.equal(shown.Original.movie, false, 'Original shows the device\'s own picture');
       for (const movies of ['Enhanced', 'Original']) {
         assert.ok(shown[movies].centres.every((p) => !backdrop(p)), `${movies}: the movie is on the screen in both views`);
+        const { size, display, side } = shown[movies].screen;
+        assert.deepEqual([display, side], [[320, 216], 0], `${movies}: the screen shows the display alone, without wider framing's sides`);
+        assert.ok(Math.abs(size[1] / size[0] - 216 / 320) < 0.005, `${movies}: the screen has the display's shape (${size})`);
       }
       assert.deepEqual(shown.Enhanced.hash, shown.Original.hash, 'neither setting changes the game');
+      // The title's 15-bit screen after the movie (from game frame 1429)
+      // has wider framing's sides: 39 display pixels each side of 16:9.
+      await page.evaluate(() => window.xem.runFrames(600));
+      await frames(3);
+      const title = await status(page);
+      console.log(`the title's screen: ${JSON.stringify(title.xr.screen)}`);
+      assert.equal(title.renderer.movie, false, 'the title is no movie frame');
+      assert.equal(title.xr.screen.side, 39, 'the title\'s screen has wider framing\'s sides');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

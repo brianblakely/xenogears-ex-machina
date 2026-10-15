@@ -1,24 +1,37 @@
 //! Enhanced and Original movies on the original game (local only: it needs
 //! the user's disc 1 and a game module build; the GPU is whatever wgpu
-//! finds, lavapipe in the runtime shell, which enlarges rebuilt frames
-//! bilinearly unless FSR 1 is forced). Presented every frame as a desktop
-//! host presents them, at 640x480:
+//! finds, lavapipe in the runtime shell, and each view is told how to
+//! enlarge rebuilt frames, bilinearly or by FSR 1, whatever its kind).
+//! Presented every frame as a desktop host presents them, at 640x480:
 //!
 //! - every frame of the title movie that shows a picture is rebuilt from
 //!   what the MDEC decoded, by a view enlarging bilinearly and by one
-//!   forced to FSR 1, until the movie eases into the MDEC's own picture
-//!   over its last second (its last frame and the frames held after it the
-//!   MDEC's) and the title's 15-bit frames follow; each rebuilt picture,
-//!   averaged back to the display's pixels, stays within the MDEC's error
-//!   of the device's picture and shows its 8x8 blocks' edges less than the
-//!   device's picture does;
+//!   enlarging by FSR 1 (whose pictures differ on every frame: FSR ran),
+//!   until the movie eases into the MDEC's own picture over its last
+//!   second (its last frame and the frames held after it the MDEC's) and
+//!   the title's 15-bit frames follow;
+//! - each of those rebuilt pictures, averaged back to the display's pixels,
+//!   stays within the MDEC's error of the device's picture (mean error,
+//!   PSNR);
+//! - at full strength each shows its 8x8 blocks' edges (the block-edge
+//!   measure below) less than the device's picture does, on every frame
+//!   where the MDEC's picture enlarged plainly (bilinearly, to the same
+//!   size, averaged back) shows them less than the picture itself, as a
+//!   blur does to the blocks' steps (most of the movie). On the others the
+//!   enlargement's blur alone raises the measure: the steps it counts at
+//!   the blocks' edges are a picture's own outlines beside them, which a
+//!   blur moves onto them (the SQUARESOFT logo's letters), or there are no
+//!   blocks to show (the fade from black). There each rebuilt picture shows
+//!   the blocks' edges less than that plain enlargement does, and may show
+//!   them more than the device's own picture (printed);
 //! - under the Original setting no frame is rebuilt, and the game's RAM ends
 //!   the same with Enhanced, Original or no presentation;
 //! - the new-game movie is rebuilt to its last frame and the next frame is
 //!   the field's 15-bit one;
 //! - a state restored mid-movie, the trace restarted for a new internal
 //!   scale and a view attached mid-movie show rebuilt frames again within
-//!   two movie frames, never the picture of a timeline left behind.
+//!   two movie frames; after a restore, the restored timeline's picture,
+//!   never the one of the timeline left behind.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test movies
 
@@ -36,6 +49,10 @@ use xem_settings::{Graphics, MovieFilter};
 /// The output a view presents into (a 320x216 movie frame rebuilt at
 /// twice its size, 640x432).
 const OUTPUT: (u32, u32) = (640, 480);
+
+/// The movie frames a counted movie eases over (the renderer's own, a
+/// second at the movies' 15 a second).
+const EASE_FRAMES: i64 = 15;
 
 fn disc() -> Option<PathBuf> {
     let path = std::env::var_os("XEM_DISC1")
@@ -60,13 +77,12 @@ fn graphics(movies: MovieFilter) -> Graphics {
     graphics
 }
 
-/// A view enlarging rebuilt movie frames as this GPU does or, with `fsr`,
-/// by FSR 1.
+/// A view enlarging rebuilt movie frames bilinearly or, with `fsr`, by
+/// FSR 1, whatever the GPU (a software rasterizer chooses bilinear by
+/// itself, any other FSR 1).
 fn view(gpu: &Gpu, fsr: bool) -> GameView {
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-    if fsr {
-        view.set_software_movies(false);
-    }
+    view.set_software_movies(!fsr);
     view
 }
 
@@ -143,6 +159,29 @@ impl Picture {
         Picture { width, height, rgb }
     }
 
+    /// Enlarged `factor` times bilinearly, as the renderer's bilinear pass
+    /// samples (at the output pixels' centres, the edge pixels repeated).
+    fn enlarged(&self, factor: usize) -> Picture {
+        let (width, height) = (self.width * factor, self.height * factor);
+        let at = |x: isize, y: isize| {
+            let (x, y) = (x.clamp(0, self.width as isize - 1) as usize, y.clamp(0, self.height as isize - 1) as usize);
+            self.rgb[y * self.width + x]
+        };
+        let mut rgb = vec![[0.0; 3]; width * height];
+        for (i, out) in rgb.iter_mut().enumerate() {
+            let x = ((i % width) as f32 + 0.5) / factor as f32 - 0.5;
+            let y = ((i / width) as f32 + 0.5) / factor as f32 - 0.5;
+            let (fx, fy) = (x - x.floor(), y - y.floor());
+            let (x, y) = (x.floor() as isize, y.floor() as isize);
+            for c in 0..3 {
+                let top = at(x, y)[c] * (1.0 - fx) + at(x + 1, y)[c] * fx;
+                let bottom = at(x, y + 1)[c] * (1.0 - fx) + at(x + 1, y + 1)[c] * fx;
+                out[c] = top * (1.0 - fy) + bottom * fy;
+            }
+        }
+        Picture { width, height, rgb }
+    }
+
     /// The mean absolute difference from `other`, levels per channel.
     fn mean_error(&self, other: &Picture) -> f32 {
         assert_eq!((self.width, self.height), (other.width, other.height));
@@ -161,9 +200,10 @@ impl Picture {
         self.rgb.iter().map(|p| p.iter().sum::<f32>()).sum::<f32>() / (3 * self.rgb.len()) as f32
     }
 
-    /// How much more the luminance steps between neighbours across the
-    /// edges of the 8x8 blocks the MDEC decodes than between neighbours
-    /// within them (about 1 for a picture without blocks).
+    /// The block-edge measure: how much more the luminance steps between
+    /// neighbours across the edges of the 8x8 blocks the MDEC decodes than
+    /// between neighbours within them (about 1 for a picture without
+    /// blocks).
     fn block_edges(&self) -> f32 {
         let luma = |x: usize, y: usize| {
             let [r, g, b] = self.rgb[y * self.width + x];
@@ -199,6 +239,19 @@ fn compare(rebuilt: &Picture, device: &Picture) -> (f32, f32, f32, f32) {
     (boxed.mean_error(device), boxed.psnr(device), boxed.block_edges(), device.block_edges())
 }
 
+/// The frames of `frames` (ascending) as runs: "404-445, 517, 709-737".
+fn runs(frames: &[u64]) -> String {
+    let mut spans: Vec<(u64, u64)> = Vec::new();
+    for &n in frames {
+        match spans.last_mut() {
+            // Frames held between new ones still continue a run.
+            Some(span) if n <= span.1 + 4 => span.1 = n,
+            _ => spans.push((n, n)),
+        }
+    }
+    spans.iter().map(|&(a, b)| if a == b { format!("{a}") } else { format!("{a}-{b}") }).collect::<Vec<_>>().join(", ")
+}
+
 /// What the game says of the title movie: the frame it showed last and its
 /// last one, while the movie mode plays it.
 fn title_movie(session: &mut Session<NativeModule>) -> Option<(i64, i64)> {
@@ -207,9 +260,10 @@ fn title_movie(session: &mut Session<NativeModule>) -> Option<(i64, i64)> {
 }
 
 /// The title movie, presented on every frame from boot to the title's
-/// screen by a view enlarging as this GPU does and one using FSR 1.
+/// screen by a view enlarging bilinearly and one using FSR 1, every
+/// rebuilt picture compared with the device's.
 #[test]
-fn the_title_movie_is_rebuilt_on_every_frame_clearer_than_the_mdecs_and_eases_into_the_title() {
+fn every_title_movie_frame_is_rebuilt_within_the_mdecs_error_its_blocks_showing_less_easing_into_the_title() {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
@@ -222,8 +276,14 @@ fn the_title_movie_is_rebuilt_on_every_frame_clearer_than_the_mdecs_and_eases_in
     // The first frame rebuilt, the first showing a picture, the frame the
     // game shows its last movie frame at, the first 15-bit frame after it.
     let (mut first, mut picture, mut last, mut title) = (None, None, None, None);
-    let (mut rebuilt, mut new_frames) = (0, 0);
-    let mut samples = Vec::new();
+    let mut rebuilt = 0;
+    // Each view's furthest from the device's picture: mean error, PSNR.
+    let mut worst = [(0f32, f32::INFINITY); 2];
+    // The frames at full strength whose plain enlargement shows the blocks'
+    // edges less than the device's picture, with the block-edge measures
+    // (the device's, then each view's); the others, with the device's,
+    // the plain enlargement's and each view's.
+    let (mut lowered, mut others): (Vec<(u64, f32, [f32; 2])>, Vec<(u64, f32, f32, [f32; 2])>) = (Vec::new(), Vec::new());
     let mut eased = Vec::new();
     let mut shown_before = None;
     for n in 0..1500u64 {
@@ -261,36 +321,86 @@ fn the_title_movie_is_rebuilt_on_every_frame_clearer_than_the_mdecs_and_eases_in
             assert!(scene.starts_with("field"), "frame {n}: the title's screen ({scene})");
             assert!(sizes[0].is_some() && !shows[0], "frame {n}: the title drawn by the renderer");
         }
-        // New movie frames: some at full strength, and those the ease mixes.
         let new = movie.map(|(shown, _)| shown) != shown_before;
         shown_before = movie.map(|(shown, _)| shown);
-        let left = movie.map_or(i64::MAX, |(shown, end)| end - shown);
-        if !(shows[0] && new && device.mean() > if left < 15 { 1.0 } else { 20.0 }) {
+        if !shows[0] {
             continue;
         }
-        new_frames += 1;
-        if left >= 15 && new_frames % 8 != 0 {
-            continue;
-        }
+        // Every rebuilt picture, easing or not, within the MDEC's error.
         let pictures: Vec<_> = views.iter().zip(&sizes).map(|(view, size)| Picture::presented(&gpu, view, size.unwrap())).collect();
-        if left < 15 {
-            eased.push((left, compare(&pictures[0], &device).0));
-        } else {
-            for (fsr, rebuilt) in [false, true].into_iter().zip(&pictures) {
-                samples.push((n, fsr, compare(rebuilt, &device)));
+        let compared: Vec<_> = pictures.iter().map(|rebuilt| compare(rebuilt, &device)).collect();
+        for (fsr, &(error, psnr, ..)) in compared.iter().enumerate() {
+            assert!(error <= 6.0 && psnr >= 30.0, "frame {n} fsr={}: the rebuilt picture strays from the MDEC's ({error:.2}, {psnr:.1} dB)", fsr == 1);
+            worst[fsr] = (worst[fsr].0.max(error), worst[fsr].1.min(psnr));
+        }
+        // Over the movie's last second each new movie frame eases on.
+        let left = movie.map_or(i64::MAX, |(shown, end)| end - shown);
+        if left < EASE_FRAMES {
+            if new && device.mean() > 1.0 {
+                eased.push((left, compared[0].0));
             }
+            continue;
+        }
+        // At full strength. The two enlargements differ wherever there is a
+        // picture: the second view's is FSR 1's.
+        assert!(device.mean() == 0.0 || pictures[0].mean_error(&pictures[1]) > 0.0, "frame {n}: the FSR 1 view enlarged as the bilinear one");
+        // The blocks' edges. Where a plain enlargement of the device's
+        // picture (bilinear, to the rebuilt pictures' size, averaged back)
+        // shows them less than the picture itself, as a blur does to the
+        // blocks' steps, the rebuilt pictures show them less than the
+        // device's own. Where the plain enlargement shows them more, the
+        // steps at the blocks' edges are a picture's own outlines beside
+        // them, which the blur moves onto them, or there are no blocks to
+        // show; there the rebuilt pictures show them less than the plain
+        // enlargement.
+        let factor = pictures[0].width / device.width;
+        let plain = device.enlarged(factor).boxed(factor).block_edges();
+        let (device_edges, edges) = (compared[0].3, [compared[0].2, compared[1].2]);
+        let (reference, against) = if plain < device_edges { (device_edges, "the device's picture") } else { (plain, "the MDEC's picture enlarged plainly") };
+        for (fsr, edges) in edges.iter().enumerate() {
+            assert!(
+                *edges < reference,
+                "frame {n} fsr={}: the blocks' edges show as much as on {against} ({edges:.3} against {reference:.3}; the device's {device_edges:.3}, enlarged plainly {plain:.3})",
+                fsr == 1
+            );
+        }
+        if plain < device_edges {
+            lowered.push((n, device_edges, edges));
+        } else {
+            others.push((n, device_edges, plain, edges));
         }
     }
     let (first, picture, last, title) = (first.expect("a rebuilt frame"), picture.expect("a movie picture"), last.expect("the movie's last frame"), title.expect("the title's screen"));
     eprintln!("title movie: pictures from frame {picture}, rebuilt {first}..{last} ({rebuilt} frames), the title at {title}");
     assert!(first <= picture, "the first picture ({picture}) is rebuilt (from {first})");
     assert!(rebuilt > 900, "{rebuilt} frames rebuilt");
-    assert!(samples.len() >= 20, "{} frames compared", samples.len());
-    for (n, fsr, (error, psnr, edges, device_edges)) in &samples {
-        eprintln!("frame {n} fsr={fsr}: mean error {error:.2}, PSNR {psnr:.1} dB, block edges {edges:.3} (the device's {device_edges:.3})");
-        assert!(*error <= 6.0 && *psnr >= 30.0, "frame {n} fsr={fsr}: the rebuilt picture strays from the MDEC's ({error:.2}, {psnr:.1} dB)");
-        assert!(edges < device_edges, "frame {n} fsr={fsr}: the blocks' edges show as much as the device's ({edges:.3} against {device_edges:.3})");
+    for (fsr, (error, psnr)) in worst.iter().enumerate() {
+        eprintln!("fsr={}: every rebuilt picture within {error:.2} levels on average of the device's, at least {psnr:.1} dB", fsr == 1);
     }
+    let full = lowered.len() + others.len();
+    let range = |values: &mut dyn Iterator<Item = f32>| values.fold((f32::INFINITY, f32::NEG_INFINITY), |(low, high), v| (low.min(v), high.max(v)));
+    let (low, high) = range(&mut lowered.iter().map(|l| l.1));
+    eprintln!("at full strength, {full} frames; {} where a plain enlargement lowers the block-edge measure (the device's {low:.2}-{high:.2}):", lowered.len());
+    for fsr in 0..2 {
+        let (low, high) = range(&mut lowered.iter().map(|l| l.2[fsr]));
+        let (_, nearest) = range(&mut lowered.iter().map(|l| l.2[fsr] / l.1));
+        eprintln!("  fsr={}: rebuilt {low:.2}-{high:.2}, at most {nearest:.3} of the device's", fsr == 1);
+    }
+    let (low, high) = range(&mut others.iter().map(|o| o.1));
+    eprintln!("{} others ({}; the device's {low:.2}-{high:.2}):", others.len(), runs(&others.iter().map(|o| o.0).collect::<Vec<_>>()));
+    for fsr in 0..2 {
+        let (_, nearest) = range(&mut others.iter().map(|o| o.3[fsr] / o.2));
+        let (_, above) = range(&mut others.iter().map(|o| o.3[fsr] - o.1));
+        let more = others.iter().filter(|o| o.3[fsr] >= o.1).map(|o| o.0).collect::<Vec<_>>();
+        eprintln!(
+            "  fsr={}: at most {nearest:.3} of the plain enlargement's measure, at most {above:+.3} from the device's own (at or above it on {} frames: {})",
+            fsr == 1,
+            more.len(),
+            runs(&more)
+        );
+    }
+    assert!(full > 850, "{full} frames at full strength");
+    assert!(lowered.len() * 4 >= full * 3, "the device's own picture is the reference on most frames ({} of {full})", lowered.len());
     // Over its last second the movie eases into the MDEC's picture: each
     // frame closer than the one before, the last nearly the MDEC's.
     eprintln!("eased (frames left, mean error): {eased:?}");
@@ -434,6 +544,7 @@ fn rebuilt_frames_go_on_after_a_restore_a_restart_and_a_view_attached_mid_movie(
             assert!(views[0].presented_movie(), "frame {n}: rebuilt");
         }
     }
+    // The picture of the timeline each restore leaves behind.
     let shown = Picture::device(&mut session);
     let cases: [(&str, Box<dyn FnOnce(&mut Session<NativeModule>, &mut [GameView])>); 2] = [
         ("a state from 30 frames before", Box::new(|session: &mut Session<NativeModule>, _: &mut [GameView]| session.restore_bytes(&states[1]).unwrap())),
@@ -442,9 +553,10 @@ fn rebuilt_frames_go_on_after_a_restore_a_restart_and_a_view_attached_mid_movie(
     for (case, restart) in cases {
         let (waited, picture, device) = resumes(&gpu, &mut session, &mut views, &graphics, restart);
         let (error, psnr, ..) = compare(&picture, &device);
-        eprintln!("{case}: rebuilt after {waited} frames, mean error {error:.2} ({psnr:.1} dB) against the restored picture");
+        let (behind, ..) = compare(&picture, &shown);
+        eprintln!("{case}: rebuilt after {waited} frames, mean error {error:.2} ({psnr:.1} dB) against the restored picture, {behind:.2} against the one left behind");
         assert!(error <= 6.0, "{case}: the rebuilt picture is the restored one");
-        assert!(device.mean_error(&shown) > 1.0, "{case}: the restored picture differs from the one before");
+        assert!(error < behind / 2.0, "{case}: the rebuilt picture ({error:.2} levels from the restored one) is as near the one left behind ({behind:.2})");
         assert!(waited <= 8, "{case}: rebuilt again within two movie frames ({waited})");
     }
     // A new internal scale restarts the trace.

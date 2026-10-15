@@ -148,6 +148,7 @@ async function movie(args, backend) {
     await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
     assert.equal((await page.evaluate(() => window.xem.settings.apply({ Scale: 'Integer' }))).error, undefined);
     await page.evaluate(() => window.xem.boot());
+    assert.equal((await status(page)).renderer.backend, backend, `the ${backend} renderer`);
     // The page's first presentation of the session starts the draw trace:
     // the movie frames decoded after it can be rebuilt.
     await page.evaluate(() => window.xem.runFrames(840));

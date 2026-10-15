@@ -1444,20 +1444,26 @@ Under the Enhanced movies setting `GameView` rebuilds 24-bit movie frames
 from what the MDEC decoded (above, GameView); under Original, and for a
 frame whose macroblocks it does not all know, hosts show the device's own
 picture, each pixel a block. Hosts make the rebuilt picture at the size
-they show it, so it is enlarged once (`ViewConfig::movies`): a window
-(desktop, Android) the display placed in its safe area as the
-presentation's scale places it (Fit, Integer or Stretch; Android's insets
-no longer resample FSR's output), the browser's canvas likewise, and a
-headset's virtual screen as many pixels across as the screen spans in an
-eye (its width, times two-hand scaling, over its distance, in the eye's
-pixels per unit of tangent), at most the eye's own width
-(`headset_movie_output`: a larger screen shows only part of itself). A
-rebuilt frame is the display alone (`Presented::movie`): hosts place it,
-map pointers onto it and set the headset screen's shape without wider
+they show it (`ViewConfig::movies`): a window (desktop, Android) the
+display placed in its safe area as the presentation's scale places it, the
+browser's canvas likewise, and a headset's virtual screen as many pixels
+across as the screen spans in an eye (its width, times two-hand scaling,
+over its distance, in the eye's pixels per unit of tangent), at most the
+eye's own width (`headset_movie_output`: a larger screen shows only part of
+itself). Under the Fit and Integer scales it is enlarged once, a phone's
+insets resampling nothing; under Stretch the rebuilt picture keeps the
+display's shape within the stretched rectangle (`fitted`) and the
+compositor stretches it across, a second enlargement one way. A rebuilt
+frame is the display alone (`Presented::movie`): hosts place it, map
+pointers onto it and set the headset screen's shape without wider
 framing's sides. Each host tells whether its last frame showed a rebuilt
 movie frame: the browser's `status().renderer.movie`, OpenXR's `xrframe`
-`movie=0|1`, Android's `frame rendered ... movie=0|1` log line and the
-desktop's `--control` `status` reply (`renderer.movie`).
+`movie=0|1` (beside whose picture the screen shows, `view=1` the
+renderer's and `view=0` the device's own, the screen's sides, `side=`, and
+the first eye's field of view's tangents, `fov=`), Android's
+`frame rendered ... movie=0|1` log line and the desktop's `--control`
+`status` reply (`renderer.movie`); a browser's `status().xr.screen` gives
+the headset screen's size, the display pixels it shows and its sides.
 
 The title movie's frames (from boot, measured natively at 640x480 on
 lavapipe on this machine) are 24-bit from game frame 371; the display shows
@@ -1467,14 +1473,27 @@ into the MDEC's: averaged back to the display's pixels, it lies 2.64
 levels on average from the device's with 14 frames left and about 0.19 a
 frame less each frame after, 0.16 with one left. The movie's last frame
 (1326) and the frames the game holds after it (to 1428) are the device's
-own, and the title's 15-bit frame (field 490) follows at 1429. Sampled
-rebuilt frames (838-1126, the bright ones) averaged back to the display's
-pixels lie 0.77-2.62 levels on average from the device's picture (PSNR
-31.8-44.7 dB), bilinearly as FSR 1 (forced on lavapipe:
-`GameView::set_software_movies`), and their luminance steps across the 8x8
-blocks' edges 0.94-1.09 times as much as within the blocks, the device's
-1.07-1.22 times: the blocks show less. The new-game movie (field 4's movie
-13, 24-bit from game frame 2 168 to 20 013 on the new-game route) is
+own, and the title's 15-bit frame (field 490) follows at 1429. Every
+rebuilt frame, averaged back to the display's pixels, lies at most 2.82
+levels on average from the device's picture and at least 31.2 dB PSNR from
+it when enlarged bilinearly, 2.12 levels and 33.9 dB by FSR 1 (forced on
+lavapipe: `GameView::set_software_movies`). The block-edge measure (the
+luminance steps across the 8x8 blocks' edges over those within the
+blocks, about 1 without blocks) of the 869 frames at full strength: on the
+788 where the MDEC's picture enlarged plainly (bilinearly to the same
+size, averaged back) measures less than the picture itself, as a blur
+does to the blocks' steps (the device's measure 0.73-1.72 there), the
+rebuilt picture measures less than the device's on every frame (at most
+0.964 of it bilinearly, 0.966 by FSR 1): the blocks show less. On the
+other 81 the enlargement's blur alone raises the measure: the fade from
+black (401-445, 514-520; the device's measure 0.43-1.11), whose blocks do
+not show by it, and the SQUARESOFT logo moving (706-737), whose letters'
+outlines lie beside the blocks' edges, where a blur moves their steps.
+There the rebuilt picture measures less than the plain enlargement (at
+most 0.994 of it bilinearly, 0.983 by FSR 1), and on the logo as much as
+the device's own picture or more: up to 0.136 more on 29 frames (706-737)
+bilinearly, 0.067 on 20 (706-725) by FSR 1. The new-game movie (field 4's
+movie 13, 24-bit from game frame 2 168 to 20 013 on the new-game route) is
 rebuilt to its last frame and the field's 15-bit frame follows at 20 014.
 After a state restored mid-movie (30 or 310 frames back), the trace
 restarted for a new internal scale, or a view attached mid-movie, the
@@ -1482,43 +1501,66 @@ blocks of the frame shown are unknown (a restart starts a trace from all
 of VRAM, without what the abandoned one kept) until the player loads a
 frame decoded since: the device's picture shows for 4, 4, 3 and 5 game
 frames (one movie frame at 15 a second), and the first rebuilt frame is
-the restored timeline's (0.82 and 0.59 levels from its device picture),
-never one from before the restore. In a browser (frame 860 of the title
-movie, headless Chromium's SwiftShader adapters, both software, so both
-enlarge bilinearly) the rebuilt frame lies 0.58 levels from the device's
-over the display's pixels on WebGPU and WebGL2, whose pictures are
-identical. On Monado's simulated headset (a 320x240 eye) the 3 m screen
-2.5 m ahead spans 210 pixels: the title movie is rebuilt at 210x142, and
-under Original shown at the display's 320x216.
+the restored timeline's (0.82 and 0.59 levels from its device picture,
+5.55 and 15.75 from the picture shown before the restore), never one from
+before the restore. Through the desktop's and Android's view (frame 840
+on, wider framing on, a 1366x768 target whose safe area leaves out 60
+pixels each side and 34 above and below) the title movie is rebuilt at
+1037x700 under Fit and 960x648 under Integer, the display's placed sizes in
+the safe area, and shown at those sizes without sides. In a browser (frame
+860 of the title movie, headless Chromium's SwiftShader adapters, both
+software, so both enlarge bilinearly) the rebuilt frame lies 0.58 levels
+from the device's over the display's pixels on WebGPU and WebGL2, whose
+pictures are identical. On Monado's simulated headset (a 320x240 eye
+whose field of view's tangents run from -0.9163 to 0.9163 across) the 3 m
+screen 2.5 m ahead spans 210 pixels: the title movie is rebuilt at
+210x142, with no sides while wider framing is on (the renderer's frames
+before it have 39 each side), and under Original shown at the display's
+320x216.
 
 Tests: `xem-headless/tests/movies.rs` (local, disc 1; lavapipe) presents
-every frame from boot through the title movie with a view enlarging as
-the GPU does and one forced to FSR 1, checking the facts above (every
-frame with a picture rebuilt until the ease ends, the ease monotonic to
-under a quarter, the held frames and the title's frame, each sampled
-rebuilt frame within 6 levels and 30 dB of the device's and showing its
-blocks' edges less); under Original no frame is rebuilt, and the RAM after
-1 100 frames from boot is the same with Enhanced, Original and no
-presentation; the new-game movie ends rebuilt into the field's 15-bit
-frame; and the restores, the restart and the attach above resume within
-two movie frames (8 game frames), the restores with the restored picture
-(within 6 levels of its device picture, which differs from the one shown
-before). The view's
-unit tests check that every host class rebuilds under Enhanced alone and
-the headset sizing. `web/tests/render.test.mjs` shows frame 860 of the
-title movie twice from one snapshot on WebGPU and on WebGL2 (wider
+every frame from boot through the title movie with a view enlarging
+bilinearly and one enlarging by FSR 1 (each told so whatever the GPU),
+checking the facts above: every frame with a picture rebuilt until the
+ease ends, every rebuilt frame within 6 levels and 30 dB of the device's,
+the two enlargements different on every frame with a picture (FSR 1 ran),
+at full strength on every frame the block-edge measure below the device
+picture's where a plain enlargement lowers it and below the plain
+enlargement's elsewhere, the device's picture the reference on at least
+three quarters of the frames, the ease monotonic to under a quarter, the
+held frames and the title's frame; under Original no frame is rebuilt, and
+the RAM after 1 100 frames from boot is the same with Enhanced, Original
+and no presentation; the new-game movie ends rebuilt into the field's
+15-bit frame; and the restores, the restart and the attach above resume
+within two movie frames (8 game frames), the restores with the restored
+picture (within 6 levels of its device picture and less than half as far
+from it as from the picture shown before). `xem-host`'s
+`a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides`
+(local, disc 1) checks the desktop's and Android's view as above: the
+rebuilt frame's size the display's placed size in the safe area under Fit
+and under Integer, shown at that size and centred there, without sides
+while the view's own frames have them, and the device's 320x216 picture
+under Original. The view's unit tests check that every host class
+rebuilds under Enhanced alone and the headset sizing.
+`web/tests/render.test.mjs` shows frame 860 of the title movie twice from
+one snapshot on WebGPU and on WebGL2 (each its backend, checked; wider
 framing on, the Integer scale): `renderer.movie` true under Enhanced with
 no sides and false under Original, the pictures different but within 6
 levels of each other over the display's pixels, the RAM the same, and the
 backends' rebuilt frames 97% within 8 levels (measured: 100%).
-`web/tests/xr-game.test.mjs` does it in IWER's Quest 3 (`renderer.movie`
-true then false, the movie on the screen at both views' centres, the RAM
-the same). `scripts/xr-game-smoke.sh` checks `movie=1` on every headset
-frame from game frame 405 of its boot run, one picture size in the
-display's shape and not 320x216, and in a run under Original `movie=0` at
-320x216 with the RAM equal to `xem-headless`'s. `scripts/android-smoke.sh`
-checks a `frame rendered` line with `movie=1` while the opening movie
-plays.
+`web/tests/xr-game.test.mjs` does it in IWER's Quest 3 with wider framing
+on (`renderer.movie` true then false, the movie on the screen at both
+views' centres, the screen, `status().xr.screen`, showing the 320x216
+display without sides in its shape under both settings, the RAM the same,
+and the title's 15-bit screen after the movie with sides of 39).
+`scripts/xr-game-smoke.sh` runs its boot run with wider framing on and
+checks `movie=1` on every headset frame from game frame 405, each made at
+the screen's span in the eye from the logged field of view (210x142),
+`side=0` on those frames and on the device's own pictures (`view=0`) and
+`side=39` on the renderer's frames before the movie (`view=1`), and in a
+run under Original `movie=0` at 320x216 with the RAM equal to
+`xem-headless`'s. `scripts/android-smoke.sh` checks a `frame rendered`
+line with `movie=1` while the opening movie plays.
 
 Not done or not measured: FSR 1 runs on real frames only where forced on
 lavapipe; the browsers' and Android emulator's adapters are software
@@ -1527,8 +1569,18 @@ span on headset GPUs (the Low tier) is not measured. The macroblocks are
 not carried across a restart or restore (matching them to the restored
 VRAM would remove the one movie frame of the device's picture measured
 above). Only the title movie eases; other movies end rebuilt and cut to
-what follows. No person has judged the pictures: "clearer" is the
-block-edge measure above, and Android shows only its logged flag.
+what follows. Under the Stretch scale a rebuilt frame is enlarged twice
+(above). No person has judged the pictures: "clearer" is the block-edge
+measure above, measured on the title movie alone. On its fade from black
+and its SQUARESOFT logo that measure follows the picture's own outlines
+and the enlargement's blur rather than the blocks, so there the rebuilt
+pictures are compared with a plain enlargement only; on the logo they
+measure as much as the device's own picture or more. No test drives the
+desktop's window (its SDL host takes Wayland or X11 only), so the
+desktop's `--control` `renderer.movie` is untested: the view's flag it
+reports is the one the `xem-host` test checks. Android shows only its
+logged flag; its real insets (the `xem-host` test stands in with a safe
+area) and sizes are not checked.
 
 ### Characters in a wider view
 
@@ -2408,8 +2460,10 @@ Headset class (Low tier, depth of field off unless enabled).
   lavapipe), a paused game with head tracking and rendering
   continuing, the RAM at frame N equal to `xem-headless`'s, stereo eye
   captures of the screen, an HD-2D field on it, and the title movie
-  rebuilt (`movie=1`) and, in a run under the Original movies setting,
-  the device's own (`movie=0`, 320x216). Its inspection run
+  rebuilt (`movie=1`) at the screen's span in an eye (`fov=`) with no
+  sides while wider framing is on (`side=0`, the renderer's frames before
+  it `side=39`) and, in a run under the Original movies setting, the
+  device's own (`movie=0`, 320x216). Its inspection run
   (field 30 under HD-2D, Fei walked into the room by the session log's
   pads; the underhand grab at headset frames 150 and 270, the Pause grab
   at 180 and 240) checks that the view is on from the first grab to the
@@ -2445,7 +2499,8 @@ Headset class (Low tier, depth of field off unless enabled).
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
   exit, and an unchanged RAM hash; its movie test shows the title movie
-  rebuilt in the headset and the device's own under Original
+  rebuilt in the headset and the device's own under Original, the screen
+  without wider framing's sides (`status().xr.screen`)
   ([Movies](#movies)); its inspection test (field 30) toggles
   the view with the right controller's stick click, turns it one
   30-degree step with the stick (no pitch; the Binaural listener faces the

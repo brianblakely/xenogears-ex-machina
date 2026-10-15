@@ -1574,6 +1574,92 @@ mod tests {
         assert!(!view.first_person());
     }
 
+    /// The title movie through the desktop's and Android's view (local only:
+    /// disc 1 and the game module; lavapipe), from its frame 840 with wider
+    /// framing on, in a 1366x768 target whose safe area leaves out 60 pixels
+    /// each side and 34 above and below (as a phone's insets do): under the
+    /// Fit and the Integer scale the frame is rebuilt at the display's size
+    /// placed in the safe area (not fitted to the whole target) and shown
+    /// there at that size (enlarged once), centred, its picture without
+    /// wider framing's sides (the view's own frames have them); under the
+    /// Original movies setting the device's own picture.
+    #[cfg(all(has_game_module, not(debug_assertions)))]
+    #[test]
+    fn a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides() {
+        use xem_settings::{MovieFilter, Scale, SettingChange};
+        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        if !disc.exists() {
+            eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+            return;
+        }
+        let (session, _) = xem_game::boot(&disc, &Default::default()).unwrap();
+        let mut game = Game::new(session);
+        for _ in 0..840 {
+            assert!(game.session.frame().unwrap());
+        }
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let wide = xem_settings::Graphics { widescreen: true, ..settings.borrow().settings().graphics };
+        settings.borrow_mut().apply(SettingChange::Graphics(wide)).unwrap();
+        let (width, height) = (1366u32, 768u32);
+        let safe = Rect { x: 60.0, y: 34.0, width: (width - 120) as f32, height: (height - 68) as f32 };
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings.clone(), false).unwrap();
+        view.set_safe_area((60, 34, width - 120, height - 68));
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("movie target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        // A host frame: a game frame, taken and presented.
+        let step = |view: &mut View, game: &mut Game| {
+            assert!(game.session.frame().unwrap());
+            view.set_game_frame(&gpu, game);
+            view.render(&gpu, &output, 0.0).unwrap();
+        };
+        for scale in [Scale::Fit, Scale::Integer] {
+            settings.borrow_mut().apply(SettingChange::Scale(scale)).unwrap();
+            // Rebuilt within two movie frames (the trace starts with the
+            // view's first frame).
+            let mut waited = 0;
+            while { step(&mut view, &mut game); !view.presented_movie() } {
+                waited += 1;
+                assert!(waited <= 8, "{scale:?}: no rebuilt frame within two movie frames");
+            }
+            let display = game.display_info();
+            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale);
+            let made = view.renderer.presented_texture().map(|t| (t.width(), t.height())).expect("the rebuilt frame");
+            let picture = view.picture.expect("the picture's place");
+            eprintln!("{scale:?}: {}x{} display rebuilt at {made:?}, placed at {:?}", display.width, display.height, picture.placed);
+            assert!(display.color24 && (display.width, display.height) == (320, 216), "{scale:?}: the title movie's display ({display:?})");
+            assert_eq!(made, (placed.width.round() as u32, placed.height.round() as u32), "{scale:?}: made at the display's size placed in the safe area");
+            assert_eq!((picture.placed.width, picture.placed.height), (made.0 as f32, made.1 as f32), "{scale:?}: shown at the size it was made at");
+            assert_eq!(
+                (picture.placed.x, picture.placed.y),
+                (safe.x + ((safe.width - picture.placed.width) / 2.0).round(), safe.y + ((safe.height - picture.placed.height) / 2.0).round()),
+                "{scale:?}: centred in the safe area"
+            );
+            assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "{scale:?}: the display alone, without wider framing's sides");
+            assert!(view.renderer.config().is_some_and(|c| c.side > 0), "{scale:?}: the view's own frames have sides");
+        }
+        // The Original movies setting: the device's own picture, as it is.
+        let original = xem_settings::Graphics {
+            filtering: xem_settings::TextureFiltering { movies: MovieFilter::Original, ..wide.filtering },
+            ..wide
+        };
+        settings.borrow_mut().apply(SettingChange::Graphics(original)).unwrap();
+        for _ in 0..4 {
+            step(&mut view, &mut game);
+            assert!(!view.presented_movie(), "rebuilt under Original");
+        }
+        let picture = view.picture.expect("the picture's place");
+        assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "the device's own 320x216 picture");
+    }
+
     #[test]
     fn shared_keyboard_codes_map_to_physical_sdl_keys() {
         let mut codes = vec!["ControlLeft".to_string(),"ControlRight".into(),"ShiftLeft".into(),"ShiftRight".into(),
