@@ -469,6 +469,11 @@ function xrFrame(time, xrframe) {
     }
     disc.serveGameReads(app);
     audio.pump();
+    // What the session asked for (the panel's operations, the controllers'
+    // chords) runs now, and card writes go to IndexedDB, as after the
+    // window's frames.
+    dispatchAppRequests();
+    cards.flush().catch(() => {}); // retained for explicit retry; visible in status
     xr.frames += 1;
     page.frameError = null;
   } catch (error) {
@@ -629,6 +634,18 @@ $('import-bios').addEventListener('change', operationGuard(async (event) => {
   event.target.value = ''; operationStatus(message);
 }));
 
+/** The backups' pickers and downloads, which an immersive session cannot
+ * show: they are refused there, as in native headset play. */
+const FILE_ACTIONS = ['ExportState', 'ImportState', 'ExportCard1', 'ImportCard1', 'ExportCard2', 'ImportCard2',
+  'ExportSettings', 'ImportSettings', 'ImportBios'];
+const XR_PICKERS = 'File pickers are available in windowed play.';
+// The panel's Import disc… cannot show the file chooser in a session either.
+$('file').addEventListener('click', (event) => {
+  if (!page.xr) return;
+  event.preventDefault();
+  operationStatus(XR_PICKERS);
+});
+
 function control(command) {
   const reply = window.xem.command(command);
   if (reply.error) throw new Error(reply.error);
@@ -658,6 +675,7 @@ async function executeAppOperation(request) {
     return { ok: true };
   }
   const action = request.Action;
+  if (page.xr && FILE_ACTIONS.includes(action)) throw new Error(XR_PICKERS);
   switch (action) {
     case 'Reset': {
       const reply = control({ cmd: 'reset' });

@@ -738,9 +738,12 @@ impl XemApp {
         let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
         let bindings = self.settings.borrow().settings().game_bindings.clone();
         let inspecting = self.look(&bindings, field, now);
-        // The player's Pause in a headset (or settings' own pause there):
-        // time stands still, nothing to catch up afterwards.
-        if self.headset.pauses.paused() && self.xr_input.is_some() {
+        // The player's Pause in a headset (or settings' own pause there,
+        // which a held rewind goes on through: a chord while the panel
+        // shows): time stands still, nothing to catch up afterwards.
+        let rewinding = self.rewind_held.iter().any(|held| *held);
+        let paused = self.headset.pauses.player || (self.headset.pauses.settings && !rewinding);
+        if paused && self.xr_input.is_some() {
             self.hud_forward = None;
             self.hud_rewind = None;
             // The panel's own Close still closes it (and its pause).

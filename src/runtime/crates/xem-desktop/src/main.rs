@@ -38,6 +38,9 @@ struct Options {
     xr_hands: Vec<(u64, String)>,
     /// Headset tests: Recenter at these headset frames, as the app action does.
     xr_recenter_at: Vec<u64>,
+    /// Headset tests: scripted controller buttons (headset frame, the
+    /// gamepad's buttons as `xem_settings::controls::PAD_NAMES` bits).
+    xr_pad: Vec<(u64, u16)>,
     /// Agents' commands on stdin while the game plays (`--control`).
     control: bool,
 }
@@ -58,6 +61,7 @@ fn options() -> Result<Options, String> {
         xr_capture_at: Vec::new(),
         xr_hands: Vec::new(),
         xr_recenter_at: Vec::new(),
+        xr_pad: Vec::new(),
         control: false,
     };
     let mut args = std::env::args().skip(1);
@@ -113,11 +117,25 @@ fn options() -> Result<Options, String> {
                     options.xr_hands.push((at.parse().map_err(|_| "bad --xr-hands frame")?, name.to_string()));
                 }
             }
+            "--xr-pad" => {
+                let value = args.next().ok_or("--xr-pad needs FRAME:BUTTONS,...")?;
+                for item in value.split(',') {
+                    let (at, names) = item.split_once(':').ok_or("--xr-pad needs FRAME:BUTTONS,...")?;
+                    let mut buttons = 0u16;
+                    for name in names.split('+').filter(|name| *name != "none") {
+                        let bit = xem_settings::controls::PAD_NAMES.iter().position(|n| *n == name)
+                            .ok_or_else(|| format!("unknown button {name} (buttons: {})", xem_settings::controls::PAD_NAMES.join(", ")))?;
+                        buttons |= 1 << bit;
+                    }
+                    options.xr_pad.push((at.parse().map_err(|_| "bad --xr-pad frame")?, buttons));
+                }
+                options.xr_pad.sort_by_key(|(at, _)| *at);
+            }
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...]]] [--show-settings] \
-                     [--exit-after-frames N] [--screenshot out.png] [--control]\n\
+                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] \
+                     [--xr-pad N:BUTTONS,...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
                      --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
@@ -125,18 +143,22 @@ fn options() -> Result<Options, String> {
                      pinch to walk, thumb taps and swipes), the left menu button toggles Settings; \
                      in a field the underhand grab (or the right stick's click released alone) looks around \
                      from the character's eyes, the head looking and the right stick turning in steps; \
+                     the app's chords take their buttons first (the right stick's click, Back, with A saves \
+                     the state, with Y loads it, with the left grip rewinds, with the right grip toggles fast-forward); \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
                      prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel, NAME@panel:X/Y at the settings panel's \
                      logical pixel, NAME@world:X/Y/Z at that point of the game's world on the diorama's table) at headset frames, \
                      for tests without hand tracking; --xr-recenter-at recenters the view at those headset frames \
                      (as the panel's Recenter does); \
+                     --xr-pad holds the gamepad's BUTTONS (South, East, West, North, L1, R1, LT, RT, Back, Start \
+                     joined by +, or none) from headset frame N to the next entry, for tests without controller buttons; \
                      --xr-capture-at saves both eyes at those headset frames (looking from within the scene, \
                      each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
                      the command layer's (status, context, navigate, act, ...; status adds renderer.movie, \
                      whether the window last showed a rebuilt movie frame), settings, \
                      settings_apply {{change}} (the panel's own typed change), panel {{visible}}, \
-                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer) and \
+                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer; not with --xr) and \
                      bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
@@ -271,6 +293,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
     }
     game.set_frame_limit(options.exit_at_frame);
     let settings = Rc::new(RefCell::new(open_settings()));
+    // Save state keeps its state beside the settings, as in the window.
     let play = xem_host::xr_play::XrPlay {
         show_settings: options.show_settings,
         pause: options.xr_pause,
@@ -278,8 +301,11 @@ fn run_xr(options: &Options) -> Result<(), String> {
         capture_at: options.xr_capture_at.clone(),
         hands: options.xr_hands.clone(),
         recenter_at: options.xr_recenter_at.clone(),
+        pad: options.xr_pad.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,
+        state_directory: None,
+        control: options.control,
     };
     xem_host::xr_play::run(&(), &play, settings, game).map(|_| ())
 }
@@ -387,10 +413,10 @@ impl Host {
     fn run(&mut self, window: &sdl::Window, options: &Options) -> Result<(), String> {
         let mut frames = 0u64;
         let mut minimized = false;
-        let control = options.control.then(Control::spawn);
+        let control = options.control.then(xem_host::Control::spawn);
         loop {
             if let Some(control) = &control {
-                control.poll(self);
+                control.poll(|command| self.command(command));
             }
             self.import_disc(window, options);
             let was_visible = self.view.panel_visible();
@@ -501,19 +527,10 @@ impl Host {
     /// service (as the panel's edits), the panel shown or hidden, the rest
     /// to the game's command layer.
     fn command(&mut self, command: &serde_json::Value) -> serde_json::Value {
-        let settings = self.view.settings().clone();
+        if let Some(reply) = xem_host::settings_command(self.view.settings(), command) {
+            return reply;
+        }
         match command.get("cmd").and_then(serde_json::Value::as_str) {
-            Some("settings") => serde_json::to_value(settings.borrow().settings()).unwrap_or_default(),
-            Some("settings_apply") => {
-                let change = command.get("change").cloned().unwrap_or_default();
-                match serde_json::from_value::<xem_settings::SettingChange>(change) {
-                    Ok(change) => match settings.borrow_mut().apply(change) {
-                        Ok(ack) => serde_json::json!({ "revision": ack.revision, "settings": ack.settings }),
-                        Err(rejected) => serde_json::json!({ "error": rejected.to_string() }),
-                    },
-                    Err(error) => serde_json::json!({ "error": format!("not a setting change: {error}") }),
-                }
-            }
             Some("import_disc") => {
                 // As the panel's Import disc… does once its dialog chose a file.
                 let Some(path) = command.get("path").and_then(serde_json::Value::as_str) else {
@@ -662,43 +679,6 @@ fn save_png(
     writer
         .write_image_data(rgba)
         .map_err(|error| error.to_string())
-}
-
-/// `--control`: agents' JSON commands on stdin, one a line, each answered by
-/// a line on stdout between the game's frames.
-struct Control {
-    lines: std::sync::mpsc::Receiver<String>,
-}
-
-impl Control {
-    fn spawn() -> Control {
-        let (send, lines) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            for line in std::io::stdin().lines() {
-                let Ok(line) = line else { break };
-                if send.send(line).is_err() {
-                    break;
-                }
-            }
-        });
-        Control { lines }
-    }
-
-    fn poll(&self, host: &mut Host) {
-        use std::io::Write;
-        while let Ok(line) = self.lines.try_recv() {
-            if line.trim().is_empty() {
-                continue;
-            }
-            let reply = match serde_json::from_str::<serde_json::Value>(&line) {
-                Ok(command) => host.command(&command),
-                Err(error) => serde_json::json!({ "error": format!("not JSON: {error}") }),
-            };
-            let mut out = std::io::stdout().lock();
-            let _ = writeln!(out, "{reply}");
-            let _ = out.flush();
-        }
-    }
 }
 
 /// SDL's file dialog answered: the chosen path (or none) to the main loop.

@@ -1570,6 +1570,19 @@ export component SettingsPanel inherits Window {
                             if root.selected-section == 4: Card {
                                 title: "Fast-forward";
 
+                                // An action, not a setting (the bindings'
+                                // Toggle fast-forward), for touch screens and
+                                // headsets without a keyboard or a gamepad.
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text { text: root.fast-forward ? "On: the game runs at the speed below; music keeps its tempo." : "Off: the game runs at its own speed."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        horizontal-stretch: 0;
+                                        Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; clicked => { root.app-action-requested(4); } }
+                                    }
+                                }
+                                Divider { }
                                 SliderRow {
                                     label: "Speed";
                                     value-text: root.fast-forward-rates[root.fast-forward-rate];

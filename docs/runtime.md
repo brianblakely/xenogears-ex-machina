@@ -2835,10 +2835,16 @@ Headset class (Low tier, depth of field off unless enabled).
   once the game is booted, with the activity and JavaVM as the loader's
   platform data; `crates/xem-host/src/xr_play.rs`): the
   screen 2.5 m ahead (Settings: headset), the settings panel a quad
-  layer (left menu button), movie frames on the same screen (rebuilt as
-  wide as the screen spans in an eye: [Movies](#movies)); controllers
-  are the game bindings' gamepad ([Controls](#controls)). One
-  `xrframe` line per frame. `src/runtime/scripts/xr-game-smoke.sh` (Monado's simulated
+  layer (left menu button, or both sticks' clicks), movie frames on the
+  same screen (rebuilt as wide as the screen spans in an eye:
+  [Movies](#movies)); controllers are the game bindings' gamepad
+  ([Controls](#controls)) after the app's chords take theirs ([Saves and
+  time controls](#saves-and-time-controls)); `--control` answers agents'
+  commands between frames as in the window (but `import_disc`). One
+  `xrframe` line per frame (with `ff=`, the fast-forward factor the
+  session runs at, 0 when off, and `hud=`, what the HUD shows: `ff`,
+  `rewind`, `notice`), and an `app` line per operation with the game's
+  vblank and memory hash just after it. `src/runtime/scripts/xr-game-smoke.sh` (Monado's simulated
   HMD, null compositor) checks 57-63 game frames a second against the
   simulated 20 Hz headset, sustained pacing (wall-clock frame intervals: p50
   50.06 ms, p99 under 57 ms, at most 5% beyond 1.5 periods; measured on
@@ -2877,7 +2883,27 @@ Headset class (Low tier, depth of field off unless enabled).
   putting a moved seat back at its origin, the RAM against `xem-headless`,
   the settings panel above the table opened and closed, and a pinch
   through the table walking Fei; and in field 12 the dialogue on the pane
-  in both eyes ([In a headset](#in-a-headset)).
+  in both eyes ([In a headset](#in-a-headset)). Its
+  saves run plays the player's own game (no session log) from field 30,
+  a state `xem-headless` saved that an agent's `--control` command loads
+  at the first headset frame: prayer hands open Settings, pinches on the
+  panel choose Saves and Save state, the panel closes and opens again for
+  Load state, then Time's Start fast-forward, and scripted controller
+  buttons (`--xr-pad N:BUTTONS,...`, for runtimes whose controllers have
+  none to press) hold Back+RT and later Back+LT. It checks the agent's
+  reply, that Settings held the game while it saved, the HUD's two results
+  (`hud notice="State saved"` and `"State loaded"`, each shown for four
+  seconds of headset frames), that Load state left the vblank and memory
+  hash Save state did, that `xem-headless` restores the state file the
+  panel wrote to that RAM, that fast-forward ran the game at 0.8 to 1.1 of
+  60 frames a second times the factor the session paced it at (the 10×
+  setting is paced at what the 20 Hz loop's 12 ms batches reach: 329
+  frames a second at a mean factor of 5.64, 0.97 of it, in a smoke run
+  here on lavapipe; 232 at 4.17, 0.93 of it, in a trial run of the same
+  scenario under other builds' load), 60.0
+  frames a second once the chord turned it off, and that Back+LT held for
+  two seconds rewound (game frame 2895 back to 2102) under the HUD's
+  rewind icon, the game playing on after.
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs
@@ -2918,7 +2944,26 @@ Headset class (Low tier, depth of field off unless enabled).
   pointer source's ray with a pinch, or a
   controller's ray with its trigger (`select`). The button reads Enter VR
   or Exit VR; a hidden session (the browser's own menu) or its end lets go
-  of held input.
+  of held input. After each immersive frame the page runs the operations
+  asked for in it and writes the cards the game changed to IndexedDB, as
+  after the window's ([Browser host](#browser-host)). The saves test of
+  `web/tests/xr-game.test.mjs` plays the slice's save route
+  (`slice-save.json`, `xem-headless` up to frame 10 100, card 2
+  unformatted as there) to its end in the session: the game formats card
+  2 and saves to it, and IndexedDB holds that card (formatted, the save in
+  its first block, equal to the session's image) while the session runs,
+  the canvas's loop never having run. It then clicks the panel's Saves
+  and Save state with the right controller's ray and trigger (the state
+  in IndexedDB, its checksum verified, the HUD's "State saved", the game
+  held by Settings' pause), turns fast-forward on with Back+RT (the right
+  stick's click with the right grip; inspection not toggled) and checks
+  the game's rate against 1× at the factor the session paces it at
+  (above 1.2, and the rate 0.7 to 1.3 of 1× times it: on IWER's software
+  WebGL here 45.1 frames a second at 1× and 66.2 at a mean factor of
+  1.70, 0.86 of it; 30.4 and 45.9 at 1.40 in an earlier run under other
+  tracks' heavier load), turns it off with
+  Time's Stop fast-forward, loads the state by the ray (the saved RAM
+  again) and has Export state backup refused in the session.
 
 In a field both toggle first-person inspection with the underhand grab
 and the controllers' Back (the right stick's click) released alone, where
@@ -3398,9 +3443,10 @@ one after another took about 26 minutes; `desktop` 114 s.
 
 The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves,
 Gameplay and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
-Desktop widths use a sidebar; narrow windows use a strip of section tabs. Rewind and
-the notched FF rate slider live in Time, with compact interval and history fields
-and the retained queue's available seconds and memory usage. Graphics contains
+Desktop widths use a sidebar; narrow windows use a strip of section tabs. Rewind
+(with Hold to rewind), the fast-forward toggle's button and the notched FF rate
+slider live in Time, with compact interval and history fields and the retained
+queue's available seconds and memory usage. Graphics contains
 Show FPS, which draws a counter over the game on desktop, Android, browser and
 headsets; it can also be toggled through a keyboard or gamepad binding.
 The same HUD shows icons during active fast-forward and successful held rewind,
@@ -3413,16 +3459,24 @@ corners, a plain 16-pixel icon coloured by what it says (a success's check
 green, a failure's mark red) and one weight of text; the counter, then the
 activity icons, in a row, a result below them, and a failure's chip grown
 downward to give its cause. Settings contains save-state, rewind, backup
-and binding controls, and windowed play their file pickers. On desktop,
-Android and in the browser these operations also take keyboard and gamepad
-chords. Native headset play (OpenXR) reaches them only through its Settings
-panel: its controllers and hands do not reach the app bindings. In a WebXR
-session the operations asked for there, from the Settings panel or a
-controller's chord, queue: they run at the page's next key, pointer or
-window-frame input (after the session, or a key of an attached keyboard).
-Fast-forward is an
-on/off toggle, bound to backtick (`Backquote`) or Back+RT by default, with no
-Settings checkbox for the toggle. Its separate
+and binding controls, and windowed play their file pickers. Every host
+also takes these operations' keyboard and gamepad chords
+(`xem_settings::AppInput`, which takes a chord's buttons before the game
+has the rest). In a headset the controllers are that gamepad, OpenXR's
+(`xr_play`) and a WebXR session's alike: Back is the right stick's
+click and LT and RT the grips, so by default Back with A saves the
+state, with Y loads it, with the left grip rewinds while held and with
+the right grip toggles fast-forward, and both sticks' clicks toggle
+Settings. The operations a headset frame asks for (the panel's, a
+chord's) run in that frame, and a session refuses the file pickers and
+downloads (the backups' imports and exports, Import BIOS, the browser's
+Import disc…) with "File pickers are available in windowed play.", as
+neither can show them. Fast-forward is an on/off toggle, bound to
+backtick (`Backquote`) or Back+RT by default. Settings → Time's Start
+fast-forward button (Stop fast-forward while it runs, beside a line
+saying which) is the same action for touch screens and headsets without
+a keyboard or a gamepad: not a setting, so nothing about it persists
+and there is no checkbox. Its separate
 saved rate defaults to 10×. The slider snaps to 1×, 5×, 10×, 15×, 20× and
 Uncapped; changing the rate does not turn fast-forward on. Uncapped has no
 game-frame multiplier or frame-count ceiling: each host runs as much game work
@@ -3466,7 +3520,9 @@ bindable to keyboard/gamepad, persists with Settings and is included in settings
 backups. Pending focus requests are outside game snapshots; input recordings
 include their requests and cancellations so replay reaches the same game pause.
 
-Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release.
+Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release
+(also Settings → Time's Hold to rewind, held: a headset's settings pause
+holds the game while the panel shows, but not a held rewind).
 Every 250 ms (`REWIND_STEP_MS`) a held rewind takes the newest state before
 the game's frame off the queue and plays on from it until the display shows
 a frame both built and drawn after it (its third change of buffers: the
@@ -3641,8 +3697,14 @@ Browsers use explicit Settings operations or
 `window.xem.appOperation({Action: 'ExportState'})` and the
 snapshot/card/settings automation methods. Browser file pickers require a
 recognized activation; a refusal is shown in Settings and operation status.
-Headset play (OpenXR's `xr_play`, the browser's WebXR session) saves and
-loads through the same session. No Lua runtime exists yet (plan.md, Phase
+Headset play saves and loads through the same session as the window:
+OpenXR's Save state keeps `state.xemstate` where the window's does (beside
+the settings; on Android in the files directory, which the Android host
+gives the headset loop as `XrPlay::state_directory`), and agents reach
+these commands there too (`xem-desktop --xr --control`); a WebXR session
+keeps its state in IndexedDB's `saves` store, and the game's own card
+writes reach IndexedDB after every immersive frame, as after the window's
+([Browser host](#browser-host)). No Lua runtime exists yet (plan.md, Phase
 11), so these state paths cover the game, event, audio and media services.
 
 Tests: `xem-core/tests/persistence.rs`, over a stand-in module and the real
@@ -3687,9 +3749,37 @@ unchanged, besides the storage failures above. `xem-host`'s
 module, nothing booted): a state naming another build, loaded through
 `Game::command` and through the panel's Load state, is refused with the
 runtime's text, unquoted. `xem-ui/tests/hud.rs` shows a refusal in the
-failure chip.
+failure chip. Every host's save states and time controls:
+`xem-ui/tests/panel.rs`'s
+`time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_press_it`
+(Start fast-forward sends Toggle fast-forward and changes no setting, the
+session's state turns it to Stop fast-forward, and the points the headset
+and Android smokes press, at their panels' sizes and with a running
+game's status texts, reach Saves, Time, Save state, Load state, the
+fast-forward button and a held Hold to rewind);
+`src/runtime/scripts/xr-game-smoke.sh`'s saves run (OpenXR on Monado:
+the panel's Save state and Load state by pinches, Start fast-forward,
+the Back+RT and Back+LT chords from scripted buttons, an agent's
+`--control` command; [Headsets](#headsets)); `web/tests/xr-game.test.mjs`'s
+saves test (WebXR on IWER: the game's own save to card 2 in IndexedDB
+during the session, Save state and Load state by a controller's ray,
+Back+RT, Stop fast-forward, a picker refused); `android-smoke.sh`'s
+Settings by touch on the emulator (Stop and Start fast-forward, Hold to
+rewind, Save state and Load state; [Android host](#android-host)).
 
-Not done or not measured: an open file's later blocks' directory frames are
+Not done or not measured: in a headset the panel's Hold to rewind holds
+only under an OpenXR controller's held trigger (a pinch or WebXR's
+`select` is a click, which starts and ends it at once), so players with
+hands alone have no rewind there; no test holds it (Monado's simulated
+controllers press nothing, and the scripted buttons are the gamepad's);
+the Android host's headset loop with its files directory as the state
+directory has not run (the emulator has no OpenXR runtime); fast-forward
+in a headset reaches what the host's batches reach, not the setting's
+10× (a 20 Hz Monado loop here 4 to 6×, IWER's software WebGL 1.4 to
+1.7×); the Android emulator draws frames with the panel over the game
+at about two a second, so its Hold to rewind went back only 6 and 9
+vblanks in two runs' two-second holds (its history then holds states a
+few frames apart). An open file's later blocks' directory frames are
 not compared (the bytes it depends on there are; the game's saves are one
 block); a writer whose bytes so far match a later save's (the same save
 made again) writes on, making the save it would have made; states taken
@@ -4938,7 +5028,9 @@ frames while the game plays: the command layer's (`status`, `context`,
 own typed, validated, persisted change), `panel {visible}`,
 `import_disc {path}` (the launcher's path) and `bios_import {path}` (Import
 BIOS's: kept beside the settings for every boot and given to the running
-game); nothing passes through the window system.
+game); nothing passes through the window system. With `--xr` the headset
+session answers the same commands but `import_disc` (`xem_host::Control`
+and `xem_host::settings_command` serve both).
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
@@ -5077,9 +5169,10 @@ as JSON text or bytes.
   into it at once, marking the card dirty; after each of the window's
   animation frames and each automation step the page writes the latest
   dirty images to IndexedDB in order and acknowledges only completed
-  transactions. A WebXR session's frames replace the window's and write
-  nothing: dirty images wait for the session's end, an automation step or
-  an explicit retry. A failed write retains
+  transactions. A WebXR session's frames replace the window's and do the
+  same: after each, the page runs the operations asked for in it (the
+  panel's, the controllers' chords) and writes the dirty images, so a save
+  made in the headset is in IndexedDB before the session ends. A failed write retains
   the image for explicit retry and export, with the error visible in Settings.
   Quota exhaustion, denied storage, interrupted transactions, corrupt states
   and missing/evicted saves have explicit errors. The runtime's
@@ -5318,6 +5411,11 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   cards](#original-saves-and-memory-cards)). Import BIOS (save titles) does
   too, and keeps the image as `<files dir>/bios.bin`, whose Kanji font every
   boot takes ([Save titles and the Kanji font](#save-titles-and-the-kanji-font)).
+  Save state keeps `<files dir>/state.xemstate`, in the window and in the
+  headset loop (`--xr`, which takes the files directory as its state
+  directory). Each app operation's outcome is logged with the game's
+  vertical blank and memory hash just after it (`xem: app
+  Action(SaveState) game_vblank=… memory_hash … ok: State written: …`).
 - **Lifecycle.** SDL 3.4 delivers the application events only to event
   watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
   `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the
@@ -5350,7 +5448,18 @@ In `nix develop path:./nix/runtime#android`:
   made there in `<files dir>/bios.bin` (`font=bios` in its log line): boot
   logo, opening movie and title screenshots,
   frame rates, a pad press, and a background and return across which the
-  game's vertical-blank count stays put. `XEM_SMOKE_GAME_ONLY=1` skips the
+  game's vertical-blank count stays put; after the 20× fast-forward
+  rounds, Settings by touch (Back shows the panel), read from the
+  operations' `xem: app` lines: Time's Stop fast-forward, Hold to rewind
+  held for two seconds (the vblank its release logs is below the
+  press's), Saves' Save state (its vblank past the release's: the game
+  played on), the panel hidden while the game plays on, then Load state
+  (the vblank and memory hash Save state logged; `files/state.xemstate`
+  written), and Start fast-forward again (`fast_forward=true` in the
+  `frame rendered` lines once the panel hides). The emulator's software
+  Vulkan draws frames with the panel shown at about two a second (30
+  without it), and the game runs at most two frames a drawn one, so the
+  section waits on those lines rather than on frames. `XEM_SMOKE_GAME_ONLY=1` skips the
   synthetic-disc and lifecycle sections. The game module must be built first
   (`python3 tools/game_module.py --stubs` in the default shell).
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the

@@ -388,7 +388,8 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
     let at = row.absolute_position();
     let size = row.size();
     let from = LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0);
-    let to = LogicalPosition::new(from.x, 20.0);
+    // Up past the panel's top, as a finger slides off it.
+    let to = LogicalPosition::new(from.x, -60.0);
     ui.dispatch(WindowEvent::PointerMoved { position: from });
     ui.dispatch(WindowEvent::PointerPressed {
         position: from,
@@ -753,6 +754,101 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
         ui.update().unwrap();
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
+}
+
+#[test]
+fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_press_it() {
+    use xem_settings::{AppAction, AppRequest};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(Cell::new(0));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |_| acks.set(acks.get() + 1)
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    // The headset's panel (xem-host xr_play: 440x560 logical at 2.0).
+    let mut ui = SettingsUi::new(shared, settings.clone(), (880, 1120), 2.0).unwrap();
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    section(&mut ui, "Time", 4);
+    // As the hosts show a running game's time.
+    let status = "29 of 30 seconds available · 184.2 MiB used";
+    ui.set_time_status(Some(false), status);
+    ui.update().unwrap();
+    let toggle = AppRequest::Action(AppAction::ToggleFastForward);
+    press(&ui, &element(&ui, "Start fast-forward", AccessibleRole::Button));
+    assert_eq!(requests.borrow().as_slice(), [toggle], "the bindings' Toggle fast-forward");
+    assert_eq!(acks.get(), 0, "an action, not a setting");
+    // The session's state shows: on, the button stops it.
+    ui.set_time_status(Some(true), status);
+    ui.update().unwrap();
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Start fast-forward").next().is_none());
+    press(&ui, &element(&ui, "Stop fast-forward", AccessibleRole::Button));
+    assert_eq!(requests.borrow().as_slice(), [toggle, toggle]);
+    assert_eq!(acks.get(), 0);
+
+    // xr-game-smoke.sh's pinches at logical points: Saves, Save state and
+    // Load state, Time and Start fast-forward.
+    ui.set_time_status(Some(false), status);
+    requests.borrow_mut().clear();
+    let at = |ui: &mut SettingsUi, x: f32, y: f32| {
+        click(ui, LogicalPosition::new(x, y));
+        ui.update().unwrap();
+    };
+    at(&mut ui, 298.0, 98.0);
+    assert_eq!(ui.component().get_selected_section(), 5, "the headset smoke's pinch selects Saves");
+    at(&mut ui, 122.0, 170.0);
+    at(&mut ui, 314.0, 170.0);
+    at(&mut ui, 256.0, 98.0);
+    assert_eq!(ui.component().get_selected_section(), 4, "and Time");
+    at(&mut ui, 347.0, 395.0);
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::SaveState), AppRequest::Action(AppAction::LoadState), toggle]);
+
+    // android-smoke.sh's taps on its 1080x2400 screen, where the panel
+    // (1064x1470 at 2.625, with the game disc's card) is at 8,465: Time,
+    // Stop fast-forward (fast-forward on at 20x then), Hold to rewind
+    // (held), Saves, Save state and Load state, Time and Start fast-forward.
+    ui.on_import_disc(|| {});
+    ui.set_disc_status("Xenogears disc 1 (SLUS-00664)");
+    ui.resize((1064, 1470), 2.625);
+    ui.component().set_selected_section(0);
+    ui.update().unwrap();
+    requests.borrow_mut().clear();
+    let screen = |x: f32, y: f32| LogicalPosition::new((x - 8.0) / 2.625, (y - 465.0) / 2.625);
+    let tap = |ui: &mut SettingsUi, x: f32, y: f32| {
+        click(ui, screen(x, y));
+        ui.update().unwrap();
+    };
+    tap(&mut ui, 628.0, 722.0);
+    assert_eq!(ui.component().get_selected_section(), 4, "the Android smoke's tap selects Time");
+    ui.set_time_status(Some(true), status);
+    ui.update().unwrap();
+    tap(&mut ui, 829.0, 1502.0);
+    // A long press (the narrow form pans under a finger, so a press
+    // reaches the button once it has stayed put a moment).
+    let hold = screen(850.0, 1318.0);
+    ui.dispatch(WindowEvent::PointerMoved { position: hold });
+    ui.dispatch(WindowEvent::PointerPressed { position: hold, button: PointerEventButton::Left });
+    std::thread::sleep(std::time::Duration::from_millis(400));
+    ui.update().unwrap();
+    assert_eq!(requests.borrow().last(), Some(&AppRequest::UiRewind(true)), "the Android smoke's long press holds rewind");
+    ui.dispatch(WindowEvent::PointerReleased { position: hold, button: PointerEventButton::Left });
+    ui.update().unwrap();
+    ui.set_time_status(Some(false), status);
+    tap(&mut ui, 727.0, 722.0);
+    assert_eq!(ui.component().get_selected_section(), 5, "and Saves");
+    tap(&mut ui, 306.0, 1095.0);
+    tap(&mut ui, 764.0, 1095.0);
+    tap(&mut ui, 628.0, 722.0);
+    tap(&mut ui, 829.0, 1502.0);
+    assert_eq!(
+        requests.borrow().as_slice(),
+        [toggle, AppRequest::UiRewind(true), AppRequest::UiRewind(false), AppRequest::Action(AppAction::SaveState),
+            AppRequest::Action(AppAction::LoadState), toggle]
+    );
+    assert_eq!(acks.get(), 0, "none of them changes a setting");
 }
 
 #[test]

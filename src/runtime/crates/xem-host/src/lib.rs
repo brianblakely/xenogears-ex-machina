@@ -52,6 +52,80 @@ pub enum Finger {
 /// What the game's state says of the player's buttons ([`Game::pad_context`]).
 pub use xem_settings::player::Context as PadContext;
 
+/// `--control`: agents' JSON commands on stdin, one a line, each answered by
+/// a line on stdout between the game's frames (in the desktop's window and
+/// in a headset session, `xr_play::XrPlay::control`).
+pub struct Control {
+    lines: std::sync::mpsc::Receiver<String>,
+}
+
+impl Control {
+    /// Reads stdin on a thread of its own until it ends.
+    pub fn spawn() -> Control {
+        let (send, lines) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for line in std::io::stdin().lines() {
+                let Ok(line) = line else { break };
+                if send.send(line).is_err() {
+                    break;
+                }
+            }
+        });
+        Control { lines }
+    }
+
+    /// Answers the commands that arrived since the last call, each with
+    /// `answer`'s reply (one that is not JSON with the reason).
+    pub fn poll(&self, mut answer: impl FnMut(&serde_json::Value) -> serde_json::Value) {
+        use std::io::Write;
+        while let Ok(line) = self.lines.try_recv() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            let reply = match serde_json::from_str::<serde_json::Value>(&line) {
+                Ok(command) => answer(&command),
+                Err(error) => serde_json::json!({ "error": format!("not JSON: {error}") }),
+            };
+            let mut out = std::io::stdout().lock();
+            let _ = writeln!(out, "{reply}");
+            let _ = out.flush();
+        }
+    }
+}
+
+/// An agent's settings command, as the panel's edits make them: `settings`
+/// (the settings as they are) and `settings_apply {change}` (the panel's own
+/// typed change, validated, persisted and acknowledged by the service).
+/// None for any other command.
+pub fn settings_command(settings: &RefCell<SettingsService>, command: &serde_json::Value) -> Option<serde_json::Value> {
+    Some(match command.get("cmd").and_then(serde_json::Value::as_str)? {
+        "settings" => serde_json::to_value(settings.borrow().settings()).unwrap_or_default(),
+        "settings_apply" => {
+            let change = command.get("change").cloned().unwrap_or_default();
+            match serde_json::from_value::<xem_settings::SettingChange>(change) {
+                Ok(change) => match settings.borrow_mut().apply(change) {
+                    Ok(ack) => serde_json::json!({ "revision": ack.revision, "settings": ack.settings }),
+                    Err(rejected) => serde_json::json!({ "error": rejected.to_string() }),
+                },
+                Err(error) => serde_json::json!({ "error": format!("not a setting change: {error}") }),
+            }
+        }
+        _ => return None,
+    })
+}
+
+/// An app operation's outcome with the game's vertical blank and memory
+/// hash just after it (a state saved or loaded is the RAM the hash says):
+/// the line the Android host logs ([`View::on_operation`]) and a headset
+/// session prints.
+pub fn operation_line(request: &AppRequest, result: &Result<String, String>, game: Option<&mut Game>) -> String {
+    let game = game.map_or_else(String::new, |game| format!(" game_vblank={} memory_hash {}", game.vblanks(), game.memory_hash()));
+    match result {
+        Ok(text) => format!("app {request:?}{game} ok: {text}"),
+        Err(error) => format!("app {request:?}{game} error: {error}"),
+    }
+}
+
 /// A wgpu surface for `window`.
 pub fn create_surface(
     instance: &wgpu::Instance,
@@ -277,6 +351,8 @@ pub struct View {
     app_input: AppInput,
     app_requests: Rc<RefCell<Vec<AppRequest>>>,
     operations: operations::Operations,
+    /// Where operations' outcomes are told ([`Self::on_operation`]).
+    operation_log: Option<Box<dyn FnMut(&str)>>,
     /// Mouse wheel notches not yet turned into zoom steps (smooth wheels).
     wheel: f32,
     /// The game's mouse buttons and camera turn, and whether SDL's relative
@@ -389,6 +465,7 @@ impl View {
             app_input: AppInput::default(),
             app_requests,
             operations: operations::Operations::default(),
+            operation_log: None,
             wheel: 0.0,
             player: Default::default(),
             game_ui: xem_core::context::Context::None,
@@ -432,6 +509,14 @@ impl View {
 
     pub fn set_state_directory(&mut self, path: std::path::PathBuf) { self.operations.directory = Some(path); }
 
+    /// `log` is told each app operation's outcome ([`operation_line`]): the
+    /// Android host's logcat, where its smoke test reads them.
+    pub fn on_operation(&mut self, log: impl FnMut(&str) + 'static) { self.operation_log = Some(Box::new(log)); }
+
+    fn log_operation(&mut self, request: &AppRequest, result: &Result<String,String>, game: Option<&mut Game>) {
+        if let Some(log) = &mut self.operation_log { log(&operation_line(request,result,game)); }
+    }
+
     /// Import BIOS of a file an agent names (`xem-desktop --control`'s
     /// `bios_import {path}`), as the panel's picker gives one: checked, kept
     /// in the app's directory for every boot and given to `game` if one
@@ -467,6 +552,7 @@ impl View {
         let completed = self.operations.poll(game.as_mut(),&mut self.settings.borrow_mut());
         if let Some((action,result)) = completed {
             self.state_notice(action,&result);
+            self.log_operation(&AppRequest::Action(action),&result,game.as_mut());
             self.show_result(result);
         }
         let bindings = self.settings.borrow().settings().app_bindings.clone();
@@ -491,6 +577,7 @@ impl View {
             if let AppRequest::Action(action) = request {
                 if result.is_err() || !self.operations.busy { self.state_notice(action,&result); }
             }
+            self.log_operation(&request,&result,game.as_mut());
             self.show_result(result);
         }
         if let Some(game) = game {

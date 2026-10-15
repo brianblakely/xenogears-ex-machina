@@ -16,6 +16,7 @@ impl Game {
     pub fn sync_time_settings(&mut self, _: &xem_settings::Settings) -> Result<(),String> { match *self {} }
     pub fn configure_rewind(&mut self, _: bool, _: u32, _: u32) -> Result<(),String> { match *self {} }
     pub fn set_rewind_held(&mut self, _: bool, _: bool) -> Result<(),String> { match *self {} }
+    pub fn rewind_held(&self) -> bool { match *self {} }
     pub fn time_activity(&self) -> (bool,bool) { match *self {} }
     pub fn mouse_camera_active(&mut self, _: &xem_settings::Settings) -> bool { match *self {} }
     pub fn time_status(&mut self) -> (bool,String) { match *self {} }

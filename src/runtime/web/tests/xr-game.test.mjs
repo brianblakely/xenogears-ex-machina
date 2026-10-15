@@ -18,14 +18,20 @@
 // (status().renderer.movie), the device's own picture under Original, on the
 // screen in both views, the screen without wider framing's sides
 // (status().xr.screen) in the display's shape, the game's RAM the same; the
-// title's 15-bit screen after it has the sides.
+// title's 15-bit screen after it has the sides. Saves and time controls in
+// the session: the game's own save to card 2 (the slice's save route, its
+// last frames played in the headset) reaches IndexedDB during the session,
+// the panel's Save state and Load state by a controller's ray, fast-forward
+// by the controllers' Back+RT and off by the panel's button, and the
+// backups' pickers refused.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, SHOTS, USER_DISC, WEB, start, status } from './support.mjs';
+import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, start, status } from './support.mjs';
 
 const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -405,6 +411,156 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       console.log(`the title's screen: ${JSON.stringify(title.xr.screen)}`);
       assert.equal(title.renderer.movie, false, 'the title is no movie frame');
       assert.ok(title.xr.screen.side > 0, `the title's screen has wider framing's sides (${title.xr.screen.side})`);
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('saves and time controls work in the session, and the game\'s card saves reach IndexedDB there', { timeout: 900_000 }, async () => {
+    // The slice's save route natively up to its card writes, card 2
+    // unformatted as on the route; the session plays the rest.
+    const route = JSON.parse(readFileSync(join(ROOT, 'tests', 'reference-inputs', 'slice-save.json'), 'utf8'));
+    const FROM = 10100;
+    const cards = mkdtempSync(join(tmpdir(), 'xem-xr-cards-'));
+    writeFileSync(join(cards, 'card2.mcd'), Buffer.alloc(0x20000));
+    const state = join(SHOTS, 'xr-save-route.state');
+    execFileSync(HEADLESS, ['--disc', USER_DISC, '--cards', cards, '--control'], {
+      input: [{ cmd: 'schedule', commands: route.commands }, { cmd: 'run_until', until: { frames: FROM }, max_frames: FROM + 100 },
+        { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
+    });
+    assert.ok(readFileSync(join(cards, 'card2.mcd')).every((b) => b === 0), 'the route writes card 2 only after frame ' + FROM);
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    try {
+      let page = await browser.page();
+      await page.evaluate(() => window.xem.cards.store(1, new Uint8Array(0x20000)));
+      await page.close();
+      page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))),
+        readFileSync(state).toString('base64'));
+      assert.equal((await status(page)).session.frames, FROM);
+      const scheduled = await page.evaluate((commands) => window.xem.command({ cmd: 'schedule', commands }),
+        route.commands.filter(([at]) => at >= FROM));
+      assert.equal(scheduled.error, undefined, JSON.stringify(scheduled));
+      await page.evaluate(() => { const p = window.xrDevice.position; window.xemHeadStart = [p.x, p.y, p.z]; });
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+
+      // The game formats card 2 and saves to it in the session's frames; the
+      // page writes the card to IndexedDB after them, the session going on.
+      let info = await status(page);
+      const [canvas, written] = [info.loop.animationFrames, info.page.cards.written];
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction((end) => window.xem.status().session.frames >= end, route.frames, { timeout: 300_000 });
+      await page.waitForFunction(() => { const s = window.xem.status(); return s.page.cards.pending === 0 && !s.cards.unsaved; }, null, { timeout: 30_000 });
+      info = await status(page);
+      assert.equal(info.page.xr.active, true, 'still in the session');
+      assert.equal(info.loop.animationFrames, canvas, 'the canvas loop rested: the session\'s frames wrote the card');
+      assert.ok(info.page.cards.written > written, `IndexedDB took the game's writes (${written} -> ${info.page.cards.written})`);
+      const card = await page.evaluate(async () => Array.from(await window.xem.cards.stored(1)));
+      assert.equal(String.fromCharCode(card[0], card[1]), 'MC', 'card 2 formatted');
+      assert.equal(card[128], 0x51, 'and holding the save');
+      assert.deepEqual(card, await page.evaluate(() => Array.from(window.xem.cards.image(1))), 'IndexedDB holds the card the game wrote');
+
+      // Settings by the right controller's ray and trigger: the panel's
+      // logical pixel in the session's space (origin at the head as the
+      // session began; the panel 1.1 m ahead, 0.75 m down, tilted 25
+      // degrees, 0.55 m wide: xem-web's render::xr_panel_quad). At this
+      // viewport the panel is the canvas's, 640x560 with its sidebar.
+      assert.deepEqual(info.xr.panelSize, [640, 560]);
+      const aim = ([x, y]) => page.evaluate(([x, y]) => {
+        const [width, height] = window.xem.status().xr.panelSize;
+        const tilt = -25 * Math.PI / 180;
+        const [u, v] = [(x / width - 0.5) * 0.55, (0.5 - y / height) * 0.55 * height / width];
+        const target = [u, -0.75 + v * Math.cos(tilt), -1.1 + v * Math.sin(tilt)];
+        const from = [0.2, -0.3, -0.3];
+        const toward = target.map((t, i) => t - from[i]);
+        const [dx, dy, dz] = toward.map((c) => c / Math.hypot(...toward));
+        // The turn taking -Z to that direction, about -Z x direction.
+        const [ax, ay] = [dy, -dx];
+        const s = Math.sin(Math.acos(-dz) / 2) / (Math.hypot(ax, ay) || 1);
+        const [right, head] = [window.xrDevice.controllers.right, window.xemHeadStart];
+        right.position.set(head[0] + from[0], head[1] + from[1], head[2] + from[2]);
+        right.quaternion.set(ax * s, ay * s, 0, Math.cos(Math.acos(-dz) / 2));
+      }, [x, y]);
+      const pull = async (point) => {
+        await aim(point);
+        await frames(3);
+        await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('trigger', 1));
+        await frames(3);
+        await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('trigger', 0));
+        await frames(5);
+      };
+      const [SAVES, TIME, SAVE_STATE, LOAD_STATE, FAST_FORWARD] = [[82, 294], [82, 254], [296, 167], [505, 167], [547, 322]];
+      await page.evaluate(() => window.xem.panel.show(true));
+      await frames(4);
+      await pull(SAVES);
+      assert.equal((await status(page)).renderer.panelSection, 5, 'the ray chose Saves');
+      const saved = await page.evaluate(() => window.xem.memoryHash());
+      await pull(SAVE_STATE);
+      await page.waitForFunction(() => window.xem.status().renderer.hud?.notice === 'State saved', null, { timeout: 30_000 });
+      const record = await page.evaluate(async () => { const r = await window.xem.load('slot0'); return r && { verified: r.verified, bytes: r.bytes }; });
+      assert.ok(record?.verified, `IndexedDB holds the state, its checksum verified: ${JSON.stringify(record)}`);
+      assert.equal(await page.evaluate(() => window.xem.memoryHash()), saved, 'Settings held the game while it saved');
+
+      // Settings closed, the game at its own pace; then the controllers'
+      // Back+RT (the right stick's click with the right grip) fast-forwards
+      // it, at about the factor the session paces it at.
+      await page.evaluate(() => window.xem.panel.show(false));
+      await frames(10);
+      const rate = async () => {
+        const [before, t0] = [await status(page), Date.now()];
+        const factors = [];
+        while (Date.now() - t0 < 3000) {
+          await page.waitForTimeout(250);
+          const s = (await status(page)).session;
+          factors.push(s.fast_forward ? s.fast_forward_pace ?? s.fast_forward_rate.Fixed : 1);
+        }
+        const after = await status(page);
+        return { rate: (after.loop.gameFrames - before.loop.gameFrames) / ((Date.now() - t0) / 1000), factor: factors.reduce((a, b) => a + b) / factors.length };
+      };
+      const normal = await rate();
+      await page.evaluate(() => { const r = window.xrDevice.controllers.right; r.updateButtonValue('thumbstick', 1); r.updateButtonValue('squeeze', 1); });
+      await frames(3);
+      await page.evaluate(() => { const r = window.xrDevice.controllers.right; r.updateButtonValue('thumbstick', 0); r.updateButtonValue('squeeze', 0); });
+      await frames(3);
+      info = await status(page);
+      assert.equal(info.session.fast_forward, true, 'Back+RT turned fast-forward on');
+      assert.equal(info.xr.inspecting, false, 'Back with RT is a chord, not inspection\'s toggle');
+      const fast = await rate();
+      // The session paces a fixed rate at what the host reaches (a loaded
+      // machine's software WebGL reaches less than 10x).
+      const share = fast.rate / normal.rate / fast.factor;
+      console.log(`1x ${normal.rate.toFixed(1)} frames/s; fast-forward ${fast.rate.toFixed(1)} frames/s at a mean factor of ${fast.factor.toFixed(2)} (${share.toFixed(2)} of it)`);
+      assert.ok(fast.factor > 1.2 && fast.rate > 1.15 * normal.rate && share > 0.7 && share < 1.3,
+        `fast-forward ran ${fast.rate.toFixed(1)} frames a second against ${normal.rate.toFixed(1)} at a mean factor of ${fast.factor.toFixed(2)}`);
+      assert.equal((await status(page)).renderer.hud.fast_forward, true, 'the HUD shows fast-forward');
+
+      // The panel's Stop fast-forward (Time), then Load state (Saves) gives
+      // back the saved game.
+      await page.evaluate(() => window.xem.panel.show(true));
+      await frames(4);
+      await pull(TIME);
+      await pull(FAST_FORWARD);
+      assert.equal((await status(page)).session.fast_forward, false, 'the panel\'s Stop fast-forward turned it off');
+      await pull(SAVES);
+      await pull(LOAD_STATE);
+      await page.waitForFunction(() => window.xem.status().renderer.hud?.notice === 'State loaded', null, { timeout: 30_000 });
+      assert.equal(await page.evaluate(() => window.xem.memoryHash()), saved, 'Load state gave back the saved game');
+
+      // No file picker opens in the session: the backups' are refused.
+      const refused = await page.evaluate(() => window.xem.appOperation({ Action: 'ExportState' }).then(() => null, (error) => error.message));
+      assert.equal(refused, 'File pickers are available in windowed play.');
+      assert.equal((await status(page)).page.xr.active, true);
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 30_000 });
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

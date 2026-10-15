@@ -19,7 +19,10 @@
 # (screenshots), with its frame rate measured and its opening movie shown
 # rebuilt (a frame logged with movie=1), a pad press, a touch on the control
 # deck, and a background and return during which the
-# game's frame count does not move, plus repeated Home/return at 20x FF.
+# game's frame count does not move, plus repeated Home/return at 20x FF; then
+# Settings by touch: Stop fast-forward, Hold to rewind held (the game's
+# vblank goes back), Save state and, after the game played on, Load state
+# (the vblank and memory hash the save left), and Start fast-forward.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
 # start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
 # logs (tests/reference-inputs/slice-*.json) to their native memory hashes:
@@ -428,6 +431,62 @@ PY
         fail "Android lifecycle event was pumped while the live host state was borrowed"
     fi
     shot 09-fast-forward-resumed
+
+    echo "== Settings' time controls and save states by touch"
+    # Back shows the panel (at 8,465 as above): Time's tab at 628,722 and its
+    # Stop fast-forward at 829,1502 (fast-forward is on at 20x), Hold to
+    # rewind at 850,1318 held 2 s, Saves at 727,722 with Save state and Load
+    # state at 306,1095 and 764,1095, then Time's Start fast-forward
+    # (xem-ui's panel test checks each tap at this size). Each operation
+    # logs the game's vblank and memory hash just after it. The emulator's
+    # software Vulkan draws the panel at about two frames a second (and the
+    # game runs at most two frames a drawn one), so the checks read those
+    # lines, and Back hides the panel while the game is to play on.
+    op_of() { sed -E 's/.*game_vblank=([0-9]+) memory_hash ([0-9a-f]+) .*/\1 \2/'; }
+    "${adb[@]}" shell input keyevent KEYCODE_BACK
+    sleep 2
+    tap 628 722
+    sleep 2
+    mark
+    tap 829 1502
+    wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward off\." 60
+    shot 10-time
+    mark
+    "${adb[@]}" shell input swipe 850 1318 850 1318 2000
+    held=$(wait_for "xem: app UiRewind\(true\) game_vblank=.* ok: Rewinding while held\." 60)
+    released=$(wait_for "xem: app UiRewind\(false\) game_vblank=.* ok: Rewind released\." 60)
+    before=$(echo "$held" | vblank_of)
+    after=$(echo "$released" | vblank_of)
+    tap 727 722
+    sleep 2
+    mark
+    tap 306 1095
+    saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/state\.xemstate" 60)
+    echo "  Hold to rewind: game vblank $before when pressed, $after when released, $(echo "$saved" | vblank_of) at Save state"
+    [ "$after" -lt "$before" ] || fail "Hold to rewind did not go back ($before -> $after)"
+    [ "$(echo "$saved" | vblank_of)" -gt "$after" ] || fail "the game did not play on after the rewind"
+    "${adb[@]}" shell input keyevent KEYCODE_BACK
+    sleep 6
+    mark
+    moved=$(wait_for "xem: frame rendered .*game_vblank=" 90)
+    [ "$(echo "$moved" | vblank_of)" -gt "$(echo "$saved" | vblank_of)" ] || fail "the game did not play on after the save"
+    "${adb[@]}" shell input keyevent KEYCODE_BACK
+    sleep 2
+    mark
+    tap 764 1095
+    loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/state\.xemstate" 60)
+    echo "  Save state left vblank and memory hash $(op_of <<<"$saved"), the game played on to vblank" \
+        "$(echo "$moved" | vblank_of), Load state left $(op_of <<<"$loaded")"
+    [ "$(op_of <<<"$saved")" = "$(op_of <<<"$loaded")" ] || fail "Load state did not give back the saved game"
+    echo "  $("${adb[@]}" shell run-as "$package" ls -l files/state.xemstate | tr -d '\r')"
+    shot 10-saves
+    tap 628 722
+    sleep 2
+    mark
+    tap 829 1502
+    wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 60
+    "${adb[@]}" shell input keyevent KEYCODE_BACK
+    wait_for "xem: frame rendered .*fast_forward=true" 90
 
     if tail -n "+$game_start" "$log" |
         grep -E "xem: (panic|game stopped|error)|FATAL EXCEPTION|SIGSEGV|SIGABRT|Fatal signal" | sed 's/^/  /'; then

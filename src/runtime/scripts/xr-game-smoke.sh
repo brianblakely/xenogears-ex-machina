@@ -34,7 +34,14 @@
 #   settings panel above the table and a pinch on its Close closes it, and
 #   a pinch with the gaze through the table on a floor point walks Fei
 #   there; in field 12 both eyes show the pane above the table with the
-#   game's dialogue on it, in the pane's colours.
+#   game's dialogue on it, in the pane's colours;
+# - save states and time controls in field 30 (a state xem-headless saved,
+#   loaded through an agent's --control command): the panel's Save state
+#   and Load state by pinches (the HUD's notices, the state file, which
+#   xem-headless restores to the RAM the save left, and the load's RAM the
+#   save's), Time's Start fast-forward (the game near the rate the session
+#   paces it at) and the controllers' chords from scripted buttons: Back+RT
+#   turns it off (60 frames a second again), Back+LT held rewinds.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -146,6 +153,24 @@ wait "$recentring"
 echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
     --xr-hands "60:prayer,90:pinch@panel:410/30,150:pinch@world:88.67/0/-55.33" >"$out/diorama-walk.log" 2>"$out/diorama-walk.err"
+# Save states and time controls, the player's own play (no session log)
+# from field 30, which an agent's command loads at the first headset frame.
+# Prayer hands open Settings at headset frame 20 (the game held by their
+# pause), pinches on the 440x560 panel choose Saves (298,98) and its Save
+# state (122,170); prayer hands close it at 80, open it at 160, and Load
+# state (314,170) restores it; Time (256,98), its Start fast-forward
+# (347,395), and Settings closed at 240. The scripted controller buttons
+# hold Back+RT at 350 (fast-forward off) and Back+LT from 460 to 500 (a
+# rewind). Then the state file the panel wrote, restored by xem-headless.
+printf '{"cmd":"enter_field","map":30}\n{"cmd":"frames","count":400}\n{"cmd":"state_save","path":"%s"}\n' "$out/field30.xemstate" |
+    "$headless" --disc "$disc" --control >"$out/saves-prep.log" 2>"$out/saves-prep.err"
+echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
+    "$desktop" --xr --control --disc "$disc" --exit-after-frames 560 \
+    --xr-hands "20:prayer,40:pinch@panel:298/98,60:pinch@panel:122/170,80:prayer,160:prayer,180:pinch@panel:314/170,200:pinch@panel:256/98,220:pinch@panel:347/395,240:prayer" \
+    --xr-pad "350:Back+RT,352:none,460:Back+LT,500:none" >"$out/saves.log" 2>"$out/saves.err"
+printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/state.xemstate" |
+    "$headless" --disc "$disc" --control >"$out/saves-headless.log" 2>"$out/saves-headless.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -526,6 +551,70 @@ pinch = [int(r["n"]) for r in rows if "Pinch" in r["gestures"] and int(r["n"]) >
 check(bool(pinch) and all(r["diorama"] == "1" for r in rows if int(r["n"]) in pinch), f"the pinch did not come while the diorama showed: {pinch}")
 check("moving" in walked and walked[-1] == "arrived", f"the pinch through the diorama did not walk Fei there: {walked[:5]}..{walked[-3:]}")
 print(f"diorama walk: the panel above the table shown {opened[:1]}..{opened[-1:]}; pinch at {pinch}, {walked[:2]}..{walked[-1:]}")
+
+# Save states and time controls: each app operation's line carries the
+# game's vblank and memory hash just after it.
+lines = open(f"{out}/saves.log").read().splitlines()
+replies = [json.loads(l) for l in lines if l.startswith("{")]
+prep = [json.loads(l) for l in open(f"{out}/saves-prep.log") if l.startswith("{")]
+at = next((p["frames"] for p in reversed(prep) if "frames" in p), None)
+check(len(replies) == 1 and "error" not in replies[0] and replies[0].get("frames") == at,
+      f"the agent's state_load in the headset (the state at frame {at}): {str(replies)[:200]}")
+def operations(action):
+    found = []
+    for line in lines:
+        m = re.match(rf"app {re.escape(action)} game_vblank=(\d+) memory_hash ([0-9a-f]{{16}}) (ok|error): (.*)", line)
+        if m:
+            found.append((int(m.group(1)), m.group(2), m.group(3), m.group(4)))
+    return found
+saved, loaded = operations("Action(SaveState)"), operations("Action(LoadState)")
+check(len(saved) == 1 and saved[0][2] == "ok", f"the panel's Save state: {saved}")
+check(len(loaded) == 1 and loaded[0][2] == "ok", f"the panel's Load state: {loaded}")
+saved = saved[0] if saved else (0, "-", "", "")
+loaded = loaded[0] if loaded else (0, "-", "", "")
+check(loaded[:2] == saved[:2], f"Load state left vblank {loaded[0]}, RAM {loaded[1]}, not the save's {saved[0]}, {saved[1]}")
+notices = [l for l in lines if l.startswith("hud notice=")]
+check(notices == ['hud notice="State saved"', 'hud notice="State loaded"'], f"the HUD's results: {notices}")
+rows = records("saves.log")
+by = {int(r["n"]): r for r in rows}
+# Each result shows for four seconds of headset frames.
+shown = [int(r["n"]) for r in rows if "notice" in r["hud"].split(",")]
+check(abs(len(shown) - 8e9 / period) <= 0.2 * 8e9 / period and all(60 <= n <= 300 for n in shown),
+      f"the HUD showed the results for {len(shown)} frames: {shown[:1]}..{shown[-1:]}")
+held = [r for r in rows if 25 <= int(r["n"]) <= 75]
+check(all(r["layers"] == "2" and r["paused"] == "1" for r in held) and len({r["game_frames"] for r in held}) == 1,
+      "Settings did not hold the game while the state was saved")
+written = [json.loads(l) for l in open(f"{out}/saves-headless.log") if l.startswith("{") or l.startswith('"')]
+restored = next((v for v in written if isinstance(v, str)), None)
+check(restored == saved[1], f"the state file the panel wrote restores to RAM {restored}, not the save's {saved[1]}")
+toggles = operations("Action(ToggleFastForward)")
+check(len(toggles) == 2 and toggles[0][3].startswith("Fast-forward on") and toggles[1][3] == "Fast-forward off.",
+      f"Start fast-forward, then the Back+RT chord: {toggles}")
+# The rate while fast-forward runs (Settings closed, until the chord),
+# against the factor the session paces it at; then 1x again.
+running = [r for r in rows if r["ff"] not in ("0", "uncapped") and r["layers"] == "1"]
+check(len(running) > 60, f"fast-forward ran {len(running)} headset frames with Settings closed")
+if len(running) > 60:
+    a, b = running[10], running[-2]
+    rate = (int(b["game_frames"]) - int(a["game_frames"])) / ((int(b["pdt_ns"]) - int(a["pdt_ns"])) / 1e9)
+    factors = [int(r["ff"]) for r in running[10:-1]]
+    factor = sum(factors) / len(factors)
+    check(factor >= 2 and 0.8 <= rate / (60 * factor) <= 1.1,
+          f"fast-forward ran the game {rate:.0f} frames a second at a mean factor of {factor:.2f} (paced {min(factors)}-{max(factors)})")
+    print(f"fast-forward: {rate:.0f} game frames a second at a mean factor of {factor:.2f} (paced {min(factors)}-{max(factors)} of the 10x setting), "
+          f"{rate / (60 * factor):.2f} of 60 times it")
+off = [r for r in rows if 360 <= int(r["n"]) <= 455]
+check(all(r["ff"] == "0" for r in off), "fast-forward stayed on after the chord")
+rate = (int(off[-1]["game_frames"]) - int(off[0]["game_frames"])) / ((int(off[-1]["pdt_ns"]) - int(off[0]["pdt_ns"])) / 1e9)
+check(55 <= rate <= 65, f"after the chord the game ran {rate:.1f} frames a second")
+rewound = [r for r in rows if 461 <= int(r["n"]) < 500]
+check(any("rewind" in r["hud"].split(",") for r in rewound), "the HUD showed no rewind while Back+LT was held")
+before, after = int(by[459]["game_frames"]), int(by[501]["game_frames"])
+check(after < before - 120, f"Back+LT held for 2 s rewound from game frame {before} to {after}")
+check(int(by[555]["game_frames"]) > after + 60, "the game did not play on after the rewind")
+check([o[2] for o in operations("Rewind(true)") + operations("Rewind(false)")] == ["ok", "ok"], "the rewind chord's requests")
+print(f"saves: saved and loaded at vblank {saved[0]} (RAM {saved[1]}, the state file's too), results shown {len(shown)} frames; "
+      f"1x {rate:.1f} frames a second after the chord; rewound from game frame {before} to {after}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

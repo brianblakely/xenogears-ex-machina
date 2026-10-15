@@ -34,9 +34,14 @@
 //!
 //! The controllers are the game bindings' gamepad ([`gamepad`]): by default
 //! the left stick moves, A confirms, B cancels and runs, Y jumps, X opens
-//! the menu, the triggers and the right stick turn the camera.
+//! the menu, the triggers and the right stick turn the camera. The app's
+//! bindings take their chords from it first, as in the window
+//! (`xem_settings::AppInput`): Back (the right stick's click) with A saves
+//! the state, with Y loads it, with the left grip rewinds while held and
+//! with the right grip toggles fast-forward; Back+Start toggles Settings.
 //!
-//! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh.
+//! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh,
+//! and every app operation a line with the game's memory hash after it.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -259,6 +264,19 @@ pub struct XrPlay {
     pub hands: Vec<(u64, String)>,
     /// Recenter at these headset frames, as the app action does.
     pub recenter_at: Vec<u64>,
+    /// Scripted controller buttons for runtimes whose controllers have
+    /// none to press (headset frame, the gamepad's buttons as bits in
+    /// [`gamepad`]'s order, `xem_settings::controls::PAD_NAMES`): held from that
+    /// frame until the next entry's, beside the controllers' own.
+    pub pad: Vec<(u64, u16)>,
+    /// Where Save state keeps its state and Import BIOS its image (the
+    /// Android host's files directory); without one, beside the settings,
+    /// as in the window.
+    pub state_directory: Option<std::path::PathBuf>,
+    /// Answer agents' JSON commands on stdin between the game's frames
+    /// (`--control`, [`crate::Control`]): the command layer's, `settings`,
+    /// `settings_apply {change}`, `panel {visible}` and `bios_import {path}`.
+    pub control: bool,
 }
 
 /// How a headset run ended.
@@ -300,6 +318,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         move |request| requests.borrow_mut().push(request)
     });
     let mut operations = crate::operations::Operations::default();
+    if let Some(directory) = &options.state_directory {
+        operations.directory = Some(directory.clone());
+    }
+    let mut app_input = xem_settings::AppInput::default();
+    let control = options.control.then(crate::Control::spawn);
     let mut hud = xem_ui::FrameRateUi::new(
         SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() },
         PANEL_SCALE,
@@ -383,8 +406,24 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             PanelPlacement { pose: Pose { position: quad.pose.position, orientation: quad.pose.orientation }, size: quad.size }
         };
 
-        // The panel: left menu toggles it; while it shows, the pad is idle.
-        if input.hands[0].menu && !menu_held {
+        // The controllers as the gamepad (with the scripted buttons), as
+        // they are: the app's chords take theirs from it before the game has
+        // the rest, as in the window, from the frame the session has the
+        // input (losing it lets go of a held rewind).
+        let focused = session.state() == xem_xr::SessionState::FOCUSED;
+        let (mut pressed, axes) = gamepad(&input);
+        if let Some((_, buttons)) = options.pad.iter().filter(|(at, _)| *at <= frames).last() {
+            for (i, button) in pressed.iter_mut().enumerate() {
+                *button |= u8::from(buttons & (1 << i) != 0);
+            }
+        }
+        if focused != app_input.focused() {
+            requests.borrow_mut().extend(app_input.set_focused(focused));
+        }
+        let settings_chord = app_input.pad(&pressed);
+        // The panel: left menu (or Back+Start) toggles it; while it shows,
+        // the pad is idle.
+        if (input.hands[0].menu && !menu_held) || settings_chord {
             let visible = !*panel_visible.borrow();
             *panel_visible.borrow_mut() = visible;
             if !visible {
@@ -392,9 +431,43 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
         menu_held = input.hands[0].menu;
+        // Agents' commands (`--control`), between the game's frames.
+        if let Some(control) = &control {
+            control.poll(|command| {
+                if let Some(reply) = crate::settings_command(&settings, command) {
+                    return reply;
+                }
+                match command.get("cmd").and_then(serde_json::Value::as_str) {
+                    Some("panel") => {
+                        if let Some(visible) = command.get("visible").and_then(serde_json::Value::as_bool) {
+                            *panel_visible.borrow_mut() = visible;
+                            if !visible {
+                                ui.cancel_dialog();
+                            }
+                        }
+                        serde_json::json!({ "visible": *panel_visible.borrow() })
+                    }
+                    // As the panel's Import BIOS once its picker chose a
+                    // file, the outcome on the status line too.
+                    Some("bios_import") => match command.get("path").and_then(serde_json::Value::as_str) {
+                        Some(path) => match operations.import_bios_file(Some(&mut game), path) {
+                            Ok(message) => {
+                                ui.set_operation_status(&message);
+                                serde_json::json!({ "ok": true, "message": message })
+                            }
+                            Err(error) => {
+                                ui.set_operation_error(&error);
+                                serde_json::json!({ "error": error })
+                            }
+                        },
+                        None => serde_json::json!({ "error": "bios_import needs path" }),
+                    },
+                    _ => game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error })),
+                }
+            });
+        }
         // The assisted controls: gestures aimed at the screen as last shown
         // (prayer hands toggle the panel; a pinch clicks on it).
-        let focused = session.state() == xem_xr::SessionState::FOCUSED;
         let mut assisted_input = assisted::input(&input, head, start.elapsed().as_secs_f64(), focused, &mut pinched);
         if !options.hands.is_empty() {
             for (_, entry) in options.hands.iter().filter(|(at, _)| *at == frames) {
@@ -464,6 +537,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if options.recenter_at.contains(&frames) {
             requests.borrow_mut().push(AppRequest::Action(AppAction::Recenter));
         }
+        // The app's operations: the panel's, then the bound chords' (the
+        // bindings stay live while the panel shows, as in the window).
+        {
+            let current = settings.borrow();
+            let current = current.settings();
+            requests.borrow_mut().extend(app_input.requests(&current.app_bindings, current.invert_trigger_chords));
+        }
         for request in std::mem::take(&mut *requests.borrow_mut()) {
             // Recenter places this loop's view: the seat moves to the head.
             let result = if request == AppRequest::Action(AppAction::Recenter) {
@@ -480,8 +560,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             if let xem_settings::AppRequest::Action(action) = request {
                 use xem_settings::AppAction::*;
                 let saved = match action { SaveState | ExportState => Some(true), LoadState | ImportState => Some(false), _ => None };
-                if let Some(saved) = saved { hud.notify_state(saved,result.as_ref().err().map(String::as_str),start.elapsed()); }
+                if let Some(saved) = saved {
+                    hud.notify_state(saved,result.as_ref().err().map(String::as_str),start.elapsed());
+                    println!("hud notice={:?}", hud.notice().unwrap_or_default());
+                }
             }
+            println!("{}", crate::operation_line(&request, &result, Some(&mut game)));
             match result {
                 Ok(message) => ui.set_operation_status(&message),
                 Err(error) => ui.set_operation_error(&error),
@@ -493,8 +577,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
 
         // The game: whatever frames are due by the wall clock, once per
         // headset frame (never per eye), unless paused for a test or by the
-        // player (the Pause grab, settings' own pause, lost tracking).
-        let pause = options.pause.is_some_and(|(at, count)| frames >= at && frames < at + count) || assist.headset.pauses.paused();
+        // player (the Pause grab, lost tracking) or by settings' own pause,
+        // which a held rewind goes on through (the panel's Hold to rewind,
+        // a chord while the panel shows).
+        let pauses = &assist.headset.pauses;
+        let pause = options.pause.is_some_and(|(at, count)| frames >= at && frames < at + count)
+            || pauses.player || (pauses.settings && !game.rewind_held());
         if pause != game_paused {
             game_paused = pause;
             if pause { game.pause() } else { game.resume() }
@@ -521,7 +609,6 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // gamepad's does, where Ex Machina draws it, and the right stick
         // turns it in steps (the head does the looking); neither while the
         // panel has the controllers.
-        let (pressed, axes) = gamepad(&input);
         let context = game.pad_context();
         let drawn = current.graphics.renderer == xem_settings::Renderer::ExMachina;
         if visible {
@@ -537,7 +624,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
         let mut ran = 0;
         if !game_paused {
-            if visible { player.clear() } else { player.gamepad(&pressed, &axes) }
+            if visible { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }
             // Inspection keeps the character where it stands
             // (`xem_settings::look`); running by default would leave Run
             // pressed alone.
@@ -546,7 +633,6 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let buttons = if visible { 0 } else { player.buttons(&current.game_bindings, start.elapsed().as_secs_f64() * 1000.0, context) };
             let buttons = xem_settings::look::game_buttons(buttons, inspecting, context.field, &context.assignment);
             game.want_inspection(inspecting);
-            let focused = session.state() == xem_xr::SessionState::FOCUSED;
             ran = game.update(buttons, &current, || focused)?;
             game.follow_sound_mode(&settings);
             player.frames_ran(ran);
@@ -823,8 +909,15 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let (at, forward) = (assist.seat.position(), assist.seat.orientation() * Vec3::NEG_Z);
             format!("{:.4},{:.4},{:.4};{:.4}", at.x, at.y, at.z, (-forward.x).atan2(-forward.z))
         };
+        // What the HUD shows over the screen: fast-forward's and rewind's
+        // icons and a state result.
+        let chips: Vec<&str> = [("ff", hud.component().get_fast_forward()), ("rewind", hud.component().get_rewinding()), ("notice", hud.notice().is_some())]
+            .into_iter().filter_map(|(chip, shown)| shown.then_some(chip)).collect();
+        // Fast-forward's factor as the session runs it (a fixed rate the
+        // host cannot reach is paced at the rate it does), 0 when off.
+        let factor = if fast_forward { game.session.frame_factor().map_or("uncapped".to_string(), |f| f.to_string()) } else { "0".to_string() };
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -847,6 +940,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             u8::from(space.is_some()),
             shown.as_ref().map_or(1.0, |s| s.share),
             view.diorama_stats().builds,
+            factor,
+            if chips.is_empty() { "-".to_string() } else { chips.join(",") },
         );
         frames += 1;
         if quit.get() && !exit_requested {

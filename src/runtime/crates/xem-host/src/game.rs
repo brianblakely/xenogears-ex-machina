@@ -194,6 +194,10 @@ impl Game {
         }
         Ok(())
     }
+    /// Whether a rewind is held (a binding's or the panel's Hold to rewind).
+    pub fn rewind_held(&self) -> bool {
+        self.rewind_held.iter().any(|held| *held)
+    }
     /// Recent completed work, rather than the time-control preference alone.
     pub fn time_activity(&self) -> (bool, bool) {
         let held = self.rewind_held.iter().any(|held| *held);

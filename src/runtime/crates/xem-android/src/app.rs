@@ -386,6 +386,9 @@ impl Host {
         let import_requested = Rc::new(Cell::new(false));
         view.set_host_class(xem_render::ps1::HostClass::Mobile);
         view.set_state_directory(files.clone());
+        // Each app operation's outcome with the game's memory hash after it
+        // (android-smoke.sh compares a state's save and load).
+        view.on_operation(log);
         view.ui().on_import_disc({
             let requested = import_requested.clone();
             move || requested.set(true)
@@ -632,7 +635,9 @@ impl Host {
         };
         log("entering the headset");
         let settings = self.view.settings().clone();
-        match xem_host::xr_play::run(&platform, &Default::default(), settings, game) {
+        // Save state keeps its state in the files directory, as the window does.
+        let play = xem_host::xr_play::XrPlay { state_directory: self.cards.parent().map(PathBuf::from), ..Default::default() };
+        match xem_host::xr_play::run(&platform, &play, settings, game) {
             Ok(ended) => {
                 log("headset session ended");
                 self.live.borrow_mut().game = Some(ended.game);
@@ -729,7 +734,11 @@ impl Host {
             let seconds = elapsed.as_secs_f64();
             let rendered = (live.frames - live.fps.1) as f64 / seconds;
             let game = match live.game.as_mut() {
-                Some(game) => format!(" game={:.1}", (game.vblanks() - live.fps.2) as f64 / seconds),
+                // A state loaded or a rewind takes the count back: no rate then.
+                Some(game) => match game.vblanks().checked_sub(live.fps.2) {
+                    Some(ran) => format!(" game={:.1}", ran as f64 / seconds),
+                    None => " game=- (the vblank count went back)".to_string(),
+                },
                 None => String::new(),
             };
             log(&format!("fps rendered={rendered:.1}{game} over {seconds:.1}s"));
