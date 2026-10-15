@@ -13,7 +13,9 @@
 //! outside the port's own memory it is the same byte for byte, and what
 //! differs within it is the port's presentation bookkeeping, gone two
 //! frames on from the same presentation records but for dead stack that
-//! nothing reads.
+//! nothing reads. `xem-headless --control`'s `reveal_frames` (Lahan drawn
+//! wider and pulled back) reveals culled faces and leaves the RAM as plain
+//! frames do.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test render
 
@@ -877,4 +879,51 @@ fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
     assert_eq!(hash(&mut session), skipped, "showing a diorama changes nothing");
     let shown = whole(&mut session);
     presentation_only(&mut session, &shown, &unseen).unwrap_or_else(|at| panic!("a diorama changes the whole state: {at}"));
+}
+
+/// `xem-headless --control`'s `reveal_frames`, whose answer arm64-smoke.sh
+/// compares under qemu with the native one: Lahan drawn as a wider framing
+/// with the camera pulled back reveals faces the game culls, more than
+/// without the pull-back (the port's floating point judges those), and the
+/// RAM goes on as plain frames leave it.
+#[test]
+fn reveal_frames_reveals_more_culled_faces_pulled_back_and_leaves_the_ram_as_plain_frames_do() {
+    use std::io::Write as _;
+    use std::process::{Command, Stdio};
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The answers to Lahan's entry, 300 frames, `frames` and the RAM hash.
+    let play = |frames: serde_json::Value| -> Vec<serde_json::Value> {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_xem-headless"))
+            .args(["--control", "--disc"])
+            .arg(&disc)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("xem-headless");
+        let mut stdin = child.stdin.take().unwrap();
+        for command in [json!({"cmd": "enter_field", "map": 1}), json!({"cmd": "frames", "count": 300}), frames, json!({"cmd": "memory_hash"})] {
+            writeln!(stdin, "{command}").unwrap();
+        }
+        drop(stdin);
+        let output = child.wait_with_output().expect("xem-headless's answers");
+        assert!(output.status.success(), "xem-headless failed");
+        String::from_utf8(output.stdout).unwrap().lines().map(|line| serde_json::from_str(line).unwrap()).collect()
+    };
+    let pulled_back = play(json!({"cmd": "reveal_frames", "count": 120, "reach": [85, 32], "pull_back": 3000}));
+    let wider = play(json!({"cmd": "reveal_frames", "count": 120, "reach": [85, 32]}));
+    let plain = play(json!({"cmd": "frames", "count": 120}));
+    let revealed = |answers: &[serde_json::Value]| {
+        assert_eq!(answers[2]["frames"], 120, "{}", answers[2]);
+        assert!(answers[2]["drawn"].as_u64() > answers[2]["revealed"].as_u64(), "{}", answers[2]);
+        answers[2]["revealed"].as_u64().unwrap()
+    };
+    let (far, near) = (revealed(&pulled_back), revealed(&wider));
+    eprintln!("Lahan, 120 frames: {far} culled faces revealed pulled back, {near} without; RAM {}", plain[3].as_str().unwrap_or("?"));
+    assert!(near > 0 && far > 2 * near, "culled faces revealed: {far} pulled back, {near} without");
+    assert_eq!(pulled_back[3], plain[3], "the RAM after reveal_frames pulled back is that of plain frames");
+    assert_eq!(wider[3], plain[3], "the RAM after reveal_frames is that of plain frames");
 }

@@ -29,7 +29,10 @@
 # (F5) there, pulled, is xem-headless's state at that frame byte for byte,
 # loads natively to that RAM and goes on to where xem-headless's own goes.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
-# start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
+# start and the game. XEM_SMOKE_ABI=arm64-v8a builds and installs the APK's
+# arm64-v8a library instead, which the AVD's x86_64 image runs through its
+# ARM translation (libndk_translation; the start checks the app's process
+# runs it). XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
 # logs (tests/reference-inputs/slice-*.json) to their native memory hashes:
 # the forest route with a background and return on the way, the save to card
 # 2, and the load of that card in a fresh process. Touch coordinates are those of the AVD's pixel_6
@@ -49,6 +52,7 @@ apk=$root/build/android/gradle/app/outputs/apk/debug/xem-debug.apk
 package=dev.xem.app
 activity=$package/.XemActivity
 disc1=${XEM_DISC1:-$root/discs/Xenogears disc 1.chd}
+abi=${XEM_SMOKE_ABI:-x86_64}
 
 fail() {
     echo "FAIL: $*" >&2
@@ -86,8 +90,16 @@ logcat_pid=
 cleanup() {
     [ -z "$watcher_pid" ] || kill "$watcher_pid" 2>/dev/null || true
     [ -n "$logcat_pid" ] && kill "$logcat_pid" 2>/dev/null
+    # The emulator stops, whichever run booted it, and is gone before this
+    # run ends: a run right after boots its own (it took the one shutting
+    # down for booted, and found it offline).
+    rm -f "$booted"
     "${adb[@]}" emu kill >/dev/null 2>&1 || { [ -n "$emulator_pid" ] && kill "$emulator_pid" 2>/dev/null; } || true
     [ -z "$emulator_pid" ] || wait "$emulator_pid" 2>/dev/null || true
+    for _ in $(seq 60); do
+        pgrep -f -- "-avd xem-smoke -port $port" >/dev/null || break
+        sleep 1
+    done
 }
 if [ -n "${XEM_SMOKE_BOOT:-}" ]; then
     [ -z "$watcher_pid" ] || wait "$watcher_pid" || true
@@ -98,7 +110,7 @@ fi
 trap cleanup EXIT
 
 if [ -z "${XEM_SKIP_BUILD:-}" ]; then
-    XEM_ANDROID_ABIS=x86_64 "$root/src/runtime/scripts/android-build.sh"
+    XEM_ANDROID_ABIS=$abi "$root/src/runtime/scripts/android-build.sh"
 fi
 [ -f "$apk" ] || fail "no APK at $apk"
 
@@ -131,7 +143,7 @@ done
 [[ $("${adb[@]}" shell dumpsys window displays) == *"mRotation=0 "* ]] || fail "display not in portrait"
 
 "${adb[@]}" uninstall "$package" >/dev/null 2>&1 || true
-"${adb[@]}" install "$apk" >/dev/null
+"${adb[@]}" install --abi "$abi" "$apk" >/dev/null
 "${adb[@]}" push "$synthetic" /sdcard/Download/xem-synthetic.bin >/dev/null
 
 log=$out/logcat.txt
@@ -192,6 +204,21 @@ wait_for "xem: settings .*revision 0"
 wait_for "xem: frame rendered frame=1 " 60
 wait_for "xem: frame rendered frame=120 " 60
 shot 01-started
+# The library the app's process runs: the package's ABI, and the ARM
+# translation's linker for arm64 libraries (with its arm64 system libraries)
+# mapped in the process only when that is arm64-v8a.
+pid=$("${adb[@]}" shell pidof "$package" | tr -d '\r')
+"${adb[@]}" exec-out run-as "$package" cat "/proc/$pid/maps" >"$out/maps.txt"
+installed=$("${adb[@]}" shell dumpsys package "$package" | sed -n -E 's/.*primaryCpuAbi=([^ ]+).*/\1/p' | head -1 | tr -d '\r')
+translated=$(awk '$NF ~ "^/system/lib64/arm64/" { print $NF }' "$out/maps.txt" | sort -u | wc -l)
+[ "$installed" = "$abi" ] || fail "the app was installed with its $installed library, not $abi"
+if [ "$abi" = x86_64 ]; then
+    ! grep -q '/system/bin/arm64/linker64' "$out/maps.txt" || fail "the x86_64 app's process runs arm64 code"
+    echo "  the app runs its x86_64 library"
+else
+    grep -q '/system/bin/arm64/linker64' "$out/maps.txt" || fail "the app's process runs no arm64 code through the ARM translation"
+    echo "  the app runs its $installed library through the ARM translation ($translated of its arm64 system libraries mapped)"
+fi
 
 if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 # The panel (1064x1470 at 2.625, at 8,465 on the 1080x2400 screen) shows

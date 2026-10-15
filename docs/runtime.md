@@ -128,7 +128,17 @@ original address.
   nearly four minutes, the parts 41 s on 16 threads), built without
   semantic interposition so the parts' global functions inline as one
   file's static ones did (a Lahan frame's game work: 1.395 ms, one file
-  1.396).
+  1.396), and with `-ffp-contract=off`: each floating-point operation is
+  rounded on its own, as wasm's are. GCC otherwise fuses a product into
+  the sum after it where the processor has a fused multiply-add: for
+  aarch64 at `-O2` it gives `xem_present_face_visible` (with
+  `xem_present_points_visible` the module's only floating point, the
+  port's tests of which culled faces a host reveals) two `fmadd` and three
+  `fmsub` in place of eight `fmul`, two `fadd` and three `fsub`. The builds made here round
+  alike either way: x86_64's baseline has no fused multiply-add and the
+  NDK's clang fuses only within one C expression, which wasm2c never
+  writes, so their objects are the same byte for byte with and without the
+  flag (GCC's x86_64 ones and the static arm64 `xem-headless`'s).
 - **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
   (wasm32-unknown-unknown, wasm-bindgen); the two modules keep separate
   memories and exchange scalars and bounds-checked offsets.
@@ -151,7 +161,13 @@ vertical blank; a log that spans a restore is refused, [Saves and time
 controls](#saves-and-time-controls)) and `scenario {writes, mode}`, which writes values through the
 schema and enters a mode through the original dispatcher on an empty stack.
 Pads are set as the BIOS driver reports them; nothing simulates lower-level
-input.
+input. `xem-headless --control` adds `screenshot {path}` and `vram {path}`
+(PNG files), `display` (where the display shows VRAM) and `reveal_frames
+{count, reach: [x, y], pull_back, around}`: frames drawn as a view wider or
+pulled back draws them, the draw trace asking the port for the faces the
+game culls, answered with the primitives traced, how many were culled
+faces and an FNV-1a digest of those (presentation only: the RAM goes on as
+without; [State interchange](#state-interchange)).
 
 - **Introspection.** `tools/game_schema.py` compiles every unit again with
   debug information and writes `build/game/schema.json`: each global the C
@@ -1705,7 +1721,12 @@ switching profiles (HD-2D with wider framing and interpolation, wider framing
 with the camera pulled back four times, PS1, Custom, Modern), and with a
 second view attaching, changing and detaching, and checks one RAM hash; the
 browser test `web/tests/render.test.mjs` does the same per profile on WebGPU
-and WebGL2, and the slice logs still replay to their hashes.
+and WebGL2, and the slice logs still replay to their hashes. `render.rs`
+also plays 120 frames of Lahan through `xem-headless --control`'s
+`reveal_frames` (the trace asking for the faces a 16:9 framing's view
+pulled back by 3 000 depth units would show, with no renderer): 54 516
+culled faces revealed against 11 564 without the pull-back here, and the
+RAM hash of plain frames either way.
 
 **Presentation and the whole state.** Presenting leaves the game's state
 as it is, but a whole state (`Session::snapshot_bytes`) also holds the
@@ -4377,8 +4398,10 @@ before review or a merge (AGENTS.md): `desktop` (the default, for the
 native and shared code) builds the game module and runs the port's unit
 tests, the Rust workspace's tests and the validation run; `web` the web
 build, the browser suites and the browser tests that measure time
-(WebXR's among them); `android` the APK, the emulator's smoke test and
-the game's arm64 build under qemu (`arm64-smoke.sh`); `xr`
+(WebXR's among them); `android` the APK with both its libraries, the
+emulator's smoke test, the smoke's game again with the APK's arm64-v8a
+library (which the emulator runs through its ARM translation) and the
+game's arm64 build under qemu (`arm64-smoke.sh`); `xr`
 the native build and the OpenXR smoke test. `full` runs them all and what
 CI runs (`.github/workflows/ci.yml`) as on a clone without the user's discs:
 `tools/repository/check.py`, which builds and tests the workspace (here
@@ -4395,7 +4418,8 @@ nothing either). What measures frame rates then runs alone, one after another,
 since their emulator, headset and browsers render on the
 processor (beside the browser suites the Android smoke's frame rate fell
 from 56 to 10 a second, the XR smoke's headset frames came late, and their
-checks failed): the Android smoke, the XR smoke, and the browser tests that
+checks failed): the Android smoke (with the APK's x86_64 library, then its
+game with the arm64-v8a one), the XR smoke, and the browser tests that
 measure time (the headset's frame rate, rewind frame times, fast-forward's
 music, the stalled page, a resume read within the rewind's one-second
 interval, the Binaural mode's cost). Rust builds use the `suite` profile
@@ -4908,6 +4932,9 @@ states where they hold:
 | the slice's session logs | headless on arm64 (`aarch64-linux-android` under `qemu-aarch64`) | the forest route, the save and that card's loads as card 1 and as card 2 to their recorded hashes, each ending in the native end state byte for byte | `arm64-smoke.sh` |
 | headless | headless on arm64 | the forest route's state in its battle (frame 7000) to the route's end state | `arm64-smoke.sh` |
 | headless on arm64 | headless | that state, byte for byte the native one, to the route's end state | `arm64-smoke.sh` |
+| Lahan drawn pulled back and wider (`reveal_frames`) | headless on arm64 | 600 frames: the same culled faces revealed (their number and digest), the RAM and the whole state as natively | `arm64-smoke.sh` |
+| headless | Android's arm64-v8a library (the x86_64 emulator's ARM translation) | Load state (F8) of `files/state.xemstate`, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
+| Android's arm64-v8a library | headless | Save state (F5), pulled: byte for byte, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
 | a session booted from disc 2 | a session booted from disc 1 | the same hash | `xem-headless/tests/discs.rs` |
 | the game's own save in a browser | native | card 2 byte for byte | `web/tests/slice.test.mjs` |
 | the game's own save on arm64 | native | card 2 byte for byte | `arm64-smoke.sh` |
@@ -4976,24 +5003,51 @@ save to an unformatted card 2 (11 235) and that card's loads as card 1
 natively, each in the same state on both byte for byte, and the save's
 card 2 is the native one byte for byte; the forest route's state in its
 battle at frame 7000 is the same on both byte for byte, and each goes on
-in a fresh session on the other to the route's end state. It took 4 min
-2 s here alone and 240 s in the android tier, with the runs under qemu
-side by side at 70 to 84 frames a second (native `xem-headless` 430 to
-750). The refusals in the table above
+in a fresh session on the other to the route's end state. Lahan (field 1)
+drawn for 600 frames as a 16:9 framing with the camera pulled back by
+3 000 depth units would draw it (`xem-headless --control`'s
+`reveal_frames`, reaching 85 by 32 pixels beyond the screen: the draw
+trace asks the port for the faces the game culls, which it judges on the
+pulled-back camera's screen in floating point, the game module's only
+floating point) reveals the same 276 276 culled faces among 393 894
+primitives on both (the same FNV-1a digest of their packets, shapes and
+screen points), to the same RAM and whole state byte for byte. Those
+tests (`xem_present_face_visible`, `xem_present_points_visible`) round each
+product, sum and quotient on its own, as wasm's do, in every build here
+(`-ffp-contract=off`: [The game module](#the-game-module); `llvm-objdump`
+lists no fused multiply-add in them in the static build or in the APK's
+`libmain.so`, nor `objdump` in GCC's x86_64 build). It took 4 min 32 s here alone (the reveals 30 s under
+qemu, 3 s natively), with the runs under qemu side by side at 54 to 73
+frames a second (native `xem-headless` 433 to 683). With
+`XEM_SMOKE_ABI=arm64-v8a`, `android-smoke.sh` installs the APK's
+arm64-v8a library (`adb install --abi arm64-v8a`), which the emulator's
+x86_64 image runs through its ARM translation
+(`ro.dalvik.vm.native.bridge=libndk_translation.so`; the start checks that
+the package's ABI is arm64-v8a and that the translation's arm64 linker,
+`/system/bin/arm64/linker64`, and arm64 system libraries are mapped in the
+app's process), with Vulkan through the translation's `libvulkan.so`
+proxy to SwiftShader. In the smoke's game section the game
+boots from disc 1 and plays (24 to 45 game frames and 18 to 40 drawn
+frames a second over its first 30 s, the opening movie among them), the
+background and return, fast-forward's Home rounds, Hold to rewind and
+Save and Load state by touch pass as with the x86_64 library,
+`xem-headless`'s field 30 state loaded by F8 plays to `24a65171efb8d70b`
+at frame 2510 as natively, and the state F5 saves there is
+`xem-headless`'s byte for byte (2 681 637 bytes) and goes on natively to
+`b88b373fd2986cc2`, as the native state's own; about 3 minutes from the
+emulator's boot here alone. The refusals in the table above
 are `xem-core/tests/persistence.rs`'s (a stand-in game, no local inputs),
 word for word: each damaged or foreign state, an older SPU device record,
 another GPU record and the drive's disc.
 
-Not done or not measured: arm64 runs only headless under qemu's user-mode
-emulator, in that statically linked build: the APK's arm64-v8a library
-(SDL3, Vulkan, the app's Load state and Save state) has not run, since no
-arm64 device is here and the Android emulator runs the APK's x86_64
-library (the AVD's x86_64 image also offers arm64 apps through its binary
-translation, `ro.dalvik.vm.native.bridge=libndk_translation.so`, which no
-test uses), and the game module's only floating point
-(`xem_present_face_visible` and `xem_present_points_visible`, the port's
-tests of which culled faces a host revealing them draws) runs only for a
-host that asks for reveals, so arm64 has not run it; Horizon OS's
+Not done or not measured: no arm64 processor runs anything here: arm64 is
+emulated, `xem-headless` (linked statically) by qemu's user-mode emulator
+and the APK's arm64-v8a library by the Android emulator's ARM translation
+(Google's libndk_translation on x86_64), and the translated app runs only
+the smoke's game section (the synthetic disc, rotation, activity
+recreation and restart run with the x86_64 library) under the default
+graphics, which ask for no reveals, so the APK's floating point has run
+only as the static build's, compiled to the same instructions; Horizon OS's
 OpenXR and the Android host's headset loop have not run (Monado stands in
 for OpenXR; the emulator has no OpenXR runtime); Windows and macOS hosts
 are not built here; states are compared between hosts with the same host
@@ -6965,8 +7019,8 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
 
 In `nix develop path:./nix/runtime#android`:
 
-- build: `src/runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick ABIs)
-  → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
+- build: `src/runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick
+  ABIs, both by default) → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
 - emulator smoke test: `src/runtime/scripts/android-smoke.sh` (headless API-34
   x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
   screenshots in `build/android/smoke`). With the user's disc 1 at
@@ -7003,15 +7057,23 @@ In `nix develop path:./nix/runtime#android`:
   default graphics ask for no reveals), loads natively to that RAM and
   goes on 600 frames to where `xem-headless`'s own goes ([State
   interchange](#state-interchange); about 40 s on the emulator). `XEM_SMOKE_GAME_ONLY=1` skips the
-  synthetic-disc and lifecycle sections. The game module must be built first
+  synthetic-disc and lifecycle sections. `XEM_SMOKE_ABI=arm64-v8a` builds
+  (unless `XEM_SKIP_BUILD=1`) and installs the APK's arm64-v8a library
+  instead (`adb install --abi`), which the AVD's x86_64 image runs through
+  its ARM translation; the start checks the package's ABI and the
+  translation's arm64 linker in the app's process (the x86_64 run: its
+  absence).
+  The suite's android tier runs the whole smoke with the x86_64 library,
+  then its game section with the arm64-v8a one. The game module must be built first
   (`python3 tools/game_module.py --stubs` in the default shell).
 - arm64 under qemu: `src/runtime/scripts/arm64-smoke.sh` builds
   `xem-headless` for `aarch64-linux-android` (cargo-ndk, API 29, linked
   statically against bionic; `XEM_SKIP_BUILD=1` reuses it) and, with the
   user's disc 1, plays the slice's session logs under the shell's
   `qemu-aarch64` and with `xem-headless` (`XEM_HEADLESS`, else the suite's
-  build), comparing their hashes, states and the save's card ([State
-  interchange](#state-interchange); inputs, replies and states in
+  build), comparing their hashes, states and the save's card, and draws
+  Lahan pulled back (`reveal_frames`), comparing the culled faces revealed
+  ([State interchange](#state-interchange); inputs, replies and states in
   `build/arm64`)
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
   shared crates alone (Slint compiles its FemtoVG module out on Android, so
@@ -7025,10 +7087,13 @@ startup, asset access, lifecycle and the game (`src/runtime/scripts/android-smok
 Monado's simulated headset for OpenXR stereo, the Slint panel quad, swapchain
 and device ownership, frame scheduling and paused head tracking
 (`XEM_XR_COMPOSITED=1 src/runtime/scripts/xr-smoke.sh`), and IWER's Quest 3 in
-Chromium for WebXR (`npm run test:xr`), and qemu's user-mode emulator for the
-game on arm64 (`src/runtime/scripts/arm64-smoke.sh`, headless). What no
-emulator here exercises, and a headset would be the first to show: the APK's
-arm64-v8a build running (it is only compiled and linked); Horizon OS's OpenXR runtime with Meta's loader in the APK,
+Chromium for WebXR (`npm run test:xr`), and for arm64 qemu's user-mode
+emulator (the game headless: `src/runtime/scripts/arm64-smoke.sh`) and the
+Android emulator's ARM translation (the APK's arm64-v8a library:
+`XEM_SMOKE_ABI=arm64-v8a android-smoke.sh`). What no
+emulator here exercises, and a headset would be the first to show: an arm64
+processor running the APK's arm64-v8a library (the emulator translates it to
+x86_64); Horizon OS's OpenXR runtime with Meta's loader in the APK,
 its Vulkan driver, reprojection, hand tracking and eye gaze; Quest Browser's
 WebXR compositor and whether it offers WebGPU XR layers (`XRGPUBinding`);
 whether the 2 GiB read-write reservation of game memory fits Quest memory

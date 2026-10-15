@@ -83,7 +83,13 @@ fn main() {
         // The parts' functions are global, and position-independent code
         // would otherwise keep each call open to interposition: no inlining
         // even within a part.
-        .flag_if_supported("-fno-semantic-interposition");
+        .flag_if_supported("-fno-semantic-interposition")
+        // Each floating-point operation rounded on its own, as wasm's are:
+        // GCC otherwise fuses a product into the sum after it where the
+        // processor has a fused multiply-add (for aarch64, two fmadd and
+        // three fmsub in xem_present_face_visible), and the port's tests of
+        // which culled faces a host reveals would round as no browser does.
+        .flag_if_supported("-ffp-contract=off");
     // XEM_GAME_DEBUG=1: line tables (no variable tracking), so backtraces
     // through the translated module name its lines.
     if env::var_os("XEM_GAME_DEBUG").is_some() {

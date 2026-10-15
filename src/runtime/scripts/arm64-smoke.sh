@@ -16,7 +16,11 @@
 # recording ended at, in the same state on both byte for byte; the save
 # writes the same card 2 on both; and the forest route's state in its
 # battle (frame 7000), the same on both, goes on from each on the other to
-# the route's end and its state. Inputs, replies and states: build/arm64/.
+# the route's end and its state. Lahan drawn as a camera pulled back and a
+# wider framing draw it (xem-headless's reveal_frames: the game module's
+# only floating point judges the faces the game culls) reveals the same
+# faces on both, to the same RAM and state. Inputs, replies and states:
+# build/arm64/.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../../.." && pwd)
@@ -89,6 +93,17 @@ for arch, other in (("arm64", "native"), ("native", "arm64")):
             {"cmd": "memory_hash"},
             {"cmd": "state_save", "path": f"{out}/{arch}-{name}.xemstate"},
         ])
+    # Lahan (field 1) as a 16:9 framing's sides (53 pixels) and their margin
+    # with the camera pulled back by 3000 depth units ask the port for the
+    # faces the game culls: it judges each on the pulled-back camera's screen
+    # in floating point (about 460 revealed a frame here).
+    write(f"{arch}-reveals", [
+        {"cmd": "enter_field", "map": 1},
+        {"cmd": "frames", "count": 300},
+        {"cmd": "reveal_frames", "count": 600, "reach": [85, 32], "pull_back": 3000},
+        {"cmd": "memory_hash"},
+        {"cmd": "state_save", "path": f"{out}/{arch}-reveals.xemstate"},
+    ])
 EOF
 
 # run ARCH NAME...: each NAME in turn, xem-headless (ARCH arm64: its arm64
@@ -124,7 +139,7 @@ together() {
 
 for arch in arm64 native; do
     mkdir -p "$out/$arch-cards-forest" "$out/$arch-cards-save" "$out/$arch-cards-onward" \
-        "$out/$arch-cards-load" "$out/$arch-cards-load-card2"
+        "$out/$arch-cards-load" "$out/$arch-cards-load-card2" "$out/$arch-cards-reveals"
     # Card 2 starts unformatted, as on the original route.
     head -c 131072 /dev/zero >"$out/$arch-cards-save/card2.mcd"
 done
@@ -134,8 +149,8 @@ for arch in arm64 native; do
     cp "$out/$arch-cards-save/card2.mcd" "$out/$arch-cards-load/card1.mcd"
     cp "$out/$arch-cards-save/card2.mcd" "$out/$arch-cards-load-card2/card2.mcd"
 done
-echo "== the loads of that card, and the battle's state on the other"
-together load load-card2 onward || fail "a run stopped (build/arm64/*.err)"
+echo "== the loads of that card, the battle's state on the other, and Lahan pulled back"
+together load load-card2 onward reveals || fail "a run stopped (build/arm64/*.err)"
 
 python3 - "$out" "$root/tests/reference-inputs" <<'EOF'
 import filecmp, json, sys
@@ -170,11 +185,32 @@ for arch in ("arm64", "native"):
         failures.append(f"{arch}: the battle's state from the other went on to another state than the route's own")
 if not same("arm64-cards-save/card2.mcd", "native-cards-save/card2.mcd"):
     failures.append("the save's card 2 under qemu is not the native one")
+# Lahan pulled back: reveal_frames' answer (the primitives traced, the
+# culled faces revealed, their digest) and the RAM after it, on each.
+reveals = {}
+for arch in ("arm64", "native"):
+    replies = [json.loads(text) for text in open(f"{out}/{arch}-reveals.out")]
+    errors = [reply for reply in replies if isinstance(reply, dict) and "error" in reply]
+    if errors:
+        failures.append(f"{arch} reveals: {errors[0]}")
+    answer = next((reply for reply in replies if isinstance(reply, dict) and "digest" in reply), {})
+    ram = next((reply for reply in replies if isinstance(reply, str)), None)
+    seconds = int(open(f"{out}/{arch}-reveals.seconds").read())
+    reveals[arch] = (answer, ram)
+    print(f"  reveals: {arch} {answer.get('frames')} frames, {answer.get('drawn')} primitives, {answer.get('revealed')} culled faces"
+          f" revealed (digest {answer.get('digest')}), RAM {ram} in {seconds} s")
+if reveals["native"][0].get("frames") != 600 or not reveals["native"][0].get("revealed"):
+    failures.append(f"reveals: natively {reveals['native'][0]}, not 600 frames revealing culled faces")
+if reveals["arm64"] != reveals["native"]:
+    failures.append("reveals: under qemu other faces were revealed, or the RAM went elsewhere, than natively")
+if not same("arm64-reveals.xemstate", "native-reveals.xemstate"):
+    failures.append("reveals: the arm64 state at its end is not the native one")
 for failure in failures:
     print(f"FAIL: {failure}", file=sys.stderr)
 if failures:
     sys.exit(1)
 print("  every log's end state, the battle's state at frame 7000 and the save's card 2: arm64's the native ones, byte for byte;"
-      " the battle's state from each went on to the route's end state on the other")
+      " the battle's state from each went on to the route's end state on the other;"
+      " Lahan pulled back revealed the same culled faces on both, to the same RAM and state")
 EOF
 echo "PASS (build/arm64)"

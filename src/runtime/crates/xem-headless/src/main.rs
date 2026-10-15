@@ -3,7 +3,8 @@
 //!
 //! `--frames N` runs N frames and reports; `--control` reads one JSON command
 //! per line from stdin and answers each on stdout (xem_core::control), plus
-//! `screenshot {path}` and `vram {path}`, which write the display and VRAM as PNGs.
+//! `screenshot {path}` and `vram {path}`, which write the display and VRAM as PNGs,
+//! and `reveal_frames`, which plays frames as a wider or pulled-back view draws them.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -179,6 +180,7 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     None => serde_json::json!({ "error": "vram needs path" }),
                 },
+                Ok(command) if command["cmd"] == "reveal_frames" => reveal_frames(&mut session, &command),
                 Ok(command) => xem_game::storage::command(&mut session,&command),
                 Err(error) => serde_json::json!({ "error": format!("bad json: {error}") }),
             };
@@ -256,6 +258,61 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         println!("binaural: {}", session.execute(&serde_json::json!({"cmd": "binaural"})));
     }
     Ok(())
+}
+
+/// `reveal_frames {count, reach: [x, y], pull_back, around}`: plays `count`
+/// frames (1 by default) as a host whose view reaches `reach` pixels beyond
+/// the original's screen (not 0, 0) draws them, from `pull_back` GTE depth
+/// units behind the game's camera, looking `around` ([`xem_gpu::Reveals`]):
+/// the draw trace on, asking the port for the faces the game culls, taken
+/// after each frame and off again at the end. Presentation only: the game's
+/// RAM goes on as without it. For a camera pulled back the port judges each
+/// culled face on that camera's screen in floating point, the game module's
+/// only floating point. Answers the frames played, the primitives traced,
+/// how many of them are faces the game culled, and an FNV-1a digest of
+/// those (each one's packet, shape and screen points), or the trap.
+#[cfg(has_game_module)]
+fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule>, command: &serde_json::Value) -> serde_json::Value {
+    let number = |value: &serde_json::Value, limit: u64| value.as_u64().unwrap_or(0).min(limit);
+    let reveals = xem_gpu::Reveals {
+        reach: [number(&command["reach"][0], 0xFFFF) as u16, number(&command["reach"][1], 0xFFFF) as u16],
+        pull_back: number(&command["pull_back"], u64::from(u32::MAX)) as u32,
+        around: number(&command["around"], 0xFF) as u8,
+    };
+    let device = session.runtime.services().gpu.device_mut();
+    device.set_trace(true);
+    device.set_reveals(Some(reveals));
+    let (mut frames, mut drawn, mut revealed, mut digest) = (0u64, 0u64, 0u64, 0xCBF2_9CE4_8422_2325u64);
+    let mut trap = None;
+    for _ in 0..command["count"].as_u64().unwrap_or(1) {
+        match session.frame() {
+            Ok(true) => frames += 1,
+            Ok(false) => break,
+            Err(error) => {
+                trap = Some(error.to_string());
+                break;
+            }
+        }
+        for op in session.runtime.services().gpu.device_mut().take_trace().ops {
+            let xem_gpu::TraceOp::Draw(primitive) = op else { continue };
+            drawn += 1;
+            if !primitive.revealed {
+                continue;
+            }
+            revealed += 1;
+            let points = primitive.vertices.iter().flat_map(|v| [v.x as u32, v.y as u32]);
+            for word in [primitive.source, primitive.shape as u32].into_iter().chain(points) {
+                for byte in word.to_le_bytes() {
+                    digest = (digest ^ u64::from(byte)).wrapping_mul(0x0100_0000_01B3);
+                }
+            }
+        }
+    }
+    session.runtime.services().gpu.device_mut().set_trace(false);
+    match trap {
+        Some(trap) => serde_json::json!({ "error": trap, "frames": frames }),
+        None => serde_json::json!({ "frames": frames, "drawn": drawn, "revealed": revealed, "digest": format!("{digest:016x}") }),
+    }
 }
 
 /// The displayed picture as an RGBA PNG (an empty display area gives 1x1).

@@ -11,8 +11,10 @@
 #            workspace's tests and the validation run
 #   web      the game module, the web build and the browser suites, the
 #            browser tests that measure time (WebXR's among them) last
-#   android  the game module, the APK and the emulator's smoke test, and
-#            the game's arm64 build under qemu (arm64-smoke.sh)
+#   android  the game module, the APK and the emulator's smoke test, its
+#            game again with the APK's arm64-v8a library (which the
+#            emulator runs through its ARM translation), and the game's
+#            arm64 build under qemu (arm64-smoke.sh)
 #   xr       the game module, the native build and the OpenXR smoke test
 #   full     all of them, and what CI runs (.github/workflows/ci.yml) as on
 #            a clone without the user's discs: tools/repository/check.py,
@@ -30,7 +32,8 @@
 # frame rates runs alone, one after another (their emulator, headset and
 # browsers render on the processor: beside the browser suites the Android
 # smoke's frame rate fell from 56 to 10 a second, the XR smoke's headset
-# frames came late, and their checks failed): the Android smoke, the XR
+# frames came late, and their checks failed): the Android smoke (with the
+# APK's x86_64 library, then its game with the arm64-v8a one), the XR
 # smoke, and the browser tests that measure time (the headset's frame rate,
 # rewind frame times, fast-forward's music, the stalled page, a resume read
 # within the rewind's one-second interval, the Binaural mode's cost).
@@ -186,7 +189,7 @@ in_android() {
         CARGO_BUILD_JOBS="$side_jobs" "$@"
 }
 android_build() {
-    in_android env XEM_ANDROID_ABIS=x86_64 src/runtime/scripts/android-build.sh
+    in_android env XEM_ANDROID_ABIS="x86_64 arm64-v8a" src/runtime/scripts/android-build.sh
 }
 android_boot() {
     in_android env XEM_SMOKE_BOOT=1 src/runtime/scripts/android-smoke.sh
@@ -196,6 +199,14 @@ android() {
     # or one of its own in the android tier).
     (cd "$runtime" && cargo build --profile suite -p xem-headless) &&
         in_android env XEM_SKIP_BUILD=1 XEM_HEADLESS="$headless" src/runtime/scripts/android-smoke.sh
+}
+# The smoke's game (its state interchange among it) with the APK's
+# arm64-v8a library, which the emulator's x86_64 image runs through its ARM
+# translation.
+android_arm64() {
+    (cd "$runtime" && cargo build --profile suite -p xem-headless) &&
+        in_android env XEM_SKIP_BUILD=1 XEM_SMOKE_ABI=arm64-v8a XEM_SMOKE_GAME_ONLY=1 XEM_HEADLESS="$headless" \
+            src/runtime/scripts/android-smoke.sh
 }
 # The arm64 build under qemu compares with xem-headless too, and builds in
 # a target directory of its own.
@@ -243,6 +254,7 @@ wait
 if covers android; then
     if passed android-build; then
         stage android android
+        stage android-arm64 android_arm64
     elif passed android-boot; then
         # No APK to test: stop the emulator booted for it (android-smoke.sh's port).
         in_android adb -s emulator-5584 emu kill >/dev/null 2>&1
