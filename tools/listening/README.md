@@ -52,9 +52,9 @@ listeners at large. Whether they, with the models, settle the plan's
    save a state in the desktop app (a `.xemstate` file of the same game
    module) and pass it: with `--state battle=PATH` the battle excerpt
    starts there and the others are made as before. `--only NAME,...` makes
-   a test of those excerpts alone (its manifest holds only them). Both commands take
-   `--out DIR` and `--seed N` (2026 by default; the same seed and commit
-   make the same files).
+   a test of those excerpts alone (its manifest holds only them). Both
+   commands take `--out DIR` and `--seed N` (2026 by default; the same
+   seed and commit make the same files).
 
 3. Serve the page and open it:
 
@@ -65,12 +65,14 @@ listeners at large. Whether they, with the models, settle the plan's
    DIR` change where it serves and saves (`.local/listening/results` by
    default).
 
-4. Enter a name for yourself (the results files are named after it) and
-   your headphones, and take the sessions: L1, L2 and L3 (localization; L1
-   starts with longer training), C1 and C2 (coherence). Each session first
-   checks the level (set your volume to the pink noise: comfortable, about a
-   conversation's loudness, then leave it), which ear is which, and the
-   headphones' polarity.
+4. Enter a name for yourself and your headphones, and take the sessions:
+   L1, L2 and L3 (localization; L1 starts with longer training), C1 and C2
+   (coherence). Each session first checks the level (set your volume to the
+   pink noise: comfortable, about a conversation's loudness, then leave
+   it), which ear is which, and the headphones' polarity. Each answer is
+   saved at once to `results/NAME-SESSION.json` (the checks, every trial's
+   stimulus, level rove and answer, every rating and how often each
+   version was played); a session taken again goes to `NAME-SESSION-r2.json`.
 
 5. Analyse:
 
@@ -181,5 +183,7 @@ runs the page in headless Chromium on a small synthetic set: a script
 answers every planned session through the page's controls (a session left
 mid-block and resumed), and the analysis must read its answers back. With
 `XEM_LISTENING_STIMULI=DIR` (an absolute path) it runs every session of the
-stimuli in DIR instead, answers saved to a temporary directory. Nobody
-listens there.
+stimuli in DIR instead (about half an hour), answers saved to a temporary
+directory. Nobody listens there. An unfinished session resumes only on the
+stimuli it was answering; once they are made again it starts afresh in a
+file of its own, and the analysis leaves the old answers out.

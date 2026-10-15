@@ -1108,14 +1108,21 @@ works them out apart from it: the rendered ones exact (no error, elevation
 gain 1), every other front/back-eligible raw one mirrored (that many
 front/back confusions, no lateral error), the panned ones level (gain 0,
 the lateral error their targets' elevations make), every catch and moving
-trial right, and each condition's mean rating; 65 s on its own synthetic
-set. With `XEM_LISTENING_STIMULI` it runs the generated stimuli's every
-session. It shows the page and the analysis work, not what anyone hears.
+trial right, and each condition's mean rating. On its own synthetic set
+(70 s) an unfinished session saved against other stimuli waits in the
+results: the page starts the session afresh beside it and the analysis
+leaves it out. With `XEM_LISTENING_STIMULI` it runs the generated stimuli's
+every session: here 1 032 localization trials and 80 coherence screens in
+28 minutes, the raw set's front/back confusions read back as scripted (60
+of 120). It shows the page and the analysis work, not what anyone hears.
 
 Not done or not measured: no listening tests with people: the
 self-administered test is ready and has been answered only by a script,
 and whether one listener beside the models makes the plan's calibrated
-listening comparisons is the user's to judge. Direction is
+listening comparisons is the user's to judge; its analysis sets a person's
+numbers over the test's 48 directions beside the models' over every
+measured direction (the models' output holds no direction-by-direction
+predictions). Direction is
 predicted by models calibrated on 23 people's own localization, for how
 they would hear the KEMAR head's cues, not measured on anyone; the models
 are validated for static broadband sounds, so moving sounds, the game's

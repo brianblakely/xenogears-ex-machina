@@ -210,9 +210,19 @@ async function start(entry) {
   let results = [];
   try { results = await getJSON('results/'); } catch { /* none yet */ }
   const mine = results.filter((r) => r.listener === name && r.session === entry.session.name);
-  const partial = mine.find((r) => !r.complete);
-  if (partial) {
-    run = await getJSON(`results/${encodeURIComponent(partial.file)}`);
+  // An unfinished session resumes only on the stimuli it was answering;
+  // after the stimuli were made again it starts afresh in a file of its own.
+  const current = JSON.stringify(manifest.generated);
+  let resumed = null;
+  for (const partial of mine.filter((r) => !r.complete)) {
+    const saved = await getJSON(`results/${encodeURIComponent(partial.file)}`);
+    if (JSON.stringify(saved.manifest?.generated) === current) {
+      resumed = saved;
+      break;
+    }
+  }
+  if (resumed) {
+    run = resumed;
   } else {
     const taken = mine.length;
     run = {

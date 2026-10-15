@@ -3,7 +3,9 @@
 // manifests plan runs to its end through the page's own controls (the three
 // headphone checks, the azimuth dial, the elevation slider and the start and
 // end markers, the MUSHRA buttons and sliders), each answer saved by
-// tools/listening/serve.py; a session is left mid-block and resumed; then
+// tools/listening/serve.py; a session is left mid-block and resumed, and
+// (on the synthetic set) an unfinished one saved against other stimuli is
+// left beside a fresh one; then
 // tools/listening/analyse.py reads the answers back as the script gave them,
 // against expectations worked out here independently. Nobody listens: this
 // shows the page and the analysis work, not what anyone hears.
@@ -269,6 +271,18 @@ test('the listening page runs every planned session on scripted answers and the 
   const localization = JSON.parse(readFileSync(join(stimuli, 'localization.json'), 'utf8'));
   let coherence = null;
   try { coherence = JSON.parse(readFileSync(join(stimuli, 'coherence.json'), 'utf8')); } catch { /* localization only */ }
+  // On the synthetic set, an unfinished L1 saved against other stimuli
+  // waits in the results: the page must start L1 afresh beside it, and the
+  // analysis leave it out.
+  const files = Object.fromEntries([...localization.sessions, ...(coherence?.sessions ?? [])].map((s) => [s.name, `scripted-${s.name}.json`]));
+  if (!REAL) {
+    mkdirSync(results, { recursive: true });
+    const stale = { kind: 'xem-listening-results', version: 1, part: 'localization', session: 'L1', file: 'scripted-L1.json', listener: 'scripted',
+      complete: false, manifest: { kind: localization.kind, version: 1, generated: { ...localization.generated, seed: 999 } }, calibrations: [],
+      trials: [{ trial: 'L1-1-001', stimulus: 'gone', training: false, response: { azimuth: 0, elevation: 0 } }], ratings: [] };
+    writeFileSync(join(results, 'scripted-L1.json'), JSON.stringify(stale));
+    files.L1 = 'scripted-L1-r2.json';
+  }
   const { child, base } = await startServer(stimuli, results);
   const browser = await chromium.launch({ executablePath: process.env.XEM_CHROMIUM, headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
   try {
@@ -288,7 +302,7 @@ test('the listening page runs every planned session on scripted answers and the 
   // Each session's answers were saved, every trial once, the resumed
   // session's calibration twice.
   for (const [i, session] of localization.sessions.entries()) {
-    const saved = JSON.parse(readFileSync(join(results, `scripted-${session.name}.json`), 'utf8'));
+    const saved = JSON.parse(readFileSync(join(results, files[session.name]), 'utf8'));
     assert.equal(saved.complete, true);
     assert.equal(saved.headphones, 'none (a script)');
     assert.deepEqual(saved.manifest.generated, localization.generated);
@@ -298,7 +312,7 @@ test('the listening page runs every planned session on scripted answers and the 
     assert.ok(saved.calibrations.every((c) => c.level_set && c.left_right_ok && c.polarity_ok));
   }
   for (const session of coherence?.sessions ?? []) {
-    const saved = JSON.parse(readFileSync(join(results, `scripted-${session.name}.json`), 'utf8'));
+    const saved = JSON.parse(readFileSync(join(results, files[session.name]), 'utf8'));
     assert.equal(saved.complete, true);
     assert.deepEqual(saved.ratings.map((r) => r.trial), session.trials.map((t) => t.trial));
     for (const r of saved.ratings) {
@@ -311,7 +325,7 @@ test('the listening page runs every planned session on scripted answers and the 
   const out = join(work, 'analysis.json');
   execFileSync('python3', [join(LISTENING, 'analyse.py'), '--stimuli', stimuli, '--results', results, '--models', join(work, 'none.json'), '--json', out, '--bootstrap', '200'], { stdio: 'pipe' });
   const analysis = JSON.parse(readFileSync(out, 'utf8'));
-  assert.deepEqual(analysis.notes, []);
+  assert.deepEqual(analysis.notes, REAL ? [] : ['scripted-L1.json: answered against other stimuli than the current manifest\'s (another commit or seed); left out']);
   const stimuliById = new Map(localization.stimuli.map((s) => [s.id, s]));
   const count = { kemar: 0 };
   const expected = { rendered: [], kemar: [], stereo: [] };

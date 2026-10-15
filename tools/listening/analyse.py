@@ -563,11 +563,14 @@ def coherence(results: list[dict], manifest: dict, draws: int, seed: int, notes:
 
 
 def number(value, digits=1, unit=""):
-    return "-" if value is None else f"{value:.{digits}f}{unit}"
+    if value is None:
+        return "-"
+    # No "-0.0" for a value that rounds to zero.
+    return f"{(0.0 if abs(value) < 0.5 * 10**-digits else value):.{digits}f}{unit}"
 
 
 def interval(ci, digits=1):
-    return "" if not ci else f" [{ci[0]:.{digits}f}, {ci[1]:.{digits}f}]"
+    return "" if not ci else f" [{number(ci[0], digits)}, {number(ci[1], digits)}]"
 
 
 def stat(summary: dict, name: str, digits=1) -> str:
