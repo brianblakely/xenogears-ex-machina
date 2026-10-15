@@ -524,8 +524,11 @@ pub enum TraceOp {
     Eye(Eye),
     /// The camera the game draws its next frame with (while the view looks
     /// from within or around the scene: [`Reveals::around`]), in order with
-    /// the commands: the port records it as it builds the frame.
-    Camera(Camera),
+    /// the commands: the port records it as it builds the frame. Boxed: with
+    /// a battle's stage it is larger than a primitive, and every op of a
+    /// trace, of a renderer's logs and of its replays is as large as the
+    /// largest kind of op.
+    Camera(Box<Camera>),
 }
 
 /// A movie macroblock as the MDEC decoded it, before its conversion to RGB:
@@ -715,7 +718,7 @@ impl Recorder {
                         let stage = stage.filter(|_| mode == CameraMode::Battle);
                         let ground = ground.filter(|_| mode == CameraMode::Worldmap);
                         let camera = Camera { axes: self.axes, translation: self.translation, target, focus: f32::from(projection.sz), mode, stage, ground };
-                        self.ops.push(TraceOp::Camera(camera));
+                        self.ops.push(TraceOp::Camera(Box::new(camera)));
                     }
                 }
                 STAGE => {

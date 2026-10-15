@@ -2349,7 +2349,14 @@ each one over in order with the commands (`TraceOp::Camera`:
 `xem_gpu::Camera` with its axes, translation, target, focus depth and
 `CameraMode`, a battle's with its `Stage`, the world map's with its
 `ground`; `Camera::world_point` inverts it, `Camera::view_point` applies
-it). A buffer's log keeps the records current
+it). The record is boxed (`TraceOp::Camera(Box<Camera>)`): a battle's
+stage makes a `Camera` 324 bytes, more than a primitive, and every op of a
+trace, of a renderer's logs and of its replays is as large as the largest
+kind of op, so inline it made every op 328 bytes on x86_64 against a
+primitive's 256, and 324 against 248 in the browser's wasm32, in every
+mode, the diorama off too; boxed, an op is a primitive's size on both
+(measured with rustc's `-Zprint-type-sizes`). A buffer's log keeps the
+records current
 when its frame's first primitive is drawn (`FrameLog::camera` and `eye`,
 the newest within four vertical blanks), and `FrameRenderer::camera` the
 shown frame's: the port makes a frame's records while the game builds it,
@@ -2446,7 +2453,9 @@ camera and 142 primitives instead of its own 71),
 `xem-gpu/tests/gpu.rs`
 `a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`,
 `a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other_camera_does`,
-`polygons_the_backdrop_projects_are_the_world_marked_as_the_backdrop`
+`polygons_the_backdrop_projects_are_the_world_marked_as_the_backdrop`,
+`a_traced_op_takes_no_more_room_than_a_drawn_primitive` (an op as large as
+a primitive; with the camera inline it failed, 328 bytes against 256)
 and `tests/test_port_presentation.py` (the entries `xem_present_camera`
 writes) check the format and the logs without the game (the stage's port
 code reads `battle_area`, whose pointers a native build would widen, and

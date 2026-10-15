@@ -106,7 +106,7 @@ impl Player {
             run(&mut self.session, json!({"cmd": "frames", "count": 1}));
             let trace = self.session.runtime.services().gpu.device_mut().take_trace();
             camera = trace.ops.iter().rev().find_map(|op| match op {
-                xem_render::xem_gpu::TraceOp::Camera(camera) => Some(*camera),
+                xem_render::xem_gpu::TraceOp::Camera(camera) => Some(**camera),
                 _ => None,
             }).or(camera);
         }

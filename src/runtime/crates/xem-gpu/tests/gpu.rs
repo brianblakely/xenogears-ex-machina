@@ -938,7 +938,7 @@ fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_poi
     ram.node(0x1000, 0xFF_FFFF, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
     gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
     let trace = gpu.take_trace();
-    let cameras: Vec<_> = trace.ops.iter().enumerate().filter_map(|(i, op)| if let TraceOp::Camera(c) = op { Some((i, *c)) } else { None }).collect();
+    let cameras: Vec<_> = trace.ops.iter().enumerate().filter_map(|(i, op)| if let TraceOp::Camera(c) = op { Some((i, **c)) } else { None }).collect();
     let draw = trace.ops.iter().position(|op| matches!(op, TraceOp::Draw(_))).expect("the frame's triangle");
     assert_eq!(cameras.len(), 1, "one camera: {cameras:?}");
     let (at, camera) = cameras[0];
@@ -1010,7 +1010,7 @@ fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other
     records.push(entry(8, 640, 3, [0, -472, 0]));
     gpu.trace_projections(0, &records, &[], &[]);
     let trace = gpu.take_trace();
-    let cameras: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Camera(c) = op { Some(*c) } else { None }).collect();
+    let cameras: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Camera(c) = op { Some(**c) } else { None }).collect();
     assert_eq!(cameras.len(), 3);
     let mut stage = Stage { look_at: [1632.0, -96.0, 2368.0], eye: [1632.0, -1800.0, -900.0], turns: true, ..Stage::default() };
     stage.combatants[0] = Some(Combatant { position: [2288.0, -562.0, 1095.0], height: 96.0 });
@@ -1018,6 +1018,16 @@ fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other
     assert_eq!((cameras[0].mode, cameras[0].stage, cameras[0].ground), (CameraMode::Battle, Some(stage), None), "the battle's camera takes its stage");
     assert_eq!((cameras[1].mode, cameras[1].stage, cameras[1].ground), (CameraMode::Field, None, None), "a field's camera carries none");
     assert_eq!((cameras[2].mode, cameras[2].stage, cameras[2].ground), (CameraMode::Worldmap, None, Some(-256.0)), "the world map's takes its ground");
+}
+
+#[test]
+fn a_traced_op_takes_no_more_room_than_a_drawn_primitive() {
+    // Every op of a trace, of a renderer's logs and of its replays is as
+    // large as the largest kind of op, on every host and in every mode: the
+    // camera records a diorama asks for (a battle's with its stage) stay out
+    // of line.
+    use xem_gpu::{Primitive, TraceOp};
+    assert_eq!(std::mem::size_of::<TraceOp>(), std::mem::size_of::<Primitive>(), "a trace op is as large as a primitive");
 }
 
 /// FNV-1a over bytes, as the MDEC keys a macroblock's output.

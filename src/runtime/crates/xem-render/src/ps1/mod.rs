@@ -2425,7 +2425,7 @@ impl Ps1Renderer {
                     continue;
                 }
                 TraceOp::Camera(camera) => {
-                    self.camera = Some((*camera, 0));
+                    self.camera = Some((**camera, 0));
                     continue;
                 }
                 // Recorded each frame the game draws (every other blank in a
