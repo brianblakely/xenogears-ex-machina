@@ -3223,8 +3223,10 @@ and a hand found closed toggle nothing (its loss pauses, at 282; the right
 hand's Pause resumes), the diorama shown in every frame of them; while
 the Pause holds the game (30 frames, one game frame) the head takes 30
 poses, the left eye changes over 2% between the captures at 110 and 125
-(34.5% measured) and each pair shows the table in depth (the disparity by
-band of rows, top first, 11 to 27 and 11 to 26 pixels); the left hand's
+(16.1% measured) and each pair shows the table in depth (the disparity by
+band of rows, top first, 10 to 19 pixels at both; the left eye's own move
+between them, recorded, 12 pixels in the far bands to 16 in the near:
+the head's move seen in depth too); the left hand's
 underhand grab looks from within (343 to 382, no diorama) and, again,
 gives the diorama back on the next frame at the scale and table it had
 (1.408385e-3 m a unit, the table's centre at (0, -32, 90) as before); a
@@ -3232,13 +3234,13 @@ pinch through the table walks (`moving` from 422), the underhand grab
 stops it (`stopped` from 430) and none restarts to the run's end; prayer
 hands show the settings panel over the table for 30 frames, the game held
 (the panel's middle at (0, 0.417, -1.050), above the table's far edge).
-With the diorama as the view from boot, the title movie's 309 rebuilt
+With the diorama as the view from boot, the title movie's 308 rebuilt
 frames show on the screen alone at the screen's span, 210x142 for
 320x216, and the title (field 490) on the screen. In all nine runs with
 the diorama as the view the screen's share moves from a headset frame to
 the next by no more than the time between their presentations
 (`presented_us=`) over the 0.3 s switch, within the log's rounding (the
-device's own pictures and inspection take the view at once): 20 frames
+device's own pictures and inspection take the view at once): 21 frames
 between the screen and the diorama over them, the first frames of a
 diorama coming late (its first build), so a switch of 0.3 s spans one to
 four headset frames at 20 Hz.
@@ -3350,7 +3352,9 @@ from boot into fields, from the debug battle's selector into its battle
 and from boot into the world map), and a movie between two dioramas ran
 nowhere on the game (a synthetic 24-bit frame after a diorama only); the
 paused head's motion parallax between two captures is recorded, not
-checked (the simulated head turns as it moves: no band of rows matched).
+checked: it depends on how far the simulated head, turning as it moves,
+went between them (no band of rows matched in one run, 12 to 16 pixels
+from the far bands to the near in the next).
 
 #### Scaling
 
@@ -4470,8 +4474,8 @@ Phase 8 item 4 for that camera mode).
 | A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
 | Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
-| The diorama: transitions | in all nine runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`; 20 frames between the two over them): from boot into fields, from the debug battle's selector into its battle, into the world map; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had | the underhand grab over the diorama at 150%: from within at once, then the diorama back at once at 150%, its room from the world unchanged | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; `ps1.rs`: a menu's, a 24-bit movie frame's and inspection's screen after a diorama, eased |
-| The diorama: paused head tracking | the left hand's Pause in field 30: 30 head poses in 30 frames, one game frame, 34.5% of the left eye changed between two captures, each pair in depth (disparity 11 to 27 and 11 to 26 pixels, far rows to near) | the left hand's Pause: the head moved 10 cm, the rows across the table shift by their depth (38 to 23 points, near to far), the game's clock still | |
+| The diorama: transitions | in all nine runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`; 21 frames between the two over them): from boot into fields, from the debug battle's selector into its battle, into the world map; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had | the underhand grab over the diorama at 150%: from within at once, then the diorama back at once at 150%, its room from the world unchanged | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; `ps1.rs`: a menu's, a 24-bit movie frame's and inspection's screen after a diorama, eased |
+| The diorama: paused head tracking | the left hand's Pause in field 30: 30 head poses in 30 frames, one game frame, 16.1% of the left eye changed between two captures, each pair in depth (disparity 10 to 19 pixels, far rows to near) | the left hand's Pause: the head moved 10 cm, the rows across the table shift by their depth (38 to 23 points, near to far), the game's clock still | |
 | The diorama: either hand's grabs | in field 30 the left hand's Pause grab pauses and resumes, both hands' together toggle once, the right hand's resumes; a sideways grab, a fist turned while closed and a hand found closed toggle nothing (its loss pauses, the right hand's Pause resumes); the diorama shown in every frame of them | the left hand's grab pauses and resumes, both hands' toggle once, the right hand's resumes, a sideways grab and a turned fist count nothing; the diorama on | the screen's (above) |
 | The diorama: inspection stops a walk | a pinch through the table walks, the underhand grab stops it (`stopped`) and none restarts to the run's end (the player's own play) | | `diorama.rs`: stopped, the character where it stopped 120 blanks on |
 | The diorama: two-hand scaling owns both hands | 252% spread and 151% contracted, each committed once: only the scaling's gestures, no pause, press or walk, the camera's target still and its room point, the table's anchor, within 0.03 mm, a key beside the pane one width ([Scaling](#scaling)) | gathered hands 20 to 50 cm apart: 2.52 live, committed once, the anchor within a millimetre, no pause or pinch ([Scaling](#scaling)) | `headset`'s scaling tests ([Scaling](#scaling)) |
@@ -4480,7 +4484,7 @@ Phase 8 item 4 for that camera mode).
 | The diorama: sprite planes and both eyes | each capture's disparity grows from the far rows to the near, each eye showing its own diorama picture in the renderer's colours (0 levels off) | moving the head shifts the rows by depth; VR and AR sessions begun at one head place one table | `diorama.rs`: one build a game frame for both eyes, each eye of a pair as it is alone (0 bytes differ), the thickest stack of a sprite's parts 300 um off its billboard (Lahan), Lahan's sprite rows alike in both eyes; `ps1.rs`: one upright sprite in both eyes, apart by its disparity only; split sprites in the game's order from five sides |
 | The diorama: holes | | | `diorama.rs`: of the floor the character walks, seen from 16 sides and heights, 0.021% without the scene in Lahan, none in fields 12, 22 and 30 (under 0.5%) |
 | The diorama: masks and effects | the debug battle's and the world map's dioramas ease in from the screen (the transitions row) | | `ps1.rs`: a fade tints the diorama and its pane, not the room; a subtracting interface quad takes its colour off the pane as off the screen; the pictures before the scene paint the wall in the game's order; `diorama.rs`: the random battle's entry and end shown on the screen between the dioramas; HD-2D effects left out, said by the Headset card (`xem-ui/tests/panel.rs`) |
-| The diorama: interface and media | field 12's dialogue on the pane in each eye at its texels (all of 291 and 288 pixels within 2 levels); the title movie on the screen in its own shape | (the pane's pixels not read) | `diorama.rs`: the pane's opaque pixels the flat frame's (field 12's dialogue and the debug battle exactly, the world map within a 15-bit step), all of field 12's interface on it; the movie's frames in its shape; `draw`: keys, HUD and panel outside the volume at a constant size |
+| The diorama: interface and media | field 12's dialogue on the pane in each eye at its texels (all of 339 and 337 pixels within 2 levels); the title movie on the screen in its own shape | (the pane's pixels not read) | `diorama.rs`: the pane's opaque pixels the flat frame's (field 12's dialogue and the debug battle exactly, the world map within a 15-bit step), all of field 12's interface on it; the movie's frames in its shape; `draw`: keys, HUD and panel outside the volume at a constant size |
 
 The settings panel stands below the screen (`draw::panel` with
 `Beside::Screen`, both hosts giving the screen's size as scaled and its
