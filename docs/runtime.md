@@ -4179,7 +4179,9 @@ the system's "isn't responding" dialogs on its AVD (on a loaded host one
 took its taps). Logs, and each stage's result and time: `build/suite/`.
 Measured here (16 threads, warm builds): `full` 723 s with every stage
 passing (709 s before CI's checks joined it), where the same stages run
-one after another took about 26 minutes; `desktop` 114 s.
+one after another took about 26 minutes; `desktop` 114 s; `android` 500 s
+with an up-to-date APK (the emulator's boot, 23 s, and the arm64 stage,
+240 s, beside the APK's build, then the emulator's smoke, 239 s).
 
 ## Saves and time controls
 
@@ -4734,8 +4736,9 @@ natively, each in the same state on both byte for byte, and the save's
 card 2 is the native one byte for byte; the forest route's state in its
 battle at frame 7000 is the same on both byte for byte, and each goes on
 in a fresh session on the other to the route's end state. It took 4 min
-2 s here, with the runs under qemu side by side at 70 to 81 frames a
-second (native `xem-headless` 470 to 750). The refusals in the table above
+2 s here alone and 240 s in the android tier, with the runs under qemu
+side by side at 70 to 84 frames a second (native `xem-headless` 430 to
+750). The refusals in the table above
 are `xem-core/tests/persistence.rs`'s (a stand-in game, no local inputs),
 word for word: each damaged or foreign state, an older SPU device record,
 another GPU record and the drive's disc.
