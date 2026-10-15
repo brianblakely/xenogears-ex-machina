@@ -149,8 +149,9 @@ pub struct XemApp {
     xr_gestures: Vec<xem_assist::gesture::Gesture>,
     /// A controller's select (trigger) came since the last frame, by hand.
     xr_select: Option<usize>,
-    /// The hands' standard pinches recognised in the session (for tests).
-    xr_pinches: u32,
+    /// The gestures recognised in sessions (`status().xr.counts`, for
+    /// tests: most leave no state behind them).
+    xr_counts: xem_assist::gesture::Counts,
     /// The session's reference space resets (the runtime's recentring) and
     /// the player's Recenter actions.
     xr_resets: u32,
@@ -276,7 +277,7 @@ impl XemApp {
             xr_panel_inside: false,
             xr_gestures: Vec::new(),
             xr_select: None,
-            xr_pinches: 0,
+            xr_counts: Default::default(),
             xr_resets: 0,
             xr_recenters: 0,
             xr_held: Default::default(),
@@ -534,10 +535,13 @@ impl XemApp {
             self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui);
         }
         // First-person inspection shows no field camera to walk or point
-        // through: its taps walk nowhere and talk to no one.
+        // through: its taps walk nowhere and talk to no one. Otherwise the
+        // field as the picture shows it (pulled back, say).
         let inspecting = self.first_person();
+        let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
         let Some(session) = self.session.as_mut() else { return };
-        let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
+        let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
+            .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref()));
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
             // A tap on the paused game resumes it, as a click does.
@@ -589,13 +593,16 @@ impl XemApp {
         let Some(screen) = self.xr_screen else { return };
         let ui = self.ui;
         // First-person inspection keeps the character where it stands, and
-        // shows no field camera to point through.
+        // shows no field camera to point through; otherwise the field as the
+        // screen shows it (pulled back, say).
         let inspecting = self.first_person();
         self.headset.inspecting = inspecting;
         self.headset.auto_advance = settings.auto_advance.enabled;
+        let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
         let (field, targets, controls) = match self.session.as_mut() {
             Some(session) => (
-                (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten(),
+                (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
+                    .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref())),
                 session.runtime.targets(),
                 session.runtime.field_controls(),
             ),
@@ -607,7 +614,7 @@ impl XemApp {
             xem_assist::headset::Effects { aim: self.headset.aim(&input, &screen), ..Default::default() }
         };
         let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
-        self.xr_pinches += u32::from(pinched);
+        self.xr_counts.add(&effects.gestures);
         self.xr_held = effects.held.clone();
         let (inspect, auto_advance) = {
             let mut host = WebCarry { session: self.session.as_mut(), input: &mut self.input, inspect: false, auto_advance: false };
@@ -1670,7 +1677,12 @@ impl XemApp {
             "xr": {
                 "input": self.xr_input.is_some(),
                 "gestures": self.xr_gestures,
-                "pinches": self.xr_pinches,
+                "counts": self.xr_counts,
+                // The keys beside the screen as last placed: each one's
+                // centre in the session's space and its width (metres).
+                "keys": self.renderer.as_ref().map_or_else(Vec::new, |r| r.overlay.room.iter()
+                    .filter(|p| matches!(p.widget, xem_render::glass::Widget::Key(..)))
+                    .map(|p| { let at = p.pose.w_axis; [at.x, at.y, at.z, p.size.x] }).collect()),
                 "pointer": self.headset.pointer,
                 "pauses": self.headset.pauses,
                 "settings": self.headset.settings_open,
@@ -1705,8 +1717,14 @@ impl XemApp {
                 "recenters": self.xr_recenters,
                 "panelHit": self.xr_panel_hit,
                 "panelClick": self.xr_panel_click,
-                // The panel's logical size (where its controls are).
+                // The panel's logical size (where its controls are), and
+                // where it stands in the session: its centre, orientation
+                // (x, y, z, w) and size (metres).
                 "panelSize": self.renderer.as_ref().and_then(|r| r.panel()).map(|p| { let (w, h) = p.size(); [w as f32 / p.scale_factor(), h as f32 / p.scale_factor()] }),
+                "panel": self.renderer.as_ref().and_then(|r| Some((r.xr_seat, r.panel()?))).map(|(seat, p)| {
+                    let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), p.size());
+                    json!({"position": quad.pose.position.to_array(), "orientation": quad.pose.orientation.to_array(), "size": [quad.size.0, quad.size.1]})
+                }),
                 "rays": self.xr_input.as_ref().map(|i| i.rays.map(|r| r.map(|r| { let f = r.forward(); [r.position.x, r.position.y, r.position.z, f.x, f.y, f.z] }))),
             },
             "loop": {

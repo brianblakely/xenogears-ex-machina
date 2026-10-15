@@ -117,6 +117,25 @@ impl Camera {
         let direction = apply([(sx - SCREEN_CENTRE.0) / self.h, (sy - SCREEN_CENTRE.1) / self.h, 1.0]);
         Some((origin, direction))
     }
+
+    /// This camera as a picture shows it from another view (a presentation's
+    /// pulled-back camera, a look from within the scene): a point `v` of
+    /// this camera's view space shows at `centre + h · (q.x, q.y) / q.z`,
+    /// `q = rows · v + offset` (screen pixels). The camera returned projects
+    /// and picks as that picture shows the world (its depth sheared into x
+    /// and y where the picture's centre is not the screen's); its angle, the
+    /// game's, stays.
+    pub fn seen(&self, rows: [[f32; 3]; 3], offset: [f32; 3], h: f32, centre: (f32, f32)) -> Camera {
+        let mut m = [0, 1, 2].map(|r| [0, 1, 2].map(|c| (0..3).map(|k| rows[r][k] * self.m[k][c]).sum::<f32>()));
+        let mut t = [0, 1, 2].map(|r| (0..3).map(|k| rows[r][k] * self.t[k]).sum::<f32>() + offset[r]);
+        for (axis, shift) in [(0, (centre.0 - SCREEN_CENTRE.0) / h), (1, (centre.1 - SCREEN_CENTRE.1) / h)] {
+            for c in 0..3 {
+                m[axis][c] += shift * m[2][c];
+            }
+            t[axis] += shift * t[2];
+        }
+        Camera { m, t, h, angle: self.angle }
+    }
 }
 
 fn invert(m: [[f32; 3]; 3]) -> Option<[[f32; 3]; 3]> {
@@ -931,6 +950,39 @@ mod tests {
         // The player is not pointed at, nor an actor the game skips.
         f.actors[1] = Some(Actor { flags: 1, ..f.actors[1].unwrap() });
         assert_eq!(f.actor_near_ray(V3::new(50.0, -400.0, 50.0), V3::new(0.0, 100.0, 0.0), 10.0, 20.0), None);
+    }
+
+    #[test]
+    fn a_camera_seen_from_another_view_projects_and_picks_as_its_picture_shows() {
+        let f = field(strip(5), vec![0]);
+        let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        let camera = Camera { m: [[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]], t: [-250.0, 0.0, 600.0], h: 256.0, angle: 0x300 };
+        let point = V3::new(300.0, 0.0, 70.0);
+        let view = camera.view(point);
+        let near = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 1e-3 && (a.1 - b.1).abs() < 1e-3;
+        // Pulled back 900 units along its axis, about the picture's own
+        // centre (8 lines below the screen's).
+        let pulled = camera.seen(identity, [0.0, 0.0, 900.0], 256.0, (160.0, 120.0));
+        let shown = pulled.project(point).unwrap();
+        let z = view[2] + 900.0;
+        assert!(near(shown, (160.0 + 256.0 * view[0] / z, 120.0 + 256.0 * view[1] / z)), "{shown:?}");
+        assert_eq!(pulled.angle, 0x300, "the game's own angle");
+        let f = Field { camera: pulled, ..f };
+        let hit = f.pick(shown).unwrap();
+        assert!(hit.point.planar(point) < 0.5, "the pulled-back picture's point picks the floor shown there: {hit:?}");
+        // Looking from within the scene a quarter turn to the right (its
+        // forward the camera's right), from 500 units ahead.
+        let rows = [[0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]];
+        let eye = [0.0, 0.0, 500.0];
+        let offset = [0, 1, 2].map(|r| -(0..3).map(|k| rows[r][k] * eye[k]).sum::<f32>());
+        let looking = camera.seen(rows, offset, 200.0, (160.0, 112.0));
+        let q = [0, 1, 2].map(|r| (0..3).map(|k| rows[r][k] * (view[k] - eye[k])).sum::<f32>());
+        let shown = looking.project(point).unwrap();
+        assert!(near(shown, (160.0 + 200.0 * q[0] / q[2], 112.0 + 200.0 * q[1] / q[2])), "{shown:?} for {q:?}");
+        let (origin, direction) = looking.ray(shown).unwrap();
+        let along = point.sub(origin).dot(direction) / direction.dot(direction);
+        let off = point.sub(origin.add(direction.scale(along)));
+        assert!(off.dot(off).sqrt() < 1e-2, "the look's ray through its picture's point meets the point: {off:?}");
     }
 
     #[test]

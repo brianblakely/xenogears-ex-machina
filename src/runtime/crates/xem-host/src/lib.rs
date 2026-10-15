@@ -1053,7 +1053,8 @@ impl View {
         self.arrange(ui);
         let taps = std::mem::take(&mut self.taps);
         let inspecting = self.renderer.first_person();
-        let field = if inspecting { None } else { game.field() };
+        // The field as the picture shows it (pulled back, say).
+        let field = if inspecting { None } else { game.field().map(|f| xem_assist::overlay::seen(f, self.renderer.viewpoint().as_ref())) };
         if !taps.is_empty() {
             let targets = game.targets();
             for tap in taps {

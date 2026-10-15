@@ -318,7 +318,10 @@ impl Recognizer {
         if self.scale_release && shapes.iter().all(|s| s.is_none_or(|s| s.open())) {
             self.scale_release = false;
         }
-        let two_handed = self.scaling.is_some() || self.scale_release || self.prayer;
+        // Scaling owns the hands through their release: the frame it ends
+        // on too, when they let go at once.
+        let released = out.contains(&Gesture::ScaleEnd);
+        let two_handed = self.scaling.is_some() || self.scale_release || self.prayer || released;
 
         for hand in Hand::BOTH {
             let Some(shape) = shapes[hand.index()] else { continue };
@@ -395,6 +398,42 @@ impl Recognizer {
     }
 }
 
+
+/// How many of each gesture a host has recognised (its status, for tests:
+/// a grab, prayer hands or a scaling leaves no state behind it that says it
+/// was seen, such as an underhand grab outside a field).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct Counts {
+    pub pause: u32,
+    pub inspect: u32,
+    pub settings: u32,
+    /// Two-hand scalings begun.
+    pub scale: u32,
+    pub pinch: u32,
+    pub tap: u32,
+    pub swipe: u32,
+    /// Hands whose tracking was lost.
+    pub lost: u32,
+}
+
+impl Counts {
+    pub fn add(&mut self, gestures: &[Gesture]) {
+        for gesture in gestures {
+            let count = match gesture {
+                Gesture::Pause { .. } => &mut self.pause,
+                Gesture::Inspect { .. } => &mut self.inspect,
+                Gesture::Settings => &mut self.settings,
+                Gesture::ScaleBegin => &mut self.scale,
+                Gesture::Pinch { .. } => &mut self.pinch,
+                Gesture::Tap { .. } => &mut self.tap,
+                Gesture::Swipe { .. } => &mut self.swipe,
+                Gesture::TrackingLost { .. } => &mut self.lost,
+                Gesture::Scale { .. } | Gesture::ScaleEnd => continue,
+            };
+            *count += 1;
+        }
+    }
+}
 
 /// Gestures a source of hand input can produce: joints give the grabs,
 /// the whole-hand pinch and prayer hands; the runtime's pinch and
@@ -549,6 +588,38 @@ pub(crate) mod tests {
         assert!((factor - 2.0).abs() < 0.2, "{factor}");
         assert_eq!(gestures[2], Gesture::ScaleEnd);
         assert_eq!(gestures.len(), 3, "{gestures:?}");
+    }
+
+    #[test]
+    fn the_runtimes_pinch_and_thumb_through_two_hand_scaling_fire_nothing_but_the_scale() {
+        // Gathered fingertips a runtime may take for its pinch, and a thumb
+        // tap and swipe it reports in the middle, from the gather to after
+        // the hands let go: only the scale's own events.
+        let at = |x: f32, hand: [Vec3; JOINTS]| place(hand, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
+        let poses = [
+            (at(-0.1, left(open())), at(0.1, open()), false, None),
+            (at(-0.1, left(whole_pinch())), at(0.1, whole_pinch()), true, None),
+            (at(-0.15, left(whole_pinch())), at(0.15, whole_pinch()), true, Some(Micro::Tap)),
+            (at(-0.2, left(whole_pinch())), at(0.2, whole_pinch()), true, Some(Micro::Swipe(Swipe::Up))),
+            (at(-0.2, left(open())), at(0.2, open()), true, Some(Micro::Tap)),
+            (at(-0.2, left(open())), at(0.2, open()), false, None),
+        ];
+        let mut recognizer = Recognizer::default();
+        let gestures: Vec<Gesture> = poses.iter().enumerate().flat_map(|(i, (l, r, pinch, micro))| recognizer.update(&Frame {
+            time: i as f64 / 90.0,
+            hands: [Some(*l), Some(*r)],
+            view_right: Vec3::X,
+            pinch: [Some(*pinch); 2],
+            micro: [*micro; 2],
+            micro_capable: [true; 2],
+        })).collect();
+        let Gesture::Scale { factor } = gestures[1] else { panic!("{gestures:?}") };
+        assert!(factor > 1.0, "{gestures:?}");
+        assert!(gestures.iter().all(|g| matches!(g, Gesture::ScaleBegin | Gesture::Scale { .. } | Gesture::ScaleEnd)), "{gestures:?}");
+        assert_eq!((gestures.first(), gestures.last()), (Some(&Gesture::ScaleBegin), Some(&Gesture::ScaleEnd)), "{gestures:?}");
+        // The hands open again, the runtime's next pinch and tap are theirs.
+        let next = recognizer.update(&Frame { time: 1.0, hands: [Some(poses[5].0), Some(poses[5].1)], view_right: Vec3::X, pinch: [None, Some(true)], micro: [None, Some(Micro::Tap)], micro_capable: [true; 2] });
+        assert_eq!(next, [Gesture::Pinch { hand: Hand::Right }, Gesture::Tap { hand: Hand::Right }]);
     }
 
     #[test]

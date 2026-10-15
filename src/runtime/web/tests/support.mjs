@@ -96,7 +96,12 @@ export const QUEST = `${IWER}\n;window.xrDevice = new IWER.XRDevice(IWER.metaQue
 // The hand model in the page (an init script after QUEST): a right hand in
 // its own frame (wrist at the origin, fingers along -Z, palm down), each
 // finger curled by `curl`, the thumb's tip at `thumb`; poses are registered
-// with IWER as left-hand data (IWER mirrors them for the right hand).
+// with IWER as left-hand data (IWER mirrors them for the right hand). The
+// shapes: open, half, fist and gather (a whole-hand pinch: every fingertip
+// at the thumb's). IWER draws a hand's joints toward its pinch pose by the
+// pinch value; `pinchPose(device, name)` makes that pose one of the
+// model's (a runtime reporting its pinch while the fingertips are
+// gathered), and `pinchPose(device)` gives IWER's own back.
 export const HAND_MODEL = `
 window.handModel = (() => {
   const JOINTS = ['wrist', 'thumb-metacarpal', 'thumb-phalanx-proximal', 'thumb-phalanx-distal', 'thumb-tip'];
@@ -131,7 +136,15 @@ window.handModel = (() => {
     j[3] = j[2].map((v, i) => (v + j[4][i]) / 2);
     return j;
   };
-  const shapes = { open: right([0, 0, 0, 0], rest), half: right([0.5, 0.5, 0.5, 0.5], rest), fist: fist() };
+  // Every fingertip gathered towards the middle of the index's and the
+  // little finger's (xem_assist::synthetic::whole_pinch).
+  const gather = () => {
+    const j = right([0.45, 0.45, 0.45, 0.45], rest);
+    const centre = j[9].map((v, k) => (v + j[24][k]) / 2);
+    for (const tip of [4, 9, 14, 19, 24]) j[tip] = j[tip].map((v, k) => centre[k] + (v - centre[k]) * 0.15);
+    return j;
+  };
+  const shapes = { open: right([0, 0, 0, 0], rest), half: right([0.5, 0.5, 0.5, 0.5], rest), fist: fist(), gather: gather() };
   const pose = (joints) => ({
     jointTransforms: Object.fromEntries(JOINTS.map((name, i) => {
       const [x, y, z] = joints[i];
@@ -140,16 +153,23 @@ window.handModel = (() => {
     })),
   });
   const handInput = (hand) => hand[Object.getOwnPropertySymbols(hand).find((s) => s.description === '@iwer/xr-hand-input')];
+  const own = new Map();
   return {
     install(device) {
       for (const hand of [device.hands.left, device.hands.right]) {
         const poses = handInput(hand).poses;
+        if (!own.has(hand)) own.set(hand, poses.pinch);
         for (const [name, joints] of Object.entries(shapes)) poses[name] = pose(joints);
       }
     },
     set(device, hand, shape) {
       device.hands[hand].poseId = shape;
       device.hands[hand].updateHandPose();
+    },
+    pinchPose(device, shape) {
+      for (const hand of [device.hands.left, device.hands.right]) {
+        handInput(hand).poses.pinch = shape ? pose(shapes[shape]) : own.get(hand);
+      }
     },
   };
 })();`;

@@ -277,6 +277,24 @@ pub struct HeadsetEye {
     pub fov: [f32; 4],
 }
 
+/// The viewpoint a picture showed the game's scene from when it was not the
+/// game camera's own ([`GameView::viewpoint`]: the camera pulled back, or a
+/// look from within the scene): a point `v` of the game camera's view space
+/// (where [`xem_gpu::TraceVertex::view`] holds points) shows at `centre +
+/// h · (q.x, q.y) / q.z`, `q = rows · v + offset`, in front of the view
+/// (`q.z` above `near`). `centre` is in the picture's own pixels: the
+/// display's, from its left edge and top (as hosts map pointers to the
+/// game's screen). `rows` are orthonormal: the view's right, down and
+/// forward.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Viewpoint {
+    pub rows: [[f32; 3]; 3],
+    pub offset: [f32; 3],
+    pub h: f32,
+    pub centre: (f32, f32),
+    pub near: f32,
+}
+
 /// A headset's presentation ([`GameView::present_headset`]).
 pub struct HeadsetPresented<'a> {
     /// Each eye's picture looking from within the scene (an `Rgba8Unorm`
@@ -620,6 +638,39 @@ impl GameView {
     /// its runtime moved the reference space).
     pub fn recenter_diorama(&mut self) {
         self.diorama.recenter();
+    }
+
+    /// The viewpoint the screen last presented showed the game's scene from,
+    /// when it was not the game camera's own: the camera pulled back (wider
+    /// views' zoom out in a field or the world map), or first-person
+    /// inspection's look from the character's eye. Pointing at the picture
+    /// goes through it, so that a pinch or a click picks what the picture
+    /// shows there and marks lie where it shows them (hosts see the field's
+    /// camera through it: `xem_core::field::Camera::seen`). None for the
+    /// game camera's own picture, a headset's pane (no scene) and a frame
+    /// whose world the port did not project.
+    pub fn viewpoint(&self) -> Option<Viewpoint> {
+        let shown = self.main.shown?;
+        let framing = shown.framing;
+        if framing.interface == Interface::Only || (framing.pull_back <= 0.0 && framing.look.is_none()) {
+            return None;
+        }
+        let ((x, y), h) = super::frame::projection(self.main.frame.newest())?;
+        let centre = (x - shown.area.x as f32, y - shown.area.y as f32);
+        Some(match framing.look {
+            Some(look) => {
+                let rows = look.axes;
+                let offset = std::array::from_fn(|r| -(0..3).map(|k| rows[r][k] * look.eye[k]).sum::<f32>());
+                Viewpoint { rows, offset, h: look.h[0], centre: (centre.0 + look.shift[0], centre.1 + look.shift[1]), near: look.near }
+            }
+            None => Viewpoint {
+                rows: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                offset: [0.0, 0.0, framing.pull_back],
+                h,
+                centre,
+                near: h / 2.0,
+            },
+        })
     }
 
     /// How far the first-person view has turned from the heading it began

@@ -428,6 +428,12 @@ impl WebRenderer {
         self.renderer.look_angles()
     }
 
+    /// The viewpoint the screen showed the scene from when not the game
+    /// camera's own (`GameView::viewpoint`): pointers point through it.
+    pub fn viewpoint(&self) -> Option<xem_render::ps1::Viewpoint> {
+        self.renderer.viewpoint()
+    }
+
     /// Where the first-person view faces, for the Binaural listener
     /// (`GameView::listener_axes`).
     pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {

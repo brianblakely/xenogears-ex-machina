@@ -137,7 +137,8 @@ impl Assisted {
             return panel_visible;
         }
         let context = game.pad_context();
-        let field = if self.headset.inspecting { None } else { game.field() };
+        // The field as the screen last showed it (pulled back, say).
+        let field = if self.headset.inspecting { None } else { game.field().map(|f| overlay::seen(f, view.viewpoint().as_ref())) };
         let targets = game.targets();
         let effects = self.headset.update(input, screen, context.ui, field.as_ref(), targets.as_ref());
         // What a control deck holds (its stick, its held keys).
@@ -150,14 +151,15 @@ impl Assisted {
         self.headset.settings_open
     }
 
-    /// The marks to draw this frame, as room quads.
-    pub fn placed(&self, settings: &Settings, input: &Input, screen: &Screen, game: &mut Game) -> Vec<Placed> {
+    /// The marks to draw this frame, as room quads, over the screen showing
+    /// the scene from `viewpoint` ([`GameView::viewpoint`]).
+    pub fn placed(&self, settings: &Settings, input: &Input, screen: &Screen, game: &mut Game, viewpoint: Option<xem_render::ps1::Viewpoint>) -> Vec<Placed> {
         if !settings.assisted.gestures {
             return vec![];
         }
         let ui = game.pad_context().ui;
         let inspecting = self.headset.inspecting;
-        let field = if inspecting { None } else { game.field() };
+        let field = if inspecting { None } else { game.field().map(|f| overlay::seen(f, viewpoint.as_ref())) };
         let aim = self.headset.aim(input, screen);
         let targets = game.targets();
         let destination = if inspecting { None } else { game.destination() };

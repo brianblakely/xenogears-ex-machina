@@ -123,6 +123,18 @@ pub fn marks(ui: Context, aim: Option<Pointed>, field: Option<&Field>, destinati
     marks
 }
 
+/// The field as a picture shows it: its camera seen from the picture's
+/// viewpoint (`GameView::viewpoint`) when that is not the game camera's
+/// own (the camera pulled back), so that a pinch, a tap or a click picks
+/// the floor and the actors the picture shows where it points, and floor
+/// marks lie where it shows that floor.
+pub fn seen(mut field: Field, viewpoint: Option<&xem_render::ps1::Viewpoint>) -> Field {
+    if let Some(v) = viewpoint {
+        field.camera = field.camera.seen(v.rows, v.offset, v.h, v.centre);
+    }
+    field
+}
+
 /// The pointer's keys (left of the screen) for hands without the thumb's
 /// microgestures: what the swipes and taps would press.
 pub const POINTER_KEYS: [(&str, GameAction); 10] = [

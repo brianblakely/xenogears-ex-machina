@@ -21,7 +21,7 @@ fn main() {
     println!("tracking lost mid-grab, found closed: {} toggles of 200", reliability::reacquired_fists(200, &noise, 5));
     for alone in [Hand::Right, Hand::Left] {
         print!("relaxed posture, {alone:?} hand alone:");
-        for (i, name) in reliability::GESTURES.into_iter().filter(|n| *n != "prayer").enumerate() {
+        for (i, name) in reliability::GESTURES.into_iter().filter(|n| !reliability::two_handed(n)).enumerate() {
             let m = reliability::measure_with(name, 1000, &noise, 201 + i as u64, &Setup::relaxed(Some(alone)));
             print!(" {name} {:.1}%", 100.0 * m.recognised as f32 / m.tries as f32);
         }

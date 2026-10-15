@@ -71,6 +71,9 @@ struct Player {
     ui: Option<xem_core::context::Context>,
     /// What the runtime offers of the standard gestures.
     runtime: Runtime,
+    /// The viewpoint the host's picture shows the scene from when not the
+    /// game camera's own ([`Player::pulled_back`]): pointing goes through it.
+    viewpoint: Option<xem_render::ps1::Viewpoint>,
 }
 
 /// Where the harness's head is (the room's floor at y 0).
@@ -81,7 +84,7 @@ impl Player {
         let screen = Screen::flat(Quad { pose: Pose { position: Vec3::new(0.0, 1.6, -2.5), orientation: Quat::IDENTITY }, size: (3.2, 2.24) }, (320.0, 224.0), 0.0);
         let mut headset = Headset::default();
         headset.source = PointerSource::Eye;
-        Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0, ui: None, runtime: Runtime::HORIZON }
+        Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0, ui: None, runtime: Runtime::HORIZON, viewpoint: None }
     }
 
     fn context(&mut self) -> Value {
@@ -114,6 +117,36 @@ impl Player {
         let space = xem_render::ps1::DioramaSpace::first(&camera, h, xem_render::glam::Vec2::new(320.0, 224.0), &xem_render::ps1::Table::default(), seat).expect("a camera that spans space");
         self.screen = Screen::pane(space, EYES);
         space
+    }
+
+    /// The game's next frames presented as a desktop's picture with the
+    /// field's camera pulled back (wider views' zoom out at `zoom_out`
+    /// percent): the viewpoint the picture shows the scene from, which the
+    /// harness points through from then on, as hosts do.
+    fn pulled_back(&mut self, zoom_out: u16) -> xem_render::ps1::Viewpoint {
+        use xem_render::ps1::{GameView, HostClass, ViewConfig};
+        let gpu = pollster::block_on(xem_render::Gpu::headless()).expect("a wgpu adapter");
+        let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+        let graphics = xem_settings::Graphics { zoom_out, ..Default::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 960), view.max_scale()));
+        let _ = view.take_restart();
+        self.session.runtime.services().gpu.device_mut().set_trace(true);
+        for frame in 0..8 {
+            let device = self.session.runtime.services().gpu.device_mut();
+            device.set_reveals(view.reveals());
+            run(&mut self.session, json!({"cmd": "frames", "count": 1}));
+            let device = self.session.runtime.services().gpu.device_mut();
+            view.push(device.take_trace());
+            let display = device.display();
+            let scene = self.session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            let _ = view.present(&mut encoder, &display, &scene, f64::from(frame) / 60.0);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        self.session.runtime.services().gpu.device_mut().set_trace(false);
+        let viewpoint = view.viewpoint().expect("the picture shows the field pulled back");
+        self.viewpoint = Some(viewpoint);
+        viewpoint
     }
 
     /// One headset frame of this step (its hands, and the runtime's
@@ -154,7 +187,8 @@ impl Player {
         };
         self.time += 1.0 / 60.0;
         let ui = self.ui.unwrap_or_else(|| self.session.runtime.context());
-        let field = (self.session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(self.session.runtime.memory())).flatten();
+        let field = (self.session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(self.session.runtime.memory())).flatten()
+            .map(|f| xem_assist::overlay::seen(f, self.viewpoint.as_ref()));
         let targets = self.session.runtime.targets();
         let effects = self.headset.update(&input, &self.screen, ui, field.as_ref(), targets.as_ref());
         self.input.touch = effects.held.clone();
@@ -339,6 +373,57 @@ fn through_a_diorama_a_tap_by_a_villager_talks_to_them() {
     assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Confirmed));
     player.rest(30);
     assert_eq!(player.context()["kind"], "dialogue");
+}
+
+/// With the field's camera pulled back (wider views' zoom out at 250%), a
+/// pinch with the gaze where the picture shows a floor point walks there
+/// and the cursor and the destination's mark lie there: the harness points
+/// through the picture's viewpoint, as hosts do. The game's own camera
+/// shows that point elsewhere.
+#[test]
+fn pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there() {
+    use xem_assist::overlay::{Kind, marks, seen};
+    use xem_core::field::Reach;
+    let Some(mut player) = walking(30) else { return };
+    let viewpoint = player.pulled_back(250);
+    let field = player.field();
+    let shown = seen(field.clone(), Some(&viewpoint));
+    let me = *field.player().unwrap();
+    let mesh = &field.layers[me.layer];
+    let apart = |a: (f32, f32), b: (f32, f32)| ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
+    // A walkable floor point some way off and away from everyone, on the
+    // picture: the one the game's camera shows farthest from there.
+    let (goal, at, own) = (0..mesh.triangles.len())
+        .map(|t| (t, mesh.centroid(t)))
+        .filter(|(t, c)| field.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+        .filter(|(_, c)| field.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
+        .filter_map(|(_, c)| {
+            let at = shown.camera.project(c).filter(|p| (16.0..304.0).contains(&p.0) && (16.0..208.0).contains(&p.1))?;
+            Some((c, at, field.camera.project(c)?))
+        })
+        .max_by(|a, b| apart(a.1, a.2).total_cmp(&apart(b.1, b.2)))
+        .expect("walkable floor on the picture");
+    eprintln!("pulled back {:.0} units: the floor at {goal:?} shows at {at:?}, the game's camera puts it at {own:?}", viewpoint.offset[2]);
+    assert!(apart(at, own) > 20.0, "the picture shows the point elsewhere than the game's camera: {at:?} and {own:?}");
+    player.gesture("pinch", Some(at));
+    let Some(xem_core::assist::Intent::Walk { to, .. }) = player.session.assist.as_ref().map(|a| a.intent.clone()) else {
+        panic!("walking: {:?}", player.session.assist_outcome)
+    };
+    assert!(to.planar(goal) < 16.0, "the walk heads for the floor the picture shows there: {to:?} for {goal:?}");
+    let marked = marks(xem_core::context::Context::Walk, Some(xem_assist::dispatch::Pointed::Screen(at)), Some(&shown), Some(to), None, false);
+    let at_mark = |kind: Kind| marked.iter().find(|m| m.kind == kind).map(|m| match m.place {
+        xem_assist::overlay::Place::Screen { centre, .. } => apart(centre, at),
+        xem_assist::overlay::Place::Floor { .. } => f32::INFINITY,
+    });
+    assert!(at_mark(Kind::Floor(Reach::Walk)).is_some_and(|d| d < 0.5), "the cursor lies on walkable floor there: {marked:?}");
+    assert!(at_mark(Kind::Destination).is_some_and(|d| d < 2.0), "the destination's mark lies there: {marked:?}");
+    for _ in 0..400 {
+        if player.session.assist.is_none() { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Arrived));
+    let arrived = player.field().player().unwrap().position;
+    assert!(arrived.planar(goal) < 16.0, "arrived at {arrived:?} for {goal:?}");
 }
 
 /// A thumb tap on a villager approaches and talks to them; taps advance

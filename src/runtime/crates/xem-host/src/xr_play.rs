@@ -774,7 +774,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         };
         last_screen = Some(screen);
         let style = Assisted::style(&current);
-        let marks: Vec<(wgpu::TextureView, Mat4, Vec2)> = assist.placed(&current, &assisted_input, &screen, &mut game).into_iter()
+        let marks: Vec<(wgpu::TextureView, Mat4, Vec2)> = assist.placed(&current, &assisted_input, &screen, &mut game, view.viewpoint()).into_iter()
             .map(|placed| (assist.texture(&gpu, &placed.widget, style), placed.pose, placed.size))
             .collect();
 

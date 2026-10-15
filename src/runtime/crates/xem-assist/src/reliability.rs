@@ -1,6 +1,7 @@
-//! Measures this crate's own gesture recognizers (the grabs and prayer
-//! hands; the pinch, taps and swipes are the runtime's standard ones, its
-//! to qualify) under hand-tracking noise (plan.md:
+//! Measures this crate's own gesture recognizers (the grabs, prayer hands
+//! and two-hand scaling, spreading and contracting; the pinch, taps and
+//! swipes are the runtime's standard ones, its to qualify) under
+//! hand-tracking noise (plan.md:
 //! false activations, missed gestures, response latency, rapid pause and
 //! resume, tracking-loss recovery). Hands are the synthetic model with
 //! per-joint jitter (a tracker's), slow drift and tremor, varied speed,
@@ -136,19 +137,40 @@ fn matches(name: &str, gesture: &Gesture) -> bool {
         ("pause", Gesture::Pause { .. }) | ("inspect", Gesture::Inspect { .. }) | ("pinch", Gesture::Pinch { .. }) | ("tap", Gesture::Tap { .. }) | ("prayer", Gesture::Settings) => true,
         ("swipe-up", Gesture::Swipe { direction: Swipe::Up, .. }) | ("swipe-down", Gesture::Swipe { direction: Swipe::Down, .. }) => true,
         ("swipe-left", Gesture::Swipe { direction: Swipe::Left, .. }) | ("swipe-right", Gesture::Swipe { direction: Swipe::Right, .. }) => true,
+        // A scaling's events are all its own.
+        ("scale-out" | "scale-in", Gesture::ScaleBegin | Gesture::Scale { .. } | Gesture::ScaleEnd) => true,
         _ => false,
     }
 }
 
 /// The completing pose of each gesture (where its event is due): the frame
-/// index of the last new pose in the unslowed sequence.
+/// index of the last new pose in the unslowed sequence (a scaling's
+/// gathered hands, where it begins).
 fn completing(name: &str) -> usize {
     match name {
         "pause" | "inspect" => 3,
         "pinch" => 2,
         "tap" => 4,
         "prayer" => 1,
+        "scale-out" | "scale-in" => 2,
         _ => 4,
+    }
+}
+
+/// Whether a measured gesture takes both hands (the others are made with
+/// either hand alone).
+pub fn two_handed(name: &str) -> bool {
+    matches!(name, "prayer" | "scale-out" | "scale-in")
+}
+
+/// Whether a scaling did what it was made for, by the last factor it gave
+/// and its end: spread to twice the hands' distance (or contracted to
+/// half) and let go of the hands. Other gestures need nothing of it.
+fn scaled_as_made(name: &str, factor: Option<f32>, ended: bool) -> bool {
+    match name {
+        "scale-out" => ended && factor.is_some_and(|f| f > 1.5),
+        "scale-in" => ended && factor.is_some_and(|f| f < 0.67),
+        _ => true,
     }
 }
 
@@ -228,14 +250,26 @@ pub fn measure_with(name: &'static str, tries: usize, noise: &Noise, seed: u64, 
         }
         let mut seen = None;
         let mut wrong = false;
+        // A scaling's last factor and its end.
+        let mut factor = None;
+        let mut ended = false;
         for (i, hands) in frames.into_iter().chain(varied(&mut rng, &vec![open_hands(); 6], noise)).enumerate() {
             for gesture in frame(&mut recognizer, hands) {
+                match gesture {
+                    Gesture::Scale { factor: f } => factor = Some(f),
+                    Gesture::ScaleEnd => ended = true,
+                    _ => {}
+                }
                 if matches(expected, &gesture) && seen.is_none() {
                     seen = Some(i.saturating_sub(due));
                 } else if !matches(expected, &gesture) && !matches!(gesture, Gesture::TrackingLost { .. }) {
                     wrong = true;
                 }
             }
+        }
+        // A scaling counts when it scaled as made and let go of the hands.
+        if !scaled_as_made(name, factor, ended) {
+            seen = None;
         }
         match seen {
             Some(frames) => {
@@ -301,7 +335,7 @@ pub fn sustained(stretches: usize, minutes: f32, tries: usize, seed: u64) -> Vec
         let mut stretch = Stretch { from: k as f32 * minutes, noise: (noise.jitter, noise.tremor, noise.slowest), droop, ..Stretch::default() };
         let mut latency = 0.0;
         for (i, name) in GESTURES.into_iter().enumerate() {
-            let alone = if name == "prayer" { None } else { Some(Hand::BOTH[(i + k) % 2]) };
+            let alone = if two_handed(name) { None } else { Some(Hand::BOTH[(i + k) % 2]) };
             let m = measure_with(name, tries, &noise, seed + (k * 16 + i) as u64, &Setup { posture, alone });
             stretch.tries += m.tries;
             stretch.recognised += m.recognised;
@@ -360,7 +394,7 @@ pub fn reacquired_fists(count: usize, noise: &Noise, seed: u64) -> usize {
 }
 
 /// The gestures recognised here (the standard ones are the runtime's).
-pub const GESTURES: [&str; 3] = ["pause", "inspect", "prayer"];
+pub const GESTURES: [&str; 5] = ["pause", "inspect", "prayer", "scale-out", "scale-in"];
 
 #[cfg(test)]
 mod tests {
@@ -389,7 +423,7 @@ mod tests {
     fn a_relaxed_posture_works_with_either_hand_alone() {
         let noise = Noise::default();
         for alone in [Hand::Right, Hand::Left] {
-            for (i, name) in GESTURES.into_iter().filter(|n| *n != "prayer").enumerate() {
+            for (i, name) in GESTURES.into_iter().filter(|n| !two_handed(n)).enumerate() {
                 let m = measure_with(name, 100, &noise, 31 + i as u64, &Setup::relaxed(Some(alone)));
                 assert!(m.recognised >= 92, "{alone:?} {m:?}");
                 assert!(m.latency <= 4.0, "{alone:?} {m:?}");

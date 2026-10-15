@@ -1298,12 +1298,18 @@ pub(crate) fn sprite_feet(ops: &[TraceOp]) -> HashMap<u32, [f32; 3]> {
 /// projection offset plus the drawing offset (VRAM pixels), as
 /// [`first_person`] takes each scene primitive's centre; none without it.
 pub(crate) fn projection_centre(ops: &[TraceOp]) -> Option<(f32, f32)> {
+    projection(ops).map(|(centre, _)| centre)
+}
+
+/// [`projection_centre`] and the projection distance (the GTE's H) the
+/// world of `ops` is projected with.
+pub(crate) fn projection(ops: &[TraceOp]) -> Option<((f32, f32), f32)> {
     let scene = scene_offset(ops)?;
     ops.iter().find_map(|op| match op {
         TraceOp::Draw(p) if p.class == Class::World => match p.projection {
-            Some((offset, _)) if offset == scene => Some((
-                f32::from(offset.0) + f32::from(p.environment.offset.0),
-                f32::from(offset.1) + f32::from(p.environment.offset.1),
+            Some((offset, h)) if offset == scene => Some((
+                (f32::from(offset.0) + f32::from(p.environment.offset.0), f32::from(offset.1) + f32::from(p.environment.offset.1)),
+                f32::from(h),
             )),
             _ => None,
         },

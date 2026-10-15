@@ -894,6 +894,68 @@ pub(crate) mod tests {
         recenter(&mut seat, Some(Pose { position: Vec3::new(0.0, 0.0, 0.5), orientation: Quat::from_rotation_y(-0.5) }), &mut view).unwrap();
         assert!(seat.position().distance(Vec3::new(0.0, 0.0, 0.5)) < 1e-6 && view.0 == 4);
     }
+
+    /// [`field`] standing on a floor (a square 2000 units a side, 100 below
+    /// the camera, ahead of it), so that a pinch below the screen's centre
+    /// walks.
+    fn floored() -> Field {
+        use xem_core::field::{Layer, Triangle, V3};
+        let mut field = field();
+        let vertices = vec![V3::new(-1000.0, 100.0, 0.0), V3::new(1000.0, 100.0, 0.0), V3::new(-1000.0, 100.0, 2000.0), V3::new(1000.0, 100.0, 2000.0)];
+        let triangles = vec![Triangle { v: [0, 1, 2], n: [-1, 1, -1], attribute: 0 }, Triangle { v: [1, 3, 2], n: [-1, -1, 0], attribute: 0 }];
+        field.layers = vec![Layer { vertices, triangles }];
+        for actor in field.actors.iter_mut().flatten() {
+            actor.position.y = 100.0;
+        }
+        field
+    }
+
+    #[test]
+    fn two_hand_scaling_owns_both_hands_stays_within_its_range_and_ends_where_it_reached() {
+        use crate::synthetic::{Runtime, gesture, in_front};
+        let field = floored();
+        let floor = (160.0, 180.0);
+        let mut time = 0.0;
+        let mut play = |headset: &mut Headset, name: &str, ui: Context| -> Effects {
+            let mut effects = Effects::default();
+            for step in gesture(name).unwrap() {
+                let head = Pose { position: Vec3::ZERO, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, screen().point(floor).normalize()) };
+                let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+                let frame = step.frame(time, hands, Vec3::X, Runtime::HORIZON);
+                time += 1.0 / 72.0;
+                let input = Input { time: frame.time, head: Some(head), hands, pinch: frame.pinch, micro: frame.micro, micro_capable: frame.micro_capable, focused: true, ..Input::default() };
+                let more = headset.update(&input, &screen(), ui, Some(&field), None);
+                effects.outs.extend(more.outs);
+                effects.gestures.extend(more.gestures);
+            }
+            effects
+        };
+        let scaled = |outs: &[Out]| outs.iter().all(|o| matches!(o, Out::ScaleBegin | Out::Scale { .. } | Out::ScaleEnd));
+        let walked = |outs: &[Out]| outs.iter().any(|o| matches!(o, Out::Command { command } if command["cmd"] == "navigate"));
+        // The gaze on the floor, where a pinch walks: the runtime's pinch
+        // held through the gesture walks nowhere, and nothing pauses.
+        let mut headset = Headset::default();
+        let mut scaling = Scaling::default();
+        assert!(walked(&play(&mut headset, "pinch", Context::Walk).outs), "a pinch there walks");
+        for (name, reached) in [("scale-pinch", 2.0), ("scale-in", 1.0), ("scale-out", 2.0), ("scale-out", 3.0), ("scale-in", 1.5)] {
+            let effects = play(&mut headset, name, Context::Walk);
+            assert!(scaled(&effects.outs) && effects.outs.contains(&Out::ScaleEnd), "{name}: {:?}", effects.outs);
+            assert!(!headset.pauses.paused(), "{name}");
+            carry(effects.outs, &mut Ignored, &mut scaling);
+            assert!((scaling.scale - reached).abs() < 0.08, "{name}: scale {} (the range 0.4-3 holding it)", scaling.scale);
+        }
+        // A factor after the end changes nothing: it scales from no start.
+        carry(vec![Out::Scale { factor: 2.0 }], &mut Ignored, &mut scaling);
+        assert!((scaling.scale - 1.5).abs() < 0.08, "{}", scaling.scale);
+        carry(vec![Out::ScaleBegin, Out::Scale { factor: 0.01 }, Out::ScaleEnd], &mut Ignored, &mut scaling);
+        assert_eq!(scaling.scale, 0.4, "the smallest screen");
+        // With settings open (their pause holding the game) scaling is the
+        // app's: it still scales.
+        headset.set_settings(true);
+        let effects = play(&mut headset, "scale-out", Context::Walk);
+        carry(effects.outs, &mut Ignored, &mut scaling);
+        assert!((scaling.scale - 0.8).abs() < 0.05, "{}", scaling.scale);
+    }
 }
 
 /// What carries a headset's effects out on a host: the command layer and

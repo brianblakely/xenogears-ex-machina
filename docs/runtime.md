@@ -3177,8 +3177,35 @@ reports the frames run):
 `field_view.angle`), the walkmesh (`FieldComponents`: per-layer
 triangles with neighbours and attributes over SVECTOR vertices) and the
 event actors. A screen point picks the floor the camera ray meets on the
-player's layer (`pick`); routes plan over the triangles the player may
-enter (an attribute blocks by the actor's flags, bit 23 blocks layer 0, a
+player's layer (`pick`). Hosts point at their picture: when it shows the
+scene from another viewpoint than the game camera's (wider views' zoom
+out pulls the camera back along its axis), `GameView::viewpoint` gives
+it (the view's rows and offset in the game camera's view space, its
+projection distance and centre, in display pixels from the display's
+corner), and `xem_assist::overlay::seen` sees the field's camera from it
+(`Camera::seen`: the view composed with the camera, its depth sheared
+into x and y where the picture's centre is not the screen's), so that a
+pinch, a tap or a click picks the floor and the actors the picture shows
+where it points, and floor marks lie where it shows that floor (desktop
+and Android's taps and clicks, OpenXR and both browser paths).
+First-person inspection's look has a viewpoint too, but the hosts pass
+no field while it shows (nothing is approached from within the scene).
+An agent's `navigate {screen}` is the game camera's screen. Tests:
+xem-core's `a_camera_seen_from_another_view_projects_and_picks_as_its_picture_shows`
+(pulled back about another centre, and turned within the scene), xem-render's
+`a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from`
+(a synthetic field at 250%: floor points show on the floor's colour where
+the viewpoint places them and its rays meet them, where the game camera's
+projection shows no floor; from within the scene, the floor and a wall
+where the look's viewpoint places them) and xem-headless's
+`pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there`
+(field 30 at 250%: the camera 6 915 units back, a floor point shown 46
+pixels from where the game camera puts it; a pinch there walks to it and
+arrives, the cursor and the destination's mark lying there; pointed
+through the game camera instead, the walk heads 125 units away).
+
+Routes plan over the triangles the player may enter (an attribute
+blocks by the actor's flags, bit 23 blocks layer 0, a
 higher bit-22 ledge needs a jump), string-pulled a body's width off the
 walls; a goal on mesh cut off by a gap within 300 units gets a takeoff at
 the nearest edge. `xem_core::assist` plays a route as the pad: the D-pad's
@@ -3270,10 +3297,12 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   begins and kept through closure, firing on closure from an open hand
   (no hold or cooldown; reopening rearms; a fist found closed fires
   nothing; the other hand's simultaneous grab coalesces); whole-hand
-  pinches (two of them scale, owning both hands until both open); prayer
-  hands (open aligned palms near-touching, once until they part). A
-  closing hand emits no pinch or thumb event, nor does a pinch held
-  through a grab once the grab ends.
+  pinches (two of them scale, owning both hands until both open, the
+  frame they let go on included); prayer hands (open aligned palms
+  near-touching, once until they part). A closing hand emits no pinch or
+  thumb event, nor does a pinch held through a grab or a scaling once it
+  ends, and the runtime's pinch or thumb events during a scaling (a
+  runtime may take gathered fingertips for a pinch) are the scaling's.
 - **Resolution** (`xem_assist::dispatch`, table in its documentation):
   walking, a pinch walks to the floor under the pointer (`navigate`, if
   reachable), a tap approaches and talks to the actor under it
@@ -3368,18 +3397,48 @@ pinches through the dialogue and opens and leaves the menu with the
 pointer's MENU and BACK keys. `xem_assist::reliability` measures the
 plan's own recognizers on the hand model under per-joint jitter (2 mm),
 tremor (2 mm), varied speed, size (±10%) and turn (±20°) (`cargo run -p
-xem-assist --example reliability`, 1000 tries each): grabs and prayer
-100%, latency within a frame of the closing pose; 30 minutes of idle play
-(relaxed, curling, reaching, turning hands) fire nothing; 200 pause grabs
-a twelfth of a second apart toggle 200 times; a hand lost mid-grab and
-found closed toggles nothing; every one-hand gesture works with either
-hand alone. The standard gestures' reliability is the runtime's. The XR
-game smoke plays scripted gestures in OpenXR (`--xr-hands`: Pause,
-prayer hands, a pinch on the panel's Close, a pinch that walks) and logs
-the hand gestures the runtime offers; the browser's
-`tests/xr-hands.test.mjs` drives IWER's hands (grabs, prayer, lost
-tracking, a standard pinch that counts once and the pointer it makes)
-and controllers (the trigger on the panel's Close).
+xem-assist --example reliability`, 1000 tries each): grabs, prayer and
+two-hand scaling spreading to twice the hands' distance and contracting to
+half 100%, latency within a frame of the closing (or gathering) pose; 30
+minutes of idle play (relaxed, curling, reaching, turning hands) fire
+nothing; 200 pause grabs a twelfth of a second apart toggle 200 times; a
+hand lost mid-grab and found closed toggles nothing; every one-hand
+gesture works with either hand alone. The standard gestures' reliability
+is the runtime's. The scripted gestures (`xem_assist::synthetic::gesture`,
+which `--xr-hands` names) cover the contract's cases: `pause` and
+`inspect` with either hand (`-left`), `pause-both` (both hands closing
+in the same frames: one toggle), `grab-sideways` (neither), `fist-turn`
+(a fist closed sideways turned palm down and palm up: nothing),
+`fist-reacquire` (lost while closing, found closed: the loss, no grab),
+`scale-out`, `scale-in` and `scale-pinch` (two whole-hand pinches
+spreading from 15 to 30 cm and contracting back, the last with the
+runtime's pinch reported from the gather to a frame after the release:
+nothing but the scale); unit tests read each as the contract says in
+front of a turned head, and the headset core's test finds a scaling with
+the gaze on walkable floor walking nowhere, pausing nothing, the screen
+held between 0.4 and 3 times its width and a factor after the scaling's
+end changing nothing. The XR game smoke plays scripted gestures in OpenXR
+(`--xr-hands`: Pause, prayer hands, a pinch on the panel's Close, a pinch
+that walks) and logs the hand gestures the runtime offers; the browser's
+`tests/xr-hands.test.mjs` drives IWER's hands over the module fixture
+(either hand's overhand grab pausing and resuming, both hands' together
+once; either hand's underhand grab counted as inspection's, a sideways
+grab, a fist turned while closed and a hand found closed toggling
+nothing; the head moved and turned during the player's Pause and during
+the settings' pause, the session drawing on, the views following it and
+the game's frames standing still; prayer; lost tracking; a standard
+pinch that counts once and the pointer it makes; two whole-hand pinches
+(a gathered hand's pose) spreading from 30 to 60 cm and contracting back
+with IWER's pinch held, the screen twice as wide and back, no pinch
+counted, no grab as they let go into fists, the game running on and the
+pointer's keys keeping their 0.22 m and staying beside the screen's edge)
+and controllers (the trigger on the panel's Close, found where the
+session says the panel stands). A browser's `status().xr.counts` counts
+each kind of gesture recognised (pauses, inspections, settings, scalings
+begun, pinches, taps, swipes, hands lost), `.keys` gives the keys beside
+the screen (centre and width) and `.panel` where the panel stands; IWER
+draws a hand's joints toward its pinch pose by the pinch's value, so the
+test makes that pose the gathered hand's while it scales.
 
 The game-level harness also covers every field map whose scripts read the
 pad (84, from `events.py --buttons`): its event reports the map and those

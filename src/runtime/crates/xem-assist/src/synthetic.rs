@@ -160,21 +160,70 @@ impl Step {
 /// The steps of a named gesture with the right hand (the left open):
 /// `pause` (an overhand grab), `inspect` (underhand), `pinch`, `tap`,
 /// `swipe-up`, `swipe-down`, `swipe-left`, `swipe-right`; `prayer` with
-/// both, `lose` (both hands untracked for a while).
+/// both, `lose` (both hands untracked for a while). The grabs' other cases:
+/// `pause-left` and `inspect-left` (the left hand's, the right resting
+/// open), `pause-both` (both hands closing together in the same frames:
+/// one toggle), `grab-sideways` (the palm sideways: neither), `fist-turn`
+/// (a fist closed sideways, a handshake's grip, turned palm down, back,
+/// palm up and back before it opens: nothing) and `fist-reacquire` (the
+/// right hand lost while it closes and found again closed: its tracking
+/// lost, no grab). Two-hand scaling: `scale-out` (two whole-hand pinches
+/// spreading from 15 to 30 cm apart, then let go), `scale-in` (contracting
+/// from 30 to 15 cm) and `scale-pinch` (`scale-out` with the runtime's
+/// pinch reported on both hands from the gather until a frame after they
+/// let go, as a runtime may take gathered fingertips for one: nothing but
+/// the scale).
 pub fn gesture(name: &str) -> Option<Frames> {
     // The left hand rests open beside the right's gestures.
-    let place_both = |p: [Vec3; JOINTS]| -> Hands {
-        [Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0))), Some(place(p, Quat::IDENTITY, Vec3::new(0.12, 0.0, 0.0)))]
-    };
+    let rest_left = || Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0)));
+    let place_right = |p: [Vec3; JOINTS]| Some(place(p, Quat::IDENTITY, Vec3::new(0.12, 0.0, 0.0)));
+    let place_both = |p: [Vec3; JOINTS]| -> Hands { [rest_left(), place_right(p)] };
     let right = |poses: &[[Vec3; JOINTS]]| -> Frames { poses.iter().map(|p| Step::of(place_both(*p))).collect() };
+    // The left hand doing the right's poses (mirrored), the right resting open.
+    let left_hand = |poses: &[[Vec3; JOINTS]]| -> Frames {
+        poses.iter().map(|p| Step::of([place_right(*p).map(left), place_right(open())])).collect()
+    };
     // A thumb gesture's poses, the runtime's event on the lifting one.
     let micro = |poses: &[[Vec3; JOINTS]], at: usize, event: Micro| -> Frames {
         poses.iter().enumerate().map(|(i, p)| Step { hands: place_both(*p), pinch: [false; 2], micro: [None, (i == at).then_some(event)] }).collect()
     };
     let up = Quat::from_rotation_z(std::f32::consts::PI);
+    let roll = |degrees: f32, p: [Vec3; JOINTS]| place(p, Quat::from_rotation_z(degrees.to_radians()), Vec3::ZERO);
+    let grab = [open(), open(), half(), fist(), fist(), open(), open()];
+    let underhand = [open(), open(), half(), fist(), fist(), open()].map(|p| place(p, up, Vec3::new(0.0, 0.05, 0.0)));
+    // Both hands `apart` metres between their wrists, each in its pose.
+    let apart = |distance: f32, l: [Vec3; JOINTS], r: [Vec3; JOINTS]| -> Hands {
+        [Some(place(left(l), Quat::IDENTITY, Vec3::new(-distance / 2.0, 0.0, 0.0))), Some(place(r, Quat::IDENTITY, Vec3::new(distance / 2.0, 0.0, 0.0)))]
+    };
+    // Two whole-hand pinches gathered `from` apart, moved to `to` in five
+    // steps and let go there (the hands opening), with `pinched` the
+    // runtime's pinch on both hands from the gather to a frame after.
+    let scale = |from: f32, to: f32, pinched: bool| -> Frames {
+        let gathered = (0..=5).map(|i| from + (to - from) * i as f32 / 5.0);
+        std::iter::repeat_n(apart(from, open(), open()), 2)
+            .chain(std::iter::once(apart(from, whole_pinch(), whole_pinch())))
+            .chain(gathered.map(|d| apart(d, whole_pinch(), whole_pinch())))
+            .chain(std::iter::once(apart(to, whole_pinch(), whole_pinch())))
+            .chain(std::iter::repeat_n(apart(to, open(), open()), 2))
+            .enumerate()
+            .map(|(i, hands)| Step { hands, pinch: [pinched && (2..=10).contains(&i); 2], micro: [None; 2] })
+            .collect()
+    };
     Some(match name {
-        "pause" => right(&[open(), open(), half(), fist(), fist(), open(), open()]),
-        "inspect" => right(&[open(), open(), half(), fist(), fist(), open()].map(|p| place(p, up, Vec3::new(0.0, 0.05, 0.0)))),
+        "pause" => right(&grab),
+        "inspect" => right(&underhand),
+        "pause-left" => left_hand(&grab),
+        "inspect-left" => left_hand(&underhand),
+        "pause-both" => grab.iter().map(|p| Step::of([place_right(*p).map(left), place_right(*p)])).collect(),
+        "grab-sideways" => right(&grab.map(|p| roll(90.0, p))),
+        "fist-turn" => right(&[open(), roll(90.0, half()), roll(90.0, fist()), roll(45.0, fist()), fist(), fist(), roll(45.0, fist()),
+            roll(90.0, fist()), roll(135.0, fist()), roll(180.0, fist()), roll(180.0, fist()), roll(135.0, fist()), roll(90.0, fist()),
+            roll(90.0, open()), open()]),
+        "fist-reacquire" => [place_both(open()), place_both(half()), [rest_left(), None], [rest_left(), None], [rest_left(), None],
+            place_both(fist()), place_both(fist()), place_both(fist()), place_both(open()), place_both(open())].map(Step::of).to_vec(),
+        "scale-out" => scale(0.15, 0.3, false),
+        "scale-in" => scale(0.3, 0.15, false),
+        "scale-pinch" => scale(0.15, 0.3, true),
         "pinch" => [open(), open(), pinch(), pinch(), pinch(), open(), open()].iter().enumerate()
             .map(|(i, p)| Step { hands: place_both(*p), pinch: [false, (2..5).contains(&i)], micro: [None; 2] }).collect(),
         "tap" => micro(&[relaxed(), relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed(), relaxed()], 4, Micro::Tap),
@@ -235,6 +284,31 @@ mod tests {
         ] {
             let steps: Vec<Step> = opened().into_iter().chain(gesture(name).unwrap()).collect();
             assert_eq!(run(&steps, head, Runtime::HORIZON), [expected], "{name}");
+        }
+    }
+
+    #[test]
+    fn the_grabs_other_hands_and_turns_and_the_scaling_scripts_read_as_the_contract_says() {
+        let head = (Vec3::new(-0.2, 1.5, 0.3), Quat::from_rotation_y(-0.9) * Quat::from_rotation_x(-0.3));
+        let seen = |name: &str| {
+            let steps: Vec<Step> = opened().into_iter().chain(gesture(name).unwrap()).collect();
+            run(&steps, head, Runtime::HORIZON)
+        };
+        assert_eq!(seen("pause-left"), [Gesture::Pause { hand: Hand::Left }]);
+        assert_eq!(seen("inspect-left"), [Gesture::Inspect { hand: Hand::Left }]);
+        let both = seen("pause-both");
+        assert!(matches!(both[..], [Gesture::Pause { .. }]), "both hands closing together toggle once: {both:?}");
+        assert_eq!(seen("grab-sideways"), [], "a sideways grab is neither");
+        assert_eq!(seen("fist-turn"), [], "a closed fist turning through palm down and up fires nothing");
+        assert_eq!(seen("fist-reacquire"), [Gesture::TrackingLost { hand: Hand::Right }], "a hand found closed fires no grab");
+        for (name, reached) in [("scale-out", 2.0), ("scale-in", 0.5), ("scale-pinch", 2.0)] {
+            let gestures = seen(name);
+            let factors: Vec<f32> = gestures.iter().filter_map(|g| match g { Gesture::Scale { factor } => Some(*factor), _ => None }).collect();
+            assert_eq!(gestures.first(), Some(&Gesture::ScaleBegin), "{name}: {gestures:?}");
+            assert_eq!(gestures.last(), Some(&Gesture::ScaleEnd), "{name}: {gestures:?}");
+            assert_eq!(gestures.len(), factors.len() + 2, "{name}: nothing but the scale (the runtime's pinch included): {gestures:?}");
+            let last = *factors.last().unwrap();
+            assert!((last / reached - 1.0).abs() < 0.05, "{name}: scaled by {last}");
         }
     }
 

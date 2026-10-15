@@ -649,6 +649,105 @@ fn a_view_from_within_the_scene_shows_its_picture_and_clips_what_reaches_behind_
     assert_eq!(at(&inside, 320, 200), [0, 0, 0], "above its far end, nothing");
 }
 
+/// [`FIELD`] with its floor and wall as the field's own scenery (the world,
+/// as a map is drawn), the level camera's record, the depth it looks at
+/// (1200) and the sprite as the controlled character (its eye record at
+/// its feet), two frames of it presented flat on a desktop at twice the
+/// original under `graphics` (a scene's first frame forgets the depth
+/// recorded before it began), first-person inspection on with
+/// `first_person`: the viewpoint the picture shows the scene from, the
+/// picture and its scale.
+fn shown_from(gpu: &Gpu, graphics: xem_settings::Graphics, first_person: bool) -> (Option<xem_render::ps1::Viewpoint>, Vec<u8>, f32) {
+    let frame = |gpu: &mut xem_gpu::Gpu| {
+        let mut faces = FIELD;
+        faces[0].class = 0;
+        faces[1].class = 0;
+        gte_frame(gpu, LEVEL, &faces, true);
+        let focus = Projection { sz: 1200, ..projection(FEET, 4, 0) };
+        gpu.trace_projections(0, &[projection(FEET, 7, SPRITE), focus], &[], &[]);
+    };
+    let traces = traced(frame);
+    let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+    view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 480), view.max_scale()));
+    let _ = view.take_restart();
+    view.set_first_person(first_person);
+    let present = |view: &mut GameView, now: f64| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let size = view.present(&mut encoder, &DISPLAY, "field:1", now).expect("a picture").size;
+        gpu.queue.submit([encoder.finish()]);
+        size
+    };
+    for trace in [&traces.0, &traces.1] {
+        view.push(trace.clone());
+    }
+    present(&mut view, 0.0);
+    view.push(DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        frame(&mut device);
+        device.take_trace()
+    }));
+    let size = present(&mut view, 0.1);
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
+    (view.viewpoint(), pixels, size.0 as f32 / 320.0)
+}
+
+/// Where `viewpoint` shows the view-space point `v` (picture pixels), and
+/// the ray through a picture pixel (origin, direction in view space).
+fn shows(viewpoint: &xem_render::ps1::Viewpoint, v: [f32; 3]) -> (f32, f32) {
+    let q: [f32; 3] = std::array::from_fn(|r| (0..3).map(|k| viewpoint.rows[r][k] * v[k]).sum::<f32>() + viewpoint.offset[r]);
+    (viewpoint.centre.0 + viewpoint.h * q[0] / q[2], viewpoint.centre.1 + viewpoint.h * q[1] / q[2])
+}
+
+fn ray(viewpoint: &xem_render::ps1::Viewpoint, (x, y): (f32, f32)) -> ([f32; 3], [f32; 3]) {
+    let local = [(x - viewpoint.centre.0) / viewpoint.h, (y - viewpoint.centre.1) / viewpoint.h, 1.0];
+    let back = |v: [f32; 3]| -> [f32; 3] { std::array::from_fn(|i| (0..3).map(|r| viewpoint.rows[r][i] * v[r]).sum()) };
+    let offset = viewpoint.offset;
+    (back([-offset[0], -offset[1], -offset[2]]), back(local))
+}
+
+/// The colour of the picture at picture point `at` (`scale` pixels each).
+fn colour_at(pixels: &[u8], scale: f32, (x, y): (f32, f32)) -> [u8; 3] {
+    let (px, py) = ((x * scale) as usize, (y * scale) as usize);
+    let i = (py * (320.0 * scale) as usize + px) * 4;
+    [pixels[i], pixels[i + 1], pixels[i + 2]]
+}
+
+#[test]
+fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let green = [0, 255, 0];
+    // The game camera's own picture: no other viewpoint.
+    assert_eq!(shown_from(&gpu, xem_settings::Graphics::default(), false).0, None, "the game camera's own");
+    // Pulled back by wider views' zoom out at 250%: from 1.5 times the
+    // depth the camera looks at (1200, its record's) further back.
+    let (viewpoint, pixels, scale) = shown_from(&gpu, xem_settings::Graphics { zoom_out: 250, ..Default::default() }, false);
+    let viewpoint = viewpoint.expect("pulled back");
+    assert_eq!((viewpoint.offset, viewpoint.h, viewpoint.centre), ([0.0, 0.0, 1800.0], 256.0, (160.0, 120.0)));
+    // Floor points (the level camera's view space is the world's), where
+    // the picture shows the floor and its ray meets it, where the game's own
+    // projection would put them below the floor the picture shows (its
+    // floor 10 lines tall, from 134 to 143).
+    for floor in [[200.0, 200.0, 1000.0], [-250.0, 200.0, 600.0], [120.0, 200.0, 1100.0], [-150.0, 200.0, 1300.0]] {
+        let at = shows(&viewpoint, floor);
+        assert_eq!(colour_at(&pixels, scale, at), green, "the floor at {floor:?} shows at {at:?}");
+        let (origin, direction) = ray(&viewpoint, at);
+        let t = (floor[1] - origin[1]) / direction[1];
+        let met: [f32; 3] = std::array::from_fn(|i| origin[i] + direction[i] * t);
+        assert!((0..3).all(|i| (met[i] - floor[i]).abs() < 0.5), "the ray through {at:?} meets the floor at {met:?}");
+        let game = (160.0 + 256.0 * floor[0] / floor[2], 120.0 + 256.0 * floor[1] / floor[2]);
+        assert_ne!(colour_at(&pixels, scale, game), green, "the game camera's {game:?} for {floor:?} is below the floor shown");
+    }
+    // Looking from within the scene: from the character's eye (0.9 of its
+    // sprite's 100 above its feet), along the camera's heading.
+    let (viewpoint, pixels, scale) = shown_from(&gpu, xem_settings::Graphics::default(), true);
+    let viewpoint = viewpoint.expect("looking from within");
+    assert_eq!(viewpoint.offset, [0.0, -110.0, -1000.0], "{viewpoint:?}");
+    for (point, colour) in [([60.0, 200.0, 1300.0], green), ([-150.0, 200.0, 1700.0], green), ([50.0, 100.0, 1500.0], [255, 0, 0])] {
+        let at = shows(&viewpoint, point);
+        assert_eq!(colour_at(&pixels, scale, at), colour, "{point:?} shows at {at:?}");
+    }
+}
+
 #[test]
 fn interface_pixels_bypass_the_effects() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
