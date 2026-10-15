@@ -805,6 +805,18 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     assert_eq!(ui.component().get_selected_section(), 4, "and Time");
     at(&mut ui, 347.0, 395.0);
     assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::SaveState), AppRequest::Action(AppAction::LoadState), toggle]);
+    // Its held run's ray: Time's Hold to rewind, held, then the panel
+    // hidden mid-hold (xr_play lets go of its pointer then).
+    requests.borrow_mut().clear();
+    let hold = LogicalPosition::new(355.0, 325.0);
+    ui.dispatch(WindowEvent::PointerMoved { position: hold });
+    ui.dispatch(WindowEvent::PointerPressed { position: hold, button: PointerEventButton::Left });
+    std::thread::sleep(std::time::Duration::from_millis(400));
+    ui.update().unwrap();
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true)], "the headset smoke's ray holds rewind");
+    ui.cancel_pointer();
+    ui.update().unwrap();
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true), AppRequest::UiRewind(false)], "and the panel hidden lets it go");
 
     // android-smoke.sh's taps on its 1080x2400 screen, where the panel
     // (1064x1470 at 2.625, with the game disc's card) is at 8,465: Time,

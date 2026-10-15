@@ -2897,13 +2897,29 @@ Headset class (Low tier, depth of field off unless enabled).
   hash Save state did, that `xem-headless` restores the state file the
   panel wrote to that RAM, that fast-forward ran the game at 0.8 to 1.1 of
   60 frames a second times the factor the session paced it at (the 10×
-  setting is paced at what the 20 Hz loop's 12 ms batches reach: 329
-  frames a second at a mean factor of 5.64, 0.97 of it, in a smoke run
-  here on lavapipe; 232 at 4.17, 0.93 of it, in a trial run of the same
-  scenario under other builds' load), 60.0
+  setting is paced at what the 20 Hz loop's 12 ms batches reach, which
+  follows the machine's other load: in smoke runs here on lavapipe 566
+  frames a second at a mean factor of 9.56 with little other load, 329
+  at 5.64, and 205 at 3.51 beside another track's test suite, each 0.97
+  to 0.99 of it), 60.0
   frames a second once the chord turned it off, and that Back+LT held for
   two seconds rewound (game frame 2895 back to 2102) under the HUD's
-  rewind icon, the game playing on after.
+  rewind icon, the game playing on after. Its held run (the same state)
+  opens Settings with Back+Start at headset frame 200 and holds Back+LT
+  from 205 to 211, then points the right controller's ray at the panel
+  (`--xr-pad N:BUTTONS@panel:X/Y`, the entry's R1 its trigger: Monado's
+  simulated controllers press nothing and point where no test chooses), clicks
+  Time, holds its Hold to rewind from 230, and closes Settings with
+  Back+Start at 245 while the trigger still holds it, letting go at 270.
+  It checks that both rewinds go on through Settings' pause (the panel
+  shown, the game not paused, its frames going back under the HUD's
+  rewind icon), that Settings hold the game again once Back+LT is let
+  go, and that closing them lets go of Hold to rewind in that frame
+  (`UiRewind(false)` at 245), the game playing on behind the closed
+  panel with the trigger still held (in a run here Back+LT rewound game
+  frame 1306 to 1194 and Hold to rewind 1194 to 1014, and the game ran
+  on to 1086 by headset frame 269; with that release removed it went on
+  rewinding behind the closed panel until its history ran out).
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs
@@ -2952,18 +2968,23 @@ Headset class (Low tier, depth of field off unless enabled).
   unformatted as there) to its end in the session: the game formats card
   2 and saves to it, and IndexedDB holds that card (formatted, the save in
   its first block, equal to the session's image) while the session runs,
-  the canvas's loop never having run. It then clicks the panel's Saves
+  the canvas's loop never having run (the session keeps rewind history,
+  as the player's play does). It then clicks the panel's Saves
   and Save state with the right controller's ray and trigger (the state
   in IndexedDB, its checksum verified, the HUD's "State saved", the game
   held by Settings' pause), turns fast-forward on with Back+RT (the right
   stick's click with the right grip; inspection not toggled) and checks
   the game's rate against 1× at the factor the session paces it at
-  (above 1.2, and the rate 0.7 to 1.3 of 1× times it: on IWER's software
-  WebGL here 45.1 frames a second at 1× and 66.2 at a mean factor of
-  1.70, 0.86 of it; 30.4 and 45.9 at 1.40 in an earlier run under other
-  tracks' heavier load), turns it off with
-  Time's Stop fast-forward, loads the state by the ray (the saved RAM
-  again) and has Export state backup refused in the session.
+  (above 1.2, and the rate 0.7 to 1.3 of 1× times it: in runs on IWER's
+  software WebGL here 38.1 frames a second at 1× and 66.4 at a mean
+  factor of 1.73, 1.01 of it; 56.4 and 79.6 at 1.55, 0.91 of it; and
+  30.0 and 46.8 at 1.50, 1.04 of it, under other tracks' load), turns it off with
+  Time's Stop fast-forward, holds Back+LT (the right stick's click with
+  the left grip) with the panel still shown, which rewinds through
+  Settings' pause under the HUD's rewind icon (game frame 11 809 back to
+  11 507 here) and, let go, leaves the game held by Settings again,
+  loads the state by the ray (the saved RAM again) and has Export state
+  backup refused in the session.
 
 In a field both toggle first-person inspection with the underhand grab
 and the controllers' Back (the right stick's click) released alone, where
@@ -3522,7 +3543,11 @@ include their requests and cancellations so replay reaches the same game pause.
 
 Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release
 (also Settings → Time's Hold to rewind, held: a headset's settings pause
-holds the game while the panel shows, but not a held rewind).
+holds the game while the panel shows, but not a held rewind, whose HUD
+icon shows over the panel too). However the panel closes, and when the
+window or a headset session loses focus, it lets go of what its pointer
+held (`SettingsUi::cancel_pointer`): a Hold to rewind the pointer still
+holds ends then, not on a release the hidden panel never sees.
 Every 250 ms (`REWIND_STEP_MS`) a held rewind takes the newest state before
 the game's frame off the queue and plays on from it until the display shows
 a frame both built and drawn after it (its third change of buffers: the
@@ -3756,27 +3781,34 @@ failure chip. Every host's save states and time controls:
 session's state turns it to Stop fast-forward, and the points the headset
 and Android smokes press, at their panels' sizes and with a running
 game's status texts, reach Saves, Time, Save state, Load state, the
-fast-forward button and a held Hold to rewind);
+fast-forward button and a held Hold to rewind, the headset smoke's let
+go by `cancel_pointer`, as a closing panel lets it go);
 `src/runtime/scripts/xr-game-smoke.sh`'s saves run (OpenXR on Monado:
 the panel's Save state and Load state by pinches, Start fast-forward,
 the Back+RT and Back+LT chords from scripted buttons, an agent's
-`--control` command; [Headsets](#headsets)); `web/tests/xr-game.test.mjs`'s
+`--control` command) and held run (Back+LT and the panel's Hold to
+rewind under a scripted controller ray's trigger, both through Settings'
+pause, and Settings closed mid-hold letting go of it; [Headsets](#headsets));
+`web/tests/xr-game.test.mjs`'s
 saves test (WebXR on IWER: the game's own save to card 2 in IndexedDB
 during the session, Save state and Load state by a controller's ray,
-Back+RT, Stop fast-forward, a picker refused); `android-smoke.sh`'s
+Back+RT, Stop fast-forward, Back+LT through Settings' pause under the
+HUD's rewind icon, a picker refused); `android-smoke.sh`'s
 Settings by touch on the emulator (Stop and Start fast-forward, Hold to
 rewind, Save state and Load state; [Android host](#android-host)).
 
 Not done or not measured: in a headset the panel's Hold to rewind holds
 only under an OpenXR controller's held trigger (a pinch or WebXR's
 `select` is a click, which starts and ends it at once), so players with
-hands alone have no rewind there; no test holds it (Monado's simulated
-controllers press nothing, and the scripted buttons are the gamepad's);
+hands alone have no rewind there; only a scripted ray and trigger hold
+it in a test (Monado's simulated controllers press nothing and point
+where no test chooses);
 the Android host's headset loop with its files directory as the state
 directory has not run (the emulator has no OpenXR runtime); fast-forward
 in a headset reaches what the host's batches reach, not the setting's
-10× (a 20 Hz Monado loop here 4 to 6×, IWER's software WebGL 1.4 to
-1.7×); the Android emulator draws frames with the panel over the game
+10× (a 20 Hz Monado loop here 3.5 to 9.6× as the machine's other load
+varied, IWER's software WebGL 1.4 to 1.7×); the Android emulator draws
+frames with the panel over the game
 at about two a second, so its Hold to rewind went back only 6 and 9
 vblanks in two runs' two-second holds (its history then holds states a
 few frames apart). An open file's later blocks' directory frames are
@@ -5458,8 +5490,11 @@ In `nix develop path:./nix/runtime#android`:
   written), and Start fast-forward again (`fast_forward=true` in the
   `frame rendered` lines once the panel hides). The emulator's software
   Vulkan draws frames with the panel shown at about two a second (30
-  without it), and the game runs at most two frames a drawn one, so the
-  section waits on those lines rather than on frames. `XEM_SMOKE_GAME_ONLY=1` skips the
+  without it), and a drawn frame runs only about three game frames (the
+  host's one batch: at most four at 1×, its catch-up, within 12 ms; the
+  `fps` lines of two passing runs here gave 2.8 to 3.2 at 1× and 3.9 to
+  4.6 under fast-forward), so the section waits on those lines rather
+  than on frames. `XEM_SMOKE_GAME_ONLY=1` skips the
   synthetic-disc and lifecycle sections. The game module must be built first
   (`python3 tools/game_module.py --stubs` in the default shell).
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the

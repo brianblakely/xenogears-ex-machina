@@ -41,7 +41,12 @@
 #   xem-headless restores to the RAM the save left, and the load's RAM the
 #   save's), Time's Start fast-forward (the game near the rate the session
 #   paces it at) and the controllers' chords from scripted buttons: Back+RT
-#   turns it off (60 frames a second again), Back+LT held rewinds.
+#   turns it off (60 frames a second again), Back+LT held rewinds;
+# - held rewinds go on through Settings' pause under the HUD's icon (Back+LT,
+#   and the panel's Hold to rewind under a scripted controller ray's
+#   trigger), Settings hold the game again once a rewind is let go, and
+#   Settings closed with the trigger still held let go of Hold to rewind
+#   (the game plays on behind the closed panel).
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -171,6 +176,16 @@ printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     --xr-pad "350:Back+RT,352:none,460:Back+LT,500:none" >"$out/saves.log" 2>"$out/saves.err"
 printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/state.xemstate" |
     "$headless" --disc "$disc" --control >"$out/saves-headless.log" 2>"$out/saves-headless.err"
+# Held rewinds through Settings' pause, from the same state: Back+Start
+# opens Settings at headset frame 200 and Back+LT is held from 205 to 211;
+# then the right controller's ray (scripted: Monado's controllers point
+# where no test chooses) clicks Time (256,98) at 220 and holds its
+# Hold to rewind (355,325) with the trigger (R1) from 230, Back+Start
+# closes Settings at 245 with the trigger still held, and it lets go at 270.
+printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
+    "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
+    --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
+    >"$out/held.log" 2>"$out/held.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -615,6 +630,49 @@ check(int(by[555]["game_frames"]) > after + 60, "the game did not play on after 
 check([o[2] for o in operations("Rewind(true)") + operations("Rewind(false)")] == ["ok", "ok"], "the rewind chord's requests")
 print(f"saves: saved and loaded at vblank {saved[0]} (RAM {saved[1]}, the state file's too), results shown {len(shown)} frames; "
       f"1x {rate:.1f} frames a second after the chord; rewound from game frame {before} to {after}")
+
+# Held rewinds through Settings' pause: each rewind request with the
+# headset frame it ran in (its app line comes before that frame's line).
+rows = records("held.log")
+by = {int(r["n"]): r for r in rows}
+def gf(n):
+    return int(by[n]["game_frames"])
+rewinds, last = [], -1
+for line in open(f"{out}/held.log"):
+    if line.startswith("xrframe "):
+        last = int(line.split()[1].split("=", 1)[1])
+    m = re.match(r"app (\w*Rewind)\((true|false)\) game_vblank=\d+ memory_hash [0-9a-f]{16} (ok|error)", line)
+    if m:
+        rewinds.append((last + 1, m.group(1), m.group(2), m.group(3)))
+check([r[1:] for r in rewinds] == [("Rewind", "true", "ok"), ("Rewind", "false", "ok"), ("UiRewind", "true", "ok"), ("UiRewind", "false", "ok")],
+      f"the held run's rewinds: {rewinds}")
+if len(rewinds) == 4:
+    (chord_on, *_), (chord_off, *_), (held_on, *_), (held_off, *_) = rewinds
+    # Back+LT with Settings shown rewinds through their pause under the
+    # HUD's icon; let go, they hold the game again.
+    during = [by[n] for n in range(chord_on, chord_off)]
+    check((chord_on, chord_off) == (205, 211) and all(r["layers"] == "2" and r["paused"] == "0" for r in during)
+          and any("rewind" in r["hud"].split(",") for r in during) and gf(chord_off - 1) < gf(chord_on - 1),
+          f"Back+LT with Settings shown, frames {chord_on}-{chord_off}: game frame {gf(chord_on - 1)} to {gf(chord_off - 1)}, "
+          f"layers/paused/hud {[(r['layers'], r['paused'], r['hud']) for r in during]}")
+    held = [by[n] for n in range(chord_off, 220)]
+    check(all(r["paused"] == "1" for r in held) and len({r["game_frames"] for r in held}) == 1,
+          "Settings did not hold the game again once Back+LT was let go")
+    # The panel's Hold to rewind under the ray's trigger, the same.
+    during = [by[n] for n in range(held_on, 245)]
+    check(230 <= held_on < 240 and all(r["layers"] == "2" and r["paused"] == "0" for r in during)
+          and any("rewind" in r["hud"].split(",") for r in during) and gf(244) < gf(held_on - 1),
+          f"Hold to rewind from headset frame {held_on}: game frame {gf(held_on - 1)} to {gf(244)}, "
+          f"layers/paused/hud {[(r['layers'], r['paused'], r['hud']) for r in during]}")
+    # Settings closed with the trigger still held let go of it then: the
+    # game plays on, not rewinding behind the closed panel.
+    hidden = range(245, 270)
+    check(held_off == 245 and all(by[n]["layers"] == "1" for n in hidden)
+          and all(gf(n + 1) >= gf(n) for n in hidden) and gf(269) > gf(245) + 30,
+          f"Settings closed at 245 let go of Hold to rewind at headset frame {held_off}; then game frames {[gf(n) for n in hidden]}")
+    print(f"held: Back+LT with Settings shown rewound game frame {gf(chord_on - 1)} to {gf(chord_off - 1)}; Hold to rewind "
+          f"from headset frame {held_on} rewound {gf(held_on - 1)} to {gf(244)}; Settings closed at 245 let it go, the game on "
+          f"to {gf(269)} by 269 with the trigger still held")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

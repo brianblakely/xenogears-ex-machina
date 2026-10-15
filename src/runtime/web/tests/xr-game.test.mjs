@@ -22,8 +22,9 @@
 // the session: the game's own save to card 2 (the slice's save route, its
 // last frames played in the headset) reaches IndexedDB during the session,
 // the panel's Save state and Load state by a controller's ray, fast-forward
-// by the controllers' Back+RT and off by the panel's button, and the
-// backups' pickers refused.
+// by the controllers' Back+RT and off by the panel's button, Back+LT
+// rewinding through Settings' pause under the HUD's icon, and the backups'
+// pickers refused.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -438,7 +439,8 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
       await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
-      await page.evaluate(() => window.xem.boot());
+      // With rewind history, as the player's own play has it.
+      await page.evaluate(() => window.xem.boot({ rewind: true }));
       await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))),
         readFileSync(state).toString('base64'));
       assert.equal((await status(page)).session.frames, FROM);
@@ -550,6 +552,27 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await pull(TIME);
       await pull(FAST_FORWARD);
       assert.equal((await status(page)).session.fast_forward, false, 'the panel\'s Stop fast-forward turned it off');
+
+      // Back+LT (the right stick's click with the left grip) held with the
+      // panel shown rewinds through Settings' pause under the HUD's icon;
+      // let go, Settings hold the game again.
+      const chord = (on) => page.evaluate((on) => {
+        window.xrDevice.controllers.right.updateButtonValue('thumbstick', on);
+        window.xrDevice.controllers.left.updateButtonValue('squeeze', on);
+      }, on);
+      const ahead = (await status(page)).session.frames;
+      await chord(1);
+      await page.waitForFunction(() => window.xem.status().renderer.hud?.rewinding, null, { timeout: 30_000 });
+      await page.waitForFunction((ahead) => window.xem.status().session.frames < ahead - 30, ahead, { timeout: 30_000 });
+      await chord(0);
+      await frames(5);
+      const rewound = (await status(page)).session.frames;
+      await frames(20);
+      info = await status(page);
+      console.log(`Back+LT with Settings shown rewound game frame ${ahead} to ${rewound}`);
+      assert.equal(info.session.frames, rewound, 'Settings hold the game again once Back+LT is let go');
+      assert.equal(info.renderer.hud.rewinding, false, 'and the HUD\'s rewind icon goes');
+      assert.equal(info.renderer.panelVisible, true, 'Settings showed throughout');
       await pull(SAVES);
       await pull(LOAD_STATE);
       await page.waitForFunction(() => window.xem.status().renderer.hud?.notice === 'State loaded', null, { timeout: 30_000 });

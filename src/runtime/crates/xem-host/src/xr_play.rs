@@ -187,6 +187,12 @@ fn screen_pose(seat: &Seat, distance: f32) -> Mat4 {
     Mat4::from_rotation_translation(pose.orientation, pose.position)
 }
 
+/// The settings panel's logical pixel (x, y) in LOCAL.
+fn panel_point(panel: &PanelPlacement, (x, y): (f32, f32)) -> Vec3 {
+    let (u, v) = (x / PANEL_LOGICAL.0, y / PANEL_LOGICAL.1);
+    panel.pose.position + panel.pose.orientation * Vec3::new((u - 0.5) * panel.size.0, (0.5 - v) * panel.size.1, 0.0)
+}
+
 /// An eye as the renderer looks through it from within the scene: its pose
 /// as the seat sees it (whose -Z faces the screen) and its field of view's
 /// tangents.
@@ -267,8 +273,11 @@ pub struct XrPlay {
     /// Scripted controller buttons for runtimes whose controllers have
     /// none to press (headset frame, the gamepad's buttons as bits in
     /// [`gamepad`]'s order, `xem_settings::controls::PAD_NAMES`): held from that
-    /// frame until the next entry's, beside the controllers' own.
-    pub pad: Vec<(u64, u16)>,
+    /// frame until the next entry's, beside the controllers' own. With a
+    /// settings panel's logical pixel, the right controller points from
+    /// the head at it for as long, its trigger (select) the entry's R1
+    /// (Monado's simulated controllers point where no test chooses).
+    pub pad: Vec<(u64, u16, Option<(f32, f32)>)>,
     /// Where Save state keeps its state and Import BIOS its image (the
     /// Android host's files directory); without one, beside the settings,
     /// as in the window.
@@ -340,6 +349,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     // How often the runtime moved LOCAL and the player recentred.
     let (mut resets, mut recenters) = (0u32, 0u32);
     let mut pointer = PanelPointer::default();
+    // Whether the panel showed in the last frame.
+    let mut panel_shown = options.show_settings;
     let mut menu_held = false;
     let mut player = xem_settings::player::PlayerInput::default();
     // First-person inspection's toggle on the controllers (their Back), its
@@ -391,7 +402,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if frame.views_valid {
             tracked_eyes = Some(eyes.each_ref().map(|eye| headset_eye(eye, &assist.seat)));
         }
-        let input = frame.input.clone();
+        let mut input = frame.input.clone();
         let head = frame.head;
         let period = frame.predicted_display_period.as_nanos();
         let display_time = frame.predicted_display_time.as_nanos();
@@ -406,19 +417,33 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             PanelPlacement { pose: Pose { position: quad.pose.position, orientation: quad.pose.orientation }, size: quad.size }
         };
 
+        // The scripted controller input of this frame: a ray at a panel
+        // pixel is the right controller's, pulled by the entry's R1.
+        let script = options.pad.iter().filter(|(at, ..)| *at <= frames).last();
+        if let (Some(&(_, buttons, Some(pixel))), Some(head)) = (script, head) {
+            let right = &mut input.hands[1];
+            right.active = true;
+            right.aim = Some(Pose { position: head.position, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, (panel_point(&panel, pixel) - head.position).normalize()) });
+            right.select = buttons & (1 << 5) != 0;
+            right.trigger = f32::from(u8::from(right.select));
+        }
         // The controllers as the gamepad (with the scripted buttons), as
         // they are: the app's chords take theirs from it before the game has
         // the rest, as in the window, from the frame the session has the
-        // input (losing it lets go of a held rewind).
+        // input (losing it lets go of a held rewind, and of what the panel's
+        // pointer held, as the window losing focus does).
         let focused = session.state() == xem_xr::SessionState::FOCUSED;
         let (mut pressed, axes) = gamepad(&input);
-        if let Some((_, buttons)) = options.pad.iter().filter(|(at, _)| *at <= frames).last() {
+        if let Some((_, buttons, _)) = script {
             for (i, button) in pressed.iter_mut().enumerate() {
                 *button |= u8::from(buttons & (1 << i) != 0);
             }
         }
         if focused != app_input.focused() {
             requests.borrow_mut().extend(app_input.set_focused(focused));
+            if !focused {
+                ui.cancel_pointer();
+            }
         }
         let settings_chord = app_input.pad(&pressed);
         // The panel: left menu (or Back+Start) toggles it; while it shows,
@@ -426,9 +451,6 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if (input.hands[0].menu && !menu_held) || settings_chord {
             let visible = !*panel_visible.borrow();
             *panel_visible.borrow_mut() = visible;
-            if !visible {
-                ui.cancel_dialog();
-            }
         }
         menu_held = input.hands[0].menu;
         // Agents' commands (`--control`), between the game's frames.
@@ -441,9 +463,6 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                     Some("panel") => {
                         if let Some(visible) = command.get("visible").and_then(serde_json::Value::as_bool) {
                             *panel_visible.borrow_mut() = visible;
-                            if !visible {
-                                ui.cancel_dialog();
-                            }
                         }
                         serde_json::json!({ "visible": *panel_visible.borrow() })
                     }
@@ -484,10 +503,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
             if let (Some(aim), Some(screen), Some(head)) = (scripted_aim, last_screen, head) {
                 let target = match aim {
-                    ScriptedAim::Panel((x, y)) => {
-                        let (u, v) = (x / PANEL_LOGICAL.0, y / PANEL_LOGICAL.1);
-                        Some(panel.pose.position + panel.pose.orientation * Vec3::new((u - 0.5) * panel.size.0, (0.5 - v) * panel.size.1, 0.0))
-                    }
+                    ScriptedAim::Panel(pixel) => Some(panel_point(&panel, pixel)),
                     ScriptedAim::Screen(at) => Some(screen.point(at)),
                     // Where the diorama shows that point (none while it does not).
                     ScriptedAim::World(point) => screen.diorama.map(|space| space.room_from_world.transform_point3(point)),
@@ -514,14 +530,19 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let current = settings.borrow().settings().clone();
             let open = assist.update(&current, &assisted_input, &screen, &mut game, &mut player, &mut view, *panel_visible.borrow());
             requests.borrow_mut().append(&mut assist.requests);
-            if open != *panel_visible.borrow() {
-                *panel_visible.borrow_mut() = open;
-                if !open {
-                    ui.cancel_dialog();
-                }
-            }
+            *panel_visible.borrow_mut() = open;
         }
         let visible = *panel_visible.borrow();
+        // However it closed (the menu button or Back+Start, prayer hands,
+        // its Close, an agent's `panel`), the panel lets go of what its
+        // pointer held, whose release it no longer sees (Hold to rewind
+        // under a controller's trigger), and of its quit confirmation, as
+        // the window's does.
+        if panel_shown && !visible {
+            ui.cancel_pointer();
+            ui.cancel_dialog();
+        }
+        panel_shown = visible;
         if visible {
             if input.hands[1].active && assisted_input.hands.iter().all(Option::is_none) {
                 pointer.update(&ui, &panel, panel_px, &input.hands[1]);

@@ -39,8 +39,9 @@ struct Options {
     /// Headset tests: Recenter at these headset frames, as the app action does.
     xr_recenter_at: Vec<u64>,
     /// Headset tests: scripted controller buttons (headset frame, the
-    /// gamepad's buttons as `xem_settings::controls::PAD_NAMES` bits).
-    xr_pad: Vec<(u64, u16)>,
+    /// gamepad's buttons as `xem_settings::controls::PAD_NAMES` bits, the
+    /// settings panel's logical pixel the right controller points at).
+    xr_pad: Vec<(u64, u16, Option<(f32, f32)>)>,
     /// Agents' commands on stdin while the game plays (`--control`).
     control: bool,
 }
@@ -121,21 +122,29 @@ fn options() -> Result<Options, String> {
                 let value = args.next().ok_or("--xr-pad needs FRAME:BUTTONS,...")?;
                 for item in value.split(',') {
                     let (at, names) = item.split_once(':').ok_or("--xr-pad needs FRAME:BUTTONS,...")?;
+                    // `BUTTONS@panel:X/Y` points the right controller at the panel's logical pixel too.
+                    let (names, pixel) = match names.split_once("@panel:") {
+                        Some((names, pixel)) => {
+                            let parsed = pixel.split_once('/').and_then(|(x, y)| x.parse().ok().zip(y.parse().ok()));
+                            (names, Some(parsed.ok_or_else(|| format!("bad --xr-pad panel pixel {pixel:?} (X/Y)"))?))
+                        }
+                        None => (names, None),
+                    };
                     let mut buttons = 0u16;
                     for name in names.split('+').filter(|name| *name != "none") {
                         let bit = xem_settings::controls::PAD_NAMES.iter().position(|n| *n == name)
                             .ok_or_else(|| format!("unknown button {name} (buttons: {})", xem_settings::controls::PAD_NAMES.join(", ")))?;
                         buttons |= 1 << bit;
                     }
-                    options.xr_pad.push((at.parse().map_err(|_| "bad --xr-pad frame")?, buttons));
+                    options.xr_pad.push((at.parse().map_err(|_| "bad --xr-pad frame")?, buttons, pixel));
                 }
-                options.xr_pad.sort_by_key(|(at, _)| *at);
+                options.xr_pad.sort_by_key(|(at, ..)| *at);
             }
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
                      [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] \
-                     [--xr-pad N:BUTTONS,...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
+                     [--xr-pad N:BUTTONS[@panel:X/Y],...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
                      --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
@@ -151,7 +160,8 @@ fn options() -> Result<Options, String> {
                      for tests without hand tracking; --xr-recenter-at recenters the view at those headset frames \
                      (as the panel's Recenter does); \
                      --xr-pad holds the gamepad's BUTTONS (South, East, West, North, L1, R1, LT, RT, Back, Start \
-                     joined by +, or none) from headset frame N to the next entry, for tests without controller buttons; \
+                     joined by +, or none) from headset frame N to the next entry, for tests without controller buttons \
+                     (@panel:X/Y also points the right controller at the panel's logical pixel, R1 its trigger); \
                      --xr-capture-at saves both eyes at those headset frames (looking from within the scene, \
                      each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \

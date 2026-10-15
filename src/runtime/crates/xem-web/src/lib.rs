@@ -730,6 +730,14 @@ impl XemApp {
         on
     }
 
+    /// Whether a headset holds the game still: the player's Pause, or
+    /// settings' own pause, which a held rewind goes on through (a chord
+    /// while the panel shows).
+    fn xr_paused(&self) -> bool {
+        let pauses = &self.headset.pauses;
+        self.xr_input.is_some() && (pauses.player || (pauses.settings && !self.rewind_held.iter().any(|held| *held)))
+    }
+
     /// The game frames due since the last step (see [`XemApp::frame`]).
     fn step(&mut self, now: f64) -> Result<(), JsValue> {
         self.sync_time_controls()?;
@@ -738,12 +746,9 @@ impl XemApp {
         let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
         let bindings = self.settings.borrow().settings().game_bindings.clone();
         let inspecting = self.look(&bindings, field, now);
-        // The player's Pause in a headset (or settings' own pause there,
-        // which a held rewind goes on through: a chord while the panel
-        // shows): time stands still, nothing to catch up afterwards.
-        let rewinding = self.rewind_held.iter().any(|held| *held);
-        let paused = self.headset.pauses.player || (self.headset.pauses.settings && !rewinding);
-        if paused && self.xr_input.is_some() {
+        // Paused in a headset: time stands still, nothing to catch up
+        // afterwards.
+        if self.xr_paused() {
             self.hud_forward = None;
             self.hud_rewind = None;
             // The panel's own Close still closes it (and its pause).
@@ -911,7 +916,8 @@ impl XemApp {
     fn take_game_frame(&mut self, headset: bool) {
         let now = now_ms();
         let held = self.rewind_held.iter().any(|held| *held);
-        let active = self.running && !(self.headset.pauses.paused() && self.xr_input.is_some());
+        // What `step` runs: a held rewind through settings' pause too.
+        let active = self.running && !self.xr_paused();
         let forward = active && !held && self.session.as_ref().is_some_and(|s| s.fast_forward && s.stopped.is_none())
             && self.hud_forward.is_some_and(|at| now - at < 150.0);
         let rewind = active && held && self.hud_rewind.is_some_and(|at| now - at < xem_core::rewind::REWIND_STEP_MS as f64 + 100.0);
