@@ -406,14 +406,19 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let head = frame.head;
         let period = frame.predicted_display_period.as_nanos();
         let display_time = frame.predicted_display_time.as_nanos();
-        // The settings panel: below the screen, or above the diorama's table
-        // (which the Original renderer never shows).
-        let table = match xr_view(&settings.borrow().settings().graphics) {
-            XrView::Diorama(table) => Some(table),
-            XrView::Screen => None,
-        };
+        // The settings panel: below the screen (as large as two-hand scaling
+        // makes it, in the last picture's shape), off it, or above the
+        // diorama's table (which the Original renderer never shows).
         let panel = {
-            let quad = xem_assist::draw::panel(&assist.seat, table.as_ref(), panel_px.1 as f32 / panel_px.0 as f32);
+            let graphics = settings.borrow().settings().graphics;
+            let width = f32::from(graphics.xr.width_cm) / 100.0 * assist.scaling.scale;
+            let screen = (width, width * presented_size.1 as f32 / presented_size.0 as f32);
+            let distance = f32::from(graphics.xr.distance_cm) / 100.0;
+            let aspect = panel_px.1 as f32 / panel_px.0 as f32;
+            let quad = match xr_view(&graphics) {
+                XrView::Diorama(table) => xem_assist::draw::panel(&assist.seat, xem_assist::draw::Beside::Table(&table), aspect),
+                XrView::Screen => xem_assist::draw::panel(&assist.seat, xem_assist::draw::Beside::Screen { size: screen, distance }, aspect),
+            };
             PanelPlacement { pose: Pose { position: quad.pose.position, orientation: quad.pose.orientation }, size: quad.size }
         };
 
@@ -774,7 +779,20 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         };
         last_screen = Some(screen);
         let style = Assisted::style(&current);
-        let marks: Vec<(wgpu::TextureView, Mat4, Vec2)> = assist.placed(&current, &assisted_input, &screen, &mut game, view.viewpoint()).into_iter()
+        let placed = assist.placed(&current, &assisted_input, &screen, &mut game, view.viewpoint());
+        // The keys beside the screen (the frame log's): how many, the widest
+        // and narrowest (metres), and the nearest and farthest a key's inner
+        // edge stands from the screen's edge beside it.
+        let keys = {
+            let inverse = screen.quad.pose.orientation.inverse();
+            let (widths, gaps): (Vec<f32>, Vec<f32>) = placed.iter().filter(|p| matches!(p.widget, xem_render::glass::Widget::Key(..))).map(|p| {
+                let local = inverse * (p.pose.w_axis.truncate() - screen.quad.pose.position);
+                (p.size.x, local.x.abs() - screen.quad.size.0 / 2.0 - p.size.x / 2.0)
+            }).unzip();
+            let range = |v: &[f32]| format!("{:.4}-{:.4}", v.iter().copied().fold(f32::MAX, f32::min), v.iter().copied().fold(f32::MIN, f32::max));
+            if widths.is_empty() { "-".to_string() } else { format!("{}:{}:{}", widths.len(), range(&widths), range(&gaps)) }
+        };
+        let marks: Vec<(wgpu::TextureView, Mat4, Vec2)> = placed.into_iter()
             .map(|placed| (assist.texture(&gpu, &placed.widget, style), placed.pose, placed.size))
             .collect();
 
@@ -937,8 +955,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // Fast-forward's factor as the session runs it (a fixed rate the
         // host cannot reach is paced at the rate it does), 0 when off.
         let factor = if fast_forward { game.session.frame_factor().map_or("uncapped".to_string(), |f| f.to_string()) } else { "0".to_string() };
+        // Where the settings panel stands (its middle, in LOCAL).
+        let panel_at = format!("{:.3},{:.3},{:.3}", panel.pose.position.x, panel.pose.position.y, panel.pose.position.z);
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),

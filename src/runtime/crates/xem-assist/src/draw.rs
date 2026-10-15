@@ -71,29 +71,46 @@ pub fn pane_hud(space: &DioramaSpace, hud_px: (u32, u32), scale_factor: f32) -> 
     (place(size), size)
 }
 
-/// The settings panel's width (metres) below a headset's screen, and where
-/// it stands there from the seat: 1.1 m ahead and 0.75 m down, tilted 25
-/// degrees towards the player.
+/// The settings panel's width (metres) below a headset's screen, how far
+/// its middle stands from the seat, and how far (degrees, as seen from the
+/// seat) its top edge's middle stands below the screen's lower edge.
 pub const PANEL_WIDTH: f32 = 0.55;
-const PANEL_AT: Vec3 = Vec3::new(0.0, -0.75, -1.1);
-const PANEL_TILT_DEG: f32 = -25.0;
+const PANEL_DISTANCE: f32 = 1.33;
+const PANEL_GAP_DEG: f32 = 4.0;
+
+/// What a headset's settings panel stands beside: the screen (its size,
+/// metres, as two-hand scaling has made it, and how far ahead of the seat
+/// it stands) or the diorama's table.
+#[derive(Clone, Copy, Debug)]
+pub enum Beside<'a> {
+    Screen { size: (f32, f32), distance: f32 },
+    Table(&'a Table),
+}
 
 /// Where a headset's settings panel stands in front of `seat`, `aspect` its
-/// height over its width: below the screen, tilted towards the player; with
-/// the diorama as the view (`table`), where the diorama's pane floats, its
+/// height over its width: below the screen, facing the seat from
+/// `PANEL_DISTANCE`, its top edge `PANEL_GAP_DEG` below the screen's
+/// lower edge as seen from the seat, so that it stays off the screen
+/// whatever the screen's shape, size and scale (the larger the screen, the
+/// lower the panel, its lower edge at most straight down); with the
+/// diorama as the view (`table`), where the diorama's pane floats, its
 /// lower edge above the table's volume (over the pane while it shows: the
 /// game is paused), as large as seen from the seat as below the screen.
-pub fn panel(seat: &Seat, table: Option<&Table>, aspect: f32) -> Quad {
-    match table {
-        None => {
-            let local = Pose { position: PANEL_AT, orientation: Quat::from_rotation_x(PANEL_TILT_DEG.to_radians()) };
-            Quad { pose: seat.place(local), size: (PANEL_WIDTH, PANEL_WIDTH * aspect) }
+pub fn panel(seat: &Seat, beside: Beside, aspect: f32) -> Quad {
+    match beside {
+        Beside::Screen { size, distance } => {
+            let height = PANEL_WIDTH * aspect;
+            let half = (height / 2.0 / PANEL_DISTANCE).atan();
+            let edge = (size.1 / 2.0 / distance.max(0.01)).atan();
+            let down = (edge + PANEL_GAP_DEG.to_radians() + half).min(std::f32::consts::FRAC_PI_2 - half);
+            let local = Pose { position: Vec3::new(0.0, -down.sin(), -down.cos()) * PANEL_DISTANCE, orientation: Quat::from_rotation_x(-down) };
+            Quad { pose: seat.place(local), size: (PANEL_WIDTH, height) }
         }
-        Some(table) => {
+        Beside::Table(table) => {
             // As wide, seen from the seat at its middle, as below the screen
             // (its middle rises with its size: a few steps settle it).
             let above = table.above(seat.pose);
-            let seen = PANEL_WIDTH / PANEL_AT.length();
+            let seen = PANEL_WIDTH / PANEL_DISTANCE;
             let centre = |width: f32| above * Mat4::from_translation(Vec3::new(0.0, width * aspect / 2.0, 0.0));
             let mut width = seen * above.w_axis.truncate().distance(seat.position());
             for _ in 0..4 {
@@ -329,9 +346,9 @@ mod tests {
                             // Everything beside the pane, laid out at this scale.
                             let beside: Vec<Quad> = side_keys(&pane, 10).into_iter().chain(pad_keys(&pane, 10)).map(|(_, key)| key).chain([hud]).collect();
                             sizes.push(((n, height, distance, tilt), scale, beside, pane.quad));
-                            let panel = panel(&Seat { pose: seat }, Some(&table), 1.27);
+                            let panel = panel(&Seat { pose: seat }, Beside::Table(&table), 1.27);
                             assert!(outside(&panel, table_from_room), "{case}: the panel");
-                            let below_screen = panel_width_seen(&super::panel(&Seat { pose: seat }, None, 1.27), at);
+                            let below_screen = panel_width_seen(&super::panel(&Seat { pose: seat }, Beside::Screen { size: (3.0, 2.1), distance: 2.5 }, 1.27), at);
                             assert!((panel_width_seen(&panel, at) / below_screen - 1.0).abs() < 0.01, "{case}: the panel as large as below the screen");
                         }
                     }
@@ -377,5 +394,91 @@ mod tests {
         assert!(top.normalize().dot(Vec3::NEG_Z) > 0.999, "its top away from the seat: {top}");
         // Without a diorama a floor mark has nowhere to lie.
         assert!(room(&marks, &Screen { diorama: None, ..pane }, &[], &[]).is_empty());
+    }
+
+    /// The corners of `quad` in the room, in order round it.
+    fn round(quad: &Quad) -> [Vec3; 4] {
+        let (right, up) = (quad.pose.orientation * Vec3::X * quad.size.0 / 2.0, quad.pose.orientation * Vec3::Y * quad.size.1 / 2.0);
+        [right + up, right - up, -right - up, -right + up].map(|d| quad.pose.position + d)
+    }
+
+    /// How far apart (radians) two quads look from `eye`: the widest gap a
+    /// plane through the eye and an edge of either leaves between them (a
+    /// gap between two convex shapes seen from a point is one such plane's),
+    /// negative where they overlap.
+    fn apart(eye: Vec3, a: &Quad, b: &Quad) -> f32 {
+        let towards = |quad: &Quad| round(quad).map(|p| (p - eye).normalize());
+        let (a, b) = (towards(a), towards(b));
+        let mut widest = f32::NEG_INFINITY;
+        for (own, other) in [(a, b), (b, a)] {
+            for i in 0..4 {
+                let normal = own[i].cross(own[(i + 1) % 4]).normalize();
+                // The side of the edge's plane the quad itself lies on.
+                let side = own[(i + 2) % 4].dot(normal).signum();
+                let gap = other.iter().map(|d| -d.dot(normal) * side).fold(f32::INFINITY, f32::min);
+                widest = widest.max(gap.clamp(-1.0, 1.0).asin());
+            }
+        }
+        widest
+    }
+
+    #[test]
+    fn the_settings_panel_and_the_keys_stay_off_the_screen_at_every_scale_and_shape() {
+        // The screen as both hosts place it in front of the seat (the
+        // default 3 m wide 2.5 m ahead; 2 m wide; 4 m wide 3 m ahead), two-hand
+        // scaling from 0.4 to 3 times its width, its height from the
+        // picture's shape (320x224, wider framing's 398x224, 320x240 and
+        // 320x216), from two seats; OpenXR's panel (880x1120) and the
+        // browser's (640x560); columns of 1 to 10 keys beside each edge.
+        let seats = [Seat::default(), Seat { pose: Mat4::from_rotation_translation(Quat::from_rotation_y(-0.7), Vec3::new(0.2, 0.1, 0.3)) }];
+        let degree = 1f32.to_radians();
+        let (mut panel_gap, mut key_gap, mut lowest) = (f32::MAX, f32::MAX, 0.0f32);
+        for seat in &seats {
+            let eye = seat.position();
+            let forward = seat.orientation() * Vec3::NEG_Z;
+            for (width, distance) in [(3.0, 2.5), (2.0, 2.5), (4.0, 3.0)] {
+                for tenths in 4..=30 {
+                    let scale = tenths as f32 / 10.0;
+                    for (w, h) in [(320.0, 224.0), (398.0, 224.0), (320.0, 240.0), (320.0, 216.0)] {
+                        let size = (width * scale, width * scale * h / w);
+                        let at = seat.place(Pose { position: Vec3::new(0.0, 0.0, -distance), orientation: Quat::IDENTITY });
+                        let screen = Screen::flat(Quad { pose: at, size }, (w, h), 0.0);
+                        let case = format!("a {width} m screen {distance} m ahead at {scale}, {w}x{h}");
+                        for aspect in [1120.0 / 880.0, 560.0 / 640.0] {
+                            let panel = panel(seat, Beside::Screen { size, distance }, aspect);
+                            // In front of the seat, facing it, as large as ever.
+                            let towards = panel.pose.position - eye;
+                            assert!(towards.dot(forward) > 0.0 && (towards.length() - PANEL_DISTANCE).abs() < 1e-4, "{case}: {panel:?}");
+                            assert!((panel.pose.orientation * Vec3::Z).dot(-towards.normalize()) > 0.9999, "{case}: the panel faces the seat");
+                            let gap = apart(eye, &panel, &screen.quad);
+                            assert!(gap > 2.0 * degree, "{case}: the panel {:.2} degrees off the screen", gap.to_degrees());
+                            panel_gap = panel_gap.min(gap);
+                            lowest = lowest.max(-(towards.normalize().y.asin()));
+                            for count in 1..=10 {
+                                for (_, key) in side_keys(&screen, count).iter().chain(pad_keys(&screen, count).iter()) {
+                                    assert_eq!(key.size, KEY_SIZE, "{case}: the keys keep their size");
+                                    // Beside the screen in its plane (its 4 cm gap
+                                    // narrows with distance), and well off the panel.
+                                    let (off_screen, off_panel) = (apart(eye, key, &screen.quad), apart(eye, key, &panel));
+                                    assert!(off_screen > 0.0 && off_panel > degree, "{case}: {count} keys, one {:.2} degrees off the screen and {:.2} off the panel",
+                                        off_screen.to_degrees(), off_panel.to_degrees());
+                                    key_gap = key_gap.min(off_screen);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        eprintln!("the panel at least {:.1} degrees below the screen, its middle at most {:.1} below level; the keys at least {:.2} degrees beside the screen",
+            panel_gap.to_degrees(), lowest.to_degrees(), key_gap.to_degrees());
+        // The old place (0.75 m down, 1.1 m ahead, tilted 25 degrees) covered
+        // the default screen's lower edge, where the dialogue windows stand.
+        let old = Quad {
+            pose: Pose { position: Vec3::new(0.0, -0.75, -1.1), orientation: Quat::from_rotation_x(-25f32.to_radians()) },
+            size: (PANEL_WIDTH, PANEL_WIDTH * 1120.0 / 880.0),
+        };
+        let screen = Quad { pose: Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY }, size: (3.0, 2.1) };
+        assert!(apart(Vec3::ZERO, &old, &screen) < 0.0, "the old place overlapped the screen");
     }
 }

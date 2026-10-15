@@ -6,7 +6,9 @@
 // flat screen in each view; head tracking continues while the game is
 // paused (and with it the Binaural mode's listener, the music's stage
 // turning with the head, or staying put and heard against it with
-// head-tracked music); leaving returns to the canvas; and the game's RAM
+// head-tracked music); with the head turned away the player's Recenter and
+// then IWER's own recentring (its reference space's `reset`) each put the
+// screen in front again; leaving returns to the canvas; and the game's RAM
 // after the same frames is the same in and out of the headset. First-person
 // inspection (field 30, IWER's tracked hands): the underhand grab looks from
 // within the scene through each view, a head turn changes the view while the
@@ -159,6 +161,40 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const [stage, againstHead] = [await look(AHEAD), await look(RIGHT)];
       assert.ok(turnedBy(stage, againstHead, -90), `head-tracked music stays put, heard a quarter to the left: ${JSON.stringify([stage, againstHead])}`);
       console.log(`music parts: ${still.length} turning with the head, ${stage.length} staying put`);
+
+      // Recentring the screen view: the head moved and turned a quarter to
+      // the right leaves the screen out of both views; the player's
+      // Recenter puts the seat at the head, facing its way, and the screen
+      // in front of it again; the runtime's own recentring (IWER's: the
+      // head levelled to the space's -Z, its reference space's `reset`)
+      // puts the seat back at the space's origin, the screen in front.
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      const centres = async () => {
+        await frames(6);
+        const p = await page.evaluate(([w, h]) => window.xem.xr.readback([[Math.floor(w / 4), Math.floor(h / 2)], [Math.floor(3 * w / 4), Math.floor(h / 2)]]), layer);
+        return [p.slice(0, 4), p.slice(4, 8)];
+      };
+      await page.evaluate(() => { window.xrDevice.position.set(0.2, 1.6, 0.1); window.xrDevice.quaternion.set(0, -Math.SQRT1_2, 0, Math.SQRT1_2); });
+      const away = await centres();
+      assert.ok(away.every(backdrop), `turned away, the screen is out of view: ${away}`);
+      const turnedViewer = (await status(page)).page.xr.viewer;
+      await page.evaluate(() => window.xem.appOperation({ Action: 'Recenter' }));
+      const recentred = await centres();
+      let seated = (await status(page)).xr;
+      assert.equal(seated.recenters, 1, 'one Recenter');
+      assert.ok(Math.abs(seated.seat.yaw + Math.PI / 2) < 1e-3, `the seat faces the head's way: ${JSON.stringify(seated.seat)}`);
+      assert.ok(Math.hypot(...seated.seat.position.map((v, i) => v - turnedViewer[i])) < 0.01, `the seat at the head: ${JSON.stringify(seated.seat)} for ${turnedViewer}`);
+      assert.ok(!backdrop(recentred[0]) || !backdrop(recentred[1]), `recentred, the screen is in front: ${recentred}`);
+      await page.evaluate(() => window.xrDevice.recenter());
+      const reset = await centres();
+      seated = (await status(page)).xr;
+      assert.equal(seated.resets, 1, 'the reference space reset reached the app');
+      assert.ok(Math.abs(seated.seat.yaw) < 1e-6 && seated.seat.position.every((v) => Math.abs(v) < 1e-6), `the seat at the origin: ${JSON.stringify(seated.seat)}`);
+      assert.ok(!backdrop(reset[0]) || !backdrop(reset[1]), `after the runtime's recentring the screen is in front: ${reset}`);
+      console.log(`recentring: turned away ${away}, Recenter ${recentred} (seat ${JSON.stringify((await status(page)).xr.seat)}), reset ${reset}`);
 
       // Leaving returns to the canvas (the emulator's overlay covers the
       // page's button while a session runs).

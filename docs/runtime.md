@@ -2944,7 +2944,13 @@ Headset class (Low tier, depth of field off unless enabled).
   panel with the trigger still held (in a run here Back+LT rewound game
   frame 1306 to 1194 and Hold to rewind 1194 to 1014, and the game ran
   on to 1086 by headset frame 269; with that release removed it went on
-  rewinding behind the closed panel until its history ran out).
+  rewinding behind the closed panel until its history ran out). Its
+  qualification runs (either hand's grabs and two-hand scaling in field
+  30, a scene tour, the world map's recentring and the battles) are in
+  [Headset qualification](#headset-qualification); the `xrframe` line's
+  `keys=` gives the keys beside the screen (how many, their widths and how
+  far each stands beside the screen's edge) and `panel=` where the
+  settings panel's middle stands.
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs
@@ -2956,7 +2962,11 @@ Headset class (Low tier, depth of field off unless enabled).
   pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
-  exit, and an unchanged RAM hash; its movie test shows the title movie
+  recentring on the screen (the head moved and turned a quarter away, both
+  views' centres the room's; the player's Recenter puts the seat at the
+  head, facing its way, and IWER's own recentring, its `local` space's
+  `reset`, at the origin, the screen in front after each), exit, and an
+  unchanged RAM hash; its movie test shows the title movie
   rebuilt in the headset and the device's own under Original, the screen
   without wider framing's sides (`status().xr.screen`)
   ([Movies](#movies)); its inspection test (field 30) toggles
@@ -2991,8 +3001,9 @@ Headset class (Low tier, depth of field off unless enabled).
   each hand's target ray and its 25 joints to the headset core
   ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)),
   whose Pause and settings hold the game's clock; the settings panel is a
-  quad below the screen in the session (0.55 m wide, tilted toward the
-  player; above the table with the diorama as the view) that takes the
+  quad below the screen in the session (0.55 m wide, off the screen at
+  every scale as OpenXR's: [Headset qualification](#headset-qualification);
+  above the table with the diorama as the view) that takes the
   pointer source's ray with a pinch, or a
   controller's ray with its trigger (`select`). The button reads Enter VR
   or Exit VR; a hidden session (the browser's own menu) or its end lets go
@@ -3452,7 +3463,9 @@ the gaze on walkable floor walking nowhere, pausing nothing, the screen
 held between 0.4 and 3 times its width and a factor after the scaling's
 end changing nothing. The XR game smoke plays scripted gestures in OpenXR
 (`--xr-hands`: Pause, prayer hands, a pinch on the panel's Close, a pinch
-that walks) and logs the hand gestures the runtime offers; the browser's
+that walks, and every case above in its hands run: [Headset
+qualification](#headset-qualification)) and logs the hand gestures the
+runtime offers; the browser's
 `tests/xr-hands.test.mjs` drives IWER's hands over the module fixture
 (either hand's overhand grab pausing and resuming, both hands' together
 once; either hand's underhand grab counted as inspection's, a sideways
@@ -3494,6 +3507,70 @@ grabs and prayer still hold at 100% with no idle activation. Nothing
 needs a held pose, dwell or raised arm, and the decks keep hands low. A
 device's own noise, its eye tracking, its standard pinch and
 microgestures need that device, and people's comfort needs people.
+
+### Headset qualification
+
+What the headset contract asks of both headset hosts and what shows that
+it holds, on emulated headsets: Monado's simulated HMD (null compositor,
+lavapipe) with scripted hands for OpenXR (`xr-game-smoke.sh`, whose
+`xrframe` lines and eye captures it checks), IWER's Quest 3 with its
+tracked hands for WebXR (`web/tests/xr-hands.test.mjs` over the module
+fixture, `xr-game.test.mjs` on the game), and the shared code's tests.
+
+| The contract | OpenXR (Monado) | WebXR (IWER) | Shared code |
+| --- | --- | --- | --- |
+| Either hand's grabs | field 30: the left hand's Pause grab pauses and resumes, both hands' together toggle once, the right hand's resumes | each hand's grab alone, both hands' once (`status().xr.counts`) | `synthetic`'s scripts read as the contract says before a turned head; `reliability`: either hand alone, 100% |
+| Grabs that toggle nothing | a sideways grab, a fist turned palm down and up while closed, a hand found closed (its loss pauses) | the same three, counted | the same scripts; 30 minutes of idle play fire nothing |
+| Two-hand scaling owns both hands | to 2.02 times, back to 1 and to 2.02 again (the runtime's pinch held through the last): only the scaling's gestures, no pause or walk, the game running on, the keys unchanged; a pinch after it walks | to twice the width and back with IWER's pinch held: no pinch counted, no grab as the hands close, the game running on, the keys 0.22 m wide beside the screen's edge | `gesture`: the runtime's pinch and thumb during a scaling, its release frame included, are the scaling's; `headset`: no walk or pause, 0.4 to 3 times, ending at the scale reached |
+| Paused head tracking | the player's Pause and Settings' own: a head pose of its own on most frames, the left eye changing (over 2% of it), one game frame (measured: 60 poses in 60 frames and 30 in 30, 17.5% and 16.6% of the eye) | the head moved and turned under both: the views and the viewer follow it, the game's frames stand still | |
+| Settings panel and keys off the screen | the panel's middle (`panel=`) lower beside the scaled screen (measured: 0.869 m below the seat, 1.128 m at 2.02 times); the keys (`keys=`) unchanged while it scales, the world map deck's as many, as wide and as far beside the edge at every scale | the pointer's keys 0.22 m wide beside the scaled screen's edge (`status().xr.keys`); the panel's Close found where `status().xr.panel` says it stands | `draw`'s layout test (below) |
+| Recentring the screen view | the app's Recenter puts the seat at the head; `monado-ctl -c` (`ReferenceSpaceChangePending` for LOCAL) puts it back at LOCAL's origin; the screen in front of both eyes after each | the player's Recenter with the head moved and turned away; IWER's `recenter()` and its space's `reset`; the screen in front after each | `a_moved_reference_cancels_gestures_lets_the_stick_go_ends_scaling_and_resets_the_seat` (`headset::reference_changed`) |
+| A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
+| First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
+| Pinches pick what is shown | the pinch on the scaled screen walks to the floor the gaze is on | the diorama's pinch through the table heads for the floor point gazed at ([In a headset](#in-a-headset)) | `Camera::seen` through `GameView::viewpoint`; field 30 pulled back at 250%, the pinch walks to the floor shown ([Assisted movement](#assisted-movement)) |
+
+The settings panel stands below the screen (`draw::panel` with
+`Beside::Screen`, both hosts giving the screen's size as scaled and its
+distance): its middle 1.33 m from the seat (as far as its old place, so
+as large), facing the seat, its top edge's middle 4 degrees below the
+screen's lower edge as seen from the seat; the larger the screen, the
+lower the panel, its lower edge at most straight down. Its old place
+(0.75 m down, 1.1 m ahead, tilted 25 degrees) covered the default screen's
+lower edge, where the dialogue windows stand, and more of any screen
+scaled larger.
+
+Tests: the runs and tests in the table, and `draw`'s
+`the_settings_panel_and_the_keys_stay_off_the_screen_at_every_scale_and_shape`,
+which lays out three screens (3 m wide 2.5 m ahead, 2 m wide, 4 m wide
+3 m ahead) at 0.4 to 3 times their width in four picture shapes (320x224,
+398x224, 320x240, 320x216) from two seats, with OpenXR's panel (880x1120)
+and the browser's (640x560) and 1 to 10 keys beside each edge: the panel
+stands at least 3.9 degrees off the screen as seen from the seat (its
+middle at most 75.1 degrees below level), and the keys keep their size,
+stand beside the screen (at least 0.15 degrees off it) and more than a
+degree off the panel; the old place overlaps the default screen. The
+tour's pictures were read for this qualification: both eyes of each
+OpenXR capture (the screen in front with the game's picture on it, the
+field and its dialogue from within the scene) and IWER's
+`build/web-test/xr-tour-*.png`. They showed the title screen (field 490)
+turning inspection on, the first look from within replaying the last
+field's eyes and the world map deck's THROTTLE label running off its key;
+all three are fixed and tested ([First-person
+inspection](#first-person-inspection), the glass's labels above).
+
+Not done or not measured: comfort (no people tests). Monado's simulated
+headset tracks no hands, so OpenXR's hand cases are scripted
+(`--xr-hands`), and its `xrframe` line lists each frame's gestures rather
+than counting them. While first-person inspection shows, the hosts pass
+no field to the pointer (nothing is approached from within the scene), so
+its viewpoint is tested but picks nothing. A screen whose lower edge
+stands more than about 57 degrees below the seat's level (66 for the
+browser's shorter panel), as the settings' largest screens at their
+nearest allow (Graphics' headset width and distance run from 0.5 to
+20 m), leaves no room under it: the panel stops with its lower edge
+straight down and overlaps the screen. With the diorama as the view the
+panel stands over the pane while it shows, the game paused ([In a
+headset](#in-a-headset)).
 
 ## Crates
 

@@ -36,15 +36,18 @@ pub struct Overlay {
 }
 
 /// The settings panel's place in a headset (as the OpenXR host's): below
-/// the screen, tilted toward the player, 55 cm wide; above the diorama's
-/// table while it is the view (`xem_assist::draw::panel`).
-pub fn xr_panel_quad(seat: &Seat, settings: &SettingsService, panel_px: (u32, u32)) -> xem_assist::headset::Quad {
+/// the screen (`screen`: its size in metres, as scaled), off it, facing the
+/// player, 55 cm wide; above the diorama's table while it is the view
+/// (`xem_assist::draw::panel`).
+pub fn xr_panel_quad(seat: &Seat, settings: &SettingsService, panel_px: (u32, u32), screen: (f32, f32)) -> xem_assist::headset::Quad {
+    use xem_assist::draw::Beside;
+    let graphics = &settings.settings().graphics;
+    let aspect = panel_px.1.max(1) as f32 / panel_px.0.max(1) as f32;
     // (The Original renderer never shows the diorama.)
-    let table = match xr_view(&settings.settings().graphics) {
-        HeadsetView::Diorama(table) => Some(table),
-        HeadsetView::Screen => None,
-    };
-    xem_assist::draw::panel(seat, table.as_ref(), panel_px.1.max(1) as f32 / panel_px.0.max(1) as f32)
+    match xr_view(graphics) {
+        HeadsetView::Diorama(table) => xem_assist::draw::panel(seat, Beside::Table(&table), aspect),
+        HeadsetView::Screen => xem_assist::draw::panel(seat, Beside::Screen { size: screen, distance: f32::from(graphics.xr.distance_cm) / 100.0 }, aspect),
+    }
 }
 
 pub struct WebRenderer {
@@ -772,13 +775,13 @@ impl WebRenderer {
         let room: Vec<(wgpu::TextureView, Mat4, Vec2)> = self.overlay.room.iter()
             .map(|p| (self.atlas.view(&self.gpu.device, &self.gpu.queue, &p.widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone(), p.pose, p.size))
             .collect();
+        let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale;
+        let height = width * screen_size.1 as f32 / screen_size.0 as f32;
         let panel_quad = self.panel.as_ref().filter(|_| self.panel_visible).map(|panel| {
-            let quad = xr_panel_quad(&seat, settings, panel.size());
+            let quad = xr_panel_quad(&seat, settings, panel.size(), (width, height));
             (panel.view().clone(), Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position), Vec2::new(quad.size.0, quad.size.1))
         });
         let targets = self.xr.as_ref().expect("made above");
-        let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale;
-        let height = width * screen_size.1 as f32 / screen_size.0 as f32;
         let pose = {
             let pose = seat.place(xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -f32::from(graphics.xr.distance_cm) / 100.0), orientation: xem_render::glam::Quat::IDENTITY });
             Mat4::from_rotation_translation(pose.orientation, pose.position)

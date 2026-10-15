@@ -46,7 +46,28 @@
 #   and the panel's Hold to rewind under a scripted controller ray's
 #   trigger), Settings hold the game again once a rewind is let go, and
 #   Settings closed with the trigger still held let go of Hold to rewind
-#   (the game plays on behind the closed panel).
+#   (the game plays on behind the closed panel);
+# - headset qualification: through the player's Pause and Settings' own the
+#   head stays tracked and the eyes' pictures follow it while the game
+#   stands still; either hand's overhand grab pauses and resumes, both
+#   hands' together toggle once, and a sideways grab, a fist turned while
+#   closed and a hand found already closed toggle nothing; two whole-hand
+#   pinches scale the screen (to 2 and back, the runtime's pinch held
+#   through one), owning both hands (no grab, pinch or walk) while the
+#   game runs on, the deck's keys keep their size and the settings panel
+#   moves down out of the screen's way; a pinch after it walks; the
+#   underhand grab of the left hand turns inspection on and off in the
+#   field and nothing in its menu;
+# - a scene tour, both eyes captured: the title movie, the title (field
+#   490), field 30 and its menu, field 12's dialogue, the world map and
+#   battles on foot and in Gears are on the screen in front of the eyes;
+#   the grab looks from within the scene only in the field and the
+#   dialogue (and gives the screen back), and turns nothing on elsewhere;
+#   the dialogue's and the Gears' RAM is xem-headless's;
+# - on the screen view the app's Recenter puts the seat at the head and
+#   Monado's recentring of LOCAL puts it back at LOCAL's origin, the screen
+#   in front of the eyes after each; the world map's control deck keeps
+#   as many keys, as wide and as far beside the screen at every scale.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -107,12 +128,14 @@ cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Hand gestures, scripted (Monado's simulated headset tracks no hands): an
 # overhand grab pauses and another resumes, prayer hands open and close
 # Settings, a pinch with the gaze on the panel's Close button closes it,
-# and in field 30 a pinch with the gaze on the floor walks there.
+# and in field 30 a pinch with the gaze on the floor walks there; both eyes
+# captured twice in each pause (the player's, Settings').
 echo '{"commands": [[0, {"cmd": "enter_field", "map": 30}]]}' >"$out/field30.json"
 cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
 echo '{"graphics": {"profile": "Hd2d"}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
-    --xr-hands "60:pause,120:pause,140:prayer,170:prayer,180:prayer,190:pinch@panel:410/30,230:pinch@120/150" >"$out/gestures.log" 2>"$out/gestures.err"
+    --xr-hands "60:pause,120:pause,140:prayer,170:prayer,180:prayer,190:pinch@panel:410/30,230:pinch@120/150" \
+    --xr-capture "$out/gestures" --xr-capture-at 80,110,150,165 >"$out/gestures.log" 2>"$out/gestures.err"
 cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Field 12 (a room, a dialogue window and a portrait) under the HD-2D profile.
 echo '{"commands": [[0, {"cmd": "enter_field", "map": 12}]]}' >"$out/field.json"
@@ -186,6 +209,76 @@ printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
     --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
     >"$out/held.log" 2>"$out/held.err"
+# Headset qualification on the screen view (docs/runtime.md, Headset
+# qualification): short runs, each from its own start, so that a headset
+# frame lands in its scene whether the game runs 2.6 or 3.6 frames to one.
+# Either hand's grabs and two-hand scaling in field 30 under the default
+# profile, the gaze the eyes': the log opens the field's menu at game frame
+# 600 and closes it at 1100, the left hand's underhand grab at 150 turning
+# nothing on in it (both eyes captured at 160); the left hand's Pause grab
+# at 400 and 430, both hands' at 460 (one toggle), the right hand's at 490;
+# a sideways grab at 520, a fist closed sideways and turned palm down and
+# up at 550, a hand found closed at 590 (its loss pauses; the right hand's
+# Pause at 620 resumes); two whole-hand pinches spreading at 660,
+# contracting at 690 and spreading at 720 with the runtime's pinch held and
+# the gaze on walkable floor, then a pinch there at 760, which walks; the
+# left hand's underhand grab at 850 and 890 (inspection on and off), both
+# eyes captured at 840 and 875.
+hands='[[0, {"cmd": "enter_field", "map": 30}], [600, {"cmd": "act", "actions": ["Menu"], "frames": 2}], [1100, {"cmd": "act", "actions": ["Cancel"], "frames": 2}]]'
+echo "{\"commands\": $hands}" >"$out/hands.json"
+echo '{"graphics": {"profile": "Modern"}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/hands.json" --exit-after-frames 920 \
+    --xr-hands "150:inspect-left,400:pause-left,430:pause-left,460:pause-both,490:pause,520:grab-sideways,550:fist-turn,590:fist-reacquire,620:pause,660:scale-out,690:scale-in,720:scale-pinch@120/150,760:pinch@120/150,850:inspect-left,890:inspect-left" \
+    --xr-capture "$out/hands" --xr-capture-at 160,840,875 >"$out/hands.log" 2>"$out/hands.err"
+# The scene tour under HD-2D, both eyes captured in each scene (pictures
+# for people to read, and the checks): from boot the title movie (headset
+# frame 290) and the title, field 490 (560; the underhand grab at 570 turns
+# nothing on); field 12's dialogue (entered at game frame 0: the screen at
+# 100, the grab at 110, the eyes from within at 135, the grab again at
+# 150; then the same log in xem-headless). Field 30 and its menu are the
+# hands run's; the world map and the battles follow.
+echo '{"graphics": {"profile": "Hd2d"}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --exit-at-frame 2100 --xr-hands "570:inspect" --xr-capture "$out/title" --xr-capture-at 290,560 \
+    >"$out/title.log" 2>"$out/title.err"
+"$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 1000 --xr-hands "110:inspect,150:inspect" \
+    --xr-capture "$out/dialogue" --xr-capture-at 100,135 >"$out/dialogue.log" 2>"$out/dialogue.err"
+printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 12}]]}\n{"cmd":"run_until","until":{"frames":1000},"max_frames":2000}\n{"cmd":"memory_hash"}\n' |
+    "$headless" --disc "$disc" --control >"$out/dialogue-headless.log" 2>"$out/dialogue-headless.err"
+# The world map (boot mode 3) on the screen: captured at 280, the
+# underhand grab at 300 turns nothing on; two whole-hand pinches spreading
+# at 320 and contracting at 350 beside its control deck's keys; the app's
+# Recenter at 380, then Monado's recentring of LOCAL once the session has
+# drawn 400 frames, both eyes captured at 390 and 440.
+echo '{"commands": [[0, {"cmd": "boot_mode", "mode": 3}]]}' >"$out/worldmap.json"
+(
+    for _ in $(seq 900); do grep -q '^xrframe n=400 ' "$out/worldmap.log" 2>/dev/null && break; sleep 0.1; done
+    monado-ctl -c >"$out/monado-ctl-worldmap.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl-worldmap.log"
+) &
+recentring=$!
+"$desktop" --xr --disc "$disc" --script "$out/worldmap.json" --exit-after-frames 470 --xr-recenter-at 380 \
+    --xr-hands "300:inspect,320:scale-out,350:scale-in" --xr-capture "$out/worldmap" --xr-capture-at 280,390,440 \
+    >"$out/worldmap.log" 2>"$out/worldmap.err"
+wait "$recentring"
+# Battles from the original's debug battle selector (Start with the default
+# scene and party; in Gears with each member's gear column set to Nml
+# first): captured at 560 and 620, the underhand grab at 590 turns nothing
+# on; then the Gears' log in xem-headless.
+foot='[[60, {"cmd": "write", "path": "mode_battle_standalone", "value": 1}], [60, {"cmd": "boot_mode", "mode": 2}], [960, {"cmd": "press", "buttons": ["start"], "frames": 1}]]'
+gear='[[60, {"cmd": "write", "path": "mode_battle_standalone", "value": 1}], [60, {"cmd": "boot_mode", "mode": 2}]'
+at=960
+for button in down down cross right cross right cross start; do
+    gear="$gear, [$at, {\"cmd\": \"press\", \"buttons\": [\"$button\"], \"frames\": 1}]"
+    at=$((at + 21))
+done
+gear="$gear]"
+echo "{\"commands\": $foot}" >"$out/battle.json"
+echo "{\"commands\": $gear}" >"$out/gear.json"
+for battle in battle gear; do
+    "$desktop" --xr --disc "$disc" --script "$out/$battle.json" --exit-at-frame 2300 \
+        --xr-hands "590:inspect" --xr-capture "$out/$battle" --xr-capture-at 560,620 >"$out/$battle.log" 2>"$out/$battle.err"
+done
+printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2300},"max_frames":3000}\n{"cmd":"memory_hash"}\n' "$gear" |
+    "$headless" --disc "$disc" --control >"$out/gear-headless.log" 2>"$out/gear-headless.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -674,6 +767,157 @@ if len(rewinds) == 4:
     print(f"held: Back+LT with Settings shown rewound game frame {gf(chord_on - 1)} to {gf(chord_off - 1)}; Hold to rewind "
           f"from headset frame {held_on} rewound {gf(held_on - 1)} to {gf(244)}; Settings closed at 245 let it go, the game on "
           f"to {gf(269)} by 269 with the trigger still held")
+
+# Headset qualification. Paused head tracking (the gestures run): through
+# the player's Pause and Settings' own the head is tracked (more than half
+# the frames have a pose of their own), the eyes' pictures follow it (over
+# 2% of their pixels change between the two captures), the game stands
+# still.
+def changed(a, b):
+    (w, h, ra), (_, _, rb) = a, b
+    return sum(1 for y in range(h) for x in range(0, 4 * w, 4) if ra[y][x:x + 3] != rb[y][x:x + 3]) / (w * h)
+rows = records("gestures.log")
+for name, held, (a, b) in [("the player's Pause", [r for r in rows if r["player_pause"] == "1"], (80, 110)),
+                           ("Settings' pause", [r for r in rows if r["layers"] == "2" and int(r["n"]) < 175], (150, 165))]:
+    check(len({r["head"] for r in held}) > len(held) // 2, f"{name}: head tracking stopped ({len({r['head'] for r in held})} poses in {len(held)} frames)")
+    check(len({r["game_frames"] for r in held}) == 1, f"{name}: the game ran")
+    moved = changed(png(f"{out}/gestures/{a}/left.png"), png(f"{out}/gestures/{b}/left.png"))
+    check(moved > 0.02, f"{name}: the eyes did not follow the head ({moved:.1%} of the left eye changed from {a} to {b})")
+    print(f"paused head tracking, {name}: {len({r['head'] for r in held})} head poses in {len(held)} frames, the game at "
+          f"{sorted({r['game_frames'] for r in held})}, {moved:.1%} of the left eye changed from frame {a} to {b}")
+
+def gestures_in(rows, first, last):
+    return [g for r in rows if first <= int(r["n"]) < last for g in json.loads(r["gestures"])]
+
+# Either hand's grabs and two-hand scaling (the hands run).
+rows = records("hands.log")
+by = {int(r["n"]): r for r in rows}
+pause = lambda hand: {"gesture": "Pause", "hand": hand}
+menu = [r for r in rows if 150 <= int(r["n"]) < 170]
+check({"gesture": "Inspect", "hand": "Left"} in gestures_in(rows, 150, 170) and bool(menu) and all('"menu"' in r["context"] for r in menu)
+      and all(r["fp"] == "0" for r in rows if int(r["n"]) < 850),
+      f"in the field's menu the underhand grab turned nothing on: {gestures_in(rows, 150, 170)}, {menu[0]['context'][:40] if menu else '-'}")
+for first, last, wanted, paused, what in [
+    (400, 420, [pause("Left")], "1", "the left hand's Pause grab pauses"),
+    (430, 450, [pause("Left")], "0", "and resumes"),
+    (460, 480, None, "1", "both hands closing together toggle once"),
+    (490, 510, [pause("Right")], "0", "the right hand's resumes"),
+    (520, 585, [], "0", "a sideways grab and a fist turned while closed toggle nothing"),
+    (590, 615, [{"gesture": "TrackingLost", "hand": "Right"}], "1", "a hand lost and found closed: its loss pauses, the fist toggles nothing"),
+    (620, 640, [pause("Right")], "0", "the right hand's Pause resumes"),
+]:
+    seen = gestures_in(rows, first, last)
+    ok = (len(seen) == 1 and seen[0]["gesture"] == "Pause") if wanted is None else seen == wanted
+    check(ok and by[last - 5]["player_pause"] == paused and '"walk"' in by[first]["context"],
+          f"{what}: {seen}, paused {by[last - 5]['player_pause']}, {by[first]['context'][:30]}")
+scaling = [r for r in rows if 660 <= int(r["n"]) < 760]
+kinds = [g["gesture"] for g in gestures_in(rows, 660, 760)]
+scales = {n: float(by[n]["scale"]) for n in (685, 715, 755)}
+check(set(kinds) <= {"ScaleBegin", "Scale", "ScaleEnd"} and kinds.count("ScaleBegin") == 3 and kinds.count("ScaleEnd") == 3,
+      f"two whole-hand pinches gave only their scaling (the runtime's pinch held through the last): {sorted(set(kinds))}")
+check(abs(scales[685] - 2.02) < 0.05 and abs(scales[715] - 1.0) < 0.03 and abs(scales[755] - 2.02) < 0.05, f"the screen's scale {scales}")
+check(all(r["player_pause"] == "0" for r in scaling), "scaling paused the game")
+check(int(by[759]["game_frames"]) - int(by[660]["game_frames"]) > 250, "the game did not run on while scaling")
+check(all(r["assist"] == "-" for r in scaling), f"scaling walked: {sorted({r['assist'] for r in scaling})}")
+check(len({r["keys"] for r in scaling}) == 1, f"the control deck's keys changed as the screen scaled: {sorted({r['keys'] for r in scaling})}")
+panel_y = {n: float(by[n]["panel"].split(",")[1]) for n in (655, 685)}
+check(panel_y[685] < panel_y[655] - 0.1, f"the settings panel stays below the scaled screen: its middle at {panel_y}")
+walked = [r["assist"] for r in rows if 760 <= int(r["n"]) < 840]
+check("moving" in walked and walked[-1] == "arrived", f"the pinch after scaling did not walk: {walked[:3]}..{walked[-2:]}")
+on = [int(r["n"]) for r in rows if r["fp"] == "1"]
+check(bool(on) and 850 <= on[0] <= 856 and 890 <= on[-1] <= 896 and len(on) == on[-1] - on[0] + 1,
+      f"the left hand's underhand grab turned inspection on and off in the field: on {on[:1]}..{on[-1:]}")
+print(f"hands: nothing from the grab in the menu; left, both and right grabs, sideways, turned and reacquired fists as the contract says; "
+      f"scale {scales}, the panel's middle {panel_y}; inspection on {on[:1]}..{on[-1:]}")
+
+# The scene tour: each capture shows the screen in front of the eye, or the
+# eye's picture from within the scene over its view; the grab looks from
+# within only in a field and its dialogue, not on the title (field 490) or
+# in the field's menu; the dialogue's RAM is xem-headless's.
+def tour_screen(log, n, what, context=None):
+    by = {int(r["n"]): r for r in records(log)}
+    eyes = [png(f"{out}/{log[:-4]}/{n}/{side}.png") for side in ("left", "right")]
+    check(all(lit(e[2]) > 0.05 for e in eyes) and by[n]["within"] == "0", f"tour, {what}: the screen is not in front ({[round(lit(e[2]), 3) for e in eyes]})")
+    check(context is None or context in by[n]["context"], f"tour, {what}: the game shows {by[n]['context'][:60]}")
+    return by[n]
+def tour_within(log, n, what):
+    # From within, the scene covers more than three quarters of each eye
+    # (dark walls near the room's colour make up the rest); the screen in
+    # front covers about a quarter.
+    by = {int(r["n"]): r for r in records(log)}
+    eyes = [png(f"{out}/{log[:-4]}/{n}/{side}.png") for side in ("left", "right")]
+    check(by[n]["fp"] == "1" and by[n]["within"] == "1" and all(covered(e[2]) > 0.75 for e in eyes),
+          f"tour, {what}: the eyes do not look from within the scene ({by[n]['fp']}, {by[n]['within']}, {[round(covered(e[2]), 3) for e in eyes]})")
+def tour_grab(log, n, inspectable, what, hand="Right"):
+    rows = records(log)
+    by = {int(r["n"]): r for r in rows}
+    grabbed = {"gesture": "Inspect", "hand": hand} in gestures_in(rows, n, n + 15)
+    check(grabbed and by[n + 14]["fp"] == ("1" if inspectable else "0"), f"tour, {what}: the underhand grab ({grabbed}) left inspection {by[n + 14]['fp']}")
+check(tour_screen("title.log", 290, "the title movie")["movie"] == "1", "tour: the title movie was not rebuilt")
+tour_screen("title.log", 560, "the title", '"map":490')
+tour_grab("title.log", 570, False, "the title")
+tour_screen("hands.log", 160, "field 30's menu", '"menu"')
+tour_screen("hands.log", 840, "field 30", '"walk"')
+tour_within("hands.log", 875, "field 30")
+tour_screen("dialogue.log", 100, "field 12's dialogue", '"dialogue"')
+tour_grab("dialogue.log", 110, True, "the dialogue")
+tour_within("dialogue.log", 135, "field 12's dialogue")
+check(records("dialogue.log")[-1]["fp"] == "0", "tour: the grab again did not give the dialogue's screen back")
+for log in ("title.log", "hands.log", "dialogue.log"):
+    check(all(r["picture"] != "-" for r in records(log) if int(r["n"]) >= 5), f"{log}: a headset frame went without a picture")
+reference = [json.loads(l) for l in open(f"{out}/dialogue-headless.log") if l.startswith("{") or l.startswith('"')]
+reference = next(v for v in reference if isinstance(v, str))
+check(final_hash("dialogue.log") == reference, f"dialogue.log: RAM at game frame 1000 {final_hash('dialogue.log')} != headless {reference}")
+print(f"tour: the title movie, the title, field 30, its menu and field 12's dialogue on the screen, from within in the field and the "
+      f"dialogue only; the dialogue's RAM {final_hash('dialogue.log')}")
+
+# The world map: on the screen, the grab turning nothing on, scaling beside
+# its control deck's keys (as many, as wide and as far beside the screen's
+# edge at every scale); the app's Recenter puts the seat at the head and
+# Monado's recentring of LOCAL puts it back at LOCAL's origin, the screen
+# in front of the eyes after each.
+rows = records("worldmap.log")
+by = {int(r["n"]): r for r in rows}
+check('"world_map"' in by[280]["context"] and lit(png(f"{out}/worldmap/280/left.png")[2]) > 0.05, f"the world map is not on the screen: {by[280]['context'][:40]}")
+check({"gesture": "Inspect", "hand": "Right"} in gestures_in(rows, 300, 315) and all(r["fp"] == "0" for r in rows), "the world map's grab turned inspection on")
+keys = {r["keys"] for r in rows if 315 <= int(r["n"]) < 380}
+scales = [float(r["scale"]) for r in rows if 315 <= int(r["n"]) < 380]
+check(len(keys) == 1 and next(iter(keys)) != "-" and max(scales) > 1.9 and abs(scales[-1] - 1.0) < 0.03,
+      f"the deck's keys changed as the screen scaled ({sorted(keys)}, scale {min(scales):.2f}-{max(scales):.2f})")
+count, widths, gaps = next(iter(keys)).split(":") if len(keys) == 1 and next(iter(keys)) != "-" else ("0", "0-0", "0-0")
+check(widths == "0.2200-0.2200" and all(abs(float(g) - 0.04) < 0.001 for g in gaps.split("-")), f"the keys' widths {widths}, gaps {gaps}")
+recentred = next((r for r in rows if r["recenters"] == "1"), None)
+if recentred:
+    head = [float(v) for v in recentred["head"].split(";")[0].split(",")]
+    seat = [float(v) for v in recentred["seat"].split(";")[0].split(",")]
+    check(int(recentred["n"]) == 380 and max(abs(a - b) for a, b in zip(head, seat)) < 0.001, f"Recenter at {recentred['n']}: seat {seat} for the head {head}")
+check(recentred is not None, "no Recenter in the world map run")
+events = [l for l in open(f"{out}/worldmap.log") if l.startswith("event reference_space_change")]
+reset = next((r for r in rows if r["resets"] != "0"), None)
+check(bool(events) and reset is not None and int(reset["n"]) > 380, f"Monado's recentring did not reach the session ({open(f'{out}/monado-ctl-worldmap.log').read().strip()!r})")
+if reset:
+    place, yaw = reset["seat"].split(";")
+    check(max(abs(float(v)) for v in place.split(",")) < 1e-4 and abs(float(yaw)) < 1e-4, f"the seat after LOCAL's recentring: {reset['seat']}")
+for n in (390, 440):
+    eyes = [png(f"{out}/worldmap/{n}/{side}.png") for side in ("left", "right")]
+    check(all(lit(e[2]) > 0.05 for e in eyes), f"world map at {n}: the screen is not in front after recentring")
+print(f"world map: keys {sorted(keys)} at scales {min(scales):.2f}-{max(scales):.2f}; Recenter at {recentred and recentred['n']} "
+      f"(seat {recentred and recentred['seat']}), LOCAL recentred at {reset and reset['n']} (seat {reset and reset['seat']})")
+
+# Battles on foot and in Gears: on the screen, the grab turning nothing on;
+# the Gears' RAM is xem-headless's.
+for battle in ("battle", "gear"):
+    rows = records(f"{battle}.log")
+    by = {int(r["n"]): r for r in rows}
+    for n in (560, 620):
+        eyes = [png(f"{out}/{battle}/{n}/{side}.png") for side in ("left", "right")]
+        check('"battle"' in by[n]["context"] and all(lit(e[2]) > 0.05 for e in eyes), f"{battle} at {n}: no battle on the screen ({by[n]['context'][:40]})")
+    check({"gesture": "Inspect", "hand": "Right"} in gestures_in(rows, 590, 605) and all(r["fp"] == "0" for r in rows), f"{battle}: the grab turned inspection on")
+    check(all(r["picture"] != "-" for r in rows if int(r["n"]) >= 5), f"{battle}: a headset frame went without a picture")
+reference = [json.loads(l) for l in open(f"{out}/gear-headless.log") if l.startswith("{") or l.startswith('"')]
+reference = next(v for v in reference if isinstance(v, str))
+check(final_hash("gear.log") == reference, f"gear.log: RAM at game frame 2300 {final_hash('gear.log')} != headless {reference}")
+print(f"battles: on foot and in Gears on the screen at headset frames 560 and 620, the grab turning nothing on; Gears' RAM {final_hash('gear.log')}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))
