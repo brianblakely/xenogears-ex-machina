@@ -93,27 +93,6 @@ impl Control {
     }
 }
 
-/// An agent's settings command, as the panel's edits make them: `settings`
-/// (the settings as they are) and `settings_apply {change}` (the panel's own
-/// typed change, validated, persisted and acknowledged by the service).
-/// None for any other command.
-pub fn settings_command(settings: &RefCell<SettingsService>, command: &serde_json::Value) -> Option<serde_json::Value> {
-    Some(match command.get("cmd").and_then(serde_json::Value::as_str)? {
-        "settings" => serde_json::to_value(settings.borrow().settings()).unwrap_or_default(),
-        "settings_apply" => {
-            let change = command.get("change").cloned().unwrap_or_default();
-            match serde_json::from_value::<xem_settings::SettingChange>(change) {
-                Ok(change) => match settings.borrow_mut().apply(change) {
-                    Ok(ack) => serde_json::json!({ "revision": ack.revision, "settings": ack.settings }),
-                    Err(rejected) => serde_json::json!({ "error": rejected.to_string() }),
-                },
-                Err(error) => serde_json::json!({ "error": format!("not a setting change: {error}") }),
-            }
-        }
-        _ => return None,
-    })
-}
-
 /// An app operation's outcome with the game's vertical blank and memory
 /// hash just after it (a state saved or loaded is the RAM the hash says):
 /// the line the Android host logs ([`View::on_operation`]) and a headset

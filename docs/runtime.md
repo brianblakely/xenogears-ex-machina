@@ -5292,7 +5292,7 @@ both), `panel {visible}`,
 BIOS's: kept beside the settings for every boot and given to the running
 game); nothing passes through the window system. With `--xr` the headset
 session answers the same commands but `import_disc` (`xem_host::Control`
-and `xem_host::settings_command` serve both).
+and `SettingsService::command` serve both).
 `xem-desktop/tests/control.rs` runs the desktop itself on weston's headless
 backend with lavapipe (local, disc 1) and changes the gameplay options
 through `settings_apply` ([Gameplay options](#gameplay-options)).

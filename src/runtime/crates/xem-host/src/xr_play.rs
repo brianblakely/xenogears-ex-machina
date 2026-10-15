@@ -456,7 +456,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // Agents' commands (`--control`), between the game's frames.
         if let Some(control) = &control {
             control.poll(|command| {
-                if let Some(reply) = crate::settings_command(&settings, command) {
+                if let Some(reply) = settings.borrow_mut().command(command) {
                     return reply;
                 }
                 match command.get("cmd").and_then(serde_json::Value::as_str) {
