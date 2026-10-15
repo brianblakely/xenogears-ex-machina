@@ -44,7 +44,7 @@ void test_record_camera(void) {
             ("src/port/asm.c", "xem_asm_link_9_words", "void xem_asm_link_9_words(u32 *entry, u32 *packet)"),
             ("src/port/present.c", "battle_popup_draw_glyph", "void battle_popup_draw_glyph(SpritePart *glyph, s32 colour)"),
             ("src/port/present.c", "xem_record_entry",
-             "static void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z)"),
+             "void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z)"),
             ("src/port/present.c", "xem_present_camera", "void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode)"),
         ):
             source += "\n" + signature + " {" + function_body(path, name) + "\n"

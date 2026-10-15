@@ -2319,13 +2319,23 @@ is drawn with where it is set:
 | Mode | Where | Camera | Target |
 | --- | --- | --- | --- |
 | field | `field_draw_models`, with either bit (then the controlled character, `XEM_PROJECTION_EYE`) | `field_view.scaled_world` | `field_view.target` |
-| battle | `sprite_set_view_matrix` (WRAPPED), when the battle sets it from `battle_camera.matrix` once a frame, after drawing its stage | the look-at matrix with the quake's offset | `battle_camera_view_target` |
+| battle | `sprite_set_view_matrix` (WRAPPED), when the battle sets it from `battle_camera.matrix` once a frame, after drawing its stage; its stage just before (below) | the look-at matrix with the quake's offset | `battle_camera_view_target` |
 | world map | `worldmap_objects_draw`, which every world-map frame calls (the actors' sprite pass that also sets the sprites' view matrix runs in the open map only) | `worldmap_camera_matrix`, which maps points relative to the camera's target with z negated, as the world map places its objects | (0, the target's height, 0), the point the orbit and look-at cameras look at |
 
-The trace hands each one over in order with the commands
-(`TraceOp::Camera`: `xem_gpu::Camera` with its axes, translation, target,
-focus depth and `CameraMode`; `Camera::world_point` inverts it,
-`Camera::view_point` applies it). A buffer's log keeps the records current
+Before a battle's camera the port records its stage (`battle_present.c`,
+`XEM_PROJECTION_STAGE`), what a diorama stands the battle on its table by
+whatever the camera does: each combatant the battle shows, as its camera
+frames them (`battle_camera_frame_slots`: a slot with a sprite, not hidden),
+its sprite's place in the battle's world and its height (its frame's extent:
+a person's about 96 units, a Gear's about 500, the debug battle's boss
+1523), owned by its slot; then the scene data's camera 0, the start view
+`battle_enter` begins the battle with, its look-at (its depth 1 once the
+battle's turns run, `battle_turns_active`: its opening is over, its
+combatants have entered and stand) and its eye. The trace hands each one
+over in order with the commands (`TraceOp::Camera`: `xem_gpu::Camera` with
+its axes, translation, target, focus depth and `CameraMode`, a battle's with
+its `Stage`; `Camera::world_point` inverts it, `Camera::view_point` applies
+it). A buffer's log keeps the records current
 when its frame's first primitive is drawn (`FrameLog::camera` and `eye`,
 the newest within four vertical blanks), and `FrameRenderer::camera` the
 shown frame's: the port makes a frame's records while the game builds it,
@@ -2376,9 +2386,22 @@ and, in Lahan, quads that move with the camera. The target the battle and
 the world map record lies on their camera's axis within 2% of its depth,
 at its recorded depth; the world map's (its height -256 there, y down)
 negated would lie off it.
+`a_battles_cameras_carry_its_stage_as_the_game_keeps_it` (the first debug
+battle, Cross every 10 frames for 300 frames, then 120 without): every
+battle camera of the frames shown carries a stage, and over 8 frames more,
+taking each frame's trace, the one camera a frame holds the combatants at
+the places `battle_area` keeps for its slots' sprites, each as tall as the
+sprite is in RAM before or after its frame within a fifth (a sprite's
+height changes within a frame as its animation steps: 90 as the battle
+draws, 96 before and after, measured), the scene data's start view as RAM
+holds it, and the turns running; measured at rest, the party at
+(4360, 0, 4160), (4420, 0, 3840) and (3810, 0, 4040), 90 to 130 tall, and
+the boss at (3820, 0, 4040), 1523 tall; the start view looking at
+(4192, 0, 3680) from (4192, -1719, 464).
 `camera_records_leave_ram_vram_sound_and_time_unchanged` runs 240 frames
 from the same state in each of the four with `around` 0, 1 and 2 and
-without a trace: one RAM hash, VRAM, sound and clock each. One
+without a trace (with `ANYWHERE`, the battles' stages too): one RAM hash,
+VRAM, sound and clock each. One
 desert battle frame drawn with `ANYWHERE` held 8 262 primitives, 4 654 of
 them culled faces. `xem-headless/tests/render.rs`
 `first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged`
@@ -2392,9 +2415,12 @@ record older than four vertical blanks; with the logs begun at the start
 of a presentation, the last of two frames drawn over kept the first one's
 camera and 142 primitives instead of its own 71),
 `xem-gpu/tests/gpu.rs`
-`a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`
+`a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`,
+`a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does`
 and `tests/test_port_presentation.py` (the entries `xem_present_camera`
-writes) check the format and the logs without the game.
+writes) check the format and the logs without the game (the stage's port
+code reads `battle_area`, whose pointers a native build would widen, so it
+is checked on the game only).
 
 Not done or not measured: the [Diorama](#diorama) presents these records
 in both headset hosts ([In a headset](#in-a-headset)), where only field 30
@@ -2458,12 +2484,34 @@ camera of `--example motion` and the tests below drive it too.
   degrees away, `Fixed` keeps the scene's first. A cut (the target jumping
   more than a third of the table, or the heading more than 45 degrees, from
   a game frame to the next) jumps at once, and a jump (a cut or a snap) dims
-  the diorama by 70%, fading over 0.25 s. A battle keeps the point and the
-  heading its first frame had (its cameras orbit and cut, and its input is
-  not camera-relative); the world map's points already follow its camera's
-  target. The table's volume is x and z within 0.45 m of its centre and y
-  from 0.25 m below its top to 0.55 m above: what lies outside is not drawn
-  (draw.wgsl discards it).
+  the diorama by 70%, fading over 0.25 s. A battle's table stands where its
+  stage puts it for the whole battle ([Camera records](#camera-records);
+  its cameras orbit, cut and shake, and its input is not camera-relative),
+  so no camera's move, cut or quake moves it (a quake offsets the camera's
+  translation, which the frame's camera record carries: its world stays
+  put through it), nor does a recentring: it faces the start view's way;
+  during the battle's opening (until its turns run: its combatants enter,
+  leaping in and appearing) it stands on the start view's look-at, spanning
+  the original screen's width at its depth; once the turns run, a jump
+  places it on the middle of the combatants' extent across the table (as
+  the battle's camera frames them all), on the ground the lowest of them
+  stands on, spanning their extent with the tallest one's height to spare,
+  at least the original screen's width at two projection distances (the
+  nearest the battle's camera frames them from: 640 units) and enough for
+  the tallest to stand within nine tenths of the volume's height; a new
+  start view (another battle without leaving the mode) places it again.
+  Measured over four battles, the start view looks 324 to 1473 units
+  across the floor from the combatants' middle (the debug battle's 324,
+  Babel Tower's 543, the debug Gear battle's 614): the
+  Mountain Path's random battle (map 15) looks at (1632, -96, 2368) from
+  its start view, its four combatants stand within 241 by 163 units at
+  (2092 to 2333, -514 to -562, 932 to 1095), where its table now stands at
+  1406 um a unit (two projection distances' screen: a person 13.5 cm tall),
+  against 231 um placed by the start view (2.2 cm, at the table's edge).
+  The world map's points already follow its camera's target. The table's
+  volume is x and z within 0.45 m of its centre and y from 0.25 m below its
+  top to 0.55 m above: what lies outside is not drawn (draw.wgsl discards
+  it).
 - **Sprites** stand as upright billboards facing the seat's way, built once
   a game frame for both eyes: each part's offset from its sprite's floor
   point on the game's screen laid along the billboards' right and the
@@ -2517,7 +2565,11 @@ camera of `--example motion` and the tests below drive it too.
   scene's first primitive (the clear, panoramas, sky bands) are the
   backdrop: a wall at the back of the volume, facing the seat (seen from
   behind it is not drawn), the original screen mapped across the volume's
-  width, a line there a ribbon a native pixel wide. Where the room shows
+  width, a line there a ribbon a native pixel wide. All in one plane, the
+  wall's pictures paint over one another in the game's order, as the PS1
+  draws them: they test the depth (the scene stands in front of them) but
+  do not write it (written, the clear's depth fought the pictures drawn
+  over it: the debug battle's forest showed black or in bands). Where the room shows
   around the table ([The room](#the-room-passthrough-and-immersive-ar);
   hosts say so every frame: `GameView::set_room`), the wall leaves out
   those fills, the game's clear, which the room stands in for; the
@@ -2655,6 +2707,11 @@ apart: the same rows 287-380 and width in both eyes, 75 pixels apart);
 `a_fade_tints_the_diorama_and_its_pane_but_not_the_room` (mode 2's 64
 off the floor and off the pane's interface, the room's grey and the pane's
 transparency kept);
+`a_picture_the_game_draws_over_its_clear_shows_whole_on_the_wall` (the
+clear, then a panorama in three panels reaching above the screen's top, as
+the debug battle's forest: the same 36 908 pixels of it in the eye as with
+the clear left out where the room shows; with the wall's depth written,
+17 640);
 `frames_without_a_camera_record_or_in_other_modes_show_the_screen` (and
 the screen easing into the diorama over 0.3 s, and the screen view);
 `the_listener_takes_the_tables_axes_only_while_the_diorama_is_presented`
@@ -2688,9 +2745,18 @@ the table level under pitched and rolled cameras (the world's up its up,
 the camera's level axis away from the seat); a 20-degree turn eased and
 a 60-degree one a cut that jumps and dims for 0.25 s, as does a target
 jumping beyond a third of the table; Snap holding within 30 degrees and
-jumping past them, Fixed keeping the first heading; a battle keeping
-its first point and heading whatever its camera does; a new scene
-beginning its own point and scale (half at twice the depth).
+jumping past them, Fixed keeping the first heading; a battle's table
+facing its start view's way, centred on its combatants' extent across it
+on the lowest one's ground and spanning that extent with the tallest's
+height to spare, standing still and never dimming while its camera
+orbits, cuts and shakes (a point drawn through a shaken camera the same
+world point) and through recentrings, on the start view's look-at during
+the opening or without a combatant (no jump), placed by the combatants
+once the turns run (a jump) and staying should the turns pause, and placed
+again for another start view; a tall enemy (the debug battle's 1523)
+within nine tenths of the volume's height and a small formation (the
+Mountain Path's, 241 across) spanning two projection distances' screen;
+a new scene beginning its own point and scale (half at twice the depth).
 `xem-headless/tests/render.rs`
 `a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged` presents
 240 frames of field 12 from the same state as a diorama for two eyes of a

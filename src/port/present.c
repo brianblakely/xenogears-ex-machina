@@ -69,6 +69,7 @@ void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bot
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 void field_sprite_set_color_unless_fog(void *target, u8 *color);
 void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
+void xem_present_battle_stage(void);
 /* The battle camera's look-at point (battle/objects.h, whose other headers
  * the port does not need). */
 extern SVECTOR battle_camera_view_target;
@@ -242,7 +243,7 @@ s32 field_instance_is_off_screen(FieldInstance *instance) {
 /* A ring entry that is no drawn point (xem/gte.h): `class_`, the depth
  * `sz`, `owner` and the point (x, y, z) as its `view`, with the GTE's
  * screen offset and projection distance. Written to the ring only. */
-static void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z) {
+void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z) {
     XemProjectionRing *ring = xem_gte_ring;
     XemProjection *p = &ring->entries[ring->count % XEM_GTE_PROJECTIONS];
 
@@ -326,15 +327,17 @@ void field_draw_models(void) {
 
 /* The sprites' view matrix: the original, then, while a view from anywhere
  * around the scene wants culled faces (xem/gte.h XEM_AROUND_ANYWHERE), the
- * battle's camera (the matrix every battle frame sets it from, once its
- * stage is drawn) recorded with the point it looks at. A field records its
- * camera with its models (field_draw_models), the world map with its scene
+ * battle's stage (battle_present.c: its combatants and start view) and its
+ * camera (the matrix every battle frame sets it from, once its stage is
+ * drawn) recorded with the point it looks at. A field records its camera
+ * with its models (field_draw_models), the world map with its scene
  * objects (worldmap_present.c), which every one of its frames draws.
  * Written to the ring only. */
 void sprite_set_view_matrix(MATRIX *view) {
     xem_original_sprite_set_view_matrix(view);
     if (xem_reveals_wanted() && (xem_present_reveals->around & XEM_AROUND_ANYWHERE) && sprite_in_battle &&
         view == &battle_camera.matrix) {
+        xem_present_battle_stage();
         xem_present_camera(view, battle_camera_view_target.vx, battle_camera_view_target.vy, battle_camera_view_target.vz,
                            XEM_CAMERA_BATTLE);
     }

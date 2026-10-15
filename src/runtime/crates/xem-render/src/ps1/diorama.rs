@@ -16,8 +16,10 @@
 //!   (keeping the world's handedness, so nothing is mirrored and faces keep
 //!   their winding) and scaled so the original screen's width at the
 //!   camera's target depth spans the table, fixed when the scene begins,
-//!   times the player's scale. Fragments outside the table's volume are not
-//!   drawn.
+//!   times the player's scale. A battle's stands where its combatants stand,
+//!   facing the way its start view looks, scaled to show them all, for the
+//!   whole battle ([`battle_table`]). Fragments outside the table's volume
+//!   are not drawn.
 //! - **Sprites** stand as upright billboards at their floor points, each
 //!   part laid along the billboards' right and the world's up as the game's
 //!   camera showed it, all facing the seat's way (built once a game frame,
@@ -65,7 +67,7 @@ use super::{
 use glam::{DMat3, DVec3, Mat3, Mat4, Vec2, Vec3};
 use std::collections::HashMap;
 use std::sync::Arc;
-use xem_gpu::{Camera, CameraMode, Class, Environment, Primitive, Shape, TraceOp, TraceVertex, VramRect};
+use xem_gpu::{Camera, CameraMode, Class, Combatant, Environment, Primitive, Shape, Stage, TraceOp, TraceVertex, VramRect};
 
 /// What a headset shows of the game ([`super::GameView::set_xr_view`]): the
 /// flat virtual screen, or the diorama on its table.
@@ -88,7 +90,7 @@ pub struct DioramaEye {
 }
 
 /// How the table turns with the game's camera (fields and the world map;
-/// a battle's table keeps the heading and the point it began with).
+/// a battle's table stands where its stage puts it for the whole battle).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Turns {
     /// Eased towards the camera's heading; at once at a cut, dimmed briefly.
@@ -387,6 +389,68 @@ struct Placement {
     /// the last update.
     jumped: Option<f64>,
     at: Option<f64>,
+    /// A battle's table, which its stage places for the whole battle.
+    battle: Option<BattleTable>,
+}
+
+/// Where a battle's stage put the table ([`battle_table`]): for the start
+/// view it was placed for (a new one is a new battle), from its combatants
+/// once any stood.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct BattleTable {
+    start: ([f32; 3], [f32; 3]),
+    formed: bool,
+    point: Vec3,
+    heading: f32,
+    base: f32,
+}
+
+/// The original screen's width at two projection distances, the nearest the
+/// battle's camera frames its combatants from (`battle_camera_frame_slots`):
+/// the least of a battle's world a table spans (world units).
+const BATTLE_SPAN: f32 = 2.0 * 320.0;
+/// A battle's tallest combatant stands within this share of the table's
+/// volume above its top.
+const BATTLE_HEADROOM: f32 = 0.9;
+
+/// Where a battle's table stands for the whole battle (docs/runtime.md,
+/// Diorama), from its `stage` (`flip` the world's y and z to the table's,
+/// `h` the projection distance): the start view's heading (the way the
+/// camera the battle begins with looks); once its turns run (its opening is
+/// over: its combatants have entered and stand), the middle of their extent
+/// across the table, as its camera frames them all, on the ground the
+/// lowest of them stands on, and the span of the battle's world the table's
+/// width shows: their extent with the tallest one's height to spare, at
+/// least [`BATTLE_SPAN`], and room for the tallest within
+/// [`BATTLE_HEADROOM`] of the volume's height. During its opening, the start
+/// view's look-at and the original screen's width at its depth.
+fn battle_table(stage: &Stage, flip: Vec3, h: f32) -> BattleTable {
+    let (look, eye) = (Vec3::from(stage.look_at), Vec3::from(stage.eye));
+    let forward = flip * (look - eye);
+    let heading = if forward.x.hypot(forward.z) > 1e-3 { std::f32::consts::PI - forward.x.atan2(forward.z) } else { 0.0 };
+    let turn = Mat3::from_rotation_y(heading) * Mat3::from_diagonal(flip);
+    let combatants: Vec<Combatant> = stage.combatants.iter().flatten().copied().collect();
+    let start = (stage.look_at, stage.eye);
+    let width = VOLUME_MAX.x - VOLUME_MIN.x;
+    if !stands(stage) {
+        let span = 320.0 * (look - eye).length() / h.max(1.0);
+        return BattleTable { start, formed: false, point: look, heading, base: width / span.max(1.0) };
+    }
+    // Their bounds across the table (its x and z).
+    let across: Vec<Vec3> = combatants.iter().map(|c| turn * Vec3::from(c.position)).collect();
+    let (lo, hi) = across.iter().fold((Vec3::MAX, Vec3::MIN), |(lo, hi), p| (lo.min(*p), hi.max(*p)));
+    let middle = turn.transpose() * ((lo + hi) / 2.0);
+    let ground = combatants.iter().map(|c| c.position[1]).fold(f32::MIN, f32::max);
+    let extent = (hi.x - lo.x).max(hi.z - lo.z);
+    let tallest = combatants.iter().map(|c| c.height).fold(0.0, f32::max);
+    let span = BATTLE_SPAN.max(extent + tallest).max(tallest * width / (BATTLE_HEADROOM * VOLUME_MAX.y));
+    BattleTable { start, formed: true, point: Vec3::new(middle.x, ground, middle.z), heading, base: width / span }
+}
+
+/// Whether a battle's combatants stand: its turns run and some combatant
+/// shows.
+fn stands(stage: &Stage) -> bool {
+    stage.turns && stage.combatants.iter().any(Option::is_some)
 }
 
 /// Where the frame shown stands on the table.
@@ -467,29 +531,59 @@ impl Placement {
         let forward = flip * m.row(2);
         let yaw = std::f32::consts::PI - forward.x.atan2(forward.z);
         let target = Vec3::from(camera.target);
-        // The original screen's width at the target's depth spans the
-        // table, at the scene's beginning.
+        let (followed, heading, base) = match (camera.mode, &camera.stage) {
+            // A battle's stage places its table for the whole battle,
+            // whatever its camera does (it orbits, cuts and shakes): again
+            // only for a new battle's start view or as its combatants come to
+            // stand after its opening, a jump.
+            (CameraMode::Battle, Some(stage)) => {
+                let placed = match self.battle {
+                    Some(battle) if battle.start == (stage.look_at, stage.eye) && (battle.formed || !stands(stage)) => battle,
+                    before => {
+                        if before.is_some() {
+                            self.jumped = Some(now);
+                        }
+                        battle_table(stage, flip, h)
+                    }
+                };
+                self.battle = Some(placed);
+                (placed.point, placed.heading, placed.base)
+            }
+            _ => self.follow(camera, target, yaw, units, h, new_frame, now, dt, table),
+        };
+        let scale = base * table.scale;
+        let turn = Mat3::from_rotation_y(heading) * Mat3::from_diagonal(flip);
+        let table_from_world = Mat4::from_scale(Vec3::splat(scale)) * Mat4::from_mat3(turn) * Mat4::from_translation(-followed);
+        // The table's axes back in the world (the turn's rows).
+        let back = turn.transpose();
+        Some(Placed { table_from_world, turn, right: back * Vec3::X, up: back * Vec3::Y, toward: back * Vec3::Z, scale, heading })
+    }
+
+    /// The point the table follows, its heading and the scene's scale (metres
+    /// per world unit) for a field's or the world map's frame drawn with
+    /// `camera` (looking at `target`, `yaw` its heading, `units` view-space
+    /// units per world unit): the original screen's width at the target's
+    /// depth spans the table, at the scene's beginning; the point eases
+    /// towards the target and the heading turns as `table` says, both at once
+    /// at a cut.
+    #[allow(clippy::too_many_arguments)]
+    fn follow(&mut self, camera: &Camera, target: Vec3, yaw: f32, units: f32, h: f32, new_frame: bool, now: f64, dt: f64, table: &Table) -> (Vec3, f32, f32) {
         let focus = if camera.focus > 1.0 { camera.focus } else { 4000.0 };
         let width = 320.0 * focus / h.max(1.0) / units;
         let base = *self.base.get_or_insert((VOLUME_MAX.x - VOLUME_MIN.x) / width.max(1.0));
-        // A battle's table keeps the point and heading it began with.
-        let battle = camera.mode == CameraMode::Battle;
         let cut = new_frame
-            && !battle
             && self.last.is_some_and(|(at, heading)| (target - at).length() * base > (VOLUME_MAX.x - VOLUME_MIN.x) / 3.0 || wrap(yaw - heading).abs() > CUT_TURN);
         if new_frame {
             self.last = Some((target, yaw));
         }
         let ease = 1.0 - (-dt / EASE).exp() as f32;
         let followed = match self.target {
-            Some(point) if battle => point,
             Some(point) if !cut => point + (target - point) * ease,
             _ => target,
         };
         self.target = Some(followed);
-        let turns = if battle { Turns::Fixed } else { table.turns };
         let mut jumped = cut;
-        let heading = match (self.heading, turns) {
+        let heading = match (self.heading, table.turns) {
             (None, _) => yaw,
             (Some(heading), Turns::Fixed) => heading,
             (Some(_), _) if cut => yaw,
@@ -504,12 +598,7 @@ impl Placement {
         if jumped {
             self.jumped = Some(now);
         }
-        let scale = base * table.scale;
-        let turn = Mat3::from_rotation_y(heading) * Mat3::from_diagonal(flip);
-        let table_from_world = Mat4::from_scale(Vec3::splat(scale)) * Mat4::from_mat3(turn) * Mat4::from_translation(-followed);
-        // The table's axes back in the world (the turn's rows).
-        let back = turn.transpose();
-        Some(Placed { table_from_world, turn, right: back * Vec3::X, up: back * Vec3::Y, toward: back * Vec3::Z, scale, heading })
+        (followed, heading, base)
     }
 
     /// How far the diorama is dimmed at `now` (0-1) after the table's last
@@ -778,9 +867,14 @@ impl Builder<'_> {
     /// the table's space with `table`): its triangles as the face winds (a
     /// quad's second as 1-3-2), reversed with `flip`; front-facing only with
     /// `cull`; opaque pixels depth-tested and written, translucent ones
-    /// tested only. A sprite's part (`billboard`) is lifted that far (world
-    /// units) along the billboards' normal towards the side each eye sees
-    /// (draw.wgsl `vs_world`). Fewer than three points draw nothing.
+    /// tested only. In the table's space (the backdrop's wall, all of it in
+    /// one plane) every pixel is tested only: the wall's pictures paint over
+    /// one another in the game's order, as the PS1 draws them (written, the
+    /// depth of the game's clear made the pictures drawn over it fight with
+    /// it), and the scene stands in front of them all. A sprite's part
+    /// (`billboard`) is lifted that far (world units) along the billboards'
+    /// normal towards the side each eye sees (draw.wgsl `vs_world`). Fewer
+    /// than three points draw nothing.
     fn world_primitive(&mut self, p: &Primitive, points: &[Vec3], table: bool, cull: bool, flip: bool, billboard: Option<f32>) {
         if points.len() < 3 {
             return;
@@ -811,11 +905,12 @@ impl Builder<'_> {
         let end = self.vertices.len() as u32;
         let space = Space::World { cull };
         let blend = p.environment.draw_mode >> 5 & 3;
+        let opaque = if table { DepthMode::Read } else { DepthMode::Test };
         if !p.semi {
-            self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth: DepthMode::Test, space }, None, start..end);
+            self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth: opaque, space }, None, start..end);
         } else {
             if p.textured {
-                self.push_range(PipelineKey { fragment: Fragment::OpaqueTexels, blend: 0, depth: DepthMode::Test, space }, None, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::OpaqueTexels, blend: 0, depth: opaque, space }, None, start..end);
             }
             self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth: DepthMode::Read, space }, None, start..end);
         }
@@ -1373,7 +1468,8 @@ impl Diorama {
 
     /// The table takes the camera's point and heading at once at the next
     /// presentation, as a new scene's does (a recentring, a reference space
-    /// the runtime moved): no easing from where it stood.
+    /// the runtime moved): no easing from where it stood. A battle's table
+    /// stays where its stage put it.
     pub(crate) fn recenter(&mut self) {
         let placement = &mut self.placement;
         (placement.target, placement.heading, placement.last) = (None, None, None);
@@ -1420,6 +1516,7 @@ mod tests {
         target: [0.0, 200.0, 1200.0],
         focus: 1200.0,
         mode: CameraMode::Field,
+        stage: None,
     };
 
     const AREA: DisplayArea = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -1653,7 +1750,7 @@ mod tests {
         // view = R · world; R's rows are the camera's axes in the world.
         let r = Mat3::from_rotation_z(roll.to_radians()) * Mat3::from_rotation_x(pitch.to_radians()) * Mat3::from_rotation_y(-yaw.to_radians());
         let columns = (r * 4096.0).to_cols_array_2d();
-        Camera { axes: columns, translation: [0.0; 3], target, focus: 1200.0, mode }
+        Camera { axes: columns, translation: [0.0; 3], target, focus: 1200.0, mode, stage: None }
     }
 
     /// The world's direction `d` on the table.
@@ -1728,25 +1825,125 @@ mod tests {
         assert!(smooth.windows(2).all(|w| w[1] > w[0]) && smooth[4] < 45.0, "eased behind the camera: {smooth:?}");
     }
 
-    #[test]
-    fn a_battle_keeps_its_first_point_and_heading_and_a_new_scene_begins_again() {
-        let table = Table::default();
-        let mut placement = Placement::default();
-        let first = placement.update(&camera(10.0, 20.0, 0.0, [0.0, 0.0, 1200.0], CameraMode::Battle), 256.0, "battle", true, 0.0, &table).expect("a placement");
-        // Its camera orbits and cuts; the table stays.
-        for (n, (yaw, target)) in [(40.0, [100.0, 0.0, 1100.0]), (120.0, [-500.0, 0.0, 900.0]), (250.0, [0.0, 0.0, 1300.0])].into_iter().enumerate() {
-            let placed = placement.update(&camera(yaw, 20.0, 0.0, target, CameraMode::Battle), 256.0, "battle", true, 1.0 + n as f64, &table).expect("a placement");
-            assert_eq!(placed.table_from_world, first.table_from_world, "the battle's table keeps its first point and heading");
-            assert_eq!(placement.dim(1.0 + n as f64), 0.0, "and never dims");
+    /// A battle's stage, its turns running: combatants at `combatants` ((x,
+    /// y, z), height; y down) and the start view looking from `eye` at
+    /// `look_at`.
+    fn stage(combatants: &[([f32; 3], f32)], look_at: [f32; 3], eye: [f32; 3]) -> Stage {
+        let mut stage = Stage { look_at, eye, turns: true, ..Stage::default() };
+        for (slot, &(position, height)) in combatants.iter().enumerate() {
+            stage.combatants[slot] = Some(Combatant { position, height });
         }
-        // A new scene: its own point, heading and scale (the screen's width at
-        // its target's depth: a camera farther off makes the table's scale
-        // smaller).
+        stage
+    }
+
+    /// A battle camera turned `yaw` degrees and pitched 20 down, looking at
+    /// `target`, shaken by `quake` (its translation's offset), with `stage`.
+    fn battle_camera(yaw: f32, target: [f32; 3], quake: [f32; 3], stage: Stage) -> Camera {
+        let mut camera = camera(yaw, 20.0, 0.0, target, CameraMode::Battle);
+        camera.translation = quake;
+        camera.stage = Some(stage);
+        camera
+    }
+
+    #[test]
+    fn a_battle_stands_where_its_combatants_stand_facing_its_start_view_whatever_its_camera_does() {
+        let table = Table::default();
+        // The party on the right, two enemies on the left (one 300 tall),
+        // on ground 100 and 120 up (y down); the start view looks along the
+        // world's +z, 30 degrees to its right.
+        let (s, c) = 30f32.to_radians().sin_cos();
+        let look_at = [900.0, 0.0, 900.0];
+        let eye = [900.0 - 2000.0 * s, -1700.0, 900.0 - 2000.0 * c];
+        let party = [([1000.0, -100.0, 1000.0], 96.0), ([1100.0, -100.0, 1300.0], 96.0)];
+        let foes = [([600.0, -120.0, 1100.0], 300.0), ([500.0, -100.0, 1400.0], 96.0)];
+        let formed = stage(&[party[0], party[1], foes[0], foes[1]], look_at, eye);
+        let mut placement = Placement::default();
+        let first = placement.update(&battle_camera(10.0, [0.0, 0.0, 1200.0], [0.0; 3], formed), 256.0, "battle", true, 0.0, &table).expect("a placement");
+        // Its heading is the start view's: the way it looks lies away from
+        // the seat on the table.
+        assert!(wrap(first.heading - first_heading(look_at, eye)).abs() < 1e-5);
+        let away = on_table(&first, Vec3::new(s, 0.0, c));
+        assert!((away - Vec3::NEG_Z).length() < 1e-4, "the start view looks along {away} on the table");
+        // Its centre: the middle of their extent across the table, on the
+        // ground the lowest of them stands on (100 up).
+        let across: Vec<Vec3> = [party[0], party[1], foes[0], foes[1]].iter().map(|(p, _)| first.table_from_world.transform_point3(Vec3::from(*p))).collect();
+        let (lo, hi) = across.iter().fold((Vec3::MAX, Vec3::MIN), |(lo, hi), p| (lo.min(*p), hi.max(*p)));
+        assert!(((lo.x + hi.x) / 2.0).abs() < 1e-5 && ((lo.z + hi.z) / 2.0).abs() < 1e-5, "centred across the table: {lo} {hi}");
+        assert!(lo.y.abs() < 1e-5 && (hi.y - 20.0 * first.scale).abs() < 1e-5, "the lowest ground on the table's top, the other 20 above: {lo} {hi}");
+        // Its scale: their extent across it with the tallest one's height to
+        // spare spans the table.
+        let extent = ((hi.x - lo.x).max(hi.z - lo.z)) / first.scale;
+        assert!(((VOLUME_MAX.x - VOLUME_MIN.x) / first.scale - (extent + 300.0)).abs() < 0.5, "{extent} + 300 across the table");
+        // Its camera orbits, cuts and shakes (the quake offsets its
+        // translation): the table stays, never dims, and a recentring
+        // leaves it.
+        for (n, (yaw, target, quake)) in [(40.0, [100.0, 0.0, 1100.0], [0.0; 3]), (120.0, [-500.0, -300.0, 900.0], [12.0, -8.0, 0.0]), (250.0, [0.0, 0.0, 1300.0], [-6.0, 4.0, 3.0])].into_iter().enumerate() {
+            let now = 1.0 + n as f64;
+            let placed = placement.update(&battle_camera(yaw, target, quake, formed), 256.0, "battle", true, now, &table).expect("a placement");
+            assert_eq!(placed.table_from_world, first.table_from_world, "the battle's table stands where its stage put it");
+            assert_eq!(placement.dim(now), 0.0, "and never dims");
+            (placement.target, placement.heading, placement.last) = (None, None, None);
+        }
+        // A quake moves the camera, not the world: a point the game draws
+        // through the shaken camera is the same world point.
+        let (still, shaken) = (battle_camera(40.0, look_at, [0.0; 3], formed), battle_camera(40.0, look_at, [12.0, -8.0, 5.0], formed));
+        let point = [700.0, -80.0, 1250.0];
+        let back = |camera: &Camera| WorldFrame::new(camera).expect("a frame").point(camera.view_point(point));
+        assert!((back(&still) - back(&shaken)).length() < 1e-2 && (back(&still) - Vec3::from(point)).length() < 1e-2);
+        // During the battle's opening (its turns not yet running: its
+        // combatants entering), and without any combatant, the table stands
+        // on the start view's look-at, spanning the screen's width at its
+        // depth; once the turns run, its combatants place it again, a jump.
+        let mut placement = Placement::default();
+        let depth = (Vec3::from(look_at) - Vec3::from(eye)).length();
+        for (n, opening) in [stage(&[], look_at, eye), Stage { turns: false, ..formed }].into_iter().enumerate() {
+            let waiting = placement.update(&battle_camera(0.0, look_at, [0.0; 3], opening), 256.0, "battle", true, n as f64 * 0.1, &table).expect("a placement");
+            assert!(waiting.table_from_world.transform_point3(Vec3::from(look_at)).length() < 1e-4, "the start view's look-at at the centre");
+            assert!(((VOLUME_MAX.x - VOLUME_MIN.x) / waiting.scale - 320.0 * depth / 256.0).abs() < 0.5);
+        }
+        assert_eq!(placement.dim(0.2), 0.0, "no jump during the opening");
+        let joined = placement.update(&battle_camera(0.0, look_at, [0.0; 3], formed), 256.0, "battle", true, 0.5, &table).expect("a placement");
+        assert_eq!(joined.table_from_world, first.table_from_world, "placed by the combatants once they stand");
+        assert_eq!(placement.dim(0.5), 1.0, "a jump");
+        let stays = placement.update(&battle_camera(0.0, look_at, [0.0; 3], Stage { turns: false, ..formed }), 256.0, "battle", true, 0.6, &table).expect("a placement");
+        assert_eq!(stays.table_from_world, first.table_from_world, "and stays should the turns pause");
+        // Another battle (another start view) without leaving the mode: its
+        // own table, a jump; a new scene begins its own too.
+        let next = stage(&[party[0], foes[1]], [0.0, 0.0, 0.0], [0.0, -1000.0, -2000.0]);
+        let other = placement.update(&battle_camera(0.0, look_at, [0.0; 3], next), 256.0, "battle", true, 2.0, &table).expect("a placement");
+        assert_ne!(other.table_from_world, first.table_from_world);
+        assert_eq!(placement.dim(2.0), 1.0);
         let mut far = camera(0.0, 0.0, 0.0, [0.0, 0.0, 2400.0], CameraMode::Field);
         far.focus = 2400.0;
         let field = placement.update(&far, 256.0, "field:2", true, 10.0, &table).expect("a placement");
-        assert!((field.scale * 2.0 - first.scale).abs() < 1e-9, "half the scale at twice the depth: {} against {}", field.scale, first.scale);
-        assert!(field.table_from_world.transform_point3(Vec3::new(0.0, 0.0, 2400.0)).length() < 1e-4, "its own target at the table's centre");
+        assert!(field.table_from_world.transform_point3(Vec3::new(0.0, 0.0, 2400.0)).length() < 1e-4, "a field's own target at the table's centre");
+        // The screen's width at the target's depth spans a field's table:
+        // half the scale at twice the depth.
+        let near = placement.update(&camera(0.0, 0.0, 0.0, [0.0, 0.0, 1200.0], CameraMode::Field), 256.0, "field:3", true, 11.0, &table).expect("a placement");
+        assert!((field.scale * 2.0 - near.scale).abs() < 1e-9, "{} against {}", field.scale, near.scale);
+    }
+
+    /// The table's heading for a start view looking from `eye` at `look_at`.
+    fn first_heading(look_at: [f32; 3], eye: [f32; 3]) -> f32 {
+        let forward = Vec3::new(1.0, -1.0, -1.0) * (Vec3::from(look_at) - Vec3::from(eye));
+        std::f32::consts::PI - forward.x.atan2(forward.z)
+    }
+
+    #[test]
+    fn a_battles_table_shows_a_tall_enemy_within_its_volume_and_a_small_formation_at_least_two_projections_wide() {
+        let table = Table::default();
+        let place = |combatants: &[([f32; 3], f32)]| {
+            let stage = stage(combatants, [0.0, 0.0, 0.0], [0.0, -1000.0, -3000.0]);
+            Placement::default().update(&battle_camera(0.0, [0.0; 3], [0.0; 3], stage), 256.0, "battle", true, 0.0, &table).expect("a placement")
+        };
+        // The debug battle's boss (1523 tall) beside three people: it stands
+        // within nine tenths of the volume's height above the table.
+        let boss = place(&[([3820.0, 0.0, 4040.0], 1523.0), ([4360.0, 0.0, 4160.0], 92.0), ([4420.0, 0.0, 3840.0], 96.0), ([4460.0, 0.0, 4000.0], 96.0)]);
+        assert!((1523.0 * boss.scale - BATTLE_HEADROOM * VOLUME_MAX.y).abs() < 1e-4, "{} m tall", 1523.0 * boss.scale);
+        // Two against two a step apart (the Mountain Path's: 241 across):
+        // the table spans two projection distances' screen width.
+        let small = place(&[([2288.0, -562.0, 1095.0], 60.0), ([2333.0, -514.0, 932.0], 96.0), ([2131.0, -560.0, 1095.0], 62.0), ([2092.0, -519.0, 963.0], 62.0)]);
+        assert!(((VOLUME_MAX.x - VOLUME_MIN.x) / small.scale - BATTLE_SPAN).abs() < 0.5);
     }
 
     #[test]

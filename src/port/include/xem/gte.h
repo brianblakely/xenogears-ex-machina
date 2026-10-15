@@ -207,13 +207,20 @@ typedef struct {
  * controlled character's position through the camera (EYE, its sprite the
  * owner). The world map's camera maps points relative to the camera's
  * target, its z negated, as the world map places its objects
- * (worldmap_present.c): its target is (0, the target's height, 0). */
+ * (worldmap_present.c): its target is (0, the target's height, 0). Before a
+ * battle's camera comes its stage (battle_present.c), in the battle's world:
+ * each combatant the battle shows (STAGE: `view` its sprite's place, `sz`
+ * its height, `owner` its slot, 0-10), then the scene's start view, the
+ * camera the battle begins with (STAGE entries owned by XEM_STAGE_LOOK_AT,
+ * its look-at, `sz` 1 once the battle's turns run after its opening, and
+ * XEM_STAGE_EYE, its eye). */
 enum {
     XEM_PROJECTION_GROUND = 3,
     XEM_PROJECTION_FOCUS = 4,
     XEM_PROJECTION_AXIS = 6,
     XEM_PROJECTION_EYE = 7,
     XEM_PROJECTION_CAMERA = 8,
+    XEM_PROJECTION_STAGE = 9,
 };
 
 /* A CAMERA entry's owner: which of the game's 3D modes drew the frame. */
@@ -221,6 +228,13 @@ enum {
     XEM_CAMERA_FIELD = 1,
     XEM_CAMERA_BATTLE = 2,
     XEM_CAMERA_WORLDMAP = 3,
+};
+
+/* The start view's points among a battle's STAGE entries (owners past the
+ * eleven slots). */
+enum {
+    XEM_STAGE_LOOK_AT = 16,
+    XEM_STAGE_EYE = 17,
 };
 
 #ifdef __psx__

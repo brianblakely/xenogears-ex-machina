@@ -953,6 +953,44 @@ fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_poi
     assert!(point.iter().zip(back).all(|(a, b)| (a - b).abs() < 0.01), "{point:?} came back as {back:?}");
     assert!((camera.view_point(camera.target)[2] - camera.focus).abs() < 1.0, "the target lies at its depth");
     assert_eq!(xem_gpu::Camera { axes: [[0.0; 3]; 3], ..camera }.world_point([1.0; 3]), None, "no space, no inverse");
+    assert_eq!(camera.stage, None, "no stage recorded before it");
+}
+
+#[test]
+fn a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does() {
+    use xem_gpu::{CameraMode, Combatant, Projection, Reveals, Stage, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE }));
+    let _ = gpu.take_trace();
+    let entry = |class: u8, sz: u16, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 164), h: 512, owner, view };
+    let axes = |records: &mut Vec<Projection>| {
+        records.extend((0..3).map(|k| entry(6, 0, k, std::array::from_fn(|i| if i == k as usize { 4096 } else { 0 }))));
+        records.push(entry(6, 0, 3, [0, 0, 3000]));
+    };
+    // A battle's stage (combatants in slots 0 and 4, the start view's
+    // look-at, its turns running, and eye), then its camera; then a field's
+    // camera, after a stage no camera of a battle took.
+    let mut records = vec![
+        entry(9, 96, 0, [2288, -562, 1095]),
+        entry(9, 451, 4, [1075, -175, 28]),
+        entry(9, 1, 16, [1632, -96, 2368]),
+        entry(9, 0, 17, [1632, -1800, -900]),
+    ];
+    axes(&mut records);
+    records.push(entry(8, 3000, 2, [2230, -540, 1010]));
+    records.push(entry(9, 60, 1, [10, 0, 10]));
+    axes(&mut records);
+    records.push(entry(8, 3000, 1, [0, 0, 0]));
+    gpu.trace_projections(0, &records, &[], &[]);
+    let trace = gpu.take_trace();
+    let cameras: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Camera(c) = op { Some(*c) } else { None }).collect();
+    assert_eq!(cameras.len(), 2);
+    let mut stage = Stage { look_at: [1632.0, -96.0, 2368.0], eye: [1632.0, -1800.0, -900.0], turns: true, ..Stage::default() };
+    stage.combatants[0] = Some(Combatant { position: [2288.0, -562.0, 1095.0], height: 96.0 });
+    stage.combatants[4] = Some(Combatant { position: [1075.0, -175.0, 28.0], height: 451.0 });
+    assert_eq!((cameras[0].mode, cameras[0].stage), (CameraMode::Battle, Some(stage)), "the battle's camera takes its stage");
+    assert_eq!((cameras[1].mode, cameras[1].stage), (CameraMode::Field, None), "a field's camera carries none");
 }
 
 /// FNV-1a over bytes, as the MDEC keys a macroblock's output.

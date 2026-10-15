@@ -1434,6 +1434,12 @@ const FIELD: [Face; 4] = [
 fn gte_frame(gpu: &mut xem_gpu::Gpu, columns: [[i32; 3]; 3], faces: &[Face], camera: bool) {
     gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
     gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    gte_faces(gpu, columns, faces, camera);
+}
+
+/// [`gte_frame`]'s camera record and `faces`, after whatever the frame drew
+/// before them.
+fn gte_faces(gpu: &mut xem_gpu::Gpu, columns: [[i32; 3]; 3], faces: &[Face], camera: bool) {
     let matrix = Mat3x3(columns);
     // The target in the world, and its depth through the camera.
     let target = [0.0, 200.0, 1200.0];
@@ -1750,6 +1756,41 @@ fn a_fade_tints_the_diorama_and_its_pane_but_not_the_room() {
     let pane_at = |p: &[u8], x: usize, y: usize| p[(y * 640 + x) * 4..(y * 640 + x) * 4 + 4].to_vec();
     assert_eq!((pane_at(&plain_pane, 560, 430), pane_at(&faded_pane, 560, 430)), (vec![255, 255, 0, 255], vec![191, 191, 0, 255]), "the interface under the fade darkens on the pane");
     assert_eq!(pane_at(&faded_pane, 320, 300), [0, 0, 0, 0], "the rest of the pane stays transparent");
+}
+
+#[test]
+fn a_picture_the_game_draws_over_its_clear_shows_whole_on_the_wall() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // The game's clear, then a magenta panorama over the screen's top half
+    // before the scene, in three panels from above the screen's top (as the
+    // debug battle's forest), all on the wall in one plane; the camera
+    // recorded first, as the port records it before its frame's draws.
+    // Where the room shows, the wall leaves out the clear: the panels alone.
+    let traces = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        device.trace_projections(0, &camera_entries(LEVEL, [0, 0, 0], [0, 200, 1200], 1200), &[], &[]);
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        for x in [1, 106, 211] {
+            device.write_gp0_words(&[0x28FF_00FF, xy(x, -18), xy(x + 105, -18), xy(x, 122), xy(x + 105, 122)]);
+        }
+        gte_faces(device, LEVEL, &FIELD, false);
+    });
+    let picture = |room: bool| {
+        let mut view = diorama_view(&gpu, &traces, Table::default());
+        view.set_room(room);
+        let eye = [orbit(0.0, 10.0, 1.2, 0.0)];
+        for now in [0.0, 1.0] {
+            present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+        }
+        let (pictures, screen, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), 2.0);
+        assert_eq!(screen, 0.0);
+        pictures.into_iter().next().unwrap()
+    };
+    let magenta = |p: &[u8]| (0..640 * 480).filter(|&i| p[i * 4..i * 4 + 3] == [255, 0, 255]).collect::<Vec<_>>();
+    let (over, alone) = (magenta(&picture(false)), magenta(&picture(true)));
+    assert!(alone.len() > 5000, "the strip on the wall: {} pixels", alone.len());
+    assert_eq!(over.len(), alone.len(), "the strip shows as whole over the clear as alone (with the wall's depth written, the clear's fought it)");
+    assert_eq!(over, alone);
 }
 
 #[test]

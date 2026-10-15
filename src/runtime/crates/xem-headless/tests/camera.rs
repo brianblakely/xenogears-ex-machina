@@ -11,7 +11,10 @@
 //! from a frame to the next, the median still primitive moves less than 4
 //! world units and 95 in 100 of them do (through the frame before's camera,
 //! the median moves more than four times that). In a battle and on the
-//! world map the camera looks at the target it records. The records change
+//! world map the camera looks at the target it records. A battle's cameras
+//! carry its stage: at rest, its combatants at their sprites' places and
+//! heights as the battle keeps them, its scene data's start view, and its
+//! turns running. The records change
 //! nothing of the game: from the same state, the same frames end at the
 //! same RAM, VRAM, sound and clock with `around` 0, 1 and 2 as without a
 //! trace.
@@ -371,6 +374,77 @@ fn a_stage_drawn_over_twice_a_presentation_keeps_its_last_frames_camera() {
 #[test]
 fn the_world_maps_terrain_stays_put_through_each_frames_camera_as_the_camera_turns() {
     scenery_stays_put_as_the_camera_turns(Mode::Worldmap, 600, 1, 4.0);
+}
+
+/// `battle_area` (battle/area.h): its slots (0x1C bytes each, `hidden` at
+/// +3) and the slots' sprites (x, y and z in 16.16, `height` at +0x36).
+const BATTLE_AREA: u32 = 0x800C_3EB0;
+const AREA_SLOTS: u32 = BATTLE_AREA + 4;
+const AREA_SPRITES: u32 = BATTLE_AREA + 0x8C8C;
+/// The scene data's camera 0, the battle's start view (battle/scene.h).
+const START_VIEW: u32 = 0x47C;
+
+#[test]
+fn a_battles_cameras_carry_its_stage_as_the_game_keeps_it() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut session = Mode::Battle.enter(&disc);
+    // Cross now and then (its attacks), then nothing for two seconds: the
+    // combatants back at their places, at rest.
+    let shown = present(&mut session, &gpu, 420, 1, |n| if n < 300 { Mode::Battle.buttons(n) } else { vec![] });
+    let cameras: Vec<Camera> = shown.iter().filter_map(|frame| frame.camera.filter(|c| c.mode == CameraMode::Battle)).collect();
+    assert!(cameras.len() > 300 && cameras.iter().all(|c| c.stage.is_some()), "every battle camera carries its stage ({} cameras)", cameras.len());
+    let scene = session.execute(&json!({"cmd": "inspect", "path": "mode_battle_scene_data"}));
+    let data = u32::from_str_radix(scene.as_str().expect("a pointer").trim_start_matches("0x"), 16).unwrap();
+    // Each of a few more frames: the stage the port recorded as the game
+    // drew it, against RAM before and after the frame (at rest the places
+    // stay; a sprite's frame extent, its height, changes within a frame as
+    // its animation steps: measured, 90 as the battle draws, 96 before and
+    // after).
+    let read = |session: &mut Session<NativeModule>| {
+        let memory = session.runtime.memory();
+        let word = |address: u32| {
+            let mut bytes = [0u8; 4];
+            memory.read(address, &mut bytes).expect("RAM");
+            u32::from_le_bytes(bytes)
+        };
+        let half = |address: u32| (word(address & !3) >> (8 * (address & 2))) as u16;
+        let combatants: Vec<Option<([f32; 3], f32)>> = (0..11u32).map(|slot| {
+            let sprite = word(AREA_SPRITES + slot * 4);
+            let hidden = word(AREA_SLOTS + slot * 0x1C) >> 24 != 0;
+            (sprite != 0 && !hidden).then(|| {
+                let at = |offset: u32| (word(sprite + offset) as i32 >> 16) as f32;
+                ([at(0), at(4), at(8)], f32::from(half(sprite + 0x36)))
+            })
+        }).collect();
+        let point = |at: u32| [0, 2, 4].map(|k| f32::from(half(data + START_VIEW + at + k) as i16));
+        (combatants, point(0), point(6))
+    };
+    for _ in 0..8 {
+        let (before, look_at, eye) = read(&mut session);
+        assert!(session.frame().expect("frame"));
+        let trace = session.runtime.services().gpu.device_mut().take_trace();
+        let (after, _, _) = read(&mut session);
+        let stages: Vec<_> = trace.ops.iter().filter_map(|op| match op {
+            TraceOp::Camera(c) if c.mode == CameraMode::Battle => Some(c.stage),
+            _ => None,
+        }).collect();
+        assert_eq!(stages.len(), 1, "one battle camera a frame");
+        let stage = stages[0].expect("the battle camera carries its stage");
+        for (slot, recorded) in stage.combatants.iter().enumerate() {
+            let recorded = recorded.map(|c| (c.position, c.height));
+            assert_eq!(recorded.map(|(at, _)| at), before[slot].map(|(at, _)| at), "slot {slot}: where the battle keeps it");
+            assert!(recorded.is_none_or(|(_, height)| [before[slot], after[slot]].iter().flatten().any(|(_, h)| (h - height).abs() <= h / 5.0)),
+                "slot {slot}: {recorded:?} as tall as before ({:?}) or after ({:?}) its frame, within a fifth", before[slot], after[slot]);
+        }
+        assert_eq!((stage.look_at, stage.eye), (look_at, eye), "the scene data's start view");
+        assert!(stage.turns, "its turns run");
+    }
+    let (combatants, look_at, eye) = read(&mut session);
+    eprintln!("the debug battle's stage at rest: {combatants:?}; start view {look_at:?} from {eye:?}");
 }
 
 /// The game's state after `frames` frames from `state` with the trace

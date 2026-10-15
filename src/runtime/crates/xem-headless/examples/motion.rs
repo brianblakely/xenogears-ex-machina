@@ -195,11 +195,26 @@ impl Review {
         let mirrored = presented.as_ref().and_then(|presented| presented.space).map(|space| {
             xem_render::glam::Mat3::from_cols_array_2d(&space.camera.axes).determinant() < 0.0
         });
+        // The camera the frame shown was drawn with (its mode, target and
+        // heading about the world's up, degrees) and the world point the
+        // table's centre shows, with the table's metres per world unit.
+        let placement = presented.as_ref().and_then(|presented| presented.space).map(|space| {
+            let axis = xem_render::glam::Mat3::from_cols_array_2d(&space.camera.axes).row(2);
+            let centre = space.world_from_room().transform_point3(space.room_from_table.transform_point3(Vec3::ZERO));
+            // A battle's stage: its combatants (slot, place, height) and
+            // start view.
+            let stage = space.camera.stage.map(|stage| json!({
+                "combatants": stage.combatants.iter().enumerate().filter_map(|(slot, c)| c.map(|c| json!([slot, c.position, c.height]))).collect::<Vec<_>>(),
+                "look_at": stage.look_at, "eye": stage.eye,
+            }));
+            json!({"mode": format!("{:?}", space.camera.mode), "target": space.camera.target, "heading": axis.x.atan2(axis.z).to_degrees(),
+                "centre": centre.to_array(), "world_scale": space.scale, "stage": stage})
+        });
         gpu.queue.submit([encoder.finish()]);
         let stats = view.diorama_stats();
         self.builds.push(json!({"scene": stats.scene, "sprites": stats.sprites, "one_sided": stats.one_sided, "revealed": stats.revealed,
             "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "runs": stats.runs,
-            "builds": stats.builds, "mirrored": mirrored}));
+            "builds": stats.builds, "mirrored": mirrored, "placement": placement}));
         shown.then(|| (self.target.width(), self.target.height()))
     }
 }
@@ -634,7 +649,11 @@ fn main() {
         shown_revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
     }
     if let Some((x, y)) = probe {
-        for op in view.frame().primitives() {
+        for (index, op) in view.frame().primitives().iter().enumerate() {
+            // The frame's VRAM writes, where they lie among its draws.
+            if let xem_render::xem_gpu::TraceOp::Write { rect, upload, .. } = op {
+                eprintln!("write at op {index}: {rect:?} upload {upload}");
+            }
             let xem_render::xem_gpu::TraceOp::Draw(p) = op else { continue };
             // The point in the buffer the primitive was drawn into.
             let (x, y) = (x + f32::from(p.environment.area[0]), y + f32::from(p.environment.area[1]));
@@ -643,7 +662,7 @@ fn main() {
             let (y0, y1) = v.iter().fold((f32::MAX, f32::MIN), |(a, b), v| (a.min(v.fy), b.max(v.fy)));
             if x >= x0 && x <= x1 && y >= y0 && y <= y1 {
                 let depths: Vec<f32> = v.iter().map(|v| v.z).collect();
-                eprintln!("{:?} {:?} textured {} semi {} offset {:?} owner {:#x} depths {depths:?} bounds {x0:.1},{y0:.1}-{x1:.1},{y1:.1} mode {:#x}",
+                eprintln!("op {index}: {:?} {:?} textured {} semi {} offset {:?} owner {:#x} depths {depths:?} bounds {x0:.1},{y0:.1}-{x1:.1},{y1:.1} mode {:#x}",
                     p.class, p.shape, p.textured, p.semi, p.projection, p.owner, p.environment.draw_mode);
                 eprintln!("    points (x, y, u, v): {:?}", v.iter().map(|v| (v.x, v.y, v.u, v.v)).collect::<Vec<_>>());
                 eprintln!("    before the division: {:?}, floor {:?}", v.iter().map(|v| v.view).collect::<Vec<_>>(), p.ground);

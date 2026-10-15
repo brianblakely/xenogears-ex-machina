@@ -123,7 +123,8 @@ pub struct Eye {
 /// 4.12, times the field's scale in a field) and its translation, so that a
 /// world point's view-space point (the space of [`TraceVertex::view`]) is
 /// `axes · point / 4096 + translation`; the point it looks at, in the same
-/// world units (`target`), and that point's depth through it (`focus`).
+/// world units (`target`), and that point's depth through it (`focus`). A
+/// battle's carries its stage, recorded just before it (`stage`).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Camera {
     pub axes: [[f32; 3]; 3],
@@ -131,6 +132,30 @@ pub struct Camera {
     pub target: [f32; 3],
     pub focus: f32,
     pub mode: CameraMode,
+    pub stage: Option<Stage>,
+}
+
+/// A battle's stage, as the port records it before the battle's camera
+/// (xem/gte.h `XEM_PROJECTION_STAGE`), in the battle's world (y down): the
+/// combatants the battle shows (by slot: the party's 0-2, the enemies'
+/// 3-10), as its camera frames them, the scene's start view, the camera
+/// the battle begins with (its look-at and its eye), and whether its turns
+/// run (`turns`: its opening is over, its combatants have entered and stand).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Stage {
+    pub combatants: [Option<Combatant>; 11],
+    pub look_at: [f32; 3],
+    pub eye: [f32; 3],
+    pub turns: bool,
+}
+
+/// A battle's combatant: where its sprite stands and how tall it is (its
+/// frame's extent at its scale: a person's about 96 units, a Gear's about
+/// 500, a big enemy's more).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Combatant {
+    pub position: [f32; 3],
+    pub height: f32,
 }
 
 /// Which of the game's 3D modes a [`Camera`] drew a frame of, and so the
@@ -261,7 +286,12 @@ const FOCUS: u8 = 4;
 const AXIS: u8 = 6;
 const EYE: u8 = 7;
 const CAMERA: u8 = 8;
+const STAGE: u8 = 9;
 const TRANSLATION: u32 = 3;
+/// A battle's stage entries past its slots: the start view's look-at and
+/// eye (xem/gte.h `XEM_STAGE_*`).
+const STAGE_LOOK_AT: u32 = 16;
+const STAGE_EYE: u32 = 17;
 /// Points the interface projects (xem/gte.h: the world map's player marker),
 /// traced as interface: flat, at the original's whole pixels.
 const INTERFACE: u8 = 5;
@@ -550,11 +580,13 @@ pub(crate) struct Recorder {
     /// The newest floor point of each sprite (by owner), the camera focus
     /// depth since the last take, and the world's axes and the translation
     /// the port recorded last (before the camera's target and the
-    /// controlled character's position).
+    /// controlled character's position), and the battle's stage recorded
+    /// before its camera (taken by it).
     grounds: WordMap<u32>,
     focus: Option<u16>,
     axes: [[f32; 3]; 3],
     translation: [f32; 3],
+    stage: Option<Stage>,
     /// The age of culled faces: vertical blanks after which the port had
     /// recorded something new. A game that records nothing (paused) holds
     /// its last list and its faces with it.
@@ -662,10 +694,26 @@ impl Recorder {
                     }
                 }
                 CAMERA => {
+                    // A battle's stage comes just before its camera.
+                    let stage = self.stage.take();
                     if let Some(mode) = CameraMode::from_owner(projection.owner) {
                         let target = projection.view.map(|c| c as f32);
-                        let camera = Camera { axes: self.axes, translation: self.translation, target, focus: f32::from(projection.sz), mode };
+                        let stage = stage.filter(|_| mode == CameraMode::Battle);
+                        let camera = Camera { axes: self.axes, translation: self.translation, target, focus: f32::from(projection.sz), mode, stage };
                         self.ops.push(TraceOp::Camera(camera));
+                    }
+                }
+                STAGE => {
+                    let point = projection.view.map(|c| c as f32);
+                    let stage = self.stage.get_or_insert_with(Stage::default);
+                    match projection.owner {
+                        STAGE_LOOK_AT => (stage.look_at, stage.turns) = (point, projection.sz != 0),
+                        STAGE_EYE => stage.eye = point,
+                        slot => {
+                            if let Some(combatant) = stage.combatants.get_mut(slot as usize) {
+                                *combatant = Some(Combatant { position: point, height: f32::from(projection.sz) });
+                            }
+                        }
                     }
                 }
                 EYE => {
