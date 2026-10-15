@@ -2344,11 +2344,12 @@ terrain triangle there, the cell split along one diagonal as
 takes with the GTE and the scratchpad; the port only reads the cell's
 corners (none where no terrain block is loaded). The vehicle boot mode 3
 begins in hovers 136 units above it there, and the terrain the frame draws
-passes over the target within a unit and a half of it. The trace hands each one
-over in order with the commands (`TraceOp::Camera`: `xem_gpu::Camera` with
-its axes, translation, target, focus depth and `CameraMode`, a battle's with
-its `Stage`, the world map's with its `ground`; `Camera::world_point`
-inverts it, `Camera::view_point` applies it). A buffer's log keeps the records current
+passes over the target within a unit and a half of it. The trace hands
+each one over in order with the commands (`TraceOp::Camera`:
+`xem_gpu::Camera` with its axes, translation, target, focus depth and
+`CameraMode`, a battle's with its `Stage`, the world map's with its
+`ground`; `Camera::world_point` inverts it, `Camera::view_point` applies
+it). A buffer's log keeps the records current
 when its frame's first primitive is drawn (`FrameLog::camera` and `eye`,
 the newest within four vertical blanks), and `FrameRenderer::camera` the
 shown frame's: the port makes a frame's records while the game builds it,
@@ -2453,10 +2454,12 @@ the ground's the world map's block pointers, so they are checked on the
 game only).
 
 Not done or not measured: the [Diorama](#diorama) presents these records
-in both headset hosts ([In a headset](#in-a-headset)), where only field 30
-and field 12 ran; the cost of `ANYWHERE` in battles and on
-the world map is not measured; the world map's scripted scenes, the
-arena, menus and movies were not run with it; the first battle's camera
+in both headset hosts ([In a headset](#in-a-headset)), where field 30,
+field 12, the debug battle on foot and the world map ran; the cost of
+`ANYWHERE` in battles and on the world map is not measured; the ground
+under the world map's target was compared with its terrain for its boot
+mode 3 vehicle only (not walking, nor on its sea); the world map's
+scripted scenes, the arena, menus and movies were not run with it; the first battle's camera
 turned while it attacked, the desert's only came in (0.9 degrees); of the
 real game, only the desert was presented several frames at a time; a frame
 built with the bits before a change is not told apart.
@@ -3055,7 +3058,28 @@ the gaze scripted, prayer hands at headset frame 60 open the settings
 panel above the table (its quad layer shown from frame 61 to 92, the game
 held) and a pinch on its Close closes it, and a pinch through the table
 at the world point (88.67, 0, -55.33) of field 30 walks Fei there
-(moving, then arrived). `web/tests/xr-diorama.test.mjs` (IWER's Quest 3; field 30):
+(moving, then arrived). Its battle and world map runs show them as
+dioramas: the debug battle on foot (Start on the selector's defaults, then
+Cross every 30 game frames from game frame 1500: its attacks), and the
+world map at 25%, the vehicle boot mode 3 begins in driven on by its
+throttle (Triangle) from game frame 800 to 1200. From the first headset
+frame the diorama shows in (397 and 200 measured, game frames 1194 and
+607) it shows in every one to the end. The battle's table centre
+(`table=`) shows two world points only, the start view's look-at, (4192,
+0, 3680), during the opening, then the combatants' middle, (4140, 0,
+4000), from headset frame 447 (game frame 1320) to the end, while the
+camera's target took 127 places. The world map's shows the camera's
+target across, (0, its height, 0), the map moving under it, the target
+climbing from 256 to 472 units up (y down: -256 to -472) and standing
+0.031 to 0.087 m above the table's top (within eight tenths of the
+volume's 0.55 m) as the table settles towards the ground under it. At
+headset frames 600 and 700 (the battle) and 350 and 420 (the world map)
+the eyes' disparity grows with nearness (measured: 11 to 21 and 10 to 17
+pixels; 10 to 19 and 10 to 16), each eye showing its diorama picture in
+the renderer's colours (0.0 levels over 56 to 64 and 31 to 41 covered
+blocks), and the RAM at the end is `xem-headless`'s for the same log
+(fb5a86347ce8e142, 0cf9bacdeea04a58).
+`web/tests/xr-diorama.test.mjs` (IWER's Quest 3; field 30):
 the automation's 120 frames end at the same RAM in and out of the headset
 with the diorama on; the table covers more than half of a row of the left
 view (its points unlike the room's backdrop, the layer's top left
@@ -3075,7 +3099,20 @@ walk for it, within 2 units (measured: (99.99998, 0, 19.99994) for
 (100, 0, 20)), and Fei arrives within 16 units of it (at (95, 0, 23),
 5.8 away); the test goes on to scale the diorama and to show it in
 immersive AR ([Scaling](#scaling), [The
-room](#the-room-passthrough-and-immersive-ar)).
+room](#the-room-passthrough-and-immersive-ar)). Its second test shows the
+debug battle on foot (saved by `xem-headless` with its turns running) and
+the world map (boot mode 3) as dioramas at 100%: the automation's 120
+frames end at the same RAM in and out of the headset in each; once the
+diorama shows, moving the head 10 cm sideways shifts the rows across the
+table by their depth, by 5 points or more from one to another (measured:
+17 to 44 points in the battle, 17 to 36 on the world map, where a flat
+picture shifts every row alike); played on, the party attacking (Cross
+every 30 game frames) and the vehicle driven on (Triangle held), the
+diorama alone shows in all 40 samples 4 session frames apart (312 and 528
+game frames), the battle's room from its world the same in every sample
+while its camera's target took 17 places, and the world map's camera's
+target at (0, its height, 0) at 21 heights, standing in the room where it
+first stood across the floor (within 0.0001 mm).
 `xem-headless/tests/gestures.rs`
 `through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none`
 (field 30, the table placed from the frame's own camera record as a
@@ -3118,7 +3155,10 @@ Not done or not measured: on Monado's simulated
 HMD `monado-ctl -c` delivers the event but the head's poses do not jump
 (nothing visible moves LOCAL there), and no controller binding recentres
 by default; comfort is not measured (no people tests) and nothing ran on a
-Quest; marks are drawn over the diorama whatever stands in front of them;
+Quest; a Gear battle was not shown as a diorama in a headset (the review
+camera's captures only: Cross through the debug Gear battle traps the game
+module, an open issue of the module, not of the view), nor the world map
+walking; marks are drawn over the diorama whatever stands in front of them;
 a ray through the table meets the floor through scenery standing in front
 of it (no depth test: a floor behind a wall can be pointed at); the HUD's
 place and size beside the pane are checked by the unit test alone, not in
@@ -3176,7 +3216,8 @@ is aimed at and nothing reaches the game: no press, command or pause.
 - **Logs.** OpenXR's `xrframe` line adds `diorama_scale=` (as shown: the
   hands' while they scale it; 0 for the screen), `world_scale=` (the
   table's metres per world unit), `target=` (the camera's target, world
-  units) and `anchor=` (where it stands in the room, metres) while the
+  units), `anchor=` (where it stands in the room, metres) and `table=`
+  (the world point the table's centre shows, world units) while the
   diorama shows, and `key=` (a key's width beside the screen or the pane,
   metres); each commit prints `scale commit diorama_scale=N revision=R`.
   WebXR's `status().xr` has `scale` (the screen's), `dioramaScale`,

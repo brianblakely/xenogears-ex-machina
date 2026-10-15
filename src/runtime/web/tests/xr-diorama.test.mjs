@@ -15,7 +15,10 @@
 // AR-specific and its layer with alpha, blends by alpha: the layer is
 // transparent where VR shows the room's backdrop or the game's clear on the
 // wall behind the table, and drawn where it shows the diorama (VR's layer
-// opaque).
+// opaque). In the debug battle, its party attacking, the table stands
+// still while the battle's camera moves; on the world map, its vehicle
+// driven on, it stays on the camera's target; both show in depth, and the
+// automation's frames end at the same RAM in and out of the headset.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -387,6 +390,145 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       assert.ok(black.length >= grid.length * 0.05 && behind >= black.length * 0.85, `the room behind the table where VR showed the wall's clear: ${behind} of ${black.length}`);
       assert.ok(covered >= drawn.length * 0.98, `the diorama drawn: ${covered} of ${drawn.length}`);
       assert.ok(opaque.length > 0 && alike >= opaque.length * 0.95, `opaque pixels as VR shows them: ${alike} of ${opaque.length}`);
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('a battle\'s table stands still while its camera moves and the world map\'s keeps its target, both in depth', { timeout: 600_000 }, async () => {
+    // The debug battle on foot with its turns running (Start on the
+    // selector's defaults, as xr-game-smoke.sh's battles) and the world
+    // map (boot mode 3), each saved by xem-headless.
+    const scenes = [
+      ['battle', [{ cmd: 'frames', count: 60 }, { cmd: 'write', path: 'mode_battle_standalone', value: 1 }, { cmd: 'boot_mode', mode: 2 },
+        { cmd: 'frames', count: 900 }, { cmd: 'press', buttons: ['start'], frames: 1 }, { cmd: 'frames', count: 600 }]],
+      ['world-map', [{ cmd: 'boot_mode', mode: 3 }, { cmd: 'frames', count: 900 }]],
+    ];
+    const states = new Map(scenes.map(([name, commands]) => {
+      const path = join(SHOTS, `xr-diorama-${name}.state`);
+      execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+        input: [...commands, { cmd: 'state_save', path }].map((c) => JSON.stringify(c)).join('\n') + '\n',
+      });
+      return [name, readFileSync(path).toString('base64')];
+    }));
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    try {
+      const page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      const load = (base64) => page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))), base64);
+      // The same frames outside the headset first, for the state check.
+      const flat = new Map();
+      for (const [name, base64] of states) {
+        await load(base64);
+        await page.evaluate(() => window.xem.runFrames(120));
+        flat.set(name, await page.evaluate(() => window.xem.memoryHash()));
+      }
+      const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      const applied = await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, xr: { ...g.xr, view: 'Diorama' } } }), graphics);
+      assert.equal(applied.ok, true, JSON.stringify(applied));
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      const layer = await page.evaluate(() => {
+        const gl = document.querySelector('canvas').getContext('webgl2');
+        return [gl.drawingBufferWidth, gl.drawingBufferHeight];
+      });
+      // Rows of the left view across the table, near first (as above).
+      const heights = Array.from({ length: 12 }, (_, i) => 0.04 + i * 0.04);
+      const count = 200;
+      const points = heights.flatMap((v) => Array.from({ length: count }, (_, i) => [Math.floor((0.05 + 0.4 * i / count) * layer[0]), Math.floor(v * layer[1])]));
+      const read = async () => {
+        const bytes = await page.evaluate((points) => window.xem.xr.readback(points), points);
+        return heights.map((_, r) => bytes.slice(r * count * 4, (r + 1) * count * 4));
+      };
+      const origin = await page.evaluate(() => { const p = window.xrDevice.position; return [p.x, p.y, p.z]; });
+      for (const [name] of scenes) {
+        // The automation's frames in the headset end where the flat ones did.
+        await load(states.get(name));
+        await page.evaluate(() => window.xem.runFrames(120));
+        assert.equal(await page.evaluate(() => window.xem.memoryHash()), flat.get(name), `${name}: the diorama changes nothing in the game`);
+        // From the state, once the diorama shows, the game held: in depth,
+        // the head 10 cm to the right shifts the rows across the table by
+        // their depth, unlike a flat picture's one shift (the terrain's
+        // hills and the battle's combatants stand nearer than the rows
+        // below them, so not nearest first).
+        await load(states.get(name));
+        await page.evaluate(() => window.xem.setRunning(true));
+        await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
+        await page.evaluate(() => window.xem.setRunning(false));
+        await frames(4);
+        const rows = await read();
+        await page.screenshot({ path: join(SHOTS, `xr-diorama-${name}.png`) });
+        await page.evaluate(([x, y, z]) => window.xrDevice.position.set(x + 0.1, y, z), origin);
+        await frames(6);
+        const after = await read();
+        const shifts = rows.map((row, r) => shift(row, after[r]));
+        console.log(`${name}: parallax for 10 cm sideways, by row (near first): ${JSON.stringify(shifts)} points`);
+        const matched = shifts.filter((s) => s.matched);
+        const spread = Math.max(...matched.map((s) => s.shift)) - Math.min(...matched.map((s) => s.shift));
+        assert.ok(matched.length >= 4, `${name}: rows the move matches: ${JSON.stringify(shifts)}`);
+        assert.ok(spread >= 5, `${name}: the rows shift by their depth: ${JSON.stringify(shifts)}`);
+        await page.evaluate((p) => window.xrDevice.position.set(...p), origin);
+        await frames(6);
+        // Played on: the battle's party attacking (Cross every 30 game
+        // frames: its camera moves, orbits and cuts), the world map's
+        // vehicle (the one boot mode 3 begins in) driven on by its
+        // throttle, Triangle, climbing as it goes; the table where each
+        // frame put it.
+        await page.evaluate(() => window.xem.setRunning(true));
+        await page.evaluate((name) => {
+          if (name === 'world-map') {
+            window.xem.command({ cmd: 'press', buttons: ['triangle'], frames: 400 });
+            return;
+          }
+          let next = 0;
+          window.presser = setInterval(() => {
+            const at = window.xem.status().loop.gameFrames;
+            if (at >= next) {
+              window.xem.command({ cmd: 'press', buttons: ['cross'], frames: 2 });
+              next = at + 30;
+            }
+          }, 20);
+        }, name);
+        const seen = [];
+        for (let i = 0; i < 40; i++) {
+          await frames(4);
+          const info = await status(page);
+          seen.push({ ...info.xr, gameFrames: info.loop.gameFrames });
+        }
+        await page.evaluate(() => { clearInterval(window.presser); window.xem.setRunning(false); });
+        await frames(4);
+        await page.screenshot({ path: join(SHOTS, `xr-diorama-${name}-played.png`) });
+        const shown = seen.filter((s) => s.diorama && s.share === 0).length;
+        const spaces = seen.filter((s) => s.space).map((s) => s.space);
+        const tables = spaces.map((s) => s.roomFromWorld);
+        const moved = Math.max(...tables.map((m) => Math.max(...m.map((v, i) => Math.abs(v - tables[0][i])))));
+        const targets = new Set(spaces.map((s) => s.target.join(',')));
+        // Where the camera's target stands in the room, across the floor.
+        const across = Math.max(...spaces.map((s) => Math.hypot(s.anchor[0] - spaces[0].anchor[0], s.anchor[2] - spaces[0].anchor[2])));
+        console.log(`${name}: the diorama alone in ${shown} of ${seen.length} samples over ${seen[seen.length - 1].gameFrames - seen[0].gameFrames} game frames, `
+          + `the room from the world within ${moved} of the first, the camera's target at ${targets.size} places (${[...targets].slice(0, 4).join('; ')}..) `
+          + `within ${(across * 1000).toFixed(4)} mm of its first place across the room, ${spaces[0]?.scale} m a unit`);
+        assert.equal(shown, seen.length, `${name}: the diorama shows throughout`);
+        if (name === 'battle') {
+          assert.ok(moved < 1e-5, `the battle's table stands still: ${moved}`);
+          assert.ok(targets.size >= 5, `the battle's camera moves while its table stands: ${targets.size} targets`);
+        } else {
+          // Its frame is the target's: (0, its height, 0), the map moving
+          // under it; the table follows its height or the ground under it.
+          assert.ok([...targets].every((t) => { const [x, , z] = t.split(',').map(Number); return x === 0 && z === 0; }) && targets.size > 1,
+            `the world map's camera's target, the vehicle climbing: ${[...targets]}`);
+          assert.ok(across < 0.001, `the world map's table stays on its camera's target across the room: ${across} m`);
+        }
+      }
       await page.evaluate(() => window.xem.xr.exit());
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
       assert.deepEqual(page.errors, []);

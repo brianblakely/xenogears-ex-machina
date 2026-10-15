@@ -1051,24 +1051,26 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // The diorama's scale as shown (the hands' while they scale it; 0 for
         // the screen) and, while it shows, the table's metres per world unit,
         // the camera's target (world units) and where it stands in the room
-        // (the table's anchor: metres), and a key's width beside the screen
-        // or the pane (metres).
+        // (the table's anchor: metres), the world point the table's centre
+        // shows (world units), and a key's width beside the screen or the
+        // pane (metres).
         let diorama_scale = match view.xr_view() {
             XrView::Diorama(table) => table.scale,
             XrView::Screen => 0.0,
         };
         let point = |p: Vec3, digits: usize| format!("{:.digits$},{:.digits$},{:.digits$}", p.x, p.y, p.z);
-        let (world_scale, target, anchor) = match &space {
+        let (world_scale, target, anchor, centre) = match &space {
             Some(space) => {
                 let target = Vec3::from(space.camera.target);
-                (format!("{:.6e}", space.scale), point(target, 2), point(space.room_from_world.transform_point3(target), 5))
+                let centre = space.world_from_room().transform_point3(space.room_from_table.transform_point3(Vec3::ZERO));
+                (format!("{:.6e}", space.scale), point(target, 2), point(space.room_from_world.transform_point3(target), 5), point(centre, 1))
             }
-            None => ("-".into(), "-".into(), "-".into()),
+            None => ("-".into(), "-".into(), "-".into(), "-".into()),
         };
         let key = xem_assist::draw::side_keys(&screen, 1)[0].1.size.0;
         let binaural = binaural_line(&mut game);
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} key={key:.5} passthrough={} binaural={binaural}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),

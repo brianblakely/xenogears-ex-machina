@@ -35,6 +35,13 @@
 #   a pinch with the gaze through the table on a floor point walks Fei
 #   there; in field 12 both eyes show the pane above the table with the
 #   game's dialogue on it, in the pane's colours;
+# - a battle on foot (its log attacking every 30 frames) and the world map
+#   (its vehicle driven on, at 25%) as dioramas: the diorama shows in every
+#   headset frame from its first; the battle's table stands where its
+#   start view looks during its opening, then on its combatants to the
+#   end, whatever its camera does; the world map's stays on its camera's
+#   target as the map moves under it; the eyes see 3D in the renderer's
+#   colours and the RAM is xem-headless's;
 # - save states and time controls in field 30 (a state xem-headless saved,
 #   loaded through an agent's --control command): the panel's Save state
 #   and Load state by pinches (the HUD's notices, the state file, which
@@ -326,6 +333,30 @@ for battle in battle gear; do
 done
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2300},"max_frames":3000}\n{"cmd":"memory_hash"}\n' "$gear" |
     "$headless" --disc "$disc" --control >"$out/gear-headless.log" 2>"$out/gear-headless.err"
+# The battle on foot as a diorama, its log pressing Cross every 30 frames
+# from game frame 1500 (its attacks: the battle's camera moves), both eyes
+# captured at headset frames 600 and 700; the world map as a diorama at
+# 25%, the vehicle it begins in driven on by its throttle (Triangle) from
+# game frame 800 to 1200, both eyes captured at 350 and 420; then each log
+# in xem-headless.
+fight="${foot%]}"
+for f in $(seq 1500 30 2200); do
+    fight="$fight, [$f, {\"cmd\": \"press\", \"buttons\": [\"cross\"], \"frames\": 2}]"
+done
+fight="$fight]"
+echo "{\"commands\": $fight}" >"$out/fight.json"
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/fight.json" --exit-at-frame 2300 --xr-capture "$out/battle-diorama" --xr-capture-at 600,700 \
+    >"$out/battle-diorama.log" 2>"$out/battle-diorama.err"
+printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2300},"max_frames":3000}\n{"cmd":"memory_hash"}\n' "$fight" |
+    "$headless" --disc "$disc" --control >"$out/battle-diorama-headless.log" 2>"$out/battle-diorama-headless.err"
+drive='[[0, {"cmd": "boot_mode", "mode": 3}], [800, {"cmd": "press", "buttons": ["triangle"], "frames": 400}]]'
+echo "{\"commands\": $drive}" >"$out/worlddrive.json"
+echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/worlddrive.json" --exit-at-frame 1500 --xr-capture "$out/worldmap-diorama" --xr-capture-at 350,420 \
+    >"$out/worldmap-diorama.log" 2>"$out/worldmap-diorama.err"
+printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1500},"max_frames":2500}\n{"cmd":"memory_hash"}\n' "$drive" |
+    "$headless" --disc "$disc" --control >"$out/worldmap-diorama-headless.log" 2>"$out/worldmap-diorama-headless.err"
 # Two-hand scaling of the diorama, with the inspection run's log (its RAM
 # checked against the same headless run): two whole-hand pinches spread at
 # headset frame 110 and contract at 150, once the log has walked Fei into
@@ -1040,6 +1071,61 @@ reference = [json.loads(l) for l in open(f"{out}/gear-headless.log") if l.starts
 reference = next(v for v in reference if isinstance(v, str))
 check(final_hash("gear.log") == reference, f"gear.log: RAM at game frame 2300 {final_hash('gear.log')} != headless {reference}")
 print(f"battles: on foot and in Gears on the screen at headset frames 560 and 620, the grab turning nothing on; Gears' RAM {final_hash('gear.log')}")
+
+# A battle and the world map as dioramas: from its first diorama frame on
+# the diorama shows in every headset frame (through the battle's attacks
+# and the world map's drive); the battle's table stands at two places
+# only, the start view's look-at during its opening, then its combatants'
+# middle to the end, while its camera's target moves; the world map's
+# stays on its camera's target across (its frame's (0, height, 0): the map
+# moves under it) at 25%, the target above its top within the headroom as
+# the table settles towards the ground under the climbing vehicle; the
+# eyes see 3D (their disparity grows with nearness) in the renderer's
+# colours; the RAM is xem-headless's for the same log.
+def diorama_run(name, frames, captures):
+    rows = records(f"{name}-diorama.log")
+    by = {int(r["n"]): r for r in rows}
+    shown = [r for r in rows if r["diorama"] == "1"]
+    first = int(shown[0]["n"]) if shown else None
+    check(first is not None and all(r["diorama"] == "1" for r in rows if int(r["n"]) >= first), f"{name}: the diorama gave way to the screen after frame {first}")
+    # The places the table's centre showed (world units), each from the
+    # headset frame it first did.
+    tables = []
+    for r in shown:
+        at = tuple(float(v) for v in r["table"].split(","))
+        if not tables or max(abs(a - b) for a, b in zip(at, tables[-1][0])) > 1:
+            tables.append((at, int(r["n"])))
+    for n in captures:
+        check(by[n]["diorama"] == "1" and by[n]["share"] == "0.000", f"{name} at {n}: the diorama alone was not shown ({by[n]['diorama']}, {by[n]['share']})")
+        d = disparities(png(f"{out}/{name}-diorama/{n}/left.png"), png(f"{out}/{name}-diorama/{n}/right.png"))
+        shifts = [s for _, s in d]
+        check(len(d) >= 3 and max(shifts) - min(shifts) >= 5 and d[-1][1] > d[0][1], f"{name} at {n}: the eyes' disparity does not grow with nearness: {d}")
+        for side in ("left", "right"):
+            blocks, levels = covered_off(png(f"{out}/{name}-diorama/{n}/{side}.png"), png(f"{out}/{name}-diorama/{n}/{side}-diorama.png"))
+            check(blocks >= 20 and levels <= 4, f"{name} at {n} {side}: the eye shows its diorama {levels:.1f} levels off over {blocks} covered blocks")
+        print(f"{name} diorama {n}: disparity by band of rows (top first) {d}")
+    reference = next(v for v in (json.loads(l) for l in open(f"{out}/{name}-diorama-headless.log") if l.startswith("{") or l.startswith('"')) if isinstance(v, str))
+    check(final_hash(f"{name}-diorama.log") == reference, f"{name}-diorama.log: RAM at game frame {frames} {final_hash(f'{name}-diorama.log')} != headless {reference}")
+    return rows, shown, tables
+rows, shown, tables = diorama_run("battle", 2300, (600, 700))
+moved = {r["target"] for r in shown}
+check(len(tables) == 2 and len(moved) > 20, f"the battle's table stood at {len(tables)} places ({tables[:3]}..) while its camera's target took {len(moved)}")
+print(f"battle diorama: shown from headset frame {shown[0]['n'] if shown else '-'}; the table at {tables}; the camera's target at {len(moved)} places; RAM {final_hash('battle-diorama.log')}")
+rows, shown, tables = diorama_run("worldmap", 1500, (350, 420))
+scales = {r["world_scale"] for r in shown}
+centres = [tuple(float(v) for v in r["table"].split(",")) for r in shown]
+targets = [tuple(float(v) for v in r["target"].split(",")) for r in shown]
+heights = {t[1] for t in targets}
+across = all(c[0] == 0 and c[2] == 0 and t[0] == 0 and t[2] == 0 for c, t in zip(centres, targets))
+# How far above the table's top the target stands (y down; metres), within
+# the headroom (eight tenths of the volume's 0.55 m above its top).
+above = [round((c[1] - t[1]) * float(r["world_scale"]), 4) for c, t, r in zip(centres, targets, shown)]
+check(across and len(heights) > 5 and above and min(above) >= -0.001 and max(above) <= 0.8 * 0.55 + 0.001 and above[-1] > 0.01 and scales == {"2.812500e-4"},
+      f"the world map's table off its camera's target (across: {across}; the target {min(above, default='-')} to {max(above, default='-')} m above its top "
+      f"over {len(heights)} heights), {sorted(scales)} m a unit")
+print(f"world map diorama at 25%: shown from headset frame {shown[0]['n'] if shown else '-'}; the table on its target across, the target "
+      f"{min(above, default='-')} to {max(above, default='-')} m above its top, at {min(heights, default='-')} to {max(heights, default='-')} (y down), "
+      f"{sorted(scales)} m a unit; RAM {final_hash('worldmap-diorama.log')}")
 
 # Two-hand scaling of the diorama: the spread enlarges it live and the
 # contraction shrinks it, each committed to the setting once, when the hands
