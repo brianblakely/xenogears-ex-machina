@@ -348,8 +348,9 @@ PY
     done
     grep -E "xem: (fps|frame rendered .*game_vblank)" "$log" | tail -12 | sed 's/^/  /'
     # The opening movie (game frames 401-1325) shown rebuilt from what the
-    # MDEC decoded (the Enhanced movies setting) while the shots ran.
-    wait_for "xem: frame rendered .*game_vblank=.* movie=1" 1
+    # MDEC decoded (the Enhanced movies setting): while the shots ran, or
+    # soon after on a slow emulator (before Start skips it below).
+    wait_for "xem: frame rendered .*game_vblank=.* movie=1" 60
     # Game memory is one 2 GiB linear-memory mapping, committed as touched.
     pid=$("${adb[@]}" shell pidof "$package" | tr -d '\r')
     echo "  memory: $("${adb[@]}" shell grep -E "'^(VmSize|VmRSS)'" "/proc/$pid/status" | tr -s ' \t\r\n' ' ')" \

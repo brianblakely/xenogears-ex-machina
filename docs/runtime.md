@@ -1501,7 +1501,9 @@ blocks' edges less); under Original no frame is rebuilt, and the RAM after
 1 100 frames from boot is the same with Enhanced, Original and no
 presentation; the new-game movie ends rebuilt into the field's 15-bit
 frame; and the restores, the restart and the attach above resume within
-two movie frames (8 game frames) with the restored picture. The view's
+two movie frames (8 game frames), the restores with the restored picture
+(within 6 levels of its device picture, which differs from the one shown
+before). The view's
 unit tests check that every host class rebuilds under Enhanced alone and
 the headset sizing. `web/tests/render.test.mjs` shows frame 860 of the
 title movie twice from one snapshot on WebGPU and on WebGL2 (wider
