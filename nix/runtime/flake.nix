@@ -143,6 +143,8 @@
               androidPkgs.jdk17
               androidPkgs.gradle
               androidPkgs.cargo-ndk
+              # qemu-aarch64 runs xem-headless's arm64 build (scripts/arm64-smoke.sh).
+              androidPkgs.qemu-user
             ];
             shellHook = previous.shellHook + ''
               export ANDROID_HOME=${android.androidsdk}/libexec/android-sdk

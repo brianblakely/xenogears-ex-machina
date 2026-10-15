@@ -11,7 +11,8 @@
 #            workspace's tests and the validation run
 #   web      the game module, the web build and the browser suites, the
 #            browser tests that measure time (WebXR's among them) last
-#   android  the game module, the APK and the emulator's smoke test
+#   android  the game module, the APK and the emulator's smoke test, and
+#            the game's arm64 build under qemu (arm64-smoke.sh)
 #   xr       the game module, the native build and the OpenXR smoke test
 #   full     all of them, and what CI runs (.github/workflows/ci.yml) as on
 #            a clone without the user's discs: tools/repository/check.py,
@@ -24,7 +25,8 @@
 # build, then the browser suites (the slice's, the longest, from the start
 # beside the others two files at a time; the slice's and the persistence
 # tests two at a time within them: at most five browsers); the Android APK,
-# and the emulator boots (its boot measures nothing). Then what measures
+# the emulator boots (its boot measures nothing), and the arm64 build plays
+# the slice's logs under qemu (measuring nothing either). Then what measures
 # frame rates runs alone, one after another (their emulator, headset and
 # browsers render on the processor: beside the browser suites the Android
 # smoke's frame rate fell from 56 to 10 a second, the XR smoke's headset
@@ -195,6 +197,12 @@ android() {
     (cd "$runtime" && cargo build --profile suite -p xem-headless) &&
         in_android env XEM_SKIP_BUILD=1 XEM_HEADLESS="$headless" src/runtime/scripts/android-smoke.sh
 }
+# The arm64 build under qemu compares with xem-headless too, and builds in
+# a target directory of its own.
+arm64() {
+    (cd "$runtime" && cargo build --profile suite -p xem-headless) &&
+        in_android env CARGO_TARGET_DIR="$runtime/target-arm64" XEM_HEADLESS="$headless" src/runtime/scripts/arm64-smoke.sh
+}
 
 summary() {
     {
@@ -229,6 +237,7 @@ covers web && { stage web web && stage browser browser; } &
 if covers android; then
     stage android-build android_build &
     stage android-boot android_boot &
+    stage arm64 arm64 &
 fi
 wait
 if covers android; then

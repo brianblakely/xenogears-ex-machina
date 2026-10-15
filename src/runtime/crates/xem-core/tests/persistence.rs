@@ -6,6 +6,7 @@
 use serde_json::json;
 use std::{cell::{Cell,RefCell},rc::Rc,time::Duration};
 use xem_core::control::Session;
+use xem_core::devices::Device;
 use xem_core::devices::card::{CardStorage, formatted};
 use xem_core::memory::OutOfBounds;
 use xem_core::module::{AsyncState, ImportHandler};
@@ -476,6 +477,13 @@ fn every_damaged_or_foreign_state_is_refused_by_name_and_changes_nothing() {
     s.execute(&json!({"cmd":"frames", "count":2}));
     let original = s.runtime.snapshot().unwrap();
     let content = checked(&original).unwrap().to_vec();
+    // The devices' records end the content, each a u32 length and the
+    // device's save: the GPU's, the drive's, the MDEC's, the SPU's, the card's.
+    let services = s.runtime.services();
+    let records = [services.gpu.save(), services.cd.save(), services.mdec.save(), services.spu.save(), services.card.save()];
+    let device_at = |index: usize| content.len() - records[index..].iter().map(|r| 4 + r.len()).sum::<usize>() + 4;
+    assert!(content.ends_with(&records[4]) && content[device_at(0)..].starts_with(&records[0]));
+    let spu_version = u32::from_le_bytes(records[3][..4].try_into().unwrap());
     s.execute(&json!({"cmd":"frames", "count":3}));
     let current = s.runtime.snapshot().unwrap();
     let changed = |at: usize, bytes: &[u8]| {
@@ -506,6 +514,9 @@ fn every_damaged_or_foreign_state_is_refused_by_name_and_changes_nothing() {
             r#"incompatible state: the state's packages are ["a mod"], this session's are []"#.into()),
         ("an extra identity field", identity(format!(r#"{{"module":"{module}","disc":"","packages":[],"extra":1}}"#)),
             "bad snapshot: identity: unknown field `extra`".into()),
+        ("an older SPU device record", changed(device_at(3), &(spu_version - 1).to_le_bytes()),
+            format!("snapshot device state: bad snapshot: SPU device version {}, expected {spu_version}", spu_version - 1)),
+        ("another GPU device record", changed(device_at(0), &[!records[0][0]]), "snapshot device state: not a GPU device snapshot".into()),
         ("a trailing byte", { let mut c = content.clone(); c.push(7); seal(c) }, "bad snapshot: trailing bytes".into()),
         ("a truncated last device", { let mut c = content.clone(); c.pop(); seal(c) }, "bad snapshot: truncated".into()),
     ];

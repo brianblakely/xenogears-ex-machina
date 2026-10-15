@@ -4136,7 +4136,8 @@ before review or a merge (AGENTS.md): `desktop` (the default, for the
 native and shared code) builds the game module and runs the port's unit
 tests, the Rust workspace's tests and the validation run; `web` the web
 build, the browser suites and the browser tests that measure time
-(WebXR's among them); `android` the APK and the emulator's smoke test; `xr`
+(WebXR's among them); `android` the APK, the emulator's smoke test and
+the game's arm64 build under qemu (`arm64-smoke.sh`); `xr`
 the native build and the OpenXR smoke test. `full` runs them all and what
 CI runs (`.github/workflows/ci.yml`) as on a clone without the user's discs:
 `tools/repository/check.py`, which builds and tests the workspace (here
@@ -4148,7 +4149,8 @@ at once; CI's checks; the web build, then the browser suites (the slice's, the
 longest, from the start beside the others two files at a time; the slice's
 and the persistence tests two at a time within them: at most five
 browsers); the Android APK, and the emulator boots (its boot measures
-nothing). What measures frame rates then runs alone, one after another,
+nothing); the arm64 build plays the slice's logs under qemu (measuring
+nothing either). What measures frame rates then runs alone, one after another,
 since their emulator, headset and browsers render on the
 processor (beside the browser suites the Android smoke's frame rate fell
 from 56 to 10 a second, the XR smoke's headset frames came late, and their
@@ -4592,7 +4594,7 @@ memory regions with runs of 16 or more zero bytes compressed, and each
 device's own versioned record, sealed by the SHA-256 of all of it. It
 holds no native pointers or host paths: the game module's memory is
 wasm32 linear memory, addressed alike by the native wasm2c translation
-(desktop, OpenXR, Android) and by browsers, and the drive's discs are
+on x86_64 and arm64 (desktop, OpenXR, Android) and by browsers, and the drive's discs are
 named by number. A state made on one host loads on another when each of
 these holds, and is refused otherwise with the message given, the running
 game unchanged:
@@ -4607,7 +4609,7 @@ game unchanged:
 | Game | Xenogears (USA), either disc, any Redump-verified image (CHD, cue and bin, ISO): `SLUS-00664+SLUS-00669` | `incompatible state: the state's disc is "…", this session's is "…"` |
 | Packages | the same ordered package digests (none exist yet) | `incompatible state: the state's packages are […], this session's are […]` |
 | The drive's disc | the disc in the state's drive at hand (booted, or beside the boot disc) | `snapshot device state: the state has disc 2 in the drive, which is not here` |
-| Devices | each device's record and version | `bad snapshot: SPU device version 3, expected 4`, `snapshot device state: not a GPU device snapshot`, … |
+| Devices | each device's record and version | `snapshot device state: bad snapshot: SPU device version 3, expected 4`, `snapshot device state: not a GPU device snapshot`, … |
 | Length | nothing after the last device | `bad snapshot: trailing bytes` |
 
 Identity differences are joined by `; `. Hosts show the message as it is:
@@ -4660,14 +4662,20 @@ states where they hold:
 | browser (WebGPU, WebGL2), after drawing under HD-2D, wider and pulled back | headless | to the page's RAM, then 240 frames | `web/tests/render.test.mjs` |
 | browser (WebXR on IWER) | headless | byte for byte, then 120 frames | `web/tests/xr-game.test.mjs` |
 | browser (IndexedDB), the page reloaded | browser | the slice's save to its native hash | `web/tests/slice.test.mjs` |
+| the slice's session logs | headless on arm64 (`aarch64-linux-android` under `qemu-aarch64`) | the forest route, the save and that card's loads as card 1 and as card 2 to their recorded hashes, each ending in the native end state byte for byte | `arm64-smoke.sh` |
+| headless | headless on arm64 | the forest route's state in its battle (frame 7000) to the route's end state | `arm64-smoke.sh` |
+| headless on arm64 | headless | that state, byte for byte the native one, to the route's end state | `arm64-smoke.sh` |
 | a session booted from disc 2 | a session booted from disc 1 | the same hash | `xem-headless/tests/discs.rs` |
 | the game's own save in a browser | native | card 2 byte for byte | `web/tests/slice.test.mjs` |
+| the game's own save on arm64 | native | card 2 byte for byte | `arm64-smoke.sh` |
 
 **Cards and settings across devices.** A memory card file is the raw
 128 KiB image on every host (Export original card 1/2 writes it, and every
 host's Import reads it and the other formats: [Original saves and memory
-cards](#original-saves-and-memory-cards)), and the game writes the same
-bytes to it on every host (the browser's save above). A settings backup is
+cards](#original-saves-and-memory-cards)), and the game's own save writes
+the same bytes to it in a browser and on arm64 as natively (the saves
+above; no test compares the cards that the desktop window's, OpenXR's or
+Android's in-game saves write). A settings backup is
 `{"version": 1, "settings": …}` JSON on every host: another version or an
 unknown envelope field is refused (`incompatible settings backup
 version`, serde's message); a value the importing build cannot read (out
@@ -4716,10 +4724,32 @@ native state's own does; `web/tests/render.test.mjs` has both backends' exports 
 natively to `ea9b510132f1ff8d` and go on to `3ccc7cd1bb8bcdda` as in the
 page; `xr-game.test.mjs`'s headset export is the native state byte for
 byte; `slice.test.mjs`'s card 2 is the native save's byte for byte.
+`src/runtime/scripts/arm64-smoke.sh` (disc 1, in `#android`) builds
+`xem-headless` for `aarch64-linux-android` with cargo-ndk at API 29, the
+APK's target, linked statically against bionic, and runs it under the
+shell's `qemu-aarch64` (QEMU 11.1.0): the forest route (12 205 frames), the
+save to an unformatted card 2 (11 235) and that card's loads as card 1
+(5 252) and as card 2 (5 468) end at their recorded hashes there and
+natively, each in the same state on both byte for byte, and the save's
+card 2 is the native one byte for byte; the forest route's state in its
+battle at frame 7000 is the same on both byte for byte, and each goes on
+in a fresh session on the other to the route's end state. It took 4 min
+2 s here, with the runs under qemu side by side at 70 to 81 frames a
+second (native `xem-headless` 470 to 750). The refusals in the table above
+are `xem-core/tests/persistence.rs`'s (a stand-in game, no local inputs),
+word for word: each damaged or foreign state, an older SPU device record,
+another GPU record and the drive's disc.
 
-Not done or not measured: arm64 hosts are unverified (Android's
-arm64-v8a build compiles and links, but no arm64 device or emulator runs
-it here, and no qemu run of the headless logs was made); Horizon OS's
+Not done or not measured: arm64 runs only headless under qemu's user-mode
+emulator, in that statically linked build: the APK's arm64-v8a library
+(SDL3, Vulkan, the app's Load state and Save state) has not run, since no
+arm64 device is here and the Android emulator runs the APK's x86_64
+library (the AVD's x86_64 image also offers arm64 apps through its binary
+translation, `ro.dalvik.vm.native.bridge=libndk_translation.so`, which no
+test uses), and the game module's only floating point
+(`xem_present_face_visible` and `xem_present_points_visible`, the port's
+tests of which culled faces a host revealing them draws) runs only for a
+host that asks for reveals, so arm64 has not run it; Horizon OS's
 OpenXR and the Android host's headset loop have not run (Monado stands in
 for OpenXR; the emulator has no OpenXR runtime); Windows and macOS hosts
 are not built here; states are compared between hosts with the same host
@@ -4729,8 +4759,8 @@ shows, for the view); whole states taken while a host reveals culled faces
 are compared outside the port's memory and two frames on, not byte for
 byte; the long run walks Lahan and wherever its input leads (it reached
 field map 8 in the hour), not the story's other scenes; only the slice's
-save is compared byte for byte as a card across hosts (the browser's;
-the Android emulator's card is reloaded on the device only); a settings
+save is compared byte for byte as a card across hosts (the browser's and
+arm64's; the Android emulator's card is reloaded on the device only); a settings
 import does not report the settings it left at their defaults or the
 names it dropped, and no test moves a settings backup between hosts.
 
@@ -6731,6 +6761,14 @@ In `nix develop path:./nix/runtime#android`:
   interchange](#state-interchange); about 40 s on the emulator). `XEM_SMOKE_GAME_ONLY=1` skips the
   synthetic-disc and lifecycle sections. The game module must be built first
   (`python3 tools/game_module.py --stubs` in the default shell).
+- arm64 under qemu: `src/runtime/scripts/arm64-smoke.sh` builds
+  `xem-headless` for `aarch64-linux-android` (cargo-ndk, API 29, linked
+  statically against bionic; `XEM_SKIP_BUILD=1` reuses it) and, with the
+  user's disc 1, plays the slice's session logs under the shell's
+  `qemu-aarch64` and with `xem-headless` (`XEM_HEADLESS`, else the suite's
+  build), comparing their hashes, states and the save's card ([State
+  interchange](#state-interchange); inputs, replies and states in
+  `build/arm64`)
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
   shared crates alone (Slint compiles its FemtoVG module out on Android, so
   `xem-ui` takes the renderer from `i-slint-renderer-femtovg` there)
@@ -6743,9 +6781,10 @@ startup, asset access, lifecycle and the game (`src/runtime/scripts/android-smok
 Monado's simulated headset for OpenXR stereo, the Slint panel quad, swapchain
 and device ownership, frame scheduling and paused head tracking
 (`XEM_XR_COMPOSITED=1 src/runtime/scripts/xr-smoke.sh`), and IWER's Quest 3 in
-Chromium for WebXR (`npm run test:xr`). What no emulator here exercises, and a
-headset would be the first to show: the arm64-v8a build running (it is only
-compiled and linked); Horizon OS's OpenXR runtime with Meta's loader in the APK,
+Chromium for WebXR (`npm run test:xr`), and qemu's user-mode emulator for the
+game on arm64 (`src/runtime/scripts/arm64-smoke.sh`, headless). What no
+emulator here exercises, and a headset would be the first to show: the APK's
+arm64-v8a build running (it is only compiled and linked); Horizon OS's OpenXR runtime with Meta's loader in the APK,
 its Vulkan driver, reprojection, hand tracking and eye gaze; Quest Browser's
 WebXR compositor and whether it offers WebGPU XR layers (`XRGPUBinding`);
 whether the 2 GiB read-write reservation of game memory fits Quest memory
