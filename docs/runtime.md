@@ -138,7 +138,8 @@ original address.
   alike either way: x86_64's baseline has no fused multiply-add and the
   NDK's clang fuses only within one C expression, which wasm2c never
   writes, so their objects are the same byte for byte with and without the
-  flag (GCC's x86_64 ones and the static arm64 `xem-headless`'s).
+  flag (GCC's x86_64 ones, the static arm64 `xem-headless`'s and the APK's
+  for both ABIs).
 - **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
   (wasm32-unknown-unknown, wasm-bindgen); the two modules keep separate
   memories and exchange scalars and bounds-checked offsets.
@@ -4444,9 +4445,13 @@ the system's "isn't responding" dialogs on its AVD (on a loaded host one
 took its taps). Logs, and each stage's result and time: `build/suite/`.
 Measured here (16 threads, warm builds): `full` 723 s with every stage
 passing (709 s before CI's checks joined it), where the same stages run
-one after another took about 26 minutes; `desktop` 114 s; `android` 500 s
-with an up-to-date APK (the emulator's boot, 23 s, and the arm64 stage,
-240 s, beside the APK's build, then the emulator's smoke, 239 s).
+one after another took about 26 minutes; `desktop` 114 s; `android` 902 s
+after a change to the translation's compiler flags (the APK's build of
+both libraries, 149 s, and the arm64 stage, 417 s, each compiling the
+translation again, beside the emulator's boot, 25 s; then the emulator's
+smoke, 254 s, and the smoke's game with the arm64-v8a library, 210 s,
+which boots the emulator again), and 500 s with an up-to-date x86_64 APK
+before that second smoke and the arm64-v8a library's build joined it.
 
 ## Saves and time controls
 
@@ -5017,8 +5022,9 @@ product, sum and quotient on its own, as wasm's do, in every build here
 (`-ffp-contract=off`: [The game module](#the-game-module); `llvm-objdump`
 lists no fused multiply-add in them in the static build or in the APK's
 `libmain.so`, nor `objdump` in GCC's x86_64 build). It took 4 min 32 s here alone (the reveals 30 s under
-qemu, 3 s natively), with the runs under qemu side by side at 54 to 73
-frames a second (native `xem-headless` 433 to 683). With
+qemu, 3 s natively) and 256 s in the android tier, with the runs under
+qemu side by side at 54 to 82 frames a second (native `xem-headless` 393
+to 683). With
 `XEM_SMOKE_ABI=arm64-v8a`, `android-smoke.sh` installs the APK's
 arm64-v8a library (`adb install --abi arm64-v8a`), which the emulator's
 x86_64 image runs through its ARM translation
@@ -5027,15 +5033,16 @@ the package's ABI is arm64-v8a and that the translation's arm64 linker,
 `/system/bin/arm64/linker64`, and arm64 system libraries are mapped in the
 app's process), with Vulkan through the translation's `libvulkan.so`
 proxy to SwiftShader. In the smoke's game section the game
-boots from disc 1 and plays (24 to 45 game frames and 18 to 40 drawn
-frames a second over its first 30 s, the opening movie among them), the
-background and return, fast-forward's Home rounds, Hold to rewind and
-Save and Load state by touch pass as with the x86_64 library,
-`xem-headless`'s field 30 state loaded by F8 plays to `24a65171efb8d70b`
-at frame 2510 as natively, and the state F5 saves there is
-`xem-headless`'s byte for byte (2 681 637 bytes) and goes on natively to
-`b88b373fd2986cc2`, as the native state's own; about 3 minutes from the
-emulator's boot here alone. The refusals in the table above
+boots from disc 1 and plays (46 to 52 game frames and 31 to 43 drawn
+frames a second over its first 25 s in the android tier, where the x86_64
+library's were 54 to 60 and 38 to 42; 24 to 45 and 18 to 40 in a run
+here beside other work), the background and return, fast-forward's Home
+rounds, Hold to rewind and Save and Load state by touch pass as with the
+x86_64 library, `xem-headless`'s field 30 state loaded by F8 plays to
+`24a65171efb8d70b` at frame 2510 as natively, and the state F5 saves
+there is `xem-headless`'s byte for byte (2 681 637 bytes) and goes on
+natively to `b88b373fd2986cc2`, as the native state's own: 210 s in the
+android tier, the emulator's boot among them. The refusals in the table above
 are `xem-core/tests/persistence.rs`'s (a stand-in game, no local inputs),
 word for word: each damaged or foreign state, an older SPU device record,
 another GPU record and the drive's disc.
