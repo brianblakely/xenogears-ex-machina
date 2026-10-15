@@ -105,6 +105,16 @@ pub fn operation_line(request: &AppRequest, result: &Result<String, String>, gam
     }
 }
 
+/// `xem-desktop --save-state-at FRAME:PATH`, in the window and in a
+/// headset: once the game has run FRAME frames (its frame limit holds it
+/// there), its state written to `path` as Save state writes one; the line
+/// the host prints (the game's frame and memory hash, which the state's
+/// RAM is).
+pub fn save_state_at(game: &mut Game, path: &std::path::Path) -> Result<String, String> {
+    game.command(&serde_json::json!({"cmd": "state_save", "path": path})).map_err(|error| format!("--save-state-at {}: {error}", path.display()))?;
+    Ok(format!("state saved frame {} memory_hash {} path {}", game.frames_run(), game.memory_hash(), path.display()))
+}
+
 /// A wgpu surface for `window`.
 pub fn create_surface(
     instance: &wgpu::Instance,

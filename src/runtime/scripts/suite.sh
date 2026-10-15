@@ -190,7 +190,10 @@ android_boot() {
     in_android env XEM_SMOKE_BOOT=1 src/runtime/scripts/android-smoke.sh
 }
 android() {
-    in_android env XEM_SKIP_BUILD=1 src/runtime/scripts/android-smoke.sh
+    # The smoke compares states with xem-headless (the native stage's build,
+    # or one of its own in the android tier).
+    (cd "$runtime" && cargo build --profile suite -p xem-headless) &&
+        in_android env XEM_SKIP_BUILD=1 XEM_HEADLESS="$headless" src/runtime/scripts/android-smoke.sh
 }
 
 summary() {

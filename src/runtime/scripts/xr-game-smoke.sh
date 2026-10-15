@@ -47,6 +47,12 @@
 #   trigger), Settings hold the game again once a rewind is let go, and
 #   Settings closed with the trigger still held let go of Hold to rewind
 #   (the game plays on behind the closed panel);
+# - state interchange: that state loaded in the headset (--load-state) and
+#   played on 600 game frames under HD-2D has xem-headless's RAM at the
+#   300th, where the headset writes its state (--save-state-at), and at
+#   the 600th; the headset's state is xem-headless's at that frame byte for
+#   byte (the screen without wider framing asks for no reveals), loads
+#   natively to its RAM and goes on to the same end;
 # - headset qualification: through the player's Pause and Settings' own the
 #   head stays tracked and the eyes' pictures follow it while the game
 #   stands still; either hand's overhand grab pauses and resumes, both
@@ -233,6 +239,23 @@ printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
     --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
     >"$out/held.log" 2>"$out/held.err"
+# State interchange: field 30's state from xem-headless (the saves run's)
+# loaded in the headset (--load-state) and played on 600 game frames with
+# no input under HD-2D, the state the headset writes at the 300th
+# (--save-state-at) loaded by xem-headless and played on 300 frames, and
+# the same frames in xem-headless from its own state. The screen without
+# wider framing leaves the field's characters the original's view, and no
+# focus pause waits on Monado's session focus, so the headset gives the
+# game xem-headless's controls.
+at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" | "$headless" --disc "$disc" --control 2>/dev/null |
+    python3 -c 'import json, sys; print(json.loads(sys.stdin.readline())["frames"])')
+echo '{"graphics": {"profile": "Hd2d"}, "pause_on_focus_loss": false}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --load-state "$out/field30.xemstate" --save-state-at "$((at + 300)):$out/xr-saved.xemstate" \
+    --exit-at-frame "$((at + 600))" >"$out/interchange.log" 2>"$out/interchange.err"
+printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n{"cmd":"state_save","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' \
+    "$out/field30.xemstate" "$out/headless-saved.xemstate" | "$headless" --disc "$disc" --control >"$out/interchange-headless.log" 2>"$out/interchange-headless.err"
+printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' \
+    "$out/xr-saved.xemstate" | "$headless" --disc "$disc" --control >"$out/interchange-native.log" 2>"$out/interchange-native.err"
 # Headset qualification on the screen view (docs/runtime.md, Headset
 # qualification): short runs, each from its own start, so that a headset
 # frame lands in its scene whether the game runs 2.6 or 3.6 frames to one.
@@ -837,6 +860,35 @@ if len(rewinds) == 4:
     print(f"held: Back+LT with Settings shown rewound game frame {gf(chord_on - 1)} to {gf(chord_off - 1)}; Hold to rewind "
           f"from headset frame {held_on} rewound {gf(held_on - 1)} to {gf(244)}; Settings closed at 245 let it go, the game on "
           f"to {gf(269)} by 269 with the trigger still held")
+
+# State interchange: xem-headless's state played on in the headset reaches
+# xem-headless's RAM at the frame the headset saves at and the frame it ends
+# at, and the state the headset saved loads natively to its RAM and goes on
+# to the same end.
+def strings(name):
+    return [json.loads(l) for l in open(f"{out}/{name}") if l.startswith('"')]
+log = open(f"{out}/interchange.log").read()
+saved = re.search(r"^state saved frame (\d+) memory_hash ([0-9a-f]{16}) path ", log, re.M)
+ended = re.search(r"^xem-desktop: frame (\d+) memory_hash ([0-9a-f]{16})", log, re.M)
+loaded = next((json.loads(l) for l in open(f"{out}/interchange-headless.log") if l.startswith("{")), {})
+reference, native = strings("interchange-headless.log"), strings("interchange-native.log")
+at = loaded.get("frames")
+check(bool(saved) and bool(ended) and at is not None and len(reference) == 2 and len(native) == 2,
+      f"the interchange runs: saved {bool(saved)}, ended {bool(ended)}, from frame {at}, hashes {reference} {native}")
+if saved and ended and at is not None and len(reference) == 2 and len(native) == 2:
+    check((int(saved.group(1)), int(ended.group(1))) == (at + 300, at + 600),
+          f"the headset saved at frame {saved.group(1)} and ended at {ended.group(1)}, not {at + 300} and {at + 600}")
+    check(saved.group(2) == reference[0], f"the headset's RAM at frame {at + 300} {saved.group(2)}, xem-headless's {reference[0]}")
+    check(ended.group(2) == reference[1], f"the headset's RAM at frame {at + 600} {ended.group(2)}, xem-headless's {reference[1]}")
+    check(native[0] == saved.group(2), f"the headset's state loads natively to RAM {native[0]}, not its {saved.group(2)}")
+    check(native[1] == reference[1], f"the headset's state goes on natively to RAM {native[1]}, not {reference[1]}")
+    # The screen without wider framing asks for no reveals: the whole state
+    # is xem-headless's at that frame.
+    check(open(f"{out}/xr-saved.xemstate", "rb").read() == open(f"{out}/headless-saved.xemstate", "rb").read(),
+          "the headset's state is not xem-headless's at the same frame, byte for byte")
+    print(f"interchange: xem-headless's field 30 state at frame {at} played on in the headset to {saved.group(2)} at {at + 300} "
+          f"(saved, xem-headless's state byte for byte) and {ended.group(2)} at {at + 600}, xem-headless's; the headset's state "
+          f"natively {native[0]}, then {native[1]}")
 
 # Headset qualification. Paused head tracking (the gestures run): through
 # the player's Pause and Settings' own the head is tracked (more than half

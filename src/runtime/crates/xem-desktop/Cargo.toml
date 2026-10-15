@@ -17,3 +17,6 @@ xem-host = { path = "../xem-host" }
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }
 xem-game = { path = "../xem-game" }
+
+[dev-dependencies]
+xem-core = { path = "../xem-core" }

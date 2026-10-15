@@ -534,6 +534,7 @@ impl Drop for Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(not(debug_assertions))]
     use xem_settings::FastForwardRate;
 
     #[test]
@@ -652,12 +653,21 @@ mod tests {
         assert_eq!(gameplay(&mut game), [maps, json!(true), json!(255), json!(90), json!(true)], "the refused dwell changed nothing");
     }
 
+    /// The user's disc 1 (local only: XEM_DISC1, else discs/ beside the
+    /// repository), for the original game's tests (release builds only:
+    /// an unoptimised game module runs far below the console's rate).
+    #[cfg(not(debug_assertions))]
+    fn disc() -> Option<std::path::PathBuf> {
+        let path = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        path.exists().then_some(path)
+    }
+
+    #[cfg(not(debug_assertions))]
     #[test]
-    #[ignore = "needs the original disc 1 and built game module"]
     fn original_game_rewind_frame_latency_and_scheduled_setup() {
         use serde_json::json;
-        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
-            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
         let (mut session,_) = xem_game::boot(&disc,&Default::default()).unwrap();
         let log = json!({"cmd":"schedule","commands":[
             [0,{"cmd":"connect_pad","port":1,"connected":false}],
@@ -696,12 +706,11 @@ mod tests {
         assert!(p99 < 16.0,"rewind frame p99 was {p99:.3} ms");
     }
 
+    #[cfg(not(debug_assertions))]
     #[test]
-    #[ignore = "needs the original disc 1 and built game module"]
     fn original_game_focus_loss_uses_original_pause_and_waits_for_legal_play() {
         use serde_json::json;
-        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
-            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
         let (mut session,_) = xem_game::boot(&disc,&Default::default()).unwrap();
         assert!(session.execute(&json!({"cmd":"enter_field","map":22})).get("error").is_none());
         assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
@@ -784,11 +793,10 @@ mod tests {
         assert_eq!(game.session.execute(&json!({"cmd":"memory_hash"})),final_hash,"focus pause recordings replay exactly");
     }
 
+    #[cfg(not(debug_assertions))]
     #[test]
-    #[ignore = "needs the original disc 1 and built game module"]
     fn original_game_held_rewind_stops_at_history_start_and_resumes_on_release() {
-        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
-            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
         let (session,_) = xem_game::boot(&disc,&Default::default()).unwrap();
         let clock = std::rc::Rc::new(std::cell::Cell::new(Duration::ZERO));
         let source = clock.clone();
@@ -808,15 +816,24 @@ mod tests {
         game.set_rewind_held(true,true).unwrap();
         game.set_rewind_held(false,true).unwrap();
         assert!(game.rewind_held[0],"releasing a panel hold does not release the bound input");
+        // States a second apart (frames 0, 30, ... 150): each step takes the
+        // newest before the game's frame and plays on from it, at most
+        // REWIND_PLAY_BLANKS (`Session::rewind_step`).
+        let landed = |game: &Game, state: u64, was: u64| {
+            let frame = game.frames_run();
+            assert!(frame > state && frame <= state + xem_core::rewind::REWIND_PLAY_BLANKS && frame < was,
+                "from frame {was}, the state at {state} played on to {frame}");
+        };
         assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
-        assert_eq!(game.frames_run(),120);
+        landed(&game,120,150);
         assert_eq!(game.time_activity(),(false,true),"only completed rewind steps show the rewind icon");
         assert!(!game.session.fast_forward,"rewind must keep the current FF switch off");
         assert_eq!(game.session.fast_forward_rate,FastForwardRate::Fixed(20));
-        for expected in [90,60,30,0] {
+        for state in [90,60,30,0] {
+            let was = game.frames_run();
             game.rewind_next = Instant::now();
             assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
-            assert_eq!(game.frames_run(),expected);
+            landed(&game,state,was);
             assert!(!game.session.fast_forward);
             assert_eq!(game.session.runtime.services().clock.audio_speed,1);
             assert_eq!(game.session.runtime.services().spu.speed(),1);

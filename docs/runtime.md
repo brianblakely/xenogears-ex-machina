@@ -1704,6 +1704,38 @@ second view attaching, changing and detaching, and checks one RAM hash; the
 browser test `web/tests/render.test.mjs` does the same per profile on WebGPU
 and WebGL2, and the slice logs still replay to their hashes.
 
+**Presentation and the whole state.** Presenting leaves the game's state
+as it is, but a whole state (`Session::snapshot_bytes`) also holds the
+port's own memory (its data, the fibers' asyncify save areas and its
+shadow stack: [Commands, introspection and snapshots](#commands-introspection-and-snapshots)),
+where the presentation's code leaves bookkeeping of its own while the
+host asks for faces the game culls (reveals: wider framing, the camera
+pulled back, first-person inspection, a diorama). `render.rs` compares
+whole states too (`presentation_only`). Right after its runs (field 12 or
+Lahan, 90 or 240 frames from one state) the states drawn and not drawn
+are the same byte for byte outside the port's memory (PS1 RAM, the
+scratchpad and I/O pages, KUSEG and every device's state), and differ in
+128 to 564 bytes within it: frames the presentation's code left below the
+game fiber's suspended shadow stack pointer (deeper than the game's own
+frames reach), values the suspended frames saved on their way (asyncify's
+save area: a pointer on one path, a count on the other), and copies of
+the presentation rings' counts, which the port takes into locals
+(`projections = xem_gte_ring->count`, model_draw.c) and which count only
+while a trace records, at fixed addresses outside every state region (so a
+rendering host's counts go on across a restore, and a headless session's
+stay where they were). Played on two frames from the same presentation
+records with no trace, the two hold the same saved values, and what still
+differs is dead stack alone (128 to 236 bytes here, none after the sprite
+facings' runs), between the stack's bottom and the suspended pointer,
+which no code reads: every port and game function zero-initialises its
+locals (`-ftrivial-auto-var-init=zero`, `tools/game_module.py`). With those
+bytes the same the states are the same byte for byte. A host that asks
+for no reveals (no wider framing, pull-back, inspection or diorama) leaves
+no such bookkeeping in a state: the desktop window under HD-2D, Android's
+default graphics, the OpenXR and WebXR screen views each save states
+byte for byte xem-headless's at the same frame ([State
+interchange](#state-interchange)).
+
 ### Profiles and settings
 
 `xem_settings::Graphics` (the Graphics section of the panel, `SettingChange::Graphics`):
@@ -3382,6 +3414,15 @@ Headset class (Low tier, depth of field off unless enabled).
   frame 1306 to 1194 and Hold to rewind 1194 to 1014, and the game ran
   on to 1086 by headset frame 269; with that release removed it went on
   rewinding behind the closed panel until its history ran out). Its
+  interchange run loads the same state with `--load-state` (frame 710)
+  under HD-2D with no focus pause (Monado's session is focused only once
+  it runs) and plays it on with no input, writing the headset's state at
+  frame 1010 (`--save-state-at`) and ending at 1310: the RAM at both is
+  `xem-headless`'s from the same state (`e6366cb7f5d61d8c`,
+  `a7cb468cae1e226e` in a run here), the headset's state is
+  `xem-headless`'s at 1010 byte for byte (the screen without wider
+  framing asks for no reveals), and loaded natively it goes on to the same
+  end ([State interchange](#state-interchange)). Its
   qualification runs (either hand's grabs and two-hand scaling in field
   30, a scene tour, the world map's recentring and the battles) are in
   [Headset qualification](#headset-qualification); the `xrframe` line's
@@ -4121,7 +4162,15 @@ against release's 161 s); a failing test target is built again with line
 tables (`suite-debug`) and run with a backtrace into `rust-debug.log`. A
 module build that changes nothing keeps `build/game/game.wasm` and its time,
 so nothing downstream rebuilds (play.sh compares the sources with
-`build/game/stamp`, which each finished module build touches). The Android
+`build/game/stamp`, which each finished module build touches). The
+desktop tier's Rust tests include the original game's long run
+(`xem-headless/tests/long_run.rs`, 36 000 frames twice, about two
+minutes) and `xem-host`'s original-game tests (rewind frame latency, the
+focus pause's recording, the held rewind), which skip without the disc as
+the others do. The Android smoke compares states with `xem-headless`: the
+android stage builds it (the suite profile, the native target directory:
+nothing to do after the native stage) and gives it to the smoke
+(`XEM_HEADLESS`). The Android
 smoke, run by itself, boots its emulator while the APK builds
 (`XEM_SMOKE_BOOT=1` only boots it, and a later run uses it), and turns off
 the system's "isn't responding" dialogs on its AVD (on a loaded host one
@@ -4533,6 +4582,157 @@ fingerprint sees only what
 the stand-in states hold, so a variant added to the format is outside it
 until a stand-in state holds one, and device semantics changed without a
 layout change pass it.
+
+### State interchange
+
+A state is one byte format on every host: `XEMSNAP\0`, the format version
+and the identity record (JSON: `module`, `disc`, `packages`), then
+fixed-width little-endian words and length-prefixed records, the module's
+memory regions with runs of 16 or more zero bytes compressed, and each
+device's own versioned record, sealed by the SHA-256 of all of it. It
+holds no native pointers or host paths: the game module's memory is
+wasm32 linear memory, addressed alike by the native wasm2c translation
+(desktop, OpenXR, Android) and by browsers, and the drive's discs are
+named by number. A state made on one host loads on another when each of
+these holds, and is refused otherwise with the message given, the running
+game unchanged:
+
+| Condition | What the restoring session needs | Refused with |
+|---|---|---|
+| Size | 32 bytes to 64 MiB | `bad snapshot: state size N bytes, outside 32 bytes to 64 MiB` |
+| Seal | the SHA-256 the file ends with | `bad snapshot: checksum` |
+| Format | `XEMSNAP\0` and format version 9 (`snapshot::VERSION`; never converted) | `bad snapshot: magic`; `bad snapshot: format version 8, expected 9` |
+| Identity record | exactly `module`, `disc` and `packages` | `bad snapshot: identity: unknown field …` |
+| Game module | the same `game.wasm` (its SHA-256: `XEM_MODULE_ID` natively, the fetched file's in browsers); any change to `src/port`, `tools/game_module.py` or `src/decomp` makes another | `incompatible state: the state's game module is "…", this session's is "…"` |
+| Game | Xenogears (USA), either disc, any Redump-verified image (CHD, cue and bin, ISO): `SLUS-00664+SLUS-00669` | `incompatible state: the state's disc is "…", this session's is "…"` |
+| Packages | the same ordered package digests (none exist yet) | `incompatible state: the state's packages are […], this session's are […]` |
+| The drive's disc | the disc in the state's drive at hand (booted, or beside the boot disc) | `snapshot device state: the state has disc 2 in the drive, which is not here` |
+| Devices | each device's record and version | `bad snapshot: SPU device version 3, expected 4`, `snapshot device state: not a GPU device snapshot`, … |
+| Length | nothing after the last device | `bad snapshot: trailing bytes` |
+
+Identity differences are joined by `; `. Hosts show the message as it is:
+the HUD's failure chip and the panel's status line, `xem-desktop
+--load-state FILE: …` on the command line and the Android log's `xem: app
+Action(LoadState) … error: …`. The browser's own storage refuses before
+the runtime does (`No stored state in this slot. It may have been
+cleared or evicted; import a backup.`, `Invalid stored state. Import a
+backup.`, `Stored state checksum failed. Import a backup.`, `State file
+exceeds 64 MiB.`), and native reads refuse a file over the cap (`file
+exceeds size limit`).
+
+**What a state does not carry**, the restoring host's own from its next
+frame: the game-affecting controls (the view the field's characters keep
+moving in, which wider framing, the camera pulled back, first-person
+inspection and the diorama set; the sound mode, which Binaural runs in
+Stereo; the attack page; the focus pause; random battles off and half
+encounters; text speed, auto-advance and skippable movies; fast-forward,
+its rate and pace, and the music clock), rewind history and its settings,
+and the attachments: the memory cards' contents, the discs beside the
+boot disc and the Kanji font (a BIOS image's, else the substitute glyphs:
+continuations differ where save titles are drawn). The same continuation
+needs the same of these; a recording carries the controls
+(`xem-host/tests/states.rs`'s headset test).
+
+**Whole states.** Where no presentation bookkeeping is in play (headless,
+or a host asking for no reveals) a state another host saves at a frame is
+byte for byte the state `xem-headless` saves there. A host showing faces
+the game culls (wider framing, the camera pulled back, inspection, the
+diorama) keeps bookkeeping in the port's memory ([Presentation and the
+whole state](#the-renderer-phase-4)), so its states differ from
+`xem-headless`'s there while the game's RAM, scratchpad, devices and
+continuation are the same. The tests compare the RAM and scratchpad
+hash's continuation (`memory_hash`, the authority) on every pair and whole
+states where they hold:
+
+| From | To | Checked | Test |
+|---|---|---|---|
+| headless (state file, a fresh session) | headless | 36 000 frames (216 000 once): every 1 800 frames byte for byte, with rewinds of 1 to 4 steps and 10× fast-forward | `xem-headless/tests/long_run.rs` |
+| headless | the desktop's window in process (`Game`, `View`, HD-2D, lavapipe) | 600 frames: the original's RAM and whole state | `xem-host/tests/states.rs` |
+| headless | a headset's presentation in process (both eyes within the scene, then the diorama) | 600 frames: the RAM of a plain session given the recorded view; the whole state outside the port's memory | `xem-host/tests/states.rs` |
+| headless | `xem-desktop` (weston's headless backend, lavapipe) | `--load-state`; frames 300 and 600 under HD-2D | `xem-desktop/tests/states.rs` |
+| `xem-desktop` | headless | `--save-state-at`: byte for byte, then 300 frames | `xem-desktop/tests/states.rs` |
+| headless | `xem-desktop --xr` (OpenXR on Monado) | frames 300 and 600 under HD-2D | `xr-game-smoke.sh` (interchange) |
+| `xem-desktop --xr` | headless | byte for byte, then 300 frames | `xr-game-smoke.sh` (interchange) |
+| headless | Android (x86_64 emulator) | Load state (F8) of `files/state.xemstate`, then 600 frames | `android-smoke.sh` |
+| Android | headless | Save state (F5), pulled: byte for byte, then 600 frames | `android-smoke.sh` |
+| headless | browser (WebGL2) | imported exactly; 30 frames byte for byte (the opening movie, the world map) | `web/tests/persistence.test.mjs` |
+| browser (WebGL2) | headless | to the browser's RAM | `web/tests/persistence.test.mjs` |
+| browser (WebGPU, WebGL2), after drawing under HD-2D, wider and pulled back | headless | to the page's RAM, then 240 frames | `web/tests/render.test.mjs` |
+| browser (WebXR on IWER) | headless | byte for byte, then 120 frames | `web/tests/xr-game.test.mjs` |
+| browser (IndexedDB), the page reloaded | browser | the slice's save to its native hash | `web/tests/slice.test.mjs` |
+| a session booted from disc 2 | a session booted from disc 1 | the same hash | `xem-headless/tests/discs.rs` |
+| the game's own save in a browser | native | card 2 byte for byte | `web/tests/slice.test.mjs` |
+
+**Cards and settings across devices.** A memory card file is the raw
+128 KiB image on every host (Export original card 1/2 writes it, and every
+host's Import reads it and the other formats: [Original saves and memory
+cards](#original-saves-and-memory-cards)), and the game writes the same
+bytes to it on every host (the browser's save above). A settings backup is
+`{"version": 1, "settings": …}` JSON on every host: another version or an
+unknown envelope field is refused (`incompatible settings backup
+version`, serde's message); a value the importing build cannot read (out
+of its range, a variant it does not offer) leaves that setting at its
+default and a name it does not know is dropped, the rest kept, without
+the import saying which (`Settings::read`'s list of them goes unused on
+import and when the settings file opens).
+
+Tests: `xem-headless/tests/long_run.rs` (local: disc 1): from Lahan 300
+frames after entering it, a reference and a run carried across sessions
+play the same input, a pure function of the frame number (a seeded
+xorshift's choice of the d-pad, Cross and Circle held 1 to 30 frames), and
+10× fast-forward over 600 frames around every third checkpoint; the
+carried run saves its state to a file at every checkpoint (every 1 800
+frames) and goes on in a freshly booted session that loads it, and every
+third interval turns rewind on (a fake clock, a state each 60 frames, a 24
+MiB budget, 30 seconds of history) at the start of a quiet spell and steps
+back 1 to 4 times at its end (a rewind step plays on from a state with the
+state's own buttons, so nothing is held then), then plays on; at every
+checkpoint the two are the same byte for byte, and the history stays
+within its budget and length. 36 000 frames each (the default;
+`XEM_LONG_RUN_FRAMES` for more) took 122.6 s here beside other work (20
+checkpoints and sessions, 7 rewinds); 216 000 frames (an hour of game time)
+took 616 s alone in its process (120 checkpoints and sessions, 40 rewinds,
+24 000 fast-forwarded frames; the walk ended in field map 8 at RAM
+`30d46e72c5adf322`). `xem-host/tests/states.rs` (disc 1, lavapipe): Lahan's
+state restored in a host's `Game` and played 600 frames paced by the wall
+clock as the desktop's frame plays them (168 to 185 host frames under
+HD-2D at 960×540 in four runs here) ends at the original's RAM and whole state; as a
+headset's presentation plays them (both eyes from within the scene, then
+the diorama; 255 to 259 host frames) at a plain session's replaying the
+host's recording (the view `1000 | 1024 << 16`), whose whole state differs
+from the host's only in the port's bookkeeping, and a plain session
+without the view ends elsewhere; 17 s for both. `xem-desktop/tests/states.rs`
+(disc 1, weston, lavapipe): field 30's state at frame 710 loaded by
+`--load-state` reaches `e6366cb7f5d61d8c` at frame 1010, where
+`--save-state-at` writes a state byte for byte a plain session's, and
+`a7cb468cae1e226e` at 1310, as natively, and the window presented frames
+meanwhile; 11 s. `xr-game-smoke.sh`'s interchange run reaches the same
+hashes from the same state, its state at 1010 byte for byte
+`xem-headless`'s; `android-smoke.sh`'s state step plays field 30's state
+at frame 1910 on the emulator to `24a65171efb8d70b` at 2510 as natively,
+and the state it saves there (2 681 637 bytes) is the native one byte for
+byte and goes on natively to `b88b373fd2986cc2` 600 frames later, as the
+native state's own does; `web/tests/render.test.mjs` has both backends' exports load
+natively to `ea9b510132f1ff8d` and go on to `3ccc7cd1bb8bcdda` as in the
+page; `xr-game.test.mjs`'s headset export is the native state byte for
+byte; `slice.test.mjs`'s card 2 is the native save's byte for byte.
+
+Not done or not measured: arm64 hosts are unverified (Android's
+arm64-v8a build compiles and links, but no arm64 device or emulator runs
+it here, and no qemu run of the headless logs was made); Horizon OS's
+OpenXR and the Android host's headset loop have not run (Monado stands in
+for OpenXR; the emulator has no OpenXR runtime); Windows and macOS hosts
+are not built here; states are compared between hosts with the same host
+controls and attachments (a host whose wider framing, sound mode or BIOS
+font differs goes on differently by design, which only the headset test
+shows, for the view); whole states taken while a host reveals culled faces
+are compared outside the port's memory and two frames on, not byte for
+byte; the long run walks Lahan and wherever its input leads (it reached
+field map 8 in the hour), not the story's other scenes; only the slice's
+save is compared byte for byte as a card across hosts (the browser's;
+the Android emulator's card is reloaded on the device only); a settings
+import does not report the settings it left at their defaults or the
+names it dropped, and no test moves a settings backup between hosts.
 
 ### Original saves and memory cards
 
@@ -6042,7 +6242,17 @@ through `settings_apply` ([Gameplay options](#gameplay-options)).
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
 hashes in the desktop host too, the load from card 2 in a fresh process after
-the save.
+the save. `--load-state FILE` loads a state (Save state's, `xem-headless`'s
+`state_save`, a browser's export) once the game has booted, before the
+window or the headset plays it, as Load state does (a refusal ends the run
+with its message), and `--save-state-at N:FILE` writes the game's state to
+FILE when it has run N frames (the game's count since boot, which a loaded
+state goes on from; the frame limit holds the game at N until the state is
+written), printing `xem-desktop: state saved frame N memory_hash H path
+FILE` (in a headset `state saved frame …`), and plays on to
+`--exit-at-frame`; both work in the window and with `--xr`, for tests of
+[State interchange](#state-interchange) (`xem-desktop/tests/states.rs`,
+`xr-game-smoke.sh`).
 
 `./play.sh [DISC] [xem-desktop options]` (repository root) builds what is
 missing or stale (the matched images, the game module, `xem-desktop`) and plays
@@ -6505,7 +6715,20 @@ In `nix develop path:./nix/runtime#android`:
   host's one batch: at most four at 1×, its catch-up, within 12 ms; the
   `fps` lines of two passing runs here gave 2.8 to 3.2 at 1× and 3.9 to
   4.6 under fast-forward), so the section waits on those lines rather
-  than on frames. `XEM_SMOKE_GAME_ONLY=1` skips the
+  than on frames. Then, with `xem-headless` (`XEM_HEADLESS`, else the
+  suite's build; the suite's android stage builds it), a state it made
+  1 600 frames into field 30 (frame F) goes where Load state reads it, with
+  a session log of no commands ending at F+600 (`files/script.json`: the
+  game plays as the original, without the player's input or the host's
+  controls); Load state's key (F8, held) after the boot loads it through
+  the app's own path to `xem-headless`'s RAM (11 and 7.5 s after the boot
+  in two runs here, the game the boot started meanwhile playing toward the
+  log's end at 32 to 40 frames a second), the log's `script frame F+600 memory_hash` is
+  `xem-headless`'s, and Save state's (F5) state there, pulled with
+  `run-as`, is `xem-headless`'s state at that frame byte for byte (the
+  default graphics ask for no reveals), loads natively to that RAM and
+  goes on 600 frames to where `xem-headless`'s own goes ([State
+  interchange](#state-interchange); about 40 s on the emulator). `XEM_SMOKE_GAME_ONLY=1` skips the
   synthetic-disc and lifecycle sections. The game module must be built first
   (`python3 tools/game_module.py --stubs` in the default shell).
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the

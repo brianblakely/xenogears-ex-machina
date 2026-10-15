@@ -26,6 +26,11 @@ struct Options {
     script: Option<PathBuf>,
     /// Exit when the game has run this many frames, reporting its memory hash.
     exit_at_frame: Option<u64>,
+    /// Load this state file once the game has booted, before either loop
+    /// (as Load state loads one).
+    load_state: Option<PathBuf>,
+    /// Write the game's state to the path once it has run this many frames.
+    save_state_at: Option<(u64, PathBuf)>,
     /// Play in an OpenXR headset on a virtual screen (xr.rs).
     xr: bool,
     /// Headset tests: pause the game at headset frame N for M frames.
@@ -59,6 +64,8 @@ fn options() -> Result<Options, String> {
         bios: None,
         script: None,
         exit_at_frame: None,
+        load_state: None,
+        save_state_at: None,
         xr: false,
         xr_pause: None,
         xr_capture: None,
@@ -91,6 +98,12 @@ fn options() -> Result<Options, String> {
             "--exit-at-frame" => {
                 let count = args.next().ok_or("--exit-at-frame needs a frame")?;
                 options.exit_at_frame = Some(count.parse().map_err(|_| format!("bad frame {count:?}"))?);
+            }
+            "--load-state" => options.load_state = Some(args.next().ok_or("--load-state needs a state file")?.into()),
+            "--save-state-at" => {
+                let value = args.next().ok_or("--save-state-at needs FRAME:PATH")?;
+                let (at, path) = value.split_once(':').ok_or("--save-state-at needs FRAME:PATH")?;
+                options.save_state_at = Some((at.parse().map_err(|_| format!("bad --save-state-at frame {at:?}"))?, path.into()));
             }
             "--xr" => options.xr = true,
             "--control" => options.control = true,
@@ -152,7 +165,7 @@ fn options() -> Result<Options, String> {
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] [--xr-lose-tracking N,M] \
+                     [--exit-at-frame N] [--load-state FILE] [--save-state-at N:FILE] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] [--xr-lose-tracking N,M] \
                      [--xr-pad N:BUTTONS[@panel:X/Y],...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
@@ -182,7 +195,11 @@ fn options() -> Result<Options, String> {
                      import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer; not with --xr) and \
                      bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
-                     --exit-at-frame prints the memory hash at that game frame and exits.\n\
+                     --exit-at-frame prints the memory hash at that game frame and exits; \
+                     --load-state loads a state file (Save state's, xem-headless's state_save, a browser's \
+                     export) once the game has booted, before the window or the headset plays it; \
+                     --save-state-at writes the game's state to FILE when it has run N frames (the game's \
+                     count since boot, which a loaded state goes on from), printing its memory hash, and plays on.\n\
                      Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app); its \
                      Controls section lists and rebinds the game's keys, buttons and mouse buttons \
                      (by default WASD move, E confirm, F cancel, Shift run, Space jump, Tab the game menu, \
@@ -199,6 +216,14 @@ fn options() -> Result<Options, String> {
     }
     if options.screenshot.is_some() && options.exit_after_frames.is_none() {
         return Err("--screenshot is taken at --exit-after-frames".into());
+    }
+    if (options.load_state.is_some() || options.save_state_at.is_some()) && options.disc.is_none() {
+        return Err("--load-state and --save-state-at need --disc".into());
+    }
+    if let (Some((at, _)), Some(exit)) = (&options.save_state_at, options.exit_at_frame)
+        && *at > exit
+    {
+        return Err(format!("--save-state-at frame {at} comes after --exit-at-frame {exit}"));
     }
     Ok(options)
 }
@@ -307,12 +332,13 @@ fn run_xr(options: &Options) -> Result<(), String> {
     let _sdl = sdl::Sdl::init_without_video()?;
     let disc = options.disc.as_deref().ok_or("--xr needs --disc")?;
     let mut game = open_game(options, disc)?;
+    load_state(&mut game, options)?;
     if let Some(path) = &options.script {
         let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
         let log: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
         game.schedule(&log)?;
     }
-    game.set_frame_limit(options.exit_at_frame);
+    game.set_frame_limit(frame_limit(options));
     let settings = Rc::new(RefCell::new(open_settings()));
     // Save state keeps its state beside the settings, as in the window.
     let play = xem_host::xr_play::XrPlay {
@@ -326,6 +352,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
         pad: options.xr_pad.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,
+        save_state_at: options.save_state_at.clone(),
         state_directory: None,
         control: options.control,
     };
@@ -341,6 +368,21 @@ fn run_xr(_options: &Options) -> Result<(), String> {
 #[cfg(not(has_game_module))]
 fn open_game(_options: &Options, _disc: &std::path::Path) -> Result<Game, String> {
     Err("this build has no game module (python3 tools/game_module.py builds it)".into())
+}
+
+/// `--load-state`: the state file loaded into the booted game, as Load
+/// state loads one (a refusal names what differs).
+fn load_state(game: &mut Game, options: &Options) -> Result<(), String> {
+    if let Some(path) = &options.load_state {
+        game.command(&serde_json::json!({"cmd": "state_load", "path": path})).map_err(|error| format!("--load-state {}: {error}", path.display()))?;
+    }
+    Ok(())
+}
+
+/// The frame the game may run to: `--save-state-at`'s (the loops then
+/// write the state and raise it), else `--exit-at-frame`'s.
+fn frame_limit(options: &Options) -> Option<u64> {
+    options.save_state_at.as_ref().map(|(at, _)| *at).or(options.exit_at_frame)
 }
 
 /// Boots the user's disc and plays it, with cards under the settings'
@@ -410,13 +452,16 @@ impl Host {
         });
         window.set_text_input(options.show_settings);
         let mut game = options.disc.as_deref().map(|disc| open_game(options, disc)).transpose()?;
+        if let Some(game) = &mut game {
+            load_state(game, options)?;
+        }
         if let (Some(game), Some(path)) = (&mut game, &options.script) {
             let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
             let log: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
             game.schedule(&log)?;
         }
         if let Some(game) = &mut game {
-            game.set_frame_limit(options.exit_at_frame);
+            game.set_frame_limit(frame_limit(options));
         }
         Ok(Self {
             view,
@@ -435,6 +480,7 @@ impl Host {
     fn run(&mut self, window: &sdl::Window, options: &Options) -> Result<(), String> {
         let mut frames = 0u64;
         let mut minimized = false;
+        let mut state_saved = false;
         let control = options.control.then(xem_host::Control::spawn);
         loop {
             if let Some(control) = &control {
@@ -491,6 +537,14 @@ impl Host {
             }
             if last && frames > 0 {
                 return Ok(());
+            }
+            if let (Some(game), Some((at, path))) = (&mut self.game, &options.save_state_at)
+                && !state_saved
+                && game.frames_run() >= *at
+            {
+                println!("xem-desktop: {}", xem_host::save_state_at(game, path)?);
+                state_saved = true;
+                game.set_frame_limit(options.exit_at_frame);
             }
             if let (Some(game), Some(at)) = (&mut self.game, options.exit_at_frame)
                 && game.frames_run() >= at

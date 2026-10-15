@@ -297,6 +297,10 @@ pub struct XrPlay {
     pub exit_after_frames: Option<u64>,
     /// End the session when the game has run this many frames, reporting its RAM hash.
     pub exit_at_frame: Option<u64>,
+    /// Write the game's state to the path once it has run this many frames
+    /// (`crate::save_state_at`; the host's frame limit holds the game at the
+    /// frame), then play on to `exit_at_frame`.
+    pub save_state_at: Option<(u64, std::path::PathBuf)>,
     /// Synthetic hand gestures (headset frame, `xem_assist::synthetic`
     /// gesture name) for runtimes without hand tracking: from the first,
     /// the hands rest open in front of the head between gestures.
@@ -424,6 +428,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut presented_size = (320u32, 216u32);
     let mut game_paused = false;
     let mut captured = false;
+    let mut state_saved = false;
     let mut movie = MovieFrame::default();
     loop {
         for event in session.poll_events().map_err(|e| e.to_string())? {
@@ -1091,6 +1096,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             u8::from(ended.passthrough.is_some()),
         );
         frames += 1;
+        if let Some((at, path)) = options.save_state_at.as_ref().filter(|_| !state_saved)
+            && game.frames_run() >= *at
+        {
+            println!("{}", crate::save_state_at(&mut game, path)?);
+            state_saved = true;
+            game.set_frame_limit(options.exit_at_frame);
+        }
         if quit.get() && !exit_requested {
             session.request_exit().map_err(|e| e.to_string())?;
             exit_requested = true;

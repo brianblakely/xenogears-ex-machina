@@ -22,7 +22,12 @@
 # game's frame count does not move, plus repeated Home/return at 20x FF; then
 # Settings by touch: Stop fast-forward, Hold to rewind held (the game's
 # vblank goes back), Save state and, after the game played on, Load state
-# (the vblank and memory hash the save left), and Start fast-forward.
+# (the vblank and memory hash the save left), and Start fast-forward. With
+# xem-headless (XEM_HEADLESS, else the suite's build) a state it made in
+# field 30 loads on the device through Load state's key (F8) and plays on
+# 600 frames to xem-headless's memory hash, and the device's Save state
+# (F5) there, pulled, is xem-headless's state at that frame byte for byte,
+# loads natively to that RAM and goes on to where xem-headless's own goes.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
 # start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
 # logs (tests/reference-inputs/slice-*.json) to their native memory hashes:
@@ -491,6 +496,67 @@ PY
     if tail -n "+$game_start" "$log" |
         grep -E "xem: (panic|game stopped|error)|FATAL EXCEPTION|SIGSEGV|SIGABRT|Fatal signal" | sed 's/^/  /'; then
         fail "crash or game trap in the log"
+    fi
+    # A native state through the app's own load path: xem-headless's field
+    # 30 state (at frame F) where Load state reads it (files/state.xemstate),
+    # a session log with no commands that ends at F+600 (files/script.json:
+    # the game plays as the original, no player's input or host controls),
+    # Load state by its key (F8) once the game booted: the log's memory hash
+    # at F+600 is xem-headless's. Save state (F5) there, the state pulled:
+    # xem-headless's own state at F+600, and played on natively, the RAM
+    # xem-headless's own reaches.
+    headless=${XEM_HEADLESS:-$root/src/runtime/target-suite/suite/xem-headless}
+    if [ -x "$headless" ]; then
+        echo "== a native state loaded on the device, played on, saved there and played on natively"
+        native() { "$headless" --disc "$disc1" --control 2>/dev/null; }
+        last_string() { python3 -c 'import json,sys; print([json.loads(l) for l in sys.stdin if l.startswith(chr(34))][-1])'; }
+        # 1 600 frames in: the game the boot starts plays toward the log's
+        # end until the load, which must come first (about 11 s here).
+        printf '{"cmd":"enter_field","map":30}\n{"cmd":"frames","count":1600}\n{"cmd":"state_save","path":"%s"}\n' "$out/native.xemstate" | native >/dev/null
+        at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/native.xemstate" | native | python3 -c 'import json,sys; print(json.loads(sys.stdin.readline())["frames"])')
+        start_hash=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/native.xemstate" | native | last_string)
+        played=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"memory_hash"}\n' "$out/native.xemstate" | native | last_string)
+        twice=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":1200}\n{"cmd":"memory_hash"}\n' "$out/native.xemstate" | native | last_string)
+        echo "{\"commands\": [], \"frames\": $((at + 600))}" >"$out/state-script.json"
+        "${adb[@]}" push "$out/native.xemstate" /data/local/tmp/xem-state.xemstate >/dev/null
+        "${adb[@]}" push "$out/state-script.json" /data/local/tmp/xem-script.json >/dev/null
+        mark
+        "${adb[@]}" shell am force-stop "$package"
+        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-state.xemstate files/state.xemstate
+        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-script.json files/script.json
+        "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
+        wait_for "xem: disc picker opened" 60
+        pick_document disc1 "xem-disc1\.chd"
+        wait_for "xem: script .* to frame Some\($((at + 600))\)" 120
+        wait_for "xem: game booted" 60
+        "${adb[@]}" shell input keyevent --longpress KEYCODE_F8
+        loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/state\.xemstate" 60)
+        got=$(wait_for "xem: script frame $((at + 600)) memory_hash " 120 | sed -E 's/.*memory_hash ([0-9a-f]+).*/\1/')
+        echo "  xem-headless's state at frame $at (RAM $start_hash) loaded on the device: $(op_of <<<"$loaded");" \
+            "frame $((at + 600)) memory_hash $got (natively $played)"
+        [ "$(op_of <<<"$loaded" | cut -d' ' -f2)" = "$start_hash" ] || fail "Load state did not give the native state's RAM"
+        [ "$got" = "$played" ] || fail "the native state went on elsewhere on the device"
+        mark
+        "${adb[@]}" shell input keyevent --longpress KEYCODE_F5
+        saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/state\.xemstate" 60)
+        "${adb[@]}" exec-out run-as "$package" cat files/state.xemstate >"$out/device.xemstate"
+        continued=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
+        onward=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
+        echo "  Save state on the device: $(op_of <<<"$saved"), $(wc -c <"$out/device.xemstate") bytes; natively RAM $continued," \
+            "600 frames on $onward (the native state's own $twice)"
+        [ "$(op_of <<<"$saved" | cut -d' ' -f2)" = "$played" ] || fail "Save state on the device did not hold the RAM it played to"
+        [ "$continued" = "$played" ] || fail "the device's state loaded natively elsewhere"
+        [ "$onward" = "$twice" ] || fail "the device's state went on natively elsewhere"
+        # The default graphics ask for no reveals (no wider framing,
+        # pull-back or inspection): the whole state is xem-headless's.
+        printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"state_save","path":"%s"}\n' \
+            "$out/native.xemstate" "$out/native-played.xemstate" | native >/dev/null
+        cmp -s "$out/device.xemstate" "$out/native-played.xemstate" || fail "the device's state is not xem-headless's at that frame, byte for byte"
+        echo "  the device's state is xem-headless's at frame $((at + 600)), byte for byte"
+        "${adb[@]}" shell run-as "$package" rm -f files/script.json files/state.xemstate
+        "${adb[@]}" shell rm -f /data/local/tmp/xem-state.xemstate /data/local/tmp/xem-script.json
+    else
+        echo "== no xem-headless at $headless (XEM_HEADLESS): skipped the state interchange step"
     fi
     if [ -n "${XEM_SMOKE_SLICE:-}" ]; then
         # play_log NAME [lifecycle]: the session log tests/reference-inputs/slice-NAME.json

@@ -4,6 +4,10 @@
 // field camera pulled back, on WebGPU and on WebGL2. Each profile draws a picture of its own; none of them
 // changes the game: the same frames from the same snapshot end at the same
 // RAM hash whatever is selected and however often the page renders. The
+// page's state exported after it drew under HD-2D with wider framing and the
+// camera pulled back (the draw trace and its reveals on) loads in
+// xem-headless to the page's RAM hash, and 240 frames there end where the
+// page's 240 frames end. The
 // title movie's frame 860, shown twice from one snapshot: under the
 // Enhanced movies setting rebuilt from what the MDEC decoded
 // (status().renderer.movie, no wider framing's sides), under Original the
@@ -13,10 +17,10 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, WEBGPU, decodePng, pixelStats, shot, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, WEBGPU, decodePng, native, pixelStats, shot, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -101,6 +105,20 @@ async function profiles(args, backend) {
     assert.equal(hd2d, modern, 'HD-2D, wider framing and interpolation leave the game unchanged');
     assert.equal(ps1, modern, 'the PS1 profile leaves the game unchanged');
     assert.equal(zoomed, modern, 'pulling the camera back (the port records the culled scenery) leaves the game unchanged');
+
+    // The page's state after drawing under HD-2D, wider and pulled back,
+    // exported: natively it is the page's RAM, and goes on as the page's.
+    await page.evaluate((s) => window.xem.command({ cmd: 'restore', ...s }), snapshot);
+    await picture(page, `render-${backend}-export.png`, graphics({ profile: 'Hd2d', widescreen: true, zoom_out: 200 }));
+    const exported = join(SHOTS, `render-${backend}-export.xemstate`);
+    writeFileSync(exported, Buffer.from(await page.evaluate(() => Array.from(window.xem.exportSnapshot()))));
+    const at = await page.evaluate(() => window.xem.memoryHash());
+    await page.evaluate(() => window.xem.runFrames(240));
+    const onward = await page.evaluate(() => window.xem.memoryHash());
+    assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'memory_hash' }]), at, 'the export loads natively to the page\'s RAM');
+    assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'frames', count: 240 }, { cmd: 'memory_hash' }]), onward,
+      'and goes on natively as in the page');
+    console.log(`${backend}: the page's state after drawing loads natively to ${at} and goes on to ${onward} in both`);
   } finally {
     await browser.close();
   }

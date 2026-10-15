@@ -7,14 +7,16 @@
 // at the RAM/scratchpad hash its native recording ended at. The save writes
 // card 2 to IndexedDB through a page reload taken mid-route (the session is
 // saved to IndexedDB, the page reloads, the disc is imported again and the
-// session restored), and the next page loads that card from the title.
+// session restored), byte for byte the card xem-headless's save writes on
+// the same log, and the next page loads that card from the title.
 
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { devices } from 'playwright-core';
-import { NO_WEBGPU, ROOT, USER_DISC, WEB, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, WEB, native, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm'));
 const log = (name) => JSON.parse(readFileSync(join(ROOT, 'tests', 'reference-inputs', `slice-${name}.json`), 'utf8'));
@@ -66,7 +68,9 @@ async function forest(options) {
 // Each test plays in its own browser, two at a time: the longest (the save
 // and its reload) beside the three forest routes in turn.
 describe('the Phase 3 slice in browsers', { concurrency: 2, skip: !available && `needs ${USER_DISC} and the game module` }, () => {
-  test('the save survives a reload mid-route and the next page loads it', { timeout: 3_600_000 }, async () => {
+  test('the save survives a reload mid-route, writes the native save\'s card and the next page loads it', {
+    timeout: 3_600_000, skip: !existsSync(HEADLESS) && `needs ${HEADLESS} (the native save)`,
+  }, async () => {
     const save = log('save');
     const load = log('load-card2');
     const MID = 6000;
@@ -98,6 +102,15 @@ describe('the Phase 3 slice in browsers', { concurrency: 2, skip: !available && 
       const card = new Uint8Array(Object.values(await page.evaluate(async () => Array.from(await window.xem.cards.stored(1)))));
       assert.equal(String.fromCharCode(card[0], card[1]), 'MC', 'card 2 formatted');
       assert.equal(card[128], 0x51, 'and holding the save');
+      // The same log natively, card 2 unformatted there too: the game's
+      // save is the browser's card, byte for byte.
+      const cards = mkdtempSync(join(tmpdir(), 'xem-slice-cards-'));
+      writeFileSync(join(cards, 'card2.mcd'), new Uint8Array(0x20000));
+      const exported = join(cards, 'native-card2.mcd');
+      const reply = native([{ cmd: 'schedule', commands: save.commands }, { cmd: 'run_until', max_frames: save.frames, until: { frames: save.frames } },
+        { cmd: 'card_export', slot: 1, path: exported }], ['--cards', cards]);
+      assert.equal(reply.ok, true, JSON.stringify(reply));
+      assert.ok(Buffer.from(card).equals(readFileSync(exported)), 'the browser\'s card 2 is the native save\'s, byte for byte');
       await page.close();
 
       // A new page loads card 2 from the title screen.

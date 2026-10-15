@@ -22,6 +22,15 @@ export const USER_DISC2 = process.env.XEM_DISC2 ?? join(ROOT, 'discs', 'Xenogear
 // The native host the tests compare with (XEM_HEADLESS: another build's, as the test suite's).
 export const HEADLESS = process.env.XEM_HEADLESS ?? join(ROOT, 'src', 'runtime', 'target', 'release', 'xem-headless');
 
+/** xem-headless (`--control`, more `args` after) booted from the user's
+ * disc 1 and given `commands`: its reply to the last. */
+export function native(commands, args = []) {
+  const output = execFileSync(HEADLESS, ['--disc', USER_DISC, '--control', ...args], {
+    input: commands.map((command) => JSON.stringify(command)).join('\n') + '\n', encoding: 'utf8', maxBuffer: 1 << 26,
+  });
+  return JSON.parse(output.trim().split('\n').at(-1));
+}
+
 /** Chromium flags. WebGPU on SwiftShader's Vulkan: with Chromium's default
  * Vulkan selection the headless browser destroys a WebGPU device after its
  * canvas presents a frame. */

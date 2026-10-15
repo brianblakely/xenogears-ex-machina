@@ -8,7 +8,12 @@
 //! and detaches midway, or the view looks around in first person (the port
 //! then records every face the game culls and where its character stands),
 //! or a headset's diorama shows it from a moving head at changing scales
-//! (the port records every face and each frame's camera).
+//! (the port records every face and each frame's camera). The whole state
+//! (`Session::snapshot_bytes`) is compared too (`presentation_only`):
+//! outside the port's own memory it is the same byte for byte, and what
+//! differs within it is the port's presentation bookkeeping, gone two
+//! frames on from the same presentation records but for dead stack that
+//! nothing reads.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test render
 
@@ -459,16 +464,171 @@ fn hash(session: &mut Session<NativeModule>) -> String {
     format!("{:016x}", session.memory_hash().unwrap())
 }
 
+/// The whole state a run ended at (`Session::snapshot_bytes`) and its
+/// parts, to name where two differ: each memory region a state keeps and
+/// each device's saved state.
+struct Whole {
+    bytes: Vec<u8>,
+    parts: Vec<(String, u32, Vec<u8>)>,
+}
+
+fn whole(session: &mut Session<NativeModule>) -> Whole {
+    use xem_core::devices::Device;
+    let mut parts = Vec::new();
+    for (start, len) in xem_core::snapshot::REGIONS {
+        let mut data = vec![0; len as usize];
+        session.runtime.memory().read(start, &mut data).unwrap();
+        parts.push(("memory".to_string(), start, data));
+    }
+    let s = session.runtime.services();
+    for (name, saved) in [("the GPU", s.gpu.save()), ("the drive", s.cd.save()), ("the MDEC", s.mdec.save()), ("the SPU", s.spu.save()), ("the cards", s.card.save())] {
+        parts.push((name.to_string(), 0, saved));
+    }
+    Whole { bytes: session.snapshot_bytes().unwrap(), parts }
+}
+
+/// Two whole states the same byte for byte, or where they differ: each
+/// memory region's differing bytes (how many, the first and the last
+/// address), each device whose saved state differs, else the rest of the
+/// state (fibers, globals, clock, pads, counters).
+fn same(a: &Whole, b: &Whole) -> Result<(), String> {
+    if a.bytes == b.bytes {
+        return Ok(());
+    }
+    Err(differences(a, b, |_| true).unwrap_or_else(|| "outside memory and the devices (fibers, globals, clock, pads, counters)".into()))
+}
+
+/// Where the parts `which` picks differ (`same`), if they do.
+fn differences(a: &Whole, b: &Whole, which: impl Fn(u32) -> bool) -> Option<String> {
+    let mut found = Vec::new();
+    for ((name, start, x), (_, _, y)) in a.parts.iter().zip(&b.parts) {
+        if x == y || !(name != "memory" || which(*start)) {
+            continue;
+        }
+        let differing: Vec<usize> = (0..x.len().min(y.len())).filter(|&i| x[i] != y[i]).collect();
+        match (differing.first(), differing.last()) {
+            (Some(first), Some(last)) if name == "memory" => found.push(format!(
+                "{} bytes of memory from {:#010x} to {:#010x}", differing.len(), *start as usize + first, *start as usize + last)),
+            _ => found.push(format!("{name}'s state ({} bytes against {})", x.len(), y.len())),
+        }
+    }
+    (!found.is_empty()).then(|| found.join("; "))
+}
+
+/// The port's own memory (tools/game_module.py PORT_BASE): its data and
+/// BSS (the fibers' asyncify save areas among them) and its shadow stack.
+const PORT: u32 = 0x1000_0000;
+
+/// The port's presentation records, outside every state region (xem/gte.h
+/// and sprite_facing.c): the projection, store and culled-face rings, the
+/// captures and the sprite facings' scratch. Each begins with its counts.
+const PRESENTATION: [u32; 5] = [0x7000_0000, 0x7030_0000, 0x7050_0000, 0x70A0_0000, 0x70B0_0000];
+
+/// The shadow stack's size (tools/game_module.py STACK_BYTES): it lies
+/// below the top a fresh module starts the game fiber at.
+const STACK_BYTES: u32 = 0x10_0000;
+
+/// The module's stack pointer a state holds (after its header, identity,
+/// entry, current fiber and two fibers: runtime.rs `snapshot_content`).
+fn stack_pointer(state: &[u8]) -> u32 {
+    let mut r = xem_core::snapshot::Reader::new(xem_core::snapshot::checked(state).unwrap());
+    r.u64().unwrap();
+    r.u32().unwrap();
+    r.bytes().unwrap();
+    for _ in 0..3 {
+        r.u32().unwrap();
+    }
+    for _ in 0..2 {
+        for _ in 0..r.u32().unwrap() {
+            r.u32().unwrap();
+        }
+    }
+    r.u32().unwrap()
+}
+
+/// What presentation leaves in a whole state, `drawn` against `unseen`
+/// from the same state and frames, is the port's own bookkeeping alone.
+/// Everything outside the port's memory (PS1 RAM, the scratchpad and I/O
+/// pages, KUSEG, every device) is the same byte for byte. Within it the
+/// presentation's code leaves frames of its own below the game fiber's
+/// suspended shadow stack, values the suspended frames saved on their way
+/// (asyncify's save area: a pointer on one path, a count on the other),
+/// and copies of the presentation rings' counts, which count only while a
+/// trace records and lie outside states (so a rendering host's go on
+/// across a restore). Played on two frames from the same presentation
+/// records with no trace, the two hold the same saved values; what still
+/// differs is dead stack alone, deeper than the game's own frames reach,
+/// between the stack's bottom and the suspended stack pointer, which no
+/// code reads (every port and game function zero-initialises its locals:
+/// tools/game_module.py's -ftrivial-auto-var-init=zero), and with those
+/// bytes the same the two are the same byte for byte.
+fn presentation_only(session: &mut Session<NativeModule>, drawn: &Whole, unseen: &Whole) -> Result<(), String> {
+    use xem_core::module::GameModule;
+    if let Some(at) = differences(drawn, unseen, |start| start != PORT) {
+        return Err(format!("outside the port's memory: {at}"));
+    }
+    if let Err(at) = same(drawn, unseen) {
+        eprintln!("the port's bookkeeping right after: {at}");
+    }
+    let records: Vec<Vec<u8>> = PRESENTATION.iter().map(|&address| {
+        let mut data = vec![0; 0x1_0000];
+        session.runtime.memory().read(address, &mut data).unwrap();
+        data
+    }).collect();
+    let mut on = Vec::new();
+    for state in [&drawn.bytes, &unseen.bytes] {
+        session.restore_bytes(state).unwrap();
+        for (&address, data) in PRESENTATION.iter().zip(&records) {
+            session.runtime.memory().write(address, data).unwrap();
+        }
+        session.runtime.services().gpu.device_mut().set_trace(false);
+        for _ in 0..2 {
+            assert!(session.frame().expect("frame"));
+        }
+        on.push(whole(session));
+    }
+    if same(&on[0], &on[1]).is_ok() {
+        return Ok(());
+    }
+    // The dead stack: from the stack's bottom to the suspended pointer.
+    let (sp, top) = (stack_pointer(&on[0].bytes), NativeModule::new().stack_pointer());
+    if stack_pointer(&on[1].bytes) != sp {
+        return Err("two frames on, the game fiber's stack pointers differ".into());
+    }
+    let dead = top - STACK_BYTES..sp;
+    if let Some(at) = differences(&on[0], &on[1], |start| start != PORT) {
+        return Err(format!("two frames on, outside the port's memory: {at}"));
+    }
+    fn port(w: &Whole) -> &[u8] {
+        &w.parts.iter().find(|(name, start, _)| name == "memory" && *start == PORT).unwrap().2
+    }
+    let (a, b) = (port(&on[0]), port(&on[1]));
+    if let Some(i) = (0..a.len()).find(|&i| a[i] != b[i] && !dead.contains(&(PORT + i as u32))) {
+        return Err(format!("two frames on, port memory at {:#010x} differs outside the dead stack {dead:#x?}", PORT + i as u32));
+    }
+    // The session holds the second: with the first's dead stack, the same.
+    let from = (dead.start - PORT) as usize..(dead.end - PORT) as usize;
+    session.runtime.memory().write(dead.start, &a[from.clone()]).unwrap();
+    if session.snapshot_bytes().unwrap() != on[0].bytes {
+        return Err("two frames on, the states differ beside the dead stack".into());
+    }
+    let differing: Vec<usize> = from.filter(|&i| a[i] != b[i]).collect();
+    eprintln!("two frames on: {} bytes of dead stack alone differ, {:#010x} to {:#010x} (the suspended stack pointer {sp:#010x})",
+        differing.len(), PORT as usize + differing[0], PORT as usize + differing[differing.len() - 1]);
+    Ok(())
+}
+
 /// Runs `FRAMES` frames; before frame `n`, `view(n)` says which view (if
 /// any) draws it and with which settings, and `look(n)` how far it turns
 /// looking around in first person (`None`: it does not). Returns the RAM
-/// hash and the frames shown from the field character's eyes.
+/// hash, the frames shown from the field character's eyes and the whole
+/// state at the end.
 fn run(
     session: &mut Session<NativeModule>,
     gpu: &Gpu,
     mut view: impl FnMut(u64) -> Option<(usize, Graphics)>,
     look: impl Fn(u64) -> Option<f32>,
-) -> (String, u64) {
+) -> (String, u64, Whole) {
     let mut views: Vec<GameView> = (0..2).map(|_| GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter))).collect();
     let mut looked = 0;
     for n in 0..FRAMES {
@@ -506,7 +666,7 @@ fn run(
             }
         }
     }
-    (hash(session), looked)
+    (hash(session), looked, whole(session))
 }
 
 #[test]
@@ -521,7 +681,7 @@ fn rendering_skipped_offscreen_or_as_a_spectator_leaves_the_game_unchanged() {
     let start = session.snapshot_bytes().unwrap();
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
 
-    let (skipped, _) = run(&mut session, &gpu, |_| None, |_| None);
+    let (skipped, _, unseen) = run(&mut session, &gpu, |_| None, |_| None);
 
     let profiles = [
         Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() },
@@ -536,23 +696,26 @@ fn rendering_skipped_offscreen_or_as_a_spectator_leaves_the_game_unchanged() {
         Graphics::default(),
     ];
     session.restore_bytes(&start).unwrap();
-    let (every_frame, _) = run(&mut session, &gpu, |n| Some((0, profiles[(n / 30) as usize % profiles.len()])), |_| None);
+    let (every_frame, _, drawn) = run(&mut session, &gpu, |n| Some((0, profiles[(n / 30) as usize % profiles.len()])), |_| None);
     assert_eq!(every_frame, skipped, "drawing every frame under switching profiles changes nothing");
+    presentation_only(&mut session, &drawn, &unseen).unwrap_or_else(|at| panic!("drawing every frame changes the whole state: {at}"));
 
     session.restore_bytes(&start).unwrap();
-    let (spectator, _) = run(&mut session, &gpu, |n| match n {
+    let (spectator, _, watched) = run(&mut session, &gpu, |n| match n {
         // A spectator attaches, changes its look, and detaches.
         60..120 => Some((1, profiles[0])),
         120..180 => Some((1, profiles[1])),
         _ => None,
     }, |_| None);
     assert_eq!(spectator, skipped, "a spectator attaching and detaching changes nothing");
+    presentation_only(&mut session, &watched, &unseen).unwrap_or_else(|at| panic!("a spectator changes the whole state: {at}"));
 
     // Looking around in first person midway, under two profiles, turning.
     session.restore_bytes(&start).unwrap();
-    let (looking, looked) = run(&mut session, &gpu, |n| Some((0, profiles[(n / 60) as usize % 2])), |n| (40..200).contains(&n).then_some(0.05));
+    let (looking, looked, looked_around) = run(&mut session, &gpu, |n| Some((0, profiles[(n / 60) as usize % 2])), |n| (40..200).contains(&n).then_some(0.05));
     assert!(looked > 100, "the field's character's eyes show ({looked} frames)");
     assert_eq!(looking, skipped, "looking around in first person changes nothing");
+    presentation_only(&mut session, &looked_around, &unseen).unwrap_or_else(|at| panic!("looking around changes the whole state: {at}"));
 }
 
 #[test]
@@ -582,22 +745,24 @@ fn first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_v
             session.runtime.services().gpu.device().save(),
             session.runtime.services().spu.chip().save(),
             session.runtime.services().clock.now);
-        (state, changed)
+        (state, changed, whole(session))
     };
-    let (original, no_facings) = run(&mut session, 0);
+    let (original, no_facings, unfaced) = run(&mut session, 0);
     assert_eq!(no_facings,0);
     // A view from anywhere has no viewer's position to face: no facings.
     // (The port takes the bits its GPU commands last handed over, and its
     // rings are no part of a state: the first frame after a restore is
     // built with the run before's, so this one follows the original's.)
     session.restore_bytes(&initial).unwrap();
-    let (anywhere, anywhere_facings) = run(&mut session, Reveals::ANYWHERE);
+    let (anywhere, anywhere_facings, from_anywhere) = run(&mut session, Reveals::ANYWHERE);
     assert_eq!(anywhere_facings,0,"sprite facings replay for first-person looking only");
     assert_eq!(anywhere,original,"a view from anywhere cannot change original RAM, VRAM, sound or time");
+    presentation_only(&mut session, &from_anywhere, &unfaced).unwrap_or_else(|at| panic!("a view from anywhere changes the whole state: {at}"));
     session.restore_bytes(&initial).unwrap();
-    let (looking, facings) = run(&mut session, Reveals::LOOK);
+    let (looking, facings, faced) = run(&mut session, Reveals::LOOK);
     assert!(facings > 0,"Lahan NPCs must select frames from the player's viewing position");
     assert_eq!(looking,original,"alternate texture assembly cannot change original RAM (including RNG), VRAM, sound or time");
+    presentation_only(&mut session, &faced, &unfaced).unwrap_or_else(|at| panic!("sprite facings change the whole state: {at}"));
 }
 
 #[test]
@@ -677,7 +842,7 @@ fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
     assert!(session.execute(&json!({"cmd": "frames", "count": 400})).get("error").is_none());
     let start = session.snapshot_bytes().unwrap();
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
-    let (skipped, _) = run(&mut session, &gpu, |_| None, |_| None);
+    let (skipped, _, unseen) = run(&mut session, &gpu, |_| None, |_| None);
     session.restore_bytes(&start).unwrap();
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     let mut dioramas = 0;
@@ -710,4 +875,6 @@ fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
     }
     assert!(dioramas > 150, "the field shows as a diorama ({dioramas} of {FRAMES} frames)");
     assert_eq!(hash(&mut session), skipped, "showing a diorama changes nothing");
+    let shown = whole(&mut session);
+    presentation_only(&mut session, &shown, &unseen).unwrap_or_else(|at| panic!("a diorama changes the whole state: {at}"));
 }

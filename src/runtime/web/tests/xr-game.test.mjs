@@ -9,7 +9,10 @@
 // head-tracked music); with the head turned away the player's Recenter and
 // then IWER's own recentring (its reference space's `reset`) each put the
 // screen in front again; leaving returns to the canvas; and the game's RAM
-// after the same frames is the same in and out of the headset. First-person
+// after the same frames is the same in and out of the headset, and the
+// state exported in the headset is xem-headless's after the same frames
+// byte for byte (the screen asks for no reveals), loads there to its RAM and
+// goes on there as in the headset. First-person
 // inspection (field 30, IWER's tracked hands): the underhand grab looks from
 // within the scene through each view, a head turn changes the view while the
 // player's Pause holds the game, the controllers' click and stick toggle and
@@ -41,7 +44,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, rotate, start, status } from './support.mjs';
+import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, native, rotate, start, status } from './support.mjs';
 
 const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -84,6 +87,20 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       // The automation's frames in the headset end where the flat ones did.
       await page.evaluate(() => window.xem.runFrames(120));
       assert.equal(await page.evaluate(() => window.xem.memoryHash()), flatHash, 'the headset changes nothing in the game');
+      // The state in the headset, exported: natively it is the headset's
+      // RAM, and 120 frames there end where the headset's 120 end.
+      const exported = join(SHOTS, 'xr-field12-export.xemstate');
+      writeFileSync(exported, Buffer.from(await page.evaluate(() => Array.from(window.xem.exportSnapshot()))));
+      await page.evaluate(() => window.xem.runFrames(120));
+      const onward = await page.evaluate(() => window.xem.memoryHash());
+      assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'memory_hash' }]), flatHash, 'the headset\'s state loads natively to its RAM');
+      assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'frames', count: 120 }, { cmd: 'memory_hash' }]), onward,
+        'and goes on natively as in the headset');
+      // The screen without wider framing asks for no reveals: the whole
+      // state is xem-headless's after the same frames.
+      const same = join(SHOTS, 'xr-field12-native.xemstate');
+      native([{ cmd: 'state_load', path: state }, { cmd: 'frames', count: 120 }, { cmd: 'state_save', path: same }]);
+      assert.ok(readFileSync(exported).equals(readFileSync(same)), 'the headset\'s state is xem-headless\'s, byte for byte');
 
       // Running: game frames follow the clock, not the session's frame rate.
       await page.evaluate(() => window.xem.setRunning(true));
