@@ -14,7 +14,7 @@
 //! | Battle commands | | next page of the ring | the ring's upper slot | lower | left | right |
 //! | Battle attacks | | | Weak | Fierce | Strong | end the sequence |
 //! | Battle lists | | select the entry gazed at (or the selected one) | later | earlier | | back |
-//! | Battle targets | | the target gazed at (or the selected one) | up | down | left | back |
+//! | Battle targets | | the target gazed at, through a diorama the one by the ray (or the selected one) | up | down | left | back |
 use crate::gesture::{Gesture, Swipe};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -141,9 +141,20 @@ pub fn tap_at(at: Pointed, ui: Context, field: Option<&Field>, targets: Option<&
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
         Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { .. } => {
             let targets = targets?;
-            Some(Out::Select { index: targets.at(at.screen()?)?, confirm: targets.confirm })
+            Some(Out::Select { index: entry_pointed(targets, at)?, confirm: targets.confirm })
         }
         _ => None,
+    }
+}
+
+/// The entry of `targets` `at` points at: on the picture or the pane, its
+/// box ([`Targets::at`]); along a ray through a diorama, the battle target
+/// nearest it ([`Targets::near_ray`]: by its upright axis in the battle's
+/// world; none of a menu's or a dialogue's, which show on the pane).
+fn entry_pointed(targets: &Targets, at: Pointed) -> Option<usize> {
+    match at {
+        Pointed::Screen(at) | Pointed::Pane(at) => targets.at(at),
+        Pointed::World(ray) => targets.near_ray(ray.origin, ray.direction, ray.within, ray.reach),
     }
 }
 
@@ -176,7 +187,8 @@ fn pinch(ui: Context, aim: Aim, field: Option<&Field>) -> Option<Out> {
 }
 
 fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
-    let at = aim.and_then(Pointed::screen);
+    // The entry the pointer is on, if any.
+    let pointed = targets.zip(aim).and_then(|(t, aim)| Some((t, entry_pointed(t, aim)?)));
     match ui {
         Context::Walk => {
             let field = field?;
@@ -189,10 +201,10 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
         // A choice answers only the one gazed at.
         Context::Dialogue { choice: Some(_) } => {
-            let index = targets.zip(at).and_then(|(t, at)| t.at(at))?;
+            let (_, index) = pointed?;
             Some(Out::Select { index, confirm: true })
         }
-        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(at).and_then(|(t, at)| Some((t, t.at(at)?))) {
+        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match pointed {
             Some((targets, index)) => Out::Select { index, confirm: targets.confirm },
             None => press([GameAction::Confirm]),
         }),
@@ -349,7 +361,7 @@ mod tests {
     #[test]
     fn a_touch_chooses_battle_entries_as_a_click_does() {
         let entry = |x: f32, press: Option<GameAction>, ground: Option<xem_core::menu::Ground>| Entry { rect: Rect { x, y: 0.0, width: 10.0, height: 10.0 }, select: None, press, twice: false, ground };
-        let target = xem_core::menu::Ground { slot: 3, x: 0, z: 0, selectable: true };
+        let target = xem_core::menu::Ground { slot: 3, x: 0, z: 0, selectable: true, sprite: [0; 3], height: 96 };
         let attack = Targets {
             what: "battle_attack",
             entries: vec![entry(0.0, Some(GameAction::AttackWeak), None), entry(20.0, None, Some(target))],
@@ -453,6 +465,39 @@ mod tests {
         let choice = Context::Dialogue { choice: Some(xem_core::context::Choice { count: 2, index: 0 }) };
         assert_eq!(dispatch(&tap, choice, Some(Pointed::Pane((150.0, 120.0))), None, Some(&list())), [Out::Select { index: 1, confirm: true }]);
         assert!(dispatch(&tap, choice, down(150.0, 120.0), None, Some(&list())).is_empty(), "a ray through the table answers no choice");
+    }
+
+    /// The debug battle's targets at rest: Fei and the boss (world y down).
+    fn battle_targets(what: &'static str, confirm: bool) -> Targets {
+        let target = |slot, sprite: [i32; 3], height, x: f32| Entry {
+            rect: Rect { x, y: 0.0, width: 10.0, height: 10.0 }, select: None, press: None, twice: false,
+            ground: Some(xem_core::menu::Ground { slot, x: sprite[0] as i16, z: sprite[2] as i16, selectable: true, sprite, height }),
+        };
+        Targets { what, entries: vec![target(0, [4360, 0, 4160], 92, 0.0), target(3, [3820, 0, 4040], 1523, 20.0)], selected: Some(0), steps: Steps::Compass, confirm }
+    }
+
+    /// A ray down through a diorama's table at the world point (x, y, z).
+    fn down_at(x: f32, y: f32, z: f32) -> Pointed {
+        Pointed::World(WorldRay { origin: V3::new(x, y - 1000.0, z - 1000.0), direction: V3::new(0.0, 1500.0, 1500.0), within: 1.0, reach: 20.0 })
+    }
+
+    #[test]
+    fn through_a_diorama_a_battles_target_is_chosen_by_the_ray() {
+        let targeting = Context::Battle { page: 1, attack: false, ap: 6, list: false, targeting: true };
+        let tap = [Gesture::Tap { hand: HAND }];
+        let targets = battle_targets("battle_targets", true);
+        assert_eq!(dispatch(&tap, targeting, Some(down_at(3820.0, -800.0, 4040.0)), None, Some(&targets)), [Out::Select { index: 1, confirm: true }], "the boss, by the ray");
+        assert_eq!(dispatch(&tap, targeting, Some(down_at(4360.0, -40.0, 4160.0)), None, Some(&targets)), [Out::Select { index: 0, confirm: true }], "Fei");
+        assert_eq!(dispatch(&tap, targeting, Some(down_at(5000.0, 0.0, 3000.0)), None, Some(&targets)), [press([GameAction::Confirm])], "by no target: the one selected");
+        // The pointer's pinch is a tap there.
+        assert_eq!(tap_at(down_at(3820.0, -800.0, 4040.0), targeting, None, Some(&targets)), Some(Out::Select { index: 1, confirm: true }));
+        // On the attack page a target is only selected (its attacks confirm it).
+        let attack = battle_targets("battle_attack", false);
+        assert_eq!(tap_at(down_at(3820.0, -800.0, 4040.0), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 1, confirm: false }));
+        // The cursor lies on the floor at the target's feet, as wide as its frame.
+        let marks = crate::overlay::marks(targeting, Some(down_at(3820.0, -800.0, 4040.0)), None, None, Some(&targets), true);
+        assert_eq!(marks, [crate::overlay::Mark { kind: crate::overlay::Kind::Cursor, place: crate::overlay::Place::Floor { point: V3::new(3820.0, 0.0, 4040.0), radius: 1523.0 * 0.35 } }]);
+        assert!(crate::overlay::marks(targeting, Some(down_at(5000.0, 0.0, 3000.0)), None, None, Some(&targets), true).is_empty(), "no target, no mark");
     }
 
     #[test]

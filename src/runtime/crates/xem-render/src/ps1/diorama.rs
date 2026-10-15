@@ -642,10 +642,11 @@ fn placeable(p: &Primitive) -> bool {
 
 /// Where the scene the game drew begins in `ops`: its first primitive of
 /// the scene that has a place (the culled faces the port drew for the
-/// record aside). `None` for a frame without a scene to place.
+/// record and the backdrop it projects aside). `None` for a frame without a
+/// scene to place.
 fn first_scene(ops: &[TraceOp]) -> Option<usize> {
     let scene = scene_offset(ops);
-    ops.iter().position(|op| matches!(op, TraceOp::Draw(p) if !p.revealed && effective_class(p, scene).is_scene() && placeable(p)))
+    ops.iter().position(|op| matches!(op, TraceOp::Draw(p) if !p.revealed && !p.backdrop && effective_class(p, scene).is_scene() && placeable(p)))
 }
 
 /// A line as a quad, its two ends doubled (a quad's in Z order: 0 0 / 1 1),
@@ -859,6 +860,7 @@ fn fill_primitive(rect: VramRect, rgb: u32, fifteen: bool) -> Primitive {
         revealed: false,
         ground: None,
         facing: None,
+        backdrop: false,
     }
 }
 
@@ -1137,6 +1139,15 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
                 } else {
                     builder.fill(*rect, *color);
                     stats.pane += 1;
+                }
+            }
+            TraceOp::Draw(p) if p.backdrop => {
+                // The backdrop the game projects far behind its scene (a
+                // battle's sky): on the wall where its screen shows it, in
+                // its order (but its culled faces).
+                if !p.revealed {
+                    wall.draw(builder, p);
+                    stats.wall += 1;
                 }
             }
             TraceOp::Draw(p) => {
@@ -1586,6 +1597,31 @@ mod tests {
         }).expect("the window on the pane");
         assert!(draws(&commands, last).iter().all(|key| key.space == Space::Pane), "the interface never enters the eyes' pass");
         assert!(commands.iter().all(|command| !matches!(command, Command::Draw { key, .. } if matches!(key.space, Space::World { .. }) && key.fragment == Fragment::Rect)));
+    }
+
+    #[test]
+    fn a_backdrop_projected_far_behind_the_scene_and_the_pictures_after_it_lie_on_the_wall() {
+        // A battle's sky (the Mountain Path's): the clear, a band, the sky
+        // projected 14 000 deep, then its panorama strip, then the scene.
+        let fill = TraceOp::Fill { rect: VramRect { x: 0, y: 0, width: 320, height: 240 }, color: 0x5A_8CE7 };
+        let band = primitive(&[[0.0, 0.0, 0.0], [320.0, 0.0, 0.0], [0.0, 29.0, 0.0], [320.0, 29.0, 0.0]], Class::Flat, 0, true);
+        let mut sky = primitive(&[[-9000.0, -6000.0, 14000.0], [9000.0, -6000.0, 14000.0], [-9000.0, -4000.0, 14000.0], [9000.0, -4000.0, 14000.0]], Class::World, 0, false);
+        sky.backdrop = true;
+        let strip = primitive(&[[0.0, 0.0, 0.0], [320.0, 0.0, 0.0], [0.0, 120.0, 0.0], [320.0, 120.0, 0.0]], Class::Flat, 0, true);
+        let ops = [fill, TraceOp::Draw(band), TraceOp::Draw(sky.clone()), TraceOp::Draw(strip), TraceOp::Draw(primitive(&FLOOR, Class::Model, 1, false))];
+        assert_eq!(first_scene(&ops), Some(4), "the scene begins after the sky and its pictures");
+        let (vertices, _, stats) = built(&ops);
+        assert_eq!((stats.wall, stats.scene, stats.pane), (4, 1, 0), "the clear, the band, the sky and the strip on the wall; nothing on the pane");
+        // The sky where its screen points show it on the wall, in its plane.
+        let wall: Vec<&Vertex> = vertices.iter().filter(|v| v.mode[3] & FLAG_TABLE != 0).collect();
+        assert_eq!(wall.len(), 24);
+        assert!(wall.iter().all(|v| v.depth == VOLUME_MIN.z + 0.002));
+        let at = Wall::new(AREA).point(sky.vertices[0].fx, sky.vertices[0].fy);
+        assert!(wall[12..18].iter().any(|v| (Vec3::new(v.position[0], v.position[1], v.depth) - at).length() < 1e-6), "the sky's first corner at its screen point");
+        // Its culled faces are left out.
+        sky.revealed = true;
+        let (_, _, stats) = built(&[TraceOp::Draw(sky), TraceOp::Draw(primitive(&FLOOR, Class::Model, 1, false))]);
+        assert_eq!((stats.wall, stats.scene), (0, 1));
     }
 
     #[test]

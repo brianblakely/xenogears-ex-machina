@@ -66,12 +66,15 @@ typedef struct {
 
 /* What draws the projections (present.c sets it around the wrapped seams):
  * INTERFACE is interface the GTE places (the world map's player marker),
- * drawn as the original draws it. */
+ * drawn as the original draws it; BACKDROP the sky a battle's stage draws
+ * far behind its scene (battle_draw_stage_sky), the world to a renderer of
+ * the game's view, the backdrop to one seeing the scene from elsewhere. */
 enum {
     XEM_PROJECTION_OTHER = 0,
     XEM_PROJECTION_MODEL = 1,
     XEM_PROJECTION_SPRITE = 2,
     XEM_PROJECTION_INTERFACE = 5,
+    XEM_PROJECTION_BACKDROP = 10,
 };
 
 typedef struct {

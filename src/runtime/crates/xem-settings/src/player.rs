@@ -624,8 +624,8 @@ mod tests {
             entries: vec![
                 Entry { press: Some(GameAction::AttackWeak), ..entry(0.0) },
                 // The debug battle's Fei, and the enemy left of him.
-                Entry { ground: Some(Ground { slot: 0, x: 4360, z: 4160, selectable: true }), ..entry(20.0) },
-                Entry { ground: Some(Ground { slot: 3, x: 3820, z: 4040, selectable: true }), ..entry(40.0) },
+                Entry { ground: Some(Ground { slot: 0, x: 4360, z: 4160, selectable: true, sprite: [4360, 0, 4160], height: 92 }), ..entry(20.0) },
+                Entry { ground: Some(Ground { slot: 3, x: 3820, z: 4040, selectable: true, sprite: [3820, 0, 4040], height: 1523 }), ..entry(40.0) },
             ],
             selected: Some(1),
             steps: Steps::Compass,

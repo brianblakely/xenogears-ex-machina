@@ -376,6 +376,63 @@ fn the_world_maps_terrain_stays_put_through_each_frames_camera_as_the_camera_tur
     scenery_stays_put_as_the_camera_turns(Mode::Worldmap, 600, 1, 4.0);
 }
 
+/// With a view from anywhere the world map's terrain lies all around its
+/// camera's target, behind its camera too (the cells whose projection the
+/// GTE flags behind or through its plane included): over the last frame
+/// shown, the floor within 1 500 units of the target, the reach of a
+/// diorama's table at 25%, is covered but for a few cells at most.
+#[test]
+fn the_world_maps_terrain_lies_all_around_its_target_for_a_view_from_anywhere() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut session = Mode::Worldmap.enter(&disc);
+    let shown = present(&mut session, &gpu, 60, 1, |_| vec![]);
+    let frame = shown.iter().rev().find(|f| f.camera.is_some_and(|c| c.mode == CameraMode::Worldmap)).expect("a world map frame");
+    let camera = frame.camera.unwrap();
+    // The floor in cells of 50 units across the target's surroundings.
+    const CELL: f32 = 50.0;
+    const REACH: f32 = 1500.0;
+    let side = (2.0 * REACH / CELL) as usize;
+    let mut covered = vec![false; side * side];
+    for op in &frame.ops {
+        let TraceOp::Draw(p) = op else { continue };
+        if p.class != Class::World || p.backdrop {
+            continue;
+        }
+        let Some(points) = (0..p.vertex_count()).map(|i| p.vertices[i].view.and_then(|v| camera.world_point(v))).collect::<Option<Vec<_>>>() else { continue };
+        let triangles: &[[usize; 3]] = if points.len() == 4 { &[[0, 1, 2], [1, 3, 2]] } else if points.len() == 3 { &[[0, 1, 2]] } else { &[] };
+        for t in triangles {
+            let [a, b, c] = t.map(|i| (points[i][0], points[i][2]));
+            let area = (b.0 - a.0) * (c.1 - a.1) - (c.0 - a.0) * (b.1 - a.1);
+            if area.abs() < 1e-3 {
+                continue;
+            }
+            let (x0, x1) = (a.0.min(b.0).min(c.0), a.0.max(b.0).max(c.0));
+            let (z0, z1) = (a.1.min(b.1).min(c.1), a.1.max(b.1).max(c.1));
+            let cells = |lo: f32, hi: f32| (((lo + REACH) / CELL).floor().max(0.0) as usize)..=(((hi + REACH) / CELL).floor().min(side as f32 - 1.0) as usize);
+            for cz in cells(z0, z1) {
+                for cx in cells(x0, x1) {
+                    let (x, z) = (cx as f32 * CELL - REACH + CELL / 2.0, cz as f32 * CELL - REACH + CELL / 2.0);
+                    let edge = |p: (f32, f32), q: (f32, f32)| ((q.0 - p.0) * (z - p.1) - (x - p.0) * (q.1 - p.1)) * area.signum() >= 0.0;
+                    if edge(a, b) && edge(b, c) && edge(c, a) {
+                        covered[cz * side + cx] = true;
+                    }
+                }
+            }
+        }
+    }
+    let within: Vec<usize> = (0..side * side).filter(|&i| {
+        let (x, z) = ((i % side) as f32 * CELL - REACH + CELL / 2.0, (i / side) as f32 * CELL - REACH + CELL / 2.0);
+        x.hypot(z) <= REACH
+    }).collect();
+    let bare = within.iter().filter(|&&i| !covered[i]).count();
+    eprintln!("the world map's terrain within {REACH} units of its target: {} of {} cells of {CELL} covered", within.len() - bare, within.len());
+    assert!(bare * 100 <= within.len(), "{bare} of {} cells bare", within.len());
+}
+
 /// `battle_area` (battle/area.h): its slots (0x1C bytes each, `hidden` at
 /// +3) and the slots' sprites (x, y and z in 16.16, `height` at +0x36).
 const BATTLE_AREA: u32 = 0x800C_3EB0;

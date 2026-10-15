@@ -903,6 +903,7 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         revealed: false,
         ground: None,
         facing: None,
+        backdrop: false,
     })
 }
 

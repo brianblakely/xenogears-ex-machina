@@ -95,7 +95,8 @@ fn floor(kind: Kind, field: &Field, point: V3, radius: f32, diorama: bool) -> Op
 /// would scroll. With `diorama` (a diorama shows, the screen's pixels its
 /// pane's), floor marks lie on its floor; a pointer on the pane shows a
 /// flat cursor there, one through the table the floor it meets (and none
-/// where it meets no floor).
+/// where it meets no floor), or in a battle the cursor on the floor at the
+/// feet of the target it points at.
 pub fn marks(ui: Context, aim: Option<Pointed>, field: Option<&Field>, destination: Option<V3>, targets: Option<&Targets>, diorama: bool) -> Vec<Mark> {
     let mut marks = Vec::new();
     let at = aim.and_then(Pointed::screen);
@@ -116,6 +117,15 @@ pub fn marks(ui: Context, aim: Option<Pointed>, field: Option<&Field>, destinati
         (Context::Walk, Some(Pointed::World(ray))) => {
             let hit = field.and_then(|f| f.pick_ray(ray.origin, ray.direction, ray.within).map(|hit| (f, hit)));
             marks.extend(hit.and_then(|(f, hit)| floor(Kind::Floor(hit.reach), f, hit.point, FLOOR_RADIUS, true)));
+        }
+        // A battle target the ray points at: the cursor lying on the floor
+        // at its feet, as wide as the target's frame.
+        (Context::Battle { .. }, Some(Pointed::World(ray))) => {
+            let ground = targets.and_then(|t| t.near_ray(ray.origin, ray.direction, ray.within, ray.reach).and_then(|i| t.entries[i].ground));
+            if let Some(ground) = ground {
+                let feet = V3::new(ground.sprite[0] as f32, ground.sprite[1] as f32, ground.sprite[2] as f32);
+                marks.push(Mark { kind: Kind::Cursor, place: Place::Floor { point: feet, radius: (f32::from(ground.height) * 0.35).max(FLOOR_RADIUS) } });
+            }
         }
         (_, Some(Pointed::World(_))) => {}
         (_, Some(Pointed::Screen(at) | Pointed::Pane(at))) => marks.push(cursor(at)),

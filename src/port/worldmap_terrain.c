@@ -46,7 +46,8 @@ enum { XEM_TERRAIN_DRAWN, XEM_TERRAIN_REJECTED, XEM_TERRAIN_FLAG_ERROR };
 
 /* Presentation only (xem/gte.h): a terrain triangle the screen-bounds test
  * culled (or, with the camera pulled back or a view looking from around
- * the scene, the winding test dropped),
+ * the scene, the winding test dropped; looking from around, also one a
+ * FLAG error dropped: behind or through the camera's plane),
  * recorded as the POLY_FT3 it would have been (the pool's command
  * word, the page and CLUT as drawn triangles get them) when the host wants
  * culled faces, xem_present_face_visible keeps it and it is nearer than the
@@ -97,6 +98,12 @@ static s32 xem_terrain_triangle(u32 word, u32 ot, u32 *packet, u32 *count, u32 u
     xem_gte_execute(XEM_GTE_RTPT);
     sxy0 = xem_gte_read_data(XEM_GTE_SXY0);
     if ((s32)xem_gte_read_control(31) < 0) {
+        /* A view looking from around the scene may see a triangle behind
+         * or through the camera's plane: recorded (its points before the
+         * division hold), the game's packets as they were. */
+        if (xem_present_reveals->around != 0) {
+            xem_terrain_reveal(word, ot, *packet, uv0, uv1, uv2, sxy0, xem_gte_read_data(XEM_GTE_SXY1), xem_gte_read_data(XEM_GTE_SXY2));
+        }
         return XEM_TERRAIN_FLAG_ERROR;
     }
     sxy1 = xem_gte_read_data(XEM_GTE_SXY1);
@@ -159,6 +166,37 @@ static void xem_terrain_load(s32 first, u32 vertex) {
     xem_lwc2(first + 1, vertex + 4);
 }
 
+/* Presentation only (xem/gte.h), for a view looking from around the scene:
+ * the second triangle of a cell whose first raised a FLAG error, which the
+ * original leaves unprojected, projected as the original would have
+ * projected it and recorded where xem_terrain_reveal keeps it. The GTE and
+ * the ring's register provenance are put back. */
+static void xem_terrain_reveal_second(u32 word, u32 ot, u32 packet, u32 vertex, u32 tr, u32 br, u32 tl, u32 bl) {
+    XemGte saved = xem_gte;
+    u32 fifo[3], uv;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        fifo[i] = xem_gte_ring->fifo[i];
+    }
+    xem_terrain_load(XEM_GTE_VXY0, vertex + 8);
+    xem_terrain_load(XEM_GTE_VXY1, vertex + 0x50);
+    if (word & 0x8000) {
+        xem_terrain_load(XEM_GTE_VXY2, vertex);
+        uv = tl;
+    } else {
+        xem_terrain_load(XEM_GTE_VXY2, vertex + 0x48);
+        uv = bl;
+    }
+    xem_gte_execute(XEM_GTE_RTPT);
+    xem_terrain_reveal(word, ot, packet, tr, br, uv, xem_gte_read_data(XEM_GTE_SXY0), xem_gte_read_data(XEM_GTE_SXY1),
+                       xem_gte_read_data(XEM_GTE_SXY2));
+    xem_gte = saved;
+    for (i = 0; i < 3; i++) {
+        xem_gte_ring->fifo[i] = fifo[i];
+    }
+}
+
 /* Draw one terrain quarter block of 8x8 cells as POLY_FT3 pairs from the 9x9
  * vertices in the scratchpad, at `packets` onwards, linking them into `ot`.
  * The packet count is checked before each cell, so drawing stops once 0x7FE
@@ -205,7 +243,8 @@ void worldmap_terrain_draw_quarter_block(u32 *cells, u32 *ot, s32 packets) {
                 xem_terrain_load(XEM_GTE_VXY1, vertex + 8);
                 uv = tr;
             }
-            /* A FLAG error on the first triangle skips the second as well. */
+            /* A FLAG error on the first triangle skips the second as well
+             * (recorded for a view from around the scene). */
             if (xem_terrain_triangle(word, ot_address, &packet, &count, tl, uv, bl) != XEM_TERRAIN_FLAG_ERROR) {
                 /* (TR, BR, BL), or with bit 15 (TR, BR, TL). */
                 xem_terrain_load(XEM_GTE_VXY0, vertex + 8);
@@ -218,6 +257,8 @@ void worldmap_terrain_draw_quarter_block(u32 *cells, u32 *ot, s32 packets) {
                     uv = bl;
                 }
                 xem_terrain_triangle(word, ot_address, &packet, &count, tr, br, uv);
+            } else if (xem_present_reveals->around != 0 && xem_present_reveals->wanted) {
+                xem_terrain_reveal_second(word, ot_address, packet, vertex, tr, br, tl, bl);
             }
             cell += 4;
             vertex += 8;
@@ -233,12 +274,13 @@ done:
  * (worldmap_terrain_draw: outside its camera's view), from its cell words
  * and its 9x9 vertices (`vertices`: the vxy, vz words the original builds
  * in the scratchpad), each triangle projected as the original projects it
- * (a FLAG error skipping the cell's second triangle too) and recorded as
- * culled where xem_terrain_reveal keeps it. `packet` holds the pool's
- * command word, `ot` is the ordering table the original links into. */
+ * (a FLAG error skipping the cell's second triangle too, but for a view
+ * looking from around the scene, which sees behind the camera's plane) and
+ * recorded as culled where xem_terrain_reveal keeps it. `packet` holds the
+ * pool's command word, `ot` is the ordering table the original links into. */
 void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u32 *vertices) {
     const u32 *tl, *tr, *bl, *br, *a, *b, *c;
-    u32 word, base, uv_tl, uv_tr, uv_bl, uv_br, uv_b, uv_c;
+    u32 word, base, uv_tl, uv_tr, uv_bl, uv_br, uv_b, uv_c, around = xem_present_reveals->around;
     s32 row, column;
 
     for (row = 0; row < 8; row++) {
@@ -274,7 +316,7 @@ void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u3
             xem_gte_write_data(XEM_GTE_VXY2, bl[0]);
             xem_gte_write_data(XEM_GTE_VZ2, bl[1]);
             xem_gte_execute(XEM_GTE_RTPT);
-            if ((s32)xem_gte_read_control(31) < 0) {
+            if ((s32)xem_gte_read_control(31) < 0 && around == 0) {
                 continue;
             }
             xem_terrain_reveal(word, ot, packet, uv_tl, uv_b, uv_bl, xem_gte_read_data(XEM_GTE_SXY0),
@@ -289,7 +331,7 @@ void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u3
             xem_gte_write_data(XEM_GTE_VXY2, c[0]);
             xem_gte_write_data(XEM_GTE_VZ2, c[1]);
             xem_gte_execute(XEM_GTE_RTPT);
-            if ((s32)xem_gte_read_control(31) < 0) {
+            if ((s32)xem_gte_read_control(31) < 0 && around == 0) {
                 continue;
             }
             xem_terrain_reveal(word, ot, packet, uv_tr, uv_br, uv_c, xem_gte_read_data(XEM_GTE_SXY0),

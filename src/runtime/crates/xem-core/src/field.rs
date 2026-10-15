@@ -70,10 +70,10 @@ pub struct V3 {
 
 impl V3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self { V3 { x, y, z } }
-    fn sub(self, o: V3) -> V3 { V3::new(self.x - o.x, self.y - o.y, self.z - o.z) }
-    fn add(self, o: V3) -> V3 { V3::new(self.x + o.x, self.y + o.y, self.z + o.z) }
-    fn scale(self, s: f32) -> V3 { V3::new(self.x * s, self.y * s, self.z * s) }
-    fn dot(self, o: V3) -> f32 { self.x * o.x + self.y * o.y + self.z * o.z }
+    pub(crate) fn sub(self, o: V3) -> V3 { V3::new(self.x - o.x, self.y - o.y, self.z - o.z) }
+    pub(crate) fn add(self, o: V3) -> V3 { V3::new(self.x + o.x, self.y + o.y, self.z + o.z) }
+    pub(crate) fn scale(self, s: f32) -> V3 { V3::new(self.x * s, self.y * s, self.z * s) }
+    pub(crate) fn dot(self, o: V3) -> f32 { self.x * o.x + self.y * o.y + self.z * o.z }
     fn cross(self, o: V3) -> V3 { V3::new(self.y * o.z - self.z * o.y, self.z * o.x - self.x * o.z, self.x * o.y - self.y * o.x) }
     /// `self - o` on the floor (y zero).
     pub fn sub_planar(self, o: V3) -> V3 { V3::new(self.x - o.x, 0.0, self.z - o.z) }

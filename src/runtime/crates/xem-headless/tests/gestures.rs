@@ -111,8 +111,10 @@ impl Player {
             }).or(camera);
         }
         self.session.runtime.services().gpu.device_mut().set_trace(false);
-        let camera = camera.expect("the field's camera recorded");
-        let h = self.field().camera.h;
+        let camera = camera.expect("the scene's camera recorded");
+        // A battle projects with 512 (xem_core::menu's targets), a field
+        // with its camera's.
+        let h = if camera.mode == xem_render::xem_gpu::CameraMode::Battle { 512.0 } else { self.field().camera.h };
         let seat = xem_render::glam::Mat4::from_translation(EYES);
         let space = xem_render::ps1::DioramaSpace::first(&camera, h, xem_render::glam::Vec2::new(320.0, 224.0), &xem_render::ps1::Table::default(), seat).expect("a camera that spans space");
         self.screen = Screen::pane(space, EYES);
@@ -682,6 +684,36 @@ fn battle_target_list_beside_the_screen_takes_gaze_and_taps() {
     assert_eq!(player.context()["targeting"], false, "confirmed: {}", player.context());
     let cursor = run(&mut player.session, json!({"cmd": "inspect", "path": "battle_target_cursor_slot"}));
     assert_eq!(cursor, json!(1), "Elly, the second ally");
+}
+
+/// Through a diorama of the battle, its table placed by the battle's stage
+/// as a headset places it, a tap with the gaze on a party member standing
+/// on the table (Elly, at her middle) chooses that target the game's own
+/// way, as the gaze on the screen does.
+#[test]
+fn through_a_diorama_a_tap_on_a_battle_target_chooses_it() {
+    let Some(mut player) = battle(false) else { return };
+    player.gesture("swipe-down", None);
+    player.rest(60);
+    player.gesture("tap", None);
+    player.rest(40);
+    assert_eq!(player.context()["targeting"], true, "{}", player.context());
+    let space = player.diorama();
+    let targets = player.session.runtime.targets().expect("the targets");
+    let elly = targets.entries.iter().filter_map(|e| e.ground).find(|g| g.slot == 1).expect("Elly among the targets");
+    let feet = xem_core::field::V3::new(elly.sprite[0] as f32, elly.sprite[1] as f32, elly.sprite[2] as f32);
+    assert!(on_table(&space, feet, 0.05), "Elly stands on the table: {elly:?}");
+    let middle = Vec3::new(feet.x, feet.y - f32::from(elly.height) / 2.0, feet.z);
+    let room = space.room_from_world.transform_point3(middle);
+    player.gesture_toward("tap", Some(room));
+    for _ in 0..120 {
+        if player.context()["targeting"] != true { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.context()["targeting"], false, "confirmed: {}", player.context());
+    let cursor = run(&mut player.session, json!({"cmd": "inspect", "path": "battle_target_cursor_slot"}));
+    assert_eq!(cursor, json!(1), "Elly");
+    eprintln!("through the diorama: Elly chosen at {middle:?}, {:.2} m from the eyes", room.distance(EYES));
 }
 
 /// The world map's control deck: a pinch captures the stick, the hand's

@@ -65,8 +65,40 @@
 //!   attacks confirm it, and Confirm is one of them.
 use crate::action::GameAction;
 use crate::context::Context;
+use crate::field::V3;
 use crate::memory::GameMemory;
 use serde::Serialize;
+
+/// The least distance between the segments `p0`-`p1` and `q0`-`q1` (their
+/// nearest points, each clamped to its segment).
+fn segment_distance(p0: V3, p1: V3, q0: V3, q1: V3) -> f32 {
+    let (d1, d2, r) = (p1.sub(p0), q1.sub(q0), p0.sub(q0));
+    let (a, e, f) = (d1.dot(d1), d2.dot(d2), d2.dot(r));
+    let (s, t) = if a <= f32::EPSILON && e <= f32::EPSILON {
+        (0.0, 0.0)
+    } else if a <= f32::EPSILON {
+        (0.0, (f / e).clamp(0.0, 1.0))
+    } else {
+        let c = d1.dot(r);
+        if e <= f32::EPSILON {
+            ((-c / a).clamp(0.0, 1.0), 0.0)
+        } else {
+            let b = d1.dot(d2);
+            let denominator = a * e - b * b;
+            let s = if denominator > f32::EPSILON { ((b * f - c * e) / denominator).clamp(0.0, 1.0) } else { 0.0 };
+            let t = (b * s + f) / e;
+            if t < 0.0 {
+                ((-c / a).clamp(0.0, 1.0), 0.0)
+            } else if t > 1.0 {
+                (((b - c) / a).clamp(0.0, 1.0), 1.0)
+            } else {
+                (s, t)
+            }
+        }
+    };
+    let gap = p0.add(d1.scale(s)).sub(q0.add(d2.scale(t)));
+    gap.dot(gap).sqrt()
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub struct Rect {
@@ -110,6 +142,11 @@ pub struct Ground {
     pub z: i16,
     /// The game lets the cursor onto it.
     pub selectable: bool,
+    /// Where its sprite stands in the battle's world (y down) and how tall
+    /// it is (its frame's extent): for pointing at it along a ray through
+    /// a diorama of the battle ([`Targets::near_ray`]).
+    pub sprite: [i32; 3],
+    pub height: u16,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
@@ -162,6 +199,24 @@ impl Targets {
         hits().find(|(_, e)| e.ground.is_none())
             .or_else(|| hits().min_by(|(_, a), (_, b)| (a.rect.width * a.rect.height).total_cmp(&(b.rect.width * b.rect.height))))
             .map(|(i, _)| i)
+    }
+
+    /// The battle target a ray in the battle's world points at (a ray
+    /// through a diorama of the battle, from `origin` to `within` lengths of
+    /// `direction`): of those the game lets its cursor onto, the one whose
+    /// upright axis, from its sprite's feet to its height, passes nearest
+    /// the ray, within `reach` world units of it or, for a bigger target,
+    /// within its frame's half width (as on the screen, where a target's box
+    /// is 0.7 times as wide as it is tall).
+    pub fn near_ray(&self, origin: V3, direction: V3, within: f32, reach: f32) -> Option<usize> {
+        let end = origin.add(direction.scale(within));
+        self.entries.iter().enumerate().filter_map(|(index, entry)| {
+            let ground = entry.ground.filter(|g| g.selectable)?;
+            let height = f32::from(ground.height.max(1));
+            let feet = V3::new(ground.sprite[0] as f32, ground.sprite[1] as f32, ground.sprite[2] as f32);
+            let d = segment_distance(origin, end, feet, V3::new(feet.x, feet.y - height, feet.z));
+            (d <= reach.max(height * 0.35)).then_some((d, index))
+        }).min_by(|a, b| a.0.total_cmp(&b.0)).map(|(_, index)| index)
     }
 
     /// The next press toward entry `to`, if not selected already.
@@ -510,7 +565,14 @@ fn target_entries(memory: &dyn GameMemory, cursor: u8, selectable: impl Fn(u8) -
         if slot == cursor {
             selected = Some(entries.len());
         }
-        let ground = Ground { slot, x: s16_at(memory, place + 0xA)?, z: s16_at(memory, place + 0xC)?, selectable: selectable(slot) };
+        let ground = Ground {
+            slot,
+            x: s16_at(memory, place + 0xA)?,
+            z: s16_at(memory, place + 0xC)?,
+            selectable: selectable(slot),
+            sprite: at,
+            height: tall as u16,
+        };
         entries.push(Entry { ground: Some(ground), ..Entry::at(Rect { x: x - size * 0.35, y: y - size, width: size * 0.7, height: size }) });
     }
     Some((entries, selected))
@@ -739,7 +801,7 @@ mod tests {
     #[test]
     fn battle_targets_step_the_way_the_game_moves_its_cursor() {
         // The debug battle's party (Fei, Elly, Citan) and its enemy, on the floor.
-        let place = |slot, x, z| Entry { ground: Some(Ground { slot, x, z, selectable: true }), ..Entry::at(Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 }) };
+        let place = |slot, x: i16, z: i16| Entry { ground: Some(Ground { slot, x, z, selectable: true, sprite: [x.into(), 0, z.into()], height: 96 }), ..Entry::at(Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 }) };
         let entries = vec![place(0, 4360, 4160), place(1, 4420, 3840), place(2, 4460, 4000), place(3, 3820, 4040)];
         let from = |selected| Targets::new("battle_targets", entries.clone(), Some(selected), Steps::Compass);
         assert_eq!(from(0).step_toward(3), Some(GameAction::Left));
@@ -754,8 +816,36 @@ mod tests {
     }
 
     #[test]
+    fn battle_targets_are_pointed_at_along_a_ray_by_their_upright_axes() {
+        // The debug battle at rest: Fei, Elly and Citan, 90 to 96 tall, and
+        // its boss, 1523 tall (world y down).
+        let target = |slot, sprite: [i32; 3], height| Entry {
+            ground: Some(Ground { slot, x: sprite[0] as i16, z: sprite[2] as i16, selectable: true, sprite, height }),
+            ..Entry::at(Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 })
+        };
+        let entries = vec![target(0, [4360, 0, 4160], 92), target(1, [4420, 0, 3840], 96), target(2, [4460, 0, 4000], 96), target(3, [3820, 0, 4040], 1523)];
+        let mut targets = Targets::new("battle_targets", entries, Some(0), Steps::Compass);
+        // A ray from above the seat's side down towards a point (its reach
+        // 20 units: a few centimetres on a table).
+        let towards = |targets: &Targets, x: f32, y: f32, z: f32| {
+            let origin = V3::new(x, y - 1500.0, z - 1500.0);
+            targets.near_ray(origin, V3::new(x, y, z).sub(origin).scale(1.5), 1.0, 20.0)
+        };
+        assert_eq!(towards(&targets, 4360.0, -50.0, 4160.0), Some(0), "at Fei's chest");
+        assert_eq!(towards(&targets, 4362.0, -5.0, 4158.0), Some(0), "at his feet");
+        assert_eq!(towards(&targets, 4460.0, -60.0, 4000.0), Some(2), "Citan");
+        assert_eq!(towards(&targets, 3820.0, -1200.0, 4040.0), Some(3), "high on the boss");
+        assert_eq!(towards(&targets, 3820.0 + 400.0, -700.0, 4040.0), Some(3), "within the boss's half width (533 at 1523 tall)");
+        assert_eq!(towards(&targets, 4360.0, -50.0, 4160.0 + 120.0), None, "beside Fei, beyond his half width");
+        assert_eq!(towards(&targets, 5000.0, 0.0, 5000.0), None, "the floor away from them all");
+        // One the game keeps its cursor from is not pointed at.
+        targets.entries[0].ground.as_mut().unwrap().selectable = false;
+        assert_eq!(towards(&targets, 4360.0, -50.0, 4160.0), None);
+    }
+
+    #[test]
     fn overlapping_targets_give_the_point_to_the_smallest() {
-        let target = |slot, rect| Entry { ground: Some(Ground { slot, x: 0, z: 0, selectable: true }), ..Entry::at(rect) };
+        let target = |slot, rect| Entry { ground: Some(Ground { slot, x: 0, z: 0, selectable: true, sprite: [0; 3], height: 96 }), ..Entry::at(rect) };
         let enemy = target(3, Rect { x: 0.0, y: 0.0, width: 200.0, height: 200.0 });
         let fei = target(0, Rect { x: 50.0, y: 50.0, width: 30.0, height: 45.0 });
         let targets = Targets::new("battle_targets", vec![enemy, fei], Some(0), Steps::Compass);

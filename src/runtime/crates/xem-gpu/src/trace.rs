@@ -295,6 +295,9 @@ const STAGE_EYE: u32 = 17;
 /// Points the interface projects (xem/gte.h: the world map's player marker),
 /// traced as interface: flat, at the original's whole pixels.
 const INTERFACE: u8 = 5;
+/// Points of the backdrop a battle draws far behind its scene (xem/gte.h:
+/// its sky), traced as the world ([`Primitive::backdrop`]).
+const BACKDROP: u8 = 10;
 
 impl Class {
     fn from_projection(class: u8) -> Class {
@@ -396,6 +399,10 @@ pub struct Primitive {
     /// The original animation assembled from the first-person viewing angle.
     /// Presentation only; the GPU's commands and VRAM remain original.
     pub facing: Option<std::sync::Arc<SpriteFacing>>,
+    /// Every point projected by the backdrop the game draws far behind its
+    /// scene (a battle's sky; xem/gte.h `XEM_PROJECTION_BACKDROP`): part of
+    /// the world in the game's view, the backdrop to a view from elsewhere.
+    pub backdrop: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1113,8 +1120,10 @@ impl Gpu {
     }
 
     /// The vertex `word`, the `at`th word of the command (usize::MAX when
-    /// it is not in the command buffer) and its `index`th point.
-    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32, u16)>) {
+    /// it is not in the command buffer) and its `index`th point: with its
+    /// projection's class, offset, projection distance, owner, depth and
+    /// whether the backdrop made it.
+    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32, u16, bool)>) {
         let (x, y) = self.vertex(word);
         let (dx, dy) = (x - sign11(word), y - sign11(word >> 16));
         let mut vertex = TraceVertex {
@@ -1138,7 +1147,7 @@ impl Gpu {
             vertex.fy = p.y as f32 / 65536.0 + dy as f32;
             vertex.z = f32::from(p.sz.max(1));
             vertex.view = Some(p.view.map(|c| c as f32));
-            (Class::from_projection(p.class), p.offset, p.h, p.owner, p.sz)
+            (Class::from_projection(p.class), p.offset, p.h, p.owner, p.sz, p.class == BACKDROP)
         });
         (vertex, class)
     }
@@ -1194,8 +1203,8 @@ impl Gpu {
         // GTE used to zoom a picture of the screen about its centre); a
         // culled face there lies behind the game's camera, in the view of
         // a camera pulled back.
-        let at_h = classes.iter().zip(&vertices).all(|(&(_, _, h, _, _), v)| v.z == f32::from(h));
-        let at_zero = !revealed && classes.iter().all(|&(_, _, _, _, sz)| sz == 0);
+        let at_h = classes.iter().zip(&vertices).all(|(&(_, _, h, _, _, _), v)| v.z == f32::from(h));
+        let at_zero = !revealed && classes.iter().all(|&(_, _, _, _, sz, _)| sz == 0);
         if classes.len() == count && (at_h || at_zero) {
             for v in &mut vertices[..count] {
                 (v.fx, v.fy, v.z, v.view) = (v.x as f32, v.y as f32, 0.0, None);
@@ -1207,8 +1216,9 @@ impl Gpu {
             // Executed, the polygon's page would have set GP0(E1h) bits 0-8 and 11.
             environment.draw_mode = (environment.draw_mode & !0x9FF) | (page & 0x9FF);
         }
-        let projection = classes.first().map(|&(_, offset, h, _, _)| (offset, h));
+        let projection = classes.first().map(|&(_, offset, h, _, _, _)| (offset, h));
         let owner = classes.first().map_or(0, |c| c.3);
+        let backdrop = classes.len() == count && classes.iter().all(|c| c.5);
         let classes: Vec<Class> = classes.iter().map(|c| c.0).collect();
         let class = primitive_class(&classes, count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
@@ -1241,6 +1251,7 @@ impl Gpu {
             revealed,
             ground,
             facing,
+            backdrop,
         };
         self.trace_drawn(primitive);
     }
@@ -1303,6 +1314,7 @@ impl Gpu {
             revealed: false,
             ground: None,
             facing: None,
+            backdrop: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1314,8 +1326,9 @@ impl Gpu {
         let gouraud = op & 0x10 != 0;
         let (a, class_a) = self.trace_vertex(trace, vertex0, usize::MAX, 0, color0, 0);
         let (b, class_b) = self.trace_vertex(trace, vertex1, usize::MAX, 1, if gouraud { color1 } else { color0 }, 0);
-        let projection = class_a.or(class_b).map(|(_, offset, h, _, _)| (offset, h));
+        let projection = class_a.or(class_b).map(|(_, offset, h, _, _, _)| (offset, h));
         let owner = class_a.or(class_b).map_or(0, |c| c.3);
+        let backdrop = class_a.zip(class_b).is_some_and(|(a, b)| a.5 && b.5);
         let classes: Vec<Class> = class_a.into_iter().chain(class_b).map(|c| c.0).collect();
         let primitive = Primitive {
             shape: Shape::Line,
@@ -1334,6 +1347,7 @@ impl Gpu {
             revealed: false,
             ground: None,
             facing: None,
+            backdrop,
         };
         self.trace_drawn(primitive);
     }

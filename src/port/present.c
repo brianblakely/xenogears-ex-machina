@@ -624,13 +624,17 @@ s32 gpu_draw_panorama(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX 
     return result;
 }
 
-/* The battle stage's sky: the original, then its horizon bands and fills
- * on either side (xem_reveal_backdrop_fills). */
+/* The battle stage's sky: the original, its projections the backdrop's
+ * (XEM_PROJECTION_BACKDROP: a view of the scene from elsewhere shows them
+ * behind it), then its horizon bands and fills on either side
+ * (xem_reveal_backdrop_fills). */
 void battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer) {
-    u32 head = *ot;
+    u32 head = *ot, previous = xem_gte_ring->class_;
     s32 reach = xem_backdrop_reach();
 
+    xem_gte_ring->class_ = XEM_PROJECTION_BACKDROP;
     xem_original_battle_draw_stage_sky(sky, eye, target, view, ot, buffer);
+    xem_gte_ring->class_ = previous;
     if (reach != 0) {
         xem_reveal_backdrop_fills(XEM_ADDRESS_OF(*ot), head, reach);
     }

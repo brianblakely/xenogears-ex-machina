@@ -207,7 +207,7 @@ impl Review {
                 "combatants": stage.combatants.iter().enumerate().filter_map(|(slot, c)| c.map(|c| json!([slot, c.position, c.height]))).collect::<Vec<_>>(),
                 "look_at": stage.look_at, "eye": stage.eye,
             }));
-            json!({"mode": format!("{:?}", space.camera.mode), "target": space.camera.target, "heading": axis.x.atan2(axis.z).to_degrees(),
+            json!({"mode": format!("{:?}", space.camera.mode), "target": space.camera.target, "focus": space.camera.focus, "heading": axis.x.atan2(axis.z).to_degrees(),
                 "centre": centre.to_array(), "world_scale": space.scale, "stage": stage})
         });
         gpu.queue.submit([encoder.finish()]);

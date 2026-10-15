@@ -957,6 +957,27 @@ fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_poi
 }
 
 #[test]
+fn polygons_the_backdrop_projects_are_the_world_marked_as_the_backdrop() {
+    use xem_gpu::{Class, Projection, TraceOp};
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    // Two triangles' points: the first projected by the backdrop (class 10:
+    // a battle's sky), the second by the world (class 0).
+    let point = |class: u8, x: i32, y: i32| Projection { sxy: xy(x, y), sz: 14000, class, x: x << 16, y: y << 16, offset: (160, 120), h: 256, owner: 0, view: [x * 50, y * 50, 14000] };
+    let records: Vec<Projection> = [(10, 10, 20), (10, 40, 60), (10, 5, 50), (0, 110, 20), (0, 140, 60), (0, 105, 50)].iter().map(|&(c, x, y)| point(c, x, y)).collect();
+    // Each packet's vertex words follow its header and command word.
+    let stores: Vec<xem_gpu::SxyStore> = (0..6).map(|i| xem_gpu::SxyStore { address: 0x1008 + (i / 3) * 0x100 + (i % 3) * 4, value: records[i as usize].sxy, source: Some(i) }).collect();
+    gpu.trace_projections(0, &records, &stores, &[]);
+    ram.node(0x1000, 0x1100, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
+    ram.node(0x1100, 0xFF_FFFF, &[0x2000_FFFF, xy(110, 20), xy(140, 60), xy(105, 50)]);
+    gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+    let drawn: Vec<(Class, bool)> = gpu.take_trace().ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.class, p.backdrop)) } else { None }).collect();
+    assert_eq!(drawn, [(Class::World, true), (Class::World, false)]);
+}
+
+#[test]
 fn a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does() {
     use xem_gpu::{CameraMode, Combatant, Projection, Reveals, Stage, TraceOp};
     let mut gpu = fresh();

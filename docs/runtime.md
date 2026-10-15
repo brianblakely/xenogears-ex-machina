@@ -2291,8 +2291,13 @@ first-person inspection, `Reveals::ANYWHERE` (2) for a view from anywhere
 around a field, a battle or the world map. With either bit every face
 counts wherever it lies, the field's culled scenery pieces and skipped
 sprite actors are drawn for the record, and so are the world map's scene
-objects its projection skips and the terrain triangles its winding test
-drops (before, with a pulled-back camera only); the sprites the port draws
+objects its projection skips, the terrain triangles its winding test
+drops (before, with a pulled-back camera only) and those its projection's
+FLAG error drops behind or through its camera's plane, both of a cell
+(the original leaves the second unprojected after the first fails; the
+port projects it for the record, the GTE put back): a diorama's table at
+25% showed no terrain over a third of it, behind the world map's camera,
+in steps of its cells; the sprites the port draws
 again facing the character's eyes come with `LOOK` only (`sprite_facing.c`),
 the battle's and the world map's cameras with `ANYWHERE` only. `GameView`
 asks for `ANYWHERE` while its headset view is the [Diorama](#diorama) of a
@@ -2398,10 +2403,17 @@ holds it, and the turns running; measured at rest, the party at
 (4360, 0, 4160), (4420, 0, 3840) and (3810, 0, 4040), 90 to 130 tall, and
 the boss at (3820, 0, 4040), 1523 tall; the start view looking at
 (4192, 0, 3680) from (4192, -1719, 464).
+`the_world_maps_terrain_lies_all_around_its_target_for_a_view_from_anywhere`
+takes the world map's last frame shown with `ANYWHERE` back through its
+camera: of the 2 828 cells of 50 units within 1 500 of the target (a
+diorama's reach at 25%) all are covered by its terrain (with the
+triangles behind its camera dropped, as before, 2 095).
 `camera_records_leave_ram_vram_sound_and_time_unchanged` runs 240 frames
 from the same state in each of the four with `around` 0, 1 and 2 and
 without a trace (with `ANYWHERE`, the battles' stages too): one RAM hash,
-VRAM, sound and clock each. One
+VRAM, sound and clock each (field fd3154d0f8c7dc47, battle
+ff78fb7899ba79a4, desert 2c9cfe67bf5c6dcb, world map 9b83d31eba10763f, as
+before the stages and the terrain behind the camera were recorded). One
 desert battle frame drawn with `ANYWHERE` held 8 262 primitives, 4 654 of
 them culled faces. `xem-headless/tests/render.rs`
 `first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged`
@@ -2416,7 +2428,8 @@ of a presentation, the last of two frames drawn over kept the first one's
 camera and 142 primitives instead of its own 71),
 `xem-gpu/tests/gpu.rs`
 `a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`,
-`a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does`
+`a_battles_camera_carries_the_stage_recorded_before_it_and_no_other_camera_does`,
+`polygons_the_backdrop_projects_are_the_world_marked_as_the_backdrop`
 and `tests/test_port_presentation.py` (the entries `xem_present_camera`
 writes) check the format and the logs without the game (the stage's port
 code reads `battle_area`, whose pointers a native build would widen, so it
@@ -2508,10 +2521,16 @@ camera of `--example motion` and the tests below drive it too.
   (2092 to 2333, -514 to -562, 932 to 1095), where its table now stands at
   1406 um a unit (two projection distances' screen: a person 13.5 cm tall),
   against 231 um placed by the start view (2.2 cm, at the table's edge).
-  The world map's points already follow its camera's target. The table's
-  volume is x and z within 0.45 m of its centre and y from 0.25 m below its
-  top to 0.55 m above: what lies outside is not drawn (draw.wgsl discards
-  it).
+  The world map's points already follow its camera's target (its frame is
+  the target's: the target stays at (0, its height, 0) and the map moves
+  under it); its camera looks from 640 units at its target, so its table
+  spans 799 units at 100% and 3 196 at 25%, its far edge 2 238 deep at
+  most, within the terrain's 5x5 window of blocks (at least 4 096 units
+  from the target every way) and the game's draw distances (scene objects
+  to 3 456 deep, terrain to 3 840): at every scale the table's edges bound
+  what it shows, not the game's. The table's volume is x and z within
+  0.45 m of its centre and y from 0.25 m below its top to 0.55 m above:
+  what lies outside is not drawn (draw.wgsl discards it).
 - **Sprites** stand as upright billboards facing the seat's way, built once
   a game frame for both eyes: each part's offset from its sprite's floor
   point on the game's screen laid along the billboards' right and the
@@ -2565,7 +2584,15 @@ camera of `--example motion` and the tests below drive it too.
   scene's first primitive (the clear, panoramas, sky bands) are the
   backdrop: a wall at the back of the volume, facing the seat (seen from
   behind it is not drawn), the original screen mapped across the volume's
-  width, a line there a ribbon a native pixel wide. All in one plane, the
+  width, a line there a ribbon a native pixel wide. So is, wherever it
+  comes in the frame, what the game projects far behind its scene as its
+  backdrop, a battle's sky (the port marks `battle_draw_stage_sky`'s
+  projections `XEM_PROJECTION_BACKDROP`; the trace keeps them the world,
+  `Primitive::backdrop`, so the screen and its effects see no change), its
+  culled faces left out: the Mountain Path's random battle projects its sky
+  11 913 to 16 366 deep before its sky bands and panorama; taken as the
+  scene's start, the sky lay far beyond the table and the bands and
+  panorama went on the pane, opaque over its upper half. All in one plane, the
   wall's pictures paint over one another in the game's order, as the PS1
   draws them: they test the depth (the scene stands in front of them) but
   do not write it (written, the clear's depth fought the pictures drawn
@@ -2740,7 +2767,11 @@ their floor point and a jumping one above it; a shadow lifted over a
 floor and a face beside it not; which faces may be dropped from behind;
 fills after the scene over part of the screen on the pane and one over
 all of it a tint; a line before the scene a ribbon on the wall and a
-frame without a scene built without fault. They check the placement:
+frame without a scene built without fault; a battle's sky projected far
+behind the scene (the Mountain Path's: the clear, a band, the sky 14 000
+deep, its panorama strip) on the wall at its screen points with the
+pictures after it, the scene beginning after them, nothing on the pane,
+and its culled faces left out. They check the placement:
 the table level under pitched and rolled cameras (the world's up its up,
 the camera's level axis away from the seat); a 20-degree turn eased and
 a 60-degree one a cut that jumps and dims for 0.25 s, as does a target
@@ -2863,8 +2894,18 @@ the screen then).
   world points, 3 mm above it (`overlay::Place::Floor`), across the world's
   x and z as on the screen (their tops along its z: a Jump mark's chevron
   points as it does there, not mirrored); a ray that meets
-  no floor shows none, and on the pane the cursor is flat. Battles take
-  their targets from the pane and the target keys.
+  no floor shows none, and on the pane the cursor is flat. In a battle a
+  tap (or a pointer's pinch) with the ray through the table chooses the
+  target whose upright axis, from its sprite's feet to its height
+  (`menu::Ground::sprite` and `height`, as the game keeps them), passes
+  nearest the ray, within the actor's reach or the target's half width
+  (0.35 of its height, as on the screen, where its box is 0.7 times as
+  wide as tall): `Targets::near_ray`, then the same steps and confirmation
+  as a target gazed at on the screen (on the attack page, selected only);
+  a ray by no target confirms the one selected. The cursor then lies on
+  the floor at that target's feet, as wide as its frame. The pane's lists
+  and the target keys beside it (for targets that overlap or hide one
+  another) take the gaze as before.
 - **The listener.** The Binaural head is the head as the seat sees it.
   While the diorama is presented, the listener's axes are the seat's right,
   down and forward taken through the table into the game camera's view
@@ -2968,8 +3009,19 @@ room](#the-room-passthrough-and-immersive-ar)).
 (field 30, the table placed from the frame's own camera record as a
 headset places it: a pinch at a walkable floor point on the table heads
 the walk within 2 units of it and arrives within 16; one on the pane walks
-nowhere) and `through_a_diorama_a_tap_by_a_villager_talks_to_them` (Lahan:
-the villager approached and talked to). Unit tests: the settings' bounds,
+nowhere), `through_a_diorama_a_tap_by_a_villager_talks_to_them` (Lahan:
+the villager approached and talked to) and
+`through_a_diorama_a_tap_on_a_battle_target_chooses_it` (the debug battle's
+targeting after an item, the table placed by the battle's stage: a tap
+with the gaze through the table at Elly's middle, (4420, -48, 3840), 0.71 m
+from the eyes, steers the game's cursor to her slot and confirms it; with
+world rays choosing nothing, as before, it confirmed Fei, the target
+selected). Unit tests: the battle targets' rays (`xem-core` menu.rs: at
+Fei's chest and feet, Citan, high on the boss and within its half width,
+none beside Fei or away from them all, none the game keeps its cursor
+from) and their dispatch (`xem-assist` dispatch.rs: the boss and Fei by
+the ray, Confirm by none, the pointer's pinch, the attack page's
+selection, the cursor at the boss's feet as wide as its frame); the settings' bounds,
 defaults, old files and Reset diorama (`xem-settings` graphics.rs); the
 panel's Headset rows, Recenter and Reset diorama through the settings
 service (`xem-ui/tests/panel.rs`
@@ -2990,9 +3042,7 @@ the settings' mapping, the screen under the Original renderer
 (`xem-render` diorama.rs); the listener's axes only while the diorama is
 presented (`xem-render/tests/ps1.rs`, [Diorama](#diorama)).
 
-Not done or not measured: battle targets through the table (they come
-from the pane and the keys);
-the world map and battles were not run in a headset; on Monado's simulated
+Not done or not measured: on Monado's simulated
 HMD `monado-ctl -c` delivers the event but the head's poses do not jump
 (nothing visible moves LOCAL there), and no controller binding recentres
 by default; comfort is not measured (no people tests) and nothing ran on a
