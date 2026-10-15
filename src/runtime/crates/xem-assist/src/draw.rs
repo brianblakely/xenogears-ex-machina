@@ -481,4 +481,42 @@ mod tests {
         let screen = Quad { pose: Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY }, size: (3.0, 2.1) };
         assert!(apart(Vec3::ZERO, &old, &screen) < 0.0, "the old place overlapped the screen");
     }
+
+    /// Where the room below the screen runs out: the panel keeps its gap
+    /// until the screen's lower edge stands about 56.5 degrees below the
+    /// seat's level (65.5 for the browser's shorter panel), then stops
+    /// with its lower edge straight down and covers the screen's lower edge
+    /// from about 60.5 degrees (69.5), whatever makes the screen so tall:
+    /// the settings' largest screens at their nearest, or two-hand scaling
+    /// at its largest (3 times) of a 4 m screen at the default 2.5 m with a
+    /// 4:3 picture or a 4.5 m one with the field's.
+    #[test]
+    fn the_panel_covers_the_screen_only_where_its_lower_edge_stands_over_sixty_degrees_down() {
+        let seat = Seat::default();
+        let eye = seat.position();
+        let degree = 1f32.to_radians();
+        let distance = 2.5;
+        let gap = |size: (f32, f32), aspect: f32| {
+            let screen = Quad { pose: seat.place(Pose { position: Vec3::new(0.0, 0.0, -distance), orientation: Quat::IDENTITY }), size };
+            apart(eye, &panel(&seat, Beside::Screen { size, distance }, aspect), &screen)
+        };
+        let edges: Vec<f32> = (300..=800).map(|tenths| tenths as f32 / 10.0).collect();
+        for (aspect, kept_from, covered_by, what) in [(1120.0 / 880.0, 56.0, 61.0, "OpenXR's panel"), (560.0 / 640.0, 65.0, 70.0, "the browser's panel")] {
+            // The field's 320x224 picture, its lower edge `edge` degrees down.
+            let at = |edge: f32| {
+                let height = 2.0 * distance * edge.to_radians().tan();
+                gap((height * 320.0 / 224.0, height), aspect)
+            };
+            let kept = edges.iter().copied().take_while(|&edge| at(edge) > 3.9 * degree).last().expect("room below a low screen");
+            let covered = edges.iter().copied().find(|&edge| at(edge) < 0.0).expect("no room below a screen reaching straight down");
+            eprintln!("{what}: its gap kept to a lower edge {kept:.1} degrees down, the screen covered from {covered:.1}");
+            assert!((kept_from..kept_from + 1.0).contains(&kept) && (covered_by - 1.0..=covered_by).contains(&covered), "{what}: kept to {kept}, covered from {covered}");
+            assert!(edges.iter().copied().filter(|&edge| edge < covered).all(|edge| at(edge) >= 0.0), "{what}: off the screen below {covered}");
+        }
+        // Two-hand scaling at its largest.
+        let spread = |width: f32, (w, h): (f32, f32)| (3.0 * width, 3.0 * width * h / w);
+        assert!(gap(spread(3.0, (320.0, 240.0)), 1120.0 / 880.0) > 3.9 * degree, "the default 3 m screen of a 4:3 picture spread to 3 times keeps its gap");
+        assert!(gap(spread(4.0, (320.0, 240.0)), 1120.0 / 880.0) < 0.0, "a 4 m screen of a 4:3 picture spread to 3 times is covered");
+        assert!(gap(spread(4.5, (320.0, 224.0)), 1120.0 / 880.0) < 0.0, "a 4.5 m screen of the field's picture spread to 3 times is covered");
+    }
 }

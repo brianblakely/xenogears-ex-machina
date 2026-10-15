@@ -657,7 +657,7 @@ fn a_view_from_within_the_scene_shows_its_picture_and_clips_what_reaches_behind_
 /// recorded before it began), first-person inspection on with
 /// `first_person`: the viewpoint the picture shows the scene from, the
 /// picture and its scale.
-fn shown_from(gpu: &Gpu, graphics: xem_settings::Graphics, first_person: bool) -> (Option<xem_render::ps1::Viewpoint>, Vec<u8>, f32) {
+fn shown_from(gpu: &Gpu, graphics: xem_settings::Graphics, first_person: bool) -> (GameView, Option<xem_render::ps1::Viewpoint>, Vec<u8>, f32) {
     let frame = |gpu: &mut xem_gpu::Gpu| {
         let mut faces = FIELD;
         faces[0].class = 0;
@@ -688,7 +688,8 @@ fn shown_from(gpu: &Gpu, graphics: xem_settings::Graphics, first_person: bool) -
     }));
     let size = present(&mut view, 0.1);
     let pixels = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
-    (view.viewpoint(), pixels, size.0 as f32 / 320.0)
+    let viewpoint = view.viewpoint();
+    (view, viewpoint, pixels, size.0 as f32 / 320.0)
 }
 
 /// Where `viewpoint` shows the view-space point `v` (picture pixels), and
@@ -717,11 +718,19 @@ fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let green = [0, 255, 0];
     // The game camera's own picture: no other viewpoint.
-    assert_eq!(shown_from(&gpu, xem_settings::Graphics::default(), false).0, None, "the game camera's own");
+    assert_eq!(shown_from(&gpu, xem_settings::Graphics::default(), false).1, None, "the game camera's own");
     // Pulled back by wider views' zoom out at 250%: from 1.5 times the
     // depth the camera looks at (1200, its record's) further back.
-    let (viewpoint, pixels, scale) = shown_from(&gpu, xem_settings::Graphics { zoom_out: 250, ..Default::default() }, false);
+    let (mut view, viewpoint, pixels, scale) = shown_from(&gpu, xem_settings::Graphics { zoom_out: 250, ..Default::default() }, false);
     let viewpoint = viewpoint.expect("pulled back");
+    // The host shows the device's own picture (the Original renderer): the
+    // game camera's, until the view presents again.
+    view.away();
+    assert_eq!(view.viewpoint(), None, "the device's own picture is the game camera's");
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    view.present(&mut encoder, &DISPLAY, "field:1", 0.2).expect("a picture");
+    gpu.queue.submit([encoder.finish()]);
+    assert_eq!(view.viewpoint(), Some(viewpoint), "presented again, pulled back");
     assert_eq!((viewpoint.offset, viewpoint.h, viewpoint.centre), ([0.0, 0.0, 1800.0], 256.0, (160.0, 120.0)));
     // Floor points (the level camera's view space is the world's), where
     // the picture shows the floor and its ray meets it, where the game's own
@@ -739,13 +748,18 @@ fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from
     }
     // Looking from within the scene: from the character's eye (0.9 of its
     // sprite's 100 above its feet), along the camera's heading.
-    let (viewpoint, pixels, scale) = shown_from(&gpu, xem_settings::Graphics::default(), true);
+    let (mut view, viewpoint, pixels, scale) = shown_from(&gpu, xem_settings::Graphics::default(), true);
     let viewpoint = viewpoint.expect("looking from within");
     assert_eq!(viewpoint.offset, [0.0, -110.0, -1000.0], "{viewpoint:?}");
     for (point, colour) in [([60.0, 200.0, 1300.0], green), ([-150.0, 200.0, 1700.0], green), ([50.0, 100.0, 1500.0], [255, 0, 0])] {
         let at = shows(&viewpoint, point);
         assert_eq!(colour_at(&pixels, scale, at), colour, "{point:?} shows at {at:?}");
     }
+    // The Original renderer ends inspection and the host shows the device's
+    // own picture: no look's viewpoint stays behind.
+    view.set_first_person(false);
+    view.away();
+    assert_eq!(view.viewpoint(), None, "the device's own picture after inspection is the game camera's");
 }
 
 /// First-person inspection begins only on a frame that draws the field's
@@ -1788,7 +1802,7 @@ fn the_listener_takes_the_tables_axes_only_while_the_diorama_is_presented() {
     // The host shows the device's own picture (a 24-bit movie frame the view
     // does not draw): the diorama lies nowhere until presented again, and
     // then eases in from the screen.
-    view.hide_diorama();
+    view.away();
     assert_eq!((view.listener_axes(), view.diorama_space()), (None, None), "no table's axes while it is not presented");
     let shares: Vec<f32> = [5.0, 5.1, 5.2, 5.4].iter().map(|&now| present_diorama(&gpu, &mut view, &eye, (640, 480), now).1).collect();
     assert!(shares[0] == 1.0 && shares.windows(2).all(|w| w[1] < w[0]) && shares[3] == 0.0, "eased in from the screen: {shares:?}");

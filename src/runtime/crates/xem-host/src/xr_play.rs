@@ -740,8 +740,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             })
         } else {
             // The device's own picture (the Original renderer, 24-bit movie
-            // frames): no diorama lies anywhere meanwhile.
-            view.hide_diorama();
+            // frames): pointing goes through the game's camera, and no
+            // diorama lies anywhere meanwhile.
+            view.away();
             let (width, height, rgba) = game.display();
             movie.set(&gpu, (width, height), &rgba);
             (width > 0 && height > 0).then_some((width, height))

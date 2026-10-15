@@ -2374,10 +2374,10 @@ camera of `--example motion` and the tests below drive it too.
   end of the debug battle won (the share rising 0.056 a presentation from
   0 to 1, no step larger in 240 frames). The Original renderer does not
   use `GameView`: a host shows its picture on its screen as before.
-  A headset frame the host shows without the view (the device's own
-  picture: the Original renderer, a 24-bit movie frame the view does not
-  draw) calls `hide_diorama`: the diorama lies nowhere until it is
-  presented again, and then eases in from the screen.
+  A frame the host shows without the view (the device's own picture: the
+  Original renderer, a 24-bit movie frame the view does not draw) calls
+  `away`: the diorama lies nowhere until it is presented again, and then
+  eases in from the screen.
 - **Presenting.** `present_diorama(encoder, display, scene, now, eyes, seat)`
   draws the pending trace and, while the diorama shows, the diorama for
   each `DioramaEye` (`view` from the room to the eye, `proj` to wgpu clip
@@ -2467,7 +2467,7 @@ transparency kept);
 the screen easing into the diorama over 0.3 s, and the screen view);
 `the_listener_takes_the_tables_axes_only_while_the_diorama_is_presented`
 (the seat's axes through the table while it shows; none after
-`hide_diorama`, then the share 1, 2/3, 1/3 and 0 at +0, 0.1, 0.2 and 0.4 s
+`away`, then the share 1, 2/3, 1/3 and 0 at +0, 0.1, 0.2 and 0.4 s
 as it eases in again; none under the Original renderer, whose settings
 give the screen);
 `leaving_the_diorama_eases_to_the_screen_as_the_last_diorama_fades_out`
@@ -2568,7 +2568,7 @@ the screen then).
   OpenXR's settings panel is a quad layer over all of it, WebXR's a quad
   drawn last. Under the Original renderer the headset view is the screen
   whatever the setting (`ps1::xr_view`), and a frame the host shows the
-  device's own picture in (`GameView::hide_diorama`) has no diorama.
+  device's own picture in (`GameView::away`) has no diorama.
 - **Around the table**, outside its volume whatever the scale: the HUD
   inside the pane's top left corner, as large seen from the seat as on the
   default screen (3 m wide, 2.5 m ahead) wherever the table puts the pane,
@@ -3001,9 +3001,11 @@ Headset class (Low tier, depth of field off unless enabled).
   each hand's target ray and its 25 joints to the headset core
   ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)),
   whose Pause and settings hold the game's clock; the settings panel is a
-  quad below the screen in the session (0.55 m wide, off the screen at
-  every scale as OpenXR's: [Headset qualification](#headset-qualification);
-  above the table with the diorama as the view) that takes the
+  quad below the screen in the session (0.55 m wide, off the screen as
+  OpenXR's is while the screen's lower edge, whatever its scale, stands
+  less than 69.5 degrees below the seat's level: [Headset
+  qualification](#headset-qualification); above the table with the
+  diorama as the view) that takes the
   pointer source's ray with a pinch, or a
   controller's ray with its trigger (`select`). The button reads Enter VR
   or Exit VR; a hidden session (the browser's own menu) or its end lets go
@@ -3227,9 +3229,13 @@ projection distance and centre, in display pixels from the display's
 corner), and `xem_assist::overlay::seen` sees the field's camera from it
 (`Camera::seen`: the view composed with the camera, its depth sheared
 into x and y where the picture's centre is not the screen's), so that a
-pinch, a tap or a click picks the floor and the actors the picture shows
-where it points, and floor marks lie where it shows that floor (desktop
-and Android's taps and clicks, OpenXR and both browser paths).
+pinch or a tap picks the floor and the actors the picture shows where it
+points, and floor marks lie where it shows that floor (desktop, Android
+and browser taps, OpenXR and WebXR pinches). A host that shows the
+device's own picture instead (the Original renderer, a 24-bit movie frame
+the view does not draw) says so (`GameView::away`), and the view gives no
+viewpoint until it presents again: that picture is the game camera's,
+also after first-person inspection, which the Original renderer ends.
 First-person inspection's look has a viewpoint too, but the hosts pass
 no field while it shows (nothing is approached from within the scene).
 An agent's `navigate {screen}` is the game camera's screen. Tests:
@@ -3239,12 +3245,24 @@ xem-core's `a_camera_seen_from_another_view_projects_and_picks_as_its_picture_sh
 (a synthetic field at 250%: floor points show on the floor's colour where
 the viewpoint places them and its rays meet them, where the game camera's
 projection shows no floor; from within the scene, the floor and a wall
-where the look's viewpoint places them) and xem-headless's
+where the look's viewpoint places them; after `away` no viewpoint, and
+the same one presented again), xem-headless's
 `pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there`
 (field 30 at 250%: the camera 6 915 units back, a floor point shown 46
 pixels from where the game camera puts it; a pinch there walks to it and
 arrives, the cursor and the destination's mark lying there; pointed
-through the game camera instead, the walk heads 125 units away).
+through the game camera instead, the walk heads 125 units away) and
+xem-host's
+`taps_point_through_the_picture_presented_and_through_the_game_camera_under_the_original_renderer`
+(the desktop and Android `View` presenting field 30 at 150%, the camera
+2 305 units back: a tap where the picture shows a floor point 17.5 pixels
+from the game camera's place walks there, its mark there; under the
+Original renderer, after that picture and after first-person inspection,
+the view gives no viewpoint and a tap walks to the floor the game's
+camera shows, where through the last picture's viewpoint it would pick no
+floor; presented again, the camera is pulled back again; at 250% the
+middle of each of the 30 walkable triangles that picture shows lies
+within a tap's reach, 18 pixels, of an actor, so a tap there talks).
 
 Routes plan over the triangles the player may enter (an attribute
 blocks by the actor's flags, bit 23 blocks layer 0, a
@@ -3521,13 +3539,13 @@ fixture, `xr-game.test.mjs` on the game), and the shared code's tests.
 | --- | --- | --- | --- |
 | Either hand's grabs | field 30: the left hand's Pause grab pauses and resumes, both hands' together toggle once, the right hand's resumes | each hand's grab alone, both hands' once (`status().xr.counts`) | `synthetic`'s scripts read as the contract says before a turned head; `reliability`: either hand alone, 100% |
 | Grabs that toggle nothing | a sideways grab, a fist turned palm down and up while closed, a hand found closed (its loss pauses) | the same three, counted | the same scripts; 30 minutes of idle play fire nothing |
-| Two-hand scaling owns both hands | to 2.02 times, back to 1 and to 2.02 again (the runtime's pinch held through the last): only the scaling's gestures, no pause or walk, the game running on, the keys unchanged; a pinch after it walks | to twice the width and back with IWER's pinch held: no pinch counted, no grab as the hands close, the game running on, the keys 0.22 m wide beside the screen's edge | `gesture`: the runtime's pinch and thumb during a scaling, its release frame included, are the scaling's; `headset`: no walk or pause, 0.4 to 3 times, ending at the scale reached |
+| Two-hand scaling owns both hands | in field 30 to 2.02 times, back to 1 and to 2.02 again (the runtime's pinch held through the last): only the scaling's gestures, no pause or walk, the game running on; a pinch after it walks; on the world map, beside its control deck, the deck's keys as many, as wide and as far beside the screen's edge at every scale (field 30's walk shows no keys) | to twice the width and back with IWER's pinch held: no pinch counted, no grab as the hands close, the game running on, the keys 0.22 m wide beside the screen's edge | `gesture`: the runtime's pinch and thumb during a scaling, its release frame included, are the scaling's; `headset`: no walk or pause, 0.4 to 3 times, ending at the scale reached |
 | Paused head tracking | the player's Pause and Settings' own: a head pose of its own on most frames, the left eye changing (over 2% of it), one game frame (measured: 60 poses in 60 frames and 30 in 30, 17.5% and 16.6% of the eye) | the head moved and turned under both: the views and the viewer follow it, the game's frames stand still | |
-| Settings panel and keys off the screen | the panel's middle (`panel=`) lower beside the scaled screen (measured: 0.869 m below the seat, 1.128 m at 2.02 times); the keys (`keys=`) unchanged while it scales, the world map deck's as many, as wide and as far beside the edge at every scale | the pointer's keys 0.22 m wide beside the scaled screen's edge (`status().xr.keys`); the panel's Close found where `status().xr.panel` says it stands | `draw`'s layout test (below) |
+| Settings panel and keys off the screen | the panel's middle (`panel=`) lower beside the scaled screen (measured: 0.869 m below the seat, 1.128 m at 2.02 times); the world map deck's keys (`keys=`) as many, as wide and as far beside the edge at every scale (measured: 8 keys 0.22 m wide, 0.04 m beside the edge, at 1.00 to 2.02 times) | the pointer's keys 0.22 m wide beside the scaled screen's edge (`status().xr.keys`); the panel's Close found where `status().xr.panel` says it stands | `draw`'s layout test (below) |
 | Recentring the screen view | the app's Recenter puts the seat at the head; `monado-ctl -c` (`ReferenceSpaceChangePending` for LOCAL) puts it back at LOCAL's origin; the screen in front of both eyes after each | the player's Recenter with the head moved and turned away; IWER's `recenter()` and its space's `reset`; the screen in front after each | `a_moved_reference_cancels_gestures_lets_the_stick_go_ends_scaling_and_resets_the_seat` (`headset::reference_changed`) |
 | A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
-| Pinches pick what is shown | the pinch on the scaled screen walks to the floor the gaze is on | the diorama's pinch through the table heads for the floor point gazed at ([In a headset](#in-a-headset)) | `Camera::seen` through `GameView::viewpoint`; field 30 pulled back at 250%, the pinch walks to the floor shown ([Assisted movement](#assisted-movement)) |
+| Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
 
 The settings panel stands below the screen (`draw::panel` with
 `Beside::Screen`, both hosts giving the screen's size as scaled and its
@@ -3548,7 +3566,14 @@ and the browser's (640x560) and 1 to 10 keys beside each edge: the panel
 stands at least 3.9 degrees off the screen as seen from the seat (its
 middle at most 75.1 degrees below level), and the keys keep their size,
 stand beside the screen (at least 0.15 degrees off it) and more than a
-degree off the panel; the old place overlaps the default screen. The
+degree off the panel; the old place overlaps the default screen.
+`the_panel_covers_the_screen_only_where_its_lower_edge_stands_over_sixty_degrees_down`
+finds where the room below the screen runs out, a screen 2.5 m ahead
+growing in 0.1 degree steps of its lower edge: OpenXR's panel keeps its
+gap (3.9 degrees) to a lower edge 56.5 degrees below level and covers it
+from 60.6, the browser's to 65.5 and from 69.5; spread to 3 times, the
+default 3 m screen keeps the gap and a 4 m screen of a 4:3 picture or a
+4.5 m one of the field's 320x224 is covered. The
 tour's pictures were read for this qualification: both eyes of each
 OpenXR capture (the screen in front with the game's picture on it, the
 field and its dialogue from within the scene) and IWER's
@@ -3563,13 +3588,24 @@ headset tracks no hands, so OpenXR's hand cases are scripted
 (`--xr-hands`), and its `xrframe` line lists each frame's gestures rather
 than counting them. While first-person inspection shows, the hosts pass
 no field to the pointer (nothing is approached from within the scene), so
-its viewpoint is tested but picks nothing. A screen whose lower edge
-stands more than about 57 degrees below the seat's level (66 for the
-browser's shorter panel), as the settings' largest screens at their
-nearest allow (Graphics' headset width and distance run from 0.5 to
-20 m), leaves no room under it: the panel stops with its lower edge
-straight down and overlaps the screen. With the diorama as the view the
-panel stands over the pane while it shows, the game paused ([In a
+its viewpoint is tested but picks nothing. No headset run pulls the
+camera back or points under the Original renderer: the headset hosts
+hand the shared headset core the field through `GameView::viewpoint`
+(and call `GameView::away` for the device's own picture) as the desktop
+host does, which only the desktop host's and xem-headless's tests show
+on the game. The OpenXR hands run logs that its pinch walks, not where
+to. Below a screen whose lower edge stands more than 56.5 degrees below
+the seat's level (65.5 for the browser's shorter panel) the panel's gap
+narrows, its lower edge stopping straight down, and from 60.6 degrees
+(69.5) the panel covers the screen's lower edge: once the screen's
+height, as scaled, over twice its distance passes 1.78 (2.67 for the
+browser). The settings' larger screens at their nearest reach that
+(Graphics' headset width and distance run from 0.5 to 20 m), and so does
+two-hand scaling at its largest, 3 times: a 4 m screen at the default
+2.5 m with a 4:3 picture (61 degrees) or a 4.5 m one with the field's
+320x224 (62 degrees); the default 3 m screen spread 3 times keeps its
+gap (at most 53.5 degrees). With the diorama as the view the panel stands
+over the pane while it shows, the game paused ([In a
 headset](#in-a-headset)).
 
 ## Crates

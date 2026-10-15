@@ -1125,7 +1125,12 @@ impl View {
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
             Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view, p.size, p.movie)),
-            None => None,
+            // The device's own picture (the Original renderer, 24-bit movie
+            // frames): taps point through the game's camera.
+            None => {
+                self.renderer.away();
+                None
+            }
         };
         let encoded = presented.is_some();
         // A rebuilt movie frame is the display alone, without wider
@@ -1741,6 +1746,159 @@ mod tests {
         }
         let picture = view.picture.expect("the picture's place");
         assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "the device's own 320x216 picture");
+    }
+
+    /// Taps point through the picture the view last presented, and through
+    /// the game's camera while the host shows the device's own picture: in
+    /// field 30 with the camera pulled back (wider views' zoom out at 150%;
+    /// at 250% the middle of every walkable triangle that picture shows
+    /// lies within a tap's reach of an actor) a tap where the picture shows
+    /// a floor point walks there, its mark lying there; under the Original
+    /// renderer the view gives no viewpoint and a tap walks to the floor the
+    /// game's camera shows there (through the last picture's viewpoint it
+    /// would pick elsewhere or nothing), after the pulled-back picture and
+    /// after first-person inspection (which the Original renderer ends);
+    /// presented again, the pulled-back viewpoint returns.
+    #[cfg(all(has_game_module, not(debug_assertions)))]
+    #[test]
+    fn taps_point_through_the_picture_presented_and_through_the_game_camera_under_the_original_renderer() {
+        use xem_assist::dispatch::{Out, Pointed, tap_at};
+        use xem_assist::overlay::{Kind, Place, seen};
+        use xem_core::context::Context;
+        use xem_core::field::{Camera, Field, Reach, V3};
+        use xem_settings::{Renderer, SettingChange};
+        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        if !disc.exists() {
+            eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+            return;
+        }
+        let (session, _) = xem_game::boot(&disc, &Default::default()).unwrap();
+        let mut game = Game::new(session);
+        let run = |game: &mut Game, command: serde_json::Value| {
+            game.command(&command).unwrap_or_else(|error| panic!("{command}: {error}"));
+        };
+        run(&mut game, serde_json::json!({"cmd": "enter_field", "map": 30}));
+        run(&mut game, serde_json::json!({"cmd": "frames", "count": 300}));
+        for _ in 0..120 {
+            match game.pad_context().ui {
+                Context::Walk => break,
+                Context::Dialogue { .. } => run(&mut game, serde_json::json!({"cmd": "act", "actions": ["Confirm"], "frames": 2})),
+                _ => {}
+            }
+            run(&mut game, serde_json::json!({"cmd": "frames", "count": 30}));
+        }
+        assert_eq!(game.pad_context().ui, Context::Walk, "Fei walks in field 30");
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let graphics = |renderer: Renderer| SettingChange::Graphics(xem_settings::Graphics { renderer, zoom_out: 150, ..Default::default() });
+        settings.borrow_mut().apply(graphics(Renderer::ExMachina)).unwrap();
+        // A wide window: the touch deck stands beside the picture.
+        let (width, height) = (1600u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings.clone(), false).unwrap();
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("pointing target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        // Host frames: a game frame each, taken and presented.
+        let mut time = 0.0;
+        let mut frames = |view: &mut View, game: &mut Game, count: usize| {
+            for _ in 0..count {
+                assert!(game.session.frame().unwrap());
+                view.set_game_frame(&gpu, game);
+                time += 1.0 / 60.0;
+                view.render(&gpu, &output, time).unwrap();
+            }
+        };
+        // A tap on the picture where it shows the screen point `at`, carried
+        // out as the host's frame does (`View::assist`): where the walk it
+        // begins heads and where the destination's mark lies (the walk is
+        // stopped again, Fei standing where he stands).
+        let tap = |view: &mut View, game: &mut Game, at: (f32, f32)| {
+            view.assist(game);
+            let (x, y) = view.picture.expect("the picture's place").from_screen(at);
+            let touched = (x / width as f32, y / height as f32);
+            view.finger(Finger::Down, 1, touched);
+            view.finger(Finger::Up, 1, touched);
+            view.assist(game);
+            let to = game.destination();
+            let mark = view.marks.iter().find(|mark| mark.kind == Kind::Destination).and_then(|mark| match mark.place {
+                Place::Screen { centre, .. } => Some(centre),
+                Place::Floor { .. } => None,
+            });
+            run(game, serde_json::json!({"cmd": "assist_stop"}));
+            (to, mark)
+        };
+        let apart = |a: (f32, f32), b: (f32, f32)| ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
+        // Walkable floor some way off Fei and away from everyone, where the
+        // picture `shown` sees shows it and a tap there walks (no one within
+        // its reach): the point `other` puts farthest from there, and how far.
+        let floor = |shown: &Field, other: &Camera| -> (V3, (f32, f32), f32) {
+            let me = *shown.player().expect("Fei");
+            let mesh = &shown.layers[me.layer];
+            (0..mesh.triangles.len())
+                .map(|t| (t, mesh.centroid(t)))
+                .filter(|(t, c)| shown.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+                .filter(|(_, c)| shown.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
+                .filter_map(|(_, c)| {
+                    let at = shown.camera.project(c).filter(|p| (16.0..304.0).contains(&p.0) && (16.0..208.0).contains(&p.1))?;
+                    let walks = matches!(tap_at(Pointed::Screen(at), Context::Walk, Some(shown), None),
+                        Some(Out::Command { command }) if command["cmd"] == "navigate");
+                    if !walks {
+                        return None;
+                    }
+                    Some((c, at, apart(at, other.project(c)?)))
+                })
+                .max_by(|a, b| a.2.total_cmp(&b.2))
+                .expect("walkable floor a tap reaches on the picture")
+        };
+        // The Original renderer's picture after `last` (the viewpoint the
+        // view presented before it): no viewpoint, and a tap walks to the
+        // floor the game's camera shows; then the view's renderer again.
+        let original = |view: &mut View, game: &mut Game, frames: &mut dyn FnMut(&mut View, &mut Game, usize), last: xem_render::ps1::Viewpoint, what: &str| {
+            settings.borrow_mut().apply(graphics(Renderer::Original)).unwrap();
+            frames(view, game, 2);
+            assert!(!view.first_person(), "{what}: the Original renderer ends inspection");
+            assert_eq!(view.renderer.viewpoint(), None, "{what}: the device's own picture is the game camera's");
+            let field = game.field().expect("field 30");
+            let stale = seen(field.clone(), Some(&last));
+            let (goal, at, shift) = floor(&field, &stale.camera);
+            let elsewhere = stale.pick(at).map(|hit| hit.point.planar(goal));
+            eprintln!("{what}: the floor at {goal:?} shows at {at:?}, {shift:.1} pixels from the last picture's place; through it a tap there picks {elsewhere:?} units away");
+            assert!(elsewhere.is_none_or(|d| d > 32.0), "{what}: through the last picture's viewpoint {at:?} picks elsewhere");
+            let (to, mark) = tap(view, game, at);
+            assert!(to.is_some_and(|to| to.planar(goal) < 16.0), "{what}: a tap walks to the floor the game's camera shows: {to:?} for {goal:?}");
+            assert!(mark.is_some_and(|mark| apart(mark, at) < 2.0), "{what}: the destination's mark lies there: {mark:?} for {at:?}");
+            settings.borrow_mut().apply(graphics(Renderer::ExMachina)).unwrap();
+        };
+        // Pulled back: through the picture's viewpoint.
+        frames(&mut view, &mut game, 8);
+        let pulled = view.renderer.viewpoint().expect("the picture shows the field pulled back");
+        let field = game.field().expect("field 30");
+        let shown = seen(field.clone(), Some(&pulled));
+        let (goal, at, shift) = floor(&shown, &field.camera);
+        eprintln!("pulled back {:.0} units: the floor at {goal:?} shows at {at:?}, {shift:.1} pixels from where the game's camera puts it", pulled.offset[2]);
+        assert!(shift > 10.0, "the game's camera shows {goal:?} elsewhere than {at:?}");
+        let (to, mark) = tap(&mut view, &mut game, at);
+        assert!(to.is_some_and(|to| to.planar(goal) < 16.0), "pulled back, a tap walks to the floor the picture shows: {to:?} for {goal:?}");
+        assert!(mark.is_some_and(|mark| apart(mark, at) < 2.0), "the destination's mark lies there: {mark:?} for {at:?}");
+        let last = view.renderer.viewpoint().expect("pulled back");
+        original(&mut view, &mut game, &mut frames, last, "after the pulled-back picture");
+        frames(&mut view, &mut game, 8);
+        assert!(view.renderer.viewpoint().is_some_and(|v| v.rows == pulled.rows && v.offset[2] > 0.0), "presented again, pulled back");
+        // From within the scene: the look's viewpoint, then the Original
+        // renderer.
+        view.renderer.set_first_person(true);
+        frames(&mut view, &mut game, 8);
+        assert!(view.first_person(), "inspection looks from within field 30");
+        let look = view.renderer.viewpoint().expect("the look's viewpoint");
+        assert_ne!(look.rows, pulled.rows, "from the character's eye, not the camera pulled back");
+        original(&mut view, &mut game, &mut frames, look, "after first-person inspection");
     }
 
     #[test]

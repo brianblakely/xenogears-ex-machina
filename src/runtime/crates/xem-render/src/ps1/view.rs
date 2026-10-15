@@ -657,11 +657,13 @@ impl GameView {
     /// when it was not the game camera's own: the camera pulled back (wider
     /// views' zoom out in a field or the world map), or first-person
     /// inspection's look from the character's eye. Pointing at the picture
-    /// goes through it, so that a pinch or a click picks what the picture
+    /// goes through it, so that a pinch or a tap picks what the picture
     /// shows there and marks lie where it shows them (hosts see the field's
     /// camera through it: `xem_core::field::Camera::seen`). None for the
-    /// game camera's own picture, a headset's pane (no scene) and a frame
-    /// whose world the port did not project.
+    /// game camera's own picture, a headset's pane (no scene), a frame
+    /// whose world the port did not project, and while the host shows
+    /// something else ([`GameView::away`]: the Original renderer's picture
+    /// is the game camera's).
     pub fn viewpoint(&self) -> Option<Viewpoint> {
         let shown = self.main.shown?;
         let framing = shown.framing;
@@ -1150,12 +1152,16 @@ impl GameView {
         })
     }
 
-    /// The host shows something other than this view's presentations in a
-    /// headset frame (the device's own picture: the Original renderer, a
-    /// 24-bit movie frame the view does not draw): the diorama gives way to
-    /// the screen at once (and eases in again from it), and lies nowhere (no
-    /// space, no listener's axes) until it is presented again.
-    pub fn hide_diorama(&mut self) {
+    /// The host shows something other than this view's presentations (the
+    /// device's own picture: the Original renderer, a 24-bit movie frame
+    /// the view does not draw): nothing the view presented is on show until
+    /// it presents again. Pointing goes through the game's camera (no
+    /// [`GameView::viewpoint`]), a screen the game takes next is not a
+    /// picture it presented, and the diorama gives way to the screen at
+    /// once (and eases in again from it), lying nowhere (no space, no
+    /// listener's axes).
+    pub fn away(&mut self) {
+        (self.presented_movie, self.headset, self.main.presented_effects, self.main.shown) = (false, false, None, None);
         self.diorama.away();
     }
 

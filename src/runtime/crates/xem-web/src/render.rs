@@ -520,7 +520,12 @@ impl WebRenderer {
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
             Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size, p.movie)),
-            None => None,
+            // The device's own picture (the Original renderer, 24-bit movie
+            // frames): taps point through the game's camera.
+            None => {
+                self.renderer.away();
+                None
+            }
         };
         let encoded = presented.is_some();
         // A rebuilt movie frame is the display alone, without wider
@@ -740,9 +745,10 @@ impl WebRenderer {
                 (Some((p.screen.view.clone(), p.screen.size)), 1.0)
             }),
             // The device's own picture (the Original renderer, 24-bit movie
-            // frames): no diorama lies anywhere meanwhile.
+            // frames): pointing goes through the game's camera, and no
+            // diorama lies anywhere meanwhile.
             None => {
-                self.renderer.hide_diorama();
+                self.renderer.away();
                 None
             }
         };
