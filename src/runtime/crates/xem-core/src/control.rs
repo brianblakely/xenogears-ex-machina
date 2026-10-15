@@ -570,8 +570,9 @@ impl<M: GameModule> Session<M> {
     }
 
     /// The head's axes in the presentation's reference space (headsets), as
-    /// the game camera's view space is oriented; none (tracking lost) keeps
-    /// the last. Presentation only: it never reaches the game.
+    /// the game camera's view space is oriented; none: no head (out of a
+    /// headset; a host that loses tracking keeps the last by not calling).
+    /// Presentation only: it never reaches the game.
     pub fn set_head(&mut self, axes: Option<[[f32; 3]; 3]>) {
         if let Some(presenter) = self.runtime.services().spu.binaural_mut() {
             presenter.set_head(axes);

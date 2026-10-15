@@ -85,10 +85,13 @@
 #   camera's pitch (level on its heading, the head doing the pitching), and
 #   inspection ended in the pause takes the view away at once; the music
 #   holds still; in the diorama the same while the simulated head
-#   moves 10 cm and more (its position ignored) and two whole-hand pinches
-#   scale the table 1 to 2.5 times and back (their own gestures only, moving
-#   nobody); the listener is the controlled character throughout, no number
-#   is NaN or infinite, and the RAM at game frame 1200 is xem-headless's.
+#   moves 10 cm and more (its position ignored) and whole-hand pinches
+#   scale the table from 25% to the 400% limit and back to 25% (their own
+#   gestures only, moving nobody), the listener's view held to the last bit
+#   through the scales and both recentrings; the listener is the
+#   controlled character throughout, no number is NaN or infinite, the
+#   session's end leaves the presenter no head and no view (the game goes
+#   back to a flat host), and the RAM at game frame 1200 is xem-headless's.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -318,10 +321,13 @@ cp "$out/config/xenogears-ex-machina/settings.json" "$out/diorama-scale.settings
 # 220 frames, the head lost for 15 frames from 240 and inspection's end;
 # then the same log in xem-headless (its RAM and the controlled character at
 # game frame 1200).
-# The diorama with the same log: the game held by the test's pause from
-# headset frame 150 to 290, and in it two whole-hand pinches spreading at
-# 170 and contracting at 200, Monado's recentring once the session has
-# drawn 225 frames and the app's Recenter at 250.
+# The diorama with the same log, at 25% of its scale: the game held by the
+# test's pause from headset frame 150 to 410, and in it whole-hand pinches
+# spreading at 160, 180, 200 and 220 (2.52 times each: 63%, 159%, then the
+# 400% limit twice), Monado's recentring once the session has drawn 240
+# frames (a recentring ends a scaling under way, so none is), the app's
+# Recenter at 265, and contracting at 280 to 380 every 20 frames (0.598
+# times each: 239%, 143%, 85%, 51%, 30%, then the 25% limit).
 echo '{"commands": [[0, {"cmd": "enter_field", "map": 15}]]}' >"$out/field15.json"
 for run in binaural binaural-diorama; do
     case $run in
@@ -329,8 +335,9 @@ for run in binaural binaural-diorama; do
         echo '{"binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
         at=220 options=(--xr-hands "120:inspect,150:pause,255:inspect,270:pause" --xr-recenter-at 190 --xr-lose-tracking 240,15) ;;
     binaural-diorama)
-        echo '{"graphics": {"xr": {"view": "Diorama"}}, "binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
-        at=225 options=(--xr-pause 150,140 --xr-hands "170:spread,200:contract" --xr-recenter-at 250) ;;
+        echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}, "binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
+        at=240 options=(--xr-pause 150,260 --xr-recenter-at 265
+            --xr-hands "160:spread,180:spread,200:spread,220:spread,280:contract,300:contract,320:contract,340:contract,360:contract,380:contract") ;;
     esac
     (
         for _ in $(seq 900); do grep -q "^xrframe n=$at " "$out/$run.log" 2>/dev/null && break; sleep 0.1; done
@@ -1196,26 +1203,37 @@ print(f"binaural: the presenter's head is the pose's within {worst:.4f} degrees;
 # simulated head moves) ignored, the listener at the character; two-hand
 # scaling (no movement, no gesture but its own), Monado's recentring and
 # the app's Recenter change nothing heard but the head's turn.
-rows, still, _, worst, spread, off = binaural("binaural-diorama", lambda r: 150 <= int(r["n"]) < 290)
+rows, still, _, worst, spread, off = binaural("binaural-diorama", lambda r: 150 <= int(r["n"]) < 410)
 check(all(r["diorama"] == "1" and r["share"] == "0.000" and r["paused"] == "1" for r in still), "binaural-diorama: the diorama alone showed while the game was held")
 check(len({r["game_frames"] for r in still}) == 1, "binaural-diorama: the game ran while it was held")
 check(final_hash("binaural-diorama.log") == binaural_hash, f"binaural-diorama.log: RAM at game frame 1200 {final_hash('binaural-diorama.log')} != headless {binaural_hash}")
+# From the setting's 25% to the 400% limit and back to the 25% limit, each
+# gesture committed once.
 scales = [float(r["diorama_scale"]) for r in still]
 kinds = {g["gesture"] for r in still for g in json.loads(r["gestures"])}
-commits = [l for l in open(f"{out}/binaural-diorama.log") if l.startswith("scale commit ")]
-check(max(scales) > 2.4 and min(scales) < 1.01 and kinds <= {"ScaleBegin", "Scale", "ScaleEnd"} and len(commits) == 2 and all(r["assist"] == "-" for r in still),
-      f"binaural-diorama: two-hand scaling from {min(scales)} to {max(scales)} gave only its own gestures {sorted(kinds)}, committed {len(commits)} times, moved nobody")
+committed = [int(m.group(1)) for l in open(f"{out}/binaural-diorama.log") if (m := re.match(r"scale commit diorama_scale=(\d+) revision=", l))]
+check(scales[0] == 0.25 and max(scales) == 4.0 and scales[-1] == 0.25 and len(committed) == 10 and max(committed) == 400 and committed[-1] == 25
+      and kinds <= {"ScaleBegin", "Scale", "ScaleEnd"} and all(r["assist"] == "-" for r in still),
+      f"binaural-diorama: two-hand scaling from {scales[0]} to {max(scales)} and back to {scales[-1]} (committed {committed}) gave only its own gestures {sorted(kinds)}, moved nobody")
 places = [tuple(float(v) for v in r["head"].split(";")[0].split(",")) for r in still if r["head"] != "-"]
 reach = max(math.dist(p, q) for p in places for q in places[::10])
 check(reach > 0.1, f"binaural-diorama: the head moved {reach:.3f} m while the game was held")
 recentred = next((r for r in rows if r["recenters"] == "1"), None)
 moved = next((r for r in rows if r["resets"] == "1"), None)
-check(recentred is not None and int(recentred["n"]) == 250 and abs(presented(recentred)["head"][0]) < 0.01,
+check(recentred is not None and int(recentred["n"]) == 265 and abs(presented(recentred)["head"][0]) < 0.01,
       f"binaural-diorama: the Recenter turned the presenter's head ahead: {recentred and (recentred['n'], presented(recentred)['head'])}")
-check(moved is not None and 225 <= int(moved["n"]) < 250, f"binaural-diorama: Monado's recentring reached the session in the pause ({open(f'{out}/monado-ctl-binaural-diorama.log').read().strip()!r})")
+check(moved is not None and 240 <= int(moved["n"]) < 265, f"binaural-diorama: Monado's recentring reached the session in the pause ({open(f'{out}/monado-ctl-binaural-diorama.log').read().strip()!r})")
 print(f"binaural diorama: the presenter's head within {worst:.4f} degrees of the pose; the game held, the head turning over {spread:.2f} degrees and "
-      f"moving {reach:.3f} m, scaled {min(scales):.2f}-{max(scales):.2f} ({len(commits)} commits), LOCAL recentred at {moved and moved['n']} and "
-      f"recentred at 250: the view held still and each effect in it within {max(off.values()):.4f} degrees; RAM {final_hash('binaural-diorama.log')}")
+      f"moving {reach:.3f} m, scaled {scales[0]:.2f}-{max(scales):.2f}-{scales[-1]:.2f} (committed {committed}), LOCAL recentred at {moved and moved['n']} and "
+      f"recentred at 265: the view held still and each effect in it within {max(off.values()):.4f} degrees; RAM {final_hash('binaural-diorama.log')}")
+# The session's end gives the game back to a flat host (Android's window):
+# the presenter keeps neither the head nor the listener's view it had.
+for name in ("binaural", "binaural-diorama"):
+    last = presented(records(f"{name}.log")[-1])
+    ended = next((l for l in open(f"{out}/{name}.log") if l.startswith("exit frames=")), "")
+    left = json.loads(ended.split(" binaural=", 1)[1]) if " binaural=" in ended else None
+    check(last["head"] is not None and (name == "binaural" or last["view"] is not None) and left is not None and left["head"] is None and left["view"] is None,
+          f"{name}: the session ended with the presenter's head {last['head']} and view {last['view']}, leaving {left}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

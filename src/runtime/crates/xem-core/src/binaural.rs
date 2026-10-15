@@ -922,13 +922,50 @@ impl Presenter {
             "coverage_gaps": coverage,
         })
     }
+
+    /// The part of [`status`](Self::status) a host logs every headset
+    /// frame, without building the rest.
+    pub fn heard(&self) -> Heard {
+        let mut heard = Heard { head: self.head.map(|axes| angles(axes[2])), view: self.view.map(|axes| angles(axes[2])), at: self.scene.listener, ..Heard::default() };
+        for source in self.renderer.sources() {
+            let Some((azimuth, elevation)) = source.target else { continue };
+            match self.ids.iter().find_map(|(key, id)| (*id == source.id).then_some(key)) {
+                Some(SourceKey::Music { .. }) => heard.music.push((source.id, [azimuth, elevation])),
+                Some(SourceKey::Effect { .. }) => heard.effects.push((source.id, [azimuth, elevation])),
+                None => {}
+            }
+        }
+        heard
+    }
+}
+
+/// Where the presentation hears from and where it places its sources
+/// ([`Presenter::heard`]), as its status gives them.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Heard {
+    /// The head's and the listener's view's facing (`[yaw, pitch]`,
+    /// degrees, yaw to the right): the status's `head` and `first_person`.
+    pub head: Option<[f32; 2]>,
+    pub view: Option<[f32; 2]>,
+    /// The listening position (world units): `listening_position`.
+    pub at: Option<[f32; 3]>,
+    /// Each effect and each music part heading somewhere: its source's id
+    /// and its target (`[azimuth, elevation]`, degrees), in the status's
+    /// order.
+    pub effects: Vec<(u32, [f32; 2])>,
+    pub music: Vec<(u32, [f32; 2])>,
 }
 
 /// Where a listener's forward axis (in the space it turned in) faces:
-/// `{yaw, pitch}`, degrees, yaw to the right.
+/// `[yaw, pitch]`, degrees, yaw to the right.
+fn angles([x, y, z]: [f32; 3]) -> [f32; 2] {
+    [x.atan2(z).to_degrees(), (-y).atan2(x.hypot(z)).to_degrees()]
+}
+
+/// [`angles`] as the status gives them: `{yaw, pitch}`.
 fn facing(forward: [f32; 3]) -> Value {
-    let [x, y, z] = forward;
-    json!({"yaw": x.atan2(z).to_degrees(), "pitch": (-y).atan2(x.hypot(z)).to_degrees()})
+    let [yaw, pitch] = angles(forward);
+    json!({"yaw": yaw, "pitch": pitch})
 }
 
 /// The source a voice's identity makes it part of.
@@ -1460,5 +1497,37 @@ mod tests {
         assert_eq!(presenter.renderer.route(3), Route::Original);
         presenter.retag(1 << 3, &ram);
         assert!(matches!(presenter.renderer.route(3), Route::Source(_)));
+    }
+
+    #[test]
+    fn what_a_frame_log_takes_of_the_status_is_the_status() {
+        // A field emitter and a music part, a look and a head turn: the
+        // summary's every number is the status's.
+        let level: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        let mut presenter = field_scene(level, [0, 0, 1000], [0, 0, 0], [-300, 0, 0]);
+        let mut ram = driver();
+        own(&mut ram, 0, MUSIC, 2);
+        presenter.key_on(1, &ram);
+        presenter.set_view(Some([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]));
+        let half = (-0.3f32).sin_cos();
+        presenter.set_head(Some(head_axes([0.0, half.0, 0.0, half.1])));
+        let (heard, status) = (presenter.heard(), presenter.status());
+        let facing = |value: &Value| json!([value["yaw"], value["pitch"]]);
+        assert_eq!((json!(heard.head), json!(heard.view)), (facing(&status["head"]), facing(&status["first_person"])));
+        assert_eq!(json!(heard.at), status["listening_position"]);
+        let of = |kind: &str| -> Vec<Value> {
+            status["sources"].as_array().expect("sources").iter()
+                .filter(|source| source["kind"] == kind && !source["target"].is_null())
+                .map(|source| json!([source["id"], source["target"]["azimuth"], source["target"]["elevation"]]))
+                .collect()
+        };
+        let listed = |sources: &[(u32, [f32; 2])]| -> Vec<Value> { sources.iter().map(|(id, [azimuth, elevation])| json!([id, azimuth, elevation])).collect() };
+        assert_eq!((listed(&heard.effects), listed(&heard.music)), (of("effect"), of("music")));
+        assert_eq!((heard.effects.len(), heard.music.len()), (1, 1), "{status}");
+        assert!(heard.head.is_some() && heard.view.is_some() && heard.at.is_some());
+        // Out of a headset and inspection: neither.
+        presenter.set_head(None);
+        presenter.set_view(None);
+        assert_eq!((presenter.heard().head, presenter.heard().view), (None, None));
     }
 }

@@ -216,29 +216,19 @@ fn assist_pose(pose: Pose) -> xem_assist::headset::Pose {
     xem_assist::headset::Pose { position: pose.position, orientation: pose.orientation }
 }
 
-/// What the Binaural mode presents, for the frame log: the presenter's
-/// head and its listener's view (first-person inspection's or the
-/// diorama's), each as `[yaw, pitch]` (degrees, yaw to the right), the
+/// What the Binaural mode presents, for the frame log
+/// (`xem_core::binaural::Heard`, not the whole status, every frame): the
+/// presenter's head and its listener's view (first-person inspection's or
+/// the diorama's), each as `[yaw, pitch]` (degrees, yaw to the right), the
 /// listening position (world units), and where each placed effect and
 /// each music part heads (`[id, azimuth, elevation]`, degrees), as JSON
 /// without spaces; `-` while nothing presents.
 fn binaural_line(game: &mut Game) -> String {
-    let Some(status) = game.session.runtime.services().spu.binaural().map(|presenter| presenter.status()) else { return "-".into() };
-    let facing = |value: &serde_json::Value| (!value.is_null()).then(|| serde_json::json!([value["yaw"], value["pitch"]]));
-    let heading = |kind: &str| -> Vec<serde_json::Value> {
-        status["sources"].as_array().into_iter().flatten()
-            .filter(|source| source["kind"] == kind && !source["target"].is_null())
-            .map(|source| serde_json::json!([source["id"], source["target"]["azimuth"], source["target"]["elevation"]]))
-            .collect()
+    let Some(heard) = game.session.runtime.services().spu.binaural().map(|presenter| presenter.heard()) else { return "-".into() };
+    let heading = |sources: &[(u32, [f32; 2])]| -> Vec<serde_json::Value> {
+        sources.iter().map(|(id, [azimuth, elevation])| serde_json::json!([id, azimuth, elevation])).collect()
     };
-    serde_json::json!({
-        "head": facing(&status["head"]),
-        "view": facing(&status["first_person"]),
-        "at": status["listening_position"],
-        "effects": heading("effect"),
-        "music": heading("music"),
-    })
-    .to_string()
+    serde_json::json!({"head": heard.head, "view": heard.view, "at": heard.at, "effects": heading(&heard.effects), "music": heading(&heard.music)}).to_string()
 }
 
 /// A two-hand scaling of the diorama that ended becomes the player's
@@ -1118,6 +1108,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     // reached.
     assist.scaling.end();
     commit_scale(&settings, &mut assist.scaling);
-    println!("exit frames={frames} game_frames={} memory_hash {}", game.frames_run(), game.memory_hash());
+    // The game goes back to a flat host (Android's window): no head, and the
+    // camera's own view until that host gives the listener another.
+    game.set_head(None);
+    game.set_listener_view(None);
+    println!("exit frames={frames} game_frames={} memory_hash {} binaural={}", game.frames_run(), game.memory_hash(), binaural_line(&mut game));
     Ok(Ended { game, quit: quit.get() })
 }

@@ -211,6 +211,9 @@ pub struct DioramaSpace {
     /// y-down made up): with `room_from_table`, `room_from_world`'s rotation
     /// without its scale.
     pub turn: Mat3,
+    /// The table's tilt from the seat (radians; positive raises its far
+    /// edge): with the seat, `room_from_table`'s rotation.
+    pub tilt: f32,
     /// The table's volume in its space.
     pub volume: (Vec3, Vec3),
     /// The interface pane's pose in the room (its centre; x right, y up,
@@ -246,6 +249,7 @@ impl DioramaSpace {
             room_from_world: room_from_table * placed.table_from_world,
             room_from_table,
             turn: placed.turn,
+            tilt: table.tilt,
             volume: Table::VOLUME,
             pane,
             pane_size,
@@ -270,14 +274,15 @@ impl DioramaSpace {
     /// the seat's right, down and forward (the presentation's, which a
     /// headset's head turns from) in the game camera's view space, through
     /// the table: the head's turn, given in the seat's space, is composed
-    /// with them once (`xem_core::binaural`). The table's scale is not in
-    /// them, not even by rounding: through the table is through its place
-    /// in the room and its turn from the world, both rotations.
+    /// with them once (`xem_core::binaural`). The table stands where the
+    /// seat puts it, so through the table is through its tilt from the seat
+    /// and its turn from the world, both rotations: neither the player's
+    /// scale nor where the seat stands in the room (a recentring) is in
+    /// them, not even by rounding.
     pub fn listener_axes(&self) -> Option<[[f32; 3]; 3]> {
-        let room_from_world = Mat3::from_mat4(self.room_from_table) * self.turn;
-        let view_from_room = rotation(&self.camera) * room_from_world.transpose();
-        let seat = Mat3::from_mat4(self.seat);
-        let axes = [seat * Vec3::X, seat * Vec3::NEG_Y, seat * Vec3::NEG_Z].map(|axis| (view_from_room * axis).normalize_or_zero());
+        let seat_from_world = Mat3::from_rotation_x(self.tilt) * self.turn;
+        let view_from_seat = rotation(&self.camera) * seat_from_world.transpose();
+        let axes = [Vec3::X, Vec3::NEG_Y, Vec3::NEG_Z].map(|axis| (view_from_seat * axis).normalize_or_zero());
         axes.iter().all(|axis| axis.length_squared() > 0.5).then(|| axes.map(|axis| axis.to_array()))
     }
 }
@@ -1810,6 +1815,25 @@ mod tests {
                 let placed = Mat3::from_mat4(space.room_from_table) * space.turn;
                 let apart = rotation.to_cols_array().iter().zip(placed.to_cols_array()).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
                 assert!(apart < 1e-5, "tilt {tilt}, scale {scale}: the room from the world is the table's place and turn, scaled ({apart})");
+            }
+        }
+    }
+
+    #[test]
+    fn the_listener_is_the_same_from_every_seat_to_the_last_bit() {
+        // A recentring stands the seat at the head, turned its way about the
+        // vertical, and the table with it: the seat faces the world on the
+        // table as it did, so the listener's axes are identical from every
+        // seat (the yaws Monado's turning head was recentred at among them),
+        // the table tilted or not.
+        let camera = camera(70.0, 25.0, 3.0, [100.0, 200.0, 1200.0], CameraMode::Field);
+        for tilt in [0.0f32, 30.0] {
+            let table = Table { tilt: tilt.to_radians(), ..Table::default() };
+            let from = |seat: Mat4| DioramaSpace::first(&camera, 256.0, Vec2::new(320.0, 224.0), &table, seat).expect("a space").listener_axes().expect("axes");
+            let origin = from(Mat4::IDENTITY);
+            for yaw in [0.0814f32, 0.0570, 0.0341, 0.0185, -0.0868, 0.6, -2.3, std::f32::consts::PI] {
+                let seat = Mat4::from_rotation_translation(glam::Quat::from_rotation_y(yaw), Vec3::new(0.2, -0.03, -0.1));
+                assert_eq!(from(seat), origin, "tilt {tilt}, a seat turned {yaw} radians");
             }
         }
     }

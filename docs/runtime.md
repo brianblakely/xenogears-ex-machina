@@ -612,7 +612,10 @@ or on the game's own Sound screen, turns it off.
   (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose as
   the seat sees it, the seat's forward its reference, so a recentred seat
   is ahead again; lost tracking keeps the last; leaving the headset clears
-  it). The view's axes and the head reach the presenter whenever the host
+  it: the browser's session end does, and so does the OpenXR loop's end,
+  which takes the listener's view away too before it gives the game back
+  to a flat host, Android's window, whose own view follows). The view's
+  axes and the head reach the presenter whenever the host
   computes them, every frame it presents, the game running or held
   (`xem_host::Game::set_listener_view`, `set_head`; the browser's step):
   presentation only (a held game sounds nothing), but the presenter holds
@@ -653,7 +656,12 @@ or on the game's own Sound screen, turns it off.
   presents): `head` and `view` (the head's and the listener view's facing,
   `[yaw, pitch]` degrees, yaw to the right; null without), `at` (the
   listening position) and `effects` and `music` (each placed source's
-  `[id, azimuth, elevation]`, where it heads); WebXR's page reads the same
+  `[id, azimuth, elevation]`, where it heads); the session's `exit` line
+  has it once more, the head and the view taken away. It is
+  `Presenter::heard`, only the status's part the line needs: in field 15
+  (9 sources, after 600 frames; the suite profile, 20 000 lines on this
+  machine, other builds running) the line takes 4.0 us a frame where taken
+  from the whole status it took 75 us, the same 346 bytes. WebXR's page reads the same
   through the `binaural` command (`head`, `first_person`, `sources`).
   `xem-headless`'s `first_person` example prints the status a native
   desktop host has looking around in first person from a state and look
@@ -1210,33 +1218,46 @@ committed once a gesture) change nothing heard at any scale, press
 nothing and walk nobody; 240 frames from the state at 25%, 100% and 400%
 end at the same RAM and the same sound (its frames and hash) and hear the
 same. The OpenXR smoke (Monado's simulated HMD, field 15, the frame log's
-`binaural=`; two runs, the second the xr tier's, whose simulated head
+`binaural=`; two runs, one alone and the xr tier's, whose simulated head
 moves with time): the presenter's head is the pose's turn from the seat
-within 0.0022 and 0.0033 degree every frame, the game running and paused
+within 0.0034 and 0.0023 degree every frame, the game running and paused
 (the bound 0.02: the log's five decimals); in first-person inspection,
-held by the player's Pause while the simulated head turned over 7.2 and
-7.1 degrees, each effect with the head's turn taken off held still in the
-listener's view within 0.0015 and 0.0026 degree (bound 0.02) through the
+held by the player's Pause while the simulated head turned over 8.0 and
+18.4 degrees, each effect with the head's turn taken off held still in the
+listener's view within 0.0032 and 0.0022 degree (bound 0.02) through the
 Recenter, Monado's recentring of LOCAL and 15 frames of scripted lost
 tracking (`--xr-lose-tracking`: the last head kept, and what is heard
 with it); inspection heard the screen's directions turned up by the
-camera's pitch within 0.0011 and 0.0007 degree (bound 0.05); inspection
+camera's pitch within 0.0005 degree in both (bound 0.05); inspection
 ended in the pause took the listener's view away at once; the music held
-still; in the diorama the same within 0.0013 and 0.0018 degree while the
-head turned 12.7 and 10.6 degrees and moved 20 cm, two-hand scaling went
-from 1 to 2.52 times and back to 1.51 (committed twice, no other gesture,
-nobody moved), LOCAL was recentred and the seat recentred; the listener
-was the controlled character throughout and both runs' RAM at game frame
-1 200 is xem-headless's.
+still; in the diorama the same within 0.0024 and 0.0018 degree while the
+head turned 17.4 and 12.9 degrees and moved 20 cm, two-hand scaling went
+from the setting's 25% to the 400% limit and back to the 25% limit
+(committed ten times: 63, 159, 400, 400, 239, 143, 85, 51, 30 and 25%; no
+other gesture, nobody moved), LOCAL was recentred and the seat recentred
+(turned 0.0543 and 0.0159 radians), the listener's view the same to the
+last bit throughout; the listener was the controlled character
+throughout, the session's end left the presenter no head and no
+listener's view, and both runs' RAM at game frame 1 200 is
+xem-headless's.
 `first-person.test.mjs`: in field 15 the browser's listener looking
 around in first person faces as the native desktop host's within 4e-6
 degree for the same state and look (xem-headless's `first_person`
-example, the game view natively), its three emitters heard exactly where
-the native host hears them, from the same place, the music in the same
+example, the game view natively), its three emitters are heard within
+1e-6 degree of where the native host hears them (bound 1e-3 for both; in
+three runs the listener 3.81e-6, 0 and 3.81e-6 degree apart, the
+emitters 0, 9.54e-7 and 0), from the same place, the music in the same
 places. `xem-render`'s `the_listener_is_the_same_at_every_scale_to_the_last_bit`:
 the diorama's listener axes at 25%, 37.7%, 137%, 252% and 400% are 100%'s
 to the last bit, the table tilted or not (taken through `room_from_world`
-they were not, at 37.7%). `tests/test_listening.py`: the
+they were not, at 37.7%); `the_listener_is_the_same_from_every_seat_to_the_last_bit`:
+from seats turned by eight yaws (Monado's recentred ones, -0.0868 to
+0.0814 radians, among them) they are the seat at the origin's to the last bit,
+tilted or not (taken through the seat and back they were not, at 0.0814).
+`xem-core`'s `what_a_frame_log_takes_of_the_status_is_the_status`: the
+frame log's `Presenter::heard` (head, view, listening position, each
+effect's and music part's target) is the status's, number for number.
+`tests/test_listening.py`: the
 listening test's analysis on answers with known errors (exact ones, front/
 back mirror images, negated and halved elevations, answers further out),
 its seeded bootstrap, the model comparison and the coherence summary,
@@ -2750,12 +2771,16 @@ the screen then).
   down and forward taken through the table into the game camera's view
   space (`DioramaSpace::listener_axes`), so the head's turn composes once
   with the table's heading and tilt; the music's stage, turned by the head
-  alone, stays put in the room. Through the table is through its place in
-  the room and its turn from the world (`DioramaSpace::turn`), both
-  rotations: the player's scale is not in the axes, not even by rounding
-  (taken through `room_from_world` and normalised, they differed from
-  scale to scale in their last bits, moving what is heard by about 1e-5
-  degree). Otherwise (the screen, the Original renderer, the device's own
+  alone, stays put in the room. The table stands where the seat puts it,
+  so through the table is through its tilt from the seat and its turn from
+  the world (`DioramaSpace::tilt`, `turn`), both rotations: neither the
+  player's scale nor where the seat stands (a recentring) is in the axes,
+  not even by rounding (taken through `room_from_world` and normalised,
+  they differed from scale to scale in their last bits, moving what is
+  heard by about 1e-5 degree; taken through the seat's place in the room
+  and back, a recentring moved them by about 3e-7 degree, so a check of
+  the view held still through one failed in two of five Monado runs).
+  Otherwise (the screen, the Original renderer, the device's own
   movie frames) the listener has the screen's axes: none, or first-person
   inspection's. The hosts give the presenter these axes, as they give it
   the head, whenever they present, the game running or not, so a table
@@ -2860,7 +2885,8 @@ screen within 1% and the panel as wide as below the screen within 1%,
 a ray through the table becoming the world's, the seat, and the shared
 reference handler cancelling a grab in progress, ending scaling and
 letting a bout's stick go (`xem-assist`); the pane upright above the far
-edge at every tilt and scale, the listener's axes through the table, and
+edge at every tilt and scale, the listener's axes through the table (the
+same at every scale and from every seat to the last bit), and
 the settings' mapping, the screen under the Original renderer
 (`xem-render` diorama.rs); the listener's axes only while the diorama is
 presented (`xem-render/tests/ps1.rs`, [Diorama](#diorama)).
@@ -3371,12 +3397,16 @@ Headset class (Low tier, depth of field off unless enabled).
   `--xr-lose-tracking N,M` (headset frames N to N+M-1 taken as the
   runtime reporting no head and no valid views, which Monado's simulated
   HMD never does) in the pause and inspection ended there; one in the
-  diorama, held by `--xr-pause`, with two-hand scaling, Monado's
-  recentring and Recenter in the pause. They check that the presenter's
+  diorama at 25% of its scale, held by `--xr-pause`, with two-hand
+  scaling to the 400% limit and back to 25%, Monado's recentring (no
+  scaling under way: a recentring ends one) and Recenter in the pause.
+  They check that the presenter's
   head is the logged pose's turn from the seat, that with it taken off
   every effect holds still while the game does (the head applied once),
-  and the rest the Binaural section lists; both runs' RAM at game frame
-  1 200 is `xem-headless`'s for the same log.
+  that the session's end leaves the presenter no head and no listener's
+  view (the `exit` line's `binaural=`), and the rest the Binaural section
+  lists; both runs' RAM at game frame 1 200 is `xem-headless`'s for the
+  same log.
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs

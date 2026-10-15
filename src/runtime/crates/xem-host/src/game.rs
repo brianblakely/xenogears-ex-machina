@@ -496,7 +496,8 @@ impl Game {
     }
 
     /// The headset's head in the presentation's reference space, for the
-    /// Binaural mode (none: tracking lost, the last stays).
+    /// Binaural mode (none: no head, out of a headset; a host that loses
+    /// tracking keeps the last by not calling).
     pub fn set_head(&mut self, axes: Option<[[f32; 3]; 3]>) {
         self.session.set_head(axes);
     }
