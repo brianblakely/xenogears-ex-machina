@@ -166,9 +166,10 @@ input. `xem-headless --control` adds `screenshot {path}` and `vram {path}`
 (PNG files), `display` (where the display shows VRAM) and `reveal_frames
 {count, reach: [x, y], pull_back, around}`: frames drawn as a view wider or
 pulled back draws them, the draw trace asking the port for the faces the
-game culls, answered with the primitives traced, how many were culled
-faces and an FNV-1a digest of those (presentation only: the RAM goes on as
-without; [State interchange](#state-interchange)).
+game culls, answered with the primitives traced in them (the first frame's
+too), how many were culled faces and an FNV-1a digest of those (their
+shapes and screen points in the order traced; presentation only: the RAM
+goes on as without; [State interchange](#state-interchange)).
 
 - **Introspection.** `tools/game_schema.py` compiles every unit again with
   debug information and writes `build/game/schema.json`: each global the C
@@ -1727,7 +1728,10 @@ also plays 120 frames of Lahan through `xem-headless --control`'s
 `reveal_frames` (the trace asking for the faces a 16:9 framing's view
 pulled back by 3 000 depth units would show, with no renderer): 54 516
 culled faces revealed against 11 564 without the pull-back here, and the
-RAM hash of plain frames either way.
+RAM hash of plain frames either way; the game's own primitives traced in
+those 120 frames (23 538, the traced less the revealed) are as many as in
+120 calls of one frame each, each call's trace starting anew, so the
+first frame a trace plays counts too, and those calls end at the same RAM.
 
 **Presentation and the whole state.** Presenting leaves the game's state
 as it is, but a whole state (`Session::snapshot_bytes`) also holds the
@@ -4445,13 +4449,15 @@ the system's "isn't responding" dialogs on its AVD (on a loaded host one
 took its taps). Logs, and each stage's result and time: `build/suite/`.
 Measured here (16 threads, warm builds): `full` 723 s with every stage
 passing (709 s before CI's checks joined it), where the same stages run
-one after another took about 26 minutes; `desktop` 114 s; `android` 902 s
-after a change to the translation's compiler flags (the APK's build of
-both libraries, 149 s, and the arm64 stage, 417 s, each compiling the
-translation again, beside the emulator's boot, 25 s; then the emulator's
-smoke, 254 s, and the smoke's game with the arm64-v8a library, 210 s,
-which boots the emulator again), and 500 s with an up-to-date x86_64 APK
-before that second smoke and the arm64-v8a library's build joined it.
+one after another took about 26 minutes; `desktop` 114 s; `android` 741 s
+with an up-to-date APK (the arm64 stage, 258 s with the world map's
+reveals, beside the emulator's boot, 22 s; then the emulator's smoke,
+239 s, and the smoke's game with the arm64-v8a library, 223 s, which
+boots the emulator again), 902 s after a change to the translation's
+compiler flags (the APK's build of both libraries, 149 s, and the arm64
+stage, 417 s, each compiling the translation again), and 500 s with an
+up-to-date x86_64 APK before that second smoke and the arm64-v8a
+library's build joined it.
 
 ## Saves and time controls
 
@@ -4937,7 +4943,7 @@ states where they hold:
 | the slice's session logs | headless on arm64 (`aarch64-linux-android` under `qemu-aarch64`) | the forest route, the save and that card's loads as card 1 and as card 2 to their recorded hashes, each ending in the native end state byte for byte | `arm64-smoke.sh` |
 | headless | headless on arm64 | the forest route's state in its battle (frame 7000) to the route's end state | `arm64-smoke.sh` |
 | headless on arm64 | headless | that state, byte for byte the native one, to the route's end state | `arm64-smoke.sh` |
-| Lahan drawn pulled back and wider (`reveal_frames`) | headless on arm64 | 600 frames: the same culled faces revealed (their number and digest), the RAM and the whole state as natively | `arm64-smoke.sh` |
+| Lahan and the world map drawn pulled back and wider (`reveal_frames`) | headless on arm64 | 600 and 300 frames: the same culled faces revealed (their number and digest; the world map's clouds among them), the RAM and the whole state as natively | `arm64-smoke.sh` |
 | headless | Android's arm64-v8a library (the x86_64 emulator's ARM translation) | Load state (F8) of `files/state.xemstate`, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
 | Android's arm64-v8a library | headless | Save state (F5), pulled: byte for byte, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
 | a session booted from disc 2 | a session booted from disc 1 | the same hash | `xem-headless/tests/discs.rs` |
@@ -5009,22 +5015,29 @@ natively, each in the same state on both byte for byte, and the save's
 card 2 is the native one byte for byte; the forest route's state in its
 battle at frame 7000 is the same on both byte for byte, and each goes on
 in a fresh session on the other to the route's end state. Lahan (field 1)
-drawn for 600 frames as a 16:9 framing with the camera pulled back by
-3 000 depth units would draw it (`xem-headless --control`'s
-`reveal_frames`, reaching 85 by 32 pixels beyond the screen: the draw
-trace asks the port for the faces the game culls, which it judges on the
-pulled-back camera's screen in floating point, the game module's only
-floating point) reveals the same 276 276 culled faces among 393 894
-primitives on both (the same FNV-1a digest of their packets, shapes and
-screen points), to the same RAM and whole state byte for byte. Those
-tests (`xem_present_face_visible`, `xem_present_points_visible`) round each
-product, sum and quotient on its own, as wasm's do, in every build here
-(`-ffp-contract=off`: [The game module](#the-game-module); `llvm-objdump`
-lists no fused multiply-add in them in the static build or in the APK's
-`libmain.so`, nor `objdump` in GCC's x86_64 build). It took 4 min 32 s here alone (the reveals 30 s under
-qemu, 3 s natively) and 256 s in the android tier, with the runs under
-qemu side by side at 54 to 82 frames a second (native `xem-headless` 393
-to 683). With
+drawn for 600 frames and the world map for 300 as a 16:9 framing with the
+camera pulled back by 3 000 depth units would draw them (`xem-headless
+--control`'s `reveal_frames`, reaching 85 by 32 pixels beyond the screen:
+the draw trace asks the port for the faces the game culls, which it
+judges on the pulled-back camera's screen in floating point, the game
+module's only floating point) reveal the same culled faces on both,
+Lahan's 276 276 among 393 894 primitives and the world map's 554 585
+among 673 614 (the same FNV-1a digests of their shapes and screen
+points), to the same RAM and whole state byte for byte. The port judges
+Lahan's culled scenery by `xem_present_face_visible` alone, the world
+map's terrain by it too and the world map's cloud quads by
+`xem_present_points_visible`, which nothing else calls
+(`src/port/worldmap_present.c`): gdb's breakpoints on the two in the
+native build counted 182 084 calls of the first and none of the second in
+100 such frames of Lahan, and 791 112 and 49 158 in the world map's 300.
+Those two functions round each product, sum and quotient on its own, as
+wasm's do, in every build here (`-ffp-contract=off`: [The game
+module](#the-game-module); `llvm-objdump` lists no fused multiply-add in
+them in the static build or in the APK's `libmain.so`, nor `objdump` in
+GCC's x86_64 build). It took 258 s in the
+android tier (the reveals 30 s for Lahan and 40 s for the world map under
+qemu, 3 s each natively), with the runs under qemu side by side at 67 to
+80 frames a second (native `xem-headless` 435 to 656). With
 `XEM_SMOKE_ABI=arm64-v8a`, `android-smoke.sh` installs the APK's
 arm64-v8a library (`adb install --abi arm64-v8a`), which the emulator's
 x86_64 image runs through its ARM translation
@@ -5041,9 +5054,10 @@ rounds, Hold to rewind and Save and Load state by touch pass as with the
 x86_64 library, `xem-headless`'s field 30 state loaded by F8 plays to
 `24a65171efb8d70b` at frame 2510 as natively, and the state F5 saves
 there is `xem-headless`'s byte for byte (2 681 637 bytes) and goes on
-natively to `b88b373fd2986cc2`, as the native state's own: 210 s in the
-android tier, the emulator's boot among them. The refusals in the table above
-are `xem-core/tests/persistence.rs`'s (a stand-in game, no local inputs),
+natively to `b88b373fd2986cc2`, as the native state's own: 210 and 223 s
+in two runs of the android tier, the emulator's boot among them. The
+refusals in the table above are `xem-core/tests/persistence.rs`'s (a
+stand-in game, no local inputs),
 word for word: each damaged or foreign state, an older SPU device record,
 another GPU record and the drive's disc.
 
@@ -5054,7 +5068,15 @@ and the APK's arm64-v8a library by the Android emulator's ARM translation
 the smoke's game section (the synthetic disc, rotation, activity
 recreation and restart run with the x86_64 library) under the default
 graphics, which ask for no reveals, so the APK's floating point has run
-only as the static build's, compiled to the same instructions; Horizon OS's
+only as the static build's, compiled to the same instructions; no Linux
+arm64 build (`aarch64-unknown-linux-gnu`, GCC and glibc, as an arm64
+desktop or OpenXR host would be built) of `xem-headless` or of the
+desktop and OpenXR hosts has been made or run: every arm64 program built
+here is the NDK clang's, for Android, and what `-ffp-contract=off`
+guards against in GCC's code has been checked only by compiling the part
+of the translation that holds both floating-point functions
+(`game_15.c`) with the pinned nixpkgs' cross GCC and reading its
+disassembly; Horizon OS's
 OpenXR and the Android host's headset loop have not run (Monado stands in
 for OpenXR; the emulator has no OpenXR runtime); Windows and macOS hosts
 are not built here; states are compared between hosts with the same host
@@ -7068,8 +7090,8 @@ In `nix develop path:./nix/runtime#android`:
   (unless `XEM_SKIP_BUILD=1`) and installs the APK's arm64-v8a library
   instead (`adb install --abi`), which the AVD's x86_64 image runs through
   its ARM translation; the start checks the package's ABI and the
-  translation's arm64 linker in the app's process (the x86_64 run: its
-  absence).
+  translation's arm64 linker and arm64 system libraries in the app's
+  process (the x86_64 run: the linker's absence).
   The suite's android tier runs the whole smoke with the x86_64 library,
   then its game section with the arm64-v8a one. The game module must be built first
   (`python3 tools/game_module.py --stubs` in the default shell).
@@ -7079,9 +7101,9 @@ In `nix develop path:./nix/runtime#android`:
   user's disc 1, plays the slice's session logs under the shell's
   `qemu-aarch64` and with `xem-headless` (`XEM_HEADLESS`, else the suite's
   build), comparing their hashes, states and the save's card, and draws
-  Lahan pulled back (`reveal_frames`), comparing the culled faces revealed
-  ([State interchange](#state-interchange); inputs, replies and states in
-  `build/arm64`)
+  Lahan and the world map pulled back (`reveal_frames`), comparing the
+  culled faces revealed ([State interchange](#state-interchange); inputs,
+  replies and states in `build/arm64`)
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
   shared crates alone (Slint compiles its FemtoVG module out on Android, so
   `xem-ui` takes the renderer from `i-slint-renderer-femtovg` there)

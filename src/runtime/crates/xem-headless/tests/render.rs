@@ -14,8 +14,8 @@
 //! differs within it is the port's presentation bookkeeping, gone two
 //! frames on from the same presentation records but for dead stack that
 //! nothing reads. `xem-headless --control`'s `reveal_frames` (Lahan drawn
-//! wider and pulled back) reveals culled faces and leaves the RAM as plain
-//! frames do.
+//! wider and pulled back) counts every frame it plays, reveals culled faces
+//! and leaves the RAM as plain frames do.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test render
 
@@ -884,18 +884,21 @@ fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
 /// `xem-headless --control`'s `reveal_frames`, whose answer arm64-smoke.sh
 /// compares under qemu with the native one: Lahan drawn as a wider framing
 /// with the camera pulled back reveals faces the game culls, more than
-/// without the pull-back (the port's floating point judges those), and the
-/// RAM goes on as plain frames leave it.
+/// without the pull-back (the port's floating point judges those); every
+/// frame it plays counts, the first too (120 frames in one call trace as
+/// many of the game's own primitives as 120 calls of one frame each, each
+/// call's trace starting anew); and the RAM goes on as plain frames leave
+/// it.
 #[test]
-fn reveal_frames_reveals_more_culled_faces_pulled_back_and_leaves_the_ram_as_plain_frames_do() {
+fn reveal_frames_counts_every_frame_reveals_more_culled_faces_pulled_back_and_leaves_the_ram_as_plain_frames_do() {
     use std::io::Write as _;
     use std::process::{Command, Stdio};
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    // The answers to Lahan's entry, 300 frames, `frames` and the RAM hash.
-    let play = |frames: serde_json::Value| -> Vec<serde_json::Value> {
+    // The answers to Lahan's entry, 300 frames, `then` and the RAM hash.
+    let play = |then: Vec<serde_json::Value>| -> Vec<serde_json::Value> {
         let mut child = Command::new(env!("CARGO_BIN_EXE_xem-headless"))
             .args(["--control", "--disc"])
             .arg(&disc)
@@ -905,7 +908,8 @@ fn reveal_frames_reveals_more_culled_faces_pulled_back_and_leaves_the_ram_as_pla
             .spawn()
             .expect("xem-headless");
         let mut stdin = child.stdin.take().unwrap();
-        for command in [json!({"cmd": "enter_field", "map": 1}), json!({"cmd": "frames", "count": 300}), frames, json!({"cmd": "memory_hash"})] {
+        let entry = [json!({"cmd": "enter_field", "map": 1}), json!({"cmd": "frames", "count": 300})];
+        for command in entry.into_iter().chain(then).chain([json!({"cmd": "memory_hash"})]) {
             writeln!(stdin, "{command}").unwrap();
         }
         drop(stdin);
@@ -913,17 +917,32 @@ fn reveal_frames_reveals_more_culled_faces_pulled_back_and_leaves_the_ram_as_pla
         assert!(output.status.success(), "xem-headless failed");
         String::from_utf8(output.stdout).unwrap().lines().map(|line| serde_json::from_str(line).unwrap()).collect()
     };
-    let pulled_back = play(json!({"cmd": "reveal_frames", "count": 120, "reach": [85, 32], "pull_back": 3000}));
-    let wider = play(json!({"cmd": "reveal_frames", "count": 120, "reach": [85, 32]}));
-    let plain = play(json!({"cmd": "frames", "count": 120}));
+    let pulled_back = play(vec![json!({"cmd": "reveal_frames", "count": 120, "reach": [85, 32], "pull_back": 3000})]);
+    let wider = play(vec![json!({"cmd": "reveal_frames", "count": 120, "reach": [85, 32]})]);
+    let plain = play(vec![json!({"cmd": "frames", "count": 120})]);
+    // The default count, one frame, 120 times.
+    let one_by_one = play(vec![json!({"cmd": "reveal_frames", "reach": [85, 32], "pull_back": 3000}); 120]);
     let revealed = |answers: &[serde_json::Value]| {
         assert_eq!(answers[2]["frames"], 120, "{}", answers[2]);
         assert!(answers[2]["drawn"].as_u64() > answers[2]["revealed"].as_u64(), "{}", answers[2]);
         answers[2]["revealed"].as_u64().unwrap()
     };
     let (far, near) = (revealed(&pulled_back), revealed(&wider));
-    eprintln!("Lahan, 120 frames: {far} culled faces revealed pulled back, {near} without; RAM {}", plain[3].as_str().unwrap_or("?"));
+    // The game's own primitives, those traced less the culled faces: what
+    // the GPU drew, whenever the trace started.
+    let own = |answer: &serde_json::Value| answer["drawn"].as_u64().unwrap() - answer["revealed"].as_u64().unwrap();
+    let singles = &one_by_one[2..122];
+    assert!(singles.iter().all(|answer| answer["frames"] == 1), "{singles:?}");
+    let (whole, each) = (own(&pulled_back[2]), singles.iter().map(own).sum::<u64>());
+    let ram = |answers: &[serde_json::Value]| answers.last().cloned().unwrap();
+    eprintln!(
+        "Lahan, 120 frames: {far} culled faces revealed pulled back, {near} without; the game's own primitives {whole}, \
+         {each} a frame a call; RAM {}",
+        ram(&plain)
+    );
     assert!(near > 0 && far > 2 * near, "culled faces revealed: {far} pulled back, {near} without");
-    assert_eq!(pulled_back[3], plain[3], "the RAM after reveal_frames pulled back is that of plain frames");
-    assert_eq!(wider[3], plain[3], "the RAM after reveal_frames is that of plain frames");
+    assert!(each > 0 && each == whole, "the game's own primitives in 120 frames: {whole} in one call, {each} in 120 calls of one");
+    assert_eq!(ram(&pulled_back), ram(&plain), "the RAM after reveal_frames pulled back is that of plain frames");
+    assert_eq!(ram(&wider), ram(&plain), "the RAM after reveal_frames is that of plain frames");
+    assert_eq!(ram(&one_by_one), ram(&plain), "the RAM after reveal_frames a frame at a time is that of plain frames");
 }

@@ -268,9 +268,10 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
 /// after each frame and off again at the end. Presentation only: the game's
 /// RAM goes on as without it. For a camera pulled back the port judges each
 /// culled face on that camera's screen in floating point, the game module's
-/// only floating point. Answers the frames played, the primitives traced,
-/// how many of them are faces the game culled, and an FNV-1a digest of
-/// those (each one's packet, shape and screen points), or the trap.
+/// only floating point. Answers the frames played, the primitives traced in
+/// them, how many of those are faces the game culled, and an FNV-1a digest
+/// of those (each one's shape and screen points, in the order traced), or
+/// the trap.
 #[cfg(has_game_module)]
 fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule>, command: &serde_json::Value) -> serde_json::Value {
     let number = |value: &serde_json::Value, limit: u64| value.as_u64().unwrap_or(0).min(limit);
@@ -282,6 +283,10 @@ fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule
     let device = session.runtime.services().gpu.device_mut();
     device.set_trace(true);
     device.set_reveals(Some(reveals));
+    // A trace's first take is the whole VRAM it starts from, in place of
+    // what was traced before it: taken before the first frame, so that
+    // frame's primitives are counted too.
+    device.take_trace();
     let (mut frames, mut drawn, mut revealed, mut digest) = (0u64, 0u64, 0u64, 0xCBF2_9CE4_8422_2325u64);
     let mut trap = None;
     for _ in 0..command["count"].as_u64().unwrap_or(1) {
@@ -300,8 +305,10 @@ fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule
                 continue;
             }
             revealed += 1;
+            // Its shape and screen points (a culled face, never sent to the
+            // GPU, comes from no packet: its source is always 0).
             let points = primitive.vertices.iter().flat_map(|v| [v.x as u32, v.y as u32]);
-            for word in [primitive.source, primitive.shape as u32].into_iter().chain(points) {
+            for word in [primitive.shape as u32].into_iter().chain(points) {
                 for byte in word.to_le_bytes() {
                     digest = (digest ^ u64::from(byte)).wrapping_mul(0x0100_0000_01B3);
                 }

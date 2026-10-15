@@ -217,6 +217,7 @@ if [ "$abi" = x86_64 ]; then
     echo "  the app runs its x86_64 library"
 else
     grep -q '/system/bin/arm64/linker64' "$out/maps.txt" || fail "the app's process runs no arm64 code through the ARM translation"
+    [ "$translated" -gt 0 ] || fail "the app's process maps the ARM translation's linker but none of its arm64 system libraries"
     echo "  the app runs its $installed library through the ARM translation ($translated of its arm64 system libraries mapped)"
 fi
 
@@ -369,10 +370,10 @@ PY
     wait_for "xem: disc picker opened" 60
     pick_document disc1 "xem-disc1\.chd"
     wait_for "xem: disc identified source=content://.*boot=SLUS_006\.64;1 sha256=dc0b2dd7[0-9a-f]* disc=Xenogears disc 1 \(SLUS-00664\)" 180
-    booted=$(wait_for "xem: game booted source=content://.*boot=SLUS_006\.64;1" 60)
-    echo "$booted"
-    [[ $booted == *"audio=stream opened"* ]] || fail "no audio stream for the game"
-    [[ $booted == *" font=bios "* ]] || fail "the boot did not take the stored BIOS image's font"
+    game_booted=$(wait_for "xem: game booted source=content://.*boot=SLUS_006\.64;1" 60)
+    echo "$game_booted"
+    [[ $game_booted == *"audio=stream opened"* ]] || fail "no audio stream for the game"
+    [[ $game_booted == *" font=bios "* ]] || fail "the boot did not take the stored BIOS image's font"
     # Later boots (the slice's) without it, as natively.
     "${adb[@]}" shell run-as "$package" rm files/bios.bin
     wait_for "xem: frame rendered .*game_vblank=" 60
