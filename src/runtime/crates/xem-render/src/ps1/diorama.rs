@@ -59,7 +59,6 @@ use super::{
     Stream, Vertex, bind_group, color, effective_class, fill_color, overlap, pass_options, picture_usage, samples, scene_offset, scissor_rect,
     texture, upload,
 };
-use crate::{Compositor, Quad, Rect, ViewTarget};
 use glam::{DMat3, DVec3, Mat3, Mat4, Vec2, Vec3};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -72,6 +71,17 @@ pub enum XrView {
     #[default]
     Screen,
     Diorama(Table),
+}
+
+/// A headset eye the diorama is drawn for
+/// ([`super::GameView::present_diorama`]): from the room through `view`
+/// (the room to the eye) and `proj` (the eye to wgpu's clip space), into a
+/// picture of `size` pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DioramaEye {
+    pub view: Mat4,
+    pub proj: Mat4,
+    pub size: (u32, u32),
 }
 
 /// How the table turns with the game's camera (fields and the world map;
@@ -263,16 +273,24 @@ impl DioramaSpace {
 
 /// What a diorama presentation shows ([`super::GameView::present_diorama`]).
 pub struct DioramaPresented<'a> {
-    /// The flat screen's share of the view: 0 the diorama alone (drawn into
-    /// the eyes), 1 the screen alone, easing between them.
+    /// The flat screen's share of the view: 0 the diorama alone, 1 the
+    /// screen alone, easing between them.
     pub screen: f32,
     /// The flat frame for the screen, while it shows (`screen > 0`): an
     /// `Rgba8Unorm` texture of sRGB-encoded values, as
     /// [`super::GameView::present`] gives it.
     pub frame: Option<super::Presented<'a>>,
+    /// Each eye's picture of the diorama, while it shows (one per
+    /// [`DioramaEye`], at its size: `Rgba8Unorm`, premultiplied, sRGB-encoded
+    /// values, transparent around the scene): for the host to draw over its
+    /// eye's whole view at `opacity`, over the screen and under the pane.
+    pub eyes: Vec<&'a wgpu::TextureView>,
+    /// The eyes' pictures' opacity: one minus `screen`, dimmed briefly after
+    /// the table jumped (a cut or a snap).
+    pub opacity: f32,
     /// The game's interface on a transparent pane (premultiplied,
     /// sRGB-encoded values; where it goes: `space`), while the diorama shows:
-    /// for the host to draw at one minus `screen`, as the eyes' pictures are.
+    /// for the host to draw at one minus `screen`.
     pub pane: Option<&'a wgpu::TextureView>,
     /// Where the diorama lies in the room, while it shows.
     pub space: Option<DioramaSpace>,
@@ -915,7 +933,6 @@ struct Targets {
     built: Option<Built>,
     eyes: Vec<Target>,
     pane: Option<Target>,
-    compositor: Option<Compositor>,
 }
 
 impl Targets {
@@ -929,7 +946,6 @@ impl Targets {
             built: None,
             eyes: Vec::new(),
             pane: None,
-            compositor: None,
         }
     }
 
@@ -1210,13 +1226,14 @@ impl Diorama {
         }
     }
 
-    /// Draws a diorama into `eyes` (each from the room through its view and
-    /// projection, into its target's viewport), over what they hold, at
-    /// `opacity`; `seat` is the seat's pose in the room. With `shown` (the
-    /// frame shown, its display area, the scene that drew it and whether it
-    /// is a new game frame), the frame shown's (built once a game frame);
-    /// without, the last build (held, or fading out). False when there is
-    /// nothing to draw.
+    /// Draws a diorama for `eyes` (each from the room through its view and
+    /// projection) into a picture of each eye's own (cleared to nothing
+    /// first: [`Diorama::eyes`]), and the pane; `seat` is the seat's pose in
+    /// the room. With `shown` (the frame shown, its display area, the scene
+    /// that drew it and whether it is a new game frame), the frame shown's
+    /// (built once a game frame); without, the last build (held, or fading
+    /// out). Returns the opacity to draw the eyes' pictures at (`opacity`,
+    /// dimmed briefly after a jump); `None` when there is nothing to draw.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn present(
         &mut self,
@@ -1226,17 +1243,17 @@ impl Diorama {
         renderer: &mut Ps1Renderer,
         shown: Option<(&FrameRenderer, DisplayArea, &str, bool)>,
         now: f64,
-        eyes: &[ViewTarget],
+        eyes: &[DioramaEye],
         seat: Mat4,
         table: &Table,
         opacity: f32,
-    ) -> bool {
+    ) -> Option<f32> {
         let gpu = self.gpu.get_or_insert_with(|| Targets::new(device));
         if let Some((frame, area, scene, new_frame)) = shown {
-            let (Some(camera), Some(start)) = (frame.camera(), frame.snapshot().cloned()) else { return false };
+            let (Some(camera), Some(start)) = (frame.camera(), frame.snapshot().cloned()) else { return None };
             let ops = frame.newest();
             let h = projection_distance(ops, scene_offset(ops)).unwrap_or(256.0);
-            let Some(placed) = self.placement.update(&camera, h, scene, new_frame, now, table) else { return false };
+            let placed = self.placement.update(&camera, h, scene, new_frame, now, table)?;
             let identity = (frame.identity(), frame.drawn());
             let rebuild = gpu.built.as_ref().is_none_or(|built| {
                 built.identity != identity || built.area != area || wrap(built.heading - placed.heading).abs() > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
@@ -1249,7 +1266,7 @@ impl Diorama {
                 let Some((commands, stats)) = gpu.build(device, queue, &options, ops, &camera, &placed, area) else {
                     // (Its buffers hold the last build no longer.)
                     gpu.built = None;
-                    return false;
+                    return None;
                 };
                 self.stats = DioramaStats { builds: self.stats.builds + 1, ..stats };
                 let writes = ops.iter().filter(|op| matches!(op, TraceOp::Write { .. })).cloned().collect();
@@ -1258,14 +1275,14 @@ impl Diorama {
                 built.placed = placed;
             }
         }
-        let Some(built) = &gpu.built else { return false };
+        let built = gpu.built.as_ref()?;
         let placed = built.placed;
         let room_from_table = table.room_from_table(seat);
         let world_from_room = (room_from_table * placed.table_from_world).inverse();
-        // The targets: one per eye at its viewport's size, and the pane at
-        // the picture's scale.
+        // The targets: one per eye at its size, and the pane at the
+        // picture's scale.
         let layout = &renderer.pipelines.layout;
-        let sizes: Vec<(u32, u32)> = eyes.iter().map(|eye| (eye.viewport.width.round().max(1.0) as u32, eye.viewport.height.round().max(1.0) as u32)).collect();
+        let sizes: Vec<(u32, u32)> = eyes.iter().map(|eye| (eye.size.0.max(1), eye.size.1.max(1))).collect();
         if gpu.eyes.len() != sizes.len() || gpu.eyes.iter().zip(&sizes).any(|(eye, size)| eye.size != *size) {
             gpu.eyes = sizes.iter().map(|&size| Target::new(device, layout, &gpu.vram.texture, &gpu.capture, size)).collect();
         }
@@ -1312,28 +1329,16 @@ impl Diorama {
             target.clear(encoder);
         }
         encode(device, &mut renderer.pipelines, encoder, gpu.vertices.buffer(), gpu.staging.buffer(), &gpu.vram.texture, &gpu.eyes, pane, (origin, scale), &built.commands);
-        // The eyes' pictures over the targets, dimmed briefly after a jump.
-        let dim = self.placement.dim(now);
-        if let Some(format) = eyes.first().map(|eye| eye.target.texture().format()) {
-            if gpu.compositor.as_ref().is_none_or(|compositor| compositor.format() != format) {
-                gpu.compositor = Some(Compositor::new(device, queue, format));
-            }
-            let quads: Vec<[Quad; 1]> = eyes.iter().zip(&gpu.eyes).map(|(eye, target)| {
-                let size = eye.target.texture().size();
-                let rect = Rect { x: eye.viewport.x, y: eye.viewport.y, width: eye.viewport.width, height: eye.viewport.height };
-                let mut quad = Quad::screen(&target.view, rect, (size.width, size.height));
-                quad.filter = wgpu::FilterMode::Nearest;
-                quad.opacity = opacity * (1.0 - DIM_DEPTH * dim);
-                quad.srgb_encoded = true;
-                [quad]
-            }).collect();
-            let targets: Vec<_> = eyes.iter().zip(&quads).map(|(eye, quad)| (eye.target, None, &quad[..])).collect();
-            gpu.compositor.as_mut().expect("made above").draw_targets(encoder, &targets);
-        }
         // The pane floats above the table's far edge, facing the seat.
         let display = Vec2::new(built.area.width as f32, built.area.height as f32);
         self.space = Some(DioramaSpace::of(&placed, &built.camera, display, table, seat));
-        true
+        // The eyes' pictures are drawn faded, dimmed briefly after a jump.
+        Some(opacity * (1.0 - DIM_DEPTH * self.placement.dim(now)))
+    }
+
+    /// Each eye's picture the last [`Diorama::present`] drew.
+    pub(crate) fn eyes(&self) -> Vec<&wgpu::TextureView> {
+        self.gpu.as_ref().map_or_else(Vec::new, |gpu| gpu.eyes.iter().map(|eye| &eye.view).collect())
     }
 
     /// The table takes the camera's point and heading at once at the next
@@ -1349,6 +1354,14 @@ impl Diorama {
     pub(crate) fn hide(&mut self) {
         self.space = None;
         self.screen = 1.0;
+    }
+
+    /// Nothing presented the diorama this time (the host showed something
+    /// else): the screen alone, from which the diorama eases in once
+    /// presented again (not by the time it was away).
+    pub(crate) fn away(&mut self) {
+        self.hide();
+        self.eased = None;
     }
 
     /// The pane the last presentation drew.
@@ -1724,13 +1737,17 @@ mod tests {
 
     #[test]
     fn the_settings_choose_the_screen_or_the_diorama_as_placed() {
-        use xem_settings::{DioramaTurns, HeadsetView, XrScreen};
-        assert_eq!(super::super::xr_view(&XrScreen::default()), XrView::Screen);
+        use xem_settings::{DioramaTurns, Graphics, HeadsetView, Renderer, XrScreen};
+        let with = |xr: XrScreen| super::super::xr_view(&Graphics { xr, ..Graphics::default() });
+        assert_eq!(with(XrScreen::default()), XrView::Screen);
         let xr = XrScreen { view: HeadsetView::Diorama, diorama_scale: 250, diorama_height_cm: -30, diorama_distance_cm: 80, diorama_tilt_deg: 15, diorama_turns: DioramaTurns::Fixed, ..XrScreen::default() };
-        let XrView::Diorama(table) = super::super::xr_view(&xr) else { panic!("a diorama") };
+        let XrView::Diorama(table) = with(xr) else { panic!("a diorama") };
         assert_eq!((table.scale, table.height, table.distance, table.turns), (2.5, -0.3, 0.8, Turns::Fixed));
         assert!((table.tilt - 15f32.to_radians()).abs() < 1e-6);
-        let XrView::Diorama(default) = super::super::xr_view(&XrScreen { view: HeadsetView::Diorama, ..XrScreen::default() }) else { panic!("a diorama") };
+        let XrView::Diorama(default) = with(XrScreen { view: HeadsetView::Diorama, ..XrScreen::default() }) else { panic!("a diorama") };
         assert_eq!(default, Table::default(), "the settings' defaults are the renderer's");
+        // The Original renderer draws no scene of its own: the screen.
+        let original = Graphics { renderer: Renderer::Original, xr, ..Graphics::default() };
+        assert_eq!(super::super::xr_view(&original), XrView::Screen, "no diorama under the Original renderer");
     }
 }

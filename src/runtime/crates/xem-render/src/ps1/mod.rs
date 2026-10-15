@@ -15,7 +15,7 @@ mod frame;
 mod movie;
 mod view;
 
-pub use diorama::{DioramaPresented, DioramaSpace, DioramaStats, Table, Turns, XrView};
+pub use diorama::{DioramaEye, DioramaPresented, DioramaSpace, DioramaStats, Table, Turns, XrView};
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
 pub use frame::{FrameRenderer, Framing, Interface, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
 pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};

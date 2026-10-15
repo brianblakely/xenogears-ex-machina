@@ -157,12 +157,20 @@ impl Review {
         let target = self.target.create_view(&Default::default());
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         let backdrop = xem_render::wgpu::Color { r: 0.06, g: 0.06, b: 0.07, a: 1.0 };
-        self.compositor.draw(&mut encoder, &target, Some(backdrop), &[]);
-        let eyes = [xem_render::ViewTarget { view: self.eye.0, proj: self.eye.1, target: &target, viewport: xem_render::Viewport::full(self.target.width(), self.target.height()) }];
+        let size = (self.target.width(), self.target.height());
+        let eyes = [xem_render::ps1::DioramaEye { view: self.eye.0, proj: self.eye.1, size }];
         let presented = view.present_diorama(&mut encoder, display, scene, now, &eyes, Mat4::IDENTITY);
+        let mut quads = Vec::new();
         if let Some(presented) = &presented {
             let view_proj = self.eye.1 * self.eye.0;
-            let mut quads = Vec::new();
+            // The diorama's picture over the backdrop, then the pane.
+            for picture in &presented.eyes {
+                let mut quad = xem_render::Quad::screen(picture, xem_render::Rect { x: 0.0, y: 0.0, width: size.0 as f32, height: size.1 as f32 }, size);
+                quad.filter = xem_render::wgpu::FilterMode::Nearest;
+                quad.opacity = presented.opacity;
+                quad.srgb_encoded = true;
+                quads.push(quad);
+            }
             if let (Some(pane), Some(space)) = (presented.pane, presented.space) {
                 self.pane = Some(pane.texture().clone());
                 let mut quad = xem_render::Quad::world(pane, view_proj, space.pane, space.pane_size);
@@ -178,8 +186,9 @@ impl Review {
                 quads.push(quad);
             }
             self.screens.push(presented.screen);
-            self.compositor.draw(&mut encoder, &target, None, &quads);
         }
+        self.compositor.draw(&mut encoder, &target, Some(backdrop), &quads);
+        drop(quads);
         let shown = presented.is_some();
         // Whether the frame's camera matrix mirrors its world (its axes'
         // determinant negative), which the table undoes.

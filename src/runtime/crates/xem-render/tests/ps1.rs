@@ -1163,8 +1163,7 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
 // The diorama (docs/runtime.md, Diorama).
 
 use xem_render::glam::{Mat4, Vec3, Vec4};
-use xem_render::ps1::{DioramaSpace, GameView, HostClass, Table, ViewConfig, XrView};
-use xem_render::{ViewTarget, Viewport};
+use xem_render::ps1::{DioramaEye, DioramaSpace, GameView, HostClass, Table, ViewConfig, XrView};
 
 /// The projection (offset 160, 120; H 256) of view-space point `point`, made
 /// for `class` (0 world, 1 model, 2 sprite, 3 a sprite's floor) by `owner`.
@@ -1338,8 +1337,22 @@ fn present_shown(
             ..Default::default()
         });
     }
-    let eye_views: Vec<ViewTarget> = eyes.iter().zip(&views).map(|(&(eye, proj), target)| ViewTarget { view: eye, proj, target, viewport: Viewport::full(size.0, size.1) }).collect();
-    let presented = view.present_diorama(&mut encoder, display, scene, now, &eye_views, Mat4::IDENTITY);
+    let diorama_eyes: Vec<DioramaEye> = eyes.iter().map(|&(eye, proj)| DioramaEye { view: eye, proj, size }).collect();
+    let presented = view.present_diorama(&mut encoder, display, scene, now, &diorama_eyes, Mat4::IDENTITY);
+    // Each eye's picture over its target, as a host draws it.
+    if let Some(presented) = &presented {
+        let whole = xem_render::Rect { x: 0.0, y: 0.0, width: size.0 as f32, height: size.1 as f32 };
+        let quads: Vec<[xem_render::Quad; 1]> = presented.eyes.iter().map(|picture| {
+            let mut quad = xem_render::Quad::screen(picture, whole, size);
+            quad.filter = xem_render::wgpu::FilterMode::Nearest;
+            quad.opacity = presented.opacity;
+            quad.srgb_encoded = true;
+            [quad]
+        }).collect();
+        assert!(quads.is_empty() || quads.len() == views.len(), "a picture for each eye");
+        let passes: Vec<_> = views.iter().zip(&quads).map(|(target, quad)| (target, None, &quad[..])).collect();
+        xem_render::Compositor::new(&gpu.device, &gpu.queue, xem_render::wgpu::TextureFormat::Rgba8Unorm).draw_targets(&mut encoder, &passes);
+    }
     let shown = presented.map(|presented| (presented.screen, presented.pane.map(|pane| pane.texture().clone())));
     gpu.queue.submit([encoder.finish()]);
     let (screen, pane) = shown?;
@@ -1574,6 +1587,38 @@ fn frames_without_a_camera_record_or_in_other_modes_show_the_screen() {
     // The screen view: the screen whatever the frame.
     view.set_xr_view(XrView::Screen);
     assert_eq!(present_diorama(&gpu, &mut view, &eye, (640, 480), 1.6).1, 1.0);
+}
+
+#[test]
+fn the_listener_takes_the_tables_axes_only_while_the_diorama_is_presented() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    let traces = traced(|device| diorama_scene(device, LEVEL));
+    let mut view = diorama_view(&gpu, &traces, Table::default());
+    assert_eq!(view.listener_axes(), None, "nothing presented yet");
+    present_diorama(&gpu, &mut view, &eye, (640, 480), 0.0);
+    assert_eq!(present_diorama(&gpu, &mut view, &eye, (640, 480), 1.0).1, 0.0, "the diorama alone");
+    let space = view.diorama_space().expect("a diorama shown");
+    assert!(space.listener_axes().is_some());
+    assert_eq!(view.listener_axes(), space.listener_axes(), "the seat's axes through the table");
+    // The host shows the device's own picture (a 24-bit movie frame the view
+    // does not draw): the diorama lies nowhere until presented again, and
+    // then eases in from the screen.
+    view.hide_diorama();
+    assert_eq!((view.listener_axes(), view.diorama_space()), (None, None), "no table's axes while it is not presented");
+    let shares: Vec<f32> = [5.0, 5.1, 5.2, 5.4].iter().map(|&now| present_diorama(&gpu, &mut view, &eye, (640, 480), now).1).collect();
+    assert!(shares[0] == 1.0 && shares.windows(2).all(|w| w[1] < w[0]) && shares[3] == 0.0, "eased in from the screen: {shares:?}");
+    assert_eq!(view.listener_axes(), view.diorama_space().and_then(|space| space.listener_axes()));
+    assert!(view.listener_axes().is_some());
+    // The Original renderer draws no scene of its own: the settings give the
+    // screen whatever the headset view, and the listener no table's axes.
+    let original = xem_settings::Graphics {
+        renderer: xem_settings::Renderer::Original,
+        xr: xem_settings::XrScreen { view: xem_settings::HeadsetView::Diorama, ..Default::default() },
+        ..Default::default()
+    };
+    view.set_xr_view(xem_render::ps1::xr_view(&original));
+    assert_eq!((view.listener_axes(), view.diorama_space()), (None, None), "no table's axes under the Original renderer");
 }
 
 /// The game's next frame of [`FIELD`] through the camera `columns`,

@@ -5,7 +5,7 @@ use crate::overlay::{Kind, Mark, Place};
 use crate::touch::Rect;
 use xem_render::glam::{Mat4, Quat, Vec2, Vec3};
 use xem_render::glass::{Icon, State, Widget};
-use xem_render::ps1::Table;
+use xem_render::ps1::{DioramaSpace, Table};
 
 /// The widgets' texture size in pixels.
 pub const WIDGET_PIXELS: u32 = 128;
@@ -26,15 +26,49 @@ pub fn key_scale(distance: f32) -> f32 {
 
 /// Where a headset's HUD (the frame counter, playback activity and state
 /// notices: `hud_px` physical pixels at `scale_factor` per logical pixel)
-/// stands: inside the top left corner of `anchor` (the screen, or the
-/// diorama's pane: its pose, centred, and size in metres), as large against
-/// it as against the default screen, 2 mm in front. Its pose and size.
+/// stands on its screen: inside the top left corner of `anchor` (the
+/// screen's pose, centred, and its size in metres), as large against it as
+/// against the default screen, 2 mm in front. Its pose and size.
 pub fn hud(anchor: Mat4, anchor_size: Vec2, hud_px: (u32, u32), scale_factor: f32) -> (Mat4, Vec2) {
     let unit = anchor_size.x / 640.0 / scale_factor;
     let size = Vec2::new(hud_px.0 as f32 * unit, hud_px.1 as f32 * unit);
     let margin = anchor_size.x / 80.0;
     let at = Vec3::new(-anchor_size.x / 2.0 + size.x / 2.0 + margin, anchor_size.y / 2.0 - size.y / 2.0 - margin, 0.002);
     (anchor * Mat4::from_translation(at), size)
+}
+
+/// The default screen (`xem_settings::XrScreen::default()`): its width and
+/// its distance ahead of the seat (metres).
+const DEFAULT_SCREEN: (f32, f32) = (3.0, 2.5);
+
+/// Where a headset's HUD ([`hud`]) stands beside a diorama (`space`: its
+/// pane, and the seat the table was placed from): inside the pane's top left
+/// corner, as large seen from the seat as the HUD of the default screen
+/// showing the same picture is from there, wherever the table puts the
+/// pane; raised to stand on the pane's lower edge where it is taller than
+/// the pane (that edge is above the table's volume: the HUD stays outside
+/// it); 2 mm in front. Its pose and size.
+pub fn pane_hud(space: &DioramaSpace, hud_px: (u32, u32), scale_factor: f32) -> (Mat4, Vec2) {
+    let (pane, pane_size) = (space.pane, space.pane_size);
+    let seat = space.seat.w_axis.truncate();
+    // The default screen's HUD as seen from its seat: its size over its
+    // distance.
+    let screen = Vec2::new(DEFAULT_SCREEN.0, DEFAULT_SCREEN.0 * pane_size.y / pane_size.x.max(f32::EPSILON));
+    let (on_screen, screen_size) = hud(Mat4::from_translation(Vec3::new(0.0, 0.0, -DEFAULT_SCREEN.1)), screen, hud_px, scale_factor);
+    let seen = screen_size / on_screen.w_axis.truncate().length();
+    let margin = pane_size.x / 80.0;
+    let place = |size: Vec2| {
+        let top = pane_size.y / 2.0 - size.y / 2.0 - margin;
+        let y = top.max(size.y / 2.0 - pane_size.y / 2.0);
+        pane * Mat4::from_translation(Vec3::new(-pane_size.x / 2.0 + size.x / 2.0 + margin, y, 0.002))
+    };
+    // Its size follows its distance, which its size moves a little: a few
+    // steps settle it.
+    let mut size = seen * pane.w_axis.truncate().distance(seat);
+    for _ in 0..4 {
+        size = seen * place(size).w_axis.truncate().distance(seat);
+    }
+    (place(size), size)
 }
 
 /// The settings panel's width (metres) below a headset's screen, and where
@@ -132,12 +166,13 @@ pub fn room(marks: &[Mark], screen: &Screen, keys: &[KeyMark], pad: &[KeyMark]) 
                 Mat4::from_cols((x * 2.0).extend(0.0), (-y * 2.0).extend(0.0), normal.extend(0.0), (at + normal * lift).extend(1.0))
             }
             Place::Floor { point, radius } => {
-                // Across the world's x and z, its top towards the far side,
-                // a few millimetres over the floor.
+                // Across the world's x and z as on the screen (its right
+                // along the world's x, its top along its z), facing up, a
+                // few millimetres over the floor.
                 let room = screen.diorama?.room_from_world;
                 let at = room.transform_point3(Vec3::new(point.x, point.y, point.z));
                 let x = room.transform_vector3(Vec3::new(radius, 0.0, 0.0));
-                let z = room.transform_vector3(Vec3::new(0.0, 0.0, -radius));
+                let z = room.transform_vector3(Vec3::new(0.0, 0.0, radius));
                 let up = room.transform_vector3(Vec3::NEG_Y).normalize_or_zero();
                 Mat4::from_cols((x * 2.0).extend(0.0), (z * 2.0).extend(0.0), up.extend(0.0), (at + up * FLOOR_LIFT).extend(1.0))
             }
@@ -247,6 +282,12 @@ mod tests {
         // Keys of scale 1 as far as the default screen, as seen from the seat
         // (the screen's own, off its middle, look a little smaller).
         let beside_screen = KEY_SIZE.1 / KEY_DISTANCE;
+        // The HUD (the frame counter's 304x110 logical pixels at twice that)
+        // on the default screen (3 m wide, 2.5 m ahead) showing the picture
+        // the pane shows (320x224), as seen from the seat.
+        let (screen_hud, screen_hud_size) = hud(Mat4::from_translation(Vec3::new(0.0, 0.0, -2.5)), Vec2::new(3.0, 3.0 * 224.0 / 320.0), (608, 220), 2.0);
+        let hud_on_screen = screen_hud_size.y / screen_hud.w_axis.truncate().length();
+        let mut hud_spread = (f32::MAX, 0.0f32);
         let seats = [Mat4::IDENTITY, Mat4::from_rotation_translation(Quat::from_rotation_y(0.8), Vec3::new(0.3, 0.1, -0.2))];
         let mut sizes = Vec::new();
         let mut spread = (f32::MAX, 0.0f32);
@@ -274,12 +315,17 @@ mod tests {
                                     assert!((0.7..1.3).contains(&size), "{case}, {count} keys: {size} as large as beside the screen");
                                 }
                             }
-                            // The HUD inside the pane's corner (the frame counter's
-                            // 304x110 logical pixels at twice that).
-                            let (hud_pose, hud_size) = hud(space.pane, space.pane_size, (608, 220), 2.0);
+                            // The HUD in the pane's corner, as large seen from the
+                            // seat as on the default screen.
+                            let (hud_pose, hud_size) = pane_hud(&space, (608, 220), 2.0);
                             let (_, orientation, position) = hud_pose.to_scale_rotation_translation();
                             let hud = Quad { pose: Pose { position, orientation }, size: (hud_size.x, hud_size.y) };
                             assert!(outside(&hud, table_from_room), "{case}: the HUD");
+                            let size = angular_height(&hud, at) / hud_on_screen;
+                            hud_spread = (hud_spread.0.min(size), hud_spread.1.max(size));
+                            assert!((size - 1.0).abs() < 0.01, "{case}: the HUD {size} as large as on the default screen");
+                            let along = |axis: Vec3| (hud.pose.orientation * axis).dot(pane.quad.pose.orientation * axis);
+                            assert!(along(Vec3::X) > 0.9999 && along(Vec3::Z) > 0.9999, "{case}: the HUD lies on the pane");
                             // Everything beside the pane, laid out at this scale.
                             let beside: Vec<Quad> = side_keys(&pane, 10).into_iter().chain(pad_keys(&pane, 10)).map(|(_, key)| key).chain([hud]).collect();
                             sizes.push(((n, height, distance, tilt), scale, beside, pane.quad));
@@ -292,7 +338,7 @@ mod tests {
                 }
             }
         }
-        eprintln!("keys beside the pane look {:.2}-{:.2} as large as beside the screen", spread.0, spread.1);
+        eprintln!("keys beside the pane look {:.2}-{:.2} as large as beside the screen, the HUD {:.4}-{:.4} as on the default screen", spread.0, spread.1, hud_spread.0, hud_spread.1);
         // The player's scale changes nothing beside the table: the pane, its
         // keys and the HUD stand where and as large as they do at 100%.
         for (place, scale, beside, pane) in &sizes {
@@ -322,6 +368,13 @@ mod tests {
         assert!((pose.z_axis.truncate() - up).length() < 1e-5, "facing up from the floor");
         let across = pose.x_axis.truncate().length();
         assert!((across - 40.0 * space.scale).abs() < 1e-6, "twice the radius across, as the table scales the world: {across}");
+        // Not mirrored: right-handed about the floor's up, as on the screen,
+        // its top along the world's z, which the level camera looks along
+        // (away from the seat: a Jump mark's chevron points where it does on
+        // the screen).
+        let (right, top) = (pose.x_axis.truncate(), pose.y_axis.truncate());
+        assert!(right.cross(top).normalize().dot(up) > 0.999, "facing up, not mirrored: {pose:?}");
+        assert!(top.normalize().dot(Vec3::NEG_Z) > 0.999, "its top away from the seat: {top}");
         // Without a diorama a floor mark has nowhere to lie.
         assert!(room(&marks, &Screen { diorama: None, ..pane }, &[], &[]).is_empty());
     }

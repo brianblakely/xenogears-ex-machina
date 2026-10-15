@@ -8,7 +8,7 @@
 // runtime's own recentring (IWER's, its reference space's `reset`) puts the
 // seat back at the space's origin; the automation's frames end at the same
 // RAM in and out of the headset; and a pinch with the head aimed through
-// the table at a floor point walks Fei there.
+// the table at a floor point heads the walk for it and walks Fei there.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -197,15 +197,26 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
         window.xrDevice.quaternion.set(q[0] * p[1], q[1] * p[0], -q[1] * p[1], q[0] * p[0]);
       }, { room, eye });
       await frames(6);
+      // The walk's target as the session holds it while Fei walks (he runs
+      // there: the walk may be over before the test looks again).
+      await page.evaluate(() => {
+        window.walkTarget = null;
+        window.walkPoll = setInterval(() => {
+          const intent = window.xem.command({ cmd: 'status' }).assist?.intent;
+          if (intent?.kind === 'walk' && !window.walkTarget) window.walkTarget = intent.to;
+        }, 5);
+      });
       await page.evaluate(() => window.xrDevice.hands.right.updatePinchValue(1));
       await frames(3);
       await page.evaluate(() => window.xrDevice.hands.right.updatePinchValue(0));
       await frames(3);
-      // Walking (Fei runs there: it may be over already), then arrived.
+      // Walking, then arrived.
       await page.waitForFunction(() => window.xem.command({ cmd: 'status' }).assist_outcome === 'arrived', null, { timeout: 120_000 });
+      const to = await page.evaluate(() => { clearInterval(window.walkPoll); return window.walkTarget; });
       const field = await page.evaluate(() => window.xem.command({ cmd: 'field' }));
       const fei = field.actors.find((a) => a.index === field.player).position;
-      console.log(`walked to ${JSON.stringify(fei)} for the floor point ${goal}`);
+      console.log(`walked to ${JSON.stringify(fei)}, the walk heading for ${JSON.stringify(to)}, for the floor point ${goal}`);
+      assert.ok(to && Math.hypot(to.x - goal[0], to.z - goal[2]) < 2, `the walk heads for the floor point gazed at: ${JSON.stringify(to)}`);
       assert.ok(Math.hypot(fei.x - goal[0], fei.z - goal[2]) < 16, `Fei stands at the floor point gazed at: ${JSON.stringify(fei)}`);
       assert.deepEqual(page.errors, []);
     } finally {

@@ -6,7 +6,7 @@
 //! inspection) has each of its eyes drawn too, and the game's interface on
 //! a pane of its own ([`GameView::present_headset`]).
 
-use super::diorama::{Diorama, DioramaPresented, Fallback, XrView};
+use super::diorama::{Diorama, DioramaEye, DioramaPresented, Fallback, XrView};
 use super::frame::projection_centre;
 use super::{
     DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Interface, Lighting, Look, Ps1Renderer, Quality,
@@ -80,11 +80,12 @@ pub fn headset_movie_output(width: f32, distance: f32, eye: u32, fov: [f32; 4]) 
 }
 
 /// What a headset shows as the settings choose it (`Graphics::xr`): the
-/// screen, or the diorama on its table as placed there.
-pub fn xr_view(xr: &xem_settings::XrScreen) -> XrView {
+/// screen, or the diorama on its table as placed there. The Original
+/// renderer draws no scene of its own: the screen, whatever the view.
+pub fn xr_view(graphics: &Graphics) -> XrView {
+    let xr = &graphics.xr;
     match xr.view {
-        xem_settings::HeadsetView::Screen => XrView::Screen,
-        xem_settings::HeadsetView::Diorama => XrView::Diorama(super::Table {
+        xem_settings::HeadsetView::Diorama if graphics.renderer == xem_settings::Renderer::ExMachina => XrView::Diorama(super::Table {
             scale: f32::from(xr.diorama_scale) / 100.0,
             height: f32::from(xr.diorama_height_cm) / 100.0,
             distance: f32::from(xr.diorama_distance_cm) / 100.0,
@@ -95,6 +96,7 @@ pub fn xr_view(xr: &xem_settings::XrScreen) -> XrView {
                 xem_settings::DioramaTurns::Fixed => super::Turns::Fixed,
             },
         }),
+        _ => XrView::Screen,
     }
 }
 
@@ -999,20 +1001,19 @@ impl GameView {
 
     /// Presents for a headset (docs/runtime.md, Diorama): draws the pending
     /// trace and, while the view is the diorama and the frame shown can be
-    /// one, the diorama into each of `eyes` (its target's viewport, from the
-    /// room through its view and projection, over what the target holds),
-    /// the table placed from `seat` (its pose in the room, turned about its
-    /// up only). Otherwise, and easing between the two (the last diorama
-    /// fading out as the screen eases in, and back), the flat frame
-    /// `present` gives, for the host to show on its screen. `None` while
-    /// there is nothing to show.
+    /// one, the diorama for each of `eyes` (from the room through its view
+    /// and projection) into a picture of its own, the table placed from
+    /// `seat` (its pose in the room, turned about its up only). Otherwise,
+    /// and easing between the two (the last diorama fading out as the
+    /// screen eases in, and back), the flat frame `present` gives, for the
+    /// host to show on its screen. `None` while there is nothing to show.
     pub fn present_diorama(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         display: &DisplayInfo,
         scene: &str,
         now: f64,
-        eyes: &[crate::ViewTarget],
+        eyes: &[DioramaEye],
         seat: glam::Mat4,
     ) -> Option<DioramaPresented<'_>> {
         let config = self.config?;
@@ -1033,15 +1034,16 @@ impl GameView {
             None => Some(Fallback::Screen),
         };
         let (screen, build) = self.diorama.ease(fallback, new_frame, now);
-        let drew = match table {
+        let opacity = match table {
             Some(table) if screen < 1.0 => {
                 // The frame shown when it can be a diorama, else the last
                 // build, held or fading out.
                 let shown = area.filter(|_| build).map(|area| (&self.main.frame, area, self.scene.as_str(), new_frame));
                 self.diorama.present(&self.device, &self.queue, encoder, &mut self.renderer, shown, now, eyes, seat, &table, 1.0 - screen)
             }
-            _ => false,
+            _ => None,
         };
+        let drew = opacity.is_some();
         if !drew {
             self.diorama.hide();
         }
@@ -1067,11 +1069,22 @@ impl GameView {
         Some(DioramaPresented {
             screen,
             frame: flat.and_then(|flat| self.flat_view(flat)),
+            eyes: if drew { self.diorama.eyes() } else { Vec::new() },
+            opacity: opacity.unwrap_or(0.0),
             pane: if drew { self.diorama.pane() } else { None },
             space: self.diorama.space(),
             new_frame,
             effects_unavailable: drew && config.effects.any(),
         })
+    }
+
+    /// The host shows something other than this view's presentations in a
+    /// headset frame (the device's own picture: the Original renderer, a
+    /// 24-bit movie frame the view does not draw): the diorama gives way to
+    /// the screen at once (and eases in again from it), and lies nowhere (no
+    /// space, no listener's axes) until it is presented again.
+    pub fn hide_diorama(&mut self) {
+        self.diorama.away();
     }
 
     /// The diorama the last [`GameView::present_diorama`] drew: where the

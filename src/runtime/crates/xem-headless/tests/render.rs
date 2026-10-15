@@ -680,17 +680,6 @@ fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
     let (skipped, _) = run(&mut session, &gpu, |_| None, |_| None);
     session.restore_bytes(&start).unwrap();
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-    let target = gpu.device.create_texture(&xem_render::wgpu::TextureDescriptor {
-        label: None,
-        size: xem_render::wgpu::Extent3d { width: 320, height: 240, depth_or_array_layers: 1 },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: xem_render::wgpu::TextureDimension::D2,
-        format: xem_render::wgpu::TextureFormat::Rgba8Unorm,
-        usage: xem_render::wgpu::TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-    let target_view = target.create_view(&Default::default());
     let mut dioramas = 0;
     for n in 0..FRAMES {
         // The scale and the turns change midway, as a player's would.
@@ -709,11 +698,10 @@ fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
         // A head swaying round the table.
         let t = n as f32 / 60.0;
         let head = Vec3::new(0.3 * t.sin(), 0.1 * (2.0 * t).sin(), 0.2 * t.cos());
-        let eyes = [-0.032f32, 0.032].map(|x| xem_render::ViewTarget {
+        let eyes = [-0.032f32, 0.032].map(|x| xem_render::ps1::DioramaEye {
             view: Mat4::look_at_rh(head + Vec3::X * x, Vec3::new(0.0, -0.45, -0.6), Vec3::Y),
             proj: Mat4::perspective_rh(1.6, 4.0 / 3.0, 0.05, 20.0),
-            target: &target_view,
-            viewport: xem_render::Viewport::full(320, 240),
+            size: (320, 240),
         });
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         let shown = view.present_diorama(&mut encoder, &display, &scene, n as f64 / 60.0, &eyes, Mat4::IDENTITY).is_some_and(|presented| presented.screen < 1.0);

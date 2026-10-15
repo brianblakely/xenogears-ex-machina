@@ -27,11 +27,14 @@
 # - the seated diorama (the headset view setting) in field 30: the eyes see
 #   the room on the table in 3D (their disparity grows from the far rows to
 #   the near ones, where the screen's is the same in every row, and each
-#   eye shows its diorama picture in the renderer's colours), Monado's
-#   recentring of LOCAL (`monado-ctl -c`) reaches the session and puts the
-#   seat at LOCAL's origin, the app's Recenter puts it at the head, the
-#   game's RAM is xem-headless's, and a pinch with the gaze through the
-#   table on a floor point walks Fei there.
+#   eye shows its diorama picture in the renderer's colours), the app's
+#   Recenter puts the seat at the head, Monado's recentring of LOCAL
+#   (`monado-ctl -c`) reaches the session and puts the seat back at LOCAL's
+#   origin, the game's RAM is xem-headless's, prayer hands open the
+#   settings panel above the table and a pinch on its Close closes it, and
+#   a pinch with the gaze through the table on a floor point walks Fei
+#   there; in field 12 both eyes show the pane above the table with the
+#   game's dialogue on it, in the pane's colours.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -123,21 +126,26 @@ echo '{"graphics": {"profile": "Modern"}}' >"$out/config/xenogears-ex-machina/se
     --xr-hands "150:inspect,180:pause,195:inspect,210:inspect" --xr-capture "$out/modern" --xr-capture-at 230 >"$out/modern.log" 2>"$out/modern.err"
 # The diorama, with the same log as the inspection run (its RAM checked
 # against the same headless run): both eyes captured at headset frames 150
-# and 250, Monado's recentring once the session has drawn 100 frames, the
-# app's Recenter at 220. Then a pinch through the table at a floor point of
-# field 30 (a world point: the gaze aims where the table shows it).
+# and 250, the app's Recenter at 60, Monado's recentring once the session
+# has drawn 100 frames, the app's Recenter again at 220. Field 12's dialogue
+# on the pane (from about headset frame 90), captured at 120. Then prayer hands
+# at 60 open the settings panel above the table, a pinch on its Close at 90
+# closes it, and a pinch through the table at a floor point of field 30 (a
+# world point: the gaze aims where the table shows it) walks there.
 echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
 (
     for _ in $(seq 600); do grep -q '^xrframe n=100 ' "$out/diorama.log" 2>/dev/null && break; sleep 0.1; done
     monado-ctl -c >"$out/monado-ctl.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl.log"
 ) &
 recentring=$!
-"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-recenter-at 220 \
+"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-recenter-at 60,220 \
     --xr-capture "$out/diorama" --xr-capture-at 150,250 >"$out/diorama.log" 2>"$out/diorama.err"
 wait "$recentring"
+"$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 1000 --xr-capture "$out/field-diorama" --xr-capture-at 120 \
+    >"$out/field-diorama.log" 2>"$out/field-diorama.err"
 echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
-    --xr-hands "150:pinch@world:88.67/0/-55.33" >"$out/diorama-walk.log" 2>"$out/diorama-walk.err"
+    --xr-hands "60:prayer,90:pinch@panel:410/30,150:pinch@world:88.67/0/-55.33" >"$out/diorama-walk.log" 2>"$out/diorama-walk.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -415,28 +423,109 @@ for n in (150, 250):
 flat = disparities(png(f"{out}/field/left.png"), png(f"{out}/field/right.png"))
 check(len(flat) >= 3 and max(s for _, s in flat) - min(s for _, s in flat) <= 1, f"the screen's disparity is not one in every row: {flat}")
 print(f"screen (field 12): disparity by band of rows {flat}")
-# Monado's recentring: the session hears it and the seat is LOCAL's origin
-# from then on; the app's Recenter puts the seat at the head.
+# The app's Recenter at 60 puts the seat at the head; Monado's recentring
+# reaches the session and puts the seat, moved until then, back at LOCAL's
+# origin on the frame it does; the second Recenter at 220 puts it at the
+# head again.
+def place(r):
+    return [float(v) for v in r["seat"].split(";")[0].split(",")], float(r["seat"].split(";")[1])
+def recentred_at(count):
+    r = next((r for r in rows if r["recenters"] == str(count)), None)
+    if r is None:
+        return None, f"no Recenter number {count}"
+    head = [float(v) for v in r["head"].split(";")[0].split(",")]
+    seat, _ = place(r)
+    return r, f"Recenter {count} at frame {r['n']}: seat {seat} for the head {head}" if any(abs(a - b) >= 0.001 for a, b in zip(head, seat)) else None
 events = [l for l in open(f"{out}/diorama.log") if l.startswith("event reference_space_change")]
 check(len(events) >= 1, f"Monado's recentring did not reach the session ({open(f'{out}/monado-ctl.log').read().strip()!r})")
+first, problem = recentred_at(1)
+check(problem is None and first is not None and int(first["n"]) == 60, problem or f"the first Recenter came at {first['n']}, not 60")
 reset = next((r for r in rows if r["resets"] != "0"), None)
-check(reset is not None and reset["seat"].startswith("0.0000,0.0000,0.0000;"), f"the seat after the reference changed: {reset and reset['seat']}")
-recentred = next((r for r in rows if r["recenters"] == "1"), None)
-if recentred:
-    head = [float(v) for v in recentred["head"].split(";")[0].split(",")]
-    seat = [float(v) for v in recentred["seat"].split(";")[0].split(",")]
-    check(int(recentred["n"]) == 220 and all(abs(a - b) < 0.001 for a, b in zip(head, seat)), f"Recenter at frame 220: seat {seat} for the head {head} at {recentred['n']}")
-check(recentred is not None, "the app's Recenter did not run")
-print(f"diorama: shown in {len(shown)} of {len(rows)} headset frames, {len(events)} recentring of LOCAL (seat {reset and reset['seat']}), "
-      f"Recenter at {recentred and recentred['n']} (seat {recentred and recentred['seat']}); RAM {final_hash('diorama.log')}")
+before = by.get(int(reset["n"]) - 1) if reset else None
+if reset and before:
+    (moved, yaw), (back, back_yaw) = place(before), place(reset)
+    check(int(before["recenters"]) == 1 and (max(abs(v) for v in moved) > 0.001 or abs(yaw) > 0.001),
+          f"the seat had not moved before LOCAL's recentring: {before['seat']} at frame {before['n']}")
+    check(max(abs(v) for v in back) < 1e-4 and abs(back_yaw) < 1e-4 and int(reset["n"]) < 220,
+          f"the seat after the reference changed: {reset['seat']} at frame {reset['n']}")
+check(reset is not None and before is not None, "no frame shows the reference's change")
+second, problem = recentred_at(2)
+check(problem is None and second is not None and int(second["n"]) == 220, problem or f"the second Recenter came at {second['n']}, not 220")
+print(f"diorama: shown in {len(shown)} of {len(rows)} headset frames; Recenter at {first and first['n']} (seat {first and first['seat']}), "
+      f"{len(events)} recentring of LOCAL at frame {reset and reset['n']} (seat {before and before['seat']} before, {reset and reset['seat']} after), "
+      f"Recenter at {second and second['n']} (seat {second and second['seat']}); RAM {final_hash('diorama.log')}")
 print(f"diorama pacing: {pace(lambda r: r['diorama'] == '1')}")
-# A pinch through the table walks Fei to the floor point gazed at.
+# Field 12's dialogue on the pane above the table: each eye shows the
+# pane's picture where the pane stands. Each eye pixel's centre is taken
+# through the eye's projection and view onto the pane's plane; where it
+# meets the pane on an opaque texel (the window's frame, text and the
+# portrait: its body is translucent), clear of the texels' edges, the eye
+# shows that texel's colour (the pane is drawn unfiltered over the
+# diorama, at the diorama's share).
+rows = records("field-diorama.log")
+by = {int(r["n"]): r for r in rows}
+line = next((l for l in open(f"{out}/field-diorama.log") if l.startswith("capture pane ")), None)
+check(line is not None, "no capture of the diorama's pane in field 12")
+if line:
+    fields = dict(f.split("=", 1) for f in line.split()[2:])
+    n = int(fields["n"])
+    check(by[n]["diorama"] == "1" and by[n]["share"] == "0.000" and '"dialogue"' in by[n]["context"],
+          f"field 12 at frame {n}: no dialogue on the diorama alone ({by[n]['diorama']}, {by[n]['share']}, {by[n]['context']})")
+    numbers = lambda text: [float(v) for v in text.split(",")]
+    def apply(m, p):
+        # A column-major matrix times a point.
+        return [sum(m[4 * c + r] * p[c] for c in range(4)) for r in range(4)]
+    pose, (pw, ph) = numbers(fields["pose"]), numbers(fields["size"])
+    paw, pah, pane = png(f"{out}/field-diorama/{n}/pane.png")
+    opaque = sum(1 for row in pane for x in range(3, len(row), 4) if row[x] == 255) / (paw * pah)
+    check(opaque > 0.05, f"the pane holds no interface ({opaque:.1%} of it opaque)")
+    origin, across, up = apply(pose, [0, 0, 0, 1]), apply(pose, [1, 0, 0, 0]), apply(pose, [0, 1, 0, 0])
+    for side in ("left", "right"):
+        w, h, eye = png(f"{out}/field-diorama/{n}/{side}.png")
+        vp = numbers(fields[side])
+        c0, cx, cy = apply(vp, origin), apply(vp, across), apply(vp, up)
+        corners = [apply(vp, [origin[k] + (u - 0.5) * pw * across[k] + (0.5 - v) * ph * up[k] for k in range(3)] + [1.0])
+                   for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
+        check(all(c[3] > 0 for c in corners), f"field 12 {side}: the pane is behind the eye")
+        xs = [(c[0] / c[3] + 1) / 2 * w for c in corners if c[3] > 0] or [0]
+        ys = [(1 - c[1] / c[3]) / 2 * h for c in corners if c[3] > 0] or [0]
+        diffs = []
+        for py in range(max(0, int(min(ys))), min(h, int(max(ys)) + 1)):
+            for px in range(max(0, int(min(xs))), min(w, int(max(xs)) + 1)):
+                # Where the pixel's centre meets the pane: a point a across and
+                # b up from its middle (metres), its clip position the pixel's.
+                nx, ny = (px + 0.5) / w * 2 - 1, 1 - (py + 0.5) / h * 2
+                a11, a12, a21, a22 = cx[0] - nx * cx[3], cy[0] - nx * cy[3], cx[1] - ny * cx[3], cy[1] - ny * cy[3]
+                b1, b2 = nx * c0[3] - c0[0], ny * c0[3] - c0[1]
+                det = a11 * a22 - a12 * a21
+                if abs(det) < 1e-12:
+                    continue
+                a, b = (b1 * a22 - a12 * b2) / det, (a11 * b2 - b1 * a21) / det
+                tu, tv = (a / pw + 0.5) * paw, (0.5 - b / ph) * pah
+                if not (0 <= tu < paw and 0 <= tv < pah) or min(tu % 1, 1 - tu % 1, tv % 1, 1 - tv % 1) < 0.05:
+                    continue
+                texel = pane[int(tv)][4 * int(tu):4 * int(tu) + 4]
+                if texel[3] == 255:
+                    diffs.append(max(abs(eye[py][4 * px + k] - texel[k]) for k in range(3)))
+        within = sum(1 for d in diffs if d <= 2) / max(1, len(diffs))
+        check(len(diffs) >= 100 and within >= 0.98, f"field 12 {side}: {within:.1%} of {len(diffs)} eye pixels on the pane's opaque texels show them within 2 levels")
+        print(f"field 12 diorama, {side} eye: the pane ({opaque:.0%} of it opaque) spans {min(xs):.0f}-{max(xs):.0f} x {min(ys):.0f}-{max(ys):.0f}; "
+              f"{within:.1%} of {len(diffs)} pixels on its opaque texels within 2 levels (worst {max(diffs, default=255)})")
+# Prayer hands open the settings panel above the table (its quad layer) and
+# a pinch on its Close closes it, the game held meanwhile; then a pinch
+# through the table walks Fei to the floor point gazed at.
 rows = records("diorama-walk.log")
+panel = [r for r in rows if r["layers"] == "2"]
+opened = [int(r["n"]) for r in panel]
+check(bool(opened) and 60 <= opened[0] <= 80 and opened[-1] < 100 and len(opened) == opened[-1] - opened[0] + 1,
+      f"prayer hands showed the panel above the table and a pinch on Close closed it: shown {opened[:1]}..{opened[-1:]}")
+check(len({r["game_frames"] for r in panel}) == 1, "the game ran while the panel was open")
+check(all(r["diorama"] == "1" for r in panel), "the diorama gave way while the panel was open")
 walked = [r["assist"] for r in rows if int(r["n"]) >= 150]
-pinch = [int(r["n"]) for r in rows if "Pinch" in r["gestures"]]
+pinch = [int(r["n"]) for r in rows if "Pinch" in r["gestures"] and int(r["n"]) >= 150]
 check(bool(pinch) and all(r["diorama"] == "1" for r in rows if int(r["n"]) in pinch), f"the pinch did not come while the diorama showed: {pinch}")
 check("moving" in walked and walked[-1] == "arrived", f"the pinch through the diorama did not walk Fei there: {walked[:5]}..{walked[-3:]}")
-print(f"diorama walk: pinch at {pinch}, {walked[:2]}..{walked[-1:]}")
+print(f"diorama walk: the panel above the table shown {opened[:1]}..{opened[-1:]}; pinch at {pinch}, {walked[:2]}..{walked[-1:]}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))
