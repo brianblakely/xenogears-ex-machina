@@ -7,8 +7,13 @@
 // Recenter puts the table in front of the head turned away, and the
 // runtime's own recentring (IWER's, its reference space's `reset`) puts the
 // seat back at the space's origin; the automation's frames end at the same
-// RAM in and out of the headset; and a pinch with the head aimed through
-// the table at a floor point heads the walk for it and walks Fei there.
+// RAM in and out of the headset; a pinch with the head aimed through the
+// table at a floor point heads the walk for it and walks Fei there; two
+// whole-hand pinches spreading grow the diorama live about its anchor and
+// commit its scale once, the RAM still the flat run's at that scale; and
+// immersive AR (offered: IWER's Quest 3 supports it), asked for with nothing
+// AR-specific, blends by alpha: the layer is transparent where VR shows the
+// room's backdrop and drawn where it shows the diorama (VR's layer opaque).
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -45,15 +50,26 @@ function shift(before, after, reach = 45) {
 /** Whether two rows of RGBA bytes show the same picture (within a few levels). */
 const same = (a, b) => a.reduce((sum, v, i) => sum + (i % 4 === 3 ? 0 : Math.abs(v - b[i])), 0) / (a.length * 3 / 4) <= 6;
 
+/** An init script recording the sessions the page asks for (mode and init). */
+const REQUESTS = `
+window.xrRequests = [];
+{
+  const request = navigator.xr.requestSession.bind(navigator.xr);
+  navigator.xr.requestSession = (mode, init) => {
+    window.xrRequests.push({ mode, init: JSON.parse(JSON.stringify(init ?? {})) });
+    return request(mode, init);
+  };
+}`;
+
 describe('the seated diorama in a headset browser', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
-  test('the table shows in depth, recentres and takes a pinch through it', { timeout: 600_000 }, async () => {
+  test('the table shows in depth, recentres, takes a pinch through it, scales about its anchor and stands in the room in AR', { timeout: 600_000 }, async () => {
     // Field 30 with Fei walked into the room (as xr-game-smoke.sh does).
     const state = join(SHOTS, 'xr-diorama-field30.state');
     execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
         { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL + REQUESTS }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -112,9 +128,13 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
         return heights.map((_, r) => bytes.slice(r * count * 4, (r + 1) * count * 4));
       };
       const rows = await read();
+      assert.ok(rows.every((row) => row.every((v, i) => i % 4 !== 3 || v === 255)), 'in VR the layer is opaque (the context\'s alpha is for AR)');
       await page.screenshot({ path: join(SHOTS, 'xr-diorama.png') });
-      const lit = rows.map((row) => row.filter((_, i) => i % 4 === 0).filter((v, i) => Math.abs(v - 26) + Math.abs(row[4 * i + 1] - 30) + Math.abs(row[4 * i + 2] - 38) > 24).length / count);
-      console.log(`rows covered by the table: ${lit.map((l) => l.toFixed(2))}`);
+      // The room's backdrop: the layer's top left corner, above everything
+      // the view shows (the layer holds the clear's values as they are).
+      const backdrop = Array.from(await page.evaluate((point) => window.xem.xr.readback([point]), [1, layer[1] - 2])).slice(0, 3);
+      const lit = rows.map((row) => Array.from({ length: count }, (_, i) => i).filter((i) => [0, 1, 2].some((k) => Math.abs(row[4 * i + k] - backdrop[k]) > 3)).length / count);
+      console.log(`rows covered by the table (the backdrop ${backdrop}): ${lit.map((l) => l.toFixed(2))}`);
       assert.ok(lit.some((l) => l > 0.5), 'the table fills rows of the view');
 
       // Parallax: the head 10 cm to the right; the table stays in the room,
@@ -218,6 +238,121 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       console.log(`walked to ${JSON.stringify(fei)}, the walk heading for ${JSON.stringify(to)}, for the floor point ${goal}`);
       assert.ok(to && Math.hypot(to.x - goal[0], to.z - goal[2]) < 2, `the walk heads for the floor point gazed at: ${JSON.stringify(to)}`);
       assert.ok(Math.hypot(fei.x - goal[0], fei.z - goal[2]) < 16, `Fei stands at the floor point gazed at: ${JSON.stringify(fei)}`);
+
+      // Two-hand scaling, the game stopped and the head facing the table:
+      // two whole-hand pinches (the hand model's gather pose) spreading from
+      // 20 to 50 cm apart grow the diorama live about its anchor (the
+      // camera's target stays where it stands in the room within a
+      // millimetre while the table's scale grows), a key beside the pane
+      // keeps its width, and the scale shown last becomes the setting once,
+      // as the hands let go; nothing else happens.
+      await page.evaluate(() => window.xem.setRunning(false));
+      await page.evaluate(() => window.xrDevice.quaternion.set(0, 0, 0, 1));
+      await frames(6);
+      const scaling = { pauses: (await status(page)).xr.pauses, pinches: (await status(page)).xr.pinches, revision: (await status(page)).settingsRevision };
+      const at = (x) => page.evaluate((x) => {
+        window.xrDevice.hands.left.position.set(-x, 1.4, -0.3);
+        window.xrDevice.hands.right.position.set(x, 1.4, -0.3);
+      }, x);
+      const shape = (name) => page.evaluate((name) => {
+        window.handModel.set(window.xrDevice, 'left', name);
+        window.handModel.set(window.xrDevice, 'right', name);
+      }, name);
+      await at(0.1);
+      await frames(3);
+      await shape('gather');
+      await frames(3);
+      const seen = [];
+      for (let i = 1; i <= 10; i++) {
+        await at(0.1 + 0.015 * i);
+        await frames(2);
+        seen.push((await status(page)).xr);
+      }
+      await shape('open');
+      await frames(4);
+      info = await status(page);
+      const anchors = seen.map((s) => s.space.anchor);
+      const anchorMoved = Math.max(...anchors.map((a) => Math.hypot(...a.map((v, i) => v - anchors[0][i]))));
+      const tables = seen.map((s) => s.space.scale);
+      console.log(`scaling: shown ${seen.map((s) => s.dioramaScale.toFixed(3))}, the table ${(tables[tables.length - 1] / tables[0]).toFixed(3)} times, `
+        + `the anchor within ${(anchorMoved * 1000).toFixed(4)} mm, keys ${[...new Set(seen.map((s) => s.keyWidth))]} m; committed ${(await page.evaluate(() => window.xem.settings.get())).settings.graphics.xr.diorama_scale}%`);
+      assert.ok(seen.every((s) => s.scaling && s.diorama), `scaling the diorama shown: ${JSON.stringify(seen.map((s) => [s.scaling, s.diorama]))}`);
+      assert.ok(tables[tables.length - 1] / tables[0] > 2 && Math.abs(seen[seen.length - 1].dioramaScale - 2.52) < 0.1, `the table grew live: ${tables}`);
+      assert.ok(anchorMoved < 0.001, `the anchor stays put: ${anchorMoved} m`);
+      assert.equal(new Set(seen.map((s) => s.keyWidth)).size, 1, 'a key beside the pane keeps its width');
+      const committed = (await page.evaluate(() => window.xem.settings.get())).settings.graphics.xr.diorama_scale;
+      assert.equal(committed, Math.round(seen[seen.length - 1].dioramaScale * 100), 'the scale shown last is the setting');
+      assert.equal(info.settingsRevision, scaling.revision + 1, 'committed once');
+      assert.equal(info.xr.scaling, false);
+      assert.deepEqual([info.xr.pauses, info.xr.pinches], [scaling.pauses, scaling.pinches], 'no pause and no pinch');
+      // The automation's frames at the new scale end at the same RAM.
+      await page.evaluate(load, base64);
+      await page.evaluate(() => window.xem.runFrames(120));
+      assert.equal(await page.evaluate(() => window.xem.memoryHash()), flatHash, 'the diorama at 252% changes nothing in the game');
+
+      // Immersive AR, where the browser offers it (IWER's Quest 3 does):
+      // asked for with the same optional features as VR (nothing AR-specific),
+      // its blend mode alpha-blend, the layer transparent where VR showed the
+      // room's backdrop and drawn where it showed the diorama (the same
+      // frame, the game stopped, the head where the session begins, the
+      // table placed at once in both: Recenter in VR, as a new session's
+      // first frame places it).
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.setRunning(false));
+      await page.evaluate((p) => { window.xrDevice.position.set(...p); window.xrDevice.quaternion.set(0, 0, 0, 1); }, origin);
+      await frames(6);
+      await page.evaluate(() => window.xem.appOperation({ Action: 'Recenter' }));
+      await frames(6);
+      const grid = [];
+      for (let y = 0; y < 30; y++) for (let x = 0; x < 40; x++) grid.push([Math.floor((x + 0.5) / 40 * layer[0]), Math.floor((y + 0.5) / 30 * layer[1])]);
+      const vr = await page.evaluate((points) => window.xem.xr.readback(points), grid);
+      const vrSpace = (await status(page)).xr.space;
+      const vrHead = (await status(page)).page.xr.viewer;
+      assert.ok(vr.every((v, i) => i % 4 !== 3 || v === 255), 'in VR the layer is opaque');
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
+      assert.equal(await page.isVisible('#ar'), true, 'Enter AR is offered');
+      await page.click('#ar');
+      await page.waitForFunction(() => window.xem.status().page.xr.active && window.xem.status().page.xr.frames > 10, null, { timeout: 60_000 });
+      info = await status(page);
+      assert.equal(info.page.xr.mode, 'immersive-ar');
+      assert.equal(info.page.xr.blend, 'alpha-blend', 'IWER\'s Quest 3 blends AR by alpha');
+      assert.equal(info.xr.room, true, 'the room shows around what the frames draw');
+      const requests = await page.evaluate(() => window.xrRequests);
+      assert.deepEqual(requests.map((r) => r.mode), ['immersive-vr', 'immersive-ar']);
+      for (const r of requests) {
+        assert.equal(r.init.requiredFeatures, undefined, `${r.mode}: no feature required`);
+        assert.deepEqual(r.init.optionalFeatures, ['local-floor', 'hand-tracking'], `${r.mode}: nothing AR-specific asked for`);
+      }
+      // (The canvas's frames between the sessions show the screen: the
+      // diorama eases in again.)
+      await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
+      await frames(6);
+      const arSpace = (await status(page)).xr.space;
+      const ar = await page.evaluate((points) => window.xem.xr.readback(points), grid);
+      await page.screenshot({ path: join(SHOTS, 'xr-diorama-ar.png') });
+      // The room's backdrop in VR is the real room in AR: transparent black;
+      // what VR drew over it is drawn.
+      const pixel = (bytes, i) => Array.from(bytes.slice(4 * i, 4 * i + 4));
+      const around = grid.map((_, i) => i).filter((i) => pixel(vr, i).slice(0, 3).every((v, k) => v === backdrop[k]));
+      const drawn = grid.map((_, i) => i).filter((i) => !around.includes(i));
+      const clear = around.filter((i) => pixel(ar, i).every((v) => v === 0)).length;
+      const covered = drawn.filter((i) => pixel(ar, i)[3] > 0).length;
+      const opaque = drawn.filter((i) => pixel(ar, i)[3] === 255);
+      const alike = opaque.filter((i) => pixel(ar, i).slice(0, 3).every((v, k) => Math.abs(v - pixel(vr, i)[k]) <= 4)).length;
+      const off = opaque.map((i) => Math.max(...[0, 1, 2].map((k) => Math.abs(pixel(ar, i)[k] - pixel(vr, i)[k])))).sort((a, b) => a - b);
+      console.log(`immersive AR: of ${grid.length} points, ${around.length} showed the room's backdrop ${backdrop} in VR (${clear} transparent in AR), `
+        + `${drawn.length} the diorama, its pane or the screen (${covered} drawn in AR, ${opaque.length} opaque, ${alike} of them as in VR; `
+        + `levels off: median ${off[off.length >> 1]}, p90 ${off[Math.floor(off.length * 0.9)]}); the same table: `
+        + `${JSON.stringify(arSpace.roomFromWorld) === JSON.stringify(vrSpace.roomFromWorld)}, head ${JSON.stringify((await status(page)).page.xr.viewer)} against ${JSON.stringify(vrHead)}; `
+        + `the room's points drawn in AR (point, VR, AR): ${JSON.stringify(around.filter((i) => pixel(ar, i)[3] > 0).slice(0, 6).map((i) => [grid[i], pixel(vr, i), pixel(ar, i)]))}`);
+      assert.ok(around.length >= grid.length * 0.2 && drawn.length >= grid.length * 0.1, `the room and the table both in view: ${around.length}, ${drawn.length}`);
+      assert.ok(clear >= around.length * 0.98, `transparent around the table: ${clear} of ${around.length}`);
+      assert.ok(covered >= drawn.length * 0.98, `the diorama drawn: ${covered} of ${drawn.length}`);
+      assert.ok(opaque.length > 0 && alike >= opaque.length * 0.95, `opaque pixels as VR shows them: ${alike} of ${opaque.length}`);
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

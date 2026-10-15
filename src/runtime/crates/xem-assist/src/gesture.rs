@@ -257,10 +257,16 @@ impl Recognizer {
         self.hands[hand.index()].last
     }
 
+    /// Whether two-hand scaling is under way.
+    pub fn scaling(&self) -> bool {
+        self.scaling.is_some()
+    }
+
     /// Forget everything in progress (focus lost, the app took the input):
-    /// held and pending gestures are cancelled; every hand must open again.
+    /// held and pending gestures are cancelled; every hand must open again
+    /// (hands still gathered begin no new scaling).
     pub fn cancel(&mut self) {
-        *self = Recognizer { prayer_armed: false, ..Recognizer::default() };
+        *self = Recognizer { prayer_armed: false, scale_release: true, ..Recognizer::default() };
     }
 
     pub fn update(&mut self, frame: &Frame) -> Vec<Gesture> {

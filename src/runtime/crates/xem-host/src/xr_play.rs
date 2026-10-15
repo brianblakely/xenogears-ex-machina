@@ -25,7 +25,13 @@
 //! gives way to it (movies, menus). The keys stand beside the pane, the
 //! settings panel where it floats. The pointer aims through the table at
 //! the game's world: a pinch walks to the floor it meets, a tap talks to
-//! the actor beside it.
+//! the actor beside it. Two whole-hand pinches scale the diorama about its
+//! table's anchor, live, and the scale they end at becomes the setting
+//! (`xem_assist::headset::Scaling`); with the screen as the view they scale
+//! the screen for the session. Where the system can show the room (alpha
+//! blending, or `XR_FB_passthrough`) and the player turns Passthrough on,
+//! the room stands around the table in place of the backdrop; elsewhere
+//! (Monado's simulated HMD) the panel offers no Passthrough.
 //!
 //! Everything stands in front of the seat (`xem_assist::headset::Seat`):
 //! LOCAL's origin, moved to the head by Recenter (the panel's button, an
@@ -209,6 +215,17 @@ fn assist_pose(pose: Pose) -> xem_assist::headset::Pose {
     xem_assist::headset::Pose { position: pose.position, orientation: pose.orientation }
 }
 
+/// A two-hand scaling of the diorama that ended becomes the player's
+/// setting, once, through the settings service (logged).
+fn commit_scale(settings: &RefCell<SettingsService>, scaling: &mut xem_assist::headset::Scaling) {
+    if let Some(percent) = scaling.reached() {
+        match xem_assist::headset::commit_scale(&mut settings.borrow_mut(), percent) {
+            Ok(ack) => println!("scale commit diorama_scale={percent} revision={}", ack.revision),
+            Err(error) => println!("scale commit diorama_scale={percent} refused: {error}"),
+        }
+    }
+}
+
 /// Where a scripted gesture aims (`--xr-hands NAME@...`): a pixel of the
 /// screen (or the diorama's pane), a logical pixel of the settings panel,
 /// or a point of the game's world through the diorama.
@@ -302,6 +319,16 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     println!("xr runtime={:?} system={:?} eye_size={}x{} blend={:?}", caps.runtime, caps.system, caps.eye_size.0, caps.eye_size.1, caps.blend_mode);
     // The standard hand gestures the runtime offers (none is imitated).
     println!("xr hands: tracking={} hand_interaction={} microgestures={} eye_gaze={}", caps.hand_tracking, caps.hand_interaction, caps.microgestures, caps.eye_gaze);
+    // Whether the room can show behind the diorama: alpha blending among
+    // the blend modes, else XR_FB_passthrough; else not at all (Monado's
+    // simulated HMD), and the panel offers no Passthrough.
+    let offered = match caps.passthrough {
+        Some(xem_xr::Passthrough::AlphaBlend) => "alpha_blend",
+        Some(xem_xr::Passthrough::Fb) => "fb",
+        None => "unavailable",
+    };
+    let modes: Vec<String> = caps.blend_modes.iter().map(|mode| format!("{mode:?}")).collect();
+    println!("xr room: passthrough={offered} blend_modes={}", modes.join(","));
     let gpu = context.gpu().clone();
     let panel_px = ((PANEL_LOGICAL.0 * PANEL_SCALE) as u32, (PANEL_LOGICAL.1 * PANEL_SCALE) as u32);
     let mut ui = SettingsUi::new(
@@ -312,10 +339,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     )
     .map_err(|e| e.to_string())?;
     // The Controls section lists first-person inspection's headset controls;
-    // Graphics offers Recenter. No OpenXR passthrough is used yet.
+    // Graphics offers Recenter, and Passthrough where the system can show
+    // the room.
     ui.set_first_person(true);
     ui.set_first_person_headset(true);
     ui.set_in_headset(true);
+    ui.set_passthrough_offered(caps.passthrough.is_some());
     let panel_visible = Rc::new(RefCell::new(options.show_settings));
     ui.on_close({
         let visible = panel_visible.clone();
@@ -406,11 +435,14 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let head = frame.head;
         let period = frame.predicted_display_period.as_nanos();
         let display_time = frame.predicted_display_time.as_nanos();
+        let graphics = settings.borrow().settings().graphics;
+        // Two-hand scaling scales the diorama while it is the view (from its
+        // setting's scale), else the screen.
+        assist.scaling.view(matches!(xr_view(&graphics), XrView::Diorama(_)).then_some(graphics.xr.diorama_scale));
         // The settings panel: below the screen (as large as two-hand scaling
         // makes it, in the last picture's shape), off it, or above the
         // diorama's table (which the Original renderer never shows).
         let panel = {
-            let graphics = settings.borrow().settings().graphics;
             let width = f32::from(graphics.xr.width_cm) / 100.0 * assist.scaling.scale;
             let screen = (width, width * presented_size.1 as f32 / presented_size.0 as f32);
             let distance = f32::from(graphics.xr.distance_cm) / 100.0;
@@ -537,6 +569,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             requests.borrow_mut().append(&mut assist.requests);
             *panel_visible.borrow_mut() = open;
         }
+        // A scaling of the diorama that ended (the hands let go, or the
+        // focus or the reference was lost) becomes the player's setting.
+        commit_scale(&settings, &mut assist.scaling);
         let visible = *panel_visible.borrow();
         // However it closed (the menu button or Back+Start, prayer hands,
         // its Close, an agent's `panel`), the panel lets go of what its
@@ -675,10 +710,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let spanned = headset_movie_output(f32::from(xr.width_cm) / 100.0 * assist.scaling.scale, f32::from(xr.distance_cm) / 100.0, session.eye_size().0, fov);
         config.movies = config.movies.map(|_| spanned);
         view.configure(config);
-        // The screen or the diorama (never under the Original renderer),
-        // before the frame is taken: the diorama asks the trace for every
-        // face and the camera.
-        view.set_xr_view(xr_view(&current.graphics));
+        // The screen or the diorama (never under the Original renderer; at
+        // the hands' scale while they scale it), before the frame is taken:
+        // the diorama asks the trace for every face and the camera.
+        view.set_xr_view(assist.scaling.shown(xr_view(&current.graphics)));
+        // The room behind the diorama, where the system can show it and the
+        // player turned it on (the panel's row shows only then).
+        let room = caps.passthrough.is_some() && current.graphics.xr.passthrough && matches!(view.xr_view(), XrView::Diorama(_));
         let restart = view.take_restart();
         // The Original renderer shows the display as the device holds it
         // (nothing to look around in).
@@ -900,8 +938,14 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                         });
                         within.into_iter().chain(screen).chain(diorama).chain(pane).chain(glass).collect()
                     });
-                    // The room around the screen; the eyes' pictures cover it.
-                    let clear = Some(if inside.is_empty() { BACKDROP } else { wgpu::Color::BLACK });
+                    // The room around the screen (with passthrough the real
+                    // one: nothing, the drawn colour premultiplied, its
+                    // alpha what covers the room); the eyes' pictures cover it.
+                    let clear = Some(match (inside.is_empty(), room) {
+                        (false, _) => wgpu::Color::BLACK,
+                        (true, true) => wgpu::Color::TRANSPARENT,
+                        (true, false) => BACKDROP,
+                    });
                     compositor.draw_targets(encoder, &[(target.views[0], clear, &quads[0]), (target.views[1], clear, &quads[1])]);
                     if capture.is_some() {
                         readback = Some(crate::readback::Readback::record(&gpu.device, encoder, target.texture));
@@ -935,7 +979,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 captured = true;
             }
         }
-        let ended = session.end_frame(visible.then_some(panel)).map_err(|e| e.to_string())?;
+        let ended = session.end_frame(visible.then_some(panel), room).map_err(|e| e.to_string())?;
         let head = head.map_or("-".into(), |p| format!("{:.5},{:.5},{:.5};{:.5},{:.5},{:.5},{:.5}", p.position.x, p.position.y, p.position.z, p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w));
         // First-person inspection: on, drawn from within the scene (the
         // eyes' pictures), and the view's turn (yaw, pitch; radians).
@@ -958,8 +1002,26 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let factor = if fast_forward { game.session.frame_factor().map_or("uncapped".to_string(), |f| f.to_string()) } else { "0".to_string() };
         // Where the settings panel stands (its middle, in LOCAL).
         let panel_at = format!("{:.3},{:.3},{:.3}", panel.pose.position.x, panel.pose.position.y, panel.pose.position.z);
+        // The diorama's scale as shown (the hands' while they scale it; 0 for
+        // the screen) and, while it shows, the table's metres per world unit,
+        // the camera's target (world units) and where it stands in the room
+        // (the table's anchor: metres), and a key's width beside the screen
+        // or the pane (metres).
+        let diorama_scale = match view.xr_view() {
+            XrView::Diorama(table) => table.scale,
+            XrView::Screen => 0.0,
+        };
+        let point = |p: Vec3, digits: usize| format!("{:.digits$},{:.digits$},{:.digits$}", p.x, p.y, p.z);
+        let (world_scale, target, anchor) = match &space {
+            Some(space) => {
+                let target = Vec3::from(space.camera.target);
+                (format!("{:.6e}", space.scale), point(target, 2), point(space.room_from_world.transform_point3(target), 5))
+            }
+            None => ("-".into(), "-".into(), "-".into()),
+        };
+        let key = xem_assist::draw::side_keys(&screen, 1)[0].1.size.0;
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} key={key:.5} passthrough={}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -984,6 +1046,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             view.diorama_stats().builds,
             factor,
             if chips.is_empty() { "-".to_string() } else { chips.join(",") },
+            u8::from(ended.passthrough.is_some()),
         );
         frames += 1;
         if quit.get() && !exit_requested {
@@ -999,6 +1062,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             exit_requested = true;
         }
     }
+    // A scaling of the diorama under way as the session ended ends where it
+    // reached.
+    assist.scaling.end();
+    commit_scale(&settings, &mut assist.scaling);
     println!("exit frames={frames} game_frames={} memory_hash {}", game.frames_run(), game.memory_hash());
     Ok(Ended { game, quit: quit.get() })
 }

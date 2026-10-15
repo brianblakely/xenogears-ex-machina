@@ -156,6 +156,11 @@ pub struct XemApp {
     /// the player's Recenter actions.
     xr_resets: u32,
     xr_recenters: u32,
+    /// The scales two-hand scaling of the diorama committed to the setting.
+    xr_scale_commits: u32,
+    /// The immersive session's environment blend mode (WebXR's
+    /// `environmentBlendMode`), while one runs.
+    xr_blend: Option<String>,
     /// What a headset's control deck holds.
     xr_held: std::collections::BTreeSet<xem_core::action::GameAction>,
     /// Where the pointer last met the panel in the session (u, v), and
@@ -280,6 +285,8 @@ impl XemApp {
             xr_counts: Default::default(),
             xr_resets: 0,
             xr_recenters: 0,
+            xr_scale_commits: 0,
+            xr_blend: None,
             xr_held: Default::default(),
             xr_panel_hit: None,
             xr_panel_click: None,
@@ -382,6 +389,7 @@ impl XemApp {
             }
         }
         self.assist_xr();
+        self.commit_scale();
         self.step(now)?;
         let eye_height = viewports.chunks_exact(4).map(|v| v[3]).max().unwrap_or(0).max(0) as u32;
         // OpenGL clip depth (-1..1) to wgpu's (0..1).
@@ -462,6 +470,28 @@ impl XemApp {
         self.xr_input = Some(input);
     }
 
+    /// An immersive session began, its environment blend mode WebXR's
+    /// `environmentBlendMode`: any but `opaque` (immersive AR's
+    /// `alpha-blend`) shows the real room around what the frames draw, which
+    /// they leave transparent (no room backdrop).
+    pub fn xr_session(&mut self, environment_blend_mode: &str) {
+        self.xr_blend = Some(environment_blend_mode.to_string());
+        if let Some(renderer) = &mut self.renderer {
+            renderer.xr_room = environment_blend_mode != "opaque";
+        }
+    }
+
+    /// A two-hand scaling of the diorama that ended becomes the player's
+    /// setting, once, through the settings service (the panel shows it).
+    fn commit_scale(&mut self) {
+        if let Some(percent) = self.xr_scaling.reached() {
+            match xem_assist::headset::commit_scale(&mut self.settings.borrow_mut(), percent) {
+                Ok(_) => self.xr_scale_commits += 1,
+                Err(error) => web_sys::console::warn_1(&format!("the diorama's scale {percent}% was not kept: {error}").into()),
+            }
+        }
+    }
+
     /// The runtime reset the session's reference space (its `reset` event:
     /// the system recentred it), as OpenXR's hosts take theirs
     /// (`xem_assist::headset::reference_changed`).
@@ -500,9 +530,13 @@ impl XemApp {
         }
     }
 
-    /// The immersive session ended: the canvas shows the game again.
+    /// The immersive session ended: the canvas shows the game again (a
+    /// two-hand scaling of the diorama under way ends where it reached).
     pub fn xr_ended(&mut self) {
         self.xr_input = None;
+        self.xr_blend = None;
+        self.xr_scaling.end();
+        self.commit_scale();
         if let Some(session) = self.session.as_mut() {
             session.set_head(None);
         }
@@ -592,6 +626,10 @@ impl XemApp {
         }
         let Some(screen) = self.xr_screen else { return };
         let ui = self.ui;
+        // Two-hand scaling scales the diorama while it is the view (from its
+        // setting's scale), else the screen.
+        let diorama = matches!(xem_render::ps1::xr_view(&settings.graphics), xem_render::ps1::XrView::Diorama(_)).then_some(settings.graphics.xr.diorama_scale);
+        self.xr_scaling.view(diorama);
         // First-person inspection keeps the character where it stands, and
         // shows no field camera to point through; otherwise the field as the
         // screen shows it (pulled back, say).
@@ -633,9 +671,10 @@ impl XemApp {
         if self.headset.settings_open != panel_visible {
             self.set_panel_visible(self.headset.settings_open);
         }
-        // The panel takes the pointer's ray and clicks.
+        // The panel takes the pointer's ray and clicks; the frame shows the
+        // screen or the diorama as the scaling has them.
         if let Some(renderer) = &mut self.renderer {
-            renderer.xr_scale = self.xr_scaling.scale;
+            renderer.xr_scaling = self.xr_scaling;
             let destination = match self.session.as_ref().and_then(|s| s.assist.as_ref()).map(|a| &a.intent) {
                 Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
                 _ => None,
@@ -1686,7 +1725,20 @@ impl XemApp {
                 "pointer": self.headset.pointer,
                 "pauses": self.headset.pauses,
                 "settings": self.headset.settings_open,
+                // Two-hand scaling: the screen's scale (for the session), the
+                // diorama's as the frames show it (the hands' while they scale
+                // it, else the setting's), whether it is under way, and the
+                // scales it committed to the setting.
                 "scale": self.xr_scaling.scale,
+                "dioramaScale": self.xr_scaling.diorama_scale().unwrap_or(f32::from(self.settings.borrow().settings().graphics.xr.diorama_scale) / 100.0),
+                "scaling": self.xr_scaling.scaling(),
+                "scaleCommits": self.xr_scale_commits,
+                // A key's width beside the screen or the diorama's pane (metres).
+                "keyWidth": self.xr_screen.map(|s| xem_assist::draw::side_keys(&s, 1)[0].1.size.0),
+                // The session's environment blend mode, and whether the real
+                // room shows around what the frames draw.
+                "blend": self.xr_blend,
+                "room": self.renderer.as_ref().is_some_and(|r| r.xr_room),
                 // The virtual screen as the last immersive frame drew it: its
                 // size (metres), the display pixels it shows and the wider
                 // framing's sides (display pixels each side; none for a
@@ -1698,16 +1750,20 @@ impl XemApp {
                 "within": self.renderer.as_ref().is_some_and(|r| r.xr_within),
                 // The diorama: whether the last immersive frame showed it, the
                 // screen's share of the view (1 the screen alone), and where it
-                // lay: the room from the game's world (column major) and metres
-                // per world unit; the seat (its place and turn, radians to the
-                // left) and how often the runtime reset the reference space and
-                // the player recentred.
+                // lay: the room from the game's world (column major), metres
+                // per world unit, the pane's centre, the camera's target (world
+                // units) and where it stands in the room (the table's anchor);
+                // the seat (its place and turn, radians to the left) and how
+                // often the runtime reset the reference space and the player
+                // recentred.
                 "diorama": self.renderer.as_ref().is_some_and(|r| r.xr_space.is_some()),
                 "share": self.renderer.as_ref().map_or(1.0, |r| r.xr_share),
                 "space": self.renderer.as_ref().and_then(|r| r.xr_space).map(|space| json!({
                     "roomFromWorld": space.room_from_world.to_cols_array(),
                     "scale": space.scale,
                     "pane": space.pane.w_axis.truncate().to_array(),
+                    "target": space.camera.target,
+                    "anchor": space.room_from_world.transform_point3(xem_render::glam::Vec3::from(space.camera.target)).to_array(),
                 })),
                 "seat": self.renderer.as_ref().map(|r| {
                     let (at, forward) = (r.xr_seat.position(), r.xr_seat.orientation() * xem_render::glam::Vec3::NEG_Z);

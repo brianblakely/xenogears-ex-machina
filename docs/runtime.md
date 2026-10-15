@@ -1574,7 +1574,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled; a first-person view shows it either way), back faces (both off) |
-| headset | the view: the screen (default) or the diorama; the screen's distance and width; the diorama's scale (25-400%, 100), the table's height (-100 to 30 cm, -45), distance (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed); passthrough (off; no host offers it yet); depth of field in a headset (off) |
+| headset | the view: the screen (default) or the diorama; the screen's distance and width; the diorama's scale (25-400%, 100), the table's height (-100 to 30 cm, -45), distance (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed); passthrough (off; offered only where an OpenXR headset can show the room: alpha blending or `XR_FB_passthrough`); depth of field in a headset (off) |
 
 Modern draws at high resolution, perspective-correct and sub-pixel, in full
 colour, in the original's drawing order. PS1 keeps every limit at the native
@@ -1608,8 +1608,9 @@ picture, each pixel a block. Hosts make the rebuilt picture at the size
 they show it (`ViewConfig::movies`): a window (desktop, Android) the
 display placed in its safe area as the presentation's scale places it, the
 browser's canvas likewise, and a headset's virtual screen as many pixels
-across as the screen spans in an eye (its width, times two-hand scaling,
-over its distance, in the eye's pixels per unit of tangent), at most the
+across as the screen spans in an eye (its width, times the screen's
+two-hand scaling, over its distance, in the eye's pixels per unit of
+tangent), at most the
 eye's own width (`headset_movie_output`: a larger screen shows only part of
 itself). Under the Fit and Integer scales it is enlarged once (a phone's
 insets do not resample it again); under Stretch the rebuilt picture keeps
@@ -2533,10 +2534,12 @@ the screen then).
   diorama's scale (25-400%, one value for every scene, 100% by default),
   the table's height (-100 to 30 cm from the seated head, -45), distance
   (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed);
-  and passthrough (off; its row shows only where a headset offers it, and
-  none does yet). The settings service validates them (`diorama scale must
-  be 25-400 percent`, ...). Reset diorama puts the scale, place and turns
-  back (the view, the screen and passthrough stay). The screen's distance
+  and passthrough (off; its row shows only where the headset can show the
+  room: [The room](#the-room-passthrough-and-immersive-ar)). The settings
+  service validates them (`diorama scale must be 25-400 percent`, ...).
+  Two-hand scaling sets the scale too ([Scaling](#scaling)). Reset diorama
+  puts the scale, place and turns back (the view, the screen and
+  passthrough stay). The screen's distance
   and width stay in the card under the diorama: the screen it gives way
   to. While the view is the diorama and the profile has effects a headset
   draws (`Graphics::headset_effects`), the card says the diorama does not
@@ -2671,7 +2674,10 @@ held) and a pinch on its Close closes it, and a pinch through the table
 at the world point (88.67, 0, -55.33) of field 30 walks Fei there
 (moving, then arrived). `web/tests/xr-diorama.test.mjs` (IWER's Quest 3; field 30):
 the automation's 120 frames end at the same RAM in and out of the headset
-with the diorama on; the table covers rows of the left view; moving the
+with the diorama on; the table covers more than half of a row of the left
+view (its points unlike the room's backdrop, the layer's top left
+corner's colour: 0.76 to 1.00 of each row across the table measured, none
+of the row above it); moving the
 head 10 cm sideways shifts the rows with texture the move matches by
 their depth, the nearest at least 5 points (0.2% of the layer's width
 each) more than the farthest (measured: 38, 35, 27 and 30 near the near
@@ -2684,7 +2690,9 @@ is the origin again and the picture the first; and a pinch (the hand's
 select) with the head aimed through the table at a floor point heads the
 walk for it, within 2 units (measured: (99.99998, 0, 19.99994) for
 (100, 0, 20)), and Fei arrives within 16 units of it (at (95, 0, 23),
-5.8 away).
+5.8 away); the test goes on to scale the diorama and to show it in
+immersive AR ([Scaling](#scaling), [The
+room](#the-room-passthrough-and-immersive-ar)).
 `xem-headless/tests/gestures.rs`
 `through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none`
 (field 30, the table placed from the frame's own camera record as a
@@ -2711,10 +2719,8 @@ the settings' mapping, the screen under the Original renderer
 (`xem-render` diorama.rs); the listener's axes only while the diorama is
 presented (`xem-render/tests/ps1.rs`, [Diorama](#diorama)).
 
-Not done or not measured: passthrough and immersive AR (the setting exists,
-no host offers it yet); scaling the diorama with two whole-hand pinches
-(two-hand scaling still scales the screen, which the diorama gives way to);
-battle targets through the table (they come from the pane and the keys);
+Not done or not measured: battle targets through the table (they come
+from the pane and the keys);
 the world map and battles were not run in a headset; on Monado's simulated
 HMD `monado-ctl -c` delivers the event but the head's poses do not jump
 (nothing visible moves LOCAL there), and no controller binding recentres
@@ -2725,6 +2731,205 @@ of it (no depth test: a floor behind a wall can be pointed at); the HUD's
 place and size beside the pane are checked by the unit test alone, not in
 a host's eyes; the browser's panel is not opened in the diorama view, nor
 its pane's pixels checked, in IWER (the OpenXR smoke does both).
+
+#### Scaling
+
+Two whole-hand pinches (each hand's five fingertips gathered, its fingers
+not folded into the palm: `gesture::Shape::whole_pinch`, apart from fists
+and the runtime's pinch) scale what a headset shows (plan.md, Phase 8):
+spreading them enlarges it, contracting shrinks it, by the palms' distance
+over theirs as the gesture began; letting go with either hand ends it, and
+both open again before either begins another gesture (no grab fires as
+they close and no pinch counts: the recognizer's ownership rules). Nothing
+is aimed at and nothing reaches the game: no press, command or pause.
+
+- **The diorama**, while it is the view (both hosts tell
+  `headset::Scaling::view` every frame from the settings; never under the
+  Original renderer): the hands scale it from its setting's scale, within
+  the setting's range (25-400%), live (the frames show the table at the
+  hands' scale: `Scaling::shown`), and the scale the gesture ends at
+  becomes the setting once, through the settings service
+  (`headset::commit_scale`: the graphics block as it is with the new
+  `diorama_scale`, validated, saved and acknowledged to every subscriber,
+  so the panel's slider shows it; Reset diorama puts 100% back). It scales
+  about the table's anchor: the table's chain (the room from the table,
+  then the scale, the heading, the flip to y up and the shift to the point
+  the table follows) keeps that point, the camera's target, at the centre
+  of the table's top whatever the scale, so it stays where it stands in the
+  room while everything else moves away from it or towards it by the
+  scale. The table's volume, the pane, the keys beside it, the HUD and the
+  settings panel depend on no scale (they stand outside the volume and
+  keep their size: [In a headset](#in-a-headset)). A scaling cut short
+  ends where it reached and is committed the same way: the app losing the
+  runtime's focus (OpenXR not FOCUSED, WebXR hidden), the runtime moving
+  the reference space (`headset::reference_changed`), the session ending,
+  or the screen chosen as the view meanwhile. No scaling
+  begins while first-person inspection shows; one under way as it began
+  ends where it reached when the hands let go.
+- **The screen**, otherwise: the hands scale its width for the session, 0.4
+  to 3 times the setting's (in memory; a rebuilt movie frame is made at the
+  scaled width), and nothing is committed.
+- **Synthetic gestures** for runtimes without hand tracking
+  (`xem_assist::synthetic`, `--xr-hands N:spread,M:contract`): `spread`
+  gathers both hands 20 cm apart and parts them to 50 cm in ten steps, then
+  opens them (2.52 times by the palms' distance), `contract` brings them
+  from 50 to 30 cm (0.598 times). The browser tests' hand model has the
+  same gather pose for IWER's hands.
+- **Logs.** OpenXR's `xrframe` line adds `diorama_scale=` (as shown: the
+  hands' while they scale it; 0 for the screen), `world_scale=` (the
+  table's metres per world unit), `target=` (the camera's target, world
+  units) and `anchor=` (where it stands in the room, metres) while the
+  diorama shows, and `key=` (a key's width beside the screen or the pane,
+  metres); each commit prints `scale commit diorama_scale=N revision=R`.
+  WebXR's `status().xr` has `scale` (the screen's), `dioramaScale`,
+  `scaling`, `scaleCommits`, `keyWidth` and `space.target` and
+  `space.anchor`.
+
+Measured on Monado's simulated HMD (20 Hz, this machine's CPU and
+lavapipe; the smoke's scaling run in field 30 under HD-2D, Fei walked
+into the room and the camera still): the spread from headset frame 110
+took the shown scale from 1 to 2.5213 in ten steps of 0.152 (frames 113 to
+122) and committed 252% as the hands opened (124), the contraction from
+150 took it from 2.52 to 1.5063 in ten steps of 0.101 and committed 151%
+(164), and the setting file held 151 at the end; the table's metres per
+world unit followed the shown scale
+on every frame (1.408e-3 at 100%, 3.551e-3 at 2.5213); the camera's target
+stood still (0.00 units) and its room point, the anchor, moved 0.03 mm
+over the spread and less than 0.01 mm over the contraction (the table's
+eased point settling, as it does between the gestures); a key beside the
+pane stayed 0.10020 m wide; the diorama showed in 277 of 297 headset
+frames, intervals p50 50.40 ms and p99 60.71 ms, 1 of 276 late, presenting
+p50 1.32 ms and p95 2.09 ms (load average falling from 27 to 4 over the
+smoke). In IWER's Quest 3 (field 30, the game stopped) ten steps of
+1.5 cm per hand showed 1.152 to 2.518 and committed 252%, the anchor
+within 0.003 to 0.14 mm (four runs; the eased point settling after Fei's
+walk) and a key 0.1002 m wide throughout.
+
+Tests: `xr-game-smoke.sh`'s scaling run (Monado; the inspection run's log,
+scripted `spread` at headset frame 110 and `contract` at 150): exactly two
+`scale commit` lines, the first 240-260%, the second 0.6 times it within 2,
+each the scale shown on the frame before (within half a percent), the
+setting file holding the last; the scale 1 before the spread; every
+gesture recognised a scaling one, the player's Pause and the game's
+pause never set, the assist state unchanged; over each gesture, while the
+diorama shows, the table's scale growing more than 2 times (shrinking
+below 0.7 times) and by the shown scale's ratio within 0.01, the camera's
+target within a unit and its room point within a millimetre; one key
+width on every diorama frame; and the RAM at game frame 1200 equal to
+`xem-headless`'s for the same log (23da911a1e0e26bc).
+`web/tests/xr-diorama.test.mjs` (IWER's Quest 3, field 30): two gathered
+hands parted from 20 to 50 cm grow the diorama live (scaling on every
+step), the table's scale more than 2 times and the shown scale within 0.1
+of 2.52, the anchor within a millimetre, one key width, the scale shown
+last committed once (one settings revision), no pause or pinch; then the
+automation's 120 frames from the state at 252% end at the flat run's RAM.
+`web/tests/xr-hands.test.mjs` (the fixture, no private input): with the
+screen as the view the same spread scales the screen to about 2.5 for the
+session and commits nothing; with the diorama the shown scale grows step
+by step, the setting takes the last shown one with one acknowledged
+change, the screen's scale stays, a contraction commits about 0.6 times
+it, and nothing pauses, pinches or opens settings. Unit tests
+(`xem-assist`): `two_hand_scaling_scales_the_diorama_about_its_anchor_live_and_commits_once_when_it_ends`
+(the spread to 2.52 live and committed once as 252%, the shown view, the
+anchor's room point within a millimetre at 25 to 400% with another point
+moving away by the scale and the table, volume and pane unchanged, the
+clamp at 400% and 25%, the screen's session scaling),
+`a_diorama_scaling_cut_short_ends_where_it_reached_and_inspection_scales_nothing`
+(focus lost, inspection begun, the screen chosen and a moved reference
+each end it where it reached; hands still gathered after the focus or the
+reference came back begin nothing until they open; inspecting, a spread
+scales nothing), `a_reached_scale_is_committed_to_the_setting_through_the_settings_service`
+(one acknowledgement, the block otherwise as it was, Reset diorama back to
+100%, 401% refused), `spread_and_contract_read_as_two_hand_scaling_alone_by_their_factors`
+(both runtimes' synthetic gestures, nothing but scaling, 2.52 and 0.598)
+and the keys, HUD and panel test above, now at every scale from 25 to
+400% in steps of 25%.
+
+Not done or not measured: the scaling's feel (no people tests, no Quest
+hand tracking: the gestures are synthetic or IWER's posed hands); a scale
+per scene or per mode (one global value, as the setting is); battles and
+the world map were not scaled in a headset.
+
+#### The room (passthrough and immersive AR)
+
+Where a headset can show the room around the player, the diorama (or the
+screen) stands in it; nothing AR-specific is required for it (no hit
+tests, planes, anchors, depth or meshes), and VR and the browser's flat
+play stay as they are.
+
+- **WebXR.** The page offers Enter AR beside Enter VR only where
+  `navigator.xr.isSessionSupported('immersive-ar')` says so (and with the
+  XR-compatible WebGL2 renderer, chosen when the browser supports either
+  mode). Both buttons request their mode with the same optional features
+  (`local-floor`, `hand-tracking`) and none required. A session whose
+  `environmentBlendMode` is not `opaque` (immersive AR's `alpha-blend`)
+  gets an `XRWebGLLayer` with alpha, and the host leaves the room's
+  backdrop out (`XemApp::xr_session`, `WebRenderer::xr_room`): each view,
+  the buffer the views are assembled in and the layer are cleared to
+  transparent black, and the compositor's premultiplied colour (what
+  WebXR's compositor takes) leaves alpha 0 where nothing is drawn, the
+  diorama's own alpha around its scene and full alpha on opaque surfaces,
+  the screen, the pane's opaque texels and the keys. The canvas's WebGL2
+  context has alpha (an emulated headset such as IWER uses the canvas's
+  own framebuffer as the layer); the canvas and VR stay opaque, their
+  clears being opaque. The view setting stays the player's: AR shows the
+  screen or the diorama as VR does. The page's `status().page.xr` adds
+  `arSupported`, `mode` and `blend`, and `status().xr` `blend` and `room`.
+- **OpenXR** ([OpenXR adapter](#openxr-adapter)): the room can show where
+  the system blends by alpha or offers `XR_FB_passthrough`
+  (`Capabilities::passthrough`), and only there does the panel offer
+  Passthrough (`SettingsUi::set_passthrough_offered`). With it on and the
+  diorama the view, the loop clears the eyes to transparent black instead
+  of the backdrop and asks `end_frame` to show the room. Monado 25.1's
+  simulated HMD enumerates `OPAQUE` alone and offers no
+  `XR_FB_passthrough`: the loop prints `xr room: passthrough=unavailable
+  blend_modes=OPAQUE`, the panel offers no Passthrough, and a setting
+  asking for it changes nothing (`passthrough=0` on every `xrframe` line,
+  the backdrop drawn). The APK declares `com.oculus.feature.PASSTHROUGH`
+  with `required="false"` (Horizon OS offers the extension to apps that
+  declare it; the app runs without it).
+- The diorama's backdrop wall (the game's clear and panoramas at the back
+  of the table's volume) stands in the room as in VR: it is the game's own
+  picture.
+
+Tests: `web/tests/xr-diorama.test.mjs` (IWER's Quest 3, field 30, the
+diorama at 252%): in VR the layer is opaque at every point read (alpha
+255, the context's alpha notwithstanding); Enter AR is offered, both
+sessions were asked for with `optionalFeatures` `local-floor` and
+`hand-tracking` and no `requiredFeatures` (the page's calls, recorded),
+the AR session's blend mode is `alpha-blend` and the room shows; with the
+game stopped, the head where both sessions begin and the table placed at
+once in both (Recenter in VR), over a grid of 40x30 points across both
+views, the points that showed the room's backdrop in VR (its clear,
+rgb(3, 4, 5) as the layer holds it) are transparent black in AR for 98% or
+more, those that showed the diorama, its pane or the keys are drawn for
+98% or more, and the opaque ones show VR's colour within 4 levels for 95%
+or more. Measured: 665 room points, 661 transparent (the other 4 black at
+alpha 1 to 25, coverage VR's 8-bit composite rounds back to the backdrop),
+535 drawn of 535, 525 of the 527 opaque ones as in VR (median and 90th
+percentile 0 levels off). `web/tests/xr-hands.test.mjs` (the fixture):
+IWER's Quest 3 offers Enter VR and Enter AR, the same headset without
+immersive AR Enter VR alone (`arSupported` false, no XR error).
+`xr-game-smoke.sh`'s scaling run (Monado, the
+setting asking for Passthrough): `xr room: passthrough=unavailable
+blend_modes=OPAQUE`, `passthrough=0` on all 297 frames, every rendered
+frame the projection layer alone, and the eye's corner the backdrop,
+opaque, as in the screen run. `xem-xr`
+`the_room_shows_only_where_the_system_blends_by_alpha_or_offers_fb_passthrough`
+(opaque or additive alone: none; alpha blending first or after opaque:
+alpha blending; opaque with the extension supported: `XR_FB_passthrough`).
+The panel's Passthrough row shows only where offered (`xem-ui/tests/panel.rs`,
+[In a headset](#in-a-headset)).
+
+Not done or not measured: OpenXR's alpha blending and `XR_FB_passthrough`
+paths have run on no runtime (Monado offers neither, and nothing ran on a
+Quest), so the room behind an OpenXR frame is not observed, nor
+premultiplied against straight alpha on a real compositor; IWER's
+immersive AR has no camera picture (its synthetic environments,
+`@iwer/sem`, are not installed), so only the layer's alpha is checked, not
+a composition over a room; comfort over passthrough is not measured (no
+people tests); in AR the diorama's backdrop wall still stands behind the
+table.
 
 ### HD-2D effects
 
@@ -2848,7 +3053,12 @@ player: each eye or view draws the same presented frame with its own view and
 projection; nothing claims reconstructed 3D there. With Graphics' headset
 view set to the diorama, each eye sees the scene in 3D on a table in front
 of the seat instead, the interface on a pane above it, and the screen where
-the diorama gives way to it ([In a headset](#in-a-headset)). Everything
+the diorama gives way to it ([In a headset](#in-a-headset)); two
+whole-hand pinches scale the diorama, or else the screen
+([Scaling](#scaling)), and where the headset can show the room (a
+browser's immersive AR, OpenXR's passthrough where offered) the room
+stands around them in place of the backdrop ([The
+room](#the-room-passthrough-and-immersive-ar)). Everything
 stands in front of the seat, which Recenter moves to the head and the
 runtime's own recentring puts back at the reference space's origin. The game runs from the host's
 clock (at most four catch-up frames per host frame, so a 15 Hz session still
@@ -3357,12 +3567,15 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   begins and kept through closure, firing on closure from an open hand
   (no hold or cooldown; reopening rearms; a fist found closed fires
   nothing; the other hand's simultaneous grab coalesces); whole-hand
-  pinches (two of them scale, owning both hands until both open, the
-  frame they let go on included); prayer hands (open aligned palms
-  near-touching, once until they part). A closing hand emits no pinch or
-  thumb event, nor does a pinch held through a grab or a scaling once it
-  ends, and the runtime's pinch or thumb events during a scaling (a
-  runtime may take gathered fingertips for a pinch) are the scaling's.
+  pinches (two of them scale the diorama while it is the view, about its
+  table's anchor, the scale committed to the setting when either hand lets
+  go, or else the screen for the session: [Scaling](#scaling); they own
+  both hands until both open, the frame they let go on included); prayer
+  hands (open aligned palms near-touching, once until they part). A
+  closing hand emits no pinch or thumb event, nor does a pinch held
+  through a grab or a scaling once it ends, and the runtime's pinch or
+  thumb events during a scaling (a runtime may take gathered fingertips
+  for a pinch) are the scaling's.
 - **Resolution** (`xem_assist::dispatch`, table in its documentation):
   walking, a pinch walks to the floor under the pointer (`navigate`, if
   reachable), a tap approaches and talks to the actor under it
@@ -3399,9 +3612,11 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   prayer hands toggle Settings, which hold their own pause, and
   closing them keeps the player's. Losing the hands or the app's focus
   drops what was pending, stops assisted movement and pauses until the
-  player's Pause (from an open hand). Two-hand scaling leaves the screen's
+  player's Pause (from an open hand); a two-hand scaling under way ends
+  where it reached. Two-hand scaling leaves the screen's and the diorama's
   size while inspection shows (the gesture still owns both hands, so no
-  grab fires as they close).
+  grab fires as they close; one under way as inspection began ends where
+  it reached when the hands let go).
 - **Control decks** (`xem_assist::arcade`) for the bespoke inputs,
   one-handed: Battling's bouts and the open world map (walking, Gears,
   vehicles). A pinch captures a stick at the hand, the hand's travel holds
@@ -5796,6 +6011,22 @@ synchronisation rules; in short:
   only when the runtime offers the extension and the system reports support;
   `Capabilities` reports both. Input is raw state; gestures are interpreted
   elsewhere.
+- The system's environment blend modes are enumerated
+  (`Capabilities::blend_modes`; an opaque session uses the first). The room
+  can show behind the frame (`Capabilities::passthrough`) where
+  `ALPHA_BLEND` is among them (`Passthrough::AlphaBlend`), else where
+  `XR_FB_passthrough` is offered (it is enabled whenever it is) and the
+  system supports it (`XrSystemPassthroughProperties2FB`'s capability bit, or
+  the first version's flag: `Passthrough::Fb`); else not at all. A frame
+  asked to show it (`end_frame(panel, true)`) submits the projection layer
+  with `BLEND_TEXTURE_SOURCE_ALPHA` (premultiplied colour, OpenXR's default)
+  and either `ALPHA_BLEND` as its blend mode or, under it, a passthrough
+  layer (`XrPassthroughFB` and a reconstruction `XrPassthroughLayerFB`, both
+  running from their creation when first asked for, dropped once a frame
+  no longer asks: the cameras stop); elsewhere the request changes nothing.
+  `EndedFrame::passthrough` says how the room showed. The openxr crate keeps
+  the passthrough layer's builder to itself, so it is submitted in its raw
+  form.
 - On Android the loader is initialised with XR_KHR_loader_init_android and the
   instance created with XR_KHR_android_create_instance (`Platform` is
   `openxr::AndroidPlatformInfo` there).
@@ -5829,7 +6060,11 @@ Monado cannot show what only a headset can: the Horizon OS runtime and its
 Vulkan driver, Quest frame pacing and reprojection, real head and controller
 tracking, hand tracking and eye gaze (Monado's simulated devices offer neither),
 Android lifecycle and permissions (eye tracking needs
-`com.oculus.permission.EYE_TRACKING`), and the APK packaging with Meta's loader.
+`com.oculus.permission.EYE_TRACKING`), the APK packaging with Meta's loader,
+and the room behind the frame (the simulated HMD enumerates `OPAQUE` alone
+and offers no `XR_FB_passthrough`, so neither passthrough path runs there;
+the APK declares `com.oculus.feature.PASSTHROUGH`, not required, which
+Horizon OS asks of apps using the extension).
 `xem-xr` cross-compiles for `aarch64-linux-android`
 (`cargo ndk -t arm64-v8a -P 26 build -p xem-xr` in `#android`).
 

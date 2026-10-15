@@ -94,8 +94,45 @@ pub struct Capabilities {
     /// Recommended per-eye image size.
     pub eye_size: (u32, u32),
     pub max_layers: u32,
+    /// The environment blend modes the system offers, in its order of
+    /// preference, and the first (the one an opaque session uses).
+    pub blend_modes: Vec<xr::EnvironmentBlendMode>,
     pub blend_mode: xr::EnvironmentBlendMode,
+    /// How the session can show the room around the player, if it can
+    /// ([`Passthrough::offered`]).
+    pub passthrough: Option<Passthrough>,
     pub gpu: String,
+}
+
+/// How a session shows the room around the player behind what it draws,
+/// the frames the host asks for it ([`XrSession::end_frame`]); the host
+/// leaves the room's backdrop out of them and draws premultiplied colour
+/// whose alpha is what covers the room.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Passthrough {
+    /// The system blends the frame over the room by its alpha
+    /// (`XR_ENVIRONMENT_BLEND_MODE_ALPHA_BLEND`: video see-through headsets
+    /// whose runtime offers it).
+    AlphaBlend,
+    /// `XR_FB_passthrough`: a passthrough layer under the projection layer,
+    /// which covers it by its alpha.
+    Fb,
+}
+
+impl Passthrough {
+    /// What the system offers, in that order: alpha blending among its
+    /// blend modes, else `XR_FB_passthrough` where the extension is enabled
+    /// and the system supports it; else nothing (an opaque display, such as
+    /// Monado's simulated HMD: the room is not shown).
+    pub fn offered(blend_modes: &[xr::EnvironmentBlendMode], fb_passthrough: bool) -> Option<Passthrough> {
+        if blend_modes.contains(&xr::EnvironmentBlendMode::ALPHA_BLEND) {
+            Some(Passthrough::AlphaBlend)
+        } else if fb_passthrough {
+            Some(Passthrough::Fb)
+        } else {
+            None
+        }
+    }
 }
 
 /// The platform data the loader and instance need: `()` off Android, an
@@ -140,6 +177,9 @@ impl XrContext {
         extensions.ext_eye_gaze_interaction = available.ext_eye_gaze_interaction;
         extensions.ext_hand_interaction = available.ext_hand_interaction;
         extensions.meta_hand_tracking_microgestures = available.ext_hand_interaction && available.meta_hand_tracking_microgestures;
+        // Passthrough where a runtime offers it this way (Horizon OS); used
+        // only when the system supports it and the player turns it on.
+        extensions.fb_passthrough = available.fb_passthrough;
         #[cfg(target_os = "android")]
         {
             extensions.khr_android_create_instance = true;
@@ -176,11 +216,14 @@ impl XrContext {
                 format!("primary stereo has {} views", views.len()),
             ));
         }
-        let blend_mode = *instance
+        let blend_modes = instance
             .enumerate_environment_blend_modes(system, VIEW_TYPE)
-            .map_err(XrError::xr("xrEnumerateEnvironmentBlendModes"))?
+            .map_err(XrError::xr("xrEnumerateEnvironmentBlendModes"))?;
+        let blend_mode = *blend_modes
             .first()
             .ok_or_else(|| XrError::new("blend modes", "none offered".into()))?;
+        let fb_passthrough = extensions.fb_passthrough && supports_fb_passthrough(&instance, system)?;
+        let passthrough = Passthrough::offered(&blend_modes, fb_passthrough);
         let hand_tracking = extensions.ext_hand_tracking
             && instance
                 .supports_hand_tracking(system)
@@ -202,7 +245,9 @@ impl XrContext {
                 views[0].recommended_image_rect_height,
             ),
             max_layers: system_properties.graphics_properties.max_layer_count,
+            blend_modes,
             blend_mode,
+            passthrough,
             gpu: format!("{} ({})", info.name, info.driver),
         };
         Ok(Self {
@@ -254,6 +299,33 @@ fn supports_eye_gaze(instance: &xr::Instance, system: xr::SystemId) -> Result<bo
         return Err(XrError::xr("xrGetSystemProperties")(result));
     }
     Ok(gaze.supports_eye_gaze_interaction.into())
+}
+
+/// Whether the system supports `XR_FB_passthrough` (its second properties'
+/// capability bit, or the first's flag on runtimes of the extension's first
+/// version).
+fn supports_fb_passthrough(instance: &xr::Instance, system: xr::SystemId) -> Result<bool, XrError> {
+    let mut first = xr::sys::SystemPassthroughPropertiesFB {
+        ty: xr::sys::SystemPassthroughPropertiesFB::TYPE,
+        next: std::ptr::null(),
+        supports_passthrough: false.into(),
+    };
+    let mut second = xr::sys::SystemPassthroughProperties2FB {
+        ty: xr::sys::SystemPassthroughProperties2FB::TYPE,
+        next: std::ptr::from_mut(&mut first).cast_const().cast(),
+        capabilities: xr::sys::PassthroughCapabilityFlagsFB::EMPTY,
+    };
+    // SAFETY: an output structure chain of the right types for the call.
+    let mut properties: xr::sys::SystemProperties = unsafe { std::mem::zeroed() };
+    properties.ty = xr::sys::SystemProperties::TYPE;
+    properties.next = std::ptr::from_mut(&mut second).cast();
+    let result = unsafe {
+        (instance.fp().get_system_properties)(instance.as_raw(), system, &mut properties)
+    };
+    if result.into_raw() < 0 {
+        return Err(XrError::xr("xrGetSystemProperties")(result));
+    }
+    Ok(second.capabilities.contains(xr::sys::PassthroughCapabilityFlagsFB::PASSTHROUGH_CAPABILITY) || bool::from(first.supports_passthrough))
 }
 
 #[derive(Clone, Debug)]
@@ -445,6 +517,10 @@ pub struct XrSession {
     eyes: Swapchain,
     panel: Option<Swapchain>,
     input: input::Input,
+    /// `XR_FB_passthrough`'s passthrough and layer while the room shows
+    /// that way (made when first asked for, dropped when no longer: the
+    /// cameras stop).
+    fb: Option<(xr::PassthroughLayerFB, xr::Passthrough)>,
     view_space: xr::Space,
     space: xr::Space,
     frame_waiter: xr::FrameWaiter,
@@ -453,6 +529,8 @@ pub struct XrSession {
     instance: xr::Instance,
     gpu: Gpu,
     blend_mode: xr::EnvironmentBlendMode,
+    /// How the system can show the room.
+    passthrough: Option<Passthrough>,
     depth_range: (f32, f32),
     state: SessionState,
     running: bool,
@@ -564,6 +642,7 @@ impl XrSession {
             eyes,
             panel,
             input,
+            fb: None,
             view_space,
             space,
             frame_waiter,
@@ -572,6 +651,7 @@ impl XrSession {
             instance,
             gpu: context.gpu.clone(),
             blend_mode: context.capabilities.blend_mode,
+            passthrough: context.capabilities.passthrough,
             depth_range: config.depth_range,
             state: SessionState::IDLE,
             running: false,
@@ -778,9 +858,33 @@ impl XrSession {
 
     /// Ends the frame (`xrEndFrame`): the projection layer if the eyes were
     /// rendered, then the panel quad layer at `panel` if its swapchain has an
-    /// image. Returns the frame, with the layers it submitted.
-    pub fn end_frame(&mut self, panel: Option<PanelPlacement>) -> Result<EndedFrame, XrError> {
+    /// image. With `passthrough`, where the system can show the room
+    /// ([`Capabilities::passthrough`]), the room shows behind the projection
+    /// layer, which covers it by its alpha (premultiplied colour): alpha
+    /// blending as the frame's blend mode, or `XR_FB_passthrough`'s layer
+    /// under it; elsewhere `passthrough` changes nothing (the opaque blend
+    /// mode). Returns the frame, with the layers it submitted and how the
+    /// room showed.
+    pub fn end_frame(&mut self, panel: Option<PanelPlacement>, passthrough: bool) -> Result<EndedFrame, XrError> {
         let frame = self.frame.take().expect("end a begun frame");
+        let room = self.passthrough.filter(|_| passthrough);
+        // XR_FB_passthrough's objects while the room shows that way, running
+        // from their creation (none otherwise).
+        if room == Some(Passthrough::Fb) {
+            if self.fb.is_none() {
+                let running = xr::PassthroughFlagsFB::IS_RUNNING_AT_CREATION;
+                let feature = self.session.create_passthrough(running).map_err(XrError::xr("xrCreatePassthroughFB"))?;
+                let layer = self
+                    .session
+                    .create_passthrough_layer(&feature, running, xr::PassthroughLayerPurposeFB::RECONSTRUCTION)
+                    .map_err(XrError::xr("xrCreatePassthroughLayerFB"))?;
+                self.fb = Some((layer, feature));
+            }
+        } else {
+            self.fb = None;
+        }
+        // Alpha covers the room where it shows.
+        let alpha = if room.is_some() { xr::CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA } else { xr::CompositionLayerFlags::EMPTY };
         let rect = self.eyes.rect();
         let projection_views = [0, 1].map(|eye| {
             xr::CompositionLayerProjectionView::new()
@@ -794,8 +898,19 @@ impl XrSession {
                 )
         });
         let projection = xr::CompositionLayerProjection::new()
+            .layer_flags(alpha)
             .space(&self.space)
             .views(&projection_views);
+        // The room under everything, where XR_FB_passthrough shows it (the
+        // crate keeps this layer's builder to itself: its raw form, whose
+        // space the runtime ignores).
+        let underlay = self.fb.as_ref().map(|(layer, _)| xr::sys::CompositionLayerPassthroughFB {
+            ty: xr::sys::CompositionLayerPassthroughFB::TYPE,
+            next: std::ptr::null(),
+            flags: xr::CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
+            space: <xr::sys::Space as xr::sys::Handle>::NULL,
+            layer_handle: layer.as_raw(),
+        });
         let quad = match (&self.panel, panel) {
             (Some(swapchain), Some(placement)) if swapchain.released.is_some() => Some(
                 xr::CompositionLayerQuad::new()
@@ -818,6 +933,15 @@ impl XrSession {
         };
         let mut layers: Vec<&xr::CompositionLayerBase<xr::Vulkan>> = Vec::new();
         let mut submitted = Vec::new();
+        if let Some(underlay) = &underlay
+            && frame.should_render
+        {
+            // SAFETY: a passthrough layer begins with the composition layer
+            // header CompositionLayerBase wraps (repr(transparent)), as every
+            // layer does; it outlives xrEndFrame below.
+            layers.push(unsafe { &*std::ptr::from_ref(underlay).cast::<xr::CompositionLayerBase<xr::Vulkan>>() });
+            submitted.push(Layer::Passthrough);
+        }
         if frame.rendered && frame.should_render {
             layers.push(&projection);
             submitted.push(Layer::Projection);
@@ -828,12 +952,14 @@ impl XrSession {
             layers.push(quad);
             submitted.push(Layer::Quad);
         }
+        let blend_mode = if room == Some(Passthrough::AlphaBlend) { xr::EnvironmentBlendMode::ALPHA_BLEND } else { self.blend_mode };
         self.frame_stream
-            .end(frame.predicted_display_time, self.blend_mode, &layers)
+            .end(frame.predicted_display_time, blend_mode, &layers)
             .map_err(XrError::xr("xrEndFrame"))?;
         Ok(EndedFrame {
             frame,
             layers: submitted,
+            passthrough: room,
         })
     }
 }
@@ -855,6 +981,8 @@ impl Drop for XrSession {
 /// A composition layer submitted by `xrEndFrame`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Layer {
+    /// `XR_FB_passthrough`'s room, under the others.
+    Passthrough,
     Projection,
     Quad,
 }
@@ -862,6 +990,29 @@ pub enum Layer {
 pub struct EndedFrame {
     pub frame: Frame,
     pub layers: Vec<Layer>,
+    /// How the room showed behind the frame (none: the opaque blend mode).
+    pub passthrough: Option<Passthrough>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_room_shows_only_where_the_system_blends_by_alpha_or_offers_fb_passthrough() {
+        use xr::EnvironmentBlendMode as Mode;
+        // Monado's simulated HMD (and any opaque display): never.
+        assert_eq!(Passthrough::offered(&[Mode::OPAQUE], false), None);
+        assert_eq!(Passthrough::offered(&[], false), None);
+        // An additive display (see-through optics) lights over the room
+        // itself; it is not a passthrough this host draws for.
+        assert_eq!(Passthrough::offered(&[Mode::ADDITIVE], false), None);
+        // A runtime offering alpha blending, first or after opaque.
+        assert_eq!(Passthrough::offered(&[Mode::OPAQUE, Mode::ALPHA_BLEND], false), Some(Passthrough::AlphaBlend));
+        assert_eq!(Passthrough::offered(&[Mode::ALPHA_BLEND], true), Some(Passthrough::AlphaBlend), "alpha blending first");
+        // Horizon OS: opaque only, with XR_FB_passthrough supported.
+        assert_eq!(Passthrough::offered(&[Mode::OPAQUE], true), Some(Passthrough::Fb));
+    }
 }
 
 fn acquire(

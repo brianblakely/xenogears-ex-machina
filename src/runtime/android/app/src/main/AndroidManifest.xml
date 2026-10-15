@@ -13,6 +13,12 @@
     <uses-feature
         android:name="android.hardware.gamepad"
         android:required="false" />
+    <!-- Horizon OS offers XR_FB_passthrough to apps declaring it: the
+         diorama over the room where the player turns Passthrough on. Not
+         required: the app runs without it (on phones, other headsets). -->
+    <uses-feature
+        android:name="com.oculus.feature.PASSTHROUGH"
+        android:required="false" />
 
     <application
         android:allowBackup="false"

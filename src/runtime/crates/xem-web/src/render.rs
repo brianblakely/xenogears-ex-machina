@@ -88,8 +88,13 @@ pub struct WebRenderer {
     /// of view's tangents (left, right, up, down), which the screen's span
     /// in it is reckoned from.
     xr_eye: (u32, [f32; 4]),
-    /// Two-hand scaling of the headset's screen.
-    pub xr_scale: f32,
+    /// Two-hand scaling as the headset's input has it: the screen's scale,
+    /// and the diorama's while the hands scale it.
+    pub xr_scaling: xem_assist::headset::Scaling,
+    /// The immersive session shows the real room around what it draws
+    /// (immersive AR: its blend mode is not opaque): the frames leave it
+    /// transparent, without the room's backdrop.
+    pub xr_room: bool,
     /// The last immersive frame looked from within the scene through each
     /// view (first-person inspection), the screen showing the interface.
     pub xr_within: bool,
@@ -240,7 +245,8 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         xr_eye_height: 1080,
         // Until a frame tells: a square view 90 degrees wide.
         xr_eye: (1080, [-1.0, 1.0, 1.0, -1.0]),
-        xr_scale: 1.0,
+        xr_scaling: Default::default(),
+        xr_room: false,
         xr_within: false,
         xr_seat: Seat::default(),
         xr_share: 1.0,
@@ -250,11 +256,14 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
     })
 }
 
-/// The canvas's WebGL2 context, XR-compatible from the start (no alpha,
-/// antialiasing, depth or stencil: the renderer owns its targets).
+/// The canvas's WebGL2 context, XR-compatible from the start (no
+/// antialiasing, depth or stencil: the renderer owns its targets). It has
+/// alpha, for an emulated headset whose layer is the canvas's own
+/// framebuffer (IWER's) in immersive AR; what the canvas and VR draw stays
+/// opaque (their clears are).
 fn xr_context(canvas: &HtmlCanvasElement) -> Result<WebGl2RenderingContext, String> {
     let attributes = js_sys::Object::new();
-    for (key, value) in [("alpha", false), ("antialias", false), ("depth", false), ("stencil", false), ("xrCompatible", true)] {
+    for (key, value) in [("alpha", true), ("antialias", false), ("depth", false), ("stencil", false), ("xrCompatible", true)] {
         js_sys::Reflect::set(&attributes, &key.into(), &value.into()).map_err(|e| format!("{e:?}"))?;
     }
     canvas
@@ -457,15 +466,16 @@ impl WebRenderer {
         // in a headset, as wide as the screen spans in a view.
         let shown = if headset {
             let (eye, fov) = self.xr_eye;
-            headset_movie_output(f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale, f32::from(graphics.xr.distance_cm) / 100.0, eye, fov)
+            headset_movie_output(f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scaling.scale, f32::from(graphics.xr.distance_cm) / 100.0, eye, fov)
         } else {
             let placed = present_rect((display.width, display.height), self.size(), settings.presentation.scale);
             (placed.width.round() as u32, placed.height.round() as u32)
         };
         config.movies = config.movies.map(|_| shown);
         self.renderer.configure(config);
-        // A headset shows the screen or the diorama; the canvas the screen.
-        self.renderer.set_xr_view(if headset { xr_view(graphics) } else { HeadsetView::Screen });
+        // A headset shows the screen or the diorama (at the hands' scale while
+        // they scale it); the canvas the screen.
+        self.renderer.set_xr_view(if headset { self.xr_scaling.shown(xr_view(graphics)) } else { HeadsetView::Screen });
         self.renderer.take_restart()
     }
 
@@ -641,7 +651,7 @@ impl WebRenderer {
             (None, Some((_, _, size))) => ((size.0 as f32, size.1 as f32), 0.0),
             (None, None) => return None,
         };
-        let width = f32::from(xr.width_cm) / 100.0 * self.xr_scale;
+        let width = f32::from(xr.width_cm) / 100.0 * self.xr_scaling.scale;
         let aspect = (display.1) / (display.0 + 2.0 * side);
         let pose = self.xr_seat.place(xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -f32::from(xr.distance_cm) / 100.0), orientation: xem_render::glam::Quat::IDENTITY });
         Some(xem_assist::headset::Screen::flat(xem_assist::headset::Quad { pose, size: (width, width * aspect) }, display, side))
@@ -704,8 +714,9 @@ impl WebRenderer {
             hud.frame(std::time::Duration::from_secs_f64(time), self.scale, presentation.show_fps).map_err(|e| e.to_string())?;
         }
         // The headset view as the settings have it now (never the diorama
-        // under the Original renderer), the game paused or not.
-        self.renderer.set_xr_view(xr_view(&graphics));
+        // under the Original renderer; at the hands' scale while they scale
+        // it), the game paused or not.
+        self.renderer.set_xr_view(self.xr_scaling.shown(xr_view(&graphics)));
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         // First-person inspection looks from within the scene through each
         // view, every immersive frame, paused or not.
@@ -781,7 +792,7 @@ impl WebRenderer {
         let room: Vec<(wgpu::TextureView, Mat4, Vec2)> = self.overlay.room.iter()
             .map(|p| (self.atlas.view(&self.gpu.device, &self.gpu.queue, &p.widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone(), p.pose, p.size))
             .collect();
-        let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale;
+        let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scaling.scale;
         let height = width * screen_size.1 as f32 / screen_size.0 as f32;
         let panel_quad = self.panel.as_ref().filter(|_| self.panel_visible).map(|panel| {
             let quad = xr_panel_quad(&seat, settings, panel.size(), (width, height));
@@ -864,8 +875,14 @@ impl WebRenderer {
                     .collect()
             })
             .collect();
-        // The room around the screen; the views' pictures cover it.
-        let clear = Some(if within.is_empty() { BACKDROP } else { wgpu::Color::BLACK });
+        // The room around the screen; the views' pictures cover it. In
+        // immersive AR the real room: nothing drawn, the colour premultiplied
+        // and its alpha what covers the room.
+        let clear = Some(match (within.is_empty(), self.xr_room) {
+            (false, _) => wgpu::Color::BLACK,
+            (true, true) => wgpu::Color::TRANSPARENT,
+            (true, false) => BACKDROP,
+        });
         // The eyes into the layer-sized buffer at their viewports (WebXR
         // counts rows from the bottom; the buffer from the top until the flip).
         let assembled: Vec<Quad> = targets
@@ -896,7 +913,7 @@ impl WebRenderer {
             .collect();
         passes.push((&targets.assembled, clear, &assembled));
         let last = [flipped];
-        passes.push((&targets.layer, Some(wgpu::Color::BLACK), &last));
+        passes.push((&targets.layer, Some(if self.xr_room { wgpu::Color::TRANSPARENT } else { wgpu::Color::BLACK }), &last));
         self.compositor.draw_targets(&mut encoder, &passes);
         drop(passes);
         self.gpu.queue.submit([encoder.finish()]);
@@ -927,6 +944,7 @@ impl WebRenderer {
         self.xr_space = None;
         self.xr_share = 1.0;
         self.xr_seat = Seat::default();
+        self.xr_room = false;
     }
 
     fn xr_targets(&self, framebuffer: Option<WebGlFramebuffer>, size: (u32, u32)) -> XrTargets {

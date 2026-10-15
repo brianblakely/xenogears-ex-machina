@@ -66,7 +66,14 @@
 # - on the screen view the app's Recenter puts the seat at the head and
 #   Monado's recentring of LOCAL puts it back at LOCAL's origin, the screen
 #   in front of the eyes after each; the world map's control deck keeps
-#   as many keys, as wide and as far beside the screen at every scale.
+#   as many keys, as wide and as far beside the screen at every scale;
+# - two-hand scaling of the diorama (scripted whole-hand pinches spread,
+#   then contract): the table's scale follows the hands live, the camera's
+#   target stays at the table's anchor within a millimetre, each gesture's
+#   scale is committed to the setting once when the hands let go, a key
+#   beside the pane keeps its width, nothing else happens and the RAM is
+#   xem-headless's; Monado's simulated HMD (opaque, no XR_FB_passthrough)
+#   shows no room: Passthrough, asked for, changes nothing.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -278,6 +285,16 @@ for battle in battle gear; do
 done
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2300},"max_frames":3000}\n{"cmd":"memory_hash"}\n' "$gear" |
     "$headless" --disc "$disc" --control >"$out/gear-headless.log" 2>"$out/gear-headless.err"
+# Two-hand scaling of the diorama, with the inspection run's log (its RAM
+# checked against the same headless run): two whole-hand pinches spread at
+# headset frame 110 and contract at 150, once the log has walked Fei into
+# the room (game frames 500 to 560, by about headset frame 80) and the
+# camera holds still, both eyes captured at 140; and Passthrough asked for,
+# which Monado's simulated HMD cannot show.
+echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama", "passthrough": true}}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-hands "110:spread,150:contract" \
+    --xr-capture "$out/diorama-scale" --xr-capture-at 140 >"$out/diorama-scale.log" 2>"$out/diorama-scale.err"
+cp "$out/config/xenogears-ex-machina/settings.json" "$out/diorama-scale.settings.json"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -917,6 +934,71 @@ reference = [json.loads(l) for l in open(f"{out}/gear-headless.log") if l.starts
 reference = next(v for v in reference if isinstance(v, str))
 check(final_hash("gear.log") == reference, f"gear.log: RAM at game frame 2300 {final_hash('gear.log')} != headless {reference}")
 print(f"battles: on foot and in Gears on the screen at headset frames 560 and 620, the grab turning nothing on; Gears' RAM {final_hash('gear.log')}")
+
+# Two-hand scaling of the diorama: the spread enlarges it live and the
+# contraction shrinks it, each committed to the setting once, when the hands
+# let go, at the scale shown last; the camera's target stays at the table's
+# anchor within a millimetre while the table's scale changes; a key beside
+# the pane keeps its width; nothing else happens (no pause, press, command
+# or walk) and the RAM at game frame 1200 is xem-headless's. Monado cannot
+# show the room: Passthrough, asked for, changes nothing.
+rows = records("diorama-scale.log")
+by = {int(r["n"]): r for r in rows}
+log = open(f"{out}/diorama-scale.log").read().splitlines()
+commits = [int(l.split("diorama_scale=")[1].split()[0]) for l in log if l.startswith("scale commit ")]
+check(final_hash("diorama-scale.log") == inspected, f"diorama-scale.log: RAM at game frame 1200 {final_hash('diorama-scale.log')} != headless {inspected}")
+check(len(commits) == 2 and 240 <= commits[0] <= 260 and abs(commits[1] - commits[0] * 0.598) <= 2,
+      f"the spread and the contraction were committed once each, about 2.5 and 0.6 times: {commits}")
+check(not any("refused" in l for l in log if l.startswith("scale commit ")), "a scale was refused")
+saved = json.load(open(f"{out}/diorama-scale.settings.json"))["graphics"]["xr"]
+check(saved.get("diorama_scale") == (commits[-1] if commits else None), f"the setting keeps the last scale: {saved.get('diorama_scale')} for {commits}")
+scales = [float(r["diorama_scale"]) for r in rows]
+check(all(abs(s - 1.0) < 1e-4 for s in scales[:110]), f"the scale before the spread: {sorted(set(scales[:110]))}")
+gestures = [json.loads(r["gestures"]) for r in rows]
+named = {g["gesture"] for frame in gestures for g in frame}
+check(named <= {"ScaleBegin", "Scale", "ScaleEnd"} and {"ScaleBegin", "ScaleEnd"} <= named, f"gestures other than scaling: {sorted(named)}")
+check(all(r["player_pause"] == "0" and r["paused"] == "0" for r in rows), "scaling paused the game")
+check(all(r["assist"] == rows[0]["assist"] for r in rows), f"scaling commanded the character: {sorted({r['assist'] for r in rows})}")
+def scaled(begin):
+    # The frames from a scaling's begin to its end, while the diorama shows.
+    start = next((i for i, g in enumerate(gestures) if i >= begin and any(x["gesture"] == "ScaleBegin" for x in g)), None)
+    end = next((i for i, g in enumerate(gestures) if start is not None and i > start and any(x["gesture"] == "ScaleEnd" for x in g)), None)
+    return [] if start is None or end is None else [r for r in rows[start:end + 1] if r["diorama"] == "1"]
+for name, begin, grows in (("spread", 110, True), ("contraction", 150, False)):
+    frames_ = scaled(begin)
+    check(len(frames_) >= 10, f"the {name} scaled over {len(frames_)} frames showing the diorama")
+    if not frames_:
+        continue
+    world = [float(r["world_scale"]) for r in frames_]
+    shown_ = [float(r["diorama_scale"]) for r in frames_]
+    anchors = [[float(v) for v in r["anchor"].split(",")] for r in frames_]
+    targets = [[float(v) for v in r["target"].split(",")] for r in frames_]
+    moved = max(sum((a - b) ** 2 for a, b in zip(p, anchors[0])) ** 0.5 for p in anchors)
+    drift = max(sum((a - b) ** 2 for a, b in zip(p, targets[0])) ** 0.5 for p in targets)
+    ratio = world[-1] / world[0]
+    check((ratio > 2.0) if grows else (ratio < 0.7), f"the {name}: the table's scale went {world[0]:.4e} to {world[-1]:.4e} ({ratio:.3f} times)")
+    check(abs(ratio - shown_[-1] / shown_[0]) < 0.01, f"the {name}: the table scales by the diorama's scale ({ratio:.4f} against {shown_[-1] / shown_[0]:.4f})")
+    check(drift < 1.0 and moved < 0.001, f"the {name}: the anchor moved {moved * 1000:.3f} mm (the camera's target {drift:.2f} units)")
+    print(f"diorama {name}: headset frames {frames_[0]['n']}..{frames_[-1]['n']}, shown scale {shown_[0]:.4f} to {shown_[-1]:.4f}, "
+          f"the table's {ratio:.4f} times, the anchor within {moved * 1000:.4f} mm (target within {drift:.3f} units)")
+for commit in commits:
+    # The commit is the scale the frame before showed.
+    line = next(i for i, l in enumerate(log) if l.startswith(f"scale commit diorama_scale={commit} "))
+    before = [l for l in log[:line] if l.startswith("xrframe ")][-1]
+    shown_last = float(dict(f.split("=", 1) for f in before.split()[1:])["diorama_scale"])
+    check(abs(shown_last * 100 - commit) <= 0.5, f"committed {commit}% after showing {shown_last:.4f}")
+keys = {r["key"] for r in rows if r["diorama"] == "1"}
+check(len(keys) == 1, f"a key beside the pane changed its width with the scale: {sorted(keys)}")
+check(any(l.startswith("xr room: passthrough=unavailable blend_modes=OPAQUE") for l in log),
+      f"Monado's simulated HMD offers the room: {[l for l in log if l.startswith('xr room')]}")
+# No frame showed the room, and every rendered one submitted the projection
+# layer alone (no passthrough layer; the panel never opens in this run).
+check(all(r["passthrough"] == "0" for r in rows), "the room showed (passthrough) on an opaque display")
+check(all(r["layers"] == "1" for r in rows if r["render"] == "1"), f"layers other than the projection: {sorted({r['layers'] for r in rows if r['render'] == '1'})}")
+_, _, scaled_eye = png(f"{out}/diorama-scale/140/left.png")
+check(scaled_eye[0][0:4] == left[0][0:3] + b"\xff", f"the room's backdrop is drawn, opaque, with Passthrough on: {tuple(scaled_eye[0][0:4])} against {tuple(left[0][0:3])}")
+print(f"diorama scaling: committed {commits} (setting {saved.get('diorama_scale')}), a key {sorted(keys)} m wide; "
+      f"{next((l for l in log if l.startswith('xr room')), 'no room line')}; RAM {final_hash('diorama-scale.log')}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

@@ -35,6 +35,7 @@ const page = {
   // canvas's animation frames.
   xr: null,
   xrSupported: false,
+  arSupported: false,
   xrSessions: 0,
   xrError: null,
 };
@@ -157,13 +158,15 @@ function wireCanvas() {
 wireCanvas();
 // Immersive play is submitted through an XR-compatible WebGL2 context
 // (WebXR layers on WebGPU are not available to test): a browser that offers
-// immersive VR renders with one from the start; others use WebGPU first.
+// immersive VR or AR renders with one from the start; others use WebGPU first.
 try {
   page.xrSupported = Boolean(navigator.xr) && await navigator.xr.isSessionSupported('immersive-vr');
 } catch (error) {
   page.xrError = String(error);
 }
-const prefer = params.get('backend') ?? (page.xrSupported ? 'webgl2-xr' : 'auto');
+// A browser whose WebXR knows no immersive AR rejects the question: no AR.
+page.arSupported = Boolean(navigator.xr) && await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+const prefer = params.get('backend') ?? (page.xrSupported || page.arSupported ? 'webgl2-xr' : 'auto');
 if (!(await startRenderer(prefer)) && prefer !== 'webgl2') await startRenderer('webgl2');
 new ResizeObserver(sizeCanvas).observe(document.querySelector('main'));
 
@@ -249,8 +252,12 @@ const host = {
       crossOriginIsolated: window.crossOriginIsolated,
       xr: {
         supported: page.xrSupported,
+        arSupported: page.arSupported,
         capable: app.xr_capable(),
         active: Boolean(page.xr),
+        // The running session's mode and environment blend mode.
+        mode: page.xr?.mode ?? null,
+        blend: page.xr?.blend ?? null,
         sessions: page.xrSessions,
         frames: page.xr?.frames ?? 0,
         views: page.xr?.views ?? 0,
@@ -261,7 +268,8 @@ const host = {
       },
     };
   },
-  enterVr: () => enterVr(),
+  enterVr: () => enterXr('immersive-vr'),
+  enterAr: () => enterXr('immersive-ar'),
   exitVr: () => page.xr?.session.end(),
   /** RGBA bytes of the immersive layer at [x, y] points (from the bottom left). */
   xrReadback: (points) => page.xr && new Promise((resolve) => { page.xr.readbackRequest = { points, resolve }; }),
@@ -329,24 +337,32 @@ document.addEventListener('fullscreenchange', () => {
 // --- Immersive play (WebXR): a flat virtual screen in front of the player --
 // The game runs from the session's animation frames exactly as from the
 // canvas's (the frames due by the clock, never per view); every view draws
-// the same game picture as a screen. Controllers stand in for a pad
-// (xr-standard mapping): left stick the D-pad, A/B/X/Y Cross/Circle/Square/
-// Triangle, triggers L1/R1, squeeze L2/R2, stick clicks Start/Select.
-async function enterVr() {
+// the same game picture as a screen, or the diorama. Controllers stand in
+// for a pad (xr-standard mapping): left stick the D-pad, A/B/X/Y
+// Cross/Circle/Square/Triangle, triggers L1/R1, squeeze L2/R2, stick clicks
+// Start/Select. Immersive AR (where the browser offers it) is the same play
+// over the real room: a session whose blend mode is not opaque gets a layer
+// with alpha, and the frames leave the room around what they draw
+// transparent.
+async function enterXr(mode) {
   if (page.xr || !navigator.xr) return;
-  const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'hand-tracking'] });
+  // VR and AR ask for the same optional features: nothing AR-specific
+  // (hit tests, planes, anchors, depth) is asked for, let alone required.
+  const session = await navigator.xr.requestSession(mode, { optionalFeatures: ['local-floor', 'hand-tracking'] });
   page.xrSessions += 1;
   const gl = canvas.getContext('webgl2');
+  const blend = session.environmentBlendMode ?? 'opaque';
   // ?xrScale=F asks for a smaller (or larger) layer than the headset's default.
   const framebufferScaleFactor = Number(params.get('xrScale') ?? 1);
-  const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: false, framebufferScaleFactor });
+  const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: blend !== 'opaque', framebufferScaleFactor });
   session.updateRenderState({ baseLayer: layer });
   const space = await session.requestReferenceSpace('local');
   // The runtime recentred the space (the system's recentring): everything
   // stands in front of its new origin again, as OpenXR's hosts do it.
   space.addEventListener('reset', () => app.xr_reference_reset());
-  page.xr = { session, layer, space, frames: 0, views: 0, select: -1, pinching: [false, false], pinched: [false, false] };
-  vrButton.textContent = 'Exit VR';
+  app.xr_session(blend);
+  page.xr = { session, layer, space, mode, blend, frames: 0, views: 0, select: -1, pinching: [false, false], pinched: [false, false] };
+  (mode === 'immersive-ar' ? arButton : vrButton).textContent = mode === 'immersive-ar' ? 'Exit AR' : 'Exit VR';
   // A controller's select (trigger) clicks on the settings panel. A hand's
   // select is WebXR's standard pinch: held from selectstart to selectend
   // (one that starts and ends within a frame still counts). A hidden
@@ -368,6 +384,7 @@ async function enterVr() {
   session.addEventListener('end', () => {
     page.xr = null;
     vrButton.textContent = 'Enter VR';
+    arButton.textContent = 'Enter AR';
     app.xr_ended();
     app.release_input();
     if (document.hasFocus()) app.resume_input();
@@ -519,11 +536,16 @@ document.addEventListener('visibilitychange', () => {
 
 // --- Controls ----------------------------------------------------------------
 const vrButton = $('vr');
+const arButton = $('ar');
+// Enter AR shows only where the browser offers immersive AR.
 vrButton.hidden = !(page.xrSupported && app.xr_capable());
-vrButton.addEventListener('click', () => {
-  if (page.xr) page.xr.session.end();
-  else enterVr().catch((error) => { page.xrError = String(error.message ?? error); });
-});
+arButton.hidden = !(page.arSupported && app.xr_capable());
+for (const [button, mode] of [[vrButton, 'immersive-vr'], [arButton, 'immersive-ar']]) {
+  button.addEventListener('click', () => {
+    if (page.xr) page.xr.session.end();
+    else enterXr(mode).catch((error) => { page.xrError = String(error.message ?? error); });
+  });
+}
 function show(message) {
   $('message').textContent = message;
 }

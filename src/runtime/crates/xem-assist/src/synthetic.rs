@@ -157,6 +157,20 @@ impl Step {
     }
 }
 
+/// Two whole-hand pinches `from` metres apart (each hand that far from the
+/// middle) moving to `to` in even steps, then held there and opened: two-hand
+/// scaling by about `to / from` (the palms' distance), both hands open at the
+/// end (so the next gesture may begin).
+fn whole_pinches(from: f32, to: f32) -> Frames {
+    let at = |x: f32, hand| place(hand, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
+    let both = |x: f32, hand: fn() -> [Vec3; JOINTS]| Step::of([Some(at(-x, left(hand()))), Some(at(x, hand()))]);
+    let steps = 10;
+    let mut frames = vec![both(from, open), both(from, whole_pinch), both(from, whole_pinch)];
+    frames.extend((1..=steps).map(|i| both(from + (to - from) * i as f32 / steps as f32, whole_pinch)));
+    frames.extend([both(to, whole_pinch), both(to, open), both(to, open)]);
+    frames
+}
+
 /// The steps of a named gesture with the right hand (the left open):
 /// `pause` (an overhand grab), `inspect` (underhand), `pinch`, `tap`,
 /// `swipe-up`, `swipe-down`, `swipe-left`, `swipe-right`; `prayer` with
@@ -169,10 +183,12 @@ impl Step {
 /// right hand lost while it closes and found again closed: its tracking
 /// lost, no grab). Two-hand scaling: `scale-out` (two whole-hand pinches
 /// spreading from 15 to 30 cm apart, then let go), `scale-in` (contracting
-/// from 30 to 15 cm) and `scale-pinch` (`scale-out` with the runtime's
+/// from 30 to 15 cm), `scale-pinch` (`scale-out` with the runtime's
 /// pinch reported on both hands from the gather until a frame after they
 /// let go, as a runtime may take gathered fingertips for one: nothing but
-/// the scale).
+/// the scale), `spread` (two whole-hand pinches 20 cm apart moving to 50 cm
+/// in ten steps: two-hand scaling by about 2.5) and `contract` (from 50 cm
+/// to 30 cm: about 0.6).
 pub fn gesture(name: &str) -> Option<Frames> {
     // The left hand rests open beside the right's gestures.
     let rest_left = || Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0)));
@@ -237,6 +253,8 @@ pub fn gesture(name: &str) -> Option<Frames> {
             let apart = |x: f32, h: [Vec3; JOINTS]| place(h, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
             [[Some(apart(-0.2, l)), Some(apart(0.2, r))], [Some(l), Some(r)], [Some(l), Some(r)], [Some(apart(-0.2, l)), Some(apart(0.2, r))], [Some(apart(-0.2, l)), Some(apart(0.2, r))]].map(Step::of).to_vec()
         }
+        "spread" => whole_pinches(0.1, 0.25),
+        "contract" => whole_pinches(0.25, 0.15),
         "lose" => std::iter::repeat_n(Step::default(), 30).collect(),
         _ => return None,
     })
@@ -309,6 +327,27 @@ mod tests {
             assert_eq!(gestures.len(), factors.len() + 2, "{name}: nothing but the scale (the runtime's pinch included): {gestures:?}");
             let last = *factors.last().unwrap();
             assert!((last / reached - 1.0).abs() < 0.05, "{name}: scaled by {last}");
+        }
+    }
+
+    #[test]
+    fn spread_and_contract_read_as_two_hand_scaling_alone_by_their_factors() {
+        let head = (Vec3::new(0.3, 1.6, -0.2), Quat::from_rotation_y(0.7) * Quat::from_rotation_x(-0.2));
+        // The palms' distance, from 0.197 m to 0.497 m and back to 0.297 m.
+        for runtime in [Runtime::HORIZON, Runtime::WEBXR] {
+            for (name, factor) in [("spread", 0.4972 / 0.1972), ("contract", 0.2972 / 0.4972)] {
+                let steps: Vec<Step> = opened().into_iter().chain(gesture(name).unwrap()).collect();
+                let seen = run(&steps, head, runtime);
+                assert!(seen.len() > 3 && seen[0] == Gesture::ScaleBegin && seen[seen.len() - 1] == Gesture::ScaleEnd, "{name}: {seen:?}");
+                let between = &seen[1..seen.len() - 1];
+                assert!(between.iter().all(|g| matches!(g, Gesture::Scale { .. })), "{name}: nothing but scaling: {seen:?}");
+                let Gesture::Scale { factor: reached } = between[between.len() - 1] else { unreachable!() };
+                assert!((reached - factor).abs() < 0.01, "{name} ({runtime:?}) reaches {reached}, not {factor}");
+            }
+            // One after the other, both read (the hands open between them).
+            let steps: Vec<Step> = opened().into_iter().chain(gesture("spread").unwrap()).chain(gesture("contract").unwrap()).collect();
+            let begins = run(&steps, head, runtime).iter().filter(|g| **g == Gesture::ScaleBegin).count();
+            assert_eq!(begins, 2, "{runtime:?}");
         }
     }
 

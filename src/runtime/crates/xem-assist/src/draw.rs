@@ -313,7 +313,9 @@ mod tests {
             for height in [-1.0, -0.45, 0.3] {
                 for distance in [0.3, 0.6, 2.0] {
                     for tilt in [0.0f32, 20.0, 45.0] {
-                        for scale in [0.25, 1.0, 4.0] {
+                        // Every scale of the setting's range (25-400%) in steps
+                        // of 25%, as two-hand scaling passes through them.
+                        for scale in (1..=16).map(|step| step as f32 * 0.25) {
                             let table = Table { scale, height, distance, tilt: tilt.to_radians(), turns: Turns::Smooth };
                             let space = diorama(&table, seat);
                             let pane = Screen::pane(space, at);

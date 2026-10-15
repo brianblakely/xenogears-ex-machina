@@ -15,8 +15,12 @@
 // their release (the runtime's pinch held through them counts no pinch,
 // letting go into fists toggles nothing, the game runs on), and the
 // pointer's keys beside the screen keep their size and stay beside it.
-// Transient gestures are read from status().xr.counts. Needs no private
-// inputs.
+// With the diorama as the view they scale the diorama instead, live, its
+// scale committed to the setting once as the hands let go (the screen's
+// scale stays the session's); neither pauses, pinches or opens settings.
+// Enter AR shows where the headset supports immersive AR (IWER's Quest 3),
+// and not on the same headset without it. Transient gestures are read from
+// status().xr.counts. Needs no private inputs.
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
@@ -343,6 +347,117 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();
+    }
+  });
+
+  test('two whole-hand pinches scale the screen, or the diorama committing its scale once they let go', { timeout: 300_000 }, async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    try {
+      const page = await browser.page('?game=/fixtures/fixture.wasm&xrScale=0.25');
+      await page.evaluate(async () => {
+        await window.xem.boot({ executable: false });
+        window.xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+        window.xem.setRunning(true);
+        const device = window.xrDevice;
+        device.primaryInputMode = 'hand';
+        window.handModel.install(device);
+        device.hands.left.position.set(-0.15, 1.4, -0.3);
+        device.hands.right.position.set(0.15, 1.4, -0.3);
+        window.handModel.set(device, 'left', 'open');
+        window.handModel.set(device, 'right', 'open');
+      });
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().xr.input && window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      const xr = async () => (await status(page)).xr;
+      // Both hands gathered (whole-hand pinches) `from` metres from the
+      // middle, moved to `to` in ten steps, then opened; what the status
+      // shows at each step.
+      const scale = async (from, to) => {
+        const seen = [];
+        const at = (x) => page.evaluate((x) => {
+          window.xrDevice.hands.left.position.set(-x, 1.4, -0.3);
+          window.xrDevice.hands.right.position.set(x, 1.4, -0.3);
+        }, x);
+        await at(from);
+        await frames(2);
+        for (const hand of ['left', 'right']) await page.evaluate((hand) => window.handModel.set(window.xrDevice, hand, 'gather'), hand);
+        await frames(3);
+        for (let i = 1; i <= 10; i++) {
+          await at(from + (to - from) * i / 10);
+          await frames(2);
+          seen.push(await xr());
+        }
+        for (const hand of ['left', 'right']) await page.evaluate((hand) => window.handModel.set(window.xrDevice, hand, 'open'), hand);
+        await frames(3);
+        return seen;
+      };
+      const revision = async () => (await status(page)).settingsRevision;
+      const pinches = (await xr()).pinches;
+
+      // The screen as the view: the screen scales for the session, nothing
+      // is committed.
+      let seen = await scale(0.1, 0.25);
+      let state = await xr();
+      console.log(`screen: ${seen.map((s) => s.scale.toFixed(3))}, then ${state.scale}`);
+      assert.ok(seen.every((s) => s.scaling), `scaling while the hands are gathered: ${JSON.stringify(seen.map((s) => s.scaling))}`);
+      assert.ok(Math.abs(state.scale - 2.52) < 0.1 && !state.scaling, `the screen 2.5 times as large: ${state.scale}`);
+      assert.equal(state.scaleCommits, 0, 'the screen\'s scale is the session\'s');
+      const screenScale = state.scale;
+
+      // The diorama as the view: it scales live, and its scale becomes the
+      // setting once, as the hands let go.
+      const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      assert.equal((await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, xr: { ...g.xr, view: 'Diorama' } } }), graphics)).ok, true);
+      await frames(3);
+      const before = await revision();
+      seen = await scale(0.1, 0.25);
+      state = await xr();
+      const settings = async () => (await page.evaluate(() => window.xem.settings.get())).settings.graphics.xr;
+      console.log(`diorama: ${seen.map((s) => s.dioramaScale.toFixed(3))}, committed ${(await settings()).diorama_scale}%`);
+      assert.ok(seen.every((s, i) => s.scaling && (i === 0 || s.dioramaScale >= seen[i - 1].dioramaScale)), `it grows live: ${JSON.stringify(seen.map((s) => s.dioramaScale))}`);
+      assert.ok(Math.abs(seen[seen.length - 1].dioramaScale - 2.52) < 0.1, `to about 2.5: ${seen[seen.length - 1].dioramaScale}`);
+      const xrSettings = await settings();
+      assert.equal(xrSettings.diorama_scale, Math.round(seen[seen.length - 1].dioramaScale * 100), 'the setting takes the scale shown last');
+      assert.equal(await revision(), before + 1, 'one acknowledged change for the gesture');
+      assert.equal(state.scaleCommits, 1);
+      assert.equal(state.scale, screenScale, 'the screen keeps its scale');
+      // A contraction from there: 0.6 times, committed once more.
+      seen = await scale(0.25, 0.15);
+      state = await xr();
+      assert.ok(Math.abs((await settings()).diorama_scale - xrSettings.diorama_scale * 0.598) <= 2, `0.6 times: ${(await settings()).diorama_scale}`);
+      assert.equal(state.scaleCommits, 2);
+      assert.equal(await revision(), before + 2);
+      // Nothing else: no Pause, no pinch, no settings.
+      assert.equal(state.pauses.player, false, 'no grab toggled Pause');
+      assert.equal(state.settings, false);
+      assert.equal(state.pinches, pinches, 'no pinch');
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('Enter AR shows only where the headset browser supports immersive AR', { timeout: 300_000 }, async () => {
+    // IWER's Quest 3 supports both modes; the same headset without immersive
+    // AR offers VR alone.
+    const vrOnly = `${IWER}\n;window.xrDevice = new IWER.XRDevice({ ...IWER.metaQuest3, supportedSessionModes: ['inline', 'immersive-vr'] }, { stereoEnabled: true });`
+      + 'window.xrDevice.installRuntime({ forceInstall: true });';
+    for (const [script, ar] of [[HEADSET, true], [vrOnly, false]]) {
+      const browser = await start({ args: NO_WEBGPU, fixtures: true, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: script }] });
+      try {
+        const page = await browser.page('?game=/fixtures/fixture.wasm&xrScale=0.25');
+        const xr = (await status(page)).page.xr;
+        assert.deepEqual([xr.supported, xr.arSupported, xr.error], [true, ar, null], JSON.stringify(xr));
+        assert.equal(await page.isVisible('#vr'), true, 'Enter VR is offered');
+        assert.equal(await page.isVisible('#ar'), ar, ar ? 'Enter AR is offered' : 'no Enter AR without immersive AR');
+        assert.deepEqual(page.errors, []);
+      } finally {
+        await browser.close();
+      }
     }
   });
 });

@@ -15,7 +15,11 @@
 //!   the pinch, the thumb's tap and its swipes up, left and right do
 //!   nothing (the swipe down still opens the game's menu), the pointer's
 //!   direction, JUMP and camera keys are gone, and two-hand scaling leaves
-//!   the screen as it was (the gesture still owns both hands).
+//!   the screen and the diorama as they were (the gesture still owns both
+//!   hands).
+//! - Two-hand scaling ([`Scaling`]) scales the diorama while it is the
+//!   view, about its table's anchor, committed to the setting when the
+//!   hands let go; otherwise the screen, for the session.
 //!
 //! The pointer source is the player's explicit choice (eye gaze where the
 //! runtime grants it, the head's direction, or one hand's ray as the
@@ -411,9 +415,13 @@ impl Headset {
     /// else's.
     pub fn update(&mut self, input: &Input, screen: &Screen, ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Effects {
         let mut effects = Effects { aim: self.aim(input, screen), ..Effects::default() };
-        // Focus lost: everything pending is dropped, and the game pauses.
+        // Focus lost: everything pending is dropped (two-hand scaling ends
+        // where it reached), and the game pauses.
         if !input.focused {
             if self.was_focused {
+                if self.recognizer.scaling() {
+                    effects.outs.push(Out::ScaleEnd);
+                }
                 self.recognizer.cancel();
                 self.pauses.player = true;
                 effects.outs.push(Out::TrackingLost);
@@ -479,11 +487,13 @@ impl Headset {
                 !pressed
             });
         }
-        // Inspecting, the screen keeps its size (the scaling gesture still
-        // owns both hands: no grab fires) and, while the player walks,
-        // nothing walks, approaches, jumps or turns the game's camera.
+        // Inspecting, the screen and the diorama keep their size (the
+        // scaling gesture still owns both hands: no grab fires; one under
+        // way as inspection began ends where it reached) and, while the
+        // player walks, nothing walks, approaches, jumps or turns the
+        // game's camera.
         if self.inspecting {
-            game_gestures.retain(|g| !matches!(g, Gesture::ScaleBegin | Gesture::Scale { .. } | Gesture::ScaleEnd));
+            game_gestures.retain(|g| !matches!(g, Gesture::ScaleBegin | Gesture::Scale { .. }));
             if ui == Context::Walk {
                 use crate::gesture::Swipe;
                 game_gestures.retain(|g| !matches!(g, Gesture::Pinch { .. } | Gesture::Tap { .. }
@@ -956,6 +966,178 @@ pub(crate) mod tests {
         carry(effects.outs, &mut Ignored, &mut scaling);
         assert!((scaling.scale - 0.8).abs() < 0.05, "{}", scaling.scale);
     }
+
+    /// Plays the synthetic gesture `name` in front of the head (one step a
+    /// frame) and carries its outs out; returns them and the diorama's live
+    /// scale after each frame.
+    fn scale_by(headset: &mut Headset, scaling: &mut Scaling, name: &str, time: &mut f64) -> (Vec<Out>, Vec<Option<f32>>) {
+        use crate::synthetic::{Runtime, gesture, in_front};
+        let (mut outs, mut live) = (Vec::new(), Vec::new());
+        for step in gesture(name).unwrap() {
+            let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+            let frame = step.frame(*time, hands, Vec3::X, Runtime::HORIZON);
+            *time += 1.0 / 72.0;
+            let input = Input { time: frame.time, head: Some(head()), hands, pinch: frame.pinch, micro: frame.micro, micro_capable: frame.micro_capable, focused: true, ..Input::default() };
+            let effects = headset.update(&input, &screen(), Context::Walk, None, None);
+            outs.extend(effects.outs.iter().cloned());
+            carry(effects.outs, &mut Ignored, scaling);
+            live.push(scaling.diorama_scale());
+        }
+        (outs, live)
+    }
+
+    #[test]
+    fn two_hand_scaling_scales_the_diorama_about_its_anchor_live_and_commits_once_when_it_ends() {
+        use xem_render::ps1::{Table, XrView};
+        let mut time = 0.0;
+        let mut headset = Headset::default();
+        let mut scaling = Scaling::default();
+        let only_scaling = |outs: &[Out]| outs.iter().all(|o| matches!(o, Out::ScaleBegin | Out::Scale { .. } | Out::ScaleEnd));
+        // The diorama is the view, at its default 100%: spreading the hands
+        // enlarges it live, the screen keeps its scale, and the setting takes
+        // it once, when they let go.
+        scaling.view(Some(100));
+        let (outs, live) = scale_by(&mut headset, &mut scaling, "spread", &mut time);
+        assert!(only_scaling(&outs), "no movement, press, command or grab: {outs:?}");
+        let reached = live.iter().flatten().fold(0.0f32, |a, b| a.max(*b));
+        assert!((reached - 2.52).abs() < 0.01 && scaling.scale == 1.0, "live to {reached}; the screen {}", scaling.scale);
+        assert!(live.windows(2).all(|w| w[1].unwrap_or(f32::MAX) >= w[0].unwrap_or(0.0) || w[1].is_none()), "it grows as the hands part: {live:?}");
+        assert_eq!(live.last(), Some(&None), "the gesture ended: {live:?}");
+        assert_eq!((scaling.reached(), scaling.reached()), (Some(252), None), "committed once");
+        // Live, the view shows the hands' scale in place of the setting's.
+        let table = Table::default();
+        scaling.view(Some(252));
+        scaling.begin();
+        scaling.to(0.5);
+        assert_eq!(scaling.shown(XrView::Diorama(table)), XrView::Diorama(Table { scale: 1.26, ..table }));
+        assert_eq!(scaling.shown(XrView::Screen), XrView::Screen);
+        scaling.end();
+        assert_eq!(scaling.reached(), Some(126));
+        // About the anchor: the point the table follows (the camera's target)
+        // stays where it stands in the room within a millimetre at every
+        // scale, and every other point moves away from it by the scale.
+        let seat = Mat4::from_rotation_translation(Quat::from_rotation_y(0.4), Vec3::new(0.1, 0.0, -0.05));
+        let camera = level_camera();
+        let space = |scale: f32| DioramaSpace::first(&camera, 256.0, glam::Vec2::new(320.0, 224.0), &Table { scale, tilt: 0.3, ..table }, seat).unwrap();
+        let (target, other) = (Vec3::from(camera.target), Vec3::new(150.0, -40.0, 1100.0));
+        let at_one = space(1.0);
+        let (anchor, apart) = (at_one.room_from_world.transform_point3(target), at_one.room_from_world.transform_point3(other));
+        assert!(anchor.distance(at_one.room_from_table.transform_point3(Vec3::ZERO)) < 1e-4, "the target stands at the table's anchor");
+        for scale in [0.25, 0.6, 1.26, 2.52, 4.0] {
+            let s = space(scale);
+            let moved = s.room_from_world.transform_point3(target).distance(anchor);
+            assert!(moved < 0.001, "scale {scale}: the anchor moved {moved} m");
+            let away = s.room_from_world.transform_point3(other).distance(anchor) / apart.distance(anchor);
+            assert!((away - scale).abs() < 1e-3, "scale {scale}: another point {away} times as far from the anchor");
+            assert_eq!((s.room_from_table, s.pane, s.pane_size, s.volume), (at_one.room_from_table, at_one.pane, at_one.pane_size, at_one.volume), "scale {scale}: the table, its volume and pane stay");
+        }
+        // Within the setting's range: from 400% a spread stays there, from
+        // 25% a contraction does.
+        for (from, name, to) in [(400, "spread", 400), (25, "contract", 25), (60, "contract", 36)] {
+            scaling.view(Some(from));
+            let (_, live) = scale_by(&mut headset, &mut scaling, name, &mut time);
+            assert!(live.iter().flatten().all(|s| (0.25..=4.0).contains(s)), "{from}% {name}: {live:?}");
+            assert_eq!(scaling.reached(), Some(to), "{from}% {name}");
+        }
+        // The screen as the view: the session's scale changes, nothing is
+        // committed and the view shows no diorama scale.
+        scaling.view(None);
+        let (outs, live) = scale_by(&mut headset, &mut scaling, "spread", &mut time);
+        assert!(only_scaling(&outs) && live.iter().all(Option::is_none));
+        assert!((scaling.scale - 2.52).abs() < 0.01 && scaling.reached().is_none(), "the screen {}", scaling.scale);
+        scale_by(&mut headset, &mut scaling, "contract", &mut time);
+        assert!((scaling.scale - 2.52 * 0.598).abs() < 0.01, "the screen {}", scaling.scale);
+    }
+
+    #[test]
+    fn a_diorama_scaling_cut_short_ends_where_it_reached_and_inspection_scales_nothing() {
+        use crate::synthetic::{Runtime, gesture, in_front};
+        let mut time = 0.0;
+        let frame_input = |step: &crate::synthetic::Step, time: f64, focused: bool| {
+            let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+            let frame = step.frame(time, hands, Vec3::X, Runtime::HORIZON);
+            Input { time, head: Some(head()), hands, pinch: frame.pinch, micro: frame.micro, micro_capable: frame.micro_capable, focused, ..Input::default() }
+        };
+        let spread = gesture("spread").unwrap();
+        // Cut short halfway: the app losing focus (the runtime's menu),
+        // inspection beginning (the hands then let go), the screen chosen as
+        // the view, or the runtime moving the reference space: the scaling
+        // ends where it reached, which the setting takes.
+        for cut in ["focus", "inspection", "view", "reference"] {
+            let mut headset = Headset::default();
+            let mut scaling = Scaling::default();
+            scaling.view(Some(100));
+            for (i, step) in spread.iter().enumerate() {
+                let halfway = i == spread.len() / 2;
+                if halfway && cut == "inspection" {
+                    headset.inspecting = true;
+                }
+                if halfway && cut == "view" {
+                    scaling.view(None);
+                }
+                if halfway && cut == "reference" {
+                    reference_changed(&mut headset, &mut scaling, &mut Seat::default(), &mut View::default());
+                }
+                let effects = headset.update(&frame_input(step, time, !(halfway && cut == "focus")), &screen(), Context::Walk, None, None);
+                time += 1.0 / 72.0;
+                carry(effects.outs, &mut Ignored, &mut scaling);
+                if halfway {
+                    break;
+                }
+            }
+            if cut == "inspection" {
+                // The hands let go while inspecting: the end still comes.
+                for step in &spread[spread.len() - 2..] {
+                    let effects = headset.update(&frame_input(step, time, true), &screen(), Context::Walk, None, None);
+                    time += 1.0 / 72.0;
+                    carry(effects.outs, &mut Ignored, &mut scaling);
+                }
+            }
+            let reached = scaling.reached();
+            assert!(!scaling.scaling() && reached.is_some_and(|p| (110..252).contains(&p)), "{cut}: ended at {reached:?}");
+            if cut == "focus" || cut == "reference" {
+                // The hands still gathered (the focus back) begin nothing
+                // until both have opened.
+                let held = &spread[spread.len() / 2];
+                for _ in 0..3 {
+                    let effects = headset.update(&frame_input(held, time, true), &screen(), Context::Walk, None, None);
+                    time += 1.0 / 72.0;
+                    assert!(effects.outs.is_empty(), "{cut}: {:?}", effects.outs);
+                }
+            }
+        }
+        // Inspecting from the start, a spread scales neither the diorama nor
+        // the screen (the gesture still owns the hands: no grab fires).
+        let mut headset = Headset { inspecting: true, ..Headset::default() };
+        let mut scaling = Scaling::default();
+        scaling.view(Some(100));
+        let (outs, live) = scale_by(&mut headset, &mut scaling, "spread", &mut time);
+        assert!(live.iter().all(Option::is_none) && scaling.reached().is_none() && scaling.scale == 1.0, "{outs:?}");
+    }
+
+    #[test]
+    fn a_reached_scale_is_committed_to_the_setting_through_the_settings_service() {
+        use xem_settings::{MemoryStore, SettingChange, SettingsService};
+        let mut settings = SettingsService::with_defaults(MemoryStore::default());
+        let changes = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        settings.subscribe({
+            let changes = changes.clone();
+            move |ack| changes.borrow_mut().push(ack.change.clone())
+        });
+        let before = settings.settings().graphics;
+        let ack = commit_scale(&mut settings, 252).unwrap();
+        assert_eq!(ack.settings.graphics.xr.diorama_scale, 252);
+        let mut want = before;
+        want.xr.diorama_scale = 252;
+        assert_eq!(settings.settings().graphics, want, "the rest of the block as it was");
+        assert_eq!(changes.borrow().as_slice(), [SettingChange::Graphics(want)], "acknowledged once to every subscriber");
+        // Reset diorama (the panel's) puts it back; out of range is refused.
+        let mut reset = settings.settings().graphics;
+        reset.xr = reset.xr.diorama_reset();
+        settings.apply(SettingChange::Graphics(reset)).unwrap();
+        assert_eq!(settings.settings().graphics.xr.diorama_scale, 100);
+        assert!(commit_scale(&mut settings, 401).is_err() && settings.settings().graphics.xr.diorama_scale == 100);
+    }
 }
 
 /// What carries a headset's effects out on a host: the command layer and
@@ -976,29 +1158,130 @@ pub trait Carry {
     fn toggle_auto_advance(&mut self);
 }
 
-/// Two-hand scaling of the headset's screen.
-#[derive(Clone, Copy, Debug)]
+/// Two-hand scaling (two whole-hand pinches: spread to enlarge, contract to
+/// shrink, either hand let go to finish). While the diorama is the view it
+/// scales the diorama about its table's anchor (the point the table
+/// follows stays where it stands in the room; the table's volume, its pane,
+/// the keys and the panel keep their place and size): live while the hands
+/// scale it ([`Scaling::shown`]), within the setting's range, and committed
+/// once to the setting when the gesture ends ([`Scaling::reached`],
+/// [`commit_scale`]). Otherwise it scales the headset's screen for the
+/// session (in memory, 0.4-3 times the setting's width). Presentation
+/// only: nothing reaches the game.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Scaling {
+    /// The screen's scale (1: the setting's width).
     pub scale: f32,
-    start: Option<f32>,
+    /// The diorama's scale setting while the diorama is the view
+    /// ([`Scaling::view`]).
+    diorama: Option<f32>,
+    under: Option<Under>,
+    /// The diorama's scale (percent) a gesture ended at, not yet committed.
+    reached: Option<u16>,
 }
+
+/// What a two-hand scaling under way scales, from what.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Under {
+    /// The screen's scale as it began.
+    Screen { from: f32 },
+    /// The diorama's scale as it began, and now.
+    Diorama { from: f32, now: f32 },
+}
+
+/// The screen's scale's bounds (times the setting's width).
+const SCREEN_SCALE: (f32, f32) = (0.4, 3.0);
 
 impl Default for Scaling {
     fn default() -> Self {
-        Self { scale: 1.0, start: None }
+        Self { scale: 1.0, diorama: None, under: None, reached: None }
     }
 }
 
+/// A diorama scale as the setting holds it (percent, within its range).
+fn percent(scale: f32) -> u16 {
+    let range = xem_settings::graphics::DIORAMA_SCALE;
+    ((scale * 100.0).round() as i64).clamp(i64::from(*range.start()), i64::from(*range.end())) as u16
+}
+
 impl Scaling {
-    /// Whether a two-hand scaling is under way.
-    pub fn scaling(&self) -> bool {
-        self.start.is_some()
+    /// What two-hand scaling scales from now on (hosts say it every frame):
+    /// the diorama, at its setting's scale (`diorama`, percent), while it is
+    /// the view, else the screen. A scaling under way of the other ends at
+    /// the scale it reached.
+    pub fn view(&mut self, diorama: Option<u16>) {
+        let diorama = diorama.map(|percent| f32::from(percent) / 100.0);
+        if matches!((self.under, diorama), (Some(Under::Screen { .. }), Some(_)) | (Some(Under::Diorama { .. }), None)) {
+            self.end();
+        }
+        self.diorama = diorama;
     }
 
-    /// Ends the scaling under way at the scale it reached.
-    pub fn end(&mut self) {
-        self.start = None;
+    /// Whether a two-hand scaling is under way.
+    pub fn scaling(&self) -> bool {
+        self.under.is_some()
     }
+
+    /// The diorama's scale while the hands scale it (1: the original
+    /// screen's width at the camera's target spans the table).
+    pub fn diorama_scale(&self) -> Option<f32> {
+        match self.under {
+            Some(Under::Diorama { now, .. }) => Some(now),
+            _ => None,
+        }
+    }
+
+    /// `view` (the settings') as the scaling under way shows it: the
+    /// diorama at the hands' scale until the setting takes it.
+    pub fn shown(&self, view: xem_render::ps1::XrView) -> xem_render::ps1::XrView {
+        match (view, self.diorama_scale()) {
+            (xem_render::ps1::XrView::Diorama(table), Some(scale)) => xem_render::ps1::XrView::Diorama(xem_render::ps1::Table { scale, ..table }),
+            (view, _) => view,
+        }
+    }
+
+    fn begin(&mut self) {
+        self.under = Some(match self.diorama {
+            Some(from) => Under::Diorama { from, now: from },
+            None => Under::Screen { from: self.scale },
+        });
+    }
+
+    /// The hands' distance is `factor` times what it was as they began.
+    fn to(&mut self, factor: f32) {
+        let range = xem_settings::graphics::DIORAMA_SCALE;
+        let (least, most) = (f32::from(*range.start()) / 100.0, f32::from(*range.end()) / 100.0);
+        match &mut self.under {
+            Some(Under::Screen { from }) => self.scale = (*from * factor).clamp(SCREEN_SCALE.0, SCREEN_SCALE.1),
+            Some(Under::Diorama { from, now }) => *now = (*from * factor).clamp(least, most),
+            None => {}
+        }
+    }
+
+    /// Ends the scaling under way at the scale it reached: the screen's
+    /// stays; the diorama's waits to be committed ([`Scaling::reached`]).
+    pub fn end(&mut self) {
+        if let Some(Under::Diorama { now, .. }) = self.under.take() {
+            self.reached = Some(percent(now));
+        }
+    }
+
+    /// The diorama's scale (percent) the last scaling of it ended at, once:
+    /// for the host to commit ([`commit_scale`]).
+    pub fn reached(&mut self) -> Option<u16> {
+        self.reached.take()
+    }
+}
+
+/// Commits the diorama's scale a two-hand scaling ended at (`percent`,
+/// [`Scaling::reached`]) as the player's setting, through the settings
+/// service as every other change (validated, saved, acknowledged to every
+/// subscriber: the panel shows it). The rest of the graphics block stays as
+/// it is.
+pub fn commit_scale(settings: &mut xem_settings::SettingsService, percent: u16) -> Result<xem_settings::Ack, xem_settings::Rejected> {
+    let mut graphics = settings.settings().graphics;
+    graphics.xr.diorama_scale = percent;
+    settings.apply(xem_settings::SettingChange::Graphics(graphics))
 }
 
 /// Carries out resolved effects (the pauses and settings were the
@@ -1016,13 +1299,9 @@ pub fn carry(outs: Vec<Out>, host: &mut impl Carry, scaling: &mut Scaling) {
             }
             Out::ToggleInspect => host.inspect(),
             Out::ToggleAutoAdvance => host.toggle_auto_advance(),
-            Out::ScaleBegin => scaling.start = Some(scaling.scale),
-            Out::Scale { factor } => {
-                if let Some(start) = scaling.start {
-                    scaling.scale = (start * factor).clamp(0.4, 3.0);
-                }
-            }
-            Out::ScaleEnd => scaling.start = None,
+            Out::ScaleBegin => scaling.begin(),
+            Out::Scale { factor } => scaling.to(factor),
+            Out::ScaleEnd => scaling.end(),
             Out::TrackingLost => {
                 host.release();
                 host.command(serde_json::json!({"cmd": "assist_stop"}));

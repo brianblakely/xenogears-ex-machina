@@ -235,7 +235,7 @@ fn run(options: Options) -> Result<(), String> {
             }
         }
 
-        let ended = session.end_frame(Some(panel)).map_err(|e| e.to_string())?;
+        let ended = session.end_frame(Some(panel), false).map_err(|e| e.to_string())?;
         log_frame(frames, &session, &ended, sim_time, hit);
         frames += 1;
         if options.exit_after_frames.is_some_and(|n| frames >= n) && !exit_requested {
@@ -296,6 +296,7 @@ fn log_frame(
         .layers
         .iter()
         .map(|layer| match layer {
+            Layer::Passthrough => "passthrough",
             Layer::Projection => "projection",
             Layer::Quad => "quad",
         })

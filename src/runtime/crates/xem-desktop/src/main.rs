@@ -155,7 +155,8 @@ fn options() -> Result<Options, String> {
                      the app's chords take their buttons first (the right stick's click, Back, with A saves \
                      the state, with Y loads it, with the left grip rewinds, with the right grip toggles fast-forward); \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
-                     prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel, NAME@panel:X/Y at the settings panel's \
+                     prayer, spread and contract (two whole-hand pinches parting or closing: two-hand scaling), lose; \
+                     NAME@X/Y also aims eye gaze at that screen pixel, NAME@panel:X/Y at the settings panel's \
                      logical pixel, NAME@world:X/Y/Z at that point of the game's world on the diorama's table) at headset frames, \
                      for tests without hand tracking; --xr-recenter-at recenters the view at those headset frames \
                      (as the panel's Recenter does); \
