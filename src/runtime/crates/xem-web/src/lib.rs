@@ -795,6 +795,11 @@ impl XemApp {
         let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
         let bindings = self.settings.borrow().settings().game_bindings.clone();
         let inspecting = self.look(&bindings, field, now);
+        // The Binaural listener looks where the presentation looks, whether
+        // the game runs or not, as the head turns it (presentation only).
+        if let Some(session) = self.session.as_mut() {
+            session.set_listener_view(self.renderer.as_mut().and_then(|r| r.listener_axes()));
+        }
         // Paused in a headset: time stands still, nothing to catch up
         // afterwards.
         if self.xr_paused() {
@@ -872,7 +877,7 @@ impl XemApp {
             if let Some(session) = self.session.as_mut() {
                 session.set_binaural(binaural);
                 // Inspection stops a route on entry and refuses new ones;
-                // the Binaural listener looks where it looks.
+                // a presentation just started takes the listener's view.
                 session.set_inspecting(inspecting);
                 session.set_listener_view(self.renderer.as_mut().and_then(|r| r.listener_axes()));
             }

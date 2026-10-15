@@ -97,10 +97,11 @@ port() {
 }
 
 # What the native stages run: the tests, the validation example and the
-# hosts (the browser suites compare with xem-headless).
+# hosts (the browser suites compare with xem-headless, and with the
+# first_person example's first-person listener).
 native() {
     cd "$runtime" && cargo test --profile suite --workspace --no-run &&
-        cargo build --profile suite -p xem-headless -p xem-desktop --bins --example validation
+        cargo build --profile suite -p xem-headless -p xem-desktop --bins --example validation --example first_person
 }
 
 # The workspace's tests; each failing target again with line tables.
@@ -147,7 +148,7 @@ browser() {
     local slice=$!
     XEM_HEADLESS=$headless node --test --test-concurrency=2 --test-skip-pattern="$timed" \
         tests/binaural.test.mjs tests/disc.test.mjs tests/first-person.test.mjs tests/listening.test.mjs tests/page.test.mjs \
-        tests/persistence.test.mjs tests/render.test.mjs tests/sound.test.mjs tests/xr-hands.test.mjs || status=1
+        tests/persistence.test.mjs tests/render.test.mjs tests/sound.test.mjs tests/xr-binaural.test.mjs tests/xr-hands.test.mjs || status=1
     wait "$slice" || status=1
     return $status
 }

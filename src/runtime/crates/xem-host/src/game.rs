@@ -45,8 +45,9 @@ pub struct Game {
     /// The battle's attack page stays shown through a sequence the player
     /// began by pointing at it (`Session::set_attack_page`).
     attack_page: bool,
-    /// The listener's axes while the presentation looks from within the
-    /// scene (first-person inspection; `Session::set_listener_view`).
+    /// The listener's axes while the presentation looks from elsewhere
+    /// than the game's camera (`Session::set_listener_view`), for a
+    /// presentation an update starts.
     listener_view: Option<[[f32; 3]; 3]>,
     /// The presentation shows first-person inspection
     /// (`Session::set_inspecting`).
@@ -296,6 +297,7 @@ impl Game {
     pub fn update(&mut self, buttons: u16, settings: &xem_settings::Settings, mut focused: impl FnMut() -> bool) -> Result<u32, String> {
         self.sync_time_settings(settings)?;
         self.session.set_binaural(settings.binaural);
+        // A presentation just started takes the listener's view too.
         self.session.set_listener_view(self.listener_view);
         if !self.scripted {
             self.session.set_inspecting(self.inspecting);
@@ -476,11 +478,14 @@ impl Game {
         self.attack_page = kept;
     }
 
-    /// The listener's axes while the presentation looks from within the
-    /// scene (`GameView::listener_axes`: first-person inspection), for the
-    /// Binaural mode.
-    pub fn want_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
+    /// The listener's axes while the presentation looks from elsewhere than
+    /// the game's camera (`GameView::listener_axes`: first-person
+    /// inspection, a headset's diorama), for the Binaural mode: taken at
+    /// once, whether the game runs or not, as the head is (presentation
+    /// only), and by a presentation the next update starts.
+    pub fn set_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
         self.listener_view = axes;
+        self.session.set_listener_view(axes);
     }
 
     /// Whether the presentation shows first-person inspection from the next

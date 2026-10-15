@@ -864,7 +864,7 @@ impl View {
             // look around in).
             game.stop_trace();
             game.want_actor_view(0);
-            game.want_listener_view(None);
+            game.set_listener_view(None);
             self.renderer.set_first_person(false);
             self.game_frame = None;
             let (width, height, rgba) = game.display();
@@ -881,7 +881,7 @@ impl View {
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
         game.want_actor_view(if graphics.actors_in_view { self.renderer.actor_view() } else { 0 });
-        game.want_listener_view(self.renderer.listener_axes());
+        game.set_listener_view(self.renderer.listener_axes());
         let (trace, display, scene) = game.take_frame(restart, self.renderer.reveals());
         self.fresh_frame |= !trace.ops.is_empty();
         self.renderer.push(trace);

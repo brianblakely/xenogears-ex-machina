@@ -73,7 +73,22 @@
 #   scale is committed to the setting once when the hands let go, a key
 #   beside the pane keeps its width, nothing else happens and the RAM is
 #   xem-headless's; Monado's simulated HMD (opaque, no XR_FB_passthrough)
-#   shows no room: Passthrough, asked for, changes nothing.
+#   shows no room: Passthrough, asked for, changes nothing;
+# - the Binaural mode in field 15 (the frame log's `binaural`: what the
+#   presenter holds): its head is the head's turn from the seat every frame,
+#   the game running or paused; in first-person inspection, with the game
+#   paused, each effect holds still in the listener's view once that turn is
+#   taken off (the head applied once, neither twice with the view nor not at
+#   all) through the head's turns, the app's Recenter, Monado's recentring of
+#   LOCAL and lost tracking (scripted: the last head kept, and what is heard
+#   with it), the view being the screen's directions turned up by the
+#   camera's pitch (level on its heading, the head doing the pitching), and
+#   inspection ended in the pause takes the view away at once; the music
+#   holds still; in the diorama the same while the simulated head
+#   moves 10 cm and more (its position ignored) and two whole-hand pinches
+#   scale the table 1 to 2.5 times and back (their own gestures only, moving
+#   nobody); the listener is the controlled character throughout, no number
+#   is NaN or infinite, and the RAM at game frame 1200 is xem-headless's.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -295,9 +310,41 @@ echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama", "passthrough": 
 "$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-hands "110:spread,150:contract" \
     --xr-capture "$out/diorama-scale" --xr-capture-at 140 >"$out/diorama-scale.log" 2>"$out/diorama-scale.err"
 cp "$out/config/xenogears-ex-machina/settings.json" "$out/diorama-scale.settings.json"
+# The Binaural mode in field 15 (three emitters the presenter places, and
+# its music), under the default profile: the screen, then first-person
+# inspection from headset frame 120 (the underhand grab) to 255, the
+# player's Pause from 150 to 270 holding the game, and in it the app's
+# Recenter at 190, Monado's recentring of LOCAL once the session has drawn
+# 220 frames, the head lost for 15 frames from 240 and inspection's end;
+# then the same log in xem-headless (its RAM and the controlled character at
+# game frame 1200).
+# The diorama with the same log: the game held by the test's pause from
+# headset frame 150 to 290, and in it two whole-hand pinches spreading at
+# 170 and contracting at 200, Monado's recentring once the session has
+# drawn 225 frames and the app's Recenter at 250.
+echo '{"commands": [[0, {"cmd": "enter_field", "map": 15}]]}' >"$out/field15.json"
+for run in binaural binaural-diorama; do
+    case $run in
+    binaural)
+        echo '{"binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
+        at=220 options=(--xr-hands "120:inspect,150:pause,255:inspect,270:pause" --xr-recenter-at 190 --xr-lose-tracking 240,15) ;;
+    binaural-diorama)
+        echo '{"graphics": {"xr": {"view": "Diorama"}}, "binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
+        at=225 options=(--xr-pause 150,140 --xr-hands "170:spread,200:contract" --xr-recenter-at 250) ;;
+    esac
+    (
+        for _ in $(seq 900); do grep -q "^xrframe n=$at " "$out/$run.log" 2>/dev/null && break; sleep 0.1; done
+        monado-ctl -c >"$out/monado-ctl-$run.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl-$run.log"
+    ) &
+    recentring=$!
+    "$desktop" --xr --disc "$disc" --script "$out/field15.json" --exit-at-frame 1200 "${options[@]}" >"$out/$run.log" 2>"$out/$run.err"
+    wait "$recentring"
+done
+printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 15}]]}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n{"cmd":"field"}\n' |
+    "$headless" --disc "$disc" --control >"$out/binaural-headless.log" 2>"$out/binaural-headless.err"
 
 python3 - "$out" "$frames" <<'EOF'
-import json, re, sys, zlib, struct
+import json, math, re, sys, zlib, struct
 out, frames = sys.argv[1], int(sys.argv[2])
 
 def records(name):
@@ -999,6 +1046,176 @@ _, _, scaled_eye = png(f"{out}/diorama-scale/140/left.png")
 check(scaled_eye[0][0:4] == left[0][0:3] + b"\xff", f"the room's backdrop is drawn, opaque, with Passthrough on: {tuple(scaled_eye[0][0:4])} against {tuple(left[0][0:3])}")
 print(f"diorama scaling: committed {commits} (setting {saved.get('diorama_scale')}), a key {sorted(keys)} m wide; "
       f"{next((l for l in log if l.startswith('xr room')), 'no room line')}; RAM {final_hash('diorama-scale.log')}")
+
+# The Binaural mode. Each frame's `binaural` field is what the presenter
+# holds: its head and its listener's view ([yaw, pitch], degrees, yaw to
+# the right), the listening position, and where each placed effect and
+# music part heads ([id, azimuth, elevation], degrees). The head as the
+# presenter should take it is the logged pose's turn from the seat, its
+# axes (right, down, forward) as xem_core::binaural::head_axes makes them;
+# taking them off a target (their transpose) gives the direction in the
+# listener's view, which holds still while the scene does, however the head
+# turns or moves, if the head is applied once (applied twice, or not at
+# all, it would move with the head).
+def qmul(a, b):
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    return (aw * bx + ax * bw + ay * bz - az * by, aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw, aw * bw - ax * bx - ay * by - az * bz)
+def turned(q, v):
+    x, y, z, w = q
+    t = (2 * (y * v[2] - z * v[1]), 2 * (z * v[0] - x * v[2]), 2 * (x * v[1] - y * v[0]))
+    return (v[0] + w * t[0] + (y * t[2] - z * t[1]), v[1] + w * t[1] + (z * t[0] - x * t[2]), v[2] + w * t[2] + (x * t[1] - y * t[0]))
+def heard_head(r):
+    if r["head"] == "-":
+        return None
+    q = tuple(float(v) for v in r["head"].split(";")[1].split(","))
+    half = float(r["seat"].split(";")[1]) / 2
+    relative = qmul((0.0, -math.sin(half), 0.0, math.cos(half)), q)
+    view = lambda v: (v[0], -v[1], -v[2])
+    return [view(turned(relative, axis)) for axis in ((1, 0, 0), (0, -1, 0), (0, 0, -1))]
+def facing(f):
+    return math.degrees(math.atan2(f[0], f[2])), math.degrees(math.atan2(-f[1], math.hypot(f[0], f[2])))
+def toward(azimuth, elevation):
+    a, e = math.radians(azimuth), math.radians(elevation)
+    return (math.sin(a) * math.cos(e), -math.sin(e), math.cos(a) * math.cos(e))
+def taken_off(axes, d):
+    return tuple(sum(axes[r][i] * d[r] for r in range(3)) for i in range(3))
+def apart(a, b):
+    chord = math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
+    return math.degrees(2 * math.asin(min(1.0, chord / 2)))
+def presented(r):
+    return json.loads(r["binaural"]) if r["binaural"] != "-" else None
+def numbers(value):
+    return [v for item in (value if isinstance(value, list) else [value]) for v in (numbers(item) if isinstance(item, list) else [item])]
+reference = [json.loads(l) for l in open(f"{out}/binaural-headless.log") if l.startswith("{") or l.startswith('"')]
+binaural_hash = next(v for v in reference if isinstance(v, str))
+field15 = next(v for v in reference if isinstance(v, dict) and "actors" in v)
+character = next(a["position"] for a in field15["actors"] if a["index"] == field15["player"])
+def binaural(name, held):
+    """The checks both runs share, `held` the frames the game stood still
+    in: the presenter's head is the pose's turn from the seat, every frame
+    (the game running or not) but the lost ones; the listening position is
+    the controlled character's; nothing is NaN or infinite; and while the
+    game stands still the listener's view and every music part hold still
+    and each effect does once the head is taken off. Returns the frames,
+    the held ones and each effect's direction in the view."""
+    rows = records(f"{name}.log")
+    worst, heads, odd, elsewhere = 0.0, 0, [], []
+    for r in rows:
+        b = presented(r)
+        if b is None:
+            continue
+        values = numbers([b["head"] or [], b["view"] or [], b["at"] or [], b["effects"], b["music"]])
+        if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in values):
+            odd.append(r["n"])
+        axes = heard_head(r)
+        if axes is not None and b["head"] is not None:
+            yaw, pitch = facing(axes[2])
+            worst = max(worst, abs((b["head"][0] - yaw + 180) % 360 - 180), abs(b["head"][1] - pitch))
+            heads += 1
+        if b["at"] is not None and b["at"] != [character["x"], character["y"], character["z"]]:
+            elsewhere.append((r["n"], b["at"]))
+    check(not odd, f"{name}: frames with numbers neither finite nor numbers: {odd[:5]}")
+    check(not elsewhere, f"{name}: the listener away from the controlled character at {character}: {elsewhere[:3]}")
+    check(heads > 300 and worst < 0.02, f"{name}: the presenter's head is the pose's turn from the seat within {worst:.4f} degrees over {heads} frames")
+    still = [r for r in rows if held(r) and presented(r) is not None]
+    views = {json.dumps(presented(r)["view"]) for r in still}
+    check(len(still) > 100 and len(views) == 1 and "null" not in views, f"{name}: the listener's view held still while the game did: {sorted(views)[:3]}")
+    parts = {}
+    effects = {}
+    yaws = []
+    for r in still:
+        b = presented(r)
+        for part in b["music"]:
+            parts.setdefault(part[0], set()).add(tuple(part[1:]))
+        axes = heard_head(r)
+        if axes is None:
+            continue
+        yaws.append(facing(axes[2])[0])
+        for id_, azimuth, elevation in b["effects"]:
+            effects.setdefault(id_, []).append(taken_off(axes, toward(azimuth, elevation)))
+    check(len(parts) >= 4 and all(len(p) == 1 for p in parts.values()), f"{name}: music parts moved while the game stood still: { {k: len(v) for k, v in parts.items()} }")
+    spread = max(yaws) - min(yaws) if yaws else 0.0
+    off = {id_: max(apart(v[0], x) for x in v) for id_, v in effects.items()}
+    check(len(effects) == 3 and all(len(v) > 80 for v in effects.values()) and max(off.values(), default=99) < 0.02 and spread > 3,
+          f"{name}: with the head taken off, each effect holds still within {off} degrees as the head turns over {spread:.2f} degrees")
+    return rows, still, {id_: v[0] for id_, v in effects.items()}, worst, spread, off
+
+# The screen, then first-person inspection with the head's look.
+rows, still, inspected, worst, spread, off = binaural("binaural", lambda r: r["player_pause"] == "1" and r["fp"] == "1")
+by = {int(r["n"]): r for r in rows}
+check(all(r["within"] == "1" for r in still) and min(int(r["n"]) for r in still) < 160, "binaural: the player's Pause came while inspection looked from within the scene")
+# Inspection ended with the game held: the listener's view goes at once
+# (the presentation's, applied paused or not, as the head is).
+ended = [r for r in rows if r["player_pause"] == "1" and r["fp"] == "0" and int(r["n"]) > 200]
+check(len(ended) >= 5 and all(presented(r)["view"] is None for r in ended[1:]),
+      f"binaural: inspection ended with the game held, the listener's view went: {[(r['n'], presented(r)['view']) for r in ended[:3]]}")
+check(final_hash("binaural.log") == binaural_hash, f"binaural.log: RAM at game frame 1200 {final_hash('binaural.log')} != headless {binaural_hash}")
+# The head looks: the view inspection gives the listener is level on the
+# camera's heading (the head does the pitching), so a direction is heard
+# as the screen's (the game camera's) turned up by the camera's pitch, then
+# by the head; the screen's directions themselves held still before
+# inspection (the scene stands still).
+view = presented(still[0])["view"]
+screen = {}
+for r in rows:
+    b = presented(r)
+    axes = heard_head(r)
+    if int(r["n"]) < 118 and r["fp"] == "0" and b is not None and len(b["effects"]) == 3 and axes is not None:
+        for id_, azimuth, elevation in b["effects"]:
+            screen.setdefault(id_, []).append(taken_off(axes, toward(azimuth, elevation)))
+pitch = math.radians(view[1])
+level = [(1, 0, 0), (0, math.cos(pitch), math.sin(pitch)), (0, -math.sin(pitch), math.cos(pitch))]
+held_screen = {id_: max(apart(v[0], x) for x in v) for id_, v in screen.items()}
+looked = {id_: apart(tuple(sum(a * b for a, b in zip(row, screen[id_][-1])) for row in level), inspected[id_]) for id_ in inspected if id_ in screen}
+check(abs(view[0]) < 0.01 and len(looked) == 3 and all(len(v) >= 30 for v in screen.values()) and max(held_screen.values()) < 0.02 and max(looked.values()) < 0.05,
+      f"binaural: inspection hears the screen's directions turned by the camera's pitch ({view}) then the head: {looked} "
+      f"(the screen's held within {held_screen} over {[len(v) for v in screen.values()]} frames)")
+# The app's Recenter puts the seat at the head: the head is ahead (its
+# pitch kept); Monado's recentring puts the seat back at LOCAL's origin.
+recentred = next((r for r in rows if r["recenters"] == "1"), None)
+check(recentred is not None and int(recentred["n"]) == 190 and abs(presented(recentred)["head"][0]) < 0.01,
+      f"binaural: the Recenter turned the presenter's head ahead: {recentred and (recentred['n'], presented(recentred)['head'])}")
+moved = next((r for r in rows if r["resets"] == "1"), None)
+check(moved is not None and 220 <= int(moved["n"]) < 240 and moved["seat"].split(";")[1] in ("0.0000", "-0.0000") and moved["player_pause"] == "1",
+      f"binaural: Monado's recentring reached the session in the pause: {moved and (moved['n'], moved['seat'])} ({open(f'{out}/monado-ctl-binaural.log').read().strip()!r})")
+# Lost tracking keeps the last head, and what is heard with it.
+lost = [int(r["n"]) for r in rows if r["head"] == "-" and int(r["n"]) > 100]
+check(lost == list(range(240, 255)), f"binaural: the head was lost in frames {lost[:2]}..{lost[-1:]}")
+if lost == list(range(240, 255)):
+    before = presented(by[239])
+    check(all(presented(by[n])["head"] == before["head"] and presented(by[n])["effects"] == before["effects"] for n in lost),
+          "binaural: lost tracking kept the last head and the directions heard with it")
+    check(presented(by[255])["head"] != before["head"], "binaural: found again, the head follows the pose")
+print(f"binaural: the presenter's head is the pose's within {worst:.4f} degrees; inspecting, paused, the head turning over {spread:.2f} degrees "
+      f"(the Recenter at 190, LOCAL recentred at {moved and moved['n']}, the head lost 240-254), each effect holds still in the view within "
+      f"{max(off.values()):.4f} degrees; heard as the screen's turned by the camera's pitch {view[1]:.2f} within {max(looked.values()):.4f}; "
+      f"RAM {final_hash('binaural.log')}")
+# The diorama: the head's turn from the seat once, its position (Monado's
+# simulated head moves) ignored, the listener at the character; two-hand
+# scaling (no movement, no gesture but its own), Monado's recentring and
+# the app's Recenter change nothing heard but the head's turn.
+rows, still, _, worst, spread, off = binaural("binaural-diorama", lambda r: 150 <= int(r["n"]) < 290)
+check(all(r["diorama"] == "1" and r["share"] == "0.000" and r["paused"] == "1" for r in still), "binaural-diorama: the diorama alone showed while the game was held")
+check(len({r["game_frames"] for r in still}) == 1, "binaural-diorama: the game ran while it was held")
+check(final_hash("binaural-diorama.log") == binaural_hash, f"binaural-diorama.log: RAM at game frame 1200 {final_hash('binaural-diorama.log')} != headless {binaural_hash}")
+scales = [float(r["diorama_scale"]) for r in still]
+kinds = {g["gesture"] for r in still for g in json.loads(r["gestures"])}
+commits = [l for l in open(f"{out}/binaural-diorama.log") if l.startswith("scale commit ")]
+check(max(scales) > 2.4 and min(scales) < 1.01 and kinds <= {"ScaleBegin", "Scale", "ScaleEnd"} and len(commits) == 2 and all(r["assist"] == "-" for r in still),
+      f"binaural-diorama: two-hand scaling from {min(scales)} to {max(scales)} gave only its own gestures {sorted(kinds)}, committed {len(commits)} times, moved nobody")
+places = [tuple(float(v) for v in r["head"].split(";")[0].split(",")) for r in still if r["head"] != "-"]
+reach = max(math.dist(p, q) for p in places for q in places[::10])
+check(reach > 0.1, f"binaural-diorama: the head moved {reach:.3f} m while the game was held")
+recentred = next((r for r in rows if r["recenters"] == "1"), None)
+moved = next((r for r in rows if r["resets"] == "1"), None)
+check(recentred is not None and int(recentred["n"]) == 250 and abs(presented(recentred)["head"][0]) < 0.01,
+      f"binaural-diorama: the Recenter turned the presenter's head ahead: {recentred and (recentred['n'], presented(recentred)['head'])}")
+check(moved is not None and 225 <= int(moved["n"]) < 250, f"binaural-diorama: Monado's recentring reached the session in the pause ({open(f'{out}/monado-ctl-binaural-diorama.log').read().strip()!r})")
+print(f"binaural diorama: the presenter's head within {worst:.4f} degrees of the pose; the game held, the head turning over {spread:.2f} degrees and "
+      f"moving {reach:.3f} m, scaled {min(scales):.2f}-{max(scales):.2f} ({len(commits)} commits), LOCAL recentred at {moved and moved['n']} and "
+      f"recentred at 250: the view held still and each effect in it within {max(off.values()):.4f} degrees; RAM {final_hash('binaural-diorama.log')}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

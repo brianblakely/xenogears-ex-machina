@@ -216,6 +216,31 @@ fn assist_pose(pose: Pose) -> xem_assist::headset::Pose {
     xem_assist::headset::Pose { position: pose.position, orientation: pose.orientation }
 }
 
+/// What the Binaural mode presents, for the frame log: the presenter's
+/// head and its listener's view (first-person inspection's or the
+/// diorama's), each as `[yaw, pitch]` (degrees, yaw to the right), the
+/// listening position (world units), and where each placed effect and
+/// each music part heads (`[id, azimuth, elevation]`, degrees), as JSON
+/// without spaces; `-` while nothing presents.
+fn binaural_line(game: &mut Game) -> String {
+    let Some(status) = game.session.runtime.services().spu.binaural().map(|presenter| presenter.status()) else { return "-".into() };
+    let facing = |value: &serde_json::Value| (!value.is_null()).then(|| serde_json::json!([value["yaw"], value["pitch"]]));
+    let heading = |kind: &str| -> Vec<serde_json::Value> {
+        status["sources"].as_array().into_iter().flatten()
+            .filter(|source| source["kind"] == kind && !source["target"].is_null())
+            .map(|source| serde_json::json!([source["id"], source["target"]["azimuth"], source["target"]["elevation"]]))
+            .collect()
+    };
+    serde_json::json!({
+        "head": facing(&status["head"]),
+        "view": facing(&status["first_person"]),
+        "at": status["listening_position"],
+        "effects": heading("effect"),
+        "music": heading("music"),
+    })
+    .to_string()
+}
+
 /// A two-hand scaling of the diorama that ended becomes the player's
 /// setting, once, through the settings service (logged).
 fn commit_scale(settings: &RefCell<SettingsService>, scaling: &mut xem_assist::headset::Scaling) {
@@ -288,6 +313,10 @@ pub struct XrPlay {
     pub hands: Vec<(u64, String)>,
     /// Recenter at these headset frames, as the app action does.
     pub recenter_at: Vec<u64>,
+    /// Headset frames N to N+M-1 taken as the runtime reports lost
+    /// tracking (no located head, no valid views), for runtimes whose
+    /// simulated headset never loses it (Monado's).
+    pub lose_tracking: Option<(u64, u64)>,
     /// Scripted controller buttons for runtimes whose controllers have
     /// none to press (headset frame, the gamepad's buttons as bits in
     /// [`gamepad`]'s order, `xem_settings::controls::PAD_NAMES`): held from that
@@ -432,11 +461,15 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let Some(frame) = session.begin_frame().map_err(|e| e.to_string())? else { continue };
         let should_render = frame.should_render;
         let eyes = frame.eyes;
-        if frame.views_valid {
+        // Lost tracking, as the runtime reports it: no head and no valid
+        // views (a test's frames stand in for it where the runtime never
+        // loses it).
+        let tracked = !options.lose_tracking.is_some_and(|(at, count)| frames >= at && frames < at + count);
+        if frame.views_valid && tracked {
             tracked_eyes = Some(eyes.each_ref().map(|eye| headset_eye(eye, &assist.seat)));
         }
         let mut input = frame.input.clone();
-        let head = frame.head;
+        let head = frame.head.filter(|_| tracked);
         let period = frame.predicted_display_period.as_nanos();
         let display_time = frame.predicted_display_time.as_nanos();
         let graphics = settings.borrow().settings().graphics;
@@ -744,9 +777,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
         game.want_actor_view(if !original && current.graphics.actors_in_view { view.actor_view() } else { 0 });
         // The Binaural listener looks where inspection looks, or from the
-        // seat through the diorama's table; the head turns it once more
-        // (`set_head` above).
-        game.want_listener_view(view.listener_axes());
+        // seat through the diorama's table, paused or not; the head turns it
+        // once more (`set_head` above).
+        game.set_listener_view(view.listener_axes());
         let (display, scene) = if original {
             game.stop_trace();
             (game.display_info(), String::new())
@@ -1038,8 +1071,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             None => ("-".into(), "-".into(), "-".into()),
         };
         let key = xem_assist::draw::side_keys(&screen, 1)[0].1.size.0;
+        let binaural = binaural_line(&mut game);
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} key={key:.5} passthrough={}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} key={key:.5} passthrough={} binaural={binaural}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),

@@ -612,7 +612,13 @@ or on the game's own Sound screen, turns it off.
   (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose as
   the seat sees it, the seat's forward its reference, so a recentred seat
   is ahead again; lost tracking keeps the last; leaving the headset clears
-  it). The hosts' audio stays plain two-channel stereo at
+  it). The view's axes and the head reach the presenter whenever the host
+  computes them, every frame it presents, the game running or held
+  (`xem_host::Game::set_listener_view`, `set_head`; the browser's step):
+  presentation only (a held game sounds nothing), but the presenter holds
+  the presentation's listener at once; in a headset held by the player's
+  Pause a snap turn, inspection ending or a tilted table used to reach it
+  only when the game ran again. The hosts' audio stays plain two-channel stereo at
   the SPU's 44.1 kHz (SDL and the browser resample to the device), so no
   platform spatializer is stacked on it, and an audio device or its rate
   changing, pausing and resuming reach the presented sound exactly as they
@@ -642,7 +648,16 @@ or on the game's own Sound screen, turns it off.
   (`tap.routes`), with the capture's `frames` and `lead` (the output
   samples before its first). `xem-headless --binaural` (or
   `--binaural-config JSON`) with `--wav` writes the output to a file and
-  prints the status.
+  prints the status. OpenXR's `xrframe` line has `binaural=`: what the
+  presenter holds that frame, as JSON without spaces (`-` while nothing
+  presents): `head` and `view` (the head's and the listener view's facing,
+  `[yaw, pitch]` degrees, yaw to the right; null without), `at` (the
+  listening position) and `effects` and `music` (each placed source's
+  `[id, azimuth, elevation]`, where it heads); WebXR's page reads the same
+  through the `binaural` command (`head`, `first_person`, `sources`).
+  `xem-headless`'s `first_person` example prints the status a native
+  desktop host has looking around in first person from a state and look
+  angles (`--state FILE --look YAW,PITCH`), for the browser's comparison.
 
 **Calibrated computational listeners.** Nobody has listened to the mode
 yet. In people's place, localization models fitted to listeners' own
@@ -1003,12 +1018,20 @@ field 509 (`tests/reference-inputs/binaural-field509-walk.json`, a session
 log: six emitter actors playing three sounds, of which the original keeps
 the three nearest the character sounding, a set that changes nine times on
 the walk; the camera turned by 45 and 90 degrees, turns in place, the menu
-and a jump), eleven sessions from one state (plain Stereo; Binaural with its
+and a jump), fifteen sessions from one state (plain Stereo; Binaural with its
 defaults, bypassed, music only, effects only, immersion 0 and 100;
 head-tracked music under a head sweeping 90 degrees either way; sweeping
 first-person axes; the settings changed every 120 frames, off and on again
 among them; a game view drawing every frame zoomed out four times with
-wider framing, characters in view off, the port recording what it reveals)
+wider framing, characters in view off, the port recording what it reveals;
+a headset's head as its host gives it, its turn from the seat
+(`xem_assist::headset`'s seat, recentre and reference handler), sweeping
+and pitched 15 degrees up, head-tracked music on, the player's Recenter
+at walk frame 300, the runtime recentring its space on the head at 700,
+tracking lost over frames 1 000 to 1 059; and a headset's diorama drawn
+every frame for two small eyes at 25%, 100% and 400% of its scale,
+characters in view off, its listener the seat's axes through the table
+as the host takes them, the head sweeping)
 have the same game memory (`memory_hash`), voice volume
 registers and current volumes every frame and the same SPU every 60
 frames, and every placed source reports exactly the gain the driver staged
@@ -1029,7 +1052,10 @@ presenter takes their directions), 3 786 times each: in front or behind as
 its camera-space depth says (3 382 and 384 times), above or below as its
 camera-space height says (2 746 and 806), on the side the original pans it
 to (4 281 voice frames), and through the first-person axes or the head as
-they turn. The camera's turns (71 frames with the character and the
+they turn, the recentred head as the presenter held it (the one kept
+while tracking was lost included), and the diorama's view of the table
+then the head, each once (within 0.22 degree, 3 786 times in each). The
+camera's turns (71 frames with the character and the
 emitter still, 127 degrees in all) turn what is heard by the geometry; the
 character's five turns in place move nothing beyond what the camera's glide
 moves (within 4e-6 degree). Each of the 15 emitter starts is a source of
@@ -1046,7 +1072,18 @@ The music's 18 parts keep their places
 heard there turned only by their own pan, which is their voice's (within
 0.03 of unpanned volumes, 11 949 frames); looking around in first person
 moves no music; head-tracked music is heard against the head within 2e-5
-degree. Clicks: where sources switched (28 frames) and where the settings
+degree, the recentred head too. The recentred session's Recenter and the
+runtime's recentring put the head ahead (yaw within 0.01 degree, its
+pitch of 15 kept), lost tracking keeps the last head through all 60
+frames and the head is followed again once found; there the head turned
+at once by -90, 137 and -32 degrees, everything placed gliding after it,
+and the high band stands out 2.31, 0.30 and 3.57 dB less than the
+original's (the bound: no more than 3 dB more). No session presents a
+direction that is not a number. The three diorama sessions take the same
+listener's axes from their tables and present the same, status and sound
+sample for sample, every frame (the table shown in 1 164 of the 1 500;
+menus show the screen), and their listener is the controlled character
+(`listening_position` the field reader's place). Clicks: where sources switched (28 frames) and where the settings
 changed (12), from two blocks before to twenty after, the presented high
 band stands out of its surroundings (its 20 blocks before and after) at
 most 1.24 and 0.10 dB more than the original's, in the least of its three
@@ -1142,7 +1179,61 @@ while the game is paused, and has no head after the session; in field 15
 (a field 15 state imported in the headset, the game paused), a quarter turn
 of the head leaves the music's four parts where they were against the head
 without head-tracked music, and with it turns each by 90 degrees the other
-way (within 2), the stage staying put. `tests/test_listening.py`: the
+way (within 2), the stage staying put. `xr-binaural.test.mjs` (IWER's
+Quest 3, a field 15 state, the game held while the head turns): the
+presenter's head is the head's turn from the seat (within 0.01 degree);
+on the screen and in first-person inspection, six head turns (to 120
+degrees right, 35 up and their mixtures) each hear the three emitters
+where they lay with the head ahead turned once by the head's axes (within
+5e-5 degree; a turn to the right moves each that far to the left in
+azimuth, its elevation kept), never twice: inspection's view does not take
+the head; the music keeps its places; inspection hears the screen's
+directions turned up by the camera's pitch (25.03 degrees: its view is
+level on the camera's heading) and the right stick's 30-degree step,
+taken with the game held, turns them once more. The player's Recenter
+(the head 90 degrees right and 20 up) leaves the head ahead of the seat
+at its pitch, and IWER's recentring (its space's `reset`) the head as the
+space then has it, what is heard following each; frames without a viewer
+pose (lost tracking, as browsers report it) keep the last head and what is
+heard with it for their 10 frames, the head followed again after; nothing
+is NaN. In the diorama the listener is the controlled character, and from
+four head turns, through the Recenter and through the reset, each emitter
+is heard where the table shows it from the head (the character to its
+emitter in the room by the table's matrix, in the head's axes; within
+0.02 degree: the presenter takes the camera's rows' directions, the table
+the record's axes); the head moved 15 to 27 cm without turning changes
+nothing heard; the table tilted 30 degrees with the game held turns the
+listener's view 30 degrees at once (25.03 up to -5.01) and is heard from
+the head as it lies (within 0.0012); and two whole-hand pinches, the game
+held, growing the table from 25% to 400% (16 frames read, the scale
+committed once a gesture) change nothing heard at any scale, press
+nothing and walk nobody; 240 frames from the state at 25%, 100% and 400%
+end at the same RAM and the same sound (its frames and hash) and hear the
+same. The OpenXR smoke (Monado's simulated HMD, field 15, the frame log's
+`binaural=`): the presenter's head is the pose's turn from the seat
+within 0.0022 degree every frame, the game running and paused; in
+first-person inspection, held by the player's Pause while the simulated
+head turned over 7.2 degrees, each effect with the head's turn taken off
+held still in the listener's view within 0.0015 degree through the
+Recenter, Monado's recentring of LOCAL and 15 frames of scripted lost
+tracking (`--xr-lose-tracking`: the last head kept, and what is heard
+with it); inspection heard the screen's directions turned up by the
+camera's pitch within 0.0011 degree; inspection ended in the pause took
+the listener's view away at once; the music held still; in the diorama
+the same within 0.0013 degree while the head turned 12.7 degrees and
+moved 20 cm, two-hand scaling went from 1 to 2.52 times and back to 1.51
+(committed twice, no other gesture, nobody moved), LOCAL was recentred and
+the seat recentred; the listener was the controlled character throughout
+and both runs' RAM at game frame 1 200 is xem-headless's.
+`first-person.test.mjs`: in field 15 the browser's listener looking
+around in first person faces as the native desktop host's within 4e-6
+degree for the same state and look (xem-headless's `first_person`
+example, the game view natively), its three emitters heard exactly where
+the native host hears them, from the same place, the music in the same
+places. `xem-render`'s `the_listener_is_the_same_at_every_scale_to_the_last_bit`:
+the diorama's listener axes at 25%, 37.7%, 137%, 252% and 400% are 100%'s
+to the last bit, the table tilted or not (taken through `room_from_world`
+they were not, at 37.7%). `tests/test_listening.py`: the
 listening test's analysis on answers with known errors (exact ones, front/
 back mirror images, negated and halved elevations, answers further out),
 its seeded bootstrap, the model comparison and the coherence summary,
@@ -1198,9 +1289,24 @@ emitters, the arena's voices and sprites' animation sounds (each effect left out
 guessed), and sounds that event scripts start (field and battle) are left
 out, since the actor running a script is not necessarily the emitter; no
 per-song overrides were reviewed; the arena path is tested on synthetic
-memory, not reached in the game; headsets and phones only through IWER and a
-throttled processor (OpenXR's Monado run does not check the presented
-head). The battle camera's swings the battle test hears are its own (the
+memory, not reached in the game; headsets only through IWER and Monado,
+phones through a throttled processor. Lost tracking is emulated on both
+headsets (IWER's frames given no viewer pose, as browsers report it;
+Monado's simulated HMD never loses tracking, so `--xr-lose-tracking` takes
+frames as the runtime reporting no head and no valid views), and
+Monado's recentring of LOCAL does not move its simulated head's poses, so
+there the runtime's recentring re-references through the seat alone. The
+headset tests place what is heard with the scene standing still (the
+game held, or field 15 with nobody playing); with it moving (the walk),
+the head, recentring, lost tracking and the diorama's scales are heard
+only headlessly, through the hosts' own seat and view code. A state taken in
+the browser while a headset's diorama presents differs from run to run
+at one scale too, after the same frames from the same state, in two
+words of the module's own memory outside the game's (wasm addresses
+0x10001024 and 0x10001068, growing from run to run like a host's counter
+kept in a suspended frame), its game memory, scratchpad and sound alike;
+it is not investigated further, and the scales are compared by those.
+The battle camera's swings the battle test hears are its own (the
 framing yaw turned in both sessions): the retained battle's camera turns
 only before any combatant sounds. No placed effect sounds across a camera
 cut on the routes kept (Lahan's cuts carry the song alone), so an effect's
@@ -1899,8 +2005,9 @@ anywhere; in the forest, map 22, the 30 sprite actors the original stops
 keep moving); off, the game runs as the original. The
 [Binaural sound mode](#binaural-sound-mode)'s listener looks where the view
 looks (`GameView::listener_axes`, which every host gives the session each
-frame: the look alone, never a headset's head, which `Session::set_head`
-adds once more after it). `status().renderer.firstPerson` and
+frame it presents, the game running or held: the look alone, never a
+headset's head, which `Session::set_head` adds once more after it).
+`status().renderer.firstPerson` and
 `status().renderer.look` (radians turned from the heading it began with,
 yaw right and pitch up) show it in browsers. `--example motion -- --map 30
 --look YAW,PITCH[,TURN]` shows a field from the eyes (degrees from the
@@ -1972,7 +2079,11 @@ moves (an agent's, a script's) carry the eyes with it without turning
 them: the heading stays the world's, so the view follows the character's
 place but neither its turning nor its animation. The Binaural listener
 looks along the view's level heading without the head, which
-`Session::set_head` adds once. Turned off, the screen is back where it
+`Session::set_head` adds once (so an effect is heard as on the screen
+turned up by the camera's pitch, then by the head: measured on IWER and
+Monado, [Binaural sound mode](#binaural-sound-mode)); the right stick's
+step turns it with the view, while the player's Pause holds the game too.
+Turned off, the screen is back where it
 was and as large (two-hand scaling does nothing while the view shows).
 
 Measured on Monado's simulated HMD (20 Hz, eyes of 320x240) with lavapipe
@@ -2632,10 +2743,18 @@ the screen then).
   down and forward taken through the table into the game camera's view
   space (`DioramaSpace::listener_axes`), so the head's turn composes once
   with the table's heading and tilt; the music's stage, turned by the head
-  alone, stays put in the room. Otherwise (the screen, the Original
-  renderer, the device's own movie frames) the listener has the screen's
-  axes: none, or first-person inspection's. The listener stays at the
-  character.
+  alone, stays put in the room. Through the table is through its place in
+  the room and its turn from the world (`DioramaSpace::turn`), both
+  rotations: the player's scale is not in the axes, not even by rounding
+  (taken through `room_from_world` and normalised, they differed from
+  scale to scale in their last bits, moving what is heard by about 1e-5
+  degree). Otherwise (the screen, the Original renderer, the device's own
+  movie frames) the listener has the screen's axes: none, or first-person
+  inspection's. The hosts give the presenter these axes, as they give it
+  the head, whenever they present, the game running or not, so a table
+  tilted, recentred or scaled while the game is held reaches the
+  presenter at once.
+  The listener stays at the character, whatever the head's place.
 - **Logs.** OpenXR's `xrframe` line adds `xr_view=` (`screen` or
   `diorama`, the setting's view), `diorama=` (shown),
   `share=` (the screen's), `builds=`, `seat=` (its place; its turn,
@@ -3237,7 +3356,20 @@ Headset class (Low tier, depth of field off unless enabled).
   [Headset qualification](#headset-qualification); the `xrframe` line's
   `keys=` gives the keys beside the screen (how many, their widths and how
   far each stands beside the screen's edge) and `panel=` where the
-  settings panel's middle stands.
+  settings panel's middle stands. Its Binaural runs (field 15, Binaural
+  on) hear the head through the frame log's `binaural=` (what the
+  presenter holds: [Binaural sound mode](#binaural-sound-mode)): one on
+  the screen, then in first-person inspection held by the player's Pause,
+  with the app's Recenter, Monado's recentring of LOCAL and
+  `--xr-lose-tracking N,M` (headset frames N to N+M-1 taken as the
+  runtime reporting no head and no valid views, which Monado's simulated
+  HMD never does) in the pause and inspection ended there; one in the
+  diorama, held by `--xr-pause`, with two-hand scaling, Monado's
+  recentring and Recenter in the pause. They check that the presenter's
+  head is the logged pose's turn from the seat, that with it taken off
+  every effect holds still while the game does (the head applied once),
+  and the rest the Binaural section lists; both runs' RAM at game frame
+  1 200 is `xem-headless`'s for the same log.
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs

@@ -38,6 +38,9 @@ struct Options {
     xr_hands: Vec<(u64, String)>,
     /// Headset tests: Recenter at these headset frames, as the app action does.
     xr_recenter_at: Vec<u64>,
+    /// Headset tests: headset frames N to N+M-1 as the runtime reports lost
+    /// tracking.
+    xr_lose_tracking: Option<(u64, u64)>,
     /// Headset tests: scripted controller buttons (headset frame, the
     /// gamepad's buttons as `xem_settings::controls::PAD_NAMES` bits, the
     /// settings panel's logical pixel the right controller points at).
@@ -62,6 +65,7 @@ fn options() -> Result<Options, String> {
         xr_capture_at: Vec::new(),
         xr_hands: Vec::new(),
         xr_recenter_at: Vec::new(),
+        xr_lose_tracking: None,
         xr_pad: Vec::new(),
         control: false,
     };
@@ -108,6 +112,11 @@ fn options() -> Result<Options, String> {
                     options.xr_recenter_at.push(item.parse().map_err(|_| format!("bad --xr-recenter-at frame {item:?}"))?);
                 }
             }
+            "--xr-lose-tracking" => {
+                let value = args.next().ok_or("--xr-lose-tracking needs FRAME,COUNT")?;
+                let (at, count) = value.split_once(',').ok_or("--xr-lose-tracking needs FRAME,COUNT")?;
+                options.xr_lose_tracking = Some((at.parse().map_err(|_| "bad --xr-lose-tracking")?, count.parse().map_err(|_| "bad --xr-lose-tracking")?));
+            }
             "--xr-hands" => {
                 let value = args.next().ok_or("--xr-hands needs FRAME:GESTURE,...")?;
                 for item in value.split(',') {
@@ -143,7 +152,7 @@ fn options() -> Result<Options, String> {
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] \
+                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] [--xr-lose-tracking N,M] \
                      [--xr-pad N:BUTTONS[@panel:X/Y],...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
@@ -159,7 +168,8 @@ fn options() -> Result<Options, String> {
                      NAME@X/Y also aims eye gaze at that screen pixel, NAME@panel:X/Y at the settings panel's \
                      logical pixel, NAME@world:X/Y/Z at that point of the game's world on the diorama's table) at headset frames, \
                      for tests without hand tracking; --xr-recenter-at recenters the view at those headset frames \
-                     (as the panel's Recenter does); \
+                     (as the panel's Recenter does); --xr-lose-tracking takes M headset frames from N as the \
+                     runtime reports lost tracking (no head, no valid views), for runtimes that never lose it; \
                      --xr-pad holds the gamepad's BUTTONS (South, East, West, North, L1, R1, LT, RT, Back, Start \
                      joined by +, or none) from headset frame N to the next entry, for tests without controller buttons \
                      (@panel:X/Y also points the right controller at the panel's logical pixel, R1 its trigger); \
@@ -312,6 +322,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
         capture_at: options.xr_capture_at.clone(),
         hands: options.xr_hands.clone(),
         recenter_at: options.xr_recenter_at.clone(),
+        lose_tracking: options.xr_lose_tracking,
         pad: options.xr_pad.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,

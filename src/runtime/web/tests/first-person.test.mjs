@@ -12,16 +12,23 @@
 // while the page has lost focus. The canvas's pictures go to build/web-test
 // (first-person-*.png). Input is held until the page's frames have read it,
 // so a loaded machine (the suite runs browsers side by side) slows the test
-// but does not change what it sees.
+// but does not change what it sees. In field 15 the browser's Binaural
+// listener looking around in first person (its facing, where each emitter
+// is heard, the music's places) is the native desktop host's for the same
+// state and look within float rounding: xem-headless's first_person example
+// (the same game view natively) takes the page's state and look angles.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
 import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, pixelStats, shot, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
+/** The native desktop host's first-person listener: xem-headless's
+ *  first_person example, built beside it (suite.sh's native stage). */
+const FIRST_PERSON = join(dirname(HEADLESS), 'examples', 'first_person');
 mkdirSync(SHOTS, { recursive: true });
 
 /** Animation frames of the page (each one a frame of its loop). */
@@ -264,6 +271,77 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
       assert.equal((await status(page)).session.inspecting, false, 'Back released alone ends it');
       assert.equal((await page.evaluate((p) => window.xem.settings.apply({ PauseOnFocusLoss: p }), focusPause)).ok, true);
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('the Binaural listener looking around in first person is the native host\'s within float rounding', { skip: !existsSync(FIRST_PERSON) && `needs ${FIRST_PERSON}`, timeout: 600_000 }, async () => {
+    // Field 15: three emitters the presenter places, and its music; the
+    // scene stands still while nobody plays.
+    const state = join(SHOTS, 'first-person-field15.state');
+    execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+      input: [{ cmd: 'enter_field', map: 15 }, { cmd: 'frames', count: 600 }, { cmd: 'state_save', path: state }]
+        .map((c) => JSON.stringify(c)).join('\n') + '\n',
+    });
+    const browser = await start({ args: NO_WEBGPU });
+    try {
+      const page = await browser.page();
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(async (base64) => {
+        await window.xem.boot();
+        window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
+        const binaural = window.xem.settings.get().settings.binaural;
+        window.xem.settings.apply({ Binaural: { ...binaural, enabled: true } });
+        window.xem.setRunning(true);
+        document.activeElement?.blur();
+      }, readFileSync(state).toString('base64'));
+      await page.waitForFunction(() => window.xem.command({ cmd: 'context' }).kind === 'walk');
+      await toggle(page, true);
+      await hold(page, 'ArrowRight', 400);
+      await hold(page, 'ArrowUp', 300);
+      await page.waitForFunction(() => {
+        const b = window.xem.command({ cmd: 'binaural' });
+        return b.first_person && (b.sources ?? []).filter((s) => s.kind === 'effect' && s.target).length === 3;
+      }, null, { timeout: 60_000 });
+      // The game held (the listener goes on taking the view's axes), its
+      // state and the view's look to the native host.
+      await page.evaluate(() => window.xem.setRunning(false));
+      await frames(page, 6);
+      const { look, heard, saved } = await page.evaluate(() => {
+        const bytes = window.xem.exportSnapshot();
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        return { look: window.xem.status().renderer.look, heard: window.xem.command({ cmd: 'binaural' }), saved: btoa(binary) };
+      });
+      const looked = join(SHOTS, 'first-person-field15-looked.state');
+      writeFileSync(looked, Buffer.from(saved, 'base64'));
+      const native = JSON.parse(execFileSync(FIRST_PERSON, ['--disc', USER_DISC, '--state', looked, '--look', `${look.yaw},${look.pitch}`], {
+        env: { ...process.env, VK_ICD_FILENAMES: process.env.VK_ICD_FILENAMES ?? process.env.XEM_LAVAPIPE_ICD ?? '' },
+        maxBuffer: 64 << 20,
+      }).toString());
+      assert.deepEqual(native.look, [look.yaw, look.pitch], 'the native view looks as the page\'s does');
+      const there = native.binaural;
+      // Each source by what it is (the native session's ids are its own).
+      const effects = (b) => new Map(b.sources.filter((s) => s.kind === 'effect' && s.target).map((s) => [s.follows, s.target]));
+      const places = (b) => new Map(b.sources.filter((s) => s.kind === 'music').map((s) => [`${s.song}/${s.part}`, s.placement]));
+      const off = (a, b) => Math.max(Math.abs(a.yaw - b.yaw), Math.abs(a.pitch - b.pitch));
+      const listener = off(heard.first_person, there.first_person);
+      const [here, native3] = [effects(heard), effects(there)];
+      const worst = Math.max(...[...here].map(([actor, t]) => {
+        const n = native3.get(actor);
+        assert.ok(n, `the native host places the emitter following actor ${actor} too`);
+        return Math.max(Math.abs(((t.azimuth - n.azimuth + 540) % 360) - 180), Math.abs(t.elevation - n.elevation));
+      }));
+      console.log(`first-person listener: the page's ${JSON.stringify(heard.first_person)}, the native host's ${JSON.stringify(there.first_person)} `
+        + `(${listener.toExponential(2)} degrees apart); its 3 emitters within ${worst.toExponential(2)} degrees`);
+      assert.ok(listener < 1e-3, `the listener faces as the native host's: ${listener} degrees apart`);
+      assert.equal(native3.size, 3);
+      assert.ok(worst < 1e-3, `each emitter is heard where the native host hears it: ${worst} degrees apart`);
+      assert.deepEqual(there.listening_position, heard.listening_position, 'from the same listening position');
+      assert.deepEqual(places(there), places(heard), 'the music in the same places');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

@@ -26,7 +26,13 @@
 //! and shows each placed source mixed once (alone, it is its signal
 //! through the HRTF pairs of where it was heard, frame by frame); drawing
 //! zoomed out changes nothing heard, and with characters in view the
-//! game's own gains stay.
+//! game's own gains stay. A headset's head as its host gives it (its turn
+//! from the seat) is heard once, through the player's Recenter, the
+//! runtime recentring its space and lost tracking (the last head kept),
+//! without a NaN or a click where it jumps; a headset's diorama drawn at
+//! 25%, 100% and 400% of its scale presents the same every frame, status
+//! and sound, from the controlled character, its view of the table and the
+//! head each once.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test binaural
 
@@ -937,13 +943,23 @@ enum Presentation {
     /// actors moving in that zoomed view (`Session::set_actor_view`), a
     /// change to the game itself.
     InView,
+    /// A headset's head as its host gives it ([`recentred_heads`]: the
+    /// head's turn from the seat), head-tracked music on: the head sweeping
+    /// as in `Head`, pitched up, the player's Recenter at [`RECENTRE`], the
+    /// runtime recentring its reference space at [`RESET`] and tracking lost
+    /// over [`LOST`].
+    Recentred,
+    /// A headset's diorama at the player's scale (percent), drawn every
+    /// frame, characters in view off: the listener the seat's axes through
+    /// the table, the head turning as in `Head`.
+    Diorama(u16),
 }
 
 /// The Binaural mode's defaults, on.
 const ON: Config = Config { enabled: true, spatial_music: true, positional_effects: true, music_immersion: 70, head_tracked_music: false, bypass: false };
 
 /// The sessions the walk's tests read, all played once ([`walks`]).
-const PRESENTATIONS: [Presentation; 12] = [
+const PRESENTATIONS: [Presentation; 16] = [
     Presentation::Plain,
     Presentation::Settings(ON),
     Presentation::Settings(Config { bypass: true, ..ON }),
@@ -956,6 +972,10 @@ const PRESENTATIONS: [Presentation; 12] = [
     Presentation::Toggled,
     Presentation::Zoomed,
     Presentation::InView,
+    Presentation::Recentred,
+    Presentation::Diorama(25),
+    Presentation::Diorama(100),
+    Presentation::Diorama(400),
 ];
 const PLAIN: usize = 0;
 const PLACED: usize = 1;
@@ -965,6 +985,17 @@ const VIEW: usize = 8;
 const TOGGLED: usize = 9;
 const ZOOMED: usize = 10;
 const IN_VIEW: usize = 11;
+const RECENTRED: usize = 12;
+const DIORAMAS: [usize; 3] = [13, 14, 15];
+
+/// The walk frames (from its input's start) a [`Presentation::Recentred`]
+/// session recentres at (the seat to the head, turned 90 degrees to the
+/// right then), has its runtime recentre the reference space at (the head
+/// then 45 to the left of the seat's 90 to the right), and loses tracking
+/// over.
+const RECENTRE: u64 = 300;
+const RESET: u64 = 700;
+const LOST: std::ops::Range<u64> = 1000..1060;
 
 /// The walk's frames (counted from its input's start) the placed session
 /// keeps a tap capture of: the camera's quarter turn, turns in place,
@@ -1013,8 +1044,46 @@ fn head_of(n: u64) -> [[f32; 3]; 3] {
     xem_core::binaural::head_axes([0.0, -half.sin(), 0.0, half.cos()])
 }
 
+/// The heads a [`Presentation::Recentred`] session sets before each walk
+/// frame, as a headset host gives them (`head_axes` of the head's turn
+/// from the seat, `xem_assist::headset`'s seat moved as the hosts move
+/// it), none while tracking is lost (the host sets nothing: the last
+/// stays). The head sweeps as [`head_of`]'s, pitched 15 degrees up; the
+/// player's Recenter puts the seat at it; the runtime's recentring puts the
+/// seat at the origin, the head from then on given turned from where it
+/// faced then (as a runtime recentres its space on the head).
+fn recentred_heads(frames: u64) -> Vec<Option<[[f32; 3]; 3]>> {
+    use xem_assist::headset::{Anchored, Headset, Pose, Scaling, Seat};
+    use xem_render::glam::{Quat, Vec3};
+    struct NoTable;
+    impl Anchored for NoTable {
+        fn anchor_again(&mut self) {}
+    }
+    let (mut seat, mut headset, mut scaling) = (Seat::default(), Headset::default(), Scaling::default());
+    let mut space = Quat::IDENTITY;
+    (0..frames)
+        .map(|n| {
+            let tracked = Quat::from_rotation_y(-sweep(n)) * Quat::from_rotation_x(15f32.to_radians());
+            if n == RESET {
+                space = Seat::at(Pose { position: Vec3::ZERO, orientation: tracked }).orientation().inverse();
+                xem_assist::headset::reference_changed(&mut headset, &mut scaling, &mut seat, &mut NoTable);
+            }
+            let head = Pose { position: Vec3::new(0.0, 1.6, 0.0), orientation: space * tracked };
+            if n == RECENTRE {
+                xem_assist::headset::recenter(&mut seat, Some(head), &mut NoTable).expect("a tracked head");
+            }
+            (!LOST.contains(&n)).then(|| xem_core::binaural::head_axes(seat.relative(head.orientation).to_array()))
+        })
+        .collect()
+}
+
 fn apply(rows: &[[f32; 3]; 3], v: [f32; 3]) -> [f32; 3] {
     rows.map(|row| row[0] * v[0] + row[1] * v[1] + row[2] * v[2])
+}
+
+/// `outer` applied after `inner`, as one set of axes.
+fn compose(outer: &[[f32; 3]; 3], inner: &[[f32; 3]; 3]) -> [[f32; 3]; 3] {
+    std::array::from_fn(|r| std::array::from_fn(|c| (0..3).map(|k| outer[r][k] * inner[k][c]).sum()))
 }
 
 fn unit(v: [f32; 3]) -> [f32; 3] {
@@ -1256,31 +1325,60 @@ struct Walked {
     /// The view session's `audio_capture` with `tap: true` over the first
     /// two seconds of [`TAP`], as the command replies.
     tap_reply: Option<Value>,
+    /// The head and the listener's view the presenter held for each frame
+    /// (the headset sessions, recentred and diorama: what they set, or kept).
+    heads: Vec<Option<[[f32; 3]; 3]>>,
+    views: Vec<Option<[[f32; 3]; 3]>>,
 }
 
-/// A view drawing a session's frames as a desktop host would ([`Presentation::Zoomed`]).
+/// A view drawing a session's frames as a host would: a desktop's zoomed
+/// picture ([`Presentation::Zoomed`]), or a headset's diorama at a scale
+/// ([`Presentation::Diorama`]).
 struct Drawn {
     gpu: xem_render::Gpu,
     view: xem_render::ps1::GameView,
+    graphics: xem_settings::Graphics,
+    headset: bool,
 }
+
+/// The eyes a headset diorama is drawn for: small pictures, 64 mm apart,
+/// at the seat.
+const DIORAMA_EYE: (u32, u32) = (48, 48);
 
 impl Drawn {
     fn new() -> Drawn {
-        let gpu = pollster::block_on(xem_render::Gpu::headless()).expect("a wgpu adapter");
-        let mut view = xem_render::ps1::GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-        view.configure(Self::config(&view));
-        Drawn { gpu, view }
+        Self::with(zoomed_graphics(), false)
     }
 
-    fn config(view: &xem_render::ps1::GameView) -> xem_render::ps1::ViewConfig {
-        xem_render::ps1::ViewConfig::resolve(&zoomed_graphics(), xem_render::ps1::HostClass::Desktop, ZOOMED_OUTPUT, view.max_scale())
+    /// The headset's diorama view at `percent` of its scale, characters in
+    /// view off (the game's actor view stays the original's).
+    fn diorama(percent: u16) -> Drawn {
+        let xr = xem_settings::XrScreen { view: xem_settings::HeadsetView::Diorama, diorama_scale: percent, ..Default::default() };
+        Self::with(xem_settings::Graphics { actors_in_view: false, xr, ..Default::default() }, true)
+    }
+
+    fn with(graphics: xem_settings::Graphics, headset: bool) -> Drawn {
+        let gpu = pollster::block_on(xem_render::Gpu::headless()).expect("a wgpu adapter");
+        let view = xem_render::ps1::GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let mut drawn = Drawn { gpu, view, graphics, headset };
+        drawn.view.configure(drawn.config());
+        drawn
+    }
+
+    fn config(&self) -> xem_render::ps1::ViewConfig {
+        let (class, output) = if self.headset { (xem_render::ps1::HostClass::Headset, DIORAMA_EYE) } else { (xem_render::ps1::HostClass::Desktop, ZOOMED_OUTPUT) };
+        xem_render::ps1::ViewConfig::resolve(&self.graphics, class, output, self.view.max_scale())
     }
 
     /// The frame the session just ran, drawn (the draw trace on and the
-    /// port recording what the wider picture reveals, as the host does).
+    /// port recording what the picture reveals, as the host does): the
+    /// diorama for both eyes from the seat at the room's origin.
     fn draw(&mut self, session: &mut Session<NativeModule>, n: u64) {
-        let config = Self::config(&self.view);
+        let config = self.config();
         self.view.configure(config);
+        if self.headset {
+            self.view.set_xr_view(xem_render::ps1::xr_view(&self.graphics));
+        }
         let device = session.runtime.services().gpu.device_mut();
         if self.view.take_restart() || !device.trace_enabled() {
             device.set_trace(true);
@@ -1290,7 +1388,15 @@ impl Drawn {
         let display = device.display();
         let scene = session.scene();
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
-        let _ = self.view.present(&mut encoder, &display, &scene, n as f64 / 60.0);
+        let now = n as f64 / 60.0;
+        if self.headset {
+            use xem_render::glam::{Mat4, Vec3};
+            let proj = Mat4::perspective_rh(1.6, 1.0, 0.05, 50.0);
+            let eyes = [-0.032, 0.032].map(|x| xem_render::ps1::DioramaEye { view: Mat4::from_translation(Vec3::new(-x, 0.0, 0.0)), proj, size: DIORAMA_EYE });
+            let _ = self.view.present_diorama(&mut encoder, &display, &scene, now, &eyes, Mat4::IDENTITY);
+        } else {
+            let _ = self.view.present(&mut encoder, &display, &scene, now);
+        }
         self.gpu.queue.submit([encoder.finish()]);
     }
 }
@@ -1315,20 +1421,43 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
             assert!(view & 0xFFFF == 400 && view >> 16 > 0, "pulled back four times with wider sides: {view:#x}");
             session.set_actor_view(view).unwrap();
         }
+        Presentation::Recentred => session.set_binaural(Config { head_tracked_music: true, ..ON }),
+        Presentation::Diorama(percent) => {
+            session.set_binaural(ON);
+            drawn = Some(Drawn::diorama(percent));
+        }
     }
     let placed = presentation == PRESENTATIONS[PLACED];
-    let observed = placed || matches!(presentation, Presentation::Head | Presentation::View | Presentation::Zoomed | Presentation::InView);
+    let observed = placed
+        || matches!(presentation, Presentation::Head | Presentation::View | Presentation::Zoomed | Presentation::InView | Presentation::Recentred | Presentation::Diorama(_));
     let reads = observed && presentation != Presentation::Zoomed || presentation == Presentation::Plain;
     let mut frames = Vec::new();
     let mut gains = Gains::default();
     let mut previous = Voices::default();
     let (mut statuses, mut seen, mut audio, mut ends, mut tap, mut tap_reply) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), None, None);
     let (mut slots, mut slot_changes, mut angles, mut menu) = (Vec::new(), 0, std::collections::BTreeSet::new(), Vec::new());
+    let recentred = recentred_heads(log.frames - log.start());
+    let (mut heads, mut views): (Vec<Option<[[f32; 3]; 3]>>, Vec<Option<[[f32; 3]; 3]>>) = (Vec::new(), Vec::new());
     for n in 0..log.frames - log.start() {
         match presentation {
             Presentation::Head => session.set_head(Some(head_of(n))),
             Presentation::View => session.set_listener_view(Some(view_axes(n))),
             Presentation::Toggled if n % 120 == 0 && n > 0 => session.set_binaural(TOGGLES[(n / 120) as usize % TOGGLES.len()]),
+            Presentation::Recentred => {
+                // Lost, the host sets nothing: the presenter keeps the last.
+                if let Some(head) = recentred[n as usize] {
+                    session.set_head(Some(head));
+                }
+                heads.push(recentred[n as usize].or(heads.last().copied().flatten()));
+            }
+            Presentation::Diorama(_) => {
+                // The listener's view of the diorama the host showed last.
+                let view = drawn.as_mut().expect("a diorama").view.listener_axes();
+                session.set_head(Some(head_of(n)));
+                session.set_listener_view(view);
+                heads.push(Some(head_of(n)));
+                views.push(view);
+            }
             _ => {}
         }
         if (placed || presentation == Presentation::View) && n == TAP.start {
@@ -1382,7 +1511,7 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
     }
     let memory_hash = format!("{:016x}", session.memory_hash().unwrap());
     let coverage = matches!(presentation, Presentation::Plain).then_some((slot_changes, angles.len(), menu.iter().filter(|m| **m).count() as u32));
-    Walked { presentation, frames, gains, memory_hash, coverage, menu, statuses, seen, audio, ends, tap, tap_reply }
+    Walked { presentation, frames, gains, memory_hash, coverage, menu, statuses, seen, audio, ends, tap, tap_reply, heads, views }
 }
 
 /// Every session of the walk ([`PRESENTATIONS`]), played once for all the
@@ -1634,8 +1763,10 @@ fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
     // reader has them, their difference through the camera's matrix as the
     // game draws with it (`scaled_world`, whose rows' lengths differ by up
     // to 0.8%: the presenter takes each row's direction, hence the 0.5
-    // degree bound), then the first-person view's or the head's turn.
-    for index in [PLACED, VIEW, HEAD, IN_VIEW] {
+    // degree bound), then the first-person view's or the head's turn, or
+    // both: a headset's diorama's view (the seat through the table) then
+    // the head, each once.
+    for index in [PLACED, VIEW, HEAD, IN_VIEW, RECENTRED, DIORAMAS[0], DIORAMAS[1], DIORAMAS[2]] {
         let run = &walked[index];
         let mut d = Directions::default();
         let mut previous: Option<(&Seen, std::collections::HashMap<u64, (usize, [f32; 3], [f32; 3])>)> = None;
@@ -1645,6 +1776,8 @@ fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
             let turn = match index {
                 VIEW => Some(view_axes(n as u64)),
                 HEAD => Some(head_of(n as u64)),
+                RECENTRED => run.heads[n],
+                _ if DIORAMAS.contains(&index) => run.heads[n].map(|head| run.views[n].map_or(head, |view| compose(&head, &view))),
                 _ => None,
             };
             let mut heard = std::collections::HashMap::new();
@@ -1879,13 +2012,17 @@ fn along_a_walk_the_music_keeps_its_places() {
         assert_eq!(strip(music(view)), strip(music(plain)), "frame {}: looking around in first person moves no music", frame_at(log, n));
     }
     // Head-tracked music: the stage stays put as the head turns, so it is
-    // heard turned the other way.
+    // heard turned the other way, a recentred head's (and the one kept
+    // through lost tracking) too.
     let mut worst = 0f32;
-    for (n, status) in walked[HEAD].statuses.iter().enumerate() {
-        for source in music(status).values() {
-            let off = between(apply(&head_of(n as u64), stage(source)), target(source).expect("a place"));
-            worst = worst.max(off);
-            assert!(off < 0.05, "frame {}: head-tracked part {} heard {off} degrees from its place against the head", frame_at(log, n), source["part"]);
+    for index in [HEAD, RECENTRED] {
+        for (n, status) in walked[index].statuses.iter().enumerate() {
+            let head = if index == HEAD { head_of(n as u64) } else { walked[index].heads[n].expect("a head") };
+            for source in music(status).values() {
+                let off = between(apply(&head, stage(source)), target(source).expect("a place"));
+                worst = worst.max(off);
+                assert!(off < 0.05, "{:?}, frame {}: head-tracked part {} heard {off} degrees from its place against the head", walked[index].presentation, frame_at(log, n), source["part"]);
+            }
         }
     }
     eprintln!("head-tracked music: within {worst} degrees of its places against the head");
@@ -2041,6 +2178,97 @@ fn along_a_walk_switching_sources_adds_no_clicks() {
     }
     let (b, o) = (high_band(&placed.audio).iter().sum::<f64>(), high_band(&plain.audio).iter().sum::<f64>());
     eprintln!("the placed walk's high band against the original's: {:+.2} dB", 10.0 * (b / o).log10());
+}
+
+/// Whether every direction a status holds is a number, none NaN or
+/// infinite (serde gives a NaN as null).
+fn finite(status: &Value) -> bool {
+    let number = |v: &Value| v.as_f64().is_some_and(f64::is_finite);
+    let facing = |f: &Value| f.is_null() || (number(&f["yaw"]) && number(&f["pitch"]));
+    let direction = |d: &Value| number(&d["azimuth"]) && number(&d["elevation"]);
+    facing(&status["head"])
+        && facing(&status["first_person"])
+        && status["sources"].as_array().unwrap().iter().all(|s| direction(s) && (s["target"].is_null() || direction(&s["target"])))
+}
+
+#[test]
+fn along_a_walk_recentring_the_head_and_losing_it_re_reference_what_is_heard_without_nans_or_clicks() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // (Where each effect and part is heard through the head as held is the
+    // direction and music tests'.)
+    let run = &walked[RECENTRED];
+    let head = |n: u64| run.statuses[n as usize]["head"].clone();
+    let yaw = |n: u64| head(n)["yaw"].as_f64().unwrap();
+    let pitch = |n: u64| head(n)["pitch"].as_f64().unwrap();
+    // The player's Recenter puts the seat at the head: the head is ahead of
+    // it, its pitch kept; the runtime's recentring puts the seat at the
+    // space's origin, the head then ahead of it in the space as the runtime
+    // gives it from then on.
+    for (n, what) in [(RECENTRE, "the Recenter"), (RESET, "the runtime's recentring")] {
+        assert!(yaw(n).abs() < 0.01 && (pitch(n) - 15.0).abs() < 0.01, "frame {}: {what} puts the head ahead: {}", frame_at(log, n as usize), head(n));
+    }
+    // Lost tracking keeps the last head; found, the head is followed again.
+    for n in LOST {
+        assert_eq!(head(n), head(LOST.start - 1), "frame {}: lost tracking keeps the last head", frame_at(log, n as usize));
+    }
+    assert_ne!(head(LOST.end), head(LOST.start - 1), "found, the head is followed again");
+    // Nothing any session presents is NaN or infinite.
+    for run in walked.iter().filter(|run| !run.statuses.is_empty()) {
+        for (n, status) in run.statuses.iter().enumerate() {
+            assert!(finite(status), "{:?}, frame {}: a direction that is not a number: {status}", run.presentation, frame_at(log, n));
+        }
+    }
+    // What is heard jumps with the head there (the effects and, head-tracked,
+    // the music), gliding from one direction to the other: no clicks.
+    let plain = &walked[PLAIN];
+    let jumps = [RECENTRE, RESET, LOST.end];
+    let turned: Vec<f64> = jumps.iter().map(|&n| (yaw(n) - yaw(n - 1) + 540.0).rem_euclid(360.0) - 180.0).collect();
+    let events: Vec<(usize, usize)> = jumps.iter().map(|&n| (run.ends[n as usize - 1] / 2, run.ends[n as usize] / 2)).collect();
+    let rises = clicks(&run.audio, &plain.audio, &events);
+    let most = rises.iter().map(|r| r.parts).fold(f64::MIN, f64::max);
+    eprintln!("recentred: the head turned {turned:.1?} degrees at once at frames {:?} (the Recenter, the runtime's recentring, tracking found); \
+        there the high band stands out {:?} dB more than the original's",
+        jumps.map(|n| frame_at(log, n as usize)), rises.iter().map(|r| format!("{:+.2}/{:+.2}/{:+.2}", r.parts, r.whole, r.level)).collect::<Vec<_>>());
+    assert!(turned.iter().all(|t| t.abs() > 20.0), "the head jumped at each: {turned:?}");
+    assert!(most <= 3.0, "where the head jumped, the high band stands out at most 3 dB more than the original's: {most:+.2} dB");
+}
+
+#[test]
+fn along_a_walk_the_diorama_is_heard_the_same_at_every_scale_from_the_character() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // (Game memory and the SPU are plain Stereo's frame by frame at every
+    // scale: the first walk test's; each effect is heard where the field
+    // reader puts it through the seat's view of the table and the head:
+    // the direction test's.)
+    let [quarter, whole, four] = DIORAMAS.map(|i| &walked[i]);
+    let mut shown = 0;
+    for n in 0..whole.statuses.len() {
+        let at = frame_at(log, n);
+        // The listener's view each host took from its table, and everything
+        // presented, are the same to the last bit at 25%, 100% and 400%.
+        for (scale, run) in [(25, quarter), (400, four)] {
+            assert_eq!(run.views[n], whole.views[n], "frame {at}: the listener's view at {scale}% is 100%'s");
+            assert_eq!(run.statuses[n], whole.statuses[n], "frame {at}: at {scale}% the presentation is 100%'s");
+        }
+        shown += usize::from(whole.views[n].is_some());
+        assert_eq!(whole.statuses[n]["first_person"].is_null(), whole.views[n].is_none());
+        // The listener is the controlled character, not the spectator.
+        let seen = whole.seen[n].as_ref().expect("the walk stays in the field");
+        let character = seen.position(seen.player.expect("a controlled actor")).expect("its place");
+        let listener = whole.statuses[n]["listening_position"].as_array().expect("a listener").iter().map(|c| c.as_f64().unwrap() as f32).collect::<Vec<_>>();
+        assert_eq!(listener, character.to_vec(), "frame {at}: the listener is the controlled character");
+    }
+    assert_eq!(quarter.audio, whole.audio, "25%: the sound is 100%'s sample for sample");
+    assert_eq!(four.audio, whole.audio, "400%: the sound is 100%'s sample for sample");
+    eprintln!("diorama: the seat's view of the table heard in {shown} of {} frames, the same at 25%, 100% and 400%, the sound too ({} samples)",
+        whole.statuses.len(), whole.audio.len());
+    assert!(shown * 10 > whole.statuses.len() * 7, "the diorama showed for most of the walk: {shown} frames");
 }
 
 #[test]
