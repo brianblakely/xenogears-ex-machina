@@ -13,7 +13,11 @@
 //! movie's natural end; the three controls are recorded, so a replay
 //! reaches the recording's memory; agents read each option's effect in
 //! `status` (the movie and whether a press ends it, a choice that counts
-//! nothing toward the dwell); and the game's opening chapter, New Game to
+//! nothing toward the dwell), a movie only while its loop reads the press
+//! (from boot: the boot's movie from its player's start, the title's
+//! attract movie from its first picture, a press it offers ending each and
+//! one it does not changing nothing, and no movie while the field reloads
+//! after one); and the game's opening chapter, New Game to
 //! Fei's room, plays with the settings' defaults to the original's memory
 //! and with every scene option to the same story value through the same
 //! maps and battle. Local only: it needs the user's disc 1 and a game
@@ -595,6 +599,153 @@ fn a_story_movie_ends_on_confirm_where_the_setting_lets_it_and_the_field_goes_on
         assert_eq!(half(session, MODE_FIELD_MAP_ID) & 0xFFF, 23);
     }
     assert_eq!(story(&mut skipped), story(&mut original), "the same story value after map 23's opening");
+}
+
+/// The movie `status` shows now.
+fn shown_movie(session: &mut Session<NativeModule>) -> Value {
+    run(session, json!({"cmd": "status"}))["movie"].clone()
+}
+
+/// A session from boot, its pad untouched but for `presses`: on each
+/// (frame, input) Start (`"start"`) or Confirm for one vertical blank, run
+/// to frame `to` (frames since boot).
+fn from_boot(disc: &PathBuf, presses: &[(u64, &str)], to: u64) -> Session<NativeModule> {
+    let (mut session, _) = boot(disc, &Default::default()).expect("boot");
+    while session.runtime.frames() < to {
+        let now = session.runtime.frames();
+        for (_, input) in presses.iter().filter(|(at, _)| *at == now) {
+            press(&mut session, input);
+        }
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+    }
+    session
+}
+
+fn press(session: &mut Session<NativeModule>, input: &str) {
+    match input {
+        "start" => run(session, json!({"cmd": "press", "buttons": ["start"], "frames": 1})),
+        _ => run(session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 1})),
+    };
+}
+
+/// Agents read a movie in `status` while its loop reads the press, and a
+/// press it says ends the movie does (docs/runtime.md, Movies can be
+/// skipped). From boot with no other input: the boot's movie, the movie
+/// mode's, shows from its player's start and not while the mode loads the
+/// movie library; Start on its first frame ends it, and on the frame
+/// before it plays on to its end. The title's attract movie, a field movie
+/// whose request has the early exit, shows from its first picture and not
+/// while its player waits for it; a press on the first picture is dropped,
+/// as the game's pad queue is full from the wait, until the loop's first
+/// read, and a Confirm then ends the movie at once: no other press is
+/// wanted while it fades, and nothing shows while the field reloads what
+/// the movie displaced.
+#[test]
+fn status_shows_a_movie_while_its_loop_reads_the_press_and_a_press_it_says_ends_it_does() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The boot's movie: nothing while the movie mode loads the movie
+    // library, then the movie from its player's start.
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let mut loading = 0;
+    let started = loop {
+        assert!(session.runtime.frames() < 2000, "the boot's movie never showed");
+        let movie = shown_movie(&mut session);
+        if session.runtime.services().mode == Some(6) {
+            if !movie.is_null() {
+                assert_eq!(movie, json!({"kind": "mode", "frame": -1, "ends_on_press": true}), "its player started, no picture yet");
+                break session.runtime.frames();
+            }
+            loading += 1;
+        }
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+    };
+    assert!(loading >= 30, "nothing shows while the movie mode loads the movie library ({loading} frames)");
+    press(&mut session, "start");
+    let mut ended = 0;
+    while session.runtime.services().mode == Some(6) {
+        assert!(ended < 30, "Start ends the boot's movie");
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+        ended += 1;
+    }
+    // The title's attract movie: nothing while its player waits for the
+    // first picture, then the picture, a press dropped until the loop's
+    // first read.
+    let mut waited = 0;
+    let picture = loop {
+        assert!(session.runtime.frames() < 6000, "the title's movie never showed");
+        let movie = shown_movie(&mut session);
+        let frame = word(&mut session, MOVIE_FRAME);
+        if !movie.is_null() {
+            assert!(frame > 0, "a field movie shows from its first picture: {movie}");
+            assert_eq!(movie, json!({"kind": "field", "frame": frame, "ends_on_press": false}), "the pad queue the wait filled drops a press");
+            break session.runtime.frames();
+        }
+        if session.runtime.services().mode == Some(1) && word(&mut session, MOVIE_REQUESTED) != 0 && word(&mut session, MOVIE_STOPPED) == 0 {
+            waited += 1;
+        }
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+    };
+    assert!(waited >= 16, "the player waited {waited} frames for the first picture");
+    let read = loop {
+        assert!(session.runtime.frames() - picture < 8, "the loop reads the press within its first pass");
+        let movie = shown_movie(&mut session);
+        assert_eq!(movie["kind"], json!("field"), "the movie still shows");
+        if movie["ends_on_press"] == json!(true) {
+            break session.runtime.frames();
+        }
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+    };
+    // Confirm: the loop reads it at its next pass (a press still ends the
+    // movie until then), the movie fades for five vertical blanks with no
+    // press wanted, its player closes and the field reloads.
+    press(&mut session, "confirm");
+    let (mut pending, mut fading, mut reloading) = (0, 0, 0);
+    while word(&mut session, MOVIE_REQUESTED) != 0 {
+        assert!(session.runtime.frames() - read < 400, "the field takes the movie's end");
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+        let movie = shown_movie(&mut session);
+        match (movie.is_null(), movie["ends_on_press"] == json!(true)) {
+            (true, _) => reloading += 1,
+            (false, true) if fading == 0 && reloading == 0 => pending += 1,
+            (false, false) if reloading == 0 => fading += 1,
+            _ => panic!("the movie showed out of turn: {movie} after {pending} frames pending, {fading} fading, {reloading} reloading"),
+        }
+    }
+    assert!(pending <= 3, "the loop read the press {pending} frames after it");
+    assert!((5..=7).contains(&fading), "the movie faded {fading} frames");
+    assert!(reloading >= 30, "{reloading} frames of the field's reload show no movie");
+    let last = word(&mut session, MOVIE_FRAME);
+    assert!(last < 10, "Confirm ended the movie at its frame {last}");
+    eprintln!("from boot: the boot's movie showed {started} frames in after {loading} frames of its mode and Start ended it {ended} \
+        frames later; the title's movie waited {waited} frames for its first picture at {picture}, read a press from {read}, and \
+        Confirm there ended it at its frame {last}: read after {pending}, {fading} frames fading, {reloading} frames reloading");
+    // A press the readout does not offer changes nothing: Start on the frame
+    // before the boot's movie showed (it plays to its end, about 960 frames
+    // on), Confirm on the title movie's first picture.
+    let (boot_movie, (title_movie, title_frame)) = std::thread::scope(|scope| {
+        let boot_movie = scope.spawn(|| {
+            let mut session = from_boot(&disc, &[(started - 1, "start")], started);
+            let mut played = 0;
+            while session.runtime.services().mode == Some(6) && played < 2000 {
+                run(&mut session, json!({"cmd": "frames", "count": 1}));
+                played += 1;
+            }
+            played
+        });
+        let title_movie = scope.spawn(|| {
+            let mut session = from_boot(&disc, &[(started, "start"), (picture, "confirm")], picture + 120);
+            (shown_movie(&mut session), word(&mut session, MOVIE_FRAME))
+        });
+        (boot_movie.join().expect("a run"), title_movie.join().expect("a run"))
+    });
+    eprintln!("Start on frame {}: the boot's movie played {boot_movie} frames on; Confirm on the title movie's first picture: \
+        120 frames later it shows {title_movie}", started - 1);
+    assert!(boot_movie >= 900, "Start before the boot's movie showed: it played {boot_movie} frames more");
+    assert_eq!(title_movie["kind"], json!("field"), "Confirm on the first picture: the movie plays on ({title_movie})");
+    assert!(title_frame > last + 10, "the title's movie played on to its frame {title_frame}");
 }
 
 /// How the opening chapter went: its end, frames, story value, the field

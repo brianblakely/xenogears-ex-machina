@@ -1617,6 +1617,12 @@ fn status_shows_the_prompt_auto_advance_counts_toward_and_the_movie_a_press_woul
     for (at, value) in [(0x800A_DB70, 1u32), (0x800A_DB6C, 0), (0x800A_DB74, 0), (0x800A_DB80, 0x40), (0x800B_06A0, 21), (0x800C_268C, 1)] {
         s.runtime.memory().write_u32(at, value).unwrap();
     }
+    assert_eq!(status(&mut s, "movie"), json!(null), "no movie library's player streams it");
+    // The movie library's player streaming it (state 1, the field's frame
+    // callback) and the scripts' input mask letting every button through.
+    s.runtime.memory().write(0x801E_8964, &[1]).unwrap();
+    s.runtime.memory().write_u32(0x801E_8990, 0x800A_7120).unwrap();
+    s.runtime.memory().write(0x800B_217A, &0xFFFFu16.to_le_bytes()).unwrap();
     assert_eq!(status(&mut s, "movie"), json!({"kind":"field","frame":21,"ends_on_press":false}));
     s.runtime.memory().write_u32(0x800A_DB80, 0xC0).unwrap();
     assert_eq!(status(&mut s, "movie")["ends_on_press"], json!(true), "Confirm ends it");

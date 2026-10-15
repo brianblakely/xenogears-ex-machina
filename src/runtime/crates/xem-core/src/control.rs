@@ -895,7 +895,7 @@ impl<M: GameModule> Session<M> {
         let movie_skip = self.runtime.services().movie_skip;
         // What the dialogue options act on, as the game shows it: the
         // field dialogue's prompt (auto-advance counts toward its dwell
-        // while it waits) and the movie playing.
+        // while it waits) and the movie whose loop reads the press.
         let mode = self.runtime.services().mode;
         let dialogue = crate::dialogue::prompt(self.runtime.memory(), mode);
         let movie = crate::movie::movie(self.runtime.memory(), mode);

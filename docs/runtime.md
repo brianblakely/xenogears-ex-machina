@@ -4295,9 +4295,13 @@ import keep them. On the game,
 (`xem-headless/tests/text_and_movies.rs`, about 31 s here, its three runs
 side by side) play the runs above, and the second file also reads `status`
 on map 25's story movie (`movie.ends_on_press` false without the option
-and true with it, `null` on map 23) and at map 172's choice (`dialogue` a
-choice, `auto_advance_waited` 0). The slice logs replay to their recorded
-hashes (`xem-headless/tests/slice.rs`).
+and true with it, `null` on map 23), frame by frame through the boot's
+and the title's movies from boot (`movie` only while the movie's loop
+reads the press, a press it offers ending each and one it does not
+changing nothing; [below](#text-speed-auto-advance-and-movie-skipping)),
+and at map 172's choice (`dialogue` a choice, `auto_advance_waited` 0).
+The slice logs replay to their recorded hashes
+(`xem-headless/tests/slice.rs`).
 
 Not done or not measured: under the default, the enemies met only in the
 platforming areas' random battles (battle 32's enemy 0 and battle 59's
@@ -4922,13 +4926,32 @@ would do to the field's dialogue now, read as auto-advance reads it
 `{"kind":"choice"}`; Fast and Instant text make a page's prompt show
 sooner. `auto_advance_waited` is the vertical blanks the shown prompt has
 waited toward the dwell (0 while auto-advance is off, at a choice and
-after each press). `movie` (`xem_core::movie`) is `null` or the movie
-playing: its `kind` (`field`, a story movie; `window`, a window movie;
-`mode`, the movie mode's), the `frame` it shows and `ends_on_press`,
-whether a press would end it now by the original's early exit (a field
-movie's request with fade bit 0x80, or the debug monitor present; the
-movie mode's unless its request kept it), which the option turns on for
-the story's movies as their frames run.
+after each press). `movie` (`xem_core::movie`) is the movie whose
+playback loop reads the press, or `null`: its `kind` (`field`, a story
+movie; `window`, a window movie; `mode`, the movie mode's), the `frame` it
+shows and `ends_on_press`, whether a press now would end it by the
+original's early exit. A field movie shows from its first picture until
+its loop closes the movie library's player (`movie_close`): before the
+picture the player waits for its first frame in a loop that reads no pad,
+and after the loop the field reloads what the movie displaced. Its loop
+reads the press from the game's pad queue, which keeps 16 vertical
+blanks' pads and drops the rest, so a press counts only while the queue
+has room: before the first picture only in the first 16 vertical blanks
+after the field last read the pad, and on the first picture after a
+longer wait not until the loop's first read empties the queue.
+`ends_on_press` follows the request's fade bit 0x80 (or the debug monitor
+present) and the queue's room, and is false while the staff roll draws
+over the movie, while the scripts' input mask holds Confirm back and once
+the loop has taken a press, after which the movie fades for five vertical
+blanks and closes.
+The movie mode's shows from its player's start (`frame` -1 until its
+first picture) until the player stops, as its loop reads the pad from the
+start, and not while the mode loads the movie library; its
+`ends_on_press` is false where its request kept it and once its end
+counts down. Which movie the player plays is its frame callback, the
+field's or the movie mode's, in the movie library's memory, which the
+library's load zeroes. The option turns `ends_on_press` on for the
+story's movies as their frames run.
 
 Tests: `xem-settings`'
 `text_speed_auto_advance_and_movie_skip_default_to_the_original_validate_and_persist`
@@ -4953,12 +4976,17 @@ while paused; a recording's presses replayed on the same frames over a
 host's other dwell), and
 `status_shows_the_prompt_auto_advance_counts_toward_and_the_movie_a_press_would_end`
 (`dialogue` waiting, `auto_advance_waited` counting toward the dwell and
-back to 0 after the press, a choice, and a field movie whose `ends_on_press`
-follows its request's fade bit). `xem-core`'s `movie` unit tests read
-invented memory: a field movie ends on a press only when its request has
-the early exit or the debug monitor is present, no movie shows before its
-request, after its end or in another mode, and the movie mode's ends on a
-press unless its request kept it. `tests/test_port_text_speed.py` and
+back to 0 after the press, a choice, and a field movie that shows once the
+movie library's player streams it and whose `ends_on_press` follows its
+request's fade bit). `xem-core`'s `movie` unit tests read invented memory:
+a field movie ends on a press only when its request has the early exit or
+the debug monitor is present (Triangle a window movie's); it shows from its
+first picture until its player closes, and not before its request, after
+its end, in another mode or while the movie library holds another movie's
+player or none; its loop takes no press under the staff roll, once it has
+taken one, through the scripts' mask or with the pad queue full; and the
+movie mode's shows from its player's start until it stops and ends on a
+press unless its request kept it or its end counts down. `tests/test_port_text_speed.py` and
 `tests/test_port_movie_skip.py` (suite.sh's port stage) build the two
 wrappers natively with `-Wall -Werror` against an invented host: a speed
 raises a smaller budget and never lowers one, slow text and the one-line
@@ -4989,11 +5017,24 @@ Bot's pages by auto-advance to its four choices and checks that the
 choice still waits unanswered 1 200 frames later (no battle) and that the
 player's own third choice then starts the bot's battle, ends map 25's
 movie on Confirm only under the option and runs on into map 23 to the
-same story value (reading `status.movie` before the press), plays the
+same story value (reading `status.movie` before the press), reads
+`status.movie` frame by frame from boot (below), plays the
 game's opening to Fei's room with the defaults and with every option on
 ([Gameplay options](#gameplay-options)), and replays a recording that
 turned all three on (and changed the dwell) on map 131 to the recording's
-memory hash. The slice
+memory hash. From boot with no other input
+(`status_shows_a_movie_while_its_loop_reads_the_press_and_a_press_it_says_ends_it_does`,
+about 7 s here): the movie mode loads the movie library for 73 frames
+with no movie shown; the boot's movie shows 372 frames in, at its player's
+start, and Start then ends it, while Start on the frame before changes
+nothing (the movie plays on 960 frames to its end). The title's attract
+movie waits 38 frames for its first picture with no movie shown, shows
+`ends_on_press` false on the picture and the next two frames, while the
+queue that wait filled drops a press (Confirm on the picture changes
+nothing), and true from the loop's first read; Confirm then ends it at
+its frame 3: the loop reads the press a frame later, the movie fades 6
+frames with `ends_on_press` false, and the field's 90 frames of reload
+show no movie. The slice
 logs replay to their recorded hashes (`xem-headless/tests/slice.rs`). A
 browser test (`persistence.test.mjs`, the fixture module) checks that the
 running page gives the session the original's values, then half
