@@ -14,7 +14,7 @@ use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
     GraphicsProfile, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS, TextSpeed,
+    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS, TextSpeed, EncounterRate,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -479,6 +479,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
         RandomBattles::Original => 1,
     });
     panel.set_random_battles_note(random_battles_note(settings.random_battles).into());
+    panel.set_encounter_rate(i32::from(settings.encounter_rate == EncounterRate::Half));
     panel.set_text_speed(index_of(&TextSpeed::ALL, &settings.text_speed));
     panel.set_auto_advance(settings.auto_advance.enabled);
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
@@ -685,6 +686,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         move |name, value| {
             let mut auto = settings.borrow().settings().auto_advance;
             apply(match name.as_str() {
+                "encounter-rate" => Some(SettingChange::EncounterRate(if value == 1 { EncounterRate::Half } else { EncounterRate::Original })),
                 "text-speed" => usize::try_from(value).ok().and_then(|i| TextSpeed::ALL.get(i)).map(|speed| SettingChange::TextSpeed(*speed)),
                 "auto-advance" => {
                     auto.enabled = value != 0;

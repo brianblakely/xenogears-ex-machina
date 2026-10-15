@@ -599,6 +599,15 @@ fn random_battles_are_chosen_in_the_gameplay_section_through_the_settings_servic
     let mut reloaded = SettingsService::with_defaults(MemoryStore::default());
     reloaded.import(&settings.borrow().export()).unwrap();
     assert_eq!(reloaded.settings().random_battles, RandomBattles::NotWhilePlatforming);
+    // The rate of the ones left on, beside it.
+    use xem_settings::EncounterRate;
+    element(&ui, "Encounter rate", AccessibleRole::RadioGroup);
+    assert_eq!(ui.component().get_encounter_rate(), 0, "the original's rate");
+    ui.component().invoke_gameplay_edited("encounter-rate".into(), 1);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().encounter_rate, EncounterRate::Half);
+    assert_eq!(acks.borrow().last(), Some(&SettingChange::EncounterRate(EncounterRate::Half)));
+    assert_eq!(ui.component().get_encounter_rate(), 1);
 }
 
 #[test]

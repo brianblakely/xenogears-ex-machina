@@ -373,6 +373,26 @@ impl<M: GameModule> Session<M> {
         Ok(())
     }
 
+    /// Whether the host halves the field's random battles
+    /// (src/port/encounters.c): on the maps whose random battles it leaves
+    /// on, the draw runs every other field frame, so the same walk brings
+    /// half its battles; scripted battles and the world map's stay the
+    /// game's. Off is the original. It changes the game, so it is recorded
+    /// with the inputs, and a replay keeps the recorded one.
+    pub fn set_half_encounters(&mut self, enabled: bool) {
+        if self.replay_end.is_some() {
+            return;
+        }
+        self.apply_half_encounters(enabled);
+    }
+
+    fn apply_half_encounters(&mut self, enabled: bool) {
+        if self.runtime.services().half_encounters != enabled {
+            self.record_control(json!({"cmd":"half_encounters","enabled":enabled}));
+            self.runtime.services().half_encounters = enabled;
+        }
+    }
+
     /// Put memory card `slot` in or take it out (`Card::set_present`; both
     /// are in by default, as on a console whose cards stay in): the game's
     /// checks of a card taken out time out and its file calls fail, as the
@@ -870,6 +890,7 @@ impl<M: GameModule> Session<M> {
         let attack_page = self.runtime.services().attack_page;
         let sound_mode = self.runtime.services().sound_mode;
         let random_battles_off = self.runtime.services().random_battles_off.clone();
+        let half_encounters = self.runtime.services().half_encounters;
         let text_speed = self.runtime.services().text_speed;
         let movie_skip = self.runtime.services().movie_skip;
         let binaural = self.runtime.services().spu.binaural().map(|p| p.config());
@@ -891,6 +912,7 @@ impl<M: GameModule> Session<M> {
             "attack_page": attack_page,
             "sound_mode": sound_mode,
             "random_battles_off": random_battles_off,
+            "half_encounters": half_encounters,
             "card_present": card_present,
             "kanji_font": kanji_font,
             "text_speed": text_speed,
@@ -954,6 +976,11 @@ impl<M: GameModule> Session<M> {
             "random_battles" => {
                 let off = random_battle_maps(command).ok_or("random_battles needs off: a list of field maps 0-4095")?;
                 self.apply_random_battles(&off)?;
+                Ok(self.status())
+            }
+            "half_encounters" => {
+                let enabled = command.get("enabled").and_then(Value::as_bool).ok_or("half_encounters needs enabled: true or false")?;
+                self.apply_half_encounters(enabled);
                 Ok(self.status())
             }
             "card_present" => {
@@ -1340,7 +1367,7 @@ impl<M: GameModule> Session<M> {
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
-                                        "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
+                                        "half_encounters", "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1384,6 +1411,9 @@ impl<M: GameModule> Session<M> {
                 let off = self.runtime.services().random_battles_off.clone();
                 if !off.is_empty() {
                     self.record_control(json!({"cmd":"random_battles","off":off}));
+                }
+                if self.runtime.services().half_encounters {
+                    self.record_control(json!({"cmd":"half_encounters","enabled":true}));
                 }
                 for slot in 0..2 {
                     if !self.runtime.services().card.present(slot) {
@@ -1446,6 +1476,7 @@ impl<M: GameModule> Session<M> {
                             Some("actor_view") if control.get("view").and_then(Value::as_u64).is_some_and(|v| v <= u64::from(u32::MAX)) => {},
                             Some("attack_page") if control.get("kept").is_some_and(Value::is_boolean) => {},
                             Some("random_battles") if random_battle_maps(control).is_some() => {},
+                            Some("half_encounters") if control.get("enabled").is_some_and(Value::is_boolean) => {},
                             Some("card_present") if card_presence(control).is_some() => {},
                             Some("text_speed") if control.get("glyphs").and_then(Value::as_u64).is_some_and(|g| g <= 255) => {},
                             Some("movie_skip") if control.get("enabled").is_some_and(Value::is_boolean) => {},
@@ -1456,7 +1487,7 @@ impl<M: GameModule> Session<M> {
                             Some("assist_stop" | "reset") => {},
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
                             _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, \
-                                card-presence, text-speed, movie-skip, auto-advance, assist and music-clock inputs".into()),
+                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1485,6 +1516,7 @@ impl<M: GameModule> Session<M> {
                 self.runtime.services().actor_view = 0;
                 self.runtime.services().attack_page = false;
                 self.runtime.services().random_battles_off.clear();
+                self.runtime.services().half_encounters = false;
                 self.runtime.services().card.set_present(0, true);
                 self.runtime.services().card.set_present(1, true);
                 self.runtime.services().text_speed = 0;
@@ -1525,7 +1557,7 @@ impl<M: GameModule> Session<M> {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
                     if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
-                        | "card_present" | "text_speed" | "movie_skip" | "auto_advance" | "music_advance") {
+                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "auto_advance" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

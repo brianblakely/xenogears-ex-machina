@@ -8,8 +8,9 @@
 //! on to map 415; map 172's Repair Bot still starts its scripted battle
 //! when the player picks it; and on a map the setting leaves on (the
 //! Mountain Path, map 15) the same walk brings the same random battle and
-//! the same RAM with the control as without it. Local only: it needs the
-//! user's disc 1 and a game module build.
+//! the same RAM with the control as without it, and halved (Half
+//! encounters) its random battle after twice the walk, from the same draw.
+//! Local only: it needs the user's disc 1 and a game module build.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test encounters
 
@@ -203,4 +204,34 @@ fn a_map_the_setting_leaves_on_draws_its_random_battle_as_without_the_control() 
         })
         .collect();
     assert_eq!(battles[0], battles[1], "the same battle at the same frame, the same RAM: the control changes nothing on a map it leaves on");
+}
+
+#[test]
+fn halved_random_battles_come_after_twice_the_walk_on_a_map_left_on() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The Mountain Path (map 15) under the default setting's maps, Up held
+    // from its entrance: halved, the draw's step counts down every other
+    // field frame, so its battle needs twice the walk.
+    let off = Settings::default().random_battles_off();
+    let walks: Vec<(Value, i64, u64)> = [false, true].into_iter().map(|half| {
+        let mut session = session(&disc, off);
+        session.set_half_encounters(half);
+        enter(&mut session, 15, 0);
+        let dealt = draw(&mut session);
+        run(&mut session, json!({"cmd": "hold", "actions": ["Up"]}));
+        run(&mut session, json!({"cmd": "frames", "count": 60}));
+        let step = |draw: &Value| draw["steps"][0].as_i64().expect("a step");
+        let counted = step(&dealt) - step(&draw(&mut session));
+        let came = walk_until_battle(&mut session, &["Up"], 4 * 241 * 4).expect("its random battle comes");
+        (dealt, counted, 60 + came)
+    }).collect();
+    let ((dealt, original, original_came), (halved_dealt, halved, halved_came)) = (walks[0].clone(), walks[1].clone());
+    eprintln!("map 15: in 60 frames of walk the original's step counted down {original}, halved {halved}; \
+        the battle after {original_came} and {halved_came} frames; the draw as dealt: {dealt}");
+    assert_eq!(halved_dealt, dealt, "the same draw dealt");
+    assert!(original > 0 && (2 * halved - original).abs() <= 1, "half the count for the same walk: {original} and {halved}");
+    assert!(halved_came > original_came, "the battle needs the longer walk");
 }

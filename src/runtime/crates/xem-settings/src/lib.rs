@@ -137,6 +137,18 @@ pub enum RandomBattles {
     Original,
 }
 
+/// How often the field's random battles come where the game has them
+/// (docs/runtime.md, Random battles in platforming areas).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum EncounterRate {
+    /// As the game's own draw deals them.
+    #[default]
+    Original,
+    /// Half as often for the same walk: the draw runs every other field
+    /// frame (`Session::set_half_encounters`).
+    Half,
+}
+
 /// How fast the game's message windows show their text (docs/runtime.md,
 /// Text speed). Every speed keeps the windows' pages, pauses, timed waits
 /// and authored slow text.
@@ -224,6 +236,8 @@ pub struct Settings {
     /// Where the field's random battles happen (the hosts give the session
     /// [`Settings::random_battles_off`]).
     pub random_battles: RandomBattles,
+    /// How often the random battles it leaves on come.
+    pub encounter_rate: EncounterRate,
     /// How fast message windows show their text.
     pub text_speed: TextSpeed,
     /// Field dialogue goes on by itself.
@@ -255,6 +269,7 @@ impl Default for Settings {
             pause_on_focus_loss: true,
             assisted: Assisted::default(),
             random_battles: RandomBattles::default(),
+            encounter_rate: EncounterRate::default(),
             text_speed: TextSpeed::default(),
             auto_advance: AutoAdvance::default(),
             movie_skip: false,
@@ -297,6 +312,7 @@ pub enum SettingChange {
     /// The assisted controls' block, whole.
     Assisted(Assisted),
     RandomBattles(RandomBattles),
+    EncounterRate(EncounterRate),
     TextSpeed(TextSpeed),
     /// The auto-advance block, whole: on or off and its dwell.
     AutoAdvance(AutoAdvance),
@@ -365,6 +381,12 @@ impl Settings {
         }
     }
 
+    /// Whether the hosts halve the session's random battles
+    /// (`Session::set_half_encounters`).
+    pub fn half_encounters(&self) -> bool {
+        self.encounter_rate == EncounterRate::Half
+    }
+
     /// The auto-advance dwell the hosts give the session
     /// (`Session::set_auto_advance`): the setting's while it is on, else 0.
     pub fn auto_advance_dwell(&self) -> u32 {
@@ -408,6 +430,7 @@ impl Settings {
             SettingChange::ResetGameBindings => next.game_bindings = GameBindings::default(),
             SettingChange::Assisted(assisted) => next.assisted = *assisted,
             SettingChange::RandomBattles(battles) => next.random_battles = *battles,
+            SettingChange::EncounterRate(rate) => next.encounter_rate = *rate,
             SettingChange::TextSpeed(speed) => next.text_speed = *speed,
             SettingChange::AutoAdvance(auto) => next.auto_advance = *auto,
             SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
@@ -772,6 +795,15 @@ mod tests {
         let agent: SettingChange = serde_json::from_str(r#"{"RandomBattles":"NotWhilePlatforming"}"#).unwrap();
         other.apply(agent).unwrap();
         assert_eq!(other.settings().random_battles_off(), off);
+        // The rate of the ones left on: the original's by default, Half
+        // saved, reloaded and carried by a backup.
+        assert_eq!(other.settings().encounter_rate, EncounterRate::Original);
+        service.apply(SettingChange::EncounterRate(EncounterRate::Half)).unwrap();
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().encounter_rate, EncounterRate::Half);
+        other.import(&service.export()).unwrap();
+        assert_eq!(other.settings().encounter_rate, EncounterRate::Half);
+        let (read, reset) = Settings::read(&serde_json::json!({"encounter_rate": "Never"})).unwrap();
+        assert_eq!((read.encounter_rate, reset), (EncounterRate::Original, vec!["encounter_rate".to_string()]));
         // Saved before the setting existed, or with a policy no longer
         // offered: the default, alone.
         assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.random_battles, RandomBattles::NotWhilePlatforming);

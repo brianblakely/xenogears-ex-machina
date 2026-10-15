@@ -37,10 +37,12 @@ const FIBERS: u32 = 0x8000_0214;
 const TASK_STACK_TOP: u32 = 0x100C_0000;
 /// With `DRAW_MAP` nonzero each frame runs the stand-in's random draw on that
 /// field map as the port's field_encounter_count_down does: it asks the host
-/// (xem.random_battles with the map's low 12 bits) and counts the frames the
+/// (xem.random_battles with the map's low 12 bits), keeps the pace it gives
+/// at `DRAW_PACE` (0 off, 1 the original's, 2 half) and counts the frames the
 /// draw ran at `DRAW_RAN`.
 const DRAW_MAP: u32 = 0x8000_0400;
 const DRAW_RAN: u32 = 0x8000_0404;
+const DRAW_PACE: u32 = 0x8000_0410;
 /// The text speed and movie skip the port's wrappers would get
 /// (xem.text_speed, xem.movie_skip), kept each frame.
 const TEXT_SPEED_SEEN: u32 = 0x8000_0408;
@@ -171,9 +173,13 @@ impl GameModule for Counter {
         let step = self.memory.read_u32(SAVE_STEP).unwrap();
         if step != 0 { self.save_step(step); }
         let map = self.memory.read_u32(DRAW_MAP).unwrap();
-        if map != 0 && self.import("random_battles", &[map & 0xFFF]) != 0 {
-            let ran = self.memory.read_u32(DRAW_RAN).unwrap();
-            self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
+        if map != 0 {
+            let pace = self.import("random_battles", &[map & 0xFFF]);
+            self.memory.write_u32(DRAW_PACE, pace).unwrap();
+            if pace != 0 {
+                let ran = self.memory.read_u32(DRAW_RAN).unwrap();
+                self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
+            }
         }
         let glyphs = self.import("text_speed", &[]);
         let skip = self.import("movie_skip", &[]);
@@ -1409,6 +1415,54 @@ fn card_presence_is_recorded_and_a_replay_keeps_it() {
 
 fn status(s: &mut Session<Counter>, name: &str) -> serde_json::Value {
     s.execute(&json!({"cmd":"status"}))[name].clone()
+}
+
+#[test]
+fn half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_off() {
+    let mut s = session();
+    s.runtime.memory().write_u32(DRAW_MAP, 15).unwrap();
+    s.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!(word(&mut s, DRAW_PACE), 1, "the original's pace");
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":1}));
+    s.set_half_encounters(true);
+    s.execute(&json!({"cmd":"frames","count":3}));
+    assert_eq!((word(&mut s, DRAW_PACE), status(&mut s, "half_encounters")), (2, json!(true)), "half, where the draw stays on");
+    s.set_random_battles(&[15]).unwrap();
+    s.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!(word(&mut s, DRAW_PACE), 0, "a map turned off stays off");
+    s.set_random_battles(&[]).unwrap();
+    s.set_half_encounters(false);
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(word(&mut s, DRAW_PACE), 1);
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let halves: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "half_encounters").map(|c| c[1]["enabled"].clone()).collect();
+    assert_eq!(halves, [json!(true), json!(false)], "each change once");
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    other.set_half_encounters(true);
+    assert!(other.execute(&log).get("error").is_none());
+    assert_eq!(status(&mut other, "half_encounters"), json!(false), "a replay starts from the original's");
+    other.execute(&json!({"cmd":"frames","count":2}));
+    other.set_half_encounters(false);
+    other.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!(word(&mut other, DRAW_PACE), 2, "a replay keeps the recorded halving, not the host's");
+    // A recording begun halved starts so; session logs and agents set it.
+    s.set_half_encounters(true);
+    s.execute(&json!({"cmd":"record"}));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    assert!(log["controls"].as_array().unwrap().iter().any(|c| c[1] == json!({"cmd":"half_encounters","enabled":true})), "{log}");
+    let frames = s.runtime.frames();
+    let scheduled = s.execute(&json!({"cmd":"schedule","commands":[[frames + 1, {"cmd":"half_encounters","enabled":false}]]}));
+    assert!(scheduled.get("error").is_none(), "{scheduled}");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(status(&mut s, "half_encounters"), json!(false));
+    assert!(s.execute(&json!({"cmd":"readiness"}))["valid_commands"].as_array().unwrap().contains(&json!("half_encounters")));
+    assert!(s.execute(&json!({"cmd":"half_encounters","enabled":"yes"})).get("error").is_some());
+    let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, {"cmd":"half_encounters"}]]}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("half-encounters")), "{refused}");
 }
 
 #[test]

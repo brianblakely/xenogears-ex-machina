@@ -750,11 +750,11 @@ impl XemApp {
             let start = now_ms();
             let mut batch = 0;
             let mut fetching = false;
-            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, text_speed, movie_skip, auto_advance) = {
+            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, half_encounters, text_speed, movie_skip, auto_advance) = {
                 let settings = self.settings.borrow();
                 let settings = settings.settings();
                 (settings.pause_on_focus_loss, settings.game_sound_mode(), settings.binaural, settings.random_battles_off(),
-                 settings.text_speed.glyphs(), settings.movie_skip, settings.auto_advance_dwell())
+                 settings.half_encounters(), settings.text_speed.glyphs(), settings.movie_skip, settings.auto_advance_dwell())
             };
             if let Some(session) = self.session.as_mut() {
                 session.set_binaural(binaural);
@@ -770,6 +770,7 @@ impl XemApp {
                 session.set_attack_page(self.input.attack_pointed());
                 session.set_sound_mode(sound_mode).map_err(error)?;
                 session.set_random_battles(random_battles_off).map_err(error)?;
+                session.set_half_encounters(half_encounters);
                 session.set_text_speed(text_speed).map_err(error)?;
                 session.set_movie_skip(movie_skip);
                 session.set_auto_advance(auto_advance).map_err(error)?;

@@ -739,6 +739,9 @@ export component SettingsPanel inherits Window {
     // 0 not while platforming, 1 the original's), and what that means.
     in-out property <int> random-battles;
     in property <string> random-battles-note;
+    // How often the ones left on come (xem_settings::EncounterRate: 0
+    // Original, 1 Half).
+    in-out property <int> encounter-rate;
     // The message windows' text speed (xem_settings::TextSpeed: 0 Original,
     // 1 Fast, 2 Instant), auto-advance dialogue and its wait on each page
     // (vertical blanks), and whether movies can be skipped.
@@ -780,7 +783,7 @@ export component SettingsPanel inherits Window {
     callback mouse-deadzone-edited(int);
     callback run-by-default-edited(bool);
     callback random-battles-edited(int);
-    // A dialogue or movie option by name (text-speed, auto-advance,
+    // A gameplay option by name (encounter-rate, text-speed, auto-advance,
     // auto-advance-dwell, movie-skip) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
@@ -1581,6 +1584,12 @@ export component SettingsPanel inherits Window {
                                     Choice { accessible-label: "Random battles"; width: 190px; model: ["Not while platforming", "Original"]; current-index <=> root.random-battles; selected => { root.random-battles-edited(self.current-index); } }
                                 }
                                 Text { text: root.random-battles-note; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Divider { }
+                                Row {
+                                    label: "Encounter rate";
+                                    Segmented { accessible-label: "Encounter rate"; options: ["Original", "Half"]; current <=> root.encounter-rate; selected(index) => { root.gameplay-edited("encounter-rate", index); } }
+                                }
+                                Text { text: "Half: the random battles left on come half as often for the same walk."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 6: Card {
                                 title: "Dialogue and movies";

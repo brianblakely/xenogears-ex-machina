@@ -88,6 +88,9 @@ pub struct Services {
     /// The field maps whose random battles the host turns off
     /// (src/port/encounters.c), ascending, each once; none the original's.
     pub(crate) random_battles_off: Vec<u16>,
+    /// The host halves the field's random battles elsewhere (the draw runs
+    /// every other field frame); off the original's.
+    pub(crate) half_encounters: bool,
     /// Where the Kanji font in game memory came from
     /// ([`Runtime::install_kanji_font`]); none before one is placed.
     pub kanji_font: Option<crate::bios::KanjiFont>,
@@ -286,8 +289,9 @@ impl ImportHandler for Services {
             "actor_view" => Action::Return(self.actor_view),
             "attack_page" => Action::Return(u32::from(self.attack_page)),
             "random_battles" => {
+                // The draw's pace on the map: 0 off, 2 half, 1 the original's.
                 let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
-                Action::Return(u32::from(!off))
+                Action::Return(if off { 0 } else if self.half_encounters { 2 } else { 1 })
             }
             "text_speed" => Action::Return(self.text_speed),
             "movie_skip" => Action::Return(u32::from(self.movie_skip)),

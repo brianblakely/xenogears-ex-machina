@@ -3664,12 +3664,14 @@ default in platforming-heavy areas. `xem_core::encounters::PLATFORMING_AREAS`
 lists those areas, a name and the maps there that arm the draw
 (`platforming_maps()` their union, ascending), classified as [below](#how-the-areas-are-classified).
 
-**The setting.** `Settings.random_battles` (the panel's Gameplay section,
-`SettingChange::RandomBattles`):
+**The setting.** `Settings.random_battles` and `Settings.encounter_rate`
+(the panel's Gameplay section, `SettingChange::RandomBattles` and
+`SettingChange::EncounterRate`):
 
 | Setting | Values |
 | --- | --- |
 | random battles | Not while platforming (`NotWhilePlatforming`, the default): none on the maps of `PLATFORMING_AREAS`, the game's elsewhere; Original: wherever the game has them |
+| encounter rate | Original (the default): the random battles left on come as the game's draw deals them; Half: half as often for the same walk (as Perfect Works Build's half encounters, reimplemented here) |
 
 The setting stores the policy's name, not its maps, so a revised table
 applies to everyone who keeps the default and a deliberate Original is
@@ -3713,6 +3715,22 @@ brought a battle request 140 frames in without the control; with the
 default setting's maps, none in 6 020 frames, the window still 300 and the
 step still 52 as dealt.
 
+**Half the encounters.** The same import gives the draw's pace: 0 off, 1
+the original's, 2 half (`Session::set_half_encounters`, the hosts' value
+`Settings::half_encounters()`). At 2 `encounters.c` runs the draw only
+on even field frames, by the dialogue's tick (`field_dialogue_tick_count`,
+which the field's draw pass counts once a frame), so its steps count down
+half as fast and its battles come after twice the walk; the steps it
+deals, the battles' formations' weights and every other rule stay the
+game's, and a map turned off stays off. The world map's encounters keep
+the original's rate. It is a recorded control like the maps
+(`{"cmd":"half_encounters","enabled":true}`; `status` reports
+`half_encounters`). Measured headless on the Mountain Path (map 15, its
+draw dealt period 240 and step 48) with Up held from entrance 0: in the
+first 60 frames the step counted down 14 under the original and 7 halved,
+and the battle came 130 frames into the walk under the original and 230
+halved.
+
 **Agents** change the setting as people do, through the settings service:
 `{"cmd":"settings_apply","change":{"RandomBattles":"Original"}}` on
 `xem-desktop --control` and `window.xem.settings.apply({RandomBattles:
@@ -3731,23 +3749,31 @@ Tests: `xem-settings`'
 checks the default policy and its maps, that the default saves its name,
 that a deliberate Original survives other changes, a reload and a backup,
 an agent's change, and that an old file or a policy no longer offered
-reads the default alone. `tests/test_port_encounters.py` (suite.sh's port
+reads the default alone; the same test checks that the encounter rate
+defaults to the original's and that Half is saved, reloaded, carried by a
+backup and a value no longer offered resets alone.
+`tests/test_port_encounters.py` (suite.sh's port
 stage) builds `src/port/encounters.c` natively with `-Wall -Werror`
 against an invented host: the draw runs where the host leaves it on and
-not where it turns it off, asked with the map's low 12 bits.
-`xem-core/tests/persistence.rs` checks on the stand-in module, whose draw
-asks the import every frame: no draw on a map turned off (its gear bits
-aside), each change recorded once with its maps ascending, a replay
-starting from none and keeping the recorded maps over the host's, drawing
-as the recording did, a recording begun with maps off, `schedule`,
-`readiness`, refused maps and refused recorded controls; and `field`'s
-`random_draw` with `off_here`. `xem-host`'s
+not where it turns it off, asked with the map's low 12 bits, and halved it
+runs on even field frames only. `xem-core/tests/persistence.rs` checks on
+the stand-in module, whose draw asks the import every frame: no draw on a
+map turned off (its gear bits aside), each change recorded once with its
+maps ascending, a replay starting from none and keeping the recorded maps
+over the host's, drawing as the recording did, a recording begun with maps
+off, `schedule`, `readiness`, refused maps and refused recorded controls;
+`field`'s `random_draw` with `off_here`; and
+`half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_off`
+(the pace 2 where the draw stays on and 0 where it is off, each change
+once, the replay's start from the original's and its recorded halving over
+the host's, a recording begun halved, `schedule`, `readiness` and refused
+values). `xem-host`'s
 `frames_give_the_session_the_settings_random_battle_maps_and_a_session_log_none`
 checks that `Game::update` gives the session the default policy's maps,
-none under Original and none while a session log plays.
-`xem-ui/tests/panel.rs` checks that the Gameplay section's choice applies
-through the service, is acknowledged, shows its note and follows an
-agent's change, and that the wheel never changes it.
+none under Original, the halving under Half, and none of either while a
+session log plays. `xem-ui/tests/panel.rs` checks that the Gameplay
+section's choices apply through the service, are acknowledged, show the
+note and follow an agent's change, and that the wheel never changes them.
 `xem-headless/tests/encounters.rs` (local, disc 1, 14-23 s here) checks on
 the game that on map 414 Up held brings a random battle within two of the
 draw's windows without the control and none in five under the default
@@ -3755,7 +3781,9 @@ setting's maps, the draw as dealt; that map 414's door still leads to 415
 and map 172's Repair Bot, its third choice picked, still starts its
 scripted battle (formation 3) under them; and that on the Mountain Path
 (map 15, left on) the same walk brings its battle at the same frame and to
-the same RAM with them as without. The slice logs replay to their recorded
+the same RAM with them as without, and halved the same draw counts half
+as far in 60 frames of walk and its battle comes later. The slice logs
+replay to their recorded
 hashes (`xem-headless/tests/slice.rs`). A browser test
 (`persistence.test.mjs`, the fixture module) checks that the running page
 gives the session the default policy's maps, that `RandomBattles:
@@ -3763,8 +3791,8 @@ gives the session the default policy's maps, that `RandomBattles:
 survives a reload, and that the Gameplay tab is reachable.
 
 Not done or not measured: the world map's random battles stay on (no
-platforming there), and there is no option that turns all of them off or
-changes the rate. Under the default the enemies met only in the listed
+platforming there) at the original's rate whatever the encounter rate, and
+no option turns all of them off. Under the default the enemies met only in the listed
 maps' random battles ([below](#how-the-areas-are-classified)) are not met.
 The Android and OpenXR hosts give the maps through `Game::update`, which
 the desktop shares; no headset or phone run checked it on the game.
@@ -4137,7 +4165,8 @@ shown (nothing while the game is paused); at the dwell the next frame
 holds Confirm on pad 1 over the host's buttons for one vertical blank, as
 the player's press would, and the count starts again. A `Choice` never
 counts, so a choice waits for the player however long it shows, and the
-player's own presses advance as before. The dwell counts from when it
+player's own presses advance as before. The dwell is game time: under
+fast-forward it passes with the game's frames. The dwell counts from when it
 changes, a recording or a replay starts or a state is restored, so the
 presses follow from the game's memory and the recorded dwell alone, and a
 replay presses where the recording did. Auto-advance reads the field's
@@ -4251,9 +4280,10 @@ same story value, and replays a recording that turned all three on (and
 changed the dwell) on map 131 to the recording's memory hash. The slice
 logs replay to their recorded hashes (`xem-headless/tests/slice.rs`). A
 browser test (`persistence.test.mjs`, the fixture module) checks that the
-running page gives the session the original's values, then Instant text
-and movie skipping from `xem.settings.apply`, and that T turns
-auto-advance on (dwell 120, saved in `localStorage`) and off again.
+running page gives the session the original's values, then half
+encounters, Instant text and movie skipping from `xem.settings.apply`,
+and that T turns auto-advance on (dwell 120, saved in `localStorage`) and
+off again.
 
 Not done or not measured: the battle event's movie (the movie mode's,
 event set 3) under the option was not reached on the game (the wrapper is
@@ -4265,8 +4295,9 @@ time windows against other scripts may need the narration's second press,
 and the battle's, arena's and world map's windows were not measured under
 them. No HUD chip shows that auto-advance is on (AUTO's light does, on
 touch screens and in headsets).
-The options Perfect Works Build pairs with fast text that change the
-game's balance (half encounters, more EXP and gold) are not offered. The
+Of the mod's options that change the game's balance only half encounters
+is offered ([above](#random-battles-in-platforming-areas), the field's
+draw only); more EXP and gold is not. The
 browser test ran on the fixture module; the Android, headset and touch
 hosts give the values through the same `Game::update` and frame loop, and
 no phone or headset run used them on the game.

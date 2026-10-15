@@ -350,6 +350,7 @@ impl Game {
                 self.session.set_attack_page(self.attack_page);
                 self.session.set_sound_mode(settings.game_sound_mode())?;
                 self.session.set_random_battles(settings.random_battles_off())?;
+                self.session.set_half_encounters(settings.half_encounters());
                 self.session.set_text_speed(settings.text_speed.glyphs())?;
                 self.session.set_movie_skip(settings.movie_skip);
                 self.session.set_auto_advance(settings.auto_advance_dwell())?;
@@ -571,11 +572,16 @@ mod tests {
         settings.random_battles = RandomBattles::Original;
         update(&mut game, &settings);
         assert_eq!(off(&mut game), json!([]), "the original's: none");
+        let half = |game: &mut Game| game.session.execute(&json!({"cmd":"status"}))["half_encounters"].clone();
+        assert_eq!(half(&mut game), json!(false), "the original's rate");
+        settings.encounter_rate = xem_settings::EncounterRate::Half;
+        update(&mut game, &settings);
+        assert_eq!(half(&mut game), json!(true));
         // A session log plays the original whatever the settings say.
         let mut scripted = Game::new(session());
         scripted.schedule(&json!({"commands": []})).unwrap();
-        assert!(update(&mut scripted, &Settings::default()) > 0);
-        assert_eq!(off(&mut scripted), json!([]));
+        assert!(update(&mut scripted, &Settings { encounter_rate: xem_settings::EncounterRate::Half, ..Settings::default() }) > 0);
+        assert_eq!((off(&mut scripted), half(&mut scripted)), (json!([]), json!(false)));
     }
 
     #[test]
