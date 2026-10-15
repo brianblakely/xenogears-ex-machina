@@ -4203,6 +4203,10 @@ its default and resets nothing else (`Settings::read`); a deliberate choice,
 and its import; and a revised table of platforming areas applies to
 everyone who keeps the default. An import replaces the settings whole, so a
 backup saved before the options existed brings their defaults. The
+shortcut list, though, is one setting read whole, so a file saved before
+`ToggleAutoAdvance` existed has no binding for it until one is set in
+Shortcuts ([below](#text-speed-auto-advance-and-movie-skipping)); the
+panel's switch and AUTO work either way. The
 interactive hosts (the desktop, Android, OpenXR's play and a running
 browser page) give the session the values before every game frame outside
 session logs; headless sessions, session logs and replays play the
