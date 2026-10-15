@@ -4277,8 +4277,9 @@ module, nothing booted): a state naming another build, loaded through
 `Game::command` and through the panel's Load state, is refused with the
 runtime's text, unquoted. `xem-ui/tests/hud.rs` shows a refusal in the
 failure chip. `xem-headless/tests/states.rs` (local: the user's discs; its
-five tests 54 s here, 39 s of them the held rewind's, which renders on
-lavapipe) takes the original game's states where each kind of progress is
+five tests side by side 27 s in the desktop tier here and 54 s beside
+other builds, the held rewind's alone, rendering on lavapipe, 39 s) takes
+the original game's states where each kind of progress is
 under way and checks that they go on identically (`continues_identically`:
 a state taken, frames run keeping each frame's RAM/scratchpad hash, the
 SPU's samples, the data sectors the drive delivers and the XA sectors it
@@ -4346,17 +4347,18 @@ not compared (the bytes it depends on there are; the game's saves are one
 block); a writer whose bytes so far match a later save's (the same save
 made again) writes on, making the save it would have made; states taken
 inside a save or a load are tested with the stand-in and the card device's
-bench, not the original game's save menu; the arena is reached only by a
-debug launch (the bout's task and parameters written), whose bout stops at
-frame 724 on its own, with or without input and with no state taken (the
-GPU's display list links to address 0; not investigated, and whether the
-original does the same with these writes is unknown), so `states.rs`
-covers its first 150 frames, not a bout the story starts; held rewind is
-tested from a battle into its field, not inside a movie or on the world
-map; the drive's tally of XA sectors played (`Cd::xa_sectors`, the host's,
-for verification) starts afresh at a restore; sealed but crafted values for the
-entry, the stack pointer, fiber areas, the clock and the pads are accepted
-and fail later in the bounds-checked module; the fingerprint sees only what
+bench, not the original game's save menu; the tests reach the arena only
+by a debug launch (the bout's task and parameters written), whose bout
+stops at frame 724 on its own, with or without input and with no state
+taken (the GPU's display list links to address 0; not investigated, and
+whether the original does the same with these writes is unknown), so
+`states.rs` covers its first 150 frames, not a bout the story starts; held
+rewind is tested from a battle into its field, not inside a movie or on the
+world map; the drive's tally of XA sectors played (`Cd::xa_sectors`, the
+host's, for verification) starts afresh at a restore; sealed but crafted
+values for the entry, the stack pointer, fiber areas, the clock and the
+pads are accepted and fail later in the bounds-checked module; the
+fingerprint sees only what
 the stand-in states hold, so a variant added to the format is outside it
 until a stand-in state holds one, and device semantics changed without a
 layout change pass it.
@@ -4496,12 +4498,13 @@ the save the game made as its first file of disc 1 passing the game's
 checks, imports it as a `.mcs` through `card_import` (a fresh card 1, byte
 for byte the card the game made) and plays the title's load from it to the
 recorded hash (52 s for the test here, beside other builds).
-`xem-headless/tests/saves.rs` (local: both discs; its five tests 29 s
-here) plays the game's own file screens, pressing along the cursor paths
-their screens show (the box cursor read from slot39's `MenuCard`: five
-columns of three boxes a card, Right a column, Down a row), and checks each
-card through `card_list` and its bytes (names, file digits, the disc each
-save asks for, blocks, directory frames and the payload's checksum). After
+`xem-headless/tests/saves.rs` (local: both discs; its five tests side by
+side 28 s here) plays the game's own file screens, pressing along the
+cursor paths their screens show (the box cursor read from slot39's
+`MenuCard`: five columns of three boxes a card, Right a column, Down a
+row), and checks each card through `card_list` and its bytes (names, file
+digits, the disc each save asks for, blocks, directory frames and the
+payload's checksum). After
 the slice's save at field 22, that save point saves No.02 (the first free
 digit, in the first free block), overwrites No.01 in its block (a later
 play time, No.02 untouched), deletes No.02 (its frame marked deleted,
