@@ -96,6 +96,12 @@ pub struct Services {
     /// substitute glyphs (xem_game `BootOptions::stored_bios`). The native
     /// hosts show it on their storage line until an image is installed.
     pub kanji_font_notice: Option<String>,
+    /// The glyphs a message window's step reveals at least
+    /// (src/port/text_speed.c); 0 the original's.
+    pub(crate) text_speed: u32,
+    /// The host lets the player's press end any movie
+    /// (src/port/movie_skip.c).
+    pub(crate) movie_skip: bool,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -283,6 +289,8 @@ impl ImportHandler for Services {
                 let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
                 Action::Return(u32::from(!off))
             }
+            "text_speed" => Action::Return(self.text_speed),
+            "movie_skip" => Action::Return(u32::from(self.movie_skip)),
             "sound_mode" => Action::Return(self.sound_mode.unwrap_or(u32::MAX)),
             "sound_mode_change" => {
                 let changed = std::mem::take(&mut self.sound_mode_changed);

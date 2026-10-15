@@ -28,7 +28,7 @@ const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
 #[derive(Default)]
 pub struct Overlay {
     pub marks: Vec<xem_assist::overlay::Mark>,
-    pub deck: Vec<(xem_assist::touch::Control, xem_assist::touch::Rect, bool)>,
+    pub deck: Vec<(xem_assist::touch::Control, xem_assist::touch::Rect, xem_render::glass::State)>,
     pub ui: Option<xem_core::context::Context>,
     pub style: xem_render::glass::Style,
     pub room: Vec<xem_assist::draw::Placed>,
@@ -551,9 +551,8 @@ impl WebRenderer {
             }
         }
         if !self.panel_visible && let Some(ui) = self.overlay.ui {
-            for (control, rect, held) in &self.overlay.deck {
-                let state = if *held { xem_render::glass::State::Pressed } else { xem_render::glass::State::Normal };
-                let (widget, rect) = xem_assist::draw::deck_widget(*control, control.label(ui), state, *rect);
+            for (control, rect, state) in &self.overlay.deck {
+                let (widget, rect) = xem_assist::draw::deck_widget(*control, control.label(ui), *state, *rect);
                 let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone();
                 glass.push((view, None, Some(Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })));
             }

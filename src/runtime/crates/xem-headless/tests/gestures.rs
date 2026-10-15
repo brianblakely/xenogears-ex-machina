@@ -53,6 +53,7 @@ impl Carry for Carried<'_> {
     fn release(&mut self) {
         self.input.clear();
     }
+    fn toggle_auto_advance(&mut self) {}
 }
 
 /// The host's part, headless.
@@ -472,7 +473,7 @@ fn battle_target_list_beside_the_screen_takes_gaze_and_taps() {
     player.rest(40);
     assert_eq!(player.context()["targeting"], true, "{}", player.context());
     let targets = player.session.runtime.targets().unwrap();
-    let keys = xem_assist::overlay::side_keys(player.session.runtime.context(), Some(&targets));
+    let keys = xem_assist::overlay::side_keys(player.session.runtime.context(), Some(&targets), false);
     let labels: Vec<_> = keys.iter().map(|k| (k.label.as_str(), k.lit)).collect();
     assert_eq!(labels, [("ALLY 1", true), ("ALLY 2", false), ("ALLY 3", false), ("FOE 1", false)]);
     let quads = xem_assist::draw::side_keys(&player.screen, keys.len());

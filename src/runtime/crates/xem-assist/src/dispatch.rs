@@ -47,6 +47,9 @@ pub enum Out {
     Command { command: Value },
     /// A key of a control deck beside the picture was tapped (or pinched).
     Key { key: u32 },
+    /// AUTO was tapped: auto-advance dialogue goes on or off (an app
+    /// setting, never the game's input).
+    ToggleAutoAdvance,
 }
 
 /// The screen pixels (320x224) the active pointer (eye gaze, head or a

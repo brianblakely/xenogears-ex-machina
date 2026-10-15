@@ -112,6 +112,18 @@ fn icon_of(label: &str) -> Icon {
     }
 }
 
+/// A touch control's state: pressed while a finger holds it, AUTO lit
+/// while auto-advance dialogue is on.
+pub fn deck_state(control: crate::touch::Control, held: bool, auto_advance: bool) -> State {
+    if held {
+        State::Pressed
+    } else if control == crate::touch::Control::Auto && auto_advance {
+        State::Active
+    } else {
+        State::Normal
+    }
+}
+
 /// A touch control's widget, and the square it is drawn in (wide keys
 /// fill the middle of their square image).
 pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_render::glass::State, rect: Rect) -> (xem_render::glass::Widget, Rect) {

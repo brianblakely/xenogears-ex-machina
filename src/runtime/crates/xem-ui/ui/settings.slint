@@ -739,6 +739,13 @@ export component SettingsPanel inherits Window {
     // 0 not while platforming, 1 the original's), and what that means.
     in-out property <int> random-battles;
     in property <string> random-battles-note;
+    // The message windows' text speed (xem_settings::TextSpeed: 0 Original,
+    // 1 Fast, 2 Instant), auto-advance dialogue and its wait on each page
+    // (vertical blanks), and whether movies can be skipped.
+    in-out property <int> text-speed;
+    in-out property <bool> auto-advance;
+    in-out property <int> auto-advance-dwell: 120;
+    in-out property <bool> movie-skip;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
     // ledge brake, touch controls, reduced transparency and motion.
@@ -773,6 +780,9 @@ export component SettingsPanel inherits Window {
     callback mouse-deadzone-edited(int);
     callback run-by-default-edited(bool);
     callback random-battles-edited(int);
+    // A dialogue or movie option by name (text-speed, auto-advance,
+    // auto-advance-dwell, movie-skip) and value.
+    callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
     callback assist-edited(string, int);
@@ -1571,6 +1581,38 @@ export component SettingsPanel inherits Window {
                                     Choice { accessible-label: "Random battles"; width: 190px; model: ["Not while platforming", "Original"]; current-index <=> root.random-battles; selected => { root.random-battles-edited(self.current-index); } }
                                 }
                                 Text { text: root.random-battles-note; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 6: Card {
+                                title: "Dialogue and movies";
+                                Row {
+                                    label: "Text speed";
+                                    Segmented { accessible-label: "Text speed"; options: ["Original", "Fast", "Instant"]; current <=> root.text-speed; selected(index) => { root.gameplay-edited("text-speed", index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Auto-advance dialogue";
+                                    checked <=> root.auto-advance;
+                                    toggled(on) => { root.gameplay-edited("auto-advance", on ? 1 : 0); }
+                                }
+                                if root.auto-advance: SliderRow {
+                                    label: "Wait on each page";
+                                    value-text: "\{root.auto-advance-dwell / 60} s";
+                                    Slider {
+                                        accessible-label: "Auto-advance wait on each page";
+                                        minimum: 30;
+                                        maximum: 600;
+                                        value: root.auto-advance-dwell;
+                                        changed(value) => { root.gameplay-edited("auto-advance-dwell", round(value / 15) * 15); }
+                                    }
+                                }
+                                Text { text: "Choices always wait for you."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Movies can be skipped";
+                                    checked <=> root.movie-skip;
+                                    toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
+                                }
+                                Text { text: "Confirm, or Start, ends a movie the way the game ends the movies it lets you skip."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             // About
                             if root.selected-section == 7: Card {

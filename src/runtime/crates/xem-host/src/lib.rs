@@ -953,6 +953,7 @@ impl View {
         match phase {
             Finger::Down => match self.deck.down(id, at, time) {
                 Touched::Settings => self.set_panel_visible(true),
+                Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },
@@ -1131,8 +1132,9 @@ impl View {
         if touch_shown && !visible {
             let ui = self.game_ui;
             let held = self.deck.held();
+            let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
             for (control, rect) in self.deck.controls.clone() {
-                let state = if held.contains(&control) { xem_render::glass::State::Pressed } else { xem_render::glass::State::Normal };
+                let state = xem_assist::draw::deck_state(control, held.contains(&control), auto_advance);
                 let (widget, rect) = xem_assist::draw::deck_widget(control, control.label(ui), state, rect);
                 let rect = Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();

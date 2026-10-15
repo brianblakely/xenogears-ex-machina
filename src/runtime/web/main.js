@@ -713,6 +713,13 @@ async function executeAppOperation(request) {
       if (!reply.ok) throw new Error(reply.reason);
       operationStatus('FPS display preference saved.'); return reply;
     }
+    case 'ToggleAutoAdvance': {
+      const auto = window.xem.settings.get().settings.auto_advance;
+      const reply = window.xem.settings.apply({ AutoAdvance: { ...auto, enabled: !auto.enabled } });
+      if (!reply.ok) throw new Error(reply.reason);
+      operationStatus(auto.enabled ? 'Auto-advance dialogue off.' : 'Auto-advance dialogue on: choices still wait for you.');
+      return reply;
+    }
     case 'IncreaseFastForwardRate': case 'DecreaseFastForwardRate': {
       const reply = JSON.parse(app.step_fast_forward_rate(action === 'IncreaseFastForwardRate'));
       if (!reply.ok) throw new Error(reply.reason);

@@ -180,6 +180,8 @@ struct WebCarry<'a> {
     input: &'a mut xem_settings::player::PlayerInput,
     /// The underhand grab asked for first-person inspection's toggle.
     inspect: bool,
+    /// AUTO beside the screen asked for auto-advance's toggle.
+    auto_advance: bool,
 }
 
 impl xem_assist::headset::Carry for WebCarry<'_> {
@@ -202,6 +204,9 @@ impl xem_assist::headset::Carry for WebCarry<'_> {
     }
     fn release(&mut self) {
         self.input.clear();
+    }
+    fn toggle_auto_advance(&mut self) {
+        self.auto_advance = true;
     }
 }
 
@@ -483,7 +488,7 @@ impl XemApp {
             // A tap on the paused game resumes it, as a click does.
             if self.input.unpause() { continue; }
             let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
-            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input, inspect: false }, &mut self.xr_scaling);
+            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input, inspect: false, auto_advance: false }, &mut self.xr_scaling);
         }
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
@@ -503,7 +508,8 @@ impl XemApp {
             renderer.overlay.marks = marks;
             renderer.overlay.ui = shown.then_some(ui);
             renderer.overlay.style = style;
-            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, held.contains(c))).collect();
+            let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
+            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, xem_assist::draw::deck_state(*c, held.contains(c), auto_advance))).collect();
         }
         self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
@@ -531,6 +537,7 @@ impl XemApp {
         // shows no field camera to point through.
         let inspecting = self.first_person();
         self.headset.inspecting = inspecting;
+        self.headset.auto_advance = settings.auto_advance.enabled;
         let (field, targets, controls) = match self.session.as_mut() {
             Some(session) => (
                 (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten(),
@@ -547,11 +554,14 @@ impl XemApp {
         let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
         self.xr_pinches += u32::from(pinched);
         self.xr_held = effects.held.clone();
-        let inspect = {
-            let mut host = WebCarry { session: self.session.as_mut(), input: &mut self.input, inspect: false };
+        let (inspect, auto_advance) = {
+            let mut host = WebCarry { session: self.session.as_mut(), input: &mut self.input, inspect: false, auto_advance: false };
             xem_assist::headset::carry(effects.outs, &mut host, &mut self.xr_scaling);
-            host.inspect
+            (host.inspect, host.auto_advance)
         };
+        if auto_advance {
+            self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance));
+        }
         // The underhand grab toggles inspection in a field but its menu,
         // where Ex Machina draws it.
         if inspect && xem_settings::look::grab_toggles(controls, settings.graphics.renderer) && let Some(renderer) = &mut self.renderer {
@@ -740,10 +750,11 @@ impl XemApp {
             let start = now_ms();
             let mut batch = 0;
             let mut fetching = false;
-            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off) = {
+            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, text_speed, movie_skip, auto_advance) = {
                 let settings = self.settings.borrow();
                 let settings = settings.settings();
-                (settings.pause_on_focus_loss, settings.game_sound_mode(), settings.binaural, settings.random_battles_off())
+                (settings.pause_on_focus_loss, settings.game_sound_mode(), settings.binaural, settings.random_battles_off(),
+                 settings.text_speed.glyphs(), settings.movie_skip, settings.auto_advance_dwell())
             };
             if let Some(session) = self.session.as_mut() {
                 session.set_binaural(binaural);
@@ -759,6 +770,9 @@ impl XemApp {
                 session.set_attack_page(self.input.attack_pointed());
                 session.set_sound_mode(sound_mode).map_err(error)?;
                 session.set_random_battles(random_battles_off).map_err(error)?;
+                session.set_text_speed(text_speed).map_err(error)?;
+                session.set_movie_skip(movie_skip);
+                session.set_auto_advance(auto_advance).map_err(error)?;
                 match session.frame() {
                     Ok(true) => {
                         batch += 1;
@@ -1103,6 +1117,7 @@ impl XemApp {
         match kind {
             "down" => match self.deck.down(u64::from(id), (x, y), time) {
                 Touched::Settings => self.set_panel_visible(true),
+                Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },

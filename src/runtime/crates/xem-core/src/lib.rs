@@ -11,6 +11,7 @@ pub mod bios;
 pub mod clock;
 pub mod context;
 pub mod control;
+pub mod dialogue;
 mod focus;
 pub mod time;
 pub mod devices;

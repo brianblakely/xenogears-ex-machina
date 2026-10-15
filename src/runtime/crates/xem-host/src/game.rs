@@ -350,6 +350,9 @@ impl Game {
                 self.session.set_attack_page(self.attack_page);
                 self.session.set_sound_mode(settings.game_sound_mode())?;
                 self.session.set_random_battles(settings.random_battles_off())?;
+                self.session.set_text_speed(settings.text_speed.glyphs())?;
+                self.session.set_movie_skip(settings.movie_skip);
+                self.session.set_auto_advance(settings.auto_advance_dwell())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;
@@ -573,6 +576,31 @@ mod tests {
         scripted.schedule(&json!({"commands": []})).unwrap();
         assert!(update(&mut scripted, &Settings::default()) > 0);
         assert_eq!(off(&mut scripted), json!([]));
+    }
+
+    #[test]
+    fn frames_give_the_session_the_settings_text_speed_auto_advance_and_movie_skipping_and_a_session_log_the_original() {
+        use serde_json::json;
+        use xem_settings::{AutoAdvance, Settings, TextSpeed};
+        let session = || Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default);
+        let controls = |game: &mut Game| {
+            let status = game.session.execute(&json!({"cmd":"status"}));
+            (status["text_speed"].clone(), status["auto_advance"].clone(), status["movie_skip"].clone())
+        };
+        let update = |game: &mut Game, settings: &Settings| {
+            game.paced = Instant::now() - FRAME * 2;
+            game.update(0, settings, || true).unwrap()
+        };
+        let mut game = Game::new(session());
+        assert!(update(&mut game, &Settings::default()) > 0);
+        assert_eq!(controls(&mut game), (json!(0), json!(0), json!(false)), "the defaults are the original's");
+        let settings = Settings { text_speed: TextSpeed::Fast, auto_advance: AutoAdvance { enabled: true, dwell: 90 }, movie_skip: true, ..Settings::default() };
+        update(&mut game, &settings);
+        assert_eq!(controls(&mut game), (json!(4), json!(90), json!(true)));
+        let mut scripted = Game::new(session());
+        scripted.schedule(&json!({"commands": []})).unwrap();
+        assert!(update(&mut scripted, &settings) > 0);
+        assert_eq!(controls(&mut scripted), (json!(0), json!(0), json!(false)), "a session log plays the original");
     }
 
     #[test]

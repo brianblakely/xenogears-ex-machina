@@ -2759,7 +2759,10 @@ D-pad's directions; lifting or a cancelled touch lets go (explicit press
 and release). A finger alone dragged on the picture turns inspection's
 view, the scene following it. Battling names the face buttons and
 turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
-adds Board (L2 and R2 together: a Gear boarded or left), a shop's quantity
+adds Board (L2 and R2 together: a Gear boarded or left), a field's scenes
+and dialogue add AUTO above the face buttons (auto-advance dialogue on or
+off, lit while on: [Text speed, auto-advance and movie
+skipping](#text-speed-auto-advance-and-movie-skipping)), a shop's quantity
 list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
 is the pointer's tap (`xem_assist::dispatch::tap_at`; on the pause
 screen, Start, as a click): walking, on an actor
@@ -2821,7 +2824,10 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   the gaze on a tap (else confirm the selected one), move up, down and
   left with those swipes and back out to the right; beside the screen
   they also stand as a list (ALLY 1-3, FOE n; the selected one lit) for
-  targets that overlap or hide one another. Presses queued for one
+  targets that overlap or hide one another. In a field's scenes and
+  dialogue AUTO stands beside the screen (auto-advance dialogue on or off,
+  lit while on); a tap or pinch aimed at it is that app toggle, never the
+  dialogue's advance. Presses queued for one
   interface never reach the next (`PlayerInput`). While first-person
   inspection shows (`Headset::inspecting`), walking, the pinch, the tap and
   the swipes up, left and right do nothing (the swipe down still opens the
@@ -3670,7 +3676,8 @@ applies to everyone who keeps the default and a deliberate Original is
 never overwritten; a file saved before the setting existed reads the
 default, and a policy no longer offered resets alone (`Settings::read`).
 `Settings::random_battles_off()` resolves the policy to its maps. The
-Gameplay section (between Saves and About; Phase 7's other options join it)
+Gameplay section (between Saves and About, with the [dialogue and movie
+options](#text-speed-auto-advance-and-movie-skipping) under it)
 shows the choice and, under it, the areas it turns off by name; the browser
 renders the same panel, and a narrow panel's strip of tabs holds all eight
 sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
@@ -4038,6 +4045,225 @@ kernel menu's setup gives); other characters' and gears' jumps are not
 measured, nor is a walk off a floor with Run held (the fall's 12 units an
 update are the jumps' air speed).
 
+### Text speed, auto-advance and movie skipping
+
+Three options in the Gameplay section change how the game shows its
+dialogue and movies, after the conveniences mods such as Perfect Works
+Build offer (reimplemented here from the decompiled program; nothing of
+the mod's is used and no game data is patched). Each defaults to the
+original and is a recorded control:
+
+| Setting | Values | Control | What changes |
+| --- | --- | --- | --- |
+| text speed (`Settings.text_speed`, `SettingChange::TextSpeed`) | Original (the default), Fast, Instant | `text_speed {glyphs}`: 0, 4, 255 | the glyphs a message window's step reveals at least (`src/port/text_speed.c`) |
+| auto-advance dialogue (`Settings.auto_advance`, `SettingChange::AutoAdvance`, the whole block) | off (the default) or on, and the wait on each page: 30-600 vertical blanks, default 120 (2 s) | `auto_advance {dwell}`: the wait while on, else 0 | the session presses Confirm once a field dialogue's prompt has shown that long (`xem_core::dialogue`) |
+| movies can be skipped (`Settings.movie_skip`, `SettingChange::MovieSkip`) | off (the default), on | `movie_skip {enabled}` | Confirm (or Start) ends any movie by the original's own early exit (`src/port/movie_skip.c`) |
+
+The settings are saved by name (a file saved before they existed, or a
+value no longer offered, reads the default alone) and travel in backups.
+The interactive hosts give the session their values before every game
+frame of a batch outside session logs, as they give it the random-battle
+maps (`Game::update` for the desktop, Android and OpenXR, and the
+browser's running frame loop); headless sessions, session logs and
+replays play the original unless commanded.
+
+**Text speed.** A message window reveals its text a step at a time:
+`window_draw_frame` (80034888) gives `window_reveal_text` (80033DF0) the
+window's speed, one glyph per field frame (two where a scene's `d6
+set_text_speed` slows the field frame), and a step stops at a newline, a
+page, a pause, a timed wait or a line's end. `text_speed.c` wraps
+`window_reveal_text`: with the host's `xem.text_speed()` nonzero, a step
+reveals at least that many glyphs. Fast (4) shows four glyphs a field
+frame where the original shows one; Instant (255) shows a line a field
+frame, since a step still ends at each newline. Every page, pause and
+timed wait (`0F 00`, `0F 02`, `0F 0D`) the text holds stays, so the
+scripts that wait on a window wait as before, after a shorter reveal;
+authored slow text (`0F 0E`: a glyph every few frames, the window's
+`unk88` set) keeps its pace, a higher authored speed is never lowered
+(`0F 01 FF`, a line at a time, stands 1 421 times in disc 1's field
+messages), and `window_render_text_line`'s one-line layout window
+(`window_single_line_window`: the menus', shops', name entry's and
+battle lists' text) keeps its own budget. The option applies to every window `window_draw_frame` draws: the
+field's dialogue, the battle's message window, the arena's and the world
+map's. Measured headless (suite profile) on map 131's entry scene, its 22
+pages turned as each prompt shows: their reveals took 3 158 frames
+(vertical blanks) in all with the original's speed, 1 086 with Fast and
+434 with Instant, the scene 3 808, 1 736 and 1 224 frames.
+
+Perfect Works Build ships re-scripted variants of disc 1's maps 4, 27,
+131, 288, 326, 359 and 482 for its fast text, because their scenes time
+their windows against other scripts. With Instant text (and the
+original's, for comparison) each scene reachable from a test's start
+plays to the same end, story value and map, showing the same messages
+(the timed ones among them), a player pressing Confirm as each prompt
+shows:
+
+| Map (start) | Original | Instant | End | Timed messages shown |
+| --- | --- | --- | --- | --- |
+| 4, the opening narration (`enter_field`) | 6 729 | 6 509 | map 2, story 3 | 0, 1 (`0F 02`) |
+| 27 (`enter_field`) | 1 600 | 1 060 | map 28 | 0-7 (`0F 02`; no press needed) |
+| 131 (`enter_field`) | 3 808 | 1 224 | the player's control | 3 (`0F 02`) |
+| 288 at story 154 (actor 23's scene) | 2 181 | 1 335 | the player's control | none in that scene |
+| 326 at story 153, entered with parameter 5 (actor 31's scene) | 2 937 | 2 509 | map 335 | 0, 0x23, 0x2E, 0x35, 0x38 (`0F 02`) |
+| 482 (`enter_field`) | 2 516 | 1 754 | the player's control | none (pages and `0F 00` waits) |
+
+The opening narration differs in one way, which is presumably why the
+mod re-scripted it. Each of its pages shows in a window while the
+narration's script counts out the page's time, then waits for Confirm with
+no prompt of its own (`31 0x0020` looping on itself, map 4 +0x1668). The
+original's reveal lasts past that count, so the press that ends a page's
+text also goes on; with Instant (or Fast) text the text ends first, its
+press closes the window, and the narration waits for a second press. A
+player who presses only at prompts reaches map 2 after 9 731 frames with
+the original's text and is still waiting after 14 000 with Instant's; one
+who also presses when the narration waits reaches map 2 with either (the
+table's row). The other scenes need no second press. Map 359's slow
+narration (`0F 0E`) belongs to a scene that depends on the party's
+members and was not reached from a test's start.
+
+**Auto-advance dialogue.** `xem_core::dialogue::prompt` reads, between
+frames, what a press of Confirm would do to the field's dialogue, as
+`field_dialogue_draw_windows` (8008004C) takes one: it gives a press to
+every window in use, done opening, and either selected (+0x412) or the
+newest. A window waiting for a press (its text's flag 8; its end, a page
+or a pause) is `Waiting`; one showing a choice (`choice.status` 0), or
+whose text has ended while its owner actor rests on `a9 start_choice`
+(every `a9` on both discs directly follows its message instruction, so a
+press there would answer, or skip, the choice before it shows), is
+`Choice`. With `auto_advance {dwell}` nonzero, after each frame the game
+finishes the session counts the vertical blanks a `Waiting` prompt has
+shown (nothing while the game is paused); at the dwell the next frame
+holds Confirm on pad 1 over the host's buttons for one vertical blank, as
+the player's press would, and the count starts again. A `Choice` never
+counts, so a choice waits for the player however long it shows, and the
+player's own presses advance as before. The dwell counts from when it
+changes, a recording or a replay starts or a state is restored, so the
+presses follow from the game's memory and the recorded dwell alone, and a
+replay presses where the recording did. Auto-advance reads the field's
+dialogue windows only: battle messages, and waits for Confirm with no
+window (the opening narration's), still take the player's press. Measured
+headless on map 482's entry scene (8 pages): a player pressing at each
+prompt reaches control after 2 516 frames, auto-advance at 30 vertical
+blanks a page after 2 740, at the same end and story value with the same
+messages.
+
+`AppAction::ToggleAutoAdvance` ("Toggle auto-advance dialogue", T or
+Back+West by default, rebindable in Shortcuts) turns the setting on or
+off through the settings service and says which on the status line.
+Touch screens and headsets have AUTO beside the picture in a field's
+scenes and dialogue (`Context::Event` and `Context::Dialogue`): the touch
+deck shows it above the face buttons, a headset beside the screen's right
+edge (`overlay::side_keys`), lit while auto-advance is on; a touch, or a
+tap or pinch aimed at it, is the same app action, never a press of the
+game's.
+
+**Movies can be skipped.** The original ends a movie early only where its
+request lets it. A field movie whose request has fade bit 0x80
+(`field_movie_fade_bits`) ends on Confirm in `field_movie_play`
+(800A7C58): the loop drains the pad, fades the CD volume, waits five
+vertical blanks and closes the movie as at its end. The movie mode's (6)
+ends on Cross or Start unless its request kept it
+(`movie_mode_read_playback_input`, 800769A4, `movie_mode_unskippable`).
+The story's field movies (`fe 60` with mode 2, `fe a0`) are requested
+without the bit and the battle events' movie is kept; on disc 1 only map
+490's (the title's attract movie) and map 728's requests have the bit. `movie_skip.c` wraps
+`field_movie_run_frames` (800A732C) to set bit 0x80 as a field movie's
+frames run and `movie_mode_read_playback_input` to clear the keep flag,
+while the host's `xem.movie_skip()` is nonzero, so the player's press
+takes the original's own early exit and its cleanup. Window movies (field
+movie mode 2, `fe 67`), which the field's scripts end, stay as they are.
+Armed, a field movie's loop drains the pad queue on each pass, which
+changes the game's memory, hence the recorded control; a press held
+across a movie's start (Confirm repeats after 32 vertical blanks) ends it
+as it would end the movies the original lets the player skip. Only
+`field_movie_frame` then differs from a natural end, which `fe 85` reads
+on map 490 (the title's attract movie, skippable already) and map 665
+(a window movie). Measured headless on map 25's scene (from
+`enter_field`): its movie (#7, 1 059 frames) ignored Confirm and played
+4 386 frames to its frame 1 059 without the option, map 23 coming 13
+frames later; with it, a press 120 frames in ended the movie at its frame
+21, 241 frames after it began, and map 23 came 13 frames after that; 600
+frames into map 23 both runs are in the field with the same story value.
+
+**Agents** change the settings through the settings service as people
+do (`{"cmd":"settings_apply","change":{"TextSpeed":"Instant"}}` on
+`xem-desktop --control`; `window.xem.settings.apply({AutoAdvance:
+{enabled: true, dwell: 90}})` in the browser), and where no host gives the
+values they set the controls directly: `{"cmd":"text_speed","glyphs":
+255}` (0-255), `{"cmd":"auto_advance","dwell":120}` (0 or up to 3 600)
+and `{"cmd":"movie_skip","enabled":true}`. `status` reports `text_speed`,
+`auto_advance` and `movie_skip`; `readiness` lists the three commands,
+session logs may schedule them, a recording begun with any of them on
+starts with it, and a replay starts from the original's and keeps the
+recorded values over the host's.
+
+Tests: `xem-settings`'
+`text_speed_auto_advance_and_movie_skip_default_to_the_original_validate_and_persist`
+checks the defaults (the sessions get 0, 0 and off), the glyphs and
+dwells the settings resolve to, a reload, the dwell's bounds, that off
+keeps the dwell, an agent's change, a backup, and that an old file or a
+value no longer offered reads the default alone. `xem-core`'s
+`dialogue` unit tests read invented windows: a page's, an end's and a
+pause's wait take a press; a shown choice, or an end whose owner rests on
+`a9`, never; revealing text, a menu, another mode or a window still
+opening are no wait. `xem-core/tests/persistence.rs` checks on the
+stand-in module, whose wrappers ask the imports every frame and whose
+dialogue window ends its wait on a frame holding Confirm:
+`the_text_speed_and_movie_skipping_are_recorded_and_a_replay_keeps_them`
+(each change once, the replay's start from the original's, the host's
+values ignored while it plays, a recording begun with them, `schedule`,
+`readiness`, refused values and refused recorded controls) and
+`auto_advance_presses_confirm_once_a_page_waited_its_dwell_never_at_a_choice_and_replays`
+(no press while off; Confirm for one frame after the dwell and released
+after it; the next page's own dwell; none at a choice in 60 frames or
+while paused; a recording's presses replayed on the same frames over a
+host's other dwell). `tests/test_port_text_speed.py` and
+`tests/test_port_movie_skip.py` (suite.sh's port stage) build the two
+wrappers natively with `-Wall -Werror` against an invented host: a speed
+raises a smaller budget and never lowers one, slow text and the one-line
+layout window keep theirs; a field movie gains bit 0x80 only when armed
+and never in mode 2, and the movie mode's keep flag clears only when
+armed. `xem-host`'s
+`frames_give_the_session_the_settings_text_speed_auto_advance_and_movie_skipping_and_a_session_log_the_original`
+checks that `Game::update` gives the session the original's values by
+default, the settings' (4, 90, on) once chosen, and a session log the
+original's whatever they say. `xem-assist`'s touch and headset tests check AUTO: in scenes and
+dialogue only, clear of every other control, a touch or an aimed tap or
+pinch the app's toggle (never Confirm), lit while on. `xem-ui/tests/panel.rs`
+checks that the Gameplay section's three options apply through the
+service, are acknowledged, show the wait only while auto-advance is on,
+keep a refused wait and follow an agent's change.
+`xem-headless/tests/text_and_movies.rs` (local, disc 1; about 75 s here
+at four tests at a time) plays the table's scenes with the original's and
+Instant text to the same end, story value and messages (the narration
+also as the two-press difference above), measures map 131's reveals at
+the three speeds (each page no slower, the totals strictly faster), plays
+map 482 with auto-advance to the pressed run's end, turns map 172's Repair
+Bot's pages by auto-advance to its four choices and checks that the
+choice still waits unanswered 1 200 frames later (no battle) and that the
+player's own third choice then starts the bot's battle, ends map 25's
+movie on Confirm only under the option and runs on into map 23 to the
+same story value, and replays a recording that turned all three on (and
+changed the dwell) on map 131 to the recording's memory hash. The slice
+logs replay to their recorded hashes (`xem-headless/tests/slice.rs`). A
+browser test (`persistence.test.mjs`, the fixture module) checks that the
+running page gives the session the original's values, then Instant text
+and movie skipping from `xem.settings.apply`, and that T turns
+auto-advance on (dwell 120, saved in `localStorage`) and off again.
+
+Not done or not measured: the battle event's movie (the movie mode's,
+event set 3) under the option was not reached on the game (the wrapper is
+unit-tested). Auto-advance does not turn battle messages or the opening
+narration's window-less waits; the cut cutscene skip's battle-message
+advance ([below](#cutscene-skipping)) is not offered either. Fast and
+Instant text was compared on the six scenes above only; other scenes that
+time windows against other scripts may need the narration's second press.
+The options Perfect Works Build pairs with fast text that change the
+game's balance (half encounters, more EXP and gold) are not offered. The
+browser test ran on the fixture module; the Android, headset and touch
+hosts give the values through the same `Game::update` and frame loop, and
+no phone or headset run used them on the game.
+
 ### Cutscene skipping
 
 Phase 7 (plan.md) asks for cutscene skipping that keeps the story's
@@ -4048,7 +4274,10 @@ skip stops at the first frame the marker is set and lands at the real end
 of the scene on every tested scene, with no frame count or other
 heuristic. The game's control grant, its only record of that moment, is
 not such a marker, so the runtime has no cutscene skip. The measurements
-follow.
+follow. (A movie's end is such a moment: movies end on Confirm under
+[Movies can be skipped](#text-speed-auto-advance-and-movie-skipping), and
+text shows faster and dialogue goes on by itself under the options beside
+it.)
 
 **The candidate marker.** The field's only record that the player controls
 the character is its control grant, `field_player_control_polled`
@@ -4185,7 +4414,8 @@ the game's bindings ([Controls](#controls)) and the assisted controls
 reduced transparency and motion); Shortcuts lists every app operation with
 its bindings and edits the chosen one in place; Gameplay holds the options
 that change the game itself ([Random battles in platforming
-areas](#random-battles-in-platforming-areas)). Cancel closes either binding
+areas](#random-battles-in-platforming-areas); [Text speed, auto-advance and
+movie skipping](#text-speed-auto-advance-and-movie-skipping)). Cancel closes either binding
 editor without saving its changes. The header's Reset sends the shared
 `reset` command. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the

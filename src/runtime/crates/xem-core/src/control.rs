@@ -113,7 +113,17 @@ pub struct Session<M: GameModule> {
     inspecting: bool,
     /// A shop quantity edit under way (`shop_quantity`).
     quantity: Option<Quantity>,
+    /// Auto-advance ([`Session::set_auto_advance`]): the vertical blanks a
+    /// dialogue's prompt shows before Confirm is pressed; 0 off.
+    auto_advance: u32,
+    /// The vertical blanks the prompt has shown so far, and whether the
+    /// next frame presses Confirm.
+    auto_waited: u32,
+    auto_press: bool,
 }
+
+/// The longest auto-advance dwell: a minute of vertical blanks.
+pub const MAX_AUTO_ADVANCE_DWELL: u32 = 3600;
 
 /// A shop's proposed quantity edited by presses: `more` Right or Left,
 /// `presses` left, the frame within the current press (one held, one
@@ -195,6 +205,9 @@ impl<M: GameModule> Session<M> {
             ledge_brake: false,
             inspecting: false,
             quantity: None,
+            auto_advance: 0,
+            auto_waited: 0,
+            auto_press: false,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
@@ -374,6 +387,107 @@ impl<M: GameModule> Session<M> {
         }
     }
 
+    /// The host's text speed (src/port/text_speed.c): the glyphs a message
+    /// window's step reveals at least, 1-255 (255: a line at a time); the
+    /// windows still stop at their pages, pauses and timed waits, and
+    /// authored slow text keeps its pace. 0 is the window's own speed, the
+    /// original's. It changes the game, so it is recorded with the inputs,
+    /// and a replay keeps the recorded one.
+    pub fn set_text_speed(&mut self, glyphs: u32) -> Result<(), String> {
+        if self.replay_end.is_some() {
+            return Ok(());
+        }
+        self.apply_text_speed(glyphs)
+    }
+
+    fn apply_text_speed(&mut self, glyphs: u32) -> Result<(), String> {
+        if glyphs > 255 {
+            return Err("text_speed glyphs is 0 (the original's speed) or 1-255".into());
+        }
+        if self.runtime.services().text_speed != glyphs {
+            self.record_control(json!({"cmd":"text_speed","glyphs":glyphs}));
+            self.runtime.services().text_speed = glyphs;
+        }
+        Ok(())
+    }
+
+    /// Whether the player's press ends any movie (src/port/movie_skip.c):
+    /// the story's movies take the original's own early exit (Confirm in
+    /// the field, Cross or Start in the movie mode) that only some movies
+    /// allow; window movies stay the scripts'. Off is the original. It
+    /// changes the game, so it is recorded with the inputs, and a replay
+    /// keeps the recorded one.
+    pub fn set_movie_skip(&mut self, enabled: bool) {
+        if self.replay_end.is_some() {
+            return;
+        }
+        self.apply_movie_skip(enabled);
+    }
+
+    fn apply_movie_skip(&mut self, enabled: bool) {
+        if self.runtime.services().movie_skip != enabled {
+            self.record_control(json!({"cmd":"movie_skip","enabled":enabled}));
+            self.runtime.services().movie_skip = enabled;
+        }
+    }
+
+    /// Auto-advance dialogue (`crate::dialogue`): once a field dialogue's
+    /// prompt has shown for `dwell` vertical blanks, and no choice shows or
+    /// is about to open there, the session presses Confirm on pad 1 for one
+    /// vertical blank, as the player would; the player's own presses work
+    /// as before. 0 turns it off, the original. The presses follow from the
+    /// game's memory and the dwell alone, counted from when the dwell
+    /// changes, a recording or replay starts or a state is restored, so the
+    /// dwell is recorded with the inputs and a replay presses where the
+    /// recording did.
+    pub fn set_auto_advance(&mut self, dwell: u32) -> Result<(), String> {
+        if self.replay_end.is_some() {
+            return Ok(());
+        }
+        self.apply_auto_advance(dwell)
+    }
+
+    fn apply_auto_advance(&mut self, dwell: u32) -> Result<(), String> {
+        if dwell > MAX_AUTO_ADVANCE_DWELL {
+            return Err(format!("auto_advance dwell is 0 (off) or 1-{MAX_AUTO_ADVANCE_DWELL} vertical blanks"));
+        }
+        if self.auto_advance != dwell {
+            self.record_control(json!({"cmd":"auto_advance","dwell":dwell}));
+            self.auto_advance = dwell;
+            self.restart_auto_advance();
+        }
+        Ok(())
+    }
+
+    /// The dwell counts from now, with no press due.
+    fn restart_auto_advance(&mut self) {
+        if std::mem::take(&mut self.auto_press) {
+            self.restore_base_pad();
+        }
+        self.auto_waited = 0;
+    }
+
+    /// After a frame the game finished: the press it held ends, else the
+    /// prompt's dwell counts on (the game paused counts nothing) and, once
+    /// it is reached, the next frame presses.
+    fn follow_auto_advance(&mut self) {
+        if self.auto_advance == 0 {
+            return;
+        }
+        if std::mem::take(&mut self.auto_press) {
+            self.auto_waited = 0;
+            return self.restore_base_pad();
+        }
+        let mode = self.runtime.services().mode;
+        let waiting = matches!(crate::dialogue::prompt(self.runtime.memory(), mode), crate::dialogue::Prompt::Waiting { .. });
+        if !waiting || self.game_paused() {
+            self.auto_waited = 0;
+            return;
+        }
+        self.auto_waited += 1;
+        self.auto_press = self.auto_waited >= self.auto_advance;
+    }
+
     /// The game's sound mode the host chooses (src/port/sound.c): 0 Mono,
     /// 1 Stereo, 2 Wide, as the game's Sound screen numbers them. The game
     /// takes it when its sound driver starts, whenever it changes and after
@@ -533,9 +647,23 @@ impl<M: GameModule> Session<M> {
             self.set_pad(port, buttons);
         }
         self.apply_assist();
+        if self.auto_press {
+            let confirm = crate::action::GameAction::Confirm.button_with(&self.runtime.button_assignment());
+            if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
+                pad.buttons |= confirm;
+            }
+        }
         match self.runtime.run_frame() {
             Ok(report) => {
-                if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); self.trace_title_movie(); self.runtime.update_binaural(); }
+                if !report.blocked {
+                    // Before the controls due next: a recording's change of
+                    // the dwell lands after the frame it followed.
+                    self.follow_auto_advance();
+                    self.apply_replay_controls()?;
+                    self.checkpoint();
+                    self.trace_title_movie();
+                    self.runtime.update_binaural();
+                }
                 Ok(!report.blocked)
             },
             Err(trap) => {
@@ -742,6 +870,8 @@ impl<M: GameModule> Session<M> {
         let attack_page = self.runtime.services().attack_page;
         let sound_mode = self.runtime.services().sound_mode;
         let random_battles_off = self.runtime.services().random_battles_off.clone();
+        let text_speed = self.runtime.services().text_speed;
+        let movie_skip = self.runtime.services().movie_skip;
         let binaural = self.runtime.services().spu.binaural().map(|p| p.config());
         let services = self.runtime.services();
         let card_present = [services.card.present(0), services.card.present(1)];
@@ -763,6 +893,9 @@ impl<M: GameModule> Session<M> {
             "random_battles_off": random_battles_off,
             "card_present": card_present,
             "kanji_font": kanji_font,
+            "text_speed": text_speed,
+            "movie_skip": movie_skip,
+            "auto_advance": self.auto_advance,
             "binaural": binaural,
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
@@ -826,6 +959,22 @@ impl<M: GameModule> Session<M> {
             "card_present" => {
                 let (slot, present) = card_presence(command).ok_or("card_present needs slot (0 or 1) and present (true or false)")?;
                 self.apply_card_present(slot, present);
+                Ok(self.status())
+            }
+            "text_speed" => {
+                let glyphs = arg_u64("glyphs").and_then(|g| u32::try_from(g).ok()).ok_or("text_speed needs glyphs: 0 (the original's) or 1-255")?;
+                self.apply_text_speed(glyphs)?;
+                Ok(self.status())
+            }
+            "movie_skip" => {
+                let enabled = command.get("enabled").and_then(Value::as_bool).ok_or("movie_skip needs enabled: true or false")?;
+                self.apply_movie_skip(enabled);
+                Ok(self.status())
+            }
+            "auto_advance" => {
+                let dwell = arg_u64("dwell").and_then(|d| u32::try_from(d).ok())
+                    .ok_or_else(|| format!("auto_advance needs dwell: 0 (off) or 1-{MAX_AUTO_ADVANCE_DWELL} vertical blanks"))?;
+                self.apply_auto_advance(dwell)?;
                 Ok(self.status())
             }
             "actor_view" => {
@@ -1190,7 +1339,8 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
+                                        "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1205,6 +1355,9 @@ impl<M: GameModule> Session<M> {
                 Ok(serde_json::to_value(services.card.status(slot as usize, services.clock.now)).expect("card status"))
             }
             "record" => {
+                // Auto-advance's dwell counts from the recording's start, as
+                // a replay's does.
+                self.restart_auto_advance();
                 let vblank = self.vblank();
                 let changes = self.runtime.services().pads.0.iter().enumerate().map(|(port,pad)| (vblank,port as u32,pad.buttons)).collect();
                 self.recording = Some(InputLog { start_vblank: vblank, changes, end_vblank: vblank, restores: Vec::new(),
@@ -1236,6 +1389,16 @@ impl<M: GameModule> Session<M> {
                     if !self.runtime.services().card.present(slot) {
                         self.record_control(json!({"cmd":"card_present","slot":slot,"present":false}));
                     }
+                }
+                let glyphs = self.runtime.services().text_speed;
+                if glyphs != 0 {
+                    self.record_control(json!({"cmd":"text_speed","glyphs":glyphs}));
+                }
+                if self.runtime.services().movie_skip {
+                    self.record_control(json!({"cmd":"movie_skip","enabled":true}));
+                }
+                if self.auto_advance != 0 {
+                    self.record_control(json!({"cmd":"auto_advance","dwell":self.auto_advance}));
                 }
                 if let Some(mode) = self.runtime.services().sound_mode {
                     let taken = !self.runtime.services().sound_mode_changed;
@@ -1284,12 +1447,16 @@ impl<M: GameModule> Session<M> {
                             Some("attack_page") if control.get("kept").is_some_and(Value::is_boolean) => {},
                             Some("random_battles") if random_battle_maps(control).is_some() => {},
                             Some("card_present") if card_presence(control).is_some() => {},
+                            Some("text_speed") if control.get("glyphs").and_then(Value::as_u64).is_some_and(|g| g <= 255) => {},
+                            Some("movie_skip") if control.get("enabled").is_some_and(Value::is_boolean) => {},
+                            Some("auto_advance") if control.get("dwell").and_then(Value::as_u64).is_some_and(|d| d <= u64::from(MAX_AUTO_ADVANCE_DWELL)) => {},
                             Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
                                 && control.get("taken").is_none_or(Value::is_boolean) => {},
                             Some("assist") if control.get("intent").is_some() => {},
                             Some("assist_stop" | "reset") => {},
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
-                            _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, card-presence, assist and music-clock inputs".into()),
+                            _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, \
+                                card-presence, text-speed, movie-skip, auto-advance, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1320,6 +1487,10 @@ impl<M: GameModule> Session<M> {
                 self.runtime.services().random_battles_off.clear();
                 self.runtime.services().card.set_present(0, true);
                 self.runtime.services().card.set_present(1, true);
+                self.runtime.services().text_speed = 0;
+                self.runtime.services().movie_skip = false;
+                self.auto_advance = 0;
+                self.restart_auto_advance();
                 self.runtime.services().sound_mode = None;
                 self.runtime.services().sound_mode_changed = false;
                 self.replay_end = command.get("end_vblank").and_then(Value::as_u64).map(|end| now + end.saturating_sub(start));
@@ -1353,7 +1524,8 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles" | "card_present" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
+                        | "card_present" | "text_speed" | "movie_skip" | "auto_advance" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
@@ -1508,6 +1680,8 @@ impl<M: GameModule> Session<M> {
         if self.assist.take().is_some() {
             self.assist_outcome = Some(crate::assist::Outcome::Interrupted);
         }
+        // Auto-advance's dwell counts from the restored moment.
+        self.restart_auto_advance();
         self.timeline_revision += 1;
         self.reset_rewind_timer();
         // The restored game takes the host's sound mode again.

@@ -12,7 +12,7 @@ use xem_assist::overlay;
 use xem_render::glass::{self, Style, Widget};
 use xem_render::ps1::GameView;
 use xem_settings::player::{PlayerInput, Pulse};
-use xem_settings::{Settings, XrPointer};
+use xem_settings::{AppAction, AppRequest, Settings, XrPointer};
 
 fn pose(p: xem_xr::Pose) -> Pose {
     Pose { position: p.position, orientation: p.orientation }
@@ -73,6 +73,7 @@ struct Native<'a> {
     player: &'a mut PlayerInput,
     view: &'a mut GameView,
     inspectable: bool,
+    requests: &'a mut Vec<AppRequest>,
 }
 
 impl Carry for Native<'_> {
@@ -95,6 +96,9 @@ impl Carry for Native<'_> {
     fn release(&mut self) {
         self.player.clear();
     }
+    fn toggle_auto_advance(&mut self) {
+        self.requests.push(AppRequest::Action(AppAction::ToggleAutoAdvance));
+    }
 }
 
 #[derive(Default)]
@@ -104,6 +108,9 @@ pub struct Assisted {
     pub scaling: Scaling,
     /// The last frame's gestures, for the frame log.
     pub gestures: Vec<Gesture>,
+    /// App operations the gestures asked for (AUTO), for the host to carry
+    /// out with its others.
+    pub requests: Vec<AppRequest>,
 }
 
 impl Assisted {
@@ -119,6 +126,7 @@ impl Assisted {
     pub fn update(&mut self, settings: &Settings, input: &Input, screen: &Screen, game: &mut Game, player: &mut PlayerInput, view: &mut GameView, panel_visible: bool) -> bool {
         self.headset.source = source(settings.assisted.pointer);
         self.headset.inspecting = view.first_person();
+        self.headset.auto_advance = settings.auto_advance.enabled;
         if self.headset.settings_open != panel_visible {
             self.headset.set_settings(panel_visible);
         }
@@ -135,7 +143,7 @@ impl Assisted {
         // The underhand grab toggles inspection in a field but its menu,
         // where Ex Machina draws it.
         let inspectable = xem_settings::look::grab_toggles(context.field, settings.graphics.renderer);
-        xem_assist::headset::carry(effects.outs, &mut Native { game, player, view, inspectable }, &mut self.scaling);
+        xem_assist::headset::carry(effects.outs, &mut Native { game, player, view, inspectable, requests: &mut self.requests }, &mut self.scaling);
         self.gestures = effects.gestures;
         self.headset.settings_open
     }

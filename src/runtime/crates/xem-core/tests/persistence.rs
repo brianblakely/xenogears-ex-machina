@@ -41,6 +41,23 @@ const TASK_STACK_TOP: u32 = 0x100C_0000;
 /// draw ran at `DRAW_RAN`.
 const DRAW_MAP: u32 = 0x8000_0400;
 const DRAW_RAN: u32 = 0x8000_0404;
+/// The text speed and movie skip the port's wrappers would get
+/// (xem.text_speed, xem.movie_skip), kept each frame.
+const TEXT_SPEED_SEEN: u32 = 0x8000_0408;
+const MOVIE_SKIP_SEEN: u32 = 0x8000_040c;
+/// With `DIALOGUE` nonzero the stand-in is a field (mode 1) showing dialogue
+/// window 0 as the game lays it out (`xem_core::dialogue`), its text waiting
+/// for a page while its flags hold 8: a frame whose pad 1 holds Confirm ends
+/// the wait (counted at `PRESSES`, the frame at `LAST_PRESS`), and the next
+/// page waits `NEXT_PAGE` frames later.
+const DIALOGUE: u32 = 0x8000_0500;
+const PRESSES: u32 = 0x8000_0504;
+const LAST_PRESS: u32 = 0x8000_0508;
+const NEXT_PAGE: u32 = 0x8000_050c;
+const PAD_BUFFER: u32 = 0x8000_0510;
+const WINDOW: u32 = 0x800C_2698;
+const WINDOW_FLAGS: u32 = WINDOW + 0x28;
+const WINDOW_CHOICE: u32 = WINDOW + 0x37C;
 
 /// Card images shared with the test, as a host's storage.
 #[derive(Clone)]
@@ -157,6 +174,33 @@ impl GameModule for Counter {
         if map != 0 && self.import("random_battles", &[map & 0xFFF]) != 0 {
             let ran = self.memory.read_u32(DRAW_RAN).unwrap();
             self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
+        }
+        let glyphs = self.import("text_speed", &[]);
+        let skip = self.import("movie_skip", &[]);
+        self.memory.write_u32(TEXT_SPEED_SEEN, glyphs).unwrap();
+        self.memory.write_u32(MOVIE_SKIP_SEEN, skip).unwrap();
+        if self.memory.read_u32(DIALOGUE).unwrap() != 0 {
+            self.import("mode", &[1]);
+            self.import("pad_read", &[0, PAD_BUFFER, 4]);
+            let mut held = [0; 2];
+            self.memory.read(PAD_BUFFER + 2, &mut held).unwrap();
+            let held = !u16::from_le_bytes(held);
+            let mut flags = [0; 2];
+            self.memory.read(WINDOW_FLAGS, &mut flags).unwrap();
+            let waiting = u16::from_le_bytes(flags) & 8 != 0;
+            let next = self.memory.read_u32(NEXT_PAGE).unwrap();
+            if waiting && held & xem_core::action::GameAction::Confirm.button() != 0 {
+                self.memory.write(WINDOW_FLAGS, &0u16.to_le_bytes()).unwrap();
+                let presses = self.memory.read_u32(PRESSES).unwrap();
+                self.memory.write_u32(PRESSES, presses + 1).unwrap();
+                self.memory.write_u32(LAST_PRESS, count + 1).unwrap();
+                self.memory.write_u32(NEXT_PAGE, 5).unwrap();
+            } else if !waiting && next > 0 {
+                self.memory.write_u32(NEXT_PAGE, next - 1).unwrap();
+                if next == 1 {
+                    self.memory.write(WINDOW_FLAGS, &8u16.to_le_bytes()).unwrap();
+                }
+            }
         }
         let fibers = self.memory.read_u32(FIBERS).unwrap();
         self.memory.write_u32(FIBERS, 0).unwrap();
@@ -1361,6 +1405,141 @@ fn card_presence_is_recorded_and_a_replay_keeps_it() {
     assert_eq!(card_present(&mut s), json!([true, true]), "a refused change changes nothing");
     let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, {"cmd":"card_present","slot":3,"present":true}]]}));
     assert!(refused["error"].as_str().is_some_and(|e| e.contains("card-presence")), "{refused}");
+}
+
+fn status(s: &mut Session<Counter>, name: &str) -> serde_json::Value {
+    s.execute(&json!({"cmd":"status"}))[name].clone()
+}
+
+#[test]
+fn the_text_speed_and_movie_skipping_are_recorded_and_a_replay_keeps_them() {
+    let mut s = session();
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!((word(&mut s, TEXT_SPEED_SEEN), word(&mut s, MOVIE_SKIP_SEEN)), (0, 0), "the original's by default");
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    s.set_text_speed(255).unwrap();
+    s.set_movie_skip(true);
+    s.execute(&json!({"cmd":"frames","count":3}));
+    assert_eq!((word(&mut s, TEXT_SPEED_SEEN), word(&mut s, MOVIE_SKIP_SEEN)), (255, 1), "the port's wrappers get them");
+    s.set_text_speed(4).unwrap();
+    s.set_movie_skip(false);
+    s.execute(&json!({"cmd":"frames","count":2}));
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let controls: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter()
+        .filter(|c| matches!(c[1]["cmd"].as_str(), Some("text_speed" | "movie_skip"))).map(|c| c[1].clone()).collect();
+    assert_eq!(controls, [json!({"cmd":"text_speed","glyphs":255}), json!({"cmd":"movie_skip","enabled":true}),
+        json!({"cmd":"text_speed","glyphs":4}), json!({"cmd":"movie_skip","enabled":false})], "each change once");
+    // A replay from the same state starts from the original's and keeps the
+    // recorded values, not the host's.
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    other.set_text_speed(4).unwrap();
+    other.set_movie_skip(true);
+    assert!(other.execute(&log).get("error").is_none());
+    assert_eq!((status(&mut other, "text_speed"), status(&mut other, "movie_skip")), (json!(0), json!(false)));
+    other.execute(&json!({"cmd":"frames","count":3}));
+    other.set_text_speed(0).unwrap();
+    other.set_movie_skip(false);
+    other.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!((word(&mut other, TEXT_SPEED_SEEN), word(&mut other, MOVIE_SKIP_SEEN)), (255, 1), "a replay keeps the recorded values, not the host's");
+    other.execute(&json!({"cmd":"frames","count":4}));
+    assert_eq!((status(&mut other, "text_speed"), status(&mut other, "movie_skip")), (json!(4), json!(false)));
+    // A recording begun with them on starts with them; session logs and
+    // agents set them by command.
+    s.set_text_speed(255).unwrap();
+    s.set_movie_skip(true);
+    s.execute(&json!({"cmd":"record"}));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    for control in [json!({"cmd":"text_speed","glyphs":255}), json!({"cmd":"movie_skip","enabled":true})] {
+        assert!(log["controls"].as_array().unwrap().iter().any(|c| c[1] == control), "{log}");
+    }
+    let frames = s.runtime.frames();
+    let scheduled = s.execute(&json!({"cmd":"schedule","commands":[[frames + 1, {"cmd":"text_speed","glyphs":0}], [frames + 1, {"cmd":"movie_skip","enabled":false}]]}));
+    assert!(scheduled.get("error").is_none(), "{scheduled}");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!((status(&mut s, "text_speed"), status(&mut s, "movie_skip")), (json!(0), json!(false)));
+    let valid = s.execute(&json!({"cmd":"readiness"}))["valid_commands"].clone();
+    for name in ["text_speed", "movie_skip", "auto_advance"] {
+        assert!(valid.as_array().unwrap().contains(&json!(name)), "{name}");
+    }
+    assert!(s.set_text_speed(256).is_err());
+    for bad in [json!({"cmd":"text_speed"}), json!({"cmd":"text_speed","glyphs":256}), json!({"cmd":"movie_skip","enabled":1})] {
+        assert!(s.execute(&bad).get("error").is_some(), "{bad}");
+    }
+    for bad in [json!({"cmd":"text_speed","glyphs":300}), json!({"cmd":"movie_skip"}), json!({"cmd":"auto_advance","dwell":-1})] {
+        let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, bad]]}));
+        assert!(refused["error"].as_str().is_some_and(|e| e.contains("text-speed, movie-skip, auto-advance")), "{refused}");
+    }
+}
+
+/// Window 0 of the field's dialogue waiting for its page (the others
+/// free), the field with no menu, as `xem_core::dialogue` reads them.
+fn dialogue(s: &mut Session<Counter>) {
+    let memory = s.runtime.memory();
+    memory.write(0x800A_DB64, &[0xFF]).unwrap();
+    memory.write(0x800B_2174, &1u16.to_le_bytes()).unwrap();
+    for i in 0..4 {
+        let window = WINDOW + i * 0x498;
+        memory.write(window + 0x40E, &(if i == 0 { 0i16 } else { -1 }).to_le_bytes()).unwrap();
+        memory.write(window + 0x410, &(if i == 0 { 0u16 } else { 0xFFFF }).to_le_bytes()).unwrap();
+        memory.write(window + 0x37C, &(-1i16).to_le_bytes()).unwrap();
+    }
+    memory.write(WINDOW_FLAGS, &8u16.to_le_bytes()).unwrap();
+    memory.write(WINDOW + 0x83, &[2]).unwrap();
+    memory.write_u32(DIALOGUE, 1).unwrap();
+}
+
+#[test]
+fn auto_advance_presses_confirm_once_a_page_waited_its_dwell_never_at_a_choice_and_replays() {
+    let mut s = session();
+    dialogue(&mut s);
+    s.execute(&json!({"cmd":"frames","count":30}));
+    assert_eq!(word(&mut s, PRESSES), 0, "off, the original: the page waits for the player");
+    s.set_auto_advance(10).unwrap();
+    s.execute(&json!({"cmd":"frames","count":10}));
+    assert_eq!(word(&mut s, PRESSES), 0, "the dwell counts the frames the page waited");
+    s.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!(word(&mut s, PRESSES), 1, "then Confirm for one frame");
+    assert_eq!(s.runtime.services().pads.0[0].buttons, 0, "and released after it");
+    s.execute(&json!({"cmd":"frames","count":16}));
+    assert_eq!(word(&mut s, PRESSES), 2, "the next page waits its own dwell: 5 frames to show, 10 to wait, 1 to press");
+    // A choice (or one about to open) is the player's: no press, ever.
+    s.runtime.memory().write(WINDOW_CHOICE, &0i16.to_le_bytes()).unwrap();
+    s.execute(&json!({"cmd":"frames","count":60}));
+    assert_eq!(word(&mut s, PRESSES), 2, "a choice is never answered");
+    s.runtime.memory().write(WINDOW_CHOICE, &(-1i16).to_le_bytes()).unwrap();
+    // A pause counts nothing.
+    s.runtime.memory().write_u32(0x8000_0010, 0x40).unwrap();
+    s.execute(&json!({"cmd":"frames","count":30}));
+    assert_eq!(word(&mut s, PRESSES), 2, "the paused game's page waits");
+    s.runtime.memory().write_u32(0x8000_0010, 0).unwrap();
+    // A recording and its replay press on the same frames.
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":25}));
+    s.set_auto_advance(4).unwrap();
+    s.execute(&json!({"cmd":"frames","count":20}));
+    let presses = (word(&mut s, PRESSES), word(&mut s, LAST_PRESS));
+    assert_eq!(presses.0, 5, "three presses in the recording: its frames 11, 30 and 39");
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let dwells: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "auto_advance").map(|c| c[1]["dwell"].clone()).collect();
+    assert_eq!(dwells, [json!(10), json!(4)], "the dwell at the start, then its change");
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    other.set_auto_advance(1).unwrap();
+    assert!(other.execute(&log).get("error").is_none());
+    other.execute(&json!({"cmd":"frames","count":20}));
+    other.set_auto_advance(1).unwrap();
+    other.execute(&json!({"cmd":"frames","count":25}));
+    assert_eq!((word(&mut other, PRESSES), word(&mut other, LAST_PRESS)), presses, "a replay presses where the recording did, not with the host's dwell");
+    assert_eq!(status(&mut other, "auto_advance"), json!(4));
+    assert!(s.set_auto_advance(xem_core::control::MAX_AUTO_ADVANCE_DWELL + 1).is_err());
+    let refused = s.execute(&json!({"cmd":"auto_advance"}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("vertical blanks")), "{refused}");
 }
 
 #[test]

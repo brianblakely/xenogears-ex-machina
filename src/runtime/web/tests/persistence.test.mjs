@@ -523,6 +523,33 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     } finally { await browser.close(); }
   });
 
+  test('text speed, movie skipping and auto-advance reach the session from the settings, and T toggles auto-advance', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true });
+    try {
+      const page = await browser.page(fixture); await forever(page);
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.status().session.frames > 2);
+      const session = async () => (await status(page)).session;
+      const before = await session();
+      assert.deepEqual([before.text_speed, before.movie_skip, before.auto_advance], [0, false, 0], 'the original by default');
+      for (const change of [{ TextSpeed: 'Instant' }, { MovieSkip: true }]) {
+        const reply = await page.evaluate((c) => window.xem.settings.apply(c), change);
+        assert.equal(reply.ok, true, JSON.stringify(reply));
+      }
+      await page.waitForFunction(() => { const s = window.xem.status().session; return s.text_speed === 255 && s.movie_skip === true; });
+      // The app action's default key goes through the settings too.
+      await page.keyboard.press('KeyT');
+      await page.waitForFunction(() => window.xem.status().session.auto_advance === 120);
+      assert.equal((await page.evaluate(() => window.xem.settings.get())).settings.auto_advance.enabled, true);
+      const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('xem.settings')));
+      assert.deepEqual([stored.text_speed, stored.movie_skip, stored.auto_advance], ['Instant', true, { enabled: true, dwell: 120 }]);
+      await page.keyboard.press('KeyT');
+      await page.waitForFunction(() => window.xem.status().session.auto_advance === 0);
+      await page.evaluate(() => window.xem.setRunning(false));
+      assert.deepEqual(page.errors, []);
+    } finally { await browser.close(); }
+  });
+
   test('Settings operations have keyboard and gamepad paths and bindings survive reload', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [() => {
       window.padButtons = Array(17).fill(false);

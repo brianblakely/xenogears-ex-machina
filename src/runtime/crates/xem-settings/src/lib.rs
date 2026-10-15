@@ -137,6 +137,58 @@ pub enum RandomBattles {
     Original,
 }
 
+/// How fast the game's message windows show their text (docs/runtime.md,
+/// Text speed). Every speed keeps the windows' pages, pauses, timed waits
+/// and authored slow text.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextSpeed {
+    /// The game's own: a glyph per field frame (two where a scene sets a
+    /// slower frame).
+    #[default]
+    Original,
+    /// Four glyphs per field frame.
+    Fast,
+    /// A line per field frame.
+    Instant,
+}
+
+impl TextSpeed {
+    pub const ALL: [TextSpeed; 3] = [TextSpeed::Original, TextSpeed::Fast, TextSpeed::Instant];
+
+    /// The glyphs a window's step reveals at least
+    /// (`Session::set_text_speed`); 0 the window's own.
+    pub fn glyphs(self) -> u32 {
+        match self {
+            TextSpeed::Original => 0,
+            TextSpeed::Fast => 4,
+            TextSpeed::Instant => 255,
+        }
+    }
+}
+
+/// Auto-advance dialogue (docs/runtime.md, Auto-advance dialogue): a field
+/// dialogue's page goes on by itself once its prompt has shown `dwell`
+/// vertical blanks (a sixtieth of a second each); choices always wait for
+/// the player.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct AutoAdvance {
+    pub enabled: bool,
+    pub dwell: u32,
+}
+
+/// The auto-advance dwell's default and range, in vertical blanks.
+pub const DEFAULT_AUTO_ADVANCE_DWELL: u32 = 120;
+pub const MIN_AUTO_ADVANCE_DWELL: u32 = 30;
+pub const MAX_AUTO_ADVANCE_DWELL: u32 = 600;
+const _: () = assert!(MAX_AUTO_ADVANCE_DWELL <= xem_core::control::MAX_AUTO_ADVANCE_DWELL, "the session takes every dwell the setting offers");
+
+impl Default for AutoAdvance {
+    fn default() -> Self {
+        Self { enabled: false, dwell: DEFAULT_AUTO_ADVANCE_DWELL }
+    }
+}
+
 /// The complete application settings.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -172,6 +224,13 @@ pub struct Settings {
     /// Where the field's random battles happen (the hosts give the session
     /// [`Settings::random_battles_off`]).
     pub random_battles: RandomBattles,
+    /// How fast message windows show their text.
+    pub text_speed: TextSpeed,
+    /// Field dialogue goes on by itself.
+    pub auto_advance: AutoAdvance,
+    /// The player's Confirm (or Start) ends any movie, as the game lets it
+    /// end some.
+    pub movie_skip: bool,
 }
 
 impl Default for Settings {
@@ -196,6 +255,9 @@ impl Default for Settings {
             pause_on_focus_loss: true,
             assisted: Assisted::default(),
             random_battles: RandomBattles::default(),
+            text_speed: TextSpeed::default(),
+            auto_advance: AutoAdvance::default(),
+            movie_skip: false,
         }
     }
 }
@@ -235,6 +297,10 @@ pub enum SettingChange {
     /// The assisted controls' block, whole.
     Assisted(Assisted),
     RandomBattles(RandomBattles),
+    TextSpeed(TextSpeed),
+    /// The auto-advance block, whole: on or off and its dwell.
+    AutoAdvance(AutoAdvance),
+    MovieSkip(bool),
 }
 
 /// An applied and persisted change.
@@ -299,6 +365,12 @@ impl Settings {
         }
     }
 
+    /// The auto-advance dwell the hosts give the session
+    /// (`Session::set_auto_advance`): the setting's while it is on, else 0.
+    pub fn auto_advance_dwell(&self) -> u32 {
+        if self.auto_advance.enabled { self.auto_advance.dwell } else { 0 }
+    }
+
     fn with(&self, change: &SettingChange) -> Result<Settings, String> {
         let mut next = self.clone();
         match change {
@@ -336,6 +408,9 @@ impl Settings {
             SettingChange::ResetGameBindings => next.game_bindings = GameBindings::default(),
             SettingChange::Assisted(assisted) => next.assisted = *assisted,
             SettingChange::RandomBattles(battles) => next.random_battles = *battles,
+            SettingChange::TextSpeed(speed) => next.text_speed = *speed,
+            SettingChange::AutoAdvance(auto) => next.auto_advance = *auto,
+            SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
         }
         next.validate()?;
         Ok(next)
@@ -403,6 +478,9 @@ impl Settings {
         }
         if self.master_volume > MAX_VOLUME {
             return Err(format!("volume must be 0-{MAX_VOLUME}"));
+        }
+        if !(MIN_AUTO_ADVANCE_DWELL..=MAX_AUTO_ADVANCE_DWELL).contains(&self.auto_advance.dwell) {
+            return Err(format!("the auto-advance dwell must be {MIN_AUTO_ADVANCE_DWELL}–{MAX_AUTO_ADVANCE_DWELL} vertical blanks"));
         }
         self.binaural.validate()?;
         self.game_bindings.validate()?;
@@ -699,6 +777,41 @@ mod tests {
         assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.random_battles, RandomBattles::NotWhilePlatforming);
         let (read, reset) = Settings::read(&serde_json::json!({"random_battles": "Never", "mouse_camera": true})).unwrap();
         assert_eq!((read.random_battles, read.mouse_camera, reset), (RandomBattles::NotWhilePlatforming, true, vec!["random_battles".to_string()]));
+    }
+
+    #[test]
+    fn text_speed_auto_advance_and_movie_skip_default_to_the_original_validate_and_persist() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        let settings = service.settings();
+        assert_eq!((settings.text_speed, settings.auto_advance.enabled, settings.movie_skip), (TextSpeed::Original, false, false));
+        assert_eq!((settings.text_speed.glyphs(), settings.auto_advance_dwell()), (0, 0), "the sessions get the original's");
+        service.apply(SettingChange::TextSpeed(TextSpeed::Instant)).unwrap();
+        service.apply(SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell: 90 })).unwrap();
+        service.apply(SettingChange::MovieSkip(true)).unwrap();
+        let reopened = SettingsService::open(store.clone()).unwrap();
+        let settings = reopened.settings();
+        assert_eq!((settings.text_speed.glyphs(), settings.auto_advance_dwell(), settings.movie_skip), (255, 90, true));
+        for dwell in [0, MIN_AUTO_ADVANCE_DWELL - 1, MAX_AUTO_ADVANCE_DWELL + 1] {
+            assert!(service.apply(SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell })).is_err(), "dwell {dwell}");
+        }
+        // Off keeps the dwell for the next time it is on.
+        service.apply(SettingChange::AutoAdvance(AutoAdvance { enabled: false, dwell: 90 })).unwrap();
+        assert_eq!((service.settings().auto_advance_dwell(), service.settings().auto_advance.dwell), (0, 90));
+        // An agent's change, and a backup.
+        let agent: SettingChange = serde_json::from_str(r#"{"TextSpeed":"Fast"}"#).unwrap();
+        service.apply(agent).unwrap();
+        assert_eq!(service.settings().text_speed.glyphs(), 4);
+        let mut other = SettingsService::with_defaults(MemoryStore::default());
+        other.import(&service.export()).unwrap();
+        assert_eq!((other.settings().text_speed, other.settings().movie_skip), (TextSpeed::Fast, true));
+        // Saved before the options existed, or with a value no longer
+        // offered: the original's, alone.
+        let (read, reset) = Settings::read(&serde_json::json!({"text_speed": "Warp", "auto_advance": {"enabled": true, "dwell": 5}, "mouse_camera": true})).unwrap();
+        assert_eq!((read.text_speed, read.auto_advance, read.mouse_camera), (TextSpeed::Original, AutoAdvance { enabled: true, dwell: DEFAULT_AUTO_ADVANCE_DWELL }, true));
+        assert_eq!(reset, ["auto_advance.dwell", "text_speed"]);
+        assert!(!Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.movie_skip);
     }
 
     #[test]

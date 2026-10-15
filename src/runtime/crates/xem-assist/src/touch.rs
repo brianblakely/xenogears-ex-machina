@@ -17,7 +17,9 @@
 //!   confirms it; in a dialogue it advances. A finger dragged on the
 //!   picture turns first-person inspection's view ([`Deck::take_drag`]).
 //! - A shop's quantity list adds the +, -, ALL and NONE keys; the world
-//!   map adds Board (L2 and R2 together: a Gear boarded or left).
+//!   map adds Board (L2 and R2 together: a Gear boarded or left); a field
+//!   scene or dialogue adds AUTO (auto-advance dialogue on or off, lit
+//!   while on), apart from the face buttons that advance one page.
 use crate::overlay::QuantityKey;
 use std::collections::{BTreeMap, BTreeSet};
 use xem_core::action::GameAction;
@@ -42,6 +44,8 @@ pub enum Control {
     Settings,
     /// The world map's Board: L2 and R2 together (a Gear boarded or left).
     Board,
+    /// Auto-advance dialogue on or off (the app's toggle, not the game's).
+    Auto,
     Quantity(u8),
 }
 
@@ -62,7 +66,7 @@ impl Control {
             Control::Start => vec![GameAction::Start],
             Control::Select => vec![GameAction::Select],
             Control::Board => vec![GameAction::L2, GameAction::R2],
-            Control::Settings | Control::Quantity(_) => vec![],
+            Control::Settings | Control::Auto | Control::Quantity(_) => vec![],
         }
     }
 
@@ -84,6 +88,7 @@ impl Control {
             Control::Select => "SELECT",
             Control::Settings => "SETTINGS",
             Control::Board => "BOARD",
+            Control::Auto => "AUTO",
             Control::Quantity(k) => QuantityKey::ALL[k as usize].label(),
         }
     }
@@ -149,11 +154,14 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     controls.push((Control::Settings, small(w / 2.0 - size * 0.85)));
     controls.push((Control::Start, small(w / 2.0 + size * 0.85)));
     // A wide key above a cluster: Select over the D-pad, the world map's
-    // Board over the face buttons.
+    // Board, or a field scene's AUTO, over the face buttons.
     let above = |cx: f32| Rect { x: cx - size * 0.8, y: low - 2.3 * (size + gap) - size * 0.35, width: size * 1.6, height: size * 0.7 };
     controls.push((Control::Select, above(left_x)));
     if matches!(ui, Context::WorldMap { .. }) {
         controls.push((Control::Board, above(right_x)));
+    }
+    if crate::overlay::auto_key(ui) {
+        controls.push((Control::Auto, above(right_x)));
     }
     if matches!(ui, Context::Menu { quantities: true, .. }) {
         let x = right_x;
@@ -185,6 +193,8 @@ pub enum Touched {
     Tap((f32, f32)),
     /// Settings was pressed.
     Settings,
+    /// AUTO was pressed: auto-advance dialogue goes on or off.
+    AutoAdvance,
     /// A shop quantity key.
     Quantity(QuantityKey),
 }
@@ -221,6 +231,7 @@ impl Deck {
         self.fingers.insert(finger, Finger { control, start: at, began: time, travelled: false, on_picture, at });
         match control {
             Some(Control::Settings) => Touched::Settings,
+            Some(Control::Auto) => Touched::AutoAdvance,
             Some(Control::Quantity(k)) => Touched::Quantity(QuantityKey::ALL[k as usize]),
             _ => Touched::Nothing,
         }
@@ -357,6 +368,28 @@ mod tests {
                 assert_eq!(deck.actions(), BTreeSet::from([GameAction::Select]));
                 assert_eq!(Control::Select.label(ui), "SELECT");
             }
+        }
+    }
+
+    #[test]
+    fn auto_shows_in_field_scenes_and_dialogue_clear_of_every_other_control() {
+        let picture = Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 };
+        for ui in [Context::Event { map: 4, buttons: 0 }, Context::Dialogue { choice: None }] {
+            let mut deck = Deck::default();
+            deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
+            let auto = deck.controls.iter().find(|(k, _)| *k == Control::Auto).expect("AUTO in a scene").1;
+            for (other, r) in deck.controls.iter().filter(|(k, _)| *k != Control::Auto) {
+                let apart = r.x >= auto.x + auto.width || auto.x >= r.x + r.width || r.y >= auto.y + auto.height || auto.y >= r.y + r.height;
+                assert!(apart, "{other:?} {r:?} overlaps AUTO {auto:?} ({ui:?})");
+            }
+            assert_eq!(deck.down(1, auto.centre(), 0.0), Touched::AutoAdvance);
+            assert!(deck.actions().is_empty(), "the app's toggle presses nothing of the game's");
+            assert_eq!(Control::Auto.label(ui), "AUTO");
+        }
+        for ui in [Context::Walk, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false }] {
+            let mut deck = Deck::default();
+            deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
+            assert!(deck.controls.iter().all(|(k, _)| *k != Control::Auto), "no AUTO in {ui:?}");
         }
     }
 

@@ -10,7 +10,7 @@ pub enum AppAction {
     IncreaseRewindHistory, DecreaseRewindHistory,
     ExportState, ImportState, ExportCard1, ImportCard1, ExportCard2, ImportCard2,
     ExportSettings, ImportSettings, RetryStorage, RequestPersistence, ImportBios,
-    ToggleFps, TogglePauseOnFocusLoss, Reset,
+    ToggleFps, TogglePauseOnFocusLoss, ToggleAutoAdvance, Reset,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -19,7 +19,7 @@ pub enum AppRequest {
     Rewind(bool),
     UiRewind(bool),
 }
-pub const APP_ACTIONS: [(AppAction, &str); 26] = [
+pub const APP_ACTIONS: [(AppAction, &str); 27] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
@@ -38,6 +38,7 @@ pub const APP_ACTIONS: [(AppAction, &str); 26] = [
     (AppAction::ImportBios, "Import BIOS (save titles)"),
     (AppAction::ToggleFps, "Toggle FPS display"),
     (AppAction::TogglePauseOnFocusLoss, "Toggle pause on focus loss"),
+    (AppAction::ToggleAutoAdvance, "Toggle auto-advance dialogue"),
     (AppAction::Reset, "Reset"),
 ];
 pub const PAD_NAMES: [&str; 16] = ["South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right"];
@@ -84,7 +85,7 @@ pub fn defaults() -> BTreeMap<AppAction, AppBinding> {
     use AppAction::*;
     [(SaveState,"F5","Back+South"), (LoadState,"F8","Back+North"),
      (Rewind,"KeyR","Back+LT"), (ToggleRewind,"F7","Back+East"),
-     (ToggleFastForward,"Backquote","Back+RT")]
+     (ToggleFastForward,"Backquote","Back+RT"), (ToggleAutoAdvance,"KeyT","Back+West")]
         .into_iter().map(|(a,k,g)| (a,AppBinding::parse(k,g))).collect()
 }
 

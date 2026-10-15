@@ -124,6 +124,12 @@ pub fn quantity_keys(ui: Context) -> bool {
     matches!(ui, Context::Menu { quantities: true, .. })
 }
 
+/// Whether AUTO shows (auto-advance dialogue on or off): in a field's
+/// scenes and its dialogue, where pages wait.
+pub fn auto_key(ui: Context) -> bool {
+    matches!(ui, Context::Event { .. } | Context::Dialogue { .. })
+}
+
 /// A key beside the picture: its label, what aiming a tap at it does, and
 /// whether it is lit (the target selected now).
 #[derive(Clone, Debug, PartialEq)]
@@ -134,12 +140,17 @@ pub struct SideKey {
 }
 
 /// The keys beside the picture outside a control deck: a shop list's
-/// quantity keys, or a battle's targets as a list (slots 0-2 the party,
-/// the rest the enemies), for targets that overlap or hide one another.
-pub fn side_keys(ui: Context, targets: Option<&Targets>) -> Vec<SideKey> {
+/// quantity keys, AUTO in a field's scenes and dialogue (lit while
+/// `auto_advance` is on), or a battle's targets as a list (slots 0-2 the
+/// party, the rest the enemies), for targets that overlap or hide one
+/// another.
+pub fn side_keys(ui: Context, targets: Option<&Targets>, auto_advance: bool) -> Vec<SideKey> {
     if quantity_keys(ui) {
         return QuantityKey::ALL.iter().enumerate()
             .map(|(i, key)| SideKey { label: key.label().to_string(), out: Out::Key { key: i as u32 }, lit: false }).collect();
+    }
+    if auto_key(ui) {
+        return vec![SideKey { label: "AUTO".into(), out: Out::ToggleAutoAdvance, lit: auto_advance }];
     }
     let Some(targets) = targets.filter(|t| t.what == "battle_targets") else { return vec![] };
     let (mut ally, mut foe) = (0, 0);

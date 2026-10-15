@@ -187,6 +187,9 @@ pub struct Headset {
     /// The host shows first-person inspection (hosts set it before each
     /// [`Headset::update`]).
     pub inspecting: bool,
+    /// Auto-advance dialogue is on (hosts set it from the setting before
+    /// each [`Headset::update`]): AUTO beside the screen shows lit.
+    pub auto_advance: bool,
     was_focused: bool,
     tracked: [bool; 2],
 }
@@ -215,7 +218,7 @@ impl Headset {
                 label: key.label.to_string(),
                 state: state(i, key.hold && key.actions.iter().all(|a| self.arcade.toggled.contains(a))),
             }).collect(),
-            None => crate::overlay::side_keys(ui, targets).into_iter().enumerate()
+            None => crate::overlay::side_keys(ui, targets, self.auto_advance).into_iter().enumerate()
                 .map(|(i, key)| crate::draw::KeyMark { label: key.label, state: state(i, key.lit) }).collect(),
         }
     }
@@ -288,7 +291,7 @@ impl Headset {
         // A control deck (Battling, the world map) takes the game's
         // gestures and its keys beside the screen.
         let deck = crate::arcade::deck(ui).filter(|_| !self.settings_open);
-        let side_keys = if deck.is_some() { vec![] } else { crate::overlay::side_keys(ui, targets) };
+        let side_keys = if deck.is_some() { vec![] } else { crate::overlay::side_keys(ui, targets, self.auto_advance) };
         let keys = crate::draw::side_keys(screen, deck.map_or(side_keys.len(), |deck| crate::arcade::keys(deck).len()));
         // A tap or pinch aimed at a deck key is the key's.
         let nearest = |keys: &[(u32, Quad)]| ray(self.source, input).and_then(|(origin, direction)| {
@@ -457,6 +460,33 @@ mod tests {
     }
 
     #[test]
+    fn auto_beside_the_screen_toggles_auto_advance_and_never_advances_the_page() {
+        use crate::synthetic::{Runtime, gesture, in_front};
+        let ui = Context::Dialogue { choice: None };
+        let quad = crate::draw::side_keys(&screen(), 1)[0].1;
+        let local = quad.pose.position - screen().quad.pose.position;
+        let at = ((local.x / 3.2 + 0.5) * 320.0, (0.5 - local.y / 2.24) * 224.0);
+        for runtime in [Runtime::HORIZON, Runtime::WEBXR] {
+            let mut headset = Headset::default();
+            let mut outs = Vec::new();
+            let steps = gesture(if runtime.microgestures { "tap" } else { "pinch" }).unwrap();
+            for (i, step) in steps.iter().enumerate() {
+                let head = Pose { position: Vec3::ZERO, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, screen().point(at).normalize()) };
+                let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+                let frame = step.frame(i as f64 / 72.0, hands, Vec3::X, runtime);
+                let input = Input { time: frame.time, head: Some(head), hands, pinch: frame.pinch, micro: frame.micro, micro_capable: frame.micro_capable, focused: true, ..Input::default() };
+                outs.extend(headset.update(&input, &screen(), ui, None, None).outs);
+            }
+            assert_eq!(outs, [Out::ToggleAutoAdvance], "AUTO's, not the page's ({runtime:?})");
+            let mark = |headset: &Headset| headset.key_marks(ui, None)[0].clone();
+            assert_eq!(mark(&headset), crate::draw::KeyMark { label: "AUTO".into(), state: xem_render::glass::State::Hover });
+            headset.auto_advance = true;
+            assert_eq!(mark(&headset).state, xem_render::glass::State::Active, "lit while on");
+        }
+        assert!(Headset::default().key_marks(Context::Walk, None).is_empty(), "walking shows no AUTO");
+    }
+
+    #[test]
     fn settings_pause_apart_from_the_players_and_focus_loss_pauses() {
         let mut headset = Headset::default();
         let input = Input { head: Some(head()), focused: true, ..Input::default() };
@@ -497,6 +527,7 @@ mod tests {
         fn select(&mut self, _: usize, _: bool) {}
         fn inspect(&mut self) {}
         fn release(&mut self) {}
+        fn toggle_auto_advance(&mut self) {}
     }
 
     #[test]
@@ -582,6 +613,9 @@ pub trait Carry {
     fn inspect(&mut self);
     /// Everything held let go (tracking or focus lost).
     fn release(&mut self);
+    /// Auto-advance dialogue toggled (AUTO beside the screen): the app's
+    /// `ToggleAutoAdvance`, through the settings.
+    fn toggle_auto_advance(&mut self);
 }
 
 /// Two-hand scaling of the headset's screen.
@@ -611,6 +645,7 @@ pub fn carry(outs: Vec<Out>, host: &mut impl Carry, scaling: &mut Scaling) {
                 }
             }
             Out::ToggleInspect => host.inspect(),
+            Out::ToggleAutoAdvance => host.toggle_auto_advance(),
             Out::ScaleBegin => scaling.start = Some(scaling.scale),
             Out::Scale { factor } => {
                 if let Some(start) = scaling.start {

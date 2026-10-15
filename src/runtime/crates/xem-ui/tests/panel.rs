@@ -602,6 +602,50 @@ fn random_battles_are_chosen_in_the_gameplay_section_through_the_settings_servic
 }
 
 #[test]
+fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section_through_the_settings_service() {
+    use xem_settings::{AutoAdvance, SettingChange, TextSpeed};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Gameplay", 6);
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    assert_eq!(ui.component().get_text_speed(), 0, "the original's speed");
+    assert!(!shown(&ui, "Auto-advance wait on each page"), "the wait shows only with auto-advance on");
+    // Every choice is the service's: applied, acknowledged and saved.
+    ui.component().invoke_gameplay_edited("text-speed".into(), 2);
+    let auto = element(&ui, "Auto-advance dialogue", AccessibleRole::Switch);
+    press(&ui, &auto);
+    ui.update().unwrap();
+    assert!(shown(&ui, "Auto-advance wait on each page"));
+    ui.component().invoke_gameplay_edited("auto-advance-dwell".into(), 90);
+    press(&ui, &element(&ui, "Movies can be skipped", AccessibleRole::Switch));
+    ui.update().unwrap();
+    {
+        let current = settings.borrow();
+        let current = current.settings();
+        assert_eq!((current.text_speed, current.auto_advance, current.movie_skip), (TextSpeed::Instant, AutoAdvance { enabled: true, dwell: 90 }, true));
+    }
+    assert_eq!(*acks.borrow(), [SettingChange::TextSpeed(TextSpeed::Instant), SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell: 120 }),
+        SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell: 90 }), SettingChange::MovieSkip(true)]);
+    // A refused wait leaves the shown one; an agent's change shows.
+    ui.component().invoke_gameplay_edited("auto-advance-dwell".into(), 5);
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_auto_advance_dwell(), 90);
+    settings.borrow_mut().apply(SettingChange::AutoAdvance(AutoAdvance { enabled: false, dwell: 90 })).unwrap();
+    settings.borrow_mut().apply(SettingChange::TextSpeed(TextSpeed::Fast)).unwrap();
+    ui.update().unwrap();
+    assert!(!ui.component().get_auto_advance() && !shown(&ui, "Auto-advance wait on each page"));
+    assert_eq!(ui.component().get_text_speed(), 1);
+}
+
+#[test]
 fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     const SECTIONS: [&str; 8] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "About"];
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");

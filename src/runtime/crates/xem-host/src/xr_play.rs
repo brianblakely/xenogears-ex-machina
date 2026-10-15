@@ -358,6 +358,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if let Some(screen) = last_screen {
             let current = settings.borrow().settings().clone();
             let open = assist.update(&current, &assisted_input, &screen, &mut game, &mut player, &mut view, *panel_visible.borrow());
+            requests.borrow_mut().append(&mut assist.requests);
             if open != *panel_visible.borrow() {
                 *panel_visible.borrow_mut() = open;
                 if !open {

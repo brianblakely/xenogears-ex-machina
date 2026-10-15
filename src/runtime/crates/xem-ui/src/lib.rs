@@ -14,7 +14,7 @@ use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
     GraphicsProfile, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS,
+    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS, TextSpeed,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -479,6 +479,10 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
         RandomBattles::Original => 1,
     });
     panel.set_random_battles_note(random_battles_note(settings.random_battles).into());
+    panel.set_text_speed(index_of(&TextSpeed::ALL, &settings.text_speed));
+    panel.set_auto_advance(settings.auto_advance.enabled);
+    panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
+    panel.set_movie_skip(settings.movie_skip);
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
     panel.set_assist_pointer(match assisted.pointer {
@@ -673,6 +677,23 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         move |index| {
             let battles = if index == 1 { RandomBattles::Original } else { RandomBattles::NotWhilePlatforming };
             apply(Some(SettingChange::RandomBattles(battles)))
+        }
+    });
+    panel.on_gameplay_edited({
+        let apply = apply.clone();
+        let settings = settings.clone();
+        move |name, value| {
+            let mut auto = settings.borrow().settings().auto_advance;
+            apply(match name.as_str() {
+                "text-speed" => usize::try_from(value).ok().and_then(|i| TextSpeed::ALL.get(i)).map(|speed| SettingChange::TextSpeed(*speed)),
+                "auto-advance" => {
+                    auto.enabled = value != 0;
+                    Some(SettingChange::AutoAdvance(auto))
+                }
+                "auto-advance-dwell" => u32::try_from(value).ok().map(|dwell| SettingChange::AutoAdvance(xem_settings::AutoAdvance { dwell, ..auto })),
+                "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
+                _ => None,
+            })
         }
     });
     panel.on_mouse_camera_edited({

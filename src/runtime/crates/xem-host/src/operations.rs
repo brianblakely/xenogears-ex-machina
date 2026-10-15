@@ -141,6 +141,11 @@ impl Operations {
                 settings.apply(SettingChange::ShowFps(!settings.settings().presentation.show_fps)).map_err(|e| e.to_string())?;
                 Ok("FPS display preference saved.".into())
             }
+            AppAction::ToggleAutoAdvance => {
+                let auto = settings.settings().auto_advance;
+                settings.apply(SettingChange::AutoAdvance(xem_settings::AutoAdvance { enabled: !auto.enabled, ..auto })).map_err(|e| e.to_string())?;
+                Ok(if auto.enabled { "Auto-advance dialogue off." } else { "Auto-advance dialogue on: choices still wait for you." }.into())
+            }
             AppAction::RetryStorage => {
                 game.as_deref_mut().ok_or("No game session.")?.retry_storage()?;
                 Ok("Pending card writes completed.".into())
