@@ -213,4 +213,5 @@ manifest's `generated` block holds a SHA-256 of every file the generator
 wrote and of the rest of the manifest, so stimuli made again in any other
 way (another commit or seed, `--only`, `--state`, a changed tree) start
 the session afresh in a file of its own, and the analysis leaves the old
-answers out. Making them again the same way keeps the answers.
+answers out. Making them again the same way (the same commit, seed,
+options and tree) keeps the answers.

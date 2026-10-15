@@ -17,8 +17,8 @@
 //! SHA-256 of every file written (its path and digest) and of the rest of
 //! the manifest: the page resumes a session, and the analysis takes its
 //! answers, only where `generated` is the one the manifest has now, so
-//! stimuli made in any other way (another seed, `--only`, `--state`, a
-//! changed tree) never share answers.
+//! stimuli made in any other way (another commit or seed, `--only`,
+//! `--state`, a changed tree) never share answers.
 //!
 //! `localization` (no disc needed) writes `localization.json` and
 //! `localization/`: half-second bursts of seeded Gaussian noise in 48

@@ -817,10 +817,11 @@ the page resumes an unfinished session, and the analysis takes answers,
 only where that block is the manifest's now, so stimuli made again in any
 other way (another commit or seed, `--only`, `--state`, a changed tree)
 start the session afresh and leave the old answers out of the analysis,
-and the same stimuli made again keep them. A session that cannot save or
-load (`serve.py` stopped, a refused save, a stimulus missing) stops with a
-message saying every saved answer is kept, and started again resumes after
-the last one. Nobody has taken the test yet.
+while stimuli made again the same way (commit, seed, options and tree)
+keep them. A session that cannot save or load (`serve.py` stopped, a
+refused save, a stimulus missing) stops with a message saying every saved
+answer is kept, and started again resumes after the last one. Nobody has
+taken the test yet.
 
 - *Localization.* Half-second bursts of seeded Gaussian noise from 48
   measured directions (elevations -30, 0, 30 and 60 degrees, azimuths every
@@ -852,29 +853,28 @@ the last one. Nobody has taken the test yet.
   from boot by a fixed recipe and saved as a state (the hosts' format;
   `--state` takes one of the user's instead, a disc 2 one too, and labels
   the excerpt as the user's state; a name that is not an excerpt's is
-  refused), then presented from it four
-  times at Spatial Music immersion 0, 35, 70 and 100, Positional Effects
-  off (effects keep their original mix in every condition), each with a
-  tap capture: Lahan village (field 1), Kislev (fields 213 and 199),
-  Solaris (field 466), the world map, a battle (the debug battle
-  selector's: the ordinary battle theme), Weltall's battle in burning Lahan
-  (field 2, the game's opening scene, Cross at every dialogue until the
-  battle starts, about 2 000 frames: an event battle that keeps its scene's
-  music, in place of a boss) and the title movie's music; 9 to 22 parts
-  sound in the sequenced ones. The only other story battle the retained
-  routes reach, on disc 2's `soul-vessel` route (from the user's memory
-  card; vertical blanks 7 783 to 14 190; Fei, Elly and a third member on
-  foot against four small creatures and a tall one), likewise keeps its
-  scene's music: `mode_music_selected_track` holds track 20 in the field
-  from vertical blank 7 000 at the latest and in the battle (Lahan's battle
-  plays track 11, field 2's), a song unlike either battle's above. Whether
-  either is a boss is not established. The generator reaches its scenes
-  from boot, without the user's card; a state of the soul vessel's battle,
-  made headless from the route by a local probe
-  (`.local/p678/scratch/p8a/step4fix/`), presents through `--state` (disc 2
-  beside disc 1) with 23 parts. The conditions:
-  the original Stereo output (the SPU's own, which the generator checks is
-  the same in the four presentations), the four immersions as presented,
+  refused), then presented from it four times at Spatial Music immersion
+  0, 35, 70 and 100, Positional Effects off (effects keep their original
+  mix in every condition), each with a tap capture: Lahan village (field
+  1), Kislev (fields 213 and 199), Solaris (field 466), the world map, a
+  battle (the debug battle selector's: the ordinary battle theme),
+  Weltall's battle in burning Lahan (field 2, the game's opening scene,
+  Cross at every dialogue until the battle starts, about 2 000 frames: an
+  event battle that keeps its scene's music, in place of a boss) and the
+  title movie's music; 9 to 22 parts sound in the sequenced ones. The only
+  other story battle the retained routes reach, on disc 2's `soul-vessel`
+  route (from the user's memory card; vertical blanks 7 783 to 14 190;
+  Fei, Elly and a third member on foot against four small creatures and a
+  tall one), likewise keeps its scene's music: `mode_music_selected_track`
+  holds track 20 in the field from vertical blank 7 000 at the latest and
+  in the battle (Lahan's battle plays track 11, field 2's), a song unlike
+  either battle's above. Whether either is a boss is not established. The
+  generator reaches its scenes from boot, without the user's card; a state
+  of the soul vessel's battle, made headless from the route by a local
+  probe (`.local/p678/scratch/p8a/step4fix/`), presents through `--state`
+  (disc 2 beside disc 1) with 23 parts. The conditions: the original
+  Stereo output (the SPU's own, which the generator checks is the same in
+  the four presentations), the four immersions as presented,
   and a disintegrated low anchor mixed again from the captured voices with
   every part at a random place of its own. Each condition's loudness, the
   gain to -23 LUFS the page applies (every peak stays under 0.4 of full
@@ -1134,18 +1134,19 @@ and the markers, the MUSHRA buttons and sliders; no answer taken before its
 height is set; a session left mid-block and resumed; a save the server
 refuses (503) stopping the session with its message, and the session
 started again asking that trial again; each trial saved once);
-`analyse.py` then reads the answers back as the test
-works them out apart from it: the rendered ones exact (no error, elevation
-gain 1), every other front/back-eligible raw one mirrored (that many
-front/back confusions, no lateral error), the panned ones level (gain 0,
-the lateral error their targets' elevations make), every catch and moving
-trial right, and each condition's mean rating. On its own synthetic set
-(70 s) an unfinished session saved against other stimuli waits in the
-results: the page starts the session afresh beside it and the analysis
-leaves it out. With `XEM_LISTENING_STIMULI` it runs the generated stimuli's
+`analyse.py` then reads the answers back as the test works them out apart
+from it: the rendered ones exact (no error, elevation gain 1), every other
+front/back-eligible raw one mirrored (that many front/back confusions, no
+lateral error), the panned ones level (gain 0, the lateral error their
+targets' elevations make), every catch and moving trial right, and each
+condition's mean rating. On its own synthetic set (70 s; the refused save
+falls on a test trial) an unfinished session saved against other stimuli
+waits in the results: the page starts the session afresh beside it and
+the analysis leaves it out. With `XEM_LISTENING_STIMULI` it runs the generated stimuli's
 every session: here 1 032 localization trials and 80 coherence screens in
-28 minutes, the raw set's front/back confusions read back as scripted (60
-of 120). It shows the page and the analysis work, not what anyone hears.
+28 minutes (the refused save falls on a training trial there), the raw
+set's front/back confusions read back as scripted (60 of 120). It shows
+the page and the analysis work, not what anyone hears.
 
 Not done or not measured: no listening tests with people: the
 self-administered test is ready and has been answered only by a script,
