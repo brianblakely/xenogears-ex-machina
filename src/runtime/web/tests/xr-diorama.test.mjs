@@ -24,9 +24,13 @@
 // toggle once, a sideways grab and a fist turned while closed toggle
 // nothing; while the player's Pause holds the game the head moved 10 cm
 // sees the table in depth, the game's clock standing still; the underhand
-// grab looks from within the scene and, again, gives the diorama back at
-// once at the scale and place it had; prayer hands open the settings panel
-// where the pane floats, its own pause holding the game, and close it.
+// grab looks from within the scene from the first session frame after it
+// and, again, gives the diorama back on the first session frame after it,
+// at the scale and place it had (every session frame recorded); the field's
+// menu, opened and closed through the automation, eases from the diorama to
+// the screen, shows on the screen alone and eases back; prayer hands open
+// the settings panel where the pane floats, its own pause holding the game,
+// and close it.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -59,6 +63,27 @@ function shift(before, after, reach = 45) {
   const texture = Math.sqrt(compared.reduce((sum, v) => sum + (v - mean) ** 2, 0) / compared.length);
   return { shift: best, matched: texture > 4 && Math.abs(best) < reach && sad.get(best) < 0.6 * median };
 }
+
+/** An init script (after QUEST) recording, while `window.xrRecording` is
+ *  set, what each session frame presented, as the page's frame callback
+ *  left it: the frame's time (the view eases by it), the screen's share,
+ *  whether the diorama showed, inspection and its eyes from within, and the
+ *  game's frames. */
+const RECORDER = `
+window.xrTimeline = [];
+window.xrRecording = false;
+{
+  const request = window.XRSession.prototype.requestAnimationFrame;
+  window.XRSession.prototype.requestAnimationFrame = function (callback) {
+    return request.call(this, (time, frame) => {
+      callback(time, frame);
+      if (!window.xrRecording) return;
+      const s = window.xem.status();
+      window.xrTimeline.push({ time, frame: s.page.xr.frames, share: s.xr.share, diorama: s.xr.diorama, inspecting: s.xr.inspecting,
+        within: s.xr.within, gameFrames: s.loop.gameFrames });
+    });
+  };
+}`;
 
 /** Whether two rows of RGBA bytes show the same picture (within a few levels). */
 const same = (a, b) => a.reduce((sum, v, i) => sum + (i % 4 === 3 ? 0 : Math.abs(v - b[i])), 0) / (a.length * 3 / 4) <= 6;
@@ -545,7 +570,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
     }
   });
 
-  test('either hand\'s grabs work over it, the head tracked in depth while they pause it, inspection gives it back as it was and prayer opens settings over it', { timeout: 600_000 }, async () => {
+  test('either hand\'s grabs work over it, the head tracked in depth while they pause it, inspection gives it back at once as it was, the field\'s menu eases to the screen and back, and prayer opens settings over it', { timeout: 600_000 }, async () => {
     // Field 30 with Fei walked into the room (as the first test), IWER's
     // hands taking the model's poses.
     const state = join(SHOTS, 'xr-diorama-hands.state');
@@ -553,7 +578,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
         { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL + RECORDER }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -561,6 +586,10 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       await page.evaluate(() => window.xem.boot());
       const base64 = readFileSync(state).toString('base64');
       await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))), base64);
+      // Each session frame's presentation from now (RECORDER), and the
+      // frames recorded.
+      const record = () => page.evaluate(() => { window.xrTimeline = []; window.xrRecording = true; });
+      const recorded = () => page.evaluate(() => { window.xrRecording = false; return window.xrTimeline; });
       // The diorama at 150%, a scale of the player's own.
       const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
       const applied = await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, xr: { ...g.xr, view: 'Diorama', diorama_scale: 150 } } }), graphics);
@@ -681,9 +710,11 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       assert.equal(info.xr.diorama, true, 'the diorama shows on');
 
       // The left hand's underhand grab looks from within the scene; again,
-      // and the diorama is back at once as it was (its scale, where it
-      // stood: the camera still).
+      // and the diorama is back as it was (its scale, where it stood: the
+      // camera still): each way at once, on the first session frame after
+      // the grab toggles inspection (every session frame recorded).
       const was = info.xr.space;
+      await record();
       await grab('left', UP);
       info = await status(page);
       assert.equal(info.xr.counts.inspect, before.inspect + 1, 'an underhand grab');
@@ -691,12 +722,53 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       await grab('left', UP);
       await frames(2);
       info = await status(page);
-      console.log(`inspection: the diorama before ${JSON.stringify(was)}, after ${JSON.stringify(info.xr.space)}`);
-      assert.deepEqual([info.xr.inspecting, info.xr.diorama, info.xr.share], [false, true, 0], 'the diorama back at once');
+      const looked = await recorded();
+      const on = looked.findIndex((f) => f.inspecting);
+      const off = looked.findIndex((f, i) => i > on && !f.inspecting);
+      const around = (i) => JSON.stringify(looked.slice(Math.max(i - 1, 0), i + 2));
+      console.log(`inspection: on at session frame ${looked[on]?.frame} ${around(on)}, off at ${looked[off]?.frame} ${around(off)}; `
+        + `the diorama before ${JSON.stringify(was)}, after ${JSON.stringify(info.xr.space)}`);
+      assert.ok(on > 0 && looked.slice(0, on).every((f) => f.diorama && f.share === 0), `the diorama until inspection: ${around(on)}`);
+      assert.ok(looked[on].within && !looked[on].diorama, `from within from inspection's first session frame: ${around(on)}`);
+      assert.ok(off > on && looked.slice(on, off).every((f) => f.within && !f.diorama), 'from within throughout');
+      assert.ok(looked[off].diorama && looked[off].share === 0, `the diorama back alone on the first session frame after inspection: ${around(off)}`);
+      assert.ok(looked.slice(off).every((f) => !f.inspecting && f.diorama && f.share === 0), 'and on');
+      assert.deepEqual([info.xr.inspecting, info.xr.diorama, info.xr.share], [false, true, 0], 'the diorama back');
       assert.equal(info.xr.dioramaScale, 1.5, 'the player\'s scale');
       assert.equal(info.xr.space.scale, was.scale, 'at the scale it had');
-      const off = Math.max(...info.xr.space.roomFromWorld.map((v, i) => Math.abs(v - was.roomFromWorld[i])));
-      assert.ok(off < 1e-4, `standing where it stood: ${off}`);
+      const stood = Math.max(...info.xr.space.roomFromWorld.map((v, i) => Math.abs(v - was.roomFromWorld[i])));
+      assert.ok(stood < 1e-4, `standing where it stood: ${stood}`);
+
+      // The field's menu (the automation's Menu, then Cancel): the view eases
+      // from the diorama to the screen over the 0.3 s switch, shows the menu
+      // on the screen alone, and eases back to the diorama once it closes.
+      await record();
+      await page.evaluate(() => window.xem.command({ cmd: 'act', actions: ['Menu'], frames: 2 }));
+      // Cancel once the menu's commands take the input (opening, it ignores it).
+      await page.waitForFunction(() => {
+        const context = window.xem.command({ cmd: 'context' });
+        return context.kind === 'menu' && context.commands && window.xrTimeline.filter((f) => f.share === 1 && !f.diorama).length >= 10;
+      }, null, { timeout: 180_000 });
+      await page.evaluate(() => window.xem.command({ cmd: 'act', actions: ['Cancel'], frames: 2 }));
+      await page.waitForFunction(() => {
+        const t = window.xrTimeline;
+        const screen = t.findLastIndex((f) => f.share === 1);
+        return screen >= 0 && t.length - screen > 10 && t.slice(-10).every((f) => f.diorama && f.share === 0);
+      }, null, { timeout: 180_000 });
+      const menu = await recorded();
+      const shares = menu.map((f) => f.share);
+      const first = shares.findIndex((s) => s === 1);
+      const last = shares.findLastIndex((s) => s === 1);
+      const out = menu.slice(0, first).filter((f) => f.share > 0);
+      const back = menu.slice(last + 1).filter((f) => f.share < 1 && f.share > 0);
+      const jumps = menu.slice(1).filter((f, i) => Math.abs(f.share - menu[i].share) > (f.time - menu[i].time) / 1000 / 0.3 + 0.01);
+      console.log(`the menu over the diorama: ${menu.length} session frames, eased out over ${JSON.stringify(out.map((f) => f.share))}, `
+        + `the screen alone in ${last - first + 1}, back over ${JSON.stringify(back.map((f) => f.share))}`);
+      assert.ok(menu[0].diorama && menu[0].share === 0, 'the diorama before the menu');
+      assert.ok(out.length >= 1 && back.length >= 1, `eased each way, not cut: ${JSON.stringify(shares)}`);
+      assert.ok(menu.slice(first, last + 1).every((f) => f.share === 1 && !f.diorama), 'the menu on the screen alone');
+      assert.deepEqual(jumps, [], 'the screen\'s share moves by no more than the frames\' time over the 0.3 s switch');
+      assert.ok(menu.at(-1).diorama && menu.at(-1).share === 0, 'the diorama again');
 
       // Prayer hands: the settings panel over the table (where the pane
       // stands, facing the seat), its own pause holding the game, the

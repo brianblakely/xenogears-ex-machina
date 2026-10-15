@@ -44,8 +44,12 @@
 #   and none restarts; prayer hands open and close the settings panel over
 #   the table, the game held; with the diorama as the view the title movie
 #   (its rebuilt frames in their own shape) and the title show on the
-#   screen; in every run with the diorama as the view, the view eases
-#   between the diorama and the screen over 0.3 s;
+#   screen; field 30's menu, the Mountain Path's random battle and its end,
+#   and Lahan left for the world map and a field entered from it each go
+#   from the diorama to the screen and back to a diorama (the battle's, the
+#   world map's, the field's), and map 25's story movie shows on the screen
+#   between its field's dioramas; in every run with the diorama as the view,
+#   the view eases between the diorama and the screen over 0.3 s;
 # - a battle on foot (its log attacking every 30 frames) and the world map
 #   (its vehicle driven on, at 25%) as dioramas: the diorama shows in every
 #   headset frame from its first; the battle's table stands where its
@@ -233,6 +237,34 @@ echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}'
 # both on the screen.
 echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --exit-at-frame 1800 >"$out/diorama-title.log" 2>"$out/diorama-title.err"
+# The diorama's fallbacks to the screen, each a session log with the
+# diorama as the view: field 30's menu (opened at game frame 600, closed at
+# 1100: the hands run's log, below); the Mountain Path's random battle and
+# its end (Up held from game frame 120 to 700, the battle from 355; Cross
+# every 30 frames from 760, the field again from 1600); Lahan left for the
+# world map (tests/reference-inputs/world-map-lahan-exit.json) and a field
+# entered from it at game frame 2860.
+hands='[[0, {"cmd": "enter_field", "map": 30}], [600, {"cmd": "act", "actions": ["Menu"], "frames": 2}], [1100, {"cmd": "act", "actions": ["Cancel"], "frames": 2}]]'
+echo "{\"commands\": $hands}" >"$out/hands.json"
+battle15='[[0, {"cmd": "enter_field", "map": 15, "entry": 0}], [120, {"cmd": "pad", "buttons": ["up"]}], [700, {"cmd": "pad", "buttons": []}]'
+for f in $(seq 760 30 2080); do
+    battle15="$battle15, [$f, {\"cmd\": \"press\", \"buttons\": [\"cross\"], \"frames\": 2}]"
+done
+echo "{\"commands\": $battle15]}" >"$out/battle15.json"
+python3 -c 'import json, sys; route = json.load(open(sys.argv[1])); print(json.dumps({"commands": route["commands"] + [[2860, {"cmd": "enter_field", "map": 1}]]}))' \
+    "$root/tests/reference-inputs/world-map-lahan-exit.json" >"$out/lahan-worldmap.json"
+"$desktop" --xr --disc "$disc" --script "$out/hands.json" --exit-at-frame 1500 >"$out/diorama-menu.log" 2>"$out/diorama-menu.err"
+"$desktop" --xr --disc "$disc" --script "$out/battle15.json" --exit-at-frame 2400 >"$out/diorama-battle.log" 2>"$out/diorama-battle.err"
+"$desktop" --xr --disc "$disc" --script "$out/lahan-worldmap.json" --exit-at-frame 3400 >"$out/diorama-worldmap.log" 2>"$out/diorama-worldmap.err"
+# Map 25's story movie between its scene and the field after it, the
+# player's own play from a state xem-headless saved there (the scene's
+# dialogue auto-advanced to game frame 5080; the movie begins about 350
+# frames on, its 4 280 frames on the screen, then map 25 again).
+printf '{"cmd":"enter_field","map":25}\n{"cmd":"auto_advance","dwell":1}\n{"cmd":"frames","count":5080}\n{"cmd":"auto_advance","dwell":0}\n{"cmd":"state_save","path":"%s"}\n' "$out/movie25.xemstate" |
+    "$headless" --disc "$disc" --control >"$out/movie25-prep.log" 2>"$out/movie25-prep.err"
+at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/movie25.xemstate" | "$headless" --disc "$disc" --control 2>/dev/null |
+    python3 -c 'import json, sys; print(json.loads(sys.stdin.readline())["frames"])')
+"$desktop" --xr --disc "$disc" --load-state "$out/movie25.xemstate" --exit-at-frame "$((at + 5300))" >"$out/diorama-movie.log" 2>"$out/diorama-movie.err"
 # Save states and time controls, the player's own play (no session log)
 # from field 30, which an agent's command loads at the first headset frame.
 # Prayer hands open Settings at headset frame 20 (the game held by their
@@ -301,9 +333,10 @@ printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n{"cmd":"frames"
 # qualification): short runs, each from its own start, so that a headset
 # frame lands in its scene whether the game runs 2.6 or 3.6 frames to one.
 # Either hand's grabs and two-hand scaling in field 30 under the default
-# profile, the gaze the eyes': the log opens the field's menu at game frame
-# 600 and closes it at 1100, the left hand's underhand grab at 150 turning
-# nothing on in it (both eyes captured at 160); the left hand's Pause grab
+# profile, the gaze the eyes': the log (hands.json, above) opens the
+# field's menu at game frame 600 and closes it at 1100, the left hand's
+# underhand grab at 150 turning nothing on in it (both eyes captured at
+# 160); the left hand's Pause grab
 # at 400 and 430, both hands' at 460 (one toggle), the right hand's at 490;
 # a sideways grab at 520, a fist closed sideways and turned palm down and
 # up at 550, a hand found closed at 590 (its loss pauses; the right hand's
@@ -312,8 +345,6 @@ printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n{"cmd":"frames"
 # the gaze on walkable floor, then a pinch there at 760, which walks; the
 # left hand's underhand grab at 850 and 890 (inspection on and off), both
 # eyes captured at 840 and 875.
-hands='[[0, {"cmd": "enter_field", "map": 30}], [600, {"cmd": "act", "actions": ["Menu"], "frames": 2}], [1100, {"cmd": "act", "actions": ["Cancel"], "frames": 2}]]'
-echo "{\"commands\": $hands}" >"$out/hands.json"
 echo '{"graphics": {"profile": "Modern"}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --script "$out/hands.json" --exit-after-frames 920 \
     --xr-hands "150:inspect-left,400:pause-left,430:pause-left,460:pause-both,490:pause,520:grab-sideways,550:fist-turn,590:fist-reacquire,620:pause,660:scale-out,690:scale-in,720:scale-pinch@120/150,760:pinch@120/150,850:inspect-left,890:inspect-left" \
@@ -1104,7 +1135,8 @@ diorama_title()
 def diorama_easing():
     easing = {}
     for name in ("diorama.log", "field-diorama.log", "diorama-walk.log", "diorama-hands.log", "battle-diorama.log", "worldmap-diorama.log",
-                 "diorama-scale.log", "binaural-diorama.log", "diorama-title.log"):
+                 "diorama-scale.log", "binaural-diorama.log", "diorama-title.log", "diorama-menu.log", "diorama-battle.log", "diorama-worldmap.log",
+                 "diorama-movie.log"):
         rows, jumps, eased = records(name), [], 0
         for a, b in zip(rows, rows[1:]):
             if "0" in (a["view"], b["view"]) or "1" in (a["fp"], b["fp"]):
@@ -1117,6 +1149,50 @@ def diorama_easing():
         check(not jumps, f"{name}: the screen's share jumped: {jumps[:5]}")
     print(f"diorama easing, frames between the screen and the diorama: {easing}")
 diorama_easing()
+
+# The diorama's fallbacks: from the first frame the diorama shows alone,
+# each run goes to the screen and back to a diorama, each way through frames
+# between the two (D the diorama alone, E between, S the screen alone; the
+# context the game reports in each).
+def diorama_fallbacks():
+    for name, wanted, kinds, what in (
+        ("diorama-menu.log", "DESED", ["walk", "menu", "walk"], "field 30's menu"),
+        ("diorama-battle.log", "DESEDESED", ["walk", None, "battle", None, "walk"], "the Mountain Path's random battle"),
+        ("diorama-worldmap.log", "DESEDESED", ["walk", None, "world_map", None, None], "Lahan, the world map and a field entered from it"),
+    ):
+        runs = []
+        for r in records(name):
+            share, shown = float(r["share"]), r["diorama"] == "1"
+            phase = "D" if shown and share == 0.0 else "S" if share == 1.0 and not shown else "E"
+            kind = json.loads(r["context"]).get("kind", "-")
+            if runs and runs[-1][0] == phase:
+                runs[-1][2] = int(r["n"])
+                runs[-1][3].add(kind)
+            else:
+                runs.append([phase, int(r["n"]), int(r["n"]), {kind}])
+        runs = runs[next((i for i, run in enumerate(runs) if run[0] == "D"), len(runs)):]
+        told = ", ".join(f"{p} {a}-{b} {'/'.join(sorted(k))}" for p, a, b, k in runs)
+        steady = [run for run in runs if run[0] != "E"]
+        check("".join(run[0] for run in runs) == wanted and all(k is None or k in run[3] for k, run in zip(kinds, steady)),
+              f"{name}: {what} from the diorama to the screen and back: {told}")
+        print(f"diorama fallbacks, {what}: {told}")
+    # Map 25's story movie: the diorama eases out over its first rebuilt
+    # frames, the movie shows on the screen alone, and map 25's diorama
+    # eases back in after it.
+    rows = records("diorama-movie.log")
+    phase = lambda r: "D" if r["diorama"] == "1" and float(r["share"]) == 0.0 else "S" if float(r["share"]) == 1.0 and r["diorama"] == "0" else "E"
+    movie = [i for i, r in enumerate(rows) if r["movie"] == "1"]
+    before = [i for i in range(movie[0]) if phase(rows[i]) == "D"] if movie else []
+    out_ = [i for i in range(before[-1] + 1, movie[0] + 30) if phase(rows[i]) == "E"] if before else []
+    alone = [i for i in movie if phase(rows[i]) == "S"]
+    after = [i for i in range(movie[-1] + 1, len(rows)) if phase(rows[i]) == "D"] if movie else []
+    back = [i for i in range(movie[-1] + 1, after[0]) if phase(rows[i]) == "E"] if after else []
+    told = (f"the diorama alone to headset frame {rows[before[-1]]['n'] if before else '-'}, eased out over {len(out_)} frames, the movie's "
+            f"{len(movie)} rebuilt frames ({len(alone)} on the screen alone), eased back in over {len(back)} to map 25's diorama from "
+            f"{rows[after[0]]['n'] if after else '-'}")
+    check(len(movie) >= 300 and before and out_ and len(alone) * 10 >= len(movie) * 9 and after and back, f"diorama-movie.log: map 25's movie between dioramas: {told}")
+    print(f"diorama fallbacks, map 25's movie: {told}")
+diorama_fallbacks()
 
 # The scene tour: each capture shows the screen in front of the eye, or the
 # eye's picture from within the scene over its view; the grab looks from

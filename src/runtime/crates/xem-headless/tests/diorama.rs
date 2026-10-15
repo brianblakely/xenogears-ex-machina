@@ -10,10 +10,13 @@
 //! pictures through `away`).
 //!
 //! - Holes: in fields 1, 12, 22 and 30, seen from eight sides at two
-//!   heights, the scene covers the walkmesh's footprint on the table (the
-//!   floor the controlled character walks, within the table's volume as
-//!   each eye sees it) but for fewer than 0.5% of its pixels, where the eye
-//!   shows the room around the table or the backdrop's wall instead.
+//!   heights, the walkmesh's footprint on the table (every actor layer's
+//!   floors within the table's volume as each eye sees it) where the eye
+//!   shows the room around the table or the backdrop's wall instead of the
+//!   scene: fewer than 0.5% of its pixels in fields 1, 12 and 30, and of the
+//!   floors the controlled character may stand on in all four; in field 22
+//!   more (measured: a strip of floor the party may not walk, beyond where
+//!   the path's modelled ground ends), the plan's criterion not met there.
 //! - Sprites and eyes: in Lahan and fields 30 and 12 the thickest stack of
 //!   a sprite's parts stands within a millimetre of its billboard's plane;
 //!   two eyes share each game frame's one build, each showing exactly what
@@ -21,18 +24,23 @@
 //!   townspeople seen from behind the table) each of their rows holds as
 //!   many sprite pixels in either eye.
 //! - The pane: field 12's dialogue, the debug battle's interface and the
-//!   world map's are on the pane as the flat frame draws them where they
-//!   are opaque (within a 15-bit step, nearly all within 2 levels), and
-//!   nothing but the interface is; where the game draws no pictures before
-//!   its scene, all of the flat frame's opaque interface is on the pane.
+//!   world map's are on the pane exactly as the flat frame draws them where
+//!   they are opaque (but for 21 pixels at the world map compass cone's
+//!   edge, one 15-bit step off, the cause not established), and nothing but
+//!   the interface is; the interface drawn after the scene is all on the
+//!   pane in its colour, and where the game draws no pictures before its
+//!   scene, all of the flat frame's opaque interface.
 //! - Transitions: the title movie shows on the screen in its own shape, and
 //!   the title after it; a field's diorama eases in, its menu, a random
 //!   battle and its end, leaving Lahan for the world map and entering a
-//!   field from it ease between the diorama and the screen (the screen's
-//!   share moves by no more than the time passed over the switch's 0.3 s);
-//!   first-person inspection takes the eyes over from the diorama and gives
-//!   it back at once at the scale and place it had, the route it stopped
-//!   not restarted.
+//!   field from it, a story movie in a field and the field after it ease
+//!   between the diorama and the screen (the screen's share moves by no
+//!   more than the time passed over the switch's 0.3 s), the movie's frames
+//!   in their own shape; first-person inspection takes the eyes over from
+//!   the diorama and gives it back at once at the scale and place it had,
+//!   the route it stopped not restarted; Graphics' headset view set to the
+//!   screen in a session shows the screen at once, and set to the diorama
+//!   again eases in from it.
 //!
 //! `XEM_DIORAMA_HOLES=<dir>`, `XEM_DIORAMA_EYES=<dir>` and
 //! `XEM_DIORAMA_PANE=<dir>` save the pictures looked at (local review
@@ -50,7 +58,7 @@ use xem_game::{NativeModule, boot};
 use xem_render::Gpu;
 use xem_render::glam::{Mat4, Vec2, Vec3};
 use xem_render::ps1::{AUX_INTERFACE, AUX_MODEL, AUX_SPRITE, AUX_WORLD, DioramaEye, DioramaSpace, GameView, HeadsetEye, HostClass, Table, ViewConfig, XrView};
-use xem_render::xem_gpu::CameraMode;
+use xem_render::xem_gpu::{CameraMode, Trace, TraceOp};
 use xem_settings::Graphics;
 
 fn disc() -> Option<PathBuf> {
@@ -146,14 +154,18 @@ struct Pictures {
 }
 
 /// A headset host on the game, and beside it a view showing the screen from
-/// the same trace (for the pane's checks).
+/// the same trace and one showing it from the trace without what the game
+/// draws before its scene (for the pane's checks).
 struct Host {
     session: Session<NativeModule>,
     gpu: Gpu,
     view: GameView,
     screen: Option<GameView>,
+    after_scene: Option<GameView>,
     graphics: Graphics,
     table: Table,
+    /// Graphics' headset view the screen (else the diorama on `table`).
+    screen_view: bool,
     /// Vertical blanks run (the presentations' clock: 60 a second).
     blanks: u64,
 }
@@ -163,22 +175,30 @@ impl Host {
         let (session, _) = boot(disc, &Default::default()).expect("boot");
         let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
         let view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-        Host { session, gpu, view, screen: None, graphics: Graphics::default(), table: Table::default(), blanks: 0 }
+        Host { session, gpu, view, screen: None, after_scene: None, graphics: Graphics::default(), table: Table::default(), screen_view: false, blanks: 0 }
+    }
+
+    /// Adds the views beside the headset's for the pane's checks.
+    fn beside(&mut self) {
+        for side in [&mut self.screen, &mut self.after_scene] {
+            *side = Some(GameView::new(&self.gpu.device, &self.gpu.queue, Some(&self.gpu.adapter)));
+        }
     }
 
     /// Runs one vertical blank and presents it to `eyes`.
     fn step(&mut self, eyes: &[DioramaEye]) -> Shown {
         let config = ViewConfig::resolve(&self.graphics, HostClass::Headset, OUTPUT, self.view.max_scale());
         self.view.configure(config);
-        self.view.set_xr_view(XrView::Diorama(self.table));
+        self.view.set_xr_view(if self.screen_view { XrView::Screen } else { XrView::Diorama(self.table) });
         self.session.set_inspecting(self.view.first_person());
         assert!(self.session.frame().expect("frame"), "a native disc never blocks");
         self.blanks += 1;
         let device = self.session.runtime.services().gpu.device_mut();
-        let restart = self.view.take_restart() | self.screen.as_mut().is_some_and(|screen| {
-            screen.configure(config);
-            screen.take_restart()
-        });
+        let mut restart = self.view.take_restart();
+        for side in [&mut self.screen, &mut self.after_scene].into_iter().flatten() {
+            side.configure(config);
+            restart |= side.take_restart();
+        }
         if restart || !device.trace_enabled() {
             device.set_trace(true);
         }
@@ -186,6 +206,9 @@ impl Host {
         let trace = device.take_trace();
         if let Some(screen) = &mut self.screen {
             screen.push(trace.clone());
+        }
+        if let Some(after) = &mut self.after_scene {
+            after.push(after_scene(&trace));
         }
         self.view.push(trace);
         self.present(eyes, false).0
@@ -223,7 +246,9 @@ impl Host {
             // not rebuild): no diorama lies anywhere meanwhile.
             self.view.away();
             shown.device = true;
-        } else if self.view.first_person() {
+        } else if self.view.first_person() || self.view.xr_view() == XrView::Screen {
+            // Inspection, or the screen as the headset view: the screen (its
+            // interface alone while inspection looks from within).
             let heads = [-0.032f32, 0.032].map(|x| HeadsetEye { orientation: [0.0, 0.0, 0.0, 1.0], position: [x, 0.0, 0.0], fov: [-1.0, 1.0, 1.0, -1.0] });
             if let Some(presented) = self.view.present_headset(&mut encoder, &display, &scene, now, &heads) {
                 shown.within = !presented.eyes.is_empty();
@@ -243,8 +268,8 @@ impl Host {
                 textures = (presented.eyes.iter().map(|eye| eye.texture().clone()).collect(), presented.pane.map(|pane| pane.texture().clone()));
             }
         }
-        if let Some(screen) = &mut self.screen {
-            let _ = screen.present(&mut encoder, &display, &scene, now);
+        for side in [&mut self.screen, &mut self.after_scene].into_iter().flatten() {
+            let _ = side.present(&mut encoder, &display, &scene, now);
         }
         self.gpu.queue.submit([encoder.finish()]);
         let read_texture = |texture: &xem_render::wgpu::Texture| xem_render::read_rgba8(&self.gpu.device, &self.gpu.queue, texture);
@@ -262,6 +287,20 @@ impl Host {
     fn context(&mut self) -> String {
         run(&mut self.session, json!({"cmd": "context"}))["kind"].as_str().unwrap_or_default().to_string()
     }
+}
+
+/// `trace` without the pictures a frame draws before its scene and those it
+/// projects behind it (the diorama's wall: the backdrop), where the trace
+/// holds a scene (each frame's commands come within one vertical blank): its
+/// flat frame shows the interface drawn after the scene over the scene and
+/// the game's clear.
+fn after_scene(trace: &Trace) -> Trace {
+    let first = trace.ops.iter().position(|op| matches!(op, TraceOp::Draw(p) if p.class.is_scene() && !p.backdrop));
+    let ops = trace.ops.iter().enumerate()
+        .filter(|(i, op)| !matches!(op, TraceOp::Draw(p) if p.backdrop || (!p.class.is_scene() && first.is_some_and(|first| *i < first))))
+        .map(|(_, op)| op.clone())
+        .collect();
+    Trace { ops, focus: trace.focus }
 }
 
 /// `polygon` (in the table's space) cut by the plane `axis` = `bound`,
@@ -303,20 +342,27 @@ fn fill(mask: &mut [bool], (width, height): (usize, usize), polygon: &[Vec2]) {
     }
 }
 
-/// The walkmesh's footprint in `eye`'s picture: the floor the controlled
-/// character walks (its layer's triangles it may stand on; the other layers
-/// are other actors', some of them a few large triangles beyond the scene)
-/// within the table's volume as the eye sees it, a pixel in from its edges
-/// (each pixel counted with its four neighbours in it).
-fn footprint(field: &Field, space: &DioramaSpace, eye: &DioramaEye) -> Vec<bool> {
+/// Whether triangle `t` of walkmesh layer `layer` is a floor: its attribute
+/// word lacks bit 0x800000, which the game's floor search
+/// (field_collision_find_actor_floor, field_motion.c) takes as no floor on
+/// that layer (a wall on layer 0; above it a pit, through which an actor
+/// falls to the floor below).
+fn floor(field: &Field, layer: usize, t: usize) -> bool {
+    let index = field.layers[layer].triangles[t].attribute as usize;
+    field.attributes.get(index).copied().unwrap_or(0) & 0x80_0000 == 0
+}
+
+/// `triangles` of walkmesh layer `layer` in `eye`'s picture, within the
+/// table's volume as the eye sees it, a pixel in from its edges (each pixel
+/// counted with its four neighbours in it).
+fn footprint(field: &Field, layer: usize, triangles: &[usize], space: &DioramaSpace, eye: &DioramaEye) -> Vec<bool> {
     let (width, height) = (eye.size.0 as usize, eye.size.1 as usize);
     let table_from_world = space.table_from_room() * space.room_from_world;
     let clip_from_table = eye.proj * eye.view * space.room_from_table;
     let (lo, hi) = Table::VOLUME;
     let mut mask = vec![false; width * height];
-    let player = field.player().expect("the controlled character");
-    let layer = &field.layers[player.layer];
-    for t in (0..layer.triangles.len()).filter(|&t| !field.blocked(player.layer, t, player)) {
+    let layer = &field.layers[layer];
+    for &t in triangles {
         let mut polygon: Vec<Vec3> = layer.corners(t).iter().map(|v| table_from_world.transform_point3(Vec3::new(v.x, v.y, v.z))).collect();
         for axis in 0..3 {
             polygon = clip(&polygon, axis, lo[axis], false);
@@ -363,37 +409,52 @@ fn the_scene_covers_the_walkmesh_seen_from_eight_sides_at_two_heights() {
         assert!(last.diorama && last.screen == 0.0, "map {map}: the diorama alone shows ({}, {})", last.diorama, last.screen);
         let space = last.space.expect("the diorama's space");
         let field = Field::read(host.session.runtime.memory()).expect("a field");
-        let player = field.player().expect("the controlled character");
-        let triangles = field.layers[player.layer].triangles.len();
-        let (mut total, mut missing, mut least) = (0usize, 0usize, usize::MAX);
-        let mut views = Vec::new();
+        let player = *field.player().expect("the controlled character");
+        // The walkmesh's floors on every actor layer: all but the top one, the
+        // camera's floor (field_camera_walk_top_layer walks layer_count - 1;
+        // actors' floor searches take the layers below it); and of them those
+        // the controlled character may stand on.
+        let layers: Vec<(Vec<usize>, Vec<usize>)> = (0..field.layers.len() - 1).map(|layer| {
+            let floors: Vec<usize> = (0..field.layers[layer].triangles.len()).filter(|&t| floor(&field, layer, t)).collect();
+            let walkable = floors.iter().copied().filter(|&t| !field.blocked(layer, t, &player)).collect();
+            (floors, walkable)
+        }).collect();
+        let actors: Vec<Vec<usize>> = (0..layers.len())
+            .map(|layer| field.actors.iter().flatten().filter(|a| a.layer == layer && a.flags & 1 == 0).map(|a| a.index).collect())
+            .collect();
+        let pixels = (SIZE.0 * SIZE.1) as usize;
+        let (mut walkmesh, mut walkable) = (Holes::default(), Holes::default());
+        let mut by_layer: Vec<Holes> = layers.iter().map(|_| Holes::default()).collect();
         for pitch in [30.0f32, 60.0] {
             for yaw in (0..8).map(|k| k as f32 * 45.0) {
                 let eye = review(yaw, pitch, 1.1, SIZE);
                 let (shown, pictures) = host.present(&[eye], true);
                 assert!(shown.diorama, "map {map}: the diorama from {yaw}, {pitch}");
                 let classes = &pictures.eyes[0].1;
-                let mask = footprint(&field, &space, &eye);
-                let covered = mask.iter().filter(|&&m| m).count();
-                let holes = mask.iter().enumerate().filter(|&(i, &m)| m && !scene_class(classes[i * 4 + 2])).count();
-                views.push(format!("{yaw:.0}/{pitch:.0}: {holes} of {covered}"));
-                total += covered;
-                missing += holes;
-                least = least.min(covered);
+                let view = format!("{yaw:.0}/{pitch:.0}");
+                let (mut floors, mut walks) = (vec![false; pixels], vec![false; pixels]);
+                for (layer, (all, standable)) in layers.iter().enumerate() {
+                    let mask = footprint(&field, layer, all, &space, &eye);
+                    by_layer[layer].add(&view, &mask, classes);
+                    floors.iter_mut().zip(&mask).for_each(|(a, &m)| *a |= m);
+                    let mask = footprint(&field, layer, standable, &space, &eye);
+                    walks.iter_mut().zip(&mask).for_each(|(a, &m)| *a |= m);
+                }
+                walkmesh.add(&view, &floors, classes);
+                walkable.add(&view, &walks, classes);
                 if let Some(directory) = std::env::var_os("XEM_DIORAMA_HOLES") {
-                    // Local review pictures: the eye, its footprint in green
-                    // and its holes in red.
+                    // Local review pictures: the eye, the floors the controlled
+                    // character may stand on in green (their holes red), the
+                    // walkmesh's other floors in blue (their holes magenta).
                     let mut picture = pictures.eyes[0].0.clone();
-                    for (i, &m) in mask.iter().enumerate() {
-                        if m {
-                            let hole = !scene_class(classes[i * 4 + 2]);
-                            let p = &mut picture[i * 4..i * 4 + 4];
-                            if hole {
-                                p.copy_from_slice(&[255, 0, 0, 255]);
-                            } else {
-                                p[1] = p[1].saturating_add(40);
-                                p[3] = 255;
-                            }
+                    for i in (0..pixels).filter(|&i| floors[i]) {
+                        let hole = !scene_class(classes[i * 4 + 2]);
+                        let p = &mut picture[i * 4..i * 4 + 4];
+                        match (hole, walks[i]) {
+                            (true, true) => p.copy_from_slice(&[255, 0, 0, 255]),
+                            (true, false) => p.copy_from_slice(&[255, 0, 255, 255]),
+                            (false, true) => (p[1], p[3]) = (p[1].saturating_add(40), 255),
+                            (false, false) => (p[2], p[3]) = (p[2].saturating_add(80), 255),
                         }
                     }
                     let path = PathBuf::from(&directory).join(format!("holes-{map}-{yaw:.0}-{pitch:.0}.png"));
@@ -403,13 +464,49 @@ fn the_scene_covers_the_walkmesh_seen_from_eight_sides_at_two_heights() {
                 }
             }
         }
-        eprintln!("map {map}: the floor the character walks, {triangles} triangles; {missing} of {total} footprint pixels without the scene ({:.3}%); by view (yaw/pitch): {}",
-            100.0 * missing as f64 / total.max(1) as f64, views.join(", "));
-        results.push((map, total, missing, least, views));
+        let layer_lines: Vec<String> = by_layer.iter().enumerate().map(|(layer, holes)| {
+            format!("layer {layer} ({} of {} triangles floors, {} of them the character's; actors {:?}): {}",
+                layers[layer].0.len(), field.layers[layer].triangles.len(), layers[layer].1.len(), actors[layer], holes.summary())
+        }).collect();
+        eprintln!("map {map} (the controlled character on layer {}, {} layers): the walkmesh's floors {}; the floors the character may stand on {}; by layer: {}; by view (yaw/pitch), the floors: {}",
+            player.layer, field.layers.len(), walkmesh.summary(), walkable.summary(), layer_lines.join("; "), walkmesh.views.join(", "));
+        results.push((map, walkmesh, walkable));
     }
-    for (map, total, missing, least, views) in results {
-        assert!(least >= 1000, "map {map}: the floor on the table from every side ({least} pixels at least): {}", views.join(", "));
-        assert!(missing * 200 < total, "map {map}: {missing} of {total} footprint pixels show no scene: {}", views.join(", "));
+    for (map, walkmesh, walkable) in results {
+        assert!(walkmesh.least >= 1000, "map {map}: the floor on the table from every side ({} pixels at least): {}", walkmesh.least, walkmesh.views.join(", "));
+        assert!(walkable.missing * 200 < walkable.total, "map {map}: {} of the floors the character may stand on show no scene: {}", walkable.summary(), walkable.views.join(", "));
+        // The whole walkmesh: under 0.5% but in field 22, where a strip of
+        // floor the party may not walk, beyond where the path's modelled
+        // ground ends, shows the room from the table's right (measured, not
+        // met: docs/runtime.md, Diorama). Should that change, so must they.
+        assert_eq!(walkmesh.missing * 200 < walkmesh.total, map != 22, "map {map}: {} of the walkmesh's floors show no scene: {}", walkmesh.summary(), walkmesh.views.join(", "));
+    }
+}
+
+/// The pixels of a walkmesh footprint over the views that show no scene.
+#[derive(Default)]
+struct Holes {
+    /// The footprint's pixels and those without the scene, over the views.
+    total: usize,
+    missing: usize,
+    /// The fewest footprint pixels in a view.
+    least: usize,
+    views: Vec<String>,
+}
+
+impl Holes {
+    /// Adds a view's footprint `mask` over its eye's `classes`.
+    fn add(&mut self, view: &str, mask: &[bool], classes: &[u8]) {
+        let covered = mask.iter().filter(|&&m| m).count();
+        let holes = mask.iter().enumerate().filter(|&(i, &m)| m && !scene_class(classes[i * 4 + 2])).count();
+        self.least = if self.views.is_empty() { covered } else { self.least.min(covered) };
+        self.views.push(format!("{view}: {holes} of {covered}"));
+        self.total += covered;
+        self.missing += holes;
+    }
+
+    fn summary(&self) -> String {
+        format!("{} of {} pixels without the scene ({:.3}%)", self.missing, self.total, 100.0 * self.missing as f64 / self.total.max(1) as f64)
     }
 }
 
@@ -510,7 +607,7 @@ fn the_pane_holds_the_interface_as_the_flat_frame_draws_it() {
         for command in commands {
             run(&mut host.session, command);
         }
-        host.screen = Some(GameView::new(&host.gpu.device, &host.gpu.queue, Some(&host.gpu.adapter)));
+        host.beside();
         let eyes = seated(SMALL, 90.0);
         let mut shown = host.steps(60, &eyes);
         if name.starts_with("field 12") {
@@ -528,11 +625,13 @@ fn the_pane_holds_the_interface_as_the_flat_frame_draws_it() {
         assert!(last.diorama && last.screen == 0.0, "{name}: the diorama alone shows ({}, {})", last.diorama, last.screen);
         let (_, pictures) = host.present(&eyes, true);
         let pane = pictures.pane.expect("the pane");
-        let screen = host.screen.as_ref().expect("the screen's view");
-        let frame = screen.frame();
-        let size = frame.size();
-        let flat = xem_render::read_rgba8(&host.gpu.device, &host.gpu.queue, frame.color());
-        let classes = xem_render::read_rgba8(&host.gpu.device, &host.gpu.queue, frame.aux());
+        let read = |view: &Option<GameView>| {
+            let frame = view.as_ref().expect("a view beside").frame();
+            let picture = |texture| xem_render::read_rgba8(&host.gpu.device, &host.gpu.queue, texture);
+            (frame.size(), picture(frame.color()), picture(frame.aux()))
+        };
+        let (size, flat, classes) = read(&host.screen);
+        let (_, after_flat, after_classes) = read(&host.after_scene);
         assert_eq!(pane.len(), flat.len(), "{name}: the pane is the flat frame's size {size:?}");
         if let Some(directory) = std::env::var_os("XEM_DIORAMA_PANE") {
             // Opaque pane pixels: white where they are the flat frame's, red where not.
@@ -557,34 +656,51 @@ fn the_pane_holds_the_interface_as_the_flat_frame_draws_it() {
         // Where the pane is opaque, the flat frame's colour and the
         // interface's class there; where the flat frame's interface is
         // opaque, the pane is too, when the game drew no pictures before its
-        // scene (those are the wall's: the debug battle's forest).
+        // scene (those are the wall's: the debug battle's forest); and
+        // wherever the interface drawn after the scene is opaque (the flat
+        // frame of the trace without the wall's pictures), the pane is, in
+        // its colour.
         let pixels = pane.len() / 4;
         let opaque: Vec<usize> = (0..pixels).filter(|&i| pane[i * 4 + 3] == 255).collect();
-        let differing: Vec<usize> = opaque.iter().copied().filter(|&i| (0..3).any(|c| pane[i * 4 + c].abs_diff(flat[i * 4 + c]) > 2)).collect();
+        let level = |i: usize, other: &[u8]| (0..3).map(|c| pane[i * 4 + c].abs_diff(other[i * 4 + c])).max().unwrap_or(0);
+        let differing: Vec<(usize, usize, u8)> = opaque.iter().copied().filter(|&i| level(i, &flat) > 0)
+            .map(|i| (i % size.0 as usize, i / size.0 as usize, level(i, &flat))).collect();
         let interface = opaque.iter().filter(|&&i| u32::from(classes[i * 4 + 2]) == AUX_INTERFACE).count();
-        let flat_interface: Vec<usize> = (0..pixels).filter(|&i| u32::from(classes[i * 4 + 2]) == AUX_INTERFACE && classes[i * 4 + 3] != 255).collect();
+        let opaque_interface = |classes: &[u8]| -> Vec<usize> { (0..pixels).filter(|&i| u32::from(classes[i * 4 + 2]) == AUX_INTERFACE && classes[i * 4 + 3] != 255).collect() };
+        let flat_interface = opaque_interface(&classes);
         let on_pane = flat_interface.iter().filter(|&&i| pane[i * 4 + 3] == 255).count();
+        let after = opaque_interface(&after_classes);
+        let after_on_pane = after.iter().filter(|&&i| pane[i * 4 + 3] == 255 && level(i, &after_flat) == 0).count();
         let wall = host.view.diorama_stats().wall;
-        let unlike: Vec<((usize, usize), [u8; 4], [u8; 4])> = differing.iter().step_by((differing.len() / 8).max(1)).take(8)
-            .map(|&i| ((i % size.0 as usize, i / size.0 as usize), pane[i * 4..i * 4 + 4].try_into().unwrap(), flat[i * 4..i * 4 + 4].try_into().unwrap())).collect();
-        // At most one 15-bit step (8 levels) apart anywhere.
-        let off = differing.iter().map(|&i| (0..3).map(|c| pane[i * 4 + c].abs_diff(flat[i * 4 + c])).max().unwrap_or(0)).max().unwrap_or(0);
-        eprintln!("{name}: the pane {size:?}: {} opaque pixels, {} of them more than 2 levels off the flat frame, at most {off} ({unlike:?}), {interface} the interface's class; \
-            of the flat frame's {} opaque interface pixels {on_pane} opaque on the pane; {wall} primitives on the wall", opaque.len(), differing.len(), flat_interface.len());
-        results.push((name, opaque.len(), differing.len(), off, interface, flat_interface.len(), on_pane, wall));
+        eprintln!("{name}: the pane {size:?}: {} opaque pixels, {} of them unlike the flat frame ({differing:?}), {interface} the interface's class; \
+            of the flat frame's {} opaque interface pixels {on_pane} opaque on the pane, of the {} drawn after the scene {after_on_pane} on it in their colour; {wall} primitives on the wall",
+            opaque.len(), differing.len(), flat_interface.len(), after.len());
+        results.push((name, opaque.len(), differing, interface, (flat_interface.len(), on_pane), (after.len(), after_on_pane), wall));
     }
-    for (name, opaque, differing, off, interface, flat_interface, on_pane, wall) in results {
+    for (name, opaque, differing, interface, (flat_interface, on_pane), (after, after_on_pane), wall) in results {
         assert!(opaque >= 500, "{name}: the interface on the pane ({opaque} opaque pixels)");
-        // (Measured: on the world map, the first native pixel of six rows of
-        // the compass's red cone, its edge, one 15-bit step off; the cause
-        // is not established.)
-        assert!(differing * 200 <= opaque && off <= 8, "{name}: the pane's opaque pixels are the flat frame's ({differing} of {opaque} unlike, at most {off} levels)");
+        if name == "the world map" {
+            // Measured, its cause not established (an open issue,
+            // docs/runtime.md Diorama): the first native pixel of six rows of
+            // the compass's red cone, its left edge, one 15-bit step off.
+            assert!(differing.len() <= 21 && differing.iter().all(|&(x, y, off)| COMPASS_EDGE.0.contains(&x) && COMPASS_EDGE.1.contains(&y) && off <= 8),
+                "{name}: the pane's opaque pixels are the flat frame's but for the compass cone's edge: {differing:?}");
+        } else {
+            assert!(differing.is_empty(), "{name}: the pane's opaque pixels are the flat frame's: {differing:?}");
+        }
         assert_eq!(interface, opaque, "{name}: the pane holds the interface alone");
         if wall <= 1 {
             assert_eq!(on_pane, flat_interface, "{name}: the flat frame's opaque interface is on the pane");
         }
+        assert!(after >= 500 && after_on_pane == after, "{name}: the interface drawn after the scene on the pane in its colour ({after_on_pane} of {after})");
     }
 }
+
+/// Where the world map's compass cone's left edge lies on its pane (its
+/// 640x432 picture, twice the native 320x216): the 21 pixels one 15-bit step
+/// off the flat frame (native columns 286 to 293, rows 141 to 150: the first
+/// pixel of six rows).
+const COMPASS_EDGE: (std::ops::RangeInclusive<usize>, std::ops::RangeInclusive<usize>) = (572..=587, 282..=301);
 
 /// Checks that the screen's share eases: between two presentations of the
 /// diorama view it moves by at most the time passed over the switch (but
@@ -841,4 +957,105 @@ fn leaving_lahan_for_the_world_map_and_entering_a_field_from_it_ease_between_the
     assert!(shown.iter().any(|s| s.blank < left && field(s)), "Lahan's diorama before");
     assert!(shown.iter().any(|s| s.blank > left && s.blank < entered && world(s)), "the world map's diorama");
     assert!(shown.iter().any(|s| s.blank > entered && field(s)), "Lahan's diorama again");
+}
+
+/// The field movie: stopped and requested (text_and_movies.rs).
+const MOVIE_STOPPED: u32 = 0x800A_DB6C;
+const MOVIE_REQUESTED: u32 = 0x800A_DB70;
+
+fn word(session: &mut Session<NativeModule>, address: u32) -> u32 {
+    let mut bytes = [0; 4];
+    session.runtime.memory().read(address, &mut bytes).expect("game memory");
+    u32::from_le_bytes(bytes)
+}
+
+#[test]
+fn a_story_movie_eases_out_of_the_fields_diorama_and_back_and_the_next_maps_follows() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // Map 25's scene, its dialogue auto-advanced, into its movie (#7), the
+    // field after it and map 23 (text_and_movies.rs's route).
+    let mut host = Host::new(&disc);
+    run(&mut host.session, json!({"cmd": "enter_field", "map": 25}));
+    host.session.set_auto_advance(1).expect("a dwell");
+    let eyes = seated(SMALL, 90.0);
+    let mut shown = Vec::new();
+    let mut began = None;
+    for _ in 0..8000 {
+        shown.push(host.step(&eyes));
+        if word(&mut host.session, MOVIE_REQUESTED) != 0 && word(&mut host.session, MOVIE_STOPPED) == 0 {
+            host.session.set_auto_advance(0).expect("off");
+            began = Some(host.blanks);
+            break;
+        }
+    }
+    let began = began.expect("map 25's movie begins");
+    let mut entered = None;
+    for _ in 0..8000 {
+        shown.push(host.step(&eyes));
+        if entered.is_none() && shown.last().is_some_and(|s| s.scene == "field:23") {
+            entered = Some(host.blanks);
+        }
+        if entered.is_some_and(|at| host.blanks >= at + 300) {
+            break;
+        }
+    }
+    let entered = entered.expect("map 23 comes");
+    eprintln!("map 25, its movie from blank {began}, map 23 from {entered}:\n{}", timeline(&shown));
+    eases("map 25, its movie and map 23", &shown);
+    let field = |s: &Shown, map: &str| s.diorama && s.screen == 0.0 && s.mode() == Some(CameraMode::Field) && s.scene == map;
+    let rebuilt: Vec<&Shown> = shown.iter().filter(|s| s.movie).collect();
+    let (first, last) = (rebuilt.first().expect("the movie's frames rebuilt").blank, rebuilt.last().expect("rebuilt").blank);
+    // Map 25's diorama before the movie and after it (the field goes on
+    // there a while), then map 23's.
+    let before = shown.iter().filter(|s| s.blank < first && field(s, "field:25")).map(|s| s.blank).max().expect("map 25's diorama before the movie");
+    let back = shown.iter().filter(|s| s.blank > last && field(s, "field:25")).map(|s| s.blank).min().expect("map 25's diorama after it");
+    let next = shown.iter().filter(|s| field(s, "field:23")).map(|s| s.blank).min().expect("map 23's diorama");
+    let easing = |from: u64, to: u64| spans(&shown, |s| s.blank > from && s.blank < to && s.screen > 0.0 && s.screen < 1.0);
+    let alone = rebuilt.iter().filter(|s| s.screen == 1.0 && !s.diorama).map(|s| s.blank).collect::<Vec<_>>();
+    let start = *alone.first().expect("the movie on the screen alone");
+    let (out, into) = (easing(before, start), easing(last, back));
+    let shapes: std::collections::BTreeSet<((u32, u32), (u32, u32))> = rebuilt.iter().filter_map(|s| Some((s.flat?, s.display))).collect();
+    eprintln!("map 25's diorama last alone at {before}, the movie's rebuilt frames {first}..={last} ({} of them, {} on the screen alone from {start}; frame, display: {shapes:?}), \
+        map 25's diorama again from {back}, map 23's from {next}; eased out {out:?}, back in {into:?}", rebuilt.len(), alone.len());
+    assert!(before < first && last < back && back < next, "map 25's diorama, the movie, map 25's diorama, map 23's");
+    assert!(out.len() == 1 && rebuilt.iter().any(|s| s.blank >= out[0].0 && s.blank <= out[0].1), "the diorama eases out over the movie's frames: {out:?}");
+    assert_eq!(into.len(), 1, "map 25's diorama eases in after the movie: {into:?}");
+    assert!(alone.len() * 10 > rebuilt.len() * 9, "the movie on the screen alone ({} of {} rebuilt frames)", alone.len(), rebuilt.len());
+    for s in &rebuilt {
+        let (w, h) = s.flat.expect("the movie's frame");
+        let expected = w as f32 * s.display.1 as f32 / s.display.0 as f32;
+        assert!((h as f32 - expected).abs() <= 1.0, "blank {}: the movie's frame {w}x{h} keeps the display's {:?} shape", s.blank, s.display);
+    }
+    assert!(shown.last().is_some_and(|s| field(s, "field:23")), "map 23's diorama shows on");
+}
+
+#[test]
+fn switching_the_headset_view_cuts_to_the_screen_and_eases_back_into_the_diorama() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut host = Host::new(&disc);
+    run(&mut host.session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut host.session, json!({"cmd": "frames", "count": 400}));
+    let eyes = seated(SMALL, 90.0);
+    let shown = host.steps(60, &eyes);
+    assert!(shown.last().is_some_and(|s| s.diorama && s.screen == 0.0), "field 30's diorama shows");
+    // Graphics' headset view set to the screen in the session (the panel's
+    // Headset card): the screen at once, as the hosts then present it.
+    host.screen_view = true;
+    let screen = host.steps(60, &eyes);
+    assert!(screen.iter().all(|s| !s.diorama && s.screen == 1.0 && !s.within && s.flat.is_some()), "the screen at once and on: {}", timeline(&screen));
+    // Set to the diorama again: it eases in from the screen over the switch.
+    host.screen_view = false;
+    let back = host.steps(60, &eyes);
+    eprintln!("the view switched to the screen at blank {}, to the diorama at {}:\n{}", screen[0].blank, back[0].blank, timeline(&back));
+    eases("back to the diorama", &back);
+    assert_eq!(back[0].screen, 1.0, "from the screen");
+    let easing = spans(&back, |s| s.screen > 0.0 && s.screen < 1.0);
+    assert_eq!(easing.len(), 1, "eased in once: {easing:?}");
+    assert!(back.last().is_some_and(|s| s.diorama && s.screen == 0.0 && s.mode() == Some(CameraMode::Field)), "the field's diorama again");
 }
