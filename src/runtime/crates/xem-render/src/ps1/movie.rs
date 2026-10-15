@@ -440,6 +440,16 @@ impl MovieRenderer {
         Self { software, ..Self::default() }
     }
 
+    /// Enlarges as for a GPU that rasterizes in software (bilinearly) or not
+    /// (FSR 1) from the next frame on, whatever the GPU is: tests run FSR on
+    /// a software rasterizer this way.
+    pub fn set_software(&mut self, software: bool) {
+        if software != self.software {
+            self.software = software;
+            self.shown = None;
+        }
+    }
+
     pub fn observe(&mut self, ops: &[TraceOp]) {
         self.tiles.observe(ops);
     }

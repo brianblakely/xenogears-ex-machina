@@ -718,8 +718,10 @@ impl Host {
         self.gpu.queue.present(frame);
         live.frames += 1;
         if live.log_next_frame || live.frames.is_multiple_of(LOG_EVERY) {
+            // movie=1: the frame showed a movie frame rebuilt from what the
+            // MDEC decoded (the Enhanced movies setting).
             let status = live.status();
-            log(&format!("frame rendered {status}"));
+            log(&format!("frame rendered {status} movie={}", u8::from(self.view.presented_movie())));
             live.log_next_frame = false;
         }
         let elapsed = live.fps.0.elapsed();

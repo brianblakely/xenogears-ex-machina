@@ -29,7 +29,7 @@ use std::rc::Rc;
 use std::time::Instant;
 use crate::Game;
 use xem_render::glam::{Mat4, Quat, Vec2, Vec3};
-use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
+use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig, headset_movie_output};
 use xem_render::{Compositor, Quad, Rect, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
@@ -456,8 +456,14 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let (forward,rewind) = game.time_activity();
         hud.set_activity(forward,rewind);
         hud.frame(start.elapsed(),PANEL_SCALE,current.presentation.show_fps).map_err(|e| e.to_string())?;
-        // The virtual screen fills about half of a view's height.
-        let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
+        // The virtual screen fills about half of a view's height. A rebuilt
+        // movie frame is made as wide as the screen spans in an eye (its
+        // width scaled by two-hand scaling, over its distance).
+        let mut config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
+        let xr = current.graphics.xr;
+        let fov = headset_eye(&eyes[0]).fov;
+        let spanned = headset_movie_output(f32::from(xr.width_cm) / 100.0 * assist.scaling.scale, f32::from(xr.distance_cm) / 100.0, session.eye_size().0, fov);
+        config.movies = config.movies.map(|_| spanned);
         view.configure(config);
         let restart = view.take_restart();
         // The Original renderer shows the display as the device holds it
@@ -487,9 +493,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let mut inside: Vec<wgpu::TextureView> = Vec::new();
         // The presentation's own time on this thread (the frame log's).
         let presenting = Instant::now();
+        // A movie frame rebuilt from what the MDEC decoded (Enhanced movies).
+        let mut movie_rebuilt = false;
         let picture = if from_view {
             view.present_headset(&mut encoder, &display, &scene, start.elapsed().as_secs_f64(), &looking).map(|p| {
                 inside = p.eyes.iter().map(|&eye| eye.clone()).collect();
+                movie_rebuilt = p.screen.movie;
                 p.screen.size
             })
         } else {
@@ -513,11 +522,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
 
         // The virtual screen: its size (the setting's, scaled by two-hand
-        // scaling) and the display pixels it spans.
-        let xr = current.graphics.xr;
+        // scaling) and the display pixels it spans (a rebuilt movie frame
+        // without wider framing's sides).
         let width = f32::from(xr.width_cm) / 100.0 * assist.scaling.scale;
         let height = width * presented_size.1 as f32 / presented_size.0 as f32;
-        let side = if from_view { view.config().map_or(0, |c| c.side) as f32 } else { 0.0 };
+        let side = if from_view && !movie_rebuilt { view.config().map_or(0, |c| c.side) as f32 } else { 0.0 };
         let screen = xem_assist::headset::Screen {
             quad: xem_assist::headset::Quad {
                 pose: xem_assist::headset::Pose { position: screen_pose(f32::from(xr.distance_cm) / 100.0).position, orientation: Quat::IDENTITY },
@@ -631,7 +640,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // eyes' pictures), and the view's turn (yaw, pitch; radians).
         let look = view.look_angles().map_or("-".into(), |(yaw, pitch)| format!("{yaw:.4},{pitch:.4}"));
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} movie={} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -639,6 +648,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             game.vblanks(),
             u8::from(game_paused),
             picture.map_or("-".into(), |(w, h)| format!("{w}x{h}")),
+            u8::from(movie_rebuilt),
             serde_json::to_string(&assist.gestures).unwrap_or_default(),
             u8::from(assist.headset.pauses.player),
             marks.len(),

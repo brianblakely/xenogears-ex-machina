@@ -3,7 +3,13 @@
 // portrait) under the Modern, HD-2D and PS1 profiles, wider framing and the
 // field camera pulled back, on WebGPU and on WebGL2. Each profile draws a picture of its own; none of them
 // changes the game: the same frames from the same snapshot end at the same
-// RAM hash whatever is selected and however often the page renders.
+// RAM hash whatever is selected and however often the page renders. The
+// title movie's frame 860, shown twice from one snapshot: under the
+// Enhanced movies setting rebuilt from what the MDEC decoded
+// (status().renderer.movie, no wider framing's sides), under Original the
+// device's own picture, the two different but within the MDEC's error of
+// each other over the display's pixels, the game's RAM the same; the
+// backends' rebuilt frames agree.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -100,6 +106,87 @@ async function profiles(args, backend) {
   }
 }
 
+/** Two animation frames: the page presents what the game drew. */
+const painted = (page) => page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+
+/** The game's picture in a canvas screenshot (`picture`, as status() gives
+ * it: placed at a whole multiple by the Integer scale), averaged over each
+ * display pixel's square. */
+function displayPixels(png, picture) {
+  const image = decodePng(png);
+  const [width, height] = picture.display;
+  const factor = picture.width / width;
+  assert.ok(Number.isInteger(factor) && picture.height === height * factor, `placed at a whole multiple: ${JSON.stringify(picture)}`);
+  const rgb = new Float32Array(width * height * 3);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      for (let k = 0; k < 3; k++) {
+        let sum = 0;
+        for (let dy = 0; dy < factor; dy++) {
+          for (let dx = 0; dx < factor; dx++) sum += image.rgba[((picture.y + y * factor + dy) * image.width + picture.x + x * factor + dx) * 4 + k];
+        }
+        rgb[(y * width + x) * 3 + k] = sum / (factor * factor);
+      }
+    }
+  }
+  return { width, height, rgb };
+}
+
+const meanError = (a, b) => a.rgb.reduce((sum, value, i) => sum + Math.abs(value - b.rgb[i]), 0) / a.rgb.length;
+
+/** Each backend's rebuilt movie frame (`movie` below), for comparing them. */
+const rebuilt = {};
+
+/** The title movie from a boot, its frame 860 shown twice from a snapshot
+ * taken 12 frames before: rebuilt from what the MDEC decoded under the
+ * Enhanced movies setting, the device's own picture under Original. */
+async function movie(args, backend) {
+  const browser = await start({ args });
+  try {
+    const page = await browser.page();
+    await page.setInputFiles('#file', USER_DISC);
+    await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+    assert.equal((await page.evaluate(() => window.xem.settings.apply({ Scale: 'Integer' }))).error, undefined);
+    await page.evaluate(() => window.xem.boot());
+    // The page's first presentation of the session starts the draw trace:
+    // the movie frames decoded after it can be rebuilt.
+    await page.evaluate(() => window.xem.runFrames(840));
+    await painted(page);
+    await page.evaluate(() => window.xem.runFrames(8));
+    await painted(page);
+    assert.equal((await page.evaluate(() => window.xem.snapshot('movie'))).error, undefined);
+    const shown = {};
+    for (const movies of ['Enhanced', 'Original']) {
+      await page.evaluate(() => window.xem.restore('movie'));
+      const current = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      // Wider framing on: a rebuilt movie frame is the display alone.
+      const graphics = { ...current, widescreen: true, filtering: { ...current.filtering, movies } };
+      const applied = await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), graphics);
+      assert.equal(applied.error, undefined, JSON.stringify(applied));
+      await page.evaluate(() => window.xem.runFrames(12));
+      await painted(page);
+      const info = await status(page);
+      const png = await page.locator('canvas').screenshot({ path: shot(`render-${backend}-movie-${movies.toLowerCase()}.png`) });
+      const hash = await page.evaluate(() => window.xem.memoryHash());
+      shown[movies] = { png, movie: info.renderer.movie, picture: info.renderer.picture, hash };
+    }
+    assert.equal(shown.Enhanced.movie, true, 'Enhanced shows the movie frame rebuilt');
+    assert.equal(shown.Original.movie, false, 'Original shows the device\'s own picture');
+    assert.equal(shown.Enhanced.picture.side, 0, 'a rebuilt movie frame has no wider framing\'s sides');
+    assert.deepEqual(shown.Enhanced.picture.display, shown.Original.picture.display, 'the same display');
+    assert.notDeepEqual(shown.Enhanced.png, shown.Original.png, 'the two pictures differ');
+    assert.deepEqual(shown.Enhanced.hash, shown.Original.hash, 'neither setting changes the game');
+    const [enhanced, original] = [shown.Enhanced, shown.Original].map((s) => displayPixels(s.png, s.picture));
+    const error = meanError(enhanced, original);
+    console.log(`${backend} (${(await status(page)).renderer.adapter}): the rebuilt frame ${error.toFixed(2)} levels from the device's on average, over its pixels`);
+    assert.ok(error <= 6, `the rebuilt frame is the frame the device shows (${error})`);
+    rebuilt[backend] = enhanced;
+    assert.deepEqual(page.errors, []);
+  } finally {
+    await browser.close();
+  }
+}
+
 describe('the game renderer in browsers', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
   test('WebGPU draws every profile without changing the game', { timeout: 600_000 }, async () => {
     await profiles(WEBGPU, 'webgpu');
@@ -127,5 +214,28 @@ describe('the game renderer in browsers', { skip: !available && `needs ${USER_DI
       console.log(`${name}: ${(share * 100).toFixed(2)}% of pixels within 8 levels, mean difference ${(total / (a.width * a.height)).toFixed(2)}`);
       assert.ok(share > 0.97, `${name}: the backends agree (${share})`);
     }
+  });
+
+  test('WebGPU rebuilds movie frames as Enhanced asks and shows them as they are under Original', { timeout: 600_000 }, async () => {
+    await movie(WEBGPU, 'webgpu');
+  });
+
+  test('WebGL2 rebuilds movie frames as Enhanced asks and shows them as they are under Original', { timeout: 600_000 }, async () => {
+    await movie(NO_WEBGPU, 'webgl2');
+  });
+
+  test('WebGPU and WebGL2 rebuild the same movie frame', () => {
+    // Over the display's pixels, each enlarging as its adapter's kind
+    // chooses (headless Chromium's adapters are SwiftShader's: software,
+    // so bilinear on both).
+    const [a, b] = [rebuilt.webgpu, rebuilt.webgl2];
+    assert.ok(a && b, 'both backends rebuilt the frame (the tests above)');
+    let close = 0;
+    for (let i = 0; i < a.width * a.height; i++) {
+      if (Math.max(...[0, 1, 2].map((k) => Math.abs(a.rgb[i * 3 + k] - b.rgb[i * 3 + k]))) <= 8) close++;
+    }
+    const share = close / (a.width * a.height);
+    console.log(`movie: ${(share * 100).toFixed(2)}% of display pixels within 8 levels, mean difference ${meanError(a, b).toFixed(2)}`);
+    assert.ok(share > 0.97, `the backends agree (${share})`);
   });
 });

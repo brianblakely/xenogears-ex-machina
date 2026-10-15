@@ -10,6 +10,10 @@
 #   the RAM at game frame N equals xem-headless's at frame N;
 # - both eyes show the same game picture from their own views (a flat screen
 #   with stereo disparity, not reconstructed 3D);
+# - the title movie's frames (from boot) are rebuilt from what the MDEC
+#   decoded (movie=1), as wide as the screen spans in an eye, under the
+#   Enhanced movies setting, and are the device's own 320x216 pictures under
+#   Original (movie=0), which changes nothing in the game either;
 # - first-person inspection in field 30: the underhand grab turns it on and
 #   off, each eye then looks from the character's eye with the head (their
 #   pictures cover the view, show the room, differ between the eyes and
@@ -64,6 +68,11 @@ for _ in $(seq 100); do [[ -S $rundir/monado_comp_ipc ]] && break; sleep 0.1; do
 
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-capture "$out/eyes" >"$out/running.log" 2>"$out/running.err"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-pause 60,120 >"$out/paused.log" 2>"$out/paused.err"
+# The title movie under the Original movies setting.
+cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
+echo '{"graphics": {"profile": "Hd2d", "filtering": {"movies": "Original"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --exit-at-frame "$frames" >"$out/original.log" 2>"$out/original.err"
+cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Hand gestures, scripted (Monado's simulated headset tracks no hands): an
 # overhand grab pauses and another resumes, prayer hands open and close
 # Settings, a pinch with the gaze on the panel's Close button closes it,
@@ -122,8 +131,23 @@ def check(ok, message):
 
 headless = [json.loads(l) for l in open(f"{out}/headless.log") if l.startswith("{") or l.startswith('"')]
 reference = next(v for v in headless if isinstance(v, str))
-for name in ["running.log", "paused.log"]:
+for name in ["running.log", "paused.log", "original.log"]:
     check(final_hash(name) == reference, f"{name}: RAM at game frame {frames} {final_hash(name)} != headless {reference}")
+
+# The title movie: its pictures from game frame 401 (the display shows
+# black 24-bit frames from 371), its frame 2 there.
+def movie_rows(name):
+    return [r for r in records(name) if int(r["game_frames"]) >= 405]
+rebuilt, original = movie_rows("running.log"), movie_rows("original.log")
+check(len(rebuilt) >= 30 and all(r["movie"] == "1" for r in rebuilt),
+      f"Enhanced: {sum(r['movie'] == '1' for r in rebuilt)} of {len(rebuilt)} movie frames rebuilt")
+sizes = {r["picture"] for r in rebuilt}
+shapes = [tuple(map(int, s.split("x"))) for s in sizes]
+check(len(sizes) == 1 and all(abs(w / h - 320 / 216) < 0.02 and (w, h) != (320, 216) for w, h in shapes),
+      f"Enhanced: rebuilt movie frames are made at the screen's span in the shape of the display, not {sizes}")
+check(len(original) >= 30 and all(r["movie"] == "0" and r["picture"] == "320x216" for r in original),
+      f"Original: movie frames are the device's own pictures: {[(r['movie'], r['picture']) for r in original][:3]}")
+print(f"movies: {len(rebuilt)} headset frames rebuilt at {', '.join(sizes)}; under Original {len(original)} at 320x216")
 
 rows = records("running.log")
 period = sorted(int(r["period_ns"]) for r in rows)[len(rows) // 2]

@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, XrWebGlLayer};
 use xem_render::glam::{Mat4, Vec2, Vec3, Vec4};
-use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
+use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig, headset_movie_output};
 use xem_render::xem_gpu::{DisplayInfo, Reveals, Trace};
 use xem_render::{Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
@@ -61,6 +61,9 @@ pub struct WebRenderer {
     game_frame: Option<(DisplayInfo, String)>,
     /// Where the last frame showed the game (pointer mapping).
     pub picture: Option<Picture>,
+    /// The last frame (on the canvas or in a headset) showed a movie frame
+    /// rebuilt from what the MDEC decoded (the Enhanced movies setting).
+    pub movie: bool,
     pub backend: &'static str,
     pub adapter: String,
     scale: f32,
@@ -76,6 +79,10 @@ pub struct WebRenderer {
     gl: Option<WebGl2RenderingContext>,
     xr: Option<XrTargets>,
     xr_eye_height: u32,
+    /// The immersive frame's first view: its width in pixels and its field
+    /// of view's tangents (left, right, up, down), which the screen's span
+    /// in it is reckoned from.
+    xr_eye: (u32, [f32; 4]),
     /// Two-hand scaling of the headset's screen.
     pub xr_scale: f32,
     /// The last immersive frame looked from within the scene through each
@@ -207,6 +214,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         renderer,
         game_frame: None,
         picture: None,
+        movie: false,
         scale: 1.0,
         panel: None,
         frame_rate: None,
@@ -217,6 +225,8 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         gl,
         xr: None,
         xr_eye_height: 1080,
+        // Until a frame tells: a square view 90 degrees wide.
+        xr_eye: (1080, [-1.0, 1.0, 1.0, -1.0]),
         xr_scale: 1.0,
         xr_within: false,
         overlay: Overlay::default(),
@@ -411,14 +421,26 @@ impl WebRenderer {
         self.renderer.listener_axes()
     }
 
-    /// The renderer's configuration for `graphics` on this canvas (or in a
-    /// headset); returns whether the device's draw trace must restart from
-    /// the whole VRAM.
-    pub fn configure_game(&mut self, graphics: &xem_settings::Graphics, headset: bool) -> bool {
+    /// The renderer's configuration for `settings` on this canvas (or in a
+    /// headset) for a frame of `display`; returns whether the device's draw
+    /// trace must restart from the whole VRAM.
+    pub fn configure_game(&mut self, settings: &xem_settings::Settings, headset: bool, display: &DisplayInfo) -> bool {
+        let graphics = &settings.graphics;
         let class = if headset { HostClass::Headset } else { HostClass::Browser };
         // The virtual screen fills about half of a view.
         let size = if headset { (self.xr_eye_height / 2, self.xr_eye_height / 2) } else { (self.config.width, self.config.height) };
-        let config = ViewConfig::resolve(graphics, class, size, self.renderer.max_scale());
+        let mut config = ViewConfig::resolve(graphics, class, size, self.renderer.max_scale());
+        // A rebuilt movie frame is made at the size it is shown: on the
+        // canvas, the display placed as the presentation settings place it;
+        // in a headset, as wide as the screen spans in a view.
+        let shown = if headset {
+            let (eye, fov) = self.xr_eye;
+            headset_movie_output(f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale, f32::from(graphics.xr.distance_cm) / 100.0, eye, fov)
+        } else {
+            let placed = present_rect((display.width, display.height), self.size(), settings.presentation.scale);
+            (placed.width.round() as u32, placed.height.round() as u32)
+        };
+        config.movies = config.movies.map(|_| shown);
         self.renderer.configure(config);
         self.renderer.take_restart()
     }
@@ -468,10 +490,15 @@ impl WebRenderer {
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
-            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size)),
+            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size, p.movie)),
             None => None,
         };
         let encoded = presented.is_some();
+        // A rebuilt movie frame is the display alone, without wider
+        // framing's sides.
+        self.movie = presented.is_some_and(|(_, _, movie)| movie);
+        let side = if self.movie { 0.0 } else { side };
+        let presented = presented.map(|(view, size, _)| (view, size));
         let (game_view, game_size) = match (presented, &self.game_image) {
             (Some(presented), _) => presented,
             (None, Some((_, view, size))) => (view, *size),
@@ -569,8 +596,9 @@ impl WebRenderer {
     /// The headset's screen as the last immersive frame drew it.
     pub fn xr_screen(&self, settings: &SettingsService) -> Option<xem_assist::headset::Screen> {
         let xr = settings.settings().graphics.xr;
+        let side = if self.movie { 0.0 } else { self.renderer.config().map_or(0, |c| c.side) as f32 };
         let (display, side) = match (&self.game_frame, &self.game_image) {
-            (Some((display, _)), _) => ((display.width as f32, display.height as f32), self.renderer.config().map_or(0, |c| c.side) as f32),
+            (Some((display, _)), _) => ((display.width as f32, display.height as f32), side),
             (None, Some((_, _, size))) => ((size.0 as f32, size.1 as f32), 0.0),
             (None, None) => return None,
         };
@@ -590,6 +618,14 @@ impl WebRenderer {
     pub fn set_xr_eye_height(&mut self, height: u32) {
         if height > 0 {
             self.xr_eye_height = height;
+        }
+    }
+
+    /// The immersive frame's first view, which rebuilt movie frames are
+    /// sized for (`configure_game`).
+    pub fn set_xr_eye(&mut self, view: &XrView) {
+        if view.viewport[2] > 0 {
+            self.xr_eye = (view.viewport[2] as u32, view.eye().fov);
         }
     }
 
@@ -636,14 +672,17 @@ impl WebRenderer {
         // view, every immersive frame, paused or not.
         let eyes: Vec<HeadsetEye> = if self.renderer.first_person() { views.iter().map(XrView::eye).collect() } else { Vec::new() };
         let mut within: Vec<wgpu::TextureView> = Vec::new();
+        let mut movie = false;
         let presented = match &self.game_frame {
             Some((display, scene)) => self.renderer.present_headset(&mut encoder, display, scene, time, &eyes).map(|p| {
                 within = p.eyes.iter().map(|&eye| eye.clone()).collect();
+                movie = p.screen.movie;
                 (p.screen.view, p.screen.size, true)
             }),
             None => None,
         };
         self.xr_within = !within.is_empty();
+        self.movie = movie;
         let (screen, screen_size, encoded) = match (presented, &self.game_image) {
             (Some(presented), _) => (Some(presented.0), presented.1, presented.2),
             (None, Some((_, view, size))) => (Some(view), *size, false),

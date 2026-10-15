@@ -19,7 +19,7 @@ pub use diorama::{DioramaPresented, DioramaSpace, DioramaStats, Table, Turns, Xr
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
 pub use frame::{FrameRenderer, Framing, Interface, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
 pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};
-pub use view::{GameView, HeadsetEye, HeadsetPresented, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
+pub use view::{GameView, HeadsetEye, HeadsetPresented, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, headset_movie_output, scene_zoom, wide_side};
 
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;

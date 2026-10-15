@@ -70,6 +70,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn display_info(&mut self) -> xem_render::xem_gpu::DisplayInfo {
+        match *self {}
+    }
+
     pub fn take_frame(&mut self, _restart: bool, _reveals: Option<xem_render::xem_gpu::Reveals>) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
         match *self {}
     }

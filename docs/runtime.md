@@ -1384,7 +1384,8 @@ snapshots are its. The renderer only draws again what it drew:
   request; `TraceOp::MovieFramesLeft`), and over its last second the
   rebuilt picture eases into the MDEC's own (the 24-bit pixels in the
   native VRAM, each a block), its last frame the device's picture. Other
-  movies stay rebuilt to their end.
+  movies stay rebuilt to their end ([Movies](#movies): the size each host
+  makes them at, what hosts report, measurements).
 
 The trace, the projections, the recording and every renderer object observe
 only: the native test `xem-headless/tests/render.rs` runs the same 240 frames
@@ -1436,6 +1437,96 @@ from clipping (the drawing area, and the GPU size limit, always kept) and
 from intentional hiding and gameplay activation (game state, decided
 against the original camera and screen whatever is drawn, except as the
 next section says).
+
+### Movies
+
+Under the Enhanced movies setting `GameView` rebuilds 24-bit movie frames
+from what the MDEC decoded (above, GameView); under Original, and for a
+frame whose macroblocks it does not all know, hosts show the device's own
+picture, each pixel a block. Hosts make the rebuilt picture at the size
+they show it, so it is enlarged once (`ViewConfig::movies`): a window
+(desktop, Android) the display placed in its safe area as the
+presentation's scale places it (Fit, Integer or Stretch; Android's insets
+no longer resample FSR's output), the browser's canvas likewise, and a
+headset's virtual screen as many pixels across as the screen spans in an
+eye (its width, times two-hand scaling, over its distance, in the eye's
+pixels per unit of tangent), at most the eye's own width
+(`headset_movie_output`: a larger screen shows only part of itself). A
+rebuilt frame is the display alone (`Presented::movie`): hosts place it,
+map pointers onto it and set the headset screen's shape without wider
+framing's sides. Each host tells whether its last frame showed a rebuilt
+movie frame: the browser's `status().renderer.movie`, OpenXR's `xrframe`
+`movie=0|1`, Android's `frame rendered ... movie=0|1` log line and the
+desktop's `--control` `status` reply (`renderer.movie`).
+
+The title movie's frames (from boot, measured natively at 640x480 on
+lavapipe on this machine) are 24-bit from game frame 371; the display shows
+black until frame 401 (the player's frame 2), and from then every frame is
+rebuilt to frame 1325, 925 frames. Over its last second the picture eases
+into the MDEC's: averaged back to the display's pixels, it lies 2.64
+levels on average from the device's with 14 frames left and about 0.19 a
+frame less each frame after, 0.16 with one left. The movie's last frame
+(1326) and the frames the game holds after it (to 1428) are the device's
+own, and the title's 15-bit frame (field 490) follows at 1429. Sampled
+rebuilt frames (838-1126, the bright ones) averaged back to the display's
+pixels lie 0.77-2.62 levels on average from the device's picture (PSNR
+31.8-44.7 dB), bilinearly as FSR 1 (forced on lavapipe:
+`GameView::set_software_movies`), and their luminance steps across the 8x8
+blocks' edges 0.94-1.09 times as much as within the blocks, the device's
+1.07-1.22 times: the blocks show less. The new-game movie (field 4's movie
+13, 24-bit from game frame 2 168 to 20 013 on the new-game route) is
+rebuilt to its last frame and the field's 15-bit frame follows at 20 014.
+After a state restored mid-movie (30 or 310 frames back), the trace
+restarted for a new internal scale, or a view attached mid-movie, the
+blocks of the frame shown are unknown (a restart starts a trace from all
+of VRAM, without what the abandoned one kept) until the player loads a
+frame decoded since: the device's picture shows for 4, 4, 3 and 5 game
+frames (one movie frame at 15 a second), and the first rebuilt frame is
+the restored timeline's (0.82 and 0.59 levels from its device picture),
+never one from before the restore. In a browser (frame 860 of the title
+movie, headless Chromium's SwiftShader adapters, both software, so both
+enlarge bilinearly) the rebuilt frame lies 0.58 levels from the device's
+over the display's pixels on WebGPU and WebGL2, whose pictures are
+identical. On Monado's simulated headset (a 320x240 eye) the 3 m screen
+2.5 m ahead spans 210 pixels: the title movie is rebuilt at 210x142, and
+under Original shown at the display's 320x216.
+
+Tests: `xem-headless/tests/movies.rs` (local, disc 1; lavapipe) presents
+every frame from boot through the title movie with a view enlarging as
+the GPU does and one forced to FSR 1, checking the facts above (every
+frame with a picture rebuilt until the ease ends, the ease monotonic to
+under a quarter, the held frames and the title's frame, each sampled
+rebuilt frame within 6 levels and 30 dB of the device's and showing its
+blocks' edges less); under Original no frame is rebuilt, and the RAM after
+1 100 frames from boot is the same with Enhanced, Original and no
+presentation; the new-game movie ends rebuilt into the field's 15-bit
+frame; and the restores, the restart and the attach above resume within
+two movie frames (8 game frames) with the restored picture. The view's
+unit tests check that every host class rebuilds under Enhanced alone and
+the headset sizing. `web/tests/render.test.mjs` shows frame 860 of the
+title movie twice from one snapshot on WebGPU and on WebGL2 (wider
+framing on, the Integer scale): `renderer.movie` true under Enhanced with
+no sides and false under Original, the pictures different but within 6
+levels of each other over the display's pixels, the RAM the same, and the
+backends' rebuilt frames 97% within 8 levels (measured: 100%).
+`web/tests/xr-game.test.mjs` does it in IWER's Quest 3 (`renderer.movie`
+true then false, the movie on the screen at both views' centres, the RAM
+the same). `scripts/xr-game-smoke.sh` checks `movie=1` on every headset
+frame from game frame 405 of its boot run, one picture size in the
+display's shape and not 320x216, and in a run under Original `movie=0` at
+320x216 with the RAM equal to `xem-headless`'s. `scripts/android-smoke.sh`
+checks a `frame rendered` line with `movie=1` while the opening movie
+plays.
+
+Not done or not measured: FSR 1 runs on real frames only where forced on
+lavapipe; the browsers' and Android emulator's adapters are software
+rasterizers and enlarge bilinearly, and its cost at a headset screen's
+span on headset GPUs (the Low tier) is not measured. The macroblocks are
+not carried across a restart or restore (matching them to the restored
+VRAM would remove the one movie frame of the device's picture measured
+above). Only the title movie eases; other movies end rebuilt and cut to
+what follows. No person has judged the pictures: "clearer" is the
+block-edge measure above, and Android shows only its logged flag.
 
 ### Characters in a wider view
 
@@ -2305,7 +2396,8 @@ Headset class (Low tier, depth of field off unless enabled).
   once the game is booted, with the activity and JavaVM as the loader's
   platform data; `crates/xem-host/src/xr_play.rs`): the
   screen 2.5 m ahead (Settings: headset screen), the settings panel a quad
-  layer (left menu button), movie frames on the same screen; controllers
+  layer (left menu button), movie frames on the same screen (rebuilt as
+  wide as the screen spans in an eye: [Movies](#movies)); controllers
   are the game bindings' gamepad ([Controls](#controls)). One
   `xrframe` line per frame. `src/runtime/scripts/xr-game-smoke.sh` (Monado's simulated
   HMD, null compositor) checks 57-63 game frames a second against the
@@ -2313,7 +2405,9 @@ Headset class (Low tier, depth of field off unless enabled).
   50.06 ms, p99 under 57 ms, at most 5% beyond 1.5 periods; measured on
   lavapipe), a paused game with head tracking and rendering
   continuing, the RAM at frame N equal to `xem-headless`'s, stereo eye
-  captures of the screen, and an HD-2D field on it. Its inspection run
+  captures of the screen, an HD-2D field on it, and the title movie
+  rebuilt (`movie=1`) and, in a run under the Original movies setting,
+  the device's own (`movie=0`, 320x216). Its inspection run
   (field 30 under HD-2D, Fei walked into the room by the session log's
   pads; the underhand grab at headset frames 150 and 270, the Pause grab
   at 180 and 240) checks that the view is on from the first grab to the
@@ -2348,7 +2442,9 @@ Headset class (Low tier, depth of field off unless enabled).
   pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
-  exit, and an unchanged RAM hash; its inspection test (field 30) toggles
+  exit, and an unchanged RAM hash; its movie test shows the title movie
+  rebuilt in the headset and the device's own under Original
+  ([Movies](#movies)); its inspection test (field 30) toggles
   the view with the right controller's stick click, turns it one
   30-degree step with the stick (no pitch; the Binaural listener faces the
   turn with the head on it, and the camera's view again once it is off),
@@ -4149,7 +4245,9 @@ as JSON text or bytes.
   WebGL2 otherwise (`?backend=webgl2` forces it); `status().renderer.backend`
   says which, and `status().renderer.picture` where the game's picture lies
   on the canvas (canvas pixels) and the screen it shows (its display size
-  and the wider framing's sides). With a session the canvas shows the GPU device's display
+  and the wider framing's sides, none for a rebuilt movie frame);
+  `status().renderer.movie` whether the last frame was a rebuilt movie
+  frame ([Movies](#movies)). With a session the canvas shows the GPU device's display
   (`display_rgba8`, uploaded to an sRGB texture after frames ran and placed by
   the presentation scale and filter, as xem-host's `View::set_game_image`);
   without one, the test scene. The Slint panel (FemtoVG's wgpu renderer on the same device,

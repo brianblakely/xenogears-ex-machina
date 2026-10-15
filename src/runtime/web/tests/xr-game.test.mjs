@@ -12,7 +12,11 @@
 // within the scene through each view, a head turn changes the view while the
 // player's Pause holds the game, the controllers' click and stick toggle and
 // turn it then too and the Original renderer ends it, and the grab again
-// gives the screen back at its size.
+// gives the screen back at its size. The title movie in the headset, the
+// same frame shown twice from one snapshot: rebuilt from what the MDEC
+// decoded under the Enhanced movies setting (status().renderer.movie), the
+// device's own picture under Original, on the screen in both views, the
+// game's RAM the same.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -327,6 +331,59 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(info.renderer.firstPerson, true, 'the view carries out of the headset');
       await page.waitForTimeout(300);
       assert.ok((await status(page)).loop.animationFrames > info.loop.animationFrames, 'the canvas draws it');
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('a movie on the virtual screen is rebuilt under Enhanced and the device\'s own under Original', { timeout: 600_000 }, async () => {
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    try {
+      const page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      // The title movie, bright from about frame 840.
+      await page.evaluate(() => window.xem.runFrames(840));
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().page.xr.frames > 10, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      // Each immersive frame takes the game frames run since the last.
+      await page.evaluate(() => window.xem.runFrames(8));
+      await frames(3);
+      assert.equal((await page.evaluate(() => window.xem.snapshot('movie'))).error, undefined);
+      const layer = await page.evaluate(() => {
+        const gl = document.querySelector('canvas').getContext('webgl2');
+        return [gl.drawingBufferWidth, gl.drawingBufferHeight];
+      });
+      const centres = [[Math.floor(layer[0] / 4), Math.floor(layer[1] / 2)], [Math.floor(3 * layer[0] / 4), Math.floor(layer[1] / 2)]];
+      const backdrop = (p) => Math.abs(p[0] - 26) + Math.abs(p[1] - 30) + Math.abs(p[2] - 38) < 24;
+      const shown = {};
+      for (const movies of ['Enhanced', 'Original']) {
+        await page.evaluate(() => window.xem.restore('movie'));
+        const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+        const applied = await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), { ...graphics, filtering: { ...graphics.filtering, movies } });
+        assert.equal(applied.error, undefined, JSON.stringify(applied));
+        await page.evaluate(() => window.xem.runFrames(12));
+        await frames(3);
+        const pixels = await page.evaluate((points) => window.xem.xr.readback(points), centres);
+        shown[movies] = {
+          movie: (await status(page)).renderer.movie,
+          centres: [pixels.slice(0, 4), pixels.slice(4, 8)],
+          hash: await page.evaluate(() => window.xem.memoryHash()),
+        };
+      }
+      console.log(`view centres: Enhanced ${shown.Enhanced.centres.join(' / ')}, Original ${shown.Original.centres.join(' / ')}`);
+      assert.equal(shown.Enhanced.movie, true, 'Enhanced shows the movie frame rebuilt in the headset');
+      assert.equal(shown.Original.movie, false, 'Original shows the device\'s own picture');
+      for (const movies of ['Enhanced', 'Original']) {
+        assert.ok(shown[movies].centres.every((p) => !backdrop(p)), `${movies}: the movie is on the screen in both views`);
+      }
+      assert.deepEqual(shown.Enhanced.hash, shown.Original.hash, 'neither setting changes the game');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

@@ -16,8 +16,9 @@
 # (settings and the persisted document grant survive). With the user's disc
 # 1 the game boots from it, taking the Kanji font of a BIOS image made here
 # where Import BIOS keeps one (files/bios.bin), and plays for ~25 s
-# (screenshots), with its frame
-# rate measured, a pad press, a touch on the control deck, and a background and return during which the
+# (screenshots), with its frame rate measured and its opening movie shown
+# rebuilt (a frame logged with movie=1), a pad press, a touch on the control
+# deck, and a background and return during which the
 # game's frame count does not move, plus repeated Home/return at 20x FF.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
 # start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
@@ -346,6 +347,9 @@ PY
         shot "07-game-${at}s"
     done
     grep -E "xem: (fps|frame rendered .*game_vblank)" "$log" | tail -12 | sed 's/^/  /'
+    # The opening movie (game frames 401-1325) shown rebuilt from what the
+    # MDEC decoded (the Enhanced movies setting) while the shots ran.
+    wait_for "xem: frame rendered .*game_vblank=.* movie=1" 1
     # Game memory is one 2 GiB linear-memory mapping, committed as touched.
     pid=$("${adb[@]}" shell pidof "$package" | tr -d '\r')
     echo "  memory: $("${adb[@]}" shell grep -E "'^(VmSize|VmRSS)'" "/proc/$pid/status" | tr -s ' \t\r\n' ' ')" \

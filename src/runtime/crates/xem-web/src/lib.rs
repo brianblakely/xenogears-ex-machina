@@ -355,10 +355,6 @@ impl XemApp {
         self.assist_xr();
         self.step(now)?;
         let eye_height = viewports.chunks_exact(4).map(|v| v[3]).max().unwrap_or(0).max(0) as u32;
-        if let Some(renderer) = &mut self.renderer {
-            renderer.set_xr_eye_height(eye_height);
-        }
-        self.take_game_frame(true);
         // OpenGL clip depth (-1..1) to wgpu's (0..1).
         let depth = xem_render::glam::Mat4::from_cols(
             xem_render::glam::Vec4::X,
@@ -375,6 +371,13 @@ impl XemApp {
                 viewport: [v[0], v[1], v[2], v[3]],
             })
             .collect();
+        if let Some(renderer) = &mut self.renderer {
+            renderer.set_xr_eye_height(eye_height);
+            if let Some(view) = views.first() {
+                renderer.set_xr_eye(view);
+            }
+        }
+        self.take_game_frame(true);
         self.stats.xr_frames += 1;
         if let Some(renderer) = &mut self.renderer {
             renderer.render_xr(&layer, &views, now / 1000.0, &self.settings.borrow()).map_err(error)?;
@@ -862,7 +865,8 @@ impl XemApp {
                         self.display_dirty = false;
                         return;
                     }
-                    let restart = renderer.configure_game(&graphics, headset);
+                    let display = session.runtime.services().gpu.device().display();
+                    let restart = renderer.configure_game(self.settings.borrow().settings(), headset, &display);
                     let reveals = renderer.reveals();
                     self.actor_view = if graphics.actors_in_view { renderer.actor_view() } else { 0 };
                     let scene = session.scene();
@@ -1546,8 +1550,12 @@ impl XemApp {
                 "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
                 "hud": r.frame_rate.as_ref().map(|hud| json!({"visible":hud.visible(),"notice":hud.notice(),"fast_forward":hud.component().get_fast_forward(),"rewinding":hud.component().get_rewinding()})),
                 // Where the game's picture lies on the canvas (canvas pixels)
-                // and the screen it shows (with the wider framing's sides).
+                // and the screen it shows (with the wider framing's sides,
+                // none for a rebuilt movie frame).
                 "picture": r.picture.map(|p| json!({"x": p.placed.x, "y": p.placed.y, "width": p.placed.width, "height": p.placed.height, "display": [p.display.0, p.display.1], "side": p.side})),
+                // The last frame showed a movie frame rebuilt from what the
+                // MDEC decoded (the Enhanced movies setting).
+                "movie": r.movie,
                 // First-person inspection, and how far its view has turned
                 // from the heading it began with (radians, yaw right, pitch up).
                 "firstPerson": r.first_person(),

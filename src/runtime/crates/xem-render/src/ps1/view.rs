@@ -66,6 +66,19 @@ pub fn display_side((width, height): (u32, u32), aspect: f32) -> u32 {
     (((wide - width as f32) / 2.0).round().max(0.0) as u32).min(MAX_WIDE_SIDE)
 }
 
+/// The output a rebuilt movie frame is fitted into on a headset's virtual
+/// screen ([`ViewConfig::movies`]): as many pixels across as the screen,
+/// `width` metres wide and `distance` metres ahead, spans in an eye `eye`
+/// pixels wide whose field of view's tangents are `fov` (left, right, up,
+/// down), at most the eye's width (a larger screen shows only part of
+/// itself), both ways: the picture keeps its shape within it.
+pub fn headset_movie_output(width: f32, distance: f32, eye: u32, fov: [f32; 4]) -> (u32, u32) {
+    let span = fov[1] - fov[0];
+    let across = if span > 0.0 && distance > 0.0 { width / distance * eye as f32 / span } else { eye as f32 };
+    let across = (across.round() as u32).clamp(1, eye.max(1));
+    (across, across)
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
@@ -204,6 +217,10 @@ pub struct Presented<'a> {
     pub size: (u32, u32),
     /// A new game frame arrived with this presentation.
     pub new_frame: bool,
+    /// The picture is a movie frame rebuilt from what the MDEC decoded (the
+    /// Enhanced movies setting): the display alone, without wider framing's
+    /// sides.
+    pub movie: bool,
 }
 
 /// Which picture a flat presentation drew into: a movie frame, the screen
@@ -817,7 +834,7 @@ impl GameView {
             Picture::Screen => self.main.view()?,
             Picture::Pane => self.main.frame.pane_view()?,
         };
-        Some(Presented { view, size: flat.size, new_frame: flat.new_frame })
+        Some(Presented { view, size: flat.size, new_frame: flat.new_frame, movie: flat.picture == Picture::Movie })
     }
 
     /// A movie frame the MDEC decoded, rebuilt (the Enhanced setting) to fit
@@ -1057,6 +1074,22 @@ impl GameView {
         self.config.is_some_and(|config| config.movies.is_some()) && self.movie.shows(display)
     }
 
+    /// Whether the last presentation (`present`, `present_headset` or
+    /// `present_diorama`) showed a movie frame rebuilt from what the MDEC
+    /// decoded (the Enhanced setting): not when it drew one of the
+    /// renderer's frames, or nothing (the host then shows the device's own
+    /// picture). [`Presented::movie`] says it of each presentation.
+    pub fn presented_movie(&self) -> bool {
+        self.presented_movie
+    }
+
+    /// Enlarges rebuilt movie frames bilinearly, as on a GPU that rasterizes
+    /// in software (the adapter's kind chooses by default), or by FSR 1
+    /// ([`super::MovieRenderer::set_software`]).
+    pub fn set_software_movies(&mut self, software: bool) {
+        self.movie.set_software(software);
+    }
+
     /// Whether this view draws `display` (15-bit and on); 24-bit movie
     /// frames are the device's own picture unless [`GameView::shows_movie`].
     pub fn shows(display: &DisplayInfo) -> bool {
@@ -1113,4 +1146,33 @@ fn sprite_height(ops: &[TraceOp], owner: u32, feet: [f32; 3], up: [f32; 3]) -> O
         .map(|q| (0..3).map(|i| (q[i] - feet[i]) * up[i]).sum::<f32>())
         .reduce(f32::max)
         .filter(|height| *height > 0.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use xem_settings::MovieFilter;
+
+    /// Every kind of host rebuilds movie frames into the output it gives
+    /// under Enhanced, and none under Original.
+    #[test]
+    fn movies_are_rebuilt_under_enhanced_alone_on_every_host() {
+        for host in [HostClass::Desktop, HostClass::Mobile, HostClass::Browser, HostClass::Headset] {
+            for (movies, rebuilt) in [(MovieFilter::Enhanced, Some((1280, 720))), (MovieFilter::Original, None)] {
+                let mut graphics = Graphics::default();
+                graphics.filtering.movies = movies;
+                assert_eq!(ViewConfig::resolve(&graphics, host, (1280, 720), 8).movies, rebuilt, "{host:?}, {movies:?}");
+            }
+        }
+    }
+
+    /// A screen 3 m wide 2.5 m ahead spans 0.6 of an eye 90 degrees wide
+    /// (its tangents -1 to 1); one three times as wide, more than the eye.
+    #[test]
+    fn a_headsets_movie_frames_are_made_as_wide_as_the_screen_spans_in_an_eye() {
+        let fov = [-1.0, 1.0, 1.0, -1.0];
+        assert_eq!(headset_movie_output(3.0, 2.5, 1000, fov), (600, 600));
+        assert_eq!(headset_movie_output(9.0, 2.5, 1000, fov), (1000, 1000), "at most the eye's width");
+        assert_eq!(headset_movie_output(3.0, 2.5, 1000, [-1.2, 0.8, 1.0, -1.0]), (600, 600), "an eye's own span");
+    }
 }

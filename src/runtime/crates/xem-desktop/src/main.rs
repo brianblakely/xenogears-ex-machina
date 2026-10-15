@@ -121,7 +121,8 @@ fn options() -> Result<Options, String> {
                      --xr-capture-at saves both eyes at those headset frames (looking from within the scene, \
                      each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
-                     the command layer's (status, context, navigate, act, ...), settings, \
+                     the command layer's (status, context, navigate, act, ...; status adds renderer.movie, \
+                     whether the window last showed a rebuilt movie frame), settings, \
                      settings_apply {{change}} (the panel's own typed change), panel {{visible}}, \
                      import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer) and \
                      bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once).\n\
@@ -530,7 +531,18 @@ impl Host {
                 serde_json::json!({ "visible": self.view.panel_visible() })
             }
             _ => match &mut self.game {
-                Some(game) => game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error })),
+                Some(game) => {
+                    let mut reply = game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error }));
+                    // `status` also tells what the window showed last, as a
+                    // browser's does: `movie`, a movie frame rebuilt from what
+                    // the MDEC decoded (the Enhanced movies setting).
+                    if command.get("cmd").and_then(serde_json::Value::as_str) == Some("status")
+                        && let Some(status) = reply.as_object_mut()
+                    {
+                        status.insert("renderer".into(), serde_json::json!({ "movie": self.view.presented_movie() }));
+                    }
+                    reply
+                }
                 None => serde_json::json!({ "error": "no game: play a disc (--disc)" }),
             },
         }

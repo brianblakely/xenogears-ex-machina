@@ -268,6 +268,9 @@ pub struct View {
     game_frame: Option<(DisplayInfo, String)>,
     /// A new trace arrived since the last presentation.
     fresh_frame: bool,
+    /// The last presentation showed a movie frame rebuilt from what the
+    /// MDEC decoded (the Enhanced movies setting).
+    presented_movie: bool,
     host_class: HostClass,
     /// Where the game picture may go: the window's safe area, in pixels.
     safe_area: Option<Rect>,
@@ -380,6 +383,7 @@ impl View {
             renderer: GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter)),
             game_frame: None,
             fresh_frame: false,
+            presented_movie: false,
             host_class: HostClass::Desktop,
             safe_area: None,
             app_input: AppInput::default(),
@@ -767,6 +771,21 @@ impl View {
         self.host_class = class;
     }
 
+    /// Where the game picture may go: the safe area the host gave, when it
+    /// lies within the target, else all of it.
+    fn safe_rect(&self) -> Rect {
+        let (width, height) = (self.target_size.0 as f32, self.target_size.1 as f32);
+        self.safe_area
+            .filter(|a| a.x + a.width <= width && a.y + a.height <= height && a.width >= 1.0 && a.height >= 1.0)
+            .unwrap_or(Rect { x: 0.0, y: 0.0, width, height })
+    }
+
+    /// Whether the last frame showed a movie frame rebuilt from what the
+    /// MDEC decoded (`GameView::presented_movie`), for status reports.
+    pub fn presented_movie(&self) -> bool {
+        self.presented_movie
+    }
+
     /// Takes what `game` drew since the last call for the renderer (the
     /// graphics settings choose how it is drawn). A 24-bit display (movie
     /// frames) is shown as the device holds it.
@@ -786,7 +805,13 @@ impl View {
             self.set_game_image(gpu, (width, height), &rgba);
             return;
         }
-        let config = ViewConfig::resolve(&graphics, self.host_class, self.target_size, self.renderer.max_scale());
+        let mut config = ViewConfig::resolve(&graphics, self.host_class, self.target_size, self.renderer.max_scale());
+        // A rebuilt movie frame is made at the size it is shown: the display
+        // placed in the safe area as the presentation settings place it.
+        let display = game.display_info();
+        let safe = self.safe_rect();
+        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale);
+        config.movies = config.movies.map(|_| (placed.width.round() as u32, placed.height.round() as u32));
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
         game.want_actor_view(if graphics.actors_in_view { self.renderer.actor_view() } else { 0 });
@@ -1026,12 +1051,20 @@ impl View {
         self.ui.set_first_person_touch(touch_shown);
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         self.fresh_frame = false;
+        // The picture goes inside the safe area (all of the target when the
+        // host gave none).
+        let safe = self.safe_rect();
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
-            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view, p.size)),
+            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view, p.size, p.movie)),
             None => None,
         };
         let encoded = presented.is_some();
+        // A rebuilt movie frame is the display alone, without wider
+        // framing's sides.
+        self.presented_movie = presented.is_some_and(|(_, _, movie)| movie);
+        let side = if self.presented_movie { 0.0 } else { side };
+        let presented = presented.map(|(view, size, _)| (view, size));
         let (game_view, game_size) = match (presented, &self.game_image) {
             (Some(presented), _) => presented,
             (None, Some((_, view, size))) => (view, *size),
@@ -1056,11 +1089,6 @@ impl View {
         let presentation = self.settings.borrow().settings().presentation.clone();
         self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
             .map_err(|error| error.to_string())?;
-        // Inside the safe area (all of the target when the host gave none).
-        let safe = self
-            .safe_area
-            .filter(|a| a.x + a.width <= target_size.0 as f32 && a.y + a.height <= target_size.1 as f32 && a.width >= 1.0 && a.height >= 1.0)
-            .unwrap_or(Rect { x: 0.0, y: 0.0, width: target_size.0 as f32, height: target_size.1 as f32 });
         let mut placed = present_rect(game_size, (safe.width as u32, safe.height as u32), presentation.scale);
         placed.x += safe.x;
         placed.y += safe.y;
