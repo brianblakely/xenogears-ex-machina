@@ -537,7 +537,7 @@ impl Host {
     /// service (as the panel's edits), the panel shown or hidden, the rest
     /// to the game's command layer.
     fn command(&mut self, command: &serde_json::Value) -> serde_json::Value {
-        if let Some(reply) = xem_host::settings_command(self.view.settings(), command) {
+        if let Some(reply) = self.view.settings().borrow_mut().command(command) {
             return reply;
         }
         match command.get("cmd").and_then(serde_json::Value::as_str) {

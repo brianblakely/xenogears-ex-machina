@@ -704,6 +704,29 @@ impl SettingsService {
     pub fn subscribe(&mut self, listener: impl FnMut(&Ack) + 'static) {
         self.listeners.push(Box::new(listener));
     }
+
+    /// The settings commands of an agent's JSON channel (`xem-desktop
+    /// --control`): `{"cmd":"settings"}` answers the settings, and
+    /// `{"cmd":"settings_apply","change":{…}}` applies a [`SettingChange`]
+    /// as the panel's edits do and answers its acknowledgement,
+    /// `{revision, settings}`, or `{error}` with the settings unchanged.
+    /// Another command is not the settings' (`None`).
+    pub fn command(&mut self, command: &serde_json::Value) -> Option<serde_json::Value> {
+        match command.get("cmd").and_then(serde_json::Value::as_str)? {
+            "settings" => Some(serde_json::to_value(&self.settings).expect("settings serialize")),
+            "settings_apply" => {
+                let change = command.get("change").cloned().unwrap_or_default();
+                Some(match serde_json::from_value::<SettingChange>(change) {
+                    Ok(change) => match self.apply(change) {
+                        Ok(ack) => serde_json::json!({ "revision": ack.revision, "settings": ack.settings }),
+                        Err(rejected) => serde_json::json!({ "error": rejected.to_string() }),
+                    },
+                    Err(error) => serde_json::json!({ "error": format!("not a setting change: {error}") }),
+                })
+            }
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -845,6 +868,100 @@ mod tests {
         assert_eq!((read.text_speed, read.auto_advance, read.mouse_camera), (TextSpeed::Original, AutoAdvance { enabled: true, dwell: DEFAULT_AUTO_ADVANCE_DWELL }, true));
         assert_eq!(reset, ["auto_advance.dwell", "text_speed"]);
         assert!(!Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.movie_skip);
+    }
+
+    /// The gameplay options' keys as `Settings` saves them.
+    const GAMEPLAY: [&str; 5] = ["random_battles", "encounter_rate", "text_speed", "auto_advance", "movie_skip"];
+
+    #[test]
+    fn the_gameplay_options_default_to_not_while_platforming_and_the_original_and_explicit_choices_survive_saves_backups_and_imports() {
+        use super::*;
+        let gameplay = |settings: &Settings| -> serde_json::Value {
+            let value = serde_json::to_value(settings).unwrap();
+            GAMEPLAY.iter().map(|key| (key.to_string(), value[key].clone())).collect()
+        };
+        let defaults = serde_json::json!({"random_battles": "NotWhilePlatforming", "encounter_rate": "Original", "text_speed": "Original",
+            "auto_advance": {"enabled": false, "dwell": DEFAULT_AUTO_ADVANCE_DWELL}, "movie_skip": false});
+        // A fresh settings file: random battles off in the platforming
+        // areas, the original's everything else, as the first save writes.
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        service.apply(SettingChange::MasterVolume(40)).unwrap();
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(gameplay(&serde_json::from_value(saved).unwrap()), defaults);
+        let settings = service.settings();
+        assert_eq!((settings.random_battles_off(), settings.half_encounters(), settings.text_speed.glyphs(), settings.auto_advance_dwell(), settings.movie_skip),
+            (xem_core::encounters::platforming_maps(), false, 0, 0, false), "the sessions get the platforming maps and the original's");
+        // A file saved before the options existed: every key but theirs,
+        // with other choices of its own. It reads the defaults for them,
+        // keeps the rest and resets nothing, from a real file too.
+        let mut old = serde_json::to_value(Settings { master_volume: 40, mouse_camera: true, ..Settings::default() }).unwrap();
+        for key in GAMEPLAY {
+            old.as_object_mut().unwrap().remove(key);
+        }
+        let (read, reset) = Settings::read(&old).unwrap();
+        assert_eq!((gameplay(&read), read.master_volume, read.mouse_camera, reset), (defaults.clone(), 40, true, Vec::<String>::new()));
+        let dir = std::env::temp_dir().join(format!("xem-settings-gameplay-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        std::fs::write(&path, serde_json::to_string_pretty(&old).unwrap()).unwrap();
+        let opened = SettingsService::open(FileStore::new(&path)).unwrap();
+        assert_eq!((gameplay(opened.settings()), opened.settings().master_volume), (defaults.clone(), 40));
+        // An explicit choice of each, acknowledged in turn, survives other
+        // changes, a reload, a backup and its import into another service.
+        let chosen = [SettingChange::RandomBattles(RandomBattles::Original), SettingChange::EncounterRate(EncounterRate::Half),
+            SettingChange::TextSpeed(TextSpeed::Fast), SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell: 45 }), SettingChange::MovieSkip(true)];
+        let mut file = SettingsService::open(FileStore::new(&path)).unwrap();
+        for (n, change) in chosen.into_iter().enumerate() {
+            assert_eq!(file.apply(change).unwrap().revision, n as u64 + 1);
+        }
+        let explicit = serde_json::json!({"random_battles": "Original", "encounter_rate": "Half", "text_speed": "Fast",
+            "auto_advance": {"enabled": true, "dwell": 45}, "movie_skip": true});
+        file.apply(SettingChange::MouseCamera(false)).unwrap();
+        file.apply(SettingChange::Replace(Settings { master_volume: 70, ..file.settings().clone() })).unwrap();
+        let reopened = SettingsService::open(FileStore::new(&path)).unwrap();
+        assert_eq!((gameplay(reopened.settings()), reopened.settings().master_volume), (explicit.clone(), 70), "kept through other changes and a reload");
+        let mut other = SettingsService::with_defaults(MemoryStore::default());
+        other.import(&reopened.export()).unwrap();
+        assert_eq!(gameplay(other.settings()), explicit, "a backup carries them");
+        // A backup saved before the options existed imports their defaults:
+        // an import replaces the settings with the backup's.
+        let backup = serde_json::json!({"version": 1, "settings": old}).to_string();
+        other.import(&backup).unwrap();
+        assert_eq!(gameplay(other.settings()), defaults);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn agents_change_every_gameplay_option_through_the_settings_commands_and_read_the_acknowledgement() {
+        use super::*;
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        let reply = |service: &mut SettingsService, change: serde_json::Value| service.command(&serde_json::json!({"cmd": "settings_apply", "change": change})).unwrap();
+        // As an agent sends them on `xem-desktop --control`.
+        for (n, (change, key, value)) in [
+            (serde_json::json!({"RandomBattles": "Original"}), "random_battles", serde_json::json!("Original")),
+            (serde_json::json!({"EncounterRate": "Half"}), "encounter_rate", serde_json::json!("Half")),
+            (serde_json::json!({"TextSpeed": "Instant"}), "text_speed", serde_json::json!("Instant")),
+            (serde_json::json!({"AutoAdvance": {"enabled": true, "dwell": 90}}), "auto_advance", serde_json::json!({"enabled": true, "dwell": 90})),
+            (serde_json::json!({"MovieSkip": true}), "movie_skip", serde_json::json!(true)),
+            (serde_json::json!({"RandomBattles": "NotWhilePlatforming"}), "random_battles", serde_json::json!("NotWhilePlatforming")),
+        ].into_iter().enumerate() {
+            let ack = reply(&mut service, change.clone());
+            assert_eq!((&ack["revision"], &ack["settings"][key]), (&serde_json::json!(n + 1), &value), "{change} -> {ack}");
+            assert_eq!(service.command(&serde_json::json!({"cmd": "settings"})).unwrap()[key], value, "settings shows it");
+        }
+        // Refused changes say why and change nothing.
+        for (change, why) in [
+            (serde_json::json!({"AutoAdvance": {"enabled": true, "dwell": 5}}), "auto-advance dwell must be 30–600"),
+            (serde_json::json!({"TextSpeed": "Warp"}), "not a setting change"),
+            (serde_json::json!({"RandomBattles": "Never"}), "not a setting change"),
+        ] {
+            let refused = reply(&mut service, change.clone());
+            assert!(refused["error"].as_str().is_some_and(|e| e.contains(why)), "{change} -> {refused}");
+        }
+        assert_eq!(service.revision(), 6, "nothing refused was applied");
+        assert_eq!(service.settings().auto_advance, AutoAdvance { enabled: true, dwell: 90 });
+        assert_eq!(service.command(&serde_json::json!({"cmd": "status"})), None, "another command is the game's");
     }
 
     #[test]

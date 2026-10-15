@@ -1732,10 +1732,11 @@ measure above, measured on the title movie alone. On its fade from black
 and its SQUARESOFT logo that measure follows the picture's own outlines
 and the enlargement's blur rather than the blocks, so there the rebuilt
 pictures are compared with a plain enlargement only; on the logo they
-measure as much as the device's own picture or more. No test drives the
-desktop's window (its SDL host takes Wayland or X11 only), so the
-desktop's `--control` `renderer.movie` is untested: the view's flag it
-reports is the one the `xem-host` test checks. Android shows only its
+measure as much as the device's own picture or more. The desktop's
+`--control` `renderer.movie` is untested (the one test that runs the
+desktop's window, `xem-desktop/tests/control.rs` on weston's headless
+backend, checks the settings commands): the view's flag it reports is the
+one the `xem-host` test checks. Android shows only its
 logged flag; its real insets (the `xem-host` test stands in with a safe
 area) and sizes are not checked.
 
@@ -4173,6 +4174,137 @@ delete over a card put back.
 
 ## Gameplay options
 
+Phase 7 (plan.md) adds options that change how the game plays, each
+reimplemented from the decompiled program, none patching game data. They
+sit together in the settings panel's Gameplay section (the browser shows
+the same panel); each is a setting of `xem-settings` and reaches the game
+as a recorded control of the session, whose zero is the original's:
+
+| Option | Setting (default) | Control | What changes | Agents see its effect in |
+| --- | --- | --- | --- | --- |
+| [Random battles](#random-battles-in-platforming-areas) | `random_battles`: `NotWhilePlatforming` (the default), `Original` | `random_battles {off}` | the field's random draw does not run on the platforming areas' maps (`src/port/encounters.c`) | `status.random_battles_off`; `field.random_draw` (`off_here`, its window and steps left as dealt) |
+| [Encounter rate](#random-battles-in-platforming-areas) | `encounter_rate`: `Original` (the default), `Half` | `half_encounters {enabled}` | the draw runs on every other field frame where it runs at all | `status.half_encounters`; `field.random_draw` (its steps count down half as fast) |
+| [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line (`src/port/text_speed.c`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
+| [Auto-advance dialogue](#text-speed-auto-advance-and-movie-skipping) | `auto_advance`: off (the default) or on, a dwell of 30-600 vertical blanks (120) | `auto_advance {dwell}` | the session presses Confirm once a field dialogue's prompt has shown the dwell, never at a choice (`xem_core::dialogue`) | `status.auto_advance`, `status.auto_advance_waited`, `status.dialogue` |
+| [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping) | `movie_skip`: off (the default), on | `movie_skip {enabled}` | the story's movies take the original's early exit on the player's press (`src/port/movie_skip.c`) | `status.movie_skip`; `status.movie` (`ends_on_press`) |
+
+Cutscene skipping is not offered: the game marks no next moment the
+player controls clearly enough ([Cutscene skipping](#cutscene-skipping)),
+so it was cut with the battle-message advance that belonged to it; nor is
+an EXP and gold multiplier.
+
+**Defaults.** A fresh settings file (the desktop's and Android's
+`settings.json`, the browser's `xem.settings`) holds random battles off in
+the platforming areas and the original's every other option, and the hosts
+give the session the platforming areas' maps and the original's values.
+Each choice is stored by name: a file saved before an option existed reads
+its default and resets nothing else (`Settings::read`); a deliberate choice,
+`Original` among them, survives other changes, reloads, a settings backup
+and its import; and a revised table of platforming areas applies to
+everyone who keeps the default. An import replaces the settings whole, so a
+backup saved before the options existed brings their defaults. The
+interactive hosts (the desktop, Android, OpenXR's play and a running
+browser page) give the session the values before every game frame outside
+session logs; headless sessions, session logs and replays play the
+original unless commanded, and a replay keeps the recorded values.
+
+**Agents** change the options as people do, through the settings service,
+and get its acknowledgement. On `xem-desktop --control`,
+`{"cmd":"settings"}` answers the settings and
+`{"cmd":"settings_apply","change":{"TextSpeed":"Instant"}}` applies the
+typed change and answers `{revision, settings}`, or `{error}` with the
+reason and the settings unchanged (`SettingsService::command`, the
+panel's own service). In a browser, `window.xem.settings.apply({TextSpeed:
+'Instant'})` answers `{ok: true, revision, settings}` or `{ok: false,
+rejected, reason}`, and `xem.settings.get()`, `.export()` and
+`.import(text)` read, back up and restore them. The next frame's `status`
+shows the control the host gave. Where no host gives the values
+(`xem-headless --control`, session logs, a browser page whose frames
+commands drive) agents set the controls directly, recorded as the hosts'
+are. Android has no agent channel.
+
+**Ordinary progression with the defaults**, played on the game headless
+(suite profile, disc 1; frames are vertical blanks):
+
+- *Through a suppressed area.* From map 413's entrance from map 412
+  (where map 412's door leads once the tower's gate is open), in the
+  party's gears, a walk as a player makes it climbs Babel Tower through
+  the original's doors of maps 413, 414, 415 and 416, each arming its
+  draw and each turned off by the default, to the tower's top, map 418,
+  after 3 266 frames with no battle; touching the top's actor 20 still
+  starts its fixed battle (formation 2, 4 740 frames in). The walk is the
+  assisted route to each map's door with Jump pressed at each takeoff, and
+  a running jump toward the door each time the route stops short: the
+  route plans a jump only where it enters a ledge (attribute bit 22, the
+  [slides](#how-the-areas-are-classified)) from below, so it walks into a
+  floor that is only higher and stops there.
+  Under the original the same walk meets a random battle on map 414 after
+  428 frames. Map 172's Repair Bot still starts its scripted battle under
+  the default ([above](#random-battles-in-platforming-areas)).
+- *A chapter's scenes.* The game's opening from the title's New Game (the
+  title, the narration on map 4, Lahan's maps 2 and 14 and the battle on
+  map 14) plays to Fei's room in the village chief's house, story value 6
+  on map 14 with the player walking. With what the hosts give the session
+  from the default settings it ends at the original's frame (18 837) and
+  memory; with Instant text, auto-advance at its shortest dwell, movies
+  skippable and half encounters it shows the same maps, fights the same
+  battle and reaches the same story value after 18 323 frames. Each
+  option's scenes, timed ones among them, are compared with the
+  original's [below](#text-speed-auto-advance-and-movie-skipping).
+
+Nothing soft-locked in these runs.
+
+Tests: `xem-settings`'
+`the_gameplay_options_default_to_not_while_platforming_and_the_original_and_explicit_choices_survive_saves_backups_and_imports`
+checks the first save of a fresh file and the values the sessions get;
+that a file holding every key but the options' (a real file through
+`FileStore` too) reads their defaults, keeps the rest and resets nothing;
+and that a choice of each, acknowledged in turn, survives other changes,
+a whole-settings change, a reload, a backup and its import, while a
+backup saved before the options imports their defaults.
+`agents_change_every_gameplay_option_through_the_settings_commands_and_read_the_acknowledgement`
+sends each option's change as an agent's JSON line, reads the revision and
+the settings back, and checks that refused changes (a dwell out of range,
+values no longer offered) say why and change nothing. `xem-host`'s
+`an_agents_gameplay_settings_reach_the_session_on_the_next_frame` follows
+those commands through `Game::update` into the session's `status`, beside
+its per-option tests of the defaults and of session logs.
+`xem-desktop/tests/control.rs` (local: disc 1, the game module, and
+weston's headless backend and lavapipe from the runtime shell; about 2 s
+here) runs `xem-desktop --control` itself on a fresh configuration
+directory: the defaults in `status`, each `settings_apply` acknowledged
+with its revision, a refused dwell, the next frames' `status`, the
+settings file, and a second launch that starts with the choices. A
+browser test (`persistence.test.mjs`, the fixture module) loads an
+`xem.settings` saved without the options and reads their defaults, the
+running page gives the session the default maps, `xem.settings.apply`
+acknowledges each option's change in turn and refuses a dwell out of
+range, the session shows each, and a reload and an exported backup's
+import keep them. On the game,
+`the_default_setting_climbs_babel_tower_through_its_doors_and_the_tops_fixed_battle_still_starts`
+(`xem-headless/tests/encounters.rs`, about 11 s here) and
+`the_opening_chapter_reaches_feis_room_with_the_defaults_as_the_original_and_with_every_scene_option`
+(`xem-headless/tests/text_and_movies.rs`, about 31 s here, its three runs
+side by side) play the runs above, and the second file also reads `status`
+on map 25's story movie (`movie.ends_on_press` false without the option
+and true with it, `null` on map 23) and at map 172's choice (`dialogue` a
+choice, `auto_advance_waited` 0). The slice logs replay to their recorded
+hashes (`xem-headless/tests/slice.rs`).
+
+Not done or not measured: the climb does not cross Babel Tower's maps 407,
+409 and 412 (map 412's door to map 413 opens only once map 417's switch,
+reached on foot, sets the tower's flag, which an `enter_field` start does
+not), and no run crossed Blackmoon Forest or the Aveh-Kislev border
+mountains end to end. The climb starts from `enter_field`'s game data with
+the gears set, not from a story save, and its route is the assist's with
+running jumps where it stops short, not a person's. The chapter is the
+game's opening only and holds no story movie; no later chapter was played
+end to end with the options, and movie skipping was measured on map 25's
+movie. The desktop's agent channel was run on weston's headless backend,
+a compositor with no screen. The Android, OpenXR and WebXR hosts give the
+values through the same `Game::update` and frame loop, and no run there
+used the options on the game. No person tried the options.
+
 ### Random battles in platforming areas
 
 The field's random battles come from one draw, `field_encounter_count_down`,
@@ -4302,7 +4434,11 @@ and map 172's Repair Bot, its third choice picked, still starts its
 scripted battle (formation 3) under them; and that on the Mountain Path
 (map 15, left on) the same walk brings its battle at the same frame and to
 the same RAM with them as without, and halved the same draw counts half
-as far in 60 frames of walk and its battle comes later. The slice logs
+as far in 60 frames of walk and its battle comes later; and that under
+them the party climbs Babel Tower from map 413 through its doors to the
+top with no random battle, where the top's fixed battle still starts,
+while the original's random battle interrupts the same walk on map 414
+([Gameplay options](#gameplay-options)). The slice logs
 replay to their recorded
 hashes (`xem-headless/tests/slice.rs`). A browser test
 (`persistence.test.mjs`, the fixture module) checks that the running page
@@ -4831,7 +4967,7 @@ the game's. `xem-ui/tests/panel.rs`
 checks that the Gameplay section's three options apply through the
 service, are acknowledged, show the wait only while auto-advance is on,
 keep a refused wait and follow an agent's change.
-`xem-headless/tests/text_and_movies.rs` (local, disc 1; about 75 s here
+`xem-headless/tests/text_and_movies.rs` (local, disc 1; about 80 s here
 at four tests at a time) plays the table's scenes with the original's and
 Instant text to the same end, story value and messages (the narration
 also as the two-press difference above), checks that map 359's slow
@@ -4842,8 +4978,11 @@ Bot's pages by auto-advance to its four choices and checks that the
 choice still waits unanswered 1 200 frames later (no battle) and that the
 player's own third choice then starts the bot's battle, ends map 25's
 movie on Confirm only under the option and runs on into map 23 to the
-same story value, and replays a recording that turned all three on (and
-changed the dwell) on map 131 to the recording's memory hash. The slice
+same story value (reading `status.movie` before the press), plays the
+game's opening to Fei's room with the defaults and with every option on
+([Gameplay options](#gameplay-options)), and replays a recording that
+turned all three on (and changed the dwell) on map 131 to the recording's
+memory hash. The slice
 logs replay to their recorded hashes (`xem-headless/tests/slice.rs`). A
 browser test (`persistence.test.mjs`, the fixture module) checks that the
 running page gives the session the original's values, then half
@@ -5079,12 +5218,16 @@ right stick and the mouse (under the mouse camera setting) look around
 `--control` answers agents' JSON commands on stdin, a line each, between
 frames while the game plays: the command layer's (`status`, `context`,
 `navigate`, `act`, ...), `settings`, `settings_apply {change}` (the panel's
-own typed, validated, persisted change), `panel {visible}`,
+own typed, validated, persisted change; `SettingsService::command` answers
+both), `panel {visible}`,
 `import_disc {path}` (the launcher's path) and `bios_import {path}` (Import
 BIOS's: kept beside the settings for every boot and given to the running
 game); nothing passes through the window system. With `--xr` the headset
 session answers the same commands but `import_disc` (`xem_host::Control`
 and `xem_host::settings_command` serve both).
+`xem-desktop/tests/control.rs` runs the desktop itself on weston's headless
+backend with lavapipe (local, disc 1) and changes the gameplay options
+through `settings_apply` ([Gameplay options](#gameplay-options)).
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native

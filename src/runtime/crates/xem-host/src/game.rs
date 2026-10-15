@@ -614,6 +614,39 @@ mod tests {
     }
 
     #[test]
+    fn an_agents_gameplay_settings_reach_the_session_on_the_next_frame() {
+        use serde_json::json;
+        use xem_settings::{MemoryStore, SettingsService};
+        // `xem-desktop --control`: the settings commands go to the
+        // settings service, and its frames give the session the result.
+        let mut settings = SettingsService::with_defaults(MemoryStore::default());
+        let mut game = Game::new(Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default));
+        let update = |game: &mut Game, settings: &SettingsService| {
+            game.paced = Instant::now() - FRAME * 2;
+            game.update(0, settings.settings(), || true).unwrap()
+        };
+        let gameplay = |game: &mut Game| {
+            let status = game.session.execute(&json!({"cmd":"status"}));
+            ["random_battles_off", "half_encounters", "text_speed", "auto_advance", "movie_skip"].map(|key| status[key].clone())
+        };
+        assert!(update(&mut game, &settings) > 0);
+        let maps = json!(xem_core::encounters::platforming_maps());
+        assert_eq!(gameplay(&mut game), [maps.clone(), json!(false), json!(0), json!(0), json!(false)], "a fresh host: the defaults");
+        for change in [json!({"RandomBattles":"Original"}), json!({"EncounterRate":"Half"}), json!({"TextSpeed":"Instant"}),
+            json!({"AutoAdvance":{"enabled":true,"dwell":90}}), json!({"MovieSkip":true})] {
+            let ack = settings.command(&json!({"cmd":"settings_apply","change":change})).unwrap();
+            assert!(ack.get("revision").is_some(), "{change} -> {ack}");
+        }
+        update(&mut game, &settings);
+        assert_eq!(gameplay(&mut game), [json!([]), json!(true), json!(255), json!(90), json!(true)], "the next frame's status shows each");
+        let refused = settings.command(&json!({"cmd":"settings_apply","change":{"AutoAdvance":{"enabled":true,"dwell":601}}})).unwrap();
+        assert!(refused["error"].is_string(), "{refused}");
+        settings.command(&json!({"cmd":"settings_apply","change":{"RandomBattles":"NotWhilePlatforming"}})).unwrap();
+        update(&mut game, &settings);
+        assert_eq!(gameplay(&mut game), [maps, json!(true), json!(255), json!(90), json!(true)], "the refused dwell changed nothing");
+    }
+
+    #[test]
     #[ignore = "needs the original disc 1 and built game module"]
     fn original_game_rewind_frame_latency_and_scheduled_setup() {
         use serde_json::json;

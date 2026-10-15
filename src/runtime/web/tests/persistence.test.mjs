@@ -550,6 +550,54 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     } finally { await browser.close(); }
   });
 
+  test('an old xem.settings reads the gameplay defaults, agents change each option with an acknowledgement, and the choices survive a reload and a backup', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true });
+    const ready = async (page) => page.waitForFunction(() => document.body.dataset.ready === 'true');
+    const gameplay = (s) => [s.random_battles, s.encounter_rate, s.text_speed, s.auto_advance, s.movie_skip];
+    try {
+      const page = await browser.page(fixture);
+      // Settings saved before the gameplay options existed, with a choice of their own.
+      await page.evaluate(() => {
+        const old = window.xem.settings.get().settings;
+        for (const key of ['random_battles', 'encounter_rate', 'text_speed', 'auto_advance', 'movie_skip']) delete old[key];
+        localStorage.setItem('xem.settings', JSON.stringify({ ...old, master_volume: 40 }));
+      });
+      await page.reload(); await ready(page);
+      const read = (await page.evaluate(() => window.xem.settings.get())).settings;
+      assert.deepEqual([...gameplay(read), read.master_volume],
+        ['NotWhilePlatforming', 'Original', 'Original', { enabled: false, dwell: 120 }, false, 40], 'the defaults, the rest kept');
+      await forever(page);
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => { const s = window.xem.status().session; return s.random_battles_off.includes(414) && s.text_speed === 0; });
+      // Agents change each through the settings service: acknowledged in turn.
+      const first = (await page.evaluate(() => window.xem.settings.get())).revision;
+      const changes = [{ RandomBattles: 'Original' }, { EncounterRate: 'Half' }, { TextSpeed: 'Instant' },
+        { AutoAdvance: { enabled: true, dwell: 90 } }, { MovieSkip: true }];
+      for (const [n, change] of changes.entries()) {
+        const reply = await page.evaluate((c) => window.xem.settings.apply(c), change);
+        assert.deepEqual([reply.ok, reply.revision], [true, first + n + 1], JSON.stringify(reply));
+      }
+      const refused = await page.evaluate(() => window.xem.settings.apply({ AutoAdvance: { enabled: true, dwell: 5 } }));
+      assert.deepEqual([refused.ok, refused.rejected], [false, 'invalid'], JSON.stringify(refused));
+      assert.match(refused.reason, /auto-advance dwell must be 30–600/);
+      // The session's status shows each on the next frames.
+      await page.waitForFunction(() => {
+        const s = window.xem.status().session;
+        return s.random_battles_off.length === 0 && s.half_encounters && s.text_speed === 255 && s.auto_advance === 90 && s.movie_skip;
+      });
+      const chosen = ['Original', 'Half', 'Instant', { enabled: true, dwell: 90 }, true];
+      const backup = await page.evaluate(() => window.xem.settings.export());
+      await page.evaluate(() => window.xem.setRunning(false));
+      await page.reload(); await ready(page);
+      assert.deepEqual(gameplay((await page.evaluate(() => window.xem.settings.get())).settings), chosen, 'kept by a reload');
+      // After another change, importing the backup brings them back.
+      assert.equal((await page.evaluate(() => window.xem.settings.apply({ RandomBattles: 'NotWhilePlatforming' }))).ok, true);
+      const imported = await page.evaluate((text) => window.xem.settings.import(text), backup);
+      assert.deepEqual(gameplay(imported.settings), chosen, 'carried by the backup');
+      assert.deepEqual(page.errors, []);
+    } finally { await browser.close(); }
+  });
+
   test('Settings operations have keyboard and gamepad paths and bindings survive reload', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [() => {
       window.padButtons = Array(17).fill(false);

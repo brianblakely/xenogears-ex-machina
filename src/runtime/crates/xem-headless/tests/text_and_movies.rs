@@ -10,9 +10,14 @@
 //! auto-advance takes a scene through its pages to the same end and leaves
 //! a choice to the player however long it waits; the setting lets a story
 //! movie end on Confirm, after which the field goes on as after the
-//! movie's natural end; and the three controls are recorded, so a replay
-//! reaches the recording's memory. Local only: it needs the user's disc 1
-//! and a game module build.
+//! movie's natural end; the three controls are recorded, so a replay
+//! reaches the recording's memory; agents read each option's effect in
+//! `status` (the movie and whether a press ends it, a choice that counts
+//! nothing toward the dwell); and the game's opening chapter, New Game to
+//! Fei's room, plays with the settings' defaults to the original's memory
+//! and with every scene option to the same story value through the same
+//! maps and battle. Local only: it needs the user's disc 1 and a game
+//! module build.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test text_and_movies
 
@@ -499,6 +504,8 @@ fn auto_advance_leaves_a_choice_to_the_player_however_long_it_waits() {
     assert_eq!((choice.count, choice.index), (4, 0));
     run(&mut session, json!({"cmd": "frames", "count": 1200}));
     assert_eq!(session.runtime.context(), Context::Dialogue { choice: Some(choice) }, "the choice still waits, unanswered");
+    let status = run(&mut session, json!({"cmd": "status"}));
+    assert_eq!((&status["dialogue"], &status["auto_advance_waited"]), (&json!({"kind": "choice"}), &json!(0)), "agents see a choice, which counts nothing");
     assert_eq!(session.runtime.services().mode, Some(1), "no battle: nothing was chosen");
     // The player's own answer still works.
     for _ in 0..2 {
@@ -531,11 +538,16 @@ fn to_the_movie(disc: &PathBuf, skip: bool) -> Session<NativeModule> {
 
 /// Presses Confirm (one vertical blank) `after` frames into the movie and
 /// runs until the field shows map 23: the frames the movie played, its
-/// last frame and the frames to map 23.
-fn press_through(session: &mut Session<NativeModule>, after: u64) -> (u64, u32, u64) {
+/// last frame, the frames to map 23 and the movie `status` showed just
+/// before the press.
+fn press_through(session: &mut Session<NativeModule>, after: u64) -> (u64, u32, u64, Value) {
     let start = session.runtime.frames();
     let mut ended = None;
+    let mut shown = Value::Null;
     for frame in 0..12_000u64 {
+        if frame == after {
+            shown = run(session, json!({"cmd": "status"}))["movie"].clone();
+        }
         if frame == after || frame == after + 2 {
             run(session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 1}));
         }
@@ -546,7 +558,7 @@ fn press_through(session: &mut Session<NativeModule>, after: u64) -> (u64, u32, 
         }
         if half(session, MODE_FIELD_MAP_ID) & 0xFFF == 23 {
             let (played, last) = ended.expect("the movie ended first");
-            return (played, last, session.runtime.frames() - start);
+            return (played, last, session.runtime.frames() - start, shown);
         }
     }
     panic!("map 23 never came");
@@ -559,13 +571,19 @@ fn a_story_movie_ends_on_confirm_where_the_setting_lets_it_and_the_field_goes_on
         return;
     };
     let mut original = to_the_movie(&disc, false);
-    let (played, last, arrived) = press_through(&mut original, 120);
+    let (played, last, arrived, shown) = press_through(&mut original, 120);
     let mut skipped = to_the_movie(&disc, true);
-    let (skipped_played, skipped_last, skipped_arrived) = press_through(&mut skipped, 120);
+    let (skipped_played, skipped_last, skipped_arrived, skipped_shown) = press_through(&mut skipped, 120);
     eprintln!("map 25's movie: the original's played {played} frames to its frame {last}, map 23 after {arrived}; \
-        skippable it ended {skipped_played} frames in at its frame {skipped_last}, map 23 after {skipped_arrived}");
+        skippable it ended {skipped_played} frames in at its frame {skipped_last}, map 23 after {skipped_arrived}; \
+        status showed {shown} and {skipped_shown} before the press");
     assert!(last >= 1050, "the original's movie ignores Confirm and plays to its end");
     assert!(skipped_last < 100 && skipped_played < 400, "skippable, Confirm ends it");
+    // Agents see which: the story's movie, a press ending it only under
+    // the option.
+    assert_eq!((&shown["kind"], &shown["ends_on_press"]), (&json!("field"), &json!(false)), "{shown}");
+    assert_eq!((&skipped_shown["kind"], &skipped_shown["ends_on_press"]), (&json!("field"), &json!(true)), "{skipped_shown}");
+    assert_eq!(run(&mut skipped, json!({"cmd": "status"}))["movie"], Value::Null, "no movie on map 23");
     // The field goes on as after the natural end: map 23's opening runs to
     // the same moment, story value and memory of the scene ahead.
     let story = |s: &mut Session<NativeModule>| half(s, STORY);
@@ -577,6 +595,145 @@ fn a_story_movie_ends_on_confirm_where_the_setting_lets_it_and_the_field_goes_on
         assert_eq!(half(session, MODE_FIELD_MAP_ID) & 0xFFF, 23);
     }
     assert_eq!(story(&mut skipped), story(&mut original), "the same story value after map 23's opening");
+}
+
+/// How the opening chapter went: its end, frames, story value, the field
+/// maps it showed in order, the battles it fought and the memory it ended
+/// with.
+#[derive(Debug)]
+struct Opening {
+    end: End,
+    frames: u64,
+    story: u16,
+    maps: Vec<u16>,
+    battles: u32,
+    hash: Value,
+}
+
+/// The game's opening chapter as a player plays it from boot:
+/// tests/reference-inputs/new-game-movie-skip.json's presses (the title's
+/// New Game and the press that begins the story's text), then Confirm for
+/// one vertical blank as each dialogue prompt shows (`prompts`; none while
+/// auto-advance turns the pages) and at each wait for Confirm outside a
+/// window (the narration's), and Cross 8 of every 64 frames in a battle,
+/// until the player has walked 300 frames. `setup` gives the session its
+/// controls first; a choice, which the chapter has none of, fails.
+fn opening(disc: &PathBuf, setup: impl FnOnce(&mut Session<NativeModule>), prompts: bool) -> Opening {
+    let inputs: Value = serde_json::from_str(&std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/new-game-movie-skip.json"),
+    ).expect("the reference input")).expect("JSON");
+    let presses: Vec<(u64, u64, u16)> = inputs.as_array().expect("presses").iter().map(|press| {
+        let buttons = press["buttons"].as_array().expect("buttons").iter()
+            .map(|b| xem_core::control::button_bit(b.as_str().expect("a name")).expect("a button")).fold(0, |all, b| all | b);
+        (press["start"].as_u64().expect("start"), press["end"].as_u64().expect("end"), buttons)
+    }).collect();
+    let until = presses.iter().map(|p| p.1).max().expect("presses");
+    let (mut session, _) = boot(disc, &Default::default()).expect("boot");
+    setup(&mut session);
+    let confirm = GameAction::Confirm.button();
+    let cross = xem_core::control::button_bit("cross").expect("Cross");
+    let (mut maps, mut battles, mut battling, mut walking) = (Vec::new(), 0, 0u64, 0);
+    let (mut pressed_at, mut looped_at): (Option<u64>, Option<u64>) = (None, None);
+    let mut end = End::Unfinished;
+    while session.runtime.frames() < 60_000 {
+        let now = session.runtime.frames();
+        let mode = session.runtime.services().mode;
+        let mut buttons = 0;
+        if now < until {
+            buttons = presses.iter().filter(|(start, end, _)| (*start..*end).contains(&now)).fold(0, |all, p| all | p.2);
+        } else if mode == Some(2) {
+            battling += 1;
+            if battling == 1 {
+                battles += 1;
+            }
+            if battling % 64 < 8 {
+                buttons = cross;
+            }
+        } else if mode == Some(1) {
+            battling = 0;
+            match xem_core::dialogue::prompt(session.runtime.memory(), mode) {
+                Prompt::Choice => panic!("the opening chapter has no choice"),
+                Prompt::Waiting { .. } => {
+                    looped_at = None;
+                    if prompts && pressed_at.is_none_or(|at| now - at >= 16) {
+                        buttons = confirm;
+                        pressed_at = Some(now);
+                    }
+                }
+                Prompt::None => {
+                    pressed_at = None;
+                    if confirm_loop(&mut session) && looped_at.is_none_or(|at| now - at >= 16) {
+                        buttons = confirm;
+                        looped_at = Some(now);
+                    }
+                }
+            }
+        }
+        session.set_pad(0, buttons);
+        assert!(session.frame().expect("the game runs"), "a disc read blocked");
+        if session.runtime.services().mode == Some(1) {
+            let map = half(&mut session, MODE_FIELD_MAP_ID) & 0xFFF;
+            if maps.last() != Some(&map) && map != 0xFFF {
+                maps.push(map);
+            }
+        }
+        walking = if session.runtime.context() == Context::Walk { walking + 1 } else { 0 };
+        if walking >= 300 {
+            end = End::Control;
+            break;
+        }
+    }
+    session.set_pad(0, 0);
+    let hash = run(&mut session, json!({"cmd": "memory_hash"}));
+    Opening { end, frames: session.runtime.frames(), story: half(&mut session, STORY), maps, battles, hash }
+}
+
+/// Ordinary progression with the settings' defaults and with every scene
+/// option: the opening chapter (New Game, the narration on map 4, Lahan's
+/// maps 2 and 14 and the battle there) plays to Fei's room, story value 6 on
+/// map 14 with the player walking. With what the hosts give the session from
+/// `Settings::default()` (random battles off in the platforming areas, the
+/// original's everything else) it ends with the original's memory; with
+/// Instant text, auto-advance turning the pages, movies skippable and half
+/// encounters it shows the same maps, fights the same battle and reaches the
+/// same story value sooner.
+#[test]
+fn the_opening_chapter_reaches_feis_room_with_the_defaults_as_the_original_and_with_every_scene_option() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // Three sessions of their own, played side by side.
+    let [original, defaults, options] = std::thread::scope(|scope| {
+        let original = scope.spawn(|| opening(&disc, |_| {}, true));
+        let defaults = scope.spawn(|| opening(&disc, |session| {
+            // What `Game::update` and the browser's frame loop give the session.
+            let settings = xem_settings::Settings::default();
+            session.set_random_battles(settings.random_battles_off()).expect("field maps");
+            session.set_half_encounters(settings.half_encounters());
+            session.set_text_speed(settings.text_speed.glyphs()).expect("a text speed");
+            session.set_movie_skip(settings.movie_skip);
+            session.set_auto_advance(settings.auto_advance_dwell()).expect("a dwell");
+        }, true));
+        let options = scope.spawn(|| opening(&disc, |session| {
+            session.set_random_battles(xem_settings::Settings::default().random_battles_off()).expect("field maps");
+            session.set_text_speed(xem_settings::TextSpeed::Instant.glyphs()).expect("a text speed");
+            session.set_auto_advance(xem_settings::MIN_AUTO_ADVANCE_DWELL).expect("a dwell");
+            session.set_movie_skip(true);
+            session.set_half_encounters(true);
+        }, false));
+        [original, defaults, options].map(|run| run.join().expect("a run"))
+    });
+    for (name, run) in [("the original", &original), ("the defaults", &defaults), ("every option", &options)] {
+        eprintln!("the opening chapter under {name}: {:?} after {} frames, story {}, maps {:?}, {} battle(s), memory {}",
+            run.end, run.frames, run.story, run.maps, run.battles, run.hash);
+    }
+    assert_eq!((original.end, original.story, original.maps.last()), (End::Control, 6, Some(&14)), "the original reaches Fei's room");
+    assert_eq!(original.battles, 1, "and fights map 14's battle");
+    assert_eq!((defaults.frames, &defaults.hash), (original.frames, &original.hash), "the defaults play the chapter as the original does");
+    assert_eq!((options.end, options.story, &options.maps, options.battles), (original.end, original.story, &original.maps, original.battles),
+        "every scene option reaches the same story value through the same maps and battle");
+    assert!(options.frames < original.frames, "and sooner");
 }
 
 #[test]
