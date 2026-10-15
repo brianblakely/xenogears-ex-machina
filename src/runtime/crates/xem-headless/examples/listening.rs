@@ -12,7 +12,13 @@
 //! DIR is `.local/listening` at the repository's root by default (ignored:
 //! the music is the game's, from the user's disc, and stays on this
 //! machine). Every random choice comes from the seed (2026 by default), so
-//! the same commit and seed make the same files.
+//! the same commit and seed make the same files. Each manifest's
+//! `generated` block names the commit and the seed and holds `content`, the
+//! SHA-256 of every file written (its path and digest) and of the rest of
+//! the manifest: the page resumes a session, and the analysis takes its
+//! answers, only where `generated` is the one the manifest has now, so
+//! stimuli made in any other way (another seed, `--only`, `--state`, a
+//! changed tree) never share answers.
 //!
 //! `localization` (no disc needed) writes `localization.json` and
 //! `localization/`: half-second bursts of seeded Gaussian noise in 48
@@ -35,7 +41,10 @@
 //! `music` (disc 1 and the game module) writes `coherence.json`,
 //! `coherence/` and `states/`: eight excerpts of the game's music, each
 //! reached from boot by the recipe below and saved as a state (a host's
-//! .xemstate; `--state NAME=FILE` takes one of the user's instead), then
+//! .xemstate; `--state NAME=FILE` takes one of the user's instead, labelled
+//! as theirs, a disc 2 one too when disc 2 lies beside disc 1; `--only`
+//! makes the named excerpts alone; a name that is not an excerpt's is
+//! refused), then
 //! presented from that state four times, the game in Stereo with Binaural's
 //! Spatial Music at immersion 0, 35, 70 and 100 (Positional Effects off, so
 //! effects keep their original mix in every condition), with a tap capture
@@ -57,6 +66,8 @@
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use xem_binaural::{BLOCK, Renderer, Route, SAMPLE_RATE, Target, hrtf, measure, pan};
+use xem_core::snapshot::digest;
+use xem_disc::identify::hex;
 use xem_spu::TapFrame;
 
 /// The loudness every condition is brought to (ITU-R BS.1770-4).
@@ -129,30 +140,62 @@ fn commit() -> Value {
     json!({"commit": git(&["rev-parse", "HEAD"]), "dirty": git(&["status", "--porcelain", "--untracked-files=no"]).map(|s| !s.is_empty())})
 }
 
-/// Two sides as a 16-bit stereo WAV file at the SPU's rate.
-fn write_wav(path: &Path, sides: &Sides) {
-    let frames = sides[0].len();
-    let data = (frames * 4) as u32;
-    let mut out = Vec::with_capacity(44 + data as usize);
-    out.extend_from_slice(b"RIFF");
-    out.extend_from_slice(&(36 + data).to_le_bytes());
-    out.extend_from_slice(b"WAVEfmt ");
-    out.extend_from_slice(&16u32.to_le_bytes());
-    out.extend_from_slice(&1u16.to_le_bytes());
-    out.extend_from_slice(&2u16.to_le_bytes());
-    out.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
-    out.extend_from_slice(&(SAMPLE_RATE * 4).to_le_bytes());
-    out.extend_from_slice(&4u16.to_le_bytes());
-    out.extend_from_slice(&16u16.to_le_bytes());
-    out.extend_from_slice(b"data");
-    out.extend_from_slice(&data.to_le_bytes());
-    for n in 0..frames {
-        for side in sides {
-            out.extend_from_slice(&((side[n] * 32768.0).round().clamp(-32768.0, 32767.0) as i16).to_le_bytes());
-        }
+/// What a run writes under its output directory: each file's path there,
+/// with its SHA-256.
+struct Files {
+    out: PathBuf,
+    written: Vec<(String, String)>,
+}
+
+impl Files {
+    fn new(out: &Path) -> Files {
+        Files { out: out.to_owned(), written: Vec::new() }
     }
-    std::fs::create_dir_all(path.parent().expect("a directory")).expect("the stimuli's directory");
-    std::fs::write(path, out).expect("a stimulus");
+
+    /// Two sides as a 16-bit stereo WAV file at the SPU's rate, at `file`
+    /// under the output directory.
+    fn wav(&mut self, file: &str, sides: &Sides) {
+        let frames = sides[0].len();
+        let data = (frames * 4) as u32;
+        let mut out = Vec::with_capacity(44 + data as usize);
+        out.extend_from_slice(b"RIFF");
+        out.extend_from_slice(&(36 + data).to_le_bytes());
+        out.extend_from_slice(b"WAVEfmt ");
+        out.extend_from_slice(&16u32.to_le_bytes());
+        out.extend_from_slice(&1u16.to_le_bytes());
+        out.extend_from_slice(&2u16.to_le_bytes());
+        out.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
+        out.extend_from_slice(&(SAMPLE_RATE * 4).to_le_bytes());
+        out.extend_from_slice(&4u16.to_le_bytes());
+        out.extend_from_slice(&16u16.to_le_bytes());
+        out.extend_from_slice(b"data");
+        out.extend_from_slice(&data.to_le_bytes());
+        for n in 0..frames {
+            for side in sides {
+                out.extend_from_slice(&((side[n] * 32768.0).round().clamp(-32768.0, 32767.0) as i16).to_le_bytes());
+            }
+        }
+        let path = self.out.join(file);
+        std::fs::create_dir_all(path.parent().expect("a directory")).expect("the stimuli's directory");
+        std::fs::write(&path, &out).expect("a stimulus");
+        self.written.push((file.to_owned(), hex(&digest(&out))));
+    }
+
+    /// `manifest` with its `generated` block, to which `content` is added:
+    /// the SHA-256 of every file written (path and digest, in the order
+    /// written) and of the rest of the manifest.
+    fn manifest(&self, mut manifest: Value, mut generated: Value) -> Value {
+        let covered = serde_json::to_vec(&json!({"files": self.written, "manifest": manifest})).expect("JSON");
+        generated["content"] = json!({"sha256": hex(&digest(&covered)), "of": "every file written (its path and SHA-256) and the rest of this manifest"});
+        manifest["generated"] = generated;
+        manifest
+    }
+}
+
+/// Stops the run over a wrong command line.
+fn refuse(message: &str) -> ! {
+    eprintln!("listening: {message}");
+    std::process::exit(2);
 }
 
 fn peak(sides: &Sides) -> f32 {
@@ -186,28 +229,31 @@ fn main() {
     let mut only: Option<Vec<String>> = None;
     let mut states: Vec<(String, PathBuf)> = Vec::new();
     while let Some(arg) = args.next() {
-        let mut value = || args.next().unwrap_or_else(|| panic!("{arg} needs a value"));
+        let mut value = || args.next().unwrap_or_else(|| refuse(&format!("{arg} needs a value")));
         match arg.as_str() {
             "--out" => out = PathBuf::from(value()),
-            "--seed" => seed = value().parse().expect("a number"),
+            "--seed" => seed = value().parse().unwrap_or_else(|_| refuse("--seed takes a number")),
             "--only" => only = Some(value().split(',').map(str::to_owned).collect()),
             "--state" => {
                 let v = value();
-                let (name, path) = v.split_once('=').expect("--state NAME=FILE");
+                let (name, path) = v.split_once('=').unwrap_or_else(|| refuse("--state takes NAME=FILE"));
                 states.push((name.to_owned(), PathBuf::from(path)));
             }
-            other => panic!("unknown option {other}"),
+            other => refuse(&format!("unknown option {other}")),
         }
+    }
+    let usage = "usage: listening localization|music [--out DIR] [--seed N] [--only NAME,...] [--state NAME=FILE]...";
+    match part.as_str() {
+        "localization" if only.is_some() || !states.is_empty() => refuse("--only and --state choose music excerpts; localization takes neither"),
+        "localization" | "music" => {}
+        _ => refuse(usage),
     }
     std::fs::create_dir_all(&out).expect("the output directory");
     let out = out.canonicalize().expect("the output directory");
-    match part.as_str() {
-        "localization" => localization::main(&out, seed),
-        "music" => music::main(&out, seed, only, states),
-        _ => {
-            eprintln!("usage: listening localization|music [--out DIR] [--seed N] [--only NAME,...] [--state NAME=FILE]...");
-            std::process::exit(2);
-        }
+    if part == "localization" {
+        localization::main(&out, seed);
+    } else {
+        music::main(&out, seed, only, states);
     }
 }
 
@@ -480,6 +526,7 @@ mod localization {
                 assert!(near > far, "{}: the near ear is the louder", m.entry["id"]);
             }
         }
+        let mut files = Files::new(out);
         let mut stimuli = Vec::new();
         let mut loudest = 0f32;
         for m in made {
@@ -489,7 +536,7 @@ mod localization {
             let mut entry = m.entry;
             entry["loudness"] = json!(rounded(loudness(&sides), 2));
             entry["seconds"] = json!(rounded(sides[0].len() as f64 / RATE, 4));
-            write_wav(&out.join(entry["file"].as_str().unwrap()), &sides);
+            files.wav(entry["file"].as_str().unwrap(), &sides);
             stimuli.push(entry);
         }
         // Catch trials: the burst in one ear only, at the target loudness.
@@ -505,7 +552,7 @@ mod localization {
             loudest = loudest.max(peak(&sides));
             let id = format!("catch-{side}-t{token}");
             let file = format!("localization/catch/{id}.wav");
-            write_wav(&out.join(&file), &sides);
+            files.wav(&file, &sides);
             let azimuth = if side == "right" { 90.0 } else { 270.0 };
             stimuli.push(json!({"id": id, "file": file, "condition": "catch", "motion": "static", "side": side, "start": [azimuth, 0.0], "end": [azimuth, 0.0],
                 "token": token, "loudness": rounded(loudness(&sides), 2), "seconds": rounded(sides[0].len() as f64 / RATE, 4)}));
@@ -524,7 +571,7 @@ mod localization {
                 loudest = loudest.max(peak(&sides));
                 let id = format!("training-s{session}-{i:02}-{:03}{:+03}", direction.0 as i32, direction.1 as i32);
                 let file = format!("localization/training/{id}.wav");
-                write_wav(&out.join(&file), &sides);
+                files.wav(&file, &sides);
                 stimuli.push(json!({"id": id, "file": file, "condition": "rendered", "motion": "static", "training": true, "start": [direction.0, direction.1],
                     "end": [direction.0, direction.1], "token": i, "loudness": rounded(loudness(&sides), 2), "seconds": rounded(sides[0].len() as f64 / RATE, 4)}));
                 ids.push(id);
@@ -534,10 +581,9 @@ mod localization {
         let headroom = 10f64.powf(ROVE_DB / 20.0) as f32;
         assert!(loudest * headroom < MOST, "the loudest stimulus, roved up, reaches {} of full scale", loudest * headroom);
         // Calibration.
-        let calibration = out.join("localization/calibration");
         let level = |sides: Sides| scaled(&sides, TARGET_LUFS - loudness(&sides));
         let p = pink(seed_of(seed, "pink"), 8.0);
-        write_wav(&calibration.join("pink.wav"), &level([p.clone(), p]));
+        files.wav("localization/calibration/pink.wav", &level([p.clone(), p]));
         for (e, side) in ["left", "right"].iter().enumerate() {
             let mut one = Vec::new();
             for burst in 0..3 {
@@ -546,12 +592,12 @@ mod localization {
             }
             let silent = vec![0f32; one.len()];
             let sides = if e == 0 { [one, silent] } else { [silent, one] };
-            write_wav(&calibration.join(format!("{side}.wav")), &level(sides));
+            files.wav(&format!("localization/calibration/{side}.wav"), &level(sides));
         }
         let low = low_noise(seed_of(seed, "polarity"), 2.0);
         let negated: Vec<f32> = low.iter().map(|s| -s).collect();
-        write_wav(&calibration.join("in-phase.wav"), &level([low.clone(), low.clone()]));
-        write_wav(&calibration.join("anti-phase.wav"), &level([low, negated]));
+        files.wav("localization/calibration/in-phase.wav", &level([low.clone(), low.clone()]));
+        files.wav("localization/calibration/anti-phase.wav", &level([low, negated]));
         // The sessions.
         let test_ids = |condition: &str, motion: &str| -> Vec<Value> { stimuli.iter().filter(|s| s["condition"] == condition && s["motion"] == motion && s.get("training").is_none()).cloned().collect() };
         let mut sessions = Vec::new();
@@ -595,18 +641,18 @@ mod localization {
             sessions.push(json!({"name": name, "training": training, "blocks": blocks}));
         }
         let count = stimuli.len();
+        let generated = json!({
+            "tool": "cargo run --release -p xem-headless --example listening -- localization",
+            "source": commit(),
+            "seed": seed,
+            "sample_rate": SAMPLE_RATE,
+            "renderer": {"block": BLOCK, "voice": "one voice at the Stereo pan law's centre, pre-pan gain 1, main volume full, routed to one source (Target::Listener)",
+                "moving": "the source's target set every block along the path; the renderer glides to it (30 ms) as for the game's sources"},
+            "hrtf": "MIT KEMAR, diffuse-field equalized (crates/xem-binaural/hrtf/README.md)",
+        });
         let manifest = json!({
             "kind": "xem-listening-localization",
             "version": 1,
-            "generated": {
-                "tool": "cargo run --release -p xem-headless --example listening -- localization",
-                "source": commit(),
-                "seed": seed,
-                "sample_rate": SAMPLE_RATE,
-                "renderer": {"block": BLOCK, "voice": "one voice at the Stereo pan law's centre, pre-pan gain 1, main volume full, routed to one source (Target::Listener)",
-                    "moving": "the source's target set every block along the path; the renderer glides to it (30 ms) as for the game's sources"},
-                "hrtf": "MIT KEMAR, diffuse-field equalized (crates/xem-binaural/hrtf/README.md)",
-            },
             "level": {"target_lufs": TARGET_LUFS, "rove_db": ROVE_DB, "condition_gain_db": gains, "loudest": rounded(f64::from(loudest), 4),
                 "note": "each condition is scaled so that its static bursts' median loudness (ITU-R BS.1770-4) is the target; each keeps the level differences its directions have; the page roves each trial's level"},
             "conditions": {
@@ -620,6 +666,7 @@ mod localization {
             "stimuli": stimuli,
             "sessions": sessions,
         });
+        let manifest = files.manifest(manifest, generated);
         write_json(&out.join("localization.json"), &manifest);
         println!("{count} stimuli in {:.1} s; gains {:?}; loudest {:.3} of full scale", started.elapsed().as_secs_f64(), gains, loudest);
     }
@@ -630,7 +677,9 @@ mod music {
     use std::path::{Path, PathBuf};
 
     pub fn main(_: &Path, _: u64, _: Option<Vec<String>>, _: Vec<(String, PathBuf)>) {
-        eprintln!("the music excerpts need the game module (python3 tools/game_module.py builds it)");
+        eprintln!(
+            "the music excerpts need the game module: `python3 tools/game_module.py --stubs` builds it, from the matched links of `make -C src/decomp all-verify` (docs/runtime.md, The game module)"
+        );
         std::process::exit(1);
     }
 }
@@ -895,15 +944,44 @@ mod music {
         out
     }
 
+    /// The excerpts `--only` names (every one without it), each with the
+    /// user's state `--state` gives it; refused when a name is not an
+    /// excerpt's, a state is given twice or for an excerpt left out, or a
+    /// state file is missing.
+    fn chosen(only: Option<Vec<String>>, states: Vec<(String, PathBuf)>) -> Vec<(&'static Excerpt, Option<PathBuf>)> {
+        let names: Vec<&str> = EXCERPTS.iter().map(|e| e.name).collect();
+        let valid = names.join(", ");
+        for name in only.iter().flatten().chain(states.iter().map(|(name, _)| name)) {
+            if !names.contains(&name.as_str()) {
+                refuse(&format!("no excerpt is called {name:?} (the excerpts: {valid})"));
+            }
+        }
+        let made: Vec<&'static Excerpt> = EXCERPTS.iter().filter(|e| only.as_ref().is_none_or(|o| o.iter().any(|n| n == e.name))).collect();
+        for (i, (name, path)) in states.iter().enumerate() {
+            if states[..i].iter().any(|(other, _)| other == name) {
+                refuse(&format!("--state gives {name} twice"));
+            }
+            if !made.iter().any(|e| e.name == name) {
+                refuse(&format!("--state gives {name}, which --only leaves out"));
+            }
+            if !path.is_file() {
+                refuse(&format!("--state {name}={}: no such file", path.display()));
+            }
+        }
+        made.into_iter().map(|e| (e, states.iter().find(|(name, _)| name == e.name).map(|(_, path)| path.clone()))).collect()
+    }
+
     pub fn main(out: &Path, seed: u64, only: Option<Vec<String>>, states: Vec<(String, PathBuf)>) {
         let started = std::time::Instant::now();
+        let chosen = chosen(only, states);
         let states_dir = out.join("states");
         std::fs::create_dir_all(&states_dir).expect("the states' directory");
+        let mut files = Files::new(out);
         let mut excerpts = Vec::new();
-        for excerpt in EXCERPTS.iter().filter(|e| only.as_ref().is_none_or(|o| o.iter().any(|n| n == e.name))) {
+        for (excerpt, user_state) in chosen {
             let begun = std::time::Instant::now();
-            let state = match states.iter().find(|(name, _)| name == excerpt.name) {
-                Some((_, path)) => path.clone(),
+            let state = match &user_state {
+                Some(path) => path.clone(),
                 None => {
                     let path = states_dir.join(format!("{}.xemstate", excerpt.name));
                     make_state(excerpt, &path);
@@ -974,7 +1052,7 @@ mod music {
             for (name, sides) in conditions {
                 let sides = faded(sides);
                 let file = format!("coherence/{}/{name}.wav", excerpt.name);
-                write_wav(&out.join(&file), &sides);
+                files.wav(&file, &sides);
                 let lufs = loudness(&sides);
                 let iacc: Vec<f64> = measure::iacc(&sides, RATE).iter().map(|c| rounded(*c, 3)).collect();
                 described.insert(name, json!({"file": file, "loudness": rounded(lufs, 2), "gain_db": rounded(TARGET_LUFS - lufs, 2), "peak": rounded(f64::from(peak(&sides)), 4), "iacc": iacc}));
@@ -991,12 +1069,21 @@ mod music {
                 Setup::EventBattle => "enter_field 2, Cross every 30 frames until the battle mode, 300 frames".to_owned(),
                 Setup::TitleMovie => "boot, 360 frames (the title movie)".to_owned(),
             };
-            let user_state = states.iter().any(|(name, _)| name == excerpt.name);
+            // A state of the user's is labelled as theirs: the page shows the
+            // label, and the built-in one names another scene.
+            let (label, kind, shown) = match &user_state {
+                Some(path) => {
+                    let file = path.file_name().map_or_else(|| path.display().to_string(), |n| n.to_string_lossy().into_owned());
+                    (format!("Your own state {file} (in place of the {} excerpt)", excerpt.name), "the user's state".to_owned(), path.display().to_string())
+                }
+                None => (excerpt.label.to_owned(), excerpt.kind.to_owned(), format!("states/{}.xemstate", excerpt.name)),
+            };
+            let state_sha256 = hex(&digest(&std::fs::read(&state).expect("the state")));
             println!("{}: {} parts, CD {}, identical {:?}, {:.1} s", excerpt.name, music.len(), cd, identical, begun.elapsed().as_secs_f64());
             excerpts.push(json!({
-                "id": excerpt.name, "label": excerpt.label, "kind": excerpt.kind, "seconds": excerpt.seconds,
-                "state": if user_state { json!(state.display().to_string()) } else { json!(format!("states/{}.xemstate", excerpt.name)) },
-                "how": if user_state { "the user's state".to_owned() } else { how },
+                "id": excerpt.name, "label": label, "kind": kind, "seconds": excerpt.seconds,
+                "state": shown, "state_sha256": state_sha256,
+                "how": if user_state.is_some() { "the user's state".to_owned() } else { how },
                 "capture": {"warm_frames": WARM, "skipped_samples": SKIP, "fade_seconds": FADE_SECONDS},
                 "conditions": described,
                 "identical": identical,
@@ -1036,17 +1123,17 @@ mod music {
             }
             sessions.push(json!({"name": name, "trials": trials}));
         }
+        let generated = json!({
+            "tool": "cargo run --release -p xem-headless --example listening -- music",
+            "source": commit(),
+            "seed": seed,
+            "sample_rate": SAMPLE_RATE,
+            "disc": disc().file_name().map(|n| n.to_string_lossy().into_owned()),
+            "presentation": {"sound_mode": "Stereo (the game's, under Binaural)", "spatial_music": true, "positional_effects": false, "head_tracked_music": false, "immersions": IMMERSIONS},
+        });
         let manifest = json!({
             "kind": "xem-listening-coherence",
             "version": 1,
-            "generated": {
-                "tool": "cargo run --release -p xem-headless --example listening -- music",
-                "source": commit(),
-                "seed": seed,
-                "sample_rate": SAMPLE_RATE,
-                "disc": disc().file_name().map(|n| n.to_string_lossy().into_owned()),
-                "presentation": {"sound_mode": "Stereo (the game's, under Binaural)", "spatial_music": true, "positional_effects": false, "head_tracked_music": false, "immersions": IMMERSIONS},
-            },
             "level": {"target_lufs": TARGET_LUFS, "note": "the page applies each condition's gain_db, which brings its loudness (ITU-R BS.1770-4) to the target"},
             "attributes": attributes.iter().map(|(id, label, question, high, low, top)| json!({"id": id, "label": label, "question": question, "high": high, "low": low, "reference_top": top})).collect::<Vec<_>>(),
             "conditions": {
@@ -1060,6 +1147,7 @@ mod music {
             "excerpts": excerpts,
             "sessions": sessions,
         });
+        let manifest = files.manifest(manifest, generated);
         write_json(&out.join("coherence.json"), &manifest);
         println!("music excerpts in {:.1} s", started.elapsed().as_secs_f64());
     }

@@ -67,11 +67,18 @@ function generator(text) {
   };
 }
 
-function direction(azimuth, elevation) {
+function side(azimuth) {
   const a = Math.round(((azimuth % 360) + 360) % 360);
-  const side = a === 0 ? 'ahead' : a === 180 ? 'behind' : a < 180 ? `${a}° (right)` : `${a}° (left)`;
+  return a === 0 ? 'ahead' : a === 180 ? 'behind' : a < 180 ? `${a}° (right)` : `${a}° (left)`;
+}
+
+function height(elevation) {
   const e = Math.round(elevation);
-  return `${side}, ${e === 0 ? 'level' : e > 0 ? `${e}° up` : `${-e}° down`}`;
+  return e === 0 ? 'level' : e > 0 ? `${e}° up` : `${-e}° down`;
+}
+
+function direction(azimuth, elevation) {
+  return `${side(azimuth)}, ${height(elevation)}`;
 }
 
 // ---------------------------------------------------------------- server
@@ -198,7 +205,23 @@ async function home(message) {
       missing.length ? h('p', { class: 'note' }, `Missing: ${missing.join('; ')}.`) : null));
 }
 
+/** Runs a session; an error (serve.py stopped, a save refused, a stimulus
+ * missing) stops it with a message instead of leaving the page waiting. */
 async function start(entry) {
+  try {
+    await runSession(entry);
+  } catch (error) {
+    const where = run?.file ? ` in results/${run.file}` : '';
+    show(h('div', { class: 'panel', dataset: { step: 'error' } },
+      h('h2', {}, `Session ${entry.session.name} stopped`),
+      h('p', { class: 'error', id: 'error' }, String(error?.message ?? error)),
+      h('p', {}, `Every answer saved before this is kept${where}. Check that serve.py is still running, then start the session again: it resumes after the last saved answer.`),
+      h('button', { id: 'error-home', class: 'primary', onclick: () => home() }, 'Back to the sessions')));
+  }
+}
+
+async function runSession(entry) {
+  run = null;
   await context();
   const name = listenerName();
   try {
@@ -340,10 +363,13 @@ async function calibrate(localization) {
 // ---------------------------------------------------------------- the dial
 
 /** The azimuth dial (seen from above, ahead at the top) and the elevation
- * slider; with `moving`, a start and an end are marked. */
+ * slider; with `moving`, a start and an end are marked. Every marker needs
+ * its azimuth and its height set (the slider moved or pressed, or Level),
+ * so a height left where the slider starts is never taken for an answer. */
 function answerControls(moving, onChange) {
   const size = 360, c = 180, r = 140;
   const marks = moving ? { start: { azimuth: null, elevation: 0 }, end: { azimuth: null, elevation: 0 } } : { end: { azimuth: null, elevation: 0 } };
+  const heightSet = Object.fromEntries(Object.keys(marks).map((name) => [name, false]));
   let selected = moving ? 'start' : 'end';
   const point = (azimuth, radius = r) => [c + radius * Math.sin(azimuth * Math.PI / 180), c - radius * Math.cos(azimuth * Math.PI / 180)];
   const face = svg('svg', { viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': 'Azimuth dial: ahead at the top, seen from above' });
@@ -386,7 +412,7 @@ function answerControls(moving, onChange) {
     const mark = marks[selected];
     slider.value = mark.elevation;
     dial.setAttribute('aria-valuenow', mark.azimuth ?? 0);
-    reading.textContent = Object.entries(marks).map(([name, m]) => `${moving ? (name === 'start' ? 'Start: ' : 'End: ') : ''}${m.azimuth === null ? 'click the dial' : direction(m.azimuth, m.elevation)}`).join(' · ');
+    reading.textContent = Object.entries(marks).map(([name, m]) => `${moving ? (name === 'start' ? 'Start: ' : 'End: ') : ''}${m.azimuth === null ? 'click the dial' : side(m.azimuth)}, ${heightSet[name] ? height(m.elevation) : 'set the height'}`).join(' · ');
     for (const [name, button] of Object.entries(markerButtons)) button.classList.toggle('selected', name === selected);
     onChange?.();
   };
@@ -418,15 +444,18 @@ function answerControls(moving, onChange) {
       event.preventDefault();
     }
   });
-  slider.addEventListener('input', () => { marks[selected].elevation = Number(slider.value); draw(); });
-  const elevation = h('div', { class: 'elevation' }, slider, h('div', { class: 'scale-labels' }, h('span', {}, 'Above (90°)'), h('span', {}, 'Level (0°)'), h('span', {}, 'Below (−90°)')));
+  slider.addEventListener('input', () => { marks[selected].elevation = Number(slider.value); heightSet[selected] = true; draw(); });
+  // Pressing the slider where it stands sets that height too.
+  slider.addEventListener('pointerdown', () => { heightSet[selected] = true; draw(); });
+  const level = h('button', { id: 'level', onclick: () => { marks[selected].elevation = 0; heightSet[selected] = true; draw(); } }, 'Level');
+  const elevation = h('div', { class: 'elevation' }, slider, h('div', { class: 'scale-labels' }, h('span', {}, 'Above (90°)'), h('span', {}, 'Level (0°)'), h('span', {}, 'Below (−90°)')), level);
   const markers = moving ? h('div', { class: 'markers' },
     markerButtons.start = h('button', { id: 'mark-start', onclick: () => { selected = 'start'; draw(); } }, 'Where it started'),
     markerButtons.end = h('button', { id: 'mark-end', onclick: () => { selected = 'end'; draw(); } }, 'Where it ended')) : null;
   draw();
   return {
     element: h('div', {}, h('div', { class: 'answer' }, h('div', { style: 'flex: 1 1 280px; max-width: 360px' }, dial, markers), elevation), reading),
-    complete: () => Object.values(marks).every((m) => m.azimuth !== null),
+    complete: () => Object.entries(marks).every(([name, m]) => m.azimuth !== null && heightSet[name]),
     value: () => (moving ? { start: { ...marks.start }, end: { ...marks.end } } : { ...marks.end }),
     showTruth: (points) => {
       truth.replaceChildren();
@@ -435,7 +464,7 @@ function answerControls(moving, onChange) {
         truth.append(svg('circle', { class: 'truth-mark', cx: x, cy: y, r: 13 }));
       }
     },
-    disable: () => { face.style.pointerEvents = 'none'; slider.disabled = true; },
+    disable: () => { face.style.pointerEvents = 'none'; slider.disabled = true; level.disabled = true; },
   };
 }
 
@@ -460,7 +489,7 @@ async function localization(session) {
         : [h('h2', {}, `Session ${session.name}: block ${trial.block} of ${blocks}`),
           h('p', {}, previous === 'training' || previous === null ? 'The test trials: each sound plays once, and nothing is shown after your answer. Some sounds move: mark where they started and where they ended.' : 'Take a break if you like.')];
       show(h('div', { class: 'panel' }, ...intro,
-        h('p', { class: 'muted' }, 'Keep your head still and facing the screen. Click the dial where the sound came from (ahead is at the top; the dial is seen from above), set its height with the slider, then answer. Keys: arrows turn the dial, Enter answers.'),
+        h('p', { class: 'muted' }, 'Keep your head still and facing the screen. Click the dial where the sound came from (ahead is at the top; the dial is seen from above), set its height with the slider (Level for ear height: every answer needs its height set), then answer. Keys: arrows turn the dial, Enter answers.'),
         h('button', { id: 'block-start', class: 'primary', onclick: () => go.resolve() }, 'Begin')));
       await go.promise;
       previous = trial.block;

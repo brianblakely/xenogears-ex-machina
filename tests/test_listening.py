@@ -374,6 +374,35 @@ class Analysis(unittest.TestCase):
         self.assertIn("one listener", text)
         self.assertIn("post-screening", text)
 
+    def test_each_analysis_is_of_one_listener(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            manifest_and_results(directory)
+            # A second listener takes C1 once and rates the hidden reference 40.
+            other = json.loads((directory / "results" / "test-C1.json").read_text())
+            other.update(listener="sam", file="sam-C1.json")
+            for rating in other["ratings"]:
+                rating["ratings"]["reference"] = 40
+            (directory / "results" / "sam-C1.json").write_text(json.dumps(other))
+            results = directory / "results"
+            with self.assertRaisesRegex(ValueError, r"2 listeners \(sam, test\).*--listener"):
+                analyse.analyse(directory, results, None, 0, 1)
+            with self.assertRaisesRegex(ValueError, "no results of listener 'kim'"):
+                analyse.analyse(directory, results, None, 0, 1, "kim")
+            mine = analyse.analyse(directory, results, None, 0, 1, "test")
+            theirs = analyse.analyse(directory, results, None, 0, 1, "sam")
+        # Nothing of one is pooled with the other's.
+        self.assertEqual(mine["listener"], "test")
+        self.assertEqual(mine["coherence"]["n"], 4)
+        self.assertTrue(mine["coherence"]["post_screening"]["passed"])
+        self.assertEqual(mine["coherence"]["repeats"]["pairs"], 12)
+        self.assertEqual(theirs["listener"], "sam")
+        self.assertNotIn("localization", theirs)
+        self.assertEqual(theirs["coherence"]["n"], 2)
+        self.assertFalse(theirs["coherence"]["post_screening"]["passed"])
+        self.assertIsNone(theirs["coherence"]["repeats"])
+        self.assertIn("analysis of sam", analyse.report(theirs))
+
     def test_answers_to_other_stimuli_are_left_out(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)

@@ -810,9 +810,17 @@ address and that saves every answer at once under
 Python's standard library only). `cargo run --release -p xem-headless
 --example listening -- localization` and `-- music` make the stimuli and
 plan the sessions into `.local/listening` (ignored: the music is the
-disc's), every random choice from a seed (2026) and each manifest naming the
-commit it came from; answers given to other stimuli than the current
-manifest's are left out of the analysis. Nobody has taken the test yet.
+disc's), every random choice from a seed (2026). Each manifest's
+`generated` block names the commit and the seed and holds a SHA-256 of
+every file written (its path and digest) and of the rest of the manifest:
+the page resumes an unfinished session, and the analysis takes answers,
+only where that block is the manifest's now, so stimuli made again in any
+other way (another commit or seed, `--only`, `--state`, a changed tree)
+start the session afresh and leave the old answers out of the analysis,
+and the same stimuli made again keep them. A session that cannot save or
+load (`serve.py` stopped, a refused save, a stimulus missing) stops with a
+message saying every saved answer is kept, and started again resumes after
+the last one. Nobody has taken the test yet.
 
 - *Localization.* Half-second bursts of seeded Gaussian noise from 48
   measured directions (elevations -30, 0, 30 and 60 degrees, azimuths every
@@ -834,13 +842,17 @@ manifest's are left out of the analysis. Nobody has taken the test yet.
   catch trials (one ear only), shuffled into four blocks, after 24 training
   trials (12 in later sessions) that show where each sound was. The answer
   is a dial seen from above and an elevation slider, a start and an end
-  for a moving sound; each test sound plays once. Every session first sets
-  the level (pink noise at -23 LUFS) and checks left and right and the
-  headphones' polarity (the same low noise in and out of phase). 1 032
-  files (110 MB), made in 3 to 6 s here.
+  for a moving sound, each marker's height set by moving or pressing the
+  slider or by Level (no answer is taken before, so a slider left where it
+  starts is never read as level); each test sound plays once. Every
+  session first sets the level (pink noise at -23 LUFS) and checks left
+  and right and the headphones' polarity (the same low noise in and out of
+  phase). 1 032 files (110 MB), made in 3 to 6 s here.
 - *Musical coherence.* Eight excerpts (12 s; the title's 10), each reached
   from boot by a fixed recipe and saved as a state (the hosts' format;
-  `--state` takes one of the user's instead), then presented from it four
+  `--state` takes one of the user's instead, a disc 2 one too, and labels
+  the excerpt as the user's state; a name that is not an excerpt's is
+  refused), then presented from it four
   times at Spatial Music immersion 0, 35, 70 and 100, Positional Effects
   off (effects keep their original mix in every condition), each with a
   tap capture: Lahan village (field 1), Kislev (fields 213 and 199),
@@ -848,8 +860,19 @@ manifest's are left out of the analysis. Nobody has taken the test yet.
   selector's: the ordinary battle theme), Weltall's battle in burning Lahan
   (field 2, the game's opening scene, Cross at every dialogue until the
   battle starts, about 2 000 frames: an event battle that keeps its scene's
-  music, in place of a boss, which no retained route reaches) and the title
-  movie's music; 9 to 22 parts sound in the sequenced ones. The conditions:
+  music, in place of a boss) and the title movie's music; 9 to 22 parts
+  sound in the sequenced ones. The only other story battle the retained
+  routes reach, on disc 2's `soul-vessel` route (from the user's memory
+  card; vertical blanks 7 783 to 14 190; Fei, Elly and a third member on
+  foot against four small creatures and a tall one), likewise keeps its
+  scene's music: `mode_music_selected_track` holds track 20 in the field
+  from vertical blank 7 000 at the latest and in the battle (Lahan's battle
+  plays track 11, field 2's), a song unlike either battle's above. Whether
+  either is a boss is not established. The generator reaches its scenes
+  from boot, without the user's card; a state of the soul vessel's battle,
+  made headless from the route by a local probe
+  (`.local/p678/scratch/p8a/step4fix/`), presents through `--state` (disc 2
+  beside disc 1) with 23 parts. The conditions:
   the original Stereo output (the SPU's own, which the generator checks is
   the same in the four presentations), the four immersions as presented,
   and a disintegrated low anchor mixed again from the captured voices with
@@ -884,6 +907,9 @@ manifest's are left out of the analysis. Nobody has taken the test yet.
   in at least 85% of the trials of the questions the reference tops), the
   two sessions' agreement, and the envelopment ratings against the
   measured decorrelation from 500 Hz to 4 kHz (a proxy, not a model).
+  It is of one listener (the name the page saved): results holding
+  several are refused unless `--listener` chooses one, since the
+  post-screening and the repeats are one person's.
 
 Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
 `xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
@@ -1098,12 +1124,17 @@ without head-tracked music, and with it turns each by 90 degrees the other
 way (within 2), the stage staying put. `tests/test_listening.py`: the
 listening test's analysis on answers with known errors (exact ones, front/
 back mirror images, negated and halved elevations, answers further out),
-its seeded bootstrap, the model comparison and the coherence summary, and
-answers to other stimuli left out. `web/tests/listening.test.mjs`: the page
-in headless Chromium, a script answering every planned session through the
-page's own controls (the checks, the dial, the slider and the markers, the
-MUSHRA buttons and sliders; a session left mid-block and resumed, each
-trial saved once); `analyse.py` then reads the answers back as the test
+its seeded bootstrap, the model comparison and the coherence summary,
+answers to other stimuli left out, and one listener at a time (two
+listeners' results refused without `--listener`, and each one's
+post-screening and repeats their own). `web/tests/listening.test.mjs`: the
+page in headless Chromium, a script answering every planned session
+through the page's own controls (the checks, the dial, the slider, Level
+and the markers, the MUSHRA buttons and sliders; no answer taken before its
+height is set; a session left mid-block and resumed; a save the server
+refuses (503) stopping the session with its message, and the session
+started again asking that trial again; each trial saved once);
+`analyse.py` then reads the answers back as the test
 works them out apart from it: the rendered ones exact (no error, elevation
 gain 1), every other front/back-eligible raw one mirrored (that many
 front/back confusions, no lateral error), the panned ones level (gain 0,
@@ -1135,10 +1166,12 @@ coherence is measured only by proxies not calibrated against anyone, and
 the arrangement rules are not tuned by ear; the immersion control does not
 make the music more diffuse step by step (the supports placed behind cross
 the sides on their way there). The listening test's music has no boss
-battle (an event battle that keeps its scene's music stands in) and hears
-the premixed-music estimate only on the title movie's music mixed again,
-since no other premixed music was found. A generic head, so a listener's
-own front and back may differ; positional effects cover the field's
+battle: an event battle that keeps its scene's music stands in, the
+routes' only other story battle (the soul vessel's, on disc 2) keeps its
+scene's music too and needs the user's card, and neither is established
+as a boss. It hears the premixed-music estimate only on the title movie's
+music mixed again, since no other premixed music was found. A generic
+head, so a listener's own front and back may differ; positional effects cover the field's
 emitters, the arena's voices and sprites' animation sounds (each effect left out is reported, not
 guessed), and sounds that event scripts start (field and battle) are left
 out, since the actor running a script is not necessarily the emitter; no

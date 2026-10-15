@@ -1,11 +1,13 @@
 // The self-administered listening test's page (tools/listening) in
 // headless Chromium, answered by a script, then analysed. Every session the
 // manifests plan runs to its end through the page's own controls (the three
-// headphone checks, the azimuth dial, the elevation slider and the start and
-// end markers, the MUSHRA buttons and sliders), each answer saved by
-// tools/listening/serve.py; a session is left mid-block and resumed, and
-// (on the synthetic set) an unfinished one saved against other stimuli is
-// left beside a fresh one; then
+// headphone checks, the azimuth dial, the elevation slider, its Level button
+// and the start and end markers, the MUSHRA buttons and sliders), each answer
+// saved by tools/listening/serve.py; no answer is taken before its height is
+// set; a session is left mid-block and resumed; a save the server refuses
+// stops the session with a message, and starting it again asks that trial
+// again; and (on the synthetic set) an unfinished session saved against
+// other stimuli is left beside a fresh one; then
 // tools/listening/analyse.py reads the answers back as the script gave them,
 // against expectations worked out here independently. Nobody listens: this
 // shows the page and the analysis work, not what anyone hears.
@@ -160,6 +162,12 @@ async function setRange(page, selector, value) {
   await page.locator(selector).fill(String(value));
 }
 
+/** The marker's height: Level for 0, the slider otherwise. */
+async function setElevation(page, value) {
+  if (value === 0) await page.click('#level');
+  else await setRange(page, '#elevation', value);
+}
+
 async function calibrate(page) {
   await page.waitForSelector('[data-step="level"]');
   await page.click('#level-play');
@@ -180,8 +188,8 @@ async function calibrate(page) {
   await page.click(`#pol-answer-${inPhase}`);
 }
 
-async function begin(page, base, session) {
-  await page.goto(base);
+async function begin(page, base, session, reload = true) {
+  if (reload) await page.goto(base);
   await page.locator(`[data-session="${session}"]`).waitFor();
   await page.fill('#listener', 'scripted');
   await page.fill('#headphones', 'none (a script)');
@@ -189,36 +197,69 @@ async function begin(page, base, session) {
   await calibrate(page);
 }
 
-async function localizationSession(page, base, manifest, session, resumeAfter) {
+/** A localization session answered to its end: left after `resumeAfter`
+ * answers and resumed, and the save of answer `failAt` (from 0) refused
+ * once. How many times the session was started. */
+async function localizationSession(page, base, manifest, session, resumeAfter, failAt) {
   const stimuli = new Map(manifest.stimuli.map((s) => [s.id, s]));
   const plan = [...session.training.map((t) => ({ ...t, training: true, block: 'training' })),
     ...session.blocks.flatMap((b, i) => b.map((t) => ({ ...t, block: i + 1 })))];
   const count = { kemar: 0 };
+  // Each trial's answer, kept for a trial asked again.
+  const answers = new Map();
   await begin(page, base, session.name);
+  let starts = 1;
   let previous = null;
   let done = 0;
-  for (const trial of plan) {
+  while (done < plan.length) {
+    const trial = plan[done];
     if (trial.block !== previous) {
       await page.click('#block-start');
       previous = trial.block;
     }
     await page.locator(`[data-trial="${trial.trial}"]`).waitFor();
     const stimulus = stimuli.get(trial.stimulus);
+    if (done === 0) {
+      // The sound has played and the dial is set, but no height yet: no answer.
+      await page.locator('#playing', { hasText: 'Your answer:' }).waitFor();
+      await setDial(page, stimulus.start[0]);
+      assert.equal(await page.locator('#answer').isDisabled(), true, 'no answer before its height is set');
+    }
     if (stimulus.motion === 'moving') {
       for (const [mark, at] of [['start', stimulus.start], ['end', stimulus.end]]) {
         await page.click(`#mark-${mark}`);
         await setDial(page, at[0]);
-        await setRange(page, '#elevation', at[1]);
+        await setElevation(page, at[1]);
       }
     } else {
-      const answer = trial.training ? { azimuth: stimulus.start[0], elevation: stimulus.start[1] } : scripted(stimulus, count);
+      if (!answers.has(done)) answers.set(done, trial.training ? { azimuth: stimulus.start[0], elevation: stimulus.start[1] } : scripted(stimulus, count));
+      const answer = answers.get(done);
       await setDial(page, answer.azimuth);
-      await setRange(page, '#elevation', answer.elevation);
+      await setElevation(page, answer.elevation);
+    }
+    const failing = done === failAt;
+    if (failing) {
+      await page.route('**/results/*.json', (route) => (route.request().method() === 'PUT'
+        ? route.fulfill({ status: 503, contentType: 'text/plain', body: 'the server is away (the test)' })
+        : route.continue()));
     }
     await page.click('#answer');
     if (trial.training) {
       await page.locator('#feedback').waitFor();
       await page.click('#next');
+    }
+    if (failing) {
+      // The refused save stops the session with a message; started again,
+      // it resumes at the trial whose answer was not saved.
+      await page.locator('[data-step="error"]').waitFor();
+      assert.match(await page.locator('#error').textContent(), /503/);
+      await page.unroute('**/results/*.json');
+      await page.click('#error-home');
+      await begin(page, base, session.name, false);
+      starts++;
+      failAt = null;
+      previous = done > 0 ? plan[done - 1].block : null;
+      continue;
     }
     done++;
     if (resumeAfter && done === resumeAfter) {
@@ -226,10 +267,12 @@ async function localizationSession(page, base, manifest, session, resumeAfter) {
       // saved answer, without the block's introduction.
       await page.locator(`[data-trial="${plan[done].trial}"]`).waitFor();
       await begin(page, base, session.name);
+      starts++;
       resumeAfter = null;
     }
   }
   await page.locator('text=is done and saved').waitFor();
+  return starts;
 }
 
 async function coherenceSession(page, base, manifest, session) {
@@ -284,6 +327,7 @@ test('the listening page runs every planned session on scripted answers and the 
     files.L1 = 'scripted-L1-r2.json';
   }
   const { child, base } = await startServer(stimuli, results);
+  const starts = {};
   const browser = await chromium.launch({ executablePath: process.env.XEM_CHROMIUM, headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
@@ -291,7 +335,7 @@ test('the listening page runs every planned session on scripted answers and the 
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    for (const [i, session] of localization.sessions.entries()) await localizationSession(page, base, localization, session, i === 0 ? 5 : null);
+    for (const [i, session] of localization.sessions.entries()) starts[session.name] = await localizationSession(page, base, localization, session, i === 0 ? 5 : null, i === 0 ? 8 : null);
     for (const session of coherence?.sessions ?? []) await coherenceSession(page, base, coherence, session);
     assert.deepEqual(errors, [], 'no errors in the page');
   } finally {
@@ -299,16 +343,17 @@ test('the listening page runs every planned session on scripted answers and the 
     child.kill();
   }
 
-  // Each session's answers were saved, every trial once, the resumed
-  // session's calibration twice.
-  for (const [i, session] of localization.sessions.entries()) {
+  // Each session's answers were saved, every trial once, the calibration
+  // once a start (three in the first session: resumed, and started again
+  // after the refused save).
+  for (const session of localization.sessions) {
     const saved = JSON.parse(readFileSync(join(results, files[session.name]), 'utf8'));
     assert.equal(saved.complete, true);
     assert.equal(saved.headphones, 'none (a script)');
     assert.deepEqual(saved.manifest.generated, localization.generated);
     const planned = [...session.training, ...session.blocks.flat()].map((t) => t.trial);
     assert.deepEqual(saved.trials.map((t) => t.trial), planned, `${session.name}: every trial once, in order`);
-    assert.equal(saved.calibrations.length, i === 0 ? 2 : 1);
+    assert.equal(saved.calibrations.length, starts[session.name]);
     assert.ok(saved.calibrations.every((c) => c.level_set && c.left_right_ok && c.polarity_ok));
   }
   for (const session of coherence?.sessions ?? []) {
@@ -325,7 +370,8 @@ test('the listening page runs every planned session on scripted answers and the 
   const out = join(work, 'analysis.json');
   execFileSync('python3', [join(LISTENING, 'analyse.py'), '--stimuli', stimuli, '--results', results, '--models', join(work, 'none.json'), '--json', out, '--bootstrap', '200'], { stdio: 'pipe' });
   const analysis = JSON.parse(readFileSync(out, 'utf8'));
-  assert.deepEqual(analysis.notes, REAL ? [] : ['scripted-L1.json: answered against other stimuli than the current manifest\'s (another commit or seed); left out']);
+  assert.deepEqual(analysis.notes, REAL ? [] : ['scripted-L1.json: answered against other stimuli than the current manifest\'s (made at another commit, with another seed or other files); left out']);
+  assert.equal(analysis.listener, 'scripted');
   const stimuliById = new Map(localization.stimuli.map((s) => [s.id, s]));
   const count = { kemar: 0 };
   const expected = { rendered: [], kemar: [], stereo: [] };

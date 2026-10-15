@@ -27,7 +27,12 @@ listeners at large. Whether they, with the models, settle the plan's
 
   and run the commands below in it, from the repository's root.
 - For the music: disc 1 at `discs/Xenogears disc 1.chd` (or `XEM_DISC1`)
-  and the game module (`python3 tools/game_module.py`, once).
+  and the game module, built once with
+
+      python3 tools/game_module.py --stubs
+
+  which needs the matched PS1 links (`make -C src/decomp all-verify`;
+  docs/runtime.md, The game module).
 - Time: three localization sessions of about 30-40 minutes and two
   coherence sessions of about 45-60 minutes; take them on different days if
   you like. A session can be left and resumed.
@@ -50,11 +55,13 @@ listeners at large. Whether they, with the models, settle the plan's
    MB) and `states/`, the saved state each excerpt starts from. To hear a
    scene of your own instead of a built-in one (a boss you reached, say),
    save a state in the desktop app (a `.xemstate` file of the same game
-   module) and pass it: with `--state battle=PATH` the battle excerpt
-   starts there and the others are made as before. `--only NAME,...` makes
-   a test of those excerpts alone (its manifest holds only them). Both
-   commands take `--out DIR` and `--seed N` (2026 by default; the same
-   seed and commit make the same files).
+   module) and pass it: with `--state lahan-gear-battle=PATH` that excerpt
+   starts there, labelled as your state, and the others are made as
+   before. A disc 2 state is taken too while disc 2 lies beside disc 1 in
+   `discs/`. `--only NAME,...` makes a test of those excerpts alone (its
+   manifest holds only them). A name that is not an excerpt's (the table
+   below) is refused. Both commands take `--out DIR` and `--seed N` (2026
+   by default; the same seed and commit make the same files).
 
 3. Serve the page and open it:
 
@@ -80,8 +87,11 @@ listeners at large. Whether they, with the models, settle the plan's
 
    It prints a report and writes `.local/listening/analysis.json`; with
    `build/binaural/models.json` present (the model evaluation) the model
-   listeners' predictions sit beside yours. `--results DIR`, `--json FILE`,
-   `--bootstrap N` (2000) and `--seed N` change its inputs and intervals.
+   listeners' predictions sit beside yours. It analyses one listener: when
+   the results hold answers under several names, it lists them and stops,
+   and `--listener NAME` (the name as the results' file names show it)
+   chooses one. `--results DIR`, `--json FILE`, `--bootstrap N` (2000) and
+   `--seed N` change its inputs and intervals.
 
 ## Localization
 
@@ -108,9 +118,12 @@ shuffled into four blocks. L1 starts with 24 training trials, L2 and L3
 with 12: after each, the dial shows where the sound was.
 
 You answer on a dial seen from above (ahead at the top; click or drag, or
-the arrow keys) and an elevation slider (90 above to 90 below). For a
-moving sound you mark where it started and where it ended. Each test sound
-plays once. Keep your head still, facing the screen.
+the arrow keys) and an elevation slider (90 above to 90 below). Every
+answer needs its height set: move or press the slider, or press Level for
+a sound at ear height (the slider starts level, and a height left there
+untouched is not taken for an answer). For a moving sound you mark where
+it started and where it ended. Each test sound plays once. Keep your head
+still, facing the screen.
 
 ## Musical coherence
 
@@ -129,13 +142,20 @@ state, then presented from it at Spatial Music immersion 0, 35, 70 and 100
 | lahan-gear-battle | event battle, in place of a boss | field 2 (Lahan in flames), Cross at every dialogue until Weltall's battle |
 | title-movie | CD estimate | the title movie's music |
 
-No boss battle is reachable on the retained routes without playing to it,
-so an event battle with its own scene's music stands in (`--state` takes a
-boss of yours). The title movie's music is the only premixed (CD) music the
-routes reach, and while a movie plays the runtime keeps its mix original:
-its immersions are the capture mixed again through the premixed-music
-estimate, so they show the estimate on real game music, not what the title
-presents.
+An event battle stands in for a boss. The routes checked reach two story
+battles, Weltall's in burning Lahan (from boot) and one on disc 2's
+`soul-vessel` route (from the test saves `tools/memcard_saves.py` makes out
+of your memory card: Fei, Elly and a third member on foot against four
+small creatures and a tall one). Both keep the music their scene was
+already playing, and whether either counts as a boss is not established.
+The generator reaches its scenes from boot, without your card, so
+Weltall's battle is used; `--state lahan-gear-battle=PATH` takes a state
+of a boss you reached (or of the soul vessel's battle) instead.
+
+The title movie's music is the only premixed (CD) music the routes reach,
+and while a movie plays the runtime keeps its mix original: its immersions
+are the capture mixed again through the premixed-music estimate, so they
+show the estimate on real game music, not what the title presents.
 
 Each screen has the labelled reference (the original Stereo output) and six
 versions to rate from 0 to 100: the reference again (hidden), a
@@ -180,10 +200,17 @@ validated model of musical coherence exists.
     (cd src/runtime/web && node --test tests/listening.test.mjs)
 
 runs the page in headless Chromium on a small synthetic set: a script
-answers every planned session through the page's controls (a session left
-mid-block and resumed), and the analysis must read its answers back. With
-`XEM_LISTENING_STIMULI=DIR` (an absolute path) it runs every session of the
-stimuli in DIR instead (about half an hour), answers saved to a temporary
-directory. Nobody listens there. An unfinished session resumes only on the
-stimuli it was answering; once they are made again it starts afresh in a
-file of its own, and the analysis leaves the old answers out.
+answers every planned session through the page's controls (no answer is
+taken before its height is set; a session is left mid-block and resumed;
+a save the server refuses stops the session with a message, and starting
+it again asks that trial again), and the analysis must read its answers
+back. With `XEM_LISTENING_STIMULI=DIR` (an absolute path) it runs every
+session of the stimuli in DIR instead (about half an hour), answers saved
+to a temporary directory. Nobody listens there.
+
+An unfinished session resumes only on the stimuli it was answering: each
+manifest's `generated` block holds a SHA-256 of every file the generator
+wrote and of the rest of the manifest, so stimuli made again in any other
+way (another commit or seed, `--only`, `--state`, a changed tree) start
+the session afresh in a file of its own, and the analysis leaves the old
+answers out. Making them again the same way keeps the answers.

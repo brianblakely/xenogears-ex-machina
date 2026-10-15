@@ -2,13 +2,17 @@
 """Analyse the listening test's answers (tools/listening/README.md).
 
     python3 tools/listening/analyse.py [--stimuli DIR] [--results DIR]
-        [--models FILE] [--json FILE] [--bootstrap N] [--seed N]
+        [--listener NAME] [--models FILE] [--json FILE] [--bootstrap N]
+        [--seed N]
 
-Reads every results file the page saved (`.local/listening/results` by
+Reads the results files the page saved (`.local/listening/results` by
 default) with the manifests that planned them (`localization.json`,
 `coherence.json` in `.local/listening`), prints a report and writes it as
 JSON (`analysis.json` beside the results by default). Python's standard
-library only.
+library only. The analysis is of one listener (the name the page saved
+with the answers): when the results hold several, `--listener NAME`
+chooses one, and without it the script names them and stops, since every
+measure here (the post-screening, the repeats) is one person's.
 
 Localization, per condition (the renderer, the KEMAR set's raw responses,
 the Stereo pan control), over the static test trials (training and catch
@@ -241,10 +245,29 @@ def check_manifest(result: dict, manifest: dict | None, notes: list[str]) -> boo
     if result.get("manifest", {}).get("generated") != manifest.get("generated"):
         notes.append(
             f"{result['_path']}: answered against other stimuli than the current manifest's"
-            " (another commit or seed); left out"
+            " (made at another commit, with another seed or other files); left out"
         )
         return False
     return True
+
+
+def one_listener(results: list[dict], listener: str | None) -> tuple[list[dict], str | None]:
+    """The results of `listener`, or of the only listener they hold; a
+    ValueError when there are several and none is chosen, or the chosen one
+    has none."""
+    names = sorted({str(r.get("listener")) for r in results})
+    if listener is not None:
+        chosen = [r for r in results if r.get("listener") == listener]
+        if not chosen:
+            held = ", ".join(names) or "none"
+            raise ValueError(f"no results of listener {listener!r} (the results hold: {held})")
+        return chosen, listener
+    if len(names) > 1:
+        raise ValueError(
+            f"the results hold {len(names)} listeners ({', '.join(names)}); the analysis is"
+            " of one person: choose with --listener NAME"
+        )
+    return results, names[0] if names else None
 
 
 # ---------------------------------------------------------------- localization
@@ -580,8 +603,8 @@ def stat(summary: dict, name: str, digits=1) -> str:
 
 def report(analysis: dict) -> str:
     lines = [
-        "Listening test analysis (one listener: about that person and those headphones,"
-        " not listeners at large)",
+        f"Listening test analysis of {analysis['listener']} (one listener: about that person"
+        " and those headphones, not listeners at large)",
         "",
     ]
     for note in analysis["notes"]:
@@ -680,10 +703,15 @@ def report(analysis: dict) -> str:
 
 
 def analyse(
-    stimuli: Path, results_dir: Path, models_path: Path | None, draws: int, seed: int
+    stimuli: Path,
+    results_dir: Path,
+    models_path: Path | None,
+    draws: int,
+    seed: int,
+    listener: str | None = None,
 ) -> dict:
     notes: list[str] = []
-    results = load_results(results_dir)
+    results, listener = one_listener(load_results(results_dir), listener)
     localization_manifest = load_json(stimuli / "localization.json")
     coherence_manifest = load_json(stimuli / "coherence.json")
     models = load_json(models_path) if models_path else None
@@ -723,7 +751,7 @@ def analyse(
             "bootstrap": draws,
             "seed": seed,
         },
-        "listeners": sorted({r.get("listener") for r in results if r.get("listener")}),
+        "listener": listener,
         "headphones": sorted({r.get("headphones") for r in results if r.get("headphones")}),
         "calibration": calibration,
         "notes": notes,
@@ -744,6 +772,7 @@ def main() -> None:
     )
     parser.add_argument("--stimuli", type=Path, default=ROOT / ".local/listening")
     parser.add_argument("--results", type=Path, help="default: STIMULI/results")
+    parser.add_argument("--listener", help="whose answers (needed when the results hold several)")
     parser.add_argument("--models", type=Path, default=ROOT / "build/binaural/models.json")
     parser.add_argument("--json", type=Path, help="default: STIMULI/analysis.json")
     parser.add_argument("--bootstrap", type=int, default=2000)
@@ -752,13 +781,17 @@ def main() -> None:
     results = args.results or args.stimuli / "results"
     if not results.is_dir():
         parser.error(f"no results in {results}")
-    analysis = analyse(
-        args.stimuli,
-        results,
-        args.models if args.models.is_file() else None,
-        args.bootstrap,
-        args.seed,
-    )
+    try:
+        analysis = analyse(
+            args.stimuli,
+            results,
+            args.models if args.models.is_file() else None,
+            args.bootstrap,
+            args.seed,
+            args.listener,
+        )
+    except ValueError as error:
+        parser.error(str(error))
     print(report(analysis))
     out = args.json or args.stimuli / "analysis.json"
     out.write_text(json.dumps(analysis, indent=1) + "\n")
