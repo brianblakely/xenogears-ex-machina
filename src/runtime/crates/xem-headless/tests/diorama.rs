@@ -109,8 +109,7 @@ fn review(yaw: f32, pitch: f32, distance: f32, size: (u32, u32)) -> DioramaEye {
 /// What a presentation showed.
 #[derive(Clone, Debug)]
 struct Shown {
-    /// Vertical blanks run when it presented, the session's scene and the
-    /// game's mode.
+    /// Vertical blanks run when it presented, and the session's scene.
     blank: u64,
     scene: String,
     /// The screen's share of the view (1: the screen alone).

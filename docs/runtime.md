@@ -2961,8 +2961,9 @@ on this machine's lavapipe:
 - `the_title_movie_and_the_title_after_it_show_on_the_screen_the_movie_in_its_own_shape`
   (from boot, 2 200 blanks): the title movie on the screen alone (1 033
   blanks: 925 rebuilt frames, 640x432 for its 320x216 display, its shape;
-  56 of the device's own, its first), then the title (field 490) on the
-  screen alone (it draws nothing a diorama places).
+  52 of the renderer's own frames as its mode begins and 56 of the
+  device's own 24-bit ones about the rebuilt ones), then the title (field
+  490) on the screen alone (it draws nothing a diorama places).
 - `a_fields_menu_and_first_person_inspection_take_the_view_and_give_the_diorama_back`
   (field 30 at twice its scale): inspection's eyes take the view from its
   first presentation, and when it ends the diorama is back at once (the
@@ -3015,8 +3016,12 @@ a tenfold lift does not change: its cause is not established.
 
 OpenXR's loop (`xr_play`) and WebXR's (`render_xr`) show the diorama when
 Graphics' headset view is Diorama, and the screen otherwise; first-person
-inspection takes the eyes over while it is on (the diorama gives way to
-the screen then).
+inspection takes the eyes over while it is on, at once, from its first
+frame, and when it ends gives the diorama back at once (no crossfade
+between two views of the scene from different places), at the scale it
+had and, the camera still, where it stood; had the camera moved
+meanwhile, the table goes on easing to it from where it stood (its first
+step, its time held to 0.25 s, more than half the way).
 
 - **Settings** (`Graphics::xr`, the panel's Headset card in Graphics, the
   same panel in a browser): the view, Screen (the default) or Diorama; the
@@ -3130,7 +3135,11 @@ the screen then).
   The listener stays at the character, whatever the head's place.
 - **Logs.** OpenXR's `xrframe` line adds `xr_view=` (`screen` or
   `diorama`, the setting's view), `diorama=` (shown),
-  `share=` (the screen's), `builds=`, `seat=` (its place; its turn,
+  `share=` (the screen's), `presented_us=` (when the frame was presented,
+  microseconds into the loop: the time the view eases by; `wall_us=` is
+  taken as the frame's line is printed, after its presentation and
+  drawing, so a slow frame's eases by more than its `wall_us=` shows),
+  `builds=`, `seat=` (its place; its turn,
   radians), `resets=` and `recenters=`, and an `event
   reference_space_change` line; a capture in the diorama saves each eye's
   diorama picture beside it (`left-diorama.png`, `right-diorama.png`) and
@@ -3204,7 +3213,35 @@ the eyes' disparity grows with nearness (measured: 11 to 21 and 10 to 17
 pixels; 10 to 19 and 10 to 16), each eye showing its diorama picture in
 the renderer's colours (0.0 levels over 56 to 64 and 31 to 41 covered
 blocks), and the RAM at the end is `xem-headless`'s for the same log
-(fb5a86347ce8e142, 0cf9bacdeea04a58).
+(fb5a86347ce8e142, 0cf9bacdeea04a58). Its hands run on the diorama is the
+player's own play from field 30's state (a session log's inputs stand in
+for the player's, and inspection then stops no walk: a log keeps its own
+record), the gaze the eyes': the left hand's Pause grab at headset frame
+100 pauses (103) and at 130 resumes, both hands' at 160 toggle once, the
+right hand's at 190 resumes; a sideways grab, a fist turned while closed
+and a hand found closed toggle nothing (its loss pauses, at 282; the right
+hand's Pause resumes), the diorama shown in every frame of them; while
+the Pause holds the game (30 frames, one game frame) the head takes 30
+poses, the left eye changes over 2% between the captures at 110 and 125
+(34.5% measured) and each pair shows the table in depth (the disparity by
+band of rows, top first, 11 to 27 and 11 to 26 pixels); the left hand's
+underhand grab looks from within (343 to 382, no diorama) and, again,
+gives the diorama back on the next frame at the scale and table it had
+(1.408385e-3 m a unit, the table's centre at (0, -32, 90) as before); a
+pinch through the table walks (`moving` from 422), the underhand grab
+stops it (`stopped` from 430) and none restarts to the run's end; prayer
+hands show the settings panel over the table for 30 frames, the game held
+(the panel's middle at (0, 0.417, -1.050), above the table's far edge).
+With the diorama as the view from boot, the title movie's 309 rebuilt
+frames show on the screen alone at the screen's span, 210x142 for
+320x216, and the title (field 490) on the screen. In all nine runs with
+the diorama as the view the screen's share moves from a headset frame to
+the next by no more than the time between their presentations
+(`presented_us=`) over the 0.3 s switch, within the log's rounding (the
+device's own pictures and inspection take the view at once): 20 frames
+between the screen and the diorama over them, the first frames of a
+diorama coming late (its first build), so a switch of 0.3 s spans one to
+four headset frames at 20 Hz.
 `web/tests/xr-diorama.test.mjs` (IWER's Quest 3; field 30):
 the automation's 120 frames end at the same RAM in and out of the headset
 with the diorama on; the table covers more than half of a row of the left
@@ -3238,7 +3275,24 @@ diorama alone shows in all 40 samples 4 session frames apart (312 and 528
 game frames), the battle's room from its world the same in every sample
 while its camera's target took 17 places, and the world map's camera's
 target at (0, its height, 0) at 21 heights, standing in the room where it
-first stood across the floor (within 0.0001 mm).
+first stood across the floor (within 0.0001 mm). Its third test puts
+IWER's tracked hands (the test hand model's poses) on the diorama of field
+30 at 150%: the left hand's overhand grab pauses, the diorama showing
+through it; while the player's Pause holds the game (one game frame) the
+head moved 10 cm to the right shifts the rows across the table by their
+depth (measured: 38, 35, 26 and 30 points near the near edge, 23 across
+the rest), the viewer following it; the left hand's grab again resumes,
+both hands' together toggle once (the pauses counted), the right hand's
+resumes, and a sideways grab and a fist turned palm down and up while
+closed count nothing; the left hand's underhand grab looks from within
+the scene (inspecting, the views within, no diorama) and, again, gives
+the diorama back with the screen's share 0 at 150%, its room from the
+world the same in every number; prayer hands open settings over the
+diorama (the diorama shown, the settings' pause holding the game), the
+panel standing where the pane floats (its middle over the pane's within a
+millimetre across the floor, both 1.05 m ahead of the seat on its axis,
+0.319 m and 0.323 m up), and prayer again closes them, the player's Pause
+never set.
 `xem-headless/tests/gestures.rs`
 `through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none`
 (field 30, the table placed from the frame's own camera record as a
@@ -3288,8 +3342,15 @@ walking; marks are drawn over the diorama whatever stands in front of them;
 a ray through the table meets the floor through scenery standing in front
 of it (no depth test: a floor behind a wall can be pointed at); the HUD's
 place and size beside the pane are checked by the unit test alone, not in
-a host's eyes; the browser's panel is not opened in the diorama view, nor
-its pane's pixels checked, in IWER (the OpenXR smoke does both).
+a host's eyes; the browser's pane's pixels are not checked in IWER (the
+OpenXR smoke checks field 12's dialogue on them); a field's menu, a
+random battle's entry and end and a field entered from the world map ran
+as transitions in `xem-headless`'s harness alone (the headset runs ease
+from boot into fields, from the debug battle's selector into its battle
+and from boot into the world map), and a movie between two dioramas ran
+nowhere on the game (a synthetic 24-bit frame after a diorama only); the
+paused head's motion parallax between two captures is recorded, not
+checked (the simulated head turns as it moves: no band of rows matched).
 
 #### Scaling
 
@@ -4392,7 +4453,11 @@ it holds, on emulated headsets: Monado's simulated HMD (null compositor,
 lavapipe) with scripted hands for OpenXR (`xr-game-smoke.sh`, whose
 `xrframe` lines and eye captures it checks), IWER's Quest 3 with its
 tracked hands for WebXR (`web/tests/xr-hands.test.mjs` over the module
-fixture, `xr-game.test.mjs` on the game), and the shared code's tests.
+fixture, `xr-game.test.mjs` and, for the diorama, `xr-diorama.test.mjs` on
+the game), and the shared code's tests (for the diorama
+`xem-headless/tests/diorama.rs`: [Diorama](#diorama)). The rows from "The
+diorama" on are its own: Graphics' headset view the diorama (plan.md
+Phase 8 item 4 for that camera mode).
 
 | The contract | OpenXR (Monado) | WebXR (IWER) | Shared code |
 | --- | --- | --- | --- |
@@ -4405,6 +4470,17 @@ fixture, `xr-game.test.mjs` on the game), and the shared code's tests.
 | A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
 | Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
+| The diorama: transitions | in all nine runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`; 20 frames between the two over them): from boot into fields, from the debug battle's selector into its battle, into the world map; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had | the underhand grab over the diorama at 150%: from within at once, then the diorama back at once at 150%, its room from the world unchanged | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; `ps1.rs`: a menu's, a 24-bit movie frame's and inspection's screen after a diorama, eased |
+| The diorama: paused head tracking | the left hand's Pause in field 30: 30 head poses in 30 frames, one game frame, 34.5% of the left eye changed between two captures, each pair in depth (disparity 11 to 27 and 11 to 26 pixels, far rows to near) | the left hand's Pause: the head moved 10 cm, the rows across the table shift by their depth (38 to 23 points, near to far), the game's clock still | |
+| The diorama: either hand's grabs | in field 30 the left hand's Pause grab pauses and resumes, both hands' together toggle once, the right hand's resumes; a sideways grab, a fist turned while closed and a hand found closed toggle nothing (its loss pauses, the right hand's Pause resumes); the diorama shown in every frame of them | the left hand's grab pauses and resumes, both hands' toggle once, the right hand's resumes, a sideways grab and a turned fist count nothing; the diorama on | the screen's (above) |
+| The diorama: inspection stops a walk | a pinch through the table walks, the underhand grab stops it (`stopped`) and none restarts to the run's end (the player's own play) | | `diorama.rs`: stopped, the character where it stopped 120 blanks on |
+| The diorama: two-hand scaling owns both hands | 252% spread and 151% contracted, each committed once: only the scaling's gestures, no pause, press or walk, the camera's target still and its room point, the table's anchor, within 0.03 mm, a key beside the pane one width ([Scaling](#scaling)) | gathered hands 20 to 50 cm apart: 2.52 live, committed once, the anchor within a millimetre, no pause or pinch ([Scaling](#scaling)) | `headset`'s scaling tests ([Scaling](#scaling)) |
+| The diorama: two-hand app controls | prayer hands show the settings panel over the table (its middle at (0, 0.417, -1.05)), the game held, the diorama on; a pinch on its Close (the walk run) or prayer hands again (the hands run) close it | prayer hands open settings over the diorama, the panel standing where the pane floats (both 1.05 m ahead on the seat's axis), its own pause holding the game; prayer again closes them | `draw`'s layout test: the panel outside the volume, as wide seen from the seat as below the screen |
+| The diorama: recentring | the app's Recenter at 60 and 220 puts the seat at the head, `monado-ctl -c` (at 103) back at LOCAL's origin | the player's Recenter with the head turned 30 degrees: the table in front again; IWER's `recenter()` (`reset`): the seat at the origin, the first picture | `headset::reference_changed`, `GameView::recenter_diorama` ([In a headset](#in-a-headset)) |
+| The diorama: sprite planes and both eyes | each capture's disparity grows from the far rows to the near, each eye showing its own diorama picture in the renderer's colours (0 levels off) | moving the head shifts the rows by depth; VR and AR sessions begun at one head place one table | `diorama.rs`: one build a game frame for both eyes, each eye of a pair as it is alone (0 bytes differ), the thickest stack of a sprite's parts 300 um off its billboard (Lahan), Lahan's sprite rows alike in both eyes; `ps1.rs`: one upright sprite in both eyes, apart by its disparity only; split sprites in the game's order from five sides |
+| The diorama: holes | | | `diorama.rs`: of the floor the character walks, seen from 16 sides and heights, 0.021% without the scene in Lahan, none in fields 12, 22 and 30 (under 0.5%) |
+| The diorama: masks and effects | the debug battle's and the world map's dioramas ease in from the screen (the transitions row) | | `ps1.rs`: a fade tints the diorama and its pane, not the room; a subtracting interface quad takes its colour off the pane as off the screen; the pictures before the scene paint the wall in the game's order; `diorama.rs`: the random battle's entry and end shown on the screen between the dioramas; HD-2D effects left out, said by the Headset card (`xem-ui/tests/panel.rs`) |
+| The diorama: interface and media | field 12's dialogue on the pane in each eye at its texels (all of 291 and 288 pixels within 2 levels); the title movie on the screen in its own shape | (the pane's pixels not read) | `diorama.rs`: the pane's opaque pixels the flat frame's (field 12's dialogue and the debug battle exactly, the world map within a 15-bit step), all of field 12's interface on it; the movie's frames in its shape; `draw`: keys, HUD and panel outside the volume at a constant size |
 
 The settings panel stands below the screen (`draw::panel` with
 `Beside::Screen`, both hosts giving the screen's size as scaled and its
@@ -4465,7 +4541,19 @@ two-hand scaling at its largest, 3 times: a 4 m screen at the default
 320x224 (62 degrees); the default 3 m screen spread 3 times keeps its
 gap (at most 53.5 degrees). With the diorama as the view the panel stands
 over the pane while it shows, the game paused ([In a
-headset](#in-a-headset)).
+headset](#in-a-headset)). The diorama's rows: inspection and the diorama
+hand the eyes over at once each way, without a crossfade (the fallbacks
+to the screen are the ones eased); a field's menu, a random battle's entry
+and end and a field entered from the world map ran as transitions in
+`xem-headless`'s harness alone, a movie between two dioramas nowhere on
+the game, and no Gear battle nor the world map walking as a diorama in a
+headset (the module traps in the first: [Diorama](#diorama)); holes,
+sprite planes and the pane's equality with the flat frame are measured in
+the harness (the renderer a headset's eyes are drawn by), not in a
+headset's captures, and IWER's checks read no pane pixels; in a session
+log played in a headset (`--script`), inspection stops no walk, the log
+keeping its own record, so OpenXR's walk-stopping run is the player's own
+play from a state.
 
 ## Crates
 

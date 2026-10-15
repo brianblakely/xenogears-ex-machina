@@ -35,6 +35,17 @@
 #   a pinch with the gaze through the table on a floor point walks Fei
 #   there; in field 12 both eyes show the pane above the table with the
 #   game's dialogue on it, in the pane's colours;
+# - hands on the diorama, the player's own play from a field 30 state:
+#   either hand's grabs as on the screen, the diorama showing through them;
+#   the player's Pause holds the game while the head moves, the eyes
+#   following it and seeing the table in depth; the underhand grab looks
+#   from within the scene and gives the diorama back at once at the scale
+#   and place it had; inspection stops a walk through the table under way
+#   and none restarts; prayer hands open and close the settings panel over
+#   the table, the game held; with the diorama as the view the title movie
+#   (its rebuilt frames in their own shape) and the title show on the
+#   screen; in every run with the diorama as the view, the view eases
+#   between the diorama and the screen over 0.3 s;
 # - a battle on foot (its log attacking every 30 frames) and the world map
 #   (its vehicle driven on, at 25%) as dioramas: the diorama shows in every
 #   headset frame from its first; the battle's table stands where its
@@ -218,6 +229,10 @@ wait "$recentring"
 echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
     --xr-hands "60:prayer,90:pinch@panel:410/30,150:pinch@world:88.67/0/-55.33" >"$out/diorama-walk.log" 2>"$out/diorama-walk.err"
+# The title movie and the title with the diorama as the view, from boot:
+# both on the screen.
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --exit-at-frame 1800 >"$out/diorama-title.log" 2>"$out/diorama-title.err"
 # Save states and time controls, the player's own play (no session log)
 # from field 30, which an agent's command loads at the first headset frame.
 # Prayer hands open Settings at headset frame 20 (the game held by their
@@ -236,6 +251,25 @@ printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     --xr-pad "350:Back+RT,352:none,460:Back+LT,500:none" >"$out/saves.log" 2>"$out/saves.err"
 printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/state.xemstate" |
     "$headless" --disc "$disc" --control >"$out/saves-headless.log" 2>"$out/saves-headless.err"
+# Hands on the diorama (docs/runtime.md, Headset qualification), the
+# player's own play (no session log, whose inputs would stand in for the
+# player's and leave inspection's stop to the log) from the same state, the
+# gaze the eyes': the left hand's Pause grab at headset frame 100 and again
+# at 130 (both eyes captured at 110 and 125 while it holds the game, the
+# head moving), both hands' at 160, the right hand's at 190; a sideways
+# grab at 220, a fist closed sideways and turned at 250, a hand found
+# closed at 280 (its loss pauses; the right hand's Pause at 310 resumes);
+# the left hand's underhand grab at 340 and 380 (from within the scene,
+# then the diorama again); a pinch through the table at 420 walks, the
+# underhand grab at 422 stops the walk and at 465 gives the diorama back
+# with no walk; prayer hands at 520 and 550 open and close the settings
+# panel over the table.
+cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
+echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 600 \
+    --xr-hands "100:pause-left,130:pause-left,160:pause-both,190:pause,220:grab-sideways,250:fist-turn,280:fist-reacquire,310:pause,340:inspect-left,380:inspect-left,420:pinch@world:88.67/0/-55.33,422:inspect-left,465:inspect-left,520:prayer,550:prayer" \
+    --xr-capture "$out/diorama-hands" --xr-capture-at 110,125 >"$out/diorama-hands.log" 2>"$out/diorama-hands.err"
+cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Held rewinds through Settings' pause, from the same state: Back+Start
 # opens Settings at headset frame 200 and Back+LT is held from 205 to 211;
 # then the right controller's ray (scripted: Monado's controllers point
@@ -982,6 +1016,107 @@ check(bool(on) and 850 <= on[0] <= 856 and 890 <= on[-1] <= 896 and len(on) == o
       f"the left hand's underhand grab turned inspection on and off in the field: on {on[:1]}..{on[-1:]}")
 print(f"hands: nothing from the grab in the menu; left, both and right grabs, sideways, turned and reacquired fists as the contract says; "
       f"scale {scales}, the panel's middle {panel_y}; inspection on {on[:1]}..{on[-1:]}")
+
+# Hands on the diorama (the diorama-hands run): either hand's grabs as on
+# the screen, the diorama shown through them; the player's Pause holds the
+# game while the head moves, the eyes following it and seeing the table in
+# depth; the underhand grab looks from within the scene and gives the
+# diorama back at once at the scale and place it had; inspection stops a
+# walk under way and none restarts; prayer hands open the settings panel
+# over the diorama, the game held.
+def diorama_hands():
+    rows = records("diorama-hands.log")
+    by = {int(r["n"]): r for r in rows}
+    first = next((int(r["n"]) for r in rows if r["diorama"] == "1"), None)
+    check(first is not None and first < 100, f"diorama hands: the diorama shows only from headset frame {first}")
+    for start, end, wanted, paused, what in [
+        (100, 120, [pause("Left")], "1", "the left hand's Pause grab pauses"),
+        (130, 150, [pause("Left")], "0", "and resumes"),
+        (160, 180, None, "1", "both hands closing together toggle once"),
+        (190, 210, [pause("Right")], "0", "the right hand's resumes"),
+        (220, 275, [], "0", "a sideways grab and a fist turned while closed toggle nothing"),
+        (280, 305, [{"gesture": "TrackingLost", "hand": "Right"}], "1", "a hand lost and found closed: its loss pauses, the fist toggles nothing"),
+        (310, 330, [pause("Right")], "0", "the right hand's Pause resumes"),
+    ]:
+        seen = gestures_in(rows, start, end)
+        ok = (len(seen) == 1 and seen[0]["gesture"] == "Pause") if wanted is None else seen == wanted
+        shown = sum(by[n]["diorama"] == "1" for n in range(start, end))
+        check(ok and by[end - 5]["player_pause"] == paused and shown == end - start,
+              f"diorama hands, {what}: {seen}, paused {by[end - 5]['player_pause']}, the diorama in {shown} of {end - start} frames")
+    held = [r for r in rows if 100 <= int(r["n"]) < 135 and r["player_pause"] == "1"]
+    check(len(held) >= 20 and len({r["head"] for r in held}) > len(held) // 2,
+          f"diorama hands: head tracking stopped while paused ({len({r['head'] for r in held})} poses in {len(held)} frames)")
+    check(len({r["game_frames"] for r in held}) == 1, "diorama hands: the game ran while the player paused it")
+    moved = changed(png(f"{out}/diorama-hands/110/left.png"), png(f"{out}/diorama-hands/125/left.png"))
+    check(moved > 0.02, f"diorama hands: the eyes did not follow the head while paused ({moved:.1%} of the left eye changed)")
+    depths = {}
+    for n in (110, 125):
+        d = depths[n] = disparities(png(f"{out}/diorama-hands/{n}/left.png"), png(f"{out}/diorama-hands/{n}/right.png"))
+        shifts = [s for _, s in d]
+        check(by[n]["diorama"] == "1" and by[n]["share"] == "0.000" and len(d) >= 3 and max(shifts) - min(shifts) >= 5 and d[-1][1] > d[0][1],
+              f"diorama hands, paused at {n}: the eyes' disparity does not grow with nearness: {d}")
+    # How the left eye moved from 110 to 125, band by band (the head's move
+    # shifts the near rows more than the far: recorded, not checked).
+    motion = disparities(png(f"{out}/diorama-hands/110/left.png"), png(f"{out}/diorama-hands/125/left.png"))
+    on = [int(r["n"]) for r in rows if 340 <= int(r["n"]) < 420 and r["fp"] == "1"]
+    check(bool(on) and on[0] <= 350 and 380 <= on[-1] <= 392 and len(on) == on[-1] - on[0] + 1
+          and all(by[n]["within"] == "1" and by[n]["diorama"] == "0" for n in on),
+          f"diorama hands: the underhand grab looks from within the scene from the diorama: on {on[:1]}..{on[-1:]}")
+    if on:
+        before, after = by[on[0] - 1], by[on[-1] + 1]
+        same = lambda r: (r["world_scale"], r["diorama_scale"], r["table"])
+        check(after["diorama"] == "1" and after["share"] == "0.000" and same(after) == same(before),
+              f"diorama hands: inspection ended, the diorama back at once at its scale and place: {before['n']} {same(before)}, {after['n']} {after['diorama']} {after['share']} {same(after)}")
+    looked = [int(r["n"]) for r in rows if 420 <= int(r["n"]) < 520 and r["fp"] == "1"]
+    walked = [r["assist"] for r in rows if 420 <= int(r["n"]) < (looked[0] if looked else 520)]
+    check(bool(looked) and "moving" in walked, f"diorama hands: the pinch through the table walked until the grab: {walked}, inspection {looked[:1]}..{looked[-1:]}")
+    if looked:
+        later = sorted({r["assist"] for r in rows if int(r["n"]) > looked[0] + 2})
+        check(later == ["stopped"], f"diorama hands: inspection stopped the walk and none restarted: {later}")
+        back = by[looked[-1] + 1]
+        check(back["diorama"] == "1" and back["share"] == "0.000", f"diorama hands: the diorama back at once after the second inspection ({back['diorama']}, {back['share']})")
+    panel = [r for r in rows if r["layers"] == "2" and int(r["n"]) >= 520]
+    check(20 <= len(panel) <= 40 and len({r["game_frames"] for r in panel}) == 1 and all(r["diorama"] == "1" for r in panel),
+          f"diorama hands: prayer hands showed the settings panel over the diorama for {len(panel)} frames, the game held")
+    print(f"diorama hands: the diorama from {first}; left, both and right grabs, sideways, turned and reacquired fists as on the screen; paused "
+          f"{len(held)} frames, {len({r['head'] for r in held})} head poses, {moved:.1%} of the left eye changed from 110 to 125, the eyes' disparity "
+          f"{depths}, the left eye's move {motion}; inspection on {on[:1]}..{on[-1:]}, the diorama back {same(after) if on else '-'}; the walk "
+          f"{walked[:3]}..{walked[-1:]} stopped by inspection {looked[:1]}..{looked[-1:]}; the panel {len(panel)} frames, its middle {panel[0]['panel'] if panel else '-'}")
+diorama_hands()
+
+# The title movie and the title with the diorama as the view: on the screen,
+# the movie's rebuilt frames at the screen's span in their own shape.
+def diorama_title():
+    rows = records("diorama-title.log")
+    movie = [r for r in rows if r["movie"] == "1"]
+    check(len(movie) >= 30 and all(r["xr_view"] == "diorama" and r["diorama"] == "0" and r["share"] == "1.000" and r["picture"] == spanned for r in movie),
+          f"diorama title: the movie on the screen in its own shape: {sorted({(r['diorama'], r['share'], r['picture']) for r in movie})}")
+    title = [r for r in rows if int(r["game_frames"]) >= 1450]
+    check(len(title) >= 20 and all(r["diorama"] == "0" for r in title), "diorama title: the title (field 490) on the screen")
+    print(f"diorama title: {len(movie)} rebuilt movie frames on the screen at {spanned}; the title on the screen in {len(title)} frames")
+diorama_title()
+
+# In every run with the diorama as the view, the view eases between the
+# diorama and the screen: from a headset frame to the next the screen's
+# share moves by no more than the time passed over the 0.3 s switch (but
+# for the device's own pictures and first-person inspection, which take the
+# view at once).
+def diorama_easing():
+    easing = {}
+    for name in ("diorama.log", "field-diorama.log", "diorama-walk.log", "diorama-hands.log", "battle-diorama.log", "worldmap-diorama.log",
+                 "diorama-scale.log", "binaural-diorama.log", "diorama-title.log"):
+        rows, jumps, eased = records(name), [], 0
+        for a, b in zip(rows, rows[1:]):
+            if "0" in (a["view"], b["view"]) or "1" in (a["fp"], b["fp"]):
+                continue
+            dt = (int(b["presented_us"]) - int(a["presented_us"])) / 1e6
+            if abs(float(b["share"]) - float(a["share"])) > dt / 0.3 + 0.002:
+                jumps.append((b["n"], a["share"], b["share"], round(dt, 3)))
+            eased += 0.0 < float(b["share"]) < 1.0
+        easing[name] = eased
+        check(not jumps, f"{name}: the screen's share jumped: {jumps[:5]}")
+    print(f"diorama easing, frames between the screen and the diorama: {easing}")
+diorama_easing()
 
 # The scene tour: each capture shows the screen in front of the eye, or the
 # eye's picture from within the scene over its view; the grab looks from

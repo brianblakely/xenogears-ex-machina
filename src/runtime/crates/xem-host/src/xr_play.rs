@@ -1070,7 +1070,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let key = xem_assist::draw::side_keys(&screen, 1)[0].1.size.0;
         let binaural = binaural_line(&mut game);
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} presented_us={} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -1089,6 +1089,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             u8::from(view.first_person()),
             u8::from(!inside.is_empty()),
             assist.scaling.scale,
+            // When the frame was presented (the time the view eases by).
+            (now * 1e6) as u64,
             if matches!(view.xr_view(), XrView::Diorama(_)) { "diorama" } else { "screen" },
             u8::from(space.is_some()),
             shown.as_ref().map_or(1.0, |s| s.share),

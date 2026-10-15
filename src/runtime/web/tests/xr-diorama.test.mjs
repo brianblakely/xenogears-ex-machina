@@ -18,7 +18,15 @@
 // opaque). In the debug battle, its party attacking, the table stands
 // still while the battle's camera moves; on the world map, its vehicle
 // driven on, it stays on the camera's target; both show in depth, and the
-// automation's frames end at the same RAM in and out of the headset.
+// automation's frames end at the same RAM in and out of the headset. With
+// IWER's hands taking a simple hand model's poses, over the diorama:
+// either hand's overhand grab pauses and resumes, both hands' together
+// toggle once, a sideways grab and a fist turned while closed toggle
+// nothing; while the player's Pause holds the game the head moved 10 cm
+// sees the table in depth, the game's clock standing still; the underhand
+// grab looks from within the scene and, again, gives the diorama back at
+// once at the scale and place it had; prayer hands open the settings panel
+// where the pane floats, its own pause holding the game, and close it.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -529,6 +537,202 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
           assert.ok(across < 0.001, `the world map's table stays on its camera's target across the room: ${across} m`);
         }
       }
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('either hand\'s grabs work over it, the head tracked in depth while they pause it, inspection gives it back as it was and prayer opens settings over it', { timeout: 600_000 }, async () => {
+    // Field 30 with Fei walked into the room (as the first test), IWER's
+    // hands taking the model's poses.
+    const state = join(SHOTS, 'xr-diorama-hands.state');
+    execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+      input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
+        { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
+    });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    try {
+      const page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      const base64 = readFileSync(state).toString('base64');
+      await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))), base64);
+      // The diorama at 150%, a scale of the player's own.
+      const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      const applied = await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, xr: { ...g.xr, view: 'Diorama', diorama_scale: 150 } } }), graphics);
+      assert.equal(applied.ok, true, JSON.stringify(applied));
+      await page.evaluate(() => {
+        const device = window.xrDevice;
+        device.primaryInputMode = 'hand';
+        window.handModel.install(device);
+        // The hands in front of the player, palms down, apart.
+        device.hands.left.position.set(-0.15, 1.4, -0.3);
+        device.hands.right.position.set(0.15, 1.4, -0.3);
+        window.handModel.set(device, 'left', 'open');
+        window.handModel.set(device, 'right', 'open');
+      });
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().xr.input && window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      const shape = async (hand, name, n = 3) => {
+        await page.evaluate(({ hand, name }) => window.handModel.set(window.xrDevice, hand, name), { hand, name });
+        await frames(n);
+      };
+      const shapes = async (name, n = 3) => {
+        await page.evaluate((name) => {
+          window.handModel.set(window.xrDevice, 'left', name);
+          window.handModel.set(window.xrDevice, 'right', name);
+        }, name);
+        await frames(n);
+      };
+      const turn = (hand, q) => page.evaluate(({ hand, q }) => window.xrDevice.hands[hand].quaternion.set(...q), { hand, q });
+      // Palms down (as the model is), up and sideways.
+      const [DOWN, UP, SIDE] = [[0, 0, 0, 1], [0, 0, 1, 0], [0, 0, Math.SQRT1_2, Math.SQRT1_2]];
+      // A five-finger grab closing and opening again, the palm turned `q`.
+      const grab = async (hand, q = DOWN) => {
+        await turn(hand, q);
+        await frames(3);
+        for (const name of ['open', 'half', 'fist', 'open']) await shape(hand, name);
+        await turn(hand, DOWN);
+        await frames(3);
+      };
+      const xr = async () => (await status(page)).xr;
+      const gameFrames = async () => (await status(page)).loop.gameFrames;
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
+      const layer = await page.evaluate(() => {
+        const gl = document.querySelector('canvas').getContext('webgl2');
+        return [gl.drawingBufferWidth, gl.drawingBufferHeight];
+      });
+      // Rows of the left view across the table, near first (as above).
+      const heights = Array.from({ length: 12 }, (_, i) => 0.04 + i * 0.04);
+      const count = 200;
+      const points = heights.flatMap((v) => Array.from({ length: count }, (_, i) => [Math.floor((0.05 + 0.4 * i / count) * layer[0]), Math.floor(v * layer[1])]));
+      const read = async () => {
+        const bytes = await page.evaluate((points) => window.xem.xr.readback(points), points);
+        return heights.map((_, r) => bytes.slice(r * count * 4, (r + 1) * count * 4));
+      };
+
+      // The left hand's overhand grab: the player's Pause, the diorama on.
+      let before = (await xr()).counts;
+      await grab('left');
+      let info = await status(page);
+      assert.equal(info.xr.pauses.player, true, 'the left hand\'s grab paused');
+      assert.equal(info.xr.diorama, true, 'the diorama shows through the pause');
+      // While it holds the game, the head moved 10 cm to the right: the
+      // views follow it, the table in depth (rows across it shift by their
+      // depth), the game's clock standing still.
+      const held = info.loop.gameFrames;
+      const sessionFrames = info.page.xr.frames;
+      const viewer = info.page.xr.viewer;
+      const rows = await read();
+      const origin = await page.evaluate(() => { const p = window.xrDevice.position; return [p.x, p.y, p.z]; });
+      await page.evaluate(([x, y, z]) => window.xrDevice.position.set(x + 0.1, y, z), origin);
+      await frames(8);
+      const moved = await read();
+      info = await status(page);
+      const shifts = rows.map((row, r) => shift(row, moved[r]));
+      const matched = shifts.filter((s) => s.matched);
+      const spread = matched.length ? Math.max(...matched.map((s) => s.shift)) - Math.min(...matched.map((s) => s.shift)) : 0;
+      console.log(`the player's Pause: game frame ${held} to ${info.loop.gameFrames}, session frames ${sessionFrames} to ${info.page.xr.frames}, `
+        + `the head ${viewer} to ${info.page.xr.viewer}; parallax for 10 cm by row (near first) ${JSON.stringify(shifts)}`);
+      assert.equal(info.loop.gameFrames, held, 'the game\'s clock stands still under the player\'s Pause');
+      assert.notDeepEqual(info.page.xr.viewer, viewer, 'the head is tracked');
+      assert.ok(matched.length >= 4 && spread >= 5, `the paused diorama in depth: ${JSON.stringify(shifts)}`);
+      await page.evaluate((p) => window.xrDevice.position.set(...p), origin);
+      await frames(6);
+      // The left hand's grab again: resumed.
+      await grab('left');
+      assert.equal((await xr()).pauses.player, false, 'the left hand\'s grab resumed');
+      const running = await gameFrames();
+      await frames(10);
+      assert.ok(await gameFrames() > running, 'the game runs again');
+      // Both hands closing together: one toggle; the right hand's resumes.
+      for (const name of ['half', 'fist', 'open']) await shapes(name);
+      info = await status(page);
+      assert.equal(info.xr.pauses.player, true, 'both hands\' grab paused');
+      assert.equal(info.xr.counts.pause, before.pause + 3, `both hands closing together toggle once: ${JSON.stringify(info.xr.counts)}`);
+      await grab('right');
+      assert.equal((await xr()).pauses.player, false, 'the right hand\'s grab resumed');
+      // A sideways grab, and a fist closed sideways then turned palm down
+      // and up while closed: nothing.
+      before = (await xr()).counts;
+      await grab('right', SIDE);
+      await turn('right', SIDE);
+      await frames(3);
+      for (const name of ['open', 'half', 'fist']) await shape('right', name);
+      for (const q of [DOWN, UP, SIDE]) {
+        await turn('right', q);
+        await frames(3);
+      }
+      await shape('right', 'open');
+      await turn('right', DOWN);
+      await frames(3);
+      info = await status(page);
+      assert.deepEqual(info.xr.counts, before, `a sideways grab and a turned fist toggle nothing: ${JSON.stringify(info.xr.counts)}`);
+      assert.equal(info.xr.pauses.player, false);
+      assert.equal(info.xr.diorama, true, 'the diorama shows on');
+
+      // The left hand's underhand grab looks from within the scene; again,
+      // and the diorama is back at once as it was (its scale, where it
+      // stood: the camera still).
+      const was = info.xr.space;
+      await grab('left', UP);
+      info = await status(page);
+      assert.equal(info.xr.counts.inspect, before.inspect + 1, 'an underhand grab');
+      assert.deepEqual([info.xr.inspecting, info.xr.within, info.xr.diorama], [true, true, false], `inspection looks from within the scene: ${JSON.stringify(info.xr)}`);
+      await grab('left', UP);
+      await frames(2);
+      info = await status(page);
+      console.log(`inspection: the diorama before ${JSON.stringify(was)}, after ${JSON.stringify(info.xr.space)}`);
+      assert.deepEqual([info.xr.inspecting, info.xr.diorama, info.xr.share], [false, true, 0], 'the diorama back at once');
+      assert.equal(info.xr.dioramaScale, 1.5, 'the player\'s scale');
+      assert.equal(info.xr.space.scale, was.scale, 'at the scale it had');
+      const off = Math.max(...info.xr.space.roomFromWorld.map((v, i) => Math.abs(v - was.roomFromWorld[i])));
+      assert.ok(off < 1e-4, `standing where it stood: ${off}`);
+
+      // Prayer hands: the settings panel over the table (where the pane
+      // stands, facing the seat), its own pause holding the game, the
+      // diorama on; again, closed.
+      const prayer = async () => {
+        await page.evaluate(() => {
+          const d = window.xrDevice;
+          // Palms facing: the left hand turned palm right, the right palm left.
+          d.hands.left.quaternion.set(0, 0, -Math.SQRT1_2, Math.SQRT1_2);
+          d.hands.right.quaternion.set(0, 0, Math.SQRT1_2, Math.SQRT1_2);
+          d.hands.left.position.set(-0.02, 1.4, -0.3);
+          d.hands.right.position.set(0.02, 1.4, -0.3);
+        });
+        await frames(4);
+        await page.evaluate(() => {
+          const d = window.xrDevice;
+          d.hands.left.position.set(-0.25, 1.4, -0.3);
+          d.hands.right.position.set(0.25, 1.4, -0.3);
+        });
+        await frames(4);
+      };
+      await prayer();
+      info = await status(page);
+      const opened = info.loop.gameFrames;
+      await frames(6);
+      const panel = info.xr.panel;
+      const pane = info.xr.space?.pane;
+      console.log(`prayer: settings ${info.xr.settings}, the panel at ${JSON.stringify(panel)}, the pane at ${JSON.stringify(pane)}`);
+      assert.deepEqual([info.xr.settings, info.xr.pauses.settings, info.xr.diorama], [true, true, true], `settings opened over the diorama: ${JSON.stringify(info.xr)}`);
+      assert.equal(await page.evaluate(() => window.xem.panel.visible()), true, 'the panel shows in the session');
+      assert.equal(await gameFrames(), opened, 'the settings\' pause holds the game');
+      assert.ok(Math.abs(panel.position[0] - pane[0]) < 1e-3 && Math.abs(panel.position[2] - pane[2]) < 1e-3 && panel.position[1] > pane[1] - 0.25,
+        `the panel stands where the pane floats: ${JSON.stringify(panel)}, the pane ${pane}`);
+      await prayer();
+      info = await status(page);
+      assert.deepEqual([info.xr.settings, info.xr.pauses.player], [false, false], 'closed again, the player\'s Pause never set');
       await page.evaluate(() => window.xem.xr.exit());
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
       assert.deepEqual(page.errors, []);
