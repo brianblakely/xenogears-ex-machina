@@ -20,9 +20,12 @@ listeners at large. Whether they, with the models, settle the plan's
 - Headphones (the KEMAR set is diffuse-field equalized, so open or
   diffuse-field-tuned headphones suit it best; note the model on the first
   screen) and a quiet room.
-- The runtime shell: from the repository's root, prefix the commands below
-  with `nix --extra-experimental-features 'nix-command flakes' develop
-  path:./nix/runtime -c` (it has cargo, Python and Chromium).
+- The runtime shell, which has cargo, Python and a browser. From the
+  repository's root:
+
+      nix --extra-experimental-features 'nix-command flakes' develop path:./nix/runtime
+
+  and run the commands below in it, from the repository's root.
 - For the music: disc 1 at `discs/Xenogears disc 1.chd` (or `XEM_DISC1`)
   and the game module (`python3 tools/game_module.py`, once).
 - Time: three localization sessions of about 30-40 minutes and two
@@ -31,22 +34,25 @@ listeners at large. Whether they, with the models, settle the plan's
 
 ## Steps
 
-1. Make the localization stimuli (about 10 seconds; no disc needed):
+1. Make the localization stimuli (a few seconds once built; no disc
+   needed):
 
-       cd src/runtime && cargo run --release -p xem-headless --example listening -- localization
+       (cd src/runtime && cargo run --release -p xem-headless --example listening -- localization)
 
    This writes `.local/listening/localization.json` and
    `.local/listening/localization/` (about 110 MB).
 
-2. Make the music excerpts (about 3 minutes):
+2. Make the music excerpts (2 to 3 minutes):
 
-       cd src/runtime && cargo run --release -p xem-headless --example listening -- music
+       (cd src/runtime && cargo run --release -p xem-headless --example listening -- music)
 
    This writes `.local/listening/coherence.json`, `coherence/` (about 100
    MB) and `states/`, the saved state each excerpt starts from. To hear a
    scene of your own instead of a built-in one (a boss you reached, say),
-   save a state in the desktop app and pass it: `--state battle=PATH`
-   (`--only NAME,...` remakes only those excerpts). Both commands take
+   save a state in the desktop app (a `.xemstate` file of the same game
+   module) and pass it: with `--state battle=PATH` the battle excerpt
+   starts there and the others are made as before. `--only NAME,...` makes
+   a test of those excerpts alone (its manifest holds only them). Both commands take
    `--out DIR` and `--seed N` (2026 by default; the same seed and commit
    make the same files).
 
@@ -169,7 +175,7 @@ validated model of musical coherence exists.
 
 ## Checking the page
 
-    cd src/runtime/web && node --test tests/listening.test.mjs
+    (cd src/runtime/web && node --test tests/listening.test.mjs)
 
 runs the page in headless Chromium on a small synthetic set: a script
 answers every planned session through the page's controls (a session left

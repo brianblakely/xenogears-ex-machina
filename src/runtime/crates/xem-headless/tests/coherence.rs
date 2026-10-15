@@ -3,8 +3,8 @@
 //! module build). No validated model of a mix's spatial coherence exists
 //! (the SAQI's spatial disintegration has none), so these are regression
 //! measures of the signals, not predictions of what people hear: in Lahan's
-//! opening scene (field 2 from its entry, 17 parts of the village's song
-//! sounding and nothing else placed), presented at music immersion 0, 35,
+//! opening scene (field 2 from its entry, the village burning at night: 17
+//! parts of its music sounding and nothing else placed), presented at music immersion 0, 35,
 //! 70 and 100 with a tap capture over ten seconds,
 //!
 //! - the mix keeps the original Stereo mix's loudness (ITU-R BS.1770-4,
@@ -45,7 +45,7 @@ use xem_core::control::Session;
 use xem_game::{BootOptions, NativeModule, boot};
 use xem_spu::{TapFrame, VOICES};
 
-/// Lahan's opening scene: the village's song, three scripted camera cuts,
+/// Lahan's opening scene: its music, three scripted camera cuts,
 /// no positional effect (tests/binaural.rs).
 const FIELD: u32 = 2;
 /// The capture: frames after the field's entry.

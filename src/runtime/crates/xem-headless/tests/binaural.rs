@@ -570,9 +570,10 @@ fn in_a_battle_camera_swings_switching_sources_and_the_return_to_the_field_add_n
 }
 
 /// Lahan's square (field 2) entered as the game's development menu enters
-/// it: its scene plays by itself, the village's song with it, and its
-/// script cuts the camera three times (it turns 96, 114 and 59 degrees
-/// from one frame to the next, about 390, 890 and 1 020 frames in).
+/// it: its scene (the village burning at night) plays by itself, its music
+/// with it, and its script cuts the camera three times (it turns 96, 114
+/// and 59 degrees from one frame to the next, about 390, 890 and 1 020
+/// frames in).
 const CUT_FIELD: u32 = 2;
 const CUT_FRAMES: u64 = 1200;
 

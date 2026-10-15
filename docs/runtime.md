@@ -837,7 +837,7 @@ manifest's are left out of the analysis. Nobody has taken the test yet.
   for a moving sound; each test sound plays once. Every session first sets
   the level (pink noise at -23 LUFS) and checks left and right and the
   headphones' polarity (the same low noise in and out of phase). 1 032
-  files (110 MB), made in 6 s.
+  files (110 MB), made in 3 to 6 s here.
 - *Musical coherence.* Eight excerpts (12 s; the title's 10), each reached
   from boot by a fixed recipe and saved as a state (the hosts' format;
   `--state` takes one of the user's instead), then presented from it four
@@ -856,7 +856,9 @@ manifest's are left out of the analysis. Nobody has taken the test yet.
   every part at a random place of its own. Each condition's loudness, the
   gain to -23 LUFS the page applies (every peak stays under 0.4 of full
   scale after it), its peak and its interaural cross-correlation by octave
-  go to the manifest; the eight excerpts take 3 minutes here. Two
+  go to the manifest; the eight excerpts take 1.5 to 3 minutes here, and
+  two runs from one commit and seed write the same files (the localization
+  stimuli's too, and the saved states). Two
   sessions rate every excerpt once per question (coherence, lead and
   foundation, envelopment, tone colour, preference), MUSHRA-style: the
   labelled reference and six versions, the reference hidden among them,
@@ -940,7 +942,8 @@ than the original's in the high band. In Lahan's opening scene (field 2,
 entered as the game's development menu enters it, 1 200 frames plain and
 under Binaural) the scene's script cuts the camera three times, turning it
 96, 114 and 59 degrees from one frame to the next as the field reader sees
-it, while the village's song sounds (8 to 20 parts either side of a cut)
+it, while the scene's music sounds (the village burning at night; 8 to
+20 parts either side of a cut)
 and nothing else is placed: each of its 20 parts keeps its place on the
 stage through the cuts, heard from it turned only by its own pan (15 857
 part frames), the parts sounding before a cut play on after it on the same
@@ -1037,7 +1040,8 @@ sample 4 393 samples (99.6 ms, the fade) after it went off, and leaves game
 memory and the SPU as that run's. `tests/coherence.rs` (musical coherence
 by proxies that are not calibrated against listeners: regression guards,
 not predictions of what people hear): Lahan's opening scene (field 2 from
-its entry, 17 parts of the village's song sounding, nothing else placed)
+its entry, 17 parts of the burning village's music sounding, nothing
+else placed)
 presented at music immersion 0, 35, 70 and 100, a tap capture over ten
 seconds (frames 300 to 900 after the entry) each. The mix's BS.1770-4 loudness is
 the original Stereo mix's within 0.3 LU at every immersion (+0.09, +0.19,

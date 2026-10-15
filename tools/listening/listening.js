@@ -386,10 +386,19 @@ function answerControls(moving, onChange) {
     const y = c - (event.clientY - box.top) * size / box.height;
     return (Math.round(Math.atan2(x, y) * 180 / Math.PI) + 360) % 360;
   };
+  // A press sets the marker; dragging moves it (the dial keeps the pointer
+  // until it is released, wherever that is).
   let dragging = false;
-  face.addEventListener('pointerdown', (event) => { dragging = true; marks[selected].azimuth = fromEvent(event); draw(); });
+  face.addEventListener('pointerdown', (event) => {
+    dragging = true;
+    face.setPointerCapture(event.pointerId);
+    marks[selected].azimuth = fromEvent(event);
+    draw();
+  });
   face.addEventListener('pointermove', (event) => { if (dragging) { marks[selected].azimuth = fromEvent(event); draw(); } });
-  window.addEventListener('pointerup', () => { dragging = false; }, { once: false });
+  const release = () => { dragging = false; };
+  face.addEventListener('pointerup', release);
+  face.addEventListener('pointercancel', release);
   dial.addEventListener('keydown', (event) => {
     const step = event.shiftKey ? 1 : 5;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
