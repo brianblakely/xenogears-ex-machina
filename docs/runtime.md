@@ -4164,8 +4164,8 @@ module build that changes nothing keeps `build/game/game.wasm` and its time,
 so nothing downstream rebuilds (play.sh compares the sources with
 `build/game/stamp`, which each finished module build touches). The
 desktop tier's Rust tests include the original game's long run
-(`xem-headless/tests/long_run.rs`, 36 000 frames twice, about two
-minutes) and `xem-host`'s original-game tests (rewind frame latency, the
+(`xem-headless/tests/long_run.rs`, 36 000 frames twice: 138 s of the
+tier's 866 s in a run here beside other tracks' work) and `xem-host`'s original-game tests (rewind frame latency, the
 focus pause's recording, the held rewind), which skip without the disc as
 the others do. The Android smoke compares states with `xem-headless`: the
 android stage builds it (the suite profile, the native target directory:
@@ -4689,8 +4689,8 @@ back 1 to 4 times at its end (a rewind step plays on from a state with the
 state's own buttons, so nothing is held then), then plays on; at every
 checkpoint the two are the same byte for byte, and the history stays
 within its budget and length. 36 000 frames each (the default;
-`XEM_LONG_RUN_FRAMES` for more) took 122.6 s here beside other work (20
-checkpoints and sessions, 7 rewinds); 216 000 frames (an hour of game time)
+`XEM_LONG_RUN_FRAMES` for more) took 122.6 s here alone and 138 s in the
+desktop tier (20 checkpoints and sessions, 7 rewinds); 216 000 frames (an hour of game time)
 took 616 s alone in its process (120 checkpoints and sessions, 40 rewinds,
 24 000 fast-forwarded frames; the walk ended in field map 8 at RAM
 `30d46e72c5adf322`). `xem-host/tests/states.rs` (disc 1, lavapipe): Lahan's
