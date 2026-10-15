@@ -4206,11 +4206,11 @@ backup saved before the options existed brings their defaults. The
 shortcut list, though, is one setting read whole, so a file saved before
 `ToggleAutoAdvance` existed has no binding for it until one is set in
 Shortcuts ([below](#text-speed-auto-advance-and-movie-skipping)); the
-panel's switch and AUTO work either way. The
-interactive hosts (the desktop, Android, OpenXR's play and a running
-browser page) give the session the values before every game frame outside
-session logs; headless sessions, session logs and replays play the
-original unless commanded, and a replay keeps the recorded values.
+panel's switch and AUTO work either way. The interactive hosts (the
+desktop, Android, OpenXR's play and a running browser page) give the
+session the values before every game frame outside session logs;
+headless sessions, session logs and replays play the original unless
+commanded, and a replay keeps the recorded values.
 
 **Agents** change the options as people do, through the settings service,
 and get its acknowledgement. On `xem-desktop --control`,
@@ -4241,10 +4241,10 @@ are. Android has no agent channel.
   a running jump toward the door each time the route stops short: the
   route plans a jump only where it enters a ledge (attribute bit 22, the
   [slides](#how-the-areas-are-classified)) from below, so it walks into a
-  floor that is only higher and stops there.
-  Under the original the same walk meets a random battle on map 414 after
-  428 frames. Map 172's Repair Bot still starts its scripted battle under
-  the default ([above](#random-battles-in-platforming-areas)).
+  floor that is only higher and stops there. Under the original the same
+  walk meets a random battle on map 414 after 428 frames. Map 172's Repair
+  Bot still starts its scripted battle under the default
+  ([below](#random-battles-in-platforming-areas)).
 - *A chapter's scenes.* The game's opening from the title's New Game (the
   title, the narration on map 4, Lahan's maps 2 and 14 and the battle on
   map 14) plays to Fei's room in the village chief's house, story value 6
