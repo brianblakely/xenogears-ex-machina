@@ -1330,8 +1330,11 @@ game fiber's asyncify area (wasm 0x10001024 and 0x10001068, 0x4c and
 the diorama presents, across restores (0xc00 and 0x8 without a
 diorama), as a copy of a running count the state does not hold would
 (the presentation rings' counts, outside the state, run so); game
-memory, scratchpad and sound are alike. The cause is not established,
-and the scales are compared by those.
+memory, scratchpad and sound are alike. [Presentation and the whole
+state](#the-renderer-phase-4) locates differences of this kind in native
+runs (copies of the presentation rings' counts, which the port takes into
+locals); for these two words the cause is not established, and the
+scales are compared by those.
 The battle camera's swings the battle test hears are its own (the
 framing yaw turned in both sessions): the retained battle's camera turns
 only before any combatant sounds. No placed effect sounds across a camera
