@@ -444,8 +444,10 @@ impl Settings {
     /// when the settings it makes read and validate, else each of its values
     /// in turn; a value that does not (a variant no longer offered, a number
     /// out of range) leaves its setting at the default, and its path (such as
-    /// `graphics.filtering.movies`) is returned. Only a value that is not an
-    /// object is refused.
+    /// `graphics.filtering.movies`) is returned. A shortcut list saved
+    /// before an action with a default binding existed gives that action its
+    /// default, less any chord another action holds. Only a value that is
+    /// not an object is refused.
     pub fn read(value: &serde_json::Value) -> Result<(Settings, Vec<String>), String> {
         fn take(settings: &mut serde_json::Value, path: &mut Vec<String>, value: &serde_json::Value, reset: &mut Vec<String>) {
             let mut candidate = settings.clone();
@@ -478,7 +480,23 @@ impl Settings {
         let mut settings = serde_json::to_value(Settings::default()).expect("settings serialize");
         let mut reset = Vec::new();
         take(&mut settings, &mut Vec::new(), value, &mut reset);
-        Ok((serde_json::from_value(settings).expect("read when taken"), reset))
+        let mut settings: Settings = serde_json::from_value(settings).expect("read when taken");
+        for (action, default) in controls::defaults() {
+            if settings.app_bindings.contains_key(&action) {
+                continue;
+            }
+            // A chord is held when another action's is the same keys.
+            let free = |chord: &Vec<String>, of: fn(&AppBinding) -> &Vec<String>| {
+                !settings.app_bindings.values().any(|binding| {
+                    let held = of(binding);
+                    !held.is_empty() && held.len() == chord.len() && chord.iter().all(|key| held.contains(key))
+                })
+            };
+            let keyboard = if free(&default.keyboard, |b| &b.keyboard) { default.keyboard.clone() } else { Vec::new() };
+            let gamepad = if free(&default.gamepad, |b| &b.gamepad) { default.gamepad.clone() } else { Vec::new() };
+            settings.app_bindings.insert(action, AppBinding { keyboard, gamepad });
+        }
+        Ok((settings, reset))
     }
 
     /// Checks values that the types alone do not constrain (for loaded files).
@@ -1188,6 +1206,35 @@ mod tests {
         let service = SettingsService::open(store).unwrap();
         assert_eq!(service.settings().audio_output, AudioOutput::Mono);
         assert_eq!(service.settings().master_volume, 80);
+    }
+
+    #[test]
+    fn a_shortcut_list_saved_before_an_action_existed_reads_its_default_binding_less_a_chord_another_holds() {
+        // Saved before ToggleAutoAdvance existed: its default, T and
+        // Back+West, and nothing reset.
+        let mut old = serde_json::to_value(Settings::default()).unwrap();
+        old["app_bindings"].as_object_mut().unwrap().remove("ToggleAutoAdvance");
+        let (read, reset) = Settings::read(&old).unwrap();
+        assert!(reset.is_empty(), "{reset:?}");
+        assert_eq!(read, Settings::default());
+        // A chord the player gave another action stays that action's; the
+        // other chord is the new action's.
+        old["app_bindings"]["ImportBios"] = serde_json::json!({"keyboard": ["KeyT"], "gamepad": []});
+        let (read, _) = Settings::read(&old).unwrap();
+        assert_eq!(read.app_bindings[&AppAction::ToggleAutoAdvance], AppBinding::parse("", "Back+West"));
+        assert_eq!(read.app_bindings[&AppAction::ImportBios], AppBinding::parse("KeyT", ""));
+        // An action the player unbound stays unbound, and a saved file
+        // keeps the list it read.
+        old["app_bindings"]["ToggleAutoAdvance"] = serde_json::json!({"keyboard": [], "gamepad": []});
+        assert_eq!(Settings::read(&old).unwrap().0.app_bindings[&AppAction::ToggleAutoAdvance], AppBinding::default());
+        let store = SharedStore::default();
+        *store.0.borrow_mut() = Some(r#"{"app_bindings": {"SaveState": {"keyboard": ["F6"], "gamepad": []}}}"#.into());
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F6", ""), "the player's own binding");
+        assert_eq!(service.settings().app_bindings[&AppAction::ToggleAutoAdvance], AppBinding::parse("KeyT", "Back+West"));
+        service.apply(SettingChange::MasterVolume(10)).unwrap();
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(saved["app_bindings"]["ToggleAutoAdvance"], serde_json::json!({"keyboard": ["KeyT"], "gamepad": ["Back", "West"]}));
     }
 
     #[test]

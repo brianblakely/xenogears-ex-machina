@@ -4207,10 +4207,11 @@ its default and resets nothing else (`Settings::read`); a deliberate choice,
 and its import; and a revised table of platforming areas applies to
 everyone who keeps the default. An import replaces the settings whole, so a
 backup saved before the options existed brings their defaults. The
-shortcut list, though, is one setting read whole, so a file saved before
-`ToggleAutoAdvance` existed has no binding for it until one is set in
-Shortcuts ([below](#text-speed-auto-advance-and-movie-skipping)); the
-panel's switch and AUTO work either way. The interactive hosts (the
+shortcut list is one setting, kept as saved, but an action with a default
+binding that a saved list lacks (`ToggleAutoAdvance` in files saved
+before it existed) reads that default, less any chord the list gives
+another action ([below](#text-speed-auto-advance-and-movie-skipping)).
+The interactive hosts (the
 desktop, Android, OpenXR's play and a running browser page) give the
 session the values before every game frame outside session logs;
 headless sessions, session logs and replays play the original unless
@@ -4272,6 +4273,11 @@ that a file holding every key but the options' (a real file through
 and that a choice of each, acknowledged in turn, survives other changes,
 a whole-settings change, a reload, a backup and its import, while a
 backup saved before the options imports their defaults.
+`a_shortcut_list_saved_before_an_action_existed_reads_its_default_binding_less_a_chord_another_holds`
+checks that a list saved without `ToggleAutoAdvance` reads T and
+Back+West and resets nothing, that a chord the list gives another action
+stays that action's, that an unbound action stays unbound, and that the
+next save writes the binding.
 `agents_change_every_gameplay_option_through_the_settings_commands_and_read_the_acknowledgement`
 sends each option's change as an agent's JSON line, reads the revision and
 the settings back, and checks that refused changes (a dwell out of range,
@@ -4286,7 +4292,8 @@ directory: the defaults in `status`, each `settings_apply` acknowledged
 with its revision, a refused dwell, the next frames' `status`, the
 settings file, and a second launch that starts with the choices. A
 browser test (`persistence.test.mjs`, the fixture module) loads an
-`xem.settings` saved without the options and reads their defaults, the
+`xem.settings` saved without the options and the auto-advance shortcut
+and reads their defaults, the
 running page gives the session the default maps, `xem.settings.apply`
 acknowledges each option's change in turn and refuses a dwell out of
 range, the session shows each, and a reload and an exported backup's
@@ -4873,9 +4880,10 @@ messages.
 Back+West by default, rebindable in Shortcuts) turns the setting on or
 off through the settings service and says which on the status line.
 Settings saved before the action existed (every saved file and browser
-`xem.settings` holds the whole shortcut list, which `Settings::read` takes
-whole) have no binding for it until one is set in Shortcuts; the panel's
-switch and AUTO work either way.
+`xem.settings` holds the whole shortcut list) read its default binding
+(`Settings::read`): T and Back+West, less a chord the saved list gives
+another action, which stays that action's; an action unbound in
+Shortcuts (an empty binding) stays unbound.
 Touch screens and headsets have AUTO beside the picture in a field's
 scenes and dialogue (`Context::Event` and `Context::Dialogue`): the touch
 deck shows it above the face buttons, a headset beside the screen's right
@@ -5255,7 +5263,9 @@ only when it asks for a redraw. Settings live in
 `xem_settings::SettingsService` (`$XDG_CONFIG_HOME/xenogears-ex-machina/settings.json`
 on the desktop); the panel and agents change them only through `apply`.
 A saved setting that does not read (a value no longer offered) or keeps the
-whole from validating takes its default alone, the others staying as saved
+whole from validating takes its default alone, the others staying as saved,
+and an action with a default binding that the saved shortcut list lacks
+takes that binding, less any chord another action holds
 (`Settings::read`, also for imported backups).
 With a disc, the game runs paced by the wall clock at 60 frames a second (a
 stalled host drops time rather than catching up), pad 1 follows the keyboard,

@@ -556,16 +556,19 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     const gameplay = (s) => [s.random_battles, s.encounter_rate, s.text_speed, s.auto_advance, s.movie_skip];
     try {
       const page = await browser.page(fixture);
-      // Settings saved before the gameplay options existed, with a choice of their own.
+      // Settings saved before the gameplay options and the auto-advance
+      // shortcut existed, with a choice of their own.
       await page.evaluate(() => {
         const old = window.xem.settings.get().settings;
         for (const key of ['random_battles', 'encounter_rate', 'text_speed', 'auto_advance', 'movie_skip']) delete old[key];
+        delete old.app_bindings.ToggleAutoAdvance;
         localStorage.setItem('xem.settings', JSON.stringify({ ...old, master_volume: 40 }));
       });
       await page.reload(); await ready(page);
       const read = (await page.evaluate(() => window.xem.settings.get())).settings;
       assert.deepEqual([...gameplay(read), read.master_volume],
         ['NotWhilePlatforming', 'Original', 'Original', { enabled: false, dwell: 120 }, false, 40], 'the defaults, the rest kept');
+      assert.deepEqual(read.app_bindings.ToggleAutoAdvance, { keyboard: ['KeyT'], gamepad: ['Back', 'West'] }, 'the new shortcut reads its default');
       await forever(page);
       await page.evaluate(() => window.xem.setRunning(true));
       await page.waitForFunction(() => { const s = window.xem.status().session; return s.random_battles_off.includes(414) && s.text_speed === 0; });
