@@ -20,19 +20,13 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { HAND_MODEL, IWER, NO_WEBGPU, QUEST as HEADSET, QUEST_BROWSER, start, status } from './support.mjs';
+import { HAND_MODEL, IWER, NO_WEBGPU, QUEST as HEADSET, QUEST_BROWSER, rotate, start, status } from './support.mjs';
 
 const QUEST = HEADSET + HAND_MODEL;
 // Hand orientations: palm down (as the model is), palm up and sideways.
 const DOWN = [0, 0, 0, 1];
 const UP = [0, 0, 1, 0];
 const SIDE = [0, 0, Math.SQRT1_2, Math.SQRT1_2];
-
-/** `v` turned by the quaternion `q` (x, y, z, w). */
-function rotate([x, y, z, w], v) {
-  const t = [2 * (y * v[2] - z * v[1]), 2 * (z * v[0] - x * v[2]), 2 * (x * v[1] - y * v[0])];
-  return [v[0] + w * t[0] + (y * t[2] - z * t[1]), v[1] + w * t[1] + (z * t[0] - x * t[2]), v[2] + w * t[2] + (x * t[1] - y * t[0])];
-}
 
 describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm ci)' }, () => {
   test('either hand\'s grabs pause, prayer hands open settings, scaling owns both hands', { timeout: 300_000 }, async () => {

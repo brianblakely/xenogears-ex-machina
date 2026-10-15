@@ -41,7 +41,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, start, status } from './support.mjs';
+import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, rotate, start, status } from './support.mjs';
 
 const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -640,26 +640,27 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.deepEqual(card, await page.evaluate(() => Array.from(window.xem.cards.image(1))), 'IndexedDB holds the card the game wrote');
 
       // Settings by the right controller's ray and trigger: the panel's
-      // logical pixel in the session's space (origin at the head as the
-      // session began; the panel 1.1 m ahead, 0.75 m down, tilted 25
-      // degrees, 0.55 m wide: xem-web's render::xr_panel_quad). At this
+      // logical pixel where the session says the panel stands
+      // (status().xr.panel: its centre, orientation and size in the
+      // session's space, whose origin is the head as the session began;
+      // xem-web's render::xr_panel_quad, below the screen). At this
       // viewport the panel is the canvas's, 640x560 with its sidebar.
       assert.deepEqual(info.xr.panelSize, [640, 560]);
-      const aim = ([x, y]) => page.evaluate(([x, y]) => {
-        const [width, height] = window.xem.status().xr.panelSize;
-        const tilt = -25 * Math.PI / 180;
-        const [u, v] = [(x / width - 0.5) * 0.55, (0.5 - y / height) * 0.55 * height / width];
-        const target = [u, -0.75 + v * Math.cos(tilt), -1.1 + v * Math.sin(tilt)];
-        const from = [0.2, -0.3, -0.3];
-        const toward = target.map((t, i) => t - from[i]);
-        const [dx, dy, dz] = toward.map((c) => c / Math.hypot(...toward));
-        // The turn taking -Z to that direction, about -Z x direction.
-        const [ax, ay] = [dy, -dx];
-        const s = Math.sin(Math.acos(-dz) / 2) / (Math.hypot(ax, ay) || 1);
-        const [right, head] = [window.xrDevice.controllers.right, window.xemHeadStart];
-        right.position.set(head[0] + from[0], head[1] + from[1], head[2] + from[2]);
-        right.quaternion.set(ax * s, ay * s, 0, Math.cos(Math.acos(-dz) / 2));
-      }, [x, y]);
+      const aim = async ([x, y]) => {
+        const { panelSize: [width, height], panel: { position, orientation, size } } = (await status(page)).xr;
+        const target = rotate(orientation, [(x / width - 0.5) * size[0], (0.5 - y / height) * size[1], 0]).map((v, i) => v + position[i]);
+        await page.evaluate((target) => {
+          const from = [0.2, -0.3, -0.3];
+          const toward = target.map((t, i) => t - from[i]);
+          const [dx, dy, dz] = toward.map((c) => c / Math.hypot(...toward));
+          // The turn taking -Z to that direction, about -Z x direction.
+          const [ax, ay] = [dy, -dx];
+          const s = Math.sin(Math.acos(-dz) / 2) / (Math.hypot(ax, ay) || 1);
+          const [right, head] = [window.xrDevice.controllers.right, window.xemHeadStart];
+          right.position.set(head[0] + from[0], head[1] + from[1], head[2] + from[2]);
+          right.quaternion.set(ax * s, ay * s, 0, Math.cos(Math.acos(-dz) / 2));
+        }, target);
+      };
       const pull = async (point) => {
         await aim(point);
         await frames(3);

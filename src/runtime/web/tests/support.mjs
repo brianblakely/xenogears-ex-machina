@@ -93,6 +93,12 @@ export const IWER = existsSync(IWER_PATH) ? readFileSync(IWER_PATH, 'utf8') : ''
 export const QUEST = `${IWER}\n;window.xrDevice = new IWER.XRDevice(IWER.metaQuest3, { stereoEnabled: true });`
   + 'window.xrDevice.installRuntime({ forceInstall: true });';
 
+/** `v` turned by the quaternion `q` (x, y, z, w). */
+export function rotate([x, y, z, w], v) {
+  const t = [2 * (y * v[2] - z * v[1]), 2 * (z * v[0] - x * v[2]), 2 * (x * v[1] - y * v[0])];
+  return [v[0] + w * t[0] + (y * t[2] - z * t[1]), v[1] + w * t[1] + (z * t[0] - x * t[2]), v[2] + w * t[2] + (x * t[1] - y * t[0])];
+}
+
 // The hand model in the page (an init script after QUEST): a right hand in
 // its own frame (wrist at the origin, fingers along -Z, palm down), each
 // finger curled by `curl`, the thumb's tip at `thumb`; poses are registered
