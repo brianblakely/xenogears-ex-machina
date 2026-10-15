@@ -6,10 +6,11 @@
 //!
 //! - every frame of the title movie that shows a picture is rebuilt from
 //!   what the MDEC decoded, by a view enlarging bilinearly and by one
-//!   enlarging by FSR 1 (whose pictures differ on every frame: FSR ran),
-//!   until the movie eases into the MDEC's own picture over its last
-//!   second (its last frame and the frames held after it the MDEC's) and
-//!   the title's 15-bit frames follow;
+//!   enlarging by FSR 1 (whose pictures differ from the bilinear ones on
+//!   every frame at full strength that is not black: FSR ran), until the
+//!   movie eases into the MDEC's own picture over its last second (its last
+//!   frame and the frames held after it the MDEC's) and the title's 15-bit
+//!   frames follow;
 //! - each of those rebuilt pictures, averaged back to the display's pixels,
 //!   stays within the MDEC's error of the device's picture (mean error,
 //!   PSNR);

@@ -1450,9 +1450,9 @@ browser's canvas likewise, and a headset's virtual screen as many pixels
 across as the screen spans in an eye (its width, times two-hand scaling,
 over its distance, in the eye's pixels per unit of tangent), at most the
 eye's own width (`headset_movie_output`: a larger screen shows only part of
-itself). Under the Fit and Integer scales it is enlarged once, a phone's
-insets resampling nothing; under Stretch the rebuilt picture keeps the
-display's shape within the stretched rectangle (`fitted`) and the
+itself). Under the Fit and Integer scales it is enlarged once (a phone's
+insets do not resample it again); under Stretch the rebuilt picture keeps
+the display's shape within the stretched rectangle (`fitted`) and the
 compositor stretches it across, a second enlargement one way. A rebuilt
 frame is the display alone (`Presented::movie`): hosts place it, map
 pointers onto it and set the headset screen's shape without wider
@@ -1523,9 +1523,9 @@ every frame from boot through the title movie with a view enlarging
 bilinearly and one enlarging by FSR 1 (each told so whatever the GPU),
 checking the facts above: every frame with a picture rebuilt until the
 ease ends, every rebuilt frame within 6 levels and 30 dB of the device's,
-the two enlargements different on every frame with a picture (FSR 1 ran),
-at full strength on every frame the block-edge measure below the device
-picture's where a plain enlargement lowers it and below the plain
+at full strength the two enlargements different on every frame that is
+not black (FSR 1 ran) and on every frame the block-edge measure below the
+device picture's where a plain enlargement lowers it and below the plain
 enlargement's elsewhere, the device's picture the reference on at least
 three quarters of the frames, the ease monotonic to under a quarter, the
 held frames and the title's frame; under Original no frame is rebuilt, and
@@ -1552,15 +1552,15 @@ backends' rebuilt frames 97% within 8 levels (measured: 100%).
 on (`renderer.movie` true then false, the movie on the screen at both
 views' centres, the screen, `status().xr.screen`, showing the 320x216
 display without sides in its shape under both settings, the RAM the same,
-and the title's 15-bit screen after the movie with sides of 39).
+and the title's 15-bit screen after the movie with sides, 39 measured).
 `scripts/xr-game-smoke.sh` runs its boot run with wider framing on and
 checks `movie=1` on every headset frame from game frame 405, each made at
 the screen's span in the eye from the logged field of view (210x142),
 `side=0` on those frames and on the device's own pictures (`view=0`) and
-`side=39` on the renderer's frames before the movie (`view=1`), and in a
-run under Original `movie=0` at 320x216 with the RAM equal to
-`xem-headless`'s. `scripts/android-smoke.sh` checks a `frame rendered`
-line with `movie=1` while the opening movie plays.
+sides on the renderer's frames before the movie (`view=1`; `side=39`
+measured), and in a run under Original `movie=0` at 320x216 with the RAM
+equal to `xem-headless`'s. `scripts/android-smoke.sh` checks a
+`frame rendered` line with `movie=1` while the opening movie plays.
 
 Not done or not measured: FSR 1 runs on real frames only where forced on
 lavapipe; the browsers' and Android emulator's adapters are software
@@ -2462,7 +2462,7 @@ Headset class (Low tier, depth of field off unless enabled).
   captures of the screen, an HD-2D field on it, and the title movie
   rebuilt (`movie=1`) at the screen's span in an eye (`fov=`) with no
   sides while wider framing is on (`side=0`, the renderer's frames before
-  it `side=39`) and, in a run under the Original movies setting, the
+  it with sides) and, in a run under the Original movies setting, the
   device's own (`movie=0`, 320x216). Its inspection run
   (field 30 under HD-2D, Fei walked into the room by the session log's
   pads; the underhand grab at headset frames 150 and 270, the Pause grab
