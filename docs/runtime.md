@@ -2673,9 +2673,22 @@ camera of `--example motion` and the tests below drive it too.
   game takes next (it takes the native pixels).
 - **What it does not draw.** HD-2D effects are not drawn in the diorama
   (`effects_unavailable`; Graphics' headset card says so while the view is
-  the diorama and the profile has effects a headset draws, and the profile
-  stays as chosen: the screen the diorama gives way to keeps them). The
-  screen's limits have no place in a view from anywhere:
+  the diorama and the profile has effects a headset draws: "The diorama
+  does not draw the profile's HD-2D effects; the screen it gives way to
+  keeps them."; the profile stays as chosen). They are not drawn for each
+  eye because each pass works over the flat frame in the original
+  screen's terms: normals and occlusion from its per-pixel depth a native
+  pixel apart, fog and depth of field by that depth across the scene's
+  span, shafts from its depthless pixels, sprite shadows laid by owner on
+  the floor behind each sprite as the screen shows it, and an average
+  colour, exposure and focus eased over frames. Per eye they would need
+  the eye's own depth in the game's units (the table's depth over its
+  scale) and the classes, the eased state taken once a game frame and
+  shared by both eyes (two eyes easing their own exposure or focus differ,
+  which shows as rivalry between them), shadows and shafts placed in the
+  world rather than on a screen, and the passes twice at an eye's
+  resolution, on headsets whose automatic quality is already the Low
+  tier. The screen's limits have no place in a view from anywhere:
   affine textures, vertex snapping, native resolution, dithering and the
   painter's order are not applied (15-bit colour and filtering are);
   viewport culling keeps what the game drew. The world map's terrain is not
