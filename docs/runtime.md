@@ -4767,7 +4767,21 @@ and `{"cmd":"movie_skip","enabled":true}`. `status` reports `text_speed`,
 `auto_advance` and `movie_skip`; `readiness` lists the three commands,
 session logs may schedule them, a recording begun with any of them on
 starts with it, and a replay starts from the original's and keeps the
-recorded values over the host's.
+recorded values over the host's. `status` also reports what the options
+act on, as the game shows it. `dialogue` is what a press of Confirm
+would do to the field's dialogue now, read as auto-advance reads it
+(`xem_core::dialogue::prompt`): `{"kind":"none"}`,
+`{"kind":"waiting","wait":n}` (its text's end 1, a page 2, a pause 3) or
+`{"kind":"choice"}`; Fast and Instant text make a page's prompt show
+sooner. `auto_advance_waited` is the vertical blanks the shown prompt has
+waited toward the dwell (0 while auto-advance is off, at a choice and
+after each press). `movie` (`xem_core::movie`) is `null` or the movie
+playing: its `kind` (`field`, a story movie; `window`, a window movie;
+`mode`, the movie mode's), the `frame` it shows and `ends_on_press`,
+whether a press would end it now by the original's early exit (a field
+movie's request with fade bit 0x80, or the debug monitor present; the
+movie mode's unless its request kept it), which the option turns on for
+the story's movies as their frames run.
 
 Tests: `xem-settings`'
 `text_speed_auto_advance_and_movie_skip_default_to_the_original_validate_and_persist`
@@ -4789,7 +4803,15 @@ values ignored while it plays, a recording begun with them, `schedule`,
 (no press while off; Confirm for one frame after the dwell and released
 after it; the next page's own dwell; none at a choice in 60 frames or
 while paused; a recording's presses replayed on the same frames over a
-host's other dwell). `tests/test_port_text_speed.py` and
+host's other dwell), and
+`status_shows_the_prompt_auto_advance_counts_toward_and_the_movie_a_press_would_end`
+(`dialogue` waiting, `auto_advance_waited` counting toward the dwell and
+back to 0 after the press, a choice, and a field movie whose `ends_on_press`
+follows its request's fade bit). `xem-core`'s `movie` unit tests read
+invented memory: a field movie ends on a press only when its request has
+the early exit or the debug monitor is present, no movie shows before its
+request, after its end or in another mode, and the movie mode's ends on a
+press unless its request kept it. `tests/test_port_text_speed.py` and
 `tests/test_port_movie_skip.py` (suite.sh's port stage) build the two
 wrappers natively with `-Wall -Werror` against an invented host: a speed
 raises a smaller budget and never lowers one, slow text and the one-line

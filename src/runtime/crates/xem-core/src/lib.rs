@@ -22,6 +22,7 @@ pub mod inspect;
 pub mod memory;
 pub mod menu;
 pub mod module;
+pub mod movie;
 pub mod pad;
 pub mod presentation;
 pub mod runtime;

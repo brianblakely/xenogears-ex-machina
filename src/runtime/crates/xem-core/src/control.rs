@@ -893,6 +893,12 @@ impl<M: GameModule> Session<M> {
         let half_encounters = self.runtime.services().half_encounters;
         let text_speed = self.runtime.services().text_speed;
         let movie_skip = self.runtime.services().movie_skip;
+        // What the dialogue options act on, as the game shows it: the
+        // field dialogue's prompt (auto-advance counts toward its dwell
+        // while it waits) and the movie playing.
+        let mode = self.runtime.services().mode;
+        let dialogue = crate::dialogue::prompt(self.runtime.memory(), mode);
+        let movie = crate::movie::movie(self.runtime.memory(), mode);
         let binaural = self.runtime.services().spu.binaural().map(|p| p.config());
         let services = self.runtime.services();
         let card_present = [services.card.present(0), services.card.present(1)];
@@ -918,6 +924,9 @@ impl<M: GameModule> Session<M> {
             "text_speed": text_speed,
             "movie_skip": movie_skip,
             "auto_advance": self.auto_advance,
+            "auto_advance_waited": self.auto_waited,
+            "dialogue": dialogue,
+            "movie": movie,
             "binaural": binaural,
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),

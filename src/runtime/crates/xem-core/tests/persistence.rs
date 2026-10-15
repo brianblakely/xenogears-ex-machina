@@ -1597,6 +1597,32 @@ fn auto_advance_presses_confirm_once_a_page_waited_its_dwell_never_at_a_choice_a
 }
 
 #[test]
+fn status_shows_the_prompt_auto_advance_counts_toward_and_the_movie_a_press_would_end() {
+    let mut s = session();
+    dialogue(&mut s);
+    s.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!(status(&mut s, "dialogue"), json!({"kind":"waiting","wait":2}), "the page waits for a press");
+    assert_eq!(status(&mut s, "auto_advance_waited"), json!(0), "off, nothing counts");
+    s.set_auto_advance(10).unwrap();
+    s.execute(&json!({"cmd":"frames","count":4}));
+    assert_eq!(status(&mut s, "auto_advance_waited"), json!(4), "the frames the prompt has waited toward the dwell");
+    s.execute(&json!({"cmd":"frames","count":7}));
+    assert_eq!(word(&mut s, PRESSES), 1, "pressed once the dwell was reached");
+    assert_eq!((status(&mut s, "dialogue"), status(&mut s, "auto_advance_waited")), (json!({"kind":"none"}), json!(0)), "and the page went on");
+    s.runtime.memory().write(WINDOW_CHOICE, &0i16.to_le_bytes()).unwrap();
+    assert_eq!(status(&mut s, "dialogue"), json!({"kind":"choice"}), "a choice shows");
+    // A field movie, as the game keeps it: requested, playing frame 21,
+    // its request without the early exit, then with it.
+    assert_eq!(status(&mut s, "movie"), json!(null));
+    for (at, value) in [(0x800A_DB70, 1u32), (0x800A_DB6C, 0), (0x800A_DB74, 0), (0x800A_DB80, 0x40), (0x800B_06A0, 21), (0x800C_268C, 1)] {
+        s.runtime.memory().write_u32(at, value).unwrap();
+    }
+    assert_eq!(status(&mut s, "movie"), json!({"kind":"field","frame":21,"ends_on_press":false}));
+    s.runtime.memory().write_u32(0x800A_DB80, 0xC0).unwrap();
+    assert_eq!(status(&mut s, "movie")["ends_on_press"], json!(true), "Confirm ends it");
+}
+
+#[test]
 fn the_field_command_reports_the_random_draw_and_whether_it_is_off_here() {
     let mut s = session();
     let memory = s.runtime.memory();
