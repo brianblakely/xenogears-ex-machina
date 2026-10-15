@@ -3,13 +3,15 @@
 //! whatever wgpu finds, lavapipe in the runtime shell). `continues_identically`
 //! takes a state, runs frames keeping each one's RAM/scratchpad hash, the
 //! SPU's output, the data sectors the drive delivers and the XA sectors it
-//! plays, restores the state (whose own snapshot is then the state, byte for
-//! byte) and runs the same frames again: the same hashes, samples and
-//! sectors, and the same state at the end, byte for byte. Where:
+//! plays, restores the state (which drops the run's sound still queued for
+//! a host; its own snapshot is then the state, byte for byte) and runs the
+//! same frames again: the same hashes, samples and sectors, and the same
+//! state at the end, byte for byte. Where:
 //!
 //! - the new game's opening movie with its XA sound, twice
 //!   (tests/reference-inputs/new-game-sound-mode-stereo.json about frames
-//!   4000 and 9000), then fast-forwarded at 10x over it;
+//!   4000 and 9000), then fast-forwarded at 10x over it (the restore keeping
+//!   the host's 10x on the music clock and the SPU);
 //! - the world map, the party walking on (tests/reference-inputs/world-map-lahan-exit.json),
 //!   the drive streaming its terrain;
 //! - a Battling bout, which runs as the arena's task fiber beside the game's
@@ -17,9 +19,10 @@
 //!   gestures.rs's bout writes them, and mode 4 selected; this bout stops at
 //!   frame 724 on its own, before which its frames here end);
 //! - the story's disc change during its five-second wait (discs.rs's route,
-//!   no cards): restored into a fresh session booted from disc 1 with disc 2
-//!   beside it, disc 2 goes in at the same cycle and the game goes on to the
-//!   same RAM;
+//!   no cards): disc 2 goes in at the frame and cycle where the session that
+//!   took the state, never restored, puts it in, and the game goes on to the
+//!   same RAM, the state restored in that session or in a fresh one booted
+//!   from disc 1 with disc 2 beside it;
 //! - a held rewind from the slice's forest battle (tests/reference-inputs/slice-forest.json)
 //!   back into the field it came from: each step shows a frame the game drew
 //!   after its state (the renderer replays its draws, as render.rs checks in
@@ -40,6 +43,7 @@ use serde_json::{Value, json};
 use xem_core::context::Context;
 use xem_core::control::{Session, button_bit};
 use xem_core::devices::cd::STORY_CHANGE_CYCLES;
+use xem_core::devices::spu::OUTPUT_LIMIT;
 use xem_core::snapshot::{Reader, checked};
 use xem_game::{BootOptions, NativeModule, boot};
 use xem_render::Gpu;
@@ -94,8 +98,9 @@ fn take_audio(s: &mut Session<NativeModule>) -> Vec<i16> {
 }
 
 /// What `count` frames did: each frame's RAM/scratchpad hash, the samples
-/// the SPU gave, the data sectors the drive delivered (cycle, address), the
-/// XA audio sectors it played and the state at the end.
+/// the SPU gave (its capture, the samples staying queued as for a host that
+/// has not played them yet), the data sectors the drive delivered (cycle,
+/// address), the XA audio sectors it played and the state at the end.
 #[derive(PartialEq, Eq)]
 struct Run {
     hashes: Vec<u64>,
@@ -110,12 +115,13 @@ fn run(s: &mut Session<NativeModule>, count: u64) -> Run {
     // its XA count afresh): counted within the run.
     s.runtime.services().cd.sector_log = Some(Vec::new());
     let xa = s.runtime.services().cd.xa_sectors;
+    s.runtime.services().spu.start_capture();
     let mut run = Run { hashes: Vec::new(), audio: Vec::new(), sectors: Vec::new(), xa: 0, end: Vec::new() };
     for _ in 0..count {
         step(s);
         run.hashes.push(s.memory_hash().unwrap());
-        run.audio.extend(take_audio(s));
     }
+    run.audio = s.runtime.services().spu.take_capture().unwrap_or_default();
     run.sectors = s.runtime.services().cd.sector_log.take().unwrap().iter().map(|d| (d.cycle, d.lba)).collect();
     run.xa = s.runtime.services().cd.xa_sectors - xa;
     run.end = s.snapshot_bytes().unwrap();
@@ -130,12 +136,16 @@ fn continues_identically(s: &mut Session<NativeModule>, count: u64) -> Run {
     let pads = [0, 1].map(|port| s.runtime.services().pads.0[port].buttons);
     let state = s.snapshot_bytes().unwrap();
     let first = run(s, count);
+    // The run's sound still waits for a host (the queue keeps its last
+    // OUTPUT_LIMIT samples), and the restore drops it.
+    let queued = s.runtime.services().spu.audio_queued();
+    assert_eq!(queued, first.audio.len().min(OUTPUT_LIMIT), "the run's sound waits for a host");
     s.restore_bytes(&state).unwrap();
+    assert_eq!(s.runtime.services().spu.audio_queued(), 0, "the restore drops the {queued} samples of the run it left");
     assert!(s.snapshot_bytes().unwrap() == state, "a restored state is the state");
     for (port, buttons) in pads.into_iter().enumerate() {
         s.set_pad(port as u32, buttons);
     }
-    assert!(take_audio(s).is_empty(), "the restore leaves no sound of the run it left");
     let again = run(s, count);
     if let Some(frame) = (0..first.hashes.len()).find(|&i| first.hashes[i] != again.hashes[i]) {
         panic!("RAM differs {} frames after the state", frame + 1);
@@ -192,7 +202,10 @@ fn the_opening_movie_with_its_xa_sound_goes_on_identically_also_fast_forwarded()
     ok(&mut s, json!({"cmd": "fast_forward_configure", "rate": {"Fixed": 10}}));
     assert_eq!(ok(&mut s, json!({"cmd": "fast_forward", "enabled": true}))["fast_forward"], true);
     let fast = continues_identically(&mut s, 1200);
-    assert!(s.fast_forward && s.frame_factor() == Some(10), "the restore keeps the host's fast-forward");
+    // A state holds the music clock at 1x (runtime.rs `snapshot_content`);
+    // the restore puts the host's speed back on the clock and the SPU.
+    let services = s.runtime.services();
+    assert_eq!((services.clock.audio_speed, services.spu.speed()), (10, 10), "the restore keeps the host's 10x");
     assert!(fast.xa > 0, "the drive plays the movie's XA audio fast-forwarded");
     let seconds = fast.audio.len() as f64 / 2.0 / 44_100.0;
     assert!((1.8..2.2).contains(&seconds), "{seconds} s of sound for 20 s of the movie at 10x");
@@ -326,9 +339,13 @@ fn a_state_in_the_story_disc_changes_wait_puts_disc_2_in_at_the_same_cycle() {
     let waiting = s.snapshot_bytes().unwrap();
     // Within the wait (far less than its five seconds).
     assert!(due.1 - s.runtime.services().clock.now > STORY_CHANGE_CYCLES / 2);
-    continues_identically(&mut s, 120);
-    s.restore_bytes(&waiting).unwrap();
+    // The session that took the state goes on, never restored, to the change.
     let here = until_disc_2(&mut s);
+    assert!(here.1 >= due.1);
+    // Restored there, the wait goes on identically, to the same change.
+    s.restore_bytes(&waiting).unwrap();
+    continues_identically(&mut s, 120);
+    assert_eq!(until_disc_2(&mut s), here, "restored in the session that took it: the same change");
     drop(s);
 
     // A fresh session booted from disc 1, disc 2 beside it.
@@ -336,8 +353,7 @@ fn a_state_in_the_story_disc_changes_wait_puts_disc_2_in_at_the_same_cycle() {
     fresh.restore_bytes(&waiting).expect("the waiting state restores");
     assert_eq!(fresh.runtime.services().cd.change_due(), Some(due), "the same change, due at the same cycle");
     assert_eq!(fresh.runtime.services().cd.wanted(), None);
-    assert_eq!(until_disc_2(&mut fresh), here, "disc 2 in at the same frame and cycle, the game on to the same RAM");
-    assert!(here.1 >= due.1);
+    assert_eq!(until_disc_2(&mut fresh), here, "disc 2 in at the frame and cycle it went in without a restore, the game on to the same RAM");
 }
 
 /// What a host does each frame: the game's draws since the last given to

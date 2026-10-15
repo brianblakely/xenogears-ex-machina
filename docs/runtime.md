@@ -342,9 +342,10 @@ booted from disc 1, takes disc 1 and the new game begins; the story's
 change waits five seconds; and
 `web/tests/disc.test.mjs`: in the browser, disc 1 imported while the game
 waits for it goes in). A state saved in the story's five-second wait by a
-session that holds disc 2 keeps the change due at its cycle: restored in a
-fresh session booted from disc 1 with disc 2 beside it, disc 2 goes in at
-the same frame and cycle and the game goes on to the same RAM
+session that holds disc 2 keeps the change due at its cycle: restored in
+that session or in a fresh one booted from disc 1 with disc 2 beside it,
+disc 2 goes in at the frame and cycle where the session that saved it puts
+it in without a restore, and the game goes on to the same RAM
 (`xem-headless/tests/states.rs`). The save the story's change offers asks
 for disc 2 (its vars\[82\] is 1), and loaded from disc 1's title the
 changer puts disc 2 in at once (`xem-headless/tests/saves.rs`).
@@ -4283,19 +4284,22 @@ the original game's states where each kind of progress is
 under way and checks that they go on identically (`continues_identically`:
 a state taken, frames run keeping each frame's RAM/scratchpad hash, the
 SPU's samples, the data sectors the drive delivers and the XA sectors it
-plays, the state restored, whose own snapshot is then the state byte for
-byte, the same frames run again: the same hashes, samples and sectors and
-the same state at the end, byte for byte): the new game's opening movie
-with its XA sound (600 frames from frames 4000 and 9000 of
-`new-game-sound-mode-stereo.json`, then 1200 frames at 10× fast-forward,
-whose 2 s of sound are the divided music clock's), the world map while the
-party walks and the drive streams its terrain (600 frames from the end of
+plays, the state restored, which drops the run's sound still queued for a
+host and whose own snapshot is then the state byte for byte, the same
+frames run again: the same hashes, samples and sectors and the same state
+at the end, byte for byte): the new game's opening movie with its XA sound
+(600 frames from frames 4000 and 9000 of `new-game-sound-mode-stereo.json`,
+then 1200 frames at 10× fast-forward, whose 2 s of sound are the divided
+music clock's; a state holds the music clock at 1×, and the restore puts
+the host's 10× back on it and on the SPU), the world map while the party
+walks and the drive streams its terrain (600 frames from the end of
 `world-map-lahan-exit.json`), a Battling bout whose state holds the arena's
 task fiber (150 frames; the bout launched by writes, as `gestures.rs`
-launches it) and the story's five-second disc change wait (restored in a
-fresh two-disc session, disc 2 goes in at the same frame and cycle, and the
-RAM 300 frames on is the same). A held rewind from the forest battle of
-`slice-forest.json` (frame 6400) steps back into its field (ten steps, to
+launches it) and the story's five-second disc change wait (restored in the
+session that took the state and in a fresh two-disc session, disc 2 goes
+in at the frame and cycle where the session that took it puts it in
+without a restore, and the RAM 300 frames on is the same). A held rewind
+from the forest battle of `slice-forest.json` (frame 6400) steps back into its field (ten steps, to
 frame 5826), each step showing a frame the game drew after its state as the
 renderer draws it (`GameView`) but the one landing in the battle's opening
 while it loads (frame 5953), which draws nothing new, and the field goes on
@@ -4513,9 +4517,11 @@ asked again, shows a third notice instead (the screenshots read "The same
 file exists on the Memory Card in Slot 1. Cannot copy.", message 0x4d)
 and writes nothing. On the world map (`world-map-lahan-exit.json`; the
 menu on Square, the world map's button 0x10) the file screen shows "No
-Memory Card" while both cards are out (`card_present`), and with them in
-saves to card 1; the title's Load puts the party back on the world map
-where it was saved (`game_data.worldmap`, and the items). The story's disc
+Memory Card" while both cards are out (`card_present`), and with them in,
+after a walk south, saves to card 1; the title's Load puts the party back
+on the world map where it was saved (`game_data.worldmap`, zero at the
+title before a load: where the party walked to, not where it came out of
+Lahan). The story's disc
 change (its menu requested as `discs.rs` requests it) saves a file that
 asks for disc 2, which disc 1's title loads with disc 2 put in at once and
 disc 2's index read. Map 687's save point on disc 2 (where
@@ -4728,15 +4734,22 @@ commands, card 1 untouched; card 1 put back and listed with this game's
 save; card 1 out and back at the file screen with card 2 in, its listing
 dropped and made again). The two `file_screen.rs` tests take 7 s together
 here (suite profile, with other builds beside them).
+`xem-headless/tests/saves.rs`'s
+`the_world_maps_file_screen_finds_no_card_while_both_are_out` (disc 1, on
+the world map at the end of `world-map-lahan-exit.json`): with both cards
+out, File in the world map's menu shows the "No Memory Card" notice (the
+notice up, both cards absent in the file screen's state, no card message)
+and the menu takes the pad again, both cards untouched
+([Original saves and memory cards](#original-saves-and-memory-cards)).
 
 Not done or not measured: on a console a card put in is flagged new until
 it is written (psx-spx, "Memory Card Read/Write Commands"), and the BIOS's
 check may then report a new card, which the game takes as an unformatted
 card's result (`menu_card_event_results`); this device does not model the
 flag, and the game's handling of a real swap is not verified (no capture);
-the save menus' own no-card and one-card paths (a field save point's, the
-world map's, the disc change's) are not driven by a test, nor copy or
-delete over a card put back.
+the save menus' one-card paths (a field save point's, the world map's, the
+disc change's) and the no-card paths of a field save point's and the disc
+change's are not driven by a test, nor copy or delete over a card put back.
 
 ## Gameplay options
 

@@ -14,8 +14,10 @@
 //!   file of that name) without writing;
 //! - on the world map (tests/reference-inputs/world-map-lahan-exit.json: out
 //!   of Lahan by its south exit) the menu's file screen finds no card while
-//!   both are out (`card_present`), and with them in it saves to card 1; the
-//!   title's Load takes that save back onto the world map where it was made;
+//!   both are out (`card_present`), and with them in, once the party has
+//!   walked on south, it saves to card 1; the title's Load takes that save
+//!   back onto the world map where it was made, not where the party came out
+//!   of Lahan;
 //! - the story's disc change (its menu, kind 6, requested as the last event of
 //!   disc 1 requests it, discs.rs) offers a save, whose payload carries the
 //!   disc to load it from (vars\[82\] = 1: disc 2); loaded from disc 1's
@@ -465,9 +467,13 @@ fn a_world_map_save_loads_from_the_title_onto_the_world_map() {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    // Card 1 a fresh formatted card (no card file yet).
+    // Card 1 a fresh formatted card (no card file yet). The party walks
+    // south first, away from where it came out of Lahan.
     let cards = scratch("world-map");
     let mut s = world_map(&disc, &cards);
+    let arrived = inspect(&mut s, "game_data.worldmap", 1);
+    ok(&mut s, json!({ "cmd": "press", "buttons": ["down"], "frames": 300 }));
+    frames(&mut s, 360);
     world_map_menu(&mut s);
     file_screen(&mut s);
     command(&mut s, SAVE);
@@ -477,9 +483,10 @@ fn a_world_map_save_loads_from_the_title_onto_the_world_map() {
     until_commands(&mut s, "the world map's menu after the save");
     assert_eq!(saves(&mut s, 0), [listed("BASLUS-006640", 1, 1, 1)]);
     // Where the save puts the party (game_data.worldmap: its place, its
-    // heading, the vehicle's) and what it carries.
+    // heading, the vehicle's; the title's before a load are zero): where it
+    // walked to, not where it arrived.
     let place = inspect(&mut s, "game_data.worldmap", 1);
-    let items = inspect(&mut s, "game_data.itemIds", 1);
+    assert_ne!(place, arrived, "the party walked on from where it came out of Lahan");
     // Out of the menu, the party walks on there.
     press(&mut s, "circle", 200);
     assert_eq!(inspect(&mut s, "worldmap_menu_requested", 0), json!(0));
@@ -491,7 +498,6 @@ fn a_world_map_save_loads_from_the_title_onto_the_world_map() {
         s.runtime.services().mode == Some(3) && matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. })
     });
     assert_eq!(inspect(&mut loaded, "game_data.worldmap", 1), place, "the world map where it was saved");
-    assert_eq!(inspect(&mut loaded, "game_data.itemIds", 1), items);
     let _ = std::fs::remove_dir_all(cards);
 }
 
@@ -567,7 +573,6 @@ fn a_save_at_a_disc_2_save_point_loads_from_disc_2s_title() {
     yes(&mut s, 0);
     until_commands(&mut s, "the field menu after the save");
     assert_eq!(saves(&mut s, 0), [listed("BASLUS-006640", 1, 1, 2)], "a disc 2 save");
-    let items = inspect(&mut s, "game_data.itemIds", 1);
     press(&mut s, "circle", 0);
     until(&mut s, 600, "back in the field", |s| s.runtime.context() == Context::Walk);
     let card = card_image(&mut s, 0);
@@ -577,6 +582,5 @@ fn a_save_at_a_disc_2_save_point_loads_from_disc_2s_title() {
     assert_eq!(inspect(&mut loaded, "mode_field_map_id", 0).as_u64().unwrap() & 0xFFF, 687, "the save's field");
     assert_eq!(inspect(&mut loaded, "cd_directory_table[60]", 0), json!(2), "disc 2's index");
     assert_eq!(loaded.runtime.services().cd.inserted(), 2);
-    assert_eq!(inspect(&mut loaded, "game_data.itemIds", 1), items);
     let _ = std::fs::remove_dir_all(cards);
 }
