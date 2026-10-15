@@ -54,6 +54,7 @@ u32 test_step(s32 single, u32 speed, u32 budget, s32 slow) {
 
     def test_slow_text_and_the_one_line_layout_window_keep_their_own(self):
         self.assertEqual(self.step(255, 1, slow=3), 1, "0F 0E's glyph every few frames")
+        self.assertEqual(self.step(4, 1, slow=3), 1, "with Fast text too")
         self.assertEqual(self.step(255, 100, single=True), 100, "window_render_text_line's budget")
 
 

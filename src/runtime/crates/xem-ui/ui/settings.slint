@@ -1597,6 +1597,7 @@ export component SettingsPanel inherits Window {
                                     label: "Text speed";
                                     Segmented { accessible-label: "Text speed"; options: ["Original", "Fast", "Instant"]; current <=> root.text-speed; selected(index) => { root.gameplay-edited("text-speed", index); } }
                                 }
+                                Text { text: "Fast and Instant keep pauses and slow text as written. A scene that times its pages, such as the opening narration, can then wait for one more press."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 ToggleRow {
                                     label: "Auto-advance dialogue";
@@ -1621,7 +1622,7 @@ export component SettingsPanel inherits Window {
                                     checked <=> root.movie-skip;
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
                                 }
-                                Text { text: "Confirm, or Start, ends a movie the way the game ends the movies it lets you skip."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Text { text: "Confirm ends a story movie, and Cross or Start the title's and battles' movies, as the game ends those it lets you skip. Movies in a window play on."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             // About
                             if root.selected-section == 7: Card {

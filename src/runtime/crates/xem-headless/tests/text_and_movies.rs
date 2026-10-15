@@ -1,11 +1,12 @@
 //! Text speed, auto-advance dialogue and movie skipping on the game
 //! (docs/runtime.md, Gameplay options). The timed scenes Perfect Works
 //! Build had to re-script for its fast text (disc 1's maps 4, 27, 131, 288,
-//! 326 and 482 here; 359 is not reached, see the docs) reach the same end,
-//! story value and map with Instant text as with the original's, showing
-//! the same messages, the timed ones where the scene reached has them (the
-//! opening narration needs a second press a page); Fast and Instant
-//! reveal each page in fewer frames;
+//! 326, 359 and 482; two of map 288's) reach the same end, story value and
+//! map with Instant text as with the original's, showing the same
+//! messages, timed ones among them (the opening narration needs a second
+//! press a page); authored slow text (`0F 0E`, map 359's terminal
+//! readouts) reveals in the same frames with Instant text as with the
+//! original's; Fast and Instant reveal each page in fewer frames;
 //! auto-advance takes a scene through its pages to the same end and leaves
 //! a choice to the player however long it waits; the setting lets a story
 //! movie end on Confirm, after which the field goes on as after the
@@ -18,7 +19,7 @@
 #![cfg(all(has_game_module, not(debug_assertions)))]
 
 use serde_json::{Value, json};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use xem_core::action::GameAction;
 use xem_core::context::Context;
@@ -65,14 +66,18 @@ fn half(session: &mut Session<NativeModule>, address: u32) -> u16 {
 
 /// Where a scene starts: a field map entered as the development kernel menu
 /// does (`enter_field`), then, for a scene the map plays only later in the
-/// story, entered again with the game data's story value and entry
-/// parameter (`game_data.entry[2]`, the map's v0002) set, and, for a talk,
-/// the actor approached and talked to (`interact`).
+/// story, entered again with the game data's story value, entry parameter
+/// (`game_data.entry[2]`, the map's v0002: the entrance a door's
+/// `change_map_entry` names) and party set, and, for a talk, the actor
+/// approached and talked to (`interact`).
 #[derive(Clone, Copy)]
 struct Scene {
     map: u16,
     story: Option<u16>,
     parameter: Option<u16>,
+    /// The party's characters (0 Fei, 1 Elly, 2 Citan, 3 Bart, 4 Billy,
+    /// 5 Rico), for a scene whose actors are the party's.
+    party: Option<[u8; 3]>,
     talk: Option<u64>,
     /// The messages with timed controls (wait_done, slow) the scene shows,
     /// as `python3 -m tools.analysis.text_control --list field --item MAP`
@@ -85,7 +90,7 @@ struct Scene {
 
 impl Scene {
     const fn at(map: u16, timed: &'static [u16]) -> Self {
-        Scene { map, story: None, parameter: None, talk: None, timed, loops: false }
+        Scene { map, story: None, parameter: None, party: None, talk: None, timed, loops: false }
     }
 }
 
@@ -122,13 +127,22 @@ fn confirm_loop(session: &mut Session<NativeModule>) -> bool {
 fn start(disc: &PathBuf, scene: Scene) -> Session<NativeModule> {
     let (mut session, _) = boot(disc, &Default::default()).expect("boot");
     run(&mut session, json!({"cmd": "enter_field", "map": scene.map}));
-    if scene.story.is_some() || scene.parameter.is_some() {
+    if scene.story.is_some() || scene.parameter.is_some() || scene.party.is_some() {
         let mut writes = vec![json!({"path": "game_data.map", "value": scene.map})];
         if let Some(story) = scene.story {
             writes.push(json!({"path": "game_data.vars[0]", "value": story}));
         }
         if let Some(parameter) = scene.parameter {
             writes.push(json!({"path": "game_data.entry[2]", "value": parameter}));
+        }
+        if let Some(party) = scene.party {
+            for (slot, character) in party.into_iter().enumerate() {
+                writes.push(json!({"path": format!("game_data.party[{slot}]"), "value": character}));
+            }
+            // As field_main does when the field ends (for a battle or the
+            // menu): the next entry loads the party's files afresh from the
+            // game data, and its actors become that party.
+            writes.push(json!({"path": "mode_party_file_kind", "value": 0}));
         }
         run(&mut session, json!({"cmd": "scenario", "writes": writes, "mode": 1}));
     }
@@ -173,7 +187,19 @@ struct Played {
     /// Frames from each page's start (its window open, or the press that
     /// turned to it) to its prompt.
     reveals: Vec<u64>,
+    /// Each slow message's first page (its window paced by authored slow
+    /// text, the Window's frames between glyphs): frames from the window's
+    /// opening to its first wait for a press, or to its closing.
+    slow: BTreeMap<u16, u64>,
     presses: u32,
+}
+
+/// A message's window as it is shown, for [`Played::slow`].
+struct Shown {
+    message: u16,
+    since: u64,
+    slow: bool,
+    waited: bool,
 }
 
 /// The message dialogue window `i` shows, by its number in the map's table.
@@ -200,6 +226,7 @@ fn play(session: &mut Session<NativeModule>, budget: u64, press: bool, loops: bo
     let first = map(session);
     let confirm = GameAction::Confirm.button();
     let (mut shown, mut reveals, mut presses) = (BTreeSet::new(), Vec::new(), 0);
+    let (mut slow, mut open): (BTreeMap<u16, u64>, [Option<Shown>; 4]) = (BTreeMap::new(), Default::default());
     let mut page_since = None;
     let mut pressed_at: Option<u64> = None;
     let mut seen: Option<u64> = None;
@@ -219,6 +246,30 @@ fn play(session: &mut Session<NativeModule>, budget: u64, press: bool, loops: bo
             }
         }
         let now = session.runtime.frames();
+        // A slow message's first page lasts until its window first waits
+        // for a press (text flag 8), or closes (a timed end); its pace is
+        // the one it ends with (a window opening on a message keeps the
+        // last one's for a few frames).
+        for (i, at) in open.iter_mut().enumerate() {
+            let window = WINDOWS + i as u32 * WINDOW_SIZE;
+            let message = if windows && half(session, window + 0x40E) == 0 { message(session, i as u32) } else { None };
+            if at.as_ref().is_some_and(|s| Some(s.message) != message) {
+                let ended = at.take().expect("a window shown");
+                if ended.slow && !ended.waited {
+                    slow.entry(ended.message).or_insert(now - ended.since);
+                }
+            }
+            if let Some(n) = message {
+                let s = at.get_or_insert(Shown { message: n, since: now, slow: false, waited: false });
+                s.slow = half(session, window + 0x18 + 0x88) != 0;
+                if !s.waited && half(session, window + 0x18 + 0x10) & 8 != 0 {
+                    s.waited = true;
+                    if s.slow {
+                        slow.entry(n).or_insert(now - s.since);
+                    }
+                }
+            }
+        }
         let mut buttons = 0;
         // A page that ends where the one before it waited (a press turned
         // it, and it showed whole at once) waits with its window's text
@@ -283,15 +334,16 @@ fn play(session: &mut Session<NativeModule>, budget: u64, press: bool, loops: bo
         }
     }
     session.set_pad(0, 0);
-    Played { end: end.unwrap_or(End::Unfinished), frames: session.runtime.frames() - start, story: half(session, STORY), shown, reveals, presses }
+    Played { end: end.unwrap_or(End::Unfinished), frames: session.runtime.frames() - start, story: half(session, STORY), shown, reveals, slow, presses }
 }
 
 /// The scene played with the original's text and with Instant text: the
-/// same end, story value and messages, its timed ones among them.
-fn same_end(scene: Scene, budget: u64) {
+/// same end, story value and messages, its timed ones among them. The two
+/// runs, or none without the disc.
+fn same_end(scene: Scene, budget: u64) -> Option<Vec<Played>> {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
-        return;
+        return None;
     };
     let runs: Vec<Played> = [0, 255].into_iter().map(|glyphs| {
         let mut session = start(&disc, scene);
@@ -307,6 +359,7 @@ fn same_end(scene: Scene, budget: u64) {
     assert_eq!(instant.shown, original.shown, "map {}: the same messages", scene.map);
     assert!(scene.timed.iter().all(|n| original.shown.contains(n)), "map {}: its timed messages show", scene.map);
     assert!(instant.frames <= original.frames, "map {}: no longer with Instant text", scene.map);
+    Some(runs)
 }
 
 /// The opening narration (map 4): each of its pages shows in a window
@@ -342,9 +395,35 @@ fn instant_text_takes_map_131s_scene_to_the_same_end() {
 }
 
 #[test]
-fn instant_text_takes_map_288s_scene_to_the_same_end() {
-    // Story 153-154: actor 23's scene, as its event 0 lets it run.
-    same_end(Scene { story: Some(154), ..Scene::at(288, &[]) }, 6_000);
+fn instant_text_takes_map_288s_scene_from_entrance_2_to_the_same_end() {
+    // Map 96's door at story 75: actor 22's scene (its event 0 keeps it at
+    // entrance 2), to map 96.
+    same_end(Scene { story: Some(75), parameter: Some(2), ..Scene::at(288, &[0x4F]) }, 8_000);
+}
+
+#[test]
+fn instant_text_takes_map_288s_scene_from_entrance_8_to_the_same_end() {
+    // Map 290's door, the story at 168 and Fei, Bart and Billy the party:
+    // actor 27's scene (kept at entrance 8), to map 273.
+    same_end(Scene { story: Some(168), parameter: Some(8), party: Some([0, 3, 4]), ..Scene::at(288, &[0x8D]) }, 12_000);
+}
+
+/// Map 359's data bank: Billy's party (here Citan and Bart, Elly and Rico
+/// the scene's own actors) reads the Ethos's terminals, whose readouts
+/// (messages 0x8C-0x8E) are authored slow text, a glyph every two field
+/// frames. Instant text leaves their pace: each readout's first page takes
+/// the same frames as the original's.
+#[test]
+fn instant_text_takes_map_359s_scene_to_the_same_end_and_its_slow_text_keeps_its_pace() {
+    let scene = Scene { story: Some(158), party: Some([4, 2, 3]), ..Scene::at(359, &[0x8C, 0x8D, 0x8E, 0x8F]) };
+    let Some(runs) = same_end(scene, 26_000) else { return };
+    let (original, instant) = (&runs[0], &runs[1]);
+    eprintln!("map 359's slow pages (message: frames to the first wait or the close): the original's {:?}, Instant's {:?}", original.slow, instant.slow);
+    for readout in [0x8C, 0x8D, 0x8E] {
+        let frames = original.slow.get(&readout).copied();
+        assert!(frames.is_some_and(|f| f > 100), "message {readout:#x} shows as slow text: {:?}", original.slow);
+        assert_eq!(instant.slow.get(&readout).copied(), frames, "message {readout:#x} keeps its pace");
+    }
 }
 
 #[test]

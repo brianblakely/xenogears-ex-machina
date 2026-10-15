@@ -432,6 +432,48 @@ describe('automation over a game module fixture', () => {
     }
   });
 
+  test('AUTO on the touch deck in a field scene turns auto-advance on and off through the settings', async () => {
+    const touch = await browser.page('?game=/fixtures/fixture.wasm');
+    try {
+      await touch.evaluate(async () => {
+        await window.xem.boot({ executable: false });
+        // The fixture reports the field's mode; with no menu requested and
+        // no window open, the field's context is a scene's.
+        window.xem.command({ cmd: 'write_memory', address: 0x80000110, hex: '01000000' });
+        window.xem.command({ cmd: 'write_memory', address: 0x800ADB64, hex: 'ff' });
+        window.xem.setRunning(true);
+        for (let i = 0; i < 4; i++) await new Promise(requestAnimationFrame);
+      });
+      const tap = (id, control) => touch.evaluate(async ({ id, control }) => {
+        const canvas = document.querySelector('canvas');
+        const scale = window.devicePixelRatio || 1;
+        const c = window.xem.status().touch.controls.find((k) => k.control === control);
+        const box = canvas.getBoundingClientRect();
+        const x = box.left + (c ? c.x + c.width / 2 : canvas.width / 2) / scale;
+        const y = box.top + (c ? c.y + c.height / 2 : canvas.height / 2) / scale;
+        for (const type of ['pointerdown', 'pointerup']) {
+          canvas.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', pointerId: id, clientX: x, clientY: y, bubbles: true, isPrimary: true }));
+          for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+        }
+      }, { id, control });
+      const enabled = (on) => touch.waitForFunction((on) => window.xem.settings.get().settings.auto_advance.enabled === on, on);
+      // The first touch shows the deck, with AUTO in the field's scene.
+      await tap(1, null);
+      const controls = await touch.evaluate(() => window.xem.status().touch.controls.map((c) => c.control));
+      assert.ok(controls.includes('Auto') && controls.includes('Confirm'), JSON.stringify(controls));
+      await tap(2, 'Auto');
+      await enabled(true);
+      await touch.waitForFunction(() => window.xem.status().session.auto_advance === 120);
+      assert.deepEqual(await touch.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons), [], 'no press of the game\'s');
+      await tap(3, 'Auto');
+      await enabled(false);
+      await touch.waitForFunction(() => window.xem.status().session.auto_advance === 0);
+      assert.deepEqual(touch.errors, []);
+    } finally {
+      await touch.close();
+    }
+  });
+
   test('gamepad sticks drive movement and camera, and Back+Start owns the settings toggle', async () => {
     const controls = await browser.page('?game=/fixtures/fixture.wasm');
     try {

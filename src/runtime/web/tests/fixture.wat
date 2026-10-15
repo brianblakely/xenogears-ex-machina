@@ -13,6 +13,10 @@
 ;; makes (create "bu00:XEMTEST", write the 128 bytes at 0x80000400, close),
 ;; leaves the descriptor and the write's result at 0x80000104 and 0x80000108,
 ;; and then waits for VSync forever.
+;; With RAM word 0x80000110 nonzero before the first frame (and 0x80000100
+;; zero), xem_run(0, _) instead reports that word as the game's mode
+;; (xem.mode, as the port's mode_dispatch reports the mode it enters) and
+;; then waits for VSync forever.
 (module
   (import "xem" "yield" (func $yield (param i32)))
   (import "xem" "restart" (func $restart (param i32 i32)))
@@ -20,6 +24,7 @@
   (import "xem" "card_open" (func $card_open (param i32 i32) (result i32)))
   (import "xem" "card_write" (func $card_write (param i32 i32 i32) (result i32)))
   (import "xem" "card_close" (func $card_close (param i32) (result i32)))
+  (import "xem" "mode" (func $mode (param i32)))
   ;; RAM keeps its KSEG0 address, as in the real module.
   (memory (export "memory") 32800 32800)
   (global $sp (export "__stack_pointer") (mut i32) (i32.const 0x10000))
@@ -54,6 +59,12 @@
         (loop $wait
           (call $yield (i32.const 1))
           (br $wait))))
+    (if (i32.and (i32.eqz (local.get $kind)) (i32.ne (i32.load (i32.const 0x80000110)) (i32.const 0)))
+      (then
+        (call $mode (i32.load (i32.const 0x80000110)))
+        (loop $mode_wait
+          (call $yield (i32.const 1))
+          (br $mode_wait))))
     (if (i32.eqz (local.get $kind))
       (then
         (loop $boot

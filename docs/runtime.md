@@ -4085,7 +4085,7 @@ original and is a recorded control:
 | --- | --- | --- | --- |
 | text speed (`Settings.text_speed`, `SettingChange::TextSpeed`) | Original (the default), Fast, Instant | `text_speed {glyphs}`: 0, 4, 255 | the glyphs a message window's step reveals at least (`src/port/text_speed.c`) |
 | auto-advance dialogue (`Settings.auto_advance`, `SettingChange::AutoAdvance`, the whole block) | off (the default) or on, and the wait on each page: 30-600 vertical blanks, default 120 (2 s) | `auto_advance {dwell}`: the wait while on, else 0 | the session presses Confirm once a field dialogue's prompt has shown that long (`xem_core::dialogue`) |
-| movies can be skipped (`Settings.movie_skip`, `SettingChange::MovieSkip`) | off (the default), on | `movie_skip {enabled}` | Confirm (or Start) ends any movie by the original's own early exit (`src/port/movie_skip.c`) |
+| movies can be skipped (`Settings.movie_skip`, `SettingChange::MovieSkip`) | off (the default), on | `movie_skip {enabled}` | by the original's own early exit, Confirm ends a field movie (the story's) and Cross or Start the movie mode's (the title's and the battle event's); window movies stay the scripts' (`src/port/movie_skip.c`) |
 
 The settings are saved by name (a file saved before they existed, or a
 value no longer offered, reads the default alone) and travel in backups.
@@ -4122,19 +4122,34 @@ pages turned as each prompt shows: their reveals took 3 158 frames
 Perfect Works Build ships re-scripted variants of disc 1's maps 4, 27,
 131, 288, 326, 359 and 482 for its fast text, because their scenes time
 their windows against other scripts. With Instant text (and the
-original's, for comparison) each scene reachable from a test's start
-plays to the same end, story value and map, showing the same messages
-(the timed ones among them), a player pressing Confirm as each prompt
-shows:
+original's, for comparison) a scene of each plays to the same end, story
+value and map, showing the same messages (timed ones among them), a
+player pressing Confirm as each prompt shows. A scene the map plays later
+in the story starts from `enter_field` and a `scenario` entry with the
+story value, the entry parameter (`game_data.entry[2]`, the map's v0002:
+the entrance a door's `change_map_entry` names) and, where the scene's
+actors are the party's, the party (`game_data.party`, with
+`mode_party_file_kind` 0, as `field_main` leaves it when the field ends,
+so the entry loads the party's files afresh). Frames are the vertical
+blanks a run played, to the next map or through 300 frames of the
+player's control:
 
 | Map (start) | Original | Instant | End | Timed messages shown |
 | --- | --- | --- | --- | --- |
 | 4, the opening narration (`enter_field`) | 6 729 | 6 509 | map 2, story 3 | 0, 1 (`0F 02`) |
 | 27 (`enter_field`) | 1 600 | 1 060 | map 28 | 0-7 (`0F 02`; no press needed) |
 | 131 (`enter_field`) | 3 808 | 1 224 | the player's control | 3 (`0F 02`) |
-| 288 at story 154 (actor 23's scene) | 2 181 | 1 335 | the player's control | none in that scene |
+| 288 at story 75 from entrance 2 (map 96's door; actor 22's scene) | 5 006 | 1 786 | map 96 | 0x4F (`0F 02`) |
+| 288 at story 168 from entrance 8 (map 290's door), Fei, Bart and Billy the party (actor 27's scene) | 8 336 | 2 374 | map 273, story 169 | 0x8D (`0F 02`) |
 | 326 at story 153, entered with parameter 5 (actor 31's scene) | 2 937 | 2 509 | map 335 | 0, 0x23, 0x2E, 0x35, 0x38 (`0F 02`) |
+| 359 at story 158, Billy, Citan and Bart the party (the Ethos's data bank; Elly and Rico the map's own actors) | 22 741 | 9 439 | the player's control | 0x8C-0x8E (`0F 0E`), 0x8F (`0F 02`) |
 | 482 (`enter_field`) | 2 516 | 1 754 | the player's control | none (pages and `0F 00` waits) |
+
+Authored slow text keeps its pace on the game: map 359's terminal
+readouts (messages 0x8C-0x8E, a glyph every two field frames) took 2 102,
+738 and 218 frames from their windows' opening to their first wait (or,
+for 0x8C, its timed close) with Instant text, as with the original's,
+while the scene as a whole took 9 439 frames instead of 22 741.
 
 The opening narration differs in one way, which is presumably why the
 mod re-scripted it. Each of its pages shows in a window while the
@@ -4146,9 +4161,9 @@ count does, a press then only closes the window, and the narration waits
 for a second press. A player who presses only at prompts reaches map 2
 after 9 731 frames with the original's text and is still waiting after
 14 000 with Instant's; one who also presses when the narration waits
-reaches map 2 with either (the table's row). The other scenes need no second press. Map 359's slow
-narration (`0F 0E`) belongs to a scene that depends on the party's
-members and was not reached from a test's start.
+reaches map 2 with either (the table's row). The panel's note under Text
+speed says that a scene timing its pages can wait for one more press. The
+other scenes need no second press.
 
 **Auto-advance dialogue.** `xem_core::dialogue::prompt` reads, between
 frames, what a press of Confirm would do to the field's dialogue, as
@@ -4180,6 +4195,10 @@ messages.
 `AppAction::ToggleAutoAdvance` ("Toggle auto-advance dialogue", T or
 Back+West by default, rebindable in Shortcuts) turns the setting on or
 off through the settings service and says which on the status line.
+Settings saved before the action existed (every saved file and browser
+`xem.settings` holds the whole shortcut list, which `Settings::read` takes
+whole) have no binding for it until one is set in Shortcuts; the panel's
+switch and AUTO work either way.
 Touch screens and headsets have AUTO beside the picture in a field's
 scenes and dialogue (`Context::Event` and `Context::Dialogue`): the touch
 deck shows it above the face buttons, a headset beside the screen's right
@@ -4262,14 +4281,19 @@ checks that `Game::update` gives the session the original's values by
 default, the settings' (4, 90, on) once chosen, and a session log the
 original's whatever they say. `xem-assist`'s touch and headset tests check AUTO: in scenes and
 dialogue only, clear of every other control, a touch or an aimed tap or
-pinch the app's toggle (never Confirm), lit while on. `xem-ui/tests/panel.rs`
+pinch the app's toggle (never Confirm), lit while on; `xem-host`'s
+`touch_controls_hold_their_buttons_taps_on_the_picture_are_kept_and_auto_asks_the_app`
+checks that a finger on the desktop and Android view's AUTO in a field's
+scene queues the app's toggle, one request a touch, holding no button of
+the game's. `xem-ui/tests/panel.rs`
 checks that the Gameplay section's three options apply through the
 service, are acknowledged, show the wait only while auto-advance is on,
 keep a refused wait and follow an agent's change.
 `xem-headless/tests/text_and_movies.rs` (local, disc 1; about 75 s here
 at four tests at a time) plays the table's scenes with the original's and
 Instant text to the same end, story value and messages (the narration
-also as the two-press difference above), measures map 131's reveals at
+also as the two-press difference above), checks that map 359's slow
+readouts take the same frames with either, measures map 131's reveals at
 the three speeds (each page no slower, the totals strictly faster), plays
 map 482 with auto-advance to the pressed run's end, turns map 172's Repair
 Bot's pages by auto-advance to its four choices and checks that the
@@ -4283,24 +4307,40 @@ browser test (`persistence.test.mjs`, the fixture module) checks that the
 running page gives the session the original's values, then half
 encounters, Instant text and movie skipping from `xem.settings.apply`,
 and that T turns auto-advance on (dwell 120, saved in `localStorage`) and
-off again.
+off again; another (`page.test.mjs`, the fixture module reporting the
+field's mode) that AUTO shows on the touch deck in a field's scene and
+that touches on it turn auto-advance on (the session's dwell 120) and off
+again through the settings, pressing no button of the game's.
 
 Not done or not measured: the battle event's movie (the movie mode's,
 event set 3) under the option was not reached on the game (the wrapper is
 unit-tested). Auto-advance does not turn battle messages or the opening
 narration's window-less waits; the cut cutscene skip's battle-message
 advance ([below](#cutscene-skipping)) is not offered either. Fast and
-Instant text was compared on the six scenes above only; other scenes that
-time windows against other scripts may need the narration's second press,
-and the battle's, arena's and world map's windows were not measured under
-them. No HUD chip shows that auto-advance is on (AUTO's light does, on
-touch screens and in headsets).
+Instant text was compared on the scenes above only, and not every timed
+message of their maps shows in them: map 27's message 8, map 131's
+message 9, eleven of map 326's sixteen (1-7, 0x12, 0x17, 0x1E and 0x3F),
+and four of map 288's six: 0x2F, in actor 14's talk at story 153-154,
+which `interact` found no path to from entrances 0, 9 and 10 (entrances 1
+and 6 open on a scene); 0x38 and 0x39, which actor 16 has actor 15 show in
+turn, again and again, at story 153-154 while the map's local v0402 is 0
+(seen in a probe; no end to compare); and 0x69, in the talk with Billy's
+stand-in (actor 21, story 155-159, Bart in the party) after a choice,
+which the runs never answer. Authored slow text was compared on the game
+on map 359's readouts with Instant text only; that Fast keeps it too is
+checked by `tests/test_port_text_speed.py` alone. Other scenes that time windows
+against other scripts may need the narration's second press, and the
+battle's, arena's and world map's windows were not measured under Fast
+or Instant text. No HUD chip shows that auto-advance is on (AUTO's light
+does, on touch screens and in headsets).
 Of the mod's options that change the game's balance only half encounters
 is offered ([above](#random-battles-in-platforming-areas), the field's
 draw only); more EXP and gold is not. The
-browser test ran on the fixture module; the Android, headset and touch
+browser tests ran on the fixture module; the Android, headset and touch
 hosts give the values through the same `Game::update` and frame loop, and
-no phone or headset run used them on the game.
+no phone or headset run used them on the game. A headset's AUTO key
+(`Carry::toggle_auto_advance`, through OpenXR's and WebXR's app requests)
+is unit-tested only: no Monado or IWER run aims at it.
 
 ### Cutscene skipping
 

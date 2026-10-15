@@ -242,8 +242,9 @@ pub struct Settings {
     pub text_speed: TextSpeed,
     /// Field dialogue goes on by itself.
     pub auto_advance: AutoAdvance,
-    /// The player's Confirm (or Start) ends any movie, as the game lets it
-    /// end some.
+    /// The player's Confirm ends a field movie (Cross or Start the movie
+    /// mode's), as the game lets it end some; window movies stay the
+    /// scripts'.
     pub movie_skip: bool,
 }
 

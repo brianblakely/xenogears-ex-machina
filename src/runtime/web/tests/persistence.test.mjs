@@ -741,12 +741,13 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       await page.evaluate(()=>window.xem.fastForward(false));
       await page.keyboard.down('Enter'); await page.waitForTimeout(80); await page.keyboard.up('Enter');
       await page.waitForFunction(()=>!(window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40));
-      await page.evaluate(()=>{
-        window.xem.settings.apply({BindApp:{action:'TogglePauseOnFocusLoss',binding:{keyboard:['KeyO'],gamepad:['Back','West']}}});
-      });
+      // A chord no default binding uses (Back+West toggles auto-advance).
+      const bound=await page.evaluate(()=>
+        window.xem.settings.apply({BindApp:{action:'TogglePauseOnFocusLoss',binding:{keyboard:['KeyO'],gamepad:['Back','L1']}}}));
+      assert.equal(bound.ok,true,JSON.stringify(bound));
       await page.keyboard.press('KeyO');
       assert.equal((await page.evaluate(()=>window.xem.settings.get())).settings.pause_on_focus_loss,false);
-      await page.evaluate(()=>{window.padButtons[8]=true;window.padButtons[2]=true;});
+      await page.evaluate(()=>{window.padButtons[8]=true;window.padButtons[4]=true;});
       await page.waitForFunction(()=>window.xem.settings.get().settings.pause_on_focus_loss);
       await page.evaluate(()=>{
         window.padButtons.fill(false);

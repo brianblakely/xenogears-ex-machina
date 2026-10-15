@@ -1316,7 +1316,7 @@ mod tests {
     }
 
     #[test]
-    fn touch_controls_hold_their_buttons_and_taps_on_the_picture_are_kept() {
+    fn touch_controls_hold_their_buttons_taps_on_the_picture_are_kept_and_auto_asks_the_app() {
         use xem_core::pad::button;
         let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
         let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
@@ -1359,6 +1359,18 @@ mod tests {
         assert_eq!(view.taps.len(), 1);
         let screen = view.picture.unwrap().to_screen(view.taps[0].0, view.taps[0].1).unwrap();
         assert!((screen.0 - 160.0).abs() < 1.0 && (screen.1 - 120.0).abs() < 1.0, "{screen:?}");
+        // In a field's scene AUTO asks the app to toggle auto-advance, as
+        // its shortcut does, and holds no button of the game's.
+        view.arrange(xem_core::context::Context::Event { map: 4, buttons: 0 });
+        let auto = view.deck.controls.iter().find(|(c, _)| *c == xem_assist::touch::Control::Auto).expect("AUTO in a scene").1;
+        let (ax, ay) = auto.centre();
+        let requests = view.app_requests.borrow().len();
+        view.finger(Finger::Down, 9, (ax / width as f32, ay / height as f32));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), 0);
+        assert_eq!(view.app_requests.borrow()[requests..], [AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)]);
+        view.finger(Finger::Up, 9, (ax / width as f32, ay / height as f32));
+        assert_eq!(view.app_requests.borrow().len(), requests + 1, "one request a touch");
+        assert_eq!(view.taps.len(), 1, "not a tap on the picture");
     }
 
     #[test]
