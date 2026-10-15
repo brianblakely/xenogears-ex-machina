@@ -4083,9 +4083,10 @@ authored slow text (`0F 0E`: a glyph every few frames, the window's
 (`0F 01 FF`, a line at a time, stands 1 421 times in disc 1's field
 messages), and `window_render_text_line`'s one-line layout window
 (`window_single_line_window`: the menus', shops', name entry's and
-battle lists' text) keeps its own budget. The option applies to every window `window_draw_frame` draws: the
-field's dialogue, the battle's message window, the arena's and the world
-map's. Measured headless (suite profile) on map 131's entry scene, its 22
+battle lists' text) keeps its own budget. The option applies to every
+window `window_draw_frame` draws: the field's dialogue, the battle's
+message window, the arena's and the world map's. Measured headless
+(suite profile) on map 131's entry scene, its 22
 pages turned as each prompt shows: their reveals took 3 158 frames
 (vertical blanks) in all with the original's speed, 1 086 with Fast and
 434 with Instant, the scene 3 808, 1 736 and 1 224 frames.
@@ -4112,12 +4113,12 @@ mod re-scripted it. Each of its pages shows in a window while the
 narration's script counts out the page's time, then waits for Confirm with
 no prompt of its own (`31 0x0020` looping on itself, map 4 +0x1668). The
 original's reveal lasts past that count, so the press that ends a page's
-text also goes on; with Instant (or Fast) text the text ends first, its
-press closes the window, and the narration waits for a second press. A
-player who presses only at prompts reaches map 2 after 9 731 frames with
-the original's text and is still waiting after 14 000 with Instant's; one
-who also presses when the narration waits reaches map 2 with either (the
-table's row). The other scenes need no second press. Map 359's slow
+text also goes on; with Instant (or Fast) text the text ends before the
+count does, a press then only closes the window, and the narration waits
+for a second press. A player who presses only at prompts reaches map 2
+after 9 731 frames with the original's text and is still waiting after
+14 000 with Instant's; one who also presses when the narration waits
+reaches map 2 with either (the table's row). The other scenes need no second press. Map 359's slow
 narration (`0F 0E`) belongs to a scene that depends on the party's
 members and was not reached from a test's start.
 
@@ -4153,9 +4154,9 @@ off through the settings service and says which on the status line.
 Touch screens and headsets have AUTO beside the picture in a field's
 scenes and dialogue (`Context::Event` and `Context::Dialogue`): the touch
 deck shows it above the face buttons, a headset beside the screen's right
-edge (`overlay::side_keys`), lit while auto-advance is on; a touch, or a
-tap or pinch aimed at it, is the same app action, never a press of the
-game's.
+edge (`overlay::side_keys`, where no control deck holds the keys there),
+lit while auto-advance is on; a touch, or a tap or pinch aimed at it, is
+the same app action, never a press of the game's.
 
 **Movies can be skipped.** The original ends a movie early only where its
 request lets it. A field movie whose request has fade bit 0x80
@@ -4166,7 +4167,8 @@ ends on Cross or Start unless its request kept it
 (`movie_mode_read_playback_input`, 800769A4, `movie_mode_unskippable`).
 The story's field movies (`fe 60` with mode 2, `fe a0`) are requested
 without the bit and the battle events' movie is kept; on disc 1 only map
-490's (the title's attract movie) and map 728's requests have the bit. `movie_skip.c` wraps
+490's (the title's attract movie) and map 728's requests have the bit.
+`movie_skip.c` wraps
 `field_movie_run_frames` (800A732C) to set bit 0x80 as a field movie's
 frames run and `movie_mode_read_playback_input` to clear the keep flag,
 while the host's `xem.movie_skip()` is nonzero, so the player's press
@@ -4175,10 +4177,12 @@ movie mode 2, `fe 67`), which the field's scripts end, stay as they are.
 Armed, a field movie's loop drains the pad queue on each pass, which
 changes the game's memory, hence the recorded control; a press held
 across a movie's start (Confirm repeats after 32 vertical blanks) ends it
-as it would end the movies the original lets the player skip. Only
-`field_movie_frame` then differs from a natural end, which `fe 85` reads
-on map 490 (the title's attract movie, skippable already) and map 665
-(a window movie). Measured headless on map 25's scene (from
+as it would end the movies the original lets the player skip. After the
+early exit the loop's cleanup is the natural end's (`movie_close` stops
+the stream and silences the CD input, as a movie's last frames do);
+`field_movie_frame` keeps the frame the movie reached, which only `fe 85`
+reads, on map 490 (the title's attract movie, skippable already) and map
+665 (a window movie). Measured headless on map 25's scene (from
 `enter_field`): its movie (#7, 1 059 frames) ignored Confirm and played
 4 386 frames to its frame 1 059 without the option, map 23 coming 13
 frames later; with it, a press 120 frames in ended the movie at its frame
@@ -4257,7 +4261,10 @@ unit-tested). Auto-advance does not turn battle messages or the opening
 narration's window-less waits; the cut cutscene skip's battle-message
 advance ([below](#cutscene-skipping)) is not offered either. Fast and
 Instant text was compared on the six scenes above only; other scenes that
-time windows against other scripts may need the narration's second press.
+time windows against other scripts may need the narration's second press,
+and the battle's, arena's and world map's windows were not measured under
+them. No HUD chip shows that auto-advance is on (AUTO's light does, on
+touch screens and in headsets).
 The options Perfect Works Build pairs with fast text that change the
 game's balance (half encounters, more EXP and gold) are not offered. The
 browser test ran on the fixture module; the Android, headset and touch

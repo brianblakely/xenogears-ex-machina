@@ -3,7 +3,9 @@
 //! Build had to re-script for its fast text (disc 1's maps 4, 27, 131, 288,
 //! 326 and 482 here; 359 is not reached, see the docs) reach the same end,
 //! story value and map with Instant text as with the original's, showing
-//! their timed messages; Fast and Instant reveal each page in fewer frames;
+//! the same messages, the timed ones where the scene reached has them (the
+//! opening narration needs a second press a page); Fast and Instant
+//! reveal each page in fewer frames;
 //! auto-advance takes a scene through its pages to the same end and leaves
 //! a choice to the player however long it waits; the setting lets a story
 //! movie end on Confirm, after which the field goes on as after the
