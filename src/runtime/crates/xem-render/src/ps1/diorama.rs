@@ -39,9 +39,12 @@
 //! - **What else the frame holds.** Flat primitives and fills the game drew
 //!   before its scene (the clear, panoramas, sky bands) are the backdrop: a
 //!   wall at the back of the table's volume, the original screen mapped onto
-//!   it. Flat primitives drawn after (windows, text, portraits, menus, the
-//!   interface's own models) and pictures uploaded to the screen go onto a
-//!   transparent premultiplied pane, drawn as the screen draws them. A
+//!   it; where the room shows around the table (passthrough, immersive AR)
+//!   the room stands in for the clear (the fills), which the wall then
+//!   leaves out. Flat primitives drawn after (windows, text, portraits,
+//!   menus, the interface's own models) and pictures uploaded to the screen
+//!   go onto a transparent premultiplied pane, drawn as the screen draws
+//!   them. A
 //!   full-screen untextured one (a fade, a flash) tints each eye's diorama
 //!   and the pane over what they held then, never the room around them.
 //! - **The screen instead.** Movies, menus and other modes but fields,
@@ -918,6 +921,9 @@ struct Built {
     camera: Camera,
     placed: Placed,
     area: DisplayArea,
+    /// Built for the room around the table (its wall without the game's
+    /// clear).
+    room: bool,
     commands: Vec<Command>,
 }
 
@@ -952,9 +958,9 @@ impl Targets {
     /// Builds the frame's diorama ([`build`]) into the vertex and staging
     /// buffers (the last build's no longer); returns its commands.
     #[allow(clippy::too_many_arguments)]
-    fn build(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, options: &DrawOptions, ops: &[TraceOp], camera: &Camera, placed: &Placed, area: DisplayArea) -> Option<(Vec<Command>, DioramaStats)> {
+    fn build(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, options: &DrawOptions, ops: &[TraceOp], camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<(Vec<Command>, DioramaStats)> {
         let mut builder = Builder::reusing(options, ops, &mut self.storage);
-        let stats = build(&mut builder, ops, camera, placed, area);
+        let stats = build(&mut builder, ops, camera, placed, area, room);
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(device, queue, &builder.staging);
         let commands = std::mem::take(&mut builder.commands);
@@ -964,9 +970,11 @@ impl Targets {
 }
 
 /// Builds the diorama of a frame into `builder` (made for `ops`): `ops`
-/// drawn with `camera` and placed as `placed`, the screen at `area`. `None`
+/// drawn with `camera` and placed as `placed`, the screen at `area`; with
+/// `room` (the room shows around the table) the wall leaves out the game's
+/// clear (its fills before the scene), which the room stands in for. `None`
 /// when the camera's axes span no space.
-fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Placed, area: DisplayArea) -> Option<DioramaStats> {
+fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<DioramaStats> {
     let options = builder.options;
     let world = WorldFrame::new(camera)?;
     let scene = scene_offset(ops);
@@ -1006,8 +1014,12 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
             TraceOp::Fill { rect, color } => {
                 let fill = fill_primitive(*rect, *color, options.fidelity.color_15bit);
                 if index < first {
-                    wall.draw(builder, &fill);
-                    stats.wall += 1;
+                    // The game's clear, on the wall unless the room around
+                    // the table stands in for it.
+                    if !room {
+                        wall.draw(builder, &fill);
+                        stats.wall += 1;
+                    }
                 } else if overlap(&shown, rect) * 10 >= u32::from(shown.width) * u32::from(shown.height) * 9 {
                     // Over (nine tenths of) the screen shown: a fade.
                     builder.tint(tint_colors(&fill), false, 0);
@@ -1232,8 +1244,10 @@ impl Diorama {
     /// the room. With `shown` (the frame shown, its display area, the scene
     /// that drew it and whether it is a new game frame), the frame shown's
     /// (built once a game frame); without, the last build (held, or fading
-    /// out). Returns the opacity to draw the eyes' pictures at (`opacity`,
-    /// dimmed briefly after a jump); `None` when there is nothing to draw.
+    /// out); with `room` (the room shows around the table) built without the
+    /// game's clear on its wall. Returns the opacity to draw the eyes'
+    /// pictures at (`opacity`, dimmed briefly after a jump); `None` when
+    /// there is nothing to draw.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn present(
         &mut self,
@@ -1247,6 +1261,7 @@ impl Diorama {
         seat: Mat4,
         table: &Table,
         opacity: f32,
+        room: bool,
     ) -> Option<f32> {
         let gpu = self.gpu.get_or_insert_with(|| Targets::new(device));
         if let Some((frame, area, scene, new_frame)) = shown {
@@ -1256,21 +1271,21 @@ impl Diorama {
             let placed = self.placement.update(&camera, h, scene, new_frame, now, table)?;
             let identity = (frame.identity(), frame.drawn());
             let rebuild = gpu.built.as_ref().is_none_or(|built| {
-                built.identity != identity || built.area != area || wrap(built.heading - placed.heading).abs() > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
+                built.identity != identity || built.area != area || built.room != room || wrap(built.heading - placed.heading).abs() > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
             });
             if rebuild {
                 let base = *renderer.options();
                 // The screen's limits have no place in a view from anywhere.
                 let fidelity = Fidelity { affine_textures: false, vertex_snapping: false, dithering: false, native_resolution: false, painter_ordering: true, ..base.fidelity };
                 let options = DrawOptions { fidelity, ..base };
-                let Some((commands, stats)) = gpu.build(device, queue, &options, ops, &camera, &placed, area) else {
+                let Some((commands, stats)) = gpu.build(device, queue, &options, ops, &camera, &placed, area, room) else {
                     // (Its buffers hold the last build no longer.)
                     gpu.built = None;
                     return None;
                 };
                 self.stats = DioramaStats { builds: self.stats.builds + 1, ..stats };
                 let writes = ops.iter().filter(|op| matches!(op, TraceOp::Write { .. })).cloned().collect();
-                gpu.built = Some(Built { identity, heading: placed.heading, scale: placed.scale, toward: placed.toward, start, writes, camera, placed, area, commands });
+                gpu.built = Some(Built { identity, heading: placed.heading, scale: placed.scale, toward: placed.toward, start, writes, camera, placed, area, room, commands });
             } else if let Some(built) = &mut gpu.built {
                 built.placed = placed;
             }
@@ -1417,9 +1432,14 @@ mod tests {
 
     /// The diorama `ops` build: its vertices and commands.
     fn built(ops: &[TraceOp]) -> (Vec<Vertex>, Vec<Command>, DioramaStats) {
+        built_for(ops, false)
+    }
+
+    /// The diorama `ops` build with the room around the table or not.
+    fn built_for(ops: &[TraceOp], room: bool) -> (Vec<Vertex>, Vec<Command>, DioramaStats) {
         let options = DrawOptions::default();
         let mut builder = Builder::new(&options, ops);
-        let stats = build(&mut builder, ops, &LEVEL, &placed(), AREA).expect("a camera");
+        let stats = build(&mut builder, ops, &LEVEL, &placed(), AREA, room).expect("a camera");
         (builder.vertices, builder.commands, stats)
     }
 
@@ -1454,6 +1474,30 @@ mod tests {
         }).expect("the window on the pane");
         assert!(draws(&commands, last).iter().all(|key| key.space == Space::Pane), "the interface never enters the eyes' pass");
         assert!(commands.iter().all(|command| !matches!(command, Command::Draw { key, .. } if matches!(key.space, Space::World { .. }) && key.fragment == Fragment::Rect)));
+    }
+
+    #[test]
+    fn where_the_room_shows_the_wall_leaves_out_the_games_clear_and_keeps_its_pictures() {
+        let screen = VramRect { x: 0, y: 0, width: 320, height: 240 };
+        // The clear and a panorama strip before the scene, the floor, then a
+        // fade over the screen.
+        let strip = primitive(&[[0.0, 0.0, 0.0], [320.0, 0.0, 0.0], [0.0, 60.0, 0.0], [320.0, 40.0, 0.0]], Class::Flat, 0, true);
+        let ops = [
+            TraceOp::Fill { rect: screen, color: 0x40_2010 },
+            TraceOp::Draw(strip),
+            TraceOp::Draw(primitive(&FLOOR, Class::Model, 1, false)),
+            TraceOp::Fill { rect: screen, color: 0x10_1010 },
+        ];
+        let on_wall = |vertices: &[Vertex]| vertices.iter().filter(|v| v.mode[3] & FLAG_TABLE != 0).map(|v| v.position[1]).collect::<Vec<f32>>();
+        let (vertices, _, stats) = built_for(&ops, false);
+        assert_eq!((stats.wall, stats.scene, stats.tints, on_wall(&vertices).len()), (2, 1, 1, 12), "in VR the clear and the strip");
+        let (vertices, _, stats) = built_for(&ops, true);
+        assert_eq!((stats.wall, stats.scene, stats.tints), (1, 1, 1), "the strip alone on the wall; the scene and the fade as they were");
+        // The strip's quad, as high as it is on the screen (not the clear's,
+        // down to the wall's foot).
+        let wall = on_wall(&vertices);
+        let foot = Wall::new(AREA).point(0.0, 60.0).y;
+        assert!(wall.len() == 6 && wall.iter().all(|y| *y >= foot - 1e-6), "{wall:?} above {foot}");
     }
 
     #[test]

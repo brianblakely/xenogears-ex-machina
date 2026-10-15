@@ -717,6 +717,9 @@ impl WebRenderer {
         // under the Original renderer; at the hands' scale while they scale
         // it), the game paused or not.
         self.renderer.set_xr_view(self.xr_scaling.shown(xr_view(&graphics)));
+        // In immersive AR the room stands in for the game's clear behind the
+        // table.
+        self.renderer.set_room(self.xr_room);
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         // First-person inspection looks from within the scene through each
         // view, every immersive frame, paused or not.

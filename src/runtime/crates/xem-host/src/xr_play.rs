@@ -30,8 +30,9 @@
 //! (`xem_assist::headset::Scaling`); with the screen as the view they scale
 //! the screen for the session. Where the system can show the room (alpha
 //! blending, or `XR_FB_passthrough`) and the player turns Passthrough on,
-//! the room stands around the table in place of the backdrop; elsewhere
-//! (Monado's simulated HMD) the panel offers no Passthrough.
+//! the room stands around the table in place of the backdrop and behind it
+//! in place of the game's clear; elsewhere (Monado's simulated HMD, or
+//! after the runtime refused it) the panel offers no Passthrough.
 //!
 //! Everything stands in front of the seat (`xem_assist::headset::Seat`):
 //! LOCAL's origin, moved to the head by Recenter (the panel's button, an
@@ -329,6 +330,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     };
     let modes: Vec<String> = caps.blend_modes.iter().map(|mode| format!("{mode:?}")).collect();
     println!("xr room: passthrough={offered} blend_modes={}", modes.join(","));
+    if let Some(error) = &caps.passthrough_error {
+        println!("xr room: XR_FB_passthrough unusable ({error})");
+    }
     let gpu = context.gpu().clone();
     let panel_px = ((PANEL_LOGICAL.0 * PANEL_SCALE) as u32, (PANEL_LOGICAL.1 * PANEL_SCALE) as u32);
     let mut ui = SettingsUi::new(
@@ -714,9 +718,23 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // the hands' scale while they scale it), before the frame is taken:
         // the diorama asks the trace for every face and the camera.
         view.set_xr_view(assist.scaling.shown(xr_view(&current.graphics)));
-        // The room behind the diorama, where the system can show it and the
-        // player turned it on (the panel's row shows only then).
-        let room = caps.passthrough.is_some() && current.graphics.xr.passthrough && matches!(view.xr_view(), XrView::Diorama(_));
+        // The room behind the diorama, where the session can show it and the
+        // player turned it on (the panel's row shows only then). A runtime
+        // refusing it leaves it out for the rest of the session, the row
+        // with it; the session goes on.
+        let wanted = current.graphics.xr.passthrough && matches!(view.xr_view(), XrView::Diorama(_));
+        let room = match session.show_room(wanted) {
+            xem_xr::Room::Shown(_) => true,
+            xem_xr::Room::Hidden => false,
+            xem_xr::Room::Refused(error) => {
+                println!("xr room: refused ({error}): passthrough=unavailable for the session");
+                ui.set_passthrough_offered(false);
+                false
+            }
+        };
+        // Where the room shows, it stands in for the game's clear behind the
+        // table.
+        view.set_room(room);
         let restart = view.take_restart();
         // The Original renderer shows the display as the device holds it
         // (nothing to look around in).
@@ -979,7 +997,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 captured = true;
             }
         }
-        let ended = session.end_frame(visible.then_some(panel), room).map_err(|e| e.to_string())?;
+        let ended = session.end_frame(visible.then_some(panel)).map_err(|e| e.to_string())?;
         let head = head.map_or("-".into(), |p| format!("{:.5},{:.5},{:.5};{:.5},{:.5},{:.5},{:.5}", p.position.x, p.position.y, p.position.z, p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w));
         // First-person inspection: on, drawn from within the scene (the
         // eyes' pictures), and the view's turn (yaw, pitch; radians).

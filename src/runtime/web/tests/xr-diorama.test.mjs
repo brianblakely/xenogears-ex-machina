@@ -12,8 +12,10 @@
 // whole-hand pinches spreading grow the diorama live about its anchor and
 // commit its scale once, the RAM still the flat run's at that scale; and
 // immersive AR (offered: IWER's Quest 3 supports it), asked for with nothing
-// AR-specific, blends by alpha: the layer is transparent where VR shows the
-// room's backdrop and drawn where it shows the diorama (VR's layer opaque).
+// AR-specific and its layer with alpha, blends by alpha: the layer is
+// transparent where VR shows the room's backdrop or the game's clear on the
+// wall behind the table, and drawn where it shows the diorama (VR's layer
+// opaque).
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -50,14 +52,28 @@ function shift(before, after, reach = 45) {
 /** Whether two rows of RGBA bytes show the same picture (within a few levels). */
 const same = (a, b) => a.reduce((sum, v, i) => sum + (i % 4 === 3 ? 0 : Math.abs(v - b[i])), 0) / (a.length * 3 / 4) <= 6;
 
-/** An init script recording the sessions the page asks for (mode and init). */
+/** An init script recording the sessions the page asks for (mode and init)
+ *  and the layers it makes for them (the session's mode and the layer's
+ *  init: IWER's layer, the canvas's own framebuffer, takes no alpha of its
+ *  own, so only the page's request shows what a headset's browser gets). */
 const REQUESTS = `
 window.xrRequests = [];
+window.xrLayers = [];
 {
+  const modes = new WeakMap();
   const request = navigator.xr.requestSession.bind(navigator.xr);
-  navigator.xr.requestSession = (mode, init) => {
+  navigator.xr.requestSession = async (mode, init) => {
     window.xrRequests.push({ mode, init: JSON.parse(JSON.stringify(init ?? {})) });
-    return request(mode, init);
+    const session = await request(mode, init);
+    modes.set(session, mode);
+    return session;
+  };
+  const Layer = window.XRWebGLLayer;
+  window.XRWebGLLayer = class extends Layer {
+    constructor(session, context, init) {
+      super(session, context, init);
+      window.xrLayers.push({ mode: modes.get(session) ?? null, init: JSON.parse(JSON.stringify(init ?? {})) });
+    }
   };
 }`;
 
@@ -292,63 +308,83 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
 
       // Immersive AR, where the browser offers it (IWER's Quest 3 does):
       // asked for with the same optional features as VR (nothing AR-specific),
-      // its blend mode alpha-blend, the layer transparent where VR showed the
-      // room's backdrop and drawn where it showed the diorama (the same
-      // frame, the game stopped, the head where the session begins, the
-      // table placed at once in both: Recenter in VR, as a new session's
-      // first frame places it).
+      // its layer asked for with alpha (VR's without), its blend mode
+      // alpha-blend, the layer transparent where VR showed the room's
+      // backdrop or the game's clear on the wall behind the table, and drawn
+      // where it showed the diorama. Each mode is read in a session begun
+      // afresh at one game frame (the game stopped, the head where the
+      // sessions begin), so both place the same table at once (a diorama
+      // takes its scale's measure as it begins); at the default scale (as
+      // Reset diorama puts it) the wall shows above the scene, the clear
+      // black in field 30.
+      const scaled = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      const defaultScale = await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, xr: { ...g.xr, diorama_scale: 100 } } }), scaled);
+      assert.equal(defaultScale.ok, true, JSON.stringify(defaultScale));
       await page.evaluate(() => window.xem.setRunning(true));
       await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
       await page.evaluate(() => window.xem.setRunning(false));
       await page.evaluate((p) => { window.xrDevice.position.set(...p); window.xrDevice.quaternion.set(0, 0, 0, 1); }, origin);
-      await frames(6);
-      await page.evaluate(() => window.xem.appOperation({ Action: 'Recenter' }));
-      await frames(6);
       const grid = [];
       for (let y = 0; y < 30; y++) for (let x = 0; x < 40; x++) grid.push([Math.floor((x + 0.5) / 40 * layer[0]), Math.floor((y + 0.5) / 30 * layer[1])]);
-      const vr = await page.evaluate((points) => window.xem.xr.readback(points), grid);
-      const vrSpace = (await status(page)).xr.space;
-      const vrHead = (await status(page)).page.xr.viewer;
+      // The session running ended, one of `mode` begun by its button, once
+      // the diorama shows in it again (the canvas's frames between the
+      // sessions show the screen): the layer's bytes at the grid's points,
+      // where the table lies and the head.
+      const fresh = async (button, mode) => {
+        await page.evaluate(() => window.xem.xr.exit());
+        await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
+        assert.equal(await page.isVisible(button), true, `${button} is offered`);
+        await page.click(button);
+        await page.waitForFunction((mode) => window.xem.status().page.xr.mode === mode && window.xem.status().page.xr.frames > 10, mode, { timeout: 60_000 });
+        await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
+        await frames(6);
+        const { xr: { space }, page: { xr: { viewer } } } = await status(page);
+        return { bytes: await page.evaluate((points) => window.xem.xr.readback(points), grid), space, viewer };
+      };
+      const inVr = await fresh('#vr', 'immersive-vr');
+      const vr = inVr.bytes;
       assert.ok(vr.every((v, i) => i % 4 !== 3 || v === 255), 'in VR the layer is opaque');
-      await page.evaluate(() => window.xem.xr.exit());
-      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
-      assert.equal(await page.isVisible('#ar'), true, 'Enter AR is offered');
-      await page.click('#ar');
-      await page.waitForFunction(() => window.xem.status().page.xr.active && window.xem.status().page.xr.frames > 10, null, { timeout: 60_000 });
+      const inAr = await fresh('#ar', 'immersive-ar');
+      const ar = inAr.bytes;
+      await page.screenshot({ path: join(SHOTS, 'xr-diorama-ar.png') });
       info = await status(page);
-      assert.equal(info.page.xr.mode, 'immersive-ar');
       assert.equal(info.page.xr.blend, 'alpha-blend', 'IWER\'s Quest 3 blends AR by alpha');
       assert.equal(info.xr.room, true, 'the room shows around what the frames draw');
+      assert.deepEqual([inAr.space, inAr.viewer], [inVr.space, inVr.viewer], 'the same table seen from the same head');
       const requests = await page.evaluate(() => window.xrRequests);
-      assert.deepEqual(requests.map((r) => r.mode), ['immersive-vr', 'immersive-ar']);
+      assert.deepEqual(requests.map((r) => r.mode), ['immersive-vr', 'immersive-vr', 'immersive-ar']);
       for (const r of requests) {
         assert.equal(r.init.requiredFeatures, undefined, `${r.mode}: no feature required`);
         assert.deepEqual(r.init.optionalFeatures, ['local-floor', 'hand-tracking'], `${r.mode}: nothing AR-specific asked for`);
       }
-      // (The canvas's frames between the sessions show the screen: the
-      // diorama eases in again.)
-      await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
-      await frames(6);
-      const arSpace = (await status(page)).xr.space;
-      const ar = await page.evaluate((points) => window.xem.xr.readback(points), grid);
-      await page.screenshot({ path: join(SHOTS, 'xr-diorama-ar.png') });
+      const layers = await page.evaluate(() => window.xrLayers);
+      assert.deepEqual(layers.map((l) => [l.mode, l.init.alpha]), [['immersive-vr', false], ['immersive-vr', false], ['immersive-ar', true]],
+        `VR's layers opaque, AR's with alpha: ${JSON.stringify(layers)}`);
       // The room's backdrop in VR is the real room in AR: transparent black;
-      // what VR drew over it is drawn.
+      // so is the game's clear on the wall behind the table (black in VR:
+      // the clear, and any black texel the scene draws, which AR draws);
+      // what VR drew over them is drawn.
       const pixel = (bytes, i) => Array.from(bytes.slice(4 * i, 4 * i + 4));
-      const around = grid.map((_, i) => i).filter((i) => pixel(vr, i).slice(0, 3).every((v, k) => v === backdrop[k]));
-      const drawn = grid.map((_, i) => i).filter((i) => !around.includes(i));
+      const indices = grid.map((_, i) => i);
+      const around = indices.filter((i) => pixel(vr, i).slice(0, 3).every((v, k) => v === backdrop[k]));
+      const black = indices.filter((i) => pixel(vr, i).slice(0, 3).every((v) => v === 0));
+      const drawn = indices.filter((i) => !around.includes(i) && !black.includes(i));
       const clear = around.filter((i) => pixel(ar, i).every((v) => v === 0)).length;
+      const behind = black.filter((i) => pixel(ar, i).every((v) => v === 0)).length;
       const covered = drawn.filter((i) => pixel(ar, i)[3] > 0).length;
       const opaque = drawn.filter((i) => pixel(ar, i)[3] === 255);
       const alike = opaque.filter((i) => pixel(ar, i).slice(0, 3).every((v, k) => Math.abs(v - pixel(vr, i)[k]) <= 4)).length;
       const off = opaque.map((i) => Math.max(...[0, 1, 2].map((k) => Math.abs(pixel(ar, i)[k] - pixel(vr, i)[k])))).sort((a, b) => a - b);
       console.log(`immersive AR: of ${grid.length} points, ${around.length} showed the room's backdrop ${backdrop} in VR (${clear} transparent in AR), `
+        + `${black.length} black (${behind} transparent in AR: the wall's clear), `
         + `${drawn.length} the diorama, its pane or the screen (${covered} drawn in AR, ${opaque.length} opaque, ${alike} of them as in VR; `
-        + `levels off: median ${off[off.length >> 1]}, p90 ${off[Math.floor(off.length * 0.9)]}); the same table: `
-        + `${JSON.stringify(arSpace.roomFromWorld) === JSON.stringify(vrSpace.roomFromWorld)}, head ${JSON.stringify((await status(page)).page.xr.viewer)} against ${JSON.stringify(vrHead)}; `
-        + `the room's points drawn in AR (point, VR, AR): ${JSON.stringify(around.filter((i) => pixel(ar, i)[3] > 0).slice(0, 6).map((i) => [grid[i], pixel(vr, i), pixel(ar, i)]))}`);
+        + `levels off: median ${off[off.length >> 1]}, p90 ${off[Math.floor(off.length * 0.9)]}); the table ${JSON.stringify(inAr.space)} from the head ${JSON.stringify(inAr.viewer)}; `
+        + `the room's points drawn in AR (point, VR, AR): ${JSON.stringify(around.filter((i) => pixel(ar, i)[3] > 0).slice(0, 6).map((i) => [grid[i], pixel(vr, i), pixel(ar, i)]))}; `
+        + `black points drawn in AR: ${JSON.stringify(black.filter((i) => pixel(ar, i)[3] > 0).slice(0, 6).map((i) => [grid[i], pixel(ar, i)]))}; `
+        + `opaque points unlike VR (point, VR, AR): ${JSON.stringify(opaque.filter((i) => pixel(ar, i).slice(0, 3).some((v, k) => Math.abs(v - pixel(vr, i)[k]) > 4)).map((i) => [grid[i], pixel(vr, i), pixel(ar, i)]))}`);
       assert.ok(around.length >= grid.length * 0.2 && drawn.length >= grid.length * 0.1, `the room and the table both in view: ${around.length}, ${drawn.length}`);
       assert.ok(clear >= around.length * 0.98, `transparent around the table: ${clear} of ${around.length}`);
+      assert.ok(black.length >= grid.length * 0.05 && behind >= black.length * 0.85, `the room behind the table where VR showed the wall's clear: ${behind} of ${black.length}`);
       assert.ok(covered >= drawn.length * 0.98, `the diorama drawn: ${covered} of ${drawn.length}`);
       assert.ok(opaque.length > 0 && alike >= opaque.length * 0.95, `opaque pixels as VR shows them: ${alike} of ${opaque.length}`);
       await page.evaluate(() => window.xem.xr.exit());

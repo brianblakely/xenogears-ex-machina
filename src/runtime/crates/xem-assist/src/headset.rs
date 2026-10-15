@@ -664,6 +664,30 @@ pub(crate) mod tests {
         assert!(headset.pauses.player);
     }
 
+    #[test]
+    fn after_focus_loss_one_hands_pause_resumes_whatever_the_other_hand_does() {
+        use crate::synthetic::{Runtime, Step, fist, half, in_front, left, open, place};
+        let mut headset = Headset::default();
+        let mut time = 0.0;
+        let mut step = |headset: &mut Headset, step: Step, focused: bool| {
+            let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+            let signals = step.frame(time, hands, Vec3::X, Runtime::HORIZON);
+            time += 1.0 / 72.0;
+            let input = Input { time, head: Some(head()), hands, pinch: signals.pinch, micro: signals.micro, micro_capable: signals.micro_capable, focused, ..Input::default() };
+            headset.update(&input, &screen(), Context::Walk, None, None).outs
+        };
+        let at = |x: f32, hand| place(hand, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
+        let both = |l, r| Step::of([Some(at(-0.12, left(l))), Some(at(0.12, r))]);
+        step(&mut headset, both(open(), open()), true);
+        assert_eq!(step(&mut headset, both(half(), open()), false), [Out::TrackingLost]);
+        assert!(headset.pauses.player, "the focus lost pauses");
+        // The focus back, the left hand stays half curled: the right hand's
+        // overhand grab from open resumes.
+        let outs: Vec<Out> = [open(), half(), fist()].into_iter().flat_map(|r| step(&mut headset, both(half(), r), true)).collect();
+        assert_eq!(outs, [Out::TogglePause]);
+        assert!(!headset.pauses.player, "resumed");
+    }
+
     /// A field whose one other actor stands ahead of the player, at the
     /// screen's centre.
     fn field() -> Field {

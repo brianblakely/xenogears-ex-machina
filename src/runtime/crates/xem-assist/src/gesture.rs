@@ -263,10 +263,13 @@ impl Recognizer {
     }
 
     /// Forget everything in progress (focus lost, the app took the input):
-    /// held and pending gestures are cancelled; every hand must open again
-    /// (hands still gathered begin no new scaling).
+    /// held and pending gestures are cancelled; each hand must open again
+    /// before its grab fires. A two-hand scaling under way (or just ended)
+    /// keeps both hands as when it ends: hands still gathered begin no new
+    /// scaling, and nothing else fires until both have opened.
     pub fn cancel(&mut self) {
-        *self = Recognizer { prayer_armed: false, scale_release: true, ..Recognizer::default() };
+        let scale_release = self.scaling.is_some() || self.scale_release;
+        *self = Recognizer { prayer_armed: false, scale_release, ..Recognizer::default() };
     }
 
     pub fn update(&mut self, frame: &Frame) -> Vec<Gesture> {
@@ -626,6 +629,47 @@ pub(crate) mod tests {
         // The hands open again, the runtime's next pinch and tap are theirs.
         let next = recognizer.update(&Frame { time: 1.0, hands: [Some(poses[5].0), Some(poses[5].1)], view_right: Vec3::X, pinch: [None, Some(true)], micro: [None, Some(Micro::Tap)], micro_capable: [true; 2] });
         assert_eq!(next, [Gesture::Pinch { hand: Hand::Right }, Gesture::Tap { hand: Hand::Right }]);
+    }
+
+    #[test]
+    fn after_a_cancel_one_hand_gestures_alone_and_a_cut_scaling_keeps_both_hands_until_both_open() {
+        // Cancelled with no scaling under way (the focus lost, a moved
+        // reference), the left hand tracked and half curled throughout: the
+        // right hand's overhand grab (from open), the runtime's pinch and its
+        // tap fire as on a fresh recognizer.
+        let curled = Some(left(half()));
+        let mut recognizer = Recognizer::default();
+        run(&mut recognizer, 0.0, &[(Some(left(open())), Some(open())), (curled, Some(open()))]);
+        recognizer.cancel();
+        let grab = [(curled, Some(open())), (curled, Some(half())), (curled, Some(fist()))];
+        assert_eq!(run(&mut recognizer, 1.0, &grab), [Gesture::Pause { hand: Hand::Right }]);
+        let signals = |time: f64, pinch: bool, micro: Option<Micro>| Frame {
+            time,
+            hands: [curled, Some(open())],
+            view_right: Vec3::X,
+            pinch: [Some(false), Some(pinch)],
+            micro: [None, micro],
+            micro_capable: [true, true],
+        };
+        assert!(recognizer.update(&signals(2.0, false, None)).is_empty());
+        recognizer.cancel();
+        assert_eq!(recognizer.update(&signals(2.1, true, None)), [Gesture::Pinch { hand: Hand::Right }]);
+        recognizer.cancel();
+        assert_eq!(recognizer.update(&signals(2.2, false, Some(Micro::Tap))), [Gesture::Tap { hand: Hand::Right }]);
+        // Cancelled while two hands scale: they keep both hands as when a
+        // scaling ends. Still gathered they begin no new scaling, and a hand
+        // closing on the way out grabs nothing, until both have opened.
+        let at = |x: f32, hand: [Vec3; JOINTS]| place(hand, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
+        let both = |l: [Vec3; JOINTS], r: [Vec3; JOINTS]| (Some(at(-0.1, left(l))), Some(at(0.1, r)));
+        let mut recognizer = Recognizer::default();
+        let begun = run(&mut recognizer, 3.0, &[both(open(), open()), both(whole_pinch(), whole_pinch())]);
+        assert_eq!(begun, [Gesture::ScaleBegin]);
+        recognizer.cancel();
+        let held = [both(whole_pinch(), whole_pinch()), both(whole_pinch(), whole_pinch()), both(open(), half()), both(open(), fist())];
+        let gestures = run(&mut recognizer, 4.0, &held);
+        assert!(gestures.is_empty() && !recognizer.scaling(), "{gestures:?}");
+        let opened = [both(open(), open()), both(open(), half()), both(open(), fist())];
+        assert_eq!(run(&mut recognizer, 5.0, &opened), [Gesture::Pause { hand: Hand::Right }], "both opened: the grabs are back");
     }
 
     #[test]

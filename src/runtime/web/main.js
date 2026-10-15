@@ -158,15 +158,18 @@ function wireCanvas() {
 wireCanvas();
 // Immersive play is submitted through an XR-compatible WebGL2 context
 // (WebXR layers on WebGPU are not available to test): a browser that offers
-// immersive VR or AR renders with one from the start; others use WebGPU first.
+// immersive VR renders with one from the start; others use WebGPU first.
 try {
   page.xrSupported = Boolean(navigator.xr) && await navigator.xr.isSessionSupported('immersive-vr');
 } catch (error) {
   page.xrError = String(error);
 }
-// A browser whose WebXR knows no immersive AR rejects the question: no AR.
-page.arSupported = Boolean(navigator.xr) && await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
-const prefer = params.get('backend') ?? (page.xrSupported || page.arSupported ? 'webgl2-xr' : 'auto');
+// Immersive AR is a headset's, offered beside immersive VR only: a phone's
+// handheld AR (immersive AR alone) has no input this page maps (the screen's
+// touches), so the phone plays flat as before. A browser whose WebXR knows
+// no immersive AR rejects the question: no AR.
+page.arSupported = page.xrSupported && await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+const prefer = params.get('backend') ?? (page.xrSupported ? 'webgl2-xr' : 'auto');
 if (!(await startRenderer(prefer)) && prefer !== 'webgl2') await startRenderer('webgl2');
 new ResizeObserver(sizeCanvas).observe(document.querySelector('main'));
 
@@ -537,7 +540,7 @@ document.addEventListener('visibilitychange', () => {
 // --- Controls ----------------------------------------------------------------
 const vrButton = $('vr');
 const arButton = $('ar');
-// Enter AR shows only where the browser offers immersive AR.
+// Enter AR shows only where the headset's browser offers immersive AR.
 vrButton.hidden = !(page.xrSupported && app.xr_capable());
 arButton.hidden = !(page.arSupported && app.xr_capable());
 for (const [button, mode] of [[vrButton, 'immersive-vr'], [arButton, 'immersive-ar']]) {

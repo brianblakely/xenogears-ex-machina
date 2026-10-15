@@ -101,11 +101,15 @@ pub struct Capabilities {
     /// How the session can show the room around the player, if it can
     /// ([`Passthrough::offered`]).
     pub passthrough: Option<Passthrough>,
+    /// Why `XR_FB_passthrough` shows no room although the runtime offers
+    /// it: the system's passthrough properties could not be read (the
+    /// headset starts without the room that way), for the host's log.
+    pub passthrough_error: Option<String>,
     pub gpu: String,
 }
 
 /// How a session shows the room around the player behind what it draws,
-/// the frames the host asks for it ([`XrSession::end_frame`]); the host
+/// the frames the host asks for it ([`XrSession::show_room`]); the host
 /// leaves the room's backdrop out of them and draws premultiplied colour
 /// whose alpha is what covers the room.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -132,6 +136,54 @@ impl Passthrough {
         } else {
             None
         }
+    }
+}
+
+/// The room behind a frame, as [`XrSession::show_room`] decided it.
+#[derive(Debug)]
+pub enum Room {
+    /// Not shown (the opaque blend mode): the host draws its backdrop.
+    Hidden,
+    /// Shown this way: the host leaves its backdrop out and draws
+    /// premultiplied colour whose alpha is what covers the room.
+    Shown(Passthrough),
+    /// The runtime refused to show it (`XR_FB_passthrough`'s objects: not
+    /// permitted, short of resources): not shown, and unavailable for the
+    /// rest of the session (later frames are hidden without asking again).
+    /// The session goes on; the host reports the refusal and offers the room
+    /// no more.
+    Refused(XrError),
+}
+
+/// How a session shows the room behind its frames: what the system offers,
+/// until the runtime refuses it, and `XR_FB_passthrough`'s objects (`T`)
+/// while the room shows that way, made when first wanted and dropped when a
+/// frame no longer wants them (the cameras stop).
+#[derive(Debug)]
+struct RoomState<T> {
+    offered: Option<Passthrough>,
+    fb: Option<T>,
+}
+
+impl<T> RoomState<T> {
+    /// The room behind a frame the host wants it behind (`wanted`), `create`
+    /// making XR_FB_passthrough's objects when they are first needed. Its
+    /// error, the runtime's refusal, leaves the room unavailable from then
+    /// on: this frame and every later one are hidden, without asking again.
+    fn frame(&mut self, wanted: bool, create: impl FnOnce() -> Result<T, XrError>) -> Room {
+        let room = self.offered.filter(|_| wanted);
+        if room != Some(Passthrough::Fb) {
+            self.fb = None;
+        } else if self.fb.is_none() {
+            match create() {
+                Ok(objects) => self.fb = Some(objects),
+                Err(refused) => {
+                    self.offered = None;
+                    return Room::Refused(refused);
+                }
+            }
+        }
+        room.map_or(Room::Hidden, Room::Shown)
     }
 }
 
@@ -222,7 +274,13 @@ impl XrContext {
         let blend_mode = *blend_modes
             .first()
             .ok_or_else(|| XrError::new("blend modes", "none offered".into()))?;
-        let fb_passthrough = extensions.fb_passthrough && supports_fb_passthrough(&instance, system)?;
+        // A system whose passthrough properties cannot be read shows no room
+        // by XR_FB_passthrough; the headset starts all the same.
+        let (fb_passthrough, passthrough_error) = match extensions.fb_passthrough.then(|| supports_fb_passthrough(&instance, system)) {
+            None => (false, None),
+            Some(Ok(supported)) => (supported, None),
+            Some(Err(error)) => (false, Some(error.to_string())),
+        };
         let passthrough = Passthrough::offered(&blend_modes, fb_passthrough);
         let hand_tracking = extensions.ext_hand_tracking
             && instance
@@ -248,6 +306,7 @@ impl XrContext {
             blend_modes,
             blend_mode,
             passthrough,
+            passthrough_error,
             gpu: format!("{} ({})", info.name, info.driver),
         };
         Ok(Self {
@@ -490,6 +549,9 @@ pub struct Frame {
     pub input: InputState,
     pub ops: Vec<SwapchainOp>,
     rendered: bool,
+    /// How the room shows behind the frame ([`XrSession::show_room`]; none
+    /// until it is asked for).
+    room: Option<Passthrough>,
 }
 
 /// The eye swapchain image being rendered: one texture of two array layers,
@@ -517,10 +579,9 @@ pub struct XrSession {
     eyes: Swapchain,
     panel: Option<Swapchain>,
     input: input::Input,
-    /// `XR_FB_passthrough`'s passthrough and layer while the room shows
-    /// that way (made when first asked for, dropped when no longer: the
-    /// cameras stop).
-    fb: Option<(xr::PassthroughLayerFB, xr::Passthrough)>,
+    /// How the system can show the room, and `XR_FB_passthrough`'s
+    /// passthrough and layer while the room shows that way.
+    room: RoomState<(xr::PassthroughLayerFB, xr::Passthrough)>,
     view_space: xr::Space,
     space: xr::Space,
     frame_waiter: xr::FrameWaiter,
@@ -529,8 +590,6 @@ pub struct XrSession {
     instance: xr::Instance,
     gpu: Gpu,
     blend_mode: xr::EnvironmentBlendMode,
-    /// How the system can show the room.
-    passthrough: Option<Passthrough>,
     depth_range: (f32, f32),
     state: SessionState,
     running: bool,
@@ -642,7 +701,7 @@ impl XrSession {
             eyes,
             panel,
             input,
-            fb: None,
+            room: RoomState { offered: context.capabilities.passthrough, fb: None },
             view_space,
             space,
             frame_waiter,
@@ -651,7 +710,6 @@ impl XrSession {
             instance,
             gpu: context.gpu.clone(),
             blend_mode: context.capabilities.blend_mode,
-            passthrough: context.capabilities.passthrough,
             depth_range: config.depth_range,
             state: SessionState::IDLE,
             running: false,
@@ -804,6 +862,7 @@ impl XrSession {
             input,
             ops: Vec::new(),
             rendered: false,
+            room: None,
         })))
     }
 
@@ -856,33 +915,46 @@ impl XrSession {
         Ok(())
     }
 
+    /// Decides the room behind the frame begun, before its eyes are drawn:
+    /// shown where the host wants it (`wanted`) and the session can show it
+    /// ([`Capabilities::passthrough`], until the runtime refuses it), by
+    /// alpha blending or by `XR_FB_passthrough`
+    /// (its passthrough and reconstruction layer made running when first
+    /// wanted, dropped when a frame no longer wants them: the cameras stop);
+    /// else hidden (the opaque blend mode). A runtime refusing
+    /// XR_FB_passthrough's objects leaves the frame hidden and the room
+    /// unavailable for the rest of the session ([`Room::Refused`]).
+    /// [`Self::end_frame`] submits the frame as decided; a frame not decided
+    /// is hidden.
+    pub fn show_room(&mut self, wanted: bool) -> Room {
+        let frame = self.frame.as_mut().expect("decide the room inside a frame");
+        let session = &self.session;
+        let room = self.room.frame(wanted, || {
+            let running = xr::PassthroughFlagsFB::IS_RUNNING_AT_CREATION;
+            let feature = session.create_passthrough(running).map_err(XrError::xr("xrCreatePassthroughFB"))?;
+            let layer = session
+                .create_passthrough_layer(&feature, running, xr::PassthroughLayerPurposeFB::RECONSTRUCTION)
+                .map_err(XrError::xr("xrCreatePassthroughLayerFB"))?;
+            Ok((layer, feature))
+        });
+        frame.room = match room {
+            Room::Shown(passthrough) => Some(passthrough),
+            Room::Hidden | Room::Refused(_) => None,
+        };
+        room
+    }
+
     /// Ends the frame (`xrEndFrame`): the projection layer if the eyes were
     /// rendered, then the panel quad layer at `panel` if its swapchain has an
-    /// image. With `passthrough`, where the system can show the room
-    /// ([`Capabilities::passthrough`]), the room shows behind the projection
-    /// layer, which covers it by its alpha (premultiplied colour): alpha
-    /// blending as the frame's blend mode, or `XR_FB_passthrough`'s layer
-    /// under it; elsewhere `passthrough` changes nothing (the opaque blend
-    /// mode). Returns the frame, with the layers it submitted and how the
-    /// room showed.
-    pub fn end_frame(&mut self, panel: Option<PanelPlacement>, passthrough: bool) -> Result<EndedFrame, XrError> {
+    /// image. Where [`Self::show_room`] showed the room behind the frame, it
+    /// shows behind the projection layer, which covers it by its alpha
+    /// (premultiplied colour): alpha blending as the frame's blend mode, or
+    /// `XR_FB_passthrough`'s layer under it; else the opaque blend mode.
+    /// Returns the frame, with the layers it submitted and how the room
+    /// showed.
+    pub fn end_frame(&mut self, panel: Option<PanelPlacement>) -> Result<EndedFrame, XrError> {
         let frame = self.frame.take().expect("end a begun frame");
-        let room = self.passthrough.filter(|_| passthrough);
-        // XR_FB_passthrough's objects while the room shows that way, running
-        // from their creation (none otherwise).
-        if room == Some(Passthrough::Fb) {
-            if self.fb.is_none() {
-                let running = xr::PassthroughFlagsFB::IS_RUNNING_AT_CREATION;
-                let feature = self.session.create_passthrough(running).map_err(XrError::xr("xrCreatePassthroughFB"))?;
-                let layer = self
-                    .session
-                    .create_passthrough_layer(&feature, running, xr::PassthroughLayerPurposeFB::RECONSTRUCTION)
-                    .map_err(XrError::xr("xrCreatePassthroughLayerFB"))?;
-                self.fb = Some((layer, feature));
-            }
-        } else {
-            self.fb = None;
-        }
+        let room = frame.room;
         // Alpha covers the room where it shows.
         let alpha = if room.is_some() { xr::CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA } else { xr::CompositionLayerFlags::EMPTY };
         let rect = self.eyes.rect();
@@ -904,7 +976,7 @@ impl XrSession {
         // The room under everything, where XR_FB_passthrough shows it (the
         // crate keeps this layer's builder to itself: its raw form, whose
         // space the runtime ignores).
-        let underlay = self.fb.as_ref().map(|(layer, _)| xr::sys::CompositionLayerPassthroughFB {
+        let underlay = self.room.fb.as_ref().filter(|_| room == Some(Passthrough::Fb)).map(|(layer, _)| xr::sys::CompositionLayerPassthroughFB {
             ty: xr::sys::CompositionLayerPassthroughFB::TYPE,
             next: std::ptr::null(),
             flags: xr::CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
@@ -1012,6 +1084,43 @@ mod tests {
         assert_eq!(Passthrough::offered(&[Mode::ALPHA_BLEND], true), Some(Passthrough::AlphaBlend), "alpha blending first");
         // Horizon OS: opaque only, with XR_FB_passthrough supported.
         assert_eq!(Passthrough::offered(&[Mode::OPAQUE], true), Some(Passthrough::Fb));
+    }
+
+    #[test]
+    fn the_room_shows_where_wanted_and_a_refused_passthrough_leaves_it_out_for_the_session() {
+        let never = || -> Result<u32, XrError> { panic!("nothing to make") };
+        let shown = |room: &Room| match room {
+            Room::Shown(passthrough) => Some(*passthrough),
+            Room::Hidden => None,
+            Room::Refused(error) => panic!("refused: {error}"),
+        };
+        // Nothing offered: hidden. Alpha blending: shown where wanted, with
+        // nothing to make.
+        let mut opaque = RoomState::<u32> { offered: None, fb: None };
+        assert_eq!(shown(&opaque.frame(true, never)), None);
+        let mut alpha = RoomState::<u32> { offered: Some(Passthrough::AlphaBlend), fb: None };
+        assert_eq!(shown(&alpha.frame(true, never)), Some(Passthrough::AlphaBlend));
+        assert_eq!(shown(&alpha.frame(false, never)), None);
+        // XR_FB_passthrough: its objects made when first wanted, kept while
+        // wanted, dropped when not, made again when wanted again.
+        let mut fb = RoomState::<u32> { offered: Some(Passthrough::Fb), fb: None };
+        let mut made = 0;
+        for (wanted, room, objects) in [(true, Some(Passthrough::Fb), Some(1)), (true, Some(Passthrough::Fb), Some(1)), (false, None, None), (true, Some(Passthrough::Fb), Some(2))] {
+            let decided = fb.frame(wanted, || {
+                made += 1;
+                Ok(made)
+            });
+            assert_eq!((shown(&decided), fb.fb), (room, objects), "wanted={wanted}");
+        }
+        // Refused (XR_FB_passthrough's not permitted): this frame hidden, the
+        // refusal returned once, and the room unavailable for the session,
+        // never asked for again.
+        let mut refused = RoomState::<u32> { offered: Some(Passthrough::Fb), fb: None };
+        let not_permitted = xr::sys::Result::ERROR_NOT_PERMITTED_PASSTHROUGH_FB;
+        let decided = refused.frame(true, || Err(XrError::xr("xrCreatePassthroughFB")(not_permitted)));
+        assert!(matches!(&decided, Room::Refused(error) if error.result == Some(not_permitted)), "{decided:?}");
+        assert_eq!((refused.offered, refused.fb), (None, None));
+        assert_eq!(shown(&refused.frame(true, never)), None);
     }
 }
 

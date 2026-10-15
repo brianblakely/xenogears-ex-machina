@@ -19,8 +19,9 @@
 // scale committed to the setting once as the hands let go (the screen's
 // scale stays the session's); neither pauses, pinches or opens settings.
 // Enter AR shows where the headset supports immersive AR (IWER's Quest 3),
-// and not on the same headset without it. Transient gestures are read from
-// status().xr.counts. Needs no private inputs.
+// and not on the same headset without it, nor where a browser offers
+// immersive AR alone (a phone's handheld AR, which plays flat). Transient
+// gestures are read from status().xr.counts. Needs no private inputs.
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
@@ -443,17 +444,22 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
 
   test('Enter AR shows only where the headset browser supports immersive AR', { timeout: 300_000 }, async () => {
     // IWER's Quest 3 supports both modes; the same headset without immersive
-    // AR offers VR alone.
-    const vrOnly = `${IWER}\n;window.xrDevice = new IWER.XRDevice({ ...IWER.metaQuest3, supportedSessionModes: ['inline', 'immersive-vr'] }, { stereoEnabled: true });`
+    // AR offers VR alone; a browser offering immersive AR alone (a phone's
+    // handheld AR) offers neither and plays flat as before, on the renderer
+    // a browser without immersive VR starts (WebGPU first; WebGL2 here, with
+    // WebGPU disabled), not the XR one.
+    const device = (modes) => `${IWER}\n;window.xrDevice = new IWER.XRDevice({ ...IWER.metaQuest3, supportedSessionModes: ${JSON.stringify(modes)} }, { stereoEnabled: true });`
       + 'window.xrDevice.installRuntime({ forceInstall: true });';
-    for (const [script, ar] of [[HEADSET, true], [vrOnly, false]]) {
+    const cases = [[HEADSET, true, true], [device(['inline', 'immersive-vr']), true, false], [device(['inline', 'immersive-ar']), false, false]];
+    for (const [script, vr, ar] of cases) {
       const browser = await start({ args: NO_WEBGPU, fixtures: true, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: script }] });
       try {
         const page = await browser.page('?game=/fixtures/fixture.wasm&xrScale=0.25');
-        const xr = (await status(page)).page.xr;
-        assert.deepEqual([xr.supported, xr.arSupported, xr.error], [true, ar, null], JSON.stringify(xr));
-        assert.equal(await page.isVisible('#vr'), true, 'Enter VR is offered');
-        assert.equal(await page.isVisible('#ar'), ar, ar ? 'Enter AR is offered' : 'no Enter AR without immersive AR');
+        const { page: { xr }, renderer } = await status(page);
+        assert.deepEqual([xr.supported, xr.arSupported, xr.error], [vr, ar, null], JSON.stringify(xr));
+        assert.equal(await page.isVisible('#vr'), vr, vr ? 'Enter VR is offered' : 'no Enter VR without immersive VR');
+        assert.equal(await page.isVisible('#ar'), ar, ar ? 'Enter AR is offered' : 'no Enter AR without a headset\'s immersive AR');
+        assert.equal(renderer.backend, vr ? 'webgl2-xr' : 'webgl2', 'the XR renderer only where immersive VR is offered');
         assert.deepEqual(page.errors, []);
       } finally {
         await browser.close();

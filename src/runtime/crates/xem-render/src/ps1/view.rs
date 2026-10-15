@@ -354,6 +354,8 @@ pub struct GameView {
     /// What a headset shows, and the diorama's state.
     xr_view: XrView,
     diorama: Diorama,
+    /// The room shows around a headset's frames ([`GameView::set_room`]).
+    room: bool,
 }
 
 /// One picture a presentation draws: its frame, the effects over it, what
@@ -509,6 +511,7 @@ impl GameView {
             first_person: None,
             xr_view: XrView::Screen,
             diorama: Diorama::default(),
+            room: false,
         }
     }
 
@@ -1073,6 +1076,14 @@ impl GameView {
         self.xr_view
     }
 
+    /// Whether the room shows around a headset's frames (passthrough,
+    /// immersive AR; hosts say it every frame): the diorama's wall then
+    /// leaves out the game's clear, which the room stands in for
+    /// (docs/runtime.md, The room).
+    pub fn set_room(&mut self, room: bool) {
+        self.room = room;
+    }
+
     /// Presents for a headset (docs/runtime.md, Diorama): draws the pending
     /// trace and, while the view is the diorama and the frame shown can be
     /// one, the diorama for each of `eyes` (from the room through its view
@@ -1113,7 +1124,7 @@ impl GameView {
                 // The frame shown when it can be a diorama, else the last
                 // build, held or fading out.
                 let shown = area.filter(|_| build).map(|area| (&self.main.frame, area, self.scene.as_str(), new_frame));
-                self.diorama.present(&self.device, &self.queue, encoder, &mut self.renderer, shown, now, eyes, seat, &table, 1.0 - screen)
+                self.diorama.present(&self.device, &self.queue, encoder, &mut self.renderer, shown, now, eyes, seat, &table, 1.0 - screen, self.room)
             }
             _ => None,
         };

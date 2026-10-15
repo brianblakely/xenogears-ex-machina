@@ -1574,7 +1574,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled; a first-person view shows it either way), back faces (both off) |
-| headset | the view: the screen (default) or the diorama; the screen's distance and width; the diorama's scale (25-400%, 100), the table's height (-100 to 30 cm, -45), distance (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed); passthrough (off; offered only where an OpenXR headset can show the room: alpha blending or `XR_FB_passthrough`); depth of field in a headset (off) |
+| headset | the view: the screen (default) or the diorama; the screen's distance and width; the diorama's scale (25-400%, 100), the table's height (-100 to 30 cm, -45), distance (30-200 cm, 60), tilt (0-45 degrees, 0) and turns (Smooth, Snap, Fixed); passthrough (off; offered only where an OpenXR headset can show the room: alpha blending or `XR_FB_passthrough`, until its runtime refuses it in a session); depth of field in a headset (off) |
 
 Modern draws at high resolution, perspective-correct and sub-pixel, in full
 colour, in the original's drawing order. PS1 keeps every limit at the native
@@ -2330,7 +2330,11 @@ camera of `--example motion` and the tests below drive it too.
   scene's first primitive (the clear, panoramas, sky bands) are the
   backdrop: a wall at the back of the volume, facing the seat (seen from
   behind it is not drawn), the original screen mapped across the volume's
-  width, a line there a ribbon a native pixel wide. Flat primitives drawn
+  width, a line there a ribbon a native pixel wide. Where the room shows
+  around the table ([The room](#the-room-passthrough-and-immersive-ar);
+  hosts say so every frame: `GameView::set_room`), the wall leaves out
+  those fills, the game's clear, which the room stands in for; the
+  panoramas and sky bands stay on it. Flat primitives drawn
   after it (windows, text, portraits, menus, the compass and other
   interface models, battle numbers) and pictures uploaded to the screen
   go onto the interface pane, drawn as the screen
@@ -2558,7 +2562,8 @@ the screen then).
   `local` space), the handler both hosts share
   (`headset::reference_changed`) puts the seat back at the origin (the
   runtime moved the space to the head already), cancels the gestures in
-  progress (each hand opens again before the next), lets go of a control
+  progress (each hand opens again before its next grab; the two hands of a
+  scaling under way both open again before anything else), lets go of a control
   deck's captured stick and ends two-hand scaling. Both make the table take
   the camera's point and heading at once rather than ease from where it
   stood (`GameView::recenter_diorama`).
@@ -2763,7 +2768,12 @@ is aimed at and nothing reaches the game: no press, command or pause.
   ends where it reached and is committed the same way: the app losing the
   runtime's focus (OpenXR not FOCUSED, WebXR hidden), the runtime moving
   the reference space (`headset::reference_changed`), the session ending,
-  or the screen chosen as the view meanwhile. No scaling
+  or the screen chosen as the view meanwhile. Cut short, it keeps both
+  hands as one that ends does: hands still gathered begin no new scaling,
+  and nothing else fires until both have opened (`Recognizer::cancel`; a
+  cancel with no scaling under way leaves each hand its own gestures: one
+  that opens grabs, and the runtime's pinch and taps fire, whatever the
+  other hand does). No scaling
   begins while first-person inspection shows; one under way as it began
   ends where it reached when the hands let go.
 - **The screen**, otherwise: the hands scale its width for the session, 0.4
@@ -2838,7 +2848,15 @@ clamp at 400% and 25%, the screen's session scaling),
 (focus lost, inspection begun, the screen chosen and a moved reference
 each end it where it reached; hands still gathered after the focus or the
 reference came back begin nothing until they open; inspecting, a spread
-scales nothing), `a_reached_scale_is_committed_to_the_setting_through_the_settings_service`
+scales nothing),
+`after_a_cancel_one_hand_gestures_alone_and_a_cut_scaling_keeps_both_hands_until_both_open`
+(cancelled with the other hand half curled throughout, an overhand grab
+from open, the runtime's pinch and its tap each fire; cancelled while
+scaling, gathered hands begin nothing and a closing hand grabs nothing
+until both open, then a grab fires),
+`after_focus_loss_one_hands_pause_resumes_whatever_the_other_hand_does`
+(the focus lost and back, the left hand half curled, the right hand's
+overhand grab resumes), `a_reached_scale_is_committed_to_the_setting_through_the_settings_service`
 (one acknowledgement, the block otherwise as it was, Reset diorama back to
 100%, 401% refused), `spread_and_contract_read_as_two_hand_scaling_alone_by_their_factors`
 (both runtimes' synthetic gestures, nothing but scaling, 2.52 and 0.598)
@@ -2857,10 +2875,15 @@ screen) stands in it; nothing AR-specific is required for it (no hit
 tests, planes, anchors, depth or meshes), and VR and the browser's flat
 play stay as they are.
 
-- **WebXR.** The page offers Enter AR beside Enter VR only where
-  `navigator.xr.isSessionSupported('immersive-ar')` says so (and with the
-  XR-compatible WebGL2 renderer, chosen when the browser supports either
-  mode). Both buttons request their mode with the same optional features
+- **WebXR.** The page offers Enter AR beside Enter VR only where the
+  browser supports both `immersive-vr` and `immersive-ar`
+  (`navigator.xr.isSessionSupported`): a headset's browser, with the
+  XR-compatible WebGL2 renderer, which immersive VR's support alone
+  chooses. A browser offering immersive AR alone (a phone's handheld AR,
+  whose input is the screen's touches, which this page does not map in a
+  session) offers neither button and plays flat as before, on the
+  renderer a browser without immersive VR starts (WebGPU first). Both
+  buttons request their mode with the same optional features
   (`local-floor`, `hand-tracking`) and none required. A session whose
   `environmentBlendMode` is not `opaque` (immersive AR's `alpha-blend`)
   gets an `XRWebGLLayer` with alpha, and the host leaves the room's
@@ -2879,8 +2902,16 @@ play stay as they are.
   the system blends by alpha or offers `XR_FB_passthrough`
   (`Capabilities::passthrough`), and only there does the panel offer
   Passthrough (`SettingsUi::set_passthrough_offered`). With it on and the
-  diorama the view, the loop clears the eyes to transparent black instead
-  of the backdrop and asks `end_frame` to show the room. Monado 25.1's
+  diorama the view, the loop asks the session to show the room behind the
+  frame before its eyes are drawn (`XrSession::show_room`), and where it
+  shows clears the eyes to transparent black instead of the backdrop. A
+  runtime refusing `XR_FB_passthrough`'s objects (not permitted, short of
+  resources) does not end the session: that frame and every later one are
+  opaque with the backdrop, the loop prints `xr room: refused (...):
+  passthrough=unavailable for the session` and the panel's row goes
+  (`Room::Refused`); a system whose passthrough properties cannot be read
+  starts without the room by `XR_FB_passthrough` (`xr room:
+  XR_FB_passthrough unusable (...)`). Monado 25.1's
   simulated HMD enumerates `OPAQUE` alone and offers no
   `XR_FB_passthrough`: the loop prints `xr room: passthrough=unavailable
   blend_modes=OPAQUE`, the panel offers no Passthrough, and a setting
@@ -2888,28 +2919,46 @@ play stay as they are.
   the backdrop drawn). The APK declares `com.oculus.feature.PASSTHROUGH`
   with `required="false"` (Horizon OS offers the extension to apps that
   declare it; the app runs without it).
-- The diorama's backdrop wall (the game's clear and panoramas at the back
-  of the table's volume) stands in the room as in VR: it is the game's own
-  picture.
+- **The wall behind the table.** Where the room shows, the diorama's
+  backdrop wall leaves out the game's clear (its fills before the scene,
+  black in most fields), which the room stands in for, as it stands in for
+  the room's backdrop around the table; the panoramas and sky bands the
+  game drew before its scene stay on the wall, its own pictures
+  (`GameView::set_room`, said by both hosts every frame; a change rebuilds
+  the frame's diorama).
 
 Tests: `web/tests/xr-diorama.test.mjs` (IWER's Quest 3, field 30, the
-diorama at 252%): in VR the layer is opaque at every point read (alpha
-255, the context's alpha notwithstanding); Enter AR is offered, both
-sessions were asked for with `optionalFeatures` `local-floor` and
-`hand-tracking` and no `requiredFeatures` (the page's calls, recorded),
-the AR session's blend mode is `alpha-blend` and the room shows; with the
-game stopped, the head where both sessions begin and the table placed at
-once in both (Recenter in VR), over a grid of 40x30 points across both
-views, the points that showed the room's backdrop in VR (its clear,
+diorama at its default scale after the scaling part's 252%): with the
+game stopped, a VR session and then an AR session are each begun afresh
+at that one game frame, the head where they begin, and both place the
+same table (asserted equal: a diorama takes its scale's measure as it
+begins, so a session begun earlier would differ by a fraction of a per
+cent). In VR the layer is opaque at every point read (alpha 255, the
+context's alpha notwithstanding); Enter AR is offered; the three sessions'
+requests asked for `optionalFeatures` `local-floor` and `hand-tracking`
+and no `requiredFeatures`, and their `XRWebGLLayer`s for alpha false,
+false and true (the page's calls, recorded in the page: IWER's layer is
+the canvas's own framebuffer, which takes no alpha of its own, so only the
+request shows what a headset's browser gets); the AR session's blend mode
+is `alpha-blend` and the room shows. Over a grid of 40x30 points across
+both views, the points that showed the room's backdrop in VR (its clear,
 rgb(3, 4, 5) as the layer holds it) are transparent black in AR for 98% or
-more, those that showed the diorama, its pane or the keys are drawn for
-98% or more, and the opaque ones show VR's colour within 4 levels for 95%
-or more. Measured: 665 room points, 661 transparent (the other 4 black at
-alpha 1 to 25, coverage VR's 8-bit composite rounds back to the backdrop),
-535 drawn of 535, 525 of the 527 opaque ones as in VR (median and 90th
-percentile 0 levels off). `web/tests/xr-hands.test.mjs` (the fixture):
-IWER's Quest 3 offers Enter VR and Enter AR, the same headset without
-immersive AR Enter VR alone (`arSupported` false, no XR error).
+more; of those that showed black in VR (the wall's clear, and the scene's
+black texels, which AR draws) there are at least 5% of the grid, 85% or
+more of them transparent in AR; the others, the diorama, its pane or the
+keys, are drawn for 98% or more, and the opaque ones show VR's colour
+within 4 levels for 95% or more. Measured: 773 room points, 769
+transparent (the other 4 black at alpha 1 to 25, coverage VR's 8-bit
+composite rounds back to the backdrop); 111 black, 102 transparent in AR
+(the 9 others opaque black scene texels along the layer's bottom row;
+with the wall's clear kept in AR none was: 0 of 111, measured once with
+the web host's room flag forced off); 316 drawn of 316, all 308 opaque
+ones as in VR (median and 90th percentile 0 levels off).
+`web/tests/xr-hands.test.mjs` (the fixture): IWER's Quest 3 offers Enter
+VR and Enter AR, the same headset without immersive AR Enter VR alone
+(`arSupported` false, no XR error), and a device offering immersive AR
+alone neither (`supported` and `arSupported` false), its renderer WebGL2
+(WebGPU disabled) rather than the XR one.
 `xr-game-smoke.sh`'s scaling run (Monado, the
 setting asking for Passthrough): `xr room: passthrough=unavailable
 blend_modes=OPAQUE`, `passthrough=0` on all 297 frames, every rendered
@@ -2917,19 +2966,31 @@ frame the projection layer alone, and the eye's corner the backdrop,
 opaque, as in the screen run. `xem-xr`
 `the_room_shows_only_where_the_system_blends_by_alpha_or_offers_fb_passthrough`
 (opaque or additive alone: none; alpha blending first or after opaque:
-alpha blending; opaque with the extension supported: `XR_FB_passthrough`).
+alpha blending; opaque with the extension supported: `XR_FB_passthrough`)
+and `the_room_shows_where_wanted_and_a_refused_passthrough_leaves_it_out_for_the_session`
+(the session's room state with stand-in objects: alpha blending shown
+where wanted with nothing made; `XR_FB_passthrough`'s objects made when
+first wanted, kept, dropped when not wanted and made again; a refusal,
+`ERROR_NOT_PERMITTED_PASSTHROUGH_FB`, hides that frame, is returned once
+and leaves the room unavailable, never asked for again). `xem-render`
+`where_the_room_shows_the_wall_leaves_out_the_games_clear_and_keeps_its_pictures`
+(the clear and a panorama strip on the wall without the room, the strip
+alone with it, the scene and a later fade as they were).
 The panel's Passthrough row shows only where offered (`xem-ui/tests/panel.rs`,
 [In a headset](#in-a-headset)).
 
 Not done or not measured: OpenXR's alpha blending and `XR_FB_passthrough`
 paths have run on no runtime (Monado offers neither, and nothing ran on a
 Quest), so the room behind an OpenXR frame is not observed, nor
-premultiplied against straight alpha on a real compositor; IWER's
-immersive AR has no camera picture (its synthetic environments,
-`@iwer/sem`, are not installed), so only the layer's alpha is checked, not
-a composition over a room; comfort over passthrough is not measured (no
-people tests); in AR the diorama's backdrop wall still stands behind the
-table.
+premultiplied against straight alpha on a real compositor, nor a
+runtime's refusal of `XR_FB_passthrough` (its handling is unit-tested
+with stand-ins only); IWER's immersive AR has no camera picture (its
+synthetic environments, `@iwer/sem`, are not installed), so only the
+layer's alpha is checked, not a composition over a room; the wall without
+the clear was checked in field 30 alone, not where a wall also holds
+panoramas or sky bands (a battle's, the world map's); handheld AR (a
+phone's immersive AR) is not offered; comfort over passthrough is not
+measured (no people tests).
 
 ### HD-2D effects
 
@@ -3056,8 +3117,9 @@ of the seat instead, the interface on a pane above it, and the screen where
 the diorama gives way to it ([In a headset](#in-a-headset)); two
 whole-hand pinches scale the diorama, or else the screen
 ([Scaling](#scaling)), and where the headset can show the room (a
-browser's immersive AR, OpenXR's passthrough where offered) the room
-stands around them in place of the backdrop ([The
+headset browser's immersive AR, OpenXR's passthrough where offered) the
+room stands around them in place of the backdrop and behind the table in
+place of the game's clear ([The
 room](#the-room-passthrough-and-immersive-ar)). Everything
 stands in front of the seat, which Recenter moves to the head and the
 runtime's own recentring puts back at the reference space's origin. The game runs from the host's
@@ -3612,8 +3674,9 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   prayer hands toggle Settings, which hold their own pause, and
   closing them keeps the player's. Losing the hands or the app's focus
   drops what was pending, stops assisted movement and pauses until the
-  player's Pause (from an open hand); a two-hand scaling under way ends
-  where it reached. Two-hand scaling leaves the screen's and the diorama's
+  player's Pause (from an open hand, whatever the other hand does); a
+  two-hand scaling under way ends where it reached, its hands both opening
+  again before anything else. Two-hand scaling leaves the screen's and the diorama's
   size while inspection shows (the gesture still owns both hands, so no
   grab fires as they close; one under way as inspection began ends where
   it reached when the hands let go).
@@ -6017,13 +6080,21 @@ synchronisation rules; in short:
   `ALPHA_BLEND` is among them (`Passthrough::AlphaBlend`), else where
   `XR_FB_passthrough` is offered (it is enabled whenever it is) and the
   system supports it (`XrSystemPassthroughProperties2FB`'s capability bit, or
-  the first version's flag: `Passthrough::Fb`); else not at all. A frame
-  asked to show it (`end_frame(panel, true)`) submits the projection layer
-  with `BLEND_TEXTURE_SOURCE_ALPHA` (premultiplied colour, OpenXR's default)
-  and either `ALPHA_BLEND` as its blend mode or, under it, a passthrough
-  layer (`XrPassthroughFB` and a reconstruction `XrPassthroughLayerFB`, both
-  running from their creation when first asked for, dropped once a frame
-  no longer asks: the cameras stop); elsewhere the request changes nothing.
+  the first version's flag: `Passthrough::Fb`); else not at all. A system
+  whose passthrough properties cannot be read offers none that way and
+  the session starts all the same (`Capabilities::passthrough_error` says
+  why). The host decides each frame's room before drawing its eyes
+  (`XrSession::show_room(wanted)`, returning `Room::Hidden`, `Shown` or
+  `Refused`); a frame showing it is ended (`end_frame(panel)`) with the
+  projection layer's `BLEND_TEXTURE_SOURCE_ALPHA` (premultiplied colour,
+  OpenXR's default) and either `ALPHA_BLEND` as its blend mode or, under
+  it, a passthrough layer (`XrPassthroughFB` and a reconstruction
+  `XrPassthroughLayerFB`, both running from their creation when first
+  wanted, dropped once a frame no longer wants them: the cameras stop);
+  elsewhere, and in a frame not decided, the opaque blend mode. A runtime
+  refusing those objects leaves that frame opaque and the room unavailable
+  for the rest of the session (later frames are opaque without asking
+  again); the error goes to the host, never out of `end_frame`.
   `EndedFrame::passthrough` says how the room showed. The openxr crate keeps
   the passthrough layer's builder to itself, so it is submitted in its raw
   form.
