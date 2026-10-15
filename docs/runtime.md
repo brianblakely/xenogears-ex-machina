@@ -1210,21 +1210,24 @@ committed once a gesture) change nothing heard at any scale, press
 nothing and walk nobody; 240 frames from the state at 25%, 100% and 400%
 end at the same RAM and the same sound (its frames and hash) and hear the
 same. The OpenXR smoke (Monado's simulated HMD, field 15, the frame log's
-`binaural=`): the presenter's head is the pose's turn from the seat
-within 0.0022 degree every frame, the game running and paused; in
-first-person inspection, held by the player's Pause while the simulated
-head turned over 7.2 degrees, each effect with the head's turn taken off
-held still in the listener's view within 0.0015 degree through the
+`binaural=`; two runs, the second the xr tier's, whose simulated head
+moves with time): the presenter's head is the pose's turn from the seat
+within 0.0022 and 0.0033 degree every frame, the game running and paused
+(the bound 0.02: the log's five decimals); in first-person inspection,
+held by the player's Pause while the simulated head turned over 7.2 and
+7.1 degrees, each effect with the head's turn taken off held still in the
+listener's view within 0.0015 and 0.0026 degree (bound 0.02) through the
 Recenter, Monado's recentring of LOCAL and 15 frames of scripted lost
 tracking (`--xr-lose-tracking`: the last head kept, and what is heard
 with it); inspection heard the screen's directions turned up by the
-camera's pitch within 0.0011 degree; inspection ended in the pause took
-the listener's view away at once; the music held still; in the diorama
-the same within 0.0013 degree while the head turned 12.7 degrees and
-moved 20 cm, two-hand scaling went from 1 to 2.52 times and back to 1.51
-(committed twice, no other gesture, nobody moved), LOCAL was recentred and
-the seat recentred; the listener was the controlled character throughout
-and both runs' RAM at game frame 1 200 is xem-headless's.
+camera's pitch within 0.0011 and 0.0007 degree (bound 0.05); inspection
+ended in the pause took the listener's view away at once; the music held
+still; in the diorama the same within 0.0013 and 0.0018 degree while the
+head turned 12.7 and 10.6 degrees and moved 20 cm, two-hand scaling went
+from 1 to 2.52 times and back to 1.51 (committed twice, no other gesture,
+nobody moved), LOCAL was recentred and the seat recentred; the listener
+was the controlled character throughout and both runs' RAM at game frame
+1 200 is xem-headless's.
 `first-person.test.mjs`: in field 15 the browser's listener looking
 around in first person faces as the native desktop host's within 4e-6
 degree for the same state and look (xem-headless's `first_person`
