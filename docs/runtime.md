@@ -2672,8 +2672,14 @@ camera of `--example motion` and the tests below drive it too.
   draws them into a transparent premultiplied texture (`PASS_PANE`): an
   opaque pixel covers, mode 0 is half the colour at half coverage, modes 1
   and 3 add without coverage, so over the room the pane shows as the
-  original blends it; mode 2 (B-F) has no such form and darkens by F's
-  brightest channel. A full-screen untextured one (a fade, a flash), or a
+  original blends it; mode 2 (B-F) takes F off the pane as far as the pane
+  covers there (exactly B-F over the interface's opaque pixels, as on the
+  screen: the debug battle's interface subtracts so over a portrait and
+  its gauges) and, where the scene or the room shows
+  through, which no premultiplied form can take F off, darkens it by F's
+  brightest channel (before, it darkened the pane's own pixels that way
+  too: 3 816 of the battle's 27 708 opaque pane pixels were not the
+  screen's). A full-screen untextured one (a fade, a flash), or a
   fill over nine tenths of the screen shown, tints each eye's diorama and
   the pane over what they hold then, weighted by their coverage (the room
   around the table stays as it is); a smaller fill (a window's, a
@@ -2855,7 +2861,13 @@ diorama before for two frames, not an empty table, then the share rising
 `the_diorama_is_built_once_a_game_frame_while_the_table_turns` (the
 camera turning 3 degrees a frame, each frame presented three times at
 90 Hz: 10 builds for 10 frames; paused, one build in 90 presentations as
-the table turns on); `nothing_outside_the_tables_volume_is_drawn`. The
+the table turns on); `nothing_outside_the_tables_volume_is_drawn`;
+`a_subtracting_interface_quad_takes_its_colour_off_the_pane_as_off_the_screen`
+(a grey window, 132 as the interface's 15 bits show 128, under a quad
+subtracting 64, 66 in those bits: 66 on the screen and on the pane,
+opaque; beside the window, over the scene, the pane holds nothing but the
+darkening, its alpha 66; the earlier form gave the window 98 on the
+pane). The
 unit tests in `ps1/diorama.rs` check the build: the backdrop on one plane and the
 interface on the pane only, never in the eyes' pass; a sprite's parts
 upright in one plane facing the seat at its floor point, as tall as
@@ -2898,6 +2910,84 @@ and scale (half at twice the depth).
 240 frames of field 12 from the same state as a diorama for two eyes of a
 swaying head, the scale and the turns changing midway, and ends at the
 RAM hash of the same frames drawn by nothing.
+`xem-headless/tests/diorama.rs` qualifies the diorama on the game, its
+harness playing a headset host's part (the view configured as a
+headset's, the diorama its headset view, the session told whether
+first-person inspection shows, each vertical blank presented to a seated
+head's two eyes, 64 mm apart and parallel; inspection's through
+`present_headset`, the device's own pictures through `away`), measured
+on this machine's lavapipe:
+- `the_scene_covers_the_walkmesh_seen_from_eight_sides_at_two_heights`:
+  in fields 1, 12, 22 and 30 at the default scale, from eight sides (every
+  45 degrees round the table) at 30 and 60 degrees up, 1.1 m from its
+  centre (640x480, 60 degrees high), the walkmesh's footprint (the floor
+  the controlled character walks: its layer's triangles it may stand on,
+  within the table's volume as the eye sees it, a pixel in from its
+  edges) lacks the scene (its eye's class, `GameView::diorama_aux`, the
+  room's or the wall's) for fewer than 0.5% of its pixels: measured 172 of
+  817 466 (0.021%; the 73 seen from behind at 30 degrees lie on the
+  volume's edge) in Lahan, none of 143 036, 497 227 and 76 639 in fields
+  12, 22 and 30. The other layers are other actors': fields 12 and 30 have
+  a second of two triangles about 3 200 by 2 600 and 3 500 by 2 800 units,
+  far beyond their rooms, Lahan a second of 802 triangles and a third of 40
+  from 261 to 1 257 units up; counted with every layer, the room shows in
+  13.7% of Lahan's footprint, 64%, 38% and 72% of fields 12, 22 and 30's.
+- `sprites_stand_flat_and_both_eyes_see_one_diorama_apart_along_their_rows`:
+  in Lahan (seen from behind the table, where its townspeople stand in
+  view), field 30 and field 12 (from the seat, 640x480 eyes 90 degrees
+  high), 120 presentations to two eyes make one build a game frame (60 for
+  60); the thickest stack of a sprite's parts stands 300 um off its
+  billboard's plane in Lahan (79 parts, 385 lifted) and 100 um in fields
+  30 and 12 (`DioramaStats::thickest`): 2D stays 2D; each eye of the pair
+  shows exactly what it shows presented alone (0 bytes differ), one
+  diorama through two views; and in Lahan, where the sprites stand apart,
+  each of their 54 rows holds as many sprite pixels in either eye (a
+  billboard's row lies at one depth before both). In field 30 (89 of 107
+  rows) and field 12 (44 of 50) characters stand one behind another and
+  behind furniture, so each eye sees another part of the farther one (up
+  to 8 pixels a row; not asserted there).
+- `the_pane_holds_the_interface_as_the_flat_frame_draws_it`: beside the
+  diorama a view showing the screen from the same trace; on field 12's
+  dialogue, the debug battle (its turns running) and the world map, every
+  opaque pane pixel holds the flat frame's colour within one 15-bit step
+  and 99.5% or more within 2 levels, and the interface's class there
+  (measured: 21 272 of 21 272 and 27 708 of 27 708 at 0 levels; on the
+  world map 10 099 of 10 120, the other 21, the first native pixel of six
+  rows of the compass's red cone, its edge, one 15-bit step off, the cause
+  not established); where the game draws no pictures before its scene
+  (the wall holds its clear alone: field 12), every opaque interface
+  pixel of the flat frame is opaque on the pane (21 272 of 21 272). The
+  debug battle's forest, drawn before its scene, lies on the wall.
+- `the_title_movie_and_the_title_after_it_show_on_the_screen_the_movie_in_its_own_shape`
+  (from boot, 2 200 blanks): the title movie on the screen alone (1 033
+  blanks: 925 rebuilt frames, 640x432 for its 320x216 display, its shape;
+  56 of the device's own, its first), then the title (field 490) on the
+  screen alone (it draws nothing a diorama places).
+- `a_fields_menu_and_first_person_inspection_take_the_view_and_give_the_diorama_back`
+  (field 30 at twice its scale): inspection's eyes take the view from its
+  first presentation, and when it ends the diorama is back at once (the
+  screen's share 0) at 2.8186e-3 m a unit as before and where the table
+  stood (its room from the world the same to the last bit); a route under
+  way (`navigate` to (100, 20)) stops as inspection begins (`stopped`, the
+  character at (65, 0, 38)) and none restarts when it ends (120 blanks
+  on, the character still there); the field's menu (its mode the field's,
+  drawing no scene) eases out over 17 blanks, shows on the screen alone,
+  and eases back in over 17 once it closes.
+- `a_random_battle_and_its_end_ease_from_the_fields_diorama_to_the_battles_and_back`
+  (the Mountain Path, map 15, Up held until its random battle, blank 360,
+  then Cross every 30 until the field again, blank 1 600): the field's
+  diorama shows on into the battle's first blanks and eases out over 17
+  as the battle's entry draws (405-422), the battle's eases in (571-588)
+  and shows to its end, its own eased out (1 618-1 635) and the field's in
+  (1 762-1 779).
+- `leaving_lahan_for_the_world_map_and_entering_a_field_from_it_ease_between_their_dioramas`
+  (tests/reference-inputs/world-map-lahan-exit.json, then `enter_field 1`):
+  Lahan's diorama eases out (1 843-1 860), the world map's in (2 067-2
+  084); entered from it, Lahan's again (2 692-2 709).
+Throughout, between two presentations the screen's share moves by no
+more than the time passed over the 0.3 s switch, and the diorama is drawn
+at no more than one minus it. The harness runs 87 s on two threads (the
+suite profile).
 
 Not done or not measured (the headsets' own: [In a headset](#in-a-headset)):
 the pane's place is a first choice, not one tried by anyone seated; HD-2D
@@ -2910,7 +3000,8 @@ on its sea or in its other vehicles; the table's slow settling on the
 ground under a target in flight is a first choice (comfort not measured);
 the one-sided rule drops a double-sided face the game showed from
 its front once an eye sees it from behind; surfaces the game never models
-stay holes; the world map's distant terrain lies beyond the volume at
+stay holes (measured on the floor the controlled character walks only, in
+four fields); the world map's distant terrain lies beyond the volume at
 scale 1; the cost on a headset's CPU (Quest's) and GPU is not measured;
 the per-eye pass count grows with the uploads between draws (two to five
 groups measured); a fade the game draws over its held picture without

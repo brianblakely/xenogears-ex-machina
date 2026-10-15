@@ -449,14 +449,17 @@ fn fs_semi(in: VertexOut) -> Targets {
     // The diorama's interface pane is premultiplied and starts transparent,
     // blended (One, OneMinusSrcAlpha) for colour and alpha alike: B/2+F/2 is
     // F/2 at half coverage, B+F and B+F/4 add F and F/4 without coverage, so
-    // the pane shows over the scene as the original blends them; B-F has no
-    // such form and darkens by F's brightest channel instead.
+    // the pane shows over the scene as the original blends them. B-F is
+    // blended apart (ps1/mod.rs): F taken off as much of the pane as covers
+    // (exactly B-F where the pane is opaque, as over the screen's interface),
+    // and where the scene or the room shows through, what shows darkened by
+    // F's brightest channel (no premultiplied form takes F off it).
     if (pass_.options & PASS_PANE) != 0u {
         if mode == 0u {
             return Targets(vec4<f32>(s.color.rgb * 0.5, 0.5), vec4<f32>(0.0));
         }
         if mode == 2u {
-            return Targets(vec4<f32>(0.0, 0.0, 0.0, max(s.color.r, max(s.color.g, s.color.b))), vec4<f32>(0.0));
+            return Targets(vec4<f32>(s.color.rgb, max(s.color.r, max(s.color.g, s.color.b))), vec4<f32>(0.0));
         }
         return Targets(vec4<f32>(s.color.rgb * weight, 0.0), vec4<f32>(0.0));
     }

@@ -1187,6 +1187,16 @@ impl GameView {
         self.diorama.stats()
     }
 
+    /// The auxiliary picture of diorama eye `eye` the last
+    /// [`GameView::present_diorama`] drew, while it drew the diorama: each
+    /// pixel's class (blue: `AUX_WORLD`, `AUX_MODEL` and `AUX_SPRITE` where
+    /// the scene is drawn; `AUX_BACKGROUND` where nothing is, the room around
+    /// the table; `AUX_INTERFACE` or `AUX_BACKGROUND` on the backdrop's
+    /// wall). For checks of what the eyes see (tests, captures).
+    pub fn diorama_aux(&self, eye: usize) -> Option<&wgpu::Texture> {
+        self.diorama.space().and(self.diorama.eye_aux(eye)).map(wgpu::TextureView::texture)
+    }
+
     /// The depth a pulled-back camera keeps its zoom at: the field camera's
     /// target where the port records it, else the depth in the middle of
     /// the screen, eased between frames (and taken at once after a cut).

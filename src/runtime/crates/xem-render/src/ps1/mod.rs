@@ -411,7 +411,13 @@ impl Pipelines {
                     let over = C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add };
                     Some(wgpu::BlendState { color: over, alpha: over })
                 }
-                // The pane is premultiplied (draw.wgsl fs_semi).
+                // The pane is premultiplied (draw.wgsl fs_semi). B-F takes F
+                // off as much of it as covers (the pane's alpha) and covers
+                // what it does not by F's brightest channel.
+                (Fragment::Semi, Space::Pane) if key.blend == 2 => Some(wgpu::BlendState {
+                    color: C { src_factor: F::DstAlpha, dst_factor: F::One, operation: O::ReverseSubtract },
+                    alpha: C { src_factor: F::OneMinusDstAlpha, dst_factor: F::One, operation: O::Add },
+                }),
                 (Fragment::Semi, Space::Pane) => {
                     let over = C { src_factor: F::One, dst_factor: F::OneMinusSrcAlpha, operation: O::Add };
                     Some(wgpu::BlendState { color: over, alpha: over })

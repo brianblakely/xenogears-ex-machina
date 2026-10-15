@@ -213,7 +213,7 @@ impl Review {
         gpu.queue.submit([encoder.finish()]);
         let stats = view.diorama_stats();
         self.builds.push(json!({"scene": stats.scene, "sprites": stats.sprites, "one_sided": stats.one_sided, "revealed": stats.revealed,
-            "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "runs": stats.runs,
+            "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "thickest_um": stats.thickest, "runs": stats.runs,
             "builds": stats.builds, "mirrored": mirrored, "placement": placement}));
         shown.then(|| (self.target.width(), self.target.height()))
     }

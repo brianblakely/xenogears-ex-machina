@@ -1760,6 +1760,42 @@ fn a_fade_tints_the_diorama_and_its_pane_but_not_the_room() {
 }
 
 #[test]
+fn a_subtracting_interface_quad_takes_its_colour_off_the_pane_as_off_the_screen() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A grey window (20..80, 20..50), then a quad subtracting 64 (mode 2)
+    // from 10 to 60 across it: over the window and, left of it, over the
+    // scene, where the pane holds nothing.
+    let traces = traced(|device| {
+        diorama_scene(device, LEVEL);
+        device.write_gp0_words(&[0x6080_8080, xy(20, 20), 30 << 16 | 60]);
+        device.write_gp0(0xE100_0240);
+        device.write_gp0_words(&[0x2A40_4040, xy(10, 25), xy(60, 25), xy(10, 45), xy(60, 45)]);
+    });
+    let mut view = diorama_view(&gpu, &traces, Table::default());
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    let (_, screen, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), 0.0);
+    assert_eq!(screen, 1.0, "the screen first");
+    let flat = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("the flat frame"));
+    present_diorama(&gpu, &mut view, &eye, (640, 480), 1.0);
+    let (_, screen, pane) = present_diorama(&gpu, &mut view, &eye, (640, 480), 2.0);
+    assert_eq!(screen, 0.0);
+    let pane = pane.expect("a pane");
+    // Pixels at twice the native ones; the flat frame's alpha is the mask bit.
+    let at = |p: &[u8], (x, y): (usize, usize)| p[(y * 640 + x) * 4..(y * 640 + x) * 4 + 4].to_vec();
+    let rgb = |p: &[u8], point| at(p, point)[..3].to_vec();
+    // The window's grey alone (native 70, 30): 132, as the interface's 15
+    // bits show 128.
+    assert_eq!(rgb(&flat, (140, 60)), [132, 132, 132], "the window on the screen");
+    assert_eq!(at(&pane, (140, 60)), [132, 132, 132, 255], "the window on the pane");
+    // Under the quad (40, 35): its 64 is 66 in the interface's 15 bits.
+    assert_eq!(rgb(&flat, (80, 70)), [66, 66, 66], "66 taken off the window on the screen");
+    assert_eq!(at(&pane, (80, 70)), [66, 66, 66, 255], "and off the window on the pane (B-F where the pane covers)");
+    // Over the scene (15, 35) the pane holds the darkening alone: nothing of
+    // its own, covering by F's brightest channel.
+    assert_eq!(at(&pane, (30, 70)), [0, 0, 0, 66], "over the scene, the pane darkens what shows through");
+}
+
+#[test]
 fn a_picture_the_game_draws_over_its_clear_shows_whole_on_the_wall() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     // The game's clear, then a magenta panorama over the screen's top half

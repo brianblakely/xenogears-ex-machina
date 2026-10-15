@@ -336,8 +336,11 @@ pub struct DioramaStats {
     /// division nor a projection).
     pub unplaced: u32,
     /// Faces and sprite parts lifted over others they were drawn over in
-    /// their plane.
+    /// their plane, and the most a sprite's part was lifted off its
+    /// billboard's plane (micrometres on the table: how thick the thickest
+    /// stack of a sprite's parts stands).
     pub lifted: u32,
+    pub thickest: u32,
     /// Groups of draws between VRAM uploads (each a pass per eye).
     pub runs: u32,
     /// The builds made since the diorama view began, this one included (one
@@ -1204,6 +1207,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
                         // eye sees (the game's order holds from behind too).
                         let raised = parts.place(placed.toward, &points, tolerance, lift);
                         stats.lifted += u32::from(raised > 0.0);
+                        stats.thickest = stats.thickest.max((raised * placed.scale * 1e6).round() as u32);
                         builder.world_primitive(p, &points, false, false, false, Some(raised));
                         stats.sprites += 1;
                         continue;
@@ -1501,6 +1505,13 @@ impl Diorama {
     /// Each eye's picture the last [`Diorama::present`] drew.
     pub(crate) fn eyes(&self) -> Vec<&wgpu::TextureView> {
         self.gpu.as_ref().map_or_else(Vec::new, |gpu| gpu.eyes.iter().map(|eye| &eye.view).collect())
+    }
+
+    /// Eye `eye`'s auxiliary picture the last [`Diorama::present`] drew:
+    /// each pixel's class ([`super::AUX_FORMAT`]'s blue, `AUX_*`; the
+    /// background where nothing of the scene is drawn).
+    pub(crate) fn eye_aux(&self, eye: usize) -> Option<&wgpu::TextureView> {
+        Some(&self.gpu.as_ref()?.eyes.get(eye)?.aux)
     }
 
     /// The table takes the camera's point and heading at once at the next

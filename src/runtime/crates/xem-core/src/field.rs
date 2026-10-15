@@ -419,8 +419,8 @@ impl Field {
         self.attributes.get(index).copied().unwrap_or(0)
     }
 
-    /// Whether `actor` may stand on triangle `t` at all.
-    fn blocked(&self, layer: usize, t: usize, actor: &Actor) -> bool {
+    /// Whether `actor` may not stand on triangle `t` of `layer` at all.
+    pub fn blocked(&self, layer: usize, t: usize, actor: &Actor) -> bool {
         let word = self.attribute(layer, t, actor);
         ((actor.flags >> 8) & 7) & ((word >> 5) & 7) != 0 || (layer == 0 && word & ATTR_LAYER0_BLOCK != 0)
     }
