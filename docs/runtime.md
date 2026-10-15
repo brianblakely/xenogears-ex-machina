@@ -5600,7 +5600,15 @@ main browser host so the adapter can move into it unchanged.
   forbids); one compositor pass then copies it into the layer on the GPU,
   flipped vertically (the GLES backend stores images top row first, WebXR
   reads framebuffers bottom row first) and sRGB-encoded in the shader (the
-  layer is RGBA8 without sRGB writes). Nothing passes through the CPU.
+  layer is RGBA8 without sRGB writes). Nothing passes through the CPU. A
+  clear colour is linear on every target, as the quads' pictures are: the
+  compositor encodes it for a linear format holding encoded values (the
+  browser's eye buffers), as an sRGB target (OpenXR's swapchains) does
+  itself, so the room around the screen is the same colour in both hosts
+  (sRGB 29, 31, 39; written as it was, a clear left the browser's room at
+  3, 4, 5, nearly black, and the tests that tell the screen from the room
+  by its colour told nothing). Tests: xem-render's
+  `a_clear_colour_is_the_same_colour_on_linear_and_srgb_targets`.
 - **Views.** Each view is drawn with the inverse of `XRView.transform`,
   `projectionMatrix` remapped from OpenGL depth (-1..1) to wgpu's (0..1), and
   its layer viewport (converted from WebXR's bottom-left origin).

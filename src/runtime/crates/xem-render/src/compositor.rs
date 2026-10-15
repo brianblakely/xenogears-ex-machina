@@ -293,8 +293,11 @@ impl Compositor {
     }
 
     /// Records one pass drawing `quads` in order onto `target`, cleared to
-    /// `clear` first when given. Quad data is written through the queue: call
-    /// this (or [`Compositor::draw_targets`]) at most once per queue submission.
+    /// `clear` first when given: a linear colour, as the quads' pictures are
+    /// once decoded, so encoded where the target holds encoded values in a
+    /// linear format (the same colour on either kind of target). Quad data
+    /// is written through the queue: call this (or
+    /// [`Compositor::draw_targets`]) at most once per queue submission.
     pub fn draw(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
@@ -359,7 +362,14 @@ impl Compositor {
         }
         let mut index = 0;
         for (target, clear, quads) in targets {
-            let load = clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear);
+            // A clear writes its values as they are: into a linear format
+            // holding encoded values they go encoded, as the shader's
+            // `to_srgb` writes the quads'.
+            let stored = |c: wgpu::Color| {
+                let to_srgb = |v: f64| if v <= 0.0031308 { v * 12.92 } else { 1.055 * v.powf(1.0 / 2.4) - 0.055 };
+                if encode { wgpu::Color { r: to_srgb(c.r), g: to_srgb(c.g), b: to_srgb(c.b), a: c.a } } else { c }
+            };
+            let load = clear.map_or(wgpu::LoadOp::Load, |c| wgpu::LoadOp::Clear(stored(c)));
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("compositor"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {

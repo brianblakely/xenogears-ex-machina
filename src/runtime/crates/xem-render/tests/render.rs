@@ -160,6 +160,37 @@ fn scene_renders_stereo_views_and_composites() {
     );
 }
 
+#[test]
+fn a_clear_colour_is_the_same_colour_on_linear_and_srgb_targets() {
+    // The headsets' room (linear 0.012, 0.014, 0.02): an sRGB target (an
+    // OpenXR swapchain's) encodes a clear as it stores it; a linear one
+    // holding encoded values (the browser's headset buffers) has it encoded
+    // by the compositor. Both hold the same bytes, the room's sRGB 29, 31,
+    // 39 (a clear written as it is would leave 3, 4, 5: nearly black).
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let room = wgpu::Color { r: 0.012, g: 0.014, b: 0.02, a: 1.0 };
+    let stored = |format: wgpu::TextureFormat| {
+        let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("cleared"),
+            size: wgpu::Extent3d { width: 4, height: 4, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let mut compositor = Compositor::new(&gpu.device, &gpu.queue, format);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        compositor.draw(&mut encoder, &texture.create_view(&Default::default()), Some(room), &[]);
+        gpu.queue.submit([encoder.finish()]);
+        pixel(&read_rgba8(&gpu.device, &gpu.queue, &texture), 4, 1, 1)
+    };
+    let (srgb, linear) = (stored(wgpu::TextureFormat::Rgba8UnormSrgb), stored(wgpu::TextureFormat::Rgba8Unorm));
+    let near = |a: [u8; 4], b: [u8; 4]| a.iter().zip(&b).all(|(a, b)| a.abs_diff(*b) <= 1);
+    assert!(near(srgb, [29, 31, 39, 255]) && near(linear, srgb), "sRGB target {srgb:?}, linear target {linear:?}");
+}
+
 fn glam_x(x: f32) -> xem_render::glam::Vec3 {
     xem_render::glam::Vec3::new(x, 0.0, 0.0)
 }
