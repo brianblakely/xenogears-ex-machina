@@ -61,6 +61,14 @@ try {
 } catch (error) {
   cards.error = String(error);
 }
+// The player's BIOS image (Import BIOS), whose Kanji font every boot takes
+// for save titles; the substitute glyphs without one.
+try {
+  const bios = await storage.get('cards', 'bios');
+  if (bios) app.set_bios(bios);
+} catch (error) {
+  page.storageError = `Stored BIOS not used: ${error.message ?? error}`;
+}
 
 // --- Canvas renderer: WebGPU, else WebGL2 -----------------------------------
 let canvas = $('screen');
@@ -167,6 +175,18 @@ const host = {
     if (cards.notice) operationStatus(cards.notice);
     return status;
   },
+  /** Import BIOS: the runtime checks the image, IndexedDB takes it beside
+   * the cards, then every boot takes its Kanji font and a running game has
+   * it now. Resolves to the status line's message; a refused file or a
+   * failed write changes nothing. */
+  async importBios(bytes) {
+    try { app.check_bios(bytes); }
+    catch (error) { throw new Error(`BIOS not imported: ${error.message ?? error}.`); }
+    await storage.put('cards', 'bios', bytes);
+    app.set_bios(bytes);
+    return 'BIOS imported: save titles use its Kanji font.';
+  },
+  storedBios: () => storage.get('cards', 'bios'),
   async importDisc(file, name = file.name) {
     try { localStorage.setItem('xem.disc.last', JSON.stringify({ name, bytes: file.size })); }
     catch (error) { page.storageError = String(error); }
@@ -586,17 +606,26 @@ $('import-settings').addEventListener('change', operationGuard(async (event) => 
   if (file.size > 1024 * 1024) throw new Error('Settings file exceeds 1 MiB.');
   app.import_settings(await file.text()); event.target.value = ''; operationStatus('Settings imported and saved.');
 }));
+/** The largest file read as a BIOS image (xem_core::bios::MAX_FILE): the
+ * runtime then says what a file of another size is. */
+const MAX_BIOS_FILE = 16 * 1024 * 1024;
+$('import-bios').addEventListener('change', operationGuard(async (event) => {
+  const file = event.target.files[0]; if (!file) return;
+  if (file.size > MAX_BIOS_FILE) throw new Error(`BIOS not imported: ${file.name} (${file.size} bytes) is no PS1 BIOS image (512 KiB).`);
+  const message = await host.importBios(new Uint8Array(await file.arrayBuffer()));
+  event.target.value = ''; operationStatus(message);
+}));
 
 function control(command) {
   const reply = window.xem.command(command);
   if (reply.error) throw new Error(reply.error);
   return reply;
 }
-function chooseBackup(id) {
+function chooseBackup(id, message = 'Choose a backup file.') {
   const input = $(id);
   input.value = '';
   input.showPicker();
-  operationStatus('Choose a backup file.');
+  operationStatus(message);
 }
 async function appOperation(request) {
   try { return await executeAppOperation(request); }
@@ -694,6 +723,7 @@ async function executeAppOperation(request) {
     case 'ExportSettings':
       download('xenogears-settings.json', app.export_settings(), 'application/json'); operationStatus('Settings backup exported.'); break;
     case 'ImportSettings': chooseBackup('import-settings'); break;
+    case 'ImportBios': chooseBackup('import-bios', 'Choose your PS1 BIOS image.'); break;
     case 'RetryStorage': await cards.flush({ retry: true }); operationStatus('Pending card writes completed.'); break;
     case 'RequestPersistence': {
       const granted = await storage.requestPersistence(); page.storage = await storage.status();

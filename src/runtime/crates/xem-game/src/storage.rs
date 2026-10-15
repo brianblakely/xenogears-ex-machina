@@ -5,6 +5,17 @@ use xem_core::{control::Session, module::GameModule};
 use xem_core::devices::card::{CardStorage, formatted, CARD_SIZE};
 use xem_core::devices::card_file::MAX_FILE;
 
+/// The BIOS image the player imported (Import BIOS, `xem_core::bios`), kept
+/// in the app's directory beside its settings and its `cards` directory:
+/// every boot takes its Kanji font (`BootOptions::bios`).
+pub const BIOS_FILE: &str = "bios.bin";
+
+/// The BIOS image imported into the app's directory `directory`, when one
+/// is there.
+pub fn stored_bios(directory: &Path) -> Option<PathBuf> {
+    Some(directory.join(BIOS_FILE)).filter(|path| path.is_file())
+}
+
 /// Images as files `card1.mcd` and `card2.mcd` in a directory; a missing
 /// file is a fresh formatted card.
 pub struct FileStorage {

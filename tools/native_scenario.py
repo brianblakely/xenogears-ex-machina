@@ -57,6 +57,7 @@ LOGGED = {
     "pad",
     "press",
     "connect_pad",
+    "card_present",
     "boot_mode",
     "write_memory",
     "write",

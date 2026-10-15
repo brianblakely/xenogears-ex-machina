@@ -11,6 +11,7 @@ impl Game {
     pub fn card_image(&mut self, _: usize) -> Option<Vec<u8>> { match *self {} }
     pub fn import_card(&mut self, _: usize, _: &[u8], _: &str) -> Result<String,String> { match *self {} }
     pub fn retry_storage(&mut self) -> Result<(),String> { match *self {} }
+    pub fn install_bios(&mut self, _: &[u8]) -> Result<(),String> { match *self {} }
     pub fn configure_fast_forward(&mut self, _: xem_settings::FastForwardRate) -> Result<(),String> { match *self {} }
     pub fn sync_time_settings(&mut self, _: &xem_settings::Settings) -> Result<(),String> { match *self {} }
     pub fn configure_rewind(&mut self, _: bool, _: u32, _: u32) -> Result<(),String> { match *self {} }

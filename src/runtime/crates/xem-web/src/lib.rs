@@ -97,6 +97,10 @@ pub struct XemApp {
     audio: audio::Mixer,
     audio_scratch: Vec<i16>,
     cards: storage::BrowserCards,
+    /// The player's BIOS image (Import BIOS; IndexedDB keeps it beside the
+    /// cards), whose Kanji font every boot installs; the substitute glyphs
+    /// without one.
+    bios: Option<Vec<u8>>,
     input: xem_settings::player::PlayerInput,
     mouse_captured: bool,
     /// The interface the player's input reached last (the wheel's) and its
@@ -230,6 +234,7 @@ impl XemApp {
             audio: audio::Mixer::default(),
             audio_scratch: Vec::new(),
             cards: storage::BrowserCards::default(),
+            bios: None,
             input: Default::default(),
             mouse_captured: false,
             ui: xem_core::context::Context::None,
@@ -1336,7 +1341,7 @@ impl XemApp {
         }
         let module = WebModule::new(&instance, import_names, module_id).map_err(error)?;
         self.memory_bytes = module.memory_bytes();
-        // As xem_game::boot does natively (without a BIOS image: blank Kanji glyphs).
+        // As xem_game::boot does natively.
         let mut runtime = Runtime::new(module);
         if let Some(identity) = identity {
             runtime.identity.disc = identity;
@@ -1345,7 +1350,8 @@ impl XemApp {
         runtime.services().card.attach_storage(Box::new(self.cards.clone())).map_err(error)?;
         runtime.services().spu.set_output(true);
         if let Some(executable) = executable {
-            bios::install_kanji_font(runtime.memory(), None).map_err(error)?;
+            // The player's BIOS image's Kanji font, else the substitute glyphs.
+            runtime.install_kanji_font(self.bios.as_deref()).map_err(error)?;
             // The BIOS copies the executable's text to its address and jumps to pc0.
             let header = exe::parse(&executable).map_err(error)?;
             runtime.load_executable(header.text_address, exe::text(&executable, &header)).map_err(error)?;
@@ -1498,6 +1504,31 @@ impl XemApp {
         (slot < 2).then(|| session.runtime.services().card.image(slot).map(<[u8]>::to_vec)).flatten()
     }
 
+    // --- BIOS ---------------------------------------------------------------
+
+    /// Why `bytes` are not a BIOS image whose Kanji font save titles can be
+    /// drawn from (`xem_core::bios::check`), if they are not. The page checks
+    /// a picked file before IndexedDB takes it.
+    pub fn check_bios(&self, bytes: &[u8]) -> Result<(), JsValue> {
+        bios::check(bytes).map_err(error)
+    }
+
+    /// Keep the player's BIOS image for every boot's Kanji font and give it
+    /// to a running game now (`Runtime::install_kanji_font`; its next save
+    /// title is drawn from it). Refused, nothing changed, for a file that is
+    /// not one. The page sets the one IndexedDB holds before a session boots.
+    pub fn set_bios(&mut self, bytes: Vec<u8>) -> Result<(), JsValue> {
+        bios::check(&bytes).map_err(error)?;
+        // A session on a module test fixture has no font to replace.
+        if let Some(session) = self.session.as_mut()
+            && session.runtime.services().kanji_font.is_some()
+        {
+            session.runtime.install_kanji_font(Some(&bytes)).map_err(error)?;
+        }
+        self.bios = Some(bytes);
+        Ok(())
+    }
+
     /// Everything a client can inspect.
     pub fn status(&mut self) -> String {
         let session = self.session.as_mut().map(|s| s.execute(&json!({ "cmd": "status" })));
@@ -1577,6 +1608,8 @@ impl XemApp {
             },
             "audio": { "frames": self.audio.frames, "dropped": self.audio.dropped, "sampleRate": audio::SAMPLE_RATE },
             "cards": { "unsaved": self.cards.dirty(), "errors": card_errors },
+            // Whether a BIOS image gives boots their Kanji font.
+            "bios": self.bios.is_some(),
             "settingsRevision": settings_revision,
         }))
     }

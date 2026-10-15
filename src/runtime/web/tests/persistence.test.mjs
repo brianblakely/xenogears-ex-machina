@@ -182,6 +182,70 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     } finally { await browser.close(); }
   });
 
+  test('a BIOS image imports beside the cards for every boot, and a file that is not one changes nothing', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [faultInjector] });
+    try {
+      const page = await browser.page(fixture);
+      page.on('filechooser', () => {});
+      const result = await page.evaluate(async () => {
+        const x = window.xem;
+        // A plausible font where a BIOS keeps it (0x66000): a blank
+        // full-width space, its digits and Latin letters (glyphs 147-208)
+        // each drawn differently. No original content.
+        const image = (mark) => {
+          const rom = new Uint8Array(0x80000);
+          for (let glyph = 147; glyph <= 208; glyph++) rom[0x66000 + glyph * 30 + 2] = glyph - 146;
+          rom[0] = mark;
+          return rom;
+        };
+        const errors = [];
+        const refused = async (bytes) => {
+          try { await x.bios.import(bytes); errors.push('accepted'); } catch (error) { errors.push(String(error.message ?? error)); }
+        };
+        const before = x.status().bios;
+        await refused(new Uint8Array(1000).fill(7));
+        await refused(new Uint8Array(0x80000));
+        const nothing = (await x.bios.stored()) === undefined && !x.status().bios;
+        const message = await x.bios.import(image(1));
+        // IndexedDB takes an image before the session: a failed write changes nothing.
+        window.storageFault = 'quota';
+        await refused(image(2));
+        window.storageFault = null;
+        const stored = await x.bios.stored();
+        return { before, errors, nothing, message, stored: [stored.length, stored[0]], after: x.status().bios };
+      });
+      assert.deepEqual(result.errors.slice(0, 2), [
+        'BIOS not imported: a PS1 BIOS image is 512 KiB (524288 bytes), not 1000 bytes.',
+        'BIOS not imported: this file has no Kanji font where a PS1 BIOS keeps it (offset 0x66000): a full-width letter or digit is blank.',
+      ]);
+      assert.match(result.errors[2], /quota/i);
+      assert.equal(result.before, false);
+      assert.ok(result.nothing, 'a refused file is neither stored nor kept');
+      assert.equal(result.message, 'BIOS imported: save titles use its Kanji font.');
+      assert.deepEqual(result.stored, [0x80000, 1], 'IndexedDB holds the image imported, not the one its write refused');
+      assert.equal(result.after, true);
+
+      // A reload takes it from IndexedDB for the boots to come.
+      await page.reload(); await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      assert.equal(await page.evaluate(() => window.xem.status().bios), true);
+
+      // Import BIOS, on a key here, opens the page's own picker.
+      const accept = await page.$eval('#import-bios', (input) => input.accept.split(','));
+      assert.ok(accept.includes('.bin') && accept.includes('.rom'), `${accept}`);
+      const bound = await page.evaluate(() => window.xem.settings.apply({ BindApp: { action: 'ImportBios', binding: { keyboard: ['F9'], gamepad: [] } } }));
+      assert.equal(bound.ok, true);
+      const rom = Buffer.alloc(0x80000);
+      for (let glyph = 147; glyph <= 208; glyph++) rom[0x66000 + glyph * 30 + 2] = glyph - 146;
+      rom[0] = 3;
+      const picker = page.waitForEvent('filechooser');
+      await page.keyboard.press('F9');
+      await (await picker).setFiles({ name: 'SCPH1001.BIN', mimeType: 'application/octet-stream', buffer: rom });
+      await page.waitForFunction(() => window.xem.status().page.operationStatus?.startsWith('BIOS imported'));
+      assert.equal(await page.evaluate(async () => (await window.xem.bios.stored())[0]), 3);
+      assert.deepEqual(page.errors, []);
+    } finally { await browser.close(); }
+  });
+
   test('HUD shows active time controls and state results without memory-card notices', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [faultInjector] });
     try {

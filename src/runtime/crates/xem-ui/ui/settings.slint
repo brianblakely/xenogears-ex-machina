@@ -1578,6 +1578,10 @@ export component SettingsPanel inherits Window {
                                 Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 7: Card {
+                                title: "Save titles";
+                                Text { text: "The game draws save titles with your console's BIOS font. Without your BIOS image they use substitute letters, digits and marks drawn for this project, and other characters stay blank. Saves → Import BIOS (save titles) gives the original font."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 7: Card {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }

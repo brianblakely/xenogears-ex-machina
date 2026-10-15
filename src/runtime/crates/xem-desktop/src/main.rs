@@ -281,18 +281,19 @@ fn open_game(_options: &Options, _disc: &std::path::Path) -> Result<Game, String
 }
 
 /// Boots the user's disc and plays it, with cards under the settings'
-/// directory unless `--cards` names one.
+/// directory unless `--cards` names one, and the Kanji font of the BIOS
+/// image `--bios` names, else of the one imported into the settings'
+/// directory (Import BIOS), else the substitute glyphs.
 #[cfg(has_game_module)]
 fn open_game(options: &Options, disc: &std::path::Path) -> Result<Game, String> {
-    let cards = options.cards.clone().or_else(|| {
-        FileStore::default_path().and_then(|p| p.parent().map(|d| d.join("cards")))
-    });
+    let directory = FileStore::default_path().and_then(|p| p.parent().map(std::path::Path::to_path_buf));
+    let cards = options.cards.clone().or_else(|| directory.as_ref().map(|d| d.join("cards")));
     if let Some(dir) = &cards {
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     }
     let boot = xem_game::BootOptions {
         cards,
-        bios: options.bios.clone(),
+        bios: options.bios.clone().or_else(|| directory.as_deref().and_then(xem_game::storage::stored_bios)),
         audio_output: true,
         ..Default::default()
     };

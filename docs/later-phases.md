@@ -430,7 +430,7 @@ prototype per function, plus adapters where callers depend on narrowing.
 | Timing and pacing | `VSync`, root counters, `DrawSync`, polls | [original-boundaries.md](original-boundaries.md#timing) | virtual clock; [consequences below](#timing-consequences-for-a-port) |
 | Interrupt work | vblank, sound tick, SPU, CD, MDEC, DrawSync callbacks, card events | [original-boundaries.md](original-boundaries.md#interrupt-context-work) | fixed delivery points, recorded for replay |
 | Control flow | entry, stack reset, dispatcher, mode exits, soft reset, arena coroutine, self-modifying patcher | [original-boundaries.md](original-boundaries.md#control-flow-and-state) | host loop with a non-local mode exit; nested fiber |
-| BIOS Kanji ROM | `Krom2RawAdd` (save titles; the staff roll, which only the unused field ext `be` enables) | [original-boundaries.md](original-boundaries.md#services) (BIOS Kanji ROM) | a font imported from the user's BIOS, or a substitute marked as one |
+| BIOS Kanji ROM | `Krom2RawAdd` (save titles; the staff roll, which only the unused field ext `be` enables) | [original-boundaries.md](original-boundaries.md#services) (BIOS Kanji ROM) | the font of the player's BIOS image, or substitute glyphs for what North American save titles hold ([runtime.md](runtime.md#save-titles-and-the-kanji-font)) |
 | Movies | mdec `St*` streaming, libpress, MDEC DMA callback | [original-boundaries.md](original-boundaries.md#interrupt-context-work) and its [Presentation](original-boundaries.md#presentation) | software MDEC; logical movie clock without output |
 
 ### Disc and files
@@ -931,7 +931,6 @@ record.
 | Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 9 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
 | Missing media decoders | no SPU ADPCM in the repository; `src/runtime/crates/xem-media` implements the MDEC (dequantization, IDCT, colour conversion) and XA ADPCM with its resampler from psx-spx, whose IDCT rounding, colour fixed point, 15-bit truncation and 18900 Hz resampling are approximations, untested against captured frames and audio | SPU ADPCM in Phase 2; compare xem-media with captured MDEC output and CD audio |
-| BIOS font source | `Krom2RawAdd` users in slot39 and field | a user BIOS import or a labelled substitute |
 | Script data open items | the Open lines of [field-events.md](scripts/field-events.md), [text-control.md](scripts/text-control.md), [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md), [arena-frame-events.md](scripts/arena-frame-events.md), [formations.md](scripts/formations.md), [timelines.md](scripts/timelines.md) | as stated there |
 
 ## Suggested sequencing for Phases 2-4 and 12

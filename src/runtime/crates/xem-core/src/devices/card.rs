@@ -48,6 +48,13 @@
 //! refused while the game has a file open on that card (a save or a load
 //! under way), checks it, or the cards are still busy with an access.
 //!
+//! A card can be taken out and put back ([`Card::set_present`], the
+//! recorded `card_present` control; both are in by default, as on a console
+//! whose cards stay in). Out, the slot keeps its image and storage, and the
+//! game finds no card there: its checks time out and its file calls fail,
+//! as the BIOS answers without a card. Put back, the card answers again,
+//! and the game's file screens list it anew, as after a card put in.
+//!
 //! # Restoring over the inserted cards
 //!
 //! A state keeps the calls under way: the open files, a directory search and
@@ -66,7 +73,9 @@
 //! the same). A search over a directory that differs ends; a pending check
 //! reports the card inserted now. Over the same card the state goes on as it
 //! would have, also after a rewind inside a save: the bytes it wrote are
-//! still there, and it writes the rest again.
+//! still there, and it writes the rest again. Whether each card is in is the
+//! host's, as the cards are: a restore keeps it, and a card out is one the
+//! state's files and search do not find.
 
 use super::{Context, Device, card_file, unknown};
 use crate::clock::CPU_HZ;
@@ -80,8 +89,11 @@ use sha2::{Digest, Sha256};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CardStatus {
     pub slot: usize,
-    /// The inserted card's listing; none without a card.
+    /// The slot's card's listing, also while it is out ([`Card::set_present`]);
+    /// none without a card.
     pub card: Option<card_file::Listing>,
+    /// Whether the card is in, for the game ([`Card::set_present`]).
+    pub present: bool,
     /// Why the card cannot change now ([`Card::busy_with`]).
     pub busy: Option<String>,
 }
@@ -360,10 +372,19 @@ struct Check {
     event: u32,
 }
 
+/// The card the game finds in `slot`: the slot's image, none without a card
+/// or with it taken out (`removed`, [`Card::set_present`]).
+fn inserted<'a>(images: &'a [Option<Vec<u8>>; 2], removed: &[bool; 2], slot: usize) -> Option<&'a [u8]> {
+    if removed[slot] { None } else { images[slot].as_deref() }
+}
+
 #[derive(Default)]
 pub struct Card {
     storage: Option<Box<dyn CardStorage>>,
     images: [Option<Vec<u8>>; 2],
+    /// The cards taken out of the game's view (the `card_present` control,
+    /// [`Card::set_present`]): each slot keeps its image and storage.
+    removed: [bool; 2],
     started: bool,
     files: [Option<OpenFile>; FILES],
     search: Option<Search>,
@@ -380,19 +401,20 @@ impl Card {
     pub(crate) fn restore_state(&mut self, mut state: Self) {
         state.storage = self.storage.take();
         state.images = std::mem::take(&mut self.images);
+        state.removed = self.removed;
         state.pending = self.pending;
         state.errors = std::mem::take(&mut self.errors);
-        let images = &state.images;
+        let (images, removed) = (&state.images, &state.removed);
         for file in &mut state.files {
             let elsewhere = |f: &OpenFile| {
-                let image = images[f.slot].as_deref();
+                let image = inserted(images, removed, f.slot);
                 directory_frame(image, f.first) != Some(f.frame) || file_digest(image, f) != f.data
             };
             if file.as_ref().is_some_and(elsewhere) {
                 *file = None;
             }
         }
-        if state.search.as_ref().is_some_and(|s| directory_digest(state.images[s.slot].as_deref()) != s.directory) {
+        if state.search.as_ref().is_some_and(|s| directory_digest(inserted(images, removed, s.slot)) != s.directory) {
             state.search = None;
         }
         if let Some(check) = state.check {
@@ -406,7 +428,7 @@ impl Card {
     /// renamed or deleted, a writer's position moved, the card formatted or
     /// another inserted).
     fn card_changed(&mut self, slot: usize) {
-        let image = self.images[slot].as_deref();
+        let image = inserted(&self.images, &self.removed, slot);
         for file in self.files.iter_mut().flatten().filter(|file| file.slot == slot) {
             file.frame = directory_frame(image, file.first).unwrap_or([0; FRAME_SIZE]);
             file.data = file_digest(image, file);
@@ -448,6 +470,45 @@ impl Card {
         self.card_changed(slot);
     }
 
+    /// Put `slot`'s card in for the game, or take it out (the `card_present`
+    /// control; both are in by default, as a console's cards stay in). A
+    /// card taken out stays the slot's, its image and storage as they were,
+    /// but the game finds no card there, as the BIOS answers without one:
+    /// `_card_info` ends in the timeout event and every file call fails.
+    /// Taking it out closes the game's files on it and ends a directory
+    /// search there. Put back, it answers again: the game's next check ends
+    /// done for a formatted card ([`EVENT_NEW`] for an unformatted one),
+    /// which the game's file screens take as a card put in after one taken
+    /// out (slot39 `menu_card_check_port`: they list it again). A check
+    /// under way ends with what the slot holds when it ends.
+    pub fn set_present(&mut self, slot: usize, present: bool) {
+        if self.present(slot) == present {
+            return;
+        }
+        self.removed[slot] = !present;
+        if !present {
+            for file in &mut self.files {
+                if file.as_ref().is_some_and(|f| f.slot == slot) {
+                    *file = None;
+                }
+            }
+            if self.search.as_ref().is_some_and(|search| search.slot == slot) {
+                self.search = None;
+            }
+        }
+        if let Some(check) = self.check.filter(|check| (check.channel >> 4 & 1) as usize == slot) {
+            self.check = Some(Check { event: self.info_event(check.channel), ..check });
+        }
+        self.card_changed(slot);
+    }
+
+    /// Whether `slot`'s card is in for the game ([`set_present`](Self::set_present)).
+    pub fn present(&self, slot: usize) -> bool {
+        !self.removed[slot]
+    }
+
+    /// The image of the card in `slot`, also while it is out
+    /// ([`set_present`](Self::set_present)).
     pub fn image(&self, slot: usize) -> Option<&[u8]> {
         self.images[slot].as_deref()
     }
@@ -497,7 +558,12 @@ impl Card {
     /// What `slot` holds (a listing of its card, `card_list`) and why it
     /// cannot change now.
     pub fn status(&self, slot: usize, now: u64) -> CardStatus {
-        CardStatus { slot, card: self.images[slot].as_deref().map(card_file::list), busy: self.busy_with(slot, now) }
+        CardStatus {
+            slot,
+            card: self.images[slot].as_deref().map(card_file::list),
+            present: self.present(slot),
+            busy: self.busy_with(slot, now),
+        }
     }
 
     /// The card a file the player picked holds, for `slot` at cycle `now`:
@@ -567,7 +633,11 @@ impl Card {
         self.busy_until = self.busy_until.max(now) + frames * FRAME_CYCLES;
     }
 
+    /// The card the game finds in `slot` when it holds a file system.
     fn formatted_image(&mut self, slot: usize) -> Option<&mut Vec<u8>> {
+        if self.removed[slot] {
+            return None;
+        }
         self.images[slot].as_mut().filter(|image| is_formatted(image))
     }
 
@@ -581,10 +651,10 @@ impl Card {
     }
 
     /// What `_card_info` on `channel` finds: a file system, a card without
-    /// one, or no card.
+    /// one, or no card (none in the slot, or one taken out).
     fn info_event(&self, channel: u32) -> u32 {
         let slot = (channel >> 4 & 1) as usize;
-        match (&self.images[slot], channel & 0xF) {
+        match (inserted(&self.images, &self.removed, slot), channel & 0xF) {
             (Some(image), 0) if is_formatted(image) => EVENT_DONE,
             (Some(_), 0) => EVENT_NEW,
             _ => EVENT_TIMEOUT,
@@ -685,7 +755,7 @@ impl Card {
     /// The next file of the search, written as a DIRENTRY at `entry`.
     fn next_match(&mut self, entry: u32, context: &mut Context<'_>) -> Result<u32, String> {
         let Some(search) = self.search.as_mut() else { return Ok(0) };
-        let Some(image) = self.images[search.slot].as_ref().filter(|image| is_formatted(image)) else {
+        let Some(image) = inserted(&self.images, &self.removed, search.slot).filter(|image| is_formatted(image)) else {
             return Ok(0);
         };
         while search.next < BLOCKS {
@@ -744,7 +814,7 @@ impl Card {
 
     fn format(&mut self, device: &[u8], now: u64) -> u32 {
         let Some((slot, _)) = parse(device) else { return 0 };
-        let Some(image) = self.images[slot].as_mut() else { return 0 };
+        let Some(image) = self.images[slot].as_mut().filter(|_| !self.removed[slot]) else { return 0 };
         format_image(image);
         for file in &mut self.files {
             if file.as_ref().is_some_and(|f| f.slot == slot) {
@@ -808,7 +878,7 @@ impl Device for Card {
                         slot,
                         pattern: pattern.to_vec(),
                         next: 1,
-                        directory: directory_digest(self.images[slot].as_deref()),
+                        directory: directory_digest(inserted(&self.images, &self.removed, slot)),
                     });
                     self.next_match(arg(1), context)?
                 }
@@ -1356,6 +1426,90 @@ mod tests {
         b.call("info", &[0x10]);
         b.wait();
         assert_eq!(b.raised[2], (IRQ_CARD, EVENT_TIMEOUT));
+    }
+
+    #[test]
+    fn a_card_taken_out_answers_as_no_card_and_again_when_put_back() {
+        let mut b = Bench::new(storage_with_formatted_card());
+        b.call("start", &[]);
+        let path = b.string(NAME, "bu00:SAVE");
+        let created = b.call("open", &[path, 1 << 16 | 0x200]);
+        b.call("close", &[created]);
+        let card = b.card.image(0).unwrap().to_vec();
+        let reader = b.call("open", &[path, 1]);
+        assert_ne!(reader, u32::MAX);
+        let device = b.string(NAME2, "bu00:");
+        assert_eq!(b.call("firstfile", &[device, ENTRY]), 1);
+        let quiet = b.card.save();
+        b.card.set_present(1, false);
+        assert_eq!(b.card.save(), quiet, "whether a card is in is not the device's state");
+        b.card.set_present(1, true);
+
+        b.card.set_present(0, false);
+        assert!(!b.card.present(0));
+        b.call("info", &[0]);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_TIMEOUT)), "its check finds no card");
+        assert_eq!(b.call("read", &[reader, BUFFER, 0x80]), u32::MAX, "its open file is closed");
+        assert_eq!(b.call("nextfile", &[ENTRY]), 0, "its listing ended");
+        assert!(b.list("bu00:").is_empty(), "nothing is listed");
+        let path = b.string(NAME, "bu00:SAVE");
+        assert_eq!(b.call("open", &[path, 1]), u32::MAX);
+        assert_eq!(b.call("delete", &[path]), 0);
+        let other = b.string(NAME, "bu00:OTHER");
+        assert_eq!(b.call("open", &[other, 1 << 16 | 0x200]), u32::MAX, "nothing is created");
+        let device = b.string(NAME, "bu00:");
+        assert_eq!(b.call("format", &[device]), 0);
+        assert_eq!(b.card.image(0).unwrap(), card, "the card is as it was");
+        let status = b.card.status(0, b.now);
+        assert!(!status.present && status.card.is_some_and(|card| card.saves.len() == 1), "out, listed for the host");
+
+        b.card.set_present(0, true);
+        b.call("info", &[0]);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_DONE)), "put back, its check finds it");
+        assert_eq!(b.list("bu00:"), vec![("SAVE".to_string(), BLOCK_SIZE as u32)]);
+        assert!(b.card.status(0, b.now).present);
+    }
+
+    #[test]
+    fn a_check_ends_with_what_the_slot_holds_when_it_ends() {
+        let mut storage = storage_with_formatted_card();
+        storage.images[1] = Some(vec![0; CARD_SIZE]);
+        let mut b = Bench::new(storage);
+        b.call("start", &[]);
+        assert_eq!(b.call("info", &[0]), 1);
+        b.card.set_present(0, false);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_TIMEOUT)));
+        assert_eq!(b.call("info", &[0]), 1);
+        b.card.set_present(0, true);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_DONE)));
+        // An unformatted card put back is a card without a file system.
+        b.card.set_present(1, false);
+        b.call("info", &[0x10]);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_TIMEOUT)));
+        b.card.set_present(1, true);
+        b.call("info", &[0x10]);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_NEW)));
+    }
+
+    #[test]
+    fn a_restore_keeps_the_cards_in_or_out() {
+        let mut b = Bench::new(storage_with_formatted_card());
+        b.call("start", &[]);
+        let fd = begin_save(&mut b);
+        let state = b.card.save();
+        b.card.set_present(0, false);
+        restore(&mut b, &state);
+        assert!(!b.card.present(0), "the host's, as the cards are");
+        assert_eq!(write_sectors(&mut b, fd, 0..1, 0xA0), vec![u32::MAX], "the state's file is on a card that is out");
+        b.card.set_present(0, true);
+        restore(&mut b, &state);
+        assert_eq!(write_sectors(&mut b, fd, 0..1, 0xA0), vec![0x100], "put back, the same card: the save writes on");
     }
 
     #[test]

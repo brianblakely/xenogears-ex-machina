@@ -556,8 +556,11 @@ impl Host {
             .and_then(|()| {
                 let reader = xem_disc::FileReadAt::new(disc).map_err(|e| e.to_string())?;
                 let disc = xem_disc::open_reader(reader).map_err(|e| e.to_string())?;
+                // The Kanji font of the BIOS image imported into the files
+                // directory (Import BIOS), else the substitute glyphs.
                 let options = xem_game::BootOptions {
                     cards: Some(self.cards.clone()),
+                    bios: self.cards.parent().and_then(xem_game::storage::stored_bios),
                     audio_output: true,
                     ..Default::default()
                 };

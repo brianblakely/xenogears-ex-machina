@@ -9,7 +9,7 @@ pub enum AppAction {
     IncreaseRewindInterval, DecreaseRewindInterval,
     IncreaseRewindHistory, DecreaseRewindHistory,
     ExportState, ImportState, ExportCard1, ImportCard1, ExportCard2, ImportCard2,
-    ExportSettings, ImportSettings, RetryStorage, RequestPersistence,
+    ExportSettings, ImportSettings, RetryStorage, RequestPersistence, ImportBios,
     ToggleFps, TogglePauseOnFocusLoss, Reset,
 }
 
@@ -19,7 +19,7 @@ pub enum AppRequest {
     Rewind(bool),
     UiRewind(bool),
 }
-pub const APP_ACTIONS: [(AppAction, &str); 25] = [
+pub const APP_ACTIONS: [(AppAction, &str); 26] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
@@ -35,6 +35,7 @@ pub const APP_ACTIONS: [(AppAction, &str); 25] = [
     (AppAction::ExportCard2, "Export original card 2"), (AppAction::ImportCard2, "Import original card 2"),
     (AppAction::ExportSettings, "Export settings"), (AppAction::ImportSettings, "Import settings"),
     (AppAction::RetryStorage, "Retry pending card writes"), (AppAction::RequestPersistence, "Request browser persistence"),
+    (AppAction::ImportBios, "Import BIOS (save titles)"),
     (AppAction::ToggleFps, "Toggle FPS display"),
     (AppAction::TogglePauseOnFocusLoss, "Toggle pause on focus loss"),
     (AppAction::Reset, "Reset"),

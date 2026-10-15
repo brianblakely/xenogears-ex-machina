@@ -1272,6 +1272,97 @@ fn the_maps_without_random_battles_are_recorded_and_a_replay_keeps_them() {
     assert!(refused["error"].as_str().is_some_and(|e| e.contains("random-battles")), "{refused}");
 }
 
+fn card_present(s: &mut Session<Counter>) -> serde_json::Value {
+    s.execute(&json!({"cmd":"status"}))["card_present"].clone()
+}
+
+#[test]
+fn card_presence_is_recorded_and_a_replay_keeps_it() {
+    let stored = Rc::new(RefCell::new([formatted(), formatted()]));
+    let mut s = session();
+    s.runtime.services().card.attach_storage(Box::new(Storage(stored.clone()))).unwrap();
+    assert_eq!(card_present(&mut s), json!([true, true]), "both cards are in, as on a console");
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    for _ in 0..2 {
+        s.execute(&json!({"cmd":"card_present","slot":0,"present":false}));
+    }
+    assert_eq!(card_present(&mut s), json!([false, true]));
+    // The stand-in's save finds no card 1: nothing is written, card 1 stays
+    // as it was, and `card_list` still lists it, out.
+    begin_save(&mut s, 0xA0);
+    finish_save(&mut s);
+    assert_eq!((word(&mut s, SAVE_WRITTEN), word(&mut s, SAVE_REFUSED), word(&mut s, SAVE_RENAMED)), (0, 32, 0));
+    assert!(card_image(&mut s) == formatted() && stored.borrow()[0] == formatted(), "card 1 is as it was");
+    let listed = s.execute(&json!({"cmd":"card_list","slot":0}));
+    assert_eq!((listed["present"].clone(), listed["card"]["formatted"].clone()), (json!(false), json!(true)), "{listed}");
+    s.execute(&json!({"cmd":"card_present","slot":0,"present":true}));
+    begin_save(&mut s, 0xA0);
+    finish_save(&mut s);
+    assert_eq!((word(&mut s, SAVE_WRITTEN), word(&mut s, SAVE_RENAMED)), (32, 1), "put back, the save is made");
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let changes: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "card_present").cloned().collect();
+    let start = log["start_vblank"].as_u64().unwrap();
+    let at = |change: &serde_json::Value| change[0].as_u64().unwrap() - start;
+    assert_eq!(changes.iter().map(|c| c[1].clone()).collect::<Vec<_>>(),
+        [json!({"cmd":"card_present","slot":0,"present":false}), json!({"cmd":"card_present","slot":0,"present":true})],
+        "each change once");
+    assert!(0 < at(&changes[0]) && at(&changes[0]) < at(&changes[1]), "{changes:?}");
+
+    // A replay from the same state starts with both cards in, whatever the
+    // session had, and takes card 1 out and puts it back where the
+    // recording did.
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.runtime.services().card.attach_storage(Box::new(Storage(Rc::new(RefCell::new([formatted(), formatted()]))))).unwrap();
+    other.restore_bytes(&initial).unwrap();
+    other.execute(&json!({"cmd":"card_present","slot":1,"present":false}));
+    assert!(other.execute(&log).get("error").is_none());
+    assert_eq!(card_present(&mut other), json!([true, true]), "a replay starts with the cards in");
+    let started = vblank(&mut other);
+    let (mut seen, mut last) = (Vec::new(), card_present(&mut other));
+    while vblank(&mut other) - started <= at(&changes[1]) {
+        assert!(other.frame().unwrap());
+        let now = card_present(&mut other);
+        if now != last {
+            seen.push((vblank(&mut other) - started, now.clone()));
+            last = now;
+        }
+    }
+    assert_eq!(seen, [(at(&changes[0]), json!([false, true])), (at(&changes[1]), json!([true, true]))],
+        "card 1 out and back in where the recording took it out and put it back");
+
+    // Whether a card is in is the host's: a restored state and a console
+    // reset leave card 1 out.
+    let state = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"card_present","slot":0,"present":false}));
+    s.restore_bytes(&state).unwrap();
+    s.execute(&json!({"cmd":"reset"}));
+    assert_eq!(card_present(&mut s), json!([false, true]), "a restore and a reset leave card 1 out");
+    s.execute(&json!({"cmd":"card_present","slot":0,"present":true}));
+
+    // A recording begun with a card out starts with it out.
+    s.execute(&json!({"cmd":"card_present","slot":1,"present":false}));
+    s.execute(&json!({"cmd":"record"}));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    assert!(log["controls"].as_array().unwrap().iter().any(|c| c[1] == json!({"cmd":"card_present","slot":1,"present":false})), "{log}");
+    // Session logs and agents set it by command; a card is 0 or 1.
+    let frames = s.runtime.frames();
+    let scheduled = s.execute(&json!({"cmd":"schedule","commands":[[frames + 1, {"cmd":"card_present","slot":1,"present":true}]]}));
+    assert!(scheduled.get("error").is_none(), "{scheduled}");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(card_present(&mut s), json!([true, true]));
+    let valid = s.execute(&json!({"cmd":"readiness"}))["valid_commands"].clone();
+    assert!(valid.as_array().unwrap().contains(&json!("card_present")));
+    for bad in [json!({"cmd":"card_present"}), json!({"cmd":"card_present","slot":2,"present":false}), json!({"cmd":"card_present","slot":0,"present":"no"})] {
+        assert!(s.execute(&bad)["error"].as_str().is_some_and(|e| e.contains("slot (0 or 1) and present (true or false)")), "{bad}");
+    }
+    assert_eq!(card_present(&mut s), json!([true, true]), "a refused change changes nothing");
+    let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, {"cmd":"card_present","slot":3,"present":true}]]}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("card-presence")), "{refused}");
+}
+
 #[test]
 fn the_field_command_reports_the_random_draw_and_whether_it_is_off_here() {
     let mut s = session();

@@ -439,11 +439,14 @@ waits for it goes in).
   ([Saves and time controls](#saves-and-time-controls)). A card or save
   file the player imports replaces a card between the game's card calls,
   never during one ([Original saves and memory
-  cards](#original-saves-and-memory-cards)).
+  cards](#original-saves-and-memory-cards)). Both cards are in, as a
+  console's stay in; the recorded control `card_present` takes one out or
+  puts it back for agents and tests ([Cards in and out](#cards-in-and-out)).
 - **Kanji font.** Krom2RawAdd returns glyph addresses in the BIOS ROM's font
   through its KUSEG mirror 0x1FC66000; the host places the font there from the
-  user's BIOS image (`--bios FILE`), or blank glyphs without one
-  (`xem_core::bios`).
+  player's BIOS image (Import BIOS, or `--bios FILE`), or substitute glyphs
+  for what save titles hold without one (`xem_core::bios`; [Save titles and
+  the Kanji font](#save-titles-and-the-kanji-font)).
 - The PC file server (libsn `PC*`) has no development host and fails.
 
 ## Binaural sound mode
@@ -2953,7 +2956,10 @@ cards. Settings' Import original card 1/2 takes any memory card or save file
 the runtime reads, and Export original card 1/2 writes the exact 128 KiB raw
 `.mcd` ([Original saves and memory cards](#original-saves-and-memory-cards)).
 An import replaces the inserted card between frames; the browser writes it
-to IndexedDB first, with play paused until that completes. State backups use
+to IndexedDB first, with play paused until that completes. Import BIOS (save
+titles) gives the file screens' titles the font of the player's BIOS image;
+without one they use substitute glyphs ([Save titles and the Kanji
+font](#save-titles-and-the-kanji-font)). State backups use
 `.xemstate`; settings have a separate JSON backup. Native writes acknowledge
 after writing, syncing and replacing the file. Document providers on Android
 acknowledge after write, flush and close; their own replacement guarantees
@@ -3064,7 +3070,11 @@ it found (`message`, the status line's report) and the card's listing
 `window.xem.command` too, for agents and tests (no panel shows it): its
 listing (`card`, none without a card: `formatted`, `free_blocks`, `problems`,
 `notes` and `saves`, each with `name`, `first_block`, `blocks`, `title`,
-`kind` and `problems`) and why it cannot change now (`busy`). File commands
+`kind` and `problems`), whether the card is in (`present`) and why it cannot
+change now (`busy`). The recorded `card_present {slot, present}` takes a
+card out or puts it back ([Cards in and out](#cards-in-and-out)); `status`
+reports both cards' (`card_present`) and where the Kanji font came from
+(`kanji_font`: `bios` or `substitute`). File commands
 are accepted only as explicit native host requests; scheduled logs accept
 game input, setup and pacing commands and cannot access files or list cards.
 Browsers use explicit Settings operations or
@@ -3292,6 +3302,164 @@ game's file screens keep their listing across an import made while they
 show (described above; the host does not take the card out and put it back
 for them); a file screen's own operations over imported saves are tested
 only through the slice's load, not its copy or delete.
+
+### Save titles and the Kanji font
+
+The game's file screens draw each save's title from the BIOS ROM's Kanji
+font: slot39 `menu_save_title_render` asks Krom2RawAdd for each character's
+16x15 glyph, narrows it to 12 columns and composes the title's two lines of
+16 characters into VRAM, of which the file screen (the save menus' and the
+title's Load) shows the second, the place, beside the play time. The ROM is
+the player's, so the
+host places the font where Krom2RawAdd finds it (`xem_core::bios`): the
+player's BIOS image's, or substitute glyphs without one.
+
+Settings → Saves → Backups' Import BIOS (save titles), an app action on
+every host and bindable like the others, takes the image through the same
+picker as the card imports (SDL's file dialog on the desktop, Android's
+document picker, the browser page's own file input offering .bin, .rom and
+.bios). `bios::check` takes a file of exactly 512 KiB whose font region (at
+0x66000, where the BIOS keeps it) holds a plausible font: the full-width
+space blank, and the 62 full-width digits and Latin letters drawn, no two
+the same. A refused file changes nothing and the status line says why
+("BIOS not imported: a PS1 BIOS image is 512 KiB (524288 bytes), not 4194304
+bytes."). Natively the image is kept as `bios.bin` in the app's directory
+(`xem_game::storage::BIOS_FILE`: the desktop's beside `settings.json` and
+`cards/`, Android's `<files dir>/bios.bin`); the browser's IndexedDB keeps it
+in the `cards` store under the key `bios`, written before the session takes
+it, so a failed write changes nothing. Every boot then installs its font
+(`xem_game::boot`, the browser's `boot`), and a running game takes it at once
+(`Runtime::install_kanji_font`), drawing its next title from it.
+`xem-desktop --bios FILE` and `xem-headless --bios FILE` name an image for
+that run instead; a file `check` refuses fails the boot, naming the file and
+the reason.
+
+Without an image the substitute glyphs (`xem-core/font/substitute.txt`,
+described in its `README.md`) stand where the BIOS keeps those characters,
+and every other glyph is blank: 68 glyphs drawn for this project and
+licensed with it (MIT), taken from no BIOS and no other font. They are what
+North American titles hold: "ＸＥＮＯＧＥＡＲＳ／Ｎｏ．", the file number, a
+full-width space and 30 bytes of the line the story value picks from
+directory (0x10, 1) file 1 (`menu_save_build_header_title`,
+`menu_card_init_and_read_title`). `python3 -m tools.analysis.save_titles`
+lists the 61 codes that both discs' 355 lines ask for with all 15 file
+numbers (the space, the digits, 45 Latin letters and ． ！ ／ ’ −) and checks
+that each has a glyph; the seven letters no line uses are drawn too. The
+glyphs have thin strokes at a full-width font's height, placed for the
+screen's narrowing (columns 1-2, 5-6, 9-10 and 13-14 merged), with the top
+row clear because the screen reads a sixteenth row from the next glyph.
+They are a substitute: other games' titles on the same card keep blank
+glyphs where they use other characters, and so would the staff roll
+(directory 4 file 0xAB, `field_staff_roll_write_line`), which asks the font
+for 575 characters, most of them kanji in the staff's names, though no
+shipped script enables it ([original-boundaries.md](original-boundaries.md),
+Services: BIOS Kanji ROM).
+
+The font region lies outside snapshots: like the disc and the cards it is
+the session's attachment, which a restored state keeps; `status` says which
+font is in (`kanji_font`). A title's pixels pass through game memory (the
+screen composes them in heap blocks it frees), so a title drawn from another
+font changes RAM there until the game reuses the blocks. The slice logs,
+whose save and load show titles, end at their recorded hashes with the
+substitute as they did with blank glyphs, and as they do with every pixel of
+every glyph set (measured once with the font region filled, by
+`write_memory`).
+
+Tests: `xem-core`'s `bios` tests:
+`glyphs_follow_the_fonts_code_order` (known codes' glyphs, codes the font
+lacks, each of the 3489 glyphs one code's),
+`the_port_finds_glyphs_where_the_host_puts_them` (the host's table of rows
+1-8 and the glyph count, address and size are `src/port/bios.c`'s),
+`the_substitute_covers_what_north_american_save_titles_hold` (the 68 codes
+in order, each drawn but the space, the top rows clear, the data's rows),
+`a_bios_image_is_checked_for_its_size_and_its_font` (0 bytes, 512 KiB less
+or more one byte and 4 MiB; zeros, 0xFF, noise and one glyph for every
+letter, each refused naming why) and
+`the_font_comes_from_a_bios_or_the_substitute` (the region as each leaves
+it; a refused file writes nothing). `xem-host`'s
+`an_imported_bios_is_kept_for_every_boot_and_a_file_that_is_not_one_is_refused`
+(the native import once a file is picked: a 1000-byte file and a blank font
+refused by name, nothing kept; a plausible image made here kept as
+`bios.bin`, where the boots find it). `xem-headless/tests/file_screen.rs`
+(disc 1): `the_file_screen_draws_save_titles_from_the_substitute_glyphs_or_a_bios_image`
+(the title's Load over a card holding a save made here: the title image in
+VRAM is, halfword for halfword, what `menu_save_title_render` composes from
+the substitute font, and from the font of a BIOS image made here, the
+substitute glyphs drawn bold; a 256 KiB file fails the boot by name).
+`web/tests/persistence.test.mjs`'s "a BIOS image imports beside the cards
+for every boot, and a file that is not one changes nothing" (a 1000-byte
+file and a blank font refused by name, nothing kept; IndexedDB's write
+failing on quota; the image there after a reload; Import BIOS on a key
+opening the page's picker) and `web/tests/disc.test.mjs`'s "boots with an
+imported BIOS image's Kanji font, else the substitute glyphs" (disc 1: the
+font's Ａ without an image, then from an imported one at once and after a
+boot); its comparison with `xem-headless` reads the substitute's Ａ on both.
+
+Not done or not measured: no BIOS image exists on this machine, so no title
+has been drawn from a real BIOS's font: the BIOS path is tested with images
+made here, and the plausibility check is reasoned from the font's layout
+(a blank space, distinct letters), not run on BIOS versions; the desktop's
+and Android's pickers are not driven by a test, only what follows a pick
+(`import_bios`), and no Android boot has taken a stored image (the
+emulator's smoke imports none); the substitute's look is its author's
+judgement from the file screen's screenshots (no people tests).
+
+### Cards in and out
+
+Both memory cards are in, as a console's stay in. The recorded control
+`card_present {slot, present}` takes a card out or puts it back
+(`Card::set_present`), for agents and tests; no panel offers it. A card
+taken out stays the slot's, its image and storage as they were (`card_list`
+lists it, `present` false; an import replaces it there, for the game to find
+when it is put back), but the game finds no card there, as the BIOS
+answers without one: `_card_info` ends in the timeout event and every file
+call fails; the game's files open on it close and a directory search there
+ends. Put back, the card answers again: a check ends done for a formatted
+card, new for an unformatted one. The game's file screens check both cards
+while they show (`menu_card_poll_ports`) and treat the change as a card
+pulled out and put in (`menu_card_check_port`): a check that times out marks
+the card absent and clears its listing, one that ends done after a timeout
+marks it present again, and a presence that changed makes the screen list
+that card anew. With both cards out, the title's Load shows the game's "No
+Memory Card" notice for about a second and returns to the title
+(`menu_card_refresh`); with card 2 in, taking card 1 out at the file screen
+drops card 1's listing and putting it back lists its save again, each within
+a few frames here (the game's next check).
+
+It is recorded like the other controls: in a recording's controls and at
+its start when a card is out, reset to both in when a replay starts, in
+session logs, and in the agent tools' logs (`tools/native_scenario.py`).
+Whether a card is in is the host's, not the game state's: a restored state,
+a rewind and a console reset keep it, and a state's file open on a card
+that is out closes on restore, as on a card taken out. Its default, both
+in, is the original's, so the slice logs and replays are unchanged.
+
+Tests: the card device's `a_card_taken_out_answers_as_no_card_and_again_when_put_back`
+(the timeout, a closed file, an ended search, no listing, no file opened,
+created, deleted or formatted, the card unchanged and still listed for the
+host; done and the file listed when it is back),
+`a_check_ends_with_what_the_slot_holds_when_it_ends` and
+`a_restore_keeps_the_cards_in_or_out`; `xem-core/tests/persistence.rs`'s
+`card_presence_is_recorded_and_a_replay_keeps_it` (the stand-in's save
+refused with card 1 out and made with it back, each change recorded once at
+its vblank, a replay putting both in first and then following the recorded
+changes, a restore and a reset keeping card 1 out, a recording's start, a
+session log, and validation); `xem-headless/tests/file_screen.rs`'s
+`the_titles_load_finds_no_card_while_both_are_out_and_lists_a_card_put_back`
+(disc 1: the notice with both cards out and the return to the title's
+commands, card 1 untouched; card 1 put back and listed with this game's
+save; card 1 out and back at the file screen with card 2 in, its listing
+dropped and made again). The two `file_screen.rs` tests take 7 s together
+here (suite profile, with other builds beside them).
+
+Not done or not measured: on a console a card put in is flagged new until
+it is written (psx-spx, "Memory Card Read/Write Commands"), and the BIOS's
+check may then report a new card, which the game takes as an unformatted
+card's result (`menu_card_event_results`); this device does not model the
+flag, and the game's handling of a real swap is not verified (no capture);
+the save menus' own no-card and one-card paths (a field save point's, the
+world map's, the disc change's) are not driven by a test, nor copy or
+delete over a card put back.
 
 ## Gameplay options
 
@@ -3807,8 +3975,9 @@ other hosts were not run.
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
-FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`; the
-test scene without a disc), placed by the presentation settings, under the
+FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`,
+without `--bios` the BIOS image Import BIOS keeps beside the settings, if
+any; the test scene without a disc), placed by the presentation settings, under the
 Slint settings panel (Escape or a gamepad's Back+Start toggles it). The
 panel is the launcher too: Saves' Import disc… opens SDL's file dialog and
 plays the chosen disc (CHD, cue sheet or Redump-verified ISO), or gives it
@@ -3921,9 +4090,13 @@ as JSON text or bytes.
   either host identically; disc 1 answers the same replies in both.
   `XemApp::snapshot_bytes`/`restore_bytes` carry game state bytes for
   saves. `boot` starts the game as `xem_game::boot` does natively (the
-  executable's text, blank Kanji glyphs, the memory cards, the user's disc in
-  the drive read in place through `DiscImport::game_source`) and takes the
-  game's `stubs.txt` and `schema.json` from beside `game.wasm`.
+  executable's text, the Kanji font of the BIOS image IndexedDB keeps or the
+  substitute glyphs, the memory cards, the user's disc in the drive read in
+  place through `DiscImport::game_source`) and takes the game's `stubs.txt`
+  and `schema.json` from beside `game.wasm`. The page hands the runtime that
+  image before any boot (`set_bios`); Import BIOS checks a picked file
+  (`check_bios`), writes it to IndexedDB, then sets it, and the automation's
+  `bios.import(bytes)` and `bios.stored()` do and read the same.
 - **Blocked frames.** The page reads the disc only asynchronously, so a frame
   whose sector is not fetched yet stops (`Session::frame` returns `Ok(false)`)
   without advancing the virtual clock, and continues where it stopped once the
@@ -4246,7 +4419,9 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   Import and Export original card 1/2 go through the document pickers
   (`content://` documents read and written through SDL); a raw single save
   takes its name from the document id ([Original saves and memory
-  cards](#original-saves-and-memory-cards)).
+  cards](#original-saves-and-memory-cards)). Import BIOS (save titles) does
+  too, and keeps the image as `<files dir>/bios.bin`, whose Kanji font every
+  boot takes ([Save titles and the Kanji font](#save-titles-and-the-kanji-font)).
 - **Lifecycle.** SDL 3.4 delivers the application events only to event
   watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
   `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the

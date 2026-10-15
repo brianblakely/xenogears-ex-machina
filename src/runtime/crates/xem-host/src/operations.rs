@@ -53,10 +53,24 @@ impl Operations {
                     let game = game.as_deref_mut().ok_or("Boot a game before importing a card.")?;
                     return game.import_card(slot,&read(&path,MAX_FILE)?,&file_name(&path));
                 }
+                AppAction::ImportBios => return self.import_bios(game.as_deref_mut(),&read(&path,xem_core::bios::MAX_FILE)?),
                 _ => return Err("Unexpected file operation.".into()),
             }
             Ok("Backup imported.".into())
         })()))
+    }
+
+    /// Import BIOS's work once the player picked `rom`: checked
+    /// (`xem_core::bios::check`), kept in the app's directory for every boot
+    /// (`xem_game::storage::BIOS_FILE`), then given to the running game.
+    /// The status line's message; a refused file or a failed write keeps
+    /// nothing.
+    fn import_bios(&self, game: Option<&mut Game>, rom: &[u8]) -> Result<String,String> {
+        xem_core::bios::check(rom).map_err(|e| format!("BIOS not imported: {e}."))?;
+        let directory = self.directory.as_ref().ok_or("No application storage directory.")?;
+        xem_storage::replace(&directory.join(xem_game::storage::BIOS_FILE),rom).map_err(|e| format!("BIOS not imported: {e}."))?;
+        if let Some(game) = game { game.install_bios(rom)?; }
+        Ok("BIOS imported: save titles use its Kanji font.".into())
     }
 
     pub fn execute(&mut self, request: AppRequest, window: Option<&sdl::Window>, mut game: Option<&mut Game>, settings: &mut SettingsService) -> Result<String,String> {
@@ -148,7 +162,7 @@ impl Operations {
                         SDL_ShowOpenFileDialog(Some(chosen),userdata,window.raw,std::ptr::null(),0,std::ptr::null(),false);
                     }
                 }
-                Ok("Choose a backup file.".into())
+                Ok(if action == AppAction::ImportBios { "Choose your PS1 BIOS image." } else { "Choose a backup file." }.into())
             }
         }
     }
@@ -219,6 +233,27 @@ fn write(path: &str, bytes: &[u8]) -> Result<(),String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn an_imported_bios_is_kept_for_every_boot_and_a_file_that_is_not_one_is_refused() {
+        let directory = std::env::temp_dir().join(format!("xem-import-bios-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&directory);
+        let operations = super::Operations { directory: Some(directory.clone()), ..Default::default() };
+        let refused = operations.import_bios(None, &[7; 1000]).unwrap_err();
+        assert_eq!(refused, "BIOS not imported: a PS1 BIOS image is 512 KiB (524288 bytes), not 1000 bytes.");
+        let blank = operations.import_bios(None, &vec![0; xem_core::bios::BIOS_SIZE]).unwrap_err();
+        assert!(blank.ends_with("a full-width letter or digit is blank."), "{blank}");
+        assert_eq!(xem_game::storage::stored_bios(&directory), None, "nothing kept");
+        // A plausible font made here: glyphs 147-208, the full-width digits
+        // and Latin letters, each different.
+        let mut rom = vec![0; xem_core::bios::BIOS_SIZE];
+        for glyph in 147..=208 { rom[0x66000 + glyph * 30 + 2] = (glyph - 146) as u8; }
+        assert_eq!(operations.import_bios(None, &rom).unwrap(), "BIOS imported: save titles use its Kanji font.");
+        let stored = xem_game::storage::stored_bios(&directory).expect("kept for the boots");
+        assert_eq!(stored, directory.join("bios.bin"));
+        assert_eq!(std::fs::read(&stored).unwrap(), rom);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
     #[test]
     fn a_picked_files_name_comes_from_its_path_or_its_android_document() {
         assert_eq!(super::file_name("/home/user/saves/BASLUS-006640"), "BASLUS-006640");

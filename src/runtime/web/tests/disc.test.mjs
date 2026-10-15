@@ -89,6 +89,9 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
       { cmd: 'run_until', max_frames: 600, until: { vblanks: 600 } },
       { cmd: 'status' },
       { cmd: 'memory_hash' },
+      // The Kanji font's Ａ (glyph 157): without a BIOS image both hosts
+      // place the same substitute glyphs.
+      { cmd: 'read_memory', address: 0x1fc66000 + 157 * 30, length: 30 },
     ];
     await page.evaluate(() => window.xem.boot());
     const browser = await inPage(page, commands);
@@ -110,6 +113,29 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
     }
     assert.ok(requests.every((request) => request.startsWith('GET ')), requests.join('\n'));
     assert.ok(!requests.some((request) => request.includes('.chd')), 'the disc never left the machine');
+  });
+
+  test('boots with an imported BIOS image\'s Kanji font, else the substitute glyphs', async () => {
+    const result = await page.evaluate(async () => {
+      const x = window.xem;
+      const glyph = () => x.command({ cmd: 'read_memory', address: 0x1fc66000 + 157 * 30, length: 30 });
+      const font = () => [x.status().session.kanji_font, glyph()];
+      await x.boot();
+      const substitute = font();
+      // A plausible font made here (glyphs 147-208, the full-width digits
+      // and Latin letters, each different), not a BIOS's.
+      const rom = new Uint8Array(0x80000);
+      for (let i = 147; i <= 208; i++) rom[0x66000 + i * 30 + 2] = i - 146;
+      await x.bios.import(rom);
+      const imported = font();
+      await x.boot();
+      return { substitute, imported, booted: font() };
+    });
+    assert.equal(result.substitute[0], 'substitute');
+    assert.notEqual(result.substitute[1], '00'.repeat(30), 'its Ａ is drawn');
+    const bios = ['bios', `0000${(157 - 146).toString(16).padStart(2, '0')}${'00'.repeat(27)}`];
+    assert.deepEqual(result.imported, bios, 'the running game has the imported font at once');
+    assert.deepEqual(result.booted, bios, 'and a boot takes it');
   });
 });
 

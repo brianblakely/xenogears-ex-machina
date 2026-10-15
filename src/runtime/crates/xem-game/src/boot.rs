@@ -1,9 +1,10 @@
 //! Start the game natively from the user's disc, as the BIOS does: identify
 //! the disc, copy the executable's text to its address, insert the disc into
-//! the drive, attach the memory cards and the Kanji font. Every native host
-//! (headless, desktop, Android) starts the game here; [`boot`] verifies the
-//! disc as Redump's dump (`xem_disc::verify`) and gives the drive's changer
-//! the game's other disc when it is beside the first.
+//! the drive, attach the memory cards and the Kanji font (a BIOS image's, or
+//! the substitute glyphs, `xem_core::bios`). Every native host (headless,
+//! desktop, Android) starts the game here; [`boot`] verifies the disc as
+//! Redump's dump (`xem_disc::verify`) and gives the drive's changer the
+//! game's other disc when it is beside the first.
 
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -20,7 +21,8 @@ use crate::NativeModule;
 pub struct BootOptions {
     /// Where card1.mcd and card2.mcd live; no card is inserted without it.
     pub cards: Option<PathBuf>,
-    /// A BIOS image for the Kanji font (blank glyphs without one).
+    /// A BIOS image for the Kanji font (`xem_core::bios::check` must accept
+    /// it); the substitute glyphs without one.
     pub bios: Option<PathBuf>,
     /// build/game/stubs.txt, to name functions the port does not define.
     pub stubs: Option<PathBuf>,
@@ -66,9 +68,16 @@ pub fn boot_source(
         runtime.services().card.attach_storage(Box::new(FileStorage { dir: dir.clone() }))?;
         for error in &runtime.services().card.errors { eprintln!("{error}"); }
     }
-    let rom = options.bios.as_ref().map(std::fs::read).transpose()?;
-    if bios::install_kanji_font(runtime.memory(), rom.as_deref())? == bios::KanjiFont::Blank {
-        eprintln!("kanji font: blank glyphs (no BIOS image)");
+    let rom = match &options.bios {
+        Some(path) => Some(xem_storage::read(path, bios::MAX_FILE).map_err(|e| format!("BIOS image {}: {e}", path.display()))?),
+        None => None,
+    };
+    let font = runtime.install_kanji_font(rom.as_deref()).map_err(|e| match &options.bios {
+        Some(path) => format!("BIOS image {}: {e}", path.display()),
+        None => e,
+    })?;
+    if font == bios::KanjiFont::Substitute {
+        eprintln!("kanji font: substitute glyphs for save titles (no BIOS image)");
     }
     runtime.services().spu.set_output(options.audio_output);
     // The BIOS copies the executable's text to its address and jumps to pc0.

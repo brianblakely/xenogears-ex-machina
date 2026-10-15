@@ -88,6 +88,9 @@ pub struct Services {
     /// The field maps whose random battles the host turns off
     /// (src/port/encounters.c), ascending, each once; none the original's.
     pub(crate) random_battles_off: Vec<u16>,
+    /// Where the Kanji font in game memory came from
+    /// ([`Runtime::install_kanji_font`]); none before one is placed.
+    pub kanji_font: Option<crate::bios::KanjiFont>,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -441,6 +444,17 @@ impl<M: GameModule> Runtime<M> {
         self.memory().write(address, text)?;
         self.executable = Some((address, text.to_vec()));
         Ok(())
+    }
+
+    /// Place the Kanji font where Krom2RawAdd finds it: `bios`'s, a BIOS
+    /// image `bios::check` accepts (refused, nothing changed, otherwise), or
+    /// the substitute glyphs without one (`bios::install_kanji_font`). Hosts
+    /// do at every boot and when the player imports a BIOS image; the game
+    /// draws from it the next time it draws a title.
+    pub fn install_kanji_font(&mut self, bios: Option<&[u8]>) -> Result<crate::bios::KanjiFont, String> {
+        let font = crate::bios::install_kanji_font(self.memory(), bios)?;
+        self.services().kanji_font = Some(font);
+        Ok(font)
     }
 
     pub fn services(&mut self) -> &mut Services {

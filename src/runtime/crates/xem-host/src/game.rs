@@ -146,6 +146,12 @@ impl Game {
         services.card.import_file(slot,bytes,file_name,now)
     }
     pub fn retry_storage(&mut self) -> Result<(),String> { self.session.runtime.services().card.retry_writes() }
+    /// Give the running game the Kanji font of a BIOS image the player
+    /// imported (`Runtime::install_kanji_font`), between frames: the game
+    /// draws its next save title from it.
+    pub fn install_bios(&mut self, rom: &[u8]) -> Result<(),String> {
+        self.session.runtime.install_kanji_font(Some(rom)).map(|_| ())
+    }
     pub fn configure_fast_forward(&mut self, rate: xem_settings::FastForwardRate) -> Result<(),String> {
         self.session.configure_fast_forward(rate)
     }

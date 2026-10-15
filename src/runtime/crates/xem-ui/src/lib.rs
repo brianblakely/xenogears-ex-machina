@@ -902,6 +902,7 @@ fn backup_actions() -> impl Iterator<Item = (AppAction, &'static str)> {
                 | AppAction::ImportSettings
                 | AppAction::RetryStorage
                 | AppAction::RequestPersistence
+                | AppAction::ImportBios
         )
     })
 }
