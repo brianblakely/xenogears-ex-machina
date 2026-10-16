@@ -1796,11 +1796,19 @@ fn inspection_stops_a_route_refuses_new_ones_and_leaves_recorded_ones_to_run() {
     let log = s.execute(&json!({"cmd":"stop_recording"}));
     let assists: Vec<&str> = log["controls"].as_array().unwrap().iter().filter_map(|c| c[1]["cmd"].as_str()).filter(|cmd| cmd.starts_with("assist")).collect();
     assert_eq!(assists, ["assist", "assist_stop", "assist", "assist", "assist_stop"], "inspection's stop is recorded as the player's own, the refused intent not at all");
-    // A replay keeps its own record: the host's inspection stops none of its routes.
+    // A replay keeps its own record: begun while the host inspects, its
+    // intent runs (the recording's, not an agent's live one), and the
+    // host's toggles while it plays stop none of its routes.
+    s.set_inspecting(true);
     let replay = json!({"cmd":"replay","start_vblank":0,"end_vblank":5,"changes":[],"controls":[[0,{"cmd":"assist","intent":intent}]]});
-    assert!(s.execute(&replay).get("error").is_none());
+    let reply = s.execute(&replay);
+    assert!(reply.get("error").is_none(), "{reply}");
+    assert!(s.assist.is_some(), "a replay begun while the host inspects starts its route");
+    s.set_inspecting(false);
     s.set_inspecting(true);
     assert!(s.assist.is_some(), "a replay's route runs whatever the host shows");
+    assert!(s.frame().unwrap(), "the replay's route runs, nothing stops the session");
+    assert!(s.stopped.is_none(), "{:?}", s.stopped);
 }
 
 /// The stand-in as a field (mode 1) whose player walks (the player control
@@ -1867,13 +1875,15 @@ fn inspection_refuses_agents_live_moves_jumps_and_camera_turns_while_the_player_
     use xem_core::pad::button;
     assert_eq!(then, [(0, button::CROSS), (1, button::UP), (0, button::START), (0, 0), (0, button::LEFT), (0, 0)], "only what passed is in the log");
     assert!(changes.iter().any(|(v, port, buttons)| *v > at && *port == 0 && buttons & button::UP != 0), "the log's own Up and the agent's later one are");
-    // The log replays to the same RAM whatever the replaying host shows.
+    // The log replays to the same RAM with the replaying host inspecting
+    // from its start.
     let mut other = session();
     other.restore_bytes(&start).unwrap();
+    other.set_inspecting(true);
+    assert_eq!(other.execute(&json!({"cmd":"status"}))["inspecting"], json!(true));
     let mut replay = recorded.clone();
     replay["cmd"] = json!("replay");
     assert!(other.execute(&replay).get("error").is_none());
-    other.set_inspecting(true);
     let end = recorded["end_vblank"].as_u64().unwrap();
     let ran = other.execute(&json!({"cmd":"run_until","until":{"vblanks":end},"max_frames":100}));
     assert_eq!(ran["met"], json!(true), "{ran}");

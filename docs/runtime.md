@@ -2156,7 +2156,12 @@ its menu, under Ex Machina) and refused otherwise, naming why (no field,
 the field's menu, the Original renderer). `yaw` turns it to look that many
 degrees right of the heading it began with (where a view turned on begins,
 level), `pitch` up (held within 80 degrees of level); a look is refused
-while the view is off or under the menu. It answers `{"first_person": bool,
+while the view is off or under the menu. In a headset the head does the
+pitching: the eyes turn with it from the view's heading held level,
+whatever `pitch` says. The pitch is kept, answered and reported (OpenXR's
+`xrframe` `look=`) as the view's, and shows only where its flat picture
+does (a browser's page once the WebXR session ends; in OpenXR, the virtual
+screen before the runtime first locates the eyes). It answers `{"first_person": bool,
 "look": {"yaw": degrees, "pitch": degrees}}` (to a thousandth; `look` null
 while off) or `{"error": ...}`, and an unknown field is refused rather than
 read as a toggle. The session takes the new state with the host's next
@@ -2355,14 +2360,16 @@ camera, starts no route, keeps the character and shows the game's camera
 pixel for pixel against a view that never looked, and a new route walks.
 `xem-core/tests/persistence.rs` checks the session's part on a stand-in
 module (one recorded stop, the refusals, a live `assist` refused while a
-session log's intent still runs, a replay that ignores the host) and, with
-the stand-in walking in a field and reading pad 1 into its RAM, that eight
-live commands holding directions, Jump (as Jump and AttackWeak), CameraLeft
-or R1 are refused and reach no pad, that Confirm, Start, pad 2 and a
-release pass, as a direction does in a dialogue, that a session log's Up
-and L1 run without stopping the session, that the recording holds exactly
-what passed, and that it replays to the recording's RAM hash with the
-replaying host inspecting; `xem-settings`' look tests the toggles
+session log's intent still runs, and a replay begun while the host
+inspects, whose recorded `assist` starts its route and runs on whatever
+the host's toggles do while it plays) and, with the stand-in walking in a
+field and reading pad 1 into its RAM, that eight live commands holding
+directions, Jump (as Jump and AttackWeak), CameraLeft or R1 are refused
+and reach no pad, that Confirm, Start, pad 2 and a release pass, as a
+direction does in a dialogue, that a session log's Up and L1 run without
+stopping the session, that the recording holds exactly what passed, and
+that it replays to the recording's RAM hash with the replaying host
+inspecting from the replay's start; `xem-settings`' look tests the toggles
 (Select's keys and the deck's SELECT alike), the underhand grab's rule
 (`look::grab_toggles`: in a field but its menu, under Ex Machina only),
 the `first_person` command (parsed, an unknown field refused, toggled in a
@@ -4482,7 +4489,10 @@ have no R3), where Ex Machina draws it (the Original renderer ends it,
 paused or not, and none toggles it there), whether the game runs or the
 player's Pause holds it (not while Settings are open). Agents turn it on,
 off and around with `--xr --control`'s `first_person` (OpenXR) and
-`window.xem.firstPerson` (WebXR, the page's), as on the flat hosts. Turned on during a pause, it
+`window.xem.firstPerson` (WebXR, the page's), as on the flat hosts, but
+a `pitch` turns no eye: the head does the pitching, and the pitch shows
+only in the view's flat picture
+([First-person inspection](#first-person-inspection)). Turned on during a pause, it
 looks from within once the game's next frame records the character's
 place, at once if the frame shown has it (the view turned off and on
 within the pause). The view
@@ -4569,10 +4579,11 @@ view (V, Back+R1 and the touch deck's LOOK by default) also toggle
 first-person inspection, which the arrow keys, the right
 stick, a finger on the picture and the mouse camera's motion turn
 ([First-person inspection](#first-person-inspection)); Settings' Controls
-section lists them (with the finger's drag where touch controls show; a
-headset's lists its underhand grab, the right stick's click, the head and
-the right stick instead, the stick turning in 30-degree steps,
-[Headsets](#headsets)).
+section lists Select, R3 and what turns the view (with the finger's drag
+where touch controls show; a headset's lists its underhand grab, the right
+stick's click, the head and the right stick instead, the stick turning in
+30-degree steps, [Headsets](#headsets)), and Shortcuts lists Toggle
+first-person view with its bindings.
 
 ### The game's interface context
 
