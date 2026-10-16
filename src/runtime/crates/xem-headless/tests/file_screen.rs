@@ -15,8 +15,12 @@
 //! A card imported while the Load's file screen shows (`card_import`, as
 //! Import original card 1/2) is refused into either slot, naming why, and
 //! changes nothing; left, the title takes it, and the Load opened again
-//! lists the imported card's saves. The inputs to the title's Load are the
-//! load slice's (tests/reference-inputs/slice-load.json).
+//! lists the imported card's saves. An import at each frame of the Load's
+//! opening, from before the screen reads the cards until it has listed
+//! them, is either refused or listed by the screen as the card it put in
+//! (each save's name and title, and their count): taken until the screen
+//! begins to read the cards, refused from then on. The inputs to the
+//! title's Load are the load slice's (tests/reference-inputs/slice-load.json).
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test file_screen
 
@@ -469,5 +473,78 @@ fn a_card_import_waits_while_the_file_screen_shows_and_the_screen_lists_the_impo
     let seen = watch(&mut s, 260);
     let again = seen.last().unwrap().expect("the file screen");
     assert_eq!((again.present, again.files[0], again.ours), ([1, 1], 2, 1), "the imported card's two saves listed: {seen:?}");
+    let _ = std::fs::remove_dir_all(cards);
+}
+
+/// Card 1 as the file screen lists it (slot39 `MenuCard` while a menu runs:
+/// the files its directory listing found, +0x4F8A, each file's name, +0x18
+/// of its 0x5C-byte entry, and its title, bytes 4..0x60 of the first block
+/// read into its 0x200-byte head from +0xB94), and whether the screen polls
+/// the cards (`MenuCard.mode` +0x4FE6) and its card mode holds
+/// (`MenuFlags.card_mode` +0x68).
+fn card1_listed(s: &mut Session<NativeModule>) -> Option<(Vec<(String, Vec<u8>)>, bool, bool)> {
+    let ram = 0x8000_0000..0x8020_0000;
+    let state = Some(word(s, 0x8006_25A0)).filter(|p| ram.contains(p))?;
+    let card = Some(word(s, state + 0x32C)).filter(|p| ram.contains(p))?;
+    let flags = Some(word(s, state + 0x33C)).filter(|p| ram.contains(p))?;
+    let [count] = bytes::<1>(s, card + 0x4F8A);
+    let files = (0..u32::from(count))
+        .map(|i| {
+            let name = bytes::<21>(s, card + i * 0x5C + 0x18);
+            let name = String::from_utf8_lossy(&name[..name.iter().position(|&b| b == 0).unwrap_or(21)]).into_owned();
+            (name, bytes::<0x5C>(s, card + 0xB94 + i * 0x200 + 4).to_vec())
+        })
+        .collect();
+    Some((files, bytes::<1>(s, card + 0x4FE6)[0] != 0, bytes::<1>(s, flags + 0x68)[0] != 0))
+}
+
+#[test]
+fn an_import_at_each_frame_of_the_loads_opening_is_refused_or_listed_as_the_card_it_put_in() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let cards = scratch("opening");
+    let lahan = game_save(0, "Lahan Village");
+    let card1 = card_holding(&lahan);
+    std::fs::write(cards.join("card1.mcd"), &card1).unwrap();
+    std::fs::write(cards.join("card2.mcd"), formatted()).unwrap();
+    // Another card: a save of the same name with another title, and a second.
+    let other = [game_save(0, "Mountain Path"), game_save(1, "Shevat")];
+    let file = cards.join("other.mcd");
+    std::fs::write(&file, card_with(&other)).unwrap();
+    let listing = |saves: &[(String, Vec<u8>)]| saves.iter().map(|(name, block)| (name.clone(), block[4..4 + 0x5C].to_vec())).collect::<Vec<_>>();
+    let mut s = session(&disc, &cards, None);
+    // The title's Load chosen (its press let go at 2754): the screen opens.
+    ok(&mut s, json!({ "cmd": "schedule", "commands": title_inputs(2755) }));
+    run_to(&mut s, 2775);
+    let opening = s.snapshot_bytes().unwrap();
+    assert!(card1_listed(&mut s).is_some_and(|(_, polls, card_mode)| !polls && !card_mode), "the screen has not read the cards yet");
+
+    // From that moment, an import at each frame from before the screen
+    // reads the cards to after it has listed them: once the screen has
+    // settled, it lists the card the slot holds, whichever was taken.
+    let mut seen = Vec::new();
+    for frame in 2775..2810 {
+        s.restore_bytes(&opening).unwrap();
+        let now = s.runtime.services().clock.now;
+        s.runtime.services().card.change(0, card1.clone(), now).expect("card 1 back before the screen reads it");
+        run_to(&mut s, frame);
+        let (_, polls, card_mode) = card1_listed(&mut s).expect("the title's menu");
+        let reply = xem_game::storage::command(&mut s, &json!({ "cmd": "card_import", "slot": 0, "path": file }));
+        let took = reply.get("error").is_none();
+        assert!(took || reply["error"].as_str().is_some_and(|e| e.starts_with("memory card 1 not changed: ")), "{reply}");
+        run_to(&mut s, 2860);
+        let (listed, ..) = card1_listed(&mut s).expect("the Load's listing");
+        let expected = if took { listing(&other) } else { listing(std::slice::from_ref(&lahan)) };
+        assert!(listed == expected, "an import at frame {frame} ({reply}): the screen lists {listed:?}");
+        seen.push((frame, took, polls, card_mode));
+    }
+    // The frames spanned the opening: imports taken until the screen began
+    // to read the cards, and refused from then on, before its card mode too.
+    eprintln!("(frame, taken, polling, card mode): {seen:?}");
+    assert!(seen.iter().any(|&(_, took, polls, _)| took && !polls), "{seen:?}");
+    assert!(seen.iter().any(|&(_, took, polls, card_mode)| !took && polls && !card_mode), "{seen:?}");
+    assert!(seen.iter().all(|&(_, took, polls, card_mode)| took == !(polls || card_mode)), "{seen:?}");
     let _ = std::fs::remove_dir_all(cards);
 }

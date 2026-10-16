@@ -711,6 +711,10 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         await frames(5);
       };
       const [SAVES, TIME, SAVE_STATE, LOAD_STATE, FAST_FORWARD] = [[82, 294], [82, 254], [296, 167], [505, 167], [547, 322]];
+      // The history full (its 30 s of play) before Settings' pause, which
+      // is no play time: the pause takes no states off it.
+      await page.waitForFunction(() => window.xem.status().session.rewind.available_seconds >= 28.5, null, { timeout: 90_000 });
+      const history = (await status(page)).session.rewind;
       await page.evaluate(() => window.xem.panel.show(true));
       await frames(4);
       await pull(SAVES);
@@ -721,12 +725,16 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const record = await page.evaluate(async () => { const r = await window.xem.load('slot0'); return r && { verified: r.verified, bytes: r.bytes }; });
       assert.ok(record?.verified, `IndexedDB holds the state, its checksum verified: ${JSON.stringify(record)}`);
       assert.equal(await page.evaluate(() => window.xem.memoryHash()), saved, 'Settings held the game while it saved');
+      await page.waitForTimeout(4000);
 
       // Settings closed, the game at its own pace; then the controllers'
       // Back+RT (the right stick's click with the right grip) fast-forwards
       // it, at about the factor the session paces it at.
       await page.evaluate(() => window.xem.panel.show(false));
       await frames(10);
+      const kept = (await status(page)).session.rewind;
+      console.log(`Settings' pause: ${history.states} states from game frame ${history.oldest_frame} before, ${kept.states} from ${kept.oldest_frame} after`);
+      assert.ok(kept.states >= history.states - 1, `Settings' pause took no play time off the history: ${history.states} states before it, ${kept.states} after`);
       const rate = async () => {
         const [before, t0] = [await status(page), Date.now()];
         const factors = [];
@@ -770,7 +778,8 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         window.xrDevice.controllers.right.updateButtonValue('thumbstick', on);
         window.xrDevice.controllers.left.updateButtonValue('squeeze', on);
       }, on);
-      const ahead = (await status(page)).session.frames;
+      const { frames: ahead, rewind } = (await status(page)).session;
+      console.log(`Back+LT: the history holds ${rewind.states} states from game frame ${rewind.oldest_frame}`);
       await chord(1);
       await page.waitForFunction(() => window.xem.status().renderer.hud?.rewinding, null, { timeout: 30_000 });
       await page.waitForFunction((ahead) => window.xem.status().session.frames < ahead - 30, ahead, { timeout: 30_000 });
@@ -792,20 +801,9 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       // button mid-pinch changes nothing (the pointer moves nowhere while a
       // pinch holds it).
       const HOLD = [555, 252];
-      // Each hold from fresh history: Settings closed while the game plays
-      // on 300 frames, then shown again on Time (the history holds 30 s by
-      // the page's clock, and in a session that clock runs on through
-      // Settings' pauses, which this test spends much of its time in).
-      const playOn = async () => {
-        await page.evaluate(() => window.xem.panel.show(false));
-        const from = (await status(page)).session.frames;
-        await page.waitForFunction((from) => window.xem.status().session.frames > from + 300, from, { timeout: 60_000 });
-        await page.evaluate(() => window.xem.panel.show(true));
-        await frames(4);
-      };
       const held = async (name, press, during, release) => {
-        await playOn();
-        const ahead = (await status(page)).session.frames;
+        const { frames: ahead, rewind } = (await status(page)).session;
+        console.log(`${name}: the history holds ${rewind.states} states from game frame ${rewind.oldest_frame}`);
         await press();
         await page.waitForFunction(() => window.xem.status().renderer.hud?.rewinding, null, { timeout: 30_000 });
         await during();

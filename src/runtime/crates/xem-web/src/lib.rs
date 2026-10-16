@@ -822,7 +822,8 @@ impl XemApp {
             session.set_listener_view(self.renderer.as_mut().and_then(|r| r.listener_axes()));
         }
         // Paused in a headset: time stands still, nothing to catch up
-        // afterwards.
+        // afterwards, and the rewind history's play time stands still too
+        // (as the native hosts' `Game::resume` restarts its timer).
         if self.xr_paused() {
             self.hud_forward = None;
             self.hud_rewind = None;
@@ -832,6 +833,9 @@ impl XemApp {
             }
             self.paced = Some(now);
             self.music_paced = Some(now);
+            if let Some(session) = self.session.as_mut() {
+                session.reset_rewind_timer();
+            }
             self.stats.last_batch = 0;
             return Ok(());
         }

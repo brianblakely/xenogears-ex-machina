@@ -27,8 +27,8 @@ const WINDOW_AGE: u32 = 0x410;
 /// The menus: the screen (`menu_state_screen`: 0 the field menu, 1 member
 /// change, 2 load, 3 name entry, 4 shop, 5 Gear shop, 6 disc change) and
 /// the state block (`menu_state_current`: the top cursor +0x336, a choice
-/// window's cursor +0x338 and count +0x33A, bytes; its `MenuFlags` +0x33C
-/// and `MenuImages` +0x350). A field's menu runs while
+/// window's cursor +0x338 and count +0x33A, bytes; its `MenuCard` +0x32C,
+/// `MenuFlags` +0x33C and `MenuImages` +0x350). A field's menu runs while
 /// `menu_state_debug_start` is 0 (`field_run_menu` clears it for
 /// `mode_run_menu`, which sets it again on leaving): before, the block is
 /// the last menu's, after, it is freed.
@@ -129,23 +129,31 @@ pub fn read_context(memory: &dyn GameMemory, mode: Option<u32>) -> Context {
     context.unwrap_or(Context::None)
 }
 
-/// Whether the game's file screen shows (slot39 `menu_file_screen_run` in
-/// its card mode, `MenuFlags.card_mode` +0x68): the save, copy and delete
-/// screens of a field's and the world map's menu and of the disc change,
-/// and the title's Load. They list the cards' saves once and act on that
-/// listing by name (an Overwrite, a Delete, a Load). Read while a menu runs
-/// (`menu_state_debug_start` 0 from a field or the world map, or mode 5),
-/// as `read_context` reads the menu.
+/// Whether the game's file screen shows (slot39 `menu_file_screen_run`):
+/// the save, copy and delete screens of a field's and the world map's menu
+/// and of the disc change, and the title's Load. They list the cards' saves
+/// once and act on that listing by name (an Overwrite, a Delete, a Load).
+/// It shows from when it begins to read the cards until its command has
+/// returned: `MenuCard.mode` (+0x4FE6), nonzero while the card screen
+/// polls the cards, is set where `menu_file_screen_enter_card_mode`
+/// forgets the listing, before the frames that list the directories and
+/// read each save's first block, and cleared by `menu_top_command_run`
+/// once the screen has returned; the screen's card mode
+/// (`MenuFlags.card_mode` +0x68), set once that first listing is made,
+/// holds through the commands that clear `MenuCard.mode` meanwhile (a
+/// question, a load). Read while a menu runs (`menu_state_debug_start` 0
+/// from a field or the world map, or mode 5), as `read_context` reads the
+/// menu.
 pub fn file_screen(memory: &dyn GameMemory, mode: Option<u32>) -> bool {
     if mode != Some(5) && u8_at(memory, MENU_STATE_DEBUG_START) != Some(0) {
         return false;
     }
-    (|| {
-        let state = ram_pointer(u32_at(memory, MENU_STATE_CURRENT)?)?;
-        let flags = ram_pointer(u32_at(memory, state + 0x33C)?)?;
-        u8_at(memory, flags + 0x68)
-    })()
-    .is_some_and(|card_mode| card_mode != 0)
+    let Some(state) = u32_at(memory, MENU_STATE_CURRENT).and_then(ram_pointer) else { return false };
+    let set = |block: u32, offset: u32| {
+        let at = u32_at(memory, state + block).and_then(ram_pointer);
+        at.and_then(|at| u8_at(memory, at + offset)).is_some_and(|value| value != 0)
+    };
+    set(0x33C, 0x68) || set(0x32C, 0x4FE6)
 }
 
 fn menu(memory: &dyn GameMemory) -> Option<Context> {

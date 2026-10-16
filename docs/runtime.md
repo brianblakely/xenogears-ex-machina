@@ -4220,10 +4220,14 @@ Headset class (Low tier, depth of field off unless enabled).
   2 and saves to it, and IndexedDB holds that card (formatted, the save in
   its first block, equal to the session's image) while the session runs,
   the canvas's loop never having run (the session keeps rewind history,
-  as the player's play does). It then clicks the panel's Saves
+  as the player's play does). Once the history holds its 30 seconds of
+  play, it clicks the panel's Saves
   and Save state with the right controller's ray and trigger (the state
   in IndexedDB, its checksum verified, the HUD's "State saved", the game
-  held by Settings' pause), turns fast-forward on with Back+RT (the right
+  held by Settings' pause), keeps Settings shown 4 seconds more and checks
+  that the pause took no play time off the history (as many states after
+  it, one fewer at most: 28 from game frame 10 100 before and after in a
+  run here), turns fast-forward on with Back+RT (the right
   stick's click with the right grip; inspection not toggled) and checks
   the game's rate against 1× at the factor the session paces it at
   (above 1.2, and the rate 0.7 to 1.3 of 1× times it: in runs on IWER's
@@ -5065,7 +5069,8 @@ checksums are generated for export and checked on import, outside the periodic
 checkpoint; restoring a queued state still validates its identity and devices.
 Settings controls the seconds between states (default 1)
 and the history length (default 30 seconds). Both use real elapsed play time,
-independent of FF speed; paused time is excluded. The interval cannot exceed
+independent of FF speed; paused time is excluded (a headset's pause, the
+player's or Settings', in OpenXR and WebXR alike). The interval cannot exceed
 the history length. The original game's pause screens stop snapshots and freeze
 the queue's elapsed-play time, preserving history for when play resumes. Pausing
 restarts the snapshot interval on resume. Increasing and decreasing either value
@@ -5224,10 +5229,15 @@ listing (`card`, none without a card: `formatted`, `free_blocks`, `problems`,
 change now (`busy`). The recorded `card_present {slot, present}` takes a
 card out or puts it back ([Cards in and out](#cards-in-and-out)); `status`
 reports both cards' (`card_present`), where the Kanji font came from
-(`kanji_font`: `bios` or `substitute`) and what the storage line shows
-(`storage`: `pending_writes`, the card writes the storage has not yet
-taken; `errors`, the cards' storage errors; `kanji_font_notice`, why an
-imported BIOS image is unused, or null). File commands
+(`kanji_font`: `bios` or `substitute`) and what the native hosts' storage
+line shows (`storage`: `pending_writes`, the card writes the storage has
+not yet taken; `errors`, the cards' storage errors; `kanji_font_notice`,
+why an imported BIOS image is unused, or null). The browser's page writes
+the cards to IndexedDB and checks an imported BIOS image itself, so its
+session's `storage` always reads no pending writes, no errors and no
+notice; browser agents read its storage line's results from
+`window.xem.status().page`: `cards` (`pending`, `error`, `notice`) and
+`biosNotice`. File commands
 are accepted only as explicit native host requests; scheduled logs accept
 game input, setup and pacing commands and cannot access files or list cards.
 Browsers use explicit Settings operations or
@@ -5397,10 +5407,7 @@ hold Hold to rewind under an OpenXR controller, Monado's simulated
 controllers pressing nothing and pointing where no test chooses); an
 agent's held rewind and a binding's are one hold (either's release ends
 it); xem-headless has no storage retry (`card.retry_writes` is the hosts'
-Retry pending card writes); in a WebXR session Settings' pause is not
-taken off the history's play time (the page's clock runs on through it,
-where the native hosts' `Game::resume` restarts the history's timer), so a
-long pause there ages the history;
+Retry pending card writes);
 the Android host's headset loop with its files directory as the state
 directory has not run (the emulator has no OpenXR runtime); fast-forward
 in a headset reaches what the host's batches reach, not the setting's
@@ -5752,16 +5759,25 @@ menus' file screens (the save, copy and delete screens of a field's and the
 world map's menu and of the disc change, and the title's Load: slot39's
 `menu_file_screen_run`), which list them when they open and then act by name
 on what they listed, so an Overwrite or a Delete chosen after an import
-would reach the save of that name on the imported card. While one shows, an
-import into either card is refused ("memory card 1 not changed: the game's
-file screen shows the cards' saves and would act on the ones it listed;
-leave it, then try again"), on every host and through `card_import` alike,
-and the next import after the player leaves it goes through; the screen
-opened again lists the card anew. Whether one shows is read from the game's
-memory when each frame ends, a state is restored or the console resets
-(`xem_core::context::file_screen`: the screen's card mode,
-`MenuFlags.card_mode`, while a menu runs), kept by the card device for the
-changes between frames (`Card::file_screen`, which no state holds).
+would reach the save of that name on the imported card. While one shows,
+from the frame it begins to read the cards (before it lists them) until its
+command has returned, an import into either card is refused ("memory card 1
+not changed: the game's file screen shows the cards' saves and would act on
+the ones it listed; leave it, then try again"), on every host and through
+`card_import` alike, and the next import after the player leaves it goes
+through; the screen opened again lists the card anew. Whether one shows is
+read from the game's memory when each frame ends, a state is restored or
+the console resets (`xem_core::context::file_screen`, while a menu runs:
+the card screen's polling, `MenuCard.mode`, which
+`menu_file_screen_enter_card_mode` sets where it forgets the last listing
+and `menu_top_command_run` clears once the screen has returned, or the
+screen's card mode, `MenuFlags.card_mode`, set once it has listed the cards
+and held until it ends), kept by the card device for the changes between
+frames (`Card::file_screen`, which no state holds). On the load slice's
+inputs to the title's Load, an import is taken up to frame 2787 and refused
+from 2788, where the screen begins to read the cards, nine frames before
+its card mode (2797): the card mode alone left those frames open, and an
+import taken in them left the screen listing the card it replaced.
 
 Tests: `xem-core`'s `card_file` tests make every container from a card or a
 save built here (this game's save with its title, digit, disc and checksum
@@ -5794,9 +5810,10 @@ refused and changes nothing, `card_list` says why; the save commits and the
 import then applies);
 `a_card_import_waits_for_the_games_file_screen_to_close_and_a_restore_reads_it_again`
 (the stand-in's memory showing a file screen as the game's does when a
-frame ends: an import refused by name, `card_list` saying why, nothing
-changed; closed, the import goes through once a frame has ended; a state
-taken while it showed shows it again once restored);
+frame ends, reading the cards before its card mode, then in it: an import
+refused by name each time, `card_list` saying why, nothing changed; closed,
+the import goes through once a frame has ended; a state taken while it
+showed shows it again once restored);
 `scheduled_file_operations_are_rejected_before_any_command_is_queued`
 covers the card commands and `card_list`. `xem-game/tests/cards.rs` (a
 stand-in module, card files in a temporary directory):
@@ -5819,7 +5836,16 @@ of a card holding two saves is refused into either slot with the reason,
 `card_list` says it, and neither card or its file changes; Circle back to
 the screen's commands, still refused; Circle again to the title's commands,
 then the import goes through, and the Load opened again lists the imported
-card's two saves).
+card's two saves) and
+`an_import_at_each_frame_of_the_loads_opening_is_refused_or_listed_as_the_card_it_put_in`
+(disc 1: from a state taken as the Load opens, at frame 2775, an import at
+each of the 35 frames to 2809 of a card holding a save of the same name
+with another title and a second save: once the screen has settled, at
+2860, it lists the card the slot holds, each save's name and title and
+their count, whether the import was taken or refused; taken while the
+screen does not read the cards, refused while it does or its card mode
+holds; with the card mode alone, the import at 2789 was taken and the
+screen listed one save of the two).
 `xem-headless/tests/saves.rs` (local: both discs; its five tests side by
 side 28 s here) plays the game's own file screens, pressing along the
 cursor paths their screens show (the box cursor read from slot39's
@@ -5868,8 +5894,9 @@ picker, a raw save named by a document id among them) are not driven by a
 test, only the command and the file name rule they share; the browser's
 take-back of IndexedDB when frames run during an import is not tested; the
 refusal while a file screen shows is driven at the title's Load only (the
-save, copy and delete screens and the disc change's share its card mode,
-read from their code, not driven with an import), and the frame or two in
+save, copy and delete screens and the disc change's share its card
+polling and card mode, read from their code, not driven with an import),
+and the frame or two in
 which a field or the world map has begun to run a menu but not yet made its
 state block read the last menu's block, as the interface context does; a
 file screen's copy and delete are tested over the game's own

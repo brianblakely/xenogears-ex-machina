@@ -780,13 +780,18 @@ fn a_card_changes_from_outside_the_game_only_between_its_card_calls() {
 
 /// The game's file screen as `xem_core::context::file_screen` reads it: a
 /// menu running (`menu_state_debug_start` 0), its state block, the block's
-/// flags and their card mode (the blocks at made-up places in RAM).
-fn show_file_screen(s: &mut Session<Counter>, shown: bool) {
+/// flags with their card mode (`card_mode`, once the screen has listed the
+/// cards) and its card state polling the cards (`reading`, from when the
+/// screen begins to read them; `MenuCard.mode` 2), the blocks at made-up
+/// places in RAM.
+fn show_file_screen(s: &mut Session<Counter>, reading: bool, card_mode: bool) {
     let memory = s.runtime.memory();
     memory.write(0x8005_9178, &[0]).unwrap();
     memory.write_u32(0x8006_25A0, 0x8010_0000).unwrap();
+    memory.write_u32(0x8010_0000 + 0x32C, 0x8010_2000).unwrap();
     memory.write_u32(0x8010_0000 + 0x33C, 0x8010_1000).unwrap();
-    memory.write(0x8010_1000 + 0x68, &[u8::from(shown)]).unwrap();
+    memory.write(0x8010_2000 + 0x4FE6, &[if reading { 2 } else { 0 }]).unwrap();
+    memory.write(0x8010_1000 + 0x68, &[u8::from(card_mode)]).unwrap();
 }
 
 #[test]
@@ -800,18 +805,21 @@ fn a_card_import_waits_for_the_games_file_screen_to_close_and_a_restore_reads_it
         let now = s.runtime.services().clock.now;
         s.runtime.services().card.import_file(0, &other, "other.mcd", now)
     };
-    // The screen shows when a frame ends: the import is refused by name,
-    // `card_list` says why, and nothing changes.
-    show_file_screen(&mut s, true);
-    assert!(s.frame().unwrap());
-    let refused = import(&mut s).unwrap_err();
-    assert!(refused.starts_with("memory card 1 not changed: the game's file screen shows the cards' saves"), "{refused}");
-    let busy = s.execute(&json!({"cmd":"card_list","slot":0}))["busy"].clone();
-    assert!(busy.as_str().is_some_and(|b| b.contains("file screen")), "{busy}");
-    assert!(card_image(&mut s) == formatted() && stored.borrow()[0] == formatted(), "nothing changed");
+    // The screen shows when a frame ends, from when it begins to read the
+    // cards (before its card mode) and in its card mode: the import is
+    // refused by name, `card_list` says why, and nothing changes.
+    for (reading, card_mode) in [(true, false), (true, true), (false, true)] {
+        show_file_screen(&mut s, reading, card_mode);
+        assert!(s.frame().unwrap());
+        let refused = import(&mut s).unwrap_err();
+        assert!(refused.starts_with("memory card 1 not changed: the game's file screen shows the cards' saves"), "{refused}");
+        let busy = s.execute(&json!({"cmd":"card_list","slot":0}))["busy"].clone();
+        assert!(busy.as_str().is_some_and(|b| b.contains("file screen")), "{busy}");
+        assert!(card_image(&mut s) == formatted() && stored.borrow()[0] == formatted(), "nothing changed");
+    }
     let shown = s.snapshot_bytes().unwrap();
     // Closed, the import goes through once a frame has ended.
-    show_file_screen(&mut s, false);
+    show_file_screen(&mut s, false, false);
     assert!(import(&mut s).is_err(), "between frames the last frame's end stands");
     assert!(s.frame().unwrap());
     assert_eq!(import(&mut s).unwrap(), "Card 1: raw card, no saves");
