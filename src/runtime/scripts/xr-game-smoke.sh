@@ -51,7 +51,9 @@
 #   and Lahan left for the world map and a field entered from it each go
 #   from the diorama to the screen and back to a diorama (the battle's, the
 #   world map's, the field's), and map 25's story movie shows on the screen
-#   between its field's dioramas; in every run with the diorama as the view,
+#   between its field's dioramas, the settings panel's place beside the
+#   pane after a frame that showed the diorama and below the screen after
+#   one that showed the screen; in every run with the diorama as the view,
 #   the view eases between the diorama and the screen over 0.3 s;
 # - a battle on foot (its log attacking every 30 frames) and the world map
 #   (its vehicle driven on, at 25%) as dioramas: the diorama shows in every
@@ -889,19 +891,33 @@ if line:
         check(len(diffs) >= 100 and within >= 0.98, f"field 12 {side}: {within:.1%} of {len(diffs)} eye pixels on the pane's opaque texels show them within 2 levels")
         print(f"field 12 diorama, {side} eye: the pane ({opaque:.0%} of it opaque) spans {min(xs):.0f}-{max(xs):.0f} x {min(ys):.0f}-{max(ys):.0f}; "
               f"{within:.1%} of {len(diffs)} pixels on its opaque texels within 2 levels (worst {max(diffs, default=255)})")
+# How far round to the right of the seat's way (seat=) a room point (x, z)
+# stands, about the vertical through the seat (degrees).
+def round_from(r, x, z):
+    sx, _, sz, yaw = (float(v) for v in r["seat"].replace(";", ",").split(","))
+    dx, dz = x - sx, z - sz
+    return math.degrees(math.atan2(dx * math.cos(yaw) - dz * math.sin(yaw), -dx * math.sin(yaw) - dz * math.cos(yaw)))
+
 # Where the settings panel's middle (panel=) stands from the diorama's pane
 # (pane=, its middle; 0.6 m wide) as seen from the seat (seat=): degrees
 # round to the right, about the vertical through the seat, from the pane's
 # right edge and from its middle.
 def beside_pane(r):
-    sx, _, sz, yaw = (float(v) for v in r["seat"].replace(";", ",").split(","))
-    def round_to(x, z):
-        dx, dz = x - sx, z - sz
-        return math.degrees(math.atan2(dx * math.cos(yaw) - dz * math.sin(yaw), -dx * math.sin(yaw) - dz * math.cos(yaw)))
+    yaw = float(r["seat"].split(";")[1])
     panel, pane = ([float(v) for v in r[k].split(",")] for k in ("panel", "pane"))
     edge = (pane[0] + 0.3 * math.cos(yaw), pane[2] - 0.3 * math.sin(yaw))
-    at = round_to(panel[0], panel[2])
-    return at - round_to(*edge), at - round_to(pane[0], pane[2])
+    at = round_from(r, panel[0], panel[2])
+    return at - round_from(r, *edge), at - round_from(r, pane[0], pane[2])
+
+# Where the settings panel stands (panel=, placed before the frame
+# presents): beside the diorama's pane (its middle 20 degrees or more round
+# to the right of the seat's way) or below the screen (straight ahead, half
+# a metre or more below the seat).
+def panel_place(r):
+    x, y, z = (float(v) for v in r["panel"].split(","))
+    up = y - float(r["seat"].split(",")[1])
+    turn = round_from(r, x, z)
+    return "beside" if turn >= 20 else "below" if abs(turn) < 0.5 and up < -0.5 else f"{turn:.1f} degrees round, {up:.2f} m up"
 
 # Prayer hands open the settings panel beside the diorama's pane (its quad
 # layer: its middle some 20 degrees or more round from the pane's right
@@ -1329,7 +1345,15 @@ diorama_easing()
 # The diorama's fallbacks: from the first frame the diorama shows alone,
 # each run goes to the screen and back to a diorama, each way through frames
 # between the two (D the diorama alone, E between, S the screen alone; the
-# context the game reports in each).
+# context the game reports in each). The settings panel stands beside the
+# pane after a frame that showed the diorama (pane=), and below the screen
+# after one where the screen stood in for it.
+def fallback_panel(name):
+    rows = records(name)
+    wrong = [(b["n"], a["pane"], panel_place(b)) for a, b in zip(rows, rows[1:]) if panel_place(b) != ("beside" if a["pane"] != "-" else "below")]
+    places = [panel_place(r) for r in rows[1:]]
+    check(not wrong and "beside" in places and "below" in places, f"{name}: the settings panel beside the pane after the diorama and below the screen after the screen: {wrong[:5]}")
+    return f"the panel beside the pane in {places.count('beside')} frames, below the screen in {places.count('below')}"
 def diorama_fallbacks():
     for name, wanted, kinds, what in (
         ("diorama-menu.log", "DESED", ["walk", "menu", "walk"], "field 30's menu"),
@@ -1351,7 +1375,7 @@ def diorama_fallbacks():
         steady = [run for run in runs if run[0] != "E"]
         check("".join(run[0] for run in runs) == wanted and all(k is None or k in run[3] for k, run in zip(kinds, steady)),
               f"{name}: {what} from the diorama to the screen and back: {told}")
-        print(f"diorama fallbacks, {what}: {told}")
+        print(f"diorama fallbacks, {what}: {told}; {fallback_panel(name)}")
     # Map 25's story movie: the diorama eases out over its first rebuilt
     # frames, the movie shows on the screen alone, and map 25's diorama
     # eases back in after it.
@@ -1367,7 +1391,7 @@ def diorama_fallbacks():
             f"{len(movie)} rebuilt frames ({len(alone)} on the screen alone), eased back in over {len(back)} to map 25's diorama from "
             f"{rows[after[0]]['n'] if after else '-'}")
     check(len(movie) >= 300 and before and out_ and len(alone) * 10 >= len(movie) * 9 and after and back, f"diorama-movie.log: map 25's movie between dioramas: {told}")
-    print(f"diorama fallbacks, map 25's movie: {told}")
+    print(f"diorama fallbacks, map 25's movie: {told}; {fallback_panel('diorama-movie.log')}")
 diorama_fallbacks()
 
 # The scene tour: each capture shows the screen in front of the eye, or the

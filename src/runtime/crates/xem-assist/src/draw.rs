@@ -520,10 +520,12 @@ mod tests {
         let seats = [Mat4::IDENTITY, Mat4::from_rotation_translation(Quat::from_rotation_y(0.8), Vec3::new(0.3, 0.1, -0.2))];
         let degree = 1f32.to_radians();
         let (mut pane_gap, mut key_gap, mut turns) = (f32::MAX, f32::MAX, (f32::MAX, 0.0f32));
+        // Where the panel's middle stands behind the seat's shoulder line:
+        // degrees round and up.
+        let mut behind: Vec<(f32, f32)> = Vec::new();
         for pose in seats {
             let seat = Seat { pose };
             let eye = seat.position();
-            let forward = seat.orientation() * Vec3::NEG_Z;
             // How far round to the right of the seat's way a point is, about
             // the vertical through the seat (radians).
             let round_to = |p: Vec3| {
@@ -552,9 +554,18 @@ mod tests {
                             let towards = (eye - panel.pose.position) * Vec3::new(1.0, 0.0, 1.0);
                             assert!((panel.pose.orientation * Vec3::Z).dot(towards.normalize()) > 0.9999 && (panel.pose.orientation * Vec3::Y).y > 0.9999,
                                 "{case}: the panel upright, facing the seat: {panel:?}");
-                            let turn = forward.cross(-towards.normalize()).y.asin();
-                            assert!(turn < 0.0, "{case}: right of the seat's way");
-                            turns = (turns.0.min(-turn), turns.1.max(-turn));
+                            // Its middle right of the seat's way, past the
+                            // seat's shoulder line (90 degrees round) only
+                            // with the table at its nearest, highest and most
+                            // tilted, which lifts the pane near the zenith.
+                            let turn = round_to(panel.pose.position);
+                            assert!(turn > 0.0, "{case}: right of the seat's way");
+                            turns = (turns.0.min(turn), turns.1.max(turn));
+                            if turn > std::f32::consts::FRAC_PI_2 {
+                                let middle = pose.inverse().transform_point3(panel.pose.position);
+                                assert!((height, distance, tilt) == (0.3, 0.3, 45.0), "{case}: the panel's middle {:.1} degrees round", turn.to_degrees());
+                                behind.push((turn.to_degrees(), middle.y.atan2(middle.x.hypot(middle.z)).to_degrees()));
+                            }
                             let nearest = round(&panel).map(round_to).into_iter().fold(f32::MAX, f32::min);
                             for (w, h) in [(320.0, 224.0), (320.0, 240.0), (398.0, 224.0), (320.0, 216.0)] {
                                 let space = DioramaSpace::first(&crate::headset::tests::level_camera(), 256.0, Vec2::new(w, h), &table, pose).expect("a space");
@@ -585,11 +596,13 @@ mod tests {
                 }
             }
         }
+        // That table puts it there from both seats, with both panels.
+        assert_eq!(behind.len(), 4, "the panel's middle behind the seat's shoulder line: {behind:?}");
         // The default table's, from the seat at the origin (recorded).
         let default = panel(&Seat::default(), Beside::Table(&Table::default()), 1120.0 / 880.0);
         let middle = default.pose.position;
-        eprintln!("beside the diorama's pane the panel stands at least {:.2} degrees off it and {:.2} off its keys, its middle {:.1}-{:.1} degrees right of the seat's way; \
-            with the default table at {middle:.3}, {:.1} degrees right and {:.1} up, {:.3} m wide",
+        eprintln!("beside the diorama's pane the panel stands at least {:.2} degrees off it and {:.2} off its keys, its middle {:.1}-{:.1} degrees right of the seat's way \
+            (past 90 with the table nearest, highest and most tilted, round and up: {behind:.1?}); with the default table at {middle:.3}, {:.1} degrees right and {:.1} up, {:.3} m wide",
             pane_gap.to_degrees(), key_gap.to_degrees(), turns.0.to_degrees(), turns.1.to_degrees(),
             middle.x.atan2(-middle.z).to_degrees(), middle.y.atan2(middle.x.hypot(middle.z)).to_degrees(), default.size.0);
     }

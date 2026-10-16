@@ -687,7 +687,7 @@ impl XemApp {
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
             let seat = renderer.xr_seat;
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
-                let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), panel.size(), screen.quad.size);
+                let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), panel.size(), screen.quad.size, screen.diorama.is_some());
                 // A controller's select clicks where that controller points;
                 // otherwise the pointer source aims and a pinch clicks.
                 let selected_ray = self.xr_select.and_then(|hand| input.rays[hand]);
@@ -1786,7 +1786,7 @@ impl XemApp {
                 // (x, y, z, w) and size (metres).
                 "panelSize": self.renderer.as_ref().and_then(|r| r.panel()).map(|p| { let (w, h) = p.size(); [w as f32 / p.scale_factor(), h as f32 / p.scale_factor()] }),
                 "panel": self.renderer.as_ref().and_then(|r| Some((r.xr_seat, r.panel()?, self.xr_screen?))).map(|(seat, p, screen)| {
-                    let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), p.size(), screen.quad.size);
+                    let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), p.size(), screen.quad.size, screen.diorama.is_some());
                     json!({"position": quad.pose.position.to_array(), "orientation": quad.pose.orientation.to_array(), "size": [quad.size.0, quad.size.1]})
                 }),
                 "rays": self.xr_input.as_ref().map(|i| i.rays.map(|r| r.map(|r| { let f = r.forward(); [r.position.x, r.position.y, r.position.z, f.x, f.y, f.z] }))),

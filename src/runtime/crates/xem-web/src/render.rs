@@ -38,15 +38,17 @@ pub struct Overlay {
 /// The settings panel's place in a headset (as the OpenXR host's): below
 /// the screen (`screen`: its size in metres, as scaled), off it, facing the
 /// player, 55 cm wide; beside the diorama's pane, off it and its keys and
-/// above the table, while the diorama is the view (`xem_assist::draw::panel`).
-pub fn xr_panel_quad(seat: &Seat, settings: &SettingsService, panel_px: (u32, u32), screen: (f32, f32)) -> xem_assist::headset::Quad {
+/// above the table, while the diorama is the view and the frame shows it
+/// (`diorama`; where it gives way, the screen stands in for it)
+/// (`xem_assist::draw::panel`).
+pub fn xr_panel_quad(seat: &Seat, settings: &SettingsService, panel_px: (u32, u32), screen: (f32, f32), diorama: bool) -> xem_assist::headset::Quad {
     use xem_assist::draw::Beside;
     let graphics = &settings.settings().graphics;
     let aspect = panel_px.1.max(1) as f32 / panel_px.0.max(1) as f32;
     // (The Original renderer never shows the diorama.)
     match xr_view(graphics) {
-        HeadsetView::Diorama(table) => xem_assist::draw::panel(seat, Beside::Table(&table), aspect),
-        HeadsetView::Screen => xem_assist::draw::panel(seat, Beside::Screen { size: screen, distance: f32::from(graphics.xr.distance_cm) / 100.0 }, aspect),
+        HeadsetView::Diorama(table) if diorama => xem_assist::draw::panel(seat, Beside::Table(&table), aspect),
+        _ => xem_assist::draw::panel(seat, Beside::Screen { size: screen, distance: f32::from(graphics.xr.distance_cm) / 100.0 }, aspect),
     }
 }
 
@@ -799,7 +801,7 @@ impl WebRenderer {
         let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scaling.scale;
         let height = width * screen_size.1 as f32 / screen_size.0 as f32;
         let panel_quad = self.panel.as_ref().filter(|_| self.panel_visible).map(|panel| {
-            let quad = xr_panel_quad(&seat, settings, panel.size(), (width, height));
+            let quad = xr_panel_quad(&seat, settings, panel.size(), (width, height), pane.is_some());
             (panel.view().clone(), Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position), Vec2::new(quad.size.0, quad.size.1))
         });
         let targets = self.xr.as_ref().expect("made above");

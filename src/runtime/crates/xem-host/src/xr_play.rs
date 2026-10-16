@@ -473,16 +473,18 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         assist.scaling.view(matches!(xr_view(&graphics), XrView::Diorama(_)).then_some(graphics.xr.diorama_scale));
         // The settings panel: below the screen (as large as two-hand scaling
         // makes it, in the last picture's shape), off it, or beside the
-        // diorama's pane, off it and its keys, above the table (which the
-        // Original renderer never shows).
+        // diorama's pane, off it and its keys, above the table, while the
+        // last frame showed the diorama (which the Original renderer never
+        // shows; where it gives way, the screen stands in for it).
         let panel = {
             let width = f32::from(graphics.xr.width_cm) / 100.0 * assist.scaling.scale;
             let screen = (width, width * presented_size.1 as f32 / presented_size.0 as f32);
             let distance = f32::from(graphics.xr.distance_cm) / 100.0;
             let aspect = panel_px.1 as f32 / panel_px.0 as f32;
+            let diorama = last_screen.is_some_and(|screen| screen.diorama.is_some());
             let quad = match xr_view(&graphics) {
-                XrView::Diorama(table) => xem_assist::draw::panel(&assist.seat, xem_assist::draw::Beside::Table(&table), aspect),
-                XrView::Screen => xem_assist::draw::panel(&assist.seat, xem_assist::draw::Beside::Screen { size: screen, distance }, aspect),
+                XrView::Diorama(table) if diorama => xem_assist::draw::panel(&assist.seat, xem_assist::draw::Beside::Table(&table), aspect),
+                _ => xem_assist::draw::panel(&assist.seat, xem_assist::draw::Beside::Screen { size: screen, distance }, aspect),
             };
             PanelPlacement { pose: Pose { position: quad.pose.position, orientation: quad.pose.orientation }, size: quad.size }
         };
