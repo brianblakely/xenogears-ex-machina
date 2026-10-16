@@ -180,7 +180,9 @@ pub(crate) struct Near {
 
 /// [`PassUniform::options`]: depth from its reciprocal, which interpolates
 /// across the screen as the true depth does (a camera within the scene sees
-/// polygons spanning much of its depth range; draw.wgsl).
+/// polygons spanning much of its depth range; draw.wgsl), reversed: nearer
+/// is larger, where a float keeps its precision at any distance
+/// ([`DepthMode::Nearer`]; fills write the far plane, 0).
 pub(crate) const PASS_RECIPROCAL_DEPTH: u32 = 16;
 /// [`PassUniform::options`]: an eye of the diorama ([`diorama`]: drawn only
 /// inside the table's volume, coverage in alpha) and its interface pane
@@ -273,6 +275,9 @@ pub(crate) enum DepthMode {
     Over,
     /// Tested and written (depth-tested ordering).
     Test,
+    /// Tested and written where depth is reversed, nearer larger (a camera
+    /// within the scene: [`PASS_RECIPROCAL_DEPTH`]).
+    Nearer,
     /// Tested, not written (a diorama's translucent primitives).
     Read,
     /// Writes the far plane (fills).
@@ -467,6 +472,7 @@ impl Pipelines {
             let (compare, write) = match key.depth {
                 DepthMode::Over => (wgpu::CompareFunction::Always, false),
                 DepthMode::Test => (wgpu::CompareFunction::LessEqual, true),
+                DepthMode::Nearer => (wgpu::CompareFunction::GreaterEqual, true),
                 DepthMode::Read => (wgpu::CompareFunction::LessEqual, false),
                 DepthMode::Clear => (wgpu::CompareFunction::Always, true),
             };
@@ -573,6 +579,9 @@ pub(crate) struct Builder<'a> {
     /// polygons, which neither the GPU's size limit nor back-face culling
     /// drops, and depth is tested whatever the ordering.
     pub(crate) near: Option<Near>,
+    /// The target's depth is reversed, nearer larger (a camera within the
+    /// scene, and the interface drawn over its picture after it).
+    pub(crate) reversed: bool,
     /// Moves every vertex (shadows, interpolated replays).
     pub(crate) remap: Option<Box<dyn Fn(&mut Vertex) + 'a>>,
     /// The area writes are shown in (a replay's display area; everywhere
@@ -734,6 +743,7 @@ impl<'a> Builder<'a> {
             spill: 0,
             reveal: Reveal::Hidden,
             near: None,
+            reversed: false,
             remap: None,
             rows_left: ROW_BUDGET,
             shown: None,
@@ -1130,7 +1140,11 @@ impl<'a> Builder<'a> {
         } else {
             vec![rect(left - spill, right + spill)]
         };
-        let depth = if (!fidelity.painter_ordering || self.near.is_some()) && projected { DepthMode::Test } else { DepthMode::Over };
+        let depth = match (!fidelity.painter_ordering || self.near.is_some()) && projected {
+            true if self.reversed => DepthMode::Nearer,
+            true => DepthMode::Test,
+            false => DepthMode::Over,
+        };
         let end = self.vertices.len() as u32;
         // Semi-transparent pixels leave the depth and class under them; those
         // of the interface (windows) are then marked as interface, so no

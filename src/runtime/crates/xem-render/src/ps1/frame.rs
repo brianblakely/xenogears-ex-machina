@@ -25,6 +25,7 @@
 //!   [`first_person`]); polygons reaching behind its near plane are clipped
 //!   there as they are drawn, and depth is tested whatever the ordering.
 
+use super::diorama::Layers;
 use super::{
     AUX_FORMAT, Builder, COLOR_FORMAT, Capture, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
     Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset,
@@ -142,6 +143,9 @@ pub struct FrameRenderer {
     /// Primitives the last replay drew (for the effects), when it replayed.
     replayed: Vec<TraceOp>,
     replaying: bool,
+    /// The last replay looked from within the scene: its depth is reversed
+    /// ([`super::DepthMode::Nearer`]), for the interface drawn over it.
+    reversed: bool,
     /// The native VRAM when the newest frame began (its log's start).
     snapshot: Option<Arc<Vec<u16>>>,
     /// The native VRAM a replay samples ([`ReplayVram`]) and its staged
@@ -332,6 +336,7 @@ impl FrameRenderer {
             previous_ops: Vec::new(),
             replayed: Vec::new(),
             replaying: false,
+            reversed: false,
             snapshot: None,
             vram: ReplayVram::new(device, "frame replay vram"),
             feedback: texture(device, "frame feedback", (1, 1), COLOR_FORMAT, picture_usage()),
@@ -456,6 +461,7 @@ impl FrameRenderer {
         self.side = side;
         self.replaying = replay;
         self.overlay.clear();
+        self.reversed = false;
         if !replay {
             // The display as it is; or, without the interface or with it
             // alone, nothing while there is nothing to replay (no log of
@@ -563,6 +569,8 @@ impl FrameRenderer {
             Reveal::Hidden
         };
         builder.near = look.map(|look| Near { distance: look.near, h: look.h, shift: look.shift });
+        builder.reversed = look.is_some();
+        self.reversed = look.is_some();
         for op in &ops {
             builder.op(op);
         }
@@ -583,8 +591,10 @@ impl FrameRenderer {
         queue.write_buffer(&self.overlay_uniform, 0, bytemuck::bytes_of(&overlay_uniform));
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(device, queue, &builder.staging);
-        // Start from black (the replayed clear covers what the game cleared).
+        // Start from black (the replayed clear covers what the game cleared),
+        // at the far plane (0 where depth is reversed).
         clear(encoder, [&color, &aux]);
+        let far = if look.is_some() { 0.0 } else { 1.0 };
         let depth_view = depth.create_view(&Default::default());
         let visible_depth_view = self.depth.create_view(&Default::default());
         for view in std::iter::once(&depth_view).chain(extra.then_some(&visible_depth_view)) {
@@ -593,7 +603,7 @@ impl FrameRenderer {
             color_attachments: &[],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view,
-                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(far), store: wgpu::StoreOp::Store }),
                 stencil_ops: None,
             }),
             ..Default::default()
@@ -655,6 +665,7 @@ impl FrameRenderer {
         let options: DrawOptions = *renderer.options();
         let mut builder = Builder::reusing(&options, &self.overlay, &mut self.overlay_storage);
         builder.scene = self.overlay_scene;
+        builder.reversed = self.reversed;
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.spill = self.side;
         builder.capture = renderer.capture.rect.filter(|_| renderer.capture.scale == self.scale).map(|rect| (rect, renderer.capture.side));
@@ -1202,6 +1213,10 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
     };
     let point = view_point;
     let feet = sprite_feet(ops);
+    let raises = sprite_raises(ops, &feet);
+    // The game's order among faces in one plane, which depth cannot tell
+    // apart: each lifted over those it is drawn over there.
+    let mut layers = Layers::default();
     ops.retain_mut(|op| {
         let TraceOp::Draw(p) = op else { return true };
         let Some(((ox, oy), _)) = p.projection else { return true };
@@ -1215,13 +1230,14 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         let mut moved = [[0.0f32; 3]; 4];
         let anchor = feet.get(&p.owner).copied().filter(|_| p.class == Class::Sprite);
         let spread = anchor.map(&across);
+        let raise = anchor.and_then(|anchor| raises.get(&anchor.map(f32::to_bits))).copied().unwrap_or(0.0);
         for (i, m) in moved.iter_mut().enumerate().take(count) {
             let Some(q) = point(p, i) else { return false };
             *m = match (anchor, spread) {
                 (Some(anchor), Some(s)) => {
                     let base = camera(anchor);
                     let (right, down) = (q[0] - anchor[0], q[1] - anchor[1]);
-                    std::array::from_fn(|k| base[k] + right * s[k] - down * up[k])
+                    std::array::from_fn(|k| base[k] + right * s[k] + (raise - down) * up[k])
                 }
                 _ => camera(q),
             };
@@ -1229,6 +1245,7 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         if moved[..count].iter().all(|m| m[2] < look.near) {
             return false;
         }
+        lift(&mut layers, &mut moved[..count]);
         let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
         let project = |m: [f32; 3]| {
             let z = m[2].max(look.near);
@@ -1250,6 +1267,38 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
     });
 }
 
+/// Faces of a look from within the scene in one plane: their planes within
+/// this of each other (the game camera's view-space units, a field's about
+/// three a world unit: a quarter of the space between a field's shadows and
+/// their floor), found by cells this large of the plane.
+const COPLANAR: f32 = 0.25;
+const PLANE_CELL: f32 = 768.0;
+/// A face drawn over others in their plane is drawn this share of its depth
+/// nearer a face below it (with depth reversed, eighty times a float's
+/// precision: a tenth of a unit 10 000 away), where it shows as it did.
+const LIFT: f32 = 1e-5;
+
+/// Lifts a face, its `points` in a look's camera space (the eye at the
+/// origin), over the faces it overlaps that were drawn before it in its
+/// plane ([`Layers`]): each point moved towards the eye along its ray by
+/// [`LIFT`] of its depth a face below it, so it shows where it did, nearer.
+fn lift(layers: &mut Layers, points: &mut [[f32; 3]]) {
+    if points.len() < 3 {
+        return;
+    }
+    let corners: Vec<glam::Vec3> = points.iter().map(|m| glam::Vec3::from(*m)).collect();
+    let normal = (corners[1] - corners[0]).cross(corners[2] - corners[0]).normalize_or_zero();
+    if normal == glam::Vec3::ZERO {
+        return;
+    }
+    let normal = if normal.dot(-corners[0]) < 0.0 { -normal } else { normal };
+    let below = layers.place(normal, &corners, COPLANAR, 1.0, PLANE_CELL);
+    if below > 0.0 {
+        let nearer = 1.0 / (1.0 + below * LIFT);
+        points.iter_mut().for_each(|m| *m = m.map(|c| c * nearer));
+    }
+}
+
 /// A point on the screen and its depth, back in the game camera's view space
 /// through `p`'s projection.
 pub(crate) fn unproject(p: &Primitive, (x, y, z): (f32, f32, f32)) -> [f32; 3] {
@@ -1265,6 +1314,32 @@ pub(crate) fn unproject(p: &Primitive, (x, y, z): (f32, f32, f32)) -> [f32; 3] {
 pub(crate) fn view_point(p: &Primitive, i: usize) -> Option<[f32; 3]> {
     let v = &p.vertices[i];
     v.view.or_else(|| (v.z > 0.0).then(|| unproject(p, (v.fx, v.fy, v.z))))
+}
+
+/// How far a look from within the scene raises the sprites at each floor
+/// point of `ops` (`feet`, by the point's bits; view-space units along the
+/// world's up): the game draws a sprite a little below its floor point,
+/// over the floor whatever their depths, so they stand on the floor, their
+/// lowest part there, or above it as far as the game drew them above it (a
+/// jump: raised by nothing), as the diorama stands them.
+pub(crate) fn sprite_raises(ops: &[TraceOp], feet: &HashMap<u32, [f32; 3]>) -> HashMap<[u32; 3], f32> {
+    let scene = scene_offset(ops);
+    let mut raises: HashMap<[u32; 3], f32> = HashMap::new();
+    for op in ops {
+        let TraceOp::Draw(p) = op else { continue };
+        if p.class != Class::Sprite || p.projection.is_none() || !effective_class(p, scene).is_scene() {
+            continue;
+        }
+        let Some(anchor) = feet.get(&p.owner) else { continue };
+        for q in (0..p.vertex_count()).filter_map(|i| view_point(p, i)) {
+            let raise = raises.entry(anchor.map(f32::to_bits)).or_insert(0.0);
+            *raise = raise.max(q[1] - anchor[1]);
+        }
+    }
+    // Less than a hundredth of a unit is none: the floor point taken back
+    // through the projection lies that close to a part drawn at it.
+    raises.retain(|_, raise| *raise >= 0.01);
+    raises
 }
 
 /// Where each sprite of `ops` stands (by its owner), in the game camera's

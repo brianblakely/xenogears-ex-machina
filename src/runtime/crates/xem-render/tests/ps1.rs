@@ -563,6 +563,52 @@ fn sprites_stand_facing_the_view_at_their_feet_and_the_viewers_own_is_left_out()
     }
 }
 
+/// From within, the game's order among faces in one plane is kept, which
+/// depth cannot tell apart: a sprite's part drawn over another stands a
+/// little nearer (where it shows as before), a part beside it does not; and
+/// a sprite the game draws reaching below its floor point (over the floor,
+/// whatever their depths) stands on the floor, its lowest part there.
+#[test]
+fn from_within_a_part_drawn_over_another_stands_nearer_and_a_sprite_on_its_floor() {
+    // Sprite `owner`'s part at view-space `x0..x1` across and `y0..y1` down,
+    // 1000 ahead, its floor point (0, 200, 1000) as the game's projection
+    // shows it (centre 160, 120; H 256).
+    let part = |owner: u32, x0: f32, x1: f32, y0: f32, y1: f32, ground: [f32; 2]| {
+        let TraceOp::Draw(mut p) = primitive(0, 0, 0) else { unreachable!() };
+        p.shape = Shape::Quad;
+        p.class = Class::Sprite;
+        p.owner = owner;
+        p.ground = Some([160.0 + 256.0 * ground[0] / 1000.0, 120.0 + 256.0 * ground[1] / 1000.0, 1000.0]);
+        with_view(TraceOp::Draw(p), &[[x0, y0, 1000.0], [x1, y0, 1000.0], [x0, y1, 1000.0], [x1, y1, 1000.0]])
+    };
+    // The first reaches 50 below its floor point; the second, drawn over it,
+    // lies within it; another sprite's beside them stands on its floor point.
+    let mut ops = vec![
+        part(1, -50.0, 50.0, 50.0, 250.0, [0.0, 200.0]),
+        part(1, -30.0, 30.0, 80.0, 180.0, [0.0, 200.0]),
+        part(2, 300.0, 400.0, 50.0, 200.0, [350.0, 200.0]),
+    ];
+    first_person(&mut ops, &AHEAD);
+    let points: Vec<Vec<[f32; 3]>> = ops.iter().map(|op| match op {
+        TraceOp::Draw(p) => p.vertices.iter().map(|v| v.view.expect("in the view's camera")).collect(),
+        _ => unreachable!(),
+    }).collect();
+    // Standing on its floor point (y 200, as near as the projection takes it
+    // back): its lowest part there, its top 200 above, as tall as the game
+    // drew it.
+    let heights: Vec<f32> = points[0].iter().map(|m| m[1]).collect();
+    assert!(heights.iter().zip([0.0, 0.0, 200.0, 200.0]).all(|(y, expected)| (y - expected).abs() < 1e-3), "the first part stands on its floor point: {heights:?}");
+    assert!(points[0].iter().all(|m| m[2] == 1000.0), "the first part in its plane: {:?}", points[0]);
+    // The second, raised as much, a hundred-thousandth of its depth nearer
+    // and where it was in the picture.
+    for (m, (x, y)) in points[1].iter().zip([(-30.0, 30.0), (30.0, 30.0), (-30.0, 130.0), (30.0, 130.0)]) {
+        let nearer = 1000.0 - m[2];
+        assert!(nearer > 0.005 && nearer < 0.02, "the part drawn over it stands nearer ({nearer})");
+        assert!((m[0] / m[2] - x / 1000.0).abs() < 1e-6 && (m[1] / m[2] - y / 1000.0).abs() < 1e-6, "where it was: {m:?}");
+    }
+    assert!(points[2].iter().all(|m| m[2] == 1000.0), "a part beside them stays in its plane: {:?}", points[2]);
+}
+
 #[test]
 fn first_person_replaces_a_directional_sprite_once_and_restores_its_texture_cells() {
     use xem_gpu::{Projection, SpriteFacing, SpriteFacingPart, VramRect};

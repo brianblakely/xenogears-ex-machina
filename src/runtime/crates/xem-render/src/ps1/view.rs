@@ -7,7 +7,7 @@
 //! a pane of its own ([`GameView::present_headset`]).
 
 use super::diorama::{Diorama, DioramaEye, DioramaPresented, Fallback, XrView};
-use super::frame::projection_centre;
+use super::frame::{projection_centre, sprite_feet, sprite_raises};
 use super::{
     DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Interface, Lighting, Look, Ps1Renderer, Quality,
     central_depth,
@@ -736,10 +736,15 @@ impl GameView {
             Some(height) => height,
             None => {
                 // A sprite the frame does not draw stands as tall as the
-                // field's characters do (the axes carry the field's scale).
+                // field's characters do (the axes carry the field's scale);
+                // raised to stand on the floor as the view stands the
+                // sprites ([`super::frame::first_person`]).
+                let ops = self.main.frame.newest();
                 let scale = eye.axes[0].iter().map(|c| c * c).sum::<f32>().sqrt() / 4096.0;
-                let top = sprite_height(self.main.frame.newest(), eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
-                *view.height.insert(top * EYE_LEVEL)
+                let top = sprite_height(ops, eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
+                let feet = sprite_feet(ops);
+                let raise = feet.get(&eye.sprite).and_then(|anchor| sprite_raises(ops, &feet).get(&anchor.map(f32::to_bits)).copied()).unwrap_or(0.0);
+                *view.height.insert(top * EYE_LEVEL + raise)
             }
         };
         Some(Base {
@@ -1271,6 +1276,25 @@ impl GameView {
     /// [`GameView::present_headset`] drew, while it drew the eyes.
     pub fn eye_texture(&self, eye: usize) -> Option<&wgpu::Texture> {
         self.eyes.get(eye).filter(|_| self.headset)?.texture()
+    }
+
+    /// Where headset eye `eye` looked from within the scene at the last
+    /// [`GameView::present_headset`] that drew the eyes (its [`Look`]), and
+    /// its auxiliary picture: each pixel's class (blue: `AUX_WORLD`,
+    /// `AUX_MODEL` and `AUX_SPRITE` where the scene is drawn,
+    /// `AUX_BACKGROUND` where nothing is or the game's clear). For checks of
+    /// what the eyes see (tests).
+    pub fn eye_look(&self, eye: usize) -> Option<(Look, &wgpu::Texture)> {
+        let target = self.eyes.get(eye).filter(|_| self.headset)?;
+        Some((target.shown?.framing.look?, target.frame.aux()))
+    }
+
+    /// The look the screen's picture was last drawn with (first-person
+    /// inspection on a flat host: [`GameView::present`]), none while it
+    /// shows the game's camera or a headset's pane. For checks of what the
+    /// picture shows (tests), with [`GameView::frame`]'s classes.
+    pub fn screen_look(&self) -> Option<Look> {
+        self.main.shown.filter(|_| !self.headset)?.framing.look
     }
 
     /// What the renderer drew and dropped at the last presentation.

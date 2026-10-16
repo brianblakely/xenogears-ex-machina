@@ -2141,8 +2141,9 @@ one recorded for its frame (the newest within four vertical blanks when the
 frame's first primitive is drawn), so the view stands where the character
 stood in the frame shown.
 From the first frame recorded so it looks along the heading of the game's
-camera, level, from 0.9 of the character's sprite's height above its feet,
-with a 70-degree field of view across the original's 320 pixels (H 228.5).
+camera, level, from 0.9 of the character's sprite's height above its feet
+(raised as its sprite stands on the floor, below), with a 70-degree field of
+view across the original's 320 pixels (H 228.5).
 `frame::first_person` moves every scene vertex's point before the division
 into that camera (a vertex without one is taken back through the game's
 projection); a sprite's parts face the view, standing along the world's up
@@ -2153,7 +2154,25 @@ in the camera's space, colour and texture coordinates taken at the cut;
 neither the GPU's size limit nor back-face culling drops scene polygons, and
 depth is tested whatever the ordering, from its reciprocal, which
 interpolates across the screen as depth does (polygons span much of the
-view's depth). The interface stays as the game drew it (the compass too).
+view's depth), kept reversed (nearer larger: `DepthMode::Nearer`, fills
+writing the far plane, 0), where a float keeps its precision at any
+distance. The PS1 draws a primitive over another whatever their depths,
+and in one plane depth cannot tell them apart: a sprite's parts, split
+sprites at one floor point and faces drawn over others showed through each
+other pixel by pixel (a townsperson's shirt striped in field 30, seen from
+within close by). So `first_person` lifts each face over the faces it
+overlaps in its plane drawn before it (`diorama::Layers`, which the diorama
+lifts its faces by; planes within a quarter of a view-space unit are one),
+towards the eye along each point's ray by a hundred-thousandth of its depth
+a face below it (a tenth of a unit 10 000 away), where it shows as it did.
+The game also draws a sprite reaching below its floor point, over the floor
+whatever their depths (in fields 1, 12 and 30, 32 of 33 sprites, by 6 to 48
+view units, 2% to 24% of their height), which a look from within hid under
+the floor (the townspeople's feet in Lahan): the sprites at a floor point
+stand with their lowest part on it, or above it as far as the game drew them
+above it (a jump), as the diorama stands them (`frame::sprite_raises`), and
+the eye is raised with the character's own. The interface stays as the game
+drew it (the compass too).
 A frame recorded looking around but shown from the game's camera (the view
 just turned off) shows none of its culled faces: they lie anywhere, not
 only beside the screen.
@@ -2327,6 +2346,11 @@ through the trace's start (no camera record) and ends at the first frame
 with one; over a field's scene it stays; an eye that saw a green floor,
 the view off, another frame with the floor blue and the view on again,
 sees blue (held from before, it saw green: the tour's title).
+`xem-render`'s `from_within_a_part_drawn_over_another_stands_nearer_and_a_sprite_on_its_floor`:
+a sprite's part reaching 50 below its floor point stands on it, its top as
+high above as the game drew it, a part drawn over it in its plane stands a
+hundred-thousandth of its depth nearer where it showed, a part beside them
+stays.
 `xr-game-smoke.sh` plays it on Monado ([Headsets](#headsets)) and
 `web/tests/xr-game.test.mjs` on IWER, whose scene tour toggles it with
 the left hand's underhand grab in each scene (only in field 30 and

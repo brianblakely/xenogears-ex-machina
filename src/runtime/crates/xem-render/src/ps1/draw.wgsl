@@ -120,11 +120,13 @@ fn vs_main(in: VertexIn) -> VertexOut {
     // Depth-tested ordering: projected primitives by their depth, the
     // rest drawn over (the pipeline's compare decides). A camera within the
     // scene sees polygons from near it to far away, across which only the
-    // reciprocal of depth interpolates as the depth does.
+    // reciprocal of depth interpolates as the depth does; kept reversed
+    // (nearer larger: ps1/mod.rs DepthMode::Nearer), where a float keeps
+    // its precision at any distance.
     var z = 0.0;
     if in.depth > 0.0 {
         if (pass_.options & 16u) != 0u {
-            z = clamp(1.0 - 1.0 / max(in.depth, 1.0), 0.0, 1.0);
+            z = clamp(1.0 / max(in.depth, 1.0), 0.0, 1.0);
         } else {
             z = clamp(in.depth / 65536.0, 0.0, 1.0);
         }
@@ -508,8 +510,8 @@ struct BlitOut {
 fn vs_rect(in: VertexIn) -> BlitOut {
     var out: BlitOut;
     let ndc = (in.position - pass_.origin) / pass_.extent * vec2<f32>(2.0, -2.0) + vec2<f32>(-1.0, 1.0);
-    // Fills clear depth to the far plane.
-    out.clip = vec4<f32>(ndc, 1.0, 1.0);
+    // Fills clear depth to the far plane (0 where depth is reversed).
+    out.clip = vec4<f32>(ndc, select(1.0, 0.0, (pass_.options & 16u) != 0u), 1.0);
     out.color = in.color;
     out.upload = in.mode.w;
     return out;

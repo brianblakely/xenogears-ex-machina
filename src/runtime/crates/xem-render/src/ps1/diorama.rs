@@ -759,9 +759,10 @@ impl Wall {
 /// it overlaps would show through it pixel by pixel (a shadow on a floor, a
 /// sprite's part over another, split sprites at one floor point). Each is
 /// lifted [`LIFT`] above the highest face it overlaps in its plane, drawn
-/// before it.
+/// before it (a look from within the scene lifts its faces likewise:
+/// [`super::frame::first_person`]).
 #[derive(Default)]
-struct Layers {
+pub(crate) struct Layers {
     faces: Vec<Layered>,
     /// The faces by their plane's normal and distance (in bands of the
     /// tolerance) and by the cells their outline covers in it.
@@ -843,9 +844,10 @@ fn overlaps(a: &[Vec2], b: &[Vec2], margin: f32) -> bool {
 impl Layers {
     /// Places a face at `points` (a quad's in Z order) with unit normal
     /// `normal` (towards the side it is lifted to) and returns how far to
-    /// lift it (world units): planes within `tolerance` are one, `lift` the
-    /// step. A face of fewer than three points is not one.
-    fn place(&mut self, normal: Vec3, points: &[Vec3], tolerance: f32, lift: f32) -> f32 {
+    /// lift it (in the points' units): planes within `tolerance` are one,
+    /// `lift` the step, `cell` the size of the cells faces are found by. A
+    /// face of fewer than three points is not one.
+    pub(crate) fn place(&mut self, normal: Vec3, points: &[Vec3], tolerance: f32, lift: f32, cell: f32) -> f32 {
         if points.len() < 3 {
             return 0.0;
         }
@@ -857,8 +859,8 @@ impl Layers {
         let direction = (normal * 512.0).round().as_ivec3().to_array();
         let band = (base / tolerance).floor() as i64;
         let cells = |lo: Vec2, hi: Vec2| {
-            let (x0, x1) = ((lo.x / CELL).floor() as i32, (hi.x / CELL).floor() as i32);
-            let (y0, y1) = ((lo.y / CELL).floor() as i32, (hi.y / CELL).floor() as i32);
+            let (x0, x1) = ((lo.x / cell).floor() as i32, (hi.x / cell).floor() as i32);
+            let (y0, y1) = ((lo.y / cell).floor() as i32, (hi.y / cell).floor() as i32);
             (x0..=x1).flat_map(move |x| (y0..=y1).map(move |y| (x, y)))
         };
         self.placements += 1;
@@ -1227,7 +1229,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
                         // Lifted over the parts drawn before it in its
                         // billboard's plane, towards whichever side of it an
                         // eye sees (the game's order holds from behind too).
-                        let raised = parts.place(placed.toward, &points, tolerance, lift);
+                        let raised = parts.place(placed.toward, &points, tolerance, lift, CELL);
                         stats.lifted += u32::from(raised > 0.0);
                         stats.thickest = stats.thickest.max((raised * placed.scale * 1e6).round() as u32);
                         builder.world_primitive(p, &points, false, false, false, Some(raised));
@@ -1250,7 +1252,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
                     let normal = (points[1] - points[0]).cross(points[2] - points[0]).normalize_or_zero();
                     if normal != Vec3::ZERO {
                         let normal = if normal.dot(camera_at - points[0]) < 0.0 { -normal } else { normal };
-                        let raised = faces.place(normal, &points, tolerance, lift);
+                        let raised = faces.place(normal, &points, tolerance, lift, CELL);
                         points.iter_mut().for_each(|point| *point += normal * raised);
                         stats.lifted += u32::from(raised > 0.0);
                     }
