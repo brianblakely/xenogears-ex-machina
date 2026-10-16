@@ -523,7 +523,7 @@ impl FrameRenderer {
             }
         }
         if let Some(look) = &look {
-            first_person(&mut ops, look);
+            first_person_layered(&mut ops, look, self.newest.map(|frame| (&mut renderer.plane_layers, frame)));
         } else if pulled {
             pull_back(&mut ops, framing.pull_back);
         }
@@ -1141,6 +1141,23 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
 /// are placed at it until the primitive is clipped there. Interface
 /// primitives stay as they are.
 pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
+    first_person_layered(ops, look, None);
+}
+
+/// The lifts a look from within the scene gives a frame's faces
+/// ([`plane_layers`]), kept for the frame's next looks (both eyes of a
+/// headset and every presentation of it): the frame's identity and its
+/// operations' count, and each operation's faces below it.
+#[derive(Default)]
+pub(crate) struct PlaneLayers {
+    frame: Option<((u16, u16), u64)>,
+    count: usize,
+    below: Vec<f32>,
+}
+
+/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
+/// when it holds them, else worked out and kept there.
+pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
     // Each original part carries the same alternative for its drawing pass.
     // Replace that pass once, including the original builder's texture cells,
     // and put those cells back before another sprite/scenery samples VRAM.
@@ -1216,8 +1233,23 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
     let raises = sprite_raises(ops, &feet);
     // The game's order among faces in one plane, which depth cannot tell
     // apart: each lifted over those it is drawn over there.
-    let mut layers = Layers::default();
+    let worked;
+    let below: &[f32] = match kept {
+        Some((kept, frame)) => {
+            if kept.frame != Some(frame) || kept.count != ops.len() {
+                *kept = PlaneLayers { frame: Some(frame), count: ops.len(), below: plane_layers(ops, scene) };
+            }
+            &kept.below
+        }
+        None => {
+            worked = plane_layers(ops, scene);
+            &worked
+        }
+    };
+    let mut index = 0;
     ops.retain_mut(|op| {
+        let lifts = below[index];
+        index += 1;
         let TraceOp::Draw(p) = op else { return true };
         let Some(((ox, oy), _)) = p.projection else { return true };
         if !effective_class(p, scene).is_scene() {
@@ -1245,7 +1277,11 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         if moved[..count].iter().all(|m| m[2] < look.near) {
             return false;
         }
-        lift(&mut layers, &mut moved[..count]);
+        if lifts > 0.0 {
+            // Towards the eye along each point's ray: where it showed, nearer.
+            let nearer = 1.0 / (1.0 + lifts * LIFT);
+            moved[..count].iter_mut().for_each(|m| *m = m.map(|c| c * nearer));
+        }
         let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
         let project = |m: [f32; 3]| {
             let z = m[2].max(look.near);
@@ -1278,25 +1314,33 @@ const PLANE_CELL: f32 = 768.0;
 /// precision: a tenth of a unit 10 000 away), where it shows as it did.
 const LIFT: f32 = 1e-5;
 
-/// Lifts a face, its `points` in a look's camera space (the eye at the
-/// origin), over the faces it overlaps that were drawn before it in its
-/// plane ([`Layers`]): each point moved towards the eye along its ray by
-/// [`LIFT`] of its depth a face below it, so it shows where it did, nearer.
-fn lift(layers: &mut Layers, points: &mut [[f32; 3]]) {
-    if points.len() < 3 {
-        return;
-    }
-    let corners: Vec<glam::Vec3> = points.iter().map(|m| glam::Vec3::from(*m)).collect();
-    let normal = (corners[1] - corners[0]).cross(corners[2] - corners[0]).normalize_or_zero();
-    if normal == glam::Vec3::ZERO {
-        return;
-    }
-    let normal = if normal.dot(-corners[0]) < 0.0 { -normal } else { normal };
-    let below = layers.place(normal, &corners, COPLANAR, 1.0, PLANE_CELL);
-    if below > 0.0 {
-        let nearer = 1.0 / (1.0 + below * LIFT);
-        points.iter_mut().for_each(|m| *m = m.map(|c| c * nearer));
-    }
+/// For each of `ops`, how many faces it is drawn over in its plane
+/// ([`Layers`]; 0 for all but the scene's faces), found in the game
+/// camera's view space: the same from any look, which moves the world's
+/// faces as one and lays a sprite's parts on its billboard as the game's
+/// screen shows them (they share the plane facing its camera there).
+fn plane_layers(ops: &[TraceOp], scene: Option<(i16, i16)>) -> Vec<f32> {
+    let mut layers = Layers::default();
+    ops.iter().map(|op| {
+        let TraceOp::Draw(p) = op else { return 0.0 };
+        if p.projection.is_none() || p.shape == Shape::Line || !effective_class(p, scene).is_scene() {
+            return 0.0;
+        }
+        let count = p.vertex_count();
+        let mut corners = [glam::Vec3::ZERO; 4];
+        for (i, corner) in corners.iter_mut().enumerate().take(count) {
+            let Some(q) = view_point(p, i) else { return 0.0 };
+            *corner = glam::Vec3::from(q);
+        }
+        let corners = &corners[..count];
+        let normal = (corners[1] - corners[0]).cross(corners[2] - corners[0]).normalize_or_zero();
+        if normal == glam::Vec3::ZERO {
+            return 0.0;
+        }
+        // Towards the game's camera, the view space's origin.
+        let normal = if normal.dot(-corners[0]) < 0.0 { -normal } else { normal };
+        layers.place(normal, corners, COPLANAR, 1.0, PLANE_CELL)
+    }).collect()
 }
 
 /// A point on the screen and its depth, back in the game camera's view space

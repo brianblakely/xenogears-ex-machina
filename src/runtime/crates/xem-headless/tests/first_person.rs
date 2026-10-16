@@ -544,6 +544,7 @@ fn from_within_each_field_the_walkmesh_in_view_shows_the_scene_and_the_interface
             let (mut empty, mut pixels) = (0usize, 0usize);
             let mut empty_views = Vec::new();
             let mut interface = None;
+            let mut cost = None;
             for pitch in PITCHES {
                 for yaw in YAWS {
                     host.look(yaw, pitch);
@@ -590,6 +591,17 @@ fn from_within_each_field_the_walkmesh_in_view_shows_the_scene_and_the_interface
                         }
                     }
                     if yaw == 0.0 && pitch == 0.0 {
+                        // What a look from within costs on this machine's CPU:
+                        // `first_person` over the frame's primitives, its lifts
+                        // worked out each time (hosts keep them for a frame's
+                        // later looks; recorded, not checked).
+                        let ops = host.view.frame().newest().to_vec();
+                        let began = std::time::Instant::now();
+                        for _ in 0..10 {
+                            let mut moved = ops.clone();
+                            first_person(&mut moved, &seen[0].look);
+                        }
+                        cost = Some((ops.len(), began.elapsed().as_secs_f64() * 100.0));
                         // The interface: on the flat picture, where the game
                         // drew it opaque after its scene, the flat frame's
                         // colour; in a headset all of it on the pane in its
@@ -616,9 +628,9 @@ fn from_within_each_field_the_walkmesh_in_view_shows_the_scene_and_the_interface
             let (opaque, kept, unlike, covered) = interface.expect("the interface looked at");
             eprintln!("map {map}, {host_name} (the character on layer {}): the walkmesh's floors {}; the character's {}; by layer: {}; \
                 no scene in {:.2}% of the pictures ({}); the interface: {opaque} opaque pixels drawn after the scene, {kept} of them as the flat frame shows them, \
-                {unlike} opaque pane pixels unlike the flat frame, {covered} pane pixels covered; by view, the floors: {}",
+                {unlike} opaque pane pixels unlike the flat frame, {covered} pane pixels covered; first_person over the frame's {} operations {:.2} ms; by view, the floors: {}",
                 player.layer, walkmesh.summary(), walkable.summary(), layer_lines.join("; "), 100.0 * empty as f64 / pixels as f64,
-                empty_views.join(", "), walkmesh.views.join(", "));
+                empty_views.join(", "), cost.map_or(0, |c| c.0), cost.map_or(0.0, |c| c.1), walkmesh.views.join(", "));
             results.push((map, headset, walkmesh, walkable, (opaque, kept, unlike)));
         }
     }
@@ -977,14 +989,17 @@ fn sprite_reach(ops: &[TraceOp]) -> (BTreeMap<u32, [f32; 3]>, BTreeMap<u32, (f32
     (grounds, reach)
 }
 
+/// Sprites by owner: their parts' corners, and the floor point they stand at.
+type Sprites = BTreeMap<u32, (Vec<Vec<Vec3>>, Option<Vec3>)>;
+
 /// Each sprite's parts (by owner) a look from within `ops` draws, their
 /// corners back in the game camera's view space, and the floor point it
 /// stands them at (its ground's place in the look taken back there).
-fn sprite_points(ops: &[TraceOp], look: &Look) -> BTreeMap<u32, (Vec<Vec<Vec3>>, Option<Vec3>)> {
+fn sprite_points(ops: &[TraceOp], look: &Look) -> Sprites {
     let mut ops = ops.to_vec();
     first_person(&mut ops, look);
     let back = |m: [f32; 3]| Vec3::from(std::array::from_fn(|i| look.eye[i] + m[0] * look.axes[0][i] + m[1] * look.axes[1][i] + m[2] * look.axes[2][i]));
-    let mut sprites: BTreeMap<u32, (Vec<Vec<Vec3>>, Option<Vec3>)> = BTreeMap::new();
+    let mut sprites = Sprites::new();
     for op in &ops {
         let TraceOp::Draw(p) = op else { continue };
         let Some(((ox, oy), _)) = p.projection.filter(|_| p.class == Class::Sprite) else { continue };

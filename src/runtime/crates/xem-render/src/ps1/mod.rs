@@ -1819,6 +1819,9 @@ pub struct Ps1Renderer {
     /// for.
     eye: Option<(xem_gpu::Eye, u32)>,
     camera: Option<(xem_gpu::Camera, u32)>,
+    /// The lifts a look from within gave the frame it last looked at, for
+    /// its next looks ([`frame::PlaneLayers`]).
+    pub(crate) plane_layers: frame::PlaneLayers,
     /// The display's size in VRAM pixels (a screen buffer's), when known,
     /// and the last few areas displayed (the screen buffers).
     display: Option<(u16, u16)>,
@@ -2049,6 +2052,7 @@ impl Ps1Renderer {
             logs: Vec::new(),
             eye: None,
             camera: None,
+            plane_layers: frame::PlaneLayers::default(),
             display: None,
             shown: Vec::new(),
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],

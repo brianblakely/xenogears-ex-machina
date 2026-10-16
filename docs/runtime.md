@@ -2165,6 +2165,13 @@ overlaps in its plane drawn before it (`diorama::Layers`, which the diorama
 lifts its faces by; planes within a quarter of a view-space unit are one),
 towards the eye along each point's ray by a hundred-thousandth of its depth
 a face below it (a tenth of a unit 10 000 away), where it shows as it did.
+The faces below each are found in the game camera's view space, the same
+from any look (a look moves the world's faces as one and lays a sprite's
+parts on its billboard as the game's screen shows them), once a game frame
+for all of a view's looks (both eyes, each presentation: kept by the
+renderer, `frame::PlaneLayers`): on this machine's CPU about 2 ms for the
+5 000 primitives of a frame in Lahan or the forest and 0.1 ms in a room,
+a look's own work 0.5 to 0.9 ms there as before.
 The game also draws a sprite reaching below its floor point, over the floor
 whatever their depths (in fields 1, 12 and 30, 32 of 33 sprites, by 6 to 48
 view units, 2% to 24% of their height), which a look from within hid under
@@ -2433,10 +2440,10 @@ the ceilings of rooms and the skies above outdoor fields (up to 28% of an
 eye looking back past the camera's side in field 30), measured and shown
 as they are, not made up; the walkmesh's floors in view show the scene
 (none of their pixels, in fields 1, 12, 22 and 30). A face the game draws
-from both sides is drawn twice from within, whichever side faces the eye,
-and where its quad does not lie flat the two meet along a fold, the far
-side's texture coordinates on part of it (measured above; field 12's
-railings). Holes, the game's order and the pane are measured in
+from both sides (two quads wound each way) is drawn twice from within,
+whichever side faces the eye; where its quad does not lie flat the two meet
+along a fold, the far side's texture coordinates showing on part of it
+(measured above: field 12's railings). Holes, the game's order and the pane are measured in
 `xem-headless`'s harness, which draws a headset's eyes with the renderer
 the hosts use, not in a headset's captures. In an OpenXR session (Monado)
 `xr-game-smoke.sh` plays `xr_play`'s own paths: its controllers run, the

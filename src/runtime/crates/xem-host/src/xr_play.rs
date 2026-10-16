@@ -568,7 +568,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 *button |= u8::from(buttons & (1 << i) != 0);
             }
         }
-        if let Some((_, [x, y])) = options.stick.iter().filter(|(at, _)| *at <= frames).last() {
+        if let Some((_, [x, y])) = options.stick.iter().rfind(|(at, _)| *at <= frames) {
             axes[2] = (axes[2] + x).clamp(-1.0, 1.0);
             axes[3] = (axes[3] - y).clamp(-1.0, 1.0);
         }
