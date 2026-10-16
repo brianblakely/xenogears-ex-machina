@@ -2141,9 +2141,8 @@ one recorded for its frame (the newest within four vertical blanks when the
 frame's first primitive is drawn), so the view stands where the character
 stood in the frame shown.
 From the first frame recorded so it looks along the heading of the game's
-camera, level, from 0.9 of the character's sprite's height above its feet
-(raised as its sprite stands on the floor, below), with a 70-degree field of
-view across the original's 320 pixels (H 228.5).
+camera, level, from 0.9 of the character's sprite's height above its feet,
+with a 70-degree field of view across the original's 320 pixels (H 228.5).
 `frame::first_person` moves every scene vertex's point before the division
 into that camera (a vertex without one is taken back through the game's
 projection); a sprite's parts face the view, standing along the world's up
@@ -2177,9 +2176,9 @@ whatever their depths (in fields 1, 12 and 30, 32 of 33 sprites, by 6 to 48
 view units, 2% to 24% of their height), which a look from within hid under
 the floor (the townspeople's feet in Lahan): the sprites at a floor point
 stand with their lowest part on it, or above it as far as the game drew them
-above it (a jump), as the diorama stands them (`frame::sprite_raises`), and
-the eye is raised with the character's own. The interface stays as the game
-drew it (the compass too).
+above it (a jump), as the diorama stands them (`frame::sprite_raises`); the
+eye stays at its height above the character's floor point. The interface
+stays as the game drew it (the compass too).
 A frame recorded looking around but shown from the game's camera (the view
 just turned off) shows none of its culled faces: they lie anywhere, not
 only beside the screen.
@@ -2365,33 +2364,35 @@ frame of the same trace and a look from within the same trace with each
 scene primitive drawn plain in a colour of its own. From the controlled
 character's eye in fields 1, 12, 22 and 30, turned to eight headings at two
 pitches (level and 30 degrees down), the walkmesh's floors in view (every
-actor layer's, as `diorama.rs` takes them) show no scene at none of their
-pixels, flat or in either eye (0 of 0.36 to 5.5 million a field; the 0.5%
-asserted, in each field); what shows none lies above them, the ceilings and
-skies the game never models: 0 to 2.8% of the flat pictures and 0.5 to 6.0%
-of the eyes' a field, up to 28% of one eye looking back past the camera's
-side in field 30, where the room has no ceiling. Where the game draws its
+actor layer's, as `diorama.rs` takes them) show the scene at every one of
+their pixels, flat and in either eye (0.48 to 5.6 million a field; under
+0.5% without it asserted, in each field); what shows none lies above them,
+the ceilings and skies the game never models: 0 to 1.6% of the flat
+pictures and 0.5 to 4.1% of the eyes' a field, up to 23.5% of one eye
+looking back past the camera's side in field 30, where the room has no
+ceiling. Where the game draws its
 interface opaque after the scene, the flat look shows every pixel of it as
 the flat frame does, and in a headset all of it is on the pane in that
 colour, no opaque pane pixel unlike the flat frame (4 514 to 27 712 pixels
 a field, field 12's dialogue the most). In fields 1, 30 and 12 from those
 sixteen looks, flat and in a headset, wherever two primitives the look draws
 meet in one plane (around the pixel too: faces crossing are not one) the
-picture shows the one the game drew last at every one of 0.08 to 1.3
-million such pixels a field (before the lift, with the tie judged at the
-pixel alone, a sprite's parts showed an earlier part through a later at
-4 702 and 35 979 pixels in field 30, flat and in a headset, and 1 684 and
-1 331 in field 12); a face the game draws from both sides (twice, its
-corners in the other order) is counted apart: where its quad does not lie
-flat its two drawings meet along a fold and each shows on its side of it,
-the other side's texture coordinates there (1 503 and 1 385 pixels in
-Lahan, 22 052 and 26 343 in field 12's room, none in field 30). Every
-sprite drawn reaching below its floor point stands with its lowest part on
-it, within what the lifts move it (half a unit and two ten-thousandths of
-its distance), but the controlled character's second sprite in Lahan, at
-its floor point, whose lower parts lie behind the eye; one drawn 6 units
+picture shows the one the game drew last at every one of 0.08 to 1.4
+million such pixels a field (the renderer before the lift and the
+reversed depth, the tie judged at the pixel alone, showed a sprite's
+earlier part through a later at 4 702 and 35 979 pixels in field 30, flat
+and in a headset, and 1 684 and 1 331 in field 12); a face the game draws
+from both sides (twice, its corners in the other order) is counted apart:
+where its quad does not lie flat its two drawings meet along a fold and
+each shows on its side of it, the other side's texture coordinates there
+(1 499 and 1 261 pixels in Lahan, 24 142 and 26 525 in field 12's room,
+none in field 30). Every sprite drawn reaching below its floor point
+stands with its lowest part on it, within what the lifts move it (half a
+unit and two ten-thousandths of its distance), but for the controlled
+character's second sprite in Lahan, at its floor point, whose lower parts
+lie behind the eye; one drawn 6 units
 above its floor point stays as high. Both eyes see each sprite as one
-billboard, its parts within 1.3 units of one plane (their lifts) and the
+billboard, its parts within 0.6 units of one plane (their lifts) and the
 two eyes' within 0.02 units. In a headset, map 25's story movie begun while
 inspecting shows on the screen with no eyes for its 4 233 rebuilt frames,
 inspection on through it; after it the eyes look from within in map 25
@@ -2436,8 +2437,8 @@ shows no subtractive effect (it darkens nothing behind it); the field
 menu's backdrop is the first eye's view squeezed into the display's shape,
 and the room round the menu is the last frame before it (its characters
 stand still). From within, what the game never models shows its clear:
-the ceilings of rooms and the skies above outdoor fields (up to 28% of an
-eye looking back past the camera's side in field 30), measured and shown
+the ceilings of rooms and the skies above outdoor fields (up to 23.5% of
+an eye looking back past the camera's side in field 30), measured and shown
 as they are, not made up; the walkmesh's floors in view show the scene
 (none of their pixels, in fields 1, 12, 22 and 30). A face the game draws
 from both sides (two quads wound each way) is drawn twice from within,
@@ -4876,8 +4877,8 @@ Phase 8 item 4 for that camera mode).
 | A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
 | First person: transitions | in field 30 the underhand grab on and off, and again while the player's Pause holds the game (inspect, modern); the controllers' Back released alone on, off and on again, the right stick turning it a step a push, and an agent's Original renderer ending it in the headset frame it arrives in (controllers); from the diorama and back to it at its scale and place, a walk stopped (diorama-hands) | the grab and the controllers' click on and off, paused or not, the Original renderer ending it; on as the session ends, the canvas going on with it, and the next session looking from within at once; a battle loaded after the field ending it; from the diorama and back (`xr-diorama.test.mjs`) | `first_person.rs` in a headset: map 25's story movie begun while inspecting on the screen with no eyes for its 4 233 rebuilt frames, inspection on through it, the eyes from within again in map 25 after it, map 23's first frame ending the view; the Mountain Path's random battle entered while inspecting, the eyes and the pane (the compass alone) for the 48 blanks it loads behind the field's last frame, its shatter, the eye's picture broken up, ending inspection on the screen; `inspection.rs`: through the field's menu and a state loaded |
-| First person: holes | | | `first_person.rs`: from the character's eye in fields 1, 12, 22 and 30 at eight headings and two pitches, flat and in both eyes, no pixel of the walkmesh's floors in view without the scene (under 0.5% asserted in each); the ceilings and skies the game never models show its clear, 0 to 2.8% of the flat pictures and 0.5 to 6.0% of the eyes', up to 28% of an eye looking back in field 30 (measured) |
-| First person: the game's order, sprite planes and both eyes | the eyes differ and look from within, in the renderer's colours (inspect, modern) | | `first_person.rs`: in fields 1, 30 and 12 from sixteen looks, flat and in a headset, at every pixel where two primitives meet in one plane the one the game drew last (0.08 to 1.3 million a field; a sprite's parts lost it at up to 35 979 before the lift), faces drawn from both sides counted apart; sprites drawn reaching below their floor points standing on them; both eyes one billboard a sprite (within 0.02 units), its parts within 1.3 units of one plane; `ps1.rs`: a part drawn over another a hundred-thousandth of its depth nearer where it showed, a sprite on its floor point, one sprite for canted eyes |
+| First person: holes | | | `first_person.rs`: from the character's eye in fields 1, 12, 22 and 30 at eight headings and two pitches, flat and in both eyes, no pixel of the walkmesh's floors in view without the scene (under 0.5% asserted in each); the ceilings and skies the game never models show its clear, 0 to 1.6% of the flat pictures and 0.5 to 4.1% of the eyes', up to 23.5% of an eye looking back in field 30 (measured) |
+| First person: the game's order, sprite planes and both eyes | the eyes differ and look from within, in the renderer's colours (inspect, modern) | | `first_person.rs`: in fields 1, 30 and 12 from sixteen looks, flat and in a headset, at every pixel where two primitives meet in one plane the one the game drew last (0.08 to 1.4 million a field; a sprite's parts lost it at up to 35 979 before the lift), faces drawn from both sides counted apart; sprites drawn reaching below their floor points standing on them; both eyes one billboard a sprite (within 0.02 units), its parts within 0.6 units of one plane; `ps1.rs`: a part drawn over another a hundred-thousandth of its depth nearer where it showed, a sprite on its floor point, one sprite for canted eyes |
 | First person: interface and media | | (the pane's pixels not read) | `first_person.rs`: where the game draws its interface opaque after the scene, all of it as the flat frame shows it, on the flat look and on the headset's pane (4 514 to 27 712 pixels a field, field 12's dialogue the most), no opaque pane pixel unlike the flat frame; a story movie begun while inspecting on the screen (transitions); `inspection.rs`: field 30's compass alone on the pane (7% of it covered); `ps1.rs`: the pane covering by its alpha, the interface in neither eye |
 | Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
 | The diorama: transitions | in all thirteen runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`): from boot into fields, from the debug battle's selector into its battle, into the world map; field 30's menu, the Mountain Path's random battle and its end, and Lahan to the world map and a field from it, each from the diorama to the screen and back to a diorama (the battle's, the world map's, the field's), each way through frames between the two; map 25's story movie on the screen between its field's dioramas; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had; an agent's `settings_apply` through `--control` in field 30: the screen alone from the first frame after it, at once, and the diorama eased in again from the screen over five frames (`xr_view=`, `diorama=`, `share=`) | the underhand grab over the diorama at 150%: from within on the first session frame after it, the diorama back alone on the first after the next (every session frame recorded), at 150%, its room from the world unchanged; field 30's menu through the automation: from the diorama to the screen over two session frames, the menu on the screen alone, back over three, each step within its time over 0.3 s; map 25's story movie from the state at game frame 5080: eased out, 1 959 of its 1 960 rebuilt frames on the screen alone, eased back over three; Graphics' headset view set through `xem.settings.apply` in the session: the screen alone from the next session frame, the diorama eased in again over three | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, map 25's story movie out and back, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; the headset view set to the screen in a session, the screen at once, and to the diorama again, eased in; `ps1.rs`: a menu's and a 24-bit movie frame's screen after a diorama, eased (and inspection's through `present_diorama`, a path the hosts do not take); after inspection, the table easing on from where it stood |

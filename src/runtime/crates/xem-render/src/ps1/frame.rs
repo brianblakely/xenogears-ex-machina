@@ -1366,7 +1366,7 @@ pub(crate) fn view_point(p: &Primitive, i: usize) -> Option<[f32; 3]> {
 /// over the floor whatever their depths, so they stand on the floor, their
 /// lowest part there, or above it as far as the game drew them above it (a
 /// jump: raised by nothing), as the diorama stands them.
-pub(crate) fn sprite_raises(ops: &[TraceOp], feet: &HashMap<u32, [f32; 3]>) -> HashMap<[u32; 3], f32> {
+fn sprite_raises(ops: &[TraceOp], feet: &HashMap<u32, [f32; 3]>) -> HashMap<[u32; 3], f32> {
     let scene = scene_offset(ops);
     let mut raises: HashMap<[u32; 3], f32> = HashMap::new();
     for op in ops {

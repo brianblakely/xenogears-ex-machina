@@ -7,7 +7,7 @@
 //! a pane of its own ([`GameView::present_headset`]).
 
 use super::diorama::{Diorama, DioramaEye, DioramaPresented, Fallback, XrView};
-use super::frame::{projection_centre, sprite_feet, sprite_raises};
+use super::frame::projection_centre;
 use super::{
     DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Interface, Lighting, Look, Ps1Renderer, Quality,
     central_depth,
@@ -736,15 +736,10 @@ impl GameView {
             Some(height) => height,
             None => {
                 // A sprite the frame does not draw stands as tall as the
-                // field's characters do (the axes carry the field's scale);
-                // raised to stand on the floor as the view stands the
-                // sprites ([`super::frame::first_person`]).
-                let ops = self.main.frame.newest();
+                // field's characters do (the axes carry the field's scale).
                 let scale = eye.axes[0].iter().map(|c| c * c).sum::<f32>().sqrt() / 4096.0;
-                let top = sprite_height(ops, eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
-                let feet = sprite_feet(ops);
-                let raise = feet.get(&eye.sprite).and_then(|anchor| sprite_raises(ops, &feet).get(&anchor.map(f32::to_bits)).copied()).unwrap_or(0.0);
-                *view.height.insert(top * EYE_LEVEL + raise)
+                let top = sprite_height(self.main.frame.newest(), eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
+                *view.height.insert(top * EYE_LEVEL)
             }
         };
         Some(Base {
