@@ -875,6 +875,7 @@ fn an_agents_held_rewind_steps_as_a_hosts_does_and_stops_at_the_oldest_state() {
     let stepped = s.execute(&json!({"cmd":"rewind_step","steps":10}));
     assert_eq!((stepped["steps"].clone(), stepped["status"]["frames"].clone()), (json!(3), json!(most)), "fewer taken: the oldest reached");
     assert_eq!(s.execute(&json!({"cmd":"rewind_step"}))["steps"], 0);
+    assert!(s.execute(&json!({"cmd":"readiness"}))["valid_commands"].as_array().unwrap().contains(&json!("rewind_step")));
     // A session log holds no rewind: it is the agent's, between frames.
     assert!(s.execute(&json!({"cmd":"schedule","commands":[[200,{"cmd":"rewind_step"}]]}))["error"].as_str().is_some_and(|e| e.contains("cannot be scheduled")));
 }

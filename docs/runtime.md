@@ -5243,8 +5243,9 @@ line's text) or `{error}`. `{"Rewind": true}` holds rewind as R held does
 (the window's and the headset's frames then step it, through a headset's
 Settings pause as well) until `{"Rewind": false}`; `{"Action":
 "RetryStorage"}` retries the pending card writes; `{"Action": "Recenter"}`
-recentres a headset's view (in the window it is refused, as the panel's
-would be); the rest are the panel's actions. The file pickers are refused
+recentres a headset's view (the window refuses it: "Recentering places a
+headset's view; play in a headset to use it."); the rest are the panel's
+actions. The file pickers are refused
 ("ExportState opens a file picker, which only a player answers: agents name
 the file"): agents use the file commands above. Android has no command
 channel (the agent surface it has: [Android host](#android-host)).
