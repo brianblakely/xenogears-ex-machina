@@ -7,8 +7,9 @@
 # (desktop for the native and shared code), and full once at the end, before
 # review or a merge (AGENTS.md):
 #
-#   desktop  (the default) the game module, the port's unit tests, the Rust
-#            workspace's tests and the validation run
+#   desktop  (the default) the game module, the port's unit tests (with the
+#            platforming table's check on the user's extracted discs), the
+#            Rust workspace's tests and the validation run
 #   web      the game module, the web build and the browser suites, the
 #            browser tests that measure time (WebXR's among them) last
 #   android  the game module, the APK and the emulator's smoke test, its
@@ -98,7 +99,18 @@ port() {
     cd "$root" && python3 -m unittest tests.test_port_model_draw tests.test_port_gte tests.test_port_gpu \
         tests.test_game_module_pause tests.test_port_original_traces tests.test_port_resident tests.test_port_arena \
         tests.test_port_worldmap tests.test_port_presentation tests.test_port_controls tests.test_port_disc tests.test_dispatch_tables \
-        tests.test_platforming tests.test_port_encounters tests.test_port_text_speed tests.test_port_movie_skip
+        tests.test_platforming tests.test_port_encounters tests.test_port_text_speed tests.test_port_movie_skip || return
+    # The platforming table's proof on the user's discs: xem-core's
+    # PLATFORMING_AREAS is the classifier's (about 33 s); it reads both discs
+    # extracted and their images under .local, and is skipped without them.
+    local number
+    for number in 1 2; do
+        if [[ ! -f $root/.local/extract/disc$number/manifest.json || ! -f $root/.local/discs/disc$number.bin ]]; then
+            echo "skipping the platforming table's check: no disc $number (.local/extract/disc$number, .local/discs/disc$number.bin)"
+            return 0
+        fi
+    done
+    python3 -m tools.analysis.platforming --check
 }
 
 # What the native stages run: the tests, the validation example and the

@@ -644,6 +644,8 @@ fn random_battles_are_chosen_in_the_gameplay_section_through_the_settings_servic
     assert_eq!(choice.accessible_value().as_deref(), Some("Not while platforming"), "the default policy");
     let note = ui.component().get_random_battles_note().to_string();
     assert!(note.contains("Babel Tower") && note.contains("Blackmoon Forest"), "{note}");
+    assert!(note.starts_with("Off on the jumping-heavy maps of Blackmoon Forest, the Aveh-Kislev border mountains and Babel Tower."),
+        "the extent, not whole areas: {note}");
     // A choice is the service's: applied, acknowledged and saved.
     press(&ui, &choice);
     key(&ui, xem_ui::Key::DownArrow);

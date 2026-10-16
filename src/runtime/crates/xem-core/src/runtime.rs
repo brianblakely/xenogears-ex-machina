@@ -100,7 +100,9 @@ pub struct Services {
     /// hosts show it on their storage line until an image is installed.
     pub kanji_font_notice: Option<String>,
     /// The glyphs a message window's step reveals at least
-    /// (src/port/text_speed.c); 0 the original's.
+    /// (src/port/text_speed.c); 0 the original's, which the import also
+    /// answers while a field script counts out a page before its wait for
+    /// Confirm ([`crate::dialogue::page_counted_out`]).
     pub(crate) text_speed: u32,
     /// The host lets the player's press end any movie
     /// (src/port/movie_skip.c).
@@ -293,7 +295,11 @@ impl ImportHandler for Services {
                 let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
                 Action::Return(if off { 0 } else if self.half_encounters { 2 } else { 1 })
             }
-            "text_speed" => Action::Return(self.text_speed),
+            // The original's reveal while a field script counts out a page
+            // before its wait for Confirm (the opening narration's).
+            "text_speed" => Action::Return(
+                if self.text_speed != 0 && crate::dialogue::page_counted_out(&*memory, self.mode) { 0 } else { self.text_speed },
+            ),
             "movie_skip" => Action::Return(u32::from(self.movie_skip)),
             "sound_mode" => Action::Return(self.sound_mode.unwrap_or(u32::MAX)),
             "sound_mode_change" => {

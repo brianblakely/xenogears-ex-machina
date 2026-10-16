@@ -226,8 +226,8 @@ if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 # its eight sections as a strip of tabs, each as wide as its label at
 # least at this width: Graphics at 210,722, Saves at 727,722 (the panel
 # example's --locate at that size and scale; xem-ui's panel test checks
-# both taps; with DejaVu Sans or Inter for the system's font the centres
-# move at most 5 pixels in tabs 102-141 wide).
+# both taps; with DejaVu Sans or Noto Sans for the system's font the
+# centres move at most 5 pixels in tabs 102-141 wide).
 echo "== settings change by touch (Show FPS)"
 mark
 tap 210 722

@@ -5872,9 +5872,11 @@ and get its acknowledgement. On `xem-desktop --control`,
 typed change and answers `{revision, settings}`, or `{error}` with the
 reason and the settings unchanged (`SettingsService::command`, the
 panel's own service). In a browser, `window.xem.settings.apply({TextSpeed:
-'Instant'})` answers `{ok: true, revision, settings}` or `{ok: false,
-rejected, reason}`, and `xem.settings.get()`, `.export()` and
-`.import(text)` read, back up and restore them. The next frame's `status`
+'Instant'})` answers `{ok: true, revision, settings}`, or `{ok: false,
+rejected, reason}` for a change the service refuses; a value that is no
+`SettingChange` (`{TextSpeed: 'Warp'}`) throws an `Error` ("bad change:
+…") where the desktop answers `{error}`. `xem.settings.get()`,
+`.export()` and `.import(text)` read, back up and restore them. The next frame's `status`
 shows the control the host gave. Where no host gives the values
 (`xem-headless --control`, session logs, a browser page whose frames
 commands drive) agents set the controls directly, recorded as the hosts'
@@ -6378,7 +6380,9 @@ walking from map 15's layer-1 floor into a floorless triangle takes the
 leader off layer 1 into the air and down at least 150 units onto layer
 0's floor.
 With the user's discs extracted, `python3 -m tools.analysis.platforming
---check` proves the shipped table.
+--check` proves the shipped table: suite.sh's port stage runs it when
+`.local/extract` and `.local/discs` hold both discs, and says it skips it
+otherwise.
 
 Not done or not measured: the classification is a static approximation of
 the walkmesh. It measures each actor layer on its own and does not follow
@@ -6468,7 +6472,7 @@ player's control:
 
 | Map (start) | Original | Instant | End | Timed messages shown |
 | --- | --- | --- | --- | --- |
-| 4, the opening narration (`enter_field`) | 6 729 | 6 509 | map 2, story 3 | 0, 1 (`0F 02`) |
+| 4, the opening narration (`enter_field`) | 9 731 | 9 509 | map 2, story 3 | 0, 1 (`0F 02`) |
 | 27 (`enter_field`) | 1 600 | 1 060 | map 28 | 0-7 (`0F 02`; no press needed) |
 | 131 (`enter_field`) | 3 808 | 1 224 | the player's control | 3 (`0F 02`) |
 | 288 at story 75 from entrance 2 (map 96's door; actor 22's scene) | 5 006 | 1 786 | map 96 | 0x4F (`0F 02`) |
@@ -6483,19 +6487,45 @@ readouts (messages 0x8C-0x8E, a glyph every two field frames) took 2 102,
 for 0x8C, its timed close) with Instant text, as with the original's,
 while the scene as a whole took 9 439 frames instead of 22 741.
 
-The opening narration differs in one way, which is presumably why the
-mod re-scripted it. Each of its pages shows in a window while the
-narration's script counts out the page's time, then waits for Confirm with
-no prompt of its own (`31 0x0020` looping on itself, map 4 +0x1668). The
-original's reveal lasts past that count, so the press that ends a page's
-text also goes on; with Instant (or Fast) text the text ends before the
-count does, a press then only closes the window, and the narration waits
-for a second press. A player who presses only at prompts reaches map 2
-after 9 731 frames with the original's text and is still waiting after
-14 000 with Instant's; one who also presses when the narration waits
-reaches map 2 with either (the table's row). The panel's note under Text
-speed says that a scene timing its pages can wait for one more press. The
-other scenes need no second press.
+The opening narration times its pages, which is presumably why the mod
+re-scripted it. Each page shows in a window (actor 12's events 5-9,
+messages 2-6) while the narration's script (actor 0's event 1) counts out
+the page's time with two `26 wait_countdown`s (330-450 frames a page),
+then waits for Confirm with no prompt of its own (it calls `31 0x0020`
+looping on itself, map 4 +0x1668). The original's reveal lasts past that
+count, so the press that ends a page's text also ends the wait; text that
+ended before the count would take that press to close the window alone,
+and the narration would wait for a second press with nothing on screen.
+So while a field script counts out a page this way, the `xem.text_speed`
+import answers 0, the original's (`xem_core::dialogue::page_counted_out`:
+an actor's running slot rests on a `26` whose next instructions are more
+`26`s and then, run into, called or jumped to, a `31` test of Confirm
+whose not-held branch is a jump back to it). The page reveals at the
+original's pace until its count ends and at the chosen speed after, so
+its prompt shows only once the script waits for the press. A player who
+presses only at prompts (the table's row) reaches map 2 after 9 731
+frames with the original's text, 9 563 with Fast and 9 509 with Instant,
+with the same five presses; one who also presses as soon as the
+narration waits reaches it after 6 729 frames with the original's text
+and 6 509 with Instant. The panel's note under Text speed says that a
+page a scene times shows at the original's pace until its time is up.
+
+The rule's pattern was swept in both discs' field scripts (every map's
+instructions walked from each event's entry with `tools.analysis.events`,
+730 maps a disc). They hold 19 waits for Confirm outside a window (a
+button test of Confirm whose not-held branch comes back to it), every one
+a `31 0x0020`: on disc 1's maps 4, 14, 129, 131, 132, 133, 135, 144, 153,
+154, 293 (two), 296 (two) and 431, and disc 2's maps 293 and 296 (two
+each). Thirteen counts lead straight into one, all on disc 1: map 4's ten
+(two a page), each with its page shown, and three on maps 129 (+0x0444
+and +0x046e, 30 frames each) and 431 (+0x0424, 40 frames), which the
+counting script reaches with no window of its own open (it has waited
+for its window to close with `9c`, or shown none); a window another
+script showed during one of those counts would reveal at the original's
+pace for its 30 or 40 frames. So the opening narration is the only timed narration
+the rule changes. The sweep is a local script, not in the repository
+(`.local/p678/scratch/p7/p77/rule_sweep.py`); it reads the discs
+extracted (`.local/extract`).
 
 **Auto-advance dialogue.** `xem_core::dialogue::prompt` reads, between
 frames, what a press of Confirm would do to the field's dialogue, as
@@ -6517,8 +6547,9 @@ fast-forward it passes with the game's frames. The dwell counts from when it
 changes, a recording or a replay starts or a state is restored, so the
 presses follow from the game's memory and the recorded dwell alone, and a
 replay presses where the recording did. Auto-advance reads the field's
-dialogue windows only: battle messages, and waits for Confirm with no
-window (the opening narration's), still take the player's press. Measured
+dialogue windows only: battle messages, and the scripts' waits for
+Confirm with no window open (the sweep above finds 19), still take the
+player's press. Measured
 headless on map 482's entry scene (8 pages): a player pressing at each
 prompt reaches control after 2 516 frames, auto-advance at 30 vertical
 blanks a page after 2 740, at the same end and story value with the same
@@ -6605,7 +6636,10 @@ longer wait not until the loop's first read empties the queue.
 present) and the queue's room, and is false while the staff roll draws
 over the movie, while the scripts' input mask holds Confirm back and once
 the loop has taken a press, after which the movie fades for five vertical
-blanks and closes.
+blanks and closes. On the loop's first pass the taken press is the
+field's last read before the movie (`field_pad_port0_repeated` still holds
+it), so a Confirm the field read just before the movie began makes
+`ends_on_press` false for that pass, at most 2 frames.
 The movie mode's shows from its player's start (`frame` -1 until its
 first picture) until the player stops, as its loop reads the pad from the
 start, and not while the mode loads the movie library; its
@@ -6624,7 +6658,16 @@ value no longer offered reads the default alone. `xem-core`'s
 `dialogue` unit tests read invented windows: a page's, an end's and a
 pause's wait take a press; a shown choice, or an end whose owner rests on
 `a9`, never; revealing text, a menu, another mode or a window still
-opening are no wait. `xem-core/tests/persistence.rs` checks on the
+opening are no wait. The `a9` reading rests on the sweep of both discs'
+field scripts made for the cut cutscene skip (`tools.analysis.events`;
+`.local/p678/gap/p7-cutscenes.json`, local): all 1 536 `a9` instructions
+directly follow their message instruction (`d2` 1 225, `f5` 177, `fc` 97,
+`d4` 37), and every message instruction is followed by `9c` or `a9`. The
+same unit tests read invented scripts: an actor resting on a count that
+calls, runs into or jumps to a `31` wait for Confirm counts out a page,
+and the wait itself, the call after the counts, an ended slot, another
+mode, a wait for another button, a test whose branch goes on or a count
+before `9c` do not. `xem-core/tests/persistence.rs` checks on the
 stand-in module, whose wrappers ask the imports every frame and whose
 dialogue window ends its wait on a frame holding Confirm:
 `the_text_speed_and_movie_skipping_are_recorded_and_a_replay_keeps_them`
@@ -6668,10 +6711,11 @@ the game's. `xem-ui/tests/panel.rs`
 checks that the Gameplay section's three options apply through the
 service, are acknowledged, show the wait only while auto-advance is on,
 keep a refused wait and follow an agent's change.
-`xem-headless/tests/text_and_movies.rs` (local, disc 1; about 80 s here
+`xem-headless/tests/text_and_movies.rs` (local, disc 1; about 90 s here
 at four tests at a time) plays the table's scenes with the original's and
 Instant text to the same end, story value and messages (the narration
-also as the two-press difference above), checks that map 359's slow
+also with Fast text, each with the original's five presses, and pressing
+too as soon as it waits), checks that map 359's slow
 readouts take the same frames with either, measures map 131's reveals at
 the three speeds (each page no slower, the totals strictly faster), plays
 map 482 with auto-advance to the pressed run's end, turns map 172's Repair
@@ -6709,9 +6753,9 @@ again through the settings, pressing no button of the game's.
 
 Not done or not measured: the battle event's movie (the movie mode's,
 event set 3) under the option was not reached on the game (the wrapper is
-unit-tested). Auto-advance does not turn battle messages or the opening
-narration's window-less waits; the cut cutscene skip's battle-message
-advance ([below](#cutscene-skipping)) is not offered either. Fast and
+unit-tested). Auto-advance does not turn battle messages or the scripts'
+waits for Confirm with no window open; the cut cutscene skip's
+battle-message advance ([below](#cutscene-skipping)) is not offered either. Fast and
 Instant text was compared on the scenes above only, and not every timed
 message of their maps shows in them: map 27's message 8, map 131's
 message 9, eleven of map 326's sixteen (1-7, 0x12, 0x17, 0x1E and 0x3F),
@@ -6723,10 +6767,12 @@ turn, again and again, at story 153-154 while the map's local v0402 is 0
 stand-in (actor 21, story 155-159, Bart in the party) after a choice,
 which the runs never answer. Authored slow text was compared on the game
 on map 359's readouts with Instant text only; that Fast keeps it too is
-checked by `tests/test_port_text_speed.py` alone. Other scenes that time windows
-against other scripts may need the narration's second press, and the
-battle's, arena's and world map's windows were not measured under Fast
-or Instant text. No HUD chip shows that auto-advance is on (AUTO's light
+checked by `tests/test_port_text_speed.py` alone. The sweep looks for the
+narration's one pattern (a count straight into a wait for Confirm); a
+scene that times a window against another script some other way was
+compared on the game only on the maps above, and the battle's, arena's
+and world map's windows were not measured under Fast or Instant text.
+No HUD chip shows that auto-advance is on (AUTO's light
 does, on touch screens and in headsets).
 Of the mod's options that change the game's balance only half encounters
 is offered ([above](#random-battles-in-platforming-areas), the field's
@@ -6739,15 +6785,17 @@ is unit-tested only: no Monado or IWER run aims at it.
 
 ### Cutscene skipping
 
-Phase 7 (plan.md) asks for cutscene skipping that keeps the story's
-outcome: the original scripts run unthrottled, Confirm is pressed at the
-dialogue waits, and the skip ends at the next moment the player controls.
-The user made it conditional on the game marking that moment clearly: the
-skip stops at the first frame the marker is set and lands at the real end
-of the scene on every tested scene, with no frame count or other
-heuristic. The game's control grant, its only record of that moment, is
-not such a marker, so the runtime has no cutscene skip. The measurements
-follow. (A movie's end is such a moment: movies end on Confirm under
+The Phase 7 step that built the gameplay options asked for cutscene
+skipping that keeps the story's outcome: the original scripts run
+unthrottled, Confirm is pressed at the dialogue waits, and the skip ends
+at the next moment the player controls. The user made it conditional on
+the game marking that moment clearly: the skip stops at the first frame
+the marker is set and lands at the real end of the scene on every tested
+scene, with no frame count or other heuristic. The gate found no such
+marker: the game's control grant, its only record of that moment, is not
+one. So the feature was cut and removed from plan.md (`70fb543`), and the
+runtime has no cutscene skip. The measurements follow. (A movie's end is
+such a moment: movies end on Confirm under
 [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping), and
 text shows faster and dialogue goes on by itself under the options beside
 it.)

@@ -10,7 +10,9 @@
 //! on both discs directly follows its message instruction, so while the
 //! message shows, the window's owner actor (+0x416) rests on that a9; a
 //! press at the end would answer, or skip, the choice before it shows.
-//! Read from the game's memory between steps; nothing is written.
+//! Also whether a field script is counting out a page before it waits for
+//! Confirm outside any window ([`page_counted_out`], for the host's text
+//! speed). Read from the game's memory; nothing is written.
 use crate::memory::GameMemory;
 use serde::Serialize;
 
@@ -45,6 +47,18 @@ const ACTOR_SLOTS: u32 = 0x8C;
 const ACTOR_SLOT: u32 = 0xCE;
 const EVENT_BYTECODE: u32 = 0x800A_DC00;
 const START_CHOICE: u8 = 0xA9;
+/// A script slot's priority (bits 18-21 of its second word); 15 a free
+/// slot (`field_event_end_slot`).
+const SLOT_PRIORITY: u32 = 4;
+const FREE_SLOT: u32 = 15;
+/// `26 wait_countdown`, `05 call`, `01 jump` and `31
+/// branch_unless_buttons` (field_event.c), and Confirm (Circle) in the
+/// held buttons `31` tests.
+const WAIT_COUNTDOWN: u8 = 0x26;
+const CALL: u8 = 0x05;
+const JUMP: u8 = 0x01;
+const BRANCH_UNLESS_BUTTONS: u8 = 0x31;
+const CONFIRM: u16 = 0x0020;
 
 /// What a press of Confirm would do to the field's dialogue now.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -114,6 +128,55 @@ fn read_prompt(memory: &dyn GameMemory, mode: Option<u32>) -> Option<Prompt> {
         prompt = Prompt::Waiting { wait };
     }
     Some(prompt)
+}
+
+/// Whether a field script in `mode` is counting out a page's time before
+/// it waits for Confirm outside any window, as the opening narration's
+/// does (map 4: actor 0 has actor 12 show each page, counts with `26
+/// wait_countdown` and calls a `31 0x0020` loop at +0x1668): an actor's
+/// running slot rests on a `26` whose next instructions are more `26`s and
+/// then, run into, called or jumped to, a `31` test of Confirm whose
+/// not-held branch is a jump back to it. The page's window takes the
+/// press that ends its text, and the original's reveal lasts past the
+/// count, so that press also ends the wait; while this holds the host's
+/// text speed keeps the original's reveal (`xem.text_speed`), and a page
+/// can show its prompt only once the script waits for the press.
+pub fn page_counted_out(memory: &dyn GameMemory, mode: Option<u32>) -> bool {
+    mode == Some(1) && counting_out(memory).unwrap_or(false)
+}
+
+fn counting_out(memory: &dyn GameMemory) -> Option<bool> {
+    let count = u32_at(memory, COMPONENTS)?.min(256);
+    let descriptors = ram(u32_at(memory, COMPONENTS + 4)?)?;
+    let bytecode = ram(u32_at(memory, EVENT_BYTECODE)?)?;
+    let op = |pc: u16| u8_at(memory, bytecode + u32::from(pc));
+    let operand = |pc: u16, at: u16| u16_at(memory, bytecode + u32::from(pc.wrapping_add(at)));
+    for index in 0..count {
+        let Some(actor) = u32_at(memory, descriptors + index * DESCRIPTOR_SIZE + DESCRIPTOR_ACTOR).and_then(ram) else {
+            continue;
+        };
+        let slot = actor + ACTOR_SLOTS + u32::from(u8_at(memory, actor + ACTOR_SLOT)? & 7) * 8;
+        let mut pc = u16_at(memory, slot)?;
+        if (u32_at(memory, slot + SLOT_PRIORITY)? >> 18) & 0xF == FREE_SLOT || op(pc)? != WAIT_COUNTDOWN {
+            continue;
+        }
+        for _ in 0..16 {
+            if op(pc)? != WAIT_COUNTDOWN {
+                break;
+            }
+            pc = pc.wrapping_add(3);
+        }
+        if matches!(op(pc)?, CALL | JUMP) {
+            pc = operand(pc, 1)?;
+        }
+        if op(pc)? == BRANCH_UNLESS_BUTTONS && (operand(pc, 1)? & CONFIRM) != 0 {
+            let not_held = operand(pc, 3)?;
+            if op(not_held)? == JUMP && operand(not_held, 1)? == pc {
+                return Some(true);
+            }
+        }
+    }
+    Some(false)
 }
 
 #[cfg(test)]
@@ -191,5 +254,60 @@ mod tests {
         let mut opening = field(8, 1, -1, 0x9C);
         opening.write(WINDOWS + WINDOW_SIZE + TIMER, &3i16.to_le_bytes()).unwrap();
         assert_eq!(prompt(&opening, Some(1)), Prompt::None, "the window still opens");
+    }
+
+    /// Invented bytecode: two counts calling a wait for Confirm at +0x20
+    /// (its not-held branch at +0x28 a jump back), and the wait run into
+    /// after a count at +0x30 and jumped to after one at +0x40.
+    const COUNTED: &[(u16, &[u8])] = &[
+        (0x00, &[0x26, 0x1E, 0x80, 0x26, 0x14, 0x80, 0x05, 0x20, 0x00, 0x00]),
+        (0x20, &[0x31, 0x20, 0x00, 0x28, 0x00, 0x01, 0x2B, 0x00]),
+        (0x28, &[0x01, 0x20, 0x00, 0x0D]),
+        (0x30, &[0x26, 0x0A, 0x80, 0x31, 0x20, 0x00, 0x38, 0x00]),
+        (0x38, &[0x01, 0x33, 0x00, 0x00]),
+        (0x40, &[0x26, 0x0A, 0x80, 0x01, 0x20, 0x00]),
+    ];
+
+    /// A field whose descriptor 1's actor runs slot 2 at `pc` of `code`
+    /// with priority `priority` (descriptor 0 has no actor).
+    fn script(code: &[(u16, &[u8])], pc: u16, priority: u32) -> Ram {
+        let mut memory = Ram(vec![0; 0x20_0000]);
+        let mut put = |address: u32, bytes: &[u8]| memory.write(address, bytes).unwrap();
+        let (descriptors, actor, bytecode) = (0x8010_0000u32, 0x8011_0000u32, 0x8012_0000u32);
+        put(COMPONENTS, &2u32.to_le_bytes());
+        put(COMPONENTS + 4, &descriptors.to_le_bytes());
+        put(descriptors + DESCRIPTOR_SIZE + DESCRIPTOR_ACTOR, &actor.to_le_bytes());
+        put(actor + ACTOR_SLOT, &[2]);
+        put(actor + ACTOR_SLOTS + 2 * 8, &pc.to_le_bytes());
+        put(actor + ACTOR_SLOTS + 2 * 8 + SLOT_PRIORITY, &(priority << 18).to_le_bytes());
+        put(EVENT_BYTECODE, &bytecode.to_le_bytes());
+        for (at, bytes) in code {
+            put(bytecode + u32::from(*at), bytes);
+        }
+        memory
+    }
+
+    #[test]
+    fn a_script_counting_into_its_wait_for_confirm_counts_out_a_page() {
+        assert!(page_counted_out(&script(COUNTED, 0x00, 3), Some(1)), "a count, another, then a call of the wait");
+        assert!(page_counted_out(&script(COUNTED, 0x03, 3), Some(1)), "the last count");
+        assert!(page_counted_out(&script(COUNTED, 0x30, 7), Some(1)), "a count running into the wait");
+        assert!(page_counted_out(&script(COUNTED, 0x40, 7), Some(1)), "a count jumping to it");
+    }
+
+    #[test]
+    fn the_wait_itself_other_tests_a_free_slot_or_another_mode_count_out_no_page() {
+        assert!(!page_counted_out(&script(COUNTED, 0x20, 3), Some(1)), "the counts are over: the script waits");
+        assert!(!page_counted_out(&script(COUNTED, 0x06, 3), Some(1)), "the call after them");
+        assert!(!page_counted_out(&script(COUNTED, 0x00, FREE_SLOT), Some(1)), "an ended slot");
+        assert!(!page_counted_out(&script(COUNTED, 0x00, 3), Some(2)), "a battle");
+        let other = |at: u16, bytes: &'static [u8]| {
+            let mut code = COUNTED.to_vec();
+            code.push((at, bytes));
+            page_counted_out(&script(&code, 0x00, 3), Some(1))
+        };
+        assert!(!other(0x20, &[0x31, 0x40, 0x00, 0x28, 0x00]), "a wait for another button");
+        assert!(!other(0x28, &[0x01, 0x2B, 0x00]), "a test whose branch goes on");
+        assert!(!other(0x06, &[0x9C]), "a count before a wait on its own window");
     }
 }

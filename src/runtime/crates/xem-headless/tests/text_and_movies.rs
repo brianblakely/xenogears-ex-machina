@@ -3,8 +3,10 @@
 //! Build had to re-script for its fast text (disc 1's maps 4, 27, 131, 288,
 //! 326, 359 and 482; two of map 288's) reach the same end, story value and
 //! map with Instant text as with the original's, showing the same
-//! messages, timed ones among them (the opening narration needs a second
-//! press a page); authored slow text (`0F 0E`, map 359's terminal
+//! messages, timed ones among them, and the opening narration, whose
+//! script counts out each page before it waits for Confirm outside the
+//! window, takes one press a page with Fast and Instant text as with the
+//! original's; authored slow text (`0F 0E`, map 359's terminal
 //! readouts) reveals in the same frames with Instant text as with the
 //! original's; Fast and Instant reveal each page in fewer frames;
 //! auto-advance takes a scene through its pages to the same end and leaves
@@ -374,23 +376,33 @@ fn same_end(scene: Scene, budget: u64) -> Option<Vec<Played>> {
 /// The opening narration (map 4): each of its pages shows in a window
 /// while its script counts out the page's time, then waits for Confirm
 /// outside the window. The original's reveal lasts past that count, so the
-/// press that ends the page's text also goes on; with Instant text the
-/// text ends first, its press closes the window, and the narration waits
-/// for a second press (Perfect Works Build re-scripted this map). With the
-/// second press the narration ends as the original's does.
+/// press that ends the page's text also ends the wait (Perfect Works Build
+/// re-scripted this map). Fast and Instant text reveal such a page at the
+/// original's pace until its count ends (`dialogue::page_counted_out`), so
+/// a player who presses only at the prompts takes the narration to Lahan
+/// with one press a page with them too, no later than with the original's
+/// text; one who also presses while the script waits outside the window
+/// reaches the same end.
 #[test]
-fn instant_text_takes_the_opening_narration_to_lahan_with_a_second_press_on_each_page() {
+fn fast_and_instant_text_take_the_opening_narration_to_lahan_with_one_press_a_page() {
     same_end(Scene { loops: true, ..Scene::at(4, &[0, 1]) }, 14_000);
     let Some(disc) = disc() else { return };
-    let runs: Vec<Played> = [0, 255].into_iter().map(|glyphs| {
+    let runs: Vec<Played> = [0, 4, 255].into_iter().map(|glyphs| {
         let mut session = start(&disc, Scene::at(4, &[]));
         session.set_text_speed(glyphs).expect("a text speed");
         play(&mut session, 14_000, true, false)
     }).collect();
-    eprintln!("map 4, pressing only at prompts: the original's {:?} after {} frames, Instant's {:?} after {}",
-        runs[0].end, runs[0].frames, runs[1].end, runs[1].frames);
-    assert_eq!((runs[0].end, runs[0].story), (End::Map(2), 3), "the original's narration needs one press a page");
-    assert_eq!(runs[1].end, End::Unfinished, "Instant text's needs the second");
+    for (glyphs, run) in [0, 4, 255].iter().zip(&runs) {
+        eprintln!("map 4 at {glyphs} glyphs a step, pressing only at prompts: {:?} after {} frames, story {}, {} presses, messages {:?}",
+            run.end, run.frames, run.story, run.presses, run.shown);
+    }
+    let original = &runs[0];
+    assert_eq!((original.end, original.story), (End::Map(2), 3), "the original's narration needs one press a page");
+    for run in &runs[1..] {
+        assert_eq!((run.end, run.story, &run.shown), (original.end, original.story, &original.shown), "the same end, story value and messages");
+        assert_eq!(run.presses, original.presses, "one press a page, as with the original's text");
+        assert!(run.frames <= original.frames, "no later than the original's");
+    }
 }
 
 #[test]

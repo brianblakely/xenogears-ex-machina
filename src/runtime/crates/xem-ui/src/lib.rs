@@ -550,12 +550,20 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     show_game_binding(panel, settings);
 }
 
-/// What a random-battles policy does, naming the areas it turns them off in.
+/// What a random-battles policy does, naming the areas whose jumping-heavy
+/// maps it turns them off on (an area's other maps keep theirs); a name
+/// with a lowercase word describes its area and takes "the".
 fn random_battles_note(battles: RandomBattles) -> String {
     match battles {
         RandomBattles::NotWhilePlatforming => {
-            let areas: Vec<&str> = PLATFORMING_AREAS.iter().map(|(name, _)| *name).collect();
-            format!("Off where jumping meets them: {}. Scripted battles and the world map's stay.", areas.join(", "))
+            let areas: Vec<String> = PLATFORMING_AREAS.iter().map(|(name, _)| {
+                if name.split(' ').any(|word| word.starts_with(char::is_lowercase)) { format!("the {name}") } else { name.to_string() }
+            }).collect();
+            let areas = match areas.split_last() {
+                Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
+                _ => areas.concat(),
+            };
+            format!("Off on the jumping-heavy maps of {areas}. Scripted battles and the world map's stay.")
         }
         RandomBattles::Original => "Wherever the original game has them.".into(),
     }

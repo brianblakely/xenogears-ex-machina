@@ -11,6 +11,10 @@
  * window wait as before, after a shorter reveal. Authored slow text
  * (0F 0E: a glyph every few frames, unk88) keeps its pace, and the
  * one-line layout window (window_render_text_line) keeps its own budget.
+ * The host answers 0 while a field script counts out a page before it
+ * waits for Confirm outside the window (the opening narration's), so that
+ * page's prompt shows only once the script waits for the press, as with
+ * the original's reveal, which lasts past the count.
  * The host records its speed with the game's inputs; 0 is the original's.
  * The port keeps no data of its own.
  */

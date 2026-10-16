@@ -409,10 +409,12 @@ impl<M: GameModule> Session<M> {
 
     /// The host's text speed (src/port/text_speed.c): the glyphs a message
     /// window's step reveals at least, 1-255 (255: a line at a time); the
-    /// windows still stop at their pages, pauses and timed waits, and
-    /// authored slow text keeps its pace. 0 is the window's own speed, the
-    /// original's. It changes the game, so it is recorded with the inputs,
-    /// and a replay keeps the recorded one.
+    /// windows still stop at their pages, pauses and timed waits, authored
+    /// slow text keeps its pace, and a page a field script counts out before
+    /// its wait for Confirm (the opening narration's) reveals at the
+    /// original's pace until the count ends ([`crate::dialogue::page_counted_out`]).
+    /// 0 is the window's own speed, the original's. It changes the game, so
+    /// it is recorded with the inputs, and a replay keeps the recorded one.
     pub fn set_text_speed(&mut self, glyphs: u32) -> Result<(), String> {
         if self.replay_end.is_some() {
             return Ok(());
