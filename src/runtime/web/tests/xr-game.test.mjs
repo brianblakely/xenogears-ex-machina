@@ -792,7 +792,19 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       // button mid-pinch changes nothing (the pointer moves nowhere while a
       // pinch holds it).
       const HOLD = [555, 252];
+      // Each hold from fresh history: Settings closed while the game plays
+      // on 300 frames, then shown again on Time (the history holds 30 s by
+      // the page's clock, and in a session that clock runs on through
+      // Settings' pauses, which this test spends much of its time in).
+      const playOn = async () => {
+        await page.evaluate(() => window.xem.panel.show(false));
+        const from = (await status(page)).session.frames;
+        await page.waitForFunction((from) => window.xem.status().session.frames > from + 300, from, { timeout: 60_000 });
+        await page.evaluate(() => window.xem.panel.show(true));
+        await frames(4);
+      };
       const held = async (name, press, during, release) => {
+        await playOn();
         const ahead = (await status(page)).session.frames;
         await press();
         await page.waitForFunction(() => window.xem.status().renderer.hud?.rewinding, null, { timeout: 30_000 });
