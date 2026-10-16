@@ -863,6 +863,15 @@ people.
   median and the KEMAR head): the script exits with status 0. With its
   cache filled a run takes 4 minutes here; filling it takes about an hour
   once (the 24 lookups 30 to 40 minutes, the lateral estimates 22 to 27).
+- *What the results hold for.* These results are the models' for the
+  responses measured for that run, and the desktop tier keeps the two
+  together: `xem-binaural`'s `tests/models.rs` measures every set again as
+  `rendered_hrirs` does and fails when one differs from the set the models
+  heard (by the digests of the evaluated files, which it keeps; Tests
+  below), asking for the responses to be measured and `evaluate.m` run
+  again on them, and these results and the digests updated from
+  `models.json`. Measured again here (2026-10-16), every set is the
+  evaluated files byte for byte.
 
 **The self-administered listening test.** `tools/listening` is a test the
 user can take alone over headphones (its README gives the steps): a local
@@ -989,7 +998,14 @@ one channel at -3.01 LUFS, and identical sides correlate fully) and
 measured ones is recovered from the rendered ears alone (spectra and delay,
 matched against every measured direction) within 1.5 degrees (median), 3.5
 at worst, left and right, front and back and up and down always right; the
-model listener there is the measured head, not people. `xem_core::binaural`
+model listener there is the measured head, not people. `tests/models.rs`
+measures every set `rendered_hrirs` writes again (3 to 5 s here, release
+builds only) and finds each the
+one the calibrated models heard (above): its digest, FNV-1a 64 over its
+directions and every sample rounded to 1e-6 (half away from zero), is the
+evaluated files' (computed from those files apart from the test), and with
+the levelling's target raised by 0.005% the four rendered sets' digests
+differ and it fails. `xem_core::binaural`
 on synthetic driver memory (identities, songs, field and arena emitters,
 sprites followed until freed, the battle's fixed centre, distance, zoom and
 scale changing nothing, restores, head turns; a start's tail keeping its
@@ -1010,14 +1026,16 @@ original mix; fast-forward and rewind keep presenting; a restored state
 sounds the same every time, and a restore, which jumps from one moment's
 sound to another's in the original too, stands out no more there (the
 click measure below: 1.0 and 1.5 dB less than the original's). In the
-forest's battle (the slice's route, two sessions from one state at frame
-6 000, plain and under Binaural) the combatants' sounds are placed at their
-sprites (9 effects) around the formation's centre, which stays put through
-the battle; read apart from the presenter, each sprite's position from
-that centre through the sprites' view (`sprite_view_matrix`, the battle
-camera's) is where it is heard within 0.11 degree, 1 899 times. That
+forest's battle (the slice's route, three sessions from one state at frame
+6 000: plain, under Binaural, and under Binaural drawn as a headset's
+diorama) the combatants' sounds are placed at their sprites (9 effects)
+around the formation's centre, which stays put through the battle; read
+apart from the presenter, each sprite's position from that centre through
+the sprites' view (`sprite_view_matrix`, the battle camera's) is where it
+is heard within 0.11 degree, 1 899 times, 263 of them from where the
+sprite had moved since the frame before. That
 battle's camera turns only in its opening sweep, before any combatant
-sounds, so both sessions turn the yaw it frames the party from
+sounds, so the three sessions turn the yaw it frames the party from
 (`battle_camera_framing_angles`) six times, and the game's own framing and
 easing swing the camera over 97 frames: 196 placed directions follow it,
 703 degrees in all. The battle's scripts start 16 effects no sprite's
@@ -1026,7 +1044,23 @@ original mix (9 022 voice frames). The battle music's 20 parts keep their
 places through the swings, and the swings, the 83 source switches and the
 return to the field (frame 9 515, where the game's mode goes from the
 battle back to the field) stand out at most 0.61, 1.10 and 0.62 dB more
-than the original's in the high band. In Lahan's opening scene (field 2,
+than the original's in the high band. Drawn as a headset's diorama at 100%
+(every frame, for two small eyes from the seat at the room's origin; the
+head sweeping 90 degrees either way every four seconds; the listener's
+view the seat's through the table as the host takes it before each frame),
+the battle's game memory, voice volumes and SPU are the plain battle's
+frame by frame, the listener is the formation's centre as on the screen,
+and the table shows in all 1 812 frames with a listener. Where the battle
+camera is the one the table shown was drawn with (1 688 directions), each
+sprite's sound is heard where the table shows the sprite from the
+formation's centre (in the room, by the table's matrix), seen from the
+head, within 0.04 degree (bound 0.5); while the written swings turn the
+camera (211 directions) the table shown was drawn with the camera of one
+to three frames before (the presenter reads the camera at the frame's end,
+the host's listener's view is of the frame it shows), and what is heard
+is turned from where the table shows the sprite by at most the camera's
+turn since plus 0.02 degree (the bound: plus 0.5; the turn 53.7 degrees
+at most). In Lahan's opening scene (field 2,
 entered as the game's development menu enters it, 1 200 frames plain and
 under Binaural) the scene's script cuts the camera three times, turning it
 96, 114 and 59 degrees from one frame to the next as the field reader sees
@@ -1066,10 +1100,11 @@ through the frame, 1 606 of them effects; within 0.3% of the driver's own
 gain before panning, recomputed from its records by the decomp's formula,
 which is the pan law's rounding); the zoomed-out session presents exactly
 what the plain Binaural one does, status and sound alike (the presenter has
-no zoom). A twelfth session keeps the field's characters moving in that
+no zoom). A sixteenth session keeps the field's characters moving in that
 zoomed view (`set_actor_view`, as the hosts do with characters in view):
-its game differs, the original's nearest three stay the same on this walk,
-and its placed sources still report the driver's gains (13 152 checked).
+its game differs, the original's nearest three stay the same in every
+frame of this walk, and its placed sources still report the driver's
+gains (13 152 checked).
 In those sessions the field reader (`xem_core::field::Field` and the
 emitter slots, apart from the presenter) puts each placed emitter where it
 is heard, through the camera matrix the game draws with, within 0.5 degree
@@ -1313,8 +1348,12 @@ are validated for static broadband sounds, so moving sounds, the game's
 effects and music lie outside them, and the lateral model reads only
 interaural delays, so the Stereo control's level differences go unheard
 there (people hear those inside the head). barumerli2023's full-sphere
-predictions are not run (Octave, above), and no regression port of the
-models' numbers runs in the suite (the AMT is a local tool). Musical
+predictions are not run (Octave, above), and the models run by hand only
+(the AMT is a local tool): the suite checks only that the renderer's
+responses are still the ones they heard (`tests/models.rs`), and a change
+in the arithmetic's last bits (another compiler, libm or processor) that
+moves a sample across a rounding step fails it too, the models then to be
+run again all the same. Musical
 coherence is measured only by proxies not calibrated against anyone, and
 the arrangement rules are not tuned by ear; the immersion control does not
 make the music more diffuse step by step (the supports placed behind cross
@@ -1339,22 +1378,41 @@ there the runtime's recentring re-references through the seat alone. The
 headset tests place what is heard with the scene standing still (the
 game held, or field 15 with nobody playing); with it moving (the walk),
 the head, recentring, lost tracking and the diorama's scales are heard
-only headlessly, through the hosts' own seat and view code. A state taken in
+only headlessly, through the hosts' own seat and view code. In a diorama
+what is heard follows the game's camera at the frame's end while the
+table shows the frame the game drew last (in the battle one to three
+frames before), so while the camera turns, sounds lead the table by that
+turn: measured only in the battle, whose table stands still (53.7 degrees
+at most, in the written swings' fastest frames); the field's sessions
+check what is heard against the listener's view the host gave, not
+against the table. A state taken in
 the browser while a headset's diorama presents differs from run to run
 at one scale too, after the same frames from the same state, in two
-words of the module's own memory outside the game's: in the suspended
-game fiber's asyncify area (wasm 0x10001024 and 0x10001068, 0x4c and
-0x90 into it), they grow by exactly 9 640 and 408 every game frame while
-the diorama presents, across restores (0xc00 and 0x8 without a
-diorama), as a copy of a running count the state does not hold would
-(the presentation rings' counts, outside the state, run so); game
-memory, scratchpad and sound are alike. [Presentation and the whole
-state](#the-renderer-phase-4) locates differences of this kind in native
-runs (copies of the presentation rings' counts, which the port takes into
-locals); for these two words the cause is not established, and the
-scales are compared by those.
+words of the module's own memory outside the game's, which are
+presentation bookkeeping and no leak: values asyncify saved with the
+suspended game fiber's frames (its save area, wasm 0x10001024 and
+0x10001068, 0x4c and 0x90 into it), copies of presentation-ring running
+counts, which lie outside every state, so that a restore does not reset
+them. While the diorama presents they grow by exactly 9 640 and 408 every
+game frame, at every scale and across restores (each 240-frame run from
+the state adds 240 times as much); without a diorama (the flat page, the
+headset's screen view) they hold 0xc00 and 0x8, unchanging. The save area
+keeps one length in every state, 388 bytes of its 256 KiB: each
+suspension writes it again from its start (`xem_unwind_area`, which both
+hosts call at every unwind), so nothing accumulates. The counts are u32
+and the faster wraps after about 445 500 diorama frames (about two hours
+at 60 frames a second), harmlessly: the port reads them modulo the rings'
+65 536 entries or as unsigned differences, the host by `wrapping_sub`
+(`devices/gpu.rs`), and 65 536 divides 2^32; at the wrap only the stores
+of the point projected as number 2^32 - 1 lose their source (its index
+plus one is 0, the stores' "unknown"): one vertex for a frame,
+presentation only. [Presentation
+and the whole state](#the-renderer-phase-4) shows the same natively:
+played on from the same presentation records, two sessions' saved values
+agree. Game memory, scratchpad and sound are alike, and the scales are
+compared by those.
 The battle camera's swings the battle test hears are its own (the
-framing yaw turned in both sessions): the retained battle's camera turns
+framing yaw turned in every session): the retained battle's camera turns
 only before any combatant sounds. No placed effect sounds across a camera
 cut on the routes kept (Lahan's cuts carry the song alone), so an effect's
 direction jumping at a cut is measured only through the same glide
@@ -3190,7 +3248,9 @@ start does.
   the head, whenever they present, the game running or not, so a table
   tilted, recentred or scaled while the game is held reaches the
   presenter at once.
-  The listener stays at the character, whatever the head's place.
+  The listener stays where the screen's is, whatever the head's place: the
+  controlled character in a field, the formation's centre in a battle (the
+  world map places nothing).
 - **Logs.** OpenXR's `xrframe` line adds `xr_view=` (`screen` or
   `diorama`, the setting's view), `diorama=` (shown),
   `share=` (the screen's), `presented_us=` (when the frame was presented,

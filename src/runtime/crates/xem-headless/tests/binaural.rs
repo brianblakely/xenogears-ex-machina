@@ -4,11 +4,15 @@
 //! parts and the field's emitters, it places the emitters on the side the
 //! original pans them to, and a restored state starts its sound afresh
 //! without a click. In the forest's battle the combatants' sounds come from
-//! their sprites through the battle camera's view as it swings, sounds the
-//! battle's scripts start are reported and keep their mix, the music keeps
-//! its places, and neither swings, switches nor the return to the field
-//! click. Through the camera cuts of Lahan's opening scene (field 2) the
-//! music keeps its places and nothing clicks.
+//! their sprites through the battle camera's view as it swings and as they
+//! move, sounds the battle's scripts start are reported and keep their mix,
+//! the music keeps its places, and neither swings, switches nor the return
+//! to the field click; drawn as a headset's diorama, with the head turning,
+//! the battle's game is the plain one's and each sprite's sound is heard
+//! where the table shows the sprite from the formation's centre, seen from
+//! the head (turned by as much as the camera turned since the frame the
+//! table shows). Through the camera cuts of Lahan's opening scene (field 2)
+//! the music keeps its places and nothing clicks.
 //! Along a walk among field 509's emitters (the session log
 //! tests/reference-inputs/binaural-field509-walk.json), every presentation
 //! setting leaves the game, the driver's voice volumes and the SPU as they
@@ -26,7 +30,8 @@
 //! and shows each placed source mixed once (alone, it is its signal
 //! through the HRTF pairs of where it was heard, frame by frame); drawing
 //! zoomed out changes nothing heard, and with characters in view the
-//! game's own gains stay. A headset's head as its host gives it (its turn
+//! game's own gains and the original's nearest three emitters stay. A
+//! headset's head as its host gives it (its turn
 //! from the seat) is heard once, through the player's Recenter, the
 //! runtime recentring its space and lost tracking (the last head kept),
 //! without a NaN or a click where it jumps; a headset's diorama drawn at
@@ -325,42 +330,89 @@ const BATTLE_FRAMES: u64 = 3600;
 /// frames, and the game's own framing and easing swing the camera there.
 const SWINGS: [(u64, u16); 6] = [(6700, 0x0200), (7000, 0xFE00), (7300, 0x0400), (7700, 0x0000), (8100, 0xFD00), (8600, 0x0100)];
 
-/// What a battle session left after each frame: the mode; the output as
-/// presented and where each frame's ended in it; with Binaural, its status,
-/// the sprites' view (`sprite_view_matrix`, 4.12 rows as floats) and the
-/// positions of the sprites its sources follow, read apart from the
-/// presenter.
+/// How a battle session presents: plain Stereo, under Binaural, or under
+/// Binaural in a headset's diorama at 100% of its scale (drawn every frame
+/// for two small eyes from the seat at the room's origin, characters in
+/// view off), the head turning as in the walk's [`Presentation::Head`] and
+/// the listener's view the seat's through the table as the host takes it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Fighting {
+    Plain,
+    Placed,
+    Diorama,
+}
+
+/// What a battle session left after each frame: the mode; the game (as the
+/// walk's [`Frame`]); the output as presented and where each frame's ended
+/// in it; with Binaural, its status, the sprites' view
+/// (`sprite_view_matrix`, 4.12 rows as floats) and the positions of the
+/// sprites its sources follow, read apart from the presenter; in the
+/// diorama, before each frame, the listener's view the host took from the
+/// diorama it showed last and that diorama's place in the room.
 struct Fought {
     modes: Vec<Option<u32>>,
+    frames: Vec<Frame>,
     audio: Vec<i16>,
     ends: Vec<usize>,
     statuses: Vec<Value>,
     views: Vec<[[f32; 3]; 3]>,
     sprites: Vec<std::collections::HashMap<String, [f32; 3]>>,
+    listened: Vec<Option<[[f32; 3]; 3]>>,
+    spaces: Vec<Option<xem_render::ps1::DioramaSpace>>,
 }
 
-fn fight(disc: &Path, state: &[u8], log: &Log, binaural: bool) -> Fought {
+fn fight(disc: &Path, state: &[u8], log: &Log, how: Fighting) -> Fought {
     let (mut session, _) = boot(disc, &BootOptions { audio_output: true, ..Default::default() }).expect("boot");
     session.set_sound_mode(1).unwrap();
     session.restore_bytes(state).unwrap();
+    let binaural = how != Fighting::Plain;
     if binaural {
         session.set_binaural(ON);
     }
+    let mut drawn = (how == Fighting::Diorama).then(|| Drawn::diorama(100));
     let mut commands = log.commands(BATTLE_FROM, false).as_array().unwrap().clone();
     for (at, yaw) in SWINGS {
         commands.push(json!([at, {"cmd": "write_memory", "address": 0x800C_3742u32, "hex": hex(&yaw.to_le_bytes())}]));
     }
     commands.sort_by_key(|c| c[0].as_u64());
     execute(&mut session, json!({"cmd": "schedule", "commands": commands}));
-    let mut fought = Fought { modes: Vec::new(), audio: Vec::new(), ends: Vec::new(), statuses: Vec::new(), views: Vec::new(), sprites: Vec::new() };
-    for _ in 0..BATTLE_FRAMES {
+    let mut fought = Fought {
+        modes: Vec::new(),
+        frames: Vec::new(),
+        audio: Vec::new(),
+        ends: Vec::new(),
+        statuses: Vec::new(),
+        views: Vec::new(),
+        sprites: Vec::new(),
+        listened: Vec::new(),
+        spaces: Vec::new(),
+    };
+    for n in 0..BATTLE_FRAMES {
+        if let Some(drawn) = drawn.as_mut() {
+            // The listener's view of the diorama the host showed last.
+            let view = drawn.view.listener_axes();
+            fought.spaces.push(drawn.view.diorama_space());
+            session.set_head(Some(head_of(n)));
+            session.set_listener_view(view);
+            fought.listened.push(view);
+        }
         assert!(session.frame().expect("a frame"));
+        if let Some(drawn) = drawn.as_mut() {
+            drawn.draw(&mut session, n);
+        }
         let spu = &mut session.runtime.services().spu;
         let start = fought.audio.len();
         fought.audio.resize(start + spu.audio_queued(), 0);
         spu.take_audio(&mut fought.audio[start..]);
         fought.ends.push(fought.audio.len());
         fought.modes.push(session.runtime.services().mode);
+        let chip = session.runtime.services().spu.chip();
+        let registers: Vec<u16> = (0..xem_spu::VOICES)
+            .flat_map(|v| [xem_spu::reg::VOICE_VOLUME_LEFT, xem_spu::reg::VOICE_VOLUME_RIGHT].map(|r| chip.read16(xem_spu::reg::voice(v) + r)))
+            .collect();
+        let volumes: Vec<[i16; 2]> = (0..xem_spu::VOICES).map(|v| chip.voice(v).volume).collect();
+        let chip_state = ((BATTLE_FROM + n + 1) % 60 == 0).then(|| fnv(&chip.save()));
+        fought.frames.push(Frame { memory: session.memory_hash().unwrap(), registers, volumes, chip: chip_state });
         if binaural {
             let status = execute(&mut session, json!({"cmd": "binaural"}));
             let memory = session.runtime.memory();
@@ -401,11 +453,12 @@ fn both<T: Send>(plain: impl FnOnce() -> T + Send, placed: impl FnOnce() -> T + 
     })
 }
 
-/// The forest's battle, plain and under Binaural, played once for the
-/// tests that read it.
+/// The forest's battle, plain, under Binaural and in a headset's diorama,
+/// played once for the tests that read it.
 struct Battle {
     plain: Fought,
     placed: Fought,
+    diorama: Fought,
 }
 
 static BATTLE: std::sync::OnceLock<Result<Battle, String>> = std::sync::OnceLock::new();
@@ -415,8 +468,13 @@ fn battle() -> Option<&'static Battle> {
     Some(played_once(&BATTLE, "the battle's sessions", || {
         let log = Log::read(FOREST);
         let state = state_at(&disc, &log, BATTLE_FROM);
-        let (plain, placed) = both(|| fight(&disc, &state, &log, false), || fight(&disc, &state, &log, true));
-        Battle { plain, placed }
+        let (disc, state, log) = (&disc, &state, &log);
+        let [plain, placed, diorama] = std::thread::scope(|scope| {
+            [Fighting::Plain, Fighting::Placed, Fighting::Diorama]
+                .map(|how| scope.spawn(move || fight(disc, state, log, how)))
+                .map(|run| run.join().unwrap_or_else(|panic| std::panic::resume_unwind(panic)))
+        });
+        Battle { plain, placed, diorama }
     }))
 }
 
@@ -438,7 +496,7 @@ fn battle_sounds_come_from_their_combatants_around_a_fixed_centre() {
     };
     let mut anchors = Vec::new();
     let mut effects = std::collections::BTreeSet::new();
-    let (mut checked, mut worst, mut swings, mut swung) = (0, 0f32, 0, 0f32);
+    let (mut checked, mut worst, mut swings, mut swung, mut moved) = (0, 0f32, 0, 0f32, 0);
     let mut previous: std::collections::HashMap<u64, [f32; 3]> = std::collections::HashMap::new();
     for (n, status) in placed.statuses.iter().enumerate() {
         // The battle placing its combatants or gone: no listener.
@@ -464,6 +522,8 @@ fn battle_sounds_come_from_their_combatants_around_a_fixed_centre() {
             worst = worst.max(off);
             checked += 1;
             assert!(off < 0.5, "battle frame {n}: {source} heard {off} degrees from the sprite in the camera's view");
+            // Heard from where its sprite moved to since the frame before.
+            moved += usize::from(n > 0 && placed.sprites[n - 1].get(source["follows"].as_str().unwrap()).is_some_and(|before| *before != at));
             let id = source["id"].as_u64().unwrap();
             if let Some(&earlier) = previous.get(&id)
                 && placed.views[n] != placed.views[n - 1]
@@ -475,7 +535,7 @@ fn battle_sounds_come_from_their_combatants_around_a_fixed_centre() {
         }
         previous = heard;
     }
-    eprintln!("battle: {} frames with a listener, {} effects placed at their sprites ({effects:?}); {checked} directions within {worst} degrees of the sprites in the camera's view, {swings} of them as the camera moved, {swung:.0} degrees in all; the camera swung in {} frames",
+    eprintln!("battle: {} frames with a listener, {} effects placed at their sprites ({effects:?}); {checked} directions within {worst} degrees of the sprites in the camera's view, {moved} of them as their sprite moved, {swings} as the camera moved, {swung:.0} degrees in all; the camera swung in {} frames",
         anchors.len(), effects.len(), self::swings(placed).len());
     assert!(anchors.len() > 1000, "the battle ran");
     // The listener stays at the formation's centre on the floor (its height
@@ -484,6 +544,86 @@ fn battle_sounds_come_from_their_combatants_around_a_fixed_centre() {
     assert!(anchors.iter().all(|a| floor(a) == floor(&anchors[0])), "{anchors:?}");
     assert!(effects.len() >= 5, "the combatants' sounds are placed at them: {effects:?}");
     assert!(checked > 100 && swings > 20 && swung > 30.0, "the camera swung while placed sounds played");
+    assert!(moved > 100, "the sprites moved while their sounds played: {moved} directions");
+}
+
+/// A camera record's matrix (`Camera::axes`, its columns, 4.12) as the
+/// sprites' view's rows (as floats, a unit 1).
+fn camera_rows(axes: &[[f32; 3]; 3]) -> [[f32; 3]; 3] {
+    std::array::from_fn(|r| std::array::from_fn(|c| axes[c][r] / 4096.0))
+}
+
+/// The turn (degrees) from one camera's rows to another's, each row made
+/// unit length and the two taken as rotations: 2 asin(|a - b| / 2√2).
+fn turn_between(a: &[[f32; 3]; 3], b: &[[f32; 3]; 3]) -> f32 {
+    let squares: f64 = (0..3).map(|r| (unit(a[r]), unit(b[r]))).flat_map(|(x, y)| (0..3).map(move |c| f64::from(x[c] - y[c]).powi(2))).sum();
+    (2.0 * (squares.sqrt() / (2.0 * std::f64::consts::SQRT_2)).min(1.0).asin()).to_degrees() as f32
+}
+
+#[test]
+fn in_a_battles_diorama_each_sound_is_heard_where_the_table_shows_its_sprite_from_the_head_and_the_game_is_the_plain_battles() {
+    use xem_render::glam::{Quat, Vec3};
+    let Some(Battle { plain, placed, diorama }) = battle() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // Drawn as a diorama, with the head and the listener's view given
+    // before every frame, the game is the plain battle's.
+    assert_eq!(diorama.frames.len(), plain.frames.len());
+    for (n, (frame, reference)) in diorama.frames.iter().zip(&plain.frames).enumerate() {
+        assert_eq!(frame, reference, "battle frame {}: the game, the voices' volumes and the SPU as in the plain battle", BATTLE_FROM + n as u64 + 1);
+    }
+    let (mut listening, mut shown, mut effects) = (0, 0, std::collections::BTreeSet::new());
+    let (mut still, mut still_worst, mut turning, mut turning_worst, mut beyond, mut turned_most, mut behind) = (0, 0f32, 0, 0f32, f32::MIN, 0f32, 0);
+    for (n, status) in diorama.statuses.iter().enumerate() {
+        if diorama.modes[n] != Some(2) || status["listening_position"].is_null() {
+            continue;
+        }
+        listening += 1;
+        // The listener is the formation's centre, as on the screen.
+        let flat = &placed.statuses[n];
+        assert_eq!((&status["listener"], &status["listening_position"]), (&flat["listener"], &flat["listening_position"]), "battle frame {n}: the listener as on the screen");
+        let Some(space) = diorama.spaces[n].filter(|_| diorama.listened[n].is_some()) else { continue };
+        shown += 1;
+        let anchor: Vec<f32> = status["listening_position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap() as f32).collect();
+        // The battle camera the table shown was drawn with, against the
+        // sprites' view the frame was heard through (the presenter reads it
+        // at the frame's end): the same, or turned since the frame the table
+        // shows (the sprites' view of a few frames before).
+        let drawn_with = camera_rows(&space.camera.axes);
+        let turned = if drawn_with == diorama.views[n] { 0.0 } else { turn_between(&drawn_with, &diorama.views[n]) };
+        let head = Quat::from_rotation_y(-sweep(n as u64));
+        for source in status["sources"].as_array().unwrap().iter().filter(|s| s["emitter"] == "sprite") {
+            let at = diorama.sprites[n][source["follows"].as_str().unwrap()];
+            let position: Vec<f32> = source["position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap() as f32).collect();
+            assert_eq!(position, at, "{source}");
+            effects.insert(source["effect"].as_str().unwrap().to_owned());
+            let Some(t) = target(source) else { continue };
+            // The sprite from the formation's centre on the table, in the
+            // room (the seat at its origin), in the head's axes.
+            let room = space.room_from_world.transform_vector3(Vec3::from(at) - Vec3::from_slice(&anchor));
+            let local = head.inverse() * room;
+            let off = between([local.x, -local.y, -local.z], t);
+            if turned == 0.0 {
+                still += 1;
+                still_worst = still_worst.max(off);
+                assert!(off < 0.5, "battle frame {n}: {source} heard {off} degrees from where the table shows its sprite from the head");
+            } else {
+                let since = (1..=n.min(3)).find(|&k| diorama.views[n - k] == drawn_with);
+                assert!(since.is_some(), "battle frame {n}: the table shown was drawn with the camera of at most three frames before");
+                behind = behind.max(since.unwrap());
+                turning += 1;
+                turning_worst = turning_worst.max(off);
+                beyond = beyond.max(off - turned);
+                turned_most = turned_most.max(turned);
+                assert!(off < turned + 0.5, "battle frame {n}: {source} heard {off} degrees from where the table shows its sprite, the camera turned {turned} since the table shown");
+            }
+        }
+    }
+    eprintln!("battle diorama: {listening} frames with a listener, the table shown in {shown}, {} effects placed ({effects:?}); {still} directions with the camera as the table shown was drawn with, within {still_worst} degrees of where the table shows the sprite from the head; {turning} with it turned since (the table drawn {behind} frames before at most, the camera turned {turned_most} degrees at most), within {turning_worst} ({beyond:+} beyond the turn)",
+        effects.len());
+    assert!(listening > 1000 && shown * 10 > listening * 9, "the battle ran, its table shown: {shown} of {listening} frames");
+    assert!(effects.len() >= 5 && still > 1000 && turning > 100, "the combatants' sounds were placed and checked, the camera still and turning: {effects:?}");
 }
 
 #[test]
@@ -544,7 +684,7 @@ fn in_a_battle_the_music_keeps_its_places_as_the_camera_swings() {
 
 #[test]
 fn in_a_battle_camera_swings_switching_sources_and_the_return_to_the_field_add_no_clicks() {
-    let Some(Battle { plain, placed }) = battle() else {
+    let Some(Battle { plain, placed, .. }) = battle() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
@@ -2432,9 +2572,10 @@ fn along_a_walk_zooming_out_changes_nothing_heard_and_characters_in_view_keep_th
     assert_eq!(zoomed.audio, placed.audio, "and sounds the same");
     // With characters in view the game keeps actors moving that the
     // original stops: which emitters it keeps sounding is then its own
-    // decision, and every placed source still has the gain the driver gave
-    // its voices (directions from the game's camera: checked with the field
-    // reader above).
+    // decision (on this walk the original's nearest three, the same in
+    // every frame), and every placed source still has the gain the driver
+    // gave its voices (directions from the game's camera: checked with the
+    // field reader above).
     let in_view = &walked[IN_VIEW];
     assert_ne!(in_view.memory_hash, plain.memory_hash, "characters in view change the game");
     let slots = |run: &Walked| -> Vec<[(u16, u16); 3]> { run.seen.iter().map(|s| s.as_ref().unwrap().slots).collect() };
@@ -2442,6 +2583,8 @@ fn along_a_walk_zooming_out_changes_nothing_heard_and_characters_in_view_keep_th
     let gains = &in_view.gains;
     eprintln!("characters in view: the emitter slots differ from the original's in {differing} frames; {} source frames checked ({} effects, {} music), worst {:+.4}",
         gains.checked, gains.effects, gains.music, gains.worst_ratio);
+    assert_eq!(slots(in_view).len(), slots(plain).len());
+    assert_eq!(differing, 0, "with characters in view the game keeps the original's nearest three emitters sounding on this walk");
     assert!(gains.failures.is_empty(), "{} sources report another gain than the driver gave their voices, first: {}", gains.failures.len(), gains.failures.first().unwrap());
     assert!(gains.effects >= 500 && gains.music >= 500 && gains.worst_ratio.abs() < 0.01, "{gains:?}");
 }

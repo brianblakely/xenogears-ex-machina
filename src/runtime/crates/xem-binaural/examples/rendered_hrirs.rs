@@ -32,7 +32,9 @@
 //! directions and the measurement's conditions), and one little-endian
 //! float32 file a set holding its responses as [direction][ear: left,
 //! right][sample]. Directions are (azimuth clockwise from ahead, elevation
-//! up) in degrees, the renderer's convention.
+//! up) in degrees, the renderer's convention. `tests/models.rs` measures
+//! the sets again through [`sets`] and checks they are the ones the models
+//! last heard.
 
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -161,14 +163,14 @@ fn measure(azimuth: f32, elevation: f32, samples: &[i16], spectrum: &[Complex], 
 }
 
 /// A set of responses, written as float32 and described in the JSON.
-struct Set {
-    name: &'static str,
-    kind: &'static str,
-    length: usize,
-    directions: Vec<(f32, f32)>,
-    labels: Vec<String>,
-    ears: Vec<[Vec<f32>; 2]>,
-    notes: Value,
+pub struct Set {
+    pub name: &'static str,
+    pub kind: &'static str,
+    pub length: usize,
+    pub directions: Vec<(f32, f32)>,
+    pub labels: Vec<String>,
+    pub ears: Vec<[Vec<f32>; 2]>,
+    pub notes: Value,
 }
 
 fn rendered(name: &'static str, directions: Vec<(f32, f32)>, labels: Vec<String>, samples: &[i16], spectrum: &[Complex]) -> Set {
@@ -204,13 +206,11 @@ fn rendered(name: &'static str, directions: Vec<(f32, f32)>, labels: Vec<String>
     }
 }
 
-fn main() {
-    let out = std::env::args()
-        .nth(1)
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/binaural"));
-    std::fs::create_dir_all(&out).expect("the output directory");
-    let out = out.canonicalize().expect("the output directory");
+/// Every set the models hear, in the order `hrirs.json` lists them: the
+/// rendered responses at the measured directions, the grid, the music's
+/// places and the estimate's loudspeakers, the KEMAR set's own and the
+/// Stereo control.
+pub fn sets() -> Vec<Set> {
     let hrtf = Hrtf::kemar();
     let (samples, spectrum) = noise(&Fft::new(PERIOD));
     let measured = hrtf.directions();
@@ -269,6 +269,17 @@ fn main() {
         ears: measured.iter().map(|&d| stereo(d)).collect(),
         notes: json!({"pan": "0x4000 + sin(azimuth) cos(elevation) times 0x4000 (left) or 0x3F00 (right), through the driver's Stereo law"}),
     });
+    sets
+}
+
+fn main() {
+    let out = std::env::args()
+        .nth(1)
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/binaural"));
+    std::fs::create_dir_all(&out).expect("the output directory");
+    let out = out.canonicalize().expect("the output directory");
+    let sets = sets();
     let mut described = Vec::new();
     for set in &sets {
         let file = format!("{}.f32", set.name);
