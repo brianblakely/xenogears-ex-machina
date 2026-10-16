@@ -797,8 +797,12 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         await press();
         await page.waitForFunction(() => window.xem.status().renderer.hud?.rewinding, null, { timeout: 30_000 });
         await during();
-        await page.waitForFunction((ahead) => window.xem.status().session.frames < ahead - 120, ahead, { timeout: 30_000 });
-        assert.equal((await status(page)).renderer.hud.rewinding, true, `${name}: still rewinding`);
+        // Still held after it: the game goes on back (a step at least).
+        const then = (await status(page)).session.frames;
+        await page.waitForFunction(({ ahead, then }) => {
+          const frames = window.xem.status().session.frames;
+          return frames < ahead - 120 && frames < then - 20;
+        }, { ahead, then }, { timeout: 30_000 });
         await release();
         await frames(5);
         const rewound = (await status(page)).session.frames;
