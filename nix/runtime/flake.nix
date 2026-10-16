@@ -119,6 +119,8 @@
               export XEM_CHROMIUM=${pkgs.chromium}/bin/chromium
               # Software Vulkan (lavapipe) for tests; xem-gpu-host switches to the host driver.
               export XEM_LAVAPIPE_ICD=${pkgs.mesa}/share/vulkan/icd.d/lvp_icd.${pkgs.stdenv.hostPlatform.uname.processor}.json
+              # Mesa's EGL (llvmpipe) for tests on wgpu's GL backend (suite.sh's rust stage).
+              export XEM_MESA_EGL=${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json
               export XEM_MONADO_RUNTIME=${pkgs.monado}/share/openxr/1/openxr_monado.json
               export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath runtimeLibraries}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
               export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1

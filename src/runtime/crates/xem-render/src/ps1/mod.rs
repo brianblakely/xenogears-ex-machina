@@ -182,7 +182,9 @@ pub(crate) struct Near {
 /// across the screen as the true depth does (a camera within the scene sees
 /// polygons spanning much of its depth range; draw.wgsl), reversed: nearer
 /// is larger, where a float keeps its precision at any distance
-/// ([`DepthMode::Nearer`]; fills write the far plane, 0).
+/// ([`DepthMode::Nearer`], whose fragments write their depth: GL's clip
+/// space would keep a step of 6e-8 near the far plane; fills write the far
+/// plane, 0).
 pub(crate) const PASS_RECIPROCAL_DEPTH: u32 = 16;
 /// [`PassUniform::options`]: an eye of the diorama ([`diorama`]: drawn only
 /// inside the table's volume, coverage in alpha) and its interface pane
@@ -276,7 +278,8 @@ pub(crate) enum DepthMode {
     /// Tested and written (depth-tested ordering).
     Test,
     /// Tested and written where depth is reversed, nearer larger (a camera
-    /// within the scene: [`PASS_RECIPROCAL_DEPTH`]).
+    /// within the scene: [`PASS_RECIPROCAL_DEPTH`]), the depth written by
+    /// the fragment (draw.wgsl `NearerTargets`).
     Nearer,
     /// Tested, not written (a diorama's translucent primitives).
     Read,
@@ -448,14 +451,17 @@ impl Pipelines {
                 _ => None,
             };
             // A diorama's eyes take their points through the eye's matrices.
+            // Reversed depth is written by the fragment (draw.wgsl
+            // NearerTargets: in full precision on GL too).
             let vertex = if matches!(key.space, Space::World { .. }) { "vs_world" } else { "vs_main" };
+            let nearer = key.depth == DepthMode::Nearer;
             let (vertex, fragment) = match key.fragment {
-                Fragment::Opaque => (vertex, "fs_opaque"),
-                Fragment::OpaqueTexels => (vertex, "fs_opaque_texels"),
-                Fragment::Semi => (vertex, "fs_semi"),
+                Fragment::Opaque => (vertex, if nearer { "fs_opaque_nearer" } else { "fs_opaque" }),
+                Fragment::OpaqueTexels => (vertex, if nearer { "fs_opaque_texels_nearer" } else { "fs_opaque_texels" }),
+                Fragment::Semi => (vertex, if nearer { "fs_semi_nearer" } else { "fs_semi" }),
                 Fragment::Rect => ("vs_rect", "fs_rect"),
                 Fragment::Shadow => ("vs_main", "fs_shadow"),
-                Fragment::Mark => (vertex, "fs_mark"),
+                Fragment::Mark => (vertex, if nearer { "fs_mark_nearer" } else { "fs_mark" }),
                 Fragment::Tint => ("vs_world", "fs_tint"),
             };
             let shadow = key.fragment == Fragment::Shadow;

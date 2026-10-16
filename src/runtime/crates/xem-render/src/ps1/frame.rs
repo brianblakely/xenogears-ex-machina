@@ -1310,8 +1310,9 @@ pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Op
 const COPLANAR: f32 = 0.25;
 const PLANE_CELL: f32 = 768.0;
 /// A face drawn over others in their plane is drawn this share of its depth
-/// nearer a face below it (with depth reversed, eighty times a float's
-/// precision: a tenth of a unit 10 000 away), where it shows as it did.
+/// nearer a face below it (with depth reversed and written by the fragment,
+/// eighty times a float's precision on every backend: a tenth of a unit
+/// 10 000 away), where it shows as it did.
 const LIFT: f32 = 1e-5;
 
 /// For each of `ops`, how many faces it is drawn over in its plane

@@ -695,6 +695,56 @@ fn a_view_from_within_the_scene_shows_its_picture_and_clips_what_reaches_behind_
     assert_eq!(at(&inside, 320, 200), [0, 0, 0], "above its far end, nothing");
 }
 
+/// From within, a face the game draws over another in its plane shows at
+/// every pixel they share however far away they lie: here on a wall 5 200
+/// to 6 800 units ahead, slanting away to the right. Its lift (a
+/// hundred-thousandth of its depth nearer) is under a float's step near the
+/// far plane of GL's clip space, through which wgpu's GL backend (WebGL2,
+/// GLES) takes a vertex's depth (2z - 1), so the fragment writes its depth
+/// itself; scripts/suite.sh runs this on that backend too.
+#[test]
+fn from_within_a_face_drawn_over_another_in_its_plane_shows_wherever_they_overlap_far_away() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // The wall z = 6000 + x / 2 in view space, red, and a green face the
+    // game draws over it there, every corner exactly in its plane.
+    let wall = |gpu: &mut xem_gpu::Gpu| {
+        gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0000]);
+        gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        let corners = |x: i32, y: i32| {
+            [[-x, -y], [x, -y], [-x, y], [x, y]].map(|[x, y]| {
+                let z = 6000 + x / 2;
+                let (sx, sy) = (160.0 + 256.0 * x as f32 / z as f32, 120.0 + 256.0 * y as f32 / z as f32);
+                Projection { sxy: xy(sx.floor() as i32, sy.floor() as i32), sz: z as u16, class: 0, x: (sx * 65536.0) as i32, y: (sy * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0, view: [x, y, z] }
+            })
+        };
+        let projections: Vec<Projection> = corners(1600, 2000).into_iter().chain(corners(800, 1000)).collect();
+        let packet = |colour: u32, first: usize| -> (Vec<u32>, Vec<(usize, usize)>) {
+            let words = std::iter::once(0x2800_0000 | colour).chain(projections[first..first + 4].iter().map(|p| p.sxy)).collect();
+            (words, (0..4).map(|i| (1 + i, first + i)).collect())
+        };
+        submit(gpu, &projections, &[packet(0x0000FF, 0), packet(0x00FF00, 4)]);
+    };
+    let trace = traced(wall);
+    let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { look: Some(AHEAD), ..Default::default() });
+    gpu.queue.submit([encoder.finish()]);
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    // Well inside the green face (x 123.4 to 192, y 74.3 to 165.7 at its
+    // near side and 80 to 160 at its far side), at twice the original.
+    let (mut shared, mut red) = (0, 0);
+    for y in 2 * 82..2 * 158 {
+        for x in 2 * 126..2 * 189 {
+            let i = (y * 640 + x) * 4;
+            shared += 1;
+            red += usize::from(pixels[i] > pixels[i + 1]);
+        }
+    }
+    let info = gpu.adapter.get_info();
+    assert_eq!(red, 0, "{:?} ({}): the face drawn over the wall shows at all {shared} pixels they share", info.backend, info.name);
+}
+
 /// [`FIELD`] with its floor and wall as the field's own scenery (the world,
 /// as a map is drawn), the level camera's record, the depth it looks at
 /// (1200) and the sprite as the controlled character (its eye record at

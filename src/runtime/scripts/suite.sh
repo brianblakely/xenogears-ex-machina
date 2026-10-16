@@ -9,7 +9,8 @@
 #
 #   desktop  (the default) the game module, the port's unit tests (with the
 #            platforming table's check on the user's extracted discs), the
-#            Rust workspace's tests and the validation run
+#            Rust workspace's tests (the game's order from within the scene
+#            on wgpu's GL backend too) and the validation run
 #   web      the game module, the web build and the browser suites, the
 #            browser tests that measure time (WebXR's among them) last
 #   android  the game module, the APK and the emulator's smoke test, its
@@ -121,7 +122,9 @@ native() {
         cargo build --profile suite -p xem-headless -p xem-desktop --bins --example validation --example first_person
 }
 
-# The workspace's tests; each failing target again with line tables.
+# The workspace's tests; each failing target again with line tables. Then
+# the game's order from within the scene again on wgpu's GL backend (Mesa's
+# llvmpipe through EGL), whose clip space WebGL2 and GLES draw through.
 rust() {
     cd "$runtime" || return 1
     local status=0
@@ -133,6 +136,9 @@ rust() {
             VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD RUST_BACKTRACE=1 cargo test --profile suite-debug $target
         done >"$logs/rust-debug.log" 2>&1
     fi
+    WGPU_BACKEND=gl __EGL_VENDOR_LIBRARY_FILENAMES=$XEM_MESA_EGL LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+        cargo test --profile suite --workspace --test ps1 --test first_person -- \
+        from_within_a_face_drawn_over_another from_within_the_games_order || status=1
     return $status
 }
 

@@ -2155,10 +2155,19 @@ depth is tested whatever the ordering, from its reciprocal, which
 interpolates across the screen as depth does (polygons span much of the
 view's depth), kept reversed (nearer larger: `DepthMode::Nearer`, fills
 writing the far plane, 0), where a float keeps its precision at any
-distance. The PS1 draws a primitive over another whatever their depths,
-and in one plane depth cannot tell them apart: a sprite's parts, split
-sprites at one floor point and faces drawn over others showed through each
-other pixel by pixel (a townsperson's shirt striped in field 30, seen from
+distance, and written by each fragment itself (draw.wgsl's
+`NearerTargets`): wgpu's GL backend, which WebXR always draws through
+(WebGL2), as do browsers without WebGPU and Android's GLES fallback, takes
+a vertex's depth through GL's clip space (2z - 1), where a float's step
+near the far plane is 6e-8, too coarse beyond a few hundred units for the
+lift below (measured on Mesa's llvmpipe before the fragments wrote it: a
+sprite's earlier part through a later at 3 456 pixels in field 30 flat and
+139 in field 12 in a headset, and a face drawn over a wall 5 200 to 6 800
+units away hidden at every pixel). The PS1 draws a primitive over another
+whatever their depths, and in one plane depth cannot tell them apart: a
+sprite's parts, split sprites at one floor point and faces drawn over
+others showed through each other pixel by pixel (a townsperson's shirt
+striped in field 30, seen from
 within close by). So `first_person` lifts each face over the faces it
 overlaps in its plane drawn before it (`diorama::Layers`, which the diorama
 lifts its faces by; planes within a quarter of a view-space unit are one),
@@ -2356,7 +2365,13 @@ sees blue (held from before, it saw green: the tour's title).
 a sprite's part reaching 50 below its floor point stands on it, its top as
 high above as the game drew it, a part drawn over it in its plane stands a
 hundred-thousandth of its depth nearer where it showed, a part beside them
-stays. `xem-headless/tests/first_person.rs` (local, disc 1) qualifies the
+stays; `from_within_a_face_drawn_over_another_in_its_plane_shows_wherever_they_overlap_far_away`
+draws a face over a wall 5 200 to 6 800 units ahead, slanting away, which
+shows at all 19 152 pixels they share. The desktop tier runs it and
+`first_person.rs`'s order test (below) again on wgpu's GL backend
+(`suite.sh`'s rust stage: Mesa's llvmpipe through EGL, `XEM_MESA_EGL`),
+where they agree with lavapipe.
+`xem-headless/tests/first_person.rs` (local, disc 1) qualifies the
 view as a camera mode on the game, flat (the desktop's look) and in a
 headset's eyes (`present_headset`, the eyes 64 mm apart with fields of view
 of tangents ±1 across and ±0.75 up and down), beside the game camera's flat
@@ -2385,8 +2400,10 @@ and in a headset, and 1 684 and 1 331 in field 12); a face the game draws
 from both sides (twice, its corners in the other order) is counted apart:
 where its quad does not lie flat its two drawings meet along a fold and
 each shows on its side of it, the other side's texture coordinates there
-(1 499 and 1 261 pixels in Lahan, 24 142 and 26 525 in field 12's room,
-none in field 30). Every sprite drawn reaching below its floor point
+(1 500 and 1 257 pixels in Lahan, 24 142 and 26 525 in field 12's room,
+none in field 30). On wgpu's GL backend the order holds at every such
+pixel too (Lahan's faces drawn from both sides at 1 495 and 1 259 pixels,
+the rest as on lavapipe). Every sprite drawn reaching below its floor point
 stands with its lowest part on it, within what the lifts move it (half a
 unit and two ten-thousandths of its distance), but for the controlled
 character's second sprite in Lahan, at its floor point, whose lower parts
@@ -2444,10 +2461,24 @@ as they are, not made up; the walkmesh's floors in view show the scene
 from both sides (two quads wound each way) is drawn twice from within,
 whichever side faces the eye; where its quad does not lie flat the two meet
 along a fold, the far side's texture coordinates showing on part of it
-(measured above: field 12's railings). Holes, the game's order and the pane are measured in
-`xem-headless`'s harness, which draws a headset's eyes with the renderer
-the hosts use, not in a headset's captures. In an OpenXR session (Monado)
-`xr-game-smoke.sh` plays `xr_play`'s own paths: its controllers run, the
+(measured above: field 12's railings). The eye stands at 0.9 of the height
+the character's sprite reaches above its floor point (the part reaching
+below the point left out), while the other sprites stand raised by that
+part (in fields 1, 12 and 30 by 6 to 48 view units, 2% to 24% of their
+height; the player's own sprite reaches 48 units below its floor point in
+field 30): beside a character drawn as the player's is, the eye stands at
+0.9 of its height less that share (0.68 to 0.88 for the shares measured),
+not at 0.9. Raising the eye with its own sprite instead showed more of
+field 30's missing ceiling (the smoke's inspect run's eyes covered 89% to
+90% of the view, 91% to 93% at this height) and changed the headset's
+metre (the eye's height is 1.6 m), so the eye keeps its height. Holes,
+the game's order and the pane are measured in `xem-headless`'s harness,
+which draws a headset's eyes with the renderer the hosts use, on lavapipe
+(Vulkan) and, for the game's order, also on wgpu's GL backend (Mesa's
+llvmpipe, through the clip space WebGL2 and GLES draw with), not in a
+headset's captures nor on a phone's or a Quest's GPU. In an OpenXR
+session (Monado) `xr-game-smoke.sh` plays `xr_play`'s own paths: its
+controllers run, the
 player's own play from field 30's state (no session log, so the host gives
 the session the view's state), toggles the view with the controllers' Back
 released alone, holds Down, Jump (North) and a camera turn (L1) while it
@@ -4878,7 +4909,7 @@ Phase 8 item 4 for that camera mode).
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
 | First person: transitions | in field 30 the underhand grab on and off, and again while the player's Pause holds the game (inspect, modern); the controllers' Back released alone on, off and on again, the right stick turning it a step a push, and an agent's Original renderer ending it in the headset frame it arrives in (controllers); from the diorama and back to it at its scale and place, a walk stopped (diorama-hands) | the grab and the controllers' click on and off, paused or not, the Original renderer ending it; on as the session ends, the canvas going on with it, and the next session looking from within at once; a battle loaded after the field ending it; from the diorama and back (`xr-diorama.test.mjs`) | `first_person.rs` in a headset: map 25's story movie begun while inspecting on the screen with no eyes for its 4 233 rebuilt frames, inspection on through it, the eyes from within again in map 25 after it, map 23's first frame ending the view; the Mountain Path's random battle entered while inspecting, the eyes and the pane (the compass alone) for the 48 blanks it loads behind the field's last frame, its shatter, the eye's picture broken up, ending inspection on the screen; `inspection.rs`: through the field's menu and a state loaded |
 | First person: holes | | | `first_person.rs`: from the character's eye in fields 1, 12, 22 and 30 at eight headings and two pitches, flat and in both eyes, no pixel of the walkmesh's floors in view without the scene (under 0.5% asserted in each); the ceilings and skies the game never models show its clear, 0 to 1.6% of the flat pictures and 0.5 to 4.1% of the eyes', up to 23.5% of an eye looking back in field 30 (measured) |
-| First person: the game's order, sprite planes and both eyes | the eyes differ and look from within, in the renderer's colours (inspect, modern) | | `first_person.rs`: in fields 1, 30 and 12 from sixteen looks, flat and in a headset, at every pixel where two primitives meet in one plane the one the game drew last (0.08 to 1.4 million a field; a sprite's parts lost it at up to 35 979 before the lift), faces drawn from both sides counted apart; sprites drawn reaching below their floor points standing on them; both eyes one billboard a sprite (within 0.02 units), its parts within 0.6 units of one plane; `ps1.rs`: a part drawn over another a hundred-thousandth of its depth nearer where it showed, a sprite on its floor point, one sprite for canted eyes |
+| First person: the game's order, sprite planes and both eyes | the eyes differ and look from within, in the renderer's colours (inspect, modern) | | `first_person.rs`: in fields 1, 30 and 12 from sixteen looks, flat and in a headset, at every pixel where two primitives meet in one plane the one the game drew last (0.08 to 1.4 million a field, on lavapipe and on wgpu's GL backend, whose clip space WebXR's WebGL2 draws through; a sprite's parts lost it at up to 35 979 before the lift, and on GL at up to 3 456 before the fragments wrote their depth), faces drawn from both sides counted apart; sprites drawn reaching below their floor points standing on them; both eyes one billboard a sprite (within 0.02 units), its parts within 0.6 units of one plane; `ps1.rs`: a part drawn over another a hundred-thousandth of its depth nearer where it showed, a face drawn over a wall 5 200 to 6 800 units away showing at every pixel they share on both backends, a sprite on its floor point, one sprite for canted eyes |
 | First person: interface and media | | (the pane's pixels not read) | `first_person.rs`: where the game draws its interface opaque after the scene, all of it as the flat frame shows it, on the flat look and on the headset's pane (4 514 to 27 712 pixels a field, field 12's dialogue the most), no opaque pane pixel unlike the flat frame; a story movie begun while inspecting on the screen (transitions); `inspection.rs`: field 30's compass alone on the pane (7% of it covered); `ps1.rs`: the pane covering by its alpha, the interface in neither eye |
 | Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
 | The diorama: transitions | in all thirteen runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`): from boot into fields, from the debug battle's selector into its battle, into the world map; field 30's menu, the Mountain Path's random battle and its end, and Lahan to the world map and a field from it, each from the diorama to the screen and back to a diorama (the battle's, the world map's, the field's), each way through frames between the two; map 25's story movie on the screen between its field's dioramas; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had; an agent's `settings_apply` through `--control` in field 30: the screen alone from the first frame after it, at once, and the diorama eased in again from the screen over five frames (`xr_view=`, `diorama=`, `share=`) | the underhand grab over the diorama at 150%: from within on the first session frame after it, the diorama back alone on the first after the next (every session frame recorded), at 150%, its room from the world unchanged; field 30's menu through the automation: from the diorama to the screen over two session frames, the menu on the screen alone, back over three, each step within its time over 0.3 s; map 25's story movie from the state at game frame 5080: eased out, 1 959 of its 1 960 rebuilt frames on the screen alone, eased back over three; Graphics' headset view set through `xem.settings.apply` in the session: the screen alone from the next session frame, the diorama eased in again over three | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, map 25's story movie out and back, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; the headset view set to the screen in a session, the screen at once, and to the diorama again, eased in; `ps1.rs`: a menu's and a 24-bit movie frame's screen after a diorama, eased (and inspection's through `present_diorama`, a path the hosts do not take); after inspection, the table easing on from where it stood |
@@ -7450,6 +7481,9 @@ disc 1 by default on the host's NVIDIA driver.
 From `src/runtime/` in `nix develop path:./nix/runtime`:
 
 - tests on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test -p xem-settings -p xem-render -p xem-ui`
+- on wgpu's GL backend (Mesa's llvmpipe through EGL; GL's clip space, as
+  WebGL2 and GLES draw): `WGPU_BACKEND=gl __EGL_VENDOR_LIBRARY_FILENAMES=$XEM_MESA_EGL
+  LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe cargo test -p xem-render --test ps1`
 - on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
   (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run;
   `XEM_FRAME_STATS=1` prints a line a

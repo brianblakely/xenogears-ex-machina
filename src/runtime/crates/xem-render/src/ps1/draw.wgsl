@@ -103,6 +103,11 @@ struct VertexOut {
     @location(5) @interpolate(flat) limits: u32,
     // A diorama fragment's point in the table's space (vs_world).
     @location(6) table: vec3<f32>,
+    // The depth the rasterizer takes (clip z over w) times w, and w:
+    // interpolated perspective-correctly, their quotient is that depth
+    // across the screen, which a camera within the scene writes itself
+    // (fs_*_nearer).
+    @location(7) depth_w: vec2<f32>,
 };
 
 @vertex
@@ -122,7 +127,8 @@ fn vs_main(in: VertexIn) -> VertexOut {
     // scene sees polygons from near it to far away, across which only the
     // reciprocal of depth interpolates as the depth does; kept reversed
     // (nearer larger: ps1/mod.rs DepthMode::Nearer), where a float keeps
-    // its precision at any distance.
+    // its precision at any distance, and written by the fragment there
+    // (NearerTargets), as GL's clip space would not keep it.
     var z = 0.0;
     if in.depth > 0.0 {
         if (pass_.options & 16u) != 0u {
@@ -132,6 +138,7 @@ fn vs_main(in: VertexIn) -> VertexOut {
         }
     }
     out.clip = vec4<f32>(ndc * in.w, z * in.w, in.w);
+    out.depth_w = vec2<f32>(z * in.w, in.w);
     out.color = in.color;
     out.uv_perspective = in.uv;
     out.uv_affine_w = vec3<f32>(in.uv * in.w, in.w);
@@ -175,6 +182,7 @@ fn vs_world(in: VertexIn) -> VertexOut {
     out.mode = in.mode;
     out.depth = 0.0;
     out.limits = in.limits;
+    out.depth_w = vec2<f32>(0.0, 1.0);
     return out;
 }
 
@@ -409,22 +417,56 @@ fn aux(in: VertexOut) -> vec4<f32> {
     return vec4<f32>(f32(depth >> 8u), f32(depth & 255u), f32(kind), f32(flags)) / 255.0;
 }
 
+// The targets and the fragment's depth, for a camera within the scene
+// (ps1/mod.rs DepthMode::Nearer): the depth its vertices interpolate to, in
+// a float's full precision. wgpu's GL backend (WebGL2, GLES) would take it
+// through GL's clip space (2z - 1), where a float's step near the far plane
+// (0) is 6e-8: coarser beyond a few hundred units than the lift that keeps
+// the game's order in a plane (ps1/frame.rs LIFT).
+struct NearerTargets {
+    @location(0) color: vec4<f32>,
+    @location(1) aux: vec4<f32>,
+    @builtin(frag_depth) depth: f32,
+};
+
+fn nearer(targets: Targets, in: VertexOut) -> NearerTargets {
+    return NearerTargets(targets.color, targets.aux, in.depth_w.x / in.depth_w.y);
+}
+
 // Every fragment of an opaque primitive (semi-transparent texels included,
 // drawn opaque as the GPU does without the semi flag).
-@fragment
-fn fs_opaque(in: VertexOut) -> Targets {
+fn opaque_targets(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
     return Targets(s.color, aux(in));
 }
 
-// The opaque texels of a semi-transparent textured primitive.
 @fragment
-fn fs_opaque_texels(in: VertexOut) -> Targets {
+fn fs_opaque(in: VertexOut) -> Targets {
+    return opaque_targets(in);
+}
+
+@fragment
+fn fs_opaque_nearer(in: VertexOut) -> NearerTargets {
+    return nearer(opaque_targets(in), in);
+}
+
+// The opaque texels of a semi-transparent textured primitive.
+fn opaque_texel_targets(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
     if s.semi {
         discard;
     }
     return Targets(s.color, aux(in));
+}
+
+@fragment
+fn fs_opaque_texels(in: VertexOut) -> Targets {
+    return opaque_texel_targets(in);
+}
+
+@fragment
+fn fs_opaque_texels_nearer(in: VertexOut) -> NearerTargets {
+    return nearer(opaque_texel_targets(in), in);
 }
 
 // The semi-transparent fragments. One blend state serves both targets
@@ -435,8 +477,7 @@ fn fs_opaque_texels(in: VertexOut) -> Targets {
 // auxiliary target stays as it was under weight 0 (scene effects keep the
 // depth and class beneath; fs_mark marks an interface window's pixels), and
 // both keep their stored alpha.
-@fragment
-fn fs_semi(in: VertexOut) -> Targets {
+fn semi_targets(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
     if !s.semi {
         discard;
@@ -468,6 +509,16 @@ fn fs_semi(in: VertexOut) -> Targets {
     return Targets(vec4<f32>(s.color.rgb, weight), vec4<f32>(0.0));
 }
 
+@fragment
+fn fs_semi(in: VertexOut) -> Targets {
+    return semi_targets(in);
+}
+
+@fragment
+fn fs_semi_nearer(in: VertexOut) -> NearerTargets {
+    return nearer(semi_targets(in), in);
+}
+
 // A full-screen fade over a diorama's eye or its pane (ps1/diorama.rs): its
 // colour over what the target holds, weighted by the target's own coverage
 // (the blend's source factor is the destination's alpha), so what is
@@ -488,8 +539,7 @@ fn fs_tint(in: VertexOut) -> Targets {
 // The semi-transparent pixels of an interface primitive, marked as
 // interface in the auxiliary target (weight 1 there, its alpha included:
 // flags 255) with the colour left as fs_semi made it (weight 0).
-@fragment
-fn fs_mark(in: VertexOut) -> Targets {
+fn mark_targets(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
     if !s.semi {
         discard;
@@ -497,6 +547,16 @@ fn fs_mark(in: VertexOut) -> Targets {
     var info = aux(in);
     info.a = 1.0;
     return Targets(vec4<f32>(0.0), info);
+}
+
+@fragment
+fn fs_mark(in: VertexOut) -> Targets {
+    return mark_targets(in);
+}
+
+@fragment
+fn fs_mark_nearer(in: VertexOut) -> NearerTargets {
+    return nearer(mark_targets(in), in);
 }
 
 // GP0(02h) fills and uploads: a VRAM rectangle shown as itself.
