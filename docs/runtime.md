@@ -5365,9 +5365,10 @@ during the session, Save state and Load state by a controller's ray,
 Back+RT, Stop fast-forward, Back+LT through Settings' pause under the
 HUD's rewind icon; Hold to rewind held by the right controller's select,
 then with IWER's tracked hands alone by a held pinch, the head turning
-off the button meanwhile without moving the pointer, each going back at
-least 120 game frames through Settings' pause and Settings holding the
-game again after; a picker refused); `android-smoke.sh`'s
+off the button meanwhile without moving the pointer and the rewind going
+on after it, each going back at least 120 game frames through Settings'
+pause and Settings holding the game again after; a picker refused);
+`android-smoke.sh`'s
 Settings by touch on the emulator (Stop and Start fast-forward, Hold to
 rewind, Save state and Load state; [Android host](#android-host)).
 Agents: `xem-core/tests/persistence.rs`'s
