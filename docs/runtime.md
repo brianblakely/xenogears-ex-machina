@@ -6501,12 +6501,14 @@ while the scene as a whole took 9 439 frames instead of 22 741.
 The opening narration times its pages, which is presumably why the mod
 re-scripted it. Each page shows in a window (actor 12's events 5-9,
 messages 2-6) while the narration's script (actor 0's event 1) counts out
-the page's time with two `26 wait_countdown`s (330-450 frames a page),
-then waits for Confirm with no prompt of its own (it calls `31 0x0020`
-looping on itself, map 4 +0x1668). The original's reveal lasts past that
-count, so the press that ends a page's text also ends the wait; text that
-ended before the count would take that press to close the window alone,
-and the narration would wait for a second press with nothing on screen.
+the page's time with two `26 wait_countdown`s (330-450 field frames a
+page, so 660-900 vertical blanks: measured headless, the count stepped
+once every two vertical blanks for 197 steps), then waits for Confirm
+with no prompt of its own (it calls `31 0x0020` looping on itself,
+map 4 +0x1668). The original's reveal lasts past that count, so the
+press that ends a page's text also ends the wait; text that ended
+before the count would take that press to close the window alone, and
+the narration would wait for a second press with nothing on screen.
 So while a field script counts out a page this way, the `xem.text_speed`
 import answers 0, the original's (`xem_core::dialogue::page_counted_out`:
 an actor's running slot rests on a `26` whose next instructions are more
@@ -6529,14 +6531,16 @@ a `31 0x0020`: on disc 1's maps 4, 14, 129, 131, 132, 133, 135, 144, 153,
 154, 293 (two), 296 (two) and 431, and disc 2's maps 293 and 296 (two
 each). Thirteen counts lead straight into one, all on disc 1: map 4's ten
 (two a page), each with its page shown, and three on maps 129 (+0x0444
-and +0x046e, 30 frames each) and 431 (+0x0424, 40 frames), which the
-counting script reaches with no window of its own open (it has waited
-for its window to close with `9c`, or shown none); a window another
-script showed during one of those counts would reveal at the original's
-pace for its 30 or 40 frames. So the opening narration is the only timed
-narration the rule changes. The sweep is a local script, not in the
-repository (`.local/p678/scratch/p7/p77/rule_sweep.py`); it reads the
-discs extracted (`.local/extract`).
+and +0x046e, 30 field frames each) and 431 (+0x0424, 40 field frames),
+which the counting script reaches with no window of its own open (it has
+waited for its window to close with `9c`, or shown none); a window
+another script showed during one of those counts would reveal at the
+original's pace for those 60 or 80 vertical blanks (neither map holds a
+`d6`, so its field frame keeps the two vertical blanks
+`field_reset_state` gives every map). So the opening narration is the
+only timed narration the rule changes. The sweep is a local script, not
+in the repository (`.local/p678/scratch/p7/p77/rule_sweep.py`); it reads
+the discs extracted (`.local/extract`).
 
 **Auto-advance dialogue.** `xem_core::dialogue::prompt` reads, between
 frames, what a press of Confirm would do to the field's dialogue, as
