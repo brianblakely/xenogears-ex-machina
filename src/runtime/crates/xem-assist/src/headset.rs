@@ -828,22 +828,27 @@ pub(crate) mod tests {
 
     #[test]
     fn through_the_diorama_the_listener_hears_the_table_where_it_lies_from_the_head() {
-        // The Binaural presenter hears a direction of the game camera's view
-        // space through the listener's axes, then the head's (each applied as
+        // The Binaural presenter hears a direction of the game's world
+        // through the camera the listener's axes are in (the one the frame
+        // shown was drawn with), those axes, then the head's (each applied as
         // the axes' components, xem_core::binaural).
         let apply = |axes: [[f32; 3]; 3], v: Vec3| Vec3::new(v.dot(Vec3::from(axes[0])), v.dot(Vec3::from(axes[1])), v.dot(Vec3::from(axes[2])));
         let seat_pose = Pose { position: Vec3::new(0.1, 0.0, -0.05), orientation: Quat::from_rotation_y(0.4) };
         let seat = Seat::at(seat_pose);
+        // A camera turned 63 degrees and pitched 23 (`DioramaSpace::first`
+        // levels the table under it).
+        let turned = glam::Mat3::from_rotation_x(0.4) * glam::Mat3::from_rotation_y(-1.1);
+        let camera = xem_render::xem_gpu::Camera { axes: (turned * 4096.0).to_cols_array_2d(), ..level_camera() };
         for tilt in [0.0f32, 30.0] {
             let table = xem_render::ps1::Table { tilt: tilt.to_radians(), ..xem_render::ps1::Table::default() };
-            let space = DioramaSpace::first(&level_camera(), 256.0, glam::Vec2::new(320.0, 224.0), &table, seat.pose).unwrap();
-            let listener = space.listener_axes().unwrap();
+            let space = DioramaSpace::first(&camera, 256.0, glam::Vec2::new(320.0, 224.0), &table, seat.pose).unwrap();
+            let (listener, rows) = space.listener_axes().unwrap();
             let head = Quat::from_rotation_y(0.9) * Quat::from_rotation_x(-0.3);
             let heard = xem_core::binaural::head_axes(seat.relative(head).to_array());
             for world in [Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0), Vec3::new(-0.6, -0.2, 0.5).normalize()] {
-                // As heard: the camera's view of the direction (its camera is
-                // the identity), through the listener's axes, then the head's.
-                let got = apply(heard, apply(listener, world));
+                // As heard: the camera's view of the direction, through the
+                // listener's axes, then the head's.
+                let got = apply(heard, apply(listener, apply(rows, world)));
                 // Where it lies: the direction on the table in the room, in the
                 // head's own axes (right, down, forward).
                 let room = space.room_from_world.transform_vector3(world).normalize();

@@ -224,6 +224,18 @@ enum Placing {
     Unresolved(&'static str),
 }
 
+/// The listener's view while the presentation looks from elsewhere than the
+/// game camera (`Session::set_listener_view`): its axes (right, down,
+/// forward) in the view space of the camera the frame shown was drawn with,
+/// and that camera's rotation rows (the world to its view space, each made
+/// unit length, as the presenter reads the game's matrices). Directions are
+/// heard through that camera rather than the one the game holds at the
+/// frame's end: the frame shown is the game's draw of an earlier frame (one
+/// to three before in the forest's battle), and the game's camera turning
+/// since turns nothing heard (a battle's diorama stands still while its
+/// camera swings).
+pub type ListenerView = ([[f32; 3]; 3], [[f32; 3]; 3]);
+
 /// A head's axes (right, down, forward) in the game camera's view space,
 /// from its orientation `[x, y, z, w]` in an XR reference space (+X right,
 /// +Y up, -Z ahead: OpenXR's and WebXR's) whose -Z faces the game's
@@ -369,9 +381,10 @@ pub struct Presenter {
     next_id: u32,
     songs: HashMap<u32, Song>,
     scene: Scene,
-    /// The listener's axes in the camera's view space (first-person
-    /// inspection), and the head's in the presentation's (headsets).
-    view: Option<[[f32; 3]; 3]>,
+    /// The listener's view ([`Presenter::set_view`]: its axes and the
+    /// camera they are in), and the head's axes in the presentation's
+    /// (headsets).
+    view: Option<ListenerView>,
     head: Option<[[f32; 3]; 3]>,
     /// Every sounding voice's identity is to be read again (after a restore).
     retag: bool,
@@ -444,11 +457,12 @@ impl Presenter {
         !self.config.enabled && self.renderer.presenting_original()
     }
 
-    /// The listener's axes in the game camera's view space while the
-    /// presentation looks from elsewhere (first-person inspection).
-    pub fn set_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
-        if self.view != axes {
-            self.view = axes;
+    /// The listener's view while the presentation looks from elsewhere
+    /// than the game camera ([`ListenerView`]: first-person inspection, a
+    /// headset's diorama); none: the game camera's own.
+    pub fn set_view(&mut self, view: Option<ListenerView>) {
+        if self.view != view {
+            self.view = view;
             self.update_sources();
         }
     }
@@ -636,14 +650,18 @@ impl Presenter {
         let world = [0, 1, 2].map(|i| position[i] - listener[i]);
         let distance = world.iter().map(|c| c * c).sum::<f32>().sqrt();
         // At the listener the direction is kept (zero), not made up.
-        let direction = if distance < 1.0 { [0.0; 3] } else { self.to_listener(apply(&camera, world.map(|c| c / distance))) };
+        let direction = if distance < 1.0 { [0.0; 3] } else { self.to_listener(&camera, world.map(|c| c / distance)) };
         Placing::Placed { direction, follows, emitter }
     }
 
-    /// A direction in the game camera's view space as the listener hears it:
-    /// through the first-person view, then the head, each once.
-    fn to_listener(&self, view: [f32; 3]) -> [f32; 3] {
-        let looked = self.view.map_or(view, |axes| apply(&axes, view));
+    /// A direction in the game's world as the listener hears it: through
+    /// the game's `camera`, or the listener's view (its axes, through the
+    /// camera they are in), then the head, each once.
+    fn to_listener(&self, camera: &[[f32; 3]; 3], world: [f32; 3]) -> [f32; 3] {
+        let looked = match &self.view {
+            Some((axes, shown)) => apply(axes, apply(shown, world)),
+            None => apply(camera, world),
+        };
         self.head.map_or(looked, |axes| apply(&axes, looked))
     }
 
@@ -914,7 +932,7 @@ impl Presenter {
             "presenting": !self.renderer.presenting_original(),
             "listener": listener,
             "listening_position": self.scene.listener,
-            "first_person": self.view.map(|axes| facing(axes[2])),
+            "first_person": self.view.map(|(axes, _)| facing(axes[2])),
             "head": self.head.map(|axes| facing(axes[2])),
             "cd": if self.scene.movie { "original (a movie plays)" } else if self.config.spatial_music { "estimated arrangement (premixed music)" } else { "original" },
             "sources": sources,
@@ -926,7 +944,7 @@ impl Presenter {
     /// The part of [`status`](Self::status) a host logs every headset
     /// frame, without building the rest.
     pub fn heard(&self) -> Heard {
-        let mut heard = Heard { head: self.head.map(|axes| angles(axes[2])), view: self.view.map(|axes| angles(axes[2])), at: self.scene.listener, ..Heard::default() };
+        let mut heard = Heard { head: self.head.map(|axes| angles(axes[2])), view: self.view.map(|(axes, _)| angles(axes[2])), at: self.scene.listener, ..Heard::default() };
         for source in self.renderer.sources() {
             let Some((azimuth, elevation)) = source.target else { continue };
             match self.ids.iter().find_map(|(key, id)| (*id == source.id).then_some(key)) {
@@ -1179,8 +1197,9 @@ mod tests {
             Placing::Placed { direction, .. } => assert!(direction[0] < -0.99, "{direction:?}"),
             other => panic!("{other:?}"),
         }
-        // First-person, looking a quarter to the left: it is ahead.
-        presenter.set_view(Some([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]));
+        // First-person, looking a quarter to the left of the camera the
+        // frame shown was drawn with (this one): it is ahead.
+        presenter.set_view(Some(([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]], [[-1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0]])));
         match presenter.place_effect(presenter.tags[10].unwrap()) {
             Placing::Placed { direction, .. } => assert!(direction[2] > 0.99, "{direction:?}"),
             other => panic!("{other:?}"),
@@ -1263,6 +1282,15 @@ mod tests {
     /// The presenter of `field_direction`'s field, its emitter's voice 8
     /// keyed on.
     fn field_scene(rows: [i16; 9], t: [i32; 3], listener: [i32; 3], emitter: [i32; 3]) -> Presenter {
+        let ram = field_ram(rows, t, listener, emitter);
+        let mut presenter = Presenter::new(on());
+        presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        presenter.key_on(1 << 8, &ram);
+        presenter
+    }
+
+    /// The game memory of `field_scene`'s field.
+    fn field_ram(rows: [i16; 9], t: [i32; 3], listener: [i32; 3], emitter: [i32; 3]) -> Ram {
         let mut ram = driver();
         let mut matrix: Vec<u8> = rows.iter().flat_map(|r| r.to_le_bytes()).collect();
         matrix.extend([0, 0]);
@@ -1280,10 +1308,39 @@ mod tests {
             ram.put(FIELD_EMITTER_SLOTS + slot * 6, &[actor.to_le_bytes(), sound.to_le_bytes()].concat());
         }
         effect(&mut ram, 8, 8, 0x30, 9);
+        ram
+    }
+
+    /// The level camera's rotation rows (`field_scene`'s `level`).
+    const LEVEL_ROWS: [[f32; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+
+    #[test]
+    fn a_listeners_view_is_heard_through_the_camera_it_was_given_in_whatever_the_game_turns_since() {
+        // A headset's diorama (or first-person inspection) shows a frame the
+        // game drew through the level camera: the listener's view, a quarter
+        // to the right of that camera, hears the emitter on its right ahead.
+        let level: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        let mut ram = field_ram(level, [0, 0, 1000], [0, 0, 0], [500, 0, 0]);
         let mut presenter = Presenter::new(on());
         presenter.update_scene(&ram, Some(MODE_FIELD), false);
         presenter.key_on(1 << 8, &ram);
-        presenter
+        let right = [[0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]];
+        presenter.set_view(Some((right, LEVEL_ROWS)));
+        let shown = heard(&presenter);
+        assert!(shown[2] > 0.99, "{shown:?}");
+        // The game turns its camera half round before the next frame shows:
+        // through the camera the view was given in, nothing heard moves (the
+        // game camera's own view hears the emitter on the other side).
+        let turned: [i16; 9] = [-4096, 0, 0, 0, 4096, 0, 0, 0, -4096];
+        ram.put(FIELD_VIEW_SCALED_WORLD, &turned.iter().flat_map(|r| r.to_le_bytes()).collect::<Vec<u8>>());
+        presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        assert_eq!(heard(&presenter), shown, "the camera turned since the frame shown turns nothing heard");
+        presenter.set_view(None);
+        assert!(heard(&presenter)[0] < -0.99, "the turned camera's own view: {:?}", heard(&presenter));
+        // The next frame shown, drawn through the turned camera, gives the
+        // view's axes in its view space: the same listener in the world.
+        presenter.set_view(Some(([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]], [[-1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0]])));
+        assert_eq!(heard(&presenter), shown, "the same view through the next frame's camera");
     }
 
     #[test]
@@ -1294,7 +1351,7 @@ mod tests {
         let camera = heard(&presenter);
         assert!(camera[0] < -0.99, "{camera:?}");
         // First-person inspection looking a quarter to the left: it is ahead.
-        presenter.set_view(Some([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]));
+        presenter.set_view(Some(([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]], LEVEL_ROWS)));
         let looked = heard(&presenter);
         assert!(looked[2] > 0.99, "{looked:?}");
         // The head then turned a quarter right (in a headset, whose reference
@@ -1324,13 +1381,13 @@ mod tests {
         // An emitter on the camera's right, level with the character.
         let level: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
         let mut presenter = field_scene(level, [0, 0, 1000], [0, 0, 0], [500, 0, 0]);
-        presenter.set_view(Some(view));
+        presenter.set_view(Some((view, LEVEL_ROWS)));
         presenter.set_head(Some(head));
         let Placing::Placed { direction, .. } = presenter.place_effect(presenter.tags[8].unwrap()) else { panic!("placed") };
         let right = [1.0, 0.0, 0.0];
         // Ahead of the turned view, so below the raised head.
         assert!(close(direction, [0.0, s, c]), "{direction:?}");
-        assert!(close(presenter.to_listener(right), direction));
+        assert!(close(presenter.to_listener(&LEVEL_ROWS, right), direction));
         // Not the head first, nor either turn twice.
         for wrong in [apply(&view, apply(&head, right)), apply(&head, apply(&view, apply(&view, right))), apply(&head, apply(&head, apply(&view, right)))] {
             assert!(!close(direction, wrong), "{direction:?} against {wrong:?}");
@@ -1508,7 +1565,7 @@ mod tests {
         let mut ram = driver();
         own(&mut ram, 0, MUSIC, 2);
         presenter.key_on(1, &ram);
-        presenter.set_view(Some([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]));
+        presenter.set_view(Some(([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]], LEVEL_ROWS)));
         let half = (-0.3f32).sin_cos();
         presenter.set_head(Some(head_axes([0.0, half.0, 0.0, half.1])));
         let (heard, status) = (presenter.heard(), presenter.status());

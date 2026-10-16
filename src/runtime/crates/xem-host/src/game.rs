@@ -45,10 +45,10 @@ pub struct Game {
     /// The battle's attack page stays shown through a sequence the player
     /// began by pointing at it (`Session::set_attack_page`).
     attack_page: bool,
-    /// The listener's axes while the presentation looks from elsewhere
+    /// The listener's view while the presentation looks from elsewhere
     /// than the game's camera (`Session::set_listener_view`), for a
     /// presentation an update starts.
-    listener_view: Option<[[f32; 3]; 3]>,
+    listener_view: Option<xem_core::binaural::ListenerView>,
     /// The presentation shows first-person inspection
     /// (`Session::set_inspecting`).
     inspecting: bool,
@@ -478,14 +478,15 @@ impl Game {
         self.attack_page = kept;
     }
 
-    /// The listener's axes while the presentation looks from elsewhere than
+    /// The listener's view while the presentation looks from elsewhere than
     /// the game's camera (`GameView::listener_axes`: first-person
-    /// inspection, a headset's diorama), for the Binaural mode: taken at
-    /// once, whether the game runs or not, as the head is (presentation
-    /// only), and by a presentation the next update starts.
-    pub fn set_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
-        self.listener_view = axes;
-        self.session.set_listener_view(axes);
+    /// inspection, a headset's diorama; its axes and the camera of the
+    /// frame shown they are in), for the Binaural mode: taken at once,
+    /// whether the game runs or not, as the head is (presentation only), and
+    /// by a presentation the next update starts.
+    pub fn set_listener_view(&mut self, view: Option<xem_core::binaural::ListenerView>) {
+        self.listener_view = view;
+        self.session.set_listener_view(view);
     }
 
     /// Whether the presentation shows first-person inspection from the next

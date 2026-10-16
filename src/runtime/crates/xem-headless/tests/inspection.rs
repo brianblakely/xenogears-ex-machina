@@ -109,7 +109,7 @@ impl Host {
     /// Where the view looks in the world: its heading (radians, from the
     /// world's +z toward +x) through the axes of the frame it shows.
     fn look_heading(&mut self) -> Option<f32> {
-        let look = self.view.listener_axes()?;
+        let (look, _) = self.view.listener_axes()?;
         let eye = self.view.frame().eye()?;
         let unit = |v: [f32; 3]| {
             let length = v.iter().map(|c| c * c).sum::<f32>().sqrt();
@@ -294,7 +294,7 @@ fn a_headset_looks_from_the_characters_eye_through_each_eye_paused_or_not_and_ch
     let colours = |picture: &[u8]| picture.chunks_exact(4).map(|p| [p[0], p[1], p[2]]).collect::<std::collections::BTreeSet<_>>().len();
     // Where the view looks in the world (as `Host::look_heading`).
     let heading = |view: &mut GameView| -> f32 {
-        let look = view.listener_axes().expect("looking");
+        let (look, _) = view.listener_axes().expect("looking");
         let eye = view.frame().eye().expect("the character's record");
         let unit = |v: [f32; 3]| v.map(|c| c / v.iter().map(|c| c * c).sum::<f32>().sqrt());
         let world = eye.axes.map(unit).map(|axis| axis.iter().zip(look[2]).map(|(a, f)| a * f).sum::<f32>());

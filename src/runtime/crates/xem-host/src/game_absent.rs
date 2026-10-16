@@ -87,7 +87,7 @@ impl Game {
         match *self {}
     }
 
-    pub fn set_listener_view(&mut self, _axes: Option<[[f32; 3]; 3]>) {
+    pub fn set_listener_view(&mut self, _view: Option<xem_core::binaural::ListenerView>) {
         match *self {}
     }
 

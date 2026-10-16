@@ -10,8 +10,8 @@
 //! to the field click; drawn as a headset's diorama, with the head turning,
 //! the battle's game is the plain one's and each sprite's sound is heard
 //! where the table shows the sprite from the formation's centre, seen from
-//! the head (turned by as much as the camera turned since the frame the
-//! table shows). Through the camera cuts of Lahan's opening scene (field 2)
+//! the head, the camera turning since the frame the table shows or not.
+//! Through the camera cuts of Lahan's opening scene (field 2)
 //! the music keeps its places and nothing clicks.
 //! Along a walk among field 509's emitters (the session log
 //! tests/reference-inputs/binaural-field509-walk.json), every presentation
@@ -37,7 +37,8 @@
 //! without a NaN or a click where it jumps; a headset's diorama drawn at
 //! 25%, 100% and 400% of its scale presents the same every frame, status
 //! and sound, from the controlled character, its view of the table and the
-//! head each once.
+//! head each once, each emitter heard where the table shows it from the
+//! head; first-person axes are heard through the camera they are given in.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test binaural
 
@@ -45,7 +46,7 @@
 
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
-use xem_core::binaural::Config;
+use xem_core::binaural::{Config, ListenerView};
 use xem_core::control::Session;
 use xem_core::memory::GameMemory;
 use xem_game::{BootOptions, NativeModule, boot};
@@ -348,7 +349,8 @@ enum Fighting {
 /// (`sprite_view_matrix`, 4.12 rows as floats) and the positions of the
 /// sprites its sources follow, read apart from the presenter; in the
 /// diorama, before each frame, the listener's view the host took from the
-/// diorama it showed last and that diorama's place in the room.
+/// diorama it showed last (the seat's axes and the camera of the frame
+/// shown) and that diorama's place in the room.
 struct Fought {
     modes: Vec<Option<u32>>,
     frames: Vec<Frame>,
@@ -357,7 +359,7 @@ struct Fought {
     statuses: Vec<Value>,
     views: Vec<[[f32; 3]; 3]>,
     sprites: Vec<std::collections::HashMap<String, [f32; 3]>>,
-    listened: Vec<Option<[[f32; 3]; 3]>>,
+    listened: Vec<Option<ListenerView>>,
     spaces: Vec<Option<xem_render::ps1::DioramaSpace>>,
 }
 
@@ -574,7 +576,7 @@ fn in_a_battles_diorama_each_sound_is_heard_where_the_table_shows_its_sprite_fro
         assert_eq!(frame, reference, "battle frame {}: the game, the voices' volumes and the SPU as in the plain battle", BATTLE_FROM + n as u64 + 1);
     }
     let (mut listening, mut shown, mut effects) = (0, 0, std::collections::BTreeSet::new());
-    let (mut still, mut still_worst, mut turning, mut turning_worst, mut beyond, mut turned_most, mut behind) = (0, 0f32, 0, 0f32, f32::MIN, 0f32, 0);
+    let (mut checked, mut worst, mut turning, mut turning_worst, mut turned_most, mut behind) = (0, 0f32, 0, 0f32, 0f32, 0);
     for (n, status) in diorama.statuses.iter().enumerate() {
         if diorama.modes[n] != Some(2) || status["listening_position"].is_null() {
             continue;
@@ -587,11 +589,17 @@ fn in_a_battles_diorama_each_sound_is_heard_where_the_table_shows_its_sprite_fro
         shown += 1;
         let anchor: Vec<f32> = status["listening_position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap() as f32).collect();
         // The battle camera the table shown was drawn with, against the
-        // sprites' view the frame was heard through (the presenter reads it
-        // at the frame's end): the same, or turned since the frame the table
-        // shows (the sprites' view of a few frames before).
+        // sprites' view the game holds at the frame's end (the screen's
+        // listener hears through it): the same, or turned since the frame
+        // the table shows (the sprites' view of a few frames before).
         let drawn_with = camera_rows(&space.camera.axes);
         let turned = if drawn_with == diorama.views[n] { 0.0 } else { turn_between(&drawn_with, &diorama.views[n]) };
+        if turned > 0.0 {
+            let since = (1..=n.min(3)).find(|&k| diorama.views[n - k] == drawn_with);
+            assert!(since.is_some(), "battle frame {n}: the table shown was drawn with the camera of at most three frames before");
+            behind = behind.max(since.unwrap());
+            turned_most = turned_most.max(turned);
+        }
         let head = Quat::from_rotation_y(-sweep(n as u64));
         for source in status["sources"].as_array().unwrap().iter().filter(|s| s["emitter"] == "sprite") {
             let at = diorama.sprites[n][source["follows"].as_str().unwrap()];
@@ -600,30 +608,24 @@ fn in_a_battles_diorama_each_sound_is_heard_where_the_table_shows_its_sprite_fro
             effects.insert(source["effect"].as_str().unwrap().to_owned());
             let Some(t) = target(source) else { continue };
             // The sprite from the formation's centre on the table, in the
-            // room (the seat at its origin), in the head's axes.
+            // room (the seat at its origin), in the head's axes: where it is
+            // heard, whatever the camera did since the table shown was drawn.
             let room = space.room_from_world.transform_vector3(Vec3::from(at) - Vec3::from_slice(&anchor));
             let local = head.inverse() * room;
             let off = between([local.x, -local.y, -local.z], t);
-            if turned == 0.0 {
-                still += 1;
-                still_worst = still_worst.max(off);
-                assert!(off < 0.5, "battle frame {n}: {source} heard {off} degrees from where the table shows its sprite from the head");
-            } else {
-                let since = (1..=n.min(3)).find(|&k| diorama.views[n - k] == drawn_with);
-                assert!(since.is_some(), "battle frame {n}: the table shown was drawn with the camera of at most three frames before");
-                behind = behind.max(since.unwrap());
+            checked += 1;
+            worst = worst.max(off);
+            if turned > 0.0 {
                 turning += 1;
                 turning_worst = turning_worst.max(off);
-                beyond = beyond.max(off - turned);
-                turned_most = turned_most.max(turned);
-                assert!(off < turned + 0.5, "battle frame {n}: {source} heard {off} degrees from where the table shows its sprite, the camera turned {turned} since the table shown");
             }
+            assert!(off < 0.5, "battle frame {n}: {source} heard {off} degrees from where the table shows its sprite from the head (the camera turned {turned} degrees since the table shown was drawn)");
         }
     }
-    eprintln!("battle diorama: {listening} frames with a listener, the table shown in {shown}, {} effects placed ({effects:?}); {still} directions with the camera as the table shown was drawn with, within {still_worst} degrees of where the table shows the sprite from the head; {turning} with it turned since (the table drawn {behind} frames before at most, the camera turned {turned_most} degrees at most), within {turning_worst} ({beyond:+} beyond the turn)",
+    eprintln!("battle diorama: {listening} frames with a listener, the table shown in {shown}, {} effects placed ({effects:?}); {checked} directions within {worst} degrees of where the table shows the sprite from the head, {turning} of them with the camera turned since the table shown was drawn (the table drawn {behind} frames before at most, the camera turned {turned_most} degrees at most), those within {turning_worst}",
         effects.len());
     assert!(listening > 1000 && shown * 10 > listening * 9, "the battle ran, its table shown: {shown} of {listening} frames");
-    assert!(effects.len() >= 5 && still > 1000 && turning > 100, "the combatants' sounds were placed and checked, the camera still and turning: {effects:?}");
+    assert!(effects.len() >= 5 && checked > 1000 && turning > 100 && turned_most > 20.0, "the combatants' sounds were placed and checked, the camera still and turning since the table shown: {effects:?}");
 }
 
 #[test]
@@ -1071,7 +1073,9 @@ enum Presentation {
     /// Head-tracked music, the head turning from 90 degrees left to 90
     /// right and back every four seconds.
     Head,
-    /// First-person axes (desktop inspection) sweeping the same way.
+    /// First-person axes (desktop inspection) sweeping the same way, in the
+    /// view space of the field camera the frame before ended with (as a
+    /// host gives them with the camera of the frame it shows).
     View,
     /// The settings changing every 120 frames ([`TOGGLES`]).
     Toggled,
@@ -1221,11 +1225,6 @@ fn apply(rows: &[[f32; 3]; 3], v: [f32; 3]) -> [f32; 3] {
     rows.map(|row| row[0] * v[0] + row[1] * v[1] + row[2] * v[2])
 }
 
-/// `outer` applied after `inner`, as one set of axes.
-fn compose(outer: &[[f32; 3]; 3], inner: &[[f32; 3]; 3]) -> [[f32; 3]; 3] {
-    std::array::from_fn(|r| std::array::from_fn(|c| (0..3).map(|k| outer[r][k] * inner[k][c]).sum()))
-}
-
 fn unit(v: [f32; 3]) -> [f32; 3] {
     let length = v.iter().map(|c| c * c).sum::<f32>().sqrt();
     v.map(|c| c / length)
@@ -1285,6 +1284,12 @@ impl Seen {
 
     fn position(&self, actor: usize) -> Option<[f32; 3]> {
         *self.actors.get(actor)?
+    }
+
+    /// Actor `actor` from the controlled actor in the field's world.
+    fn world_of(&self, actor: usize) -> Option<[f32; 3]> {
+        let (at, from) = (self.position(actor)?, self.position(self.player?)?);
+        Some([0, 1, 2].map(|i| at[i] - from[i]))
     }
 
     /// Actor `actor` as the camera sees it from the controlled actor: their
@@ -1466,9 +1471,12 @@ struct Walked {
     /// two seconds of [`TAP`], as the command replies.
     tap_reply: Option<Value>,
     /// The head and the listener's view the presenter held for each frame
-    /// (the headset sessions, recentred and diorama: what they set, or kept).
+    /// (the headset sessions, recentred and diorama: what they set, or kept;
+    /// the view session's and the diorama's views), and where the diorama
+    /// whose view it was lay.
     heads: Vec<Option<[[f32; 3]; 3]>>,
-    views: Vec<Option<[[f32; 3]; 3]>>,
+    views: Vec<Option<ListenerView>>,
+    spaces: Vec<Option<xem_render::ps1::DioramaSpace>>,
 }
 
 /// A view drawing a session's frames as a host would: a desktop's zoomed
@@ -1577,11 +1585,18 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
     let (mut statuses, mut seen, mut audio, mut ends, mut tap, mut tap_reply) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), None, None);
     let (mut slots, mut slot_changes, mut angles, mut menu) = (Vec::new(), 0, std::collections::BTreeSet::new(), Vec::new());
     let recentred = recentred_heads(log.frames - log.start());
-    let (mut heads, mut views): (Vec<Option<[[f32; 3]; 3]>>, Vec<Option<[[f32; 3]; 3]>>) = (Vec::new(), Vec::new());
+    let (mut heads, mut views, mut spaces): (Vec<Option<[[f32; 3]; 3]>>, Vec<Option<ListenerView>>, Vec<_>) = (Vec::new(), Vec::new(), Vec::new());
     for n in 0..log.frames - log.start() {
         match presentation {
             Presentation::Head => session.set_head(Some(head_of(n))),
-            Presentation::View => session.set_listener_view(Some(view_axes(n))),
+            Presentation::View => {
+                // In the view space of the field camera the frame before
+                // ended with (as a host's frame shown was drawn with it).
+                let camera = Seen::read(session.runtime.memory()).expect("the walk stays in the field").camera.map(unit);
+                let view = Some((view_axes(n), camera));
+                session.set_listener_view(view);
+                views.push(view);
+            }
             Presentation::Toggled if n % 120 == 0 && n > 0 => session.set_binaural(TOGGLES[(n / 120) as usize % TOGGLES.len()]),
             Presentation::Recentred => {
                 // Lost, the host sets nothing: the presenter keeps the last.
@@ -1592,7 +1607,9 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
             }
             Presentation::Diorama(_) => {
                 // The listener's view of the diorama the host showed last.
-                let view = drawn.as_mut().expect("a diorama").view.listener_axes();
+                let shown = &mut drawn.as_mut().expect("a diorama").view;
+                let view = shown.listener_axes();
+                spaces.push(shown.diorama_space());
                 session.set_head(Some(head_of(n)));
                 session.set_listener_view(view);
                 heads.push(Some(head_of(n)));
@@ -1651,7 +1668,7 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
     }
     let memory_hash = format!("{:016x}", session.memory_hash().unwrap());
     let coverage = matches!(presentation, Presentation::Plain).then_some((slot_changes, angles.len(), menu.iter().filter(|m| **m).count() as u32));
-    Walked { presentation, frames, gains, memory_hash, coverage, menu, statuses, seen, audio, ends, tap, tap_reply, heads, views }
+    Walked { presentation, frames, gains, memory_hash, coverage, menu, statuses, seen, audio, ends, tap, tap_reply, heads, views, spaces }
 }
 
 /// Every session of the walk ([`PRESENTATIONS`]), played once for all the
@@ -1891,6 +1908,10 @@ struct Directions {
     orbit_turn: f32,
     turns: u64,
     turn_worst: f32,
+    /// A diorama's: directions checked against where its table shows the
+    /// emitter, and the farthest.
+    table: u64,
+    table_worst: f32,
 }
 
 #[test]
@@ -1899,13 +1920,16 @@ fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
+    use xem_render::glam::{Quat, Vec3};
     // The oracle: the controlled actor and the emitter's actor as the field
     // reader has them, their difference through the camera's matrix as the
     // game draws with it (`scaled_world`, whose rows' lengths differ by up
     // to 0.8%: the presenter takes each row's direction, hence the 0.5
-    // degree bound), then the first-person view's or the head's turn, or
-    // both: a headset's diorama's view (the seat through the table) then
-    // the head, each once.
+    // degree bound), or with a listener's view given (first-person axes, a
+    // headset's diorama's seat through the table) through the camera they
+    // were given in, then their axes; then the head's turn, each once. In a
+    // diorama shown, besides: where the table shows the emitter from the
+    // character, in the room, in the head's axes.
     for index in [PLACED, VIEW, HEAD, IN_VIEW, RECENTRED, DIORAMAS[0], DIORAMAS[1], DIORAMAS[2]] {
         let run = &walked[index];
         let mut d = Directions::default();
@@ -1913,23 +1937,41 @@ fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
         for (n, status) in run.statuses.iter().enumerate() {
             let at = frame_at(log, n);
             let seen = run.seen[n].as_ref().expect("the walk stays in the field");
-            let turn = match index {
-                VIEW => Some(view_axes(n as u64)),
+            let view = run.views.get(n).copied().flatten();
+            let head = match index {
                 HEAD => Some(head_of(n as u64)),
-                RECENTRED => run.heads[n],
-                _ if DIORAMAS.contains(&index) => run.heads[n].map(|head| run.views[n].map_or(head, |view| compose(&head, &view))),
+                _ if index == RECENTRED || DIORAMAS.contains(&index) => run.heads[n],
                 _ => None,
             };
+            let turn = view.is_some() || head.is_some();
+            let heard_as = |v: [f32; 3]| head.map_or(v, |axes| apply(&axes, v));
+            let table = run.spaces.get(n).copied().flatten().filter(|_| view.is_some());
             let mut heard = std::collections::HashMap::new();
             for source in field_emitters(status) {
                 let (id, actor) = (source["id"].as_u64().unwrap(), source["follows"].as_u64().unwrap() as usize);
-                let v = unit(seen.view_of(actor).expect("the emitter's actor and the controlled one"));
+                let world = seen.world_of(actor).expect("the emitter's actor and the controlled one");
+                let (v, oriented) = match view {
+                    Some((axes, camera)) => {
+                        let v = apply(&axes, apply(&camera, unit(world)));
+                        (v, v)
+                    }
+                    None => (unit(seen.view_of(actor).expect("as above")), unit(seen.oriented_view_of(actor).expect("as above"))),
+                };
                 let t = target(source).expect("an emitter apart from the character has a direction");
-                let off = between(turn.map_or(v, |axes| apply(&axes, v)), t);
+                let off = between(heard_as(v), t);
                 d.worst = d.worst.max(off);
                 d.checked += 1;
                 assert!(off < 0.5, "{:?}, frame {at}: source {id} is heard {off:.3} degrees from where the field reader puts actor {actor}: {source}", run.presentation);
-                if turn.is_none() {
+                if let Some(space) = table {
+                    // The seat at the room's origin, the head turned
+                    // `sweep(n)` to the right (`head_of`).
+                    let local = Quat::from_rotation_y(-sweep(n as u64)).inverse() * space.room_from_world.transform_vector3(Vec3::from(world));
+                    let off = between([local.x, -local.y, -local.z], t);
+                    d.table_worst = d.table_worst.max(off);
+                    d.table += 1;
+                    assert!(off < 0.5, "{:?}, frame {at}: source {id} is heard {off:.3} degrees from where the table shows actor {actor} from the head: {source}", run.presentation);
+                }
+                if !turn {
                     // Ahead or behind by the camera-space depth, above or
                     // below by the camera-space y (down).
                     if v[2].abs() > 0.05 {
@@ -1941,13 +1983,12 @@ fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
                         *(if v[1] < 0.0 { &mut d.up } else { &mut d.down }) += 1;
                     }
                 }
-                let oriented = unit(seen.oriented_view_of(actor).expect("as above"));
-                heard.insert(id, (actor, t, turn.map_or(oriented, |axes| apply(&axes, oriented))));
+                heard.insert(id, (actor, t, heard_as(oriented)));
             }
             // The original pans an emitter by where the screen shows it;
             // heard from the character, it falls on that side when the pan
             // is clear of the centre.
-            if turn.is_none() {
+            if !turn {
                 for voice in status["voices"].as_array().unwrap().iter().filter(|v| v.get("effect_channel").is_some()) {
                     let Some(&(_, t, _)) = voice["route"].as_u64().and_then(|id| heard.get(&id)) else { continue };
                     let v = voice["voice"].as_u64().unwrap() as usize;
@@ -1988,6 +2029,9 @@ fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
         }
         eprintln!("{:?}: {d:?}", run.presentation);
         assert!(d.checked > 2000, "{:?}: the emitters were placed and checked", run.presentation);
+        if DIORAMAS.contains(&index) {
+            assert!(d.table * 10 > d.checked * 7, "{:?}: the emitters were checked against the table shown in most frames: {d:?}", run.presentation);
+        }
         if index == PLACED {
             assert!(d.front > 0 && d.back > 0 && d.up > 0 && d.down > 0 && d.sides > 100, "the walk heard emitters ahead, behind, above, below and to the sides: {d:?}");
             assert!(d.orbit_frames > 20 && d.orbit_turn > 30.0, "the camera's turns turned what is heard: {d:?}");
@@ -2384,8 +2428,8 @@ fn along_a_walk_the_diorama_is_heard_the_same_at_every_scale_from_the_character(
     };
     // (Game memory and the SPU are plain Stereo's frame by frame at every
     // scale: the first walk test's; each effect is heard where the field
-    // reader puts it through the seat's view of the table and the head:
-    // the direction test's.)
+    // reader puts it through the seat's view of the table and the head, and
+    // where the table shows it from the head: the direction test's.)
     let [quarter, whole, four] = DIORAMAS.map(|i| &walked[i]);
     let mut shown = 0;
     for n in 0..whole.statuses.len() {

@@ -626,7 +626,12 @@ or on the game's own Sound screen, turns it off.
   then are placed by their emitters at the next register sync rather than
   counted as gaps), with the
   first-person view's axes (`GameView::listener_axes`; while a headset's
-  diorama shows, the seat's axes through its table) and a headset's head
+  diorama shows, the seat's axes through its table), each with the camera
+  of the frame shown that they are in (`xem_core::binaural::ListenerView`:
+  the presenter hears them through it, not through the camera the game
+  holds at the frame's end, which leads the picture by one to three frames
+  in the forest's battle, so the game's camera turning after the frame
+  shown moves nothing heard) and a headset's head
   (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose as
   the seat sees it, the seat's forward its reference, so a recentred seat
   is ahead again; lost tracking keeps the last; leaving the headset clears
@@ -1011,7 +1016,9 @@ sprites followed until freed, the battle's fixed centre, distance, zoom and
 scale changing nothing, restores, head turns; a start's tail keeping its
 place when its slot takes another actor for the same sound; a first-person
 look a quarter right and a head pitched 45 degrees up, which do not
-commute, turning a direction in that order, each once). On the
+commute, turning a direction in that order, each once; a listener's view
+heard through the camera it was given in, so that the game's camera turned
+half round since moves nothing heard). On the
 original game, `xem-headless/tests/binaural.rs` (field 15: three emitters
 and its music): with the mode on, music only, effects only or bypassed, game
 memory and the SPU (voice volumes, the driver's pre-pan gains, included)
@@ -1047,20 +1054,20 @@ battle back to the field) stand out at most 0.61, 1.10 and 0.62 dB more
 than the original's in the high band. Drawn as a headset's diorama at 100%
 (every frame, for two small eyes from the seat at the room's origin; the
 head sweeping 90 degrees either way every four seconds; the listener's
-view the seat's through the table as the host takes it before each frame),
-the battle's game memory, voice volumes and SPU are the plain battle's
-frame by frame, the listener is the formation's centre as on the screen,
-and the table shows in all 1 812 frames with a listener. Where the battle
-camera is the one the table shown was drawn with (1 688 directions), each
-sprite's sound is heard where the table shows the sprite from the
-formation's centre (in the room, by the table's matrix), seen from the
-head, within 0.04 degree (bound 0.5); while the written swings turn the
-camera (211 directions) the table shown was drawn with the camera of one
-to three frames before (the presenter reads the camera at the frame's end,
-the host's listener's view is of the frame it shows), and what is heard
-is turned from where the table shows the sprite by at most the camera's
-turn since plus 0.02 degree (the bound: plus 0.5; the turn 53.7 degrees
-at most). In Lahan's opening scene (field 2,
+view the seat's through the table, with the camera of the frame shown, as
+the host takes it before each frame), the battle's game memory and voice
+volumes are the plain battle's frame by frame and its SPU every 60 frames,
+the listener is the formation's centre as on the screen, and the table
+shows in all 1 812 frames with a listener. Each sprite's sound is heard
+where the table shows the sprite from the formation's centre (in the room,
+by the table's matrix), seen from the head, within 0.03 degree (bound
+0.5) in all 1 899 directions. In 211 of them the written swings had turned
+the battle camera since the frame the table shows, which was drawn with
+the camera of one to three frames before (up to 53.7 degrees: the game's
+camera at the frame's end leads its picture), and that moves nothing
+heard: the presenter hears the listener's view through the camera it came
+with. In Lahan's
+opening scene (field 2,
 entered as the game's development menu enters it, 1 200 frames plain and
 under Binaural) the scene's script cuts the camera three times, turning it
 96, 114 and 59 degrees from one frame to the next as the field reader sees
@@ -1115,7 +1122,12 @@ camera-space height says (2 746 and 806), on the side the original pans it
 to (4 281 voice frames), and through the first-person axes or the head as
 they turn, the recentred head as the presenter held it (the one kept
 while tracking was lost included), and the diorama's view of the table
-then the head, each once (within 0.22 degree, 3 786 times in each). The
+then the head, each once (within 0.22 degree, 3 786 times in each; the
+first-person axes, given in the view space of the field camera the frame
+before ended with, are heard through that camera, within 2e-5 degree).
+Where a diorama's table shows (2 954 directions at each scale), each
+emitter is heard where the table shows it from the character, in the
+room, seen from the head, within 0.03 degree. The
 camera's turns (71 frames with the character and the
 emitter still, 127 degrees in all) turn what is heard by the geometry; the
 character's five turns in place move nothing beyond what the camera's glide
@@ -1378,14 +1390,12 @@ there the runtime's recentring re-references through the seat alone. The
 headset tests place what is heard with the scene standing still (the
 game held, or field 15 with nobody playing); with it moving (the walk),
 the head, recentring, lost tracking and the diorama's scales are heard
-only headlessly, through the hosts' own seat and view code. In a diorama
-what is heard follows the game's camera at the frame's end while the
-table shows the frame the game drew last (in the battle one to three
-frames before), so while the camera turns, sounds lead the table by that
-turn: measured only in the battle, whose table stands still (53.7 degrees
-at most, in the written swings' fastest frames); the field's sessions
-check what is heard against the listener's view the host gave, not
-against the table. A state taken in
+only headlessly, through the hosts' own seat and view code. First-person
+inspection's look reaches the presenter with the camera of the frame
+shown, as the diorama's seat does, so a camera a scene's script turns
+while the player looks around moves nothing heard; that is checked on
+synthetic memory and with the walk's synthetic first-person axes, not with
+a script turning the camera during an inspection in the game. A state taken in
 the browser while a headset's diorama presents differs from run to run
 at one scale too, after the same frames from the same state, in two
 words of the module's own memory outside the game's, which are
@@ -2151,7 +2161,8 @@ keep moving); off, the game runs as the original. The
 [Binaural sound mode](#binaural-sound-mode)'s listener looks where the view
 looks (`GameView::listener_axes`, which every host gives the session each
 frame it presents, the game running or held: the look alone, never a
-headset's head, which `Session::set_head` adds once more after it).
+headset's head, which `Session::set_head` adds once more after it, with
+the camera of the frame shown, which the presenter hears it through).
 `status().renderer.firstPerson` and
 `status().renderer.look` (radians turned from the heading it began with,
 yaw right and pitch up) show it in browsers. `--example motion -- --map 30
@@ -3230,10 +3241,17 @@ start does.
   another) take the gaze as before.
 - **The listener.** The Binaural head is the head as the seat sees it.
   While the diorama is presented, the listener's axes are the seat's right,
-  down and forward taken through the table into the game camera's view
-  space (`DioramaSpace::listener_axes`), so the head's turn composes once
-  with the table's heading and tilt; the music's stage, turned by the head
-  alone, stays put in the room. The table stands where the seat puts it,
+  down and forward taken through the table into the view space of the
+  camera the frame shown was drawn with, given with that camera
+  (`DioramaSpace::listener_axes`), so the head's turn composes once with
+  the table's heading and tilt; the music's stage, turned by the head
+  alone, stays put in the room. The presenter hears the axes through that
+  camera, so what is heard is the table's world from the seat whatever the
+  game's camera does after the frame shown: a battle's table stands still
+  while its camera swings, and so does what is heard (before, the
+  presenter took them through the camera the game held at the frame's end,
+  up to 53.7 degrees ahead of the table shown in the forest battle's
+  written swings). The table stands where the seat puts it,
   so through the table is through its tilt from the seat and its turn from
   the world (`DioramaSpace::tilt`, `turn`), both rotations: neither the
   player's scale nor where the seat stands (a recentring) is in the axes,

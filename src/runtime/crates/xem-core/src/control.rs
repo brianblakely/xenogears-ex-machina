@@ -560,12 +560,14 @@ impl<M: GameModule> Session<M> {
         }
     }
 
-    /// The listener's axes (right, down, forward) in the game camera's view
-    /// space while the presentation looks from elsewhere (first-person
-    /// inspection); none: the camera's own.
-    pub fn set_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
+    /// The listener's view while the presentation looks from elsewhere
+    /// (first-person inspection, a headset's diorama): its axes (right,
+    /// down, forward) in the view space of the camera the frame shown was
+    /// drawn with, and that camera (`crate::binaural::ListenerView`); none:
+    /// the camera's own.
+    pub fn set_listener_view(&mut self, view: Option<crate::binaural::ListenerView>) {
         if let Some(presenter) = self.runtime.services().spu.binaural_mut() {
-            presenter.set_view(axes);
+            presenter.set_view(view);
         }
     }
 

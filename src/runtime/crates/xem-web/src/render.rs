@@ -446,9 +446,10 @@ impl WebRenderer {
         self.renderer.viewpoint()
     }
 
-    /// Where the first-person view faces, for the Binaural listener
+    /// Where the first-person view or the diorama's seat faces, and the
+    /// camera of the frame shown, for the Binaural listener
     /// (`GameView::listener_axes`).
-    pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
+    pub fn listener_axes(&mut self) -> Option<([[f32; 3]; 3], [[f32; 3]; 3])> {
         self.renderer.listener_axes()
     }
 

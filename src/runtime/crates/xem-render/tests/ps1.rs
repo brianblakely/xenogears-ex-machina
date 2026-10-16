@@ -2255,7 +2255,7 @@ fn a_headset_sees_from_the_characters_eye_through_each_eyes_field_of_view_with_t
         assert_eq!(named(at(picture, 40, 210)), "magenta", "eye {eye} shows the floor where the interface was drawn");
     }
     // The listener looks along the view's level heading, whatever the head does.
-    let forward = view.listener_axes().expect("looking")[2];
+    let forward = view.listener_axes().expect("looking").0[2];
     assert!((forward[2] - 1.0).abs() < 1e-4, "{forward:?}");
 
     // A quarter turn of the head to the right: the scene ahead leaves the
@@ -2264,7 +2264,7 @@ fn a_headset_sees_from_the_characters_eye_through_each_eyes_field_of_view_with_t
     let (turned, _) = present(&mut view, &eyes(right));
     assert_eq!(named(at(&turned[0], 318, 1)), "black", "nothing to the right");
     assert_ne!(turned[0], pictures[0]);
-    assert!((view.listener_axes().expect("looking")[2][2] - 1.0).abs() < 1e-4, "the listener is head-free");
+    assert!((view.listener_axes().expect("looking").0[2][2] - 1.0).abs() < 1e-4, "the listener is head-free");
 
     // A frame without the character's record: the eyes stay where they were
     // rather than cut to the game's camera.

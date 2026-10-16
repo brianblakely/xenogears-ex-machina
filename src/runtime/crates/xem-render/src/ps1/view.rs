@@ -630,23 +630,28 @@ impl GameView {
         self.first_person.is_some()
     }
 
-    /// The first-person view's axes (right, down, forward) in the game
-    /// camera's view space, while it looks around: where a listener faces
-    /// (the Binaural mode's first-person listener). They never include a
-    /// headset's head, which the session turns the listener by once more
-    /// (`Session::set_head`): in a headset they are level on the view's
-    /// heading (the head does the pitching), the base its eyes turn from.
-    /// While the diorama shows, the seat's axes through the table
+    /// The Binaural listener's view (`xem_core::binaural::ListenerView`)
+    /// while it looks around: the first-person view's axes (right, down,
+    /// forward) in the game camera's view space as the frame shown was drawn
+    /// (the character's record it looks from), where a listener faces, and
+    /// that camera's rotation rows, which the presenter hears them through.
+    /// They never include a headset's head, which the session turns the
+    /// listener by once more (`Session::set_head`): in a headset they are
+    /// level on the view's heading (the head does the pitching), the base
+    /// its eyes turn from. While the diorama shows, the seat's axes through
+    /// the table and the camera of the frame it shows
     /// ([`super::DioramaSpace::listener_axes`]): the head turns from the
     /// seat, whose forward the table's heading and tilt take elsewhere in
     /// the game's world.
-    pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
+    pub fn listener_axes(&mut self) -> Option<([[f32; 3]; 3], [[f32; 3]; 3])> {
         if self.first_person.is_none() && let Some(space) = self.diorama.space().filter(|_| self.diorama_scene()) {
             return space.listener_axes();
         }
         let headset = self.headset;
         let base = self.base(headset)?;
-        Some(base.axes(if headset { 0.0 } else { base.pitch }))
+        // The character's record the view looks from (`base` holds it).
+        let eye = self.first_person.as_ref()?.held?;
+        Some((base.axes(if headset { 0.0 } else { base.pitch }), super::diorama::camera_rows(&eye.axes)?))
     }
 
     /// The diorama's table takes the camera's point and heading at once at

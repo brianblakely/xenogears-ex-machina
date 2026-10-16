@@ -272,20 +272,24 @@ impl DioramaSpace {
         self.room_from_table.inverse()
     }
 
-    /// The listener's axes for the Binaural mode while the diorama shows:
-    /// the seat's right, down and forward (the presentation's, which a
-    /// headset's head turns from) in the game camera's view space, through
-    /// the table: the head's turn, given in the seat's space, is composed
-    /// with them once (`xem_core::binaural`). The table stands where the
-    /// seat puts it, so through the table is through its tilt from the seat
-    /// and its turn from the world, both rotations: neither the player's
-    /// scale nor where the seat stands in the room (a recentring) is in
-    /// them, not even by rounding.
-    pub fn listener_axes(&self) -> Option<[[f32; 3]; 3]> {
+    /// The listener's view for the Binaural mode while the diorama shows
+    /// (`xem_core::binaural::ListenerView`): the seat's right, down and
+    /// forward (the presentation's, which a headset's head turns from)
+    /// through the table into the view space of the camera the frame shown
+    /// was drawn with, and that camera's rotation rows (`camera_rows`),
+    /// which the presenter hears them through: so what is heard is the
+    /// table's world from the seat, whatever camera the game holds by the
+    /// time it is heard. The head's turn, given in the seat's space, is
+    /// composed with them once. The table stands where the seat puts it, so
+    /// through the table is through its tilt from the seat and its turn
+    /// from the world, both rotations: neither the player's scale nor where
+    /// the seat stands in the room (a recentring) is in them, not even by
+    /// rounding. None while the camera's matrix spans no space.
+    pub fn listener_axes(&self) -> Option<([[f32; 3]; 3], [[f32; 3]; 3])> {
+        let camera = camera_rows(&self.camera.axes)?;
         let seat_from_world = Mat3::from_rotation_x(self.tilt) * self.turn;
-        let view_from_seat = rotation(&self.camera) * seat_from_world.transpose();
-        let axes = [Vec3::X, Vec3::NEG_Y, Vec3::NEG_Z].map(|axis| (view_from_seat * axis).normalize_or_zero());
-        axes.iter().all(|axis| axis.length_squared() > 0.5).then(|| axes.map(|axis| axis.to_array()))
+        let view_from_seat = Mat3::from_cols_array_2d(&camera).transpose() * seat_from_world.transpose();
+        Some(([Vec3::X, Vec3::NEG_Y, Vec3::NEG_Z].map(|axis| (view_from_seat * axis).to_array()), camera))
     }
 }
 
@@ -494,6 +498,24 @@ fn wrap(angle: f32) -> f32 {
 /// 4096 + translation, M's columns its axes.
 fn rotation(camera: &Camera) -> Mat3 {
     Mat3::from_cols(Vec3::from(camera.axes[0]), Vec3::from(camera.axes[1]), Vec3::from(camera.axes[2])) / 4096.0
+}
+
+/// A recorded camera's rotation (`Camera::axes`, `Eye::axes`: its matrix's
+/// columns) as its rows, each made unit length as the Binaural presenter
+/// makes the game's own matrices' (`xem_core::binaural`), so that the same
+/// matrix gives the same rows to the last bit; none when a row is shorter
+/// than one (a matrix spanning no space).
+pub(crate) fn camera_rows(axes: &[[f32; 3]; 3]) -> Option<[[f32; 3]; 3]> {
+    let mut rows = [[0f32; 3]; 3];
+    for (r, row) in rows.iter_mut().enumerate() {
+        *row = [axes[0][r], axes[1][r], axes[2][r]];
+        let length = row.iter().map(|c| c * c).sum::<f32>().sqrt();
+        if length < 1.0 {
+            return None;
+        }
+        *row = row.map(|c| c / length);
+    }
+    Some(rows)
 }
 
 /// The world from a camera's view space: a point's world point is
@@ -2118,7 +2140,8 @@ mod tests {
         // camera's own, whatever its yaw and the seat's.
         for yaw in [0.0, 70.0, -130.0] {
             let space = DioramaSpace::first(&camera(yaw, 25.0, 0.0, [0.0, 0.0, 1200.0], CameraMode::Field), 256.0, Vec2::new(320.0, 224.0), &Table::default(), seat).unwrap();
-            let [right, down, forward] = space.listener_axes().unwrap();
+            let ([right, down, forward], rows) = space.listener_axes().unwrap();
+            assert_eq!(Some(rows), camera_rows(&space.camera.axes), "in the view space of the camera the frame was drawn with");
             // The camera pitched 25 degrees; the table is level: its forward
             // is the camera's level heading, 25 degrees up in its view.
             let (s, c) = 25f32.to_radians().sin_cos();
@@ -2129,7 +2152,7 @@ mod tests {
         let tilted = Table { tilt: 20f32.to_radians(), ..Table::default() };
         let space = DioramaSpace::first(&LEVEL, 256.0, Vec2::new(320.0, 224.0), &tilted, Mat4::IDENTITY).unwrap();
         let (s, c) = 20f32.to_radians().sin_cos();
-        let [_, _, forward] = space.listener_axes().unwrap();
+        let ([_, _, forward], _) = space.listener_axes().unwrap();
         assert!(close(forward, [0.0, s, c]), "{forward:?}");
     }
 
