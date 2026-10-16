@@ -778,6 +778,107 @@ fn a_card_changes_from_outside_the_game_only_between_its_card_calls() {
     assert!(s.execute(&json!({"cmd":"card_list","slot":2})).get("error").is_some());
 }
 
+/// The game's file screen as `xem_core::context::file_screen` reads it: a
+/// menu running (`menu_state_debug_start` 0), its state block, the block's
+/// flags and their card mode (the blocks at made-up places in RAM).
+fn show_file_screen(s: &mut Session<Counter>, shown: bool) {
+    let memory = s.runtime.memory();
+    memory.write(0x8005_9178, &[0]).unwrap();
+    memory.write_u32(0x8006_25A0, 0x8010_0000).unwrap();
+    memory.write_u32(0x8010_0000 + 0x33C, 0x8010_1000).unwrap();
+    memory.write(0x8010_1000 + 0x68, &[u8::from(shown)]).unwrap();
+}
+
+#[test]
+fn a_card_import_waits_for_the_games_file_screen_to_close_and_a_restore_reads_it_again() {
+    let stored = Rc::new(RefCell::new([formatted(), formatted()]));
+    let mut s = session();
+    s.runtime.services().card.attach_storage(Box::new(Storage(stored.clone()))).unwrap();
+    let mut other = formatted();
+    other[0x2000] = 0x42;
+    let import = |s: &mut Session<Counter>| {
+        let now = s.runtime.services().clock.now;
+        s.runtime.services().card.import_file(0, &other, "other.mcd", now)
+    };
+    // The screen shows when a frame ends: the import is refused by name,
+    // `card_list` says why, and nothing changes.
+    show_file_screen(&mut s, true);
+    assert!(s.frame().unwrap());
+    let refused = import(&mut s).unwrap_err();
+    assert!(refused.starts_with("memory card 1 not changed: the game's file screen shows the cards' saves"), "{refused}");
+    let busy = s.execute(&json!({"cmd":"card_list","slot":0}))["busy"].clone();
+    assert!(busy.as_str().is_some_and(|b| b.contains("file screen")), "{busy}");
+    assert!(card_image(&mut s) == formatted() && stored.borrow()[0] == formatted(), "nothing changed");
+    let shown = s.snapshot_bytes().unwrap();
+    // Closed, the import goes through once a frame has ended.
+    show_file_screen(&mut s, false);
+    assert!(import(&mut s).is_err(), "between frames the last frame's end stands");
+    assert!(s.frame().unwrap());
+    assert_eq!(import(&mut s).unwrap(), "Card 1: raw card, no saves");
+    assert!(card_image(&mut s) == other && stored.borrow()[0] == other);
+    // A state taken while it showed shows it again once restored.
+    s.restore_bytes(&shown).unwrap();
+    assert!(import(&mut s).unwrap_err().contains("file screen"), "the restored RAM's screen");
+}
+
+/// Card storage that refuses every write while `failing` holds.
+struct Failing(Rc<RefCell<[Vec<u8>; 2]>>, Rc<Cell<bool>>);
+impl CardStorage for Failing {
+    fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> { Ok(Some(self.0.borrow()[slot].clone())) }
+    fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> {
+        if self.1.get() { return Err(std::io::Error::other("the disk is full")); }
+        self.0.borrow_mut()[slot] = image.to_vec();
+        Ok(())
+    }
+}
+
+#[test]
+fn status_shows_the_storage_line_pending_writes_card_errors_and_an_unused_bios() {
+    let stored = Rc::new(RefCell::new([formatted(), formatted()]));
+    let failing = Rc::new(Cell::new(true));
+    let mut s = session();
+    s.runtime.services().card.attach_storage(Box::new(Failing(stored.clone(), failing.clone()))).unwrap();
+    let storage = |s: &mut Session<Counter>| s.execute(&json!({"cmd":"status"}))["storage"].clone();
+    assert_eq!(storage(&mut s), json!({"pending_writes": 0, "errors": [], "kanji_font_notice": null}));
+    // The game's save, which the storage refuses to keep: pending, and why.
+    begin_save(&mut s, 0x5A);
+    finish_save(&mut s);
+    assert_eq!(storage(&mut s), json!({"pending_writes": 1, "errors": ["memory card 1: the disk is full"], "kanji_font_notice": null}));
+    // Why an imported BIOS image is unused, as the boot found it.
+    let notice = "Imported BIOS image bios.bin not used: a PS1 BIOS image is 512 KiB (524288 bytes), not 3 bytes; save titles use the substitute glyphs.";
+    s.runtime.services().kanji_font_notice = Some(notice.into());
+    assert_eq!(storage(&mut s)["kanji_font_notice"], notice);
+    // Retried once the storage keeps it: stored, nothing pending or wrong.
+    failing.set(false);
+    s.runtime.services().card.retry_writes().unwrap();
+    assert_eq!((storage(&mut s)["pending_writes"].clone(), storage(&mut s)["errors"].clone()), (json!(0), json!([])));
+    assert!(stored.borrow()[0] == card_image(&mut s), "the retry stored the card the game saved");
+}
+
+#[test]
+fn an_agents_held_rewind_steps_as_a_hosts_does_and_stops_at_the_oldest_state() {
+    let (mut s, clock) = timed_session();
+    s.execute(&json!({"cmd":"rewind_configure","max_bytes":0}));
+    assert!(s.execute(&json!({"cmd":"rewind_step"}))["error"].as_str().is_some_and(|e| e.contains("Enable rewind")));
+    s.execute(&json!({"cmd":"rewind_configure","max_bytes":xem_core::rewind::MAX_REWIND_BYTES,"interval_seconds":1}));
+    // States at frames 0, 1, 21, 41 and 61; the game at 80 (as for
+    // `Session::rewind_step`, the hosts' held rewind).
+    for second in 1..=4 {
+        clock.set(Duration::from_secs(second));
+        for _ in 0..20 { assert!(s.frame().unwrap()); }
+    }
+    let most = xem_core::rewind::REWIND_PLAY_BLANKS;
+    let stepped = s.execute(&json!({"cmd":"rewind_step","steps":2}));
+    assert_eq!(stepped["steps"], 2, "{stepped}");
+    assert_eq!((stepped["status"]["frames"].clone(), stepped["status"]["rewind"]["states"].clone()), (json!(41 + most), json!(3)),
+        "two steps, each played on from its state as a host's are");
+    let stepped = s.execute(&json!({"cmd":"rewind_step","steps":10}));
+    assert_eq!((stepped["steps"].clone(), stepped["status"]["frames"].clone()), (json!(3), json!(most)), "fewer taken: the oldest reached");
+    assert_eq!(s.execute(&json!({"cmd":"rewind_step"}))["steps"], 0);
+    // A session log holds no rewind: it is the agent's, between frames.
+    assert!(s.execute(&json!({"cmd":"schedule","commands":[[200,{"cmd":"rewind_step"}]]}))["error"].as_str().is_some_and(|e| e.contains("cannot be scheduled")));
+}
+
 #[test]
 fn rewinding_into_a_save_never_changes_another_file_and_the_same_card_goes_on_identically() {
     let (mut s, clock) = timed_session();

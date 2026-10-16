@@ -37,8 +37,10 @@
 // in the headset) reaches IndexedDB during the session, the panel's Save
 // state and Load state by a controller's ray, fast-forward by the
 // controllers' Back+RT and off by the panel's button, Back+LT rewinding
-// through Settings' pause under the HUD's icon, and the backups' pickers
-// refused.
+// through Settings' pause under the HUD's icon, the panel's Hold to rewind
+// held the same way by a controller's select and, with hands alone (IWER's
+// tracked hands, the head aiming), by a held pinch, the head turning off
+// the button meanwhile, and the backups' pickers refused.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -638,7 +640,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
     assert.ok(readFileSync(join(cards, 'card2.mcd')).every((b) => b === 0), 'the route writes card 2 only after frame ' + FROM);
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
     try {
       let page = await browser.page();
       await page.evaluate(() => window.xem.cards.store(1, new Uint8Array(0x20000)));
@@ -781,6 +783,72 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(info.session.frames, rewound, 'Settings hold the game again once Back+LT is let go');
       assert.equal(info.renderer.hud.rewinding, false, 'and the HUD\'s rewind icon goes');
       assert.equal(info.renderer.panelVisible, true, 'Settings showed throughout');
+
+      // Time's Hold to rewind held by the right controller's select, from
+      // its selectstart to its selectend, then with hands alone (the head,
+      // the default pointer source, looking at it) by a held pinch: each
+      // rewinds through Settings' pause under the HUD's icon until it ends,
+      // and Settings hold the game again after. The head turning off the
+      // button mid-pinch changes nothing (the pointer moves nowhere while a
+      // pinch holds it).
+      const HOLD = [555, 252];
+      const held = async (name, press, during, release) => {
+        const ahead = (await status(page)).session.frames;
+        await press();
+        await page.waitForFunction(() => window.xem.status().renderer.hud?.rewinding, null, { timeout: 30_000 });
+        await during();
+        await page.waitForFunction((ahead) => window.xem.status().session.frames < ahead - 120, ahead, { timeout: 30_000 });
+        assert.equal((await status(page)).renderer.hud.rewinding, true, `${name}: still rewinding`);
+        await release();
+        await frames(5);
+        const rewound = (await status(page)).session.frames;
+        await frames(20);
+        const after = await status(page);
+        console.log(`${name} on Hold to rewind rewound game frame ${ahead} to ${rewound}`);
+        assert.equal(after.session.frames, rewound, `${name}: Settings hold the game again once it ends`);
+        assert.equal(after.renderer.hud.rewinding, false, `${name}: and the HUD's rewind icon goes`);
+      };
+      await aim(HOLD);
+      await frames(3);
+      const trigger = (value) => page.evaluate((value) => window.xrDevice.controllers.right.updateButtonValue('trigger', value), value);
+      await held('a controller\'s held select', () => trigger(1), async () => {}, () => trigger(0));
+      // The head turned to look at a panel point (the session's origin is
+      // the head as the session began, where it still is).
+      const look = async ([x, y]) => {
+        const { panelSize: [width, height], panel: { position, orientation, size } } = (await status(page)).xr;
+        const target = rotate(orientation, [(x / width - 0.5) * size[0], (0.5 - y / height) * size[1], 0]).map((v, i) => v + position[i]);
+        await page.evaluate((target) => {
+          const [dx, dy, dz] = target.map((c) => c / Math.hypot(...target));
+          const [ax, ay] = [dy, -dx];
+          const s = Math.sin(Math.acos(-dz) / 2) / (Math.hypot(ax, ay) || 1);
+          window.xrDevice.quaternion.set(ax * s, ay * s, 0, Math.cos(Math.acos(-dz) / 2));
+        }, target);
+      };
+      await page.evaluate(() => {
+        const device = window.xrDevice;
+        window.handModel.install(device);
+        device.primaryInputMode = 'hand';
+        device.hands.left.position.set(-0.15, 1.4, -0.3);
+        device.hands.right.position.set(0.15, 1.4, -0.3);
+        window.handModel.set(device, 'left', 'open');
+        window.handModel.set(device, 'right', 'open');
+      });
+      await look(HOLD);
+      await frames(6);
+      const pinch = (value) => page.evaluate((value) => window.xrDevice.hands.right.updatePinchValue(value), value);
+      let pressedAt;
+      await held('a held pinch', () => pinch(1), async () => {
+        pressedAt = (await status(page)).xr.panelHit;
+        await look([HOLD[0], HOLD[1] + 150]);
+        await frames(6);
+        assert.deepEqual((await status(page)).xr.panelHit, pressedAt, 'the pointer moves nowhere while the pinch holds it');
+      }, () => pinch(0));
+      const { panelClick, panelHit } = (await status(page)).xr;
+      assert.ok(Math.hypot(panelClick[0] - HOLD[0], panelClick[1] - HOLD[1]) < 2, `the pinch pressed where it began: ${panelClick}`);
+      assert.notDeepEqual(panelHit, pressedAt, 'let go, the pointer follows the head again');
+      // The controllers again, the head ahead.
+      await page.evaluate(() => { window.xrDevice.quaternion.set(0, 0, 0, 1); window.xrDevice.primaryInputMode = 'controller'; });
+      await frames(6);
       await pull(SAVES);
       await pull(LOAD_STATE);
       await page.waitForFunction(() => window.xem.status().renderer.hud?.notice === 'State loaded', null, { timeout: 30_000 });

@@ -146,12 +146,15 @@ pub struct XemApp {
     xr_input: Option<xem_assist::headset::Input>,
     xr_screen: Option<xem_assist::headset::Screen>,
     xr_scaling: xem_assist::headset::Scaling,
-    /// The panel pointer inside a headset was on the panel.
-    xr_panel_inside: bool,
+    /// The settings panel's pointer inside a headset: a pinch or a
+    /// controller's select presses it from its start to its end.
+    xr_pointer: xem_assist::headset::PanelPointer,
     /// The last immersive frame's gestures (`status().xr.gestures`).
     xr_gestures: Vec<xem_assist::gesture::Gesture>,
-    /// A controller's select (trigger) came since the last frame, by hand.
-    xr_select: Option<usize>,
+    /// Each controller's select (trigger): held this frame, and begun since
+    /// the pointer last took it.
+    xr_select: [bool; 2],
+    xr_select_began: [bool; 2],
     /// The gestures recognised in sessions (`status().xr.counts`, for
     /// tests: most leave no state behind them).
     xr_counts: xem_assist::gesture::Counts,
@@ -282,9 +285,10 @@ impl XemApp {
             xr_input: None,
             xr_screen: None,
             xr_scaling: Default::default(),
-            xr_panel_inside: false,
+            xr_pointer: Default::default(),
             xr_gestures: Vec::new(),
-            xr_select: None,
+            xr_select: [false; 2],
+            xr_select_began: [false; 2],
             xr_counts: Default::default(),
             xr_resets: 0,
             xr_recenters: 0,
@@ -431,6 +435,9 @@ impl XemApp {
     /// the session is visible (1), then for the left and right hands each:
     /// a target ray (present, position, orientation) and the 25 joints
     /// (present, then x, y, z each), all in the session's reference space.
+    /// `select` has a bit for each controller whose select (its trigger) is
+    /// held this frame, or began and ended since the last (1 the left's, 2
+    /// the right's).
     pub fn xr_input(&mut self, now: f64, data: &[f32], select: i32) {
         use xem_render::glam::{Quat, Vec3};
         const HAND: usize = 8 + 1 + 75 + 2;
@@ -460,9 +467,12 @@ impl XemApp {
                 input.pinch[hand] = Some(d[85] != 0.0);
             }
         }
-        // A controller's select (its trigger): the hand that pressed it.
-        if (0..2).contains(&select) {
-            self.xr_select = Some(select as usize);
+        // Each controller's select (its trigger), held or not, and whether
+        // it began.
+        for hand in 0..2 {
+            let held = select & (1 << hand) != 0;
+            self.xr_select_began[hand] |= held && !self.xr_select[hand];
+            self.xr_select[hand] = held;
         }
         // The Binaural listener turns with the head as the seat sees it
         // (presentation only).
@@ -654,7 +664,10 @@ impl XemApp {
         } else {
             xem_assist::headset::Effects { aim: self.headset.aim(&input, &screen), ..Default::default() }
         };
-        let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
+        let pinched = effects.gestures.iter().find_map(|g| match g {
+            xem_assist::gesture::Gesture::Pinch { hand } => Some(hand.index()),
+            _ => None,
+        });
         self.xr_counts.add(&effects.gestures);
         self.xr_held = effects.held.clone();
         let (inspect, auto_advance) = {
@@ -687,39 +700,47 @@ impl XemApp {
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
             let seat = renderer.xr_seat;
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
+                use xem_assist::headset::{PanelEvent, Presser};
                 let quad = render::xr_panel_quad(&seat, &self.settings.borrow(), panel.size(), screen.quad.size, screen.diorama.is_some());
-                // A controller's select clicks where that controller points;
-                // otherwise the pointer source aims and a pinch clicks.
-                let selected_ray = self.xr_select.and_then(|hand| input.rays[hand]);
-                let hit = match selected_ray {
+                // A controller's select presses where that controller
+                // points; otherwise the pointer source aims and a pinch
+                // presses. Either holds the pointer until it ends.
+                let selected = (0..2).find(|&hand| self.xr_select_began[hand] && input.rays[hand].is_some());
+                let began = selected.map(Presser::Select).or(pinched.map(Presser::Pinch));
+                let hit = match selected.and_then(|hand| input.rays[hand]) {
                     Some(ray) => quad.hit(ray.position, ray.forward()),
                     None => self.headset.hit(&input, &quad),
                 };
-                match hit {
-                    Some(((u, v), _)) => {
-                        self.xr_panel_hit = Some((u, v));
-                        let scale = panel.scale_factor();
-                        let (w, h) = panel.size();
-                        let position = xem_ui::LogicalPosition::new(u * w as f32 / scale, v * h as f32 / scale);
-                        panel.dispatch(xem_ui::WindowEvent::PointerMoved { position });
-                        if pinched || self.xr_select.is_some() {
-                            self.xr_panel_click = Some((position.x, position.y));
-                            let button = xem_ui::PointerEventButton::Left;
-                            panel.dispatch(xem_ui::WindowEvent::PointerPressed { position, button });
-                            panel.dispatch(xem_ui::WindowEvent::PointerReleased { position, button });
+                let selects = self.xr_select;
+                let held = |presser| match presser {
+                    Presser::Select(hand) => selects[hand],
+                    Presser::Pinch(hand) => input.pinch[hand] == Some(true),
+                };
+                let scale = panel.scale_factor();
+                let (w, h) = panel.size();
+                let at = |(u, v): (f32, f32)| xem_ui::LogicalPosition::new(u * w as f32 / scale, v * h as f32 / scale);
+                let button = xem_ui::PointerEventButton::Left;
+                for event in self.xr_pointer.update(hit.map(|(uv, _)| uv), began, held) {
+                    panel.dispatch(match event {
+                        PanelEvent::Moved(uv) => {
+                            self.xr_panel_hit = Some(uv);
+                            xem_ui::WindowEvent::PointerMoved { position: at(uv) }
                         }
-                        self.xr_panel_inside = true;
-                    }
-                    None if self.xr_panel_inside => {
-                        self.xr_panel_hit = None;
-                        panel.dispatch(xem_ui::WindowEvent::PointerExited);
-                        self.xr_panel_inside = false;
-                    }
-                    None => {}
+                        PanelEvent::Pressed(uv) => {
+                            let position = at(uv);
+                            self.xr_panel_click = Some((position.x, position.y));
+                            xem_ui::WindowEvent::PointerPressed { position, button }
+                        }
+                        PanelEvent::Released(uv) => xem_ui::WindowEvent::PointerReleased { position: at(uv), button },
+                        PanelEvent::Exited => {
+                            self.xr_panel_hit = None;
+                            xem_ui::WindowEvent::PointerExited
+                        }
+                    });
                 }
             }
         }
-        self.xr_select = None;
+        self.xr_select_began = [false; 2];
     }
 
     /// Whether first-person inspection shows.
@@ -1092,6 +1113,7 @@ impl XemApp {
         self.look_mouse = [0.0; 2];
         let _ = self.app_input.set_focused(false);
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.cancel_pointer(); }
+        self.xr_pointer.release();
         self.app_requests.borrow_mut().retain(|r| matches!(r,AppRequest::Action(_)));
         let _ = self.set_rewind_held(false,false);
         let _ = self.set_rewind_held(false,true);
@@ -1137,7 +1159,10 @@ impl XemApp {
 
     pub fn set_panel_visible(&mut self, visible: bool) {
         if let Some(renderer) = &mut self.renderer {
-            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() { panel.cancel_pointer(); }
+            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() {
+                panel.cancel_pointer();
+                self.xr_pointer.release();
+            }
             renderer.panel_visible = visible && renderer.has_panel();
         }
     }

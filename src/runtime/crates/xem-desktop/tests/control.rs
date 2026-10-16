@@ -7,8 +7,14 @@
 //! revision, refuses a dwell out of range with the reason and changes
 //! nothing then, and the next frames' `status` shows each value; the
 //! settings file keeps the choices, so a second launch starts with them.
-//! Local only: it needs the user's disc 1, a game module build and weston
-//! and lavapipe (nix/runtime's shell).
+//! The panel's and the bindings' operations reach agents as one command
+//! (docs/runtime.md, Saves and time controls): `app {request}` holds
+//! rewind in field 30 until it lets go, as R held does (the game goes
+//! back, then plays on), retries the pending card writes, and refuses the
+//! file pickers and Recenter, each with the reason; `status` shows the
+//! storage line's results (a card file that is no card, a kept BIOS image
+//! that is no image). Local only: it needs the user's disc 1, a game
+//! module build and weston and lavapipe (nix/runtime's shell).
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-desktop --test control
 
@@ -35,8 +41,9 @@ struct Display {
 }
 
 impl Display {
-    fn start(lavapipe: &str) -> Display {
-        let root = std::env::temp_dir().join(format!("xem-desktop-control-{}", std::process::id()));
+    /// A display of its own for the test `name`.
+    fn start(name: &str, lavapipe: &str) -> Display {
+        let root = std::env::temp_dir().join(format!("xem-desktop-control-{name}-{}", std::process::id()));
         std::fs::create_dir_all(root.join("run")).expect("a runtime directory");
         let weston = Command::new("weston")
             .args(["--backend=headless", "--renderer=pixman", "--width=1280", "--height=800", "--socket=wl-xem", "--idle-time=0"])
@@ -138,7 +145,7 @@ fn agents_change_the_gameplay_options_on_the_desktops_control_channel_and_the_ne
         eprintln!("skipping: no weston or lavapipe (run in nix/runtime's shell)");
         return;
     };
-    let display = Display::start(&lavapipe);
+    let display = Display::start("gameplay", &lavapipe);
     let maps = json!(xem_settings::Settings::default().random_battles_off());
     let chosen = [json!([]), json!(true), json!(255), json!(90), json!(true)];
     {
@@ -165,4 +172,64 @@ fn agents_change_the_gameplay_options_on_the_desktops_control_channel_and_the_ne
     assert_eq!((&saved["random_battles"], &saved["movie_skip"]), (&json!("Original"), &json!(true)));
     let mut again = Desktop::launch(&display, &disc, &lavapipe);
     assert_eq!(gameplay(&again.status_after(0, 10)), chosen, "kept for the next launch");
+}
+
+#[test]
+fn agents_hold_rewind_retry_card_writes_and_read_the_storage_line_through_the_desktops_app_command() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (Ok(lavapipe), true) = (std::env::var("XEM_LAVAPIPE_ICD"), Command::new("weston").arg("--version").output().is_ok()) else {
+        eprintln!("skipping: no weston or lavapipe (run in nix/runtime's shell)");
+        return;
+    };
+    let display = Display::start("app", &lavapipe);
+    // Card 1's file is no card, and the BIOS image Import BIOS kept is no
+    // image: the boot leaves both unused and says why. No focus pause, so
+    // the field plays whatever focus the headless compositor gives.
+    std::fs::create_dir_all(display.root.join("cards")).unwrap();
+    std::fs::write(display.root.join("cards/card1.mcd"), b"not a card").unwrap();
+    let config = display.root.join("config/xenogears-ex-machina");
+    std::fs::create_dir_all(&config).unwrap();
+    std::fs::write(config.join("bios.bin"), [0u8; 3]).unwrap();
+    std::fs::write(config.join("settings.json"), r#"{"pause_on_focus_loss": false}"#).unwrap();
+    let mut desktop = Desktop::launch(&display, &disc, &lavapipe);
+    let storage = desktop.status_after(0, 10)["storage"].clone();
+    assert_eq!(storage["pending_writes"], 0, "{storage}");
+    assert!(storage["errors"][0].as_str().is_some_and(|e| e.starts_with("memory card 1: expected a raw 128 KiB image")), "{storage}");
+    assert!(storage["kanji_font_notice"].as_str().is_some_and(|n| n.contains("bios.bin not used") && n.ends_with("not 3 bytes; save titles use the substitute glyphs.")),
+        "{storage}");
+
+    // Field 30, played five seconds: its rewind history (the window's
+    // settings keep one). Held from the agent, rewind goes back a state
+    // every 250 ms as a held R does; let go, the game plays on.
+    let entered = desktop.send(json!({"cmd": "enter_field", "map": 30}));
+    let at = entered["status"]["frames"].as_u64().unwrap_or_else(|| panic!("{entered}"));
+    let ahead = desktop.status_after(at, 300)["frames"].as_u64().unwrap();
+    assert_eq!(desktop.send(json!({"cmd": "app", "request": {"Rewind": true}})), json!({"ok": true, "message": "Rewinding while held."}));
+    let began = Instant::now();
+    let back = loop {
+        let frames = desktop.send(json!({"cmd": "status"}))["frames"].as_u64().unwrap();
+        if frames + 120 < ahead {
+            break frames;
+        }
+        assert!(began.elapsed() < Duration::from_secs(30), "the held rewind went from frame {ahead} only to {frames}");
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    assert_eq!(desktop.send(json!({"cmd": "app", "request": {"Rewind": false}})), json!({"ok": true, "message": "Rewind released."}));
+    let released = desktop.send(json!({"cmd": "status"}))["frames"].as_u64().unwrap();
+    assert!(released <= back + 2 * xem_core::rewind::REWIND_PLAY_BLANKS, "it went on rewinding past frame {back}: {released}");
+    let on = desktop.status_after(released, 60)["frames"].as_u64().unwrap();
+    eprintln!("held rewind from frame {ahead} back to {released}, then on to {on}");
+
+    // Retried, the card writes the boot met are done (card 1 stays unused).
+    assert_eq!(desktop.send(json!({"cmd": "app", "request": {"Action": "RetryStorage"}})), json!({"ok": true, "message": "Pending card writes completed."}));
+    let storage = desktop.send(json!({"cmd": "status"}))["storage"].clone();
+    assert_eq!((&storage["pending_writes"], &storage["errors"]), (&json!(0), &json!([])), "{storage}");
+    // A file picker is the player's (agents name the file), and only a
+    // headset recentres.
+    let picker = desktop.send(json!({"cmd": "app", "request": {"Action": "ExportState"}}));
+    assert!(picker["error"].as_str().is_some_and(|e| e.starts_with("ExportState opens a file picker")), "{picker}");
+    assert_eq!(desktop.send(json!({"cmd": "app", "request": {"Action": "Recenter"}})), json!({"error": "Recentering places a headset's view; play in a headset to use it."}));
 }

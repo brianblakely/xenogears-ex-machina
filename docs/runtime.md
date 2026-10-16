@@ -148,7 +148,11 @@ original address.
 
 `xem_core::control::Session` is the one command layer for humans, agents,
 tests and browser clients: a JSON command in, a JSON result out
-(`xem-headless --control` reads one per line). Commands: `status`,
+(`xem-headless --control` reads one per line). The hosts' app operations
+(the panel's and the bindings': a held rewind, card write retries, ...)
+sit on it the same way for players and agents (`window.xem.appOperation`,
+`--control`'s `app {request}`; [Saves and time
+controls](#saves-and-time-controls)). Commands: `status`,
 `frames {count}`, bounded `run_until {max_frames, until: {frames} | {vblanks} |
 {path, equals|not_equals}}`, `pad {port, buttons}`, `press {buttons, frames}`,
 `hold {actions}` and `act {actions, frames}` (pad 1 by typed actions,
@@ -4104,6 +4108,19 @@ Headset class (Low tier, depth of field off unless enabled).
   frame 1306 to 1194 and Hold to rewind 1194 to 1014, and the game ran
   on to 1086 by headset frame 269; with that release removed it went on
   rewinding behind the closed panel until its history ran out). Its
+  held-hands run (the same state, hands alone, the gaze the eyes') has an
+  agent's `app {"Action": "Recenter"}` arrive once the session has drawn
+  100 frames, opens Settings with prayer hands at 200, picks Time with a
+  pinch at 220 and holds a pinch on Hold to rewind from 242 to 281
+  (`pinch-hold`), the gaze moving down off the button at 260 (`rest`, an
+  aim alone). It checks the agent's reply and that `recenters=` goes from 0
+  to 1 at that frame, that the pinch's start and end are Hold to rewind's
+  (`UiRewind(true)` within ten frames of 242, `UiRewind(false)` at 282 to
+  284: a press the narrow panel's form takes only once the pointer has
+  stayed put a moment, and the gaze moving away neither pans the form nor
+  lets go), that the game goes back at least 120 frames through Settings'
+  pause under the HUD's rewind icon meanwhile, and that Settings hold it
+  again after. Its
   interchange run loads the same state with `--load-state` (frame 710)
   under HD-2D with no focus pause (Monado's session is focused only once
   it runs) and plays it on with no input, writing the headset's state at
@@ -4936,7 +4953,10 @@ library's build joined it.
 
 The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves,
 Gameplay and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
-Desktop widths use a sidebar; narrow windows use a strip of section tabs. Rewind
+Desktop widths use a sidebar; narrow windows use a strip of section tabs.
+Saves' Backups card puts its buttons two to a row on a panel at least 600
+logical pixels wide (a desktop's 640), one to a row on narrower ones (a
+phone's, a headset's 440), so that every label fits its card. Rewind
 (with Hold to rewind), the fast-forward toggle's button and the notched FF rate
 slider live in Time, with compact interval and history fields and the retained
 queue's available seconds and memory usage. Graphics contains
@@ -5016,7 +5036,13 @@ include their requests and cancellations so replay reaches the same game pause.
 Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release
 (also Settings → Time's Hold to rewind, held: a headset's settings pause
 holds the game while the panel shows, but not a held rewind, whose HUD
-icon shows over the panel too). However the panel closes, and when the
+icon shows over the panel too). In a headset the panel's pointer is pressed
+where a pinch or a controller's select (its trigger) begins and let go
+where it pressed when that pinch or select ends, moving nowhere meanwhile
+(no pinch-and-drag scrolling, plan.md Phase 5; `xem_assist::headset::PanelPointer`,
+OpenXR's hands and WebXR's hands and controllers; OpenXR's controllers
+press with their trigger's ray), so a pinch held on Hold to rewind rewinds
+with hands alone. However the panel closes, and when the
 window or a headset session loses focus, it lets go of what its pointer
 held (`SettingsUi::cancel_pointer`): a Hold to rewind the pointer still
 holds ends then, not on a release the hidden panel never sees.
@@ -5150,8 +5176,18 @@ The shared control commands are available through `xem-headless --control` and
 {"cmd":"fast_forward","enabled":false}
 {"cmd":"rewind_configure","max_bytes":2147483648,"interval_seconds":1,"history_seconds":30}
 {"cmd":"rewind","steps":1}
+{"cmd":"rewind_step","steps":4}
 {"cmd":"reset"}
 ```
+
+`rewind {steps}` restores the state `steps` back at once, the game waiting
+there; `rewind_step {steps}` (default 1) is a held rewind's, as the hosts
+hold one: each step takes the newest state before the game's frame and
+plays on from it (`Session::rewind_step`, a host's every 250 ms while held),
+and the reply gives the steps taken (`steps`, fewer than asked once the
+history's start is reached) with the `status`. It is how a headless agent
+holds rewind; neither can be scheduled, and a recording lists their
+restores.
 
 `reset` abandons the current game stack and boots the game as the console
 does after its reset line: the executable is copied to its address again
@@ -5179,21 +5215,39 @@ reads any memory card or save file as Import original card 1/2 does
 replies with what
 it found (`message`, the status line's report) and the card's listing
 (`card`); `card_export` writes the raw card. The shared, read-only
-`card_list {slot}` reports a card on every host, the browser's
-`window.xem.command` too, for agents and tests (no panel shows it): its
+`card_list {slot}` reports a card on every host with a command channel
+(not Android's, below), the browser's `window.xem.command` too, for agents
+and tests (no panel shows it): its
 listing (`card`, none without a card: `formatted`, `free_blocks`, `problems`,
 `notes` and `saves`, each with `name`, `first_block`, `blocks`, `title`,
 `kind` and `problems`), whether the card is in (`present`) and why it cannot
 change now (`busy`). The recorded `card_present {slot, present}` takes a
 card out or puts it back ([Cards in and out](#cards-in-and-out)); `status`
-reports both cards' (`card_present`) and where the Kanji font came from
-(`kanji_font`: `bios` or `substitute`). File commands
+reports both cards' (`card_present`), where the Kanji font came from
+(`kanji_font`: `bios` or `substitute`) and what the storage line shows
+(`storage`: `pending_writes`, the card writes the storage has not yet
+taken; `errors`, the cards' storage errors; `kanji_font_notice`, why an
+imported BIOS image is unused, or null). File commands
 are accepted only as explicit native host requests; scheduled logs accept
 game input, setup and pacing commands and cannot access files or list cards.
 Browsers use explicit Settings operations or
 `window.xem.appOperation({Action: 'ExportState'})` and the
 snapshot/card/settings automation methods. Browser file pickers require a
 recognized activation; a refusal is shown in Settings and operation status.
+Native agents reach the panel's and the bindings' operations the same way:
+`xem-desktop --control` and the headset's (`--xr --control`) take
+`app {request}`, an `xem_settings::AppRequest` as JSON, and carry it out as
+the panel's and the bindings' are (`Operations::execute`; its outcome on the
+status line, a state's on the HUD), answering `{ok, message}` (the status
+line's text) or `{error}`. `{"Rewind": true}` holds rewind as R held does
+(the window's and the headset's frames then step it, through a headset's
+Settings pause as well) until `{"Rewind": false}`; `{"Action":
+"RetryStorage"}` retries the pending card writes; `{"Action": "Recenter"}`
+recentres a headset's view (in the window it is refused, as the panel's
+would be); the rest are the panel's actions. The file pickers are refused
+("ExportState opens a file picker, which only a player answers: agents name
+the file"): agents use the file commands above. Android has no command
+channel (the agent surface it has: [Android host](#android-host)).
 Headset play saves and loads through the same session as the window:
 OpenXR's Save state keeps `state.xemstate` where the window's does (beside
 the settings; on Android in the files directory, which the Android host
@@ -5286,27 +5340,62 @@ session's state turns it to Stop fast-forward, and the points the headset
 and Android smokes press, at their panels' sizes and with a running
 game's status texts, reach Saves, Time, Save state, Load state, the
 fast-forward button and a held Hold to rewind, the headset smoke's let
-go by `cancel_pointer`, as a closing panel lets it go);
+go by `cancel_pointer`, as a closing panel lets it go; at the WebXR
+test's 640 by 560, its Time, Stop fast-forward and Hold to rewind);
+`xem-assist`'s
+`a_pinch_or_select_held_on_the_panel_presses_where_it_began_and_lets_go_there_moving_nowhere_between`
+(the headsets' panel pointer: pressed where a pinch or a select begins,
+nothing sent while it holds as the pointer moves or leaves, let go where
+it pressed when it ends; one that begins and ends in a frame clicks;
+another source taking the pointer lets it go);
 `src/runtime/scripts/xr-game-smoke.sh`'s saves run (OpenXR on Monado:
 the panel's Save state and Load state by pinches, Start fast-forward,
 the Back+RT and Back+LT chords from scripted buttons, an agent's
-`--control` command) and held run (Back+LT and the panel's Hold to
+`--control` command), held run (Back+LT and the panel's Hold to
 rewind under a scripted controller ray's trigger, both through Settings'
-pause, and Settings closed mid-hold letting go of it; [Headsets](#headsets));
+pause, and Settings closed mid-hold letting go of it) and held-hands run
+(hands alone: a scripted pinch held on Hold to rewind for 40 headset
+frames holds it from the pinch's start to its end, the gaze moving 125
+pixels down off the button meanwhile, and rewinds through Settings'
+pause; an agent's `app` Recenter; [Headsets](#headsets));
 `web/tests/xr-game.test.mjs`'s
 saves test (WebXR on IWER: the game's own save to card 2 in IndexedDB
 during the session, Save state and Load state by a controller's ray,
 Back+RT, Stop fast-forward, Back+LT through Settings' pause under the
-HUD's rewind icon, a picker refused); `android-smoke.sh`'s
+HUD's rewind icon; Hold to rewind held by the right controller's select,
+then with IWER's tracked hands alone by a held pinch, the head turning
+off the button meanwhile without moving the pointer, each going back at
+least 120 game frames through Settings' pause and Settings holding the
+game again after; a picker refused); `android-smoke.sh`'s
 Settings by touch on the emulator (Stop and Start fast-forward, Hold to
 rewind, Save state and Load state; [Android host](#android-host)).
+Agents: `xem-core/tests/persistence.rs`'s
+`an_agents_held_rewind_steps_as_a_hosts_does_and_stops_at_the_oldest_state`
+(`rewind_step`: refused without history, two steps played on as
+`Session::rewind_step`'s, then the three left of ten asked for, none at
+the oldest, none scheduled) and
+`status_shows_the_storage_line_pending_writes_card_errors_and_an_unused_bios`
+(the stand-in's save into a storage that refuses it: one write pending and
+the error; an unused BIOS image's notice; a retry with the storage working
+stores the card); `xem-host`'s
+`an_agents_app_requests_run_as_the_panels_and_the_bindings_do_but_open_no_picker`
+(the game module, nothing booted: `{"Rewind": true}` and `false` hold and
+let go as a binding does, Retry pending card writes and Toggle fast-forward
+answer as the panel's, a picker, Recenter in the window and a request that
+is none refused); `xem-desktop/tests/control.rs`'s
+`agents_hold_rewind_retry_card_writes_and_read_the_storage_line_through_the_desktops_app_command`
+(the window under weston: a card file that is no card and a kept BIOS
+image that is no image in `status`'s `storage`; in field 30 an agent's held
+rewind goes back at least 120 frames until it lets go, then the game plays
+on; the retry clears the errors; Export state backup and Recenter refused).
 
-Not done or not measured: in a headset the panel's Hold to rewind holds
-only under an OpenXR controller's held trigger (a pinch or WebXR's
-`select` is a click, which starts and ends it at once), so players with
-hands alone have no rewind there; only a scripted ray and trigger hold
-it in a test (Monado's simulated controllers press nothing and point
-where no test chooses);
+Not done or not measured: the scripted hands' pinch and IWER's stand in
+for a runtime's (Monado tracks no hands; only a scripted ray and trigger
+hold Hold to rewind under an OpenXR controller, Monado's simulated
+controllers pressing nothing and pointing where no test chooses); an
+agent's held rewind and a binding's are one hold (either's release ends
+it); xem-headless has no storage retry (`card.retry_writes` is the hosts'
+Retry pending card writes);
 the Android host's headset loop with its files directory as the state
 directory has not run (the emulator has no OpenXR runtime); fast-forward
 in a headset reaches what the host's batches reach, not the setting's
@@ -5560,7 +5649,9 @@ are compared outside the port's memory and two frames on, not byte for
 byte; the long run walks Lahan and wherever its input leads (it reached
 field map 8 in the hour), not the story's other scenes; only the slice's
 save is compared byte for byte as a card across hosts (the browser's and
-arm64's; the Android emulator's card is reloaded on the device only); a settings
+arm64's; the Android emulator's card is reloaded on the device only by
+`android-smoke.sh` with `XEM_SMOKE_SLICE=1`, which no suite stage passes:
+manual); a settings
 import does not report the settings it left at their defaults or the
 names it dropped, and no test moves a settings backup between hosts.
 
@@ -5637,10 +5728,11 @@ the Japanese first disc's serial under the American region code; no Japanese
 disc or save was at hand to confirm it.
 
 An import changes a card between frames (`Card::change`), never under a
-call of the game's: it is refused, with the reason, while the game has a
-file open on that card (a save or a load under way: the game's own saves
-write a sector a frame), is checking it, or the cards are still busy with an
-access (`Card::busy_with`; `card_list` reports it as `busy`). Natively the
+call of the game's: it is refused, with the reason, while the game's file
+screen shows (below), the game has a file open on that card (a save or a
+load under way: the game's own saves write a sector a frame), is checking
+it, or the cards are still busy with an access (`Card::busy_with`;
+`card_list` reports it as `busy`). Natively the
 file `cardN.mcd` takes the card before the device does, so a refused write
 changes nothing. The browser pauses play, lands any pending card writes, has
 the runtime read the file (`read_card_file`, refused while the card is busy
@@ -5650,12 +5742,21 @@ were. Were the card to become busy while IndexedDB writes (frames that
 automation runs meanwhile), the session refuses it and IndexedDB takes back
 the session's card. Natively, an import into a slot whose card file did not
 load (a file of another size, a read error: the slot is left empty and the
-file unchanged) replaces that file. The game reads its cards only in its menus'
-file screens, which list them when they open and then act by name on what
-they listed: an import while one of them shows leaves that screen's listing
-as it was until it lists again (after its own save, copy or delete), so a
-save it overwrites or deletes then is the one of that name on the card now.
-Importing before opening the game's file screen avoids that.
+file unchanged) replaces that file. The game reads its cards only in its
+menus' file screens (the save, copy and delete screens of a field's and the
+world map's menu and of the disc change, and the title's Load: slot39's
+`menu_file_screen_run`), which list them when they open and then act by name
+on what they listed, so an Overwrite or a Delete chosen after an import
+would reach the save of that name on the imported card. While one shows, an
+import into either card is refused ("memory card 1 not changed: the game's
+file screen shows the cards' saves and would act on the ones it listed;
+leave it, then try again"), on every host and through `card_import` alike,
+and the next import after the player leaves it goes through; the screen
+opened again lists the card anew. Whether one shows is read from the game's
+memory when each frame ends, a state is restored or the console resets
+(`xem_core::context::file_screen`: the screen's card mode,
+`MenuFlags.card_mode`, while a menu runs), kept by the card device for the
+changes between frames (`Card::file_screen`, which no state holds).
 
 Tests: `xem-core`'s `card_file` tests make every container from a card or a
 save built here (this game's save with its title, digit, disc and checksum
@@ -5676,7 +5777,8 @@ Japanese prefix, another game's save; the report naming the first failure),
 `titles_decode_shift_jis_kana_and_say_where_they_stop`. The card device's:
 `changes_from_outside_wait_for_the_games_files` (an open file refuses a
 change and an import, a check under way and the busy time refuse a change,
-the other card goes on, storage takes the new card) and
+the other card goes on, a file screen showing refuses an import into either
+card, storage takes the new card) and
 `an_imported_single_save_is_the_card_the_bios_makes_for_it_and_a_damaged_card_is_refused`
 (a `.mcs` of a file the BIOS created and the game wrote gives that card byte
 for byte; a damaged card and a text file are refused, nothing changed).
@@ -5684,7 +5786,13 @@ for byte; a damaged card and a text file are refused, nothing changed).
 `a_card_changes_from_outside_the_game_only_between_its_card_calls` (the
 stand-in's save holds its file open across frames: a DexDrive import is
 refused and changes nothing, `card_list` says why; the save commits and the
-import then applies); `scheduled_file_operations_are_rejected_before_any_command_is_queued`
+import then applies);
+`a_card_import_waits_for_the_games_file_screen_to_close_and_a_restore_reads_it_again`
+(the stand-in's memory showing a file screen as the game's does when a
+frame ends: an import refused by name, `card_list` saying why, nothing
+changed; closed, the import goes through once a frame has ended; a state
+taken while it showed shows it again once restored);
+`scheduled_file_operations_are_rejected_before_any_command_is_queued`
 covers the card commands and `card_list`. `xem-game/tests/cards.rs` (a
 stand-in module, card files in a temporary directory):
 `an_import_reads_any_card_or_save_file_and_says_what_it_found` (`.mcs`,
@@ -5699,6 +5807,14 @@ the save the game made as its first file of disc 1 passing the game's
 checks, imports it as a `.mcs` through `card_import` (a fresh card 1, byte
 for byte the card the game made) and plays the title's load from it to the
 recorded hash (52 s for the test here, beside other builds).
+`xem-headless/tests/file_screen.rs`'s
+`a_card_import_waits_while_the_file_screen_shows_and_the_screen_lists_the_imported_card_after`
+(disc 1: at the title's Load, its cursor on card 1's one save, `card_import`
+of a card holding two saves is refused into either slot with the reason,
+`card_list` says it, and neither card or its file changes; Circle back to
+the screen's commands, still refused; Circle again to the title's commands,
+then the import goes through, and the Load opened again lists the imported
+card's two saves).
 `xem-headless/tests/saves.rs` (local: both discs; its five tests side by
 side 28 s here) plays the game's own file screens, pressing along the
 cursor paths their screens show (the box cursor read from slot39's
@@ -5746,9 +5862,12 @@ native pickers' imports (SDL's dialogs on the desktop, Android's document
 picker, a raw save named by a document id among them) are not driven by a
 test, only the command and the file name rule they share; the browser's
 take-back of IndexedDB when frames run during an import is not tested; the
-game's file screens keep their listing across an import made while they
-show (described above; the host does not take the card out and put it back
-for them); a file screen's copy and delete are tested over the game's own
+refusal while a file screen shows is driven at the title's Load only (the
+save, copy and delete screens and the disc change's share its card mode,
+read from their code, not driven with an import), and the frame or two in
+which a field or the world map has begun to run a menu but not yet made its
+state block read the last menu's block, as the interface context does; a
+file screen's copy and delete are tested over the game's own
 saves (`saves.rs`), over imported saves only the slice's load; the disc
 change's save is made where its menu is requested by a write, not after the
 story's last event of disc 1, and the disc-2 save point is reached from the
@@ -7075,7 +7194,10 @@ same width from every tab, so the labels still show whole down to 342 (a
 narrows below 24 pixels: all eight stay inside the panel down to its least
 width, 280. `xem-ui/tests/panel.rs` clicks every tab at six widths from 280
 to 405 and checks that the Android smoke's two taps select Graphics and
-Saves at 405. Each section is a column of cards of settings, and the
+Saves at 405, and that Saves' Backups card keeps all eleven of its buttons
+inside it at ten widths from 280 to 640 (one to a row below 600 logical
+pixels, where two of its longer labels side by side overflowed it: at 560
+"Request browser persistence" ran past the card's edge). Each section is a column of cards of settings, and the
 status line under them says what the last change or operation did (a
 note, done, or a problem in red). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
@@ -7132,14 +7254,19 @@ frames while the game plays: the command layer's (`status`, `context`,
 `navigate`, `act`, ...), `settings`, `settings_apply {change}` (the panel's
 own typed, validated, persisted change; `SettingsService::command` answers
 both), `panel {visible}`,
-`import_disc {path}` (the launcher's path) and `bios_import {path}` (Import
+`import_disc {path}` (the launcher's path), `bios_import {path}` (Import
 BIOS's: kept beside the settings for every boot and given to the running
-game); nothing passes through the window system. With `--xr` the headset
-session answers the same commands but `import_disc` (`xem_host::Control`
-and `SettingsService::command` serve both).
+game) and `app {request}` (the panel's and the bindings' operations as they
+run them, the file pickers refused: [Saves and time
+controls](#saves-and-time-controls)); nothing passes through the window
+system. With `--xr` the headset session answers the same commands but
+`import_disc` (`xem_host::Control` and `SettingsService::command` serve
+both), its `app` Recenter recentring the view.
 `xem-desktop/tests/control.rs` runs the desktop itself on weston's headless
-backend with lavapipe (local, disc 1) and changes the gameplay options
-through `settings_apply` ([Gameplay options](#gameplay-options)).
+backend with lavapipe (local, disc 1), changes the gameplay options
+through `settings_apply` ([Gameplay options](#gameplay-options)) and holds
+rewind, retries card writes and reads the storage line through `app` and
+`status`.
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
@@ -7213,7 +7340,8 @@ as JSON text or bytes.
   what `xem-headless --control` answers.
 - **Scheduling.** `requestAnimationFrame` calls `XemApp::frame`: while running,
   the player's input on pad 1, the game frames due at 60 per second of page
-  time, at most two per animation frame and none after 12 ms, then one render;
+  time, at most four per animation frame times the fast-forward factor
+  (`MAX_FRAMES_PER_ANIMATION`) and none after 12 ms, then one render;
   the page then posts the frames' sound and card writes. Time a throttled,
   hidden or stalled page missed is dropped (`status().loop.dropped`), never
   caught up.
@@ -7545,7 +7673,9 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   game runs, go to the drive's changer for the game's disc changes
   ([Discs](#discs)) instead of starting it again. Like the
   desktop, `xem_host::Game` runs the frames due at 60 per second of wall time
-  (at most two per rendered frame, never catching up), the GPU device's
+  (at most four per rendered frame times the fast-forward factor,
+  `MAX_CATCH_UP`, and none after 12 ms; a longer stall's time is dropped,
+  never caught up), the GPU device's
   display becomes the game image and the SPU's output plays through an SDL3
   audio stream (AAudio) at the master volume (Binaural presenting it when
   on); pad 1 is the keyboard (arrows,
@@ -7571,14 +7701,28 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   directory). Each app operation's outcome is logged with the game's
   vertical blank and memory hash just after it (`xem: app
   Action(SaveState) game_vblank=… memory_hash … ok: State written: …`).
+- **Agents.** The Android host has no command channel (no `--control`):
+  agents and tests reach it through the player's input, keys sent over adb
+  (`adb shell input keyevent`) reaching the game and the app operations
+  through the same bindings as a keyboard's (by default F5 Save state, F8
+  Load state, R held to rewind, Backquote fast-forward, T auto-advance;
+  [Saves and time controls](#saves-and-time-controls)); through session logs pushed to
+  `<files dir>/script.json`, which hold game input, setup and pacing only
+  (`card_present` and `fast_forward` among them; no file commands, no
+  rewind); and through logcat, which carries each app operation's line
+  above, the boot's and the frames' (`frame rendered`, `fps`) and a
+  session log's end. Card and BIOS imports go only through the document
+  pickers; `card_list`, `status` and the `app` command of the other native
+  hosts have no Android counterpart.
 - **Lifecycle.** SDL 3.4 delivers the application events only to event
   watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
   `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the
   simulation clock and the game (its audio paused and flushed), SDL then blocks the thread until the activity resumes,
   and after `DID_ENTER_FOREGROUND` the surface is recreated on the new native
   window and the clocks restart where they stopped (a frame never advances
-  the simulation clock by more than 100 ms nor runs more than two game
-  frames, so there is no catch-up). A replaced native window
+  the simulation clock by more than 100 ms nor runs more than four game
+  frames times the fast-forward factor, so there is no catch-up). A
+  replaced native window
   (configuration changes) is detected by identity and the surface recreated.
   `LOW_MEMORY` is logged; on `TERMINATING` the run ends. A recreated activity
   (changes outside `configChanges`, such as density or asset paths) runs

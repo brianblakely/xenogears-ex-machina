@@ -264,6 +264,83 @@ pub fn recenter(seat: &mut Seat, head: Option<Pose>, view: &mut impl Anchored) -
     Ok("The view is in front of you again.".into())
 }
 
+/// What holds the settings panel's pointer down in a headset, by hand (0
+/// the left, 1 the right): its standard pinch (OpenXR's `pinch_ext`,
+/// WebXR's select of a hand source) or a controller's select (its trigger).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Presser {
+    Pinch(usize),
+    Select(usize),
+}
+
+/// What the settings panel's pointer does in a frame, at (u, v) across the
+/// panel from its top left (both 0..1).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PanelEvent {
+    Moved((f32, f32)),
+    Pressed((f32, f32)),
+    Released((f32, f32)),
+    /// The pointer left the panel.
+    Exited,
+}
+
+/// The settings panel's pointer in a headset (OpenXR's hands, WebXR's
+/// hands and controllers): it follows where the pointer meets the panel; a
+/// pinch or a controller's select beginning there presses it, and that
+/// pinch's or select's end lets it go where it pressed. Between the two it
+/// moves nowhere (no pinch-and-drag scrolling: plan.md Phase 5), so a pinch
+/// or a trigger held on Hold to rewind holds it as a held mouse button does.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct PanelPointer {
+    /// On the panel at the last update.
+    inside: bool,
+    /// Held down: by what, and where.
+    pressed: Option<(Presser, (f32, f32))>,
+}
+
+impl PanelPointer {
+    /// One frame: `at`, where the pointer meets the panel (none off it);
+    /// `began`, what began to press this frame; `held`, whether a presser
+    /// holds now (one that began and ended within the frame does not: a
+    /// click). The panel's events, in order.
+    pub fn update(&mut self, at: Option<(f32, f32)>, began: Option<Presser>, held: impl Fn(Presser) -> bool) -> Vec<PanelEvent> {
+        let mut events = Vec::new();
+        if let Some((presser, uv)) = self.pressed {
+            if held(presser) {
+                return events;
+            }
+            events.push(PanelEvent::Released(uv));
+            self.pressed = None;
+        }
+        match at {
+            Some(uv) => {
+                self.inside = true;
+                events.push(PanelEvent::Moved(uv));
+                if let Some(presser) = began {
+                    events.push(PanelEvent::Pressed(uv));
+                    if held(presser) {
+                        self.pressed = Some((presser, uv));
+                    } else {
+                        events.push(PanelEvent::Released(uv));
+                    }
+                }
+            }
+            None if self.inside => {
+                self.inside = false;
+                events.push(PanelEvent::Exited);
+            }
+            None => {}
+        }
+        events
+    }
+
+    /// Lets go of a press at once (another source took the pointer, or the
+    /// panel hid and lets go itself): where it pressed, if it held one.
+    pub fn release(&mut self) -> Option<(f32, f32)> {
+        self.pressed.take().map(|(_, uv)| uv)
+    }
+}
+
 /// One headset frame's input.
 #[derive(Clone, Debug, Default)]
 pub struct Input {
@@ -567,6 +644,31 @@ pub(crate) mod tests {
         let point = screen.point((40.0, 200.0));
         let again = screen.aim(Vec3::ZERO, point.normalize()).unwrap();
         assert!((again.0 - 40.0).abs() < 0.01 && (again.1 - 200.0).abs() < 0.01, "{again:?}");
+    }
+
+    #[test]
+    fn a_pinch_or_select_held_on_the_panel_presses_where_it_began_and_lets_go_there_moving_nowhere_between() {
+        use PanelEvent::*;
+        let mut pointer = PanelPointer::default();
+        let pinch = Presser::Pinch(1);
+        assert_eq!(pointer.update(Some((0.5, 0.4)), None, |_| false), [Moved((0.5, 0.4))], "hovering");
+        assert_eq!(pointer.update(Some((0.5, 0.5)), Some(pinch), |p| p == pinch), [Moved((0.5, 0.5)), Pressed((0.5, 0.5))]);
+        // Held, the pointer moving over the panel or leaving it sends
+        // nothing (a drag would pan a narrow panel's form), and another
+        // hand's pinch presses nothing.
+        assert_eq!(pointer.update(Some((0.5, 0.8)), None, |p| p == pinch), []);
+        assert_eq!(pointer.update(None, Some(Presser::Pinch(0)), |p| p == pinch || p == Presser::Pinch(0)), []);
+        // Its end lets go where it pressed, then the pointer goes on.
+        assert_eq!(pointer.update(None, None, |_| false), [Released((0.5, 0.5)), Exited]);
+        // A select that begins and ends within a frame is a click.
+        let select = Presser::Select(0);
+        assert_eq!(pointer.update(Some((0.2, 0.3)), Some(select), |_| false), [Moved((0.2, 0.3)), Pressed((0.2, 0.3)), Released((0.2, 0.3))]);
+        // Held, a select is the select's to end, not a pinch's.
+        assert_eq!(pointer.update(Some((0.2, 0.3)), Some(select), |p| p == select), [Moved((0.2, 0.3)), Pressed((0.2, 0.3))]);
+        assert_eq!(pointer.update(Some((0.7, 0.7)), None, |p| p == select), []);
+        assert_eq!(pointer.release(), Some((0.2, 0.3)), "another source taking the pointer lets go where it pressed");
+        assert_eq!(pointer.release(), None);
+        assert_eq!(pointer.update(Some((0.7, 0.7)), None, |p| p == select), [Moved((0.7, 0.7))], "and the pointer follows again");
     }
 
     #[test]

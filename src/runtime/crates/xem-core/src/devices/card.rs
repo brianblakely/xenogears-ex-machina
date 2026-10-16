@@ -46,7 +46,9 @@
 //! [`super::card_file`] reads, as a raw image) replaces the card between
 //! frames, never under a call of the game's ([`Card::change`]): it is
 //! refused while the game has a file open on that card (a save or a load
-//! under way), checks it, or the cards are still busy with an access.
+//! under way), checks it, the cards are still busy with an access, or the
+//! game's file screen shows ([`Card::file_screen`]), whose listing would
+//! no longer be the card's.
 //!
 //! A card can be taken out and put back ([`Card::set_present`], the
 //! recorded `card_present` control; both are in by default, as on a console
@@ -393,6 +395,11 @@ pub struct Card {
     /// Storage errors, for the host to report.
     pub errors: Vec<String>,
     pending: [bool; 2],
+    /// The game's file screen shows ([`crate::context::file_screen`]), as
+    /// the game's memory said when its last frame ended, a state was
+    /// restored or the console reset (the runtime keeps it; no state holds
+    /// it): the cards change from outside only once it has closed.
+    pub file_screen: bool,
 }
 
 impl Card {
@@ -404,6 +411,7 @@ impl Card {
         state.removed = self.removed;
         state.pending = self.pending;
         state.errors = std::mem::take(&mut self.errors);
+        state.file_screen = self.file_screen;
         let (images, removed) = (&state.images, &state.removed);
         for file in &mut state.files {
             let elsewhere = |f: &OpenFile| {
@@ -514,9 +522,14 @@ impl Card {
     }
 
     /// Why the card in `slot` cannot change from outside the game at cycle
-    /// `now`: the game has a file open on it, checks it, or the cards are
-    /// still busy with an access (none: it can, between frames).
+    /// `now`: the game's file screen shows (it acts by name on the saves it
+    /// listed, so an Overwrite or a Delete would reach a save of that name
+    /// on the new card), the game has a file open on it, checks it, or the
+    /// cards are still busy with an access; none: it can, between frames.
     pub fn busy_with(&self, slot: usize, now: u64) -> Option<String> {
+        if self.file_screen {
+            return Some("the game's file screen shows the cards' saves and would act on the ones it listed; leave it, then try again".into());
+        }
         let card = slot + 1;
         let open = self.files.iter().flatten().filter(|file| file.slot == slot).count();
         if open > 0 {
@@ -1355,6 +1368,18 @@ mod tests {
         assert!(b.card.change(0, other.clone(), b.now).unwrap_err().contains("busy with the game's access"));
         b.wait();
         assert_eq!(b.card.status(0, b.now).busy, None);
+        // While the game's file screen shows (the runtime says so), neither
+        // card changes: the screen acts on the saves it listed.
+        b.card.file_screen = true;
+        let mut third = formatted();
+        third[BLOCK_SIZE] = 0x43;
+        for slot in 0..2 {
+            let refused = b.card.import_file(slot, &third, "third.mcd", b.now).unwrap_err();
+            assert!(refused.contains("the game's file screen shows the cards' saves"), "{refused}");
+            assert!(b.card.status(slot, b.now).busy.is_some_and(|busy| busy.contains("leave it, then try again")));
+        }
+        assert_eq!(b.card.image(1), Some(&other[..]), "nothing changed");
+        b.card.file_screen = false;
         b.card.change(0, other.clone(), b.now).unwrap();
         assert_eq!(b.card.image(0), Some(&other[..]));
         assert_eq!(shared.0.borrow().images[0].as_deref(), Some(&other[..]), "storage has the new card");

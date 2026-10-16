@@ -364,21 +364,25 @@ async function enterXr(mode) {
   // stands in front of its new origin again, as OpenXR's hosts do it.
   space.addEventListener('reset', () => app.xr_reference_reset());
   app.xr_session(blend);
-  page.xr = { session, layer, space, mode, blend, frames: 0, views: 0, select: -1, pinching: [false, false], pinched: [false, false] };
+  page.xr = { session, layer, space, mode, blend, frames: 0, views: 0, selecting: [false, false], selected: [false, false],
+    pinching: [false, false], pinched: [false, false] };
   (mode === 'immersive-ar' ? arButton : vrButton).textContent = mode === 'immersive-ar' ? 'Exit AR' : 'Exit VR';
-  // A controller's select (trigger) clicks on the settings panel. A hand's
-  // select is WebXR's standard pinch: held from selectstart to selectend
-  // (one that starts and ends within a frame still counts). A hidden
+  // A controller's select (trigger) presses the settings panel's pointer
+  // where it points; a hand's select is WebXR's standard pinch. Each holds
+  // from selectstart to selectend (one that starts and ends within a frame
+  // still counts), so either held on Hold to rewind rewinds. A hidden
   // session (the runtime's own menu) lets go of everything held.
   const handOf = (source) => (source?.handedness === 'left' ? 0 : 1);
-  session.addEventListener('select', (event) => {
-    if (page.xr && !event.inputSource?.hand) { page.xr.select = handOf(event.inputSource); page.xr.selects = (page.xr.selects ?? 0) + 1; }
-  });
   session.addEventListener('selectstart', (event) => {
-    if (page.xr && event.inputSource?.hand) { const i = handOf(event.inputSource); page.xr.pinching[i] = true; page.xr.pinched[i] = true; }
+    if (!page.xr) return;
+    const i = handOf(event.inputSource);
+    if (event.inputSource?.hand) { page.xr.pinching[i] = true; page.xr.pinched[i] = true; }
+    else { page.xr.selecting[i] = true; page.xr.selected[i] = true; page.xr.selects = (page.xr.selects ?? 0) + 1; }
   });
   session.addEventListener('selectend', (event) => {
-    if (page.xr && event.inputSource?.hand) page.xr.pinching[handOf(event.inputSource)] = false;
+    if (!page.xr) return;
+    const i = handOf(event.inputSource);
+    if (event.inputSource?.hand) page.xr.pinching[i] = false; else page.xr.selecting[i] = false;
   });
   session.addEventListener('visibilitychange', () => {
     if (session.visibilityState !== 'visible') app.release_input();
@@ -473,8 +477,11 @@ function xrFrame(time, xrframe) {
       });
       const { pressed, axes } = xrGamepad(xr.session);
       app.gamepad(pressed, axes);
-      app.xr_input(time, xrInput(xrframe, pose, xr.session, xr.space), xr.select);
-      xr.select = -1;
+      // Each controller's select held this frame (or begun and ended since
+      // the last): a bit per hand, 1 the left's and 2 the right's.
+      const selects = [0, 1].reduce((bits, i) => bits | (xr.selecting[i] || xr.selected[i] ? 1 << i : 0), 0);
+      xr.selected = [false, false];
+      app.xr_input(time, xrInput(xrframe, pose, xr.session, xr.space), selects);
       app.xr_frame(time, xr.layer, matrices, viewports);
       // A readback asked for reads the layer just drawn, inside the frame
       // (an emulated layer may be the canvas's default framebuffer).

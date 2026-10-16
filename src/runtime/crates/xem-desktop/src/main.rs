@@ -192,8 +192,11 @@ fn options() -> Result<Options, String> {
                      the command layer's (status, context, navigate, act, ...; status adds renderer.movie, \
                      whether the window last showed a rebuilt movie frame), settings, \
                      settings_apply {{change}} (the panel's own typed change), panel {{visible}}, \
-                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer; not with --xr) and \
-                     bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once).\n\
+                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer; not with --xr), \
+                     bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once) and \
+                     app {{request}} (the panel's and the bindings' operations as they run them, answering {{ok, message}} or {{error}}: \
+                     {{\"Rewind\": true}} holds rewind until {{\"Rewind\": false}}, {{\"Action\": \"RetryStorage\"}} retries pending card writes, \
+                     {{\"Action\": \"Recenter\"}} recentres a headset's view; not the file pickers, whose files agents name instead).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits; \
                      --load-state loads a state file (Save state's, xem-headless's state_save, a browser's \
@@ -636,6 +639,9 @@ impl Host {
                 }
                 serde_json::json!({ "visible": self.view.panel_visible() })
             }
+            // The panel's and the bindings' operations, as theirs run (a
+            // held rewind, Retry pending card writes, ...).
+            Some("app") => xem_host::app_reply(xem_host::agent_request(command).and_then(|request| self.view.app_command(self.game.as_mut(), request))),
             _ => match &mut self.game {
                 Some(game) => {
                     let mut reply = game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error }));

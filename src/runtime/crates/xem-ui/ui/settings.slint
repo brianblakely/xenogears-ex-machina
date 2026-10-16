@@ -720,6 +720,9 @@ export component SettingsPanel inherits Window {
     in-out property <string> keyboard-binding;
     in-out property <string> gamepad-binding;
     in property <[string]> backup-actions;
+    // The Backups card's buttons two to a row on a panel wide enough for
+    // its longest pair (a desktop's 640), else one to a row.
+    private property <int> backup-columns: root.width >= 600px ? 2 : 1;
     // Every game action with its inputs (xem_settings::bindings); the
     // selected one (-1 none) is edited: keys, gamepad inputs, mouse buttons.
     in property <[BindingRow]> game-bindings;
@@ -1661,11 +1664,11 @@ export component SettingsPanel inherits Window {
 
                                 VerticalLayout {
                                     spacing: 8px;
-                                    for row in ceil(root.backup-actions.length / 2): HorizontalLayout {
+                                    for row in ceil(root.backup-actions.length / root.backup-columns): HorizontalLayout {
                                         spacing: 8px;
-                                        Button { text: root.backup-actions[row * 2]; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.backup-action-requested(row * 2); } }
-                                        if row * 2 + 1 < root.backup-actions.length: Button { text: root.backup-actions[row * 2 + 1]; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.backup-action-requested(row * 2 + 1); } }
-                                        if row * 2 + 1 >= root.backup-actions.length: Rectangle { horizontal-stretch: 1; preferred-width: 0px; }
+                                        Button { text: root.backup-actions[row * root.backup-columns]; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.backup-action-requested(row * root.backup-columns); } }
+                                        if root.backup-columns == 2 && row * 2 + 1 < root.backup-actions.length: Button { text: root.backup-actions[row * 2 + 1]; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.backup-action-requested(row * 2 + 1); } }
+                                        if root.backup-columns == 2 && row * 2 + 1 >= root.backup-actions.length: Rectangle { horizontal-stretch: 1; preferred-width: 0px; }
                                     }
                                 }
                                 if root.storage-status != "": Text { text: root.storage-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }

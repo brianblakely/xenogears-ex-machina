@@ -16,6 +16,30 @@ struct Callback {
     sender: Sender<Dialog>,
 }
 
+/// The operations that open a file picker, which only a player answers.
+const PICKERS: [AppAction; 9] = [
+    AppAction::ExportState, AppAction::ImportState, AppAction::ExportCard1, AppAction::ImportCard1, AppAction::ExportCard2,
+    AppAction::ImportCard2, AppAction::ExportSettings, AppAction::ImportSettings, AppAction::ImportBios,
+];
+
+/// An agent's app operation (`--control`'s `app {request}`, in the window
+/// and in a headset): the panel's and the bindings' operations as
+/// `xem_settings::AppRequest` (`{"Action": "RetryStorage"}`; `{"Rewind":
+/// true}` holds rewind as a held binding does until `{"Rewind": false}`),
+/// carried out as theirs are ([`Operations::execute`]), but not the file
+/// pickers: agents name the file instead (`state_save`, `state_load`,
+/// `card_import`, `card_export`, `bios_import`).
+pub fn agent_request(command: &serde_json::Value) -> Result<AppRequest,String> {
+    let request = command.get("request").cloned()
+        .ok_or(r#"app needs request: an app operation, such as {"Action": "RetryStorage"} or {"Rewind": true}"#)?;
+    let request: AppRequest = serde_json::from_value(request).map_err(|e| format!("not an app operation: {e}"))?;
+    if let AppRequest::Action(action) = request && PICKERS.contains(&action) {
+        return Err(format!("{action:?} opens a file picker, which only a player answers: agents name the file \
+            (state_save, state_load, card_import, card_export, bios_import)"));
+    }
+    Ok(request)
+}
+
 pub struct Operations {
     pub directory: Option<PathBuf>,
     sender: Sender<Dialog>,

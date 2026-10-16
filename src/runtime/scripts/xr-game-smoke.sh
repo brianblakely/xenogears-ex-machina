@@ -73,7 +73,10 @@
 #   and the panel's Hold to rewind under a scripted controller ray's
 #   trigger), Settings hold the game again once a rewind is let go, and
 #   Settings closed with the trigger still held let go of Hold to rewind
-#   (the game plays on behind the closed panel);
+#   (the game plays on behind the closed panel); with hands alone, a pinch
+#   held on Hold to rewind holds it from the pinch's start to its end, the
+#   gaze leaving the button meanwhile (the panel's pointer moves nowhere
+#   while a pinch holds it), and an agent's `app` command recentres;
 # - the gameplay options in the headset (an agent on --control, the game
 #   running): the settings' defaults reach the session (random battles off
 #   on xem-core's platforming maps, every other option the original's), and
@@ -350,6 +353,21 @@ drawn() { # LOG N: wait (at most a minute) until the headset run logging to LOG 
 } | "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
     --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
     >"$out/held.log" 2>"$out/held.err"
+# A hands-only player's held rewind, from the same state, the gaze the
+# eyes': an agent's app command recentres once the session has drawn 100
+# frames; prayer hands open Settings at headset frame 200, a pinch picks
+# Time (256,98) at 220, and a pinch held on its Hold to rewind (355,325)
+# from 240 (the pinch itself from 242 to 281) rewinds through Settings'
+# pause, the gaze moving down off the button meanwhile at 260 (the panel's
+# pointer moves nowhere while the pinch holds it).
+echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+(
+    printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate"
+    for _ in $(seq 600); do grep -q '^xrframe n=100 ' "$out/held-hands.log" 2>/dev/null && break; sleep 0.1; done
+    printf '{"cmd":"app","request":{"Action":"Recenter"}}\n'
+) | "$desktop" --xr --control --disc "$disc" --exit-after-frames 320 \
+    --xr-hands "200:prayer,220:pinch@panel:256/98,240:pinch-hold@panel:355/325,260:rest@panel:355/450" \
+    >"$out/held-hands.log" 2>"$out/held-hands.err"
 # The headset's AUTO key, the player's own play from field 12's dialogue
 # (a state xem-headless saved with its prompt waiting), the gaze the
 # eyes': a pinch at headset frame 40 aimed at AUTO beside the screen's
@@ -1049,6 +1067,47 @@ if len(rewinds) == 4:
     print(f"held: Back+LT with Settings shown rewound game frame {gf(chord_on - 1)} to {gf(chord_off - 1)}; Hold to rewind "
           f"from headset frame {held_on} rewound {gf(held_on - 1)} to {gf(244)}; Settings closed at 245 let it go, the game on "
           f"to {gf(269)} by 269 with the trigger still held")
+
+# A hands-only player's held rewind: the pinch held on Hold to rewind (242
+# to 281) holds it from its start to its end, the gaze leaving the button
+# at 260 changing nothing; meanwhile the game goes back through Settings'
+# pause under the HUD's icon, and Settings hold it again once it ends. An
+# agent's app command recentred the view once (its reply, the frames').
+lines = open(f"{out}/held-hands.log").read().splitlines()
+rows = records("held-hands.log")
+by = {int(r["n"]): r for r in rows}
+def gf(n):
+    return int(by[n]["game_frames"])
+rewinds, last = [], -1
+for line in lines:
+    if line.startswith("xrframe "):
+        last = int(line.split()[1].split("=", 1)[1])
+    m = re.match(r"app (\w*Rewind)\((true|false)\) game_vblank=\d+ memory_hash [0-9a-f]{16} (ok|error)", line)
+    if m:
+        rewinds.append((last + 1, m.group(1), m.group(2), m.group(3)))
+check([r[1:] for r in rewinds] == [("UiRewind", "true", "ok"), ("UiRewind", "false", "ok")], f"the held pinch's rewinds: {rewinds}")
+if len(rewinds) == 2:
+    (held_on, *_), (held_off, *_) = rewinds
+    during = [by[n] for n in range(held_on, held_off)]
+    check(242 <= held_on < 252 and 282 <= held_off <= 284,
+          f"the pinch held from headset frame 242 to 281 held Hold to rewind from {held_on} to {held_off}")
+    check(all(r["layers"] == "2" and r["paused"] == "0" for r in during) and any("rewind" in r["hud"].split(",") for r in during)
+          and gf(held_off - 1) < gf(held_on - 1) - 120,
+          f"the held pinch rewound game frame {gf(held_on - 1)} to {gf(held_off - 1)}, "
+          f"layers/paused/hud {sorted({(r['layers'], r['paused'], r['hud']) for r in during})}")
+    after = [by[n] for n in range(held_off + 1, 320)]
+    check(all(r["layers"] == "2" and r["paused"] == "1" for r in after) and len({r["game_frames"] for r in after}) == 1,
+          "Settings did not hold the game again once the pinch let go")
+    print(f"held hands: the pinch held Hold to rewind from headset frame {held_on} to {held_off}, game frame {gf(held_on - 1)} "
+          f"to {gf(held_off - 1)}, the gaze off the button from 260")
+replies = [json.loads(l) for l in lines if l.startswith("{")]
+recentred = [l for l in lines if l.startswith("recenter seat=")]
+counts = [(int(r["n"]), r["recenters"]) for r in rows]
+first = next((n for n, c in counts if c == "1"), None)
+check(len(replies) == 2 and replies[1] == {"ok": True, "message": "The view is in front of you again."} and len(recentred) == 1
+      and first is not None and first >= 100 and all(c == ("1" if n >= first else "0") for n, c in counts),
+      f"the agent's app Recenter: replies {str(replies)[-160:]}, {recentred}, recenters from frame {first}")
+print(f"held hands: an agent's app Recenter at headset frame {first} ({recentred[:1]})")
 
 # The gameplay options in the headset (the held run's agent): the settings'
 # defaults reach the session (random battles off on xem-core's platforming

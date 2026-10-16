@@ -20,6 +20,7 @@ mod assisted;
 mod operations;
 
 pub use game::Game;
+pub use operations::agent_request;
 
 use sdl3_sys::everything::*;
 use std::cell::{Cell, RefCell};
@@ -102,6 +103,15 @@ pub fn operation_line(request: &AppRequest, result: &Result<String, String>, gam
     match result {
         Ok(text) => format!("app {request:?}{game} ok: {text}"),
         Err(error) => format!("app {request:?}{game} error: {error}"),
+    }
+}
+
+/// An agent's acknowledgement of an app operation (`app {request}`):
+/// `{"ok": true, "message"}`, the status line's text, or `{"error"}`.
+pub fn app_reply(result: Result<String, String>) -> serde_json::Value {
+    match result {
+        Ok(message) => serde_json::json!({ "ok": true, "message": message }),
+        Err(error) => serde_json::json!({ "error": error }),
     }
 }
 
@@ -512,6 +522,18 @@ impl View {
     /// runs; the outcome shows on the status line as the panel's does.
     pub fn import_bios(&self, game: Option<&mut Game>, path: &str) -> Result<String,String> {
         let result = self.operations.import_bios_file(game,path);
+        self.show_result(result.clone());
+        result
+    }
+
+    /// An agent's app operation (`xem-desktop --control`'s `app {request}`,
+    /// [`agent_request`]), carried out as the panel's and the bindings' are
+    /// ([`Self::update_app`]): its outcome on the status line, a state's on
+    /// the HUD, and its line where operations are told.
+    pub fn app_command(&mut self, mut game: Option<&mut Game>, request: AppRequest) -> Result<String,String> {
+        let result = self.operations.execute(request,None,game.as_deref_mut(),&mut self.settings.borrow_mut());
+        if let AppRequest::Action(action) = request { self.state_notice(action,&result); }
+        self.log_operation(&request,&result,game);
         self.show_result(result.clone());
         result
     }

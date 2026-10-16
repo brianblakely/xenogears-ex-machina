@@ -568,6 +568,35 @@ mod tests {
     }
 
     #[test]
+    fn an_agents_app_requests_run_as_the_panels_and_the_bindings_do_but_open_no_picker() {
+        use serde_json::json;
+        use xem_settings::{MemoryStore, SettingsService};
+        // `--control`'s `app {request}`, as the window and a headset carry
+        // it out: through the panel's and the bindings' operations.
+        let mut game = Game::new(Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default));
+        let mut operations = crate::operations::Operations::default();
+        let mut settings = SettingsService::with_defaults(MemoryStore::default());
+        let mut app = |game: &mut Game, request: serde_json::Value| {
+            crate::agent_request(&json!({"cmd": "app", "request": request})).and_then(|request| operations.execute(request, None, Some(game), &mut settings))
+        };
+        // A held rewind starts and ends as a held binding's (the host's
+        // frames then step it, `Game::update`).
+        assert_eq!(app(&mut game, json!({"Rewind": true})), Ok("Rewinding while held.".into()));
+        assert!(game.rewind_held());
+        assert_eq!(app(&mut game, json!({"Rewind": false})), Ok("Rewind released.".into()));
+        assert!(!game.rewind_held());
+        assert_eq!(app(&mut game, json!({"Action": "RetryStorage"})), Ok("Pending card writes completed.".into()));
+        assert_eq!(app(&mut game, json!({"Action": "ToggleFastForward"})), Ok("Fast-forward on. Music keeps its normal tempo and pitch.".into()));
+        assert!(game.session.fast_forward);
+        // A file picker is the player's to answer; only a headset recentres.
+        let refused = app(&mut game, json!({"Action": "ImportCard1"})).unwrap_err();
+        assert!(refused.starts_with("ImportCard1 opens a file picker") && refused.contains("card_import"), "{refused}");
+        assert_eq!(app(&mut game, json!({"Action": "Recenter"})), Err("Recentering places a headset's view; play in a headset to use it.".into()));
+        assert!(app(&mut game, json!({"Action": "Fly"})).unwrap_err().starts_with("not an app operation"));
+        assert!(crate::agent_request(&json!({"cmd": "app"})).unwrap_err().starts_with("app needs request"));
+    }
+
+    #[test]
     fn frames_give_the_session_the_settings_random_battle_maps_and_a_session_log_none() {
         use serde_json::json;
         use xem_settings::{RandomBattles, Settings};

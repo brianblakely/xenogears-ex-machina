@@ -129,6 +129,25 @@ pub fn read_context(memory: &dyn GameMemory, mode: Option<u32>) -> Context {
     context.unwrap_or(Context::None)
 }
 
+/// Whether the game's file screen shows (slot39 `menu_file_screen_run` in
+/// its card mode, `MenuFlags.card_mode` +0x68): the save, copy and delete
+/// screens of a field's and the world map's menu and of the disc change,
+/// and the title's Load. They list the cards' saves once and act on that
+/// listing by name (an Overwrite, a Delete, a Load). Read while a menu runs
+/// (`menu_state_debug_start` 0 from a field or the world map, or mode 5),
+/// as `read_context` reads the menu.
+pub fn file_screen(memory: &dyn GameMemory, mode: Option<u32>) -> bool {
+    if mode != Some(5) && u8_at(memory, MENU_STATE_DEBUG_START) != Some(0) {
+        return false;
+    }
+    (|| {
+        let state = ram_pointer(u32_at(memory, MENU_STATE_CURRENT)?)?;
+        let flags = ram_pointer(u32_at(memory, state + 0x33C)?)?;
+        u8_at(memory, flags + 0x68)
+    })()
+    .is_some_and(|card_mode| card_mode != 0)
+}
+
 fn menu(memory: &dyn GameMemory) -> Option<Context> {
     let screen = u8_at(memory, MENU_STATE_SCREEN)?;
     let state = ram_pointer(u32_at(memory, MENU_STATE_CURRENT)?)?;

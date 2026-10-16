@@ -490,6 +490,16 @@ impl<M: GameModule> Runtime<M> {
         unsafe { &mut *self.services }
     }
 
+    /// Tells the cards whether the game's file screen shows
+    /// (`Card::file_screen`), from the game's memory now: once a frame
+    /// ends, a state is restored or the console resets, so changes from
+    /// outside (between frames) know it.
+    fn note_file_screen(&mut self) {
+        let mode = self.services().mode;
+        let shown = crate::context::file_screen(self.module.memory(), mode);
+        self.services().card.file_screen = shown;
+    }
+
     pub fn module(&mut self) -> &mut M {
         &mut self.module
     }
@@ -620,6 +630,7 @@ impl<M: GameModule> Runtime<M> {
         if let Err(error) = loaded.and_then(|()| services.spu.power_on(memory)) {
             services.trap_reason = Some(error.to_string());
         }
+        self.note_file_screen();
     }
 
     /// Deliver an interrupt while the game is suspended, on the stack below
@@ -800,6 +811,7 @@ impl<M: GameModule> Runtime<M> {
                 if std::mem::take(&mut self.stopped_before_vblank) {
                     self.resume_advance = Some((frame_end + VBLANK_CYCLES, limit, first_only));
                     self.frames += 1;
+                    self.note_file_screen();
                     return Ok(report);
                 }
                 if self.services().cd.blocked {
@@ -810,6 +822,7 @@ impl<M: GameModule> Runtime<M> {
             }
             if self.services().clock.now >= frame_end {
                 self.frames += 1;
+                self.note_file_screen();
                 return Ok(report);
             }
         }
@@ -1080,6 +1093,7 @@ impl<M: GameModule> Runtime<M> {
         self.fibers = fibers;
         self.module.set_stack_pointer(stack_pointer);
         self.module.set_globals(&globals);
+        self.note_file_screen();
         Ok(())
     }
 }

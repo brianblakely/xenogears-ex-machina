@@ -908,6 +908,13 @@ impl<M: GameModule> Session<M> {
         let services = self.runtime.services();
         let card_present = [services.card.present(0), services.card.present(1)];
         let kanji_font = services.kanji_font;
+        // What the storage line shows: card writes not yet stored, the
+        // cards' storage errors, and why an imported BIOS image is unused.
+        let storage = json!({
+            "pending_writes": services.card.pending_writes(),
+            "errors": services.card.errors,
+            "kanji_font_notice": services.kanji_font_notice,
+        });
         json!({
             "vblanks": services.clock.vblanks,
             "cycles": services.clock.now,
@@ -926,6 +933,7 @@ impl<M: GameModule> Session<M> {
             "half_encounters": half_encounters,
             "card_present": card_present,
             "kanji_font": kanji_font,
+            "storage": storage,
             "text_speed": text_speed,
             "movie_skip": movie_skip,
             "auto_advance": self.auto_advance,
@@ -1137,6 +1145,18 @@ impl<M: GameModule> Session<M> {
                 self.restore_rewind_state(&data)?;
                 self.rewind.truncate(at);
                 Ok(self.status())
+            }
+            "rewind_step" => {
+                // A held rewind, as the hosts hold one (they take a step
+                // every REWIND_STEP_MS while it is held): `steps` of them,
+                // each one older state played on from (`rewind_step`); fewer
+                // taken than asked for, the history's start was reached.
+                let steps = arg_u64("steps").unwrap_or(1);
+                let mut taken = 0;
+                while taken < steps && self.rewind_step()? {
+                    taken += 1;
+                }
+                Ok(json!({ "steps": taken, "status": self.status() }))
             }
             "frames" => {
                 let n = arg_u64("count").unwrap_or(1);
@@ -1380,7 +1400,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
+                                        "restore", "rewind_configure", "rewind", "rewind_step", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
                                         "half_encounters", "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }

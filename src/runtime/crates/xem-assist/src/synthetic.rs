@@ -171,8 +171,13 @@ fn whole_pinches(from: f32, to: f32) -> Frames {
     frames
 }
 
+/// Frames the runtime's pinch holds in `pinch-hold`.
+pub const PINCH_HOLD_FRAMES: usize = 40;
+
 /// The steps of a named gesture with the right hand (the left open):
-/// `pause` (an overhand grab), `inspect` (underhand), `pinch`, `tap`,
+/// `pause` (an overhand grab), `inspect` (underhand), `pinch`,
+/// `pinch-hold` (the pinch held [`PINCH_HOLD_FRAMES`] frames), `rest` (a
+/// frame of both hands resting open: an aim alone), `tap`,
 /// `swipe-up`, `swipe-down`, `swipe-left`, `swipe-right`; `prayer` with
 /// both, `lose` (both hands untracked for a while). The grabs' other cases:
 /// `pause-left` and `inspect-left` (the left hand's, the right resting
@@ -242,6 +247,11 @@ pub fn gesture(name: &str) -> Option<Frames> {
         "scale-pinch" => scale(0.15, 0.3, true),
         "pinch" => [open(), open(), pinch(), pinch(), pinch(), open(), open()].iter().enumerate()
             .map(|(i, p)| Step { hands: place_both(*p), pinch: [false, (2..5).contains(&i)], micro: [None; 2] }).collect(),
+        "pinch-hold" => (0..PINCH_HOLD_FRAMES + 4).map(|i| {
+            let held = (2..PINCH_HOLD_FRAMES + 2).contains(&i);
+            Step { hands: place_both(if held { pinch() } else { open() }), pinch: [false, held], micro: [None; 2] }
+        }).collect(),
+        "rest" => vec![Step::of(place_both(open()))],
         "tap" => micro(&[relaxed(), relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed(), relaxed()], 4, Micro::Tap),
         "swipe-up" => micro(&[relaxed(), thumb_on_index(0.1), thumb_on_index(0.5), thumb_on_index(0.9), thumb_lifted(0.9), relaxed()], 4, Micro::Swipe(Swipe::Up)),
         "swipe-down" => micro(&[relaxed(), thumb_on_index(0.9), thumb_on_index(0.5), thumb_on_index(0.1), thumb_lifted(0.1), relaxed()], 4, Micro::Swipe(Swipe::Down)),
@@ -293,6 +303,7 @@ mod tests {
             ("pause", Gesture::Pause { hand: right }),
             ("inspect", Gesture::Inspect { hand: right }),
             ("pinch", Gesture::Pinch { hand: right }),
+            ("pinch-hold", Gesture::Pinch { hand: right }),
             ("tap", Gesture::Tap { hand: right }),
             ("swipe-up", Gesture::Swipe { hand: right, direction: Swipe::Up }),
             ("swipe-down", Gesture::Swipe { hand: right, direction: Swipe::Down }),
@@ -303,6 +314,10 @@ mod tests {
             let steps: Vec<Step> = opened().into_iter().chain(gesture(name).unwrap()).collect();
             assert_eq!(run(&steps, head, Runtime::HORIZON), [expected], "{name}");
         }
+        let held = gesture("pinch-hold").unwrap();
+        assert_eq!(held.iter().filter(|step| step.pinch[1]).count(), PINCH_HOLD_FRAMES, "pinch-hold: the runtime's pinch held as long");
+        let steps: Vec<Step> = opened().into_iter().chain(gesture("rest").unwrap()).collect();
+        assert_eq!(run(&steps, head, Runtime::HORIZON), [], "rest: nothing");
     }
 
     #[test]

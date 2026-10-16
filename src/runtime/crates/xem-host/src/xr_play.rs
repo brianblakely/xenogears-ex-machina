@@ -83,16 +83,29 @@ pub fn gamepad(input: &InputState) -> ([u8; 16], [f32; 4]) {
     (pressed, [left.thumbstick[0], -left.thumbstick[1], right.thumbstick[0], -right.thumbstick[1]])
 }
 
-/// Points at the panel with the right controller's aim ray.
+/// Points at the panel with the right controller's aim ray, or with the
+/// hands' pointer source ([`xem_assist::headset::PanelPointer`]).
 #[derive(Default)]
 struct PanelPointer {
     pressed: bool,
     /// The ray was on the panel at the last update.
     inside: bool,
+    /// The hands' pointer: a pinch presses it from its start to its end.
+    hands: xem_assist::headset::PanelPointer,
+}
+
+/// A point of the panel at (u, v) across it, in its logical pixels.
+fn panel_position(ui: &SettingsUi, panel_px: (u32, u32), (u, v): (f32, f32)) -> LogicalPosition {
+    let scale = ui.scale_factor();
+    LogicalPosition::new(u * panel_px.0 as f32 / scale, v * panel_px.1 as f32 / scale)
 }
 
 impl PanelPointer {
     fn update(&mut self, ui: &SettingsUi, panel: &PanelPlacement, panel_px: (u32, u32), hand: &HandInput) -> bool {
+        // The controller takes the pointer: a pinch that held it lets go.
+        if let Some(uv) = self.hands.release() {
+            ui.dispatch(WindowEvent::PointerReleased { position: panel_position(ui, panel_px, uv), button: PointerEventButton::Left });
+        }
         let on = self.on_panel(ui, panel, panel_px, hand);
         // The ray leaving the panel leaves nothing on it hovered.
         if self.inside && !on {
@@ -133,25 +146,62 @@ impl PanelPointer {
 }
 
 impl PanelPointer {
-    /// A hand's pointer on the panel at (u, v), and a pinch: one click there.
-    fn hand(&mut self, ui: &SettingsUi, panel_px: (u32, u32), uv: Option<(f32, f32)>, pinched: bool) {
-        let Some((u, v)) = uv else {
-            if self.inside {
-                ui.dispatch(WindowEvent::PointerExited);
-            }
-            self.inside = false;
-            return;
-        };
-        self.inside = true;
-        let scale = ui.scale_factor();
-        let position = LogicalPosition::new(u * panel_px.0 as f32 / scale, v * panel_px.1 as f32 / scale);
-        ui.dispatch(WindowEvent::PointerMoved { position });
-        if pinched {
-            let button = PointerEventButton::Left;
-            ui.dispatch(WindowEvent::PointerPressed { position, button });
-            ui.dispatch(WindowEvent::PointerReleased { position, button });
+    /// The hands' pointer on the panel at (u, v): a pinch beginning there
+    /// (`began`, the hand's whose pinch began this frame) presses it, and
+    /// the end of that hand's pinch (`pinch`, each hand's as the runtime
+    /// reports it) lets it go where it pressed, the pointer moving nowhere
+    /// meanwhile (no pinch-and-drag scrolling), so a pinch held on Hold to
+    /// rewind holds it.
+    fn hand(&mut self, ui: &SettingsUi, panel_px: (u32, u32), uv: Option<(f32, f32)>, began: Option<usize>, pinch: [Option<bool>; 2]) {
+        use xem_assist::headset::{PanelEvent, Presser};
+        let held = |presser| matches!(presser, Presser::Pinch(hand) if pinch[hand] == Some(true));
+        let button = PointerEventButton::Left;
+        for event in self.hands.update(uv, began.map(Presser::Pinch), held) {
+            ui.dispatch(match event {
+                PanelEvent::Moved(uv) => WindowEvent::PointerMoved { position: panel_position(ui, panel_px, uv) },
+                PanelEvent::Pressed(uv) => WindowEvent::PointerPressed { position: panel_position(ui, panel_px, uv), button },
+                PanelEvent::Released(uv) => WindowEvent::PointerReleased { position: panel_position(ui, panel_px, uv), button },
+                PanelEvent::Exited => WindowEvent::PointerExited,
+            });
         }
     }
+}
+
+/// One app operation in the headset (the panel's, a chord's, a gesture's,
+/// an agent's `app`): Recenter places this loop's view (the seat moves to
+/// the head); the rest go through `Operations::execute`, as in the window.
+/// Its outcome shows on the status line (a state's on the HUD too), and a
+/// line with the game's memory hash after it is printed.
+#[allow(clippy::too_many_arguments)]
+fn operate(
+    request: AppRequest, operations: &mut crate::operations::Operations, game: &mut Game, settings: &RefCell<SettingsService>, assist: &mut Assisted,
+    head: Option<Pose>, view: &mut GameView, recenters: &mut u32, hud: &mut xem_ui::FrameRateUi, elapsed: std::time::Duration, ui: &SettingsUi,
+) -> Result<String, String> {
+    let result = if request == AppRequest::Action(AppAction::Recenter) {
+        let result = xem_assist::headset::recenter(&mut assist.seat, head.map(assist_pose), view);
+        if result.is_ok() {
+            *recenters += 1;
+            let seat = assist.seat.position();
+            println!("recenter seat={:.4},{:.4},{:.4}", seat.x, seat.y, seat.z);
+        }
+        result
+    } else {
+        operations.execute(request, None, Some(game), &mut settings.borrow_mut())
+    };
+    if let AppRequest::Action(action) = request {
+        use xem_settings::AppAction::*;
+        let saved = match action { SaveState | ExportState => Some(true), LoadState | ImportState => Some(false), _ => None };
+        if let Some(saved) = saved {
+            hud.notify_state(saved, result.as_ref().err().map(String::as_str), elapsed);
+            println!("hud notice={:?}", hud.notice().unwrap_or_default());
+        }
+    }
+    println!("{}", crate::operation_line(&request, &result, Some(game)));
+    match &result {
+        Ok(message) => ui.set_operation_status(message),
+        Err(error) => ui.set_operation_error(error),
+    }
+    result
 }
 
 /// The device's own picture (24-bit movie frames) as an sRGB texture.
@@ -325,7 +375,10 @@ pub struct XrPlay {
     pub state_directory: Option<std::path::PathBuf>,
     /// Answer agents' JSON commands on stdin between the game's frames
     /// (`--control`, [`crate::Control`]): the command layer's, `settings`,
-    /// `settings_apply {change}`, `panel {visible}` and `bios_import {path}`.
+    /// `settings_apply {change}`, `panel {visible}`, `bios_import {path}` and
+    /// `app {request}` (the panel's and the bindings' operations,
+    /// [`crate::agent_request`]: a held rewind, Retry pending card writes,
+    /// Recenter and the rest).
     pub control: bool,
 }
 
@@ -515,6 +568,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             requests.borrow_mut().extend(app_input.set_focused(focused));
             if !focused {
                 ui.cancel_pointer();
+                pointer.hands.release();
             }
         }
         let settings_chord = app_input.pad(&pressed);
@@ -553,6 +607,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                         },
                         None => serde_json::json!({ "error": "bios_import needs path" }),
                     },
+                    // The panel's and the bindings' operations, as theirs
+                    // run (Recenter, a held rewind, Retry pending card
+                    // writes...).
+                    Some("app") => crate::app_reply(crate::agent_request(command).and_then(|request| {
+                        operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui)
+                    })),
                     _ => game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error })),
                 }
             });
@@ -616,6 +676,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if panel_shown && !visible {
             ui.cancel_pointer();
             ui.cancel_dialog();
+            pointer.hands.release();
         }
         panel_shown = visible;
         if visible {
@@ -623,10 +684,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 pointer.update(&ui, &panel, panel_px, &input.hands[1]);
             } else {
                 // Hands tracked (or no controller): the pointer source's ray,
-                // and a pinch to click.
+                // pressed by a pinch for as long as it holds.
                 let quad = xem_assist::headset::Quad { pose: xem_assist::headset::Pose { position: panel.pose.position, orientation: panel.pose.orientation }, size: panel.size };
-                let pinched = assist.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
-                pointer.hand(&ui, panel_px, assist.headset.hit(&assisted_input, &quad).map(|(uv, _)| uv), pinched);
+                let began = assist.gestures.iter().find_map(|g| match g {
+                    xem_assist::gesture::Gesture::Pinch { hand } => Some(hand.index()),
+                    _ => None,
+                });
+                pointer.hand(&ui, panel_px, assist.headset.hit(&assisted_input, &quad).map(|(uv, _)| uv), began, assisted_input.pinch);
             }
         }
 
@@ -641,31 +705,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             requests.borrow_mut().extend(app_input.requests(&current.app_bindings, current.invert_trigger_chords));
         }
         for request in std::mem::take(&mut *requests.borrow_mut()) {
-            // Recenter places this loop's view: the seat moves to the head.
-            let result = if request == AppRequest::Action(AppAction::Recenter) {
-                let result = xem_assist::headset::recenter(&mut assist.seat, head.map(assist_pose), &mut view);
-                if result.is_ok() {
-                    recenters += 1;
-                    let seat = assist.seat.position();
-                    println!("recenter seat={:.4},{:.4},{:.4}", seat.x, seat.y, seat.z);
-                }
-                result
-            } else {
-                operations.execute(request,None,Some(&mut game),&mut settings.borrow_mut())
-            };
-            if let xem_settings::AppRequest::Action(action) = request {
-                use xem_settings::AppAction::*;
-                let saved = match action { SaveState | ExportState => Some(true), LoadState | ImportState => Some(false), _ => None };
-                if let Some(saved) = saved {
-                    hud.notify_state(saved,result.as_ref().err().map(String::as_str),start.elapsed());
-                    println!("hud notice={:?}", hud.notice().unwrap_or_default());
-                }
-            }
-            println!("{}", crate::operation_line(&request, &result, Some(&mut game)));
-            match result {
-                Ok(message) => ui.set_operation_status(&message),
-                Err(error) => ui.set_operation_error(&error),
-            }
+            let _ = operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui);
         }
         let (fast_forward,status) = game.time_status();
         ui.set_time_status(Some(fast_forward),&status);

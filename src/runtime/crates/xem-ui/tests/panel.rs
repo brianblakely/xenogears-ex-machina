@@ -756,6 +756,36 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
         ui.update().unwrap();
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
+
+    // Saves' Backups card keeps every button inside it on panels as wide as
+    // those, a headset's (440) and the desktop's (640, and the sidebar's
+    // narrowest, 560): two to a row where they fit, else one. (The panels
+    // are tall here, so that every row shows: the width is what counts.)
+    const BACKUPS: [&str; 11] = [
+        "Export state backup", "Import state backup", "Export original card 1", "Import original card 1", "Export original card 2",
+        "Import original card 2", "Export settings", "Import settings", "Retry pending card writes", "Request browser persistence",
+        "Import BIOS (save titles)",
+    ];
+    for (width, scale, rows) in [
+        (640, 1.0, 6), (600, 1.0, 6), (560, 1.0, 11), (880, 2.0, 11), (1064, 2.625, 11),
+        (1064, 2.75, 11), (1064, 3.0, 11), (344, 1.0, 11), (304, 1.0, 11), (280, 1.0, 11),
+    ] {
+        ui.resize((width, (1200.0 * scale) as u32), scale);
+        ui.component().set_selected_section(5);
+        ui.update().unwrap();
+        let width = width as f32 / scale;
+        let card = element(&ui, "Backups", AccessibleRole::Groupbox);
+        let (left, right) = (card.absolute_position().x, card.absolute_position().x + card.size().width);
+        assert!(left >= 0.0 && right <= width, "the Backups card lies inside a panel {width} wide: {left}..{right}");
+        let mut tops = std::collections::BTreeSet::new();
+        for label in BACKUPS {
+            let button = element(&ui, label, AccessibleRole::Button);
+            let (at, extent) = (button.absolute_position(), button.size());
+            assert!(at.x >= left && at.x + extent.width <= right, "{label} lies inside the Backups card ({left}..{right}) on a panel {width} wide: {at:?} {extent:?}");
+            tops.insert(at.y as i32);
+        }
+        assert_eq!(tops.len(), rows, "Backups' rows on a panel {width} wide");
+    }
 }
 
 #[test]
@@ -819,6 +849,26 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     ui.cancel_pointer();
     ui.update().unwrap();
     assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true), AppRequest::UiRewind(false)], "and the panel hidden lets it go");
+
+    // xr-game.test.mjs's points on its WebXR panel (the canvas's: 640x560
+    // with the sidebar): Time, Stop fast-forward (fast-forward on then),
+    // and Hold to rewind, held by a controller's select and a pinch.
+    ui.resize((640, 560), 1.0);
+    ui.component().set_selected_section(0);
+    ui.update().unwrap();
+    requests.borrow_mut().clear();
+    at(&mut ui, 82.0, 254.0);
+    assert_eq!(ui.component().get_selected_section(), 4, "the WebXR test's pull selects Time");
+    ui.set_time_status(Some(true), status);
+    ui.update().unwrap();
+    at(&mut ui, 547.0, 322.0);
+    let hold = LogicalPosition::new(555.0, 252.0);
+    ui.dispatch(WindowEvent::PointerMoved { position: hold });
+    ui.dispatch(WindowEvent::PointerPressed { position: hold, button: PointerEventButton::Left });
+    ui.update().unwrap();
+    ui.dispatch(WindowEvent::PointerReleased { position: hold, button: PointerEventButton::Left });
+    ui.update().unwrap();
+    assert_eq!(requests.borrow().as_slice(), [toggle, AppRequest::UiRewind(true), AppRequest::UiRewind(false)], "and Stop fast-forward and Hold to rewind");
 
     // android-smoke.sh's taps on its 1080x2400 screen, where the panel
     // (1064x1470 at 2.625, with the game disc's card) is at 8,465: Time,

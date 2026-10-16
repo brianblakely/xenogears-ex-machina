@@ -12,8 +12,11 @@
 //! (`card_present`) the Load shows the game's "No Memory Card" notice and
 //! returns to the title; a card put back is listed, and at the file screen
 //! a card taken out and put back is listed anew, as after a physical swap.
-//! The inputs to the title's Load are the load slice's
-//! (tests/reference-inputs/slice-load.json).
+//! A card imported while the Load's file screen shows (`card_import`, as
+//! Import original card 1/2) is refused into either slot, naming why, and
+//! changes nothing; left, the title takes it, and the Load opened again
+//! lists the imported card's saves. The inputs to the title's Load are the
+//! load slice's (tests/reference-inputs/slice-load.json).
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test file_screen
 
@@ -80,15 +83,32 @@ fn game_save(digit: u8, line: &str) -> (String, Vec<u8>) {
     (format!("BASLUS-00664{}", char::from(b'0' + digit)), block)
 }
 
-/// A freshly formatted card holding `save` (as an imported `.mcs` becomes).
-fn card_holding((name, block): &(String, Vec<u8>)) -> Vec<u8> {
+/// A one-block save's directory frame: its first block, its size, no next
+/// block, its name and the frame's checksum.
+fn directory_frame(name: &str, size: usize) -> Vec<u8> {
     let mut frame = vec![0; 0x80];
     frame[0] = 0x51;
-    frame[4..8].copy_from_slice(&(block.len() as u32).to_le_bytes());
+    frame[4..8].copy_from_slice(&(size as u32).to_le_bytes());
     frame[8..10].copy_from_slice(&0xFFFFu16.to_le_bytes());
     frame[0x0A..0x0A + name.len()].copy_from_slice(name.as_bytes());
     frame[0x7F] = frame[..0x7F].iter().fold(0, |a, b| a ^ b);
-    card_file::detect(&[frame, block.clone()].concat(), "save.mcs").expect("a single save").1
+    frame
+}
+
+/// A freshly formatted card holding `save` (as an imported `.mcs` becomes).
+fn card_holding((name, block): &(String, Vec<u8>)) -> Vec<u8> {
+    card_file::detect(&[directory_frame(name, block.len()), block.clone()].concat(), "save.mcs").expect("a single save").1
+}
+
+/// A freshly formatted card holding `saves`, the first in block 1, the
+/// next in block 2 and so on.
+fn card_with(saves: &[(String, Vec<u8>)]) -> Vec<u8> {
+    let mut image = card_holding(&saves[0]);
+    for (block, (name, data)) in saves.iter().enumerate().skip(1).map(|(i, save)| (i + 1, save)) {
+        image[block * 0x80..(block + 1) * 0x80].copy_from_slice(&directory_frame(name, data.len()));
+        image[block * BLOCK_SIZE..(block + 1) * BLOCK_SIZE].copy_from_slice(data);
+    }
+    image
 }
 
 /// The load slice's inputs before frame `until`: the title, then its Load.
@@ -387,5 +407,67 @@ fn the_titles_load_finds_no_card_while_both_are_out_and_lists_a_card_put_back() 
     let back = seen.last().unwrap().expect("the file screen");
     assert_eq!((back.present, back.files[0], back.ours), ([1, 1], 1, 1), "card 1 listed anew: {seen:?}");
     assert!(seen.iter().all(|c| c.is_some_and(|c| !c.no_card_notice)), "{seen:?}");
+    let _ = std::fs::remove_dir_all(cards);
+}
+
+#[test]
+fn a_card_import_waits_while_the_file_screen_shows_and_the_screen_lists_the_imported_card_after() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let cards = scratch("import");
+    let card1 = card_holding(&game_save(0, "Lahan Village"));
+    std::fs::write(cards.join("card1.mcd"), &card1).unwrap();
+    std::fs::write(cards.join("card2.mcd"), formatted()).unwrap();
+    let file = cards.join("imported.mcd");
+    std::fs::write(&file, card_with(&[game_save(0, "Lahan Village"), game_save(1, "Mountain Path")])).unwrap();
+    let mut s = session(&disc, &cards, None);
+    ok(&mut s, json!({ "cmd": "schedule", "commands": title_inputs(3004) }));
+    run_to(&mut s, 3040);
+    let listed = cards_shown(&mut s).expect("the title's Load");
+    assert_eq!((listed.present, listed.files[0], listed.ours), ([1, 1], 1, 1), "card 1's one save listed");
+
+    // An import into either card while the file screen shows is refused,
+    // naming why (`card_list` says it too), and changes nothing.
+    for slot in [0, 1] {
+        let refused = xem_game::storage::command(&mut s, &json!({ "cmd": "card_import", "slot": slot, "path": file }));
+        let reason = format!("memory card {} not changed: the game's file screen shows the cards' saves and would act on the ones it listed; leave it, then try again", slot + 1);
+        assert_eq!(refused, json!({ "error": reason }));
+        let busy = ok(&mut s, json!({ "cmd": "card_list", "slot": slot }))["busy"].clone();
+        assert!(busy.as_str().is_some_and(|b| b.contains("file screen")), "{busy}");
+    }
+    assert!(s.runtime.services().card.image(0).unwrap() == card1 && std::fs::read(cards.join("card1.mcd")).unwrap() == card1, "card 1 as it was");
+    assert!(std::fs::read(cards.join("card2.mcd")).unwrap() == formatted(), "card 2 as it was");
+
+    // Circle takes the cursor off the saves to the screen's commands, where
+    // the import still waits; Circle again leaves the screen, the title's
+    // commands take the input, and the import goes through. The Load
+    // opened again lists the imported card's saves.
+    let press_circle = |s: &mut Session<NativeModule>| {
+        let at = s.runtime.frames();
+        ok(s, json!({ "cmd": "schedule", "commands": [[at + 5, { "cmd": "pad", "port": 0, "buttons": ["circle"] }], [at + 13, { "cmd": "pad", "port": 0, "buttons": [] }]] }));
+        run_to(s, at + 60);
+    };
+    press_circle(&mut s);
+    assert!(cards_shown(&mut s).is_some() && !title_menu(&mut s), "the file screen's commands");
+    let refused = xem_game::storage::command(&mut s, &json!({ "cmd": "card_import", "slot": 0, "path": file }));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("file screen")), "{refused}");
+    press_circle(&mut s);
+    let mut left = title_menu(&mut s);
+    for _ in 0..300 {
+        if left {
+            break;
+        }
+        assert!(s.frame().expect("frame"));
+        left = title_menu(&mut s);
+    }
+    assert!(left, "back at the title's commands");
+    let reply = xem_game::storage::command(&mut s, &json!({ "cmd": "card_import", "slot": 0, "path": file }));
+    assert_eq!(reply["message"], json!("Card 1: raw card, 2 saves"), "{reply}");
+    press_cross(&mut s);
+    let seen = watch(&mut s, 260);
+    let again = seen.last().unwrap().expect("the file screen");
+    assert_eq!((again.present, again.files[0], again.ours), ([1, 1], 2, 1), "the imported card's two saves listed: {seen:?}");
     let _ = std::fs::remove_dir_all(cards);
 }
