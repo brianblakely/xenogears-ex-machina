@@ -5397,7 +5397,10 @@ hold Hold to rewind under an OpenXR controller, Monado's simulated
 controllers pressing nothing and pointing where no test chooses); an
 agent's held rewind and a binding's are one hold (either's release ends
 it); xem-headless has no storage retry (`card.retry_writes` is the hosts'
-Retry pending card writes);
+Retry pending card writes); in a WebXR session Settings' pause is not
+taken off the history's play time (the page's clock runs on through it,
+where the native hosts' `Game::resume` restarts the history's timer), so a
+long pause there ages the history;
 the Android host's headset loop with its files directory as the state
 directory has not run (the emulator has no OpenXR runtime); fast-forward
 in a headset reaches what the host's batches reach, not the setting's
