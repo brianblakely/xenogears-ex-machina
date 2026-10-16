@@ -29,8 +29,15 @@
 // at the scale and place it had (every session frame recorded); the field's
 // menu, opened and closed through the automation, eases from the diorama to
 // the screen, shows on the screen alone and eases back; prayer hands open
-// the settings panel where the pane floats, its own pause holding the game,
-// and close it.
+// the settings panel beside the pane, beyond the keys beside it and facing
+// the seat (the pane in view), its own pause holding the game, and close
+// it; Graphics' headset view set to the screen through xem.settings.apply
+// in the session shows the screen alone from the next session frame, and
+// set to the diorama again eases in from it. From map 25's scene (its
+// dialogue auto-advanced to game frame 5080 by xem-headless), the player's
+// own play eases out of the field's diorama over its story movie's first
+// frames, shows the movie on the screen alone and eases back into map 25's
+// diorama after it, every session frame within its time over the switch.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -67,8 +74,9 @@ function shift(before, after, reach = 45) {
 /** An init script (after QUEST) recording, while `window.xrRecording` is
  *  set, what each session frame presented, as the page's frame callback
  *  left it: the frame's time (the view eases by it), the screen's share,
- *  whether the diorama showed, inspection and its eyes from within, and the
- *  game's frames. */
+ *  whether the diorama showed, inspection and its eyes from within, whether
+ *  the screen showed a movie frame rebuilt from what the MDEC decoded, and
+ *  the game's frames. */
 const RECORDER = `
 window.xrTimeline = [];
 window.xrRecording = false;
@@ -80,10 +88,33 @@ window.xrRecording = false;
       if (!window.xrRecording) return;
       const s = window.xem.status();
       window.xrTimeline.push({ time, frame: s.page.xr.frames, share: s.xr.share, diorama: s.xr.diorama, inspecting: s.xr.inspecting,
-        within: s.xr.within, gameFrames: s.loop.gameFrames });
+        within: s.xr.within, movie: s.renderer?.movie ?? false, gameFrames: s.loop.gameFrames });
     });
   };
 }`;
+
+/** What a recorded session frame showed: the diorama alone (D), the
+ *  screen alone (S) or the view easing between the two (E). */
+const phase = (f) => (f.diorama && f.share === 0 ? 'D' : f.share === 1 && !f.diorama ? 'S' : 'E');
+
+/** The recorded session frames whose screen's share moved by more than
+ *  their time allows over the 0.3 s switch. */
+const jumps = (timeline) => timeline.slice(1).filter((f, i) => Math.abs(f.share - timeline[i].share) > (f.time - timeline[i].time) / 1000 / 0.3 + 0.01);
+
+/** How far round to the right of the seat's way (`seat`: its place and its
+ *  turn, radians to the left) a room point stands, about the vertical
+ *  through the seat (degrees). */
+const roundFrom = (seat, p) => {
+  const [dx, dz] = [p[0] - seat.position[0], p[2] - seat.position[2]];
+  const [c, s] = [Math.cos(seat.yaw), Math.sin(seat.yaw)];
+  return Math.atan2(dx * c - dz * s, -dx * s - dz * c) * 180 / Math.PI;
+};
+
+/** `v` turned by the quaternion `q` (x, y, z, w). */
+const turned = ([x, y, z, w], [a, b, c]) => {
+  const t = [2 * (y * c - z * b), 2 * (z * a - x * c), 2 * (x * b - y * a)];
+  return [a + w * t[0] + y * t[2] - z * t[1], b + w * t[1] + z * t[0] - x * t[2], c + w * t[2] + x * t[1] - y * t[0]];
+};
 
 /** Whether two rows of RGBA bytes show the same picture (within a few levels). */
 const same = (a, b) => a.reduce((sum, v, i) => sum + (i % 4 === 3 ? 0 : Math.abs(v - b[i])), 0) / (a.length * 3 / 4) <= 6;
@@ -570,7 +601,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
     }
   });
 
-  test('either hand\'s grabs work over it, the head tracked in depth while they pause it, inspection gives it back at once as it was, the field\'s menu eases to the screen and back, and prayer opens settings over it', { timeout: 600_000 }, async () => {
+  test('either hand\'s grabs work over it, the head tracked in depth while they pause it, inspection gives it back at once as it was, the field\'s menu eases to the screen and back, prayer opens settings beside its pane, and the headset view switched in the session cuts to the screen and eases back', { timeout: 600_000 }, async () => {
     // Field 30 with Fei walked into the room (as the first test), IWER's
     // hands taking the model's poses.
     const state = join(SHOTS, 'xr-diorama-hands.state');
@@ -761,18 +792,18 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       const last = shares.findLastIndex((s) => s === 1);
       const out = menu.slice(0, first).filter((f) => f.share > 0);
       const back = menu.slice(last + 1).filter((f) => f.share < 1 && f.share > 0);
-      const jumps = menu.slice(1).filter((f, i) => Math.abs(f.share - menu[i].share) > (f.time - menu[i].time) / 1000 / 0.3 + 0.01);
       console.log(`the menu over the diorama: ${menu.length} session frames, eased out over ${JSON.stringify(out.map((f) => f.share))}, `
         + `the screen alone in ${last - first + 1}, back over ${JSON.stringify(back.map((f) => f.share))}`);
       assert.ok(menu[0].diorama && menu[0].share === 0, 'the diorama before the menu');
       assert.ok(out.length >= 1 && back.length >= 1, `eased each way, not cut: ${JSON.stringify(shares)}`);
       assert.ok(menu.slice(first, last + 1).every((f) => f.share === 1 && !f.diorama), 'the menu on the screen alone');
-      assert.deepEqual(jumps, [], 'the screen\'s share moves by no more than the frames\' time over the 0.3 s switch');
+      assert.deepEqual(jumps(menu), [], 'the screen\'s share moves by no more than the frames\' time over the 0.3 s switch');
       assert.ok(menu.at(-1).diorama && menu.at(-1).share === 0, 'the diorama again');
 
-      // Prayer hands: the settings panel over the table (where the pane
-      // stands, facing the seat), its own pause holding the game, the
-      // diorama on; again, closed.
+      // Prayer hands: the settings panel beside the pane (its inner edge
+      // beyond the keys beside the pane's right edge, standing on the pane's
+      // lower edge, upright, facing the seat: the pane in view), its own
+      // pause holding the game, the diorama on; again, closed.
       const prayer = async () => {
         await page.evaluate(() => {
           const d = window.xrDevice;
@@ -796,15 +827,121 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       await frames(6);
       const panel = info.xr.panel;
       const pane = info.xr.space?.pane;
-      console.log(`prayer: settings ${info.xr.settings}, the panel at ${JSON.stringify(panel)}, the pane at ${JSON.stringify(pane)}`);
-      assert.deepEqual([info.xr.settings, info.xr.pauses.settings, info.xr.diorama], [true, true, true], `settings opened over the diorama: ${JSON.stringify(info.xr)}`);
+      const seat = info.xr.seat;
+      const [paneWidth, paneHeight] = info.xr.screen.size;
+      // How far round from the pane's right edge the panel's inner edge
+      // stands (degrees), how high its lower edge stands over the pane's
+      // (metres), and how squarely it faces the seat.
+      const right = turned(panel.orientation, [1, 0, 0]);
+      const normal = turned(panel.orientation, [0, 0, 1]);
+      const inner = panel.position.map((v, i) => v - right[i] * panel.size[0] / 2);
+      const edge = [pane[0] + Math.cos(seat.yaw) * paneWidth / 2, pane[1], pane[2] - Math.sin(seat.yaw) * paneWidth / 2];
+      const offPane = roundFrom(seat, inner) - roundFrom(seat, edge);
+      const above = (panel.position[1] - panel.size[1] / 2) - (pane[1] - paneHeight / 2);
+      const toSeat = [seat.position[0] - panel.position[0], seat.position[2] - panel.position[2]];
+      const facing = (normal[0] * toSeat[0] + normal[2] * toSeat[1]) / Math.hypot(...toSeat);
+      console.log(`prayer: settings ${info.xr.settings}, the panel at ${JSON.stringify(panel)}, the pane at ${JSON.stringify(pane)} (${paneWidth} by ${paneHeight} m); `
+        + `the panel's inner edge ${offPane.toFixed(2)} degrees round from the pane's right edge, its lower edge ${above.toFixed(5)} m over the pane's, facing the seat ${facing.toFixed(6)}`);
+      assert.deepEqual([info.xr.settings, info.xr.pauses.settings, info.xr.diorama], [true, true, true], `settings opened with the diorama: ${JSON.stringify(info.xr)}`);
       assert.equal(await page.evaluate(() => window.xem.panel.visible()), true, 'the panel shows in the session');
       assert.equal(await gameFrames(), opened, 'the settings\' pause holds the game');
-      assert.ok(Math.abs(panel.position[0] - pane[0]) < 1e-3 && Math.abs(panel.position[2] - pane[2]) < 1e-3 && panel.position[1] > pane[1] - 0.25,
-        `the panel stands where the pane floats: ${JSON.stringify(panel)}, the pane ${pane}`);
+      assert.ok(offPane > 9 && Math.abs(above) < 1e-3 && facing > 0.9999 && Math.abs(normal[1]) < 1e-4,
+        `the panel stands beside the pane, beyond its keys, facing the seat: ${JSON.stringify(panel)}, the pane ${pane}`);
       await prayer();
       info = await status(page);
       assert.deepEqual([info.xr.settings, info.xr.pauses.player], [false, false], 'closed again, the player\'s Pause never set');
+
+      // Graphics' headset view switched in the session (as the panel's
+      // Headset card switches it, through the shared settings service): to
+      // the screen, shown alone from the first session frame after it; to
+      // the diorama again, eased in from the screen over the 0.3 s switch
+      // (once the trace carries the camera again) to the diorama alone.
+      await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
+      const current = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      const view = (graphics, view) => page.evaluate(({ graphics, view }) => {
+        const applied = window.xem.settings.apply({ Graphics: { ...graphics, xr: { ...graphics.xr, view } } });
+        return { applied, at: window.xrTimeline.length };
+      }, { graphics, view });
+      await record();
+      await frames(10);
+      const toScreen = await view(current, 'Screen');
+      await frames(30);
+      const toDiorama = await view(current, 'Diorama');
+      await page.waitForFunction((at) => {
+        const t = window.xrTimeline;
+        return t.length > at + 10 && t.slice(-10).every((f) => f.diorama && f.share === 0);
+      }, toDiorama.at, { timeout: 120_000 });
+      const switching = await recorded();
+      const onScreen = switching.slice(toScreen.at, toDiorama.at);
+      const backIn = switching.slice(toDiorama.at);
+      const easedIn = backIn.filter((f) => phase(f) === 'E').map((f) => f.share);
+      console.log(`the headset view switched: to the screen at session frame ${switching[toScreen.at]?.frame} ${JSON.stringify(switching.slice(toScreen.at - 1, toScreen.at + 1))}, `
+        + `the screen alone for ${onScreen.length}; to the diorama at ${switching[toDiorama.at]?.frame}, eased in over ${JSON.stringify(easedIn)}`);
+      assert.deepEqual([toScreen.applied.ok, toDiorama.applied.ok], [true, true], `both switches acknowledged: ${JSON.stringify([toScreen.applied, toDiorama.applied])}`);
+      assert.ok(toScreen.at > 0 && switching.slice(0, toScreen.at).every((f) => phase(f) === 'D'), 'the diorama alone before the switch');
+      assert.ok(onScreen.length >= 20 && onScreen.every((f) => phase(f) === 'S' && !f.within), `the screen alone from the first session frame after the switch: ${JSON.stringify(onScreen.slice(0, 3))}`);
+      assert.ok(backIn[0].share === 1 && easedIn.length >= 1 && phase(backIn.at(-1)) === 'D', `the diorama eased in from the screen: ${JSON.stringify(backIn.map((f) => f.share))}`);
+      assert.deepEqual(jumps(backIn), [], 'the share eases in by no more than the frames\' time over the 0.3 s switch');
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('a story movie eases out of the field\'s diorama to the screen and back into it', { timeout: 600_000 }, async () => {
+    // Map 25's scene, its dialogue auto-advanced to game frame 5080 by
+    // xem-headless (as xr-game-smoke.sh's diorama-movie run starts): the
+    // player's own play from there reaches its story movie about 350 game
+    // frames on, 4 280 frames long, and map 25 again after it.
+    const state = join(SHOTS, 'xr-diorama-movie25.state');
+    execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+      input: [{ cmd: 'enter_field', map: 25 }, { cmd: 'auto_advance', dwell: 1 }, { cmd: 'frames', count: 5080 }, { cmd: 'auto_advance', dwell: 0 },
+        { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
+    });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + RECORDER }] });
+    try {
+      const page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      const base64 = readFileSync(state).toString('base64');
+      await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))), base64);
+      const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      const applied = await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, xr: { ...g.xr, view: 'Diorama' } } }), graphics);
+      assert.equal(applied.ok, true, JSON.stringify(applied));
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
+      // Every session frame from the state on (RECORDER), the game running,
+      // until map 25's diorama shows alone again after the movie.
+      await page.evaluate(() => { window.xrTimeline = []; window.xrRecording = true; });
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => {
+        const t = window.xrTimeline;
+        const last = t.findLastIndex((f) => f.movie);
+        return last >= 0 && t.length - last > 20 && t.slice(-10).every((f) => f.diorama && f.share === 0);
+      }, null, { timeout: 480_000, polling: 500 });
+      const timeline = await page.evaluate(() => { window.xrRecording = false; return window.xrTimeline; });
+      await page.evaluate(() => window.xem.setRunning(false));
+      // Map 25's diorama, eased out over the movie's first rebuilt frames,
+      // the movie on the screen alone, eased back into map 25's diorama.
+      const movie = timeline.flatMap((f, i) => (f.movie ? [i] : []));
+      const [first, last] = [movie[0], movie.at(-1)];
+      const before = timeline.slice(0, first).findLastIndex((f) => phase(f) === 'D');
+      const out = timeline.slice(before + 1, first + 30).filter((f) => phase(f) === 'E').map((f) => f.share);
+      const alone = movie.filter((i) => phase(timeline[i]) === 'S').length;
+      const after = timeline.findIndex((f, i) => i > last && phase(f) === 'D');
+      const back = timeline.slice(last + 1, after).filter((f) => phase(f) === 'E').map((f) => f.share);
+      const games = (i) => timeline[i]?.gameFrames;
+      console.log(`map 25's movie: ${timeline.length} session frames; the diorama alone to session frame ${timeline[before]?.frame} (game frame ${games(before)}), `
+        + `eased out over ${JSON.stringify(out)}, ${movie.length} rebuilt movie frames (game frames ${games(first)}-${games(last)}), ${alone} of them on the screen alone, `
+        + `eased back over ${JSON.stringify(back)} to the diorama alone from session frame ${timeline[after]?.frame} (game frame ${games(after)})`);
+      assert.ok(before >= 0 && first > before, 'map 25\'s diorama before the movie');
+      assert.ok(out.length >= 1, `eased out of the diorama: ${JSON.stringify(timeline.slice(before, first + 3).map(phase).join(''))}`);
+      assert.ok(movie.length >= 100 && alone * 10 >= movie.length * 9, `the movie on the screen alone (${alone} of ${movie.length} rebuilt frames)`);
+      assert.ok(after > last && back.length >= 1, `eased back into the diorama after the movie: ${JSON.stringify(timeline.slice(last, last + 12).map(phase).join(''))}`);
+      assert.deepEqual(jumps(timeline), [], 'the screen\'s share moves by no more than the frames\' time over the 0.3 s switch');
       await page.evaluate(() => window.xem.xr.exit());
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 60_000 });
       assert.deepEqual(page.errors, []);

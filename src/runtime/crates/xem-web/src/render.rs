@@ -37,8 +37,8 @@ pub struct Overlay {
 
 /// The settings panel's place in a headset (as the OpenXR host's): below
 /// the screen (`screen`: its size in metres, as scaled), off it, facing the
-/// player, 55 cm wide; above the diorama's table while it is the view
-/// (`xem_assist::draw::panel`).
+/// player, 55 cm wide; beside the diorama's pane, off it and its keys and
+/// above the table, while the diorama is the view (`xem_assist::draw::panel`).
 pub fn xr_panel_quad(seat: &Seat, settings: &SettingsService, panel_px: (u32, u32), screen: (f32, f32)) -> xem_assist::headset::Quad {
     use xem_assist::draw::Beside;
     let graphics = &settings.settings().graphics;

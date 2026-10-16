@@ -2988,7 +2988,7 @@ and scale (half at twice the depth).
 240 frames of field 12 from the same state as a diorama for two eyes of a
 swaying head, the scale and the turns changing midway, and ends at the
 RAM hash of the same frames drawn by nothing.
-`xem-headless/tests/diorama.rs` qualifies the diorama on the game, its
+`xem-headless/tests/diorama.rs` measures the diorama on the game, its
 harness playing a headset host's part (the view configured as a
 headset's, the diorama its headset view, the session told whether
 first-person inspection shows, each vertical blank presented to a seated
@@ -3018,10 +3018,12 @@ on this machine's lavapipe:
   1 255 floor triangles: their attribute bits 5-7 against the leader's
   flags 8-10), a strip beyond the path's right-hand edge, below where its
   modelled ground ends, that shows the room from the table's right (5 164
-  of 44 442 pixels from 90 degrees at 30 up). The plan's criterion, fewer
-  than 0.5% of the walkmesh's footprint without the scene, holds in
-  fields 1, 12 and 30 and is not met in field 22 (asserted both ways: a
-  change in field 22 fails the test). On the floors the controlled
+  of 44 442 pixels from 90 degrees at 30 up). The qualification's bound,
+  fewer than 0.5% of the walkmesh's footprint without the scene (a step's
+  criterion, not the plan's: the plan asks the missing surfaces measured,
+  handled and documented, as here), holds in fields 1, 12 and 30 and is
+  not met in field 22 (asserted both ways: a change in field 22 fails the
+  test). On the floors the controlled
   character may stand on it holds in all four (asserted): 172 of 817 466
   (0.021%) in Lahan, none of 143 036, 497 227 and 76 639. Counted with the
   camera's floors and the upper layers' pits too, large triangles reaching
@@ -3030,20 +3032,47 @@ on this machine's lavapipe:
   building, between its supports, shows the room from the seat's side at
   30 degrees up; no floor of the walkmesh lies there, and the game models
   no ground under it.
+- `the_scene_covers_a_battles_ground_and_the_world_maps_terrain_seen_from_eight_sides_at_two_heights`:
+  from the same 16 views, the ground the frame shown drew, as the diorama
+  places it (each face at its points before the division; the faces
+  within 45 degrees of level, within the table's volume, a pixel in from
+  its edges). A battle's is its stage, which the game draws as models (the
+  models whose faces reach across more than the table's 0.9 m: the debug
+  battle's two, its floor and the ground about it, 1 504 faces, and the
+  Mountain Path's four, 1 089; a combatant's model parts reach 0.38 m at
+  most and its sprites are no model; a battle's faces of the world's class
+  are effects, shadows and distant scenery), each with its turns running;
+  the world map's is its terrain at the end of Lahan's exit near its
+  target, the world's opaque triangles (11 084, 10 660 of them level; its
+  billboards, clouds, shadows and the sky's bands are quads). Measured:
+  the debug battle none of 1 426 250 pixels, the Mountain Path's battle 10
+  of 1 262 488 (0.001%, at the volume's edge from 225 degrees at 30 up),
+  the world map none of 1 398 533: under the 0.5% bound in all three
+  (asserted). At this resolution the world map's unsealed T-junctions open
+  no crack; its clouds, semi-transparent quads 0.13 to 0.32 m above the
+  terrain at scale 1, are no ground (counted with every level face of the
+  world's class, the room or the wall showed in 5.4% of that footprint,
+  where the clouds lie).
 - `sprites_stand_flat_and_both_eyes_see_one_diorama_apart_along_their_rows`:
   in Lahan (seen from behind the table, where its townspeople stand in
-  view), field 30 and field 12 (from the seat, 640x480 eyes 90 degrees
-  high), 120 presentations to two eyes make one build a game frame (60 for
-  60); the thickest stack of a sprite's parts stands 300 um off its
-  billboard's plane in Lahan (79 parts, 385 lifted) and 100 um in fields
-  30 and 12 (`DioramaStats::thickest`): 2D stays 2D; each eye of the pair
-  shows exactly what it shows presented alone (0 bytes differ), one
-  diorama through two views; and in Lahan, where the sprites stand apart,
-  each of their 54 rows holds as many sprite pixels in either eye (a
-  billboard's row lies at one depth before both). In field 30 (89 of 107
-  rows) and field 12 (44 of 50) characters stand one behind another and
-  behind furniture, so each eye sees another part of the farther one (up
-  to 8 pixels a row; not asserted there).
+  view), field 30, field 12, the debug battle on foot and the Mountain
+  Path's random battle (each with its turns running) and the world map on
+  foot at the end of Lahan's exit (at 400%: at 100% its walker spans 5 rows
+  of an eye) (from the seat, 640x480 eyes 90 degrees high), 120
+  presentations to two eyes make one build a game frame (60 for 60; 120
+  for 120 in the battles, which draw a frame every blank); the thickest
+  stack of a sprite's parts stands 300 um off its billboard's plane in
+  Lahan (79 parts, 385 lifted) and the debug battle (30, 187), 400 um in
+  the Mountain Path's battle (40, 23), 200 um on the world map (16, 13) and
+  100 um in fields 30 and 12 (`DioramaStats::thickest`): 2D stays 2D; each
+  eye of the pair shows exactly what it shows presented alone (0 bytes
+  differ), one diorama through two views; and in Lahan, where the sprites
+  stand apart, each of their 54 rows holds as many sprite pixels in either
+  eye (a billboard's row lies at one depth before both). In field 30 (89
+  of 107 rows) and field 12 (44 of 50) characters stand one behind another
+  and behind furniture, so each eye sees another part of the farther one
+  (up to 8 pixels a row; not asserted there); the battles' rows (25 of 25,
+  84 of 84) and the world map's (22 of 22) were alike (recorded).
 - `the_pane_holds_the_interface_as_the_flat_frame_draws_it`: beside the
   diorama a view showing the screen from the same trace, and one from the
   trace without what each frame draws before its scene or projects behind
@@ -3104,23 +3133,26 @@ Throughout, between two presentations the screen's share moves by no
 more than the time passed over the 0.3 s switch (but where the headset
 view changes, the device's own picture shows or inspection takes the
 eyes), and the diorama is drawn at no more than one minus it. The
-harness runs 91 s on three threads (the suite profile).
+harness runs 242 s on three threads (the suite profile, the machine
+shared with other builds).
 
 Not done or not measured (the headsets' own: [In a headset](#in-a-headset)):
 the pane's place is a first choice, not one tried by anyone seated; HD-2D
 effects per eye were not attempted (What it does not draw, above, says
 why); battles were reviewed in four (the debug battle on foot and in
 Gears, the Mountain Path's random battle, a Gear battle at map 414) and
-the world map in the vehicle boot mode 3 begins in, not their scripted
-scenes (an event battle's, the world map's) nor the world map walking,
-on its sea or in its other vehicles; the table's slow settling on the
+measured in two (on foot: the debug battle and the Mountain Path's, Tests
+above), and the world map in the vehicle boot mode 3 begins in and on foot
+at Lahan's exit (measured there), not their scripted scenes (an event
+battle's, the world map's) nor walking on the world map, on its sea or in
+its other vehicles; the table's slow settling on the
 ground under a target in flight is a first choice (comfort not measured);
 the one-sided rule drops a double-sided face the game showed from
 its front once an eye sees it from behind; surfaces the game never models
-stay holes, and the plan's criterion for them is not met in field 22: a
-strip of floor the party may not walk shows the room in 1.2% of the
-walkmesh's footprint there, more than 0.5% (measured in four fields: Tests
-above), and the room shows through the gap under Lahan's raised
+stay holes, beyond the qualification's 0.5% bound in field 22: a strip of
+floor the party may not walk shows the room in 1.2% of the walkmesh's
+footprint there (measured in four fields, two battles and on the world
+map: Tests above), and the room shows through the gap under Lahan's raised
 building, where no floor lies; on the world map's pane 21 pixels of its
 compass cone's edge are one 15-bit step off the flat frame, the cause not
 established; the world map's distant terrain lies beyond the volume at
@@ -3158,6 +3190,11 @@ start does.
   and passthrough (off; its row shows only where the headset can show the
   room: [The room](#the-room-passthrough-and-immersive-ar)). The settings
   service validates them (`diorama scale must be 25-400 percent`, ...).
+  Agents change them through the same service, as the panel's rows do:
+  `settings_apply` with a `Graphics` block on a headset's `--control`
+  (`xem-desktop --xr --control`) and `xem.settings.apply` in a browser,
+  answered with the acknowledged settings; the OpenXR smoke and IWER switch
+  the view so in a session (Headset qualification).
   Two-hand scaling sets the scale too ([Scaling](#scaling)). Reset diorama
   puts the scale, place and turns back (the view, the screen and
   passthrough stay). The screen's distance
@@ -3205,13 +3242,26 @@ start does.
   look as large from the seat as the screen's do from 2.5 m
   (`draw::key_scale` from the pane edge's distance), their columns standing
   on the pane's lower edge where they are taller than the pane; and the
-  settings panel where the pane floats, its lower edge there (over the pane
-  while it shows: the game is paused), as wide seen from the seat as below
-  the screen (`draw::panel`). The keys beside the pane look 0.72 to 1.19
-  times as large as the screen's from 2.5 m over the settings' range of
-  height, distance and tilt (the screen's own, off its middle, 0.81-0.83),
-  the HUD 0.9995 to 1.0000 times as large as on the default screen, and
-  both the same at every scale.
+  settings panel beside the pane on its right (`draw::panel`, both hosts):
+  its inner edge in the pane's plane beyond the column of keys there (at
+  the largest scale the pane's edge gives them, for a picture no taller
+  than wide), 4 degrees further round as seen from the seat, its lower
+  edge on the pane's (so above the table's volume), upright and turned
+  about that edge to face the seat, as wide seen from the seat as below the
+  screen. All of it lies further round than the pane and its keys, so the
+  game's interface stays in view while the panel shows (Phase 5's panel
+  outside the game's presentation). The keys beside the pane look 0.72 to
+  1.19 times as large as the screen's from 2.5 m over the settings' range
+  of height, distance and tilt (the screen's own, off its middle,
+  0.81-0.83), the HUD 0.9995 to 1.0000 times as large as on the default
+  screen, and both the same at every scale. With the default table the
+  panel's middle stands 38.4 degrees right of the seat's way and 21.2 up
+  (at (0.707, 0.442, -0.893) for OpenXR's 880x1120 panel, 0.505 m wide);
+  over the settings' range of height, distance and tilt it stands 4.22
+  degrees or more off the pane and 1.33 or more off its keys as seen from
+  the seat (a vertical gap of 4 degrees round narrows towards the zenith,
+  where a table above the head and near it puts the pane), its middle 28.6
+  to 84.0 degrees round.
 - **Aiming** at the diorama: the pointer source's ray meets the pane (its
   pixels are the screen's: menus, dialogue, choices, battle lists and the
   keys; walking, the pane shows no floor, so a pinch there walks nowhere and
@@ -3276,7 +3326,8 @@ start does.
   taken as the frame's line is printed, after its presentation and
   drawing, so a slow frame's eases by more than its `wall_us=` shows),
   `builds=`, `seat=` (its place; its turn,
-  radians), `resets=` and `recenters=`, and an `event
+  radians), `resets=` and `recenters=`, `pane=` (the pane's middle while
+  the diorama shows, beside `panel=`, the settings panel's), and an `event
   reference_space_change` line; a capture in the diorama saves each eye's
   diorama picture beside it (`left-diorama.png`, `right-diorama.png`) and
   the pane (`pane.png`), and prints a `capture pane` line (the headset
@@ -3326,8 +3377,11 @@ portrait, 8% of the pane: the window's body is translucent) clear of the
 texels' edges shows that texel's colour, within 2 levels for 98% of at
 least 100 such pixels (measured: all of 311 and 301, at 0 levels). With
 the gaze scripted, prayer hands at headset frame 60 open the settings
-panel above the table (its quad layer shown from frame 61 to 92, the game
-held) and a pinch on its Close closes it, and a pinch through the table
+panel beside the pane (its quad layer shown from frame 61 to 92, the game
+held; its middle at (0.707, 0.442, -0.893), the pane's at (0, 0.323,
+-1.050), 22.4 degrees round from the pane's right edge and 38.4 from its
+middle as seen from the seat: off it) and a pinch on its Close closes it,
+and a pinch through the table
 at the world point (88.67, 0, -55.33) of field 30 walks Fei there
 (moving, then arrived). Its battle and world map runs show them as
 dioramas: the debug battle on foot (Start on the selector's defaults, then
@@ -3368,8 +3422,18 @@ gives the diorama back on the next frame at the scale and table it had
 (1.408385e-3 m a unit, the table's centre at (0, -32, 90) as before); a
 pinch through the table walks (`moving` from 422), the underhand grab
 stops it (`stopped` from 430) and none restarts to the run's end; prayer
-hands show the settings panel over the table for 30 frames, the game held
-(the panel's middle at (0, 0.417, -1.050), above the table's far edge).
+hands show the settings panel beside the pane for 30 frames, the game
+held (its middle where the walk run's stood). From the same state with the
+diorama as the view, an agent's `settings_apply` through `--control` sets
+Graphics' headset view to the screen once the session has drawn 100
+frames and to the diorama again at 200, each answered with the settings
+it made: from the first headset frame after the first (101) the screen
+shows alone (`xr_view=screen`, no diorama, the screen's share 1), at
+once; after the second the view is the diorama again (`xr_view=diorama`),
+the screen showing on for three frames until the frames carry their
+camera records, then the diorama eases in over five (0.835 to 0.165) to
+the diorama alone from frame 210, each step within its time over the
+0.3 s switch.
 With the diorama as the view from boot, the title movie's 308 rebuilt
 frames show on the screen alone at the screen's span, 210x142 for
 320x216, and the title (field 490) on the screen. Its fallback runs,
@@ -3445,17 +3509,28 @@ screen's share 0) on the first session frame after that, at 150%, its
 room from the world the same in every number (each session frame
 recorded as the page's frame callback left it); the field's menu, opened
 and closed through the automation (Menu, then Cancel once its commands
-take the input), takes the screen's share from 0 to 1 over three session
-frames (0.30, 0.62, 0.94), shows on the screen alone (151 session
-frames) and gives the diorama back over three (0.86, 0.59, 0.30), each
-step within its frames' time over the 0.3 s switch (inspection on at
-session frame 305, off at 342, in the final run); prayer hands open
-settings over the
-diorama (the diorama shown, the settings' pause holding the game), the
-panel standing where the pane floats (its middle over the pane's within a
-millimetre across the floor, both 1.05 m ahead of the seat on its axis,
-0.319 m and 0.323 m up), and prayer again closes them, the player's Pause
-never set.
+take the input), takes the screen's share from 0 to 1 over two session
+frames (0.46, 0.91), shows on the screen alone (124 session frames) and
+gives the diorama back over three (0.86, 0.55, 0.19), each step within
+its frames' time over the 0.3 s switch (inspection on at session frame
+307, off at 344, in the final run, the session drawing 6.8 frames a
+second on a loaded machine); prayer hands open settings beside the
+diorama's pane (the diorama shown, the settings' pause holding the game),
+the panel's inner edge 9.93 degrees round from the pane's right edge as
+seen from the seat (beyond the keys' place), its lower edge on the pane's
+(within 0.00001 m), upright and facing the seat (its middle at (0.703,
+0.335, -0.898), 0.492 m wide), and prayer again closes them, the
+player's Pause never set; then Graphics' headset view set to the screen
+through `xem.settings.apply` shows the screen alone from the next session
+frame (560; the diorama alone on 559) for 33 frames, and set to the
+diorama again eases in from it over three (0.81, 0.48, 0.13) to the
+diorama alone. Its fourth test plays map 25's scene from a state
+`xem-headless` saved at game frame 5080 (its dialogue auto-advanced, as
+the OpenXR smoke's movie run starts): the diorama alone shows to session
+frame 137, eases out over the story movie's first rebuilt frame (0.41),
+1 959 of its 1 960 rebuilt frames show on the screen alone, and map 25's
+diorama eases back in over three session frames (0.89, 0.48, 0.08), every
+session frame within its time over the 0.3 s switch.
 `xem-headless/tests/gestures.rs`
 `through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none`
 (field 30, the table placed from the frame's own camera record as a
@@ -3485,6 +3560,10 @@ on the screen, the pane, keys, HUD and panel outside the volume and the
 same at every scale, the keys as large as the screen's over the settings'
 range of height, distance and tilt, the HUD as large as on the default
 screen within 1% and the panel as wide as below the screen within 1%,
+the panel beside the pane (`with_the_diorama_the_settings_panel_stands_beside_its_pane_and_keys_above_the_table_facing_the_seat`:
+above the volume, upright and facing the seat, its lower edge on the
+pane's, 4 degrees or more round from the pane and its 1 to 10 keys for
+four picture shapes, from two seats, over the settings' range),
 a ray through the table becoming the world's, the seat, and the shared
 reference handler cancelling a grab in progress, ending scaling and
 letting a bout's stick go (`xem-assist`); the pane upright above the far
@@ -3498,20 +3577,20 @@ Not done or not measured: on Monado's simulated
 HMD `monado-ctl -c` delivers the event but the head's poses do not jump
 (nothing visible moves LOCAL there), and no controller binding recentres
 by default; comfort is not measured (no people tests) and nothing ran on a
-Quest; a Gear battle was not shown as a diorama in a headset (the review
-camera's captures only: Cross through the debug Gear battle traps the game
-module, an open issue of the module, not of the view), nor the world map
-walking; marks are drawn over the diorama whatever stands in front of them;
+Quest; a Gear battle was not shown as a diorama in a headset (map 414's in
+the review camera's captures only; the smoke plays the debug Gear battle,
+nothing pressed in it, on the screen view), nor the world map walking;
+marks are drawn over the diorama whatever stands in front of them;
 a ray through the table meets the floor through scenery standing in front
 of it (no depth test: a floor behind a wall can be pointed at); the HUD's
 place and size beside the pane are checked by the unit test alone, not in
 a host's eyes; the browser's pane's pixels are not checked in IWER (the
 OpenXR smoke checks field 12's dialogue on them); in IWER the diorama's
-transitions ran for inspection and the field's menu only (a battle's, the
-world map's and a story movie's ran on Monado and in `xem-headless`'s
-harness) and no walk was stopped by inspection (Monado's hands run and
-the harness stop one), and the headset view switched in a session in the
-harness alone; the
+transitions ran for inspection, the field's menu, map 25's story movie
+and Graphics' headset view switched in the session (a battle's and the
+world map's ran on Monado and in `xem-headless`'s harness), and no walk
+was stopped by inspection there (Monado's hands run and the harness stop
+one); the
 paused head's motion parallax between two captures is recorded, not
 checked: it depends on how far the simulated head, turning as it moves,
 went between them (no band of rows matched in one run, 12 to 16 pixels
@@ -3959,9 +4038,10 @@ Headset class (Low tier, depth of field off unless enabled).
   diorama runs check the diorama in field 30: depth in the eyes'
   disparity, Recenter and Monado's recentring of LOCAL (`monado-ctl -c`)
   putting a moved seat back at its origin, the RAM against `xem-headless`,
-  the settings panel above the table opened and closed, and a pinch
-  through the table walking Fei; and in field 12 the dialogue on the pane
-  in both eyes ([In a headset](#in-a-headset)). Its
+  the settings panel beside the pane opened and closed, a pinch
+  through the table walking Fei and an agent's `settings_apply` switching
+  the headset view to the screen and back; and in field 12 the dialogue on
+  the pane in both eyes ([In a headset](#in-a-headset)). Its
   saves run plays the player's own game (no session log) from field 30,
   a state `xem-headless` saved that an agent's `--control` command loads
   at the first headset frame: prayer hands open Settings, pinches on the
@@ -4635,15 +4715,15 @@ Phase 8 item 4 for that camera mode).
 | A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
 | Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
-| The diorama: transitions | in all thirteen runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`): from boot into fields, from the debug battle's selector into its battle, into the world map; field 30's menu, the Mountain Path's random battle and its end, and Lahan to the world map and a field from it, each from the diorama to the screen and back to a diorama (the battle's, the world map's, the field's), each way through frames between the two; map 25's story movie on the screen between its field's dioramas; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had | the underhand grab over the diorama at 150%: from within on the first session frame after it, the diorama back alone on the first after the next (every session frame recorded), at 150%, its room from the world unchanged; field 30's menu through the automation: from the diorama to the screen over three session frames, the menu on the screen alone, back over three, each step within its time over 0.3 s | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, map 25's story movie out and back, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; the headset view set to the screen in a session, the screen at once, and to the diorama again, eased in; `ps1.rs`: a menu's and a 24-bit movie frame's screen after a diorama, eased (and inspection's through `present_diorama`, a path the hosts do not take); after inspection, the table easing on from where it stood |
+| The diorama: transitions | in all thirteen runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`): from boot into fields, from the debug battle's selector into its battle, into the world map; field 30's menu, the Mountain Path's random battle and its end, and Lahan to the world map and a field from it, each from the diorama to the screen and back to a diorama (the battle's, the world map's, the field's), each way through frames between the two; map 25's story movie on the screen between its field's dioramas; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had; an agent's `settings_apply` through `--control` in field 30: the screen alone from the first frame after it, at once, and the diorama eased in again from the screen over five frames (`xr_view=`, `diorama=`, `share=`) | the underhand grab over the diorama at 150%: from within on the first session frame after it, the diorama back alone on the first after the next (every session frame recorded), at 150%, its room from the world unchanged; field 30's menu through the automation: from the diorama to the screen over two session frames, the menu on the screen alone, back over three, each step within its time over 0.3 s; map 25's story movie from the state at game frame 5080: eased out, 1 959 of its 1 960 rebuilt frames on the screen alone, eased back over three; Graphics' headset view set through `xem.settings.apply` in the session: the screen alone from the next session frame, the diorama eased in again over three | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, map 25's story movie out and back, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; the headset view set to the screen in a session, the screen at once, and to the diorama again, eased in; `ps1.rs`: a menu's and a 24-bit movie frame's screen after a diorama, eased (and inspection's through `present_diorama`, a path the hosts do not take); after inspection, the table easing on from where it stood |
 | The diorama: paused head tracking | the left hand's Pause in field 30: 30 head poses in 30 frames, one game frame, 16.1% of the left eye changed between two captures, each pair in depth (disparity 10 to 19 pixels, far rows to near) | the left hand's Pause: the head moved 10 cm, the rows across the table shift by their depth (38 to 23 points, near to far), the game's clock still | |
 | The diorama: either hand's grabs | in field 30 the left hand's Pause grab pauses and resumes, both hands' together toggle once, the right hand's resumes; a sideways grab, a fist turned while closed and a hand found closed toggle nothing (its loss pauses, the right hand's Pause resumes); the diorama shown in every frame of them | the left hand's grab pauses and resumes, both hands' toggle once, the right hand's resumes, a sideways grab and a turned fist count nothing; the diorama on | the screen's (above) |
 | The diorama: inspection stops a walk | a pinch through the table walks, the underhand grab stops it (`stopped`) and none restarts to the run's end (the player's own play) | | `diorama.rs`: stopped, the character where it stopped 120 blanks on |
 | The diorama: two-hand scaling owns both hands | 252% spread and 151% contracted, each committed once: only the scaling's gestures, no pause, press or walk, the camera's target still and its room point, the table's anchor, within 0.03 mm, a key beside the pane one width ([Scaling](#scaling)) | gathered hands 20 to 50 cm apart: 2.52 live, committed once, the anchor within a millimetre, no pause or pinch ([Scaling](#scaling)) | `headset`'s scaling tests ([Scaling](#scaling)) |
-| The diorama: two-hand app controls | prayer hands show the settings panel over the table (its middle at (0, 0.417, -1.05)), the game held, the diorama on; a pinch on its Close (the walk run) or prayer hands again (the hands run) close it | prayer hands open settings over the diorama, the panel standing where the pane floats (both 1.05 m ahead on the seat's axis), its own pause holding the game; prayer again closes them | `draw`'s layout test: the panel outside the volume, as wide seen from the seat as below the screen |
+| The diorama: two-hand app controls | prayer hands show the settings panel beside the pane (its middle at (0.707, 0.442, -0.893), 22.4 degrees round from the pane's right edge as seen from the seat: `panel=`, `pane=`), the game held, the diorama on; a pinch on its Close (the walk run) or prayer hands again (the hands run) close it | prayer hands open settings beside the diorama's pane (`status().xr.panel`: its inner edge 9.93 degrees round from the pane's right edge, its lower edge on the pane's, facing the seat), its own pause holding the game; prayer again closes them | `draw`'s layout tests: the panel outside the volume, as wide seen from the seat as below the screen, beside the pane 4 degrees or more round from it and its keys |
 | The diorama: recentring | the app's Recenter at 60 and 220 puts the seat at the head, `monado-ctl -c` (at 103) back at LOCAL's origin | the player's Recenter with the head turned 30 degrees: the table in front again; IWER's `recenter()` (`reset`): the seat at the origin, the first picture | `headset::reference_changed`, `GameView::recenter_diorama` ([In a headset](#in-a-headset)) |
-| The diorama: sprite planes and both eyes | each capture's disparity grows from the far rows to the near, each eye showing its own diorama picture in the renderer's colours (0 levels off) | moving the head shifts the rows by depth; VR and AR sessions begun at one head place one table | `diorama.rs`: one build a game frame for both eyes, each eye of a pair as it is alone (0 bytes differ), the thickest stack of a sprite's parts 300 um off its billboard (Lahan), Lahan's sprite rows alike in both eyes; `ps1.rs`: one upright sprite in both eyes, apart by its disparity only; split sprites in the game's order from five sides |
-| The diorama: holes | | | `diorama.rs`: of the walkmesh's footprint (every actor layer's floors), seen from 16 sides and heights, 0.053% without the scene in Lahan and none in fields 12 and 30 (under 0.5%); 1.2% in field 22, where the plan's 0.5% is not met (a strip of floor the party may not walk, beyond where the path's modelled ground ends); of the floors the controlled character may stand on, 0.021% in Lahan and none in the other three |
+| The diorama: sprite planes and both eyes | each capture's disparity grows from the far rows to the near, each eye showing its own diorama picture in the renderer's colours (0 levels off) | moving the head shifts the rows by depth; VR and AR sessions begun at one head place one table | `diorama.rs`: in three fields, the debug battle and the Mountain Path's on foot and the world map on foot, one build a game frame for both eyes, each eye of a pair as it is alone (0 bytes differ), the thickest stack of a sprite's parts 400 um off its billboard at most (the Mountain Path's battle; Lahan's and the debug battle's 300 um), Lahan's sprite rows alike in both eyes; `ps1.rs`: one upright sprite in both eyes, apart by its disparity only; split sprites in the game's order from five sides |
+| The diorama: holes | | | `diorama.rs`: of the walkmesh's footprint (every actor layer's floors), seen from 16 sides and heights, 0.053% without the scene in Lahan and none in fields 12 and 30 (under the qualification's 0.5% bound, a step's criterion); 1.2% in field 22, beyond it (a strip of floor the party may not walk, beyond where the path's modelled ground ends); of the floors the controlled character may stand on, 0.021% in Lahan and none in the other three; of the ground the frame drew, from the same views, none of the debug battle's stage, 0.001% of the Mountain Path battle's and none of the world map's terrain at Lahan's exit |
 | The diorama: masks and effects | the Mountain Path's random battle's entry and end on the screen between the field's diorama and the battle's; the debug battle's and the world map's dioramas ease in from the screen (the transitions row) | | `ps1.rs`: a fade tints the diorama and its pane, not the room; a subtracting interface quad takes its colour off the pane as off the screen; the pictures before the scene paint the wall in the game's order; `diorama.rs`: the random battle's entry and end shown on the screen between the dioramas; HD-2D effects left out, said by the Headset card (`xem-ui/tests/panel.rs`) |
 | The diorama: interface and media | field 12's dialogue on the pane in each eye at its texels (all of 339 and 337 pixels within 2 levels); the title movie on the screen in its own shape | (the pane's pixels not read) | `diorama.rs`: the pane's opaque pixels the flat frame's exactly (field 12's dialogue, the debug battle, the world map's but for 21 pixels of its compass cone's edge, a 15-bit step off: cause not established), the interface drawn after the scene all on it in its colour, all of field 12's and the world map's interface; the movies' frames in their shape; `draw`: keys, HUD and panel outside the volume at a constant size |
 
@@ -4655,7 +4735,9 @@ screen's lower edge as seen from the seat; the larger the screen, the
 lower the panel, its lower edge at most straight down. Its old place
 (0.75 m down, 1.1 m ahead, tilted 25 degrees) covered the default screen's
 lower edge, where the dialogue windows stand, and more of any screen
-scaled larger.
+scaled larger. With the diorama as the view it stands beside the pane on
+its right (`Beside::Table`: [In a headset](#in-a-headset)); it stood
+where the pane floats before, over the game's interface while it showed.
 
 Tests: the runs and tests in the table, and `draw`'s
 `the_settings_panel_and_the_keys_stay_off_the_screen_at_every_scale_and_shape`,
@@ -4667,6 +4749,15 @@ stands at least 3.9 degrees off the screen as seen from the seat (its
 middle at most 75.1 degrees below level), and the keys keep their size,
 stand beside the screen (at least 0.15 degrees off it) and more than a
 degree off the panel; the old place overlaps the default screen.
+`with_the_diorama_the_settings_panel_stands_beside_its_pane_and_keys_above_the_table_facing_the_seat`
+lays out the diorama's pane for the same four picture shapes with 1 to 10
+keys beside its right edge, from two seats, the table at the ends and the
+middle of the settings' height (-1 to 0.3 m), distance (0.3 to 2 m) and
+tilt (0 to 45 degrees), with both panels: the panel stands above the
+table's volume, upright and facing the seat, its lower edge on the
+pane's, all of it 4 degrees or more round from the pane and its keys
+(4.22 degrees of view or more off the pane, 1.33 or more off a key),
+its middle 28.6 to 84.0 degrees right of the seat's way.
 `the_panel_covers_the_screen_only_where_its_lower_edge_stands_over_sixty_degrees_down`
 finds where the room below the screen runs out, a screen 2.5 m ahead
 growing in 0.1 degree steps of its lower edge: OpenXR's panel keeps its
@@ -4704,18 +4795,21 @@ browser). The settings' larger screens at their nearest reach that
 two-hand scaling at its largest, 3 times: a 4 m screen at the default
 2.5 m with a 4:3 picture (61 degrees) or a 4.5 m one with the field's
 320x224 (62 degrees); the default 3 m screen spread 3 times keeps its
-gap (at most 53.5 degrees). With the diorama as the view the panel stands
-over the pane while it shows, the game paused ([In a
+gap (at most 53.5 degrees). With the diorama as the view the panel
+stands beside the pane, 4 degrees round from its keys as seen from the
+seat, which narrows to 1.33 degrees of view where a table set near and
+above the head raises the pane towards the zenith ([In a
 headset](#in-a-headset)). The diorama's rows: inspection and the diorama
 hand the eyes over at once each way, without a crossfade, and so does the
 headset view set to the screen in a session (set to the diorama, the view
-eases in); the fallbacks to the screen are the ones eased. A battle's,
-the world map's and a story movie's transitions ran on Monado and in
-`xem-headless`'s harness, not in IWER (inspection's and the field menu's
-there), the headset view switched in a session in the harness alone, and
-no Gear battle nor the world map walking as a diorama in a headset (the
-module traps in the first: [Diorama](#diorama)). Holes are not within
-the plan's 0.5% of the walkmesh's footprint in field 22 (1.2%:
+eases in); the fallbacks to the screen are the ones eased. A battle's and
+the world map's transitions ran on Monado and in `xem-headless`'s
+harness, not in IWER (inspection's, the field menu's, a story movie's and
+the headset view switched in the session there, the last on Monado too),
+and no Gear battle nor the world map walking as a diorama in a headset
+(map 414's Gear battle in the review camera's captures only). Holes
+exceed the qualification's 0.5% bound (a step's criterion, not the
+plan's) of the walkmesh's footprint in field 22 (1.2%:
 [Diorama](#diorama)); holes, sprite planes and the pane's equality with
 the flat frame are measured in the harness (the renderer a headset's
 eyes are drawn by), not in a headset's captures, and IWER's checks read

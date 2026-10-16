@@ -1,4 +1,4 @@
-//! The seated diorama qualified on the original game (docs/runtime.md,
+//! The seated diorama measured on the original game (docs/runtime.md,
 //! Headset qualification; local only: it needs the user's disc 1 and a game
 //! module build; the GPU is whatever wgpu finds, lavapipe in the runtime
 //! shell). A harness plays a headset host's part, as `xr_play` and the
@@ -9,20 +9,27 @@
 //! from within the scene through `present_headset`, the device's own
 //! pictures through `away`).
 //!
-//! - Holes: in fields 1, 12, 22 and 30, seen from eight sides at two
-//!   heights, the walkmesh's footprint on the table (every actor layer's
-//!   floors within the table's volume as each eye sees it) where the eye
-//!   shows the room around the table or the backdrop's wall instead of the
-//!   scene: fewer than 0.5% of its pixels in fields 1, 12 and 30, and of the
-//!   floors the controlled character may stand on in all four; in field 22
-//!   more (measured: a strip of floor the party may not walk, beyond where
-//!   the path's modelled ground ends), the plan's criterion not met there.
-//! - Sprites and eyes: in Lahan and fields 30 and 12 the thickest stack of
-//!   a sprite's parts stands within a millimetre of its billboard's plane;
-//!   two eyes share each game frame's one build, each showing exactly what
-//!   it shows presented alone; where the sprites stand apart (Lahan's
-//!   townspeople seen from behind the table) each of their rows holds as
-//!   many sprite pixels in either eye.
+//! - Holes: seen from eight sides at two heights, a footprint on the table
+//!   (within the table's volume as each eye sees it) where the eye shows
+//!   the room around the table or the backdrop's wall instead of the scene.
+//!   In fields 1, 12, 22 and 30 the walkmesh's (every actor layer's
+//!   floors): fewer than 0.5% of its pixels (the qualification's bound, a
+//!   step's criterion; the plan asks the missing surfaces measured and
+//!   documented) in fields 1, 12 and 30, and of the floors the controlled
+//!   character may stand on in all four; in field 22 more (measured: a
+//!   strip of floor the party may not walk, beyond where the path's
+//!   modelled ground ends), beyond the bound. In the debug battle and the
+//!   Mountain Path's random battle their stage's ground (the models
+//!   reaching across more than the table, their faces within 45 degrees of
+//!   level), and on the world map at the end of Lahan's exit its terrain
+//!   near its target: fewer than 0.5% in all three.
+//! - Sprites and eyes: in Lahan, fields 30 and 12, the debug battle, the
+//!   Mountain Path's random battle and the world map on foot (at 400%) the
+//!   thickest stack of a sprite's parts stands within a millimetre of its
+//!   billboard's plane; two eyes share each game frame's one build, each
+//!   showing exactly what it shows presented alone; where the sprites stand
+//!   apart (Lahan's townspeople seen from behind the table) each of their
+//!   rows holds as many sprite pixels in either eye.
 //! - The pane: field 12's dialogue, the debug battle's interface and the
 //!   world map's are on the pane exactly as the flat frame draws them where
 //!   they are opaque (but for 21 pixels at the world map compass cone's
@@ -57,8 +64,8 @@ use xem_core::field::Field;
 use xem_game::{NativeModule, boot};
 use xem_render::Gpu;
 use xem_render::glam::{Mat4, Vec2, Vec3};
-use xem_render::ps1::{AUX_INTERFACE, AUX_MODEL, AUX_SPRITE, AUX_WORLD, DioramaEye, DioramaSpace, GameView, HeadsetEye, HostClass, Table, ViewConfig, XrView};
-use xem_render::xem_gpu::{CameraMode, Trace, TraceOp};
+use xem_render::ps1::{AUX_INTERFACE, AUX_MODEL, AUX_SPRITE, AUX_WORLD, DioramaEye, DioramaSpace, GameView, HeadsetEye, HostClass, Table, ViewConfig, XrView, effective_class, scene_offset};
+use xem_render::xem_gpu::{Camera, CameraMode, Class, Shape, Trace, TraceOp};
 use xem_settings::Graphics;
 
 fn disc() -> Option<PathBuf> {
@@ -287,6 +294,131 @@ impl Host {
     fn context(&mut self) -> String {
         run(&mut self.session, json!({"cmd": "context"}))["kind"].as_str().unwrap_or_default().to_string()
     }
+
+    /// Field 15, the Mountain Path, from its first entrance: walked into
+    /// once the player may (its scripts' dialogue confirmed), Up held until
+    /// its random battle comes, then let go. The frames shown to `eyes` and
+    /// the blank the battle came at.
+    fn mountain_path_battle(&mut self, eyes: &[DioramaEye]) -> (Vec<Shown>, u64) {
+        run(&mut self.session, json!({"cmd": "enter_field", "map": 15, "entry": 0}));
+        let mut shown = Vec::new();
+        for _ in 0..300 {
+            shown.extend(self.steps(10, eyes));
+            match self.context().as_str() {
+                "walk" => break,
+                "dialogue" => {
+                    run(&mut self.session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
+                }
+                _ => {}
+            }
+        }
+        shown.extend(self.steps(60, eyes));
+        run(&mut self.session, json!({"cmd": "hold", "actions": ["Up"]}));
+        let mut came = None;
+        for _ in 0..400 {
+            shown.extend(self.steps(10, eyes));
+            if self.mode() == 2 {
+                came = Some(self.blanks);
+                break;
+            }
+        }
+        let came = came.expect("the random battle comes");
+        run(&mut self.session, json!({"cmd": "hold", "actions": []}));
+        (shown, came)
+    }
+
+    /// Lahan left for the world map on foot along
+    /// tests/reference-inputs/world-map-lahan-exit.json, presented to `eyes`
+    /// until 300 game frames past the route's end: the frames shown.
+    fn lahan_exit(&mut self, eyes: &[DioramaEye]) -> Vec<Shown> {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/world-map-lahan-exit.json");
+        let route: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        run(&mut self.session, json!({"cmd": "schedule", "commands": route["commands"]}));
+        let end = route["frames"].as_u64().unwrap();
+        let mut shown = Vec::new();
+        while self.session.runtime.frames() < end + 300 {
+            shown.extend(self.steps(10, eyes));
+        }
+        shown
+    }
+}
+
+/// The debug battle on foot from boot: Start on the battle selector's
+/// defaults (as the browser's and Monado's battle runs start it), then 500
+/// frames into it.
+fn debug_battle() -> Vec<Value> {
+    vec![
+        json!({"cmd": "frames", "count": 60}),
+        json!({"cmd": "write", "path": "mode_battle_standalone", "value": 1}),
+        json!({"cmd": "boot_mode", "mode": 2}),
+        json!({"cmd": "frames", "count": 900}),
+        json!({"cmd": "press", "buttons": ["start"], "frames": 1}),
+        json!({"cmd": "frames", "count": 500}),
+    ]
+}
+
+/// A scene the diorama shows, reached from boot.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Scene {
+    /// A field entered, 400 frames on (field 30 with Fei walked into the
+    /// room, as the headset runs do).
+    Field(u64),
+    /// The debug battle on foot ([`debug_battle`]).
+    DebugBattle,
+    /// The Mountain Path's random battle ([`Host::mountain_path_battle`]).
+    MountainPath,
+    /// The world map on foot at the end of Lahan's exit route
+    /// ([`Host::lahan_exit`]).
+    WorldMap,
+}
+
+impl Scene {
+    fn name(self) -> String {
+        match self {
+            Scene::Field(1) => "Lahan".into(),
+            Scene::Field(map) => format!("field {map}"),
+            Scene::DebugBattle => "the debug battle".into(),
+            Scene::MountainPath => "the Mountain Path's random battle".into(),
+            Scene::WorldMap => "the world map".into(),
+        }
+    }
+
+    /// Reaches the scene in `host` (presenting to small seated eyes where
+    /// it plays on with frames shown): a battle until its diorama shows
+    /// alone with its turns running (its opening over, its combatants
+    /// standing where the table stands).
+    fn reach(self, host: &mut Host) {
+        let eyes = seated(SMALL, 90.0);
+        match self {
+            Scene::Field(map) => {
+                run(&mut host.session, json!({"cmd": "enter_field", "map": map}));
+                run(&mut host.session, json!({"cmd": "frames", "count": 400}));
+                if map == 30 {
+                    run(&mut host.session, json!({"cmd": "press", "buttons": ["down"], "frames": 60}));
+                    run(&mut host.session, json!({"cmd": "frames", "count": 30}));
+                }
+            }
+            Scene::DebugBattle => {
+                for command in debug_battle() {
+                    run(&mut host.session, command);
+                }
+            }
+            Scene::MountainPath => {
+                host.mountain_path_battle(&eyes);
+            }
+            Scene::WorldMap => {
+                host.lahan_exit(&eyes);
+            }
+        }
+        if matches!(self, Scene::DebugBattle | Scene::MountainPath) {
+            let turns = |s: &Shown| s.diorama && s.screen == 0.0 && s.space.and_then(|space| space.camera.stage).is_some_and(|stage| stage.turns);
+            let mut shown = Vec::new();
+            while !shown.last().is_some_and(turns) {
+                assert!(shown.len() < 3000, "{}: the battle's diorama with its turns running: {}", self.name(), timeline(&shown));
+                shown.push(host.step(&eyes));
+            }
+        }
+    }
 }
 
 /// `trace` without the pictures a frame draws before its scene and those it
@@ -352,18 +484,83 @@ fn floor(field: &Field, layer: usize, t: usize) -> bool {
     field.attributes.get(index).copied().unwrap_or(0) & 0x80_0000 == 0
 }
 
-/// `triangles` of walkmesh layer `layer` in `eye`'s picture, within the
-/// table's volume as the eye sees it, a pixel in from its edges (each pixel
-/// counted with its four neighbours in it).
-fn footprint(field: &Field, layer: usize, triangles: &[usize], space: &DioramaSpace, eye: &DioramaEye) -> Vec<bool> {
-    let (width, height) = (eye.size.0 as usize, eye.size.1 as usize);
+/// Polygons in the table's space.
+type Polygons = Vec<Vec<Vec3>>;
+
+/// `triangles` of walkmesh layer `layer` in the table's space of `space`.
+fn in_table(field: &Field, layer: usize, triangles: &[usize], space: &DioramaSpace) -> Polygons {
     let table_from_world = space.table_from_room() * space.room_from_world;
+    let layer = &field.layers[layer];
+    triangles.iter().map(|&t| layer.corners(t).iter().map(|v| table_from_world.transform_point3(Vec3::new(v.x, v.y, v.z))).collect()).collect()
+}
+
+/// The ground the frame shown drew (its `ops`, through the `camera` it was
+/// drawn with) in the table's space of `space`, as the diorama places it
+/// (each face at its points before the division), each face a triangle
+/// within 45 degrees of level: in a battle its stage's, drawn as models
+/// (those whose faces reach across more than the table's width: the floor
+/// and the ground around it; a combatant's parts are smaller, its sprites
+/// are no model); on the world map its terrain's, the world's opaque
+/// triangles (its billboards, clouds, shadows and the sky's bands are
+/// quads). Also how many faces of models or of the terrain the frame drew,
+/// how many of them had every point before the division and how many of
+/// those are the stage's or the terrain's.
+fn ground(ops: &[TraceOp], camera: &Camera, space: &DioramaSpace) -> (Polygons, (usize, usize, usize)) {
+    let table_from_world = space.table_from_room() * space.room_from_world;
+    let scene = scene_offset(ops);
+    let (mut faces, mut placed) = (0, 0);
+    let mut owned: Vec<(u32, Vec<Vec3>)> = Vec::new();
+    for op in ops {
+        let TraceOp::Draw(p) = op else { continue };
+        let class = effective_class(p, scene);
+        let kept = !p.backdrop && match camera.mode {
+            CameraMode::Battle => class == Class::Model && matches!(p.shape, Shape::Triangle | Shape::Quad),
+            CameraMode::Worldmap => class == Class::World && p.shape == Shape::Triangle && !p.semi,
+            CameraMode::Field => false,
+        };
+        if !kept {
+            continue;
+        }
+        faces += 1;
+        let Some(points) = p.vertices[..p.vertex_count()].iter().map(|v| v.view.and_then(|view| camera.world_point(view))).collect::<Option<Vec<_>>>() else { continue };
+        placed += 1;
+        owned.push((p.owner, points.into_iter().map(|p| table_from_world.transform_point3(Vec3::from(p))).collect()));
+    }
+    // A battle's stage: the models reaching across more than the table.
+    let width = Table::VOLUME.1.x - Table::VOLUME.0.x;
+    let mut reach: std::collections::HashMap<u32, (Vec2, Vec2)> = std::collections::HashMap::new();
+    for (owner, points) in &owned {
+        let span = reach.entry(*owner).or_insert((Vec2::MAX, Vec2::MIN));
+        for p in points {
+            let across = Vec2::new(p.x, p.z);
+            *span = (span.0.min(across), span.1.max(across));
+        }
+    }
+    let stage = |owner: &u32| camera.mode != CameraMode::Battle || reach[owner].1.cmpgt(reach[owner].0 + width).any();
+    let mut ground = Vec::new();
+    for (_, points) in owned.iter().filter(|(owner, _)| stage(owner)) {
+        let triangles: &[[usize; 3]] = if points.len() == 4 { &[[0, 1, 2], [1, 3, 2]] } else { &[[0, 1, 2]] };
+        for t in triangles {
+            let [a, b, c] = t.map(|i| points[i]);
+            if (b - a).cross(c - a).normalize_or_zero().y.abs() >= std::f32::consts::FRAC_1_SQRT_2 {
+                ground.push(vec![a, b, c]);
+            }
+        }
+    }
+    let stage_faces = owned.iter().filter(|(owner, _)| stage(owner)).count();
+    (ground, (faces, placed, stage_faces))
+}
+
+/// `polygons` (in the table's space of `space`) in `eye`'s picture, within
+/// the table's volume as the eye sees it, a pixel in from its edges (each
+/// pixel counted with its four neighbours in it).
+fn footprint(polygons: &[Vec<Vec3>], space: &DioramaSpace, eye: &DioramaEye) -> Vec<bool> {
+    let (width, height) = (eye.size.0 as usize, eye.size.1 as usize);
     let clip_from_table = eye.proj * eye.view * space.room_from_table;
     let (lo, hi) = Table::VOLUME;
     let mut mask = vec![false; width * height];
-    let layer = &field.layers[layer];
-    for &t in triangles {
-        let mut polygon: Vec<Vec3> = layer.corners(t).iter().map(|v| table_from_world.transform_point3(Vec3::new(v.x, v.y, v.z))).collect();
+    for polygon in polygons {
+        let mut polygon = polygon.clone();
         for axis in 0..3 {
             polygon = clip(&polygon, axis, lo[axis], false);
             polygon = clip(&polygon, axis, hi[axis], true);
@@ -425,6 +622,9 @@ fn the_scene_covers_the_walkmesh_seen_from_eight_sides_at_two_heights() {
         let pixels = (SIZE.0 * SIZE.1) as usize;
         let (mut walkmesh, mut walkable) = (Holes::default(), Holes::default());
         let mut by_layer: Vec<Holes> = layers.iter().map(|_| Holes::default()).collect();
+        let polygons: Vec<(Polygons, Polygons)> = layers.iter().enumerate()
+            .map(|(layer, (all, standable))| (in_table(&field, layer, all, &space), in_table(&field, layer, standable, &space)))
+            .collect();
         for pitch in [30.0f32, 60.0] {
             for yaw in (0..8).map(|k| k as f32 * 45.0) {
                 let eye = review(yaw, pitch, 1.1, SIZE);
@@ -433,11 +633,11 @@ fn the_scene_covers_the_walkmesh_seen_from_eight_sides_at_two_heights() {
                 let classes = &pictures.eyes[0].1;
                 let view = format!("{yaw:.0}/{pitch:.0}");
                 let (mut floors, mut walks) = (vec![false; pixels], vec![false; pixels]);
-                for (layer, (all, standable)) in layers.iter().enumerate() {
-                    let mask = footprint(&field, layer, all, &space, &eye);
+                for (layer, (all, standable)) in polygons.iter().enumerate() {
+                    let mask = footprint(all, &space, &eye);
                     by_layer[layer].add(&view, &mask, classes);
                     floors.iter_mut().zip(&mask).for_each(|(a, &m)| *a |= m);
-                    let mask = footprint(&field, layer, standable, &space, &eye);
+                    let mask = footprint(standable, &space, &eye);
                     walks.iter_mut().zip(&mask).for_each(|(a, &m)| *a |= m);
                 }
                 walkmesh.add(&view, &floors, classes);
@@ -483,7 +683,69 @@ fn the_scene_covers_the_walkmesh_seen_from_eight_sides_at_two_heights() {
     }
 }
 
-/// The pixels of a walkmesh footprint over the views that show no scene.
+#[test]
+fn the_scene_covers_a_battles_ground_and_the_world_maps_terrain_seen_from_eight_sides_at_two_heights() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    const SIZE: (u32, u32) = (640, 480);
+    let mut results = Vec::new();
+    for scene in [Scene::DebugBattle, Scene::MountainPath, Scene::WorldMap] {
+        let name = scene.name();
+        let mut host = Host::new(&disc);
+        scene.reach(&mut host);
+        let seat = seated(SMALL, 90.0);
+        let shown = host.steps(40, &seat);
+        let last = shown.last().expect("presented");
+        assert!(last.diorama && last.screen == 0.0, "{name}: the diorama alone shows ({}, {})", last.diorama, last.screen);
+        let space = last.space.expect("the diorama's space");
+        // The ground of the frame the diorama shows, as the game drew it.
+        let frame = host.view.frame();
+        let camera = frame.camera().expect("the frame's camera");
+        assert_eq!(camera, space.camera, "{name}: the frame shown is the one the diorama stands on");
+        let (polygons, (faces, placed, stage)) = ground(frame.newest(), &camera, &space);
+        let pixels = (SIZE.0 * SIZE.1) as usize;
+        let mut holes = Holes::default();
+        for pitch in [30.0f32, 60.0] {
+            for yaw in (0..8).map(|k| k as f32 * 45.0) {
+                let eye = review(yaw, pitch, 1.1, SIZE);
+                let (shown, pictures) = host.present(&[eye], true);
+                assert!(shown.diorama, "{name}: the diorama from {yaw}, {pitch}");
+                let classes = &pictures.eyes[0].1;
+                let mask = footprint(&polygons, &space, &eye);
+                holes.add(&format!("{yaw:.0}/{pitch:.0}"), &mask, classes);
+                if let Some(directory) = std::env::var_os("XEM_DIORAMA_HOLES") {
+                    // Local review pictures: the eye, the ground in green
+                    // (its holes red).
+                    let mut picture = pictures.eyes[0].0.clone();
+                    for i in (0..pixels).filter(|&i| mask[i]) {
+                        let p = &mut picture[i * 4..i * 4 + 4];
+                        if scene_class(classes[i * 4 + 2]) {
+                            (p[1], p[3]) = (p[1].saturating_add(40), 255);
+                        } else {
+                            p.copy_from_slice(&[255, 0, 0, 255]);
+                        }
+                    }
+                    let path = PathBuf::from(&directory).join(format!("holes-{}-{yaw:.0}-{pitch:.0}.png", name.replace([' ', '\''], "-")));
+                    let mut encoder = png::Encoder::new(std::fs::File::create(path).unwrap(), SIZE.0, SIZE.1);
+                    encoder.set_color(png::ColorType::Rgba);
+                    encoder.write_header().unwrap().write_image_data(&picture).unwrap();
+                }
+            }
+        }
+        eprintln!("{name} ({faces} faces of models or the terrain, {placed} with every point before the division, {stage} of them the stage's or the terrain's; \
+            {} ground triangles; {} m a unit): the ground {}; by view (yaw/pitch): {}", polygons.len(), space.scale, holes.summary(), holes.views.join(", "));
+        results.push((name, holes));
+    }
+    for (name, holes) in results {
+        assert!(holes.least >= 1000, "{name}: the ground on the table from every side ({} pixels at least): {}", holes.least, holes.views.join(", "));
+        // Under 0.5% in all three (measured: docs/runtime.md, Diorama).
+        assert!(holes.missing * 200 < holes.total, "{name}: {} of the ground shows no scene: {}", holes.summary(), holes.views.join(", "));
+    }
+}
+
+/// The pixels of a footprint over the views that show no scene.
 #[derive(Default)]
 struct Holes {
     /// The footprint's pixels and those without the scene, over the views.
@@ -517,25 +779,27 @@ fn sprites_stand_flat_and_both_eyes_see_one_diorama_apart_along_their_rows() {
         return;
     };
     const SIZE: (u32, u32) = (640, 480);
-    // Each map, and whether its sprites stand apart in the eyes' view (in
+    // Each scene, and whether its sprites stand apart in the eyes' view (in
     // fields 30 and 12 characters stand one behind another and behind
     // furniture, so each eye sees another part of the farther one).
-    for (map, apart) in [(1u64, true), (30, false), (12, false)] {
+    for (scene, apart) in [(Scene::Field(1), true), (Scene::Field(30), false), (Scene::Field(12), false),
+        (Scene::DebugBattle, false), (Scene::MountainPath, false), (Scene::WorldMap, false)]
+    {
+        let name = scene.name();
         let mut host = Host::new(&disc);
-        run(&mut host.session, json!({"cmd": "enter_field", "map": map}));
-        run(&mut host.session, json!({"cmd": "frames", "count": 400}));
-        if map == 30 {
-            // Fei walked into the room (as the headset runs do).
-            run(&mut host.session, json!({"cmd": "press", "buttons": ["down"], "frames": 60}));
-            run(&mut host.session, json!({"cmd": "frames", "count": 30}));
+        scene.reach(&mut host);
+        if scene == Scene::WorldMap {
+            // At the largest scale (400%), where its walker stands tall
+            // enough on the table to count its rows.
+            host.table = Table { scale: 4.0, ..Table::default() };
         }
         // A headset's field of view, the table whole in both eyes: from the
         // seat, or in Lahan, whose townspeople stand behind its platform
         // seen from the seat, as far from the table's centre behind it.
-        let at = if map == 1 { Vec3::new(0.0, 0.0, 2.0 * centre().z) } else { Vec3::ZERO };
+        let at = if scene == Scene::Field(1) { Vec3::new(0.0, 0.0, 2.0 * centre().z) } else { Vec3::ZERO };
         let eyes = head(at, SIZE, 90.0);
         let eased = host.steps(40, &eyes);
-        assert!(eased.last().is_some_and(|s| s.diorama && s.screen == 0.0), "map {map}: the diorama alone shows");
+        assert!(eased.last().is_some_and(|s| s.diorama && s.screen == 0.0), "{name}: the diorama alone shows");
         // Both eyes share each game frame's one build.
         let before = host.view.diorama_stats().builds;
         let shown = host.steps(120, &eyes);
@@ -558,13 +822,13 @@ fn sprites_stand_flat_and_both_eyes_see_one_diorama_apart_along_their_rows() {
             (y, count(&pair.eyes[0].1), count(&pair.eyes[1].1))
         }).filter(|&(_, l, r)| l + r > 0).collect();
         let unlike_rows: Vec<&(usize, usize, usize)> = rows.iter().filter(|&&(_, l, r)| l.abs_diff(r) > 2.max(l.max(r) / 10)).collect();
-        eprintln!("map {map}: {} builds for {frames} game frames over {} presentations to two eyes; {} sprite parts, {} lifted, the thickest stack {} um; \
+        eprintln!("{name}: {} builds for {frames} game frames over {} presentations to two eyes; {} sprite parts, {} lifted, the thickest stack {} um; \
             the pair's eyes unlike each alone in {unlike:?} bytes; sprite pixels alike on {} of {} rows (unlike: row, left, right {unlike_rows:?})",
             stats.builds - before, shown.len(), stats.sprites, stats.lifted, stats.thickest, rows.len() - unlike_rows.len(), rows.len());
         if let Some(directory) = std::env::var_os("XEM_DIORAMA_EYES") {
             for (eye, (picture, classes)) in pair.eyes.iter().enumerate() {
                 for (what, pixels) in [("picture", picture), ("classes", classes)] {
-                    let path = PathBuf::from(&directory).join(format!("eyes-{map}-{eye}-{what}.png"));
+                    let path = PathBuf::from(&directory).join(format!("eyes-{}-{eye}-{what}.png", name.replace([' ', '\''], "-")));
                     let mut encoder = png::Encoder::new(std::fs::File::create(path).unwrap(), SIZE.0, SIZE.1);
                     encoder.set_color(png::ColorType::Rgba);
                     let shown: Vec<u8> = pixels.chunks(4).flat_map(|p| if what == "classes" { [p[2] * 60, 0, 0, 255] } else { [p[0], p[1], p[2], 255] }).collect();
@@ -572,13 +836,13 @@ fn sprites_stand_flat_and_both_eyes_see_one_diorama_apart_along_their_rows() {
                 }
             }
         }
-        assert_eq!(stats.builds - before, frames, "map {map}: one build a game frame for both eyes");
-        assert!(stats.sprites > 0, "map {map}: sprites on the table");
-        assert!(stats.thickest <= 1000, "map {map}: a sprite's parts within a millimetre of its billboard ({} um)", stats.thickest);
-        assert_eq!(unlike, [0, 0], "map {map}: each eye of the pair shows what it shows alone");
-        assert!(rows.len() >= 20, "map {map}: sprites in both eyes ({} rows)", rows.len());
+        assert_eq!(stats.builds - before, frames, "{name}: one build a game frame for both eyes");
+        assert!(stats.sprites > 0, "{name}: sprites on the table");
+        assert!(stats.thickest <= 1000, "{name}: a sprite's parts within a millimetre of its billboard ({} um)", stats.thickest);
+        assert_eq!(unlike, [0, 0], "{name}: each eye of the pair shows what it shows alone");
+        assert!(rows.len() >= 20, "{name}: sprites in both eyes ({} rows)", rows.len());
         if apart {
-            assert!(unlike_rows.is_empty(), "map {map}: sprite rows alike in both eyes, but {unlike_rows:?}");
+            assert!(unlike_rows.is_empty(), "{name}: sprite rows alike in both eyes, but {unlike_rows:?}");
         }
     }
 }
@@ -591,14 +855,7 @@ fn the_pane_holds_the_interface_as_the_flat_frame_draws_it() {
     };
     let scenes: [(&str, Vec<Value>); 3] = [
         ("field 12's dialogue", vec![json!({"cmd": "enter_field", "map": 12})]),
-        ("the debug battle", vec![
-            json!({"cmd": "frames", "count": 60}),
-            json!({"cmd": "write", "path": "mode_battle_standalone", "value": 1}),
-            json!({"cmd": "boot_mode", "mode": 2}),
-            json!({"cmd": "frames", "count": 900}),
-            json!({"cmd": "press", "buttons": ["start"], "frames": 1}),
-            json!({"cmd": "frames", "count": 500}),
-        ]),
+        ("the debug battle", debug_battle()),
         ("the world map", vec![json!({"cmd": "boot_mode", "mode": 3}), json!({"cmd": "frames", "count": 800})]),
     ];
     let mut results = Vec::new();
@@ -869,33 +1126,8 @@ fn a_random_battle_and_its_end_ease_from_the_fields_diorama_to_the_battles_and_b
         return;
     };
     let mut host = Host::new(&disc);
-    run(&mut host.session, json!({"cmd": "enter_field", "map": 15, "entry": 0}));
     let eyes = seated(SMALL, 90.0);
-    let mut shown = Vec::new();
-    // Until the player walks (the map's scripts may speak first).
-    for _ in 0..300 {
-        shown.extend(host.steps(10, &eyes));
-        match host.context().as_str() {
-            "walk" => break,
-            "dialogue" => {
-                run(&mut host.session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
-            }
-            _ => {}
-        }
-    }
-    shown.extend(host.steps(60, &eyes));
-    // Up until the Mountain Path's random battle comes.
-    run(&mut host.session, json!({"cmd": "hold", "actions": ["Up"]}));
-    let mut came = None;
-    for _ in 0..400 {
-        shown.extend(host.steps(10, &eyes));
-        if host.mode() == 2 {
-            came = Some(host.blanks);
-            break;
-        }
-    }
-    let came = came.expect("the random battle comes");
-    run(&mut host.session, json!({"cmd": "hold", "actions": []}));
+    let (mut shown, came) = host.mountain_path_battle(&eyes);
     // Its party attacks until it ends and the field shows again.
     let mut ended = None;
     let mut next = host.blanks + 300;
@@ -933,16 +1165,9 @@ fn leaving_lahan_for_the_world_map_and_entering_a_field_from_it_ease_between_the
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/world-map-lahan-exit.json");
-    let route: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
     let mut host = Host::new(&disc);
-    run(&mut host.session, json!({"cmd": "schedule", "commands": route["commands"]}));
     let eyes = seated(SMALL, 90.0);
-    let end = route["frames"].as_u64().unwrap();
-    let mut shown = Vec::new();
-    while host.session.runtime.frames() < end + 300 {
-        shown.extend(host.steps(10, &eyes));
-    }
+    let mut shown = host.lahan_exit(&eyes);
     let left = shown.iter().find(|s| s.scene == "worldmap").map(|s| s.blank).expect("the world map");
     // Into a field from the world map.
     run(&mut host.session, json!({"cmd": "enter_field", "map": 1}));

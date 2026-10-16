@@ -31,18 +31,21 @@
 #   Recenter puts the seat at the head, Monado's recentring of LOCAL
 #   (`monado-ctl -c`) reaches the session and puts the seat back at LOCAL's
 #   origin, the game's RAM is xem-headless's, prayer hands open the
-#   settings panel above the table and a pinch on its Close closes it, and
-#   a pinch with the gaze through the table on a floor point walks Fei
-#   there; in field 12 both eyes show the pane above the table with the
-#   game's dialogue on it, in the pane's colours;
+#   settings panel beside the diorama's pane (off it as seen from the seat)
+#   and a pinch on its Close closes it, and a pinch with the gaze through
+#   the table on a floor point walks Fei there; in field 12 both eyes show
+#   the pane above the table with the game's dialogue on it, in the pane's
+#   colours; an agent's settings_apply (--control) switches Graphics' headset
+#   view to the screen in the session, shown at once, and back to the
+#   diorama, eased in from the screen;
 # - hands on the diorama, the player's own play from a field 30 state:
 #   either hand's grabs as on the screen, the diorama showing through them;
 #   the player's Pause holds the game while the head moves, the eyes
 #   following it and seeing the table in depth; the underhand grab looks
 #   from within the scene and gives the diorama back at once at the scale
 #   and place it had; inspection stops a walk through the table under way
-#   and none restarts; prayer hands open and close the settings panel over
-#   the table, the game held; with the diorama as the view the title movie
+#   and none restarts; prayer hands open and close the settings panel
+#   beside the pane, the game held; with the diorama as the view the title movie
 #   (its rebuilt frames in their own shape) and the title show on the
 #   screen; field 30's menu, the Mountain Path's random battle and its end,
 #   and Lahan left for the world map and a field entered from it each go
@@ -225,7 +228,7 @@ echo '{"graphics": {"profile": "Modern"}}' >"$out/config/xenogears-ex-machina/se
 # and 250, the app's Recenter at 60, Monado's recentring once the session
 # has drawn 100 frames, the app's Recenter again at 220. Field 12's dialogue
 # on the pane (from about headset frame 90), captured at 120. Then prayer hands
-# at 60 open the settings panel above the table, a pinch on its Close at 90
+# at 60 open the settings panel beside the pane, a pinch on its Close at 90
 # closes it, and a pinch through the table at a floor point of field 30 (a
 # world point: the gaze aims where the table shows it) walks there.
 echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
@@ -304,12 +307,24 @@ printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/
 # then the diorama again); a pinch through the table at 420 walks, the
 # underhand grab at 422 stops the walk and at 465 gives the diorama back
 # with no walk; prayer hands at 520 and 550 open and close the settings
-# panel over the table.
+# panel beside the pane.
 cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
 echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 "$desktop" --xr --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 600 \
     --xr-hands "100:pause-left,130:pause-left,160:pause-both,190:pause,220:grab-sideways,250:fist-turn,280:fist-reacquire,310:pause,340:inspect-left,380:inspect-left,420:pinch@world:88.67/0/-55.33,422:inspect-left,465:inspect-left,520:prayer,550:prayer" \
     --xr-capture "$out/diorama-hands" --xr-capture-at 110,125 >"$out/diorama-hands.log" 2>"$out/diorama-hands.err"
+# Graphics' headset view switched in the session by an agent, the player's
+# own play from the same state with the diorama as the view: once the
+# session has drawn 100 frames, `settings_apply` through --control sets it
+# to the screen, and at 200 to the diorama again (the run's other graphics
+# settings are the defaults, which the block's missing fields take).
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+for n in 100 200; do
+    for _ in $(seq 600); do grep -q "^xrframe n=$n " "$out/diorama-switch.log" 2>/dev/null && break; sleep 0.1; done
+    view=$([[ $n == 100 ]] && echo Screen || echo Diorama)
+    printf '{"cmd":"settings_apply","change":{"Graphics":{"xr":{"view":"%s"}}}}\n' "$view"
+done | "$desktop" --xr --control --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 320 \
+    >"$out/diorama-switch.log" 2>"$out/diorama-switch.err"
 cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Held rewinds through Settings' pause, from the same state: Back+Start
 # opens Settings at headset frame 200 and Back+LT is held from 205 to 211;
@@ -874,21 +889,43 @@ if line:
         check(len(diffs) >= 100 and within >= 0.98, f"field 12 {side}: {within:.1%} of {len(diffs)} eye pixels on the pane's opaque texels show them within 2 levels")
         print(f"field 12 diorama, {side} eye: the pane ({opaque:.0%} of it opaque) spans {min(xs):.0f}-{max(xs):.0f} x {min(ys):.0f}-{max(ys):.0f}; "
               f"{within:.1%} of {len(diffs)} pixels on its opaque texels within 2 levels (worst {max(diffs, default=255)})")
-# Prayer hands open the settings panel above the table (its quad layer) and
-# a pinch on its Close closes it, the game held meanwhile; then a pinch
-# through the table walks Fei to the floor point gazed at.
+# Where the settings panel's middle (panel=) stands from the diorama's pane
+# (pane=, its middle; 0.6 m wide) as seen from the seat (seat=): degrees
+# round to the right, about the vertical through the seat, from the pane's
+# right edge and from its middle.
+def beside_pane(r):
+    sx, _, sz, yaw = (float(v) for v in r["seat"].replace(";", ",").split(","))
+    def round_to(x, z):
+        dx, dz = x - sx, z - sz
+        return math.degrees(math.atan2(dx * math.cos(yaw) - dz * math.sin(yaw), -dx * math.sin(yaw) - dz * math.cos(yaw)))
+    panel, pane = ([float(v) for v in r[k].split(",")] for k in ("panel", "pane"))
+    edge = (pane[0] + 0.3 * math.cos(yaw), pane[2] - 0.3 * math.sin(yaw))
+    at = round_to(panel[0], panel[2])
+    return at - round_to(*edge), at - round_to(pane[0], pane[2])
+
+# Prayer hands open the settings panel beside the diorama's pane (its quad
+# layer: its middle some 20 degrees or more round from the pane's right
+# edge as seen from the seat, half the panel being 12, the keys beside the
+# pane 6: off the pane, which stays in view) and a pinch on its Close
+# closes it, the game held meanwhile; then a pinch through the table walks
+# Fei to the floor point gazed at.
 rows = records("diorama-walk.log")
 panel = [r for r in rows if r["layers"] == "2"]
 opened = [int(r["n"]) for r in panel]
 check(bool(opened) and 60 <= opened[0] <= 80 and opened[-1] < 100 and len(opened) == opened[-1] - opened[0] + 1,
-      f"prayer hands showed the panel above the table and a pinch on Close closed it: shown {opened[:1]}..{opened[-1:]}")
+      f"prayer hands showed the panel beside the pane and a pinch on Close closed it: shown {opened[:1]}..{opened[-1:]}")
 check(len({r["game_frames"] for r in panel}) == 1, "the game ran while the panel was open")
 check(all(r["diorama"] == "1" for r in panel), "the diorama gave way while the panel was open")
+beside = sorted({beside_pane(r) for r in panel})
+check(bool(beside) and all(edge >= 20 and middle >= 30 for edge, middle in beside),
+      f"the panel beside the pane (degrees round from its right edge and its middle): {beside[:3]}")
 walked = [r["assist"] for r in rows if int(r["n"]) >= 150]
 pinch = [int(r["n"]) for r in rows if "Pinch" in r["gestures"] and int(r["n"]) >= 150]
 check(bool(pinch) and all(r["diorama"] == "1" for r in rows if int(r["n"]) in pinch), f"the pinch did not come while the diorama showed: {pinch}")
 check("moving" in walked and walked[-1] == "arrived", f"the pinch through the diorama did not walk Fei there: {walked[:5]}..{walked[-3:]}")
-print(f"diorama walk: the panel above the table shown {opened[:1]}..{opened[-1:]}; pinch at {pinch}, {walked[:2]}..{walked[-1:]}")
+print(f"diorama walk: the panel beside the pane shown {opened[:1]}..{opened[-1:]}, its middle at {panel[0]['panel'] if panel else '-'}, "
+      f"{beside[0][0] if beside else 0:.1f} degrees round from the pane's right edge, {beside[0][1] if beside else 0:.1f} from its middle; "
+      f"pinch at {pinch}, {walked[:2]}..{walked[-1:]}")
 
 # Save states and time controls: each app operation's line carries the
 # game's vblank and memory hash just after it.
@@ -1152,7 +1189,7 @@ print(f"hands: nothing from the grab in the menu; left, both and right grabs, si
 # depth; the underhand grab looks from within the scene and gives the
 # diorama back at once at the scale and place it had; inspection stops a
 # walk under way and none restarts; prayer hands open the settings panel
-# over the diorama, the game held.
+# beside the pane, the game held.
 def diorama_hands():
     rows = records("diorama-hands.log")
     by = {int(r["n"]): r for r in rows}
@@ -1206,12 +1243,53 @@ def diorama_hands():
         check(back["diorama"] == "1" and back["share"] == "0.000", f"diorama hands: the diorama back at once after the second inspection ({back['diorama']}, {back['share']})")
     panel = [r for r in rows if r["layers"] == "2" and int(r["n"]) >= 520]
     check(20 <= len(panel) <= 40 and len({r["game_frames"] for r in panel}) == 1 and all(r["diorama"] == "1" for r in panel),
-          f"diorama hands: prayer hands showed the settings panel over the diorama for {len(panel)} frames, the game held")
+          f"diorama hands: prayer hands showed the settings panel with the diorama for {len(panel)} frames, the game held")
+    beside = sorted({beside_pane(r) for r in panel})
+    check(bool(beside) and all(edge >= 20 and middle >= 30 for edge, middle in beside),
+          f"diorama hands: the panel beside the pane (degrees round from its right edge and its middle): {beside[:3]}")
     print(f"diorama hands: the diorama from {first}; left, both and right grabs, sideways, turned and reacquired fists as on the screen; paused "
           f"{len(held)} frames, {len({r['head'] for r in held})} head poses, {moved:.1%} of the left eye changed from 110 to 125, the eyes' disparity "
           f"{depths}, the left eye's move {motion}; inspection on {on[:1]}..{on[-1:]}, the diorama back {same(after) if on else '-'}; the walk "
           f"{walked[:3]}..{walked[-1:]} stopped by inspection {looked[:1]}..{looked[-1:]}; the panel {len(panel)} frames, its middle {panel[0]['panel'] if panel else '-'}")
 diorama_hands()
+
+# Graphics' headset view switched by an agent in the session (the
+# diorama-switch run): each settings_apply acknowledged with the settings
+# it made; from the first headset frame after the switch to the screen, the
+# screen alone (xr_view=screen, no diorama, share 1), at once; after the
+# switch back, the diorama view (xr_view=diorama) eases in from the screen
+# over frames between the two, each step within its time over the 0.3 s
+# switch, to the diorama alone.
+def diorama_switch():
+    lines = open(f"{out}/diorama-switch.log").read().splitlines()
+    replies, at, last = [], [], None
+    for line in lines:
+        if line.startswith("xrframe "):
+            last = int(line.split()[1].split("=")[1])
+        elif line.startswith("{"):
+            replies.append(json.loads(line))
+            at.append(last)
+    views = [r.get("settings", {}).get("graphics", {}).get("xr", {}).get("view") for r in replies]
+    check(views == ["Screen", "Diorama"] and all("revision" in r for r in replies) and None not in at,
+          f"diorama switch: settings_apply answered {[r.get('error', v) for r, v in zip(replies, views)]} after headset frames {at}")
+    if len(at) != 2 or None in at:
+        return
+    rows = records("diorama-switch.log")
+    shown = lambda r: r["diorama"] == "1" and r["share"] == "0.000"
+    before = [r for r in rows if at[0] - 10 < int(r["n"]) <= at[0]]
+    screen = [r for r in rows if at[0] < int(r["n"]) <= at[1]]
+    back = [r for r in rows if int(r["n"]) > at[1]]
+    check(len(before) == 10 and all(r["xr_view"] == "diorama" and shown(r) for r in before), f"diorama switch: the diorama alone before the switch: {[(r['n'], r['diorama'], r['share']) for r in before]}")
+    check(len(screen) >= 50 and all(r["xr_view"] == "screen" and r["diorama"] == "0" and r["share"] == "1.000" for r in screen),
+          f"diorama switch: the screen alone from the first frame after the switch: {sorted({(r['xr_view'], r['diorama'], r['share']) for r in screen})}")
+    jumps = [(b["n"], a["share"], b["share"]) for a, b in zip(back, back[1:])
+             if abs(float(b["share"]) - float(a["share"])) > (int(b["presented_us"]) - int(a["presented_us"])) / 1e6 / 0.3 + 0.002]
+    eased = [r["share"] for r in back if 0.0 < float(r["share"]) < 1.0]
+    check(bool(back) and back[0]["xr_view"] == "diorama" and back[0]["share"] == "1.000" and eased and not jumps and len(back) >= 20 and all(shown(r) for r in back[-10:]),
+          f"diorama switch: back to the diorama, eased in from the screen: first {back[0]['share'] if back else '-'}, eased over {eased}, jumps {jumps}")
+    print(f"diorama switch: settings_apply after headset frames {at}; the screen alone from {screen[0]['n'] if screen else '-'} for {len(screen)} frames; "
+          f"back to the diorama from the screen over {eased}, alone from {next((r['n'] for r in back if shown(r)), '-')}")
+diorama_switch()
 
 # The title movie and the title with the diorama as the view: on the screen,
 # the movie's rebuilt frames at the screen's span in their own shape.

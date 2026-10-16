@@ -472,8 +472,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // setting's scale), else the screen.
         assist.scaling.view(matches!(xr_view(&graphics), XrView::Diorama(_)).then_some(graphics.xr.diorama_scale));
         // The settings panel: below the screen (as large as two-hand scaling
-        // makes it, in the last picture's shape), off it, or above the
-        // diorama's table (which the Original renderer never shows).
+        // makes it, in the last picture's shape), off it, or beside the
+        // diorama's pane, off it and its keys, above the table (which the
+        // Original renderer never shows).
         let panel = {
             let width = f32::from(graphics.xr.width_cm) / 100.0 * assist.scaling.scale;
             let screen = (width, width * presented_size.1 as f32 / presented_size.0 as f32);
@@ -1046,8 +1047,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // Fast-forward's factor as the session runs it (a fixed rate the
         // host cannot reach is paced at the rate it does), 0 when off.
         let factor = if fast_forward { game.session.frame_factor().map_or("uncapped".to_string(), |f| f.to_string()) } else { "0".to_string() };
-        // Where the settings panel stands (its middle, in LOCAL).
+        // Where the settings panel stands (its middle, in LOCAL), and the
+        // diorama's pane while it shows.
         let panel_at = format!("{:.3},{:.3},{:.3}", panel.pose.position.x, panel.pose.position.y, panel.pose.position.z);
+        let pane_at = space.as_ref().map_or("-".into(), |space| format!("{:.3},{:.3},{:.3}", space.pane.w_axis.x, space.pane.w_axis.y, space.pane.w_axis.z));
         // The diorama's scale as shown (the hands' while they scale it; 0 for
         // the screen) and, while it shows, the table's metres per world unit,
         // the camera's target (world units) and where it stands in the room
@@ -1070,7 +1073,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let key = xem_assist::draw::side_keys(&screen, 1)[0].1.size.0;
         let binaural = binaural_line(&mut game);
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} presented_us={} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} presented_us={} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} pane={pane_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),

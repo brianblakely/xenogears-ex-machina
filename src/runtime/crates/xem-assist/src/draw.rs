@@ -73,7 +73,8 @@ pub fn pane_hud(space: &DioramaSpace, hud_px: (u32, u32), scale_factor: f32) -> 
 
 /// The settings panel's width (metres) below a headset's screen, how far
 /// its middle stands from the seat, and how far (degrees, as seen from the
-/// seat) its top edge's middle stands below the screen's lower edge.
+/// seat) its top edge's middle stands below the screen's lower edge (and
+/// its edge beside the keys right of a diorama's pane).
 pub const PANEL_WIDTH: f32 = 0.55;
 const PANEL_DISTANCE: f32 = 1.33;
 const PANEL_GAP_DEG: f32 = 4.0;
@@ -93,9 +94,15 @@ pub enum Beside<'a> {
 /// lower edge as seen from the seat, so that it stays off the screen
 /// whatever the screen's shape, size and scale (the larger the screen, the
 /// lower the panel, its lower edge at most straight down); with the
-/// diorama as the view (`table`), where the diorama's pane floats, its
-/// lower edge above the table's volume (over the pane while it shows: the
-/// game is paused), as large as seen from the seat as below the screen.
+/// diorama as the view (`table`), beside the diorama's pane on its right:
+/// its inner edge in the pane's plane beyond the column of keys beside the
+/// pane ([`side_keys`]), `PANEL_GAP_DEG` further round as seen from the
+/// seat, its lower edge on the pane's (above the table's volume, as the
+/// pane: outside it whatever the table's height, distance and tilt),
+/// upright and turned about that edge to face the seat, as large seen from
+/// the seat as below the screen. Seen from the seat all of it lies further
+/// round than the pane and its keys: the game's interface stays in view
+/// while the panel shows.
 pub fn panel(seat: &Seat, beside: Beside, aspect: f32) -> Quad {
     match beside {
         Beside::Screen { size, distance } => {
@@ -107,17 +114,36 @@ pub fn panel(seat: &Seat, beside: Beside, aspect: f32) -> Quad {
             Quad { pose: seat.place(local), size: (PANEL_WIDTH, height) }
         }
         Beside::Table(table) => {
-            // As wide, seen from the seat at its middle, as below the screen
-            // (its middle rises with its size: a few steps settle it).
-            let above = table.above(seat.pose);
+            // In the seat's space: the pane's lower edge's middle (straight
+            // ahead, the pane across the seat's way) and its half-width
+            // (whatever the picture's shape).
+            let lower = (seat.pose.inverse() * table.above(seat.pose)).w_axis.truncate();
+            let half_pane = table.pane(seat.pose, 0.0).1.x / 2.0;
+            let ahead = (-lower.z).max(0.01);
+            // The keys right of the pane stand in its plane at the scale its
+            // right edge's middle gives them ([`Screen::pane`]), at most the
+            // scale of the farther of its ends for a picture no taller than
+            // wide: their column's outer edge, and the panel's inner edge
+            // beyond it in that plane, `PANEL_GAP_DEG` further round.
+            let edge = |height: f32| Vec3::new(half_pane, lower.y + height / 2.0, lower.z).length();
+            let column = half_pane + (KEY_GAP + KEY_SIZE.0) * key_scale(edge(0.0).max(edge(2.0 * half_pane)));
+            let inner = Vec3::new(ahead * (column.atan2(ahead) + PANEL_GAP_DEG.to_radians()).tan(), lower.y, lower.z);
+            // Turned about that edge to face the seat (its right `turn` from
+            // the pane's: the seat on its normal through its middle), so that
+            // all of it lies further round than the keys; as wide, seen from
+            // the seat at its middle, as below the screen (its middle moves
+            // with its size: a few steps settle it).
+            let place = |width: f32| {
+                let turn = inner.x.atan2(ahead) + (width / 2.0 / inner.x.hypot(ahead)).min(1.0).asin();
+                (turn, inner + Vec3::new(turn.cos(), 0.0, turn.sin()) * (width / 2.0) + Vec3::Y * (width * aspect / 2.0))
+            };
             let seen = PANEL_WIDTH / PANEL_DISTANCE;
-            let centre = |width: f32| above * Mat4::from_translation(Vec3::new(0.0, width * aspect / 2.0, 0.0));
-            let mut width = seen * above.w_axis.truncate().distance(seat.position());
-            for _ in 0..4 {
-                width = seen * centre(width).w_axis.truncate().distance(seat.position());
+            let mut width = seen * inner.length();
+            for _ in 0..6 {
+                width = seen * place(width).1.length();
             }
-            let (_, orientation, position) = centre(width).to_scale_rotation_translation();
-            Quad { pose: Pose { position, orientation }, size: (width, width * aspect) }
+            let (turn, middle) = place(width);
+            Quad { pose: seat.place(Pose { position: middle, orientation: Quat::from_rotation_y(-turn) }), size: (width, width * aspect) }
         }
     }
 }
@@ -482,6 +508,90 @@ mod tests {
         };
         let screen = Quad { pose: Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY }, size: (3.0, 2.1) };
         assert!(apart(Vec3::ZERO, &old, &screen) < 0.0, "the old place overlapped the screen");
+    }
+
+    #[test]
+    fn with_the_diorama_the_settings_panel_stands_beside_its_pane_and_keys_above_the_table_facing_the_seat() {
+        // From two seats, the table at the ends and the middle of the
+        // settings' height, distance and tilt ranges, the pane for each
+        // picture's shape (the field's 320x224, 320x240, wider framing's
+        // 398x224 and the world map's 320x216) with 1 to 10 keys beside its
+        // right edge, OpenXR's panel (880x1120) and the browser's (640x560).
+        let seats = [Mat4::IDENTITY, Mat4::from_rotation_translation(Quat::from_rotation_y(0.8), Vec3::new(0.3, 0.1, -0.2))];
+        let degree = 1f32.to_radians();
+        let (mut pane_gap, mut key_gap, mut turns) = (f32::MAX, f32::MAX, (f32::MAX, 0.0f32));
+        for pose in seats {
+            let seat = Seat { pose };
+            let eye = seat.position();
+            let forward = seat.orientation() * Vec3::NEG_Z;
+            // How far round to the right of the seat's way a point is, about
+            // the vertical through the seat (radians).
+            let round_to = |p: Vec3| {
+                let local = pose.inverse().transform_point3(p);
+                local.x.atan2(-local.z)
+            };
+            let furthest = |quad: &Quad| round(quad).map(round_to).into_iter().fold(f32::MIN, f32::max);
+            for height in [-1.0, -0.45, 0.3] {
+                for distance in [0.3, 0.6, 2.0] {
+                    for tilt in [0.0f32, 20.0, 45.0] {
+                        let table = Table { height, distance, tilt: tilt.to_radians(), ..Table::default() };
+                        // The volume's highest point in the room.
+                        let (min, max) = Table::VOLUME;
+                        let room_from_table = table.room_from_table(pose);
+                        let top = (0..8).map(|i| {
+                            let corner = Vec3::new([min.x, max.x][i & 1], [min.y, max.y][i >> 1 & 1], [min.z, max.z][i >> 2 & 1]);
+                            room_from_table.transform_point3(corner).y
+                        }).fold(f32::MIN, f32::max);
+                        for aspect in [1120.0 / 880.0, 560.0 / 640.0] {
+                            let panel = panel(&seat, Beside::Table(&table), aspect);
+                            let case = format!("height {height}, distance {distance}, tilt {tilt}, a panel {aspect:.2} high");
+                            let corners = round(&panel);
+                            let lowest = corners.iter().map(|c| c.y).fold(f32::MAX, f32::min);
+                            assert!(lowest > top, "{case}: the panel above the table's volume ({lowest} over {top})");
+                            // Upright, turned to face the seat, on its right.
+                            let towards = (eye - panel.pose.position) * Vec3::new(1.0, 0.0, 1.0);
+                            assert!((panel.pose.orientation * Vec3::Z).dot(towards.normalize()) > 0.9999 && (panel.pose.orientation * Vec3::Y).y > 0.9999,
+                                "{case}: the panel upright, facing the seat: {panel:?}");
+                            let turn = forward.cross(-towards.normalize()).y.asin();
+                            assert!(turn < 0.0, "{case}: right of the seat's way");
+                            turns = (turns.0.min(-turn), turns.1.max(-turn));
+                            let nearest = round(&panel).map(round_to).into_iter().fold(f32::MAX, f32::min);
+                            for (w, h) in [(320.0, 224.0), (320.0, 240.0), (398.0, 224.0), (320.0, 216.0)] {
+                                let space = DioramaSpace::first(&crate::headset::tests::level_camera(), 256.0, Vec2::new(w, h), &table, pose).expect("a space");
+                                let pane = Screen::pane(space, eye);
+                                // Standing on the pane's lower edge, all of it
+                                // `PANEL_GAP_DEG` or more further round than the
+                                // pane and its keys, so off them as seen from
+                                // the seat (less than that gap where they stand
+                                // high above it: a vertical plane's gap shrinks
+                                // towards the zenith).
+                                let pane_lowest = round(&pane.quad).iter().map(|c| c.y).fold(f32::MAX, f32::min);
+                                assert!((lowest - pane_lowest).abs() < 1e-4, "{case}, {w}x{h}: the panel's lower edge at {lowest}, the pane's at {pane_lowest}");
+                                let off = apart(eye, &panel, &pane.quad);
+                                assert!(nearest - furthest(&pane.quad) > PANEL_GAP_DEG * degree && off > PANEL_GAP_DEG * degree,
+                                    "{case}, {w}x{h}: the panel {:.2} degrees round from the pane, {:.2} off it", (nearest - furthest(&pane.quad)).to_degrees(), off.to_degrees());
+                                pane_gap = pane_gap.min(off);
+                                for count in 1..=10 {
+                                    for (_, key) in side_keys(&pane, count) {
+                                        let off = apart(eye, &panel, &key);
+                                        assert!(nearest - furthest(&key) > PANEL_GAP_DEG * degree - 1e-5 && off > degree,
+                                            "{case}, {w}x{h}, {count} keys: the panel {:.2} degrees round from a key, {:.2} off it", (nearest - furthest(&key)).to_degrees(), off.to_degrees());
+                                        key_gap = key_gap.min(off);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // The default table's, from the seat at the origin (recorded).
+        let default = panel(&Seat::default(), Beside::Table(&Table::default()), 1120.0 / 880.0);
+        let middle = default.pose.position;
+        eprintln!("beside the diorama's pane the panel stands at least {:.2} degrees off it and {:.2} off its keys, its middle {:.1}-{:.1} degrees right of the seat's way; \
+            with the default table at {middle:.3}, {:.1} degrees right and {:.1} up, {:.3} m wide",
+            pane_gap.to_degrees(), key_gap.to_degrees(), turns.0.to_degrees(), turns.1.to_degrees(),
+            middle.x.atan2(-middle.z).to_degrees(), middle.y.atan2(middle.x.hypot(middle.z)).to_degrees(), default.size.0);
     }
 
     /// Where the room below the screen runs out: the panel keeps its gap

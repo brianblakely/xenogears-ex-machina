@@ -280,8 +280,10 @@ pub struct XrScreen {
     pub diorama_distance_cm: u16,
     pub diorama_tilt_deg: u8,
     pub diorama_turns: DioramaTurns,
-    /// The diorama over the room around the player, where the headset offers
-    /// passthrough (no host offers it yet; off by default).
+    /// The diorama over the room around the player, where the OpenXR runtime
+    /// offers passthrough (the ALPHA_BLEND blend mode or XR_FB_passthrough;
+    /// off by default). The browser takes no part in it: there the room
+    /// shows in an immersive AR session (Enter AR).
     pub passthrough: bool,
 }
 
