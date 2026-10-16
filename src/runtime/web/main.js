@@ -802,6 +802,13 @@ async function executeAppOperation(request) {
     }
     // The headset's view in front of the head again (in a session).
     case 'Recenter': operationStatus(app.xr_recenter()); break;
+    // The player's own (keys, chords, the deck's LOOK) stay in the runtime
+    // for its next frame; this is the automation's appOperation.
+    case 'ToggleFirstPerson': {
+      const reply = control({ cmd: 'first_person' });
+      operationStatus(reply.first_person ? 'First-person view on.' : 'First-person view off.');
+      return reply;
+    }
     default: throw new Error(`Unknown app operation ${action}`);
   }
   return { ok: true };

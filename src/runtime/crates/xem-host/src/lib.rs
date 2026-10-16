@@ -373,11 +373,14 @@ pub struct View {
     atlas: xem_render::glass::Atlas,
     relative_mouse: bool,
     /// The first gamepad's buttons as they are (before app chords take
-    /// theirs), first-person inspection's toggle, the mouse motion that
-    /// turns its view, and when its view last turned.
+    /// theirs), first-person inspection's toggle, the app's Toggle
+    /// first-person view asked for since the last frame (its key, its chord,
+    /// the deck's LOOK), the mouse motion that turns its view, and when its
+    /// view last turned.
     pad: [u8; 16],
     axes: [f32; 4],
     look_toggle: xem_settings::look::Toggle,
+    look_asked: bool,
     look_mouse: [f32; 2],
     looked: Option<Instant>,
     /// The disc the game waits for that the drive's changer has not got.
@@ -480,6 +483,7 @@ impl View {
             pad: [0; 16],
             axes: [0.0; 4],
             look_toggle: Default::default(),
+            look_asked: false,
             look_mouse: [0.0; 2],
             looked: None,
             wanted_disc: None,
@@ -584,6 +588,11 @@ impl View {
         self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
+            // The view's own: the next frame's toggles carry it out.
+            if request == AppRequest::Action(xem_settings::AppAction::ToggleFirstPerson) {
+                self.look_asked = true;
+                continue;
+            }
             let result = self.operations.execute(request,Some(window),game.as_mut(),&mut self.settings.borrow_mut());
             if let AppRequest::Action(action) = request {
                 if result.is_err() || !self.operations.busy { self.state_notice(action,&result); }
@@ -972,13 +981,14 @@ impl View {
     /// battle's attack inputs have the buttons, `xem_settings::bindings`).
     /// In a field they also toggle and turn first-person inspection, which
     /// holds back the buttons that would walk, jump or turn the camera
-    /// (`xem_settings::look`).
+    /// (`xem_settings::look`), as the app's Toggle first-person view does.
     pub fn pad_buttons(&mut self, context: PadContext, targets: Option<xem_core::menu::Targets>) -> u16 {
         self.game_ui = context.ui;
         self.targets = targets;
         if self.panel_visible() || !self.app_input.focused() {
             self.player.clear();
             self.look_toggle.clear();
+            self.look_asked = false;
             self.look_mouse = [0.0; 2];
             self.deck.take_drag();
             self.looked = None;
@@ -1000,14 +1010,25 @@ impl View {
         self.player.browse(self.targets.as_ref());
         // First-person inspection: toggled in a field (Ex Machina draws it)
         // by Select's keys, the touch deck's SELECT and the gamepad, and
-        // while it is on, turned by the arrows, the right stick, a finger on
-        // the picture and the mouse the game holds.
+        // anywhere in one but its menu by the app's Toggle first-person view
+        // (an agent's bare `first_person`), and while it is on, turned by the
+        // arrows, the right stick, a finger on the picture and the mouse the
+        // game holds.
         let field = context.field;
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
-        let drawn = self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
+        let setting = self.settings.borrow().settings().graphics.renderer;
+        let drawn = setting == xem_settings::Renderer::ExMachina;
+        let asked = std::mem::take(&mut self.look_asked);
+        let was = self.renderer.first_person();
         if self.look_toggle.update(select, &self.pad, field) && drawn {
-            self.renderer.set_first_person(!self.renderer.first_person());
+            self.renderer.set_first_person(!was);
+        } else if asked && let Ok(change) = xem_settings::look::Command::TOGGLE.change(was, self.renderer.look_angles(), field, setting) {
+            // (Refused where the view cannot change, the menu or the
+            // Original renderer: nothing happens, as for the grab.)
+            self.renderer.set_first_person(change.on);
+        }
+        if self.renderer.first_person() != was {
             self.player.mouse.clear();
             self.look_mouse = [0.0; 2];
         }
@@ -1042,6 +1063,24 @@ impl View {
         self.renderer.first_person()
     }
 
+    /// An agent's `first_person` command (`xem-desktop --control`) in
+    /// `field` (`Game::pad_context`): the view on, off or turned as `command`
+    /// says (`xem_settings::look`: the app's Toggle first-person view is the
+    /// bare command), answering where it looks; the next update gives the
+    /// session its state (`Game::want_inspection`).
+    pub fn first_person_command(&mut self, command: &xem_settings::look::Command, field: xem_core::FieldControls) -> Result<serde_json::Value, String> {
+        let renderer = self.settings.borrow().settings().graphics.renderer;
+        let change = command.change(self.renderer.first_person(), self.renderer.look_angles(), field, renderer)?;
+        if change.on != self.renderer.first_person() {
+            // The game's mouse camera and the view's mouse motion let go.
+            self.renderer.set_first_person(change.on);
+            self.player.mouse.clear();
+            self.look_mouse = [0.0; 2];
+        }
+        self.renderer.look_around(change.turn.0, change.turn.1);
+        Ok(xem_settings::look::reply(self.renderer.first_person(), self.renderer.look_angles()))
+    }
+
     /// A finger on the game (`at` across the target, 0..1).
     pub fn finger(&mut self, phase: Finger, id: u64, at: (f32, f32)) {
         let at = (at.0 * self.target_size.0 as f32, at.1 * self.target_size.1 as f32);
@@ -1052,6 +1091,7 @@ impl View {
             Finger::Down => match self.deck.down(id, at, time) {
                 Touched::Settings => self.set_panel_visible(true),
                 Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
+                Touched::FirstPerson => self.look_asked = true,
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },
@@ -1148,6 +1188,8 @@ impl View {
 
         let panel_rect = self.panel_rect();
         let touch_shown = self.touch_shown();
+        // The deck's LOOK is lit while the view shows.
+        let first_person = self.renderer.first_person();
         self.ui.set_first_person_touch(touch_shown);
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         self.fresh_frame = false;
@@ -1240,7 +1282,7 @@ impl View {
             let held = self.deck.held();
             let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
             for (control, rect) in self.deck.controls.clone() {
-                let state = xem_assist::draw::deck_state(control, held.contains(&control), auto_advance);
+                let state = xem_assist::draw::deck_state(control, held.contains(&control), auto_advance, first_person);
                 let (widget, rect) = xem_assist::draw::deck_widget(control, control.label(ui), state, rect);
                 let rect = Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
@@ -1692,6 +1734,81 @@ mod tests {
         view.finger(Finger::Down, 2, across(select));
         assert_eq!(view.pad_buttons(PadContext { field: FieldControls { picture: true, ..walking }, ..context }, None) & button::SELECT, button::SELECT);
         assert!(!view.first_person());
+    }
+
+    #[test]
+    fn the_decks_look_toggles_first_person_anywhere_in_a_field_but_its_menu_and_is_lit_while_it_shows() {
+        use xem_assist::touch::Control;
+        use xem_core::FieldControls;
+        use xem_core::context::Context;
+        use xem_settings::look::Command;
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let (width, height) = (1280u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings.clone(), false).unwrap();
+        let black: Vec<_> = (0..320 * 240).flat_map(|_| [0, 0, 0, 255]).collect();
+        view.set_game_image(&gpu, (320, 240), &black);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("touch target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        view.render(&gpu, &output, 0.0).unwrap();
+        // A finger has touched the game: the deck shows.
+        view.touched = true;
+        let across = |(x, y): (f32, f32)| (x / width as f32, y / height as f32);
+        // The key's pixels as drawn (summed brightness): lit while the view shows.
+        let drawn = |view: &mut View, key: xem_assist::touch::Rect| -> u64 {
+            view.render(&gpu, &output, 0.0).unwrap();
+            let image = xem_render::read_rgba8(&gpu.device, &gpu.queue, &target);
+            let inside = |i: usize| key.contains(((i % width as usize) as f32, (i / width as usize) as f32));
+            image.chunks_exact(4).enumerate().filter(|(i, _)| inside(*i)).map(|(_, p)| u64::from(p[0]) + u64::from(p[1]) + u64::from(p[2])).sum()
+        };
+        // A dialogue's (where Select toggles nothing) and a walk where
+        // Select shows the map's picture: LOOK toggles the view in both, and
+        // presses nothing of the game's.
+        let dialogue = FieldControls { field: true, walking: false, menu: false, picture: false };
+        let picture = FieldControls { field: true, walking: true, menu: false, picture: true };
+        for (field, ui) in [(dialogue, Context::Dialogue { choice: None }), (picture, Context::Walk)] {
+            view.arrange(ui);
+            let look = view.deck.controls.iter().find(|(c, _)| *c == Control::Look).expect("LOOK in a field").1;
+            let context = PadContext { field, ui, ..PadContext::default() };
+            let off = drawn(&mut view, look);
+            for on in [true, false] {
+                view.finger(Finger::Down, 1, across(look.centre()));
+                assert_eq!(view.pad_buttons(context, None), 0, "{ui:?}: LOOK holds none of the game's buttons");
+                assert_eq!(view.first_person(), on, "{ui:?}: LOOK toggles the view");
+                view.finger(Finger::Up, 1, across(look.centre()));
+                assert_eq!(view.pad_buttons(context, None), 0);
+                assert_eq!(view.first_person(), on, "{ui:?}: once a press");
+                if on {
+                    assert_ne!(drawn(&mut view, look), off, "{ui:?}: LOOK is lit while the view shows");
+                }
+            }
+            assert_eq!(drawn(&mut view, look), off, "{ui:?}: and unlit after");
+        }
+        // Not under the field's menu (it has the screen) nor the Original
+        // renderer (no view to look around in): nothing changes.
+        let menu = FieldControls { menu: true, ..dialogue };
+        assert!(view.first_person_command(&Command::TOGGLE, menu).unwrap_err().contains("menu"));
+        assert!(!view.first_person());
+        view.arrange(Context::Walk);
+        let look = view.deck.controls.iter().find(|(c, _)| *c == Control::Look).unwrap().1;
+        let graphics = settings.borrow().settings().graphics;
+        settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(xem_settings::Graphics { renderer: xem_settings::Renderer::Original, ..graphics })).unwrap();
+        view.finger(Finger::Down, 2, across(look.centre()));
+        view.pad_buttons(PadContext { field: picture, ui: Context::Walk, ..PadContext::default() }, None);
+        view.finger(Finger::Up, 2, across(look.centre()));
+        assert!(!view.first_person(), "the Original renderer has no view to toggle");
+        settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(graphics)).unwrap();
+        // An agent's command: on, looking 30 degrees right and 10 down.
+        let reply = view.first_person_command(&Command { on: Some(true), yaw: Some(30.0), pitch: Some(-10.0) }, picture).unwrap();
+        assert_eq!(reply, serde_json::json!({"first_person": true, "look": {"yaw": 30.0, "pitch": -10.0}}));
+        assert!(view.first_person());
     }
 
     /// The title movie through the desktop's and Android's view (local only:

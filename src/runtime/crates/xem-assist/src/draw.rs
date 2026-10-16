@@ -270,11 +270,13 @@ fn icon_of(label: &str) -> Icon {
 }
 
 /// A touch control's state: pressed while a finger holds it, AUTO lit
-/// while auto-advance dialogue is on.
-pub fn deck_state(control: crate::touch::Control, held: bool, auto_advance: bool) -> State {
+/// while auto-advance dialogue is on, LOOK while first-person inspection
+/// shows.
+pub fn deck_state(control: crate::touch::Control, held: bool, auto_advance: bool, first_person: bool) -> State {
+    use crate::touch::Control;
     if held {
         State::Pressed
-    } else if control == crate::touch::Control::Auto && auto_advance {
+    } else if (control == Control::Auto && auto_advance) || (control == Control::Look && first_person) {
         State::Active
     } else {
         State::Normal

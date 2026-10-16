@@ -169,6 +169,17 @@ pub fn buttons_with(actions: impl IntoIterator<Item = GameAction>, assignment: &
     actions.into_iter().fold(0, |bits, action| bits | action.button_with(assignment))
 }
 
+/// What first-person inspection keeps from the field while the player walks
+/// (docs/runtime.md, First-person inspection): the directions, jumping and
+/// the field camera's turns, so the character stays where it stands and the
+/// game's camera stays. The hosts hold the player's buttons for them back
+/// (`xem_settings::look`); the session refuses agents' commands holding
+/// them (`control::Session::set_inspecting`).
+pub const INSPECTION_HELD: [GameAction; 7] = [
+    GameAction::Up, GameAction::Down, GameAction::Left, GameAction::Right,
+    GameAction::Jump, GameAction::CameraLeft, GameAction::CameraRight,
+];
+
 /// Actions named in a command's JSON list.
 pub fn actions_of(value: &serde_json::Value) -> Result<Vec<GameAction>, String> {
     value.as_array().ok_or("actions must be a list of names")?.iter().map(|name| {

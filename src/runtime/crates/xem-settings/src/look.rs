@@ -10,17 +10,20 @@
 //! walks so are walking and jumping, so the character stays where it
 //! stands. A menu keeps every button, and the view does not turn under it.
 //! In a headset the head looks around, and the right stick turns the view
-//! in steps ([`SnapTurn`]).
+//! in steps ([`SnapTurn`]). The app's Toggle first-person view action and
+//! agents' `first_person` command ([`Command`]) toggle it anywhere in a
+//! field but its menu, as a headset's underhand grab does.
 use xem_core::FieldControls;
-use xem_core::action::{Assignment, GameAction, buttons_with};
+use xem_core::action::{Assignment, GameAction, INSPECTION_HELD, buttons_with};
 use xem_core::pad::button;
 
 /// The game's buttons held back while the view is on and the player walks,
 /// under the game's button assignment: the directions, jump and the field
-/// camera's turns (Triangle, L1 and R1 under the default assignment); in a
-/// dialogue or an event only the turns (choices take the directions).
+/// camera's turns (Triangle, L1 and R1 under the default assignment:
+/// [`INSPECTION_HELD`]); in a dialogue or an event only the turns (choices
+/// take the directions).
 pub fn held_back(assignment: &Assignment) -> u16 {
-    button::UP | button::DOWN | button::LEFT | button::RIGHT | buttons_with([GameAction::Jump], assignment) | camera(assignment)
+    buttons_with(INSPECTION_HELD, assignment)
 }
 
 fn camera(assignment: &Assignment) -> u16 {
@@ -133,9 +136,100 @@ pub fn turns(on: bool, field: FieldControls) -> bool {
 /// Whether a headset's underhand grab toggles the view: in a field but its
 /// menu, as the right stick's click does, where Ex Machina draws it (the
 /// Original renderer has nothing to look around in, and a toggle there
-/// would still stop a route and hold back the walking buttons).
+/// would still stop a route and hold back the walking buttons). The app's
+/// Toggle first-person view action and agents' `first_person` command
+/// toggle it so too.
 pub fn grab_toggles(field: FieldControls, renderer: crate::Renderer) -> bool {
-    renderer == crate::Renderer::ExMachina && field.field && !field.menu
+    refusal(field, renderer).is_none()
+}
+
+/// Why the view cannot be turned on or off now ([`grab_toggles`]).
+fn refusal(field: FieldControls, renderer: crate::Renderer) -> Option<&'static str> {
+    if renderer != crate::Renderer::ExMachina {
+        Some("the Original renderer shows the console's picture: there is no first-person view to look around in")
+    } else if !field.field {
+        Some("first-person inspection looks around a field: there is none now")
+    } else if field.menu {
+        Some("the field's menu has the screen: close it first")
+    } else {
+        None
+    }
+}
+
+/// An agent's `first_person` command (`{"cmd": "first_person", "on": bool,
+/// "yaw": degrees, "pitch": degrees}`, each optional), which the app's
+/// Toggle first-person view action is with none: the view on or off (`on`
+/// absent: toggled, or on where a look is given) where [`grab_toggles`]
+/// allows a change, then turned to look `yaw` degrees right of the heading
+/// it began with and `pitch` up (held within 80 degrees of level) where it
+/// turns ([`turns`]). The hosts give the session the view's state before
+/// their next frames (`Session::set_inspecting`: a route under way stops).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Command {
+    pub on: Option<bool>,
+    pub yaw: Option<f32>,
+    pub pitch: Option<f32>,
+}
+
+/// What a [`Command`] does to the view: whether it shows after it, then the
+/// turn it takes (radians right and up) from where it looks then.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Change {
+    pub on: bool,
+    pub turn: (f32, f32),
+}
+
+impl Command {
+    /// The app's Toggle first-person view.
+    pub const TOGGLE: Command = Command { on: None, yaw: None, pitch: None };
+
+    pub fn parse(command: &serde_json::Value) -> Result<Command, String> {
+        let fields = command.as_object().ok_or("first_person is a JSON object")?;
+        if let Some(other) = fields.keys().find(|key| !["cmd", "on", "yaw", "pitch"].contains(&key.as_str())) {
+            return Err(format!("first_person takes on, yaw and pitch, not {other}"));
+        }
+        let on = fields.get("on").map(|on| on.as_bool().ok_or("on is true or false")).transpose()?;
+        let degrees = |name: &str| {
+            fields.get(name).map(|value| value.as_f64().filter(|v| v.is_finite()).map(|v| v as f32).ok_or_else(|| format!("{name} is a number of degrees"))).transpose()
+        };
+        Ok(Command { on, yaw: degrees("yaw")?, pitch: degrees("pitch")? })
+    }
+
+    /// Its change of a view that shows (`on`) looking `look` (radians from
+    /// the heading it began with, while it shows) in `field` under
+    /// `renderer`; refused (nothing changes) where the view cannot change,
+    /// or turn: off, or under the field's menu.
+    pub fn change(&self, on: bool, look: Option<(f32, f32)>, field: FieldControls, renderer: crate::Renderer) -> Result<Change, String> {
+        let looks = self.yaw.is_some() || self.pitch.is_some();
+        let shows = self.on.unwrap_or(looks || !on);
+        if shows != on && let Some(why) = refusal(field, renderer) {
+            return Err(why.into());
+        }
+        if !looks {
+            return Ok(Change { on: shows, turn: (0.0, 0.0) });
+        }
+        if !shows {
+            return Err("the first-person view is off: turn it on to look around".into());
+        }
+        if !turns(shows, field) {
+            return Err("the field's menu has the screen: the view turns once it closes".into());
+        }
+        // A view turned on begins along the heading, level.
+        let (yaw, pitch) = if on { look.unwrap_or_default() } else { (0.0, 0.0) };
+        let to = |target: Option<f32>, now: f32| target.map_or(0.0, |degrees| degrees.to_radians() - now);
+        Ok(Change { on: shows, turn: (to(self.yaw, yaw), to(self.pitch, pitch)) })
+    }
+}
+
+/// A `first_person` command's answer: whether the view shows, and where it
+/// looks (degrees right of the heading it began with and up, to a
+/// thousandth; null while it is off).
+pub fn reply(on: bool, look: Option<(f32, f32)>) -> serde_json::Value {
+    let degrees = |radians: f32| (f64::from(radians.to_degrees()) * 1000.0).round() / 1000.0;
+    serde_json::json!({
+        "first_person": on,
+        "look": look.filter(|_| on).map(|(yaw, pitch)| serde_json::json!({ "yaw": degrees(yaw), "pitch": degrees(pitch) })),
+    })
 }
 
 /// What turns the view in a host frame.
@@ -256,6 +350,46 @@ mod tests {
         }
         assert!(!grab_toggles(MENU, ExMachina), "a menu has the screen");
         assert!(!grab_toggles(ELSEWHERE, ExMachina), "only in a field");
+    }
+
+    #[test]
+    fn the_command_and_the_action_toggle_where_the_grab_does_and_turn_the_view_where_it_turns() {
+        use crate::Renderer::{ExMachina, Original};
+        use serde_json::json;
+        let parse = |value: serde_json::Value| Command::parse(&value);
+        assert_eq!(parse(json!({"cmd": "first_person"})), Ok(Command::TOGGLE), "the action is the bare command");
+        let look = parse(json!({"cmd": "first_person", "on": true, "yaw": 30, "pitch": -10.5})).unwrap();
+        assert_eq!(look, Command { on: Some(true), yaw: Some(30.0), pitch: Some(-10.5) });
+        for bad in [json!({"cmd": "first_person", "on": 1}), json!({"cmd": "first_person", "yaw": "right"}), json!({"cmd": "first_person", "enabled": true})] {
+            assert!(parse(bad.clone()).is_err(), "{bad}");
+        }
+        // Toggled in any field but its menu (where the player walks, a
+        // dialogue's, a map whose Select shows its picture), under Ex Machina.
+        for field in [FIELD, DIALOGUE, PICTURE] {
+            assert_eq!(Command::TOGGLE.change(false, None, field, ExMachina), Ok(Change { on: true, turn: (0.0, 0.0) }), "{field:?}");
+            assert_eq!(Command::TOGGLE.change(true, Some((0.5, 0.1)), field, ExMachina), Ok(Change { on: false, turn: (0.0, 0.0) }), "{field:?}");
+        }
+        for (field, renderer, why) in [(MENU, ExMachina, "menu"), (ELSEWHERE, ExMachina, "field"), (FIELD, Original, "Original")] {
+            let refused = Command::TOGGLE.change(false, None, field, renderer).unwrap_err();
+            assert!(refused.contains(why), "{field:?} {renderer:?}: {refused}");
+            assert!(!grab_toggles(field, renderer));
+        }
+        let off = Command { on: Some(false), ..Command::TOGGLE };
+        assert_eq!(off.change(false, None, ELSEWHERE, Original), Ok(Change { on: false, turn: (0.0, 0.0) }), "off where it is off anywhere");
+        assert!(off.change(true, Some((0.0, 0.0)), MENU, ExMachina).is_err(), "no change under the menu");
+        // A look: from the heading when it comes on, else from where it looks.
+        let (yaw, pitch) = (30f32.to_radians(), (-10.5f32).to_radians());
+        let near = |change: Change, on: bool, turn: (f32, f32)| change.on == on && (change.turn.0 - turn.0).abs() < 1e-6 && (change.turn.1 - turn.1).abs() < 1e-6;
+        assert!(near(look.change(false, None, FIELD, ExMachina).unwrap(), true, (yaw, pitch)));
+        assert!(near(look.change(true, Some((0.5, 0.1)), DIALOGUE, ExMachina).unwrap(), true, (yaw - 0.5, pitch - 0.1)));
+        let across = Command { yaw: Some(-90.0), ..Command::TOGGLE };
+        assert!(near(across.change(true, Some((0.5, 0.1)), FIELD, ExMachina).unwrap(), true, ((-90f32).to_radians() - 0.5, 0.0)), "a look alone keeps it on");
+        assert!(near(across.change(false, None, FIELD, ExMachina).unwrap(), true, ((-90f32).to_radians(), 0.0)), "and turns it on");
+        assert!(Command { on: Some(false), ..across }.change(true, Some((0.0, 0.0)), FIELD, ExMachina).unwrap_err().contains("off"));
+        assert!(across.change(true, Some((0.0, 0.0)), MENU, ExMachina).unwrap_err().contains("menu"), "the view turns but under a menu");
+        // The answer: degrees to a thousandth, no look while off.
+        assert_eq!(reply(true, Some((yaw, pitch))), json!({"first_person": true, "look": {"yaw": 30.0, "pitch": -10.5}}));
+        assert_eq!(reply(false, None), json!({"first_person": false, "look": null}));
     }
 
     #[test]

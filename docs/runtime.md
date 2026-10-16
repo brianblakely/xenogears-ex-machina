@@ -2072,8 +2072,18 @@ runs and the picture shows; the browser reads it through `WebModule` as the
 native hosts do). Select is any of its bound keys (Backspace), the touch
 deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
 released alone (Back begins the app chords; a headset controller's Back is
-its right stick's click). The right stick's click toggles it anywhere in a
-field but a menu. While the view is on, the arrow keys (2 radians a second
+its right stick's click), all of which toggle only there: while the player
+walks where Select shows no picture. A gamepad's right stick's click (R3)
+toggles it anywhere in a field but a menu; a headset's controllers have no
+R3. The app action Toggle first-person view (`AppAction::ToggleFirstPerson`:
+V and Back+R1 by default, a headset's right stick's click with its right
+trigger, and the touch deck's LOOK; rebindable in Settings' Shortcuts) toggles
+it anywhere in a field but its menu too, as a headset's underhand grab does
+(`look::grab_toggles`), for players with no right stick to click and in
+dialogues, events and on the picture maps; neither the chord's Back nor its
+R1 reaches the game while the chord holds. Every toggle works only where Ex
+Machina draws the view (not under the Original renderer) and not while the
+settings panel has the input. While the view is on, the arrow keys (2 radians a second
 across, 1.5 up and down, whatever the bindings give them), the right stick
 (3 and 2 at full tilt, past a fifth of its travel), a finger alone dragged
 on the picture (0.003 radians a logical pixel, the scene following the
@@ -2110,21 +2120,50 @@ gestures. Hosts give the session the view's state before each batch of
 frames (`Session::set_inspecting`: `Game::want_inspection` on desktop,
 Android and OpenXR, the browser's frame loop): turning it on stops a route
 under way, recorded as the player's own `assist_stop` is, and while it is
-on `navigate` and `interact` are refused ("first-person inspection keeps
-the character where it stands: turn it off to walk or interact");
-`status` reports `inspecting`. An agent's other input is not held back:
-`pad`, `press`, `hold` and `act` reach the pad as sent, so its directions
-and Jump walk, turn and jump the character under the view
-(`tests/inspection.rs` turns it so), and an `assist` command (the intent
-`navigate` and `interact` record, sent live or replayed) starts its
-route. A replay ignores the host's state, and the native hosts give none
-while they play a session log (`--script`, Android's `script.json`).
-Turning it off restarts nothing. Taps on the picture resolve without the
-field, since the view shows no field camera to walk or point through:
-walking, they walk nowhere and talk to no one, while a dialogue's still
-advance and a menu's still choose, and no floor or destination marks
-show. A headset's gestures follow the same rule
+on the session refuses agents' moves with "first-person inspection keeps
+the character where it stands: turn it off to walk, jump, turn the camera
+or interact": `navigate`, `interact` and an `assist` sent live (the intent
+`navigate` and `interact` record) anywhere, and while the player walks
+(the `walk` context) `pad`, `press`, `hold` and `act` holding pad 1's
+directions, Jump's button or the camera's turns under the game's button
+assignment (`action::INSPECTION_HELD`, what the view holds back from the
+player; Triangle is Jump's whichever action names it, AttackWeak too). The
+rest of pad 1, pad 2 and a release pass, and outside the walk (a
+dialogue's choices take the directions) they all do. A refused command
+changes and records nothing, so a recording replays as it played. A session
+log's commands (`schedule`) and a replay's controls are the recording's
+and run whatever the host shows, and the hosts' own `Session::set_pad` is
+never refused (`tests/inspection.rs` turns the character by it under the
+view); a hold an agent gave before the view came on stays until it is
+released. `status` reports `inspecting`. A replay ignores the host's state,
+and the native hosts give none while they play a session log (`--script`,
+Android's `script.json`). Turning it off restarts nothing. Taps on the
+picture resolve without the field, since the view shows no field camera to
+walk or point through: walking, they walk nowhere and talk to no one, while
+a dialogue's still advance and a menu's still choose, and no floor or
+destination marks show. A headset's gestures follow the same rule
 ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)).
+
+Agents turn the view on, off and around with the hosts' `first_person`
+command (`xem_settings::look::Command`), which the app's Toggle first-person
+view is without its fields: `{"cmd": "first_person", "on": bool, "yaw":
+degrees, "pitch": degrees}`, each optional, on `xem-desktop --control`, the
+headset's `--xr --control` and in browsers `window.xem.firstPerson({on, yaw,
+pitch})` (or `window.xem.command`; the page answers it, not the session).
+`on` absent toggles the view, or turns it on where a look is given; a
+change is made only where the toggles allow one (anywhere in a field but
+its menu, under Ex Machina) and refused otherwise, naming why (no field,
+the field's menu, the Original renderer). `yaw` turns it to look that many
+degrees right of the heading it began with (where a view turned on begins,
+level), `pitch` up (held within 80 degrees of level); a look is refused
+while the view is off or under the menu. It answers `{"first_person": bool,
+"look": {"yaw": degrees, "pitch": degrees}}` (to a thousandth; `look` null
+while off) or `{"error": ...}`, and an unknown field is refused rather than
+read as a toggle. The session takes the new state with the host's next
+batch of frames, as for the player's toggles: from then `status` reports
+`inspecting` and a route under way has stopped (a browser page held by
+`setRunning(false)` runs none until it runs again). Android has no agent
+channel.
 
 The view itself is presentation only. While it is on, `GameView::reveals`
 asks for every face the game culls (`Reveals::LOOK`, bit 0 of the
@@ -2203,7 +2242,8 @@ headset's head, which `Session::set_head` adds once more after it, with
 the camera of the frame shown, which the presenter hears it through).
 `status().renderer.firstPerson` and
 `status().renderer.look` (radians turned from the heading it began with,
-yaw right and pitch up) show it in browsers. `--example motion -- --map 30
+yaw right and pitch up; `first_person` answers in degrees) show it in
+browsers. `--example motion -- --map 30
 --look YAW,PITCH[,TURN]` shows a field from the eyes (degrees from the
 camera's heading, TURN more each frame kept: map 30's room with its
 townspeople standing round the table). Measured in the forest (960x720
@@ -2304,7 +2344,8 @@ frames (more than 100 shown from the eyes) and ends at the same RAM hash;
 `tests/controls.rs` checks the field query (the map's picture, walking,
 the menu) on the original's maps. `tests/inspection.rs` (local, disc 1)
 plays a flat host's part in field 30: turning the view on stops a route 15
-frames under way (`Stopped`) and refuses new ones; the character and the
+frames under way (`Stopped`) and refuses new ones and an agent's `act` Up,
+`press` Triangle and `hold` CameraLeft; the character and the
 game's camera stay over 60 frames of a held direction, jump and camera
 turn (more than 50 of them shown from the eyes); while an agent's presses
 turn the character five ways and the game's camera a quarter turn (0 to
@@ -2313,20 +2354,52 @@ turn the character five ways and the game's camera a quarter turn (0 to
 camera, starts no route, keeps the character and shows the game's camera
 pixel for pixel against a view that never looked, and a new route walks.
 `xem-core/tests/persistence.rs` checks the session's part on a stand-in
-module (one recorded stop, the refusals, a recorded intent that still runs,
-a replay that ignores the host), `xem-settings`' look tests the toggles
+module (one recorded stop, the refusals, a live `assist` refused while a
+session log's intent still runs, a replay that ignores the host) and, with
+the stand-in walking in a field and reading pad 1 into its RAM, that eight
+live commands holding directions, Jump (as Jump and AttackWeak), CameraLeft
+or R1 are refused and reach no pad, that Confirm, Start, pad 2 and a
+release pass, as a direction does in a dialogue, that a session log's Up
+and L1 run without stopping the session, that the recording holds exactly
+what passed, and that it replays to the recording's RAM hash with the
+replaying host inspecting; `xem-settings`' look tests the toggles
 (Select's keys and the deck's SELECT alike), the underhand grab's rule
 (`look::grab_toggles`: in a field but its menu, under Ex Machina only),
-the held-back buttons under the default, an unswapped and a
-shoulder-swapped assignment and the turn rates, `xem-assist`'s the
+the `first_person` command (parsed, an unknown field refused, toggled in a
+walk, a dialogue and a picture map, refused under the menu, outside a field
+and under the Original renderer, off anywhere it is off, a look from the
+heading when it comes on or from where it looks, a look alone keeping it
+on, refused while off or under the menu, and its answer in degrees), the
+held-back buttons under the default, an unswapped and a
+shoulder-swapped assignment and the turn rates, and `controls`' tests
+Toggle first-person view's V and Back+R1 (held by no other shortcut nor a
+game key; Back then R1 asks once, the game has neither while the chord
+holds, and Back let go after it is no Select toggle), `xem-assist`'s the
 headset's gestures and pointer keys while
-inspecting and two-hand scaling that leaves the screen, and the deck's
-SELECT and drag, `xem-host`'s a gamepad's toggles and the touch deck (SELECT
+inspecting and two-hand scaling that leaves the screen, the deck's
+SELECT and drag, and LOOK (in a walk, a scene and a dialogue on a
+letterboxed phone, a 16:9 phone and a tablet, clear of every other control
+and within the screen, pressing none of the game's buttons; in no menu,
+world map, battle or other context; lit while the view shows), `xem-host`'s
+a gamepad's toggles and the touch deck (SELECT
 toggling and staying the game's where the map's picture shows, no Run left
-alone, a 100-pixel drag turning 0.3 radians and tapping nothing),
-`xem-core`'s Binaural test a look and a head turn each applied once, and
-`xem-ui/tests/panel.rs` the look row's drag on touch screens and a
-headset's own rows.
+alone, a 100-pixel drag turning 0.3 radians and tapping nothing; LOOK
+toggling the view in a dialogue and on a picture map once a press, lit
+while it shows, nothing under the menu or the Original renderer, and an
+agent's command answered with its look), `xr_play`'s a headset's right
+stick's click with its trigger asking Toggle first-person view once (the
+game having neither button) and the headset view taking it in a dialogue,
+not under its menu nor the Original renderer, `xem-core`'s Binaural test a
+look and a head turn each applied once, and
+`xem-ui/tests/panel.rs` the look row's drag on touch screens, a
+headset's own rows and Shortcuts' Toggle first-person view (V and Back+R1
+on its row and in its editors, rebound to G through the settings service,
+Save state's chord refused). `xem-desktop/tests/control.rs` (weston,
+local) sends `first_person` to `xem-desktop --control`: refused at the
+title and for an unknown field; in field 30, with a route under way, on
+(answering the camera's heading), the next frames' `status` showing
+`inspecting` and the route `stopped`, `navigate` and `act` Up refused,
+turned to 30 degrees right and 10 down, and off, the session following.
 In a headset: `xem-render/tests/ps1.rs` presents a synthetic field to two
 eyes 32 mm apart with asymmetric fields of view (tangents -1 to 0.5 and
 -0.5 to 1 across, 0.5 up, 1 down): each eye's line of sight falls at two
@@ -2426,7 +2499,12 @@ the screen.
 `web/tests/xr-game.test.mjs` on IWER, whose scene tour toggles it with
 the left hand's underhand grab in each scene (only in field 30 and
 field 12's dialogue does it look from within, the title included among
-the rest).
+the rest). The smoke's `agent-inspect` run plays field 30 from a state with
+`--xr --control`: a walk by `navigate`, `first_person` on looking 30 degrees
+right (every frame after it `fp=1`, `look=0.5236,0.0000` and from within,
+the walk `stopped`), `navigate` and `act` Up refused and `status`'s
+`inspecting` true, `first_person` off, then Toggle first-person view's chord
+by `--xr-pad` (Back, then Back+R1) on for 30 headset frames and off.
 `web/tests/first-person.test.mjs` (local, disc 1) runs field 30 in a page
 with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
 `navigate` is refused; W and Space reach no pad and the character stays;
@@ -2438,7 +2516,13 @@ the deck's SELECT toggles it off and on, and a 100-pixel drag turns it
 Original renderer ends the view; a gamepad's right stick's click toggles
 it, its right stick turns it right and its Back released alone ends it,
 while after the page's `blur` neither the stick, the click nor Back acts,
-and a click held as focus returns toggles nothing. Its canvas pictures go
+and a click held as focus returns toggles nothing; `window.xem.firstPerson`
+turns it on looking 30 degrees right and 10 down (answered in degrees,
+`status().renderer.look` in radians) and an 8-frame route stops once the
+loop runs, `act` Up, `press` Triangle and `navigate` are refused, a bad `on`
+is refused, and it turns it off; then V, the deck's LOOK, the automation's
+`appOperation` Toggle first-person view and the bare command toggle it in
+turn. Its canvas pictures go
 to `build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds
 the game's Select with the deck's SELECT outside a field.
 
@@ -2502,14 +2586,17 @@ session and into the next. The touch
 look's rate is a constant chosen to follow the finger on a phone-sized
 picture, not measured with people, and the Android emulator has not
 played the touch toggle or drag (the unit tests and the browser's touch
-pointers have). Keyboard-only and touch-only players have no toggle on the
-ten maps where Select shows the map's picture (the deck has no right
-stick's click; a gamepad's remains). Inspection is the player's alone: no
-command or page call lets an agent turn the view on, off or around on any
-host (agents see it through `status`'s `inspecting` and browsers'
-`status().renderer`), and an agent's pad input and `assist` commands are
-not held back while it shows. Whether hosts should give agents the view,
-and hold their input back during it, is undecided.
+pointers have), nor the deck's LOOK. On the ten maps where Select shows the
+map's picture, and in dialogues and events, Select's toggles stay the
+game's; keyboard-only, touch-only and headset-controller-only players toggle
+there with Toggle first-person view (V, the deck's LOOK, Back+R1), as
+gamepad players can with R3 and hands with the underhand grab. The
+desktop's SDL keyboard (V, as Backspace) is driven by no test, the
+browser's is; the chord ran on Monado (scripted buttons), not on IWER,
+whose page maps the same buttons (`xrGamepad`). The session takes a
+command's change with the host's next batch of frames, as the player's: a
+`navigate` an agent sends before then is still taken, and that batch stops
+it.
 
 ### Camera records
 
@@ -4387,10 +4474,15 @@ Headset class (Low tier, depth of field off unless enabled).
   backup refused in the session.
 
 In a field both toggle first-person inspection with the underhand grab
-and the controllers' Back (the right stick's click) released alone, where
-Ex Machina draws it (the Original renderer ends it, paused or not, and
-neither toggles it there), whether the game runs or the player's Pause
-holds it (not while Settings are open). Turned on during a pause, it
+and Toggle first-person view's chord (the right stick's click with the
+right trigger, Back+R1) anywhere but in its menu, and with the controllers'
+Back (the right stick's click) released alone only where Select toggles
+it, while the player walks where Select shows no picture (the controllers
+have no R3), where Ex Machina draws it (the Original renderer ends it,
+paused or not, and none toggles it there), whether the game runs or the
+player's Pause holds it (not while Settings are open). Agents turn it on,
+off and around with `--xr --control`'s `first_person` (OpenXR) and
+`window.xem.firstPerson` (WebXR, the page's), as on the flat hosts. Turned on during a pause, it
 looks from within once the game's next frame records the character's
 place, at once if the frame shown has it (the view turned off and on
 within the pause). The view
@@ -4429,6 +4521,9 @@ button the game reads as talk and confirm whatever the table says.
 Agents send `hold {actions}` (held until the next hold) or `act {actions,
 frames}` (held for that many frames) to the command layer; nothing passes
 through SDL, the DOM or the operating system. `actions` is a list of names.
+While first-person inspection shows and the player walks, the session
+refuses those holding the directions, Jump or the camera's turns
+([First-person inspection](#first-person-inspection)).
 
 Hosts translate their platform events into actions through the game
 bindings (`xem_settings::bindings`, saved as `game_bindings`): for each
@@ -4468,8 +4563,10 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 | L2, R2 | 1, 2 | LT, RT | |
 | AttackWeak, AttackStrong, AttackFierce, AttackEnd | W, A, S, D | North, West, South, East | |
 
-In a field, Select (where the game's shows nothing) and the right stick's
-click also toggle first-person inspection, which the arrow keys, the right
+In a field, Select (where the game's shows nothing, while the player
+walks), the right stick's click and the app shortcut Toggle first-person
+view (V, Back+R1 and the touch deck's LOOK by default) also toggle
+first-person inspection, which the arrow keys, the right
 stick, a finger on the picture and the mouse camera's motion turn
 ([First-person inspection](#first-person-inspection)); Settings' Controls
 section lists them (with the finger's drag where touch controls show; a
@@ -4664,10 +4761,15 @@ D-pad's directions; lifting or a cancelled touch lets go (explicit press
 and release). A finger alone dragged on the picture turns inspection's
 view, the scene following it. Battling names the face buttons and
 turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
-adds Board (L2 and R2 together: a Gear boarded or left), a field's scenes
-and dialogue add AUTO above the face buttons (auto-advance dialogue on or
-off, lit while on: [Text speed, auto-advance and movie
-skipping](#text-speed-auto-advance-and-movie-skipping)), a shop's quantity
+adds Board (L2 and R2 together: a Gear boarded or left), a field (walking,
+its scenes and dialogue; not its menu) adds LOOK above the face buttons
+(Toggle first-person view: [First-person
+inspection](#first-person-inspection) on or off anywhere in the field,
+lit while it shows, holding none of the game's buttons), its scenes and
+dialogue AUTO beside it (auto-advance dialogue on or off, lit while on:
+[Text speed, auto-advance and movie
+skipping](#text-speed-auto-advance-and-movie-skipping)), the two each a
+little narrower than the deck's other wide keys, and a shop's quantity
 list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
 is the pointer's tap (`xem_assist::dispatch::tap_at`; on the pause
 screen, Start, as a click): walking, on an actor
@@ -7396,7 +7498,8 @@ the game's bindings ([Controls](#controls)) and the assisted controls
 reduced transparency and motion); Shortcuts lists every app operation with
 its bindings and edits the chosen one in place (Recenter headset view among
 them, with no default binding: the headset card's Recenter button and the
-automation reach it); Gameplay holds the options
+automation reach it; Toggle first-person view, V and Back+R1, last);
+Gameplay holds the options
 that change the game itself ([Random battles in platforming
 areas](#random-battles-in-platforming-areas); [Text speed, auto-advance and
 movie skipping](#text-speed-auto-advance-and-movie-skipping)). Cancel closes either binding
@@ -7437,14 +7540,17 @@ Back+Start toggles Settings once and consumes
 both buttons until both are released. Guide/Home has no app binding.
 Walking in a field, Select (Backspace, or Back released alone) toggles the
 first-person view where the original's Select shows no map's picture, and
-the right stick's click anywhere in a field; in it the arrow keys, the
+the right stick's click and Toggle first-person view (V, Back+R1) anywhere
+in a field but its menu; in it the arrow keys, the
 right stick and the mouse (under the mouse camera setting) look around
 ([First-person inspection](#first-person-inspection)).
 `--control` answers agents' JSON commands on stdin, a line each, between
 frames while the game plays: the command layer's (`status`, `context`,
 `navigate`, `act`, ...), `settings`, `settings_apply {change}` (the panel's
 own typed, validated, persisted change; `SettingsService::command` answers
-both), `panel {visible}`,
+both), `panel {visible}`, `first_person {on, yaw, pitch}` (the view on, off
+or toggled, then turned: [First-person
+inspection](#first-person-inspection)),
 `import_disc {path}` (the launcher's path), `bios_import {path}` (Import
 BIOS's: kept beside the settings for every boot and given to the running
 game) and `app {request}` (the panel's and the bindings' operations as they
@@ -7455,9 +7561,9 @@ system. With `--xr` the headset session answers the same commands but
 both), its `app` Recenter recentring the view.
 `xem-desktop/tests/control.rs` runs the desktop itself on weston's headless
 backend with lavapipe (local, disc 1), changes the gameplay options
-through `settings_apply` ([Gameplay options](#gameplay-options)) and holds
+through `settings_apply` ([Gameplay options](#gameplay-options)), holds
 rewind, retries card writes and reads the storage line through `app` and
-`status`.
+`status`, and looks around field 30 by `first_person`.
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
@@ -7584,11 +7690,15 @@ as JSON text or bytes.
   game bindings ([Controls](#controls)); touch pointers play the touch
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
   points at menu entries. In a field, Select's keys, the deck's SELECT and
-  the gamepad's Back alone or its right stick's click toggle first-person
-  inspection, which the arrow keys, the right stick, a finger on the
-  picture and the mouse under pointer lock (both its motions: the page
-  passes `movementY` too) turn
-  ([First-person inspection](#first-person-inspection)). The page keeps
+  the gamepad's Back alone toggle first-person inspection while the player
+  walks where Select shows no picture, and the gamepad's right stick's
+  click and Toggle first-person view (V, Back+R1, the deck's LOOK; the
+  runtime keeps these requests for its next frame, so the page's operations
+  never see them) anywhere in it but its menu; the arrow keys, the right
+  stick, a finger on the picture and the mouse under pointer lock (both its
+  motions: the page passes `movementY` too) turn it
+  ([First-person inspection](#first-person-inspection)); agents use
+  `window.xem.firstPerson`. The page keeps
   only the game's keys from the browser, and the arrow keys while
   inspection shows (and Escape, which toggles the panel; the header's
   Settings button and the deck's Settings do too, so Escape is never the
@@ -7635,10 +7745,12 @@ as JSON text or bytes.
   as navigator.xr) to their native hashes; the save goes through a reload
   taken mid-route (the session saved to IndexedDB, restored after the reload)
   and the next page loads card 2 from the title.
-- **Automation.** `window.xem`: `status()`, `boot({executable, run})`,
+- **Automation.** `window.xem` (`version` 4): `status()`, `boot({executable, run})`,
   `setRunning`, `command(cmd)` (any control command) with the shorthands
   `step(frames)`, `runUntil({maxFrames, until})`, `memoryHash()`,
   `snapshot(name)`/`restore(name)`, `exportSnapshot()`/`importSnapshot(bytes)`;
+  `firstPerson({on, yaw, pitch})` (the page's own `first_person`: [First-person
+  inspection](#first-person-inspection));
   the asynchronous `run(cmd)` and `runFrames(n)` (through blocked frames);
   `settings.get()`/`settings.apply(change)` (a `SettingChange`, e.g.
   `{MasterVolume: 40}`), `panel.show(bool)`, `importDisc(blob)`,

@@ -1122,3 +1122,31 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     assert!(dropdown.absolute_position().y < before_y, "wheel over a focused dropdown scrolls the containing panel");
     assert_eq!(*settings.borrow().settings(), before);
 }
+
+#[test]
+fn shortcuts_list_toggle_first_person_view_with_its_key_and_chord_and_rebind_it_through_the_service() {
+    use slint::Model;
+    use xem_settings::{AppAction, AppBinding};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 2000), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Shortcuts", 3);
+    let row = |ui: &SettingsUi| ui.component().get_bindings().iter().find(|row| row.name == "Toggle first-person view").expect("listed");
+    let listed = row(&ui);
+    assert_eq!((listed.keyboard.as_str(), listed.gamepad.as_str()), ("V", "Back+R1"), "its key and chord on the row");
+    press(&ui, &element(&ui, "Toggle first-person view", AccessibleRole::ListItem));
+    ui.update().unwrap();
+    assert_eq!((ui.component().get_keyboard_binding().as_str(), ui.component().get_gamepad_binding().as_str()), ("KeyV", "Back+R1"), "in its editors");
+    // Rebound through the settings service, as every shortcut is; a chord
+    // another shortcut holds is refused and changes nothing.
+    let selected = ui.component().get_selected_action();
+    ui.component().invoke_binding_edited(selected, "KeyG".into(), "Back+R1".into());
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("KeyG", "Back+R1"));
+    assert_eq!(row(&ui).keyboard.as_str(), "G");
+    ui.component().invoke_binding_edited(selected, "KeyG".into(), "Back+South".into());
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("KeyG", "Back+R1"), "Save state's chord stays Save state's");
+}

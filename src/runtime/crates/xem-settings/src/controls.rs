@@ -14,6 +14,11 @@ pub enum AppAction {
     /// A headset's view placed again in front of the head as it is now
     /// (where it stands, turned as it faces about the vertical).
     Recenter,
+    /// First-person inspection on or off anywhere in a field but its menu,
+    /// as the underhand grab toggles it (`look::grab_toggles`): for players
+    /// with no right stick to click (a keyboard, a touch deck's LOOK, a
+    /// headset's controllers), and where Select is the game's.
+    ToggleFirstPerson,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,7 +27,7 @@ pub enum AppRequest {
     Rewind(bool),
     UiRewind(bool),
 }
-pub const APP_ACTIONS: [(AppAction, &str); 28] = [
+pub const APP_ACTIONS: [(AppAction, &str); 29] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
@@ -44,6 +49,7 @@ pub const APP_ACTIONS: [(AppAction, &str); 28] = [
     (AppAction::ToggleAutoAdvance, "Toggle auto-advance dialogue"),
     (AppAction::Reset, "Reset"),
     (AppAction::Recenter, "Recenter headset view"),
+    (AppAction::ToggleFirstPerson, "Toggle first-person view"),
 ];
 pub const PAD_NAMES: [&str; 16] = ["South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right"];
 
@@ -85,11 +91,15 @@ pub(crate) fn keyboard_code(code: &str) -> bool {
      "PageUp","PageDown","CapsLock","NumLock","ScrollLock","Pause","PrintScreen","BracketLeft","BracketRight","Backslash",
      "Semicolon","Quote","Backquote","Comma","Period","Slash","Minus","Equal"].contains(&code)
 }
+/// The app actions' default bindings. Toggle first-person view's chord is
+/// one a headset's right controller holds alone (its stick's click, Back,
+/// with its trigger, R1: `xr_play::gamepad`), as a gamepad's Back with R1.
 pub fn defaults() -> BTreeMap<AppAction, AppBinding> {
     use AppAction::*;
     [(SaveState,"F5","Back+South"), (LoadState,"F8","Back+North"),
      (Rewind,"KeyR","Back+LT"), (ToggleRewind,"F7","Back+East"),
-     (ToggleFastForward,"Backquote","Back+RT"), (ToggleAutoAdvance,"KeyT","Back+West")]
+     (ToggleFastForward,"Backquote","Back+RT"), (ToggleAutoAdvance,"KeyT","Back+West"),
+     (ToggleFirstPerson,"KeyV","Back+R1")]
         .into_iter().map(|(a,k,g)| (a,AppBinding::parse(k,g))).collect()
 }
 
@@ -262,6 +272,40 @@ mod tests {
             assert_eq!(input.gamepad_for_game(&bindings,false),[0;16]);
         }
     }
+    #[test]
+    fn first_person_has_a_key_and_a_one_handed_chord_that_no_other_binding_holds() {
+        let bindings = defaults();
+        let binding = &bindings[&AppAction::ToggleFirstPerson];
+        assert_eq!(*binding, AppBinding::parse("KeyV", "Back+R1"));
+        binding.validate().unwrap();
+        for (action, other) in bindings.iter().filter(|(action, _)| **action != AppAction::ToggleFirstPerson) {
+            assert!(!other.keyboard.iter().any(|k| k == "KeyV"), "{action:?} holds V");
+            assert_ne!(other.gamepad, binding.gamepad, "{action:?} holds Back+R1");
+        }
+        // Nor a game key (the arrows the view turns with and Escape, the
+        // panel's, are other keys).
+        assert!(!crate::GameBindings::default().inputs().contains("KeyV"), "V is a game key");
+        // Back then R1 (a headset's right stick's click with its trigger) ask
+        // once; the game has neither while the chord holds (no camera turn,
+        // no Select), and Back let go after it toggles nothing of Select's.
+        let field = xem_core::FieldControls { field: true, walking: true, menu: false, picture: false };
+        let (mut input, mut toggle) = (AppInput::default(), crate::look::Toggle::default());
+        let mut pad = [0; 16];
+        for (back, r1, asked) in [(1, 0, false), (1, 1, true), (1, 1, false), (1, 0, false), (0, 0, false)] {
+            (pad[8], pad[5]) = (back, r1);
+            input.pad(&pad);
+            let requests = input.requests(&bindings, false);
+            assert_eq!(requests, if asked { vec![AppRequest::Action(AppAction::ToggleFirstPerson)] } else { vec![] }, "Back {back} R1 {r1}");
+            if r1 == 1 {
+                assert_eq!(input.gamepad_for_game(&bindings, false), [0; 16], "the chord's buttons are the app's");
+            }
+            assert!(!toggle.update(false, &pad, field), "Back in the chord is no Select toggle");
+        }
+        input.key("KeyV", true);
+        assert_eq!(input.requests(&bindings, false), vec![AppRequest::Action(AppAction::ToggleFirstPerson)]);
+        assert!(input.captures_key("KeyV", &bindings));
+    }
+
     #[test]
     fn rewind_stays_held_until_both_devices_release_and_inverted_triggers_send_game_buttons() {
         let bindings = defaults();

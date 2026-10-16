@@ -45,7 +45,7 @@ export function createAutomation(host) {
   }
 
   return Object.freeze({
-    version: 3,
+    version: 4,
     /** Renderer, disc, session, loop, audio, storage and page state. */
     status: () => ({ ...parse(app.status()), page: host.pageStatus() }),
     /** Start a session on a fresh game module instance: `{executable: false}`
@@ -56,6 +56,14 @@ export function createAutomation(host) {
     setRunning: (running) => app.set_running(Boolean(running)),
     /** Any control command, e.g. {cmd: 'inspect', path: 'mode_next_mode'}; errors come back as {error}. */
     command,
+    /** First-person inspection, as the native hosts' `first_person` command:
+     * `{on, yaw, pitch}`, each optional (on absent toggles it as Toggle
+     * first-person view does, or turns it on where a look is given; yaw
+     * degrees right of the heading it began with, pitch up), anywhere in a
+     * field but its menu under Ex Machina. Returns {first_person, look} (in
+     * degrees) or {error}; the session takes it with the page's next batch
+     * of frames. */
+    firstPerson: (options = {}) => command({ cmd: 'first_person', ...options }),
     /** The typed Settings/bindings operation, e.g. {Action:'SaveState'}. */
     appOperation: (request) => host.appOperation(request),
     /** `frames` or `run_until` to completion, fetching the disc sectors frames wait

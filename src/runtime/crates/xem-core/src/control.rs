@@ -111,6 +111,9 @@ pub struct Session<M: GameModule> {
     pub ledge_brake: bool,
     /// The host shows first-person inspection ([`Session::set_inspecting`]).
     inspecting: bool,
+    /// A session log's (`schedule`) or a replay's command runs: what it
+    /// holds is the recording's, which inspection never refuses.
+    recorded: bool,
     /// A shop quantity edit under way (`shop_quantity`).
     quantity: Option<Quantity>,
     /// Auto-advance ([`Session::set_auto_advance`]): the vertical blanks a
@@ -158,8 +161,10 @@ const BUTTONS: [(&str, u16); 16] = [
     ("square", button::SQUARE),
 ];
 
-/// Why `navigate` and `interact` are refused during first-person inspection.
-const INSPECTING: &str = "first-person inspection keeps the character where it stands: turn it off to walk or interact";
+/// Why agents' moves are refused during first-person inspection: `navigate`,
+/// `interact` and a live `assist`, and while the player walks the commands
+/// holding the directions, jumping or the camera's turns.
+const INSPECTING: &str = "first-person inspection keeps the character where it stands: turn it off to walk, jump, turn the camera or interact";
 
 /// A button's bit by its control name ("cross", "start", ...).
 pub fn button_bit(name: &str) -> Option<u16> {
@@ -204,6 +209,7 @@ impl<M: GameModule> Session<M> {
             base_pad: 0,
             ledge_brake: false,
             inspecting: false,
+            recorded: false,
             quantity: None,
             auto_advance: 0,
             auto_waited: 0,
@@ -627,7 +633,10 @@ impl<M: GameModule> Session<M> {
         let now = self.vblank();
         while self.replay_controls.first().is_some_and(|(at, _)| *at <= now) {
             let (_, command) = self.replay_controls.remove(0);
-            self.try_execute(&command).map_err(Trap::Host)?;
+            let was = std::mem::replace(&mut self.recorded, true);
+            let done = self.try_execute(&command);
+            self.recorded = was;
+            done.map_err(Trap::Host)?;
         }
         if self.replay_end.is_some_and(|end| now >= end) { self.replay_end = None; }
         Ok(())
@@ -658,7 +667,9 @@ impl<M: GameModule> Session<M> {
         self.apply_replay_controls()?;
         while self.script.first().is_some_and(|(at, _)| *at <= self.runtime.frames()) {
             let (at, command) = self.script.remove(0);
+            let was = std::mem::replace(&mut self.recorded, true);
             let reply = self.execute(&command);
+            self.recorded = was;
             if let Some(error) = reply.get("error") {
                 let reason = format!("scheduled command at frame {at} failed: {error}");
                 self.stopped = Some(reason.clone());
@@ -723,9 +734,14 @@ impl<M: GameModule> Session<M> {
     /// Whether the host shows first-person inspection, which keeps the
     /// character where it stands: turning it on stops a route under way
     /// (recorded as `assist_stop`, as the player's own stop is), and while
-    /// it is on `navigate` and `interact` are refused. A recorded `assist`
-    /// (a replay's, a session log's) still runs. Hosts set it before every
-    /// batch of frames; a replay keeps its own record and ignores it.
+    /// it is on `navigate`, `interact` and a live `assist` are refused, and
+    /// while the player walks so are `pad`, `press`, `hold` and `act` holding
+    /// pad 1's directions, jump or the camera's turns under the game's button
+    /// assignment ([`crate::action::INSPECTION_HELD`]). A refused command
+    /// changes and records nothing. A session log's and a replay's commands
+    /// still run (they are the recording's), and so does the host's own
+    /// `set_pad`. Hosts set it before every batch of frames; a replay keeps
+    /// its own record and ignores it.
     pub fn set_inspecting(&mut self, on: bool) {
         if self.replay_end.is_some() {
             return;
@@ -734,6 +750,20 @@ impl<M: GameModule> Session<M> {
             self.stop_assist(crate::assist::Outcome::Stopped);
         }
         self.inspecting = on;
+    }
+
+    /// Whether a command holding `buttons` on pad `port` may run now: not an
+    /// agent's live command holding what inspection keeps from the field
+    /// while the player walks ([`Session::set_inspecting`]).
+    fn inspection_allows(&mut self, port: u32, buttons: u16) -> Result<(), String> {
+        if !self.inspecting || self.recorded || port != 0 || self.runtime.context() != crate::context::Context::Walk {
+            return Ok(());
+        }
+        let held = crate::action::buttons_with(crate::action::INSPECTION_HELD, &self.runtime.button_assignment());
+        if buttons & held != 0 {
+            return Err(INSPECTING.into());
+        }
+        Ok(())
     }
 
     /// Pad 1 for the next frame: the base input, and the assist's D-pad and
@@ -1184,6 +1214,7 @@ impl<M: GameModule> Session<M> {
             "pad" => {
                 let port = arg_u64("port").unwrap_or(0) as u32;
                 let buttons = buttons_of(command.get("buttons").ok_or("pad needs buttons")?)?;
+                self.inspection_allows(port, buttons)?;
                 self.set_pad(port, buttons);
                 Ok(self.status())
             }
@@ -1191,6 +1222,7 @@ impl<M: GameModule> Session<M> {
                 // Hold the buttons for `frames` frames from now, then release.
                 let port = arg_u64("port").unwrap_or(0) as u32;
                 let buttons = buttons_of(command.get("buttons").ok_or("press needs buttons")?)?;
+                self.inspection_allows(port, buttons)?;
                 let frames = arg_u64("frames").unwrap_or(1);
                 let now = self.vblank();
                 self.set_pad(port, buttons);
@@ -1268,9 +1300,13 @@ impl<M: GameModule> Session<M> {
                 Ok(self.status())
             }
             "assist" => {
-                // A recorded intent, as resolved when it was given.
+                // A recorded intent, as resolved when it was given: an
+                // agent's own, sent live, is a route inspection refuses.
                 let intent: crate::assist::Intent = serde_json::from_value(command.get("intent").ok_or("assist needs intent")?.clone())
                     .map_err(|e| e.to_string())?;
+                if self.inspecting && !self.recorded {
+                    return Err(INSPECTING.into());
+                }
                 self.start_assist(intent);
                 Ok(self.status())
             }
@@ -1301,7 +1337,9 @@ impl<M: GameModule> Session<M> {
                 // until the next hold; an empty list releases them.
                 let actions = crate::action::actions_of(command.get("actions").ok_or("hold needs actions")?)?;
                 let assignment = self.runtime.button_assignment();
-                self.set_pad(0, crate::action::buttons_with(actions, &assignment));
+                let buttons = crate::action::buttons_with(actions, &assignment);
+                self.inspection_allows(0, buttons)?;
+                self.set_pad(0, buttons);
                 Ok(self.status())
             }
             "act" => {
@@ -1310,7 +1348,9 @@ impl<M: GameModule> Session<M> {
                 let frames = arg_u64("frames").unwrap_or(1);
                 let now = self.vblank();
                 let assignment = self.runtime.button_assignment();
-                self.set_pad(0, crate::action::buttons_with(actions, &assignment));
+                let buttons = crate::action::buttons_with(actions, &assignment);
+                self.inspection_allows(0, buttons)?;
+                self.set_pad(0, buttons);
                 self.scheduled.push((now + frames, 0, 0));
                 Ok(self.status())
             }

@@ -18,8 +18,10 @@
 //!   picture turns first-person inspection's view ([`Deck::take_drag`]).
 //! - A shop's quantity list adds the +, -, ALL and NONE keys; the world
 //!   map adds Board (L2 and R2 together: a Gear boarded or left); a field
-//!   scene or dialogue adds AUTO (auto-advance dialogue on or off, lit
-//!   while on), apart from the face buttons that advance one page.
+//!   (not its menu) adds LOOK (first-person inspection on or off, the app's
+//!   Toggle first-person view, lit while on), and its scenes and dialogue
+//!   AUTO beside it (auto-advance dialogue on or off, lit while on), apart
+//!   from the face buttons that advance one page.
 use crate::overlay::QuantityKey;
 use std::collections::{BTreeMap, BTreeSet};
 use xem_core::action::GameAction;
@@ -46,6 +48,9 @@ pub enum Control {
     Board,
     /// Auto-advance dialogue on or off (the app's toggle, not the game's).
     Auto,
+    /// First-person inspection on or off anywhere in a field but its menu
+    /// (the app's Toggle first-person view, not the game's Select).
+    Look,
     Quantity(u8),
 }
 
@@ -66,7 +71,7 @@ impl Control {
             Control::Start => vec![GameAction::Start],
             Control::Select => vec![GameAction::Select],
             Control::Board => vec![GameAction::L2, GameAction::R2],
-            Control::Settings | Control::Auto | Control::Quantity(_) => vec![],
+            Control::Settings | Control::Auto | Control::Look | Control::Quantity(_) => vec![],
         }
     }
 
@@ -89,6 +94,7 @@ impl Control {
             Control::Settings => "SETTINGS",
             Control::Board => "BOARD",
             Control::Auto => "AUTO",
+            Control::Look => "LOOK",
             Control::Quantity(k) => QuantityKey::ALL[k as usize].label(),
         }
     }
@@ -154,14 +160,19 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     controls.push((Control::Settings, small(w / 2.0 - size * 0.85)));
     controls.push((Control::Start, small(w / 2.0 + size * 0.85)));
     // A wide key above a cluster: Select over the D-pad, the world map's
-    // Board, or a field scene's AUTO, over the face buttons.
+    // Board over the face buttons; in a field LOOK there, its scenes' AUTO
+    // beside it, each of the two a little narrower.
     let above = |cx: f32| Rect { x: cx - size * 0.8, y: low - 2.3 * (size + gap) - size * 0.35, width: size * 1.6, height: size * 0.7 };
+    let half = |cx: f32, right: bool| Rect { x: if right { cx + gap / 2.0 } else { cx - gap / 2.0 - size * 1.5 }, width: size * 1.5, ..above(cx) };
     controls.push((Control::Select, above(left_x)));
     if matches!(ui, Context::WorldMap { .. }) {
         controls.push((Control::Board, above(right_x)));
     }
+    if crate::overlay::look_key(ui) {
+        controls.push((Control::Look, half(right_x, true)));
+    }
     if crate::overlay::auto_key(ui) {
-        controls.push((Control::Auto, above(right_x)));
+        controls.push((Control::Auto, half(right_x, false)));
     }
     if matches!(ui, Context::Menu { quantities: true, .. }) {
         let x = right_x;
@@ -195,6 +206,8 @@ pub enum Touched {
     Settings,
     /// AUTO was pressed: auto-advance dialogue goes on or off.
     AutoAdvance,
+    /// LOOK was pressed: first-person inspection goes on or off.
+    FirstPerson,
     /// A shop quantity key.
     Quantity(QuantityKey),
 }
@@ -232,6 +245,7 @@ impl Deck {
         match control {
             Some(Control::Settings) => Touched::Settings,
             Some(Control::Auto) => Touched::AutoAdvance,
+            Some(Control::Look) => Touched::FirstPerson,
             Some(Control::Quantity(k)) => Touched::Quantity(QuantityKey::ALL[k as usize]),
             _ => Touched::Nothing,
         }
@@ -391,6 +405,44 @@ mod tests {
             deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
             assert!(deck.controls.iter().all(|(k, _)| *k != Control::Auto), "no AUTO in {ui:?}");
         }
+    }
+
+    #[test]
+    fn look_shows_in_a_field_beside_auto_clear_of_every_other_control_and_presses_nothing() {
+        for (target, picture) in [
+            // The phone's letterbox, a 16:9 phone without room beside the
+            // picture, and a 4:3 tablet's picture filling it.
+            ((2400.0, 1080.0), Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 }),
+            ((1920.0, 1080.0), Rect { x: 240.0, y: 0.0, width: 1440.0, height: 1080.0 }),
+            ((2048.0, 1536.0), Rect { x: 0.0, y: 0.0, width: 2048.0, height: 1536.0 }),
+        ] {
+            for ui in [Context::Walk, Context::Event { map: 4, buttons: 0 }, Context::Dialogue { choice: None }] {
+                let mut deck = Deck::default();
+                deck.arrange(target, picture, 3.0, ui);
+                let look = deck.controls.iter().find(|(k, _)| *k == Control::Look).expect("LOOK in a field").1;
+                for (other, r) in deck.controls.iter().filter(|(k, _)| *k != Control::Look) {
+                    let apart = r.x >= look.x + look.width || look.x >= r.x + r.width || r.y >= look.y + look.height || look.y >= r.y + r.height;
+                    assert!(apart, "{other:?} {r:?} overlaps LOOK {look:?} ({ui:?})");
+                }
+                assert!(look.x >= 0.0 && look.x + look.width <= target.0, "LOOK within the screen: {look:?}");
+                assert_eq!(deck.down(1, look.centre(), 0.0), Touched::FirstPerson);
+                assert!(deck.actions().is_empty(), "the app's toggle presses nothing of the game's (not Select)");
+                assert_eq!(Control::Look.label(ui), "LOOK");
+            }
+        }
+        let picture = Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 };
+        let menu = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false };
+        for ui in [menu, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false }, Context::None] {
+            let mut deck = Deck::default();
+            deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
+            assert!(deck.controls.iter().all(|(k, _)| *k != Control::Look), "no LOOK in {ui:?}");
+        }
+        use crate::draw::deck_state;
+        use xem_render::glass::State;
+        assert_eq!(deck_state(Control::Look, false, true, true), State::Active, "lit while the view shows");
+        assert_eq!(deck_state(Control::Look, false, true, false), State::Normal);
+        assert_eq!(deck_state(Control::Auto, false, true, false), State::Active, "AUTO keeps its own light");
+        assert_eq!(deck_state(Control::Look, true, false, true), State::Pressed);
     }
 
     #[test]

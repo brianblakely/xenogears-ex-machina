@@ -9,7 +9,10 @@
 // the picture turns it; Backspace again gives the keys back; the Original
 // renderer ends it; a gamepad's right stick's click toggles it, its right
 // stick turns it and its Back released alone ends it, none of which acts
-// while the page has lost focus. The canvas's pictures go to build/web-test
+// while the page has lost focus; an agent's `window.xem.firstPerson` turns
+// it on looking where asked (a route under way stops, the agent's walk and
+// jump are refused) and off; Toggle first-person view's key (V), the deck's
+// LOOK and the automation's app operation toggle it. The canvas's pictures go to build/web-test
 // (first-person-*.png). Input is held until the page's frames have read it,
 // so a loaded machine (the suite runs browsers side by side) slows the test
 // but does not change what it sees. In field 15 the browser's Binaural
@@ -271,6 +274,48 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
       assert.equal((await status(page)).session.inspecting, false, 'Back released alone ends it');
       assert.equal((await page.evaluate((p) => window.xem.settings.apply({ PauseOnFocusLoss: p }), focusPause)).ok, true);
+      await gamepad();
+
+      // An agent's typed command: on, looking 30 degrees right and 10 down,
+      // stops a route under way (by command, the page's loop held) once the
+      // loop runs again; the agent's walk and jump are refused while it
+      // shows; off, the session has it off.
+      await page.evaluate(() => window.xem.setRunning(false));
+      assert.equal((await command(page, { cmd: 'navigate', to: [-80, -90] })).error, undefined);
+      await page.evaluate(() => window.xem.runFrames(8));
+      assert.notEqual((await status(page)).session.assist, null, 'a route under way');
+      let reply = await page.evaluate(() => window.xem.firstPerson({ on: true, yaw: 30, pitch: -10 }));
+      assert.deepEqual(reply, { first_person: true, look: { yaw: 30, pitch: -10 } });
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.status().session.inspecting);
+      session = (await status(page)).session;
+      assert.equal(session.assist, null, 'the agent\'s view stopped the route');
+      assert.equal(session.assist_outcome, 'stopped');
+      r = await renderer(page);
+      assert.ok(Math.abs(r.look.yaw - Math.PI / 6) < 1e-4 && Math.abs(r.look.pitch + Math.PI / 18) < 1e-4, `status shows the look in radians: ${JSON.stringify(r.look)}`);
+      for (const cmd of [{ cmd: 'act', actions: ['Up'], frames: 5 }, { cmd: 'press', buttons: ['triangle'] }, { cmd: 'navigate', to: [-80, -90] }]) {
+        assert.match((await command(page, cmd)).error, /^first-person inspection keeps the character/, JSON.stringify(cmd));
+      }
+      assert.match((await page.evaluate(() => window.xem.firstPerson({ on: 'yes' }))).error, /on is true or false/);
+      reply = await page.evaluate(() => window.xem.firstPerson({ on: false }));
+      assert.deepEqual(reply, { first_person: false, look: null });
+      await page.waitForFunction(() => !window.xem.status().session.inspecting);
+
+      // Toggle first-person view: its key (V), the deck's LOOK, and the
+      // automation's app operation, each once a press.
+      await page.keyboard.down('KeyV');
+      await page.waitForFunction(() => window.xem.status().renderer.firstPerson);
+      await page.keyboard.up('KeyV');
+      await frames(page, 3);
+      assert.equal((await renderer(page)).firstPerson, true, 'V turned it on, once');
+      const deck = (await status(page)).touch.controls.map((c) => c.control);
+      assert.ok(deck.includes('Look') && deck.includes('Select'), JSON.stringify(deck));
+      await finger('pointerdown', 3, 'Look');
+      await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
+      await finger('pointerup', 3, 'Look');
+      assert.equal((await status(page)).session.assist, null, 'LOOK walks nowhere');
+      assert.equal((await page.evaluate(() => window.xem.appOperation({ Action: 'ToggleFirstPerson' }))).first_person, true);
+      assert.equal((await page.evaluate(() => window.xem.firstPerson())).first_person, false, 'the bare command toggles it');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

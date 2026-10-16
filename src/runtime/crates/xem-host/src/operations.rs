@@ -177,6 +177,8 @@ impl Operations {
             AppAction::RequestPersistence => Ok("Native saves use application files. Export backups for another device.".into()),
             // A headset's loop takes it before it comes here (xr_play).
             AppAction::Recenter => Err("Recentering places a headset's view; play in a headset to use it.".into()),
+            // The views take it before it comes here (`View::pad_buttons`, xr_play).
+            AppAction::ToggleFirstPerson => Err("First-person view toggles in a view that shows the game.".into()),
             _ => {
                 let window = window.ok_or("File pickers are available in windowed play.")?;
                 self.export = match action {

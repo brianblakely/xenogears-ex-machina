@@ -6,7 +6,8 @@
 //! characters keep moving in, as the hosts give it), and the view presented
 //! from the game's draw trace beside one that never looks around. In field
 //! 30, turning inspection on stops the route under way and refuses new
-//! ones; the character stays where it stands, and the game's camera too,
+//! ones and an agent's walk, jump and camera turn (`act`, `press`, `hold`);
+//! the character stays where it stands, and the game's camera too,
 //! while the player holds a direction, jump and a camera turn; the view
 //! keeps its heading in the world for 120 frames while an agent's presses
 //! turn the character about and the game's camera a quarter; turning it
@@ -162,7 +163,10 @@ fn inspection_stops_the_route_keeps_the_character_and_its_heading_and_restores_t
     assert!(host.session.assist.is_none(), "turning inspection on stops the route");
     assert_eq!(host.session.assist_outcome, Some(xem_core::assist::Outcome::Stopped));
     assert_eq!(run(&mut host.session, json!({"cmd": "status"}))["inspecting"], true);
-    for command in [json!({"cmd": "navigate", "to": [-80.0, -90.0]}), json!({"cmd": "interact", "actor": 1})] {
+    // So are an agent's walk, jump and camera turn while the player walks
+    // (the host's own pad, below, is the view's to hold back).
+    for command in [json!({"cmd": "navigate", "to": [-80.0, -90.0]}), json!({"cmd": "interact", "actor": 1}),
+        json!({"cmd": "act", "actions": ["Up"], "frames": 10}), json!({"cmd": "press", "buttons": ["triangle"]}), json!({"cmd": "hold", "actions": ["CameraLeft"]})] {
         let reply = host.session.execute(&command);
         assert!(reply["error"].as_str().is_some_and(|e| e.starts_with("first-person inspection")), "{command} -> {reply}");
     }

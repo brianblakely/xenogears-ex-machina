@@ -171,6 +171,12 @@ pub fn auto_key(ui: Context) -> bool {
     matches!(ui, Context::Event { .. } | Context::Dialogue { .. })
 }
 
+/// Whether a touch deck's LOOK shows (first-person inspection on or off):
+/// in a field but its menu, where the view toggles.
+pub fn look_key(ui: Context) -> bool {
+    matches!(ui, Context::Walk | Context::Event { .. } | Context::Dialogue { .. })
+}
+
 /// A key beside the picture: its label, what aiming a tap at it does, and
 /// whether it is lit (the target selected now).
 #[derive(Clone, Debug, PartialEq)]

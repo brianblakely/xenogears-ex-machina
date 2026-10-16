@@ -186,10 +186,13 @@ fn options() -> Result<Options, String> {
                      --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
                      game bindings' gamepad, hands gesture (overhand grab Pause, prayer hands Settings, \
                      pinch to walk, thumb taps and swipes), the left menu button toggles Settings; \
-                     in a field the underhand grab (or the right stick's click released alone) looks around \
-                     from the character's eyes, the head looking and the right stick turning in steps; \
+                     in a field the underhand grab (anywhere but its menu), Toggle first-person view's chord \
+                     (the right stick's click with the right trigger) or, where Select toggles it, the right stick's \
+                     click released alone looks around from the character's eyes, the head looking and the right \
+                     stick turning in steps; \
                      the app's chords take their buttons first (the right stick's click, Back, with A saves \
-                     the state, with Y loads it, with the left grip rewinds, with the right grip toggles fast-forward); \
+                     the state, with Y loads it, with the left grip rewinds, with the right grip toggles fast-forward, \
+                     with the right trigger the first-person view); \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
                      prayer, spread and contract (two whole-hand pinches parting or closing: two-hand scaling), lose; \
                      NAME@X/Y also aims eye gaze at that screen pixel, NAME@panel:X/Y at the settings panel's \
@@ -207,6 +210,10 @@ fn options() -> Result<Options, String> {
                      the command layer's (status, context, navigate, act, ...; status adds renderer.movie, \
                      whether the window last showed a rebuilt movie frame), settings, \
                      settings_apply {{change}} (the panel's own typed change), panel {{visible}}, \
+                     first_person {{on, yaw, pitch}} (each optional: the first-person view on, off, or toggled as Toggle \
+                     first-person view does, anywhere in a field but its menu under Ex Machina, then turned to yaw degrees \
+                     right of the heading it began with and pitch up; it answers first_person and look, and status's \
+                     inspecting follows from the next frame), \
                      import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer; not with --xr), \
                      bios_import {{path}} (as the panel's Import BIOS: kept for every boot, the running game's at once) and \
                      app {{request}} (the panel's and the bindings' operations as they run them, answering {{ok, message}} or {{error}}: \
@@ -224,8 +231,10 @@ fn options() -> Result<Options, String> {
                      which Tab also closes, Left/Right the camera, Enter start, Backspace select). \
                      The mouse points at menu entries and the wheel scrolls them; Back+Start toggles settings.\n\
                      Walking in a field, Select (Backspace, or Back alone) toggles a first-person view where \
-                     Select shows no map, as does the right stick's click; in it the arrow keys, the right \
-                     stick and (with the mouse camera setting) the mouse look around, and the character stays put."
+                     Select shows no map, as does the right stick's click anywhere in a field but its menu, and so \
+                     does Toggle first-person view (V, Back+R1, the touch deck's LOOK; rebindable in Shortcuts); \
+                     in it the arrow keys, the right stick and (with the mouse camera setting) the mouse look around, \
+                     and the character stays put."
                 );
                 std::process::exit(0);
             }
@@ -658,6 +667,15 @@ impl Host {
             // The panel's and the bindings' operations, as theirs run (a
             // held rewind, Retry pending card writes, ...).
             Some("app") => xem_host::app_reply(xem_host::agent_request(command).and_then(|request| self.view.app_command(self.game.as_mut(), request))),
+            Some("first_person") => {
+                // As the app's Toggle first-person view, or on, off or
+                // turned: the next frames give the session its state (a
+                // route under way stops).
+                let field = self.game.as_mut().map(|game| game.pad_context().field).unwrap_or_default();
+                xem_settings::look::Command::parse(command)
+                    .and_then(|command| self.view.first_person_command(&command, field))
+                    .unwrap_or_else(|error| serde_json::json!({ "error": error }))
+            }
             _ => match &mut self.game {
                 Some(game) => {
                     let mut reply = game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error }));

@@ -11,8 +11,10 @@
 //! screen, not reconstructed 3D. The settings panel is a quad layer beside
 //! it (left menu button); the right controller points at it.
 //!
-//! First-person inspection (the underhand grab, or the controllers' Back
-//! released alone) looks from within the scene instead: each eye's own
+//! First-person inspection (the underhand grab or Toggle first-person
+//! view's chord anywhere in a field but its menu, the controllers' Back
+//! released alone where Select toggles it, an agent's `first_person`)
+//! looks from within the scene instead: each eye's own
 //! picture from the character's eye, turned and moved as the eye is, over
 //! its whole view, and the game's interface alone on a pane where the
 //! screen was (`GameView::present_headset`), every headset frame, paused
@@ -44,8 +46,9 @@
 //! the menu, the triggers and the right stick turn the camera. The app's
 //! bindings take their chords from it first, as in the window
 //! (`xem_settings::AppInput`): Back (the right stick's click) with A saves
-//! the state, with Y loads it, with the left grip rewinds while held and
-//! with the right grip toggles fast-forward; Back+Start toggles Settings.
+//! the state, with Y loads it, with the left grip rewinds while held,
+//! with the right grip toggles fast-forward and with the right trigger
+//! first-person view; Back+Start toggles Settings.
 //!
 //! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh,
 //! and every app operation a line with the game's memory hash after it.
@@ -81,6 +84,18 @@ pub fn gamepad(input: &InputState) -> ([u8; 16], [f32; 4]) {
         pressed[i] = u8::from(on);
     }
     (pressed, [left.thumbstick[0], -left.thumbstick[1], right.thumbstick[0], -right.thumbstick[1]])
+}
+
+/// An agent's `first_person` command (`--control`) or the app's Toggle
+/// first-person view in the headset's view, in `field` under `renderer`
+/// (`xem_settings::look::Command`): its answer, or why nothing changed.
+fn first_person(view: &mut GameView, command: &xem_settings::look::Command, field: xem_core::FieldControls, renderer: xem_settings::Renderer) -> Result<serde_json::Value, String> {
+    let change = command.change(view.first_person(), view.look_angles(), field, renderer)?;
+    if change.on != view.first_person() {
+        view.set_first_person(change.on);
+    }
+    view.look_around(change.turn.0, change.turn.1);
+    Ok(xem_settings::look::reply(view.first_person(), view.look_angles()))
 }
 
 /// Points at the panel with the right controller's aim ray, or with the
@@ -466,10 +481,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut panel_shown = options.show_settings;
     let mut menu_held = false;
     let mut player = xem_settings::player::PlayerInput::default();
-    // First-person inspection's toggle on the controllers (their Back), its
+    // First-person inspection's toggle on the controllers (their Back), the
+    // app's Toggle first-person view asked for this frame (its chord), its
     // turn on the right stick, and the last eyes tracked (held through
     // frames the runtime cannot locate them in).
     let mut look_toggle = xem_settings::look::Toggle::default();
+    let mut look_asked = false;
     let mut snap = xem_settings::look::SnapTurn::default();
     let mut tracked_eyes: Option<[HeadsetEye; 2]> = None;
     let mut assist = Assisted::new();
@@ -600,6 +617,14 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                         }
                         serde_json::json!({ "visible": *panel_visible.borrow() })
                     }
+                    // As the app's Toggle first-person view, or on, off or
+                    // turned; this frame's update gives the session its state.
+                    Some("first_person") => {
+                        let renderer = settings.borrow().settings().graphics.renderer;
+                        xem_settings::look::Command::parse(command)
+                            .and_then(|command| first_person(&mut view, &command, game.pad_context().field, renderer))
+                            .unwrap_or_else(|error| serde_json::json!({ "error": error }))
+                    }
                     // As the panel's Import BIOS once its picker chose a
                     // file, the outcome on the status line too.
                     Some("bios_import") => match command.get("path").and_then(serde_json::Value::as_str) {
@@ -713,6 +738,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             requests.borrow_mut().extend(app_input.requests(&current.app_bindings, current.invert_trigger_chords));
         }
         for request in std::mem::take(&mut *requests.borrow_mut()) {
+            // Toggle first-person view is the view's: its toggles below carry
+            // it out.
+            if request == AppRequest::Action(AppAction::ToggleFirstPerson) {
+                look_asked = true;
+                continue;
+            }
             let _ = operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui);
         }
         let (fast_forward,status) = game.time_status();
@@ -750,17 +781,22 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
         // First-person inspection, paused or not: the controllers' Back (the
         // right stick's click) released alone toggles it in a field, as a
-        // gamepad's does, where Ex Machina draws it, and the right stick
-        // turns it in steps (the head does the looking); neither while the
-        // panel has the controllers.
+        // gamepad's does, where Ex Machina draws it, Toggle first-person
+        // view's chord (Back with the right trigger) anywhere in one but its
+        // menu, and the right stick turns it in steps (the head does the
+        // looking); none while the panel has the controllers.
         let context = game.pad_context();
         let drawn = current.graphics.renderer == xem_settings::Renderer::ExMachina;
+        let asked = std::mem::take(&mut look_asked);
         if visible {
             look_toggle.clear();
             snap.clear();
         } else {
             if look_toggle.update(false, &pressed, context.field) && drawn {
                 view.set_first_person(!view.first_person());
+            } else if asked {
+                // Refused (nothing changes) where the grab toggles nothing.
+                let _ = first_person(&mut view, &xem_settings::look::Command::TOGGLE, context.field, current.graphics.renderer);
             }
             if xem_settings::look::turns(view.first_person(), context.field) {
                 view.look_around(snap.update(axes[2]), 0.0);
@@ -1186,4 +1222,43 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     game.set_listener_view(None);
     println!("exit frames={frames} game_frames={} memory_hash {} binaural={}", game.frames_run(), game.memory_hash(), binaural_line(&mut game));
     Ok(Ended { game, quit: quit.get() })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_right_controllers_stick_click_with_its_trigger_toggles_first_person_anywhere_in_a_field_but_its_menu() {
+        // Toggle first-person view's default chord on a headset's
+        // controllers (`gamepad`: no R3, the right stick's click is Back):
+        // the stick's click, then the trigger with it.
+        let bindings = xem_settings::Settings::default().app_bindings;
+        let mut app = xem_settings::AppInput::default();
+        let mut input = InputState::default();
+        input.hands[1].thumbstick_click = true;
+        app.pad(&gamepad(&input).0);
+        assert!(app.requests(&bindings, false).is_empty(), "Back alone asks nothing");
+        input.hands[1].trigger = 1.0;
+        let (pressed, _) = gamepad(&input);
+        assert_eq!((pressed[8], pressed[5], pressed[11]), (1, 1, 0), "Back and R1, no R3");
+        app.pad(&pressed);
+        assert_eq!(app.requests(&bindings, false), vec![AppRequest::Action(AppAction::ToggleFirstPerson)]);
+        assert!(app.requests(&bindings, false).is_empty(), "held, once");
+        assert_eq!(app.gamepad_for_game(&bindings, false), [0; 16], "the game has neither button meanwhile");
+        // The view takes it as the grab would: in a dialogue's field (where
+        // Select toggles nothing), not under its menu nor the Original renderer.
+        let gpu = pollster::block_on(xem_render::Gpu::headless()).expect("a wgpu adapter");
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let toggle = xem_settings::look::Command::TOGGLE;
+        let dialogue = xem_core::FieldControls { field: true, walking: false, menu: false, picture: false };
+        let menu = xem_core::FieldControls { menu: true, ..dialogue };
+        let exmachina = xem_settings::Renderer::ExMachina;
+        assert!(first_person(&mut view, &toggle, dialogue, xem_settings::Renderer::Original).is_err());
+        assert_eq!(first_person(&mut view, &toggle, dialogue, exmachina).unwrap(), serde_json::json!({"first_person": true, "look": {"yaw": 0.0, "pitch": 0.0}}));
+        assert!(first_person(&mut view, &toggle, menu, exmachina).is_err() && view.first_person(), "the menu keeps it on");
+        let turned = xem_settings::look::Command { yaw: Some(30.0), ..toggle };
+        assert_eq!(first_person(&mut view, &turned, dialogue, exmachina).unwrap()["look"]["yaw"], 30.0);
+        assert_eq!(first_person(&mut view, &toggle, dialogue, exmachina).unwrap()["first_person"], false);
+    }
 }

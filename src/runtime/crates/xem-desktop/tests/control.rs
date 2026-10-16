@@ -13,8 +13,14 @@
 //! back, then plays on), retries the pending card writes, and refuses the
 //! file pickers and Recenter, each with the reason; `status` shows the
 //! storage line's results (a card file that is no card, a kept BIOS image
-//! that is no image). Local only: it needs the user's disc 1, a game
-//! module build and weston and lavapipe (nix/runtime's shell).
+//! that is no image).
+//! Agents look around in first person (docs/runtime.md, First-person
+//! inspection): `first_person` is refused outside a field; in field 30 it
+//! turns the view on, the next frames' `status` shows `inspecting` and the
+//! route under way stopped, `navigate` and a walk by `act` are refused, it
+//! turns the view to the look asked, and turns it off.
+//! Local only: it needs the user's disc 1, a game module build and weston
+//! and lavapipe (nix/runtime's shell).
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-desktop --test control
 
@@ -33,8 +39,9 @@ fn disc() -> Option<PathBuf> {
     path.exists().then_some(path)
 }
 
-/// Weston's headless compositor in a runtime directory of its own, and the
-/// desktop's configuration and cards beside it; both stop when dropped.
+/// Weston's headless compositor in a runtime directory of its own (one a
+/// test, `name`), and the desktop's configuration and cards beside it; both
+/// stop when dropped.
 struct Display {
     root: PathBuf,
     weston: Child,
@@ -232,4 +239,46 @@ fn agents_hold_rewind_retry_card_writes_and_read_the_storage_line_through_the_de
     let picker = desktop.send(json!({"cmd": "app", "request": {"Action": "ExportState"}}));
     assert!(picker["error"].as_str().is_some_and(|e| e.starts_with("ExportState opens a file picker")), "{picker}");
     assert_eq!(desktop.send(json!({"cmd": "app", "request": {"Action": "Recenter"}})), json!({"error": "Recentering places a headset's view; play in a headset to use it."}));
+}
+
+#[test]
+fn agents_turn_first_person_on_turn_it_and_turn_it_off_on_the_desktops_control_channel() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (Ok(lavapipe), true) = (std::env::var("XEM_LAVAPIPE_ICD"), Command::new("weston").arg("--version").output().is_ok()) else {
+        eprintln!("skipping: no weston or lavapipe (run in nix/runtime's shell)");
+        return;
+    };
+    let display = Display::start("first-person", &lavapipe);
+    let mut desktop = Desktop::launch(&display, &disc, &lavapipe);
+    desktop.status_after(0, 10);
+    let refused = desktop.send(json!({"cmd": "first_person", "on": true}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("field")), "the title is no field: {refused}");
+    assert!(desktop.send(json!({"cmd": "first_person", "enabled": true}))["error"].is_string(), "an unknown field is refused");
+    assert!(desktop.send(json!({"cmd": "enter_field", "map": 30})).get("error").is_none());
+    let began = Instant::now();
+    while desktop.send(json!({"cmd": "context"}))["kind"] != "walk" {
+        assert!(began.elapsed() < Duration::from_secs(120), "field 30 never let the player walk");
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    let route = desktop.send(json!({"cmd": "navigate", "to": [-80.0, -90.0]}));
+    assert!(route.get("error").is_none(), "{route}");
+    let on = desktop.send(json!({"cmd": "first_person", "on": true}));
+    assert_eq!(on, json!({"first_person": true, "look": {"yaw": 0.0, "pitch": 0.0}}), "it looks along the camera's heading");
+    let since = desktop.send(json!({"cmd": "status"}))["frames"].as_u64().expect("frames");
+    let status = desktop.status_after(since, 2);
+    assert_eq!(status["inspecting"], true, "the next frames give the session the view: {status}");
+    assert_eq!((&status["assist"], &status["assist_outcome"]), (&json!(null), &json!("stopped")), "the route under way stopped");
+    for command in [json!({"cmd": "navigate", "to": [-80.0, -90.0]}), json!({"cmd": "act", "actions": ["Up"], "frames": 30})] {
+        let reply = desktop.send(command.clone());
+        assert!(reply["error"].as_str().is_some_and(|e| e.starts_with("first-person inspection keeps the character")), "{command} -> {reply}");
+    }
+    let turned = desktop.send(json!({"cmd": "first_person", "yaw": 30, "pitch": -10}));
+    assert_eq!(turned, json!({"first_person": true, "look": {"yaw": 30.0, "pitch": -10.0}}), "turned to the look asked");
+    let off = desktop.send(json!({"cmd": "first_person", "on": false}));
+    assert_eq!(off, json!({"first_person": false, "look": null}));
+    let since = desktop.send(json!({"cmd": "status"}))["frames"].as_u64().expect("frames");
+    assert_eq!(desktop.status_after(since, 2)["inspecting"], false, "and the session has it off");
 }

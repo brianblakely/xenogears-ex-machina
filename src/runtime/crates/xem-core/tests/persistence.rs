@@ -1774,13 +1774,19 @@ fn inspection_stops_a_route_refuses_new_ones_and_leaves_recorded_ones_to_run() {
     assert!(s.assist.is_none(), "turning inspection on stops the route under way");
     assert_eq!(s.assist_outcome, Some(xem_core::assist::Outcome::Stopped));
     assert_eq!(s.execute(&json!({"cmd":"status"}))["inspecting"], json!(true));
-    for command in [json!({"cmd":"navigate","to":[1.0,2.0]}), json!({"cmd":"interact","actor":1})] {
+    for command in [json!({"cmd":"navigate","to":[1.0,2.0]}), json!({"cmd":"interact","actor":1}), json!({"cmd":"assist","intent":intent})] {
         let reply = s.execute(&command);
         assert!(reply["error"].as_str().is_some_and(|e| e.starts_with("first-person inspection keeps the character")), "{command} -> {reply}");
     }
-    // A recorded intent (a replay's, a session log's) still runs; staying
-    // on stops nothing more, and turning it off restarts nothing.
-    assert!(s.execute(&json!({"cmd":"assist","intent":intent})).get("error").is_none());
+    assert!(s.assist.is_none(), "an agent's own intent, sent live, is refused");
+    // A session log's recorded intent still runs (with no field on the
+    // stand-in to walk, it ends at once); staying on stops no route the
+    // host starts, and turning it off restarts nothing.
+    let at = s.runtime.frames();
+    assert!(s.execute(&json!({"cmd":"schedule","commands":[[at, {"cmd":"assist","intent":intent}]]})).get("error").is_none());
+    assert!(s.frame().unwrap(), "the log's command runs, nothing stops the session");
+    assert_eq!(s.assist_outcome, Some(xem_core::assist::Outcome::Interrupted), "the log's intent ran");
+    s.start_assist(intent.clone());
     s.set_inspecting(true);
     assert!(s.assist.is_some(), "only turning it on stops a route");
     s.execute(&json!({"cmd":"assist_stop"}));
@@ -1789,12 +1795,90 @@ fn inspection_stops_a_route_refuses_new_ones_and_leaves_recorded_ones_to_run() {
     assert_eq!(s.execute(&json!({"cmd":"status"}))["inspecting"], json!(false));
     let log = s.execute(&json!({"cmd":"stop_recording"}));
     let assists: Vec<&str> = log["controls"].as_array().unwrap().iter().filter_map(|c| c[1]["cmd"].as_str()).filter(|cmd| cmd.starts_with("assist")).collect();
-    assert_eq!(assists, ["assist", "assist_stop", "assist", "assist_stop"], "inspection's stop is recorded as the player's own");
+    assert_eq!(assists, ["assist", "assist_stop", "assist", "assist", "assist_stop"], "inspection's stop is recorded as the player's own, the refused intent not at all");
     // A replay keeps its own record: the host's inspection stops none of its routes.
     let replay = json!({"cmd":"replay","start_vblank":0,"end_vblank":5,"changes":[],"controls":[[0,{"cmd":"assist","intent":intent}]]});
     assert!(s.execute(&replay).get("error").is_none());
     s.set_inspecting(true);
     assert!(s.assist.is_some(), "a replay's route runs whatever the host shows");
+}
+
+/// The stand-in as a field (mode 1) whose player walks (the player control
+/// read the pad, no window open, no menu), reading pad 1 into RAM each
+/// frame (`PAD_BUFFER`): its memory hash follows the pad.
+fn walking(s: &mut Session<Counter>) {
+    let memory = s.runtime.memory();
+    memory.write(0x800A_DB64, &[0xFF]).unwrap();
+    memory.write(0x800B_2174, &0u16.to_le_bytes()).unwrap();
+    memory.write_u32(0x800A_DB68, 1).unwrap();
+    memory.write_u32(DIALOGUE, 1).unwrap();
+    s.runtime.services().mode = Some(1);
+}
+
+#[test]
+fn inspection_refuses_agents_live_moves_jumps_and_camera_turns_while_the_player_walks_records_none_and_a_replay_still_matches() {
+    let refused = |reply: &serde_json::Value| reply["error"].as_str().is_some_and(|e| e.starts_with("first-person inspection keeps the character"));
+    let mut s = session();
+    walking(&mut s);
+    assert_eq!(s.execute(&json!({"cmd":"context"}))["kind"], json!("walk"));
+    let start = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    s.set_inspecting(true);
+    let at = s.runtime.services().clock.vblanks;
+    // Directions, Jump (Triangle under the game's assignment, whichever
+    // action names it) and the camera's turns (L1, R1) on pad 1.
+    for command in [
+        json!({"cmd":"act","actions":["Up"],"frames":5}), json!({"cmd":"act","actions":["Jump"]}),
+        json!({"cmd":"act","actions":["Confirm","CameraLeft"]}), json!({"cmd":"act","actions":["AttackWeak"]}),
+        json!({"cmd":"hold","actions":["Right"]}), json!({"cmd":"pad","buttons":["down"]}),
+        json!({"cmd":"press","buttons":["triangle"],"frames":3}), json!({"cmd":"press","buttons":["cross","r1"]}),
+    ] {
+        let reply = s.execute(&command);
+        assert!(refused(&reply), "{command} -> {reply}");
+    }
+    assert_eq!(s.runtime.services().pads.0[0].buttons, 0, "none reached pad 1");
+    // The rest of pad 1, pad 2 and a release pass.
+    for command in [json!({"cmd":"act","actions":["Confirm"],"frames":2}), json!({"cmd":"pad","port":1,"buttons":["up"]}),
+        json!({"cmd":"pad","buttons":["start"]}), json!({"cmd":"hold","actions":[]})] {
+        let reply = s.execute(&command);
+        assert!(reply.get("error").is_none(), "{command} -> {reply}");
+    }
+    // A dialogue's choices take the directions: outside Walk they pass.
+    s.runtime.memory().write(0x800B_2174, &1u16.to_le_bytes()).unwrap();
+    assert_eq!(s.execute(&json!({"cmd":"context"}))["kind"], json!("dialogue"));
+    assert!(s.execute(&json!({"cmd":"pad","buttons":["left"]})).get("error").is_none());
+    assert!(s.execute(&json!({"cmd":"pad","buttons":[]})).get("error").is_none());
+    s.runtime.memory().write(0x800B_2174, &0u16.to_le_bytes()).unwrap();
+    // A session log's are the recording's: they run, and the session goes on.
+    let frame = s.runtime.frames();
+    let log = json!({"cmd":"schedule","commands":[[frame + 1, {"cmd":"act","actions":["Up"],"frames":2}], [frame + 2, {"cmd":"press","buttons":["l1"]}]]});
+    assert!(s.execute(&log).get("error").is_none());
+    s.execute(&json!({"cmd":"frames","count":4}));
+    assert!(s.stopped.is_none(), "{:?}", s.stopped);
+    // Off, an agent walks again.
+    s.set_inspecting(false);
+    assert!(s.execute(&json!({"cmd":"act","actions":["Up"],"frames":3})).get("error").is_none());
+    s.execute(&json!({"cmd":"frames","count":5}));
+    let recorded = s.execute(&json!({"cmd":"stop_recording"}));
+    let ended = s.memory_hash().unwrap();
+    let changes: Vec<(u64, u32, u16)> = serde_json::from_value(recorded["changes"].clone()).unwrap();
+    let then: Vec<(u32, u16)> = changes.iter().filter(|(v, ..)| *v == at).map(|(_, port, buttons)| (*port, *buttons)).collect();
+    use xem_core::pad::button;
+    assert_eq!(then, [(0, button::CROSS), (1, button::UP), (0, button::START), (0, 0), (0, button::LEFT), (0, 0)], "only what passed is in the log");
+    assert!(changes.iter().any(|(v, port, buttons)| *v > at && *port == 0 && buttons & button::UP != 0), "the log's own Up and the agent's later one are");
+    // The log replays to the same RAM whatever the replaying host shows.
+    let mut other = session();
+    other.restore_bytes(&start).unwrap();
+    let mut replay = recorded.clone();
+    replay["cmd"] = json!("replay");
+    assert!(other.execute(&replay).get("error").is_none());
+    other.set_inspecting(true);
+    let end = recorded["end_vblank"].as_u64().unwrap();
+    let ran = other.execute(&json!({"cmd":"run_until","until":{"vblanks":end},"max_frames":100}));
+    assert_eq!(ran["met"], json!(true), "{ran}");
+    assert!(other.stopped.is_none(), "{:?}", other.stopped);
+    assert_eq!(other.memory_hash().unwrap(), ended, "the replay matches the recording");
 }
 
 #[test]

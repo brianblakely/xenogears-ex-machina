@@ -92,6 +92,12 @@
 #   shows (it walks once it is off), the right stick turns the view 30
 #   degrees a push, and an agent's settings_apply to the Original renderer
 #   ends it;
+# - first person by an agent's command in field 30 (the player's own play
+#   from that state): `first_person` turns the view on looking 30 degrees
+#   right from within the scene, a walk under way stops, `navigate` and a
+#   walk by `act` are refused while it shows, `status` reports it, and it
+#   turns the view off; Toggle first-person view's chord (the right stick's
+#   click with the right trigger, scripted) turns it on and off;
 # - state interchange: that state loaded in the headset (--load-state) and
 #   played on 600 game frames under HD-2D has xem-headless's RAM at the
 #   300th, where the headset writes its state (--save-state-at), and at
@@ -378,6 +384,23 @@ cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
     --xr-pad "40:Back,42:none,60:Down+North+L1,121:none,130:Back,132:none,140:Down,161:none,170:Back,172:none" \
     --xr-stick "190:1/0,196:0/0,205:1/0,211:0/0" >"$out/controllers.log" 2>"$out/controllers.err"
 cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
+# First person by an agent's command (--control), the player's own play
+# from the same state: a walk by `navigate` once headset frame 30 is drawn,
+# the view on looking 30 degrees right once 36 is (the walk stops), at 80
+# `navigate` and a walk by `act` refused, `status`, and the view off; then
+# Toggle first-person view's chord (the right stick's click with the right
+# trigger: Back+R1) at 102 turns it on and at 132 off.
+{
+    printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate"
+    drawn "$out/agent-inspect.log" 30
+    echo '{"cmd":"navigate","to":[-80,-90]}'
+    drawn "$out/agent-inspect.log" 36
+    echo '{"cmd":"first_person","on":true,"yaw":30}'
+    drawn "$out/agent-inspect.log" 80
+    printf '%s\n' '{"cmd":"navigate","to":[-80,-90]}' '{"cmd":"act","actions":["Up"],"frames":10}' '{"cmd":"status"}' '{"cmd":"first_person","on":false}'
+    drawn "$out/agent-inspect.log" 150
+} | "$desktop" --xr --control --disc "$disc" --exit-after-frames 160 \
+    --xr-pad "100:Back,102:Back+R1,104:none,130:Back,132:Back+R1,134:none" >"$out/agent-inspect.log" 2>"$out/agent-inspect.err"
 # A hands-only player's held rewind, from the same state, the gaze the
 # eyes': an agent's app command recentres once the session has drawn 100
 # frames; prayer hands open Settings at headset frame 200, a pinch picks
@@ -1191,6 +1214,37 @@ if len(toggles) == 1 and len(statuses) == 3 and len(saved) == 1:
     print(f"AUTO: a pinch at headset frame {pinched[0]['n'] if pinched else '-'} turned auto-advance on at game vblank {toggled}; "
           f"{since} vertical blanks on the prompt had waited {after['auto_advance_waited']}; {later['vblanks'] - toggled} on, "
           f"after auto-advance's press, {later['auto_advance_waited']} ({later['dialogue']})")
+# First person by an agent's command: each reply with the headset frame it
+# was answered in (before that frame's line); the view's frames.
+rows = records("agent-inspect.log")
+by = {int(r["n"]): r for r in rows}
+replies, last = [], -1
+for line in open(f"{out}/agent-inspect.log"):
+    if line.startswith("xrframe "):
+        last = int(line.split()[1].split("=", 1)[1])
+    elif line.startswith("{"):
+        replies.append((last + 1, json.loads(line)))
+inspecting = "first-person inspection keeps the character"
+check(len(replies) == 7 and len(rows) == 160, f"agent-inspect: {len(replies)} replies, {len(rows)} headset frames")
+if len(replies) == 7 and len(rows) == 160:
+    (_, loaded), (walk_at, walk), (on_at, on), (_, route), (_, act), (_, status), (off_at, off) = replies
+    check("error" not in loaded and "error" not in walk and isinstance(walk.get("status", {}).get("assist"), dict),
+          f"agent-inspect: the state loaded and a walk began: {loaded} {walk}")
+    walking = [by[n]["assist"] for n in range(walk_at, on_at)]
+    check(on == {"first_person": True, "look": {"yaw": 30.0, "pitch": 0.0}}, f"agent-inspect: first_person on answered {on}")
+    shown = [by[n] for n in range(on_at, off_at)]
+    check(all(r["fp"] == "1" and r["look"] == "0.5236,0.0000" for r in shown) and sum(r["within"] == "1" for r in shown) >= len(shown) - 2,
+          f"agent-inspect: from {on_at} to {off_at} fp/look/within {[(r['fp'], r['look'], r['within']) for r in shown[:4]]}...")
+    check(any(a not in ("-", "stopped") for a in walking) and all(r["assist"] == "stopped" for r in shown),
+          f"agent-inspect: the walk under way {walking} stopped when the view came on: {[r['assist'] for r in shown[:4]]}")
+    check(all(str(r.get("error", "")).startswith(inspecting) for r in (route, act)), f"agent-inspect: refused while it shows: {route} {act}")
+    check(status.get("inspecting") is True, f"agent-inspect: status shows inspecting: {status.get('inspecting')}")
+    check(off == {"first_person": False, "look": None} and all(by[n]["fp"] == "0" for n in range(off_at, 102)),
+          f"agent-inspect: first_person off answered {off} at {off_at}")
+    chord = [int(by[n]["fp"]) for n in range(100, 160)]
+    check(chord == [0] * 2 + [1] * 30 + [0] * 28, f"agent-inspect: Back+R1 at 102 and 132 toggled fp {chord}")
+    print(f"agent-inspect: the walk began at headset frame {walk_at} ({walking[:3]}...), first_person on at {on_at} looked 30 degrees "
+          f"right and stopped it, navigate and act refused, off at {off_at}; Back+R1 toggled it on at 102 and off at 132")
 
 # OpenXR's controller paths for first-person inspection (the controllers
 # run): Back released alone toggles it in the field, held directions, Jump

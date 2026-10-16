@@ -66,6 +66,19 @@ fn error(message: impl std::fmt::Display) -> JsValue {
     js_sys::Error::new(&message.to_string()).into()
 }
 
+/// An agent's `first_person` command (`window.xem.firstPerson`) or the app's
+/// Toggle first-person view on the page's view (shared with its WebXR
+/// sessions), in `field` under the `renderer` setting
+/// (`xem_settings::look::Command`): its answer, or why nothing changed.
+fn first_person(view: &mut WebRenderer, command: &xem_settings::look::Command, field: xem_core::FieldControls, renderer: xem_settings::Renderer) -> Result<Value, String> {
+    let change = command.change(view.first_person(), view.look_angles(), field, renderer)?;
+    if change.on != view.first_person() {
+        view.set_first_person(change.on);
+    }
+    view.look_around(change.turn.0, change.turn.1);
+    Ok(xem_settings::look::reply(view.first_person(), view.look_angles()))
+}
+
 #[derive(Default)]
 struct LoopStats {
     animation_frames: u64,
@@ -175,13 +188,15 @@ pub struct XemApp {
     xr_panel_click: Option<(f32, f32)>,
     /// First-person inspection: the first gamepad's buttons and axes as
     /// they are (before app chords take theirs), the arrow keys held
-    /// (whatever the bindings say), the toggle, the mouse motion that turns
-    /// the view, when it last turned (page time), and a headset's stepped
-    /// turn.
+    /// (whatever the bindings say), the toggle, the app's Toggle
+    /// first-person view asked for since the last step (its key, its chord,
+    /// the deck's LOOK), the mouse motion that turns the view, when it last
+    /// turned (page time), and a headset's stepped turn.
     pad: [u8; 16],
     axes: [f32; 4],
     arrows: [bool; 4],
     look_toggle: xem_settings::look::Toggle,
+    look_asked: bool,
     look_mouse: [f32; 2],
     looked: Option<f64>,
     snap: xem_settings::look::SnapTurn,
@@ -301,6 +316,7 @@ impl XemApp {
             axes: [0.0; 4],
             arrows: [false; 4],
             look_toggle: Default::default(),
+            look_asked: false,
             look_mouse: [0.0; 2],
             looked: None,
             snap: Default::default(),
@@ -615,7 +631,7 @@ impl XemApp {
             renderer.overlay.ui = shown.then_some(ui);
             renderer.overlay.style = style;
             let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, xem_assist::draw::deck_state(*c, held.contains(c), auto_advance))).collect();
+            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, xem_assist::draw::deck_state(*c, held.contains(c), auto_advance, inspecting))).collect();
         }
         self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
@@ -751,19 +767,23 @@ impl XemApp {
     /// First-person inspection this frame, at page time `now`
     /// (`xem_settings::look`), paused or not: toggled in a field, where Ex
     /// Machina draws it, by Select's keys, the touch deck's SELECT, the
-    /// gamepad's Back released alone or its right stick's click; while it
-    /// shows, turned by the arrow keys, the right stick, a finger on the
-    /// picture and the mouse the game holds, or in a headset by the right
+    /// gamepad's Back released alone or its right stick's click, and
+    /// anywhere in one but its menu by the app's Toggle first-person view;
+    /// while it shows, turned by the arrow keys, the right stick, a finger on
+    /// the picture and the mouse the game holds, or in a headset by the right
     /// stick in steps (the head looks around). Whether it shows. Neither
     /// happens while the settings panel has the input or the page has lost
     /// focus, when the game's buttons are let go too (the page reads the
     /// gamepad whatever the focus). The Original renderer ends it.
     fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
-        // The mouse's and a finger's motion are the view's this frame, or no one's.
+        // The mouse's and a finger's motion are the view's this frame, or no
+        // one's, as Toggle first-person view asked for since the last.
         let mut mouse = std::mem::take(&mut self.look_mouse);
         let (dx, dy) = self.deck.take_drag();
+        let asked = std::mem::take(&mut self.look_asked);
         let looked = self.looked.replace(now);
-        let drawn = self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
+        let setting = self.settings.borrow().settings().graphics.renderer;
+        let drawn = setting == xem_settings::Renderer::ExMachina;
         let away = self.panel_visible() || !self.app_input.focused();
         let headset = self.xr_input.is_some();
         let Some(renderer) = self.renderer.as_mut() else { return false };
@@ -780,8 +800,14 @@ impl XemApp {
         }
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| self.input.key_held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
+        let was = renderer.first_person();
         if self.look_toggle.update(select, &self.pad, field) && drawn {
-            renderer.set_first_person(!renderer.first_person());
+            renderer.set_first_person(!was);
+        } else if asked {
+            // Refused (nothing changes) where the grab toggles nothing.
+            let _ = first_person(renderer, &xem_settings::look::Command::TOGGLE, field, setting);
+        }
+        if renderer.first_person() != was {
             self.input.mouse.clear();
             mouse = [0.0; 2];
         }
@@ -1147,7 +1173,16 @@ impl XemApp {
         Ok(())
     }
 
-    pub fn take_app_requests(&self) -> String { to_json(&std::mem::take(&mut *self.app_requests.borrow_mut())) }
+    /// The app operations asked for since the last call, for the page to
+    /// carry out; Toggle first-person view (its key, its chord) stays for the
+    /// next step's toggles ([`XemApp::look`]).
+    pub fn take_app_requests(&mut self) -> String {
+        let mut requests = std::mem::take(&mut *self.app_requests.borrow_mut());
+        let asked = requests.len();
+        requests.retain(|request| *request != AppRequest::Action(xem_settings::AppAction::ToggleFirstPerson));
+        self.look_asked |= requests.len() != asked;
+        to_json(&requests)
+    }
     /// Save-state feedback after the host completes storage or restoration.
     pub fn state_notice(&mut self, saved: bool, failure: Option<String>) {
         if let Some(hud) = self.renderer.as_mut().and_then(|r| r.frame_rate.as_mut()) {
@@ -1267,6 +1302,7 @@ impl XemApp {
             "down" => match self.deck.down(u64::from(id), (x, y), time) {
                 Touched::Settings => self.set_panel_visible(true),
                 Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
+                Touched::FirstPerson => self.look_asked = true,
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },
@@ -1556,10 +1592,13 @@ impl XemApp {
     /// `xem-headless --control` reads them), JSON in and out: `status`,
     /// `frames`, `run_until`, `pad`, `press`, `inspect`, `write`, `snapshot`,
     /// `restore`, `memory_hash`, ... A command that runs frames runs at most
-    /// [`MAX_FRAMES_PER_COMMAND`]; errors come back as `{"error": ...}`.
+    /// [`MAX_FRAMES_PER_COMMAND`]; errors come back as `{"error": ...}`. The
+    /// page's own `first_person` ([`XemApp::first_person_command`]) is the
+    /// view's, not the session's.
     pub fn command(&mut self, command: &str) -> String {
         let reply = match serde_json::from_str::<Value>(command) {
             Err(e) => json!({ "error": format!("bad json: {e}") }),
+            Ok(command) if command.get("cmd").and_then(Value::as_str) == Some("first_person") => self.first_person_command(&command),
             Ok(command) => {
                 let frames = match command.get("cmd").and_then(Value::as_str) {
                     Some("frames") => command.get("count").and_then(Value::as_u64).unwrap_or(1),
@@ -1592,6 +1631,25 @@ impl XemApp {
             self.running = false;
         }
         to_json(&reply)
+    }
+
+    /// `{"cmd": "first_person", "on": bool, "yaw": degrees, "pitch":
+    /// degrees}`, each optional: the view on, off or toggled as the app's
+    /// Toggle first-person view toggles it (anywhere in a field but its
+    /// menu, under Ex Machina), then turned (`xem_settings::look::Command`),
+    /// answering `{first_person, look}`; the session takes its state with
+    /// the next batch of frames the page runs (`status().session.inspecting`).
+    fn first_person_command(&mut self, command: &Value) -> Value {
+        let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let setting = self.settings.borrow().settings().graphics.renderer;
+        let Some(renderer) = self.renderer.as_mut() else { return json!({ "error": "no renderer: the page shows no game" }) };
+        let was = renderer.first_person();
+        let reply = xem_settings::look::Command::parse(command).and_then(|command| first_person(renderer, &command, field, setting));
+        if renderer.first_person() != was {
+            self.input.mouse.clear();
+            self.look_mouse = [0.0; 2];
+        }
+        reply.unwrap_or_else(|error| json!({ "error": error }))
     }
 
     /// The runtime between frames as snapshot bytes (`Runtime::snapshot`), for saves.
