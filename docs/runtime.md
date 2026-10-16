@@ -2081,9 +2081,9 @@ trigger, and the touch deck's LOOK; rebindable in Settings' Shortcuts) toggles
 it anywhere in a field but its menu too, as a headset's underhand grab does
 (`look::grab_toggles`), for players with no right stick to click and in
 dialogues, events and on the picture maps; neither the chord's Back nor its
-R1 reaches the game while the chord holds. Every toggle works only where Ex
-Machina draws the view (not under the Original renderer) and not while the
-settings panel has the input. While the view is on, the arrow keys (2 radians a second
+R1 reaches the game while the chord holds. Each of the player's toggles
+works only where Ex Machina draws the view (not under the Original
+renderer) and not while the settings panel has the input. While the view is on, the arrow keys (2 radians a second
 across, 1.5 up and down, whatever the bindings give them), the right stick
 (3 and 2 at full tilt, past a fifth of its travel), a finger alone dragged
 on the picture (0.003 radians a logical pixel, the scene following the
