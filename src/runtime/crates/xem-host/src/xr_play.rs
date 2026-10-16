@@ -369,6 +369,10 @@ pub struct XrPlay {
     /// the head at it for as long, its trigger (select) the entry's R1
     /// (Monado's simulated controllers point where no test chooses).
     pub pad: Vec<(u64, u16, Option<(f32, f32)>)>,
+    /// Scripted right stick for runtimes whose controllers have none
+    /// (headset frame, x and y from -1 to 1, y up): held from that frame
+    /// until the next entry's, added to the controllers' own.
+    pub stick: Vec<(u64, [f32; 2])>,
     /// Where Save state keeps its state and Import BIOS its image (the
     /// Android host's files directory); without one, beside the settings,
     /// as in the window.
@@ -558,11 +562,15 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // input (losing it lets go of a held rewind, and of what the panel's
         // pointer held, as the window losing focus does).
         let focused = session.state() == xem_xr::SessionState::FOCUSED;
-        let (mut pressed, axes) = gamepad(&input);
+        let (mut pressed, mut axes) = gamepad(&input);
         if let Some((_, buttons, _)) = script {
             for (i, button) in pressed.iter_mut().enumerate() {
                 *button |= u8::from(buttons & (1 << i) != 0);
             }
+        }
+        if let Some((_, [x, y])) = options.stick.iter().filter(|(at, _)| *at <= frames).last() {
+            axes[2] = (axes[2] + x).clamp(-1.0, 1.0);
+            axes[3] = (axes[3] - y).clamp(-1.0, 1.0);
         }
         if focused != app_input.focused() {
             requests.borrow_mut().extend(app_input.set_focused(focused));
@@ -1114,8 +1122,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         };
         let key = xem_assist::draw::side_keys(&screen, 1)[0].1.size.0;
         let binaural = binaural_line(&mut game);
+        // Where the field's controlled character stands (whole world units).
+        let player = game.field().and_then(|field| field.player().map(|actor| actor.position))
+            .map_or("-".into(), |p| format!("{:.0},{:.0},{:.0}", p.x, p.y, p.z));
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us} presented_us={} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} pane={pane_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} view={} movie={} side={:.0} fov={fov} head={head} gestures={} player_pause={} marks={} assist={} context={} player={player} fp={} within={} look={look} scale={:.4} present_us={present_us} presented_us={} xr_view={} diorama={} share={:.3} builds={} seat={seat} resets={resets} recenters={recenters} ff={} hud={} keys={keys} panel={panel_at} pane={pane_at} diorama_scale={diorama_scale:.4} world_scale={world_scale} target={target} anchor={anchor} table={centre} key={key:.5} passthrough={} binaural={binaural}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),

@@ -19,7 +19,9 @@
 // within the scene through each view, a head turn changes the view while the
 // player's Pause holds the game, the controllers' click and stick toggle and
 // turn it then too and the Original renderer ends it, and the grab again
-// gives the screen back at its size. The title movie in the headset with
+// gives the screen back at its size; on as the session ends, the canvas
+// goes on with the view, and a new session looks from within the scene at
+// once (the canvas and the headset share one view). The title movie in the headset with
 // wider framing on, the same frame shown twice from one snapshot: rebuilt
 // from what the MDEC decoded under the Enhanced movies setting
 // (status().renderer.movie), the device's own picture under Original, on the
@@ -424,6 +426,14 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(info.renderer.firstPerson, true, 'the view carries out of the headset');
       await page.waitForTimeout(300);
       assert.ok((await status(page)).loop.animationFrames > info.loop.animationFrames, 'the canvas draws it');
+      // And into a new session: Enter VR again, its views look from within
+      // the scene with no toggle.
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().page.xr.active, null, { timeout: 60_000 });
+      await page.waitForFunction(() => window.xem.status().xr.within, null, { timeout: 30_000 });
+      info = await status(page);
+      assert.equal(info.xr.inspecting, true, 'the view carries into a new session');
+      assert.equal(info.xr.within, true, 'the new session\'s views look from within the scene');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

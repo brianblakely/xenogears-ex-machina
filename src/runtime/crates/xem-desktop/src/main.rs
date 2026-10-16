@@ -50,6 +50,8 @@ struct Options {
     /// gamepad's buttons as `xem_settings::controls::PAD_NAMES` bits, the
     /// settings panel's logical pixel the right controller points at).
     xr_pad: Vec<(u64, u16, Option<(f32, f32)>)>,
+    /// Headset tests: the scripted right stick (headset frame, x and y).
+    xr_stick: Vec<(u64, [f32; 2])>,
     /// Agents' commands on stdin while the game plays (`--control`).
     control: bool,
 }
@@ -74,6 +76,7 @@ fn options() -> Result<Options, String> {
         xr_recenter_at: Vec::new(),
         xr_lose_tracking: None,
         xr_pad: Vec::new(),
+        xr_stick: Vec::new(),
         control: false,
     };
     let mut args = std::env::args().skip(1);
@@ -162,11 +165,22 @@ fn options() -> Result<Options, String> {
                 }
                 options.xr_pad.sort_by_key(|(at, ..)| *at);
             }
+            "--xr-stick" => {
+                let value = args.next().ok_or("--xr-stick needs FRAME:X/Y,...")?;
+                for item in value.split(',') {
+                    let parsed = item.split_once(':').and_then(|(at, xy)| {
+                        let (x, y) = xy.split_once('/')?;
+                        Some((at.parse().ok()?, [x.parse::<f32>().ok()?.clamp(-1.0, 1.0), y.parse::<f32>().ok()?.clamp(-1.0, 1.0)]))
+                    });
+                    options.xr_stick.push(parsed.ok_or_else(|| format!("bad --xr-stick entry {item:?} (FRAME:X/Y)"))?);
+                }
+                options.xr_stick.sort_by_key(|(at, _)| *at);
+            }
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
                      [--exit-at-frame N] [--load-state FILE] [--save-state-at N:FILE] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...] [--xr-recenter-at N,...] [--xr-lose-tracking N,M] \
-                     [--xr-pad N:BUTTONS[@panel:X/Y],...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
+                     [--xr-pad N:BUTTONS[@panel:X/Y],...] [--xr-stick N:X/Y,...]]] [--show-settings] [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
                      --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
@@ -186,6 +200,7 @@ fn options() -> Result<Options, String> {
                      --xr-pad holds the gamepad's BUTTONS (South, East, West, North, L1, R1, LT, RT, Back, Start \
                      joined by +, or none) from headset frame N to the next entry, for tests without controller buttons \
                      (@panel:X/Y also points the right controller at the panel's logical pixel, R1 its trigger); \
+                     --xr-stick holds the right stick at X/Y (each -1 to 1, Y up) from headset frame N to the next entry; \
                      --xr-capture-at saves both eyes at those headset frames (looking from within the scene, \
                      each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
@@ -353,6 +368,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
         recenter_at: options.xr_recenter_at.clone(),
         lose_tracking: options.xr_lose_tracking,
         pad: options.xr_pad.clone(),
+        stick: options.xr_stick.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,
         save_state_at: options.save_state_at.clone(),

@@ -2350,7 +2350,53 @@ sees blue (held from before, it saw green: the tour's title).
 a sprite's part reaching 50 below its floor point stands on it, its top as
 high above as the game drew it, a part drawn over it in its plane stands a
 hundred-thousandth of its depth nearer where it showed, a part beside them
-stays.
+stays. `xem-headless/tests/first_person.rs` (local, disc 1) qualifies the
+view as a camera mode on the game, flat (the desktop's look) and in a
+headset's eyes (`present_headset`, the eyes 64 mm apart with fields of view
+of tangents ±1 across and ±0.75 up and down), beside the game camera's flat
+frame of the same trace and a look from within the same trace with each
+scene primitive drawn plain in a colour of its own. From the controlled
+character's eye in fields 1, 12, 22 and 30, turned to eight headings at two
+pitches (level and 30 degrees down), the walkmesh's floors in view (every
+actor layer's, as `diorama.rs` takes them) show no scene at none of their
+pixels, flat or in either eye (0 of 0.36 to 5.5 million a field; the 0.5%
+asserted, in each field); what shows none lies above them, the ceilings and
+skies the game never models: 0 to 2.8% of the flat pictures and 0.5 to 6.0%
+of the eyes' a field, up to 28% of one eye looking back past the camera's
+side in field 30, where the room has no ceiling. Where the game draws its
+interface opaque after the scene, the flat look shows every pixel of it as
+the flat frame does, and in a headset all of it is on the pane in that
+colour, no opaque pane pixel unlike the flat frame (4 514 to 27 712 pixels
+a field, field 12's dialogue the most). In fields 1, 30 and 12 from those
+sixteen looks, flat and in a headset, wherever two primitives the look draws
+meet in one plane (around the pixel too: faces crossing are not one) the
+picture shows the one the game drew last at every one of 0.08 to 1.3
+million such pixels a field (before the lift, with the tie judged at the
+pixel alone, a sprite's parts showed an earlier part through a later at
+4 702 and 35 979 pixels in field 30, flat and in a headset, and 1 684 and
+1 331 in field 12); a face the game draws from both sides (twice, its
+corners in the other order) is counted apart: where its quad does not lie
+flat its two drawings meet along a fold and each shows on its side of it,
+the other side's texture coordinates there (1 503 and 1 385 pixels in
+Lahan, 22 052 and 26 343 in field 12's room, none in field 30). Every
+sprite drawn reaching below its floor point stands with its lowest part on
+it, within what the lifts move it (half a unit and two ten-thousandths of
+its distance), but the controlled character's second sprite in Lahan, at
+its floor point, whose lower parts lie behind the eye; one drawn 6 units
+above its floor point stays as high. Both eyes see each sprite as one
+billboard, its parts within 1.3 units of one plane (their lifts) and the
+two eyes' within 0.02 units. In a headset, map 25's story movie begun while
+inspecting shows on the screen with no eyes for its 4 233 rebuilt frames,
+inspection on through it; after it the eyes look from within in map 25
+again, until map 23's first frame ends the view. The Mountain Path's random
+battle entered while inspecting (the host's pad walking the character up,
+which nothing holds back) keeps the eyes and the pane, the compass alone
+on it (5.5% covered), for the 48 blanks the battle loads behind the
+field's last frame; the battle's first frame, its shatter, ends inspection
+on the screen, its pieces the eye's picture (the screen the game takes is
+the first eye's, what the player looked at: its first picture follows the
+eye's last at a correlation of 0.91 of brightness), and the battle shows on
+the screen.
 `xr-game-smoke.sh` plays it on Monado ([Headsets](#headsets)) and
 `web/tests/xr-game.test.mjs` on IWER, whose scene tour toggles it with
 the left hand's underhand grab in each scene (only in field 30 and
@@ -2382,15 +2428,38 @@ a semi-transparent interface pixel over another as half covering, and
 shows no subtractive effect (it darkens nothing behind it); the field
 menu's backdrop is the first eye's view squeezed into the display's shape,
 and the room round the menu is the last frame before it (its characters
-stand still). OpenXR's own calls have not run in a session: the
-held-back buttons (`xr_play`'s `look::game_buttons`), the Original
-renderer's end, the controllers' Back toggle, the snap turn and the
-listener's view (Monado's simulated controllers, `khr/simple_controller`,
-have no stick, and the smoke plays without the Binaural mode). The rules
-they share are unit-tested, and WebXR's toggle, snap turn, listener and
+stand still). From within, what the game never models shows its clear:
+the ceilings of rooms and the skies above outdoor fields (up to 28% of an
+eye looking back past the camera's side in field 30), measured and shown
+as they are, not made up; the walkmesh's floors in view show the scene
+(none of their pixels, in fields 1, 12, 22 and 30). A face the game draws
+from both sides is drawn twice from within, whichever side faces the eye,
+and where its quad does not lie flat the two meet along a fold, the far
+side's texture coordinates on part of it (measured above; field 12's
+railings). Holes, the game's order and the pane are measured in
+`xem-headless`'s harness, which draws a headset's eyes with the renderer
+the hosts use, not in a headset's captures. In an OpenXR session (Monado)
+`xr-game-smoke.sh` plays `xr_play`'s own paths: its controllers run, the
+player's own play from field 30's state (no session log, so the host gives
+the session the view's state), toggles the view with the controllers' Back
+released alone, holds Down, Jump (North) and a camera turn (L1) while it
+shows, the character staying where it stands (`player=` in the frame log;
+it walks once the view is off), turns the view with the right stick 30
+degrees a push and ends it with an agent's `settings_apply` to the
+Original renderer; its binaural run looks from within with the Binaural
+mode on and checks the listener's view, held still through head turns,
+both recentrings and lost tracking, and gone when inspection ends
+([Binaural sound mode](#binaural-sound-mode)); its diorama-hands run stops
+a walk under way with the underhand grab, none restarting. Monado's
+simulated controllers (`khr/simple_controller`) press nothing and have no
+stick, so those buttons (`--xr-pad`) and the stick (`--xr-stick`) are
+scripted beside the controllers' own; a session log played in a headset
+(`--script`) stands in for the player and gives the session no view state,
+so those runs are the player's own play; no headset with real controllers
+(a Quest) has played them. WebXR's toggle, snap turn, listener and
 Original end ran on IWER (its held-back buttons are the browser page's
-code, which `first-person.test.mjs` runs). The view has not been carried
-into a session either (only out of one). The touch
+code, which `first-person.test.mjs` runs), and the view carried out of a
+session and into the next. The touch
 look's rate is a constant chosen to follow the finger on a phone-sized
 picture, not measured with people, and the Android emulator has not
 played the touch toggle or drag (the unit tests and the browser's touch
@@ -4132,6 +4201,19 @@ Headset class (Low tier, depth of field off unless enabled).
   frame 1306 to 1194 and Hold to rewind 1194 to 1014, and the game ran
   on to 1086 by headset frame 269; with that release removed it went on
   rewinding behind the closed panel until its history ran out). Its
+  controllers run (the same state, the player's own play) plays
+  first-person inspection on the controllers: Back released alone
+  (scripted) at headset frame 42 turns it on, Down, North (Jump) and L1 (a
+  camera turn) held from 60 to 120 leave the character where it stands
+  (`player=`, the controlled character's place in whole world units:
+  0,0,90 throughout), Back at 132 turns it off and Down held from 140 to
+  160 walks (to 0,0,50 in a run here), Back at 172 turns it on again, the
+  right stick (`--xr-stick N:X/Y,...`, held from that headset frame to the
+  next entry, beside the controllers' own: Monado's have none) pushed right
+  from 190 and again from 205 turns the view 30 degrees each push (yaw
+  0.5236, then 1.0472), and an agent's `settings_apply` to the Original
+  renderer, sent once the session has drawn 230 frames, ends it in the
+  headset frame it arrives in (231 in that run). Its
   held-hands run (the same state, hands alone, the gaze the eyes') has an
   agent's `app {"Action": "Recenter"}` arrive once the session has drawn
   100 frames, opens Settings with prayer hands at 200, picks Time with a
@@ -4285,7 +4367,8 @@ through frames the runtime cannot locate them in) and their fields of
 view, WebXR from each view's inverse transform and the tangents its
 projection matrix holds (`XrView::eye`). OpenXR's `xrframe` line reports
 `fp=` (the view on), `within=` (drawn from within), `look=` (yaw, pitch),
-`scale=` and `present_us=`; `--xr-capture-at N,...` captures both eyes
+`player=` (where the controlled character stands), `scale=` and
+`present_us=`; `--xr-capture-at N,...` captures both eyes
 at those headset frames (from within the scene, with the renderer's
 picture for each); `status().xr.inspecting` and `.within` show it
 in a browser. The settings panel's Controls section lists the grab, the
@@ -4785,6 +4868,10 @@ Phase 8 item 4 for that camera mode).
 | Recentring the screen view | the app's Recenter puts the seat at the head; `monado-ctl -c` (`ReferenceSpaceChangePending` for LOCAL) puts it back at LOCAL's origin; the screen in front of both eyes after each | the player's Recenter with the head moved and turned away; IWER's `recenter()` and its space's `reset`; the screen in front after each | `a_moved_reference_cancels_gestures_lets_the_stick_go_ends_scaling_and_resets_the_seat` (`headset::reference_changed`) |
 | A scene tour on the screen | the title movie (rebuilt), the title (field 490), field 30 and its menu, field 12's dialogue, the world map, battles on foot and in Gears: both eyes captured, the screen in front; the dialogue's and the Gears' RAM `xem-headless`'s | the same scenes from natively made states: 17 or 18 of 18 points about the views' centres unlike the room | |
 | First person on the tour | the underhand grab looks from within (`fp=1`, `within=1`, the picture covering the eye) in the field and its dialogue only, the grab again giving the screen back; nothing on the title, in the menu, on the world map or in battles | the left hand's underhand grab: from within in the field and the dialogue only; a battle loaded after the field ends the view | `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew` |
+| First person: transitions | in field 30 the underhand grab on and off, and again while the player's Pause holds the game (inspect, modern); the controllers' Back released alone on, off and on again, the right stick turning it a step a push, and an agent's Original renderer ending it in the headset frame it arrives in (controllers); from the diorama and back to it at its scale and place, a walk stopped (diorama-hands) | the grab and the controllers' click on and off, paused or not, the Original renderer ending it; on as the session ends, the canvas going on with it, and the next session looking from within at once; a battle loaded after the field ending it; from the diorama and back (`xr-diorama.test.mjs`) | `first_person.rs` in a headset: map 25's story movie begun while inspecting on the screen with no eyes for its 4 233 rebuilt frames, inspection on through it, the eyes from within again in map 25 after it, map 23's first frame ending the view; the Mountain Path's random battle entered while inspecting, the eyes and the pane (the compass alone) for the 48 blanks it loads behind the field's last frame, its shatter, the eye's picture broken up, ending inspection on the screen; `inspection.rs`: through the field's menu and a state loaded |
+| First person: holes | | | `first_person.rs`: from the character's eye in fields 1, 12, 22 and 30 at eight headings and two pitches, flat and in both eyes, no pixel of the walkmesh's floors in view without the scene (under 0.5% asserted in each); the ceilings and skies the game never models show its clear, 0 to 2.8% of the flat pictures and 0.5 to 6.0% of the eyes', up to 28% of an eye looking back in field 30 (measured) |
+| First person: the game's order, sprite planes and both eyes | the eyes differ and look from within, in the renderer's colours (inspect, modern) | | `first_person.rs`: in fields 1, 30 and 12 from sixteen looks, flat and in a headset, at every pixel where two primitives meet in one plane the one the game drew last (0.08 to 1.3 million a field; a sprite's parts lost it at up to 35 979 before the lift), faces drawn from both sides counted apart; sprites drawn reaching below their floor points standing on them; both eyes one billboard a sprite (within 0.02 units), its parts within 1.3 units of one plane; `ps1.rs`: a part drawn over another a hundred-thousandth of its depth nearer where it showed, a sprite on its floor point, one sprite for canted eyes |
+| First person: interface and media | | (the pane's pixels not read) | `first_person.rs`: where the game draws its interface opaque after the scene, all of it as the flat frame shows it, on the flat look and on the headset's pane (4 514 to 27 712 pixels a field, field 12's dialogue the most), no opaque pane pixel unlike the flat frame; a story movie begun while inspecting on the screen (transitions); `inspection.rs`: field 30's compass alone on the pane (7% of it covered); `ps1.rs`: the pane covering by its alpha, the interface in neither eye |
 | Pinches pick what is shown | a pinch with the gaze on the 2.02-times screen walks and arrives (where it heads is not logged); no run pulls the camera back, so the screen shows the game camera's picture | the diorama's pinch through the table heads for the floor point gazed at (the table's own ray: [In a headset](#in-a-headset)); no run pulls the camera back | `Camera::seen` through `GameView::viewpoint`: field 30 pulled back at 250%, a pinch walks to the floor shown; the desktop and Android `View` at 150%, a tap walks to the floor shown, and under the Original renderer (`GameView::away`) to the floor the game's camera shows ([Assisted movement](#assisted-movement)) |
 | The diorama: transitions | in all thirteen runs with the diorama as the view the screen's share moves from a headset frame to the next by no more than their presentations' interval over the 0.3 s switch (`presented_us=`): from boot into fields, from the debug battle's selector into its battle, into the world map; field 30's menu, the Mountain Path's random battle and its end, and Lahan to the world map and a field from it, each from the diorama to the screen and back to a diorama (the battle's, the world map's, the field's), each way through frames between the two; map 25's story movie on the screen between its field's dioramas; from boot the title movie's rebuilt frames (210x142, 320x216's shape at the screen's span) and the title on the screen alone; the underhand grab takes the eyes from within at once and the grab again gives the diorama back on the next frame at the scale and table it had; an agent's `settings_apply` through `--control` in field 30: the screen alone from the first frame after it, at once, and the diorama eased in again from the screen over five frames (`xr_view=`, `diorama=`, `share=`) | the underhand grab over the diorama at 150%: from within on the first session frame after it, the diorama back alone on the first after the next (every session frame recorded), at 150%, its room from the world unchanged; field 30's menu through the automation: from the diorama to the screen over two session frames, the menu on the screen alone, back over three, each step within its time over 0.3 s; map 25's story movie from the state at game frame 5080: eased out, 1 959 of its 1 960 rebuilt frames on the screen alone, eased back over three; Graphics' headset view set through `xem.settings.apply` in the session: the screen alone from the next session frame, the diorama eased in again over three | `xem-headless/tests/diorama.rs`: the title movie (640x432 for 320x216) and the title on the screen; a field's diorama easing in, its menu out and back, a random battle's entry and end, Lahan to the world map and a field again, map 25's story movie out and back, each way over 17 blanks of 60 Hz; inspection giving the diorama back at once at its scale and place; the headset view set to the screen in a session, the screen at once, and to the diorama again, eased in; `ps1.rs`: a menu's and a 24-bit movie frame's screen after a diorama, eased (and inspection's through `present_diorama`, a path the hosts do not take); after inspection, the table easing on from where it stood |
 | The diorama: paused head tracking | the left hand's Pause in field 30: 30 head poses in 30 frames, one game frame, 16.1% of the left eye changed between two captures, each pair in depth (disparity 10 to 19 pixels, far rows to near) | the left hand's Pause: the head moved 10 cm, the rows across the table shift by their depth (38 to 23 points, near to far), the game's clock still | |
@@ -4890,7 +4977,16 @@ the flat frame are measured in the harness (the renderer a headset's
 eyes are drawn by), not in a headset's captures, and IWER's checks read
 no pane pixels; in a session log played in a headset (`--script`),
 inspection stops no walk, the log keeping its own record, so OpenXR's
-walk-stopping run is the player's own play from a state.
+walk-stopping run is the player's own play from a state, and so is its
+controllers run. The first-person rows: a story movie and a random battle
+begun while inspecting ran in the harness alone (as a headset presents,
+`present_headset`), not on Monado or IWER; Monado's controllers' buttons
+and stick are scripted (`--xr-pad`, `--xr-stick`: its simulated
+controllers press nothing and have no stick); the ceilings and skies the
+game never models show its clear from within (measured, not made up:
+[First-person inspection](#first-person-inspection)); holes, the game's
+order in a plane and the pane are the harness's measures, not a headset's
+captures.
 
 ## Crates
 

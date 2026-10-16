@@ -86,6 +86,12 @@
 #   and the session's dwell), pressing none of the game's buttons (the
 #   prompt still waits, counted toward the dwell every vertical blank since
 #   the toggle), and auto-advance then turns the page;
+# - first-person inspection on the controllers in field 30 (that state, the
+#   player's own play): Back released alone toggles it, held directions,
+#   Jump and a camera turn leave the character where it stands while it
+#   shows (it walks once it is off), the right stick turns the view 30
+#   degrees a push, and an agent's settings_apply to the Original renderer
+#   ends it;
 # - state interchange: that state loaded in the headset (--load-state) and
 #   played on 600 game frames under HD-2D has xem-headless's RAM at the
 #   300th, where the headset writes its state (--save-state-at), and at
@@ -353,6 +359,25 @@ drawn() { # LOG N: wait (at most a minute) until the headset run logging to LOG 
 } | "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
     --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
     >"$out/held.log" 2>"$out/held.err"
+# OpenXR's controller paths for first-person inspection, the player's own
+# play (no session log, so the host gives the session the view's state)
+# from the same state: the controllers' Back released alone (scripted)
+# toggles it on at headset frame 40; Down, North (Jump) and L1 (a camera
+# turn) are held from 60 to 120 while it shows; Back toggles it off at 130
+# and Down held from 140 to 160 walks; Back toggles it on again at 170; the
+# right stick (scripted: Monado's simulated controllers have none) pushed
+# right from 190 and again from 205 turns the view 30 degrees each push;
+# and an agent's settings_apply to the Original renderer once the session
+# has drawn 230 frames ends it.
+cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
+(
+    for _ in $(seq 900); do grep -q '^xrframe n=230 ' "$out/controllers.log" 2>/dev/null && break; sleep 0.1; done
+    printf '%s\n' '{"cmd":"settings_apply","change":{"Graphics":{"renderer":"Original"}}}'
+    for _ in $(seq 600); do grep -q '^xrframe n=270 ' "$out/controllers.log" 2>/dev/null && break; sleep 0.1; done
+) | "$desktop" --xr --control --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 280 \
+    --xr-pad "40:Back,42:none,60:Down+North+L1,121:none,130:Back,132:none,140:Down,161:none,170:Back,172:none" \
+    --xr-stick "190:1/0,196:0/0,205:1/0,211:0/0" >"$out/controllers.log" 2>"$out/controllers.err"
+cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # A hands-only player's held rewind, from the same state, the gaze the
 # eyes': an agent's app command recentres once the session has drawn 100
 # frames; prayer hands open Settings at headset frame 200, a pinch picks
@@ -1166,6 +1191,44 @@ if len(toggles) == 1 and len(statuses) == 3 and len(saved) == 1:
     print(f"AUTO: a pinch at headset frame {pinched[0]['n'] if pinched else '-'} turned auto-advance on at game vblank {toggled}; "
           f"{since} vertical blanks on the prompt had waited {after['auto_advance_waited']}; {later['vblanks'] - toggled} on, "
           f"after auto-advance's press, {later['auto_advance_waited']} ({later['dialogue']})")
+
+# OpenXR's controller paths for first-person inspection (the controllers
+# run): Back released alone toggles it in the field, held directions, Jump
+# and a camera turn leave the character where it stands while it shows
+# (and walk it once it is off), the right stick turns it a step a push, and
+# the Original renderer an agent sets ends it.
+def controllers():
+    rows = records("controllers.log")
+    by = {int(r["n"]): r for r in rows}
+    fp = lambda a, b: "".join(by[n]["fp"] for n in range(a, b))
+    check(fp(0, 40) == "0" * 40 and fp(45, 129) == "1" * 84 and fp(134, 169) == "0" * 35 and fp(175, 228) == "1" * 53,
+          f"controllers: Back released alone at 42, 132 and 172 toggles inspection: {fp(0, 230)}")
+    check(all(by[n]["within"] == "1" for n in range(50, 129)), "controllers: inspection looks from within the scene")
+    stood = {by[n]["player"] for n in range(59, 125)}
+    check(len(stood) == 1 and "-" not in stood, f"controllers: Down, North and L1 held while inspecting moved the character: {sorted(stood)}")
+    walked = (by[139]["player"], by[165]["player"])
+    check(walked[0] != walked[1] and "-" not in walked, f"controllers: Down held with inspection off walked nowhere: {walked}")
+    yaw = lambda n: float(by[n]["look"].split(",")[0]) if by[n]["look"] != "-" else None
+    turns = (yaw(188), yaw(200), yaw(215))
+    check(None not in turns and abs(turns[0]) < 1e-3 and abs(turns[1] - math.pi / 6) < 1e-3 and abs(turns[2] - math.pi / 3) < 1e-3,
+          f"controllers: the right stick turned the view 30 degrees a push: {turns}")
+    # The agent's reply, after the headset frame it came in.
+    last, replied = -1, None
+    for line in open(f"{out}/controllers.log"):
+        if line.startswith("xrframe "):
+            last = int(line.split()[1].split("=", 1)[1])
+        elif line.startswith("{") and replied is None:
+            reply = json.loads(line)
+            check(reply.get("settings", {}).get("graphics", {}).get("renderer") == "Original", f"controllers: the agent's settings_apply: {line[:200]}")
+            replied = last + 1
+    ended = next((n for n in sorted(by) if replied is not None and n >= replied and by[n]["fp"] == "0"), None)
+    check(replied is not None and ended is not None and ended - replied <= 1 and fp(175, replied) == "1" * (replied - 175)
+          and all(by[n]["fp"] == "0" and by[n]["view"] == "0" for n in range(ended, 278)),
+          f"controllers: the Original renderer set at headset frame {replied} ended inspection at {ended}: {fp(170, 280)}")
+    print(f"controllers: Back toggled inspection on at {fp(0, 60).find('1')}, off at {134 - fp(120, 134)[::-1].find('1')}, on at {fp(0, 200).rfind('0') + 1}; "
+          f"the character at {sorted(stood)} through Down, North and L1 held while inspecting, walked {walked[0]} to {walked[1]} with it off; "
+          f"the view's yaw {turns} through two right-stick pushes; the Original renderer set at {replied}, inspection off from {ended}")
+controllers()
 
 # State interchange: xem-headless's state played on in the headset reaches
 # xem-headless's RAM at the frame the headset saves at and the frame it ends
