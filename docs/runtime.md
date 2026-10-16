@@ -5836,7 +5836,7 @@ as a recorded control of the session, whose zero is the original's:
 | --- | --- | --- | --- | --- |
 | [Random battles](#random-battles-in-platforming-areas) | `random_battles`: `NotWhilePlatforming` (the default), `Original` | `random_battles {off}` | the field's random draw does not run on the platforming areas' maps (`src/port/encounters.c`) | `status.random_battles_off`; `field.random_draw` (`off_here`, its window and steps left as dealt) |
 | [Encounter rate](#random-battles-in-platforming-areas) | `encounter_rate`: `Original` (the default), `Half` | `half_encounters {enabled}` | the draw runs on every other field frame where it runs at all | `status.half_encounters`; `field.random_draw` (its steps count down half as fast) |
-| [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line (`src/port/text_speed.c`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
+| [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line, except while a script counts out a page before its wait for Confirm (`src/port/text_speed.c`, `xem_core::dialogue`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
 | [Auto-advance dialogue](#text-speed-auto-advance-and-movie-skipping) | `auto_advance`: off (the default) or on, a dwell of 30-600 vertical blanks (120) | `auto_advance {dwell}` | the session presses Confirm once a field dialogue's prompt has shown the dwell, never at a choice (`xem_core::dialogue`) | `status.auto_advance`, `status.auto_advance_waited`, `status.dialogue` |
 | [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping) | `movie_skip`: off (the default), on | `movie_skip {enabled}` | the story's movies take the original's early exit on the player's press (`src/port/movie_skip.c`) | `status.movie_skip`; `status.movie` (`ends_on_press`) |
 
@@ -5940,7 +5940,15 @@ weston's headless backend and lavapipe from the runtime shell; about 2 s
 here) runs `xem-desktop --control` itself on a fresh configuration
 directory: the defaults in `status`, each `settings_apply` acknowledged
 with its revision, a refused dwell, the next frames' `status`, the
-settings file, and a second launch that starts with the choices. A
+settings file, and a second launch that starts with the choices. In
+headsets, the xr tier's smoke (`xr-game-smoke.sh`, Monado) has an agent on
+`xem-desktop --xr --control` read `status` while field 30's state plays
+(random battles off on xem-core's platforming maps, the other options
+the original's), apply `RandomBattles` Original (acknowledged with its
+revision) and find none off in the next `status`, and
+`xr-game.test.mjs` (IWER in Chromium, the timing stage) reads the same
+in an immersive session through `xem.status().session` and
+`xem.settings.apply`. A
 browser test (`persistence.test.mjs`, the fixture module) loads an
 `xem.settings` saved without the options and the auto-advance shortcut
 and reads their defaults, the
@@ -5979,9 +5987,12 @@ running jumps where it stops short, not a person's. The chapter is the
 game's opening only and holds no story movie; no later chapter was played
 end to end with the options, and movie skipping was measured on map 25's
 movie. The desktop's agent channel was run on weston's headless backend,
-a compositor with no screen. The Android, OpenXR and WebXR hosts give the
-values through the same `Game::update` and frame loop, and no run there
-used the options on the game. No person tried the options.
+a compositor with no screen. The Android host gives the values through
+the same `Game::update`, and no Android run used the options on the game
+(it has no agent channel to read them). The headset runs read the
+defaults, an agent's `RandomBattles` Original and the AUTO key
+([below](#text-speed-auto-advance-and-movie-skipping)); no random battle
+or scene was played there under an option. No person tried the options.
 
 ### Random battles in platforming areas
 
@@ -6522,10 +6533,10 @@ and +0x046e, 30 frames each) and 431 (+0x0424, 40 frames), which the
 counting script reaches with no window of its own open (it has waited
 for its window to close with `9c`, or shown none); a window another
 script showed during one of those counts would reveal at the original's
-pace for its 30 or 40 frames. So the opening narration is the only timed narration
-the rule changes. The sweep is a local script, not in the repository
-(`.local/p678/scratch/p7/p77/rule_sweep.py`); it reads the discs
-extracted (`.local/extract`).
+pace for its 30 or 40 frames. So the opening narration is the only timed
+narration the rule changes. The sweep is a local script, not in the
+repository (`.local/p678/scratch/p7/p77/rule_sweep.py`); it reads the
+discs extracted (`.local/extract`).
 
 **Auto-advance dialogue.** `xem_core::dialogue::prompt` reads, between
 frames, what a press of Confirm would do to the field's dialogue, as
@@ -6707,7 +6718,14 @@ pinch the app's toggle (never Confirm), lit while on; `xem-host`'s
 `touch_controls_hold_their_buttons_taps_on_the_picture_are_kept_and_auto_asks_the_app`
 checks that a finger on the desktop and Android view's AUTO in a field's
 scene queues the app's toggle, one request a touch, holding no button of
-the game's. `xem-ui/tests/panel.rs`
+the game's. In a headset on Monado, the xr tier's smoke loads field 12's
+dialogue from a state xem-headless saved at its prompt and aims a pinch at
+AUTO beside the screen's right edge (screen pixel 336/108 on the 3 m
+screen): the app's toggle turns auto-advance on (the settings' and the
+session's dwell 120), the prompt still waits some 45 vertical blanks
+later and has counted toward the dwell on every one since the toggle (a
+press of the game's would have turned the page and restarted the count),
+and auto-advance turns the page after its dwell. `xem-ui/tests/panel.rs`
 checks that the Gameplay section's three options apply through the
 service, are acknowledged, show the wait only while auto-advance is on,
 keep a refused wait and follow an agent's change.
@@ -6777,11 +6795,13 @@ does, on touch screens and in headsets).
 Of the mod's options that change the game's balance only half encounters
 is offered ([above](#random-battles-in-platforming-areas), the field's
 draw only); more EXP and gold is not. The
-browser tests ran on the fixture module; the Android, headset and touch
-hosts give the values through the same `Game::update` and frame loop, and
-no phone or headset run used them on the game. A headset's AUTO key
-(`Carry::toggle_auto_advance`, through OpenXR's and WebXR's app requests)
-is unit-tested only: no Monado or IWER run aims at it.
+browser tests ran on the fixture module; the Android and touch hosts give
+the values through the same `Game::update` and frame loop, and no phone
+run used them on the game. In headsets the options' defaults and an
+agent's change were read on Monado and IWER, and the AUTO key was aimed at
+on Monado only (no IWER run aims at it); beyond the page auto-advance
+turned there, no headset run played text speeds, auto-advance or movie
+skipping on the game.
 
 ### Cutscene skipping
 

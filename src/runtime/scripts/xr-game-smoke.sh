@@ -69,6 +69,15 @@
 #   trigger), Settings hold the game again once a rewind is let go, and
 #   Settings closed with the trigger still held let go of Hold to rewind
 #   (the game plays on behind the closed panel);
+# - the gameplay options in the headset (an agent on --control, the game
+#   running): the settings' defaults reach the session (random battles off
+#   on xem-core's platforming maps, every other option the original's), and
+#   settings_apply's RandomBattles Original is acknowledged and reaches it;
+#   in field 12's dialogue a pinch aimed at AUTO beside the screen turns
+#   auto-advance on through the settings (the app's toggle, the settings
+#   and the session's dwell), pressing none of the game's buttons (the
+#   prompt still waits, counted toward the dwell every vertical blank since
+#   the toggle), and auto-advance then turns the page;
 # - state interchange: that state loaded in the headset (--load-state) and
 #   played on 600 game frames under HD-2D has xem-headless's RAM at the
 #   300th, where the headset writes its state (--save-state-at), and at
@@ -308,10 +317,41 @@ cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # where no test chooses) clicks Time (256,98) at 220 and holds its
 # Hold to rewind (355,325) with the trigger (R1) from 230, Back+Start
 # closes Settings at 245 with the trigger still held, and it lets go at 270.
-printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
-    "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
+# Before, while the game runs, the agent reads the session's status at
+# headset frame 40 (the gameplay options the settings gave it), applies
+# RandomBattles Original and reads the status again at 80.
+drawn() { # LOG N: wait (at most a minute) until the headset run logging to LOG drew frame N
+    for _ in $(seq 600); do grep -q "^xrframe n=$2 " "$1" 2>/dev/null && return; sleep 0.1; done
+}
+{
+    printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate"
+    drawn "$out/held.log" 40
+    echo '{"cmd":"status"}'
+    echo '{"cmd":"settings_apply","change":{"RandomBattles":"Original"}}'
+    drawn "$out/held.log" 80
+    echo '{"cmd":"status"}'
+} | "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
     --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
     >"$out/held.log" 2>"$out/held.err"
+# The headset's AUTO key, the player's own play from field 12's dialogue
+# (a state xem-headless saved with its prompt waiting), the gaze the
+# eyes': a pinch at headset frame 40 aimed at AUTO beside the screen's
+# right edge (screen pixel 336/108: the key's centre 0.15 m past the edge
+# of the 3 m screen showing the field's 320x216 picture), the agent
+# reading the session's status at 30, 55 and 110 and the settings at 55.
+printf '{"cmd":"enter_field","map":12}\n{"cmd":"frames","count":450}\n{"cmd":"status"}\n{"cmd":"state_save","path":"%s"}\n' "$out/dialogue12.xemstate" |
+    "$headless" --disc "$disc" --control >"$out/auto-prep.log" 2>"$out/auto-prep.err"
+echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+{
+    printf '{"cmd":"state_load","path":"%s"}\n' "$out/dialogue12.xemstate"
+    drawn "$out/auto.log" 30
+    echo '{"cmd":"status"}'
+    drawn "$out/auto.log" 55
+    echo '{"cmd":"status"}'
+    echo '{"cmd":"settings"}'
+    drawn "$out/auto.log" 110
+    echo '{"cmd":"status"}'
+} | "$desktop" --xr --control --disc "$disc" --exit-after-frames 130 --xr-hands "40:pinch@336/108" >"$out/auto.log" 2>"$out/auto.err"
 # State interchange: field 30's state from xem-headless (the saves run's)
 # loaded in the headset (--load-state) and played on 600 game frames with
 # no input under HD-2D, the state the headset writes at the 300th
@@ -469,9 +509,9 @@ done
 printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 15}]]}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n{"cmd":"field"}\n' |
     "$headless" --disc "$disc" --control >"$out/binaural-headless.log" 2>"$out/binaural-headless.err"
 
-python3 - "$out" "$frames" <<'EOF'
+python3 - "$out" "$frames" "$root" <<'EOF'
 import json, math, re, sys, zlib, struct
-out, frames = sys.argv[1], int(sys.argv[2])
+out, frames, root = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 
 def records(name):
     rows = []
@@ -956,6 +996,64 @@ if len(rewinds) == 4:
     print(f"held: Back+LT with Settings shown rewound game frame {gf(chord_on - 1)} to {gf(chord_off - 1)}; Hold to rewind "
           f"from headset frame {held_on} rewound {gf(held_on - 1)} to {gf(244)}; Settings closed at 245 let it go, the game on "
           f"to {gf(269)} by 269 with the trigger still held")
+
+# The gameplay options in the headset (the held run's agent): the settings'
+# defaults reach the session (random battles off on xem-core's platforming
+# maps, every other option the original's), and an agent's RandomBattles
+# Original is acknowledged and reaches it in the next frames.
+table = re.search(r"PLATFORMING_AREAS: [^=]*= &\[(.*?)\n\];", open(f"{root}/src/runtime/crates/xem-core/src/encounters.rs").read(), re.S)
+platforming = sorted(int(n) for n in re.findall(r"\d+", re.sub(r'"[^"]*"', "", table.group(1)))) if table else None
+# (The first reply, state_load's, is the status the state was loaded with.)
+replies = [json.loads(l) for l in open(f"{out}/held.log") if l.startswith("{")][1:]
+statuses = [r for r in replies if "random_battles_off" in r]
+applied = [r for r in replies if "revision" in r]
+options = lambda s: [s["half_encounters"], s["text_speed"], s["auto_advance"], s["movie_skip"]]
+check(platforming and len(statuses) == 2 and len(applied) == 1, f"the held run's agent: {len(statuses)} statuses, {len(applied)} acknowledgements, table {platforming}")
+if platforming and len(statuses) == 2 and len(applied) == 1:
+    before, after = statuses
+    check(before["random_battles_off"] == platforming and options(before) == [False, 0, 0, False],
+          f"the defaults in the headset's session: random battles off on {before['random_battles_off']} (the table's {platforming}), "
+          f"half encounters, text speed, auto-advance and movie skipping {options(before)}")
+    check(isinstance(applied[0]["revision"], int) and applied[0]["settings"]["random_battles"] == "Original",
+          f"settings_apply RandomBattles Original: {str(applied[0])[:200]}")
+    check(after["random_battles_off"] == [] and after["frames"] > before["frames"] and options(after) == options(before),
+          f"the next status after the change: random battles off on {after['random_battles_off']}, game frame {before['frames']} to {after['frames']}")
+    print(f"gameplay options: the session had random battles off on {before['random_battles_off']} and {options(before)} at game frame "
+          f"{before['frames']}; RandomBattles Original acknowledged (revision {applied[0]['revision']}), none off at {after['frames']}")
+
+# The headset's AUTO key: aimed at beside the screen in field 12's
+# dialogue, a pinch is the app's toggle through the settings, never a
+# press of the game's: 45-ish game frames on the prompt still waits and
+# has counted toward the dwell every vertical blank since the toggle (a
+# press would have turned the page and restarted the count); auto-advance
+# then turns it.
+prep = [json.loads(l) for l in open(f"{out}/auto-prep.log") if l.startswith("{")]
+check(any(p.get("dialogue", {}).get("kind") == "waiting" for p in prep), f"field 12's state was not saved at its prompt: {[p.get('dialogue') for p in prep]}")
+lines = open(f"{out}/auto.log").read().splitlines()
+replies = [json.loads(l) for l in lines if l.startswith("{")][1:]
+statuses = [r for r in replies if "auto_advance_waited" in r]
+saved = [r for r in replies if "app_bindings" in r]
+toggles = [(int(m.group(1)), m.group(2)) for l in lines
+           if (m := re.match(r"app Action\(ToggleAutoAdvance\) game_vblank=(\d+) memory_hash [0-9a-f]{16} (ok|error)", l))]
+rows = records("auto.log")
+pinched = [r for r in rows if "Pinch" in r["gestures"]]
+check(len(toggles) == 1 and toggles[0][1] == "ok" and len(statuses) == 3 and len(saved) == 1,
+      f"the pinch at AUTO: toggles {toggles}, {len(statuses)} statuses, {len(saved)} settings")
+check(bool(pinched) and all(r["keys"].startswith("1:") and '"dialogue"' in r["context"] for r in pinched),
+      f"the pinch came in the dialogue with AUTO beside the screen: {[(r['n'], r['keys'], r['context']) for r in pinched]}")
+if len(toggles) == 1 and len(statuses) == 3 and len(saved) == 1:
+    (toggled, _), (before, after, later) = toggles[0], statuses
+    since = after["vblanks"] - toggled
+    check(before["dialogue"]["kind"] == "waiting" and before["auto_advance"] == 0, f"before the pinch: {before['dialogue']}, auto-advance {before['auto_advance']}")
+    check(after["auto_advance"] == 120 and saved[0]["auto_advance"] == {"enabled": True, "dwell": 120},
+          f"auto-advance through the settings: the session's dwell {after['auto_advance']}, the settings' {saved[0]['auto_advance']}")
+    check(after["dialogue"] == before["dialogue"] and 0 < since < 120 and abs(after["auto_advance_waited"] - since) <= 2,
+          f"no game button: {since} vertical blanks after the toggle the prompt {after['dialogue']} has waited {after['auto_advance_waited']} toward the dwell")
+    check(later["vblanks"] - toggled > 130 and later["auto_advance_waited"] < later["vblanks"] - toggled - 120,
+          f"auto-advance did not turn the page: {later['vblanks'] - toggled} vertical blanks on, waited {later['auto_advance_waited']}, {later['dialogue']}")
+    print(f"AUTO: a pinch at headset frame {pinched[0]['n'] if pinched else '-'} turned auto-advance on at game vblank {toggled}; "
+          f"{since} vertical blanks on the prompt had waited {after['auto_advance_waited']}; {later['vblanks'] - toggled} on, "
+          f"after auto-advance's press, {later['auto_advance_waited']} ({later['dialogue']})")
 
 # State interchange: xem-headless's state played on in the headset reaches
 # xem-headless's RAM at the frame the headset saves at and the frame it ends

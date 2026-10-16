@@ -8,7 +8,9 @@
 // turning with the head, or staying put and heard against it with
 // head-tracked music); with the head turned away the player's Recenter and
 // then IWER's own recentring (its reference space's `reset`) each put the
-// screen in front again; leaving returns to the canvas; and the game's RAM
+// screen in front again; the settings' gameplay options reach the session
+// (random battles off on the platforming maps, the others the original's),
+// as an agent's change does; leaving returns to the canvas; and the game's RAM
 // after the same frames is the same in and out of the headset, and the
 // state exported in the headset is xem-headless's after the same frames
 // byte for byte (the screen asks for no reveals), loads there to its RAM and
@@ -50,6 +52,11 @@ const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 
 mkdirSync(SHOTS, { recursive: true });
 
 const xr = async (page) => (await status(page)).page.xr;
+// xem-core's platforming maps (encounters.rs's PLATFORMING_AREAS), ascending.
+const platformingMaps = () => {
+  const table = readFileSync(join(ROOT, 'src/runtime/crates/xem-core/src/encounters.rs'), 'utf8').match(/PLATFORMING_AREAS: [^=]*= &\[([\s\S]*?)\n\];/)[1];
+  return [...table.replace(/"[^"]*"/g, '').matchAll(/\d+/g)].map((m) => Number(m[0])).sort((a, b) => a - b);
+};
 
 describe('immersive play in a headset browser', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
   test('the game runs on a virtual screen in both views', { timeout: 600_000 }, async () => {
@@ -115,6 +122,21 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.ok(gameRate > 40 && gameRate < 66, `the game runs near 60 frames a second (${gameRate})`);
       assert.ok(after.loop.xrFrames > before.loop.xrFrames, 'the session drives the frames');
       assert.equal(after.loop.animationFrames, before.loop.animationFrames, 'the canvas loop rests in the headset');
+
+      // The gameplay options in the session: the settings' defaults reach
+      // the game (random battles off on xem-core's platforming maps, every
+      // other option the original's), and an agent's change is acknowledged
+      // and reaches it in the session's next frames.
+      const session = (await status(page)).session;
+      assert.deepEqual(session.random_battles_off, platformingMaps(), 'random battles off on the platforming maps');
+      assert.deepEqual([session.half_encounters, session.text_speed, session.auto_advance, session.movie_skip], [false, 0, 0, false],
+        'every other option the original\'s');
+      const original = await page.evaluate(() => window.xem.settings.apply({ RandomBattles: 'Original' }));
+      assert.equal(original.ok, true, JSON.stringify(original));
+      assert.equal(original.settings.random_battles, 'Original');
+      await page.waitForFunction(() => window.xem.status().session.random_battles_off.length === 0, null, { timeout: 30_000 });
+      assert.ok((await xr(page)).frames > after.page.xr.frames, 'in the session\'s frames');
+      assert.equal((await page.evaluate(() => window.xem.settings.apply({ RandomBattles: 'NotWhilePlatforming' }))).ok, true);
 
       // Both views show the game screen at their centres.
       const layer = await page.evaluate(() => {
