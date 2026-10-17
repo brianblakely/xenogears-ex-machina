@@ -26,7 +26,11 @@ def main():
     parser.add_argument("--out", default=str(ROOT / "build" / "web"))
     parser.add_argument("--profile", default="release", choices=["release", "dev"])
     parser.add_argument("--no-game", action="store_true", help="leave the game module out (a hosted build)")
+    parser.add_argument("--release", action="store_true", help="require a complete game module for distribution")
+    parser.add_argument("--game", type=Path, default=ROOT / "build" / "game", help="game module directory")
     args = parser.parse_args()
+    if args.release and (args.no_game or any(not (args.game / name).is_file() for name in ["game.wasm", "schema.json", "stubs.txt"])):
+        parser.error("release requires game.wasm, schema.json and stubs.txt; build tools/game_module.py first")
     out = Path(args.out)
 
     # Cargo's target directory: CARGO_TARGET_DIR as the caller gave it (a
@@ -35,7 +39,7 @@ def main():
     given = os.environ.get("CARGO_TARGET_DIR")
     target_dir = Path(given).resolve() if given else ROOT / "src" / "runtime" / "target"
     env = dict(os.environ, CARGO_BUILD_JOBS=os.environ.get("CARGO_BUILD_JOBS", "6"), CARGO_TARGET_DIR=str(target_dir))
-    cargo = ["cargo", "build", "-p", "xem-web", "--target", "wasm32-unknown-unknown"]
+    cargo = ["cargo", "build", "--locked", "-p", "xem-web", "--target", "wasm32-unknown-unknown"]
     if args.profile == "release":
         cargo.append("--release")
     subprocess.run(cargo, cwd=ROOT / "src" / "runtime", env=env, check=True)
@@ -49,7 +53,7 @@ def main():
                    check=True)
     for name in PAGE:
         shutil.copy2(WEB / name, out / name)
-    game = ROOT / "build" / "game"
+    game = args.game
     if not args.no_game and (game / "game.wasm").exists():
         (out / "game").mkdir()
         for name in ["game.wasm", "stubs.txt", "schema.json"]:
@@ -58,6 +62,7 @@ def main():
         print(f"included the game module from {game}")
     else:
         print("built without a game module")
+    (out / ".nojekyll").touch()
     print(f"wrote {out}")
 
 

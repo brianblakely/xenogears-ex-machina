@@ -5212,7 +5212,7 @@ dependencies = [
 
 [[package]]
 name = "xem-android"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "jni-sys 0.4.1",
  "sdl3-sys",
@@ -5228,7 +5228,7 @@ dependencies = [
 
 [[package]]
 name = "xem-assist"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "glam",
  "serde",
@@ -5240,7 +5240,7 @@ dependencies = [
 
 [[package]]
 name = "xem-binaural"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "serde_json",
  "xem-spu",
@@ -5248,7 +5248,7 @@ dependencies = [
 
 [[package]]
 name = "xem-core"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -5262,7 +5262,7 @@ dependencies = [
 
 [[package]]
 name = "xem-desktop"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "png",
  "sdl3-sys",
@@ -5279,7 +5279,7 @@ dependencies = [
 
 [[package]]
 name = "xem-disc"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "chd",
  "sha1",
@@ -5288,7 +5288,7 @@ dependencies = [
 
 [[package]]
 name = "xem-game"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "cc",
  "serde_json",
@@ -5300,11 +5300,11 @@ dependencies = [
 
 [[package]]
 name = "xem-gpu"
-version = "0.1.0"
+version = "0.5.0"
 
 [[package]]
 name = "xem-headless"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "png",
  "pollster",
@@ -5323,8 +5323,9 @@ dependencies = [
 
 [[package]]
 name = "xem-host"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
+ "objc2 0.6.5",
  "png",
  "pollster",
  "raw-window-handle",
@@ -5344,11 +5345,11 @@ dependencies = [
 
 [[package]]
 name = "xem-media"
-version = "0.1.0"
+version = "0.5.0"
 
 [[package]]
 name = "xem-render"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bytemuck",
  "glam",
@@ -5363,7 +5364,7 @@ dependencies = [
 
 [[package]]
 name = "xem-settings"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -5373,15 +5374,15 @@ dependencies = [
 
 [[package]]
 name = "xem-spu"
-version = "0.1.0"
+version = "0.5.0"
 
 [[package]]
 name = "xem-storage"
-version = "0.1.0"
+version = "0.5.0"
 
 [[package]]
 name = "xem-ui"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "i-slint-backend-testing",
  "i-slint-renderer-femtovg",
@@ -5396,7 +5397,7 @@ dependencies = [
 
 [[package]]
 name = "xem-web"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "js-sys",
  "serde",
@@ -5414,7 +5415,7 @@ dependencies = [
 
 [[package]]
 name = "xem-webxr"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "glam",
  "js-sys",
@@ -5429,7 +5430,7 @@ dependencies = [
 
 [[package]]
 name = "xem-xr"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "ash",
  "glam",

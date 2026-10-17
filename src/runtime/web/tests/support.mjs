@@ -14,7 +14,7 @@ import { chromium } from 'playwright-core';
 import { serve } from '../serve.mjs';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
-export const WEB = join(ROOT, 'build', 'web');
+export const WEB = process.env.XEM_WEB_ROOT ?? join(ROOT, 'build', 'web');
 /** Screenshots the tests take, for people to look at. */
 export const SHOTS = join(ROOT, 'build', 'web-test');
 export const USER_DISC = process.env.XEM_DISC1 ?? join(ROOT, 'discs', 'Xenogears disc 1.chd');

@@ -12,6 +12,8 @@ root=$(cd "$(dirname "$0")/../../.." && pwd)
 out=$root/build/android
 abis=${XEM_ANDROID_ABIS:-x86_64 arm64-v8a}
 api=29
+variant=${XEM_ANDROID_VARIANT:-Debug}
+case $variant in Debug|Release) ;; *) echo 'XEM_ANDROID_VARIANT must be Debug or Release' >&2; exit 2;; esac
 : "${XEM_SDL3_SRC:?run inside nix develop path:./nix/runtime#android}"
 : "${ANDROID_NDK_HOME:?run inside nix develop path:./nix/runtime#android}"
 
@@ -39,9 +41,9 @@ done
 (
     cd "$root/src/runtime"
     XEM_ANDROID_SDL3_LIBS=$out/sdl3-libs \
-        cargo ndk "${targets[@]}" -P "$api" -o "$out/jniLibs" build -p xem-android --release
+        cargo ndk "${targets[@]}" -P "$api" -o "$out/jniLibs" build --locked -p xem-android --release
 )
 
 # The first run downloads the pinned Android Gradle Plugin into GRADLE_USER_HOME.
-gradle -p "$root/src/runtime/android" --project-cache-dir "$out/gradle-project-cache" assembleDebug
-echo "$out/gradle/app/outputs/apk/debug/xem-debug.apk"
+gradle -p "$root/src/runtime/android" --project-cache-dir "$out/gradle-project-cache" "assemble$variant"
+echo "$out/gradle/app/outputs/apk/${variant,,}/xem-${variant,,}.apk"

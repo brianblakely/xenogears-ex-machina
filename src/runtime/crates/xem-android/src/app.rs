@@ -115,11 +115,15 @@ fn files_dir() -> Result<PathBuf, String> {
     if path.is_null() {
         return Err(format!("no internal storage: {}", sdl::error()));
     }
-    Ok(PathBuf::from(
+    let directory = PathBuf::from(
         unsafe { CStr::from_ptr(path) }
             .to_string_lossy()
             .into_owned(),
-    ))
+    );
+    for name in ["discs", "cards", "saves"] {
+        std::fs::create_dir_all(directory.join(name)).map_err(|e| format!("{}: {e}", directory.display()))?;
+    }
+    Ok(directory)
 }
 
 /// Reads the bundled asset through SDL (the APK's AssetManager).

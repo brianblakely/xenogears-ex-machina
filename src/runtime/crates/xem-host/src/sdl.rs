@@ -6,7 +6,7 @@ use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
     RawWindowHandle, WindowHandle,
 };
-#[cfg(not(target_os = "android"))]
+#[cfg(all(unix, not(any(target_os = "android", target_os = "macos"))))]
 use raw_window_handle::{
     WaylandDisplayHandle, WaylandWindowHandle, XlibDisplayHandle, XlibWindowHandle,
 };
@@ -86,6 +86,9 @@ impl Window {
         let mut flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
         if cfg!(target_os = "android") {
             flags |= SDL_WINDOW_FULLSCREEN;
+        }
+        if cfg!(target_os = "macos") {
+            flags |= SDL_WINDOW_METAL;
         }
         // SAFETY: SDL is initialised; the title outlives the call.
         let raw = unsafe { SDL_CreateWindow(title.as_ptr(), width, height, flags) };
@@ -235,8 +238,7 @@ fn android_display() -> RawDisplayHandle {
     unreachable!("only Android windows have an Android display")
 }
 
-/// Reads the native handles of `window` from its SDL properties: Wayland or
-/// X11 on the desktop, the ANativeWindow on Android.
+/// Reads SDL's native window: Win32, AppKit, Wayland/X11 or ANativeWindow.
 ///
 /// # Safety
 /// `window` must be a live SDL window.
@@ -257,7 +259,26 @@ unsafe fn native_handles(
                 android_display(),
             ))
         }
-        #[cfg(not(target_os = "android"))]
+        #[cfg(target_os = "windows")]
+        {
+            use raw_window_handle::{Win32WindowHandle, WindowsDisplayHandle};
+            let hwnd = pointer(SDL_PROP_WINDOW_WIN32_HWND_POINTER).ok_or("SDL gave no HWND")?;
+            let mut handle = Win32WindowHandle::new(std::num::NonZeroIsize::new(hwnd.as_ptr() as isize).unwrap());
+            handle.hinstance = pointer(SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER)
+                .and_then(|p| std::num::NonZeroIsize::new(p.as_ptr() as isize));
+            Ok((handle.into(), WindowsDisplayHandle::new().into()))
+        }
+        #[cfg(target_os = "macos")]
+        {
+            use raw_window_handle::{AppKitDisplayHandle, AppKitWindowHandle};
+            let window = pointer(SDL_PROP_WINDOW_COCOA_WINDOW_POINTER).ok_or("SDL gave no NSWindow")?;
+            // SDL owns the NSWindow and its contentView. Both are accessed on
+            // the main thread and outlive the wgpu surface.
+            let view: *mut objc2::runtime::AnyObject = objc2::msg_send![window.as_ptr().cast::<objc2::runtime::AnyObject>(), contentView];
+            let view = NonNull::new(view).ok_or("SDL's NSWindow has no contentView")?;
+            Ok((AppKitWindowHandle::new(view.cast()).into(), AppKitDisplayHandle::new().into()))
+        }
+        #[cfg(all(unix, not(any(target_os = "android", target_os = "macos"))))]
         {
             let driver = CStr::from_ptr(SDL_GetCurrentVideoDriver()).to_string_lossy();
             match &*driver {

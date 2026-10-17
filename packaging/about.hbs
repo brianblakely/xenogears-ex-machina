@@ -1,0 +1,20 @@
+Xenogears Ex Machina — dependency notices
+
+This application uses Slint under the Slint Royalty-free License 2.0.
+Its attribution widget is accessible in application settings.
+
+HRTF data: Copyright 1994 MIT Media Laboratory. Bill Gardner and Keith
+Martin, "HRTF Measurements of a KEMAR Dummy-Head Microphone", MIT Media Lab
+Perceptual Computing Technical Report #280, May 1994; JASA 97(6), June 1995.
+Provided free without restrictions on use, with attribution to the authors.
+
+{{#each licenses}}
+{{name}}
+Used by:
+{{#each used_by}}
+  {{crate.name}} {{crate.version}} — {{crate.repository}}
+{{/each}}
+
+{{{text}}}
+
+{{/each}}

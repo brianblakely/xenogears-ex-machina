@@ -5,6 +5,8 @@ discs/
 /assets/imported/
 /assets/cache/
 /saves/
+/cards/
+/settings.json
 /captures/
 /*apikey*.txt
 /result

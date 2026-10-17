@@ -224,6 +224,25 @@ def collect_symbols(out):
     return images
 
 
+def symbol_sources():
+    """Inputs whose layout the matched links describe; no extracted bytes."""
+    files = subprocess.check_output(["git", "ls-files", "src/decomp"], cwd=ROOT, text=True).splitlines()
+    return {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in files}
+
+
+def public_symbols(path):
+    """Load the public, source-bound address map without needing private ELFs."""
+    metadata = json.loads(path.read_text())
+    sources = metadata.get("sources", {})
+    if metadata.get("format") != 1 or not sources or any(
+        not name.startswith("src/decomp/") or ".." in Path(name).parts
+        or not (ROOT / name).is_file() or hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != digest
+        for name, digest in sources.items()
+    ):
+        raise SystemExit(f"{path}: stale matched-link metadata; run all-verify, then --export-symbols {path}")
+    return metadata["images"]
+
+
 def fnv1a64(data):
     h = 0xCBF29CE484222325
     for b in data:
@@ -1115,7 +1134,7 @@ def build(args):
     (out / "obj").mkdir(parents=True, exist_ok=True)
     for report in ("compile-errors.txt", "codegen-errors.txt", "unmapped-asm.txt", "missing-data.txt", "stubs.txt"):
         (out / report).unlink(missing_ok=True)
-    images = collect_symbols(out)
+    images = public_symbols(ROOT / args.symbols) if args.symbols else collect_symbols(out)
     addresses = Addresses(images)
     sources = []
     for image, info in images.items():
@@ -1142,7 +1161,7 @@ def build(args):
         log = out / "compile-errors.txt"
         log.write_text("".join(f"== {s[0]}\n{e}" for s, e in failed))
         print(f"{len(failed)} units failed to compile: {log}")
-        if not args.stubs or args.coverage:
+        if not args.stubs or args.coverage or args.release:
             raise SystemExit(1)
     all_sources = sources
     sources = [s for s, e in zip(sources, errors) if not e]
@@ -1161,11 +1180,13 @@ def build(args):
             f"{n}\t{t}\t{c}\t{' '.join(sorted(rewriter.unmapped_users[(t, c)]))}\n"
             for (t, c), n in sorted(rewriter.unmapped_asm.items(), key=lambda x: x[1])))
         print(f"{len(rewriter.unmapped_asm)} inline assembly statements have no port function: {report}")
-        if not args.stubs or args.coverage:
+        if not args.stubs or args.coverage or args.release:
             raise SystemExit(1)
     if rewriter.missing_data:
         (out / "missing-data.txt").write_text("\n".join(rewriter.missing_data) + "\n")
         print(f"{len(rewriter.missing_data)} defined globals without an original address: {out / 'missing-data.txt'}")
+        if args.release:
+            raise SystemExit(1)
     ll_files = []
     for unit in units:
         path = out / "ir" / (unit.source.replace("/", ".") + ".x.ll")
@@ -1191,7 +1212,7 @@ def build(args):
         log = out / "codegen-errors.txt"
         log.write_text("".join(f"== {p.name}\n{e}" for p, e in failed))
         print(f"{len(failed)} units failed code generation: {log}")
-        if not args.stubs or args.coverage:
+        if not args.stubs or args.coverage or args.release:
             raise SystemExit(1)
         objects = [o for o, e in zip(objects, errors) if not e]
     link(out, objects, args, units, coverage)
@@ -1245,6 +1266,12 @@ def link(out, objects, args, units, coverage=None):
             if error:
                 raise SystemExit(error)
         (out / "stubs.txt").write_text("".join(f"{i} {name}\n" for i, name in enumerate(sorted(missing))))
+        if args.release:
+            # Retail builds never enter these development-only hooks. Any new
+            # unresolved function is a release error, not an invented pass.
+            allowed = set((PORT_DIR / "release-debug-hooks.txt").read_text().splitlines())
+            if missing != allowed:
+                raise SystemExit(f"release debug hooks differ: added {sorted(missing - allowed)}, removed {sorted(allowed - missing)}")
         if missing:
             print(f"{len(missing)} undefined functions trap through xem.missing: {out / 'stubs.txt'}")
             objects = objects + [stub_obj]
@@ -1281,11 +1308,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--out", default="build/game")
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
+    parser.add_argument("--symbols", help="public matched-link metadata instead of local PS1 ELFs")
+    parser.add_argument("--export-symbols", type=Path, help="export addresses and one-way fingerprints from verified local links, then exit")
+    parser.add_argument("--release", action="store_true", help="reject incomplete compilation, unmapped assembly and new missing functions")
     parser.add_argument("--stubs", action="store_true",
                         help="define undefined functions as traps into the host (xem.missing) and list them")
     parser.add_argument("--coverage", action="store_true",
                         help="record optimized game IR blocks (use a separate --out directory)")
-    build(parser.parse_args())
+    args = parser.parse_args()
+    if args.export_symbols:
+        out = ROOT / args.out
+        out.mkdir(parents=True, exist_ok=True)
+        metadata = {"format": 1, "sources": symbol_sources(), "images": collect_symbols(out)}
+        # Preserve link order: it is also the order the private build compiles
+        # and links units in, and affects the module and schema identities.
+        args.export_symbols.write_text(json.dumps(metadata, indent=1) + "\n")
+    else:
+        build(args)
 
 
 if __name__ == "__main__":

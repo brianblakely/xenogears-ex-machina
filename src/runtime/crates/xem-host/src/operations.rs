@@ -121,7 +121,7 @@ impl Operations {
                 Ok("Console reset.".into())
             }
             AppAction::SaveState | AppAction::LoadState => {
-                let path = self.directory.as_ref().ok_or("No application storage directory.")?.join("state.xemstate");
+                let path = self.directory.as_ref().ok_or("No application storage directory.")?.join("saves/state.xemstate");
                 let game = game.as_deref_mut().ok_or("No game session.")?;
                 game.command(&serde_json::json!({"cmd":if action == AppAction::SaveState { "state_save" } else { "state_load" },"path":path}))?;
                 Ok(format!("State {}: {}",if action == AppAction::SaveState {"written"} else {"restored"},path.display()))

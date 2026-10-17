@@ -4,6 +4,8 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.appimage.url = "github:ralismark/nix-appimage/7946addbc0d97e358a6d7aefe5e82310f0fe6b18";
+  inputs.appimage.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
     { nixpkgs, rust-overlay, ... }:
@@ -11,6 +13,8 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
       ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
     in
@@ -38,9 +42,16 @@
               "wasm32-unknown-unknown"
               "aarch64-linux-android"
               "x86_64-linux-android"
+              "x86_64-pc-windows-gnu"
             ];
           };
           llvm = pkgs.llvmPackages_21;
+          windowsSdl = pkgs.pkgsCross.mingwW64.sdl3.override {
+            traySupport = false;
+            ibusSupport = false;
+            openglSupport = false;
+            vulkanSupport = false;
+          };
           # Libraries the SDL3, wgpu (Vulkan/GL), Slint and OpenXR hosts open at run time.
           runtimeLibraries = with pkgs; [
             sdl3
@@ -139,6 +150,71 @@
         in
         {
           default = base;
+          # Release hosts use the same lock/toolchain as development. Keep the
+          # Linux test compositor/emulator out of macOS's build environment.
+          release = pkgs.mkShell {
+            packages =
+              with pkgs;
+              [
+                rust
+                llvm.clang-unwrapped
+                llvm.lld
+                llvm.llvm
+                wabt
+                binaryen
+                wasm-bindgen-cli
+                (python3.withPackages (p: [ p.pyelftools ]))
+                pkg-config
+                cmake
+                ninja
+                git
+                zip
+                unzip
+                sdl3
+                cargo-about
+                nix
+              ]
+              ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux runtimeLibraries;
+            shellHook = ''
+              export SOURCE_DATE_EPOCH=0
+              export XEM_CLANG=${llvm.clang-unwrapped}/bin/clang
+              export XEM_WASM_LD=${llvm.lld}/bin/wasm-ld
+              export XEM_WASM2C_RUNTIME=${pkgs.wabt}/share/wabt/wasm2c
+              export XEM_WASM2C_INCLUDE=${pkgs.wabt}/include
+              export XEM_SDL3_SRC=${pkgs.sdl3.src}
+              export XEM_WABT_SRC=${pkgs.wabt.src}
+              export XEM_NIXPKGS_SOURCE=${nixpkgs.outPath}
+            ''
+            + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+              export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath runtimeLibraries}
+            '';
+          };
+          windows = pkgs.mkShell {
+            packages = with pkgs; [
+              rust
+              wabt
+              (python3.withPackages (p: [ p.pyelftools ]))
+              pkg-config
+              git
+              zip
+              unzip
+              pkgsCross.mingwW64.stdenv.cc
+              windowsSdl
+              nix
+            ];
+            shellHook = ''
+              export SOURCE_DATE_EPOCH=0
+              export XEM_WASM2C_RUNTIME=${pkgs.wabt}/share/wabt/wasm2c
+              export XEM_WASM2C_INCLUDE=${pkgs.wabt}/include
+              export CC_x86_64_pc_windows_gnu=${pkgs.pkgsCross.mingwW64.stdenv.cc}/bin/x86_64-w64-mingw32-cc
+              export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=$CC_x86_64_pc_windows_gnu
+              export XEM_WINDOWS_SDL=${windowsSdl}
+              export XEM_WINDOWS_CC_LIBS=${pkgs.pkgsCross.mingwW64.stdenv.cc.cc.lib}
+              export XEM_NIXPKGS_SOURCE=${nixpkgs.outPath}
+              export SDL3_LIB_DIR=${windowsSdl}/lib
+              export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUSTFLAGS="-L native=${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib -L native=${pkgs.pkgsCross.mingwW64.windows.mcfgthreads}/lib -C link-arg=-lmcfgthread"
+            '';
+          };
           android = base.overrideAttrs (previous: {
             nativeBuildInputs = previous.nativeBuildInputs ++ [
               android.androidsdk

@@ -576,24 +576,10 @@ impl FileStore {
         Self { path: path.into() }
     }
 
-    /// `settings.json` in the platform configuration directory:
-    /// `$XDG_CONFIG_HOME` or `~/.config` on Unix, `%APPDATA%` on Windows,
-    /// `~/Library/Application Support` on macOS. Hosts without these (Android,
-    /// browsers) pass their own location to [`FileStore::new`] or use another store.
+    /// `settings.json` beside the portable executable (or in XEM_DATA_DIR).
+    /// Android and browsers pass their own location or use another store.
     pub fn default_path() -> Option<PathBuf> {
-        let env = |name| {
-            std::env::var_os(name)
-                .filter(|v| !v.is_empty())
-                .map(PathBuf::from)
-        };
-        let base = if cfg!(windows) {
-            env("APPDATA")
-        } else if cfg!(target_os = "macos") {
-            env("HOME").map(|home| home.join("Library/Application Support"))
-        } else {
-            env("XDG_CONFIG_HOME").or_else(|| env("HOME").map(|home| home.join(".config")))
-        }?;
-        Some(base.join("xenogears-ex-machina").join("settings.json"))
+        xem_storage::application_directory().ok().map(|base| base.join("settings.json"))
     }
 
     pub fn path(&self) -> &Path {

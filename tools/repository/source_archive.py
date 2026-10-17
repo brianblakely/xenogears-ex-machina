@@ -40,8 +40,16 @@ ALLOWED_SUFFIXES = {
     ".yml",
     ".yaml",
     ".ts",
+    ".rs", ".cpp", ".sh", ".slint", ".js", ".mjs", ".html", ".css",
+    ".wgsl", ".gradle", ".properties", ".xml", ".wat", ".hbs",
 }
-ALLOWED_BASENAMES = {"Makefile", "LICENSE", ".gitignore", ".clang-format", ".editorconfig"}
+ALLOWED_BASENAMES = {"Makefile", "LICENSE", ".gitignore", ".clang-format", ".editorconfig", "xem-gpu-host"}
+# Independently licensed measurement data, not a game asset. Its provenance
+# and citation ship beside it in hrtf/README.md and in the binary notices.
+REVIEWED_DATA = {
+    "src/runtime/crates/xem-binaural/hrtf/kemar-diffuse.hrir":
+        "4a7f56b11edf0ce857ac94aa13941a798a037fe21681f125ed0f11cfc551ab40",
+}
 MAX_TEXT_SIZE = 4 * 1024 * 1024
 
 
@@ -59,6 +67,10 @@ def validate_path(root: Path, name: str) -> Path:
             raise ValueError(f"Symlink cannot enter source archive: {name}")
     if not path.resolve().is_relative_to(root.resolve()) or not path.is_file():
         raise ValueError(f"Missing or escaping archive source: {name}")
+    if name in REVIEWED_DATA:
+        if hashlib.sha256(path.read_bytes()).hexdigest() != REVIEWED_DATA[name]:
+            raise ValueError(f"Reviewed data changed: {name}")
+        return path
     if path.name not in ALLOWED_BASENAMES and path.suffix not in ALLOWED_SUFFIXES:
         raise ValueError(f"Unreviewed source type: {name}")
     if path.stat().st_size > MAX_TEXT_SIZE:
@@ -87,7 +99,7 @@ def archive_bytes(root: Path = ROOT) -> bytes:
             data = path.read_bytes()
             entry = tarfile.TarInfo("xenogears-ex-machina/" + path.relative_to(root).as_posix())
             entry.size = len(data)
-            entry.mode = 0o644
+            entry.mode = 0o755 if path.stat().st_mode & 0o111 else 0o644
             entry.mtime = 0
             entry.uid = entry.gid = 0
             entry.uname = entry.gname = ""
@@ -106,7 +118,7 @@ def main() -> None:
     args = parser.parse_args()
     files = source_files()
     if args.check:
-        print(f"Source boundary audit passed: {len(files)} explicit text sources")
+        print(f"Source boundary audit passed: {len(files)} explicit source and reviewed data files")
         return
     output = args.output.resolve()
     if not output.is_relative_to((ROOT / "dist").resolve()):

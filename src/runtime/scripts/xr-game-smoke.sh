@@ -175,7 +175,7 @@ headless=${CARGO_TARGET_DIR:-$runtime/target}/$profile/xem-headless
 rm -rf "$out"
 mkdir -p "$out/config/xenogears-ex-machina"
 echo '{"graphics": {"profile": "Hd2d"}}' >"$out/config/xenogears-ex-machina/settings.json"
-export XDG_CONFIG_HOME=$out/config
+export XEM_DATA_DIR=$out/config/xenogears-ex-machina
 rundir=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/xem-xr.XXXXXX")
 export XDG_RUNTIME_DIR=$rundir
 monado=
@@ -310,7 +310,7 @@ printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     "$desktop" --xr --control --disc "$disc" --exit-after-frames 560 \
     --xr-hands "20:prayer,40:pinch@panel:298/98,60:pinch@panel:122/170,80:prayer,160:prayer,180:pinch@panel:314/170,200:pinch@panel:256/98,220:pinch@panel:347/395,240:prayer" \
     --xr-pad "350:Back+RT,352:none,460:Back+LT,500:none" >"$out/saves.log" 2>"$out/saves.err"
-printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/state.xemstate" |
+printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/saves/state.xemstate" |
     "$headless" --disc "$disc" --control >"$out/saves-headless.log" 2>"$out/saves-headless.err"
 # Hands on the diorama (docs/runtime.md, Headset qualification), the
 # player's own play (no session log, whose inputs would stand in for the

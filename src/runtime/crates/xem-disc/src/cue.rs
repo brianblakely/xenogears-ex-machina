@@ -40,6 +40,14 @@ fn words(line: &str) -> Vec<String> {
     out
 }
 
+/// All files a cue sheet needs, including any separate audio tracks.
+pub fn files(text: &str) -> Vec<String> {
+    text.lines().filter_map(|line| {
+        let words = words(line);
+        (words.first()?.eq_ignore_ascii_case("FILE")).then(|| words.get(1).cloned()).flatten()
+    }).collect()
+}
+
 /// `mm:ss:ff` to a sector count.
 fn msf(text: &str) -> Result<u32> {
     let parts: Vec<&str> = text.split(':').collect();

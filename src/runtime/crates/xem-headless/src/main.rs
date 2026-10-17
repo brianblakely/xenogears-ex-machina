@@ -60,6 +60,10 @@ fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--version" => {
+                println!("Xenogears Ex Machina {} (headless)", option_env!("XEM_RELEASE_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")));
+                return ExitCode::SUCCESS;
+            }
             "--disc" => options.disc = args.next().map(PathBuf::from).unwrap_or_default(),
             "--frames" => options.frames = args.next().and_then(|v| v.parse().ok()).unwrap_or(options.frames),
             "--stubs" => options.stubs = args.next().map(PathBuf::from).unwrap_or(options.stubs),

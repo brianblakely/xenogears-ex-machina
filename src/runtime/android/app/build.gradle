@@ -34,10 +34,29 @@ android {
         applicationId = 'dev.xem.app'
         minSdk = 29
         targetSdk = 34
-        versionCode = 1
-        versionName = '0.1.0'
+        versionCode = Integer.parseInt(System.getenv('XEM_ANDROID_VERSION_CODE') ?: '50000')
+        versionName = (System.getenv('XEM_RELEASE_VERSION') ?: 'v0.5').replaceFirst('^v', '')
         ndk {
             abiFilters 'x86_64', 'arm64-v8a'
+        }
+    }
+
+    signingConfigs {
+        release {
+            def key = System.getenv('XEM_ANDROID_KEYSTORE')
+            if (key != null) {
+                storeFile = file(key)
+                storePassword = System.getenv('XEM_ANDROID_STORE_PASSWORD')
+                keyAlias = 'xem'
+                keyPassword = System.getenv('XEM_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.release
+            debuggable = false
         }
     }
 
@@ -45,6 +64,7 @@ android {
         main {
             java.srcDirs += sdlJava
             jniLibs.srcDirs = [nativeLibs]
+            assets.srcDirs += new File(repoRoot, 'build/android/notices')
         }
     }
 
@@ -65,4 +85,12 @@ base {
 
 tasks.named('preBuild') {
     dependsOn copySdlJava
+}
+
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
+    doFirst {
+        ['XEM_ANDROID_KEYSTORE', 'XEM_ANDROID_STORE_PASSWORD', 'XEM_ANDROID_KEY_PASSWORD'].each {
+            if (!System.getenv(it)) throw new GradleException("$it is required for a signed release APK")
+        }
+    }
 }

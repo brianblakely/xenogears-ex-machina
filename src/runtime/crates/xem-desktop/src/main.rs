@@ -238,14 +238,15 @@ fn options() -> Result<Options, String> {
                 );
                 std::process::exit(0);
             }
+            "--version" => {
+                println!("Xenogears Ex Machina {}", option_env!("XEM_RELEASE_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")));
+                std::process::exit(0);
+            }
             other => return Err(format!("unknown argument {other:?} (see --help)")),
         }
     }
     if options.screenshot.is_some() && options.exit_after_frames.is_none() {
         return Err("--screenshot is taken at --exit-after-frames".into());
-    }
-    if (options.load_state.is_some() || options.save_state_at.is_some()) && options.disc.is_none() {
-        return Err("--load-state and --save-state-at need --disc".into());
     }
     if let (Some((at, _)), Some(exit)) = (&options.save_state_at, options.exit_at_frame)
         && *at > exit
@@ -273,7 +274,19 @@ fn open_settings() -> SettingsService {
     })
 }
 
-fn run(options: Options) -> Result<(), String> {
+fn run(mut options: Options) -> Result<(), String> {
+    let directory = FileStore::default_path().and_then(|p| p.parent().map(std::path::Path::to_path_buf))
+        .ok_or("cannot locate the portable installation directory")?;
+    let explicit = options.disc.as_ref().map(std::path::absolute).transpose().map_err(|e| e.to_string())?;
+    let disc = xem_disc::install::prepare(&directory).map_err(|e| format!("{}: {e}", directory.display()))?;
+    if let Some(path) = explicit && path.parent() == Some(directory.as_path()) && !path.exists() {
+        let relocated = directory.join("discs").join(path.file_name().unwrap());
+        if relocated.is_file() { options.disc = Some(relocated); }
+    }
+    if options.disc.is_none() { options.disc = disc; }
+    if (options.load_state.is_some() || options.save_state_at.is_some()) && options.disc.is_none() {
+        return Err("no disc found; put your disc images beside the executable or use --disc".into());
+    }
     if options.xr {
         return run_xr(&options);
     }

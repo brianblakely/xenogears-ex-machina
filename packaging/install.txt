@@ -1,0 +1,45 @@
+Xenogears Ex Machina
+
+Desktop: extract the download to a writable folder and put your Xenogears
+disc images beside the executable (beside the .app on macOS). On Linux,
+chmod +x the AppImage, then run it. On first launch, recognized images move
+into discs/. CUE sheets move with their track files. Existing files are
+never overwritten. Disc 1 starts automatically when both discs are present.
+Only the North American SLUS-00664 and SLUS-00669 revisions are supported.
+Use CHD, BIN/CUE, or raw 2352-byte ISO images; 2048-byte ISO images lack audio.
+
+cards/ holds card1.mcd and card2.mcd; saves/state.xemstate is the quick state.
+settings.json and an optional imported bios.bin also stay in this folder.
+Back up this folder before upgrading. Replace the application, retaining
+discs/, cards/, saves/ and settings.json. A changed game module may reject
+an older save state; original memory cards remain the interchange format.
+XEM_DATA_DIR explicitly selects another writable application folder.
+
+Linux: the AppImage bundles its runtime libraries and uses the host graphics
+drivers. It needs a supported CPU, a graphical session and unprivileged user
+namespaces. APPIMAGE_EXTRACT_AND_RUN=1 runs without FUSE. --headless selects
+the included command-line host, which needs no graphics or audio device.
+Windows: keep the included DLLs beside xem-desktop.exe and xem-headless.exe.
+macOS: open Xenogears Ex Machina.app. It is ad-hoc signed, not notarized.
+
+Android / Meta Horizon OS: install the signed APK. Import discs with the
+system document picker and grant persistent access. The operating system
+controls app storage; cards/ and saves/ live in its private files directory.
+Export backups before uninstalling. An upgrade signed with the same key
+preserves application data. Horizon immersive play needs an OpenXR runtime.
+
+Web: open the published HTTPS page, choose your own discs, and keep them
+available for subsequent sessions. Discs and saves remain local. Browser
+storage can be cleared or evicted: export card/state backups in Settings.
+To self-host, extract the web archive and serve it over HTTPS (localhost is
+also a secure context), with .wasm as application/wasm. No cross-origin
+isolation headers or SharedArrayBuffer are required. WebXR depends on the
+browser/headset and asks permission when entering an immersive session.
+
+Escape opens desktop settings. WASD move, E confirms, F cancels, Shift runs,
+Space jumps, Tab opens the game menu, Enter starts and Backspace selects.
+Controls and application shortcuts can be rebound in Settings.
+
+No original disc, BIOS, music, artwork or personal save is included.
+Source, release notes and platform qualification:
+https://github.com/brianblakely/xenogears-ex-machina

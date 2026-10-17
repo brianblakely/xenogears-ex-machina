@@ -24,6 +24,7 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")" && pwd)
 cd "$root"
+export XEM_DATA_DIR=${XEM_DATA_DIR:-$root}
 nix=(nix --extra-experimental-features 'nix-command flakes' develop)
 
 disc="discs/Xenogears disc 1.chd"

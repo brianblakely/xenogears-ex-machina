@@ -553,8 +553,8 @@ mod tests {
         foreign.bytes(br#"{"module":"another build","disc":"","packages":[]}"#);
         foreign.0.extend_from_slice(&content[16 + length..]);
         let directory = std::env::temp_dir().join(format!("xem-host-refused-state-{}", std::process::id()));
-        std::fs::create_dir_all(&directory).unwrap();
-        let path = directory.join("state.xemstate");
+        std::fs::create_dir_all(directory.join("saves")).unwrap();
+        let path = directory.join("saves/state.xemstate");
         std::fs::write(&path, seal(foreign.0)).unwrap();
         let expected = format!(r#"incompatible state: the state's game module is "another build", this session's is "{module}""#);
         assert_eq!(game.command(&json!({"cmd":"state_load","path":path})), Err(expected.clone()));

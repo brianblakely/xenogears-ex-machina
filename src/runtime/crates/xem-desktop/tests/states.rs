@@ -119,7 +119,7 @@ fn the_desktops_window_plays_a_native_state_on_and_saves_one_that_goes_on_native
         .env("SDL_VIDEODRIVER", "wayland")
         .env("SDL_AUDIO_DRIVER", "dummy")
         .env("VK_ICD_FILENAMES", &lavapipe)
-        .env("XDG_CONFIG_HOME", display.root.join("config"))
+        .env("XEM_DATA_DIR", display.root.join("config/xenogears-ex-machina"))
         .env("XEM_FRAME_STATS", "1")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

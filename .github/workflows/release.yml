@@ -1,0 +1,279 @@
+name: Portable releases
+on:
+  push:
+    branches: [master, 'release/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel a release because another commit arrived. Version reservation
+# is atomic, and reruns of a commit reuse its tag.
+concurrency:
+  group: release-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      android_code: ${{ steps.version.outputs.android_code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Make room for the pinned toolchains
+        if: runner.os == 'Linux'
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Reserve version (first release is v0.5)
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          flags=()
+          if [ "$PUBLISH" != true ]; then flags+=(--preview); fi
+          python3 tools/release/version.py --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" "${flags[@]}"
+      - name: Build game from public sources, audit licenses and source archive
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          nix develop path:./nix/runtime#release -c python3 tools/game_module.py --symbols src/port/symbols.json --release --stubs
+          nix develop path:./nix/runtime#release -c python3 tools/release/notices.py
+          python3 tools/repository/source_archive.py --output "dist/xenogears-ex-machina-$TAG-source.tar.gz"
+          cp build/THIRD_PARTY_NOTICES.txt dist/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-inputs
+          path: |
+            build/game/game.wasm
+            build/game/schema.json
+            build/game/stubs.txt
+            build/THIRD_PARTY_NOTICES.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-source
+          path: dist/*
+          if-no-files-found: error
+
+  checks:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Make room for the pinned toolchains
+        if: runner.os == 'Linux'
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-inputs
+          path: build
+      - name: Public and runtime regression tests with the released game module
+        run: nix develop path:./nix/runtime -c python3 tools/repository/check.py
+      - name: Original-target toolchain smoke test
+        run: nix develop path:./nix/ghidra#matching -c make -C src/decomp smoke
+
+  desktop:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: linux, runner: ubuntu-24.04, shell: release, arch: x86_64 }
+          - { kind: linux, runner: ubuntu-24.04-arm, shell: release, arch: aarch64 }
+          - { kind: windows, runner: ubuntu-24.04, shell: windows, arch: x86_64 }
+          - { kind: macos, runner: macos-15, shell: release, arch: aarch64 }
+          - { kind: macos, runner: macos-15-intel, shell: release, arch: x86_64 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Make room for the pinned toolchains
+        if: runner.os == 'Linux'
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-inputs
+          path: build
+      - name: Build and bundle native executables
+        env:
+          KIND: ${{ matrix.kind }}
+          SHELL_NAME: ${{ matrix.shell }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: nix develop "path:./nix/runtime#$SHELL_NAME" -c python3 tools/release/package.py "$KIND" --version "$TAG"
+      - name: Test packaged executables
+        if: matrix.kind != 'windows'
+        env:
+          KIND: ${{ matrix.kind }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: nix develop path:./nix/runtime#release -c python3 tools/release/smoke.py "$KIND" --version "$TAG"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-${{ matrix.kind }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  windows-test:
+    needs: [prepare, desktop]
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-windows-x86_64
+          path: dist
+      - name: Run the packaged Windows application
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: python tools/release/smoke.py windows --version $env:TAG
+
+  android:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Make room for the pinned toolchains
+        if: runner.os == 'Linux'
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-inputs
+          path: build
+      - name: Build signed Android and Horizon OS APK
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          XEM_ANDROID_VERSION_CODE: ${{ needs.prepare.outputs.android_code }}
+          XEM_ANDROID_KEYSTORE_BASE64: ${{ secrets.XEM_ANDROID_KEYSTORE_BASE64 }}
+          XEM_ANDROID_STORE_PASSWORD: ${{ secrets.XEM_ANDROID_STORE_PASSWORD }}
+          XEM_ANDROID_KEY_PASSWORD: ${{ secrets.XEM_ANDROID_KEY_PASSWORD }}
+          CARGO_BUILD_JOBS: 3
+        run: |
+          test -n "$XEM_ANDROID_KEYSTORE_BASE64"
+          umask 077
+          export XEM_ANDROID_KEYSTORE="$RUNNER_TEMP/xem-release.jks"
+          trap 'rm -f "$XEM_ANDROID_KEYSTORE"' EXIT
+          printf '%s' "$XEM_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$XEM_ANDROID_KEYSTORE"
+          nix develop path:./nix/runtime#android -c python3 tools/release/package.py android --version "$TAG"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-android-horizon
+          path: dist/*
+          if-no-files-found: error
+
+  web:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Make room for the pinned toolchains
+        if: runner.os == 'Linux'
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-inputs
+          path: build
+      - name: Build static WebAssembly application
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: nix develop path:./nix/runtime#release -c python3 tools/release/package.py web --version "$TAG"
+      - name: Test the packaged page, browser storage and WebXR adapters
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          export XEM_WEB_ROOT="$PWD/build/release/xenogears-ex-machina-$TAG-web"
+          nix develop path:./nix/runtime -c bash -c 'cd src/runtime/web && npm ci --ignore-scripts && npm test'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-web
+          path: dist/*
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: build/release/xenogears-ex-machina-${{ needs.prepare.outputs.tag }}-web
+
+  publish:
+    if: github.ref == 'refs/heads/master'
+    needs: [prepare, checks, desktop, windows-test, android, web]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: release-*
+          path: artifacts
+      - name: Publish complete artifacts and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: python3 tools/release/publish.py --tag "$TAG" --commit "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
+
+  pages:
+    needs: [prepare, publish]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
+      - name: Do not replace a newer published web build
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          if [ "$latest" = "$TAG" ]; then echo 'deploy=true' >> "$GITHUB_OUTPUT"; fi
+      - name: Deploy the released web build
+        if: steps.current.outputs.deploy == 'true'
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e

@@ -97,7 +97,7 @@ impl Desktop {
             .env("SDL_VIDEODRIVER", "wayland")
             .env("SDL_AUDIO_DRIVER", "dummy")
             .env("VK_ICD_FILENAMES", lavapipe)
-            .env("XDG_CONFIG_HOME", display.root.join("config"))
+            .env("XEM_DATA_DIR", display.root.join("config/xenogears-ex-machina"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

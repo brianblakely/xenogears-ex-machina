@@ -23,3 +23,6 @@ xem-game = { path = "../xem-game" }
 xem-storage = { path = "../xem-storage" }
 xem-xr = { path = "../xem-xr" }
 png.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "=0.6.5"

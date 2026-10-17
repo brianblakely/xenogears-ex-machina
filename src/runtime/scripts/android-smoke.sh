@@ -511,7 +511,7 @@ PY
     echo "  Save state left vblank and memory hash $(op_of <<<"$saved"), the game played on to vblank" \
         "$(echo "$moved" | vblank_of), Load state left $(op_of <<<"$loaded")"
     [ "$(op_of <<<"$saved")" = "$(op_of <<<"$loaded")" ] || fail "Load state did not give back the saved game"
-    echo "  $("${adb[@]}" shell run-as "$package" ls -l files/state.xemstate | tr -d '\r')"
+    echo "  $("${adb[@]}" shell run-as "$package" ls -l files/saves/state.xemstate | tr -d '\r')"
     shot 10-saves
     tap 628 722
     sleep 2
@@ -526,7 +526,7 @@ PY
         fail "crash or game trap in the log"
     fi
     # A native state through the app's own load path: xem-headless's field
-    # 30 state (at frame F) where Load state reads it (files/state.xemstate),
+    # 30 state (at frame F) where Load state reads it (files/saves/state.xemstate),
     # a session log with no commands that ends at F+600 (files/script.json:
     # the game plays as the original, no player's input or host controls),
     # Load state by its key (F8) once the game booted: the log's memory hash
@@ -550,7 +550,7 @@ PY
         "${adb[@]}" push "$out/state-script.json" /data/local/tmp/xem-script.json >/dev/null
         mark
         "${adb[@]}" shell am force-stop "$package"
-        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-state.xemstate files/state.xemstate
+        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-state.xemstate files/saves/state.xemstate
         "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-script.json files/script.json
         "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
         wait_for "xem: disc picker opened" 60
@@ -567,7 +567,7 @@ PY
         mark
         "${adb[@]}" shell input keyevent --longpress KEYCODE_F5
         saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/state\.xemstate" 60)
-        "${adb[@]}" exec-out run-as "$package" cat files/state.xemstate >"$out/device.xemstate"
+        "${adb[@]}" exec-out run-as "$package" cat files/saves/state.xemstate >"$out/device.xemstate"
         continued=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
         onward=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
         echo "  Save state on the device: $(op_of <<<"$saved"), $(wc -c <"$out/device.xemstate") bytes; natively RAM $continued," \
@@ -581,7 +581,7 @@ PY
             "$out/native.xemstate" "$out/native-played.xemstate" | native >/dev/null
         cmp -s "$out/device.xemstate" "$out/native-played.xemstate" || fail "the device's state is not xem-headless's at that frame, byte for byte"
         echo "  the device's state is xem-headless's at frame $((at + 600)), byte for byte"
-        "${adb[@]}" shell run-as "$package" rm -f files/script.json files/state.xemstate
+        "${adb[@]}" shell run-as "$package" rm -f files/script.json files/saves/state.xemstate
         "${adb[@]}" shell rm -f /data/local/tmp/xem-state.xemstate /data/local/tmp/xem-script.json
     else
         echo "== no xem-headless at $headless (XEM_HEADLESS): skipped the state interchange step"
