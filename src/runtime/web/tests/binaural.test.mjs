@@ -112,7 +112,8 @@ describe('the Binaural mode in browsers', { skip: !available && `needs ${USER_DI
 
   test('the presentation costs a bounded share of real time, even on a phone-class processor', { timeout: 900_000 }, async () => {
     const state = shot('binaural-field15.state');
-    if (!existsSync(state)) native(state);
+    // A focused run must use this module's state, not a previous build's.
+    native(state);
     const browser = await start({ args: NO_WEBGPU });
     try {
       const measure = async (binaural, throttle) => {

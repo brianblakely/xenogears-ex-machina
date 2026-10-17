@@ -726,6 +726,12 @@ Unknown behavior and progression workarounds cannot be reported as completion.
 **Goal:** Release reproducible native/browser desktop/mobile/headset play of the
 complete original game. The modding toolkit follows this release.
 
+For v0.5, the user accepts Linux as the desktop stand-in and Android/Horizon
+emulation as device qualification. Record those as proxy results, without
+claiming physical-device thermals or vendor-driver coverage. Phase 9's open
+full-story progression checks remain open; releasing v0.5 does not certify them.
+The bounded v0.5 matrix, commands and results are in [docs/releases.md](docs/releases.md).
+
 - [ ] Qualify Arch-first Linux, Windows, macOS, Android and Meta Horizon OS builds,
   appropriate graphics backends, installation/upgrades, input/audio devices,
   performance and headless/no-image operation.
@@ -746,10 +752,10 @@ complete original game. The modding toolkit follows this release.
   in-headset settings on actual supported browsers/headsets. Verify HD-2D quality
   tiers, stereo correctness and sustained frame pacing across native/browser
   presentation modes; report unsupported combinations rather than implying parity.
-- [ ] Run original-game, agent, save/time and presentation
+- [x] Run original-game, agent, save/time and presentation
   regressions on the applicable native/browser targets; verify defaults, optional
   original behavior and error diagnostics.
-- [ ] Audit licenses and the explicit authored-source allowlist; distribute no
+- [x] Audit licenses and the explicit authored-source allowlist; distribute no
   original images, extracted assets, personal saves or unreviewed dependencies.
 - [ ] Document supported revisions, devices/OS/browser versions, graphics/XR
   capabilities, presentation modes, limitations, reproducible commands and user

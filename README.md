@@ -20,7 +20,7 @@ adventures.
 | Controls for every device | **Complete** | Keyboard, mouse, gamepad, touch, VR controllers and hand tracking. |
 | Conveniences, VR views and headphone audio | **Complete** | Save states, rewind, fast-forward, memory card import, gameplay options, the VR diorama, first-person view, clearer movies and Binaural sound. |
 | Complete game | **Next** | Both-disc story, optional content and minigames. |
-| Playable release | **Not yet available** | Tested native downloads and browser play. |
+| Playable release | **v0.5** | Portable native downloads and browser play; [qualified platforms and limits](docs/releases.md). Full-story progression remains unverified. |
 | Mods and creation tools | Planned | Mod management, gameplay extensions, desktop editors and AI-assisted authoring. |
 
 [Full roadmap](plan.md) · [Runtime and feature guide](docs/runtime.md)
@@ -46,8 +46,8 @@ XEM runs natively on Linux, where development is led on Arch Linux, and in web
 browsers, which run the same compiled game code on WebGPU or WebGL2 (tested in
 Chromium). An Android app, VR through OpenXR and browser-based VR through WebXR
 run the same game too, verified on the Android emulator and simulated headsets.
-Phones and tablets get touch controls made for them. Windows, macOS and Meta
-Horizon OS builds are planned for the first release. Full editing tools will be
+Phones and tablets get touch controls made for them. Downloads include Windows,
+macOS, Linux and a shared Android/Meta Horizon OS APK. Full editing tools will be
 desktop-focused; mobile, headset and browser versions are intended for playing
 the game and compatible prebuilt mods.
 
@@ -130,18 +130,21 @@ separate approximation of Xenogears.
 XEM provides source code and tools, not the original game discs. Original disc
 images, artwork, music and other extracted game assets are not distributed with
 the project. Matching builds use data from the user's own supported discs, and
-the native and browser versions import game data locally: disc images are read
-in place, never bundled or uploaded, and saves stay on your device.
+the native and browser versions import game data locally. Desktop first launch
+organizes supported images into `discs/` beside the application; images are
+never bundled or uploaded, and saves stay on your device.
 
 The project's authored source is available under the [MIT License](LICENSE).
 
 ## Follow the project or get involved
 
-Follow this repository for milestones and see the [full roadmap](plan.md) for the
-planned progression from preservation to play to creation. There is no playable
-release yet, but developers on Linux can already build XEM from source and play
-it with their own discs (see the
-[runtime guide](docs/runtime.md#desktop-host-and-settings-panel)).
+Download [v0.5](https://github.com/brianblakely/xenogears-ex-machina/releases/tag/v0.5)
+or [play in your browser](https://brianblakely.github.io/xenogears-ex-machina/).
+For desktop installation, place the executable beside your disc images in a
+writable folder. First launch creates `discs/`, `cards/` and `saves/`.
+See the [installation and qualification guide](docs/releases.md) for platform
+requirements, upgrades and the emulator-based device matrix. Follow the
+[roadmap](plan.md) for full-game progression testing and creation tools.
 
 Developers can start with the [development guide](docs/development.md),
 [runtime guide](docs/runtime.md), [porting handbook](docs/later-phases.md) and

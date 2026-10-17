@@ -31,6 +31,11 @@ devices, their thermal behavior, or every vendor's drivers. Native platform
 builds remain separate artifacts; a Linux result does not claim that a Windows
 or macOS executable itself was run on Linux.
 
+This is a playable release of the recovered game and runtime. Phase 9's
+continuous full-story progression, endings and exhaustive optional-content
+qualification remain open. The passing scenarios below do not certify an
+end-to-end playthrough of both discs.
+
 The qualification matrix is explicit and intentionally bounded:
 
 | Test environment | Coverage |
@@ -194,3 +199,151 @@ During development use the affected suite or focused tests. Before review or
 merging a release change, run `src/runtime/scripts/suite.sh full` once. Its
 logs and exact stage results are under `build/suite/`. Checks without private
 disc inputs must report their skips; they are not original-game playthroughs.
+
+## v0.5 qualification record
+
+On 2026-10-17, `src/runtime/scripts/suite.sh full` ran once with both private
+disc images available. Module construction, port tests (242 tests, one skip),
+native/web builds, validation and Android build/boot passed. The first module
+exposed an address-mapping defect: PS1 RAM mirroring also masked the runtime's
+reserved presentation buffers. Nine Rust test targets, browser first-person
+and binaural checks, and ARM64 scene-reveal checks failed. The correction is
+in `tools/game_module.py`; no original-game source or expected capture changed.
+The suite process returned 143 (SIGTERM) during diagnostic reruns, before its
+serial device and timing stages. This run is **not recorded as a full pass**.
+
+The corrected public module is 5,392,773 bytes. Its bytes and schema matched
+the locally qualified module and the GitHub-built release input with `cmp`.
+The compiled Wasm memory regression failed before the correction and passed
+afterward. With `XEM_GAME_WASM` pointing to that corrected module,
+`CARGO_TARGET_DIR=target-release`, `XEM_RELEASE_VERSION=v0.5` and
+`VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD`, these commands ran from `src/runtime`
+inside the pinned runtime shell:
+
+```sh
+cargo test --release -p xem-headless --test camera --test binaural --test diorama --no-fail-fast
+cargo test --release -p xem-headless --test first_person --test gestures --test inspection --test render --test states --no-fail-fast
+cargo test --release -p xem-host --lib --test states --no-fail-fast
+```
+
+Results: 40/40, 42/42 and 23/23 passed. The existing OpenGL renderer and
+first-person ordering tests also passed with `WGPU_BACKEND=gl`,
+`__EGL_VENDOR_LIBRARY_FILENAMES=$XEM_MESA_EGL`, `LIBGL_ALWAYS_SOFTWARE=1` and
+`GALLIUM_DRIVER=llvmpipe`. Logs are `build/release-presentation-fixed.log`,
+`build/release-presentation-remaining.log`, `build/release-host-fixed.log` and
+`build/release-gl*.log`.
+
+`src/runtime/scripts/arm64-smoke.sh`, in the pinned Android shell with the
+corrected module and native `XEM_HEADLESS`, passed all recorded route hashes,
+cross-platform state/card interchange and the Lahan/world-map reveal checks.
+`node --test --test-concurrency=1 tests/first-person.test.mjs tests/xr-binaural.test.mjs`
+passed 4/4 with no skips, using the corrected `XEM_WEB_ROOT` and native
+`XEM_HEADLESS`. Logs are `build/release-arm64-fixed.log` and
+`build/release-web-presentation-fixed.log`.
+
+The public-check side of the initial local suite also had one compact-panel
+drag failure. The same test binary passed in isolation without a code change;
+the hosted public checks passed too. Treat that initial failure as retained
+evidence, not a silently discarded pass. Original-game checks in public CI
+skip private disc-dependent scenarios; the local runs above had those inputs.
+
+The final Linux AppImage passed this command in the pinned runtime shell:
+
+```sh
+python3 tools/release/smoke.py linux --version v0.5 --graphical --disc 'discs/Xenogears disc 1.chd'
+```
+
+It rendered Settings, organized a disposable hard link of the disc image,
+created the three storage directories beside the AppImage while launched from
+another working directory, and ran 120 headless frames. The original image
+remained in place. See `build/release-linux-smoke-final.log`.
+
+From the repository root inside the pinned Android shell, both of these
+original-game checks passed with the corrected APK and native binary:
+
+```sh
+export CARGO_TARGET_DIR="$PWD/src/runtime/target-android"
+export XEM_HEADLESS="$PWD/src/runtime/target-release/release/xem-headless"
+export XEM_SKIP_BUILD=1
+src/runtime/scripts/android-smoke.sh
+XEM_SMOKE_ABI=arm64-v8a XEM_SMOKE_GAME_ONLY=1 src/runtime/scripts/android-smoke.sh
+python3 tools/release/android_smoke.py --version v0.5
+```
+
+The first run covered document import, touch settings, low memory, rotation,
+activity recreation, restart persistence and background/resume; simulation
+advanced 0.010 seconds over roughly ten seconds in the background. Both ABIs
+played the original game, exercised rewind/fast-forward and touch saves, and
+exchanged states with the native host byte for byte. Native libraries in the
+instrumentation APK and signed release APK matched for all four `.so` entries.
+The signed APK separately passed non-debuggable installation, rendering,
+directory creation and data-preserving reinstall, including on a reset AVD.
+Logs are `build/release-android-game-fixed.log`,
+`build/release-android-arm64-fixed.log` and
+`build/release-android-cold-start.log`.
+
+The native XR check passed in the pinned runtime shell:
+
+```sh
+CARGO_TARGET_DIR="$PWD/src/runtime/target-release" XEM_CARGO_PROFILE=release XEM_SKIP_BUILD=1 src/runtime/scripts/xr-game-smoke.sh
+```
+
+Monado's simulated 20 Hz headset exercised original movies, fields, dialogue,
+menus, on-foot/Gear battles and the world map, including screen/diorama
+transitions, stereo geometry, one/two-hand gestures, controllers, tracking
+loss/recentering, paused head tracking, settings and Binaural sound. Saved
+states matched the headless host byte for byte and subsequent RAM hashes
+matched. The sampled diorama frame interval was 50.17 ms median, 56.73 ms p99,
+with zero of 276 intervals late by the test's threshold. These are simulator
+measurements. See `build/release-xr-fixed.log` and its captured views under
+`src/runtime/target/xr-game-smoke/`.
+
+The final static web package passed all 27 persistence tests with no skips:
+
+```sh
+cd src/runtime/web
+export XEM_WEB_ROOT="$PWD/../../../build/release/xenogears-ex-machina-v0.5-web"
+export XEM_HEADLESS="$PWD/../target-release/release/xem-headless"
+node --test --test-concurrency=1 tests/persistence.test.mjs
+```
+
+This covered rejected/corrupt/evicted storage, quota and interrupted writes,
+backup/import, settings and input persistence, original-game pause behavior,
+time controls and native/browser state/card interchange. Rewind latency was
+8.4 ms p99 against the 16 ms limit. Persistence cases run sequentially so
+wall-clock assertions do not compete for the software renderer. The assertions
+are unchanged. See `build/release-web-persistence-final.log`.
+
+[Hosted qualification at `55ceb35`](https://github.com/brianblakely/xenogears-ex-machina/actions/runs/39070701190)
+passed every build and test job: both Linux AppImages, both Mac bundles,
+Windows cross-build and native startup, signed Android installation/update,
+web packaging and the public/runtime regression checks. Packaged browser
+checks passed 43 tests and skipped six private-disc cases; the local runs
+provide the original-game evidence. The signed APK's cold-start check also
+passed after allowing Android's fresh boot services to settle. It retains
+full startup, process-exit and crash diagnostics on failure. This preview
+reserved no tag and published no release or Pages deployment.
+
+With the same web/native paths and pinned shell, the remaining serial browser
+checks passed:
+
+```sh
+node --test --test-name-pattern="drops missed time" tests/page.test.mjs
+node --test --test-concurrency=1 tests/xr-game.test.mjs tests/xr-diorama.test.mjs
+node --test --test-name-pattern="phone-class processor" tests/binaural.test.mjs
+node --test --test-name-pattern="native and browser" tests/binaural.test.mjs
+```
+
+Results were 1/1, 9/9, 1/1 and 1/1, with no skips. WebXR covered stereo,
+screen/diorama/movie transitions, tracking and recentering, controller/hand
+interactions, session reentry, inspection, settings, saves and time controls.
+Binaural processing used 2.2% of real time normally and 7.3% with CPU execution
+throttled four times, below the 10%/40% limits. Native/browser output differed
+by at most one sample unit against a tolerance of two.
+
+The first focused audio run correctly rejected a test-generated state from
+the earlier module. The timing test now regenerates that state using the
+selected native binary for every run; module compatibility checks remain
+unchanged. Its initial failure is retained in
+`build/release-web-timing-final.log`, alongside the passing page/WebXR checks.
+The corrected focused audio runs are in `build/release-web-binaural-final.log`.

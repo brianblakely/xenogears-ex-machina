@@ -51,6 +51,8 @@ def main():
         f"Portable Xenogears Ex Machina {args.tag}, built from `{args.commit}`.\n\n"
         "Place the desktop executable beside your own disc images. First launch organizes them into `discs/`; "
         "memory cards and save states use `cards/` and `saves/`. Android and Horizon OS share the signed APK.\n\n"
+        "Full-story progression remains unverified. Desktop and headset qualification includes the documented "
+        "Linux and emulation proxies.\n\n"
         "[Browser play](https://brianblakely.github.io/xenogears-ex-machina/) · "
         f"[Installation, supported platforms and qualification limits](https://github.com/{args.repository}/blob/{args.tag}/docs/releases.md)\n\n"
         "`SHA256SUMS` covers all downloads. No original game images, BIOS, extracted assets or personal saves are included.\n"
