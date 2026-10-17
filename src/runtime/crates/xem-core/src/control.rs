@@ -950,6 +950,7 @@ impl<M: GameModule> Session<M> {
             "cycles": services.clock.now,
             "pads": services.pads.0.iter().map(|p| json!({"connected": p.connected, "buttons": names_of(p.buttons)})).collect::<Vec<_>>(),
             "stopped": stopped,
+            "query_trap": self.runtime.query_trap(),
             "recording": self.recording.is_some(),
             "snapshots": self.snapshots.keys().cloned().collect::<Vec<_>>(),
             "frames": self.runtime.frames(),

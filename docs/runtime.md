@@ -52,6 +52,17 @@ original address.
   routines (from their `.s` contracts) and the entry and restart logic. A
   function the port does not define yet traps through `xem.missing`
   (`--stubs` lists them in `build/game/stubs.txt`).
+- **Host queries.** Between frames the hosts ask the port whether the game
+  is paused (`xem_game_paused`), whether a battle's attack page takes the
+  buttons (`xem_game_combo_input`) and what the field allows
+  (`xem_game_field_controls`). Natively these run under wasm2c's trap
+  handler as the game's own entries do (a browser's call catches a trap
+  itself): a fault in one leaves the stack pointer as the call found it,
+  the query answers as if nothing applied, and the first is reported
+  (`status`'s `query_trap`, a line on stderr), where it once ended the
+  desktop host. The combo query reads the battle's turn state only through
+  a pointer in RAM: until the battle allocates it (as it starts), the
+  pointer holds what the overlay's memory held.
 - **Handwritten routines.** Their ports (`src/port/model_draw.c`, `arena.c`,
   `worldmap_terrain.c`, `sprite_pixels.c`, `lzss.c`, `resident.c`) keep game
   addresses as 32-bit integers and access memory through

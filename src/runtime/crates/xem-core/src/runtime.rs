@@ -435,6 +435,10 @@ pub struct Runtime<M: GameModule> {
     /// The executable's text as the BIOS copied it to its address at
     /// power-on (code and initialized data), which a reset copies again.
     executable: Option<(u32, Vec<u8>)>,
+    /// The first trap a host's query of the port met ([`Self::game_paused`],
+    /// [`Self::combo_input`], [`Self::field_controls`]): the query answered
+    /// as if nothing applied, and status reports it.
+    query_trap: Option<String>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -458,6 +462,7 @@ impl<M: GameModule> Runtime<M> {
             stopped_before_vblank: false,
             frames: 0,
             executable: None,
+            query_trap: None,
         }
     }
 
@@ -835,13 +840,33 @@ impl<M: GameModule> Runtime<M> {
 
     pub fn game_paused(&mut self) -> bool {
         let mode = self.services().mode.unwrap_or(u32::MAX);
-        self.module.game_paused(mode)
+        let answer = self.module.game_paused(mode);
+        self.answered("xem_game_paused", answer)
     }
 
     /// Whether the battle's attack inputs take the player's buttons.
     pub fn combo_input(&mut self) -> bool {
         let mode = self.services().mode.unwrap_or(u32::MAX);
-        self.module.combo_input(mode)
+        let answer = self.module.combo_input(mode);
+        self.answered("xem_game_combo_input", answer)
+    }
+
+    /// A query's answer, or after a trap its default, the first trap kept
+    /// for status and printed (a fault in the port, never the game's).
+    fn answered<T: Default>(&mut self, query: &str, answer: Result<T, Trap>) -> T {
+        answer.unwrap_or_else(|trap| {
+            if self.query_trap.is_none() {
+                let report = format!("{query}: {trap}");
+                eprintln!("xem: the port's query {report}; it answers as if nothing applied");
+                self.query_trap = Some(report);
+            }
+            T::default()
+        })
+    }
+
+    /// The first trap a host's query of the port met, if any.
+    pub fn query_trap(&self) -> Option<&str> {
+        self.query_trap.as_deref()
     }
 
     /// The game's button assignment, which the typed actions resolve
@@ -870,6 +895,7 @@ impl<M: GameModule> Runtime<M> {
     pub fn field_controls(&mut self) -> FieldControls {
         let mode = self.services().mode.unwrap_or(u32::MAX);
         let bits = self.module.field_controls(mode);
+        let bits = self.answered("xem_game_field_controls", bits);
         FieldControls { field: mode == 1, walking: bits & 1 != 0, menu: bits & 4 != 0, picture: bits & 2 != 0 }
     }
 }

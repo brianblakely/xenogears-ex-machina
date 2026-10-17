@@ -25,12 +25,13 @@ class FieldControls(unittest.TestCase):
 #include "battle/turn.h"
 TurnState *battle_turn_state;
 s32 mode_next_mode;
-static TurnState test_turn;
+/* The battle's turn state where its heap puts it, in RAM. */
 void test_battle_turn(s32 page, s32 closed, s32 done) {
-    test_turn.page = page;
-    test_turn.unk2E1[0] = closed;
-    test_turn.eventsDone = done;
-    battle_turn_state = &test_turn;
+    TurnState *turn = (TurnState *)0x80100000;
+    turn->page = page;
+    turn->unk2E1[0] = closed;
+    turn->eventsDone = done;
+    battle_turn_state = turn;
 }
 s32 mode_field_map_id;
 s32 field_player_control_polled;
@@ -104,6 +105,17 @@ s32 field_inventory_is_item_not_held(s32 item) { return item == test_held ? 0 : 
         self.assertEqual(self.lib.xem_game_combo_input(2), 0)
         self.set("mode_next_mode", 1)
         self.assertEqual(self.lib.xem_game_field_controls(1), 0)
+
+    def test_a_starting_battle_reads_no_turn_pointer_outside_ram(self):
+        # The battle runs but has not allocated its turn state yet: the
+        # pointer holds the overlay memory's word, here past RAM's end or
+        # below it (a read there would fault the host).
+        self.set("mode_next_mode", 0)
+        for word in (0x7FFF7FFF, 0x80200000 - 4, 0x8F000000, 0xFFFFFFF0, 0x1F800000):
+            ctypes.c_void_p.in_dll(self.lib, "battle_turn_state").value = word
+            self.assertEqual(self.lib.xem_game_combo_input(2), 0, f"{word:#x}")
+        self.lib.test_battle_turn(5, 0, 0)
+        self.assertEqual(self.lib.xem_game_combo_input(2), 1, "the allocated state, in RAM")
 
     def test_loaded_battles_report_only_open_attack_pages(self):
         for page in (5, 0x19, 0x64, 0x65):

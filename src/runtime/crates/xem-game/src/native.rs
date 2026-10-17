@@ -33,9 +33,9 @@ unsafe extern "C" {
     fn xem_game_async_state(instance: *mut Instance) -> u32;
     fn xem_game_stop_unwind(instance: *mut Instance);
     fn xem_game_start_rewind(instance: *mut Instance, area: u32);
-    fn xem_game_paused(instance: *mut Instance, mode: u32) -> u32;
-    fn xem_game_combo_input(instance: *mut Instance, mode: u32) -> u32;
-    fn xem_game_field_controls(instance: *mut Instance, mode: u32) -> u32;
+    fn xem_game_paused(instance: *mut Instance, mode: u32, answer: *mut u32) -> c_int;
+    fn xem_game_combo_input(instance: *mut Instance, mode: u32, answer: *mut u32) -> c_int;
+    fn xem_game_field_controls(instance: *mut Instance, mode: u32, answer: *mut u32) -> c_int;
 }
 
 /// The handler pointer the glue's `host` carries.
@@ -126,6 +126,21 @@ impl NativeModule {
         NativeModule { instance, env, host }
     }
 
+    /// One of the port's queries, under the trap handler: a trap leaves
+    /// the stack pointer where the call found it, for the next frame.
+    fn query(&mut self, call: unsafe extern "C" fn(*mut Instance, u32, *mut u32) -> c_int, mode: u32) -> Result<u32, Trap> {
+        let stack_pointer = self.stack_pointer();
+        let mut answer = 0;
+        // SAFETY: a read-only port export on the live module, between frames.
+        match unsafe { call(self.instance, mode, &mut answer) } {
+            0 => Ok(answer),
+            code => {
+                self.set_stack_pointer(stack_pointer);
+                Err(Self::trap(code))
+            }
+        }
+    }
+
     fn trap(code: c_int) -> Trap {
         // SAFETY: wasm2c returns a static string.
         let text = unsafe { CStr::from_ptr(xem_game_trap_description(code)) };
@@ -146,17 +161,14 @@ impl Drop for NativeModule {
 }
 
 impl GameModule for NativeModule {
-    fn game_paused(&mut self, mode: u32) -> bool {
-        // SAFETY: read-only port export on the live module, between frames.
-        unsafe { xem_game_paused(self.instance, mode) != 0 }
+    fn game_paused(&mut self, mode: u32) -> Result<bool, Trap> {
+        self.query(xem_game_paused, mode).map(|answer| answer != 0)
     }
-    fn combo_input(&mut self, mode: u32) -> bool {
-        // SAFETY: read-only port export on the live module, between frames.
-        unsafe { xem_game_combo_input(self.instance, mode) != 0 }
+    fn combo_input(&mut self, mode: u32) -> Result<bool, Trap> {
+        self.query(xem_game_combo_input, mode).map(|answer| answer != 0)
     }
-    fn field_controls(&mut self, mode: u32) -> u32 {
-        // SAFETY: read-only port export on the live module, between frames.
-        unsafe { xem_game_field_controls(self.instance, mode) }
+    fn field_controls(&mut self, mode: u32) -> Result<u32, Trap> {
+        self.query(xem_game_field_controls, mode)
     }
     fn content_id(&self) -> String { env!("XEM_MODULE_ID").to_owned() }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) {

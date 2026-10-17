@@ -4,6 +4,7 @@
  * first-person view's toggle and the buttons it holds back). */
 #include "common.h"
 #include "battle/turn.h"
+#include "xem/memory.h"
 #include "resident/mode.h"
 #include "../decomp/src/field/field_mode.h"
 #include "../decomp/src/field/field_pad.h"
@@ -22,15 +23,23 @@ s32 field_inventory_is_item_not_held(s32 item);
  * events finish. Battle overlay memory is only meaningful while the battle
  * mode (2) runs. The host learns the next mode before the dispatcher waits
  * for the previous frame and clears/loads the overlay. mode_next_mode is
- * cleared only after that load, just before the mode's entry is called. */
+ * cleared only after that load, just before the mode's entry is called.
+ * Until the battle allocates its turn state (battle_heap_alloc as it
+ * starts), the pointer holds what the overlay's memory held: read through
+ * it only where it lies in RAM, as the game's own pointers do. */
 u32 xem_game_combo_input(u32 mode) {
     TurnState *turn;
+    XemUintptr address;
 
     if (mode != 2 || mode_next_mode != 0) {
         return 0;
     }
     turn = battle_turn_state;
-    if (turn == NULL || turn->unk2E1[0] != 0 || turn->eventsDone != 0) {
+    address = (XemUintptr)turn;
+    if (address < 0x80000000 || address > 0x80200000 - sizeof *turn) {
+        return 0;
+    }
+    if (turn->unk2E1[0] != 0 || turn->eventsDone != 0) {
         return 0;
     }
     return turn->page == 5 || turn->page == 0x64 || turn->page == 0x19 || turn->page == 0x65;

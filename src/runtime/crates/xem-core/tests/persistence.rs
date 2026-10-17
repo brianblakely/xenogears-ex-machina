@@ -53,6 +53,9 @@ const MOVIE_SKIP_SEEN: u32 = 0x8000_040c;
 /// for a page while its flags hold 8: a frame whose pad 1 holds Confirm ends
 /// the wait (counted at `PRESSES`, the frame at `LAST_PRESS`), and the next
 /// page waits `NEXT_PAGE` frames later.
+/// Nonzero: the fake's combo query traps, as a port query following a bad
+/// pointer would.
+const QUERY_TRAPS: u32 = 0x8000_0600;
 const DIALOGUE: u32 = 0x8000_0500;
 const PRESSES: u32 = 0x8000_0504;
 const LAST_PRESS: u32 = 0x8000_0508;
@@ -161,9 +164,15 @@ impl Counter {
     }
 }
 impl GameModule for Counter {
-    fn game_paused(&mut self, mode: u32) -> bool {
-        self.memory.read_u32(0x8000_0010).unwrap() & 0x40 != 0
-            || (mode == 4 && self.memory.read_u32(0x8000_0010).unwrap() & 0x00ff_0000 != 0)
+    fn game_paused(&mut self, mode: u32) -> Result<bool, Trap> {
+        Ok(self.memory.read_u32(0x8000_0010).unwrap() & 0x40 != 0
+            || (mode == 4 && self.memory.read_u32(0x8000_0010).unwrap() & 0x00ff_0000 != 0))
+    }
+    fn combo_input(&mut self, _mode: u32) -> Result<bool, Trap> {
+        match self.memory.read_u32(QUERY_TRAPS).unwrap() {
+            0 => Ok(true),
+            _ => Err(Trap::Wasm("out of bounds memory access".into())),
+        }
     }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) { self.handler = Some(handler); }
     fn set_resume_value(&mut self, _: u32) {}
@@ -253,6 +262,21 @@ fn timed_session() -> (Session<Counter>,Rc<Cell<Duration>>) {
 fn frame_at(s: &mut Session<Counter>, clock: &Cell<Duration>, seconds: u64) {
     clock.set(Duration::from_secs(seconds));
     assert!(s.frame().unwrap());
+}
+
+#[test]
+fn a_trap_in_a_hosts_query_is_reported_and_the_game_plays_on() {
+    let mut s = session();
+    assert!(s.runtime.combo_input());
+    assert_eq!(s.execute(&json!({"cmd":"status"}))["query_trap"], json!(null));
+    s.runtime.memory().write(QUERY_TRAPS, &1u32.to_le_bytes()).unwrap();
+    assert!(!s.runtime.combo_input(), "a trapped query answers as if nothing applied");
+    assert!(!s.runtime.combo_input(), "and again");
+    let status = s.execute(&json!({"cmd":"status"}));
+    assert_eq!(status["query_trap"], json!("xem_game_combo_input: game module trap: out of bounds memory access"), "{status}");
+    let frames = s.runtime.frames();
+    assert!(s.frame().unwrap(), "the game is not stopped");
+    assert!(s.runtime.frames() > frames && status["stopped"].is_null());
 }
 
 #[test]

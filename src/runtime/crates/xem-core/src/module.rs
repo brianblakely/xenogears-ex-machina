@@ -95,14 +95,16 @@ pub trait GameModule {
     fn set_stack_pointer(&mut self, value: u32);
     fn memory(&mut self) -> &mut dyn GameMemory;
     /// Original pause flags, read by the port without the inspection schema.
-    fn game_paused(&mut self, _mode: u32) -> bool { false }
+    /// The three queries run the port's code between frames: a trap in one
+    /// is reported, the module left as it was before the call.
+    fn game_paused(&mut self, _mode: u32) -> Result<bool, Trap> { Ok(false) }
     /// Whether the battle's attack inputs take the player's buttons (the
     /// port's `xem_game_combo_input`).
-    fn combo_input(&mut self, _mode: u32) -> bool { false }
+    fn combo_input(&mut self, _mode: u32) -> Result<bool, Trap> { Ok(false) }
     /// In a field, whether the player walks, whether a menu runs and
     /// whether Select shows the map's picture ([`crate::FieldControls`], the
     /// port's `xem_game_field_controls`).
-    fn field_controls(&mut self, _mode: u32) -> u32 { 0 }
+    fn field_controls(&mut self, _mode: u32) -> Result<u32, Trap> { Ok(0) }
     /// The module's mutable globals other than the stack pointer, for snapshots.
     fn globals(&mut self) -> Vec<u32>;
     fn set_globals(&mut self, values: &[u32]);
