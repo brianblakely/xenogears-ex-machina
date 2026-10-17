@@ -102,6 +102,12 @@ original address.
   register or stack word the caller left, or the caller used the `$v0` a void
   function left, `src/port/adapters.c` defines `xem_adapt_<function>` with the
   call's types and the matched code's value, and the build calls it instead.
+  A function stored where its callers use another result is reached through
+  the port's `xem_thunk_<function>` of the stored type, which the dispatcher
+  of that type selects at the function's address: `sound_switch_modulator_off`,
+  which returns nothing, in the `s32` table of modulator waves (its shapes
+  8-15, which shipped sound scripts select; before the thunk, the debug Gear
+  battle trapped there once Cross played such a sound).
 - **Suspension.** `wasm-opt --asyncify` instruments the module so that the
   imports `xem.yield` (frame waits, polls) and `xem.restart` (the dispatcher's
   stack reset, soft reset) unwind the game stack into linear memory. The host

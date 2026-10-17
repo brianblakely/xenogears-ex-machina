@@ -21,7 +21,11 @@ original memory layout:
   arguments, passes 0 for a missing one and drops an extra one; adapters.txt
   lists each, since a missing argument read a leftover register on the PS1.
   Where that matters, the port defines `xem_adapt_<function>` with the call's
-  types, written from the matched code, and it replaces the generated adapter.
+  types, written from the matched code, and it replaces the generated adapter;
+- a function stored where its callers use another result (a function that
+  returns nothing in a table of functions returning a value) is reached
+  through the port's `xem_thunk_<function>`, of the stored type, which the
+  dispatcher of that type selects at the function's address.
 
 The rewritten units are compiled with -O2, linked by wasm-ld and instrumented
 by wasm-opt --asyncify at the yield imports. The decomp itself is not
@@ -464,6 +468,9 @@ class Rewriter:
         # Port-written adapters: xem_adapt_<function> in src/port/.
         self.port_adapters = {name[len("xem_adapt_"):]: head for unit in units if unit.image == "port"
                               for name, head in unit.defined.items() if name.startswith("xem_adapt_")}
+        # Port-written thunks of a stored function's type: xem_thunk_<function>.
+        self.port_thunks = {name[len("xem_thunk_"):]: head for unit in units if unit.image == "port"
+                            for name, head in unit.defined.items() if name.startswith("xem_thunk_")}
         self.overridden = set()
         returns_path = PORT_DIR / "returns.json"
         self.returns = {k: v for k, v in json.loads(returns_path.read_text()).items()
@@ -925,6 +932,18 @@ def generate_dispatchers(rewriter, addresses):
         candidates.setdefault(signature_key(def_ret, def_params), []).append(
             (address, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image, variadic))
     dropped = []
+    # The port's thunk of a stored function, of the type its callers use,
+    # at the function's address and fingerprint.
+    for key, (image, address, length, fingerprint) in rewriter.taken.items():
+        name = key.rsplit(":", 1)[-1]
+        thunk = rewriter.port_thunks.get(name)
+        if thunk is None or rewriter.definitions.get(key) is None:
+            continue
+        _, _, thunk_ret, thunk_ret_attrs, thunk_params, _, _ = thunk
+        candidates.setdefault(signature_key(thunk_ret, thunk_params), []).append(
+            (address, length, fingerprint, f"@xem_thunk_{name}", thunk_ret, thunk_ret_attrs, thunk_params, image, False))
+        dropped.append(f"dispatch thunk: {name} at {address:#010x} as {thunk_ret}({', '.join(t for t, _ in thunk_params)})"
+                       f" through xem_thunk_{name}")
     sharers = {}
     for items in candidates.values():
         for item in items:

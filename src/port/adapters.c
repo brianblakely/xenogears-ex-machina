@@ -28,10 +28,16 @@
  *   discard the result (console_empty_debug_hook, field_set_quad_uvs_clamped,
  *   menu_detail_layout_tabs, model_set_tpage_override, text_decode_codes,
  *   worldmap_build_translucent_quads).
+ *
+ * A function stored where its callers use another type is reached through
+ * xem_thunk_<function>, of the stored type, which the build's dispatcher of
+ * that type selects at the function's address (an indirect call through
+ * another signature traps in WebAssembly).
  */
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
+#include "resident/sound.h"
 #include "battle/frame.h"
 
 void battle_menu_set_acting_slot(s32 slot);
@@ -40,6 +46,7 @@ void battle_sprite_arrive_at_target(Sprite *sprite, Sprite *other);
 s32 field_actor_update_position(s32 index, s32 lowest, void *descriptor, void *actor, s32 status);
 void gear_model_step_and_draw(MATRIX *m, void *light, u32 *ot, s32 buffer, s32 elapsed);
 Sprite *sprite_create(s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused);
+void sound_switch_modulator_off(SoundModulator *modulator);
 
 /* battle_flow.c uses the acting sprite the void 800beff4 leaves in $v0: it
  * loads BATTLE_AREA.sprites[slot] at 800bf094 and stores it to
@@ -118,4 +125,17 @@ Sprite *xem_adapt_sprite_create_with_palette_bank(void *data, s16 clut_x, s16 cl
     sprite = sprite_create(data, clut_x, clut_y, texture_x, texture_y, unused);
     sprite_palette_bank = 0;
     return sprite;
+}
+
+/* sound_switch_modulator_off returns nothing, yet the s32 table
+ * sound_modulator_waves stores it as the shapes 8-15, which shipped sound
+ * scripts select (docs/later-phases.md, Calls through another function
+ * type). It leaves its new flags in $v0 (8003F198), which hold bits 0-3
+ * alone, and sound_run_seq_modulators shifts the value it takes down by at
+ * least 10 bits: 0 either way. WebAssembly calls only a function of the
+ * call's type, so the shapes' calls reach it through this thunk of the
+ * stored type. */
+s32 xem_thunk_sound_switch_modulator_off(SoundModulator *modulator) {
+    sound_switch_modulator_off(modulator);
+    return 0;
 }

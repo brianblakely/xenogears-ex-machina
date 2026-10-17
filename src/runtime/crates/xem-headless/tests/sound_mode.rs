@@ -1,7 +1,8 @@
 //! The hosts' sound mode is the game's own (src/port/sound.c; local only: it
 //! needs the user's disc 1 and a game module build): the driver's flags
 //! follow the host's mode, and the host's mode follows the game's own Sound
-//! screen.
+//! screen. The driver's modulator shapes that switch a modulator off play
+//! through the port's thunk (src/port/adapters.c).
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test sound_mode
 
@@ -89,3 +90,42 @@ fn the_hosts_sound_mode_follows_the_games_sound_screen() {
     frames(&mut session, 2);
     assert_eq!(mode(&mut session), 0x100, "and the game the setting again");
 }
+
+/// The driver's modulator shapes 8-15 are `sound_switch_modulator_off`,
+/// which returns nothing, in its table of functions returning the wave's
+/// value: the module reaches it through the port's thunk of that type. The
+/// debug Gear battle (the original's debug selector, each member's gear
+/// column set to Nml, as the motion example's `--battle --gears`) with
+/// Cross tapped every 30 frames plays sounds of those shapes: without the
+/// thunk the module trapped on the call within 900 frames.
+#[test]
+fn the_debug_gear_battle_plays_the_modulator_off_shapes() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let press = |session: &mut Session<NativeModule>, name: &str| {
+        let reply = session.execute(&json!({"cmd": "press", "buttons": [name], "frames": 1}));
+        assert!(reply.get("error").is_none(), "{reply}");
+    };
+    frames(&mut session, 60);
+    let reply = session.execute(&json!({"cmd": "write", "path": "mode_battle_standalone", "value": 1}));
+    assert!(reply.get("error").is_none(), "{reply}");
+    let reply = session.execute(&json!({"cmd": "boot_mode", "mode": 2}));
+    assert!(reply.get("error").is_none(), "{reply}");
+    frames(&mut session, 900);
+    for name in ["down", "down", "cross", "right", "cross", "right", "cross", "start"] {
+        press(&mut session, name);
+        frames(&mut session, 20);
+    }
+    frames(&mut session, 1500);
+    assert_eq!(session.runtime.services().mode, Some(2), "the battle runs");
+    for _ in 0..50 {
+        press(&mut session, "cross");
+        frames(&mut session, 29);
+    }
+    let status = session.execute(&json!({"cmd": "status"}));
+    assert!(status["stopped"].is_null(), "the battle played on: {}", status["stopped"]);
+}
+
