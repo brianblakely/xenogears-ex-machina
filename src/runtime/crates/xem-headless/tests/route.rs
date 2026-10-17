@@ -2,7 +2,8 @@
 //! (local only: it needs the user's disc 1 and a game module build). The
 //! authoritative outcome (RAM and scratchpad) must not depend on presentation
 //! capture or on a snapshot taken and restored on the way. `enter_field`
-//! reaches the forest map and puts the party at the entrance it names.
+//! reaches the forest map and puts the party at the entrance it names, and
+//! from a field that runs it leaves that field as the field's own end does.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test route
 
@@ -128,4 +129,51 @@ fn enter_field_places_the_party_at_the_entrance_it_names() {
         assert_eq!(leader, record, "entrance {entry}: the leader stands on its entry record");
     }
     assert_ne!(placed[0].0, placed[1].0, "the two entrances are different places");
+}
+
+/// `enter_field` from a field that runs leaves it as its scripts' "end
+/// field mode" event does: the field loop frees its party sprite blocks,
+/// heap and sound bank before the kernel menu enters the next map. A
+/// restart in the middle of field 12's dialogue (after the boot's 1650
+/// frames and 650 in the field) left them to field 30, whose load made the
+/// party's sprite from garbage and trapped about 125 frames on. With the
+/// field's menu open, which runs a loop of its own, it is refused with the
+/// reason, and goes once the menu closes.
+#[test]
+fn enter_field_from_a_running_field_leaves_it_as_the_field_ends() {
+    use serde_json::{Value, json};
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut session = session(&disc);
+    let ok = |session: &mut Session<NativeModule>, command: Value| {
+        let reply = session.execute(&command);
+        assert!(reply.get("error").is_none(), "{command} -> {reply}");
+        reply
+    };
+    let menu = |session: &mut Session<NativeModule>| ok(session, json!({"cmd": "inspect", "path": "field_menu_request", "depth": 0}));
+    ok(&mut session, json!({"cmd": "frames", "count": 1650}));
+    assert_eq!(ok(&mut session, json!({"cmd": "enter_field", "map": 12}))["map"], 12);
+    ok(&mut session, json!({"cmd": "frames", "count": 650}));
+    assert_eq!(ok(&mut session, json!({"cmd": "context"}))["kind"], "dialogue", "field 12's dialogue shows");
+    assert_eq!(ok(&mut session, json!({"cmd": "enter_field", "map": 30}))["map"], 30);
+    ok(&mut session, json!({"cmd": "frames", "count": 400}));
+    assert_eq!(ok(&mut session, json!({"cmd": "context"}))["kind"], "walk", "the player walks in field 30");
+    // The field's menu open: refused; closed: the field is left.
+    ok(&mut session, json!({"cmd": "act", "actions": ["Menu"], "frames": 2}));
+    ok(&mut session, json!({"cmd": "frames", "count": 90}));
+    assert_ne!(menu(&mut session), json!(0xFF), "the field's menu runs");
+    let refused = session.execute(&json!({"cmd": "enter_field", "map": 12}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("the field's menu is open")), "{refused}");
+    for _ in 0..20 {
+        if menu(&mut session) == json!(0xFF) {
+            break;
+        }
+        ok(&mut session, json!({"cmd": "act", "actions": ["Cancel"], "frames": 2}));
+        ok(&mut session, json!({"cmd": "frames", "count": 30}));
+    }
+    assert_eq!(menu(&mut session), json!(0xFF), "the menu closed");
+    assert_eq!(ok(&mut session, json!({"cmd": "enter_field", "map": 12}))["map"], 12);
+    ok(&mut session, json!({"cmd": "frames", "count": 200}));
 }

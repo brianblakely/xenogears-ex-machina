@@ -258,6 +258,14 @@ goes on as without; [State interchange](#state-interchange)).
   and lets the menu finish into the original dispatcher. The entrance is
   `game_data.entry[2]`, which the field reads as its v0002 and places the
   party by, as a door's map change leaves it (`entry[0]` is the heading).
+  From a field that runs it leaves that field as its scripts' "end field
+  mode" event does instead of restarting the dispatcher: encounters held
+  off, the field loop then frees its party sprite blocks, heap and sound
+  bank and starts mode 0. A restart there left them to the next field,
+  which loaded over them (field 30 after field 12's dialogue made its
+  party's sprite from garbage and trapped). The field's menu runs a loop of
+  its own, so with it open `enter_field` is refused, the reason given
+  (`tests/route.rs`).
   `enter_field {map: 23}` reaches the
   forest map's opening dialogue (`tests/route.rs`) and matches the original
   capture of the same recipe (tools/reference/scenario.py) within 0.013 mean

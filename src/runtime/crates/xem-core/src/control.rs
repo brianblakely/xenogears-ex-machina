@@ -1654,11 +1654,28 @@ impl<M: GameModule> Session<M> {
                 // entrance (`game_data.entry[2]`, which the field reads as
                 // its v0002, as a door's map change leaves it; `entry[0]` is
                 // the heading).
+                // A field already running leaves through its own end, as its
+                // scripts' "end field mode" event asks for it (encounters held
+                // off, then the field loop frees its party sprite blocks, heap
+                // and sound bank and starts mode 0): a restart in the middle
+                // of it left them all to the next field, which loaded over
+                // them (field 30 after field 12's dialogue made its party
+                // sprite from garbage and trapped). The field's menu runs a
+                // loop of its own, so the field leaves only once it closes.
                 let map = arg_u64("map").ok_or("enter_field needs map")?;
                 let budget = arg_u64("max_frames").unwrap_or(6000);
-                self.run_until_value("cd_movie_request_kind", 1, budget)?;
-                self.write_path("mode_next_mode", &json!(0))?;
-                self.runtime.restart(RESTART_DISPATCH, 0);
+                if self.runtime.services().mode == Some(1) && self.inspect("mode_kernel_menu_running", 0)? == 0 {
+                    if self.inspect("field_menu_request", 0)? != 0xFF {
+                        return Err("enter_field: the field's menu is open; close it first (the field leaves only from its own loop)".into());
+                    }
+                    self.write_path("field_work.encounter_inhibition", &json!(-1))?;
+                    self.write_path("field_exit_game_mode", &json!(0))?;
+                    self.write_path("field_mode_exit_not_requested", &json!(0))?;
+                } else {
+                    self.run_until_value("cd_movie_request_kind", 1, budget)?;
+                    self.write_path("mode_next_mode", &json!(0))?;
+                    self.runtime.restart(RESTART_DISPATCH, 0);
+                }
                 self.run_until_value("mode_kernel_menu_running", 1, budget)?;
                 self.write_path("game_data.map", &json!(map))?;
                 if let Some(entry) = command.get("entry") {
