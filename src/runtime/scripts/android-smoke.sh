@@ -236,7 +236,19 @@ shot 01-graphics
 # The compact Graphics card has no heading/help rows; its Show FPS switch
 # is centred here in 01-graphics.png (the old position hit Resolution).
 tap 930 1350
-wait_for "xem: settings applied ShowFps\(true\)"
+# Check the operation itself. During first-boot log traffic the setting was
+# saved and survived restart, but logcat missed its one-line acknowledgement.
+fps_saved=
+for _ in $(seq 30); do
+    if "${adb[@]}" exec-out run-as "$package" cat files/settings.json |
+        python3 -c 'import json, sys; sys.exit(0 if json.load(sys.stdin)["presentation"]["show_fps"] is True else 1)'; then
+        fps_saved=1
+        break
+    fi
+    sleep 1
+done
+[ -n "$fps_saved" ] || fail "Show FPS was not enabled and saved by touch"
+echo "  Show FPS enabled and saved by touch"
 
 echo "== disc import through the document picker (Import disc... button)"
 mark
@@ -494,7 +506,7 @@ PY
     sleep 2
     mark
     tap 306 1095
-    saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/state\.xemstate" 60)
+    saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 60)
     echo "  Hold to rewind: game vblank $before when pressed, $after when released, $(echo "$saved" | vblank_of) at Save state"
     [ "$after" -lt "$before" ] || fail "Hold to rewind did not go back ($before -> $after)"
     [ "$(echo "$saved" | vblank_of)" -gt "$after" ] || fail "the game did not play on after the rewind"
@@ -507,7 +519,7 @@ PY
     sleep 2
     mark
     tap 764 1095
-    loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/state\.xemstate" 60)
+    loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60)
     echo "  Save state left vblank and memory hash $(op_of <<<"$saved"), the game played on to vblank" \
         "$(echo "$moved" | vblank_of), Load state left $(op_of <<<"$loaded")"
     [ "$(op_of <<<"$saved")" = "$(op_of <<<"$loaded")" ] || fail "Load state did not give back the saved game"
@@ -558,7 +570,7 @@ PY
         wait_for "xem: script .* to frame Some\($((at + 600))\)" 120
         wait_for "xem: game booted" 60
         "${adb[@]}" shell input keyevent --longpress KEYCODE_F8
-        loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/state\.xemstate" 60)
+        loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60)
         got=$(wait_for "xem: script frame $((at + 600)) memory_hash " 120 | sed -E 's/.*memory_hash ([0-9a-f]+).*/\1/')
         echo "  xem-headless's state at frame $at (RAM $start_hash) loaded on the device: $(op_of <<<"$loaded");" \
             "frame $((at + 600)) memory_hash $got (natively $played)"
@@ -566,7 +578,7 @@ PY
         [ "$got" = "$played" ] || fail "the native state went on elsewhere on the device"
         mark
         "${adb[@]}" shell input keyevent --longpress KEYCODE_F5
-        saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/state\.xemstate" 60)
+        saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 60)
         "${adb[@]}" exec-out run-as "$package" cat files/saves/state.xemstate >"$out/device.xemstate"
         continued=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
         onward=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)

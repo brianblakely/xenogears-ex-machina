@@ -213,6 +213,15 @@ jobs:
           name: release-android-horizon
           path: dist/*
           if-no-files-found: error
+      - name: Preserve Android startup diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: android-startup-diagnostics
+          path: |
+            build/android/release-smoke/
+            build/android/smoke/emulator.log
+          if-no-files-found: warn
 
   web:
     needs: prepare

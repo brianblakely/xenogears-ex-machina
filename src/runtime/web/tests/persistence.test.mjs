@@ -90,8 +90,10 @@ function gme(card) {
   return Buffer.concat([header, card]);
 }
 
-// Each test opens its own browser and storage: two run at once.
-describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, () => {
+// Each test owns its browser and storage. Keep them sequential: this suite
+// also measures elapsed play time, and competing software-rendered browsers
+// can stall a fast-forward batch while its history clock keeps advancing.
+describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, () => {
   test('a card or save file imports into a card by its contents, and a refused one changes nothing', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [faultInjector] });
     try {

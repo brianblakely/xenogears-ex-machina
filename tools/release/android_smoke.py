@@ -14,16 +14,20 @@ def adb(*arguments, check=True):
     return subprocess.run([*ADB, *arguments], capture_output=True, text=True, check=check, timeout=120)
 
 
-def start():
+def start(logfile):
     adb("logcat", "-c")
     adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.XemActivity")
     deadline = time.monotonic() + 90
     while time.monotonic() < deadline:
         log = adb("logcat", "-d", "-v", "brief").stdout
+        logfile.write_text(log)
         if "xem: frame rendered frame=120 " in log:
-            return log
-        if "FATAL EXCEPTION" in log or not adb("shell", "pidof", PACKAGE, check=False).stdout.strip():
-            raise RuntimeError("signed application failed to start:\n" + log[-8000:])
+            return
+        if f"Process: {PACKAGE}, PID:" in log or not adb("shell", "pidof", PACKAGE, check=False).stdout.strip():
+            details = adb("shell", "dumpsys", "activity", "exit-info", PACKAGE, check=False).stdout
+            crash = adb("logcat", "-b", "crash", "-d", "-v", "brief", check=False).stdout
+            logfile.with_suffix(".exit.log").write_text(details + "\n" + crash)
+            raise RuntimeError(f"signed application failed to start (full log: {logfile}):\n" + details + crash + log[-8000:])
         time.sleep(1)
     raise RuntimeError("signed application did not render 120 frames:\n" + log[-8000:])
 
@@ -38,6 +42,11 @@ def main():
     os.environ["ANDROID_USER_HOME"] = str(ROOT / ".local/android/home")
     subprocess.run([str(ROOT / "src/runtime/scripts/android-smoke.sh")],
                    env=dict(os.environ, XEM_SMOKE_BOOT="1"), check=True)
+    # As in android-smoke.sh, let first-boot configuration/activity changes
+    # settle before launching the app. The boot-only stage intentionally does
+    # not wait, so builds can overlap this interval.
+    booted = float((ROOT / "build/android/smoke/booted-at").read_text())
+    time.sleep(max(0, booted + 20 - time.time()))
     out = ROOT / "build/android/release-smoke"
     out.mkdir(parents=True, exist_ok=True)
     try:
@@ -50,7 +59,7 @@ def main():
         info = adb("shell", "dumpsys", "package", PACKAGE).stdout
         if f"versionName={args.version.removeprefix('v')}" not in info:
             raise RuntimeError("installed APK has the wrong version")
-        (out / "first-start.log").write_text(start())
+        start(out / "first-start.log")
         result = adb("shell", "run-as", PACKAGE, "pwd", check=False)
         if result.returncode == 0 or "not debuggable" not in result.stdout + result.stderr:
             raise RuntimeError("release APK unexpectedly permits run-as")
@@ -66,7 +75,7 @@ def main():
             if adb("shell", "cat", path).stdout != "upgrade preserved":
                 raise RuntimeError(f"APK update lost {directory}")
             adb("shell", "rm", path)
-        (out / "updated-start.log").write_text(start())
+        start(out / "updated-start.log")
         print(f"{apk.name}: signed install, rendering, storage and update passed")
     finally:
         adb("emu", "kill", check=False)

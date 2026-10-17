@@ -27,8 +27,8 @@
 # its own (src/runtime/target-*, none of them play.sh's): the native one,
 # then the Rust tests and the validation run at once; CI's checks; the web
 # build, then the browser suites (the slice's, the longest, from the start
-# beside the others two files at a time; the slice's and the persistence
-# tests two at a time within them: at most five browsers); the Android APK,
+# beside the others two files at a time; the slice's tests two at a time
+# within it: at most four browsers); the Android APK,
 # the emulator boots (its boot measures nothing), and the arm64 build plays
 # the slice's logs under qemu (measuring nothing either). Then what measures
 # frame rates runs alone, one after another (their emulator, headset and
