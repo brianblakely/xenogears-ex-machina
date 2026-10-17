@@ -105,6 +105,7 @@ impl WindowAdapter for PanelWindow {
 pub struct SettingsUi {
     window: Rc<PanelWindow>,
     panel: SettingsPanel,
+    settings: Rc<RefCell<SettingsService>>,
     rewind_held: Rc<Cell<bool>>,
     device: wgpu::Device,
     texture: wgpu::Texture,
@@ -132,6 +133,7 @@ impl SettingsUi {
         let ui = Self {
             window,
             panel,
+            settings,
             rewind_held: Rc::new(Cell::new(false)),
             device,
             texture,
@@ -237,6 +239,14 @@ impl SettingsUi {
         self.panel.set_can_fullscreen(offered);
     }
 
+    /// The host keeps saves in a browser's storage: Saves and Shortcuts offer
+    /// Request browser persistence, which means nothing to a native host.
+    pub fn set_browser_storage(&self, offered: bool) {
+        self.panel.set_browser_storage(offered);
+        set_backup_actions(&self.panel);
+        show_binding(&self.panel, self.settings.borrow().settings());
+    }
+
     /// The game waits for disc `number`, which the drive's changer has not
     /// got: the status line asks for it over the Saves section (where a host
     /// that imports discs has its button).
@@ -270,21 +280,20 @@ impl SettingsUi {
         });
         self.panel.on_app_action_requested({
             let f = f.clone();
+            let panel = self.panel.as_weak();
             move |index| {
-                if let Some((action, _)) =
-                    usize::try_from(index).ok().and_then(|i| APP_ACTIONS.get(i))
-                {
-                    f.borrow_mut()(AppRequest::Action(*action));
+                let browser = panel.upgrade().is_some_and(|panel| panel.get_browser_storage());
+                if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| offered_actions(browser).nth(i)) {
+                    f.borrow_mut()(AppRequest::Action(action));
                 }
             }
         });
         self.panel.on_backup_action_requested({
             let f = f.clone();
+            let panel = self.panel.as_weak();
             move |index| {
-                if let Some((action, _)) = usize::try_from(index)
-                    .ok()
-                    .and_then(|i| backup_actions().nth(i))
-                {
+                let browser = panel.upgrade().is_some_and(|panel| panel.get_browser_storage());
+                if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| backup_actions(browser).nth(i)) {
                     f.borrow_mut()(AppRequest::Action(action));
                 }
             }
@@ -585,19 +594,19 @@ fn set_status(panel: &SettingsPanel, text: &str, kind: Status) {
     panel.set_status_kind(kind as i32);
 }
 
-/// Every app operation with its bindings, in [`APP_ACTIONS`] order, and the
-/// selected one's in its editors.
+/// Every app operation the panel offers with its bindings ([`offered_actions`]),
+/// and the selected one's in its editors.
 fn show_binding(panel: &SettingsPanel, settings: &Settings) {
-    let rows: Vec<BindingRow> = APP_ACTIONS
-        .iter()
+    let browser = panel.get_browser_storage();
+    let rows: Vec<BindingRow> = offered_actions(browser)
         .map(|(action, title)| {
-            let binding = settings.app_bindings.get(action).cloned().unwrap_or_default();
+            let binding = settings.app_bindings.get(&action).cloned().unwrap_or_default();
             let keys: Vec<&str> = binding.keyboard.iter().map(|code| key_label(code)).collect();
-            BindingRow { name: (*title).into(), keyboard: keys.join("+").into(), gamepad: binding.gamepad.join("+").into() }
+            BindingRow { name: title.into(), keyboard: keys.join("+").into(), gamepad: binding.gamepad.join("+").into() }
         })
         .collect();
-    if let Some((action, _)) = usize::try_from(panel.get_selected_action()).ok().and_then(|i| APP_ACTIONS.get(i)) {
-        let binding = settings.app_bindings.get(action).cloned().unwrap_or_default();
+    if let Some((action, _)) = usize::try_from(panel.get_selected_action()).ok().and_then(|i| offered_actions(browser).nth(i)) {
+        let binding = settings.app_bindings.get(&action).cloned().unwrap_or_default();
         panel.set_keyboard_binding(binding.keyboard.join("+").into());
         panel.set_gamepad_binding(binding.gamepad.join("+").into());
     }
@@ -645,17 +654,16 @@ fn show_game_binding(panel: &SettingsPanel, settings: &Settings) {
     }
 }
 
+/// The Backups card's buttons: the backup operations the panel offers.
+fn set_backup_actions(panel: &SettingsPanel) {
+    let titles: Vec<slint::SharedString> = backup_actions(panel.get_browser_storage()).map(|(_, title)| title.into()).collect();
+    panel.set_backup_actions(Rc::new(slint::VecModel::from(titles)).into());
+}
+
 /// Routes panel edits through the settings service and shows every
 /// acknowledged change, whoever made it.
 fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
-    panel.set_backup_actions(
-        Rc::new(slint::VecModel::from(
-            backup_actions()
-                .map(|(_, title)| slint::SharedString::from(title))
-                .collect::<Vec<_>>(),
-        ))
-        .into(),
-    );
+    set_backup_actions(panel);
     panel.set_fast_forward_rates(
         Rc::new(slint::VecModel::from(
             FAST_FORWARD_RATES
@@ -890,10 +898,12 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     });
     panel.on_binding_edited({
         let apply = apply.clone();
+        let panel = panel.as_weak();
         move |index, keyboard, gamepad| {
-            if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| APP_ACTIONS.get(i)) {
+            let browser = panel.upgrade().is_some_and(|panel| panel.get_browser_storage());
+            if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| offered_actions(browser).nth(i)) {
                 apply(Some(SettingChange::BindApp {
-                    action: *action,
+                    action,
                     binding: AppBinding::parse(&keyboard, &gamepad),
                 }));
             }
@@ -964,8 +974,15 @@ fn key_label(code: &str) -> &str {
     }
 }
 
-fn backup_actions() -> impl Iterator<Item = (AppAction, &'static str)> {
-    APP_ACTIONS.into_iter().filter(|(action, _)| {
+/// The app operations a panel offers, in [`APP_ACTIONS`] order: Request
+/// browser persistence only where the host keeps saves in a browser's
+/// storage (`browser`).
+fn offered_actions(browser: bool) -> impl Iterator<Item = (AppAction, &'static str)> {
+    APP_ACTIONS.into_iter().filter(move |(action, _)| browser || *action != AppAction::RequestPersistence)
+}
+
+fn backup_actions(browser: bool) -> impl Iterator<Item = (AppAction, &'static str)> {
+    offered_actions(browser).filter(|(action, _)| {
         matches!(
             action,
             AppAction::ExportState

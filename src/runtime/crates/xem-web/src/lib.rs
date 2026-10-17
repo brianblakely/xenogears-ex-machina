@@ -331,8 +331,10 @@ impl XemApp {
         let closed = self.panel_closed.clone();
         renderer.attach_panel(self.settings.clone(), move || closed.set(true));
         if let Some(panel) = renderer.panel() {
-            // The Controls section lists first-person inspection's keys.
+            // The Controls section lists first-person inspection's keys, and
+            // Saves and Shortcuts the browser storage's persistence request.
             panel.set_first_person(true);
+            panel.set_browser_storage(true);
             let requests = self.app_requests.clone();
             panel.on_app_request(move |request| requests.borrow_mut().push(request));
             // The panel's Import disc… is the page's file chooser.

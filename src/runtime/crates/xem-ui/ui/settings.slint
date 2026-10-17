@@ -690,6 +690,10 @@ export component SettingsPanel inherits Window {
     // its headset offers passthrough.
     in property <bool> in-headset;
     in property <bool> xr-passthrough-offered;
+    // The host keeps saves in a browser's storage, which it can ask the
+    // browser to persist (Request browser persistence; the Rust side lists
+    // the operations offered).
+    in property <bool> browser-storage;
     in property <string> gfx-status;
     private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
     private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];

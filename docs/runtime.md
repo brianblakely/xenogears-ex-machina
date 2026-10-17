@@ -7541,10 +7541,13 @@ same width from every tab, so the labels still show whole down to 342 (a
 narrows below 24 pixels: all eight stay inside the panel down to its least
 width, 280. `xem-ui/tests/panel.rs` clicks every tab at six widths from 280
 to 405 and checks that the Android smoke's two taps select Graphics and
-Saves at 405, and that Saves' Backups card keeps all eleven of its buttons
+Saves at 405, and that Saves' Backups card keeps all of its buttons
 inside it at ten widths from 280 to 640 (one to a row below 600 logical
 pixels, where two of its longer labels side by side overflowed it: at 560
-"Request browser persistence" ran past the card's edge). Each section is a column of cards of settings, and the
+"Request browser persistence" ran past the card's edge). That button and
+its shortcut are the browser's alone (`SettingsUi::set_browser_storage`):
+a native host keeps its saves in application files, so its panel offers
+ten. Each section is a column of cards of settings, and the
 status line under them says what the last change or operation did (a
 note, done, or a problem in red). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls

@@ -761,30 +761,45 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     // those, a headset's (440) and the desktop's (640, and the sidebar's
     // narrowest, 560): two to a row where they fit, else one. (The panels
     // are tall here, so that every row shows: the width is what counts.)
+    // Request browser persistence is a browser's alone, there and in
+    // Shortcuts.
+    const PERSISTENCE: &str = "Request browser persistence";
     const BACKUPS: [&str; 11] = [
         "Export state backup", "Import state backup", "Export original card 1", "Import original card 1", "Export original card 2",
-        "Import original card 2", "Export settings", "Import settings", "Retry pending card writes", "Request browser persistence",
+        "Import original card 2", "Export settings", "Import settings", "Retry pending card writes", PERSISTENCE,
         "Import BIOS (save titles)",
     ];
-    for (width, scale, rows) in [
-        (640, 1.0, 6), (600, 1.0, 6), (560, 1.0, 11), (880, 2.0, 11), (1064, 2.625, 11),
-        (1064, 2.75, 11), (1064, 3.0, 11), (344, 1.0, 11), (304, 1.0, 11), (280, 1.0, 11),
-    ] {
-        ui.resize((width, (1200.0 * scale) as u32), scale);
-        ui.component().set_selected_section(5);
-        ui.update().unwrap();
-        let width = width as f32 / scale;
-        let card = element(&ui, "Backups", AccessibleRole::Groupbox);
-        let (left, right) = (card.absolute_position().x, card.absolute_position().x + card.size().width);
-        assert!(left >= 0.0 && right <= width, "the Backups card lies inside a panel {width} wide: {left}..{right}");
-        let mut tops = std::collections::BTreeSet::new();
-        for label in BACKUPS {
-            let button = element(&ui, label, AccessibleRole::Button);
-            let (at, extent) = (button.absolute_position(), button.size());
-            assert!(at.x >= left && at.x + extent.width <= right, "{label} lies inside the Backups card ({left}..{right}) on a panel {width} wide: {at:?} {extent:?}");
-            tops.insert(at.y as i32);
+    use slint::Model;
+    for browser in [false, true] {
+        ui.set_browser_storage(browser);
+        let shortcuts: Vec<String> = (0..ui.component().get_bindings().row_count())
+            .filter_map(|i| ui.component().get_bindings().row_data(i)).map(|row| row.name.to_string()).collect();
+        assert_eq!(shortcuts.iter().any(|name| name == PERSISTENCE), browser, "Shortcuts {shortcuts:?}");
+        let labels: Vec<&str> = BACKUPS.into_iter().filter(|label| browser || *label != PERSISTENCE).collect();
+        for (width, scale, pairs) in [
+            (640, 1.0, true), (600, 1.0, true), (560, 1.0, false), (880, 2.0, false), (1064, 2.625, false),
+            (1064, 2.75, false), (1064, 3.0, false), (344, 1.0, false), (304, 1.0, false), (280, 1.0, false),
+        ] {
+            ui.resize((width, (1200.0 * scale) as u32), scale);
+            ui.component().set_selected_section(5);
+            ui.update().unwrap();
+            let width = width as f32 / scale;
+            let card = element(&ui, "Backups", AccessibleRole::Groupbox);
+            let (left, right) = (card.absolute_position().x, card.absolute_position().x + card.size().width);
+            assert!(left >= 0.0 && right <= width, "the Backups card lies inside a panel {width} wide: {left}..{right}");
+            if !browser {
+                assert!(ui.component().get_backup_actions().iter().all(|title| title != PERSISTENCE), "no {PERSISTENCE} natively");
+            }
+            let mut tops = std::collections::BTreeSet::new();
+            for label in &labels {
+                let button = element(&ui, label, AccessibleRole::Button);
+                let (at, extent) = (button.absolute_position(), button.size());
+                assert!(at.x >= left && at.x + extent.width <= right, "{label} lies inside the Backups card ({left}..{right}) on a panel {width} wide: {at:?} {extent:?}");
+                tops.insert(at.y as i32);
+            }
+            let rows = if pairs { labels.len().div_ceil(2) } else { labels.len() };
+            assert_eq!(tops.len(), rows, "Backups' rows on a panel {width} wide (browser storage {browser})");
         }
-        assert_eq!(tops.len(), rows, "Backups' rows on a panel {width} wide");
     }
 }
 
