@@ -5531,8 +5531,10 @@ recentres a headset's view (the window refuses it: "Recentering places a
 headset's view; play in a headset to use it."); the rest are the panel's
 actions. The file pickers are refused
 ("ExportState opens a file picker, which only a player answers: agents name
-the file"): agents use the file commands above. Android has no command
-channel (the agent surface it has: [Android host](#android-host)).
+the file"): agents use the file commands above. So is Toggle first-person
+view: agents turn the view with `first_person`, which answers the view it
+leaves ([First-person inspection](#first-person-inspection)). Android has
+no command channel (the agent surface it has: [Android host](#android-host)).
 Headset play saves and loads through the same session as the window:
 OpenXR's Save state keeps `state.xemstate` where the window's does (beside
 the settings; on Android in the files directory, which the Android host
@@ -7567,7 +7569,7 @@ inspection](#first-person-inspection)),
 `import_disc {path}` (the launcher's path), `bios_import {path}` (Import
 BIOS's: kept beside the settings for every boot and given to the running
 game) and `app {request}` (the panel's and the bindings' operations as they
-run them, the file pickers refused: [Saves and time
+run them, the file pickers and Toggle first-person view refused: [Saves and time
 controls](#saves-and-time-controls)); nothing passes through the window
 system. With `--xr` the headset session answers the same commands but
 `import_disc` (`xem_host::Control` and `SettingsService::command` serve

@@ -28,7 +28,8 @@ const PICKERS: [AppAction; 9] = [
 /// true}` holds rewind as a held binding does until `{"Rewind": false}`),
 /// carried out as theirs are ([`Operations::execute`]), but not the file
 /// pickers: agents name the file instead (`state_save`, `state_load`,
-/// `card_import`, `card_export`, `bios_import`).
+/// `card_import`, `card_export`, `bios_import`), nor Toggle first-person
+/// view, whose command (`first_person`) answers the view it leaves.
 pub fn agent_request(command: &serde_json::Value) -> Result<AppRequest,String> {
     let request = command.get("request").cloned()
         .ok_or(r#"app needs request: an app operation, such as {"Action": "RetryStorage"} or {"Rewind": true}"#)?;
@@ -36,6 +37,9 @@ pub fn agent_request(command: &serde_json::Value) -> Result<AppRequest,String> {
     if let AppRequest::Action(action) = request && PICKERS.contains(&action) {
         return Err(format!("{action:?} opens a file picker, which only a player answers: agents name the file \
             (state_save, state_load, card_import, card_export, bios_import)"));
+    }
+    if request == AppRequest::Action(AppAction::ToggleFirstPerson) {
+        return Err("agents turn the first-person view with first_person {on, yaw, pitch}, which answers the view".into());
     }
     Ok(request)
 }

@@ -592,6 +592,7 @@ mod tests {
         let refused = app(&mut game, json!({"Action": "ImportCard1"})).unwrap_err();
         assert!(refused.starts_with("ImportCard1 opens a file picker") && refused.contains("card_import"), "{refused}");
         assert_eq!(app(&mut game, json!({"Action": "Recenter"})), Err("Recentering places a headset's view; play in a headset to use it.".into()));
+        assert!(app(&mut game, json!({"Action": "ToggleFirstPerson"})).unwrap_err().contains("first_person {on, yaw, pitch}"));
         assert!(app(&mut game, json!({"Action": "Fly"})).unwrap_err().starts_with("not an app operation"));
         assert!(crate::agent_request(&json!({"cmd": "app"})).unwrap_err().starts_with("app needs request"));
     }
