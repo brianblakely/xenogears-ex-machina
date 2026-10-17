@@ -5221,17 +5221,19 @@ smoke, run by itself, boots its emulator while the APK builds
 (`XEM_SMOKE_BOOT=1` only boots it, and a later run uses it), and turns off
 the system's "isn't responding" dialogs on its AVD (on a loaded host one
 took its taps). Logs, and each stage's result and time: `build/suite/`.
-Measured here (16 threads, warm builds): `full` 723 s with every stage
-passing (709 s before CI's checks joined it), where the same stages run
-one after another took about 26 minutes; `desktop` 114 s; `android` 741 s
-with an up-to-date APK (the arm64 stage, 258 s with the world map's
-reveals, beside the emulator's boot, 22 s; then the emulator's smoke,
-239 s, and the smoke's game with the arm64-v8a library, 223 s, which
-boots the emulator again), 902 s after a change to the translation's
-compiler flags (the APK's build of both libraries, 149 s, and the arm64
-stage, 417 s, each compiling the translation again), and 500 s with an
-up-to-date x86_64 APK before that second smoke and the arm64-v8a
-library's build joined it.
+Measured here (16 threads, warm builds): `full` 3762 s with every stage
+passing (2026-10-17, at the end of Phases 6-8; 723 s before their tests
+joined it), its longest stages the Rust tests (1492 s), the browser
+suites (1078 s), the XR smoke (994 s), the arm64 build under qemu (754 s)
+and the browser tests that measure time (717 s); `desktop` 804 to 955 s
+in that week's runs beside other tracks' work, its Rust tests 784 to
+889 s (114 s before Phases 6-8); `android` 824 s with an up-to-date APK
+(2026-10-15: the APK's build, 220 s; the arm64 stage, 350 s, beside the
+emulator's boot, 25 s; then the emulator's smoke, 243 s, and the smoke's
+game with the arm64-v8a library, 211 s, which boots the emulator again),
+and earlier 902 s after a change to the translation's compiler flags (the
+APK's build of both libraries, 149 s, and the arm64 stage, 417 s, each
+compiling the translation again).
 
 ## Saves and time controls
 
