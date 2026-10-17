@@ -1172,6 +1172,7 @@ tools/release/notices.py
 tools/release/package.py
 tools/release/publish.py
 tools/release/runtime_sources.py
+tools/release/shell.sh
 tools/release/smoke.py
 tools/release/version.py
 tools/repository/agent_contract.py

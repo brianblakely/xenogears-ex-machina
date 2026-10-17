@@ -15,7 +15,7 @@ BIOS, extracted artwork/music, personal saves or generated PS1 disassembly.
 
 | Platform | Artifact | Graphics |
 | --- | --- | --- |
-| Linux x86-64 / AArch64 | Executable AppImage | Vulkan or OpenGL ES; host graphics drivers |
+| Linux x86-64 / AArch64 | Executable AppImage | Vulkan or OpenGL ES; bundled Mesa, host NVIDIA drivers |
 | Windows x86-64 | ZIP: `xem-desktop.exe`, `xem-headless.exe`, required DLLs | Direct3D 12 or Vulkan |
 | macOS Intel / Apple Silicon | ZIP containing `Xenogears Ex Machina.app` | Metal |
 | Android 10+ / Meta Horizon OS | Signed APK, arm64-v8a and x86_64 | Vulkan/GLES; OpenXR on Horizon |
@@ -92,10 +92,11 @@ the exact game module and refuse incompatible builds with a diagnostic.
 Settings offers card/state import and export, storage retries, and save/time
 controls. Escape opens it; Back+Start does so on a controller.
 
-Linux AppImages include their library closure, including glibc, so they do
-not require a distro package manager or an installed Nix. They require a
-compatible CPU/kernel, enabled unprivileged user namespaces and suitable host
-graphics drivers. `APPIMAGE_EXTRACT_AND_RUN=1 ./filename.AppImage` avoids a
+Linux AppImages include their library closure, glibc, Mesa drivers and fonts,
+so they do not require a distro package manager or an installed Nix. They
+require a compatible CPU/kernel and enabled unprivileged user namespaces.
+Proprietary NVIDIA graphics use the host's driver libraries.
+`APPIMAGE_EXTRACT_AND_RUN=1 ./filename.AppImage` avoids a
 FUSE requirement. Security policies that disable user namespaces are not
 supported by this packager. `--headless` selects the image's command-line host
 without initializing video, GPU or audio. Windows DLLs must remain beside the
@@ -132,7 +133,11 @@ node src/runtime/web/serve.mjs build/web 8080
 ## Reproducing a release
 
 The checked-in Nix locks and Cargo lock pin the tools and dependencies. The
-public `src/port/symbols.json` contains source-bound addresses and one-way
+Intel macOS shell has a separate Nixpkgs 26.05 lock because the main package
+set no longer builds for Intel macOS; its Rust toolchain remains the same.
+`tools/release/shell.sh` also selects that lock for Nix's Bash launcher on
+Intel macOS, without changing the checked-in locks.
+The public `src/port/symbols.json` contains source-bound addresses and one-way
 function fingerprints, no original code/data bytes. It lets a clean public
 checkout build the recovered game without private PS1 links. Refresh it only
 after verifying the original targets locally:
@@ -149,7 +154,7 @@ nix develop path:./nix/runtime#release -c python3 tools/game_module.py --symbols
 nix develop path:./nix/runtime#release -c python3 tools/release/notices.py
 nix develop path:./nix/runtime#release -c python3 tools/release/package.py linux --version v0.5
 nix develop path:./nix/runtime#windows -c python3 tools/release/package.py windows --version v0.5
-nix develop path:./nix/runtime#release -c python3 tools/release/package.py macos --version v0.5
+tools/release/shell.sh release python3 tools/release/package.py macos --version v0.5
 nix develop path:./nix/runtime#release -c python3 tools/release/package.py web --version v0.5
 python3 tools/repository/source_archive.py --output dist/xenogears-ex-machina-v0.5-source.tar.gz
 ```

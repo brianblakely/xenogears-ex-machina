@@ -123,7 +123,7 @@ jobs:
           KIND: ${{ matrix.kind }}
           SHELL_NAME: ${{ matrix.shell }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: nix develop "path:./nix/runtime#$SHELL_NAME" -c python3 tools/release/package.py "$KIND" --version "$TAG"
+        run: tools/release/shell.sh "$SHELL_NAME" python3 tools/release/package.py "$KIND" --version "$TAG"
       - name: Test packaged executables
         if: matrix.kind != 'windows'
         env:
@@ -133,7 +133,7 @@ jobs:
           if [ "$KIND" = linux ]; then
             nix develop path:./nix/runtime -c python3 tools/release/smoke.py "$KIND" --version "$TAG" --graphical
           else
-            nix develop path:./nix/runtime#release -c python3 tools/release/smoke.py "$KIND" --version "$TAG"
+            tools/release/shell.sh release python3 tools/release/smoke.py "$KIND" --version "$TAG"
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

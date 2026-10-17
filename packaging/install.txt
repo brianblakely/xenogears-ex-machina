@@ -15,9 +15,10 @@ discs/, cards/, saves/ and settings.json. A changed game module may reject
 an older save state; original memory cards remain the interchange format.
 XEM_DATA_DIR explicitly selects another writable application folder.
 
-Linux: the AppImage bundles its runtime libraries and uses the host graphics
-drivers. It needs a supported CPU, a graphical session and unprivileged user
-namespaces. APPIMAGE_EXTRACT_AND_RUN=1 runs without FUSE. --headless selects
+Linux: the AppImage bundles its runtime libraries, Mesa drivers and fonts;
+proprietary NVIDIA graphics use the host driver. It needs a supported CPU,
+a graphical session and unprivileged user namespaces.
+APPIMAGE_EXTRACT_AND_RUN=1 runs without FUSE. --headless selects
 the included command-line host, which needs no graphics or audio device.
 Windows: keep the included DLLs beside xem-desktop.exe and xem-headless.exe.
 macOS: open Xenogears Ex Machina.app. It is ad-hoc signed, not notarized.
