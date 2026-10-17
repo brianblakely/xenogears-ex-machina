@@ -2101,14 +2101,18 @@ while the view shows (it would leave Run pressed alone once the directions
 are held back). A menu (the field's own, with the view as the screen it
 takes, or a script's) keeps every button, and the view does not turn under
 it (`xem_settings::look`). It ends when toggled again, when the field or its
-map is left, and under the Original renderer. It begins only where the
-first frame shown with the field camera's record (the port records it
-from the frame after the view asks) draws the field's scene as the game
-drew it (its map, models or sprites, not only faces recorded for a wider
-view): the title screen is field 490, whose camera shows none of its map
-(the game culls it whole behind the logo), so a toggle there ends at the
-next frame instead of looking around a room the game never shows or
-holding back the title's D-pad. A headset's eye pictures begin anew with
+map is left, and under the Original renderer. It begins only where a
+frame shown with the field camera's record (the port records it from the
+frame after the view asks) draws the field's scene as the game drew it
+(its map, models or sprites, not only faces recorded for a wider view):
+the title screen is field 490, whose camera shows none of its map (the
+game culls it whole behind the logo), so a toggle there ends at the
+second new frame of the record alone instead of looking around a room the
+game never shows or holding back the title's D-pad. The first such frame
+proves nothing: the trace starts again as the Original renderer ends,
+mid-frame, and its first frame holds the record without the scene the
+game drew before it; on a busy page a toggle met that frame and the view
+ended at once (`first-person.test.mjs`'s gamepad step in the full tier). A headset's eye pictures begin anew with
 each inspection: what they hold through frames that draw no field (its
 menu) is a picture of this inspection's, never an earlier one's (a
 headset tour found the title showing field 12's room, held from a
@@ -2436,9 +2440,11 @@ hash is the run's without any view; through 240 frames of the field's menu
 the pane shows the menu (over 30% of it covered); a state loaded then,
 with no frame since, leaves the pane empty and the eyes on the room.
 `xem-render`'s `inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew`
-turns the view on over a field's frames of its interface alone: it waits
-through the trace's start (no camera record) and ends at the first frame
-with one; over a field's scene it stays; an eye that saw a green floor,
+turns the view on over a field's frames of its interface alone, presented
+one at a time: it waits through the trace's start (no camera record) and
+the first frame with one (shown again, still the first), and ends at the
+second; over a frame of the record alone and then a field's scene it
+begins; over a field's scene it stays; an eye that saw a green floor,
 the view off, another frame with the floor blue and the view on again,
 sees blue (held from before, it saw green: the tour's title).
 `xem-render`'s `from_within_a_part_drawn_over_another_stands_nearer_and_a_sprite_on_its_floor`:

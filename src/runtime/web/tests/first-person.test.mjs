@@ -225,7 +225,7 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
       await frames(page, 3);
       assert.equal((await status(page)).session.inspecting, false, 'the Original renderer has nothing to look around in');
-      await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), graphics);
+      assert.equal((await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), graphics)).ok, true, 'Ex Machina again');
 
       // A gamepad (standard mapping, read each of the page's frames): the
       // right stick's click toggles the view, the right stick turns it and

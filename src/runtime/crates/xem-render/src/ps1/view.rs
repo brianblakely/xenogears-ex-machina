@@ -227,7 +227,8 @@ pub const EYE_HEIGHT_METRES: f32 = 1.6;
 /// (leaving it ends the view), the last frame's record of where the
 /// character stood, and where the field's scene was projected about in the
 /// display (VRAM pixels from its corner): a headset keeps both through
-/// frames without them.
+/// frames without them. Before it begins, `sceneless` counts the new frames
+/// shown with the field camera's record but none of its scene.
 #[derive(Clone, Debug, Default, PartialEq)]
 struct FirstPerson {
     yaw: f32,
@@ -237,6 +238,7 @@ struct FirstPerson {
     field: Option<String>,
     held: Option<Eye>,
     centre: Option<(f32, f32)>,
+    sceneless: u8,
 }
 
 /// A presented frame: an `Rgba8Unorm` texture of sRGB-encoded values.
@@ -1014,19 +1016,28 @@ impl GameView {
             self.focus = None;
         }
         // First-person inspection is the field's it began in, and begins
-        // only where the first frame shown with the field camera's record
-        // (the port records it from the frame after the view asks, as the
-        // field draws its models) draws the field's scene: a field whose
-        // camera shows none of it (the title screen's: its logo over a map
-        // the game culls whole) has nothing to look around in.
+        // only where a frame shown with the field camera's record (the port
+        // records it from the frame after the view asks, as the field draws
+        // its models) draws the field's scene: a field whose camera shows
+        // none of it (the title screen's: its logo over a map the game culls
+        // whole) has nothing to look around in, which the second new frame
+        // of the record alone tells. The first proves nothing: a trace
+        // started again mid-frame (as the Original renderer ends) logs the
+        // rest of a frame whose scene came before it, and a busy host shows
+        // that frame long enough for a toggle to meet it.
         if let Some(view) = &mut self.first_person {
             match &view.field {
                 _ if !self.scene.starts_with("field") => self.first_person = None,
                 Some(field) if *field != self.scene => self.first_person = None,
                 Some(_) => {}
                 None if self.main.frame.camera().is_none() => {}
-                None if !draws_scene(self.main.frame.newest()) => self.first_person = None,
-                None => view.field = Some(self.scene.clone()),
+                None if draws_scene(self.main.frame.newest()) => view.field = Some(self.scene.clone()),
+                None => {
+                    view.sceneless += u8::from(new_frame);
+                    if view.sceneless >= 2 {
+                        self.first_person = None;
+                    }
+                }
             }
         }
         if new_frame {

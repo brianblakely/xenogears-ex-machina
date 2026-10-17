@@ -81,6 +81,22 @@ fn traced(commands: impl FnOnce(&mut xem_gpu::Gpu)) -> (xem_gpu::Trace, xem_gpu:
     })
 }
 
+/// [`traced`]'s on one device, a trace for each of `takes` in turn: frames
+/// a host takes from the device a presentation at a time.
+fn traced_takes(takes: &[fn(&mut xem_gpu::Gpu)]) -> (xem_gpu::Trace, Vec<xem_gpu::Trace>) {
+    DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        *device = xem_gpu::Gpu::new();
+        device.set_trace(true);
+        let sync = device.take_trace();
+        let traces = takes.iter().map(|take| {
+            take(&mut device);
+            device.take_trace()
+        });
+        (sync, traces.collect())
+    })
+}
+
 #[test]
 fn original_fidelity_matches_the_software_gpu() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
@@ -859,11 +875,14 @@ fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from
 }
 
 /// First-person inspection begins only on a frame that draws the field's
-/// scene: over a field's frame of its interface alone (the title screen's
+/// scene: over a field's frames of its interface alone (the title screen's
 /// field draws its logo, the game culling its map whole) it ends at the
-/// next presentation; over [`FIELD`] it stays. A headset's eyes then never
-/// hold an earlier inspection's picture: turned on again over another
-/// frame, they show that frame, not the one they drew before.
+/// second with the field camera's record, the first proving nothing (a
+/// trace started again mid-frame logs the rest of a frame whose scene came
+/// before it): over such a frame and then [`FIELD`]'s it begins; over
+/// [`FIELD`] it stays. A headset's eyes then never hold an earlier
+/// inspection's picture: turned on again over another frame, they show
+/// that frame, not the one they drew before.
 #[test]
 fn inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew() {
     use xem_render::ps1::HeadsetEye;
@@ -882,26 +901,55 @@ fn inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew() {
         view.present(&mut encoder, &DISPLAY, "field:490", 0.0).expect("a picture");
         gpu.queue.submit([encoder.finish()]);
     };
-    // A field's frame of its camera's record and its interface alone, two
-    // of them; inspection waits for a frame with the camera's record.
-    let interface = traced(|gpu| {
-        for _ in 0..2 {
-            gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
-            gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
-            gpu.trace_projections(0, &camera_entries(LEVEL, [0; 3], [0, 200, 1200], 1200), &[], &[]);
-            gpu.write_gp0_words(&[0x6000_FFFF, xy(100, 80), 60 << 16 | 120]);
-        }
-    });
-    let mut view = GameView::new(&gpu.device, &gpu.queue, None);
-    view.configure(ViewConfig::resolve(&xem_settings::Graphics::default(), HostClass::Desktop, (640, 480), view.max_scale()));
-    let _ = view.take_restart();
-    view.push(interface.0.clone());
+    // A field's frame of its camera's record and its interface alone, and
+    // FIELD's of the controlled character's record with its floor green;
+    // the camera's record goes with a frame's first primitive, so a field's
+    // first frame has none.
+    fn interface(gpu: &mut xem_gpu::Gpu) {
+        gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        gpu.trace_projections(0, &camera_entries(LEVEL, [0; 3], [0, 200, 1200], 1200), &[], &[]);
+        gpu.write_gp0_words(&[0x6000_FFFF, xy(100, 80), 60 << 16 | 120]);
+    }
+    fn green_floor(gpu: &mut xem_gpu::Gpu) {
+        let mut faces = FIELD;
+        faces[0].command = 0x2800_0000 | 0x00FF00;
+        gte_frame(gpu, LEVEL, &faces, true);
+        gpu.trace_projections(0, &[projection(FEET, 7, SPRITE)], &[], &[]);
+    }
+    let shown = |takes: &[fn(&mut xem_gpu::Gpu)]| {
+        let (sync, frames) = traced_takes(takes);
+        let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+        view.configure(ViewConfig::resolve(&xem_settings::Graphics::default(), HostClass::Desktop, (640, 480), view.max_scale()));
+        let _ = view.take_restart();
+        view.push(sync);
+        (view, frames)
+    };
+    // The interface's frames, presented one at a time: inspection waits
+    // through the trace's start, then a frame with the camera's record and
+    // none of the scene, and ends at the second.
+    let (mut view, frames) = shown(&[interface, interface]);
     view.set_first_person(true);
     present(&mut view);
     assert!(view.first_person(), "no frame with the field camera's record yet (the trace's start): inspection waits");
-    view.push(interface.1.clone());
+    view.push(frames[0].clone());
+    present(&mut view);
+    assert!(view.first_person(), "one frame of the record and none of the scene proves nothing: inspection waits");
+    present(&mut view);
+    assert!(view.first_person(), "that frame shown again is not a second one");
+    view.push(frames[1].clone());
     present(&mut view);
     assert!(!view.first_person(), "nothing of the field's scene to look around in: inspection ends");
+    // A frame of the record alone, then the field's scene: it begins there.
+    let (mut view, frames) = shown(&[interface, green_floor, green_floor]);
+    view.set_first_person(true);
+    view.push(frames[0].clone());
+    present(&mut view);
+    for frame in &frames[1..] {
+        view.push(frame.clone());
+        present(&mut view);
+        assert!(view.first_person(), "the frame after the record alone draws the field's scene: inspection begins and stays");
+    }
     // FIELD, the sprite as the controlled character (its eye record at its
     // feet, as the port records it before the next frame's drawing), its
     // floor in `floor`'s colour, two frames of it.
