@@ -529,14 +529,14 @@ the diorama and stationary-inspection presentation bindings.
 
 **Goal:** Robust player conveniences built on foundational runtime state/time services.
 
-- [ ] Complete ordinary saves and supported original-save import/export; implement
+- [x] Complete ordinary saves and supported original-save import/export; implement
   save states, rewind and fast-forward, including event/audio/media progress.
 - [x] Persist browser saves/settings in qualified origin-local storage (such as
   IndexedDB/OPFS), acknowledge completed writes and offer explicit import/export
   backup and native/browser interchange. Handle quota exhaustion, denied storage,
   eviction and interrupted writes visibly; do not rely on unload-time saving or
   describe browser-managed storage as guaranteed permanent. Bound rewind memory.
-- [ ] Verify deterministic restore across flat/stereo/XR and headless modes,
+- [x] Verify deterministic restore across flat/stereo/XR and headless modes,
   long runs, errors and revision changes. Qualify supported cross-device save/state
   interchange; reject incompatible states explicitly rather than silently migrating.
 
@@ -546,11 +546,11 @@ the diorama and stationary-inspection presentation bindings.
 
 **Goal:** Explicit independently implemented options, separate from unknown behavior.
 
-- [ ] Default random battles off in identified platforming-heavy areas; preserve
+- [x] Default random battles off in identified platforming-heavy areas; preserve
   deliberate settings and record how areas are classified.
-- [ ] Implement desired mod-inspired options independently, without requiring
+- [x] Implement desired mod-inspired options independently, without requiring
   patched original content.
-- [ ] Verify settings, defaults, ordinary progression and agent visibility of changes.
+- [x] Verify settings, defaults, ordinary progression and agent visibility of changes.
 
 **Exit:** Options work without disguising missing original logic or breaking progression.
 
@@ -559,13 +559,13 @@ the diorama and stationary-inspection presentation bindings.
 **Goal:** Add optional camera/media features and binaural spatial presentation
 while preserving original gameplay and authored audio decisions.
 
-- [ ] Extend native OpenXR and browser WebXR stereo-screen play with seated
+- [x] Extend native OpenXR and browser WebXR stereo-screen play with seated
   diorama viewing. Retain flat/stereo play; VR must not require first-person
   inspection. Separate head pose from scripted cameras and provide recentering,
   reference-space reset handling and comfort controls. Where immersive AR is
   supported, allow the same diorama over passthrough without making AR-specific
   sensing a requirement for VR or ordinary browser play.
-- [ ] Implement stationary first-person inspection on both VR and flat displays,
+- [x] Implement stationary first-person inspection on both VR and flat displays,
   using the Phase 5 underhanded-grab binding. In field mode, **Select** is the
   keyboard/gamepad binding for toggling this viewpoint.
   This is look-around only, not FPS locomotion: keep the character stationary,
@@ -574,14 +574,14 @@ while preserving original gameplay and authored audio decisions.
   view without moving the character. Restore the prior field camera/diorama scale
   on exit without restarting the old route. Preserve Pause independently and
   avoid forced viewpoint changes from character turning or animation.
-- [ ] Implement diorama scaling with two whole-hand fingertip pinches, distinct
+- [x] Implement diorama scaling with two whole-hand fingertip pinches, distinct
   from fists and normal index pinches: spread to enlarge, contract to shrink,
   release either hand to finish. No rim targeting is required. Keep the anchor
   stable; change presentation scale only, never physics or game-state distances.
   The scaling gesture must not emit movement or grab toggles. Place the Seraph
   Glass shop/minigame decks and other external controls outside the diorama and
   retain readable control sizes while it scales; provide scale/reset settings.
-- [ ] Qualify transitions, paused head tracking, scale/gesture ownership, either
+- [x] Qualify transitions, paused head tracking, scale/gesture ownership, either
   hand's oriented grabs and two-hand app controls on native/WebXR devices. Qualify
   sprite planes, missing surfaces, masks/effects and UI/media placement per camera
   mode; 2D assets do not become volumetric in stereo. Provide clearer FMVs with an
@@ -678,7 +678,7 @@ for original playback, not as the enhanced mix's input specification.
   Wide-Stereo independently selectable and unmodified; do not force Wide as the
   enhanced mode's source. Restore the previous original preference on disable,
   and use smooth, level-consistent transitions without duplicated dry audio.
-- [ ] Verify raw/original playback separately from the enhanced renderer using
+- [x] Verify raw/original playback separately from the enhanced renderer using
   retained captures and targeted native/browser routes. Test front/back, left/
   right, elevation, moving/unknown/multi-voice emitters, voice reuse, camera orbit
   versus character turns, inspection/head tracking and fixed music placement.
