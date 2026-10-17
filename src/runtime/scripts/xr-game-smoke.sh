@@ -1233,7 +1233,7 @@ if len(replies) == 7 and len(rows) == 160:
     walking = [by[n]["assist"] for n in range(walk_at, on_at)]
     check(on == {"first_person": True, "look": {"yaw": 30.0, "pitch": 0.0}}, f"agent-inspect: first_person on answered {on}")
     shown = [by[n] for n in range(on_at, off_at)]
-    check(all(r["fp"] == "1" and r["look"] == "0.5236,0.0000" for r in shown) and sum(r["within"] == "1" for r in shown) >= len(shown) - 2,
+    check(all(r["fp"] == "1" and r["look"] == "0.5236,0.0000" for r in shown) and sum(r["within"] == "1" for r in shown) >= len(shown) - 4,
           f"agent-inspect: from {on_at} to {off_at} fp/look/within {[(r['fp'], r['look'], r['within']) for r in shown[:4]]}...")
     check(any(a not in ("-", "stopped") for a in walking) and all(r["assist"] == "stopped" for r in shown),
           f"agent-inspect: the walk under way {walking} stopped when the view came on: {[r['assist'] for r in shown[:4]]}")

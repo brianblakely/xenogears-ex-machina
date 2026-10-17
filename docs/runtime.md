@@ -2508,8 +2508,10 @@ the left hand's underhand grab in each scene (only in field 30 and
 field 12's dialogue does it look from within, the title included among
 the rest). The smoke's `agent-inspect` run plays field 30 from a state with
 `--xr --control`: a walk by `navigate`, `first_person` on looking 30 degrees
-right (every frame after it `fp=1`, `look=0.5236,0.0000` and from within,
-the walk `stopped`), `navigate` and `act` Up refused and `status`'s
+right (every frame after it `fp=1`, `look=0.5236,0.0000` and the walk
+`stopped`; the eyes look from within some ten game frames after the reply,
+so up to four headset frames go without, as the grab's check allows),
+`navigate` and `act` Up refused and `status`'s
 `inspecting` true, `first_person` off, then Toggle first-person view's chord
 by `--xr-pad` (Back, then Back+R1) on for 30 headset frames and off.
 `web/tests/first-person.test.mjs` (local, disc 1) runs field 30 in a page
