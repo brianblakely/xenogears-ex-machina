@@ -19,6 +19,7 @@ Run by tools/game_module.py; needs pyelftools (nix/runtime).
 import concurrent.futures
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -164,6 +165,27 @@ def headers_first(source, directory):
     return wrapper
 
 
+def without_inline_asm(source, obj, cflags):
+    """Compile `source` to `obj` without its inline assembly: whether it worked.
+
+    clang's MIPS assembler takes none of the GTE's coprocessor moves nor
+    `break 1024` (pollhost), which stops the object of a unit that holds
+    them; the schema wants its types and globals, not its code. Its assembly
+    is written without parsing the inline blocks, which come between #APP and
+    #NO_APP, and is assembled without them."""
+    assembly = obj.with_suffix(".s")
+    compiled = subprocess.run([os.environ["XEM_CLANG"], *cflags, "-S", "-fno-integrated-as", "-g", "-O0",
+                               "-fno-eliminate-unused-debug-types", "-ferror-limit=0", source, "-o", str(assembly)],
+                              cwd=ROOT, capture_output=True, text=True)
+    if compiled.returncode:
+        return False
+    text = re.sub(r"^\s*#APP\n.*?^\s*#NO_APP\n", "", assembly.read_text(), flags=re.S | re.M)
+    assembly.write_text(text)
+    target = [flag for flag in cflags if flag.startswith("--target=")]
+    return subprocess.run([os.environ["XEM_CLANG"], *target, "-c", str(assembly), "-o", str(obj)],
+                          cwd=ROOT, capture_output=True, text=True).returncode == 0
+
+
 def build_schema(out, units, addresses, cflags, jobs):
     """Write out/schema.json for the game units [(source, image)]."""
     types = Types()
@@ -178,9 +200,9 @@ def build_schema(out, units, addresses, cflags, jobs):
                                        "-fno-eliminate-unused-debug-types", "-ferror-limit=0", str(path), "-o", str(obj)],
                                       cwd=ROOT, capture_output=True, text=True).returncode == 0
 
-            if attempt(source):
+            if attempt(source) or attempt(headers_first(source, Path(tmp))):
                 return obj
-            return obj if attempt(headers_first(source, Path(tmp))) else None
+            return obj if without_inline_asm(source, obj, cflags) else None
 
         with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
             objects = list(pool.map(compile_unit, units))

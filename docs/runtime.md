@@ -203,7 +203,13 @@ goes on as without; [State interchange](#state-interchange)).
   has it.
   The commons units, which define arrays of types completed by later headers
   (accepted by GCC, not clang), are described through a temporary wrapper that
-  includes their target's headers first.
+  includes their target's headers first. A unit whose inline assembly
+  clang's MIPS assembler rejects (the GTE's coprocessor moves, `pollhost`'s
+  `break 1024`: `field.c`, the dialogue windows, the battle scene and 13
+  more, whose globals the schema once lacked) is described from its
+  assembly, written without parsing the inline blocks and assembled
+  without them; only `menu_common.c` stays out (its types incomplete even
+  after its target's headers).
 - **Snapshots** (`Runtime::snapshot`/`restore`) hold the module's low memory
   (port data, shadow stack, asyncify area), the scratchpad and I/O pages and
   the PS1's 2 MB of RAM (zero runs compressed), the module's stack pointer and
