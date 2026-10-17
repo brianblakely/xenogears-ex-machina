@@ -13,9 +13,9 @@ pub mod game;
 pub mod sdl;
 #[cfg(has_game_module)]
 mod readback;
-#[cfg(has_game_module)]
+#[cfg(all(has_game_module, not(target_os = "macos")))]
 pub mod xr_play;
-#[cfg(has_game_module)]
+#[cfg(all(has_game_module, not(target_os = "macos")))]
 mod assisted;
 mod operations;
 

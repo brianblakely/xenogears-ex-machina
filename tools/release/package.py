@@ -48,8 +48,8 @@ def notices(stage):
 def windows_libraries(stage):
     # Query the actual toolchain/SDL closure; never assume a developer's DLLs
     # are installed on the player's machine.
-    closure = subprocess.check_output(["nix-store", "-qR", os.environ["XEM_WINDOWS_SDL"],
-                                      os.environ["XEM_WINDOWS_CC_LIBS"]], text=True).splitlines()
+    providers = json.loads(os.environ["XEM_WINDOWS_LIBRARIES"])
+    closure = subprocess.check_output(["nix-store", "-qR", *providers], text=True).splitlines()
     available = {p.name.lower(): p for root in closure for p in Path(root).rglob("*.dll")}
     # Windows system DLLs. Everything else must be shipped or fail the build.
     system = {"kernel32.dll", "user32.dll", "gdi32.dll", "advapi32.dll", "shell32.dll", "ole32.dll",
@@ -57,10 +57,11 @@ def windows_libraries(stage):
               "userenv.dll", "secur32.dll", "shlwapi.dll", "imm32.dll", "setupapi.dll", "version.dll",
               "winmm.dll", "cfgmgr32.dll", "dwmapi.dll", "comdlg32.dll", "winspool.drv", "dxgi.dll",
               "d3d12.dll", "d3d11.dll", "dxguid.dll", "hid.dll", "crypt32.dll", "propsys.dll", "dbghelp.dll",
-              "bcryptprimitives.dll"}
+              "bcryptprimitives.dll", "dwrite.dll", "combase.dll", "opengl32.dll"}
     pending = list(stage.glob("*.exe"))
     copied = set()
-    components = {os.environ["XEM_WINDOWS_SDL"]}
+    # Include the toolchain's statically linked startup/thread support too.
+    components = set(providers)
     while pending:
         binary = pending.pop()
         output = subprocess.check_output(["x86_64-w64-mingw32-objdump", "-p", str(binary)], text=True)

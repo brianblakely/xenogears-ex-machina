@@ -367,7 +367,7 @@ impl Stats {
     }
 }
 
-#[cfg(has_game_module)]
+#[cfg(all(has_game_module, not(target_os = "macos")))]
 fn run_xr(options: &Options) -> Result<(), String> {
     let _sdl = sdl::Sdl::init_without_video()?;
     let disc = options.disc.as_deref().ok_or("--xr needs --disc")?;
@@ -400,9 +400,14 @@ fn run_xr(options: &Options) -> Result<(), String> {
     xem_host::xr_play::run(&(), &play, settings, game).map(|_| ())
 }
 
-#[cfg(not(has_game_module))]
+#[cfg(all(not(has_game_module), not(target_os = "macos")))]
 fn run_xr(_options: &Options) -> Result<(), String> {
     Err("this build has no game module (python3 tools/game_module.py builds it)".into())
+}
+
+#[cfg(target_os = "macos")]
+fn run_xr(_options: &Options) -> Result<(), String> {
+    Err("native OpenXR is not supported on macOS; flat play uses Metal".into())
 }
 
 /// A build without the game module cannot play a disc.

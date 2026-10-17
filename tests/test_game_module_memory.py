@@ -58,15 +58,21 @@ u32 local(u32 value) { volatile u32 stack[2]; stack[1] = value; return stack[1];
   const filled = e.fill(0x601230) >>> 0;
   m.setUint32(0x1F800010, 123, true);
   m.setUint32(0x10000010, 456, true);
+  // Presentation rings are host memory, outside the PS1 address segments.
+  // Their high bits must survive the same rewrite as game RAM accesses.
+  m.setUint32(0x7050000C, 2, true);
+  m.setUint32(0x70300010, 987, true);
+  e.copy(0x70000020, 0x70300010);
   console.log(JSON.stringify({linked, aliases, copied, copy: m.getUint32(0x80001228, true),
     filled, fill: m.getUint32(0x80001230, true), scratch: e.read_word(0xBF800010),
-    port: e.read_word(0x10000010), local: e.local(789)}));
+    port: e.read_word(0x10000010), local: e.local(789),
+    around: e.read_word(0x7050000C), projection: m.getUint32(0x70000020, true)}));
 })();'''
             result = subprocess.run(["node", "-e", script, str(wasm)], check=True, capture_output=True, text=True)
             self.assertEqual(json.loads(result.stdout), {
                 "linked": [0x1200, 0x1200, 0x09FFFFFF, 0], "aliases": [0x09FFFFFF] * 7,
                 "copied": 0xA0001228, "copy": 0x09FFFFFF, "filled": 0x601230, "fill": 0xABABABAB,
-                "scratch": 123, "port": 456, "local": 789,
+                "scratch": 123, "port": 456, "local": 789, "around": 2, "projection": 987,
             })
 
 

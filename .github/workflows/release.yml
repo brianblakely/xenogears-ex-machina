@@ -129,7 +129,12 @@ jobs:
         env:
           KIND: ${{ matrix.kind }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: nix develop path:./nix/runtime#release -c python3 tools/release/smoke.py "$KIND" --version "$TAG"
+        run: |
+          if [ "$KIND" = linux ]; then
+            nix develop path:./nix/runtime -c python3 tools/release/smoke.py "$KIND" --version "$TAG" --graphical
+          else
+            nix develop path:./nix/runtime#release -c python3 tools/release/smoke.py "$KIND" --version "$TAG"
+          fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-${{ matrix.kind }}-${{ matrix.arch }}
@@ -186,6 +191,12 @@ jobs:
           trap 'rm -f "$XEM_ANDROID_KEYSTORE"' EXIT
           printf '%s' "$XEM_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$XEM_ANDROID_KEYSTORE"
           nix develop path:./nix/runtime#android -c python3 tools/release/package.py android --version "$TAG"
+      - name: Test the signed APK and data-preserving updates
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          sudo chmod a+rw /dev/kvm
+          nix develop path:./nix/runtime#android -c python3 tools/release/android_smoke.py --version "$TAG"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-android-horizon

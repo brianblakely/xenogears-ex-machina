@@ -2,13 +2,21 @@
   description = "Pinned Phase 2 runtime tools: Rust, wasm32 game module, SDL3/wgpu/Slint, OpenXR, WebXR and Android";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  # 26.11 removed Intel macOS. Its release host uses the supported 26.05
+  # package set, locked separately instead of bypassing the platform check.
+  inputs.nixpkgs-intel-macos.url = "github:NixOS/nixpkgs/nixos-26.05";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   inputs.appimage.url = "github:ralismark/nix-appimage/7946addbc0d97e358a6d7aefe5e82310f0fe6b18";
   inputs.appimage.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
-    { nixpkgs, rust-overlay, ... }:
+    {
+      nixpkgs,
+      nixpkgs-intel-macos,
+      rust-overlay,
+      ...
+    }:
     let
       systems = [
         "x86_64-linux"
@@ -22,12 +30,13 @@
       devShells = forAllSystems (
         system:
         let
-          pkgs = import nixpkgs {
+          packageSet = if system == "x86_64-darwin" then nixpkgs-intel-macos else nixpkgs;
+          pkgs = import packageSet {
             inherit system;
             overlays = [ rust-overlay.overlays.default ];
           };
           # Only the android shell accepts the Android SDK license (unfree).
-          androidPkgs = import nixpkgs {
+          androidPkgs = import packageSet {
             inherit system;
             config.allowUnfree = true;
             config.android_sdk.accept_license = true;
@@ -183,7 +192,7 @@
               export XEM_WASM2C_INCLUDE=${pkgs.wabt}/include
               export XEM_SDL3_SRC=${pkgs.sdl3.src}
               export XEM_WABT_SRC=${pkgs.wabt.src}
-              export XEM_NIXPKGS_SOURCE=${nixpkgs.outPath}
+              export XEM_NIXPKGS_SOURCE=${packageSet.outPath}
             ''
             + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath runtimeLibraries}
@@ -208,8 +217,16 @@
               export XEM_WASM2C_INCLUDE=${pkgs.wabt}/include
               export CC_x86_64_pc_windows_gnu=${pkgs.pkgsCross.mingwW64.stdenv.cc}/bin/x86_64-w64-mingw32-cc
               export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=$CC_x86_64_pc_windows_gnu
-              export XEM_WINDOWS_SDL=${windowsSdl}
-              export XEM_WINDOWS_CC_LIBS=${pkgs.pkgsCross.mingwW64.stdenv.cc.cc.lib}
+              export XEM_WINDOWS_LIBRARIES='${
+                builtins.toJSON [
+                  windowsSdl
+                  windowsSdl.out
+                  pkgs.pkgsCross.mingwW64.stdenv.cc.cc.lib
+                  pkgs.pkgsCross.mingwW64.stdenv.cc.libc
+                  pkgs.pkgsCross.mingwW64.windows.pthreads
+                  pkgs.pkgsCross.mingwW64.windows.mcfgthreads
+                ]
+              }'
               export XEM_NIXPKGS_SOURCE=${nixpkgs.outPath}
               export SDL3_LIB_DIR=${windowsSdl}/lib
               export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUSTFLAGS="-L native=${pkgs.pkgsCross.mingwW64.windows.pthreads}/lib -L native=${pkgs.pkgsCross.mingwW64.windows.mcfgthreads}/lib -C link-arg=-lmcfgthread"

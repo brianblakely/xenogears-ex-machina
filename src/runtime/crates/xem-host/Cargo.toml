@@ -21,8 +21,10 @@ xem-assist = { path = "../xem-assist" }
 xem-disc = { path = "../xem-disc" }
 xem-game = { path = "../xem-game" }
 xem-storage = { path = "../xem-storage" }
-xem-xr = { path = "../xem-xr" }
 png.workspace = true
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+xem-xr = { path = "../xem-xr" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "=0.6.5"

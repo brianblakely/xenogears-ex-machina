@@ -791,7 +791,9 @@ def ram_mirrors(lines):
 
     Run before optimization so LLVM sees that accesses can alias. Allocas
     and their GEPs are already on the port stack; keep those operands intact
-    so mem2reg can promote the original C's local variables normally.
+    so mem2reg can promote the original C's local variables normally. Only
+    KUSEG's physical range and KSEG0/KSEG1 are PS1 addresses; the host's
+    presentation rings at 0x70000000 must retain their own addresses.
     """
     out, local, number = [], set(), 0
 
@@ -837,12 +839,17 @@ def ram_mirrors(lines):
         out.extend('''
 define internal ptr @xem.memory.address(ptr %pointer) alwaysinline {
   %address = ptrtoint ptr %pointer to i32
+  %segment = and i32 %address, -1073741824
+  %kernel = icmp eq i32 %segment, -2147483648
+  %user = icmp ult i32 %address, 536870912
+  %ps1 = or i1 %kernel, %user
   %physical = and i32 %address, 536870911
   %ram = icmp ult i32 %physical, 8388608
   %offset = and i32 %physical, 2097151
   %cached = or i32 %offset, -2147483648
   %mapped = select i1 %ram, i32 %cached, i32 %physical
-  %result = inttoptr i32 %mapped to ptr
+  %host = select i1 %ps1, i32 %mapped, i32 %address
+  %result = inttoptr i32 %host to ptr
   ret ptr %result
 }
 '''.splitlines())

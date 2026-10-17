@@ -1167,6 +1167,7 @@ tools/reference/observe.py
 tools/reference/scenario.py
 tools/reference/scenario_program.py
 tools/reference/sector_survey.py
+tools/release/android_smoke.py
 tools/release/notices.py
 tools/release/package.py
 tools/release/publish.py

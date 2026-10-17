@@ -1088,7 +1088,11 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       assert.ok(result.after.session.frames - result.before.session.frames > 60, 'gameplay accelerates');
       assert.equal(result.after.session.fast_forward,true);
       assert.deepEqual(result.after.session.fast_forward_rate,rate);
-      assert.equal(result.after.loop.maxFramesPerAnimation,rate === 'Uncapped' ? null : 80);
+      // Fixed fast-forward adapts to the pace this host reaches. The batch
+      // limit follows that recorded pace; the configured rate remains 20x.
+      const pace = result.after.session.fast_forward_pace ?? rate.Fixed;
+      if (rate !== 'Uncapped') assert.ok(Number.isInteger(pace) && pace >= 1 && pace <= 20);
+      assert.equal(result.after.loop.maxFramesPerAnimation,rate === 'Uncapped' ? null : 4 * pace);
       }
       assert.deepEqual(page.errors, []);
     } finally { await browser.close(); }

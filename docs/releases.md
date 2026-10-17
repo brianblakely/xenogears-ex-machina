@@ -31,6 +31,23 @@ devices, their thermal behavior, or every vendor's drivers. Native platform
 builds remain separate artifacts; a Linux result does not claim that a Windows
 or macOS executable itself was run on Linux.
 
+The qualification matrix is explicit and intentionally bounded:
+
+| Test environment | Coverage |
+| --- | --- |
+| Arch/Omarchy Linux, kernel 7.2.5, SDL 3.4.14, Mesa 26.2.2 | Native desktop proxy, Vulkan and GLES, input/audio, portable storage and headless operation |
+| Android 14 / API 34, Pixel 6 AVD, x86_64 and translated arm64-v8a | Native mobile lifecycle, import, persistence and rendering on SwiftShader |
+| Monado 25.1.0 simulated headset on Linux | Horizon native proxy, OpenXR/Vulkan, session changes, stereo, hand/controller/settings interactions |
+| Chromium 152.0.7977.82 on Linux, desktop and emulated mobile viewports | Flat browser WebGPU and WebGL2, storage, audio, lifecycle and context recovery |
+| Chromium 152 with IWER 2.5.0, Quest 3 profile | Horizon-browser proxy, WebXR-compatible WebGL2, controller/hand tracking and immersive settings |
+
+Firefox, Safari and real vendor-specific headset/browser combinations are not
+qualified by this matrix. Native Windows and macOS builds additionally run
+packaged startup checks on GitHub's Windows 2025 and macOS 15 runners.
+Presentation and performance limits, including the simulated rendering load,
+remain described in the [runtime guide](runtime.md); emulator timing is not a
+physical phone/headset thermal measurement.
+
 ## Desktop installation
 
 Extract the archive into a writable folder. Put your own disc images beside
