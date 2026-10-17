@@ -70,6 +70,12 @@ def u32(value):
 
 
 class Adapters(unittest.TestCase):
+    def test_inactive_sound_wave_calls_the_original_and_returns_zero(self):
+        result, modulator, calls = run(
+            ["xem_thunk_sound_switch_modulator_off", 0x1200],
+            ["test_recorded", 0], ["test_calls"])
+        self.assertEqual((result, modulator, calls), (0, 0x1200, 1))
+
     def test_acting_slot_returns_the_new_acting_sprite(self):
         ret, slot, calls, sprite = run(["xem_adapt_battle_menu_set_acting_slot", 2], ["test_recorded", 0],
                                        ["test_calls"], ["test_sprite", 2])

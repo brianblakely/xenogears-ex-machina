@@ -16,8 +16,8 @@
 //!   the drive streaming its terrain;
 //! - a Battling bout, which runs as the arena's task fiber beside the game's
 //!   (a debug launch: the bout's task and parameters written as
-//!   gestures.rs's bout writes them, and mode 4 selected; this bout stops at
-//!   frame 724 on its own, before which its frames here end);
+//!   gestures.rs's bout writes them, and mode 4 selected), through the first
+//!   particle effects, whose DMA links also exercise PS1 RAM aliases;
 //! - the story's disc change during its five-second wait (discs.rs's route,
 //!   no cards): disc 2 goes in at the frame and cycle where the session that
 //!   took the state, never restored, puts it in, and the game goes on to the
@@ -279,14 +279,14 @@ fn a_battling_bout_goes_on_identically_beside_its_task_fiber() {
     frames(&mut s, 30);
     let (_, kinds) = fibers(&s.snapshot_bytes().unwrap());
     assert_ne!(kinds[1], 0, "the state holds the arena's task fiber");
-    // Toward the opponent, through "READY" and "FIGHT!!". (This launch's
-    // bout stops at frame 724, input or not, no state taken: the GPU's
-    // display list links to address 0. These frames end before it.)
+    // Toward the opponent, through "READY", "FIGHT!!" and the particle
+    // effects. These used to stop at frame 725: LINK_PRIM wrote a low RAM
+    // alias while the GPU read the separate, unlinked KSEG0 packet.
     s.set_pad(0, button_bit("right").unwrap());
-    let bout = continues_identically(&mut s, 150);
-    assert!(s.runtime.frames() < 724);
+    let bout = continues_identically(&mut s, 600);
+    assert!(s.runtime.frames() > 725);
     assert_eq!(s.runtime.services().mode, Some(4), "still the bout");
-    assert!(bout.hashes.windows(2).filter(|pair| pair[0] != pair[1]).count() > 140, "the bout moves");
+    assert!(bout.hashes.windows(2).filter(|pair| pair[0] != pair[1]).count() > 590, "the bout moves");
     assert_ne!(fibers(&bout.end).1[1], 0, "and its task fiber with it");
 }
 

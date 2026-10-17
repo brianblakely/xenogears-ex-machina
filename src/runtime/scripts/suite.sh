@@ -100,7 +100,8 @@ port() {
     cd "$root" && python3 -m unittest tests.test_port_model_draw tests.test_port_gte tests.test_port_gpu \
         tests.test_game_module_pause tests.test_port_original_traces tests.test_port_resident tests.test_port_arena \
         tests.test_port_worldmap tests.test_port_presentation tests.test_port_controls tests.test_port_disc tests.test_dispatch_tables \
-        tests.test_platforming tests.test_port_encounters tests.test_port_text_speed tests.test_port_movie_skip || return
+        tests.test_platforming tests.test_port_encounters tests.test_port_text_speed tests.test_port_movie_skip \
+        tests.test_game_coverage tests.test_game_module_memory || return
     # The platforming table's proof on the user's discs: xem-core's
     # PLATFORMING_AREAS is the classifier's (about 33 s); it reads both discs
     # extracted and their images under .local, and is skipped without them.

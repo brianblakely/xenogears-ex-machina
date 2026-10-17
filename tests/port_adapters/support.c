@@ -4,6 +4,7 @@
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
+#include "resident/sound.h"
 #include "battle/frame.h"
 
 BattleMenu *battle_current_menu;
@@ -60,6 +61,10 @@ Sprite *sprite_create(s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 text
     recorded[5] = unused;
     recorded[6] = sprite_palette_bank;
     return &sprites[2];
+}
+
+void sound_switch_modulator_off(SoundModulator *modulator) {
+    record(1, (s32)modulator, 0, 0, 0, 0);
 }
 
 void test_reset(void) {

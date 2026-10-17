@@ -9,6 +9,8 @@ original memory layout:
 - a global the C defines or declares resolves to its original address, read
   from the matched links (locals by their unit); its bytes come from the images
   the game loads, so the C's initializers are dropped;
+- memory accesses resolve PS1 RAM aliases to KSEG0 without changing the
+  pointers and DMA tags the game stores;
 - a function's address, wherever C takes it, is its original address;
 - an indirect call goes through a dispatcher per wasm signature that selects the
   function by address and checks a fingerprint of its original first code
@@ -44,6 +46,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import game_coverage  # noqa: E402
 import game_schema  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -578,6 +581,7 @@ class Rewriter:
             lines = poll_back_edges(lines)
             lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
+        lines = ram_mirrors(lines)
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
         for name, decl in sorted(self.unit_decls.pop(unit.source, {}).items()):
@@ -756,6 +760,74 @@ class Rewriter:
             return unit, unit.defined[name]
         found = self.definitions.get(name)
         return found
+
+
+def ram_mirrors(lines):
+    """Translate memory operands, never the pointer values the game keeps.
+
+    The PS1's low 8 MB and its cached/uncached aliases address the same 2 MB
+    of RAM. In particular, the arena's LINK_PRIM stores through a 24-bit DMA
+    address. Wasm has no aliases: leaving that store at its numeric address
+    disconnects the packet the GPU reads at KSEG0.
+
+    Run before optimization so LLVM sees that accesses can alias. Allocas
+    and their GEPs are already on the port stack; keep those operands intact
+    so mem2reg can promote the original C's local variables normally.
+    """
+    out, local, number = [], set(), 0
+
+    def address(argument):
+        nonlocal number
+        match = re.fullmatch(r"(ptr(?: (?:align \d+|nonnull|noundef))*) (.+)", argument)
+        if not match:
+            raise ValueError(f"unhandled memory operand: {argument}")
+        attributes, pointer = match.groups()
+        if pointer in local or pointer.startswith("@"):
+            return argument
+        name = f"%xem.memory.{number}"
+        number += 1
+        out.append(f"  {name} = call ptr @xem.memory.address(ptr {pointer})")
+        return f"{attributes} {name}"
+
+    for line in lines:
+        if line.startswith("define "):
+            local = set()
+        assignment = re.match(r"\s*(%[-\w.]+) = (.+)", line)
+        if assignment:
+            name, expression = assignment.groups()
+            if expression.startswith("alloca "):
+                local.add(name)
+            elif expression.startswith("getelementptr "):
+                base = split_top(expression)[1].removeprefix("ptr ")
+                if base in local or base.startswith("@"):
+                    local.add(name)
+        memory = re.match(r"(\s*(?:%[-\w.]+ = )?(?:load|store) )(.+)", line)
+        intrinsic = re.match(r"(\s*(?:tail )?call void @llvm\.mem(?:cpy|move|set)[\w.]*)\((.*)\)(.*)", line)
+        if memory:
+            args = split_top(memory[2])
+            args[1] = address(args[1])
+            line = memory[1] + ", ".join(args)
+        elif intrinsic:
+            args = split_top(intrinsic[2])
+            args[0] = address(args[0])
+            if "@llvm.memset." not in intrinsic[1]:
+                args[1] = address(args[1])
+            line = intrinsic[1] + "(" + ", ".join(args) + ")" + intrinsic[3]
+        out.append(line)
+    if number:
+        out.extend('''
+define internal ptr @xem.memory.address(ptr %pointer) alwaysinline {
+  %address = ptrtoint ptr %pointer to i32
+  %physical = and i32 %address, 536870911
+  %ram = icmp ult i32 %physical, 8388608
+  %offset = and i32 %physical, 2097151
+  %cached = or i32 %offset, -2147483648
+  %mapped = select i1 %ram, i32 %cached, i32 %physical
+  %result = inttoptr i32 %mapped to ptr
+  ret ptr %result
+}
+'''.splitlines())
+    return out
 
 
 RET_RE = re.compile(r"^\s*ret (\S+) (%[-\w.]+)$")
@@ -1070,7 +1142,7 @@ def build(args):
         log = out / "compile-errors.txt"
         log.write_text("".join(f"== {s[0]}\n{e}" for s, e in failed))
         print(f"{len(failed)} units failed to compile: {log}")
-        if not args.stubs:
+        if not args.stubs or args.coverage:
             raise SystemExit(1)
     all_sources = sources
     sources = [s for s, e in zip(sources, errors) if not e]
@@ -1089,7 +1161,7 @@ def build(args):
             f"{n}\t{t}\t{c}\t{' '.join(sorted(rewriter.unmapped_users[(t, c)]))}\n"
             for (t, c), n in sorted(rewriter.unmapped_asm.items(), key=lambda x: x[1])))
         print(f"{len(rewriter.unmapped_asm)} inline assembly statements have no port function: {report}")
-        if not args.stubs:
+        if not args.stubs or args.coverage:
             raise SystemExit(1)
     if rewriter.missing_data:
         (out / "missing-data.txt").write_text("\n".join(rewriter.missing_data) + "\n")
@@ -1107,6 +1179,10 @@ def build(args):
     adapters += [f"port adapter: xem_adapt_{name}" for name in sorted(rewriter.overridden)]
     (out / "adapters.txt").write_text("\n".join(adapters) + "\n")
     ll_files.append(out / "ir" / "dispatch.ll")
+    coverage = None
+    if args.coverage:
+        ll_files, coverage = game_coverage.prepare(
+            ll_files, sources + [("generated dispatchers", "dispatch")], out, args.jobs)
     objects = [out / "obj" / (p.stem + ".o") for p in ll_files]
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         errors = list(pool.map(lambda p: compile_object(*p), zip(ll_files, objects)))
@@ -1115,10 +1191,14 @@ def build(args):
         log = out / "codegen-errors.txt"
         log.write_text("".join(f"== {p.name}\n{e}" for p, e in failed))
         print(f"{len(failed)} units failed code generation: {log}")
-        if not args.stubs:
+        if not args.stubs or args.coverage:
             raise SystemExit(1)
         objects = [o for o, e in zip(objects, errors) if not e]
-    link(out, objects, args, units)
+    link(out, objects, args, units, coverage)
+    if coverage is not None:
+        game_coverage.finish(out, coverage)
+    else:
+        (out / "coverage.json").unlink(missing_ok=True)
 
 
 def stub_ir(missing, units):
@@ -1140,7 +1220,7 @@ def stub_ir(missing, units):
     return "\n".join(lines) + "\n"
 
 
-def link(out, objects, args, units):
+def link(out, objects, args, units, coverage=None):
     raw = out / "game.raw.wasm"
     cmd = [os.environ["XEM_WASM_LD"], "--no-entry", "--error-limit=0",
            f"--initial-memory={MEMORY_BYTES}", f"--max-memory={MEMORY_BYTES}",
@@ -1174,6 +1254,8 @@ def link(out, objects, args, units):
     mismatches = sorted(set(re.findall(r"function signature mismatch: (\S+)", result.stderr)))
     if mismatches:
         raise SystemExit(f"signature mismatches: {', '.join(mismatches)}")
+    if coverage is not None:
+        game_coverage.initialize(raw, coverage)
     final = out / "game.wasm"
     imports = ",".join(YIELD_IMPORTS)
     # -g keeps the name section: wasm2c and native backtraces name game functions.
@@ -1201,6 +1283,8 @@ def main():
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
     parser.add_argument("--stubs", action="store_true",
                         help="define undefined functions as traps into the host (xem.missing) and list them")
+    parser.add_argument("--coverage", action="store_true",
+                        help="record optimized game IR blocks (use a separate --out directory)")
     build(parser.parse_args())
 
 

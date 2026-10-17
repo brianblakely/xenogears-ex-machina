@@ -89,6 +89,12 @@ original address.
   0x10000000 (`PORT_BASE` in tools/game_module.py), outside RAM, the
   scratchpad, I/O and every mirror the game or its DMA addresses reach. The
   linear memory ends at 0x80200000.
+  The build translates load/store and bulk-memory operands through the PS1
+  RAM mirrors before optimization, while preserving stored pointer values.
+  Thus a 24-bit graphics link writes the same RAM that the GPU reads at
+  KSEG0. `tests/test_game_module_memory.py` executes those aliases in Wasm;
+  the Battling snapshot test runs through the first particle effects and
+  past the former frame-725 display-list failure.
 - **Code addresses.** A function's address, wherever C takes it, is its original
   address. Indirect calls go through generated dispatchers that select the
   function by address and check, from a fingerprint of its original code bytes in
@@ -327,6 +333,130 @@ goes on as without; [State interchange](#state-interchange)).
   depend on presentation capture or on a snapshot restored on the way, and
   the browser suite checks the same route's `memory_hash` against
   `xem-headless --control`.
+
+### Gameplay crash exploration
+
+`tools/game_explore.py` explores short gameplay branches from a shared corpus
+of snapshots, without replaying the story before every experiment. Its default
+`frontier` strategy targets actors, dialogue choices, menus and battle commands
+through the existing pad/assisted-walking controls. Build the optional probes
+before Asyncify, then use the same native runtime (commands from the repository root):
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/runtime
+python3 tools/game_module.py --coverage --stubs --out build/game-coverage
+XEM_GAME_WASM="$PWD/build/game-coverage/game.wasm" \
+  CARGO_TARGET_DIR="$PWD/src/runtime/target-coverage" \
+  cargo build --manifest-path src/runtime/Cargo.toml --profile suite -p xem-headless
+python3 tools/game_explore.py \
+  --headless src/runtime/target-coverage/suite/xem-headless \
+  --coverage build/game-coverage/coverage.json \
+  --stubs build/game-coverage/stubs.txt \
+  --disc 'discs/Xenogears disc 1.chd' --field 23 --seed-frames 400 \
+  --out build/explore/fields --iterations 10000 --seconds 60
+```
+
+The process is:
+
+1. Seed different gameplay systems and story prerequisites directly, using
+   retained input logs, validated saves/checkpoints and targeted scenarios.
+   `--log` checks a log's recorded RAM/scratchpad hash when present; `--field`
+   enters a debug field scenario. `--add-log` and `--add-field` add more seeds
+   to the same search. With no supplied seed, the retained new-game route is used.
+2. Try short, distinct actions at each checkpoint. Retain new engine blocks,
+   field-script dispatches/outcomes, and coarse map/story/position progress.
+   Prioritize productive chains and rare coverage; deprioritize repeated NPC
+   attempts across nearby positions. Non-choice dialogue/events advance for up
+   to `--settle-frames` (default 900) before another snapshot is needed.
+3. Reuse the corpus with `--resume PREVIOUS_OUTPUT` in a **new** output directory.
+   This restores checkpoints directly and merges their measured coverage and
+   full replay witnesses. Repeat `--resume` to combine runs. `--max-corpus`
+   bounds retained snapshots; every completed branch retains its input lineage.
+   A changed module rejects old snapshots. Use `--add-replay PREVIOUS_OUTPUT/replay-suite.json`
+   to rebuild a corpus from its short input witnesses, remeasuring coverage
+   instead of importing old feature IDs; mixed-disc suites use each case's boot disc.
+4. Reduce repeat testing with `replay-suite.json`: greedy cost-weighted selection
+   keeps witnesses for every feature observed in the run. Replay it with
+   `--replay PATH/replay-suite.json`; it runs each selected case from boot,
+   using its recorded disc. It also runs on an ordinary, uninstrumented binary.
+5. Inspect the remaining blocks/scripts and add the appropriate seed or short
+   transition chain. A plateau means another state or action is needed; it is
+   not a declaration that the remaining code cannot run.
+
+For example, add a world-map route without repeating the field setup:
+
+```sh
+python3 tools/game_explore.py \
+  --headless src/runtime/target-coverage/suite/xem-headless \
+  --coverage build/game-coverage/coverage.json --stubs build/game-coverage/stubs.txt \
+  --disc 'discs/Xenogears disc 1.chd' --resume build/explore/fields \
+  --add-log tests/reference-inputs/world-map-lahan-exit.json \
+  --out build/explore/combined --iterations 10000 --seconds 60
+```
+
+Use disc 2 with its own seeds and merge its corpus in the same way. The running
+game's disc directory identifies script observations, so equal map/PC numbers
+on the two discs remain distinct. Original assets, states and generated results
+stay local. Setup writes/debug entries are labelled `scenario`, not legal
+progression. Branching preserves that origin and never edits story flags,
+inventory or battle outcomes. A scenario that violates prerequisites still
+needs a valid save/route before a finding is called player-reachable.
+
+Each optimized LLVM block has its own byte, outside the game's and port's
+reserved memory, set by a volatile store. No host call runs per probe, there
+are no block-bitmap collisions or wrapping counters, and linking the probes does
+not move game-visible port/stack addresses. An initialized signature rejects
+a stale map or an ordinary binary. The map correlates probes to the compiled
+source, image, function and block. It includes unvisited and unlinked blocks;
+zero hits are never silently classified as unreachable. A separate observer
+brackets the field interpreter's actual primary-opcode dispatch, recording
+`(disc, map, PC)` and its completed `(PC, next PC)` outcome. This sees instructions
+that begin and finish within one frame. Its sparse table compares exact keys;
+collisions are resolved, and overflow fails the measurement rather than hiding
+coverage. Epochs clear it in constant time. The loaded disc/map identity occupies
+eight fixed bytes at the end of the reserved port snapshot region, so restoring
+a checkpoint restores its identity too. Pending next-map requests cannot relabel
+the old map's remaining scripts. The decomp is unchanged.
+
+`--seconds` limits search time after setup; `--iterations`, `--seed` and
+`--timeout` bound the search and its independent process watchdog. `--strategy
+random` retains a single-seed random-input control experiment (`--stall`
+controls its rewinding). Compare observed gains under the same budget; one
+strategy is not assumed best for every state.
+
+`summary.json` reports the run's completion, failures, blocks per image and
+field-script counts. `coverage-hits.json` plus `coverage.json` identify engine
+blocks; `coverage-script-hits.json` stores exact script keys. Their encoding is
+`disc << 45 | map << 33 | pc << 17 | outcome`, with outcome `0x10000` meaning
+dispatch observed and a halfword meaning the resulting PC. `steps.jsonl` records
+gain, action and time. The replay suite's cost totals are estimates from measured
+prefix/branch costs, not timings of an independently rerun suite.
+
+These measurements do not establish all-path coverage or crash freedom. Field
+outcomes are handler results, not every possible history through them; battle
+AI/effect bytecode, story prerequisites, data variants, loop counts and action
+ordering still need targeted seeds/short chains. Static candidates can be
+enumerated with the existing `tools.analysis.events`, `battle_ai`,
+`battle_event_vm`, `battle_effect_vm` and `formations` tools; keep generated
+listings local. Do not equate a map-start sweep or a coverage plateau with
+completion of both discs and optional content.
+
+Before each input sequence, `pending.json` records its checkpoint and full
+input lineage. Traps, query traps, exits and timeouts leave `failure.json` and
+`stderr.log`. Reproduce with `--replay build/explore/NAME/failure.json` plus
+`--headless` and `--disc`; add `--from-boot` to replay the complete lineage,
+including on an ordinary build. A confirmed matching failure exits 1, a
+different failure exits 2, and a run without a failure exits 0. A timeout is a
+watchdog finding, not by itself a confirmed deadlock. Confirm scenario findings
+on a legal route before claiming a player can encounter them. Coverage-build
+snapshots have their own module identity and cannot load into an ordinary build.
+
+`tests.test_game_coverage` executes synthetic wasm branches/PHIs and the field
+observer, including distinct discs/maps, alternate outcomes, duplicate hits,
+epoch reset and overflow. It checks map rejection, watchdogs, ordinary-pad
+choice enumeration and coverage-preserving replay reduction. The desktop/full
+suite runs it. Keep ordinary-build regression comparisons and retained exact
+hashes as the independent check that instrumentation preserves game outcomes.
 
 ## Discs
 
@@ -5737,11 +5867,10 @@ block); a writer whose bytes so far match a later save's (the same save
 made again) writes on, making the save it would have made; states taken
 inside a save or a load are tested with the stand-in and the card device's
 bench, not the original game's save menu; the tests reach the arena only
-by a debug launch (the bout's task and parameters written), whose bout
-stops at frame 724 on its own, with or without input and with no state
-taken (the GPU's display list links to address 0; not investigated, and
-whether the original does the same with these writes is unknown), so
-`states.rs` covers its first 150 frames, not a bout the story starts; held
+by a debug launch (the bout's task and parameters written).
+`states.rs` covers 600 frames of that bout, including particle effects;
+the build's RAM-alias translation fixes the display-list failure formerly
+reached at frame 725. This still does not cover a bout the story starts; held
 rewind is tested from a battle into its field, not inside a movie or on the
 world map; the drive's tally of XA sectors played (`Cd::xa_sectors`, the
 host's, for verification) starts afresh at a restore; sealed but crafted
