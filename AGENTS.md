@@ -17,8 +17,8 @@
   requirement registries. Prefer the simplest implementation and existing tools.
 - Use the pinned Nix shells. While developing, test only the platform whose host you
   are changing: `src/runtime/scripts/suite.sh desktop` (native and shared code, about
-  two minutes), `web`, `android` or `xr`, or narrower focused tests. Run
-  `suite.sh full` (every platform and what CI runs, about twelve minutes) once, at
-  the end, before review or a merge, never after each change.
+  fifteen minutes), `web`, `android` or `xr`, or narrower focused tests. Run
+  `suite.sh full` (every platform and what CI runs, about an hour) once, at the
+  end, before review or a merge, never after each change.
   Record exact commands/results and missing private inputs honestly.
 - Keep original assets and generated disassembly local. Do not modify prompt.md.
