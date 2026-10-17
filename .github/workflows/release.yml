@@ -131,7 +131,18 @@ jobs:
           TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           if [ "$KIND" = linux ]; then
-            nix develop path:./nix/runtime -c python3 tools/release/smoke.py "$KIND" --version "$TAG" --graphical
+            # Ubuntu restricts unconfined user namespaces. Grant this test
+            # process the AppImage's namespace permission, leaving the
+            # system-wide restriction enabled (see docs/releases.md).
+            cat > "$RUNNER_TEMP/xem-release.apparmor" <<'PROFILE'
+          abi <abi/4.0>,
+          profile xem-release-qualification flags=(unconfined) {
+            userns,
+          }
+          PROFILE
+            sudo apparmor_parser -r "$RUNNER_TEMP/xem-release.apparmor"
+            trap 'sudo apparmor_parser -R "$RUNNER_TEMP/xem-release.apparmor"' EXIT
+            aa-exec -p xem-release-qualification -- nix develop path:./nix/runtime -c python3 tools/release/smoke.py "$KIND" --version "$TAG" --graphical
           else
             tools/release/shell.sh release python3 tools/release/smoke.py "$KIND" --version "$TAG"
           fi

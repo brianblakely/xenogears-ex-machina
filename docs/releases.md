@@ -97,8 +97,14 @@ so they do not require a distro package manager or an installed Nix. They
 require a compatible CPU/kernel and enabled unprivileged user namespaces.
 Proprietary NVIDIA graphics use the host's driver libraries.
 `APPIMAGE_EXTRACT_AND_RUN=1 ./filename.AppImage` avoids a
-FUSE requirement. Security policies that disable user namespaces are not
-supported by this packager. `--headless` selects the image's command-line host
+FUSE requirement. On Ubuntu 24.04 and later, AppArmor restricts unconfined
+user namespaces. Following [Ubuntu's application-profile instructions](https://documentation.ubuntu.com/release-notes/24.04/#unprivileged-user-namespace-restrictions),
+an administrator can grant this application `userns,` in an AppArmor profile
+with `flags=(unconfined)` attached to its absolute AppImage path. Retain the
+system-wide restriction. The Ubuntu CI runners exercise the packaged app
+inside that explicit profile; Arch does not need it. Kernels or policies
+that prohibit user namespaces entirely cannot run this launcher.
+`--headless` selects the image's command-line host
 without initializing video, GPU or audio. Windows DLLs must remain beside the
 executables. macOS bundles are ad-hoc signed; no Developer ID notarization is
 claimed. Native XR uses Vulkan/OpenXR; macOS flat Metal support does not imply

@@ -18,6 +18,8 @@ XEM_DATA_DIR explicitly selects another writable application folder.
 Linux: the AppImage bundles its runtime libraries, Mesa drivers and fonts;
 proprietary NVIDIA graphics use the host driver. It needs a supported CPU,
 a graphical session and unprivileged user namespaces.
+Ubuntu 24.04+ requires an application AppArmor profile granting userns;
+see docs/releases.md for the scoped permission and platform requirements.
 APPIMAGE_EXTRACT_AND_RUN=1 runs without FUSE. --headless selects
 the included command-line host, which needs no graphics or audio device.
 Windows: keep the included DLLs beside xem-desktop.exe and xem-headless.exe.
