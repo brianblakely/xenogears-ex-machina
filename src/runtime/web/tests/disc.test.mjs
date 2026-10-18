@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, USER_DISC2, WEB, WEBGPU, pixelStats, shot, start, status } from './support.mjs';
 
@@ -136,6 +136,41 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
     const bios = ['bios', `0000${(157 - 146).toString(16).padStart(2, '0')}${'00'.repeat(27)}`];
     assert.deepEqual(result.imported, bios, 'the running game has the imported font at once');
     assert.deepEqual(result.booted, bios, 'and a boot takes it');
+  });
+});
+
+describe('disc 1 from the page\'s server', { skip: !available && `needs ${USER_DISC} and the game module` }, () => {
+  test('?disc= imports it with range requests', async () => {
+    const browser = await start({ args: NO_WEBGPU, mounts: { '/discs/': dirname(USER_DISC) } });
+    try {
+      const page = await browser.context.newPage();
+      const ranges = [];
+      page.on('request', (request) => {
+        if (request.url().includes('/discs/') && request.headers().range) ranges.push(request.headers().range);
+      });
+      await page.goto(`${browser.base}?disc=${encodeURIComponent(`/discs/${basename(USER_DISC)}`)}`);
+      await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      await page.waitForFunction(() => ['identified', 'failed'].includes(window.xem.status().disc?.state), null,
+        { timeout: 120_000 });
+      const { disc } = await status(page);
+      assert.equal(disc.state, 'identified');
+      assert.equal(disc.bytes, statSync(USER_DISC).size);
+      assert.deepEqual([disc.identity.disc, disc.identity.serial], [1, 'SLUS-00664']);
+      assert.ok(ranges.length > 0 && ranges.every((range) => /^bytes=\d+-\d+$/.test(range)));
+      assert.match(await page.textContent('#message'), /^Xenogears disc 1 /);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('a missing image stays on screen', async () => {
+    const browser = await start({ args: NO_WEBGPU, mounts: { '/discs/': dirname(USER_DISC) } });
+    try {
+      const page = await browser.page('?disc=/discs/missing.chd');
+      await page.waitForFunction(() => document.getElementById('message').textContent.includes('HTTP 404'));
+    } finally {
+      await browser.close();
+    }
   });
 });
 

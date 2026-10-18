@@ -561,9 +561,9 @@ function show(message) {
 }
 
 /** Import `file` (its File System Access `handle`, when it has one, is
- * remembered for the disc it turns out to be). */
+ * remembered for the disc it turns out to be); resolves to the disc status. */
 async function runImport(file, handle = null) {
-  show(`Reading ${file.name} locally…`);
+  show(`Reading ${file.name}${file.url ? ` from ${file.url}` : ' locally'}…`);
   const status = await host.importDisc(file);
   const id = status.identity;
   if (status.state === 'failed') show(`${file.name}: ${status.error}`);
@@ -572,6 +572,7 @@ async function runImport(file, handle = null) {
     const running = JSON.parse(app.status()).session;
     show(`Xenogears disc ${id.disc} (${id.serial}), ${id.boot_path}${running ? ': ready for the game\'s disc changes' : ''}`);
   } else show(`${file.name}: not a known Xenogears disc (boot program ${id?.boot_path}, SHA-256 ${id?.sha256})`);
+  return status;
 }
 
 const guarded = (action) => async (event) => {
@@ -871,3 +872,10 @@ setInterval(() => {
   app.set_storage_status(`${page.storageError ?? cards.status().error ?? JSON.parse(app.settings()).error ?? page.biosNotice ?? cards.status().notice ?? page.storage.notice ?? page.storage.error ?? ''}\n${cards.status().pending} card writes pending. Ordinary saves use the game save menu.`);
 }, 250);
 document.body.dataset.ready = 'true';
+// ?disc=<url> (repeatable, disc 1 first): images on the page's server, imported once the page is ready.
+// The first failure stays on screen and stops the rest.
+await guarded(async () => {
+  for (const url of params.getAll('disc')) {
+    if (!(await runImport(await disc.openUrl(url))).identity?.disc) return;
+  }
+})();

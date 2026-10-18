@@ -7951,7 +7951,15 @@ From the repository root in `nix develop path:./nix/runtime`:
 
 - build: `python3 src/runtime/web/build.py` (output `build/web/`; `--no-game` leaves
   the game module out, as a hosted build must until it ships separately)
-- serve: `node src/runtime/web/serve.mjs build/web 8080`, then http://localhost:8080/
+- serve: `node src/runtime/web/serve.mjs build/web 8080`, then http://localhost:8080/.
+  The repository's `serve.json` (ignored by Git; without it the server stays on
+  localhost over plain HTTP) can open it to other devices: `host` (`"0.0.0.0"`),
+  `cert` and `key` (PEM files, such as a self-signed pair: away from localhost the
+  page is a secure context only over HTTPS) and `mounts` (`{"/discs/": "discs"}`),
+  paths from the repository. With `/discs/` mounted,
+  `?disc=/discs/Xenogears%20disc%201.chd` (repeatable, disc 1 first) imports the
+  image from the server once the page is ready, reading it in HTTP byte ranges
+  as a chosen file is read in `Blob` slices; a failure stays in the page's message
 - tests: `cd src/runtime/web && npm ci && npm test` (Playwright on the shell's
   Chromium; `XEM_DISC1=<disc 1 image>` adds the user-disc tests, which send
   the same control commands to `src/runtime/target/release/xem-headless --control`
