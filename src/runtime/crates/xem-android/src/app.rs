@@ -91,15 +91,10 @@ fn run(args: &[String]) -> Result<(), String> {
     let options = options(args)?;
     let run = RUNS.fetch_add(1, Ordering::Relaxed) + 1;
     log(&format!("start (run {run} in this process)"));
+    // Back toggles the settings panel instead of leaving the activity. (A
+    // recreated activity starts SDL_main again: XemActivity allows it.)
     // SAFETY: called before SDL_Init with NUL-terminated strings.
-    unsafe {
-        // Back toggles the settings panel instead of leaving the activity.
-        SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, c"1".as_ptr());
-        // When Android recreates the activity (a change of the app's asset
-        // paths, which no configChanges entry covers), SDL quits this run
-        // and starts SDL_main again in the same process instead of exiting.
-        SDL_SetHint(SDL_HINT_ANDROID_ALLOW_RECREATE_ACTIVITY, c"1".as_ptr());
-    }
+    unsafe { SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, c"1".as_ptr()) };
     let sdl = sdl::Sdl::init()?;
     let window = sdl::Window::new(&sdl, "Xenogears Ex Machina", 1280, 800)?;
     let result = Host::new(&window).and_then(|mut host| host.run(&window, &options));

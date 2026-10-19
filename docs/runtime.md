@@ -8240,8 +8240,11 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   (configuration changes) is detected by identity and the surface recreated.
   `LOW_MEMORY` is logged; on `TERMINATING` the run ends. A recreated activity
   (changes outside `configChanges`, such as density or asset paths) runs
-  `SDL_main` again in the same process (`SDL_ANDROID_ALLOW_RECREATE_ACTIVITY`),
-  which reloads settings and reopens the imported disc. `XemActivity`'s
+  `SDL_main` again in the same process (`SDL_ANDROID_ALLOW_RECREATE_ACTIVITY`,
+  which `XemActivity` sets as soon as the libraries load: a recreation
+  before `SDL_main` has started, such as an overlay changing on an
+  emulator's first boot, otherwise ended the process), which reloads
+  settings and reopens the imported disc. `XemActivity`'s
   `onDestroy` sends the run its quit and waits up to 5 s for it to end
   before SDL's own, which waits a second and then drops the quit: a run
   still booting the game when Android recreated the activity twice in a row

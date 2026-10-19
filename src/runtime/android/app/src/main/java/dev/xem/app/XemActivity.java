@@ -25,6 +25,20 @@ public class XemActivity extends SDLActivity {
         return new String[] {"SDL3", "main"};
     }
 
+    /**
+     * Android recreates the activity on changes no configChanges entry
+     * covers (its asset paths: an overlay changing on a device's first
+     * boot), at any time, before SDL_main has started too. SDL ends the
+     * process on a recreation unless it is allowed, and then starts SDL_main
+     * again in the same process. Allowed as soon as the libraries are loaded,
+     * before any recreation is checked; SDL keeps it through SDL_Quit.
+     */
+    @Override
+    public void loadLibraries() {
+        super.loadLibraries();
+        nativeSetenv("SDL_ANDROID_ALLOW_RECREATE_ACTIVITY", "1");
+    }
+
     /** {@code am start --esa xem.args --open,<uri>} passes arguments to SDL_main. */
     @Override
     protected String[] getArguments() {
