@@ -499,7 +499,7 @@ of game time after the request, with the game's change-disc notice shown
 (fast-forward shortens it); elsewhere at once. All of it runs on the
 game's clock, so recordings, rewind and replays reproduce it. Without the
 wanted disc the game waits at its notice; the hosts ask for it (the panel
-opens on Saves with the request on the status line) and the change happens
+opens on Saves with the request in its error bar) and the change happens
 when the host adds it (`Services::add_disc`). Natively `xem_game::boot`
 gives the changer the game's other disc from the boot disc's directory
 (`xem_disc::discs_beside`: the first CHD, cue, ISO or raw track there that
@@ -2010,7 +2010,7 @@ interchange](#state-interchange)).
 | HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
-| presentation | every display refresh, or game frames only; interpolation; wider framing (to the output's aspect ratio) |
+| presentation | interpolate motion: off (the default) presents a frame only when the game drew one, on presents every display refresh, matched primitives moving smoothly between the game's frames (one game frame of latency); wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
@@ -5579,7 +5579,7 @@ session's (`incompatible state: the state's game module is "…", this
 session's is "…"`, likewise the disc and the packages), an identity field
 the format has not got, a device's version found and expected, truncated or
 trailing bytes, or the drive's disc not being at hand. Hosts show that text
-as it is (the HUD's failure chip, the panel's status line; `Game::command`
+as it is (the HUD's failure chip, the panel's error bar; `Game::command`
 returns it plain). Host disc/storage attachments and presentation settings
 and current memory-card images stay attached (the drive takes the state's
 disc from them); queued future audio is discarded. App pacing is omitted
@@ -5677,7 +5677,7 @@ font](#save-titles-and-the-kanji-font)). `card_import`
 reads any memory card or save file as Import original card 1/2 does
 ([Original saves and memory cards](#original-saves-and-memory-cards)) and
 replies with what
-it found (`message`, the status line's report) and the card's listing
+it found (`message`) and the card's listing
 (`card`); `card_export` writes the raw card. The shared, read-only
 `card_list {slot}` reports a card on every host with a command channel
 (not Android's, below), the browser's `window.xem.command` too, for agents
@@ -5706,9 +5706,9 @@ recognized activation; a refusal is shown in Settings and operation status.
 Native agents reach the panel's and the bindings' operations the same way:
 `xem-desktop --control` and the headset's (`--xr --control`) take
 `app {request}`, an `xem_settings::AppRequest` as JSON, and carry it out as
-the panel's and the bindings' are (`Operations::execute`; its outcome on the
-status line, a state's on the HUD), answering `{ok, message}` (the status
-line's text) or `{error}`. `{"Rewind": true}` holds rewind as R held does
+the panel's and the bindings' are (`Operations::execute`; a failure in the
+panel's error bar, a state's outcome on the HUD), answering `{ok, message}`
+or `{error}`. `{"Rewind": true}` holds rewind as R held does
 (the window's and the headset's frames then step it, through a headset's
 Settings pause as well) until `{"Rewind": false}`; `{"Action":
 "RetryStorage"}` retries the pending card writes; `{"Action": "Recenter"}`
@@ -5925,7 +5925,7 @@ game unchanged:
 | Length | nothing after the last device | `bad snapshot: trailing bytes` |
 
 Identity differences are joined by `; `. Hosts show the message as it is:
-the HUD's failure chip and the panel's status line, `xem-desktop
+the HUD's failure chip and the panel's error bar, `xem-desktop
 --load-state FILE: …` on the command line and the Android log's `xem: app
 Action(LoadState) … error: …`. The browser's own storage refuses before
 the runtime does (`No stored state in this slot. It may have been
@@ -6135,8 +6135,8 @@ is by its contents (`xem_core::devices::card_file::detect`; a raw single
 save by its file name): a whole card becomes the card, a single save a
 freshly formatted card holding only that save, written as the BIOS creates
 and writes a file (blocks 1, 2, ... chained: the device's own create, which
-the game's saves go through too). Either replaces the inserted card. The
-status line says what was found: the file's container and the card's saves
+the game's saves go through too). Either replaces the inserted card. Its
+message says what was found: the file's container and the card's saves
 ("Card 1: DexDrive card, 3 saves", "Card 2: PS3 save (.psv) on a fresh card,
 1 save"), then the first problem of this game's saves, if one has any (a
 load the game refuses, below). Export original card 1 and 2 write the card
@@ -6338,8 +6338,8 @@ by its contents, and a refused one changes nothing" (the fixture module: a
 cards into the running session's card 2 with each report; a damaged card, a
 text file and an unnamed raw save refused; IndexedDB's write failing on
 quota with card 1 left as it was in both; Import original card 2's own
-picker, on a key, offering every extension and reporting a raw save on the
-status line).
+picker, on a key, offering every extension and reporting a raw save in its
+message).
 
 Not done or not measured: kanji in titles are not decoded (they show as
 U+FFFD; the table is kept for the rows of symbols, digits, Latin letters,
@@ -6384,7 +6384,7 @@ document picker, the browser page's own file input offering .bin, .rom and
 .bios). `bios::check` takes a file of exactly 512 KiB whose font region (at
 0x66000, where the BIOS keeps it) holds a plausible font: the full-width
 space blank, and the 62 full-width digits and Latin letters drawn, no two
-the same. A refused file changes nothing and the status line says why
+the same. A refused file changes nothing and the error bar says why
 ("BIOS not imported: a PS1 BIOS image is 512 KiB (524288 bytes), not 4194304
 bytes."). Natively the image is kept as `bios.bin` in the app's directory
 (`xem_game::storage::BIOS_FILE`: the desktop's beside `settings.json` and
@@ -6756,7 +6756,7 @@ default, and a policy no longer offered resets alone (`Settings::read`).
 `Settings::random_battles_off()` resolves the policy to its maps. The
 Gameplay section (between Saves and About, with the [dialogue and movie
 options](#text-speed-auto-advance-and-movie-skipping) under it)
-shows the choice and, under it, the areas it turns off by name; the browser
+shows the choice as a button group, as Encounter rate's; the browser
 renders the same panel, and a narrow panel's strip of tabs holds all eight
 sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
 
@@ -6848,8 +6848,8 @@ values). `xem-host`'s
 checks that `Game::update` gives the session the default policy's maps,
 none under Original, the halving under Half, and none of either while a
 session log plays. `xem-ui/tests/panel.rs` checks that the Gameplay
-section's choices apply through the service, are acknowledged, show the
-note and follow an agent's change, and that the wheel never changes them.
+section's choices apply through the service, are acknowledged and follow
+an agent's change.
 `xem-headless/tests/encounters.rs` (local, disc 1, 14-23 s here) checks on
 the game that on map 414 Up held brings a random battle within two of the
 draw's windows without the control and none in five under the default
@@ -7255,8 +7255,7 @@ presses only at prompts (the table's row) reaches map 2 after 9 731
 frames with the original's text, 9 563 with Fast and 9 509 with Instant,
 with the same five presses; one who also presses as soon as the
 narration waits reaches it after 6 729 frames with the original's text
-and 6 509 with Instant. The panel's note under Text speed says that a
-page a scene times shows at the original's pace until its time is up.
+and 6 509 with Instant.
 
 The rule's pattern was swept in both discs' field scripts (every map's
 instructions walked from each event's entry with `tools.analysis.events`,
@@ -7307,7 +7306,7 @@ messages.
 
 `AppAction::ToggleAutoAdvance` ("Toggle auto-advance dialogue", T or
 Back+West by default, rebindable in Shortcuts) turns the setting on or
-off through the settings service and says which on the status line.
+off through the settings service and says which in its message.
 Settings saved before the action existed (every saved file and browser
 `xem.settings` holds the whole shortcut list) read its default binding
 (`Settings::read`): T and Back+West, less a chord the saved list gives
@@ -7692,9 +7691,16 @@ pixels, where two of its longer labels side by side overflowed it: at 560
 "Request browser persistence" ran past the card's edge). That button and
 its shortcut are the browser's alone (`SettingsUi::set_browser_storage`):
 a native host keeps its saves in application files, so its panel offers
-ten. Each section is a column of cards of settings, and the
-status line under them says what the last change or operation did (a
-note, done, or a problem in red). Controls edits
+ten. Each section is a column of cards of settings, some under a heading
+outside the card (Graphics' Texture Filtering and VR, Controls' VR /
+Touchscreen and Global, Time's Rewind and Fast-Forward). An error bar under
+them shows only while something failed (a refused change, an operation, the
+game stopping, a disc the game asks for) until a change or an operation
+succeeds or its Dismiss closes it; a success says nothing there (agents'
+`{ok, message}` and the hosts' operation lines still say what it did). A
+button group's option of several words wraps them on a panel too narrow for
+its line. About shows the app's version (`xem_ui::VERSION`: a release's
+`XEM_RELEASE_VERSION` without its `v`, else the workspace's). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
 (hand gestures, the headset pointer, Stop at ledges, touch controls,
 reduced transparency and motion); Shortcuts lists every app operation with
@@ -7959,7 +7965,7 @@ as JSON text or bytes.
   `readSectors(lba, count)`, `save(slot)`/`load(slot)`,
   `cards.image(slot)`/`cards.stored(slot)`/`cards.flush()`,
   `cards.store(slot, image)` and `cards.importFile(slot, bytes, name)`
-  (resolving to what it found, the status line's report). Each is the
+  (resolving to what it found). Each is the
   runtime method the page's controls use; there is no DOM-input path (pads
   are set with the shared `pad`, `press` and `replay` commands).
 

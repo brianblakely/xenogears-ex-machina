@@ -479,8 +479,8 @@ PY
 
     echo "== Settings' time controls and save states by touch"
     # Back shows the panel (at 8,465 as above): Time's tab at 628,722 and its
-    # Stop fast-forward at 829,1502 (fast-forward is on at 20x), Hold to
-    # rewind at 850,1318 held 2 s, Saves at 727,722 with Save state and Load
+    # Stop fast-forward at 829,1644 (fast-forward is on at 20x), Hold to
+    # rewind at 850,1389 held 2 s, Saves at 727,722 with Save state and Load
     # state at 306,1095 and 764,1095, then Time's Start fast-forward
     # (xem-ui's panel test checks each tap at this size). Each operation
     # logs the game's vblank and memory hash just after it. The emulator's
@@ -493,11 +493,11 @@ PY
     tap 628 722
     sleep 2
     mark
-    tap 829 1502
+    tap 829 1644
     wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward off\." 60
     shot 10-time
     mark
-    "${adb[@]}" shell input swipe 850 1318 850 1318 2000
+    "${adb[@]}" shell input swipe 850 1389 850 1389 2000
     held=$(wait_for "xem: app UiRewind\(true\) game_vblank=.* ok: Rewinding while held\." 60)
     released=$(wait_for "xem: app UiRewind\(false\) game_vblank=.* ok: Rewind released\." 60)
     before=$(echo "$held" | vblank_of)
@@ -528,7 +528,7 @@ PY
     tap 628 722
     sleep 2
     mark
-    tap 829 1502
+    tap 829 1644
     wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 60
     "${adb[@]}" shell input keyevent KEYCODE_BACK
     wait_for "xem: frame rendered .*fast_forward=true" 90

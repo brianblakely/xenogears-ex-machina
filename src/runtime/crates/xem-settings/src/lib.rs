@@ -14,7 +14,7 @@ pub mod controls;
 pub mod graphics;
 pub mod look;
 pub mod player;
-pub use graphics::{DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
+pub use graphics::{DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 /// The platforming areas whose random battles NotWhilePlatforming turns off.
@@ -992,6 +992,20 @@ mod tests {
         // Settings saved before it existed open windowed.
         let (read, reset) = Settings::read(&serde_json::json!({ "presentation": { "show_fps": true } })).unwrap();
         assert!(read.presentation.show_fps && !read.presentation.fullscreen && reset.is_empty());
+    }
+
+    #[test]
+    fn interpolation_decides_whether_presentation_follows_the_game_or_the_display() {
+        use super::*;
+        let graphics = Graphics::default();
+        assert!(!graphics.interpolation && graphics.game_paced(), "off by default: the game's frames only");
+        assert!(!Graphics { interpolation: true, ..graphics }.game_paced(), "on: every display refresh");
+        assert!(!Graphics { renderer: Renderer::Original, ..graphics }.game_paced(), "the original's picture at every refresh");
+        // A file saved with the rate it used to choose keeps its other
+        // choices; the rate goes alone.
+        let (read, reset) = Settings::read(&serde_json::json!({ "graphics": { "present_rate": "Display", "interpolation": true, "zoom_out": 300 } })).unwrap();
+        assert!(read.graphics.interpolation && !read.graphics.game_paced());
+        assert_eq!((read.graphics.zoom_out, reset), (300, vec!["graphics.present_rate".to_string()]));
     }
 
     #[test]

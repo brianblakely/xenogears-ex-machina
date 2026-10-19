@@ -377,9 +377,10 @@ impl XemApp {
         self.step(now)?;
         let fresh = self.display_dirty || self.session.is_none();
         self.take_game_frame(false);
-        // Game-paced presentation draws only when the game drew (or the
-        // panel shows); the canvas keeps the last picture meanwhile.
-        let game_paced = self.settings.borrow().settings().graphics.present_rate == xem_settings::PresentRate::Game;
+        // Game-paced presentation (no interpolation) draws only when the
+        // game drew (or the panel shows); the canvas keeps the last picture
+        // meanwhile.
+        let game_paced = self.settings.borrow().settings().graphics.game_paced();
         if game_paced && !fresh && !self.panel_visible() {
             return Ok(());
         }
@@ -408,7 +409,7 @@ impl XemApp {
             let outcome = self.recenter();
             if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
                 match outcome {
-                    Ok(text) => panel.set_operation_status(&text),
+                    Ok(_) => panel.clear_operation_error(),
                     Err(error) => panel.set_operation_error(&error),
                 }
             }
@@ -1191,8 +1192,10 @@ impl XemApp {
             hud.notify_state(saved,failure.as_deref(),std::time::Duration::from_secs_f64(now_ms()/1000.0));
         }
     }
-    pub fn set_operation_status(&self, text: &str) {
-        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_status(text); }
+    /// The panel's error bar: what a page operation's failure says, or none
+    /// (`""`) once one succeeded.
+    pub fn set_operation_error(&self, text: &str) {
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_error(text); }
     }
     pub fn set_storage_status(&self, text: &str) {
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_storage_status(text); }
@@ -1700,8 +1703,7 @@ impl XemApp {
     /// What a card or save file the player picked holds, for card `slot`:
     /// `{image, message}`, its raw image (a whole card, or a fresh card
     /// holding a single save; `file_name` names a raw single save) and what
-    /// was found, as the status line reports it ("Card 1: DexDrive card, 3
-    /// saves"). Refused, naming why, for a file no container holds, a card
+    /// was found ("Card 1: DexDrive card, 3 saves"). Refused, naming why, for a file no container holds, a card
     /// whose directory is damaged, and while a session's game has a file
     /// open on that card or is busy with it. Nothing changes: the page writes
     /// the image to IndexedDB, then sets it ([`set_card_image`](Self::set_card_image)).

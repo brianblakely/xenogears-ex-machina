@@ -1,6 +1,7 @@
 // The app's Settings: sections in a sidebar (a strip of icons when the panel
-// is narrow), each a column of cards of rows, under a header with Quit (on
-// hosts that can quit) and Close and over a status line. An ordinary
+// is narrow), each a column of cards of rows (some under a heading), under a
+// header with Quit (on hosts that can quit) and Close and over an error bar
+// while something failed. An ordinary
 // application style (plan.md: not Seraph Glass) on Slint's fluent-dark
 // widgets; every edit goes through the settings service (lib.rs), and the
 // panel shows what it acknowledged.
@@ -53,7 +54,6 @@ global Icons {
     out property <string> power: "M12 3.5 L12 11.5 M6.7 7.7 A7.5 7.5 0 1 0 17.3 7.7";
     out property <string> check: "M5 12.5 L10 17 L19 7.5";
     out property <string> alert: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.8 L12 12.6 M12 16 L12 16.1";
-    out property <string> dot: "M12 10.5 A1.5 1.5 0 1 1 11.99 10.5 Z";
     out property <string> emblem: "M12 2.6 L20.2 7.3 L20.2 16.7 L12 21.4 L3.8 16.7 L3.8 7.3 Z M12 8.4 A3.6 3.6 0 1 1 11.99 8.4 Z";
 }
 
@@ -219,20 +219,32 @@ component Nav inherits FocusScope {
     }
 }
 
-// A group of settings, labelled for assistive navigation.
-component Card inherits Rectangle {
+// A group of settings, labelled for assistive navigation, and its heading
+// (if it has one) above it.
+component Card inherits VerticalLayout {
     in property <string> title;
-    background: Theme.raised;
-    border-radius: 10px;
-    border-width: 1px;
-    border-color: Theme.stroke;
-    accessible-role: groupbox;
-    accessible-label: root.title;
-    VerticalLayout {
-        padding: 14px;
-        padding-top: 12px;
-        spacing: 12px;
-        @children
+    in property <string> heading;
+    spacing: 7px;
+    padding-top: root.heading != "" ? 6px : 0px;
+    if root.heading != "": Text {
+        text: root.heading;
+        font-size: 12px;
+        font-weight: 600;
+        color: Theme.text-secondary;
+    }
+    Rectangle {
+        background: Theme.raised;
+        border-radius: 10px;
+        border-width: 1px;
+        border-color: Theme.stroke;
+        accessible-role: groupbox;
+        accessible-label: root.title;
+        VerticalLayout {
+            padding: 14px;
+            padding-top: 12px;
+            spacing: 12px;
+            @children
+        }
     }
 }
 
@@ -388,7 +400,8 @@ component SliderRow inherits VerticalLayout {
 }
 
 // A short choice of a few options side by side; the arrow keys move it once
-// it has the focus.
+// it has the focus. On a panel too narrow for it an option of several words
+// wraps them.
 component Segmented inherits FocusScope {
     in property <[string]> options;
     in-out property <int> current;
@@ -431,7 +444,9 @@ component Segmented inherits FocusScope {
                 accessible-checked: index == root.current;
                 accessible-enabled: root.enabled;
                 accessible-action-default => { root.pick(index); }
-                min-width: max(52px, label.preferred-width + 20px);
+                min-width: max(52px, label.min-width + 20px);
+                preferred-width: max(52px, label.preferred-width + 20px);
+                min-height: label.preferred-height + 10px;
                 border-radius: 6px;
                 background: index == root.current ? (touch.has-hover && root.enabled ? #ffffff2e : #ffffff26)
                     : touch.pressed && root.enabled ? Theme.pressed : touch.has-hover && root.enabled ? Theme.hover : transparent;
@@ -441,10 +456,13 @@ component Segmented inherits FocusScope {
                 drop-shadow-offset-y: 1px;
                 animate background { duration: 140ms; easing: ease-out; }
                 label := Text {
+                    x: 10px;
+                    width: parent.width - 20px;
                     text: option;
                     font-size: 12.5px;
                     font-weight: index == root.current ? 600 : 400;
                     color: !root.enabled ? Theme.text-tertiary : index == root.current || touch.has-hover ? Theme.text : Theme.text-secondary;
+                    wrap: word-wrap;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                     animate color { duration: 140ms; }
@@ -661,7 +679,6 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-profile;
     in-out property <int> gfx-scale;
     in-out property <int> gfx-quality;
-    in-out property <int> gfx-rate;
     in-out property <bool> gfx-interpolation;
     in-out property <bool> gfx-widescreen;
     // The field camera pulled back, percent (100-500).
@@ -701,9 +718,11 @@ export component SettingsPanel inherits Window {
     private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
     private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];
     in-out property <bool> pause-on-focus-loss;
-    // The status line: 0 a note, 1 something done, 2 a problem.
-    in property <string> status;
-    in property <int> status-kind;
+    // What failed (an operation, a change, the game), in the error bar
+    // until the next success or Dismiss; none, no bar.
+    in-out property <string> error;
+    // The app's version, in About.
+    in property <string> version;
     // The host offers first-person inspection (the game controls list it),
     // its touch controls show (a finger dragged on the picture looks), and
     // it plays in a headset (the underhand grab and the controllers' Back,
@@ -762,9 +781,8 @@ export component SettingsPanel inherits Window {
     in-out property <int> mouse-deadzone: 40;
     in-out property <bool> run-by-default;
     // Where the field's random battles happen (xem_settings::RandomBattles:
-    // 0 not while platforming, 1 the original's), and what that means.
+    // 0 not while platforming, 1 the original's).
     in-out property <int> random-battles;
-    in property <string> random-battles-note;
     // How often the ones left on come (xem_settings::EncounterRate: 0
     // Original, 1 Half).
     in-out property <int> encounter-rate;
@@ -826,7 +844,7 @@ export component SettingsPanel inherits Window {
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
-    // A graphics choice by name (renderer, profile, scale, quality, rate, interpolation,
+    // A graphics choice by name (renderer, profile, scale, quality, interpolation,
     // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
     // xr-distance, xr-width, xr-dof, xr-view, xr-scale, xr-height,
     // xr-table-distance, xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset)
@@ -1065,11 +1083,6 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1: Card {
                                 title: "Motion and framing";
-                                Row {
-                                    label: "Presentation";
-                                    Choice { accessible-label: "Presentation rate"; width: 150px; model: ["Every refresh", "Game frames"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
-                                }
-                                Divider { }
                                 ToggleRow {
                                     label: "Interpolate motion";
                                     checked <=> root.gfx-interpolation;
@@ -1121,6 +1134,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1: Card {
                                 title: "Filtering";
+                                heading: "Texture Filtering";
                                 Row {
                                     label: "World";
                                     Segmented { accessible-label: "World filtering"; options: ["Nearest", "Linear"]; current <=> root.gfx-filter-world; selected(index) => { root.graphics-edited("filter-world", index); } }
@@ -1140,7 +1154,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 1: Card {
                                 title: "Headset";
-                                Text { text: "VR"; font-size: 12px; font-weight: 600; color: Theme.text-secondary; }
+                                heading: "VR";
 
                                 Row {
                                     label: "View";
@@ -1376,6 +1390,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 2: Card {
                                 title: "Headsets and touch screens";
+                                heading: "VR / Touchscreen";
 
                                 ToggleRow {
                                     label: "Hand gestures";
@@ -1414,6 +1429,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 2: Card {
                                 title: "App keys and views";
+                                heading: "Global";
                                 if root.first-person: ControlRow {
                                     action: "First-person view (in a field)";
                                     inputs: root.first-person-headset ? ["Underhand grab", "Right stick click"] : ["Select", "R3"];
@@ -1526,6 +1542,7 @@ export component SettingsPanel inherits Window {
                             // Time
                             if root.selected-section == 4: Card {
                                 title: "Rewind";
+                                heading: "Rewind";
 
                                 ToggleRow {
                                     label: "Rewind history";
@@ -1579,18 +1596,14 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 4: Card {
                                 title: "Fast-forward";
+                                heading: "Fast-Forward";
 
                                 // An action, not a setting (the bindings'
                                 // Toggle fast-forward), for touch screens and
                                 // headsets without a keyboard or a gamepad.
                                 HorizontalLayout {
-                                    spacing: 12px;
-                                    Text { text: root.fast-forward ? "On: the game runs at the speed below; music keeps its tempo." : "Off: the game runs at its own speed."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
-                                    VerticalLayout {
-                                        alignment: center;
-                                        horizontal-stretch: 0;
-                                        Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; clicked => { root.app-action-requested(4); } }
-                                    }
+                                    alignment: end;
+                                    Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; clicked => { root.app-action-requested(4); } }
                                 }
                                 Divider { }
                                 SliderRow {
@@ -1685,15 +1698,13 @@ export component SettingsPanel inherits Window {
                                 title: "Battles";
                                 Row {
                                     label: "Random battles";
-                                    Choice { accessible-label: "Random battles"; width: 190px; model: ["Not while platforming", "Original"]; current-index <=> root.random-battles; selected => { root.random-battles-edited(self.current-index); } }
+                                    Segmented { accessible-label: "Random battles"; options: ["Not while platforming", "Original"]; current <=> root.random-battles; selected(index) => { root.random-battles-edited(index); } }
                                 }
-                                Text { text: root.random-battles-note; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 Row {
                                     label: "Encounter rate";
                                     Segmented { accessible-label: "Encounter rate"; options: ["Original", "Half"]; current <=> root.encounter-rate; selected(index) => { root.gameplay-edited("encounter-rate", index); } }
                                 }
-                                Text { text: "Half: the field's random battles left on come half as often for the same walk. The world map's keep their rate."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 6: Card {
                                 title: "Dialogue and movies";
@@ -1701,7 +1712,6 @@ export component SettingsPanel inherits Window {
                                     label: "Text speed";
                                     Segmented { accessible-label: "Text speed"; options: ["Original", "Fast", "Instant"]; current <=> root.text-speed; selected(index) => { root.gameplay-edited("text-speed", index); } }
                                 }
-                                Text { text: "Fast and Instant keep pauses and slow text as written. A page a scene times, as the opening narration does, shows at the original pace until its time is up."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 ToggleRow {
                                     label: "Auto-advance dialogue";
@@ -1719,19 +1729,22 @@ export component SettingsPanel inherits Window {
                                         changed(value) => { root.gameplay-edited("auto-advance-dwell", round(value / 15) * 15); }
                                     }
                                 }
-                                Text { text: "Choices always wait for you."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 ToggleRow {
                                     label: "Movies can be skipped";
                                     checked <=> root.movie-skip;
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
                                 }
-                                Text { text: "Confirm ends a story movie, and Cross or Start the title's and battles' movies, as the game ends those it lets you skip. Movies in a window play on."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             // About
                             if root.selected-section == 7: Card {
                                 title: "Xenogears Ex Machina";
                                 Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Divider { }
+                                Row {
+                                    label: "Version";
+                                    Text { text: root.version; font-size: 13px; color: Theme.text-secondary; }
+                                }
                             }
                             if root.selected-section == 7: Card {
                                 title: "Save titles";
@@ -1750,33 +1763,39 @@ export component SettingsPanel inherits Window {
                     }
                 }
             }
-            Divider { }
-            // The status line.
-            HorizontalLayout {
-                padding-left: 18px;
-                padding-right: 18px;
-                padding-top: 9px;
-                padding-bottom: 10px;
-                spacing: 8px;
-                min-height: 38px;
-                if root.status != "": VerticalLayout {
-                    alignment: center;
-                    Icon {
-                        width: 15px;
-                        height: 15px;
-                        data: root.status-kind == 1 ? Icons.check : root.status-kind == 2 ? Icons.alert : Icons.dot;
-                        color: root.status-kind == 1 ? Theme.good : root.status-kind == 2 ? Theme.bad : Theme.text-secondary;
-                        stroke-width: root.status-kind == 0 ? 0px : 1.9px;
-                        fill: root.status-kind == 0 ? Theme.text-secondary : transparent;
-                    }
+            // The error bar, only while something failed.
+            if root.error != "": Rectangle {
+                min-height: error-bar.min-height;
+                background: Theme.bad.with-alpha(0.08);
+                accessible-role: groupbox;
+                accessible-label: "Error";
+                Rectangle {
+                    y: 0px;
+                    height: 1px;
+                    background: Theme.bad.with-alpha(0.3);
                 }
-                Text {
-                    text: root.status;
-                    font-size: 12px;
-                    color: root.status-kind == 2 ? Theme.bad : Theme.text-secondary;
-                    wrap: word-wrap;
-                    vertical-alignment: center;
-                    horizontal-stretch: 1;
+                error-bar := HorizontalLayout {
+                    padding-left: 18px;
+                    padding-right: 8px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    spacing: 8px;
+                    VerticalLayout {
+                        alignment: center;
+                        Icon { width: 15px; height: 15px; data: Icons.alert; color: Theme.bad; stroke-width: 1.9px; }
+                    }
+                    Text {
+                        text: root.error;
+                        font-size: 12px;
+                        color: Theme.bad;
+                        wrap: word-wrap;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        IconButton { icon: Icons.close; label: "Dismiss"; clicked => { root.error = ""; } }
+                    }
                 }
             }
         }

@@ -191,8 +191,8 @@ const host = {
   },
   /** Import BIOS: the runtime checks the image, IndexedDB takes it beside
    * the cards, then every boot takes its Kanji font and a running game has
-   * it now. Resolves to the status line's message; a refused file or a
-   * failed write changes nothing. */
+   * it now. Resolves to what it did; a refused file or a failed write
+   * changes nothing. */
   async importBios(bytes) {
     try { app.check_bios(bytes); }
     catch (error) { throw new Error(`BIOS not imported: ${error.message ?? error}.`); }
@@ -627,10 +627,13 @@ function download(name, bytes, type = 'application/octet-stream') {
 let importCardSlot = 0;
 /** The largest file a memory card or save container is (a DexDrive card). */
 const MAX_CARD_FILE = 0xf40 + 0x20000;
-function operationStatus(message) { page.operationStatus = message; app.set_operation_status(message); }
+/** An operation's outcome (status().page.operationStatus): what it did, the
+ * panel's error bar cleared, or what failed, in the error bar. */
+function operationStatus(message) { page.operationStatus = message; app.set_operation_error(''); }
+function operationError(message) { page.operationStatus = message; app.set_operation_error(message); }
 const operationGuard = (action) => async (event) => {
   try { await action(event); }
-  catch (error) { operationStatus(String(error.message ?? error)); }
+  catch (error) { operationError(String(error.message ?? error)); }
 };
 $('import-state').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
@@ -644,7 +647,7 @@ $('import-state').addEventListener('change', operationGuard(async (event) => {
     throw error;
   }
 }));
-// Any card or save file, by its contents; the status line says what was found.
+// Any card or save file, by its contents; its message says what was found.
 $('import-card').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
   if (file.size > MAX_CARD_FILE) throw new Error(`${file.name} (${file.size} bytes) is larger than any memory card or save file.`);
@@ -675,7 +678,7 @@ const XR_PICKERS = 'File pickers are available in windowed play.';
 $('file').addEventListener('click', (event) => {
   if (!page.xr) return;
   event.preventDefault();
-  operationStatus(XR_PICKERS);
+  operationError(XR_PICKERS);
 });
 
 function control(command) {
@@ -797,7 +800,8 @@ async function executeAppOperation(request) {
     case 'RetryStorage': await cards.flush({ retry: true }); operationStatus('Pending card writes completed.'); break;
     case 'RequestPersistence': {
       const granted = await storage.requestPersistence(); page.storage = await storage.status();
-      operationStatus(granted ? 'Browser persistence granted. Keep exported backups.' : 'Browser persistence was not granted. Export backups.');
+      if (granted) operationStatus('Browser persistence granted. Keep exported backups.');
+      else operationError('Browser persistence was not granted. Export backups.');
       return { granted };
     }
     // The headset's view in front of the head again (in a session).
@@ -815,7 +819,7 @@ async function executeAppOperation(request) {
 }
 function dispatchAppRequests() {
   for (const request of JSON.parse(app.take_app_requests())) {
-    appOperation(request).catch((error) => operationStatus(String(error.message ?? error)));
+    appOperation(request).catch((error) => operationError(String(error.message ?? error)));
   }
 }
 

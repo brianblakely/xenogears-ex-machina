@@ -137,7 +137,7 @@ export function createAutomation(host) {
     /** The player's BIOS image, whose Kanji font save titles are drawn from. */
     bios: Object.freeze({
       /** Import a BIOS image's bytes (Uint8Array) as Import BIOS does;
-       * resolves to the status line's message, rejects naming why not. */
+       * resolves to what it did, rejects naming why not. */
       import: (bytes) => host.importBios(bytes),
       /** The image IndexedDB holds, or undefined. */
       stored: () => host.storedBios(),

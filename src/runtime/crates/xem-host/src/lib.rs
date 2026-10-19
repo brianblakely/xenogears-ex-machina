@@ -107,7 +107,7 @@ pub fn operation_line(request: &AppRequest, result: &Result<String, String>, gam
 }
 
 /// An agent's acknowledgement of an app operation (`app {request}`):
-/// `{"ok": true, "message"}`, the status line's text, or `{"error"}`.
+/// `{"ok": true, "message"}`, what it did, or `{"error"}`.
 pub fn app_reply(result: Result<String, String>) -> serde_json::Value {
     match result {
         Ok(message) => serde_json::json!({ "ok": true, "message": message }),
@@ -523,7 +523,7 @@ impl View {
     /// Import BIOS of a file an agent names (`xem-desktop --control`'s
     /// `bios_import {path}`), as the panel's picker gives one: checked, kept
     /// in the app's directory for every boot and given to `game` if one
-    /// runs; the outcome shows on the status line as the panel's does.
+    /// runs; a failure shows in the error bar as the panel's does.
     pub fn import_bios(&self, game: Option<&mut Game>, path: &str) -> Result<String,String> {
         let result = self.operations.import_bios_file(game,path);
         self.show_result(result.clone());
@@ -532,8 +532,8 @@ impl View {
 
     /// An agent's app operation (`xem-desktop --control`'s `app {request}`,
     /// [`agent_request`]), carried out as the panel's and the bindings' are
-    /// ([`Self::update_app`]): its outcome on the status line, a state's on
-    /// the HUD, and its line where operations are told.
+    /// ([`Self::update_app`]): a failure in the error bar, a state's outcome
+    /// on the HUD, and its line where operations are told.
     pub fn app_command(&mut self, mut game: Option<&mut Game>, request: AppRequest) -> Result<String,String> {
         let result = self.operations.execute(request,None,game.as_deref_mut(),&mut self.settings.borrow_mut());
         if let AppRequest::Action(action) = request { self.state_notice(action,&result); }
@@ -635,10 +635,11 @@ impl View {
         self.frame_rate.notify_state(saved,result.as_ref().err().map(String::as_str),self.frame_rate_started.elapsed());
     }
 
-    /// An operation's outcome on the panel's status line.
+    /// An operation's outcome in the panel's error bar: a failure shows,
+    /// a success clears an earlier one.
     fn show_result(&self, result: Result<String, String>) {
         match result {
-            Ok(text) => self.ui.set_operation_status(&text),
+            Ok(_) => self.ui.clear_operation_error(),
             Err(error) => self.ui.set_operation_error(&error),
         }
     }
@@ -935,12 +936,11 @@ impl View {
         }
     }
 
-    /// Whether a presentation is due: always at the display's rate, or
-    /// under the game-paced setting only when the game drew or the panel shows.
+    /// Whether a presentation is due: at the display's rate, or while the
+    /// presentation is game-paced (no interpolation) only when the game drew
+    /// or the panel shows.
     pub fn wants_present(&self) -> bool {
-        let graphics = self.settings.borrow().settings().graphics;
-        graphics.renderer == xem_settings::Renderer::Original
-            || graphics.present_rate == xem_settings::PresentRate::Display
+        !self.settings.borrow().settings().graphics.game_paced()
             || self.fresh_frame
             || self.panel_visible()
             || self.game_frame.is_none()
