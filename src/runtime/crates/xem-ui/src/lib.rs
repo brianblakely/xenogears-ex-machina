@@ -13,8 +13,8 @@ use std::rc::{Rc, Weak};
 use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, DioramaTurns, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
-    GraphicsProfile, HeadsetView, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS, TextSpeed, EncounterRate,
+    GraphicsProfile, HeadsetView, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
+    GAME_ACTION_ROWS, GameBinding, TextSpeed, EncounterRate,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -28,6 +28,12 @@ pub use slint::platform::{Key, PointerEventButton, WindowEvent};
 pub use slint::{LogicalPosition, LogicalSize, SharedString};
 
 slint::include_modules!();
+
+/// The app's version (a release's, else the workspace's), as About shows it.
+pub const VERSION: &str = match option_env!("XEM_RELEASE_VERSION") {
+    Some(version) => version,
+    None => env!("CARGO_PKG_VERSION"),
+};
 
 /// The panel texture's format. It holds sRGB-encoded values: composite it with
 /// `srgb_encoded` set.
@@ -248,7 +254,7 @@ impl SettingsUi {
     }
 
     /// The game waits for disc `number`, which the drive's changer has not
-    /// got: the status line asks for it over the Saves section (where a host
+    /// got: the error bar asks for it over the Saves section (where a host
     /// that imports discs has its button).
     pub fn ask_for_disc(&self, number: u8) {
         let text = if self.panel.get_can_import_disc() {
@@ -259,7 +265,7 @@ impl SettingsUi {
                  beside the one the game started from, then start again."
             )
         };
-        set_status(&self.panel, &text, Status::Problem);
+        self.panel.set_error(text.into());
         self.panel.set_selected_section(SAVES_SECTION);
     }
 
@@ -315,14 +321,14 @@ impl SettingsUi {
         self.panel.set_storage_status(text.into());
     }
 
-    /// The status line: what an operation did, or a note.
-    pub fn set_operation_status(&self, text: &str) {
-        set_status(&self.panel, text, Status::Note);
+    /// An operation succeeded: the error bar of an earlier failure goes.
+    pub fn clear_operation_error(&self) {
+        self.panel.set_error("".into());
     }
 
-    /// The status line: a problem (an operation failed, the game stopped).
+    /// The error bar: a problem (an operation failed, the game stopped).
     pub fn set_operation_error(&self, text: &str) {
-        set_status(&self.panel, text, Status::Problem);
+        self.panel.set_error(text.into());
     }
 
     /// Whether this host offers first-person inspection (the Controls
@@ -410,7 +416,6 @@ const MOVIE_FILTERS: [xem_settings::MovieFilter; 2] = [xem_settings::MovieFilter
 const RENDERERS: [xem_settings::Renderer; 2] = [xem_settings::Renderer::Original, xem_settings::Renderer::ExMachina];
 const PROFILES: [GraphicsProfile; 4] = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Ps1, GraphicsProfile::Custom];
 const QUALITIES: [QualityTier; 5] = [QualityTier::Auto, QualityTier::Low, QualityTier::Medium, QualityTier::High, QualityTier::Ultra];
-const RATES: [PresentRate; 2] = [PresentRate::Display, PresentRate::Game];
 
 fn fidelity_flags(f: &Fidelity) -> [bool; 6] {
     [f.affine_textures, f.vertex_snapping, f.color_15bit, f.dithering, f.native_resolution, f.painter_ordering]
@@ -434,7 +439,6 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "profile" => next.profile = *PROFILES.get(index?)?,
         "scale" => next.internal_scale = u8::try_from(value).ok()?,
         "quality" => next.quality = *QUALITIES.get(index?)?,
-        "rate" => next.present_rate = *RATES.get(index?)?,
         "interpolation" => next.interpolation = value != 0,
         "widescreen" => next.widescreen = value != 0,
         "filter-world" => next.filtering.world = filter()?,
@@ -497,7 +501,6 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_profile(index_of(&PROFILES, &graphics.profile));
     panel.set_gfx_scale(i32::from(graphics.internal_scale));
     panel.set_gfx_quality(index_of(&QUALITIES, &graphics.quality));
-    panel.set_gfx_rate(index_of(&RATES, &graphics.present_rate));
     panel.set_gfx_interpolation(graphics.interpolation);
     panel.set_gfx_widescreen(graphics.widescreen);
     panel.set_gfx_zoom_out(i32::from(graphics.zoom_out));
@@ -532,7 +535,6 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
         RandomBattles::NotWhilePlatforming => 0,
         RandomBattles::Original => 1,
     });
-    panel.set_random_battles_note(random_battles_note(settings.random_battles).into());
     panel.set_encounter_rate(i32::from(settings.encounter_rate == EncounterRate::Half));
     panel.set_text_speed(index_of(&TextSpeed::ALL, &settings.text_speed));
     panel.set_auto_advance(settings.auto_advance.enabled);
@@ -559,40 +561,8 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     show_game_binding(panel, settings);
 }
 
-/// What a random-battles policy does, naming the areas whose jumping-heavy
-/// maps it turns them off on (an area's other maps keep theirs); a name
-/// with a lowercase word describes its area and takes "the".
-fn random_battles_note(battles: RandomBattles) -> String {
-    match battles {
-        RandomBattles::NotWhilePlatforming => {
-            let areas: Vec<String> = PLATFORMING_AREAS.iter().map(|(name, _)| {
-                if name.split(' ').any(|word| word.starts_with(char::is_lowercase)) { format!("the {name}") } else { name.to_string() }
-            }).collect();
-            let areas = match areas.split_last() {
-                Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
-                _ => areas.concat(),
-            };
-            format!("Off on the jumping-heavy maps of {areas}. Scripted battles and the world map's stay.")
-        }
-        RandomBattles::Original => "Wherever the original game has them.".into(),
-    }
-}
-
 /// The Saves section's index (settings.slint's `sections`).
 const SAVES_SECTION: i32 = 5;
-
-/// The status line's kinds (the panel's `status-kind`).
-#[derive(Clone, Copy)]
-enum Status {
-    Note = 0,
-    Done = 1,
-    Problem = 2,
-}
-
-fn set_status(panel: &SettingsPanel, text: &str, kind: Status) {
-    panel.set_status(text.into());
-    panel.set_status_kind(kind as i32);
-}
 
 /// Every app operation the panel offers with its bindings ([`offered_actions`]),
 /// and the selected one's in its editors.
@@ -663,6 +633,7 @@ fn set_backup_actions(panel: &SettingsPanel) {
 /// Routes panel edits through the settings service and shows every
 /// acknowledged change, whoever made it.
 fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
+    panel.set_version(VERSION.trim_start_matches('v').into());
     set_backup_actions(panel);
     panel.set_fast_forward_rates(
         Rc::new(slint::VecModel::from(
@@ -678,12 +649,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     settings.borrow_mut().subscribe(move |ack| {
         if let Some(panel) = weak.upgrade() {
             show(&panel, &ack.settings);
-            let text = match ack.change {
-                SettingChange::BindApp { .. } => "Shortcut saved.",
-                SettingChange::Replace(_) => "Settings imported and saved.",
-                _ => "Settings saved.",
-            };
-            set_status(&panel, text, Status::Done);
+            panel.set_error("".into());
         }
     });
 
@@ -699,7 +665,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
             if let Err(rejected) = result {
                 // The widget may show the refused value: restore the current one.
                 show(&panel, settings.borrow().settings());
-                set_status(&panel, &describe(&rejected), Status::Problem);
+                panel.set_error(describe(&rejected).into());
             }
         }
     };

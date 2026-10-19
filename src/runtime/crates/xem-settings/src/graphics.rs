@@ -184,17 +184,6 @@ pub enum Renderer {
     ExMachina,
 }
 
-/// How often frames are presented. The game always runs at its own 60
-/// frames a second; presentation never changes simulation timing.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PresentRate {
-    /// Every display refresh (vsync).
-    #[default]
-    Display,
-    /// Only when the game finished a frame.
-    Game,
-}
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TextureFiltering {
@@ -365,9 +354,10 @@ pub struct Graphics {
     /// Internal resolution as a multiple of the original's; 0 follows the
     /// output size. The PS1 profile and native resolution draw at 1.
     pub internal_scale: u8,
-    pub present_rate: PresentRate,
     /// Interpolate presented frames between the game's frames (one game
-    /// frame of latency; matched primitives move smoothly).
+    /// frame of latency; matched primitives move smoothly), presenting
+    /// every display refresh; off, only the game's frames are presented
+    /// ([`Graphics::game_paced`]).
     pub interpolation: bool,
     /// Wider framing than the original 4:3 screen, to the output's aspect
     /// ratio: the sides show the scene beyond the original screen.
@@ -397,7 +387,6 @@ impl Default for Graphics {
             custom_effects: EffectLevels::OFF,
             quality: QualityTier::Auto,
             internal_scale: 0,
-            present_rate: PresentRate::Display,
             interpolation: false,
             widescreen: false,
             zoom_out: 100,
@@ -415,6 +404,14 @@ impl Graphics {
     pub fn zoomed(&self, notches: i32) -> Graphics {
         let zoom = i32::from(self.zoom_out) + notches * i32::from(ZOOM_STEP);
         Graphics { zoom_out: zoom.clamp(100, i32::from(MAX_ZOOM_OUT)) as u16, ..*self }
+    }
+
+    /// Whether a frame is presented only when the game drew one: Ex
+    /// Machina's renderer without interpolation, where a display refresh in
+    /// between would show the same picture again. The game always runs at
+    /// its own 60 frames a second; presentation never changes its timing.
+    pub fn game_paced(&self) -> bool {
+        self.renderer == Renderer::ExMachina && !self.interpolation
     }
 
     /// The limits the selected profile draws with.

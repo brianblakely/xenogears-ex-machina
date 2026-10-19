@@ -825,7 +825,7 @@ fn center(p: &Primitive) -> (f32, f32) {
     (vertices.iter().map(|v| v.fx).sum::<f32>() / count, vertices.iter().map(|v| v.fy).sum::<f32>() / count)
 }
 
-/// Farther than this (VRAM pixels) between frames is a cut, not motion.
+/// Farther than this (native screen pixels) between frames is a cut, not motion.
 const MAX_MOTION: f32 = 48.0;
 
 /// `newest`'s primitives moved back towards their matches in `previous`:
@@ -854,10 +854,15 @@ pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<
                 .filter(|q| !used.contains_key(&(**q as *const Primitive)))
                 .map(|q| {
                     let (qx, qy) = center(q);
-                    (q, (qx - cx).hypot(qy - cy))
+                    // Vertices include the GPU drawing offset. Alternating
+                    // screen buffers live at different VRAM positions: put
+                    // the old point in the new buffer before measuring motion.
+                    let dx = f32::from(p.environment.offset.0) - f32::from(q.environment.offset.0);
+                    let dy = f32::from(p.environment.offset.1) - f32::from(q.environment.offset.1);
+                    (q, (qx + dx - cx).hypot(qy + dy - cy), (dx, dy))
                 })
                 .min_by(|a, b| a.1.total_cmp(&b.1));
-            let Some((q, distance)) = best else { return op.clone() };
+            let Some((q, distance, (dx, dy))) = best else { return op.clone() };
             if distance > MAX_MOTION {
                 return op.clone();
             }
@@ -865,8 +870,8 @@ pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<
             let mut moved = p.clone();
             for (v, w) in moved.vertices.iter_mut().zip(q.vertices.iter()).take(p.vertex_count()) {
                 let lerp = |a: f32, b: f32| b + (a - b) * alpha;
-                v.fx = lerp(v.fx, w.fx);
-                v.fy = lerp(v.fy, w.fy);
+                v.fx = lerp(v.fx, w.fx + dx);
+                v.fy = lerp(v.fy, w.fy + dy);
                 v.x = v.fx.round() as i32;
                 v.y = v.fy.round() as i32;
                 if v.z > 0.0 && w.z > 0.0 {

@@ -2,7 +2,8 @@
 //! on a headless device (build/validation/panel/ by default: ignored):
 //!
 //!     cargo run -p xem-ui --example panel -- [--size WxH] [--scale F] [--out DIR] [--name NAME]
-//!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--locate LABEL]...
+//!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--error TEXT]
+//!         [--locate LABEL]...
 //!
 //! One picture per section (`NAME-<index>.png`; only section N with
 //! `--section`), composited over a dark grey as hosts composite it over the
@@ -11,9 +12,9 @@
 //! N times (focus rings) and `--hover` leaves the pointer at one, for hover
 //! states; `--desktop` offers Quit and Fullscreen
 //! as the desktop host does, `--import-disc` the disc card as the browser
-//! and Android hosts do; `--locate` prints where the elements of an
-//! accessible label lie (logical x, y, width, height), for tests that tap
-//! the panel.
+//! and Android hosts do, `--error` the error bar saying TEXT; `--locate`
+//! prints where the elements of an accessible label lie (logical x, y,
+//! width, height), for tests that tap the panel.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -32,6 +33,7 @@ fn main() {
     let mut tabs = 0;
     let mut desktop = false;
     let mut import_disc = false;
+    let mut error = String::new();
     let mut locate: Vec<String> = Vec::new();
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/panel");
     let mut args = std::env::args().skip(1);
@@ -48,6 +50,7 @@ fn main() {
             "--section" => only = Some(value().parse().unwrap()),
             "--desktop" => desktop = true,
             "--import-disc" => import_disc = true,
+            "--error" => error = value(),
             "--locate" => locate.push(value()),
             "--hover" => hover = Some(position(&value())),
             "--click" => clicks.push(position(&value())),
@@ -61,7 +64,7 @@ fn main() {
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
     let mut ui = SettingsUi::new(shared, settings, size, scale).expect("the panel");
-    ui.set_operation_status("Settings saved.");
+    ui.set_operation_error(&error);
     ui.on_app_request(|request| eprintln!("{request:?}"));
     if desktop {
         ui.on_quit(|| eprintln!("quit"));

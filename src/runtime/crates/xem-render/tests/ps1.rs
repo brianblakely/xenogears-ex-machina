@@ -1098,6 +1098,40 @@ fn interpolation_moves_matched_primitives_and_leaves_cuts() {
 }
 
 #[test]
+fn interpolation_moves_matched_primitives_across_screen_buffers() {
+    let buffered = |x, y, u, offset: (i16, i16)| {
+        let TraceOp::Draw(mut p) = primitive(x, y, u) else { unreachable!() };
+        p.environment.offset = offset;
+        for v in &mut p.vertices {
+            v.x += i32::from(offset.0);
+            v.y += i32::from(offset.1);
+            v.fx += f32::from(offset.0);
+            v.fy += f32::from(offset.1);
+        }
+        TraceOp::Draw(p)
+    };
+    // The game alternates screen buffers in VRAM. Their separation is
+    // not motion, in either direction, nor should it turn a real cut into
+    // a match. Include a horizontal layout as well as the field's vertical.
+    for (from, to) in [((0, 0), (0, 216)), ((0, 256), (0, 0)), ((0, 0), (320, 0))] {
+        let previous = vec![buffered(10, 10, 4, from), buffered(10, 50, 32, from)];
+        let newest = vec![buffered(30, 20, 4, to), buffered(250, 50, 32, to)];
+        for (alpha, expected) in [(0.0, (10.0, 10.0)), (0.5, (20.0, 15.0)), (1.0, (30.0, 20.0))] {
+            let ops = interpolate(&newest, &previous, alpha);
+            let TraceOp::Draw(moved) = &ops[0] else { unreachable!() };
+            let v = moved.vertices[0];
+            assert_eq!((v.fx, v.fy), (expected.0 + f32::from(to.0), expected.1 + f32::from(to.1)),
+                "motion within the newest buffer {from:?} -> {to:?}, alpha {alpha}");
+            assert_eq!((v.x, v.y), (v.fx.round() as i32, v.fy.round() as i32));
+            assert_eq!(moved.environment.offset, to, "the replay still draws into the newest buffer");
+            let TraceOp::Draw(cut) = &ops[1] else { unreachable!() };
+            assert_eq!((cut.vertices[0].fx, cut.vertices[0].fy), (250.0 + f32::from(to.0), 50.0 + f32::from(to.1)),
+                "a genuine jump remains a cut");
+        }
+    }
+}
+
+#[test]
 fn the_interface_draws_as_the_original_at_any_scale() {
     // The 2D scene (windows, text sprites, bars, slanted polygons, lines: no
     // projections) at three times the original under Modern against the

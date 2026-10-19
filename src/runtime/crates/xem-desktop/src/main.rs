@@ -638,7 +638,7 @@ impl Host {
         match &result {
             Ok(text) => {
                 self.view.ui().set_disc_status(text);
-                self.view.ui().set_operation_status(text);
+                self.view.ui().clear_operation_error();
             }
             Err(error) => self.view.ui().set_operation_error(&format!("{}: {error}", path.display())),
         }
