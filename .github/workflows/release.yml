@@ -271,15 +271,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: release-*
           path: artifacts
-      - name: Publish complete artifacts and checksums
+      - name: Publish installation guide, changelog, artifacts and checksums
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: python3 tools/release/publish.py --tag "$TAG" --commit "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
+        run: python3 -m tools.release.publish --tag "$TAG" --commit "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
 
   pages:
     needs: [prepare, publish]

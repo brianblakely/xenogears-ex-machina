@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # The test suite, from anywhere in the repository:
 #
-#   src/runtime/scripts/suite.sh [desktop|web|android|xr|full]
+#   src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF]
+#
+# Skip before starting Nix when no runtime inputs differ from the merge base
+# with origin/master, including staged, unstaged and untracked files. --base
+# selects another comparison ref; --force bypasses the check. See AGENTS.md.
 #
 # While developing, run only the platform whose host you are changing
 # (desktop for the native and shared code), and full once at the end, before
-# review or a merge (AGENTS.md):
+# review or a merge, when those inputs changed (AGENTS.md):
 #
 #   desktop  (the default) the game module, the port's unit tests (with the
 #            platforming table's check on the user's extracted discs), the
@@ -53,16 +57,61 @@ set -uo pipefail
 
 root=$(cd "$(dirname "$0")/../../.." && pwd)
 runtime=$root/src/runtime
-tier=${1:-desktop}
-case $tier in
-desktop | web | android | xr | full) ;;
-*) echo "usage: $0 [desktop|web|android|xr|full]" >&2; exit 2 ;;
-esac
+tier=desktop
+tier_given=false
+force=false
+comparison=origin/master
+usage() { echo "usage: $0 [desktop|web|android|xr|full] [--force] [--base REF]"; }
+while (($#)); do
+    case $1 in
+    desktop | web | android | xr | full)
+        if $tier_given; then usage >&2; exit 2; fi
+        tier=$1
+        tier_given=true
+        shift ;;
+    --force) force=true; shift ;;
+    --base)
+        if (($# < 2)) || [[ $2 == -* ]]; then usage >&2; exit 2; fi
+        comparison=$2
+        shift 2 ;;
+    -h | --help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+    esac
+done
+
+# This is a conservative runtime boundary, not a second test/dependency
+# registry. Any runtime change enables the chosen tier; standalone tooling
+# (such as tools/release/) still gets its own focused tests.
+if ! $force; then
+    base=$(git -C "$root" merge-base HEAD "$comparison") || {
+        echo "Cannot resolve suite base '$comparison'; fetch it, choose --base REF, or use --force." >&2
+        exit 2
+    }
+    inputs=(src/decomp/ src/port/ src/runtime/ nix/runtime/ nix/ghidra/
+        tools/game_module.py tools/game_schema.py tools/game_coverage.py tools/reference/
+        tools/analysis/platforming.py 'tests/test_port_*.py' 'tests/test_game_*.py'
+        tests/test_dispatch_tables.py tests/test_platforming.py tests/fixtures/
+        ':(glob,exclude)**/*.md')
+    changed=false
+    git -C "$root" diff --quiet "$base" -- "${inputs[@]}" || {
+        status=$?
+        if ((status != 1)); then exit "$status"; fi
+        changed=true
+    }
+    untracked=$(git -C "$root" ls-files --others --exclude-standard -- "${inputs[@]}") || exit 2
+    if ! $changed && [[ -z $untracked ]]; then
+        echo "Skipping $tier suite: no runtime inputs changed since $comparison's merge base ($base)."
+        echo "Use --force to run anyway; use focused tests for changes outside the runtime."
+        exit 0
+    fi
+fi
 
 # Everything runs in the runtime shell (the Android stage enters its own).
 nix=(nix --extra-experimental-features 'nix-command flakes' develop)
 if [[ -z ${XEM_SUITE_SHELL:-} ]]; then
-    exec "${nix[@]}" "path:$root/nix/runtime" -c env XEM_SUITE_SHELL=1 "$0" "$@"
+    arguments=("$tier" --base "$comparison")
+    if $force; then arguments+=(--force); fi
+    exec "${nix[@]}" "path:$root/nix/runtime" -c env XEM_SUITE_SHELL=1 "$0" "${arguments[@]}"
 fi
 
 logs=$root/build/suite

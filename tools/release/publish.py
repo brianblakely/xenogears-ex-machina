@@ -5,6 +5,63 @@ import json
 import subprocess
 from pathlib import Path
 
+from tools.release.version import version
+
+
+def previous_release(repository, tag, commit):
+    pages = json.loads(subprocess.check_output([
+        "gh", "api", f"repos/{repository}/releases", "--paginate", "--slurp",
+    ], text=True))
+    candidates = []
+    for page in pages:
+        for release in page:
+            number = version(release["tag_name"])
+            if not release["draft"] and not release["prerelease"] and number and number < version(tag):
+                candidates.append((number, release["tag_name"]))
+    for _, previous in sorted(candidates, reverse=True):
+        ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", previous, commit], check=False)
+        if ancestor.returncode == 0:
+            return previous
+        if ancestor.returncode != 1:
+            ancestor.check_returncode()
+    return None
+
+
+def render_notes(repository, tag, previous, changes):
+    release_url = f"https://github.com/{repository}/releases"
+    if previous:
+        changelog = f"Here's what's changed since [{previous}]({release_url}/tag/{previous}):\n\n"
+    else:
+        changelog = "Welcome to our first release!\n\n"
+    changelog += "\n\n".join(changes) if changes else "No player-facing changes were noted for this update."
+    if previous:
+        changelog += f"\n\n[See all changes](https://github.com/{repository}/compare/{previous}...{tag})."
+    owner, project = repository.split("/")
+    return Path(__file__).with_name("notes.md").read_text().format(
+        tag=tag,
+        downloads=f"{release_url}/download/{tag}/xenogears-ex-machina-{tag}-",
+        guide=f"https://github.com/{repository}/blob/{tag}/docs/releases.md",
+        browser=f"https://{owner}.github.io/{project}/",
+        changelog=changelog,
+    )
+
+
+def release_notes(repository, tag, commit):
+    previous = previous_release(repository, tag, commit)
+    directory = "docs/changes/"
+    if previous:
+        command = ["git", "diff", "--name-only", "--diff-filter=A", "-z", previous, commit, "--", directory]
+    else:
+        command = ["git", "ls-tree", "-r", "--name-only", "-z", commit, "--", directory]
+    paths = subprocess.check_output(command, text=True).split("\0")
+    changes = []
+    for path in sorted(path for path in paths if path.endswith(".md")):
+        change = subprocess.check_output(["git", "show", f"{commit}:{path}"], text=True).strip()
+        if not change:
+            raise ValueError(f"empty release note: {path}")
+        changes.append(change)
+    return render_notes(repository, tag, previous, changes)
+
 
 def expected(tag):
     prefix = f"xenogears-ex-machina-{tag}-"
@@ -47,16 +104,7 @@ def main():
             raise SystemExit("published release differs; refusing to replace it")
         return
     notes = root / "notes.md"
-    notes.write_text(
-        f"Portable Xenogears Ex Machina {args.tag}, built from `{args.commit}`.\n\n"
-        "Place the desktop executable beside your own disc images. First launch organizes them into `discs/`; "
-        "memory cards and save states use `cards/` and `saves/`. Android and Horizon OS share the signed APK.\n\n"
-        "Full-story progression remains unverified. Desktop and headset qualification includes the documented "
-        "Linux and emulation proxies.\n\n"
-        "[Browser play](https://brianblakely.github.io/xenogears-ex-machina/) · "
-        f"[Installation, supported platforms and qualification limits](https://github.com/{args.repository}/blob/{args.tag}/docs/releases.md)\n\n"
-        "`SHA256SUMS` covers all downloads. No original game images, BIOS, extracted assets or personal saves are included.\n"
-    )
+    notes.write_text(release_notes(args.repository, args.tag, args.commit))
     if view.returncode != 0:
         subprocess.run(["gh", "release", "create", args.tag, "--repo", args.repository, "--verify-tag", "--draft",
                         "--title", args.tag, "--notes-file", str(notes)], check=True)

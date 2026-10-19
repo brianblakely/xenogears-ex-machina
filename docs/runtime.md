@@ -5329,10 +5329,26 @@ captures.
 
 ## The test suite
 
-`src/runtime/scripts/suite.sh [desktop|web|android|xr|full]` runs the tests
-from anywhere in the repository, in the runtime shell. While developing,
-run only the platform whose host is changing, and `full` once at the end,
-before review or a merge (AGENTS.md): `desktop` (the default, for the
+`src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF]`
+runs the tests from anywhere in the repository, in the runtime shell. Before
+starting Nix or replacing logs, it checks tracked changes (including staged and
+unstaged edits) and non-ignored untracked files against the merge base of HEAD
+and `origin/master`. Committed branch changes count too. If no runtime sources,
+tests or build inputs changed, it reports a skip and exits successfully without
+running tests. Documentation and standalone release tooling do not trigger the
+runtime suite; use their focused checks. The boundary in `suite.sh` is conservative:
+any runtime input change enables the selected tier, rather than trying to maintain
+a dependency map for every test. Missing Git history is an error, never a silent
+skip. The check does not fetch or cache test results.
+
+Use `--base REF` to select another comparison point, such as `--base HEAD^` for
+the most recent committed update on master. Use `--force` deliberately to bypass
+change detection, including when private/ignored game inputs, drivers or the test
+environment changed. It also works without a comparison ref. A skip leaves
+`build/suite/` intact and does not establish a new passing result. Help and flag
+parsing need no Nix shell. While developing, run only the platform whose host is
+changing, and `full` once at the end before review or a merge only when runtime
+inputs changed (AGENTS.md): `desktop` (the default, for the
 native and shared code) builds the game module and runs the port's unit
 tests, the Rust workspace's tests and the validation run; `web` the web
 build, the browser suites and the browser tests that measure time

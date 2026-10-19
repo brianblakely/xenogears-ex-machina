@@ -18,7 +18,17 @@
 - Use the pinned Nix shells. While developing, test only the platform whose host you
   are changing: `src/runtime/scripts/suite.sh desktop` (native and shared code, about
   fifteen minutes), `web`, `android` or `xr`, or narrower focused tests. Run
-  `suite.sh full` (every platform and what CI runs, about an hour) once, at the
-  end, before review or a merge, never after each change.
+  `suite.sh full` (every platform and what CI runs, about an hour) once at the
+  end before review or a merge only when runtime inputs changed, never after each
+  change. Documentation, release copy and standalone tooling changes need their
+  focused checks, not the runtime suite.
+  The suite skips before starting Nix if runtime sources, tests and build inputs
+  have no changes against the merge base with `origin/master`; staged, unstaged,
+  committed branch changes and non-ignored untracked files count. It does not
+  fetch. Use `--base REF` for another comparison (e.g. `--base HEAD^` to check a
+  committed update on master), or deliberately use `--force` to run regardless,
+  including after changing private/ignored inputs or the test environment. Do not
+  use `--force` solely because a review or merge is coming.
+  A skip is not a passing test run; it leaves previous logs intact.
   Record exact commands/results and missing private inputs honestly.
 - Keep original assets and generated disassembly local. Do not modify prompt.md.

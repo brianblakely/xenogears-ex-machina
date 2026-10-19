@@ -8,6 +8,18 @@ The same release's static web application deploys to GitHub Pages.
 Branches under `release/` run the same builds and artifact checks without
 reserving a tag, publishing a release or deploying Pages.
 
+Release pages use the conversational installation and update guide in
+`tools/release/notes.md`. For each change worth announcing to players, add a new
+`docs/changes/<short-description>.md` with one or more short Markdown bullets.
+Describe what the player can do or what now works; leave code names, test results
+and build details in the PR. Keep existing entries so older releases retain
+their history. Changes without a player-facing effect don't need an entry.
+The publisher includes only entries added since the highest earlier published
+version on the release commit's ancestry, skipping drafts, prereleases and tags
+from failed builds. It reads them from that exact commit, links the full comparison,
+and explicitly says when no player-facing changes were noted. A retry of an
+already published release preserves its copy as well as its downloads.
+
 Download from [GitHub Releases](https://github.com/brianblakely/xenogears-ex-machina/releases).
 [Browser play](https://brianblakely.github.io/xenogears-ex-machina/) needs no local
 server or native executable. The project supplies no original game images,
@@ -195,9 +207,13 @@ source archive uses `packaging/source-files.txt`, with only the separately
 reviewed KEMAR data allowed as a binary input. Rust notices include the Slint
 Royalty-free 2.0 terms; the settings panel supplies its attribution widget.
 
-During development use the affected suite or focused tests. Before review or
-merging a release change, run `src/runtime/scripts/suite.sh full` once. Its
-logs and exact stage results are under `build/suite/`. Checks without private
+During development use the affected suite or focused tests. Release copy and
+publisher changes need focused release tests, not the runtime suite. Before review
+or merging runtime changes, run `src/runtime/scripts/suite.sh full` once; it skips
+when runtime inputs have no changes against the merge base with `origin/master`.
+Use `--base REF` for another comparison or deliberately use `--force` to bypass
+the guard. Its logs and exact stage results are under `build/suite/`; a skip
+preserves previous logs and does not count as a passing run. Checks without private
 disc inputs must report their skips; they are not original-game playthroughs.
 
 ## v0.5 qualification record
