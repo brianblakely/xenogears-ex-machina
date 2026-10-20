@@ -601,6 +601,8 @@ impl View {
             self.show_result(result);
         }
         if let Some(game) = game {
+            let (debug_busy, debug_message) = game.debug_status();
+            self.ui.set_debug_status(true, debug_busy, debug_message);
             let (forward,rewind) = game.time_activity();
             self.frame_rate.set_activity(forward,rewind);
             let settings = self.settings.borrow();
@@ -623,6 +625,7 @@ impl View {
             }
         } else {
             self.frame_rate.set_activity(false,false);
+            self.ui.set_debug_status(false, false, "Boot a game to use Debug.");
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
         }
         !self.operations.busy

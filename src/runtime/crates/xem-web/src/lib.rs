@@ -1022,6 +1022,14 @@ impl XemApp {
     /// Hands what the game drew to the renderer (configured for the canvas or
     /// a headset) and updates the panel's status.
     fn take_game_frame(&mut self, headset: bool) {
+        if (!self.running || self.xr_paused()) && let Some(session) = &mut self.session {
+            if session.debug.busy() {
+                if let Err(error) = session.tick_debug() {
+                    if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_error(&error); }
+                }
+                self.display_dirty = true;
+            }
+        }
         let now = now_ms();
         let held = self.rewind_held.iter().any(|held| *held);
         // What `step` runs: a held rewind through settings' pause too.
@@ -1032,10 +1040,12 @@ impl XemApp {
         if let Some(renderer) = &mut self.renderer {
             if let Some(hud) = &mut renderer.frame_rate { hud.set_activity(forward,rewind); }
             if let (Some(panel),Some(session)) = (renderer.panel(),self.session.as_ref()) {
+                panel.set_debug_status(true, session.debug.busy(), &session.debug.message);
                 panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
                     session.rewind.available_seconds(), session.rewind.history_seconds, session.rewind.bytes as f64/1048576.0,
                     session.rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default()));
             } else if let Some(panel) = renderer.panel() {
+                panel.set_debug_status(false, false, "Boot a game to use Debug.");
                 panel.set_time_status(None,"Boot a game to use save states and time controls.");
             }
             match self.session.as_mut() {

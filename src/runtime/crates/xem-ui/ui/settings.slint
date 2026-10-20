@@ -43,6 +43,7 @@ global Icons {
     out property <string> graphics: "M3.5 5 L20.5 5 L20.5 16 L3.5 16 Z M8.5 20 L15.5 20 M12 16 L12 20";
     out property <string> shortcuts: "M5 6.5 L19 6.5 A2 2 0 0 1 21 8.5 L21 15.5 A2 2 0 0 1 19 17.5 L5 17.5 A2 2 0 0 1 3 15.5 L3 8.5 A2 2 0 0 1 5 6.5 Z M7 10 L7.1 10 M10.3 10 L10.4 10 M13.6 10 L13.7 10 M16.9 10 L17 10 M8 14 L16 14";
     out property <string> controls: "M7 8 L17 8 A4.5 4.5 0 0 1 21.5 12.5 L21.5 14 A2.8 2.8 0 0 1 16.6 15.8 L15.4 14.5 L8.6 14.5 L7.4 15.8 A2.8 2.8 0 0 1 2.5 14 L2.5 12.5 A4.5 4.5 0 0 1 7 8 Z M7.5 9.8 L7.5 12.8 M6 11.3 L9 11.3 M15.8 10.2 L15.8 10.3 M17.6 12.2 L17.6 12.3";
+    out property <string> bug: "M9 8 L9 6 A3 3 0 0 1 15 6 L15 8 M9 5 L7 3 M15 5 L17 3 M7 8 L17 8 L17 15 A5 5 0 0 1 7 15 Z M12 8 L12 20 M7 10 L4 8 M17 10 L20 8 M7 14 L3 14 M17 14 L21 14 M7.7 18 L4 20 M16.3 18 L20 20";
     out property <string> time: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.5 L12 12 L15 14";
     out property <string> saves: "M5 4 L15.5 4 L20 8.5 L20 20 L5 20 Z M8 4 L8 8.5 L15 8.5 L15 4 M8 20 L8 13.5 L17 13.5 L17 20";
     // Filled Xenogears silhouette from the reference, with subpixel brush noise removed.
@@ -766,9 +767,25 @@ export component SettingsPanel inherits Window {
         { label: "Time", icon: Icons.time },
         { label: "Saves", icon: Icons.saves },
         { label: "Gameplay", icon: Icons.gameplay },
+        { label: "Debug", icon: Icons.bug },
         { label: "About", icon: Icons.about },
     ];
     out property <int> section-count: root.sections.length;
+    in property <bool> debug-available;
+    in property <bool> debug-busy;
+    in property <string> debug-status: "Boot a game to use Debug.";
+    in-out property <int> debug-map;
+    in-out property <int> debug-entry;
+    in-out property <int> debug-formation: 3;
+    in-out property <int> debug-battle-file;
+    in-out property <[int]> debug-party: [0, 1, 2];
+    in-out property <[int]> debug-gears: [0, 0, 0];
+    in-out property <int> debug-worldmap: 1024;
+    in-out property <int> debug-menu;
+    in-out property <int> debug-parameter;
+    in-out property <int> debug-movie;
+    in-out property <int> debug-movie-kind: 1;
+    callback debug-requested(int);
     in property <string> time-status: "Boot a game to use rewind.";
     in property <string> storage-status;
     in property <bool> fast-forward;
@@ -1736,8 +1753,73 @@ export component SettingsPanel inherits Window {
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
                                 }
                             }
-                            // About
+                            // The original kernel menu, with application controls.
                             if root.selected-section == 7: Card {
+                                title: "Kernel menu";
+                                heading: "Kernel menu";
+                                Text { text: "Starting a test restarts the game with the selected setup. Save your progress first."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                if root.debug-status != "": Text { text: root.debug-status; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Field";
+                                heading: "Field";
+                                Row { label: "Map"; SpinBox { accessible-label: "Debug field map"; minimum: 0; maximum: 1023; value <=> root.debug-map; } }
+                                Row { label: "Entrance"; SpinBox { accessible-label: "Debug field entrance"; minimum: 0; maximum: 65535; value <=> root.debug-entry; } }
+                                Button { text: "Go to developer room"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(6); } }
+                                Button { text: "Start field test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(0); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Battle";
+                                heading: "Battle";
+                                Row { label: "Formation"; SpinBox { accessible-label: "Debug battle formation"; minimum: 0; maximum: 15; value <=> root.debug-formation; } }
+                                Row { label: "File"; SpinBox { accessible-label: "Debug battle file"; minimum: 0; maximum: 255; value <=> root.debug-battle-file; } }
+                                Text { text: "Files 253, 254 and 255 select Event 3, Event 2 and Event 1."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                for slot in 3: VerticalLayout {
+                                    spacing: 6px;
+                                    Row {
+                                        label: "Party member \{slot + 1}";
+                                        Choice { accessible-label: "Debug party member \{slot + 1}"; model: ["Fei", "Elly", "Citan", "Bart", "Billy", "Rico", "Emeralda", "Chu-Chu", "Maria", "Citan (sword)", "Emeralda (adult)", "None"]; current-index: root.debug-party[slot]; selected => { root.debug-party[slot] = self.current-index; } }
+                                    }
+                                    Row {
+                                        label: "Gear \{slot + 1}";
+                                        Choice { accessible-label: "Debug Gear \{slot + 1}"; model: ["Off", "Normal", "Bar"]; current-index: root.debug-gears[slot]; selected => { root.debug-gears[slot] = self.current-index; } }
+                                    }
+                                }
+                                Button { text: "Start battle test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(1); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Worldmap";
+                                heading: "Worldmap";
+                                Row { label: "Map"; SpinBox { accessible-label: "Debug world map"; minimum: 1024; maximum: 2047; value <=> root.debug-worldmap; } }
+                                Button { text: "Start world map test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(2); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Battling";
+                                heading: "Battling";
+                                Button { text: "Start Battling"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(3); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Menu";
+                                heading: "Menu";
+                                Row {
+                                    label: "Screen";
+                                    Choice { accessible-label: "Debug menu screen"; model: ["Normal menu", "Member change", "Load game", "Enter name", "Item shop", "Gear shop", "Disc change"]; current-index <=> root.debug-menu; selected => { root.debug-parameter = 0; } }
+                                }
+                                Row {
+                                    label: root.debug-menu < 4 ? "Character / Gear" : root.debug-menu == 6 ? "Disc" : "Shop";
+                                    SpinBox { accessible-label: "Debug menu parameter"; minimum: 0; maximum: root.debug-menu < 4 ? 30 : root.debug-menu == 6 ? 1 : 255; value <=> root.debug-parameter; }
+                                }
+                                Button { text: "Open test menu"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(4); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Movie";
+                                heading: "Movie";
+                                Row { label: "Movie"; SpinBox { accessible-label: "Debug movie number"; minimum: 0; maximum: 63; value <=> root.debug-movie; } }
+                                Row { label: "Type"; Choice { accessible-label: "Debug movie type"; model: ["Picture", "Picture and audio", "Audio"]; current-index <=> root.debug-movie-kind; } }
+                                Button { text: "Play test movie"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(5); } }
+                            }
+                            // About
+                            if root.selected-section == 8: Card {
                                 title: "Xenogears Ex Machina";
                                 Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
@@ -1746,16 +1828,16 @@ export component SettingsPanel inherits Window {
                                     Text { text: root.version; font-size: 13px; color: Theme.text-secondary; }
                                 }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Save titles";
                                 Text { text: "The game draws save titles with your console's BIOS font. Without your BIOS image they use substitute letters, digits and marks drawn for this project, and other characters stay blank. Saves → Import BIOS (save titles) gives the original font."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Binaural sound";
                                 Text { text: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }

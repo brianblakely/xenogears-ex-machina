@@ -276,6 +276,19 @@ impl SettingsUi {
 
     pub fn on_app_request(&self, f: impl FnMut(AppRequest) + 'static) {
         let f = Rc::new(RefCell::new(f));
+        self.panel.on_debug_requested({
+            let f = f.clone();
+            let panel = self.panel.as_weak();
+            move |tool| {
+                let Some(panel) = panel.upgrade() else { return; };
+                if !panel.get_debug_available() || panel.get_debug_busy() { return; }
+                let request = debug_request(&panel, tool);
+                match request {
+                    Ok(request) => f.borrow_mut()(AppRequest::Debug(request)),
+                    Err(error) => panel.set_error(error.into()),
+                }
+            }
+        });
         self.on_reset({
             let f = f.clone();
             move || f.borrow_mut()(AppRequest::Action(AppAction::Reset))
@@ -315,6 +328,12 @@ impl SettingsUi {
     pub fn set_time_status(&self, fast_forward: Option<bool>, text: &str) {
         self.panel.set_fast_forward(fast_forward.unwrap_or(false));
         self.panel.set_time_status(text.into());
+    }
+
+    pub fn set_debug_status(&self, available: bool, busy: bool, text: &str) {
+        self.panel.set_debug_available(available);
+        self.panel.set_debug_busy(busy);
+        self.panel.set_debug_status(text.into());
     }
 
     pub fn set_storage_status(&self, text: &str) {
@@ -382,6 +401,33 @@ impl SettingsUi {
     pub fn component(&self) -> &SettingsPanel {
         &self.panel
     }
+}
+
+fn debug_request(panel: &SettingsPanel, tool: i32) -> Result<xem_settings::DebugRequest, String> {
+    use xem_settings::DebugRequest;
+    let byte = |n| u8::try_from(n).map_err(|_| "Debug value must be between 0 and 255.".to_string());
+    let word = |n| u16::try_from(n).map_err(|_| "Debug value must be between 0 and 65535.".to_string());
+    let request = match tool {
+        0 => DebugRequest::Field { map: word(panel.get_debug_map())?, entry: word(panel.get_debug_entry())? },
+        1 => {
+            let (party, gears) = (panel.get_debug_party(), panel.get_debug_gears());
+            let mut members = [11; 3];
+            let mut modes = [0; 3];
+            for i in 0..3 {
+                members[i] = byte(party.row_data(i).ok_or("Missing party slot.")?)?;
+                modes[i] = byte(gears.row_data(i).ok_or("Missing Gear slot.")?)?;
+            }
+            DebugRequest::Battle { formation: byte(panel.get_debug_formation())?, file: byte(panel.get_debug_battle_file())?, party: members, gears: modes }
+        }
+        2 => DebugRequest::Worldmap { map: word(panel.get_debug_worldmap())? },
+        3 => DebugRequest::Battling,
+        4 => DebugRequest::Menu { screen: byte(panel.get_debug_menu())?, parameter: byte(panel.get_debug_parameter())? },
+        5 => DebugRequest::Movie { movie: byte(panel.get_debug_movie())?, kind: byte(panel.get_debug_movie_kind())? },
+        6 => DebugRequest::Field { map: 0, entry: 0 },
+        _ => return Err("Unknown debug operation.".into()),
+    };
+    request.validate()?;
+    Ok(request)
 }
 
 fn panel_texture(

@@ -75,6 +75,7 @@ fn card_presence(command: &Value) -> Option<(usize, bool)> {
 }
 
 pub struct Session<M: GameModule> {
+    pub debug: crate::debug::Debug,
     pub runtime: Runtime<M>,
     pub schema: Option<Schema>,
     snapshots: HashMap<String, Vec<u8>>,
@@ -187,6 +188,7 @@ fn names_of(bits: u16) -> Vec<&'static str> {
 impl<M: GameModule> Session<M> {
     pub fn new(runtime: Runtime<M>, schema: Option<Schema>, rewind_clock: impl Fn() -> Duration + 'static) -> Self {
         let mut session = Session {
+            debug: Default::default(),
             runtime,
             schema,
             snapshots: HashMap::new(),
@@ -300,7 +302,7 @@ impl<M: GameModule> Session<M> {
         self.runtime.services().clock.vblanks
     }
 
-    fn record_control(&mut self, command: Value) {
+    pub(crate) fn record_control(&mut self, command: Value) {
         let vblank = self.vblank();
         if let Some(log) = &mut self.recording { log.controls.push((vblank, command)); }
     }
@@ -683,6 +685,7 @@ impl<M: GameModule> Session<M> {
             self.set_pad(port, buttons);
         }
         self.apply_assist();
+        self.advance_debug().map_err(Trap::Host)?;
         if self.auto_press {
             let confirm = crate::action::GameAction::Confirm.button_with(&self.runtime.button_assignment());
             if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
@@ -692,6 +695,7 @@ impl<M: GameModule> Session<M> {
         match self.runtime.run_frame() {
             Ok(report) => {
                 if !report.blocked {
+                    self.debug_frame_finished();
                     // Before the controls due next: a recording's change of
                     // the dwell lands after the frame it followed.
                     self.follow_auto_advance();
@@ -703,6 +707,7 @@ impl<M: GameModule> Session<M> {
                 Ok(!report.blocked)
             },
             Err(trap) => {
+                if self.debug.busy() { let _ = self.fail_debug(&trap.to_string()); }
                 self.stopped = Some(trap.to_string());
                 Err(trap)
             }
@@ -861,7 +866,7 @@ impl<M: GameModule> Session<M> {
         self.schema.as_ref().ok_or_else(|| "no schema (build/game/schema.json) loaded".to_string())
     }
 
-    fn inspect(&mut self, path: &str, depth: u32) -> Result<Value, String> {
+    pub(crate) fn inspect(&mut self, path: &str, depth: u32) -> Result<Value, String> {
         let schema = self.schema.as_ref().ok_or("no schema loaded")?;
         let memory = self.runtime.memory();
         let place = schema.locate(path, memory).map_err(|e: InspectError| e.to_string())?;
@@ -869,7 +874,7 @@ impl<M: GameModule> Session<M> {
     }
 
     /// Write a scalar at a path (integers, enums by name, pointers as numbers).
-    fn write_path(&mut self, path: &str, value: &Value) -> Result<(), String> {
+    pub(crate) fn write_path(&mut self, path: &str, value: &Value) -> Result<(), String> {
         let schema = self.schema.as_ref().ok_or("no schema loaded")?;
         let memory = self.runtime.memory();
         let place = schema.locate(path, memory).map_err(|e| e.to_string())?;
@@ -984,17 +989,18 @@ impl<M: GameModule> Session<M> {
         let arg_u64 = |name: &str| command.get(name).and_then(Value::as_u64);
         let arg_str = |name: &str| command.get(name).and_then(Value::as_str);
         match cmd {
+            "debug" => {
+                let request = serde_json::from_value(command.get("request").cloned().ok_or("debug needs request")?)
+                    .map_err(|e| format!("Invalid debug request: {e}"))?;
+                self.request_debug(request)?;
+                Ok(self.debug_status())
+            }
+            "debug_status" => Ok(self.debug_status()),
+            "debug_tick" => { self.tick_debug()?; Ok(self.debug_status()) }
             "status" => Ok(self.status()),
             "reset" => {
                 self.record_control(json!({"cmd":"reset"}));
-                self.runtime.reset();
-                self.quantity = None;
-                self.set_pad(0, 0);
-                self.set_pad(1, 0);
-                self.rewind.clear();
-                self.rewind.error = None;
-                self.rewind_game_paused = false;
-                self.game_state_restored();
+                self.reset_game();
                 Ok(self.status())
             }
             "fast_forward_configure" => {
@@ -1442,7 +1448,7 @@ impl<M: GameModule> Session<M> {
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "rewind_step", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
-                                        "half_encounters", "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
+                                        "half_encounters", "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1560,9 +1566,14 @@ impl<M: GameModule> Session<M> {
                                 && control.get("taken").is_none_or(Value::is_boolean) => {},
                             Some("assist") if control.get("intent").is_some() => {},
                             Some("assist_stop" | "reset") => {},
+                            Some("debug") => {
+                                let request: crate::debug::Request = serde_json::from_value(control.get("request").cloned().ok_or("debug needs request")?)
+                                    .map_err(|e| e.to_string())?;
+                                request.validate()?;
+                            },
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
                             _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, \
-                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, assist and music-clock inputs".into()),
+                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, assist, debug and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1631,7 +1642,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "debug" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
                         | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "auto_advance" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
@@ -1706,6 +1717,7 @@ impl<M: GameModule> Session<M> {
     }
 
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>, String> {
+        if self.debug.busy() { return Err("Wait for the debug operation to finish before saving a state.".into()); }
         self.runtime.snapshot().map_err(|e| e.to_string())
     }
 
@@ -1714,6 +1726,7 @@ impl<M: GameModule> Session<M> {
     }
 
     fn checkpoint(&mut self) {
+        if self.debug.busy() { return; }
         // A held rewind's frames go back in time: no history of their own.
         if self.rewind.budget == 0 || self.rewinding { return; }
         let paused = self.game_paused();
@@ -1801,7 +1814,19 @@ impl<M: GameModule> Session<M> {
         }
     }
 
+    pub(crate) fn reset_game(&mut self) {
+        self.runtime.reset();
+        self.quantity = None;
+        self.set_pad(0, 0);
+        self.set_pad(1, 0);
+        self.rewind.clear();
+        self.rewind.error = None;
+        self.rewind_game_paused = false;
+        self.game_state_restored();
+    }
+
     fn game_state_restored(&mut self) {
+        self.debug = Default::default();
         self.stopped = None;
         // Assisted movement belonged to the timeline left behind.
         if self.assist.take().is_some() {

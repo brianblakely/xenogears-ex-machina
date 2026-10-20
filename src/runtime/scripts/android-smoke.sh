@@ -223,11 +223,8 @@ fi
 
 if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 # The panel (1064x1470 at 2.625, at 8,465 on the 1080x2400 screen) shows
-# its eight sections as a strip of tabs, each as wide as its label at
-# least at this width: Graphics at 210,722, Saves at 727,722 (the panel
-# example's --locate at that size and scale; xem-ui's panel test checks
-# both taps; with DejaVu Sans or Noto Sans for the system's font the
-# centres move at most 5 pixels in tabs 102-141 wide).
+# its nine sections as a strip of tabs: Graphics at 210,722, Saves at
+# 659,722. xem-ui's panel test checks both taps at this size and scale.
 echo "== settings change by touch (Show FPS)"
 mark
 tap 210 722
@@ -252,7 +249,7 @@ echo "  Show FPS enabled and saved by touch"
 
 echo "== disc import through the document picker (Import disc... button)"
 mark
-tap 727 722
+tap 659 722
 sleep 1
 shot 01-saves
 # Import disc is now the first row directly below the tabs.
@@ -478,9 +475,9 @@ PY
     shot 09-fast-forward-resumed
 
     echo "== Settings' time controls and save states by touch"
-    # Back shows the panel (at 8,465 as above): Time's tab at 628,722 and its
+    # Back shows the panel (at 8,465 as above): Time's tab at 572,722 and its
     # Stop fast-forward at 829,1644 (fast-forward is on at 20x), Hold to
-    # rewind at 850,1389 held 2 s, Saves at 727,722 with Save state and Load
+    # rewind at 850,1389 held 2 s, Saves at 659,722 with Save state and Load
     # state at 306,1095 and 764,1095, then Time's Start fast-forward
     # (xem-ui's panel test checks each tap at this size). Each operation
     # logs the game's vblank and memory hash just after it. The emulator's
@@ -490,7 +487,7 @@ PY
     op_of() { sed -E 's/.*game_vblank=([0-9]+) memory_hash ([0-9a-f]+) .*/\1 \2/'; }
     "${adb[@]}" shell input keyevent KEYCODE_BACK
     sleep 2
-    tap 628 722
+    tap 572 722
     sleep 2
     mark
     tap 829 1644
@@ -502,7 +499,7 @@ PY
     released=$(wait_for "xem: app UiRewind\(false\) game_vblank=.* ok: Rewind released\." 60)
     before=$(echo "$held" | vblank_of)
     after=$(echo "$released" | vblank_of)
-    tap 727 722
+    tap 659 722
     sleep 2
     mark
     tap 306 1095
@@ -525,7 +522,7 @@ PY
     [ "$(op_of <<<"$saved")" = "$(op_of <<<"$loaded")" ] || fail "Load state did not give back the saved game"
     echo "  $("${adb[@]}" shell run-as "$package" ls -l files/saves/state.xemstate | tr -d '\r')"
     shot 10-saves
-    tap 628 722
+    tap 572 722
     sleep 2
     mark
     tap 829 1644

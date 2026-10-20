@@ -749,6 +749,7 @@ src/runtime/crates/xem-core/src/bios.rs
 src/runtime/crates/xem-core/src/clock.rs
 src/runtime/crates/xem-core/src/context.rs
 src/runtime/crates/xem-core/src/control.rs
+src/runtime/crates/xem-core/src/debug.rs
 src/runtime/crates/xem-core/src/devices/card.rs
 src/runtime/crates/xem-core/src/devices/card_file.rs
 src/runtime/crates/xem-core/src/devices/cd.rs
@@ -824,6 +825,7 @@ src/runtime/crates/xem-headless/tests/binaural.rs
 src/runtime/crates/xem-headless/tests/camera.rs
 src/runtime/crates/xem-headless/tests/coherence.rs
 src/runtime/crates/xem-headless/tests/controls.rs
+src/runtime/crates/xem-headless/tests/debug.rs
 src/runtime/crates/xem-headless/tests/diorama.rs
 src/runtime/crates/xem-headless/tests/discs.rs
 src/runtime/crates/xem-headless/tests/encounters.rs
