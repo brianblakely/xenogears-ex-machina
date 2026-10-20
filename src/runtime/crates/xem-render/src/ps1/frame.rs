@@ -1491,24 +1491,28 @@ pub(crate) struct PlaneLayers {
     below: Vec<f32>,
 }
 
-/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
-/// when it holds them, else worked out and kept there.
-pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
-    // Each original part carries the same alternative for its drawing pass.
-    // Replace that pass once, including the original builder's texture cells,
-    // and put those cells back before another sprite/scenery samples VRAM.
+/// Each sprite drawing pass whose parts carry an alternative (`pick`: they
+/// all carry the same one) drawn as the alternative: its cells uploaded, its
+/// parts drawn (each from the pass's first part, `clear` taking the
+/// alternative off it), and the pixels the cells covered put back before
+/// another sprite or the scenery samples VRAM.
+pub(crate) fn substitute_alternatives(
+    ops: &mut Vec<TraceOp>,
+    pick: impl Fn(&xem_gpu::Primitive) -> Option<&std::sync::Arc<xem_gpu::SpriteFacing>>,
+    clear: impl Fn(&mut xem_gpu::Primitive),
+) {
     let mut replaced = std::collections::HashSet::new();
-    let mut facing_ops = Vec::with_capacity(ops.len());
+    let mut substituted = Vec::with_capacity(ops.len());
     for op in ops.drain(..) {
-        let TraceOp::Draw(p) = &op else { facing_ops.push(op); continue };
-        let Some(facing) = &p.facing else { facing_ops.push(op); continue };
-        if !replaced.insert(std::sync::Arc::as_ptr(facing)) { continue; }
-        for (rect, pixels) in &facing.textures {
-            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        let TraceOp::Draw(p) = &op else { substituted.push(op); continue };
+        let Some(alternative) = pick(p) else { substituted.push(op); continue };
+        if !replaced.insert(std::sync::Arc::as_ptr(alternative)) { continue; }
+        for (rect, pixels) in &alternative.textures {
+            substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
-        for part in &facing.parts {
+        for part in &alternative.parts {
             let mut p = p.clone();
-            p.facing = None;
+            clear(&mut p);
             p.shape = xem_gpu::Shape::Quad;
             p.raw = part.words[0] & 0x01000000 != 0;
             p.semi = part.words[0] & 0x02000000 != 0;
@@ -1529,13 +1533,19 @@ pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Op
                 v.u = (uv & 0xFF) as i16;
                 v.v = (uv >> 8 & 0xFF) as i16;
             }
-            facing_ops.push(TraceOp::Draw(p));
+            substituted.push(TraceOp::Draw(p));
         }
-        for (rect, pixels) in &facing.restore {
-            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        for (rect, pixels) in &alternative.restore {
+            substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
     }
-    *ops = facing_ops;
+    *ops = substituted;
+}
+
+/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
+/// when it holds them, else worked out and kept there.
+pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
+    substitute_alternatives(ops, |p| p.facing.as_ref(), |p| p.facing = None);
     let scene = scene_offset(ops);
     let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     let camera = |q: [f32; 3]| {

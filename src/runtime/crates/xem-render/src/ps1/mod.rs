@@ -197,11 +197,14 @@ pub struct DrawOptions {
     pub fidelity: Fidelity,
     pub filtering: Filtering,
     pub culling: Culling,
+    /// The party's small sprites of a large-scale field drawn as the
+    /// full-size frames the port assembled ([`xem_gpu::Primitive::full_size`]).
+    pub full_size_sprites: bool,
 }
 
 impl Default for DrawOptions {
     fn default() -> Self {
-        Self { fidelity: Fidelity::MODERN, filtering: Filtering::default(), culling: Culling::default() }
+        Self { fidelity: Fidelity::MODERN, filtering: Filtering::default(), culling: Culling::default(), full_size_sprites: false }
     }
 }
 
@@ -2338,15 +2341,26 @@ impl Ps1Renderer {
             return;
         }
         self.draws += 1;
-        let captured = self.watch_captures(encoder, &trace.ops);
-        self.log(&trace.ops);
+        // The full-size frames in place of the small sprites, for the logs'
+        // replays too.
+        let substituted;
+        let ops = if self.options.full_size_sprites && trace.ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.full_size.is_some())) {
+            let mut ops = trace.ops.clone();
+            frame::substitute_alternatives(&mut ops, |p| p.full_size.as_ref(), |p| p.full_size = None);
+            substituted = ops;
+            &substituted[..]
+        } else {
+            &trace.ops[..]
+        };
+        let captured = self.watch_captures(encoder, ops);
+        self.log(ops);
         // A screen kept only for replays goes once no frame logged copies it.
         if self.earlier.iter().any(|capture| capture.replayed) {
             let logs = &self.logs;
             self.earlier.retain(|capture| !capture.replayed || capture.rect.is_some_and(|rect| copied_from(logs, rect)));
         }
         let options = self.options;
-        let mut builder = Builder::reusing(&options, &trace.ops, &mut self.storage);
+        let mut builder = Builder::reusing(&options, ops, &mut self.storage);
         builder.seal = self.seal;
         // (Its sides have no place in VRAM.)
         builder.capture = self.capture.rect.map(|rect| (rect, 0));
@@ -2356,7 +2370,7 @@ impl Ps1Renderer {
             Some(TraceOp::Fill { rect, color }) => Some((*rect, rgb15(*color))),
             _ => None,
         }).collect();
-        for op in &trace.ops {
+        for op in ops {
             builder.op(op);
         }
         let (capture_scale, capture_side, capture) = self.capture.uniform();

@@ -703,6 +703,8 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-quality;
     in-out property <bool> gfx-interpolation;
     in-out property <bool> gfx-widescreen;
+    // The party's full-resolution sprites in large-scale fields.
+    in-out property <bool> gfx-full-size-sprites;
     // The field camera pulled back, percent (100-500).
     in-out property <int> gfx-zoom-out: 100;
     in-out property <int> gfx-filter-world;
@@ -882,10 +884,10 @@ export component SettingsPanel inherits Window {
     callback filter-edited(int);
     callback show-fps-edited(bool);
     // A graphics choice by name (renderer, profile, profile-reset, scale,
-    // quality, interpolation, widescreen, zoom-out, filter-world,
-    // filter-sprites, filter-interface, xr-distance, xr-width, xr-dof,
-    // xr-view, xr-scale, xr-height, xr-table-distance, xr-tilt, xr-turns,
-    // xr-passthrough, xr-diorama-reset) and value.
+    // quality, full-size-sprites, interpolation, widescreen, zoom-out,
+    // filter-world, filter-sprites, filter-interface, xr-distance, xr-width,
+    // xr-dof, xr-view, xr-scale, xr-height, xr-table-distance, xr-tilt,
+    // xr-turns, xr-passthrough, xr-diorama-reset) and value.
     callback graphics-edited(string, int);
     // Recenter: the headset's view placed in front of the head again.
     callback xr-recenter-requested();
@@ -1115,6 +1117,12 @@ export component SettingsPanel inherits Window {
                                 if root.gfx-profile == 1 || root.gfx-profile == 3: Row {
                                     label: "HD-2D quality";
                                     Choice { accessible-label: "HD-2D quality"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Full-resolution sprites in large-scale areas";
+                                    checked <=> root.gfx-full-size-sprites;
+                                    toggled(on) => { root.graphics-edited("full-size-sprites", on ? 1 : 0); }
                                 }
                             }
                             // The selected profile's effects under its name;

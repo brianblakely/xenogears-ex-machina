@@ -767,6 +767,53 @@ fn first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_v
     presentation_only(&mut session, &faced, &unfaced).unwrap_or_else(|at| panic!("sprite facings change the whole state: {at}"));
 }
 
+/// In a large-scale field (Babel Tower's map 414, which runs event fe 1e:
+/// the party on foot draws small sprites of the map's own) a traced frame's
+/// small sprite parts carry the full-size frame the port assembles from the
+/// character's own field sprite, which the host reads from the disc the
+/// first time the port asks for it, outside every state region. Assembling
+/// them leaves RAM (with the RNG), VRAM, sound, time and the whole state as
+/// a run without a trace leaves them.
+#[test]
+fn large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged() {
+    use xem_gpu::TraceOp;
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd":"enter_field","map":414})).get("error").is_none());
+    assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
+    let alternate = session.execute(&json!({"cmd":"inspect","path":"field_work.unk2268","depth":0}));
+    assert_ne!(alternate, json!(0), "the map's party sprites are its alternate set's");
+    // Fei's block, where the host keeps it (xem_core::presentation::FULL_SPRITES).
+    let fei = |session: &mut Session<NativeModule>| session.runtime.memory().read_u32(0x70C0_0000).unwrap();
+    let initial = session.snapshot_bytes().unwrap();
+    let mut traced = |session: &mut Session<NativeModule>, trace: bool| {
+        session.runtime.services().gpu.device_mut().set_trace(trace);
+        let mut parts = 0;
+        for _ in 0..90 {
+            assert!(session.frame().unwrap());
+            for op in session.runtime.services().gpu.device_mut().take_trace().ops {
+                if let TraceOp::Draw(p) = op && let Some(full_size) = p.full_size {
+                    assert!(!full_size.parts.is_empty() && !full_size.textures.is_empty(), "an assembled frame has parts and cells");
+                    parts += 1;
+                }
+            }
+        }
+        let state = (session.memory_hash().unwrap(),
+            session.runtime.services().gpu.device().save(),
+            session.runtime.services().spu.chip().save(),
+            session.runtime.services().clock.now);
+        (state, parts, whole(session))
+    };
+    let (original, none, plain) = traced(&mut session, false);
+    assert_eq!((none, fei(&mut session)), (0, 0), "no trace: no frames, and no block read");
+    session.restore_bytes(&initial).unwrap();
+    let (drawn, parts, assembled) = traced(&mut session, true);
+    assert_eq!(fei(&mut session), 3, "Fei's block (its three sections) read from the disc");
+    assert!(parts > 0, "the party's small sprites get their full-size frames");
+    assert_eq!(drawn, original, "assembling them cannot change original RAM (including RNG), VRAM, sound or time");
+    presentation_only(&mut session, &assembled, &plain).unwrap_or_else(|at| panic!("full-size frames change the whole state: {at}"));
+}
+
 #[test]
 fn first_person_directional_sprites_render_their_alternate_texture_cells() {
     use xem_gpu::TraceOp;
@@ -829,6 +876,54 @@ fn first_person_directional_sprites_render_their_alternate_texture_cells() {
             encoder.write_header().unwrap().write_image_data(&pixels).unwrap();
         }
     }
+}
+
+/// The hosts' view draws those full-size frames in place of the small
+/// sprites with the setting on (`Graphics::full_size_sprites`): the same
+/// traced frames presented with it off and on differ only around the party
+/// on screen, where the full sets' frames have more parts than the small.
+#[test]
+fn the_full_size_setting_draws_the_party_of_a_large_scale_field_with_its_own_sprites() {
+    use xem_gpu::{Class, TraceOp};
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd":"enter_field","map":414})).get("error").is_none());
+    assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut views: Vec<_> = [false, true].into_iter().map(|full_size_sprites| {
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let graphics = Graphics { full_size_sprites, internal_scale: 4, ..Graphics::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 896), view.max_scale()));
+        view
+    }).collect();
+    session.runtime.services().gpu.device_mut().set_trace(true);
+    for frame in 0..8 {
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        views[0].push(trace.clone());
+        views[1].push(trace);
+        let display = session.runtime.services().gpu.device().display();
+        let scene = session.scene();
+        for view in &mut views {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &display, &scene, frame as f64 / 60.0).expect("a presented frame");
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    let sprites: Vec<usize> = views.iter().map(|view| view.frame().primitives().iter()
+        .filter(|op| matches!(op, TraceOp::Draw(p) if p.class == Class::Sprite)).count()).collect();
+    assert!(sprites[1] > sprites[0], "the full-size frames have more parts than the small sprites: {sprites:?}");
+    let pixels: Vec<_> = views.iter().map(|view| xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap())).collect();
+    let width = views[0].presented_texture().unwrap().width() as usize;
+    let differing: Vec<(usize, usize)> = pixels[0].chunks_exact(4).zip(pixels[1].chunks_exact(4)).enumerate()
+        .filter(|(_, (a, b))| a != b).map(|(i, _)| (i % width, i / width)).collect();
+    let (x, y) = (differing.iter().map(|p| p.0), differing.iter().map(|p| p.1));
+    let (w, h) = (x.clone().max().unwrap() - x.min().unwrap() + 1, y.clone().max().unwrap() - y.min().unwrap() + 1);
+    eprintln!("{} pixels differ, within {w}x{h}", differing.len());
+    assert!(differing.len() > 100, "the party's sprite is drawn anew ({} pixels)", differing.len());
+    assert!(w < 120 && h < 120, "and nothing else: the pixels that differ lie within {w}x{h}");
 }
 
 #[test]

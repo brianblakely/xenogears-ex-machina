@@ -69,6 +69,7 @@ void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bot
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 void field_sprite_set_color_unless_fog(void *target, u8 *color);
 void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
+void xem_present_sprite_full_size(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
 void xem_present_battle_stage(void);
 void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z);
 /* The battle camera's look-at point (battle/objects.h, whose other headers
@@ -439,6 +440,7 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     u32 previous = xem_gte_ring->class_;
     u32 owner = xem_gte_ring->owner;
     u32 first;
+    u32 last;
 
     record.sprite = (u32)sprite;
     record.ot = (u32)ot;
@@ -456,7 +458,9 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     } else {
         xem_original_sprite_draw_parts(sprite, ot);
     }
-    xem_present_sprite_facing(sprite, first, xem_gte_ring->count, cut, height);
+    last = xem_gte_ring->count;
+    xem_present_sprite_facing(sprite, first, last, cut, height);
+    xem_present_sprite_full_size(sprite, first, last, cut, height);
     xem_gte_ring->class_ = previous;
     xem_gte_ring->owner = owner;
 }

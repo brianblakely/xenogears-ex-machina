@@ -372,6 +372,11 @@ pub struct Graphics {
     /// changes the game (it is recorded with the inputs); it does nothing
     /// while the view is the original's.
     pub actors_in_view: bool,
+    /// In large-scale fields (a Gear hangar, Babel Tower), where the game
+    /// draws the party with small sprites of its own, Ex Machina's renderer
+    /// draws each character's full-resolution field sprite there instead, at
+    /// a quarter of its size. Presentation only; off, the game's small ones.
+    pub full_size_sprites: bool,
     pub filtering: TextureFiltering,
     pub culling: Culling,
     pub xr: XrScreen,
@@ -391,6 +396,7 @@ impl Default for Graphics {
             widescreen: false,
             zoom_out: 100,
             actors_in_view: true,
+            full_size_sprites: false,
             filtering: TextureFiltering::default(),
             culling: Culling::default(),
             xr: XrScreen::default(),
@@ -526,6 +532,17 @@ mod tests {
         assert!(older.actors_in_view, "settings saved before the choice existed follow the view");
         let off = Graphics { actors_in_view: false, ..Graphics::default() };
         assert_eq!(serde_json::from_str::<Graphics>(&serde_json::to_string(&off).unwrap()).unwrap(), off);
+    }
+
+    #[test]
+    fn large_scale_fields_keep_their_small_sprites_unless_full_size_is_chosen() {
+        assert!(!Graphics::default().full_size_sprites);
+        let older: Graphics = serde_json::from_str(r#"{"zoom_out":300}"#).unwrap();
+        assert!(!older.full_size_sprites, "settings saved before the choice existed keep the small sprites");
+        let on = Graphics { full_size_sprites: true, ..Graphics::default() };
+        let text = serde_json::to_string(&on).unwrap();
+        assert!(text.contains(r#""full_size_sprites":true"#), "{text}");
+        assert_eq!(serde_json::from_str::<Graphics>(&text).unwrap(), on);
     }
 
     #[test]

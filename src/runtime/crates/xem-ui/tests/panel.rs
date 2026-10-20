@@ -1136,6 +1136,17 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
         assert_eq!(shown(&ui, "HD-2D quality"), quality, "HD-2D quality for profile {profile}");
         assert!(!shown(&ui, "Characters keep moving"));
     }
+    // The Look card's last row: the party's full-resolution sprites in
+    // large-scale fields, through the settings service.
+    let switch = element(&ui, "Full-resolution sprites in large-scale areas", AccessibleRole::Switch);
+    let look = element(&ui, "Look", AccessibleRole::Groupbox);
+    let quality = element(&ui, "HD-2D quality", AccessibleRole::Combobox);
+    let (top, bottom) = (look.absolute_position().y, look.absolute_position().y + look.size().height);
+    assert!(switch.absolute_position().y > quality.absolute_position().y + quality.size().height, "below the card's other rows");
+    assert!(switch.absolute_position().y > top && switch.absolute_position().y + switch.size().height < bottom, "inside the card");
+    assert!(!settings.borrow().settings().graphics.full_size_sprites, "off by default");
+    press(&ui, &switch);
+    assert!(settings.borrow().settings().graphics.full_size_sprites);
     // High Framerate (interpolation) decides the presentation's rate: no
     // choice of it. Widescreen beside it widens the framing.
     assert!(!shown(&ui, "Presentation rate") && !shown(&ui, "Presentation"));

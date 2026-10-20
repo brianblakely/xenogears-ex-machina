@@ -140,6 +140,7 @@ impl ViewConfig {
                 interface_linear: linear(graphics.filtering.interface),
             },
             culling: super::Culling { viewport: graphics.culling.viewport, back_faces: graphics.culling.back_faces },
+            full_size_sprites: graphics.full_size_sprites,
         };
         // A headset's virtual screen takes a 16:9 shape when widened.
         let aspect = match (graphics.widescreen, host) {

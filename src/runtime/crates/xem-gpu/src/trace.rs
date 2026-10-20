@@ -454,6 +454,11 @@ pub struct Primitive {
     /// The original animation assembled from the first-person viewing angle.
     /// Presentation only; the GPU's commands and VRAM remain original.
     pub facing: Option<std::sync::Arc<SpriteFacing>>,
+    /// A party character's full-size frame, assembled from its own field
+    /// sprite at a quarter of its size, for the small sprite of a
+    /// large-scale field this part belongs to. Presentation only, as
+    /// [`Primitive::facing`].
+    pub full_size: Option<std::sync::Arc<SpriteFacing>>,
     /// Every point projected by the backdrop the game draws far behind its
     /// scene (a battle's sky; xem/gte.h `XEM_PROJECTION_BACKDROP`): part of
     /// the world in the game's view, the backdrop to a view from elsewhere.
@@ -466,6 +471,9 @@ pub struct SpriteFacingPart {
     pub points: [Projection; 4],
 }
 
+/// A sprite drawn another way than the original drew it, for presentation:
+/// its parts as the original's draw made them, the cells they sample and
+/// what those cells cover to put back.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SpriteFacing {
     pub parts: Vec<SpriteFacingPart>,
@@ -632,6 +640,7 @@ pub(crate) struct Recorder {
     /// entries (thousands a frame when zoomed out).
     reveals: WordMap<Vec<Revealed>>,
     facings: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
+    full_sizes: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     spare: Vec<Vec<Revealed>>,
     /// The address each word of the GPU's partly received command was read
     /// from (0 for words the CPU wrote), and the word being written's.
@@ -907,6 +916,13 @@ impl Recorder {
     }
 }
 
+/// Keeps an alternative for projections `first` to `last`, with the ones
+/// still within the history: a DMA may consume the previous frame.
+fn keep_alternative(list: &mut Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>, first: u32, last: u32, alternative: SpriteFacing) {
+    list.push((first, last, std::sync::Arc::new(alternative)));
+    list.retain(|(start, _, _)| last.wrapping_sub(*start) < HISTORY as u32);
+}
+
 fn sign11(value: u32) -> i32 {
     ((value << 21) as i32) >> 21
 }
@@ -915,10 +931,15 @@ impl Gpu {
     /// The port assembled an alternate facing for these original projections.
     pub fn trace_sprite_facing(&mut self, first: u32, last: u32, facing: SpriteFacing) {
         if let Some(trace) = &mut self.trace {
-            trace.facings.push((first, last, std::sync::Arc::new(facing)));
-            // A DMA may consume the previous frame; retain its records too.
-            let end = last;
-            trace.facings.retain(|(start, _, _)| end.wrapping_sub(*start) < HISTORY as u32);
+            keep_alternative(&mut trace.facings, first, last, facing);
+        }
+    }
+
+    /// The port assembled a full-size frame for the small sprite these
+    /// original projections drew.
+    pub fn trace_sprite_full_size(&mut self, first: u32, last: u32, full_size: SpriteFacing) {
+        if let Some(trace) = &mut self.trace {
+            keep_alternative(&mut trace.full_sizes, first, last, full_size);
         }
     }
     /// Turns the draw trace on or off. Turning it on starts the next trace
@@ -1346,17 +1367,10 @@ impl Gpu {
         let classes: Vec<Class> = classes.iter().map(|c| c.class).collect();
         let class = primitive_class(&classes, count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
-        let facing_index = trace.point_index(words[1], 1, 0).and_then(|point| {
-            trace.facings.iter().rposition(|(first, last, _)| point.wrapping_sub(*first) < last.wrapping_sub(*first))
-        });
-        let facing = facing_index.map(|index| {
-            let facing = &mut self.trace.as_mut().expect("tracing").facings[index].2;
-            if facing.restore.is_empty() && !facing.textures.is_empty() {
-                let facing = std::sync::Arc::make_mut(facing);
-                facing.restore = facing.textures.iter().map(|(rect, _)| (*rect, read_rect(&self.vram, *rect).into())).collect();
-            }
-            facing.clone()
-        });
+        let point = trace.point_index(words[1], 1, 0);
+        let recorder = self.trace.as_mut().expect("tracing");
+        let facing = point.and_then(|point| alternative(&mut recorder.facings, point, &self.vram));
+        let full_size = point.and_then(|point| alternative(&mut recorder.full_sizes, point, &self.vram));
         let dither = self.draw_mode & 0x200 != 0 && (gouraud || (textured && !raw));
         let primitive = Primitive {
             shape: if count == 4 { Shape::Quad } else { Shape::Triangle },
@@ -1376,6 +1390,7 @@ impl Gpu {
             revealed,
             ground,
             facing,
+            full_size,
             backdrop,
         };
         self.trace_drawn(primitive);
@@ -1440,6 +1455,7 @@ impl Gpu {
             revealed: false,
             ground: None,
             facing: None,
+            full_size: None,
             backdrop: false,
         };
         self.trace_drawn(primitive);
@@ -1474,6 +1490,7 @@ impl Gpu {
             revealed: false,
             ground: None,
             facing: None,
+            full_size: None,
             backdrop,
         };
         self.trace_drawn(primitive);
@@ -1532,4 +1549,17 @@ fn read_rect(vram: &[u16], rect: VramRect) -> Vec<u16> {
         pixels.extend_from_slice(&vram[start..start + usize::from(rect.width)]);
     }
     pixels
+}
+
+/// The newest alternative of `list` for the original projections that
+/// include `point`, with the pixels its cells cover to put back, read from
+/// `vram` when its first part is traced.
+fn alternative(list: &mut [(u32, u32, std::sync::Arc<SpriteFacing>)], point: u32, vram: &[u16]) -> Option<std::sync::Arc<SpriteFacing>> {
+    let index = list.iter().rposition(|(first, last, _)| point.wrapping_sub(*first) < last.wrapping_sub(*first))?;
+    let alternative = &mut list[index].2;
+    if alternative.restore.is_empty() && !alternative.textures.is_empty() {
+        let alternative = std::sync::Arc::make_mut(alternative);
+        alternative.restore = alternative.textures.iter().map(|(rect, _)| (*rect, read_rect(vram, *rect).into())).collect();
+    }
+    Some(alternative.clone())
 }

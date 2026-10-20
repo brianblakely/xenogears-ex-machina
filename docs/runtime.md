@@ -1660,8 +1660,11 @@ snapshots are its. The renderer only draws again what it drew:
   screen-point word a port routine stores (swc2 of SXY0-SXYP, with the
   projection each GTE screen-point register holds, which the GTE tracks; the
   handwritten renderers' stores, with their face's projections) at
-  0x70300000, and a ring of culled faces at 0x70500000 with a capture area at
-  0x70A00000. While the host asks (the culled-face ring's `wanted` word: how
+  0x70300000, a ring of culled faces at 0x70500000 with a capture area at
+  0x70A00000, the sprite alternatives' scratch at 0x70B00000 and the party's
+  field sprite blocks the host reads for them at 0x70C00000
+  ([Full-resolution sprites in large-scale
+  fields](#full-resolution-sprites-in-large-scale-fields)). While the host asks (the culled-face ring's `wanted` word: how
   far beyond the original screen a wider or pulled-back view reaches), the
   renderers' screen-bounds tests record each face they cull (front-facing,
   projected without overflow, within that reach) as the GP0 words it would
@@ -2035,6 +2038,7 @@ interchange](#state-interchange)).
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
 | presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
+| full-size sprites | the party on foot in a large-scale field drawn with its full-resolution field sprites at a quarter of their size instead of the map's small ones (off, the default; presentation only: [Full-resolution sprites in large-scale fields](#full-resolution-sprites-in-large-scale-fields)) |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled; a first-person view shows it either way), back faces (both off) |
@@ -2237,6 +2241,72 @@ those fixes are presentation only). Over Lahan (`--example motion -- --map
 1 --zoom N`, `still` in its JSON) the original leaves 43 sprite actors
 still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 7 at 3x and none at 5x.
+
+### Full-resolution sprites in large-scale fields
+
+In a large-scale field (a map whose scripts run event fe 1e: Babel Tower,
+the Gear hangars and docks), the party's sprite blocks hold their Gears'
+files, and a party character on foot takes a small sprite from the map's
+own alternate set (event 16: `field_character_sprite_ids[character]` plus
+`field_work.unk2268`): separate art at about a quarter of the full sets'
+size (12-13 pixels tall against 45-53), with standing, walking and
+running animations only (the jump shows running frames, the others the
+standing one), which 103 maps carry copies of. With
+`Graphics::full_size_sprites` (the Look card's last switch, Full-resolution
+sprites in large-scale areas, off by default) Ex Machina's renderer draws
+each character's own field sprite there instead, at a quarter of its size.
+Presentation only: the game draws and plays as the original.
+
+The port assembles it as it assembles first-person facings
+(`src/port/sprite_facing.c`, `xem_present_sprite_full_size`), after the
+original draws the sprite's parts (`present.c`) while the field's actor
+pass draws (`activity.c` marks it around `field_draw_sprite_actors`, the
+record-only redraws included): for a party actor whose sprite is the map's
+alternate set's (its `unk126` the set's index with bit 7, its block the
+map's entry, a cell directory), it asks the host import
+`xem.full_sprite(character)` for the character's block, finds the full
+set's frame for the one shown (the run of the same animation and facing
+among standing, walking and running, the animation playing first; its
+place in the run scaled to the full run's length, which can be longer:
+eight walking frames against 16), and builds that frame on a copy with
+the original's routines: its cells and palette where the original keeps
+party slot 0's (VRAM 0x280,0x100, palette 0x100,0xE0), recorded rather
+than uploaded, with scale shift 1 for the original's 3 (every length a
+quarter: parts, offsets, groups; a cut height four times). It hands the
+host the parts with their projections and the cells as presentation record
+kind 5 (a facing's form) for the original's projections. Where a check
+fails (another alternate set, a frame the runs do not hold) the small
+sprite stays. Characters 9 and 10 (Citan with his sword, adult Emeralda)
+borrow Citan's and Emeralda's small art; their full-size frames are their
+own files (14 and 15).
+
+`xem.full_sprite` reads directory 4, file character + 5 from the disc in
+the drive by the game's index on it, in whole sectors as the game reads
+its files (the packed stream runs past the size the index gives),
+unpacks it (`presentation::unpack_lzss`) into `presentation::FULL_SPRITES`
+(0x70C00000, 0x14000 bytes a character, outside RAM and every state) the
+first time the port asks, and answers its address; 0 while the drive has
+no disc or a browser still fetches the bytes (the next ask tries again),
+and for good once a disc cannot give it. The drive's state and timing are
+left alone. The trace attaches the record to the primitives the original's
+projections drew (`Primitive::full_size`, as `facing`), and
+`Ps1Renderer::draw` with `DrawOptions::full_size_sprites` replaces each such
+pass by its alternative before logging (`frame::substitute_alternatives`,
+shared with first person): the cells uploaded, the parts drawn, the pixels
+the cells covered put back. The frame logs' replays (interpolation, wider
+and pulled-back views, the diorama) draw it too. First person keeps the
+small sprites' facings, and the game's shadows stay its own.
+
+On Babel Tower's map 414 (`render.rs`
+`large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged`)
+352 traced parts carried a full-size frame in 90 frames, Fei's block read
+the first time, and RAM (with the RNG), VRAM, sound, time and the whole
+state ended as without a trace (`presentation_only`);
+`the_full_size_setting_draws_the_party_of_a_large_scale_field_with_its_own_sprites`
+presents the same frames with the setting off and on: 1011 pixels differ,
+all within 26x57 around Fei (scale 4, 1280x896). `--example render --
+--map 414 --scale 4 --full-size --compare` puts the small sprite beside the
+full one, and `--example motion` takes `--full-size` too.
 
 ### First-person inspection
 

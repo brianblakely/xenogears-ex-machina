@@ -8,7 +8,7 @@
 //!         [--ff FRAMES] [--original FROM,TO]
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
-//!         [--probe x,y] [--original-actors] [--cards DIR] [--look YAW,PITCH[,TURN]]
+//!         [--probe x,y] [--original-actors] [--full-size] [--cards DIR] [--look YAW,PITCH[,TURN]]
 //!         [--diorama YAW,PITCH,DIST[,SCALE[,FOV]]] [--turns smooth|snap|fixed]
 //!         [--name NAME] [--out DIR]
 //!
@@ -48,7 +48,8 @@
 //! owner). The field's characters keep moving in the wider or zoomed-out
 //! view as in the hosts (`Session::set_actor_view`), unless
 //! `--original-actors`; the JSON counts the sprite actors the field stops
-//! as off screen per frame (`still`). `--look` shows the field in
+//! as off screen per frame (`still`). `--full-size` draws the party of a
+//! large-scale field with its full-resolution sprites. `--look` shows the field in
 //! first-person inspection, turned YAW degrees to the right and PITCH up
 //! from the camera's heading (and TURN degrees more each kept frame), and
 //! reports where the controlled character stood (`eye`). `--diorama` shows
@@ -341,6 +342,7 @@ fn main() {
             "--zoom" => graphics.zoom_out = value().parse().unwrap(),
             "--interpolate" => graphics.interpolation = true,
             "--original-actors" => graphics.actors_in_view = false,
+            "--full-size" => graphics.full_size_sprites = true,
             "--scale" => graphics.internal_scale = value().parse().unwrap(),
             "--name" => name = value(),
             "--cards" => cards = Some(value().into()),

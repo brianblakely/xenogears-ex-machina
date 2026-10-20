@@ -7,6 +7,50 @@ pub const MODEL: u32 = 1;
 pub const SPRITE_MATRIX: u32 = 2;
 pub const SPRITE_PARTS: u32 = 3;
 pub const SPRITE_FACING: u32 = 4;
+/// A party character's full-size frame in place of its small sprite in a
+/// large-scale field, in a facing's form (src/port/sprite_facing.c).
+pub const SPRITE_FULL_SIZE: u32 = 5;
+
+/// Where the port finds the field sprite blocks of the eleven party
+/// characters (directory 4, file character + 5, unpacked), beside its
+/// rings, outside RAM and snapshots: 0x14000 bytes each, the most a party
+/// sprite block holds (field_party_alloc_sprite_blocks).
+pub const FULL_SPRITES: u32 = 0x70C0_0000;
+pub const FULL_SPRITE_BYTES: u32 = 0x14000;
+
+/// The game's LZSS stream (src/port/lzss.c; its first word the unpacked
+/// size), unpacked if it fits in `limit` bytes and ends within `packed`.
+pub(crate) fn unpack_lzss(packed: &[u8], limit: usize) -> Option<Vec<u8>> {
+    let size = usize::try_from(u32::from_le_bytes(packed.get(..4)?.try_into().ok()?)).ok()?;
+    if size > limit {
+        return None;
+    }
+    let mut out = Vec::with_capacity(size);
+    let mut bytes = packed[4..].iter().copied();
+    while out.len() < size {
+        let flags = bytes.next()?;
+        for bit in 0..8 {
+            if out.len() == size {
+                break;
+            }
+            let low = bytes.next()?;
+            if flags >> bit & 1 == 0 {
+                out.push(low);
+            } else {
+                let high = bytes.next()?;
+                let distance = usize::from(low) | usize::from(high & 0xF) << 8;
+                let from = out.len().checked_sub(distance).filter(|_| distance != 0)?;
+                // A reference may overlap its own output.
+                for n in 0..usize::from(high >> 4) + 3 {
+                    let byte = out[from + n];
+                    out.push(byte);
+                }
+            }
+        }
+    }
+    out.truncate(size);
+    Some(out)
+}
 
 /// Copy the port's temporary facing assembly before its scratch area is reused.
 /// The pixels are owned by presentation and never uploaded to the game GPU.
@@ -87,5 +131,22 @@ impl Presentation {
     /// A vertical blank ends the frame.
     pub fn end_frame(&mut self) {
         self.last_frame = std::mem::take(&mut self.current);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::unpack_lzss;
+
+    #[test]
+    fn lzss_streams_unpack_as_the_games_decoder_unpacks_them() {
+        // Three literals, a reference three back overlapping its own output
+        // for six bytes (high nibble: length - 3), a literal.
+        let stream = [10, 0, 0, 0, 0x08, b'a', b'b', b'c', 3, 0x30, b'X'];
+        assert_eq!(unpack_lzss(&stream, 0x100).as_deref(), Some(&b"abcabcabcX"[..]));
+        assert_eq!(unpack_lzss(&stream, 9), None, "larger than the block");
+        assert_eq!(unpack_lzss(&stream[..9], 0x100), None, "a stream that ends early");
+        assert_eq!(unpack_lzss(&[4, 0, 0, 0, 0x01, 0, 0x10], 0x100), None, "a reference to itself");
+        assert_eq!(unpack_lzss(&[0, 0, 0, 0], 0x100), Some(vec![]));
     }
 }

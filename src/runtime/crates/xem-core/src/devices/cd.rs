@@ -330,6 +330,19 @@ impl Cd {
         number == 0 || (self.disc.is_some() && self.inserted == number) || self.shelf.iter().any(|(n, _)| *n == number)
     }
 
+    /// File `file` of directory `directory` of the disc in the drive, by the
+    /// game's index on it, in whole sectors as the game reads its files
+    /// (`cd_get_aligned_file_size`: a packed stream may run past the size
+    /// the index gives); none without a disc. For the presentation: the
+    /// drive's state and timing are left as they are.
+    pub fn read_file(&mut self, directory: usize, file: u32) -> Result<Option<Vec<u8>>, DiscError> {
+        let Some(disc) = self.disc.as_deref_mut() else { return Ok(None) };
+        let index = xem_disc::Index::from_disc(disc)?;
+        let record = index.file(directory, file).filter(|record| record.size >= 0)
+            .ok_or_else(|| DiscError::Format(format!("no file {directory}/{file}")))?;
+        xem_disc::read_data(disc, record.lba, record.sectors() as usize * 2048).map(Some)
+    }
+
     /// Put disc `number` (0 for a disc without one) in the drive, the lid
     /// closed on it, as at boot.
     pub fn insert_disc(&mut self, number: u8, disc: Box<dyn SectorSource>) {
