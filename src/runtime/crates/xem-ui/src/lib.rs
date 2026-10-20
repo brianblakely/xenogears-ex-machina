@@ -580,6 +580,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_mouse_sensitivity(i32::from(settings.mouse_sensitivity));
     panel.set_mouse_deadzone(i32::from(settings.mouse_deadzone));
     panel.set_run_by_default(settings.run_by_default);
+    panel.set_hide_idle_cursor(settings.hide_idle_cursor);
     panel.set_random_battles(match settings.random_battles {
         RandomBattles::NotWhilePlatforming => 0,
         RandomBattles::Original => 1,
@@ -748,6 +749,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_run_by_default_edited({
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
+    });
+    panel.on_hide_idle_cursor_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::HideIdleCursor(enabled)))
     });
     panel.on_random_battles_edited({
         let apply = apply.clone();

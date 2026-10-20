@@ -8008,6 +8008,12 @@ gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
 master volume (`xem_host::Game`), as the [Binaural sound
 mode](#binaural-sound-mode) presents it when it is on. Memory cards default to `cards/` beside the settings file.
+Under Controls' Hide the cursor when the mouse is idle (`Settings::hide_idle_cursor`,
+on by default) the host hides the cursor over the game once a mouse has been
+still for `CURSOR_IDLE_SECONDS` (3; touches aside) and shows it as soon as it
+moves or presses (`Settings::hides_cursor`); Settings showing keeps it, and
+the relative mode hides it itself. The browser page hides it over its
+canvas the same way (`XemApp::hides_cursor`, CSS `cursor: none`).
 Pad 1's buttons come from the game bindings ([Controls](#controls)).
 Back+Start toggles Settings once and consumes
 both buttons until both are released. Guide/Home has no app binding.

@@ -372,6 +372,10 @@ pub struct View {
     marks: Vec<xem_assist::overlay::Mark>,
     atlas: xem_render::glass::Atlas,
     relative_mouse: bool,
+    /// When a mouse last moved or pressed (touches aside), and whether the
+    /// host hid its cursor over the game for it (`Settings::hides_cursor`).
+    mouse_moved: Instant,
+    cursor_hidden: bool,
     /// The first gamepad's buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the app's Toggle
     /// first-person view asked for since the last frame (its key, its chord,
@@ -480,6 +484,8 @@ impl View {
             marks: Vec::new(),
             atlas: Default::default(),
             relative_mouse: false,
+            mouse_moved: Instant::now(),
+            cursor_hidden: false,
             pad: [0; 16],
             axes: [0.0; 4],
             look_toggle: Default::default(),
@@ -562,6 +568,15 @@ impl View {
             self.relative_mouse = relative;
             self.player.mouse.clear();
             self.look_mouse = [0.0; 2];
+        }
+        // A still mouse's cursor hides over the game (the relative mode
+        // hides it itself) and shows again as it moves.
+        let hidden = !relative && !self.panel_visible()
+            && self.settings.borrow().settings().hides_cursor(self.mouse_moved.elapsed().as_secs_f64());
+        if hidden != self.cursor_hidden {
+            // SAFETY: SDL's video subsystem runs the window.
+            unsafe { if hidden { SDL_HideCursor() } else { SDL_ShowCursor() } };
+            self.cursor_hidden = hidden;
         }
         let was_busy = self.operations.busy;
         let completed = self.operations.poll(game.as_mut(),&mut self.settings.borrow_mut());
@@ -718,6 +733,14 @@ impl View {
     pub unsafe fn handle(&mut self, window: &sdl::Window, event: &SDL_Event) {
         let visible = self.panel_visible();
         let kind = SDL_EventType(unsafe { event.r#type });
+        let mouse = match kind {
+            SDL_EVENT_MOUSE_MOTION => Some(unsafe { event.motion }.which),
+            SDL_EVENT_MOUSE_BUTTON_DOWN => Some(unsafe { event.button }.which),
+            _ => None,
+        };
+        if mouse.is_some_and(|which| which != SDL_TOUCH_MOUSEID) {
+            self.mouse_moved = Instant::now();
+        }
         match kind {
             SDL_EVENT_KEY_DOWN | SDL_EVENT_KEY_UP => {
                 let key = unsafe { event.key };

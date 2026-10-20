@@ -120,6 +120,7 @@ function wireCanvas() {
     return [event.offsetX * scale, event.offsetY * scale];
   };
   const forward = (kind) => (event) => {
+    if (event.pointerType === 'mouse' && kind !== 'leave' && kind !== 'cancel') mouseMovedAt = performance.now();
     const [x, y] = position(event);
     // Fingers play the touch controls and tap the picture (the panel takes
     // them while it shows).
@@ -156,6 +157,13 @@ function wireCanvas() {
   canvas.addEventListener('wheel', forward('wheel'), { passive: false });
 }
 wireCanvas();
+// A still mouse's cursor hides over the game (the setting on by default) and
+// shows again as it moves; a captured pointer has none.
+let mouseMovedAt = performance.now();
+function updateCursor() {
+  const hidden = app.hides_cursor(performance.now() - mouseMovedAt);
+  if ((canvas.style.cursor === 'none') !== hidden) canvas.style.cursor = hidden ? 'none' : '';
+}
 // Immersive play is submitted through an XR-compatible WebGL2 context
 // (WebXR layers on WebGPU are not available to test): a browser that offers
 // immersive VR renders with one from the start; others use WebGPU first.
@@ -516,6 +524,7 @@ function frame(time) {
   try {
     pollGamepad();
     app.frame(time);
+    updateCursor();
     disc.serveGameReads(app);
     audio.pump();
     cards.flush().catch(() => {}); // retained for explicit retry; visible in status

@@ -818,6 +818,8 @@ export component SettingsPanel inherits Window {
     in-out property <int> mouse-sensitivity: 50;
     in-out property <int> mouse-deadzone: 40;
     in-out property <bool> run-by-default;
+    // The mouse cursor hides over the game while the mouse is still.
+    in-out property <bool> hide-idle-cursor: true;
     // Where the field's random battles happen (xem_settings::RandomBattles:
     // 0 not while platforming, 1 the original's).
     in-out property <int> random-battles;
@@ -864,6 +866,7 @@ export component SettingsPanel inherits Window {
     callback mouse-sensitivity-edited(int);
     callback mouse-deadzone-edited(int);
     callback run-by-default-edited(bool);
+    callback hide-idle-cursor-edited(bool);
     callback random-battles-edited(int);
     // A gameplay option by name (encounter-rate, text-speed, auto-advance,
     // auto-advance-dwell, movie-skip) and value.
@@ -1332,6 +1335,12 @@ export component SettingsPanel inherits Window {
                                         value: root.mouse-deadzone;
                                         changed(value) => { root.mouse-deadzone-edited(round(value)); }
                                     }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Hide the cursor when the mouse is idle";
+                                    checked <=> root.hide-idle-cursor;
+                                    toggled(on) => { root.hide-idle-cursor-edited(on); }
                                 }
                                 Divider { }
                                 ToggleRow {

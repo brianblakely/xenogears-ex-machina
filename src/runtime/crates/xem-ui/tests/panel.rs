@@ -1229,6 +1229,13 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Tab leaves the closed dropdown");
 
     section(&mut ui, "Controls", 2);
+    // The cursor hides over an idle game by default; the switch turns it off.
+    let hide = element(&ui, "Hide the cursor when the mouse is idle", AccessibleRole::Switch);
+    assert_eq!(hide.accessible_checked(), Some(true));
+    press(&ui, &hide);
+    assert!(!settings.borrow().settings().hide_idle_cursor);
+    press(&ui, &hide);
+    assert!(settings.borrow().settings().hide_idle_cursor);
     assert!(!shown(&ui, "Mouse sensitivity"));
     press(&ui, &element(&ui, "Turn the camera with the mouse", AccessibleRole::Switch));
     ui.update().unwrap();

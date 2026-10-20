@@ -1225,6 +1225,12 @@ impl XemApp {
         self.renderer.as_ref().is_some_and(|r| r.panel_visible)
     }
 
+    /// Whether the page hides the cursor over the game, the mouse still for
+    /// `idle` milliseconds (`Settings::hides_cursor`); Settings keeps it.
+    pub fn hides_cursor(&self, idle: f64) -> bool {
+        !self.panel_visible() && self.settings.borrow().settings().hides_cursor(idle / 1000.0)
+    }
+
     /// Whether play can hold the browser pointer now. A combo is a set of
     /// clickable commands, and the original pause screen releases it too.
     pub fn mouse_camera_active(&mut self) -> bool {
