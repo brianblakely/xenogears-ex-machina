@@ -802,7 +802,6 @@ export component SettingsPanel inherits Window {
     in-out property <int> debug-battle-file;
     in-out property <[int]> debug-party: [0, 1, 2];
     in-out property <[int]> debug-gears: [0, 0, 0];
-    in-out property <int> debug-worldmap: 1024;
     in-out property <int> debug-menu;
     in-out property <int> debug-parameter;
     in-out property <int> debug-movie;
@@ -1832,7 +1831,6 @@ export component SettingsPanel inherits Window {
                             if root.selected-section == 7: Card {
                                 title: "Worldmap";
                                 heading: "Worldmap";
-                                Row { label: "Map"; SpinBox { accessible-label: "Debug world map"; minimum: 1024; maximum: 2047; value <=> root.debug-worldmap; } }
                                 Button { text: "Start world map test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(2); } }
                             }
                             if root.selected-section == 7: Card {

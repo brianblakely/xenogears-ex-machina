@@ -1324,7 +1324,7 @@ fn debug_controls_submit_kernel_operations_and_developer_room() {
         ("Start field test", DebugRequest::Field { map: 22, entry: 4 }),
         ("Go to developer room", DebugRequest::Field { map: 0, entry: 0 }),
         ("Start battle test", DebugRequest::Battle { formation: 3, file: 0, party: [0, 1, 3], gears: [0, 0, 1] }),
-        ("Start world map test", DebugRequest::Worldmap { map: 1024 }),
+        ("Start world map test", DebugRequest::Worldmap),
         ("Start Battling", DebugRequest::Battling),
         ("Open test menu", DebugRequest::Menu { screen: 3, parameter: 2 }),
         ("Play test movie", DebugRequest::Movie { movie: 5, kind: 1 }),

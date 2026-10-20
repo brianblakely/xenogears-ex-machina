@@ -78,20 +78,26 @@ fn debug_menu_uses_the_requested_screen_and_parameter() {
 fn debug_launches_worldmap_battling_movie_and_developer_room() {
     let Some(mut s) = session() else { return; };
     for (request, mode) in [
-        (Request::Worldmap { map: 1024 }, 3),
+        (Request::Worldmap, 3),
         (Request::Battling, 4),
-        (Request::Movie { movie: 0, kind: 1 }, 6),
+        (Request::Movie { movie: 1, kind: 1 }, 6),
         (Request::Field { map: 0, entry: 0 }, 1),
     ] {
         launch(&mut s, request);
         assert_eq!(s.runtime.services().mode, Some(mode), "{request:?}");
         for _ in 0..300 { s.frame().unwrap_or_else(|e| panic!("{request:?}: {e}")); }
         match request {
-            Request::Worldmap { map } => assert_eq!(read(&mut s, "game_data.map"), map),
+            // Its first entry places the party on map 0x400 itself.
+            Request::Worldmap => assert_eq!(read(&mut s, "game_data.map"), 0x400),
             Request::Battling => assert_eq!(read(&mut s, "arena_mode_state"), 0),
             Request::Movie { movie, kind } => {
                 assert_eq!(read(&mut s, "movie_mode_movie_index"), movie);
                 assert_eq!(read(&mut s, "movie_mode_movie_kind"), kind);
+                // To the movie's own last frame, as the kernel menu's movie
+                // test finds it, not the request path's frame 233.
+                let last = s.runtime.services().cd.movie_last_frame(kind, movie).unwrap().expect("a picture movie's last frame");
+                assert_eq!(read(&mut s, "movie_mode_last_frame"), json!(last));
+                assert!(last > 233, "movie {movie} plays past frame 233 ({last})");
             }
             Request::Field { map, .. } => assert_eq!(read(&mut s, "mode_field_map_id"), map),
             _ => unreachable!(),

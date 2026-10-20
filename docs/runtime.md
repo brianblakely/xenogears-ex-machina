@@ -282,6 +282,15 @@ goes on as without; [State interchange](#state-interchange)).
   a **Go to developer room** shortcut (map 0, entrance 0). Launches restart
   the session; save progress first. Battle and Menu take their selector values
   from the panel, then run the original game's loading and setup code.
+  Worldmap is a button alone: the world map's first entry on the fresh game
+  places the party itself (map 0x400). Movie plays to the movie's last
+  frame, as the kernel menu's movie test finds it in a video sector's
+  header (`Cd::movie_last_frame`: the last of the movie's final 256 sectors
+  that has one, since the retail discs end a movie with audio and empty
+  sectors where the test's own read of the very last sector finds none;
+  that test's own 0xC80 for the audio kind or a file without one), through
+  the request's bit 7 and `cd_movie_request_last_frame`: without them the
+  request path stops at frame 233.
   The same typed requests are available as `debug {request: {tool: "field",
   map: 0, entry: 0}}` (the panel sends `AppRequest::Debug`). `debug_status`
   reports progress; normal frames advance it, or `debug_tick` runs a bounded

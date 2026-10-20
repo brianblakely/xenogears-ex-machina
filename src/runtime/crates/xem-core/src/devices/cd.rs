@@ -343,6 +343,36 @@ impl Cd {
         xem_disc::read_data(disc, record.lba, record.sectors() as usize * 2048).map(Some)
     }
 
+    /// The last frame of movie `index` of `kind` (0 picture, 1 picture and
+    /// audio) on the disc in the drive, as the kernel menu's movie test reads
+    /// it (movie_mode_find_last_frame): the frame number in the header that
+    /// starts a video sector (magic 0x160, type 0x8001), the movie's sectors
+    /// counted in its own unit (2048 or 2336 bytes). The test reads the
+    /// movie's very last sector; the retail discs end a movie with audio and
+    /// empty sectors (at most 124 of them on disc 1), so the last of the
+    /// movie's final 256 sectors that holds the header is read. None for the
+    /// audio kind, a file with no such sector there, or without a disc.
+    pub fn movie_last_frame(&mut self, kind: u8, index: u8) -> Result<Option<u16>, DiscError> {
+        let (file, unit) = match kind {
+            0 => (u32::from(index) + 3, FORM1_DATA_SIZE as u32),
+            1 => (u32::from(index) + 2, 0x920),
+            _ => return Ok(None),
+        };
+        let Some(disc) = self.disc.as_deref_mut() else { return Ok(None) };
+        let index = xem_disc::Index::from_disc(disc)?;
+        let Some(record) = index.file(0x18 + usize::from(kind), file).filter(|record| record.size > 0) else { return Ok(None) };
+        let sectors = (record.size as u32).next_multiple_of(4).div_ceil(unit);
+        for sector in (record.lba..record.lba + sectors).rev().take(256) {
+            let header = xem_disc::read_data(disc, sector, 12)?;
+            let (magic, kind) = (u16::from_le_bytes([header[0], header[1]]), u16::from_le_bytes([header[2], header[3]]));
+            if (magic, kind) == (0x160, 0x8001) {
+                let frame = u32::from_le_bytes(header[8..12].try_into().expect("four bytes"));
+                return Ok(Some(u16::try_from(frame).unwrap_or(u16::MAX)));
+            }
+        }
+        Ok(None)
+    }
+
     /// Put disc `number` (0 for a disc without one) in the drive, the lid
     /// closed on it, as at boot.
     pub fn insert_disc(&mut self, number: u8, disc: Box<dyn SectorSource>) {

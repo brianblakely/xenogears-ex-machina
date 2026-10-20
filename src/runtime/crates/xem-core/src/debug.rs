@@ -15,7 +15,9 @@ use crate::{GameModule, control::Session, pad::button};
 pub enum Request {
     Field { map: u16, entry: u16 },
     Battle { formation: u8, file: u8, party: [u8; 3], gears: [u8; 3] },
-    Worldmap { map: u16 },
+    /// The world map's first entry places the party itself (game_data.map
+    /// 0x400 and its own position on a fresh game): there is no map to choose.
+    Worldmap,
     Battling,
     Menu { screen: u8, parameter: u8 },
     Movie { movie: u8, kind: u8 },
@@ -28,7 +30,6 @@ impl Request {
             Self::Battle { formation, party, gears, .. } if formation > 15 || party.iter().any(|p| *p > 11)
                 || party.iter().all(|p| *p == 11) || gears.iter().any(|g| *g > 2) =>
                 Err("Choose formation 0–15, at least one party member, and Off, Normal or Bar Gears.".into()),
-            Self::Worldmap { map } if !(0x400..0x800).contains(&map) => Err("World map must be between 1024 and 2047.".into()),
             Self::Menu { screen, parameter } if screen > 6 || (screen < 4 && parameter > 30) || (screen == 6 && parameter > 1) =>
                 Err("Choose a menu screen and a valid character, shop or disc number.".into()),
             Self::Movie { movie, kind } if movie > 63 || kind > 2 => Err("Choose movie 0–63 and Picture, Picture and audio, or Audio.".into()),
@@ -70,7 +71,8 @@ impl Debug {
         self.steps.extend([Step::Pad(button), Step::Frames(4), Step::Pad(0), Step::Frames(4)]);
     }
 
-    fn launch(request: Request) -> Self {
+    /// `last_frame`: the end frame a movie test plays to.
+    fn launch(request: Request, last_frame: u16) -> Self {
         let mut job = Self { frames_left: 6000, message: "Starting debug test…".into(), ..Default::default() };
         if matches!(request, Request::Field { .. }) {
             job.wait("mode_kernel_menu_running", 1);
@@ -84,11 +86,14 @@ impl Debug {
                 1
             }
             Request::Battle { .. } => 2,
-            Request::Worldmap { map } => { job.write("game_data.map", map); 3 }
+            Request::Worldmap => 3,
             Request::Battling => 4,
             Request::Menu { .. } => 5,
             Request::Movie { movie, kind } => {
-                job.write("cd_movie_request_kind", kind);
+                // Bit 7: play to `last_frame`, else the request path stops
+                // at frame 233 (movie_mode_main).
+                job.write("cd_movie_request_kind", kind | 0x80);
+                job.write("cd_movie_request_last_frame", last_frame);
                 job.write("cd_movie_request_index", movie);
                 job.write("cd_movie_request_next_mode", 0);
                 job.write("cd_movie_request_unskippable", 0);
@@ -143,8 +148,12 @@ impl<M: GameModule> Session<M> {
         if self.debug.busy() { return Err("A debug operation is still running.".into()); }
         let address = self.schema.as_ref().ok_or("No game schema loaded.")?
             .locate("mode_next_mode", self.runtime.memory()).map_err(|e| e.to_string())?.address;
+        let last_frame = match request {
+            Request::Movie { movie, kind } => self.movie_last_frame(movie, kind)?,
+            _ => 0,
+        };
         // Validate the job's schema before a reset can discard progress.
-        let job = Debug::launch(request);
+        let job = Debug::launch(request, last_frame);
         for step in &job.steps {
             let path = match step { Step::Equal(path, _) | Step::Write(path, _) => path.as_str(), Step::MenuInput(_) => "menu_state_current", _ => continue };
             self.schema.as_ref().unwrap().locate(path, self.runtime.memory()).map_err(|e| e.to_string())?;
@@ -152,11 +161,24 @@ impl<M: GameModule> Session<M> {
         self.record_control(json!({"cmd":"debug", "request":request}));
         self.reset_game();
         self.runtime.write_before_next_dispatch(address, match request {
-            Request::Field { .. } => 0, Request::Battle { .. } => 2, Request::Worldmap { .. } => 3,
+            Request::Field { .. } => 0, Request::Battle { .. } => 2, Request::Worldmap => 3,
             Request::Battling => 4, Request::Menu { .. } => 5, Request::Movie { .. } => 6,
         });
         self.debug = job;
         Ok(())
+    }
+
+    /// The frame a movie test plays to, as the kernel menu's movie test finds
+    /// it (movie_mode_find_last_frame): the frame number in the header of the
+    /// movie's last sector (picture movies, kind 0 and 1), else that test's
+    /// own end frame, 0xC80 (the audio kind, which has no frames, or a
+    /// movie whose last sector holds no frame header).
+    fn movie_last_frame(&mut self, movie: u8, kind: u8) -> Result<u16, String> {
+        match self.runtime.services().cd.movie_last_frame(kind, movie) {
+            Ok(frame) => Ok(frame.unwrap_or(0xC80)),
+            Err(xem_disc::Error::NotReady) => Err("The disc is still being read; try again.".into()),
+            Err(error) => Err(format!("The movie's length could not be read: {error}")),
+        }
     }
 
     pub fn debug_status(&self) -> Value {

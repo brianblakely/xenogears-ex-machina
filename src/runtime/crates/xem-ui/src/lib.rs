@@ -419,7 +419,7 @@ fn debug_request(panel: &SettingsPanel, tool: i32) -> Result<xem_settings::Debug
             }
             DebugRequest::Battle { formation: byte(panel.get_debug_formation())?, file: byte(panel.get_debug_battle_file())?, party: members, gears: modes }
         }
-        2 => DebugRequest::Worldmap { map: word(panel.get_debug_worldmap())? },
+        2 => DebugRequest::Worldmap,
         3 => DebugRequest::Battling,
         4 => DebugRequest::Menu { screen: byte(panel.get_debug_menu())?, parameter: byte(panel.get_debug_parameter())? },
         5 => DebugRequest::Movie { movie: byte(panel.get_debug_movie())?, kind: byte(panel.get_debug_movie_kind())? },
