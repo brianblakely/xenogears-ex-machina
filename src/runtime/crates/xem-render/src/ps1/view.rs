@@ -150,6 +150,7 @@ impl ViewConfig {
             },
             culling: super::Culling { viewport: graphics.culling.viewport, back_faces: graphics.culling.back_faces },
             full_size_sprites: graphics.full_size_sprites,
+            hide_dialogue: false,
         };
         // A headset's virtual screen takes a 16:9 shape when widened.
         let aspect = match (graphics.widescreen, host) {
@@ -359,6 +360,8 @@ pub struct GameView {
     presented_movie: bool,
     /// First-person inspection, while it is on.
     first_person: Option<FirstPerson>,
+    /// The field's dialogue windows are left out ([`DrawOptions::hide_dialogue`]).
+    dialogue_hidden: bool,
     /// What a headset shows, and the diorama's state.
     xr_view: XrView,
     diorama: Diorama,
@@ -517,6 +520,7 @@ impl GameView {
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
             first_person: None,
+            dialogue_hidden: false,
             xr_view: XrView::Screen,
             diorama: Diorama::default(),
             room: false,
@@ -540,8 +544,10 @@ impl GameView {
         self.config.as_ref()
     }
 
-    /// Applies a configuration (cheap when unchanged).
+    /// Applies a configuration (cheap when unchanged), with the dialogue
+    /// shown or hidden as [`GameView::set_dialogue_hidden`] last said.
     pub fn configure(&mut self, config: ViewConfig) {
+        let config = ViewConfig { draw: DrawOptions { hide_dialogue: self.dialogue_hidden, ..config.draw }, ..config };
         if self.config == Some(config) {
             return;
         }
@@ -638,6 +644,23 @@ impl GameView {
     /// Whether first-person inspection is on.
     pub fn first_person(&self) -> bool {
         self.first_person.is_some()
+    }
+
+    /// Leaves the field's dialogue windows (their frames, text, portraits,
+    /// prompts and choice cursors) out of what it presents, or shows them
+    /// again: hosts hide them while the player holds Select over a dialogue
+    /// (`xem_settings::look::hides_dialogue`). The frame shown is replayed
+    /// without them at once, paused or not; the game draws as before.
+    pub fn set_dialogue_hidden(&mut self, hidden: bool) {
+        self.dialogue_hidden = hidden;
+        if let Some(config) = self.config {
+            self.configure(config);
+        }
+    }
+
+    /// Whether the field's dialogue windows are left out.
+    pub fn dialogue_hidden(&self) -> bool {
+        self.dialogue_hidden
     }
 
     /// The Binaural listener's view (`xem_core::binaural::ListenerView`)

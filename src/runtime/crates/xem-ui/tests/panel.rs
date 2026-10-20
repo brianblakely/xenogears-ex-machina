@@ -1076,6 +1076,7 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Stop at ledges").next().is_some());
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Look around in FPV").next().is_some());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Hide dialogue (held)").next().is_some(), "Select held over a dialogue hides it");
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Drag").next().is_none(), "no touch controls, no drag");
     ui.set_first_person_touch(true);
     ui.update().unwrap();
@@ -1090,8 +1091,9 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(listed(&ui, "Underhand grab") && listed(&ui, "Right stick click"), "a headset lists its toggles");
     assert!(listed(&ui, "Head"), "and the head among its looks");
+    assert!(listed(&ui, "Hide dialogue (held)"), "and its Back held over a dialogue");
     assert!(!listed(&ui, "R3") && !listed(&ui, "Arrows") && !listed(&ui, "Drag"), "and none of the flat hosts' inputs");
-    for label in ["Underhand grab", "Right stick click", "Head"] {
+    for label in ["Underhand grab", "Right stick click", "Head", "Hide dialogue (held)"] {
         let key = element(&ui, label, AccessibleRole::Text);
         let (at, size) = (key.absolute_position(), key.size());
         assert!(at.x >= 0.0 && at.x + size.width <= 440.0, "{label} at {at:?} {size:?} fits the headset's panel");

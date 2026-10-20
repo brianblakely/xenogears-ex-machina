@@ -749,7 +749,8 @@ export component SettingsPanel inherits Window {
     // The host offers first-person inspection (the game controls list it),
     // its touch controls show (a finger dragged on the picture looks), and
     // it plays in a headset (the underhand grab and the controllers' Back,
-    // their right stick's click, toggle it; their right stick turns it).
+    // their right stick's click, toggle it; their right stick turns it; that
+    // Back held hides a dialogue, as Select does elsewhere).
     in property <bool> first-person;
     in property <bool> first-person-touch;
     in property <bool> first-person-headset;
@@ -1506,6 +1507,10 @@ export component SettingsPanel inherits Window {
                                         : root.mouse-camera
                                         ? (root.first-person-touch ? ["Arrows", "Right stick", "Mouse", "Drag"] : ["Arrows", "Right stick", "Mouse"])
                                         : (root.first-person-touch ? ["Arrows", "Right stick", "Drag"] : ["Arrows", "Right stick"]);
+                                }
+                                ControlRow {
+                                    action: "Hide dialogue (held)";
+                                    inputs: root.first-person-headset ? ["Right stick click"] : ["Select"];
                                 }
                                 ControlRow { action: "Settings"; inputs: ["Esc", "Back+Start"]; }
                             }

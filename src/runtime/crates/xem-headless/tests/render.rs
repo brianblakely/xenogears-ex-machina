@@ -1418,3 +1418,154 @@ fn reveal_frames_counts_every_frame_reveals_more_culled_faces_pulled_back_and_le
     assert_eq!(ram(&wider), ram(&plain), "the RAM after reveal_frames is that of plain frames");
     assert_eq!(ram(&one_by_one), ram(&plain), "the RAM after reveal_frames a frame at a time is that of plain frames");
 }
+
+/// The open dialogue windows' areas on the original screen as field 12's
+/// draw them (`field_dialogue_windows`: in use while `busy` +0x40E is 0,
+/// their frame's rectangle at +0xAC and its border pieces up to 8 pixels
+/// beyond it, 10 below), none while one still opens (`timer` +0x408) and
+/// slides from its speaker.
+fn dialogue_areas(session: &mut Session<NativeModule>) -> Option<Vec<[i32; 4]>> {
+    let mut areas = Vec::new();
+    for window in 0..4u32 {
+        let mut bytes = [0u8; 0x498];
+        session.runtime.memory().read(0x800C_2698 + window * 0x498, &mut bytes).unwrap();
+        let half = |at: usize| i32::from(i16::from_le_bytes([bytes[at], bytes[at + 1]]));
+        if half(0x40E) != 0 {
+            continue;
+        }
+        if half(0x408) != 0 {
+            return None;
+        }
+        let (x, y, w, h) = (half(0xAC), half(0xAE), half(0xB0), half(0xB2));
+        areas.push([x - 8, y - 8, x + w + 8, y + h + 10]);
+    }
+    Some(areas)
+}
+
+/// Field 12's opening dialogue (a window with its text and the speaker's
+/// portrait) as the port records it: every primitive traced from the run of
+/// packets its windows linked lies within the windows. Held hidden (the
+/// player's Select over it, which the game gets either way) the frames
+/// presented wider and interpolated differ from those shown only where the
+/// windows lie, and the windows show again once let go; under HD-2D, as the
+/// issue's player plays, the rest of the picture also moves by the few
+/// levels its exposure eases each presentation (`EffectsRenderer`'s scene
+/// average), and holding and letting go each present once more. The game
+/// ends at the RAM (with the RNG), VRAM, sound, time and whole state of the
+/// same frames run with nothing presented.
+#[test]
+fn a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is() {
+    use xem_gpu::TraceOp;
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "enter_field", "map": 12})).get("error").is_none());
+    let reply = session.execute(&json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    // The window open, its text under way.
+    assert!(session.execute(&json!({"cmd": "frames", "count": 60})).get("error").is_none());
+    let initial = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    const PLAYED: u64 = 90;
+    const HIDDEN: std::ops::Range<u64> = 30..60;
+    // The frames with Select held throughout, presented under `graphics`
+    // (with the windows hidden for `HIDDEN` when `hide`) or not: the
+    // pictures of frames 45 and 75, the primitives the trace marked as the
+    // dialogue's and those outside the windows, the windows' areas then,
+    // and the state.
+    let play = |session: &mut Session<NativeModule>, graphics: Option<Graphics>, hide: bool| {
+        session.restore_bytes(&initial).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let (mut pictures, mut marked, mut outside, mut areas) = (Vec::new(), 0, 0, Vec::new());
+        for n in 0..PLAYED {
+            session.execute(&json!({"cmd": "pad", "buttons": ["select"]}));
+            let Some(graphics) = graphics else {
+                assert!(session.frame().expect("frame"));
+                continue;
+            };
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+            view.set_dialogue_hidden(hide && HIDDEN.contains(&n));
+            assert!(session.frame().expect("frame"));
+            let shown = dialogue_areas(session);
+            let device = session.runtime.services().gpu.device_mut();
+            if view.take_restart() || !device.trace_enabled() {
+                device.set_trace(true);
+            }
+            device.set_reveals(view.reveals());
+            let trace = device.take_trace();
+            for op in &trace.ops {
+                let TraceOp::Draw(p) = op else { continue };
+                if !p.dialogue {
+                    continue;
+                }
+                marked += 1;
+                let (dx, dy) = (i32::from(p.environment.offset.0), i32::from(p.environment.offset.1));
+                let within = |area: &[i32; 4]| p.vertices[..p.vertex_count()].iter().all(|v| {
+                    (area[0]..=area[2]).contains(&(v.x - dx)) && (area[1]..=area[3]).contains(&(v.y - dy))
+                });
+                if let Some(shown) = &shown && !shown.iter().any(within) {
+                    outside += 1;
+                }
+            }
+            view.push(trace);
+            let display = session.runtime.services().gpu.device().display();
+            let scene = session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("a presented frame");
+            gpu.queue.submit([encoder.finish()]);
+            if n == 45 || n == 75 {
+                let picture = view.presented_texture().unwrap();
+                let size = (picture.width(), picture.height());
+                pictures.push((size, xem_render::read_rgba8(&gpu.device, &gpu.queue, picture), display));
+                areas.push(shown.expect("the windows open"));
+            }
+        }
+        let state = (session.memory_hash().unwrap(),
+            session.runtime.services().gpu.device().save(),
+            session.runtime.services().spu.chip().save(),
+            session.runtime.services().clock.now);
+        (state, pictures, marked, outside, areas, whole(session))
+    };
+    let (original, _, _, _, _, unseen) = play(&mut session, None, false);
+    for (name, graphics, levels) in [
+        ("wider", Graphics { widescreen: true, interpolation: true, ..Default::default() }, 0),
+        ("hd2d", Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() }, 3),
+    ] {
+        let (shown, with, marked, outside, areas, _) = play(&mut session, Some(graphics), false);
+        let (hidden, without, _, _, _, hid) = play(&mut session, Some(graphics), true);
+        // Optional local inspection artifacts; original game assets stay local.
+        if let Some(directory) = std::env::var_os("XEM_DIALOGUE_CAPTURE") {
+            std::fs::create_dir_all(&directory).unwrap();
+            for (held, pictures) in [("shown", &with), ("hidden", &without)] {
+                for (((width, height), pixels, _), frame) in pictures.iter().zip([45, 75]) {
+                    let path = PathBuf::from(&directory).join(format!("{name}-{held}-{frame}.png"));
+                    let mut encoder = png::Encoder::new(std::fs::File::create(path).unwrap(), *width, *height);
+                    encoder.set_color(png::ColorType::Rgba);
+                    let opaque: Vec<u8> = pixels.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+                    encoder.write_header().unwrap().write_image_data(&opaque).unwrap();
+                }
+            }
+        }
+        eprintln!("{name}: {marked} primitives traced as the dialogue's in {PLAYED} frames, {outside} outside its windows {:?}", areas[0]);
+        assert!(marked > 2 * PLAYED as usize, "{name}: the window's text and portrait each frame ({marked})");
+        assert_eq!(outside, 0, "{name}: the dialogue's primitives lie within its windows");
+        // Held hidden: the picture differs (by more than `levels`) only
+        // where the windows lie.
+        let ((width, height), shown_pixels, display) = &with[0];
+        let scale = *height as f32 / display.height as f32;
+        let side = (*width as f32 / scale - display.width as f32) / 2.0;
+        let apart = |a: &[u8], b: &[u8]| a.chunks_exact(4).zip(b.chunks_exact(4)).enumerate()
+            .filter(|(_, (a, b))| (0..3).any(|c| a[c].abs_diff(b[c]) > levels))
+            .map(|(i, _)| ((i % *width as usize) as f32 / scale - side, (i / *width as usize) as f32 / scale))
+            .collect::<Vec<_>>();
+        let differing = apart(shown_pixels, &without[0].1);
+        let lies = |(x, y): (f32, f32)| areas[0].iter().any(|a| x >= a[0] as f32 - 1.0 && x <= a[2] as f32 + 1.0 && y >= a[1] as f32 - 1.0 && y <= a[3] as f32 + 1.0);
+        let beyond = differing.iter().filter(|&&point| !lies(point)).count();
+        eprintln!("{name} held hidden: {} pixels of {width}x{height} differ by more than {levels} levels, {beyond} beyond the windows", differing.len());
+        assert!(differing.len() as f32 > 2000.0 * scale * scale, "{name}: the windows go ({} pixels)", differing.len());
+        assert_eq!(beyond, 0, "{name}: and nothing else");
+        assert_eq!(apart(&with[1].1, &without[1].1).len(), 0, "{name}: let go, the windows show again");
+        assert_eq!(shown, original, "{name}: presenting the dialogue cannot change RAM (with the RNG), VRAM, sound or time");
+        assert_eq!(hidden, original, "{name}: nor hiding it");
+        presentation_only(&mut session, &hid, &unseen).unwrap_or_else(|at| panic!("{name}: hiding the dialogue changes the whole state: {at}"));
+    }
+}

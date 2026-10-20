@@ -375,6 +375,15 @@ impl ImportHandler for Services {
                         Err(error) => { self.trap_reason = Some(error); return Action::Trap; }
                     }
                 }
+                if arg(0) == crate::presentation::DIALOGUE && self.gpu.device().trace_enabled() {
+                    match (memory.read_u32(arg(1)), memory.read_u32(arg(1).wrapping_add(4))) {
+                        (Ok(newest), Ok(oldest)) => self.gpu.device_mut().trace_dialogue(newest, oldest),
+                        _ => {
+                            self.trap_reason = Some("presentation record outside memory".into());
+                            return Action::Trap;
+                        }
+                    }
+                }
                 if self.presentation.enabled {
                     let mut bytes = vec![0; arg(2).min(0x1000) as usize];
                     if memory.read(arg(1), &mut bytes).is_err() {

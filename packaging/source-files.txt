@@ -652,6 +652,7 @@ src/port/binaural.c
 src/port/bios.c
 src/port/boot.c
 src/port/controls.c
+src/port/dialogue.c
 src/port/disc.c
 src/port/division.c
 src/port/encounters.c

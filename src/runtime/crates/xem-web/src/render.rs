@@ -432,6 +432,16 @@ impl WebRenderer {
         self.renderer.set_first_person(on);
     }
 
+    /// Whether the field's dialogue windows are left out
+    /// (`GameView::dialogue_hidden`).
+    pub fn dialogue_hidden(&self) -> bool {
+        self.renderer.dialogue_hidden()
+    }
+
+    pub fn set_dialogue_hidden(&mut self, hidden: bool) {
+        self.renderer.set_dialogue_hidden(hidden);
+    }
+
     /// Turns the first-person view (`GameView::look_around`).
     pub fn look_around(&mut self, yaw: f32, pitch: f32) {
         self.renderer.look_around(yaw, pitch);

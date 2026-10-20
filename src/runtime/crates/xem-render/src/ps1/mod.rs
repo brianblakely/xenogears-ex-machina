@@ -200,11 +200,22 @@ pub struct DrawOptions {
     /// The party's small sprites of a large-scale field drawn as the
     /// full-size frames the port assembled ([`xem_gpu::Primitive::full_size`]).
     pub full_size_sprites: bool,
+    /// The field's dialogue windows ([`xem_gpu::Primitive::dialogue`]) left
+    /// out of the frames presented, while the player holds Select over one
+    /// ([`GameView::set_dialogue_hidden`]; no setting): the picture of VRAM
+    /// keeps them, as VRAM does.
+    pub hide_dialogue: bool,
 }
 
 impl Default for DrawOptions {
     fn default() -> Self {
-        Self { fidelity: Fidelity::MODERN, filtering: Filtering::default(), culling: Culling::default(), full_size_sprites: false }
+        Self {
+            fidelity: Fidelity::MODERN,
+            filtering: Filtering::default(),
+            culling: Culling::default(),
+            full_size_sprites: false,
+            hide_dialogue: false,
+        }
     }
 }
 
@@ -909,6 +920,9 @@ impl<'a> Builder<'a> {
 
     /// One traced primitive as triangles under its pipelines.
     pub(crate) fn primitive(&mut self, p: &Primitive) {
+        if p.dialogue && self.options.hide_dialogue {
+            return;
+        }
         // Viewport culling is the game's against its own screen, which a
         // camera within the scene does not look through.
         if p.revealed && !self.restores_sliver(p) && (self.reveal == Reveal::Hidden || (self.options.culling.viewport && self.near.is_none())) {
@@ -2441,7 +2455,9 @@ impl Ps1Renderer {
             let logs = &self.logs;
             self.earlier.retain(|capture| !capture.replayed || capture.rect.is_some_and(|rect| copied_from(logs, rect)));
         }
-        let options = self.options;
+        // The dialogue stays in VRAM's picture: the frames presented while it
+        // is hidden are replayed without it.
+        let options = DrawOptions { hide_dialogue: false, ..self.options };
         let mut builder = Builder::reusing(&options, ops, &mut self.storage);
         builder.seal = self.seal;
         // (Its sides have no place in VRAM.)

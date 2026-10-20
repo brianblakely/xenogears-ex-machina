@@ -1007,7 +1007,8 @@ impl View {
     /// battle's attack inputs have the buttons, `xem_settings::bindings`).
     /// In a field they also toggle and turn first-person inspection, which
     /// holds back the buttons that would walk, jump or turn the camera
-    /// (`xem_settings::look`), as the app's Toggle first-person view does.
+    /// (`xem_settings::look`), as the app's Toggle first-person view does,
+    /// and Select held over a dialogue hides its windows.
     pub fn pad_buttons(&mut self, context: PadContext, targets: Option<xem_core::menu::Targets>) -> u16 {
         self.game_ui = context.ui;
         self.targets = targets;
@@ -1018,6 +1019,7 @@ impl View {
             self.look_mouse = [0.0; 2];
             self.deck.take_drag();
             self.looked = None;
+            self.renderer.set_dialogue_hidden(false);
             return 0;
         }
         let now = self.frame_rate_started.elapsed().as_secs_f64() * 1000.0;
@@ -1043,6 +1045,11 @@ impl View {
         let field = context.field;
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
+        // Held over a dialogue, Select hides its windows (presentation only),
+        // presented anew as it changes, paused or not.
+        let hidden = xem_settings::look::hides_dialogue(select, &self.pad, context.ui);
+        self.fresh_frame |= hidden != self.renderer.dialogue_hidden();
+        self.renderer.set_dialogue_hidden(hidden);
         let setting = self.settings.borrow().settings().graphics.renderer;
         let drawn = setting == xem_settings::Renderer::ExMachina;
         let asked = std::mem::take(&mut self.look_asked);
@@ -1760,6 +1767,60 @@ mod tests {
         view.finger(Finger::Down, 2, across(select));
         assert_eq!(view.pad_buttons(PadContext { field: FieldControls { picture: true, ..walking }, ..context }, None) & button::SELECT, button::SELECT);
         assert!(!view.first_person());
+    }
+
+    #[test]
+    fn select_held_over_a_dialogue_hides_its_windows_and_stays_the_games() {
+        use xem_assist::touch::Control;
+        use xem_core::FieldControls;
+        use xem_core::context::Context;
+        use xem_core::pad::button;
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let (width, height) = (1280u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings, false).unwrap();
+        let black: Vec<_> = (0..320 * 240).flat_map(|_| [0, 0, 0, 255]).collect();
+        view.set_game_image(&gpu, (320, 240), &black);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("touch target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        view.render(&gpu, &target.create_view(&Default::default()), 0.0).unwrap();
+        let ui = Context::Dialogue { choice: None };
+        let dialogue = PadContext { field: FieldControls { field: true, ..FieldControls::default() }, ui, ..PadContext::default() };
+        let at = |view: &View| {
+            let (x, y) = view.deck.controls.iter().find(|(c, _)| *c == Control::Select).unwrap().1.centre();
+            (x / width as f32, y / height as f32)
+        };
+        view.arrange(ui);
+        let select = at(&view);
+        // The deck's SELECT held: the game has Select, the view hides the
+        // dialogue's windows.
+        view.finger(Finger::Down, 1, select);
+        assert_eq!(view.pad_buttons(dialogue, None), button::SELECT);
+        assert!(view.renderer.dialogue_hidden() && !view.first_person(), "hidden, and no view toggled");
+        view.finger(Finger::Up, 1, select);
+        assert_eq!(view.pad_buttons(dialogue, None), 0);
+        assert!(!view.renderer.dialogue_hidden(), "let go, they show");
+        // Held as the settings panel opens: they show under it.
+        view.finger(Finger::Down, 2, select);
+        view.pad_buttons(dialogue, None);
+        view.set_panel_visible(true);
+        assert_eq!(view.pad_buttons(dialogue, None), 0);
+        assert!(!view.renderer.dialogue_hidden(), "the panel has the input");
+        view.set_panel_visible(false);
+        view.finger(Finger::Up, 2, select);
+        assert_eq!(view.pad_buttons(dialogue, None), 0);
+        // Where the player walks no dialogue shows: SELECT toggles the view.
+        let walking = PadContext { field: FieldControls { walking: true, ..dialogue.field }, ui: Context::Walk, ..dialogue };
+        view.arrange(Context::Walk);
+        view.finger(Finger::Down, 3, at(&view));
+        assert_eq!(view.pad_buttons(walking, None), 0);
+        assert!(view.first_person() && !view.renderer.dialogue_hidden());
     }
 
     #[test]

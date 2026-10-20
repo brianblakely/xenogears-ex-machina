@@ -1171,6 +1171,7 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         full_size: None,
         backdrop: false,
         movie: false,
+        dialogue: false,
     })
 }
 
@@ -3114,4 +3115,84 @@ fn a_headsets_eyes_see_each_sprite_stand_in_one_place_facing_the_head() {
     // Each facing its own eye's plane, the eyes would see two.
     let apart = seen(None);
     assert!(!apart[0].iter().zip(&apart[1]).all(|(a, b)| close(*a, *b)), "each eye's own plane turns the sprite");
+}
+
+/// [`projected_scene`] with, by DMA from one ordering-table entry, an
+/// interface rectangle (the compass's place) and, with `dialogue`, a window
+/// the field's dialogue linked there before it: its backing and a line of
+/// its text, the run the port records as the dialogue's.
+fn dialogue_frame(gpu: &mut xem_gpu::Gpu, dialogue: bool) {
+    projected_scene(gpu);
+    let mut ram = Ram(vec![0; 0x4000]);
+    let mut node = |at: u32, next: u32, words: &[u32]| {
+        ram.0[at as usize >> 2] = (words.len() as u32) << 24 | next;
+        ram.0[(at as usize >> 2) + 1..][..words.len()].copy_from_slice(words);
+    };
+    node(0x1000, 0x1100, &[]);
+    node(0x1100, if dialogue { 0x1200 } else { 0xFF_FFFF }, &[0x6000_FF00, xy(20, 20), xy(30, 20)]);
+    node(0x1200, 0x1300, &[0x6000_6020, xy(40, 150), xy(200, 50)]);
+    node(0x1300, 0xFF_FFFF, &[0x6000_FFFF, xy(50, 160), xy(100, 8)]);
+    if dialogue {
+        gpu.trace_dialogue(0x1200, 0x1300);
+    }
+    gpu.dma_linked_list(&ram, 0x1000, 1 << 16).unwrap();
+}
+
+fn with_dialogue(gpu: &mut xem_gpu::Gpu) {
+    dialogue_frame(gpu, true);
+}
+
+fn without_dialogue(gpu: &mut xem_gpu::Gpu) {
+    dialogue_frame(gpu, false);
+}
+
+/// While the player holds Select over a dialogue (`GameView::set_dialogue_hidden`),
+/// the frame presented is the frame as drawn without its windows: at once,
+/// with no new frame, and for the frames drawn meanwhile; framed as the game
+/// framed it, wider, and with HD-2D's effects wider and interpolated. Let
+/// go, with no new frame, the windows show again: VRAM's picture kept them.
+#[test]
+fn a_dialogue_held_hidden_presents_the_frame_without_its_windows_and_shows_them_again() {
+    use xem_settings::{Graphics, GraphicsProfile};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let shown = traced_takes(&[with_dialogue, with_dialogue]);
+    let without = traced_takes(&[without_dialogue, without_dialogue]);
+    let marked = |trace: &xem_gpu::Trace| trace.ops.iter().filter(|op| matches!(op, TraceOp::Draw(p) if p.dialogue)).count();
+    assert_eq!((marked(&shown.1[1]), marked(&without.1[1])), (2, 0), "the window's backing and text are the dialogue's");
+    for graphics in [
+        Graphics::default(),
+        Graphics { widescreen: true, ..Default::default() },
+        Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() },
+    ] {
+        let present = |view: &mut GameView| {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &DISPLAY, "field:1", 0.0).expect("a picture");
+            gpu.queue.submit([encoder.finish()]);
+            read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"))
+        };
+        // Four presentations, held hidden as `held` says: the first frame,
+        // that frame again, the second frame, that frame again.
+        let play = |(sync, frames): &(xem_gpu::Trace, Vec<xem_gpu::Trace>), held: [bool; 4]| -> Vec<Vec<u8>> {
+            let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 480), view.max_scale()));
+            let _ = view.take_restart();
+            view.push(sync.clone());
+            held.iter().enumerate().map(|(n, &hidden)| {
+                if n % 2 == 0 {
+                    view.push(frames[n / 2].clone());
+                }
+                view.set_dialogue_hidden(hidden);
+                assert_eq!(view.dialogue_hidden(), hidden);
+                present(&mut view)
+            }).collect()
+        };
+        let with = play(&shown, [false; 4]);
+        let hidden = play(&shown, [false, true, true, false]);
+        // Without the window, presented as a hidden frame is.
+        let expected = play(&without, [true; 4]);
+        assert_ne!(with[0], expected[0], "{graphics:?}: the window shows");
+        assert!(hidden[1] == expected[1], "{graphics:?}: held, the frame shows as drawn without the window at once");
+        assert!(hidden[2] == expected[2], "{graphics:?}: and the frames drawn meanwhile");
+        assert!(hidden[3] == with[3], "{graphics:?}: let go, the window shows again");
+    }
 }

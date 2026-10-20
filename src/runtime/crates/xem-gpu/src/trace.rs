@@ -23,6 +23,8 @@
 //! The port records the faces its renderers culled at the edges of the
 //! original screen as well; they are traced as [`Primitive::revealed`]
 //! where the game would have linked them, for wider views, and never drawn.
+//! It also records the run of packets the field's dialogue windows linked,
+//! and what the DMA walk draws from it is traced as [`Primitive::dialogue`].
 
 use crate::{Gpu, VRAM_HEIGHT, VRAM_WIDTH};
 use std::collections::HashMap;
@@ -468,6 +470,12 @@ pub struct Primitive {
     /// and nothing changed since (a window movie the field shows on a
     /// screen in its world). Presentation only.
     pub movie: bool,
+    /// Drawn from the packets the field's dialogue windows linked (their
+    /// frames, text, portraits, prompts and choice cursors), as the port
+    /// records their run ([`Gpu::trace_dialogue`]): left out of the picture
+    /// while the player holds Select over a dialogue. Presentation only, as
+    /// [`Primitive::facing`].
+    pub dialogue: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -705,6 +713,11 @@ pub(crate) struct Recorder {
     /// primitives traced from it so far.
     source: u32,
     source_index: u32,
+    /// The run of packets the field's dialogue windows linked last, as the
+    /// port recorded it (its newest node and its oldest), until the DMA walk
+    /// enters it; then the node it ends with, until the walk leaves that.
+    dialogue: Option<(u32, u32)>,
+    dialogue_end: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -986,6 +999,16 @@ impl Gpu {
             keep_alternative(&mut trace.full_sizes, first, last, full_size);
         }
     }
+
+    /// The field's dialogue windows linked a run of packets at their
+    /// ordering-table entry, from `newest` (the entry's head) to `oldest`
+    /// (24-bit addresses): what the DMA walk draws from it next is the
+    /// dialogue's ([`Primitive::dialogue`]).
+    pub fn trace_dialogue(&mut self, newest: u32, oldest: u32) {
+        if let Some(trace) = &mut self.trace {
+            trace.dialogue = Some((newest & ADDRESS_MASK, oldest & ADDRESS_MASK));
+        }
+    }
     /// Turns the draw trace on or off. Turning it on starts the next trace
     /// with the whole VRAM.
     pub fn set_trace(&mut self, enabled: bool) {
@@ -1104,6 +1127,15 @@ impl Gpu {
     /// at an ordering-table entry are traced when the walk reaches it.
     pub(crate) fn trace_source(&mut self, node: u32) {
         let Some(trace) = &mut self.trace else { return };
+        // The dialogue's run, from its newest node through its oldest.
+        if node == 0 {
+            if trace.dialogue_end == Some(trace.source) {
+                trace.dialogue_end = None;
+            }
+        } else if let Some((_, oldest)) = trace.dialogue.filter(|&(newest, _)| newest == node) {
+            trace.dialogue = None;
+            trace.dialogue_end = Some(oldest);
+        }
         trace.source = node;
         trace.source_index = 0;
         let Some(mut faces) = trace.reveals.remove(&node) else { return };
@@ -1448,6 +1480,7 @@ impl Gpu {
             full_size,
             backdrop,
             movie,
+            dialogue: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1517,6 +1550,7 @@ impl Gpu {
             full_size: None,
             backdrop: false,
             movie,
+            dialogue: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1553,6 +1587,7 @@ impl Gpu {
             full_size: None,
             backdrop,
             movie: false,
+            dialogue: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1573,6 +1608,7 @@ impl Gpu {
         }
         if trace.source != 0 {
             primitive.source = trace.source << 8 | (trace.source_index & 0xFF);
+            primitive.dialogue = trace.dialogue_end.is_some();
             trace.source_index += 1;
         }
         if min_x <= max_x && min_y <= max_y && max_x >= 0 && max_y >= 0 {

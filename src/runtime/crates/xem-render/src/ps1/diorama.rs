@@ -917,6 +917,7 @@ fn fill_primitive(rect: VramRect, rgb: u32, fifteen: bool) -> Primitive {
         full_size: None,
         backdrop: false,
         movie: false,
+        dialogue: false,
     }
 }
 
@@ -1090,8 +1091,9 @@ struct Built {
     placed: Placed,
     area: DisplayArea,
     /// Built for the room around the table (its wall without the game's
-    /// clear).
+    /// clear), and with the dialogue's windows hidden.
     room: bool,
+    hidden: bool,
     commands: Vec<Command>,
 }
 
@@ -1450,8 +1452,9 @@ impl Diorama {
             let h = projection_distance(ops, scene_offset(ops)).unwrap_or(256.0);
             let placed = self.placement.update(&camera, h, scene, new_frame, now, table)?;
             let identity = (frame.identity(), frame.drawn());
+            let hidden = renderer.options().hide_dialogue;
             let rebuild = gpu.built.as_ref().is_none_or(|built| {
-                built.identity != identity || built.area != area || built.room != room || wrap(built.heading - placed.heading).abs() > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
+                built.identity != identity || built.area != area || built.room != room || built.hidden != hidden || wrap(built.heading - placed.heading).abs() > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
             });
             if rebuild {
                 let base = *renderer.options();
@@ -1465,7 +1468,7 @@ impl Diorama {
                 };
                 self.stats = DioramaStats { builds: self.stats.builds + 1, ..stats };
                 let writes = ops.iter().filter(|op| matches!(op, TraceOp::Write { .. })).cloned().collect();
-                gpu.built = Some(Built { identity, heading: placed.heading, scale: placed.scale, toward: placed.toward, start, writes, camera, placed, area, room, commands });
+                gpu.built = Some(Built { identity, heading: placed.heading, scale: placed.scale, toward: placed.toward, start, writes, camera, placed, area, room, hidden, commands });
             } else if let Some(built) = &mut gpu.built {
                 built.placed = placed;
             }

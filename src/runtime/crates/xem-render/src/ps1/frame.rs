@@ -484,8 +484,9 @@ impl FrameRenderer {
         let pulled = framing.pull_back > 0.0;
         // The interface alone has no scene to look at.
         let look = framing.look.filter(|_| framing.interface != Interface::Only);
+        // VRAM's picture keeps the dialogue the player hides.
         let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || look.is_some() || framing.replay || feedback
-            || framing.interface != Interface::Drawn)
+            || framing.interface != Interface::Drawn || renderer.options().hide_dialogue)
             && !self.newest_ops.is_empty();
         let side = if replay { framing.side } else { 0 };
         self.resize(device, ((area.width.max(1) + 2 * side) * scale, area.height.max(1) * scale));

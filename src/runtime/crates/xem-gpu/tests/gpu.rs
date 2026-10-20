@@ -878,6 +878,41 @@ fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_th
     assert_eq!(p.class, xem_gpu::Class::Flat);
 }
 
+/// The field's dialogue windows link their packets at one ordering-table
+/// entry, a run the port records by its newest and oldest packets (the
+/// newest's links lead to the oldest, whose link is what the entry held
+/// before). What the DMA walk draws from that run is the dialogue's, and
+/// nothing else: not what was linked there before or after it, and not the
+/// same packets walked again without a record.
+#[test]
+fn the_dialogues_run_of_packets_traces_as_the_dialogue_until_the_walk_passes_it() {
+    use xem_gpu::TraceOp;
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let tile = |x: i32| [0x6000_FFFF, xy(x, 10), xy(8, 8)];
+    // The entry, a packet linked after the dialogue drew, the dialogue's
+    // backing, a draw mode and a glyph's rectangle, and the packet linked
+    // before it.
+    ram.node(0x1000, 0x1800, &[]);
+    ram.node(0x1800, 0x2000, &tile(0));
+    ram.node(0x2000, 0x3000, &tile(10));
+    ram.node(0x3000, 0x4000, &[0xE100_0200]);
+    ram.node(0x4000, 0x5000, &tile(20));
+    ram.node(0x5000, 0xFF_FFFF, &tile(30));
+    let walk = |gpu: &mut Gpu| {
+        gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+        let ops = gpu.take_trace().ops;
+        ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.vertices[0].x, p.dialogue)) } else { None }).collect::<Vec<_>>()
+    };
+    gpu.trace_dialogue(0x2000, 0x4000);
+    assert_eq!(walk(&mut gpu), [(0, false), (10, true), (20, true), (30, false)], "the run's primitives alone");
+    assert_eq!(walk(&mut gpu), [(0, false), (10, false), (20, false), (30, false)], "a record serves the walk it was made for");
+    gpu.trace_dialogue(0x4000, 0x4000);
+    assert_eq!(walk(&mut gpu), [(0, false), (10, false), (20, true), (30, false)], "a run of one packet");
+}
+
 #[test]
 fn interface_projections_trace_as_flat_whole_pixels() {
     use xem_gpu::{Class, Projection, SxyStore, TraceOp};

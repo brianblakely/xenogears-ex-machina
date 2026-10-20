@@ -365,7 +365,8 @@ impl SettingsUi {
 
     /// Whether the host plays in a headset: the Controls section lists the
     /// underhand grab and the controllers' Back (their right stick's click)
-    /// as inspection's toggles, and their right stick as its look.
+    /// as inspection's toggles, their right stick as its look, and that Back
+    /// held as what hides a dialogue (elsewhere Select).
     pub fn set_first_person_headset(&self, headset: bool) {
         self.panel.set_first_person_headset(headset);
     }

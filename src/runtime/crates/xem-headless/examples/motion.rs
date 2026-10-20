@@ -23,7 +23,8 @@
 //! loads a state of the field `--map` at that frame. From the scene, the game runs `frames` frames holding the given
 //! buttons (and tapping one every so many frames, through menus and result
 //! screens, over a script's pads too; `--press` presses one at a kept
-//! frame, for two frames); each game frame is presented `present` times at evenly spaced
+//! frame, for two frames; Select held over a dialogue also hides its
+//! windows, as in the hosts); each game frame is presented `present` times at evenly spaced
 //! host times through the hosts' GameView. `--ff` runs that many game
 //! frames for each presented one, as a host's fast-forward does;
 //! `--original` shows those kept frames with the Original renderer (no
@@ -544,6 +545,9 @@ fn main() {
         if script.is_none() || tap.is_some() || !presses.is_empty() {
             session.set_pad(0, buttons | tapped | pressed);
         }
+        // Select held over a dialogue hides its windows, as in the hosts.
+        let select = (buttons | tapped | pressed) & xem_core::pad::button::SELECT != 0;
+        view.set_dialogue_hidden(xem_settings::look::hides_dialogue(select, &[0; 16], session.runtime.context()));
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
         if let Some((_, _, turn)) = look {
             view.look_around(turn.to_radians(), 0.0);

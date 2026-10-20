@@ -807,6 +807,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 view.look_around(snap.update(axes[2]), 0.0);
             }
         }
+        // The controllers' Back held alone over a dialogue hides its windows.
+        view.set_dialogue_hidden(!visible && xem_settings::look::hides_dialogue(false, &pressed, context.ui));
         let mut ran = 0;
         if !game_paused {
             if visible { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }

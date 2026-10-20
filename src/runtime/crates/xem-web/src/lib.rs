@@ -774,11 +774,12 @@ impl XemApp {
     /// anywhere in one but its menu by the app's Toggle first-person view;
     /// while it shows, turned by the arrow keys, the right stick, a finger on
     /// the picture and the mouse the game holds, or in a headset by the right
-    /// stick in steps (the head looks around). Whether it shows. Neither
-    /// happens while the settings panel has the input or the page has lost
-    /// focus, when the game's buttons are let go too (the page reads the
-    /// gamepad whatever the focus). The Original renderer ends it.
-    fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
+    /// stick in steps (the head looks around). Whether it shows. Over a
+    /// dialogue (`ui`), Select held hides its windows. None of it happens
+    /// while the settings panel has the input or the page has lost focus,
+    /// when the game's buttons are let go too (the page reads the gamepad
+    /// whatever the focus). The Original renderer ends the view.
+    fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, ui: xem_core::context::Context, now: f64) -> bool {
         // The mouse's and a finger's motion are the view's this frame, or no
         // one's, as Toggle first-person view asked for since the last.
         let mut mouse = std::mem::take(&mut self.look_mouse);
@@ -799,10 +800,15 @@ impl XemApp {
             self.look_toggle.clear();
             self.snap.clear();
             self.looked = None;
+            renderer.set_dialogue_hidden(false);
             return renderer.first_person();
         }
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| self.input.key_held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
+        // Presented anew as it changes, paused or not.
+        let hidden = xem_settings::look::hides_dialogue(select, &self.pad, ui);
+        self.display_dirty |= hidden != renderer.dialogue_hidden();
+        renderer.set_dialogue_hidden(hidden);
         let was = renderer.first_person();
         if self.look_toggle.update(select, &self.pad, field) && drawn {
             renderer.set_first_person(!was);
@@ -843,8 +849,9 @@ impl XemApp {
         // First-person inspection is toggled and turned whether the game
         // runs or not (a headset's Pause stands apart from it).
         let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let ui = self.session.as_mut().map_or(xem_core::context::Context::None, |s| s.runtime.context());
         let bindings = self.settings.borrow().settings().game_bindings.clone();
-        let inspecting = self.look(&bindings, field, now);
+        let inspecting = self.look(&bindings, field, ui, now);
         // The Binaural listener looks where the presentation looks, whether
         // the game runs or not, as the head turns it (presentation only).
         if let Some(session) = self.session.as_mut() {

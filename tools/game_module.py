@@ -86,6 +86,7 @@ WRAPPED |= {"sprite_request_frame", "sprite_queue_upload", "sprite_reserve_textu
 WRAPPED |= {"battle_command_panel_fade", "sprite_set_view_matrix", "field_encounter_count_down"}
 WRAPPED |= {"window_reveal_text", "field_movie_run_frames", "movie_mode_read_playback_input"}
 WRAPPED |= {"battle_resolve_action", "battle_results_grant_exp_skills_and_drops", "battle_results_run_screens"}
+WRAPPED |= {"field_dialogue_draw_windows"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

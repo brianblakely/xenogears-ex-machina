@@ -12,9 +12,12 @@
 //! In a headset the head looks around, and the right stick turns the view
 //! in steps ([`SnapTurn`]). The app's Toggle first-person view action and
 //! agents' `first_person` command ([`Command`]) toggle it anywhere in a
-//! field but its menu, as a headset's underhand grab does.
+//! field but its menu, as a headset's underhand grab does. While a field
+//! dialogue shows, Select held hides its windows from the picture
+//! ([`hides_dialogue`]; docs/runtime.md, Hiding a dialogue).
 use xem_core::FieldControls;
 use xem_core::action::{Assignment, GameAction, INSPECTION_HELD, buttons_with};
+use xem_core::context::Context as Ui;
 use xem_core::pad::button;
 
 /// The game's buttons held back while the view is on and the player walks,
@@ -131,6 +134,18 @@ pub fn game_buttons(buttons: u16, on: bool, field: FieldControls, assignment: &A
 /// Whether the view turns now: on, but not under a menu (it has the screen).
 pub fn turns(on: bool, field: FieldControls) -> bool {
     on && !field.menu
+}
+
+/// Whether the field's dialogue windows are left out of the picture (the
+/// view's `set_dialogue_hidden`): while one shows (`ui`, the interface the
+/// input reaches, is a dialogue), as long as Select is held: `select` (any
+/// of its bound keys, a touch deck's SELECT), or a gamepad's Back alone in
+/// `pad` (with another button it begins an app chord). Presentation only:
+/// the game's buttons stay as [`game_buttons`] gives them, Select among
+/// them (map 321's scripts read it).
+pub fn hides_dialogue(select: bool, pad: &[u8; 16], ui: Ui) -> bool {
+    let back = pad[BACK] != 0 && (0..16).all(|i| i == BACK || pad[i] == 0);
+    matches!(ui, Ui::Dialogue { .. }) && (select || back)
 }
 
 /// Whether a headset's underhand grab toggles the view: in a field but its
@@ -406,6 +421,27 @@ mod tests {
         }
         assert!(!toggle.update(false, &pad(&[BACK]), PICTURE));
         assert!(!toggle.update(false, &pad(&[]), PICTURE), "the map's picture keeps Select");
+    }
+
+    #[test]
+    fn select_held_over_a_dialogue_hides_its_windows_and_the_game_still_gets_select() {
+        use xem_core::context::Choice;
+        let message = Ui::Dialogue { choice: None };
+        let choice = Ui::Dialogue { choice: Some(Choice { count: 4, index: 0 }) };
+        // Select's keys (Backspace) and a touch deck's SELECT alike.
+        assert!(hides_dialogue(true, &pad(&[]), message), "held over a message");
+        assert!(hides_dialogue(true, &pad(&[]), choice), "and over a choice");
+        assert!(!hides_dialogue(false, &pad(&[]), message), "released, the windows show again");
+        assert!(hides_dialogue(false, &pad(&[BACK]), choice), "a gamepad's Back held alone");
+        // Back+Start (the settings panel) and Back+South (save state).
+        for other in [9, 0] {
+            assert!(!hides_dialogue(false, &pad(&[BACK, other]), message), "a chord's Back hides nothing");
+        }
+        for elsewhere in [Ui::Walk, Ui::Event { map: 12, buttons: 0 }, Ui::None] {
+            assert!(!hides_dialogue(true, &pad(&[BACK]), elsewhere), "{elsewhere:?}: no dialogue shows");
+        }
+        // The game's buttons are as they were: in a dialogue, with Select.
+        assert_eq!(game_buttons(button::SELECT | button::CIRCLE, false, DIALOGUE), button::SELECT | button::CIRCLE);
     }
 
     #[test]
