@@ -44,8 +44,9 @@ const TASK_STACK_TOP: u32 = 0x100C_0000;
 const DRAW_MAP: u32 = 0x8000_0400;
 const DRAW_RAN: u32 = 0x8000_0404;
 const DRAW_PACE: u32 = 0x8000_0410;
-/// What a battle would give, as the port's reward wrappers ask it each
-/// frame (xem.reward_scale: 2 while the encounters are halved, else 1).
+/// What a battle would give, as the port's reward wrappers ask it, kept each
+/// frame the draw runs (xem.reward_scale: 2 while the encounters are
+/// halved, else 1).
 const REWARD_SCALE_SEEN: u32 = 0x8000_0414;
 /// The text speed and movie skip the port's wrappers would get
 /// (xem.text_speed, xem.movie_skip), kept each frame.
@@ -193,13 +194,13 @@ impl GameModule for Counter {
                 let ran = self.memory.read_u32(DRAW_RAN).unwrap();
                 self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
             }
+            let rewards = self.import("reward_scale", &[]);
+            self.memory.write_u32(REWARD_SCALE_SEEN, rewards).unwrap();
         }
         let glyphs = self.import("text_speed", &[]);
         let skip = self.import("movie_skip", &[]);
-        let rewards = self.import("reward_scale", &[]);
         self.memory.write_u32(TEXT_SPEED_SEEN, glyphs).unwrap();
         self.memory.write_u32(MOVIE_SKIP_SEEN, skip).unwrap();
-        self.memory.write_u32(REWARD_SCALE_SEEN, rewards).unwrap();
         if self.memory.read_u32(DIALOGUE).unwrap() != 0 {
             self.import("mode", &[1]);
             self.import("pad_read", &[0, PAD_BUFFER, 4]);
