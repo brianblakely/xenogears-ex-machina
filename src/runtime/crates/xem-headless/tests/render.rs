@@ -558,6 +558,94 @@ fn held_rewind_in_a_battle_that_never_clears_shows_its_frames() {
     }
 }
 
+/// The debug world map (boot mode 3, as Settings → Debug → Worldmap enters
+/// it) flies the party's vehicle with no field entered since the game
+/// started; Square takes the party into its interior (field 290). That
+/// field, the first entered, reads the screen as the opening movie's
+/// 24-bit picture, copies the noise it makes of the world map's 15-bit one
+/// over the shown buffer and fades in from it, noise on the console. The
+/// transition shows the picture presented last instead from its first
+/// frame (it showed the noise for a frame), and a held rewind from the
+/// interior back to the world map shows each frame as the transition
+/// showed it (the noise its states hold showed through the steps there).
+#[test]
+fn the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
+    session.execute(&json!({"cmd":"boot_mode", "mode":3}));
+    session.execute(&json!({"cmd":"frames", "count":900}));
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, ..Graphics::default() };
+    let mut tick = 0u64;
+    // One host presentation: the picture as 32 by 18 cells' mean colours,
+    // and whether it is a frame the game drew (logged), not VRAM as it is.
+    let mut present = |session: &mut Session<NativeModule>, view: &mut GameView| -> (Vec<f32>, bool) {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 360), view.max_scale()));
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        tick += 1;
+        let (width, height) = view.present(&mut encoder, &display, &scene, tick as f64 / 60.0).expect("presented").size;
+        gpu.queue.submit([encoder.finish()]);
+        let rgba = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+        let mut cells = vec![0f32; 32 * 18 * 3];
+        for y in 0..height as usize {
+            for x in 0..width as usize {
+                let cell = (y * 18 / height as usize * 32 + x * 32 / width as usize) * 3;
+                for c in 0..3 {
+                    cells[cell + c] += f32::from(rgba[(y * width as usize + x) * 4 + c]);
+                }
+            }
+        }
+        let per_cell = (width * height) as f32 / (32.0 * 18.0);
+        (cells.iter().map(|sum| sum / per_cell).collect(), view.frame().identity().is_some())
+    };
+    let difference = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(a, b)| (a - b).abs()).sum::<f32>() / a.len() as f32;
+    let mut shown = std::collections::HashMap::new();
+    let mut last: Option<Vec<f32>> = None;
+    for n in 0..600u64 {
+        clock.set(std::time::Duration::from_millis(n * 1000 / 60));
+        session.execute(&json!({"cmd":"pad", "buttons": if (20..22).contains(&n) { vec!["square"] } else { vec![] }}));
+        assert!(session.frame().unwrap());
+        let (picture, _) = present(&mut session, &mut view);
+        // From the press on (the trace begins at the first of these frames,
+        // whose sides lack the faces the game culls until it asks for them).
+        if let Some(before) = last.as_ref().filter(|_| n > 20) {
+            let change = difference(before, &picture);
+            assert!(change < 20.0, "frame {n}: the picture changed by {change:.1} at once");
+            shown.insert(session.runtime.frames(), picture.clone());
+        }
+        last = Some(picture);
+    }
+    assert_eq!(session.scene(), "field:290", "in the vehicle's interior");
+    let mut compared = 0;
+    while session.rewind_step().unwrap() {
+        let (picture, logged) = present(&mut session, &mut view);
+        let frame = session.runtime.frames();
+        if let Some(then) = shown.get(&frame).filter(|_| logged) {
+            let change = difference(then, &picture);
+            assert!(change < 2.0, "the rewind's step to frame {frame} shows it {change:.1} apart from the frame shown then");
+            compared += 1;
+        }
+    }
+    assert_eq!(session.scene(), "worldmap", "rewound back to the world map");
+    assert!(compared >= 6, "{compared} steps compared");
+}
+
 /// Starts the debug battle selector's (`battle_scene_select_values`) first
 /// event file's formation 15: the desert, its party in their Gears.
 fn start_desert_battle(session: &mut Session<NativeModule>) {

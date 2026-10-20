@@ -1547,9 +1547,10 @@ pub(crate) fn encode(
                 match copies {
                     Copies::InPlace { scratch, capture } => {
                         copy_region(encoder, target, scratch, *source, *destination, (*width, *height), 0);
-                        if capture.areas().any(|(_, screen)| screen) {
-                            copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
-                        }
+                        // A copy of a screen the game took brings its picture
+                        // (the scaled VRAM holds it only at a screen taken
+                        // elsewhere, and only once the trace taking it is drawn).
+                        copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
                     }
                     Copies::From { color, aux, scale, capture, earlier, scratch, .. } => {
                         if let Some(side) = local {
@@ -1859,6 +1860,10 @@ pub struct Ps1Renderer {
     /// Screens it took before, elsewhere in VRAM, while VRAM still holds
     /// them (newest first): a copy of one still brings its picture.
     pub(crate) earlier: Vec<Capture>,
+    /// The last screens taken, as they were taken (newest first): a state
+    /// loaded whose VRAM holds one again (a rewind's step back into a
+    /// transition) shows its picture, not the native screen.
+    taken: Vec<Capture>,
     presented: Option<PresentedPicture>,
     draws: u64,
     storage: Storage,
@@ -2092,6 +2097,7 @@ impl Ps1Renderer {
             logged: 0,
             capture,
             earlier: Vec::new(),
+            taken: Vec::new(),
             presented: None,
             draws: 0,
             storage: Storage::default(),
@@ -2114,17 +2120,21 @@ impl Ps1Renderer {
     /// VRAM was written (its picture goes back into the scaled VRAM after).
     fn watch_captures(&mut self, encoder: &mut wgpu::CommandEncoder, ops: &[TraceOp]) -> bool {
         let mut written = false;
-        for op in ops {
+        // The last copy of a screen-sized area over another (where to, where
+        // from) while neither has changed since: a screen taken from the one
+        // is the other too (the field entered first after the game starts
+        // turns the screen it reads as 24-bit into its other buffer and
+        // copies that over the shown one before it takes it).
+        let mut copied: Option<(VramRect, VramRect)> = None;
+        for (n, op) in ops.iter().enumerate() {
             // All of VRAM again (a state loaded, a rewind's step, a trace
-            // started again): no screen taken before is kept.
-            if let TraceOp::Write { rect, upload: true, .. } = op
+            // started again).
+            if let TraceOp::Write { rect, pixels, upload: true } = op
                 && u32::from(rect.width) == VRAM_WIDTH
                 && u32::from(rect.height) == VRAM_HEIGHT
             {
-                self.capture.rect = None;
-                self.capture.aliases.clear();
-                self.capture.source = None;
-                self.earlier.clear();
+                written |= self.resync_captures(pixels);
+                copied = None;
                 continue;
             }
             // Reusing a source is only an alias while that source remains
@@ -2133,6 +2143,20 @@ impl Ps1Renderer {
                 && self.capture.source.is_some_and(|source| overlap(&source, rect) > 0)
             {
                 self.capture.source = None;
+            }
+            let changed = match op {
+                TraceOp::Fill { rect, .. } | TraceOp::Write { rect, upload: true, .. } => Some(*rect),
+                TraceOp::Copy { destination, width, height, .. } => Some(VramRect { x: destination.0, y: destination.1, width: *width, height: *height }),
+                TraceOp::Draw(p) if !p.revealed => {
+                    let [x0, y0, x1, y1] = p.environment.area;
+                    Some(VramRect { x: x0, y: y0, width: (x1 + 1).saturating_sub(x0), height: (y1 + 1).saturating_sub(y0) })
+                }
+                _ => None,
+            };
+            if let Some(rect) = changed
+                && copied.is_some_and(|(to, from)| overlap(&to, &rect) > 0 || overlap(&from, &rect) > 0)
+            {
+                copied = None;
             }
             match op {
                 TraceOp::Copy { source, destination, width, height } => {
@@ -2146,12 +2170,27 @@ impl Ps1Renderer {
                             }
                             written = true;
                         } else {
-                            written |= self.take_capture(encoder, to);
+                            // Where the screen was copied from, unless that
+                            // holds a screen kept already.
+                            let kept = std::iter::once(&self.capture).chain(&self.earlier).flat_map(Capture::areas).map(|(rect, _)| rect).collect::<Vec<_>>();
+                            let before = copied.filter(|(filled, _)| *filled == from).map(|(_, before)| before).filter(|before| !kept.contains(before));
+                            // The pixels the copy leaves there follow it.
+                            let pixels = match ops.get(n + 1) {
+                                Some(TraceOp::Write { rect, pixels, .. }) if *rect == to => Some(pixels.clone()),
+                                _ => None,
+                            };
+                            let taken = self.take_capture(encoder, to, pixels);
+                            written |= taken;
                             self.capture.source = Some(from);
+                            if let Some(before) = before.filter(|_| taken) {
+                                let screen = self.is_screen(&before);
+                                self.capture.aliases.push((before, screen));
+                            }
                         }
                     } else {
                         self.invalidate_captures(to, false);
                     }
+                    copied = (*width >= 256 && *height >= 192 && source != destination).then_some((to, from));
                 }
                 // A non-upload only mirrors the native pixels of a copy,
                 // fill or drawing just traced.
@@ -2161,7 +2200,7 @@ impl Ps1Renderer {
                     if marked && inside && self.draws - self.capture.taken <= 16 {
                         written = true;
                     } else if marked && rect.width >= 256 && rect.height >= 192 && !self.is_screen(rect) {
-                        written |= self.take_capture(encoder, *rect);
+                        written |= self.take_capture(encoder, *rect, Some(pixels.clone()));
                     } else {
                         self.invalidate_captures(*rect, true);
                     }
@@ -2173,6 +2212,37 @@ impl Ps1Renderer {
         written
     }
 
+    /// All of VRAM again, `vram` (a state loaded, a rewind's step, a trace
+    /// started again): the screens kept are the ones taken before that it
+    /// holds where they were taken, as they were taken, the newest of them
+    /// the capture (the transition a rewind's step goes back into shows the
+    /// picture presented then); and a picture presented of other VRAM is
+    /// none of its screens. Returns whether one is kept.
+    fn resync_captures(&mut self, vram: &[u16]) -> bool {
+        if vram != &self.native[..] {
+            self.presented = None;
+        }
+        let (scale, draws) = (self.scale, self.draws);
+        let held = std::iter::once(&self.capture).chain(&self.taken).find(|capture| capture.held_in(vram, scale)).cloned();
+        let current = held.as_ref().map(|capture| capture.texture.clone());
+        self.earlier = std::mem::take(&mut self.earlier).into_iter()
+            .filter(|capture| capture.held_in(vram, scale) && current.as_ref() != Some(&capture.texture))
+            .map(|capture| capture.again(draws))
+            .collect();
+        let kept = held.is_some();
+        self.set_capture(held.map_or_else(|| Capture::new(&self.device, (1, 1)), |capture| capture.again(draws)));
+        kept
+    }
+
+    /// Makes `capture` the screen kept (a new texture to bind) and returns
+    /// the one it replaces.
+    fn set_capture(&mut self, mut capture: Capture) -> Capture {
+        capture.generation = self.capture.generation + 1;
+        let replaced = std::mem::replace(&mut self.capture, capture);
+        self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
+        replaced
+    }
+
     /// What overwrites VRAM lets go of the screens kept there, but for
     /// replays of a frame logged copying one (the field's saved screen,
     /// given back to textures while a buffer copied from it is shown).
@@ -2180,10 +2250,7 @@ impl Ps1Renderer {
         let held = self.capture.rect;
         self.capture.invalidate(rect, partial_upload);
         if let Some(held) = held.filter(|held| self.capture.rect.is_none() && copied_from(&self.logs, *held)) {
-            let generation = self.capture.generation + 1;
-            let mut capture = std::mem::replace(&mut self.capture, Capture::new(&self.device, (1, 1)));
-            self.capture.generation = generation;
-            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
+            let mut capture = self.set_capture(Capture::new(&self.device, (1, 1)));
             capture.rect = Some(held);
             capture.aliases.clear();
             capture.replayed = true;
@@ -2202,47 +2269,54 @@ impl Ps1Renderer {
     }
 
     /// Keeps the presented picture (its sides included) as the screen the
-    /// game took into `rect`. The screen taken before stays while VRAM
-    /// holds it elsewhere (the field's saved one, which its menu copies
-    /// under it after taking the dimmed screen too).
-    fn take_capture(&mut self, encoder: &mut wgpu::CommandEncoder, rect: VramRect) -> bool {
+    /// game took into `rect`, where VRAM now holds `pixels`; with no picture
+    /// presented of this VRAM yet (a state loaded), the same screen taken
+    /// before, if one was. The screen taken before stays while VRAM holds it
+    /// elsewhere (the field's saved one, which its menu copies under it
+    /// after taking the dimmed screen too).
+    fn take_capture(&mut self, encoder: &mut wgpu::CommandEncoder, rect: VramRect, pixels: Option<std::sync::Arc<[u16]>>) -> bool {
         self.earlier.retain(|kept| kept.rect.is_some_and(|kept| overlap(&kept, &rect) == 0));
-        if self.capture.rect.is_some_and(|kept| overlap(&kept, &rect) == 0) {
-            let generation = self.capture.generation + 1;
-            let earlier = std::mem::replace(&mut self.capture, Capture::new(&self.device, (1, 1)));
-            self.capture.generation = generation;
-            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
-            self.earlier.insert(0, earlier);
+        let capture = match self.presented.clone().filter(|p| p.scale == self.scale) {
+            Some(picture) => {
+                let size = picture.texture.size();
+                let width = ((u32::from(rect.width) + 2 * picture.side) * picture.scale).min(size.width);
+                let height = (u32::from(rect.height) * picture.scale).min(size.height);
+                (width > 2 * picture.side * picture.scale && height > 0).then(|| {
+                    // A texture of its own: the screens remembered keep theirs.
+                    let mut capture = Capture::new(&self.device, (width, height));
+                    encoder.copy_texture_to_texture(
+                        picture.texture.as_image_copy(),
+                        capture.texture.as_image_copy(),
+                        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+                    );
+                    capture.rect = Some(rect);
+                    capture.screen = self.is_screen(&rect);
+                    capture.scale = picture.scale;
+                    capture.side = picture.side;
+                    capture.taken = self.draws;
+                    capture.taken_as = pixels.map(|pixels| (rect, pixels));
+                    if capture.taken_as.is_some() {
+                        self.taken.insert(0, capture.clone());
+                        self.taken.truncate(TAKEN_SCREENS);
+                    }
+                    capture
+                })
+            }
+            // No picture presented of this VRAM yet (a state loaded): the
+            // same screen taken before, if it was.
+            None => self.taken.iter()
+                .find(|capture| capture.scale == self.scale && capture.taken_as.as_ref().zip(pixels.as_ref())
+                    .is_some_and(|((taken, before), now)| *taken == rect && same_colours(before, now)))
+                .cloned()
+                .map(|capture| capture.again(self.draws)),
+        };
+        let taken = capture.is_some();
+        let replaced = self.set_capture(capture.unwrap_or_else(|| Capture::new(&self.device, (1, 1))));
+        if replaced.rect.is_some_and(|kept| overlap(&kept, &rect) == 0) {
+            self.earlier.insert(0, replaced);
             self.earlier.truncate(EARLIER_CAPTURES);
         }
-        self.capture.rect = None;
-        self.capture.aliases.clear();
-        self.capture.source = None;
-        let Some(picture) = self.presented.clone().filter(|p| p.scale == self.scale) else { return false };
-        let size = picture.texture.size();
-        let width = ((u32::from(rect.width) + 2 * picture.side) * picture.scale).min(size.width);
-        let height = (u32::from(rect.height) * picture.scale).min(size.height);
-        if width <= 2 * picture.side * picture.scale || height == 0 {
-            return false;
-        }
-        let held = self.capture.texture.size();
-        if held.width < width || held.height < height {
-            let generation = self.capture.generation + 1;
-            self.capture = Capture::new(&self.device, (width.max(held.width), height.max(held.height)));
-            self.capture.generation = generation;
-            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
-        }
-        encoder.copy_texture_to_texture(
-            picture.texture.as_image_copy(),
-            self.capture.texture.as_image_copy(),
-            wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-        );
-        self.capture.rect = Some(rect);
-        self.capture.screen = self.is_screen(&rect);
-        self.capture.scale = picture.scale;
-        self.capture.side = picture.side;
-        self.capture.taken = self.draws;
-        true
+        taken
     }
 
     /// The kept capture over its VRAM in the scaled picture (after the
@@ -2752,6 +2826,25 @@ pub(crate) fn bind_group(
 /// Screens taken before the capture kept while VRAM holds them.
 const EARLIER_CAPTURES: usize = 2;
 
+/// Screens remembered as they were taken ([`Ps1Renderer::taken`]).
+const TAKEN_SCREENS: usize = 4;
+
+/// Whether two runs of VRAM pixels have the same colours (the field marks
+/// the texels of its saved screen semi-transparent as it fades from it).
+fn same_colours(a: &[u16], b: &[u16]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|(a, b)| (a ^ b) & 0x7FFF == 0)
+}
+
+/// Whether `vram` holds `pixels` at `rect` ([`same_colours`]).
+fn holds(vram: &[u16], rect: VramRect, pixels: &[u16]) -> bool {
+    let width = usize::from(rect.width).max(1);
+    pixels.len() == width * usize::from(rect.height)
+        && pixels.chunks(width).enumerate().all(|(row, line)| {
+            let at = (usize::from(rect.y) + row) * VRAM_WIDTH as usize + usize::from(rect.x);
+            vram.get(at..at + line.len()).is_some_and(|held| same_colours(held, line))
+        })
+}
+
 /// Whether `log` is of the buffer a display of `area` shows: one holding
 /// the display's corner and at least half of it (the field draws 224 rows
 /// and shows 216), not another buffer it overlaps (a newly shown one whose
@@ -2771,6 +2864,7 @@ fn copied_from(logs: &[FrameLog], rect: VramRect) -> bool {
 /// picture presented then (wider, pulled back, at the renderer's scale):
 /// what samples that VRAM as a 15-bit texture shows it instead
 /// (draw.wgsl), and a copy back to a screen buffer copies it.
+#[derive(Clone)]
 pub(crate) struct Capture {
     pub(crate) texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -2790,6 +2884,8 @@ pub(crate) struct Capture {
     replayed: bool,
     /// The draw it was taken at.
     taken: u64,
+    /// Where it was taken and the native pixels VRAM held there then.
+    taken_as: Option<(VramRect, std::sync::Arc<[u16]>)>,
     /// Counts new textures (bind groups made with an older one are stale).
     pub(crate) generation: u64,
 }
@@ -2803,7 +2899,24 @@ impl Capture {
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, replayed: false, taken: 0, generation: 0 }
+        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, replayed: false, taken: 0, taken_as: None, generation: 0 }
+    }
+
+    /// Whether `vram` holds this screen where it was taken, as it was taken,
+    /// and its picture is at `scale`.
+    fn held_in(&self, vram: &[u16], scale: u32) -> bool {
+        self.scale == scale && self.taken_as.as_ref().is_some_and(|(rect, pixels)| holds(vram, *rect, pixels))
+    }
+
+    /// This screen as it was taken, again where it was taken (at the draw
+    /// `draws`).
+    fn again(mut self, draws: u64) -> Self {
+        self.rect = self.taken_as.as_ref().map(|(rect, _)| *rect);
+        self.aliases.clear();
+        self.source = None;
+        self.replayed = false;
+        self.taken = draws;
+        self
     }
 
     pub(crate) fn areas(&self) -> impl Iterator<Item = (VramRect, bool)> + '_ {

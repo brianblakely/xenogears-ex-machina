@@ -1563,6 +1563,136 @@ fn a_saved_screen_survives_a_second_copy_and_clearing_that_display_alias() {
     assert_eq!(read_rgba8(&gpu.device, &gpu.queue, frame.color()), expected, "both the pulled-back picture and its sides survive the cleared alias");
 }
 
+/// What a field entered first after the game starts makes of the screen,
+/// which it reads as the opening movie's 24-bit picture (noise read so from
+/// a 15-bit one, as after the debug world map): five 64-pixel columns
+/// written at (0, 256), not marked semi-transparent.
+fn read_as_24_bit(device: &mut xem_gpu::Gpu) {
+    for column in 0..5u32 {
+        device.write_gp0_words(&[0xA000_0000, xy(column as i32 * 64, 256), 240 << 16 | 64]);
+        for i in 0..64 * 240 / 2 {
+            let noise = |k: u32| (k.wrapping_mul(2_654_435_761) >> 7) & 0x7FFF;
+            device.write_gp0(noise(column * 7680 + i * 2) | noise(column * 7680 + i * 2 + 1) << 16);
+        }
+    }
+}
+
+/// The field's saved screen at (704, 256) drawn into its buffer at (0, 256)
+/// as its screen pieces draw it: a 15-bit texture of the saved screen's
+/// first 256 columns, over that buffer cleared.
+fn saved_screen_pieces(device: &mut xem_gpu::Gpu) {
+    device.write_gp0_words(&[0xE300_0000 | 256 << 10, 0xE400_0000 | 495 << 10 | 319, 0xE500_0000 | 256 << 11, 0xE100_0200]);
+    device.write_gp0_words(&[0x0200_0000, xy(0, 256), 240 << 16 | 320]);
+    let page = (11 | 1 << 4 | 2 << 7) << 16;
+    device.write_gp0_words(&[0x2D80_8080, xy(0, 0), 0, xy(256, 0), page | 255, xy(0, 240), 239 << 8, xy(256, 240), 239 << 8 | 255]);
+}
+
+/// The field entered first after the game starts copies what it made of
+/// the screen it read as 24-bit (noise after a 15-bit one) over the shown
+/// buffer and takes that as its saved screen: from that copy on the frame
+/// is the picture presented before, replayed (wider framing) or as the
+/// scaled VRAM holds it, not the noise for a frame (or, unreplayed, until
+/// the field cleared that buffer).
+#[test]
+fn a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_taken_keeps_the_presented_picture() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    for framing in [Framing { side: 40, pull_back: 1000.0, ..Default::default() }, Framing::default()] {
+        let traces = traced(projected_scene);
+        let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+        let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+        renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, framing);
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        let expected = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: frame.color().clone(), side: framing.side, scale: 2 }));
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            read_as_24_bit(&mut device);
+            device.write_gp0_words(&[0x8000_0000, xy(0, 256), 0, 240 << 16 | 320]);
+            device.write_gp0_words(&[0x8000_0000, 0, xy(704, 256), 240 << 16 | 320]);
+            device.take_trace()
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, &trace);
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, framing);
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        assert!(read_rgba8(&gpu.device, &gpu.queue, frame.color()) == expected, "side {}: the noise copied over the shown buffer shows", framing.side);
+    }
+}
+
+/// A state loaded whose VRAM holds a screen the game took as it took it (a
+/// rewind's step back into the field's entry) shows the picture presented
+/// when it was taken, as the entry did, not the native screen (noise after
+/// the debug world map); and from a state before the screen was taken, the
+/// screen taken again is that picture, not the one presented last (another
+/// moment's, the frame shown before the state was loaded).
+#[test]
+fn a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let pieces = DisplayArea { y: 256, ..area };
+    for y in [0, 256] {
+        renderer.set_display(xem_gpu::VramRect { x: 0, y, width: 320, height: 240 });
+    }
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut shown = |renderer: &mut Ps1Renderer, trace: Option<&xem_gpu::Trace>, area: DisplayArea| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        if let Some(trace) = trace {
+            renderer.draw(&mut encoder, trace);
+        }
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, renderer, area, framing);
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        (read_rgba8(&gpu.device, &gpu.queue, frame.color()), frame.color().clone())
+    };
+    let (_, presented) = shown(&mut renderer, None, area);
+    let picture = |texture: xem_render::wgpu::Texture| Some(xem_render::ps1::PresentedPicture { texture, side: 40, scale: 2 });
+    renderer.set_presented(picture(presented));
+    let before = DEVICE.with(|device| device.borrow().clone());
+    let take = |device: &mut xem_gpu::Gpu| {
+        device.write_gp0_words(&[0x8000_0000, 0, xy(704, 256), 240 << 16 | 320]);
+        saved_screen_pieces(device);
+    };
+    let trace = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        take(&mut device);
+        device.take_trace()
+    });
+    let (expected, _) = shown(&mut renderer, Some(&trace), pieces);
+    let taken = DEVICE.with(|device| device.borrow().clone());
+    for (state, again) in [(taken, false), (before, true)] {
+        // Its VRAM given back to textures, another frame presented.
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.write_gp0_words(&[0x0200_FF00, xy(704, 256), 240 << 16 | 320]);
+            saved_screen_pieces(&mut device);
+            device.take_trace()
+        });
+        let (other, texture) = shown(&mut renderer, Some(&trace), pieces);
+        assert!(other != expected);
+        renderer.set_presented(picture(texture));
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.load(&state.save()).expect("the state");
+            if again {
+                take(&mut device);
+            } else {
+                saved_screen_pieces(&mut device);
+            }
+            device.take_trace()
+        });
+        let (restored, _) = shown(&mut renderer, Some(&trace), pieces);
+        assert!(restored == expected, "taken again: {again}: the native screen or another moment's picture shows");
+    }
+}
+
 /// The port's record of a field camera (xem/gte.h): the world's axes
 /// (axes 0-2), the translation (axis 3, its depth `depth` telling records
 /// apart), then the point it looks at, owned by the mode (1: a field).

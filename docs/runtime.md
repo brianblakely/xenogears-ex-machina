@@ -1870,7 +1870,32 @@ snapshots are its. The renderer only draws again what it drew:
   never takes such a copy as the native pixels it copied: the field's menu
   takes the dimmed screen, and its own last frame, after the field's saved
   one, then fades back in from the saved one and gives its place back to
-  textures while the frame faded in from it still shows.
+  textures while the frame faded in from it still shows. A screen taken
+  from a buffer the game filled with a copy of another area (neither
+  changed since) is that area's too, and a copy of a screen kept brings
+  its picture into the scaled VRAM as into a replay. The field entered
+  first after the game starts (after the debug world map, boot mode 3 or
+  Settings → Debug → Worldmap: the party's vehicle, Square, its interior,
+  field 290) reads the screen as the opening movie's 24-bit picture,
+  writes what it makes of it at (0, 100h) (noise from a 15-bit screen, on
+  the console too), copies that over the shown buffer and takes it: the
+  copy showed the noise for a frame (unreplayed, until the field cleared
+  the buffer) before the transition went on with the picture presented.
+  The last four screens taken are remembered with the native pixels they
+  were taken as. All of VRAM again (a state loaded, a rewind's step) keeps
+  the screens it holds where they were taken, as they were taken (but for
+  the semi-transparency bits the field sets on its saved screen), the
+  newest of them the one textures sample, and the picture presented
+  before a state is none of its screens: until a picture of its own is
+  presented, the same screen taken again is the one taken before, else its
+  native pixels (that picture was the frame shown last, another moment's).
+  A rewind's step back into the vehicle's transition showed the noise its
+  states hold (in play, with a field entered before, the native picture,
+  narrower), not the picture the transition showed (`tests/ps1.rs`
+  `a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_taken_keeps_the_presented_picture`,
+  `a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken`;
+  `xem-headless/tests/render.rs`
+  `the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of`).
   What is drawn of it is a screen effect (interface class, never pulled
   back, no effects), and the polygons the game draws with every point the
   GTE projected at depth 0 (the field's screen pieces, scaled with
@@ -5783,9 +5808,11 @@ game had built before it, whose projections the port recorded then; at
 most 12 vertical blanks, never as far as where the step began), with those
 frames' sound at the master volume (under fast-forward the music, on the
 host's clock, plays them too). Its picture is the game's at that moment as
-the renderer draws it (wider, in high resolution), not the restored VRAM;
-where the game draws nothing new (a transition holding its last picture)
-the restored picture shows. History
+the renderer draws it (wider, in high resolution), not the restored VRAM,
+and a screen the game took that the state holds as it was taken is the
+picture presented when it was taken ([The renderer](#the-renderer-phase-4),
+Screen captures); where the game draws nothing new (a transition holding
+its last picture) the restored picture shows. History
 is enabled by Settings for interactive play. Headless sessions, scripted native
 playback and browser command-driven boots have history off unless requested;
 browser automation can boot with `rewind: true` or use `rewind_configure`.
