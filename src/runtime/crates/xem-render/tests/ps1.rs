@@ -507,6 +507,72 @@ fn terrain_slivers_turned_over_at_whole_pixels_fill_seams_too_but_not_from_behin
 }
 
 #[test]
+fn sealed_faces_stay_within_a_pixel_or_two_of_themselves_whatever_their_points_depths() {
+    // The seal grows opaque world triangles by half a native pixel, their
+    // attributes from their own plane. Thin faces whose points lie at
+    // different depths (the Battling arena's ground under its low camera:
+    // one the game drew, a sliver it culled at whole pixels) and a face
+    // reaching behind the camera (the GTE saturated its point there, which
+    // the trace gives depth 1) turn that plane within a pixel of them: a
+    // moved corner's w crossed zero, and the face was drawn through
+    // infinity over the screen. Drawn alone, each lights nothing farther
+    // than a moved corner goes (two native pixels) outside its bounds and
+    // its edges.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let faces = [
+        ([(100.0, 100.0, 600.0), (200.0, 100.5, 1500.0), (150.0, 100.27, 900.0)], false),
+        ([(50.0, 100.0, 600.0), (250.0, 100.05, 1500.0), (150.0, 100.04, 900.0)], true),
+        ([(300.0, 230.0, 1.0), (40.0, 20.0, 326.0), (200.0, 120.0, 182.0)], false),
+    ];
+    for (points, revealed) in faces {
+        let TraceOp::Draw(mut face) = primitive(0, 0, 0) else { unreachable!() };
+        face.class = Class::World;
+        face.textured = false;
+        face.revealed = revealed;
+        for (v, (fx, fy, z)) in face.vertices.iter_mut().zip(points) {
+            (v.x, v.y, v.fx, v.fy, v.z, v.color) = (fx as i32, fy as i32, fx, fy, z, 0x0000FF);
+        }
+        let (sync, mut scene) = traced(|device| {
+            device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        });
+        scene.ops.push(TraceOp::Draw(face));
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+        renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 2);
+        renderer.set_seal(true);
+        for trace in [&sync, &scene] {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, trace);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        // Within two native pixels of each edge's line, on the face's side,
+        // and of its bounds.
+        let near = |x: f32, y: f32| {
+            let (xs, ys) = (points.map(|p| p.0), points.map(|p| p.1));
+            let within = |v: f32, of: [f32; 3]| v >= of.iter().copied().fold(f32::MAX, f32::min) - 2.0 && v <= of.iter().copied().fold(f32::MIN, f32::max) + 2.0;
+            within(x, xs) && within(y, ys) && (0..3).all(|i| {
+                let (a, b, c) = (points[i], points[(i + 1) % 3], points[(i + 2) % 3]);
+                let cross = |q: (f32, f32)| (b.0 - a.0) * (q.1 - a.1) - (b.1 - a.1) * (q.0 - a.0);
+                cross((x, y)) * cross((c.0, c.1)).signum() / ((b.0 - a.0).hypot(b.1 - a.1)) >= -2.0
+            })
+        };
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+        let mut lit = 0;
+        for y in 0..480 {
+            for x in 0..640 {
+                if pixels[(y * 2048 + x) * 4] != 0 {
+                    lit += 1;
+                    // The pixel's centre where the face's points lie (they
+                    // sit at native pixel centres).
+                    let (at_x, at_y) = ((x as f32 + 0.5) / 2.0 - 0.5, (y as f32 + 0.5) / 2.0 - 0.5);
+                    assert!(near(at_x, at_y), "{points:?}: picture pixel ({x}, {y}) lit");
+                }
+            }
+        }
+        assert!(lit > 0, "{points:?} drawn");
+    }
+}
+
+#[test]
 fn pulling_back_moves_the_scene_towards_the_projection_centre_and_leaves_the_interface() {
     let scene = primitive(260, 120, 0);
     let mut interface = primitive(260, 120, 0);
@@ -2036,6 +2102,79 @@ fn a_log_grown_past_its_limit_is_dropped_not_replayed_from_the_vram_it_began_wit
     let (width, picture) = (frame.size().0 as usize, read_rgba8(&gpu.device, &gpu.queue, frame.color()));
     let at = (108 * width + 108 + frame.side() as usize) * 4;
     assert!(picture[at] > 200 && picture[at + 1] < 50 && picture[at + 2] < 50, "the sprite shows {:?}, not its red texture", &picture[at..at + 3]);
+}
+
+#[test]
+fn a_frame_drawn_over_the_other_buffers_picture_starts_its_buffers_log() {
+    // Battling's idle demo clears its two buffers (y 0 and 256) with one
+    // fill, then draws each frame over the other buffer's picture, a little
+    // darker (the Gears' trails): three sprites of its 15-bit pixels, texel
+    // for texel, semi-transparent but opaque where they are drawn (drawn
+    // pixels carry no semi-transparency bit), then the frame's own. Each
+    // display finds the log of its own buffer's newest frame, replayed over
+    // that picture as the console drew it. Sharing the fill's log, each
+    // display replayed every frame of both buffers since from black, the
+    // sprites reading the picture as the replay held it at the first
+    // (black): the demo showed black or nearly so.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
+    let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    };
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 218 });
+    let (sync, cleared) = traced(|device| device.write_gp0_words(&[0x0200_0000, 0, 480 << 16 | 320]));
+    draw(&mut renderer, &sync);
+    draw(&mut renderer, &cleared);
+    let mut frame = FrameRenderer::new(&gpu.device);
+    // Frame n's own: a green square further right each frame, and the
+    // Gears' faces (enough for its log to be judged drawn all over).
+    let mark = |n: u32| (10 + 20 * n, 50);
+    let small = |k: i32| [0x2000_00FF, xy(k, 150), xy(k + 4, 150), xy(k, 154)];
+    for n in 0..6u32 {
+        let (built, shown) = if n % 2 == 0 { (0, 256) } else { (256, 0) };
+        renderer.set_display(xem_gpu::VramRect { x: 0, y: shown, width: 320, height: 218 });
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.vblank();
+            device.write_gp0_words(&[0xE300_0000 | built << 10, 0xE400_0000 | (built + 217) << 10 | 319, 0xE500_0000 | built << 11]);
+            // The other buffer's 15-bit page (B-F, opaque where no texel
+            // carries the bit) as sprites at 7/8 brightness, its last 64
+            // pixels from the next page.
+            let page = 0xE100_0140 | u32::from(shown == 256) << 4;
+            device.write_gp0_words(&[page, 0x6670_7070, xy(0, 0), 0, 219 << 16 | 128]);
+            device.write_gp0_words(&[0x6670_7070, xy(128, 0), 128, 219 << 16 | 128]);
+            device.write_gp0_words(&[page | 4, 0x6670_7070, xy(256, 0), 0, 219 << 16 | 64]);
+            let (x, y) = mark(n);
+            device.write_gp0_words(&[0x6000_FF00, xy(x as i32, y as i32), 10 << 16 | 10]);
+            for k in 0..70 {
+                device.write_gp0_words(&small(k * 4));
+            }
+            device.take_trace()
+        });
+        draw(&mut renderer, &trace);
+        if n < 2 {
+            continue;
+        }
+        // The display shows the buffer frame n - 1 was drawn into: its log
+        // holds that frame alone, whose replay shows its own square and,
+        // a little darker, frame n - 2's from the other buffer's picture.
+        let area = DisplayArea { x: 0, y: u32::from(shown), width: 320, height: 218 };
+        frame.track(&renderer, area, None);
+        let log = renderer.frame_log(area).expect("the shown buffer's log");
+        let draws: Vec<_> = log.ops.iter().filter_map(|op| match op { TraceOp::Draw(p) => Some(p), _ => None }).collect();
+        assert_eq!((log.rect.y, log.rect.height, draws.len()), (shown, 218, 74), "frame {n}: the shown buffer's log holds its frame alone");
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing { side: 40, ..Default::default() });
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        let green = |(x, y): (u32, u32)| pixels[((y as usize + 5) * 400 + 40 + x as usize + 5) * 4 + 1];
+        assert!(green(mark(n - 1)) > 240 && (200..240).contains(&green(mark(n - 2))),
+            "frame {n}: its square {} and the one before {}", green(mark(n - 1)), green(mark(n - 2)));
+    }
 }
 
 #[test]

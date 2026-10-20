@@ -823,15 +823,19 @@ class Ground(Compare):
 
     def test_slivers_are_recorded_for_the_presentation_alone(self):
         # Flat cells 0x10 below the camera: less than a pixel tall, all
-        # their points on row 122 but for the first cell's lower left,
+        # their points on row 122 but for row 0's first cell's lower left,
         # raised 0x100 (that cell's second triangle has area). The others
         # have none at whole pixels and face the camera at their sub-pixel
         # points: while the projections are recorded and the host wants
         # culled faces, each is recorded as the POLY_FT3 it would have
-        # been, the first cell's first at its ordering-table entry, the
-        # second cell's two just before the triangle the row emitted last.
+        # been, just before a triangle the DMA walk reaches (an empty
+        # ordering-table entry the frame loop links past): the first cell's
+        # first before the triangle its row emits next (that cell's second),
+        # the second cell's two before the one the row emitted last (the
+        # same), and those of row 1, the last, which emits none, before the
+        # one emitted last too, not the slot no triangle came to.
         ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
-        reveals = (ctypes.c_uint * (4 + 16 * 4)).in_dll(LIB, "xem_present_reveal_storage")
+        reveals = (ctypes.c_uint * (4 + 16 * 5)).in_dll(LIB, "xem_present_reveal_storage")
 
         def presentation(recording, wanted):
             ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
@@ -842,23 +846,21 @@ class Ground(Compare):
         presentation(1, 16 << 16 | 16)
         LIB.xem_gte_write_control(6, 0x10)
         mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
-        mem.write(HEIGHTS + 0x200, struct.pack("<hH", -0x100, 0) + struct.pack("<hH", 0, 0) * 2)
-        self.spans({0: (0, 2)})
+        mem.write(HEIGHTS + 0x200, struct.pack("<hH", -0x100, 0x1234) + struct.pack("<hH", 0, 0x1234) * 2)
+        mem.write(HEIGHTS + 0x400, struct.pack("<hH", 0, 0x1234) * 3)
+        self.spans({0: (0, 2), 1: (1, 2)})
         count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0),
                                        lambda: asm_ground(GROUND_OT, 0, 0))
         self.assertEqual(count, 1)
-        self.assertEqual(reveals[0], 3)
-        records = [reveals[4 + 16 * i:4 + 16 * (i + 1)] for i in range(3)]
+        self.assertEqual(reveals[0], 5)
+        records = [reveals[4 + 16 * i:4 + 16 * (i + 1)] for i in range(5)]
         # Orientation 0 of the MapTable (halfwords 0-15), the nibbles of
         # flags 0x1234 and its page and CLUT word 0x7B000022.
         uv = [0x7B001030, 0x00221033, 0x1031]
-        expected = [
-            # The first cell's first triangle, at its entry (deepest 0x700).
-            (GROUND_OT + (0x700 >> 4 << 2), 3, uv),
-            # The second cell's two, before the first cell's second triangle.
-            (GROUND_POOL + 0xE100, 9, uv),
-            (GROUND_POOL + 0xE100, 12, [0x7B001030, 0x00221032, 0x1033]),
-        ]
+        turned = [0x7B001030, 0x00221032, 0x1033]
+        # Each before the first cell's second triangle, the only one emitted.
+        expected = [(GROUND_POOL + 0xE100, projections, uvs)
+                    for projections, uvs in ((3, uv), (9, uv), (12, turned), (15, uv), (18, turned))]
         for record, (node, projections, (page, second, third)) in zip(records, expected):
             words = record[4:11]
             self.assertEqual(record[:4], [node & 0x00FFFFFF, 7 | 3 << 8, projections, 0])

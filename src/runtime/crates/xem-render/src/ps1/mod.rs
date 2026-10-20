@@ -1344,6 +1344,12 @@ const SEAL: f32 = 0.5;
 /// from the triangle's own plane: depth linear in the screen, the rest
 /// perspective-correct through `w`. Neighbours that do not quite meet
 /// (blocks of terrain detail meeting in T-junctions) then overlap by a hair.
+/// Where that plane takes a moved corner to under half or over twice its
+/// own depth or `w`, the corners keep their own attributes. A face seen
+/// almost edge on (the Battling arena's ground under its low camera), whose
+/// plane turns within a pixel of it, or one reaching behind the camera,
+/// where the GTE saturated its point, put a moved corner's `w` past zero
+/// there, and the face was drawn through infinity over the screen.
 fn grow(corners: [Vertex; 3], by: f32) -> [Vertex; 3] {
     let p = corners.map(|v| glam::Vec2::from(v.position));
     let area = (p[1] - p[0]).perp_dot(p[2] - p[0]);
@@ -1362,7 +1368,7 @@ fn grow(corners: [Vertex; 3], by: f32) -> [Vertex; 3] {
         p[i] + miter.clamp_length_max(4.0 * by)
     });
     let inverse_w = corners.map(|v| 1.0 / v.w);
-    moved.map(|q| {
+    let planar = moved.map(|q| {
         // Barycentric weights of q in the original triangle.
         let b1 = (q - p[0]).perp_dot(p[2] - p[0]) / (p[1] - p[0]).perp_dot(p[2] - p[0]);
         let b2 = (p[1] - p[0]).perp_dot(q - p[0]) / area;
@@ -1378,7 +1384,13 @@ fn grow(corners: [Vertex; 3], by: f32) -> [Vertex; 3] {
             uv: std::array::from_fn(|k| mix(&|v| v.uv[k])),
             ..corners[0]
         }
-    })
+    });
+    let near = |value: f32, own: f32| value > own * 0.5 && value < own * 2.0;
+    if planar.iter().zip(&corners).all(|(grown, own)| near(grown.w, own.w) && near(grown.depth, own.depth)) {
+        planar
+    } else {
+        std::array::from_fn(|i| Vertex { position: moved[i].into(), ..corners[i] })
+    }
 }
 
 /// Whether an interface polygon is drawn a row of native pixels at a time,
@@ -1944,11 +1956,14 @@ const LOG_LIMIT: usize = 200_000;
 /// drawn there before: each covered by an opaque fill, copy, upload or
 /// polygon (untextured, or textured scenery, whose textures have no holes)
 /// drawn without the mask test. A semi-transparent one shows what lay
-/// beneath.
-fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect) -> Option<usize> {
+/// beneath, but for sprites of another of the `screens`' pictures, texel
+/// for texel: their pixels, drawn ones, carry no semi-transparency bit,
+/// and they cover as a copy of that picture would (the Battling arena's
+/// idle demo draws each frame over the one before so, a little darker).
+fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect, screens: &[VramRect]) -> Option<usize> {
     // What a frame covers is all the same in any order: the frames from
     // the last one back, until they cover it all.
-    let mut coverage = Coverage::new(rect);
+    let mut coverage = Coverage::new(rect, screens);
     let mut end = ops.len();
     for &start in frames.iter().rev() {
         if ops[start..end].iter().any(|op| coverage.add(op)) {
@@ -1960,19 +1975,21 @@ fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect) -> Option<usi
 }
 
 /// The pixels of a rectangle opaque drawing covered ([`covered_from`]).
-struct Coverage {
+struct Coverage<'a> {
     rect: VramRect,
+    /// The screen buffers whose pictures sprites copy.
+    screens: &'a [VramRect],
     stride: usize,
     bits: Vec<u64>,
     /// Pixels not yet covered: done as soon as there are none.
     left: usize,
 }
 
-impl Coverage {
-    fn new(rect: VramRect) -> Self {
+impl<'a> Coverage<'a> {
+    fn new(rect: VramRect, screens: &'a [VramRect]) -> Self {
         let (width, height) = (usize::from(rect.width), usize::from(rect.height));
         let stride = width.div_ceil(64);
-        Coverage { rect, stride, bits: vec![0; stride * height], left: width * height }
+        Coverage { rect, screens, stride, bits: vec![0; stride * height], left: width * height }
     }
 
     fn span(&mut self, y: i32, x0: i32, x1: i32) {
@@ -2011,8 +2028,9 @@ impl Coverage {
             return self.left == 0;
         }
         let TraceOp::Draw(p) = op else { return false };
-        let solid = !p.textured || matches!(p.class, Class::World | Class::Model);
-        if p.semi || p.revealed || !solid || p.environment.mask & 2 != 0 || !matches!(p.shape, Shape::Triangle | Shape::Quad | Shape::Rectangle) {
+        let picture = p.shape == Shape::Rectangle && self.screens.iter().any(|screen| overlap(screen, &self.rect) == 0 && samples(p, screen));
+        let solid = !p.textured || matches!(p.class, Class::World | Class::Model) || picture;
+        if (p.semi && !picture) || p.revealed || !solid || p.environment.mask & 2 != 0 || !matches!(p.shape, Shape::Triangle | Shape::Quad | Shape::Rectangle) {
             return false;
         }
         let rect = self.rect;
@@ -2549,7 +2567,7 @@ impl Ps1Renderer {
         // the records current at its first primitive there.
         let mut unlogged: Vec<(VramRect, usize, Option<std::sync::Arc<Vec<u16>>>, Option<Records>)> = self.shown.iter().copied()
             .filter(|area| !self.half_logged(area))
-            .filter_map(|area| Some((area, covered_from(ops, &frame_starts, area)?, None, None)))
+            .filter_map(|area| Some((area, covered_from(ops, &frame_starts, area, &self.shown)?, None, None)))
             .collect();
         for (n, op) in ops.iter().enumerate() {
             if n == 0 || matches!(ops[n - 1], TraceOp::VBlank) {
@@ -2576,7 +2594,7 @@ impl Ps1Renderer {
                                 .map(|area| (area.x, area.y))
                                 .chain([(rect.x, rect.y)])
                                 .map(|(x, y)| VramRect { x, y, width: rect.width.min(width), height: rect.height.min(height) })
-                                .map(|shown| (covered_from(ops, &frame_starts, shown), shown))
+                                .map(|shown| (covered_from(ops, &frame_starts, shown, &self.shown), shown))
                                 .max_by_key(|(from, _)| *from)
                                 .expect("the log's own corner");
                             // Unless a clear there starts it.

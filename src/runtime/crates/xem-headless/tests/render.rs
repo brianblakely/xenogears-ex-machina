@@ -568,6 +568,55 @@ fn the_clouds_over_the_scene_after_field_198s_narration_take_no_haze() {
     assert!(ground * 5 > models.len(), "the fog hazes the ground: {ground} of {} model pixels", models.len());
 }
 
+/// Battling's idle demo (on its title, after 0x4650 frames without a button,
+/// or L2 held for 120) clears both of the arena's buffers at once, then
+/// draws each frame over the other buffer's picture a little darker: the
+/// Gears and their trails. Wider, each display replays its own buffer's
+/// newest frame over that picture and shows them as bright as the console
+/// does (sharing the clear's log, each replayed every frame of both buffers
+/// since from black and showed the demo black or nearly so).
+#[test]
+fn battlings_idle_demo_shows_the_gears_and_their_trails_wider() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let commands = json!([[1, {"cmd": "debug", "request": {"tool": "battling"}}], [1150, {"cmd": "press", "buttons": ["l2"], "frames": 150}]]);
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let wide = Graphics { widescreen: true, ..Graphics::default() };
+    let brightness = |rgba: &[u8]| rgba.chunks_exact(4).map(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2])).sum::<u32>() as f32 / (rgba.len() / 4) as f32;
+    let (mut ours, mut theirs) = (0.0, 0.0);
+    for n in 0..1640 {
+        view.configure(ViewConfig::resolve(&wide, HostClass::Desktop, (640, 360), view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        // The Gears close in on each other, two hundred frames on.
+        if n >= 1540 && n % 10 == 0 {
+            let picture = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+            let (_, _, console) = session.runtime.services().gpu.display_rgba8();
+            (ours, theirs) = (ours + brightness(&picture), theirs + brightness(&console));
+        }
+    }
+    assert_eq!(session.runtime.context(), xem_core::context::Context::Arena { state: 5 }, "the demo under way");
+    // The picture's sides are black (the demo keeps its Gears within the
+    // original screen) and the console's has none: showing the same, it is
+    // four fifths as bright (a third with the shared log).
+    assert!(theirs > 50.0 && ours > theirs * 0.6, "the demo shown at {ours:.0} against the console's {theirs:.0}");
+}
+
 /// Below Shevat's towers the game draws a sea of clouds whose texture holds,
 /// around each cloud, the colour its buffer was cleared with: on the console
 /// that sky meets the cleared sky without an edge. Here too: the clear shows

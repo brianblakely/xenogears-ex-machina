@@ -1734,15 +1734,22 @@ snapshots are its. The renderer only draws again what it drew:
   sub-pixel points: far slivers near its horizon, with no area or turned
   over at whole pixels, whose neighbours left light streaks of the
   background tile between its far hills in a Modern bout. Each is drawn
-  just before the triangle its row emitted last (a cell beside it, or at
-  its ordering-table entry when the row has emitted none): the arena's
-  frame loop links past runs of empty entries before it draws
-  (`arena_display_compact_layer`), and a face recorded at one of them was
-  never drawn. The clouds' screen points, which the original
-  reads from the GTE and stores with plain writes, are recorded as stored
-  with the projections that made them (`worldmap_clouds_draw`), so they are
-  scene; and the cloud quads it leaves out as outside its view cone or
-  screen are recorded as the quads it would have filled, its pass replayed
+  just before the triangle its row emitted last (a cell beside it), or,
+  while the row has emitted none, just before the one emitted next (the
+  row's first, or the next row's), and those of the last rows, when they
+  emit none, just before the one emitted last: packets the DMA walk
+  reaches. The arena's frame loop links past runs of empty
+  ordering-table entries before it draws (`arena_display_compact_layer`),
+  and a face recorded at one was never drawn, or was drawn in a later
+  frame, where it no longer lay: recorded at their entries, rows' first
+  slivers left the sky showing through the far hilltops (of about 98 700
+  recorded over 4 000 frames of a PLAYER1 VS PLAYER2 bout on the sandy
+  stage, 919 were lost and about 500 drawn late; none now). The clouds' screen points, which
+  the original reads from the GTE and stores with plain writes, are
+  recorded as stored with the projections that made them
+  (`worldmap_clouds_draw`), so they are scene; and the cloud quads it
+  leaves out as outside its view cone or screen are recorded as the
+  quads it would have filled, its pass replayed
   on the GTE as it ran (matrices, view-cone test, distances, flags and
   quad budget) so its own quads are known and the depths that stop a far
   cloud's layers stop the recorded ones too.
@@ -1823,7 +1830,15 @@ snapshots are its. The renderer only draws again what it drew:
   T-junctions that open into hairline cracks at higher scales (the
   original's whole pixels hide them), and in the Battling arena, opaque
   world triangles are grown by half a native pixel, their attributes
-  taken from their own plane, and the terrain slivers the port records
+  taken from their own plane, unless that plane takes a moved corner to
+  under half or over twice its own depth: a face seen almost edge on
+  (the arena's ground under its low camera, drawn or a sliver) or one
+  reaching behind the camera (where the GTE saturated its point) keeps
+  its corners' own attributes then (extrapolated, a moved corner's w
+  went past zero and the face was drawn through infinity: huge planes of
+  terrain over a bout whenever its camera was low; `tests/ps1.rs`
+  `sealed_faces_stay_within_a_pixel_or_two_of_themselves_whatever_their_points_depths`);
+  and the terrain slivers the port records
   (a world triangle collapsed or turned over at whole pixels, in front of
   the camera, with area at its sub-pixel points) are drawn inside the
   original screen too, not only beside it (the host asks for culled faces
@@ -1945,11 +1960,13 @@ snapshots are its. The renderer only draws again what it drew:
   VRAM, not the frame of another it overlaps, moved). A
   game frame whose opaque drawing leaves none of a buffer's displayed
   pixels as they were (fills, copies, uploads, untextured polygons and
-  textured scenery; a battle's stage drawn over the last frame instead of
-  a clear) also starts its log, a shown buffer without one too (a state
-  loaded, a rewind's step), so a log holds about one frame where the
-  game never clears (a world map battle's log had grown to 88 000 primitives
-  replayed every presentation). Those pixels are the display's, where it
+  textured scenery, and sprites of another screen buffer's picture, texel
+  for texel, as a copy of it would; a battle's stage drawn over the last
+  frame instead of a clear) also starts its log, a shown buffer without
+  one too (a state loaded, a rewind's step), so a log holds about one
+  frame where the game never clears (a world map battle's log had grown
+  to 88 000 primitives replayed every presentation). Those pixels are the
+  display's, where it
   shows the log now: the Battling arena shows its buffer at y 256 inside
   the log the kernel menu's buffer at y 240 began, never drawing the rows
   between, and with the log's own corner that log grew past 140 000
@@ -1967,7 +1984,23 @@ snapshots are its. The renderer only draws again what it drew:
   flickered or stayed black, and its tutorial and bouts showed black
   (`tests/ps1.rs`
   `two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them`,
-  `render.rs`'s Battling test).
+  `render.rs`'s Battling test). Battling's idle demo (on its title,
+  after 0x4650 frames without a button, or L2 held for 120) clears both
+  buffers together too, then draws each frame over the other buffer's
+  picture, a little darker (the Gears' trails): sprites of its 15-bit
+  pixels, semi-transparent by command but opaque, as drawn pixels carry
+  no semi-transparency bit, then the frame's own. Covering the buffer,
+  each frame starts its log, replayed over that picture as the console
+  drew it (the native pixels the trace writes before the sprites read them;
+  where that picture is black its texels are transparent, and what they
+  leave lay just as dark). Sharing the clear's log, each display had
+  replayed every frame of both buffers since from black, the sprites
+  reading the picture as the replay held it at the first (black), and
+  showed the demo black or nearly so, ever slower as the log grew (460 ms
+  of lavapipe's time a presentation wider at 1920x1080, 14 ms now;
+  `tests/ps1.rs`
+  `a_frame_drawn_over_the_other_buffers_picture_starts_its_buffers_log`,
+  `render.rs` `battlings_idle_demo_shows_the_gears_and_their_trails_wider`).
   Of the areas shown inside a log (and its own corner), the one the trace
   draws all over last counts: an area an earlier mode showed there is
   drawn all over no more. After field 198's narration (entrance 8) and its
