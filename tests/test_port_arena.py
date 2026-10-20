@@ -821,6 +821,51 @@ class Ground(Compare):
         self.assertEqual(mem.u32(S["model_submitted_primitive_count"]), 100)
         self.assertEqual(mem.u32(S["model_drawn_primitive_count"]), 50)
 
+    def test_slivers_are_recorded_for_the_presentation_alone(self):
+        # Flat cells 0x10 below the camera: less than a pixel tall, all
+        # their points on row 122 but for the first cell's lower left,
+        # raised 0x100 (that cell's second triangle has area). The others
+        # have none at whole pixels and face the camera at their sub-pixel
+        # points: while the projections are recorded and the host wants
+        # culled faces, each is recorded as the POLY_FT3 it would have
+        # been, the first cell's first at its ordering-table entry, the
+        # second cell's two just before the triangle the row emitted last.
+        ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
+        reveals = (ctypes.c_uint * (4 + 16 * 4)).in_dll(LIB, "xem_present_reveal_storage")
+
+        def presentation(recording, wanted):
+            ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
+            ctypes.memset(ctypes.addressof(reveals), 0, ctypes.sizeof(reveals))
+            ring[6], reveals[1] = recording, wanted
+
+        self.addCleanup(presentation, 0, 0)
+        presentation(1, 16 << 16 | 16)
+        LIB.xem_gte_write_control(6, 0x10)
+        mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
+        mem.write(HEIGHTS + 0x200, struct.pack("<hH", -0x100, 0) + struct.pack("<hH", 0, 0) * 2)
+        self.spans({0: (0, 2)})
+        count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0),
+                                       lambda: asm_ground(GROUND_OT, 0, 0))
+        self.assertEqual(count, 1)
+        self.assertEqual(reveals[0], 3)
+        records = [reveals[4 + 16 * i:4 + 16 * (i + 1)] for i in range(3)]
+        # Orientation 0 of the MapTable (halfwords 0-15), the nibbles of
+        # flags 0x1234 and its page and CLUT word 0x7B000022.
+        uv = [0x7B001030, 0x00221033, 0x1031]
+        expected = [
+            # The first cell's first triangle, at its entry (deepest 0x700).
+            (GROUND_OT + (0x700 >> 4 << 2), 3, uv),
+            # The second cell's two, before the first cell's second triangle.
+            (GROUND_POOL + 0xE100, 9, uv),
+            (GROUND_POOL + 0xE100, 12, [0x7B001030, 0x00221032, 0x1033]),
+        ]
+        for record, (node, projections, (page, second, third)) in zip(records, expected):
+            words = record[4:11]
+            self.assertEqual(record[:4], [node & 0x00FFFFFF, 7 | 3 << 8, projections, 0])
+            self.assertEqual(words[0] >> 24, 0x24)
+            self.assertEqual([words[2], words[4], words[6]], [page, second, third])
+            self.assertEqual([w >> 16 for w in words[1:7:2]], [122] * 3)
+
 
 WORK = 0x80190000
 

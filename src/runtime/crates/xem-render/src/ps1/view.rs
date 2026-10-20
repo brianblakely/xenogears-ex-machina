@@ -107,6 +107,15 @@ fn draws_scene(ops: &[TraceOp]) -> bool {
     ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.class.is_scene() && !p.revealed))
 }
 
+/// Whether a scene's terrain opens hairline cracks at sub-pixel precision
+/// that the original's whole pixels hide: the world map's blocks of
+/// different detail meet in T-junctions, and its and the Battling arena's
+/// far slivers are dropped by whole-pixel winding tests (the port records
+/// them as culled faces).
+fn seals_terrain(scene: &str) -> bool {
+    scene.starts_with("worldmap") || scene == "arena"
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
@@ -583,11 +592,11 @@ impl GameView {
                     Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0 })
                 }
             }
-        } else if side > 0 || config.interpolation || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
+        } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
             // The sides, and a little more for faces leaning into them, or
             // what a camera between two frames sees beside the screen.
-            // Modern world terrain also needs sub-pixel slivers the
-            // original's whole-pixel winding test discarded inside them.
+            // Modern terrain also needs the sub-pixel slivers the
+            // original's whole-pixel winding tests discarded inside them.
             let margin = if config.interpolation { 32 } else { 16 };
             Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0 })
         } else {
@@ -983,9 +992,7 @@ impl GameView {
             super::PresentedPicture { texture, side: self.main.frame.side(), scale }
         });
         self.renderer.set_presented(presented);
-        // The world map's terrain blocks meet in T-junctions that open at
-        // higher scales; the original's whole pixels hide them.
-        self.renderer.set_seal(scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping);
+        self.renderer.set_seal(seals_terrain(scene) && !config.draw.fidelity.vertex_snapping);
         self.renderer.draw(encoder, &trace);
         // The frames this trace began are the current scene's.
         let identities: Vec<_> = self.renderer.log_identities().collect();

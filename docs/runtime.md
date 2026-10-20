@@ -1700,10 +1700,15 @@ snapshots are its. The renderer only draws again what it drew:
   strip continued from the texture column the original ends at
   (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
   battle sky's horizon bands that cross the screen copied beside it
-  (`gpu_draw_panorama`, `battle_draw_stage_sky`), each drawn just before
+  (`gpu_draw_panorama`, `battle_draw_stage_sky`, and the Battling arena's
+  sky gradient, `arena_view_draw_arena`), each drawn just before
   its band, in the drawing mode the band is drawn in (the desert's
   translucent haze adds over the horizon drawn before it, as the band
-  does). Things the game leaves
+  does). Below the arena's sky lies the draw buffer's background tile
+  (the stage's far colour), which its frame loop links once the arena's
+  task yields, so that it is drawn first; it goes on beside the screen
+  too, as a flat quad drawn just before the sky's copies (culled faces are
+  polygons). Things the game leaves
   undrawn only because a projection overflowed (an object far off the
   original screen, or near or behind its camera), which a pulled-back
   camera sees, are drawn again for the record: the field's sprite actors
@@ -1721,7 +1726,17 @@ snapshots are its. The renderer only draws again what it drew:
   their triangles recorded as culled faces; with the camera pulled back, so
   are the terrain triangles its winding test drops (a far sliver has no
   area at the original's whole pixels, and its neighbours then left a
-  crack showing the sky). The clouds' screen points, which the original
+  crack showing the sky). The Battling arena's ground
+  (`arena_stage_draw_ground_cells`, `src/port/arena.c`) records the
+  triangles its winding test drops that face the camera at their
+  sub-pixel points: far slivers near its horizon, with no area or turned
+  over at whole pixels, whose neighbours left light streaks of the
+  background tile between its far hills in a Modern bout. Each is drawn
+  just before the triangle its row emitted last (a cell beside it, or at
+  its ordering-table entry when the row has emitted none): the arena's
+  frame loop links past runs of empty entries before it draws
+  (`arena_display_compact_layer`), and a face recorded at one of them was
+  never drawn. The clouds' screen points, which the original
   reads from the GTE and stores with plain writes, are recorded as stored
   with the projections that made them (`worldmap_clouds_draw`), so they are
   scene; and the cloud quads it leaves out as outside its view cone or
@@ -1789,8 +1804,14 @@ snapshots are its. The renderer only draws again what it drew:
   texels (no bleeding from the page at higher scales or when filtered). On
   the world map, whose terrain blocks of different detail meet in
   T-junctions that open into hairline cracks at higher scales (the
-  original's whole pixels hide them), opaque world triangles are grown by
-  half a native pixel, their attributes taken from their own plane; and
+  original's whole pixels hide them), and in the Battling arena, opaque
+  world triangles are grown by half a native pixel, their attributes
+  taken from their own plane, and the terrain slivers the port records
+  (a world triangle collapsed or turned over at whole pixels, in front of
+  the camera, with area at its sub-pixel points) are drawn inside the
+  original screen too, not only beside it (the host asks for culled faces
+  there whenever vertex snapping is off; viewport culling leaves them
+  out); and
   each game frame's scene points of different faces within half a native
   pixel and 1% in depth of each other are welded to one point (`weld`),
   closing the cracks between pieces the game places with different
@@ -1892,6 +1913,18 @@ snapshots are its. The renderer only draws again what it drew:
   operations, its replay showing the kernel menu's VRAM with the latest
   particles every other game frame while interpolating (`tests/ps1.rs`
   `a_buffer_shown_lower_than_a_log_begun_before_starts_it_with_each_frame_drawn_all_over_it`).
+  A log of more than that buffer (both buffers cleared at once: the arena
+  clears its two, at y 0 and 256, together and never clears either alone)
+  becomes that buffer's, as a clear of it would make it, and the other
+  buffer's frames start a log of their own with the next frame drawn all
+  over it (its frame the shared log held is shown without a replay).
+  Sharing one log, each display found the other buffer's newest frame,
+  drawn outside it: wherever a frame is replayed (wider framing,
+  interpolation, HD-2D's effects) the arena's menus over their fire
+  flickered or stayed black, and its tutorial and bouts showed black
+  (`tests/ps1.rs`
+  `two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them`,
+  `render.rs`'s Battling test).
   When one presentation holds several game
   frames (the host ran them before it presented: fast-forward, catching
   up; a frame begins after each vertical blank), such a log starts with
@@ -2000,6 +2033,11 @@ RAM hash of plain frames either way; the game's own primitives traced in
 those 120 frames (23 538, the traced less the revealed) are as many as in
 120 calls of one frame each, each call's trace starting anew, so the
 first frame a trace plays counts too, and those calls end at the same RAM.
+In a Battling bout (the arena's sky and tile beside the screen, its far
+slivers), 90 frames presented wider end at the RAM, VRAM, sound and time
+of the same frames without a trace, and at the same whole state outside
+the port's memory (where the presentation's frames on the arena task
+fiber's shadow stack lie).
 
 **Presentation and the whole state.** Presenting leaves the game's state
 as it is, but a whole state (`Session::snapshot_bytes`) also holds the
@@ -2027,7 +2065,9 @@ facings' runs), between the stack's bottom and the suspended pointer,
 which no code reads: every port and game function zero-initialises its
 locals (`-ftrivial-auto-var-init=zero`, `tools/game_module.py`). With those
 bytes the same the states are the same byte for byte. A host that asks
-for no reveals (no wider framing, pull-back, inspection or diorama) leaves
+for no reveals (no wider framing, pull-back, inspection or diorama, and
+no terrain slivers: the world map and the Battling arena ask for theirs
+while vertex snapping is off) leaves
 no such bookkeeping in a state: the desktop window under HD-2D, Android's
 default graphics, the OpenXR and WebXR screen views each save states
 byte for byte xem-headless's at the same frame ([State
@@ -6177,7 +6217,8 @@ needs the same of these; a recording carries the controls
 or a host asking for no reveals) a state another host saves at a frame is
 byte for byte the state `xem-headless` saves there. A host showing faces
 the game culls (wider framing, the camera pulled back, inspection, the
-diorama) keeps bookkeeping in the port's memory ([Presentation and the
+diorama, the world map's and the Battling arena's terrain slivers without
+vertex snapping) keeps bookkeeping in the port's memory ([Presentation and the
 whole state](#the-renderer-phase-4)), so its states differ from
 `xem-headless`'s there while the game's RAM, scratchpad, devices and
 continuation are the same. The tests compare the RAM and scratchpad

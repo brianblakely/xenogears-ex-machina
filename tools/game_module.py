@@ -78,7 +78,7 @@ WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix",
            "sprite_draw_parts_cut_below", "sprite_draw_parts_cut_above", "field_instance_is_off_screen",
            "field_draw_models", "worldmap_map_overlay_draw", "pad_dequeue_state", "sound_silence_voices",
            "arena_menu_open_pause", "gpu_draw_panorama", "gpu_draw_panorama_strip", "battle_draw_stage_sky",
-           "field_draw_sprite_actors", "worldmap_objects_draw", "worldmap_clouds_draw",
+           "field_draw_sprite_actors", "worldmap_objects_draw", "worldmap_clouds_draw", "arena_view_draw_arena",
            "worldmap_terrain_draw", "menu_cd_check_disc", "sound_start_driver", "sound_run_tick",
            "menu_sound_mode_screen_run", "sound_start_effect", "sprite_vm_run_generic_command",
            "battle_sprite_command_run"}

@@ -266,6 +266,54 @@ static void xem_ground_packet(u32 ot, u32 *packet, u32 nibbles, u32 uvs, u32 tpa
     *packet += 32;
 }
 
+/* Presentation only (xem/gte.h): a projected triangle the winding test
+ * dropped that faces the camera at sub-pixel precision (a far sliver near
+ * the horizon, with no area or turned over at the original's whole pixels:
+ * drawn at its sub-pixel points, its neighbours leave a crack where it
+ * lies), recorded while the host wants culled faces as the POLY_FT3
+ * xem_ground_packet would have made. It is drawn just before the triangle
+ * emitted last in its row (`packet` is the pool's next slot, `row` where
+ * the row began: a cell beside it), a packet the DMA walk reaches, or else
+ * at the entry it would have been linked at: the frame loop's compaction
+ * (arena_display_compact_layer) links past runs of empty entries, and a
+ * face recorded at one would never be drawn. Its depth cue is taken with
+ * the GTE put back; the packets and the game's winding test are as they
+ * were. */
+static void xem_ground_sliver(u32 ot, u32 row, u32 packet, u32 nibbles, u32 uvs, u32 tpage_clut, u32 second, u32 third) {
+    XemGte saved;
+    u32 words[7], projections = xem_gte_ring->count;
+    s32 depth, sz;
+
+    if (!xem_present_reveals->wanted || !xem_present_face_visible(projections, 3, 320, 218)) {
+        return;
+    }
+    depth = (s32)xem_gte_read_data(XEM_GTE_SZ1);
+    sz = (s32)xem_gte_read_data(XEM_GTE_SZ2);
+    if (!(sz < depth)) {
+        depth = sz;
+    }
+    sz = (s32)xem_gte_read_data(XEM_GTE_SZ3);
+    if (!(sz < depth)) {
+        depth = sz;
+    }
+    saved = xem_gte;
+    xem_gte_execute(XEM_GTE_DPCS);
+    words[0] = xem_gte_read_data(XEM_GTE_RGB2);
+    xem_gte = saved;
+    words[1] = xem_gte_read_data(XEM_GTE_SXY0);
+    words[2] = nibbles | XEM_U16(uvs) | (tpage_clut & 0xFFFF0000);
+    words[3] = xem_gte_read_data(XEM_GTE_SXY1);
+    words[4] = nibbles | XEM_U16(uvs + second) | (tpage_clut << 16);
+    words[5] = xem_gte_read_data(XEM_GTE_SXY2);
+    words[6] = (nibbles | XEM_U16(uvs + third)) & 0xFFFF;
+    packet &= XEM_DMA_ADDRESS_MASK;
+    if (packet != row) {
+        xem_present_reveal_at(packet - 32, 3, projections, 0, words, 7);
+    } else {
+        xem_present_reveal(ot + (((u32)depth >> 4) << 2), 3, projections, words, 7);
+    }
+}
+
 /* Draw the height-map cells of rows 0-126 that the scratchpad's row limits
  * select, each as two textured triangles from the draw buffer's pool
  * (arena_stage_ground_triangles). Rotation, translation, depth cue and
@@ -279,7 +327,7 @@ u32 arena_stage_draw_ground_cells(u32 *ot, s32 originX, s32 originZ) {
     u32 packet = arena_stage_ground_triangles[arena_draw_buffer_index];
     u32 base;
     u32 row, left, right, cells;
-    u32 record, row_end;
+    u32 record, row_end, row_start;
     s32 x, z;
     u32 heights, flags, nibbles, uvs, tpage_clut;
     u32 emitted;
@@ -299,6 +347,7 @@ u32 arena_stage_draw_ground_cells(u32 *ot, s32 originX, s32 originZ) {
         model_submitted_primitive_count += cells;
         record = arena_stage_height_map + (((row << 7) + left) << 2);
         row_end = record + (cells << 2);
+        row_start = packet & XEM_DMA_ADDRESS_MASK;
         do {
             /* Corners: upper left, lower right, upper right, lower left. */
             XEM_U16(corners + 24) = x;
@@ -335,12 +384,16 @@ u32 arena_stage_draw_ground_cells(u32 *ot, s32 originX, s32 originZ) {
             xem_lwc2(XEM_GTE_VZ2, corners + 12);
             if ((s32)xem_gte_read_data(XEM_GTE_MAC0) > 0) {
                 xem_ground_packet(table, &packet, nibbles, uvs, tpage_clut, 6, 2);
+            } else {
+                xem_ground_sliver(table, row_start, packet, nibbles, uvs, tpage_clut, 6, 2);
             }
             xem_gte_execute(XEM_GTE_RTPT);
             xem_gte_execute(XEM_GTE_NCLIP);
             record += 4;
             if ((s32)xem_gte_read_data(XEM_GTE_MAC0) > 0) {
                 xem_ground_packet(table, &packet, nibbles, uvs, tpage_clut, 4, 6);
+            } else {
+                xem_ground_sliver(table, row_start, packet, nibbles, uvs, tpage_clut, 4, 6);
             }
         } while (record != row_end);
     }

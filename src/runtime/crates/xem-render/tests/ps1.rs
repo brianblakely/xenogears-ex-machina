@@ -466,6 +466,47 @@ fn terrain_slivers_culled_at_whole_pixels_fill_seams_at_one_times_zoom() {
 }
 
 #[test]
+fn terrain_slivers_turned_over_at_whole_pixels_fill_seams_too_but_not_from_behind_the_camera() {
+    // A far sliver the arena's ground drops: facing the camera at its
+    // sub-pixel points, turned over at the whole pixels the GTE gave it
+    // (the middle point floored onto the row above the line through the
+    // other two). And the same face with a point at depth 0, as a view
+    // from around the scene records one behind the camera.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let sliver = |depth: f32| {
+        let TraceOp::Draw(mut sliver) = primitive(0, 0, 0) else { unreachable!() };
+        sliver.shape = Shape::Triangle;
+        sliver.class = Class::World;
+        sliver.revealed = true;
+        sliver.textured = false;
+        for (v, (x, y, fy)) in sliver.vertices.iter_mut().zip([(50, 100, 100.0), (250, 101, 101.0), (150, 100, 100.9)]) {
+            (v.x, v.y, v.fx, v.fy, v.color) = (x, y, x as f32, fy, 0x0000FF);
+        }
+        sliver.vertices[1].z = depth;
+        sliver
+    };
+    for (depth, shown) in [(1000.0, true), (0.0, false)] {
+        let (sync, mut scene) = traced(|device| {
+            device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        });
+        scene.ops.push(TraceOp::Draw(sliver(depth)));
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+        renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 2);
+        renderer.set_seal(true);
+        for trace in [&sync, &scene] {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, trace);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        // Picture pixel (300, 202) at scale 2 takes the face at (149.75,
+        // 100.75) (vertices sit at native pixel centres): between the line
+        // through its ends and its middle point.
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+        assert_eq!(pixels[(202 * 2048 + 300) * 4] != 0, shown, "depth {depth}");
+    }
+}
+
+#[test]
 fn pulling_back_moves_the_scene_towards_the_projection_centre_and_leaves_the_interface() {
     let scene = primitive(260, 120, 0);
     let mut interface = primitive(260, 120, 0);
@@ -1572,6 +1613,57 @@ fn a_buffer_shown_lower_than_a_log_begun_before_starts_it_with_each_frame_drawn_
         frame.track(&renderer, area, None);
         let draws = renderer.frame_log(area).map_or(0, |log| log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count());
         assert_eq!(draws, 71, "frame {n}: the buffer's log holds the frame drawn all over it alone");
+        identities.push(frame.identity());
+    }
+    assert!(identities.windows(2).all(|pair| pair[0] != pair[1]), "each frame shown anew: {identities:?}");
+}
+
+#[test]
+fn two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them() {
+    // The arena clears its two buffers (y 0 and 256, 320x218) with one fill,
+    // then draws all over the one it builds each frame without clearing it,
+    // while the display shows the other: each display finds the log of the
+    // frames drawn into its own buffer, not the other's.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    };
+    let small = |k: i32| [0x2000_FFFF, xy(k, 10), xy(k + 4, 10), xy(k, 14)];
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 218 });
+    let (sync, cleared) = traced(|device| device.write_gp0_words(&[0x0200_0000, 0, 480 << 16 | 320]));
+    draw(&mut renderer, &sync);
+    draw(&mut renderer, &cleared);
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut identities = Vec::new();
+    for n in 0..6u32 {
+        let (built, shown) = if n % 2 == 0 { (0, 256) } else { (256, 0) };
+        renderer.set_display(xem_gpu::VramRect { x: 0, y: shown, width: 320, height: 218 });
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.vblank();
+            device.write_gp0_words(&[0xE300_0000 | built << 10, 0xE400_0000 | (built + 217) << 10 | 319, 0xE500_0000 | built << 11]);
+            device.write_gp0_words(&[0x2800_0040 + n, xy(0, 0), xy(320, 0), xy(0, 218), xy(320, 218)]);
+            for k in 0..70 {
+                device.write_gp0_words(&small(k * 4));
+            }
+            device.take_trace()
+        });
+        draw(&mut renderer, &trace);
+        // The display shows the buffer the frame before was drawn into (the
+        // first, drawn into the clear's log, is not replayed once that log
+        // becomes the other buffer's: from the next on, each buffer's own).
+        if n < 2 {
+            continue;
+        }
+        let area = DisplayArea { x: 0, y: u32::from(shown), width: 320, height: 218 };
+        frame.track(&renderer, area, None);
+        let log = renderer.frame_log(area).expect("the shown buffer's log");
+        let draws: Vec<_> = log.ops.iter().filter_map(|op| match op { TraceOp::Draw(p) => Some(p), _ => None }).collect();
+        assert_eq!(draws.len(), 71, "frame {n}: the shown buffer's log holds its frame alone");
+        assert!(draws.iter().all(|p| p.environment.area[1] == shown), "frame {n}: the frame drawn into the buffer shown at y {shown}");
         identities.push(frame.identity());
     }
     assert!(identities.windows(2).all(|pair| pair[0] != pair[1]), "each frame shown anew: {identities:?}");

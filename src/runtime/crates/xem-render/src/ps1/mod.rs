@@ -596,8 +596,9 @@ pub(crate) struct Builder<'a> {
     /// The area writes are shown in (a replay's display area; everywhere
     /// when none): elsewhere they only change the VRAM textures sample.
     pub(crate) shown: Option<VramRect>,
-    /// Grow opaque world triangles by [`SEAL`] (the world map's terrain,
-    /// whose blocks of different detail meet in T-junctions).
+    /// Grow opaque world triangles by [`SEAL`] and restore the terrain
+    /// slivers the game culled (the world map's terrain, whose blocks of
+    /// different detail meet in T-junctions, and the Battling arena's).
     pub(crate) seal: bool,
     /// The screen the game took ([`Capture`]): where it lies and the width
     /// of the sides its picture has (VRAM pixels).
@@ -922,11 +923,14 @@ impl<'a> Builder<'a> {
         self.commands_for(p, start);
     }
 
-    /// Terrain triangles that collapse at whole-pixel precision were
-    /// discarded by NCLIP. Their sub-pixel area still fills seams at 1x.
+    /// Terrain triangles that collapse or turn over at whole-pixel
+    /// precision were discarded by NCLIP. Their sub-pixel area still fills
+    /// seams at 1x (in front of the camera: a face a view from around the
+    /// scene records behind it has no depth).
     fn restores_sliver(&self, p: &Primitive) -> bool {
         if !self.seal || self.options.fidelity.vertex_snapping || self.options.culling.viewport
-            || p.class != Class::World || p.shape != Shape::Triangle || winding(p, [0, 1, 2]) != 0
+            || p.class != Class::World || p.shape != Shape::Triangle || winding(p, [0, 1, 2]) > 0
+            || p.vertices[..3].iter().any(|v| v.z <= 0.0)
         {
             return false;
         }
@@ -1844,7 +1848,7 @@ pub struct Ps1Renderer {
     /// The native VRAM as the trace's writes left it (the start of each
     /// buffer's log copies it).
     native: Vec<u16>,
-    /// Seal the world's T-junction cracks ([`Builder::seal`]).
+    /// Seal the terrain's cracks ([`Builder::seal`]).
     pub(crate) seal: bool,
     stats: DrawStats,
     /// Frames logged so far ([`FrameLog::frames`]).
@@ -2286,7 +2290,8 @@ impl Ps1Renderer {
     }
 
     /// Grow opaque world triangles so terrain blocks meeting in T-junctions
-    /// show no cracks at higher scales (the world map).
+    /// show no cracks at higher scales, and draw the terrain slivers the
+    /// game culled at whole pixels (the world map, the Battling arena).
     pub fn set_seal(&mut self, seal: bool) {
         self.seal = seal;
     }
@@ -2437,7 +2442,7 @@ impl Ps1Renderer {
         // of them from which the trace draws all over it, which hides
         // everything before (each buffer's, found when first needed).
         let (width, height) = self.display.unwrap_or((256, 192));
-        let mut drawn_over: Vec<(VramRect, Option<usize>)> = Vec::new();
+        let mut drawn_over: Vec<(VramRect, Option<usize>, VramRect)> = Vec::new();
         // A shown buffer without a log (the trace started again, a state
         // loaded or a rewind's step) that the game never clears starts one
         // with the last frame from which the trace draws all over it, once
@@ -2455,8 +2460,8 @@ impl Ps1Renderer {
                     if self.logs[index].ops.len() <= 64 {
                         continue;
                     }
-                    let from = match drawn_over.iter().find(|(r, _)| *r == rect) {
-                        Some((_, from)) => *from,
+                    let (from, shown) = match drawn_over.iter().find(|(r, _, _)| *r == rect) {
+                        Some((_, from, shown)) => (*from, *shown),
                         None => {
                             // From where the display shows it now: a log
                             // begun for a mode's buffer before shows the next
@@ -2468,14 +2473,22 @@ impl Ps1Renderer {
                             let shown = VramRect { x, y, width: rect.width.min(width), height: rect.height.min(height) };
                             // Unless a clear there starts it.
                             let from = covered_from(ops, &frame_starts, shown).filter(|&from| !ops[from..].iter().any(|op| clears(op, rect)));
-                            drawn_over.push((rect, from));
-                            from
+                            drawn_over.push((rect, from, shown));
+                            (from, shown)
                         }
                     };
                     if from == Some(n) {
                         let start = start.get_or_insert_with(|| std::sync::Arc::new(self.native.clone())).clone();
                         self.logged += 1;
                         let log = &mut self.logs[index];
+                        // A log of more than that buffer (both buffers cleared
+                        // at once: the arena's at y 0 and 256, which it never
+                        // clears again) becomes its log, as a clear of it
+                        // would make it; the other buffer's frames start one
+                        // of their own, where its display finds them.
+                        if overlap(&log.rect, &shown) * 10 < u32::from(log.rect.width) * u32::from(log.rect.height) * 9 {
+                            log.rect = shown;
+                        }
                         log.previous = std::mem::take(&mut log.ops);
                         log.frames = self.logged;
                         log.start = start;

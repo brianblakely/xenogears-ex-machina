@@ -305,6 +305,129 @@ fn battle_sky_bands_continue_beside_the_screen_where_they_are_drawn() {
     assert!(checked > 100 && haze, "{checked} band copies seen, the haze among them: {haze}");
 }
 
+/// Settings' Start Battling (the arena, mode 4), as a host presents every
+/// frame. The arena clears its two buffers, at y 0 and 256, at once and
+/// then draws all over the one it builds each frame without clearing it:
+/// each display shows the frames drawn into its own buffer (sharing the log
+/// the clear began, the title over its fire showed black, or black every
+/// other frame, under wider framing and HD-2D). In a bout its sky gradient
+/// and the background tile below it go on beside the screen, just before
+/// the sky; under Modern the far slivers its ground's winding test drops at
+/// whole pixels are recorded and drawn inside the original screen; and none
+/// of it changes the game: RAM, VRAM, sound and time are as without a
+/// trace, the whole state too outside the port's memory.
+#[test]
+fn battling_shows_each_buffer_its_own_frames_its_sky_beside_the_screen_and_its_far_slivers() {
+    use xem_gpu::{Class, Primitive, Shape, TraceOp};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    // The launch, then Cross on BONUS BATTLING, PLAYER1 VS COM and the two
+    // gears offered (Weltall against Vierge).
+    let cross = |at: u32| json!([at, {"cmd": "press", "buttons": ["cross"], "frames": 2}]);
+    let commands = json!([[1, {"cmd": "debug", "request": {"tool": "battling"}}], cross(1200), cross(1240), cross(1280), cross(1320)]);
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let wide = Graphics { widescreen: true, ..Graphics::default() };
+    let hd2d = Graphics { profile: GraphicsProfile::Hd2d, ..Graphics::default() };
+    let modern = Graphics::default();
+    // A frame run and presented (both shapes at scale 2): its draws.
+    let mut presented = 0u64;
+    let mut shown = |session: &mut Session<NativeModule>, view: &mut GameView, graphics: &Graphics| -> Vec<Primitive> {
+        let output = if graphics.widescreen { (640, 360) } else { (640, 480) };
+        view.configure(ViewConfig::resolve(graphics, HostClass::Desktop, output, view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        let trace = device.take_trace();
+        let draws = trace.ops.iter().filter_map(|op| match op { TraceOp::Draw(p) => Some(p.clone()), _ => None }).collect();
+        view.push(trace);
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        presented += 1;
+        assert!(view.present(&mut encoder, &display, &scene, presented as f64 / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        draws
+    };
+    let brightness = |rgba: &[u8]| rgba.chunks_exact(4).map(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2])).sum::<u32>() as f32 / (rgba.len() / 4) as f32;
+    // The title over its fire, wider and then under HD-2D: as bright as the
+    // console's picture of it, every frame.
+    for n in 0..1190 {
+        let graphics = if n < 1140 { wide } else { hd2d };
+        shown(&mut session, &mut view, &graphics);
+        if n >= 1100 {
+            let picture = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+            let (_, _, console) = session.runtime.services().gpu.display_rgba8();
+            let (ours, theirs) = (brightness(&picture), brightness(&console));
+            assert!(theirs > 100.0 && ours * 2.0 > theirs, "frame {n}: the title shown at {ours:.0} against the console's {theirs:.0}");
+        }
+    }
+    for _ in 1190..1540 {
+        shown(&mut session, &mut view, &wide);
+    }
+    assert_eq!(session.runtime.context(), xem_core::context::Context::Arena { state: 1 }, "the bout under way");
+    // The sky beside the screen: just before the sky band (a Gouraud quad
+    // over the screen's width), its two copies beside it, and before them
+    // the background tile's, from the band's bottom to the screen's, just
+    // after the tile itself.
+    let beside = |p: &Primitive| p.vertices.iter().all(|v| v.x <= 0) || p.vertices.iter().all(|v| v.x >= 320);
+    let spans = |p: &Primitive| p.vertices.iter().all(|v| v.x == 0 || v.x == 320);
+    let mut skies = 0;
+    for _ in 0..40 {
+        let draws = shown(&mut session, &mut view, &wide);
+        for (i, band) in draws.iter().enumerate() {
+            if band.revealed || band.textured || !band.gouraud || band.shape != Shape::Quad || !spans(band) || i < 5 {
+                continue;
+            }
+            let (tile, copies) = (&draws[i - 5], &draws[i - 4..i]);
+            assert!(copies.iter().all(|p| p.revealed && !p.textured && p.shape == Shape::Quad && beside(p)), "copies before the sky: {copies:?}");
+            assert!(tile.shape == Shape::Rectangle && !tile.revealed && spans(tile), "the tile before them: {tile:?}");
+            for copy in &copies[2..] {
+                assert_eq!((copy.vertices.map(|v| v.color), copy.vertices.map(|v| v.y)), (band.vertices.map(|v| v.color), band.vertices.map(|v| v.y)));
+            }
+            for copy in &copies[..2] {
+                assert_eq!(copy.vertices[0].color, tile.vertices[0].color);
+                assert_eq!(copy.vertices.map(|v| v.y), tile.vertices.map(|v| v.y));
+                assert_eq!(copy.vertices[0].y, band.vertices[2].y, "the tile below the sky");
+            }
+            skies += 1;
+        }
+    }
+    assert!(skies >= 15, "{skies} skies continued");
+    // Modern at 4:3: the slivers recorded, and drawn inside the screen.
+    let (mut slivers, mut restored) = (0, 0);
+    for _ in 0..20 {
+        let draws = shown(&mut session, &mut view, &modern);
+        slivers += draws.iter().filter(|p| p.revealed && p.class == Class::World && p.shape == Shape::Triangle).count();
+        restored += view.stats().revealed;
+    }
+    assert!(slivers > 20 && restored > 20, "{slivers} far slivers recorded, {restored} drawn");
+    // Presentation leaves the game as it was.
+    let start = session.snapshot_bytes().unwrap();
+    let state = |session: &mut Session<NativeModule>| (session.memory_hash().unwrap(), session.runtime.services().gpu.device().save(),
+        session.runtime.services().spu.chip().save(), session.runtime.services().clock.now);
+    for _ in 0..90 {
+        shown(&mut session, &mut view, &wide);
+    }
+    let (traced, drawn) = (state(&mut session), whole(&mut session));
+    session.restore_bytes(&start).unwrap();
+    session.runtime.services().gpu.device_mut().set_trace(false);
+    for _ in 0..90 {
+        assert!(session.frame().unwrap());
+    }
+    assert!(state(&mut session) == traced, "presenting changed RAM, VRAM, sound or time");
+    let unseen = whole(&mut session);
+    assert_eq!(differences(&drawn, &unseen, |start| start != PORT), None, "presenting changed the state outside the port's memory");
+}
+
 /// Below Shevat's towers the game draws a sea of clouds whose texture holds,
 /// around each cloud, the colour its buffer was cleared with: on the console
 /// that sky meets the cleared sky without an edge. Here too: the clear shows
