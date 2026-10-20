@@ -962,7 +962,9 @@ impl<'a> Builder<'a> {
         };
         let blend = p.environment.draw_mode >> 5 & 3;
         let baked = p.gouraud || (p.textured && !p.raw && p.vertices[..count].iter().any(|v| v.color & 0xFF_FFFF != 0x80_8080));
-        let kind = if self.backdrop(p) { AUX_BACKGROUND } else { aux_class(class) };
+        // A movie's picture keeps its colours through the effects, as the
+        // movie shown alone and an uploaded picture do.
+        let kind = if p.movie { AUX_INTERFACE } else if self.backdrop(p) { AUX_BACKGROUND } else { aux_class(class) };
         let mut flags = (blend << BLEND_SHIFT) | (kind << CLASS_SHIFT);
         for (on, flag) in [
             (p.textured, FLAG_TEXTURED),

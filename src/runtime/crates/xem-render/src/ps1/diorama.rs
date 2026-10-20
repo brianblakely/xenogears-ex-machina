@@ -916,6 +916,7 @@ fn fill_primitive(rect: VramRect, rgb: u32, fifteen: bool) -> Primitive {
         facing: None,
         full_size: None,
         backdrop: false,
+        movie: false,
     }
 }
 

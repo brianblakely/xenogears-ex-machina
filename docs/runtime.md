@@ -1765,7 +1765,13 @@ snapshots are its. The renderer only draws again what it drew:
   from, fills,
   copies and VRAM writes: CPU transfers as uploads, and drawn pixels a later
   command samples as a texture before that command, so the renderer's 16-bit
-  VRAM copy equals the device's at every command. A vertex takes the
+  VRAM copy equals the device's at every command. A copy onto itself that
+  sets no mask bit moves no pixel and is not traced (the field's of its
+  24-bit display area after a movie, taken for a clear, began a frame
+  replayed as the scaled VRAM's picture: [Movies](#movies), window
+  movies). A primitive whose texels are a movie's picture (15-bit, each in
+  a macroblock the movie player loaded, `TraceOp::Movie`, and unchanged
+  since) is traced as `movie`. A vertex takes the
   projection stored at its packet word's address while the word still holds
   it, and only that: matching by screen value tied interface points (window
   corners, glyphs) to unrelated 3D points at the same pixel in busy battles.
@@ -1910,8 +1916,9 @@ snapshots are its. The renderer only draws again what it drew:
   wider framing, a pulled-back camera and interpolation, a replay of the
   primitives drawn into the displayed buffer since its last clear
   (`Ps1Renderer::frame_log`: a fill or copy of the display's size starts its
-  buffer's log, replacing an older, larger one, so a log holds one frame
-  even after both buffers were cleared at once; it keeps every VRAM write
+  buffer's log (a copy onto itself is not traced, above), replacing an
+  older, larger one, so a log holds one frame even after both buffers
+  were cleared at once; it keeps every VRAM write
   of the frame, anywhere, with its pixels, and a copy of the native VRAM
   when the buffer was cleared, and a replay samples its own VRAM copy, from
   that snapshot through the frame's writes in order, so a texture slot the
@@ -2239,6 +2246,43 @@ screen 2.5 m ahead spans 210 pixels: the title movie is rebuilt at
 210x142, with no sides while wider framing is on (the renderer's frames
 before it have 39 each side), and under Original shown at the display's
 320x216.
+
+A window movie (field movie mode 2) plays within the field instead: the
+movie player loads its 15-bit pictures into VRAM beside the field's
+buffers, and the field draws them as a model's faces in its world. Map
+243 from entrance 0, past its lead-up's dialogue, shows Fei's memories so:
+sepia clips on a screen in the field's dark that fills the original screen
+at first, the camera then drawing back to Fei and a spotlight on the
+floor before it. The trace marks those faces as the movie's picture
+(`Primitive::movie`, above); they are drawn as the scene is (at their
+sub-pixel points, beside the screen, pulled back, moving with the model
+between frames) but keep the picture's colours through HD-2D's effects,
+as a movie shown alone does. Lit, hazed, blurred and graded, the first
+clip lay 8.9 levels on average from Modern's picture of it over the
+original screen (a 640x360 output), and the black texels it leaves
+transparent, the field's dark showing through, stood out of the haze; now
+HD-2D shows it as Modern does on every frame of the clip (527 compared).
+They are not rebuilt: under Enhanced too they show the MDEC's 15-bit
+picture at the scene's resolution and filtering. Where a clip ends, the
+field copies its 24-bit display area onto itself, which the trace now
+leaves out (Draw trace, above): replayed from that copy, the next frames
+of the buffer had the left side black and the VRAM beside the buffer in
+the right, for three frames: 57.0 and 73.5 levels on average from the
+original screen's edge columns at the first clip's end (58.2 and 93.0 at
+the third's), now at most 7.9 (`xem-headless/tests/render.rs`
+`map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_the_screen`,
+local, disc 1, under Modern and HD-2D with Widescreen and High Framerate;
+without the game, `xem-gpu/tests/gpu.rs`
+`what_is_drawn_from_a_movies_blocks_is_its_picture` and
+`a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits`, and
+`xem-render/tests/ps1.rs`
+`a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects` and
+`a_copy_onto_itself_leaves_the_frame_drawn_there`). Like a rebuilt frame's
+blocks, the pictures known are not carried across a restart of the trace
+(a state loaded, a rewind's step, a new internal scale): the faces are the
+scene's again until the player loads the next picture, within a movie
+frame while a clip plays; a clip's last picture, which the field shows on
+after the clip, stays the scene's then.
 
 Tests: `xem-headless/tests/movies.rs` (local, disc 1; lavapipe) presents
 every frame from boot through the title movie with a view enlarging
@@ -4593,10 +4637,12 @@ depth and class; no art is added, redrawn or replaced, and sprites keep their
 pixels and animation (no smoothing unless a filter is chosen). Interface
 pixels (primitives without a GTE projection, or projected with another screen
 offset than the scene's, such as the field compass, translucent ones
-included) keep their colours through every pass; full-screen translucent
-fades count as scene. A face of the scene whose texture fades into the
-colour its buffer was cleared with, at each of its corners and along its
-outline but for one texel in ten, is sky the game painted (Shevat's sea of
+included) keep their colours through every pass, and so do a movie's
+pictures the scene draws (a window movie on a screen in a field's world:
+[Movies](#movies)); full-screen translucent fades count as scene. A face
+of the scene whose texture fades into the colour its buffer was cleared
+with, at each of its corners and along its outline but for one texel in
+ten, is sky the game painted (Shevat's sea of
 clouds below its towers, the sky around each cloud; not the desert's
 floor, whose sand merely shares its clear's colour): it takes the cleared
 sky's place in the auxiliary target, without depth, so no light, shade or

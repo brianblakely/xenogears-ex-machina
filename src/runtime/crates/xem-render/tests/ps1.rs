@@ -1059,6 +1059,85 @@ fn interface_pixels_bypass_the_effects() {
     assert!(changed > 10_000, "the effects change the scene ({changed} pixels)");
 }
 
+/// A movie's picture the scene draws (a window movie on a screen in a
+/// field's world, [`Primitive::movie`]) keeps its colours through the
+/// effects, as the movie shown alone does, while the scene around it is lit
+/// and graded.
+#[test]
+fn a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (sync, mut trace) = traced(projected_scene);
+    // The textured quad receding in depth, its texels taken for a movie's.
+    for op in &mut trace.ops {
+        if let TraceOp::Draw(p) = op
+            && p.textured
+            && p.class == Class::Model
+        {
+            p.movie = true;
+        }
+    }
+    let (mut renderer, _) = draw(&gpu, &(sync, trace.clone()), Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut effects = EffectsRenderer::new(&gpu.device, Some(&gpu.adapter));
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing::default());
+    gpu.queue.submit([encoder.finish()]);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    effects.render(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, &frame, &trace.ops, &Effects::HD2D, Quality::High, &Lighting::default());
+    gpu.queue.submit([encoder.finish()]);
+    let plain = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    let lit = read_rgba8(&gpu.device, &gpu.queue, effects.output().unwrap());
+    let at = |pixels: &[u8], x: usize, y: usize| pixels[(y * 640 + x) * 4..(y * 640 + x) * 4 + 3].to_vec();
+    // The quad, near and far, away from the faces over it (scale 2).
+    for (x, y) in [(260, 120), (400, 80), (240, 360), (480, 200)] {
+        assert_eq!(at(&lit, x, y), at(&plain, x, y), "the movie's picture at {x},{y}");
+    }
+    // The faces over it are lit and graded.
+    for (x, y) in [(350, 250), (420, 310), (120, 120)] {
+        assert_ne!(at(&lit, x, y), at(&plain, x, y), "the scene at {x},{y}");
+    }
+}
+
+/// After a movie the field copies its 24-bit display area (480 VRAM pixels
+/// wide) onto itself, over the buffer it shows next. That copy moves no
+/// pixel, and the buffer still shows the frame drawn there, replayed wider
+/// with its sides (replayed from the copy, the frame was the scaled VRAM's
+/// picture, from the original screen's left edge on, the VRAM beside the
+/// buffer in its right side).
+#[test]
+fn a_copy_onto_itself_leaves_the_frame_drawn_there() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+    let framing = Framing { side: 40, ..Default::default() };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut shown = |renderer: &mut Ps1Renderer, trace: Option<&xem_gpu::Trace>| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        if let Some(trace) = trace {
+            renderer.draw(&mut encoder, trace);
+        }
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, renderer, area, framing);
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        read_rgba8(&gpu.device, &gpu.queue, frame.color())
+    };
+    let expected = shown(&mut renderer, None);
+    let trace = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        // Textures beside the buffer, then the copy.
+        device.write_gp0_words(&[0xA000_0000, xy(320, 0), xy(32, 240)]);
+        for _ in 0..32 * 240 / 2 {
+            device.write_gp0(0x03E0_03E0);
+        }
+        device.write_gp0_words(&[0x8000_0000, 0, 0, xy(480, 224)]);
+        device.take_trace()
+    });
+    assert!(shown(&mut renderer, Some(&trace)) == expected, "the frame drawn there");
+}
+
 fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
     let vertex = |dx: i32, dy: i32| TraceVertex {
         x: x + dx,
@@ -1091,6 +1170,7 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         facing: None,
         full_size: None,
         backdrop: false,
+        movie: false,
     })
 }
 

@@ -463,6 +463,11 @@ pub struct Primitive {
     /// scene (a battle's sky; xem/gte.h `XEM_PROJECTION_BACKDROP`): part of
     /// the world in the game's view, the backdrop to a view from elsewhere.
     pub backdrop: bool,
+    /// Its texels are a movie's picture: 15-bit, every one in a macroblock
+    /// the movie player loaded from the MDEC's output ([`TraceOp::Movie`])
+    /// and nothing changed since (a window movie the field shows on a
+    /// screen in its world). Presentation only.
+    pub movie: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -553,7 +558,8 @@ pub enum TraceOp {
     /// GP0(02h): `color` 0xBBGGRR over the rectangle (already wrapped).
     Fill { rect: VramRect, color: u32 },
     /// GP0(80h): a copy inside VRAM. The destination's resulting pixels
-    /// follow as a [`TraceOp::Write`].
+    /// follow as a [`TraceOp::Write`]. A copy onto itself that sets no mask
+    /// bit moves no pixel and is not traced.
     Copy { source: (u16, u16), destination: (u16, u16), width: u16, height: u16 },
     /// VRAM pixels as the device now holds them. `upload` is true for a
     /// CPU-to-VRAM transfer (or the whole VRAM when a trace starts): pixels
@@ -686,6 +692,11 @@ pub(crate) struct Recorder {
     macroblocks: HashMap<u64, (std::sync::Arc<MovieBlock>, u64)>,
     macroblock_keys: std::collections::VecDeque<(u64, u64)>,
     decoded_macroblocks: u64,
+    /// Where 15-bit ones were found loaded into VRAM, while VRAM there stays
+    /// as they left it, and the rectangle around those places: what is
+    /// drawn from them is the movie's picture ([`Primitive::movie`]).
+    movie: Vec<VramRect>,
+    movie_bounds: Option<VramRect>,
     /// Drawn pixels not yet written to the trace.
     dirty: Option<VramRect>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -731,6 +742,7 @@ impl Recorder {
     pub(crate) fn restart(&mut self) {
         self.ops.clear();
         self.full_sync = true;
+        self.forget_movie(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
     }
 
     /// Projection `index` while the history holds it.
@@ -750,9 +762,41 @@ impl Recorder {
         for (k, chunk) in pixels.chunks_exact(width * 16).enumerate() {
             let key = fnv1a(chunk.iter().flat_map(|pixel| pixel.to_le_bytes()));
             if let Some((block, _)) = self.macroblocks.get(&key).filter(|(block, _)| block.bits24 == (width == 24)) {
-                self.ops.push(TraceOp::Movie { x: rect.x, y: rect.y + 16 * k as u16, block: block.clone() });
+                let (x, y) = (rect.x, rect.y + 16 * k as u16);
+                if !block.bits24 {
+                    let at = VramRect { x, y, width: 16, height: 16 };
+                    self.movie.push(at);
+                    self.movie_bounds = Some(self.movie_bounds.map_or(at, |bounds| bounds.union(&at)));
+                }
+                self.ops.push(TraceOp::Movie { x, y, block: block.clone() });
             }
         }
+    }
+
+    /// VRAM changed at `rect`: the movie's blocks there are gone.
+    fn forget_movie(&mut self, rect: VramRect) {
+        if self.movie_bounds.is_some_and(|bounds| bounds.intersect(&rect).is_some()) {
+            self.movie.retain(|block| block.intersect(&rect).is_none());
+            self.movie_bounds = self.movie.iter().copied().reduce(|a, b| a.union(&b));
+        }
+    }
+
+    /// Whether the texels a primitive samples, `u` by `v` (inclusive), on the
+    /// page GP0(E1h) `mode` selects, with the texture window `window`, are
+    /// the movie's picture: 15-bit, no window, every one in its blocks.
+    fn movie_picture(&self, mode: u32, window: u32, (u0, u1): (i32, i32), (v0, v1): (i32, i32)) -> bool {
+        if self.movie.is_empty() || mode >> 7 & 3 < 2 || window != 0 || u0 < 0 || v0 < 0 || u0 > u1 || v0 > v1 || u1 > 255 || v1 > 255 {
+            return false;
+        }
+        let (x, y) = ((mode & 0xF) as i32 * 64 + u0, (mode >> 4 & 1) as i32 * 256 + v0);
+        let (width, height) = (u1 - u0 + 1, v1 - v0 + 1);
+        if x + width > VRAM_WIDTH as i32 {
+            return false;
+        }
+        let rect = VramRect { x: x as u16, y: y as u16, width: width as u16, height: height as u16 };
+        // The blocks never overlap: a block loaded over another forgets it.
+        let covered: u32 = self.movie.iter().filter_map(|block| block.intersect(&rect)).map(|r| u32::from(r.width) * u32::from(r.height)).sum();
+        covered == u32::from(rect.width) * u32::from(rect.height)
     }
 
     fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
@@ -1047,6 +1091,7 @@ impl Gpu {
         let trace = self.trace.as_mut().expect("checked above");
         trace.full_sync = false;
         trace.dirty = None;
+        trace.forget_movie(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
         trace.ops.clear();
         trace.ops.push(TraceOp::Write {
             rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
@@ -1191,6 +1236,7 @@ impl Gpu {
                     let trace = self.trace.as_mut().expect("checked above");
                     trace.ops.push(TraceOp::Fill { rect, color });
                     trace.ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload: false });
+                    trace.forget_movie(rect);
                 }
             }
             0x20..=0x3F => self.trace_polygon(words, false),
@@ -1198,6 +1244,12 @@ impl Gpu {
             0x80..=0x9F => {
                 let source = crate::Image::from_words(words[1], words[3]);
                 let destination = crate::Image::from_words(words[2], words[3]);
+                // A copy onto itself changes no pixel unless it sets their
+                // mask bit (the field copies its 24-bit display area onto
+                // itself after a movie): nothing to trace.
+                if (source.x, source.y) == (destination.x, destination.y) && self.mask & 1 == 0 {
+                    return;
+                }
                 let trace = self.trace.as_mut().expect("checked above");
                 trace.ops.push(TraceOp::Copy {
                     source: (source.x, source.y),
@@ -1220,6 +1272,7 @@ impl Gpu {
             let pixels: std::sync::Arc<[u16]> = read_rect(&self.vram, rect).into();
             let trace = self.trace.as_mut().expect("checked above");
             trace.ops.push(TraceOp::Write { rect, pixels: pixels.clone(), upload });
+            trace.forget_movie(rect);
             if upload {
                 trace.movie_blocks(rect, &pixels);
             }
@@ -1367,6 +1420,8 @@ impl Gpu {
         let classes: Vec<Class> = classes.iter().map(|c| c.class).collect();
         let class = primitive_class(&classes, count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
+        let texels = |of: fn(&TraceVertex) -> i16| vertices[..count].iter().map(|v| i32::from(of(v))).fold((i32::MAX, i32::MIN), |(lo, hi), t| (lo.min(t), hi.max(t)));
+        let movie = textured && trace.movie_picture(environment.draw_mode, environment.texture_window, texels(|v| v.u), texels(|v| v.v));
         let point = trace.point_index(words[1], 1, 0);
         let recorder = self.trace.as_mut().expect("tracing");
         let facing = point.and_then(|point| alternative(&mut recorder.facings, point, &self.vram));
@@ -1392,6 +1447,7 @@ impl Gpu {
             facing,
             full_size,
             backdrop,
+            movie,
         };
         self.trace_drawn(primitive);
     }
@@ -1420,6 +1476,9 @@ impl Gpu {
         // last pixel samples u0 + width - 1 (or u0 - width + 1 flipped).
         let u1 = if flip_x { u0 - width } else { u0 + width };
         let v1 = if flip_y { v0 - height } else { v0 + height };
+        let sampled = |from: i32, to: i32, flip: bool| if flip { (to + 1, from) } else { (from, to - 1) };
+        let environment = self.trace_environment();
+        let movie = textured && trace.movie_picture(environment.draw_mode, environment.texture_window, sampled(u0, u1, flip_x), sampled(v0, v1, flip_y));
         let at = |dx: i32, dy: i32, u: i32, v: i32| TraceVertex {
             x: corner.x + dx,
             y: corner.y + dy,
@@ -1446,7 +1505,7 @@ impl Gpu {
             semi: op & 0x02 != 0,
             dither: false,
             clut: (uv >> 16) as u16,
-            environment: self.trace_environment(),
+            environment,
             class: Class::Flat,
             projection: None,
             owner: 0,
@@ -1457,6 +1516,7 @@ impl Gpu {
             facing: None,
             full_size: None,
             backdrop: false,
+            movie,
         };
         self.trace_drawn(primitive);
     }
@@ -1492,6 +1552,7 @@ impl Gpu {
             facing: None,
             full_size: None,
             backdrop,
+            movie: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1522,6 +1583,7 @@ impl Gpu {
                 height: (max_y.min(VRAM_HEIGHT as i32 - 1) - min_y.max(0) + 1) as u16,
             };
             trace.dirty = Some(trace.dirty.map_or(rect, |dirty| dirty.union(&rect)));
+            trace.forget_movie(rect);
         }
         trace.ops.push(TraceOp::Draw(primitive));
     }

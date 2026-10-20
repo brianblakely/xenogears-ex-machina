@@ -1126,3 +1126,63 @@ fn a_macroblock_decoded_again_stays_known() {
     let trace = gpu.take_trace();
     assert!(trace.ops.iter().any(|op| matches!(op, TraceOp::Movie { block, .. } if block.luma[0] == 9)), "the still block is loaded as a movie block");
 }
+
+/// What is drawn from a 15-bit movie's macroblocks as the movie player
+/// loaded them (a window movie the field shows on a screen in its world)
+/// is the movie's picture while VRAM there holds them: a polygon or a
+/// sprite whose every texel lies in them, not one reaching past them or
+/// drawn after other pixels were loaded over them.
+#[test]
+fn what_is_drawn_from_a_movies_blocks_is_its_picture() {
+    use xem_gpu::{MovieBlock, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    // Two 15-bit macroblocks' output (16 rows of 16 VRAM pixels each),
+    // loaded as one column at (320, 256), as the player loads a slice.
+    let first: Vec<u16> = (0..16 * 16).map(|i| i as u16 * 7 + 1).collect();
+    let second: Vec<u16> = (0..16 * 16).map(|i| i as u16 * 13 + 5).collect();
+    let key = |pixels: &[u16]| fnv1a(pixels.iter().flat_map(|p| p.to_le_bytes()));
+    let block = |luma| MovieBlock { luma: [luma; 256], cb: [0; 64], cr: [0; 64], quant: [3; 6], bits24: false };
+    gpu.trace_macroblocks([(key(&first), block(1)), (key(&second), block(2))]);
+    let column: Vec<u16> = first.iter().chain(&second).copied().collect();
+    upload(&mut gpu, 320, 256, 16, 32, &column);
+    let page = 5 | 1 << 4 | 2 << 7; // (320, 256), 15-bit
+    // A raw textured quad at (0, 0) over texels u0-u1, v0-v1 of the page.
+    let quad = |gpu: &mut Gpu, (u0, u1): (u32, u32), (v0, v1): (u32, u32)| {
+        gpu.write_gp0_words(&[0x2D00_0000, xy(0, 0), v0 << 8 | u0, xy(16, 0), page << 16 | v0 << 8 | u1, xy(0, 16), v1 << 8 | u0, xy(16, 16), v1 << 8 | u1]);
+    };
+    quad(&mut gpu, (0, 15), (0, 31));
+    quad(&mut gpu, (0, 16), (0, 31));
+    // A 16x16 sprite over the second block.
+    gpu.write_gp0(0xE100_0000 | page);
+    gpu.write_gp0_words(&[0x7D00_0000, xy(40, 40), 16 << 8]);
+    // Other pixels loaded over the first block.
+    upload(&mut gpu, 320, 256, 16, 16, &[3; 256]);
+    quad(&mut gpu, (0, 15), (0, 15));
+    quad(&mut gpu, (0, 15), (16, 31));
+    let movie: Vec<bool> = gpu.take_trace().ops.iter().filter_map(|op| match op {
+        TraceOp::Draw(p) => Some(p.movie),
+        _ => None,
+    }).collect();
+    assert_eq!(movie, [true, false, true, false, true], "within the blocks, a texel past them, the sprite, the block loaded over, the other block");
+}
+
+/// A copy onto itself moves no pixel unless it sets their mask bit (the
+/// field copies its 24-bit display area onto itself after a movie): it is
+/// not traced, so no renderer takes it for a frame drawn there.
+#[test]
+fn a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits() {
+    use xem_gpu::TraceOp;
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let copied = |gpu: &mut Gpu, to: u32| {
+        gpu.write_gp0_words(&[0x8000_0000, 0, to, xy(480, 224)]);
+        gpu.take_trace().ops.iter().filter(|op| matches!(op, TraceOp::Copy { .. } | TraceOp::Write { .. })).count()
+    };
+    assert_eq!(copied(&mut gpu, 0), 0, "onto itself");
+    assert_eq!(copied(&mut gpu, xy(0, 256)), 2, "elsewhere: the copy and its destination's pixels");
+    gpu.write_gp0(0xE600_0001);
+    assert_eq!(copied(&mut gpu, 0), 2, "onto itself, setting the mask bit");
+}

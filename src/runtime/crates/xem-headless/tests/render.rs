@@ -715,6 +715,103 @@ fn the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of() {
     assert!(compared >= 6, "{compared} steps compared");
 }
 
+/// Map 243 from entrance 0, past its lead-up's dialogue, plays Fei's
+/// memories as window movies (field movie mode 2) on a screen in the
+/// field's dark: the field draws the pictures the movie player loads into
+/// VRAM as a model's faces. Under HD-2D they show as under Modern, the
+/// effects keeping off them as off a movie shown alone (they were lit,
+/// hazed, blurred and graded). Where a clip ends the field copies its
+/// 24-bit display area onto itself, over the buffer it shows next, which
+/// goes on showing its frame, wider (that copy began a frame whose replay
+/// was the scaled VRAM's picture from the original screen's left edge on:
+/// black in the left side, the textures beside the buffer in the right).
+#[test]
+fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_the_screen() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    session.execute(&json!({"cmd":"enter_field", "map": 243, "entry": 0}));
+    // The lead-up, Cross pressed through its dialogue.
+    while session.runtime.frames() < 4700 {
+        let press = session.runtime.frames() % 30 < 2;
+        session.execute(&json!({"cmd":"pad", "buttons": if press { vec!["cross"] } else { vec![] }}));
+        assert!(session.frame().unwrap());
+    }
+    session.execute(&json!({"cmd":"pad", "buttons": []}));
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d].map(|profile| {
+        let graphics = Graphics { profile, widescreen: true, interpolation: true, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 360), view.max_scale()));
+        view
+    });
+    // The mean difference (levels) of two pictures over the columns
+    // `columns` keeps.
+    let difference = |a: &[u8], b: &[u8], width: usize, columns: &dyn Fn(usize) -> bool| {
+        let (mut sum, mut count) = (0u64, 0u64);
+        for (i, (a, b)) in a.chunks_exact(4).zip(b.chunks_exact(4)).enumerate() {
+            if columns(i % width) {
+                sum += a[..3].iter().zip(&b[..3]).map(|(a, b)| u64::from(a.abs_diff(*b))).sum::<u64>();
+                count += 3;
+            }
+        }
+        sum as f32 / count.max(1) as f32
+    };
+    // And of a picture's columns `a` and `b`, all the way down.
+    let across = |picture: &[u8], width: usize, a: usize, b: usize| {
+        let rows = picture.len() / 4 / width;
+        let sum: u64 = (0..rows).flat_map(|y| (0..3).map(move |c| (y, c)))
+            .map(|(y, c)| u64::from(picture[(y * width + a) * 4 + c].abs_diff(picture[(y * width + b) * 4 + c])))
+            .sum();
+        sum as f32 / (rows * 3) as f32
+    };
+    let (mut compared, mut clips, mut playing) = (0, 0, false);
+    for n in 0..900u64 {
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        let mut size = (0, 0);
+        let pictures: Vec<Vec<u8>> = views.iter_mut().map(|view| {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            size = view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("presented").size;
+            gpu.queue.submit([encoder.finish()]);
+            xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap())
+        }).collect();
+        // The original screen's edges in the picture (its sides at its height).
+        let width = size.0 as usize;
+        let edge = (width - (display.width * size.1 / display.height) as usize) / 2;
+        let movie = session.execute(&json!({"cmd":"status"}))["movie"].clone();
+        if playing && movie.is_null() {
+            clips += 1;
+        }
+        playing = !movie.is_null();
+        // The first clip's screen covers the original screen.
+        if playing && clips == 0 && movie["frame"].as_i64().is_some_and(|frame| frame >= 4) {
+            let apart = difference(&pictures[0], &pictures[1], width, &|x| x >= edge && x < width - edge);
+            assert!(apart < 1.0, "frame {n}: HD-2D's movie {apart:.1} levels from Modern's");
+            compared += 1;
+        }
+        // The sides go on from the original screen's edges (once a frame
+        // logged since the trace began has them).
+        for (view, picture) in pictures.iter().enumerate().filter(|_| edge > 0) {
+            let (left, right) = (across(picture, width, edge - 1, edge), across(picture, width, width - edge, width - edge - 1));
+            assert!(left < 24.0 && right < 24.0, "frame {n}, view {view}: the sides {left:.1} and {right:.1} levels from the screen's edges");
+        }
+    }
+    assert!(compared > 300, "{compared} frames of the first clip compared");
+    assert_eq!(clips, 1, "the first clip ended");
+}
+
 /// Starts the debug battle selector's (`battle_scene_select_values`) first
 /// event file's formation 15: the desert, its party in their Gears.
 fn start_desert_battle(session: &mut Session<NativeModule>) {
