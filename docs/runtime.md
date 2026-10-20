@@ -1950,6 +1950,24 @@ snapshots are its. The renderer only draws again what it drew:
   (`tests/ps1.rs`
   `two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them`,
   `render.rs`'s Battling test).
+  Of the areas shown inside a log (and its own corner), the one the trace
+  draws all over last counts: an area an earlier mode showed there is
+  drawn all over no more. After field 198's narration (entrance 8) and its
+  wavy transition the battle mode plays a scene in buffers at y 0 and 224,
+  and the one at 224 holds the corner of the field's at 256: judged by the
+  field's area, its log never started again and was replayed whole every
+  other presentation (at 150 000 operations, 438 ms a presentation under
+  lavapipe at 640x360 against 11 ms for the other buffer; `tests/ps1.rs`
+  `a_buffer_holding_an_area_an_earlier_mode_showed_starts_its_log_with_each_frame_drawn_all_over_it`,
+  `render.rs`
+  `the_scene_after_field_198s_narration_replays_each_buffers_own_frame_from_its_vram`).
+  A log past 200 000 operations (a mode that never clears its buffer nor
+  draws all over it) is dropped, and nothing of that buffer is replayed
+  until a clear or a frame drawn all over it starts its log again. Kept
+  and emptied, it replayed what followed from the VRAM it began with, and
+  textures loaded since showed scrambled: that scene's Gears, its sky
+  without clouds or mountains and its ground without grass
+  (`a_log_grown_past_its_limit_is_dropped_not_replayed_from_the_vram_it_began_with`).
   When one presentation holds several game
   frames (the host ran them before it presented: fast-forward, catching
   up; a frame begins after each vertical blank), such a log starts with

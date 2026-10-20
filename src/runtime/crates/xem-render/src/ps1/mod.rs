@@ -1912,8 +1912,9 @@ struct Records {
 }
 
 /// A log grows without a clear in modes that never clear nor draw over all
-/// of their buffer; it is dropped past this length (the effects then see
-/// no primitives).
+/// of their buffer; it is dropped past this length, and nothing of that
+/// buffer is replayed (the effects then see no primitives) until a clear or
+/// a frame drawn all over it starts its log again.
 const LOG_LIMIT: usize = 200_000;
 
 /// The last of a trace's game frames (where each begins in `ops`) from
@@ -2541,12 +2542,21 @@ impl Ps1Renderer {
                             // begun for a mode's buffer before shows the next
                             // mode's a few rows lower (the kernel menu's at
                             // y 240, the arena's at 256), whose game never
-                            // draws the rows between.
-                            let (x, y) = self.shown.iter().find(|area| (area.width, area.height) == (width, height) && shown_by(&self.logs[index], area))
-                                .map_or((rect.x, rect.y), |area| (area.x, area.y));
-                            let shown = VramRect { x, y, width: rect.width.min(width), height: rect.height.min(height) };
+                            // draws the rows between. Of the areas shown in
+                            // it (and its own corner), the one the trace draws
+                            // all over last: one an earlier mode showed there
+                            // is drawn all over no more (field 198's buffer at
+                            // y 256, in its battle's at 224).
+                            let (from, shown) = self.shown.iter()
+                                .filter(|area| (area.width, area.height) == (width, height) && shown_by(&self.logs[index], area))
+                                .map(|area| (area.x, area.y))
+                                .chain([(rect.x, rect.y)])
+                                .map(|(x, y)| VramRect { x, y, width: rect.width.min(width), height: rect.height.min(height) })
+                                .map(|shown| (covered_from(ops, &frame_starts, shown), shown))
+                                .max_by_key(|(from, _)| *from)
+                                .expect("the log's own corner");
                             // Unless a clear there starts it.
-                            let from = covered_from(ops, &frame_starts, shown).filter(|&from| !ops[from..].iter().any(|op| clears(op, rect)));
+                            let from = from.filter(|&from| !ops[from..].iter().any(|op| clears(op, rect)));
                             drawn_over.push((rect, from, shown));
                             (from, shown)
                         }
@@ -2703,14 +2713,17 @@ impl Ps1Renderer {
                 && let Some(index) = self.logs.iter().position(|l| (l.rect.x, l.rect.y) == (x, y))
                     .or_else(|| self.logs.iter().position(|l| contains(&l.rect, x, y)))
             {
+                // Past its limit the log goes: kept and emptied, it replayed
+                // what followed from the VRAM it began with (textures loaded
+                // since showed scrambled).
+                if self.logs[index].ops.len() >= LOG_LIMIT {
+                    self.logs.remove(index);
+                    continue;
+                }
                 // Its frame's first primitive: the records current now are
                 // the ones the port made building that frame.
                 let records = (!self.logs[index].drawn && matches!(op, TraceOp::Draw(_))).then(|| self.frame_records());
                 let log = &mut self.logs[index];
-                if log.ops.len() >= LOG_LIMIT {
-                    log.ops.clear();
-                    log.previous.clear();
-                }
                 if let Some(records) = records {
                     (log.eye, log.camera, log.placements, log.drawn) = (records.eye, records.camera, records.placements, true);
                 }

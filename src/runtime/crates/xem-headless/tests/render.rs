@@ -428,6 +428,75 @@ fn battling_shows_each_buffer_its_own_frames_its_sky_beside_the_screen_and_its_f
     assert_eq!(differences(&drawn, &unseen, |start| start != PORT), None, "presenting changed the state outside the port's memory");
 }
 
+/// Field 198's narration (entrance 8, its dialogue advanced with Cross)
+/// ends in a wavy transition into a scene the battle mode plays in buffers
+/// at y 0 and 224, drawing all over each without clearing it; the field
+/// showed its own at 0 and 256. Presented wider, each buffer's log holds
+/// the frame drawn all over it and replays it from the VRAM the game drew
+/// it with: judged by the field's area at 256, the log at 224 never
+/// started again, was replayed whole every other presentation and, emptied
+/// past its limit, from the VRAM it began with (scrambled textures).
+#[test]
+fn the_scene_after_field_198s_narration_replays_each_buffers_own_frame_from_its_vram() {
+    use xem_gpu::TraceOp;
+    use xem_render::ps1::DisplayArea;
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let mut commands = vec![json!([0, {"cmd": "debug", "request": {"tool": "field", "map": 198, "entry": 8}}])];
+    commands.extend((0..180).map(|k| json!([600 + 20 * k, {"cmd": "press", "buttons": ["cross"], "frames": 2}])));
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    // Unpresented until the narration's end, the field still showing its buffers.
+    for _ in 0..3600 {
+        assert!(session.frame().unwrap());
+    }
+    assert_eq!(session.scene(), "field:198");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, ..Graphics::default() };
+    for n in 3600..4400u32 {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 360), view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        // From a while after the transition (about frame 3900).
+        if n < 4000 {
+            continue;
+        }
+        assert_eq!(scene, "battle");
+        let area = DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height };
+        let log = view.renderer().frame_log(area).expect("the shown buffer's log");
+        assert!(log.ops.len() < 5000, "frame {n}: the log of the buffer at y {} holds {} operations", area.y, log.ops.len());
+        // The VRAM its replay samples: as the log began, then its writes.
+        let mut replayed = log.start.to_vec();
+        for op in &log.ops {
+            if let TraceOp::Write { rect, pixels, .. } = op {
+                for (row, line) in pixels.chunks(usize::from(rect.width).max(1)).enumerate() {
+                    let at = (usize::from(rect.y) + row) * 1024 + usize::from(rect.x);
+                    if let Some(held) = replayed.get_mut(at..at + line.len()) {
+                        held.copy_from_slice(line);
+                    }
+                }
+            }
+        }
+        let vram = session.runtime.services().gpu.device().vram();
+        let differ = (0..512 * 1024).filter(|&at| (at % 1024 >= 320 || at / 1024 >= 448) && replayed[at] != vram[at]).count();
+        assert_eq!(differ, 0, "frame {n}: the replay samples {differ} texture pixels the game did not draw with");
+    }
+}
+
 /// Below Shevat's towers the game draws a sea of clouds whose texture holds,
 /// around each cloud, the colour its buffer was cleared with: on the console
 /// that sky meets the cleared sky without an edge. Here too: the clear shows

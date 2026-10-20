@@ -1800,6 +1800,95 @@ fn two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them() {
 }
 
 #[test]
+fn a_buffer_holding_an_area_an_earlier_mode_showed_starts_its_log_with_each_frame_drawn_all_over_it() {
+    // Field 198 shows its buffers at y 0 and 256 (320x216 of the 224 rows
+    // it draws). The battle its event starts clears its own at y 0 and 224
+    // and shows them at the same size, then draws all over the one it
+    // builds each frame without clearing it: its buffer at y 224 holds the
+    // corner of the field's at 256, which it never draws all over.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    };
+    let small = |k: i32| [0x2000_FFFF, xy(k, 10), xy(k + 4, 10), xy(k, 14)];
+    for y in [256, 0] {
+        renderer.set_display(xem_gpu::VramRect { x: 0, y, width: 320, height: 216 });
+    }
+    let (sync, cleared) = traced(|device| {
+        for y in [224, 0] {
+            device.write_gp0_words(&[0x0200_0000, y << 16, 224 << 16 | 320]);
+        }
+    });
+    draw(&mut renderer, &sync);
+    draw(&mut renderer, &cleared);
+    let mut frame = FrameRenderer::new(&gpu.device);
+    for n in 0..6u32 {
+        // The display shows each buffer as the battle finishes it.
+        let built = if n % 2 == 0 { 224 } else { 0 };
+        renderer.set_display(xem_gpu::VramRect { x: 0, y: built as u16, width: 320, height: 216 });
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.vblank();
+            device.write_gp0_words(&[0xE300_0000 | built << 10, 0xE400_0000 | (built + 223) << 10 | 319, 0xE500_0000 | built << 11]);
+            device.write_gp0_words(&[0x2800_0040 + n, xy(0, 0), xy(320, 0), xy(0, 224), xy(320, 224)]);
+            for k in 0..70 {
+                device.write_gp0_words(&small(k * 4));
+            }
+            device.take_trace()
+        });
+        draw(&mut renderer, &trace);
+        let area = DisplayArea { x: 0, y: built, width: 320, height: 216 };
+        frame.track(&renderer, area, None);
+        let draws = renderer.frame_log(area).map_or(0, |log| log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count());
+        assert_eq!(draws, 71, "frame {n}: the log of the buffer at y {built} holds the frame drawn all over it alone");
+    }
+}
+
+#[test]
+fn a_log_grown_past_its_limit_is_dropped_not_replayed_from_the_vram_it_began_with() {
+    // A buffer cleared once, then a texture loaded and more primitives
+    // drawn into it than a log holds, none drawing all over it, then a
+    // sprite of that texture: the frame shown samples the texture as the
+    // game loaded it, not the VRAM the log began with.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (sync, traces) = traced_takes(&[
+        |device| {
+            device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+            device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        },
+        |device| {
+            device.write_gp0_words(&[0xA000_0000, 512, 16 << 16 | 16]);
+            for _ in 0..128 {
+                device.write_gp0(0x001F_001F);
+            }
+            for k in 0..200_000 {
+                device.write_gp0_words(&[0x2000_FFFF, xy(k % 300, 10), xy(k % 300 + 4, 10), xy(k % 300, 14)]);
+            }
+            device.write_gp0(0xE100_0000 | 8 | 2 << 7);
+            device.write_gp0_words(&[0x6500_0000, xy(100, 100), 0, 16 << 16 | 16]);
+        },
+    ]);
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    for trace in std::iter::once(&sync).chain(&traces) {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing { side: 40, ..Default::default() });
+    gpu.queue.submit([encoder.finish()]);
+    let (width, picture) = (frame.size().0 as usize, read_rgba8(&gpu.device, &gpu.queue, frame.color()));
+    let at = (108 * width + 108 + frame.side() as usize) * 4;
+    assert!(picture[at] > 200 && picture[at + 1] < 50 && picture[at + 2] < 50, "the sprite shows {:?}, not its red texture", &picture[at..at + 3]);
+}
+
+#[test]
 fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
