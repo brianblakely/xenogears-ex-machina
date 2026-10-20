@@ -797,9 +797,9 @@ fn hd2d() -> Graphics {
 /// transition shows the picture presented last instead from its first
 /// frame (it showed the noise for a frame); the party opens the field's
 /// menu twice there (each visit takes three screens), and a held rewind
-/// back to the world map shows each frame as it showed: the noise its
-/// states hold showed through the steps into the transition, and again
-/// once four screens were taken since.
+/// back to the world map shows each frame as it showed, under HD-2D and
+/// under Modern: the noise its states hold showed through the steps into
+/// the transition, and again once four screens were taken since.
 #[test]
 fn the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of() {
     let Some(disc) = disc() else {
@@ -812,51 +812,59 @@ fn the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of() {
     let mut session = Session::new(session.runtime, session.schema, move || source.get());
     session.execute(&json!({"cmd":"boot_mode", "mode":3}));
     session.execute(&json!({"cmd":"frames", "count":900}));
-    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let start = session.snapshot_bytes().unwrap();
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
-    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-    let mut shown = std::collections::HashMap::new();
-    let mut last: Option<Vec<f32>> = None;
-    for n in 0..1400u64 {
-        clock.set(std::time::Duration::from_millis(n * 1000 / 60));
-        // Into the interior, then the menu opened and closed twice.
-        let buttons = match n {
-            20 | 21 | 450 | 451 | 1000 | 1001 => vec!["square"],
-            600 | 601 | 1150 | 1151 => vec!["circle"],
-            _ => vec![],
-        };
-        session.execute(&json!({"cmd":"pad", "buttons": buttons}));
-        assert!(session.frame().unwrap());
-        let (picture, _, _) = present_cells(&mut session, &mut view, &gpu, &hd2d(), n as f64 / 60.0);
-        // From the press on (the trace begins at the first of these frames,
-        // whose sides lack the faces the game culls until it asks for them).
-        if let Some(before) = last.as_ref().filter(|_| n > 20) {
-            let change = cells_apart(before, &picture);
-            assert!(change < 20.0, "frame {n}: the picture changed by {change:.1} at once");
-            shown.insert(session.runtime.frames(), picture.clone());
+    for graphics in [hd2d(), Graphics { profile: GraphicsProfile::Modern, ..hd2d() }] {
+        clock.set(std::time::Duration::ZERO);
+        session.restore_bytes(&start).unwrap();
+        session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let mut shown = std::collections::HashMap::new();
+        let mut last: Option<Vec<f32>> = None;
+        for n in 0..1400u64 {
+            clock.set(std::time::Duration::from_millis(n * 1000 / 60));
+            // Into the interior, then the menu opened and closed twice.
+            let buttons = match n {
+                20 | 21 | 450 | 451 | 1000 | 1001 => vec!["square"],
+                600 | 601 | 1150 | 1151 => vec!["circle"],
+                _ => vec![],
+            };
+            session.execute(&json!({"cmd":"pad", "buttons": buttons}));
+            assert!(session.frame().unwrap());
+            let (picture, _, _) = present_cells(&mut session, &mut view, &gpu, &graphics, n as f64 / 60.0);
+            // From the press on (the trace begins at the first of these
+            // frames, whose sides lack the faces the game culls until it asks
+            // for them).
+            if let Some(before) = last.as_ref().filter(|_| n > 20) {
+                let change = cells_apart(before, &picture);
+                assert!(change < 20.0, "{:?}: frame {n}: the picture changed by {change:.1} at once", graphics.profile);
+                shown.insert(session.runtime.frames(), picture.clone());
+            }
+            last = Some(picture);
         }
-        last = Some(picture);
-    }
-    assert_eq!(session.scene(), "field:290", "in the vehicle's interior");
-    // The frames drawn of the screens taken (the transition's, the menu's:
-    // a few primitives) as they showed; the field's own (thousands) without
-    // noise, as HD-2D's effects ease their exposure over the frames a step
-    // follows (from a step into the menu, its dimmed screen's).
-    let (mut compared, mut screens, mut steps) = (0, 0, 0);
-    while session.rewind_step().unwrap() {
-        steps += 1;
-        let (picture, logged, drawn) = present_cells(&mut session, &mut view, &gpu, &hd2d(), (1400 + steps) as f64 / 60.0);
-        let frame = session.runtime.frames();
-        if let Some(then) = shown.get(&frame).filter(|_| logged) {
-            let change = cells_apart(then, &picture);
-            let within = if drawn < 100 { 2.0 } else { 8.0 };
-            assert!(change < within, "the rewind's step to frame {frame} shows it {change:.1} apart from the frame shown then");
-            compared += 1;
-            screens += usize::from(drawn < 100);
+        assert_eq!(session.scene(), "field:290", "in the vehicle's interior");
+        // Each step's frame as it showed: under Modern every one; under
+        // HD-2D the frames drawn of the screens taken (the transition's, the
+        // menu's: a few primitives), and the field's own (thousands) without
+        // noise, as HD-2D's effects ease their exposure and depth ranges over
+        // the frames presented before (a step out of the menu into the field
+        // from the menu's dimmed screen: 6.6 apart).
+        let (mut compared, mut screens, mut steps) = (0, 0, 0);
+        while session.rewind_step().unwrap() {
+            steps += 1;
+            let (picture, logged, drawn) = present_cells(&mut session, &mut view, &gpu, &graphics, (1400 + steps) as f64 / 60.0);
+            let frame = session.runtime.frames();
+            if let Some(then) = shown.get(&frame).filter(|_| logged) {
+                let change = cells_apart(then, &picture);
+                let within = if drawn < 100 || graphics.profile == GraphicsProfile::Modern { 2.0 } else { 8.0 };
+                assert!(change < within, "{:?}: the rewind's step to frame {frame} shows it {change:.1} apart from the frame shown then", graphics.profile);
+                compared += 1;
+                screens += usize::from(drawn < 100);
+            }
         }
+        assert_eq!(session.scene(), "worldmap", "rewound back to the world map");
+        assert!(compared >= 12 && screens >= 8, "{:?}: {compared} steps compared, {screens} of screens taken", graphics.profile);
     }
-    assert_eq!(session.scene(), "worldmap", "rewound back to the world map");
-    assert!(compared >= 12 && screens >= 8, "{compared} steps compared, {screens} of screens taken");
 }
 
 /// Under fast-forward each presentation runs several game frames (ten at

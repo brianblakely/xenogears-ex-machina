@@ -1905,11 +1905,14 @@ pub struct Ps1Renderer {
     /// The screens taken that a state of the session's rewind history can
     /// bring back, as they were taken (newest first): a state loaded whose
     /// VRAM holds one again (a rewind's step back into a transition) shows
-    /// its picture, not the native screen ([`Ps1Renderer::note_history`]).
+    /// its picture, not the native screen ([`Ps1Renderer::note_history`]);
+    /// their pictures within [`REMEMBERED_BYTES`].
     taken: Vec<Capture>,
     /// The frame of the oldest state the session's rewind history holds, as
-    /// its last note said ([`TraceOp::History`]; none without history).
+    /// its last note said ([`TraceOp::History`]; none without history), and
+    /// the game's frame the note followed.
     history: Option<u64>,
+    noted: Option<u64>,
     presented: Option<PresentedPicture>,
     draws: u64,
     storage: Storage,
@@ -2152,6 +2155,7 @@ impl Ps1Renderer {
             earlier: Vec::new(),
             taken: Vec::new(),
             history: None,
+            noted: None,
             presented: None,
             draws: 0,
             storage: Storage::default(),
@@ -2349,6 +2353,7 @@ impl Ps1Renderer {
                     // bring it back (none without history).
                     if capture.taken_as.is_some() && self.history.is_some() {
                         self.taken.insert(0, capture.clone());
+                        remember_within(&mut self.taken, REMEMBERED_BYTES);
                     }
                     capture
                 })
@@ -2816,16 +2821,31 @@ impl Ps1Renderer {
     /// the history holds a state from the last frame one may hold it at or
     /// before (a state holding it, or one from before it was taken that a
     /// rewind's step plays on from to take it again): the frame it was
-    /// taken in, or a later one whose state VRAM held it in as taken.
+    /// taken in, or a later one whose state VRAM held it in as taken. A
+    /// frame before the one noted last (a state loaded, a rewind's step)
+    /// leaves the states after it behind, and the screens taken in that
+    /// time: one comes back only as the game plays on from there, until the
+    /// history takes a state again (as play goes on after a held rewind, at
+    /// once after a state loaded from a file or a slot), which lets it go
+    /// unless VRAM holds it.
     fn note_history(&mut self, frame: u64, state: bool, oldest: Option<u64>) {
         self.history = oldest;
+        let back = self.noted.replace(frame).is_some_and(|noted| frame < noted);
         let (native, scale) = (&self.native, self.scale);
-        for screen in &mut self.taken {
-            if screen.held.is_none() || (state && screen.held_in(native, scale)) {
-                screen.held = Some(frame);
+        self.taken.retain_mut(|screen| {
+            // Gone back to `frame`, no state from it on is left: one taken
+            // since is then held last before it was taken (left behind).
+            let (mut taken, mut held) = match screen.held {
+                Some((taken, held)) if back => (taken, held.min(frame.saturating_sub(1))),
+                Some(held) => held,
+                None => (frame, frame),
+            };
+            if state && screen.held_in(native, scale) {
+                (taken, held) = (taken.min(frame), frame);
             }
-        }
-        self.taken.retain(|screen| screen.held.zip(oldest).is_some_and(|(held, oldest)| held >= oldest));
+            screen.held = Some((taken, held));
+            !(state && held < taken) && oldest.is_some_and(|oldest| held >= oldest)
+        });
     }
 
     /// Whether a log is of the buffer a display of `area` shows.
@@ -2916,6 +2936,29 @@ pub(crate) fn bind_group(
 /// Screens taken before the capture kept while VRAM holds them.
 const EARLIER_CAPTURES: usize = 2;
 
+/// The most the pictures of the screens remembered take
+/// ([`Ps1Renderer::taken`]), whatever the history's length and the
+/// picture's size: the eight a held rewind back through two visits to the
+/// field's menu into the vehicle's transition needs at 3840x2160 (each at
+/// most the frame presented, 33.2 MB), thirty-two at 1920x1080.
+pub const REMEMBERED_BYTES: u64 = 256 << 20;
+
+/// Lets go of the screens remembered held longest ago (of those, the one
+/// taken first) while their pictures take more than `bytes`.
+fn remember_within(taken: &mut Vec<Capture>, bytes: u64) {
+    let size = |screen: &Capture| {
+        let size = screen.texture.size();
+        // COLOR_FORMAT's four bytes a texel.
+        u64::from(size.width) * u64::from(size.height) * 4
+    };
+    let mut total: u64 = taken.iter().map(size).sum();
+    while total > bytes {
+        // Newest first; one taken since the last note counts as held last.
+        let Some(index) = (0..taken.len()).rev().min_by_key(|&n| taken[n].held.map_or(u64::MAX, |(_, held)| held)) else { break };
+        total -= size(&taken.remove(index));
+    }
+}
+
 /// Whether two runs of VRAM pixels have the same colours (the field marks
 /// the texels of its saved screen semi-transparent as it fades from it).
 fn same_colours(a: &[u16], b: &[u16]) -> bool {
@@ -2978,9 +3021,10 @@ pub(crate) struct Capture {
     taken: u64,
     /// Where it was taken and the native pixels VRAM held there then.
     taken_as: Option<(VramRect, std::sync::Arc<[u16]>)>,
-    /// Remembered ([`Ps1Renderer::taken`]): the last frame a state of the
-    /// rewind history may hold it at ([`Ps1Renderer::note_history`]).
-    held: Option<u64>,
+    /// Remembered ([`Ps1Renderer::taken`]): the frame it was taken in and
+    /// the last frame a state of the rewind history may hold it at
+    /// ([`Ps1Renderer::note_history`]).
+    held: Option<(u64, u64)>,
     /// Counts new textures (bind groups made with an older one are stale).
     pub(crate) generation: u64,
 }
@@ -3082,6 +3126,20 @@ mod tests {
         assert_eq!(renderer.taken.len(), 1, "the same scale keeps them");
         renderer.set_options(DrawOptions::default(), 3);
         assert!(renderer.taken.is_empty(), "their pictures, at the old scale, show no more");
+    }
+
+    #[test]
+    fn the_screens_remembered_past_their_budget_go_held_longest_ago_first() {
+        let gpu = pollster::block_on(crate::Gpu::headless()).expect("a wgpu adapter");
+        // A mebibyte each, newest first: the frame each was taken in and the
+        // last a state may hold it at (none for one taken since the note).
+        let screen = |held: Option<(u64, u64)>| Capture { held, ..Capture::new(&gpu.device, (512, 512)) };
+        let mut taken = vec![screen(None), screen(Some((30, 30))), screen(Some((20, 20))), screen(Some((10, 50))), screen(Some((5, 20)))];
+        remember_within(&mut taken, 3 << 20);
+        let kept: Vec<_> = taken.iter().map(|screen| screen.held).collect();
+        assert_eq!(kept, [None, Some((30, 30)), Some((10, 50))], "the ones held longest ago, the one taken first of them first");
+        remember_within(&mut taken, 3 << 20);
+        assert_eq!(taken.len(), 3, "within it all stay");
     }
 
     #[test]

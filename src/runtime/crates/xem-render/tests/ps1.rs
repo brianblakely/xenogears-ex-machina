@@ -1975,6 +1975,210 @@ fn a_screen_taken_is_remembered_while_the_rewind_history_holds_a_state_of_its_ti
     assert!(presented(&mut renderer, &load, oldest, pieces) != expected, "remembered past the history");
 }
 
+/// A screen VRAM holds for longer than the rewind history reaches stays
+/// remembered while the states taken in that time hold it: once another is
+/// taken over it, a state from after the frame it was taken in has left
+/// the history shows its picture.
+#[test]
+fn a_screen_held_longer_than_the_rewind_history_is_remembered_from_the_states_holding_it() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let pieces = DisplayArea { y: 256, ..area };
+    for y in [0, 256] {
+        renderer.set_display(xem_gpu::VramRect { x: 0, y, width: 320, height: 240 });
+    }
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    // A game frame drawn and presented, with the history after it: a state
+    // of it, its last three states from the frame two before.
+    let frames = std::cell::Cell::new(0);
+    let mut presented = |renderer: &mut Ps1Renderer, commands: &dyn Fn(&mut xem_gpu::Gpu), area: DisplayArea| {
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            commands(&mut device);
+            frames.set(frames.get() + 1);
+            device.trace_history(frames.get(), true, Some(frames.get().saturating_sub(2).max(1)));
+            device.take_trace()
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, &trace);
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, renderer, area, framing);
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: frame.color().clone(), side: 40, scale: 2 }));
+        read_rgba8(&gpu.device, &gpu.queue, frame.color())
+    };
+    presented(&mut renderer, &|_| {}, area);
+    let take = |device: &mut xem_gpu::Gpu| {
+        device.write_gp0_words(&[0x8000_0000, 0, xy(704, 256), 240 << 16 | 320]);
+        saved_screen_pieces(device);
+    };
+    let expected = presented(&mut renderer, &take, pieces);
+    // Ten frames on, VRAM holding it all along (the history's oldest state
+    // now the eighth frame's after the one it was taken in).
+    for _ in 0..10 {
+        presented(&mut renderer, &saved_screen_pieces, pieces);
+    }
+    let state = DEVICE.with(|device| device.borrow().clone());
+    // Another taken over it, of the shown buffer cleared anew.
+    presented(&mut renderer, &|device| {
+        device.write_gp0_words(&[0x0200_0020, 0, 240 << 16 | 320]);
+        take(device);
+    }, pieces);
+    let load = |device: &mut xem_gpu::Gpu| {
+        device.load(&state.save()).expect("the state");
+        saved_screen_pieces(device);
+    };
+    assert!(presented(&mut renderer, &load, pieces) == expected, "let go once the frame it was taken in left the history");
+}
+
+/// Going back to before a screen was taken leaves it behind with the time
+/// after. A held rewind's step there plays on to take it again as its
+/// picture, but once the rewind goes on back and is let go, the first state
+/// the history takes as play goes on (whose VRAM does not hold it), or at
+/// once a state loaded from a file or a slot, lets it go: a state of the
+/// time left behind (a file's) shows the native screen.
+#[test]
+fn a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_state() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let pieces = DisplayArea { y: 256, ..area };
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let take = |device: &mut xem_gpu::Gpu| {
+        device.write_gp0_words(&[0x8000_0000, 0, xy(704, 256), 240 << 16 | 320]);
+        saved_screen_pieces(device);
+    };
+    let load = |state: &xem_gpu::Gpu| {
+        let saved = state.save();
+        move |device: &mut xem_gpu::Gpu| {
+            device.load(&saved).expect("the state");
+            saved_screen_pieces(device);
+        }
+    };
+    for stepped in [true, false] {
+        let traces = traced(projected_scene);
+        let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+        for y in [0, 256] {
+            renderer.set_display(xem_gpu::VramRect { x: 0, y, width: 320, height: 240 });
+        }
+        let mut frame = FrameRenderer::new(&gpu.device);
+        // A game frame drawn and presented, with the history after it: the
+        // game's frame, whether it took a state of it, the oldest the first.
+        let mut presented = |renderer: &mut Ps1Renderer, commands: &dyn Fn(&mut xem_gpu::Gpu), noted: (u64, bool), area: DisplayArea| {
+            let trace = DEVICE.with(|device| {
+                let mut device = device.borrow_mut();
+                commands(&mut device);
+                device.trace_history(noted.0, noted.1, Some(1));
+                device.take_trace()
+            });
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, &trace);
+            frame.prepare(&gpu.device, &gpu.queue, &mut encoder, renderer, area, framing);
+            frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, renderer, None);
+            gpu.queue.submit([encoder.finish()]);
+            renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: frame.color().clone(), side: 40, scale: 2 }));
+            read_rgba8(&gpu.device, &gpu.queue, frame.color())
+        };
+        presented(&mut renderer, &|_| {}, (1, true), area);
+        let before = DEVICE.with(|device| device.borrow().clone());
+        let expected = presented(&mut renderer, &take, (2, true), pieces);
+        presented(&mut renderer, &saved_screen_pieces, (3, true), pieces);
+        let taken = DEVICE.with(|device| device.borrow().clone());
+        if stepped {
+            // Back to frame 1's state, played on; then to an older state's
+            // (the same VRAM), and the rewind let go.
+            let saved = before.save();
+            let step = |device: &mut xem_gpu::Gpu| {
+                device.load(&saved).expect("the state");
+                take(device);
+            };
+            assert!(presented(&mut renderer, &step, (2, false), pieces) == expected, "a rewind's step: the native screen taken again shows");
+            presented(&mut renderer, &load(&before), (1, false), pieces);
+            presented(&mut renderer, &saved_screen_pieces, (2, false), pieces);
+            presented(&mut renderer, &saved_screen_pieces, (3, true), pieces);
+        } else {
+            presented(&mut renderer, &load(&before), (1, true), pieces);
+        }
+        assert!(presented(&mut renderer, &load(&taken), (3, true), pieces) != expected, "stepped: {stepped}: remembered past the time left behind");
+    }
+}
+
+/// However long the rewind history, the pictures of the screens remembered
+/// take at most `REMEMBERED_BYTES`: past it the one held longest ago goes
+/// first, a state holding it then showing the native screen, as without
+/// history, and the others their pictures.
+#[test]
+fn the_screens_remembered_keep_to_their_budget_letting_go_of_the_one_held_longest_ago() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+    // The picture presented: red, its sides 1000 pixels wide (8.9 MB a
+    // screen taken).
+    let side = 1000;
+    let (width, height) = ((320 + 2 * side) * 2, 240 * 2);
+    let texture = gpu.device.create_texture(&xem_render::wgpu::TextureDescriptor {
+        label: None,
+        size: xem_render::wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: xem_render::wgpu::TextureDimension::D2,
+        format: xem_render::ps1::COLOR_FORMAT,
+        usage: xem_render::wgpu::TextureUsages::COPY_SRC | xem_render::wgpu::TextureUsages::COPY_DST | xem_render::wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+    gpu.queue.write_texture(
+        texture.as_image_copy(),
+        &[255, 0, 0, 255].repeat((width * height) as usize),
+        xem_render::wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(width * 4), rows_per_image: None },
+        texture.size(),
+    );
+    // Two screens more than fit, each of the shown buffer cleared anew, a
+    // state of each frame from the first (noted before the first taken).
+    let trace = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.trace_history(0, true, Some(0));
+        device.take_trace()
+    });
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    renderer.draw(&mut encoder, &trace);
+    gpu.queue.submit([encoder.finish()]);
+    let screens = xem_render::ps1::REMEMBERED_BYTES / (u64::from(width) * u64::from(height) * 4) + 2;
+    let mut states = Vec::new();
+    for frame in 1..=screens {
+        renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: texture.clone(), side, scale: 2 }));
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.write_gp0_words(&[0x0200_0000 | (frame as u32 & 31) << 3 | (frame as u32 >> 5) << 11, 0, 240 << 16 | 320]);
+            device.write_gp0_words(&[0x8000_0000, 0, xy(704, 256), 240 << 16 | 320]);
+            device.trace_history(frame, true, Some(1));
+            states.push(device.save());
+            device.take_trace()
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, &trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    // A state of each loaded: whether the scaled VRAM holds its picture.
+    let mut red = |state: &[u8]| {
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.load(state).expect("the state");
+            device.take_trace()
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, &trace);
+        gpu.queue.submit([encoder.finish()]);
+        let picture = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+        picture[((256 * 2 + 100) * 2048 + 704 * 2 + 100) * 4..][..4] == [255, 0, 0, 255]
+    };
+    let shown: Vec<bool> = states.iter().map(|state| red(state)).collect();
+    assert_eq!(shown.iter().filter(|&&red| !red).count(), 2, "{shown:?}");
+    assert!(!shown[0] && !shown[1] && shown[2..].iter().all(|&red| red), "the ones held longest ago go first: {shown:?}");
+}
+
 /// Under fast-forward a presentation's trace holds several game frames. The
 /// field entered first after the game starts copies the noise it made over
 /// the shown buffer, takes that, copies it back over the noise and clears it

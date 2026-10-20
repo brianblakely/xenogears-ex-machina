@@ -283,7 +283,14 @@ goes on as without; [State interchange](#state-interchange)).
   the session; save progress first. Battle and Menu take their selector values
   from the panel, then run the original game's loading and setup code.
   Worldmap is a button alone: the world map's first entry on the fresh game
-  places the party itself (map 0x400). Movie plays to the movie's last
+  places the party itself (map 0x400). Under the Original renderer the
+  first field it leads to (Square while flying: the Yggdrasil's bridge,
+  field 290) zooms in from noise, the original program's own picture (the
+  kernel menu's Worldmap test does the same from a fresh boot: a game's
+  first field reads the screen as the title movie's 24-bit picture), while
+  Ex Machina's renderer shows the world map's picture
+  ([The renderer](#the-renderer-phase-4), Screen captures).
+  Movie plays to the movie's last
   frame, as the kernel menu's movie test finds it in a video sector's
   header (`Cd::movie_last_frame`: the last of the movie's final 256 sectors
   that has one, since the retail discs end a movie with audio and empty
@@ -1927,19 +1934,37 @@ snapshots are its. The renderer only draws again what it drew:
   session notes its history in the trace after each game frame
   (`TraceOp::History`: the frame, whether it took a state of it, the
   frame of its oldest state); without history none is remembered, and a
-  new scale lets them go (their pictures are the old scale's). What
-  bounds them is the history: the screens the game takes over its span
-  (30 seconds by default; a visit to the field's menu takes three), each
-  a picture of the frame presented (8.3 MB for a field's at 1920x1080 in
-  widescreen, scale 5). All of VRAM again (a state loaded, a rewind's
-  step) keeps the screens it holds where they were taken, as they were
-  taken (but for the semi-transparency bits the field sets on its saved
-  screen), the newest of them the one textures sample, and the picture
-  presented before a state is none of its screens: until a picture of its
-  own is presented, the same screen taken again is the one taken before,
-  else its native pixels (that picture was the frame shown last, another
-  moment's). A state loaded from a file or a slot shows a screen so only
-  while the history reaches back as far. A rewind's step back into the
+  new scale lets them go (their pictures are the old scale's). A note of
+  a frame before the last one's (a state loaded, a rewind's step) leaves
+  the states after it behind, and with them the screens taken in that
+  time: one comes back only as the game plays on from there (a held
+  rewind's step takes it again), until the history takes a state again
+  (as play goes on after the rewind; at once after a state loaded from a
+  file or a slot), which lets it go unless VRAM holds it. Each screen
+  remembered is a picture of the frame presented (8.3 MB for a field's at
+  1920x1080 in widescreen, scale 5; at most 33.2 MB at 3840x2160), and
+  bounded by the history alone they grew with its span (30 seconds by
+  default, up to an hour), the screens the game takes over it (a visit to
+  the field's menu takes three) and the picture's size: four minutes in
+  the vehicle's interior opening the menu every ten seconds kept up to 38
+  of them, 315.2 MB at 1920x1080 under 120 seconds of history. Their
+  pictures take at most 256 MiB (`REMEMBERED_BYTES`), whatever the
+  history's length and the picture's size: the eight a held rewind back
+  through two visits to the menu into the vehicle's transition needs at
+  3840x2160 (265.4 MB at most), thirty-two at 1920x1080. Past it the
+  screen held longest ago goes first, and a state holding it then shows
+  the native screen, as without history. All of VRAM again (a state
+  loaded, a rewind's step) brings back one screen it holds where it was
+  taken, as it was taken (but for the semi-transparency bits the field
+  sets on its saved screen), as the one textures sample: the screen kept
+  if it holds that, else the newest remembered it holds; of the two kept
+  before the screen kept, those it still holds stay, and no other
+  remembered screen comes back. The picture presented before a state is
+  none of its screens: until a picture of its own is presented, the same
+  screen taken again is the one taken before, else its native pixels
+  (that picture was the frame shown last, another moment's). A state
+  loaded from a file or a slot shows a screen so only while it is
+  remembered. A rewind's step back into the
   vehicle's transition showed the noise its states hold (in play, with a
   field entered before, the native picture, narrower), not the picture
   the transition showed, and while the last four screens taken were all
@@ -1949,6 +1974,9 @@ snapshots are its. The renderer only draws again what it drew:
   `a_screen_made_in_another_buffer_keeps_the_presented_picture_whatever_frames_a_presentation_holds`,
   `a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken`,
   `a_screen_taken_is_remembered_while_the_rewind_history_holds_a_state_of_its_time`,
+  `a_screen_held_longer_than_the_rewind_history_is_remembered_from_the_states_holding_it`,
+  `a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_state`,
+  `the_screens_remembered_keep_to_their_budget_letting_go_of_the_one_held_longest_ago`,
   `a_screen_taken_copied_in_vram_brings_its_picture_without_its_sides`;
   `xem-headless/tests/render.rs`
   `the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of`,
@@ -6093,7 +6121,8 @@ the renderer draws it (wider, in high resolution), not the restored VRAM,
 and a screen the game took that the state holds as it was taken is the
 picture presented when it was taken, which the renderer remembers for as
 long as the history holds a state that can bring it back, however many
-screens were taken since ([The renderer](#the-renderer-phase-4), Screen
+screens were taken since (their pictures within 256 MiB, the one held
+longest ago going first: [The renderer](#the-renderer-phase-4), Screen
 captures), and a window movie's pictures, the one the state holds and those
 loaded after it, keep their colours through HD-2D's effects as in play
 ([Movies](#movies)); where the game draws nothing new (a transition holding
