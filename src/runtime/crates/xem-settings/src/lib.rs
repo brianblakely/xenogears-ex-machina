@@ -146,7 +146,8 @@ pub enum EncounterRate {
     #[default]
     Original,
     /// Half as often for the same walk: the draw runs every other field
-    /// frame (`Session::set_half_encounters`).
+    /// frame (`Session::set_half_encounters`), and every battle gives twice
+    /// its experience, gold and deathblow progress (src/port/rewards.c).
     Half,
 }
 

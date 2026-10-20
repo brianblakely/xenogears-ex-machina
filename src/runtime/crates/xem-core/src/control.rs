@@ -385,8 +385,10 @@ impl<M: GameModule> Session<M> {
     /// (src/port/encounters.c): on the maps whose random battles it leaves
     /// on, the draw runs every other field frame, so the same walk brings
     /// half its battles; scripted battles and the world map's stay the
-    /// game's. Off is the original. It changes the game, so it is recorded
-    /// with the inputs, and a replay keeps the recorded one.
+    /// game's. Every battle then gives twice its experience, gold and
+    /// deathblow progress (src/port/rewards.c, the `reward_scale` import).
+    /// Off is the original. It changes the game, so it is recorded with the
+    /// inputs, and a replay keeps the recorded one.
     pub fn set_half_encounters(&mut self, enabled: bool) {
         if self.replay_end.is_some() {
             return;

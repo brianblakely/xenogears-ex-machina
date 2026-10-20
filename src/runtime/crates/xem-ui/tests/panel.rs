@@ -761,6 +761,10 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
     ] {
         assert!(!shown(&ui, note), "no helper text: {note}");
     }
+    // But for the encounter rate's, below it: Half doubles the rewards.
+    let note = element(&ui, "Half also doubles the EXP, G and deathblow progress that battles give.", AccessibleRole::Text);
+    let rate = element(&ui, "Encounter rate", AccessibleRole::RadioGroup);
+    assert!(note.absolute_position().y >= rate.absolute_position().y + rate.size().height, "below the setting");
     ui.component().invoke_gameplay_edited("auto-advance-dwell".into(), 90);
     press(&ui, &element(&ui, "Movies can be skipped", AccessibleRole::Switch));
     ui.update().unwrap();

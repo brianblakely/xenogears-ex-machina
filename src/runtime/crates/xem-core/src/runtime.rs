@@ -295,6 +295,9 @@ impl ImportHandler for Services {
                 let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
                 Action::Return(if off { 0 } else if self.half_encounters { 2 } else { 1 })
             }
+            // What a battle gives: twice its experience, gold and use counts
+            // while the encounters are halved, wherever the battle is.
+            "reward_scale" => Action::Return(if self.half_encounters { 2 } else { 1 }),
             // The original's reveal while a field script counts out a page
             // before its wait for Confirm (the opening narration's).
             "text_speed" => Action::Return(

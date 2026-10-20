@@ -6715,15 +6715,16 @@ as a recorded control of the session, whose zero is the original's:
 | Option | Setting (default) | Control | What changes | Agents see its effect in |
 | --- | --- | --- | --- | --- |
 | [Random battles](#random-battles-in-platforming-areas) | `random_battles`: `NotWhilePlatforming` (the default), `Original` | `random_battles {off}` | the field's random draw does not run on the platforming areas' maps (`src/port/encounters.c`) | `status.random_battles_off`; `field.random_draw` (`off_here`, its window and steps left as dealt) |
-| [Encounter rate](#random-battles-in-platforming-areas) | `encounter_rate`: `Original` (the default), `Half` | `half_encounters {enabled}` | the draw runs on every other field frame where it runs at all | `status.half_encounters`; `field.random_draw` (its steps count down half as fast) |
+| [Encounter rate](#random-battles-in-platforming-areas) | `encounter_rate`: `Original` (the default), `Half` | `half_encounters {enabled}` | the draw runs on every other field frame where it runs at all, and every battle gives twice its experience, gold and deathblow progress (`src/port/rewards.c`) | `status.half_encounters`; `field.random_draw` (its steps count down half as fast) |
 | [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line, except while a script counts out a page before its wait for Confirm (`src/port/text_speed.c`, `xem_core::dialogue`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
 | [Auto-advance dialogue](#text-speed-auto-advance-and-movie-skipping) | `auto_advance`: off (the default) or on, a dwell of 30-600 vertical blanks (120) | `auto_advance {dwell}` | the session presses Confirm once a field dialogue's prompt has shown the dwell, never at a choice (`xem_core::dialogue`) | `status.auto_advance`, `status.auto_advance_waited`, `status.dialogue` |
 | [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping) | `movie_skip`: off (the default), on | `movie_skip {enabled}` | the story's movies take the original's early exit on the player's press (`src/port/movie_skip.c`) | `status.movie_skip`; `status.movie` (`ends_on_press`) |
 
 Cutscene skipping is not offered: the game marks no next moment the
 player controls clearly enough ([Cutscene skipping](#cutscene-skipping)),
-so it was cut with the battle-message advance that belonged to it; nor is
-an EXP and gold multiplier.
+so it was cut with the battle-message advance that belonged to it. No
+multiplier of experience and gold stands on its own: Half encounters
+double them, and deathblow progress, with the battles.
 
 **Defaults.** A fresh settings file (the desktop's and Android's
 `settings.json`, the browser's `xem.settings`) holds random battles off in
@@ -6892,7 +6893,7 @@ lists those areas, a name and the maps there that arm the draw
 | Setting | Values |
 | --- | --- |
 | random battles | Not while platforming (`NotWhilePlatforming`, the default): none on the maps of `PLATFORMING_AREAS`, the game's elsewhere; Original: wherever the game has them |
-| encounter rate | Original (the default): the random battles left on come as the game's draw deals them; Half: half as often for the same walk (as Perfect Works Build's half encounters, reimplemented here) |
+| encounter rate | Original (the default): the random battles left on come as the game's draw deals them; Half: half as often for the same walk (as Perfect Works Build's half encounters, reimplemented here), and every battle gives twice its experience, gold and deathblow progress (the panel's note below the choice says so) |
 
 The setting stores the policy's name, not its maps, so a revised table
 applies to everyone who keeps the default and a deliberate Original is
@@ -6952,6 +6953,37 @@ first 60 frames the step counted down 14 under the original and 7 halved,
 and the battle came 130 frames into the walk under the original and 230
 halved.
 
+**Rewards at Half.** While the encounters are halved, every battle gives
+twice what the original's gives, wherever it is fought (a field's random
+or scripted battle, the world map's, a boss, a Gear battle), so the same
+walk earns the same progress in half the fights. The import
+`xem.reward_scale` answers 2 under the halving, else 1; it does not ask
+the map, so a map whose random battles are off keeps the doubling for its
+scripted battles. `src/port/rewards.c` wraps three of the game's
+functions. `battle_results_grant_exp_skills_and_drops` (801E2794) doubles
+the experience `battle_results_grant_rewards` totalled from the defeated
+enemies before it is shared out, and adds the gold that function gave the
+party once more: each defeated enemy's, by the bits it set in
+`battle_work_area.defeated`, to the original's 9 999 999 at most, even when
+the whole party is knocked out, as the original adds it.
+`battle_results_run_screens` (801E1FB8, whose argument the decomp names
+the experience: it is the gold, the spoils window's six digits) shows the
+doubled gold. `battle_resolve_action` (800941A4) makes a party attack's
+raise of the attacker's use count (`CharacterRecord.useCounts`, the
+progress towards its deathblows) once more under the original's rule, only
+while the count is at most 0xFDE7, so the members' percentages, the
+results' learning and an escaped battle's write-back all see it. The
+enemies' records keep their amounts (a doubled 50 000 G would not fit
+their 16 bits); an item's raise of every count (effect 15) and the Gear
+actions, which raise none, stay the original's. Without the halving each
+wrapper calls the original as it is, and the import reads the recorded
+`half_encounters` control, so a replay gives what its recording gave.
+Measured on the forest route's battle (the Phase 3 slice, Fei and Citan,
+each enemy given 25-32 G mid-battle, as the route's give none): the
+original gave 106 G and 52 experience (26 to each member, 12 to each
+reserve character) and raised Fei's count 6 by 2 and Citan's by 4; halved,
+212 G and 104 experience (52, and 25), by 4 and 8.
+
 **Agents** change the setting as people do, through the settings service:
 `{"cmd":"settings_apply","change":{"RandomBattles":"Original"}}` on
 `xem-desktop --control` and `window.xem.settings.apply({RandomBattles:
@@ -6985,10 +7017,15 @@ over the host's, drawing as the recording did, a recording begun with maps
 off, `schedule`, `readiness`, refused maps and refused recorded controls;
 `field`'s `random_draw` with `off_here`; and
 `half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_off`
-(the pace 2 where the draw stays on and 0 where it is off, each change
-once, the replay's start from the original's and its recorded halving over
-the host's, a recording begun halved, `schedule`, `readiness` and refused
-values). `xem-host`'s
+(the pace 2 where the draw stays on and 0 where it is off, the rewards'
+scale 2 in both, each change once, the replay's start from the original's
+and its recorded halving over the host's, a recording begun halved,
+`schedule`, `readiness` and refused values). `xem-headless/tests/slice.rs`'
+`halved_encounters_double_the_forest_battles_gold_experience_and_use_counts`
+(local, disc 1) fights the forest route's battle twice, the second time
+halved from its first frame: twice the gold, the experience and each raise
+of the use counts, each share of the experience within the original's
+rounding of twice the original's. `xem-host`'s
 `frames_give_the_session_the_settings_random_battle_maps_and_a_session_log_none`
 checks that `Game::update` gives the session the default policy's maps,
 none under Original, the halving under Half, and none of either while a
