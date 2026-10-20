@@ -466,9 +466,10 @@ pub struct Primitive {
     /// the world in the game's view, the backdrop to a view from elsewhere.
     pub backdrop: bool,
     /// Its texels are a movie's picture: 15-bit, every one in a macroblock
-    /// the movie player loaded from the MDEC's output ([`TraceOp::Movie`])
-    /// and nothing changed since (a window movie the field shows on a
-    /// screen in its world). Presentation only.
+    /// the movie player loaded from the MDEC's output ([`TraceOp::Movie`],
+    /// or in a load of them seen before the trace started again) and
+    /// nothing changed since (a window movie the field shows on a screen in
+    /// its world). Presentation only.
     pub movie: bool,
     /// Drawn from the packets the field's dialogue windows linked (their
     /// frames, text, portraits, prompts and choice cursors), as the port
@@ -518,7 +519,7 @@ impl Primitive {
 }
 
 /// A rectangle of VRAM pixels.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct VramRect {
     pub x: u16,
     pub y: u16,
@@ -622,6 +623,10 @@ pub struct MovieBlock {
 
 /// Movie macroblocks kept for the transfers that load them.
 const MACROBLOCKS: usize = 4096;
+/// 15-bit movie loads kept ([`Recorder::movie_loads`]): 54 seconds of a
+/// window movie's 20 columns at 15 pictures a second, more than a rewind's
+/// history holds by default (30).
+const MOVIE_LOADS: usize = 16384;
 
 /// FNV-1a, 64-bit (the key the MDEC gives a macroblock's output bytes).
 fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
@@ -705,6 +710,16 @@ pub(crate) struct Recorder {
     /// drawn from them is the movie's picture ([`Primitive::movie`]).
     movie: Vec<VramRect>,
     movie_bounds: Option<VramRect>,
+    /// The 15-bit loads of them seen (a transfer every block of which the
+    /// MDEC decoded, or one seen before), by the key of their pixels and
+    /// their place, with the count of the load that last gave each;
+    /// `movie_load_keys` holds them oldest first. They outlast a restart and
+    /// a snapshot loaded: VRAM holding one where it was loaded is the
+    /// movie's picture though the MDEC decoded it before (in the timeline a
+    /// rewind left, or before the trace started again).
+    movie_loads: HashMap<(u64, VramRect), u64>,
+    movie_load_keys: std::collections::VecDeque<((u64, VramRect), u64)>,
+    seen_movie_loads: u64,
     /// Drawn pixels not yet written to the trace.
     dirty: Option<VramRect>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -755,7 +770,6 @@ impl Recorder {
     pub(crate) fn restart(&mut self) {
         self.ops.clear();
         self.full_sync = true;
-        self.forget_movie(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
     }
 
     /// Projection `index` while the history holds it.
@@ -766,23 +780,82 @@ impl Recorder {
 
     /// The movie macroblocks a transfer to `rect` carries, found by their
     /// output's bytes: a column of them, 16 rows each, as the MDEC output
-    /// them (the movie player loads each slice it decoded as it is).
+    /// them (the movie player loads each slice it decoded as it is). A
+    /// 15-bit column loaded there before is the movie's picture again, its
+    /// blocks decoded or not.
     fn movie_blocks(&mut self, rect: VramRect, pixels: &[u16]) {
         let width = usize::from(rect.width);
-        if self.macroblocks.is_empty() || !(width == 16 || width == 24) || rect.height % 16 != 0 {
+        if (self.macroblocks.is_empty() && self.movie_loads.is_empty()) || !(width == 16 || width == 24) || rect.height % 16 != 0 {
             return;
         }
+        let load = (width == 16).then(|| (fnv1a(pixels.iter().flat_map(|pixel| pixel.to_le_bytes())), rect));
+        let seen = load.is_some_and(|load| self.movie_loads.contains_key(&load));
+        let mut decoded = 0;
         for (k, chunk) in pixels.chunks_exact(width * 16).enumerate() {
             let key = fnv1a(chunk.iter().flat_map(|pixel| pixel.to_le_bytes()));
-            if let Some((block, _)) = self.macroblocks.get(&key).filter(|(block, _)| block.bits24 == (width == 24)) {
-                let (x, y) = (rect.x, rect.y + 16 * k as u16);
-                if !block.bits24 {
-                    let at = VramRect { x, y, width: 16, height: 16 };
-                    self.movie.push(at);
-                    self.movie_bounds = Some(self.movie_bounds.map_or(at, |bounds| bounds.union(&at)));
-                }
-                self.ops.push(TraceOp::Movie { x, y, block: block.clone() });
+            let block = self.macroblocks.get(&key).filter(|(block, _)| block.bits24 == (width == 24)).map(|(block, _)| block.clone());
+            let (x, y) = (rect.x, rect.y + 16 * k as u16);
+            if seen || block.as_ref().is_some_and(|block| !block.bits24) {
+                self.movie_block(VramRect { x, y, width: 16, height: 16 });
+                decoded += usize::from(block.is_some());
             }
+            if let Some(block) = block {
+                self.ops.push(TraceOp::Movie { x, y, block });
+            }
+        }
+        if let Some(load) = load
+            && (seen || decoded == usize::from(rect.height / 16))
+        {
+            self.seen_movie_loads += 1;
+            self.movie_loads.insert(load, self.seen_movie_loads);
+            self.movie_load_keys.push_back((load, self.seen_movie_loads));
+            while self.movie_load_keys.len() > MOVIE_LOADS
+                && let Some((oldest, count)) = self.movie_load_keys.pop_front()
+            {
+                if self.movie_loads.get(&oldest) == Some(&count) {
+                    self.movie_loads.remove(&oldest);
+                }
+            }
+        }
+    }
+
+    /// The movie's picture fills `at` (a 16x16 block).
+    fn movie_block(&mut self, at: VramRect) {
+        self.movie.push(at);
+        self.movie_bounds = Some(self.movie_bounds.map_or(at, |bounds| bounds.union(&at)));
+    }
+
+    /// All of VRAM, `vram`, starts the trace again: the movie's picture is
+    /// where it holds a 15-bit load seen there.
+    fn refind_movie(&mut self, vram: &[u16]) {
+        self.movie.clear();
+        self.movie_bounds = None;
+        let mut places: Vec<VramRect> = self.movie_loads.keys().map(|&(_, place)| place).collect();
+        places.sort_by_key(|place| (place.y, place.x, place.height, place.width));
+        places.dedup();
+        for place in places {
+            let key = fnv1a(read_rect(vram, place).iter().flat_map(|pixel| pixel.to_le_bytes()));
+            // Another load seen over part of it is not there too.
+            if self.movie_loads.contains_key(&(key, place)) && self.movie.iter().all(|block| block.intersect(&place).is_none()) {
+                for k in 0..place.height / 16 {
+                    self.movie_block(VramRect { x: place.x, y: place.y + 16 * k, width: 16, height: 16 });
+                }
+            }
+        }
+    }
+
+    /// What `other` knew of movies, for a trace that starts again from all
+    /// of VRAM: the loads it saw, and with `decoded` (the same timeline, a
+    /// host's restart) the macroblocks the MDEC decoded, which the player
+    /// may load next.
+    fn keep_movies(&mut self, other: &mut Recorder, decoded: bool) {
+        self.movie_loads = std::mem::take(&mut other.movie_loads);
+        self.movie_load_keys = std::mem::take(&mut other.movie_load_keys);
+        self.seen_movie_loads = other.seen_movie_loads;
+        if decoded {
+            self.macroblocks = std::mem::take(&mut other.macroblocks);
+            self.macroblock_keys = std::mem::take(&mut other.macroblock_keys);
+            self.decoded_macroblocks = other.decoded_macroblocks;
         }
     }
 
@@ -1010,11 +1083,17 @@ impl Gpu {
         }
     }
     /// Turns the draw trace on or off. Turning it on starts the next trace
-    /// with the whole VRAM.
+    /// with the whole VRAM; turned on while on (a host's restart for a new
+    /// internal scale), it keeps what it knew of movies.
     pub fn set_trace(&mut self, enabled: bool) {
         let pending = self.fifo.len();
+        let was = self.trace.take();
         self.trace = enabled.then(|| {
-            Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() })
+            let mut trace = Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() });
+            if let Some(mut was) = was {
+                trace.keep_movies(&mut was, true);
+            }
+            trace
         });
     }
 
@@ -1036,12 +1115,14 @@ impl Gpu {
     /// on asking for the same culled faces but starts again from all of this
     /// VRAM (what is drawn next follows it), without what the abandoned
     /// timeline recorded (the port's projections, the faces it culled, the
-    /// screen points it stored in RAM).
+    /// screen points it stored in RAM) but with the movie loads it saw
+    /// (where this VRAM holds one, it is the movie's picture).
     pub fn keep_presentation(&mut self, live: &mut Gpu) {
         self.stats = std::mem::take(&mut live.stats);
-        if let Some(trace) = live.trace.take() {
+        if let Some(mut trace) = live.trace.take() {
             self.set_trace(true);
             self.set_reveals(trace.wanted);
+            self.trace.as_mut().expect("turned on").keep_movies(&mut trace, false);
             self.trace_resync();
         }
     }
@@ -1089,6 +1170,7 @@ impl Gpu {
         if trace.full_sync {
             trace.full_sync = false;
             trace.dirty = None;
+            trace.refind_movie(&self.vram);
             ops.clear();
             ops.push(TraceOp::Write {
                 rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
@@ -1114,7 +1196,7 @@ impl Gpu {
         let trace = self.trace.as_mut().expect("checked above");
         trace.full_sync = false;
         trace.dirty = None;
-        trace.forget_movie(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
+        trace.refind_movie(&self.vram);
         trace.ops.clear();
         trace.ops.push(TraceOp::Write {
             rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },

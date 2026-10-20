@@ -1774,7 +1774,11 @@ snapshots are its. The renderer only draws again what it drew:
   replayed as the scaled VRAM's picture: [Movies](#movies), window
   movies). A primitive whose texels are a movie's picture (15-bit, each in
   a macroblock the movie player loaded, `TraceOp::Movie`, and unchanged
-  since) is traced as `movie`. A vertex takes the
+  since) is traced as `movie`; the trace remembers those loads (each
+  column of macroblocks by its pixels and its place, the newest 16 384),
+  and a column it saw loaded is the movie's picture again where VRAM holds
+  it when the trace starts again from all of VRAM, and when the player
+  loads it again, decoded or not. A vertex takes the
   projection stored at its packet word's address while the word still holds
   it, and only that: matching by screen value tied interface points (window
   corners, glyphs) to unrelated 3D points at the same pixel in busy battles.
@@ -1793,10 +1797,13 @@ snapshots are its. The renderer only draws again what it drew:
   The trace is not part of `Gpu::save`; a snapshot load starts it again
   from all of VRAM, without what the abandoned timeline recorded (the
   port's projections, the faces it culled, the screen points stored in
-  RAM), and what the game draws next follows that (a rewind step's
-  frames); a trace past 100 000 ops at a vertical blank restarts too (tens of
-  frames not taken: a host running frames without presenting them, such as
-  a long browser command, keeps no backlog to replay). In the scenes
+  RAM) but with the movie loads it saw, and what the game draws next
+  follows that (a rewind step's frames); a trace past 100 000 ops at a
+  vertical blank restarts too (tens of frames not taken: a host running
+  frames without presenting them, such as a long browser command, keeps no
+  backlog to replay), and so does a trace turned on while on (a host's
+  restart for a new internal scale), which keeps the movie loads it saw
+  and the macroblocks the MDEC decoded. In the scenes
   measured every 3D point matches (Lahan: 41 640 matched, the 420 others 2D).
 - **PS1 renderer** (`xem_render::ps1::Ps1Renderer`, `draw.wgsl`). Draws the
   trace into a scaled picture of all of VRAM (colour, and an auxiliary target
@@ -2229,10 +2236,12 @@ movie 13, 24-bit from game frame 2 168 to 20 013 on the new-game route) is
 rebuilt to its last frame and the field's 15-bit frame follows at 20 014.
 After a state restored mid-movie (30 or 310 frames back), the trace
 restarted for a new internal scale, or a view attached mid-movie, the
-blocks of the frame shown are unknown (a restart starts a trace from all
-of VRAM, without what the abandoned one kept) until the player loads a
-frame decoded since: the device's picture shows for 4, 4, 3 and 5 game
-frames (one movie frame at 15 a second), and the first rebuilt frame is
+blocks of the frame shown are unknown (a trace that starts again from all
+of VRAM traces none of the 24-bit blocks loaded before it) until the
+player loads another frame, after a restore or an attach one decoded since
+(a restart keeps the macroblocks decoded: Draw trace, above): the device's
+picture shows for 4, 4, 3 and 5 game frames (one movie frame at 15 a
+second), and the first rebuilt frame is
 the restored timeline's (0.82 and 0.59 levels from its device picture,
 5.55 and 15.75 from the picture shown before the restore), never one from
 before the restore. Through the desktop's and Android's view (frame 840
@@ -2264,28 +2273,56 @@ as a movie shown alone does. Lit, hazed, blurred and graded, the first
 clip lay 8.9 levels on average from Modern's picture of it over the
 original screen (a 640x360 output), and the black texels it leaves
 transparent, the field's dark showing through, stood out of the haze; now
-HD-2D shows it as Modern does on every frame of the clip (527 compared).
-They are not rebuilt: under Enhanced too they show the MDEC's 15-bit
-picture at the scene's resolution and filtering. Where a clip ends, the
+HD-2D shows it as Modern does on every frame of the clip (527 compared),
+and drawn back at the third clip's end, the spotlight's cone over the
+screen and Fei before it (its last second and the frames after it, 76
+compared over the screen in the upper left; with its faces taken for
+scenery the first lay 22.8 levels apart). They are not rebuilt: under Enhanced
+too they show the MDEC's 15-bit picture at the scene's resolution and
+filtering. Where a clip ends, the
 field copies its 24-bit display area onto itself, which the trace now
 leaves out (Draw trace, above): replayed from that copy, the next frames
 of the buffer had the left side black and the VRAM beside the buffer in
 the right, for three frames: 57.0 and 73.5 levels on average from the
 original screen's edge columns at the first clip's end (58.2 and 93.0 at
-the third's), now at most 7.9 (`xem-headless/tests/render.rs`
+the third's), now at most 7.9 (2.6 at the third's;
+`xem-headless/tests/render.rs`
 `map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_the_screen`,
 local, disc 1, under Modern and HD-2D with Widescreen and High Framerate;
 without the game, `xem-gpu/tests/gpu.rs`
-`what_is_drawn_from_a_movies_blocks_is_its_picture` and
-`a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits`, and
+`what_is_drawn_from_a_movies_blocks_is_its_picture`,
+`a_movies_picture_is_known_again_after_a_snapshot_loaded_and_a_restart`
+and `a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits`, and
 `xem-render/tests/ps1.rs`
 `a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects` and
-`a_copy_onto_itself_leaves_the_frame_drawn_there`). Like a rebuilt frame's
-blocks, the pictures known are not carried across a restart of the trace
-(a state loaded, a rewind's step, a new internal scale): the faces are the
-scene's again until the player loads the next picture, within a movie
-frame while a clip plays; a clip's last picture, which the field shows on
-after the clip, stays the scene's then.
+`a_copy_onto_itself_leaves_the_frame_drawn_there`).
+
+Within each of the field's frames there (three vertical blanks) the field
+draws the screen first, and the player then loads its next picture, which
+the MDEC decoded in the blanks before: a state holds a picture loaded
+before it, and the first picture loaded after it was decoded before it.
+Knowing only the blocks decoded since, a trace started again (a state
+loaded, a rewind's step, a new internal scale) took the faces for scenery
+in the first frames drawn after it: a held rewind over the clips, a state
+each 61 frames, showed the screen hazed in 19 of its 25 steps into a clip
+(19 to 35 levels on average from Modern's over the screen) and in both
+steps between the clips that showed a frame drawn, where the field shows a
+clip's last picture on (9 and 31). The trace remembers the columns it saw
+loaded (Draw trace, above), so the picture a state holds and the ones
+loaded after it are the movie's from the first frame drawn: every step of
+a held rewind back over the third clip, the wait before it and the second
+clip's end shows the screen as Modern does (13 steps, 11 of them into a
+clip, 0.0 levels), and so do the frames after a state of the same session
+loaded mid-clip and after a new internal scale (which keeps the blocks
+decoded before it, so the first picture loaded after it is known too). A
+picture no trace saw loaded (a state from another session, or from before
+the trace was on, or more than 16 384 loads back: 54 seconds of this
+movie) is still the scene's for the first two frames drawn after the
+state, about a tenth of a second (3.8 to 8.6 levels over the screen, in
+the third clip). A step into the wait before a clip's first picture, where
+the field draws nothing in the twelve vertical blanks a step plays on,
+shows the restored buffer as the device holds it (the original screen,
+without sides), as any step that sees no frame drawn.
 
 Tests: `xem-headless/tests/movies.rs` (local, disc 1; lavapipe) presents
 every frame from boot through the title movie with a view enlarging
@@ -2334,10 +2371,12 @@ equal to `xem-headless`'s. `scripts/android-smoke.sh` checks a
 Not done or not measured: FSR 1 runs on real frames only where forced on
 lavapipe; the browsers' and Android emulator's adapters are software
 rasterizers and enlarge bilinearly, and its cost at a headset screen's
-span on headset GPUs (the Low tier) is not measured. The macroblocks are
-not carried across a restart or restore (matching them to the restored
-VRAM would remove the one movie frame of the device's picture measured
-above). Only the title movie eases; other movies end rebuilt and cut to
+span on headset GPUs (the Low tier) is not measured. The 24-bit
+macroblocks are not carried across a restore, nor found again in the VRAM
+a restart or restore starts from (matching them to it would remove the
+one movie frame of the device's picture measured above); a window movie's
+15-bit loads are (above). Only the title movie eases; other movies end
+rebuilt and cut to
 what follows. Under the Stretch scale a rebuilt frame is enlarged twice
 (above). No person has judged the pictures: "clearer" is the block-edge
 measure above, measured on the title movie alone. On its fade from black
@@ -5977,8 +6016,10 @@ host's clock, plays them too). Its picture is the game's at that moment as
 the renderer draws it (wider, in high resolution), not the restored VRAM,
 and a screen the game took that the state holds as it was taken is the
 picture presented when it was taken ([The renderer](#the-renderer-phase-4),
-Screen captures); where the game draws nothing new (a transition holding
-its last picture) the restored picture shows. History
+Screen captures), and a window movie's pictures, the one the state holds
+and those loaded after it, keep their colours through HD-2D's effects as in
+play ([Movies](#movies)); where the game draws nothing new (a transition
+holding its last picture) the restored picture shows. History
 is enabled by Settings for interactive play. Headless sessions, scripted native
 playback and browser command-driven boots have history off unless requested;
 browser automation can boot with `rewind: true` or use `rewind_configure`.

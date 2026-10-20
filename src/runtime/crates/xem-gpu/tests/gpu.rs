@@ -1203,6 +1203,59 @@ fn what_is_drawn_from_a_movies_blocks_is_its_picture() {
     assert_eq!(movie, [true, false, true, false, true], "within the blocks, a texel past them, the sprite, the block loaded over, the other block");
 }
 
+/// A movie's picture is known again when the trace starts again from all of
+/// VRAM: a snapshot loaded (a rewind's step) holding a column the player
+/// loaded there, and that column's successor loaded after it (decoded
+/// before the snapshot, in the timeline left behind), and a host's restart
+/// (the trace turned on while on, for a new internal scale), after which
+/// the blocks the MDEC decoded before it are loaded. Other pixels loaded
+/// where the movie was are not its picture.
+#[test]
+fn a_movies_picture_is_known_again_after_a_snapshot_loaded_and_a_restart() {
+    use xem_gpu::{MovieBlock, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let key = |pixels: &[u16]| fnv1a(pixels.iter().flat_map(|p| p.to_le_bytes()));
+    let block = |luma| MovieBlock { luma: [luma; 256], cb: [0; 64], cr: [0; 64], quant: [3; 6], bits24: false };
+    // Columns of pictures at (320, 256): two 15-bit macroblocks each.
+    let column = |seed: u16| -> Vec<u16> { (0..16 * 32).map(|i| (i as u16).wrapping_mul(seed) | 1).collect() };
+    let decoded = |pixels: &[u16]| [(key(&pixels[..256]), block(1)), (key(&pixels[256..]), block(2))];
+    let page = 5 | 1 << 4 | 2 << 7;
+    // A raw textured quad over the column's texels; then whether each
+    // quad traced since was the movie's picture.
+    let quad = |gpu: &mut Gpu| gpu.write_gp0_words(&[0x2D00_0000, xy(0, 0), 0, xy(16, 0), page << 16 | 15, xy(0, 16), 31 << 8, xy(16, 16), 31 << 8 | 15]);
+    let movie = |gpu: &mut Gpu| -> Vec<bool> {
+        gpu.take_trace().ops.iter().filter_map(|op| match op {
+            TraceOp::Draw(p) => Some(p.movie),
+            _ => None,
+        }).collect()
+    };
+    let (first, second, third) = (column(7), column(13), column(23));
+    gpu.trace_macroblocks(decoded(&first));
+    upload(&mut gpu, 320, 256, 16, 32, &first);
+    quad(&mut gpu);
+    assert_eq!(movie(&mut gpu), [true]);
+    let saved = gpu.save();
+    gpu.trace_macroblocks(decoded(&second));
+    upload(&mut gpu, 320, 256, 16, 32, &second);
+    gpu.load(&saved).unwrap();
+    quad(&mut gpu);
+    upload(&mut gpu, 320, 256, 16, 32, &second);
+    quad(&mut gpu);
+    upload(&mut gpu, 320, 256, 16, 32, &column(19));
+    quad(&mut gpu);
+    assert_eq!(movie(&mut gpu), [true, true, false], "the column the snapshot holds, its successor loaded again, other pixels");
+    upload(&mut gpu, 320, 256, 16, 32, &first);
+    gpu.trace_macroblocks(decoded(&third));
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    quad(&mut gpu);
+    upload(&mut gpu, 320, 256, 16, 32, &third);
+    quad(&mut gpu);
+    assert_eq!(movie(&mut gpu), [true, true], "after a restart, the column VRAM holds and the one decoded before it");
+}
+
 /// A copy onto itself moves no pixel unless it sets their mask bit (the
 /// field copies its 24-bit display area onto itself after a movie): it is
 /// not traced, so no renderer takes it for a frame drawn there.

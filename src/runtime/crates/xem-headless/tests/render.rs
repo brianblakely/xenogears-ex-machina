@@ -720,18 +720,29 @@ fn the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of() {
 /// field's dark: the field draws the pictures the movie player loads into
 /// VRAM as a model's faces. Under HD-2D they show as under Modern, the
 /// effects keeping off them as off a movie shown alone (they were lit,
-/// hazed, blurred and graded). Where a clip ends the field copies its
+/// hazed, blurred and graded): in the first clip, whose screen covers the
+/// original screen, and at the third's end, drawn back, the spotlight's
+/// cone over the screen and Fei before it (nothing presented between, as by
+/// a host whose window is hidden). Where a clip ends the field copies its
 /// 24-bit display area onto itself, over the buffer it shows next, which
 /// goes on showing its frame, wider (that copy began a frame whose replay
 /// was the scaled VRAM's picture from the original screen's left edge on:
 /// black in the left side, the textures beside the buffer in the right).
+/// A held rewind back over the third clip, the wait before it and the
+/// second clip's end shows the screen as under Modern in every step too: a
+/// step's state holds a picture loaded before it, and the first picture
+/// loaded after it was decoded before it (most steps showed the screen
+/// hazed).
 #[test]
 fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_the_screen() {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
     session.execute(&json!({"cmd":"enter_field", "map": 243, "entry": 0}));
     // The lead-up, Cross pressed through its dialogue.
     while session.runtime.frames() < 4700 {
@@ -740,6 +751,10 @@ fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_t
         assert!(session.frame().unwrap());
     }
     session.execute(&json!({"cmd":"pad", "buttons": []}));
+    // A state a second of the host's clock, each 61 game frames: the steps
+    // land at every point of the field's frames (three vertical blanks
+    // each) and of the movie's pictures (three in four frames).
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d].map(|profile| {
         let graphics = Graphics { profile, widescreen: true, interpolation: true, ..Graphics::default() };
@@ -747,12 +762,12 @@ fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_t
         view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 360), view.max_scale()));
         view
     });
-    // The mean difference (levels) of two pictures over the columns
-    // `columns` keeps.
-    let difference = |a: &[u8], b: &[u8], width: usize, columns: &dyn Fn(usize) -> bool| {
+    // The mean difference (levels) of two pictures over the pixels `keep`
+    // keeps (by column and row).
+    let difference = |a: &[u8], b: &[u8], width: usize, keep: &dyn Fn(usize, usize) -> bool| {
         let (mut sum, mut count) = (0u64, 0u64);
         for (i, (a, b)) in a.chunks_exact(4).zip(b.chunks_exact(4)).enumerate() {
-            if columns(i % width) {
+            if keep(i % width, i / width) {
                 sum += a[..3].iter().zip(&b[..3]).map(|(a, b)| u64::from(a.abs_diff(*b))).sum::<u64>();
                 count += 3;
             }
@@ -767,9 +782,28 @@ fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_t
             .sum();
         sum as f32 / (rows * 3) as f32
     };
-    let (mut compared, mut clips, mut playing) = (0, 0, false);
-    for n in 0..900u64 {
-        assert!(session.frame().unwrap());
+    // Drawn back, the screen lies in the upper left: in a 1920x1080 picture
+    // from 200 to 1100 across, most of the cone over it included, and from
+    // 50 to 550 down. There the movie's sepia has more red than blue (the
+    // field's dark is blue): the mean of the one over the other.
+    let screen = |(width, height): (u32, u32)| {
+        let (width, height) = (width as usize, height as usize);
+        move |x: usize, y: usize| (width * 200 / 1920..width * 1100 / 1920).contains(&x) && (height * 50 / 1080..height * 550 / 1080).contains(&y)
+    };
+    let sepia = |picture: &[u8], width: usize, keep: &dyn Fn(usize, usize) -> bool| {
+        let (mut sum, mut count) = (0i64, 0i64);
+        for (i, pixel) in picture.chunks_exact(4).enumerate() {
+            if keep(i % width, i / width) {
+                sum += i64::from(pixel[0]) - i64::from(pixel[2]);
+                count += 1;
+            }
+        }
+        sum as f32 / count.max(1) as f32
+    };
+    let mut tick = 0u64;
+    // One host presentation of both views: what the game drew since the
+    // last, drawn; their pictures, their size and the display.
+    let mut present = |session: &mut Session<NativeModule>, views: &mut [GameView; 2]| {
         let device = session.runtime.services().gpu.device_mut();
         let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
         if restart || !device.trace_enabled() {
@@ -779,37 +813,73 @@ fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_t
         let trace = device.take_trace();
         let display = device.display();
         let scene = session.scene();
+        tick += 1;
         let mut size = (0, 0);
         let pictures: Vec<Vec<u8>> = views.iter_mut().map(|view| {
             view.push(trace.clone());
             let mut encoder = gpu.device.create_command_encoder(&Default::default());
-            size = view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("presented").size;
+            size = view.present(&mut encoder, &display, &scene, tick as f64 / 60.0).expect("presented").size;
             gpu.queue.submit([encoder.finish()]);
             xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap())
         }).collect();
-        // The original screen's edges in the picture (its sides at its height).
-        let width = size.0 as usize;
-        let edge = (width - (display.width * size.1 / display.height) as usize) / 2;
+        (pictures, size, display)
+    };
+    let (mut compared, mut drawn_back, mut clips, mut playing) = (0, 0, 0, false);
+    while session.runtime.frames() < 6775 {
+        clock.set(std::time::Duration::from_secs_f64((session.runtime.frames() - 4700) as f64 / 61.0));
+        assert!(session.frame().unwrap());
+        let frame = session.runtime.frames();
         let movie = session.execute(&json!({"cmd":"status"}))["movie"].clone();
         if playing && movie.is_null() {
             clips += 1;
         }
         playing = !movie.is_null();
+        // From the first clip's end until the third's last two seconds,
+        // nothing presented: the trace goes on.
+        if (5600..6650).contains(&frame) {
+            continue;
+        }
+        let (pictures, size, display) = present(&mut session, &mut views);
+        // The original screen's edges in the picture (its sides at its height).
+        let width = size.0 as usize;
+        let edge = (width - (display.width * size.1 / display.height) as usize) / 2;
         // The first clip's screen covers the original screen.
         if playing && clips == 0 && movie["frame"].as_i64().is_some_and(|frame| frame >= 4) {
-            let apart = difference(&pictures[0], &pictures[1], width, &|x| x >= edge && x < width - edge);
-            assert!(apart < 1.0, "frame {n}: HD-2D's movie {apart:.1} levels from Modern's");
+            let apart = difference(&pictures[0], &pictures[1], width, &|x, _| x >= edge && x < width - edge);
+            assert!(apart < 1.0, "frame {frame}: HD-2D's movie {apart:.1} levels from Modern's");
             compared += 1;
         }
+        // The third clip's last second and the frames after it, drawn back.
+        if frame >= 6700 {
+            let screen = screen(size);
+            assert!(sepia(&pictures[0], width, &screen) > 10.0, "frame {frame}: the screen drawn back");
+            let apart = difference(&pictures[0], &pictures[1], width, &screen);
+            assert!(apart < 1.0, "frame {frame}: HD-2D's screen drawn back {apart:.1} levels from Modern's");
+            drawn_back += 1;
+        }
         // The sides go on from the original screen's edges (once a frame
-        // logged since the trace began has them).
-        for (view, picture) in pictures.iter().enumerate().filter(|_| edge > 0) {
+        // logged since the trace began, or began again, has them).
+        for (view, picture) in pictures.iter().enumerate().filter(|_| edge > 0 && !(6650..6700).contains(&frame)) {
             let (left, right) = (across(picture, width, edge - 1, edge), across(picture, width, width - edge, width - edge - 1));
-            assert!(left < 24.0 && right < 24.0, "frame {n}, view {view}: the sides {left:.1} and {right:.1} levels from the screen's edges");
+            assert!(left < 24.0 && right < 24.0, "frame {frame}, view {view}: the sides {left:.1} and {right:.1} levels from the screen's edges");
         }
     }
     assert!(compared > 300, "{compared} frames of the first clip compared");
-    assert_eq!(clips, 1, "the first clip ended");
+    assert_eq!(clips, 3, "the third clip ended");
+    assert!(drawn_back > 60, "{drawn_back} frames drawn back compared");
+    // A held rewind, a state a step, back into the second clip's end.
+    let mut steps = 0;
+    while session.runtime.frames() > 6050 && session.rewind_step().unwrap() {
+        let (pictures, size, _) = present(&mut session, &mut views);
+        let frame = session.runtime.frames();
+        let (width, screen) = (size.0 as usize, screen(size));
+        assert!(sepia(&pictures[0], width, &screen) > 10.0, "the rewind's step to frame {frame}: the screen");
+        let apart = difference(&pictures[0], &pictures[1], width, &screen);
+        assert!(apart < 1.0, "the rewind's step to frame {frame}: HD-2D's screen {apart:.1} levels from Modern's");
+        let movie = session.execute(&json!({"cmd":"status"}))["movie"].clone();
+        steps += usize::from(!movie.is_null() && views[1].frame().identity().is_some());
+    }
+    assert!(steps >= 6, "{steps} steps into a clip, each showing a frame drawn since");
 }
 
 /// Starts the debug battle selector's (`battle_scene_select_values`) first
