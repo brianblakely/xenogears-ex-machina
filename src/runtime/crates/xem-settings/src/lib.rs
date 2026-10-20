@@ -779,7 +779,7 @@ mod tests {
         assert!(!settings.captures_mouse(Context::Dialogue { choice: Some(Choice { count: 2, index: 0 }) }, false));
         for page in 0..8 {
             for attack in [false, true] {
-                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false }, false));
+                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false, message: false }, false));
             }
         }
     }

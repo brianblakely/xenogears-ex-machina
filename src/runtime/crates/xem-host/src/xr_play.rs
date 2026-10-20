@@ -483,11 +483,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut player = xem_settings::player::PlayerInput::default();
     // First-person inspection's toggle on the controllers (their Back), the
     // app's Toggle first-person view asked for this frame (its chord), its
-    // turn on the right stick, and the last eyes tracked (held through
-    // frames the runtime cannot locate them in).
+    // turn on the right stick, Back hiding a dialogue's windows, and the
+    // last eyes tracked (held through frames the runtime cannot locate them
+    // in).
     let mut look_toggle = xem_settings::look::Toggle::default();
     let mut look_asked = false;
     let mut snap = xem_settings::look::SnapTurn::default();
+    let mut dialogue_hiding = xem_settings::look::DialogueHiding::default();
     let mut tracked_eyes: Option<[HeadsetEye; 2]> = None;
     let mut assist = Assisted::new();
     // The virtual screen as the last frame showed it (where gestures aim).
@@ -796,6 +798,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if visible {
             look_toggle.clear();
             snap.clear();
+            dialogue_hiding.clear();
         } else {
             if look_toggle.update(false, &pressed, context.field) && drawn {
                 view.set_first_person(!view.first_person());
@@ -808,7 +811,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
         // The controllers' Back held alone over a dialogue hides its windows.
-        view.set_dialogue_hidden(!visible && xem_settings::look::hides_dialogue(false, &pressed, context.ui));
+        view.set_dialogue_hidden(!visible && dialogue_hiding.update(false, &pressed, context.ui, start.elapsed().as_secs_f64() * 1000.0));
         let mut ran = 0;
         if !game_paused {
             if visible { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }

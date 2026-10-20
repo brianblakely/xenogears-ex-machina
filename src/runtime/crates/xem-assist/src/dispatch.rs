@@ -346,7 +346,7 @@ mod tests {
     const HAND: Hand = Hand::Right;
 
     fn battle(page: u8, attack: bool) -> Context {
-        Context::Battle { page, attack, ap: 6, list: false, targeting: false }
+        Context::Battle { page, attack, ap: 6, list: false, targeting: false, message: false }
     }
 
     #[test]
@@ -483,7 +483,7 @@ mod tests {
 
     #[test]
     fn through_a_diorama_a_battles_target_is_chosen_by_the_ray() {
-        let targeting = Context::Battle { page: 1, attack: false, ap: 6, list: false, targeting: true };
+        let targeting = Context::Battle { page: 1, attack: false, ap: 6, list: false, targeting: true, message: false };
         let tap = [Gesture::Tap { hand: HAND }];
         let targets = battle_targets("battle_targets", true);
         assert_eq!(dispatch(&tap, targeting, Some(down_at(3820.0, -800.0, 4040.0)), None, Some(&targets)), [Out::Select { index: 1, confirm: true }], "the boss, by the ray");

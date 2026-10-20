@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn the_ring_and_menus_show_only_a_flat_cursor() {
-        let ring = Context::Battle { page: 9, attack: false, ap: 6, list: false, targeting: false };
+        let ring = Context::Battle { page: 9, attack: false, ap: 6, list: false, targeting: false, message: false };
         let marks = marks(ring, Some(Pointed::Screen((50.0, 60.0))), None, None, None, false);
         assert_eq!(marks.len(), 1, "the ring's own arrows show its pages: {marks:?}");
         assert_eq!(marks[0].kind, Kind::Cursor);

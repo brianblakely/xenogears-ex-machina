@@ -1653,8 +1653,10 @@ mode and the GTE transform its caller set), `sprite_set_draw_matrix` (the
 sprite and the transform it produced) and `sprite_draw_parts` (the sprite, its
 ordering table and transform). The wrappers record and then run the original
 unchanged (`WRAPPED` in tools/game_module.py); `field_dialogue_draw_windows`
-runs it first and records the packets it linked (`src/port/dialogue.c`:
-[Hiding a dialogue](#hiding-a-dialogue)). The host keeps the records of
+and the three calls that draw a battle's script message run it first and
+record the packets they linked (`src/port/dialogue.c`,
+`src/port/battle_dialogue.c`: [Hiding a dialogue](#hiding-a-dialogue)).
+The host keeps the records of
 the last complete frame (`xem_core::presentation`, the `presentation` command);
 capture is off until asked for. Cameras are read through the schema
 (`field_view`, the battle and world map camera state). The original camera and
@@ -1778,7 +1780,8 @@ snapshots are its. The renderer only draws again what it drew:
   marks as interface and for polygons whose every point the GTE projected
   at the projection distance H, drawn at their screen size: the field
   menu's counter backing, the world map's marker), the DMA node it came
-  from (and whether that is among the field's dialogue windows' packets:
+  from (and whether that is among a dialogue's packets, the field's
+  windows' or a battle's script message's:
   [Hiding a dialogue](#hiding-a-dialogue)), fills,
   copies and VRAM writes: CPU transfers as uploads, and drawn pixels a later
   command samples as a texture before that command, so the renderer's 16-bit
@@ -2599,8 +2602,10 @@ native hosts do). Select is any of its bound keys (Backspace), the touch
 deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
 released alone (Back begins the app chords; a headset controller's Back is
 its right stick's click), all of which toggle only there: while the player
-walks where Select shows no picture. Held while a dialogue shows, they hide
-its windows ([Hiding a dialogue](#hiding-a-dialogue)). A gamepad's right stick's click (R3)
+walks where Select shows no picture (Back pressed and let go there). Held
+while a dialogue shows, they hide its windows instead, and a Back held over
+one and let go once the player walks again toggles nothing
+([Hiding a dialogue](#hiding-a-dialogue)). A gamepad's right stick's click (R3)
 toggles it anywhere in a field but a menu; a headset's controllers have no
 R3. The app action Toggle first-person view (`AppAction::ToggleFirstPerson`:
 V and Back+R1 by default, a headset's right stick's click with its right
@@ -3143,93 +3148,183 @@ it.
 
 ### Hiding a dialogue
 
-While a field dialogue shows (the interface context's `dialogue`,
-`xem_core::context`: `field_work.open_windows` holds a window and no menu
-runs), Select held leaves its windows out of the picture: their frames and
-backing, the text, the speaker's portrait, the waiting prompt and the
-choice cursor. Let go, they show again. Select is any of its bound keys
-(Backspace), the touch deck's SELECT and a gamepad's Back alone (with
-another button Back begins an app chord, and the windows show), a headset
-controller's Back being its right stick's click (`look::hides_dialogue`,
-on desktop, Android, the browser and headsets alike); Settings' Controls
-section lists it as Hide dialogue (held). It is presentation only: the
-game gets Select as it does without (`look::game_buttons` takes it only
-where it toggles first-person inspection, while the player walks), its
-dialogue goes on as before (the text revealing, the prompt and the cursor
-turning, a choice moving with the directions, Circle ending a wait), and
-RAM, VRAM, sound and time are those of the same inputs shown. The game
-reads Select itself: the field shows a map's picture with it while the
-player walks (`field_picture_show`), the debug monitor resets the map with
-Cross and Select (with the monitor only), and the field's scripts test the
-held buttons (`31` and its kin; `field_update_play_record` gathers them
-each frame for `32` and `e3`), map 321's Select among them
-(`xem_core::context` `SCRIPT_BUTTONS`, from `python3 -m
-tools.analysis.events --buttons`: a script there takes control when Select
-is held at one step of its state). The windows' own code
+While a dialogue shows, Select held leaves its windows out of the picture:
+a field's (the interface context's `dialogue`, `xem_core::context`:
+`field_work.open_windows` holds a window and no menu runs) with their frames
+and backing, the text, the speaker's portrait, the waiting prompt and the
+choice cursor, and a battle's event script message (the `battle` context's
+`message`: in the script's frame mode, `battle_frame_mode` 2, its battle
+window 0, the speaker's portrait or its text shown) with its window, the
+portrait, the text and the cursor that waits for Confirm. Let go, they
+show again. Select is any of its bound keys (Backspace) and the touch
+deck's SELECT, which hide at once, and a gamepad's Back once it has been
+held alone for 0.15 s (`look::BACK_HIDES_AFTER_MS`), a headset
+controller's Back being its right stick's click. Back plus a face button,
+Start, R1 or a trigger runs the app chords (Back+South saves a state,
+Back+North loads one, Back+East and Back+West toggle rewind and
+auto-advance, Back+Start opens Settings, Back+LT rewinds, Back+RT
+fast-forwards, Back+R1 toggles first person): their second button lands
+within that time, so a chord leaves the windows as they were, and pressed
+while they are hidden it shows them again and runs its action. Once
+hidden, they stay hidden while Select is held, whatever the interface
+then: the display shows a frame while the game draws the next, so a
+window's last frames show after it has closed (three each time on field
+12's conversation), and a window opening next is hidden from its first
+frame (`look::DialogueHiding`, on desktop, Android, the browser and
+headsets alike). A gamepad's Back held over a dialogue and let go once the
+player walks again toggles no first-person view (`look::Toggle` counts a
+Back press only where Select toggles throughout). Settings' Controls
+section lists it as Hide dialogue (held).
+
+It is presentation only: the game gets Select as it does without
+(`look::game_buttons` takes it only where it toggles first-person
+inspection, while the player walks), its dialogue goes on as before (the
+text revealing, the prompt and the cursor turning, a choice moving with the
+directions, Circle ending a wait), and RAM, VRAM, sound and time are those
+of the same inputs shown. The game reads Select itself: the field shows a
+map's picture with it while the player walks (`field_picture_show`), the
+debug monitor resets the map with Cross and Select (with the monitor only),
+and the field's scripts test the held buttons (`31` and its kin;
+`field_update_play_record` gathers them each frame for `32` and `e3`), map
+321's Select among them (`xem_core::context` `SCRIPT_BUTTONS`, from
+`python3 -m tools.analysis.events --buttons`: a script there takes control
+when Select is held at one step of its state). The windows' own code
 (`field_dialogue_draw_windows`, `field_dialogue_update_choice`) reads only
-Circle and the directions.
+Circle and the directions. A battle reads Select in its turns
+(`battle_read_input`: input code 0xD, and on a debug build the party's AP
+refilled), whose interface draws no script message; the script's frame
+mode, which draws them, reads Circle (a message's wait ends) and Start
+(the pause, while the turns run) alone (`battle_tick_event_script`), and
+of the script's opcodes only the message's reads its input (`ovl3087`:
+Circle's code, 4).
 
-The windows are drawn and advanced in one pass (`field_dialogue_draw_windows`,
-8008004C: it ends a window's wait on Circle, queues its message, reveals
-its text and turns its cursors), which links every packet of the four
-windows at the ordering-table entry it is given, the overlay's first, which
-the field draws last (`field_run_frame`; `field_movie_run_overlay_frame`
-over a field movie). `src/port/dialogue.c` runs it unchanged and hands the
-host the run of packets it linked there (presentation record 6,
-`xem_core::presentation::DIALOGUE`): its newest, the entry's new head, and
-its oldest, whose link is what the entry held before. The record is made
-whether or not a draw trace records, as the sprites' are, so the port's
-memory, its dead stack included, is the same either way (the desktop's
-HD-2D window still saves a plain session's state byte for byte:
-`xem-host/tests/states.rs`). A trace
-marks what the DMA walk draws from that run, from entering its newest
-node to leaving its oldest, as the dialogue's
-(`xem_gpu::Primitive::dialogue`; a record serves the walk it was made for),
-and the hosts' `GameView::set_dialogue_hidden` (`DrawOptions::hide_dialogue`)
-leaves those primitives out of every frame presented: replays, the
-interface drawn over the effects, a headset's pane and the diorama's.
-VRAM's picture keeps them, as VRAM does, and while they are hidden the
-frame shown is replayed without them, so they go and come back at once,
-the game paused or not (the hosts present anew as the hiding changes, also
-under game-paced presentation). Under HD-2D the rest of the picture may
-move by a level or three as well: its exposure eases a step each
-presentation (`EffectsRenderer`'s scene average), and holding Select and
-letting go each present once more. The Original renderer shows the console's
-own picture, in which the windows cover what lay beneath them: nothing
-there draws that frame again, so Select hides nothing under it. Other
-modes' text windows (a battle's event messages and their portraits,
-`battle_draw_script_portrait_and_text`; the world map's place names;
-Battling's messages and choices) draw their text through the same resident
-window routine (`window_draw_frame`) but frame and link it themselves, and
-stay shown.
+The field's windows are drawn and advanced in one pass
+(`field_dialogue_draw_windows`, 8008004C: it ends a window's wait on
+Circle, queues its message, reveals its text and turns its cursors), which
+links every packet of the four windows at the ordering-table entry it is
+given, the overlay's first, which the field draws last (`field_run_frame`;
+`field_movie_run_overlay_frame` over a field movie). `src/port/dialogue.c`
+runs it unchanged and hands the host the run of packets it linked there
+(presentation record 6, `xem_core::presentation::DIALOGUE`): its newest,
+the entry's new head, and its oldest, whose link is what the entry held
+before. A battle's script message is drawn by the script's interface
+(`battle_draw_hud_for_event_script`) at the ordering table's second entry
+among its other packets, in three calls that `src/port/battle_dialogue.c`
+runs unchanged, handing over a run of each: the portrait and the text
+(`battle_draw_script_portrait_and_text`, 80074F70: all it links), window 0
+(`battle_draw_gauge_bars_and_windows`, 80073FB8, which links window 0's
+packets first of the shown windows': from its draw mode, the last it links,
+through each link within its 0x5A8-byte block) and the cursor
+(`battle_draw_list_page_glyphs`, 80073F08: its parts, linked one after
+the other), the last two only in the script's frame mode, as the turns'
+interface keeps window 0 and the cursor for its commands. The records are
+made whether or not a draw trace records, as the sprites' are, so the
+port's memory, its dead stack included, is the same either way (the
+desktop's HD-2D window still saves a plain session's state byte for byte:
+`xem-host/tests/states.rs`). A trace marks what the DMA walk draws from
+each run, from entering its newest node to leaving its oldest, as the
+dialogue's (`xem_gpu::Primitive::dialogue`): a frame's runs, recorded before
+its vertical blank, serve the walk after it, and the next frame's first
+record drops those the walk did not enter. The hosts'
+`GameView::set_dialogue_hidden` (`DrawOptions::hide_dialogue`) leaves those
+primitives out of every frame presented: replays, the interface drawn over
+the effects, a headset's pane and the diorama's. VRAM's picture keeps them,
+as VRAM does, and while they are hidden the frame shown is replayed without
+them, so they go and come back at once, the game paused or not (the hosts
+present anew as the hiding changes, also under game-paced presentation).
+Under HD-2D the rest of the picture may move by a level or three as well:
+its exposure eases a step each presentation (`EffectsRenderer`'s scene
+average), and holding Select and letting go each present once more.
 
-Tests: `tests/test_port_dialogue.py` (the port's wrapper built natively
+Where a picture comes from VRAM rather than a frame the renderer drew, it
+holds the windows as the game drew them, and nothing draws that frame
+again without them:
+
+- The Original renderer shows the console's own picture: Select hides
+  nothing under it.
+- A view's first frames, until its trace has drawn a frame (a session's
+  start, the Original renderer left for Ex Machina), show the windows.
+- A state loaded (Load state, an agent's `state_load`) shows them in its
+  first frames: three, from the loaded VRAM (drawn before the state was
+  saved), and when the state was saved between the field building a frame
+  and drawing it, one frame (two vertical blanks) more, that frame, whose
+  records were made before the save (a state holds the game, not the
+  presentation's records: `Gpu::keep_presentation` starts the trace afresh).
+  From the first frame the game builds after the load, they are hidden.
+- A host restarting its trace (a view that needs all of VRAM again: a new
+  scale, more frames run than presented) keeps the runs recorded for the
+  walk to come, so a restart between a frame's records and its walk hides
+  as before; one after a walk drops what the walk traced, as a restart
+  does, and when that changed VRAM (a glyph of the text revealed), the
+  frames presented next show VRAM's picture with the windows, three or
+  four, until the next frame the game draws shows.
+
+A held rewind's steps hide them throughout: each plays on from its state
+until the display shows a frame both built and drawn since
+(`Session::rewind_step`), whose records are its own.
+
+Other modes' text windows (the world map's place names; Battling's
+messages and choices) draw their text through the same resident window
+routine (`window_draw_frame`) but frame and link it themselves, and stay
+shown.
+
+Tests: `tests/test_port_dialogue.py` (the field's wrapper built natively
 over a stand-in that links packets: the run it hands over, the packets
 linked there before left out, a run of one, nothing handed over when
-nothing is linked, the links as the stand-in made them), `xem-gpu`
+nothing is linked, the links as the stand-in made them; the battle's
+wrappers need the battle's headers, which build for the game alone, and are
+tested on the game below), `xem-gpu`
 `the_dialogues_run_of_packets_traces_as_the_dialogue_until_the_walk_passes_it`
 (a run among packets linked before and after it, a walk without a
-record, a run of one packet), `tests/ps1.rs`
+record, a run of one packet),
+`a_battles_three_runs_trace_as_the_dialogue_in_one_walk_and_each_frame_records_anew`
+(the window's, the portrait and text's and the cursor's runs among other
+packets; the runs a walk did not enter dropped by the next frame's first
+record) and
+`a_trace_restarted_before_the_walk_keeps_the_dialogues_runs_and_a_loaded_state_has_none`,
+`xem-core`'s battle context test (the message's window, portrait and text,
+in the script's frame mode alone), `tests/ps1.rs`
 `a_dialogue_held_hidden_presents_the_frame_without_its_windows_and_shows_them_again`
 (framed as the game framed it, wider, and HD-2D wider and interpolated:
 held, the frame presented is the frame drawn without the window, at once;
-let go, the one with it), `xem-settings`' look test (the keys, the deck,
-Back alone and in a chord, no dialogue, the game's buttons kept),
+let go, the one with it), `xem-settings`' look tests (the keys and the deck
+at once, Back once held alone and never in a chord, Settings or focus
+taken, the hiding lasting while held, a battle's message, no dialogue, the
+game's buttons kept; Back held over a dialogue until the player walks
+toggling nothing, pressed and let go while walking toggling),
 `xem-host`'s deck test (its SELECT held over a dialogue: Select the
 game's, the windows hidden, shown under the panel and let go; walking, the
 view's toggle), `xem-ui/tests/panel.rs` the row, flat and in a headset,
-and `xem-headless/tests/render.rs`
-`a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is`:
-field 12's opening dialogue (Fei's window, its text and his portrait) with
+and `xem-headless/tests/render.rs`:
+`a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is`
+(field 12's opening dialogue, Fei's window, its text and his portrait, with
 Select held for 90 frames, presented wider and interpolated, and so in
-HD-2D, the window hidden for 30 of them. 582 primitives in those frames
-are traced as the dialogue's, all within the window; held hidden, 146 346
-pixels of the 1536x864 picture differ, none beyond the window (under
-HD-2D 150 255 by more than three levels, none beyond it), the picture is
-the same again once let go (under HD-2D within those three levels), and
-the game ends at the RAM, VRAM, sound,
-time and whole state of the same frames run with nothing presented (but
-for 40 bytes of dead stack, `presentation_only`).
+HD-2D, the window hidden for 30 of them: 582 primitives in those frames are
+traced as the dialogue's, all within the window; held hidden, 146 346
+pixels of the 1536x864 picture differ, none beyond the window, under HD-2D
+150 255 by more than three levels, none beyond it; the picture is the same
+again once let go, under HD-2D within those three levels; and the game
+ends at the RAM, VRAM, sound, time and whole state of the same frames run
+with nothing presented, but for 40 bytes of dead stack,
+`presentation_only`),
+`a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and_the_game_as_it_is`
+(the debug battle selector's third event file's formation 0, Lahan's Gears:
+Fei's "Reinforcements, huh?!" with his portrait, waiting for Confirm, 60
+frames with Select held, hidden for 20: 1 044 primitives traced as the
+dialogue's, all within window 0; held hidden, 200 109 pixels of the
+1536x864 picture differ, none beyond the window, under HD-2D 203 928 by
+more than three levels; the battle's state as with nothing presented, but
+for 157 bytes of dead stack),
+`a_conversation_held_hidden_stays_hidden_as_its_windows_close_and_the_next_open`
+(field 12's conversation, Select held as the hosts hold it and Confirm
+pressed at each prompt: three windows closed, the nine frames presented
+after a close still holding its primitives all hidden, and none shown
+until let go),
+`a_dialogue_held_hidden_stays_hidden_as_the_trace_restarts_and_after_a_loaded_states_first_frames`
+(restarted after frames 14 to 17, every frame hidden, after 27 and 28 three
+and four frames from VRAM; states saved after a walk and between building
+and drawing a frame loaded: three frames and four) and
+`held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows`.
 
 ### Camera records
 
@@ -5254,9 +5349,9 @@ Back (the right stick's click) released alone only where Select toggles
 it, while the player walks where Select shows no picture (the controllers
 have no R3), where Ex Machina draws it (the Original renderer ends it,
 paused or not, and none toggles it there), whether the game runs or the
-player's Pause holds it (not while Settings are open). Held alone while a
-dialogue shows, that Back hides the dialogue's windows from the screen and
-its pane ([Hiding a dialogue](#hiding-a-dialogue)). Agents turn it on,
+player's Pause holds it (not while Settings are open). Held alone for
+0.15 s while a dialogue shows, that Back hides the dialogue's windows from
+the screen and its pane ([Hiding a dialogue](#hiding-a-dialogue)). Agents turn it on,
 off and around with `--xr --control`'s `first_person` (OpenXR) and
 `window.xem.firstPerson` (WebXR, the page's), as on the flat hosts, but
 a `pitch` turns no eye: the head does the pitching, and the pitch shows
@@ -5352,11 +5447,12 @@ section lists Select, R3 and what turns the view (with the finger's drag
 where touch controls show; a headset's lists its underhand grab, the right
 stick's click, the head and the right stick instead, the stick turning in
 30-degree steps, [Headsets](#headsets)), and Shortcuts lists Toggle
-first-person view with its bindings. Held while a field dialogue shows,
-Select (a gamepad's Back alone, a headset controller's right stick's
-click) also hides the dialogue's windows from the picture, presentation
-only ([Hiding a dialogue](#hiding-a-dialogue)); the Controls section lists
-it as Hide dialogue (held).
+first-person view with its bindings. Held while a dialogue shows (a
+field's, a battle's script message), Select (a gamepad's Back once held
+alone for 0.15 s, a headset controller's right stick's click) also hides
+the dialogue's windows from the picture, presentation only
+([Hiding a dialogue](#hiding-a-dialogue)); the Controls section lists it
+as Hide dialogue (held).
 
 ### The game's interface context
 
@@ -5371,7 +5467,8 @@ mode, and is read while it runs, `menu_state_debug_start` 0, not while it
 loads nor while the field fades back in after it), `battle` (the command page, whether the attack inputs have the
 buttons, AP left, an open list, a target being chosen for an item, art or
 command; the attack page's own target choice is part of its attack
-inputs), `world_map` and `arena`. `xem_core::menu` (`targets`)
+inputs; `message` while its event script shows a message:
+[Hiding a dialogue](#hiding-a-dialogue)), `world_map` and `arena`. `xem_core::menu` (`targets`)
 lists the selectable entries the screen shows (320x224 screen pixels, as
 the display shows the drawing area): the field menu's commands and a
 command's choice window (the arc tables `menu_highlight_x/y_table`; the
@@ -8413,7 +8510,7 @@ the right stick's click and Toggle first-person view (V, Back+R1) anywhere
 in a field but its menu; in it the arrow keys, the
 right stick and the mouse (under the mouse camera setting) look around
 ([First-person inspection](#first-person-inspection)). Held while a
-dialogue shows, Select (Backspace, or Back alone) hides its windows
+dialogue shows, Select (Backspace, or Back held alone) hides its windows
 ([Hiding a dialogue](#hiding-a-dialogue)).
 `--control` answers agents' JSON commands on stdin, a line each, between
 frames while the game plays: the command layer's (`status`, `context`,

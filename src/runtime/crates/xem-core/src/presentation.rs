@@ -10,9 +10,10 @@ pub const SPRITE_FACING: u32 = 4;
 /// A party character's full-size frame in place of its small sprite in a
 /// large-scale field, in a facing's form (src/port/sprite_facing.c).
 pub const SPRITE_FULL_SIZE: u32 = 5;
-/// The run of packets the field's dialogue windows linked at their
-/// ordering-table entry: its newest and its oldest, as 24-bit links
-/// (src/port/dialogue.c).
+/// A run of packets a dialogue's windows linked at their ordering-table
+/// entry: its newest and its oldest, as 24-bit links (the field's windows,
+/// src/port/dialogue.c; a battle's script message, its window, its
+/// portrait and text, and its cursor, src/port/battle_dialogue.c).
 pub const DIALOGUE: u32 = 6;
 
 /// Where the port finds the field sprite blocks of the eleven party

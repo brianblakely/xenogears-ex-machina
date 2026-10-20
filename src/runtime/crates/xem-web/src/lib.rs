@@ -191,7 +191,8 @@ pub struct XemApp {
     /// (whatever the bindings say), the toggle, the app's Toggle
     /// first-person view asked for since the last step (its key, its chord,
     /// the deck's LOOK), the mouse motion that turns the view, when it last
-    /// turned (page time), and a headset's stepped turn.
+    /// turned (page time), a headset's stepped turn, and Select hiding a
+    /// dialogue's windows.
     pad: [u8; 16],
     axes: [f32; 4],
     arrows: [bool; 4],
@@ -200,6 +201,7 @@ pub struct XemApp {
     look_mouse: [f32; 2],
     looked: Option<f64>,
     snap: xem_settings::look::SnapTurn,
+    dialogue_hiding: xem_settings::look::DialogueHiding,
 }
 
 /// The arrow keys, in `look::Turn::arrows` order.
@@ -320,6 +322,7 @@ impl XemApp {
             look_mouse: [0.0; 2],
             looked: None,
             snap: Default::default(),
+            dialogue_hiding: Default::default(),
         }
     }
 
@@ -800,13 +803,14 @@ impl XemApp {
             self.look_toggle.clear();
             self.snap.clear();
             self.looked = None;
+            self.dialogue_hiding.clear();
             renderer.set_dialogue_hidden(false);
             return renderer.first_person();
         }
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| self.input.key_held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
         // Presented anew as it changes, paused or not.
-        let hidden = xem_settings::look::hides_dialogue(select, &self.pad, ui);
+        let hidden = self.dialogue_hiding.update(select, &self.pad, ui, now);
         self.display_dirty |= hidden != renderer.dialogue_hidden();
         renderer.set_dialogue_hidden(hidden);
         let was = renderer.first_person();

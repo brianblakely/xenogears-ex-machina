@@ -205,10 +205,10 @@ pub struct DrawOptions {
     /// The party's small sprites of a large-scale field drawn as the
     /// full-size frames the port assembled ([`xem_gpu::Primitive::full_size`]).
     pub full_size_sprites: bool,
-    /// The field's dialogue windows ([`xem_gpu::Primitive::dialogue`]) left
-    /// out of the frames presented, while the player holds Select over one
-    /// ([`GameView::set_dialogue_hidden`]; no setting): the picture of VRAM
-    /// keeps them, as VRAM does.
+    /// A dialogue's windows ([`xem_gpu::Primitive::dialogue`]: the field's,
+    /// a battle's script message) left out of the frames presented, while
+    /// the player holds Select over one ([`GameView::set_dialogue_hidden`];
+    /// no setting): the picture of VRAM keeps them, as VRAM does.
     pub hide_dialogue: bool,
 }
 

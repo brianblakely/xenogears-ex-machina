@@ -530,6 +530,7 @@ fn main() {
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
     let mut clock = setup_clock;
+    let mut dialogue_hiding = xem_settings::look::DialogueHiding::default();
     if !from_boot && skip == 0 {
         session.runtime.services().gpu.device_mut().set_trace(traced);
         let _ = view.take_restart();
@@ -547,7 +548,7 @@ fn main() {
         }
         // Select held over a dialogue hides its windows, as in the hosts.
         let select = (buttons | tapped | pressed) & xem_core::pad::button::SELECT != 0;
-        view.set_dialogue_hidden(xem_settings::look::hides_dialogue(select, &[0; 16], session.runtime.context()));
+        view.set_dialogue_hidden(dialogue_hiding.update(select, &[0; 16], session.runtime.context(), clock * 1000.0));
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
         if let Some((_, _, turn)) = look {
             view.look_around(turn.to_radians(), 0.0);

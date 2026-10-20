@@ -23,8 +23,9 @@
 //! The port records the faces its renderers culled at the edges of the
 //! original screen as well; they are traced as [`Primitive::revealed`]
 //! where the game would have linked them, for wider views, and never drawn.
-//! It also records the run of packets the field's dialogue windows linked,
-//! and what the DMA walk draws from it is traced as [`Primitive::dialogue`].
+//! It also records the runs of packets a dialogue's windows linked (the
+//! field's, a battle's script message), and what the DMA walk draws from
+//! them is traced as [`Primitive::dialogue`].
 
 use crate::{Gpu, VRAM_HEIGHT, VRAM_WIDTH};
 use std::collections::HashMap;
@@ -471,11 +472,12 @@ pub struct Primitive {
     /// nothing changed since (a window movie the field shows on a screen in
     /// its world). Presentation only.
     pub movie: bool,
-    /// Drawn from the packets the field's dialogue windows linked (their
-    /// frames, text, portraits, prompts and choice cursors), as the port
-    /// records their run ([`Gpu::trace_dialogue`]): left out of the picture
-    /// while the player holds Select over a dialogue. Presentation only, as
-    /// [`Primitive::facing`].
+    /// Drawn from the packets a dialogue's windows linked (the field's:
+    /// their frames, text, portraits, prompts and choice cursors; a
+    /// battle's script message: its window, portrait, text and cursor), as
+    /// the port records their runs ([`Gpu::trace_dialogue`]): left out of
+    /// the picture while the player holds Select over a dialogue.
+    /// Presentation only, as [`Primitive::facing`].
     pub dialogue: bool,
 }
 
@@ -734,11 +736,15 @@ pub(crate) struct Recorder {
     /// primitives traced from it so far.
     source: u32,
     source_index: u32,
-    /// The run of packets the field's dialogue windows linked last, as the
-    /// port recorded it (its newest node and its oldest), until the DMA walk
-    /// enters it; then the node it ends with, until the walk leaves that.
-    dialogue: Option<(u32, u32)>,
+    /// The runs of packets a dialogue's windows linked for the DMA walk to
+    /// come, as the port recorded them (each its newest node and its
+    /// oldest), until the walk enters one; then the node it ends with,
+    /// until the walk leaves that; and whether the walk entered one since
+    /// the last was recorded (the next record is the next frame's: the runs
+    /// recorded before it are dropped).
+    dialogue: Vec<(u32, u32)>,
     dialogue_end: Option<u32>,
+    dialogue_entered: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -757,6 +763,10 @@ const RAM_WORDS: usize = 0x20_0000 / 4;
 /// Recording frames ([`Recorder::frames`]) a culled face waits for its
 /// ordering table's walk.
 const REVEAL_FRAMES: u32 = 3;
+/// Runs of a dialogue's packets kept for the walk to come at most: a frame
+/// records one for the field's windows, three for a battle's script
+/// message (a walk that never comes leaves no more behind).
+const DIALOGUE_RUNS: usize = 8;
 /// Ops a trace holds at most between takes (tens of frames; a battle frame
 /// is a few thousand): past it, at a vertical blank, it starts again from
 /// the whole VRAM, so a host that runs frames without presenting them
@@ -1079,18 +1089,30 @@ impl Gpu {
         }
     }
 
-    /// The field's dialogue windows linked a run of packets at their
-    /// ordering-table entry, from `newest` (the entry's head) to `oldest`
-    /// (24-bit addresses): what the DMA walk draws from it next is the
-    /// dialogue's ([`Primitive::dialogue`]).
+    /// A dialogue's windows linked a run of packets at their ordering-table
+    /// entry, from `newest` to `oldest` (24-bit addresses): what the DMA
+    /// walk draws from it next is the dialogue's ([`Primitive::dialogue`]).
+    /// A frame records one run for the field's windows and up to three for
+    /// a battle's script message (its window; its portrait and text; its
+    /// cursor) before the walk; once the walk has entered one, the next
+    /// record begins the next frame's.
     pub fn trace_dialogue(&mut self, newest: u32, oldest: u32) {
         if let Some(trace) = &mut self.trace {
-            trace.dialogue = Some((newest & ADDRESS_MASK, oldest & ADDRESS_MASK));
+            if std::mem::take(&mut trace.dialogue_entered) {
+                trace.dialogue.clear();
+            }
+            if trace.dialogue.len() == DIALOGUE_RUNS {
+                trace.dialogue.remove(0);
+            }
+            trace.dialogue.push((newest & ADDRESS_MASK, oldest & ADDRESS_MASK));
         }
     }
+
     /// Turns the draw trace on or off. Turning it on starts the next trace
     /// with the whole VRAM; turned on while on (a host's restart for a new
-    /// internal scale), it keeps what it knew of movies.
+    /// internal scale, or between frames), it keeps what it knew of movies
+    /// and the runs of a dialogue's packets recorded for the walk to come,
+    /// which the game made on this timeline.
     pub fn set_trace(&mut self, enabled: bool) {
         let pending = self.fifo.len();
         let was = self.trace.take();
@@ -1098,6 +1120,9 @@ impl Gpu {
             let mut trace = Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() });
             if let Some(mut was) = was {
                 trace.keep_movies(&mut was, true);
+                if !was.dialogue_entered {
+                    trace.dialogue = std::mem::take(&mut was.dialogue);
+                }
             }
             trace
         });
@@ -1121,8 +1146,10 @@ impl Gpu {
     /// on asking for the same culled faces but starts again from all of this
     /// VRAM (what is drawn next follows it), without what the abandoned
     /// timeline recorded (the port's projections, the faces it culled, the
-    /// screen points it stored in RAM) but with the movie loads it saw
-    /// (where this VRAM holds one, it is the movie's picture).
+    /// screen points it stored in RAM, the runs of a dialogue's packets: the
+    /// loaded state's own were recorded before it was saved, and their
+    /// frame shows its windows) but with the movie loads it saw (where this
+    /// VRAM holds one, it is the movie's picture).
     pub fn keep_presentation(&mut self, live: &mut Gpu) {
         self.stats = std::mem::take(&mut live.stats);
         if let Some(mut trace) = live.trace.take() {
@@ -1215,14 +1242,14 @@ impl Gpu {
     /// at an ordering-table entry are traced when the walk reaches it.
     pub(crate) fn trace_source(&mut self, node: u32) {
         let Some(trace) = &mut self.trace else { return };
-        // The dialogue's run, from its newest node through its oldest.
+        // A dialogue's runs, each from its newest node through its oldest.
         if node == 0 {
             if trace.dialogue_end == Some(trace.source) {
                 trace.dialogue_end = None;
             }
-        } else if let Some((_, oldest)) = trace.dialogue.filter(|&(newest, _)| newest == node) {
-            trace.dialogue = None;
-            trace.dialogue_end = Some(oldest);
+        } else if let Some(at) = trace.dialogue.iter().position(|&(newest, _)| newest == node) {
+            trace.dialogue_end = Some(trace.dialogue.swap_remove(at).1);
+            trace.dialogue_entered = true;
         }
         trace.source = node;
         trace.source_index = 0;

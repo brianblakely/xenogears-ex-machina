@@ -646,11 +646,13 @@ impl GameView {
         self.first_person.is_some()
     }
 
-    /// Leaves the field's dialogue windows (their frames, text, portraits,
-    /// prompts and choice cursors) out of what it presents, or shows them
-    /// again: hosts hide them while the player holds Select over a dialogue
-    /// (`xem_settings::look::hides_dialogue`). The frame shown is replayed
-    /// without them at once, paused or not; the game draws as before.
+    /// Leaves a dialogue's windows (the field's: their frames, text,
+    /// portraits, prompts and choice cursors; a battle's script message:
+    /// its window, portrait, text and cursor) out of what it presents, or
+    /// shows them again: hosts hide them while the player holds Select over
+    /// a dialogue (`xem_settings::look::DialogueHiding`). The frame shown is
+    /// replayed without them at once, paused or not; the game draws as
+    /// before.
     pub fn set_dialogue_hidden(&mut self, hidden: bool) {
         self.dialogue_hidden = hidden;
         if let Some(config) = self.config {

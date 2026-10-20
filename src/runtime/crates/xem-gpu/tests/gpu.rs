@@ -913,6 +913,96 @@ fn the_dialogues_run_of_packets_traces_as_the_dialogue_until_the_walk_passes_it(
     assert_eq!(walk(&mut gpu), [(0, false), (10, false), (20, true), (30, false)], "a run of one packet");
 }
 
+/// The x of each primitive a walk of `ram` from `head` draws, and whether
+/// it is traced as a dialogue's.
+fn dialogue_walk(gpu: &mut Gpu, ram: &Ram, head: u32) -> Vec<(i32, bool)> {
+    use xem_gpu::TraceOp;
+    gpu.dma_linked_list(ram, head, 1000).unwrap();
+    gpu.take_trace().ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.vertices[0].x, p.dialogue)) } else { None }).collect()
+}
+
+/// A battle's script message links its window, its portrait and text, and
+/// its cursor at one ordering-table entry, among the interface's other
+/// packets: three runs, recorded before the walk, which marks them alone.
+/// The next frame's first record drops the runs a walk did not enter.
+#[test]
+fn a_battles_three_runs_trace_as_the_dialogue_in_one_walk_and_each_frame_records_anew() {
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let tile = |x: i32| [0x6000_FFFF, xy(x, 10), xy(8, 8)];
+    // The entry; the window's two packets; a draw mode; the portrait and a
+    // line of the text; a battle message; the cursor; a packet linked
+    // before them.
+    ram.node(0x1000, 0x1100, &[]);
+    ram.node(0x1100, 0x1200, &tile(0));
+    ram.node(0x1200, 0x1300, &tile(10));
+    ram.node(0x1300, 0x1400, &[0xE100_0200]);
+    ram.node(0x1400, 0x1500, &tile(20));
+    ram.node(0x1500, 0x1600, &tile(30));
+    ram.node(0x1600, 0x1700, &tile(40));
+    ram.node(0x1700, 0x1800, &tile(50));
+    ram.node(0x1800, 0xFF_FFFF, &tile(60));
+    // As the interface records them: the cursor, the portrait and text,
+    // the window (linked last, walked first).
+    gpu.trace_dialogue(0x1700, 0x1700);
+    gpu.trace_dialogue(0x1400, 0x1500);
+    gpu.trace_dialogue(0x1100, 0x1200);
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, true), (10, true), (20, true), (30, true), (40, false), (50, true), (60, false)],
+        "the three runs alone");
+    // The next frame records the portrait and text, and a run its walk
+    // does not enter.
+    gpu.trace_dialogue(0x1400, 0x1500);
+    gpu.trace_dialogue(0x1900, 0x1900);
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, true), (30, true), (40, false), (50, false), (60, false)],
+        "each run serves the walk it was recorded for");
+    // The frame after records the cursor: the run left over is gone, even
+    // with its packet linked now.
+    gpu.trace_dialogue(0x1700, 0x1700);
+    ram.node(0x1800, 0x1900, &tile(60));
+    ram.node(0x1900, 0xFF_FFFF, &tile(70));
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, false), (30, false), (40, false), (50, true), (60, false), (70, false)],
+        "the run the walk before did not enter is dropped");
+}
+
+/// A host restarting the trace between a frame's records and its walk (a
+/// new scale, more frames than it presents) keeps the dialogue's runs for
+/// that walk: the game recorded them on this timeline. Restarted after the
+/// walk, the runs left over are dropped; and a loaded state's device starts
+/// without any (its own were recorded before it was saved).
+#[test]
+fn a_trace_restarted_before_the_walk_keeps_the_dialogues_runs_and_a_loaded_state_has_none() {
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let tile = |x: i32| [0x6000_FFFF, xy(x, 10), xy(8, 8)];
+    ram.node(0x1000, 0x2000, &[]);
+    ram.node(0x2000, 0x3000, &tile(0));
+    ram.node(0x3000, 0x4000, &tile(10));
+    ram.node(0x4000, 0xFF_FFFF, &tile(20));
+    gpu.trace_dialogue(0x2000, 0x3000);
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, true), (10, true), (20, false)], "restarted between the record and the walk");
+    // A run the walk does not enter, then a restart after the walk.
+    gpu.trace_dialogue(0x2000, 0x3000);
+    gpu.trace_dialogue(0x4000, 0x4000);
+    ram.node(0x3000, 0xFF_FFFF, &tile(10));
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, true), (10, true)]);
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    ram.node(0x3000, 0x4000, &tile(10));
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, false)], "restarted after the walk: nothing left over");
+    // A state saved with a run recorded and loaded again.
+    gpu.trace_dialogue(0x2000, 0x3000);
+    let state = gpu.save();
+    gpu.load(&state).unwrap();
+    let _ = gpu.take_trace();
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, false)], "a loaded state's walk is not marked");
+}
+
 #[test]
 fn interface_projections_trace_as_flat_whole_pixels() {
     use xem_gpu::{Class, Projection, SxyStore, TraceOp};

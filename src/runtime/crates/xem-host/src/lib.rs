@@ -379,14 +379,15 @@ pub struct View {
     /// The first gamepad's buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the app's Toggle
     /// first-person view asked for since the last frame (its key, its chord,
-    /// the deck's LOOK), the mouse motion that turns its view, and when its
-    /// view last turned.
+    /// the deck's LOOK), the mouse motion that turns its view, when its
+    /// view last turned, and Select hiding a dialogue's windows.
     pad: [u8; 16],
     axes: [f32; 4],
     look_toggle: xem_settings::look::Toggle,
     look_asked: bool,
     look_mouse: [f32; 2],
     looked: Option<Instant>,
+    dialogue_hiding: xem_settings::look::DialogueHiding,
     /// The disc the game waits for that the drive's changer has not got.
     wanted_disc: Option<u8>,
 }
@@ -492,6 +493,7 @@ impl View {
             look_asked: false,
             look_mouse: [0.0; 2],
             looked: None,
+            dialogue_hiding: Default::default(),
             wanted_disc: None,
         })
     }
@@ -1007,8 +1009,8 @@ impl View {
     /// battle's attack inputs have the buttons, `xem_settings::bindings`).
     /// In a field they also toggle and turn first-person inspection, which
     /// holds back the buttons that would walk, jump or turn the camera
-    /// (`xem_settings::look`), as the app's Toggle first-person view does,
-    /// and Select held over a dialogue hides its windows.
+    /// (`xem_settings::look`), as the app's Toggle first-person view does;
+    /// Select held over a dialogue hides its windows.
     pub fn pad_buttons(&mut self, context: PadContext, targets: Option<xem_core::menu::Targets>) -> u16 {
         self.game_ui = context.ui;
         self.targets = targets;
@@ -1019,6 +1021,7 @@ impl View {
             self.look_mouse = [0.0; 2];
             self.deck.take_drag();
             self.looked = None;
+            self.dialogue_hiding.clear();
             self.renderer.set_dialogue_hidden(false);
             return 0;
         }
@@ -1047,7 +1050,7 @@ impl View {
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
         // Held over a dialogue, Select hides its windows (presentation only),
         // presented anew as it changes, paused or not.
-        let hidden = xem_settings::look::hides_dialogue(select, &self.pad, context.ui);
+        let hidden = self.dialogue_hiding.update(select, &self.pad, context.ui, now);
         self.fresh_frame |= hidden != self.renderer.dialogue_hidden();
         self.renderer.set_dialogue_hidden(hidden);
         let setting = self.settings.borrow().settings().graphics.renderer;
