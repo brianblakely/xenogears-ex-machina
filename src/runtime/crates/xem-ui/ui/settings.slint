@@ -1155,6 +1155,10 @@ export component SettingsPanel inherits Window {
                                 title: "Original limits";
 
                                 for name[index] in root.fidelity-names: ToggleRow {
+                                    // As the effects' sliders: a switch toggled
+                                    // by hand keeps its own state.
+                                    property <bool> limit: root.gfx-fidelity[index];
+                                    changed limit => { self.checked = self.limit; }
                                     label: name;
                                     checked: root.gfx-fidelity[index];
                                     toggled(on) => { root.fidelity-edited(index, on); }

@@ -107,8 +107,9 @@ pub struct Services {
     /// The host lets the player's press end any movie
     /// (src/port/movie_skip.c).
     pub(crate) movie_skip: bool,
-    /// The disc in the drive could not give the party's field sprite blocks
-    /// for the full-size alternatives (`full_sprite`): none is asked again.
+    /// The disc in the drive could not give one of the party's field sprite
+    /// blocks for the full-size alternatives (`full_sprite`): those not read
+    /// yet are not asked again.
     full_sprites_unreadable: bool,
     pub clock: Clock,
     pub pads: Pads,
@@ -229,12 +230,15 @@ impl Services {
     /// see nothing of it, and snapshots hold none of it.
     fn full_sprite(&mut self, memory: &mut dyn GameMemory, character: u32) -> u32 {
         use crate::presentation::{FULL_SPRITES, FULL_SPRITE_BYTES, unpack_lzss};
-        if character >= 11 || self.full_sprites_unreadable {
+        if character >= 11 {
             return 0;
         }
         let address = FULL_SPRITES + character * FULL_SPRITE_BYTES;
         if memory.read_u32(address).is_ok_and(|sections| sections != 0) {
             return address;
+        }
+        if self.full_sprites_unreadable {
+            return 0;
         }
         match self.cd.read_file(4, character + 5) {
             Ok(None) | Err(xem_disc::Error::NotReady) => 0,

@@ -302,7 +302,9 @@ void xem_present_sprite_full_size(Sprite *sprite, u32 first, u32 last, s32 cut, 
     s32 x, y;
     u32 character, index, frame;
 
+    /* First person keeps the small sprites, which it faces to the eyes. */
     if (!xem_gte_ring->recording || !facing->field_actors || facing->active || sprite_in_battle || sprite_in_worldmap ||
+        (xem_present_reveals->around & XEM_AROUND_LOOK) ||
         field_work.unk2268 == 0 || sprite->frame == 0 || !sprite->animations ||
         sprite->animations != sprite->resource_block || (sprite->render.word & 3) != 1) {
         return;

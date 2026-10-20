@@ -786,7 +786,7 @@ fn large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_an
     // Fei's block, where the host keeps it (xem_core::presentation::FULL_SPRITES).
     let fei = |session: &mut Session<NativeModule>| session.runtime.memory().read_u32(0x70C0_0000).unwrap();
     let initial = session.snapshot_bytes().unwrap();
-    let mut traced = |session: &mut Session<NativeModule>, trace: bool| {
+    let traced = |session: &mut Session<NativeModule>, trace: bool| {
         session.runtime.services().gpu.device_mut().set_trace(trace);
         let mut parts = 0;
         for _ in 0..90 {

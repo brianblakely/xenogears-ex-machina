@@ -2295,7 +2295,9 @@ pass by its alternative before logging (`frame::substitute_alternatives`,
 shared with first person): the cells uploaded, the parts drawn, the pixels
 the cells covered put back. The frame logs' replays (interpolation, wider
 and pulled-back views, the diorama) draw it too. First person keeps the
-small sprites' facings, and the game's shadows stay its own.
+small sprites, which it faces to the eyes: the port builds no full-size
+frame while the view looks around (`XEM_AROUND_LOOK`). The game's shadows
+stay its own.
 
 On Babel Tower's map 414 (`render.rs`
 `large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged`)
@@ -7783,8 +7785,9 @@ and world map's windows were not measured under Fast or Instant text.
 No HUD chip shows that auto-advance is on (AUTO's light
 does, on touch screens and in headsets).
 Of the mod's options that change the game's balance only half encounters
-is offered ([above](#random-battles-in-platforming-areas), the field's
-draw only); more EXP and gold is not. The
+is offered ([above](#random-battles-in-platforming-areas): the field's
+draw, and every battle's experience, gold and deathblow progress doubled
+with it); a separate EXP and gold multiplier is not. The
 browser tests ran on the fixture module; the Android and touch hosts give
 the values through the same `Game::update` and frame loop, and no phone
 run used them on the game. In headsets the options' defaults and an

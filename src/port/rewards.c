@@ -6,8 +6,8 @@
  * which battle_results_grant_rewards, 801E2280, totals from the defeated
  * enemies) is doubled before it is shared, and the gold it added to the
  * party's is added once more (to the original's 9999999 at most), the spoils
- * window showing the doubled gold the battle gave. Each party attack's raise
- * of its use count, the progress toward the attacker's deathblows
+ * window showing the doubled gold the battle gave. Each raise of a party
+ * member's use count, the progress toward its deathblows
  * (battle_resolve_action, 800941A4), is made once more under the original's
  * rule (only while the count is at most 0xFDE7), so the menus, the results'
  * learning and an escaped battle's write-back all see it. The enemies'
@@ -29,23 +29,29 @@ u8 xem_original_battle_resolve_action(void);
 void xem_original_battle_results_grant_exp_skills_and_drops(void);
 void xem_original_battle_results_run_screens(u32 gold);
 
+/* The raise goes to the attacker, or to the party member whose
+ * counterattack took the attack over (battle_resolve_counterattack): the
+ * party's three counts of the command are watched. */
 u8 battle_resolve_action(void) {
-    u8 slot;
     u8 command;
     u8 status;
-    u16 before;
+    s32 slot;
+    u16 before[3];
     u16 *count;
 
-    slot = battle_work_ptr->attackerIndex;
     command = battle_work_ptr->commandIndex;
-    if (xem_host_reward_scale() != 2 || slot >= 3 || command >= 7) {
+    if (xem_host_reward_scale() != 2 || command >= 7) {
         return xem_original_battle_resolve_action();
     }
-    count = &battle_work_ptr->records[slot].pilot.useCounts[command];
-    before = *count;
+    for (slot = 0; slot < 3; slot++) {
+        before[slot] = battle_work_ptr->records[slot].pilot.useCounts[command];
+    }
     status = xem_original_battle_resolve_action();
-    if (*count != before && *count <= 0xFDE7) {
-        *count += *count - before;
+    for (slot = 0; slot < 3; slot++) {
+        count = &battle_work_ptr->records[slot].pilot.useCounts[command];
+        if (*count > before[slot] && *count <= 0xFDE7) {
+            *count += *count - before[slot];
+        }
     }
     return status;
 }

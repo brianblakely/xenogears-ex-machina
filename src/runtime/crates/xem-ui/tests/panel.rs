@@ -481,7 +481,7 @@ fn graphics_choices_go_through_the_settings_service() {
         move |ack| acks.borrow_mut().push(ack.change.clone())
     });
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 1400), 1.0).unwrap();
     ui.update().unwrap();
     section(&mut ui, "Graphics", 1);
     assert!(
@@ -537,16 +537,20 @@ fn graphics_choices_go_through_the_settings_service() {
     // Custom's sliders show its own levels (none by default), under its name.
     heading_above(&ui, "Custom", "Effects");
     assert_eq!(element(&ui, "Lighting", AccessibleRole::Slider).accessible_value().as_deref(), Some("0"), "Custom's level, not HD-2D's");
-    ui.component().invoke_fidelity_edited(3, true);
+    press(&ui, &element(&ui, "Dithering", AccessibleRole::Switch));
     ui.component().invoke_effect_edited(8, -40);
+    ui.update().unwrap();
     let graphics = settings.borrow().settings().graphics;
     assert!(graphics.custom_fidelity.dithering, "Custom's own limits change");
     assert_eq!(graphics.custom_effects.focus, -40, "Custom's own levels change");
     assert_eq!(graphics.hd2d.bloom, 20, "HD-2D's levels are kept");
-    // Custom's Reset Defaults: its levels and limits, HD-2D's kept.
+    // Custom's Reset Defaults: its levels and limits (a switch toggled by
+    // hand too), HD-2D's kept.
     press(&ui, &element(&ui, "Reset Defaults", AccessibleRole::Button));
+    ui.update().unwrap();
     let graphics = settings.borrow().settings().graphics;
     assert_eq!((graphics.custom_effects, graphics.custom_fidelity, graphics.hd2d.bloom), (xem_settings::EffectLevels::OFF, xem_settings::Fidelity::MODERN, 20));
+    assert_eq!(element(&ui, "Dithering", AccessibleRole::Switch).accessible_checked(), Some(false), "the switch shows the reset");
     ui.component().invoke_graphics_edited("scale".into(), 99);
     assert_eq!(settings.borrow().settings().graphics.internal_scale, 3 - 3, "an invalid scale is refused");
     ui.component().invoke_graphics_edited("widescreen".into(), 1);
