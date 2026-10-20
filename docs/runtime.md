@@ -1897,37 +1897,62 @@ snapshots are its. The renderer only draws again what it drew:
   its zoom into a map change and back from a battle, the battle's shatter
   show the zoomed-out, wider picture the player saw, not the original's.
   A screen taken elsewhere keeps the two taken before while VRAM still
-  holds them, and one whose VRAM is overwritten stays while a logged frame
-  copies it, so a copy of either still brings its picture and a replay
+  holds them, and each of a screen's areas whose VRAM is overwritten stays
+  while a logged frame copies all of it, a frame logged from the same
+  trace too, so a copy of either still brings its picture and a replay
   never takes such a copy as the native pixels it copied: the field's menu
   takes the dimmed screen, and its own last frame, after the field's saved
   one, then fades back in from the saved one and gives its place back to
   textures while the frame faded in from it still shows. A screen taken
   from a buffer the game filled with a copy of another area (neither
   changed since) is that area's too, and a copy of a screen kept brings
-  its picture into the scaled VRAM as into a replay. The field entered
-  first after the game starts (after the debug world map, boot mode 3 or
-  Settings → Debug → Worldmap: the party's vehicle, Square, its interior,
-  field 290) reads the screen as the opening movie's 24-bit picture,
-  writes what it makes of it at (0, 100h) (noise from a 15-bit screen, on
-  the console too), copies that over the shown buffer and takes it: the
-  copy showed the noise for a frame (unreplayed, until the field cleared
-  the buffer) before the transition went on with the picture presented.
-  The last four screens taken are remembered with the native pixels they
-  were taken as. All of VRAM again (a state loaded, a rewind's step) keeps
-  the screens it holds where they were taken, as they were taken (but for
-  the semi-transparency bits the field sets on its saved screen), the
-  newest of them the one textures sample, and the picture presented
-  before a state is none of its screens: until a picture of its own is
-  presented, the same screen taken again is the one taken before, else its
-  native pixels (that picture was the frame shown last, another moment's).
-  A rewind's step back into the vehicle's transition showed the noise its
-  states hold (in play, with a field entered before, the native picture,
-  narrower), not the picture the transition showed (`tests/ps1.rs`
+  its picture into the scaled VRAM as into a replay, without its sides:
+  VRAM has no room for them (they lay beside the buffer copied to, over
+  the menu's last frame where it was taken at (140h, 0) and copied back
+  over its buffer at (0, 0)). The field entered first after the game
+  starts (after the debug world map, boot mode 3 or Settings → Debug →
+  Worldmap: the party's vehicle, Square, its interior, field 290) reads
+  the screen as the opening movie's 24-bit picture, writes what it makes
+  of it at (0, 100h) (noise from a 15-bit screen, on the console too),
+  copies that over the shown buffer, takes it, copies it back to
+  (0, 100h) and clears that five frames on to draw there: the copy showed
+  the noise for a frame (unreplayed, until the field cleared the buffer)
+  before the transition went on with the picture presented, and under
+  fast-forward a presentation holding both the copy and the clear showed
+  it (two of ten alignments at 10x, one of five at 5x). The screens taken
+  are remembered with the native pixels they were taken as for as long as
+  the session's rewind history holds a state that can bring one back: a
+  state from the last frame VRAM held it in as taken, or from before it
+  was taken (a rewind's step plays on from that to take it again). The
+  session notes its history in the trace after each game frame
+  (`TraceOp::History`: the frame, whether it took a state of it, the
+  frame of its oldest state); without history none is remembered, and a
+  new scale lets them go (their pictures are the old scale's). What
+  bounds them is the history: the screens the game takes over its span
+  (30 seconds by default; a visit to the field's menu takes three), each
+  a picture of the frame presented (8.3 MB for a field's at 1920x1080 in
+  widescreen, scale 5). All of VRAM again (a state loaded, a rewind's
+  step) keeps the screens it holds where they were taken, as they were
+  taken (but for the semi-transparency bits the field sets on its saved
+  screen), the newest of them the one textures sample, and the picture
+  presented before a state is none of its screens: until a picture of its
+  own is presented, the same screen taken again is the one taken before,
+  else its native pixels (that picture was the frame shown last, another
+  moment's). A state loaded from a file or a slot shows a screen so only
+  while the history reaches back as far. A rewind's step back into the
+  vehicle's transition showed the noise its states hold (in play, with a
+  field entered before, the native picture, narrower), not the picture
+  the transition showed, and while the last four screens taken were all
+  that was remembered, again once the party had visited the field's menu
+  twice in the interior (`tests/ps1.rs`
   `a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_taken_keeps_the_presented_picture`,
-  `a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken`;
+  `a_screen_made_in_another_buffer_keeps_the_presented_picture_whatever_frames_a_presentation_holds`,
+  `a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken`,
+  `a_screen_taken_is_remembered_while_the_rewind_history_holds_a_state_of_its_time`,
+  `a_screen_taken_copied_in_vram_brings_its_picture_without_its_sides`;
   `xem-headless/tests/render.rs`
-  `the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of`).
+  `the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of`,
+  `the_debug_vehicles_interior_shows_no_noise_entered_under_fast_forward`).
   What is drawn of it is a screen effect (interface class, never pulled
   back, no effects), and the polygons the game draws with every point the
   GTE projected at depth 0 (the field's screen pieces, scaled with
@@ -6066,11 +6091,16 @@ frames' sound at the master volume (under fast-forward the music, on the
 host's clock, plays them too). Its picture is the game's at that moment as
 the renderer draws it (wider, in high resolution), not the restored VRAM,
 and a screen the game took that the state holds as it was taken is the
-picture presented when it was taken ([The renderer](#the-renderer-phase-4),
-Screen captures), and a window movie's pictures, the one the state holds
-and those loaded after it, keep their colours through HD-2D's effects as in
-play ([Movies](#movies)); where the game draws nothing new (a transition
-holding its last picture) the restored picture shows. History
+picture presented when it was taken, which the renderer remembers for as
+long as the history holds a state that can bring it back, however many
+screens were taken since ([The renderer](#the-renderer-phase-4), Screen
+captures), and a window movie's pictures, the one the state holds and those
+loaded after it, keep their colours through HD-2D's effects as in play
+([Movies](#movies)); where the game draws nothing new (a transition holding
+its last picture) the restored picture shows. HD-2D's effects ease their
+exposure and depth ranges from frame to frame, so a step's frame shows the
+exposure they eased to over the frames before it (a step out of the field's
+menu into the field, the menu's dimmed screen's). History
 is enabled by Settings for interactive play. Headless sessions, scripted native
 playback and browser command-driven boots have history off unless requested;
 browser automation can boot with `rewind: true` or use `rewind_configure`.

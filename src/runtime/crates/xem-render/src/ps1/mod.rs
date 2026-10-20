@@ -1257,7 +1257,8 @@ impl<'a> Builder<'a> {
                 let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
                 self.upload(*rect, pixels, show);
             }
-            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::Eye(_) | TraceOp::Camera(_) | TraceOp::Placement(_) => {}
+            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::History { .. } | TraceOp::Eye(_) | TraceOp::Camera(_)
+            | TraceOp::Placement(_) => {}
         }
     }
 }
@@ -1579,12 +1580,14 @@ pub(crate) fn encode(
             }
             Command::Copy { source, destination, width, height, local } => {
                 match copies {
-                    Copies::InPlace { scratch, capture } => {
+                    Copies::InPlace { scratch, capture, earlier } => {
                         copy_region(encoder, target, scratch, *source, *destination, (*width, *height), 0);
                         // A copy of a screen the game took brings its picture
                         // (the scaled VRAM holds it only at a screen taken
-                        // elsewhere, and only once the trace taking it is drawn).
-                        copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
+                        // elsewhere, and only once the trace taking it is
+                        // drawn), without its sides: VRAM has no room for them.
+                        let _ = std::iter::once(capture).chain(earlier)
+                            .any(|capture| copy_capture(encoder, target, capture, *source, *destination, (*width, *height), false));
                     }
                     Copies::From { color, aux, scale, capture, earlier, scratch, .. } => {
                         if let Some(side) = local {
@@ -1594,7 +1597,7 @@ pub(crate) fn encode(
                         }
                         if let Some(capture) = capture {
                             let _ = std::iter::once(capture).chain(earlier)
-                                .any(|capture| copy_capture(encoder, target, capture, *source, *destination, (*width, *height)));
+                                .any(|capture| copy_capture(encoder, target, capture, *source, *destination, (*width, *height), true));
                         }
                     }
                 }
@@ -1680,17 +1683,18 @@ pub(crate) fn upload(encoder: &mut wgpu::CommandEncoder, staging: &wgpu::Buffer,
 /// How [`encode`] copies VRAM rectangles.
 #[derive(Clone, Copy)]
 pub(crate) enum Copies<'a> {
-    /// Inside the target, through a scratch texture.
-    InPlace { scratch: &'a wgpu::Texture, capture: &'a Capture },
+    /// Inside the target, through a scratch texture; a copy of a screen the
+    /// game took (the capture, or one taken before it), from its picture.
+    InPlace { scratch: &'a wgpu::Texture, capture: &'a Capture, earlier: &'a [Capture] },
     /// From the scaled VRAM picture (colour, auxiliary, scale) into the
     /// target; a copy of a screen the game took (the capture, or one taken
     /// before it), from its picture.
     From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture>, earlier: &'a [Capture], scratch: &'a wgpu::Texture, feedback: &'a wgpu::Texture, feedback_aux: &'a wgpu::Texture },
 }
 
-/// A copy of all of a captured screen ([`Capture`]) into a replay's target:
-/// its picture's colour, the sides too (where the target has room). False
-/// when the copy is not of that screen.
+/// A copy of all of a captured screen ([`Capture`]) into `target`: its
+/// picture's colour, with `sides` its sides too (where the target has room:
+/// a replay's). False when the copy is not of that screen.
 fn copy_capture(
     encoder: &mut wgpu::CommandEncoder,
     target: &Target,
@@ -1698,6 +1702,7 @@ fn copy_capture(
     source: (u16, u16),
     destination: (u16, u16),
     (width, height): (u16, u16),
+    sides: bool,
 ) -> bool {
     let s = target.scale;
     let Some((rect, _)) = capture.areas().find(|(r, screen)| {
@@ -1709,21 +1714,24 @@ fn copy_capture(
     }
     let size = target.color.size();
     let held = capture.texture.size();
+    // The sides copied, and where the picture copied begins in its texture.
+    let side = if sides { capture.side } else { 0 };
+    let first = (capture.side - side) * s;
     // Where the picture's left edge (its left side's) lands in the target.
-    let left = (f32::from(destination.0) - target.origin.0 - capture.side as f32) * s as f32;
+    let left = (f32::from(destination.0) - target.origin.0 - side as f32) * s as f32;
     let dy = (f32::from(destination.1) - target.origin.1) * s as f32;
     if dy < 0.0 {
         return true;
     }
     let skip = (-left).max(0.0) as u32;
     let dx = left.max(0.0) as u32;
-    let w = ((u32::from(rect.width) + 2 * capture.side) * s).min(held.width).saturating_sub(skip).min(size.width.saturating_sub(dx));
+    let w = ((u32::from(rect.width) + 2 * side) * s).min(held.width.saturating_sub(first)).saturating_sub(skip).min(size.width.saturating_sub(dx));
     let h = (u32::from(rect.height) * s).min(held.height).min(size.height.saturating_sub(dy as u32));
     if w == 0 || h == 0 {
         return true;
     }
     encoder.copy_texture_to_texture(
-        wgpu::TexelCopyTextureInfo { texture: &capture.texture, mip_level: 0, origin: wgpu::Origin3d { x: skip, y: 0, z: 0 }, aspect: wgpu::TextureAspect::All },
+        wgpu::TexelCopyTextureInfo { texture: &capture.texture, mip_level: 0, origin: wgpu::Origin3d { x: first + skip, y: 0, z: 0 }, aspect: wgpu::TextureAspect::All },
         wgpu::TexelCopyTextureInfo { texture: target.color, mip_level: 0, origin: wgpu::Origin3d { x: dx, y: dy as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
         wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
     );
@@ -1894,10 +1902,14 @@ pub struct Ps1Renderer {
     /// Screens it took before, elsewhere in VRAM, while VRAM still holds
     /// them (newest first): a copy of one still brings its picture.
     pub(crate) earlier: Vec<Capture>,
-    /// The last screens taken, as they were taken (newest first): a state
-    /// loaded whose VRAM holds one again (a rewind's step back into a
-    /// transition) shows its picture, not the native screen.
+    /// The screens taken that a state of the session's rewind history can
+    /// bring back, as they were taken (newest first): a state loaded whose
+    /// VRAM holds one again (a rewind's step back into a transition) shows
+    /// its picture, not the native screen ([`Ps1Renderer::note_history`]).
     taken: Vec<Capture>,
+    /// The frame of the oldest state the session's rewind history holds, as
+    /// its last note said ([`TraceOp::History`]; none without history).
+    history: Option<u64>,
     presented: Option<PresentedPicture>,
     draws: u64,
     storage: Storage,
@@ -2139,6 +2151,7 @@ impl Ps1Renderer {
             capture,
             earlier: Vec::new(),
             taken: Vec::new(),
+            history: None,
             presented: None,
             draws: 0,
             storage: Storage::default(),
@@ -2229,7 +2242,7 @@ impl Ps1Renderer {
                             }
                         }
                     } else {
-                        self.invalidate_captures(to, false);
+                        self.invalidate_captures(to, false, &ops[..n]);
                     }
                     copied = (*width >= 256 && *height >= 192 && source != destination).then_some((to, from));
                 }
@@ -2243,10 +2256,10 @@ impl Ps1Renderer {
                     } else if marked && rect.width >= 256 && rect.height >= 192 && !self.is_screen(rect) {
                         written |= self.take_capture(encoder, *rect, Some(pixels.clone()));
                     } else {
-                        self.invalidate_captures(*rect, true);
+                        self.invalidate_captures(*rect, true, &ops[..n]);
                     }
                 }
-                TraceOp::Fill { rect, .. } => self.invalidate_captures(*rect, false),
+                TraceOp::Fill { rect, .. } => self.invalidate_captures(*rect, false, &ops[..n]),
                 _ => {}
             }
         }
@@ -2285,28 +2298,24 @@ impl Ps1Renderer {
     }
 
     /// What overwrites VRAM lets go of the screens kept there, but for
-    /// replays of a frame logged copying one (the field's saved screen,
-    /// given back to textures while a buffer copied from it is shown).
-    fn invalidate_captures(&mut self, rect: VramRect, partial_upload: bool) {
-        let held = self.capture.rect;
-        self.capture.invalidate(rect, partial_upload);
-        if let Some(held) = held.filter(|held| self.capture.rect.is_none() && copied_from(&self.logs, *held)) {
-            let mut capture = self.set_capture(Capture::new(&self.device, (1, 1)));
-            capture.rect = Some(held);
-            capture.aliases.clear();
-            capture.replayed = true;
-            self.earlier.insert(0, capture);
-        }
-        for capture in &mut self.earlier {
-            let held = capture.rect;
-            capture.invalidate(rect, partial_upload);
-            if let Some(held) = held.filter(|held| capture.rect.is_none() && copied_from(&self.logs, *held)) {
-                capture.rect = Some(held);
-                capture.aliases.clear();
-                capture.replayed = true;
+    /// replays of a frame logged copying all of one's area (the field's
+    /// saved screen, given back to textures while a buffer copied from it is
+    /// shown), or of a frame the trace being drawn copied all of it into
+    /// before, `traced` (the field entered first after the game starts
+    /// clears the area its screen was copied from five frames on: under
+    /// fast-forward, before the frame copied from it is presented).
+    fn invalidate_captures(&mut self, rect: VramRect, partial_upload: bool, traced: &[TraceOp]) {
+        let logs = &self.logs;
+        let mut kept = Vec::new();
+        for capture in std::iter::once(&mut self.capture).chain(self.earlier.iter_mut().filter(|capture| !capture.replayed)) {
+            for (area, screen) in capture.invalidate(rect, partial_upload) {
+                if copied_from(logs, area) || copies(traced, area) {
+                    kept.push(Capture { rect: Some(area), aliases: Vec::new(), source: None, screen, replayed: true, ..capture.clone() });
+                }
             }
         }
         self.earlier.retain(|capture| capture.rect.is_some());
+        self.earlier.splice(0..0, kept);
     }
 
     /// Keeps the presented picture (its sides included) as the screen the
@@ -2336,9 +2345,10 @@ impl Ps1Renderer {
                     capture.side = picture.side;
                     capture.taken = self.draws;
                     capture.taken_as = pixels.map(|pixels| (rect, pixels));
-                    if capture.taken_as.is_some() {
+                    // Remembered while a state of the rewind history may
+                    // bring it back (none without history).
+                    if capture.taken_as.is_some() && self.history.is_some() {
                         self.taken.insert(0, capture.clone());
-                        self.taken.truncate(TAKEN_SCREENS);
                     }
                     capture
                 })
@@ -2439,6 +2449,8 @@ impl Ps1Renderer {
             self.scale = scale;
             (self.color, self.aux, self.depth, self.scratch) = Self::pictures(&self.device, scale);
             self.synced = false;
+            // Their pictures are at the old scale: none shows again.
+            self.taken.clear();
         }
     }
 
@@ -2519,7 +2531,7 @@ impl Ps1Renderer {
             &self.group,
             self.vertices.buffer(),
             Some((self.staging.buffer(), &self.vram)),
-            Copies::InPlace { scratch: &self.scratch, capture: &self.capture },
+            Copies::InPlace { scratch: &self.scratch, capture: &self.capture, earlier: &self.earlier },
             &target,
             &builder.commands,
         );
@@ -2650,6 +2662,11 @@ impl Ps1Renderer {
                 TraceOp::VBlank => {
                     self.eye = self.eye.and_then(|(eye, blanks)| (blanks < 4).then_some((eye, blanks + 1)));
                     self.camera = self.camera.and_then(|(camera, blanks)| (blanks < 4).then_some((camera, blanks + 1)));
+                    continue;
+                }
+                // With the native VRAM as that frame left it.
+                TraceOp::History { frame, state, oldest } => {
+                    self.note_history(*frame, *state, *oldest);
                     continue;
                 }
                 _ => {}
@@ -2793,6 +2810,24 @@ impl Ps1Renderer {
         }
     }
 
+    /// The session's rewind history after the game's frame `frame`
+    /// ([`TraceOp::History`]): whether it took a state of it, and the frame
+    /// of the oldest state it holds. A screen taken stays remembered while
+    /// the history holds a state from the last frame one may hold it at or
+    /// before (a state holding it, or one from before it was taken that a
+    /// rewind's step plays on from to take it again): the frame it was
+    /// taken in, or a later one whose state VRAM held it in as taken.
+    fn note_history(&mut self, frame: u64, state: bool, oldest: Option<u64>) {
+        self.history = oldest;
+        let (native, scale) = (&self.native, self.scale);
+        for screen in &mut self.taken {
+            if screen.held.is_none() || (state && screen.held_in(native, scale)) {
+                screen.held = Some(frame);
+            }
+        }
+        self.taken.retain(|screen| screen.held.zip(oldest).is_some_and(|(held, oldest)| held >= oldest));
+    }
+
     /// Whether a log is of the buffer a display of `area` shows.
     fn half_logged(&self, area: &VramRect) -> bool {
         self.logs.iter().any(|l| shown_by(l, area))
@@ -2881,9 +2916,6 @@ pub(crate) fn bind_group(
 /// Screens taken before the capture kept while VRAM holds them.
 const EARLIER_CAPTURES: usize = 2;
 
-/// Screens remembered as they were taken ([`Ps1Renderer::taken`]).
-const TAKEN_SCREENS: usize = 4;
-
 /// Whether two runs of VRAM pixels have the same colours (the field marks
 /// the texels of its saved screen semi-transparent as it fades from it).
 fn same_colours(a: &[u16], b: &[u16]) -> bool {
@@ -2910,8 +2942,13 @@ fn shown_by(log: &FrameLog, area: &VramRect) -> bool {
 
 /// Whether a frame logged copies all of `rect` (a screen kept there).
 fn copied_from(logs: &[FrameLog], rect: VramRect) -> bool {
-    logs.iter().any(|log| log.ops.iter().any(|op| matches!(op,
-        TraceOp::Copy { source, width, height, .. } if (source.0, source.1, *width, *height) == (rect.x, rect.y, rect.width, rect.height))))
+    logs.iter().any(|log| copies(&log.ops, rect))
+}
+
+/// Whether `ops` copy all of `rect`.
+fn copies(ops: &[TraceOp], rect: VramRect) -> bool {
+    ops.iter().any(|op| matches!(op,
+        TraceOp::Copy { source, width, height, .. } if (source.0, source.1, *width, *height) == (rect.x, rect.y, rect.width, rect.height)))
 }
 
 /// A screen the game took into VRAM (a copy of a screen buffer, or its
@@ -2941,6 +2978,9 @@ pub(crate) struct Capture {
     taken: u64,
     /// Where it was taken and the native pixels VRAM held there then.
     taken_as: Option<(VramRect, std::sync::Arc<[u16]>)>,
+    /// Remembered ([`Ps1Renderer::taken`]): the last frame a state of the
+    /// rewind history may hold it at ([`Ps1Renderer::note_history`]).
+    held: Option<u64>,
     /// Counts new textures (bind groups made with an older one are stale).
     pub(crate) generation: u64,
 }
@@ -2954,7 +2994,7 @@ impl Capture {
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, replayed: false, taken: 0, taken_as: None, generation: 0 }
+        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, replayed: false, taken: 0, taken_as: None, held: None, generation: 0 }
     }
 
     /// Whether `vram` holds this screen where it was taken, as it was taken,
@@ -2978,13 +3018,18 @@ impl Capture {
         self.rect.map(|r| (r, self.screen)).into_iter().chain(self.aliases.iter().copied())
     }
 
-    fn invalidate(&mut self, rect: VramRect, partial_upload: bool) {
+    /// Lets go of its areas `rect` overwrites (an alias left takes its own
+    /// place); returns them.
+    fn invalidate(&mut self, rect: VramRect, partial_upload: bool) -> Vec<(VramRect, bool)> {
         let overwritten = |r: VramRect, screen: bool| overlap(&r, &rect) > 0
             && (!partial_upload || !screen || overlap(&r, &rect) == u32::from(r.width) * u32::from(r.height));
+        let mut gone: Vec<_> = self.aliases.iter().copied().filter(|&(r, screen)| overwritten(r, screen)).collect();
         self.aliases.retain(|&(r, screen)| !overwritten(r, screen));
-        if self.rect.is_some_and(|r| overwritten(r, self.screen)) {
+        if let Some(r) = self.rect.filter(|&r| overwritten(r, self.screen)) {
+            gone.push((r, self.screen));
             self.rect = self.aliases.pop().map(|(r, screen)| { self.screen = screen; r });
         }
+        gone
     }
 
     /// The pass uniform's capture fields.
@@ -3026,6 +3071,17 @@ mod tests {
         p.environment.area[3] = 215;
         p.environment.draw_mode -= 1;
         assert!(!samples(&p, &capture), "neighbouring texture pages are not the captured screen");
+    }
+
+    #[test]
+    fn a_new_scale_lets_go_of_the_screens_remembered() {
+        let gpu = pollster::block_on(crate::Gpu::headless()).expect("a wgpu adapter");
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+        renderer.taken.push(Capture { scale: 2, ..Capture::new(&gpu.device, (1, 1)) });
+        renderer.set_options(DrawOptions::default(), 2);
+        assert_eq!(renderer.taken.len(), 1, "the same scale keeps them");
+        renderer.set_options(DrawOptions::default(), 3);
+        assert!(renderer.taken.is_empty(), "their pictures, at the old scale, show no more");
     }
 
     #[test]

@@ -590,6 +590,12 @@ pub enum TraceOp {
     /// movie, which the session notes after each of its game frames:
     /// [`Gpu::trace_movie_frames_left`]). Presentation only.
     MovieFramesLeft(u16),
+    /// The session's rewind history after a game frame: the game's frame
+    /// count, whether the history took a state of that frame, and the frame
+    /// of the oldest state it holds (none without history), for a renderer
+    /// that remembers what it presented of the screens a state can bring
+    /// back ([`Gpu::trace_history`]). Presentation only.
+    History { frame: u64, state: bool, oldest: Option<u64> },
     /// Where the field's controlled character stands in the frame the game
     /// draws next (while the view looks from within or around the scene:
     /// [`Reveals::around`]), in order with the commands: the port records
@@ -1420,6 +1426,14 @@ impl Gpu {
     pub fn trace_movie_frames_left(&mut self, frames: u16) {
         if let Some(trace) = &mut self.trace {
             trace.ops.push(TraceOp::MovieFramesLeft(frames));
+        }
+    }
+
+    /// The session's rewind history after a game frame ([`TraceOp::History`]).
+    /// Presentation only.
+    pub fn trace_history(&mut self, frame: u64, state: bool, oldest: Option<u64>) {
+        if let Some(trace) = &mut self.trace {
+            trace.ops.push(TraceOp::History { frame, state, oldest });
         }
     }
 
