@@ -220,18 +220,98 @@ component Nav inherits FocusScope {
     }
 }
 
+// A header button: an icon, and its text beside it when it has one (an
+// icon alone is named by its label); compact on a card's heading line.
+// Tab reaches it; Space or Return presses it.
+component IconButton inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> text;
+    in property <bool> compact;
+    // The icon's colour under the pointer (Quit's warns).
+    in property <brush> hover-icon-color: Theme.text;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.text != "" ? root.text : root.label;
+    accessible-action-default => { root.clicked(); }
+    forward-focus: focus;
+    width: root.text == "" ? root.height : content.preferred-width;
+    height: root.compact ? 26px : 34px;
+    border-radius: root.compact ? 6px : 8px;
+    background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
+    border-width: 1px;
+    border-color: touch.has-hover ? Theme.stroke : transparent;
+    animate background, border-color { duration: 140ms; easing: ease-out; }
+    content := HorizontalLayout {
+        padding-left: root.text == "" ? 8px : root.compact ? 8px : 10px;
+        padding-right: root.text == "" ? 8px : root.compact ? 10px : 13px;
+        spacing: root.compact ? 5px : 6px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                width: root.compact ? 14px : 18px;
+                height: root.compact ? 14px : 18px;
+                data: root.icon;
+                color: touch.has-hover ? root.hover-icon-color : Theme.text-secondary;
+            }
+        }
+        if root.text != "": Text {
+            text: root.text;
+            font-size: root.compact ? 12px : 12.5px;
+            color: touch.has-hover ? Theme.text : Theme.text-secondary;
+            vertical-alignment: center;
+            animate color { duration: 140ms; }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    // As the toolkit's Button: no area of its own, so a click does not focus it.
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        key-pressed(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: Rectangle {
+        border-radius: root.border-radius;
+        border-width: 1.5px;
+        border-color: Theme.accent;
+    }
+}
+
 // A group of settings, labelled for assistive navigation, and its heading
-// (if it has one) above it.
+// (if it has one) above it, with the heading's action (if it has one) at
+// the right of its line.
 component Card inherits VerticalLayout {
     in property <string> title;
     in property <string> heading;
+    in property <string> heading-action;
+    callback heading-action-clicked();
     spacing: 7px;
     padding-top: root.heading != "" ? 6px : 0px;
-    if root.heading != "": Text {
-        text: root.heading;
-        font-size: 12px;
-        font-weight: 600;
-        color: Theme.text-secondary;
+    if root.heading != "": HorizontalLayout {
+        spacing: 12px;
+        Text {
+            text: root.heading;
+            font-size: 12px;
+            font-weight: 600;
+            color: Theme.text-secondary;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        if root.heading-action != "": IconButton {
+            compact: true;
+            icon: Icons.reset;
+            text: root.heading-action;
+            clicked => { root.heading-action-clicked(); }
+        }
     }
     Rectangle {
         background: Theme.raised;
@@ -477,65 +557,6 @@ component Segmented inherits FocusScope {
     }
 }
 
-// A header button: an icon, and its text beside it when it has one (an
-// icon alone is named by its label). Tab reaches it; Space or Return presses it.
-component IconButton inherits Rectangle {
-    in property <string> icon;
-    in property <string> label;
-    in property <string> text;
-    // The icon's colour under the pointer (Quit's warns).
-    in property <brush> hover-icon-color: Theme.text;
-    callback clicked();
-    accessible-role: button;
-    accessible-label: root.text != "" ? root.text : root.label;
-    accessible-action-default => { root.clicked(); }
-    forward-focus: focus;
-    width: root.text == "" ? 34px : content.preferred-width;
-    height: 34px;
-    border-radius: 8px;
-    background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
-    border-width: 1px;
-    border-color: touch.has-hover ? Theme.stroke : transparent;
-    animate background, border-color { duration: 140ms; easing: ease-out; }
-    content := HorizontalLayout {
-        padding-left: root.text == "" ? 8px : 10px;
-        padding-right: root.text == "" ? 8px : 13px;
-        spacing: 6px;
-        VerticalLayout {
-            alignment: center;
-            Icon { data: root.icon; color: touch.has-hover ? root.hover-icon-color : Theme.text-secondary; }
-        }
-        if root.text != "": Text {
-            text: root.text;
-            font-size: 12.5px;
-            color: touch.has-hover ? Theme.text : Theme.text-secondary;
-            vertical-alignment: center;
-            animate color { duration: 140ms; }
-        }
-    }
-    touch := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
-    }
-    // As the toolkit's Button: no area of its own, so a click does not focus it.
-    focus := FocusScope {
-        x: 0;
-        width: 0;
-        key-pressed(event) => {
-            if event.text == Key.Space || event.text == Key.Return {
-                root.clicked();
-                return accept;
-            }
-            reject
-        }
-    }
-    if focus.has-focus: Rectangle {
-        border-radius: root.border-radius;
-        border-width: 1.5px;
-        border-color: Theme.accent;
-    }
-}
-
 // Asks before the app quits, over the dimmed panel. A press beside it, or
 // the host's Escape or Back, cancels; Tab moves between its two buttons only.
 component QuitDialog inherits Rectangle {
@@ -715,7 +736,6 @@ export component SettingsPanel inherits Window {
     // browser to persist (Request browser persistence; the Rust side lists
     // the operations offered).
     in property <bool> browser-storage;
-    in property <string> gfx-status;
     private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
     private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];
     in-out property <bool> pause-on-focus-loss;
@@ -861,11 +881,11 @@ export component SettingsPanel inherits Window {
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
-    // A graphics choice by name (renderer, profile, scale, quality, interpolation,
-    // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
-    // xr-distance, xr-width, xr-dof, xr-view, xr-scale, xr-height,
-    // xr-table-distance, xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset)
-    // and value.
+    // A graphics choice by name (renderer, profile, profile-reset, scale,
+    // quality, interpolation, widescreen, zoom-out, filter-world,
+    // filter-sprites, filter-interface, xr-distance, xr-width, xr-dof,
+    // xr-view, xr-scale, xr-height, xr-table-distance, xr-tilt, xr-turns,
+    // xr-passthrough, xr-diorama-reset) and value.
     callback graphics-edited(string, int);
     // Recenter: the headset's view placed in front of the head again.
     callback xr-recenter-requested();
@@ -1096,41 +1116,24 @@ export component SettingsPanel inherits Window {
                                     label: "HD-2D quality";
                                     Choice { accessible-label: "HD-2D quality"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
                                 }
-                                if root.gfx-status != "": Text { text: root.gfx-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
-                                title: "Motion and framing";
-                                ToggleRow {
-                                    label: "Interpolate motion";
-                                    checked <=> root.gfx-interpolation;
-                                    toggled(on) => { root.graphics-edited("interpolation", on ? 1 : 0); }
-                                }
-                                Divider { }
-                                ToggleRow {
-                                    label: "Wider framing";
-                                    checked <=> root.gfx-widescreen;
-                                    toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
-                                }
-                                Divider { }
-                                SliderRow {
-                                    label: "Zoom out";
-                                    value-text: "\{root.gfx-zoom-out / 100}x";
-                                    Slider {
-                                        accessible-label: "Field camera zoom out (mouse wheel)";
-                                        minimum: 100;
-                                        maximum: 500;
-                                        value: root.gfx-zoom-out;
-                                        changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
-                                    }
-                                }
-                            }
+                            // The selected profile's effects under its name;
+                            // Reset Defaults gives them (and Custom's limits)
+                            // their default levels.
                             if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): Card {
                                 title: root.gfx-profile == 1 ? "HD-2D effects" : "Effects";
+                                heading: root.gfx-profile == 1 ? "HD-2D" : "Custom";
+                                heading-action: "Reset Defaults";
+                                heading-action-clicked => { root.graphics-edited("profile-reset", 0); }
 
                                 for name[index] in root.effect-names: HorizontalLayout {
+                                    // A slider moved by hand keeps its own value,
+                                    // so a reset or another profile's level moves it.
+                                    property <int> level: root.gfx-effects[index];
+                                    changed level => { slider.value = self.level; }
                                     spacing: 12px;
                                     Text { text: name; font-size: 12.5px; color: Theme.text-secondary; vertical-alignment: center; min-width: 118px; horizontal-stretch: 0; }
-                                    Slider {
+                                    slider := Slider {
                                         accessible-label: name;
                                         minimum: index == 8 ? -100 : 0;
                                         maximum: 100;
@@ -1147,6 +1150,32 @@ export component SettingsPanel inherits Window {
                                     label: name;
                                     checked: root.gfx-fidelity[index];
                                     toggled(on) => { root.fidelity-edited(index, on); }
+                                }
+                            }
+                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
+                                title: "Motion and framing";
+                                ToggleRow {
+                                    label: "High Framerate";
+                                    checked <=> root.gfx-interpolation;
+                                    toggled(on) => { root.graphics-edited("interpolation", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Widescreen";
+                                    checked <=> root.gfx-widescreen;
+                                    toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                SliderRow {
+                                    label: "Zoom out";
+                                    value-text: "\{root.gfx-zoom-out / 100}x";
+                                    Slider {
+                                        accessible-label: "Field camera zoom out (mouse wheel)";
+                                        minimum: 100;
+                                        maximum: 500;
+                                        value: root.gfx-zoom-out;
+                                        changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
+                                    }
                                 }
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1: Card {

@@ -483,6 +483,7 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
     match key {
         "renderer" => next.renderer = *RENDERERS.get(index?)?,
         "profile" => next.profile = *PROFILES.get(index?)?,
+        "profile-reset" => next = next.profile_reset(),
         "scale" => next.internal_scale = u8::try_from(value).ok()?,
         "quality" => next.quality = *QUALITIES.get(index?)?,
         "interpolation" => next.interpolation = value != 0,

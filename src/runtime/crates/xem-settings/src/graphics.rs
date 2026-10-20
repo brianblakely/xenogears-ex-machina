@@ -423,6 +423,17 @@ impl Graphics {
         }
     }
 
+    /// The selected profile's effect levels, and Custom's limits, as they
+    /// are by default (the panel's Reset Defaults); the rest stays.
+    pub fn profile_reset(&self) -> Graphics {
+        let defaults = Graphics::default();
+        match self.profile {
+            GraphicsProfile::Modern | GraphicsProfile::Ps1 => *self,
+            GraphicsProfile::Hd2d => Graphics { hd2d: defaults.hd2d, ..*self },
+            GraphicsProfile::Custom => Graphics { custom_effects: defaults.custom_effects, custom_fidelity: defaults.custom_fidelity, ..*self },
+        }
+    }
+
     /// The effects the selected profile draws with.
     pub fn effects(&self) -> EffectLevels {
         match self.profile {
@@ -478,6 +489,13 @@ mod tests {
         };
         assert!(custom.fidelity().dithering && !custom.fidelity().affine_textures);
         assert_eq!(custom.effects().bloom, 30);
+        // Reset Defaults: the selected profile's own levels (Custom's limits
+        // too), the other profile's and the rest kept.
+        let edited = Graphics { hd2d: EffectLevels { bloom: 5, focus: -30, ..EffectLevels::HD2D }, zoom_out: 300, ..custom };
+        assert_eq!(edited.profile_reset(), Graphics { custom_fidelity: Fidelity::MODERN, custom_effects: EffectLevels::OFF, ..edited });
+        let hd2d = Graphics { profile: GraphicsProfile::Hd2d, ..edited };
+        assert_eq!(hd2d.profile_reset(), Graphics { hd2d: EffectLevels::HD2D, ..hd2d });
+        assert_eq!(Graphics { profile: GraphicsProfile::Modern, ..edited }.profile_reset().custom_effects.bloom, 30, "Modern has no levels to reset");
     }
 
     #[test]

@@ -2030,10 +2030,10 @@ interchange](#state-interchange)).
 | renderer | Ex Machina (default: everything below) or Original: the console's own picture (the software GPU's display) scaled to the window as before Phase 4, with no draw trace and no presentation records (the port's rings stay idle), every setting below hidden |
 | profile | Modern (default), HD-2D, PS1, Custom |
 | original limits (Custom) | affine textures, vertex snapping, 15-bit colour, dithering, native resolution, painter's ordering (off: depth-tested by the GTE depth) |
-| HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
+| HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate; the panel shows the selected profile's under its name (HD-2D or Custom) below the card holding Profile, and that heading's Reset Defaults gives them their defaults (`Graphics::profile_reset`: HD-2D's levels, or Custom's none and its original limits Modern's) |
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
-| presentation | interpolate motion: off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); wider framing (to the output's aspect ratio) |
+| presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
@@ -7837,7 +7837,8 @@ pixels, where two of its longer labels side by side overflowed it: at 560
 its shortcut are the browser's alone (`SettingsUi::set_browser_storage`):
 a native host keeps its saves in application files, so its panel offers
 ten. Each section is a column of cards of settings, some under a heading
-outside the card (Graphics' Texture Filtering and VR, Controls' VR /
+outside the card (Graphics' HD-2D or Custom, with Reset Defaults at its
+right, Texture Filtering and VR, Controls' VR /
 Touchscreen and Global, Time's Rewind and Fast-Forward). An error bar under
 them shows only while something failed (a refused change, an operation, the
 game stopping, a disc the game asks for) until a change or an operation

@@ -481,7 +481,7 @@ fn graphics_choices_go_through_the_settings_service() {
         move |ack| acks.borrow_mut().push(ack.change.clone())
     });
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
     ui.update().unwrap();
     section(&mut ui, "Graphics", 1);
     assert!(
@@ -503,13 +503,50 @@ fn graphics_choices_go_through_the_settings_service() {
     element(&ui, "Bloom", AccessibleRole::Slider);
     ui.component().invoke_effect_edited(5, 20);
     assert_eq!(settings.borrow().settings().graphics.hd2d.bloom, 20);
+    // The effects stand under the HD-2D heading, below the card holding
+    // Profile and above Motion and framing.
+    heading_above(&ui, "HD-2D", "HD-2D effects");
+    let top = |label: &str| element(&ui, label, AccessibleRole::Groupbox).absolute_position().y;
+    let bottom = |label: &str| {
+        let card = element(&ui, label, AccessibleRole::Groupbox);
+        card.absolute_position().y + card.size().height
+    };
+    assert!(bottom("Look") <= element(&ui, "HD-2D", AccessibleRole::Text).absolute_position().y, "the effects follow the Look card");
+    assert!(bottom("HD-2D effects") <= top("Motion and framing"));
+    // Reset Defaults, on the heading's line at its right, gives every
+    // slider its default, one moved by hand too (Lighting, 60 by default).
+    let reset = element(&ui, "Reset Defaults", AccessibleRole::Button);
+    let heading = element(&ui, "HD-2D", AccessibleRole::Text);
+    let card = element(&ui, "HD-2D effects", AccessibleRole::Groupbox);
+    assert!(reset.absolute_position().y + reset.size().height <= card.absolute_position().y, "above the card");
+    assert!(reset.absolute_position().y <= heading.absolute_position().y + heading.size().height, "on the heading's line");
+    let right = card.absolute_position().x + card.size().width - (reset.absolute_position().x + reset.size().width);
+    assert!((0.0..1.0).contains(&right), "at the card's right edge ({right} px in)");
+    press(&ui, &element(&ui, "Lighting", AccessibleRole::Slider));
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.hd2d.lighting, 50, "the slider's middle");
+    press(&ui, &reset);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.hd2d, xem_settings::EffectLevels::HD2D);
+    for (label, level) in [("Lighting", "60"), ("Bloom", "50")] {
+        assert_eq!(element(&ui, label, AccessibleRole::Slider).accessible_value().as_deref(), Some(level), "{label} after Reset Defaults");
+    }
+    ui.component().invoke_effect_edited(5, 20);
     ui.component().invoke_graphics_edited("profile".into(), 3);
+    ui.update().unwrap();
+    // Custom's sliders show its own levels (none by default), under its name.
+    heading_above(&ui, "Custom", "Effects");
+    assert_eq!(element(&ui, "Lighting", AccessibleRole::Slider).accessible_value().as_deref(), Some("0"), "Custom's level, not HD-2D's");
     ui.component().invoke_fidelity_edited(3, true);
     ui.component().invoke_effect_edited(8, -40);
     let graphics = settings.borrow().settings().graphics;
     assert!(graphics.custom_fidelity.dithering, "Custom's own limits change");
     assert_eq!(graphics.custom_effects.focus, -40, "Custom's own levels change");
     assert_eq!(graphics.hd2d.bloom, 20, "HD-2D's levels are kept");
+    // Custom's Reset Defaults: its levels and limits, HD-2D's kept.
+    press(&ui, &element(&ui, "Reset Defaults", AccessibleRole::Button));
+    let graphics = settings.borrow().settings().graphics;
+    assert_eq!((graphics.custom_effects, graphics.custom_fidelity, graphics.hd2d.bloom), (xem_settings::EffectLevels::OFF, xem_settings::Fidelity::MODERN, 20));
     ui.component().invoke_graphics_edited("scale".into(), 99);
     assert_eq!(settings.borrow().settings().graphics.internal_scale, 3 - 3, "an invalid scale is refused");
     ui.component().invoke_graphics_edited("widescreen".into(), 1);
@@ -1095,12 +1132,16 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
         assert_eq!(shown(&ui, "HD-2D quality"), quality, "HD-2D quality for profile {profile}");
         assert!(!shown(&ui, "Characters keep moving"));
     }
-    // Interpolate motion decides the presentation's rate: no choice of it.
+    // High Framerate (interpolation) decides the presentation's rate: no
+    // choice of it. Widescreen beside it widens the framing.
     assert!(!shown(&ui, "Presentation rate") && !shown(&ui, "Presentation"));
-    ui.component().invoke_graphics_edited("interpolation".into(), 1);
+    assert!(!shown(&ui, "Interpolate motion") && !shown(&ui, "Wider framing"), "their old names");
+    press(&ui, &element(&ui, "High Framerate", AccessibleRole::Switch));
     assert!(!settings.borrow().settings().graphics.game_paced(), "interpolated: every display refresh");
-    ui.component().invoke_graphics_edited("interpolation".into(), 0);
+    press(&ui, &element(&ui, "High Framerate", AccessibleRole::Switch));
     assert!(settings.borrow().settings().graphics.game_paced(), "not: the game's frames");
+    press(&ui, &element(&ui, "Widescreen", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().graphics.widescreen);
     // Headings stand above their cards, outside them.
     for (name, index, headings) in [
         ("Graphics", 1, [("Texture Filtering", "Filtering"), ("VR", "Headset")]),
