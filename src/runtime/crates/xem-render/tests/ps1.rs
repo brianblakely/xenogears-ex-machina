@@ -1099,6 +1099,75 @@ fn a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects() {
     }
 }
 
+/// A battle's sky: the clouds its stage projects far behind the scene
+/// (points the port marks as the backdrop's, [`Primitive::backdrop`]) take
+/// the effects as the world does but for the haze, which the flat sky they
+/// are painted over does not take; the world at their depth is hazed.
+#[test]
+fn a_battles_sky_takes_the_effects_but_not_the_haze() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A near quad of the world, then two far ones at one depth: the
+    // world's (projection class 0) and the backdrop's (class 10).
+    let traces = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        let quads = [(0, [20.0, 170.0, 300.0, 230.0], 500), (0, [30.0, 30.0, 140.0, 140.0], 4000), (10, [180.0, 30.0, 290.0, 140.0], 4000)];
+        let mut projections = Vec::new();
+        let mut packets = Vec::new();
+        for (class, [left, top, right, bottom], z) in quads {
+            let corners = [(left, top), (right, top), (left, bottom), (right, bottom)];
+            let first = projections.len();
+            for (x, y) in corners {
+                projections.push(Projection {
+                    sxy: xy(x as i32, y as i32),
+                    sz: z,
+                    class,
+                    x: (x * 65536.0) as i32,
+                    y: (y * 65536.0) as i32,
+                    offset: (160, 120),
+                    h: 256,
+                    owner: 0,
+                    view: view(x, y, f32::from(z)),
+                });
+            }
+            let words = corners.map(|(x, y)| xy(x as i32, y as i32));
+            packets.push((vec![0x28C0_6030, words[0], words[1], words[2], words[3]], (0..4).map(|k| (k + 1, first + k)).collect()));
+        }
+        submit(device, &projections, &packets);
+    });
+    let drawn: Vec<(Class, bool)> = traces.1.ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.class, p.backdrop)) } else { None }).collect();
+    assert_eq!(drawn, [(Class::World, false), (Class::World, false), (Class::World, true)]);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing::default());
+    gpu.queue.submit([encoder.finish()]);
+    let plain = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    let mut under = |effects: Effects| {
+        let mut renderer_effects = EffectsRenderer::new(&gpu.device, Some(&gpu.adapter));
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer_effects.render(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, &frame, &traces.1.ops, &effects, Quality::High, &Lighting::default());
+        gpu.queue.submit([encoder.finish()]);
+        read_rgba8(&gpu.device, &gpu.queue, renderer_effects.output().unwrap())
+    };
+    let hazed = under(Effects { fog: 1.0, ..Effects::OFF });
+    let hd2d = under(Effects::HD2D);
+    let clear = under(Effects { fog: 0.0, ..Effects::HD2D });
+    let at = |pixels: &[u8], (x, y): (usize, usize)| pixels[(y * 640 + x) * 4..(y * 640 + x) * 4 + 3].to_vec();
+    let apart = |a: Vec<u8>, b: Vec<u8>| (0..3).map(|c| a[c].abs_diff(b[c])).max().unwrap();
+    // Inside the far quads (scale 2), away from their edges.
+    for (world, sky) in [((100, 100), (400, 100)), ((170, 170), (470, 170)), ((240, 240), (540, 240))] {
+        assert_eq!(at(&plain, world), at(&plain, sky), "both far quads are drawn alike");
+        assert_eq!(at(&hazed, sky), at(&plain, sky), "the sky at {sky:?} takes no haze");
+        assert!(apart(at(&hazed, world), at(&plain, world)) > 8, "the world at {world:?} is hazed: {:?} from {:?}", at(&hazed, world), at(&plain, world));
+        // HD-2D lights and grades the sky as the world, the haze apart.
+        assert_ne!(at(&hd2d, sky), at(&plain, sky), "the sky at {sky:?} takes the other effects");
+        assert_eq!(at(&hd2d, sky), at(&clear, sky), "the sky at {sky:?} as without the haze");
+        assert_ne!(at(&hd2d, world), at(&clear, world), "the world at {world:?} hazed under HD-2D");
+    }
+}
+
 /// After a movie the field copies its 24-bit display area (480 VRAM pixels
 /// wide) onto itself, over the buffer it shows next. That copy moves no
 /// pixel, and the buffer still shows the frame drawn there, replayed wider

@@ -497,6 +497,77 @@ fn the_scene_after_field_198s_narration_replays_each_buffers_own_frame_from_its_
     }
 }
 
+/// The scene after field 198's narration looks up at the Gears under its
+/// stage's sky: a ceiling of cloud tiles projected far behind them
+/// (`battle_draw_stage_sky`, the backdrop's points), their texture fading
+/// into the flat blue band they are painted over. The HD-2D effects take
+/// the clouds for the world but leave out the haze, which the band does not
+/// take either (hazed, they turned grey against it): they keep Modern's
+/// colourfulness, and the fog alone leaves them as Modern draws them while
+/// it hazes the ground.
+#[test]
+fn the_clouds_over_the_scene_after_field_198s_narration_take_no_haze() {
+    use xem_render::ps1::{AUX_MODEL, AUX_WORLD};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let mut commands = vec![json!([0, {"cmd": "debug", "request": {"tool": "field", "map": 198, "entry": 8}}])];
+    commands.extend((0..200).map(|k| json!([600 + 20 * k, {"cmd": "press", "buttons": ["cross"], "frames": 2}])));
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    // Unpresented until 81 frames before the one looked at, the 4 461st
+    // (each frame of the scene starts its buffer's log again).
+    for _ in 0..4380 {
+        assert!(session.frame().unwrap());
+    }
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // Modern, HD-2D, and Custom with HD-2D's fog alone, wider.
+    let fog = EffectLevels { fog: EffectLevels::HD2D.fog, ..EffectLevels::OFF };
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Custom].map(|profile| {
+        let graphics = Graphics { profile, widescreen: true, custom_effects: fog, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1152, 648), view.max_scale()));
+        view
+    });
+    for n in 4380..4461u32 {
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        for view in &mut views {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    assert_eq!(session.scene(), "battle");
+    let read = |texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
+    let [modern, hd2d, hazed] = [0, 1, 2].map(|i| read(views[i].presented_texture().expect("presented")));
+    let classes = read(views[1].frame().aux());
+    assert!([&hd2d, &hazed, &classes].iter().all(|p| p.len() == modern.len()), "one size");
+    let of = |kind: u32| (0..classes.len() / 4).filter(|&i| u32::from(classes[i * 4 + 2]) == kind).collect::<Vec<_>>();
+    // The world's pixels are the clouds' (the stage's ground is a model).
+    let (clouds, models) = (of(AUX_WORLD), of(AUX_MODEL));
+    let colourful = |rgba: &[u8]| clouds.iter().map(|&i| f64::from(rgba[i * 4..i * 4 + 3].iter().max().unwrap() - rgba[i * 4..i * 4 + 3].iter().min().unwrap())).sum::<f64>() / clouds.len() as f64;
+    let apart = |a: &[u8], b: &[u8], i: usize| (0..3).map(|c| a[i * 4 + c].abs_diff(b[i * 4 + c])).max().unwrap();
+    let (unhazed, ground) = (clouds.iter().filter(|&&i| apart(&hazed, &modern, i) <= 1).count(), models.iter().filter(|&&i| apart(&hazed, &modern, i) > 2).count());
+    eprintln!("{} cloud pixels: colourfulness {:.1} under Modern, {:.1} under HD-2D; the fog alone leaves {unhazed} as Modern draws them and hazes {ground} of the models' {}",
+        clouds.len(), colourful(&modern), colourful(&hd2d), models.len());
+    assert!(clouds.len() > 50_000, "the clouds are in view: {} pixels", clouds.len());
+    assert!(colourful(&hd2d) > colourful(&modern) * 0.9, "HD-2D's clouds keep their colours: {:.1} against Modern's {:.1}", colourful(&hd2d), colourful(&modern));
+    assert_eq!(unhazed, clouds.len(), "the fog leaves the clouds as Modern draws them");
+    assert!(ground * 5 > models.len(), "the fog hazes the ground: {ground} of {} model pixels", models.len());
+}
+
 /// Below Shevat's towers the game draws a sea of clouds whose texture holds,
 /// around each cloud, the colour its buffer was cleared with: on the console
 /// that sky meets the cleared sky without an edge. Here too: the clear shows

@@ -5,8 +5,8 @@
 //
 // The auxiliary target gives each pixel the GTE depth (SZ, 16 bits in r, g)
 // and class (b: 0 background, 1 interface, 2 world, 3 model, 4 sprite) of
-// the primitive that drew it last; flags (a) bit 0 marks baked shading
-// (255: a semi-transparent interface pixel).
+// the primitive that drew it last; flags (a) bit 0 marks baked shading,
+// bit 1 a battle's sky (255: a semi-transparent interface pixel).
 
 struct Params {
     size: vec2<f32>,
@@ -83,13 +83,16 @@ struct Aux {
     depth: f32,
     kind: u32,
     baked: bool,
+    backdrop: bool,
 };
 
 fn aux_at(pixel: vec2<i32>) -> Aux {
     let dims = vec2<i32>(textureDimensions(tex1));
     let a = textureLoad(tex1, clamp(pixel, vec2<i32>(0), dims - 1), 0);
     let bytes = vec4<u32>(round(a * 255.0));
-    return Aux(f32(bytes.r * 256u + bytes.g), bytes.b, (bytes.a & 1u) != 0u);
+    // 255 marks an interface pixel, not flags (a frame drawn back can bring it).
+    let flags = select(bytes.a, 0u, bytes.a == 255u);
+    return Aux(f32(bytes.r * 256u + bytes.g), bytes.b, (flags & 1u) != 0u, (flags & 2u) != 0u);
 }
 
 fn is_scene(kind: u32) -> bool {
@@ -213,10 +216,12 @@ fn fs_light(in: Out) -> @location(0) vec4<f32> {
 
         // Aerial perspective: distance lightens and desaturates the scene
         // towards the haze tint at the scene's own brightness (tex3: the
-        // frame's average scene colour), so dark places stay dark.
+        // frame's average scene colour), so dark places stay dark. A
+        // battle's sky keeps its colours: the flat sky its clouds are
+        // painted over takes no haze.
         let average = textureLoad(tex3, vec2<i32>(0, 0), 0).rgb;
         let haze = mix(p.fog.rgb * clamp(luma(average) * 2.6, 0.03, 0.85), average * 1.8, 0.35);
-        let fog = smoothstep(p.ranges.x, p.ranges.y, a.depth) * p.fog.w;
+        let fog = select(smoothstep(p.ranges.x, p.ranges.y, a.depth) * p.fog.w, 0.0, a.backdrop);
         let faded = mix(vec3<f32>(luma(color)), color, 1.0 - 0.6 * fog);
         color = mix(faded, haze, fog);
     }

@@ -75,6 +75,8 @@ const FEEDBACK: u32 = 524288u;
 const TABLE: u32 = 1048576u;
 const CLIP: u32 = 2097152u;
 const BILLBOARD: u32 = 4194304u;
+// A battle's sky (ps1/mod.rs FLAG_BACKDROP).
+const BACKDROP: u32 = 8388608u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -413,6 +415,9 @@ fn aux(in: VertexOut) -> vec4<f32> {
     var flags = 0u;
     if (in.mode.w & BAKED) != 0u {
         flags |= 1u;
+    }
+    if (in.mode.w & BACKDROP) != 0u {
+        flags |= 2u;
     }
     return vec4<f32>(f32(depth >> 8u), f32(depth & 255u), f32(kind), f32(flags)) / 255.0;
 }

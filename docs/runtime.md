@@ -1807,7 +1807,8 @@ snapshots are its. The renderer only draws again what it drew:
   measured every 3D point matches (Lahan: 41 640 matched, the 420 others 2D).
 - **PS1 renderer** (`xem_render::ps1::Ps1Renderer`, `draw.wgsl`). Draws the
   trace into a scaled picture of all of VRAM (colour, and an auxiliary target
-  with each pixel's GTE depth, class and baked-shading flag), so double
+  with each pixel's GTE depth, class, baked-shading flag and whether a
+  battle's sky drew it, `Primitive::backdrop`), so double
   buffering, the saved-screen slot and copies between screen regions work as
   on the console; textures are decoded in the shader from the native VRAM copy
   (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
@@ -3607,7 +3608,8 @@ camera of `--example motion` and the tests below drive it too.
   comes in the frame, what the game projects far behind its scene as its
   backdrop, a battle's sky (the port marks `battle_draw_stage_sky`'s
   projections `XEM_PROJECTION_BACKDROP`; the trace keeps them the world,
-  `Primitive::backdrop`, so the screen and its effects see no change), its
+  `Primitive::backdrop`, so the screen sees no change and its effects
+  only leave out their haze: [HD-2D effects](#hd-2d-effects)), its
   culled faces left out: the Mountain Path's random battle projects its sky
   11 913 to 16 366 deep before its sky bands and panorama; taken as the
   scene's start, the sky lay far beyond the table and the bands and
@@ -4779,7 +4781,23 @@ ten, is sky the game painted (Shevat's sea of
 clouds below its towers, the sky around each cloud; not the desert's
 floor, whose sand merely shares its clear's colour): it takes the cleared
 sky's place in the auxiliary target, without depth, so no light, shade or
-haze sets it apart from the sky it meets. The look aims at Square Enix's HD-2D (Final Fantasy
+haze sets it apart from the sky it meets. The clouds a battle's stage
+projects over its sky (`battle_draw_stage_sky`'s ceiling of textured
+tiles far behind the scene: `Primitive::backdrop`, bit 1 of the
+auxiliary target's flags) are the world to every effect but the haze:
+their texture fades into the flat band they are painted over, which keeps
+its colours, and hazed they turned grey against it. After field 198's
+narration (frame 4460, 1920x1080, wider) the clouds' mean gap between a
+pixel's strongest and weakest channel is 63 on the console and 60 under
+Modern; under HD-2D it was 39, now 64 (lit and graded, they stay darker
+than Modern's). They still count in the frame's average colour and
+depths, so the haze's tint and range and the exposure are as they were;
+brighter unhazed, they throw more bloom and light shafts on what stands
+before them (at frame 7400, up to 26 levels on the Gear's sides).
+`xem-render/tests/ps1.rs` `a_battles_sky_takes_the_effects_but_not_the_haze`
+and `xem-headless/tests/render.rs`
+`the_clouds_over_the_scene_after_field_198s_narration_take_no_haze`
+(local, disc 1) check it. The look aims at Square Enix's HD-2D (Final Fantasy
 Resonance's field and battle pictures: a sharp playfield with soft
 foreground and background, glowing lamps that light what is near them, airy
 distance haze, warm highlights and cool shadows). In order: the frame's

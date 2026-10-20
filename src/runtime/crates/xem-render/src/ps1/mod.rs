@@ -32,7 +32,8 @@ pub const VRAM_HEIGHT: u32 = 512;
 /// the console's DAC outputs them; alpha is the mask bit).
 pub const COLOR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 /// Per pixel: depth (r, g: 16 bits), class (b), flags (a: bit 0 baked
-/// shading; 255 a semi-transparent interface pixel).
+/// shading, bit 1 a battle's sky ([`Primitive::backdrop`]); 255 a
+/// semi-transparent interface pixel).
 pub const AUX_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
@@ -71,6 +72,10 @@ const FLAG_CLIP: u32 = 1 << 21;
 /// A diorama vertex of a sprite's billboard part, lifted by its `w` (world
 /// units) along the billboards' normal towards the side the eye sees.
 const FLAG_BILLBOARD: u32 = 1 << 22;
+/// Projected by the backdrop a battle draws far behind its scene, its sky
+/// ([`Primitive::backdrop`]): the world to the effects but for their haze,
+/// which the flat sky its clouds are painted over does not take.
+const FLAG_BACKDROP: u32 = 1 << 23;
 
 /// Which of the original GPU's limits a picture keeps. Each is independent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -993,6 +998,7 @@ impl<'a> Builder<'a> {
             (p.shape == Shape::Line, FLAG_LINE),
             (captured, FLAG_CAPTURE),
             (feedback.is_some(), FLAG_FEEDBACK),
+            (p.backdrop, FLAG_BACKDROP),
         ] {
             if on {
                 flags |= flag;
