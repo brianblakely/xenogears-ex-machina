@@ -1841,14 +1841,46 @@ fn a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_
     }
 }
 
+/// The address a pointer of the battle holds (`battle_ui`,
+/// `battle_window_rects[0]`, `battle_message_text_window->layout`).
+fn battle_pointer(session: &mut Session<NativeModule>, path: &str) -> u32 {
+    let reply = session.execute(&json!({"cmd": "inspect", "path": path}));
+    u32::from_str_radix(reply.as_str().expect("a pointer").trim_start_matches("0x"), 16).expect("hex")
+}
+
 /// The record a pointer global of the battle points to (`battle_ui`,
 /// `battle_window_rects[0]`), and the bytes there.
 fn battle_record(session: &mut Session<NativeModule>, path: &str, length: usize) -> Vec<u8> {
-    let reply = session.execute(&json!({"cmd": "inspect", "path": path}));
-    let address = u32::from_str_radix(reply.as_str().expect("a pointer").trim_start_matches("0x"), 16).expect("hex");
+    let address = battle_pointer(session, path);
     let mut bytes = vec![0; length];
     session.runtime.memory().read(address, &mut bytes).unwrap();
     bytes
+}
+
+/// The parts of a battle's script message by the packets they are drawn
+/// from, as 24-bit DMA addresses (a traced primitive's `source` holds its
+/// node's): battle window 0's block (`battle_window_blocks[0]`, 0x5A8
+/// bytes), the portrait's quads (`battle_state_of_event_script` +0x7A4, one
+/// per draw buffer), the message text window's own primitives and its
+/// lines' (`battle_message_text_window`, 0x90 bytes, and its `layout`, 0x60
+/// a line) and the cursor's parts (`battle_graphics` +0x27C8, two quads a
+/// part, one per draw buffer).
+fn battle_message_packets(session: &mut Session<NativeModule>) -> [Vec<std::ops::Range<u32>>; 4] {
+    let packets = |address: u32, length: u32| (address & 0xFF_FFFF)..(address & 0xFF_FFFF) + length;
+    let window = battle_pointer(session, "battle_window_blocks[0]");
+    let script = battle_pointer(session, "battle_state_of_event_script");
+    let text = battle_pointer(session, "battle_message_text_window");
+    let layout = battle_pointer(session, "battle_message_text_window->layout");
+    let lines = session.execute(&json!({"cmd": "inspect", "path": "battle_message_text_window->lines"})).as_u64().expect("lines") as u32;
+    let graphics = battle_pointer(session, "battle_graphics");
+    // `battle_ui.cursorParts`.
+    let parts = u32::from_le_bytes(battle_record(session, "battle_ui", 0x104)[0x100..].try_into().unwrap());
+    [
+        vec![packets(window, 0x5A8)],
+        vec![packets(script + 0x7A4, 2 * 0x28)],
+        vec![packets(text, 0x90), packets(layout, lines * 0x60)],
+        vec![packets(graphics + 0x27C8, parts * 2 * 0x28)],
+    ]
 }
 
 /// Battle window 0's area on the original screen while a battle's event
@@ -1865,13 +1897,14 @@ fn battle_message_area(session: &mut Session<NativeModule>) -> [i32; 4] {
 /// battle selector's third event file's formation 0 (Lahan's Gears), Fei's
 /// "Reinforcements, huh?!" in battle window 0 with his portrait, waiting for
 /// Confirm with its cursor. The battle's interface context shows the
-/// message; its window, portrait, text and cursor are traced as the
-/// dialogue's, all within the window. Held hidden, the frames presented
-/// wider and interpolated (and in HD-2D) differ from those shown only
-/// within the window (under HD-2D, by more than the few levels its exposure
-/// eases); let go, the window shows again. The game ends at the RAM, VRAM,
-/// sound, time and whole state of the same frames run with nothing
-/// presented.
+/// message; its window, portrait, text and cursor (told apart by the
+/// packets they are drawn from) are each traced as the dialogue's, every
+/// primitive drawn from them and none from elsewhere, all within the
+/// window. Held hidden, the frames presented wider and interpolated (and in
+/// HD-2D) differ from those shown only within the window (under HD-2D, by
+/// more than the few levels its exposure eases); let go, the window shows
+/// again. The game ends at the RAM, VRAM, sound, time and whole state of the
+/// same frames run with nothing presented.
 #[test]
 fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and_the_game_as_it_is() {
     use xem_core::context::Context;
@@ -1895,19 +1928,21 @@ fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and
     assert!(before > 300, "the battle shows no message before ({before} frames)");
     assert!(session.execute(&json!({"cmd": "frames", "count": 30})).get("error").is_none());
     let area = battle_message_area(&mut session);
+    let packets = battle_message_packets(&mut session);
     let initial = session.snapshot_bytes().unwrap();
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     const PLAYED: u64 = 60;
     const HIDDEN: std::ops::Range<u64> = 20..40;
     // The frames with Select held throughout, presented under `graphics`
     // (with the window hidden for `HIDDEN` when `hide`) or not: the
-    // pictures of frames 30 and 50, the primitives traced as the dialogue's
-    // and those outside the window, the frames the context showed the
-    // message, and the state.
+    // pictures of frames 30 and 50; the primitives drawn from each of the
+    // message's parts traced as the dialogue's, and not; those traced as the
+    // dialogue's drawn from elsewhere and those outside the window; the
+    // frames the context showed the message, and the state.
     let play = |session: &mut Session<NativeModule>, graphics: Option<Graphics>, hide: bool| {
         session.restore_bytes(&initial).unwrap();
         let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-        let (mut pictures, mut marked, mut outside, mut shown) = (Vec::new(), 0, 0, 0);
+        let (mut pictures, mut marked, mut unmarked, mut elsewhere, mut outside, mut shown) = (Vec::new(), [0; 4], [0; 4], 0, 0, 0);
         for n in 0..PLAYED {
             session.execute(&json!({"cmd": "pad", "buttons": ["select"]}));
             shown += u32::from(matches!(session.runtime.context(), Context::Battle { message: true, .. }));
@@ -1926,10 +1961,19 @@ fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and
             let trace = device.take_trace();
             for op in &trace.ops {
                 let TraceOp::Draw(p) = op else { continue };
+                let part = packets.iter().position(|ranges| ranges.iter().any(|r| r.contains(&(p.source >> 8))));
+                match (part, p.dialogue) {
+                    (Some(part), true) => marked[part] += 1,
+                    // The first two frames' walks draw what was built before
+                    // the view turned the trace on, whose records it did not
+                    // keep.
+                    (Some(part), false) if n >= 2 => unmarked[part] += 1,
+                    (None, true) => elsewhere += 1,
+                    _ => {}
+                }
                 if !p.dialogue {
                     continue;
                 }
-                marked += 1;
                 let (dx, dy) = (i32::from(p.environment.offset.0), i32::from(p.environment.offset.1));
                 if !p.vertices[..p.vertex_count()].iter().all(|v| (area[0]..=area[2]).contains(&(v.x - dx)) && (area[1]..=area[3]).contains(&(v.y - dy))) {
                     outside += 1;
@@ -1951,7 +1995,7 @@ fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and
             session.runtime.services().gpu.device().save(),
             session.runtime.services().spu.chip().save(),
             session.runtime.services().clock.now);
-        (state, pictures, marked, outside, shown, whole(session))
+        (state, pictures, (marked, unmarked, elsewhere), outside, shown, whole(session))
     };
     let (original, _, _, _, shown, unseen) = play(&mut session, None, false);
     assert_eq!(shown, PLAYED as u32, "the message shows throughout");
@@ -1959,7 +2003,7 @@ fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and
         ("wider", Graphics { widescreen: true, interpolation: true, ..Default::default() }, 0),
         ("hd2d", Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() }, 3),
     ] {
-        let (drawn, with, marked, outside, _, _) = play(&mut session, Some(graphics), false);
+        let (drawn, with, (marked, unmarked, elsewhere), outside, _, _) = play(&mut session, Some(graphics), false);
         let (hidden, without, _, _, _, hid) = play(&mut session, Some(graphics), true);
         if let Some(directory) = std::env::var_os("XEM_DIALOGUE_CAPTURE") {
             std::fs::create_dir_all(&directory).unwrap();
@@ -1973,9 +2017,11 @@ fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and
                 }
             }
         }
-        eprintln!("{name}: {marked} primitives traced as the dialogue's in {PLAYED} frames, {outside} outside its window {area:?}");
-        // The window's pieces, the portrait, the text's lines and the cursor, each frame.
-        assert!(marked > 10 * PLAYED as usize, "{name}: the message's window, portrait, text and cursor each frame ({marked})");
+        eprintln!("{name}: {} primitives traced as the dialogue's in {PLAYED} frames (the window's, the portrait's, the text's and the cursor's {marked:?}, \
+                   {elsewhere} from elsewhere), {outside} outside its window {area:?}", marked.iter().sum::<usize>() + elsewhere);
+        assert!(marked.iter().all(|&count| count > 0), "{name}: the message's window, portrait, text and cursor are each the dialogue's ({marked:?})");
+        assert_eq!(unmarked, [0; 4], "{name}: from the third frame, so is every primitive drawn from them");
+        assert_eq!(elsewhere, 0, "{name}: and none drawn from elsewhere");
         assert_eq!(outside, 0, "{name}: the dialogue's primitives lie within its window");
         let ((width, height), shown_pixels, display) = &with[0];
         let scale = *height as f32 / display.height as f32;
@@ -2194,10 +2240,12 @@ fn a_dialogue_held_hidden_stays_hidden_as_the_trace_restarts_and_after_a_loaded_
     assert_eq!(built, 1, "one state was saved between building a frame and drawing it");
 }
 
-/// A held rewind's steps over a dialogue held hidden: each takes a state off
-/// the queue and plays on until the display shows a frame both built and
-/// drawn since (`Session::rewind_step`), so each step's picture leaves the
-/// window out.
+/// A held rewind's steps over a dialogue held hidden, from states a second
+/// apart, the newest almost a second old: each takes a state off the queue
+/// and plays on until the display shows a frame both built and drawn since
+/// (`Session::rewind_step`), so each step's picture leaves the window out.
+/// A first step from a younger state can stop short of such a frame
+/// (docs/runtime.md, Hiding a dialogue).
 #[test]
 fn held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows() {
     let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };

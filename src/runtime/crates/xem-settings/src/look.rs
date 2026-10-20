@@ -141,9 +141,9 @@ pub fn turns(on: bool, field: FieldControls) -> bool {
 
 /// How long a gamepad's Back is held alone before it hides a dialogue's
 /// windows, in milliseconds: Back begins the app chords (Back+Start opens
-/// Settings, Back+South saves a state, Back+North loads one, ...), whose
-/// second button lands within it, so a chord leaves the windows as they
-/// were.
+/// Settings, Back+South saves a state, Back+North loads one, ...), and a
+/// chord whose second button lands within it leaves the windows as they
+/// were (one slower hides them until that button lands).
 pub const BACK_HIDES_AFTER_MS: f64 = 150.0;
 
 /// Whether a dialogue's windows are left out of the picture (the view's

@@ -3163,18 +3163,18 @@ controller's Back being its right stick's click. Back plus a face button,
 Start, R1 or a trigger runs the app chords (Back+South saves a state,
 Back+North loads one, Back+East and Back+West toggle rewind and
 auto-advance, Back+Start opens Settings, Back+LT rewinds, Back+RT
-fast-forwards, Back+R1 toggles first person): their second button lands
-within that time, so a chord leaves the windows as they were, and pressed
-while they are hidden it shows them again and runs its action. Once
-hidden, they stay hidden while Select is held, whatever the interface
-then: the display shows a frame while the game draws the next, so a
-window's last frames show after it has closed (three each time on field
-12's conversation), and a window opening next is hidden from its first
-frame (`look::DialogueHiding`, on desktop, Android, the browser and
-headsets alike). A gamepad's Back held over a dialogue and let go once the
-player walks again toggles no first-person view (`look::Toggle` counts a
-Back press only where Select toggles throughout). Settings' Controls
-section lists it as Hide dialogue (held).
+fast-forwards, Back+R1 toggles first person): a chord whose second button
+lands within that time leaves the windows as they were, and one whose
+second button comes later, once Back alone has hidden them, shows them
+again as it runs its action. Once hidden, they stay hidden while Select is
+held, whatever the interface then: the display shows a frame while the
+game draws the next, so a window's last frames show after it has closed
+(three each time on field 12's conversation), and a window opening next is
+hidden from its first frame (`look::DialogueHiding`, on desktop, Android,
+the browser and headsets alike). A gamepad's Back held over a dialogue and
+let go once the player walks again toggles no first-person view
+(`look::Toggle` counts a Back press only where Select toggles throughout).
+Settings' Controls section lists it as Hide dialogue (held).
 
 It is presentation only: the game gets Select as it does without
 (`look::game_buttons` takes it only where it toggles first-person
@@ -3191,12 +3191,12 @@ and the field's scripts test the held buttons (`31` and its kin;
 when Select is held at one step of its state). The windows' own code
 (`field_dialogue_draw_windows`, `field_dialogue_update_choice`) reads only
 Circle and the directions. A battle reads Select in its turns
-(`battle_read_input`: input code 0xD, and on a debug build the party's AP
-refilled), whose interface draws no script message; the script's frame
-mode, which draws them, reads Circle (a message's wait ends) and Start
-(the pause, while the turns run) alone (`battle_tick_event_script`), and
-of the script's opcodes only the message's reads its input (`ovl3087`:
-Circle's code, 4).
+(`battle_read_input`: input code 0xD), whose interface draws no script
+message; the script's frame mode, which draws them, reads Circle (a
+message's wait ends), Start (the pause, while the turns run) and, paused
+on a debug build, L1 with R1 (the battle ends), never Select
+(`battle_tick_event_script`), and of the script's opcodes only the
+message's reads its input (`ovl3087`: Circle's code, 4).
 
 The field's windows are drawn and advanced in one pass
 (`field_dialogue_draw_windows`, 8008004C: it ends a window's wait on
@@ -3245,12 +3245,13 @@ again without them:
 - A view's first frames, until its trace has drawn a frame (a session's
   start, the Original renderer left for Ex Machina), show the windows.
 - A state loaded (Load state, an agent's `state_load`) shows them in its
-  first frames: three, from the loaded VRAM (drawn before the state was
-  saved), and when the state was saved between the field building a frame
-  and drawing it, one frame (two vertical blanks) more, that frame, whose
-  records were made before the save (a state holds the game, not the
-  presentation's records: `Gpu::keep_presentation` starts the trace afresh).
-  From the first frame the game builds after the load, they are hidden.
+  first frames presented: three from the loaded VRAM (drawn before the
+  state was saved), or, when the state was saved between the field building
+  a frame and drawing it, two from VRAM and then that frame for its two
+  vertical blanks, its records made before the save (a state holds the
+  game, not the presentation's records: `Gpu::keep_presentation` starts the
+  trace afresh). From the first frame the game builds after the load, they
+  are hidden.
 - A host restarting its trace (a view that needs all of VRAM again: a new
   scale, more frames run than presented) keeps the runs recorded for the
   walk to come, so a restart between a frame's records and its walk hides
@@ -3259,9 +3260,15 @@ again without them:
   frames presented next show VRAM's picture with the windows, three or
   four, until the next frame the game draws shows.
 
-A held rewind's steps hide them throughout: each plays on from its state
-until the display shows a frame both built and drawn since
-(`Session::rewind_step`), whose records are its own.
+A held rewind's steps hide them, but the first not always: each plays on
+from its state until the display shows a frame both built and drawn since
+(`Session::rewind_step`), whose records are its own, yet never as far as
+where the game was. The first takes the newest state before the frame the
+game is at, and when fewer than three of the display's buffer changes came
+between that state and the frame before the game's, it stops short of
+such a frame, and its picture, VRAM's or a frame built before the state,
+can show the windows. Each later step goes back a whole interval and hides
+them.
 
 Other modes' text windows (the world map's place names; Battling's
 messages and choices) draw their text through the same resident window
@@ -3311,10 +3318,14 @@ with nothing presented, but for 40 bytes of dead stack,
 (the debug battle selector's third event file's formation 0, Lahan's Gears:
 Fei's "Reinforcements, huh?!" with his portrait, waiting for Confirm, 60
 frames with Select held, hidden for 20: 1 044 primitives traced as the
-dialogue's, all within window 0; held hidden, 200 109 pixels of the
-1536x864 picture differ, none beyond the window, under HD-2D 203 928 by
-more than three levels; the battle's state as with nothing presented, but
-for 157 bytes of dead stack),
+dialogue's, told apart by the packets they were drawn from, window 0's 754
+(its four corners, eight edge pieces and shade each frame), the portrait's
+58, the text's 174 and the cursor's 58, from the third frame on every
+primitive drawn from those packets (the first two frames draw what was
+built before the trace was on) and none from elsewhere, all within window
+0; held hidden, 200 109 pixels of the 1536x864 picture differ, none beyond
+the window, under HD-2D 203 928 by more than three levels; the battle's
+state as with nothing presented, but for 157 bytes of dead stack),
 `a_conversation_held_hidden_stays_hidden_as_its_windows_close_and_the_next_open`
 (field 12's conversation, Select held as the hosts hold it and Confirm
 pressed at each prompt: three windows closed, the nine frames presented
@@ -3323,8 +3334,10 @@ until let go),
 `a_dialogue_held_hidden_stays_hidden_as_the_trace_restarts_and_after_a_loaded_states_first_frames`
 (restarted after frames 14 to 17, every frame hidden, after 27 and 28 three
 and four frames from VRAM; states saved after a walk and between building
-and drawing a frame loaded: three frames and four) and
-`held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows`.
+and drawing a frame loaded: three frames from VRAM, and two from VRAM then
+two of the frame built before the save) and
+`held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows`
+(four steps from states a second apart, the newest almost a second old).
 
 ### Camera records
 
