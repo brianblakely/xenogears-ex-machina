@@ -177,7 +177,7 @@ typedef struct {
 /* The `around` bits: the view looks around from the field's controlled
  * character (first-person inspection: sprites are drawn again facing its
  * eyes, sprite_facing.c), or from anywhere around the scene (a diorama:
- * the battle's and the world map's cameras are recorded too). */
+ * the battle's stage and the world map's ground are recorded too). */
 enum {
     XEM_AROUND_LOOK = 1,
     XEM_AROUND_ANYWHERE = 2,
@@ -198,27 +198,40 @@ typedef struct {
 } XemCaptureArea;
 
 /* What a non-drawn point in the ring is: the floor under a sprite
- * (present.c), the depth of the field camera's target, and, while the host
- * looks from within or around the scene (`around`), the camera the frame is
- * drawn with, in this order: the world's x, y and z axes through its
- * rotation (AXIS entries, `view` the matrix's column in 4.12, times the
- * field's scale in a field; `owner` the axis, 0-2), its translation (an
- * AXIS entry owned by 3), and the point it looks at in the same world
- * units (CAMERA: `view` the point, `sz` its depth, `owner` the mode,
- * XEM_CAMERA_*), so that a point's view is the rotation times the world
- * point, shifted 12 bits, plus the translation; then, in a field, the
- * controlled character's position through the camera (EYE, its sprite the
- * owner). The world map's camera maps points relative to the camera's
- * target, its z negated, as the world map places its objects
- * (worldmap_present.c): its target is (0, the target's height, 0), and
- * before it comes the ground under the target (a STAGE entry owned by
- * XEM_STAGE_GROUND: `view` (0, the ground's height, 0)), which lies below
- * a target in flight. Before a battle's camera comes its stage
- * (battle_present.c), in the battle's world: each combatant the battle
- * shows (STAGE: `view` its sprite's place, `sz` its height, `owner` its
- * slot, 0-10), then the scene's start view, the camera the battle begins
- * with (STAGE entries owned by XEM_STAGE_LOOK_AT, its look-at, `sz` 1 once
- * the battle's turns run after its opening, and XEM_STAGE_EYE, its eye). */
+ * (present.c), the depth of the field camera's target, the transform each
+ * model and sprite is drawn with, and the camera each frame of a field, a
+ * battle or the world map is drawn with. A transform (present.c) is four
+ * PLACEMENT entries the model or sprite owns, made before it projects
+ * anything: its x, y and z axes through the rotation (`sz` 0-2, `view` the
+ * matrix's column in 4.12) and its translation (`sz` 3), so that a point's
+ * view is the rotation times its local point, shifted 12 bits, plus the
+ * translation; for a model, the translation's `x` is the packet buffer it
+ * is drawn into and `y` the size of one (an instance's two buffers are one
+ * block, model_alloc_packet_buffers, so its draws alternate between two
+ * buffers that far apart). A camera comes in this order: the world's x, y
+ * and z axes through its rotation (AXIS entries, `view` the matrix's column
+ * in 4.12, times the field's scale in a field; `owner` the axis, 0-2), its
+ * translation (an AXIS entry owned by 3), and the point it looks at in the
+ * same world units (CAMERA: `view` the point, `sz` its depth, `owner` the
+ * mode, XEM_CAMERA_*, plus the host's `around` bits as it was recorded,
+ * shifted 8 bits), so that a point's view is the rotation times the world
+ * point, shifted 12 bits, plus the translation; then, while the host looks
+ * from within or around the scene (`around`), in a field, the controlled
+ * character's position through the camera (EYE, its sprite the owner). The
+ * world map's camera maps points relative to the camera's target, its z
+ * negated, as the world map places its objects (worldmap_present.c): its
+ * target is (0, the target's height, 0), and before it comes the world's
+ * point there (a STAGE entry owned by XEM_STAGE_ORIGIN: `view` the target's
+ * x, 0 and its z negated, in whole units, as the objects are placed
+ * relative to it) and, for a view from anywhere, the ground under the
+ * target (a STAGE entry owned by XEM_STAGE_GROUND: `view` (0, the ground's
+ * height, 0)), which lies below a target in flight. Before a battle's
+ * camera comes, for a view from anywhere, its stage (battle_present.c), in
+ * the battle's world: each combatant the battle shows (STAGE: `view` its
+ * sprite's place, `sz` its height, `owner` its slot, 0-10), then the
+ * scene's start view, the camera the battle begins with (STAGE entries
+ * owned by XEM_STAGE_LOOK_AT, its look-at, `sz` 1 once the battle's turns
+ * run after its opening, and XEM_STAGE_EYE, its eye). */
 enum {
     XEM_PROJECTION_GROUND = 3,
     XEM_PROJECTION_FOCUS = 4,
@@ -226,6 +239,7 @@ enum {
     XEM_PROJECTION_EYE = 7,
     XEM_PROJECTION_CAMERA = 8,
     XEM_PROJECTION_STAGE = 9,
+    XEM_PROJECTION_PLACEMENT = 11,
 };
 
 /* A CAMERA entry's owner: which of the game's 3D modes drew the frame. */
@@ -236,11 +250,13 @@ enum {
 };
 
 /* The start view's points among a battle's STAGE entries (owners past the
- * eleven slots), and the world map's ground under its camera's target. */
+ * eleven slots), and the world map's ground under its camera's target and
+ * world point at that target. */
 enum {
     XEM_STAGE_LOOK_AT = 16,
     XEM_STAGE_EYE = 17,
     XEM_STAGE_GROUND = 18,
+    XEM_STAGE_ORIGIN = 19,
 };
 
 #ifdef __psx__

@@ -1021,6 +1021,46 @@ fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other
 }
 
 #[test]
+fn a_placement_comes_before_its_owners_primitives_which_hold_its_number() {
+    use xem_gpu::{CameraMode, Projection, Reveals, SxyStore, TraceOp};
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let entry = |class: u8, sz: u16, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 120), h: 256, owner, view };
+    let unit = |k: usize| std::array::from_fn(|i| if i == k { 4096 } else { 0 });
+    // A model's placement (its rotation's columns, then its translation with
+    // its packet buffer and that buffer's size), then a triangle it projects
+    // and one of the world, owned by nothing; then the world map's point at
+    // its target and its camera, made while the host looked from anywhere.
+    let model = 0x8012_3450;
+    let mut records: Vec<Projection> = (0..3).map(|k| entry(11, k as u16, model, unit(k))).collect();
+    records.push(Projection { x: 0x8014_0000u32 as i32, y: 0x200, ..entry(11, 3, model, [40, 0, 1000]) });
+    let point = |class: u8, owner: u32, x: i32, y: i32| Projection { sxy: xy(x, y), sz: 1000, class, x: x << 16, y: y << 16, offset: (160, 120), h: 256, owner, view: [x, y, 1000] };
+    records.extend([(1, model, 10, 20), (1, model, 40, 60), (1, model, 5, 50), (0, 0, 110, 20), (0, 0, 140, 60), (0, 0, 105, 50)].map(|(c, o, x, y)| point(c, o, x, y)));
+    records.push(entry(9, 0, 19, [26240, 0, -10752]));
+    records.extend((0..3).map(|k| entry(6, 0, k as u32, unit(k))));
+    records.push(entry(6, 0, 3, [0, 0, 3000]));
+    records.push(entry(8, 640, 3 | u32::from(Reveals::ANYWHERE) << 8, [0, -472, 0]));
+    // Each packet's vertex words follow its header and command word.
+    let stores: Vec<SxyStore> = (0..6).map(|i| SxyStore { address: 0x1008 + (i / 3) * 0x100 + (i % 3) * 4, value: records[4 + i as usize].sxy, source: Some(4 + i) }).collect();
+    gpu.trace_projections(0, &records, &stores, &[]);
+    ram.node(0x1000, 0x1100, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
+    ram.node(0x1100, 0xFF_FFFF, &[0x2000_FFFF, xy(110, 20), xy(140, 60), xy(105, 50)]);
+    gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+    let trace = gpu.take_trace();
+    let placements: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Placement(p) = op { Some(*p) } else { None }).collect();
+    assert_eq!(placements.len(), 1, "one placement: {placements:?}");
+    let placed = placements[0];
+    assert_eq!((placed.owner, placed.packets, placed.size, placed.translation), (model, 0x8014_0000, 0x200, [40.0, 0.0, 1000.0]));
+    assert_eq!(placed.axes, [[4096.0, 0.0, 0.0], [0.0, 4096.0, 0.0], [0.0, 0.0, 4096.0]], "the rotation's columns");
+    let drawn: Vec<(u32, u32)> = trace.ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.owner, p.placement)) } else { None }).collect();
+    assert_eq!(drawn, [(model, placed.seq), (0, 0)], "the model's triangle holds its placement, the world's none");
+    let camera = trace.ops.iter().find_map(|op| if let TraceOp::Camera(c) = op { Some(**c) } else { None }).expect("the world map's camera");
+    assert_eq!((camera.mode, camera.origin, camera.around), (CameraMode::Worldmap, [26240.0, 0.0, -10752.0], Reveals::ANYWHERE));
+}
+
+#[test]
 fn a_traced_op_takes_no_more_room_than_a_drawn_primitive() {
     // Every op of a trace, of a renderer's logs and of its replays is as
     // large as the largest kind of op, on every host and in every mode: the

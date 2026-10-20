@@ -86,10 +86,9 @@ pub struct Reveals {
     pub pull_back: u32,
     /// Whether the view looks from within or around the scene, as the
     /// port's `around` bits ([`Reveals::LOOK`], [`Reveals::ANYWHERE`]; 0
-    /// from the game's camera): every face counts wherever it lies, and the
-    /// port records the camera each frame is drawn with ([`TraceOp::Camera`])
-    /// and, in a field, where the controlled character stands
-    /// ([`TraceOp::Eye`]).
+    /// from the game's camera): every face counts wherever it lies, the
+    /// cameras the port records say so ([`Camera::around`]), and in a field
+    /// it records where the controlled character stands ([`TraceOp::Eye`]).
     pub around: u8,
 }
 
@@ -100,7 +99,7 @@ impl Reveals {
     pub const LOOK: u8 = 1;
     /// [`Reveals::around`]: the view looks from anywhere around a field, a
     /// battle or the world map (a diorama); the port also records the
-    /// battle's and the world map's cameras.
+    /// battle's stage and the world map's ground before their cameras.
     pub const ANYWHERE: u8 = 2;
 }
 
@@ -117,14 +116,14 @@ pub struct Eye {
     pub sprite: u32,
 }
 
-/// The camera the game draws a frame with, as the port records it while the
-/// view looks from within or around the scene ([`Reveals::around`]): the
-/// world's x, y and z axes through its rotation (its matrix's columns in
-/// 4.12, times the field's scale in a field) and its translation, so that a
-/// world point's view-space point (the space of [`TraceVertex::view`]) is
-/// `axes · point / 4096 + translation`; the point it looks at, in the same
-/// world units (`target`), and that point's depth through it (`focus`). A
-/// battle's carries its stage, recorded just before it (`stage`); the world
+/// The camera the game draws a frame of a field, a battle or the world map
+/// with, as the port records it: the world's x, y and z axes through its
+/// rotation (its matrix's columns in 4.12, times the field's scale in a
+/// field) and its translation, so that a world point's view-space point (the
+/// space of [`TraceVertex::view`]) is `axes · point / 4096 + translation`;
+/// the point it looks at, in the same world units (`target`), and that
+/// point's depth through it (`focus`). A battle's carries its stage,
+/// recorded just before it for a view from anywhere (`stage`); the world
 /// map's the ground's height under its target (`ground`, y down: below a
 /// target in flight), likewise.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -136,6 +135,36 @@ pub struct Camera {
     pub mode: CameraMode,
     pub stage: Option<Stage>,
     pub ground: Option<f32>,
+    /// Where its world lies in the game's: the world map places points
+    /// relative to its camera's target (the target's x, 0 and z negated, in
+    /// whole units), so a point of the world lies at its world point plus
+    /// this in every frame; 0 elsewhere.
+    pub origin: [f32; 3],
+    /// [`Reveals::around`] as the port recorded it: a frame recorded looking
+    /// from within or around the scene holds culled faces from anywhere.
+    pub around: u8,
+}
+
+/// The transform the game draws a model or a sprite's parts with, as the
+/// port records it before they project anything ([`TraceOp::Placement`]):
+/// its local x, y and z axes through the rotation (the matrix's columns,
+/// 4.12) and its translation, so that a local point's view-space point is
+/// `axes · point / 4096 + translation`.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Placement {
+    /// Its number in the trace (from 1), which its primitives hold
+    /// ([`Primitive::placement`]).
+    pub seq: u32,
+    /// The model or sprite (game address): its primitives' owner.
+    pub owner: u32,
+    /// For a model, the packet buffer it is drawn into and the size of
+    /// one: an instance's two buffers are one block
+    /// (model_alloc_packet_buffers), so its draws alternate between buffers
+    /// `size` apart. 0 for a sprite, the owner of its own parts.
+    pub packets: u32,
+    pub size: u32,
+    pub axes: [[f32; 3]; 3],
+    pub translation: [f32; 3],
 }
 
 /// A battle's stage, as the port records it before the battle's camera
@@ -173,14 +202,15 @@ pub enum CameraMode {
     Battle,
     /// The world map: points relative to the camera's target, z negated, as
     /// the world map places them (`worldmap_camera_matrix`, looking at the
-    /// target: (0, its height, 0)).
+    /// target: (0, its height, 0); [`Camera::origin`]).
     Worldmap,
 }
 
 impl CameraMode {
-    /// The mode a camera record's owner names (xem/gte.h `XEM_CAMERA_*`).
+    /// The mode a camera record's owner names (xem/gte.h `XEM_CAMERA_*`,
+    /// below the host's `around` bits).
     fn from_owner(owner: u32) -> Option<CameraMode> {
-        match owner {
+        match owner & 0xFF {
             1 => Some(CameraMode::Field),
             2 => Some(CameraMode::Battle),
             3 => Some(CameraMode::Worldmap),
@@ -282,27 +312,44 @@ pub enum Class {
 /// Ring entries that are not drawn points (xem/gte.h): the floor under a
 /// sprite, the depth of the field camera's target, the world's axes through
 /// a camera and its translation (an axis owned by [`TRANSLATION`]), the
-/// point that camera looks at, and the controlled character's position
-/// through the field camera.
+/// point that camera looks at, the controlled character's position through
+/// the field camera, and a model's or sprite's axes and translation (its
+/// `sz` the axis, [`TRANSLATION`] for the translation).
 const GROUND: u8 = 3;
 const FOCUS: u8 = 4;
 const AXIS: u8 = 6;
 const EYE: u8 = 7;
 const CAMERA: u8 = 8;
 const STAGE: u8 = 9;
+const PLACEMENT: u8 = 11;
 const TRANSLATION: u32 = 3;
 /// A battle's stage entries past its slots: the start view's look-at and
-/// eye; and the world map's ground under its camera's target (xem/gte.h
-/// `XEM_STAGE_*`).
+/// eye; and the world map's ground under its camera's target and world
+/// point there (xem/gte.h `XEM_STAGE_*`).
 const STAGE_LOOK_AT: u32 = 16;
 const STAGE_EYE: u32 = 17;
 const STAGE_GROUND: u32 = 18;
+const STAGE_ORIGIN: u32 = 19;
 /// Points the interface projects (xem/gte.h: the world map's player marker),
 /// traced as interface: flat, at the original's whole pixels.
 const INTERFACE: u8 = 5;
 /// Points of the backdrop a battle draws far behind its scene (xem/gte.h:
 /// its sky), traced as the world ([`Primitive::backdrop`]).
 const BACKDROP: u8 = 10;
+
+/// What a traced point's projection tells of its primitive: what drew it,
+/// the GTE's screen offset and projection distance, the owner, its depth,
+/// whether the backdrop drew it, and the owner's placement then.
+#[derive(Clone, Copy)]
+struct Projected {
+    class: Class,
+    offset: (i16, i16),
+    h: u16,
+    owner: u32,
+    sz: u16,
+    backdrop: bool,
+    placement: u32,
+}
 
 impl Class {
     fn from_projection(class: u8) -> Class {
@@ -390,6 +437,9 @@ pub struct Primitive {
     pub projection: Option<((i16, i16), u16)>,
     /// The sprite or model (game address) that projected it, 0 if none.
     pub owner: u32,
+    /// The transform the owner projected it with: the [`Placement::seq`]
+    /// of the port's record of it (0 for none).
+    pub placement: u32,
     /// Where the command came from: the DMA list node's address (bits 8-31)
     /// and the primitive's index in it (bits 0-7), or 0 for words the CPU
     /// wrote.
@@ -522,13 +572,15 @@ pub enum TraceOp {
     /// [`Reveals::around`]), in order with the commands: the port records
     /// it as it builds the frame.
     Eye(Eye),
-    /// The camera the game draws its next frame with (while the view looks
-    /// from within or around the scene: [`Reveals::around`]), in order with
-    /// the commands: the port records it as it builds the frame. Boxed: with
-    /// a battle's stage it is larger than a primitive, and every op of a
-    /// trace, of a renderer's logs and of its replays is as large as the
-    /// largest kind of op.
+    /// The camera the game draws its next frame of a field, a battle or the
+    /// world map with, in order with the commands: the port records it as
+    /// it builds the frame. Boxed: with a battle's stage it is larger than a
+    /// primitive, and every op of a trace, of a renderer's logs and of its
+    /// replays is as large as the largest kind of op.
     Camera(Box<Camera>),
+    /// The transform a model or a sprite's parts of the frame the game
+    /// builds next are drawn with, in order with the commands.
+    Placement(Placement),
 }
 
 /// A movie macroblock as the MDEC decoded it, before its conversion to RGB:
@@ -603,6 +655,17 @@ pub(crate) struct Recorder {
     translation: [f32; 3],
     stage: Option<Stage>,
     ground: Option<f32>,
+    origin: Option<[f32; 3]>,
+    /// Each history projection's placement ([`Primitive::placement`], 0
+    /// none), the placements recorded so far, the axes of the one being
+    /// recorded, the newest of each sprite or model (by owner), and the
+    /// owner the last projection took one for, with it (runs of projections
+    /// share their owner).
+    placed: Vec<u32>,
+    placements: u32,
+    placement_axes: [[f32; 3]; 3],
+    placed_by: WordMap<u32>,
+    last_placed: (u32, u32),
     /// The age of culled faces: vertical blanks after which the port had
     /// recorded something new. A game that records nothing (paused) holds
     /// its last list and its faces with it.
@@ -687,6 +750,7 @@ impl Recorder {
         self.recorded |= !projections.is_empty() || !reveals.is_empty();
         if self.history.is_empty() {
             self.history = vec![Projection::default(); HISTORY];
+            self.placed = vec![0; HISTORY];
             self.stored = vec![(0, 0); RAM_WORDS];
         }
         if first != self.history_end {
@@ -710,21 +774,46 @@ impl Recorder {
                     }
                 }
                 CAMERA => {
-                    // A battle's stage, or the world map's ground, comes
-                    // just before its camera.
-                    let (stage, ground) = (self.stage.take(), self.ground.take());
+                    // A battle's stage, or the world map's ground and world
+                    // point, comes just before its camera.
+                    let (stage, ground, origin) = (self.stage.take(), self.ground.take(), self.origin.take());
                     if let Some(mode) = CameraMode::from_owner(projection.owner) {
                         let target = projection.view.map(|c| c as f32);
                         let stage = stage.filter(|_| mode == CameraMode::Battle);
                         let ground = ground.filter(|_| mode == CameraMode::Worldmap);
-                        let camera = Camera { axes: self.axes, translation: self.translation, target, focus: f32::from(projection.sz), mode, stage, ground };
+                        let origin = origin.filter(|_| mode == CameraMode::Worldmap).unwrap_or_default();
+                        let around = (projection.owner >> 8) as u8;
+                        let camera = Camera { axes: self.axes, translation: self.translation, target, focus: f32::from(projection.sz), mode, stage, ground, origin, around };
                         self.ops.push(TraceOp::Camera(Box::new(camera)));
+                    }
+                }
+                PLACEMENT => {
+                    let view = projection.view.map(|c| c as f32);
+                    match self.placement_axes.get_mut(usize::from(projection.sz)) {
+                        Some(axis) => *axis = view,
+                        None if u32::from(projection.sz) == TRANSLATION => {
+                            self.placements = self.placements.wrapping_add(1).max(1);
+                            let seq = self.placements;
+                            self.placed_by.insert(projection.owner, seq);
+                            self.last_placed = (projection.owner, seq);
+                            self.ops.push(TraceOp::Placement(Placement {
+                                seq,
+                                owner: projection.owner,
+                                packets: projection.x as u32,
+                                size: projection.y as u32,
+                                axes: self.placement_axes,
+                                translation: view,
+                            }));
+                        }
+                        None => {}
                     }
                 }
                 STAGE => {
                     let point = projection.view.map(|c| c as f32);
                     if projection.owner == STAGE_GROUND {
                         self.ground = Some(point[1]);
+                    } else if projection.owner == STAGE_ORIGIN {
+                        self.origin = Some(point);
                     } else {
                         let stage = self.stage.get_or_insert_with(Stage::default);
                         match projection.owner {
@@ -744,7 +833,18 @@ impl Recorder {
                 }
                 _ => {}
             }
+            // A model's or sprite's points take its newest placement.
+            let placed = match Class::from_projection(projection.class) {
+                Class::Model | Class::Sprite if projection.owner != 0 => {
+                    if self.last_placed.0 != projection.owner {
+                        self.last_placed = (projection.owner, self.placed_by.get(&projection.owner).copied().unwrap_or(0));
+                    }
+                    self.last_placed.1
+                }
+                _ => 0,
+            };
             self.history[self.history_end as usize % HISTORY] = *projection;
+            self.placed[self.history_end as usize % HISTORY] = placed;
             self.history_end = self.history_end.wrapping_add(1);
         }
         self.history_len = (self.history_len as usize + projections.len()).min(HISTORY) as u32;
@@ -784,15 +884,16 @@ impl Recorder {
                 age >= 1 && age <= len
             });
         }
+        // Owners of other scenes' placements, long gone.
+        if self.placed_by.len() > 4096 {
+            let newest = self.placements;
+            self.placed_by.retain(|_, seq| newest.wrapping_sub(*seq) < 4096);
+        }
     }
 
-    /// The projection that made the point `word`, the `at`th word of the
-    /// command (its `vertex`th point): the one stored at the word's address
-    /// while the word still holds it, or a culled face's own.
-    fn point(&self, word: u32, at: usize, vertex: usize) -> Option<&Projection> {
-        self.point_index(word, at, vertex).and_then(|index| self.projection(index))
-    }
-
+    /// The index of the projection that made the point `word`, the `at`th
+    /// word of the command (its `vertex`th point): the one stored at the
+    /// word's address while the word still holds it, or a culled face's own.
     fn point_index(&self, word: u32, at: usize, vertex: usize) -> Option<u32> {
         if let Some(revealed) = &self.revealing {
             return revealed[vertex];
@@ -1136,9 +1237,9 @@ impl Gpu {
 
     /// The vertex `word`, the `at`th word of the command (usize::MAX when
     /// it is not in the command buffer) and its `index`th point: with its
-    /// projection's class, offset, projection distance, owner, depth and
-    /// whether the backdrop made it.
-    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32, u16, bool)>) {
+    /// projection's class, offset, projection distance, owner, depth,
+    /// whether the backdrop made it, and its placement.
+    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<Projected>) {
         let (x, y) = self.vertex(word);
         let (dx, dy) = (x - sign11(word), y - sign11(word >> 16));
         let mut vertex = TraceVertex {
@@ -1152,17 +1253,25 @@ impl Gpu {
             u: (uv & 0xFF) as i16,
             v: (uv >> 8 & 0xFF) as i16,
         };
-        let point = trace.point(word, at, index);
+        let found = trace.point_index(word, at, index).and_then(|i| Some((trace.projection(i)?, trace.placed[i as usize % HISTORY])));
         let mut counts = trace.matches.get();
-        counts[usize::from(point.is_none())] += 1;
+        counts[usize::from(found.is_none())] += 1;
         trace.matches.set(counts);
-        let class = point.filter(|p| p.class != INTERFACE).map(|p| {
+        let class = found.filter(|(p, _)| p.class != INTERFACE).map(|(p, placement)| {
             // The sub-pixel point, also where the GTE saturated the word.
             vertex.fx = p.x as f32 / 65536.0 + dx as f32;
             vertex.fy = p.y as f32 / 65536.0 + dy as f32;
             vertex.z = f32::from(p.sz.max(1));
             vertex.view = Some(p.view.map(|c| c as f32));
-            (Class::from_projection(p.class), p.offset, p.h, p.owner, p.sz, p.class == BACKDROP)
+            Projected {
+                class: Class::from_projection(p.class),
+                offset: p.offset,
+                h: p.h,
+                owner: p.owner,
+                sz: p.sz,
+                backdrop: p.class == BACKDROP,
+                placement,
+            }
         });
         (vertex, class)
     }
@@ -1218,8 +1327,8 @@ impl Gpu {
         // GTE used to zoom a picture of the screen about its centre); a
         // culled face there lies behind the game's camera, in the view of
         // a camera pulled back.
-        let at_h = classes.iter().zip(&vertices).all(|(&(_, _, h, _, _, _), v)| v.z == f32::from(h));
-        let at_zero = !revealed && classes.iter().all(|&(_, _, _, _, sz, _)| sz == 0);
+        let at_h = classes.iter().zip(&vertices).all(|(c, v)| v.z == f32::from(c.h));
+        let at_zero = !revealed && classes.iter().all(|c| c.sz == 0);
         if classes.len() == count && (at_h || at_zero) {
             for v in &mut vertices[..count] {
                 (v.fx, v.fy, v.z, v.view) = (v.x as f32, v.y as f32, 0.0, None);
@@ -1231,10 +1340,10 @@ impl Gpu {
             // Executed, the polygon's page would have set GP0(E1h) bits 0-8 and 11.
             environment.draw_mode = (environment.draw_mode & !0x9FF) | (page & 0x9FF);
         }
-        let projection = classes.first().map(|&(_, offset, h, _, _, _)| (offset, h));
-        let owner = classes.first().map_or(0, |c| c.3);
-        let backdrop = classes.len() == count && classes.iter().all(|c| c.5);
-        let classes: Vec<Class> = classes.iter().map(|c| c.0).collect();
+        let projection = classes.first().map(|c| (c.offset, c.h));
+        let (owner, placement) = classes.first().map_or((0, 0), |c| (c.owner, c.placement));
+        let backdrop = classes.len() == count && classes.iter().all(|c| c.backdrop);
+        let classes: Vec<Class> = classes.iter().map(|c| c.class).collect();
         let class = primitive_class(&classes, count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
         let facing_index = trace.point_index(words[1], 1, 0).and_then(|point| {
@@ -1262,6 +1371,7 @@ impl Gpu {
             class,
             projection,
             owner,
+            placement,
             source: 0,
             revealed,
             ground,
@@ -1325,6 +1435,7 @@ impl Gpu {
             class: Class::Flat,
             projection: None,
             owner: 0,
+            placement: 0,
             source: 0,
             revealed: false,
             ground: None,
@@ -1341,10 +1452,10 @@ impl Gpu {
         let gouraud = op & 0x10 != 0;
         let (a, class_a) = self.trace_vertex(trace, vertex0, usize::MAX, 0, color0, 0);
         let (b, class_b) = self.trace_vertex(trace, vertex1, usize::MAX, 1, if gouraud { color1 } else { color0 }, 0);
-        let projection = class_a.or(class_b).map(|(_, offset, h, _, _, _)| (offset, h));
-        let owner = class_a.or(class_b).map_or(0, |c| c.3);
-        let backdrop = class_a.zip(class_b).is_some_and(|(a, b)| a.5 && b.5);
-        let classes: Vec<Class> = class_a.into_iter().chain(class_b).map(|c| c.0).collect();
+        let projection = class_a.or(class_b).map(|c| (c.offset, c.h));
+        let (owner, placement) = class_a.or(class_b).map_or((0, 0), |c| (c.owner, c.placement));
+        let backdrop = class_a.zip(class_b).is_some_and(|(a, b)| a.backdrop && b.backdrop);
+        let classes: Vec<Class> = class_a.into_iter().chain(class_b).map(|c| c.class).collect();
         let primitive = Primitive {
             shape: Shape::Line,
             vertices: [a, b, TraceVertex::default(), TraceVertex::default()],
@@ -1358,6 +1469,7 @@ impl Gpu {
             class: primitive_class(&classes, 2),
             projection,
             owner,
+            placement,
             source: 0,
             revealed: false,
             ground: None,

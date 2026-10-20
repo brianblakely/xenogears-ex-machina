@@ -70,6 +70,7 @@ void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target
 void field_sprite_set_color_unless_fog(void *target, u8 *color);
 void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
 void xem_present_battle_stage(void);
+void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z);
 /* The battle camera's look-at point (battle/objects.h, whose other headers
  * the port does not need). */
 extern SVECTOR battle_camera_view_target;
@@ -78,6 +79,32 @@ extern SVECTOR battle_camera_view_target;
  * is being drawn again for the record. */
 static s32 xem_reveals_wanted(void) {
     return xem_present_reveals->wanted && !xem_present_capture->active;
+}
+
+/* Presentation only (xem/gte.h): the transform the GTE holds, as the
+ * PLACEMENT entries of the model or sprite `owner` it draws next (a model
+ * into `packets`, one of its instance's two buffers of `size` bytes; 0 for
+ * a sprite). Written to the ring only, while a trace takes it. */
+static void xem_record_placement(u32 owner, u32 packets, u32 size) {
+    XemProjectionRing *ring = xem_gte_ring;
+    XemProjection *p;
+    s32 m[9], k;
+
+    if (!ring->recording || xem_present_capture->active) {
+        return;
+    }
+    /* RT's halfwords, row by row: R11 R12 / R13 R21 / R22 R23 / R31 R32 / R33. */
+    for (k = 0; k < 9; k++) {
+        m[k] = (s16)(xem_gte_read_control(k / 2) >> (k % 2 * 16));
+    }
+    for (k = 0; k < 3; k++) {
+        xem_record_entry(XEM_PROJECTION_PLACEMENT, k, owner, m[k], m[3 + k], m[6 + k]);
+    }
+    xem_record_entry(XEM_PROJECTION_PLACEMENT, 3, owner, (s32)xem_gte_read_control(5), (s32)xem_gte_read_control(6),
+                     (s32)xem_gte_read_control(7));
+    p = &ring->entries[(ring->count - 1) % XEM_GTE_PROJECTIONS];
+    p->x = (s32)packets;
+    p->y = (s32)size;
 }
 
 /* Presentation only (xem/gte.h): a model the game did not draw because a
@@ -112,6 +139,7 @@ void xem_reveal_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mo
         spill[i] = XEM_U32(0x1F800000u + i * 4);
     }
     xem_gte = *placed;
+    xem_record_placement((u32)model, (u32)packets, (u32)model->packet_size);
     model_box_test_mode = 0;
     xem_gte_ring->class_ = XEM_PROJECTION_MODEL;
     xem_gte_ring->owner = (u32)model;
@@ -181,6 +209,7 @@ s32 model_draw_sprite_model(SpriteModel *model, RenderPacket *packets, u32 *ot, 
     if (reveal) {
         placed = xem_gte;
     }
+    xem_record_placement((u32)model, (u32)packets, (u32)model->packet_size);
     xem_gte_ring->class_ = XEM_PROJECTION_MODEL;
     xem_gte_ring->owner = (u32)model;
     result = xem_original_model_draw_sprite_model(model, packets, ot, mode);
@@ -260,12 +289,17 @@ void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z) {
     ring->count++;
 }
 
-/* For a view looking from within or around the scene (xem/gte.h `around`):
- * the camera `m` a frame of `mode` (XEM_CAMERA_*) is drawn with, as the
+/* Whether the cameras frames are drawn with are recorded (xem/gte.h): while
+ * a trace takes the records, except for a model drawn again for them. */
+s32 xem_present_cameras(void) {
+    return xem_gte_ring->recording && !xem_present_capture->active;
+}
+
+/* The camera `m` a frame of `mode` (XEM_CAMERA_*) is drawn with, as the
  * world's axes through its rotation (its columns) and its translation
  * (XEM_PROJECTION_AXIS entries), then the point (x, y, z) it looks at and
- * that point's depth through it (XEM_PROJECTION_CAMERA). Written to the
- * ring only. */
+ * that point's depth through it (XEM_PROJECTION_CAMERA, with the host's
+ * `around` bits). Written to the ring only. */
 void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode) {
     s32 k;
 
@@ -273,7 +307,8 @@ void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode) {
         xem_record_entry(XEM_PROJECTION_AXIS, 0, (u32)k, m->m[0][k], m->m[1][k], m->m[2][k]);
     }
     xem_record_entry(XEM_PROJECTION_AXIS, 0, 3, m->t[0], m->t[1], m->t[2]);
-    xem_record_entry(XEM_PROJECTION_CAMERA, ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2], mode, x, y, z);
+    xem_record_entry(XEM_PROJECTION_CAMERA, ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2],
+                     mode | (xem_present_reveals->around & 0xFF) << 8, x, y, z);
 }
 
 /* For a view looking around from the controlled character (xem/gte.h
@@ -304,40 +339,43 @@ static void xem_record_eye(void) {
  * wider or farther out than the original's), the depth of the camera's
  * target through the sprites' view (field_view.scaled_world) as an
  * XEM_PROJECTION_FOCUS entry of the ring: a view pulled back moves the
- * camera by multiples of it; and, looking from within or around the scene,
- * that camera with its target and the controlled character's place.
+ * camera by multiples of it; then that camera with its target and, looking
+ * from within or around the scene, the controlled character's place.
  * Written to the ring only. */
 void field_draw_models(void) {
     MATRIX *m = &field_view.scaled_world;
     s32 x, y, z, depth;
 
-    if (xem_reveals_wanted()) {
+    if (xem_present_cameras()) {
         x = field_view.target.vx >> 16;
         y = field_view.target.vy >> 16;
         z = field_view.target.vz >> 16;
-        depth = ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2];
-        xem_record_entry(XEM_PROJECTION_FOCUS, depth, 0, 0, 0, depth);
+        if (xem_reveals_wanted()) {
+            depth = ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2];
+            xem_record_entry(XEM_PROJECTION_FOCUS, depth, 0, 0, 0, depth);
+        }
+        xem_present_camera(m, x, y, z, XEM_CAMERA_FIELD);
         if (xem_present_reveals->around != 0) {
-            xem_present_camera(m, x, y, z, XEM_CAMERA_FIELD);
             xem_record_eye();
         }
     }
     xem_original_field_draw_models();
 }
 
-/* The sprites' view matrix: the original, then, while a view from anywhere
- * around the scene wants culled faces (xem/gte.h XEM_AROUND_ANYWHERE), the
- * battle's stage (battle_present.c: its combatants and start view) and its
- * camera (the matrix every battle frame sets it from, once its stage is
- * drawn) recorded with the point it looks at. A field records its camera
- * with its models (field_draw_models), the world map with its scene
- * objects (worldmap_present.c), which every one of its frames draws.
- * Written to the ring only. */
+/* The sprites' view matrix: the original, then, in a battle, its camera
+ * (the matrix every battle frame sets it from, once its stage is drawn)
+ * recorded with the point it looks at, after its stage (battle_present.c:
+ * its combatants and start view) while a view from anywhere around the
+ * scene wants culled faces (xem/gte.h XEM_AROUND_ANYWHERE). A field
+ * records its camera with its models (field_draw_models), the world map
+ * with its scene objects (worldmap_present.c), which every one of its
+ * frames draws. Written to the ring only. */
 void sprite_set_view_matrix(MATRIX *view) {
     xem_original_sprite_set_view_matrix(view);
-    if (xem_reveals_wanted() && (xem_present_reveals->around & XEM_AROUND_ANYWHERE) && sprite_in_battle &&
-        view == &battle_camera.matrix) {
-        xem_present_battle_stage();
+    if (xem_present_cameras() && sprite_in_battle && view == &battle_camera.matrix) {
+        if (xem_reveals_wanted() && (xem_present_reveals->around & XEM_AROUND_ANYWHERE)) {
+            xem_present_battle_stage();
+        }
         xem_present_camera(view, battle_camera_view_target.vx, battle_camera_view_target.vy, battle_camera_view_target.vz,
                            XEM_CAMERA_BATTLE);
     }
@@ -406,6 +444,7 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     record.ot = (u32)ot;
     xem_capture_transform(&record.transform);
     xem_host_present(XEM_PRESENT_SPRITE_PARTS, &record, sizeof(record));
+    xem_record_placement((u32)sprite, 0, 0);
     xem_gte_ring->owner = (u32)sprite;
     xem_record_ground(sprite);
     xem_gte_ring->class_ = XEM_PROJECTION_SPRITE;

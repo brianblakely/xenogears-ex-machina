@@ -157,7 +157,7 @@ fn original_fidelity_matches_the_software_gpu() {
     assert!(differ * 100 < total, "{differ} of {total} pixels differ");
 }
 
-use xem_gpu::{Class, Environment, Primitive, Projection, Reveal, Shape, SxyStore, TraceOp, TraceVertex};
+use xem_gpu::{Camera, CameraMode, Class, Environment, Placement, Primitive, Projection, Reveal, Reveals, Shape, SxyStore, TraceOp, TraceVertex};
 use xem_render::ps1::{
     Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Look, Quality, first_person, interpolate, pull_back, weld,
 };
@@ -908,7 +908,7 @@ fn inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew() {
     fn interface(gpu: &mut xem_gpu::Gpu) {
         gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
         gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
-        gpu.trace_projections(0, &camera_entries(LEVEL, [0; 3], [0, 200, 1200], 1200), &[], &[]);
+        gpu.trace_projections(0, &camera_entries(LEVEL, [0; 3], [0, 200, 1200], 1200, Reveals::LOOK), &[], &[]);
         gpu.write_gp0_words(&[0x6000_FFFF, xy(100, 80), 60 << 16 | 120]);
     }
     fn green_floor(gpu: &mut xem_gpu::Gpu) {
@@ -1043,6 +1043,7 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         class: Class::Model,
         projection: Some(((160, 120), 256)),
         owner: 0,
+        placement: 0,
         source: 0,
         revealed: false,
         ground: None,
@@ -1079,55 +1080,144 @@ fn scene_points_weld_to_their_own_game_frames_only() {
     assert_eq!(first(&ops[2]), (100.25, Some([100.25, 100.0, 1000.0])), "a frame's face is not welded to one an earlier frame drew there");
 }
 
-#[test]
-fn interpolation_moves_matched_primitives_and_leaves_cuts() {
-    let x = |op: &TraceOp| match op {
-        TraceOp::Draw(p) => p.vertices[0].fx,
-        _ => f32::NAN,
-    };
-    // The same primitive (texture coordinates 4) moved 20 pixels right; one
-    // new (16) and one that jumped across the screen (32).
-    let previous = vec![primitive(10, 10, 4), primitive(10, 50, 32)];
-    let newest = vec![primitive(30, 10, 4), primitive(100, 100, 16), primitive(250, 50, 32)];
-    let half = interpolate(&newest, &previous, 0.5);
-    assert_eq!(x(&half[0]), 20.0, "halfway between its two positions");
-    assert_eq!(x(&half[1]), 100.0, "a new primitive stays where it is");
-    assert_eq!(x(&half[2]), 250.0, "a jump is a cut, not motion");
-    assert_eq!(x(&interpolate(&newest, &previous, 0.0)[0]), 10.0);
-    assert_eq!(x(&interpolate(&newest, &previous, 1.0)[0]), 30.0);
+/// A field camera turned `yaw` degrees about the world's up from looking
+/// along +z, 1000 units from the world's origin, which it looks at.
+fn orbiting(yaw: f32) -> Camera {
+    let (s, c) = yaw.to_radians().sin_cos();
+    Camera {
+        axes: [[c * 4096.0, 0.0, s * 4096.0], [0.0, 4096.0, 0.0], [-s * 4096.0, 0.0, c * 4096.0]],
+        translation: [0.0, 0.0, 1000.0],
+        target: [0.0; 3],
+        focus: 1000.0,
+        mode: CameraMode::Field,
+        stage: None,
+        ground: None,
+        origin: [0.0; 3],
+        around: 0,
+    }
+}
+
+/// Where `camera` sees the world point `w` (offset 160, 120; H 256).
+fn seen(camera: &Camera, w: [f32; 3]) -> ([f32; 3], (f32, f32)) {
+    let v: [f32; 3] = std::array::from_fn(|i| (0..3).map(|k| camera.axes[k][i] * w[k]).sum::<f32>() / 4096.0 + camera.translation[i]);
+    (v, (160.0 + 256.0 * v[0] / v[2], 120.0 + 256.0 * v[1] / v[2]))
+}
+
+/// A triangle of the scene at view-space `points`, of `class`, owned by
+/// `owner` with its `placement`.
+fn placed_face(points: [[f32; 3]; 3], class: Class, owner: u32, placement: u32) -> TraceOp {
+    let TraceOp::Draw(mut p) = primitive(0, 0, 0) else { unreachable!() };
+    (p.class, p.owner, p.placement) = (class, owner, placement);
+    for (v, view) in p.vertices.iter_mut().zip(points) {
+        let (fx, fy) = (160.0 + 256.0 * view[0] / view[2], 120.0 + 256.0 * view[1] / view[2]);
+        *v = TraceVertex { x: fx.floor() as i32, y: fy.floor() as i32, fx, fy, z: view[2], view: Some(view), ..*v };
+    }
+    TraceOp::Draw(p)
+}
+
+/// A model's (with `packets`, a buffer 0x100 bytes) or a sprite's placement:
+/// unturned, at `at`.
+fn placement(seq: u32, owner: u32, packets: u32, at: [f32; 3]) -> Placement {
+    let size = if packets == 0 { 0 } else { 0x100 };
+    Placement { seq, owner, packets, size, axes: [[4096.0, 0.0, 0.0], [0.0, 4096.0, 0.0], [0.0, 0.0, 4096.0]], translation: at }
+}
+
+fn first_point(op: &TraceOp) -> (f32, f32) {
+    match op {
+        TraceOp::Draw(p) => (p.vertices[0].fx, p.vertices[0].fy),
+        _ => unreachable!("a primitive"),
+    }
 }
 
 #[test]
-fn interpolation_moves_matched_primitives_across_screen_buffers() {
-    let buffered = |x, y, u, offset: (i16, i16)| {
-        let TraceOp::Draw(mut p) = primitive(x, y, u) else { unreachable!() };
-        p.environment.offset = offset;
-        for v in &mut p.vertices {
-            v.x += i32::from(offset.0);
-            v.y += i32::from(offset.1);
-            v.fx += f32::from(offset.0);
-            v.fy += f32::from(offset.1);
-        }
-        TraceOp::Draw(p)
+fn interpolation_turns_the_camera_between_frames_with_still_scenery_in_place() {
+    // The camera turned 6 degrees about what it looks at between two frames
+    // a thirtieth of a second apart.
+    let (before, after) = (orbiting(0.0), orbiting(6.0));
+    let corners = [[-200.0, 0.0, 100.0], [200.0, 0.0, 100.0], [0.0, -150.0, -50.0]];
+    let newest = vec![placed_face(corners.map(|w| seen(&after, w).0), Class::World, 0, 0)];
+    let frames = [(0.0, &before, &[][..]), (1.0 / 30.0, &after, &[][..])];
+    let close = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 1e-3 && (a.1 - b.1).abs() < 1e-3;
+    for (alpha, yaw) in [(0.0, 0.0), (0.25, 1.5), (0.5, 3.0)] {
+        let mut ops = newest.clone();
+        assert!(interpolate(&mut ops, &frames, (1.0 + alpha) / 30.0));
+        let expected = seen(&orbiting(yaw), corners[0]).1;
+        assert!(close(first_point(&ops[0]), expected), "alpha {alpha}: {:?} where a camera turned {yaw} degrees sees it, {expected:?}", first_point(&ops[0]));
+    }
+    let mut ops = newest.clone();
+    assert!(!interpolate(&mut ops, &frames, 2.0 / 30.0), "the newest frame as drawn");
+    assert_eq!(ops, newest);
+    // A camera turned further than a frame's turn cut to another view.
+    assert!(!interpolate(&mut ops, &[frames[0], (1.0 / 30.0, &orbiting(90.0), &[])], 1.5 / 30.0), "a cut is not motion");
+    assert_eq!(ops, newest);
+}
+
+#[test]
+fn interpolation_moves_models_and_sprites_from_their_own_placements() {
+    let camera = orbiting(0.0);
+    let face = |at: [f32; 3], class, owner, placement| {
+        placed_face([[at[0], at[1], at[2]], [at[0] + 10.0, at[1], at[2]], [at[0], at[1] + 10.0, at[2]]], class, owner, placement)
     };
-    // The game alternates screen buffers in VRAM. Their separation is
-    // not motion, in either direction, nor should it turn a real cut into
-    // a match. Include a horizontal layout as well as the field's vertical.
-    for (from, to) in [((0, 0), (0, 216)), ((0, 256), (0, 0)), ((0, 0), (320, 0))] {
-        let previous = vec![buffered(10, 10, 4, from), buffered(10, 50, 32, from)];
-        let newest = vec![buffered(30, 20, 4, to), buffered(250, 50, 32, to)];
-        for (alpha, expected) in [(0.0, (10.0, 10.0)), (0.5, (20.0, 15.0)), (1.0, (30.0, 20.0))] {
-            let ops = interpolate(&newest, &previous, alpha);
-            let TraceOp::Draw(moved) = &ops[0] else { unreachable!() };
-            let v = moved.vertices[0];
-            assert_eq!((v.fx, v.fy), (expected.0 + f32::from(to.0), expected.1 + f32::from(to.1)),
-                "motion within the newest buffer {from:?} -> {to:?}, alpha {alpha}");
-            assert_eq!((v.x, v.y), (v.fx.round() as i32, v.fy.round() as i32));
-            assert_eq!(moved.environment.offset, to, "the replay still draws into the newest buffer");
-            let TraceOp::Draw(cut) = &ops[1] else { unreachable!() };
-            assert_eq!((cut.vertices[0].fx, cut.vertices[0].fy), (250.0 + f32::from(to.0), 50.0 + f32::from(to.1)),
-                "a genuine jump remains a cut");
-        }
+    // Two instances of one model in adjacent blocks (buffers 0x1000 and
+    // 0x1100, 0x1200 and 0x1300), both stepping to their second buffer; a
+    // sprite; a model drawn somewhere else entirely (another thing in that
+    // memory); one not drawn before; and the scenery.
+    let previous = [
+        placement(1, 0x8010_0000, 0x1000, [0.0, 0.0, 1000.0]),
+        placement(2, 0x8010_0000, 0x1200, [-300.0, 0.0, 1000.0]),
+        placement(3, 0x8020_0000, 0, [100.0, 50.0, 1000.0]),
+        placement(4, 0x8030_0000, 0x4000, [0.0, 0.0, 1000.0]),
+    ];
+    let newest = [
+        placement(11, 0x8010_0000, 0x1100, [40.0, 0.0, 1000.0]),
+        placement(12, 0x8010_0000, 0x1300, [-300.0, 20.0, 1000.0]),
+        placement(13, 0x8020_0000, 0, [80.0, 50.0, 1000.0]),
+        placement(14, 0x8030_0000, 0x4100, [0.0, 0.0, 11_000.0]),
+        placement(15, 0x8040_0000, 0x5000, [0.0, 0.0, 1000.0]),
+    ];
+    let mut ops = vec![
+        face([40.0, 0.0, 1000.0], Class::Model, 0x8010_0000, 11),
+        face([-300.0, 20.0, 1000.0], Class::Model, 0x8010_0000, 12),
+        face([80.0, 50.0, 1000.0], Class::Sprite, 0x8020_0000, 13),
+        face([0.0, 0.0, 11_000.0], Class::Model, 0x8030_0000, 14),
+        face([0.0, 0.0, 1000.0], Class::Model, 0x8040_0000, 15),
+        face([0.0, 100.0, 1000.0], Class::World, 0, 0),
+    ];
+    let drawn = ops.clone();
+    assert!(interpolate(&mut ops, &[(0.0, &camera, &previous[..]), (1.0 / 30.0, &camera, &newest[..])], 1.5 / 30.0));
+    let screen = |v: [f32; 3]| (160.0 + 256.0 * v[0] / v[2], 120.0 + 256.0 * v[1] / v[2]);
+    let close = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 1e-3 && (a.1 - b.1).abs() < 1e-3;
+    assert!(close(first_point(&ops[0]), screen([20.0, 0.0, 1000.0])), "halfway from its own instance's place, not the other's");
+    assert!(close(first_point(&ops[1]), screen([-300.0, 10.0, 1000.0])), "the other instance from its own");
+    assert!(close(first_point(&ops[2]), screen([90.0, 50.0, 1000.0])), "a sprite from its own place");
+    for (k, why) in [(3, "a model further than the camera's distance is another"), (4, "one not drawn before holds still"), (5, "the scenery holds still")] {
+        assert_eq!(first_point(&ops[k]), first_point(&drawn[k]), "{why}");
+    }
+}
+
+#[test]
+fn each_camera_and_sprite_moves_over_the_time_between_its_own_moves() {
+    // A battle draws every display frame, a sixtieth of a second apart,
+    // while its camera turns every other one (4 degrees) and a sprite moves
+    // every one (10 units across the world).
+    let cameras: Vec<Camera> = (0..4).map(|frame| orbiting(if frame < 2 { 0.0 } else { 4.0 })).collect();
+    let sprite = |frame: usize| [100.0 + 10.0 * frame as f32, 0.0, 0.0];
+    let placements: Vec<[Placement; 1]> = (0..4)
+        .map(|frame| [Placement { seq: 1 + frame as u32, owner: 0x8020_0000, axes: cameras[frame].axes, translation: seen(&cameras[frame], sprite(frame)).0, ..Placement::default() }])
+        .collect();
+    let still = [-200.0, 0.0, 100.0];
+    let close = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 1e-3 && (a.1 - b.1).abs() < 1e-3;
+    // A quarter of a sixtieth after frames 2 and 3 arrive: the camera a
+    // quarter and three quarters of its turn on, the sprite halfway on.
+    for (newest, yaw, at) in [(2, 1.0, 115.0), (3, 3.0, 125.0)] {
+        let frames: Vec<(f64, &Camera, &[Placement])> = (0..=newest).map(|frame| (frame as f64 / 60.0, &cameras[frame], &placements[frame][..])).collect();
+        let camera = &cameras[newest];
+        let corners = |w: [f32; 3]| [w, [w[0] + 10.0, w[1], w[2]], [w[0], w[1] + 10.0, w[2]]].map(|w| seen(camera, w).0);
+        let mut ops = vec![placed_face(corners(still), Class::World, 0, 0), placed_face(corners(sprite(newest)), Class::Sprite, 0x8020_0000, 1 + newest as u32)];
+        assert!(interpolate(&mut ops, &frames, (2.0 * newest as f64 + 1.0) / 120.0));
+        let turned = orbiting(yaw);
+        assert!(close(first_point(&ops[0]), seen(&turned, still).1), "frame {newest}: the scenery through the camera turned {yaw} degrees");
+        assert!(close(first_point(&ops[1]), seen(&turned, [at, 0.0, 0.0]).1), "frame {newest}: the sprite at {at}");
     }
 }
 
@@ -1440,6 +1530,53 @@ fn camera_records(depth: i32) -> Vec<Projection> {
 }
 
 #[test]
+fn a_buffer_shown_lower_than_a_log_begun_before_starts_it_with_each_frame_drawn_all_over_it() {
+    // The kernel menu clears its buffers at y 0 and 240 (320x224); the arena
+    // then shows its own at y 0 and 256 (320x218), drawing all over each
+    // frame without clearing it, and never the rows between.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    };
+    let small = |k: i32| [0x2000_FFFF, xy(k, 10), xy(k + 4, 10), xy(k, 14)];
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 240, width: 320, height: 224 });
+    let (sync, menu) = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000 | 240 << 10, 0xE400_0000 | 463 << 10 | 319, 0xE500_0000 | 240 << 11]);
+        device.write_gp0_words(&[0x0200_0000, 240 << 16, 224 << 16 | 320]);
+        for k in 0..70 {
+            device.write_gp0_words(&small(k * 4));
+        }
+    });
+    draw(&mut renderer, &sync);
+    draw(&mut renderer, &menu);
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 218 });
+    let area = DisplayArea { x: 0, y: 256, width: 320, height: 218 };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut identities = Vec::new();
+    for n in 0..3 {
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.vblank();
+            device.write_gp0_words(&[0xE300_0000 | 256 << 10, 0xE400_0000 | 473 << 10 | 319, 0xE500_0000 | 256 << 11]);
+            device.write_gp0_words(&[0x2800_0040 + n, xy(0, 0), xy(320, 0), xy(0, 218), xy(320, 218)]);
+            for k in 0..70 {
+                device.write_gp0_words(&small(k * 4));
+            }
+            device.take_trace()
+        });
+        draw(&mut renderer, &trace);
+        frame.track(&renderer, area, None);
+        let draws = renderer.frame_log(area).map_or(0, |log| log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count());
+        assert_eq!(draws, 71, "frame {n}: the buffer's log holds the frame drawn all over it alone");
+        identities.push(frame.identity());
+    }
+    assert!(identities.windows(2).all(|pair| pair[0] != pair[1]), "each frame shown anew: {identities:?}");
+}
+
+#[test]
 fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
@@ -1468,7 +1605,7 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     draw(&mut renderer, &first);
     assert_eq!(kept(&renderer), Some(1000.0), "the frame keeps the camera recorded before its first primitive");
     let mut frame = FrameRenderer::new(&gpu.device);
-    assert!(frame.track(&renderer, area));
+    assert!(frame.track(&renderer, area, None));
     assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(1000.0), "the frame shown keeps its log's");
     let state = DEVICE.with(|device| device.borrow().save());
     // A game frame (after its vertical blank) recorded as camera `depth` at
@@ -1501,14 +1638,14 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     // and keeps the camera recorded before its first primitive.
     draw(&mut renderer, &take(&[(5, 2000, false)]));
     assert_eq!(kept(&renderer), Some(2000.0), "a frame drawn over the last keeps its own camera, not the one before");
-    assert!(frame.track(&renderer, area), "a new frame");
+    assert!(frame.track(&renderer, area, None), "a new frame");
     assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(2000.0));
     // One presentation of several frames (the host ran them before it
     // presented: fast-forward, catching up): the buffer's log begins with
     // the last that draws all over it, cleared or drawn over.
     draw(&mut renderer, &take(&[(10, 3000, false), (15, 4000, false)]));
     assert_eq!((kept(&renderer), draws(&renderer)), (Some(4000.0), 71), "the last of two frames drawn over in one trace keeps its own camera and only its primitives");
-    assert!(frame.track(&renderer, area), "a new frame");
+    assert!(frame.track(&renderer, area, None), "a new frame");
     assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(4000.0));
     draw(&mut renderer, &take(&[(20, 5000, true), (25, 6000, true)]));
     assert_eq!((kept(&renderer), draws(&renderer)), (Some(6000.0), 70), "the last of two cleared frames in one trace");
@@ -1520,7 +1657,7 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     DEVICE.with(|device| device.borrow_mut().load(&state).expect("a state"));
     draw(&mut renderer, &take(&[(40, 8000, false), (45, 9000, false)]));
     assert_eq!((kept(&renderer), draws(&renderer)), (Some(9000.0), 71), "a state's first trace keeps the camera of its last frame drawn over");
-    assert!(frame.track(&renderer, area), "a new frame");
+    assert!(frame.track(&renderer, area, None), "a new frame");
     assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(9000.0));
     // Recorded more than four vertical blanks before a frame, it is not
     // that frame's.
@@ -1562,15 +1699,16 @@ fn projection(point: [f32; 3], class: u8, owner: u32) -> Projection {
 
 /// The port's record of a field camera (xem/gte.h): its matrix's columns in
 /// 4.12 (axes 0-2), its translation (axis 3), then the point it looks at and
-/// that point's depth through it.
-fn camera_entries(columns: [[i32; 3]; 3], translation: [i32; 3], target: [i32; 3], focus: u16) -> Vec<Projection> {
+/// that point's depth through it, with the host's `around` bits
+/// ([`Reveals::around`]) as it was recorded.
+fn camera_entries(columns: [[i32; 3]; 3], translation: [i32; 3], target: [i32; 3], focus: u16, around: u8) -> Vec<Projection> {
     let entry = |class: u8, owner: u32, view: [i32; 3], sz: u16| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 120), h: 256, owner, view };
     vec![
         entry(6, 0, columns[0], 0),
         entry(6, 1, columns[1], 0),
         entry(6, 2, columns[2], 0),
         entry(6, 3, translation, 0),
-        entry(8, 1, target, focus),
+        entry(8, 1 | u32::from(around) << 8, target, focus),
     ]
 }
 
@@ -1622,7 +1760,7 @@ fn gte_faces(gpu: &mut xem_gpu::Gpu, columns: [[i32; 3]; 3], faces: &[Face], cam
     let matrix = Mat3x3(columns);
     // The target in the world, and its depth through the camera.
     let target = [0.0, 200.0, 1200.0];
-    let mut projections = if camera { camera_entries(columns, [0, 0, 0], target.map(|c| c as i32), matrix.view(target)[2] as u16) } else { Vec::new() };
+    let mut projections = if camera { camera_entries(columns, [0, 0, 0], target.map(|c| c as i32), matrix.view(target)[2] as u16, Reveals::ANYWHERE) } else { Vec::new() };
     let mut packets = Vec::new();
     for face in faces {
         if let Some(ground) = face.ground {
@@ -1983,7 +2121,7 @@ fn a_picture_the_game_draws_over_its_clear_shows_whole_on_the_wall() {
     // Where the room shows, the wall leaves out the clear: the panels alone.
     let traces = traced(|device| {
         device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
-        device.trace_projections(0, &camera_entries(LEVEL, [0, 0, 0], [0, 200, 1200], 1200), &[], &[]);
+        device.trace_projections(0, &camera_entries(LEVEL, [0, 0, 0], [0, 200, 1200], 1200, Reveals::ANYWHERE), &[], &[]);
         device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
         for x in [1, 106, 211] {
             device.write_gp0_words(&[0x28FF_00FF, xy(x, -18), xy(x + 105, -18), xy(x, 122), xy(x + 105, 122)]);

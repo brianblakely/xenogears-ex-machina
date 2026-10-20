@@ -73,7 +73,7 @@ impl MovieTiles {
                     self.forget(VramRect { x: destination.0, y: destination.1, width: *width, height: *height });
                 }
                 TraceOp::Draw(p) if !p.revealed => self.forget(drawn_rect(p)),
-                TraceOp::Draw(_) | TraceOp::Eye(_) | TraceOp::Camera(_) => {}
+                TraceOp::Draw(_) | TraceOp::Eye(_) | TraceOp::Camera(_) | TraceOp::Placement(_) => {}
             }
         }
     }

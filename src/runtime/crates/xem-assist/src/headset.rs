@@ -896,6 +896,8 @@ pub(crate) mod tests {
             mode: xem_render::xem_gpu::CameraMode::Field,
             stage: None,
             ground: None,
+            origin: [0.0; 3],
+            around: xem_render::xem_gpu::Reveals::ANYWHERE,
         }
     }
 

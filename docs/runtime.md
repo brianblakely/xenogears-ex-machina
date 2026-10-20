@@ -1861,7 +1861,14 @@ snapshots are its. The renderer only draws again what it drew:
   a clear) also starts its log, a shown buffer without one too (a state
   loaded, a rewind's step), so a log holds about one frame where the
   game never clears (a world map battle's log had grown to 88 000 primitives
-  replayed every presentation). When one presentation holds several game
+  replayed every presentation). Those pixels are the display's, where it
+  shows the log now: the Battling arena shows its buffer at y 256 inside
+  the log the kernel menu's buffer at y 240 began, never drawing the rows
+  between, and with the log's own corner that log grew past 140 000
+  operations, its replay showing the kernel menu's VRAM with the latest
+  particles every other game frame while interpolating (`tests/ps1.rs`
+  `a_buffer_shown_lower_than_a_log_begun_before_starts_it_with_each_frame_drawn_all_over_it`).
+  When one presentation holds several game
   frames (the host ran them before it presented: fast-forward, catching
   up; a frame begins after each vertical blank), such a log starts with
   the last of them from which the trace draws all over the buffer, unless
@@ -1894,10 +1901,14 @@ snapshots are its. The renderer only draws again what it drew:
   the game's camera included, a primitive reaching within the new camera's
   near plane, half H, dropped), the culled faces showing wherever they fall
   and the interface keeping its place and size.
-  Interpolation moves each scene primitive of the newest frame from its
-  match in the frame before (same shape, page, CLUT and texture coordinates,
-  or colours; the nearest, within 48 pixels) by the time since that frame
-  arrived, one game frame late; the interface moves as the game moves it.
+  Interpolation shows the newest frame's scene by the time since that
+  frame arrived, one game frame late, through a camera between the two the
+  game drew the frame before and the newest with (the port records them:
+  [Camera records](#camera-records)); what holds still in the world stays
+  where it is, and each model and sprite the port recorded the transform
+  of in both frames moves from where its points were then
+  ([Interpolation](#interpolation)); the interface moves as the game moves
+  it.
 - **Effects** (`EffectsRenderer`, `effects.wgsl`). See below.
 - **GameView** (`view.rs`) is what hosts use: it resolves the graphics
   settings for a host class, accumulates the trace between presentations,
@@ -2010,7 +2021,7 @@ interchange](#state-interchange)).
 | HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
-| presentation | interpolate motion: off (the default) presents a frame only when the game drew one, on presents every display refresh, matched primitives moving smoothly between the game's frames (one game frame of latency); wider framing (to the output's aspect ratio) |
+| presentation | interpolate motion: off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
@@ -2263,8 +2274,9 @@ are held back). A menu (the field's own, with the view as the screen it
 takes, or a script's) keeps every button, and the view does not turn under
 it (`xem_settings::look`). It ends when toggled again, when the field or its
 map is left, and under the Original renderer. It begins only where a
-frame shown with the field camera's record (the port records it from the
-frame after the view asks) draws the field's scene as the game drew it
+frame shown with the field camera's record made looking around (its
+`Camera::around`: the port records it so from the frame after the view
+asks) draws the field's scene as the game drew it
 (its map, models or sprites, not only faces recorded for a wider view):
 the title screen is field 490, whose camera shows none of its map (the
 game culls it whole behind the logo), so a toggle there ends at the
@@ -2778,7 +2790,10 @@ it.
 
 A view that looks at the scene from elsewhere than the game's camera needs
 the camera each frame was drawn with, to take the frame's view-space points
-back into its world (plan.md Phase 8's seated diorama). The culled-face
+back into its world (plan.md Phase 8's seated diorama), and so does
+[Interpolation](#interpolation), which shows the scene from a camera
+between two frames': the port records the camera of every frame of a
+field, a battle and the world map while a trace takes its records. The culled-face
 ring's `around` word carries bits (`Reveals::around`, xem/gte.h
 `XEM_AROUND_*`; 0 the game's own camera): `Reveals::LOOK` (1) for
 first-person inspection, `Reveals::ANYWHERE` (2) for a view from anywhere
@@ -2793,9 +2808,13 @@ port projects it for the record, the GTE put back): a diorama's table at
 25% showed no terrain over a third of it, behind the world map's camera,
 in steps of its cells; the sprites the port draws
 again facing the character's eyes come with `LOOK` only (`sprite_facing.c`),
-the battle's and the world map's cameras with `ANYWHERE` only. `GameView`
-asks for `ANYWHERE` while its headset view is the [Diorama](#diorama) of a
-field, a battle or the world map.
+the battle's stage and the world map's ground with `ANYWHERE` only, the
+controlled character's place with either. Every camera record carries the
+bits it was made with (`Camera::around`): a frame recorded with either
+holds culled faces from anywhere, which the game's camera shows none of,
+and first-person inspection and the diorama begin only with frames
+recorded for them. `GameView` asks for `ANYWHERE` while its headset view is
+the [Diorama](#diorama) of a field, a battle or the world map.
 The port reads the bits (as the reach and the pull-back) that the host wrote
 into the ring's header when the port's GPU commands last handed the rings
 over, and the rings are no part of a state: the first frame the game builds
@@ -2810,16 +2829,17 @@ The port records a camera as ring entries that are no drawn points
 4.12, times the field's scale in a field), its translation (an AXIS entry
 owned by 3), and the point it looks at in the same world units with that
 point's depth through it (`XEM_PROJECTION_CAMERA`, owned by the mode:
-`XEM_CAMERA_FIELD`, `_BATTLE`, `_WORLDMAP`), so that a point's view is the
-rotation times the world point, shifted 12 bits, plus the translation
-(`present.c` `xem_present_camera`). Each mode records the matrix its frame
-is drawn with where it is set:
+`XEM_CAMERA_FIELD`, `_BATTLE`, `_WORLDMAP`, plus the host's `around` bits
+shifted 8 bits), so that a point's view is the rotation times the world
+point, shifted 12 bits, plus the translation (`present.c`
+`xem_present_camera`). Each mode records the matrix its frame is drawn
+with where it is set:
 
 | Mode | Where | Camera | Target |
 | --- | --- | --- | --- |
-| field | `field_draw_models`, with either bit (then the controlled character, `XEM_PROJECTION_EYE`) | `field_view.scaled_world` | `field_view.target` |
-| battle | `sprite_set_view_matrix` (WRAPPED), when the battle sets it from `battle_camera.matrix` once a frame, after drawing its stage; its stage just before (below) | the look-at matrix with the quake's offset | `battle_camera_view_target` |
-| world map | `worldmap_objects_draw`, which every world-map frame calls (the actors' sprite pass that also sets the sprites' view matrix runs in the open map only); the ground under its target just before (below) | `worldmap_camera_matrix`, which maps points relative to the camera's target with z negated, as the world map places its objects | (0, the target's height, 0), the point the orbit and look-at cameras look at |
+| field | `field_draw_models` (then, with either bit, the controlled character, `XEM_PROJECTION_EYE`) | `field_view.scaled_world` | `field_view.target` |
+| battle | `sprite_set_view_matrix` (WRAPPED), when the battle sets it from `battle_camera.matrix` once a frame, after drawing its stage; with `ANYWHERE`, its stage just before (below) | the look-at matrix with the quake's offset | `battle_camera_view_target` |
+| world map | `worldmap_objects_draw`, which every world-map frame calls (the actors' sprite pass that also sets the sprites' view matrix runs in the open map only); the world's point at its target and, with `ANYWHERE`, the ground under it just before (below) | `worldmap_camera_matrix`, which maps points relative to the camera's target with z negated, as the world map places its objects | (0, the target's height, 0), the point the orbit and look-at cameras look at |
 
 Before a battle's camera the port records its stage (`battle_present.c`,
 `XEM_PROJECTION_STAGE`), what a diorama stands the battle on its table by
@@ -2831,7 +2851,10 @@ a person's about 96 units, a Gear's about 500, the debug battle's boss
 `battle_enter` begins the battle with, its look-at (its depth 1 once the
 battle's turns run, `battle_turns_active`: its opening is over, its
 combatants have entered and stand) and its eye. Before the world map's
-camera it records the ground's height under the camera's target (a STAGE
+camera it records where its world lies in the game's (a STAGE entry owned
+by `XEM_STAGE_ORIGIN`: the target's x, 0 and its z negated, in the whole
+units the world map places its objects relative to; `Camera::origin`), and
+the ground's height under the camera's target (a STAGE
 entry owned by `XEM_STAGE_GROUND`, `worldmap_present.c`): the plane of the
 terrain triangle there, the cell split along one diagonal as
 `worldmap_terrain_get_normal` splits it, which `worldmap_terrain_get_height`
@@ -2966,6 +2989,116 @@ scripted scenes, the arena, menus and movies were not run with it; the first bat
 turned while it attacked, the desert's only came in (0.9 degrees); of the
 real game, only the desert was presented several frames at a time; a frame
 built with the bits before a change is not told apart.
+
+### Interpolation
+
+With interpolation on, every display refresh presents the newest game
+frame's scene with its camera and each of its models and sprites on their
+way from where they were before their last move, one move late: each
+moves over the time between its own last two moves (1 to 4 vertical
+blanks; after a longer rest, the time its moves took before), from the
+host's time the frame it moved in was first shown (`frame.rs` `Clock`,
+`Moved`). A battle draws every display frame while its camera and Gears
+move every other one and its effects every one: a frame in which a thing
+did not move keeps its move going instead of starting another, so each
+moves evenly at its own pace. Once nothing moves the picture is the frame
+as the game drew it, and a presentation with nothing new draws nothing.
+Nothing is matched by its look: the port records what moved
+(`Motion`).
+
+- **The camera.** Each frame of a field, a battle or the world map carries
+  the camera the game drew it with ([Camera records](#camera-records); the
+  world map's placed at its origin, so its world is the game's in every
+  frame). The camera between two is the first's rotation turned towards
+  the second's (a quaternion's slerp; a mirrored one as a mirrored world's
+  rotation), its scale between theirs, and what it looks at moved straight
+  in the world and in its view, so it turns about that point as the game's
+  camera does; what each end's matrix holds besides a scaled rotation (its
+  4.12 rounding) is blended in, so each end is the game's own. A scene
+  point that holds still goes through the newest camera into the world and
+  through that camera back.
+- **Models and sprites.** Each model draw (`model_draw_sprite_model`, and
+  a model drawn again for the record) and each sprite's parts record the
+  transform the GTE holds as they begin (four `XEM_PROJECTION_PLACEMENT`
+  entries, xem/gte.h; `TraceOp::Placement`); the trace gives each
+  projection its owner's newest placement and each primitive its first
+  point's (`Primitive::placement`), and a buffer's log keeps the placements
+  recorded since the frame before was drawn (`FrameLog::placements`).
+  A placement of the newest frame follows the frame before's of the same
+  sprite (its owner), or of the same model instance: an instance's two
+  packet buffers are one block (`model_alloc_packet_buffers`), so its draws
+  alternate between buffers a buffer's size apart, or keep one; each
+  model's draws agree on which way they stepped (the field's and the
+  sprites' buffers flip on counters of their own), which tells adjacent
+  instances apart. Its points go back through its newest transform to its
+  own space and out through the one before into the world then, and move
+  from there to where they are now. One drawn twice differently, or moved
+  further than the camera stands from what it looks at (another thing
+  drawn into that memory), holds still in the world.
+- **What is moved.** Each projected point of the scene (and a sprite's
+  floor point) moves its sub-pixel point and depth by as much as its
+  projection moves; a primitive with a point without depth, or at or behind
+  the camera's plane, stays as drawn, and so does the interface. The
+  faces the game culls beside its screen come into it as the camera turns:
+  `GameView::reveals` asks for them 32 pixels beyond the screen (and the
+  sides) while interpolation is on, and an interpolated picture shows them
+  wherever they fall, unless its frame was recorded looking around (whose
+  culled faces lie anywhere).
+- **Cuts.** Between cameras of other modes or mirrored worlds, a turn of
+  more than 45 degrees, a scale changed by more than a quarter, or the
+  camera or what it looks at moved further than the one stands from the
+  other, the camera does not move (its frames' models and sprites still
+  do, in the world); a frame without a camera (the trace's first, menus,
+  the arena, movies) shows as drawn.
+- **Cost.** The pairing, each thing's move and its clock are worked out
+  once for each new frame; a presentation blends a map for each placement
+  still moving and takes each point through one 3x4 map.
+
+Measured (release, `--example motion`, lavapipe, 2 presentations a game
+frame): turning Lahan's camera with L1 (map 1, 80 frames, 800x540), the
+presentation's CPU cost was 0.95 ms against 1.04 ms for the nearest-match
+interpolation this replaced and 0.41 ms with interpolation off, and the
+dark tile-shaped holes that match left where like grass tiles swapped are
+gone; the picture as each new frame arrives was within a pixel of the
+frame shown before in all but 0.56% of its pixels (0.61% with the old
+match, where its pairs held; the two renderers differ about that much),
+its game state (RAM hash) the same as with interpolation off. The save
+point (map 76) turns in every presentation, against every fourth off.
+Turning the world map's camera (boot mode 3, L1), each new frame's first
+picture differed from the frame before in 0.01% of its pixels; walking
+south from Lahan's exit (the exit log, then Down), 0.04-0.34% from the
+frame before against about 1% from the newest. The debug battle's Gears
+attacking: 0-0.6% from the frame before, up to 9% from the newest.
+
+Tests: `xem-render/tests/ps1.rs`
+`interpolation_turns_the_camera_between_frames_with_still_scenery_in_place`,
+`interpolation_moves_models_and_sprites_from_their_own_placements`
+(adjacent instances of one model, a sprite, a model moved further than the
+camera's distance, one not drawn before) and
+`each_camera_and_sprite_moves_over_the_time_between_its_own_moves` (a
+camera turning every other display frame, a sprite moving every one),
+`xem-gpu/tests/gpu.rs`
+`a_placement_comes_before_its_owners_primitives_which_hold_its_number`,
+and `tests/test_port_presentation.py` (the entries a placement and a
+camera with the host's bits write).
+
+With one clock for the whole frame (the time between drawn frames), the
+debug battle's attack moved its camera and Gears over two presentations
+and held them for the next two (one presentation in four repeated the one
+before); with a clock for each thing, every presentation of the attack
+changed (0.17 to 0.36 of the picture each, against none in four before)
+and the picture neared the game's next frame evenly through its four, at
+the same cost (1.5 ms).
+The Battling arena records no camera: interpolating, it shows its frames
+as drawn, now as the display does (0.08 at most of a level apart on
+average over 240 presentations of a bout; before the frame-log fix above,
+every other game frame showed the kernel menu's VRAM and the latest
+particles), at 0.29 ms a presentation.
+
+Not done: a model's own vertex animation (`MorphTable`) steps with the
+game's frames, as do the points effects compute each frame (they follow
+the camera); scenes without a camera record (the Battling arena, menus'
+models, movies) are not interpolated; menus and movies were not run.
 
 ### Diorama
 

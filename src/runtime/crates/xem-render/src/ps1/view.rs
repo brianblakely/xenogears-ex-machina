@@ -332,10 +332,6 @@ pub struct GameView {
     pending: Vec<TraceOp>,
     /// The trace must restart from the whole VRAM.
     restart: bool,
-    /// When the newest game frame arrived and the interval before it
-    /// (seconds, the host's clock), for interpolation.
-    arrived: f64,
-    interval: f64,
     /// The scene last presented, the depth the field camera looks at as
     /// the port recorded it, and the depth the camera is pulled back from.
     scene: String,
@@ -422,9 +418,11 @@ impl Target {
         // the game's other buffer now).
         let held = self.frame.area().map(|(area, _)| area).filter(|_| framing.hold && !self.frame.newest().is_empty());
         let area = held.unwrap_or(area);
-        let new_frame = held.is_none() && (self.frame.track(renderer, area) || new_frame);
+        let new_frame = held.is_none() && (self.frame.track(renderer, area, framing.interpolate) || new_frame);
         let effects = config.effects.any() && framing.interface != Interface::Only;
-        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
+        // Interpolation's time matters only while something moves.
+        let settled = Framing { interpolate: framing.interpolate.filter(|&now| self.frame.moving(now)), ..framing };
+        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing: settled };
         if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(effects) {
             return;
         }
@@ -500,8 +498,6 @@ impl GameView {
             config: None,
             pending: Vec::new(),
             restart: true,
-            arrived: 0.0,
-            interval: 1.0 / 30.0,
             scene: String::new(),
             recorded_focus: None,
             focus: None,
@@ -586,11 +582,13 @@ impl GameView {
                     Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0 })
                 }
             }
-        } else if side > 0 || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
-            // The sides, and a little more for faces leaning into them.
+        } else if side > 0 || config.interpolation || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
+            // The sides, and a little more for faces leaning into them, or
+            // what a camera between two frames sees beside the screen.
             // Modern world terrain also needs sub-pixel slivers the
             // original's whole-pixel winding test discarded inside them.
-            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0, around: 0 })
+            let margin = if config.interpolation { 32 } else { 16 };
+            Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0 })
         } else {
             None
         }
@@ -913,7 +911,6 @@ impl GameView {
         // on the last that did, seen as the head now is (one they drew in
         // this inspection: they are made anew as it begins).
         self.show_screen(encoder, area, now, new_frame, None, Interface::Only);
-        let alpha = self.alpha(now);
         let hold = self.main.frame.eye().is_none() || projection_centre(self.main.frame.newest()).is_none();
         while self.eyes.len() < looks.len() {
             self.eyes.push(Target::new(&self.device, self.adapter.as_ref()));
@@ -921,7 +918,7 @@ impl GameView {
         for (target, look) in self.eyes.iter_mut().zip(&looks) {
             let framing = Framing {
                 side: self.side,
-                interpolate: config.interpolation.then_some(alpha).filter(|_| !hold),
+                interpolate: config.interpolation.then_some(now).filter(|_| !hold),
                 pull_back: 0.0,
                 replay: config.effects.any(),
                 look: Some(*look),
@@ -1003,7 +1000,7 @@ impl GameView {
     /// (the view's field, the game's frame arrivals, the camera's focus and
     /// the wider framing's sides); returns whether it is a new game frame.
     fn track_shown(&mut self, area: DisplayArea, scene: &str, now: f64) -> bool {
-        let new_frame = self.main.frame.track(&self.renderer, area);
+        let new_frame = self.main.frame.track(&self.renderer, area, Some(now));
         // The scene that drew the frame shown frames it: the field's last
         // frame stays pulled back while a battle loads behind it (and its
         // shatter takes it so), a battle's last one stays as the battle drew
@@ -1016,9 +1013,10 @@ impl GameView {
             self.focus = None;
         }
         // First-person inspection is the field's it began in, and begins
-        // only where a frame shown with the field camera's record (the port
-        // records it from the frame after the view asks, as the field draws
-        // its models) draws the field's scene: a field whose camera shows
+        // only where a frame shown with the field camera's record made
+        // looking around (the port records it so from the frame after the
+        // view asks, as the field draws its models) draws the field's
+        // scene: a field whose camera shows
         // none of it (the title screen's: its logo over a map the game culls
         // whole) has nothing to look around in, which the second new frame
         // of the record alone tells. The first proves nothing: a trace
@@ -1030,7 +1028,7 @@ impl GameView {
                 _ if !self.scene.starts_with("field") => self.first_person = None,
                 Some(field) if *field != self.scene => self.first_person = None,
                 Some(_) => {}
-                None if self.main.frame.camera().is_none() => {}
+                None if self.main.frame.camera().is_none_or(|camera| camera.around == 0) => {}
                 None if draws_scene(self.main.frame.newest()) => view.field = Some(self.scene.clone()),
                 None => {
                     view.sceneless += u8::from(new_frame);
@@ -1041,21 +1039,11 @@ impl GameView {
             }
         }
         if new_frame {
-            // Game frames come every 1-4 vertical blanks; a long gap (a
-            // pause, a load) is not an interval to interpolate over.
-            self.interval = (now - self.arrived).clamp(1.0 / 60.0, 4.0 / 60.0);
-            self.arrived = now;
             self.update_focus(area);
         }
         // The sides widen this display at its own height to the output's shape.
         self.side = self.config.and_then(|config| config.aspect).map_or(0, |aspect| display_side((area.width, area.height), aspect));
         new_frame
-    }
-
-    /// How far interpolation has gone from the frame before the newest to
-    /// the newest at `now`.
-    fn alpha(&self, now: f64) -> f32 {
-        ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32
     }
 
     /// The frame `area` shows (tracked: [`GameView::track_shown`]) as the
@@ -1076,7 +1064,7 @@ impl GameView {
         let zoom = scene_zoom(config.zoom, &self.scene);
         let pull_back = if zoom > 1.0 && look.is_none() && !alone { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
         // The interface moves as the game moves it: nothing to interpolate.
-        let interpolate = (config.interpolation && !alone).then_some(self.alpha(now));
+        let interpolate = (config.interpolation && !alone).then_some(now);
         let framing = Framing { side: self.side, interpolate, pull_back, replay: config.effects.any(), look, interface, hold: false };
         self.main.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
     }

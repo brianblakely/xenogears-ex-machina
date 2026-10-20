@@ -67,7 +67,7 @@ use super::{
 use glam::{DMat3, DVec3, Mat3, Mat4, Vec2, Vec3};
 use std::collections::HashMap;
 use std::sync::Arc;
-use xem_gpu::{Camera, CameraMode, Class, Combatant, Environment, Primitive, Shape, Stage, TraceOp, TraceVertex, VramRect};
+use xem_gpu::{Camera, CameraMode, Class, Combatant, Environment, Primitive, Reveals, Shape, Stage, TraceOp, TraceVertex, VramRect};
 
 /// What a headset shows of the game ([`super::GameView::set_xr_view`]): the
 /// flat virtual screen, or the diorama on its table.
@@ -909,6 +909,7 @@ fn fill_primitive(rect: VramRect, rgb: u32, fifteen: bool) -> Primitive {
         class: Class::Flat,
         projection: None,
         owner: 0,
+        placement: 0,
         source: 0,
         revealed: false,
         ground: None,
@@ -1374,12 +1375,14 @@ impl Diorama {
         {
             return Some(Fallback::Screen);
         }
-        // No camera record (or one whose axes span no space), or no scene to
-        // place: a frame the game draws over the picture before without
-        // drawing its scene (the field menu's opening fade over the field,
-        // its camera the one recorded within the four vertical blanks
-        // before) holds no diorama of its own.
-        let camera = frame.camera().filter(|camera| WorldFrame::new(camera).is_some());
+        // No camera record made for a view from anywhere (or one whose axes
+        // span no space), or no scene to place: a frame recorded before the
+        // diorama asked (its faces culled as the game's camera sees them),
+        // or one the game draws over the picture before without drawing its
+        // scene (the field menu's opening fade over the field, its camera
+        // the one recorded within the four vertical blanks before), holds no
+        // diorama of its own.
+        let camera = frame.camera().filter(|camera| camera.around & Reveals::ANYWHERE != 0 && WorldFrame::new(camera).is_some());
         if camera.is_none() || frame.snapshot().is_none() || first_scene(ops).is_none() {
             return Some(Fallback::Moment);
         }
@@ -1598,6 +1601,8 @@ mod tests {
         mode: CameraMode::Field,
         stage: None,
         ground: None,
+        origin: [0.0; 3],
+        around: 0,
     };
 
     const AREA: DisplayArea = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -1856,7 +1861,7 @@ mod tests {
         // view = R · world; R's rows are the camera's axes in the world.
         let r = Mat3::from_rotation_z(roll.to_radians()) * Mat3::from_rotation_x(pitch.to_radians()) * Mat3::from_rotation_y(-yaw.to_radians());
         let columns = (r * 4096.0).to_cols_array_2d();
-        Camera { axes: columns, translation: [0.0; 3], target, focus: 1200.0, mode, stage: None, ground: None }
+        Camera { axes: columns, translation: [0.0; 3], target, focus: 1200.0, mode, stage: None, ground: None, origin: [0.0; 3], around: 0 }
     }
 
     /// The world's direction `d` on the table.

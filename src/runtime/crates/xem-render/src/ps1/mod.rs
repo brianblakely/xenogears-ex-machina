@@ -1228,7 +1228,7 @@ impl<'a> Builder<'a> {
                 let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
                 self.upload(*rect, pixels, show);
             }
-            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::Eye(_) | TraceOp::Camera(_) => {}
+            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::Eye(_) | TraceOp::Camera(_) | TraceOp::Placement(_) => {}
         }
     }
 }
@@ -1825,6 +1825,12 @@ pub struct Ps1Renderer {
     /// for.
     eye: Option<(xem_gpu::Eye, u32)>,
     camera: Option<(xem_gpu::Camera, u32)>,
+    /// The placements the port recorded building the frame drawn next
+    /// ([`TraceOp::Placement`]: after the frame before was drawn), and, from
+    /// that frame's first primitive on, the same shared with its log.
+    placements: Vec<xem_gpu::Placement>,
+    placed: std::sync::Arc<[xem_gpu::Placement]>,
+    placing: bool,
     /// The lifts a look from within gave the frame it last looked at, for
     /// its next looks ([`frame::PlaneLayers`]).
     pub(crate) plane_layers: frame::PlaneLayers,
@@ -1870,19 +1876,28 @@ pub struct FrameLog {
     /// the port recorded it (a view looking around: [`TraceOp::Eye`]).
     pub eye: Option<xem_gpu::Eye>,
     /// The camera the game drew this frame with, when the port recorded it
-    /// (a view looking from within or around the scene: [`TraceOp::Camera`]).
+    /// (a field, a battle or the world map: [`TraceOp::Camera`]).
     pub camera: Option<xem_gpu::Camera>,
+    /// The transforms the game drew this frame's models and sprites with
+    /// ([`TraceOp::Placement`]), in the order it drew them.
+    pub placements: std::sync::Arc<[xem_gpu::Placement]>,
     /// Whether a primitive was drawn into it since it began: the port
-    /// records a frame's place and camera as it builds it, before its
-    /// first primitive, so the records current then are its own (also for
-    /// a buffer the game draws over instead of clearing it, whose log
-    /// begins with the frame).
+    /// records a frame's place, camera and placements as it builds it,
+    /// before its first primitive, so the records current then are its own
+    /// (also for a buffer the game draws over instead of clearing it, whose
+    /// log begins with the frame).
     drawn: bool,
 }
 
-/// Where the field's controlled character stood and the camera the game
-/// drew with, as the port recorded them for a frame.
-type Records = (Option<xem_gpu::Eye>, Option<xem_gpu::Camera>);
+/// Where the field's controlled character stood, the camera the game drew
+/// with and its models' and sprites' placements, as the port recorded them
+/// for a frame.
+#[derive(Clone, Default)]
+struct Records {
+    eye: Option<xem_gpu::Eye>,
+    camera: Option<xem_gpu::Camera>,
+    placements: std::sync::Arc<[xem_gpu::Placement]>,
+}
 
 /// A log grows without a clear in modes that never clear nor draw over all
 /// of their buffer; it is dropped past this length (the effects then see
@@ -2058,6 +2073,9 @@ impl Ps1Renderer {
             logs: Vec::new(),
             eye: None,
             camera: None,
+            placements: Vec::new(),
+            placed: std::sync::Arc::default(),
+            placing: false,
             plane_layers: frame::PlaneLayers::default(),
             display: None,
             shown: Vec::new(),
@@ -2426,7 +2444,14 @@ impl Ps1Renderer {
                     let from = match drawn_over.iter().find(|(r, _)| *r == rect) {
                         Some((_, from)) => *from,
                         None => {
-                            let shown = VramRect { width: rect.width.min(width), height: rect.height.min(height), ..rect };
+                            // From where the display shows it now: a log
+                            // begun for a mode's buffer before shows the next
+                            // mode's a few rows lower (the kernel menu's at
+                            // y 240, the arena's at 256), whose game never
+                            // draws the rows between.
+                            let (x, y) = self.shown.iter().find(|area| (area.width, area.height) == (width, height) && shown_by(&self.logs[index], area))
+                                .map_or((rect.x, rect.y), |area| (area.x, area.y));
+                            let shown = VramRect { x, y, width: rect.width.min(width), height: rect.height.min(height) };
                             // Unless a clear there starts it.
                             let from = covered_from(ops, &frame_starts, shown).filter(|&from| !ops[from..].iter().any(|op| clears(op, rect)));
                             drawn_over.push((rect, from));
@@ -2440,7 +2465,7 @@ impl Ps1Renderer {
                         log.previous = std::mem::take(&mut log.ops);
                         log.frames = self.logged;
                         log.start = start;
-                        (log.eye, log.camera, log.drawn) = (None, None, false);
+                        (log.eye, log.camera, log.placements, log.drawn) = (None, None, Default::default(), false);
                     }
                 }
                 for (_, from, taken, _) in &mut unlogged {
@@ -2458,9 +2483,17 @@ impl Ps1Renderer {
                     self.camera = Some((**camera, 0));
                     continue;
                 }
+                TraceOp::Placement(placement) => {
+                    // The first after a primitive begins the next frame's.
+                    if !self.placing {
+                        self.placements.clear();
+                        self.placing = true;
+                    }
+                    self.placements.push(*placement);
+                    continue;
+                }
                 // Recorded each frame the game draws (every other blank in a
-                // field) while the view looks from within or around the
-                // scene; older, they are not this frame's.
+                // field); older, they are not this frame's.
                 TraceOp::VBlank => {
                     self.eye = self.eye.and_then(|(eye, blanks)| (blanks < 4).then_some((eye, blanks + 1)));
                     self.camera = self.camera.and_then(|(camera, blanks)| (blanks < 4).then_some((camera, blanks + 1)));
@@ -2521,7 +2554,7 @@ impl Ps1Renderer {
                     log.rect = rect;
                     log.frames = frames;
                     log.start = std::sync::Arc::new(self.native.clone());
-                    (log.eye, log.camera, log.drawn) = (None, None, false);
+                    (log.eye, log.camera, log.placements, log.drawn) = (None, None, Default::default(), false);
                     continue;
                 }
                 if buffer || self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
@@ -2553,11 +2586,15 @@ impl Ps1Renderer {
                     }
                 }
             }
-            let records = self.frame_records();
             if let TraceOp::Draw(p) = op {
+                // The frame's first primitive: its placements are all recorded.
+                if self.placing {
+                    self.placed = std::sync::Arc::from(self.placements.as_slice());
+                    self.placing = false;
+                }
                 for (area, from, _, taken) in &mut unlogged {
                     if taken.is_none() && n >= *from && contains(area, p.environment.area[0], p.environment.area[1]) {
-                        *taken = Some(records);
+                        *taken = Some(self.frame_records());
                     }
                 }
             }
@@ -2565,15 +2602,16 @@ impl Ps1Renderer {
                 && let Some(index) = self.logs.iter().position(|l| (l.rect.x, l.rect.y) == (x, y))
                     .or_else(|| self.logs.iter().position(|l| contains(&l.rect, x, y)))
             {
+                // Its frame's first primitive: the records current now are
+                // the ones the port made building that frame.
+                let records = (!self.logs[index].drawn && matches!(op, TraceOp::Draw(_))).then(|| self.frame_records());
                 let log = &mut self.logs[index];
                 if log.ops.len() >= LOG_LIMIT {
                     log.ops.clear();
                     log.previous.clear();
                 }
-                // Its frame's first primitive: the records current now are
-                // the ones the port made building that frame.
-                if !log.drawn && matches!(op, TraceOp::Draw(_)) {
-                    (log.eye, log.camera, log.drawn) = (records.0, records.1, true);
+                if let Some(records) = records {
+                    (log.eye, log.camera, log.placements, log.drawn) = (records.eye, records.camera, records.placements, true);
                 }
                 log.ops.push(op.clone());
             }
@@ -2590,8 +2628,9 @@ impl Ps1Renderer {
                 _ => false,
             }).cloned().collect();
             self.logged += 1;
-            let ((eye, camera), drawn) = (records.unwrap_or_default(), records.is_some());
-            self.logs.push(FrameLog { rect: area, ops, frames: self.logged, start, eye, camera, drawn, ..Default::default() });
+            let drawn = records.is_some();
+            let Records { eye, camera, placements } = records.unwrap_or_default();
+            self.logs.push(FrameLog { rect: area, ops, frames: self.logged, start, eye, camera, placements, drawn, ..Default::default() });
             if self.logs.len() > 6 {
                 self.logs.remove(0);
             }
@@ -2603,10 +2642,10 @@ impl Ps1Renderer {
         self.logs.iter().any(|l| shown_by(l, area))
     }
 
-    /// The character's place and the camera a frame starting now was
-    /// recorded with.
+    /// The character's place, the camera and the placements a frame
+    /// starting now was recorded with.
     fn frame_records(&self) -> Records {
-        (self.eye.map(|(eye, _)| eye), self.camera.map(|(camera, _)| camera))
+        Records { eye: self.eye.map(|(eye, _)| eye), camera: self.camera.map(|(camera, _)| camera), placements: self.placed.clone() }
     }
 
     /// The logs' identities (where each buffer lies and how many frames it
