@@ -2070,7 +2070,7 @@ fn a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_st
             let trace = DEVICE.with(|device| {
                 let mut device = device.borrow_mut();
                 commands(&mut device);
-                device.trace_history(noted.0, noted.1, Some(1));
+                device.trace_history(noted.0, noted.1, Some(0));
                 device.take_trace()
             });
             let mut encoder = gpu.device.create_command_encoder(&Default::default());

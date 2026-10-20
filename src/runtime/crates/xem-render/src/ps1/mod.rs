@@ -2827,7 +2827,10 @@ impl Ps1Renderer {
     /// time: one comes back only as the game plays on from there, until the
     /// history takes a state again (as play goes on after a held rewind, at
     /// once after a state loaded from a file or a slot), which lets it go
-    /// unless VRAM holds it.
+    /// unless VRAM holds it. That leans on the states kept lying more than a
+    /// step's play-on (12 blanks) apart, as they do a second or more: a later
+    /// step from one closer before the screen was taken takes it again as
+    /// its native pixels.
     fn note_history(&mut self, frame: u64, state: bool, oldest: Option<u64>) {
         self.history = oldest;
         let back = self.noted.replace(frame).is_some_and(|noted| frame < noted);

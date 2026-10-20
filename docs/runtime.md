@@ -1940,7 +1940,12 @@ snapshots are its. The renderer only draws again what it drew:
   time: one comes back only as the game plays on from there (a held
   rewind's step takes it again), until the history takes a state again
   (as play goes on after the rewind; at once after a state loaded from a
-  file or a slot), which lets it go unless VRAM holds it. Each screen
+  file or a slot), which lets it go unless VRAM holds it. That leans on
+  the states the history keeps lying more than a step's play-on (12
+  vertical blanks) apart, a second or more as a rule; with states closer
+  (the game under about 12 frames a second, a state due again just after
+  a stall), a later step from one within that before the screen was
+  taken takes it again as its native pixels. Each screen
   remembered is a picture of the frame presented (8.3 MB for a field's at
   1920x1080 in widescreen, scale 5; at most 33.2 MB at 3840x2160), and
   bounded by the history alone they grew with its span (30 seconds by
