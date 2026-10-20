@@ -2006,12 +2006,27 @@ fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect, screens: &[Vr
 /// before `ops`, changed by their writes): a picture's pixels carry the bit
 /// where it was drawn from texels with it, and there the sprite blends with
 /// what lies beneath.
-fn blended_pictures(ops: &[TraceOp], native: &[u16], screens: &[VramRect]) -> Vec<usize> {
-    ops.iter().enumerate().filter_map(|(n, op)| {
-        let TraceOp::Draw(p) = op else { return None };
-        if !p.semi || p.shape != Shape::Rectangle || !screens.iter().any(|screen| samples(p, screen)) {
-            return None;
+fn blended_pictures<'a>(ops: &'a [TraceOp], native: &[u16], screens: &[VramRect]) -> Vec<usize> {
+    let sprite = |op: &'a TraceOp| match op {
+        TraceOp::Draw(p) if p.semi && p.shape == Shape::Rectangle && screens.iter().any(|screen| samples(p, screen)) => Some(p),
+        _ => None,
+    };
+    // VRAM as the sprites sample it: `native`, copied at the first write
+    // before the last of them and changed by each such write in turn.
+    let end = ops.iter().rposition(|op| sprite(op).is_some()).map_or(0, |last| last + 1);
+    let mut vram = std::borrow::Cow::Borrowed(native);
+    let mut blended = Vec::new();
+    for (n, op) in ops[..end].iter().enumerate() {
+        if let TraceOp::Write { rect, pixels, .. } = op {
+            let vram = vram.to_mut();
+            for (row, line) in pixels.chunks(usize::from(rect.width).max(1)).enumerate() {
+                let at = (usize::from(rect.y) + row) * VRAM_WIDTH as usize + usize::from(rect.x);
+                if let Some(target) = vram.get_mut(at..at + line.len()) {
+                    target.copy_from_slice(line);
+                }
+            }
         }
+        let Some(p) = sprite(op) else { continue };
         // Its texels: a sprite's far corners hold the coordinate one past its last.
         let mode = p.environment.draw_mode;
         let span = |texels: [i16; 4], page: u32, limit: u32| {
@@ -2020,18 +2035,11 @@ fn blended_pictures(ops: &[TraceOp], native: &[u16], screens: &[VramRect]) -> Ve
         };
         let xs = span(p.vertices.map(|v| v.u), (mode & 15) * 64, VRAM_WIDTH);
         let ys = span(p.vertices.map(|v| v.v), (mode >> 4 & 1) * 256, VRAM_HEIGHT);
-        let mut held: Vec<u16> = ys.clone().flat_map(|y| native[y * VRAM_WIDTH as usize..][xs.clone()].iter().copied()).collect();
-        for op in &ops[..n] {
-            let TraceOp::Write { rect, pixels, .. } = op else { continue };
-            let (x, y, width) = (usize::from(rect.x), usize::from(rect.y), usize::from(rect.width));
-            for row in y.max(ys.start)..(y + usize::from(rect.height)).min(ys.end) {
-                for column in x.max(xs.start)..(x + width).min(xs.end) {
-                    held[(row - ys.start) * xs.len() + column - xs.start] = pixels[(row - y) * width + column - x];
-                }
-            }
+        if ys.into_iter().any(|y| vram[y * VRAM_WIDTH as usize..][xs.clone()].iter().any(|texel| texel & 0x8000 != 0)) {
+            blended.push(n);
         }
-        held.iter().any(|texel| texel & 0x8000 != 0).then_some(n)
-    }).collect()
+    }
+    blended
 }
 
 /// The pixels of a rectangle opaque drawing covered ([`covered_from`]).

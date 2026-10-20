@@ -621,6 +621,38 @@ fn a_face_reaching_behind_the_camera_is_textured_as_the_gte_placed_its_points() 
 }
 
 #[test]
+fn a_point_nearer_than_half_the_projection_distance_takes_the_depth_the_gte_divided_it_by() {
+    // A world triangle with two points 300 units in front of the camera and
+    // one 23 units in front, nearer than half the projection distance (96),
+    // whose x and y the GTE divides by 96: its depth is 96 too, the depth
+    // HD-2D's effects read from the auxiliary target (ambient occlusion,
+    // depth of field, fog, shadows) and depth-tested ordering compares. At
+    // the centroid the face's depth through 300, 300 and 96 is 175.6; taken
+    // at 23 there, 131.1.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (sync, mut scene) = traced(|device| device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]));
+    let TraceOp::Draw(mut face) = primitive(0, 0, 0) else { unreachable!() };
+    (face.class, face.textured, face.projection) = (Class::World, false, Some(((160, 120), 192)));
+    for (v, [x, y, z]) in face.vertices.iter_mut().zip([[-100.0f32, 50.0, 300.0], [100.0, 50.0, 300.0], [0.0, 10.0, 23.0]]) {
+        let (fx, fy) = (160.0 + 192.0 * x / z.max(96.0), 120.0 + 192.0 * y / z.max(96.0));
+        (v.x, v.y, v.fx, v.fy, v.z, v.view) = (fx.floor() as i32, fy.floor() as i32, fx, fy, z, Some([x, y, z]));
+    }
+    scene.ops.push(TraceOp::Draw(face));
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
+    for trace in [&sync, &scene] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    // The centroid, (160, 148): depth in r and g, the class in b.
+    let aux = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().1);
+    let at = (148 * 1024 + 160) * 4;
+    let (depth, class) = (u32::from(aux[at]) << 8 | u32::from(aux[at + 1]), u32::from(aux[at + 2]));
+    assert_eq!((depth, class), (175, xem_render::ps1::AUX_WORLD), "the centroid's depth and class");
+}
+
+#[test]
 fn pulling_back_moves_the_scene_towards_the_projection_centre_and_leaves_the_interface() {
     let scene = primitive(260, 120, 0);
     let mut interface = primitive(260, 120, 0);
@@ -1536,6 +1568,38 @@ fn interpolation_moves_faces_reaching_behind_the_camera_as_the_gte_projects_them
                 "{w:?} at ({}, {}), where the GTE puts it for the camera turned 3 degrees ({x}, {y})", v.fx, v.fy);
         }
     }
+}
+
+#[test]
+fn interpolation_moves_a_sprites_floor_point_with_its_points_as_the_gte_projects_them() {
+    // A sprite about 55 units before the camera, nearer than half the
+    // projection distance (128), as the camera turns 6 degrees between two
+    // frames: the GTE divides its points' x and y, and its floor point's
+    // (the lowest point's, here), by that half. Halfway, the floor point,
+    // where HD-2D lays the sprite's shadow, stays at the lowest point, where
+    // the GTE puts both for the camera turned 3 degrees. Taken back at its
+    // own depth and moved by its projection there, it parted from the
+    // sprite by 127 pixels.
+    let (before, after) = (orbiting(0.0), orbiting(6.0));
+    let gte = |v: [f32; 3]| (160.0 + 256.0 * v[0] / v[2].max(128.0), 120.0 + 256.0 * v[1] / v[2].max(128.0));
+    let corners = [[-110.0, -20.0, -940.0], [-90.0, -20.0, -940.0], [-100.0, 10.0, -940.0]];
+    let TraceOp::Draw(mut sprite) = primitive(0, 0, 0) else { unreachable!() };
+    sprite.class = Class::Sprite;
+    for (v, w) in sprite.vertices.iter_mut().zip(corners) {
+        let view = seen(&after, w).0;
+        let (fx, fy) = gte(view);
+        *v = TraceVertex { x: fx.floor() as i32, y: fy.floor() as i32, fx, fy, z: view[2], view: Some(view), ..*v };
+    }
+    let lowest = sprite.vertices[2];
+    sprite.ground = Some([lowest.fx, lowest.fy, lowest.z]);
+    let mut ops = vec![TraceOp::Draw(sprite)];
+    assert!(interpolate(&mut ops, &[(0.0, &before, &[][..]), (1.0 / 30.0, &after, &[][..])], 1.5 / 30.0));
+    let TraceOp::Draw(sprite) = &ops[0] else { unreachable!() };
+    let ([x, y, z], lowest) = (sprite.ground.expect("its floor point"), sprite.vertices[2]);
+    let (gx, gy) = gte(seen(&orbiting(3.0), corners[2]).0);
+    assert!((lowest.fx - gx).abs() < 1e-2 && (lowest.fy - gy).abs() < 1e-2, "the lowest point at ({}, {}), where the GTE puts it ({gx}, {gy})", lowest.fx, lowest.fy);
+    assert!((x - lowest.fx).abs() < 1e-2 && (y - lowest.fy).abs() < 1e-2 && (z - lowest.z).abs() < 1e-2,
+        "the floor point at ({x}, {y}, {z}), the lowest point at ({}, {}, {})", lowest.fx, lowest.fy, lowest.z);
 }
 
 #[test]
@@ -2653,53 +2717,60 @@ fn sprites_of_a_picture_drawn_from_translucent_texels_start_no_log() {
     // where frame 3's semi-transparent sprites copy that picture they blend
     // with what lies beneath (B-F) and cover nothing, so frame 3, drawn
     // into the buffer at y 256, starts no log there: the buffer's log keeps
-    // frame 1 beneath it.
+    // frame 1 beneath it. So too where frames 2 and 3 are one trace (the
+    // host ran both before presenting: fast-forward, catching up), whose
+    // write of frame 2's pixels, before frame 3's sprites sample them, holds
+    // the square.
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
-    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
-    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
     let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         renderer.draw(&mut encoder, trace);
         gpu.queue.submit([encoder.finish()]);
     };
-    renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 218 });
-    let (sync, cleared) = traced(|device| {
-        device.write_gp0_words(&[0x0200_0000, 0, 480 << 16 | 320]);
-        // Green texels with the bit, at (640, 0).
-        device.write_gp0_words(&[0xA000_0000, xy(640, 0), 10 << 16 | 10]);
-        for _ in 0..50 {
-            device.write_gp0(0x83E0_83E0);
-        }
-    });
-    draw(&mut renderer, &sync);
-    draw(&mut renderer, &cleared);
     let small = |k: i32| [0x2000_00FF, xy(k, 150), xy(k + 4, 150), xy(k, 154)];
-    for n in 0..4u32 {
-        let (built, shown) = if n % 2 == 0 { (0, 256) } else { (256, 0) };
-        renderer.set_display(xem_gpu::VramRect { x: 0, y: shown, width: 320, height: 218 });
-        let trace = DEVICE.with(|device| {
-            let mut device = device.borrow_mut();
-            device.vblank();
-            device.write_gp0_words(&[0xE300_0000 | built << 10, 0xE400_0000 | (built + 217) << 10 | 319, 0xE500_0000 | built << 11]);
-            let page = 0xE100_0140 | u32::from(shown == 256) << 4;
-            device.write_gp0_words(&[page, 0x6670_7070, xy(0, 0), 0, 219 << 16 | 128]);
-            device.write_gp0_words(&[0x6670_7070, xy(128, 0), 128, 219 << 16 | 128]);
-            device.write_gp0_words(&[page | 4, 0x6670_7070, xy(256, 0), 0, 219 << 16 | 64]);
-            if n == 2 {
-                device.write_gp0_words(&[0xE100_010A, 0x6500_0000, xy(50, 50), 0, 10 << 16 | 10]);
-            } else {
-                device.write_gp0_words(&[0x6000_FF00, xy(10 + 20 * n as i32, 50), 10 << 16 | 10]);
+    for together in [false, true] {
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+        renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
+        renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 218 });
+        let (sync, cleared) = traced(|device| {
+            device.write_gp0_words(&[0x0200_0000, 0, 480 << 16 | 320]);
+            // Green texels with the bit, at (640, 0).
+            device.write_gp0_words(&[0xA000_0000, xy(640, 0), 10 << 16 | 10]);
+            for _ in 0..50 {
+                device.write_gp0(0x83E0_83E0);
             }
-            for k in 0..70 {
-                device.write_gp0_words(&small(k * 4));
-            }
-            device.take_trace()
         });
-        draw(&mut renderer, &trace);
+        draw(&mut renderer, &sync);
+        draw(&mut renderer, &cleared);
+        for n in 0..4u32 {
+            let (built, shown) = if n % 2 == 0 { (0, 256) } else { (256, 0) };
+            let trace = DEVICE.with(|device| {
+                let mut device = device.borrow_mut();
+                device.vblank();
+                device.write_gp0_words(&[0xE300_0000 | built << 10, 0xE400_0000 | (built + 217) << 10 | 319, 0xE500_0000 | built << 11]);
+                let page = 0xE100_0140 | u32::from(shown == 256) << 4;
+                device.write_gp0_words(&[page, 0x6670_7070, xy(0, 0), 0, 219 << 16 | 128]);
+                device.write_gp0_words(&[0x6670_7070, xy(128, 0), 128, 219 << 16 | 128]);
+                device.write_gp0_words(&[page | 4, 0x6670_7070, xy(256, 0), 0, 219 << 16 | 64]);
+                if n == 2 {
+                    device.write_gp0_words(&[0xE100_010A, 0x6500_0000, xy(50, 50), 0, 10 << 16 | 10]);
+                } else {
+                    device.write_gp0_words(&[0x6000_FF00, xy(10 + 20 * n as i32, 50), 10 << 16 | 10]);
+                }
+                for k in 0..70 {
+                    device.write_gp0_words(&small(k * 4));
+                }
+                (!together || n != 2).then(|| device.take_trace())
+            });
+            if let Some(trace) = trace {
+                renderer.set_display(xem_gpu::VramRect { x: 0, y: shown, width: 320, height: 218 });
+                draw(&mut renderer, &trace);
+            }
+        }
+        let log = renderer.frame_log(DisplayArea { x: 0, y: 256, width: 320, height: 218 }).expect("the log at y 256");
+        let draws = log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count();
+        assert_eq!((log.rect.y, log.rect.height, draws), (256, 218, 2 * 74), "the log at y 256 holds frames 1 and 3 (frames 2 and 3 one trace: {together})");
     }
-    let log = renderer.frame_log(DisplayArea { x: 0, y: 256, width: 320, height: 218 }).expect("the log at y 256");
-    let draws = log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count();
-    assert_eq!((log.rect.y, log.rect.height, draws), (256, 218, 2 * 74), "the log at y 256 holds frames 1 and 3");
 }
 
 #[test]

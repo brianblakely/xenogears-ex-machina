@@ -880,8 +880,13 @@ class Ground(Compare):
         # area at whole pixels and the pass emits none, so no packet of the
         # pool is linked this frame. Its slivers, recorded before the pool's
         # first slot, are not kept: a later frame linking a triangle there
-        # would draw them where they no longer lie.
-        reveals = self.recording(4)
+        # would draw them where they no longer lie. A face recorded before
+        # the pass (another of the frame's) is kept as it was.
+        reveals = self.recording(1)
+        face = [(GROUND_OT + 0x40) & 0x00FFFFFF, 7 | 3 << 8, 2, 0,
+                0x24806040, pair(10, 20), 0x7A001030, pair(30, 20), 0x00111032, pair(10, 40), 0x1031] + [0] * 5
+        reveals[0] = 1
+        reveals[4:20] = face
         LIB.xem_gte_write_control(6, 0x10)
         mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
         mem.write(HEIGHTS + 0x200, struct.pack("<hH", 0, 0x1234) * 3)
@@ -889,7 +894,8 @@ class Ground(Compare):
         count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0),
                                        lambda: asm_ground(GROUND_OT, 0, 0))
         self.assertEqual(count, 0)
-        self.assertEqual(reveals[0], 0)
+        self.assertEqual(reveals[0], 1)
+        self.assertEqual(list(reveals[4:20]), face)
 
 
 WORK = 0x80190000

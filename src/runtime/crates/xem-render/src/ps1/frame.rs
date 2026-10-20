@@ -1155,13 +1155,12 @@ impl Motion {
         placement.checked_sub(self.first).and_then(|i| self.placed.get(i as usize)).and_then(Option::as_ref).unwrap_or(&self.still)
     }
 
-    /// `ops`' scene moved: each projected point taken through its map and
-    /// its sub-pixel point and depth moved by as much as its projection
-    /// about the projection centre, as the GTE projects it (divided by its
-    /// depth, but by half the projection distance where it is nearer, or
-    /// behind the camera), and a sprite's floor point in front of the
-    /// camera by as much as its projection at its depth; a primitive with a
-    /// point without depth stays as drawn, and so does the interface.
+    /// `ops`' scene moved: each projected point (and a sprite's floor point)
+    /// taken through its map and its sub-pixel point and depth moved by as
+    /// much as its projection about the projection centre, as the GTE
+    /// projects it (divided by its depth, but by half the projection
+    /// distance where it is nearer, or behind the camera); a primitive with
+    /// a point without depth stays as drawn, and so does the interface.
     fn apply(&self, ops: &mut [TraceOp]) {
         let scene = scene_offset(ops);
         for op in ops {
@@ -1195,12 +1194,14 @@ impl Motion {
                     v.view = Some(m);
                 }
             }
-            if let Some([x, y, z]) = p.ground.filter(|ground| ground[2] >= 1.0) {
-                let q = unproject(p, (x, y, z));
-                let m = mapped(map, q);
-                if m[2] >= 1.0 {
-                    p.ground = Some([x + h * (m[0] / m[2] - q[0] / q[2]), y + h * (m[1] / m[2] - q[1] / q[2]), (z + m[2] - q[2]).max(1.0)]);
-                }
+            // The floor point, taken back as the GTE projected it, moves with
+            // the sprite's points (taken back at its own depth and moved by
+            // its projection there, one nearer than that half parted from
+            // them).
+            if let Some([x, y, z]) = p.ground {
+                let [qx, qy, _] = unproject(p, (x, y, divisor(z)));
+                let m = mapped(map, [qx, qy, z]);
+                p.ground = Some([x + h * (m[0] / divisor(m[2]) - qx / divisor(z)), y + h * (m[1] / divisor(m[2]) - qy / divisor(z)), m[2].max(1.0)]);
             }
         }
     }

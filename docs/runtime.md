@@ -1863,11 +1863,23 @@ snapshots are its. The renderer only draws again what it drew:
   PLAYER1 VS PLAYER2 bout from frame 2184 to 2254, a PLAYER1 VS COM bout
   on the rocky stage from 2074 to 2078 and from 3286 to 3366;
   `tests/ps1.rs`
-  `a_face_reaching_behind_the_camera_is_textured_as_the_gte_placed_its_points`).
+  `a_face_reaching_behind_the_camera_is_textured_as_the_gte_placed_its_points`;
+  the depth HD-2D's effects read and depth-tested ordering compares is
+  that depth too,
+  `a_point_nearer_than_half_the_projection_distance_takes_the_depth_the_gte_divided_it_by`).
   Its near cells still show their texels larger than the console does,
   growing towards a cell's near corner (101 units away against 472 at its
   far one in the PLAYER1 VS PLAYER2 bout's frame 2200), where the
-  console's affine texturing spreads them evenly. On
+  console's affine texturing spreads them evenly. The world map's cloud
+  quads nearest its camera are drawn so too, nearer the console: walking
+  while turning with L1 (`--example motion -- --worldmap --hold up,l1`),
+  the game's frames 320 to 360 in Modern 4:3, every tenth at 320x216,
+  changed with it in 1 813 pixels, 466 by more than 24 of 255, all but 13
+  (by at most 2) in the cloud quads at the top right, whose mean
+  difference from the console's picture there fell from
+  11.1 to 5.6 of 255 a colour channel; in HD-2D wider by more than 6 only
+  there (up to 30), its effects carrying the change into the rest of the
+  picture. On
   the world map, whose terrain blocks of different detail meet in
   T-junctions that open into hairline cracks at higher scales (the
   original's whole pixels hide them), and in the Battling arena, opaque
@@ -2088,7 +2100,13 @@ snapshots are its. The renderer only draws again what it drew:
   pixels carries the semi-transparency bit (none of either buffer's
   69 760 over the demo's first 398 frames; a textured primitive writes its
   texel's bit, and the sprites blend where a picture drawn from texels
-  with it has them: such a frame starts no log, `tests/ps1.rs`
+  with it has them: such a frame starts no log, its sprites' texels read
+  as the trace's writes before them left VRAM, a picture drawn earlier in
+  the same trace included, from one copy of VRAM kept through the trace:
+  each write replayed over each sprite's texels instead, the idle demo
+  fast-forwarded 8 frames a presentation took 2.42 ms of the
+  presentation's CPU at 640x360, against 1.95 now and 1.80 before the
+  check; `tests/ps1.rs`
   `sprites_of_a_picture_drawn_from_translucent_texels_start_no_log`),
   then the frame's own. Covering the buffer, each frame starts its log,
   replayed over that picture as the console drew it (the native pixels
@@ -3629,19 +3647,26 @@ Nothing is matched by its look: the port records what moved
   from there to where they are now. One drawn twice differently, or moved
   further than the camera stands from what it looks at (another thing
   drawn into that memory), holds still in the world.
-- **What is moved.** Each projected point of the scene moves its
-  sub-pixel point and depth by as much as its projection moves, as the
-  GTE projects it: divided by its depth, but by half the projection
-  distance where it lies nearer, or behind the camera (the GTE's division
-  saturates there); a sprite's floor point, in front of the camera, by as
-  much as its projection at its depth. A primitive with a point without
+- **What is moved.** Each projected point of the scene (and a sprite's
+  floor point) moves its sub-pixel point and depth by as much as its
+  projection moves, as the GTE projects it: divided by its depth, but by
+  half the projection distance where it lies nearer, or behind the camera
+  (the GTE's division saturates there). A primitive with a point without
   depth stays as drawn, and so does the interface. Held as drawn, a face
   reaching behind the camera parted from its neighbours as they moved,
   and taken at their own depth, near points swung across the screen: in
   burning Lahan (field 2) translucent quads 30 to 110 units before its
   camera, far off the screen where the GTE puts them, swept into it as
   light streaks while the camera moved (`tests/ps1.rs`
-  `interpolation_moves_faces_reaching_behind_the_camera_as_the_gte_projects_them`). The
+  `interpolation_moves_faces_reaching_behind_the_camera_as_the_gte_projects_them`),
+  and a sprite's floor point (where HD-2D lays its shadow and a look from
+  within the scene stands it), taken back at its own depth and moved by
+  its projection there, parted from a sprite nearer than that half
+  (`interpolation_moves_a_sprites_floor_point_with_its_points_as_the_gte_projects_them`).
+  A look from within the scene still takes a floor point back at its own
+  depth, in game frames as in these, so a sprite nearer than that half
+  would stand too near the middle of its view; none came that near in the
+  scenes probed (the nearest, in field 2, at 1.9 times that half). The
   faces the game culls beside its screen come into it as the camera turns:
   `GameView::reveals` asks for them 32 pixels beyond the screen (and the
   sides) while interpolation is on, and an interpolated picture shows them
