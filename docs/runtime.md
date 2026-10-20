@@ -277,6 +277,18 @@ goes on as without; [State interchange](#state-interchange)).
   capture of the same recipe (tools/reference/scenario.py) within 0.013 mean
   colour difference; on map 414 each `entry` puts the party on the map's
   entry record of that number (`tests/route.rs`).
+- **Settings → Debug.** The shared panel launches the original kernel menu's
+  Field, Battle, Worldmap, Battling, Menu and Movie operations. Field includes
+  a **Go to developer room** shortcut (map 0, entrance 0). Launches restart
+  the session; save progress first. Battle and Menu take their selector values
+  from the panel, then run the original game's loading and setup code.
+  The same typed requests are available as `debug {request: {tool: "field",
+  map: 0, entry: 0}}` (the panel sends `AppRequest::Debug`). `debug_status`
+  reports progress; normal frames advance it, or `debug_tick` runs a bounded
+  batch while a host is paused. Pending launches reject another launch and
+  save-state creation; Reset or restoring a state cancels them. Requests are
+  recorded for replay. `xem-headless/tests/debug.rs` exercises all six modes,
+  selector parameters, the developer room and the request lifecycle.
 - **Routes and regression.** `tests/reference-inputs/*.json` are pad routes
   (frame ranges and buttons) played identically by `xem-headless --inputs`
   and the reference emulator (`tools/reference/observe.py`); the captures of

@@ -137,7 +137,8 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the panel has content ({} colours)",
         distinct.len()
     );
-    section(&mut ui, "About", 7);
+    section(&mut ui, "Debug", 7);
+    section(&mut ui, "About", 8);
     assert!(
         ElementHandle::find_by_accessible_label(ui.component(), "#MadeWithSlint")
             .next()
@@ -746,7 +747,7 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
 
 #[test]
 fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
-    const SECTIONS: [&str; 8] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "About"];
+    const SECTIONS: [&str; 9] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Debug", "About"];
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
@@ -773,11 +774,11 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
             section(&mut ui, label, index as i32);
         }
     }
-    // The Android smoke taps Graphics and Saves at 210,722 and 727,722 on
+    // The Android smoke taps Graphics and Saves at 210,722 and 659,722 on
     // its 1080x2400 screen, where the panel (1064x1470 at 2.625) is at 8,465.
     ui.resize((1064, 1470), 2.625);
     ui.update().unwrap();
-    for (x, label, index) in [(210.0, "Graphics", 1), (727.0, "Saves", 5)] {
+    for (x, label, index) in [(210.0, "Graphics", 1), (659.0, "Saves", 5)] {
         click(&ui, LogicalPosition::new((x - 8.0) / 2.625, (722.0 - 465.0) / 2.625));
         ui.update().unwrap();
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
@@ -870,11 +871,11 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, LogicalPosition::new(x, y));
         ui.update().unwrap();
     };
-    at(&mut ui, 298.0, 98.0);
+    at(&mut ui, 269.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 5, "the headset smoke's pinch selects Saves");
     at(&mut ui, 122.0, 170.0);
     at(&mut ui, 314.0, 170.0);
-    at(&mut ui, 256.0, 98.0);
+    at(&mut ui, 232.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 4, "and Time");
     at(&mut ui, 347.0, 449.0);
     assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::SaveState), AppRequest::Action(AppAction::LoadState), toggle]);
@@ -926,7 +927,7 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, screen(x, y));
         ui.update().unwrap();
     };
-    tap(&mut ui, 628.0, 722.0);
+    tap(&mut ui, 572.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 4, "the Android smoke's tap selects Time");
     ui.set_time_status(Some(true), status);
     ui.update().unwrap();
@@ -942,11 +943,11 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     ui.dispatch(WindowEvent::PointerReleased { position: hold, button: PointerEventButton::Left });
     ui.update().unwrap();
     ui.set_time_status(Some(false), status);
-    tap(&mut ui, 727.0, 722.0);
+    tap(&mut ui, 659.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 5, "and Saves");
     tap(&mut ui, 306.0, 1095.0);
     tap(&mut ui, 764.0, 1095.0);
-    tap(&mut ui, 628.0, 722.0);
+    tap(&mut ui, 572.0, 722.0);
     tap(&mut ui, 829.0, 1644.0);
     assert_eq!(
         requests.borrow().as_slice(),
@@ -1230,4 +1231,49 @@ fn shortcuts_list_toggle_first_person_view_with_its_key_and_chord_and_rebind_it_
     ui.component().invoke_binding_edited(selected, "KeyG".into(), "Back+South".into());
     ui.update().unwrap();
     assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("KeyG", "Back+R1"), "Save state's chord stays Save state's");
+}
+
+#[test]
+fn debug_controls_submit_kernel_operations_and_developer_room() {
+    use xem_settings::{AppRequest, DebugRequest};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings, (640, 2600), 1.0).unwrap();
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    section(&mut ui, "Debug", 7);
+    press(&ui, &element(&ui, "Go to developer room", AccessibleRole::Button));
+    assert!(requests.borrow().is_empty(), "Debug needs a game session");
+    ui.set_debug_status(true, false, "");
+    ui.component().set_debug_map(22);
+    ui.component().set_debug_entry(4);
+    ui.component().set_debug_menu(3);
+    ui.component().set_debug_parameter(2);
+    ui.component().set_debug_movie(5);
+    ui.component().set_debug_movie_kind(1);
+    ui.update().unwrap();
+    for label in ["Debug party member 3", "Debug Gear 3"] {
+        press(&ui, &element(&ui, label, AccessibleRole::Combobox));
+        key(&ui, xem_ui::Key::DownArrow);
+        key(&ui, xem_ui::Key::Return);
+        ui.update().unwrap();
+    }
+    for (label, expected) in [
+        ("Start field test", DebugRequest::Field { map: 22, entry: 4 }),
+        ("Go to developer room", DebugRequest::Field { map: 0, entry: 0 }),
+        ("Start battle test", DebugRequest::Battle { formation: 3, file: 0, party: [0, 1, 3], gears: [0, 0, 1] }),
+        ("Start world map test", DebugRequest::Worldmap { map: 1024 }),
+        ("Start Battling", DebugRequest::Battling),
+        ("Open test menu", DebugRequest::Menu { screen: 3, parameter: 2 }),
+        ("Play test movie", DebugRequest::Movie { movie: 5, kind: 1 }),
+    ] {
+        press(&ui, &element(&ui, label, AccessibleRole::Button));
+        assert_eq!(requests.borrow_mut().pop(), Some(AppRequest::Debug(expected)), "{label}");
+    }
+    ui.set_debug_status(true, true, "Starting debug test…");
+    ui.update().unwrap();
+    press(&ui, &element(&ui, "Go to developer room", AccessibleRole::Button));
+    assert!(requests.borrow().is_empty(), "pending operations disable the launch controls");
 }

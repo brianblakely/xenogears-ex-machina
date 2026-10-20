@@ -136,6 +136,7 @@ impl Game {
         Ok(reply)
     }
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>,String> { self.session.snapshot_bytes() }
+    pub fn debug_status(&self) -> (bool, &str) { (self.session.debug.busy(), &self.session.debug.message) }
     pub fn restore_bytes(&mut self, bytes: &[u8]) -> Result<(),String> { self.session.restore_bytes(bytes) }
     pub fn card_image(&mut self, slot: usize) -> Option<Vec<u8>> { self.session.runtime.services().card.image(slot).map(<[u8]>::to_vec) }
     /// Import a card or save file the player picked into card `slot`, by its

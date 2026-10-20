@@ -747,6 +747,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let _ = operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui);
         }
         let (fast_forward,status) = game.time_status();
+        if assist.headset.pauses.settings && game.session.debug.busy() {
+            if let Err(error) = game.session.tick_debug() { ui.set_operation_error(&error); }
+            game.pause();
+        }
+        ui.set_debug_status(true, game.session.debug.busy(), &game.session.debug.message);
         ui.set_time_status(Some(fast_forward),&status);
         ui.set_storage_status(&game.storage_status());
 

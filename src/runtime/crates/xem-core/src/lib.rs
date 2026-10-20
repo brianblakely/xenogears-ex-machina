@@ -12,6 +12,7 @@ pub mod clock;
 pub mod context;
 pub mod control;
 pub mod dialogue;
+pub mod debug;
 mod focus;
 pub mod time;
 pub mod devices;

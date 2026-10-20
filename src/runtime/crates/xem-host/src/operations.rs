@@ -113,6 +113,11 @@ impl Operations {
             return Ok(if held { "Rewinding while held." } else { "Rewind released." }.into());
         }
         if self.busy { return Err("Finish the open file picker first.".into()); }
+        if let AppRequest::Debug(request) = request {
+            game.as_deref_mut().ok_or("Boot a game before using Debug.")?
+                .command(&serde_json::json!({"cmd":"debug", "request":request}))?;
+            return Ok("Starting debug test…".into());
+        }
         let AppRequest::Action(action) = request else { unreachable!() };
         match action {
             AppAction::Reset => {

@@ -702,6 +702,7 @@ async function appOperation(request) {
   }
 }
 async function executeAppOperation(request) {
+  if ('Debug' in request) return control({ cmd: 'debug', request: request.Debug });
   if ('Rewind' in request || 'UiRewind' in request) {
     const panel = 'UiRewind' in request;
     const held = panel ? request.UiRewind : request.Rewind;

@@ -23,6 +23,7 @@ pub enum AppAction {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AppRequest {
+    Debug(xem_core::debug::Request),
     Action(AppAction),
     Rewind(bool),
     UiRewind(bool),

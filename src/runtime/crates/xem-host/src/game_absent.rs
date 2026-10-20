@@ -7,6 +7,7 @@ pub enum Game {}
 impl Game {
     pub fn command(&mut self, _: &serde_json::Value) -> Result<serde_json::Value,String> { match *self {} }
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>,String> { match *self {} }
+    pub fn debug_status(&self) -> (bool, &str) { match *self {} }
     pub fn restore_bytes(&mut self, _: &[u8]) -> Result<(),String> { match *self {} }
     pub fn card_image(&mut self, _: usize) -> Option<Vec<u8>> { match *self {} }
     pub fn import_card(&mut self, _: usize, _: &[u8], _: &str) -> Result<String,String> { match *self {} }
