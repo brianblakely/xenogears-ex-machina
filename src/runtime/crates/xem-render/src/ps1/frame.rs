@@ -1155,11 +1155,13 @@ impl Motion {
         placement.checked_sub(self.first).and_then(|i| self.placed.get(i as usize)).and_then(Option::as_ref).unwrap_or(&self.still)
     }
 
-    /// `ops`' scene moved: each projected point (and a sprite's floor point)
-    /// taken through its map and its sub-pixel point and depth moved by as
-    /// much as its projection about the projection centre; a primitive with
-    /// a point without depth, or one at or behind the camera's plane, stays
-    /// as drawn, and so does the interface.
+    /// `ops`' scene moved: each projected point taken through its map and
+    /// its sub-pixel point and depth moved by as much as its projection
+    /// about the projection centre, as the GTE projects it (divided by its
+    /// depth, but by half the projection distance where it is nearer, or
+    /// behind the camera), and a sprite's floor point in front of the
+    /// camera by as much as its projection at its depth; a primitive with a
+    /// point without depth stays as drawn, and so does the interface.
     fn apply(&self, ops: &mut [TraceOp]) {
         let scene = scene_offset(ops);
         for op in ops {
@@ -1169,23 +1171,25 @@ impl Motion {
                 continue;
             }
             let (map, h, count) = (self.map(p.placement), f32::from(h), p.vertex_count());
+            let divisor = |z: f32| z.max(h / 2.0).max(1.0);
             let mut points = [([0.0f32; 3], [0.0f32; 3]); 4];
             let movable = (0..count).all(|i| {
                 let Some(q) = view_point(p, i) else { return false };
-                let m = mapped(map, q);
-                points[i] = (q, m);
-                q[2] >= 1.0 && m[2] >= 1.0
+                points[i] = (q, mapped(map, q));
+                true
             });
             if !movable {
                 continue;
             }
             for (v, (q, m)) in p.vertices.iter_mut().zip(points).take(count) {
-                v.fx += h * (m[0] / m[2] - q[0] / q[2]);
-                v.fy += h * (m[1] / m[2] - q[1] / q[2]);
+                v.fx += h * (m[0] / divisor(m[2]) - q[0] / divisor(q[2]));
+                v.fy += h * (m[1] / divisor(m[2]) - q[1] / divisor(q[2]));
                 v.x = whole(v.fx);
                 v.y = whole(v.fy);
+                // Its depth moves with its point's (the trace gives a point
+                // behind the camera depth 1).
                 if v.z > 0.0 {
-                    v.z = (v.z + m[2] - q[2]).max(1.0);
+                    v.z = (v.z + m[2] - q[2].max(1.0)).max(1.0);
                 }
                 if v.view.is_some() {
                     v.view = Some(m);

@@ -777,6 +777,22 @@ class Ground(Compare):
             mem.write(0x1F800000 + row, bytes([right]))
             mem.write(0x1F800080 + row, bytes([left]))
 
+    def recording(self, entries):
+        """The projections and culled faces recorded, the host wanting those
+        16 pixels beyond the screen, until the test ends: the culled-face
+        ring's header and its first `entries` records, as words."""
+        ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
+        reveals = (ctypes.c_uint * (4 + 16 * entries)).in_dll(LIB, "xem_present_reveal_storage")
+
+        def presentation(recording, wanted):
+            ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
+            ctypes.memset(ctypes.addressof(reveals), 0, ctypes.sizeof(reveals))
+            ring[6], reveals[1] = recording, wanted
+
+        self.addCleanup(presentation, 0, 0)
+        presentation(1, 16 << 16 | 16)
+        return reveals
+
     def test_cells_match_the_original(self):
         self.spans({0: (2, 6), 1: (0, 3), 2: (5, 5), 3: (7, 4), 4: (1, 0), 5: (0xFF, 9), 126: (60, 64), 127: (0, 9)})
         count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0x300, 0x80),
@@ -834,16 +850,7 @@ class Ground(Compare):
         # the second cell's two before the one the row emitted last (the
         # same), and those of row 1, the last, which emits none, before the
         # one emitted last too, not the slot no triangle came to.
-        ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
-        reveals = (ctypes.c_uint * (4 + 16 * 5)).in_dll(LIB, "xem_present_reveal_storage")
-
-        def presentation(recording, wanted):
-            ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
-            ctypes.memset(ctypes.addressof(reveals), 0, ctypes.sizeof(reveals))
-            ring[6], reveals[1] = recording, wanted
-
-        self.addCleanup(presentation, 0, 0)
-        presentation(1, 16 << 16 | 16)
+        reveals = self.recording(5)
         LIB.xem_gte_write_control(6, 0x10)
         mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
         mem.write(HEIGHTS + 0x200, struct.pack("<hH", -0x100, 0x1234) + struct.pack("<hH", 0, 0x1234) * 2)
@@ -867,6 +874,22 @@ class Ground(Compare):
             self.assertEqual(words[0] >> 24, 0x24)
             self.assertEqual([words[2], words[4], words[6]], [page, second, third])
             self.assertEqual([w >> 16 for w in words[1:7:2]], [122] * 3)
+
+    def test_a_pass_that_emits_no_triangle_keeps_no_slivers(self):
+        # The same flat cells without the raised corner: no triangle has
+        # area at whole pixels and the pass emits none, so no packet of the
+        # pool is linked this frame. Its slivers, recorded before the pool's
+        # first slot, are not kept: a later frame linking a triangle there
+        # would draw them where they no longer lie.
+        reveals = self.recording(4)
+        LIB.xem_gte_write_control(6, 0x10)
+        mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
+        mem.write(HEIGHTS + 0x200, struct.pack("<hH", 0, 0x1234) * 3)
+        self.spans({0: (0, 2)})
+        count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0),
+                                       lambda: asm_ground(GROUND_OT, 0, 0))
+        self.assertEqual(count, 0)
+        self.assertEqual(reveals[0], 0)
 
 
 WORK = 0x80190000

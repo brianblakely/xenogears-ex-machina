@@ -1026,6 +1026,15 @@ impl<'a> Builder<'a> {
         let fidelity = &self.options.fidelity;
         let count = p.vertex_count();
         let Attributes { mode, limits, class, projected, original, captured, captured_from, feedback, perspective } = self.attributes(p);
+        // A camera within the scene: its scene, seen from anywhere, at any size.
+        let near = self.near.filter(|_| class.is_scene());
+        // Each point at the depth the GTE divided it by, as the game's camera
+        // saw it: its own, but nearer than half the projection distance, or
+        // behind the camera, the division saturates and puts the point at
+        // twice its x and y about the centre, as if at that half (taken at
+        // its own depth, 1 behind the camera, such a point drew most of a
+        // face reaching it with its own texel).
+        let least = if near.is_none() { p.projection.map_or(0.0, |(_, h)| f32::from(h) / 2.0) } else { 0.0 };
         let vertex = |i: usize| {
             let v = &p.vertices[i];
             // Each vertex at the GTE's sub-pixel point when it has one, so
@@ -1033,10 +1042,11 @@ impl<'a> Builder<'a> {
             // interface at the original's whole pixels.
             let snap = fidelity.vertex_snapping || v.z <= 0.0 || original || captured;
             let (x, y) = if snap { (v.x as f32, v.y as f32) } else { (v.fx, v.fy) };
+            let z = v.z.max(least);
             let mut out = Vertex {
                 position: [x + 0.5, y + 0.5],
-                depth: if projected { v.z } else { 0.0 },
-                w: if perspective { v.z / 1024.0 } else { 1.0 },
+                depth: if projected { z } else { 0.0 },
+                w: if perspective { z / 1024.0 } else { 1.0 },
                 color: color(v.color),
                 uv: [f32::from(v.u), f32::from(v.v)],
                 mode,
@@ -1059,8 +1069,6 @@ impl<'a> Builder<'a> {
         let widened = self.widens(p);
         // Each point once (a quad's triangles share two).
         let corners: [Vertex; 4] = std::array::from_fn(|i| if i < count { vertex(i) } else { Vertex::default() });
-        // A camera within the scene: its scene, seen from anywhere, at any size.
-        let near = self.near.filter(|_| class.is_scene());
         match p.shape {
             Shape::Triangle | Shape::Quad => {
                 let rows = original && self.remap.is_none() && self.rows_left > 0 && needs_rows(p) && !widened;
@@ -1348,9 +1356,10 @@ const SEAL: f32 = 0.5;
 /// Where that plane takes a moved corner to under half or over twice its
 /// own depth or `w`, the corners keep their own attributes. A face seen
 /// almost edge on (the Battling arena's ground under its low camera), whose
-/// plane turns within a pixel of it, or one reaching behind the camera,
-/// where the GTE saturated its point, put a moved corner's `w` past zero
-/// there, and the face was drawn through infinity over the screen.
+/// plane turns within a pixel of it, put a moved corner's `w` past zero
+/// there, and the face was drawn through infinity over the screen (so did
+/// one reaching behind the camera while the point the GTE saturated there
+/// was taken at depth 1, not the depth the GTE divided it by).
 fn grow(corners: [Vertex; 3], by: f32) -> [Vertex; 3] {
     let p = corners.map(|v| glam::Vec2::from(v.position));
     let area = (p[1] - p[0]).perp_dot(p[2] - p[0]);
@@ -1972,21 +1981,57 @@ const LOG_LIMIT: usize = 200_000;
 /// polygon (untextured, or textured scenery, whose textures have no holes)
 /// drawn without the mask test. A semi-transparent one shows what lay
 /// beneath, but for sprites of another of the `screens`' pictures, texel
-/// for texel: their pixels, drawn ones, carry no semi-transparency bit,
-/// and they cover as a copy of that picture would (the Battling arena's
-/// idle demo draws each frame over the one before so, a little darker).
-fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect, screens: &[VramRect]) -> Option<usize> {
+/// for texel, none of whose texels carries the semi-transparency bit (the
+/// sprites of `blended` do: [`blended_pictures`]): drawn opaque, they cover
+/// as a copy of that picture would (the Battling arena's idle demo draws
+/// each frame over the one before so, a little darker), taking its black,
+/// transparent texels to leave what lay beneath as dark.
+fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect, screens: &[VramRect], blended: &[usize]) -> Option<usize> {
     // What a frame covers is all the same in any order: the frames from
     // the last one back, until they cover it all.
     let mut coverage = Coverage::new(rect, screens);
     let mut end = ops.len();
     for &start in frames.iter().rev() {
-        if ops[start..end].iter().any(|op| coverage.add(op)) {
+        if (start..end).any(|n| coverage.add(&ops[n], blended.binary_search(&n).is_ok())) {
             return Some(start);
         }
         end = start;
     }
     None
+}
+
+/// The semi-transparent sprites of `ops` (their indices, in order) that
+/// draw one of the `screens`' pictures as a 15-bit texture from texels some
+/// of which carry the semi-transparency bit, as VRAM held them then (`native`
+/// before `ops`, changed by their writes): a picture's pixels carry the bit
+/// where it was drawn from texels with it, and there the sprite blends with
+/// what lies beneath.
+fn blended_pictures(ops: &[TraceOp], native: &[u16], screens: &[VramRect]) -> Vec<usize> {
+    ops.iter().enumerate().filter_map(|(n, op)| {
+        let TraceOp::Draw(p) = op else { return None };
+        if !p.semi || p.shape != Shape::Rectangle || !screens.iter().any(|screen| samples(p, screen)) {
+            return None;
+        }
+        // Its texels: a sprite's far corners hold the coordinate one past its last.
+        let mode = p.environment.draw_mode;
+        let span = |texels: [i16; 4], page: u32, limit: u32| {
+            let at = |t: Option<&i16>| (page as i32 + i32::from(*t.unwrap())).clamp(0, limit as i32) as usize;
+            at(texels.iter().min())..at(texels.iter().max())
+        };
+        let xs = span(p.vertices.map(|v| v.u), (mode & 15) * 64, VRAM_WIDTH);
+        let ys = span(p.vertices.map(|v| v.v), (mode >> 4 & 1) * 256, VRAM_HEIGHT);
+        let mut held: Vec<u16> = ys.clone().flat_map(|y| native[y * VRAM_WIDTH as usize..][xs.clone()].iter().copied()).collect();
+        for op in &ops[..n] {
+            let TraceOp::Write { rect, pixels, .. } = op else { continue };
+            let (x, y, width) = (usize::from(rect.x), usize::from(rect.y), usize::from(rect.width));
+            for row in y.max(ys.start)..(y + usize::from(rect.height)).min(ys.end) {
+                for column in x.max(xs.start)..(x + width).min(xs.end) {
+                    held[(row - ys.start) * xs.len() + column - xs.start] = pixels[(row - y) * width + column - x];
+                }
+            }
+        }
+        held.iter().any(|texel| texel & 0x8000 != 0).then_some(n)
+    }).collect()
 }
 
 /// The pixels of a rectangle opaque drawing covered ([`covered_from`]).
@@ -2025,9 +2070,10 @@ impl<'a> Coverage<'a> {
         }
     }
 
-    /// Adds what `op` covers; returns whether all of the rectangle is
-    /// covered (never an empty one).
-    fn add(&mut self, op: &TraceOp) -> bool {
+    /// Adds what `op` covers (a sprite of a screen's picture `blended` with
+    /// what lies beneath covers nothing); returns whether all of the
+    /// rectangle is covered (never an empty one).
+    fn add(&mut self, op: &TraceOp, blended: bool) -> bool {
         if self.bits.is_empty() {
             return false;
         }
@@ -2043,7 +2089,7 @@ impl<'a> Coverage<'a> {
             return self.left == 0;
         }
         let TraceOp::Draw(p) = op else { return false };
-        let picture = p.shape == Shape::Rectangle && self.screens.iter().any(|screen| overlap(screen, &self.rect) == 0 && samples(p, screen));
+        let picture = !blended && p.shape == Shape::Rectangle && self.screens.iter().any(|screen| overlap(screen, &self.rect) == 0 && samples(p, screen));
         let solid = !p.textured || matches!(p.class, Class::World | Class::Model) || picture;
         if (p.semi && !picture) || p.revealed || !solid || p.environment.mask & 2 != 0 || !matches!(p.shape, Shape::Triangle | Shape::Quad | Shape::Rectangle) {
             return false;
@@ -2571,6 +2617,9 @@ impl Ps1Renderer {
         let frame_starts: Vec<usize> = std::iter::once(0)
             .chain(ops.iter().enumerate().filter(|(_, op)| matches!(op, TraceOp::VBlank)).map(|(n, _)| n + 1))
             .collect();
+        // Sprites of a screen's picture that blend with what lies beneath,
+        // found while the native VRAM is as the trace began.
+        let blended = blended_pictures(ops, &self.native, &self.shown);
         // A buffer the game draws over completely instead of clearing it
         // (a battle's stage, every frame) starts its log again with the last
         // of them from which the trace draws all over it, which hides
@@ -2584,7 +2633,7 @@ impl Ps1Renderer {
         // the records current at its first primitive there.
         let mut unlogged: Vec<(VramRect, usize, Option<std::sync::Arc<Vec<u16>>>, Option<Records>)> = self.shown.iter().copied()
             .filter(|area| !self.half_logged(area))
-            .filter_map(|area| Some((area, covered_from(ops, &frame_starts, area, &self.shown)?, None, None)))
+            .filter_map(|area| Some((area, covered_from(ops, &frame_starts, area, &self.shown, &blended)?, None, None)))
             .collect();
         for (n, op) in ops.iter().enumerate() {
             if n == 0 || matches!(ops[n - 1], TraceOp::VBlank) {
@@ -2611,7 +2660,7 @@ impl Ps1Renderer {
                                 .map(|area| (area.x, area.y))
                                 .chain([(rect.x, rect.y)])
                                 .map(|(x, y)| VramRect { x, y, width: rect.width.min(width), height: rect.height.min(height) })
-                                .map(|shown| (covered_from(ops, &frame_starts, shown, &self.shown), shown))
+                                .map(|shown| (covered_from(ops, &frame_starts, shown, &self.shown, &blended), shown))
                                 .max_by_key(|(from, _)| *from)
                                 .expect("the log's own corner");
                             // Unless a clear there starts it.

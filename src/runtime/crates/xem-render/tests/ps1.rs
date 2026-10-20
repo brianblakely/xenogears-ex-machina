@@ -511,13 +511,14 @@ fn sealed_faces_stay_within_a_pixel_or_two_of_themselves_whatever_their_points_d
     // The seal grows opaque world triangles by half a native pixel, their
     // attributes from their own plane. Thin faces whose points lie at
     // different depths (the Battling arena's ground under its low camera:
-    // one the game drew, a sliver it culled at whole pixels) and a face
+    // one the game drew, a sliver it culled at whole pixels) turn that
+    // plane within a pixel of them: a moved corner's w crossed zero, and the
+    // face was drawn through infinity over the screen. So did a face
     // reaching behind the camera (the GTE saturated its point there, which
-    // the trace gives depth 1) turn that plane within a pixel of them: a
-    // moved corner's w crossed zero, and the face was drawn through
-    // infinity over the screen. Drawn alone, each lights nothing farther
-    // than a moved corner goes (two native pixels) outside its bounds and
-    // its edges.
+    // the trace gives depth 1) while that point was taken at depth 1, not
+    // at the half projection distance the GTE divided it by. Drawn alone,
+    // each lights nothing farther than a moved corner goes (two native
+    // pixels) outside its bounds and its edges.
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let faces = [
         ([(100.0, 100.0, 600.0), (200.0, 100.5, 1500.0), (150.0, 100.27, 900.0)], false),
@@ -570,6 +571,53 @@ fn sealed_faces_stay_within_a_pixel_or_two_of_themselves_whatever_their_points_d
         }
         assert!(lit > 0, "{points:?} drawn");
     }
+}
+
+#[test]
+fn a_face_reaching_behind_the_camera_is_textured_as_the_gte_placed_its_points() {
+    // A world triangle with two points 300 units in front of the camera and
+    // one behind it (the Battling arena's near ground under its low camera):
+    // the GTE's division saturates for a point nearer than half the
+    // projection distance (192), putting it at twice its x and y about the
+    // centre, as if 96 units away, and the trace gives it depth 1. Drawn as
+    // the plane through the depths the GTE divided by, the face's texture
+    // spreads over it, its texel at the centroid the plane's (v 9 of 15);
+    // taken at depth 1, the point drew most of the face with its own texel
+    // (v 14 there): a flat patch where the console shows the ground's
+    // texture.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (sync, mut scene) = traced(|device| {
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        // A 15-bit texture at (512, 0): red 2u, green 2v, blue full.
+        device.write_gp0_words(&[0xA000_0000, 512, 16 << 16 | 16]);
+        for v in 0..16u32 {
+            for u in (0..16u32).step_by(2) {
+                let texel = |u: u32| 2 * u | 2 * v << 5 | 31 << 10;
+                device.write_gp0(texel(u) | texel(u + 1) << 16);
+            }
+        }
+    });
+    let TraceOp::Draw(mut face) = primitive(0, 0, 0) else { unreachable!() };
+    face.class = Class::World;
+    face.environment.draw_mode = 0x108;
+    face.projection = Some(((160, 120), 192));
+    for (v, ([x, y, z], (u, t))) in face.vertices.iter_mut().zip([([-100.0f32, 50.0, 300.0], (0, 0)), ([100.0, 50.0, 300.0], (15, 0)), ([0.0, 40.0, -50.0], (0, 15))]) {
+        let (fx, fy) = (160.0 + 192.0 * x / z.max(96.0), 120.0 + 192.0 * y / z.max(96.0));
+        (v.x, v.y, v.fx, v.fy, v.z, v.view, v.u, v.v) = (fx.floor() as i32, fy.floor() as i32, fx, fy, z.max(1.0), Some([x, y, z]), u, t);
+    }
+    scene.ops.push(TraceOp::Draw(face));
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
+    for trace in [&sync, &scene] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    // The centroid, (160, 168): weights 1/300, 1/300 and 1/96 put v at 9.1.
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+    let at = (168 * 1024 + 160) * 4;
+    let v = (u32::from(pixels[at + 1]) * 31 + 127) / 255 / 2;
+    assert_eq!(v, 9, "the centroid's texel {:?}", &pixels[at..at + 3]);
 }
 
 #[test]
@@ -1450,6 +1498,43 @@ fn interpolation_moves_models_and_sprites_from_their_own_placements() {
     assert!(close(first_point(&ops[2]), screen([90.0, 50.0, 1000.0])), "a sprite from its own place");
     for (k, why) in [(3, "a model further than the camera's distance is another"), (4, "one not drawn before holds still"), (5, "the scenery holds still")] {
         assert_eq!(first_point(&ops[k]), first_point(&drawn[k]), "{why}");
+    }
+}
+
+#[test]
+fn interpolation_moves_faces_reaching_behind_the_camera_as_the_gte_projects_them() {
+    // The camera turns 6 degrees between two frames over ground reaching
+    // under it: a face with two points about 1000 units ahead and one
+    // behind the camera, and one with a point 30 units ahead, nearer than
+    // half the projection distance (128). The GTE divides such a point's x
+    // and y by that half (its division saturates), and so does a camera
+    // turned partway. Taken at its own depth, the point behind kept its
+    // face as drawn and the near one moved as far as a point 30 units away
+    // does: both tore from the ground beside them.
+    let (before, after) = (orbiting(0.0), orbiting(6.0));
+    let gte = |v: [f32; 3]| (160.0 + 256.0 * v[0] / v[2].max(128.0), 120.0 + 256.0 * v[1] / v[2].max(128.0));
+    let face = |corners: [[f32; 3]; 3]| {
+        let TraceOp::Draw(mut p) = primitive(0, 0, 0) else { unreachable!() };
+        p.class = Class::World;
+        for (v, w) in p.vertices.iter_mut().zip(corners) {
+            let view = seen(&after, w).0;
+            let (fx, fy) = gte(view);
+            *v = TraceVertex { x: fx.floor() as i32, y: fy.floor() as i32, fx, fy, z: view[2].max(1.0), view: Some(view), ..*v };
+        }
+        TraceOp::Draw(p)
+    };
+    let behind = [[-200.0, 100.0, 0.0], [200.0, 100.0, 0.0], [0.0, 100.0, -1100.0]];
+    let near = [[-200.0, 100.0, 0.0], [200.0, 100.0, 0.0], [0.0, 100.0, -970.0]];
+    let mut ops = vec![face(behind), face(near)];
+    assert!(interpolate(&mut ops, &[(0.0, &before, &[][..]), (1.0 / 30.0, &after, &[][..])], 1.5 / 30.0));
+    let turned = orbiting(3.0);
+    for (op, corners) in ops.iter().zip([behind, near]) {
+        let TraceOp::Draw(p) = op else { unreachable!() };
+        for (v, w) in p.vertices.iter().zip(corners) {
+            let (x, y) = gte(seen(&turned, w).0);
+            assert!((v.fx - x).abs() < 1e-2 && (v.fy - y).abs() < 1e-2,
+                "{w:?} at ({}, {}), where the GTE puts it for the camera turned 3 degrees ({x}, {y})", v.fx, v.fy);
+        }
     }
 }
 
@@ -2493,8 +2578,8 @@ fn a_frame_drawn_over_the_other_buffers_picture_starts_its_buffers_log() {
     // Battling's idle demo clears its two buffers (y 0 and 256) with one
     // fill, then draws each frame over the other buffer's picture, a little
     // darker (the Gears' trails): three sprites of its 15-bit pixels, texel
-    // for texel, semi-transparent but opaque where they are drawn (drawn
-    // pixels carry no semi-transparency bit), then the frame's own. Each
+    // for texel, semi-transparent but drawn opaque, as none of the picture's
+    // texels carries the semi-transparency bit, then the frame's own. Each
     // display finds the log of its own buffer's newest frame, replayed over
     // that picture as the console drew it. Sharing the fill's log, each
     // display replayed every frame of both buffers since from black, the
@@ -2559,6 +2644,62 @@ fn a_frame_drawn_over_the_other_buffers_picture_starts_its_buffers_log() {
         assert!(green(mark(n - 1)) > 240 && (200..240).contains(&green(mark(n - 2))),
             "frame {n}: its square {} and the one before {}", green(mark(n - 1)), green(mark(n - 2)));
     }
+}
+
+#[test]
+fn sprites_of_a_picture_drawn_from_translucent_texels_start_no_log() {
+    // The idle demo's drawing (above), but frame 2's square is a sprite of
+    // texels carrying the semi-transparency bit, which its pixels keep:
+    // where frame 3's semi-transparent sprites copy that picture they blend
+    // with what lies beneath (B-F) and cover nothing, so frame 3, drawn
+    // into the buffer at y 256, starts no log there: the buffer's log keeps
+    // frame 1 beneath it.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
+    let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    };
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 218 });
+    let (sync, cleared) = traced(|device| {
+        device.write_gp0_words(&[0x0200_0000, 0, 480 << 16 | 320]);
+        // Green texels with the bit, at (640, 0).
+        device.write_gp0_words(&[0xA000_0000, xy(640, 0), 10 << 16 | 10]);
+        for _ in 0..50 {
+            device.write_gp0(0x83E0_83E0);
+        }
+    });
+    draw(&mut renderer, &sync);
+    draw(&mut renderer, &cleared);
+    let small = |k: i32| [0x2000_00FF, xy(k, 150), xy(k + 4, 150), xy(k, 154)];
+    for n in 0..4u32 {
+        let (built, shown) = if n % 2 == 0 { (0, 256) } else { (256, 0) };
+        renderer.set_display(xem_gpu::VramRect { x: 0, y: shown, width: 320, height: 218 });
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.vblank();
+            device.write_gp0_words(&[0xE300_0000 | built << 10, 0xE400_0000 | (built + 217) << 10 | 319, 0xE500_0000 | built << 11]);
+            let page = 0xE100_0140 | u32::from(shown == 256) << 4;
+            device.write_gp0_words(&[page, 0x6670_7070, xy(0, 0), 0, 219 << 16 | 128]);
+            device.write_gp0_words(&[0x6670_7070, xy(128, 0), 128, 219 << 16 | 128]);
+            device.write_gp0_words(&[page | 4, 0x6670_7070, xy(256, 0), 0, 219 << 16 | 64]);
+            if n == 2 {
+                device.write_gp0_words(&[0xE100_010A, 0x6500_0000, xy(50, 50), 0, 10 << 16 | 10]);
+            } else {
+                device.write_gp0_words(&[0x6000_FF00, xy(10 + 20 * n as i32, 50), 10 << 16 | 10]);
+            }
+            for k in 0..70 {
+                device.write_gp0_words(&small(k * 4));
+            }
+            device.take_trace()
+        });
+        draw(&mut renderer, &trace);
+    }
+    let log = renderer.frame_log(DisplayArea { x: 0, y: 256, width: 320, height: 218 }).expect("the log at y 256");
+    let draws = log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count();
+    assert_eq!((log.rect.y, log.rect.height, draws), (256, 218, 2 * 74), "the log at y 256 holds frames 1 and 3");
 }
 
 #[test]

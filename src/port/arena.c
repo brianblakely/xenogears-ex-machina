@@ -276,11 +276,11 @@ static void xem_ground_packet(u32 ot, u32 *packet, u32 nibbles, u32 uvs, u32 tpa
  * the row began: a cell beside it), or, while the row has emitted none,
  * just before the one emitted next (the row's first, or the next row's),
  * at that slot (arena_stage_draw_ground_cells moves it before the last if
- * none comes): packets the DMA walk reaches. The frame loop's compaction
- * (arena_display_compact_layer) links past runs of empty ordering-table
- * entries, and a face recorded at one would never be drawn. Its depth cue
- * is taken with the GTE put back; the packets and the game's winding test
- * are as they were. */
+ * none comes, and drops it if the pass emits none): packets the DMA walk
+ * reaches. The frame loop's compaction (arena_display_compact_layer) links
+ * past runs of empty ordering-table entries, and a face recorded at one
+ * would never be drawn. Its depth cue is taken with the GTE put back; the
+ * packets and the game's winding test are as they were. */
 static void xem_ground_sliver(u32 row, u32 packet, u32 nibbles, u32 uvs, u32 tpage_clut, u32 second, u32 third) {
     XemGte saved;
     u32 words[7], projections = xem_gte_ring->count;
@@ -388,9 +388,15 @@ u32 arena_stage_draw_ground_cells(u32 *ot, s32 originX, s32 originZ) {
     base = arena_stage_ground_triangles[arena_draw_buffer_index] & XEM_DMA_ADDRESS_MASK;
     emitted = ((packet & XEM_DMA_ADDRESS_MASK) - base) >> 5;
     /* Presentation only: slivers recorded before the slot no triangle came
-     * to (the last rows emitted none) go just before the one emitted last. */
+     * to (the last rows emitted none) go just before the one emitted last.
+     * A pass that emits none keeps none: recorded at the pool's first slot,
+     * which links no packet this frame, they would be drawn where they no
+     * longer lie once a later frame links a triangle there. */
     packet &= XEM_DMA_ADDRESS_MASK;
-    while (emitted != 0 && reveal != xem_present_reveals->count) {
+    if (emitted == 0) {
+        xem_present_reveals->count = reveal;
+    }
+    while (reveal != xem_present_reveals->count) {
         XemReveal *sliver = &xem_present_reveals->entries[reveal++ % XEM_PRESENT_REVEALS];
 
         if (sliver->entry == packet) {
