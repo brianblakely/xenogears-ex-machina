@@ -711,7 +711,7 @@ pub(crate) mod tests {
         let quad = crate::draw::pad_keys(&screen(), crate::overlay::POINTER_KEYS.len())[back].1;
         let local = quad.pose.position - screen().quad.pose.position;
         let at = ((local.x / 3.2 + 0.5) * 320.0, (0.5 - local.y / 2.24) * 224.0);
-        let outs = play(&mut headset, &pinch, at, Runtime::WEBXR, Context::Battle { page: 2, attack: false, ap: 6, list: true, targeting: false });
+        let outs = play(&mut headset, &pinch, at, Runtime::WEBXR, Context::Battle { page: 2, attack: false, ap: 6, list: true, targeting: false, message: false });
         assert_eq!(outs, [Out::Press { actions: vec![xem_core::action::GameAction::Cancel] }]);
         assert_eq!(headset.pad_marks(Context::Walk).len(), crate::overlay::POINTER_KEYS.len());
         // With microgestures the thumb plays and no keys show.

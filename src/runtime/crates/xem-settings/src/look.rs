@@ -12,9 +12,13 @@
 //! In a headset the head looks around, and the right stick turns the view
 //! in steps ([`SnapTurn`]). The app's Toggle first-person view action and
 //! agents' `first_person` command ([`Command`]) toggle it anywhere in a
-//! field but its menu, as a headset's underhand grab does.
+//! field but its menu, as a headset's underhand grab does. While a dialogue
+//! shows (a field's, or a battle's script message), Select held hides its
+//! windows from the picture ([`DialogueHiding`]; docs/runtime.md, Hiding a
+//! dialogue).
 use xem_core::FieldControls;
 use xem_core::action::{Assignment, GameAction, INSPECTION_HELD, buttons_with};
+use xem_core::context::Context as Ui;
 use xem_core::pad::button;
 
 /// The game's buttons held back while the view is on and the player walks,
@@ -62,7 +66,9 @@ fn select_toggles(field: FieldControls) -> bool {
 /// The toggle's inputs between frames: Select's keys (or a touch deck's
 /// SELECT) and the right stick's click as last seen, and while Back is
 /// held, whether alone (Back begins app chords such as Back+Start: only
-/// Back released without another button toggles).
+/// Back released without another button toggles) and held only where
+/// Select toggles (Back held over a dialogue hides its windows: let go once
+/// the player walks again, it toggles nothing).
 #[derive(Clone, Debug, Default)]
 pub struct Toggle {
     select: bool,
@@ -91,8 +97,8 @@ impl Toggle {
         self.select = select;
         self.right_stick = pressed(RIGHT_STICK);
         self.back = match (pressed(BACK), self.back) {
-            (true, None) => Some(fresh && !others),
-            (true, Some(alone)) => Some(alone && !others),
+            (true, None) => Some(fresh && !others && select_toggles(field)),
+            (true, Some(alone)) => Some(alone && !others && select_toggles(field)),
             (false, Some(true)) => {
                 toggle |= select_toggles(field);
                 None
@@ -131,6 +137,53 @@ pub fn game_buttons(buttons: u16, on: bool, field: FieldControls, assignment: &A
 /// Whether the view turns now: on, but not under a menu (it has the screen).
 pub fn turns(on: bool, field: FieldControls) -> bool {
     on && !field.menu
+}
+
+/// How long a gamepad's Back is held alone before it hides a dialogue's
+/// windows, in milliseconds: Back begins the app chords (Back+Start opens
+/// Settings, Back+South saves a state, Back+North loads one, ...), and a
+/// chord whose second button lands within it leaves the windows as they
+/// were (one slower hides them until that button lands).
+pub const BACK_HIDES_AFTER_MS: f64 = 150.0;
+
+/// Whether a dialogue's windows are left out of the picture (the view's
+/// `set_dialogue_hidden`), between frames. Select held while one shows (a
+/// field's dialogue, or a battle's script message: `ui`, the interface the
+/// input reaches) hides them: any of its bound keys or a touch deck's
+/// SELECT at once, a gamepad's Back once it has been held alone for
+/// [`BACK_HIDES_AFTER_MS`] (with another button it begins an app chord).
+/// They stay hidden while it is held, whatever the interface then: the
+/// display shows a frame while the game draws the next, so a window's last
+/// frames show after it has closed, and a window opening next is hidden
+/// from its first frame. Let go, they show again.
+/// Presentation only: the game's buttons stay as [`game_buttons`] gives
+/// them, Select among them (map 321's scripts read it).
+#[derive(Clone, Debug, Default)]
+pub struct DialogueHiding {
+    /// Since when (host milliseconds) a gamepad's Back has been held alone.
+    back: Option<f64>,
+    hidden: bool,
+}
+
+impl DialogueHiding {
+    /// Whether the windows are hidden now, `select` held (any of Select's
+    /// bound keys, a touch deck's SELECT) and the gamepad's buttons `pad` as
+    /// they are (before app chords take theirs) at `now` milliseconds of
+    /// the host's clock.
+    pub fn update(&mut self, select: bool, pad: &[u8; 16], ui: Ui, now: f64) -> bool {
+        let alone = pad[BACK] != 0 && (0..16).all(|i| i == BACK || pad[i] == 0);
+        self.back = if alone { Some(self.back.unwrap_or(now)) } else { None };
+        let held = select || self.back.is_some_and(|since| now - since >= BACK_HIDES_AFTER_MS);
+        let shows = matches!(ui, Ui::Dialogue { .. } | Ui::Battle { message: true, .. });
+        self.hidden = held && (self.hidden || shows);
+        self.hidden
+    }
+
+    /// Shows the windows (focus lost, the panel opened): a Back still held
+    /// when input comes back waits its time again.
+    pub fn clear(&mut self) {
+        *self = Self::default();
+    }
 }
 
 /// Whether a headset's underhand grab toggles the view: in a field but its
@@ -406,6 +459,104 @@ mod tests {
         }
         assert!(!toggle.update(false, &pad(&[BACK]), PICTURE));
         assert!(!toggle.update(false, &pad(&[]), PICTURE), "the map's picture keeps Select");
+    }
+
+    #[test]
+    fn back_held_over_a_dialogue_until_the_player_walks_toggles_nothing_let_go() {
+        let mut toggle = Toggle::default();
+        // Held over a dialogue (hiding its windows) until it closes by
+        // itself and the player walks, then let go.
+        assert!(!toggle.update(false, &pad(&[BACK]), DIALOGUE));
+        assert!(!toggle.update(false, &pad(&[BACK]), DIALOGUE));
+        assert!(!toggle.update(false, &pad(&[BACK]), FIELD), "the dialogue closed, the player walks");
+        assert!(!toggle.update(false, &pad(&[]), FIELD), "let go: nothing toggles");
+        // Pressed while the player walks and held as a dialogue opens and
+        // closes: nothing either.
+        assert!(!toggle.update(false, &pad(&[BACK]), FIELD));
+        assert!(!toggle.update(false, &pad(&[BACK]), DIALOGUE));
+        assert!(!toggle.update(false, &pad(&[BACK]), FIELD));
+        assert!(!toggle.update(false, &pad(&[]), FIELD), "a dialogue came between");
+        // Pressed and let go while the player walks, it toggles.
+        assert!(!toggle.update(false, &pad(&[BACK]), FIELD));
+        assert!(toggle.update(false, &pad(&[]), FIELD), "Back pressed and let go while walking");
+    }
+
+    /// A battle's interface, with its event script's message shown or not.
+    fn battle(message: bool) -> Ui {
+        Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message }
+    }
+
+    #[test]
+    fn select_held_over_a_dialogue_hides_its_windows_until_let_go_and_the_game_still_gets_select() {
+        use xem_core::context::Choice;
+        let message = Ui::Dialogue { choice: None };
+        let choice = Ui::Dialogue { choice: Some(Choice { count: 4, index: 0 }) };
+        let between = Ui::Event { map: 12, buttons: 0 };
+        let mut hiding = DialogueHiding::default();
+        // Select's keys (Backspace) and a touch deck's SELECT alike, at once.
+        assert!(hiding.update(true, &pad(&[]), message, 0.0), "held over a message");
+        assert!(hiding.update(true, &pad(&[]), choice, 16.0), "and over a choice");
+        // Still held as the window closes (its last frames show after) and
+        // the next one opens, then as the player walks.
+        assert!(hiding.update(true, &pad(&[]), between, 33.0), "the window closed: its frames still show");
+        assert!(hiding.update(true, &pad(&[]), message, 50.0), "the next one opens hidden");
+        assert!(hiding.update(true, &pad(&[]), Ui::Walk, 66.0), "the player walks, Select still held");
+        assert!(!hiding.update(false, &pad(&[]), Ui::Walk, 83.0), "let go, the windows show again");
+        // Held where no dialogue shows, nothing hides until one does.
+        for elsewhere in [Ui::Walk, between, Ui::None, battle(false)] {
+            let mut hiding = DialogueHiding::default();
+            assert!(!hiding.update(true, &pad(&[]), elsewhere, 0.0), "{elsewhere:?}: no dialogue shows");
+            assert!(hiding.update(true, &pad(&[]), message, 16.0), "{elsewhere:?}: then one opens");
+        }
+        // A battle's script message (its window, portrait and text).
+        let mut hiding = DialogueHiding::default();
+        assert!(hiding.update(true, &pad(&[]), battle(true), 0.0), "a battle's script message");
+        assert!(hiding.update(true, &pad(&[]), battle(false), 16.0), "held as it closes");
+        assert!(!hiding.update(false, &pad(&[]), battle(false), 33.0));
+        // The game's buttons are as they were: in a dialogue, with Select.
+        assert_eq!(game_buttons(button::SELECT | button::CIRCLE, false, DIALOGUE), button::SELECT | button::CIRCLE);
+    }
+
+    #[test]
+    fn a_gamepads_back_hides_a_dialogue_once_held_alone_and_its_chords_leave_it_shown() {
+        let message = Ui::Dialogue { choice: None };
+        let mut hiding = DialogueHiding::default();
+        assert!(!hiding.update(false, &pad(&[BACK]), message, 1000.0), "Back alone waits for a chord's second button");
+        assert!(!hiding.update(false, &pad(&[BACK]), message, 1000.0 + BACK_HIDES_AFTER_MS - 1.0));
+        assert!(hiding.update(false, &pad(&[BACK]), message, 1000.0 + BACK_HIDES_AFTER_MS), "held alone that long, it hides");
+        assert!(hiding.update(false, &pad(&[BACK]), Ui::Walk, 1500.0), "and stays hidden while held");
+        assert!(!hiding.update(false, &pad(&[]), Ui::Walk, 1516.0), "let go, they show");
+        // Back+Start (the settings panel), Back+South (save state), Back+North
+        // (load state): their second button lands within the wait.
+        for other in [9, 0, 3] {
+            let mut hiding = DialogueHiding::default();
+            assert!(!hiding.update(false, &pad(&[BACK]), message, 0.0));
+            assert!(!hiding.update(false, &pad(&[BACK]), message, 66.0));
+            for now in [83.0, 500.0, 2000.0] {
+                assert!(!hiding.update(false, &pad(&[BACK, other]), message, now), "a chord's Back hides nothing ({other})");
+            }
+            // The chord's button let go, Back alone waits its time again.
+            assert!(!hiding.update(false, &pad(&[BACK]), message, 2016.0));
+            assert!(hiding.update(false, &pad(&[BACK]), message, 2016.0 + BACK_HIDES_AFTER_MS));
+        }
+        // Hidden, a chord shows them (it runs its app action) and Back alone
+        // hides them again once it has waited.
+        let mut hiding = DialogueHiding::default();
+        hiding.update(false, &pad(&[BACK]), message, 0.0);
+        assert!(hiding.update(false, &pad(&[BACK]), message, 200.0));
+        assert!(!hiding.update(false, &pad(&[BACK, 0]), message, 216.0), "Back+South saves a state, the windows show");
+        assert!(!hiding.update(false, &pad(&[BACK]), message, 233.0));
+        // Input taken away (the panel, focus) shows them; Back still held
+        // when it comes back waits again.
+        let mut hiding = DialogueHiding::default();
+        hiding.update(false, &pad(&[BACK]), message, 0.0);
+        assert!(hiding.update(false, &pad(&[BACK]), message, 200.0));
+        hiding.clear();
+        assert!(!hiding.update(false, &pad(&[BACK]), message, 216.0), "back from the panel, Back still held");
+        assert!(hiding.update(false, &pad(&[BACK]), message, 216.0 + BACK_HIDES_AFTER_MS));
+        // Select's keys and the deck hide at once, Back held with them or not.
+        let mut hiding = DialogueHiding::default();
+        assert!(hiding.update(true, &pad(&[BACK]), message, 0.0));
     }
 
     #[test]

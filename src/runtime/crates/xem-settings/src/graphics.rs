@@ -372,6 +372,11 @@ pub struct Graphics {
     /// changes the game (it is recorded with the inputs); it does nothing
     /// while the view is the original's.
     pub actors_in_view: bool,
+    /// In large-scale fields (a Gear hangar, Babel Tower), where the game
+    /// draws the party with small sprites of its own, Ex Machina's renderer
+    /// draws each character's full-resolution field sprite there instead, at
+    /// a quarter of its size. Presentation only; off, the game's small ones.
+    pub full_size_sprites: bool,
     pub filtering: TextureFiltering,
     pub culling: Culling,
     pub xr: XrScreen,
@@ -391,6 +396,7 @@ impl Default for Graphics {
             widescreen: false,
             zoom_out: 100,
             actors_in_view: true,
+            full_size_sprites: false,
             filtering: TextureFiltering::default(),
             culling: Culling::default(),
             xr: XrScreen::default(),
@@ -420,6 +426,17 @@ impl Graphics {
             GraphicsProfile::Modern | GraphicsProfile::Hd2d => Fidelity::MODERN,
             GraphicsProfile::Ps1 => Fidelity::PS1,
             GraphicsProfile::Custom => self.custom_fidelity,
+        }
+    }
+
+    /// The selected profile's effect levels, and Custom's limits, as they
+    /// are by default (the panel's Reset Defaults); the rest stays.
+    pub fn profile_reset(&self) -> Graphics {
+        let defaults = Graphics::default();
+        match self.profile {
+            GraphicsProfile::Modern | GraphicsProfile::Ps1 => *self,
+            GraphicsProfile::Hd2d => Graphics { hd2d: defaults.hd2d, ..*self },
+            GraphicsProfile::Custom => Graphics { custom_effects: defaults.custom_effects, custom_fidelity: defaults.custom_fidelity, ..*self },
         }
     }
 
@@ -478,6 +495,13 @@ mod tests {
         };
         assert!(custom.fidelity().dithering && !custom.fidelity().affine_textures);
         assert_eq!(custom.effects().bloom, 30);
+        // Reset Defaults: the selected profile's own levels (Custom's limits
+        // too), the other profile's and the rest kept.
+        let edited = Graphics { hd2d: EffectLevels { bloom: 5, focus: -30, ..EffectLevels::HD2D }, zoom_out: 300, ..custom };
+        assert_eq!(edited.profile_reset(), Graphics { custom_fidelity: Fidelity::MODERN, custom_effects: EffectLevels::OFF, ..edited });
+        let hd2d = Graphics { profile: GraphicsProfile::Hd2d, ..edited };
+        assert_eq!(hd2d.profile_reset(), Graphics { hd2d: EffectLevels::HD2D, ..hd2d });
+        assert_eq!(Graphics { profile: GraphicsProfile::Modern, ..edited }.profile_reset().custom_effects.bloom, 30, "Modern has no levels to reset");
     }
 
     #[test]
@@ -508,6 +532,17 @@ mod tests {
         assert!(older.actors_in_view, "settings saved before the choice existed follow the view");
         let off = Graphics { actors_in_view: false, ..Graphics::default() };
         assert_eq!(serde_json::from_str::<Graphics>(&serde_json::to_string(&off).unwrap()).unwrap(), off);
+    }
+
+    #[test]
+    fn large_scale_fields_keep_their_small_sprites_unless_full_size_is_chosen() {
+        assert!(!Graphics::default().full_size_sprites);
+        let older: Graphics = serde_json::from_str(r#"{"zoom_out":300}"#).unwrap();
+        assert!(!older.full_size_sprites, "settings saved before the choice existed keep the small sprites");
+        let on = Graphics { full_size_sprites: true, ..Graphics::default() };
+        let text = serde_json::to_string(&on).unwrap();
+        assert!(text.contains(r#""full_size_sprites":true"#), "{text}");
+        assert_eq!(serde_json::from_str::<Graphics>(&text).unwrap(), on);
     }
 
     #[test]

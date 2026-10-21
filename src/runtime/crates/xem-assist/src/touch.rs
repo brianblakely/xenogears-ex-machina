@@ -400,7 +400,7 @@ mod tests {
             assert!(deck.actions().is_empty(), "the app's toggle presses nothing of the game's");
             assert_eq!(Control::Auto.label(ui), "AUTO");
         }
-        for ui in [Context::Walk, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false }] {
+        for ui in [Context::Walk, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message: false }] {
             let mut deck = Deck::default();
             deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
             assert!(deck.controls.iter().all(|(k, _)| *k != Control::Auto), "no AUTO in {ui:?}");
@@ -432,7 +432,7 @@ mod tests {
         }
         let picture = Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 };
         let menu = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false };
-        for ui in [menu, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false }, Context::None] {
+        for ui in [menu, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message: false }, Context::None] {
             let mut deck = Deck::default();
             deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
             assert!(deck.controls.iter().all(|(k, _)| *k != Control::Look), "no LOOK in {ui:?}");

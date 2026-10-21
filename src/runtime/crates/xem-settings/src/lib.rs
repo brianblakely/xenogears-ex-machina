@@ -25,6 +25,9 @@ pub const MAX_VOLUME: u8 = 100;
 /// The mouse camera's deadzone, default and largest, in pixels of motion.
 pub const DEFAULT_MOUSE_DEADZONE: u16 = 40;
 pub const MAX_MOUSE_DEADZONE: u16 = 100;
+/// How long the mouse is still before its cursor hides over the game
+/// ([`Settings::hide_idle_cursor`]), in seconds.
+pub const CURSOR_IDLE_SECONDS: f64 = 3.0;
 pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
 /// The Binaural sound mode's settings (`xem_core::binaural::Config`): the
 /// mode is on with `enabled`; [`Settings::audio_output`] keeps the original
@@ -146,7 +149,8 @@ pub enum EncounterRate {
     #[default]
     Original,
     /// Half as often for the same walk: the draw runs every other field
-    /// frame (`Session::set_half_encounters`).
+    /// frame (`Session::set_half_encounters`), and every battle gives twice
+    /// its experience, gold and deathblow progress (src/port/rewards.c).
     Half,
 }
 
@@ -229,6 +233,9 @@ pub struct Settings {
     pub mouse_deadzone: u16,
     /// Field movement runs unless the player holds the run button.
     pub run_by_default: bool,
+    /// The mouse cursor hides over the game once the mouse has been still for
+    /// [`CURSOR_IDLE_SECONDS`], until it moves again.
+    pub hide_idle_cursor: bool,
     pub rewind_enabled: bool,
     pub rewind_interval_seconds: u32,
     pub rewind_history_seconds: u32,
@@ -265,6 +272,7 @@ impl Default for Settings {
             mouse_sensitivity: 50,
             mouse_deadzone: DEFAULT_MOUSE_DEADZONE,
             run_by_default: false,
+            hide_idle_cursor: true,
             rewind_enabled: true,
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
             rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
@@ -291,6 +299,7 @@ pub enum SettingChange {
     MouseSensitivity(u16),
     MouseDeadzone(u16),
     RunByDefault(bool),
+    HideIdleCursor(bool),
     RewindEnabled(bool),
     RewindIntervalSeconds(u32),
     RewindHistorySeconds(u32),
@@ -366,6 +375,12 @@ impl Settings {
 
     pub fn mouse_scale(&self) -> f32 { f32::from(self.mouse_sensitivity) / 100.0 }
 
+    /// Whether the cursor hides over the game, the mouse still for `idle`
+    /// seconds ([`Settings::hide_idle_cursor`]).
+    pub fn hides_cursor(&self, idle: f64) -> bool {
+        self.hide_idle_cursor && idle >= CURSOR_IDLE_SECONDS
+    }
+
     /// The game's sound mode the hosts run it in (`Session::set_sound_mode`):
     /// Stereo under Binaural, whose placement reads the Stereo pan law;
     /// else the original mode chosen.
@@ -406,6 +421,7 @@ impl Settings {
             SettingChange::MouseSensitivity(percent) => next.mouse_sensitivity = *percent,
             SettingChange::MouseDeadzone(pixels) => next.mouse_deadzone = *pixels,
             SettingChange::RunByDefault(enabled) => next.run_by_default = *enabled,
+            SettingChange::HideIdleCursor(enabled) => next.hide_idle_cursor = *enabled,
             SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
             SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
             SettingChange::RewindHistorySeconds(seconds) => next.rewind_history_seconds = *seconds,
@@ -737,6 +753,20 @@ impl SettingsService {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn the_idle_cursor_hides_by_default_after_three_seconds() {
+        use super::*;
+        let settings = Settings::default();
+        assert!(settings.hide_idle_cursor, "on by default");
+        assert!(!settings.hides_cursor(2.9) && settings.hides_cursor(CURSOR_IDLE_SECONDS));
+        let off = Settings { hide_idle_cursor: false, ..settings.clone() };
+        assert!(!off.hides_cursor(60.0));
+        assert!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.hide_idle_cursor, "an older file hides it");
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        service.apply(SettingChange::HideIdleCursor(false)).unwrap();
+        assert!(!service.settings().hide_idle_cursor);
+    }
+
+    #[test]
     fn mouse_camera_releases_for_pause_menus_and_every_battle_page() {
         use super::*;
         use xem_core::context::{Context, Choice};
@@ -749,7 +779,7 @@ mod tests {
         assert!(!settings.captures_mouse(Context::Dialogue { choice: Some(Choice { count: 2, index: 0 }) }, false));
         for page in 0..8 {
             for attack in [false, true] {
-                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false }, false));
+                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false, message: false }, false));
             }
         }
     }

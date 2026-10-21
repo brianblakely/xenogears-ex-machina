@@ -484,8 +484,9 @@ impl FrameRenderer {
         let pulled = framing.pull_back > 0.0;
         // The interface alone has no scene to look at.
         let look = framing.look.filter(|_| framing.interface != Interface::Only);
+        // VRAM's picture keeps the dialogue the player hides.
         let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || look.is_some() || framing.replay || feedback
-            || framing.interface != Interface::Drawn)
+            || framing.interface != Interface::Drawn || renderer.options().hide_dialogue)
             && !self.newest_ops.is_empty();
         let side = if replay { framing.side } else { 0 };
         self.resize(device, ((area.width.max(1) + 2 * side) * scale, area.height.max(1) * scale));
@@ -1156,9 +1157,10 @@ impl Motion {
 
     /// `ops`' scene moved: each projected point (and a sprite's floor point)
     /// taken through its map and its sub-pixel point and depth moved by as
-    /// much as its projection about the projection centre; a primitive with
-    /// a point without depth, or one at or behind the camera's plane, stays
-    /// as drawn, and so does the interface.
+    /// much as its projection about the projection centre, as the GTE
+    /// projects it (divided by its depth, but by half the projection
+    /// distance where it is nearer, or behind the camera); a primitive with
+    /// a point without depth stays as drawn, and so does the interface.
     fn apply(&self, ops: &mut [TraceOp]) {
         let scene = scene_offset(ops);
         for op in ops {
@@ -1168,34 +1170,38 @@ impl Motion {
                 continue;
             }
             let (map, h, count) = (self.map(p.placement), f32::from(h), p.vertex_count());
+            let divisor = |z: f32| z.max(h / 2.0).max(1.0);
             let mut points = [([0.0f32; 3], [0.0f32; 3]); 4];
             let movable = (0..count).all(|i| {
                 let Some(q) = view_point(p, i) else { return false };
-                let m = mapped(map, q);
-                points[i] = (q, m);
-                q[2] >= 1.0 && m[2] >= 1.0
+                points[i] = (q, mapped(map, q));
+                true
             });
             if !movable {
                 continue;
             }
             for (v, (q, m)) in p.vertices.iter_mut().zip(points).take(count) {
-                v.fx += h * (m[0] / m[2] - q[0] / q[2]);
-                v.fy += h * (m[1] / m[2] - q[1] / q[2]);
+                v.fx += h * (m[0] / divisor(m[2]) - q[0] / divisor(q[2]));
+                v.fy += h * (m[1] / divisor(m[2]) - q[1] / divisor(q[2]));
                 v.x = whole(v.fx);
                 v.y = whole(v.fy);
+                // Its depth moves with its point's (the trace gives a point
+                // behind the camera depth 1).
                 if v.z > 0.0 {
-                    v.z = (v.z + m[2] - q[2]).max(1.0);
+                    v.z = (v.z + m[2] - q[2].max(1.0)).max(1.0);
                 }
                 if v.view.is_some() {
                     v.view = Some(m);
                 }
             }
-            if let Some([x, y, z]) = p.ground.filter(|ground| ground[2] >= 1.0) {
-                let q = unproject(p, (x, y, z));
-                let m = mapped(map, q);
-                if m[2] >= 1.0 {
-                    p.ground = Some([x + h * (m[0] / m[2] - q[0] / q[2]), y + h * (m[1] / m[2] - q[1] / q[2]), (z + m[2] - q[2]).max(1.0)]);
-                }
+            // The floor point, taken back as the GTE projected it, moves with
+            // the sprite's points (taken back at its own depth and moved by
+            // its projection there, one nearer than that half parted from
+            // them).
+            if let Some([x, y, z]) = p.ground {
+                let [qx, qy, _] = unproject(p, (x, y, divisor(z)));
+                let m = mapped(map, [qx, qy, z]);
+                p.ground = Some([x + h * (m[0] / divisor(m[2]) - qx / divisor(z)), y + h * (m[1] / divisor(m[2]) - qy / divisor(z)), m[2].max(1.0)]);
             }
         }
     }
@@ -1491,24 +1497,28 @@ pub(crate) struct PlaneLayers {
     below: Vec<f32>,
 }
 
-/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
-/// when it holds them, else worked out and kept there.
-pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
-    // Each original part carries the same alternative for its drawing pass.
-    // Replace that pass once, including the original builder's texture cells,
-    // and put those cells back before another sprite/scenery samples VRAM.
+/// Each sprite drawing pass whose parts carry an alternative (`pick`: they
+/// all carry the same one) drawn as the alternative: its cells uploaded, its
+/// parts drawn (each from the pass's first part, `clear` taking the
+/// alternative off it), and the pixels the cells covered put back before
+/// another sprite or the scenery samples VRAM.
+pub(crate) fn substitute_alternatives(
+    ops: &mut Vec<TraceOp>,
+    pick: impl Fn(&xem_gpu::Primitive) -> Option<&std::sync::Arc<xem_gpu::SpriteFacing>>,
+    clear: impl Fn(&mut xem_gpu::Primitive),
+) {
     let mut replaced = std::collections::HashSet::new();
-    let mut facing_ops = Vec::with_capacity(ops.len());
+    let mut substituted = Vec::with_capacity(ops.len());
     for op in ops.drain(..) {
-        let TraceOp::Draw(p) = &op else { facing_ops.push(op); continue };
-        let Some(facing) = &p.facing else { facing_ops.push(op); continue };
-        if !replaced.insert(std::sync::Arc::as_ptr(facing)) { continue; }
-        for (rect, pixels) in &facing.textures {
-            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        let TraceOp::Draw(p) = &op else { substituted.push(op); continue };
+        let Some(alternative) = pick(p) else { substituted.push(op); continue };
+        if !replaced.insert(std::sync::Arc::as_ptr(alternative)) { continue; }
+        for (rect, pixels) in &alternative.textures {
+            substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
-        for part in &facing.parts {
+        for part in &alternative.parts {
             let mut p = p.clone();
-            p.facing = None;
+            clear(&mut p);
             p.shape = xem_gpu::Shape::Quad;
             p.raw = part.words[0] & 0x01000000 != 0;
             p.semi = part.words[0] & 0x02000000 != 0;
@@ -1529,13 +1539,19 @@ pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Op
                 v.u = (uv & 0xFF) as i16;
                 v.v = (uv >> 8 & 0xFF) as i16;
             }
-            facing_ops.push(TraceOp::Draw(p));
+            substituted.push(TraceOp::Draw(p));
         }
-        for (rect, pixels) in &facing.restore {
-            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        for (rect, pixels) in &alternative.restore {
+            substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
     }
-    *ops = facing_ops;
+    *ops = substituted;
+}
+
+/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
+/// when it holds them, else worked out and kept there.
+pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
+    substitute_alternatives(ops, |p| p.facing.as_ref(), |p| p.facing = None);
     let scene = scene_offset(ops);
     let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     let camera = |q: [f32; 3]| {

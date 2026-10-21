@@ -365,7 +365,8 @@ impl SettingsUi {
 
     /// Whether the host plays in a headset: the Controls section lists the
     /// underhand grab and the controllers' Back (their right stick's click)
-    /// as inspection's toggles, and their right stick as its look.
+    /// as inspection's toggles, their right stick as its look, and that Back
+    /// held as what hides a dialogue (elsewhere Select).
     pub fn set_first_person_headset(&self, headset: bool) {
         self.panel.set_first_person_headset(headset);
     }
@@ -419,7 +420,7 @@ fn debug_request(panel: &SettingsPanel, tool: i32) -> Result<xem_settings::Debug
             }
             DebugRequest::Battle { formation: byte(panel.get_debug_formation())?, file: byte(panel.get_debug_battle_file())?, party: members, gears: modes }
         }
-        2 => DebugRequest::Worldmap { map: word(panel.get_debug_worldmap())? },
+        2 => DebugRequest::Worldmap,
         3 => DebugRequest::Battling,
         4 => DebugRequest::Menu { screen: byte(panel.get_debug_menu())?, parameter: byte(panel.get_debug_parameter())? },
         5 => DebugRequest::Movie { movie: byte(panel.get_debug_movie())?, kind: byte(panel.get_debug_movie_kind())? },
@@ -483,10 +484,12 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
     match key {
         "renderer" => next.renderer = *RENDERERS.get(index?)?,
         "profile" => next.profile = *PROFILES.get(index?)?,
+        "profile-reset" => next = next.profile_reset(),
         "scale" => next.internal_scale = u8::try_from(value).ok()?,
         "quality" => next.quality = *QUALITIES.get(index?)?,
         "interpolation" => next.interpolation = value != 0,
         "widescreen" => next.widescreen = value != 0,
+        "full-size-sprites" => next.full_size_sprites = value != 0,
         "filter-world" => next.filtering.world = filter()?,
         "filter-sprites" => next.filtering.sprites = filter()?,
         "filter-interface" => next.filtering.interface = filter()?,
@@ -549,6 +552,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_quality(index_of(&QUALITIES, &graphics.quality));
     panel.set_gfx_interpolation(graphics.interpolation);
     panel.set_gfx_widescreen(graphics.widescreen);
+    panel.set_gfx_full_size_sprites(graphics.full_size_sprites);
     panel.set_gfx_zoom_out(i32::from(graphics.zoom_out));
     panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
@@ -577,6 +581,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_mouse_sensitivity(i32::from(settings.mouse_sensitivity));
     panel.set_mouse_deadzone(i32::from(settings.mouse_deadzone));
     panel.set_run_by_default(settings.run_by_default);
+    panel.set_hide_idle_cursor(settings.hide_idle_cursor);
     panel.set_random_battles(match settings.random_battles {
         RandomBattles::NotWhilePlatforming => 0,
         RandomBattles::Original => 1,
@@ -745,6 +750,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_run_by_default_edited({
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
+    });
+    panel.on_hide_idle_cursor_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::HideIdleCursor(enabled)))
     });
     panel.on_random_battles_edited({
         let apply = apply.clone();

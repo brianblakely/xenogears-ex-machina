@@ -305,6 +305,318 @@ fn battle_sky_bands_continue_beside_the_screen_where_they_are_drawn() {
     assert!(checked > 100 && haze, "{checked} band copies seen, the haze among them: {haze}");
 }
 
+/// Settings' Start Battling (the arena, mode 4), as a host presents every
+/// frame. The arena clears its two buffers, at y 0 and 256, at once and
+/// then draws all over the one it builds each frame without clearing it:
+/// each display shows the frames drawn into its own buffer (sharing the log
+/// the clear began, the title over its fire showed black, or black every
+/// other frame, under wider framing and HD-2D). In a bout its sky gradient
+/// and the background tile below it go on beside the screen, just before
+/// the sky; under Modern the far slivers its ground's winding test drops at
+/// whole pixels are recorded and drawn inside the original screen; and none
+/// of it changes the game: RAM, VRAM, sound and time are as without a
+/// trace, the whole state too outside the port's memory.
+#[test]
+fn battling_shows_each_buffer_its_own_frames_its_sky_beside_the_screen_and_its_far_slivers() {
+    use xem_gpu::{Class, Primitive, Shape, TraceOp};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    // The launch, then Cross on BONUS BATTLING, PLAYER1 VS COM and the two
+    // gears offered (Weltall against Vierge).
+    let cross = |at: u32| json!([at, {"cmd": "press", "buttons": ["cross"], "frames": 2}]);
+    let commands = json!([[1, {"cmd": "debug", "request": {"tool": "battling"}}], cross(1200), cross(1240), cross(1280), cross(1320)]);
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let wide = Graphics { widescreen: true, ..Graphics::default() };
+    let hd2d = Graphics { profile: GraphicsProfile::Hd2d, ..Graphics::default() };
+    let modern = Graphics::default();
+    // A frame run and presented (both shapes at scale 2): its draws.
+    let mut presented = 0u64;
+    let mut shown = |session: &mut Session<NativeModule>, view: &mut GameView, graphics: &Graphics| -> Vec<Primitive> {
+        let output = if graphics.widescreen { (640, 360) } else { (640, 480) };
+        view.configure(ViewConfig::resolve(graphics, HostClass::Desktop, output, view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        let trace = device.take_trace();
+        let draws = trace.ops.iter().filter_map(|op| match op { TraceOp::Draw(p) => Some(p.clone()), _ => None }).collect();
+        view.push(trace);
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        presented += 1;
+        assert!(view.present(&mut encoder, &display, &scene, presented as f64 / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        draws
+    };
+    let brightness = |rgba: &[u8]| rgba.chunks_exact(4).map(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2])).sum::<u32>() as f32 / (rgba.len() / 4) as f32;
+    // The title over its fire, wider and then under HD-2D: as bright as the
+    // console's picture of it, every frame.
+    for n in 0..1190 {
+        let graphics = if n < 1140 { wide } else { hd2d };
+        shown(&mut session, &mut view, &graphics);
+        if n >= 1100 {
+            let picture = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+            let (_, _, console) = session.runtime.services().gpu.display_rgba8();
+            let (ours, theirs) = (brightness(&picture), brightness(&console));
+            assert!(theirs > 100.0 && ours * 2.0 > theirs, "frame {n}: the title shown at {ours:.0} against the console's {theirs:.0}");
+        }
+    }
+    for _ in 1190..1540 {
+        shown(&mut session, &mut view, &wide);
+    }
+    assert_eq!(session.runtime.context(), xem_core::context::Context::Arena { state: 1 }, "the bout under way");
+    // The sky beside the screen: just before the sky band (a Gouraud quad
+    // over the screen's width), its two copies beside it, and before them
+    // the background tile's, from the band's bottom to the screen's, just
+    // after the tile itself.
+    let beside = |p: &Primitive| p.vertices.iter().all(|v| v.x <= 0) || p.vertices.iter().all(|v| v.x >= 320);
+    let spans = |p: &Primitive| p.vertices.iter().all(|v| v.x == 0 || v.x == 320);
+    let mut skies = 0;
+    for _ in 0..40 {
+        let draws = shown(&mut session, &mut view, &wide);
+        for (i, band) in draws.iter().enumerate() {
+            if band.revealed || band.textured || !band.gouraud || band.shape != Shape::Quad || !spans(band) || i < 5 {
+                continue;
+            }
+            let (tile, copies) = (&draws[i - 5], &draws[i - 4..i]);
+            assert!(copies.iter().all(|p| p.revealed && !p.textured && p.shape == Shape::Quad && beside(p)), "copies before the sky: {copies:?}");
+            assert!(tile.shape == Shape::Rectangle && !tile.revealed && spans(tile), "the tile before them: {tile:?}");
+            for copy in &copies[2..] {
+                assert_eq!((copy.vertices.map(|v| v.color), copy.vertices.map(|v| v.y)), (band.vertices.map(|v| v.color), band.vertices.map(|v| v.y)));
+            }
+            for copy in &copies[..2] {
+                assert_eq!(copy.vertices[0].color, tile.vertices[0].color);
+                assert_eq!(copy.vertices.map(|v| v.y), tile.vertices.map(|v| v.y));
+                assert_eq!(copy.vertices[0].y, band.vertices[2].y, "the tile below the sky");
+            }
+            skies += 1;
+        }
+    }
+    assert!(skies >= 15, "{skies} skies continued");
+    // Modern at 4:3: the slivers recorded, and drawn inside the screen.
+    let (mut slivers, mut restored) = (0, 0);
+    for _ in 0..20 {
+        let draws = shown(&mut session, &mut view, &modern);
+        slivers += draws.iter().filter(|p| p.revealed && p.class == Class::World && p.shape == Shape::Triangle).count();
+        restored += view.stats().revealed;
+    }
+    assert!(slivers > 20 && restored > 20, "{slivers} far slivers recorded, {restored} drawn");
+    // Presentation leaves the game as it was.
+    let start = session.snapshot_bytes().unwrap();
+    let state = |session: &mut Session<NativeModule>| (session.memory_hash().unwrap(), session.runtime.services().gpu.device().save(),
+        session.runtime.services().spu.chip().save(), session.runtime.services().clock.now);
+    for _ in 0..90 {
+        shown(&mut session, &mut view, &wide);
+    }
+    let (traced, drawn) = (state(&mut session), whole(&mut session));
+    session.restore_bytes(&start).unwrap();
+    session.runtime.services().gpu.device_mut().set_trace(false);
+    for _ in 0..90 {
+        assert!(session.frame().unwrap());
+    }
+    assert!(state(&mut session) == traced, "presenting changed RAM, VRAM, sound or time");
+    let unseen = whole(&mut session);
+    assert_eq!(differences(&drawn, &unseen, |start| start != PORT), None, "presenting changed the state outside the port's memory");
+}
+
+/// Field 198's narration (entrance 8, its dialogue advanced with Cross)
+/// ends in a wavy transition into a scene the battle mode plays in buffers
+/// at y 0 and 224, drawing all over each without clearing it; the field
+/// showed its own at 0 and 256. Presented wider, each buffer's log holds
+/// the frame drawn all over it and replays it from the VRAM the game drew
+/// it with: judged by the field's area at 256, the log at 224 never
+/// started again, was replayed whole every other presentation and, emptied
+/// past its limit, from the VRAM it began with (scrambled textures).
+#[test]
+fn the_scene_after_field_198s_narration_replays_each_buffers_own_frame_from_its_vram() {
+    use xem_gpu::TraceOp;
+    use xem_render::ps1::DisplayArea;
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let mut commands = vec![json!([0, {"cmd": "debug", "request": {"tool": "field", "map": 198, "entry": 8}}])];
+    commands.extend((0..180).map(|k| json!([600 + 20 * k, {"cmd": "press", "buttons": ["cross"], "frames": 2}])));
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    // Unpresented until the narration's end, the field still showing its buffers.
+    for _ in 0..3600 {
+        assert!(session.frame().unwrap());
+    }
+    assert_eq!(session.scene(), "field:198");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, ..Graphics::default() };
+    for n in 3600..4400u32 {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 360), view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        // From a while after the transition (about frame 3900).
+        if n < 4000 {
+            continue;
+        }
+        assert_eq!(scene, "battle");
+        let area = DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height };
+        let log = view.renderer().frame_log(area).expect("the shown buffer's log");
+        assert!(log.ops.len() < 5000, "frame {n}: the log of the buffer at y {} holds {} operations", area.y, log.ops.len());
+        // The VRAM its replay samples: as the log began, then its writes.
+        let mut replayed = log.start.to_vec();
+        for op in &log.ops {
+            if let TraceOp::Write { rect, pixels, .. } = op {
+                for (row, line) in pixels.chunks(usize::from(rect.width).max(1)).enumerate() {
+                    let at = (usize::from(rect.y) + row) * 1024 + usize::from(rect.x);
+                    if let Some(held) = replayed.get_mut(at..at + line.len()) {
+                        held.copy_from_slice(line);
+                    }
+                }
+            }
+        }
+        let vram = session.runtime.services().gpu.device().vram();
+        let differ = (0..512 * 1024).filter(|&at| (at % 1024 >= 320 || at / 1024 >= 448) && replayed[at] != vram[at]).count();
+        assert_eq!(differ, 0, "frame {n}: the replay samples {differ} texture pixels the game did not draw with");
+    }
+}
+
+/// The scene after field 198's narration looks up at the Gears under its
+/// stage's sky: a ceiling of cloud tiles projected far behind them
+/// (`battle_draw_stage_sky`, the backdrop's points), their texture fading
+/// into the flat blue band they are painted over. The HD-2D effects take
+/// the clouds for the world but leave out the haze, which the band does not
+/// take either (hazed, they turned grey against it): they keep Modern's
+/// colourfulness, and the fog alone leaves them as Modern draws them while
+/// it hazes the ground.
+#[test]
+fn the_clouds_over_the_scene_after_field_198s_narration_take_no_haze() {
+    use xem_render::ps1::{AUX_MODEL, AUX_WORLD};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let mut commands = vec![json!([0, {"cmd": "debug", "request": {"tool": "field", "map": 198, "entry": 8}}])];
+    commands.extend((0..200).map(|k| json!([600 + 20 * k, {"cmd": "press", "buttons": ["cross"], "frames": 2}])));
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    // Unpresented until 81 frames before the one looked at, the 4 461st
+    // (each frame of the scene starts its buffer's log again).
+    for _ in 0..4380 {
+        assert!(session.frame().unwrap());
+    }
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // Modern, HD-2D, and Custom with HD-2D's fog alone, wider.
+    let fog = EffectLevels { fog: EffectLevels::HD2D.fog, ..EffectLevels::OFF };
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Custom].map(|profile| {
+        let graphics = Graphics { profile, widescreen: true, custom_effects: fog, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1152, 648), view.max_scale()));
+        view
+    });
+    for n in 4380..4461u32 {
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        for view in &mut views {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    assert_eq!(session.scene(), "battle");
+    let read = |texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
+    let [modern, hd2d, hazed] = [0, 1, 2].map(|i| read(views[i].presented_texture().expect("presented")));
+    let classes = read(views[1].frame().aux());
+    assert!([&hd2d, &hazed, &classes].iter().all(|p| p.len() == modern.len()), "one size");
+    let of = |kind: u32| (0..classes.len() / 4).filter(|&i| u32::from(classes[i * 4 + 2]) == kind).collect::<Vec<_>>();
+    // The world's pixels are the clouds' (the stage's ground is a model).
+    let (clouds, models) = (of(AUX_WORLD), of(AUX_MODEL));
+    let colourful = |rgba: &[u8]| clouds.iter().map(|&i| f64::from(rgba[i * 4..i * 4 + 3].iter().max().unwrap() - rgba[i * 4..i * 4 + 3].iter().min().unwrap())).sum::<f64>() / clouds.len() as f64;
+    let apart = |a: &[u8], b: &[u8], i: usize| (0..3).map(|c| a[i * 4 + c].abs_diff(b[i * 4 + c])).max().unwrap();
+    let (unhazed, ground) = (clouds.iter().filter(|&&i| apart(&hazed, &modern, i) <= 1).count(), models.iter().filter(|&&i| apart(&hazed, &modern, i) > 2).count());
+    eprintln!("{} cloud pixels: colourfulness {:.1} under Modern, {:.1} under HD-2D; the fog alone leaves {unhazed} as Modern draws them and hazes {ground} of the models' {}",
+        clouds.len(), colourful(&modern), colourful(&hd2d), models.len());
+    assert!(clouds.len() > 50_000, "the clouds are in view: {} pixels", clouds.len());
+    assert!(colourful(&hd2d) > colourful(&modern) * 0.9, "HD-2D's clouds keep their colours: {:.1} against Modern's {:.1}", colourful(&hd2d), colourful(&modern));
+    assert_eq!(unhazed, clouds.len(), "the fog leaves the clouds as Modern draws them");
+    assert!(ground * 5 > models.len(), "the fog hazes the ground: {ground} of {} model pixels", models.len());
+}
+
+/// Battling's idle demo (on its title, after 0x4650 frames without a button,
+/// or L2 held for 120) clears both of the arena's buffers at once, then
+/// draws each frame over the other buffer's picture a little darker: the
+/// Gears and their trails. Wider, each display replays its own buffer's
+/// newest frame over that picture and shows them as bright as the console
+/// does (sharing the clear's log, each replayed every frame of both buffers
+/// since from black and showed the demo black or nearly so).
+#[test]
+fn battlings_idle_demo_shows_the_gears_and_their_trails_wider() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let commands = json!([[1, {"cmd": "debug", "request": {"tool": "battling"}}], [1150, {"cmd": "press", "buttons": ["l2"], "frames": 150}]]);
+    assert!(session.execute(&json!({"cmd": "schedule", "commands": commands})).get("error").is_none());
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let wide = Graphics { widescreen: true, ..Graphics::default() };
+    let brightness = |rgba: &[u8]| rgba.chunks_exact(4).map(|p| u32::from(p[0]) + u32::from(p[1]) + u32::from(p[2])).sum::<u32>() as f32 / (rgba.len() / 4) as f32;
+    let (mut ours, mut theirs) = (0.0, 0.0);
+    for n in 0..1640 {
+        view.configure(ViewConfig::resolve(&wide, HostClass::Desktop, (640, 360), view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        // The Gears close in on each other, two hundred frames on.
+        if n >= 1540 && n % 10 == 0 {
+            let picture = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+            let (_, _, console) = session.runtime.services().gpu.display_rgba8();
+            (ours, theirs) = (ours + brightness(&picture), theirs + brightness(&console));
+        }
+    }
+    assert_eq!(session.runtime.context(), xem_core::context::Context::Arena { state: 5 }, "the demo under way");
+    // The picture's sides are black (the demo keeps its Gears within the
+    // original screen) and the console's has none: showing the same, it is
+    // four fifths as bright (a third with the shared log).
+    assert!(theirs > 50.0 && ours > theirs * 0.6, "the demo shown at {ours:.0} against the console's {theirs:.0}");
+}
+
 /// Below Shevat's towers the game draws a sea of clouds whose texture holds,
 /// around each cloud, the colour its buffer was cleared with: on the console
 /// that sky meets the cleared sky without an edge. Here too: the clear shows
@@ -433,6 +745,342 @@ fn held_rewind_in_a_battle_that_never_clears_shows_its_frames() {
         assert!(session.runtime.frames() < was);
         assert!(present(&mut session, &mut view) > 0, "step {step}: the restored VRAM shown instead of a frame drawn since");
     }
+}
+
+/// One host presentation of what the game drew since the last, under
+/// `graphics` at 640x360 and `now` seconds of the host's clock: the picture
+/// as 32 by 18 cells' mean colours, whether it is a frame the game drew
+/// (logged), not VRAM as it is, and how many of its ops change it.
+fn present_cells(session: &mut Session<NativeModule>, view: &mut GameView, gpu: &Gpu, graphics: &Graphics, now: f64) -> (Vec<f32>, bool, usize) {
+    view.configure(ViewConfig::resolve(graphics, HostClass::Desktop, (640, 360), view.max_scale()));
+    let device = session.runtime.services().gpu.device_mut();
+    if view.take_restart() || !device.trace_enabled() {
+        device.set_trace(true);
+    }
+    device.set_reveals(view.reveals());
+    view.push(device.take_trace());
+    let display = device.display();
+    let scene = session.scene();
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let (width, height) = view.present(&mut encoder, &display, &scene, now).expect("presented").size;
+    gpu.queue.submit([encoder.finish()]);
+    let rgba = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+    let mut cells = vec![0f32; 32 * 18 * 3];
+    for y in 0..height as usize {
+        for x in 0..width as usize {
+            let cell = (y * 18 / height as usize * 32 + x * 32 / width as usize) * 3;
+            for c in 0..3 {
+                cells[cell + c] += f32::from(rgba[(y * width as usize + x) * 4 + c]);
+            }
+        }
+    }
+    let per_cell = (width * height) as f32 / (32.0 * 18.0);
+    (cells.iter().map(|sum| sum / per_cell).collect(), view.frame().identity().is_some(), view.frame().drawn())
+}
+
+/// How far apart two pictures' cells are on average ([`present_cells`]).
+fn cells_apart(a: &[f32], b: &[f32]) -> f32 {
+    a.iter().zip(b).map(|(a, b)| (a - b).abs()).sum::<f32>() / a.len() as f32
+}
+
+/// HD-2D with Widescreen and High Framerate.
+fn hd2d() -> Graphics {
+    Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Graphics::default() }
+}
+
+/// The debug world map (boot mode 3, as Settings → Debug → Worldmap enters
+/// it) flies the party's vehicle with no field entered since the game
+/// started; Square takes the party into its interior (field 290). That
+/// field, the first entered, reads the screen as the opening movie's
+/// 24-bit picture, copies the noise it makes of the world map's 15-bit one
+/// over the shown buffer and fades in from it, noise on the console. The
+/// transition shows the picture presented last instead from its first
+/// frame (it showed the noise for a frame); the party opens the field's
+/// menu twice there (each visit takes three screens), and a held rewind
+/// back to the world map shows each frame as it showed, under HD-2D and
+/// under Modern: the noise its states hold showed through the steps into
+/// the transition, and again once four screens were taken since.
+#[test]
+fn the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
+    session.execute(&json!({"cmd":"boot_mode", "mode":3}));
+    session.execute(&json!({"cmd":"frames", "count":900}));
+    let start = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    for graphics in [hd2d(), Graphics { profile: GraphicsProfile::Modern, ..hd2d() }] {
+        clock.set(std::time::Duration::ZERO);
+        session.restore_bytes(&start).unwrap();
+        session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let mut shown = std::collections::HashMap::new();
+        let mut last: Option<Vec<f32>> = None;
+        for n in 0..1400u64 {
+            clock.set(std::time::Duration::from_millis(n * 1000 / 60));
+            // Into the interior, then the menu opened and closed twice.
+            let buttons = match n {
+                20 | 21 | 450 | 451 | 1000 | 1001 => vec!["square"],
+                600 | 601 | 1150 | 1151 => vec!["circle"],
+                _ => vec![],
+            };
+            session.execute(&json!({"cmd":"pad", "buttons": buttons}));
+            assert!(session.frame().unwrap());
+            let (picture, _, _) = present_cells(&mut session, &mut view, &gpu, &graphics, n as f64 / 60.0);
+            // From the press on (the trace begins at the first of these
+            // frames, whose sides lack the faces the game culls until it asks
+            // for them).
+            if let Some(before) = last.as_ref().filter(|_| n > 20) {
+                let change = cells_apart(before, &picture);
+                assert!(change < 20.0, "{:?}: frame {n}: the picture changed by {change:.1} at once", graphics.profile);
+                shown.insert(session.runtime.frames(), picture.clone());
+            }
+            last = Some(picture);
+        }
+        assert_eq!(session.scene(), "field:290", "in the vehicle's interior");
+        // Each step's frame as it showed: under Modern every one; under
+        // HD-2D the frames drawn of the screens taken (the transition's, the
+        // menu's: a few primitives), and the field's own (thousands) without
+        // noise, as HD-2D's effects ease their exposure and depth ranges over
+        // the frames presented before (a step out of the menu into the field
+        // from the menu's dimmed screen: 6.6 apart).
+        let (mut compared, mut screens, mut steps) = (0, 0, 0);
+        while session.rewind_step().unwrap() {
+            steps += 1;
+            let (picture, logged, drawn) = present_cells(&mut session, &mut view, &gpu, &graphics, (1400 + steps) as f64 / 60.0);
+            let frame = session.runtime.frames();
+            if let Some(then) = shown.get(&frame).filter(|_| logged) {
+                let change = cells_apart(then, &picture);
+                let within = if drawn < 100 || graphics.profile == GraphicsProfile::Modern { 2.0 } else { 8.0 };
+                assert!(change < within, "{:?}: the rewind's step to frame {frame} shows it {change:.1} apart from the frame shown then", graphics.profile);
+                compared += 1;
+                screens += usize::from(drawn < 100);
+            }
+        }
+        assert_eq!(session.scene(), "worldmap", "rewound back to the world map");
+        assert!(compared >= 12 && screens >= 8, "{:?}: {compared} steps compared, {screens} of screens taken", graphics.profile);
+    }
+}
+
+/// Under fast-forward each presentation runs several game frames (ten at
+/// the default rate, five at the one below): wherever they begin, the
+/// vehicle's interior shows the picture presented last through its
+/// transition, not the noise (the field clears the area its screen was
+/// copied from five frames after the copy: in some alignments within the
+/// presentation that first shows the frame copied, which showed the noise).
+#[test]
+fn the_debug_vehicles_interior_shows_no_noise_entered_under_fast_forward() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    session.execute(&json!({"cmd":"boot_mode", "mode":3}));
+    session.execute(&json!({"cmd":"frames", "count":900}));
+    let start = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    for rate in [5, 10] {
+        for offset in 0..rate {
+            session.restore_bytes(&start).unwrap();
+            let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+            let mut last: Option<Vec<f32>> = None;
+            let mut n = 0u64;
+            // Square at frames 921 and 922 (the world map's last frame is
+            // drawn at 923, held until the field's copy at 1083), presented
+            // a frame at a time to 925; then `rate` frames a presentation,
+            // the first `offset + 1`.
+            while session.runtime.frames() < 1143 {
+                session.execute(&json!({"cmd":"pad", "buttons": if (20..22).contains(&n) { vec!["square"] } else { vec![] }}));
+                let frames = match n { 0..25 => 1, 25 => offset + 1, _ => rate };
+                for _ in 0..frames {
+                    assert!(session.frame().unwrap());
+                }
+                let (picture, _, _) = present_cells(&mut session, &mut view, &gpu, &hd2d(), n as f64 / 60.0);
+                // From the press on (as the trace begins, the sides lack the
+                // faces the game culls until it asks for them).
+                if let Some(before) = last.as_ref().filter(|_| n > 20) {
+                    let change = cells_apart(before, &picture);
+                    let frame = session.runtime.frames();
+                    assert!(change < 20.0, "{rate}x from {offset}: at frame {frame} the picture changed by {change:.1} at once");
+                }
+                last = Some(picture);
+                n += 1;
+            }
+            assert_eq!(session.scene(), "field:290", "in the vehicle's interior");
+        }
+    }
+}
+
+/// Map 243 from entrance 0, past its lead-up's dialogue, plays Fei's
+/// memories as window movies (field movie mode 2) on a screen in the
+/// field's dark: the field draws the pictures the movie player loads into
+/// VRAM as a model's faces. Under HD-2D they show as under Modern, the
+/// effects keeping off them as off a movie shown alone (they were lit,
+/// hazed, blurred and graded): in the first clip, whose screen covers the
+/// original screen, and at the third's end, drawn back, the spotlight's
+/// cone over the screen and Fei before it (nothing presented between, as by
+/// a host whose window is hidden). Where a clip ends the field copies its
+/// 24-bit display area onto itself, over the buffer it shows next, which
+/// goes on showing its frame, wider (that copy began a frame whose replay
+/// was the scaled VRAM's picture from the original screen's left edge on:
+/// black in the left side, the textures beside the buffer in the right).
+/// A held rewind back over the third clip, the wait before it and the
+/// second clip's end shows the screen as under Modern in every step too: a
+/// step's state holds a picture loaded before it, and the first picture
+/// loaded after it was decoded before it (most steps showed the screen
+/// hazed).
+#[test]
+fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_the_screen() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
+    session.execute(&json!({"cmd":"enter_field", "map": 243, "entry": 0}));
+    // The lead-up, Cross pressed through its dialogue.
+    while session.runtime.frames() < 4700 {
+        let press = session.runtime.frames() % 30 < 2;
+        session.execute(&json!({"cmd":"pad", "buttons": if press { vec!["cross"] } else { vec![] }}));
+        assert!(session.frame().unwrap());
+    }
+    session.execute(&json!({"cmd":"pad", "buttons": []}));
+    // A state a second of the host's clock, each 61 game frames: the steps
+    // land at every point of the field's frames (three vertical blanks
+    // each) and of the movie's pictures (three in four frames).
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d].map(|profile| {
+        let graphics = Graphics { profile, widescreen: true, interpolation: true, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 360), view.max_scale()));
+        view
+    });
+    // The mean difference (levels) of two pictures over the pixels `keep`
+    // keeps (by column and row).
+    let difference = |a: &[u8], b: &[u8], width: usize, keep: &dyn Fn(usize, usize) -> bool| {
+        let (mut sum, mut count) = (0u64, 0u64);
+        for (i, (a, b)) in a.chunks_exact(4).zip(b.chunks_exact(4)).enumerate() {
+            if keep(i % width, i / width) {
+                sum += a[..3].iter().zip(&b[..3]).map(|(a, b)| u64::from(a.abs_diff(*b))).sum::<u64>();
+                count += 3;
+            }
+        }
+        sum as f32 / count.max(1) as f32
+    };
+    // And of a picture's columns `a` and `b`, all the way down.
+    let across = |picture: &[u8], width: usize, a: usize, b: usize| {
+        let rows = picture.len() / 4 / width;
+        let sum: u64 = (0..rows).flat_map(|y| (0..3).map(move |c| (y, c)))
+            .map(|(y, c)| u64::from(picture[(y * width + a) * 4 + c].abs_diff(picture[(y * width + b) * 4 + c])))
+            .sum();
+        sum as f32 / (rows * 3) as f32
+    };
+    // Drawn back, the screen lies in the upper left: in a 1920x1080 picture
+    // from 200 to 1100 across, most of the cone over it included, and from
+    // 50 to 550 down. There the movie's sepia has more red than blue (the
+    // field's dark is blue): the mean of the one over the other.
+    let screen = |(width, height): (u32, u32)| {
+        let (width, height) = (width as usize, height as usize);
+        move |x: usize, y: usize| (width * 200 / 1920..width * 1100 / 1920).contains(&x) && (height * 50 / 1080..height * 550 / 1080).contains(&y)
+    };
+    let sepia = |picture: &[u8], width: usize, keep: &dyn Fn(usize, usize) -> bool| {
+        let (mut sum, mut count) = (0i64, 0i64);
+        for (i, pixel) in picture.chunks_exact(4).enumerate() {
+            if keep(i % width, i / width) {
+                sum += i64::from(pixel[0]) - i64::from(pixel[2]);
+                count += 1;
+            }
+        }
+        sum as f32 / count.max(1) as f32
+    };
+    let mut tick = 0u64;
+    // One host presentation of both views: what the game drew since the
+    // last, drawn; their pictures, their size and the display.
+    let mut present = |session: &mut Session<NativeModule>, views: &mut [GameView; 2]| {
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        tick += 1;
+        let mut size = (0, 0);
+        let pictures: Vec<Vec<u8>> = views.iter_mut().map(|view| {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            size = view.present(&mut encoder, &display, &scene, tick as f64 / 60.0).expect("presented").size;
+            gpu.queue.submit([encoder.finish()]);
+            xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap())
+        }).collect();
+        (pictures, size, display)
+    };
+    let (mut compared, mut drawn_back, mut clips, mut playing) = (0, 0, 0, false);
+    while session.runtime.frames() < 6775 {
+        clock.set(std::time::Duration::from_secs_f64((session.runtime.frames() - 4700) as f64 / 61.0));
+        assert!(session.frame().unwrap());
+        let frame = session.runtime.frames();
+        let movie = session.execute(&json!({"cmd":"status"}))["movie"].clone();
+        if playing && movie.is_null() {
+            clips += 1;
+        }
+        playing = !movie.is_null();
+        // From the first clip's end until the third's last two seconds,
+        // nothing presented: the trace goes on.
+        if (5600..6650).contains(&frame) {
+            continue;
+        }
+        let (pictures, size, display) = present(&mut session, &mut views);
+        // The original screen's edges in the picture (its sides at its height).
+        let width = size.0 as usize;
+        let edge = (width - (display.width * size.1 / display.height) as usize) / 2;
+        // The first clip's screen covers the original screen.
+        if playing && clips == 0 && movie["frame"].as_i64().is_some_and(|frame| frame >= 4) {
+            let apart = difference(&pictures[0], &pictures[1], width, &|x, _| x >= edge && x < width - edge);
+            assert!(apart < 1.0, "frame {frame}: HD-2D's movie {apart:.1} levels from Modern's");
+            compared += 1;
+        }
+        // The third clip's last second and the frames after it, drawn back.
+        if frame >= 6700 {
+            let screen = screen(size);
+            assert!(sepia(&pictures[0], width, &screen) > 10.0, "frame {frame}: the screen drawn back");
+            let apart = difference(&pictures[0], &pictures[1], width, &screen);
+            assert!(apart < 1.0, "frame {frame}: HD-2D's screen drawn back {apart:.1} levels from Modern's");
+            drawn_back += 1;
+        }
+        // The sides go on from the original screen's edges (once a frame
+        // logged since the trace began, or began again, has them).
+        for (view, picture) in pictures.iter().enumerate().filter(|_| edge > 0 && !(6650..6700).contains(&frame)) {
+            let (left, right) = (across(picture, width, edge - 1, edge), across(picture, width, width - edge, width - edge - 1));
+            assert!(left < 24.0 && right < 24.0, "frame {frame}, view {view}: the sides {left:.1} and {right:.1} levels from the screen's edges");
+        }
+    }
+    assert!(compared > 300, "{compared} frames of the first clip compared");
+    assert_eq!(clips, 3, "the third clip ended");
+    assert!(drawn_back > 60, "{drawn_back} frames drawn back compared");
+    // A held rewind, a state a step, back into the second clip's end.
+    let mut steps = 0;
+    while session.runtime.frames() > 6050 && session.rewind_step().unwrap() {
+        let (pictures, size, _) = present(&mut session, &mut views);
+        let frame = session.runtime.frames();
+        let (width, screen) = (size.0 as usize, screen(size));
+        assert!(sepia(&pictures[0], width, &screen) > 10.0, "the rewind's step to frame {frame}: the screen");
+        let apart = difference(&pictures[0], &pictures[1], width, &screen);
+        assert!(apart < 1.0, "the rewind's step to frame {frame}: HD-2D's screen {apart:.1} levels from Modern's");
+        let movie = session.execute(&json!({"cmd":"status"}))["movie"].clone();
+        steps += usize::from(!movie.is_null() && views[1].frame().identity().is_some());
+    }
+    assert!(steps >= 6, "{steps} steps into a clip, each showing a frame drawn since");
 }
 
 /// Starts the debug battle selector's (`battle_scene_select_values`) first
@@ -767,6 +1415,53 @@ fn first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_v
     presentation_only(&mut session, &faced, &unfaced).unwrap_or_else(|at| panic!("sprite facings change the whole state: {at}"));
 }
 
+/// In a large-scale field (Babel Tower's map 414, which runs event fe 1e:
+/// the party on foot draws small sprites of the map's own) a traced frame's
+/// small sprite parts carry the full-size frame the port assembles from the
+/// character's own field sprite, which the host reads from the disc the
+/// first time the port asks for it, outside every state region. Assembling
+/// them leaves RAM (with the RNG), VRAM, sound, time and the whole state as
+/// a run without a trace leaves them.
+#[test]
+fn large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged() {
+    use xem_gpu::TraceOp;
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd":"enter_field","map":414})).get("error").is_none());
+    assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
+    let alternate = session.execute(&json!({"cmd":"inspect","path":"field_work.unk2268","depth":0}));
+    assert_ne!(alternate, json!(0), "the map's party sprites are its alternate set's");
+    // Fei's block, where the host keeps it (xem_core::presentation::FULL_SPRITES).
+    let fei = |session: &mut Session<NativeModule>| session.runtime.memory().read_u32(0x70C0_0000).unwrap();
+    let initial = session.snapshot_bytes().unwrap();
+    let traced = |session: &mut Session<NativeModule>, trace: bool| {
+        session.runtime.services().gpu.device_mut().set_trace(trace);
+        let mut parts = 0;
+        for _ in 0..90 {
+            assert!(session.frame().unwrap());
+            for op in session.runtime.services().gpu.device_mut().take_trace().ops {
+                if let TraceOp::Draw(p) = op && let Some(full_size) = p.full_size {
+                    assert!(!full_size.parts.is_empty() && !full_size.textures.is_empty(), "an assembled frame has parts and cells");
+                    parts += 1;
+                }
+            }
+        }
+        let state = (session.memory_hash().unwrap(),
+            session.runtime.services().gpu.device().save(),
+            session.runtime.services().spu.chip().save(),
+            session.runtime.services().clock.now);
+        (state, parts, whole(session))
+    };
+    let (original, none, plain) = traced(&mut session, false);
+    assert_eq!((none, fei(&mut session)), (0, 0), "no trace: no frames, and no block read");
+    session.restore_bytes(&initial).unwrap();
+    let (drawn, parts, assembled) = traced(&mut session, true);
+    assert_eq!(fei(&mut session), 3, "Fei's block (its three sections) read from the disc");
+    assert!(parts > 0, "the party's small sprites get their full-size frames");
+    assert_eq!(drawn, original, "assembling them cannot change original RAM (including RNG), VRAM, sound or time");
+    presentation_only(&mut session, &assembled, &plain).unwrap_or_else(|at| panic!("full-size frames change the whole state: {at}"));
+}
+
 #[test]
 fn first_person_directional_sprites_render_their_alternate_texture_cells() {
     use xem_gpu::TraceOp;
@@ -829,6 +1524,54 @@ fn first_person_directional_sprites_render_their_alternate_texture_cells() {
             encoder.write_header().unwrap().write_image_data(&pixels).unwrap();
         }
     }
+}
+
+/// The hosts' view draws those full-size frames in place of the small
+/// sprites with the setting on (`Graphics::full_size_sprites`): the same
+/// traced frames presented with it off and on differ only around the party
+/// on screen, where the full sets' frames have more parts than the small.
+#[test]
+fn the_full_size_setting_draws_the_party_of_a_large_scale_field_with_its_own_sprites() {
+    use xem_gpu::{Class, TraceOp};
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd":"enter_field","map":414})).get("error").is_none());
+    assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut views: Vec<_> = [false, true].into_iter().map(|full_size_sprites| {
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let graphics = Graphics { full_size_sprites, internal_scale: 4, ..Graphics::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 896), view.max_scale()));
+        view
+    }).collect();
+    session.runtime.services().gpu.device_mut().set_trace(true);
+    for frame in 0..8 {
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        views[0].push(trace.clone());
+        views[1].push(trace);
+        let display = session.runtime.services().gpu.device().display();
+        let scene = session.scene();
+        for view in &mut views {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &display, &scene, frame as f64 / 60.0).expect("a presented frame");
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    let sprites: Vec<usize> = views.iter().map(|view| view.frame().primitives().iter()
+        .filter(|op| matches!(op, TraceOp::Draw(p) if p.class == Class::Sprite)).count()).collect();
+    assert!(sprites[1] > sprites[0], "the full-size frames have more parts than the small sprites: {sprites:?}");
+    let pixels: Vec<_> = views.iter().map(|view| xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap())).collect();
+    let width = views[0].presented_texture().unwrap().width() as usize;
+    let differing: Vec<(usize, usize)> = pixels[0].chunks_exact(4).zip(pixels[1].chunks_exact(4)).enumerate()
+        .filter(|(_, (a, b))| a != b).map(|(i, _)| (i % width, i / width)).collect();
+    let (x, y) = (differing.iter().map(|p| p.0), differing.iter().map(|p| p.1));
+    let (w, h) = (x.clone().max().unwrap() - x.min().unwrap() + 1, y.clone().max().unwrap() - y.min().unwrap() + 1);
+    eprintln!("{} pixels differ, within {w}x{h}", differing.len());
+    assert!(differing.len() > 100, "the party's sprite is drawn anew ({} pixels)", differing.len());
+    assert!(w < 120 && h < 120, "and nothing else: the pixels that differ lie within {w}x{h}");
 }
 
 #[test]
@@ -945,4 +1688,612 @@ fn reveal_frames_counts_every_frame_reveals_more_culled_faces_pulled_back_and_le
     assert_eq!(ram(&pulled_back), ram(&plain), "the RAM after reveal_frames pulled back is that of plain frames");
     assert_eq!(ram(&wider), ram(&plain), "the RAM after reveal_frames is that of plain frames");
     assert_eq!(ram(&one_by_one), ram(&plain), "the RAM after reveal_frames a frame at a time is that of plain frames");
+}
+
+/// The open dialogue windows' areas on the original screen as field 12's
+/// draw them (`field_dialogue_windows`: in use while `busy` +0x40E is 0,
+/// their frame's rectangle at +0xAC and its border pieces up to 8 pixels
+/// beyond it, 10 below), none while one still opens (`timer` +0x408) and
+/// slides from its speaker.
+fn dialogue_areas(session: &mut Session<NativeModule>) -> Option<Vec<[i32; 4]>> {
+    let mut areas = Vec::new();
+    for window in 0..4u32 {
+        let mut bytes = [0u8; 0x498];
+        session.runtime.memory().read(0x800C_2698 + window * 0x498, &mut bytes).unwrap();
+        let half = |at: usize| i32::from(i16::from_le_bytes([bytes[at], bytes[at + 1]]));
+        if half(0x40E) != 0 {
+            continue;
+        }
+        if half(0x408) != 0 {
+            return None;
+        }
+        let (x, y, w, h) = (half(0xAC), half(0xAE), half(0xB0), half(0xB2));
+        areas.push([x - 8, y - 8, x + w + 8, y + h + 10]);
+    }
+    Some(areas)
+}
+
+/// Field 12's opening dialogue (a window with its text and the speaker's
+/// portrait) as the port records it: every primitive traced from the run of
+/// packets its windows linked lies within the windows. Held hidden (the
+/// player's Select over it, which the game gets either way) the frames
+/// presented wider and interpolated differ from those shown only where the
+/// windows lie, and the windows show again once let go; under HD-2D, as the
+/// issue's player plays, the rest of the picture also moves by the few
+/// levels its exposure eases each presentation (`EffectsRenderer`'s scene
+/// average), and holding and letting go each present once more. The game
+/// ends at the RAM (with the RNG), VRAM, sound, time and whole state of the
+/// same frames run with nothing presented.
+#[test]
+fn a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is() {
+    use xem_gpu::TraceOp;
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "enter_field", "map": 12})).get("error").is_none());
+    let reply = session.execute(&json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    // The window open, its text under way.
+    assert!(session.execute(&json!({"cmd": "frames", "count": 60})).get("error").is_none());
+    let initial = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    const PLAYED: u64 = 90;
+    const HIDDEN: std::ops::Range<u64> = 30..60;
+    // The frames with Select held throughout, presented under `graphics`
+    // (with the windows hidden for `HIDDEN` when `hide`) or not: the
+    // pictures of frames 45 and 75, the primitives the trace marked as the
+    // dialogue's and those outside the windows, the windows' areas then,
+    // and the state.
+    let play = |session: &mut Session<NativeModule>, graphics: Option<Graphics>, hide: bool| {
+        session.restore_bytes(&initial).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let (mut pictures, mut marked, mut outside, mut areas) = (Vec::new(), 0, 0, Vec::new());
+        for n in 0..PLAYED {
+            session.execute(&json!({"cmd": "pad", "buttons": ["select"]}));
+            let Some(graphics) = graphics else {
+                assert!(session.frame().expect("frame"));
+                continue;
+            };
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+            view.set_dialogue_hidden(hide && HIDDEN.contains(&n));
+            assert!(session.frame().expect("frame"));
+            let shown = dialogue_areas(session);
+            let device = session.runtime.services().gpu.device_mut();
+            if view.take_restart() || !device.trace_enabled() {
+                device.set_trace(true);
+            }
+            device.set_reveals(view.reveals());
+            let trace = device.take_trace();
+            for op in &trace.ops {
+                let TraceOp::Draw(p) = op else { continue };
+                if !p.dialogue {
+                    continue;
+                }
+                marked += 1;
+                let (dx, dy) = (i32::from(p.environment.offset.0), i32::from(p.environment.offset.1));
+                let within = |area: &[i32; 4]| p.vertices[..p.vertex_count()].iter().all(|v| {
+                    (area[0]..=area[2]).contains(&(v.x - dx)) && (area[1]..=area[3]).contains(&(v.y - dy))
+                });
+                if let Some(shown) = &shown && !shown.iter().any(within) {
+                    outside += 1;
+                }
+            }
+            view.push(trace);
+            let display = session.runtime.services().gpu.device().display();
+            let scene = session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("a presented frame");
+            gpu.queue.submit([encoder.finish()]);
+            if n == 45 || n == 75 {
+                let picture = view.presented_texture().unwrap();
+                let size = (picture.width(), picture.height());
+                pictures.push((size, xem_render::read_rgba8(&gpu.device, &gpu.queue, picture), display));
+                areas.push(shown.expect("the windows open"));
+            }
+        }
+        let state = (session.memory_hash().unwrap(),
+            session.runtime.services().gpu.device().save(),
+            session.runtime.services().spu.chip().save(),
+            session.runtime.services().clock.now);
+        (state, pictures, marked, outside, areas, whole(session))
+    };
+    let (original, _, _, _, _, unseen) = play(&mut session, None, false);
+    for (name, graphics, levels) in [
+        ("wider", Graphics { widescreen: true, interpolation: true, ..Default::default() }, 0),
+        ("hd2d", Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() }, 3),
+    ] {
+        let (shown, with, marked, outside, areas, _) = play(&mut session, Some(graphics), false);
+        let (hidden, without, _, _, _, hid) = play(&mut session, Some(graphics), true);
+        // Optional local inspection artifacts; original game assets stay local.
+        if let Some(directory) = std::env::var_os("XEM_DIALOGUE_CAPTURE") {
+            std::fs::create_dir_all(&directory).unwrap();
+            for (held, pictures) in [("shown", &with), ("hidden", &without)] {
+                for (((width, height), pixels, _), frame) in pictures.iter().zip([45, 75]) {
+                    let path = PathBuf::from(&directory).join(format!("{name}-{held}-{frame}.png"));
+                    let mut encoder = png::Encoder::new(std::fs::File::create(path).unwrap(), *width, *height);
+                    encoder.set_color(png::ColorType::Rgba);
+                    let opaque: Vec<u8> = pixels.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+                    encoder.write_header().unwrap().write_image_data(&opaque).unwrap();
+                }
+            }
+        }
+        eprintln!("{name}: {marked} primitives traced as the dialogue's in {PLAYED} frames, {outside} outside its windows {:?}", areas[0]);
+        assert!(marked > 2 * PLAYED as usize, "{name}: the window's text and portrait each frame ({marked})");
+        assert_eq!(outside, 0, "{name}: the dialogue's primitives lie within its windows");
+        // Held hidden: the picture differs (by more than `levels`) only
+        // where the windows lie.
+        let ((width, height), shown_pixels, display) = &with[0];
+        let scale = *height as f32 / display.height as f32;
+        let side = (*width as f32 / scale - display.width as f32) / 2.0;
+        let apart = |a: &[u8], b: &[u8]| a.chunks_exact(4).zip(b.chunks_exact(4)).enumerate()
+            .filter(|(_, (a, b))| (0..3).any(|c| a[c].abs_diff(b[c]) > levels))
+            .map(|(i, _)| ((i % *width as usize) as f32 / scale - side, (i / *width as usize) as f32 / scale))
+            .collect::<Vec<_>>();
+        let differing = apart(shown_pixels, &without[0].1);
+        let lies = |(x, y): (f32, f32)| areas[0].iter().any(|a| x >= a[0] as f32 - 1.0 && x <= a[2] as f32 + 1.0 && y >= a[1] as f32 - 1.0 && y <= a[3] as f32 + 1.0);
+        let beyond = differing.iter().filter(|&&point| !lies(point)).count();
+        eprintln!("{name} held hidden: {} pixels of {width}x{height} differ by more than {levels} levels, {beyond} beyond the windows", differing.len());
+        assert!(differing.len() as f32 > 2000.0 * scale * scale, "{name}: the windows go ({} pixels)", differing.len());
+        assert_eq!(beyond, 0, "{name}: and nothing else");
+        assert_eq!(apart(&with[1].1, &without[1].1).len(), 0, "{name}: let go, the windows show again");
+        assert_eq!(shown, original, "{name}: presenting the dialogue cannot change RAM (with the RNG), VRAM, sound or time");
+        assert_eq!(hidden, original, "{name}: nor hiding it");
+        presentation_only(&mut session, &hid, &unseen).unwrap_or_else(|at| panic!("{name}: hiding the dialogue changes the whole state: {at}"));
+    }
+}
+
+/// The address a pointer of the battle holds (`battle_ui`,
+/// `battle_window_rects[0]`, `battle_message_text_window->layout`).
+fn battle_pointer(session: &mut Session<NativeModule>, path: &str) -> u32 {
+    let reply = session.execute(&json!({"cmd": "inspect", "path": path}));
+    u32::from_str_radix(reply.as_str().expect("a pointer").trim_start_matches("0x"), 16).expect("hex")
+}
+
+/// The record a pointer global of the battle points to (`battle_ui`,
+/// `battle_window_rects[0]`), and the bytes there.
+fn battle_record(session: &mut Session<NativeModule>, path: &str, length: usize) -> Vec<u8> {
+    let address = battle_pointer(session, path);
+    let mut bytes = vec![0; length];
+    session.runtime.memory().read(address, &mut bytes).unwrap();
+    bytes
+}
+
+/// The parts of a battle's script message by the packets they are drawn
+/// from, as 24-bit DMA addresses (a traced primitive's `source` holds its
+/// node's): battle window 0's block (`battle_window_blocks[0]`, 0x5A8
+/// bytes), the portrait's quads (`battle_state_of_event_script` +0x7A4, one
+/// per draw buffer), the message text window's own primitives and its
+/// lines' (`battle_message_text_window`, 0x90 bytes, and its `layout`, 0x60
+/// a line) and the cursor's parts (`battle_graphics` +0x27C8, two quads a
+/// part, one per draw buffer).
+fn battle_message_packets(session: &mut Session<NativeModule>) -> [Vec<std::ops::Range<u32>>; 4] {
+    let packets = |address: u32, length: u32| (address & 0xFF_FFFF)..(address & 0xFF_FFFF) + length;
+    let window = battle_pointer(session, "battle_window_blocks[0]");
+    let script = battle_pointer(session, "battle_state_of_event_script");
+    let text = battle_pointer(session, "battle_message_text_window");
+    let layout = battle_pointer(session, "battle_message_text_window->layout");
+    let lines = session.execute(&json!({"cmd": "inspect", "path": "battle_message_text_window->lines"})).as_u64().expect("lines") as u32;
+    let graphics = battle_pointer(session, "battle_graphics");
+    // `battle_ui.cursorParts`.
+    let parts = u32::from_le_bytes(battle_record(session, "battle_ui", 0x104)[0x100..].try_into().unwrap());
+    [
+        vec![packets(window, 0x5A8)],
+        vec![packets(script + 0x7A4, 2 * 0x28)],
+        vec![packets(text, 0x90), packets(layout, lines * 0x60)],
+        vec![packets(graphics + 0x27C8, parts * 2 * 0x28)],
+    ]
+}
+
+/// Battle window 0's area on the original screen while a battle's event
+/// script shows its message there (`battle_window_rects[0]`: its x, y,
+/// width and height), with its border pieces up to 8 pixels beyond it.
+fn battle_message_area(session: &mut Session<NativeModule>) -> [i32; 4] {
+    let rect = battle_record(session, "battle_window_rects[0]", 8);
+    let at = |i: usize| i32::from(u16::from_le_bytes([rect[i], rect[i + 1]]));
+    let (x, y, w, h) = (at(0), at(2), at(4), at(6));
+    [x - 8, y - 8, x + w + 8, y + h + 8]
+}
+
+/// A battle's event script message as the port records it: the debug
+/// battle selector's third event file's formation 0 (Lahan's Gears), Fei's
+/// "Reinforcements, huh?!" in battle window 0 with his portrait, waiting for
+/// Confirm with its cursor. The battle's interface context shows the
+/// message; its window, portrait, text and cursor (told apart by the
+/// packets they are drawn from) are each traced as the dialogue's, every
+/// primitive drawn from them and none from elsewhere, all within the
+/// window. Held hidden, the frames presented wider and interpolated (and in
+/// HD-2D) differ from those shown only within the window (under HD-2D, by
+/// more than the few levels its exposure eases); let go, the window shows
+/// again. The game ends at the RAM, VRAM, sound, time and whole state of the
+/// same frames run with nothing presented.
+#[test]
+fn a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and_the_game_as_it_is() {
+    use xem_core::context::Context;
+    use xem_gpu::TraceOp;
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    session.request_debug(xem_core::debug::Request::Battle { formation: 0, file: 255, party: [0, 11, 11], gears: [1, 0, 0] }).unwrap();
+    while session.debug.busy() {
+        session.tick_debug().unwrap();
+    }
+    // The battle's scene plays, then Fei's message opens and waits.
+    let mut before = 0;
+    let waiting = (0..4000).any(|_| {
+        assert!(session.frame().expect("frame"));
+        let message = matches!(session.runtime.context(), Context::Battle { message: true, .. });
+        before += u32::from(!message && matches!(session.runtime.context(), Context::Battle { .. }));
+        // The cursor shown (`battle_ui.cursorShown`).
+        message && battle_record(&mut session, "battle_ui", 0x100)[0x9E] != 0
+    });
+    assert!(waiting, "Fei's message waits for Confirm");
+    assert!(before > 300, "the battle shows no message before ({before} frames)");
+    assert!(session.execute(&json!({"cmd": "frames", "count": 30})).get("error").is_none());
+    let area = battle_message_area(&mut session);
+    let packets = battle_message_packets(&mut session);
+    let initial = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    const PLAYED: u64 = 60;
+    const HIDDEN: std::ops::Range<u64> = 20..40;
+    // The frames with Select held throughout, presented under `graphics`
+    // (with the window hidden for `HIDDEN` when `hide`) or not: the
+    // pictures of frames 30 and 50; the primitives drawn from each of the
+    // message's parts traced as the dialogue's, and not; those traced as the
+    // dialogue's drawn from elsewhere and those outside the window; the
+    // frames the context showed the message, and the state.
+    let play = |session: &mut Session<NativeModule>, graphics: Option<Graphics>, hide: bool| {
+        session.restore_bytes(&initial).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let (mut pictures, mut marked, mut unmarked, mut elsewhere, mut outside, mut shown) = (Vec::new(), [0; 4], [0; 4], 0, 0, 0);
+        for n in 0..PLAYED {
+            session.execute(&json!({"cmd": "pad", "buttons": ["select"]}));
+            shown += u32::from(matches!(session.runtime.context(), Context::Battle { message: true, .. }));
+            let Some(graphics) = graphics else {
+                assert!(session.frame().expect("frame"));
+                continue;
+            };
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+            view.set_dialogue_hidden(hide && HIDDEN.contains(&n));
+            assert!(session.frame().expect("frame"));
+            let device = session.runtime.services().gpu.device_mut();
+            if view.take_restart() || !device.trace_enabled() {
+                device.set_trace(true);
+            }
+            device.set_reveals(view.reveals());
+            let trace = device.take_trace();
+            for op in &trace.ops {
+                let TraceOp::Draw(p) = op else { continue };
+                let part = packets.iter().position(|ranges| ranges.iter().any(|r| r.contains(&(p.source >> 8))));
+                match (part, p.dialogue) {
+                    (Some(part), true) => marked[part] += 1,
+                    // The first two frames' walks draw what was built before
+                    // the view turned the trace on, whose records it did not
+                    // keep.
+                    (Some(part), false) if n >= 2 => unmarked[part] += 1,
+                    (None, true) => elsewhere += 1,
+                    _ => {}
+                }
+                if !p.dialogue {
+                    continue;
+                }
+                let (dx, dy) = (i32::from(p.environment.offset.0), i32::from(p.environment.offset.1));
+                if !p.vertices[..p.vertex_count()].iter().all(|v| (area[0]..=area[2]).contains(&(v.x - dx)) && (area[1]..=area[3]).contains(&(v.y - dy))) {
+                    outside += 1;
+                }
+            }
+            view.push(trace);
+            let display = session.runtime.services().gpu.device().display();
+            let scene = session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("a presented frame");
+            gpu.queue.submit([encoder.finish()]);
+            if n == 30 || n == 50 {
+                let picture = view.presented_texture().unwrap();
+                let size = (picture.width(), picture.height());
+                pictures.push((size, xem_render::read_rgba8(&gpu.device, &gpu.queue, picture), display));
+            }
+        }
+        let state = (session.memory_hash().unwrap(),
+            session.runtime.services().gpu.device().save(),
+            session.runtime.services().spu.chip().save(),
+            session.runtime.services().clock.now);
+        (state, pictures, (marked, unmarked, elsewhere), outside, shown, whole(session))
+    };
+    let (original, _, _, _, shown, unseen) = play(&mut session, None, false);
+    assert_eq!(shown, PLAYED as u32, "the message shows throughout");
+    for (name, graphics, levels) in [
+        ("wider", Graphics { widescreen: true, interpolation: true, ..Default::default() }, 0),
+        ("hd2d", Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() }, 3),
+    ] {
+        let (drawn, with, (marked, unmarked, elsewhere), outside, _, _) = play(&mut session, Some(graphics), false);
+        let (hidden, without, _, _, _, hid) = play(&mut session, Some(graphics), true);
+        if let Some(directory) = std::env::var_os("XEM_DIALOGUE_CAPTURE") {
+            std::fs::create_dir_all(&directory).unwrap();
+            for (held, pictures) in [("shown", &with), ("hidden", &without)] {
+                for (((width, height), pixels, _), frame) in pictures.iter().zip([30, 50]) {
+                    let path = PathBuf::from(&directory).join(format!("battle-{name}-{held}-{frame}.png"));
+                    let mut encoder = png::Encoder::new(std::fs::File::create(path).unwrap(), *width, *height);
+                    encoder.set_color(png::ColorType::Rgba);
+                    let opaque: Vec<u8> = pixels.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+                    encoder.write_header().unwrap().write_image_data(&opaque).unwrap();
+                }
+            }
+        }
+        eprintln!("{name}: {} primitives traced as the dialogue's in {PLAYED} frames (the window's, the portrait's, the text's and the cursor's {marked:?}, \
+                   {elsewhere} from elsewhere), {outside} outside its window {area:?}", marked.iter().sum::<usize>() + elsewhere);
+        assert!(marked.iter().all(|&count| count > 0), "{name}: the message's window, portrait, text and cursor are each the dialogue's ({marked:?})");
+        assert_eq!(unmarked, [0; 4], "{name}: from the third frame, so is every primitive drawn from them");
+        assert_eq!(elsewhere, 0, "{name}: and none drawn from elsewhere");
+        assert_eq!(outside, 0, "{name}: the dialogue's primitives lie within its window");
+        let ((width, height), shown_pixels, display) = &with[0];
+        let scale = *height as f32 / display.height as f32;
+        let side = (*width as f32 / scale - display.width as f32) / 2.0;
+        let apart = |a: &[u8], b: &[u8]| a.chunks_exact(4).zip(b.chunks_exact(4)).enumerate()
+            .filter(|(_, (a, b))| (0..3).any(|c| a[c].abs_diff(b[c]) > levels))
+            .map(|(i, _)| ((i % *width as usize) as f32 / scale - side, (i / *width as usize) as f32 / scale))
+            .collect::<Vec<_>>();
+        let differing = apart(shown_pixels, &without[0].1);
+        let lies = |(x, y): (f32, f32)| x >= area[0] as f32 - 1.0 && x <= area[2] as f32 + 1.0 && y >= area[1] as f32 - 1.0 && y <= area[3] as f32 + 1.0;
+        let beyond = differing.iter().filter(|&&point| !lies(point)).count();
+        eprintln!("{name} held hidden: {} pixels of {width}x{height} differ by more than {levels} levels, {beyond} beyond the window", differing.len());
+        assert!(differing.len() as f32 > 4000.0 * scale * scale, "{name}: the window goes ({} pixels)", differing.len());
+        assert_eq!(beyond, 0, "{name}: and nothing else");
+        assert_eq!(apart(&with[1].1, &without[1].1).len(), 0, "{name}: let go, the window shows again");
+        assert_eq!(drawn, original, "{name}: presenting the message cannot change RAM (with the RNG), VRAM, sound or time");
+        assert_eq!(hidden, original, "{name}: nor hiding it");
+        presentation_only(&mut session, &hid, &unseen).unwrap_or_else(|at| panic!("{name}: hiding the message changes the whole state: {at}"));
+    }
+}
+
+/// Field 12's opening conversation with Select held as a host holds it
+/// (`xem_settings::look::DialogueHiding`), Confirm pressed as each page
+/// waits: its windows close and the next ones open. The display shows each
+/// frame while the game draws the next, so the frames presented just after
+/// a window has closed still hold its primitives; the windows stay hidden in
+/// every one of them, as in the next window's first frames. Let go, they
+/// show again.
+#[test]
+fn a_conversation_held_hidden_stays_hidden_as_its_windows_close_and_the_next_open() {
+    use xem_core::context::Context;
+    use xem_core::dialogue::Prompt;
+    use xem_gpu::TraceOp;
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "enter_field", "map": 12})).get("error").is_none());
+    let reply = session.execute(&json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, interpolation: true, ..Default::default() };
+    let mut hiding = xem_settings::look::DialogueHiding::default();
+    let (select, confirm) = (xem_core::control::button_bit("select").unwrap(), xem_settings::GameAction::Confirm.button());
+    // Windows closed, frames shown after a close still holding the closed
+    // window's primitives, frames shown with the dialogue's primitives not
+    // hidden while Select was held, and after letting go.
+    let (mut closed, mut lingering, mut showing, mut released) = (0, 0, 0, 0);
+    let (mut was, mut pressed_at, mut opened_again): (bool, Option<u64>, Option<u64>) = (true, None, None);
+    for n in 0..6000u64 {
+        let context = session.runtime.context();
+        let dialogue = matches!(context, Context::Dialogue { .. });
+        closed += u32::from(was && !dialogue);
+        was = dialogue;
+        if closed >= 3 && dialogue && opened_again.is_none() {
+            opened_again = Some(n);
+        }
+        let held = opened_again.is_none_or(|at| n < at + 30);
+        if !held && n >= opened_again.unwrap() + 60 {
+            break;
+        }
+        let mode = session.runtime.services().mode;
+        let waiting = matches!(xem_core::dialogue::prompt(session.runtime.memory(), mode), Prompt::Waiting { .. });
+        let press = held && waiting && pressed_at.is_none_or(|at| n - at >= 16);
+        if press {
+            pressed_at = Some(n);
+        }
+        session.set_pad(0, if held { select } else { 0 } | if press { confirm } else { 0 });
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 480), view.max_scale()));
+        view.set_dialogue_hidden(hiding.update(held, &[0; 16], context, n as f64 * 1000.0 / 60.0));
+        assert!(session.frame().expect("frame"));
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = session.runtime.services().gpu.device().display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("a presented frame");
+        gpu.queue.submit([encoder.finish()]);
+        let marked = view.frame().newest().iter().any(|op| matches!(op, TraceOp::Draw(p) if p.dialogue));
+        if held {
+            lingering += u32::from(marked && !matches!(session.runtime.context(), Context::Dialogue { .. }));
+            showing += u32::from(marked && !view.dialogue_hidden());
+        } else {
+            released += u32::from(marked && !view.dialogue_hidden());
+        }
+    }
+    eprintln!("{closed} windows closed with Select held, {lingering} frames shown after one still holding it, {showing} shown with it, {released} after letting go");
+    assert!(opened_again.is_some(), "three windows closed and the next opened ({closed})");
+    assert!(lingering >= 2 * closed, "the frames shown just after a window closes hold its primitives ({lingering})");
+    assert_eq!(showing, 0, "no frame presented while Select is held shows the dialogue");
+    assert!(released >= 25, "let go, the window shows again ({released} frames)");
+}
+
+/// A frame presented in [`a_dialogue_held_hidden_stays_hidden_as_the_trace_restarts_and_after_a_loaded_states_first_frames`]:
+/// its picture and display, the windows' areas, and whether it shows a
+/// frame the renderer logged (else VRAM's picture) and the dialogue's
+/// primitives traced in it.
+struct Presented {
+    size: (u32, u32),
+    pixels: Vec<u8>,
+    display: xem_gpu::DisplayInfo,
+    areas: Vec<[i32; 4]>,
+    logged: bool,
+    marked: bool,
+}
+
+/// A dialogue held hidden as a host restarts its draw trace (a view that
+/// needs all of VRAM again: a new scale, more frames run than presented)
+/// and as a state loads: field 12's opening dialogue presented wider and
+/// interpolated, the trace restarted after one of several frames in turn.
+/// A restart between a field frame's records and its walk keeps the
+/// records, so no frame the renderer draws after it shows the window; one
+/// that drops what the game traced since (the text's next glyph among it)
+/// leaves the renderer VRAM's picture, the window in it, for the few frames
+/// until the next the game draws shows. A state saved some frames on and
+/// loaded shows the window likewise in its first frames, from its VRAM
+/// (drawn before it was saved) and, when it was saved between building a
+/// frame and drawing it, in that frame too (its records were made before
+/// the save); from the next on, it is hidden.
+#[test]
+fn a_dialogue_held_hidden_stays_hidden_as_the_trace_restarts_and_after_a_loaded_states_first_frames() {
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "enter_field", "map": 12})).get("error").is_none());
+    let reply = session.execute(&json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    assert!(session.execute(&json!({"cmd": "frames", "count": 60})).get("error").is_none());
+    let initial = session.snapshot_bytes().unwrap();
+    // States saved on each side of a field frame's vertical blank, loaded
+    // well after they were saved (the text revealed further since).
+    let mut later = Vec::new();
+    assert!(session.execute(&json!({"cmd": "frames", "count": 6})).get("error").is_none());
+    for _ in 0..2 {
+        assert!(session.execute(&json!({"cmd": "frames", "count": 1})).get("error").is_none());
+        later.push(session.snapshot_bytes().unwrap());
+    }
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let graphics = Graphics { widescreen: true, interpolation: true, ..Default::default() };
+    const FRAMES: u64 = 40;
+    const LOAD: u64 = 30;
+    // Each frame presented (the window hidden when `hide`), the trace
+    // restarted after frame `restart`, a state loaded before frame `LOAD`.
+    let play = |session: &mut Session<NativeModule>, hide: bool, restart: Option<u64>, load: Option<&[u8]>| {
+        session.restore_bytes(&initial).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let mut frames = Vec::new();
+        for n in 0..FRAMES {
+            if let Some(state) = load.filter(|_| n == LOAD) {
+                session.restore_bytes(state).unwrap();
+            }
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 480), view.max_scale()));
+            view.set_dialogue_hidden(hide);
+            assert!(session.frame().expect("frame"));
+            let areas = dialogue_areas(session).expect("the window open");
+            let device = session.runtime.services().gpu.device_mut();
+            if view.take_restart() || !device.trace_enabled() || restart == Some(n) {
+                device.set_trace(true);
+            }
+            device.set_reveals(view.reveals());
+            view.push(device.take_trace());
+            let display = session.runtime.services().gpu.device().display();
+            let scene = session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("a presented frame");
+            gpu.queue.submit([encoder.finish()]);
+            let picture = view.presented_texture().unwrap();
+            let size = (picture.width(), picture.height());
+            frames.push(Presented {
+                size,
+                pixels: xem_render::read_rgba8(&gpu.device, &gpu.queue, picture),
+                display,
+                areas,
+                logged: view.frame().identity().is_some(),
+                marked: view.frame().newest().iter().any(|op| matches!(op, xem_gpu::TraceOp::Draw(p) if p.dialogue)),
+            });
+        }
+        frames
+    };
+    // The frames from the tenth on (a view's first show the console's
+    // picture: its trace starts after the first) that show the window
+    // hidden: their picture is the same as shown within the windows' areas.
+    let showing = |session: &mut Session<NativeModule>, restart: Option<u64>, load: Option<&[u8]>| {
+        let shown = play(session, false, restart, load);
+        let hidden = play(session, true, restart, load);
+        let frames: Vec<u64> = (10..FRAMES).filter(|&n| {
+            let (a, b) = (&shown[n as usize], &hidden[n as usize]);
+            let scale = a.size.1 as f32 / a.display.height as f32;
+            let side = (a.size.0 as f32 / scale - a.display.width as f32) / 2.0;
+            a.pixels.chunks_exact(4).zip(b.pixels.chunks_exact(4)).enumerate().all(|(i, (p, q))| {
+                let (x, y) = ((i % a.size.0 as usize) as f32 / scale - side, (i / a.size.0 as usize) as f32 / scale);
+                p[..3] == q[..3] || !a.areas.iter().any(|r| x >= r[0] as f32 && x <= r[2] as f32 && y >= r[1] as f32 && y <= r[3] as f32)
+            })
+        }).collect();
+        (frames, hidden)
+    };
+    for restart in [14, 15, 16, 17, 27, 28] {
+        let (frames, hidden) = showing(&mut session, Some(restart), None);
+        eprintln!("restarted after frame {restart}: the window shows in frames {frames:?}");
+        assert!(frames.iter().all(|&n| !hidden[n as usize].logged), "restarted after {restart}: only VRAM's picture shows the window ({frames:?})");
+        assert!(frames.len() <= 4 && frames.iter().enumerate().all(|(i, &n)| n == restart + i as u64), "restarted after {restart}: the frames right after it ({frames:?})");
+    }
+    let mut built = 0;
+    for state in &later {
+        let (frames, hidden) = showing(&mut session, None, Some(state));
+        let logged: Vec<u64> = frames.iter().copied().filter(|&n| hidden[n as usize].logged).collect();
+        eprintln!("a state loaded before frame {LOAD}: the window shows in frames {frames:?}, logged {logged:?}");
+        assert!(!frames.is_empty() && frames.len() <= 5 && frames.iter().enumerate().all(|(i, &n)| n == LOAD + i as u64),
+            "after the load, its first frames alone ({frames:?})");
+        // The frame built before the save (its records with it), drawn after the load.
+        assert!(logged.len() <= 2 && logged.iter().all(|&n| !hidden[n as usize].marked), "logged after the load, unmarked: {logged:?}");
+        built += usize::from(!logged.is_empty());
+    }
+    assert_eq!(built, 1, "one state was saved between building a frame and drawing it");
+}
+
+/// A held rewind's steps over a dialogue held hidden, from states a second
+/// apart, the newest almost a second old: each takes a state off the queue
+/// and plays on until the display shows a frame both built and drawn since
+/// (`Session::rewind_step`), so each step's picture leaves the window out.
+/// A first step from a younger state can stop short of such a frame
+/// (docs/runtime.md, Hiding a dialogue).
+#[test]
+fn held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows() {
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
+    assert!(session.execute(&json!({"cmd": "enter_field", "map": 12})).get("error").is_none());
+    let reply = session.execute(&json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, interpolation: true, ..Graphics::default() };
+    let mut tick = 0u64;
+    // One host presentation, the window hidden or not: the picture, and
+    // whether the frame shown holds the dialogue's primitives.
+    let mut present = |session: &mut Session<NativeModule>, view: &mut GameView, hidden: bool| {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 480), view.max_scale()));
+        view.set_dialogue_hidden(hidden);
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        tick += 1;
+        assert!(view.present(&mut encoder, &display, &scene, tick as f64 / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        let marked = view.frame().newest().iter().any(|op| matches!(op, xem_gpu::TraceOp::Draw(p) if p.dialogue));
+        (xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap()), marked)
+    };
+    // Five seconds of the dialogue, Select held, a state a second.
+    for n in 0..300u64 {
+        clock.set(std::time::Duration::from_millis(n * 1000 / 60));
+        session.execute(&json!({"cmd": "pad", "buttons": ["select"]}));
+        assert!(session.frame().unwrap());
+        present(&mut session, &mut view, true);
+    }
+    for step in 0..4 {
+        assert!(session.rewind_step().unwrap(), "step {step}");
+        assert!(dialogue_areas(&mut session).is_some_and(|areas| !areas.is_empty()), "step {step}: the window open");
+        let (shown, _) = present(&mut session, &mut view, false);
+        let (hidden, marked) = present(&mut session, &mut view, true);
+        let differing = shown.chunks_exact(4).zip(hidden.chunks_exact(4)).filter(|(a, b)| a[..3] != b[..3]).count();
+        assert!(marked && differing > 10_000, "step {step}: the frame shown leaves the window out ({differing} pixels)");
+    }
 }

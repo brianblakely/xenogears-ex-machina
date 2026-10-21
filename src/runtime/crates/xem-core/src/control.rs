@@ -385,8 +385,10 @@ impl<M: GameModule> Session<M> {
     /// (src/port/encounters.c): on the maps whose random battles it leaves
     /// on, the draw runs every other field frame, so the same walk brings
     /// half its battles; scripted battles and the world map's stay the
-    /// game's. Off is the original. It changes the game, so it is recorded
-    /// with the inputs, and a replay keeps the recorded one.
+    /// game's. Every battle then gives twice its experience, gold and
+    /// deathblow progress (src/port/rewards.c, the `reward_scale` import).
+    /// Off is the original. It changes the game, so it is recorded with the
+    /// inputs, and a replay keeps the recorded one.
     pub fn set_half_encounters(&mut self, enabled: bool) {
         if self.replay_end.is_some() {
             return;
@@ -1726,23 +1728,34 @@ impl<M: GameModule> Session<M> {
     }
 
     fn checkpoint(&mut self) {
-        if self.debug.busy() { return; }
+        let state = self.take_rewind_state();
+        // For a draw trace, the history as the frame leaves it: the renderer
+        // remembers the screens the game took for as long as a state of the
+        // history can bring them back. Presentation only.
+        let (frame, oldest) = (self.runtime.frames(), self.rewind.oldest_frame());
+        self.runtime.services().gpu.device_mut().trace_history(frame, state, oldest);
+    }
+
+    /// Takes a state of the game's frame into the rewind history when one is
+    /// due; returns whether it did.
+    fn take_rewind_state(&mut self) -> bool {
+        if self.debug.busy() { return false; }
         // A held rewind's frames go back in time: no history of their own.
-        if self.rewind.budget == 0 || self.rewinding { return; }
+        if self.rewind.budget == 0 || self.rewinding { return false; }
         let paused = self.game_paused();
         if paused || self.rewind_game_paused {
             self.reset_rewind_timer();
             self.rewind_game_paused = paused;
-            if paused { return; }
+            if paused { return false; }
         }
         let frame = self.runtime.frames();
         let now = (self.rewind_clock)();
-        if self.rewind.due(now) {
-            match self.runtime.snapshot_content() {
-                Ok(data) => self.rewind.push(frame,data,now),
-                Err(error) => self.rewind.error = Some(error.to_string()),
-            }
+        if !self.rewind.due(now) { return false; }
+        match self.runtime.snapshot_content() {
+            Ok(data) => self.rewind.push(frame,data,now),
+            Err(error) => self.rewind.error = Some(error.to_string()),
         }
+        self.rewind.error.is_none()
     }
 
     /// One older checkpoint for a host's held rewind, taken off the queue

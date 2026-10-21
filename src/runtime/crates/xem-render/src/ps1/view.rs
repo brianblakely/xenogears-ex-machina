@@ -107,6 +107,15 @@ fn draws_scene(ops: &[TraceOp]) -> bool {
     ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.class.is_scene() && !p.revealed))
 }
 
+/// Whether a scene's terrain opens hairline cracks at sub-pixel precision
+/// that the original's whole pixels hide: the world map's blocks of
+/// different detail meet in T-junctions, and its and the Battling arena's
+/// far slivers are dropped by whole-pixel winding tests (the port records
+/// them as culled faces).
+fn seals_terrain(scene: &str) -> bool {
+    scene.starts_with("worldmap") || scene == "arena"
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
@@ -140,6 +149,8 @@ impl ViewConfig {
                 interface_linear: linear(graphics.filtering.interface),
             },
             culling: super::Culling { viewport: graphics.culling.viewport, back_faces: graphics.culling.back_faces },
+            full_size_sprites: graphics.full_size_sprites,
+            hide_dialogue: false,
         };
         // A headset's virtual screen takes a 16:9 shape when widened.
         let aspect = match (graphics.widescreen, host) {
@@ -349,6 +360,8 @@ pub struct GameView {
     presented_movie: bool,
     /// First-person inspection, while it is on.
     first_person: Option<FirstPerson>,
+    /// The field's dialogue windows are left out ([`DrawOptions::hide_dialogue`]).
+    dialogue_hidden: bool,
     /// What a headset shows, and the diorama's state.
     xr_view: XrView,
     diorama: Diorama,
@@ -507,6 +520,7 @@ impl GameView {
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
             first_person: None,
+            dialogue_hidden: false,
             xr_view: XrView::Screen,
             diorama: Diorama::default(),
             room: false,
@@ -530,8 +544,10 @@ impl GameView {
         self.config.as_ref()
     }
 
-    /// Applies a configuration (cheap when unchanged).
+    /// Applies a configuration (cheap when unchanged), with the dialogue
+    /// shown or hidden as [`GameView::set_dialogue_hidden`] last said.
     pub fn configure(&mut self, config: ViewConfig) {
+        let config = ViewConfig { draw: DrawOptions { hide_dialogue: self.dialogue_hidden, ..config.draw }, ..config };
         if self.config == Some(config) {
             return;
         }
@@ -582,11 +598,11 @@ impl GameView {
                     Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0 })
                 }
             }
-        } else if side > 0 || config.interpolation || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
+        } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
             // The sides, and a little more for faces leaning into them, or
             // what a camera between two frames sees beside the screen.
-            // Modern world terrain also needs sub-pixel slivers the
-            // original's whole-pixel winding test discarded inside them.
+            // Modern terrain also needs the sub-pixel slivers the
+            // original's whole-pixel winding tests discarded inside them.
             let margin = if config.interpolation { 32 } else { 16 };
             Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0 })
         } else {
@@ -628,6 +644,25 @@ impl GameView {
     /// Whether first-person inspection is on.
     pub fn first_person(&self) -> bool {
         self.first_person.is_some()
+    }
+
+    /// Leaves a dialogue's windows (the field's: their frames, text,
+    /// portraits, prompts and choice cursors; a battle's script message:
+    /// its window, portrait, text and cursor) out of what it presents, or
+    /// shows them again: hosts hide them while the player holds Select over
+    /// a dialogue (`xem_settings::look::DialogueHiding`). The frame shown is
+    /// replayed without them at once, paused or not; the game draws as
+    /// before.
+    pub fn set_dialogue_hidden(&mut self, hidden: bool) {
+        self.dialogue_hidden = hidden;
+        if let Some(config) = self.config {
+            self.configure(config);
+        }
+    }
+
+    /// Whether the field's dialogue windows are left out.
+    pub fn dialogue_hidden(&self) -> bool {
+        self.dialogue_hidden
     }
 
     /// The Binaural listener's view (`xem_core::binaural::ListenerView`)
@@ -982,9 +1017,7 @@ impl GameView {
             super::PresentedPicture { texture, side: self.main.frame.side(), scale }
         });
         self.renderer.set_presented(presented);
-        // The world map's terrain blocks meet in T-junctions that open at
-        // higher scales; the original's whole pixels hide them.
-        self.renderer.set_seal(scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping);
+        self.renderer.set_seal(seals_terrain(scene) && !config.draw.fidelity.vertex_snapping);
         self.renderer.draw(encoder, &trace);
         // The frames this trace began are the current scene's.
         let identities: Vec<_> = self.renderer.log_identities().collect();

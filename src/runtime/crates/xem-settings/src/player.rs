@@ -492,7 +492,7 @@ mod tests {
         reassigned.assignment.0.swap(0, 1);
         assert_eq!(input.buttons(&bindings, 0.0, reassigned), button::UP | GameAction::Run.button_with(&reassigned.assignment));
         for ui in [Ui::Event { map: 1, buttons: 0xffff }, Ui::None, Ui::WorldMap { movement: 1, scene: 0 },
-            Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false },
+            Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message: false },
             Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false }]
         {
             assert_eq!(input.buttons(&bindings, 0.0, field(ui)), button::UP, "{ui:?} gets no automatic Run");
@@ -576,7 +576,7 @@ mod tests {
             steps: Steps::Direct,
             confirm: true,
         };
-        let battle = field(Ui::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false });
+        let battle = field(Ui::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false, message: false });
         fn steer(input: &mut PlayerInput, ring: &Targets, bindings: &GameBindings, context: Context, frames: usize) -> Vec<u16> {
             (0..frames).map(|_| {
                 input.browse(Some(ring));
@@ -631,7 +631,7 @@ mod tests {
             steps: Steps::Compass,
             confirm: false,
         };
-        let attacking = Context { attack: true, ..field(Ui::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false }) };
+        let attacking = Context { attack: true, ..field(Ui::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false, message: false }) };
         input.hover(Some((5.0, 5.0)));
         assert!(input.click(Some(&attack)));
         input.browse(Some(&attack));
@@ -657,7 +657,7 @@ mod tests {
     fn an_attack_sequence_is_pointed_when_a_pointer_presses_its_first_attack() {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
-        let battle = |page, ap| Context { attack: page != 1, ..field(Ui::Battle { page, attack: page != 1, ap, list: false, targeting: false }) };
+        let battle = |page, ap| Context { attack: page != 1, ..field(Ui::Battle { page, attack: page != 1, ap, list: false, targeting: false, message: false }) };
         run(&mut input, &bindings, battle(5, 7), 1);
         assert!(!input.attack_pointed());
         input.press_pointed([GameAction::AttackWeak]);

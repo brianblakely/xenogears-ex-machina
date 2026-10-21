@@ -23,6 +23,9 @@
 //! The port records the faces its renderers culled at the edges of the
 //! original screen as well; they are traced as [`Primitive::revealed`]
 //! where the game would have linked them, for wider views, and never drawn.
+//! It also records the runs of packets a dialogue's windows linked (the
+//! field's, a battle's script message), and what the DMA walk draws from
+//! them is traced as [`Primitive::dialogue`].
 
 use crate::{Gpu, VRAM_HEIGHT, VRAM_WIDTH};
 use std::collections::HashMap;
@@ -454,10 +457,28 @@ pub struct Primitive {
     /// The original animation assembled from the first-person viewing angle.
     /// Presentation only; the GPU's commands and VRAM remain original.
     pub facing: Option<std::sync::Arc<SpriteFacing>>,
+    /// A party character's full-size frame, assembled from its own field
+    /// sprite at a quarter of its size, for the small sprite of a
+    /// large-scale field this part belongs to. Presentation only, as
+    /// [`Primitive::facing`].
+    pub full_size: Option<std::sync::Arc<SpriteFacing>>,
     /// Every point projected by the backdrop the game draws far behind its
     /// scene (a battle's sky; xem/gte.h `XEM_PROJECTION_BACKDROP`): part of
     /// the world in the game's view, the backdrop to a view from elsewhere.
     pub backdrop: bool,
+    /// Its texels are a movie's picture: 15-bit, every one in a macroblock
+    /// the movie player loaded from the MDEC's output ([`TraceOp::Movie`],
+    /// or in a load of them seen before the trace started again) and
+    /// nothing changed since (a window movie the field shows on a screen in
+    /// its world). Presentation only.
+    pub movie: bool,
+    /// Drawn from the packets a dialogue's windows linked (the field's:
+    /// their frames, text, portraits, prompts and choice cursors; a
+    /// battle's script message: its window, portrait, text and cursor), as
+    /// the port records their runs ([`Gpu::trace_dialogue`]): left out of
+    /// the picture while the player holds Select over a dialogue.
+    /// Presentation only, as [`Primitive::facing`].
+    pub dialogue: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -466,6 +487,9 @@ pub struct SpriteFacingPart {
     pub points: [Projection; 4],
 }
 
+/// A sprite drawn another way than the original drew it, for presentation:
+/// its parts as the original's draw made them, the cells they sample and
+/// what those cells cover to put back.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SpriteFacing {
     pub parts: Vec<SpriteFacingPart>,
@@ -497,7 +521,7 @@ impl Primitive {
 }
 
 /// A rectangle of VRAM pixels.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct VramRect {
     pub x: u16,
     pub y: u16,
@@ -545,7 +569,8 @@ pub enum TraceOp {
     /// GP0(02h): `color` 0xBBGGRR over the rectangle (already wrapped).
     Fill { rect: VramRect, color: u32 },
     /// GP0(80h): a copy inside VRAM. The destination's resulting pixels
-    /// follow as a [`TraceOp::Write`].
+    /// follow as a [`TraceOp::Write`]. A copy onto itself that sets no mask
+    /// bit moves no pixel and is not traced.
     Copy { source: (u16, u16), destination: (u16, u16), width: u16, height: u16 },
     /// VRAM pixels as the device now holds them. `upload` is true for a
     /// CPU-to-VRAM transfer (or the whole VRAM when a trace starts): pixels
@@ -567,6 +592,12 @@ pub enum TraceOp {
     /// movie, which the session notes after each of its game frames:
     /// [`Gpu::trace_movie_frames_left`]). Presentation only.
     MovieFramesLeft(u16),
+    /// The session's rewind history after a game frame: the game's frame
+    /// count, whether the history took a state of that frame, and the frame
+    /// of the oldest state it holds (none without history), for a renderer
+    /// that remembers what it presented of the screens a state can bring
+    /// back ([`Gpu::trace_history`]). Presentation only.
+    History { frame: u64, state: bool, oldest: Option<u64> },
     /// Where the field's controlled character stands in the frame the game
     /// draws next (while the view looks from within or around the scene:
     /// [`Reveals::around`]), in order with the commands: the port records
@@ -600,6 +631,10 @@ pub struct MovieBlock {
 
 /// Movie macroblocks kept for the transfers that load them.
 const MACROBLOCKS: usize = 4096;
+/// 15-bit movie loads kept ([`Recorder::movie_loads`]): 54 seconds of a
+/// window movie's 20 columns at 15 pictures a second, more than a rewind's
+/// history holds by default (30).
+const MOVIE_LOADS: usize = 16384;
 
 /// FNV-1a, 64-bit (the key the MDEC gives a macroblock's output bytes).
 fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
@@ -632,6 +667,7 @@ pub(crate) struct Recorder {
     /// entries (thousands a frame when zoomed out).
     reveals: WordMap<Vec<Revealed>>,
     facings: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
+    full_sizes: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     spare: Vec<Vec<Revealed>>,
     /// The address each word of the GPU's partly received command was read
     /// from (0 for words the CPU wrote), and the word being written's.
@@ -677,6 +713,21 @@ pub(crate) struct Recorder {
     macroblocks: HashMap<u64, (std::sync::Arc<MovieBlock>, u64)>,
     macroblock_keys: std::collections::VecDeque<(u64, u64)>,
     decoded_macroblocks: u64,
+    /// Where 15-bit ones were found loaded into VRAM, while VRAM there stays
+    /// as they left it, and the rectangle around those places: what is
+    /// drawn from them is the movie's picture ([`Primitive::movie`]).
+    movie: Vec<VramRect>,
+    movie_bounds: Option<VramRect>,
+    /// The 15-bit loads of them seen (a transfer every block of which the
+    /// MDEC decoded, or one seen before), by the key of their pixels and
+    /// their place, with the count of the load that last gave each;
+    /// `movie_load_keys` holds them oldest first. They outlast a restart and
+    /// a snapshot loaded: VRAM holding one where it was loaded is the
+    /// movie's picture though the MDEC decoded it before (in the timeline a
+    /// rewind left, or before the trace started again).
+    movie_loads: HashMap<(u64, VramRect), u64>,
+    movie_load_keys: std::collections::VecDeque<((u64, VramRect), u64)>,
+    seen_movie_loads: u64,
     /// Drawn pixels not yet written to the trace.
     dirty: Option<VramRect>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -685,6 +736,15 @@ pub(crate) struct Recorder {
     /// primitives traced from it so far.
     source: u32,
     source_index: u32,
+    /// The runs of packets a dialogue's windows linked for the DMA walk to
+    /// come, as the port recorded them (each its newest node and its
+    /// oldest), until the walk enters one; then the node it ends with,
+    /// until the walk leaves that; and whether the walk entered one since
+    /// the last was recorded (the next record is the next frame's: the runs
+    /// recorded before it are dropped).
+    dialogue: Vec<(u32, u32)>,
+    dialogue_end: Option<u32>,
+    dialogue_entered: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -703,6 +763,10 @@ const RAM_WORDS: usize = 0x20_0000 / 4;
 /// Recording frames ([`Recorder::frames`]) a culled face waits for its
 /// ordering table's walk.
 const REVEAL_FRAMES: u32 = 3;
+/// Runs of a dialogue's packets kept for the walk to come at most: a frame
+/// records one for the field's windows, three for a battle's script
+/// message (a walk that never comes leaves no more behind).
+const DIALOGUE_RUNS: usize = 8;
 /// Ops a trace holds at most between takes (tens of frames; a battle frame
 /// is a few thousand): past it, at a vertical blank, it starts again from
 /// the whole VRAM, so a host that runs frames without presenting them
@@ -732,18 +796,109 @@ impl Recorder {
 
     /// The movie macroblocks a transfer to `rect` carries, found by their
     /// output's bytes: a column of them, 16 rows each, as the MDEC output
-    /// them (the movie player loads each slice it decoded as it is).
+    /// them (the movie player loads each slice it decoded as it is). A
+    /// 15-bit column loaded there before is the movie's picture again, its
+    /// blocks decoded or not.
     fn movie_blocks(&mut self, rect: VramRect, pixels: &[u16]) {
         let width = usize::from(rect.width);
-        if self.macroblocks.is_empty() || !(width == 16 || width == 24) || rect.height % 16 != 0 {
+        if (self.macroblocks.is_empty() && self.movie_loads.is_empty()) || !(width == 16 || width == 24) || rect.height % 16 != 0 {
             return;
         }
+        let load = (width == 16).then(|| (fnv1a(pixels.iter().flat_map(|pixel| pixel.to_le_bytes())), rect));
+        let seen = load.is_some_and(|load| self.movie_loads.contains_key(&load));
+        let mut decoded = 0;
         for (k, chunk) in pixels.chunks_exact(width * 16).enumerate() {
             let key = fnv1a(chunk.iter().flat_map(|pixel| pixel.to_le_bytes()));
-            if let Some((block, _)) = self.macroblocks.get(&key).filter(|(block, _)| block.bits24 == (width == 24)) {
-                self.ops.push(TraceOp::Movie { x: rect.x, y: rect.y + 16 * k as u16, block: block.clone() });
+            let block = self.macroblocks.get(&key).filter(|(block, _)| block.bits24 == (width == 24)).map(|(block, _)| block.clone());
+            let (x, y) = (rect.x, rect.y + 16 * k as u16);
+            if seen || block.as_ref().is_some_and(|block| !block.bits24) {
+                self.movie_block(VramRect { x, y, width: 16, height: 16 });
+                decoded += usize::from(block.is_some());
+            }
+            if let Some(block) = block {
+                self.ops.push(TraceOp::Movie { x, y, block });
             }
         }
+        if let Some(load) = load
+            && (seen || decoded == usize::from(rect.height / 16))
+        {
+            self.seen_movie_loads += 1;
+            self.movie_loads.insert(load, self.seen_movie_loads);
+            self.movie_load_keys.push_back((load, self.seen_movie_loads));
+            while self.movie_load_keys.len() > MOVIE_LOADS
+                && let Some((oldest, count)) = self.movie_load_keys.pop_front()
+            {
+                if self.movie_loads.get(&oldest) == Some(&count) {
+                    self.movie_loads.remove(&oldest);
+                }
+            }
+        }
+    }
+
+    /// The movie's picture fills `at` (a 16x16 block).
+    fn movie_block(&mut self, at: VramRect) {
+        self.movie.push(at);
+        self.movie_bounds = Some(self.movie_bounds.map_or(at, |bounds| bounds.union(&at)));
+    }
+
+    /// All of VRAM, `vram`, starts the trace again: the movie's picture is
+    /// where it holds a 15-bit load seen there.
+    fn refind_movie(&mut self, vram: &[u16]) {
+        self.movie.clear();
+        self.movie_bounds = None;
+        let mut places: Vec<VramRect> = self.movie_loads.keys().map(|&(_, place)| place).collect();
+        places.sort_by_key(|place| (place.y, place.x, place.height, place.width));
+        places.dedup();
+        for place in places {
+            let key = fnv1a(read_rect(vram, place).iter().flat_map(|pixel| pixel.to_le_bytes()));
+            // Another load seen over part of it is not there too.
+            if self.movie_loads.contains_key(&(key, place)) && self.movie.iter().all(|block| block.intersect(&place).is_none()) {
+                for k in 0..place.height / 16 {
+                    self.movie_block(VramRect { x: place.x, y: place.y + 16 * k, width: 16, height: 16 });
+                }
+            }
+        }
+    }
+
+    /// What `other` knew of movies, for a trace that starts again from all
+    /// of VRAM: the loads it saw, and with `decoded` (the same timeline, a
+    /// host's restart) the macroblocks the MDEC decoded, which the player
+    /// may load next.
+    fn keep_movies(&mut self, other: &mut Recorder, decoded: bool) {
+        self.movie_loads = std::mem::take(&mut other.movie_loads);
+        self.movie_load_keys = std::mem::take(&mut other.movie_load_keys);
+        self.seen_movie_loads = other.seen_movie_loads;
+        if decoded {
+            self.macroblocks = std::mem::take(&mut other.macroblocks);
+            self.macroblock_keys = std::mem::take(&mut other.macroblock_keys);
+            self.decoded_macroblocks = other.decoded_macroblocks;
+        }
+    }
+
+    /// VRAM changed at `rect`: the movie's blocks there are gone.
+    fn forget_movie(&mut self, rect: VramRect) {
+        if self.movie_bounds.is_some_and(|bounds| bounds.intersect(&rect).is_some()) {
+            self.movie.retain(|block| block.intersect(&rect).is_none());
+            self.movie_bounds = self.movie.iter().copied().reduce(|a, b| a.union(&b));
+        }
+    }
+
+    /// Whether the texels a primitive samples, `u` by `v` (inclusive), on the
+    /// page GP0(E1h) `mode` selects, with the texture window `window`, are
+    /// the movie's picture: 15-bit, no window, every one in its blocks.
+    fn movie_picture(&self, mode: u32, window: u32, (u0, u1): (i32, i32), (v0, v1): (i32, i32)) -> bool {
+        if self.movie.is_empty() || mode >> 7 & 3 < 2 || window != 0 || u0 < 0 || v0 < 0 || u0 > u1 || v0 > v1 || u1 > 255 || v1 > 255 {
+            return false;
+        }
+        let (x, y) = ((mode & 0xF) as i32 * 64 + u0, (mode >> 4 & 1) as i32 * 256 + v0);
+        let (width, height) = (u1 - u0 + 1, v1 - v0 + 1);
+        if x + width > VRAM_WIDTH as i32 {
+            return false;
+        }
+        let rect = VramRect { x: x as u16, y: y as u16, width: width as u16, height: height as u16 };
+        // The blocks never overlap: a block loaded over another forgets it.
+        let covered: u32 = self.movie.iter().filter_map(|block| block.intersect(&rect)).map(|r| u32::from(r.width) * u32::from(r.height)).sum();
+        covered == u32::from(rect.width) * u32::from(rect.height)
     }
 
     fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
@@ -907,6 +1062,13 @@ impl Recorder {
     }
 }
 
+/// Keeps an alternative for projections `first` to `last`, with the ones
+/// still within the history: a DMA may consume the previous frame.
+fn keep_alternative(list: &mut Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>, first: u32, last: u32, alternative: SpriteFacing) {
+    list.push((first, last, std::sync::Arc::new(alternative)));
+    list.retain(|(start, _, _)| last.wrapping_sub(*start) < HISTORY as u32);
+}
+
 fn sign11(value: u32) -> i32 {
     ((value << 21) as i32) >> 21
 }
@@ -915,18 +1077,54 @@ impl Gpu {
     /// The port assembled an alternate facing for these original projections.
     pub fn trace_sprite_facing(&mut self, first: u32, last: u32, facing: SpriteFacing) {
         if let Some(trace) = &mut self.trace {
-            trace.facings.push((first, last, std::sync::Arc::new(facing)));
-            // A DMA may consume the previous frame; retain its records too.
-            let end = last;
-            trace.facings.retain(|(start, _, _)| end.wrapping_sub(*start) < HISTORY as u32);
+            keep_alternative(&mut trace.facings, first, last, facing);
         }
     }
+
+    /// The port assembled a full-size frame for the small sprite these
+    /// original projections drew.
+    pub fn trace_sprite_full_size(&mut self, first: u32, last: u32, full_size: SpriteFacing) {
+        if let Some(trace) = &mut self.trace {
+            keep_alternative(&mut trace.full_sizes, first, last, full_size);
+        }
+    }
+
+    /// A dialogue's windows linked a run of packets at their ordering-table
+    /// entry, from `newest` to `oldest` (24-bit addresses): what the DMA
+    /// walk draws from it next is the dialogue's ([`Primitive::dialogue`]).
+    /// A frame records one run for the field's windows and up to three for
+    /// a battle's script message (its window; its portrait and text; its
+    /// cursor) before the walk; once the walk has entered one, the next
+    /// record begins the next frame's.
+    pub fn trace_dialogue(&mut self, newest: u32, oldest: u32) {
+        if let Some(trace) = &mut self.trace {
+            if std::mem::take(&mut trace.dialogue_entered) {
+                trace.dialogue.clear();
+            }
+            if trace.dialogue.len() == DIALOGUE_RUNS {
+                trace.dialogue.remove(0);
+            }
+            trace.dialogue.push((newest & ADDRESS_MASK, oldest & ADDRESS_MASK));
+        }
+    }
+
     /// Turns the draw trace on or off. Turning it on starts the next trace
-    /// with the whole VRAM.
+    /// with the whole VRAM; turned on while on (a host's restart for a new
+    /// internal scale, or between frames), it keeps what it knew of movies
+    /// and the runs of a dialogue's packets recorded for the walk to come,
+    /// which the game made on this timeline.
     pub fn set_trace(&mut self, enabled: bool) {
         let pending = self.fifo.len();
+        let was = self.trace.take();
         self.trace = enabled.then(|| {
-            Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() })
+            let mut trace = Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() });
+            if let Some(mut was) = was {
+                trace.keep_movies(&mut was, true);
+                if !was.dialogue_entered {
+                    trace.dialogue = std::mem::take(&mut was.dialogue);
+                }
+            }
+            trace
         });
     }
 
@@ -948,12 +1146,16 @@ impl Gpu {
     /// on asking for the same culled faces but starts again from all of this
     /// VRAM (what is drawn next follows it), without what the abandoned
     /// timeline recorded (the port's projections, the faces it culled, the
-    /// screen points it stored in RAM).
+    /// screen points it stored in RAM, the runs of a dialogue's packets: the
+    /// loaded state's own were recorded before it was saved, and their
+    /// frame shows its windows) but with the movie loads it saw (where this
+    /// VRAM holds one, it is the movie's picture).
     pub fn keep_presentation(&mut self, live: &mut Gpu) {
         self.stats = std::mem::take(&mut live.stats);
-        if let Some(trace) = live.trace.take() {
+        if let Some(mut trace) = live.trace.take() {
             self.set_trace(true);
             self.set_reveals(trace.wanted);
+            self.trace.as_mut().expect("turned on").keep_movies(&mut trace, false);
             self.trace_resync();
         }
     }
@@ -1001,6 +1203,7 @@ impl Gpu {
         if trace.full_sync {
             trace.full_sync = false;
             trace.dirty = None;
+            trace.refind_movie(&self.vram);
             ops.clear();
             ops.push(TraceOp::Write {
                 rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
@@ -1026,6 +1229,7 @@ impl Gpu {
         let trace = self.trace.as_mut().expect("checked above");
         trace.full_sync = false;
         trace.dirty = None;
+        trace.refind_movie(&self.vram);
         trace.ops.clear();
         trace.ops.push(TraceOp::Write {
             rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
@@ -1038,6 +1242,15 @@ impl Gpu {
     /// at an ordering-table entry are traced when the walk reaches it.
     pub(crate) fn trace_source(&mut self, node: u32) {
         let Some(trace) = &mut self.trace else { return };
+        // A dialogue's runs, each from its newest node through its oldest.
+        if node == 0 {
+            if trace.dialogue_end == Some(trace.source) {
+                trace.dialogue_end = None;
+            }
+        } else if let Some(at) = trace.dialogue.iter().position(|&(newest, _)| newest == node) {
+            trace.dialogue_end = Some(trace.dialogue.swap_remove(at).1);
+            trace.dialogue_entered = true;
+        }
         trace.source = node;
         trace.source_index = 0;
         let Some(mut faces) = trace.reveals.remove(&node) else { return };
@@ -1170,6 +1383,7 @@ impl Gpu {
                     let trace = self.trace.as_mut().expect("checked above");
                     trace.ops.push(TraceOp::Fill { rect, color });
                     trace.ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload: false });
+                    trace.forget_movie(rect);
                 }
             }
             0x20..=0x3F => self.trace_polygon(words, false),
@@ -1177,6 +1391,12 @@ impl Gpu {
             0x80..=0x9F => {
                 let source = crate::Image::from_words(words[1], words[3]);
                 let destination = crate::Image::from_words(words[2], words[3]);
+                // A copy onto itself changes no pixel unless it sets their
+                // mask bit (the field copies its 24-bit display area onto
+                // itself after a movie): nothing to trace.
+                if (source.x, source.y) == (destination.x, destination.y) && self.mask & 1 == 0 {
+                    return;
+                }
                 let trace = self.trace.as_mut().expect("checked above");
                 trace.ops.push(TraceOp::Copy {
                     source: (source.x, source.y),
@@ -1199,6 +1419,7 @@ impl Gpu {
             let pixels: std::sync::Arc<[u16]> = read_rect(&self.vram, rect).into();
             let trace = self.trace.as_mut().expect("checked above");
             trace.ops.push(TraceOp::Write { rect, pixels: pixels.clone(), upload });
+            trace.forget_movie(rect);
             if upload {
                 trace.movie_blocks(rect, &pixels);
             }
@@ -1232,6 +1453,14 @@ impl Gpu {
     pub fn trace_movie_frames_left(&mut self, frames: u16) {
         if let Some(trace) = &mut self.trace {
             trace.ops.push(TraceOp::MovieFramesLeft(frames));
+        }
+    }
+
+    /// The session's rewind history after a game frame ([`TraceOp::History`]).
+    /// Presentation only.
+    pub fn trace_history(&mut self, frame: u64, state: bool, oldest: Option<u64>) {
+        if let Some(trace) = &mut self.trace {
+            trace.ops.push(TraceOp::History { frame, state, oldest });
         }
     }
 
@@ -1346,17 +1575,12 @@ impl Gpu {
         let classes: Vec<Class> = classes.iter().map(|c| c.class).collect();
         let class = primitive_class(&classes, count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
-        let facing_index = trace.point_index(words[1], 1, 0).and_then(|point| {
-            trace.facings.iter().rposition(|(first, last, _)| point.wrapping_sub(*first) < last.wrapping_sub(*first))
-        });
-        let facing = facing_index.map(|index| {
-            let facing = &mut self.trace.as_mut().expect("tracing").facings[index].2;
-            if facing.restore.is_empty() && !facing.textures.is_empty() {
-                let facing = std::sync::Arc::make_mut(facing);
-                facing.restore = facing.textures.iter().map(|(rect, _)| (*rect, read_rect(&self.vram, *rect).into())).collect();
-            }
-            facing.clone()
-        });
+        let texels = |of: fn(&TraceVertex) -> i16| vertices[..count].iter().map(|v| i32::from(of(v))).fold((i32::MAX, i32::MIN), |(lo, hi), t| (lo.min(t), hi.max(t)));
+        let movie = textured && trace.movie_picture(environment.draw_mode, environment.texture_window, texels(|v| v.u), texels(|v| v.v));
+        let point = trace.point_index(words[1], 1, 0);
+        let recorder = self.trace.as_mut().expect("tracing");
+        let facing = point.and_then(|point| alternative(&mut recorder.facings, point, &self.vram));
+        let full_size = point.and_then(|point| alternative(&mut recorder.full_sizes, point, &self.vram));
         let dither = self.draw_mode & 0x200 != 0 && (gouraud || (textured && !raw));
         let primitive = Primitive {
             shape: if count == 4 { Shape::Quad } else { Shape::Triangle },
@@ -1376,7 +1600,10 @@ impl Gpu {
             revealed,
             ground,
             facing,
+            full_size,
             backdrop,
+            movie,
+            dialogue: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1405,6 +1632,9 @@ impl Gpu {
         // last pixel samples u0 + width - 1 (or u0 - width + 1 flipped).
         let u1 = if flip_x { u0 - width } else { u0 + width };
         let v1 = if flip_y { v0 - height } else { v0 + height };
+        let sampled = |from: i32, to: i32, flip: bool| if flip { (to + 1, from) } else { (from, to - 1) };
+        let environment = self.trace_environment();
+        let movie = textured && trace.movie_picture(environment.draw_mode, environment.texture_window, sampled(u0, u1, flip_x), sampled(v0, v1, flip_y));
         let at = |dx: i32, dy: i32, u: i32, v: i32| TraceVertex {
             x: corner.x + dx,
             y: corner.y + dy,
@@ -1431,7 +1661,7 @@ impl Gpu {
             semi: op & 0x02 != 0,
             dither: false,
             clut: (uv >> 16) as u16,
-            environment: self.trace_environment(),
+            environment,
             class: Class::Flat,
             projection: None,
             owner: 0,
@@ -1440,7 +1670,10 @@ impl Gpu {
             revealed: false,
             ground: None,
             facing: None,
+            full_size: None,
             backdrop: false,
+            movie,
+            dialogue: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1474,7 +1707,10 @@ impl Gpu {
             revealed: false,
             ground: None,
             facing: None,
+            full_size: None,
             backdrop,
+            movie: false,
+            dialogue: false,
         };
         self.trace_drawn(primitive);
     }
@@ -1495,6 +1731,7 @@ impl Gpu {
         }
         if trace.source != 0 {
             primitive.source = trace.source << 8 | (trace.source_index & 0xFF);
+            primitive.dialogue = trace.dialogue_end.is_some();
             trace.source_index += 1;
         }
         if min_x <= max_x && min_y <= max_y && max_x >= 0 && max_y >= 0 {
@@ -1505,6 +1742,7 @@ impl Gpu {
                 height: (max_y.min(VRAM_HEIGHT as i32 - 1) - min_y.max(0) + 1) as u16,
             };
             trace.dirty = Some(trace.dirty.map_or(rect, |dirty| dirty.union(&rect)));
+            trace.forget_movie(rect);
         }
         trace.ops.push(TraceOp::Draw(primitive));
     }
@@ -1532,4 +1770,17 @@ fn read_rect(vram: &[u16], rect: VramRect) -> Vec<u16> {
         pixels.extend_from_slice(&vram[start..start + usize::from(rect.width)]);
     }
     pixels
+}
+
+/// The newest alternative of `list` for the original projections that
+/// include `point`, with the pixels its cells cover to put back, read from
+/// `vram` when its first part is traced.
+fn alternative(list: &mut [(u32, u32, std::sync::Arc<SpriteFacing>)], point: u32, vram: &[u16]) -> Option<std::sync::Arc<SpriteFacing>> {
+    let index = list.iter().rposition(|(first, last, _)| point.wrapping_sub(*first) < last.wrapping_sub(*first))?;
+    let alternative = &mut list[index].2;
+    if alternative.restore.is_empty() && !alternative.textures.is_empty() {
+        let alternative = std::sync::Arc::make_mut(alternative);
+        alternative.restore = alternative.textures.iter().map(|(rect, _)| (*rect, read_rect(vram, *rect).into())).collect();
+    }
+    Some(alternative.clone())
 }

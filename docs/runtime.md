@@ -282,6 +282,22 @@ goes on as without; [State interchange](#state-interchange)).
   a **Go to developer room** shortcut (map 0, entrance 0). Launches restart
   the session; save progress first. Battle and Menu take their selector values
   from the panel, then run the original game's loading and setup code.
+  Worldmap is a button alone: the world map's first entry on the fresh game
+  places the party itself (map 0x400). Under the Original renderer the
+  first field it leads to (Square while flying: the Yggdrasil's bridge,
+  field 290) zooms in from noise, the original program's own picture (the
+  kernel menu's Worldmap test does the same from a fresh boot: a game's
+  first field reads the screen as the title movie's 24-bit picture), while
+  Ex Machina's renderer shows the world map's picture
+  ([The renderer](#the-renderer-phase-4), Screen captures).
+  Movie plays to the movie's last
+  frame, as the kernel menu's movie test finds it in a video sector's
+  header (`Cd::movie_last_frame`: the last of the movie's final 256 sectors
+  that has one, since the retail discs end a movie with audio and empty
+  sectors where the test's own read of the very last sector finds none;
+  that test's own 0xC80 for the audio kind or a file without one), through
+  the request's bit 7 and `cd_movie_request_last_frame`: without them the
+  request path stops at frame 233.
   The same typed requests are available as `debug {request: {tool: "field",
   map: 0, entry: 0}}` (the panel sends `AppRequest::Debug`). `debug_status`
   reports progress; normal frames advance it, or `debug_tick` runs a bounded
@@ -1636,7 +1652,11 @@ read-only pre-projection data at the handbook's seams (`src/port/present.c`):
 mode and the GTE transform its caller set), `sprite_set_draw_matrix` (the
 sprite and the transform it produced) and `sprite_draw_parts` (the sprite, its
 ordering table and transform). The wrappers record and then run the original
-unchanged (`WRAPPED` in tools/game_module.py). The host keeps the records of
+unchanged (`WRAPPED` in tools/game_module.py); `field_dialogue_draw_windows`
+and the three calls that draw a battle's script message run it first and
+record the packets they linked (`src/port/dialogue.c`,
+`src/port/battle_dialogue.c`: [Hiding a dialogue](#hiding-a-dialogue)).
+The host keeps the records of
 the last complete frame (`xem_core::presentation`, the `presentation` command);
 capture is off until asked for. Cameras are read through the schema
 (`field_view`, the battle and world map camera state). The original camera and
@@ -1660,8 +1680,11 @@ snapshots are its. The renderer only draws again what it drew:
   screen-point word a port routine stores (swc2 of SXY0-SXYP, with the
   projection each GTE screen-point register holds, which the GTE tracks; the
   handwritten renderers' stores, with their face's projections) at
-  0x70300000, and a ring of culled faces at 0x70500000 with a capture area at
-  0x70A00000. While the host asks (the culled-face ring's `wanted` word: how
+  0x70300000, a ring of culled faces at 0x70500000 with a capture area at
+  0x70A00000, the sprite alternatives' scratch at 0x70B00000 and the party's
+  field sprite blocks the host reads for them at 0x70C00000
+  ([Full-resolution sprites in large-scale
+  fields](#full-resolution-sprites-in-large-scale-fields)). While the host asks (the culled-face ring's `wanted` word: how
   far beyond the original screen a wider or pulled-back view reaches), the
   renderers' screen-bounds tests record each face they cull (front-facing,
   projected without overflow, within that reach) as the GP0 words it would
@@ -1688,10 +1711,15 @@ snapshots are its. The renderer only draws again what it drew:
   strip continued from the texture column the original ends at
   (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
   battle sky's horizon bands that cross the screen copied beside it
-  (`gpu_draw_panorama`, `battle_draw_stage_sky`), each drawn just before
+  (`gpu_draw_panorama`, `battle_draw_stage_sky`, and the Battling arena's
+  sky gradient, `arena_view_draw_arena`), each drawn just before
   its band, in the drawing mode the band is drawn in (the desert's
   translucent haze adds over the horizon drawn before it, as the band
-  does). Things the game leaves
+  does). Below the arena's sky lies the draw buffer's background tile
+  (the stage's far colour), which its frame loop links once the arena's
+  task yields, so that it is drawn first; it goes on beside the screen
+  too, as a flat quad drawn just before the sky's copies (culled faces are
+  polygons). Things the game leaves
   undrawn only because a projection overflowed (an object far off the
   original screen, or near or behind its camera), which a pulled-back
   camera sees, are drawn again for the record: the field's sprite actors
@@ -1709,11 +1737,44 @@ snapshots are its. The renderer only draws again what it drew:
   their triangles recorded as culled faces; with the camera pulled back, so
   are the terrain triangles its winding test drops (a far sliver has no
   area at the original's whole pixels, and its neighbours then left a
-  crack showing the sky). The clouds' screen points, which the original
-  reads from the GTE and stores with plain writes, are recorded as stored
-  with the projections that made them (`worldmap_clouds_draw`), so they are
-  scene; and the cloud quads it leaves out as outside its view cone or
-  screen are recorded as the quads it would have filled, its pass replayed
+  crack showing the sky). The Battling arena's ground
+  (`arena_stage_draw_ground_cells`, `src/port/arena.c`) records the
+  triangles its winding test drops that face the camera at their
+  sub-pixel points: far slivers near its horizon, with no area or turned
+  over at whole pixels, whose neighbours left light streaks of the
+  background tile between its far hills in a Modern bout. Each is drawn
+  just before the triangle its row emitted last (a cell beside it), or,
+  while the row has emitted none, just before the one emitted next (the
+  row's first, or the next row's), and those of the last rows, when they
+  emit none, just before the one emitted last: packets the DMA walk
+  reaches. A pass that emits no triangle keeps none (recorded before the
+  pool's first slot, which no packet links that frame, they would be
+  drawn where they no longer lie once a later frame links a triangle
+  there). The arena's frame loop links past runs of empty
+  ordering-table entries before it draws (`arena_display_compact_layer`),
+  and a face recorded at one was never drawn, or was drawn in a later
+  frame, where it no longer lay: recorded at their entries, rows' first
+  slivers left the sky showing through the far hilltops (of about 98 700
+  recorded over 4 000 frames of a PLAYER1 VS PLAYER2 bout on the sandy
+  stage, 919 were lost and about 500 drawn late; none now). The Gears'
+  faces the arena's model renderer culls beside the screen are recorded
+  at their ordering-table entries, as in every mode (`model_draw.c`): one
+  culled while its entry is empty is drawn just before the next entry,
+  and where its own entry stays empty that compaction links past the next
+  one too, so a few are still lost, or drawn in a later frame where they
+  no longer lie (in HD-2D wider with High Framerate, of 41 766 recorded
+  over that bout 349 were lost and 1 670 drawn late, 49 and 325 of them
+  reaching into the picture's sides; of 8 836 over a PLAYER1 VS COM bout,
+  3 and 167, none and 4). They are not drawn before a packet the frame
+  links, as the slivers are: which packet follows an entry is known only
+  once the frame's ordering table is complete, after the faces are
+  recorded, and one linked below the entry by then would draw them over
+  nearer faces linked in between. The clouds' screen points, which
+  the original reads from the GTE and stores with plain writes, are
+  recorded as stored with the projections that made them
+  (`worldmap_clouds_draw`), so they are scene; and the cloud quads it
+  leaves out as outside its view cone or screen are recorded as the
+  quads it would have filled, its pass replayed
   on the GTE as it ran (matrices, view-cone test, distances, flags and
   quad budget) so its own quads are known and the depths that stop a far
   cloud's layers stop the recorded ones too.
@@ -1735,10 +1796,22 @@ snapshots are its. The renderer only draws again what it drew:
   marks as interface and for polygons whose every point the GTE projected
   at the projection distance H, drawn at their screen size: the field
   menu's counter backing, the world map's marker), the DMA node it came
-  from, fills,
+  from (and whether that is among a dialogue's packets, the field's
+  windows' or a battle's script message's:
+  [Hiding a dialogue](#hiding-a-dialogue)), fills,
   copies and VRAM writes: CPU transfers as uploads, and drawn pixels a later
   command samples as a texture before that command, so the renderer's 16-bit
-  VRAM copy equals the device's at every command. A vertex takes the
+  VRAM copy equals the device's at every command. A copy onto itself that
+  sets no mask bit moves no pixel and is not traced (the field's of its
+  24-bit display area after a movie, taken for a clear, began a frame
+  replayed as the scaled VRAM's picture: [Movies](#movies), window
+  movies). A primitive whose texels are a movie's picture (15-bit, each in
+  a macroblock the movie player loaded, `TraceOp::Movie`, and unchanged
+  since) is traced as `movie`; the trace remembers those loads (each
+  column of macroblocks by its pixels and its place, the newest 16 384),
+  and a column it saw loaded is the movie's picture again where VRAM holds
+  it when the trace starts again from all of VRAM, and when the player
+  loads it again, decoded or not. A vertex takes the
   projection stored at its packet word's address while the word still holds
   it, and only that: matching by screen value tied interface points (window
   corners, glyphs) to unrelated 3D points at the same pixel in busy battles.
@@ -1757,14 +1830,18 @@ snapshots are its. The renderer only draws again what it drew:
   The trace is not part of `Gpu::save`; a snapshot load starts it again
   from all of VRAM, without what the abandoned timeline recorded (the
   port's projections, the faces it culled, the screen points stored in
-  RAM), and what the game draws next follows that (a rewind step's
-  frames); a trace past 100 000 ops at a vertical blank restarts too (tens of
-  frames not taken: a host running frames without presenting them, such as
-  a long browser command, keeps no backlog to replay). In the scenes
+  RAM) but with the movie loads it saw, and what the game draws next
+  follows that (a rewind step's frames); a trace past 100 000 ops at a
+  vertical blank restarts too (tens of frames not taken: a host running
+  frames without presenting them, such as a long browser command, keeps no
+  backlog to replay), and so does a trace turned on while on (a host's
+  restart for a new internal scale), which keeps the movie loads it saw
+  and the macroblocks the MDEC decoded. In the scenes
   measured every 3D point matches (Lahan: 41 640 matched, the 420 others 2D).
 - **PS1 renderer** (`xem_render::ps1::Ps1Renderer`, `draw.wgsl`). Draws the
   trace into a scaled picture of all of VRAM (colour, and an auxiliary target
-  with each pixel's GTE depth, class and baked-shading flag), so double
+  with each pixel's GTE depth, class, baked-shading flag and whether a
+  battle's sky drew it, `Primitive::backdrop`), so double
   buffering, the saved-screen slot and copies between screen regions work as
   on the console; textures are decoded in the shader from the native VRAM copy
   (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
@@ -1774,11 +1851,54 @@ snapshots are its. The renderer only draws again what it drew:
   match it here too. Each vertex sits at
   its own sub-pixel point when it has one (a point shared by neighbouring
   faces lands in the same place in each), and a polygon samples only its own
-  texels (no bleeding from the page at higher scales or when filtered). On
+  texels (no bleeding from the page at higher scales or when filtered). Seen
+  from the game's camera, a vertex's depth, and so its perspective, is the
+  depth the GTE divided it by: its own, but where it lies nearer than half
+  the projection distance, or behind the camera, the GTE's division
+  saturates and puts it at twice its x and y about the centre, as if at
+  that half. Taken at its own depth (1 behind the camera, as the trace
+  gives it), such a point drew most of each face reaching it with its own
+  texel: flat patches of green or brown over the Battling arena's near
+  ground under its low camera, where the console shows sand or rock (a
+  PLAYER1 VS PLAYER2 bout from frame 2184 to 2254, a PLAYER1 VS COM bout
+  on the rocky stage from 2074 to 2078 and from 3286 to 3366;
+  `tests/ps1.rs`
+  `a_face_reaching_behind_the_camera_is_textured_as_the_gte_placed_its_points`;
+  the depth HD-2D's effects read and depth-tested ordering compares is
+  that depth too,
+  `a_point_nearer_than_half_the_projection_distance_takes_the_depth_the_gte_divided_it_by`).
+  Its near cells still show their texels larger than the console does,
+  growing towards a cell's near corner (101 units away against 472 at its
+  far one in the PLAYER1 VS PLAYER2 bout's frame 2200), where the
+  console's affine texturing spreads them evenly. The world map's cloud
+  quads nearest its camera are drawn so too, nearer the console: walking
+  while turning with L1 (`--example motion -- --worldmap --hold up,l1`),
+  the game's frames 320 to 360 in Modern 4:3, every tenth at 320x216,
+  changed with it in 1 813 pixels, 466 by more than 24 of 255, all but 13
+  (by at most 2) in the cloud quads at the top right, whose mean
+  difference from the console's picture there fell from
+  11.1 to 5.6 of 255 a colour channel; in HD-2D wider by more than 6 only
+  there (up to 30), its effects carrying the change into the rest of the
+  picture. On
   the world map, whose terrain blocks of different detail meet in
   T-junctions that open into hairline cracks at higher scales (the
-  original's whole pixels hide them), opaque world triangles are grown by
-  half a native pixel, their attributes taken from their own plane; and
+  original's whole pixels hide them), and in the Battling arena, opaque
+  world triangles are grown by half a native pixel, their attributes
+  taken from their own plane, unless that plane takes a moved corner to
+  under half or over twice its own depth or w: a face seen almost edge
+  on (the arena's ground under its low camera, drawn or a sliver) keeps
+  its corners' own attributes then (extrapolated, a moved corner's w
+  went past zero and the face was drawn through infinity: huge planes of
+  terrain over a bout whenever its camera was low, from faces reaching
+  behind the camera too while their point there was taken at depth 1;
+  `tests/ps1.rs`
+  `sealed_faces_stay_within_a_pixel_or_two_of_themselves_whatever_their_points_depths`);
+  and the terrain slivers the port records
+  (a world triangle collapsed or turned over at whole pixels, in front of
+  the camera, with area at its sub-pixel points) are drawn inside the
+  original screen too, not only beside it (the host asks for culled faces
+  there whenever vertex snapping is off; viewport culling leaves them
+  out); and
   each game frame's scene points of different faces within half a native
   pixel and 1% in depth of each other are welded to one point (`weld`),
   closing the cracks between pieces the game places with different
@@ -1832,12 +1952,88 @@ snapshots are its. The renderer only draws again what it drew:
   its zoom into a map change and back from a battle, the battle's shatter
   show the zoomed-out, wider picture the player saw, not the original's.
   A screen taken elsewhere keeps the two taken before while VRAM still
-  holds them, and one whose VRAM is overwritten stays while a logged frame
-  copies it, so a copy of either still brings its picture and a replay
+  holds them, and each of a screen's areas whose VRAM is overwritten stays
+  while a logged frame copies all of it, a frame logged from the same
+  trace too, so a copy of either still brings its picture and a replay
   never takes such a copy as the native pixels it copied: the field's menu
   takes the dimmed screen, and its own last frame, after the field's saved
   one, then fades back in from the saved one and gives its place back to
-  textures while the frame faded in from it still shows.
+  textures while the frame faded in from it still shows. A screen taken
+  from a buffer the game filled with a copy of another area (neither
+  changed since) is that area's too, and a copy of a screen kept brings
+  its picture into the scaled VRAM as into a replay, without its sides:
+  VRAM has no room for them (they lay beside the buffer copied to, over
+  the menu's last frame where it was taken at (140h, 0) and copied back
+  over its buffer at (0, 0)). The field entered first after the game
+  starts (after the debug world map, boot mode 3 or Settings → Debug →
+  Worldmap: the party's vehicle, Square, its interior, field 290) reads
+  the screen as the opening movie's 24-bit picture, writes what it makes
+  of it at (0, 100h) (noise from a 15-bit screen, on the console too),
+  copies that over the shown buffer, takes it, copies it back to
+  (0, 100h) and clears that five frames on to draw there: the copy showed
+  the noise for a frame (unreplayed, until the field cleared the buffer)
+  before the transition went on with the picture presented, and under
+  fast-forward a presentation holding both the copy and the clear showed
+  it (two of ten alignments at 10x, one of five at 5x). The screens taken
+  are remembered with the native pixels they were taken as for as long as
+  the session's rewind history holds a state that can bring one back: a
+  state from the last frame VRAM held it in as taken, or from before it
+  was taken (a rewind's step plays on from that to take it again). The
+  session notes its history in the trace after each game frame
+  (`TraceOp::History`: the frame, whether it took a state of it, the
+  frame of its oldest state); without history none is remembered, and a
+  new scale lets them go (their pictures are the old scale's). A note of
+  a frame before the last one's (a state loaded, a rewind's step) leaves
+  the states after it behind, and with them the screens taken in that
+  time: one comes back only as the game plays on from there (a held
+  rewind's step takes it again), until the history takes a state again
+  (as play goes on after the rewind; at once after a state loaded from a
+  file or a slot), which lets it go unless VRAM holds it. That leans on
+  the states the history keeps lying more than a step's play-on (12
+  vertical blanks) apart, a second or more as a rule; with states closer
+  (the game under about 12 frames a second, a state due again just after
+  a stall), a later step from one within that before the screen was
+  taken takes it again as its native pixels. Each screen
+  remembered is a picture of the frame presented (8.3 MB for a field's at
+  1920x1080 in widescreen, scale 5; at most 33.2 MB at 3840x2160), and
+  bounded by the history alone they grew with its span (30 seconds by
+  default, up to an hour), the screens the game takes over it (a visit to
+  the field's menu takes three) and the picture's size: four minutes in
+  the vehicle's interior opening the menu every ten seconds kept up to 38
+  of them, 315.2 MB at 1920x1080 under 120 seconds of history. Their
+  pictures take at most 256 MiB (`REMEMBERED_BYTES`), whatever the
+  history's length and the picture's size: the eight a held rewind back
+  through two visits to the menu into the vehicle's transition needs at
+  3840x2160 (265.4 MB at most), thirty-two at 1920x1080. Past it the
+  screen held longest ago goes first, and a state holding it then shows
+  the native screen, as without history. All of VRAM again (a state
+  loaded, a rewind's step) brings back one screen it holds where it was
+  taken, as it was taken (but for the semi-transparency bits the field
+  sets on its saved screen), as the one textures sample: the screen kept
+  if it holds that, else the newest remembered it holds; of the two kept
+  before the screen kept, those it still holds stay, and no other
+  remembered screen comes back. The picture presented before a state is
+  none of its screens: until a picture of its own is presented, the same
+  screen taken again is the one taken before, else its native pixels
+  (that picture was the frame shown last, another moment's). A state
+  loaded from a file or a slot shows a screen so only while it is
+  remembered. A rewind's step back into the
+  vehicle's transition showed the noise its states hold (in play, with a
+  field entered before, the native picture, narrower), not the picture
+  the transition showed, and while the last four screens taken were all
+  that was remembered, again once the party had visited the field's menu
+  twice in the interior (`tests/ps1.rs`
+  `a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_taken_keeps_the_presented_picture`,
+  `a_screen_made_in_another_buffer_keeps_the_presented_picture_whatever_frames_a_presentation_holds`,
+  `a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken`,
+  `a_screen_taken_is_remembered_while_the_rewind_history_holds_a_state_of_its_time`,
+  `a_screen_held_longer_than_the_rewind_history_is_remembered_from_the_states_holding_it`,
+  `a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_state`,
+  `the_screens_remembered_keep_to_their_budget_letting_go_of_the_one_held_longest_ago`,
+  `a_screen_taken_copied_in_vram_brings_its_picture_without_its_sides`;
+  `xem-headless/tests/render.rs`
+  `the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of`,
+  `the_debug_vehicles_interior_shows_no_noise_entered_under_fast_forward`).
   What is drawn of it is a screen effect (interface class, never pulled
   back, no effects), and the polygons the game draws with every point the
   GTE projected at depth 0 (the field's screen pieces, scaled with
@@ -1852,8 +2048,9 @@ snapshots are its. The renderer only draws again what it drew:
   wider framing, a pulled-back camera and interpolation, a replay of the
   primitives drawn into the displayed buffer since its last clear
   (`Ps1Renderer::frame_log`: a fill or copy of the display's size starts its
-  buffer's log, replacing an older, larger one, so a log holds one frame
-  even after both buffers were cleared at once; it keeps every VRAM write
+  buffer's log (a copy onto itself is not traced, above), replacing an
+  older, larger one, so a log holds one frame even after both buffers
+  were cleared at once; it keeps every VRAM write
   of the frame, anywhere, with its pixels, and a copy of the native VRAM
   when the buffer was cleared, and a replay samples its own VRAM copy, from
   that snapshot through the frame's writes in order, so a texture slot the
@@ -1869,17 +2066,79 @@ snapshots are its. The renderer only draws again what it drew:
   VRAM, not the frame of another it overlaps, moved). A
   game frame whose opaque drawing leaves none of a buffer's displayed
   pixels as they were (fills, copies, uploads, untextured polygons and
-  textured scenery; a battle's stage drawn over the last frame instead of
-  a clear) also starts its log, a shown buffer without one too (a state
-  loaded, a rewind's step), so a log holds about one frame where the
-  game never clears (a world map battle's log had grown to 88 000 primitives
-  replayed every presentation). Those pixels are the display's, where it
+  textured scenery, and sprites of another screen buffer's picture, texel
+  for texel, as a copy of it would, but for semi-transparent ones from
+  texels some of which carry the semi-transparency bit, which blend with
+  what lies beneath; a battle's stage drawn over the last frame instead
+  of a clear) also starts its log, a shown buffer without
+  one too (a state loaded, a rewind's step), so a log holds about one
+  frame where the game never clears (a world map battle's log had grown
+  to 88 000 primitives replayed every presentation). Those pixels are the
+  display's, where it
   shows the log now: the Battling arena shows its buffer at y 256 inside
   the log the kernel menu's buffer at y 240 began, never drawing the rows
   between, and with the log's own corner that log grew past 140 000
   operations, its replay showing the kernel menu's VRAM with the latest
   particles every other game frame while interpolating (`tests/ps1.rs`
   `a_buffer_shown_lower_than_a_log_begun_before_starts_it_with_each_frame_drawn_all_over_it`).
+  A log of more than that buffer (both buffers cleared at once: the arena
+  clears its two, at y 0 and 256, together and never clears either alone)
+  becomes that buffer's, as a clear of it would make it, and the other
+  buffer's frames start a log of their own with the next frame drawn all
+  over it (its frame the shared log held is shown without a replay).
+  Sharing one log, each display found the other buffer's newest frame,
+  drawn outside it: wherever a frame is replayed (wider framing,
+  interpolation, HD-2D's effects) the arena's menus over their fire
+  flickered or stayed black, and its tutorial and bouts showed black
+  (`tests/ps1.rs`
+  `two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them`,
+  `render.rs`'s Battling test). Battling's idle demo (on its title,
+  after 0x4650 frames without a button, or L2 held for 120) clears both
+  buffers together too, then draws each frame over the other buffer's
+  picture, a little darker (the Gears' trails): sprites of its 15-bit
+  pixels, semi-transparent by command but drawn opaque, as none of its
+  pixels carries the semi-transparency bit (none of either buffer's
+  69 760 over the demo's first 398 frames; a textured primitive writes its
+  texel's bit, and the sprites blend where a picture drawn from texels
+  with it has them: such a frame starts no log, its sprites' texels read
+  as the trace's writes before them left VRAM, a picture drawn earlier in
+  the same trace included, from one copy of VRAM kept through the trace:
+  each write replayed over each sprite's texels instead, the idle demo
+  fast-forwarded 8 frames a presentation took 2.42 ms of the
+  presentation's CPU at 640x360, against 1.95 now and 1.80 before the
+  check; `tests/ps1.rs`
+  `sprites_of_a_picture_drawn_from_translucent_texels_start_no_log`),
+  then the frame's own. Covering the buffer, each frame starts its log,
+  replayed over that picture as the console drew it (the native pixels
+  the trace writes before the sprites read them). Where that picture is
+  black its texels are transparent, leaving what lay beneath, which the
+  replay takes to be as dark (black, where the console keeps a residue of
+  one 5-bit step). Sharing the clear's log, each display had
+  replayed every frame of both buffers since from black, the sprites
+  reading the picture as the replay held it at the first (black), and
+  showed the demo black or nearly so, ever slower as the log grew (460 ms
+  of lavapipe's time a presentation wider at 1920x1080, 14 ms now;
+  `tests/ps1.rs`
+  `a_frame_drawn_over_the_other_buffers_picture_starts_its_buffers_log`,
+  `render.rs` `battlings_idle_demo_shows_the_gears_and_their_trails_wider`).
+  Of the areas shown inside a log (and its own corner), the one the trace
+  draws all over last counts: an area an earlier mode showed there is
+  drawn all over no more. After field 198's narration (entrance 8) and its
+  wavy transition the battle mode plays a scene in buffers at y 0 and 224,
+  and the one at 224 holds the corner of the field's at 256: judged by the
+  field's area, its log never started again and was replayed whole every
+  other presentation (at 150 000 operations, 438 ms a presentation under
+  lavapipe at 640x360 against 11 ms for the other buffer; `tests/ps1.rs`
+  `a_buffer_holding_an_area_an_earlier_mode_showed_starts_its_log_with_each_frame_drawn_all_over_it`,
+  `render.rs`
+  `the_scene_after_field_198s_narration_replays_each_buffers_own_frame_from_its_vram`).
+  A log past 200 000 operations (a mode that never clears its buffer nor
+  draws all over it) is dropped, and nothing of that buffer is replayed
+  until a clear or a frame drawn all over it starts its log again. Kept
+  and emptied, it replayed what followed from the VRAM it began with, and
+  textures loaded since showed scrambled: that scene's Gears, its sky
+  without clouds or mountains and its ground without grass
+  (`a_log_grown_past_its_limit_is_dropped_not_replayed_from_the_vram_it_began_with`).
   When one presentation holds several game
   frames (the host ran them before it presented: fast-forward, catching
   up; a frame begins after each vertical blank), such a log starts with
@@ -1988,6 +2247,11 @@ RAM hash of plain frames either way; the game's own primitives traced in
 those 120 frames (23 538, the traced less the revealed) are as many as in
 120 calls of one frame each, each call's trace starting anew, so the
 first frame a trace plays counts too, and those calls end at the same RAM.
+In a Battling bout (the arena's sky and tile beside the screen, its far
+slivers), 90 frames presented wider end at the RAM, VRAM, sound and time
+of the same frames without a trace, and at the same whole state outside
+the port's memory (where the presentation's frames on the arena task
+fiber's shadow stack lie).
 
 **Presentation and the whole state.** Presenting leaves the game's state
 as it is, but a whole state (`Session::snapshot_bytes`) also holds the
@@ -2015,7 +2279,9 @@ facings' runs), between the stack's bottom and the suspended pointer,
 which no code reads: every port and game function zero-initialises its
 locals (`-ftrivial-auto-var-init=zero`, `tools/game_module.py`). With those
 bytes the same the states are the same byte for byte. A host that asks
-for no reveals (no wider framing, pull-back, inspection or diorama) leaves
+for no reveals (no wider framing, pull-back, inspection or diorama, and
+no terrain slivers: the world map and the Battling arena ask for theirs
+while vertex snapping is off) leaves
 no such bookkeeping in a state: the desktop window under HD-2D, Android's
 default graphics, the OpenXR and WebXR screen views each save states
 byte for byte xem-headless's at the same frame ([State
@@ -2030,11 +2296,12 @@ interchange](#state-interchange)).
 | renderer | Ex Machina (default: everything below) or Original: the console's own picture (the software GPU's display) scaled to the window as before Phase 4, with no draw trace and no presentation records (the port's rings stay idle), every setting below hidden |
 | profile | Modern (default), HD-2D, PS1, Custom |
 | original limits (Custom) | affine textures, vertex snapping, 15-bit colour, dithering, native resolution, painter's ordering (off: depth-tested by the GTE depth) |
-| HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
+| HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate; the panel shows the selected profile's under its name (HD-2D or Custom) below the card holding Profile, and that heading's Reset Defaults gives them their defaults (`Graphics::profile_reset`: HD-2D's levels, or Custom's none and its original limits Modern's) |
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
-| presentation | interpolate motion: off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); wider framing (to the output's aspect ratio) |
+| presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
+| full-size sprites | the party on foot in a large-scale field drawn with its full-resolution field sprites at a quarter of their size instead of the map's small ones (off, the default; presentation only: [Full-resolution sprites in large-scale fields](#full-resolution-sprites-in-large-scale-fields)) |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled; a first-person view shows it either way), back faces (both off) |
@@ -2123,10 +2390,12 @@ movie 13, 24-bit from game frame 2 168 to 20 013 on the new-game route) is
 rebuilt to its last frame and the field's 15-bit frame follows at 20 014.
 After a state restored mid-movie (30 or 310 frames back), the trace
 restarted for a new internal scale, or a view attached mid-movie, the
-blocks of the frame shown are unknown (a restart starts a trace from all
-of VRAM, without what the abandoned one kept) until the player loads a
-frame decoded since: the device's picture shows for 4, 4, 3 and 5 game
-frames (one movie frame at 15 a second), and the first rebuilt frame is
+blocks of the frame shown are unknown (a trace that starts again from all
+of VRAM traces none of the 24-bit blocks loaded before it) until the
+player loads another frame, after a restore or an attach one decoded since
+(a restart keeps the macroblocks decoded: Draw trace, above): the device's
+picture shows for 4, 4, 3 and 5 game frames (one movie frame at 15 a
+second), and the first rebuilt frame is
 the restored timeline's (0.82 and 0.59 levels from its device picture,
 5.55 and 15.75 from the picture shown before the restore), never one from
 before the restore. Through the desktop's and Android's view (frame 840
@@ -2143,6 +2412,71 @@ screen 2.5 m ahead spans 210 pixels: the title movie is rebuilt at
 210x142, with no sides while wider framing is on (the renderer's frames
 before it have 39 each side), and under Original shown at the display's
 320x216.
+
+A window movie (field movie mode 2) plays within the field instead: the
+movie player loads its 15-bit pictures into VRAM beside the field's
+buffers, and the field draws them as a model's faces in its world. Map
+243 from entrance 0, past its lead-up's dialogue, shows Fei's memories so:
+sepia clips on a screen in the field's dark that fills the original screen
+at first, the camera then drawing back to Fei and a spotlight on the
+floor before it. The trace marks those faces as the movie's picture
+(`Primitive::movie`, above); they are drawn as the scene is (at their
+sub-pixel points, beside the screen, pulled back, moving with the model
+between frames) but keep the picture's colours through HD-2D's effects,
+as a movie shown alone does. Lit, hazed, blurred and graded, the first
+clip lay 8.9 levels on average from Modern's picture of it over the
+original screen (a 640x360 output), and the black texels it leaves
+transparent, the field's dark showing through, stood out of the haze; now
+HD-2D shows it as Modern does on every frame of the clip (527 compared),
+and drawn back at the third clip's end, the spotlight's cone over the
+screen and Fei before it (its last second and the frames after it, 76
+compared over the screen in the upper left; with its faces taken for
+scenery the first lay 22.8 levels apart). They are not rebuilt: under Enhanced
+too they show the MDEC's 15-bit picture at the scene's resolution and
+filtering. Where a clip ends, the
+field copies its 24-bit display area onto itself, which the trace now
+leaves out (Draw trace, above): replayed from that copy, the next frames
+of the buffer had the left side black and the VRAM beside the buffer in
+the right, for three frames: 57.0 and 73.5 levels on average from the
+original screen's edge columns at the first clip's end (58.2 and 93.0 at
+the third's), now at most 7.9 (2.6 at the third's;
+`xem-headless/tests/render.rs`
+`map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_the_screen`,
+local, disc 1, under Modern and HD-2D with Widescreen and High Framerate;
+without the game, `xem-gpu/tests/gpu.rs`
+`what_is_drawn_from_a_movies_blocks_is_its_picture`,
+`a_movies_picture_is_known_again_after_a_snapshot_loaded_and_a_restart`
+and `a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits`, and
+`xem-render/tests/ps1.rs`
+`a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects` and
+`a_copy_onto_itself_leaves_the_frame_drawn_there`).
+
+Within each of the field's frames there (three vertical blanks) the field
+draws the screen first, and the player then loads its next picture, which
+the MDEC decoded in the blanks before: a state holds a picture loaded
+before it, and the first picture loaded after it was decoded before it.
+Knowing only the blocks decoded since, a trace started again (a state
+loaded, a rewind's step, a new internal scale) took the faces for scenery
+in the first frames drawn after it: a held rewind over the clips, a state
+each 61 frames, showed the screen hazed in 19 of its 25 steps into a clip
+(19 to 35 levels on average from Modern's over the screen) and in both
+steps between the clips that showed a frame drawn, where the field shows a
+clip's last picture on (9 and 31). The trace remembers the columns it saw
+loaded (Draw trace, above), so the picture a state holds and the ones
+loaded after it are the movie's from the first frame drawn: every step of
+a held rewind back over the third clip, the wait before it and the second
+clip's end shows the screen as Modern does (13 steps, 11 of them into a
+clip, 0.0 levels), and so do the frames after a state of the same session
+loaded mid-clip and after a new internal scale (which keeps the blocks
+decoded before it, so the first picture loaded after it is known too). A
+picture no trace saw loaded (a state from another session, or from before
+the trace was on, or more than 16 384 loads back: 54 seconds of this
+movie) is still the scene's for the first two frames drawn after the
+state, about a tenth of a second (3.8 to 8.6 levels over the screen, in
+the third clip). A step into the wait before a clip's first picture, where
+the field draws nothing in the twelve vertical blanks a step plays on,
+shows the restored buffer as the device holds it (the original screen,
+without sides), as any step that sees no frame drawn.
 
 Tests: `xem-headless/tests/movies.rs` (local, disc 1; lavapipe) presents
 every frame from boot through the title movie with a view enlarging
@@ -2191,10 +2525,12 @@ equal to `xem-headless`'s. `scripts/android-smoke.sh` checks a
 Not done or not measured: FSR 1 runs on real frames only where forced on
 lavapipe; the browsers' and Android emulator's adapters are software
 rasterizers and enlarge bilinearly, and its cost at a headset screen's
-span on headset GPUs (the Low tier) is not measured. The macroblocks are
-not carried across a restart or restore (matching them to the restored
-VRAM would remove the one movie frame of the device's picture measured
-above). Only the title movie eases; other movies end rebuilt and cut to
+span on headset GPUs (the Low tier) is not measured. The 24-bit
+macroblocks are not carried across a restore, nor found again in the VRAM
+a restart or restore starts from (matching them to it would remove the
+one movie frame of the device's picture measured above); a window movie's
+15-bit loads are (above). Only the title movie eases; other movies end
+rebuilt and cut to
 what follows. Under the Stretch scale a rebuilt frame is enlarged twice
 (above). No person has judged the pictures: "clearer" is the block-edge
 measure above, measured on the title movie alone. On its fade from black
@@ -2238,6 +2574,74 @@ those fixes are presentation only). Over Lahan (`--example motion -- --map
 still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 7 at 3x and none at 5x.
 
+### Full-resolution sprites in large-scale fields
+
+In a large-scale field (a map whose scripts run event fe 1e: Babel Tower,
+the Gear hangars and docks), the party's sprite blocks hold their Gears'
+files, and a party character on foot takes a small sprite from the map's
+own alternate set (event 16: `field_character_sprite_ids[character]` plus
+`field_work.unk2268`): separate art at about a quarter of the full sets'
+size (12-13 pixels tall against 45-53), with standing, walking and
+running animations only (the jump shows running frames, the others the
+standing one), which 103 maps carry copies of. With
+`Graphics::full_size_sprites` (the Look card's last switch, Full-resolution
+sprites in large-scale areas, off by default) Ex Machina's renderer draws
+each character's own field sprite there instead, at a quarter of its size.
+Presentation only: the game draws and plays as the original.
+
+The port assembles it as it assembles first-person facings
+(`src/port/sprite_facing.c`, `xem_present_sprite_full_size`), after the
+original draws the sprite's parts (`present.c`) while the field's actor
+pass draws (`activity.c` marks it around `field_draw_sprite_actors`, the
+record-only redraws included): for a party actor whose sprite is the map's
+alternate set's (its `unk126` the set's index with bit 7, its block the
+map's entry, a cell directory), it asks the host import
+`xem.full_sprite(character)` for the character's block, finds the full
+set's frame for the one shown (the run of the same animation and facing
+among standing, walking and running, the animation playing first; its
+place in the run scaled to the full run's length, which can be longer:
+eight walking frames against 16), and builds that frame on a copy with
+the original's routines: its cells and palette where the original keeps
+party slot 0's (VRAM 0x280,0x100, palette 0x100,0xE0), recorded rather
+than uploaded, with scale shift 1 for the original's 3 (every length a
+quarter: parts, offsets, groups; a cut height four times). It hands the
+host the parts with their projections and the cells as presentation record
+kind 5 (a facing's form) for the original's projections. Where a check
+fails (another alternate set, a frame the runs do not hold) the small
+sprite stays. Characters 9 and 10 (Citan with his sword, adult Emeralda)
+borrow Citan's and Emeralda's small art; their full-size frames are their
+own files (14 and 15).
+
+`xem.full_sprite` reads directory 4, file character + 5 from the disc in
+the drive by the game's index on it, in whole sectors as the game reads
+its files (the packed stream runs past the size the index gives),
+unpacks it (`presentation::unpack_lzss`) into `presentation::FULL_SPRITES`
+(0x70C00000, 0x14000 bytes a character, outside RAM and every state) the
+first time the port asks, and answers its address; 0 while the drive has
+no disc or a browser still fetches the bytes (the next ask tries again),
+and for good once a disc cannot give it. The drive's state and timing are
+left alone. The trace attaches the record to the primitives the original's
+projections drew (`Primitive::full_size`, as `facing`), and
+`Ps1Renderer::draw` with `DrawOptions::full_size_sprites` replaces each such
+pass by its alternative before logging (`frame::substitute_alternatives`,
+shared with first person): the cells uploaded, the parts drawn, the pixels
+the cells covered put back. The frame logs' replays (interpolation, wider
+and pulled-back views, the diorama) draw it too. First person keeps the
+small sprites, which it faces to the eyes: the port builds no full-size
+frame while the view looks around (`XEM_AROUND_LOOK`). The game's shadows
+stay its own.
+
+On Babel Tower's map 414 (`render.rs`
+`large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged`)
+352 traced parts carried a full-size frame in 90 frames, Fei's block read
+the first time, and RAM (with the RNG), VRAM, sound, time and the whole
+state ended as without a trace (`presentation_only`);
+`the_full_size_setting_draws_the_party_of_a_large_scale_field_with_its_own_sprites`
+presents the same frames with the setting off and on: 1011 pixels differ,
+all within 26x57 around Fei (scale 4, 1280x896). `--example render --
+--map 414 --scale 4 --full-size --compare` puts the small sprite beside the
+full one, and `--example motion` takes `--full-size` too.
+
 ### First-person inspection
 
 The flat hosts look around a field from its controlled character's eyes
@@ -2257,7 +2661,10 @@ native hosts do). Select is any of its bound keys (Backspace), the touch
 deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
 released alone (Back begins the app chords; a headset controller's Back is
 its right stick's click), all of which toggle only there: while the player
-walks where Select shows no picture. A gamepad's right stick's click (R3)
+walks where Select shows no picture (Back pressed and let go there). Held
+while a dialogue shows, they hide its windows instead, and a Back held over
+one and let go once the player walks again toggles nothing
+([Hiding a dialogue](#hiding-a-dialogue)). A gamepad's right stick's click (R3)
 toggles it anywhere in a field but a menu; a headset's controllers have no
 R3. The app action Toggle first-person view (`AppAction::ToggleFirstPerson`:
 V and Back+R1 by default, a headset's right stick's click with its right
@@ -2798,6 +3205,199 @@ command's change with the host's next batch of frames, as the player's: a
 `navigate` an agent sends before then is still taken, and that batch stops
 it.
 
+### Hiding a dialogue
+
+While a dialogue shows, Select held leaves its windows out of the picture:
+a field's (the interface context's `dialogue`, `xem_core::context`:
+`field_work.open_windows` holds a window and no menu runs) with their frames
+and backing, the text, the speaker's portrait, the waiting prompt and the
+choice cursor, and a battle's event script message (the `battle` context's
+`message`: in the script's frame mode, `battle_frame_mode` 2, its battle
+window 0, the speaker's portrait or its text shown) with its window, the
+portrait, the text and the cursor that waits for Confirm. Let go, they
+show again. Select is any of its bound keys (Backspace) and the touch
+deck's SELECT, which hide at once, and a gamepad's Back once it has been
+held alone for 0.15 s (`look::BACK_HIDES_AFTER_MS`), a headset
+controller's Back being its right stick's click. Back plus a face button,
+Start, R1 or a trigger runs the app chords (Back+South saves a state,
+Back+North loads one, Back+East and Back+West toggle rewind and
+auto-advance, Back+Start opens Settings, Back+LT rewinds, Back+RT
+fast-forwards, Back+R1 toggles first person): a chord whose second button
+lands within that time leaves the windows as they were, and one whose
+second button comes later, once Back alone has hidden them, shows them
+again as it runs its action. Once hidden, they stay hidden while Select is
+held, whatever the interface then: the display shows a frame while the
+game draws the next, so a window's last frames show after it has closed
+(three each time on field 12's conversation), and a window opening next is
+hidden from its first frame (`look::DialogueHiding`, on desktop, Android,
+the browser and headsets alike). A gamepad's Back held over a dialogue and
+let go once the player walks again toggles no first-person view
+(`look::Toggle` counts a Back press only where Select toggles throughout).
+Settings' Controls section lists it as Hide dialogue (held).
+
+It is presentation only: the game gets Select as it does without
+(`look::game_buttons` takes it only where it toggles first-person
+inspection, while the player walks), its dialogue goes on as before (the
+text revealing, the prompt and the cursor turning, a choice moving with the
+directions, Circle ending a wait), and RAM, VRAM, sound and time are those
+of the same inputs shown. The game reads Select itself: the field shows a
+map's picture with it while the player walks (`field_picture_show`), the
+debug monitor resets the map with Cross and Select (with the monitor only),
+and the field's scripts test the held buttons (`31` and its kin;
+`field_update_play_record` gathers them each frame for `32` and `e3`), map
+321's Select among them (`xem_core::context` `SCRIPT_BUTTONS`, from
+`python3 -m tools.analysis.events --buttons`: a script there takes control
+when Select is held at one step of its state). The windows' own code
+(`field_dialogue_draw_windows`, `field_dialogue_update_choice`) reads only
+Circle and the directions. A battle reads Select in its turns
+(`battle_read_input`: input code 0xD), whose interface draws no script
+message; the script's frame mode, which draws them, reads Circle (a
+message's wait ends), Start (the pause, while the turns run) and, paused
+on a debug build, L1 with R1 (the battle ends), never Select
+(`battle_tick_event_script`), and of the script's opcodes only the
+message's reads its input (`ovl3087`: Circle's code, 4).
+
+The field's windows are drawn and advanced in one pass
+(`field_dialogue_draw_windows`, 8008004C: it ends a window's wait on
+Circle, queues its message, reveals its text and turns its cursors), which
+links every packet of the four windows at the ordering-table entry it is
+given, the overlay's first, which the field draws last (`field_run_frame`;
+`field_movie_run_overlay_frame` over a field movie). `src/port/dialogue.c`
+runs it unchanged and hands the host the run of packets it linked there
+(presentation record 6, `xem_core::presentation::DIALOGUE`): its newest,
+the entry's new head, and its oldest, whose link is what the entry held
+before. A battle's script message is drawn by the script's interface
+(`battle_draw_hud_for_event_script`) at the ordering table's second entry
+among its other packets, in three calls that `src/port/battle_dialogue.c`
+runs unchanged, handing over a run of each: the portrait and the text
+(`battle_draw_script_portrait_and_text`, 80074F70: all it links), window 0
+(`battle_draw_gauge_bars_and_windows`, 80073FB8, which links window 0's
+packets first of the shown windows': from its draw mode, the last it links,
+through each link within its 0x5A8-byte block) and the cursor
+(`battle_draw_list_page_glyphs`, 80073F08: its parts, linked one after
+the other), the last two only in the script's frame mode, as the turns'
+interface keeps window 0 and the cursor for its commands. The records are
+made whether or not a draw trace records, as the sprites' are, so the
+port's memory, its dead stack included, is the same either way (the
+desktop's HD-2D window still saves a plain session's state byte for byte:
+`xem-host/tests/states.rs`). A trace marks what the DMA walk draws from
+each run, from entering its newest node to leaving its oldest, as the
+dialogue's (`xem_gpu::Primitive::dialogue`): a frame's runs, recorded before
+its vertical blank, serve the walk after it, and the next frame's first
+record drops those the walk did not enter. The hosts'
+`GameView::set_dialogue_hidden` (`DrawOptions::hide_dialogue`) leaves those
+primitives out of every frame presented: replays, the interface drawn over
+the effects, a headset's pane and the diorama's. VRAM's picture keeps them,
+as VRAM does, and while they are hidden the frame shown is replayed without
+them, so they go and come back at once, the game paused or not (the hosts
+present anew as the hiding changes, also under game-paced presentation).
+Under HD-2D the rest of the picture may move by a level or three as well:
+its exposure eases a step each presentation (`EffectsRenderer`'s scene
+average), and holding Select and letting go each present once more.
+
+Where a picture comes from VRAM rather than a frame the renderer drew, it
+holds the windows as the game drew them, and nothing draws that frame
+again without them:
+
+- The Original renderer shows the console's own picture: Select hides
+  nothing under it.
+- A view's first frames, until its trace has drawn a frame (a session's
+  start, the Original renderer left for Ex Machina), show the windows.
+- A state loaded (Load state, an agent's `state_load`) shows them in its
+  first frames presented: three from the loaded VRAM (drawn before the
+  state was saved), or, when the state was saved between the field building
+  a frame and drawing it, two from VRAM and then that frame for its two
+  vertical blanks, its records made before the save (a state holds the
+  game, not the presentation's records: `Gpu::keep_presentation` starts the
+  trace afresh). From the first frame the game builds after the load, they
+  are hidden.
+- A host restarting its trace (a view that needs all of VRAM again: a new
+  scale, more frames run than presented) keeps the runs recorded for the
+  walk to come, so a restart between a frame's records and its walk hides
+  as before; one after a walk drops what the walk traced, as a restart
+  does, and when that changed VRAM (a glyph of the text revealed), the
+  frames presented next show VRAM's picture with the windows, three or
+  four, until the next frame the game draws shows.
+
+A held rewind's steps hide them, but the first not always: each plays on
+from its state until the display shows a frame both built and drawn since
+(`Session::rewind_step`), whose records are its own, yet never as far as
+where the game was. The first takes the newest state before the frame the
+game is at, and when fewer than three of the display's buffer changes came
+between that state and the frame before the game's, it stops short of
+such a frame, and its picture, VRAM's or a frame built before the state,
+can show the windows. Each later step goes back a whole interval and hides
+them.
+
+Other modes' text windows (the world map's place names; Battling's
+messages and choices) draw their text through the same resident window
+routine (`window_draw_frame`) but frame and link it themselves, and stay
+shown.
+
+Tests: `tests/test_port_dialogue.py` (the field's wrapper built natively
+over a stand-in that links packets: the run it hands over, the packets
+linked there before left out, a run of one, nothing handed over when
+nothing is linked, the links as the stand-in made them; the battle's
+wrappers need the battle's headers, which build for the game alone, and are
+tested on the game below), `xem-gpu`
+`the_dialogues_run_of_packets_traces_as_the_dialogue_until_the_walk_passes_it`
+(a run among packets linked before and after it, a walk without a
+record, a run of one packet),
+`a_battles_three_runs_trace_as_the_dialogue_in_one_walk_and_each_frame_records_anew`
+(the window's, the portrait and text's and the cursor's runs among other
+packets; the runs a walk did not enter dropped by the next frame's first
+record) and
+`a_trace_restarted_before_the_walk_keeps_the_dialogues_runs_and_a_loaded_state_has_none`,
+`xem-core`'s battle context test (the message's window, portrait and text,
+in the script's frame mode alone), `tests/ps1.rs`
+`a_dialogue_held_hidden_presents_the_frame_without_its_windows_and_shows_them_again`
+(framed as the game framed it, wider, and HD-2D wider and interpolated:
+held, the frame presented is the frame drawn without the window, at once;
+let go, the one with it), `xem-settings`' look tests (the keys and the deck
+at once, Back once held alone and never in a chord, Settings or focus
+taken, the hiding lasting while held, a battle's message, no dialogue, the
+game's buttons kept; Back held over a dialogue until the player walks
+toggling nothing, pressed and let go while walking toggling),
+`xem-host`'s deck test (its SELECT held over a dialogue: Select the
+game's, the windows hidden, shown under the panel and let go; walking, the
+view's toggle), `xem-ui/tests/panel.rs` the row, flat and in a headset,
+and `xem-headless/tests/render.rs`:
+`a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is`
+(field 12's opening dialogue, Fei's window, its text and his portrait, with
+Select held for 90 frames, presented wider and interpolated, and so in
+HD-2D, the window hidden for 30 of them: 582 primitives in those frames are
+traced as the dialogue's, all within the window; held hidden, 146 346
+pixels of the 1536x864 picture differ, none beyond the window, under HD-2D
+150 255 by more than three levels, none beyond it; the picture is the same
+again once let go, under HD-2D within those three levels; and the game
+ends at the RAM, VRAM, sound, time and whole state of the same frames run
+with nothing presented, but for 40 bytes of dead stack,
+`presentation_only`),
+`a_battles_script_message_held_hidden_leaves_its_window_out_of_the_picture_and_the_game_as_it_is`
+(the debug battle selector's third event file's formation 0, Lahan's Gears:
+Fei's "Reinforcements, huh?!" with his portrait, waiting for Confirm, 60
+frames with Select held, hidden for 20: 1 044 primitives traced as the
+dialogue's, told apart by the packets they were drawn from, window 0's 754
+(its four corners, eight edge pieces and shade each frame), the portrait's
+58, the text's 174 and the cursor's 58, from the third frame on every
+primitive drawn from those packets (the first two frames draw what was
+built before the trace was on) and none from elsewhere, all within window
+0; held hidden, 200 109 pixels of the 1536x864 picture differ, none beyond
+the window, under HD-2D 203 928 by more than three levels; the battle's
+state as with nothing presented, but for 157 bytes of dead stack),
+`a_conversation_held_hidden_stays_hidden_as_its_windows_close_and_the_next_open`
+(field 12's conversation, Select held as the hosts hold it and Confirm
+pressed at each prompt: three windows closed, the nine frames presented
+after a close still holding its primitives all hidden, and none shown
+until let go),
+`a_dialogue_held_hidden_stays_hidden_as_the_trace_restarts_and_after_a_loaded_states_first_frames`
+(restarted after frames 14 to 17, every frame hidden, after 27 and 28 three
+and four frames from VRAM; states saved after a walk and between building
+and drawing a frame loaded: three frames from VRAM, and two from VRAM then
+two of the frame built before the save) and
+`held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows`
+(four steps from states a second apart, the newest almost a second old).
+
 ### Camera records
 
 A view that looks at the scene from elsewhere than the game's camera needs
@@ -3049,8 +3649,24 @@ Nothing is matched by its look: the port records what moved
   drawn into that memory), holds still in the world.
 - **What is moved.** Each projected point of the scene (and a sprite's
   floor point) moves its sub-pixel point and depth by as much as its
-  projection moves; a primitive with a point without depth, or at or behind
-  the camera's plane, stays as drawn, and so does the interface. The
+  projection moves, as the GTE projects it: divided by its depth, but by
+  half the projection distance where it lies nearer, or behind the camera
+  (the GTE's division saturates there). A primitive with a point without
+  depth stays as drawn, and so does the interface. Held as drawn, a face
+  reaching behind the camera parted from its neighbours as they moved,
+  and taken at their own depth, near points swung across the screen: in
+  burning Lahan (field 2) translucent quads 30 to 110 units before its
+  camera, far off the screen where the GTE puts them, swept into it as
+  light streaks while the camera moved (`tests/ps1.rs`
+  `interpolation_moves_faces_reaching_behind_the_camera_as_the_gte_projects_them`),
+  and a sprite's floor point (where HD-2D lays its shadow and a look from
+  within the scene stands it), taken back at its own depth and moved by
+  its projection there, parted from a sprite nearer than that half
+  (`interpolation_moves_a_sprites_floor_point_with_its_points_as_the_gte_projects_them`).
+  A look from within the scene still takes a floor point back at its own
+  depth, in game frames as in these, so a sprite nearer than that half
+  would stand too near the middle of its view; none came that near in the
+  scenes probed (the nearest, in field 2, at 1.9 times that half). The
   faces the game culls beside its screen come into it as the camera turns:
   `GameView::reveals` asks for them 32 pixels beyond the screen (and the
   sides) while interpolation is on, and an interpolated picture shows them
@@ -3266,7 +3882,8 @@ camera of `--example motion` and the tests below drive it too.
   comes in the frame, what the game projects far behind its scene as its
   backdrop, a battle's sky (the port marks `battle_draw_stage_sky`'s
   projections `XEM_PROJECTION_BACKDROP`; the trace keeps them the world,
-  `Primitive::backdrop`, so the screen and its effects see no change), its
+  `Primitive::backdrop`, so the screen sees no change and its effects
+  only leave out their haze: [HD-2D effects](#hd-2d-effects)), its
   culled faces left out: the Mountain Path's random battle projects its sky
   11 913 to 16 366 deep before its sky bands and panorama; taken as the
   scene's start, the sky lay far beyond the table and the bands and
@@ -4429,14 +5046,32 @@ depth and class; no art is added, redrawn or replaced, and sprites keep their
 pixels and animation (no smoothing unless a filter is chosen). Interface
 pixels (primitives without a GTE projection, or projected with another screen
 offset than the scene's, such as the field compass, translucent ones
-included) keep their colours through every pass; full-screen translucent
-fades count as scene. A face of the scene whose texture fades into the
-colour its buffer was cleared with, at each of its corners and along its
-outline but for one texel in ten, is sky the game painted (Shevat's sea of
+included) keep their colours through every pass, and so do a movie's
+pictures the scene draws (a window movie on a screen in a field's world:
+[Movies](#movies)); full-screen translucent fades count as scene. A face
+of the scene whose texture fades into the colour its buffer was cleared
+with, at each of its corners and along its outline but for one texel in
+ten, is sky the game painted (Shevat's sea of
 clouds below its towers, the sky around each cloud; not the desert's
 floor, whose sand merely shares its clear's colour): it takes the cleared
 sky's place in the auxiliary target, without depth, so no light, shade or
-haze sets it apart from the sky it meets. The look aims at Square Enix's HD-2D (Final Fantasy
+haze sets it apart from the sky it meets. The clouds a battle's stage
+projects over its sky (`battle_draw_stage_sky`'s ceiling of textured
+tiles far behind the scene: `Primitive::backdrop`, bit 1 of the
+auxiliary target's flags) are the world to every effect but the haze:
+their texture fades into the flat band they are painted over, which keeps
+its colours, and hazed they turned grey against it. After field 198's
+narration (frame 4460, 1920x1080, wider) the clouds' mean gap between a
+pixel's strongest and weakest channel is 63 on the console and 60 under
+Modern; under HD-2D it was 39, now 64 (lit and graded, they stay darker
+than Modern's). They still count in the frame's average colour and
+depths, so the haze's tint and range and the exposure are as they were;
+brighter unhazed, they throw more bloom and light shafts on what stands
+before them (at frame 7400, up to 26 levels on the Gear's sides).
+`xem-render/tests/ps1.rs` `a_battles_sky_takes_the_effects_but_not_the_haze`
+and `xem-headless/tests/render.rs`
+`the_clouds_over_the_scene_after_field_198s_narration_take_no_haze`
+(local, disc 1) check it. The look aims at Square Enix's HD-2D (Final Fantasy
 Resonance's field and battle pictures: a sharp playfield with soft
 foreground and background, glowing lamps that light what is near them, airy
 distance haze, warm highlights and cool shadows). In order: the frame's
@@ -4496,7 +5131,8 @@ traced and presented from boot as a host does with `--from-boot` (`--load-at`
 loads a field's state over the title screen, as a player loads a save;
 `--cards DIR` inserts memory card images, for the title screen's Continue),
 holding or tapping buttons (taps over a script's pads too; `--press` one at
-a kept frame), each game frame
+a kept frame; Select held over a dialogue also hides its windows, as in
+the hosts: [Hiding a dialogue](#hiding-a-dialogue)), each game frame
 presented one or more times through
 `GameView` (the characters following the view unless `--original-actors`;
 `--ff N` runs N game frames for each presented one, as fast-forward does;
@@ -4801,7 +5437,9 @@ Back (the right stick's click) released alone only where Select toggles
 it, while the player walks where Select shows no picture (the controllers
 have no R3), where Ex Machina draws it (the Original renderer ends it,
 paused or not, and none toggles it there), whether the game runs or the
-player's Pause holds it (not while Settings are open). Agents turn it on,
+player's Pause holds it (not while Settings are open). Held alone for
+0.15 s while a dialogue shows, that Back hides the dialogue's windows from
+the screen and its pane ([Hiding a dialogue](#hiding-a-dialogue)). Agents turn it on,
 off and around with `--xr --control`'s `first_person` (OpenXR) and
 `window.xem.firstPerson` (WebXR, the page's), as on the flat hosts, but
 a `pitch` turns no eye: the head does the pitching, and the pitch shows
@@ -4897,7 +5535,12 @@ section lists Select, R3 and what turns the view (with the finger's drag
 where touch controls show; a headset's lists its underhand grab, the right
 stick's click, the head and the right stick instead, the stick turning in
 30-degree steps, [Headsets](#headsets)), and Shortcuts lists Toggle
-first-person view with its bindings.
+first-person view with its bindings. Held while a dialogue shows (a
+field's, a battle's script message), Select (a gamepad's Back once held
+alone for 0.15 s, a headset controller's right stick's click) also hides
+the dialogue's windows from the picture, presentation only
+([Hiding a dialogue](#hiding-a-dialogue)); the Controls section lists it
+as Hide dialogue (held).
 
 ### The game's interface context
 
@@ -4912,7 +5555,8 @@ mode, and is read while it runs, `menu_state_debug_start` 0, not while it
 loads nor while the field fades back in after it), `battle` (the command page, whether the attack inputs have the
 buttons, AP left, an open list, a target being chosen for an item, art or
 command; the attack page's own target choice is part of its attack
-inputs), `world_map` and `arena`. `xem_core::menu` (`targets`)
+inputs; `message` while its event script shows a message:
+[Hiding a dialogue](#hiding-a-dialogue)), `world_map` and `arena`. `xem_core::menu` (`targets`)
 lists the selectable entries the screen shows (320x224 screen pixels, as
 the display shows the drawing area): the field menu's commands and a
 command's choice window (the arc tables `menu_highlight_x/y_table`; the
@@ -5078,8 +5722,9 @@ On a touch screen (Android; phone and tablet browsers) the game's controls
 are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
 letterbox has room (three controls and their gaps, at least 40 dp each),
 else over its corners: a D-pad on the left with Select above it (the
-game's Select, and in a field first-person inspection's toggle where the
-game's shows nothing), the face buttons on the right (Jump, Cancel and
+game's Select, in a field first-person inspection's toggle where the
+game's shows nothing, and held over a dialogue what hides its windows:
+[Hiding a dialogue](#hiding-a-dialogue)), the face buttons on the right (Jump, Cancel and
 Run, Confirm, Menu), the camera's turns at the top corners, Settings and
 Start at the top. A finger holds the control it is on and slides across the
 D-pad's directions; lifting or a cancelled touch lets go (explicit press
@@ -5662,9 +6307,19 @@ game had built before it, whose projections the port recorded then; at
 most 12 vertical blanks, never as far as where the step began), with those
 frames' sound at the master volume (under fast-forward the music, on the
 host's clock, plays them too). Its picture is the game's at that moment as
-the renderer draws it (wider, in high resolution), not the restored VRAM;
-where the game draws nothing new (a transition holding its last picture)
-the restored picture shows. History
+the renderer draws it (wider, in high resolution), not the restored VRAM,
+and a screen the game took that the state holds as it was taken is the
+picture presented when it was taken, which the renderer remembers for as
+long as the history holds a state that can bring it back, however many
+screens were taken since (their pictures within 256 MiB, the one held
+longest ago going first: [The renderer](#the-renderer-phase-4), Screen
+captures), and a window movie's pictures, the one the state holds and those
+loaded after it, keep their colours through HD-2D's effects as in play
+([Movies](#movies)); where the game draws nothing new (a transition holding
+its last picture) the restored picture shows. HD-2D's effects ease their
+exposure and depth ranges from frame to frame, so a step's frame shows the
+exposure they eased to over the frames before it (a step out of the field's
+menu into the field, the menu's dimmed screen's). History
 is enabled by Settings for interactive play. Headless sessions, scripted native
 playback and browser command-driven boots have history off unless requested;
 browser automation can boot with `rewind: true` or use `rewind_configure`.
@@ -6096,7 +6751,8 @@ needs the same of these; a recording carries the controls
 or a host asking for no reveals) a state another host saves at a frame is
 byte for byte the state `xem-headless` saves there. A host showing faces
 the game culls (wider framing, the camera pulled back, inspection, the
-diorama) keeps bookkeeping in the port's memory ([Presentation and the
+diorama, the world map's and the Battling arena's terrain slivers without
+vertex snapping) keeps bookkeeping in the port's memory ([Presentation and the
 whole state](#the-renderer-phase-4)), so its states differ from
 `xem-headless`'s there while the game's RAM, scratchpad, devices and
 continuation are the same. The tests compare the RAM and scratchpad
@@ -6715,15 +7371,16 @@ as a recorded control of the session, whose zero is the original's:
 | Option | Setting (default) | Control | What changes | Agents see its effect in |
 | --- | --- | --- | --- | --- |
 | [Random battles](#random-battles-in-platforming-areas) | `random_battles`: `NotWhilePlatforming` (the default), `Original` | `random_battles {off}` | the field's random draw does not run on the platforming areas' maps (`src/port/encounters.c`) | `status.random_battles_off`; `field.random_draw` (`off_here`, its window and steps left as dealt) |
-| [Encounter rate](#random-battles-in-platforming-areas) | `encounter_rate`: `Original` (the default), `Half` | `half_encounters {enabled}` | the draw runs on every other field frame where it runs at all | `status.half_encounters`; `field.random_draw` (its steps count down half as fast) |
+| [Encounter rate](#random-battles-in-platforming-areas) | `encounter_rate`: `Original` (the default), `Half` | `half_encounters {enabled}` | the draw runs on every other field frame where it runs at all, and every battle gives twice its experience, gold and deathblow progress (`src/port/rewards.c`) | `status.half_encounters`; `field.random_draw` (its steps count down half as fast) |
 | [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line, except while a script counts out a page before its wait for Confirm (`src/port/text_speed.c`, `xem_core::dialogue`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
 | [Auto-advance dialogue](#text-speed-auto-advance-and-movie-skipping) | `auto_advance`: off (the default) or on, a dwell of 30-600 vertical blanks (120) | `auto_advance {dwell}` | the session presses Confirm once a field dialogue's prompt has shown the dwell, never at a choice (`xem_core::dialogue`) | `status.auto_advance`, `status.auto_advance_waited`, `status.dialogue` |
 | [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping) | `movie_skip`: off (the default), on | `movie_skip {enabled}` | the story's movies take the original's early exit on the player's press (`src/port/movie_skip.c`) | `status.movie_skip`; `status.movie` (`ends_on_press`) |
 
 Cutscene skipping is not offered: the game marks no next moment the
 player controls clearly enough ([Cutscene skipping](#cutscene-skipping)),
-so it was cut with the battle-message advance that belonged to it; nor is
-an EXP and gold multiplier.
+so it was cut with the battle-message advance that belonged to it. No
+multiplier of experience and gold stands on its own: Half encounters
+double them, and deathblow progress, with the battles.
 
 **Defaults.** A fresh settings file (the desktop's and Android's
 `settings.json`, the browser's `xem.settings`) holds random battles off in
@@ -6892,7 +7549,7 @@ lists those areas, a name and the maps there that arm the draw
 | Setting | Values |
 | --- | --- |
 | random battles | Not while platforming (`NotWhilePlatforming`, the default): none on the maps of `PLATFORMING_AREAS`, the game's elsewhere; Original: wherever the game has them |
-| encounter rate | Original (the default): the random battles left on come as the game's draw deals them; Half: half as often for the same walk (as Perfect Works Build's half encounters, reimplemented here) |
+| encounter rate | Original (the default): the random battles left on come as the game's draw deals them; Half: half as often for the same walk (as Perfect Works Build's half encounters, reimplemented here), and every battle gives twice its experience, gold and deathblow progress (the panel's note below the choice says so) |
 
 The setting stores the policy's name, not its maps, so a revised table
 applies to everyone who keeps the default and a deliberate Original is
@@ -6952,6 +7609,37 @@ first 60 frames the step counted down 14 under the original and 7 halved,
 and the battle came 130 frames into the walk under the original and 230
 halved.
 
+**Rewards at Half.** While the encounters are halved, every battle gives
+twice what the original's gives, wherever it is fought (a field's random
+or scripted battle, the world map's, a boss, a Gear battle), so the same
+walk earns the same progress in half the fights. The import
+`xem.reward_scale` answers 2 under the halving, else 1; it does not ask
+the map, so a map whose random battles are off keeps the doubling for its
+scripted battles. `src/port/rewards.c` wraps three of the game's
+functions. `battle_results_grant_exp_skills_and_drops` (801E2794) doubles
+the experience `battle_results_grant_rewards` totalled from the defeated
+enemies before it is shared out, and adds the gold that function gave the
+party once more: each defeated enemy's, by the bits it set in
+`battle_work_area.defeated`, to the original's 9 999 999 at most, even when
+the whole party is knocked out, as the original adds it.
+`battle_results_run_screens` (801E1FB8, whose argument the decomp names
+the experience: it is the gold, the spoils window's six digits) shows the
+doubled gold. `battle_resolve_action` (800941A4) makes a party attack's
+raise of the attacker's use count (`CharacterRecord.useCounts`, the
+progress towards its deathblows) once more under the original's rule, only
+while the count is at most 0xFDE7, so the members' percentages, the
+results' learning and an escaped battle's write-back all see it. The
+enemies' records keep their amounts (a doubled 50 000 G would not fit
+their 16 bits); an item's raise of every count (effect 15) and the Gear
+actions, which raise none, stay the original's. Without the halving each
+wrapper calls the original as it is, and the import reads the recorded
+`half_encounters` control, so a replay gives what its recording gave.
+Measured on the forest route's battle (the Phase 3 slice, Fei and Citan,
+each enemy given 25-32 G mid-battle, as the route's give none): the
+original gave 106 G and 52 experience (26 to each member, 12 to each
+reserve character) and raised Fei's count 6 by 2 and Citan's by 4; halved,
+212 G and 104 experience (52, and 25), by 4 and 8.
+
 **Agents** change the setting as people do, through the settings service:
 `{"cmd":"settings_apply","change":{"RandomBattles":"Original"}}` on
 `xem-desktop --control` and `window.xem.settings.apply({RandomBattles:
@@ -6985,10 +7673,15 @@ over the host's, drawing as the recording did, a recording begun with maps
 off, `schedule`, `readiness`, refused maps and refused recorded controls;
 `field`'s `random_draw` with `off_here`; and
 `half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_off`
-(the pace 2 where the draw stays on and 0 where it is off, each change
-once, the replay's start from the original's and its recorded halving over
-the host's, a recording begun halved, `schedule`, `readiness` and refused
-values). `xem-host`'s
+(the pace 2 where the draw stays on and 0 where it is off, the rewards'
+scale 2 in both, each change once, the replay's start from the original's
+and its recorded halving over the host's, a recording begun halved,
+`schedule`, `readiness` and refused values). `xem-headless/tests/slice.rs`'
+`halved_encounters_double_the_forest_battles_gold_experience_and_use_counts`
+(local, disc 1) fights the forest route's battle twice, the second time
+halved from its first frame: twice the gold, the experience and each raise
+of the use counts, each share of the experience within the original's
+rounding of twice the original's. `xem-host`'s
 `frames_give_the_session_the_settings_random_battle_maps_and_a_session_log_none`
 checks that `Game::update` gives the session the default policy's maps,
 none under Original, the halving under Half, and none of either while a
@@ -7676,8 +8369,9 @@ and world map's windows were not measured under Fast or Instant text.
 No HUD chip shows that auto-advance is on (AUTO's light
 does, on touch screens and in headsets).
 Of the mod's options that change the game's balance only half encounters
-is offered ([above](#random-battles-in-platforming-areas), the field's
-draw only); more EXP and gold is not. The
+is offered ([above](#random-battles-in-platforming-areas): the field's
+draw, and every battle's experience, gold and deathblow progress doubled
+with it); a separate EXP and gold multiplier is not. The
 browser tests ran on the fixture module; the Android and touch hosts give
 the values through the same `Game::update` and frame loop, and no phone
 run used them on the game. In headsets the options' defaults and an
@@ -7837,7 +8531,8 @@ pixels, where two of its longer labels side by side overflowed it: at 560
 its shortcut are the browser's alone (`SettingsUi::set_browser_storage`):
 a native host keeps its saves in application files, so its panel offers
 ten. Each section is a column of cards of settings, some under a heading
-outside the card (Graphics' Texture Filtering and VR, Controls' VR /
+outside the card (Graphics' HD-2D or Custom, with Reset Defaults at its
+right, Texture Filtering and VR, Controls' VR /
 Touchscreen and Global, Time's Rewind and Fast-Forward). An error bar under
 them shows only while something failed (a refused change, an operation, the
 game stopping, a disc the game asks for) until a change or an operation
@@ -7888,6 +8583,12 @@ gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
 master volume (`xem_host::Game`), as the [Binaural sound
 mode](#binaural-sound-mode) presents it when it is on. Memory cards default to `cards/` beside the settings file.
+Under Controls' Hide the cursor when the mouse is idle (`Settings::hide_idle_cursor`,
+on by default) the host hides the cursor over the game once a mouse has been
+still for `CURSOR_IDLE_SECONDS` (3; touches aside) and shows it as soon as it
+moves or presses (`Settings::hides_cursor`); Settings showing keeps it, and
+the relative mode hides it itself. The browser page hides it over its
+canvas the same way (`XemApp::hides_cursor`, CSS `cursor: none`).
 Pad 1's buttons come from the game bindings ([Controls](#controls)).
 Back+Start toggles Settings once and consumes
 both buttons until both are released. Guide/Home has no app binding.
@@ -7896,7 +8597,9 @@ first-person view where the original's Select shows no map's picture, and
 the right stick's click and Toggle first-person view (V, Back+R1) anywhere
 in a field but its menu; in it the arrow keys, the
 right stick and the mouse (under the mouse camera setting) look around
-([First-person inspection](#first-person-inspection)).
+([First-person inspection](#first-person-inspection)). Held while a
+dialogue shows, Select (Backspace, or Back held alone) hides its windows
+([Hiding a dialogue](#hiding-a-dialogue)).
 `--control` answers agents' JSON commands on stdin, a line each, between
 frames while the game plays: the command layer's (`status`, `context`,
 `navigate`, `act`, ...), `settings`, `settings_apply {change}` (the panel's
@@ -8044,7 +8747,8 @@ as JSON text or bytes.
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
   points at menu entries. In a field, Select's keys, the deck's SELECT and
   the gamepad's Back alone toggle first-person inspection while the player
-  walks where Select shows no picture, and the gamepad's right stick's
+  walks where Select shows no picture, held while a dialogue shows they
+  hide its windows ([Hiding a dialogue](#hiding-a-dialogue)), and the gamepad's right stick's
   click and Toggle first-person view (V, Back+R1, the deck's LOOK; the
   runtime keeps these requests for its next frame, so the page's operations
   never see them) anywhere in it but its menu; the arrow keys, the right

@@ -67,13 +67,21 @@ void xem_original_battle_popup_draw_glyph(SpritePart *glyph, s32 colour);
 s32 xem_original_gpu_draw_panorama(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot, s32 buffer);
 void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
+s32 xem_original_arena_view_draw_arena(void *rig);
 void field_sprite_set_color_unless_fog(void *target, u8 *color);
 void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
+void xem_present_sprite_full_size(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
 void xem_present_battle_stage(void);
 void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z);
 /* The battle camera's look-at point (battle/objects.h, whose other headers
  * the port does not need). */
 extern SVECTOR battle_camera_view_target;
+/* The arena's frame (menu/display.h, menu/mode.h): its ordering table's one
+ * entry, the draw buffer being built (its background tile at 0xE8) and the
+ * menu screen's flags, as PS1 addresses and words. */
+extern u32 arena_current_ot;
+extern u32 arena_current_draw_buffer;
+extern u8 arena_menu_screen_flags;
 
 /* Whether the host wants the faces the game culls (xem/gte.h), and no model
  * is being drawn again for the record. */
@@ -439,6 +447,7 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     u32 previous = xem_gte_ring->class_;
     u32 owner = xem_gte_ring->owner;
     u32 first;
+    u32 last;
 
     record.sprite = (u32)sprite;
     record.ot = (u32)ot;
@@ -456,7 +465,9 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     } else {
         xem_original_sprite_draw_parts(sprite, ot);
     }
-    xem_present_sprite_facing(sprite, first, xem_gte_ring->count, cut, height);
+    last = xem_gte_ring->count;
+    xem_present_sprite_facing(sprite, first, last, cut, height);
+    xem_present_sprite_full_size(sprite, first, last, cut, height);
     xem_gte_ring->class_ = previous;
     xem_gte_ring->owner = owner;
 }
@@ -522,16 +533,35 @@ static s32 xem_spans_screen(u32 packet) {
     return 1;
 }
 
+/* Presentation only (xem/gte.h): the `count` GP0 words of a flat or
+ * Gouraud quad spanning the screen again on either side, `reach` wide with
+ * the same rows and colours, as culled faces drawn just before `node`. */
+static void xem_reveal_beside(u32 node, const u32 *quad, u32 count, s32 reach) {
+    u32 words[8], k, side;
+    s32 x;
+
+    for (side = 0; side < 2; side++) {
+        for (k = 0; k < count; k++) {
+            words[k] = quad[k];
+        }
+        /* The points: every word after the first (F4), every other (G4). */
+        for (k = 1; k < count; k += count == 5 ? 1 : 2) {
+            x = (s16)(words[k] & 0xFFFF) == 0 ? (side ? 320 : -reach) : (side ? 320 + reach : 0);
+            words[k] = (words[k] & 0xFFFF0000) | ((u32)x & 0xFFFF);
+        }
+        xem_present_reveal_at(node, 0, xem_gte_ring->count, 0, words, count);
+    }
+}
+
 /* Presentation only (xem/gte.h): the backdrop polygons just linked at
  * `entry` (since its word was `head`) that span the screen (the sky, fade
- * and ground fills, horizon bands) again on either side, `reach` wide with
- * the same rows and colours, as culled faces drawn just before each one:
- * over what the original draws before it and under what it draws after,
- * with the drawing mode it is drawn in (a translucent band's blending, set
- * by the textured polygons before it). */
+ * and ground fills, horizon bands) again on either side
+ * (xem_reveal_beside), each drawn just before its band: over what the
+ * original draws before it and under what it draws after, with the drawing
+ * mode it is drawn in (a translucent band's blending, set by the textured
+ * polygons before it). */
 static void xem_reveal_backdrop_fills(u32 entry, u32 head, s32 reach) {
-    u32 spans[16], words[8], at = XEM_U32(entry) & 0x00FFFFFF, count, n = 0, walked, i, k, side;
-    s32 x;
+    u32 spans[16], words[8], at = XEM_U32(entry) & 0x00FFFFFF, count, n = 0, walked, k;
 
     for (walked = 0; at != (head & 0x00FFFFFF) && at != 0x00FFFFFF && walked < 256; walked++) {
         if (n < 16 && xem_spans_screen(at)) {
@@ -542,17 +572,10 @@ static void xem_reveal_backdrop_fills(u32 entry, u32 head, s32 reach) {
     while (n > 0) {
         at = spans[--n];
         count = XEM_U32(at) >> 24;
-        for (side = 0; side < 2; side++) {
-            for (k = 0; k < count; k++) {
-                words[k] = XEM_U32(at + 4 + k * 4);
-            }
-            /* The points: every word after the first (F4), every other (G4). */
-            for (k = 1; k < count; k += count == 5 ? 1 : 2) {
-                x = (s16)(words[k] & 0xFFFF) == 0 ? (side ? 320 : -reach) : (side ? 320 + reach : 0);
-                words[k] = (words[k] & 0xFFFF0000) | ((u32)x & 0xFFFF);
-            }
-            xem_present_reveal_at(at, 0, xem_gte_ring->count, 0, words, count);
+        for (k = 0; k < count; k++) {
+            words[k] = XEM_U32(at + 4 + k * 4);
         }
+        xem_reveal_beside(at, words, count, reach);
     }
 }
 
@@ -677,6 +700,38 @@ void battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vie
     if (reach != 0) {
         xem_reveal_backdrop_fills(XEM_ADDRESS_OF(*ot), head, reach);
     }
+}
+
+/* The Battling arena's 3D view (a bout, its replay, the tutorial): the
+ * original, then the sky gradient it links last over the screen's width on
+ * either side (xem_reveal_backdrop_fills), and below it the draw buffer's
+ * background tile, the stage's far colour, which the frame loop links
+ * first once the task yields (while the menu screen's flag is set): its
+ * sides are drawn just before the sky's, as a flat quad (culled faces are
+ * polygons). */
+s32 arena_view_draw_arena(void *rig) {
+    u32 entry = arena_current_ot, head = XEM_U32(entry), tile = arena_current_draw_buffer + 0xE8, words[5], node;
+    s32 reach = xem_backdrop_reach(), result, x, y, width, height;
+
+    result = xem_original_arena_view_draw_arena(rig);
+    if (reach == 0) {
+        return result;
+    }
+    xem_reveal_backdrop_fills(entry, head, reach);
+    x = (s16)XEM_U16(tile + 8);
+    y = (s16)XEM_U16(tile + 10);
+    width = XEM_U16(tile + 12);
+    height = XEM_U16(tile + 14);
+    if ((arena_menu_screen_flags & 1) && x == 0 && width == 320 && height > 0) {
+        words[0] = 0x28000000 | (XEM_U32(tile + 4) & 0x02FFFFFF);
+        words[1] = (u32)y << 16;
+        words[2] = (u32)y << 16 | 320;
+        words[3] = (u32)(y + height) << 16;
+        words[4] = (u32)(y + height) << 16 | 320;
+        node = XEM_U32(entry) & 0x00FFFFFF;
+        xem_reveal_beside(node == 0x00FFFFFF ? entry : node, words, 5, reach);
+    }
+    return result;
 }
 
 /* ---------------------------------------------------------------- sprites the field skips */

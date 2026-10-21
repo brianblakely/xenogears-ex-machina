@@ -107,6 +107,10 @@ pub struct Services {
     /// The host lets the player's press end any movie
     /// (src/port/movie_skip.c).
     pub(crate) movie_skip: bool,
+    /// The disc in the drive could not give one of the party's field sprite
+    /// blocks for the full-size alternatives (`full_sprite`): those not read
+    /// yet are not asked again.
+    full_sprites_unreadable: bool,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -218,6 +222,40 @@ impl Services {
         self.route_movie();
     }
 
+    /// Where the port finds `character`'s field sprite block (directory 4,
+    /// file character + 5, unpacked; `presentation::FULL_SPRITES`), read from
+    /// the disc in the drive the first time it is asked for; 0 while none
+    /// is there (no disc in the drive, its bytes still being fetched, or a
+    /// disc that cannot give it). Presentation only: the drive and the game
+    /// see nothing of it, and snapshots hold none of it.
+    fn full_sprite(&mut self, memory: &mut dyn GameMemory, character: u32) -> u32 {
+        use crate::presentation::{FULL_SPRITES, FULL_SPRITE_BYTES, unpack_lzss};
+        if character >= 11 {
+            return 0;
+        }
+        let address = FULL_SPRITES + character * FULL_SPRITE_BYTES;
+        if memory.read_u32(address).is_ok_and(|sections| sections != 0) {
+            return address;
+        }
+        if self.full_sprites_unreadable {
+            return 0;
+        }
+        match self.cd.read_file(4, character + 5) {
+            Ok(None) | Err(xem_disc::Error::NotReady) => 0,
+            Ok(Some(packed)) => match unpack_lzss(&packed, FULL_SPRITE_BYTES as usize) {
+                Some(block) if block.len() >= 4 && memory.write(address, &block).is_ok() => address,
+                _ => {
+                    self.full_sprites_unreadable = true;
+                    0
+                }
+            },
+            Err(_) => {
+                self.full_sprites_unreadable = true;
+                0
+            }
+        }
+    }
+
     fn stub_name(&self, id: u32) -> String {
         if id >= 0x10000 {
             return format!("unmapped inline assembly #{}", id - 0x10000);
@@ -295,6 +333,12 @@ impl ImportHandler for Services {
                 let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
                 Action::Return(if off { 0 } else if self.half_encounters { 2 } else { 1 })
             }
+            // What a battle gives: twice its experience, gold and use counts
+            // while the encounters are halved, wherever the battle is.
+            "reward_scale" => Action::Return(if self.half_encounters { 2 } else { 1 }),
+            // A party character's field sprite block, for the full-size
+            // alternative of its small sprite (src/port/sprite_facing.c).
+            "full_sprite" => Action::Return(self.full_sprite(memory, arg(0))),
             // The original's reveal while a field script counts out a page
             // before its wait for Confirm (the opening narration's).
             "text_speed" => Action::Return(
@@ -321,10 +365,23 @@ impl ImportHandler for Services {
                 Action::Return(0)
             }
             "present" => {
-                if arg(0) == crate::presentation::SPRITE_FACING && self.gpu.device().trace_enabled() {
+                let alternative = [crate::presentation::SPRITE_FACING, crate::presentation::SPRITE_FULL_SIZE].contains(&arg(0));
+                if alternative && self.gpu.device().trace_enabled() {
                     match crate::presentation::sprite_facing(memory, arg(1)) {
-                        Ok((first, last, facing)) => self.gpu.device_mut().trace_sprite_facing(first, last, facing),
+                        Ok((first, last, facing)) if arg(0) == crate::presentation::SPRITE_FACING => {
+                            self.gpu.device_mut().trace_sprite_facing(first, last, facing)
+                        }
+                        Ok((first, last, full_size)) => self.gpu.device_mut().trace_sprite_full_size(first, last, full_size),
                         Err(error) => { self.trap_reason = Some(error); return Action::Trap; }
+                    }
+                }
+                if arg(0) == crate::presentation::DIALOGUE && self.gpu.device().trace_enabled() {
+                    match (memory.read_u32(arg(1)), memory.read_u32(arg(1).wrapping_add(4))) {
+                        (Ok(newest), Ok(oldest)) => self.gpu.device_mut().trace_dialogue(newest, oldest),
+                        _ => {
+                            self.trap_reason = Some("presentation record outside memory".into());
+                            return Action::Trap;
+                        }
                     }
                 }
                 if self.presentation.enabled {

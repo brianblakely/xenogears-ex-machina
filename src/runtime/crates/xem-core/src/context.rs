@@ -40,8 +40,12 @@ const MENU_STATE_DEBUG_START: u32 = 0x8005_9178;
 /// +0x2D4.
 const BATTLE_TURN_STATE: u32 = 0x800C_3EAC;
 /// The battle's interface (`battle_ui`, a pointer): the list cursor shown
-/// (+0x9E) and target choosing (+0xC6).
+/// (+0x9E), its windows shown (+0xB0, a byte each), target choosing
+/// (+0xC6), and the event script's portrait (+0xC8) and message text
+/// window (+0xC9) drawn; the frame mode (`battle_frame_mode`: 2 while the
+/// event script has the frame, its HUD drawing its messages, 1 the turns).
 const BATTLE_UI: u32 = 0x800D_2D28;
+const BATTLE_FRAME_MODE: u32 = 0x800C_3E4C;
 /// The world map's movement (`worldmap_movement_mode`: 1-3 on foot, 2
 /// Gears, 4/5/7 vehicles) and scene (`worldmap_mode_index`, 8+ scripted).
 const WORLDMAP_MOVEMENT_MODE: u32 = 0x8009_BE10;
@@ -83,8 +87,11 @@ pub enum Context {
     /// A battle: the command page, whether the attack inputs take the
     /// buttons, AP left, an item or art list open (`battle_ui.cursorShown`)
     /// and a target being chosen for one (the attack page's own target
-    /// choice is part of its attack inputs).
-    Battle { page: u8, attack: bool, ap: u8, list: bool, targeting: bool },
+    /// choice is part of its attack inputs); `message` while its event
+    /// script shows a message (in the script's frame mode, the message's
+    /// window, the speaker's portrait or the text: its battle window 0,
+    /// `scriptPortraitShown`, `messageShown`).
+    Battle { page: u8, attack: bool, ap: u8, list: bool, targeting: bool, message: bool },
     /// The world map: movement mode and scene.
     WorldMap { movement: u32, scene: u32 },
     /// Battling (the arena): its state.
@@ -243,11 +250,56 @@ fn battle(memory: &dyn GameMemory) -> Option<Context> {
     let cursor = ui.and_then(|ui| u8_at(memory, ui + 0x9E)).is_some_and(|c| c != 0);
     let choosing = ui.and_then(|ui| u8_at(memory, ui + 0xC6)).is_some_and(|c| c == 1);
     let attack = !closed && matches!(page, 5 | 0x64 | 0x19 | 0x65);
+    let shown = |at: u32| ui.and_then(|ui| u8_at(memory, ui + at)).is_some_and(|c| c != 0);
+    let script = u8_at(memory, BATTLE_FRAME_MODE)? == 2;
     Some(Context::Battle {
         page,
         attack,
         ap: u8_at(memory, turn + 0x2D4)?,
         list: !closed && cursor && matches!(page, 2 | 8 | 4 | 0x11 | 0x13 | 0x16),
         targeting: !closed && choosing && !cursor && !attack,
+        message: script && (shown(0xB0) || shown(0xC8) || shown(0xC9)),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::memory::OutOfBounds;
+
+    /// PS1 RAM, all zero but what a test puts there.
+    struct Ram(Vec<u8>);
+
+    impl GameMemory for Ram {
+        fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds> {
+            let at = address.wrapping_sub(0x8000_0000) as usize;
+            out.copy_from_slice(self.0.get(at..at + out.len()).ok_or(OutOfBounds { address, len: out.len() })?);
+            Ok(())
+        }
+        fn write(&mut self, address: u32, data: &[u8]) -> Result<(), OutOfBounds> {
+            let at = address.wrapping_sub(0x8000_0000) as usize;
+            self.0[at..at + data.len()].copy_from_slice(data);
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_battle_shows_its_event_scripts_message_in_the_scripts_frame_mode() {
+        let (ui, turn) = (0x8010_0000u32, 0x8011_0000u32);
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        ram.write(BATTLE_UI, &ui.to_le_bytes()).unwrap();
+        ram.write(BATTLE_TURN_STATE, &turn.to_le_bytes()).unwrap();
+        let message = |ram: &Ram| matches!(read_context(ram, Some(2)), Context::Battle { message: true, .. });
+        ram.write(BATTLE_FRAME_MODE, &[2]).unwrap();
+        assert!(!message(&ram), "the script's frame mode, nothing shown");
+        // Its window (battle window 0), the speaker's portrait, the text.
+        for at in [0xB0, 0xC8, 0xC9] {
+            ram.write(ui + at, &[1]).unwrap();
+            assert!(message(&ram), "+{at:#x} shown");
+            ram.write(BATTLE_FRAME_MODE, &[1]).unwrap();
+            assert!(!message(&ram), "+{at:#x}: the turns' frame mode draws no script message (window 0 is a command's)");
+            ram.write(BATTLE_FRAME_MODE, &[2]).unwrap();
+            ram.write(ui + at, &[0]).unwrap();
+        }
+    }
 }

@@ -44,6 +44,10 @@ const TASK_STACK_TOP: u32 = 0x100C_0000;
 const DRAW_MAP: u32 = 0x8000_0400;
 const DRAW_RAN: u32 = 0x8000_0404;
 const DRAW_PACE: u32 = 0x8000_0410;
+/// What a battle would give, as the port's reward wrappers ask it, kept each
+/// frame the draw runs (xem.reward_scale: 2 while the encounters are
+/// halved, else 1).
+const REWARD_SCALE_SEEN: u32 = 0x8000_0414;
 /// The text speed and movie skip the port's wrappers would get
 /// (xem.text_speed, xem.movie_skip), kept each frame.
 const TEXT_SPEED_SEEN: u32 = 0x8000_0408;
@@ -190,6 +194,8 @@ impl GameModule for Counter {
                 let ran = self.memory.read_u32(DRAW_RAN).unwrap();
                 self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
             }
+            let rewards = self.import("reward_scale", &[]);
+            self.memory.write_u32(REWARD_SCALE_SEEN, rewards).unwrap();
         }
         let glyphs = self.import("text_speed", &[]);
         let skip = self.import("movie_skip", &[]);
@@ -1567,20 +1573,22 @@ fn half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_o
     let mut s = session();
     s.runtime.memory().write_u32(DRAW_MAP, 15).unwrap();
     s.execute(&json!({"cmd":"frames","count":1}));
-    assert_eq!(word(&mut s, DRAW_PACE), 1, "the original's pace");
+    assert_eq!((word(&mut s, DRAW_PACE), word(&mut s, REWARD_SCALE_SEEN)), (1, 1), "the original's pace and rewards");
     let initial = s.snapshot_bytes().unwrap();
     s.execute(&json!({"cmd":"record"}));
     s.execute(&json!({"cmd":"frames","count":1}));
     s.set_half_encounters(true);
     s.execute(&json!({"cmd":"frames","count":3}));
     assert_eq!((word(&mut s, DRAW_PACE), status(&mut s, "half_encounters")), (2, json!(true)), "half, where the draw stays on");
+    assert_eq!(word(&mut s, REWARD_SCALE_SEEN), 2, "and a battle gives twice its rewards");
     s.set_random_battles(&[15]).unwrap();
     s.execute(&json!({"cmd":"frames","count":1}));
     assert_eq!(word(&mut s, DRAW_PACE), 0, "a map turned off stays off");
+    assert_eq!(word(&mut s, REWARD_SCALE_SEEN), 2, "its scripted battles still give twice theirs");
     s.set_random_battles(&[]).unwrap();
     s.set_half_encounters(false);
     s.execute(&json!({"cmd":"frames","count":2}));
-    assert_eq!(word(&mut s, DRAW_PACE), 1);
+    assert_eq!((word(&mut s, DRAW_PACE), word(&mut s, REWARD_SCALE_SEEN)), (1, 1));
     let mut log = s.execute(&json!({"cmd":"stop_recording"}));
     let halves: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "half_encounters").map(|c| c[1]["enabled"].clone()).collect();
     assert_eq!(halves, [json!(true), json!(false)], "each change once");
@@ -1594,6 +1602,7 @@ fn half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_o
     other.set_half_encounters(false);
     other.execute(&json!({"cmd":"frames","count":1}));
     assert_eq!(word(&mut other, DRAW_PACE), 2, "a replay keeps the recorded halving, not the host's");
+    assert_eq!(word(&mut other, REWARD_SCALE_SEEN), 2, "and its rewards");
     // A recording begun halved starts so; session logs and agents set it.
     s.set_half_encounters(true);
     s.execute(&json!({"cmd":"record"}));

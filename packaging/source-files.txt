@@ -647,11 +647,13 @@ src/port/asm.c
 src/port/asm_map.json
 src/port/asm_map_core.json
 src/port/attack_page.c
+src/port/battle_dialogue.c
 src/port/battle_present.c
 src/port/binaural.c
 src/port/bios.c
 src/port/boot.c
 src/port/controls.c
+src/port/dialogue.c
 src/port/disc.c
 src/port/division.c
 src/port/encounters.c
@@ -690,6 +692,7 @@ src/port/present.c
 src/port/release-debug-hooks.txt
 src/port/resident.c
 src/port/returns.json
+src/port/rewards.c
 src/port/sound.c
 src/port/sprite_facing.c
 src/port/sprite_pixels.c

@@ -184,6 +184,71 @@ fn forest_route_runs_stepped_or_unthrottled_to_the_same_rewarded_end() {
     assert_eq!((item, count), (json!(0x39), json!(1)));
 }
 
+/// What a battle has given so far: the party's gold, and each character's
+/// experience (`expTotalA`) and use counts (the deathblows' progress).
+fn rewards(session: &mut Session<NativeModule>) -> (u64, Vec<u64>, Vec<u64>) {
+    let mut read = |path: String| session.execute(&json!({ "cmd": "inspect", "path": path, "depth": 0 })).as_u64().unwrap_or_else(|| panic!("{path}"));
+    let gold = read("game_data.gold".into());
+    let experience = (0..11).map(|c| read(format!("game_data.characters[{c}].expTotalA"))).collect();
+    let counts = (0..11).flat_map(|c| (0..7).map(move |k| (c, k))).map(|(c, k)| read(format!("game_data.characters[{c}].useCounts[{k}]"))).collect();
+    (gold, experience, counts)
+}
+
+/// `battle_work_area`'s records (0x170 bytes each: the party's three, then
+/// the enemies' eight) and the experience the results total.
+const BATTLE_RECORDS: u32 = 0x800C_CCE8;
+const BATTLE_EXPERIENCE: u32 = 0x800D_2C84;
+
+/// Half the encounters doubles what a battle gives (src/port/rewards.c):
+/// the forest route's battle, fought again with the halving turned on as it
+/// begins, gives twice the experience, shared out (each share within the
+/// original's rounding of twice the original's), and twice each attack's
+/// raise of the attacker's use counts. The route's enemies give no gold,
+/// so in both fights each is given some (`field156`) mid-battle: the
+/// halving gives twice what they give.
+#[test]
+fn halved_encounters_double_the_forest_battles_gold_experience_and_use_counts() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let forest = log("forest");
+    let gains: Vec<_> = [false, true]
+        .into_iter()
+        .map(|half| {
+            let mut session = session(&disc, &cards(if half { "rewards-half" } else { "rewards" }), &forest);
+            while session.runtime.services().mode != Some(2) {
+                assert!(session.runtime.frames() < forest.frames, "the route fights a battle");
+                session.frame().expect("frame");
+            }
+            session.set_half_encounters(half);
+            let before = rewards(&mut session);
+            step_to(&mut session, 7000);
+            assert_eq!(session.runtime.services().mode, Some(2), "still in battle");
+            for enemy in 0..8 {
+                let gold = 25 + enemy as u16;
+                session.runtime.memory().write(BATTLE_RECORDS + (3 + enemy) * 0x170 + 0x156, &gold.to_le_bytes()).unwrap();
+            }
+            // To the frame the results add the gold (and write back the counts).
+            while rewards(&mut session).0 == before.0 {
+                assert!(session.runtime.frames() < forest.frames, "the battle gives its gold");
+                session.frame().expect("frame");
+            }
+            let experience = session.runtime.memory().read_u32(BATTLE_EXPERIENCE).unwrap();
+            let after = rewards(&mut session);
+            let delta = |a: &[u64], b: &[u64]| a.iter().zip(b).map(|(a, b)| a - b).collect::<Vec<_>>();
+            (after.0 - before.0, experience, delta(&after.1, &before.1), delta(&after.2, &before.2))
+        })
+        .collect();
+    let ((gold, experience, shares, counts), (gold2, experience2, shares2, counts2)) = (&gains[0], &gains[1]);
+    eprintln!("original: gold {gold}, experience {experience}, shares {shares:?}, counts {counts:?}");
+    eprintln!("halved: gold {gold2}, experience {experience2}, shares {shares2:?}, counts {counts2:?}");
+    assert!(*gold > 0 && *experience > 0 && counts.iter().any(|c| *c > 0), "the battle gives gold, experience and use counts");
+    assert_eq!((*gold2, *experience2), (2 * gold, 2 * experience), "twice the gold and the experience");
+    assert_eq!(*counts2, counts.iter().map(|c| 2 * c).collect::<Vec<_>>(), "twice each raise of the use counts");
+    assert!(shares.iter().zip(shares2).all(|(share, share2)| share2.abs_diff(2 * share) <= 2), "each share of twice the experience");
+}
+
 #[test]
 fn spectators_attach_change_and_detach_without_changing_the_game() {
     let Some(disc) = disc() else {

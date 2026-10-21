@@ -481,7 +481,7 @@ fn graphics_choices_go_through_the_settings_service() {
         move |ack| acks.borrow_mut().push(ack.change.clone())
     });
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 1400), 1.0).unwrap();
     ui.update().unwrap();
     section(&mut ui, "Graphics", 1);
     assert!(
@@ -503,13 +503,54 @@ fn graphics_choices_go_through_the_settings_service() {
     element(&ui, "Bloom", AccessibleRole::Slider);
     ui.component().invoke_effect_edited(5, 20);
     assert_eq!(settings.borrow().settings().graphics.hd2d.bloom, 20);
+    // The effects stand under the HD-2D heading, below the card holding
+    // Profile and above Motion and framing.
+    heading_above(&ui, "HD-2D", "HD-2D effects");
+    let top = |label: &str| element(&ui, label, AccessibleRole::Groupbox).absolute_position().y;
+    let bottom = |label: &str| {
+        let card = element(&ui, label, AccessibleRole::Groupbox);
+        card.absolute_position().y + card.size().height
+    };
+    assert!(bottom("Look") <= element(&ui, "HD-2D", AccessibleRole::Text).absolute_position().y, "the effects follow the Look card");
+    assert!(bottom("HD-2D effects") <= top("Motion and framing"));
+    // Reset Defaults, on the heading's line at its right, gives every
+    // slider its default, one moved by hand too (Lighting, 60 by default).
+    let reset = element(&ui, "Reset Defaults", AccessibleRole::Button);
+    let heading = element(&ui, "HD-2D", AccessibleRole::Text);
+    let card = element(&ui, "HD-2D effects", AccessibleRole::Groupbox);
+    assert!(reset.absolute_position().y + reset.size().height <= card.absolute_position().y, "above the card");
+    assert!(reset.absolute_position().y <= heading.absolute_position().y + heading.size().height, "on the heading's line");
+    let right = card.absolute_position().x + card.size().width - (reset.absolute_position().x + reset.size().width);
+    assert!((0.0..1.0).contains(&right), "at the card's right edge ({right} px in)");
+    press(&ui, &element(&ui, "Lighting", AccessibleRole::Slider));
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.hd2d.lighting, 50, "the slider's middle");
+    press(&ui, &reset);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.hd2d, xem_settings::EffectLevels::HD2D);
+    for (label, level) in [("Lighting", "60"), ("Bloom", "50")] {
+        assert_eq!(element(&ui, label, AccessibleRole::Slider).accessible_value().as_deref(), Some(level), "{label} after Reset Defaults");
+    }
+    ui.component().invoke_effect_edited(5, 20);
     ui.component().invoke_graphics_edited("profile".into(), 3);
-    ui.component().invoke_fidelity_edited(3, true);
+    ui.update().unwrap();
+    // Custom's sliders show its own levels (none by default), under its name.
+    heading_above(&ui, "Custom", "Effects");
+    assert_eq!(element(&ui, "Lighting", AccessibleRole::Slider).accessible_value().as_deref(), Some("0"), "Custom's level, not HD-2D's");
+    press(&ui, &element(&ui, "Dithering", AccessibleRole::Switch));
     ui.component().invoke_effect_edited(8, -40);
+    ui.update().unwrap();
     let graphics = settings.borrow().settings().graphics;
     assert!(graphics.custom_fidelity.dithering, "Custom's own limits change");
     assert_eq!(graphics.custom_effects.focus, -40, "Custom's own levels change");
     assert_eq!(graphics.hd2d.bloom, 20, "HD-2D's levels are kept");
+    // Custom's Reset Defaults: its levels and limits (a switch toggled by
+    // hand too), HD-2D's kept.
+    press(&ui, &element(&ui, "Reset Defaults", AccessibleRole::Button));
+    ui.update().unwrap();
+    let graphics = settings.borrow().settings().graphics;
+    assert_eq!((graphics.custom_effects, graphics.custom_fidelity, graphics.hd2d.bloom), (xem_settings::EffectLevels::OFF, xem_settings::Fidelity::MODERN, 20));
+    assert_eq!(element(&ui, "Dithering", AccessibleRole::Switch).accessible_checked(), Some(false), "the switch shows the reset");
     ui.component().invoke_graphics_edited("scale".into(), 99);
     assert_eq!(settings.borrow().settings().graphics.internal_scale, 3 - 3, "an invalid scale is refused");
     ui.component().invoke_graphics_edited("widescreen".into(), 1);
@@ -724,6 +765,10 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
     ] {
         assert!(!shown(&ui, note), "no helper text: {note}");
     }
+    // But for the encounter rate's, below it: Half doubles the rewards.
+    let note = element(&ui, "Half also doubles the EXP, G and deathblow progress that battles give.", AccessibleRole::Text);
+    let rate = element(&ui, "Encounter rate", AccessibleRole::RadioGroup);
+    assert!(note.absolute_position().y >= rate.absolute_position().y + rate.size().height, "below the setting");
     ui.component().invoke_gameplay_edited("auto-advance-dwell".into(), 90);
     press(&ui, &element(&ui, "Movies can be skipped", AccessibleRole::Switch));
     ui.update().unwrap();
@@ -1031,6 +1076,7 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Stop at ledges").next().is_some());
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Look around in FPV").next().is_some());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Hide dialogue (held)").next().is_some(), "Select held over a dialogue hides it");
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Drag").next().is_none(), "no touch controls, no drag");
     ui.set_first_person_touch(true);
     ui.update().unwrap();
@@ -1045,8 +1091,9 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(listed(&ui, "Underhand grab") && listed(&ui, "Right stick click"), "a headset lists its toggles");
     assert!(listed(&ui, "Head"), "and the head among its looks");
+    assert!(listed(&ui, "Hide dialogue (held)"), "and its Back held over a dialogue");
     assert!(!listed(&ui, "R3") && !listed(&ui, "Arrows") && !listed(&ui, "Drag"), "and none of the flat hosts' inputs");
-    for label in ["Underhand grab", "Right stick click", "Head"] {
+    for label in ["Underhand grab", "Right stick click", "Head", "Hide dialogue (held)"] {
         let key = element(&ui, label, AccessibleRole::Text);
         let (at, size) = (key.absolute_position(), key.size());
         assert!(at.x >= 0.0 && at.x + size.width <= 440.0, "{label} at {at:?} {size:?} fits the headset's panel");
@@ -1095,12 +1142,27 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
         assert_eq!(shown(&ui, "HD-2D quality"), quality, "HD-2D quality for profile {profile}");
         assert!(!shown(&ui, "Characters keep moving"));
     }
-    // Interpolate motion decides the presentation's rate: no choice of it.
+    // The Look card's last row: the party's full-resolution sprites in
+    // large-scale fields, through the settings service.
+    let switch = element(&ui, "Full-resolution sprites in large-scale areas", AccessibleRole::Switch);
+    let look = element(&ui, "Look", AccessibleRole::Groupbox);
+    let quality = element(&ui, "HD-2D quality", AccessibleRole::Combobox);
+    let (top, bottom) = (look.absolute_position().y, look.absolute_position().y + look.size().height);
+    assert!(switch.absolute_position().y > quality.absolute_position().y + quality.size().height, "below the card's other rows");
+    assert!(switch.absolute_position().y > top && switch.absolute_position().y + switch.size().height < bottom, "inside the card");
+    assert!(!settings.borrow().settings().graphics.full_size_sprites, "off by default");
+    press(&ui, &switch);
+    assert!(settings.borrow().settings().graphics.full_size_sprites);
+    // High Framerate (interpolation) decides the presentation's rate: no
+    // choice of it. Widescreen beside it widens the framing.
     assert!(!shown(&ui, "Presentation rate") && !shown(&ui, "Presentation"));
-    ui.component().invoke_graphics_edited("interpolation".into(), 1);
+    assert!(!shown(&ui, "Interpolate motion") && !shown(&ui, "Wider framing"), "their old names");
+    press(&ui, &element(&ui, "High Framerate", AccessibleRole::Switch));
     assert!(!settings.borrow().settings().graphics.game_paced(), "interpolated: every display refresh");
-    ui.component().invoke_graphics_edited("interpolation".into(), 0);
+    press(&ui, &element(&ui, "High Framerate", AccessibleRole::Switch));
     assert!(settings.borrow().settings().graphics.game_paced(), "not: the game's frames");
+    press(&ui, &element(&ui, "Widescreen", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().graphics.widescreen);
     // Headings stand above their cards, outside them.
     for (name, index, headings) in [
         ("Graphics", 1, [("Texture Filtering", "Filtering"), ("VR", "Headset")]),
@@ -1169,6 +1231,13 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Tab leaves the closed dropdown");
 
     section(&mut ui, "Controls", 2);
+    // The cursor hides over an idle game by default; the switch turns it off.
+    let hide = element(&ui, "Hide the cursor when the mouse is idle", AccessibleRole::Switch);
+    assert_eq!(hide.accessible_checked(), Some(true));
+    press(&ui, &hide);
+    assert!(!settings.borrow().settings().hide_idle_cursor);
+    press(&ui, &hide);
+    assert!(settings.borrow().settings().hide_idle_cursor);
     assert!(!shown(&ui, "Mouse sensitivity"));
     press(&ui, &element(&ui, "Turn the camera with the mouse", AccessibleRole::Switch));
     ui.update().unwrap();
@@ -1264,7 +1333,7 @@ fn debug_controls_submit_kernel_operations_and_developer_room() {
         ("Start field test", DebugRequest::Field { map: 22, entry: 4 }),
         ("Go to developer room", DebugRequest::Field { map: 0, entry: 0 }),
         ("Start battle test", DebugRequest::Battle { formation: 3, file: 0, party: [0, 1, 3], gears: [0, 0, 1] }),
-        ("Start world map test", DebugRequest::Worldmap { map: 1024 }),
+        ("Start world map test", DebugRequest::Worldmap),
         ("Start Battling", DebugRequest::Battling),
         ("Open test menu", DebugRequest::Menu { screen: 3, parameter: 2 }),
         ("Play test movie", DebugRequest::Movie { movie: 5, kind: 1 }),

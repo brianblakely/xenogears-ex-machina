@@ -878,6 +878,131 @@ fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_th
     assert_eq!(p.class, xem_gpu::Class::Flat);
 }
 
+/// The field's dialogue windows link their packets at one ordering-table
+/// entry, a run the port records by its newest and oldest packets (the
+/// newest's links lead to the oldest, whose link is what the entry held
+/// before). What the DMA walk draws from that run is the dialogue's, and
+/// nothing else: not what was linked there before or after it, and not the
+/// same packets walked again without a record.
+#[test]
+fn the_dialogues_run_of_packets_traces_as_the_dialogue_until_the_walk_passes_it() {
+    use xem_gpu::TraceOp;
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let tile = |x: i32| [0x6000_FFFF, xy(x, 10), xy(8, 8)];
+    // The entry, a packet linked after the dialogue drew, the dialogue's
+    // backing, a draw mode and a glyph's rectangle, and the packet linked
+    // before it.
+    ram.node(0x1000, 0x1800, &[]);
+    ram.node(0x1800, 0x2000, &tile(0));
+    ram.node(0x2000, 0x3000, &tile(10));
+    ram.node(0x3000, 0x4000, &[0xE100_0200]);
+    ram.node(0x4000, 0x5000, &tile(20));
+    ram.node(0x5000, 0xFF_FFFF, &tile(30));
+    let walk = |gpu: &mut Gpu| {
+        gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+        let ops = gpu.take_trace().ops;
+        ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.vertices[0].x, p.dialogue)) } else { None }).collect::<Vec<_>>()
+    };
+    gpu.trace_dialogue(0x2000, 0x4000);
+    assert_eq!(walk(&mut gpu), [(0, false), (10, true), (20, true), (30, false)], "the run's primitives alone");
+    assert_eq!(walk(&mut gpu), [(0, false), (10, false), (20, false), (30, false)], "a record serves the walk it was made for");
+    gpu.trace_dialogue(0x4000, 0x4000);
+    assert_eq!(walk(&mut gpu), [(0, false), (10, false), (20, true), (30, false)], "a run of one packet");
+}
+
+/// The x of each primitive a walk of `ram` from `head` draws, and whether
+/// it is traced as a dialogue's.
+fn dialogue_walk(gpu: &mut Gpu, ram: &Ram, head: u32) -> Vec<(i32, bool)> {
+    use xem_gpu::TraceOp;
+    gpu.dma_linked_list(ram, head, 1000).unwrap();
+    gpu.take_trace().ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some((p.vertices[0].x, p.dialogue)) } else { None }).collect()
+}
+
+/// A battle's script message links its window, its portrait and text, and
+/// its cursor at one ordering-table entry, among the interface's other
+/// packets: three runs, recorded before the walk, which marks them alone.
+/// The next frame's first record drops the runs a walk did not enter.
+#[test]
+fn a_battles_three_runs_trace_as_the_dialogue_in_one_walk_and_each_frame_records_anew() {
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let tile = |x: i32| [0x6000_FFFF, xy(x, 10), xy(8, 8)];
+    // The entry; the window's two packets; a draw mode; the portrait and a
+    // line of the text; a battle message; the cursor; a packet linked
+    // before them.
+    ram.node(0x1000, 0x1100, &[]);
+    ram.node(0x1100, 0x1200, &tile(0));
+    ram.node(0x1200, 0x1300, &tile(10));
+    ram.node(0x1300, 0x1400, &[0xE100_0200]);
+    ram.node(0x1400, 0x1500, &tile(20));
+    ram.node(0x1500, 0x1600, &tile(30));
+    ram.node(0x1600, 0x1700, &tile(40));
+    ram.node(0x1700, 0x1800, &tile(50));
+    ram.node(0x1800, 0xFF_FFFF, &tile(60));
+    // As the interface records them: the cursor, the portrait and text,
+    // the window (linked last, walked first).
+    gpu.trace_dialogue(0x1700, 0x1700);
+    gpu.trace_dialogue(0x1400, 0x1500);
+    gpu.trace_dialogue(0x1100, 0x1200);
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, true), (10, true), (20, true), (30, true), (40, false), (50, true), (60, false)],
+        "the three runs alone");
+    // The next frame records the portrait and text, and a run its walk
+    // does not enter.
+    gpu.trace_dialogue(0x1400, 0x1500);
+    gpu.trace_dialogue(0x1900, 0x1900);
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, true), (30, true), (40, false), (50, false), (60, false)],
+        "each run serves the walk it was recorded for");
+    // The frame after records the cursor: the run left over is gone, even
+    // with its packet linked now.
+    gpu.trace_dialogue(0x1700, 0x1700);
+    ram.node(0x1800, 0x1900, &tile(60));
+    ram.node(0x1900, 0xFF_FFFF, &tile(70));
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, false), (30, false), (40, false), (50, true), (60, false), (70, false)],
+        "the run the walk before did not enter is dropped");
+}
+
+/// A host restarting the trace between a frame's records and its walk (a
+/// new scale, more frames than it presents) keeps the dialogue's runs for
+/// that walk: the game recorded them on this timeline. Restarted after the
+/// walk, the runs left over are dropped; and a loaded state's device starts
+/// without any (its own were recorded before it was saved).
+#[test]
+fn a_trace_restarted_before_the_walk_keeps_the_dialogues_runs_and_a_loaded_state_has_none() {
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let tile = |x: i32| [0x6000_FFFF, xy(x, 10), xy(8, 8)];
+    ram.node(0x1000, 0x2000, &[]);
+    ram.node(0x2000, 0x3000, &tile(0));
+    ram.node(0x3000, 0x4000, &tile(10));
+    ram.node(0x4000, 0xFF_FFFF, &tile(20));
+    gpu.trace_dialogue(0x2000, 0x3000);
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, true), (10, true), (20, false)], "restarted between the record and the walk");
+    // A run the walk does not enter, then a restart after the walk.
+    gpu.trace_dialogue(0x2000, 0x3000);
+    gpu.trace_dialogue(0x4000, 0x4000);
+    ram.node(0x3000, 0xFF_FFFF, &tile(10));
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, true), (10, true)]);
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    ram.node(0x3000, 0x4000, &tile(10));
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, false)], "restarted after the walk: nothing left over");
+    // A state saved with a run recorded and loaded again.
+    gpu.trace_dialogue(0x2000, 0x3000);
+    let state = gpu.save();
+    gpu.load(&state).unwrap();
+    let _ = gpu.take_trace();
+    assert_eq!(dialogue_walk(&mut gpu, &ram, 0x1000), [(0, false), (10, false), (20, false)], "a loaded state's walk is not marked");
+}
+
 #[test]
 fn interface_projections_trace_as_flat_whole_pixels() {
     use xem_gpu::{Class, Projection, SxyStore, TraceOp};
@@ -1125,4 +1250,117 @@ fn a_macroblock_decoded_again_stays_known() {
     upload(&mut gpu, 0, 0, 24, 16, &still);
     let trace = gpu.take_trace();
     assert!(trace.ops.iter().any(|op| matches!(op, TraceOp::Movie { block, .. } if block.luma[0] == 9)), "the still block is loaded as a movie block");
+}
+
+/// What is drawn from a 15-bit movie's macroblocks as the movie player
+/// loaded them (a window movie the field shows on a screen in its world)
+/// is the movie's picture while VRAM there holds them: a polygon or a
+/// sprite whose every texel lies in them, not one reaching past them or
+/// drawn after other pixels were loaded over them.
+#[test]
+fn what_is_drawn_from_a_movies_blocks_is_its_picture() {
+    use xem_gpu::{MovieBlock, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    // Two 15-bit macroblocks' output (16 rows of 16 VRAM pixels each),
+    // loaded as one column at (320, 256), as the player loads a slice.
+    let first: Vec<u16> = (0..16 * 16).map(|i| i as u16 * 7 + 1).collect();
+    let second: Vec<u16> = (0..16 * 16).map(|i| i as u16 * 13 + 5).collect();
+    let key = |pixels: &[u16]| fnv1a(pixels.iter().flat_map(|p| p.to_le_bytes()));
+    let block = |luma| MovieBlock { luma: [luma; 256], cb: [0; 64], cr: [0; 64], quant: [3; 6], bits24: false };
+    gpu.trace_macroblocks([(key(&first), block(1)), (key(&second), block(2))]);
+    let column: Vec<u16> = first.iter().chain(&second).copied().collect();
+    upload(&mut gpu, 320, 256, 16, 32, &column);
+    let page = 5 | 1 << 4 | 2 << 7; // (320, 256), 15-bit
+    // A raw textured quad at (0, 0) over texels u0-u1, v0-v1 of the page.
+    let quad = |gpu: &mut Gpu, (u0, u1): (u32, u32), (v0, v1): (u32, u32)| {
+        gpu.write_gp0_words(&[0x2D00_0000, xy(0, 0), v0 << 8 | u0, xy(16, 0), page << 16 | v0 << 8 | u1, xy(0, 16), v1 << 8 | u0, xy(16, 16), v1 << 8 | u1]);
+    };
+    quad(&mut gpu, (0, 15), (0, 31));
+    quad(&mut gpu, (0, 16), (0, 31));
+    // A 16x16 sprite over the second block.
+    gpu.write_gp0(0xE100_0000 | page);
+    gpu.write_gp0_words(&[0x7D00_0000, xy(40, 40), 16 << 8]);
+    // Other pixels loaded over the first block.
+    upload(&mut gpu, 320, 256, 16, 16, &[3; 256]);
+    quad(&mut gpu, (0, 15), (0, 15));
+    quad(&mut gpu, (0, 15), (16, 31));
+    let movie: Vec<bool> = gpu.take_trace().ops.iter().filter_map(|op| match op {
+        TraceOp::Draw(p) => Some(p.movie),
+        _ => None,
+    }).collect();
+    assert_eq!(movie, [true, false, true, false, true], "within the blocks, a texel past them, the sprite, the block loaded over, the other block");
+}
+
+/// A movie's picture is known again when the trace starts again from all of
+/// VRAM: a snapshot loaded (a rewind's step) holding a column the player
+/// loaded there, and that column's successor loaded after it (decoded
+/// before the snapshot, in the timeline left behind), and a host's restart
+/// (the trace turned on while on, for a new internal scale), after which
+/// the blocks the MDEC decoded before it are loaded. Other pixels loaded
+/// where the movie was are not its picture.
+#[test]
+fn a_movies_picture_is_known_again_after_a_snapshot_loaded_and_a_restart() {
+    use xem_gpu::{MovieBlock, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let key = |pixels: &[u16]| fnv1a(pixels.iter().flat_map(|p| p.to_le_bytes()));
+    let block = |luma| MovieBlock { luma: [luma; 256], cb: [0; 64], cr: [0; 64], quant: [3; 6], bits24: false };
+    // Columns of pictures at (320, 256): two 15-bit macroblocks each.
+    let column = |seed: u16| -> Vec<u16> { (0..16 * 32).map(|i| (i as u16).wrapping_mul(seed) | 1).collect() };
+    let decoded = |pixels: &[u16]| [(key(&pixels[..256]), block(1)), (key(&pixels[256..]), block(2))];
+    let page = 5 | 1 << 4 | 2 << 7;
+    // A raw textured quad over the column's texels; then whether each
+    // quad traced since was the movie's picture.
+    let quad = |gpu: &mut Gpu| gpu.write_gp0_words(&[0x2D00_0000, xy(0, 0), 0, xy(16, 0), page << 16 | 15, xy(0, 16), 31 << 8, xy(16, 16), 31 << 8 | 15]);
+    let movie = |gpu: &mut Gpu| -> Vec<bool> {
+        gpu.take_trace().ops.iter().filter_map(|op| match op {
+            TraceOp::Draw(p) => Some(p.movie),
+            _ => None,
+        }).collect()
+    };
+    let (first, second, third) = (column(7), column(13), column(23));
+    gpu.trace_macroblocks(decoded(&first));
+    upload(&mut gpu, 320, 256, 16, 32, &first);
+    quad(&mut gpu);
+    assert_eq!(movie(&mut gpu), [true]);
+    let saved = gpu.save();
+    gpu.trace_macroblocks(decoded(&second));
+    upload(&mut gpu, 320, 256, 16, 32, &second);
+    gpu.load(&saved).unwrap();
+    quad(&mut gpu);
+    upload(&mut gpu, 320, 256, 16, 32, &second);
+    quad(&mut gpu);
+    upload(&mut gpu, 320, 256, 16, 32, &column(19));
+    quad(&mut gpu);
+    assert_eq!(movie(&mut gpu), [true, true, false], "the column the snapshot holds, its successor loaded again, other pixels");
+    upload(&mut gpu, 320, 256, 16, 32, &first);
+    gpu.trace_macroblocks(decoded(&third));
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    quad(&mut gpu);
+    upload(&mut gpu, 320, 256, 16, 32, &third);
+    quad(&mut gpu);
+    assert_eq!(movie(&mut gpu), [true, true], "after a restart, the column VRAM holds and the one decoded before it");
+}
+
+/// A copy onto itself moves no pixel unless it sets their mask bit (the
+/// field copies its 24-bit display area onto itself after a movie): it is
+/// not traced, so no renderer takes it for a frame drawn there.
+#[test]
+fn a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits() {
+    use xem_gpu::TraceOp;
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let copied = |gpu: &mut Gpu, to: u32| {
+        gpu.write_gp0_words(&[0x8000_0000, 0, to, xy(480, 224)]);
+        gpu.take_trace().ops.iter().filter(|op| matches!(op, TraceOp::Copy { .. } | TraceOp::Write { .. })).count()
+    };
+    assert_eq!(copied(&mut gpu, 0), 0, "onto itself");
+    assert_eq!(copied(&mut gpu, xy(0, 256)), 2, "elsewhere: the copy and its destination's pixels");
+    gpu.write_gp0(0xE600_0001);
+    assert_eq!(copied(&mut gpu, 0), 2, "onto itself, setting the mask bit");
 }
