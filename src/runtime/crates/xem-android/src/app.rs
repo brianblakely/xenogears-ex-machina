@@ -150,6 +150,8 @@ fn open_gpu(window: &sdl::Window) -> Result<(Gpu, wgpu::Surface<'static>), Strin
         || wgpu::InstanceDescriptor::new_with_display_handle_from_env(Box::new(window.display()));
     match xem_host::open_gpu(window, descriptor(), Some(wgpu::Backends::VULKAN)) {
         Ok(opened) => Ok(opened),
+        // Not Vulkan's failure: the native window went away meanwhile.
+        Err(error) if !window.has_native_surface() => Err(error),
         Err(error) => {
             log(&format!(
                 "Vulkan unavailable ({error}); falling back to GLES"
@@ -314,7 +316,31 @@ impl Host {
             )),
         }
 
-        let (gpu, surface) = open_gpu(window)?;
+        // The activity can lose its native window before the device opens
+        // (sent to the background, or stopped to be recreated on a first
+        // boot's overlay change): wait for the window, or for the quit of
+        // the activity's end, rather than end the run, after which SDL would
+        // finish the activity.
+        let (gpu, surface) = loop {
+            if window.has_native_surface() {
+                match open_gpu(window) {
+                    Ok(opened) => break opened,
+                    Err(error) if !window.has_native_surface() => {
+                        log(&format!("no native window ({error}); waiting"))
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            // SAFETY: SDL is initialised. SDL_PumpEvents blocks while the
+            // activity is paused.
+            unsafe {
+                SDL_PumpEvents();
+                if SDL_HasEvent(SDL_EVENT_QUIT.0) {
+                    return Err("the activity ended before its surface was ready".into());
+                }
+                SDL_Delay(100);
+            }
+        };
         let info = gpu.adapter.get_info();
         log(&format!(
             "gpu {} ({:?}, {} {})",

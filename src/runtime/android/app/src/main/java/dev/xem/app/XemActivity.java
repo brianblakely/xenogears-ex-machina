@@ -64,6 +64,21 @@ public class XemActivity extends SDLActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    /**
+     * SDL finishes the activity whenever SDL_main returns, also when the run
+     * ended for a recreation (the quit of the onDestroy below): the recreated
+     * activity was finished along with it and the launcher came to the
+     * front. The recreated activity starts SDL_main again instead.
+     */
+    @Override
+    public void finish() {
+        if (isChangingConfigurations()) {
+            Log.i(TAG, "SDL_main ended for a recreation: the activity stays");
+            return;
+        }
+        super.finish();
+    }
+
     /** How long a quitting SDL_main has to end before SDL's own onDestroy. */
     private static final long QUIT_WAIT_MS = 5000;
 

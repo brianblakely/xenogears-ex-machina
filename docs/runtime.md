@@ -9093,13 +9093,19 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   which `XemActivity` sets as soon as the libraries load: a recreation
   before `SDL_main` has started, such as an overlay changing on an
   emulator's first boot, otherwise ended the process), which reloads
-  settings and reopens the imported disc. `XemActivity`'s
+  settings and reopens the imported disc, and stays in front: SDL finishes
+  the activity whenever `SDL_main` returns, and `XemActivity`'s `finish`
+  does nothing while the activity is changing configurations (a recreation
+  as the app started on the release check's emulator, its first boot,
+  otherwise finished the recreated activity too). `XemActivity`'s
   `onDestroy` sends the run its quit and waits up to 5 s for it to end
   before SDL's own, which waits a second and then drops the quit: a run
   still booting the game when Android recreated the activity twice in a row
   missed it, kept its window, and the next run could not create one ("Android
-  only supports one window"). A run still waiting for its first surface ends
-  when the quit comes.
+  only supports one window"). A run whose activity lost its native window
+  before the device opened (sent to the background or stopped for a
+  recreation as it started) waits for the window, and a run still waiting
+  for its first surface ends when the quit comes.
 
 In `nix develop path:./nix/runtime#android`:
 

@@ -310,9 +310,9 @@ mark
 wait_for "xem: resized 1080x2400"
 
 echo "== activity recreation (display density change): SDL_main runs again in the process"
-# A density change recreates the activity (the launcher comes to the front
-# as it restarts too); returning to the app runs SDL_main again in the same
-# process, which reopens the imported disc from its persisted grant.
+# A density change recreates the activity, which stays in front: its
+# SDL_main runs again in the same process by itself and reopens the imported
+# disc from its persisted grant.
 for density in 480 reset; do
     mark
     "${adb[@]}" shell wm density "$density"
@@ -320,10 +320,12 @@ for density in 480 reset; do
     wait_for "xem: exit"
     # The system recreates activities more than once; let it settle.
     sleep 8
-    "${adb[@]}" shell am start -n "$activity" >/dev/null
     wait_for "xem: start \(run [2-9] in this process\)"
     wait_for "xem: reopening imported disc content://"
     wait_for "xem: frame rendered frame=120 " 90
+    activities=$("${adb[@]}" shell dumpsys activity activities)
+    top=$(grep -m1 topResumedActivity <<<"$activities" || true)
+    [[ $top == *"$activity"* ]] || fail "the recreated activity is not in front: $top"
 done
 
 echo "== restart: settings and the imported document persist"
