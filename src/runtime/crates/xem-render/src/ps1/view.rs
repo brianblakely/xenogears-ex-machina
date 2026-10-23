@@ -1018,6 +1018,7 @@ impl GameView {
         });
         self.renderer.set_presented(presented);
         self.renderer.set_seal(seals_terrain(scene) && !config.draw.fidelity.vertex_snapping);
+        self.renderer.set_sky(Lighting::for_scene(scene).sky_depth);
         self.renderer.draw(encoder, &trace);
         // The frames this trace began are the current scene's.
         let identities: Vec<_> = self.renderer.log_identities().collect();

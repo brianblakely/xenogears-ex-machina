@@ -121,6 +121,9 @@ pub struct Lighting {
     /// Strength of a sprite's cast (directional) and contact shadows, 0-1.
     pub cast_shadow: f32,
     pub contact_shadow: f32,
+    /// The depth in the game camera's view (GTE units) from which the scene
+    /// is the sky it paints far behind it, which takes no haze (0: none).
+    pub sky_depth: f32,
 }
 
 impl Default for Lighting {
@@ -143,6 +146,7 @@ impl Default for Lighting {
             shadow_length: -0.28,
             cast_shadow: 0.4,
             contact_shadow: 0.9,
+            sky_depth: 0.0,
         }
     }
 }

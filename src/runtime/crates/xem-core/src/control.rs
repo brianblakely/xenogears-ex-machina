@@ -124,6 +124,10 @@ pub struct Session<M: GameModule> {
     /// next frame presses Confirm.
     auto_waited: u32,
     auto_press: bool,
+    /// The field map the field draws ([`Session::scene`], which hosts call
+    /// each frame they present): the last seen while it asked for no battle
+    /// or other map; none outside the field or after a restore.
+    drawn_field: Option<Value>,
 }
 
 /// The longest auto-advance dwell: a minute of vertical blanks.
@@ -216,6 +220,7 @@ impl<M: GameModule> Session<M> {
             auto_advance: 0,
             auto_waited: 0,
             auto_press: false,
+            drawn_field: None,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
@@ -1841,6 +1846,7 @@ impl<M: GameModule> Session<M> {
     fn game_state_restored(&mut self) {
         self.debug = Default::default();
         self.stopped = None;
+        self.drawn_field = None;
         // Assisted movement belonged to the timeline left behind.
         if self.assist.take().is_some() {
             self.assist_outcome = Some(crate::assist::Outcome::Interrupted);
@@ -1880,13 +1886,35 @@ impl<M: GameModule> Session<M> {
 
     /// What the game shows, for presentation tuning (scene metadata):
     /// "field:<map>", "battle", "worldmap", "arena", "menu", "movie",
-    /// "kernel" or "boot". Read-only.
+    /// "kernel" or "boot". Reads the game only.
     pub fn scene(&mut self) -> String {
-        match self.runtime.services().mode {
-            Some(1) => match self.inspect("mode_field_map_id", 0) {
-                Ok(map) => format!("field:{map}"),
-                Err(_) => "field".into(),
-            },
+        let mode = self.runtime.services().mode;
+        if mode != Some(1) {
+            self.drawn_field = None;
+        }
+        match mode {
+            Some(1) => {
+                // A field asking for a battle or another map
+                // (`field_event_request_battle_field`,
+                // `field_event_change_map_entry`, a walk off its edge) sets
+                // the map it goes to at once, then draws its own until it
+                // leaves (field 55's last frames, which the battle's shatter
+                // takes): those frames are still its scene.
+                let requested = ["field_battle_not_requested", "field_map_change_not_requested"]
+                    .into_iter()
+                    .any(|flag| self.inspect(flag, 0).is_ok_and(|value| value == json!(0)));
+                // (A field just entered holds the last field's requests until
+                // its setup clears them: the map as it is then.)
+                match self.inspect("mode_field_map_id", 0) {
+                    Ok(map) if requested => format!("field:{}", self.drawn_field.as_ref().unwrap_or(&map)),
+                    Ok(map) => {
+                        let scene = format!("field:{map}");
+                        self.drawn_field = Some(map);
+                        scene
+                    }
+                    Err(_) => "field".into(),
+                }
+            }
             Some(0) => "kernel".into(),
             Some(2) => "battle".into(),
             Some(3) => "worldmap".into(),

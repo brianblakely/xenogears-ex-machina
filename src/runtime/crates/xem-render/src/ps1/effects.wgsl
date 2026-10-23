@@ -6,7 +6,8 @@
 // The auxiliary target gives each pixel the GTE depth (SZ, 16 bits in r, g)
 // and class (b: 0 background, 1 interface, 2 world, 3 model, 4 sprite) of
 // the primitive that drew it last; flags (a) bit 0 marks baked shading,
-// bit 1 a battle's sky (255: a semi-transparent interface pixel).
+// bit 1 a battle's sky or a scene's past its sky depth (255: a
+// semi-transparent interface pixel).
 
 struct Params {
     size: vec2<f32>,
@@ -218,7 +219,8 @@ fn fs_light(in: Out) -> @location(0) vec4<f32> {
         // towards the haze tint at the scene's own brightness (tex3: the
         // frame's average scene colour), so dark places stay dark. A
         // battle's sky keeps its colours: the flat sky its clouds are
-        // painted over takes no haze.
+        // painted over takes no haze. So does a scene's painted sky (field
+        // 55's stars and moon, beside the black the game leaves above them).
         let average = textureLoad(tex3, vec2<i32>(0, 0), 0).rgb;
         let haze = mix(p.fog.rgb * clamp(luma(average) * 2.6, 0.03, 0.85), average * 1.8, 0.35);
         let fog = select(smoothstep(p.ranges.x, p.ranges.y, a.depth) * p.fog.w, 0.0, a.backdrop);

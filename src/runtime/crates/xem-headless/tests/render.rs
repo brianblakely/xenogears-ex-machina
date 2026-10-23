@@ -568,6 +568,85 @@ fn the_clouds_over_the_scene_after_field_198s_narration_take_no_haze() {
     assert!(ground * 5 > models.len(), "the fog hazes the ground: {ground} of {} model pixels", models.len());
 }
 
+/// Field 55 (the debug Field tool's map 55, entrance 0): Grahf's Gear on a
+/// tree before the blood moon. The stars and the moon lie far behind them
+/// (past scenes.json's sky depth for the field), and above the stars the
+/// field leaves its clear's black. Hazed towards the moon's orange, the
+/// stars stood apart from that black; the fog leaves the stars and the moon
+/// as Modern draws them, and under HD-2D the stars stay as dark as Modern's.
+#[test]
+fn field_55s_stars_and_moon_take_no_haze() {
+    use xem_render::ps1::{AUX_INTERFACE, Lighting};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "debug", "request": {"tool": "field", "map": 55, "entry": 0}})).get("error").is_none());
+    // Cross every 20 frames through the dialogue; unpresented until 80
+    // frames before the 1 600th, the moon behind the Gear.
+    let step = |session: &mut Session<NativeModule>, k: u32| {
+        if k % 20 == 0 {
+            session.execute(&json!({"cmd": "press", "buttons": ["cross"], "frames": 2}));
+        }
+        assert!(session.frame().unwrap());
+    };
+    for k in 0..1520 {
+        step(&mut session, k);
+    }
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // Modern, HD-2D, and Custom with HD-2D's fog alone, wider.
+    let fog = EffectLevels { fog: EffectLevels::HD2D.fog, ..EffectLevels::OFF };
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Custom].map(|profile| {
+        let graphics = Graphics { profile, widescreen: true, custom_effects: fog, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1152, 648), view.max_scale()));
+        view
+    });
+    for k in 1520..1600u32 {
+        step(&mut session, k);
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        for view in &mut views {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            assert!(view.present(&mut encoder, &display, &scene, f64::from(k) / 60.0).is_some());
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    assert_eq!(session.scene(), "field:55");
+    let read = |texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
+    let [modern, hd2d, hazed] = [0, 1, 2].map(|i| read(views[i].presented_texture().expect("presented")));
+    let aux = read(views[1].frame().aux());
+    assert!([&hd2d, &hazed, &aux].iter().all(|p| p.len() == modern.len()), "one size");
+    // The scene's pixels (255 in the auxiliary target's alpha marks an
+    // interface pixel), and the sky's: past the sky depth (the camera not
+    // pulled back, the depth in the picture is the game's).
+    let scene: Vec<usize> = (0..aux.len() / 4).filter(|&i| u32::from(aux[i * 4 + 2]) != AUX_INTERFACE && aux[i * 4 + 3] != 255).collect();
+    let depth = |i: usize| f32::from(u16::from(aux[i * 4]) << 8 | u16::from(aux[i * 4 + 1]));
+    let sky: Vec<usize> = scene.iter().copied().filter(|&i| depth(i) >= Lighting::for_scene("field:55").sky_depth).collect();
+    let apart = |a: &[u8], b: &[u8], i: usize| (0..3).map(|c| a[i * 4 + c].abs_diff(b[i * 4 + c])).max().unwrap();
+    let unhazed = sky.iter().filter(|&&i| apart(&hazed, &modern, i) <= 1).count();
+    // The stars: the sky's dark pixels under Modern.
+    let brightest = |rgba: &[u8], i: usize| f64::from(*rgba[i * 4..i * 4 + 3].iter().max().unwrap());
+    let stars: Vec<usize> = sky.iter().copied().filter(|&i| brightest(&modern, i) < 40.0).collect();
+    let mean = |rgba: &[u8]| stars.iter().map(|&i| brightest(rgba, i)).sum::<f64>() / stars.len().max(1) as f64;
+    eprintln!("{} sky pixels of the scene's {} ({} of them stars, brightest channel {:.1} under Modern, {:.1} under HD-2D), {unhazed} unhazed by the fog",
+        sky.len(), scene.len(), stars.len(), mean(&modern), mean(&hd2d));
+    assert!(sky.len() * 2 > scene.len(), "the stars and moon fill most of the picture: {} of {}", sky.len(), scene.len());
+    assert!(stars.len() * 4 > sky.len(), "the stars are in view: {} of the sky's {}", stars.len(), sky.len());
+    assert_eq!(unhazed, sky.len(), "the fog leaves the stars and the moon as Modern draws them");
+    assert!(mean(&hd2d) < mean(&modern) + 10.0, "HD-2D's stars stay dark: {:.1} against Modern's {:.1}", mean(&hd2d), mean(&modern));
+}
+
 /// Battling's idle demo (on its title, after 0x4650 frames without a button,
 /// or L2 held for 120) clears both of the arena's buffers at once, then
 /// draws each frame over the other buffer's picture a little darker: the
@@ -2296,4 +2375,75 @@ fn held_rewind_steps_over_a_dialogue_held_hidden_show_frames_without_its_windows
         let differing = shown.chunks_exact(4).zip(hidden.chunks_exact(4)).filter(|(a, b)| a[..3] != b[..3]).count();
         assert!(marked && differing > 10_000, "step {step}: the frame shown leaves the window out ({differing} pixels)");
     }
+}
+
+/// The sandworm's battle at the end of field 55 (the debug Field tool's map
+/// 55, entrance 0, Cross every 20 frames): the field asks for it with the
+/// field that follows (54) and draws its own last frames, which the battle
+/// keeps frozen and then shatters. Those frames are still field 55's scene,
+/// its stars unhazed: tagged with field 54 (`mode_field_map_id` once the
+/// battle is asked for), they took its tuning, and the frozen frame and its
+/// shards showed the haze.
+#[test]
+fn the_sandworms_shatter_keeps_field_55s_stars() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "debug", "request": {"tool": "field", "map": 55, "entry": 0}})).get("error").is_none());
+    let mut scenes: Vec<String> = Vec::new();
+    let mut step = |session: &mut Session<NativeModule>, k: u32| {
+        if k % 20 == 0 {
+            session.execute(&json!({"cmd": "press", "buttons": ["cross"], "frames": 2}));
+        }
+        assert!(session.frame().unwrap());
+        let scene = session.scene();
+        if scenes.last() != Some(&scene) {
+            scenes.push(scene);
+        }
+    };
+    // Unpresented until shortly before the battle is asked for (the frame
+    // frozen is then the field's last, as a host presents it), on to the
+    // shatter's first frame.
+    for k in 0..14_080 {
+        step(&mut session, k);
+    }
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Hd2d].map(|profile| {
+        let graphics = Graphics { profile, widescreen: true, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (576, 324), view.max_scale()));
+        view
+    });
+    for k in 14_080..=14_240u32 {
+        step(&mut session, k);
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        for view in &mut views {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            assert!(view.present(&mut encoder, &display, &scene, f64::from(k) / 60.0).is_some());
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    let field = scenes.iter().position(|scene| scene == "field:55").expect("field 55 is entered");
+    assert_eq!(scenes[field..], ["field:55", "battle"], "field 55 draws until the battle: {scenes:?}");
+    let read = |texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
+    let [modern, hd2d] = [0, 1].map(|i| read(views[i].presented_texture().expect("presented")));
+    assert_eq!(modern.len(), hd2d.len(), "one size");
+    // The night: the pixels Modern draws dark.
+    let brightest = |rgba: &[u8], i: usize| f64::from(*rgba[i * 4..i * 4 + 3].iter().max().unwrap());
+    let night: Vec<usize> = (0..modern.len() / 4).filter(|&i| brightest(&modern, i) < 40.0).collect();
+    let mean = |rgba: &[u8]| night.iter().map(|&i| brightest(rgba, i)).sum::<f64>() / night.len() as f64;
+    eprintln!("{} of {} pixels dark under Modern: brightest channel {:.1}, under HD-2D {:.1}", night.len(), modern.len() / 4, mean(&modern), mean(&hd2d));
+    assert!(night.len() * 3 > modern.len() / 4, "the shatter's first frame is largely night: {} pixels", night.len());
+    assert!(mean(&hd2d) < mean(&modern) + 10.0, "HD-2D's shards keep the night dark: {:.1} against Modern's {:.1}", mean(&hd2d), mean(&modern));
 }

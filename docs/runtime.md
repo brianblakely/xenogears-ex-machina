@@ -5071,8 +5071,34 @@ before them (at frame 7400, up to 26 levels on the Gear's sides).
 `xem-render/tests/ps1.rs` `a_battles_sky_takes_the_effects_but_not_the_haze`
 and `xem-headless/tests/render.rs`
 `the_clouds_over_the_scene_after_field_198s_narration_take_no_haze`
-(local, disc 1) check it. The look aims at Square Enix's HD-2D (Final Fantasy
-Resonance's field and battle pictures: a sharp playfield with soft
+(local, disc 1) check it. So is the sky a field draws far behind its scene
+where scenes.json gives the field a sky depth (`sky_depth`): every face
+each of whose points lies at least that deep in the game camera's view,
+so a camera pulled back or looking around in first person does not move
+the line. Field 55's stars and blood moon behind Grahf's Gear (the debug
+Field tool's map 55, entrance 0) lie 22 800 to 40 000 deep, the Gear, the
+tree and the cockpit at most 8 300 (its sky depth 16 000): hazed towards
+the moon's orange, the stars turned maroon against the black the field
+leaves above them in the picture's top left; now the fog leaves the stars
+and the moon as Modern draws them (the Gear before the moon 1 600 frames
+after the tool is asked, Cross every 20, wider: 590 241 pixels, every one
+of which the fog changed; the stars' brightest channel is 4.1 under HD-2D
+against Modern's 4.2, and was 35.1). The battle with the sandworm that
+ends the scene keeps the field's last frame frozen, then shatters it:
+field 55 asks for the battle with the field that follows it (54, which
+`field_event_request_battle_field` puts in `mode_field_map_id` at once)
+and draws its own frames until it leaves, so `Session::scene` keeps a
+field's map while it has asked for a battle or another map (the request
+flags `field_battle_not_requested` and `field_map_change_not_requested`
+at 0) until the next field's setup clears them. Tagged field 54, those
+frames took field 54's tuning, and the frozen frame and its shards showed
+the haze (at the shatter's first frame, 14 240 frames after the tool is
+asked, presented from 14 080 on, the pixels Modern draws dark had a
+brightest channel of 51.6 under HD-2D against Modern's 8.1; now 12.1).
+`a_scenes_sky_past_its_depth_takes_no_haze`,
+`field_55s_stars_and_moon_take_no_haze` and
+`the_sandworms_shatter_keeps_field_55s_stars` (local, disc 1) check it.
+The look aims at Square Enix's HD-2D (Final Fantasy Resonance's field and battle pictures: a sharp playfield with soft
 foreground and background, glowing lamps that light what is near them, airy
 distance haze, warm highlights and cool shadows). In order: the frame's
 average scene colour, eased over frames; lighting from depth-derived normals
@@ -5098,8 +5124,8 @@ frames); grading (exposure towards a bright middle grey within limits,
 cool-shadow and warm-highlight toning, saturation, a highlight shoulder,
 contrast, vignette). Passes whose effect is off are not drawn. Scene
 tuning (light direction and colour, fog tint and range, shaft source,
-thresholds, grading, shadow lean, length and strengths) is presentation
-metadata in
+thresholds, grading, shadow lean, length and strengths, sky depth) is
+presentation metadata in
 `crates/xem-render/src/ps1/scenes.json`, keyed by `Session::scene()`
 ("field:22", "battle", "worldmap", ...).
 

@@ -1314,6 +1314,71 @@ fn a_battles_sky_takes_the_effects_but_not_the_haze() {
     }
 }
 
+/// A scene's sky past its depth (field 55's stars and moon: scenes.json's
+/// `sky_depth`) takes no haze, judged by its depth in the game camera's
+/// view: pulled back, the world nearer than that stays hazed although its
+/// depth in the picture lies beyond it.
+#[test]
+fn a_scenes_sky_past_its_depth_takes_no_haze() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A near quad of the world, one deeper, and the sky's far behind them.
+    let traces = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        let quads = [([20.0, 170.0, 300.0, 230.0], 500), ([30.0, 30.0, 140.0, 140.0], 4000), ([180.0, 30.0, 290.0, 140.0], 12000)];
+        let mut projections = Vec::new();
+        let mut packets = Vec::new();
+        for ([left, top, right, bottom], z) in quads {
+            let corners = [(left, top), (right, top), (left, bottom), (right, bottom)];
+            let first = projections.len();
+            for (x, y) in corners {
+                projections.push(Projection {
+                    sxy: xy(x as i32, y as i32),
+                    sz: z,
+                    class: 0,
+                    x: (x * 65536.0) as i32,
+                    y: (y * 65536.0) as i32,
+                    offset: (160, 120),
+                    h: 256,
+                    owner: 0,
+                    view: view(x, y, f32::from(z)),
+                });
+            }
+            let words = corners.map(|(x, y)| xy(x as i32, y as i32));
+            packets.push((vec![0x28C0_6030, words[0], words[1], words[2], words[3]], (0..4).map(|k| (k + 1, first + k)).collect()));
+        }
+        submit(device, &projections, &packets);
+    });
+    // The frame replayed as under the effects, and hazed.
+    let hazed = |sky: f32, pull_back: f32| {
+        let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+        renderer.set_sky(sky);
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let framing = Framing { replay: true, pull_back, ..Default::default() };
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, framing);
+        gpu.queue.submit([encoder.finish()]);
+        let plain = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        let mut effects = EffectsRenderer::new(&gpu.device, Some(&gpu.adapter));
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let fog = Effects { fog: 1.0, ..Effects::OFF };
+        effects.render(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, &frame, frame.primitives(), &fog, Quality::High, &Lighting::default());
+        gpu.queue.submit([encoder.finish()]);
+        (plain, read_rgba8(&gpu.device, &gpu.queue, effects.output().unwrap()))
+    };
+    let at = |pixels: &[u8], (x, y): (usize, usize)| pixels[(y * 640 + x) * 4..(y * 640 + x) * 4 + 3].to_vec();
+    let apart = |a: Vec<u8>, b: Vec<u8>| (0..3).map(|c| a[c].abs_diff(b[c])).max().unwrap();
+    // Inside the deeper quad and the sky's (scale 2), as drawn and pulled
+    // back by 4000 (the deeper quad then 8000 deep in the picture).
+    for (pull_back, world, sky) in [(0.0, (170, 170), (470, 170)), (4000.0, (240, 200), (440, 200))] {
+        let (plain, without) = hazed(0.0, pull_back);
+        assert!(apart(at(&without, sky), at(&plain, sky)) > 8, "without a sky depth the sky at {sky:?} is hazed");
+        let (plain, with) = hazed(6000.0, pull_back);
+        assert_eq!(at(&with, sky), at(&plain, sky), "the sky at {sky:?} takes no haze (pulled back {pull_back})");
+        assert!(apart(at(&with, world), at(&plain, world)) > 8, "the world at {world:?} is hazed (pulled back {pull_back}): {:?} from {:?}", at(&with, world), at(&plain, world));
+    }
+}
+
 /// After a movie the field copies its 24-bit display area (480 VRAM pixels
 /// wide) onto itself, over the buffer it shows next. That copy moves no
 /// pixel, and the buffer still shows the frame drawn there, replayed wider

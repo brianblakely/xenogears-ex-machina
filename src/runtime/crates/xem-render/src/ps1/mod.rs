@@ -73,7 +73,8 @@ const FLAG_CLIP: u32 = 1 << 21;
 /// units) along the billboards' normal towards the side the eye sees.
 const FLAG_BILLBOARD: u32 = 1 << 22;
 /// Projected by the backdrop a battle draws far behind its scene, its sky
-/// ([`Primitive::backdrop`]): the world to the effects but for their haze,
+/// ([`Primitive::backdrop`]), or a scene's sky past its depth
+/// ([`Builder::in_sky`]): the world to the effects but for their haze,
 /// which the flat sky its clouds are painted over does not take.
 const FLAG_BACKDROP: u32 = 1 << 23;
 
@@ -616,6 +617,9 @@ pub(crate) struct Builder<'a> {
     /// slivers the game culled (the world map's terrain, whose blocks of
     /// different detail meet in T-junctions, and the Battling arena's).
     pub(crate) seal: bool,
+    /// The depth in the game camera's view from which a face is the sky
+    /// the scene paints far behind it ([`Builder::in_sky`]; 0: none).
+    pub(crate) sky: f32,
     /// The screen the game took ([`Capture`]): where it lies and the width
     /// of the sides its picture has (VRAM pixels).
     pub(crate) capture: Option<(VramRect, u32)>,
@@ -774,6 +778,7 @@ impl<'a> Builder<'a> {
             rows_left: ROW_BUDGET,
             shown: None,
             seal: false,
+            sky: 0.0,
             capture: None,
             capture_aliases: &[],
             feedback: None,
@@ -876,6 +881,15 @@ impl<'a> Builder<'a> {
             }
         }
         same * 10 >= all * 9
+    }
+
+    /// Whether `p` is the sky a scene paints far behind it, each of its
+    /// points at least [`Builder::sky`] deep in the game camera's view
+    /// (field 55's stars and blood moon). The effects leave out its haze,
+    /// as a battle's sky's ([`FLAG_BACKDROP`]): hazed towards the scene's
+    /// colour, it stood apart from the black the game leaves above it.
+    fn in_sky(&self, p: &Primitive) -> bool {
+        self.sky > 0.0 && p.vertices[..p.vertex_count()].iter().all(|v| v.view.is_some_and(|[_, _, z]| z >= self.sky))
     }
 
     pub(crate) fn upload(&mut self, rect: VramRect, pixels: &[u16], show: bool) {
@@ -998,7 +1012,7 @@ impl<'a> Builder<'a> {
             (p.shape == Shape::Line, FLAG_LINE),
             (captured, FLAG_CAPTURE),
             (feedback.is_some(), FLAG_FEEDBACK),
-            (p.backdrop, FLAG_BACKDROP),
+            (p.backdrop || self.in_sky(p), FLAG_BACKDROP),
         ] {
             if on {
                 flags |= flag;
@@ -1902,6 +1916,8 @@ pub struct Ps1Renderer {
     native: Vec<u16>,
     /// Seal the terrain's cracks ([`Builder::seal`]).
     pub(crate) seal: bool,
+    /// Where the scene's sky begins ([`Builder::sky`]).
+    pub(crate) sky: f32,
     stats: DrawStats,
     /// Frames logged so far ([`FrameLog::frames`]).
     logged: u64,
@@ -2203,6 +2219,7 @@ impl Ps1Renderer {
             shown: Vec::new(),
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             seal: false,
+            sky: 0.0,
             stats: DrawStats::default(),
             logged: 0,
             capture,
@@ -2480,6 +2497,12 @@ impl Ps1Renderer {
         self.seal = seal;
     }
 
+    /// The depth in the game camera's view from which a face is the sky
+    /// the scene paints far behind it ([`Lighting::sky_depth`]; 0: none).
+    pub fn set_sky(&mut self, depth: f32) {
+        self.sky = depth;
+    }
+
     fn pictures(device: &wgpu::Device, scale: u32) -> (wgpu::Texture, wgpu::Texture, wgpu::Texture, wgpu::Texture) {
         let size = (VRAM_WIDTH * scale, VRAM_HEIGHT * scale);
         (
@@ -2555,6 +2578,7 @@ impl Ps1Renderer {
         let options = DrawOptions { hide_dialogue: false, ..self.options };
         let mut builder = Builder::reusing(&options, ops, &mut self.storage);
         builder.seal = self.seal;
+        builder.sky = self.sky;
         // (Its sides have no place in VRAM.)
         builder.capture = self.capture.rect.map(|rect| (rect, 0));
         builder.capture_aliases = &self.capture.aliases;

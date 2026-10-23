@@ -75,7 +75,7 @@ const FEEDBACK: u32 = 524288u;
 const TABLE: u32 = 1048576u;
 const CLIP: u32 = 2097152u;
 const BILLBOARD: u32 = 4194304u;
-// A battle's sky (ps1/mod.rs FLAG_BACKDROP).
+// A battle's sky, or a scene's past its depth (ps1/mod.rs FLAG_BACKDROP).
 const BACKDROP: u32 = 8388608u;
 
 struct VertexIn {
