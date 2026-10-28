@@ -1205,6 +1205,92 @@ fn interface_pixels_bypass_the_effects() {
     assert!(changed > 10_000, "the effects change the scene ({changed} pixels)");
 }
 
+/// Only scenes that opt in treat additive models as subjects. Glass,
+/// glows and shadows keep their prior depth handling, as do additive
+/// models outside the post-Deus scene. Colour blending is unchanged.
+#[test]
+fn translucent_model_depth_is_opt_in_and_preserves_blending() {
+    use xem_render::ps1::{AUX_CLASS_MASK, AUX_MODEL, AUX_WORLD};
+    let battle = Lighting::for_scene("battle");
+    assert_eq!(Lighting::for_scene("battle:75"), Lighting { additive_model_depth: true, ..battle }, "Urobolus keeps the other battle settings");
+    assert_eq!(Lighting::for_scene("battle:74"), battle, "other battles retain their transparency handling");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    for blend in 0..4u32 {
+        for color in [0x80_8080, 0x40_4040] {
+            let traces = traced(|device| {
+                // Four columns: opaque green, semi green, additive black, cutout.
+                device.write_gp0_words(&[0xA000_0000, 512, 4 << 16 | 4]);
+                for _ in 0..4 { device.write_gp0_words(&[0x83E0_03E0, 0x0000_8000]); }
+                device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+                device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+                let mut projections = Vec::new();
+                for (class, owner, z, bounds) in [(0, 0, 5000, [0, 0, 320, 240]), (1, 0x8010_0000, 1000, [100, 70, 180, 150])] {
+                    let [l, t, r, b] = bounds;
+                    for (x, y) in [(l, t), (r, t), (l, b), (r, b)] {
+                        projections.push(Projection { sxy: xy(x, y), sz: z, class, x: x << 16, y: y << 16,
+                            offset: (160, 120), h: 256, owner, view: view(x as f32, y as f32, f32::from(z)) });
+                    }
+                }
+                let p: Vec<u32> = projections.iter().map(|p| p.sxy).collect();
+                let page = (0x108 | blend << 5) << 16;
+                submit(device, &projections, &[
+                    (vec![0x2820_1810, p[0], p[1], p[2], p[3]], vec![(1, 0), (2, 1), (3, 2), (4, 3)]),
+                    (vec![0x2E00_0000 | color, p[4], 0, p[5], page | 4, p[6], 4 << 8, p[7], 4 << 8 | 4], vec![(1, 4), (3, 5), (5, 6), (7, 7)]),
+                ]);
+            });
+            let (mut renderer, reference) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+            let original_aux = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().1);
+            let at = |x: usize| (100 * 2 * 2048 + x * 2) * 4;
+            assert_eq!(u32::from(original_aux[at(125) + 2]) & AUX_CLASS_MASK, AUX_WORLD, "transparency keeps background depth by default");
+            let redraw = |renderer: &mut Ps1Renderer| {
+                for trace in [&traces.0, &traces.1] {
+                    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+                    renderer.draw(&mut encoder, trace);
+                    gpu.queue.submit([encoder.finish()]);
+                }
+            };
+            renderer.set_additive_model_depth(Lighting::for_scene("battle:75").additive_model_depth);
+            redraw(&mut renderer);
+            let picture = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+            assert_eq!(picture, reference, "blend {blend}, colour {color:x}: surface metadata cannot change colour or mask bits");
+            let aux = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().1);
+            for (x, surface) in [(105, true), (125, blend == 1), (145, false), (165, false)] {
+                let i = at(x);
+                let depth = u16::from(aux[i]) << 8 | u16::from(aux[i + 1]);
+                let class = u32::from(aux[i + 2]) & AUX_CLASS_MASK;
+                assert_eq!(class, if surface { AUX_MODEL } else { AUX_WORLD }, "blend {blend}, x={x}");
+                assert!(depth.abs_diff(if surface { 1000 } else { 5000 }) <= 1, "blend {blend}, x={x}: depth {depth}");
+                if surface {
+                    let flags = if aux[i + 3] == 255 { aux[i + 2] >> 4 } else { aux[i + 3] };
+                    assert_eq!(flags, u8::from(color != 0x80_8080), "baked shading survives the mark");
+                }
+            }
+            // A model in focus stays unchanged under depth of field alone,
+            // across the boundary between opaque and semi-transparent texels.
+            if blend == 1 {
+                let mut frame = FrameRenderer::new(&gpu.device);
+                let mut effects = EffectsRenderer::new(&gpu.device, Some(&gpu.adapter));
+                let mut encoder = gpu.device.create_command_encoder(&Default::default());
+                frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing::default());
+                gpu.queue.submit([encoder.finish()]);
+                let mut encoder = gpu.device.create_command_encoder(&Default::default());
+                effects.render(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, &frame, &traces.1.ops,
+                    &Effects { depth_of_field: 0.6, ..Effects::OFF }, Quality::High, &Lighting::default());
+                gpu.queue.submit([encoder.finish()]);
+                let sharp = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+                let dof = read_rgba8(&gpu.device, &gpu.queue, effects.output().unwrap());
+                for x in 102..137 {
+                    let i = (100 * 2 * 640 + x * 2) * 4;
+                    assert_eq!(&dof[i..i + 3], &sharp[i..i + 3], "focused model at x={x}");
+                }
+            }
+            renderer.set_additive_model_depth(Lighting::for_scene("battle:74").additive_model_depth);
+            redraw(&mut renderer);
+            assert_eq!(read_rgba8(&gpu.device, &gpu.queue, renderer.picture().1), original_aux, "leaving the scene restores its prior transparency handling");
+        }
+    }
+}
+
 /// A movie's picture the scene draws (a window movie on a screen in a
 /// field's world, [`Primitive::movie`]) keeps its colours through the
 /// effects, as the movie shown alone does, while the scene around it is lit

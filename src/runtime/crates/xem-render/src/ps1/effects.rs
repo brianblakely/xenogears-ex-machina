@@ -124,6 +124,10 @@ pub struct Lighting {
     /// The depth in the game camera's view (GTE units) from which the scene
     /// is the sky it paints far behind it, which takes no haze (0: none).
     pub sky_depth: f32,
+    /// Additive textured models supply their own effects depth. Off unless
+    /// a scene uses them as subjects (Krelian and Urobolus), rather
+    /// than light or transparency over another surface.
+    pub additive_model_depth: bool,
 }
 
 impl Default for Lighting {
@@ -147,16 +151,27 @@ impl Default for Lighting {
             cast_shadow: 0.4,
             contact_shadow: 0.9,
             sky_depth: 0.0,
+            additive_model_depth: false,
         }
     }
 }
 
 impl Lighting {
-    /// The tuning for `scene` ("field:22", "battle", "worldmap", ...): the
-    /// most specific entry of scenes.json, else its mode's, else the default.
+    /// The tuning for `scene` ("field:22", "battle:75", "worldmap", ...).
+    /// Scene entries override their mode's values and the default.
     pub fn for_scene(scene: &str) -> Lighting {
         static TABLE: std::sync::OnceLock<std::collections::HashMap<String, Lighting>> = std::sync::OnceLock::new();
-        let table = TABLE.get_or_init(|| serde_json::from_str(include_str!("scenes.json")).expect("scenes.json"));
+        let table = TABLE.get_or_init(|| {
+            let entries: HashMap<String, serde_json::Map<String, serde_json::Value>> = serde_json::from_str(include_str!("scenes.json")).expect("scenes.json");
+            entries.iter().map(|(scene, values)| {
+                let mut merged = entries.get("default").cloned().unwrap_or_default();
+                if let Some(mode) = entries.get(scene.split(':').next().unwrap_or_default()) {
+                    merged.extend(mode.clone());
+                }
+                merged.extend(values.clone());
+                (scene.clone(), serde_json::from_value(serde_json::Value::Object(merged)).expect("scene lighting"))
+            }).collect()
+        });
         let mode = scene.split(':').next().unwrap_or("");
         table.get(scene).or_else(|| table.get(mode)).or_else(|| table.get("default")).copied().unwrap_or_default()
     }

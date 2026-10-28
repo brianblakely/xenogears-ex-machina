@@ -31,6 +31,84 @@ use xem_settings::{EffectLevels, Fidelity, Graphics, GraphicsProfile};
 
 const FRAMES: u64 = 240;
 
+/// Map 718, entrance 0 leads into 719's Krelian conversation and Urobolus
+/// reveal and battle 75. Their additive model texels inherited the backdrop
+/// or floor's depth, so depth of field blurred them according to what lay behind them.
+#[test]
+fn post_deus_translucent_models_stay_in_focus_ahead_of_the_background() {
+    use xem_render::ps1::{AUX_CLASS_MASK, AUX_MODEL};
+    let disc = std::env::var_os("XEM_DISC2").map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 2.chd"));
+    if !disc.exists() {
+        eprintln!("skipping: no disc 2 (set XEM_DISC2)");
+        return;
+    }
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd":"enter_field", "map":718, "entry":0}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut views = [GraphicsProfile::Modern, GraphicsProfile::Custom].map(|profile| {
+        let graphics = Graphics { profile, custom_effects: EffectLevels { depth_of_field: 60, ..EffectLevels::OFF }, ..Graphics::default() };
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (640, 432), view.max_scale()));
+        view
+    });
+    for frame in 0..16000u32 {
+        session.execute(&json!({"cmd":"pad", "buttons": if frame % 30 < 2 { vec!["cross"] } else { vec![] }}));
+        let capture = (6480..6500).contains(&frame) || (14980..15000).contains(&frame) || (15980..16000).contains(&frame);
+        if [6480, 14980, 15980].contains(&frame) { session.runtime.services().gpu.device_mut().set_trace(true); }
+        assert!(session.frame().unwrap());
+        if !capture { continue; }
+        let device = session.runtime.services().gpu.device_mut();
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        for view in &mut views {
+            let _ = view.take_restart();
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            assert!(view.present(&mut encoder, &display, &scene, f64::from(frame) / 60.0).is_some());
+            gpu.queue.submit([encoder.finish()]);
+        }
+        if ![6499, 14999, 15999].contains(&frame) { continue; }
+        assert_eq!(scene, if frame == 15999 { "battle:75" } else { "field:719" });
+        let read = |t| xem_render::read_rgba8(&gpu.device, &gpu.queue, t);
+        let modern = read(views[0].presented_texture().unwrap());
+        let dof = read(views[1].presented_texture().unwrap());
+        let aux = read(views[1].frame().aux());
+        let width = views[1].presented_texture().unwrap().width() as usize;
+        assert_eq!(modern.len(), dof.len());
+        let (name, bounds, depths) = if frame == 6499 {
+            ("Krelian", [112, 25, 198, 120], [7000, 8000])
+        } else if frame == 14999 {
+            ("Urobolus", [100, 25, 240, 180], [7000, 11000])
+        } else {
+            ("Urobolus in battle", [190, 60, 320, 170], [3500, 5500])
+        };
+        let mut surface = 0;
+        let mut semi = 0;
+        let mut unchanged = 0;
+        let mut soft_background = 0;
+        for (i, a) in aux.chunks_exact(4).enumerate() {
+            let (x, y) = (i % width / 2, i / width / 2);
+            let z = u16::from(a[0]) << 8 | u16::from(a[1]);
+            let changed = (0..3).any(|c| modern[i * 4 + c].abs_diff(dof[i * 4 + c]) > 1);
+            if x >= bounds[0] && x < bounds[2] && y >= bounds[1] && y < bounds[3]
+                && u32::from(a[2]) & AUX_CLASS_MASK == AUX_MODEL && z >= depths[0] && z <= depths[1] {
+                surface += 1;
+                semi += usize::from(a[3] == 255);
+                unchanged += usize::from(!changed);
+            }
+            if (z > 15000 || frame == 15999 && z == 0) && changed { soft_background += 1; }
+        }
+        eprintln!("{name}: {surface} surface pixels, {semi} semi, {unchanged} sharp; {soft_background} background pixels softened");
+        assert!(surface > 5000 && semi > 2000, "{name}'s translucent surface has its own depth");
+        assert!(unchanged * 100 > surface * 95, "{name} stays sharp under depth of field");
+        assert!(soft_background > 1000, "the background still receives depth of field");
+        session.runtime.services().gpu.device_mut().set_trace(false);
+    }
+}
+
 #[test]
 fn battle_damage_totals_are_interface_and_do_not_change_scene_focus() {
     use xem_gpu::{Class, Primitive, TraceOp};
@@ -549,12 +627,13 @@ fn the_clouds_over_the_scene_after_field_198s_narration_take_no_haze() {
             gpu.queue.submit([encoder.finish()]);
         }
     }
-    assert_eq!(session.scene(), "battle");
+    let battle = session.execute(&json!({"cmd":"inspect", "path":"formation_active.battle"}));
+    assert_eq!(session.scene(), format!("battle:{battle}"));
     let read = |texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
     let [modern, hd2d, hazed] = [0, 1, 2].map(|i| read(views[i].presented_texture().expect("presented")));
     let classes = read(views[1].frame().aux());
     assert!([&hd2d, &hazed, &classes].iter().all(|p| p.len() == modern.len()), "one size");
-    let of = |kind: u32| (0..classes.len() / 4).filter(|&i| u32::from(classes[i * 4 + 2]) == kind).collect::<Vec<_>>();
+    let of = |kind: u32| (0..classes.len() / 4).filter(|&i| u32::from(classes[i * 4 + 2]) & xem_render::ps1::AUX_CLASS_MASK == kind).collect::<Vec<_>>();
     // The world's pixels are the clouds' (the stage's ground is a model).
     let (clouds, models) = (of(AUX_WORLD), of(AUX_MODEL));
     let colourful = |rgba: &[u8]| clouds.iter().map(|&i| f64::from(rgba[i * 4..i * 4 + 3].iter().max().unwrap() - rgba[i * 4..i * 4 + 3].iter().min().unwrap())).sum::<f64>() / clouds.len() as f64;
@@ -627,10 +706,9 @@ fn field_55s_stars_and_moon_take_no_haze() {
     let [modern, hd2d, hazed] = [0, 1, 2].map(|i| read(views[i].presented_texture().expect("presented")));
     let aux = read(views[1].frame().aux());
     assert!([&hd2d, &hazed, &aux].iter().all(|p| p.len() == modern.len()), "one size");
-    // The scene's pixels (255 in the auxiliary target's alpha marks an
-    // interface pixel), and the sky's: past the sky depth (the camera not
+    // The scene's pixels, and the sky's: past the sky depth (the camera not
     // pulled back, the depth in the picture is the game's).
-    let scene: Vec<usize> = (0..aux.len() / 4).filter(|&i| u32::from(aux[i * 4 + 2]) != AUX_INTERFACE && aux[i * 4 + 3] != 255).collect();
+    let scene: Vec<usize> = (0..aux.len() / 4).filter(|&i| u32::from(aux[i * 4 + 2]) & xem_render::ps1::AUX_CLASS_MASK != AUX_INTERFACE).collect();
     let depth = |i: usize| f32::from(u16::from(aux[i * 4]) << 8 | u16::from(aux[i * 4 + 1]));
     let sky: Vec<usize> = scene.iter().copied().filter(|&i| depth(i) >= Lighting::for_scene("field:55").sky_depth).collect();
     let apart = |a: &[u8], b: &[u8], i: usize| (0..3).map(|c| a[i * 4 + c].abs_diff(b[i * 4 + c])).max().unwrap();
@@ -2435,7 +2513,10 @@ fn the_sandworms_shatter_keeps_field_55s_stars() {
         }
     }
     let field = scenes.iter().position(|scene| scene == "field:55").expect("field 55 is entered");
-    assert_eq!(scenes[field..], ["field:55", "battle"], "field 55 draws until the battle: {scenes:?}");
+    // On entering battle mode the active formation is still the boot's
+    // zeroed one; battle_main then copies the Sand Worm's formation (39).
+    // The frozen field frame and its shatter retain field 55's tuning.
+    assert_eq!(scenes[field..], ["field:55", "battle:0", "battle:39"], "field 55 draws until the battle: {scenes:?}");
     let read = |texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
     let [modern, hd2d] = [0, 1].map(|i| read(views[i].presented_texture().expect("presented")));
     assert_eq!(modern.len(), hd2d.len(), "one size");

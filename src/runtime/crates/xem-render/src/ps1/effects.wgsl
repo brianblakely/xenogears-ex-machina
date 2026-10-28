@@ -6,8 +6,8 @@
 // The auxiliary target gives each pixel the GTE depth (SZ, 16 bits in r, g)
 // and class (b: 0 background, 1 interface, 2 world, 3 model, 4 sprite) of
 // the primitive that drew it last; flags (a) bit 0 marks baked shading,
-// bit 1 a battle's sky or a scene's past its sky depth (255: a
-// semi-transparent interface pixel).
+// bit 1 a battle's sky or a scene's past its sky depth. Alpha 255 marks a
+// semi-transparent surface: its flags are in blue's high nibble instead.
 
 struct Params {
     size: vec2<f32>,
@@ -91,9 +91,8 @@ fn aux_at(pixel: vec2<i32>) -> Aux {
     let dims = vec2<i32>(textureDimensions(tex1));
     let a = textureLoad(tex1, clamp(pixel, vec2<i32>(0), dims - 1), 0);
     let bytes = vec4<u32>(round(a * 255.0));
-    // 255 marks an interface pixel, not flags (a frame drawn back can bring it).
-    let flags = select(bytes.a, 0u, bytes.a == 255u);
-    return Aux(f32(bytes.r * 256u + bytes.g), bytes.b, (flags & 1u) != 0u, (flags & 2u) != 0u);
+    let flags = select(bytes.a, bytes.b >> 4u, bytes.a == 255u);
+    return Aux(f32(bytes.r * 256u + bytes.g), bytes.b & 15u, (flags & 1u) != 0u, (flags & 2u) != 0u);
 }
 
 fn is_scene(kind: u32) -> bool {

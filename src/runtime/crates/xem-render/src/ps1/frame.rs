@@ -586,6 +586,7 @@ impl FrameRenderer {
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.seal = renderer.seal;
         builder.sky = renderer.sky;
+        builder.additive_model_depth = renderer.additive_model_depth;
         builder.spill = side;
         builder.capture = capture;
         builder.capture_aliases = if current { &renderer.capture.aliases } else { &[] };

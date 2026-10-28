@@ -1885,7 +1885,7 @@ impl<M: GameModule> Session<M> {
     }
 
     /// What the game shows, for presentation tuning (scene metadata):
-    /// "field:<map>", "battle", "worldmap", "arena", "menu", "movie",
+    /// "field:<map>", "battle:<enemy file>", "worldmap", "arena", "menu", "movie",
     /// "kernel" or "boot". Reads the game only.
     pub fn scene(&mut self) -> String {
         let mode = self.runtime.services().mode;
@@ -1916,7 +1916,10 @@ impl<M: GameModule> Session<M> {
                 }
             }
             Some(0) => "kernel".into(),
-            Some(2) => "battle".into(),
+            Some(2) => match self.inspect("formation_active.battle", 0) {
+                Ok(battle) => format!("battle:{battle}"),
+                Err(_) => "battle".into(),
+            },
             Some(3) => "worldmap".into(),
             Some(4) => "arena".into(),
             Some(5) => "menu".into(),

@@ -136,7 +136,7 @@ impl Seen {
     }
 
     fn class(&self, i: usize) -> u32 {
-        u32::from(self.classes[i * 4 + 2])
+        u32::from(self.classes[i * 4 + 2]) & xem_render::ps1::AUX_CLASS_MASK
     }
 
     fn save(&self, name: &str) {
@@ -538,7 +538,7 @@ fn from_within_each_field_the_walkmesh_in_view_shows_the_scene_and_the_interface
             // camera's frame (a flat look keeps it where the game drew it).
             let (after_colours, after_classes) = host.flat(&host.after);
             let (flat_colours, _) = host.flat(&host.camera);
-            let after_interface: Vec<bool> = (0..after_classes.len() / 4).map(|i| u32::from(after_classes[i * 4 + 2]) == AUX_INTERFACE).collect();
+            let after_interface: Vec<bool> = (0..after_classes.len() / 4).map(|i| u32::from(after_classes[i * 4 + 2]) & xem_render::ps1::AUX_CLASS_MASK == AUX_INTERFACE).collect();
             let (mut walkmesh, mut walkable) = (Holes::default(), Holes::default());
             let mut by_layer: Vec<Holes> = layers.iter().map(|_| Holes::default()).collect();
             let (mut empty, mut pixels) = (0usize, 0usize);

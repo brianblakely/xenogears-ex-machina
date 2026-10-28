@@ -32,12 +32,15 @@ pub const VRAM_HEIGHT: u32 = 512;
 /// the console's DAC outputs them; alpha is the mask bit).
 pub const COLOR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 /// Per pixel: depth (r, g: 16 bits), class (b), flags (a: bit 0 baked
-/// shading, bit 1 a battle's sky ([`Primitive::backdrop`]); 255 a
-/// semi-transparent interface pixel).
+/// shading, bit 1 a battle's sky ([`Primitive::backdrop`]). Marked
+/// semi-transparent surfaces have alpha 255 and keep these flags in the
+/// high nibble of blue instead; its low nibble is always the class.
 pub const AUX_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
-/// Auxiliary classes (the b channel, 0-255).
+/// Mask for the auxiliary class in the blue channel (see [`AUX_FORMAT`]).
+pub const AUX_CLASS_MASK: u32 = 15;
+/// Auxiliary classes (the blue channel's low nibble).
 pub const AUX_BACKGROUND: u32 = 0;
 pub const AUX_INTERFACE: u32 = 1;
 pub const AUX_WORLD: u32 = 2;
@@ -282,9 +285,9 @@ pub(crate) enum Fragment {
     Rect,
     /// Sprite shadows into the shadow mask (effects.rs).
     Shadow,
-    /// An interface primitive's semi-transparent pixels marked as interface
-    /// in the auxiliary target, the colour unchanged (after an additive or
-    /// subtractive interface draw, whose blend cannot also set the class).
+    /// Semi-transparent surface pixels' depth, class and flags in the
+    /// auxiliary target, the colour unchanged (their blend cannot also
+    /// replace the auxiliary values).
     Mark,
     /// A full-screen fade over a diorama's eye or pane (draw.wgsl `fs_tint`;
     /// blend 0-3 its mode, 4 opaque).
@@ -434,7 +437,7 @@ impl Pipelines {
             let keep = C { src_factor: F::Zero, dst_factor: F::One, operation: O::Add };
             let blend = match (key.fragment, key.space) {
                 // Weight 0 for the colour, 1 for the auxiliary target, its
-                // alpha included (flags 255).
+                // alpha included (255; flags packed above the class).
                 (Fragment::Mark, _) => {
                     let over = C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add };
                     Some(wgpu::BlendState { color: over, alpha: over })
@@ -620,6 +623,8 @@ pub(crate) struct Builder<'a> {
     /// The depth in the game camera's view from which a face is the sky
     /// the scene paints far behind it ([`Builder::in_sky`]; 0: none).
     pub(crate) sky: f32,
+    /// Additive models are subjects in this scene ([`Lighting::additive_model_depth`]).
+    pub(crate) additive_model_depth: bool,
     /// The screen the game took ([`Capture`]): where it lies and the width
     /// of the sides its picture has (VRAM pixels).
     pub(crate) capture: Option<(VramRect, u32)>,
@@ -779,6 +784,7 @@ impl<'a> Builder<'a> {
             shown: None,
             seal: false,
             sky: 0.0,
+            additive_model_depth: false,
             capture: None,
             capture_aliases: &[],
             feedback: None,
@@ -1203,11 +1209,17 @@ impl<'a> Builder<'a> {
             false => DepthMode::Over,
         };
         let end = self.vertices.len() as u32;
-        // Semi-transparent pixels leave the depth and class under them; those
-        // of the interface (windows) are then marked as interface, so no
-        // effect touches them (a full-screen one, a fade, is a screen effect).
-        // (A diorama's pane needs no classes.)
-        let mark = p.semi && effective_class(p, self.scene) == Class::Flat && !self.covers_screen(p) && self.space == Space::Screen;
+        // In scenes that opt in, additive textured models are subjects
+        // (Krelian and Urobolus) and need their own effects depth.
+        // Elsewhere transparency keeps the depth beneath it, including
+        // glass, glows and shadows. Interface windows stay outside the
+        // effects; a full-screen fade acts on the scene. Dioramas need no mark.
+        let mark = p.semi && self.space == Space::Screen
+            && match effective_class(p, self.scene) {
+                Class::Flat => !self.covers_screen(p),
+                Class::Model => self.additive_model_depth && p.textured && blend == 1 && !p.backdrop,
+                _ => false,
+            };
         let space = self.space;
         for scissor in scissors {
             if !p.semi {
@@ -1918,6 +1930,8 @@ pub struct Ps1Renderer {
     pub(crate) seal: bool,
     /// Where the scene's sky begins ([`Builder::sky`]).
     pub(crate) sky: f32,
+    /// Additive models are subjects in this scene ([`Builder::additive_model_depth`]).
+    pub(crate) additive_model_depth: bool,
     stats: DrawStats,
     /// Frames logged so far ([`FrameLog::frames`]).
     logged: u64,
@@ -2220,6 +2234,7 @@ impl Ps1Renderer {
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             seal: false,
             sky: 0.0,
+            additive_model_depth: false,
             stats: DrawStats::default(),
             logged: 0,
             capture,
@@ -2503,6 +2518,12 @@ impl Ps1Renderer {
         self.sky = depth;
     }
 
+    /// Whether this scene's additive textured models supply their own
+    /// effects depth ([`Lighting::additive_model_depth`]); off by default.
+    pub fn set_additive_model_depth(&mut self, enabled: bool) {
+        self.additive_model_depth = enabled;
+    }
+
     fn pictures(device: &wgpu::Device, scale: u32) -> (wgpu::Texture, wgpu::Texture, wgpu::Texture, wgpu::Texture) {
         let size = (VRAM_WIDTH * scale, VRAM_HEIGHT * scale);
         (
@@ -2579,6 +2600,7 @@ impl Ps1Renderer {
         let mut builder = Builder::reusing(&options, ops, &mut self.storage);
         builder.seal = self.seal;
         builder.sky = self.sky;
+        builder.additive_model_depth = self.additive_model_depth;
         // (Its sides have no place in VRAM.)
         builder.capture = self.capture.rect.map(|rect| (rect, 0));
         builder.capture_aliases = &self.capture.aliases;
@@ -3272,7 +3294,7 @@ mod tests {
         }
         assert_eq!(kind(&face, sky, &edges), AUX_MODEL, "an outline mostly of cloud");
         face.semi = true;
-        assert_eq!(kind(&face, sky, &vram), AUX_MODEL, "translucent: the class beneath stays anyway");
+        assert_eq!(kind(&face, sky, &vram), AUX_MODEL, "a translucent model retains its surface class");
 
         // The clear as VRAM keeps it, expanded as texels are (the full
         // range, or the console's 15-bit colours).

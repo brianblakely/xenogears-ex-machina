@@ -1018,7 +1018,9 @@ impl GameView {
         });
         self.renderer.set_presented(presented);
         self.renderer.set_seal(seals_terrain(scene) && !config.draw.fidelity.vertex_snapping);
-        self.renderer.set_sky(Lighting::for_scene(scene).sky_depth);
+        let lighting = Lighting::for_scene(scene);
+        self.renderer.set_sky(lighting.sky_depth);
+        self.renderer.set_additive_model_depth(lighting.additive_model_depth);
         self.renderer.draw(encoder, &trace);
         // The frames this trace began are the current scene's.
         let identities: Vec<_> = self.renderer.log_identities().collect();
@@ -1308,7 +1310,7 @@ impl GameView {
 
     /// Where headset eye `eye` looked from within the scene at the last
     /// [`GameView::present_headset`] that drew the eyes (its [`Look`]), and
-    /// its auxiliary picture: each pixel's class (blue: `AUX_WORLD`,
+    /// its auxiliary picture: each pixel's class (blue & `AUX_CLASS_MASK`: `AUX_WORLD`,
     /// `AUX_MODEL` and `AUX_SPRITE` where the scene is drawn,
     /// `AUX_BACKGROUND` where nothing is or the game's clear). For checks of
     /// what the eyes see (tests).
