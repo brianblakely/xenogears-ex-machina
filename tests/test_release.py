@@ -1,15 +1,24 @@
 """Release versions, immutable asset sets and deterministic portable archives."""
 import json
+import os
 import subprocess
 import tempfile
 import unittest
 import zipfile
+from contextlib import chdir
 from pathlib import Path
 from unittest.mock import patch
 
 from tools.release.package import zip_tree
-from tools.release.publish import expected, main, previous_release, release_notes, render_notes
-from tools.release.version import android_code, next_tag, version
+from tools.release.publish import (
+    current_native_release,
+    expected,
+    main,
+    previous_release,
+    release_notes,
+    render_notes,
+)
+from tools.release.version import android_code, native_changed, next_tag, version
 
 
 class ReleaseTests(unittest.TestCase):
@@ -36,6 +45,41 @@ class ReleaseTests(unittest.TestCase):
              patch("tools.release.publish.subprocess.run", return_value=subprocess.CompletedProcess([], 128)):
             with self.assertRaises(subprocess.CalledProcessError):
                 previous_release("owner/game", "v0.5.1", "release-commit")
+
+    def test_docs_merged_during_build_do_not_stop_the_current_app_becoming_latest(self):
+        with patch("tools.release.publish.subprocess.check_output",
+                   return_value=json.dumps({"object": {"sha": "docs-merge"}})), \
+             patch("tools.release.publish.subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as run, \
+             patch("tools.release.publish.native_changed", return_value=False) as changed, \
+             patch("tools.release.publish.published_releases", return_value=[((1, 0, 0), "v1.0")]):
+            self.assertTrue(current_native_release("owner/game", "v1.0.1", "app-commit"))
+            changed.assert_called_once_with("app-commit", "docs-merge")
+            self.assertEqual([call.args[0] for call in run.call_args_list], [
+                ["git", "fetch", "--no-tags", "origin", "docs-merge"],
+                ["git", "merge-base", "--is-ancestor", "app-commit", "docs-merge"],
+            ])
+
+    def test_superseded_or_unrelated_build_cannot_become_latest(self):
+        for changed, ancestor, published in [
+            (True, 0, []),
+            (False, 1, []),
+            (False, 0, [((1, 0, 2), "v1.0.2")]),
+        ]:
+            with self.subTest(changed=changed, ancestor=ancestor, published=published), \
+                 patch("tools.release.publish.subprocess.check_output",
+                       return_value=json.dumps({"object": {"sha": "new-head"}})), \
+                 patch("tools.release.publish.subprocess.run", return_value=subprocess.CompletedProcess([], ancestor)), \
+                 patch("tools.release.publish.native_changed", return_value=changed), \
+                 patch("tools.release.publish.published_releases", return_value=published):
+                self.assertFalse(current_native_release("owner/game", "v1.0.1", "app-commit"))
+
+    def test_first_release_at_master_can_become_latest_without_fetching(self):
+        with patch("tools.release.publish.subprocess.check_output",
+                   return_value=json.dumps({"object": {"sha": "app-commit"}})), \
+             patch("tools.release.publish.subprocess.run") as run, \
+             patch("tools.release.publish.published_releases", return_value=[]):
+            self.assertTrue(current_native_release("owner/game", "v1.0", "app-commit"))
+            run.assert_not_called()
 
     def test_changelog_reads_only_new_entries_from_the_exact_release_commit(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -91,6 +135,7 @@ class ReleaseTests(unittest.TestCase):
                           f"xenogears-ex-machina-v0.6.2-{suffix}", notes)
         self.assertIn("https://owner.github.io/game/", notes)
         self.assertIn("https://github.com/owner/game/blob/v0.6.2/docs/releases.md", notes)
+        self.assertIn("https://github.com/owner/game/blob/v0.6.2/MANUAL.md", notes)
         self.assertIn("- Enjoy the new camera controls.", notes)
         self.assertNotIn("v0.5", notes)
 
@@ -152,6 +197,102 @@ class ReleaseTests(unittest.TestCase):
             (staged / "link").symlink_to(binary)
             with self.assertRaisesRegex(ValueError, "symlink"):
                 zip_tree(staged, root / "bad.zip")
+
+
+class NativeReleaseGuardTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(prefix="native release ")
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.enterContext(chdir(self.root))
+        self.git("init", "--quiet", "--initial-branch=master")
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "original\n")
+        self.base = self.commit()
+
+    def git(self, *args):
+        # The guard and these helpers use the same temporary repository.
+        return subprocess.check_output(["git", *args], cwd=self.root, text=True).strip()
+
+    def write(self, name, text="change\n"):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+
+    def commit(self):
+        self.git("add", ".")
+        self.git("-c", "user.name=Release test", "-c", "user.email=release@example.invalid",
+                 "commit", "--quiet", "--no-gpg-sign", "-m", "Test inputs")
+        return self.git("rev-parse", "HEAD")
+
+    def test_docs_tests_browser_and_publishing_do_not_release(self):
+        self.assertFalse(native_changed(self.base, self.base))
+        for path in ["MANUAL.md", "docs/changes/manual.md", ".github/workflows/release.yml",
+                     "tools/release/notes.md", "tools/release/publish.py", "tools/release/version.py",
+                     "tools/release/smoke.py", "packaging/source-files.txt", "packaging/install.txt",
+                     "tests/test_release.py", "src/runtime/crates/xem-host/tests/states.rs",
+                     "src/runtime/crates/xem-ui/examples/panel.rs", "src/runtime/scripts/suite.sh",
+                     "src/runtime/crates/xem-core/font/README.md", "src/decomp/README.md",
+                     "src/runtime/web/build.py", "src/runtime/web/index.html",
+                     "src/runtime/crates/xem-web/src/lib.rs", "src/runtime/crates/xem-webxr/src/lib.rs"]:
+            self.write(path)
+        self.assertFalse(native_changed(self.base, self.commit()))
+
+    def test_native_sources_and_build_inputs_release(self):
+        for path in ["src/decomp/src/resident/main.c", "src/decomp/include/common.h",
+                     "src/port/symbols.json", "src/port/main.c", "tools/game_module.py", "tools/game_schema.py",
+                     "src/runtime/crates/xem-host/src/lib.rs", "src/runtime/crates/xem-ui/ui/settings.slint",
+                     "src/runtime/crates/xem-gpu/src/game.wgsl", "src/runtime/crates/xem-core/font/substitute.txt",
+                     "src/runtime/crates/xem-host/Cargo.toml", "src/runtime/crates/xem-game/build.rs",
+                     "src/runtime/crates/xem-android/src/lib.rs", "src/runtime/crates/xem-xr/src/lib.rs",
+                     "src/runtime/Cargo.toml", "src/runtime/Cargo.lock", "src/runtime/.cargo/config.toml",
+                     "src/runtime/android/app/src/main/AndroidManifest.xml", "src/runtime/scripts/android-build.sh",
+                     "nix/runtime/flake.lock", "nix/runtime/freesurround.cpp", "packaging/linux.nix",
+                     "tools/release/package.py", "tools/release/shell.sh"]:
+            with self.subTest(path=path):
+                base = self.git("rev-parse", "HEAD")
+                self.write(path)
+                self.assertTrue(native_changed(base, self.commit()))
+
+    def test_whole_push_counts_earlier_code_but_not_a_net_revert(self):
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "updated\n")
+        self.commit()
+        self.write("MANUAL.md")
+        self.assertTrue(native_changed(self.base, self.commit()))
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "original\n")
+        self.assertFalse(native_changed(self.base, self.commit()))
+
+    def test_doc_only_merge_uses_master_before_the_push(self):
+        self.git("checkout", "--quiet", "-b", "manual")
+        self.write("MANUAL.md")
+        self.commit()
+        self.git("checkout", "--quiet", "master")
+        self.git("-c", "user.name=Release test", "-c", "user.email=release@example.invalid",
+                 "merge", "--quiet", "--no-ff", "--no-gpg-sign", "-m", "Merge manual", "manual")
+        self.assertFalse(native_changed(self.base, "HEAD"))
+
+    def test_removing_or_renaming_native_code_counts(self):
+        source = self.root / "src/runtime/crates/xem-host/src/lib.rs"
+        source.rename(source.with_name("renamed.rs"))
+        renamed = self.commit()
+        self.assertTrue(native_changed(self.base, renamed))
+        source.with_name("renamed.rs").unlink()
+        self.assertTrue(native_changed(renamed, self.commit()))
+
+    def test_initial_push_and_invalid_comparisons(self):
+        self.assertTrue(native_changed("0" * 40, self.base))
+        with self.assertRaises(subprocess.CalledProcessError):
+            native_changed("missing-base", self.base)
+
+    def test_check_only_outputs_skip_without_contacting_github(self):
+        from tools.release.version import main as check
+
+        output = self.root / "output"
+        with patch("sys.argv", ["version", "--commit", self.base, "--check-native-since", self.base]), \
+             patch.dict(os.environ, GITHUB_OUTPUT=str(output)), \
+             patch("tools.release.version.gh") as gh:
+            check()
+        gh.assert_not_called()
+        self.assertEqual(output.read_text(), "changed=false\n")
 
 
 if __name__ == "__main__":

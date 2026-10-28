@@ -1,9 +1,36 @@
-"""Reserve one version per master commit; retries reuse the same tag."""
+"""Check native release inputs and reserve a version; retries reuse the same tag."""
 import argparse
 import json
 import os
 import re
 import subprocess
+
+
+def native_changed(base, commit):
+    """Compare the whole push, not just its last commit or its commit messages.
+
+    These are native game, host and build inputs. Test runs, documentation,
+    browser-only code and publication machinery do not change the native app.
+    Keep this separate from suite.sh's broader test-selection boundary.
+    """
+    if base == "0" * 40:
+        base = subprocess.check_output(["git", "hash-object", "-t", "tree", "--stdin"],
+                                       input="", text=True).strip()
+    result = subprocess.run([
+        "git", "diff", "--quiet", base, commit, "--",
+        "src/decomp/", "src/port/", "src/runtime/crates/",
+        "src/runtime/Cargo.toml", "src/runtime/Cargo.lock", "src/runtime/.cargo/",
+        "src/runtime/android/", "src/runtime/scripts/android-build.sh",
+        "nix/runtime/", "tools/game_module.py", "tools/game_schema.py",
+        "packaging/linux.nix", "tools/release/package.py", "tools/release/shell.sh",
+        ":(exclude)src/runtime/crates/xem-web/",
+        ":(exclude)src/runtime/crates/xem-webxr/",
+        ":(glob,exclude)**/tests/**", ":(glob,exclude)**/examples/**",
+        ":(glob,exclude)**/benches/**", ":(glob,exclude)**/*.md",
+    ], check=False)
+    if result.returncode not in (0, 1):
+        result.check_returncode()
+    return result.returncode == 1
 
 
 def version(tag):
@@ -57,12 +84,19 @@ def reserve(repository, commit, preview=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repository", required=True)
+    parser.add_argument("--repository")
     parser.add_argument("--commit", required=True)
     parser.add_argument("--preview", action="store_true", help="build a qualification branch without creating a tag")
+    parser.add_argument("--check-native-since", metavar="BASE", help="only check inputs; never reserve a tag")
     args = parser.parse_args()
-    tag = reserve(args.repository, args.commit, args.preview)
-    values = f"tag={tag}\nandroid_code={android_code(tag)}\n"
+    if args.check_native_since:
+        changed = native_changed(args.check_native_since, args.commit)
+        values = f"changed={str(changed).lower()}\n"
+    else:
+        if not args.repository:
+            parser.error("--repository is required to reserve a version")
+        tag = reserve(args.repository, args.commit, args.preview)
+        values = f"tag={tag}\nandroid_code={android_code(tag)}\n"
     print(values, end="")
     if path := os.environ.get("GITHUB_OUTPUT"):
         with open(path, "a") as output:

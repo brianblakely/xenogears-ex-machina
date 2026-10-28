@@ -1,15 +1,24 @@
 # Releases and portable installation
 
-Updates to `master` build a GitHub release, starting with `v0.5`; subsequent
-updates increment the patch version (`v0.5.1`, `v0.5.2`, …). A retry reuses the
+Updates to `master` build a GitHub release only when native game, host or build
+inputs change. The workflow compares the complete push before reserving a tag
+or starting builds. Documentation, tests, release descriptions, workflow-only
+edits and browser-only changes do not cut a native release or deploy Pages.
+An unresolved comparison fails the check instead of reserving a version.
+An explicit manual workflow run can rebuild; `release/` branches still qualify.
+Versions start with `v0.5`; subsequent releases increment the patch version
+(`v0.5.1`, `v0.5.2`, …). A retry reuses the
 commit's tag. Publication waits for the complete artifact set and automated
 checks. Published files are immutable: a retry must reproduce their checksums.
 The same release's static web application deploys to GitHub Pages.
+If only non-native inputs changed on master while a build ran, that build can
+still become the latest release. It never displaces a newer published version.
 Branches under `release/` run the same builds and artifact checks without
 reserving a tag, publishing a release or deploying Pages.
 
 Release pages use the conversational installation and update guide in
-`tools/release/notes.md`. For each change worth announcing to players, add a new
+`tools/release/notes.md`, including a link to that version's [player's manual](../MANUAL.md).
+For each change worth announcing to players, add a new
 `docs/changes/<short-description>.md` with one or more short Markdown bullets.
 Describe what the player can do or what now works; leave code names, test results
 and build details in the PR. Keep existing entries so older releases retain

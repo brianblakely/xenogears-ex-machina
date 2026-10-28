@@ -6,6 +6,7 @@
 AGENTS.md
 CONTRIBUTING.md
 LICENSE
+MANUAL.md
 README.md
 analysis/README.md
 analysis/coverage/README.md

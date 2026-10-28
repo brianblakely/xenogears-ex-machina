@@ -1,5 +1,7 @@
 Welcome to Xenogears Ex Machina {tag}! Pick the download for your device below, or [play in your browser]({browser}).
 
+New here? The [player's manual]({manual}) walks you through the controls, settings, saves and ways to play.
+
 ## Installation
 
 You'll need images of your own North American Xenogears discs (`SLUS-00664` and `SLUS-00669`). CHD, BIN/CUE, and raw 2352-byte ISO images work. If you have CUE sheets, keep them with their track files. You don't need a BIOS.

@@ -23,7 +23,7 @@ adventures.
 | Playable release | **v0.5** | Portable native downloads and browser play; [qualified platforms and limits](docs/releases.md). Full-story progression remains unverified. |
 | Mods and creation tools | Planned | Mod management, gameplay extensions, desktop editors and AI-assisted authoring. |
 
-[Full roadmap](plan.md) · [Runtime and feature guide](docs/runtime.md)
+[Player's manual](MANUAL.md) · [Full roadmap](plan.md) · [Runtime and feature guide](docs/runtime.md)
 · [Build and verification guide](docs/matching.md)
 
 ## Why recover the original code?

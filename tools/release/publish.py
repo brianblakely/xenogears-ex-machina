@@ -5,19 +5,24 @@ import json
 import subprocess
 from pathlib import Path
 
-from tools.release.version import version
+from tools.release.version import native_changed, version
 
 
-def previous_release(repository, tag, commit):
+def published_releases(repository):
     pages = json.loads(subprocess.check_output([
         "gh", "api", f"repos/{repository}/releases", "--paginate", "--slurp",
     ], text=True))
-    candidates = []
+    releases = []
     for page in pages:
         for release in page:
             number = version(release["tag_name"])
-            if not release["draft"] and not release["prerelease"] and number and number < version(tag):
-                candidates.append((number, release["tag_name"]))
+            if not release["draft"] and not release["prerelease"] and number:
+                releases.append((number, release["tag_name"]))
+    return releases
+
+
+def previous_release(repository, tag, commit):
+    candidates = [(number, name) for number, name in published_releases(repository) if number < version(tag)]
     for _, previous in sorted(candidates, reverse=True):
         ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", previous, commit], check=False)
         if ancestor.returncode == 0:
@@ -25,6 +30,22 @@ def previous_release(repository, tag, commit):
         if ancestor.returncode != 1:
             ancestor.check_returncode()
     return None
+
+
+def current_native_release(repository, tag, commit):
+    master = json.loads(subprocess.check_output(["gh", "api", f"repos/{repository}/git/ref/heads/master"], text=True))
+    head = master["object"]["sha"]
+    if head != commit:
+        # A docs-only push can arrive while this app builds. The checkout may
+        # predate it; fetch the exact head we are checking, without moving HEAD.
+        subprocess.run(["git", "fetch", "--no-tags", "origin", head], check=True)
+        ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", commit, head], check=False)
+        if ancestor.returncode not in (0, 1):
+            ancestor.check_returncode()
+        if ancestor.returncode == 1 or native_changed(commit, head):
+            return False
+    # An older build with identical inputs must not displace a newer release.
+    return not any(number > version(tag) for number, _ in published_releases(repository))
 
 
 def render_notes(repository, tag, previous, changes):
@@ -41,6 +62,7 @@ def render_notes(repository, tag, previous, changes):
         tag=tag,
         downloads=f"{release_url}/download/{tag}/xenogears-ex-machina-{tag}-",
         guide=f"https://github.com/{repository}/blob/{tag}/docs/releases.md",
+        manual=f"https://github.com/{repository}/blob/{tag}/MANUAL.md",
         browser=f"https://{owner}.github.io/{project}/",
         changelog=changelog,
     )
@@ -109,8 +131,7 @@ def main():
         subprocess.run(["gh", "release", "create", args.tag, "--repo", args.repository, "--verify-tag", "--draft",
                         "--title", args.tag, "--notes-file", str(notes)], check=True)
     subprocess.run(["gh", "release", "upload", args.tag, "--repo", args.repository, "--clobber", *map(str, files)], check=True)
-    master = json.loads(subprocess.check_output(["gh", "api", f"repos/{args.repository}/git/ref/heads/master"], text=True))
-    latest = "true" if master["object"]["sha"] == args.commit else "false"
+    latest = str(current_native_release(args.repository, args.tag, args.commit)).lower()
     subprocess.run(["gh", "release", "edit", args.tag, "--repo", args.repository, "--draft=false", f"--latest={latest}",
                     "--notes-file", str(notes)], check=True)
 
