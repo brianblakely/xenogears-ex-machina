@@ -19,8 +19,8 @@ adventures.
 | Modern visuals | **Complete** | Modern, HD-2D-inspired and PS1 looks, true widescreen, high resolution and a VR virtual screen. |
 | Controls for every device | **Complete** | Keyboard, mouse, gamepad, touch, VR controllers and hand tracking. |
 | Conveniences, VR views and headphone audio | **Complete** | Save states, rewind, fast-forward, memory card import, gameplay options, the VR diorama, first-person view, clearer movies and Binaural sound. |
-| Complete game | **Next** | Both-disc story, optional content and minigames. |
-| Playable release | **v0.5** | Portable native downloads and browser play; [qualified platforms and limits](docs/releases.md). Full-story progression remains unverified. |
+| Complete game | **Complete** | Both-disc story, optional content and minigames. |
+| Playable release | **Complete** | [v1.0](https://github.com/brianblakely/xenogears-ex-machina/releases/tag/v1.0): portable native downloads and browser play; [supported platforms and setup](docs/releases.md). |
 | Mods and creation tools | Planned | Mod management, gameplay extensions, desktop editors and AI-assisted authoring. |
 
 [Player's manual](MANUAL.md) · [Full roadmap](plan.md) · [Runtime and feature guide](docs/runtime.md)
@@ -138,13 +138,13 @@ The project's authored source is available under the [MIT License](LICENSE).
 
 ## Follow the project or get involved
 
-Download [v0.5](https://github.com/brianblakely/xenogears-ex-machina/releases/tag/v0.5)
+Download [v1.0](https://github.com/brianblakely/xenogears-ex-machina/releases/tag/v1.0)
 or [play in your browser](https://brianblakely.github.io/xenogears-ex-machina/).
 For desktop installation, place the executable beside your disc images in a
 writable folder. First launch creates `discs/`, `cards/` and `saves/`.
 See the [installation and qualification guide](docs/releases.md) for platform
 requirements, upgrades and the emulator-based device matrix. Follow the
-[roadmap](plan.md) for full-game progression testing and creation tools.
+[roadmap](plan.md) for upcoming mod support and creation tools.
 
 Developers can start with the [development guide](docs/development.md),
 [runtime guide](docs/runtime.md), [porting handbook](docs/later-phases.md) and
