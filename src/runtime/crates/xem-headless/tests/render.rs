@@ -553,7 +553,7 @@ fn the_scene_after_field_198s_narration_replays_each_buffers_own_frame_from_its_
         if n < 4000 {
             continue;
         }
-        assert_eq!(scene, "battle");
+        assert_eq!(scene, "battle:64");
         let area = DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height };
         let log = view.renderer().frame_log(area).expect("the shown buffer's log");
         assert!(log.ops.len() < 5000, "frame {n}: the log of the buffer at y {} holds {} operations", area.y, log.ops.len());
