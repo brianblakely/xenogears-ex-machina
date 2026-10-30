@@ -1240,6 +1240,56 @@ fn map_243s_memories_show_as_the_movie_and_their_clips_end_without_vram_beside_t
     assert!(steps >= 6, "{steps} steps into a clip, each showing a frame drawn since");
 }
 
+/// Lahan burning (field 2, after the new game's narration): its heat haze
+/// takes tiles of the screen as the game draws over it, and the page its
+/// textures share holds the screen, so the pixels the game draws come to the
+/// renderer as about 250 writes a frame. A write no draw of its render pass
+/// sampled leaves the pass whole: the VRAM picture and the replay each take
+/// a handful of passes a frame, where they took a pass for each write, for
+/// each of which a phone's tiled GPU may load and store all its targets (the
+/// frame rate fell and the app closed there under Modern, HD-2D and Custom:
+/// issue #63).
+#[test]
+fn lahan_burning_draws_each_frame_in_a_few_render_passes() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd": "enter_field", "map": 2}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    // The passes are the same at any scale.
+    let graphics = Graphics { internal_scale: 1, ..Graphics::default() };
+    let (mut drawn, mut writes, mut most) = (0, 0, (0, 0));
+    for n in 0..600u32 {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Mobile, (2340, 1080), view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        let trace = device.take_trace();
+        let written = trace.ops.iter().filter(|op| matches!(op, xem_gpu::TraceOp::Write { upload: false, .. })).count();
+        if written > 100 {
+            (drawn, writes) = (drawn + 1, writes + written);
+        }
+        view.push(trace);
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        assert_eq!(scene, "field:2");
+        most = (most.0.max(view.stats().passes), most.1.max(view.frame().passes()));
+    }
+    eprintln!("{drawn} frames drew {writes} writes; at most {} passes in VRAM's picture, {} in a replay", most.0, most.1);
+    assert!(drawn > 100 && writes > 200 * drawn, "the haze's frames write as they draw");
+    assert!(most.0 <= 20 && most.1 <= 20, "{most:?} passes");
+}
+
 /// Starts the debug battle selector's (`battle_scene_select_values`) first
 /// event file's formation 15: the desert, its party in their Gears.
 fn start_desert_battle(session: &mut Session<NativeModule>) {

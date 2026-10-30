@@ -161,6 +161,8 @@ pub struct DrawStats {
     pub culled_back_faces: u32,
     /// Faces the game culled that this draw showed.
     pub revealed: u32,
+    /// The render passes its draws took ([`passes`]).
+    pub passes: u32,
 }
 
 /// Where a draw shows the faces the game culled against its screen.
@@ -645,6 +647,12 @@ pub(crate) struct Builder<'a> {
     /// Where the draws of [`Builder::primitive`], fills and shown uploads go
     /// (a diorama's pane takes the interface drawn as the screen is).
     pub(crate) space: Space,
+    /// Where the draws of the current pass begin in `commands` (after the
+    /// copy, snapshot or upload they must follow), the native VRAM they
+    /// sample ([`Builder::upload`]), and the vertices last noted.
+    pass_start: usize,
+    sampled: Sampled,
+    noted: std::ops::Range<u32>,
 }
 
 /// A builder's buffers kept between builds: a frame's vertices run to
@@ -654,6 +662,82 @@ pub(crate) struct Storage {
     vertices: Vec<Vertex>,
     commands: Vec<Command>,
     staging: Vec<u8>,
+}
+
+/// The native VRAM the draws of a pass may sample, to the pixel: the game's
+/// pixels drawn just below the tiles of the screen its heat haze takes
+/// (field 2) meet them at blocks of any size. Past [`SAMPLED_LIMIT`]
+/// rectangles, all of VRAM.
+#[derive(Default)]
+struct Sampled {
+    /// Columns and rows, inclusive, within VRAM.
+    rects: Vec<[i32; 4]>,
+    all: bool,
+}
+
+const SAMPLED_LIMIT: usize = 1024;
+
+impl Sampled {
+    /// Notes VRAM columns `x0..=x1` (from 0, below twice its width; they
+    /// wrap at its width as the GPU's addresses do) of rows `y0..=y1` sampled.
+    fn note(&mut self, (x0, x1): (i32, i32), (y0, y1): (i32, i32)) {
+        let width = VRAM_WIDTH as i32;
+        let (x0, x1) = if x0 >= width { (x0 - width, x1 - width) } else { (x0, x1) };
+        if x1 - x0 >= width - 1 {
+            self.add([0, width - 1, y0, y1]);
+        } else if x1 >= width {
+            self.add([x0, width - 1, y0, y1]);
+            self.add([0, x1 - width, y0, y1]);
+        } else {
+            self.add([x0, x1, y0, y1]);
+        }
+    }
+
+    fn add(&mut self, rect: [i32; 4]) {
+        let within = |a: &[i32; 4]| a[0] <= rect[0] && rect[1] <= a[1] && a[2] <= rect[2] && rect[3] <= a[3];
+        if self.all || self.rects.iter().rev().take(8).any(within) {
+            return;
+        }
+        if self.rects.len() == SAMPLED_LIMIT {
+            self.all = true;
+            self.rects.clear();
+        } else {
+            self.rects.push(rect);
+        }
+    }
+
+    fn note_rect(&mut self, rect: &VramRect) {
+        let (x, y) = (i32::from(rect.x), i32::from(rect.y));
+        self.note((x, x + i32::from(rect.width).max(1) - 1), (y, y + i32::from(rect.height).max(1) - 1));
+    }
+
+    /// Whether any of `rect` was noted.
+    fn meets(&self, rect: &VramRect) -> bool {
+        if rect.width == 0 || rect.height == 0 {
+            return false;
+        }
+        let (x0, y0) = (i32::from(rect.x), i32::from(rect.y));
+        let (x1, y1) = (x0 + i32::from(rect.width) - 1, y0 + i32::from(rect.height) - 1);
+        self.all || self.rects.iter().any(|a| a[0] <= x1 && x0 <= a[1] && a[2] <= y1 && y0 <= a[3])
+    }
+
+    fn clear(&mut self) {
+        self.rects.clear();
+        self.all = false;
+    }
+}
+
+/// The render passes `commands` take: their runs of draws, each between
+/// uploads, copies or snapshots.
+pub(crate) fn passes(commands: &[Command]) -> u32 {
+    let mut passes = 0;
+    let mut drawing = false;
+    for command in commands {
+        let draw = matches!(command, Command::Draw { .. });
+        passes += u32::from(draw && !drawing);
+        drawing = draw;
+    }
+    passes
 }
 
 /// Row quads one build may draw the interface with (about 24 MB of vertices).
@@ -793,6 +877,9 @@ impl<'a> Builder<'a> {
             vram: None,
             clears: Vec::new(),
             space: Space::Screen,
+            pass_start: 0,
+            sampled: Sampled::default(),
+            noted: 0..0,
         }
     }
 
@@ -898,6 +985,13 @@ impl<'a> Builder<'a> {
         self.sky > 0.0 && p.vertices[..p.vertex_count()].iter().all(|v| v.view.is_some_and(|[_, _, z]| z >= self.sky))
     }
 
+    /// Pixels into the native VRAM the draws sample, and with `show` into the
+    /// picture where they lie. An upload no draw of the current pass
+    /// sampled goes before that pass's draws, which then see VRAM as before
+    /// and the pass goes on: a tiled GPU (a phone's) may load and store all
+    /// of its targets for each pass, and the game's drawn pixels that a later
+    /// command may sample come as hundreds of writes a frame where the
+    /// page they share holds the screen (Lahan burning, field 2).
     pub(crate) fn upload(&mut self, rect: VramRect, pixels: &[u16], show: bool) {
         let row = u32::from(rect.width) * 2;
         let padded = row.next_multiple_of(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT);
@@ -906,12 +1000,21 @@ impl<'a> Builder<'a> {
             self.staging.extend_from_slice(bytemuck::cast_slice(line));
             self.staging.resize(self.staging.len() + (padded - row) as usize, 0);
         }
-        self.commands.push(Command::Upload { offset, rect });
+        let upload = Command::Upload { offset, rect };
+        if self.sampled.meets(&rect) {
+            self.commands.push(upload);
+            self.end_pass();
+        } else {
+            self.commands.insert(self.pass_start, upload);
+            self.pass_start += 1;
+        }
         if show {
             let start = self.vertices.len() as u32;
             self.rect_vertices(rect, 0, true);
             let key = PipelineKey { fragment: Fragment::Rect, blend: 0, depth: DepthMode::Clear, space: self.space };
             self.push_draw(key, None, start);
+            // (Drawn from the native pixels where it lies: draw.wgsl `fs_rect`.)
+            self.sampled.note_rect(&rect);
         }
     }
 
@@ -924,13 +1027,85 @@ impl<'a> Builder<'a> {
         }
         self.commands.push(Command::Copy { source, destination, width, height,
             local: local.map(|area| if width == area.width { self.spill } else { 0 }) });
+        self.end_pass();
     }
 
     fn start_feedback(&mut self) {
         if !self.feedback_started {
             self.commands.push(Command::Snapshot);
             self.feedback_started = true;
+            self.end_pass();
         }
+    }
+
+    /// The draws after the last command begin another pass.
+    fn end_pass(&mut self) {
+        self.pass_start = self.commands.len();
+        self.sampled.clear();
+        self.noted = 0..0;
+    }
+
+    /// Notes the native VRAM the draws of `vertices` may sample (draw.wgsl
+    /// `texel`, `sample_capture`): a textured primitive's page at its texel
+    /// coordinates, its CLUT's row, and the screen the game took when drawn
+    /// from it. A polygon's coordinates are clamped to its own (CLAMP); a
+    /// rectangle's run from its corners' (with the texel beyond for linear
+    /// filtering and for a mirrored sprite part), wrapping on the page; a
+    /// texture window may put an axis's anywhere on it. Fills sample
+    /// nothing, and a shown upload its own rectangle ([`Builder::upload`]).
+    fn note_samples(&mut self, key: PipelineKey, vertices: &std::ops::Range<u32>) {
+        if key.fragment == Fragment::Rect || *vertices == self.noted {
+            return;
+        }
+        self.noted = vertices.clone();
+        let range = vertices.start as usize..vertices.end as usize;
+        let mut sampled = std::mem::take(&mut self.sampled);
+        // (A primitive's vertices share their mode and limits.)
+        for group in self.vertices[range].chunk_by(|a, b| a.mode == b.mode && a.limits == b.limits) {
+            let [page, clut, window, flags] = group[0].mode;
+            if flags & FLAG_TEXTURED == 0 {
+                continue;
+            }
+            let texels = |lo: i32, hi: i32, window: u32| -> [Option<(i32, i32)>; 2] {
+                if window != 0 || hi - lo >= 255 {
+                    return [Some((0, 255)), None];
+                }
+                let (a, b) = (lo.rem_euclid(256), hi.rem_euclid(256));
+                if a <= b { [Some((a, b)), None] } else { [Some((a, 255)), Some((0, b))] }
+            };
+            let (u, v) = if flags & FLAG_CLAMP != 0 {
+                let limits = group[0].limits as i32;
+                ((limits & 255, limits >> 16 & 255), (limits >> 8 & 255, limits >> 24 & 255))
+            } else {
+                let (lo, hi) = group.iter().fold(([f32::MAX; 2], [f32::MIN; 2]), |(lo, hi), v| {
+                    ([lo[0].min(v.uv[0]), lo[1].min(v.uv[1])], [hi[0].max(v.uv[0]), hi[1].max(v.uv[1])])
+                });
+                let linear = i32::from(flags & FLAG_LINEAR != 0);
+                let mirrored = i32::from(flags >> CLASS_SHIFT & AUX_CLASS_MASK == AUX_SPRITE && flags & FLAG_ORIGINAL == 0);
+                let axis = |lo: f32, hi: f32| ((lo + 0.001).floor() as i32 - linear, (hi + 0.001).floor() as i32 + linear + mirrored);
+                (axis(lo[0], hi[0]), axis(lo[1], hi[1]))
+            };
+            let depth = page >> 7 & 3;
+            let (x, y) = ((page & 15) as i32 * 64, (page >> 4 & 1) as i32 * 256);
+            let shift = match depth {
+                0 => 2,
+                1 => 1,
+                _ => 0,
+            };
+            for (u0, u1) in texels(u.0, u.1, window & 31).into_iter().flatten() {
+                for (v0, v1) in texels(v.0, v.1, window >> 5 & 31).into_iter().flatten() {
+                    sampled.note((x + (u0 >> shift), x + (u1 >> shift)), (y + v0, y + v1));
+                }
+            }
+            if depth < 2 {
+                let (clut_x, clut_y) = ((clut & 63) as i32 * 16, (clut >> 6 & 511) as i32);
+                sampled.note((clut_x, clut_x + if depth == 0 { 15 } else { 255 }), (clut_y, clut_y));
+            }
+            if let (true, Some((rect, _))) = (flags & FLAG_CAPTURE != 0, self.capture) {
+                sampled.note_rect(&rect);
+            }
+        }
+        self.sampled = sampled;
     }
 
     fn feedback_source(&self, p: &Primitive) -> Option<[f32; 2]> {
@@ -1242,6 +1417,7 @@ impl<'a> Builder<'a> {
         if vertices.is_empty() {
             return;
         }
+        self.note_samples(key, &vertices);
         if let Some(Command::Draw { key: last_key, scissor: last_scissor, vertices: last }) = self.commands.last_mut()
             && *last_key == key
             && *last_scissor == scissor
@@ -2624,7 +2800,7 @@ impl Ps1Renderer {
             ..Zeroable::zeroed()
         };
         self.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
-        self.stats = builder.stats;
+        self.stats = DrawStats { passes: passes(&builder.commands), ..builder.stats };
         self.vertices.write(&self.device, &self.queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(&self.device, &self.queue, &builder.staging);
         let depth_view = self.depth.create_view(&Default::default());

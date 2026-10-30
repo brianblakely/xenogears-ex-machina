@@ -182,8 +182,11 @@ struct Live {
     /// The touch deck's layout was logged.
     deck_logged: bool,
     log_next_frame: bool,
-    /// Start of the current frame-rate span: (time, rendered frames, game vblanks).
+    /// Start of the current frame-rate span: (time, rendered frames, game
+    /// vblanks), and the most render passes a frame's game picture took in
+    /// it (`View::render_passes`).
     fps: (Instant, u64, u64),
+    passes: u32,
 }
 
 impl Live {
@@ -203,6 +206,7 @@ impl Live {
     fn restart_fps(&mut self) {
         let vblanks = self.game.as_mut().map_or(0, Game::vblanks);
         self.fps = (Instant::now(), self.frames, vblanks);
+        self.passes = 0;
     }
 }
 
@@ -431,6 +435,7 @@ impl Host {
             deck_logged: false,
             log_next_frame: true,
             fps: (Instant::now(), 0, 0),
+            passes: 0,
         }));
         // SAFETY: a plain query; the watch is removed in Drop, before `live`
         // is released.
@@ -747,6 +752,7 @@ impl Host {
         self.view.render(&self.gpu, &output, time.as_secs_f32())?;
         self.gpu.queue.present(frame);
         live.frames += 1;
+        live.passes = live.passes.max(self.view.render_passes());
         if live.log_next_frame || live.frames.is_multiple_of(LOG_EVERY) {
             // movie=1: the frame showed a movie frame rebuilt from what the
             // MDEC decoded (the Enhanced movies setting).
@@ -766,7 +772,7 @@ impl Host {
                 },
                 None => String::new(),
             };
-            log(&format!("fps rendered={rendered:.1}{game} over {seconds:.1}s"));
+            log(&format!("fps rendered={rendered:.1}{game} over {seconds:.1}s passes={}", live.passes));
             live.restart_fps();
         }
         Ok(())

@@ -30,8 +30,8 @@
 use super::diorama::Layers;
 use super::{
     AUX_FORMAT, Builder, COLOR_FORMAT, Capture, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
-    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset,
-    texture,
+    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, passes, picture_usage, samples,
+    scene_offset, texture,
 };
 use glam::{DMat3, DQuat, DVec3};
 use std::borrow::Cow;
@@ -152,9 +152,11 @@ pub struct FrameRenderer {
     prior: (Moved, Arc<[Placement]>),
     arrived: f64,
     time: f64,
-    /// Primitives the last replay drew (for the effects), when it replayed.
+    /// Primitives the last replay drew (for the effects), when it replayed,
+    /// and the render passes it and its interface took ([`super::passes`]).
     replayed: Vec<TraceOp>,
     replaying: bool,
+    passes: u32,
     /// The last replay looked from within the scene: its depth is reversed
     /// ([`super::DepthMode::Nearer`]), for the interface drawn over it.
     reversed: bool,
@@ -352,6 +354,7 @@ impl FrameRenderer {
             time: 0.0,
             replayed: Vec::new(),
             replaying: false,
+            passes: 0,
             reversed: false,
             snapshot: None,
             vram: ReplayVram::new(device, "frame replay vram"),
@@ -454,6 +457,12 @@ impl FrameRenderer {
         self.drawn
     }
 
+    /// The render passes the last replay and its interface took (none
+    /// without a replay).
+    pub fn passes(&self) -> u32 {
+        self.passes
+    }
+
     /// The native VRAM when the newest frame began (its log's start).
     pub(crate) fn snapshot(&self) -> Option<&Arc<Vec<u16>>> {
         self.snapshot.as_ref()
@@ -494,6 +503,7 @@ impl FrameRenderer {
         self.scale = scale;
         self.side = side;
         self.replaying = replay;
+        self.passes = 0;
         self.overlay.clear();
         self.reversed = false;
         if !replay {
@@ -676,6 +686,7 @@ impl FrameRenderer {
             &target,
             &builder.commands,
         );
+        self.passes = passes(&builder.commands);
         builder.store(&mut self.storage);
         if extra {
             for (from, to) in [(&color, &self.color), (&aux, &self.aux)] {
@@ -723,6 +734,7 @@ impl FrameRenderer {
         let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
         let staging = Some((self.overlay_staging.buffer(), &self.vram.texture));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
+        self.passes += passes(&builder.commands);
         builder.store(&mut self.overlay_storage);
     }
 
