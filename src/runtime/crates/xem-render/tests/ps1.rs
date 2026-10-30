@@ -2209,6 +2209,55 @@ fn a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_ta
     }
 }
 
+/// The world map's menu: it saves the screen (a copy to 704, 256) and
+/// draws the saved one, takes another screen into its other buffer (the
+/// dimmed one), copies the saved one over that buffer for its menu, and
+/// draws the saved one again (its fade back in). What draws the saved
+/// screen shows the picture presented when it was saved, whether the frame
+/// that drew it is replayed after the second screen was taken or drawn
+/// after it, replayed (wider framing) or as the scaled VRAM holds it: not
+/// the native screen.
+#[test]
+fn a_screen_taken_before_another_draws_as_its_picture() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    for framing in [Framing { side: 40, pull_back: 1000.0, ..Default::default() }, Framing::default()] {
+        let traces = traced(projected_scene);
+        let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+        let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+        let pieces = DisplayArea { y: 256, ..area };
+        for y in [0, 256] {
+            renderer.set_display(xem_gpu::VramRect { x: 0, y, width: 320, height: 240 });
+        }
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut shown = |renderer: &mut Ps1Renderer, commands: &dyn Fn(&mut xem_gpu::Gpu), area: DisplayArea| {
+            let trace = DEVICE.with(|device| {
+                let mut device = device.borrow_mut();
+                commands(&mut device);
+                device.take_trace()
+            });
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, &trace);
+            frame.prepare(&gpu.device, &gpu.queue, &mut encoder, renderer, area, framing);
+            frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, renderer, None);
+            gpu.queue.submit([encoder.finish()]);
+            (read_rgba8(&gpu.device, &gpu.queue, frame.color()), frame.color().clone())
+        };
+        let picture = |texture| Some(xem_render::ps1::PresentedPicture { texture, side: framing.side, scale: 2 });
+        let (_, presented) = shown(&mut renderer, &|_| {}, area);
+        renderer.set_presented(picture(presented));
+        let (expected, presented) = shown(&mut renderer, &|device| {
+            device.write_gp0_words(&[0x8000_0000, 0, xy(704, 256), 240 << 16 | 320]);
+            saved_screen_pieces(device);
+        }, pieces);
+        renderer.set_presented(picture(presented));
+        let (replayed, _) = shown(&mut renderer, &|device| device.write_gp0_words(&[0x8000_0000, xy(0, 256), 0, 240 << 16 | 320]), pieces);
+        assert!(replayed == expected, "side {}: the frame drawn before the second screen was taken", framing.side);
+        shown(&mut renderer, &|device| device.write_gp0_words(&[0x8000_0000, xy(704, 256), 0, 240 << 16 | 320]), area);
+        let (drawn, _) = shown(&mut renderer, &saved_screen_pieces, pieces);
+        assert!(drawn == expected, "side {}: drawn after the second screen was taken and gone", framing.side);
+    }
+}
+
 /// A state loaded whose VRAM holds a screen the game took as it took it (a
 /// rewind's step back into the field's entry) shows the picture presented
 /// when it was taken, as the entry did, not the native screen (noise after

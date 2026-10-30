@@ -898,6 +898,7 @@ impl XemApp {
             let context = self.session.as_mut().map_or_else(Default::default, |s| xem_settings::player::Context {
                 attack: s.runtime.combo_input(),
                 field: s.runtime.field_controls(),
+                world_map: s.runtime.services().mode == Some(3),
                 assignment: s.runtime.button_assignment(),
                 ui: s.runtime.context(),
                 paused: s.runtime.game_paused(),

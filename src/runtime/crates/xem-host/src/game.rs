@@ -243,13 +243,14 @@ impl Game {
 
     /// What the game's state says of the player's buttons: whether the
     /// battle's attack inputs take them (the keyboard's combo layout
-    /// applies), and in a field whether the player walks and Select shows
-    /// the map's picture (first-person inspection's toggle and the buttons
-    /// it holds back).
+    /// applies), in a field whether the player walks and Select shows the
+    /// map's picture (first-person inspection's toggle and the buttons it
+    /// holds back), and whether the world map runs.
     pub fn pad_context(&mut self) -> crate::PadContext {
         crate::PadContext {
             attack: self.session.runtime.combo_input(),
             field: self.session.runtime.field_controls(),
+            world_map: self.session.runtime.services().mode == Some(3),
             assignment: self.session.runtime.button_assignment(),
             ui: self.session.runtime.context(),
             paused: self.session.runtime.game_paused(),

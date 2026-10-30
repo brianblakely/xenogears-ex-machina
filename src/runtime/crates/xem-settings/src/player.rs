@@ -5,13 +5,13 @@
 //! here knows SDL, the DOM or a headset runtime.
 //!
 //! Some inputs mean a short sequence of presses the game reads as it reads
-//! any player's: the Menu action closes the field menu it opened (Cancel
-//! out of each command's screen it is in, then once more at the menu's
-//! commands), a click or a tap on the paused game resumes it (Start), and
-//! the mouse wheel steps a menu's or a choice's cursor. Such presses
-//! ([`Pulse`]) are held and released for whole game frames (the menus act
-//! on a button's press), counted as the host reports the frames run
-//! ([`PlayerInput::frames_ran`]).
+//! any player's: the Menu action closes the menu it opened in a field or on
+//! the world map (Cancel out of each command's screen it is in, then once
+//! more at the menu's commands), a click or a tap on the paused game
+//! resumes it (Start), and the mouse wheel steps a menu's or a choice's
+//! cursor. Such presses ([`Pulse`]) are held and released for whole game
+//! frames (the menus act on a button's press), counted as the host reports
+//! the frames run ([`PlayerInput::frames_ran`]).
 use crate::bindings::{GameAction, GameBindings, Held, Mouse};
 use std::collections::{BTreeSet, VecDeque};
 use xem_core::context::Context as Ui;
@@ -23,6 +23,9 @@ pub struct Context {
     pub attack: bool,
     /// The field's: first-person inspection's toggle and what it holds back.
     pub field: xem_core::FieldControls,
+    /// The world map runs (mode 3): a menu there is the one its menu
+    /// button opened, as a field's is.
+    pub world_map: bool,
     /// The game's button assignment, which actions resolve through.
     pub assignment: xem_core::action::Assignment,
     /// The interface the input reaches (`xem_core::context`).
@@ -33,7 +36,7 @@ pub struct Context {
 
 impl Default for Context {
     fn default() -> Self {
-        Self { attack: false, field: Default::default(), assignment: Default::default(), ui: Ui::None, paused: false }
+        Self { attack: false, field: Default::default(), world_map: false, assignment: Default::default(), ui: Ui::None, paused: false }
     }
 }
 
@@ -44,7 +47,7 @@ const PULSE_GAP: u32 = 2;
 /// before the entry is given up: three, or one on the battle's command ring,
 /// where a refused slot's second press flips the ring to its other page.
 const STALLS: u32 = 3;
-/// The most Cancel presses closing the field menu takes (its deepest screen
+/// The most Cancel presses closing the map's menu takes (its deepest screen
 /// is a few levels down; each press backs out one).
 const MENU_CLOSE_PRESSES: u32 = 8;
 /// Game frames a command's screen takes to go back after a Cancel backs out
@@ -84,7 +87,7 @@ pub struct PlayerInput {
     /// Actions a touch screen's controls hold.
     pub touch: BTreeSet<GameAction>,
     pulses: VecDeque<Pulse>,
-    /// Cancel presses left to close the field menu, and game frames until
+    /// Cancel presses left to close the map's menu, and game frames until
     /// the next may back out of a command's screen.
     closing: u32,
     settle: u32,
@@ -385,18 +388,19 @@ impl PlayerInput {
         {
             self.attack_pointed = false;
         }
-        // Menu toggles the field menu: pressed while it runs, it backs out
-        // of each command's screen with Cancel, then presses Cancel at the
+        // Menu toggles the menu it opens in a field or on the world map (not
+        // one run as its own mode): pressed while it runs, it backs out of
+        // each command's screen with Cancel, then presses Cancel at the
         // menu's commands, which closes it: one Cancel each, as a player's
         // (the menu sounds each Cancel it reads, closing too).
-        let field_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && context.field.field;
+        let map_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && (context.field.field || context.world_map);
         let menu = actions.contains(&GameAction::Menu);
-        if field_menu && menu && !self.menu_held {
+        if map_menu && menu && !self.menu_held {
             self.closing = MENU_CLOSE_PRESSES;
             self.settle = 0;
         }
         self.menu_held = menu;
-        if !field_menu {
+        if !map_menu {
             self.closing = 0;
         } else {
             actions.remove(&GameAction::Menu);
@@ -743,6 +747,28 @@ mod tests {
         input.key(&bindings, "Tab", true);
         let shop = field(Ui::Menu { screen: 4, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false });
         assert_eq!(run(&mut input, &bindings, shop, 1), [button::SQUARE]);
+    }
+
+    /// The world map's menu is the one Menu opened there, as a field's is;
+    /// a menu run as its own mode (Settings' debug start of it) keeps
+    /// Menu's button.
+    #[test]
+    fn menu_closes_the_world_maps_menu_but_not_one_run_as_its_own_mode() {
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let world_map = |ui| Context { world_map: true, ui, ..Context::default() };
+        let walking = Ui::WorldMap { movement: 1, scene: 1 };
+        let commands = Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false };
+        input.key(&bindings, "Tab", true);
+        assert_eq!(run(&mut input, &bindings, world_map(walking), 1), [button::SQUARE], "Tab opens the menu");
+        input.key(&bindings, "Tab", false);
+        run(&mut input, &bindings, world_map(commands), 1);
+        input.key(&bindings, "Tab", true);
+        assert_eq!(run(&mut input, &bindings, world_map(commands), 2), [button::CIRCLE, button::CIRCLE], "one Cancel at its commands");
+        input.key(&bindings, "Tab", false);
+        run(&mut input, &bindings, world_map(walking), 4);
+        input.key(&bindings, "Tab", true);
+        assert_eq!(run(&mut input, &bindings, Context { ui: commands, ..Context::default() }, 1), [button::SQUARE], "its own mode's");
     }
 
     #[test]

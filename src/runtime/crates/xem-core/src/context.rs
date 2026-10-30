@@ -28,10 +28,11 @@ const WINDOW_AGE: u32 = 0x410;
 /// change, 2 load, 3 name entry, 4 shop, 5 Gear shop, 6 disc change) and
 /// the state block (`menu_state_current`: the top cursor +0x336, a choice
 /// window's cursor +0x338 and count +0x33A, bytes; its `MenuCard` +0x32C,
-/// `MenuFlags` +0x33C and `MenuImages` +0x350). A field's menu runs while
-/// `menu_state_debug_start` is 0 (`field_run_menu` clears it for
-/// `mode_run_menu`, which sets it again on leaving): before, the block is
-/// the last menu's, after, it is freed.
+/// `MenuFlags` +0x33C and `MenuImages` +0x350). A field's or the world
+/// map's menu runs while `menu_state_debug_start` is 0 (`field_run_menu`
+/// and the world map's loop clear it for `mode_run_menu`, which sets it
+/// again on leaving): before, the block is the last menu's, after, it is
+/// freed.
 const MENU_STATE_SCREEN: u32 = 0x8005_9460;
 const MENU_STATE_CURRENT: u32 = 0x8006_25A0;
 const MENU_STATE_DEBUG_START: u32 = 0x8005_9178;
@@ -50,6 +51,10 @@ const BATTLE_FRAME_MODE: u32 = 0x800C_3E4C;
 /// Gears, 4/5/7 vehicles) and scene (`worldmap_mode_index`, 8+ scripted).
 const WORLDMAP_MOVEMENT_MODE: u32 = 0x8009_BE10;
 const WORLDMAP_MODE_INDEX: u32 = 0x8009_C5A8;
+/// `worldmap_menu_requested`: set when the menu button is pressed, cleared
+/// once the map is back after the menu (on foot it runs the field's menu
+/// from its own loop, `menu_state_debug_start` 0 meanwhile).
+const WORLDMAP_MENU_REQUESTED: u32 = 0x8009_D804;
 /// Battling's state (`arena_mode_state`: 0 menu, 1 bout, 4 replay, 5 demo
 /// or exit, 6 winner, 7 tutorial, 8 result).
 const ARENA_MODE_STATE: u32 = 0x8009_2790;
@@ -92,7 +97,7 @@ pub enum Context {
     /// window, the speaker's portrait or the text: its battle window 0,
     /// `scriptPortraitShown`, `messageShown`).
     Battle { page: u8, attack: bool, ap: u8, list: bool, targeting: bool, message: bool },
-    /// The world map: movement mode and scene.
+    /// The world map: movement mode and scene (its menu is a `Menu`).
     WorldMap { movement: u32, scene: u32 },
     /// Battling (the arena): its state.
     Arena { state: u32 },
@@ -125,10 +130,7 @@ pub fn read_context(memory: &dyn GameMemory, mode: Option<u32>) -> Context {
     let context = match mode {
         Some(1) => field(memory),
         Some(2) => battle(memory),
-        Some(3) => Some(Context::WorldMap {
-            movement: u32_at(memory, WORLDMAP_MOVEMENT_MODE).unwrap_or(0),
-            scene: u32_at(memory, WORLDMAP_MODE_INDEX).unwrap_or(0),
-        }),
+        Some(3) => world_map(memory),
         Some(4) => Some(Context::Arena { state: u32_at(memory, ARENA_MODE_STATE).unwrap_or(0) }),
         Some(5) => menu(memory),
         _ => None,
@@ -182,14 +184,29 @@ fn menu(memory: &dyn GameMemory) -> Option<Context> {
     })
 }
 
+/// The menu a field or the world map runs from its own loop once requested:
+/// it loads for some frames after the request, and the map fades back in
+/// after it; its state block is read while it runs.
+fn map_menu(memory: &dyn GameMemory) -> Option<Context> {
+    let running = u8_at(memory, MENU_STATE_DEBUG_START)? == 0;
+    Some(running.then(|| menu(memory)).flatten().unwrap_or(Context::Menu {
+        screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: false, switch: false, quantities: false,
+    }))
+}
+
+/// The world map, or the menu its menu button opened on foot (in a vehicle
+/// the button leaves the map instead).
+fn world_map(memory: &dyn GameMemory) -> Option<Context> {
+    let movement = u32_at(memory, WORLDMAP_MOVEMENT_MODE).unwrap_or(0);
+    if (1..4).contains(&movement) && u32_at(memory, WORLDMAP_MENU_REQUESTED).is_some_and(|requested| requested != 0) {
+        return map_menu(memory);
+    }
+    Some(Context::WorldMap { movement, scene: u32_at(memory, WORLDMAP_MODE_INDEX).unwrap_or(0) })
+}
+
 fn field(memory: &dyn GameMemory) -> Option<Context> {
     if u8_at(memory, FIELD_MENU_REQUEST)? != 0xFF {
-        // The menu loads for some frames after the request, and the field
-        // fades back in after it: its state block is read while it runs.
-        let running = u8_at(memory, MENU_STATE_DEBUG_START)? == 0;
-        return Some(running.then(|| menu(memory)).flatten().unwrap_or(Context::Menu {
-            screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: false, switch: false, quantities: false,
-        }));
+        return map_menu(memory);
     }
     if u16_at(memory, FIELD_OPEN_WINDOWS)? != 0 {
         let mut choice = None;
@@ -301,5 +318,37 @@ mod tests {
             ram.write(BATTLE_FRAME_MODE, &[2]).unwrap();
             ram.write(ui + at, &[0]).unwrap();
         }
+    }
+
+    /// On foot the world map's menu button runs the field's menu from the
+    /// map's loop: the context is that menu from the press until the map is
+    /// back; in a vehicle the button leaves the map instead.
+    #[test]
+    fn the_world_maps_menu_is_a_menu_from_its_request_until_the_map_is_back() {
+        let (state, flags, images) = (0x8010_0000u32, 0x8011_0000u32, 0x8012_0000u32);
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        let word = |ram: &mut Ram, address: u32, value: u32| ram.write(address, &value.to_le_bytes()).unwrap();
+        ram.write(MENU_STATE_DEBUG_START, &[1]).unwrap();
+        word(&mut ram, WORLDMAP_MOVEMENT_MODE, 1);
+        word(&mut ram, WORLDMAP_MODE_INDEX, 1);
+        let map = Context::WorldMap { movement: 1, scene: 1 };
+        assert_eq!(read_context(&ram, Some(3)), map);
+        word(&mut ram, WORLDMAP_MENU_REQUESTED, 1);
+        let between = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: false, switch: false, quantities: false };
+        assert_eq!(read_context(&ram, Some(3)), between, "the map fades out and the menu loads");
+        ram.write(MENU_STATE_DEBUG_START, &[0]).unwrap();
+        word(&mut ram, MENU_STATE_CURRENT, state);
+        word(&mut ram, state + 0x33C, flags);
+        word(&mut ram, state + 0x350, images);
+        ram.write(state + 0x336, &[3]).unwrap();
+        ram.write(flags + 0x04, &[1]).unwrap();
+        assert!(matches!(read_context(&ram, Some(3)), Context::Menu { screen: 0, cursor: 3, commands: true, .. }), "it runs");
+        ram.write(MENU_STATE_DEBUG_START, &[1]).unwrap();
+        assert_eq!(read_context(&ram, Some(3)), between, "it returned: the map fades back in");
+        word(&mut ram, WORLDMAP_MENU_REQUESTED, 0);
+        assert_eq!(read_context(&ram, Some(3)), map);
+        word(&mut ram, WORLDMAP_MENU_REQUESTED, 1);
+        word(&mut ram, WORLDMAP_MOVEMENT_MODE, 5);
+        assert_eq!(read_context(&ram, Some(3)), Context::WorldMap { movement: 5, scene: 1 }, "a vehicle's press leaves the map");
     }
 }
