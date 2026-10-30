@@ -553,10 +553,7 @@ impl View {
     /// Runs Settings requests and bound actions under the host's one game owner.
     /// Returns false while the platform file picker has paused play.
     pub fn update_app(&mut self, window: &sdl::Window, game: &mut Option<Game>) -> bool {
-        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
-        if self.app_input.pad(&self.pad) {
-            self.set_panel_visible(!self.panel_visible());
-        }
+        self.poll_gamepad();
         if !self.panel_visible() { self.ui.cancel_pointer(); }
         // With the mouse camera on, the game holds the mouse (hidden,
         // unbounded motion) while it has the input.
@@ -602,7 +599,10 @@ impl View {
                 }
             }
         }
-        self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
+        // A gamepad binding's field taking the next buttons: they are no chord.
+        if !(self.panel_visible() && self.ui.capturing_buttons()) {
+            self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
+        }
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
             // The view's own: the next frame's toggles carry it out.
@@ -646,6 +646,20 @@ impl View {
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
         }
         !self.operations.busy
+    }
+
+    /// The first gamepad as it is: Back+Start toggles the panel, and the
+    /// open panel takes the gamepad (`SettingsUi::gamepad`); what it holds
+    /// as the panel closes stays the panel's until let go.
+    fn poll_gamepad(&mut self) {
+        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
+        if self.app_input.pad(&self.pad) {
+            self.set_panel_visible(!self.panel_visible());
+        }
+        if self.panel_visible() && self.app_input.focused() {
+            self.ui.gamepad(&self.pad, &self.axes, self.frame_rate_started.elapsed());
+            if !self.panel_visible() { self.app_input.hold_pad(); }
+        }
     }
 
     fn state_notice(&mut self, action: xem_settings::AppAction, result: &Result<String,String>) {
@@ -1625,6 +1639,23 @@ mod tests {
         assert_eq!(frame(&mut view), button::CROSS, "West confirms now");
         press(&view, &[]);
         assert_eq!(frame(&mut view), 0);
+        // The open panel takes the gamepad: East closes it, and what closed
+        // it reaches the game only when pressed again.
+        view.set_panel_visible(true);
+        let poll = |view: &mut View| {
+            view.poll_gamepad();
+            view.pad_buttons(PadContext::default(), None)
+        };
+        assert_eq!(poll(&mut view), 0);
+        press(&view, &[SDL_GAMEPAD_BUTTON_EAST]);
+        assert_eq!(poll(&mut view), 0, "East closed the panel");
+        assert!(!view.panel_visible());
+        assert_eq!(poll(&mut view), 0, "and is the panel's while held");
+        press(&view, &[]);
+        assert_eq!(poll(&mut view), 0);
+        press(&view, &[SDL_GAMEPAD_BUTTON_EAST]);
+        assert_ne!(poll(&mut view), 0, "pressed again, it plays");
+        press(&view, &[]);
         view.gamepad_removed(again);
         unsafe { SDL_DetachVirtualJoystick(again) };
     }

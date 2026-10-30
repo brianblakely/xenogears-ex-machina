@@ -1120,9 +1120,12 @@ impl XemApp {
         }
         let editing = self.text_editor_focused();
         if editing { self.app_input.release_keyboard(); } else { self.app_input.key(code, down); }
+        let capturing = self.capturing_buttons();
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        if !capturing {
+            self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        }
         let captured = self.app_input.captures_key(code,bindings);
         if captured {
             let game = &settings.settings().game_bindings;
@@ -1150,10 +1153,25 @@ impl XemApp {
         if self.app_input.pad(pressed) {
             self.set_panel_visible(!self.panel_visible());
         }
+        // The open panel takes the gamepad on a flat page (`SettingsUi::gamepad`;
+        // a headset's controllers point at it instead); what it holds as the
+        // panel closes stays the panel's until let go.
+        if self.panel_visible() && self.app_input.focused() && self.xr_blend.is_none()
+            && let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel())
+        {
+            panel.gamepad(pressed, axes, std::time::Duration::from_secs_f64(now_ms() / 1000.0));
+            if self.panel_closed.replace(false) {
+                self.set_panel_visible(false);
+                self.app_input.hold_pad();
+            }
+        }
         if self.text_editor_focused() { self.app_input.release_keyboard(); }
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        // A gamepad binding's field taking the next buttons: they are no chord.
+        if !self.capturing_buttons() {
+            self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        }
         self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords), axes);
     }
 
@@ -1260,6 +1278,10 @@ impl XemApp {
 
     fn text_editor_focused(&self) -> bool {
         self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
+    }
+
+    fn capturing_buttons(&self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.capturing_buttons())
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the

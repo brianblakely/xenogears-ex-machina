@@ -8587,9 +8587,39 @@ Graphics' Fullscreen (desktop, off by default, saved) asks SDL for the
 whole display at start and whenever it changes, never otherwise, so a
 window manager's own fullscreen is left as it is. `cargo run -p xem-ui
 --example panel` draws each section on a headless device for review
-(`build/validation/panel/`; `--desktop`, `--click`, `--hover` and
-`--locate` show the desktop's controls, the question, hover states and
-where elements lie for tests that tap the panel).
+(`build/validation/panel/`; `--desktop`, `--click`, `--hover`, `--pad`
+and `--locate` show the desktop's controls, the question, hover states, the
+gamepad's focus after its presses and where elements lie for tests that tap
+the panel).
+The open panel takes the first gamepad (`SettingsUi::gamepad`, polled by
+`xem_host::View` on the desktop and Android and by `XemApp::gamepad` on a
+flat page; a headset's controllers point at the panel instead), as keys on
+the panel's focus chain (`xem-ui/src/gamepad.rs`): up and down (the pad's,
+or the left stick past half travel) are Tab and Shift+Tab, or the arrows
+in an open dropdown's list; left and right are the arrows for the control
+with the focus (a slider, a button group, a dropdown, a section tab; a
+number box's down and up), and Shift+Tab and Tab where it takes neither
+(along a row of buttons); South is Return, held as long as it is (Hold to
+rewind); East closes an open list, the quit question or a binding's editor
+(its row keeps the focus), else the panel; L1 and R1 go to the previous and
+next section, round from the last to the first, onto its first control.
+Directions repeat after 0.4 s every 80 ms. The first press after the panel
+shows only puts the focus on the section's first control (`focus-section`
+and Tab), what was held as it showed is no press, and while Back is held
+(the app chords' modifier) the panel takes none. Each binding list's row is
+a stop of its own (Return or Space opens or closes its editor). On a
+gamepad binding's field South takes the next buttons pressed together,
+once everything was let go, as the field's text ("Press buttons…" while it
+waits): a shortcut's chord joined by `+` in the order pressed (the standard
+buttons only), a game action's inputs (stick directions too) by spaces,
+four at most; meanwhile the host's app chords wait
+(`SettingsUi::capturing_buttons`), so binding Back+South saves no state.
+Buttons held as the panel closes stay the panel's until let go
+(`AppInput::hold_pad`): East closing it does not also cancel in the game.
+The sliders step by the values they keep (Zoom out 25, the volume, effect
+levels, Diorama scale, mouse sensitivity and deadzone 5, auto-advance's wait
+15 frames) and ring their focus once keys or a gamepad moved it
+(`PadFocus.shown`, cleared by a pointer press).
 One `xem_render::Gpu` (instance, adapter,
 device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
 Slint runs as a custom platform under the host loop and renders into a texture
@@ -8769,7 +8799,9 @@ as JSON text or bytes.
 - **Input.** While the settings panel is hidden, the keyboard
   (`KeyboardEvent.code`), the mouse and the first gamepad (Gamepad API
   standard mapping; Back+Start toggles the panel) hold pad 1 through the
-  game bindings ([Controls](#controls)); touch pointers play the touch
+  game bindings ([Controls](#controls)), and while it shows that gamepad
+  works the panel as the native hosts' does ([Desktop host and settings
+  panel](#desktop-host-and-settings-panel)); touch pointers play the touch
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
   points at menu entries. In a field, Select's keys, the deck's SELECT and
   the gamepad's Back alone toggle first-person inspection while the player

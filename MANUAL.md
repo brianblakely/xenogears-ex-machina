@@ -83,6 +83,28 @@ have their own Save buttons. Close Settings to return to the game.
 Save first. It does not mean “restore my settings.” **Quit** asks before
 closing the app. **About** shows your version and the app's credits.
 
+### Using Settings with a controller
+
+On a computer, on Android and in a browser, the controller works Settings
+once it is open (the buttons are named as in the
+[controls table](#playing-with-a-keyboard-mouse-or-controller)):
+
+| To | Press |
+| --- | --- |
+| Go to the next or previous setting | D-pad or left stick down/up |
+| Move a slider, change a choice or a number | D-pad or left stick left/right |
+| Press a button, flip a switch, open a list | Bottom button |
+| Close a list or an editor, then Settings itself | Right button |
+| Go to the previous or next section | L1 / R1 |
+
+Your first press shows where you are: an outline marks the setting the
+controller is on, and the page scrolls to keep it in view. Hold a direction
+to repeat it. Left and right also move along a row of buttons. In an open
+list, up and down choose and the bottom button closes it. **Hold to rewind**
+rewinds for as long as you hold the bottom button. Back + Start still closes
+Settings at any time. Headset controllers point at Settings instead
+([below](#headset-controllers)).
+
 ## Playing with a keyboard, mouse or controller
 
 These are the starting controls. You can change them in Settings.
@@ -183,7 +205,10 @@ its keyboard, controller or mouse entries. Choose **Save** when you're done.
 **Clear** removes that action's bindings; **Restore defaults** restores the
 game controls. The four attack actions have their own entries.
 
-The boxes currently ask you to type button names. For example:
+With a controller, move to the **Gamepad** box and press the bottom button.
+The box says **Press buttons…**: press the button you want and let go (press
+several together to make each of them an alternative), then move down to
+**Save**. On a keyboard, type the input names into the boxes. For example:
 
 | Type this | To use this input |
 | --- | --- |
@@ -202,9 +227,11 @@ assignment first. The app explains conflicts beneath Settings.
 
 Open **Settings → Shortcuts** to change app shortcuts instead. Here a plus
 sign means “hold together”: `ControlLeft+KeyS` means left Ctrl and S;
-`Back+South` means Back and the bottom controller button. Choose
-**Save shortcut** to keep the change, **Clear** to remove it, or **Cancel**
-to leave the edit.
+`Back+South` means Back and the bottom controller button. With a
+controller, press the bottom button on the **Buttons** box, then hold the
+buttons of the new shortcut together and let go; they fill the box (while it
+waits, your buttons start no shortcut). Choose **Save shortcut** to keep the
+change, **Clear** to remove it, or **Cancel** to leave the edit.
 
 You can also assign shortcuts to features that start without one: backup
 imports and exports, retrying card writes, changing rewind length or

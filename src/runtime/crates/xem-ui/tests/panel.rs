@@ -1346,3 +1346,191 @@ fn debug_controls_submit_kernel_operations_and_developer_room() {
     press(&ui, &element(&ui, "Go to developer room", AccessibleRole::Button));
     assert!(requests.borrow().is_empty(), "pending operations disable the launch controls");
 }
+
+/// The first gamepad as the hosts poll it while the panel shows: the
+/// standard buttons held (South 0, East 1, West 2, L1 4, R1 5, Back 8,
+/// the pad's Up 12, Down 13, Left 14, Right 15), a poll every 16 ms.
+struct Gamepad {
+    now: std::time::Duration,
+}
+
+impl Gamepad {
+    fn poll(&mut self, ui: &SettingsUi, held: &[usize]) {
+        let mut pressed = [0u8; 16];
+        for &button in held {
+            pressed[button] = 1;
+        }
+        ui.gamepad(&pressed, &[0.0; 4], self.now);
+        self.now += std::time::Duration::from_millis(16);
+    }
+
+    fn press(&mut self, ui: &SettingsUi, button: usize) {
+        self.poll(ui, &[button]);
+        self.poll(ui, &[]);
+    }
+}
+
+#[test]
+fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
+    use xem_settings::{AppAction, AppBinding, AppRequest, AudioOutput, Scale};
+    const SOUTH: usize = 0;
+    const EAST: usize = 1;
+    const WEST: usize = 2;
+    const L1: usize = 4;
+    const R1: usize = 5;
+    const BACK: usize = 8;
+    const UP: usize = 12;
+    const DOWN: usize = 13;
+    const LEFT: usize = 14;
+    const RIGHT: usize = 15;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    let closed = Rc::new(Cell::new(0));
+    ui.on_close({ let closed = closed.clone(); move || closed.set(closed.get() + 1) });
+    ui.on_quit(|| {});
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    let volume = || settings.borrow().settings().master_volume;
+    let mut pad = Gamepad { now: std::time::Duration::ZERO };
+
+    // What is held as the panel shows is no press: the first poll only looks.
+    pad.poll(&ui, &[DOWN]);
+    pad.poll(&ui, &[]);
+    assert_eq!(volume(), 80);
+    // The first press puts the focus on the section's first control, Master
+    // volume, and does nothing else; left and right then move its slider.
+    pad.press(&ui, DOWN);
+    assert_eq!(volume(), 80, "the first press only shows where the focus is");
+    pad.press(&ui, RIGHT);
+    assert_eq!(volume(), 85);
+    pad.press(&ui, LEFT);
+    pad.press(&ui, LEFT);
+    assert_eq!(volume(), 75);
+    // Held, a direction repeats after 0.4 s, then every 80 ms.
+    for _ in 0..36 {
+        pad.poll(&ui, &[RIGHT]);
+    }
+    pad.poll(&ui, &[]);
+    assert_eq!(volume(), 75 + 5 * 4, "a press and three repeats while held for 560 ms");
+    // Down goes on to Sound mode, whose options left and right choose.
+    pad.press(&ui, DOWN);
+    assert_eq!(settings.borrow().settings().audio_output, AudioOutput::Stereo);
+    pad.press(&ui, RIGHT);
+    assert_eq!(settings.borrow().settings().audio_output, AudioOutput::Wide);
+    pad.press(&ui, UP);
+    pad.press(&ui, LEFT);
+    assert_eq!(volume(), 90, "up goes back to the slider");
+
+    // R1 and L1 change sections (round from the last to the first), onto
+    // the new section's first control.
+    pad.press(&ui, R1);
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_selected_section(), 1);
+    pad.press(&ui, DOWN);
+    let scale = || settings.borrow().settings().presentation.scale;
+    assert_eq!(scale(), Scale::Fit);
+    // A closed dropdown steps with left and right; South opens its list,
+    // where up and down choose and South or East closes it.
+    pad.press(&ui, RIGHT);
+    assert_eq!(scale(), Scale::Integer);
+    let dropdown = element(&ui, "Scale", AccessibleRole::Combobox);
+    pad.press(&ui, SOUTH);
+    ui.update().unwrap();
+    assert_eq!(dropdown.accessible_expanded(), Some(true));
+    pad.press(&ui, DOWN);
+    assert_eq!(scale(), Scale::Stretch);
+    pad.press(&ui, LEFT);
+    pad.press(&ui, SOUTH);
+    ui.update().unwrap();
+    assert_eq!(dropdown.accessible_expanded(), Some(false));
+    assert_eq!(scale(), Scale::Stretch, "left and right leave an open list alone");
+    pad.press(&ui, SOUTH);
+    pad.press(&ui, UP);
+    pad.press(&ui, EAST);
+    ui.update().unwrap();
+    assert_eq!((dropdown.accessible_expanded(), scale()), (Some(false), Scale::Integer));
+    assert_eq!(closed.get(), 0, "East closed the list, not the panel");
+    // South presses a switch.
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    pad.press(&ui, SOUTH);
+    assert!(settings.borrow().settings().presentation.show_fps);
+    pad.press(&ui, L1);
+    pad.press(&ui, L1);
+    assert_eq!(ui.component().get_selected_section(), 8, "L1 from the first section goes to the last");
+
+    // Shortcuts: each row a stop, South opens its editor, and South on its
+    // gamepad field takes the next buttons pressed together.
+    for _ in 0..5 {
+        pad.press(&ui, L1);
+    }
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_selected_section(), 3);
+    pad.press(&ui, SOUTH);
+    assert_eq!(ui.component().get_selected_action(), 0, "Save state's editor");
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    pad.poll(&ui, &[SOUTH]);
+    assert!(ui.capturing_buttons());
+    assert_eq!(ui.component().get_gamepad_binding().as_str(), "");
+    pad.poll(&ui, &[]);
+    pad.poll(&ui, &[L1]);
+    pad.poll(&ui, &[L1, WEST]);
+    pad.poll(&ui, &[WEST]);
+    assert!(ui.capturing_buttons(), "until every button is let go");
+    pad.poll(&ui, &[]);
+    assert!(!ui.capturing_buttons());
+    assert_eq!(ui.component().get_gamepad_binding().as_str(), "L1+West");
+    // Down to Cancel, right along the buttons to Save shortcut.
+    pad.press(&ui, DOWN);
+    pad.press(&ui, RIGHT);
+    pad.press(&ui, RIGHT);
+    pad.press(&ui, SOUTH);
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F5", "L1+West"));
+    // East closes the editor, the focus back on its row; again, the panel.
+    pad.press(&ui, EAST);
+    assert_eq!((ui.component().get_selected_action(), closed.get()), (-1, 0));
+    pad.press(&ui, SOUTH);
+    assert_eq!(ui.component().get_selected_action(), 0, "South on the row opens it again");
+    pad.press(&ui, SOUTH);
+    assert_eq!(ui.component().get_selected_action(), -1, "and closes it");
+    // Back begins the app's chords: the panel takes nothing while it is held.
+    pad.poll(&ui, &[BACK]);
+    pad.poll(&ui, &[BACK, EAST]);
+    pad.poll(&ui, &[]);
+    assert_eq!(closed.get(), 0);
+    pad.press(&ui, EAST);
+    assert_eq!(closed.get(), 1);
+
+    // Hidden and shown again, the first press enters the section anew.
+    ui.cancel_pointer();
+    pad.poll(&ui, &[]);
+    pad.press(&ui, R1);
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_selected_section(), 4);
+    // Time: a number box steps with left and right, and South holds Hold to
+    // rewind as long as it is held.
+    pad.press(&ui, DOWN);
+    pad.press(&ui, RIGHT);
+    assert_eq!(settings.borrow().settings().rewind_interval_seconds, 2);
+    pad.press(&ui, LEFT);
+    assert_eq!(settings.borrow().settings().rewind_interval_seconds, 1);
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    requests.borrow_mut().clear();
+    pad.poll(&ui, &[SOUTH]);
+    pad.poll(&ui, &[SOUTH]);
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true)]);
+    pad.poll(&ui, &[]);
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true), AppRequest::UiRewind(false)]);
+
+    // The quit question: East keeps playing.
+    ui.component().set_quit_confirming(true);
+    ui.update().unwrap();
+    pad.press(&ui, EAST);
+    assert!(!ui.component().get_quit_confirming());
+    assert_eq!(closed.get(), 1);
+}

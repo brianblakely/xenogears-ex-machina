@@ -110,10 +110,12 @@ pub struct AppInput {
     active: BTreeSet<AppAction>,
     focused: bool,
     settings_chord: bool,
+    /// Buttons held as the settings panel closed ([`AppInput::hold_pad`]).
+    held_back: u16,
 }
 impl Default for AppInput {
     fn default() -> Self {
-        Self { keys: BTreeSet::new(), pad: 0, active: BTreeSet::new(), focused: true, settings_chord: false }
+        Self { keys: BTreeSet::new(), pad: 0, active: BTreeSet::new(), focused: true, settings_chord: false, held_back: 0 }
     }
 }
 impl AppInput {
@@ -132,13 +134,22 @@ impl AppInput {
     /// the panel, so releasing the chord cannot pause the game.
     pub fn pad(&mut self, pressed: &[u8]) -> bool {
         if !self.focused { return false; }
-        self.pad = pressed.iter().take(16).enumerate().filter(|(_, p)| **p != 0).fold(0, |n,(i,_)| n | (1 << i));
+        let held = pressed.iter().take(16).enumerate().filter(|(_, p)| **p != 0).fold(0, |n,(i,_)| n | (1 << i));
+        self.held_back &= held;
+        self.pad = held & !self.held_back;
         let settings = self.pad & SETTINGS_CHORD == SETTINGS_CHORD;
         let toggle = settings && !self.settings_chord;
         if settings { self.settings_chord = true; }
         if self.pad & SETTINGS_CHORD == 0 { self.settings_chord = false; }
         if self.settings_chord { self.pad &= !SETTINGS_CHORD; }
         toggle
+    }
+    /// The settings panel closed under the gamepad (its East, South on
+    /// Close): the buttons it holds were the panel's, so neither the game nor
+    /// a chord gets them until each is let go.
+    pub fn hold_pad(&mut self) {
+        self.held_back |= self.pad;
+        self.pad = 0;
     }
     pub fn release_keyboard(&mut self) { self.keys.clear(); }
     pub fn clear(&mut self) -> Vec<AppRequest> {
@@ -223,6 +234,28 @@ mod tests {
         assert!(!input.pad(&chord));
         input.set_focused(true);
         assert!(input.pad(&chord));
+    }
+    #[test]
+    fn buttons_held_as_the_panel_closes_reach_the_game_only_when_pressed_again() {
+        let bindings = defaults();
+        let mut input = AppInput::default();
+        let mut pad = [0;16]; pad[1] = 1; pad[6] = 1;
+        input.pad(&pad);
+        input.hold_pad();
+        assert_eq!(input.gamepad_for_game(&bindings,false), [0;16], "at once");
+        pad[0] = 1;
+        input.pad(&pad);
+        let mut south = [0;16]; south[0] = 1;
+        assert_eq!(input.gamepad_for_game(&bindings,false), south, "a new press plays");
+        pad[1] = 0;
+        input.pad(&pad);
+        pad[1] = 1;
+        input.pad(&pad);
+        assert_eq!(input.gamepad_for_game(&bindings,false)[1], 1, "East pressed again plays");
+        assert_eq!(input.gamepad_for_game(&bindings,false)[6], 0, "LT still held back");
+        pad[0] = 0; pad[1] = 0; pad[8] = 1;
+        input.pad(&pad);
+        assert!(input.requests(&bindings,false).is_empty(), "nor does Back with it begin Rewind (Back+LT)");
     }
     #[test]
     fn focus_loss_releases_rewind_and_prevents_background_polling_from_reasserting_it() {

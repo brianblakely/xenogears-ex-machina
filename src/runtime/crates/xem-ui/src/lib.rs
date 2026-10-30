@@ -29,6 +29,8 @@ pub use slint::{LogicalPosition, LogicalSize, SharedString};
 
 slint::include_modules!();
 
+mod gamepad;
+
 /// The app's version (a release's, else the workspace's), as About shows it.
 pub const VERSION: &str = match option_env!("XEM_RELEASE_VERSION") {
     Some(version) => version,
@@ -113,6 +115,8 @@ pub struct SettingsUi {
     panel: SettingsPanel,
     settings: Rc<RefCell<SettingsService>>,
     rewind_held: Rc<Cell<bool>>,
+    /// The gamepad on the open panel ([`SettingsUi::gamepad`]).
+    pad: Cell<gamepad::Pad>,
     device: wgpu::Device,
     texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -141,6 +145,7 @@ impl SettingsUi {
             panel,
             settings,
             rewind_held: Rc::new(Cell::new(false)),
+            pad: Cell::default(),
             device,
             texture,
             view,
@@ -181,6 +186,12 @@ impl SettingsUi {
 
     /// Forwards host input. Positions are logical pixels from the panel's top left.
     pub fn dispatch(&self, event: WindowEvent) {
+        // Keys show where the focus is; the pointer's press hides it again.
+        match event {
+            WindowEvent::PointerPressed { .. } => self.panel.global::<PadFocus>().set_shown(false),
+            WindowEvent::KeyPressed { .. } | WindowEvent::KeyPressRepeated { .. } => self.panel.global::<PadFocus>().set_shown(true),
+            _ => {}
+        }
         self.window.window.dispatch_event(event);
         // Publish held-control transitions before the host's next game frame.
         slint::platform::update_timers_and_animations();
@@ -266,7 +277,7 @@ impl SettingsUi {
             )
         };
         self.panel.set_error(text.into());
-        self.panel.set_selected_section(SAVES_SECTION);
+        self.select_section(SAVES_SECTION);
     }
 
     /// What the Disc group says about the imported disc.
@@ -387,8 +398,10 @@ impl SettingsUi {
     }
 
     /// A hidden panel must release a held pointer control even when its next
-    /// mouse-up belongs to the game or another window.
+    /// mouse-up belongs to the game or another window, and what the gamepad
+    /// holds on it ([`SettingsUi::gamepad`]).
     pub fn cancel_pointer(&self) {
+        self.release_gamepad();
         if self.rewind_held.get() {
             self.panel.invoke_rewind_held(false);
         }
