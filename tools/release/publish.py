@@ -48,7 +48,29 @@ def current_native_release(repository, tag, commit):
     return not any(number > version(tag) for number, _ in published_releases(repository))
 
 
-def render_notes(repository, tag, previous, changes):
+def commits_since(previous, commit):
+    """The commits since the previous release, newest first: (hash, subject)."""
+    log = subprocess.check_output(["git", "log", "--no-merges", "--format=%H%x00%s", f"{previous}..{commit}"],
+                                  text=True)
+    return [tuple(line.split("\0", 1)) for line in log.splitlines() if line]
+
+
+# A release body holds at most 125 000 characters; the comparison lists the rest.
+MAX_COMMITS = 500
+
+
+def render_commits(repository, previous, commits):
+    shown = commits[:MAX_COMMITS]
+    escape = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
+    lines = [f"- {''.join(escape.get(c, c) for c in subject)} "
+             f"([`{sha[:7]}`](https://github.com/{repository}/commit/{sha}))" for sha, subject in shown]
+    if len(commits) > len(shown):
+        lines.append(f"- …and {len(commits) - len(shown)} more in the full comparison.")
+    count = f"{len(commits)} commit{'' if len(commits) == 1 else 's'}"
+    return f"<details>\n<summary>{count} since {previous}</summary>\n\n" + "\n".join(lines) + "\n\n</details>"
+
+
+def render_notes(repository, tag, previous, changes, commits=()):
     release_url = f"https://github.com/{repository}/releases"
     if previous:
         changelog = f"Here's what's changed since [{previous}]({release_url}/tag/{previous}):\n\n"
@@ -57,6 +79,8 @@ def render_notes(repository, tag, previous, changes):
     changelog += "\n\n".join(changes) if changes else "No player-facing changes were noted for this update."
     if previous:
         changelog += f"\n\n[See all changes](https://github.com/{repository}/compare/{previous}...{tag})."
+        if commits:
+            changelog += "\n\n" + render_commits(repository, previous, commits)
     owner, project = repository.split("/")
     return Path(__file__).with_name("notes.md").read_text().format(
         tag=tag,
@@ -82,7 +106,8 @@ def release_notes(repository, tag, commit):
         if not change:
             raise ValueError(f"empty release note: {path}")
         changes.append(change)
-    return render_notes(repository, tag, previous, changes)
+    commits = commits_since(previous, commit) if previous else []
+    return render_notes(repository, tag, previous, changes, commits)
 
 
 def expected(tag):
