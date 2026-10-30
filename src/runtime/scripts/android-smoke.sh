@@ -27,7 +27,9 @@
 # field 30 loads on the device through Load state's key (F8) and plays on
 # 600 frames to xem-headless's memory hash, and the device's Save state
 # (F5) there, pulled, is xem-headless's state at that frame byte for byte,
-# loads natively to that RAM and goes on to where xem-headless's own goes.
+# loads natively to that RAM and goes on to where xem-headless's own goes;
+# then a state of Lahan burning (field 2) plays its heat haze to
+# xem-headless's memory hash, each frame in a few render passes.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
 # start and the game. XEM_SMOKE_ABI=arm64-v8a builds and installs the APK's
 # arm64-v8a library instead, which the AVD's x86_64 image runs through its
@@ -592,6 +594,50 @@ PY
             "$out/native.xemstate" "$out/native-played.xemstate" | native >/dev/null
         cmp -s "$out/device.xemstate" "$out/native-played.xemstate" || fail "the device's state is not xem-headless's at that frame, byte for byte"
         echo "  the device's state is xem-headless's at frame $((at + 600)), byte for byte"
+        "${adb[@]}" shell run-as "$package" rm -f files/script.json files/saves/state.xemstate
+        "${adb[@]}" shell rm -f /data/local/tmp/xem-state.xemstate /data/local/tmp/xem-script.json
+
+        # Lahan burning (field 2, after the new game's narration) under the
+        # default graphics: its heat haze takes tiles of the screen as the
+        # game draws over it, and its pixels come as about 250 writes a game
+        # frame, each of which ended a render pass of the frame's picture
+        # (a phone's tiled GPU loads and stores all of the targets for each:
+        # the frame rate fell and the app closed there, issue #63). From
+        # xem-headless's state 120 frames into the field, before the haze,
+        # 300 frames to xem-headless's memory hash; the fps lines give the
+        # most passes a frame took (a few game frames' worth each here).
+        echo "== Lahan burning: the heat haze's frames in a few render passes"
+        printf '{"cmd":"enter_field","map":2}\n{"cmd":"frames","count":120}\n{"cmd":"state_save","path":"%s"}\n' "$out/lahan.xemstate" | native >/dev/null
+        at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/lahan.xemstate" | native | python3 -c 'import json,sys; print(json.loads(sys.stdin.readline())["frames"])')
+        played=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' "$out/lahan.xemstate" | native | last_string)
+        echo "{\"commands\": [], \"frames\": $((at + 300))}" >"$out/lahan-script.json"
+        "${adb[@]}" push "$out/lahan.xemstate" /data/local/tmp/xem-state.xemstate >/dev/null
+        "${adb[@]}" push "$out/lahan-script.json" /data/local/tmp/xem-script.json >/dev/null
+        mark
+        "${adb[@]}" shell am force-stop "$package"
+        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-state.xemstate files/saves/state.xemstate
+        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-script.json files/script.json
+        "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
+        wait_for "xem: disc picker opened" 60
+        pick_document disc1 "xem-disc1\.chd"
+        wait_for "xem: script .* to frame Some\($((at + 300))\)" 120
+        wait_for "xem: game booted" 60
+        "${adb[@]}" shell input keyevent --longpress KEYCODE_F8
+        wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60
+        loaded=$mark
+        sleep 20
+        shot 11-lahan-burning
+        got=$(wait_for "xem: script frame $((at + 300)) memory_hash " 300 | sed -E 's/.*memory_hash ([0-9a-f]+).*/\1/')
+        rates=$(tail -n "+$loaded" "$log" | grep -E "xem: fps rendered=.* passes=" || true)
+        sed 's/^/  /' <<<"$rates"
+        most=$(sed -E 's/.*passes=([0-9]+).*/\1/' <<<"$rates" | sort -n | tail -1)
+        echo "  frame $((at + 300)) memory_hash $got (natively $played); at most ${most:-no} render passes a frame"
+        [ "$got" = "$played" ] || fail "Lahan burning went on elsewhere on the device"
+        [ -n "$most" ] && [ "$most" -ge 10 ] || fail "no frame of the heat haze drawn (at most ${most:-no} passes)"
+        [ "$most" -le 200 ] || fail "a frame of the heat haze took $most render passes"
+        if tail -n "+$loaded" "$log" | grep -E "xem: (panic|game stopped|error)|FATAL EXCEPTION|SIGSEGV|SIGABRT|Fatal signal" | sed 's/^/  /'; then
+            fail "crash or game trap in Lahan burning"
+        fi
         "${adb[@]}" shell run-as "$package" rm -f files/script.json files/saves/state.xemstate
         "${adb[@]}" shell rm -f /data/local/tmp/xem-state.xemstate /data/local/tmp/xem-script.json
     else

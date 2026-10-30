@@ -936,6 +936,12 @@ impl View {
         self.presented_movie
     }
 
+    /// The render passes the game's picture last took (VRAM's picture as
+    /// the game drew it and the frame replayed from it), for status reports.
+    pub fn render_passes(&self) -> u32 {
+        self.renderer.stats().passes + self.renderer.frame().passes()
+    }
+
     /// Takes what `game` drew since the last call for the renderer (the
     /// graphics settings choose how it is drawn). A 24-bit display (movie
     /// frames) is shown as the device holds it.

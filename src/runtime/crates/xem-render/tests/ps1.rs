@@ -1504,6 +1504,75 @@ fn a_copy_onto_itself_leaves_the_frame_drawn_there() {
     assert!(shown(&mut renderer, Some(&trace)) == expected, "the frame drawn there");
 }
 
+/// Pixels drawn come to the VRAM the draws sample as writes before each
+/// textured command whose page holds them: hundreds a frame where the page
+/// holds the screen (field 2, Lahan burning). A write no draw of its render
+/// pass sampled goes before the pass, which goes on (each pass may cost a
+/// tiled GPU a load and a store of all its targets); one a draw of the pass
+/// sampled still ends it. Every sprite takes the texels the GPU gave it.
+#[test]
+fn a_write_no_draw_of_its_pass_sampled_leaves_the_pass_whole() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // Raw 15-bit sprites from page 0, which holds the screen, and flat quads.
+    let sprite = |device: &mut xem_gpu::Gpu, (x, y): (i32, i32), (u, v): (u32, u32)| {
+        device.write_gp0_words(&[0x6500_0000, xy(x, y), v << 8 | u, 16 << 16 | 16]);
+    };
+    let flat = |device: &mut xem_gpu::Gpu, color: u32, (x, y): (i32, i32), (w, h): (i32, i32)| {
+        device.write_gp0_words(&[0x2800_0000 | color, xy(x, y), xy(x + w, y), xy(x, y + h), xy(x + w, y + h)]);
+    };
+    let mut drawn = Vec::new();
+    let traces = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0100]);
+        device.write_gp0_words(&[0x0200_2040, 0, 240 << 16 | 320]);
+        // What the sprites take: colours over the screen's top rows.
+        device.write_gp0_words(&[0x3800_00FF, xy(0, 0), 0x0000_FF00, xy(320, 0), 0x00FF_0000, xy(0, 20), 0x00FF_FFFF, xy(320, 20)]);
+        for i in 0..20 {
+            // Pixels drawn, then a sprite of the top rows: their write first.
+            flat(device, (0x10_2030 * (i + 1)) & 0xFF_FFFF, (8 * i as i32, 100 + 5 * i as i32), (6, 4));
+            let at = (200 + 20 * (i as i32 / 8), 30 + 20 * (i as i32 % 8));
+            sprite(device, at, (16 * (i % 4), 0));
+            drawn.push(at);
+        }
+        // A sprite takes what a quad then paints over, another takes it after.
+        sprite(device, (260, 30), (0, 120));
+        flat(device, 0x00_80FF, (0, 120), (16, 16));
+        sprite(device, (290, 30), (0, 120));
+        drawn.extend([(260, 30), (290, 30)]);
+    });
+    let writes = traces.1.ops.iter().filter(|op| matches!(op, TraceOp::Write { upload: false, .. })).count();
+    assert!(writes > 20, "the sprites' page held drawn pixels {writes} times");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_options(DrawOptions { fidelity: Fidelity::ORIGINAL, ..Default::default() }, 1);
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+    for trace in [&traces.0, &traces.1] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    // One pass, then the one the last sprite's write ends it for.
+    assert_eq!(renderer.stats().passes, 2, "{writes} writes");
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing { replay: true, ..Default::default() });
+    // (All of it interface: drawn over the scene, of which there is none.)
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    assert_eq!(frame.passes(), 2, "the replay's passes");
+    let vram = DEVICE.with(|d| d.borrow().vram().to_vec());
+    let picture = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+    let replay = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    for (x, y) in drawn {
+        for (dx, dy) in (0..16).flat_map(|dx| (0..16).map(move |dy| (dx, dy))) {
+            let (x, y) = ((x + dx) as usize, (y + dy) as usize);
+            let want = vram[y * 1024 + x];
+            let want = [expand5(want), expand5(want >> 5), expand5(want >> 10)];
+            assert_eq!(picture[(y * 1024 + x) * 4..][..3], want, "the picture's sprite at ({x}, {y})");
+            assert_eq!(replay[(y * 320 + x) * 4..][..3], want, "the replay's sprite at ({x}, {y})");
+        }
+    }
+}
+
 fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
     let vertex = |dx: i32, dy: i32| TraceVertex {
         x: x + dx,

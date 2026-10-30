@@ -1938,7 +1938,39 @@ snapshots are its. The renderer only draws again what it drew:
   and lines (`tests/ps1.rs`); at three times the original under Modern the
   interface matches it on 99.96% of the scaled pixels (slanted edges and
   lines included; 5-bit blends and a few texels the GPU's exact
-  interpolation rounds the other way aside).
+  interpolation rounds the other way aside). The draws go into render
+  passes, which the VRAM writes, copies and snapshots between them end
+  where their order needs it, and a tiled GPU (a phone's) may load and
+  store all of a pass's targets, here a scaled picture of all of VRAM, for
+  each one. A write (an upload, or pixels drawn that a later command may sample,
+  which the trace gives before each textured command whose page or CLUT
+  holds pixels drawn since the last such write) that no draw of the current
+  pass may sample goes before that pass's draws, which see VRAM as they
+  did, and the pass goes on; one that a draw of the pass may sample ends
+  it. What a draw may sample is known to the pixel: its page at its texel
+  coordinates (a polygon's clamped to its own; a rectangle's from its
+  corners', with the texel beyond for linear filtering and a mirrored
+  sprite part, wrapping on the page; all of an axis a texture window
+  remaps), its CLUT's row, a screen taken it is drawn from, and an
+  upload's own pixels for its picture. Lahan burning (field 2, after the
+  new game's narration), whose heat haze takes tiles of the screen as the
+  game draws over them and whose textures share a page with the screen,
+  gives about 250 such writes a game frame: the picture took a pass for
+  each, and its replay as many (232 to 252), where the frame rate
+  fell and the app closed on an Android phone under Modern, HD-2D and
+  Custom (issue #63). They take at most 16 each now, and draw the same
+  pictures (26 frames of the new game's route under Modern at scale 4,
+  byte for byte). There at scale 4, per game frame (half of them draw
+  nothing), the presentation's CPU time on the desktop fell from 5.5-7 to
+  2.6 ms and its GPU time from 2 to 0.6 ms (RTX 5070 Ti), and lavapipe's
+  from 60-69 to 14-20 ms; the Android emulator's SwiftShader is bound by
+  its fill rate there (about two frames a second at scale 4 either way,
+  6 ms a game frame at scale 1) and shows the change in its log: 465 to
+  505 passes a presented frame before, 26 to 47 now ([Android
+  host](#android-host)). Tests: `tests/ps1.rs`
+  `a_write_no_draw_of_its_pass_sampled_leaves_the_pass_whole` (the
+  sprites' texels as the software GPU's), `xem-headless/tests/render.rs`
+  `lahan_burning_draws_each_frame_in_a_few_render_passes`.
 - **Screen captures** (`Capture`). When the game takes the screen into
   VRAM (a copy of a displayed area elsewhere of at least 256x192, or its
   pixels read back and written there with every texel's semi-transparency
@@ -3914,10 +3946,12 @@ camera of `--example motion` and the tests below drive it too.
   the pane over what they hold then, weighted by their coverage (the room
   around the table stays as it is); a smaller fill (a window's, a
   letterbox band) goes on the pane. Uploads keep
-  their order with the draws: each group of draws between two goes into
-  every eye and the pane before the next, so each samples VRAM as the game
-  left it for it in every eye (two such groups a frame in the fields
-  measured, five in the debug battle).
+  their order with the draws that may sample them (one no draw of a group
+  samples goes before the group, as in the screen's passes): each group of
+  draws between two goes into every eye and the pane before the next, so
+  each samples VRAM as the game left it for it in every eye (two such
+  groups a frame in the fields measured, five in the debug battle, before
+  those uploads went first).
 - **The screen instead.** The frame shows on the flat screen in other
   modes than fields, battles and the world map (menus, movies, the arena,
   booting, the kernel), for 24-bit movie frames, frames drawing a screen
@@ -4318,8 +4352,9 @@ building, where no floor lies; on the world map's pane 21 pixels of its
 compass cone's edge are one 15-bit step off the flat frame, the cause not
 established; the world map's distant terrain lies beyond the volume at
 scale 1; the cost on a headset's CPU (Quest's) and GPU is not measured;
-the per-eye pass count grows with the uploads between draws (two to five
-groups measured); a fade the game draws over its held picture without
+the per-eye pass count grows with the uploads an earlier draw of their
+group samples (two to five groups measured, before the rest went first);
+a fade the game draws over its held picture without
 its scene is not shown on the diorama held (the screen shows it as it
 eases in); close up, a one-pixel column of the layers beneath shows down
 the middle of Fei's head in field 30 (640x480, scale 3, 0.5 m, from the
@@ -9131,7 +9166,9 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   `<files dir>/script.json`, which hold game input, setup and pacing only
   (`card_present` and `fast_forward` among them; no file commands, no
   rewind); and through logcat, which carries each app operation's line
-  above, the boot's and the frames' (`frame rendered`, `fps`) and a
+  above, the boot's and the frames' (`frame rendered`, and every 5 s
+  `fps` with the most render passes a frame's game picture took in that
+  time, its VRAM picture's and its replay's) and a
   session log's end. Card and BIOS imports go only through the document
   pickers; `card_list`, `status` and the `app` command of the other native
   hosts have no Android counterpart.
@@ -9204,7 +9241,14 @@ In `nix develop path:./nix/runtime#android`:
   `run-as`, is `xem-headless`'s state at that frame byte for byte (the
   default graphics ask for no reveals), loads natively to that RAM and
   goes on 600 frames to where `xem-headless`'s own goes ([State
-  interchange](#state-interchange); about 40 s on the emulator). `XEM_SMOKE_GAME_ONLY=1` skips the
+  interchange](#state-interchange); about 40 s on the emulator). A state
+  it made 120 frames into Lahan burning (field 2, before its heat haze)
+  then plays the same way, under the default graphics, 300 frames to
+  `xem-headless`'s memory hash, its frames each in a few render passes
+  (the most a presented frame took, from the `fps` lines, at most 200:
+  26 to 47 in runs here, a few game frames' worth each, where a pass for
+  each VRAM write gave 465 to 505; [The renderer](#the-renderer-phase-4),
+  PS1 renderer; issue #63). `XEM_SMOKE_GAME_ONLY=1` skips the
   synthetic-disc and lifecycle sections. `XEM_SMOKE_ABI=arm64-v8a` builds
   (unless `XEM_SKIP_BUILD=1`) and installs the APK's arm64-v8a library
   instead (`adb install --abi`), which the AVD's x86_64 image runs through

@@ -61,8 +61,8 @@ use super::frame::{FrameRenderer, ReplayVram, framebuffer_effect, sprite_feet, u
 use super::{
     AUX_FORMAT, Attributes, BLEND_SHIFT, Builder, COLOR_FORMAT, Capture, Command, DepthMode, DisplayArea, DrawOptions, FLAG_BILLBOARD, FLAG_CLIP,
     FLAG_LINE, FLAG_SEMI, FLAG_TABLE, Fidelity, Fragment, PASS_PANE, PASS_WORLD, PassUniform, PipelineKey, Pipelines, Ps1Renderer, Space, Storage,
-    Stream, Vertex, bind_group, color, effective_class, fill_color, overlap, pass_options, picture_usage, samples, scene_offset, scissor_rect,
-    texture, upload,
+    Stream, Vertex, bind_group, color, effective_class, fill_color, overlap, pass_options, passes, picture_usage, samples, scene_offset,
+    scissor_rect, texture, upload,
 };
 use glam::{DMat3, DVec3, Mat3, Mat4, Vec2, Vec3};
 use std::collections::HashMap;
@@ -345,7 +345,8 @@ pub struct DioramaStats {
     /// stack of a sprite's parts stands).
     pub lifted: u32,
     pub thickest: u32,
-    /// Groups of draws between VRAM uploads (each a pass per eye).
+    /// Groups of draws between the VRAM uploads a draw of a group samples
+    /// (each a pass per eye: [`super::passes`]).
     pub runs: u32,
     /// The builds made since the diorama view began, this one included (one
     /// a game frame; [`REBUILD_TURN`]).
@@ -1283,20 +1284,8 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
             _ => {}
         }
     }
-    stats.runs = runs(&builder.commands);
+    stats.runs = passes(&builder.commands);
     Some(stats)
-}
-
-/// Groups of draws between uploads in `commands`.
-fn runs(commands: &[Command]) -> u32 {
-    let mut runs = 0;
-    let mut drawing = false;
-    for command in commands {
-        let draw = matches!(command, Command::Draw { .. });
-        runs += u32::from(draw && !drawing);
-        drawing = draw;
-    }
-    runs
 }
 
 /// Records `commands` into `encoder`: uploads into the replay's VRAM in
