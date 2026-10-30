@@ -30,8 +30,8 @@
 use super::diorama::Layers;
 use super::{
     AUX_FORMAT, Builder, COLOR_FORMAT, Capture, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
-    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, passes, picture_usage, samples,
-    scene_offset, texture,
+    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, passes, picture_usage, sampled_screen,
+    samples, scene_offset, texture,
 };
 use glam::{DMat3, DQuat, DVec3};
 use std::borrow::Cow;
@@ -174,6 +174,9 @@ pub struct FrameRenderer {
     /// The replay's bind group, made with the capture texture of a generation.
     group: Option<(u64, wgpu::BindGroup)>,
     overlay_group: Option<(u64, wgpu::BindGroup)>,
+    /// The screen kept that the replayed frame samples
+    /// ([`super::sampled_screen`]), for the interface drawn over it after.
+    screen: Option<Capture>,
     /// The replay's and the overlay's builder buffers.
     storage: Storage,
     overlay_storage: Storage,
@@ -364,6 +367,7 @@ impl FrameRenderer {
             staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
             group: None,
             overlay_group: None,
+            screen: None,
             storage: Storage::default(),
             overlay_storage: Storage::default(),
             pane: None,
@@ -554,11 +558,12 @@ impl FrameRenderer {
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
-        let capture = renderer.capture.rect.filter(|_| current && renderer.capture.scale == scale).map(|rect| (rect, renderer.capture.side));
+        let screen = sampled_screen(&renderer.capture, &renderer.earlier, &ops);
+        let capture = screen.rect.filter(|_| current && screen.scale == scale).map(|rect| (rect, screen.side));
         if let Some((rect, _)) = capture {
             for op in &mut ops {
                 if let TraceOp::Draw(p) = op
-                    && (samples(p, &rect) || renderer.capture.aliases.iter().any(|(r, _)| samples(p, r)))
+                    && (samples(p, &rect) || screen.aliases.iter().any(|(r, _)| samples(p, r)))
                 {
                     p.class = Class::Flat;
                 }
@@ -599,7 +604,7 @@ impl FrameRenderer {
         builder.additive_model_depth = renderer.additive_model_depth;
         builder.spill = side;
         builder.capture = capture;
-        builder.capture_aliases = if current { &renderer.capture.aliases } else { &[] };
+        builder.capture_aliases = if current { &screen.aliases } else { &[] };
         builder.feedback = feedback.then_some(rect);
         builder.vram = self.snapshot.is_some().then_some(self.vram.held());
         // A frame recorded looking from within or around the scene holds
@@ -625,7 +630,7 @@ impl FrameRenderer {
             builder.op(op);
         }
         let origin = (area.x as f32 - side as f32, area.y as f32);
-        let (capture_scale, capture_side, capture) = renderer.capture.uniform();
+        let (capture_scale, capture_side, capture) = screen.uniform();
         let uniform = PassUniform {
             origin: [origin.0, origin.1],
             extent: [(area.width + 2 * side) as f32, render_height as f32],
@@ -659,20 +664,21 @@ impl FrameRenderer {
             ..Default::default()
             });
         }
-        if self.group.as_ref().is_some_and(|(generation, _)| *generation != renderer.capture.generation) {
+        let generation = screen.generation;
+        if self.group.as_ref().is_some_and(|(known, _)| *known != generation) {
             self.group = None;
         }
-        let generation = renderer.capture.generation;
         if self.overlay_group.as_ref().is_some_and(|(known, _)| *known != generation) {
             self.overlay_group = None;
         }
         self.overlay_group.get_or_insert_with(|| (generation,
-            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram.texture, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))));
+            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram.texture, screen, Some((&self.feedback, &self.feedback_aux)))));
         let group = self
             .group
-            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram.texture, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))))
+            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram.texture, screen, Some((&self.feedback, &self.feedback_aux)))))
             .1
             .clone();
+        self.screen = Some(screen.clone());
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
         let target = Target { color: &color, aux: &aux, depth: &depth_view, origin, scale };
         encode(
@@ -709,7 +715,7 @@ impl FrameRenderer {
         renderer: &mut Ps1Renderer,
         color: Option<&wgpu::Texture>,
     ) {
-        let (Some(area), Some((_, group))) = (self.area, self.overlay_group.clone()) else { return };
+        let (Some(area), Some((_, group)), Some(screen)) = (self.area, self.overlay_group.clone(), self.screen.as_ref()) else { return };
         if self.overlay.is_empty() {
             return;
         }
@@ -719,8 +725,8 @@ impl FrameRenderer {
         builder.reversed = self.reversed;
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.spill = self.side;
-        builder.capture = renderer.capture.rect.filter(|_| renderer.capture.scale == self.scale).map(|rect| (rect, renderer.capture.side));
-        builder.capture_aliases = &renderer.capture.aliases;
+        builder.capture = screen.rect.filter(|_| screen.scale == self.scale).map(|rect| (rect, screen.side));
+        builder.capture_aliases = &screen.aliases;
         for op in &self.overlay {
             builder.op(op);
         }

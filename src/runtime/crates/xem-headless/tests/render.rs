@@ -281,6 +281,87 @@ fn the_field_menu_closes_back_to_the_wider_picture() {
     assert!(checked > 100, "{checked} frames of the field shown back");
 }
 
+/// On the world map the menu saves the screen and fades it out, holds the
+/// dimmed screen (taken into its other buffer) while it loads, and once it
+/// has run fades the saved screen back in: under Modern, Modern drawn wider
+/// and HD-2D those frames show the picture presented before the menu at
+/// the picture's resolution, not the native screen (issue #65: the held
+/// screen where frames are replayed, the fade back in under all three).
+#[test]
+fn the_world_maps_menu_fades_the_presented_picture() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/world-map-lahan-exit.json");
+    let route: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    session.execute(&json!({"cmd": "schedule", "commands": route["commands"]}));
+    while session.runtime.frames() < route["frames"].as_u64().unwrap() {
+        assert!(session.frame().unwrap());
+    }
+    let start = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let read = |session: &mut Session<NativeModule>, path: &str| session.execute(&json!({"cmd": "inspect", "path": path})).as_u64().unwrap();
+    let modern = Graphics { internal_scale: 3, ..Graphics::default() };
+    for graphics in [modern, Graphics { widescreen: true, ..modern }, Graphics { profile: GraphicsProfile::Hd2d, ..modern }] {
+        session.restore_bytes(&start).unwrap();
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let (mut sharp, mut native) = (0, Vec::new());
+        for n in 0..340u64 {
+            // The menu opens, then closes from its commands.
+            let buttons = match n { 30 | 31 => vec!["square"], 250 | 251 => vec!["circle"], _ => vec![] };
+            session.execute(&json!({"cmd":"pad", "buttons": buttons}));
+            assert!(session.frame().unwrap());
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+            let device = session.runtime.services().gpu.device_mut();
+            if view.take_restart() || !device.trace_enabled() {
+                device.set_trace(true);
+            }
+            device.set_reveals(view.reveals());
+            view.push(device.take_trace());
+            let display = device.display();
+            let scene = session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            let (width, _) = view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("presented").size;
+            gpu.queue.submit([encoder.finish()]);
+            // The menu requested and not running: the saved or the dimmed
+            // screen shows.
+            if read(&mut session, "worldmap_menu_requested") == 0 || read(&mut session, "menu_state_debug_start") == 0 {
+                continue;
+            }
+            let rgba = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+            match flatness(&rgba, width as usize, 3) {
+                Some(flat) if flat < 0.1 => native.push(n),
+                Some(_) => sharp += 1,
+                None => {}
+            }
+        }
+        let which = (graphics.profile, graphics.widescreen);
+        assert!(native.is_empty() && sharp > 40, "{which:?}: {sharp} frames at the picture's resolution, the native screen at {native:?}");
+    }
+}
+
+/// How alike neighbouring pixels of `rgba` (rows `width` long) are within
+/// each `scale`-pixel run against across runs, over lit pixels: 0 for a
+/// native picture scaled up, about half for one drawn at the scale (none
+/// with nothing lit).
+fn flatness(rgba: &[u8], width: usize, scale: usize) -> Option<f32> {
+    let lit = |i: usize| rgba[i * 4..i * 4 + 3].iter().map(|&c| i32::from(c)).sum::<i32>();
+    let (mut within, mut across) = ((0.0, 0.0), (0.0, 0.0));
+    for y in (0..rgba.len() / 4 / width).step_by(3) {
+        for x in 0..width - 1 {
+            let (a, b) = (lit(y * width + x), lit(y * width + x + 1));
+            if a < 30 && b < 30 {
+                continue;
+            }
+            let pairs = if (x + 1) % scale != 0 { &mut within } else { &mut across };
+            *pairs = (pairs.0 + (a - b).abs() as f32, pairs.1 + 1.0);
+        }
+    }
+    (across.0 > 0.0 && within.1 > 0.0).then(|| within.0 / within.1 / (across.0 / across.1))
+}
+
 /// A held rewind's steps show the game's frames as the renderer draws them
 /// (wider, in high resolution), not the restored VRAM as it is: each takes
 /// a state off the queue and plays on from it until the display shows a

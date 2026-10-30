@@ -1990,8 +1990,17 @@ snapshots are its. The renderer only draws again what it drew:
   never takes such a copy as the native pixels it copied: the field's menu
   takes the dimmed screen, and its own last frame, after the field's saved
   one, then fades back in from the saved one and gives its place back to
-  textures while the frame faded in from it still shows. A screen taken
-  from a buffer the game filled with a copy of another area (neither
+  textures while the frame faded in from it still shows. Draws textured
+  from one of the two kept before, none of them from the screen taken
+  last, sample its picture too, in the scaled VRAM and in a replay
+  (`sampled_screen`): the world map's menu saves its screen at
+  (2C0h, 100h) and fades it out, takes the dimmed one into its other
+  buffer and holds it while the menu loads, and after the menu fades the
+  saved one back in; the held frames where frames are replayed (HD-2D,
+  Modern with Widescreen or High Framerate) and the fade back in under
+  every profile drawn at a higher resolution showed the native screen
+  (issue #65).
+  A screen taken from a buffer the game filled with a copy of another area (neither
   changed since) is that area's too, and a copy of a screen kept brings
   its picture into the scaled VRAM as into a replay, without its sides:
   VRAM has no room for them (they lay beside the buffer copied to, over
@@ -2062,10 +2071,12 @@ snapshots are its. The renderer only draws again what it drew:
   `a_screen_held_longer_than_the_rewind_history_is_remembered_from_the_states_holding_it`,
   `a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_state`,
   `the_screens_remembered_keep_to_their_budget_letting_go_of_the_one_held_longest_ago`,
-  `a_screen_taken_copied_in_vram_brings_its_picture_without_its_sides`;
+  `a_screen_taken_copied_in_vram_brings_its_picture_without_its_sides`,
+  `a_screen_taken_before_another_draws_as_its_picture`;
   `xem-headless/tests/render.rs`
   `the_debug_vehicles_interior_shows_no_noise_entered_or_rewound_out_of`,
-  `the_debug_vehicles_interior_shows_no_noise_entered_under_fast_forward`).
+  `the_debug_vehicles_interior_shows_no_noise_entered_under_fast_forward`,
+  `the_world_maps_menu_fades_the_presented_picture`).
   What is drawn of it is a screen effect (interface class, never pulled
   back, no effects), and the polygons the game draws with every point the
   GTE projected at depth 0 (the field's screen pieces, scaled with
@@ -5613,7 +5624,9 @@ memory (`context` command): `walk` (the player has control in a field),
 the input, the arc's highlight shown over no command's screen, `open`
 while a command's screen is open; the field menu runs inside the field
 mode, and is read while it runs, `menu_state_debug_start` 0, not while it
-loads nor while the field fades back in after it), `battle` (the command page, whether the attack inputs have the
+loads nor while the field fades back in after it; the world map runs the
+same menu on foot, a `menu` too from the press,
+`worldmap_menu_requested`, until the map is back), `battle` (the command page, whether the attack inputs have the
 buttons, AP left, an open list, a target being chosen for an item, art or
 command; the attack page's own target choice is part of its attack
 inputs; `message` while its event script shows a message:
@@ -5656,7 +5669,11 @@ reports the frames run):
   backing out of each command's screen it is in, one Cancel each, the next
   once that screen has gone back (30 frames; the item screen takes 21):
   the menu sounds every Cancel it reads, while it closes too, so one more
-  would be heard. Other screens (shops) keep the button.
+  would be heard. The world map runs the same menu from its own loop (on
+  foot; its context is that menu from the press until the map is back,
+  `worldmap_menu_requested`), and Menu closes it there too (issue #65);
+  other screens (shops) and the menu run as its own mode (Settings → Debug
+  → Menu) keep the button.
 - **The wheel** steps a menu's or a choice's cursor (a notch toward the
   player is Down); elsewhere it pulls the field camera back or in.
 - **Pointing** at an entry (the mouse over the picture,

@@ -1473,6 +1473,19 @@ impl<'a> Builder<'a> {
     }
 }
 
+/// The screen kept that the draws of `ops` sample: `capture`, unless none of
+/// them samples it and they sample one taken before that VRAM still holds
+/// (`earlier`). What they draw of it is its picture. The world map saves its
+/// screen, then takes the dimmed one into its other buffer for its menu, and
+/// fades the saved one out before the menu and back in after it.
+pub(crate) fn sampled_screen<'a>(capture: &'a Capture, earlier: &'a [Capture], ops: &[TraceOp]) -> &'a Capture {
+    let sampled = |screen: &Capture| ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if screen.areas().any(|(rect, _)| samples(p, &rect))));
+    if earlier.is_empty() || sampled(capture) {
+        return capture;
+    }
+    earlier.iter().find(|screen| !screen.replayed && sampled(screen)).unwrap_or(capture)
+}
+
 /// Whether `p` takes its texels from `rect` of VRAM as a 15-bit texture
 /// (a screen the game took there: [`Capture`]).
 pub(crate) fn samples(p: &Primitive, rect: &VramRect) -> bool {
@@ -2115,7 +2128,8 @@ pub struct Ps1Renderer {
     /// before the trace being drawn, and the draws so far.
     pub(crate) capture: Capture,
     /// Screens it took before, elsewhere in VRAM, while VRAM still holds
-    /// them (newest first): a copy of one still brings its picture.
+    /// them (newest first): a copy of one still brings its picture, and so
+    /// do draws that sample one ([`sampled_screen`]).
     pub(crate) earlier: Vec<Capture>,
     /// The screens taken that a state of the session's rewind history can
     /// bring back, as they were taken (newest first): a state loaded whose
@@ -2778,8 +2792,9 @@ impl Ps1Renderer {
         builder.sky = self.sky;
         builder.additive_model_depth = self.additive_model_depth;
         // (Its sides have no place in VRAM.)
-        builder.capture = self.capture.rect.map(|rect| (rect, 0));
-        builder.capture_aliases = &self.capture.aliases;
+        let screen = sampled_screen(&self.capture, &self.earlier, ops);
+        builder.capture = screen.rect.map(|rect| (rect, 0));
+        builder.capture_aliases = &screen.aliases;
         builder.vram = Some(&self.native);
         builder.clears = self.logs.iter().filter_map(|log| match log.ops.first() {
             Some(TraceOp::Fill { rect, color }) => Some((*rect, rgb15(*color))),
@@ -2788,7 +2803,10 @@ impl Ps1Renderer {
         for op in ops {
             builder.op(op);
         }
-        let (capture_scale, capture_side, capture) = self.capture.uniform();
+        let (capture_scale, capture_side, capture) = screen.uniform();
+        // A screen taken before binds its own picture.
+        let earlier_group = (!std::ptr::eq(screen, &self.capture))
+            .then(|| bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, screen, None));
         let uniform = PassUniform {
             origin: [0.0, 0.0],
             extent: [VRAM_WIDTH as f32, VRAM_HEIGHT as f32],
@@ -2809,7 +2827,7 @@ impl Ps1Renderer {
             &self.device,
             &mut self.pipelines,
             encoder,
-            &self.group,
+            earlier_group.as_ref().unwrap_or(&self.group),
             self.vertices.buffer(),
             Some((self.staging.buffer(), &self.vram)),
             Copies::InPlace { scratch: &self.scratch, capture: &self.capture, earlier: &self.earlier },
