@@ -37,6 +37,33 @@ export async function importDisc(app, file) {
   return status;
 }
 
+/** An image on the page's server (`?disc=`), read as importDisc reads a File:
+ * its name, its size and byte ranges through slice(start, end).arrayBuffer(),
+ * each an HTTP range request. */
+export async function openUrl(url) {
+  const head = await fetch(url, { method: 'HEAD' });
+  if (!head.ok) throw new Error(`disc ${url}: HTTP ${head.status}`);
+  if (head.headers.get('accept-ranges') !== 'bytes') throw new Error(`disc ${url}: the server does not serve byte ranges`);
+  const size = Number(head.headers.get('content-length'));
+  const name = decodeURIComponent(new URL(url, location.href).pathname.split('/').at(-1));
+  return {
+    name,
+    size,
+    url,
+    slice: (start, end) => ({
+      async arrayBuffer() {
+        if (!(start >= 0 && start <= end && end <= size)) throw new Error(`disc ${name}: bytes ${start}-${end} outside ${size}`);
+        if (start === end) return new ArrayBuffer(0);
+        const response = await fetch(url, { headers: { range: `bytes=${start}-${end - 1}` } });
+        if (response.status !== 206) throw new Error(`disc ${name}: bytes ${start}-${end}: HTTP ${response.status}`);
+        const bytes = await response.arrayBuffer();
+        if (bytes.byteLength !== end - start) throw new Error(`disc ${name}: bytes ${start}-${end}: got ${bytes.byteLength}`);
+        return bytes;
+      },
+    }),
+  };
+}
+
 /** Raw 2352-byte sectors of the newest identified image. */
 export async function readSectors(app, lba, count) {
   for (;;) {

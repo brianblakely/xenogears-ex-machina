@@ -964,6 +964,7 @@ src/runtime/web/tests/listening.test.mjs
 src/runtime/web/tests/page.test.mjs
 src/runtime/web/tests/persistence.test.mjs
 src/runtime/web/tests/render.test.mjs
+src/runtime/web/tests/serve.test.mjs
 src/runtime/web/tests/slice.test.mjs
 src/runtime/web/tests/sound.test.mjs
 src/runtime/web/tests/support.mjs
