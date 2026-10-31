@@ -1030,24 +1030,29 @@ fn translation(text: &[u8]) -> (u32, Vec<u8>) {
         .expect("a translation of the message");
     let address = word(record + 8);
     let start = (address - xem_core::locale::BASE) as usize;
-    let end = start + image.bytes[start..].iter().position(|b| *b == 0).unwrap();
-    (address, image.bytes[start..=end].to_vec())
+    (address, text_through_end(&image.bytes[start..]).to_vec())
 }
 
-/// An original text in RAM through its 00, walked as the window walks it.
-fn original_text(session: &mut Session<NativeModule>, at: u32) -> Vec<u8> {
-    let mut bytes = vec![0; 2048];
-    session.runtime.memory().read(at, &mut bytes).expect("RAM");
+/// A text's bytes through its closing 00, walked as the window walks them
+/// (a control's operand may be 00).
+fn text_through_end(bytes: &[u8]) -> &[u8] {
     let mut n = 0;
     loop {
         match bytes[n] {
-            0 => return bytes[..=n].to_vec(),
+            0 => return &bytes[..=n],
             1..=3 => n += 1,
             0x0F => n += match bytes[n + 1] { 0x04 | 0x0B => 2, 0x03 => 4, _ => 3 },
             b if b >= 0xFE => n += 2,
             _ => n += 1,
         }
     }
+}
+
+/// An original text in RAM through its 00.
+fn original_text(session: &mut Session<NativeModule>, at: u32) -> Vec<u8> {
+    let mut bytes = vec![0; 2048];
+    session.runtime.memory().read(at, &mut bytes).expect("RAM");
+    text_through_end(&bytes).to_vec()
 }
 
 /// Field 12's opening message (Fei to Alice) in a window: (its window's

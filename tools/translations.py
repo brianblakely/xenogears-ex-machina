@@ -550,9 +550,7 @@ def problems(original: Text, translation: str, extra: dict[str, int]) -> list[st
     if sorted(sequence(new, inserts)) != sorted(sequence(old, inserts)):
         found.append(f"insertions {sequence(old, inserts)} became {sequence(new, inserts)}")
     old_pages, new_pages = pages(old), pages(new)
-    timed = any(t.kind in ENDS_WITHOUT_CONFIRM or t.kind == "pause" for t in old)
-    field = original.group == "field messages"
-    if len(new_pages) != len(old_pages) and not (field and not timed and len(new_pages) > len(old_pages)):
+    if len(new_pages) != len(old_pages) and not (may_add_pages(original) and len(new_pages) > len(old_pages)):
         found.append(f"{len(old_pages)} page(s) became {len(new_pages)}")
     if original.choice and new_pages and old_pages and len(new_pages[-1]) != len(old_pages[-1]):
         found.append(f"the choice's last page has {len(old_pages[-1])} lines, not {len(new_pages[-1])}")
@@ -581,8 +579,9 @@ def width(toks: list[Token]) -> int:
 
 
 def may_add_pages(original: Text) -> bool:
-    """A field message the player's Confirm ends, without a choice."""
-    return (original.group == "field messages" and not original.choice
+    """A field message the player's Confirm ends, without a choice, in a
+    window no script sized."""
+    return (original.group == "field messages" and not original.choice and not original.fixed
             and not any(t.kind in ENDS_WITHOUT_CONFIRM or t.kind == "pause" for t in tokens(original.markup)))
 
 
@@ -725,7 +724,7 @@ def file_for(where: str) -> str:
 def merge(args) -> int:
     texts = originals_by_where()
     extra = language_characters(args.language)
-    work = read_work(sorted((LOCAL / args.language).glob("[0-9]*.txt")))
+    work = read_work([Path(f) for f in args.files] if args.files else sorted((LOCAL / args.language).glob("[0-9]*.txt")))
     bad = 0
     files: dict[str, list[str]] = defaultdict(list)
     for where, translation in sorted(work.items()):
@@ -802,6 +801,7 @@ def main(argv=None) -> int:
         command.set_defaults(run=run)
         if name == "merge":
             command.add_argument("--keep-bad", action="store_true", help="write refused translations too")
+            command.add_argument("files", nargs="*", help="translators' files (default: every .local/locale/<language>/NNN*.txt)")
     args = parser.parse_args(argv)
     return args.run(args)
 
