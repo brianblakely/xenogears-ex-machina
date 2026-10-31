@@ -549,11 +549,13 @@ mod tests {
         // The game module with nothing booted, and its state as another
         // build's: the identity record after the magic and the version.
         let mut game = Game::new(Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default));
-        let module = game.session.runtime.identity.module.clone();
+        let identity = game.session.runtime.identity.clone();
+        let module = identity.module.clone();
         let content = checked(&game.snapshot_bytes().unwrap()).unwrap().to_vec();
         let length = u32::from_le_bytes(content[12..16].try_into().unwrap()) as usize;
         let mut foreign = Writer(content[..12].to_vec());
-        foreign.bytes(br#"{"module":"another build","disc":"","packages":[]}"#);
+        // The game module alone differs (the translations installed are this session's).
+        foreign.bytes(json!({"module": "another build", "disc": identity.disc, "packages": identity.packages}).to_string().as_bytes());
         foreign.0.extend_from_slice(&content[16 + length..]);
         let directory = std::env::temp_dir().join(format!("xem-host-refused-state-{}", std::process::id()));
         std::fs::create_dir_all(directory.join("saves")).unwrap();
