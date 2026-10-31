@@ -24,10 +24,24 @@
  * taken out or blanked and an accent drawn over it, the host's recipe. The
  * rows are put back before it returns, and nothing waits in between.
  *
+ * The menus' command labels (Status, Equip, Buy ...) are not text: they are
+ * sheet entries 0x123-0x149 of the menu's sprite sheet, words drawn in its
+ * textures. When a menu has loaded its resources (the five loaders below,
+ * each the original's first), each such entry the active language
+ * translates (named by the hash of the entry's bytes, its parts' places in
+ * the textures) is drawn with the game's text renderer in the game's font
+ * into texture page (448, 256), which no menu uses, and the entry made one
+ * part showing it with the text palette the menus load at (0, 0x1D1). The
+ * line image is a heap block, as the menus' own are: the transfer to VRAM
+ * reads RAM.
+ *
  * With no language active (the original's English) every function is the
  * original's. The port keeps no data of its own.
  */
 #include "common.h"
+#include "psyq/libgpu.h"
+#include "resident/heap.h"
+#include "resident/sprite.h"
 #include "resident/text.h"
 #include "resident/window.h"
 #include "xem/memory.h"
@@ -83,6 +97,16 @@ s32 xem_original_text_get_glyph_width(u16 first, u16 second);
 void xem_original_text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane);
 u16 *text_get_font(void);
 u8 *text_get_resource_entry(u8 *resource, s32 index);
+/* resident/menu.h's MenuState *menu_state_current, read as its address
+ * (the header's layout checks hold for the game's 32-bit pointers only):
+ * the menu's sprite sheet is at +0x2DC. */
+extern u32 menu_state_current;
+#define XEM_MENU_SHEET 0x2DC
+void xem_original_menu_load_resources(void);
+void xem_original_item_shop_load_resources(void);
+void xem_original_gear_shop_load_resources(void);
+void xem_original_member_change_load_resources(void);
+void xem_original_name_entry_load_resources(void);
 
 static const XemLocaleHeader *xem_locale_header(void) {
     const XemLocaleHeader *header = (const XemLocaleHeader *)(XemUintptr)XEM_LOCALE;
@@ -138,24 +162,24 @@ u32 xem_text_length(const u8 *text) {
     return 0;
 }
 
-/* The active language's translation of `text`, or NULL. */
-static const XemLocaleText *xem_locale_find(const u8 *text) {
+/* The active language's translation of the `length` bytes at `bytes`, by
+ * their FNV-1a 64 hash, or NULL. */
+static const XemLocaleText *xem_locale_lookup(const u8 *bytes, u32 length) {
     const XemLocaleLanguage *language = xem_locale_language();
     const XemLocaleText *texts;
     const XemLocaleText *entry;
     unsigned long long hash = 0xCBF29CE484222325ULL;
     unsigned long long found;
-    u32 length;
     u32 i;
     u32 low;
     u32 high;
     u32 middle;
 
-    if (language == NULL || (length = xem_text_length(text)) == 0) {
+    if (language == NULL || length == 0) {
         return NULL;
     }
     for (i = 0; i < length; i++) {
-        hash = (hash ^ text[i]) * 0x100000001B3ULL;
+        hash = (hash ^ bytes[i]) * 0x100000001B3ULL;
     }
     texts = (const XemLocaleText *)(XemUintptr)language->texts;
     low = 0;
@@ -174,6 +198,11 @@ static const XemLocaleText *xem_locale_find(const u8 *text) {
         }
     }
     return NULL;
+}
+
+/* The active language's translation of `text`, or NULL. */
+static const XemLocaleText *xem_locale_find(const u8 *text) {
+    return xem_locale_language() != NULL ? xem_locale_lookup(text, xem_text_length(text)) : NULL;
 }
 
 static u8 *xem_translate(u8 *text) {
@@ -269,4 +298,142 @@ void text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     for (row = 0; row < 11; row++) {
         text_special_glyph_rows[row] = saved[row];
     }
+}
+
+/* The menus' command labels: their sheet entries, where they are drawn, the
+ * widest a label may be (in the renderer's 4-pixel columns, a line image of
+ * that many columns plus 3 halfwords a row) and the rows a line takes. */
+#define XEM_LABEL_FIRST 0x123
+#define XEM_LABEL_LAST 0x149
+#define XEM_LABEL_PAGE_X 448
+#define XEM_LABEL_PAGE_Y 256
+#define XEM_LABEL_PAGE_WIDTH 64 /* halfwords: 256 4-bit texels */
+#define XEM_LABEL_COLUMNS 59
+#define XEM_LABEL_STRIDE (XEM_LABEL_COLUMNS + 3)
+#define XEM_LABEL_ROWS 13
+#define XEM_LABEL_CLUT_X 0
+#define XEM_LABEL_CLUT_Y 0x1D1
+
+/* Draw each command label the active language translates into texture page
+ * (448, 256), left to right and down in 13-row lines, and make its entry
+ * one part showing it, where the original's first part was (two rows up, as
+ * the font's 13 rows centre on the original's 9). */
+void xem_locale_menu_labels(u16 *sheet) {
+    u16 *image = NULL;
+    const XemLocaleText *found;
+    SheetPart *part;
+    SheetPart *first;
+    s16 *entry;
+    RECT rect;
+    s32 id;
+    s32 width;
+    s32 halfwords;
+    s32 row;
+    s32 column;
+    s32 at_x = 0;
+    s32 at_y = 0;
+    s16 left;
+    s16 top;
+
+    if (sheet == NULL || xem_locale_language() == NULL) {
+        return;
+    }
+    for (id = XEM_LABEL_FIRST; id <= XEM_LABEL_LAST; id++) {
+        entry = (s16 *)((u8 *)sheet + sheet[id + 2]);
+        if (entry[0] < 1 || entry[0] > 8) {
+            continue;
+        }
+        found = xem_locale_lookup((const u8 *)entry, 4 + sizeof(SheetPart) * entry[0]);
+        if (found == NULL) {
+            continue;
+        }
+        if (image == NULL) {
+            image = heap_alloc(XEM_LABEL_STRIDE * XEM_LABEL_ROWS * 2, 0);
+        }
+        for (row = 0; row < XEM_LABEL_STRIDE * XEM_LABEL_ROWS; row++) {
+            image[row] = 0;
+        }
+        width = xem_original_window_render_text_line((u8 *)(XemUintptr)found->text, image, XEM_LABEL_COLUMNS, 0);
+        halfwords = (width + 3) / 4;
+        if (halfwords == 0 || halfwords > XEM_LABEL_PAGE_WIDTH) {
+            continue;
+        }
+        if (at_x + halfwords > XEM_LABEL_PAGE_WIDTH) {
+            at_x = 0;
+            at_y += XEM_LABEL_ROWS;
+        }
+        if (at_y + XEM_LABEL_ROWS > 256) {
+            break;
+        }
+        /* The line image's rows, each `halfwords` wide, one after another. */
+        for (row = 0; row < XEM_LABEL_ROWS; row++) {
+            for (column = 0; column < halfwords; column++) {
+                image[row * halfwords + column] = image[row * XEM_LABEL_STRIDE + column];
+            }
+        }
+        rect.x = XEM_LABEL_PAGE_X + at_x;
+        rect.y = XEM_LABEL_PAGE_Y + at_y;
+        rect.w = halfwords;
+        rect.h = XEM_LABEL_ROWS;
+        LoadImage(&rect, (u_long *)image);
+        DrawSync(0); /* the transfer reads the line image, which the next label reuses */
+        first = (SheetPart *)(entry + 2);
+        left = first->x;
+        top = first->y;
+        for (part = first + 1; part < first + entry[0]; part++) {
+            if ((s16)part->x < left) {
+                left = part->x;
+            }
+            if ((s16)part->y < top) {
+                top = part->y;
+            }
+        }
+        first->u = at_x * 4;
+        first->v = at_y;
+        first->w = width;
+        first->h = XEM_LABEL_ROWS;
+        first->x = left;
+        first->y = top - 2;
+        first->mode = 0;
+        first->clut_x = XEM_LABEL_CLUT_X;
+        first->clut_y = XEM_LABEL_CLUT_Y;
+        first->page_x = XEM_LABEL_PAGE_X;
+        first->page_y = XEM_LABEL_PAGE_Y;
+        first->flip_x = 0;
+        first->flip_y = 0;
+        entry[0] = 1;
+        at_x += halfwords;
+    }
+    if (image != NULL) {
+        heap_free(image);
+    }
+}
+
+static u16 *xem_menu_sheet(void) {
+    return menu_state_current != 0 ? (u16 *)(XemUintptr)XEM_U32(menu_state_current + XEM_MENU_SHEET) : NULL;
+}
+
+void menu_load_resources(void) {
+    xem_original_menu_load_resources();
+    xem_locale_menu_labels(xem_menu_sheet());
+}
+
+void item_shop_load_resources(void) {
+    xem_original_item_shop_load_resources();
+    xem_locale_menu_labels(xem_menu_sheet());
+}
+
+void gear_shop_load_resources(void) {
+    xem_original_gear_shop_load_resources();
+    xem_locale_menu_labels(xem_menu_sheet());
+}
+
+void member_change_load_resources(void) {
+    xem_original_member_change_load_resources();
+    xem_locale_menu_labels(xem_menu_sheet());
+}
+
+void name_entry_load_resources(void) {
+    xem_original_name_entry_load_resources();
+    xem_locale_menu_labels(xem_menu_sheet());
 }

@@ -1,2 +1,2 @@
 - The game's text can now be read in Brazilian Portuguese: choose **Settings → Gameplay → Language → Game text**. English stays the default.
-- Dialogue, narration, item and ability names and descriptions, shop, save and battle messages, enemy names and place names are translated; accented letters are drawn from the game's own font. A few words the game draws as pictures stay in English.
+- Dialogue, narration, menu commands, item and ability names and descriptions, shop, save and battle messages, enemy names and place names are translated; accented letters are drawn from the game's own font. A few small words the game draws as pictures (LV, HP, the battle command ring) stay in English.

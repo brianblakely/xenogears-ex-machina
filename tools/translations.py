@@ -266,6 +266,7 @@ GROUPS = {
     "bm": "battle menu",
     "be": "battle events",
     "wa": "world areas",
+    "mc": "menu commands",
 }
 PREFIX = {name: prefix for prefix, name in GROUPS.items()}
 PREFIX["field messages (packed stream reads past its file)"] = "f"
@@ -352,6 +353,28 @@ def field_scripts(disc) -> dict[int, dict]:
     return result
 
 
+# The menus' command labels (src/port/locale.c): words drawn in the menu's
+# textures, sheet entries 0x123-0x149 of its sprite sheet (directory (0x10, 0)
+# file 1, archive entry 2), named by the hash of each entry's bytes (its part
+# count, then 0x1C bytes a part). Their English is a picture, not text; a
+# translation is one line the port draws with the game's text renderer, at
+# most LABEL_COLUMNS columns.
+LABELS = range(0x123, 0x14A)
+LABEL_COLUMNS = 59
+
+
+def menu_labels(disc) -> list[tuple[int, bytes]]:
+    from tools.analysis import text_control as tc
+
+    sheet = tc.archive_entry(disc.sectors(disc.slot(0x10, 0, 1)), 2, packed=True)
+    out = []
+    for label in LABELS:
+        offset = struct.unpack_from("<H", sheet, 4 + 2 * label)[0]
+        parts = struct.unpack_from("<h", sheet, offset)[0]
+        out.append((label, sheet[offset : offset + 4 + 0x1C * parts]))
+    return out
+
+
 def originals() -> dict[str, Text]:
     """Every distinct text of both discs, by hash, with its limits."""
     from tools.analysis import text_control as tc
@@ -363,6 +386,10 @@ def originals() -> dict[str, Text]:
     for number in (1, 2):
         disc = Disc(number)
         scripts = field_scripts(disc)
+        for label, data in menu_labels(disc):
+            digest = f"{fnv1a64(data):016x}"
+            text = texts.setdefault(digest, Text(f"mc{label:03d}-0000", digest, "", LABEL_COLUMNS, 1, GROUPS["mc"]))
+            text.places.append(f"mc{label:03d}-0000@{number}")
         for group, item, data in tc.text_tables(disc):
             if data is None or isinstance(data, Exception):
                 continue
@@ -690,7 +717,7 @@ def file_for(where: str) -> str:
     if prefix == "f":
         number = int(where[1:4])
         return f"field-{number // 100}.txt"
-    return {"s": "system.txt", "ml": "menus.txt", "mw": "menus.txt", "md": "menus.txt", "mm": "menus.txt",
+    return {"s": "system.txt", "ml": "menus.txt", "mw": "menus.txt", "md": "menus.txt", "mm": "menus.txt", "mc": "menus.txt",
             "ba": "battle.txt", "en": "battle.txt", "bm": "battle.txt", "be": "battle.txt",
             "wa": "world.txt"}[prefix]
 

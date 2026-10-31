@@ -70,7 +70,11 @@ u32 test_text;
 u32 test_glyph[2];
 u16 test_rows[11];
 s16 xem_original_window_queue_message(Window *window, s32 message) { test_message = (u32)message; return 1; }
-s32 xem_original_window_render_text_line(u8 *text, void *image, s16 width, s32 flags) { test_text = (u32)(XemUintptr)text; return 8; }
+s32 xem_original_window_render_text_line(u8 *text, void *image, s16 width, s32 flags) {
+    test_text = (u32)(XemUintptr)text;
+    if (image != NULL) ((u16 *)image)[0] = 0x1111; /* a mark where the line starts */
+    return 8 * 4 * 5; /* five narrow glyphs' width in pixels */
+}
 void xem_original_window_insert_text(Window *window, u8 *text) { test_text = (u32)(XemUintptr)text; }
 u8 xem_original_text_get_message_columns(u16 *table, s32 index) { return 40; }
 u8 xem_original_text_get_message_rows(u16 *table, s32 index) { return 3; }
@@ -83,6 +87,27 @@ void xem_original_text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride,
     for (row = 0; row < 11; row++) test_rows[row] = text_special_glyph_rows[row];
 }
 u16 *text_get_font(void) { return (u16 *)(XemUintptr)0x80012000u; }
+u32 test_loads;
+u32 test_rects[16][4];
+u32 test_syncs;
+u32 test_frees;
+void *heap_alloc(s32 size, s32 mode) { return (void *)(XemUintptr)0x80040000u; }
+s32 heap_free(void *data) { test_frees++; return 0; }
+int LoadImage(RECT *rect, u_long *p) {
+    if (test_loads < 16) {
+        test_rects[test_loads][0] = rect->x; test_rects[test_loads][1] = rect->y;
+        test_rects[test_loads][2] = rect->w; test_rects[test_loads][3] = rect->h;
+    }
+    test_loads++;
+    return 0;
+}
+int DrawSync(int mode) { test_syncs++; return 0; }
+void *menu_state_current;
+void xem_original_menu_load_resources(void) {}
+void xem_original_item_shop_load_resources(void) {}
+void xem_original_gear_shop_load_resources(void) {}
+void xem_original_member_change_load_resources(void) {}
+void xem_original_name_entry_load_resources(void) {}
 u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *)resource)[index + 2]; }
 ''')
         cls.lib = port_native.build(cls.build.name, ["src/port/locale.c", str(support)],
@@ -100,6 +125,7 @@ u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *
         lib.text_get_message_rows.argtypes = [ctypes.c_void_p, ctypes.c_int]
         lib.text_get_glyph_width.argtypes = [ctypes.c_ushort, ctypes.c_ushort]
         lib.text_draw_glyph.argtypes = [ctypes.c_int, ctypes.c_ushort, ctypes.c_void_p, ctypes.c_short, ctypes.c_int]
+        lib.xem_locale_menu_labels.argtypes = [ctypes.c_void_p]
 
     def word(self, name):
         return ctypes.c_uint.in_dll(self.lib, name).value
@@ -187,3 +213,43 @@ u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *
         self.assertEqual(port_native.read(SPECIAL, 22), before, "the special glyph's rows put back")
         self.lib.text_draw_glyph(0x30, 0x41, None, 8, 0)
         self.assertEqual(self.word("test_glyph"), 0x30, "any other glyph is the original's")
+
+    def test_a_menus_command_labels_the_language_translates_are_drawn_into_the_free_page_and_their_entries_show_them(self):
+        """Sheet entries 0x123-0x149 (the command labels), by the hash of the
+        entry's bytes: a translated one drawn with the text renderer into
+        page (448, 256), its entry made one part showing it with the text
+        palette, two rows up; an untranslated one left as it was."""
+        sheet = 0x80050000
+        count = 0x150
+        offsets = 4 + 2 * count
+        entry = struct.pack("<hh", 2, 0) + struct.pack("<HhHHhhxxxxhhhHHBB", 0, 148, 32, 9, -55, -39, 0, 272, 509, 448, 148, 0, 0) \
+            + struct.pack("<HhHHhhxxxxhhhHHBB", 0x20, 148, 8, 9, -60, -39, 0, 272, 509, 448, 148, 0, 0)
+        other = struct.pack("<hh", 1, 0) + struct.pack("<HhHHhhxxxxhhhHHBB", 0x40, 157, 19, 9, 10, 20, 0, 272, 509, 448, 148, 0, 0)
+        table = bytearray(struct.pack("<HH", count, 0) + bytes(2 * count))
+        for label in range(count):
+            struct.pack_into("<H", table, 4 + 2 * label, offsets + (len(entry) if label == 0x12C else 0))
+        port_native.write(sheet, bytes(table) + entry + other)
+        digest = translations.fnv1a64(entry)
+        data = region(1, [(digest, TRANSLATION, 10, 1)], ())
+        ctypes.memmove(LOCALE, data, len(data))
+        for name in ("test_loads", "test_syncs", "test_frees"):
+            ctypes.c_uint.in_dll(self.lib, name).value = 0
+        self.lib.xem_locale_menu_labels(sheet)
+        # Every entry but 0x12C names the first entry, which is translated: each is drawn and patched once.
+        self.assertGreater(self.word("test_loads"), 0)
+        self.assertEqual(self.word("test_syncs"), self.word("test_loads"), "each transfer waited for")
+        self.assertEqual(self.word("test_frees"), 1, "the line image freed")
+        rect = tuple((ctypes.c_uint * 4).in_dll(self.lib, "test_rects"))
+        self.assertEqual(rect, (448, 256, 40, 13), "the page's first line, 160 pixels wide")
+        patched = port_native.read(sheet + offsets, 4 + 0x1C)
+        parts, _, u, v, w, h, x, y, mode, clut_x, clut_y, page_x, page_y, flip_x, flip_y = struct.unpack("<hhHhHHhhxxxxhhhHHBB", patched)
+        self.assertEqual((parts, u, v, w, h, x, y), (1, 0, 0, 160, 13, -60, -41))
+        self.assertEqual((mode, clut_x, clut_y, page_x, page_y, flip_x, flip_y), (0, 0, 0x1D1, 448, 256, 0, 0))
+        self.assertEqual(port_native.read(sheet + offsets + len(entry), len(other)), other, "the untranslated entry unchanged")
+        # Without the active language nothing is drawn or changed.
+        port_native.write(sheet + offsets, entry)
+        ctypes.memmove(LOCALE + 4, struct.pack("<I", 0), 4)
+        ctypes.c_uint.in_dll(self.lib, "test_loads").value = 0
+        self.lib.xem_locale_menu_labels(sheet)
+        self.assertEqual(self.word("test_loads"), 0)
+        self.assertEqual(port_native.read(sheet + offsets, len(entry)), entry)

@@ -8602,13 +8602,14 @@ messages, enemy names and event narration, and the world map's place
 names; 17 086 of the 17 777 distinct texts of both discs (the rest are
 glyphs alone, numbers or Japanese placeholders of the development data,
 which stay as they are). Text built at run time (numbers, the party's
-names) is the game's own. Words drawn as pictures stay as drawn: the menus'
-command labels (sheet entries 0x123-0x142 of the menu's sprite sheet, a
-strip of the menu's textures in a small font with no accented letters), the
-status screen's abbreviations composed of that font's letter sprites (LV,
-HP, EP, Next LV, Attack ...), the battle command ring's and HUD's lettering,
-and the memory card titles the file screens draw from the BIOS Kanji font
-(JIS X 0208 has no accented Latin letters).
+names) is the game's own. The menus' command labels (New Game, Status,
+Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
+anew in the language (below). Other words drawn as pictures stay as drawn:
+the labels the menus compose of a small font's letter sprites (LV, HP, EP,
+Next LV, Attack, Hit%, Defense, Weight, the Gear shop's HP, FUEL and
+WEIGHT), whose rows leave no room for the game's font, the battle command
+ring's and the HUD's lettering, and the memory card titles the file screens
+draw from the BIOS Kanji font (JIS X 0208 has no accented Latin letters).
 
 **The translations.** A language ships as text files,
 `src/runtime/crates/xem-core/locale/<tag>/*.txt`, one line per text:
@@ -8658,6 +8659,29 @@ takes the new language. `text_get_message_columns` and
 `text_get_message_rows` give a field message's window what its translation
 needs beyond its table's.
 
+**Command labels.** The menus draw their commands from sheet entries
+0x123-0x149 of the menu's sprite sheet (directory (0x10, 0) file 1, archive
+entry 2, which the field's, the battle's and the world map's menus load
+alike): words in the menus' textures, in a small font without accented
+letters, some composed of pieces of others. `src/port/locale.c` wraps the
+five loaders of a menu's resources (`menu_load_resources`,
+`item_shop_load_resources`, `gear_shop_load_resources`,
+`member_change_load_resources`, `name_entry_load_resources`): once the
+original has loaded them, each label the active language translates
+(named by the FNV-1a 64 hash of its entry's bytes, its part count and
+parts) is drawn with the game's text renderer
+(`window_render_text_line`, the original's) into a heap block, which the
+transfer to VRAM reads as it reads the menus' own, and placed in texture
+page (448, 256), which no menu screen uses (measured on each: the field
+menu and its screens, member change, the title's Load, name entry and both
+shops), left to right in 13-row lines; its entry becomes one part showing
+it with the text palette the menus load at (0, 0x1D1), two rows above the
+original's place (the font's 13 rows centre on the picture's 9). An entry
+already drawn so no longer has its original bytes, so a second pass draws
+nothing. The translations name the labels `mc<entry>-0000` (37 entries, 30
+distinct pictures); `tools/translations.py` hashes them from both discs'
+sheets.
+
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
 capitals (`locale/pt-BR/glyphs.txt`). Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
@@ -8686,6 +8710,10 @@ and blanked and its accent, the special glyph's rows put back), `xem-core`'s
 `locale` tests (markup encoded as the game reads text, the columns and rows
 measured; characters the font lacks, unknown controls and bad operands
 refused; the glyph recipes; the image's layout, records ascending by hash),
+the native test's command labels (a translated entry drawn into page
+(448, 256), each transfer waited for, the line image freed, the entry one
+part there with the text palette two rows up; an untranslated one and
+every one without an active language unchanged),
 `xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
