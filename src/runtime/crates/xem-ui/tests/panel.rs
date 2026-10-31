@@ -791,6 +791,36 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
 }
 
 #[test]
+fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_settings_service() {
+    use xem_settings::{Language, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Gameplay", 6);
+    let choice = element(&ui, "Game text language", AccessibleRole::Combobox);
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (0, Some("English")), "the original's by default");
+    // Each language listed by its own name; a choice is the service's.
+    press(&ui, &choice);
+    ui.update().unwrap();
+    element(&ui, "Português (Brasil)", AccessibleRole::ListItem).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().language, Language::BrazilianPortuguese);
+    assert_eq!(*acks.borrow(), [SettingChange::Language(Language::BrazilianPortuguese)]);
+    assert_eq!(choice.accessible_value().as_deref(), Some("Português (Brasil)"));
+    // An agent's change shows.
+    settings.borrow_mut().apply(SettingChange::Language(Language::English)).unwrap();
+    ui.update().unwrap();
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (0, Some("English")));
+}
+
+#[test]
 fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     const SECTIONS: [&str; 9] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Debug", "About"];
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");

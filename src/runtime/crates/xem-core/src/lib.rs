@@ -20,6 +20,7 @@ pub mod encounters;
 pub mod field;
 pub mod exe;
 pub mod inspect;
+pub mod locale;
 pub mod memory;
 pub mod menu;
 pub mod module;

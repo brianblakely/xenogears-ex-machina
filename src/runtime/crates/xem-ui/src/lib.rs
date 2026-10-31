@@ -14,7 +14,7 @@ use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, DioramaTurns, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
     GraphicsProfile, HeadsetView, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding, TextSpeed, EncounterRate,
+    GAME_ACTION_ROWS, GameBinding, TextSpeed, EncounterRate, Language,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -604,6 +604,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_auto_advance(settings.auto_advance.enabled);
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
     panel.set_movie_skip(settings.movie_skip);
+    panel.set_language(index_of(&Language::ALL, &settings.language));
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
     panel.set_assist_pointer(match assisted.pointer {
@@ -708,6 +709,9 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         ))
         .into(),
     );
+    panel.set_languages(
+        Rc::new(slint::VecModel::from(Language::ALL.iter().map(|l| slint::SharedString::from(l.name())).collect::<Vec<_>>())).into(),
+    );
     show(panel, settings.borrow().settings());
     let weak = panel.as_weak();
     settings.borrow_mut().subscribe(move |ack| {
@@ -789,6 +793,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 }
                 "auto-advance-dwell" => u32::try_from(value).ok().map(|dwell| SettingChange::AutoAdvance(xem_settings::AutoAdvance { dwell, ..auto })),
                 "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
+                "language" => usize::try_from(value).ok().and_then(|i| Language::ALL.get(i)).map(|language| SettingChange::Language(*language)),
                 _ => None,
             })
         }

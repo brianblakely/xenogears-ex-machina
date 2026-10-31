@@ -8581,6 +8581,125 @@ flow at a time, so a scene one actor lets go and another takes back is not
 counted. The early grants were measured headless only; the browser and the
 other hosts were not run.
 
+### Languages
+
+Settings → Gameplay → Language → **Game text** chooses the language of the
+game's own text: **English**, the original's, by default, or **Português
+(Brasil)**. It is a setting (`xem_settings::Settings::language`, saved as
+`"English"` or `"BrazilianPortuguese"`), which the hosts give the session
+every frame as they give the text speed (`Session::set_language`); agents
+use the same setting (`settings_apply {"Language": ...}`) or the session's
+command `language {language: "en" | "pt-BR"}`, and `status` says which is
+active (`language`). A language's translation changes how long the game's
+windows take and how many pages they turn, so the language is recorded with
+the inputs, and a replay takes the recorded one.
+
+**What it covers.** Every text the game draws from its text tables
+(docs/scripts/text-control.md): the field's dialogue and narration, the
+menus' item, weapon, accessory, Gear part, art and deathblow names and
+descriptions, the shops', save screens' and system messages, the battles'
+messages, enemy names and event narration, and the world map's place
+names; 17 086 of the 17 777 distinct texts of both discs (the rest are
+glyphs alone, numbers or Japanese placeholders of the development data,
+which stay as they are). Text built at run time (numbers, the party's
+names) is the game's own. Words drawn as pictures stay as drawn: the menus'
+command labels (sheet entries 0x123-0x142 of the menu's sprite sheet, a
+strip of the menu's textures in a small font with no accented letters), the
+status screen's abbreviations composed of that font's letter sprites (LV,
+HP, EP, Next LV, Attack ...), the battle command ring's and HUD's lettering,
+and the memory card titles the file screens draw from the BIOS Kanji font
+(JIS X 0208 has no accented Latin letters).
+
+**The translations.** A language ships as text files,
+`src/runtime/crates/xem-core/locale/<tag>/*.txt`, one line per text:
+`<where> <hash> <translation>`. `<where>` names the first table entry
+holding the text (`f012-0003`: field map 12's message 3; `s22-0005`:
+system data resource 22's entry 5), `<hash>` is the FNV-1a 64 hash of the
+original's bytes through its closing 00, and the translation is markup:
+characters, which become glyphs of the font, and controls in braces, the
+codes `window_reveal_text` interprets (`{n}` a new line, `{p}` a page,
+`{wait 30}`, `{name 128}`, `{item}`, ...). No original text is committed:
+`python3 -m tools.translations extract` writes both discs' texts to
+`.local/locale/` (each with its window's limits, and batches for
+translators), `lint` checks translators' files, `merge` writes the shipped
+files and `check` checks them against the discs. A translation keeps its
+original's controls (the waits, speed changes and timed ends in their order,
+the insertions in any order), and each line and page fits its window: a
+field message's lines take up to 52 columns (26 narrow letters, the widest a
+window beside a portrait leaves on the 320-pixel screen) or its table's
+columns if more, and 4 lines a page (the portrait window's rows) or its own
+rows if more; `merge` breaks a longer line at its spaces and splits a longer
+page into pages where the player's Confirm already ends the text. A timed
+text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
+(its last page's lines are the cursor's: `a9` names them), a message whose
+window a script sizes (`cf`, `d0`) and every text outside the field keep
+their pages and fit their windows as they are.
+
+**In game memory.** Every runtime installs every language's translations
+at construction (`locale::install`, `Runtime::new`) at 0x20000000, outside
+the PS1's addresses and outside snapshots (`snapshot::REGIONS`), as the
+Kanji font is placed; their digest is a package of the state identity
+(`"translations <sha256>"`), so a state restores only where the same
+translations are installed. The image is a header (magic `XLC1`, the active
+language, the number of languages, the added glyphs' address and count),
+each language's records' address and count, the glyphs' recipes, each
+language's records (hash, the translation's address, the columns and rows
+it needs) ascending by hash, then the translations' bytes.
+`locale::activate` writes the active language (0 for the original).
+`src/port/locale.c` wraps the three ways a window takes text,
+`window_queue_message`, `window_render_text_line` and `window_insert_text`:
+it walks the text it is passed as `window_reveal_text` walks it (in RAM,
+within 4 KiB), hashes it and, when the active language has a translation,
+passes the translation's address instead. The game's bytes and pointers
+stay as they are; a window's text pointer then points at the translation,
+which stays installed whatever is active later, so a window goes on with the
+text it began (and the texts queued before a change), and the next text
+takes the new language. `text_get_message_columns` and
+`text_get_message_rows` give a field message's window what its translation
+needs beyond its table's.
+
+**Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
+capitals (`locale/pt-BR/glyphs.txt`). Each is a two-byte glyph from 0xFF20
+(0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
+its special glyph), the same code in every language that adds the letter.
+`text_get_glyph_width` makes them narrow (2 columns), and `text_draw_glyph`
+draws one through the original's own drawing of 0xFFFF: it puts the letter
+in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
+0xFF and puts the special glyph's rows back, with nothing waiting in
+between. The letter is composed from the player's font: the base letter's
+11 rows (the font block `text_install_font` installed), rows taken out
+(a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
+drawn for this project over the top rows (the cedilla on row 10). No glyph
+of the original is copied.
+
+With English active every wrapped function is the original's, so the game
+runs as before: RAM, VRAM and timing are those of the original's text.
+
+Tests: `tests/test_port_locale.py` (the port built natively over stand-ins
+for the originals: a text walked as the window walks it and the tools name
+it, none outside RAM or without its 00; no language, or the original's
+English, passing every pointer through; the active language's translation
+passed to each of the three, the original where it has none; a field
+window's columns and rows grown to the translation's, never shrunk; an
+added letter narrow, drawn through 0xFFFF from its base with rows taken out
+and blanked and its accent, the special glyph's rows put back), `xem-core`'s
+`locale` tests (markup encoded as the game reads text, the columns and rows
+measured; characters the font lacks, unknown controls and bad operands
+refused; the glyph recipes; the image's layout, records ascending by hash),
+`xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
+`xem-headless/tests/text_and_movies.rs` (disc 1):
+`a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
+(field 12's opening message: in English the window reads it in RAM; in
+Brazilian Portuguese it reads the shipped translation of the same message,
+with added letters, and goes on with it once English is chosen, the next
+message read in RAM),
+`the_language_is_recorded_and_a_replay_reaches_the_recordings_memory`, the
+timed scenes the text speed is tested on (maps 4, 27, 131, 288 twice, 326,
+359 and 482: the same end, story value and messages in Brazilian
+Portuguese as in English) and
+`the_opening_chapter_reaches_feis_room_in_brazilian_portuguese` (New Game
+to Fei's room: the same maps, battle and story value).
+
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with

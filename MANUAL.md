@@ -355,6 +355,15 @@ game paused until you resume it.
 
 Find these in **Settings → Gameplay**. Each choice is saved for next time.
 
+- **Language — Game text:** **English**, the original, or **Português
+  (Brasil)**. It changes the game's dialogue, narration, item and ability
+  names and descriptions, shop and save messages, battle messages and
+  place names from the next text the game shows; a box already showing
+  text finishes it first. A few words the game draws as pictures stay in
+  English: the menus' command labels (Status, Equip, Items ...), the
+  status screen's abbreviations (LV, HP, EP ...), the battle command ring
+  and the save titles on the file screens. Settings itself stays in
+  English.
 - **Random battles — Not while platforming:** the default. Turns off random
   encounters in the selected jumping areas of Blackmoon Forest, the
   Aveh–Kislev border mountains and Babel Tower. Choose **Original** for the

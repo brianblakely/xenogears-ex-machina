@@ -1,0 +1,46 @@
+# The letters Brazilian Portuguese adds to the game's font (docs/runtime.md,
+# Languages). The port composes each from a letter of the player's own font
+# (directory (0, 1) file 6) and an accent drawn here for this project (MIT,
+# like the rest of this repository): no glyph of the original is copied.
+#
+# A glyph's rows are the font's 11 rows of 12 columns (row 0 the top; small
+# letters span rows 3-9, capitals 1-9, descenders reach row 10).
+#
+#   accent <name> <row>=<columns 0-4, # drawn> ...
+#   <char> <base letter> <accent> [drop=<rows>] [clear=<rows>]
+#
+# drop= takes those rows out of the base letter and moves the rows above them
+# down (a capital, shortened to rows 3-9, leaves room for its accent);
+# clear= blanks rows (the dot of i). Each glyph is a two-byte code, 0xFF20
+# for the first, in the order listed; the game draws it as a narrow letter.
+
+accent acute 0=...#. 1=..#..
+accent grave 0=.#... 1=..#..
+accent circumflex 0=..#.. 1=.#.#.
+accent tilde 0=.##.# 1=#..#.
+accent cedilla 10=..##.
+
+á a acute
+à a grave
+â a circumflex
+ã a tilde
+é e acute
+ê e circumflex
+í i acute clear=0,1,2
+ó o acute
+ô o circumflex
+õ o tilde
+ú u acute
+ç c cedilla
+Á A acute drop=2,4
+À A grave drop=2,4
+Â A circumflex drop=2,4
+Ã A tilde drop=2,4
+É E acute drop=3,7
+Ê E circumflex drop=3,7
+Í I acute drop=2,3
+Ó O acute drop=3,7
+Ô O circumflex drop=3,7
+Õ O tilde drop=3,7
+Ú U acute drop=3,7
+Ç C cedilla

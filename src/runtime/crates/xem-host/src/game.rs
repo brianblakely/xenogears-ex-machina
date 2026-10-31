@@ -361,6 +361,7 @@ impl Game {
                 self.session.set_half_encounters(settings.half_encounters());
                 self.session.set_text_speed(settings.text_speed.glyphs())?;
                 self.session.set_movie_skip(settings.movie_skip);
+                self.session.set_language(settings.language);
                 self.session.set_auto_advance(settings.auto_advance_dwell())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
