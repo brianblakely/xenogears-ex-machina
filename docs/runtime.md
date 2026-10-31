@@ -8599,9 +8599,11 @@ the inputs, and a replay takes the recorded one.
 menus' item, weapon, accessory, Gear part, art and deathblow names and
 descriptions, the shops', save screens' and system messages, the battles'
 messages, enemy names and event narration, and the world map's place
-names; 17 086 of the 17 777 distinct texts of both discs (the rest are
-glyphs alone, numbers or Japanese placeholders of the development data,
-which stay as they are). Text built at run time (numbers, the party's
+names: every one of the 17 086 distinct texts of both discs that holds a
+letter (the other 691 of the 17 777 are glyphs alone, numbers or Japanese
+placeholders of the development data, which stay as they are). 16 030 are
+translated; 1 056, the same in Portuguese (names alone, cries, the
+developers' test menus kept as they were), are listed rather than shipped. Text built at run time (numbers, the party's
 names) is the game's own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
 anew in the language (below). Other words drawn as pictures stay as drawn:
@@ -8623,7 +8625,10 @@ codes `window_reveal_text` interprets (`{n}` a new line, `{p}` a page,
 `python3 -m tools.translations extract` writes both discs' texts to
 `.local/locale/` (each with its window's limits, and batches for
 translators), `lint` checks translators' files, `merge` writes the shipped
-files and `check` checks them against the discs. A translation keeps its
+files and `check` checks them against the discs. A translation that is the
+original's own bytes is not shipped (where a language has no translation
+the original shows): `same.txt` names those texts by `<where>` and `<hash>`
+alone, so `check` tells them from texts left untranslated. A translation keeps its
 original's controls (the waits, speed changes and timed ends in their order,
 the insertions in any order), and each line and page fits its window: a
 field message's lines take up to 52 columns (26 narrow letters, the widest a

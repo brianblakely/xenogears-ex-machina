@@ -544,6 +544,15 @@ mod tests {
     }
 
     #[test]
+    fn every_shipped_translation_reads_and_encodes() {
+        // A line that did not would leave every translation uninstalled.
+        let image = IMAGE.as_ref().expect("the shipped translations build");
+        let lines = PT_BR.iter().map(|(_, source)| source.lines().filter(|l| !l.trim().is_empty()).count()).sum::<usize>();
+        assert_eq!(image.languages, [(Language::BrazilianPortuguese, lines)]);
+        assert!(lines > 16_000, "Brazilian Portuguese ships its translations ({lines})");
+    }
+
+    #[test]
     fn languages_are_named_by_their_tags_and_in_themselves() {
         assert_eq!(Language::from_code("pt-BR"), Some(Language::BrazilianPortuguese));
         assert_eq!(Language::from_code("pt"), None);

@@ -27,7 +27,11 @@ controls in braces, the codes window_reveal_text interprets ({n} a new line,
 `merge` and `check` hold each translation to what its windows take: the
 controls of the original (new lines move freely; a page may be added only
 where the player's Confirm already ends the text; a choice keeps its last
-page's lines), and each line and page within its window (`limits`).
+page's lines), and each line and page within its window (`limits`). A
+translation that is the original's own bytes (a name, a cry, a developer's
+label) is not shipped, as the original shows where a language has no
+translation: `same.txt` lists those texts by <where> and <hash> alone, so
+`check` tells them from texts left untranslated.
 """
 
 from __future__ import annotations
@@ -702,9 +706,17 @@ def read_work(paths) -> dict[str, str]:
     return out
 
 
+SAME = "same.txt"  # texts whose translation is the original (<where> <hash>)
+
+
 def shipped_files(language: str) -> dict[str, list[str]]:
     return {path.name: path.read_text().splitlines() for path in sorted((SHIPPED / language).glob("*.txt"))
-            if path.name != "glyphs.txt"}
+            if path.name not in ("glyphs.txt", SAME)}
+
+
+def same_as_original(language: str) -> set[str]:
+    path = SHIPPED / language / SAME
+    return {line.split()[1] for line in path.read_text().splitlines() if line.strip()} if path.exists() else set()
 
 
 # The files a language ships (xem_core::locale embeds each by name).
@@ -743,14 +755,19 @@ def merge(args) -> int:
             print(f"{where}: {'; '.join(found)}")
             if not args.keep_bad:
                 continue
+        if original.markup and encode(translation, extra) == encode(original.markup):
+            files[SAME].append(f"{where} {original.hash}")
+            continue
         files[file_for(where)].append(f"{where} {original.hash} {translation}")
     missing = [t.where for t in texts.values() if translatable(t) and t.where not in work]
     out = SHIPPED / args.language
     out.mkdir(parents=True, exist_ok=True)
-    for name in FILES:  # every file xem_core::locale embeds, empty or not
+    for name in [*FILES, SAME]:  # every file xem_core::locale embeds, empty or not, and the list
         lines = sorted(files.get(name, []))
         (out / name).write_text("".join(line + "\n" for line in lines))
-    print(f"{sum(map(len, files.values()))} translations written, {bad} refused, {len(missing)} texts untranslated")
+    shipped = sum(len(lines) for name, lines in files.items() if name != SAME)
+    print(f"{shipped} translations written, {len(files.get(SAME, []))} the same as the original, "
+          f"{bad} refused, {len(missing)} texts untranslated")
     for where in missing[:20]:
         print(f"  untranslated: {where}")
     return 1 if bad or missing else 0
@@ -780,8 +797,13 @@ def check(args) -> int:
             if found:
                 print(f"{name}:{number}: {match['where']}: {'; '.join(found)}")
                 bad += 1
-    missing = [t for t in texts.values() if translatable(t) and t.hash not in seen]
-    print(f"{len(seen)} translations checked, {bad} problems, {len(missing)} texts untranslated")
+    same = same_as_original(args.language)
+    for digest in same - set(texts):
+        print(f"{SAME}: no text of both discs has hash {digest}")
+        bad += 1
+    missing = [t for t in texts.values() if translatable(t) and t.hash not in seen and t.hash not in same]
+    print(f"{len(seen)} translations checked, {len(same)} the same as the original, {bad} problems, "
+          f"{len(missing)} texts untranslated")
     for text in missing[:20]:
         print(f"  untranslated: {text.where}")
     return 1 if bad or missing else 0

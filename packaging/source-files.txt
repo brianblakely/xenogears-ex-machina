@@ -758,6 +758,7 @@ src/runtime/crates/xem-core/locale/pt-BR/field-6.txt
 src/runtime/crates/xem-core/locale/pt-BR/field-7.txt
 src/runtime/crates/xem-core/locale/pt-BR/glyphs.txt
 src/runtime/crates/xem-core/locale/pt-BR/menus.txt
+src/runtime/crates/xem-core/locale/pt-BR/same.txt
 src/runtime/crates/xem-core/locale/pt-BR/system.txt
 src/runtime/crates/xem-core/locale/pt-BR/world.txt
 src/runtime/crates/xem-core/src/action.rs
