@@ -511,8 +511,13 @@ impl View {
             return;
         }
         self.wheel -= steps;
+        self.zoom(steps as i32);
+    }
+
+    fn zoom(&mut self, steps: i32) {
+        if steps == 0 { return; }
         let graphics = self.settings.borrow().settings().graphics;
-        let zoomed = graphics.zoomed(steps as i32);
+        let zoomed = graphics.zoomed(steps);
         if zoomed != graphics {
             let _ = self.settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(zoomed));
         }
@@ -1089,6 +1094,7 @@ impl View {
             self.look_mouse = [0.0; 2];
         }
         let on = self.renderer.first_person();
+        let zoom = self.player.zoom_steps(now, !on);
         // Running by default would leave Run pressed alone once the view
         // holds the directions back.
         self.player.run_by_default = self.settings.borrow().settings().run_by_default && !on;
@@ -1111,6 +1117,7 @@ impl View {
             let (yaw, pitch) = turn.radians(seconds);
             self.renderer.look_around(yaw, pitch);
         }
+        self.zoom(zoom);
         xem_settings::look::game_buttons(buttons, on, field, &context.assignment)
     }
 
@@ -1620,10 +1627,33 @@ mod tests {
         press(&view, &[SDL_GAMEPAD_BUTTON_NORTH]);
         assert_eq!(frame(&mut view), button::TRIANGLE, "the reconnected pad plays");
         press(&view, &[]);
+        let tilt = |view: &View, x: f32, y: f32| unsafe {
+            let joystick = SDL_GetGamepadJoystick(*view.gamepads.first().unwrap());
+            SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHTX.0, (x * 32767.0) as i16);
+            SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHTY.0, (y * 32767.0) as i16);
+            SDL_UpdateGamepads();
+        };
+        // Even during a scripted scene (no walking controls), the player
+        // can bring the camera back in to see through the house's walls.
+        tilt(&view, 0.8, 0.9);
+        assert_eq!(frame(&mut view), 0, "the lower slice zooms without turning");
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 125);
+        tilt(&view, 0.8, -0.9);
+        assert_eq!(frame(&mut view), 0);
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 100, "up restores the original zoom");
+        tilt(&view, -0.9, 0.8);
+        assert_eq!(frame(&mut view), button::L1, "the left slice still turns");
+        tilt(&view, 0.9, -0.8);
+        assert_eq!(frame(&mut view), button::R1, "the right slice still turns");
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 100, "turning never zooms");
+        tilt(&view, 0.0, 0.0);
         // Settings changed live, from the open panel: Confirm and Menu
         // swapped (Menu cleared first: an input holds one button).
         view.set_panel_visible(true);
+        tilt(&view, 0.0, 0.9);
         assert_eq!(frame(&mut view), 0, "the panel has the input");
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 100, "settings takes the stick too");
+        tilt(&view, 0.0, 0.0);
         settings.borrow_mut().apply(xem_settings::SettingChange::BindGame {
             context: xem_settings::InputContext::Play,
             action: xem_settings::GameAction::Menu,

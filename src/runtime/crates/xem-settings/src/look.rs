@@ -308,9 +308,10 @@ impl Turn {
             let t = ((v.abs() - DEAD_ZONE) / (1.0 - DEAD_ZONE)).clamp(0.0, 1.0);
             t * t * v.signum()
         };
-        let yaw = (keys(self.arrows[0], self.arrows[1]) * KEY_TURN[0] + stick(self.stick[0]) * STICK_TURN[0]) * seconds
+        let [x, y] = crate::bindings::cardinal_stick(self.stick);
+        let yaw = (keys(self.arrows[0], self.arrows[1]) * KEY_TURN[0] + stick(x) * STICK_TURN[0]) * seconds
             + self.mouse[0] * MOUSE_TURN - self.touch[0] * TOUCH_TURN;
-        let pitch = (keys(self.arrows[3], self.arrows[2]) * KEY_TURN[1] - stick(self.stick[1]) * STICK_TURN[1]) * seconds
+        let pitch = (keys(self.arrows[3], self.arrows[2]) * KEY_TURN[1] - stick(y) * STICK_TURN[1]) * seconds
             - self.mouse[1] * MOUSE_TURN + self.touch[1] * TOUCH_TURN;
         (yaw, pitch)
     }
@@ -605,7 +606,9 @@ mod tests {
         assert_eq!(turn(Turn { arrows: [true, false, true, false], ..Turn::default() }), (-1.0, 0.75), "left and up");
         assert_eq!(turn(Turn { stick: [0.15, -0.19], ..Turn::default() }), (0.0, 0.0), "within the dead zone");
         let (yaw, pitch) = turn(Turn { stick: [1.0, -1.0], ..Turn::default() });
-        assert!((yaw - 1.5).abs() < 1e-6 && (pitch - 1.0).abs() < 1e-6, "the stick at full tilt, up looks up");
+        assert!((yaw - 1.5).abs() < 1e-6 && pitch == 0.0, "the stick selects a single slice, horizontal at the boundary");
+        let (yaw, pitch) = turn(Turn { stick: [0.8, -1.0], ..Turn::default() });
+        assert!(yaw == 0.0 && (pitch - 1.0).abs() < 1e-6, "in inspection, the upper slice looks up");
         let (yaw, pitch) = Turn { mouse: [40.0, -20.0], ..Turn::default() }.radians(0.0);
         assert!((yaw - 0.1).abs() < 1e-6 && (pitch - 0.05).abs() < 1e-6, "the mouse turns by how far it moved");
         // The scene follows the finger: dragged right, the view turns left;

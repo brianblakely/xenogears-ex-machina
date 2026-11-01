@@ -2347,7 +2347,7 @@ interchange](#state-interchange)).
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
 | presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio) |
-| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
+| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game or right stick up/down moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | full-size sprites | the party on foot in a large-scale field drawn with its full-resolution field sprites at a quarter of their size instead of the map's small ones (off, the default; presentation only: [Full-resolution sprites in large-scale fields](#full-resolution-sprites-in-large-scale-fields)) |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
@@ -5596,10 +5596,17 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 | Run (held) | Shift | East | |
 | Jump | Space | North | |
 | Menu | Tab | West | |
-| CameraLeft, CameraRight | Left, Right | L1, R1, right stick | sideways motion (setting) |
+| CameraLeft, CameraRight | Left, Right | L1, R1, right stick left/right | sideways motion (setting) |
 | Start, Select | Enter, Backspace | Start, Back | |
 | L2, R2 | 1, 2 | LT, RT | |
 | AttackWeak, AttackStrong, AttackFierce, AttackEnd | W, A, S, D | North, West, South, East | |
+
+The right stick selects four equal slices: left/right turn the camera,
+up reduces zoom out and down increases it. At an exact diagonal it chooses
+horizontal. Zoom changes by a quarter step on a push, repeating after
+400 ms and every 150 ms while held, including during scripted scenes.
+The settings panel and lost focus take the stick; first-person inspection
+uses its vertical slices to look up/down instead of changing zoom.
 
 In a field, Select (where the game's shows nothing, while the player
 walks), the right stick's click and the app shortcut Toggle first-person
