@@ -856,6 +856,9 @@ impl XemApp {
         let ui = self.session.as_mut().map_or(xem_core::context::Context::None, |s| s.runtime.context());
         let bindings = self.settings.borrow().settings().game_bindings.clone();
         let inspecting = self.look(&bindings, field, ui, now);
+        let zoom_enabled = self.running && !self.panel_visible() && self.app_input.focused() && !inspecting;
+        let zoom = self.input.zoom_steps(now, zoom_enabled);
+        self.zoom(zoom);
         // The Binaural listener looks where the presentation looks, whether
         // the game runs or not, as the head turns it (presentation only).
         if let Some(session) = self.session.as_mut() {
@@ -1334,13 +1337,18 @@ impl XemApp {
         let steps = self.wheel.trunc();
         if steps != 0.0 {
             self.wheel -= steps;
-            let graphics = self.settings.borrow().settings().graphics;
-            let zoomed = graphics.zoomed(steps as i32);
-            if zoomed != graphics {
-                let _ = self.settings.borrow_mut().apply(SettingChange::Graphics(zoomed));
-            }
+            self.zoom(steps as i32);
         }
         true
+    }
+
+    fn zoom(&mut self, steps: i32) {
+        if steps == 0 { return; }
+        let graphics = self.settings.borrow().settings().graphics;
+        let zoomed = graphics.zoomed(steps);
+        if zoomed != graphics {
+            let _ = self.settings.borrow_mut().apply(SettingChange::Graphics(zoomed));
+        }
     }
 
     /// A finger on the canvas (`kind` down, move, up or cancel; canvas

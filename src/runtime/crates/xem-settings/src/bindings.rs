@@ -43,7 +43,8 @@ pub const GAME_ACTION_ROWS: [(InputContext, GameAction, &str); 19] = [
 ];
 
 /// Gamepad inputs: the standard mapping's 16 buttons (`controls::PAD_NAMES`)
-/// and each stick's four directions past half travel.
+/// and each stick's four directions past half travel. The right stick
+/// selects only its dominant axis (horizontal at an exact diagonal).
 pub const GAMEPAD_INPUTS: [&str; 24] = [
     "South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right",
     "LStickUp", "LStickDown", "LStickLeft", "LStickRight", "RStickUp", "RStickDown", "RStickLeft", "RStickRight",
@@ -219,14 +220,23 @@ pub struct Held {
     pub mouse: u8,
 }
 
+/// Four equal slices of a stick's circle, preserving travel on the chosen
+/// axis. Exact diagonals choose horizontal, so only one direction can act.
+fn cardinal_stick([x, y]: [f32; 2]) -> [f32; 2] {
+    if !x.is_finite() || !y.is_finite() { return [0.0; 2]; }
+    if x.abs() >= y.abs() { [x, 0.0] } else { [0.0, y] }
+}
+
 impl Held {
     /// The gamepad's standard buttons (1 = pressed) and its axes (left X/Y,
-    /// right X/Y, negative Y up); each stick direction holds past half travel.
+    /// right X/Y, negative Y up); directions hold past half travel. The
+    /// left stick allows diagonals, the right selects one of four slices.
     pub fn set_gamepad(&mut self, pressed: &[u8], axes: &[f32]) {
         let axis = |i| axes.get(i).copied().unwrap_or(0.0);
+        let [right_x, right_y] = cardinal_stick([axis(2), axis(3)]);
         let mut bits = pressed.iter().take(16).enumerate().filter(|(_, p)| **p != 0).fold(0u32, |n, (i, _)| n | (1 << i));
         for (i, on) in [axis(1) < -0.5, axis(1) > 0.5, axis(0) < -0.5, axis(0) > 0.5,
-            axis(3) < -0.5, axis(3) > 0.5, axis(2) < -0.5, axis(2) > 0.5].into_iter().enumerate() {
+            right_y < -0.5, right_y > 0.5, right_x < -0.5, right_x > 0.5].into_iter().enumerate() {
             if on { bits |= 1 << (16 + i); }
         }
         self.gamepad = bits;
@@ -328,6 +338,27 @@ mod tests {
         assert_eq!(bindings.buttons(&keys(&["Backslash"]), false), button::CROSS, "Backslash confirms too");
         assert_eq!(bindings.buttons(&keys(&["KeyZ"]), false), 0);
         assert_eq!(bindings.actions(&keys(&["ShiftLeft"]), false), BTreeSet::from([GameAction::Run]));
+    }
+
+    #[test]
+    fn the_right_sticks_four_slices_never_hold_two_directions() {
+        let mut held = Held::default();
+        for (x, y, name) in [
+            (-0.9, -0.8, "RStickLeft"), (0.9, -0.8, "RStickRight"),
+            (-0.9, 0.8, "RStickLeft"), (0.9, 0.8, "RStickRight"),
+            (-0.8, -0.9, "RStickUp"), (0.8, -0.9, "RStickUp"),
+            (-0.8, 0.9, "RStickDown"), (0.8, 0.9, "RStickDown"),
+            (-0.8, -0.8, "RStickLeft"), (0.8, 0.8, "RStickRight"),
+        ] {
+            held.set_gamepad(&[], &[-0.8, -0.8, x, y]);
+            let direction = GAMEPAD_INPUTS.iter().position(|&input| input == name).unwrap();
+            assert_eq!(held.gamepad >> 20, 1 << (direction - 20), "{x}, {y}: only {name}");
+            assert_eq!(held.gamepad & (0xf << 16), 1 << 16 | 1 << 18, "the left stick still walks diagonally");
+        }
+        for axes in [&[0.0, 0.0, 0.5, -0.5][..], &[0.0; 4], &[]] {
+            held.set_gamepad(&[], axes);
+            assert_eq!(held.gamepad, 0, "resting or missing axes hold nothing");
+        }
     }
 
     #[test]

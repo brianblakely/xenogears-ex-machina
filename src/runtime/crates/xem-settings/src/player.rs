@@ -56,6 +56,9 @@ const MENU_CLOSE_PRESSES: u32 = 8;
 const MENU_BACK_FRAMES: u32 = 30;
 /// The most wheel steps queued at once.
 const MAX_WHEEL_STEPS: usize = 3;
+/// Right-stick zoom: one quarter step on a push, then repeat while held.
+const ZOOM_DELAY_MS: f64 = 400.0;
+const ZOOM_REPEAT_MS: f64 = 150.0;
 
 /// Actions pressed for [`PULSE_HOLD`] game frames, then released for
 /// [`PULSE_GAP`].
@@ -95,6 +98,8 @@ pub struct PlayerInput {
     menu_held: bool,
     /// Wheel notches not yet a whole step.
     wheel: f32,
+    /// Right-stick zoom's direction and next repeat, in host milliseconds.
+    zoom: Option<(i32, f64)>,
     /// The pointer over the game's screen (320x224 pixels), whether it moved
     /// since the last steer, the entry it moved onto (steered to until
     /// selected), and a click waiting for it.
@@ -178,6 +183,30 @@ impl PlayerInput {
         self.held.set_gamepad(pressed, axes);
     }
 
+    /// Camera zoom steps at host time `now` (milliseconds): right stick up
+    /// brings it in, down pulls it back. Hosts disable this while settings
+    /// has the input, focus is lost or first-person inspection is on.
+    /// Repeats never catch up after a stalled host frame.
+    pub fn zoom_steps(&mut self, now: f64, enabled: bool) -> i32 {
+        let direction = match self.held.gamepad & (1 << 20 | 1 << 21) {
+            n if n == 1 << 20 => -1,
+            n if n == 1 << 21 => 1,
+            _ => 0,
+        };
+        if !enabled || direction == 0 {
+            self.zoom = None;
+            return 0;
+        }
+        match self.zoom {
+            Some((held, at)) if held == direction => {
+                if now < at { return 0; }
+                self.zoom = Some((direction, now + ZOOM_REPEAT_MS));
+            }
+            _ => self.zoom = Some((direction, now + ZOOM_DELAY_MS)),
+        }
+        direction
+    }
+
     /// Release everything (focus lost, the panel took the input), queued
     /// presses too: nothing pending acts when the input comes back.
     pub fn clear(&mut self) {
@@ -189,6 +218,7 @@ impl PlayerInput {
         self.settle = 0;
         self.menu_held = false;
         self.wheel = 0.0;
+        self.zoom = None;
         self.goal = None;
         self.click = 0;
     }
@@ -451,6 +481,31 @@ impl PlayerInput {
 mod tests {
     use super::*;
     use xem_core::pad::button;
+
+    #[test]
+    fn stick_zoom_steps_repeat_on_host_time_and_release_cleanly() {
+        let mut input = PlayerInput::default();
+        input.gamepad(&[], &[0.0, 0.0, 0.8, 0.9]);
+        assert_eq!(input.buttons(&GameBindings::default(), 0.0, Context::default()), 0, "zoom never turns the camera");
+        assert_eq!(input.zoom_steps(0.0, true), 1, "down pulls back immediately");
+        assert_eq!(input.zoom_steps(399.0, true), 0);
+        assert_eq!(input.zoom_steps(400.0, true), 1);
+        assert_eq!(input.zoom_steps(549.0, true), 0);
+        assert_eq!(input.zoom_steps(550.0, true), 1);
+        assert_eq!(input.zoom_steps(5000.0, true), 1, "a stalled host takes only one step");
+        assert_eq!(input.zoom_steps(5000.0, true), 0, "polling again takes none");
+        input.gamepad(&[], &[0.0, 0.0, 0.8, -0.9]);
+        assert_eq!(input.zoom_steps(5001.0, true), -1, "up brings it in immediately");
+        assert_eq!(input.zoom_steps(6000.0, false), 0, "inspection, settings or lost focus disable zoom");
+        input.clear();
+        assert_eq!(input.zoom_steps(7000.0, true), 0);
+        input.gamepad(&[], &[0.0, 0.0, 0.9, 0.8]);
+        assert_eq!(input.zoom_steps(7001.0, true), 0, "horizontal slices only turn");
+        input.gamepad(&[], &[0.0, 0.0, 0.0, 0.9]);
+        assert_eq!(input.zoom_steps(7002.0, true), 1, "a fresh push takes a fresh step");
+        input.gamepad(&[], &[]);
+        assert_eq!(input.zoom_steps(8000.0, true), 0, "a disconnected pad releases zoom");
+    }
 
     #[test]
     fn keys_the_gamepad_and_the_mouse_combine_through_the_bindings() {

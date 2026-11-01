@@ -779,7 +779,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 *panel_visible.borrow_mut() = true;
             }
         }
-        let current = settings.borrow().settings().clone();
+        let mut current = settings.borrow().settings().clone();
         // The Binaural listener turns with the head as the seat sees it,
         // paused or not (lost tracking keeps the last turn); the game never
         // sees it.
@@ -812,9 +812,15 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
         // The controllers' Back held alone over a dialogue hides its windows.
         view.set_dialogue_hidden(!visible && dialogue_hiding.update(false, &pressed, context.ui, start.elapsed().as_secs_f64() * 1000.0));
+        if visible || !focused { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }
+        let zoom = player.zoom_steps(start.elapsed().as_secs_f64() * 1000.0, !visible && focused && !view.first_person());
+        let zoomed = current.graphics.zoomed(zoom);
+        if zoomed != current.graphics {
+            let _ = settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(zoomed));
+            current.graphics = zoomed;
+        }
         let mut ran = 0;
         if !game_paused {
-            if visible { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }
             // Inspection keeps the character where it stands
             // (`xem_settings::look`); running by default would leave Run
             // pressed alone.
