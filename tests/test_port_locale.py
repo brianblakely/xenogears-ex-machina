@@ -126,6 +126,7 @@ u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *
         lib.text_get_glyph_width.argtypes = [ctypes.c_ushort, ctypes.c_ushort]
         lib.text_draw_glyph.argtypes = [ctypes.c_int, ctypes.c_ushort, ctypes.c_void_p, ctypes.c_short, ctypes.c_int]
         lib.xem_locale_menu_labels.argtypes = [ctypes.c_void_p]
+        lib.xem_locale_menu_words.argtypes = [ctypes.c_void_p]
 
     def word(self, name):
         return ctypes.c_uint.in_dll(self.lib, name).value
@@ -253,3 +254,75 @@ u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *
         self.lib.xem_locale_menu_labels(sheet)
         self.assertEqual(self.word("test_loads"), 0)
         self.assertEqual(port_native.read(sheet + offsets, len(entry)), entry)
+
+    def test_a_stat_panels_word_is_spelled_anew_with_the_small_fonts_letters_ending_where_it_ended(self):
+        """Sheet entries 0xDE-0xF8 compose a word of the small font's letter
+        cells (capitals from 0x0A, small letters from 0x24, the full stop
+        0x91): a translation takes those cells, a part a letter, its last
+        ending where the original's last ended; one with more letters than
+        parts or a letter the font lacks leaves the word as it was."""
+        sheet = 0x80060000
+        count = 0x150
+        part = lambda u, v, x, y: struct.pack("<HhHHhhxxxxhhhHHBB", u, v, 8, 8, x, y, 0, 304, 509, 479, 120, 0, 0)
+        cells = {0x0A: part(0x10, 128, 0, 0), 0x25: part(0x20, 136, 0, 0), 0x91: part(0x30, 144, 0, 0)}
+        word = struct.pack("<hh", 4, 0) + b"".join(part(0x40 + 8 * k, 152, x, 3) for k, x in enumerate((-12, -5, 1, 7)))
+        table = bytearray(struct.pack("<HH", count, 0) + bytes(2 * count))
+        body = bytearray()
+        offsets = 4 + 2 * count
+        for label in range(count):
+            struct.pack_into("<H", table, 4 + 2 * label, offsets + len(body) if label in cells or label == 0xDE else offsets)
+            if label in cells:
+                body += struct.pack("<hh", 1, 0) + cells[label]
+            elif label == 0xDE:
+                at_word = offsets + len(body)
+                body += word
+        port_native.write(sheet, bytes(table) + body)
+        digest = translations.fnv1a64(word)
+        for text, expected in ((bytes([0x20, 0x3E, 0x14, 0]), "spelled"), (bytes([0x20] * 5 + [0]), "too long"),
+                               (bytes([0x20, 0xFF, 0x20, 0]), "a letter the font lacks")):
+            port_native.write(sheet + at_word, word)
+            data = region(1, [(digest, text, 10, 1)], ())
+            ctypes.memmove(LOCALE, data, len(data))
+            self.lib.xem_locale_menu_words(sheet)
+            after = port_native.read(sheet + at_word, len(word))
+            if expected != "spelled":
+                self.assertEqual(after, word, expected)
+                continue
+            parts = struct.unpack_from("<h", after)[0]
+            spelled = [struct.unpack_from("<HhHHhh", after, 4 + 0x1C * k) for k in range(parts)]
+            # A 7, b 6, . 3: 16 pixels ending at 7 + 6 = 13.
+            self.assertEqual(parts, 3)
+            self.assertEqual([(u, v, x, y) for u, v, _, _, x, y in spelled], [(0x10, 128, -3, 3), (0x20, 136, 4, 3), (0x30, 144, 10, 3)])
+        # Without the active language the word stays.
+        port_native.write(sheet + at_word, word)
+        ctypes.memmove(LOCALE + 4, struct.pack("<I", 0), 4)
+        self.lib.xem_locale_menu_words(sheet)
+        self.assertEqual(port_native.read(sheet + at_word, len(word)), word)
+
+    def test_a_stat_panels_word_ending_in_percent_keeps_its_percent(self):
+        sheet = 0x80070000
+        count = 0x150
+        part = lambda u, v, x, y: struct.pack("<HhHHhhxxxxhhhHHBB", u, v, 8, 8, x, y, 0, 304, 509, 479, 120, 0, 0)
+        cells = {0x0A: part(0x10, 128, 0, 0), 0x25: part(0x20, 136, 0, 0)}
+        # "Hit%": its % (the rightmost part) first in memory, at x 19.
+        percent = part(0x70, 200, 19, 2)
+        word = struct.pack("<hh", 4, 0) + percent + part(0x40, 152, 2, 2) + part(0x48, 152, 7, 2) + part(0x50, 152, 12, 2)
+        table = bytearray(struct.pack("<HH", count, 0) + bytes(2 * count))
+        body = bytearray()
+        offsets = 4 + 2 * count
+        for label in range(count):
+            struct.pack_into("<H", table, 4 + 2 * label, offsets + len(body) if label in cells or label == 0xDF else offsets)
+            if label in cells:
+                body += struct.pack("<hh", 1, 0) + cells[label]
+            elif label == 0xDF:
+                at_word = offsets + len(body)
+                body += word
+        port_native.write(sheet, bytes(table) + body)
+        data = region(1, [(translations.fnv1a64(word), bytes([0x20, 0x3E, 0x5A, 0]), 8, 1)], ())
+        ctypes.memmove(LOCALE, data, len(data))
+        self.lib.xem_locale_menu_words(sheet)
+        after = port_native.read(sheet + at_word, 4 + 0x1C * 3)
+        self.assertEqual(struct.unpack_from("<h", after)[0], 3)
+        spelled = [struct.unpack_from("<HhHHhh", after, 4 + 0x1C * k) for k in range(3)]
+        # A 7 and b 6 end where the % begins (19); the % as it was.
+        self.assertEqual([(u, v, x, y) for u, v, _, _, x, y in spelled], [(0x10, 128, 6, 2), (0x20, 136, 13, 2), (0x70, 200, 19, 2)])

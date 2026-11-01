@@ -361,9 +361,9 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   place names from the next text the game shows; a box already showing
   text finishes it first, and a menu shows its commands in the language
   it had when it opened. A few words the game draws as pictures stay in
-  English: the small stat labels (LV, HP, EP, Attack, Defense ...), the
-  battle command ring and the save titles on the file screens. Settings
-  itself stays in English.
+  English: the abbreviations LV, Exp, Next LV, HP and EP, the battle
+  command ring and the save titles on the file screens. Settings itself
+  stays in English.
 - **Random battles — Not while platforming:** the default. Turns off random
   encounters in the selected jumping areas of Blackmoon Forest, the
   Aveh–Kislev border mountains and Babel Tower. Choose **Original** for the

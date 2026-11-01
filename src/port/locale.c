@@ -33,7 +33,11 @@
  * into texture page (448, 256), which no menu uses, and the entry made one
  * part showing it with the text palette the menus load at (0, 0x1D1). The
  * line image is a heap block, as the menus' own are: the transfer to VRAM
- * reads RAM.
+ * reads RAM. The stat panels' words (Attack, Defense, Weight ...) are sheet
+ * entries 0xDE-0xF8 composed of the sheet's small font, a part a letter: a
+ * translated one is spelled anew with the same font's letter cells, as many
+ * parts as letters, ending where the original ended (the panels align them
+ * right); a word ending in % keeps the original's % (its rightmost part).
  *
  * With no language active (the original's English) every function is the
  * original's. The port keeps no data of its own.
@@ -409,6 +413,120 @@ void xem_locale_menu_labels(u16 *sheet) {
     }
 }
 
+/* The stat panels' words and the small font's cells: digits, capitals and
+ * small letters from these entries, the full stop at 0x91. A letter's
+ * advance in pixels, as the original words space them. */
+#define XEM_WORD_FIRST 0xDE
+#define XEM_WORD_LAST 0xF8
+#define XEM_WORD_PARTS 12
+#define XEM_SMALL_DIGITS 0x00
+#define XEM_SMALL_CAPITALS 0x0A
+#define XEM_SMALL_LETTERS 0x24
+#define XEM_SMALL_STOP 0x91
+#define XEM_SMALL_ADVANCE 6
+static const u8 xem_small_capital_advances[26] = {7, 7, 7, 7, 6, 6, 7, 7, 4, 6, 7, 6, 8, 7, 7, 7, 7, 7, 6, 6, 7, 7, 8, 7, 7, 6};
+static const u8 xem_small_letter_advances[26] = {6, 6, 6, 6, 6, 5, 6, 6, 3, 4, 6, 3, 8, 6, 6, 6, 6, 5, 6, 6, 6, 6, 8, 7, 6, 6};
+
+/* The small font's cell for a one-byte glyph of the text and its advance,
+ * or -1 for a glyph it lacks. */
+static s32 xem_small_cell(u8 code, s32 *advance) {
+    if (code >= 0x16 && code <= 0x1F) {
+        *advance = XEM_SMALL_ADVANCE;
+        return XEM_SMALL_DIGITS + code - 0x16;
+    }
+    if (code >= 0x20 && code <= 0x39) {
+        *advance = xem_small_capital_advances[code - 0x20];
+        return XEM_SMALL_CAPITALS + code - 0x20;
+    }
+    if (code >= 0x3D && code <= 0x56) {
+        *advance = xem_small_letter_advances[code - 0x3D];
+        return XEM_SMALL_LETTERS + code - 0x3D;
+    }
+    if (code == 0x14) {
+        *advance = 3;
+        return XEM_SMALL_STOP;
+    }
+    return -1;
+}
+
+/* A letter followed by i or l (narrow letters whose ink sits right of their
+ * cells' left edges) comes 2 pixels closer, as the original words set them. */
+static s32 xem_small_kern(u8 code, u8 next) {
+    return (next == 0x45 || next == 0x48) && code != 0x45 && code != 0x48 ? -2 : 0;
+}
+
+/* Spell each stat panel word the active language translates with the
+ * small font's cells. */
+void xem_locale_menu_words(u16 *sheet) {
+    const XemLocaleText *found;
+    const u8 *text;
+    SheetPart *first;
+    SheetPart *part;
+    s16 *entry;
+    s32 id;
+    s32 length;
+    s32 total;
+    s32 advance;
+    s32 right;
+    s32 x;
+    s32 k;
+    s32 cell;
+    s32 letters;
+    s32 rightmost;
+    s16 y;
+    SheetPart percent;
+
+    if (sheet == NULL || xem_locale_language() == NULL) {
+        return;
+    }
+    for (id = XEM_WORD_FIRST; id <= XEM_WORD_LAST; id++) {
+        entry = (s16 *)((u8 *)sheet + sheet[id + 2]);
+        if (entry[0] < 1 || entry[0] > XEM_WORD_PARTS) {
+            continue;
+        }
+        found = xem_locale_lookup((const u8 *)entry, 4 + sizeof(SheetPart) * entry[0]);
+        if (found == NULL) {
+            continue;
+        }
+        text = (const u8 *)(XemUintptr)found->text;
+        for (length = 0; length <= entry[0] && text[length] != 0; length++) {
+        }
+        if (length == 0 || length > entry[0]) {
+            continue;
+        }
+        letters = text[length - 1] == 0x5A ? length - 1 : length; /* a closing % */
+        for (k = 0, total = 0; k < letters && xem_small_cell(text[k], &advance) >= 0; k++) {
+            total += advance + (k + 1 < letters ? xem_small_kern(text[k], text[k + 1]) : 0);
+        }
+        if (k < letters) {
+            continue;
+        }
+        first = (SheetPart *)(entry + 2);
+        rightmost = 0;
+        for (k = 1; k < entry[0]; k++) {
+            if ((s16)first[k].x > (s16)first[rightmost].x) {
+                rightmost = k;
+            }
+        }
+        percent = first[rightmost];
+        right = letters < length ? (s16)percent.x : (s16)percent.x + XEM_SMALL_ADVANCE;
+        x = right - total;
+        y = first->y;
+        for (k = 0; k < letters; k++) {
+            cell = xem_small_cell(text[k], &advance);
+            part = first + k;
+            *part = *(SheetPart *)((s16 *)((u8 *)sheet + sheet[cell + 2]) + 2);
+            part->x = x;
+            part->y = y;
+            x += advance + (k + 1 < letters ? xem_small_kern(text[k], text[k + 1]) : 0);
+        }
+        if (letters < length) {
+            first[letters] = percent;
+        }
+        entry[0] = length;
+    }
+}
+
 static u16 *xem_menu_sheet(void) {
     return menu_state_current != 0 ? (u16 *)(XemUintptr)XEM_U32(menu_state_current + XEM_MENU_SHEET) : NULL;
 }
@@ -416,24 +534,29 @@ static u16 *xem_menu_sheet(void) {
 void menu_load_resources(void) {
     xem_original_menu_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
+    xem_locale_menu_words(xem_menu_sheet());
 }
 
 void item_shop_load_resources(void) {
     xem_original_item_shop_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
+    xem_locale_menu_words(xem_menu_sheet());
 }
 
 void gear_shop_load_resources(void) {
     xem_original_gear_shop_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
+    xem_locale_menu_words(xem_menu_sheet());
 }
 
 void member_change_load_resources(void) {
     xem_original_member_change_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
+    xem_locale_menu_words(xem_menu_sheet());
 }
 
 void name_entry_load_resources(void) {
     xem_original_name_entry_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
+    xem_locale_menu_words(xem_menu_sheet());
 }

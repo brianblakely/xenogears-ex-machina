@@ -365,6 +365,12 @@ def field_scripts(disc) -> dict[int, dict]:
 # most LABEL_COLUMNS columns.
 LABELS = range(0x123, 0x14A)
 LABEL_COLUMNS = 59
+# The words the menus compose of their small font's letter cells, one part a
+# letter (Attack, Hit%, Defense, Evade%, Ether, EthDef., Weight, Agility,
+# fuel, Response, EthAmp, maxHeat): a translation respells them with the same
+# cells, in no more letters than the original has parts, a closing % keeping
+# the original's (src/port/locale.c).
+WORDS = (0xDE, 0xDF, 0xE0, 0xE1, 0xE2, 0xE4, 0xE6, 0xEB, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8)
 
 
 def menu_labels(disc) -> list[tuple[int, bytes]]:
@@ -372,7 +378,7 @@ def menu_labels(disc) -> list[tuple[int, bytes]]:
 
     sheet = tc.archive_entry(disc.sectors(disc.slot(0x10, 0, 1)), 2, packed=True)
     out = []
-    for label in LABELS:
+    for label in (*LABELS, *WORDS):
         offset = struct.unpack_from("<H", sheet, 4 + 2 * label)[0]
         parts = struct.unpack_from("<h", sheet, offset)[0]
         out.append((label, sheet[offset : offset + 4 + 0x1C * parts]))
@@ -392,7 +398,8 @@ def originals() -> dict[str, Text]:
         scripts = field_scripts(disc)
         for label, data in menu_labels(disc):
             digest = f"{fnv1a64(data):016x}"
-            text = texts.setdefault(digest, Text(f"mc{label:03d}-0000", digest, "", LABEL_COLUMNS, 1, GROUPS["mc"]))
+            columns = LABEL_COLUMNS if label in LABELS else 2 * struct.unpack_from("<h", data, 0)[0]
+            text = texts.setdefault(digest, Text(f"mc{label:03d}-0000", digest, "", columns, 1, GROUPS["mc"]))
             text.places.append(f"mc{label:03d}-0000@{number}")
         for group, item, data in tc.text_tables(disc):
             if data is None or isinstance(data, Exception):

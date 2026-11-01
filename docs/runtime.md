@@ -8606,12 +8606,14 @@ translated; 1 056, the same in Portuguese (names alone, cries, the
 developers' test menus kept as they were), are listed rather than shipped. Text built at run time (numbers, the party's
 names) is the game's own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
-anew in the language (below). Other words drawn as pictures stay as drawn:
-the labels the menus compose of a small font's letter sprites (LV, HP, EP,
-Next LV, Attack, Hit%, Defense, Weight, the Gear shop's HP, FUEL and
-WEIGHT), whose rows leave no room for the game's font, the battle command
-ring's and the HUD's lettering, and the memory card titles the file screens
-draw from the BIOS Kanji font (JIS X 0208 has no accented Latin letters).
+anew in the language, and the stat panels' words the menus compose of a
+small font's letters (Attack, Hit%, Defense, Evade%, Ether, Weight,
+Agility ...) are spelled anew with that font's letters (below). Other words
+drawn as pictures stay as drawn: the abbreviations the menus place letter
+by letter from tables (LV, Exp, Next LV, HP, EP, the Gear shop's FUEL and
+WEIGHT), the battle command ring's and the HUD's lettering, and the memory
+card titles the file screens draw from the BIOS Kanji font (JIS X 0208 has
+no accented Latin letters).
 
 **The translations.** A language ships as text files,
 `src/runtime/crates/xem-core/locale/<tag>/*.txt`, one line per text:
@@ -8687,6 +8689,18 @@ nothing. The translations name the labels `mc<entry>-0000` (37 entries, 30
 distinct pictures); `tools/translations.py` hashes them from both discs'
 sheets.
 
+The stat panels' words are sheet entries 0xDE-0xF8 of the same sheet, a
+part a letter of the sheet's small font (whose letter cells are entries
+0x00-0x3D, digits, capitals and small letters, and 0x91 the full stop). A
+word the active language translates (named likewise, `mc<entry>-0000`, 14
+of them) is spelled anew with those cells: a part a letter, as many as the
+translation has letters and no more than the original's, spaced as the
+original words space them (a letter before i or l two pixels closer), and
+ending where the original's last letter ended, as the panels align them
+right; a translation ending in % keeps the original's % (its rightmost
+part). The small font has no accented letters, so these words do without
+(Eter, DefEter).
+
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
 capitals (`locale/pt-BR/glyphs.txt`). Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
@@ -8718,7 +8732,10 @@ refused; the glyph recipes; the image's layout, records ascending by hash),
 the native test's command labels (a translated entry drawn into page
 (448, 256), each transfer waited for, the line image freed, the entry one
 part there with the text palette two rows up; an untranslated one and
-every one without an active language unchanged),
+every one without an active language unchanged) and stat words (spelled
+with the small font's cells, right-aligned where the original ended, a
+closing % kept; one too long or with a letter the font lacks, and every one
+without an active language, unchanged),
 `xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
