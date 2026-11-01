@@ -59,15 +59,20 @@ def commits_since(previous, commit):
 MAX_COMMITS = 500
 
 
-def render_commits(repository, previous, commits):
+def commit_list(repository, commits):
     shown = commits[:MAX_COMMITS]
     escape = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
     lines = [f"- {''.join(escape.get(c, c) for c in subject)} "
              f"([`{sha[:7]}`](https://github.com/{repository}/commit/{sha}))" for sha, subject in shown]
     if len(commits) > len(shown):
         lines.append(f"- …and {len(commits) - len(shown)} more in the full comparison.")
+    return "\n".join(lines)
+
+
+def render_commits(repository, previous, commits):
     count = f"{len(commits)} commit{'' if len(commits) == 1 else 's'}"
-    return f"<details>\n<summary>{count} since {previous}</summary>\n\n" + "\n".join(lines) + "\n\n</details>"
+    return (f"<details>\n<summary>{count} since {previous}</summary>\n\n"
+            + commit_list(repository, commits) + "\n\n</details>")
 
 
 def render_notes(repository, tag, previous, changes, commits=()):
@@ -76,10 +81,16 @@ def render_notes(repository, tag, previous, changes, commits=()):
         changelog = f"Here's what's changed since [{previous}]({release_url}/tag/{previous}):\n\n"
     else:
         changelog = "Welcome to our first release!\n\n"
-    changelog += "\n\n".join(changes) if changes else "No player-facing changes were noted for this update."
+    if changes:
+        changelog += "\n\n".join(changes)
+    elif commits:
+        # No change note was written: list the commits rather than claim nothing changed.
+        changelog += commit_list(repository, commits)
+    else:
+        changelog += "No changes were made since the previous release."
     if previous:
         changelog += f"\n\n[See all changes](https://github.com/{repository}/compare/{previous}...{tag})."
-        if commits:
+        if changes and commits:
             changelog += "\n\n" + render_commits(repository, previous, commits)
     owner, project = repository.split("/")
     return Path(__file__).with_name("notes.md").read_text().format(

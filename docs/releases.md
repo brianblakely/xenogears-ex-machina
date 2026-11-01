@@ -26,7 +26,8 @@ their history. Changes without a player-facing effect don't need an entry.
 The publisher includes only entries added since the highest earlier published
 version on the release commit's ancestry, skipping drafts, prereleases and tags
 from failed builds. It reads them from that exact commit, links the full comparison,
-and explicitly says when no player-facing changes were noted. Below them,
+and, when no entry was added, lists the commits since that version as the
+changes instead of claiming none. Below the entries,
 folded under a summary line, it lists every commit since that version
 (merges aside), newest first, each subject linked to its commit; past 500
 the full comparison has the rest. A retry of an

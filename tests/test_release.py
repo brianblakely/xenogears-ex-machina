@@ -108,6 +108,11 @@ class ReleaseTests(unittest.TestCase):
             (changes / "new.md").write_text("- Unreleased edits.\n")
             (changes / "future.md").write_text("- A future feature.\n")
             commit("After the release")
+            head = git("rev-parse", "--abbrev-ref", "HEAD")
+            git("checkout", "--quiet", "-b", "unnoted", baseline)
+            (root / "card.c").write_text("/* faster */\n")
+            unnoted_fix = commit("Load <saved> cards faster")
+            git("checkout", "--quiet", head)
             check_output = subprocess.check_output
 
             def in_repository(command, **kwargs):
@@ -127,8 +132,13 @@ class ReleaseTests(unittest.TestCase):
                                      f"(https://github.com/owner/game/commit/{released}))")
                 self.assertLess(newest, notes.index(f"- Reopen &lt;saved&gt; cards ([`{fix[:7]}`]"))
                 unchanged = release_notes("owner/game", "v0.5.1", baseline)
-                self.assertIn("No player-facing changes were noted", unchanged)
+                self.assertIn("No changes were made since the previous release.", unchanged)
                 self.assertNotIn("<details>", unchanged, "no commits, no list")
+                # Commits without a change note are listed as the changes, not hidden.
+                unnoted = release_notes("owner/game", "v0.5.1", unnoted_fix)
+                self.assertNotIn("No changes", unnoted)
+                self.assertNotIn("<details>", unnoted, "the commits are the change list")
+                self.assertIn(f"- Load &lt;saved&gt; cards faster ([`{unnoted_fix[:7]}`]", unnoted)
 
             with patch("tools.release.publish.previous_release", return_value=None), \
                  patch("tools.release.publish.subprocess.check_output", side_effect=in_repository):
@@ -140,12 +150,12 @@ class ReleaseTests(unittest.TestCase):
 
     def test_a_long_commit_list_ends_at_the_comparison(self):
         commits = [(f"{n:040x}", f"Change {n}") for n in range(600)]
-        notes = render_notes("owner/game", "v0.6.2", "v0.6.1", [], commits)
+        notes = render_notes("owner/game", "v0.6.2", "v0.6.1", ["- A note."], commits)
         self.assertIn("<summary>600 commits since v0.6.1</summary>", notes)
         self.assertIn("- Change 499 (", notes)
         self.assertNotIn("- Change 500 (", notes)
         self.assertIn("- …and 100 more in the full comparison.", notes)
-        one = render_notes("owner/game", "v0.6.2", "v0.6.1", [], commits[:1])
+        one = render_notes("owner/game", "v0.6.2", "v0.6.1", ["- A note."], commits[:1])
         self.assertIn("<summary>1 commit since v0.6.1</summary>", one)
 
     def test_installation_links_follow_the_release_instead_of_v05(self):
