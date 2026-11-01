@@ -827,7 +827,7 @@ impl XemApp {
         let on = renderer.first_person();
         if xem_settings::look::turns(on, field) {
             if headset {
-                renderer.look_around(self.snap.update(xem_settings::bindings::cardinal_stick([self.axes[2], self.axes[3]])[0]), 0.0);
+                renderer.look_around(self.snap.update(self.axes[2]), 0.0);
             } else {
                 let seconds = looked.map_or(0.0, |then| ((now - then) / 1000.0).clamp(0.0, 0.1)) as f32;
                 let density = renderer.scale_factor();

@@ -222,7 +222,7 @@ pub struct Held {
 
 /// Four equal slices of a stick's circle, preserving travel on the chosen
 /// axis. Exact diagonals choose horizontal, so only one direction can act.
-pub fn cardinal_stick([x, y]: [f32; 2]) -> [f32; 2] {
+fn cardinal_stick([x, y]: [f32; 2]) -> [f32; 2] {
     if !x.is_finite() || !y.is_finite() { return [0.0; 2]; }
     if x.abs() >= y.abs() { [x, 0.0] } else { [0.0, y] }
 }

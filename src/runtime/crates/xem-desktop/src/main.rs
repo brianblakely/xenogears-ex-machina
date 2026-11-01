@@ -230,7 +230,7 @@ fn options() -> Result<Options, String> {
                      (by default WASD move, E confirm, F cancel, Shift run, Space jump, Tab the game menu, \
                      which Tab also closes, Left/Right the camera, Enter start, Backspace select). \
                      The mouse points at menu entries and the wheel scrolls them; Back+Start toggles settings.\n\
-                     The right stick has four slices: left/right turn the camera, up reduces zoom out, down increases it.\n\
+                     Outside first-person view, the right stick has four slices: left/right turn the camera, up reduces zoom out, down increases it.\n\
                      Walking in a field, Select (Backspace, or Back alone) toggles a first-person view where \
                      Select shows no map, as does the right stick's click anywhere in a field but its menu, and so \
                      does Toggle first-person view (V, Back+R1, the touch deck's LOOK; rebindable in Shortcuts); \

@@ -807,7 +807,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 let _ = first_person(&mut view, &xem_settings::look::Command::TOGGLE, context.field, current.graphics.renderer);
             }
             if xem_settings::look::turns(view.first_person(), context.field) {
-                view.look_around(snap.update(xem_settings::bindings::cardinal_stick([axes[2], axes[3]])[0]), 0.0);
+                view.look_around(snap.update(axes[2]), 0.0);
             }
         }
         // The controllers' Back held alone over a dialogue hides its windows.

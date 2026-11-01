@@ -5601,12 +5601,12 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 | L2, R2 | 1, 2 | LT, RT | |
 | AttackWeak, AttackStrong, AttackFierce, AttackEnd | W, A, S, D | North, West, South, East | |
 
-The right stick selects four equal slices: left/right turn the camera,
-up reduces zoom out and down increases it. At an exact diagonal it chooses
-horizontal. Zoom changes by a quarter step on a push, repeating after
+Outside first-person inspection, the right stick selects four equal slices:
+left/right turn the camera, up reduces zoom out and down increases it.
+At an exact diagonal it chooses horizontal. Zoom changes by a quarter step on a push, repeating after
 400 ms and every 150 ms while held, including during scripted scenes.
-The settings panel and lost focus take the stick; first-person inspection
-uses its vertical slices to look up/down instead of changing zoom.
+The settings panel and lost focus take the stick. First-person inspection
+keeps free two-axis stick movement for looking, with zoom disabled.
 
 In a field, Select (where the game's shows nothing, while the player
 walks), the right stick's click and the app shortcut Toggle first-person
