@@ -107,6 +107,12 @@ pub struct Services {
     /// The host lets the player's press end any movie
     /// (src/port/movie_skip.c).
     pub(crate) movie_skip: bool,
+    /// The language of the game's text (src/port/locale.c): the original's
+    /// English, or the translation `locale::activate` made active.
+    pub(crate) language: crate::locale::Language,
+    /// Why the translations are not installed, when they are not
+    /// (`locale::install`); the game shows its original text.
+    pub locale_notice: Option<String>,
     /// The disc in the drive could not give one of the party's field sprite
     /// blocks for the full-size alternatives (`full_sprite`): those not read
     /// yet are not asked again.
@@ -505,7 +511,15 @@ impl<M: GameModule> Runtime<M> {
         // export calls.
         unsafe { module.set_import_handler(services as *mut dyn ImportHandler) };
         let stack_top = module.stack_pointer();
-        let identity = crate::snapshot::StateIdentity { module: module.content_id(), ..Default::default() };
+        let mut identity = crate::snapshot::StateIdentity { module: module.content_id(), ..Default::default() };
+        // Every language's translations, none active: a state names them,
+        // as a translated text a window shows lies among them.
+        match crate::locale::install(module.memory()) {
+            Ok(Some(digest)) => identity.packages.push(crate::locale::package(&digest)),
+            Ok(None) => {}
+            // SAFETY: the box lives until Drop and no export runs yet.
+            Err(error) => unsafe { (*services).locale_notice = Some(format!("translations not installed: {error}")) },
+        }
         Runtime {
             identity,
             module,

@@ -88,7 +88,11 @@ original address.
   The port's own data (shadow stacks, asyncify areas, port statics) starts at
   0x10000000 (`PORT_BASE` in tools/game_module.py), outside RAM, the
   scratchpad, I/O and every mirror the game or its DMA addresses reach. The
-  linear memory ends at 0x80200000.
+  linear memory ends at 0x80200000. The port's statics lie below the shadow
+  stack, and the game keeps a stack address in RAM (`sprite_load_image_rect`,
+  a local `RECT`), so port data that grows moves the game's memory and the
+  slice hashes even where the port changes nothing: a port routine keeps its
+  constants in its code (src/port/locale.c's letter advances).
   The build translates load/store and bulk-memory operands through the PS1
   RAM mirrors before optimization, while preserving stored pointer values.
   Thus a 24-bit graphics link writes the same RAM that the GPU reads at
@@ -8580,6 +8584,198 @@ so their windows are read from the scripts; the sweep follows one actor's
 flow at a time, so a scene one actor lets go and another takes back is not
 counted. The early grants were measured headless only; the browser and the
 other hosts were not run.
+
+### Languages
+
+Settings → Gameplay → Language → **Game text** chooses the language of the
+game's own text: **English**, the original's, by default, or **Português
+(Brasil)**. It is a setting (`xem_settings::Settings::language`, saved as
+`"English"` or `"BrazilianPortuguese"`), which the hosts give the session
+every frame as they give the text speed (`Session::set_language`); agents
+use the same setting (`settings_apply {"Language": ...}`) or the session's
+command `language {language: "en" | "pt-BR"}`, and `status` says which is
+active (`language`). A language's translation changes how long the game's
+windows take and how many pages they turn, so the language is recorded with
+the inputs, and a replay takes the recorded one.
+
+**What it covers.** Every text the game draws from its text tables
+(docs/scripts/text-control.md): the field's dialogue and narration, the
+menus' item, weapon, accessory, Gear part, art and deathblow names and
+descriptions, the shops', save screens' and system messages, the battles'
+messages, enemy names and event narration, and the world map's place
+names: every one of the 17 086 distinct texts of both discs that holds a
+letter (the other 691 of the 17 777 are glyphs alone, numbers or Japanese
+placeholders of the development data, which stay as they are). 16 030 are
+translated; 1 056, the same in Portuguese (names alone, cries, the
+developers' test menus kept as they were), are listed rather than shipped. Text built at run time (numbers, the party's
+names) is the game's own. The menus' command labels (New Game, Status,
+Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
+anew in the language, and the stat panels' words the menus compose of a
+small font's letters (Attack, Hit%, Defense, Evade%, Ether, Weight,
+Agility ...) and the words the menus place letter by letter from their
+tables (Next LV, the Gear shop's FUEL and WEIGHT) are spelled anew with
+that font's letters (below). Other words drawn as pictures stay as drawn:
+the abbreviations LV, Exp, HP and EP (which the Portuguese text keeps
+too) and the weight's unit (lbs.), the battle HUD's words (the italic
+Attack, Defense ... around the command buttons and the small Time, Ap and
+fuel), which are art in the battle's textures, and the memory card titles
+the file screens draw from the BIOS Kanji font (JIS X 0208 has no
+accented Latin letters).
+
+**The translations.** A language ships as text files,
+`src/runtime/crates/xem-core/locale/<tag>/*.txt`, one line per text:
+`<where> <hash> <translation>`. `<where>` names the first table entry
+holding the text (`f012-0003`: field map 12's message 3; `s22-0005`:
+system data resource 22's entry 5), `<hash>` is the FNV-1a 64 hash of the
+original's bytes through its closing 00, and the translation is markup:
+characters, which become glyphs of the font, and controls in braces, the
+codes `window_reveal_text` interprets (`{n}` a new line, `{p}` a page,
+`{wait 30}`, `{name 128}`, `{item}`, ...). No original text is committed:
+`python3 -m tools.translations extract` writes both discs' texts to
+`.local/locale/` (each with its window's limits, and batches for
+translators), `lint` checks translators' files, `merge` writes the shipped
+files and `check` checks them against the discs. A translation that is the
+original's own bytes is not shipped (where a language has no translation
+the original shows): `same.txt` names those texts by `<where>` and `<hash>`
+alone, so `check` tells them from texts left untranslated. A translation keeps its
+original's controls (the waits, speed changes and timed ends in their order,
+the insertions in any order), and each line and page fits its window: a
+field message's lines take up to 52 columns (26 narrow letters, the widest a
+window beside a portrait leaves on the 320-pixel screen) or its table's
+columns if more, and 4 lines a page (the portrait window's rows) or its own
+rows if more; `merge` breaks a longer line at its spaces and splits a longer
+page into pages where the player's Confirm already ends the text. A timed
+text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
+(its last page's lines are the cursor's: `a9` names them), a message whose
+window a script sizes (`cf`, `d0`) and every text outside the field keep
+their pages and fit their windows as they are.
+
+**In game memory.** Every runtime installs every language's translations
+at construction (`locale::install`, `Runtime::new`) at 0x20000000, outside
+the PS1's addresses and outside snapshots (`snapshot::REGIONS`), as the
+Kanji font is placed; their digest is a package of the state identity
+(`"translations <sha256>"`), so a state restores only where the same
+translations are installed. The image is a header (magic `XLC1`, the active
+language, the number of languages, the added glyphs' address and count),
+each language's records' address and count, the glyphs' recipes, each
+language's records (hash, the translation's address, the columns and rows
+it needs) ascending by hash, then the translations' bytes.
+`locale::activate` writes the active language (0 for the original).
+`src/port/locale.c` wraps the three ways a window takes text,
+`window_queue_message`, `window_render_text_line` and `window_insert_text`:
+it walks the text it is passed as `window_reveal_text` walks it (in RAM,
+within 4 KiB), hashes it and, when the active language has a translation,
+passes the translation's address instead. The game's bytes and pointers
+stay as they are; a window's text pointer then points at the translation,
+which stays installed whatever is active later, so a window goes on with the
+text it began (and the texts queued before a change), and the next text
+takes the new language. `text_get_message_columns` and
+`text_get_message_rows` give a field message's window what its translation
+needs beyond its table's.
+
+**Command labels.** The menus draw their commands from sheet entries
+0x123-0x149 of the menu's sprite sheet (directory (0x10, 0) file 1, archive
+entry 2, which the field's, the battle's and the world map's menus load
+alike): words in the menus' textures, in a small font without accented
+letters, some composed of pieces of others. `src/port/locale.c` wraps the
+five loaders of a menu's resources (`menu_load_resources`,
+`item_shop_load_resources`, `gear_shop_load_resources`,
+`member_change_load_resources`, `name_entry_load_resources`): once the
+original has loaded them, each label the active language translates
+(named by the FNV-1a 64 hash of its entry's bytes, its part count and
+parts) is drawn with the game's text renderer
+(`window_render_text_line`, the original's) into a heap block, which the
+transfer to VRAM reads as it reads the menus' own, and placed in texture
+page (448, 256), which no menu screen uses (measured on each: the field
+menu and its screens, member change, the title's Load, name entry and both
+shops), left to right in 13-row lines; its entry becomes one part showing
+it with the text palette the menus load at (0, 0x1D1), two rows above the
+original's place (the font's 13 rows centre on the picture's 9). An entry
+already drawn so no longer has its original bytes, so a second pass draws
+nothing. The translations name the labels `mc<entry>-0000` (37 entries, 30
+distinct pictures); `tools/translations.py` hashes them from both discs'
+sheets.
+
+The stat panels' words are sheet entries 0xDE-0xF8 of the same sheet, a
+part a letter of the sheet's small font (whose letter cells are entries
+0x00-0x3D, digits, capitals and small letters, and 0x91 the full stop). A
+word the active language translates (named likewise, `mc<entry>-0000`, 14
+of them) is spelled anew with those cells: a part a letter, as many as the
+translation has letters and no more than the original's, spaced as the
+original words space them (a letter before i or l two pixels closer), and
+ending where the original's last letter ended, as the panels align them
+right; a translation ending in % keeps the original's % (its rightmost
+part). The small font has no accented letters, so these words do without
+(Eter, DefEter).
+
+The field menu's party blocks and the status panels spell "Next LV", and
+the Gear shop's parts panel FUEL and WEIGHT, a letter a slot of their
+overlays' tables: a slot's sheet image (a cell of the small font) and its
+x (`menu_field_block_part_images`, `menu_detail_part_images` and their x
+tables in the field menu's overlay, slots 10-17, 5-12 and 29-36;
+`gear_shop_gear_values_frame_images` in the Gear shop's, slots 3-6 and
+8-13). Once `menu_load_resources` or `gear_shop_load_resources` has run,
+each row the active language translates (named `mr<row>-0000` by the hash
+of its slots' images, which `tools/translations.py` reads from both discs'
+overlays) is spelled anew from its first x: 8 pixels a letter as the
+original rows set theirs (the narrow i and l 5, a letter before one of
+them 6), a space as wide, and the slots it leaves showing its last letter
+again in place, as the original rows repeat theirs. A row spelled so no
+longer has its original images, so the next pass leaves it.
+
+**Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
+capitals (`locale/pt-BR/glyphs.txt`). Each is a two-byte glyph from 0xFF20
+(0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
+its special glyph), the same code in every language that adds the letter.
+`text_get_glyph_width` makes them narrow (2 columns), and `text_draw_glyph`
+draws one through the original's own drawing of 0xFFFF: it puts the letter
+in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
+0xFF and puts the special glyph's rows back, with nothing waiting in
+between. The letter is composed from the player's font: the base letter's
+11 rows (the font block `text_install_font` installed), rows taken out
+(a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
+drawn for this project over the top rows (the cedilla on row 10). No glyph
+of the original is copied.
+
+With English active every wrapped function is the original's, so the game
+runs as before: RAM, VRAM and timing are those of the original's text.
+
+Tests: `tests/test_port_locale.py` (the port built natively over stand-ins
+for the originals: a text walked as the window walks it and the tools name
+it, none outside RAM or without its 00; no language, or the original's
+English, passing every pointer through; the active language's translation
+passed to each of the three, the original where it has none; a field
+window's columns and rows grown to the translation's, never shrunk; an
+added letter narrow, drawn through 0xFFFF from its base with rows taken out
+and blanked and its accent, the special glyph's rows put back), `xem-core`'s
+`locale` tests (markup encoded as the game reads text, the columns and rows
+measured; characters the font lacks, unknown controls and bad operands
+refused; the glyph recipes; the image's layout, records ascending by hash),
+the native test's command labels (a translated entry drawn into page
+(448, 256), each transfer waited for, the line image freed, the entry one
+part there with the text palette two rows up; an untranslated one and
+every one without an active language unchanged) and stat words (spelled
+with the small font's cells, right-aligned where the original ended, a
+closing % kept; one too long or with a letter the font lacks, and every one
+without an active language, unchanged) and letter rows (the Gear shop's
+two and the menus' three Next LV rows spelled by their loaders from their
+first x, narrow letters and spaces set, the slots left repeating the last
+letter; one too long or with a letter the font lacks, and every one without
+an active language, unchanged), `tests/test_translations.py`'s small-font
+check of words and rows,
+`xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
+`xem-headless/tests/text_and_movies.rs` (disc 1):
+`a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
+(field 12's opening message: in English the window reads it in RAM; in
+Brazilian Portuguese it reads the shipped translation of the same message,
+with added letters, and goes on with it once English is chosen, the next
+message read in RAM),
+`the_language_is_recorded_and_a_replay_reaches_the_recordings_memory`, the
+timed scenes the text speed is tested on (maps 4, 27, 131, 288 twice, 326,
+359 and 482: the same end, story value and messages in Brazilian
+Portuguese as in English) and
+`the_opening_chapter_reaches_feis_room_in_brazilian_portuguese` (New Game
+to Fei's room: the same maps, battle and story value).
 
 ## Desktop host and settings panel
 

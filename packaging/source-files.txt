@@ -685,6 +685,7 @@ src/port/libgpu.c
 src/port/libgte.c
 src/port/libpress.c
 src/port/libspu.c
+src/port/locale.c
 src/port/lzss.c
 src/port/model_draw.c
 src/port/movie_skip.c
@@ -746,6 +747,20 @@ src/runtime/crates/xem-binaural/tests/models.rs
 src/runtime/crates/xem-core/Cargo.toml
 src/runtime/crates/xem-core/font/README.md
 src/runtime/crates/xem-core/font/substitute.txt
+src/runtime/crates/xem-core/locale/pt-BR/battle.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-0.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-1.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-2.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-3.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-4.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-5.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-6.txt
+src/runtime/crates/xem-core/locale/pt-BR/field-7.txt
+src/runtime/crates/xem-core/locale/pt-BR/glyphs.txt
+src/runtime/crates/xem-core/locale/pt-BR/menus.txt
+src/runtime/crates/xem-core/locale/pt-BR/same.txt
+src/runtime/crates/xem-core/locale/pt-BR/system.txt
+src/runtime/crates/xem-core/locale/pt-BR/world.txt
 src/runtime/crates/xem-core/src/action.rs
 src/runtime/crates/xem-core/src/assist.rs
 src/runtime/crates/xem-core/src/binaural.rs
@@ -768,6 +783,7 @@ src/runtime/crates/xem-core/src/field.rs
 src/runtime/crates/xem-core/src/focus.rs
 src/runtime/crates/xem-core/src/inspect.rs
 src/runtime/crates/xem-core/src/lib.rs
+src/runtime/crates/xem-core/src/locale.rs
 src/runtime/crates/xem-core/src/memory.rs
 src/runtime/crates/xem-core/src/menu.rs
 src/runtime/crates/xem-core/src/module.rs
@@ -1191,3 +1207,4 @@ tools/repository/source_archive.py
 tools/repository/validate.py
 tools/service_calls.py
 tools/stray_padding.py
+tools/translations.py

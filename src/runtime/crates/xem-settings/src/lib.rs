@@ -20,6 +20,7 @@ pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 pub use xem_core::debug::Request as DebugRequest;
 /// The platforming areas whose random battles NotWhilePlatforming turns off.
 pub use xem_core::encounters::PLATFORMING_AREAS;
+pub use xem_core::locale::Language;
 
 pub const MAX_VOLUME: u8 = 100;
 /// The mouse camera's deadzone, default and largest, in pixels of motion.
@@ -254,6 +255,9 @@ pub struct Settings {
     /// mode's), as the game lets it end some; window movies stay the
     /// scripts'.
     pub movie_skip: bool,
+    /// The language of the game's menus, dialogue and battle text
+    /// (`Session::set_language`): the original's English or a translation.
+    pub language: Language,
 }
 
 impl Default for Settings {
@@ -283,6 +287,7 @@ impl Default for Settings {
             text_speed: TextSpeed::default(),
             auto_advance: AutoAdvance::default(),
             movie_skip: false,
+            language: Language::English,
         }
     }
 }
@@ -328,6 +333,7 @@ pub enum SettingChange {
     /// The auto-advance block, whole: on or off and its dwell.
     AutoAdvance(AutoAdvance),
     MovieSkip(bool),
+    Language(Language),
 }
 
 /// An applied and persisted change.
@@ -452,6 +458,7 @@ impl Settings {
             SettingChange::TextSpeed(speed) => next.text_speed = *speed,
             SettingChange::AutoAdvance(auto) => next.auto_advance = *auto,
             SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
+            SettingChange::Language(language) => next.language = *language,
         }
         next.validate()?;
         Ok(next)
@@ -903,6 +910,25 @@ mod tests {
         assert_eq!((read.text_speed, read.auto_advance, read.mouse_camera), (TextSpeed::Original, AutoAdvance { enabled: true, dwell: DEFAULT_AUTO_ADVANCE_DWELL }, true));
         assert_eq!(reset, ["auto_advance.dwell", "text_speed"]);
         assert!(!Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.movie_skip);
+    }
+
+    #[test]
+    fn the_language_defaults_to_english_persists_and_reads_an_unknown_one_as_english() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().language, Language::English);
+        assert_eq!(service.apply(SettingChange::Language(Language::BrazilianPortuguese)).unwrap().settings.language, Language::BrazilianPortuguese);
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(saved["language"], "BrazilianPortuguese");
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::BrazilianPortuguese, "reopened");
+        // As an agent sends it on `xem-desktop --control`.
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "English"}})).unwrap();
+        assert_eq!(ack["settings"]["language"], "English");
+        // Saved before the setting existed, or with a language no longer offered: English.
+        let (read, reset) = Settings::read(&serde_json::json!({"language": "Klingon", "movie_skip": true})).unwrap();
+        assert_eq!((read.language, read.movie_skip, reset), (Language::English, true, vec!["language".to_string()]));
+        assert_eq!(Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.language, Language::English);
     }
 
     /// The gameplay options' keys as `Settings` saves them.
