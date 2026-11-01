@@ -88,7 +88,11 @@ original address.
   The port's own data (shadow stacks, asyncify areas, port statics) starts at
   0x10000000 (`PORT_BASE` in tools/game_module.py), outside RAM, the
   scratchpad, I/O and every mirror the game or its DMA addresses reach. The
-  linear memory ends at 0x80200000.
+  linear memory ends at 0x80200000. The port's statics lie below the shadow
+  stack, and the game keeps a stack address in RAM (`sprite_load_image_rect`,
+  a local `RECT`), so port data that grows moves the game's memory and the
+  slice hashes even where the port changes nothing: a port routine keeps its
+  constants in its code (src/port/locale.c's letter advances).
   The build translates load/store and bulk-memory operands through the PS1
   RAM mirrors before optimization, while preserving stored pointer values.
   Thus a 24-bit graphics link writes the same RAM that the GPU reads at

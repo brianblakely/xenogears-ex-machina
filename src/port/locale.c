@@ -422,7 +422,12 @@ void xem_locale_menu_labels(u16 *sheet) {
 
 /* The stat panels' words and the small font's cells: digits, capitals and
  * small letters from these entries, the full stop at 0x91. A letter's
- * advance in pixels, as the original words space them. */
+ * advance in pixels, as the original words space them, 4 bits a letter
+ * from A (or a), eight letters a constant (A-H, I-P, Q-X, Y-Z). They are
+ * constants in the code, not a table: the port's data lies below the
+ * shadow stack, and the game keeps a stack address in RAM
+ * (sprite_load_image_rect), so port data would move the game's memory
+ * even with no language active. */
 #define XEM_WORD_FIRST 0xDE
 #define XEM_WORD_LAST 0xF8
 #define XEM_WORD_PARTS 12
@@ -431,8 +436,14 @@ void xem_locale_menu_labels(u16 *sheet) {
 #define XEM_SMALL_LETTERS 0x24
 #define XEM_SMALL_STOP 0x91
 #define XEM_SMALL_ADVANCE 6
-static const u8 xem_small_capital_advances[26] = {7, 7, 7, 7, 6, 6, 7, 7, 4, 6, 7, 6, 8, 7, 7, 7, 7, 7, 6, 6, 7, 7, 8, 7, 7, 6};
-static const u8 xem_small_letter_advances[26] = {6, 6, 6, 6, 6, 5, 6, 6, 3, 4, 6, 3, 8, 6, 6, 6, 6, 5, 6, 6, 6, 6, 8, 7, 6, 6};
+#define XEM_SMALL_CAPITAL_ADVANCES 0x77667777, 0x77786764, 0x78776677, 0x67
+#define XEM_SMALL_LETTER_ADVANCES 0x66566666, 0x66683643, 0x78666656, 0x66
+
+static s32 xem_small_advance(u32 a, u32 b, u32 c, u32 d, s32 letter) {
+    u32 eight = letter < 8 ? a : letter < 16 ? b : letter < 24 ? c : d;
+
+    return (eight >> (4 * (letter & 7))) & 0xF;
+}
 
 /* The small font's cell for a one-byte glyph of the text and its advance,
  * or -1 for a glyph it lacks. */
@@ -442,11 +453,11 @@ static s32 xem_small_cell(u8 code, s32 *advance) {
         return XEM_SMALL_DIGITS + code - 0x16;
     }
     if (code >= 0x20 && code <= 0x39) {
-        *advance = xem_small_capital_advances[code - 0x20];
+        *advance = xem_small_advance(XEM_SMALL_CAPITAL_ADVANCES, code - 0x20);
         return XEM_SMALL_CAPITALS + code - 0x20;
     }
     if (code >= 0x3D && code <= 0x56) {
-        *advance = xem_small_letter_advances[code - 0x3D];
+        *advance = xem_small_advance(XEM_SMALL_LETTER_ADVANCES, code - 0x3D);
         return XEM_SMALL_LETTERS + code - 0x3D;
     }
     if (code == 0x14) {
