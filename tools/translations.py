@@ -271,6 +271,7 @@ GROUPS = {
     "be": "battle events",
     "wa": "world areas",
     "mc": "menu commands",
+    "mr": "menu letter rows",
 }
 PREFIX = {name: prefix for prefix, name in GROUPS.items()}
 PREFIX["field messages (packed stream reads past its file)"] = "f"
@@ -298,6 +299,7 @@ class Text:
     fixed: bool = False  # the script sets the window's size
     original_columns: int = 0
     original_rows: int = 0
+    small: str = ""  # "word" or "row": spelled with the menus' small font (SMALL)
 
 
 def field_scripts(disc) -> dict[int, dict]:
@@ -371,6 +373,22 @@ LABEL_COLUMNS = 59
 # cells, in no more letters than the original has parts, a closing % keeping
 # the original's (src/port/locale.c).
 WORDS = (0xDE, 0xDF, 0xE0, 0xE1, 0xE2, 0xE4, 0xE6, 0xEB, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8)
+# The small font's cells, sheet entries 0x00-0x3E, and what a translation of
+# a word or row may hold: its letters and digits, the full stop (0x91), a
+# word's closing % and a row's spaces.
+SMALL_CELLS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/"
+SMALL = {"word": re.compile(r"[A-Za-z0-9.]+%?"), "row": re.compile(r"[A-Za-z0-9.]+( [A-Za-z0-9.]+)*")}
+# The menus' rows of single letters in overlay tables, a sheet image (a small
+# font cell) and an x a slot, 8 pixels apart: a translation is spelled from
+# the row's first x in no more letters than the row has slots (src/port/locale.c).
+OVERLAY_VRAM = 0x801C5000  # slot39's and ovl2602's load address
+LETTER_ROWS = (  # overlay, images, their x, entry size, first slot, slots
+    ("slot39", 0x801EA34C, 0x801E9A78, 4, 10, 8),  # the field menu's Next LV
+    ("slot39", 0x801EA39C, 0x801E9B60, 4, 5, 8),  # the status panel's
+    ("slot39", 0x801EA39C, 0x801E9B60, 4, 24 + 5, 8),  # the gear panel's
+    ("ovl2602", 0x801D708C, 0x801D70A8, 2, 3, 4),  # the gear shop's FUEL
+    ("ovl2602", 0x801D708C, 0x801D70A8, 2, 8, 6),  # and WEIGHT
+)
 
 
 def menu_labels(disc) -> list[tuple[int, bytes]]:
@@ -382,6 +400,28 @@ def menu_labels(disc) -> list[tuple[int, bytes]]:
         offset = struct.unpack_from("<H", sheet, 4 + 2 * label)[0]
         parts = struct.unpack_from("<h", sheet, offset)[0]
         out.append((label, sheet[offset : offset + 4 + 0x1C * parts]))
+    return out
+
+
+def letter_rows(disc) -> list[tuple[int, bytes, str, int]]:
+    """Each letter row's number, its slots' images (the bytes the port names
+    it by), its English and its slots."""
+    from tools.extraction.overlays import OVERLAYS
+
+    out = []
+    for number, (overlay, images, xs, size, first, slots) in enumerate(LETTER_ROWS):
+        image = disc.data(OVERLAYS[overlay][disc.number - 1])
+        form = "<i" if size == 4 else "<H"
+
+        def entry(table, slot):
+            return struct.unpack_from(form, image, table - OVERLAY_VRAM + size * slot)[0]
+
+        start = images - OVERLAY_VRAM + size * first
+        placed = sorted({entry(xs, slot): SMALL_CELLS[entry(images, slot)] for slot in range(first, first + slots)}.items())
+        english = placed[0][1]
+        for (last, _), (x, char) in zip(placed, placed[1:]):
+            english += " " * ((x - last) // 8 - 1) + char
+        out.append((number, image[start : start + size * slots], english, slots))
     return out
 
 
@@ -399,8 +439,14 @@ def originals() -> dict[str, Text]:
         for label, data in menu_labels(disc):
             digest = f"{fnv1a64(data):016x}"
             columns = LABEL_COLUMNS if label in LABELS else 2 * struct.unpack_from("<h", data, 0)[0]
-            text = texts.setdefault(digest, Text(f"mc{label:03d}-0000", digest, "", columns, 1, GROUPS["mc"]))
+            text = texts.setdefault(digest, Text(f"mc{label:03d}-0000", digest, "", columns, 1, GROUPS["mc"],
+                                                 small="word" if label in WORDS else ""))
             text.places.append(f"mc{label:03d}-0000@{number}")
+        for row, data, english, slots in letter_rows(disc):
+            digest = f"{fnv1a64(data):016x}"
+            text = texts.setdefault(digest, Text(f"mr{row:03d}-0000", digest, english, 2 * slots, 1, GROUPS["mr"],
+                                                 small="row"))
+            text.places.append(f"mr{row:03d}-0000@{number}")
         for group, item, data in tc.text_tables(disc):
             if data is None or isinstance(data, Exception):
                 continue
@@ -569,6 +615,8 @@ def problems(original: Text, translation: str, extra: dict[str, int]) -> list[st
         if len(page) > original.rows:
             found.append(f"a page of {len(page)} lines (at most {original.rows})")
             break
+    if original.small and not SMALL[original.small].fullmatch(translation):
+        found.append(f"not spelled with the small font's letters, digits and full stop ({SMALL[original.small].pattern})")
     widest = max(max(p) for p in new_pages)
     if widest > original.columns:
         found.append(f"a line of {widest} columns (at most {original.columns}, {original.columns // 2} letters)")
@@ -735,7 +783,7 @@ def file_for(where: str) -> str:
     if prefix == "f":
         number = int(where[1:4])
         return f"field-{number // 100}.txt"
-    return {"s": "system.txt", "ml": "menus.txt", "mw": "menus.txt", "md": "menus.txt", "mm": "menus.txt", "mc": "menus.txt",
+    return {"s": "system.txt", "ml": "menus.txt", "mw": "menus.txt", "md": "menus.txt", "mm": "menus.txt", "mc": "menus.txt", "mr": "menus.txt",
             "ba": "battle.txt", "en": "battle.txt", "bm": "battle.txt", "be": "battle.txt",
             "wa": "world.txt"}[prefix]
 

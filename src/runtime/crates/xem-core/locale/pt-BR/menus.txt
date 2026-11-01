@@ -951,3 +951,6 @@ mm000-0065 84a53dd633c229a6 Aqui termina o tutorial...{n}Que tal experimentar o 
 mm000-0066 d3cddd8626097272 Sobre o Battling{n}Layout da Tela{n}Movimento{n}Ataque{n}Barras de Calor{n}Balas de Éter{n}Defesa{n}Fim do Tutorial
 mm000-0067 d3004806fd8363fc Leonard{n}"Hm! Nada mal.{p}Então que seja do seu jeito...{n}A brincadeira acabou!{p}Agora é pra valer..."
 mm000-0068 80c1359972c6bf32 Leonard{n}"Hunf! Isso não foi nada.{p}Chega de brincadeira, ora!{n}Agora é pra valer..."
+mr000-0000 341278971bc58b04 Faltam
+mr003-0000 0e7be530f1224c27 COMB
+mr004-0000 1deb33570b278e2d PESO

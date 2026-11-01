@@ -109,6 +109,12 @@ void xem_original_gear_shop_load_resources(void) {}
 void xem_original_member_change_load_resources(void) {}
 void xem_original_name_entry_load_resources(void) {}
 u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *)resource)[index + 2]; }
+s32 menu_field_block_part_images[20];
+s32 menu_field_block_part_x_table[20];
+s32 menu_detail_part_images[48];
+s32 menu_detail_part_x_table[48];
+u16 gear_shop_gear_values_frame_images[14];
+u16 gear_shop_gear_values_frame_x_table[14];
 ''')
         cls.lib = port_native.build(cls.build.name, ["src/port/locale.c", str(support)],
                                     symbols={"text_special_glyph_rows": SPECIAL})
@@ -326,3 +332,60 @@ u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *
         spelled = [struct.unpack_from("<HhHHhh", after, 4 + 0x1C * k) for k in range(3)]
         # A 7 and b 6 end where the % begins (19); the % as it was.
         self.assertEqual([(u, v, x, y) for u, v, _, _, x, y in spelled], [(0x10, 128, 6, 2), (0x20, 136, 13, 2), (0x70, 200, 19, 2)])
+
+    def test_a_menu_rows_letters_are_spelled_anew_from_its_first_x_its_last_letter_filling_the_slots_left(self):
+        """The gear shop's FUEL and WEIGHT and the menus' Next LV are rows of
+        single letters in their overlays' tables, a small font cell and an x a
+        slot (src/decomp/src/ovl2602/gear_shop.c, slot39/menu_framework.c),
+        named by the hash of the slots' cells: a translated row takes the
+        cells from its first x, 8 pixels a letter (i and l 5, a letter before
+        one 6), a space as wide, and the slots it leaves repeat its last
+        letter in place; the loaders spell each row after the original's."""
+        ctypes.c_uint.in_dll(self.lib, "menu_state_current").value = 0
+        images = (ctypes.c_uint16 * 14).in_dll(self.lib, "gear_shop_gear_values_frame_images")
+        xs = (ctypes.c_uint16 * 14).in_dll(self.lib, "gear_shop_gear_values_frame_x_table")
+        codes = [0x11, 0x19, 0x3E, 0x0F, 0x1E, 0x0E, 0x15, 0x3E, 0x20, 0x0E, 0x12, 0x10, 0x11, 0x1D]
+        places = [210, 218, 250, 210, 218, 226, 234, 250, 210, 218, 226, 234, 242, 250]
+        fuel = struct.pack("<4H", *codes[3:7])
+        weight = struct.pack("<6H", *codes[8:14])
+        # "Al i" for FUEL (a letter before a narrow one, a space), "PESO" for WEIGHT.
+        rows = [(translations.fnv1a64(fuel), bytes([0x20, 0x48, 0x10, 0x45, 0]), 8, 1),
+                (translations.fnv1a64(weight), bytes([0x2F, 0x24, 0x32, 0x2E, 0]), 12, 1)]
+        for active in (1, 0):
+            images[:], xs[:] = codes, places
+            data = region(active, rows, ())
+            ctypes.memmove(LOCALE, data, len(data))
+            self.lib.gear_shop_load_resources()
+            if not active:
+                self.assertEqual((list(images), list(xs)), (codes, places), "without the active language")
+                continue
+            # A 6 (before l), l 5, the space 8: A 210, l 216, i 229 and again; P E S O 8 apart and O again.
+            self.assertEqual(list(images), codes[:3] + [0x0A, 0x2F, 0x2C, 0x2C] + codes[7:8] + [0x19, 0x0E, 0x1C, 0x18, 0x18, 0x18])
+            self.assertEqual(list(xs), places[:3] + [210, 216, 229, 229] + places[7:8] + [210, 218, 226, 234, 234, 234])
+        # The menus' three Next LV rows (s32 slots) share one translation;
+        # one longer than its slots or with a letter the font lacks is left.
+        block = (ctypes.c_int32 * 20).in_dll(self.lib, "menu_field_block_part_images")
+        block_xs = (ctypes.c_int32 * 20).in_dll(self.lib, "menu_field_block_part_x_table")
+        detail = (ctypes.c_int32 * 48).in_dll(self.lib, "menu_detail_part_images")
+        detail_xs = (ctypes.c_int32 * 48).in_dll(self.lib, "menu_detail_part_x_table")
+        next_lv = [0x17, 0x28, 0x3B, 0x37, 0x37, 0x15, 0x1F, 0x1F]
+        digest = translations.fnv1a64(struct.pack("<8i", *next_lv))
+        for text, expected in ((bytes([0x25, 0x3D, 0x48, 0x50, 0x3D, 0x49, 0]), "spelled"),
+                               (bytes([0x25] * 9 + [0]), "too long"), (bytes([0x25, 0x5A, 0]), "a letter the font lacks")):
+            block[:] = [0] * 10 + next_lv + [0, 0]
+            block_xs[:] = [0] * 10 + [0x80, 0x88, 0x90, 0x98, 0x98, 0xA8, 0xB0, 0xB0] + [0, 0]
+            detail[:] = [0] * 5 + next_lv + [0] * 16 + next_lv + [0] * 11
+            detail_xs[:] = [0] * 5 + [0xB0] * 8 + [0] * 16 + [0x98] * 8 + [0] * 11
+            data = region(1, [(digest, text, 16, 1)], ())
+            ctypes.memmove(LOCALE, data, len(data))
+            self.lib.menu_load_resources()
+            rows = [(list(block[10:18]), block_xs[10:18]), (list(detail[5:13]), detail_xs[5:13]),
+                    (list(detail[29:37]), detail_xs[29:37])]
+            if expected != "spelled":
+                self.assertEqual([cells for cells, _ in rows], [next_lv] * 3, expected)
+                continue
+            # "Faltam": F 8, a 6 (before l), l 5, t a m 8, m again twice.
+            spelled = [0x0F, 0x24, 0x2F, 0x37, 0x24, 0x30, 0x30, 0x30]
+            for (cells, at), first in zip(rows, (0x80, 0xB0, 0x98)):
+                self.assertEqual(cells, spelled)
+                self.assertEqual(list(at), [first + d for d in (0, 8, 14, 19, 27, 35, 35, 35)])

@@ -8608,12 +8608,15 @@ names) is the game's own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
 anew in the language, and the stat panels' words the menus compose of a
 small font's letters (Attack, Hit%, Defense, Evade%, Ether, Weight,
-Agility ...) are spelled anew with that font's letters (below). Other words
-drawn as pictures stay as drawn: the abbreviations the menus place letter
-by letter from tables (LV, Exp, Next LV, HP, EP, the Gear shop's FUEL and
-WEIGHT), the battle command ring's and the HUD's lettering, and the memory
-card titles the file screens draw from the BIOS Kanji font (JIS X 0208 has
-no accented Latin letters).
+Agility ...) and the words the menus place letter by letter from their
+tables (Next LV, the Gear shop's FUEL and WEIGHT) are spelled anew with
+that font's letters (below). Other words drawn as pictures stay as drawn:
+the abbreviations LV, Exp, HP and EP (which the Portuguese text keeps
+too) and the weight's unit (lbs.), the battle HUD's words (the italic
+Attack, Defense ... around the command buttons and the small Time, Ap and
+fuel), which are art in the battle's textures, and the memory card titles
+the file screens draw from the BIOS Kanji font (JIS X 0208 has no
+accented Latin letters).
 
 **The translations.** A language ships as text files,
 `src/runtime/crates/xem-core/locale/<tag>/*.txt`, one line per text:
@@ -8701,6 +8704,21 @@ right; a translation ending in % keeps the original's % (its rightmost
 part). The small font has no accented letters, so these words do without
 (Eter, DefEter).
 
+The field menu's party blocks and the status panels spell "Next LV", and
+the Gear shop's parts panel FUEL and WEIGHT, a letter a slot of their
+overlays' tables: a slot's sheet image (a cell of the small font) and its
+x (`menu_field_block_part_images`, `menu_detail_part_images` and their x
+tables in the field menu's overlay, slots 10-17, 5-12 and 29-36;
+`gear_shop_gear_values_frame_images` in the Gear shop's, slots 3-6 and
+8-13). Once `menu_load_resources` or `gear_shop_load_resources` has run,
+each row the active language translates (named `mr<row>-0000` by the hash
+of its slots' images, which `tools/translations.py` reads from both discs'
+overlays) is spelled anew from its first x: 8 pixels a letter as the
+original rows set theirs (the narrow i and l 5, a letter before one of
+them 6), a space as wide, and the slots it leaves showing its last letter
+again in place, as the original rows repeat theirs. A row spelled so no
+longer has its original images, so the next pass leaves it.
+
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
 capitals (`locale/pt-BR/glyphs.txt`). Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
@@ -8735,7 +8753,12 @@ part there with the text palette two rows up; an untranslated one and
 every one without an active language unchanged) and stat words (spelled
 with the small font's cells, right-aligned where the original ended, a
 closing % kept; one too long or with a letter the font lacks, and every one
-without an active language, unchanged),
+without an active language, unchanged) and letter rows (the Gear shop's
+two and the menus' three Next LV rows spelled by their loaders from their
+first x, narrow letters and spaces set, the slots left repeating the last
+letter; one too long or with a letter the font lacks, and every one without
+an active language, unchanged), `tests/test_translations.py`'s small-font
+check of words and rows,
 `xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`

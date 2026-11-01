@@ -38,6 +38,13 @@
  * translated one is spelled anew with the same font's letter cells, as many
  * parts as letters, ending where the original ended (the panels align them
  * right); a word ending in % keeps the original's % (its rightmost part).
+ * A few words are rows of single letters in an overlay's tables, a sheet
+ * image (a small font cell) and an x a slot: the field menu's and the
+ * status panels' "Next LV" (menu_load_resources) and the gear shop's FUEL
+ * and WEIGHT (gear_shop_load_resources). A translated row is named by the
+ * hash of its slots' images and spelled anew from its first x, 8 pixels a
+ * letter as the original rows set theirs, the slots it leaves showing its
+ * last letter again in place, as the original rows repeat theirs.
  *
  * With no language active (the original's English) every function is the
  * original's. The port keeps no data of its own.
@@ -527,6 +534,79 @@ void xem_locale_menu_words(u16 *sheet) {
     }
 }
 
+/* The menus' rows of single letters (in the field menu's overlay and the
+ * gear shop's). A row's letters stand 8 pixels apart, a space as wide; the
+ * narrow i and l take 5 and a letter before one of them 6, as the words'
+ * kerning sets them. */
+extern s32 menu_field_block_part_images[20];
+extern s32 menu_field_block_part_x_table[20];
+extern s32 menu_detail_part_images[48];
+extern s32 menu_detail_part_x_table[48];
+extern u16 gear_shop_gear_values_frame_images[14];
+extern u16 gear_shop_gear_values_frame_x_table[14];
+#define XEM_ROW_ADVANCE 8
+#define XEM_ROW_NARROW_ADVANCE 5
+#define XEM_TEXT_SPACE 0x10
+
+static s32 xem_row_value(void *table, s32 size, s32 slot) {
+    return size == 4 ? ((s32 *)table)[slot] : ((u16 *)table)[slot];
+}
+
+static void xem_row_store(void *table, s32 size, s32 slot, s32 value) {
+    if (size == 4) {
+        ((s32 *)table)[slot] = value;
+    } else {
+        ((u16 *)table)[slot] = (u16)value;
+    }
+}
+
+/* Spell the row of `slots` letters from slot `first` of an overlay's tables
+ * (a slot's sheet image in `images`, its x in `xs`, entries of `size`
+ * bytes) as the active language translates it. */
+void xem_locale_letter_row(void *images, void *xs, s32 size, s32 first, s32 slots) {
+    const XemLocaleText *found;
+    const u8 *text;
+    s32 k;
+    s32 letters;
+    s32 slot;
+    s32 x;
+    s32 advance;
+
+    if (xem_locale_language() == NULL) {
+        return;
+    }
+    found = xem_locale_lookup((const u8 *)images + size * first, size * slots);
+    if (found == NULL) {
+        return;
+    }
+    text = (const u8 *)(XemUintptr)found->text;
+    for (k = 0, letters = 0; text[k] != 0; k++) {
+        if (text[k] != XEM_TEXT_SPACE && xem_small_cell(text[k], &advance) < 0) {
+            return;
+        }
+        letters += text[k] != XEM_TEXT_SPACE;
+    }
+    if (letters == 0 || letters > slots) {
+        return;
+    }
+    x = xem_row_value(xs, size, first);
+    slot = first;
+    for (k = 0; text[k] != 0; k++) {
+        if (text[k] == XEM_TEXT_SPACE) {
+            x += XEM_ROW_ADVANCE;
+            continue;
+        }
+        xem_row_store(images, size, slot, xem_small_cell(text[k], &advance));
+        xem_row_store(xs, size, slot, x);
+        slot++;
+        x += text[k] == 0x45 || text[k] == 0x48 ? XEM_ROW_NARROW_ADVANCE : XEM_ROW_ADVANCE + xem_small_kern(text[k], text[k + 1]);
+    }
+    for (; slot < first + slots; slot++) {
+        xem_row_store(images, size, slot, xem_row_value(images, size, slot - 1));
+        xem_row_store(xs, size, slot, xem_row_value(xs, size, slot - 1));
+    }
+}
+
 static u16 *xem_menu_sheet(void) {
     return menu_state_current != 0 ? (u16 *)(XemUintptr)XEM_U32(menu_state_current + XEM_MENU_SHEET) : NULL;
 }
@@ -535,6 +615,9 @@ void menu_load_resources(void) {
     xem_original_menu_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
     xem_locale_menu_words(xem_menu_sheet());
+    xem_locale_letter_row(menu_field_block_part_images, menu_field_block_part_x_table, 4, 10, 8);
+    xem_locale_letter_row(menu_detail_part_images, menu_detail_part_x_table, 4, 5, 8);
+    xem_locale_letter_row(menu_detail_part_images, menu_detail_part_x_table, 4, 24 + 5, 8);
 }
 
 void item_shop_load_resources(void) {
@@ -547,6 +630,8 @@ void gear_shop_load_resources(void) {
     xem_original_gear_shop_load_resources();
     xem_locale_menu_labels(xem_menu_sheet());
     xem_locale_menu_words(xem_menu_sheet());
+    xem_locale_letter_row(gear_shop_gear_values_frame_images, gear_shop_gear_values_frame_x_table, 2, 3, 4);
+    xem_locale_letter_row(gear_shop_gear_values_frame_images, gear_shop_gear_values_frame_x_table, 2, 8, 6);
 }
 
 void member_change_load_resources(void) {

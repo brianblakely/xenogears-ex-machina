@@ -64,6 +64,18 @@ class Fit(unittest.TestCase):
         self.assertEqual(tr.problems(original, "Oi{p}Vamos?{n}  Sim{n}  Não", EXTRA), [])
         self.assertIn("choice", tr.problems(original, "Oi{p}Vamos? Sim{n}  Não", EXTRA)[0])
 
+    def test_a_menu_word_or_row_takes_the_small_fonts_letters_alone_in_its_slots(self):
+        word = tr.Text("mc223-0000", "0" * 16, "", 8, 1, "menu commands", small="word")
+        self.assertEqual(tr.problems(word, "Pre%", EXTRA), [])
+        self.assertEqual(tr.problems(word, "Agi.", EXTRA), [])
+        self.assertIn("small font", tr.problems(word, "Pré%", EXTRA)[0])
+        self.assertIn("small font", tr.problems(word, "A%b", EXTRA)[0])
+        self.assertIn("at most 8", tr.problems(word, "Ataque", EXTRA)[0])
+        row = tr.Text("mr000-0000", "0" * 16, "Go on", 12, 1, "menu letter rows", small="row")
+        self.assertEqual(tr.problems(row, "Va em", EXTRA), [])
+        self.assertIn("small font", tr.problems(row, "Vá", EXTRA)[0])
+        self.assertIn("small font", tr.problems(row, "Va%", EXTRA)[0])
+
 
 if __name__ == "__main__":
     unittest.main()
