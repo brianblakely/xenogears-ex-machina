@@ -579,10 +579,14 @@ impl Host {
             } else {
                 None
             };
-            if self.frame(window, screenshot)? {
+            // The last frame is presented whatever the game drew (game-paced
+            // presentation shows nothing new on most refreshes), and the run
+            // ends once it is, its screenshot written.
+            let presented = self.frame(window, last, screenshot)?;
+            if presented {
                 frames += 1;
             }
-            if last && frames > 0 {
+            if last && presented {
                 return Ok(());
             }
             if let (Some(game), Some((at, path))) = (&mut self.game, &options.save_state_at)
@@ -731,10 +735,12 @@ impl Host {
         self.view.set_safe_area(window.safe_area());
     }
 
-    /// Renders and presents one frame; false if no frame could be acquired.
+    /// Renders and presents one frame when one is due (always when
+    /// `present`); false if none was presented.
     fn frame(
         &mut self,
         window: &sdl::Window,
+        present: bool,
         screenshot: Option<&std::path::Path>,
     ) -> Result<bool, String> {
         if self.presenter.is_suspended() {
@@ -768,7 +774,7 @@ impl Host {
             self.view.set_game_frame(&self.gpu, game);
         }
         marks[2] = Instant::now();
-        if !self.view.wants_present() {
+        if !present && !self.view.wants_present() {
             // Game-paced presentation: nothing new to show yet.
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Ok(false);

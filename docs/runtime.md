@@ -8961,7 +8961,9 @@ From `src/runtime/` in `nix develop path:./nix/runtime`:
   WebGL2 and GLES draw): `WGPU_BACKEND=gl __EGL_VENDOR_LIBRARY_FILENAMES=$XEM_MESA_EGL
   LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe cargo test -p xem-render --test ps1`
 - on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
-  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run;
+  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run:
+  the run ends once its Nth frame is presented, which game-paced presentation
+  makes whatever the game drew, its picture written;
   `XEM_FRAME_STATS=1` prints a line a
   second of the frame loop's time per stage: settings, game frames, taking
   the trace, acquiring, rendering, presenting)
