@@ -257,6 +257,12 @@ impl Game {
         }
     }
 
+    /// The interface context the player's input reaches now (the
+    /// [`pad_context`](Self::pad_context)'s `ui` alone).
+    pub fn context(&mut self) -> xem_core::context::Context {
+        self.session.runtime.context()
+    }
+
     pub fn mouse_camera_active(&mut self, settings: &xem_settings::Settings) -> bool {
         settings.captures_mouse(self.session.runtime.context(), self.session.runtime.game_paused())
     }

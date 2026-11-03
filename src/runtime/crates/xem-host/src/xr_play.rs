@@ -1193,7 +1193,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             u8::from(assist.headset.pauses.player),
             marks.len(),
             game.assist_state(),
-            serde_json::to_string(&game.pad_context().ui).unwrap_or_default(),
+            serde_json::to_string(&game.context()).unwrap_or_default(),
             u8::from(view.first_person()),
             u8::from(!inside.is_empty()),
             assist.scaling.scale,

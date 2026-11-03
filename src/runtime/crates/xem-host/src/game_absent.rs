@@ -36,6 +36,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn context(&mut self) -> xem_core::context::Context {
+        match *self {}
+    }
+
     pub fn targets(&mut self) -> Option<xem_core::menu::Targets> {
         match *self {}
     }

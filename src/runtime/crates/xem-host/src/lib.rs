@@ -1184,7 +1184,7 @@ impl View {
     /// no field camera to walk or point through: its taps walk nowhere and
     /// talk to no one, and no floor marks show.
     pub fn assist(&mut self, game: &mut Game) {
-        let ui = game.pad_context().ui;
+        let ui = game.context();
         self.arrange(ui);
         let taps = std::mem::take(&mut self.taps);
         let inspecting = self.renderer.first_person();
@@ -2087,14 +2087,14 @@ mod tests {
         run(&mut game, serde_json::json!({"cmd": "enter_field", "map": 30}));
         run(&mut game, serde_json::json!({"cmd": "frames", "count": 300}));
         for _ in 0..120 {
-            match game.pad_context().ui {
+            match game.context() {
                 Context::Walk => break,
                 Context::Dialogue { .. } => run(&mut game, serde_json::json!({"cmd": "act", "actions": ["Confirm"], "frames": 2})),
                 _ => {}
             }
             run(&mut game, serde_json::json!({"cmd": "frames", "count": 30}));
         }
-        assert_eq!(game.pad_context().ui, Context::Walk, "Fei walks in field 30");
+        assert_eq!(game.context(), Context::Walk, "Fei walks in field 30");
         let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
         let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
         let graphics = |renderer: Renderer| SettingChange::Graphics(xem_settings::Graphics { renderer, zoom_out: 150, ..Default::default() });
