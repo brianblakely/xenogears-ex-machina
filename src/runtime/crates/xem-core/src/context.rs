@@ -58,6 +58,27 @@ const WORLDMAP_MENU_REQUESTED: u32 = 0x8009_D804;
 /// Battling's state (`arena_mode_state`: 0 menu, 1 bout, 4 replay, 5 demo
 /// or exit, 6 winner, 7 tutorial, 8 result).
 const ARENA_MODE_STATE: u32 = 0x8009_2790;
+/// The mode the dispatcher enters next (`mode_next_mode`): cleared once that
+/// mode's overlay has loaded, just before its entry runs, so an overlay's
+/// memory is its mode's only while it is 0.
+const MODE_NEXT_MODE: u32 = 0x8001_8088;
+/// The field's pictures (`field_picture_table`, field_effect.c), shown by
+/// Select where their item is held: eight words a picture, its map first
+/// and its item fifth, ended by map 0xFFFF. Read no further than its ten
+/// pictures, whatever its memory holds while the field loads.
+const FIELD_PICTURE_TABLE: u32 = 0x800A_F47C;
+const FIELD_PICTURES: u32 = 10;
+/// The game data in use (`game_current_data`, a pointer): the inventory's
+/// item counts at +0x1F90 and their ids at +0x2026, 150 of each.
+const GAME_CURRENT_DATA: u32 = 0x8005_A39C;
+const ITEM_COUNTS: u32 = 0x1F90;
+const ITEM_IDS: u32 = 0x2026;
+const ITEMS: usize = 150;
+/// The sound driver's flags (`sound_driver_flags`): 0x40 while
+/// `sound_silence_voices` holds the voices, as the pause screens do.
+const SOUND_DRIVER_FLAGS: u32 = 0x8005_957C;
+/// Battling's menu paused (`arena_menu_paused`, the arena overlay's byte).
+const ARENA_MENU_PAUSED: u32 = 0x8009_2758;
 
 /// A dialogue choice: its options and the highlighted one.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -109,6 +130,19 @@ impl Context {
     pub fn navigates(&self) -> bool {
         matches!(self, Context::Menu { .. } | Context::Dialogue { choice: Some(_) } | Context::Battle { attack: false, .. })
     }
+}
+
+/// What the field says of the player's buttons ([`field_controls`]):
+/// whether it runs, whether the player walks there (the player control read
+/// the pad in the last event pass, with no dialogue open, and no menu
+/// runs), whether a menu runs, and whether Select shows the map's picture
+/// there (else the hosts' first-person toggle).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FieldControls {
+    pub field: bool,
+    pub walking: bool,
+    pub menu: bool,
+    pub picture: bool,
 }
 
 fn read<const N: usize>(memory: &dyn GameMemory, address: u32) -> Option<[u8; N]> {
@@ -163,6 +197,71 @@ pub fn file_screen(memory: &dyn GameMemory, mode: Option<u32>) -> bool {
         at.and_then(|at| u8_at(memory, at + offset)).is_some_and(|value| value != 0)
     };
     set(0x33C, 0x68) || set(0x32C, 0x4FE6)
+}
+
+/// Whether `overlay`'s mode runs with its overlay loaded: the mode runs and
+/// no next one waits (the host learns the next mode before the dispatcher
+/// loads its overlay).
+fn overlay_runs(memory: &dyn GameMemory, mode: Option<u32>, overlay: u32) -> bool {
+    mode == Some(overlay) && u32_at(memory, MODE_NEXT_MODE) == Some(0)
+}
+
+/// Whether the game shows a pause screen: the sound driver holds the voices
+/// for one, or Battling's menu is paused (read while Battling runs).
+pub fn game_paused(memory: &dyn GameMemory, mode: Option<u32>) -> bool {
+    u16_at(memory, SOUND_DRIVER_FLAGS).is_some_and(|flags| flags & 0x40 != 0)
+        || (mode == Some(4) && u8_at(memory, ARENA_MENU_PAUSED).is_some_and(|paused| paused != 0))
+}
+
+/// Whether the battle's attack inputs take the player's buttons (the
+/// keyboard's combo layout): its on-foot and Gear attack pages until the
+/// combo closes or its events finish (`Context::Battle`'s `attack`), read
+/// once the battle runs with its overlay loaded. Until the battle allocates
+/// its turn state, the pointer holds what the overlay's memory held: it is
+/// followed only into RAM.
+pub fn combo_input(memory: &dyn GameMemory, mode: Option<u32>) -> bool {
+    overlay_runs(memory, mode, 2) && matches!(battle(memory), Some(Context::Battle { attack: true, .. }))
+}
+
+/// What the field says of the player's buttons, read while the field runs
+/// with its overlay loaded: a menu runs (the menu button's or a script's),
+/// else the player walks where the player control read the pad in the last
+/// event pass (which it does with no dialogue open), and Select shows the
+/// map's picture where the map has one and its item is held.
+pub fn field_controls(memory: &dyn GameMemory, mode: Option<u32>) -> FieldControls {
+    let field = mode == Some(1);
+    if !overlay_runs(memory, mode, 1) {
+        return FieldControls { field, ..FieldControls::default() };
+    }
+    let menu = u32_at(memory, FIELD_MENU_REQUEST).is_some_and(|request| request != 0xFF);
+    let walking = !menu && u32_at(memory, FIELD_PLAYER_CONTROL_POLLED) == Some(1);
+    FieldControls { field, walking, menu, picture: picture_shown(memory) }
+}
+
+/// Whether Select shows the field map's picture, as `field_picture_show`
+/// finds it: the map (`mode_field_map_id` below its flag bits) has one
+/// and the party holds its item.
+fn picture_shown(memory: &dyn GameMemory) -> bool {
+    let Some(map) = u32_at(memory, FIELD_MAP_ID).map(|id| id & 0x3FFF) else { return false };
+    for picture in 0..FIELD_PICTURES {
+        let entry = FIELD_PICTURE_TABLE + picture * 32;
+        match u32_at(memory, entry) {
+            Some(0xFFFF) | None => return false,
+            Some(shown) if shown == map => return u32_at(memory, entry + 16).is_some_and(|item| item_held(memory, item)),
+            Some(_) => {}
+        }
+    }
+    false
+}
+
+/// Whether the party holds some of `item`, as
+/// `field_inventory_is_item_not_held` reads the game data's inventory.
+fn item_held(memory: &dyn GameMemory, item: u32) -> bool {
+    let Some(data) = u32_at(memory, GAME_CURRENT_DATA).and_then(ram_pointer) else { return false };
+    let (Some(ids), Some(counts)) = (read::<ITEMS>(memory, data + ITEM_IDS), read::<ITEMS>(memory, data + ITEM_COUNTS)) else {
+        return false;
+    };
+    ids.iter().zip(counts).any(|(&id, count)| u32::from(id) == item && count != 0)
 }
 
 fn menu(memory: &dyn GameMemory) -> Option<Context> {
@@ -350,5 +449,145 @@ mod tests {
         word(&mut ram, WORLDMAP_MENU_REQUESTED, 1);
         word(&mut ram, WORLDMAP_MOVEMENT_MODE, 5);
         assert_eq!(read_context(&ram, Some(3)), Context::WorldMap { movement: 5, scene: 1 }, "a vehicle's press leaves the map");
+    }
+
+    /// Where a test keeps the game data (`game_current_data`).
+    const DATA: u32 = 0x8012_0000;
+
+    /// A field that runs, its player walking on map 7 (with a flag bit above
+    /// its number), its picture table two invented pictures (map 7 with item
+    /// 0x40, map 9 with 0x41) and nothing held.
+    fn field_ram() -> Ram {
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        let word = |ram: &mut Ram, at: u32, value: u32| ram.write(at, &value.to_le_bytes()).unwrap();
+        for (n, (map, item)) in [(7, 0x40), (9, 0x41)].into_iter().enumerate() {
+            word(&mut ram, FIELD_PICTURE_TABLE + n as u32 * 32, map);
+            word(&mut ram, FIELD_PICTURE_TABLE + n as u32 * 32 + 16, item);
+        }
+        word(&mut ram, FIELD_PICTURE_TABLE + 2 * 32, 0xFFFF);
+        word(&mut ram, GAME_CURRENT_DATA, DATA);
+        word(&mut ram, FIELD_MENU_REQUEST, 0xFF);
+        word(&mut ram, FIELD_PLAYER_CONTROL_POLLED, 1);
+        word(&mut ram, FIELD_MAP_ID, 0x4007);
+        ram
+    }
+
+    /// `count` of `item` in the inventory's last slot.
+    fn hold(ram: &mut Ram, item: u8, count: u8) {
+        ram.write(DATA + ITEM_IDS + 149, &[item]).unwrap();
+        ram.write(DATA + ITEM_COUNTS + 149, &[count]).unwrap();
+    }
+
+    const WALKING: FieldControls = FieldControls { field: true, walking: true, menu: false, picture: false };
+
+    #[test]
+    fn select_shows_the_maps_picture_only_with_its_item_held() {
+        let mut ram = field_ram();
+        assert_eq!(field_controls(&ram, Some(1)), WALKING, "the picture's item is not held");
+        hold(&mut ram, 0x41, 1);
+        assert_eq!(field_controls(&ram, Some(1)), WALKING, "another map's item");
+        hold(&mut ram, 0x40, 0);
+        assert_eq!(field_controls(&ram, Some(1)), WALKING, "none of it left");
+        hold(&mut ram, 0x40, 1);
+        assert_eq!(field_controls(&ram, Some(1)), FieldControls { picture: true, ..WALKING }, "the map's id below its flag bits");
+        ram.write(FIELD_MAP_ID, &8u32.to_le_bytes()).unwrap();
+        assert_eq!(field_controls(&ram, Some(1)), WALKING, "a map without a picture");
+    }
+
+    #[test]
+    fn the_player_walks_while_its_control_reads_the_pad_and_no_menu_runs() {
+        let mut ram = field_ram();
+        for request in [0x80u32, 0] {
+            ram.write(FIELD_MENU_REQUEST, &request.to_le_bytes()).unwrap();
+            let menu = FieldControls { field: true, menu: true, ..FieldControls::default() };
+            assert_eq!(field_controls(&ram, Some(1)), menu, "the menu runs ({request:#x}: the button's, a script's)");
+        }
+        ram.write(FIELD_MENU_REQUEST, &0xFFu32.to_le_bytes()).unwrap();
+        ram.write(FIELD_PLAYER_CONTROL_POLLED, &0u32.to_le_bytes()).unwrap();
+        assert_eq!(field_controls(&ram, Some(1)), FieldControls { field: true, ..FieldControls::default() }, "a dialogue, an event");
+    }
+
+    #[test]
+    fn a_picture_table_without_its_end_is_read_no_further_than_its_pictures() {
+        // Memory the loading field has not filled yet: no end within ten
+        // pictures, and an eleventh that would match.
+        let mut ram = field_ram();
+        hold(&mut ram, 0x40, 1);
+        for picture in 0..11u32 {
+            ram.write(FIELD_PICTURE_TABLE + picture * 32, &(0x100 + picture).to_le_bytes()).unwrap();
+            ram.write(FIELD_PICTURE_TABLE + picture * 32 + 16, &0x40u32.to_le_bytes()).unwrap();
+        }
+        ram.write(FIELD_MAP_ID, &0x109u32.to_le_bytes()).unwrap();
+        assert!(field_controls(&ram, Some(1)).picture, "the tenth is read");
+        ram.write(FIELD_MAP_ID, &0x10Au32.to_le_bytes()).unwrap();
+        assert!(!field_controls(&ram, Some(1)).picture, "the eleventh is not");
+    }
+
+    #[test]
+    fn an_overlays_memory_is_read_only_while_its_mode_runs_with_it_loaded() {
+        let mut ram = field_ram();
+        hold(&mut ram, 0x40, 1);
+        for mode in [None, Some(0), Some(2), Some(3), Some(4), Some(5), Some(6)] {
+            assert_eq!(field_controls(&ram, mode), FieldControls::default(), "mode {mode:?} has no field overlay");
+        }
+        // The next mode waits for its overlay: the battle pointer's address
+        // still holds a texture word of the world map's.
+        ram.write(BATTLE_TURN_STATE, &0x7FFF_7FFFu32.to_le_bytes()).unwrap();
+        ram.write(MODE_NEXT_MODE, &2u32.to_le_bytes()).unwrap();
+        assert!(!combo_input(&ram, Some(2)));
+        ram.write(MODE_NEXT_MODE, &1u32.to_le_bytes()).unwrap();
+        assert_eq!(field_controls(&ram, Some(1)), FieldControls { field: true, ..FieldControls::default() });
+    }
+
+    /// The battle's turn state at `at`: its page, closed combo and finished
+    /// events.
+    fn turn(ram: &mut Ram, at: u32, page: u8, closed: u8, done: u8) {
+        ram.write(BATTLE_TURN_STATE, &at.to_le_bytes()).unwrap();
+        ram.write(at + 0x2DD, &[page]).unwrap();
+        ram.write(at + 0x2E1, &[closed]).unwrap();
+        ram.write(at + 0x2DB, &[done]).unwrap();
+    }
+
+    #[test]
+    fn a_starting_battle_follows_no_turn_pointer_outside_ram() {
+        // The battle runs but has not allocated its turn state yet: the
+        // pointer holds the overlay memory's word, past RAM's end or below it.
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        for word in [0x7FFF_7FFFu32, 0x8020_0000 - 4, 0x8F00_0000, 0xFFFF_FFF0, 0x1F80_0000] {
+            ram.write(BATTLE_TURN_STATE, &word.to_le_bytes()).unwrap();
+            assert!(!combo_input(&ram, Some(2)), "{word:#x}");
+        }
+        turn(&mut ram, 0x8010_0000, 5, 0, 0);
+        assert!(combo_input(&ram, Some(2)), "the allocated state, in RAM");
+    }
+
+    #[test]
+    fn a_battle_takes_the_buttons_only_on_its_open_attack_pages() {
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        for page in [5, 0x19, 0x64, 0x65] {
+            turn(&mut ram, 0x8010_0000, page, 0, 0);
+            assert!(combo_input(&ram, Some(2)), "page {page:#x}");
+            assert!(!combo_input(&ram, Some(3)), "page {page:#x} outside a battle");
+            turn(&mut ram, 0x8010_0000, page, 1, 0);
+            assert!(!combo_input(&ram, Some(2)), "page {page:#x}: the combo closed");
+            turn(&mut ram, 0x8010_0000, page, 0, 1);
+            assert!(!combo_input(&ram, Some(2)), "page {page:#x}: its events finished");
+        }
+        turn(&mut ram, 0x8010_0000, 0, 0, 0);
+        assert!(!combo_input(&ram, Some(2)), "the command page");
+    }
+
+    #[test]
+    fn a_pause_is_the_sound_drivers_hold_or_battlings_menu_while_battling_runs() {
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        assert!(!game_paused(&ram, Some(1)));
+        ram.write(ARENA_MENU_PAUSED, &[1]).unwrap();
+        assert!(!game_paused(&ram, Some(1)), "the arena overlay's byte outside Battling");
+        assert!(game_paused(&ram, Some(4)));
+        ram.write(ARENA_MENU_PAUSED, &[0]).unwrap();
+        ram.write(SOUND_DRIVER_FLAGS, &0x40u16.to_le_bytes()).unwrap();
+        for mode in [Some(1), Some(2), Some(3), Some(4), None] {
+            assert!(game_paused(&ram, mode), "{mode:?}");
+        }
     }
 }

@@ -3,7 +3,7 @@
 //! standard mapping, mouse buttons) that hold each typed action
 //! ([`GameAction`], `xem_core::action`), in two contexts. **Play** is
 //! everywhere; while the battle's attack inputs take the buttons
-//! (`xem_game_combo_input`) **Attack** comes first, and an input it binds
+//! (`xem_core::context::combo_input`) **Attack** comes first, and an input it binds
 //! means its attack action there (W/A/S the light, medium and heavy
 //! attacks, D ending the sequence) instead of what Play binds it to.
 //! Headset controllers and touch decks resolve through the same tables: a

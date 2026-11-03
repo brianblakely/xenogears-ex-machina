@@ -196,29 +196,6 @@ int xem_game_interrupt(w2c_game *instance, u32 irq, u32 detail) {
     return 0;
 }
 
-/* The hosts' queries of the port, between frames, under the trap handler
- * too: the answer in *answer, 0, or the trap code. */
-int xem_game_paused(w2c_game *instance, u32 mode, u32 *answer) {
-    wasm_rt_trap_t code = wasm_rt_impl_try();
-    if (code != 0) return (int)code;
-    *answer = w2c_game_xem_game_paused(instance, mode);
-    return 0;
-}
-
-int xem_game_combo_input(w2c_game *instance, u32 mode, u32 *answer) {
-    wasm_rt_trap_t code = wasm_rt_impl_try();
-    if (code != 0) return (int)code;
-    *answer = w2c_game_xem_game_combo_input(instance, mode);
-    return 0;
-}
-
-int xem_game_field_controls(w2c_game *instance, u32 mode, u32 *answer) {
-    wasm_rt_trap_t code = wasm_rt_impl_try();
-    if (code != 0) return (int)code;
-    *answer = w2c_game_xem_game_field_controls(instance, mode);
-    return 0;
-}
-
 const char *xem_game_trap_description(int code) {
     return wasm_rt_strerror((wasm_rt_trap_t)code);
 }

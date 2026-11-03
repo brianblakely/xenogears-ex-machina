@@ -88,9 +88,8 @@ class Client:
             if reply.get("error"):
                 raise Failure("command_error", str(reply["error"]), command)
             status = reply.get("status", reply)
-            for key in ("query_trap", "stopped"):
-                if status.get(key):
-                    raise Failure(key, str(status[key]), command)
+            if status.get("stopped"):
+                raise Failure("stopped", str(status["stopped"]), command)
             if reply.get("blocked"):
                 raise Failure("blocked", "native frame did not finish", command)
             if command.get("cmd") == "run_until" and reply.get("met") is False:

@@ -52,6 +52,38 @@ fn select_shows_a_field_maps_picture_only_where_it_has_one_and_its_item_is_held(
     assert!(controls.field && controls.menu && !controls.walking, "the menu runs: {controls:?}");
 }
 
+/// The hosts ask their queries between frames as often as they refresh:
+/// asked however often, the game runs as it does unasked. They read the
+/// game's memory and run none of its code. When the port answered them, the
+/// field's query ran the game's inventory loop, which counts toward its
+/// polls, and a poll falling in the query suspended the game over its own
+/// suspended frames: the next frame's vertical blank stopped it (#71, a
+/// field with a picture loading after a battle).
+#[test]
+fn the_hosts_queries_leave_the_game_as_it_runs_unasked() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut hashes = Vec::new();
+    for asked in [0, 500] {
+        let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+        // The map with a picture, its item not held: from the field's
+        // loading on, the query reads the whole inventory.
+        run(&mut session, json!({"cmd": "enter_field", "map": 0xEF}));
+        for _ in 0..300 {
+            for _ in 0..asked {
+                session.runtime.combo_input();
+                session.runtime.field_controls();
+                session.runtime.game_paused();
+            }
+            run(&mut session, json!({"cmd": "frames", "count": 1}));
+        }
+        hashes.push(session.execute(&json!({"cmd": "memory_hash"})));
+    }
+    assert_eq!(hashes[0], hashes[1], "asked 500 times a frame");
+}
+
 /// An agent's typed actions and a player's bound keys reach the game as the
 /// same pad: the menu opens from either, and the two runs end equal.
 #[test]
