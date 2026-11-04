@@ -125,7 +125,12 @@ controls. Escape opens it; Back+Start does so on a controller.
 Linux AppImages include their library closure, glibc, Mesa drivers and fonts,
 so they do not require a distro package manager or an installed Nix. They
 require a compatible CPU/kernel and enabled unprivileged user namespaces.
-Proprietary NVIDIA graphics use the host's driver libraries.
+Proprietary NVIDIA graphics use the host's driver libraries; nothing else
+comes from the host, whatever library path the app inherits. Steam starts
+its games (a Steam Deck's Gaming Mode its only way) with one naming the
+host's library directories: the launcher is static, and the app gets only
+the image's libraries and NVIDIA's, so the host's C library never meets the
+image's. The release check starts the image that way too.
 `APPIMAGE_EXTRACT_AND_RUN=1 ./filename.AppImage` avoids a
 FUSE requirement. On Ubuntu 24.04 and later, AppArmor restricts unconfined
 user namespaces. Following [Ubuntu's application-profile instructions](https://documentation.ubuntu.com/release-notes/24.04/#unprivileged-user-namespace-restrictions),

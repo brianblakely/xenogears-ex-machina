@@ -8,15 +8,6 @@ extern u16 field_pad_port0_allowed_mask;
 extern s32 field_camera_cut_timer;
 extern u8 battle_turns_active;
 extern u8 arena_retreat_rule_enabled;
-extern u16 sound_driver_flags;
-extern u8 arena_menu_paused;
-
-/* Read original game memory directly, including after a state restore. The
- * browser's optional inspection schema is not needed to recognize a pause.
- * Arena overlay memory is only meaningful while that mode is running. */
-u32 xem_game_paused(u32 mode) {
-    return (sound_driver_flags & 0x40) != 0 || (mode == 4 && arena_menu_paused != 0);
-}
 
 u32 xem_host_pause_requested(void);
 void xem_host_pause_reached(void);

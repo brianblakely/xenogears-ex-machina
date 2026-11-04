@@ -3,6 +3,7 @@
 
 use crate::clock::{Clock, Tick, VBLANK_CYCLES};
 use crate::devices::{self, Context, Device};
+use crate::context::FieldControls;
 use crate::memory::GameMemory;
 use crate::module::{Action, AsyncState, GameModule, Import, ImportHandler, Trap};
 use crate::pad::Pads;
@@ -451,19 +452,6 @@ pub struct FrameReport {
     pub interrupts: u64,
 }
 
-/// What the field says of the player's buttons ([`Runtime::field_controls`]):
-/// whether it runs, whether the player walks there (the player control read
-/// the pad in the last event pass, with no dialogue open, and no menu
-/// runs), whether a menu runs, and whether Select shows the map's picture
-/// there (else the hosts' first-person toggle).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct FieldControls {
-    pub field: bool,
-    pub walking: bool,
-    pub menu: bool,
-    pub picture: bool,
-}
-
 /// A fiber's state between steps: where it starts, or where it suspended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Fiber {
@@ -498,10 +486,6 @@ pub struct Runtime<M: GameModule> {
     /// The executable's text as the BIOS copied it to its address at
     /// power-on (code and initialized data), which a reset copies again.
     executable: Option<(u32, Vec<u8>)>,
-    /// The first trap a host's query of the port met ([`Self::game_paused`],
-    /// [`Self::combo_input`], [`Self::field_controls`]): the query answered
-    /// as if nothing applied, and status reports it.
-    query_trap: Option<String>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -533,7 +517,6 @@ impl<M: GameModule> Runtime<M> {
             stopped_before_vblank: false,
             frames: 0,
             executable: None,
-            query_trap: None,
         }
     }
 
@@ -909,35 +892,17 @@ impl<M: GameModule> Runtime<M> {
         self.frames
     }
 
+    /// Whether the game shows a pause screen ([`crate::context::game_paused`]).
     pub fn game_paused(&mut self) -> bool {
-        let mode = self.services().mode.unwrap_or(u32::MAX);
-        let answer = self.module.game_paused(mode);
-        self.answered("xem_game_paused", answer)
+        let mode = self.services().mode;
+        crate::context::game_paused(self.memory(), mode)
     }
 
-    /// Whether the battle's attack inputs take the player's buttons.
+    /// Whether the battle's attack inputs take the player's buttons
+    /// ([`crate::context::combo_input`]).
     pub fn combo_input(&mut self) -> bool {
-        let mode = self.services().mode.unwrap_or(u32::MAX);
-        let answer = self.module.combo_input(mode);
-        self.answered("xem_game_combo_input", answer)
-    }
-
-    /// A query's answer, or after a trap its default, the first trap kept
-    /// for status and printed (a fault in the port, never the game's).
-    fn answered<T: Default>(&mut self, query: &str, answer: Result<T, Trap>) -> T {
-        answer.unwrap_or_else(|trap| {
-            if self.query_trap.is_none() {
-                let report = format!("{query}: {trap}");
-                eprintln!("xem: the port's query {report}; it answers as if nothing applied");
-                self.query_trap = Some(report);
-            }
-            T::default()
-        })
-    }
-
-    /// The first trap a host's query of the port met, if any.
-    pub fn query_trap(&self) -> Option<&str> {
-        self.query_trap.as_deref()
+        let mode = self.services().mode;
+        crate::context::combo_input(self.memory(), mode)
     }
 
     /// The game's button assignment, which the typed actions resolve
@@ -962,12 +927,11 @@ impl<M: GameModule> Runtime<M> {
         crate::menu::targets(self.memory(), ui)
     }
 
-    /// What the field says of the player's buttons (nothing outside it).
+    /// What the field says of the player's buttons (nothing outside it,
+    /// [`crate::context::field_controls`]).
     pub fn field_controls(&mut self) -> FieldControls {
-        let mode = self.services().mode.unwrap_or(u32::MAX);
-        let bits = self.module.field_controls(mode);
-        let bits = self.answered("xem_game_field_controls", bits);
-        FieldControls { field: mode == 1, walking: bits & 1 != 0, menu: bits & 4 != 0, picture: bits & 2 != 0 }
+        let mode = self.services().mode;
+        crate::context::field_controls(self.memory(), mode)
     }
 }
 

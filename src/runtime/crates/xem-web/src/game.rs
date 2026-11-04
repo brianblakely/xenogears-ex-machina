@@ -70,9 +70,6 @@ struct Link {
     start_rewind: Function,
     stop_rewind: Function,
     get_state: Function,
-    game_paused: Function,
-    combo_input: Function,
-    field_controls: Function,
     stack_pointer: WebAssembly::Global,
     handler: Cell<Option<*mut dyn ImportHandler>>,
     resume_value: Cell<u32>,
@@ -138,9 +135,6 @@ impl WebModule {
             start_rewind: function("asyncify_start_rewind")?,
             stop_rewind: function("asyncify_stop_rewind")?,
             get_state: function("asyncify_get_state")?,
-            game_paused: function("xem_game_paused")?,
-            combo_input: function("xem_game_combo_input")?,
-            field_controls: function("xem_game_field_controls")?,
             stack_pointer: global("__stack_pointer")?,
             handler: Cell::new(None),
             resume_value: Cell::new(0),
@@ -156,16 +150,6 @@ impl WebModule {
 
     fn trap(error: JsValue) -> Trap {
         Trap::Wasm(describe(&error))
-    }
-
-    /// One of the port's queries: a trap leaves the stack pointer where the
-    /// call found it, for the next frame.
-    fn query(&mut self, call: &Function, mode: u32) -> Result<u32, Trap> {
-        let stack_pointer = self.stack_pointer();
-        call.call1(&JsValue::NULL, &mode.into()).map(number).map_err(|error| {
-            self.set_stack_pointer(stack_pointer);
-            Self::trap(error)
-        })
     }
 }
 
@@ -206,18 +190,6 @@ pub fn xem_game_import(index: u32, args: &[u32]) -> Result<u32, JsValue> {
 }
 
 impl GameModule for WebModule {
-    fn game_paused(&mut self, mode: u32) -> Result<bool, Trap> {
-        let call = self.link.game_paused.clone();
-        self.query(&call, mode).map(|answer| answer != 0)
-    }
-    fn combo_input(&mut self, mode: u32) -> Result<bool, Trap> {
-        let call = self.link.combo_input.clone();
-        self.query(&call, mode).map(|answer| answer != 0)
-    }
-    fn field_controls(&mut self, mode: u32) -> Result<u32, Trap> {
-        let call = self.link.field_controls.clone();
-        self.query(&call, mode)
-    }
     fn content_id(&self) -> String { self.content_id.clone() }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) {
         self.link.handler.set(Some(handler));

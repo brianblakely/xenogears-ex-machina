@@ -52,17 +52,21 @@ original address.
   routines (from their `.s` contracts) and the entry and restart logic. A
   function the port does not define yet traps through `xem.missing`
   (`--stubs` lists them in `build/game/stubs.txt`).
-- **Host queries.** Between frames the hosts ask the port whether the game
-  is paused (`xem_game_paused`), whether a battle's attack page takes the
-  buttons (`xem_game_combo_input`) and what the field allows
-  (`xem_game_field_controls`). Natively these run under wasm2c's trap
-  handler as the game's own entries do (a browser's call catches a trap
-  itself): a fault in one leaves the stack pointer as the call found it,
-  the query answers as if nothing applied, and the first is reported
-  (`status`'s `query_trap`, a line on stderr), where it once ended the
-  desktop host. The combo query reads the battle's turn state only through
+- **Host queries.** Between frames, as often as they refresh, the hosts
+  read in the game's memory whether it is paused, whether a battle's attack
+  page takes the buttons and what the field allows
+  (`xem_core::context::game_paused`, `combo_input` and `field_controls`),
+  as they read its interface context: none of the module runs for them. An
+  overlay's memory is read only while its mode runs with the overlay
+  loaded (no next mode waiting), and the battle's turn state only through
   a pointer in RAM: until the battle allocates it (as it starts), the
-  pointer holds what the overlay's memory held.
+  pointer holds what the overlay's memory held. The port once answered
+  them from module exports. The field's ran the game's inventory loop,
+  whose iterations count toward the game's polls (`xem_loop_poll`), and a
+  poll falling in the query suspended the game between frames, over its
+  own suspended frames: a field with a picture loading after a battle
+  stopped at the next frame's vertical blank (`interrupt 0 handler
+  suspended`, #71).
 - **Handwritten routines.** Their ports (`src/port/model_draw.c`, `arena.c`,
   `worldmap_terrain.c`, `sprite_pixels.c`, `lzss.c`, `resident.c`) keep game
   addresses as 32-bit integers and access memory through
@@ -2701,10 +2705,9 @@ While the player walks in a field (the player control read the pad in the
 field's last event pass, which it does with no dialogue open, and no menu
 runs), Select toggles the view where the original's Select shows nothing:
 `field_picture_show` shows a map's picture on ten maps once their item is
-held, and there Select stays the game's (the port's
-`xem_game_field_controls` tells the hosts whether the player walks, a menu
-runs and the picture shows; the browser reads it through `WebModule` as the
-native hosts do). Select is any of its bound keys (Backspace), the touch
+held, and there Select stays the game's (`xem_core::context::field_controls`
+tells the hosts whether the player walks, a menu runs and the picture shows,
+read in the game's memory alike in every host). Select is any of its bound keys (Backspace), the touch
 deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
 released alone (Back begins the app chords; a headset controller's Back is
 its right stick's click), all of which toggle only there: while the player
@@ -5571,7 +5574,7 @@ R3, Up, Down, Left, Right, and each stick's directions past half travel,
 `LStickUp` .. `RStickRight`) and mouse buttons (`MouseLeft`, `MouseRight`,
 `MouseMiddle`) holds it. Bindings have two contexts: Play everywhere, and
 Attack while the battle's attack inputs take the buttons
-(`xem_game_combo_input`), where an input Attack binds means its attack
+(`xem_core::context::combo_input`), where an input Attack binds means its attack
 action instead of what Play binds it to. An input may not hold two
 different buttons in one context. `xem_settings::player::PlayerInput` holds
 the inputs and resolves them, the same code on desktop, Android, headsets
@@ -8958,7 +8961,9 @@ From `src/runtime/` in `nix develop path:./nix/runtime`:
   WebGL2 and GLES draw): `WGPU_BACKEND=gl __EGL_VENDOR_LIBRARY_FILENAMES=$XEM_MESA_EGL
   LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe cargo test -p xem-render --test ps1`
 - on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
-  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run;
+  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run:
+  the run ends once its Nth frame is presented, which game-paced presentation
+  makes whatever the game drew, its picture written;
   `XEM_FRAME_STATS=1` prints a line a
   second of the frame loop's time per stage: settings, game frames, taking
   the trace, acquiring, rendering, presenting)
