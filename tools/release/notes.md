@@ -4,15 +4,13 @@ New here? The [player's manual]({manual}) walks you through the controls, settin
 
 ## Installation
 
-You'll need images of your own North American Xenogears discs (`SLUS-00664` and `SLUS-00669`). CHD, BIN/CUE, and raw 2352-byte ISO images work. If you have CUE sheets, keep them with their track files. You don't need a BIOS.
+You'll need images of your own North American Xenogears discs (`SLUS-00664` and `SLUS-00669`). Supported formats: CHD, BIN/CUE, and ISO. You don't need a BIOS.
 
-- **Windows:** Download the [Windows ZIP]({downloads}windows-x86_64.zip) and extract it into a folder you can save files in. Keep the included files together and open `xem-desktop.exe`.
-- **macOS:** Download the ZIP for [Apple Silicon]({downloads}macos-aarch64.zip) or [Intel]({downloads}macos-x86_64.zip), extract it, and open `Xenogears Ex Machina.app`.
-- **Linux:** Download the AppImage for [most PCs (x86-64)]({downloads}linux-x86_64.AppImage) or [ARM devices (AArch64)]({downloads}linux-aarch64.AppImage). Make it executable with `chmod +x filename.AppImage`, then run it. If it won't start, the [Linux setup guide]({guide}#desktop-installation) covers the permissions it needs.
+- **Windows:** Download the [Windows ZIP]({downloads}windows-x86_64.zip) and extract it into a folder. Keep the included files together, put your disc images beside `xem-desktop.exe`, and open it. On first launch, the app sorts the images into `discs/`. Memory cards go in `cards/`, and save states go in `saves/`.
+- **macOS:** Download the ZIP for [Apple Silicon]({downloads}macos-aarch64.zip) or [Intel]({downloads}macos-x86_64.zip) and extract it. Put your disc images beside `Xenogears Ex Machina.app` and open it. On first launch, the app sorts the images into `discs/`. Memory cards go in `cards/`, and save states go in `saves/`.
+- **Linux:** Download the AppImage for [most PCs (x86-64)]({downloads}linux-x86_64.AppImage) or [ARM devices (AArch64)]({downloads}linux-aarch64.AppImage). Make it executable with `chmod +x filename.AppImage`, put your disc images beside it, and run it. On first launch, the app sorts the images into `discs/`. Memory cards go in `cards/`, and save states go in `saves/`. If it won't start, the [Linux setup guide]({guide}#desktop-installation) covers the permissions it needs.
 - **Android / Meta Horizon OS:** Download and install the [APK]({downloads}android-horizon.apk), then choose your local disc images when the app asks for them.
 - **Browser:** Open [Xenogears Ex Machina]({browser}) and import your disc images. They stay on your device. Export a save backup before clearing your browser's storage.
-
-**Playing on desktop?** Put your disc images beside the executable, AppImage, or `.app` bundle. On first launch, the app sorts them into `discs/`. Your memory cards go in `cards/`, and save states go in `saves/`.
 
 ### Steam Deck & Steam Machine
 
