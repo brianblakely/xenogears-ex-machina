@@ -1,0 +1,599 @@
+s001-0000 9f67151d1fc27246 Hurleur
+s001-0001 73a92291a9f88870 Pied Typhon
+s001-0002 3b2eb1d047f159f2 Rupture
+s001-0003 6ebf9863cc4fa836 Double Choc
+s001-0004 90d387d6e38cf4de Raid Aérien
+s001-0005 67ffa9c96fc79774 Étincelle
+s001-0006 1c3d493254aca25c Pied Dard
+s001-0007 ae67d646ffcb4f68 Choc Anémo
+s001-0008 f0b908d65162b5ff Charge Terra
+s001-0009 b90949eb1d4de8ba Heurt Thermo
+s001-0010 c1fd80419de09245 Givre Aqua
+s002-0007 616a9b6e4da5821f Saule
+s002-0008 dcdf78f81dfa568b Terre Rare
+s002-0009 a928073eb8704d94 Inferno
+s003-0000 9626e7a9edc3c0fb Chasse-Tête
+s003-0001 f5fd1a2918a119c9 Bi-Sonique
+s003-0002 d7b15a4476eefd29 Choc Rythme
+s003-0003 63b2a8b790786dfd Dynamique
+s003-0005 b69d3e99c7a31de7 Brassard
+s003-0006 7bb78ef2fae904b9 Justice
+s003-0007 ed0c5551fcc7326f Ange
+s003-0008 dca378d8dade10c7 Brise-Terre
+s003-0009 2963de9c2853b8a4 Proéminence
+s004-0000 1218dce03e70e5cd Coupe-Gorge
+s004-0001 98f34748b9803b2f Gâchettard
+s004-0002 d3dfff236358e7d2 Infernal
+s004-0003 15b35c73874d5864 Casse-Noix
+s004-0005 f22787cdd5888bbd Diabolique
+s004-0007 10051a70b705f8c0 Rêve Royal
+s004-0008 56cf0ae434e5f0ee Porte Bénie
+s005-0000 fcb184d58edd8428 Rico Fusée
+s005-0001 f1dce7e824e6320f Élan Fatal
+s005-0003 b1d5cc6052ca07f6 Poing Dragon
+s005-0004 b57c9bd718e919eb Bombe Ignée
+s005-0005 e47d83b0e31aebcf Marteau-Pic
+s005-0006 5b9370ebebd85995 Toupie
+s005-0007 972e179b7355e2a8 Roulé Mortel
+s005-0008 da4e08772e432c8d Lariat Igné
+s006-0000 5b6434fa029e0ad0 Fauche-Jambe
+s006-0001 01c25c5a4416cf23 Fend-Vagues
+s006-0002 4783242810ecf061 Balayage
+s006-0003 739a8d53d14609e6 Marteau
+s006-0004 f453f96e162b8135 Grand Bras
+s006-0005 4cf8cc0aee9aeb45 Diviseur
+s006-0006 b0b42df34cf08c70 Bras Volant
+s006-0007 00c2a852f92931dd Main Tornade
+s009-0007 980207d1d8591553 Vent Joyeux
+s009-0008 db9ef8041b1d0570 Terre Rauque
+s009-0009 22056fde0ddf0b54 Brume Ignée
+s017-0001 2d7baad44328f988 Habit Martial
+s017-0002 a27a4e0d9a234ad2 Tenue Escrime
+s017-0003 c760f5552748448c Gilet Cuir
+s017-0004 c12ae2c73e923624 Gilet Métal
+s017-0005 076f7ed0c589a330 Veste Métal
+s017-0006 00df1bc137441fc0 Cape Pingouin
+s017-0007 5fa3402ca15c30e8 Cotte Guerre
+s017-0008 c162a43eddc5b162 Gilet Carmin
+s017-0009 08febc9f8c303719 Cuir Noir
+s017-0010 c4d80106d7000086 Gilet Doré
+s017-0011 d83f5c1453bb8493 Habit Simple
+s017-0015 5028e3cd4b2dc01a Robe Mariée
+s017-0016 8384b0a4fa1bc97b Calot Martial
+s017-0017 b82b7204dc3e37b5 Calot Escrime
+s017-0018 94e740407e41ad61 Chapeau Cuir
+s017-0019 57f75ec358b9f469 Heaume Métal
+s017-0020 6a3f503be95cf4a7 Heaume Guerre
+s017-0021 e9eda2ec58f8900d Bonnet Plumé
+s017-0022 1bc4b6284b1b5107 Heaume Noir
+s017-0023 dba1ecfca4a8e626 Capuche Dorée
+s017-0024 f60c48798ab90ba4 Chapeau Banal
+s017-0025 fa32cc48afb8f7ac Uniforme
+s017-0026 8c00e961bbb14c6b Robe Bellone
+s017-0027 0c8389f2fb6ba6f5 Robe Derviche
+s017-0028 a26204412610d4bd Cotte Sirène
+s017-0029 2a19bae8f637a5f5 Cape Bestiale
+s017-0030 aee419080e7a5e0d Cape Bourreau
+s017-0031 6a7170331562dace Cape d'Ange
+s017-0032 28d340bd52acbe64 Cape Divine
+s017-0033 f65876c95af92599 Robe Bénie
+s017-0034 5419e8dc44adc970 Robe de Dame
+s017-0035 f343a8a33cab12e8 Béret Blanc
+s017-0036 f4d7b30b96c2a628 Béret Argent
+s017-0037 b89e05547d09c3f0 Heaume Rubis
+s017-0038 bf471c7060f06250 Lueur Astrale
+s017-0039 6c230effe65b54e3 Turban Vif
+s017-0040 ff27b206508d0e2d Coiffe Dame
+s017-0041 6c3ee3d8bbd7aa59 Heaume Béni
+s017-0042 61c45d922d7eea26 Bonnet Astral
+s017-0043 5b66f99c3e944b1b Cotte Rouge
+s017-0044 2fa3da1c6184cb10 Cotte de Fer
+s017-0045 d1eccfb799c58afb Cotte Paladin
+s017-0046 1b1acef8d793b4c2 Plastron Noir
+s017-0047 66eecbb688808f20 Tabard Rose
+s017-0048 2bef98162beef2ed Cape Matador
+s017-0049 213d6f5ba8fb59c1 Cape Virile
+s017-0050 e780f49b0671c42d Tenue Héros
+s017-0051 c27cb8c07e6f12e6 Cape Mythique
+s017-0052 8ce536c56319bcc8 Armure Royale
+s017-0053 ce6325f4880acbfc Heaume de Fer
+s017-0054 fa003e6625fd9740 Heaume Preux
+s017-0055 91d528c99ef8d8e3 Heaume Obscur
+s017-0056 f8043bcadb1a505b Heaume du Roi
+s017-0057 15be5d4a4f8ce2ae Heaume Kaiser
+s017-0058 23b0a31e41667d9f Chapeau Viril
+s017-0059 083076a6e17ff8fd Tenue Pilote
+s017-0060 31721ffb06e644ff Gilet Guerre
+s017-0061 a1d2062c6ac17925 Robe Sainte
+s017-0062 668cd23ca42e2182 Robe Diable
+s017-0063 81399fe6c3397bb0 Robe Mignonne
+s017-0064 ad623205b8c5341e Tenue Guerre
+s017-0090 fb62bb2ca717c7d4 Bague Force
+s017-0091 8b75148019ffa606 Bague Force S
+s017-0092 e0addf72a278764a Bague Santé
+s017-0093 4557f92353b3aeb6 Bague Santé S
+s017-0094 79af1e657a8c27dc Lunettes
+s017-0095 d22e5bf6b4d6e97e Superlunettes
+s017-0096 2f4d2f807c7b9c6f Bottes Agiles
+s017-0097 82e1b1a98c66c1d3 Bottes Élite
+s017-0098 d9600c9c96ae97d6 Gemme Éther
+s017-0099 bf6c5b0ee24d0018 Gemme Éther G
+s017-0100 4309d5b47b92b26a Antiéther
+s017-0101 ad5295ecba64c7fd Roc Antiéther
+s017-0102 4a98607cf6c25eb0 Bague Agile
+s017-0103 d4cc8c564e87ad82 Bague Agile S
+s017-0104 ef64c3b1ddcd3a9f Ceinture Chic
+s017-0105 7c35372a5b1ceca7 Obi Yamato
+s017-0106 2da63e64d2bbfc69 Économéther
+s017-0107 2ddb6174636e6c39 Bague Sorcier
+s017-0108 f0f471f051eb5eaa Bague Hercule
+s017-0109 69427a7dd2a74b47 Carte Échange
+s017-0110 638d7071bfd7df39 Collier Saint
+s017-0111 87cc65be589ae8f5 Pièce Destin
+s017-0112 4e73e05f5fc9953e Pierre de Vie
+s017-0113 33e6870978f42927 Coup Critique
+s017-0114 13ec2497d752a47a Bague Gardien
+s017-0115 f6d42a5561c29908 Bague Esquive
+s017-0116 7d9c4bfaa439521f Manteau Noir
+s017-0117 3cfab622a1f1a545 Tablier Lutte
+s017-0118 a6f0fd81435a1068 Garde Phys.
+s017-0119 5d1c0e546ff8ce66 Garde Mentale
+s017-0120 3d0779726ef07a10 Garde Poison
+s017-0121 4fe09579c51e4113 Garde Sommeil
+s017-0122 1343b470a5ff39d4 Lunettes Top
+s017-0123 1e0a9c291279533c Garde Neurale
+s017-0124 906da0179de78ba4 Bottes Éclair
+s017-0125 67cbb39d31adfc9d Ceint. Muscle
+s017-0126 5c9853296e2622a4 Double-Éther
+s017-0127 d5d794d577d89e1a Garde Éther
+s017-0128 d1d07b0f6bde5059 Bague Vent
+s017-0129 38ad4ef0741a9303 Bague Terre
+s017-0130 756d73a4c0da18f1 Bague Feu
+s017-0131 fd1c984e62d8efe4 Bague Eau
+s017-0132 93307e058b6a80e5 Inverse Éther
+s017-0133 197763ac21f57f40 Voile d'Éther
+s017-0134 6bd1aaedad1e0206 Éther Max
+s017-0135 a71239fd7632f413 Poupée Fei
+s017-0136 5e9a89a8c72247e2 Poupée Bart
+s017-0137 da3883ee53335f03 Poupée Billy
+s017-0138 a1ba66be77a91bff Poupée Elly
+s017-0139 55e808b0201ac12e Poupée Emer
+s017-0140 ed70c9bfd41c0d28 Bague Sirène
+s017-0141 5031a6973732c1b5 Étoile Combo
+s017-0142 85da97f17aab82a2 Idole Chu-chu
+s017-0143 b3d0cbf6e2dd3487 Médaillon
+s018-0010 fbd48597b92ce7e8 Accepter
+s018-0011 b1d8597bcf6b32b6 Annuler
+s018-0017 2cf7d154d64e0022 Enn.
+s018-0018 dd047f7374e17520 Allié
+s018-0019 fded5a0c48d0680d Soi
+s018-0020 8d38c25db42dbf6d Objets reçus
+s018-0021 2fbd87cfbe60080b Or gagné
+s018-0022 c16cf90c269550fa Un
+s018-0023 dd670d73753530c5 Tous
+s018-0024 27c70c86f2760bd4   appris.
+s018-0025 31d1307d15a84133 Main D.
+s018-0026 86a185174113995c Main G.
+s018-0027 9d6426fbef150321 Gauche
+s018-0028 4e4b61948a9f7a2b Retour
+s018-0029 543f3719f354960c Arme
+s018-0030 e64fd9440858326a Munitions
+s020-0000 7db048f4b67a8c1b Tir Guidé
+s020-0001 c95577622ce8d705 Soin Interne
+s020-0002 cdae56762451d0ff Coeur de Fer
+s020-0003 771ecdf138417d12 Contreforce
+s020-0004 87a8cdef9ddd417b Force Yang
+s020-0005 e4400487746eb764 Force Yin
+s020-0006 832d2510754c8ddd Radiance
+s020-0016 6fa28edd32572d0a Éclair Anémo
+s020-0017 4c82fb180a6831ca Lance Terra
+s020-0018 2492cf7787c8a935 Cube Thermo
+s020-0019 21697fa0fef1b56c Glace Aqua
+s020-0020 d86c8d9469c88f38 Brûle Anémo
+s020-0021 10caf449b707702a Typhon Terra
+s020-0022 93fa5f4e9f09f583 DragonThermo
+s020-0023 cc93fd2cd4ffd13c Brume Aqua
+s020-0024 b7a06ee6ca99b632 Onde Anémo
+s020-0025 619c25781590d180 Ombre Terra
+s020-0026 4e11cb837bb8acb7 Vaste Thermo
+s020-0027 906358b60ff4ed88 Roi Aqua
+s020-0048 61d962f59a390235 Rire Féroce
+s020-0049 408e8911943a6b98 Pièce Divine
+s020-0050 99adffb6223fd8d6 Leurre Blanc
+s020-0051 6b6a6f351fd31c89 Parfum Rubis
+s020-0052 86abb4921a59010c Parfum Bleu
+s020-0053 00fa88017388723f Parfum Blanc
+s020-0054 2947e6870bc3e280 Mode Vent
+s020-0055 6ea1455c204ef4f6 Mode Terre
+s020-0056 b614a56e88292588 Mode Feu
+s020-0057 83ce319f2134809d Mode Eau
+s020-0064 7fa557177065ed06 Lueur Pure
+s020-0065 1fe4f2c84e85baf7 Lueur Soin
+s020-0066 48cc29a7a90c3acb Lueur Sacrée
+s020-0067 7c75a875be27502c Voix Divine
+s020-0068 03b61e37f6e13f9a Regard Divin
+s020-0069 7091b865552ebaea Égide Vent
+s020-0070 5406ef3fa68f79b0 Égide Terre
+s020-0071 c015f48526628362 Égide Feu
+s020-0072 490f526279866387 Égide Eau
+s020-0073 1abc3707bf969f54 Brise Divine
+s020-0080 9f7bff265f1cc55c Poing Acier
+s020-0081 c089e5c89c5118e6 Corps Acier
+s020-0082 aa57180a7196bae7 Âme Acier
+s020-0083 e12a3646762dfe27 Fibre Acier
+s020-0100 625ee86ab08b1aae Anémo Oméga
+s020-0112 96c95a0d36ec3d0b Danse Jungle
+s020-0113 e4ae6353b11faa43 Prière Culen
+s020-0114 697756be88acebbb Prière Myrm
+s020-0115 9628baaab1d8da2f Fausse Mort
+s020-0116 72728883f33d226d Bise Chaste
+s020-0117 2e2381c22f6143f6 Vent Jungle
+s020-0118 d32a4f99b216bf79 Gnome Terre
+s020-0119 81343beb86d8b035 Mythe Ancien
+s020-0128 1580923ad577383e Robo-Rayon
+s020-0129 88da5d0b943987a7 Robo-Missile
+s020-0130 b91db5e0df3f9da1 Robo-Poing
+s020-0131 860f1f6f0f832d6f Robo-Pied
+s020-0132 a854b028b4a49c45 Gravicanon
+s022-0015 7174b3914e9fd0ca Étoile Pâle
+s022-0016 576ca8a81516f79d Étoile Ocre
+s022-0017 5aaa9c004c442ea6 Étoile Rouge
+s022-0018 19767e4237d02ffd Étoile Bleue
+s022-0019 2f14b83c8b4c3418 Étoile Dure
+s022-0020 ad6fab9a78f5ba38 Étoile Vive
+s022-0021 8cace38ae71ccfb6 Tragédienne
+s022-0022 8f7f6e555c5d7fbf Comédienne
+s022-0025 3d669493727bebde Rose Bleue
+s022-0026 46eb5658f34d3aed Rose Rouge
+s022-0027 e5cfa5c3298311c9 Rose Noire
+s022-0028 081292744e853330 Élém. Aéro
+s022-0029 1bb6bc71a7ffe65d Élém. Terra
+s022-0030 928b440024a77655 Élém. Pyro
+s022-0031 758c92cec9a00cd5 Élém. Hydro
+s022-0032 5c66e6df5e285585 Fil de Samson
+s022-0033 c6fff5bd02e66f93 Objet Debug
+s022-0034 dc87d94cf392864d Tech. Debug
+s022-0035 5420d14ab7a19b96 Faible Vent
+s022-0036 47e44ff59f35e334 Faible Terre
+s022-0037 c53efc84110417c6 Faible Feu
+s022-0038 eb61dfcbcdb9dcb5 Faible Eau
+s022-0039 08d09de37cb58abf Paralysie !
+s022-0040 7ff2423fef197b08 Sommeil !
+s022-0041 e2952e8d1af0f0ec Mauviette
+s022-0042 651b16271d226204 Confusion
+s022-0043 e99c0908d36649af Sans Armure
+s022-0044 7a4ef63f504203e3 Orbe d'EXP
+s022-0045 5ef54f6bbcda113b Orbe Combo 10
+s022-0047 924d93f3f9d9965c option
+s022-0050 23f8130dcfc3b808 Tente
+s022-0051 ba5079eed7a24cf4 Drive FOR
+s022-0052 ed6e99fe586763fc Drive VIT
+s022-0053 d5315554ae8f6168 Drive ÉTH
+s022-0054 b97dba7df73e7de8 Drive DÉFÉTH
+s022-0055 8e66e4157996b67e Drive HP
+s022-0056 8895d6b93ff2dd3b Drive EP
+s022-0057 a52eb938496497a8 Hob-Séchée
+s022-0058 16be6cbe6689401e Hob-Viande
+s022-0059 027d1bd02c8ccdeb Hob-Steak
+s022-0060 8d5768b2eb9f3b14 Croc
+s022-0061 60a11b1ecc180378 Oeil
+s022-0062 2637995a45ee98d1 Écailles
+s022-0063 0b436c4691443641 Bizfruit
+s022-0065 930bc041461c5f72 Ariamûre
+s022-0066 9f7f3eb9089ddffd Radis
+s022-0067 ed93be3609c7e712 Jus Durian
+s022-0068 0f01bc1b04a03961 Eau de Nisan
+s022-0069 887025ee016b4c12 Eau d'Aveh
+s022-0070 b122419d3d146088 Pistolet
+s022-0072 d2cc156e4d76c2f7 Graine Anoret
+s022-0073 8d95a8a16c52a194 Fruit Anoret
+s022-0074 6e71ab9e1a2ab502 Graine Bulimy
+s022-0075 f13afd3fc0686133 Fruit Bulimy
+s022-0076 4d3cccad12abf319 BadgeChifoumi
+s022-0077 1fb8df644765505f Badge Cache
+s022-0078 cca3b71118c37938 Badge Chat
+s022-0079 77f011637f1fe8ca Larme Sirène
+s022-0080 7801075ec31a780f Photo d'OVNI
+s022-0081 f049fc53d7d1495e Passe-Partout
+s022-0082 737a4676d51bb315 Clés Égouts
+s022-0083 498cc0f8d6119ffe Clochette
+s022-0084 2dfce1935db4ec22 Livre 1
+s022-0085 2e2243935dd4aee5 Livre 2
+s022-0086 2e1edd935dd1cbbc Livre 3
+s022-0087 72baab3e9475300b Araignée
+s022-0088 2c0aedd0c49c1695 Oeuf d'Oiseau
+s022-0089 ee63cef054f49395 Croquettes
+s022-0090 ff1d71ff7c879dd9 Pépite
+s022-0091 d8841c605644677c Toile
+s022-0092 fef8d2cd9c62bacd Disque M
+s022-0093 a79866d486b23a89 PoupéeChu-chu
+s022-0094 4b3fbdc1b96f8aad Billets
+s022-0096 5b5a3536d4970adf Clé Cabine
+s022-0097 428145e02bc702ef Carte Kislev
+s022-0098 ec192a0c332057a4 Carte Merkava
+s022-0099 c4dc6abd6f005464 Carte Shevat
+s022-0100 7adfb4c6c41c9961 Pierre
+s022-0101 ac1a9a381f9e5302 Pierre Aube
+s022-0102 7ed5bd62496ae6c9 Pierre Soir
+s022-0103 19a5173f0b84c550 Pierre Noire
+s022-0104 9bcc30868c647646 Lingot d'Or
+s022-0105 62c3e7914058157b Ivoire
+s022-0106 1349ad60f96adfd5 Clé Militaire
+s022-0107 bed3c1a769e1204d Permis Trav.
+s022-0108 1877e219fcd7be70 Insigne Sale
+s023-0001 ace3bf25291e834a Bâton Magie
+s023-0002 799ea1888b04f826 Bâton Arcane
+s023-0003 96ada35a3fa0d43b Bâton Igné
+s023-0004 bdc1084dfb2b150e Bâton Lune
+s023-0005 e2dc9e6600a64cb2 Bâton Guerre
+s023-0006 b9e9386c0d58f198 Bâton Foudre
+s023-0007 48352c168796fb37 Bâton Pierre
+s023-0008 0f8c2ac9ea2e02d6 Bâton Flamme
+s023-0009 5e96c3bea9add219 Bâton Glace
+s023-0010 b66488e8a0731e89 Bâton Reine
+s023-0011 377837789b1ce473 Bâton Bombe
+s023-0012 3e4dc4a61ba59bc2 Bâton Noir
+s023-0013 773a60316a590c24 Bâton Chaos
+s023-0014 8b44ea1e4cd22806 Bâton Psy
+s023-0015 c89b98e80e550603 Bâton Crâne
+s023-0016 dc143518c6918be2 Fouet Cuir
+s023-0017 12a80468e339f72b Fouet Fer
+s023-0018 06758baa8981f2c1 Cinglant
+s023-0019 d0e7826764c8ab29 Claque-Cobra
+s023-0020 dda0cf9ca30e6545 Dard Serpent
+s023-0021 66e36279a7862466 Cobra Noir
+s023-0022 c791b945d1146230 Sang Argent
+s023-0023 d75ea47887efc10d Flagelleur
+s023-0024 598bed44b8e243a1 Ver Dune
+s023-0025 d25f61435ac2a4ec Onde Sonique
+s023-0026 7635594351afad7e Merveille
+s023-0027 95443ec416053ba3 Foudre Thor
+s023-0028 5458338c94485a95 Aspic Mortel
+s023-0031 0b0417dffd7edec6 Arme B&J M10
+s023-0032 b491b2d8d71f6495 Arme B&JM686
+s023-0033 070f3ab52b7f6fc8 Parrain
+s023-0034 d0f0d90f93f9597e Arquebuse
+s023-0035 f04d4741dcab0ab0 Pist. Éther
+s023-0037 95ea1b0070c3fd4a Escopette
+s023-0039 a940befa83b9fdb2 Épée Sengoku
+s023-0040 6bbf84e3f6ef6f98 Épée Yamame
+s023-0041 6b6e5d4ac7239dbf Épée Yamoto
+s023-0042 d56eb23a9512e9e3 Épée Mumyo
+s023-0050 cbeade2eddc65d56 Mun. B&JM10A
+s023-0051 0b2768a2cb038928 Mun. B&JM10S
+s023-0052 1283f152b00bf41b Mun. B&JM10X
+s023-0053 c4c59a25b37f6437 Mun.B&JM686A
+s023-0054 a00e48c5bfdc3c81 Mun.B&JM686S
+s023-0055 ae9ce82d7f36b508 Mun.B&JM686X
+s023-0056 2e3fcd64c4df6c17 Mun.Filleul
+s023-0057 2c7aa7611b3f3c42 Cartouche 50
+s023-0058 87a146774e1b0081 Cartouche 60
+s023-0059 8c2cd8744515f348 Cartouche 70
+s023-0060 3ca6bd12426837c7 Cartouche 80
+s023-0061 3bf36205582b2943 Mun. MatAéro
+s023-0062 82f1d0fcd5eff9ae Mun.MatTerra
+s023-0063 c0869ce221e63764 Mun. MatPyro
+s023-0064 d2cd4e8e64fd7a26 Mun.MatHydro
+s023-0065 3d15f60898046f4f Mun.MatLumin
+s023-0066 f17efe2ef5bbd1cd Mun.MatUmbra
+s023-0067 c8048ff10c0a1b2d Mun.ÉthVent
+s023-0068 77e448f7528558df Mun.ÉthTerre
+s023-0069 e9f59bc968c9b331 Mun. ÉthFeu
+s023-0070 6756ef74a085f6b6 Mun. ÉthEau
+s023-0071 f0798c9f8c9c2971 Mun. ÉthLum
+s023-0072 9f61883904da26f5 Mun.ÉthOmbre
+s030-0003 2365cc6bd43dc77c DoubleImpact
+s030-0004 ccb9d7f82efe5318 Coup Dur
+s030-0005 7a6beca9ea54ab98 Tourmente
+s030-0006 eb8d0c76b9ef919f Coup Sonique
+s030-0007 f22a7536d2186c67 Fend-Coeur
+s030-0008 4a9886e83d677e77 Méga Impact
+s030-0009 27cdfe93ecd5b163 Coup Éclat
+s030-0010 dadb845e3f412dbd Diva Suprême
+s030-0011 b8166caf198f01f8 Danse Ignée
+s030-0012 77e433b10bddffc3 Fouet Éclair
+s030-0013 e9d5e8e6edc6e7eb Rafale Bleue
+s032-0003 d781716393e17b84 Chaîne
+s032-0004 59521f42a7809c6a Fouet Vipère
+s032-0005 c6f878360675140d Onde Éclair
+s032-0006 bab1863909f60fab Cobra Sang
+s032-0007 97be763032d48e4b Mitraille
+s032-0008 9cbfabb811bce5e0 Canon Mort
+s032-0009 64b9326c873e5301 Onde Danse
+s032-0010 2861e2841952f475 Double Cobra
+s032-0011 c5bf8ca3cfd00114 Vol Céleste
+s032-0012 567f2a81c86b64e2 Météore
+s032-0013 a2fc60fc9909fc02 Danse Fatale
+s033-0003 c2eb336d715e90f0 Double Clac
+s033-0004 58744c09e7b53e6c Clac Dur
+s033-0005 e41c668f38245b72 Tir Dur
+s033-0006 7278151178c4d99d Feu Nourri
+s033-0007 6f8452d6b2125f91 Tir Impact
+s033-0008 03523946ce737c03 Poing Saint
+s033-0009 cfe3e7cbf0d9ae19 Tir Igné
+s033-0010 ba039aaad6d98bb8 Gatling Dure
+s033-0011 575227778236091a Gatling Ciel
+s033-0012 204d5ba21df7edd0 Mille
+s033-0013 6370e949a99ea22a Ascension
+s034-0003 2f14ff5086746ff6 Foret Guerre
+s034-0004 c173d2d4d23ff3e6 Tête-Bombe
+s034-0005 f35c68de4f3ce9f4 Perforatrice
+s034-0007 d01c7e4cb2bf0d39 Tornade D
+s034-0008 13cb1159c947c20e Marteau G
+s034-0009 9c66675ff09bbf27 Méga Corps
+s034-0011 e55f01227e956593 Ferraille
+s034-0012 e36176de09221c19 Foret Kaiser
+s036-0003 d3e049e9803d3db9 Méga Marteau
+s036-0004 9a30d18ecb958371 Lutte Dynamo
+s036-0005 4d60bbd95a99fba9 Gravipoing
+s036-0006 fc403a51a2eb61a7 Ruée Dynamo
+s036-0007 0aa095884ab89f93 Plongeon
+s036-0008 ecc60a1c39c0e4dc Gravipresse
+s036-0009 905eb161409d0aba Presse Astro
+s036-0010 190b3e2c930ce06c Brise-Fer
+s036-0011 f652d648712f31ec Typhon Fer
+s036-0012 5ab1a30ba08052a5 Élan Igné
+s037-0003 0d5a4272de4abbdd Coup Bras
+s037-0004 74af77fa4ba90783 Coup Aérien
+s037-0005 035c259cba446da2 Coup Dansé
+s037-0006 f033d57b1afddd92 Main Démon
+s037-0007 d41275d813be0c9a Serre Démon
+s037-0008 7088023d504a0c50 Aigle Démon
+s037-0009 ac8d053ec320fe07 Tour Mortel
+s037-0010 73fba8c7ba7651db Mort Rapide
+s037-0011 ad31be0b6c4074e7 Requiem
+s037-0012 cf40f7c6e18c8e56 Onde Noire
+s037-0013 101ae1a20117ba4c Force Noire
+s040-0006 b467cc5d8a8163db Fouet Rouge
+s050-0001 5606349dc24b6b04 Arm. Extra
+s050-0002 91f12e2427829570 Arm. Extra+1
+s050-0003 9224282427ade4d7 Arm. Extra+2
+s050-0004 9220c22427ab01ae Arm. Extra+3
+s050-0005 921d5c2427a81e85 Arm. Extra+4
+s050-0006 9219f62427a53b5c Arm. Extra+5
+s050-0007 9216902427a25833 Arm. Extra+6
+s050-0008 92132a24279f750a Arm. Extra+7
+s050-0009 967017661263ec72 Arm. ExtraDX
+s050-0010 a243f6dfab918858 Arm.Légère+1
+s050-0011 a24090dfab8ea52f Arm.Légère+2
+s050-0012 a23d2adfab8bc206 Arm.Légère+3
+s050-0013 9a2fd0353d956527 Arm. Argent
+s050-0014 da66624cccb02e4b Arm.Argent+1
+s050-0015 aafd2101e0fae68e Métal Léger
+s050-0016 5d18441dbf892c93 Métal Lourd
+s050-0017 cdb30d0b41775b63 Antirayon
+s050-0018 d14cf98163067975 Arm. Miroir
+s050-0019 26eabb943918c04d ArmMiroir+1
+s050-0021 1db7da004922c093 Arm. Isolée
+s050-0022 3455ef37bfac4237 ArmIsolée+1
+s050-0023 5e9d452d3d201424 ArmMolécule
+s050-0024 73109f0561b8cf42 Arm. Tension
+s050-0025 f74e45f4db7254a2 ArmTension+1
+s050-0026 9f602306d8589ba2 Antichoc
+s050-0027 2a7f5d78df5fafaf Arm. Sceau
+s050-0028 15386e2cab3cb613 Arm. Sceau+1
+s050-0029 3d324393bb821e5b Arm. Ange
+s050-0030 85e9c9f151f5a7c7 Arm. Ange+1
+s050-0031 8e74aef156c3aa01 Arm. Ange S
+s050-0032 211c60560f75789a Arm. Éther
+s050-0033 ed5071684b26169a Arm. Éther+1
+s050-0034 ed3f73684b17a6cd Arm. Éther+2
+s050-0035 ed3c0d684b14c3a4 Arm. Éther+3
+s050-0036 d389f466618c308f Voile Vent
+s050-0037 9001a172d78b4b71 Voile Terre
+s050-0038 f8e37835682ca667 Voile Feu
+s050-0039 335cf3330cb8f57a Voile Eau
+s050-0040 2b86b1713547cb81 Arm. Fondue
+s050-0041 ae8ea322535f2237 Circ. Vieux
+s050-0042 d336b8dfd1c86ce3 Circ. Simple
+s050-0043 fece5841034255ec Circ. Réact.
+s050-0044 4ee3a47b9590f3c7 Circ. Déf.
+s050-0045 4cc35234dffe591d Circuit A
+s050-0046 109cf4e1419cee7c Circuit B
+s050-0047 fc5e4ad6a0eab653 Circuit C
+s050-0048 cbf8828d35a985b2 Circuit D
+s050-0049 f2fe1edfb1636af9 Circuit E
+s050-0050 9e0c9e2ddaa7f788 Circuit F
+s050-0051 f9f3148cc76fcf9f Circuit G
+s050-0052 06316213646d5f95 Circuit A+1
+s050-0053 9046817b3cb7d128 Circuit B+1
+s050-0054 c6913fe59b66bbdf Circuit C+1
+s050-0055 bb060f8648484cd2 Circuit D+1
+s050-0056 dd03bbe5b0143689 Circuit E+1
+s050-0057 0e27748a9b0d667c Circuit F+1
+s050-0058 398b7743fea713c3 Circuit G+1
+s050-0060 b249f5ebf6cd2fd4 Bloque-Rayon
+s050-0061 18ec1f595e16c709 Paratonnerre
+s050-0062 7112b5463a9e2837 Isolant
+s050-0063 56d4f552f0c89e44 Étanchéité
+s050-0064 962f6914b822b623 Filtre Bruit
+s050-0065 6ac03c29bee3bd54 Antiange
+s050-0066 2ee74e9580cb017e Bouteille O2
+s050-0067 84f5b6534195ada8 Cape Magnét.
+s050-0068 87767567c53c68af Lest
+s050-0069 f0f829f25801a6d1 Plaque Dorée
+s050-0070 691809b7c15f20b9 Égide Sceau
+s050-0071 5efeec7b53e32179 Modificateur
+s050-0073 e3ca1a8fe731d568 Pierre Vent
+s050-0074 888c45ba18be62f2 Pierre Terre
+s050-0075 d8127c67422e7280 Pierre Feu
+s050-0076 59aa656aa25c9d2f Pierre Eau
+s050-0077 a6e83cd75b540c12 Économiseur
+s050-0079 504dd7c213097f69 Pouvoir Mag.
+s050-0080 bc310b03049a59ca Obturateur
+s050-0081 390d2b1ceadf8f1a Double-Voile
+s050-0082 ec5de9d1af901968 Voile Épée
+s050-0083 dc3c99d95df600eb Prot. Magie
+s050-0084 e10e92bb8bc38b9c Prot. Moteur
+s050-0085 3aa13c4445190830 Prot. Pilote
+s050-0086 19436ebf86864c20 Prot. Cuve
+s050-0087 f6aa7a7d96de5360 Répar. Arm.
+s050-0088 8d252c12cc3ee05c Prot. Mouv.
+s050-0089 2e3ce32e6cd09067 Prot. Arm.
+s050-0090 3609f25fb0bf725a Châssis HP10
+s050-0091 6a61fc5fce8042d8 Châssis HP30
+s050-0092 5937ce5fc4d2eb6e Châssis HP50
+s050-0093 8cb6585fe1daf1ac Châssis HP70
+s050-0094 7b55ca5fd7ff67b2 Châssis HP90
+s050-0095 28ed997a8f832358 Purge-Effet
+s050-0096 cdb1d0584b1c3d0b Fatalisor 1
+s050-0097 cdd066584b36397c Fatalisor 2
+s050-0098 cdd3cc584b391ca5 Fatalisor 3
+s050-0101 88cd29bacd0121d2 Chargeur A
+s050-0102 f9793fc23fdb5db4 Chargeur S
+s050-0103 f5f4c47f08816081 Chargeur X
+s051-0001 0abdb4dcb117ade1 BâtonMagieG
+s051-0002 adf82d0439d3d404 BâtonArcaneG
+s051-0003 82b0cdd3f07e6353 BâtonFerG
+s051-0004 49f0bc689b8007a0 BâtonDouxG
+s051-0005 aa61f15a1eb65857 BâtonIgnéG
+s051-0006 051fae8f4bf4adae BâtonFoudreG
+s051-0007 48e19548652ab303 BâtonPierreG
+s051-0008 99a31718ec90fd14 BâtonFlammeG
+s051-0009 687441fa52be2bed BâtonGlaceG
+s051-0010 30de939ff616cf55 BâtonChronoG
+s051-0011 114effd57866e04f BâtonFuméeG
+s051-0012 f1a38bf7b5a63ffa BâtonChaosG
+s051-0016 8a47b282e05ec128 FouetCuirG
+s051-0017 f2a87edc476d3b9d FouetFerG
+s051-0018 6acddff4f6743988 CinglantG
+s051-0019 74b2abe4a9940f88 DardSerpentG
+s051-0020 a64f6e1dbc854de2 CobraNoirG
+s051-0021 f2343624e1f0271d SangArgentG
+s051-0022 706e875bf95bf45e FoudreThorG
+s051-0023 c392f76a016f80c3 OndeSoniqueG
+s051-0031 8eee37679b6610aa Arme G-M10
+s051-0032 5d8670c87f94132f Arme G-M686
+s051-0033 7c5bdfd4fe22c4e3 G-Parrain
+s051-0034 e1d3ab1ea11b386d G-Arquebuse
+s051-0035 ae45cccc7f83fe7e G-Pist.Éther
+s051-0037 318fa1ca54da014a G-Gatling
+s051-0041 748dc1bc41265aad Épée Yamato
+s051-0042 ce5e397e7a2ffe79 Épée Kijin
+s051-0043 f4eab32a7d74381e Épée Kishin
+s051-0050 c2184957d3fb0cdc Mun. G-M10A
+s051-0051 fdce668d62af97ea Mun. G-M10S
+s051-0052 78e8e84d8aa724cd Mun. G-M10X
+s051-0053 334273e4a896e5d1 Mun. G-M686A
+s051-0054 9f12d6ac506b392b Mun. G-M686S
+s051-0055 97b64dfc6b62ce38 Mun. G-M686X
+s051-0056 f94c735394f17bb2 G-Filleul
+s051-0057 4325a77a47645439 Mun. G-GG040
+s051-0058 7ad9d6c801ec90d3 Mun. G-GG060
+s051-0059 1d6e4bfe5f5ce62d Mun. G-GG080
+s051-0060 1f54fc823c40de92 Mun. G-GG100
+s051-0061 b133fca2ea7c5743 Mun. G-MAéro
+s051-0062 f8326b9a684127ae Mun.G-MTerra
+s051-0063 35c7377fb4376564 Mun. G-MPyro
+s051-0064 480de92bf74ea826 Mun.G-MHydro
+s051-0065 b25690a62a559d4f Mun.G-MLumin
+s051-0066 66bf98cc880cffcd Mun.G-MUmbra
+s052-0000 bb68acfc68a9c47f Réparer HP
+s052-0001 da1594ca485557a9 Système Id
+s052-0002 2cf0218a8262a5ab Onde de Thor
+s052-0003 89fa59149fc4848a Enfer Vivant
+s052-0017 8493e8642456bf7b Ygg Charge D
+s052-0018 cd5b34095f798371 Canon Ygg
+s052-0021 ab7ab527f5151ea5 CanonJessie
+s052-0033 3e0825e5e994692e Lance-Fusée
+s052-0034 a171823455026526 Canon Grav.
