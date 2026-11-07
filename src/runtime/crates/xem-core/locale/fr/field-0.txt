@@ -527,3 +527,585 @@ f019-0021 198ad33f759a1724 Vous donnez à Yui l'oeuf{n}qui vous a coûté tant{n
 f019-0022 dd4d04a13f0f7f61 Yui{n}"Bonne nuit.{wait 20}{n}À demain, Fei."
 f019-0023 7b04ecc748c6cc5a Yui{n}"Que s'est-il passé...?{wait 20}{n}Sois prudent, Fei !"
 f019-0025 caa055f60e770ce8 Yui{n}"Bonne nuit.{wait 20}{n}Nous avons hâte d'être{n}au mariage de demain."
+f021-0000 45b225168ad051a5 Waouh !?{done 40}
+f021-0001 492c6ff91964a754 Fei{n}"Qu...{wait 30} Qu'est-ce que{n}c'est...?"
+f021-0002 a912e05679680f5c Fei{n}"Alors c'est de ça que{n}parlait le Doc.{p}Voyons...{wait 30}{n}qu'est-ce que ça a de si{n}intéressant..."
+f021-0003 c9b036971eb4c6f3 Fei{n}"Cette musique...?{wait 20}{n}Je l'ai{wait 10} déjà entendue{n}quelque part...?"
+f021-0004 662d7276babeda02 Fei{n}"Doc"
+f021-0005 1b066c10f631f140 Citan{n}"Me revoilà, Fei.{n}Désolé pour l'attente."
+f021-0006 be6be5aa2905b888 Citan{n}"La musique est une chose{n}bien mystérieuse...{p}Parfois, elle fait{n}resurgir des souvenirs{n}inattendus.{p}Des pensées, des{n}sentiments, des{n}souvenirs... des choses{n}presque oubliées...{p}Que l'on veuille s'en{n}souvenir ou non..."
+f021-0007 15968f94ab972a99 Citan{n}"On l'a exhumé de ruines{n}anciennes et il est{n}encore en réparation.{p}C'est de toute évidence{n}une sorte d'appareil{n}audio."
+f021-0008 adde888ee6e745c0 Citan{n}"Jadis, des gens écoutaient{n}cette mélodie, comme nous{n}maintenant...{p}Parfois, ils se{n}réjouissaient...{n}Et parfois, ils{n}pleuraient."
+f021-0009 2cc32872e711367e Citan{n}"Au fait, qu'est-ce qui{n}vous amène aujourd'hui ?"
+f021-0010 82bdc3868283fc7c Citan{n}"Ah, oui.{n}Son mariage est demain,{n}n'est-ce pas...?"
+f021-0011 1bd158043d1a265a Citan{n}"Entendu.{n}Préparons donc tout{n}cela."
+f021-0012 e4eb6d5da7534afb Citan{n}"Ah, et le dîner sera{n}bientôt prêt.{wait 20} Voulez-vous{n}vous joindre à nous ?"
+f021-0013 7415f92fc8df6484 Citan{n}"J'ai encore quelques{n}affaires à ranger{n}dehors.{p}Cela vous ennuierait{n}de tenir compagnie à{n}Midori à la maison ?"
+f021-0014 08a6c6260732370c Citan{n}"Ha, ha, ha.{n}Faites comme chez vous.{p}Mais je ne réponds pas{n}des maux de ventre{n}causés par la cuisine de{n}ma femme Yui."
+f021-0015 e9453cf71cc742eb Citan{n}"C'est peut-être parce{n}que quelqu'un vit en{n}vous...{p}... Et lui aussi devait{n}aimer cette musique, il y{n}a très longtemps, avant de{n}faire partie de vous..."
+f021-0016 9713adee9b3479f6 Citan{n}"Alors le mariage de{n}Timothy et d'Alice est{n}bien demain...{p}Il vaut peut-être mieux{n}vivre une vie ordinaire,{n}dans cet état...{wait 30} Comme un{n}fils de l'homme..."
+f021-0017 2e929ff810933a1d Citan{n}"Enfin, bref.{n}Je ferais mieux de régler{n}au moins le gyroscope..."
+f021-0018 4c47b8deb2b5c8c8 Citan{n}"Hein....!?"{done 50}
+f021-0019 466a0429be7e38f1 Citan{n}"Ce n'est pas possible...{wait 60}{n}C'est... c'est...{n}un présage...?"
+f021-0020 1f83fc1d65268ee5 Citan{n}"...{wait 40}{n}Et maintenant, que va-t-il{n}se passer...?"
+f021-0021 34ccc0f5618879ec Qu'en dites-vous ?{wait 30}{n}Pas mal, hein ?
+f021-0022 2f514b64e114c9b2 Fei{n}"Doc, qu'est-ce que{n}c'est...?"
+f021-0024 77ae6c8a194c702e Fei{n}"Ah, c'est vrai !{p}Alice m'a demandé de{n}vous emprunter du{n}matériel photo."
+f021-0025 432cc3bf06c637e0 Fei{n}"Et comment !{wait 30}{n}J'espérais que vous{n}m'inviteriez."
+f021-0026 21d6a17d152e4ade Fei{n}"D'accord.{n}Prenez votre temps, Doc.{p}Je commencerai à manger{n}quand le dîner sera{n}prêt !"
+f021-0027 95ed61706e98c234 Fei{n}"Doc...{wait 20}{n}Je me sens bizarre en{n}écoutant cette musique...{p}Je sens comme une{n}chaleur, là, à{n}l'intérieur..."
+f021-0029 1aac3598fa7d0c0f Il y a quelque chose gravé{n}en petites lettres dans le{n}coin...
+f022-0000 33c41ef93eb652fb Fei{n}"Arrête !{n}Bas les pattes,{n}ne touche pas à 'Elly' !"{done 60}
+f022-0001 bac6ee84a8bb9a59 Fei{n}"Ça va !?{n}Tiens bon !"
+f022-0002 a509945b52c99356 Jeune fille mystérieuse{n}"Hein...{wait 30}{n}Retourne-toi !"
+f022-0004 1231a1dab989c875 Jeune fille mystérieuse{n}"J'ai dit...{n}retourne-toi !"
+f022-0005 f2344eb164cd5ab4 Fei{n}"...Tu trembles ?"
+f022-0006 92cf2e3c5b33a869 Jeune fille mystérieuse{n}"Silence !"
+f022-0007 7b5af8b94753f22a Jeune fille mystérieuse{n}"...Tu n'as pas l'air d'un{n}des soldats de Kislev qui{n}me traquent...{wait 50}mais..."{done 100}
+f022-0008 ea034e46549f51a4 Jeune fille mystérieuse{n}"Ne bouge pas !"
+f022-0009 892cf0bdb360a50f Jeune fille mystérieuse{n}"J'ai ordre de tuer tout{n}-Agneau- de la surface que{n}je croise...{p}Ça fait partie de ma{n}mission. Ce n'est rien de{n}personnel."
+f022-0010 9b6e3630c2abe75c Jeune fille mystérieuse{n}"J'ai une question.{wait 40}{n}...Comment sort-on de{n}cette forêt ?"
+f022-0011 428263f4aad58381 Fei{n}"Tu es...perdue ?"
+f022-0012 6a305876498f4c6c Jeune fille mystérieuse{n}"Réponds à la question !{n}Comment je sors d'ici ?"
+f022-0013 b2baa31e0654e290 Fei{n}"Désolé...{n}mais moi aussi, je{n}cherche la sortie."
+f022-0014 f2030d949cb2a1e4 Jeune fille mystérieuse{n}"Ah..."
+f022-0015 5ab98d3949cdb5c3 Fei{n}"Tu vas rester{n}plantée là comme ça{n}encore longtemps ?{p}Si tu comptes me{n}tirer dessus, tire{n}donc une bonne{n}fois."
+f022-0016 db664b67c4601cc0 Jeune fille mystérieuse{n}"Drôle de chose à dire !{n}Tu ne vois pas dans{n}quelle situation tu es ?"
+f022-0017 cdc676ccf72cef51 Fei{n}"Je me fiche de ma{n}situation...{p}Je suis quelqu'un dont la{n}vie ne vaut rien...{n}Ça n'a aucun sens que je{n}vive, de toute façon !"
+f022-0018 5000f49f80c14d56 Jeune fille mystérieuse{n}"Re, {wait 10}recule !"{done 60}
+f022-0019 8370de4ca079fa40 Fei{n}"Tu vises où ?{wait 30}{n}Ici ! Tire juste ici !{wait 50}{n}Allez..."
+f022-0020 3ba0134dbd8e107d Jeune fille mystérieuse{n}"Tu...{wait 10}{n}tu te moques de moi ?"{done 80}
+f022-0021 dc074ecb91c17b18 Jeune fille mystérieuse{n}"Qu'est-ce que c'est ?{n}Qui es-tu ?"{done 30}
+f022-0024 50e43e6bbf991cdc Jeune fille mystérieuse{n}"Espèce de cinglé !"{done 80}
+f022-0025 f20e0336a3c52763 Jeune fille mystérieuse{n}"Tu ne tournes vraiment{n}pas rond !"{done 30}
+f022-0026 b0ffcdc3857f4764 Jeune fille mystérieuse{n}"Tu pourrais au moins{n}résister un peu !"{done 80}
+f023-0000 4a01054ce06e04f2 {speed 255}Fei{n}"Eux !{wait 60}{n}Eux !!{wait 60}{n}Eux !!!"{done 60}
+f023-0002 7592d7dbc2cb18ae Elly{n}"...Tu es réveillé ?"
+f023-0003 34bffa65fd9c9a43 Elly{n}"Hier, tu as dit que ta{n}vie ne valait rien. Que{n}voulais-tu dire ?"
+f023-0004 1843469fb2de5008 Fei{n}"Pourquoi tu me demandes{n}ça ?"
+f023-0005 05eb55d5cc960e37 Elly{n}"Pourquoi ? Hier, tu avais{n}l'air de vouloir mourir.{p}Tu pensais que je ne serais{n}pas curieuse...?{wait 20} Dis,{n}comment es-tu arrivé dans{n}cette forêt ?"
+f023-0006 2cc9fe75883611e6 Fei{n}"Je pourrais te poser la{n}même question."
+f023-0007 c7e298c9f5628a2c Elly{n}"Hein ? Eh bien,{n}je, euh..."
+f023-0008 b1b776b172cf5d5c Fei{n}"Je...{wait 30}me suis enfui...{wait 30} de{n}mon village...{wait 30} ou de ce{n}qu'il en reste..."
+f023-0009 f7febe1b186f2c78 Elly{n}"Un village...?{n}Ne me dis pas que...!?"
+f023-0010 c9a310e290545e27 Fei{n}"Lahan...{p}C'était un petit village{n}entre cette forêt et la{n}montagne.{n}Je m'en suis enfui."
+f023-0011 6011880dbfecf88d Elly{n}"Ce village-là...?"
+f023-0012 d8b52f6675300d7a Fei{n}"C'était un village{n}paisible. On m'y traitait{n}comme de la famille.{p}Puis, hier soir, des Gears{n}sont soudain apparus et se{n}sont mis à se battre en{n}plein milieu du village.{p}Le village a pris feu... Je{n}ne pouvais pas rester là à{n}regarder Lahan être{n}détruit...{p}Alors, pour sauver les{n}villageois, je suis monté{n}dans un Gear vide... sans{n}savoir le piloter.{p}Je pensais pouvoir y{n}arriver... non... c'était{n}plutôt comme si on me{n}murmurait...{p}Une voix qui me murmurait{n}de le faire... Mais ça a{n}été un désastre ! Le{n}village..."
+f023-0013 491a5dedd93e409c Elly{n}"Le village a été détruit{n}par l'armée de Kislev ?"
+f023-0015 015deacb965bba40 Fei{n}"Non... Le village a été{n}détruit...{wait 50}par moi..."
+f023-0017 79e218e8cd3b6176 Fei{n}"Oui. C'est moi.{n}J'ai détruit Lahan.{n}J'en suis certain..."
+f023-0018 0d9026e73534ceb6 Elly{n}"Comment ça, tu l'as{n}détruit ?{p}Tu n'essayais pas{n}d'aider à sauver les{n}villageois ?"
+f023-0019 f9a5ac0df20400e7 Fei{n}"J'ai essayé d'aider, oui.{n}J'ai même abattu quelques{n}Gears.{p}Mais d'autres Gears sont{n}arrivés et m'ont pris sous{n}un feu nourri...{p}Et puis mon ami...{wait 10}{n}Timothy...{wait 10}a été fauché par{n}une pluie de balles...{p}Alors j'ai perdu le{n}contrôle...{wait 10}{n}Tout est devenu noir..."
+f023-0020 69c7e987d20a44bf Fei{n}"Je ne me souviens de rien{n}après ça.{p}Le Gear dans lequel j'étais{n}s'est emballé... Enfin,{n}c'est ce qu'a dit le Doc.{p}À mon réveil...{n}le village...{n}et tous ses habitants...{n}étaient...{p}Alice... Elle était si...{n}Alice et Timothy...{n}Mon Dieu...! Tous...{n}Des gens si bons..."
+f023-0021 344c02afaeb042e9 Elly{n}"Il s'est emballé...?{n}Le Gear...?{n}Et le village ?"
+f023-0023 abbff7021ac8a769 Fei{n}"...Oui, le Gear !{p}Si seulement ces Gears ne{n}s'étaient jamais posés au{n}village...!"
+f023-0024 67ecb2bafb702c0c Fei{n}"S'ils n'étaient jamais{n}venus au village, s'ils ne{n}s'y étaient pas battus...{p}Je n'aurais pas essayé de{n}piloter ce Gear. Tout est{n}de leur faute... Pas de la{n}mienne !{p}C'est eux, les coupables.{n}S'ils n'étaient pas venus,{n}rien ne serait...{n}...sans eux !"
+f023-0025 966133a9cf41a07d Elly{n}"Ça suffit !"
+f023-0027 ec898eb16bafe71c Elly{n}"Tu es un lâche !"
+f023-0028 e1cbaa689cdce221 Fei{n}"Un lâche ?{n}...Moi ?"
+f023-0029 9f62cb017c5889d4 Elly{n}"Oui, tu es un lâche.{n}Tout ce que tu dis,{n}c'est 'eux, eux, eux'.{p}Ne parle pas comme si tu{n}n'avais aucune part de{n}responsabilité !"
+f023-0030 1dbc17429b48b278 Fei{n}"C'est ma faute...?"
+f023-0031 a2fb250eb465fad7 Elly{n}"Oui, exactement !{p}Bien sûr, le combat a{n}éclaté parce qu'un Gear{n}s'est posé en urgence dans{n}ton village.{p}Mais Kislev ne voulait que{n}le Gear, non ? Ils ne{n}venaient ni envahir ni{n}détruire Lahan.{p}Le vrai désastre, c'est{n}parce que tu es monté dans{n}un Gear pour riposter !"
+f023-0033 4200c0667a1df2d8 Elly{n}"Qu'est-ce qui t'a pris de{n}monter dans ce Gear ?{p}Piloter un Gear, ça ne{n}s'improvise pas ! Il faut{n}un entraînement ! Un civil{n}n'aurait aucune chance !{p}En plus... tu aurais dû{n}aider les villageois à fuir{n}vers un endroit sûr !{p}Comment peux-tu rejeter la{n}faute sur un Gear, alors{n}que c'est toi qui as décidé{n}de te battre avec ?{p}Pourquoi n'assumes-tu pas{n}ta part ?{n}Pourquoi rejeter toute la{n}faute sur les autres ?{p}Tu fuis, c'est tout ! Voilà{n}ce qui fait de toi un{n}lâche !"
+f023-0034 5c15727e7ead8fe3 Fei{n}"Eh bien, si tu le dis{n}comme ça... Oui... c'est{n}vrai, je suis un lâche !{p}Je n'ai pas mesuré ma{n}propre force et j'ai{n}accusé les autres de ce{n}qu'elle a causé.{p}Je suis pathétique.{n}Mais...{p}Mon sang a bouilli et je{n}n'ai pas pu me retenir !{n}Je n'ai sauvé personne...{n}ni moi, ni les autres."
+f023-0035 08a1130c1f0d2d71 Elly{n}"Fei, je, je..."
+f023-0036 3969e2176a0d1f0e Fei{n}"Tais-toi !!{n}Qu'en sais-tu, toi !?{p}À mon réveil, j'étais{n}entouré de montagnes de{n}décombres...{p}J'ignorais ce qui s'était{n}passé et ce que j'avais{n}fait. Je ne me souvenais{n}de rien.{p}Je savais seulement que{n}mes mains sentaient encore{n}ce qu'elles avaient fait.{p}Les seules choses qui{n}traversaient la paroi du{n}Gear étaient des cris...{p}Des cris mêlés à l'odeur{n}du sang, au bruit des os{n}broyés et à mes propres{n}malédictions.
+f023-0037 5c01c45d7d59ebcc Regarde ! Regarde mes{n}mains ! Tu entends ces{n}voix ? Tu comprends ce{n}sentiment ?{p}Le sentiment d'avoir{n}détruit son village de ses{n}propres mains...?{p}De ne rien pouvoir faire{n}pour les enfants restés{n}là...?{p}Ils n'ont plus rien...{n}Je n'ai plus rien...{n}Nulle part où aller...{n}ni personne..."
+f023-0038 8899109185f0e8de Fei{n}"Je ne voulais pas...{n}Je n'avais pas le choix...{n}Pas d'autre moyen..."
+f023-0039 f9ba62a49c11451d Fei{n}"Ah, non !"
+f023-0042 2c5c1e05b1d7d505 ← Sentier de montagne.{n}Attention aux falaises !
+f023-0043 e8db198b0725126c ← Village de Lahan{n}             Aveh →{n}Gare aux éboulements !
+f024-0001 6b6ae0b0b2daabb2 Fei{n}"Oui... je crois."
+f024-0002 cfef8f81a09038e9 Citan{n}"Ce combat contre le{n}Rankar était remarquable.{p}Un Gear ordinaire n'aurait{n}pas vaincu ce monstre.{n}Et vous êtes visiblement{n}en pleine forme..."
+f024-0003 351149b2844a4125 Fei{n}"Pourquoi avez-vous amené{n}ça ici, Doc ?"
+f024-0004 36bc70b53ef95d44 Citan{n}"Ça...?{n}Vous parlez du {name 11} ?"
+f024-0005 2887feade0789711 Fei{n}"...{name 11} ?{wait 20}{n}C'est le Gear qui a{n}détruit notre village.{p}Pourquoi l'avoir amené{n}jusqu'ici ? Je ne veux{n}plus jamais voir un seul{n}Gear..."
+f024-0006 b5a487460997073c Citan{n}"Je comprends ce que vous{n}devez ressentir...{p}Mais, pour vous protéger,{n}il vous faut une certaine{n}force.{p}Surtout que nous sommes{n}poursuivis."
+f024-0007 c8761703cf08a13d Fei{n}"J'admets qu'une certaine{n}force est nécessaire pour{n}se défendre.{p}Et sans ce Gear, Elly et{n}moi serions dans l'estomac{n}de ce Rankar à l'heure{n}qu'il est...{p}Mais sa puissance dépasse{n}le nécessaire. Qui a{n}besoin du pouvoir de tout{n}détruire ?"
+f024-0009 6aeae0e27484ce56 Fei{n}"Je n'ai pas besoin d'un{n}tel pouvoir...{n}Je hais les Gears."
+f024-0010 5e8eafcfa17fc1b0 Citan{n}"Fei, se servir du pouvoir{n}ou le subir... c'est une{n}affaire de coeur, non...?{p}Si on ne s'en sert pas pour{n}le mal, le pouvoir peut{n}être bon... Je crois qu'il{n}peut nous aider.{p}En ce sens, je sais que{n}tout ira bien pour vous. Il{n}vous a bien aidé cette{n}fois-ci.{p}N'ai-je pas raison ?"
+f024-0011 1e08e63a4af7b4b0 Fei{n}"Je veux y croire.{n}Mais quelque chose m'en{n}empêche. Ce Gear..."
+f024-0012 97195f6a910e5123 Fei{n}"Enfin, peu importe...{n}Au moins, Elly est en{n}sécurité maintenant."
+f024-0013 813ae54a7704c339 Citan{n}"On dirait qu'elle a{n}repris connaissance."
+f024-0014 c024a990404696ad Elly{n}"Hein...?"
+f024-0015 847246455d8cef01 Citan{n}"Je suis Citan... un ami{n}de Fei.{p}Vous avez failli mourir.{n}Sans l'aide de Fei, je{n}n'ose imaginer ce qui{n}serait arrivé.{p}Mais il a été imprudent{n}d'affronter ce Rankar à{n}mains nues."
+f024-0016 a185df7e587e2efd Elly{n}"À mains nues ?"
+f024-0017 49753b4041c30d4f Citan{n}"Enfin, je suis ravi que{n}ce que je vous ai apporté{n}vous ait servi."
+f024-0019 983e08a60144bf7c Citan{n}"Disons que nous avons{n}emprunté ce que Kislev a{n}laissé derrière lui..."
+f024-0020 dffff0c3bc65caf9 Elly{n}"...Ah."
+f024-0021 1f62761f152083fb Elly{n}"Merci, Fei. C'est déjà la{n}deuxième fois."
+f024-0022 96e832474914c79f Fei{n}"Ce n'est rien.{n}Je le mets sur ta note."
+f024-0023 3304424e065fa0f6 Citan{n}"La nuit tombe. Campons{n}ici et partons tôt{n}demain.{p}Vous semblez épuisés tous{n}les deux, et je dois faire{n}quelques réparations sur{n}notre ami ici présent..."
+f024-0025 90adfefeb9440da3 Elly{n}"Pourquoi lui ai-je{n}dit ça...?"{done 60}
+f024-0026 ca759113e2113de6 Elly{n}"Oui...{n}c'est bien ça...{n}je suis une lâche..."
+f024-0028 14e62e4caec76356 Citan{n}"Fei !{n}Vous allez bien ?"
+f024-0029 ed0abf8f67cec4c4 Fei{n}"Elly est déjà partie ?"
+f024-0030 7db32c0c1a911a49 Citan{n}"Ah, vous étiez{n}réveillé ?"
+f024-0031 f1eb5fdd893f36e3 Fei{n}"Oui, depuis un moment.{n}J'ai entendu une partie de{n}votre discussion."
+f024-0033 3f3adc9c09ceef69 Fei{n}"Alors Elly...{n}c'est ce qu'elle est ?"
+f024-0034 113aa36d9777ae3d Citan{n}"Fei, elle est..."
+f024-0035 664f166c590a6761 Fei{n}"Je sais.{n}Elly n'y est pour rien.{p}Ce qui est arrivé au{n}village, c'est ma faute.{p}J'ai déversé sur Elly tout{n}ce que j'avais sur le{n}coeur. C'est à moi de{n}m'excuser."
+f024-0036 5d9dbec290fc8b3f Citan{n}"Fei, ne vous accablez{n}pas. Ce n'était pas{n}votre faute non plus.{p}Vous essayiez seulement{n}de protéger le{n}village."
+f024-0037 7969cfc117f95e85 Fei{n}"Merci, Doc...{n}Au fait, comment vont{n}les gens du village ?"
+f024-0038 68bdf493179b8fc7 Citan{n}"Ne vous inquiétez pas,{n}Yui s'occupe d'eux.{p}Je lui ai demandé de{n}partir vite et de les{n}emmener tous en un{n}certain lieu.{p}Ils y seront en sécurité{n}un moment. Alors, pour{n}l'instant, ne pensez qu'à{n}vous."
+f024-0039 ec28d40fbe120bd6 Fei{n}"Entendu."
+f024-0040 a2869b36bd41c20e Citan{n}"Maintenant, réfléchissons{n}à la suite...{p}Et si nous sortions de{n}cette forêt pour gagner{n}Dazil, la ville du désert ?{p}Nous saurions peut-être ce{n}que trament Aveh et{n}Kislev... Et il faut des{n}pièces pour le {name 11}.{p}Le chef d'Aveh ne va pas{n}rester les bras croisés et{n}laisser impuni le fiasco de{n}l'autre nuit !"
+f024-0041 106b413d6f384469 Fei{n}"Qu'est-ce que c'est...?"
+f024-0042 a3b6855ad73f56c8 Citan{n}"Je présume que{n}c'est un cuirassé{n}volant d'Aveh..."
+f024-0043 741c366321408621 Fei{n}"Un cuirassé volant ?{n}J'ignorais qu'Aveh avait{n}une chose pareille."
+f024-0044 e1402746d4ce5243 Citan{n}"Il ne vient pas{n}d'Aveh à l'origine,{n}bien sûr...{p}Il appartient sans{n}doute aux forces de la{n}Gebler stationnées à{n}Aveh."
+f024-0046 7189e8976c0fa035 Citan{n}"Les forces spéciales du{n}Saint-Empire de{n}Solaris : la Gebler.{p}Je suis sûr que vous en{n}avez déjà entendu{n}parler.{p}C'est une organisation qui{n}apporte une aide militaire{n}à grande échelle au{n}Royaume d'Aveh.{p}Ils sont apparus à Ignas{n}il y a plusieurs mois.{n}Jusque-là, Aveh perdait{n}face à Kislev.{p}Mais, avec l'aide de la{n}Gebler, ils ont{n}reconquis la moitié de{n}leurs pertes.{p}Désormais, ils étendent{n}leur territoire et{n}récoltent les ressources{n}enfouies dans les ruines."
+f024-0047 c6b283a09cc7e61d Fei{n}"J'ai entendu les anciens{n}du village en parler...{wait 30}{n}Elly en fait partie ?"
+f024-0048 a141c49932f3dd06 Citan{n}"C'est bien possible. Ils{n}ont une technologie et une{n}force supérieures.{p}On dit qu'ils sont ici{n}uniquement pour obtenir{n}les ressources des ruines.{p}Je suis surpris qu'ils{n}utilisent quelque chose{n}d'aussi puissant que ce{n}vaisseau...{p}Ce doit être pour contenir{n}les récentes escarmouches{n}à la frontière."
+f024-0049 e88e5f8c9f38e262 Fei{n}"Alors ils combattent{n}l'Empire de Kislev ?"
+f025-0000 1a1372ead309f22a ...Hé.
+f025-0001 9c36e3cf9ecd13f4 Fei{n}"Ouf, tu te réveilles !{n}Tu as dormi si longtemps,{n}je m'inquiétais..."
+f025-0002 fab53a77ff4bc162 Jeune fille mystérieuse{n}"..."
+f025-0003 1ebccb917dbd0e89 Fei{n}"Comment tu te sens ?"
+f025-0005 b66e7f3c9f0dfd17 Fei{n}"Tu veux toujours me tuer ?{n}Alors vas-y, tire !{p}Mais pas tant qu'on est{n}dans la forêt. Les monstres{n}détestent le bruit, tu{n}sais !?"
+f025-0007 82554ef591427132 Fei{n}"D'accord.{n}Ne me parle pas si{n}tu ne veux pas...{p}Mais ça ne te tuerait pas{n}de me remercier d'avoir{n}soigné tes blessures."
+f025-0009 acad0fb5e28c1c9c Jeune fille mystérieuse{n}"Mer... merci...{wait 30}{n}mais tu n'aurais pas dû{n}m'aider.{p}Ne crois pas que ça va{n}te sauver la vie.{n}Ça ne change rien."
+f025-0010 e4a8678e6128228a Fei{n}"De quoi as-tu{n}si peur ?"
+f025-0011 f8d76ca54e0db657 Jeune fille mystérieuse{n}"Je n'ai pas peur...{n}Je suis juste prudente.{p}C'est normal que je sois{n}prudente, vu que je suis{n}tombée sur un -Agneau- de{n}la surface aussi louche."
+f025-0012 e7ebd069639c2551 Fei{n}"Hum... Ne t'en fais pas.{n}Je ne vais rien faire.{p}Et puis, tu es bien plus{n}louche que moi."
+f025-0013 b0caef9e8f36927e Jeune fille mystérieuse{n}"Hein...?"
+f025-0014 4b595564494d98e9 Fei{n}"Et comment tu{n}t'appelles ?"
+f025-0015 c92e77288fdab1e4 Jeune fille mystérieuse{n}"Je ne donne pas mon nom à{n}un -Agneau- de la{n}surface."
+f025-0016 f01867f3ccf2000e Fei{n}"Qu'est-ce que c'est{n}que{n}ces 'Agneaux' ?{p}On est perdus dans{n}cette forêt, tous les{n}deux, entourés de{n}monstres dangereux...{p}On ne devrait pas au{n}moins coopérer jusqu'à{n}ce qu'on sorte d'ici ?"
+f025-0018 252e88adbbe63159 Fei{n}"Parfait.{wait 20}{n}Alors, ton nom ?{p}Ça va être dur de coopérer{n}sans même connaître le nom{n}de l'autre.{p}Bref, je m'appelle{n}Fei Fong Wong.{wait 100}{n}Tu peux m'appeler Fei."
+f025-0019 6d2736983627af3e Jeune fille mystérieuse{n}"Je suis...Elhaym.{n}Mais mes parents{n}m'appellent Elly."
+f025-0020 86f29b0311ce3ee7 Fei{n}"'Elly', hein ?{wait 20}{n}D'une certaine façon, je{wait 20}{n}le 'savais'{wait 20} déjà."
+f025-0022 31956165e0410a15 Fei{n}"C'est trop dangereux de{n}traîner par ici si tard{n}dans la nuit...{p}Attendons le lever du jour{n}avant de chercher une{n}sortie...{wait 20}{n}Ça te va ?"
+f025-0023 c3552b467c68480a Elly{n}"Je suppose qu'on n'a pas{n}le choix, hein ?"
+f026-0000 3111a220a3f79f56 Citan{n}"Inutile. L'actionneur du{n}genou et le circuit de{n}dérivation sont fichus.{p}L'actionneur peut être{n}réparé, mais le circuit{n}doit être remplacé..."
+f026-0001 8cbb9e10e2d94e4c Citan{n}"Ah, vous avez du mal à{n}dormir ?"
+f026-0002 a57dfb2d99e7565f Elly{n}"Oui..."
+f026-0003 de2b5c8593f5dc71 Citan{n}"J'imagine. Quelle{n}journée vous avez eue."
+f026-0004 591397a39e5224d3 Citan{n}"Voici la machine que Fei a{n}utilisée quand le village a{n}été attaqué.{p}Une autre machine gisait{n}aux abords du village...{p}Nil bayer dars legus?{n}(C'était la vôtre, non ?)"
+f026-0006 9a908cfb32e717b3 Citan{n}"C'est bien ce que je{n}pensais...{p}Le pilote disparu du Gear{n}qui a fait un atterrissage{n}d'urgence à Lahan...{p}...et la mystérieuse jeune{n}femme égarée dans la{n}forêt... ne font qu'une.{p}À en juger par votre{n}uniforme, je dirais aussi{n}que vous êtes militaire...{n}Je me trompe ?"
+f026-0007 248a7650d0242f97 Elly{n}"Comment...?{n}Qui êtes-vous ?"
+f026-0008 1670336ad2437649 Citan{n}"J'ai examiné les plaques{n}des soldats morts lors de{n}l'attaque de Lahan...{p}Le motif des plaques et{n}celui de votre uniforme{n}sont identiques."
+f026-0010 d0c70e9ecdfb43ab Citan{n}"Ne vous inquiétez pas,{n}ils ont reçu une{n}sépulture digne.{p}Mais ils n'ont peut-être{n}pas apprécié de mourir en{n}terre étrangère."
+f026-0011 0f9c0b5c051c59dc Elly{n}"...Peut-être."
+f026-0012 46344467c4905445 Citan{n}"Fei sait qui vous êtes ?"
+f026-0013 7b0e986d0f0d3a2a Elly{n}"Je crois qu'il ne s'en{n}est pas encore rendu{n}compte."
+f026-0014 7fc6735979b8cfa1 Citan{n}"Très probablement...{n}Fei ne sait rien du monde{n}en dehors de Lahan."
+f026-0015 cdc122fd3792b8ac Elly{n}"Je vois... Alors, comment{n}se fait-il que..."
+f026-0016 d385d1c7950e597d Citan{n}"...Bref, mieux vaut ne{n}plus nous mêler du passé{n}de l'autre."
+f026-0017 e280bef05831b839 Elly{n}"Mais..."
+f026-0018 959bf5b2b1aa0b1c Citan{n}"Disons que j'en sais un{n}peu plus sur le monde que{n}la plupart."
+f026-0019 4a07fd15088ca4f0 Citan{n}"Enfin, Elly... j'ai une{n}faveur à vous demander..."
+f026-0020 38353093420daf11 Elly{n}"...Laquelle ?"
+f026-0021 e572683d3b5b4022 Citan{n}"Allez tout droit et vous{n}arriverez à une route.{p}Ensuite, continuez...{n}Pourriez-vous nous quitter{n}pendant que Fei dort{n}encore ?"
+f026-0023 e45a5719bc907965 Citan{n}"Les malheurs ne cessent{n}de frapper autour de Fei.{p}J'aimerais le protéger, si{n}possible... Je ne veux pas{n}qu'il soit mêlé à des{n}combats inutiles.{p}Je dis cela aussi pour{n}votre bien. Elly, votre{n}place n'est pas ici.{p}Retournez auprès de votre{n}famille."
+f026-0024 83995656815ab164 Elly{n}"Eh bien... je..."
+f026-0025 214e3fe00d9ff49a Citan{n}"Ne vous inquiétez pas. Je{n}ne révélerai pas à Fei{n}votre véritable identité.{p}Je... lui dirai simplement{n}que vous êtes partie{n}retrouver votre{n}famille..."
+f026-0026 72a5d89669406913 Elly{n}"Non, ce n'est pas ça ! Je{n}lui ai fait quelque chose{n}de terrible...{p}Alors... je veux... lui{n}demander pardon."
+f026-0027 af41c491e0b9ffc4 Citan{n}"Quelque chose de{n}terrible ?"
+f026-0028 59dccb79e9dadd74 Elly{n}"Fei m'a dit que c'était{n}notre faute si votre{n}village avait été détruit.{p}Fei répétait sans cesse...{n} 's'ils n'étaient{n}  pas venus...'{p}Alors, j'ai traité Fei de{n}lâche, parce qu'il fuyait{n}ses responsabilités...{p}Mais en vérité, c'était{n}moi qui essayais de fuir{n}la culpabilité..."
+f026-0029 1df9f07beb2c5672 Elly{n}"Si je n'étais pas tombée{n}là-bas, tout le monde{n}vivrait encore en paix.{p}Tous ces innocents{n}n'auraient pas vécu cette{n}tragédie. Mais j'ai accusé{n}Fei..."
+f026-0030 65b3762d5c4618d9 Citan{n}"C'est rare. Je n'attendais{n}pas cela de quelqu'un de{n}votre peuple.{p}Pour vous, les habitants de{n}la surface ne sont que des{n}animaux domestiqués,{n}n'est-ce pas...?"
+f026-0031 b6c6cc479718b06c Elly{n}"'Les Bergers, -Abel-,{n}  ont soumis les -Agneaux-{n}  de la surface{p}  ...ayant le droit de{n}  leur donner la vie ou{n}  la mort, selon leur{n}  bon plaisir...'      "
+f026-0032 567c9be241b22fde Citan{n}"Exactement. Mais vous{n}vous sentez responsable de{n}Fei et des villageois.{p}Pourquoi ?"
+f026-0033 6d3dbb78e500b4e7 Elly{n}"Je l'ignore moi-même...{p}À Jugend, on m'a appris{n}que les habitants de la{n}surface étaient stupides{n}et vils...{p}...Et que c'est pour ça{n}que nous devons les{n}contrôler...{wait 20}{n}Mais..."
+f026-0034 c63ce809eed3f841 Citan{n}"Mais en rencontrant Fei,{n}quelque chose en lui vous{n}a fait changer d'avis ?"
+f026-0035 83cda63c5f8f4699 Elly{n}"Oui. Il ne diffère pas de{n}nous... il semblait même{n}plus puissant.{p}Il a quelque chose...{n}...que nous n'avons pas.{wait 10}{n}Et il a risqué sa vie pour{n}me sauver... deux fois."
+f026-0036 7d97eaf87ce1c219 Citan{n}"La plupart des vôtres{n}auraient honte de{n}recevoir un tel geste.{p}Et pourtant, vous êtes{n}reconnaissante envers{n}Fei...?"
+f026-0037 b8a26338eef9c7a4 Elly{n}"C'est sûrement grâce à{n}mon père. Il aimait bien{n}les gens de la surface.{p}Ma nourrice était... une{n}habitante de la surface.{n}Mais personne ne le{n}savait...{p}Et puis...{n}je suis comme Fei..."
+f026-0038 506aa788f0a38efa Citan{n}"Comme lui ?"
+f026-0039 efa49da92379f25c Elly{n}"Non, rien.{n}Oubliez ça..."
+f026-0040 b2e4ea306e3e4b06 Citan{n}"Hum. Je crois que je{n}comprends.{p}Pardonnez-moi. Juste après{n}avoir dit que nous ne{n}devions pas nous mêler...{p}C'est dans ma nature,{n}voyez-vous ! Ma femme dit{n}que je suis trop insistant{n}et que je parle trop.{p}Mais, personnellement, je{n}ne trouve pas que je parle{n}trop."
+f026-0041 eab39e2b79d749cd Citan{n}"Il vaut sans doute{n}mieux rentrer chez vous,{n}dans votre pays.{p}Vous ne devriez vraiment{n}pas être ici."
+f026-0042 69ebf7fbd2fe25c4 Elly{n}"Je vais retourner au{n}quartier général. Mais{n}après..."
+f026-0043 2bc7b6507478aa60 Citan{n}"Vous êtes inquiète..."
+f026-0044 354aac8d3a1f8223 Elly{n}"Oui..."
+f026-0045 5eafe4428fc0a94d Citan{n}"S'inquiéter est normal...{n} 'Même moi, ça m'est déjà{n}  arrivé, vous savez !?'"
+f026-0046 b56a52c84f27d3c7 Elly{n}"Ah, Citan..."
+f027-0000 afda4d1189638af3 Maudits...{wait 60}{n}Ils me poursuivent encore.{done 30}
+f027-0001 c7d76bcf0de36f71 On est en terres d'Aveh...{wait 60}{n}Pas question d'abandonner.{done 30}
+f027-0002 b3066f7b703ade1b Ce Gear est trop précieux.{done 5}
+f027-0003 7779c0b117eafa71 ...Manquait plus que ça !{wait 60}{n}Je suis en mauvaise passe.{done 30}
+f027-0005 c0a031552380cf50 Qu'y a-t-il ? Répondez !{done 30}
+f027-0006 56e6ffe4090f2629 Bon sang ! Tous au sol !{done 30}
+f027-0007 bff85096da307776 Regroupez-vous au sol.{wait 60}{n}Il faudra les affronter !{done 30}
+f029-0000 5281872144fc5d68 Voici la centrale d'eau.{wait 10}{n}Toute l'eau de Dazil{n}vient de cette pompe.
+f029-0001 a44d88f38b614c92 L'eau est indispensable à{n}l'entretien des Gears.{p}C'est pourquoi notre{n}centrale d'eau a aussi été{n}construite pour alimenter{n}l'atelier en continu.
+f030-0000 7f0d3918ed43115b Depuis ce désastre avec{n}l'Ethos, ils courent dans{n}tous les sens comme des{n}poulets sans tête...{p}Trouver des pièces est déjà{n}une tâche bien difficile.
+f030-0001 7bd8056ccda51673 Si les demandes de{n}réparation continuent à ce{n}rythme, on ne s'en sortira{n}pas.{p}On devrait demander au{n}siège de l'Ethos d'agrandir{n}cet atelier.
+f030-0002 52357f5884a230ad Je vends les pièces de{n}l'entrepôt pour l'instant,{n}mais à ce train-là, elles{n}vont manquer.
+f030-0003 05e573a42f2fde67 Il n'y a plus de pièces de{n}Gear à l'entrepôt. Je vais{n}devoir en commander au{n}siège de l'Ethos.
+f030-0004 f81d6ec2ddf7492e J'ai fini de refaire le{n}stock de pièces. Je{n}pourrai peut-être enfin{n}souffler un peu.
+f030-0005 b282edd4fdbfaf6b Je vais devoir travailler{n}avec les mécaniciens qui{n}ont survécu.
+f030-0006 03062478757f3550 Je dois demander au siège{n}de l'Ethos un mécano{n}capable de réparer les{n}Gears militaires.
+f030-0007 c2080bf84863450b Plus aucun concurrent.{wait 15}{n}Ah là là.
+f030-0008 4f8aaf439149b7a8 Le reste du pays porte un{n}intérêt inhabituel aux{n}ruines de cette région.{p}De grandes unités sont{n}venues fouiller toutes{n}les ruines.
+f030-0009 7495ea60e322ef4e Hé, jamais vu votre tête{n}par ici.{p}Ne croyez pas pouvoir{n}semer le trouble{n}impunément !{p}Nous sommes la Garde de{n}l'armée d'Aveh !{n}...Ne l'oubliez pas !
+f030-0010 9fb4ac2530e751d7      -Objectif du mois-{n} {n}     Chercher des pièces !
+f031-0000 1555cd41fbc0fdef J'ai vu finir la guerre{n}contre Kislev et tomber ce{n}Premier ministre engraissé{n}sur notre dos.{p}Je suis vieux, mais très{n}heureux de pouvoir finir{n}mes jours en paix avec mes{n}petits-enfants.
+f031-0001 8f3578f4cf6e89a0 Les environs de cette ville{n}ont la plus grande{n}concentration de ruines du{n}sud du continent d'Ignas.{p}Aveh et Kislev se disputent{n}ces ruines depuis toujours.{n}Je suis vieux. Je veux juste{n}vivre en paix.
+f031-0002 4363126f9ac05e6d Flûte, l'eau est encore{n}coupée !{wait 20}{n}L'atelier doit s'en servir{n}en ce moment.
+f031-0003 bfe7f0f6b46c6dea Depuis l'arrivée de la{n}guilde, la plomberie va{n}mieux, mais{wait 10}...{wait 10}rien n'est{n}parfait{wait 10}...
+f031-0004 215d575cbe96108b On dit qu'en{n}vieillissant, la{n}tuyauterie flanche{wait 10}...{wait 10}mais{n}je ne pensais pas à{n}celle-là !
+f031-0005 960d092420cad2f1 Ces temps-ci, grand-père{n}est tout 'guilleret' et{n}'fringant'.
+f031-0006 2c2ff6a2f1c8f2b4 Ces temps-ci,{n}grand-père est tout{n}'morose' et 'raplapla'.
+f032-0000 477d603fdf1051d1 On dit que monsieur{n}Sigurd est très{n}beau...{p}...C'est vrai ?
+f032-0001 ef83537394b5dcd7 On dit que l'armée de{n}Kislev a attaqué un{n}village près d'ici...{p}...C'est vrai ?
+f033-0000 c9c23af005e1a467 Avec la paix, les enfants{n}peuvent jouer dehors.{n}C'est formidable, non ?
+f033-0001 0e38f82633df83a6 Ces derniers temps, la{n}ville est si animée.{p}Ça fait plaisir de voir{n}les enfants si heureux.
+f033-0002 a2f1aa40cce6ca6a Hé, il s'est passé quelque{n}chose de bien ? Tous les{n}soldats ont le sourire ces{n}temps-ci.{p}Ils sont tous devenus si{n}gentils !{n}Formidable !
+f034-0000 480b39fff9bc1915 Qui a bien pu construire{n}toutes ces ruines ?{p}Certains parlent d'une{n}civilisation antique qui{n}régnait ici il y a très{n}longtemps...{p}Mais, après avoir vu les{n}résultats des tests{n}géologiques, j'ai des{n}doutes.
+f035-0000 a0201827839f3297 Fei{n}"Voici...{wait 10}{n}Dazil..."
+f035-0001 325681953eeacdb4 Fei{n}"Réparer le {name 11}..."
+f035-0002 6a03cc5e8ccfe44d Fei{n}"D'accord, Doc,{wait 15} alors{n}jetons un oeil à cet{n}endroit."
+f035-0003 405a0e0e13713ac5 Fei{n}"...{wait 10}{n}Doc, une minute ?{n}J'ai à vous parler."
+f035-0004 bcb2a4c3f674e10c Fei{n}"...{wait 10}{n}Voilà, Doc, c'est pour le{n}{name 11}...{p}On n'a pas trouvé les{n}pièces, alors... et si{n}on ne le réparait{n}pas ?"
+f035-0005 02faf08cdaf9fad0 Fei{n}"Eh bien, on a réussi à{n}arriver jusqu'à Dazil par{n}nos propres moyens...{p}Ça ne montre pas qu'on n'a{n}pas autant besoin du{n}{name 11} qu'on le pensait ?{p}En fait, je pense rentrer à{n}Lahan quand ça se calmera,{n}pour aider à reconstruire.{p}C'est tout ce que je me{n}sens capable de faire pour{n}l'instant{wait 10}..."
+f035-0006 8e4950ef9c074ed8 Fei{n}"L'emmener loin ? Mais{n}pourquoi devrait-on faire{n}ça, Doc ?"
+f035-0007 2faf162c5af2f656 Fei{n}"Les forces spéciales{wait 10}...{wait 10}{n}Le camp d'Elly ?"
+f035-0008 a3693673284d47c8 Fei{n}"Une nouvelle{n}technologie ?"
+f035-0009 4fcee265842ac051 Fei{n}"Attendez, Doc !{wait 15}{n}L'armée de Kislev doit{n}encore y être aussi !"
+f035-0010 0e16f44a99842e00 Fei{n}"Les armées vont se{n}disputer le {name 11}...{wait 10}{n}Et juste à côté de Lahan."
+f035-0011 078477b557f44c9a Fei{n}"Mais s'il n'est pas{n}réparable, impossible{n}de l'emmener..."
+f035-0012 7e65858ac86aee79 Fei{n}"Que comptez-vous faire,{n}Doc ?"
+f035-0013 8d991ca4208e02e8 Fei{n}"Alors, Doc, que{n}comptez-vous faire de{n}ce buggy des sables ?"
+f035-0014 89b4035ce3868592 Fei{n}"Un buggy des sables ?"
+f035-0015 5258e6f5f73c485a Fei{n}"L'Ethos ?{wait 10}{n}Quel rapport entre les{n}Gears et l'Ethos ?"
+f035-0016 729b8cf79df8140f Fei{n}"Hein ?"
+f035-0017 bb549b839c2ab3a9 Citan{n}"Oui, c'est bien ça.{wait 15}{n}Dazil, la cité du désert."
+f035-0018 5df4000ac878cdd7 Citan{n}"Ici, nous devrions{n}pouvoir découvrir ce que{n}trament Aveh et Kislev.{p}Et nous devons aussi{n}réunir le nécessaire pour{n}réparer le {name 11}."
+f035-0019 6b4d74616b2bd2f9 Citan{n}"Oui. Il faut changer les{n}pièces cassées pour{n}réparer le {name 11}...{p}Sinon, il ne fonctionnera{n}pas du tout !{p}L'Ethos a un atelier dans{n}le sud de la ville.{wait 10}{n}Allons-y, Fei."
+f035-0020 bd93e4848d09cf93 Citan{n}"Seul l'Ethos sait{n}entretenir les Gears à{n}générateur.{p}C'est l'Ethos qui décide{n}quel Gear reçoit quel{n}générateur, et dans quel{n}pays..."
+f035-0021 6e52b6749c7b8c03 Citan{n}"Oui,{wait 5} bien sûr,{wait 5} Fei..."
+f035-0022 33f9b383fa102480 Citan{n}"Alors, Fei, de quoi{n}vouliez-vous me parler ?"
+f035-0023 b9072d270d7284e8 Citan{n}"Ne pas le réparer ? Qu'y{n}a-t-il, Fei ?"
+f035-0024 0a86bf9dce0b527c Citan{n}"...{wait 10}Je vois. Si c'est ce{n}que vous voulez, Fei, très{n}bien.{p}Mais je pense que nous{n}devrions essayer d'emmener{n}le {name 11} aussi loin que{n}possible de là-bas."
+f035-0025 18cecd4f48fd535a Citan{n}"Ce n'est qu'une{n}supposition, mais...{p}Je soupçonne que{n}l'incident de cette{n}nuit-là s'est produit{n}parce que...{p}...les forces spéciales de{n}la Gebler ont volé un Gear{n}militaire de Kislev."
+f035-0026 e35639369187f6b9 Citan{n}"Exactement.{p}J'ai examiné le Gear brisé{n}au village : un Gear de{n}Kislev, piloté par la{n}Gebler.{p}Il devait contenir une{n}nouvelle technologie, pour{n}que Kislev envoie des{n}troupes à ses trousses."
+f035-0027 7779d6fdd07f30e5 Citan{n}"La Gebler voulait sans{n}doute voler un nouveau{n}Gear expérimental."
+f035-0028 e9589f8946c90ecc Citan{n}"La capitale sait sûrement{n}déjà que les forces{n}spéciales ont échoué.{p}Ils vont ratisser Lahan{n}pour récupérer toutes les{n}pièces du nouveau Gear."
+f035-0029 fea758cc81922b2b Citan{n}"Très probablement.{p}Alors les inspecteurs{n}d'Aveh et les troupes de{n}Kislev vont s'affronter.{p}S'ils découvrent où nous{n}avons caché le{n}{name 11}..."
+f035-0030 f5aa986262ce8473 Citan{n}"Pour éviter les ennuis,{n}sortons le {name 11} de là{n}sur-le-champ !"
+f035-0031 4a6c03f1884f9bf1 Citan{n}"En effet. Mais rester ici{n}ne résoudra rien.{p}Heureusement, cette ville{n}est le centre de toutes les{n}fouilles du pays.{p}Il y aura sûrement des{n}informations sur l'endroit{n}où trouver des pièces...{p}Enfin, la peur est souvent{n}pire que le danger{n}lui-même... Ne la laissons{n}pas nous arrêter !"
+f035-0032 de4555848f551f76 Citan{n}"Ceci est un buggy des{n}sables.{p}{wait 10}...{wait 10}{n}C'est ça, Fei !{p}J'ai trouvé un bon moyen{n}d'obtenir les pièces dont{n}nous avons besoin pour le{n}{name 11}.{p}Retournons au loueur et{n}louons ce buggy."
+f035-0033 1ea536c526e7cf71 Citan{n}"Ceci est un buggy des{n}sables.{p}{wait 10}...{wait 10}{n}C'est ça, Fei !{p}J'ai trouvé un bon moyen{n}d'obtenir les pièces dont{n}nous avons besoin pour le{n}{name 11}.{p}D'abord, il faut trouver{n}qui peut nous louer ce{n}buggy."
+f035-0034 95dc6f07c773619a Citan{n}"Un buggy des sables est{n}un véhicule spécial conçu{n}pour le désert.{p}Ses pneus ne s'enfoncent{n}pas dans le sable. Il est{n}indispensable pour{n}traverser le désert."
+f035-0035 5d585abd78369c68 Citan{n}"Laissez-moi faire.{n}Vous allez voir."
+f035-0036 ea1481c9420fcc12 Depuis cette trêve avec{n}Kislev, la guerre est{n}pratiquement finie.{p}Désormais, notre travail{n}sera de protéger le peuple{n}des pirates du désert.
+f035-0037 d981a0b3b132f2aa Il y a trois semaines,{n}Kislev a frappé les ruines{n}du nord. Ils viendront{n}sûrement ici ensuite.{p}Soyez prudent si vous{n}allez fouiller les ruines.
+f035-0038 ac4a1b8f34b07a98 Hé, jamais vu votre tête{n}par ici.{p}Ne croyez pas pouvoir{n}semer le trouble{n}impunément !{p}Nous sommes la Garde de{n}l'armée d'Aveh !{n}...Ne l'oubliez pas !
+f035-0039 5ee712d6210febfe On dirait que la guerre{n}est finie. Les choses{n}devraient s'améliorer.{n}Quel soulagement.
+f035-0040 a1e73abc56aa1fc2 Voici le poste de la{n}Garde d'Aveh.{p}Cette ville est importante{n}car c'est la base des{n}fouilles des ruines.{p}L'élite de notre armée{n}est cantonnée ici.
+f035-0042 c2257c530c6a328c Rien à signaler !
+f035-0043 e537a32715fc00da Aucun ennemi en vue !
+f035-0044 f2242fb0d44baea9 La paix...{n}Mais la guerre n'est pas{n}encore finie.{p}Pourtant, c'est le paradis{n}comparé à l'époque où l'on{n}guettait les attaques{n}ennemies.
+f035-0045 072f237a5029c826 Le bruit court que l'armée{n}de Kislev cherche des Gears{n}enterrés.{p}Soyez prudent si vous allez{n}fouiller les ruines.
+f035-0047 764faa54503fbf37 Un certain Sigurd est aux{n}commandes en attendant le{n}passage à la république.{p}...Vous pensez qu'une{n}république est une bonne{n}idée ?{p}Enfin, je suis juste{n}content que la fin de la{n}guerre soit en vue.
+f035-0048 7781f865307bf441 La bataille contre Kislev{n}dans le désert, l'autre jour,{n}s'est soldée par notre{n}victoire totale.{p}Nous avons besoin de l'armée{n}car elle nous obtient les{n}générateurs des Gears trouvés{n}dans les ruines.{p}Jamais nous ne livrerons{n}cette ville ni nos ruines à{n}Kislev.
+f035-0050 f6e3e649b77e020c Il y a des voleurs de{n}trésors dans les ruines{n}du désert !{p}{wait 5}...{wait 5}Brrr{wait 5}...{wait 5} {wait 5}...{wait 5}Des{n}frissons{wait 5}...!{wait 5} Aïe,{wait 5} j'ai{n}fait pipi dans ma culotte.{p}Tu ferais bien de faire{n}attention, toi aussi.
+f035-0051 aa89452bb18a0259 Plein de gens se perdent{n}dans le désert et meurent{n}de faim !{p}{wait 5}...{wait 5}Brrr{wait 5}...{wait 5} {wait 5}...{wait 5}Des{n}frissons{wait 5}...!{wait 5} Aïe,{wait 5} j'ai{n}fait caca dans ma culotte.{p}Tu ferais bien de faire{n}attention, toi aussi.
+f035-0052 1c4d41bdaf9880fb Zut, je voudrais monter{n}là-haut...
+f035-0053 3511777adfee3307  Bienvenue !
+f035-0054 1d364607aa142e03 J'ai parié sur la guerre et{n}acheté des tas de choses...{p}Et que va devenir mon{n}argent quand on sera une{n}république ? Je vais finir{n}sur la paille !
+f035-0055 a86c1f94e524b1fe Ces derniers temps, on{n}parle d'une guerre totale{n}avec Kislev.{p}Je fais des réserves tant{n}qu'il ne s'agit que de{n}petites escarmouches à la{n}frontière.
+f035-0056 828716184434cae3 Hum, les prix sont un peu{n}élevés.{p}Mais il nous faut tout ça{n}pour franchir le désert...
+f035-0057 b7f9af1ec20a8c61 Shakhan, qui gouvernait ce{n}pays, a été chassé !{p}La guerre avec Kislev va{n}peut-être finir, et la vie{n}redeviendra paisible. Quel{n}bonheur.
+f035-0058 1dc209129659c378 Depuis l'arrivée des{n}troupes de la Gebler, Aveh{n}n'a presque jamais perdu{n}face à Kislev.{p}Si seulement l'Ethos{n}pouvait distribuer{n}quelques-uns de ces{n}nouveaux Gears puissants.
+f035-0059 c9719f29b55ee851 Hum, vous avez l'air{n}fatigué. On peut dormir au{n}bar, pourquoi ne pas vous{n}y reposer ?{p}Voyager aussi épuisé{n}pourrait bien vous tuer.
+f035-0060 98998ddcdc791c53 Hé, pourquoi cette mine{n}triste ? Quelque chose{n}ne va pas ?{p}C'est dans ces{n}moments-là qu'il faut un{n}verre...{p}{wait 20}ou deux,{wait 20} ou trois{wait 20}...
+f035-0061 cf62ae2c38d6577c L'armée envoie beaucoup de{n}monde ici...{p}Mais il doit sûrement y{n}avoir un moyen plus{n}efficace de fouiller ces{n}ruines !
+f035-0062 0a59f026b132be69 Je suis 'à plat'... Mon{n}détecteur de générateurs{n}est tombé en panne...{p}C'est le seul appareil{n}capable de détecter les{n}générateurs de Gears{n}enterrés...{p}Sans lui, je cours à la{n}'ruine' !
+f035-0063 19862208e9d94ebf Une bande de voleurs rôde{n}dans le désert, les{n}Sandmen... Alors{n}équipez-vous bien.{p}Sinon, ce sera entièrement{n}votre faute.
+f035-0064 3864c11d46a8e666 Des pirates sillonnent le{n}désert sur un croiseur des{n}sables... Alors{n}équipez-vous bien.{p}Sinon, ce sera entièrement{n}votre faute.
+f035-0065 5a1a12d67b786d9c Apporter des pièces de{n}fouille à l'atelier ne{n}paie plus aussi bien.{p}On dit que l'atelier{n}pourrait réduire la{n}voilure... les temps sont{n}durs, hein.
+f035-0066 d191377fdd1a551f Beaucoup d'argent pour peu{n}d'effort ! C'est la{n}meilleure méthode... Voilà{n}le secret !{p}On gagne de l'argent en{n}vendant à l'Ethos les{n}pièces qu'on déterre.{p}Plus la pièce est rare,{n}meilleur est le prix !{wait 20}{n}'Pigé' !?
+f035-0067 dfa119570783e102 Alors... que désirez-vous{n}acheter ?
+f035-0068 f45c00ee4ab3561a Fei{n}"Quelle ville animée."
+f035-0069 e79e682afa5355a7 Citan{n}"C'est le centre de{n}toutes les fouilles{n}d'Aveh.{p}On vient de tout Ignas{n}pour chercher les{n}ressources enfouies dans{n}les ruines du coin."
+f035-0070 c2fbdca1eaeff9e8 Assoc. Chasse-au-Trésor{n}  Antenne de Dazil
+f035-0071 65d847c1b5171f27   -Lucky Avenue-  {n} 'Bar tranquille'
+f035-0072 5864e0074f36f7d1  Adm. de l'Atelier
+f035-0073 192703e4afcc517b  Atelier
+f035-0074 c404da5297a38b62      Dernière heure !{n}Guerre au désert, encore ?{n} {n}   Une nouvelle unité est{n}   affectée à une base{n}   frontalière de Kislev.{n}   Une force d'élite...
+f035-0075 63efe08a805d1e27 Citan{n}"Retournons à la boutique{n}de tout à l'heure pour{n}louer le buggy."
+f036-0001 0d404a9c09fc6da9 Fei{n}"Au désert ? Doc, vous{n}allez fouiller des ruines{n}ou quoi ?"
+f036-0002 08781412db54e75c Fei{n}"Et quel rapport avec{n}ce Gear ?"
+f036-0003 f96b18405f6bc621 Fei{n}"Mais..."
+f036-0005 11bb7e5b457121d5 Fei{n}"Vous ne savez pas piloter{n}un Gear militaire ?{n}Pourquoi, Doc ?"
+f036-0006 ceb9fabc34f3fdcf Fei{n}"Comment ça... 'Il faut un{n}entraînement pour piloter{n}un Gear militaire' ?{p}(Le Gear qu'on a trouvé{n}n'était pas militaire ?{n}Alors comment l'ai-je{n}fait marcher, Doc ?)"
+f036-0007 4555f2ad863accfb Citan{n}"Un buggy des sables est{n}un véhicule spécial pour{n}les terrains désertiques.{p}Ses pneus ne s'enlisent{n}pas dans le sable... Il{n}est indispensable pour les{n}longs trajets au désert."
+f036-0008 18bd8e81ce5a7d6b Citan{n}"Je vois...{n}Bien, nous reviendrons{n}plus tard."
+f036-0009 cb19e93f96bce6eb Citan{n}"Oui, c'est cela. En{n}auriez-vous un à louer{n}maintenant ?"
+f036-0010 b434be32988a3e33 Citan{n}"Bien, alors,{n}si vous permettez."
+f036-0011 aa7a528512ba9977 Citan{n}"Fei, je vais au désert{n}chercher des pièces pour{n}le {name 11}."
+f036-0012 4c12b29843d5698d Citan{n}"Les armées de Kislev et{n}d'Aveh s'affrontent sans{n}cesse dans le désert.{p}On dit que leurs forces{n}se battent souvent pour{n}les ruines."
+f036-0013 bd28e77b2c79966b Citan{n}"En fouillant les épaves{n}de Gears militaires sur{n}les champs de bataille...{p}...je devrais trouver les{n}pièces qu'il nous faut.{p}(Et puis le {name 11} est{n}un Gear de Kislev, il nous{n}faut donc des pièces de{n}Kislev.)"
+f036-0014 c0db3c48821d52d5 Citan{n}"Fei, vous vous inquiétez{n}trop. Les choses{n}finissent par s'arranger.{p}Inutile de vous en faire{n}autant. Pourquoi ne pas{n}aller au bar en attendant{n}mon retour ?"
+f036-0015 9fafeea568991f09 Citan{n}"Les Gears militaires et{n}civils n'ont pas la même{n}structure de base.{p}C'est pourquoi les Gears{n}militaires exigent un{n}entraînement spécial et{n}un talent naturel."
+f036-0016 39465836c8dfb066 Citan{n}"Dans votre cas, Fei,{n}c'est que vous êtes{n}extrêmement doué."
+f036-0017 62e2bd247827c70d Le buggy que vous{n}attendiez est de retour.{p}Voulez-vous le louer ?
+f036-0018 ac247f7cadde40fe Hum ? Jamais vus par ici.{wait 10}{n}Vous aussi, vous voulez{n}louer un buggy ?
+f036-0019 a4958e60359de52d Bien sûr... la clé est sur{n}le contact, allez-y.
+f036-0020 1a98a8681df6ed53 Hé, vous allez le laisser{n}partir seul là-bas ?{p}Il y a beaucoup de combats{n}dans le désert... c'est un{n}endroit très dangereux.{p}On parle d'une bande de{n}pirates qui attaquent les{n}gens à bord d'un croiseur{n}des sables.{p}Vous ne devriez vraiment{n}pas le laisser seul.
+f036-0021 a463417ddc0fbdb8 Désolé, il n'est pas{n}encore revenu. Veuillez{n}patienter un peu.
+f036-0022 560c825d31cd91f2 Hum ? Jamais vus par ici.{wait 10}{n}Vous aussi, vous voulez un{n}buggy ?
+f036-0023 6e4078a2e0b3b1c2 Désolé, mais tous nos{n}buggys sont loués pour{n}l'instant.{wait 10} Voulez-vous{n}attendre ?{p}Des gars partis chercher{n}des pièces devraient{n}bientôt revenir.
+f036-0024 785b26aebcc89d90 Vous feriez mieux d'aller{n}le chercher au plus vite.
+f036-0025 ad91a56cd6cab229 Veuillez rendre le buggy{n}au plus vite. Merci !
+f036-0026 7029e0287611e1e8 Alors, quand allez-vous{n}rendre le buggy ?
+f036-0027 fe808a75392b9a0b Pour les fouilles, les{n}Gears civils ne font pas le{n}poids face aux Gears{n}militaires.{p}Mais même si on avait un{n}Gear militaire, on ne{n}saurait pas le piloter...
+f037-0000 fe15b2eb838f257f Bientôt, cette zone sera{n}entièrement fouillée...{p}Il va falloir trouver un{n}autre endroit avec des{n}trésors enfouis...
+f037-0001 35ccad05145e153b Tomber sur ces types de{n}l'armée, c'est trop{n}dangereux...{p}S'ils trouvent de{n}nouvelles ruines, ils{n}prendront tout pour eux...{p}Alors,{wait 10} quel serait le{n}meilleur endroit ?
+f037-0002 eefadedb1213d89c Chut !{n}J'essaie de réfléchir.{n}Alors, parlez moins fort.
+f037-0003 17100f6c7f24cbfc Comme l'armée ne contrôle{n}plus les sites de fouille,{n}on peut y aller par ses{n}propres moyens...{p}Sauf que maintenant, les{n}prix d'achat à l'atelier{n}de l'Ethos ont baissé.{n}Qu'est-ce qu'on fait ?
+f037-0004 e0cb040c0357c015 Je suis venu chercher{n}fortune...{n}mais l'armée contrôle tous{n}les bons sites.{p}Je vais devoir rentrer{n}chez moi bredouille. Que{n}vais-je faire ?
+f037-0005 505cf2c2c4d2ce24 J'ai voulu tenter ma{n}chance à la chasse au{n}trésor.{p}Et je m'en sors très bien.{n}La raison : j'ai trouvé un{n}bon partenaire.{p}En ce moment même, il{n}étudie une carte pour{n}préparer notre prochaine{n}étape.{p}Je compte beaucoup sur mon{n}camarade.
+f038-0000 fc88204ef6762086 Pas de relâche, même en{n}temps de paix.{p}Il faut continuer à{n}trimer, au cas où.
+f038-0001 2ccd80c27e032bed Poste de garde de Dazil,{n}armée d'Aveh. Entrée{n}interdite aux civils.{p}Si vous n'avez rien à{n}faire ici, merci de{n}partir.
+f038-0002 ff69e045ed407a67 Cette ville est le centre de{n}toutes les fouilles de Gears{n}d'Aveh.{p}On retire les générateurs{n}des Gears déterrés pour{n}fabriquer de nouveaux{n}modèles.{p}Protéger cette ville est{n}essentiel pour vaincre{n}Kislev.{p}J'ai laissé ma famille à la{n}maison pour venir ici.{wait 10}{n}Je veux faire mon devoir et{n}rentrer chez moi.
+f038-0004 1305d848400d0d43 Mon ami avait de la famille{n}à Bledavik, alors il est{n}rentré.{p}Tant mieux. Au moins,{n}quelqu'un l'attendait.{wait 15}{n}Moi...{wait 5} je suis seul...{wait 5}{p}Ce soir, je crois que je{n}vais pleurer jusqu'à{n}m'endormir.
+f038-0005 b1ad5489efb2a24b L'armée de Kislev{n}manigance quelque chose{n}dans les terres au nord{n}d'ici.{p}Mais ne vous inquiétez{n}pas... s'il se passe quoi{n}que ce soit, la Gebler{n}nous couvrira.
+f039-0000 61f41d2eb625d8a0 Fei{n}"Incroyable.{wait 10}{n}On fouille aussi juste à{n}côté de la ville ?"
+f039-0001 6daedb54b9e905a6 Citan{n}"Ce site de fouilles est{n}administré par Aveh.{p}Ce qu'on trouve ici,{n}machines et Gears, peut{n}changer le cours de la{n}guerre.{p}Ils sont indispensables à{n}l'effort de guerre."
+f040-0000 e094de5af8375c52 Citan{n}"Eh bien, cet homme{n}aime se faire{n}remarquer !"
+f040-0001 9ee21dfc78ffdfef Big Joe{n}"{wait 10}...{wait 10}Hic{wait 30}...{wait 10}{n}Où est ton ami ?{p}Il y a une guerre dans le{n}désert et il part s'y{n}balader comme ça ?{p}Si tes amis comptent pour{n}toi, alors ne les laisse{n}pas filer.{p}Surtout si c'est une{n}amie...{n}Gahahaha !"
+f040-0002 a05066cdd030b5f8 Big Joe{n}"{wait 10}...{wait 10}hic{wait 10}...{wait 30}{n}{wait 30}Tu bois aussi ?{p}L'alcool est le compagnon{n}de ma vie !{wait 30}{n}Surtout dans un monde{n}pourri comme celui-ci.{p}Tout le monde court après{n}l'argent et la dynamite...{n}Ha, quel manque de{n}romantisme."
+f040-0003 21ea649a6d854ebc Big Joe{n}"Moi ?{p}Ce que je fais ici ?{p}...Ce qui me chante, je{n}suppose."
+f040-0004 e397f186188dd5de Big Joe{n}"Tu crois savoir qui tu{n}es ?{p}Je peux me présenter{n}maintenant et, demain,{n}être quelqu'un d'autre.{p}Si t'as pas compris, je{n}répète...{wait 30}{n}...Hic !{wait 30}{p}Faut pas vendre la peau de{n}l'ours avant de l'avoir{n}tué."
+f040-0005 4c06e9dd56e418b3 "La ferme !!"
+f040-0007 9e72fa9fa1c37d4c Pourquoi vous jacassez{n}pendant que Big Joe essaie{n}de boire en paix ?{p}Vous allez la boucler...?{wait 10}{n}...{wait 10}Hic !
+f040-0009 f0fafc6e6fa0c2bf Big Joe{n}"Ouais, tu te vantes{n}beaucoup.{p}Mais est-ce que tu{n}déterres les trésors aussi{n}bien que tu parles ?"
+f040-0010 854b623f83256dfb Big Joe{n}"T'es un dur, hein...{p}Toujours à ramasser de la{n}ferraille... Pourquoi tu{n}fais pas un truc utile,{n}pour changer !?"
+f040-0011 cd520f431316744d Big Joe{n}"Gahahahaha !{wait 20}{n}C'est ça ! Rentrez chez{n}maman, les petits !"
+f040-0012 864c6cdee9b9d58a Big Joe{n}"Ha !{wait 20}{n}Bande de trouillards !"
+f040-0013 cf9f0fe735532ef0 Ces temps-ci...{wait 30} on n'a pas{n}trop de chance, hein ?
+f040-0014 5434e304e4bb234b Ha ha ! On a réussi !{done 30}
+f040-0015 4a4985de0f0c5e66 Je ne pensais pas que ça{n}marcherait si bien...{done 30}
+f040-0016 a5e9577e3b20cd91 Suivre les équipes de{n}fouille de l'armée...{done 30}
+f040-0017 9b952c3b788d5578 et piquer leur trésor !{done 30}
+f040-0019 5b9bf7d17d881b6f Tu te prends pour qui ?{p}Je me fiche que tu sois{n}Big Joe ou Big Zéro !{n}Me cherche pas !
+f040-0020 9f4c13f55f6504b2 Qu'est-ce que t'as dit !?
+f040-0021 9b9a5ce6e4f352a7 Si tu veux savoir, t'es{n}un sacré trouill--!
+f040-0022 08b4ac213f3c48ce Oh, la ferme !{n}Ferme ton clapet !
+f040-0023 034e6a139e60ef34 Ouh...!{p}E-espèce de...!{n}Tu vas me le payer !
+f040-0024 48e6f1f3d2c62838 Je me demande si je ne{n}devrais pas lâcher ce{n}boulot bientôt...
+f040-0025 4ff0b87c5fe1e60d C'est ça, on a réussi !{done 30}
+f040-0026 51c7e3d0b02efe8b Qui l'eût cru, hein ?{done 30}
+f040-0027 23961d7ef93a02f9 En se faufilant de{n}nuit...{done 30}
+f040-0028 fa742227b557d163 Simple comme ça... Pouf !{done 30}
+f040-0030 a29b57e95ff807c0 Hé, arrête ça...{p}Ce type, c'est des{n}ennuis.{p}Il a une tête de{n}fou...
+f040-0032 633e77df44e5e8af 10G la nuit...{n}Vous restez ?{n}    Oui{n}    Non
+f040-0033 e2774b61efb67d1f T'as pas assez de fric.{n}Du balai !
+f040-0034 ac375f141fbcb66c   - Menu -{n} {n}  Bière de Bledavik{n}  Ale d'Aveh{n}  Hob-Jerky{n}  Plateau de fromages
+f040-0035 34249c514e34395f Fei{n}"...Quel endroit{n}bruyant !"
+f040-0036 3303371f5829dfa3 Citan{n}"Eh bien, dans un endroit{n}pareil, il faut s'attendre{n}à ce genre d'ambiance."
+f040-0037 a7767287efdfcb88 Fei{n}"Mais quand même..."
+f040-0038 162d390c3091be70 Oups !{done 25}
+f043-0000 df0a070ef953d003 Zut, mon portefeuille...{p}Juste quand j'ai assez{n}d'argent pour réparer mon{n}Gear, je perds mon{n}portefeuille.{p}Comment je vais faire ?
+f043-0001 5562f81ad444bdbf Bah ! Ces idiots de{n}l'Ethos !{p}Comme ils savent réparer{n}les Gears, ils se croient{n}les maîtres du monde.{p}Comment veulent-ils qu'on{n}paie autant ?
+f043-0002 4fc47008dc7a46c3 Il est toujours soûl ! Ce{n}vaurien de bon à rien !
+f044-0000 582fa711e9423b73 Désolé, mon stock de{n}pièces est bas, je ne peux{n}rien vendre aux civils.
+f044-0002 d482e0bef4604f53 Je dois booster mon Gear{n}avec les pièces achetées{n}ici... ne serait-ce qu'un{n}peu.
+f045-0000 a2fec34cc1f41f35 Fei{n}"Waouh...{n}Alors c'est ça, l'atelier{n}de l'Ethos, hein, Doc ?"
+f045-0001 2823f4fbc4e44a23 Citan{n}"Oui. Seuls les ateliers de{n}l'Ethos réparent{n}officiellement les Gears.{p}Voyons si nous pouvons{n}obtenir ici les pièces{n}nécessaires pour réparer le{n}{name 11}.{p}Après tout, le temps,{n}c'est de l'argent !{n}...Alors faisons vite."
+f045-0002 0a2bd904f98c7d78 Citan{n}"Excusez-moi de vous{n}déranger.{p}Notre Gear est en panne et{n}je voudrais acheter{n}quelques pièces pour le{n}réparer."
+f045-0003 9d64303a8d18f7e7 Citan{n}"Oui, il nous faut un{n}circuit de dérivation{n}d'injection, modèle X-29."
+f045-0004 214060054555b708 Citan{n}"Je vois. Désolé pour{n}le dérangement."
+f045-0005 b9d14bec6d617835 De nos jours, la{n}technologie de l'Ethos est{n}devenue indispensable au{n}quotidien.{p}Nous comptons utiliser ces{n}installations restantes{n}pour aider tout le monde{n}autant que possible.
+f045-0006 801a914ba4ed9068 Encore vous deux ?{p}Comme vous le voyez, cette{n}installation sert uniquement{n}à réparer les Gears de{n}travail.{p}Nous ne pouvons tout{n}simplement rien pour votre{n}Gear militaire de nouveau{n}modèle.
+f045-0007 5ed8330d3ce93335 À l'origine, cette ville{n}était un refuge pour les{n}chasseurs de trésors qui{n}exploraient les ruines.{p}Notre atelier suffit à peine{n}à réparer les Gears de{n}travail utilisés pour{n}fouiller les ruines.
+f045-0008 38b5562625fcb5e5 Hum ?{n}Que puis-je pour vous ?
+f045-0009 d9491a9a0503ac96 Pas de chance, hein ?{n}Quel genre de pièce{n}cherchez-vous ?
+f045-0010 dd3863a889ad77e3 Un circuit d'injection{n}modèle X-29 ?{p}Il ne sert que sur les{n}tout derniers modèles{n}militaires. Nous n'en{n}avons pas en stock.{p}Des pièces aussi spéciales{n}ne s'obtiennent que sur{n}commande auprès du siège{n}de l'Ethos.{p}Cet atelier ne répare que{n}les Gears civils...
+f045-0011 f323c2e48b3d9173 Désolé de ne pas pouvoir{n}vous aider.
+f047-0000 81e190d6bb25f13c Hé, hé !{done 60}
+f047-0001 0587c098c613b81c Hé, je suis pas un ennemi.{done 60}
+f047-0002 4fd1620547149124 Hé, toi ! Tu peux venir{n}une petite minute ?{done 60}
+f047-0003 ff9ff7702372ba76 Rends-moi un service.{n}Tu veux bien m'écouter ?{n}    D'accord{n}    Non
+f047-0004 fec5cf381b9b8f27 Mon buggy est enlisé.{n}Tu peux pousser derrière ?{n}    Bien sûr{n}    Non
+f047-0005 93abd351b773cff9 Merci, tu m'as bien aidé.{n}Je file vers la sortie{n}de cette île.{n}Je t'emmène ?{n}    Oui{n}    Non merci
+f047-0006 bef61758de212e13 Bon. Monte.
+f047-0007 3b714b4ad5345e1a Ça va être dur de sortir{n}de ce désert.{n}Tu es sûr ?{n}    Emmène-moi{n}    Je me débrouille
+f047-0009 afe3da836eb3eb10 Bon, d'ici, tu pourrais...
+f047-0010 00f8c5422a4abf31 ...Si tu passes par là,{n}tu pourras sortir.
+f047-0011 c3fd4d1f09868e24 Fais gaffe à toi !!
+f047-0012 4f2217009de2e0b3 Crétin !
+f047-0013 aa5182fabf010718 Merci. Quand je démarre,{n}pousse.
+f047-0014 8ad1bca37905f654 Voilà, tu peux pousser.
+f047-0015 6bf2144d4cd28c40 Plus fort ! Encore un{n}petit effort.
+f047-0018 f7e8b515a895fbe4 À l'est, yo !{done 50}
+f047-0019 7d519769be7ddb5e à nous ! Ahh yeah !{done 50}
+f047-0020 e3c0e68518b6ef05 c'est pas fait pour{n}les Gears !{done 50}
+f047-0021 91f677d57f1c2734 en train de changer !{done 50}
+f047-0022 1aadb2ea8b20b9f7 on n'en sait rien !{done 50}
+f047-0023 eec31453f8aa8c98 bien trop dangereux !{done 50}
+f047-0024 e54b540f429f20d4 comme vous !{done 50}
+f047-0025 c16abe1ecc5da87a DÉGAGE !{wait 30} VITE !{done 60}
+f047-0026 4e0b1ee1ee8a84d0 têtu !{done 50}
+f047-0028 1bfb2c3f07b3015f À l'ouest, ho !{done 80}
+f047-0029 7de71f69befce66a à nous ! Ahh yeah !{done 70}
+f047-0030 e236ae8517680071 c'est pas fait pour{n}les Gears !{done 70}
+f047-0031 92f8bfd57ff79760 en train de changer !{done 70}
+f047-0032 64911ed1a36ad042 Nous{done 70}
+f047-0033 3c8692bea3b5ae7a serait{done 70}
+f047-0034 0652044d8b279156 un lieu pour les faibles{done 70}
+f047-0035 a6ed004e9d4f2a49 Écoute-moi bien.{done 100}
+f047-0036 4e3ab2e1eeb2f10e têtu !{done 60}
+f047-0038 8e04399262c27256 Yo !{wait 30}{n}Les joyeux{done 60}
+f047-0039 5d11a9a72e951a8e Chasseurs de trésors...{done 65}
+f047-0040 a93bd6a33a801c71 Ici, c'est le{done 68}
+f047-0041 2388b41e0958a2b9 Non, non, non, ici{done 53}
+f047-0042 f8582015671ab8b1 La terre est{done 26}
+f047-0043 ae16cb5d82435474 Pourquoi ?{done 75}
+f047-0044 6c7fbbff3b0f6b00 Bref...{done 70}
+f047-0045 18f8c564eb1fcc6b Ici, ce n'est pas{done 95}
+f047-0046 d34bac22b45f60d8 Si t'as toujours pas{n}pigé...{done 110}
+f047-0047 c269c673c9aa4786 Tu veux revenir ?{n}    Oui{n}    Non
+f047-0048 68af29b0238b6469 T'es teeellement{done 70}
+f047-0049 bcf7c0f6aa112c21 Quitter le désert ?{n}    Oui{n}    Non
+f049-0000 ce81c7b43a9c4edc Fei{n}"Où est passé le Doc ?{n}{wait 10}...{wait 5}Et j'ai aussi perdu ces{n}Gears de vue."
+f049-0001 dc1042d18b946f87 Fei{n}"Qu'est-ce qui se passe ?"
+f050-0000 589c80d1458e3911 Aaa-a-a-a-ah !!{done 150}
+f050-0001 6e91241d73369456 Fei{n}"Ce désert est sans fin ?{wait 15}{n}La nuit va bientôt tomber,{n}je dois me dépêcher et..."
+f050-0002 a12a385c9e07b825 Fei{n}"Que se passe-t-il ici ?{n}Gears, soucoupe volante...{n}et maintenant ces types...{p}J'espère que le Doc va{n}bien !"
+f050-0003 cf4ac2483023a9c9 Fei{n}"...{wait 60}{n}Iiiaah !"{done 30}
+f050-0004 d9da09fe97c00a75 Fei{n}"Euh, désolé !{wait 10}{n}Je vous l'emprunte juste{n}un petit moment !"
+f050-0006 52cee491034369b3  Hé, atten～ds !
+f052-0000 0855871deb3b00a6 Dégainer l'épée ?{n}    Oui{n}    Non
+f053-0000 fff9bcf4a52a7053 Fei{n}"Qu-qu'est-ce que c'est !?{wait 10}{n}Des Gears d'Aveh ?{p}{wait 10}...{wait 10}{n}Je m'inquiète pour le{n}Doc{wait 10}..."
+f053-0001 f831c1e3ce5dac92 Fei{n}"Je ferais mieux de{n}suivre ces Gears."
+f053-0002 b2ba0ac5a91c9942 Fei{n}"Une autre unité ? Ils{n}vont vers la soucoupe ?{p}Je ferais mieux de les{n}suivre pour ne pas les{n}perdre de vue..."
+f054-0000 bf3d0e8a69cff9db Fei{n}"Euh, hum...{wait 30} Qu'est-ce que{n}c'était que tout ça ?"
+f054-0001 f09e9829ea526be2 Fei{n}"Vous me voulez quoi ?{p}Vous exagérez un peu,{n}non, juste parce que j'ai{n}volé une moto..."
+f054-0003 f19018c74934e48f Fei{n}"Doc !{wait 10}{n}Vous allez bien ?"
+f054-0004 25e014eecc40340b Fei{n}"Courir{n}pourquoi...?"
+f054-0005 20ae462107f58509 Fei{n}"...D-d-d'accord."
+f054-0006 00802bb114e5b0cc Fei{n}"{wait 10}...{wait 40}Je vais bien{wait 10}...{wait 30}{n}Mais le Gear a l'air{n}cassé{wait 10}..."
+f054-0008 4cd8951b2ad73a75 Citan{n}"Fei !{wait 5} Je vous ai{n}cherché partout."
+f054-0009 40e9f3a3ebbb9056 Citan{n}"Oui, bien sûr..."
+f054-0011 706082c58f9c308f Citan{n}"Pas le temps de{n}discuter, on dirait."
+f054-0012 81c5d203b2203f2e Citan{n}"Fei, courez !"
+f054-0013 730b223ca0832650 Citan{n}"Je n'arrive pas à piloter{n}le {name 11} ! Vous seul{n}en êtes capable...{p}Vite, montez à bord !"
+f054-0014 8ee2fff38dcf92c5 Citan{n}"Fei !{n}Vous allez bien !?"
+f054-0016 5f36cc664a299991 Citan{n}"Je suis très heureux que{n}vous soyez indemne.{p}Le Gear n'a reçu que des{n}réparations provisoires.{n}Elles ne pouvaient pas{n}tenir un tel combat."
+f054-0018 e9578563991f4499 Citan{n}"Oh non !{n}L'armée d'Aveh !{n}Pas maintenant...!"
+f054-0019 3828c9549fc94f32 Citan{n}"Fei, restons{n}calmes{wait 15}...{wait 15}{n}{wait 15}...{wait 40}?"
+f055-0000 4d02bb7582c52e03 Fei{n}"Je ne sais pas comment...{wait 30}{n}mais je les ai battus !"
+f055-0001 2e35f6f0b001f7c8 Fei{n}"Mais qu-quoi ?"
+f055-0002 3fb4dd7d7bb271d2 Fei{n}"Tu es celui de...{wait 40}{n}Lahan...!!"
+f055-0003 9ba20dc253ff61d9 Fei{n}"Quel pouvoir j'avais ?{n}De quoi tu parles !"
+f055-0004 0f5e4dcaec845f3f Fei{n}"Pour me mettre dans ce{n}Gear !? C'est toi qui as{n}tout manigancé !?"
+f055-0005 78c2ee1dacfdadfc Fei{n}"Comme catalyseur !? Tu{n}veux dire que tu as{n}provoqué ça exprès !?"
+f055-0006 03be6f29314e40ae Fei{n}"Bon sang..."
+f055-0007 460c8ad268113879 Fei{n}"Tu as besoin de mon{n}pouvoir ? Pour en faire{n}quoi !?"
+f055-0008 8588e60645721107 Fei{n}"Qu'as-tu fait à mon{n}père !? Que s'est-il{n}passé entre vous deux !?"
+f055-0009 4dd2fe1f7284ee83 Fei{n}"Quoi !?"
+f055-0010 1dc06af5b040f4e8 Fei{n}"A-attends !{n}On n'a pas fini de{n}parler !!"
+f055-0011 a5d930e1505b1eec Fei{n}"Tu as attaqué mon village{n}juste pour me mettre dans{n}ce Gear !?{p}Pourquoi !?{wait 20}{n}Pourquoi les villageois{n}ont-ils dû mourir...?"
+f055-0012 d71fc6d9ddbed4b4 Fei{n}"Non !!{wait 30}{n}Je voulais juste sauver le{n}village et ses gens !{p}Je n'ai jamais voulu le{n}détruire !!"
+f055-0013 4e53bb195c425814 Fei{n}"Tais-toi !{p}Même si c'est vrai, ce{n}n'est pas toi qui as tout{n}provoqué !?{p}Si tu n'étais pas venu, le{n}village n'aurait pas{n}souffert comme ça !"
+f055-0014 680c4bad662504ee Fei{n}"D-détruire Dieu ?"
+f055-0015 35804c36ea755cc3 Fei{n}"Ne sois pas ridicule ! Je{n}ne vais pas me mêler d'une{n}chose pareille !{p}Si tu veux détruire ton{n}dieu, ou que sais-je...{n}fais-le tout seul !!"
+f055-0016 1abe3dadcea34609 Fei{n}"Mon père ?{wait 25}{n}Tu parles de mon père ?{wait 30}{n}Tu connais mon père !?"
+f055-0017 ed0853103ce39e1c Fei{n}"Quoi ?"
+f055-0018 d556ba5d102b9ee7 Citan{n}"Et c'est reparti..."
+f055-0019 5a7ee63819ea06bd Homme en noir{n}"Je vois que ton sang{n}chaud, avide de combat,{n}reste indompté."
+f055-0020 42e0dea5915473aa Homme en noir{n}"Mon nom est{wait 10} Grahf{wait 10}...{wait 10}{n}Celui qui veut le pouvoir.{p}Tu as bien montré toute{n}ta puissance à Lahan,{n}n'est-ce pas, Fei !?"
+f055-0021 3837244110383369 Grahf{n}"Un pouvoir plus grand...{n}voilà ce qu'il me faut pour{n}accomplir ma mission.{p}J'ai envoyé ces Gears sur{n}cette terre comme{n}catalyseur, pour éveiller{n}le pouvoir en toi...{p}Pour entrer en contact avec{n}toi."
+f055-0022 738e9073b1e328ff Grahf{n}"Oui.{wait 10}{n}Il fallait un catalyseur{n}pour éveiller ta force."
+f055-0023 503bf136cdec4195 Grahf{n}"Exactement.{wait 10}{n}La mort de tes proches...{p}Et toi, impuissant devant{n}elle...{wait 10} La douleur,{wait 10}{n}les cris de ton coeur, nés{n}de la tragédie...{p}Voilà !{wait 10}{n}Voilà le catalyseur qui a{n}éveillé ton pouvoir."
+f055-0024 6473565ee1c0fc77 Grahf{n}"Qu'importe pourquoi ! Peu{n}importe combien sont{n}morts...{p}C'étaient des vers, vivant{n}au jour le jour, sans{n}jamais accomplir leur{n}destin !{p}Et tu oublies ?{wait 10}{n}Tu as détruit le village.{wait 10}{n}Je n'ai rien fait, moi."
+f055-0025 b7941d5e64c394ad Grahf{n}"Vraiment ?{wait 15}{n}Tu l'as sûrement entendue,{n}non ?{p}C'est ta propre essence...{n}la voix du désir en toi,{n}qui aspire à détruire."
+f055-0026 bf08792097fbe641 Grahf{n}"Ah, maintenant tu accuses{n}les autres ?{n}Je vois...{p}C'est tout 'toi', ça.{n}Parfait. Au fond, tu n'as{n}pas changé."
+f055-0027 50604bcfa68f9828 Grahf{n}"Tu le sais très bien...{wait 10}{n}C'est pour détruire...{wait 30}{n}Dieu,{wait 10} la mère{wait 10}..."
+f055-0028 48e362826ee97ed8 Grahf{n}"Oui, détruisons Dieu.{n}C'est notre but...{n}C'est notre destin !"
+f055-0029 0d121dd8462c6607 Grahf{n}"Hah, hah, hah...{n}Tu ressembles à ton{n}père."
+f055-0030 1322ae12167a2fbe Grahf{n}"Ce fut...{n}un cri délicieux. J'en ai{n}été extasié.{p}Rien n'est plus beau qu'un{n}cri d'agonie."
+f055-0031 c98e217170a991d4 Grahf{n}"Hmph, tu tiens à savoir ?{n}Ça ne te servirait à rien{n}maintenant."
+f055-0032 a0295180b88b5787 Grahf{n}"Ton pouvoir est encore{n}loin de ce qu'exigent{n}mes desseins.{p}Tout ce qui est inutile{n}doit être mis à{n}l'épreuve jusqu'à{n}devenir adéquat."
+f055-0033 53ab1938ff5355e2 Grahf{n}"Que vas-tu faire, Fei ?{n}Si tu meurs ici, soit.{p}Tu trouverais peut-être du{n}bonheur dans l'ignorance.{n}Mais ce n'est pas ce que tu{n}veux...?{p}Si tu veux la vérité... et{n}tu la veux, n'est-ce pas,{n}Fei... voici ce que tu dois{n}faire...{p}Tu dois me montrer que tu{n}as atteint le niveau de{n}force que j'exige...{p}Pour cela, détruis les{n}autres par ta propre{n}force !{p}Alors tu récupéreras tout{n}ce que ce cri d'agonie t'a{n}coûté !{wait 15}{n}Ha, ha, ha, ha !!"
+f056-0000 b5fd10e63582172b Fei{n}"Hein ?{wait 30}{n}Ah... eh bien...{n}plus ou moins..."
+f056-0001 7413c06dda8e7899 Fei{n}"Eh bien...{wait 32}{n}On peut dire que j'ai été{n}blessé..."
+f056-0002 463f9ea14308421b Fei{n}"Il y a ça aussi, mais..."
+f056-0003 312e0d858d39ff42 Fei{n}"C'est le reste de ses{n}paroles...{p}Ce qui s'est passé à{n}Lahan... aurait été{n}orchestré pour que je{n}pilote ce Gear, selon lui.{p}C'est ce qui{n}m'inquiète..."
+f056-0004 079395d040f74959 Fei{n}"Je ne sais que ce que{n}m'ont raconté les gens qui{n}m'ont accueilli à Lahan...{p}Une nuit, un étrange homme{n}masqué m'a amené à Lahan.{n}J'étais gravement blessé à{n}l'époque...{p}Dans mon délire, j'appelais{n}mon père... On ne sait rien{n}d'autre de mes origines.{p}Je ne me rappelle ni mon{n}père ni mon passé... Alors{n}je ne me sens pas si seul,{n}ni si triste..."
+f056-0005 6a043d05dbb734a7 Fei{n}"Doc, avant que le village{n}soit détruit, je vivais{n}sans douter de moi.{p}Plus maintenant.{wait 32}{n}Je ne...{wait 15} sais pas qui{n}je suis. C'est nouveau{n}pour moi..."
+f056-0006 3b1790cc98a8a612 Fei{n}"Doc, pourquoi n'ai-je pas{n}remarqué plus tôt que je{n}n'avais aucun souvenir ?"
+f056-0007 e6308ddc39a9bcdf Citan{n}"Pour vous faire piloter{n}ce Gear...?"
+f056-0008 84d186ebca91fffb Citan{n}"Enfin, coincés ici, nous{n}ne pouvons rien faire...{n}même si nous le voulions."
+f056-0009 af28665e08dda9d9 Reposons-nous un peu.{n}Ça nous aidera peut-être{n}à y voir plus clair.{p}     Bonne idée{n}     Parlons encore
+f056-0010 307f20d2bb324d81 Reposons-nous un peu.{n}     Bonne idée{n}     Parlons encore
+f056-0013 7cddaf03f4193139 Citan{n}"Comment allez-vous, Fei ?{wait 10}{n}Bien dormi ?"
+f056-0014 b0b33dc9724f9633 Citan{n}"Pardon, j'ai échoué...{n}J'ai été imprudent.{p}Ce Gear est un modèle{n}expérimental ultrasecret{n}de Kislev...{p}Normal qu'Aveh aussi le{n}cherche désespérément."
+f056-0015 864c92cd4c0e0b90 Citan{n}"Fei ? Vous êtes blessé ?{n}Vous avez mauvaise mine."
+f056-0016 0d7e59f7ecf383ee Citan{n}"L'homme en noir a parlé{n}du sort de votre père...{n}Cela vous trouble ?"
+f056-0017 2867be14a921e58d Citan{n}"Vous vous inquiétez pour{n}votre père ?"
+f056-0018 7840e29acc863a03 Citan{n}"...{p}(C'était lui ! Sans aucun{n}doute...{wait 32} Ce n'était pas une{n}coïncidence...){p}(Approchons-nous...{wait 32} du{n}-Temps- de{wait 16}{n}l'-Évangile-...?)"
+f056-0019 74aa516a27ab67cc Citan{n}"(Majesté...{n}serait-ce la fin...?)"
+f057-0000 69c14bbb84d045ea Citan{n}"Ouf, c'était moins une."
+f058-0001 7a721afb6ca4ca81  {n}Reçu : {item}.
+f059-0000 d6223647542fd9f9 Bon sang !{n}Le {name 11} s'est enlisé{n}dans le sable...
+f059-0001 2f0dfae38eb45320 "Aaaaaaah !"{done 16}
+f059-0005 f1835f90c8465fa0 "Ouf..."{done 16}
+f059-0006 929e40eefbd2fa33 Fei{n}"Doc !?{n}Où êtes-vous,{n}Doc !?"
+f059-0007 958474aaff9cc15b Fei{n}"Et c'est reparti...{wait 32}{n}On dirait qu'on est faits{n}l'un pour l'autre !"
+f059-0008 3f043cb40c0938a6 Fei{n}"...Compris, Doc !{n}Mais une fois fini, courez{n}là-bas aussi, d'accord !?"
+f059-0009 c84007b4a780c733 Citan{n}"Fei ! Vous m'entendez ?{n}J'amène la grue jusqu'au{n}cockpit du {name 11}.{p}Vite !{n}Grimpez par la grue{n}jusqu'au {name 11} !{n}Nous coulons vite !"
+f060-0000 038b73437a0449bc Rien à faire !{n}C'est la fin !
+f060-0001 27b2c9f5e05d85c3 Fei{n}"Quelques minutes...{wait 32}{n}Doc !!"
+f060-0002 a2a160ec82b7ede1 Fei{n}"Partons,{n}Doc !"
+f060-0003 15ffce9b03a03994 Citan{n}"Oh non !"{done 32}
+f060-0004 0a21eff3e8ce1cfe Citan{n}"À en juger par l'angle...{wait 10}{n}un tir a dû percer la{n}coque...{p}Nous coulerons sans doute{n}d'ici quelques minutes."
+f060-0005 d6f0e072a27d76f0 Citan{n}"C'est verrouillé...{wait 32}{n}Sortez-nous de là !{p}Argghh !!"
+f060-0006 f127c46feffb2c7e Citan{n}"C'est trop tard..."{done 46}
+f060-0007 c528e323062eba33 Citan{n}"Il y a un interrupteur{n}pour la vanne à sable sur{n}le mur de droite, là !{p}Mais attention...{n}Une fois fermée, elle ne{n}pourra plus être rouverte."{done 150}
+f060-0008 b5f5f7a2cee4b370 Citan{n}"Fei ! Si vous fermez la{n}vanne maintenant, nous{n}serons enterrés vivants !"{done 90}
+f060-0009 1ccc633f2fd7e616 Citan{n}"Fei ! Vite !"{done 32}
+f060-0010 243a060309995dac Citan{n}"Non ! C'est trop tard..."{done 46}
+f060-0013 ff39f5053e72835a Citan{n}"Fei ! Vite...!"{done 32}
+f061-0000 c6a06c95b7f9477a Sauver sa peau et laisser{n}ses amis sombrer dans une{n}mer de sable... Et la{n}camaraderie, alors ?
+f061-0001 fe0225deddb8281e Citan{n}"Ouuuh..."
+f061-0002 3fa2170adcce7ae1 Citan{n}"Oups..."
+f061-0003 e2795f56bd7b353a Citan{n}"Ha ha ha...{wait 16}{n}Eh bien, docteur Citan{n}Uzuki !{p}Vous avez assez secoué vos{n}saccules et chatouillé vos{n}utricules pour une vie !{n}Ouah, quel tournis !"
+f061-0004 55d4054bb5c1d1e4 Citan{n}"Fei, c'était une blague.{wait 18}{n}Voyager à la main n'était{n}pas si désagréable.{p}Je comprends ce que ce{n}prototype ultrasecret{n}de Kislev a de si{n}bien."
+f061-0005 2eb492cb3b1b0d33 Citan{n}"Vraiment...?{wait 24}{n}Remarquable...!"
+f061-0007 ab63c608a271dd73 Fei{n}"Doc !{n}Venez par ici !{n}Vite !"
+f061-0008 c2e69bc09890eba5 Fei{n}"Ça va, Doc ?"
+f061-0009 d396d6c10f571b5b Fei{n}"Désolé, Doc ! Je n'ai pas{n}eu le temps d'ouvrir le{n}cockpit...{p}Vous êtes sûr que ça va,{n}Doc ?"
+f061-0010 182fba48da55fe2b Fei{n}"Oui,{wait 16} une fois allumé, il{n}s'est mis à faire plein de{n}choses tout seul...{p}Le système de réponse{n}environnementale et{n}l'antigravité se sont{n}activés{wait 5}...{wait 5}tout seuls !"
+f063-0000 d736a5ff377b5d54 Bingo !{wait 32}{n}Comme dans le rapport :{n}un transport d'Aveh.{p}Et regarde un peu ce{n}qu'il y a dessus...!
+f064-0000 b1afa27a623ad792 Bart{n}"Ouah, c'est énorme.{p}On fait quoi avec ça ?{n}Ça m'étonnerait qu'on{n}puisse le casser."
+f064-0001 4ae55670017ff8a9 Bart{n}"Mes capteurs repèrent une{n}immense caverne de l'autre{n}côté.{p}Si seulement on pouvait{n}virer ce rocher...{wait 30}{n}Mais je doute qu'on arrive{n}à le réduire en miettes !"
+f064-0002 1d98bacab68cf057 Fei{n}"Je crois qu'on{wait 30} pourrait{n}essayer de pousser..."
+f064-0003 b3361fcd9c864361 Bart{n}"Attends, quel que soit{n}l'angle{wait 30}...{wait 30}"
+f064-0004 d019a30263d37566 Bart{n}"Hé, Fei !{wait 30}{n}Mes capteurs détectent{n}quelque chose.{p}On dirait qu'il y a une{n}très grande caverne de{n}l'autre côté."
+f064-0005 6cf6a471f7b87151 Bart{n}"Si on pouvait virer ce{n}rocher...{wait 30}mais je crois que{n}c'est impossible."
+f064-0006 2747e516f026937c Bart{n}"Le tube hydromécanique{n}de mon genou est sur le{n}point de lâcher.{p}Tout ça à cause de{n}l'éboulement du plafond...{n}et de ce rocher{n}mégacolossal à pousser.{p}Ce sera pas drôle du tout{n}si mon Gear lâche dans{n}une caverne aussi{n}énorme."
+f064-0007 e8a5c825c2f8b2e4 Bart{n}"Ta tête me revient pas...{p}Zut ! Je t'aurai quand on{n}sera sortis d'ici."
+f064-0008 e439bed436f6781b Fei{n}"On dirait que même une{n}personne ne passerait pas{n}par là..."
+f064-0010 d60007df46de71dd Fei{n}"On y arrivera en{n}s'aidant l'un l'autre.{p}Continuons comme ça pour{n}sortir d'ici."
+f064-0011 cfabee66d32a0af9 Fei{n}"Tes amis ne vont pas{n}venir nous aider ?"
+f064-0012 42eb4520b55f928e Bart{n}"Attendre serait une perte{n}de temps.{wait 30} Ils ne viendront{n}sans doute pas."
+f064-0013 32f459f4b6a801a8 Fei{n}"Mais ce ne sont pas{n}tes amis ?"
+f064-0014 22c6d2d89ece37fc Bart{n}"Chez nous, on croit à une{n}éducation libérale.{p}Ils vont se dire qu'on se{n}débrouillera seuls."
+f064-0015 0ee2459261555d6c Fei{n}"Est-ce que le Doc va{n}bien ?"
+f064-0016 8d5e93a74a57789d Bart{n}"T'inquiète pas pour le{n}type qui était avec toi.{p}Nos gars l'ont sûrement{n}déjà sauvé."
+f064-0018 9389ff1d38f45392 Bart{n}"Quoi ?"
+f064-0019 d0f37c7bd386c48b Fei{n}"...{wait 30}{p}On ne serait pas tombés{n}ici si tu m'avais{n}écouté."
+f064-0020 b1f8c1f43768c214 Bart{n}"C'est pas ma faute !{n}T'aurais dû te rendre au{n}lieu de me défier.{p}Je voulais juste ton{n}Gear."
+f064-0021 1e5efe72556bd4ab Fei{n}"Ne sois pas ridicule !{p}C'est toi qui m'as attaqué{n}sans prévenir. Qu'est-ce{n}que je pouvais faire{n}d'autre ?{p}J'ai cru que j'allais{n}mourir si je ne me battais{n}pas."
+f064-0022 8c43f61c6d656fbc Bart{n}"J'y allais doucement avec{n}toi. T'as pas remarqué ?{wait 10}{n}T'es un peu lent, alors."
+f064-0023 c4b1445b46a42fa0 Fei{n}"Mens pas. Je sais que tu{n}te battais pour de vrai."
+f064-0024 79fb895b1cb3feba Bart{n}"Tu cherches la bagarre !?{n}Alors réglons ça !{n}Ici même !"
+f064-0026 9ae588c9923c4652 Bart{n}"Attends ! Régler ça ici,{n}c'est la priorité.{p}Je pourrai rien faire{n}tant qu'on n'aura pas{n}réglé ça une fois pour{n}toutes !"
+f064-0027 b857290c37a27384 Fei{n}"Tu voulais pas une trêve{n}pour l'instant ? Sortir{n}d'ici d'abord !{p}Une fois dehors, je me{n}battrai autant que tu{n}voudras.{wait 30} Maintenant,{n}sortons vite d'ici !"
+f064-0028 c7d27e149ae098b9 {speed 255} {n} CAPTEUR SABLE : GRANDE SALLE {n}                              
+f064-0029 fa6ca1516b852a78 Chute de sable au-delà du niveau{n}de sécurité standard détectée.{p}La barrière à sable sud de la{n}Terrasse de Pierre a été fermée{n}pour protéger la zone de fouille{n}du sable.{p}Jusqu'à la réouverture, gagnez{n}l'abri de sécurité à l'est du mur{n}de la barrière.{n}Merci.
+f064-0030 5637e159a0240a74 Désactivé !
+f064-0031 ac148300c4e6cc0c Fei{n}"Tu fabriques quoi ?{n}Dépêche-toi de{n}m'aider !!"
+f065-0000 aa794e3dc9d7bcc6 {speed 255} {n} CAPTEUR SABLE : GROTTE DES CHUTES{n}                                 
+f065-0003 ac58a51371db27c9 -   Fouille d'Aveh #8   -{n}-         Gear #3         -{n}    Situation actuelle{n}    Infos des environs
+f065-0004 4ac409dd88369fcb Barrière à sable en{n}cours d'ouverture par{n}le terminal externe.
+f065-0005 c2f3992dea39944a Les capteurs de sable ont{n}détecté une quantité{n}anormale de sable.{p}La barrière sud de la{n}'Terrasse de Pierre' a été{n}fermée pour protéger la{n}fouille du sable.
+f065-0006 03c0571f4fbdc2d5 Il y a deux capteurs de{n}sable. L'un est en haut de{n}la saillie, au{n}nord-nord-ouest d'ici.{p}L'autre est au bout du pont{n}que l'on voit d'ici.{p}On peut atteindre le pont{n}par le côté nord-ouest de{n}la 'Terrasse de Pierre'.
+f065-0007 9d7ea4eb8eaaf958 Au sud-est de la{n}'Terrasse de Pierre' se{n}dresse un mur, construit{n}pour contenir le sable.{p}Jusqu'à la réouverture de{n}la barrière, gagnez{n}l'abri situé à l'est du{n}mur de la barrière.
+f065-0008 73c33d78e1519153 Bart{n}"C'est quoi, ce Gear ?{p}Il est bien conservé pour{n}un Gear abandonné comme{n}ça."
