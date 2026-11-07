@@ -47,16 +47,18 @@ pub enum Language {
     #[default]
     English,
     BrazilianPortuguese,
+    French,
 }
 
 impl Language {
-    pub const ALL: [Language; 2] = [Language::English, Language::BrazilianPortuguese];
+    pub const ALL: [Language; 3] = [Language::English, Language::BrazilianPortuguese, Language::French];
 
     /// Its BCP 47 tag, as commands and `locale/` name it.
     pub fn code(self) -> &'static str {
         match self {
             Language::English => "en",
             Language::BrazilianPortuguese => "pt-BR",
+            Language::French => "fr",
         }
     }
 
@@ -69,6 +71,7 @@ impl Language {
         match self {
             Language::English => "English",
             Language::BrazilianPortuguese => "Português (Brasil)",
+            Language::French => "Français",
         }
     }
 
@@ -77,6 +80,7 @@ impl Language {
         match self {
             Language::English => &[],
             Language::BrazilianPortuguese => &PT_BR,
+            Language::French => &FR,
         }
     }
 
@@ -84,6 +88,7 @@ impl Language {
         match self {
             Language::English => "",
             Language::BrazilianPortuguese => include_str!("../locale/pt-BR/glyphs.txt"),
+            Language::French => include_str!("../locale/fr/glyphs.txt"),
         }
     }
 
@@ -100,8 +105,10 @@ macro_rules! sources {
     };
 }
 
-/// The translation files of a language, as `tools/translations.py` writes them.
+/// The translation files of each language, as `tools/translations.py` writes them.
 static PT_BR: [(&str, &str); 12] = sources!("pt-BR": "system.txt", "menus.txt", "battle.txt", "world.txt",
+    "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
+static FR: [(&str, &str); 12] = sources!("fr": "system.txt", "menus.txt", "battle.txt", "world.txt",
     "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
 
 // The font's one-byte glyphs (directory (0, 1) file 6, read by
@@ -501,7 +508,8 @@ mod tests {
     #[test]
     fn the_added_letters_are_drawn_from_the_fonts_letters_and_the_accents() {
         let glyphs = glyphs().unwrap();
-        assert_eq!(glyphs.len(), 24);
+        // Brazilian Portuguese's 24, then the 14 French adds (è ë î ï ù û ü and capitals).
+        assert_eq!(glyphs.len(), 38);
         let a_acute = &glyphs[0];
         assert_eq!((a_acute.character, a_acute.base, a_acute.drop, a_acute.clear), ('á', 0x3D, 0, 0));
         assert_eq!(&a_acute.accent[..3], &[0x10, 0x20, 0]);
@@ -511,6 +519,14 @@ mod tests {
         assert_eq!((capital.base, capital.drop), (0x20, 1 << 2 | 1 << 4));
         let cedilla = glyphs.iter().find(|g| g.character == 'ç').unwrap();
         assert_eq!((cedilla.base, cedilla.accent[10]), (0x3F, 0x30));
+        // French's letters: a letter both languages add keeps one code; the
+        // diaeresis is two dots over the letter, the i's own dot blanked.
+        let codes = added_codes(&glyphs);
+        assert_eq!((codes[&'é'], codes[&'è'], codes[&'Ü']), (FIRST_GLYPH + 4, FIRST_GLYPH + 24, FIRST_GLYPH + 37));
+        let e_diaeresis = glyphs.iter().find(|g| g.character == 'ë').unwrap();
+        assert_eq!((e_diaeresis.base, e_diaeresis.accent[0], e_diaeresis.accent[1]), (0x41, 0, 0x50));
+        let i_diaeresis = glyphs.iter().find(|g| g.character == 'ï').unwrap();
+        assert_eq!((i_diaeresis.base, i_diaeresis.clear, i_diaeresis.accent[1]), (0x45, 0b111, 0x50));
         assert!(parse_glyphs("accent dot 0=..#..\nx ※ dot").unwrap_err().contains("narrow glyph"));
         assert!(parse_glyphs("ä a umlaut").unwrap_err().contains("no such accent"));
     }
@@ -528,18 +544,20 @@ mod tests {
             .unwrap_err().contains("again"));
         let image = IMAGE.as_ref().unwrap();
         let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
-        assert_eq!((word(0), word(4), word(8), word(16)), (MAGIC, 0, 1, glyphs.len() as u32));
-        assert_eq!(word(12), BASE + (HEADER_BYTES + LANGUAGE_BYTES) as u32);
-        let (records, count) = (word(HEADER_BYTES) - BASE, word(HEADER_BYTES + 4));
-        assert_eq!(count as usize, image.languages[0].1);
-        let mut last = None;
-        for n in 0..count as usize {
-            let at = records as usize + TEXT_BYTES * n;
-            let hash = u64::from(word(at)) | u64::from(word(at + 4)) << 32;
-            assert!(last < Some(hash), "ascending by hash");
-            last = Some(hash);
-            let text = (word(at + 8) - BASE) as usize;
-            assert!(image.bytes[text..].contains(&0), "each text ends at its 00");
+        assert_eq!((word(0), word(4), word(8), word(16)), (MAGIC, 0, 2, glyphs.len() as u32));
+        assert_eq!(word(12), BASE + (HEADER_BYTES + 2 * LANGUAGE_BYTES) as u32);
+        for (n, (_, texts)) in image.languages.iter().enumerate() {
+            let (records, count) = (word(HEADER_BYTES + LANGUAGE_BYTES * n) - BASE, word(HEADER_BYTES + LANGUAGE_BYTES * n + 4));
+            assert_eq!(count as usize, *texts);
+            let mut last = None;
+            for record in 0..count as usize {
+                let at = records as usize + TEXT_BYTES * record;
+                let hash = u64::from(word(at)) | u64::from(word(at + 4)) << 32;
+                assert!(last < Some(hash), "ascending by hash");
+                last = Some(hash);
+                let text = (word(at + 8) - BASE) as usize;
+                assert!(image.bytes[text..].contains(&0), "each text ends at its 00");
+            }
         }
     }
 
@@ -547,9 +565,11 @@ mod tests {
     fn every_shipped_translation_reads_and_encodes() {
         // A line that did not would leave every translation uninstalled.
         let image = IMAGE.as_ref().expect("the shipped translations build");
-        let lines = PT_BR.iter().map(|(_, source)| source.lines().filter(|l| !l.trim().is_empty()).count()).sum::<usize>();
-        assert_eq!(image.languages, [(Language::BrazilianPortuguese, lines)]);
-        assert!(lines > 16_000, "Brazilian Portuguese ships its translations ({lines})");
+        let lines = |files: &[(&str, &str)]| files.iter().map(|(_, source)| source.lines().filter(|l| !l.trim().is_empty()).count()).sum::<usize>();
+        let (portuguese, french) = (lines(&PT_BR), lines(&FR));
+        assert_eq!(image.languages, [(Language::BrazilianPortuguese, portuguese), (Language::French, french)]);
+        assert!(portuguese > 16_000, "Brazilian Portuguese ships its translations ({portuguese})");
+        assert!(french > 16_000, "French ships its translations ({french})");
     }
 
     #[test]
@@ -559,5 +579,7 @@ mod tests {
         assert_eq!(Language::default(), Language::English);
         assert_eq!(Language::BrazilianPortuguese.name(), "Português (Brasil)");
         assert_eq!(Language::BrazilianPortuguese.number(), 1);
+        assert_eq!(Language::from_code("fr"), Some(Language::French));
+        assert_eq!((Language::French.name(), Language::French.number()), ("Français", 2));
     }
 }

@@ -6,6 +6,7 @@ import unittest
 from tools import translations as tr
 
 EXTRA = {c: tr.EXTRA_GLYPHS + n for n, c in enumerate("áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ")}
+FRENCH = {c: tr.EXTRA_GLYPHS + n for n, c in enumerate("àâçéèêëîïôùûüÀÂÇÉÈÊËÎÏÔÙÛÜ")}
 
 
 def text(markup, columns=52, rows=4, group="field messages", choice=None):
@@ -40,6 +41,13 @@ class Fit(unittest.TestCase):
         self.assertTrue(all(len(line) <= 10 for page in pages for line in page), wrapped)
         self.assertTrue(all(len(page) <= 3 for page in pages), wrapped)
         self.assertEqual(tr.problems(original, wrapped, EXTRA), [])
+
+    def test_a_line_never_begins_with_the_mark_french_sets_after_a_space(self):
+        original = text("Hello", columns=16, rows=8)
+        wrapped = tr.wrap(original, "Tu viens ? Oui ! Va : vite", FRENCH)
+        # Broken at every space, "Tu viens" would fill the first line and "?" begin the next.
+        self.assertEqual(wrapped.split("{n}"), ["Tu", "viens ?", "Oui !", "Va :", "vite"])
+        self.assertEqual(tr.problems(original, wrapped, FRENCH), [])
 
     def test_a_timed_text_a_choice_and_a_menu_text_keep_their_pages(self):
         for original in (text("One{wait 5} two{done 30}", columns=12, rows=1),

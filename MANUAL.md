@@ -355,8 +355,8 @@ game paused until you resume it.
 
 Find these in **Settings → Gameplay**. Each choice is saved for next time.
 
-- **Language — Game text:** **English**, the original, or **Português
-  (Brasil)**. It changes the game's dialogue, narration, item and ability
+- **Language — Game text:** **English**, the original, **Português
+  (Brasil)** or **Français**. It changes the game's dialogue, narration, item and ability
   names and descriptions, shop and save messages, battle messages and
   place names from the next text the game shows; a box already showing
   text finishes it first, and a menu shows its commands in the language
