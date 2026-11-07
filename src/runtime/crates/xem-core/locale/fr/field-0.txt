@@ -1109,3 +1109,543 @@ f065-0005 c2f3992dea39944a Les capteurs de sable ont{n}détecté une quantité{n
 f065-0006 03c0571f4fbdc2d5 Il y a deux capteurs de{n}sable. L'un est en haut de{n}la saillie, au{n}nord-nord-ouest d'ici.{p}L'autre est au bout du pont{n}que l'on voit d'ici.{p}On peut atteindre le pont{n}par le côté nord-ouest de{n}la 'Terrasse de Pierre'.
 f065-0007 9d7ea4eb8eaaf958 Au sud-est de la{n}'Terrasse de Pierre' se{n}dresse un mur, construit{n}pour contenir le sable.{p}Jusqu'à la réouverture de{n}la barrière, gagnez{n}l'abri situé à l'est du{n}mur de la barrière.
 f065-0008 73c33d78e1519153 Bart{n}"C'est quoi, ce Gear ?{p}Il est bien conservé pour{n}un Gear abandonné comme{n}ça."
+f069-0000 5ce55ec38e380d54 Générateur principal{n}de la zone de fouille{n}d'Aveh.{p}Le courant principal est{n}actuellement en marche.{n}    Couper le courant{n}    Laisser tel quel
+f069-0001 aeaf2e8f1e45a294 Le courant principal a{n}été coupé.
+f069-0002 850f0ea386be765d Générateur principal de{n}la zone de fouille{n}d'Aveh.{p}Le courant principal est{n}actuellement coupé.{n}    Rétablir le courant{n}    Laisser tel quel
+f069-0003 a2472f5698923c34 Le courant principal a{n}été rétabli.{n}Fonctionnement normal.
+f069-0004 bb535067f2efb889 Le courant principal est{n}actuellement coupé.
+f069-0006 fc135c86cadf8064 Monter dans{n}la nacelle ?{n}    Oui{n}    Non
+f071-0000 1267615164827930 Bart{n}"Je crois que c'est ça."
+f071-0001 8cadb815ddfb24b0 Bart{n}"Ah oui ?{wait 30} Alors on{n}dirait qu'on a un vrai{n}passionné ici, hein !"
+f071-0002 fb8aabddcf382e15 Bart{n}"Qu'est-ce qu'un vieux{n}comme toi fait dans un{n}endroit pareil ?"
+f071-0003 86b2448b427284aa Bart{n}"Un collectionneur, hein ?{n}Intéressant."
+f071-0004 502ecb6eefe6a2b1 Bart{n}"Les trucs sur cette{n}étagère, c'est toi qui les{n}as trouvés ?"
+f071-0005 2ee05d3dfe88e9d6 Le vieux Bal{n}"Les fossiles, tu dis ?{n}Je les collectionne, entre{n}autres choses.{p}Regardez à votre{n}guise."
+f071-0006 daa628cd34b8148f Le vieux Bal{n}"Ici, on exhume machines{n}anciennes et fossiles{n}d'hommes et de bêtes.{p}Vous remarquez quelque{n}chose sur ces étagères ? Du{n}plus ancien, à gauche, au{n}plus récent, à droite."
+f071-0007 ce420d3b9a5985e0 Bart{n}"T'es archéologue ou un{n}truc du genre, le vieux ?{p}J'ai pas bien compris ce{n}que tu racontes.{p}Pour moi, c'est juste un{n}tas de vieux os. Fei,{n}t'en penses quoi ?"
+f071-0008 c9e2b6901bf012ff Fei{n}"...Voyons.{wait 30}{n}D'abord, il n'y a pas d'os{n}humains jusqu'ici.{p}Ensuite, d'ici vers la{n}droite, quelque chose{n}change un peu... je{n}crois."
+f071-0009 f0735ff25ab45ebb Le vieux Bal{n}"Oui, à une époque, les{n}fossiles humains{n}disparaissent soudain.{p}C'était il y a environ dix{n}mille ans."
+f071-0010 9050f370673e1416 Bart{n}"Ça veut dire quoi ?"
+f071-0011 ffbc990ec53f4b22 Le vieux Bal{n}"Ne me demande pas. Je{n}ne sais pas au{n}juste...{p}Mais je crois qu'il n'y{n}avait pas d'humains sur{n}cette planète avant ça.{wait 30}{n}Du moins, il semble."
+f071-0012 7572cd11cd2a97a4 Bart{n}"Comment ça ?{n}Et tout ce baratin{n}sur l'évolution ?"
+f071-0013 3b361b947c8b24ce Le vieux Bal{n}"Tu parles de la théorie{n}de l'évolution que prêche{n}l'Ethos, hein ?{p}On ne peut s'y fier !{n}Je crois plutôt aux{n}vieilles légendes et{n}aux mythes."
+f071-0014 8d256405bf5a1279 Fei{n}"Des légendes ?{n}Des mythes ?"
+f071-0015 794757144ef146d3 Le vieux Bal{n}"Vous ne connaissez pas{n}cette histoire...?"
+f071-0016 c3b071291a5e1242 Le vieux Bal{n}"On dit que les humains et{n}dieu vivaient ensemble dans{n}un paradis céleste.{p}Protégés par dieu, ils{n}ignoraient la peur de la{n}mort et les catastrophes{n}naturelles.{p}Puis, un jour, les humains{n}mangèrent un fruit défendu{n}qui leur donna une sagesse{n}incroyable.{p}Mais dieu chassa les{n}humains du paradis pour{n}leur péché.{p}Amers d'avoir été chassés,{n}les humains se servirent de{n}leur sagesse pour créer des{n}géants.{p}Avec eux, ils voulaient{n}défier dieu lui-même.{n}Mais dieu déchaîna sa{n}colère sur eux.{p}Tous ceux qui défièrent{n}dieu furent anéantis. Mais{n}dieu lui-même n'en sortit{n}pas indemne.{p}Emportant le paradis, le{n}dieu blessé s'enfouit au{n}fond de l'océan pour y{n}dormir des éons.{p}Avant de dormir, dieu usa{n}ses dernières forces pour{n}créer des humains au coeur{n}pur pour habiter ce monde.{p}On dit que ces gens{n}sont...{wait 30}nos ancêtres."
+f071-0017 b07242ac3764af8b Le vieux Bal{n}"Bon, enfin, j'arrête{n}de bavarder."
+f071-0018 f211b29a1be6e02c Fei{n}"Au fait, cette{n}caverne a..."
+f071-0019 afe61a79b50363ad Le vieux Bal{n}"Une sortie ?{p}Il y a une sortie dans la{n}zone de fouille, après la{n}barrière à sable. Par là,{n}on peut sortir."
+f071-0020 99e661362d50db82 Bart{n}"La barrière ? Le mur{n}géant qu'on voit de ton{n}entrée ?"
+f071-0021 f06b567879ec5558 Le vieux Bal{n}"Oui. De l'autre côté, il{n}y a une ancienne zone de{n}fouille d'Aveh.{p}Le mur a été construit{n}quand Aveh fouillait ici,{n}pour empêcher le sable de{n}tomber d'en haut.{p}Mais les travaux là-bas{n}sont arrêtés."
+f071-0022 82c00ae6feae9447 Fei{n}"Et comment on ouvre un{n}truc aussi énorme ?"
+f071-0023 92886529d45a6681 Bart{n}"Si c'est un mur,{n}on doit pouvoir{n}le démolir."
+f071-0024 aa60bbbbb66c015f Le vieux Bal{n}"Doucement, les enfants.{p}Aussi bons que soient{n}vos Gears, vous ne{n}démolirez jamais ce mur.{p}Il est bien trop solide.{wait 30}{n}Alors...{n}passons un marché."
+f071-0025 4d00414f73f3fed6 Bart{n}"Un marché ?"
+f071-0026 58da45ede3dba167 Le vieux Bal{n}"Le mur s'est fermé{n}quand les 'Capteurs de{n}sable' ont réagi.{p}Résultat, même moi, je{n}ne peux plus passer de{n}l'autre côté.{p}C'est peut-être quand{n}vous êtes tombés ici.{n}Vous vous battiez{n}là-haut ou quoi ?"
+f071-0027 f8dac1ebe7a297fa Fei{n}"Tu sais tout, toi !{p}Bref, qu'est-ce{n}qu'on peut faire ?"
+f071-0028 bff9d6884f05dd37 Le vieux Bal{n}"C'est simple. Il suffit{n}d'éteindre les Capteurs de{n}sable.{p}Ainsi, la barrière ne se{n}refermera pas.{wait 30}{n}Pendant ce temps, j'ouvre{n}la barrière."
+f071-0029 d8541e62c89e23b5 Fei{n}"D'accord, compris."
+f071-0030 b31d88d9a9293e3a Le vieux Bal{n}"Les capteurs sont à deux{n}endroits. Vous verrez des{n}lumières rouges clignoter.{p}Bon, bonne chance, alors."
+f071-0031 9307bea014d03b72 Fei{n}"Allons-y, Bart."
+f071-0032 932c604985a1137a Le vieux Bal{n}"Ah, avant que vous{n}partiez...{p}Je peux vous céder des{n}pièces et du carburant.{wait 20}{n}Venez me voir si besoin,{n}d'accord ?"
+f071-0033 ccb041fdadf02f5e Bart{n}"Merci, le vieux.{wait 20}{n}Bon, allons remplir notre{n}part du marché !"
+f071-0034 fe4d24402712146e Fei{n}"Bien joué, le vieux !"
+f071-0035 169927296150a655 Le vieux Bal{n}"Marché conclu."
+f071-0036 48949e79a437fe33 Bart{n}"Hé, le vieux.{n}Je voudrais te demander{n}un truc."
+f071-0037 4fd056446ba9c4a8 Le vieux Bal{n}"Quoi donc ?"
+f071-0038 ad6b185531ef1871 Bart{n}"Il paraît qu'il existe un{n}Gear bien supérieur aux{n}autres.{p}On l'appelait le{n}'Gear-dieu', fabriqué dans{n}les temps anciens et caché{n}quelque part.{p}Tu sais quelque chose{n}là-dessus ?"
+f071-0039 880dec9601d23153 Le vieux Bal{n}"Un dieu fait par l'homme,{n}créé avec la sagesse de{n}dieu !{p}Un tel Gear aurait la force{n}de mille Gears. D'un geste,{n}il raserait des villes{n}entières.{p}Ses cris de guerre{n}tonneraient jusqu'au ciel.{p}Tu parles sans doute{n}d'un 'Omnigear'."
+f071-0040 b11bc4f0edfe13fc Bart{n}"Tu connais ?{p}C'est peut-être de ça{n}que tu parlais dans ton{n}histoire de la guerre{n}contre dieu..."
+f071-0041 0faf32f6e8465fc6 Le vieux Bal{n}"Ma parole, toi aussi,{n}petit ?{p}Ces histoires inspirent{n}l'âme humaine. Mais ce ne{n}sont que des légendes.{n}Rien de réel."
+f071-0042 7a7472cf7eddb606 Le vieux Bal{n}"Bon, laissez-moi jeter un{n}oeil à vos Gears.{p}Ça ne prendra pas{n}longtemps, alors attendez{n}ici, s'il vous plaît."
+f071-0043 e4e052a38b1a4870 Bart{n}"Hé, attends !{wait 30}{n}Argh, il a disparu..."
+f071-0044 18e383afb0298fc1 Fei{n}"Hé, Bart. Tu crois que le{n}Gear de cette histoire est{n}enterré quelque part ?"
+f071-0045 1b9350babed20aae Bart{n}"C'est ce que j'ai{n}entendu dire."
+f071-0046 ac305040eb476520 Fei{n}"Et si l'un de nos{n}Gears était celui-là ?"
+f071-0047 fe9c4170cbc04522 Bart{n}"Tu parles !{n}Quelles sont les chances{n}que ça arrive ?"
+f071-0049 00042f904da38d52 Bart{n}"Les Gears déterrés ces{n}derniers temps...{p}...n'ont en général que{n}quelques siècles.{n}Ils sont loin de l'âge du{n}Gear de la légende."
+f071-0050 08134c92132b4e4a Fei{n}"Et pourquoi étaient-ils{n}enterrés...?"
+f071-0051 1e3dacaf3722aeab Bart{n}"Je sais pas.{n}Il n'y a aucune archive.{wait 30}{n}Sauf..."
+f071-0052 446f67bf5a278669 Fei{n}"Sauf...?"
+f071-0053 867268634b715a2b Bart{n}"D'après les légendes, ils{n}ont été enterrés après une{n}grande guerre...{p}Les impacts de balles sur{n}leur blindage semblent le{n}confirmer."
+f071-0054 4d3a3f096453f471 Fei{n}"Tu veux dire qu'il{n}n'y a aucune archive{n}des derniers siècles ?{p}Et d'avant ?"
+f071-0055 31c01de878d4c96a Bart{n}"Ni l'un, ni l'autre.{p}L'Ethos garde toutes les{n}archives de cette{n}période.{p}Ils ont peut-être aussi{n}des archives très{n}anciennes...{p}Tout ce qu'on sait de{n}notre histoire vient des{n}bribes qu'on trouve{n}nous-mêmes."
+f071-0056 2c62795b4abb231f Bart{n}"Bref, Fei, tu penses{n}quoi du vieux ?"
+f071-0057 dfdf9e601b9a25e7 Fei{n}"Comment ça...?"
+f071-0058 f4b6ad5ed973af8b Bart{n}"Pourquoi un vieux vivrait{n}tout seul dans cette{n}caverne abandonnée ?"
+f071-0059 5ffac6fcc97c3860 Fei{n}"Je sais pas.{wait 30} Il doit{n}déterrer de vieux Gears{n}ou un truc du genre ?"
+f071-0060 f1cea5380b117f03 Bart{n}"C'est ça ! Alors tu le{n}penses aussi ?"
+f071-0061 26f0b6387db88cc8 Fei{n}"Hé !{n}Je disais ça pour rire.{p}Prends pas ça autant au{n}sérieux. C'est que des{n}légendes, tu sais ?"
+f071-0062 00ceb2f3d37f40ae Bart{n}"Non...ce vieux{n}mijote quelque chose !"
+f071-0063 1de19a18459f293c Le vieux Bal{n}"Ce n'est pas possible..."
+f071-0065 6d385e7ec52dc65e Bart{n}"Qu'est-ce qu'il y{n}a, le vieux ?"
+f071-0066 883c813d65fd90b2 Le vieux Bal{n}"Ce Gear est à toi ?"
+f071-0067 deaae3903135d118 Fei{n}"Euh... plus{n}ou moins."
+f071-0068 65f5d4fd65fdcd83 Le vieux Bal{n}"Où l'as-tu trouvé ?"
+f071-0069 a32194f846c4440c Fei{n}"Je l'ai juste emprunté."
+f071-0070 0192f72483deda6d C'est...{done 30}
+f071-0071 26d47010fb8eeb40 le{wait 5} réceptacle{wait 5}{wait 5} de{wait 5} l'âme{wait 5}{n}du{wait 5} tueur{wait 5}{wait 5} de{wait 30} dieu{wait 30}...{done 30}
+f071-0072 cc2638bf40c2bc24 Fei{n}"Attends ! Tu viens de{n}dire quoi ?"
+f071-0073 8c05b7a9159a149d Le vieux Bal{n}"Rien. Je n'ai rien{n}dit !!"
+f071-0074 dd83fca9b118044b Fei{n}"Si ! Je t'ai entendu !{n}'Tueur de dieu'...{p}C'est ce que tu as dit,{n}hein, le vieux !!"
+f071-0075 51d567501d8a89a5 Le vieux Bal{n}"Vos Gears sont réparés.{n}Vous n'avez plus rien à{n}faire ici.{p}Le moment est mal choisi{n}pour moi. Partez !"
+f071-0076 d7d9e72d627dbc33 Fei{n}"Partir...? Écoute un{n}peu, le vieux...!!"
+f071-0077 66ec601a865770a3 Fei{n}"Tu devines ce qui{n}cloche juste au bruit{n}des pas ?"
+f071-0079 9eb398d2bd86dcdb Le vieux Bal{n}"Partez, j'ai dit !"{n}    Raconte-m'en plus{n}    Vends des pièces
+f071-0080 f7b1c28509b2a566 Le vieux Bal{n}"Je n'ai plus rien à vous{n}dire. Partez."
+f071-0081 54283665c2a38de1 Le vieux Bal{n}"Quand la Calamité vous{n}aura eus, je reprendrai les{n}pièces de toute façon...{p}Si ça ne vous dérange pas,{n}je vous les vends...!"{n}    Pour les Gears{n}    Pour les personnages
+f071-0082 4c40e6ddcf059c3b Le vieux Bal{n}"D'abord, essaie de{n}changer le moteur."
+f071-0083 e163cfc5a9bfbdd7 Le vieux Bal{n}"Maintenant, allez vite{n}éteindre les Capteurs de{n}sable.{p}Ou vous voulez me{n}demander{n}autre chose ?"{p}    Où sont les capteurs ?{n}    Fonctions des Gears{n}    Des pièces à vendre ?{n}    Rien
+f071-0084 73c3ea6e52f4e991 Le vieux Bal{n}"Hmm, lesquelles ?"{n}    Pour les Gears{n}    Pour les personnages
+f071-0085 79793e2aeb645792 Le vieux Bal{n}"Vous avez éteint le{n}'Capteur de sable' en haut{n}de la Grande Salle...{p}Mais il y a un autre{n}'Capteur de sable' sur le{n}chemin d'où l'on voit les{n}chutes.{p}Il est sur une saillie{n}rocheuse, au nord-ouest{n}de mon robot de{n}réparation.{p}Autre chose ?"{n}    Fonctions des Gears{n}    Des pièces à vendre ?{n}    Rien
+f071-0086 3c151f168197de56 Le vieux Bal{n}"Hmm, que vous faut-il ?"{n}    Pièces de Gear{n}    Objets de personnage
+f071-0087 28062666bdfd2a77 Le vieux Bal{n}"Vous avez éteint le{n}Capteur de sable de la{n}Grotte des Chutes.{p}Il en reste un, au-dessus{n}du grand rocher de la{n}Grande Salle. Vous l'avez{n}déjà vu.{p}Autre chose ?"{n}    Fonctions des Gears{n}    Des pièces à vendre ?{n}    Rien
+f071-0089 528576d3d184b33f Le vieux Bal{n}"Ah, juste à temps.{n}J'allais justement{n}ouvrir la barrière."
+f071-0090 527759a3e6a1fbda "Ça fait longtemps que je{n}n'ai pas soigné de Gear.{n}Ça va être amusant."
+f071-0091 8758becdd598b746 Le vieux Bal{n}"La force d'un Gear dépend{n}des pièces équipées et du{n}pilote.{p}D'abord, le Moteur.{p}Un bon Moteur augmente la{n}Puissance d'attaque et la{n}capacité en carburant.{p}Les HP dépendent du{n}Châssis, et la Défense, de{n}l'Armure équipée.{p}Un conseil : à court de{n}carburant, utilisez{n}'Charge' pour en récupérer{n}un peu en vous défendant.{p}Face à un ennemi puissant,{n}utilisez 'Turbo' pour{n}accroître mobilité et{n}puissance.{p}Mais si vous abusez du{n}Turbo, le carburant va{n}s'épuiser.{p}Alors réfléchissez bien et{n}trouvez votre propre style{n}de combat."
+f071-0092 c7cfdece0f55f2a5 Le vieux Bal{n}"Pour commencer,{n}changez de moteur."
+f071-0093 52febf6edc5d1d2b Ça fait longtemps que je{n}n'ai pas eu de visite.{n}Que s'est-il passé ? Vous{n}êtes tombés d'en haut ?
+f071-0094 cbc720727e7ba765 Je vois...{n}Pas de chance.{p}Au bruit, je devine que{n}vous pilotez tous deux de{n}bons Gears...{p}Mais les jambes semblent{n}flancher un peu.
+f071-0095 4353b723af09029f Ha ha ha.{n}Un Gear trahit son{n}défaut par le bruit{n}qu'il fait.{p}Je parie que l'un d'eux{n}a besoin d'un nouveau{n}tube hydromécanique aux{n}articulations.{p}Il fait un bruit{n}affreux. Ça doit être{n}dur de marcher comme ça.{p}Ah, au fait, je{n}m'appelle Balthazar.{n}Appelez-moi le vieux{n}Bal.
+f071-0096 6afd18d9e4e0db4b Le vieux Bal{n}"Disons 'prospecteur', ou{n}'collectionneur de trucs'.{p}On trouve beaucoup de{n}choses abandonnées dans{n}cette caverne de{n}stalactites."
+f071-0097 cbc817050d4a977f Bart{n}"Hé, Fei ! Ça alors !{n}Quelqu'un vit ici !"
+f071-0098 1b7b91b5c011ace1 Hmm, ça faisait longtemps,{n}mais j'ai cru entendre des{n}Gears. Les vôtres, je{n}suppose ?{p}Bref, entrez donc et{n}mettez-vous à l'aise.
+f071-0099 f4de4257691af81a Fei{n}"Je ne sais pas où c'est.{n}Tu peux me dire ?"
+f072-0000 3558c724c4992c87 Quoi ?{done 60}
+f072-0001 25002701a09b762c "Hé, descends de là,{n}vite !{wait 30} Je ne vais pas te{n}tuer.{wait 30} Je veux juste que tu{n}laisses ce Gear{wait 60}...{wait 60} Hein ?"
+f072-0002 19d5b9b0650deb6b "Hé !?{wait 30}{n}T'es{wait 20} pas un soldat{n}d'Aveh ?"
+f072-0003 7861917e78235157 Fei{n}"Je te l'ai dit par{n}l'interphone tout à{n}l'heure.{p}C'est toi qui as refusé{n}de m'écouter, non ?"
+f072-0004 92ca8e72ef3857f4 "Ha, ha, ha. Désolé.{n}Ouais, je me souviens que{n}t'as dit un truc comme{n}ça.{p}Je me suis emballé et je{n}t'ai pris pour l'ennemi.{p}Euh, hum...{n}Je m'appelle Bart. Je{n}suis le pirate qui sévit{n}dans le coin."
+f072-0005 eb03409b515d72b6 Fei{n}"Je m'appelle Fei.{p}On m'a arrêté sans raison{n}et jeté dans ce navire de{n}transport d'Aveh...{p}...On m'envoyait dans un{n}camp de concentration,{n}jusqu'à ce que tu fasses{n}tout sauter.{p}Enfin...{n}Je suis juste content{n}d'avoir survécu."
+f072-0006 b06865bd065ec18f Bart{n}"Je vois... Tant mieux si{n}je t'ai un peu aidé.{p}Mais je m'attendais pas à{n}voir un civil comme toi{n}piloter un Gear militaire.{p}En plus, ce Gear est un{n}modèle tout neuf. J'en ai{n}jamais vu de ce genre."
+f072-0007 d1dbfd68c606429a Fei{n}"Disons qu'il s'est passé{n}beaucoup de choses...{p}C'est pas comme si je{n}voulais piloter ce{n}truc !"
+f072-0008 e0b7284f28f3e5aa Fei{n}"Au fait, on est où ? On{n}dirait qu'on est tombés{n}dans un drôle d'endroit.{p}J'ignorais qu'il y avait{n}d'aussi grandes cavernes{n}de stalactites sous le{n}désert."
+f072-0009 73fe9bd38e2a056c Bart{n}"Quoi ? Tu sais vraiment{n}rien, hein ?{wait 30} D'où tu{n}viens ?{p}Le désert ne couvre que{n}1000 sharls environ de la{n}couche externe du sol.{p}En dessous, c'est de la{n}roche ignée."
+f072-0010 5b8abb964afd27fe Fei{n}"De la forêt à la mer de{n}sable... et maintenant une{n}caverne de stalactites...{p}Et ensuite...?"
+f072-0011 9db8882eadf121ac Bart{n}"De quoi tu{n}parles ?"
+f072-0012 0c6a5d34987f9b29 Fei{n}"Ah, rien...{wait 30}{n}Laisse tomber..."
+f072-0013 002fba882dd444a0 Bart{n}"On est dans le pétrin...{wait 30}{n}Regarde, le trou par où{n}on est tombés a disparu.{p}Faut trouver une autre{n}sortie...{wait 30}{n}Alors, une trêve pour{n}l'instant ?{p}...Au moins jusqu'à ce{n}qu'on trouve une sortie."
+f073-0000 4f00ad6295b2e5b5 Bart{n}"Ouah... J'aurais jamais{n}cru qu'on finirait ici..."
+f073-0001 519d39c3aaba1e9b Fei{n}"On est où ?"
+f073-0002 630456ec0e3cba0e Bart{n}"Tu vois ces montagnes{n}jumelles, là-bas ?{p}C'est là que se trouvent{n}Bledavik, la capitale{n}royale d'Aveh, et le{n}Château Fatima.{p}Même si aucun roi n'y vit{n}en ce moment.{wait 20}{n}Bref, c'est ma ville{n}natale."
+f073-0003 1401d65849290f2b Fei{n}"Ville natale..."
+f073-0004 b43b5c3260e824e5 Bart{n}"Je voulais régler notre{n}bagarre tout de suite,{n}mais...{p}vu qu'on est si près de la{n}capitale d'Aveh, on se{n}ferait sûrement prendre."
+f074-0001 fc27f7e018941f07 Maison{n}"Voici le quartier{n}résidentiel."
+f074-0002 e689aa5c9e26a70f Maison{n}"Par ici, je vous prie."
+f074-0003 506984da7590faf5 Maintenant, on va aider à{n}l'entretien des Gears !
+f074-0004 0a5193f7aea9802e Ouais !!!
+f074-0005 4743e4b582801e87 C'est parti !
+f074-0006 8258eb8b03086578 {speed 255}Descendre aux docks ?{n}    Descendre{n}    Pas maintenant
+f074-0007 3744bbb7f881bf20 Bart{n}"Argh, ça va pas du{n}tout !"
+f074-0008 549d87ffb261171b {speed 255}'Ma Chambre :{n}Entre et Meurs'{n}             Bart {wait 10}{n}    Entrer{n}    Renoncer
+f074-0009 6c457debc2a29466 Fei{n}(Pourquoi dois-je{n}me battre...?)
+f074-0010 3c44e2cc40f2857b L'impact a détruit ce{n}passage...
+f075-0000 3ece56cca48a58cb Maison{n}"Merci, monsieur Fei !!{n}Et veillez, je vous prie,{n}sur le jeune maître Bart."
+f075-0001 c99cbcdd4c278587 Maison{n}"Monsieur Fei, mettez-vous{n}à l'aise, je vous prie."
+f075-0003 5a8b7f96297b00c5 Quoi ?{wait 10}{n}T'excite pas comme ça.
+f075-0004 8a0e1b98268faaf3 Hé, le bleu !{n}D'où tu viens ?{wait 10}{n}Lahan ?{wait 10} Connais pas.{p}Moi, j'étais soldat de{n}Kislev.{p}J'aimais pas les méthodes de{n}l'armée, alors on m'a viré.{p}Le jeune maître a de la{n}force et de l'ambition,{n}comme moi.
+f075-0005 5e9ba40e8228f698 Ce gars-là était soldat{n}d'Aveh.{wait 10} Le destin, c'est{n}imprévisible, hein ?{p}On se battait sans arrêt,{n}et là, on partage nos{n}repas entre camarades.{n}Qui l'eût cru, hein...!?
+f075-0006 43ec6b3db7da1c1a En parlant de manger,{n}j'ai faim{wait 5}...{wait 5}
+f075-0007 53a0ee77347b13ef Ça, c'est pas bon !
+f075-0008 13b347e8bb59380f T'es d'Aveh ?{wait 10}{n}Ah, non. Bon, moi, j'étais{n}soldat d'Aveh.{p}Le Premier ministre d'Aveh,{n}Shakhan, est si puissant{n}qu'il envoie même nous, les{n}étudiants, à la guerre.{p}J'aimais pas Shakhan.{n}Alors j'ai quitté l'armée et{n}je suis devenu pirate.
+f075-0009 6d08b681718da70d Je me demande si Francois{n}va bien à la maison{wait 5}...{wait 5}?
+f075-0010 af0028832c49da85 Quoi ?{wait 5} Non ! Beurk... Ce{n}n'est pas ma copine. C'est{n}ma chienne.
+f075-0011 bdc3efbab60c5d8d Dans la pagaille de tout{n}à l'heure, ma maquette{n}s'est cassée{wait 5}...
+f075-0012 bd92bb15814d3fd3 Bart{n}"T'es encore là ?{n}Grouille !"
+f075-0013 5f3e56f602d3d9b8 Aïe, si ces secousses{n}continuent, notre{n}précieuse maquette va...!!
+f075-0014 50d4350da7f53b4f Cette maquette est{n}très belle. Regarde un{n}peu les détails{wait 5}...
+f075-0015 1598fb5e6a80fee6 Hé, Fei !! Tu trouves pas{n}ça incroyable ?{wait 10}{n}    Très chouette !{n}    Rien de spécial
+f075-0016 fad880f55471fe28 C'est chouette, hein ?{wait 10} Cette{n}maquette a une histoire.{n}Laisse-moi te raconter...{p}Il y a douze ans, Sigurd a{n}fait fuir Bart d'Aveh. Ils{n}ont volé le meilleur cuirassé{n}d'Aveh et l'ont refait.{p}Ils l'ont rebaptisé{n}'Yggdrasil'.{p}Voici le Yggdrasil avant ses{n}améliorations.{wait 10} Je le garde{n}ici pour me rappeler les{n}espoirs que j'avais alors.
+f075-0017 536d4a2d7ae246d1 (Héhé... ça valait la{n}peine, tout ce travail{n}avec le second.)
+f075-0018 3276940877270a9b Hmpf, tout à l'heure,{n}t'as dit que c'était rien{n}de spécial{wait 5}...
+f075-0019 a9e98490d0c738ce Rien de spécial ?{wait 10}{n}Bon, laisse-moi te raconter{n}son histoire, tu changeras{n}peut-être d'avis...{p}Il y a douze ans, Sigurd a{n}fait fuir Bart d'Aveh. Ils{n}ont volé le meilleur cuirassé{n}d'Aveh et l'ont refait.{p}Ils l'ont rebaptisé{n}'Yggdrasil'. Voici le{n}Yggdrasil avant ses{n}améliorations.{p}Je le garde ici pour me{n}rappeler les espoirs que{n}j'avais alors. Mais ça n'a{n}plus d'importance...
+f075-0020 2fc7c786c0d116bc (Aïe... Le second et moi,{n}on a tant bossé dessus !)
+f075-0021 da7451f561aef05f C'est vraiment ce que tu{n}penses ? T'es un menteur,{n}Fei.
+f075-0022 e1585e933e723936 Je veux faire une autre{n}maquette du Yggdrasil...
+f075-0023 367142211d8e2956 Hé ! Fei, t'as fait du{n}super boulot ! On compte{n}sur toi !
+f075-0024 df8e889d11d96a3c Oh non !{wait 10}{n}Les Gears sont tous en{n}réparation !!
+f075-0025 ec8a2d7ea5216fbd Tu sais pourquoi une si{n}petite est ici ? C'est une{n}orpheline de guerre...{p}On l'a trouvée en pleurs{n}dans le désert. On l'a{n}amenée ici à bord du{n}Yggdrasil.{p}Il faut empêcher la guerre{n}de faire d'autres{n}orphelins comme elle.
+f075-0026 08d921200177650a Margie, tu es revenue !{wait 10}{n}Quelle joie !{wait 10}{n}Je passerai te voir plus{n}tard !
+f075-0027 1eb6374c774aa401 On m'a dit que vous nous{n}avez bien protégés{wait 5}...{wait 5}{n}Désolée, mais pas de{n}remise, vraiment.
+f075-0028 76e8c6d82db5d4f4 Revenez après avoir sauvé{n}la petite Margie ! Bonne{n}chance, mon petit Bart !
+f075-0029 0fe2300f03d46d57 Bart{n}"Compte sur moi !{wait 10}{n}Tenez le fort pour{n}nous !"
+f075-0030 9217bc427a338ef2 L'ennemi arrive ?{wait 10} Cet{n}endroit est imprenable,{n}pas d'inquiétude !!
+f075-0031 fe8b0ba972d05bae Tu ferais mieux de te{n}mettre à l'abri.
+f075-0032 d138b9194d80c278 Tu as l'air fatigué.{wait 10} Et{n}si tu faisais quelques{n}emplettes pour te{n}remonter le moral ?{p}(Amis de Bart ou pas, je{n}dois faire payer !)
+f075-0033 411c8c377e04620d Si tu veux quelque chose,{n}tu n'as qu'à demander.
+f075-0034 73be8fa88639c6d5 Qu'est-ce que tu veux ?{n}{speed 255}    Objets{n}    Accessoires{n}    Pièces de Gear{n}    Sortir
+f075-0035 15050806a434dfc9 Mon petit Bart !{wait 10}{n}Je me demandais quand tu{n}allais te montrer !
+f075-0036 700cdfd154f9d7bd Tout va bien, mon petit{n}Bart ?
+f075-0037 842545ef7e0c82de Ah ! Mon petit Fei !{n}J'avais confiance en toi.{n}Tu as promis d'aider Bart.{wait 10}{n}Merci à toi aussi.
+f075-0038 a40a03dda65c65ec Mon petit Bart, des amis{n}comme ça, c'est rare !{wait 10}{n}Alors prends-en bien soin,{n}hein !
+f075-0039 ca5446fd1086ed83 Bart{n}"Ouais. La prochaine fois{n}que je reviens, ce sera{n}avec Margie...{p}Alors je compte sur toi{n}pour nous préparer un bon{n}petit plat."
+f075-0040 65525efa4fef183f Entendu, mon chéri, tu{n}peux compter sur mamie !
+f075-0041 08571957e446de03 Mon petit Fei !! As-tu vu{n}un petit garçon et une{n}petite fille ? Où sont-ils{n}passés ?
+f075-0042 47fef2cdc61f88b1 Tiens, tu ne serais pas{n}Fei ? Mon petit Bart dit{n}s'être fait un 'ami grand{n}et fort'.
+f075-0044 aa96f2507d10ddf7 Sois l'ami de Bart.{n}C'est un garçon si gentil.{wait 10}{n}    Bien sûr{n}    Ça m'intéresse pas
+f075-0045 43bbcbaec4dc689c Fei{n}"Je sais."
+f075-0046 65ba53c13b58a9e1 Je compte sur toi,{n}mon petit Fei.
+f075-0047 cf120ab7f08454bf Fei{n}"Ça n'a rien à voir avec{n}moi{wait 5}..."
+f075-0048 186e561248449ca6 Eh bien, tu es tout{n}comme Bart, tu ne{n}lâches rien.{wait 10}{n}Tu t'en sortiras bien.
+f075-0049 251b7885d25edb60 Avec Bart, tu t'en{n}sortiras bien.
+f075-0050 012c7c7c037b14a7 Mon petit Fei,{wait 10}{n}{wait 5}...{wait 5}merci.
+f075-0051 d7016a8d2246a51b Oups !!
+f075-0052 ba47f85d955f1435 Mamie !{n}J'ai peur !
+f075-0053 7a230603d9138308 Hé, mamie.
+f075-0054 8a901cb69b71a8bc Oups{wait 5}...{wait 5}{n}Quelle honte.{wait 10}{n}Mais je suis comme ça{n}avec les enfants{wait 5}...
+f075-0055 ae5b19c809ee47b5 On ne s'est pas amusés{n}depuis longtemps.{wait 10} Allons{n}jouer dans le sable !
+f075-0056 bd1d813941a3dbcc Papa, c'est le désert !!
+f075-0057 26d937e56187688c Wahahaha !{wait 10}{n}T'es bien plus drôle que{n}la dernière fois !!
+f075-0058 f0c8404c41b0a471 Bon, à plus !!
+f075-0059 ff5d2cffe72d0d90 Des cadeaux, des cadeaux !{n}Youpi ! Youpiii !
+f075-0060 768d3592e4c8aa15 J'attends le retour de{n}mon papa. Mais je{n}pleurerai pas !{wait 10}{n}C'est bien, hein ?
+f075-0061 831fbf10e8bd770a Fei{n}"Très bien{wait 5}..."
+f075-0062 a91e34d4cba48443 Papa !!{wait 10}
+f075-0063 02dd53b967589c42 Bon retour,{n}papa !!
+f075-0064 3bb51a0037c12cee Là, là. Tu as été sage et{n}tu as bien obéi à ta{n}tante ?
+f075-0065 bd8c11091d6a91df Oui !!
+f075-0066 d2cf718927d516b7 J'ai été sage,{wait 5} alors...{wait 5}{n}où sont mes cadeaux ?
+f075-0067 a5b18c8f99d6c68a Des cadeaux !?{wait 10}{n}Regarde, voici un{n}costume de pirate !!
+f075-0068 0c74e9f1103cd075 Ouah !{wait 10}{n}Merci, papa !!
+f075-0069 f90ed3f178f502d2 Maison{n}"Voici le réfectoire.{wait 10}{n}Pardonnez son aspect{n}si rustique."
+f075-0070 adc5c13349060eb2 Maison{n}"Asseyez-vous, je vous{n}prie."
+f075-0071 64f28457e17e1a93 Maison{n}"Goûterez-vous mon fameux{n}thé ?{wait 10}{n}Monsieur Fei ?{wait 10} Docteur ?"
+f075-0072 8d61eca7a0c0112f Maison{n}"Les jeunes visiteurs{n}sont rares. Le jeune{n}maître doit être ravi.{p}Si les choses étaient{n}normales, nous ne vivrions{n}pas dans le désert, mais{n}au palais royal{wait 5}...{wait 5}"
+f075-0073 df4599a19dcbaba0 Citan{n}"Le palais royal{wait 5}...?{wait 10} Ce{n}jeune homme descend des{n}Fatima ?"
+f075-0074 c3d77f110b3a6dd7 Maison{n}"Pardon ?"
+f075-0075 43eb7b8515446858 Maison{n}"N,{wait 5} non...{wait 10}{n}Je ne suis qu'un vieux{n}gâteux qui parle trop{wait 5}...{p}Ne faites pas attention à{n}ce que je viens de dire...{n}Ha{wait 5}ha{wait 5}ha{wait 5}..."
+f075-0076 20bd8d62280f356c Citan{n}"Mais...ce jeune homme{n}borgne a vraiment une{n}certaine prestance."
+f075-0077 c710e60ee42f72b7 Maison{n}"Oh{wait 5}...{wait 5}oh{wait 5}...{wait 5}oh{wait 5}...!{wait 10}{n}Bien dit, monsieur ! Vous{n}êtes trop aimable !"
+f075-0078 3713f77f5e9f81b6 Maison{n}"Si vous permettez...{n}J'aimerais vous raconter.{p}Le jeune seigneur est le{n}dernier vestige oublié de{n}la dynastie Fatima, jadis{n}si fière.{p}...Avant qu'elle ne soit{n}détruite par les sbires de{n}Shakhan...
+f075-0079 b16044d3f14bbcf3 Prince {wait 10}{n}Bartholomew {wait 10}{n}Fatima.
+f075-0080 678224f85526a1c1 Citan{n}"Bartholomew ?{wait 10}{n}L'héritier d'Edbart IV{wait 5}...{p}On avait annoncé la mort{n}de Bartholomew, de{n}maladie, il y a 12 ans{wait 5}..."
+f075-0081 d259a8ae46848ed6 Maison{n}"Officiellement, oui.{p}En réalité, nous avons{n}arraché le jeune prince aux{n}griffes maléfiques de{n}Shakhan."
+f075-0082 a4d384892b801229 Citan{n}"Alors pourquoi le prince,{n}héritier légitime, doit-il{n}devenir pirate{wait 5}...?"
+f075-0084 0ed40ef060234a7f Maison{n}"Depuis notre fuite, nous{n}n'avons eu qu'un seul{n}souhait{wait 5}...{p}...{wait 5}que le jeune maître{n}grandisse et devienne un{n}grand homme{wait 5}..."
+f075-0085 ee42db4ba3f1a2cf Citan{n}"Pas celui de{wait 5}...{wait 10}{n}reprendre le trône ?"
+f075-0086 9a8e2f2e5f998f65 Maison{n}"Exactement.{p}Bien sûr, prétendre que{n}nous ne souhaitons pas{n}restaurer son règne{wait 5}...{wait 5}{n}serait mentir.{p}Nous avons aussi des{n}projets en ce sens."
+f075-0087 035c83976403568f Citan{n}"Ces projets incluent la{n}piraterie...?"
+f075-0088 bbec0aca50544918 Maison{n}"Eh bien, oui{wait 5}...{wait 10}{n}Mais il y a une{n}raison à cela{wait 5}..."
+f075-0089 0f9bd7ad94adda35 Maison{n}"Peu importe qui obtient{n}la technologie des ruines,{n}une chose est sûre...{p}Kislev comme Aveh se{n}serviront de ce pouvoir{n}pour écraser l'autre.{p}J'ai approuvé l'idée du{n}jeune maître : créer une{n}nouvelle force pour{n}rééquilibrer les choses."
+f075-0090 180c012f28478bb4 Citan{n}"Je vois...{p}Piller dans l'ombre est{n}bien plus efficace que de{n}fouiller soi-même."
+f075-0091 f0b424fcb0eccaf0 Maison{n}"Bien sûr, le pillage est{n}un acte impardonnable.{p}Cependant{wait 5}...{wait 5}{n}pour Aveh,{wait 5}{n}pour Ignas,{wait 5}{n}continuer ainsi{wait 5}..."
+f075-0092 8bde8ed0cda7c93b "Pardonnez-moi si cela{n}semble présomptueux."
+f075-0093 5b4fa64d7c125e94 Citan{n}"Ce n'est pas à des{n}étrangers comme nous d'en{n}juger.{p}D'après ce que vous{n}m'avez dit, je sens que{n}vos actions porteront{n}leurs fruits.{p}Voir vos enfants ici me{n}le dit."
+f075-0094 889b8fada7b20277 Maison{n}"Vos paroles me soulagent{n}beaucoup."
+f075-0095 928b0a44caac33d7 Maison{n}"Encore une tasse de{n}thé ?"
+f075-0096 7fbf4ee73ca843bc Citan{n}"Oui, volontiers.{wait 10}{n}Merci."
+f075-0097 0434cc7ca550a5bb Citan{n}"Vous parliez de projets.{n}Pourquoi ne pas les avoir{n}mis en oeuvre ?"
+f075-0098 906dfe40fb5a83ca Maison{n}"Avec mademoiselle{n}Margie prisonnière, nous{n}n'osons rien faire."
+f075-0099 3b2750d8ae6d19a3 Citan{n}"Serait-ce, par hasard,{wait 10}{n}celle de Nisan{wait 5}...?"
+f075-0100 582c799dd59ac6d9 Maison{n}"Vous êtes bien informé,{n}mon cher docteur.{p}C'est la Grande Mère{n}Marguerite de Nisan{wait 5}...{wait 10}{n}et la cousine du jeune{n}maître."
+f075-0101 dd499a7f84121d50 Citan{n}"Pourquoi Shakhan la{n}tient-il prisonnière ?"
+f075-0102 63ad8058415ea1df Maison{n}"Pour le 'Jaspe Fatima' !"
+f075-0103 a099707d929afb92 Citan{n}"Le Jaspe Fatima, qui{n}révélerait l'emplacement{n}d'un grand trésor ?"
+f075-0104 fc497caec226e44b Maison{n}"Ma foi, cher docteur !{wait 10}{n}Vous savez tant de choses.{wait 10}{n}J'en suis impressionné."
+f075-0105 d8cf6612cf9b8bd1 Fei{n}"Non{wait 5}...{wait 5}{n}C'est que je n'ai pas{n}soif pour l'instant !"
+f075-0106 9fa41db52b0e4862 Maison{n}"Eh bien, nous ignorons ce{n}qu'est vraiment ce grand{n}trésor...{p}Mais on le dit assez{n}puissant pour sauver notre{n}royaume s'il était un jour{n}en péril !"
+f075-0107 f597a2bf7c99d8ba Citan{n}"Et Marguerite possède le{n}Jaspe qui révèle{n}l'emplacement ?"
+f075-0108 ac8149d095468a25 Maison{n}"Une moitié seulement,{n}pour être précis.{p}Le jeune maître et{n}mademoiselle Marguerite en{n}ont chacun une moitié.{p}Ce n'est qu'en réunissant{n}les deux moitiés qu'on{n}saura où est le trésor."
+f075-0109 5f634e7f5e33363f Citan{n}"Qu'est-ce que le Jaspe{n}Fatima, au juste ?{p}Quand vous parlez d'une{n}moitié de Jaspe, j'imagine{n}une sorte de collier{wait 5}..."
+f075-0110 f67a6776b33b70ca Maison{n}"Seuls les héritiers{n}d'Aveh et de Nisan savent{n}à quoi il ressemble."
+f075-0111 19711e826f67b2eb Citan{n}"Je vois.{wait 10}{n}C'est donc pour cela qu'on{n}la retient.{p}J'imagine qu'une fois le{n}secret percé, ses chances{n}de survie ne{wait 5}..."
+f075-0112 cc28f755507b63b1 Citan{n}"Ah, pardonnez-moi.{wait 10}{n}Je voulais juste,{wait 10}{n}enfin{wait 5}...{p}Je ne faisais qu'envisager{n}le pire. Alors, je vous en{n}prie, ne le prenez pas{n}mal{wait 5}..."
+f075-0113 4fb01a0976d3712c Maison{n}"Non, c'est un scénario{n}terriblement réaliste."
+f075-0115 093f315a95fa63d0 Citan{n}"Hum.{wait 10}{n}Que pourrait bien être{n}ce grand trésor{wait 5}...?"
+f075-0116 526b0bad7468448a Maison{n}"Eh bien,{wait 10} je n'en ai pas{n}la moindre idée...{wait 5}"
+f075-0117 41a0815c10d3a4f5 Le Gear...!{n}Il parle du Gear !{wait 10}{n}Ça ne peut être que ça !
+f075-0118 d434dc0516d3bcf4 Maison{n}"Jeune maître{wait 5}...{wait 10}{n}les Gears vont bien ?"
+f075-0119 56e40557b13b0284 Bart{n}"Ouais...{p}Même étanches, du sable{n}est entré dans les{n}articulations.{p}C'est galère à réparer,{n}alors j'ai laissé{n}l'équipage s'en occuper.{p}Mon boulot, c'est juste de{n}piloter.{p}En plus, je suis nul avec{n}les machines,{wait 10} alors je{n}ferais que gêner."
+f075-0120 22113ed15785e904 Jeune maître{wait 5}...
+f075-0121 6b0e71e2a761f0b7 Bart{n}"Bref... On parlait de{n}quoi, déjà ?"
+f075-0122 b9f32a24a4bed782 Citan{n}"Si le grand trésor{n}pouvait être un{wait 5}...{wait 5}Gear ?"
+f075-0123 858c0257eef2c08a Bart{n}"Ah, ouais.{p}Vous savez, il y a un{n}truc comme ça sur l'un{n}des rouleaux illustrés{n}d'Aveh."
+f075-0124 07d3a903c93b1b91 Citan{n}"Des rouleaux illustrés ?"
+f075-0126 e15fe5cb390c3e3c Bart{n}"Bon,{wait 5} si ça vous dit,{wait 10}{n}allons à la salle des{n}opérations{wait 5}...{p}Je vous montrerai de quoi{n}je parle{wait 5}...{wait 5}vous êtes mes{n}invités spéciaux, après{n}tout."
+f075-0127 5385d462ca20c199 Citan{n}"Cela semble intéressant."
+f075-0129 34a6db0eb097ef59 Maison{n}"Vous n'aimez pas mon thé,{wait 10}{n}monsieur Fei ?"
+f076-0000 8fb69f80c881638e Fei{n}"Je suis{wait 5}...{wait 10}très{wait 10}{n}très...{wait 10}fatigué{wait 5}..."
+f076-0001 e47d8582d4a6cffb Ils ont dû nous suivre{n}depuis la Caverne !{wait 10}{n}On a fait une bêtise !
+f076-0002 329e0a7a61d5e651 Ce regard...{wait 10} Tu nous{n}crois assassins ?{wait 30} Eh{n}bien, non...{p}On ne tue personne.{n}On sauve même la vie de{n}nos ennemis. C'est la{n}police de Bart.
+f076-0003 7c88c0a8834dd83a ('Politique', plutôt ??)
+f076-0004 77bd00074263aac3 Bon sang !! La Gebler !!
+f076-0005 58999d2d7a24d185 On part demain à l'aube.{n}T'es prêt ?{n}    {speed 255}Attends{n}    Prêt
+f076-0006 a4fe62ccc22e1eae Préviens-moi quand tu{n}seras prêt.
+f076-0007 c52f86ed138980cf T'as rien oublié ?{n}    {speed 255}Une seconde{n}    C'est bon
+f076-0009 4dc1f6d892172a1c D'accord. Dors bien.
+f076-0010 1f2b550c67cce5be Tu veux te reposer dans{n}un endroit pareil ?{p}Tu plaisantes,{n}j'espère...{wait 30}{n}    {speed 255}Je veux me reposer{n}    Plus tard peut-être
+f076-0011 07d33c4b3ee5b28d Hé ! Je sais que c'est{n}un taudis, mais tiens{n}bon.
+f076-0012 a1b04153cdf1a7f6 Quand tu voudras te{n}reposer, dis-le-moi.
+f076-0013 3be05855e1a320f1 C'est ce que je pensais.
+f076-0014 41b35f55f463ece1 Hein ?{wait 30}{n}Je croyais que c'étaient{n}nos ronflements.
+f076-0015 ec7826158e170571 ...snif, snif...{wait 10}{n}Pauvre Helen...
+f076-0017 352a96f7b63c2174 Je lis, dégage !
+f076-0018 6d60007d2b3b3b25 C'est pas l'heure de{n}dormir !!
+f076-0019 9ce61f20fcf680d6 Faut se reposer quand on{n}peut, pour agir quand il{n}le faut.{wait 10}{p}Savoir quand faire chaque{n}chose, c'est important.
+f076-0020 31652dcb0ff2aa36 Quel lit est mieux...?{done 60}
+f076-0021 6581c09504dd139a Ça alors ! On a{n}été repérés !
+f076-0022 ac1a042214e10983 On était à deux doigts{n}de la paix entre Aveh et{n}Kislev.{p}Puis, dit-on, le père de{n}Bart, Edbart IV, a été{n}assassiné par Shakhan.
+f076-0023 02ba6c0d786955e1 Tu ne t'en tireras pas{n}comme ça, Shakhan !!
+f076-0024 a28c71f22c47cee1 Il me fait bouillir !
+f076-0025 76a8ae47059e49bc Presque tous les Gears{n}sont en réparation !!
+f076-0026 aab3e8de5c65f61c ...Aïe, aïe... Quelle{n}blessure pitoyable...{wait 30}{n}Le Maître ne doit pas me{n}voir comme ça.
+f076-0027 63b963790416cb46 Aïïïe !!{wait 30}{n}Faites plus attention, je{n}vous prie.
+f076-0028 c519d9e006a2ea87 Bon remède, mauvais goût.{wait 10}{n}C'est bien connu.{wait 10} À ta{n}piqûre !
+f076-0029 d6757d73658343ff Bah, quel regard noir !
+f076-0030 5074cd79356e9de3 Hein, quoi ?
+f076-0031 e5e03346a7f524f6 Quand tu seras malade,{n}préviens-moi. Je te ferai{n}une grosse piqûre qui te{n}guérira aussitôt.
+f076-0032 e665efac61694954 C'est pas le moment de{n}jouer !
+f076-0033 285b43216b9bd127 Hé, t'as la carte de{n}Margarita ?
+f076-0034 8da8cd7ac514972a Non, je l'ai pas.{wait 10}{n}Mais j'ai celle de Beth.
+f076-0035 8c2e6fca241add38 La base a été découverte ?
+f076-0036 6422d727d641b01f Je pioche jamais la bonne.{wait 30}{n}(Je parle des cartes,{n}idiot !)
+f076-0037 901644298666d0e3 Quoi ? Quoi donc ?
+f076-0038 0db8d18e6f752221 Une petite sieste...
+f076-0039 9a984ac26f33493f C'était quoi, ce boucan ?
+f076-0040 26f5762b22cba4db Des Gears ont envahi le{n}dock du Yggdrasil !{p}5 Gears des forces{n}spéciales de la Gebler et{n}un seul grand Gear non{n}identifié.{p}Tous les pilotes,{n}présentez-vous au hangar{n}des Gears !
+f077-0001 31862249f2ea1d2f Bart{n}"Bon sang !{wait 10} C'est quoi,{n}son problème, à ce Fei ?{p}J'essaie de devenir son{n}ami et il explose de rage{n}pour rien..."
+f077-0002 458365f5d71b464f Bart{n}"Bon, il a l'air d'avoir{n}plein de choses en tête.{wait 10}{n}Je veux pas le brusquer.{p}Mais ce serait marrant de{n}me battre avec lui{wait 5}...{wait 20}{n}Je lui redemanderai."
+f077-0003 3eaeed372c41abd1 Si je me planque sous{n}l'ascenseur...
+f077-0004 50d8e933c77bd894 Bart{n}"Quoi !?{n}Dégage !!"
+f077-0006 5bc8310fc8206267 Bart{n}"Arrgghh, ça me{n}saoule !"wemd(60)
+f077-0007 ae0c704ba1d261a6 Fei{n}"C'est{wait 5}...{n}le bandeau de Bart !?"
+f077-0008 2e66dd8261355110 Fei{n}"Ces photos montrent Bart{n}enfant, on dirait...{p}La fille à côté de lui...{wait 10}{n}ça doit être Margie !!"
+f077-0009 8c34542a23f1c3a7 Fei{n}"Les deux photos semblent{n}montrer Bart enfant...{p}La fille à côté de lui...{wait 10}{n}Ce doit être la fille dont{n}ils parlaient !"
+f077-0010 554faf754907bd6a Fei{n}"À qui est cette photo ?{wait 30}{n}Un petit garçon et une{n}petite fille..."
+f078-0000 92c2b2663bb2dc34 Citan{n}"Vous êtes prêt ?{wait 10}{n}Je viendrai plus tard.{n}Reposez-vous un peu."
+f078-0001 1568d192544e38ab Citan{n}"Fei, inutile d'en{n}vouloir à Bart.{wait 10}{n}Pardonnez-lui."
+f078-0002 2a7c66711ea96631 Citan{n}"Fei, rien ne justifie{n}votre colère envers Bart.{wait 10}{n}Pardonnez-lui."
+f078-0003 8e905a001e5f38a9 Sigurd{n}"Nous partons demain à{n}l'aube.{wait 10}{p}Préparez-vous aujourd'hui{n}et reposez-vous du voyage{n}dans vos quartiers."
+f078-0004 48f607f5b67bb80d Sigurd{n}"Je fouille le réseau{n}d'informations{p}à la recherche de{n}rapports sur la situation{n}d'Aveh."
+f078-0005 d7f6524537479303 Sigurd{n}"Que voulez-vous savoir ?{wait 10}{n}    {speed 255}Qui est Margie ?{n}    Qui est Shakhan ?{n}    Le Jaspe Fatima ?{n}    Parlez-moi de Nisan{n}    Rien
+f078-0006 eb511ae6a31a3ae8 Sigurd{n}"Margie est la Mère{n}Marguerite de Nisan.{p}Mais Shakhan, d'Aveh, l'a{n}emprisonnée et convoite le{n}Jaspe Fatima.{p}Bart n'en a peut-être pas{n}l'air, mais il est très{n}inquiet."
+f078-0007 f67dce01e7353c3e Sigurd{n}"Shakhan était le Premier{n}ministre d'Aveh.{p}Aujourd'hui, c'est lui qui{n}gouverne.{wait 10} C'est son règne{n}qui a plongé notre Aveh{n}dans le chaos."
+f078-0008 280a92b628ad8174 Sigurd{n}"Margie possède la moitié{n}du Jaspe Fatima.{p}Shakhan le veut, car il{n}révèle l'emplacement du{n}grand trésor."
+f078-0009 78e4087f16f30026 Sigurd{n}"Nisan est un petit pays{n}sacré, à l'ouest d'Ignas.{p}En son centre se dresse{n}une immense cathédrale{n}magnifiquement ornée.{p}Le pays a été fondé par{n}Sophia.{p}Ses fidèles, les -Kahal-,{n}l'appellent la 'Mère du{n}Savoir'.{p}Elle fut aussi la première{n}Mère de Nisan."
+f078-0010 f10bed63666f9c98 Envoi des dernières{n}informations !
+f078-0011 e5d4fa3490c2581b Nous prions pour la{n}réussite du sauvetage !
+f078-0012 ce3556aae466a906 Voie d'évacuation 4 :{n}civils. Tous les civils{n}du dock, à l'abri dans le{n}Yggdrasil !
+f078-0013 ac32f4c4e69a3c3a Il y a 12 ans, Sigurd a{n}fui Aveh avec le jeune{n}maître.{p}On est bons amis depuis.
+f078-0015 887e7ab236a57cf7 On transmet les dernières{n}infos au Yggdrasil.{n}Bonne chance pour sauver{n}Margie !
+f078-0016 b76c3c8748e4aed3 Ils sont entrés par la{n}porte 4.
+f078-0017 72609d3904b0f35a Signature thermique non{n}identifiée dans le conduit{n}de ventilation.{wait 10}{p}Des Gears ! La porte 3 est{n}détruite !
+f078-0018 2d6f390fe9c9c3ca Courant principal coupé !!{wait 10}{n}Passez sur la réserve !
+f078-0019 631e4dc01241472f Margie va bien, j'espère.{wait 10}{n}Pourvu qu'elle ne soit pas{n}blessée.{p}On n'est que des{n}opérateurs, mais on{n}s'inquiète.{p}On ne peut rien faire.{wait 10}{n}...Snif...
+f078-0021 8d51c3022d2231b2 Bonne chance pour{n}sauver Margie !
+f078-0022 7231e63306a4f10a On a perdu des Gears !{n}Gears opérationnels : 5{n}En service : 1{n}Invité : 1{p}Tous les pilotes, au{n}dock des Gears{n}immédiatement !
+f078-0023 43ccac2eec683fd4 Zone dégagée !!
+f078-0024 a4100098a1e9509d Citan{n}"Quel endroit{n}incroyable !{p}Même la capitale n'a{n}sans doute pas{n}d'équipements pareils."
+f078-0025 3d75cd30d4604336 Bart{n}"Héhé. Surpris ?{wait 10}{n}Toute cette technologie,{n}c'est grâce à Sig."
+f078-0026 b6401f00c76f757c Bart{n}"Hé, Fei !{wait 10}{n}Reste pas devant l'écran.{wait 10}{n}On voit rien !"
+f078-0027 a86a7a4b50b88ca3 Bart{n}"Bon, les gars !{wait 10}{n}Mon dossier spécial sur{n}le grand écran !"
+f078-0028 66f972b06fc0fcf5 Citan{n}"Qu'est-ce que c'est...?"
+f078-0029 c855e122731e9aab Bart{n}"Un rouleau illustré de{n}presque 500 ans.{p}Voici le roi Fatima Ier...{wait 10}{n}'le corps enveloppé de{n}flammes, scellant un pacte{n}de sang avec des géants'.{p}Il aurait utilisé la force{n}des géants pour fonder{n}Aveh."
+f078-0030 8edcc420b2a55d19 Citan{n}"Remarquable, un rouleau{n}si ancien... et en si bon{n}état !{p}Je croyais que l'Ethos{n}contrôlait tout ce genre{n}de choses..."
+f078-0031 3d7468c4eea2c524 Bart{n}"Normalement, oui.{p}Mais c'était un des{n}biens les plus précieux{n}de mon père."
+f078-0032 087f035e64eeb5bf Bart{n}"Suivant !"
+f078-0033 19052d3c473f84d6 Bart{n}"Le pays fondé, Fatima a{n}forcé les géants à{n}dormir{wait 5}...{p}...{wait 5}pour protéger son peuple{n}au besoin.{wait 15} Mais on ignore{n}où ils sont cachés.{p}Ailleurs, l'un des géants{n}est appelé le 'Grand Trésor{n}Fatima'."
+f078-0034 5f8da68861c2bc80 Citan{n}"Et le 'Jaspe' ?"
+f078-0035 ffeb8c53ad95fdb4 Bart{n}"Hé...{wait 10}{n}vous en savez, des choses.{p}Vous seriez pas un espion{n}de Shakhan, par hasard ?"
+f078-0036 99a4038729049ede Citan{n}"Bien sûr que non.{wait 10}{n}Ce n'est qu'une curiosité{n}intellectuelle..."
+f078-0037 d3fcc5a030313958 Bart{n}"Je blague.{wait 10} Le Jaspe{n}serait la clé pour trouver{n}notre trésor."
+f078-0038 50c0e00ce69c7f40 Citan{n}"Une clé...{p}Serait-ce ce que{n}cherche Shakhan ?"
+f078-0039 5695a5efb65a1c21 Bart{n}"Pas que lui.{wait 10}{n}La Gebler aussi, elle le{n}cherche."
+f078-0040 9c0937999ed90944 Citan{n}"Vraiment ?{p}Il faut donc sauver{n}Marguerite au plus vite."
+f078-0041 774d34129ae5b44f Bart{n}"À qui le dites-vous !"
+f078-0042 b3b98ca2f0adb9ec Bart{n}"On vous a aidés{wait 5}...{wait 10} En{n}échange, je peux vous{n}demander un service ?"
+f078-0043 ca7f6fcb1c965067 Citan{n}"Ce serait{wait 5}...{wait 5}{n}pour vous aider à la{n}sauver{wait 10}...?"
+f078-0044 24528025e9057888 Bart{n}"Malin, le garçon !{wait 10}{n}C'est exactement ça.{p}D'après Sigurd{wait 5}...{wait 10}{n}Aveh et Kislev seraient à{n}vos trousses !{p}Alors on vous aide et{n}vous nous aidez{wait 5}...{wait 10}{n}Ça vous va ?{wait 10}{n}C'est pas trop demander."
+f078-0045 f8422e69afb872b9 Citan{n}"Eh bien, si cela paie le{n}gîte et le couvert,{n}j'aiderai de mon mieux..."
+f078-0046 dd0b3500ca7df40e Citan{n}"Qu'en pensez-vous, Fei ?{wait 10}{n}Vous ne dites rien depuis{n}un moment..."
+f078-0047 f2c633d22a92d788 Bart{n}"Ouais.{wait 10}{n}T'as été génial dans la{n}caverne de stalactites.{p}À toi seul, tu vaux dix ou{n}vingt gardes de Shakhan."
+f078-0049 5de1ed765b28d43e Bart{n}"Ta force, j'adorerais{n}l'avoir de mon côté !"
+f078-0050 1047a1b6560c8a28 Fei{n}"Pourquoi tout le monde{n}veut que je me batte ?"
+f078-0051 fa59da71e040e7c1 Bart{n}"H, hein...{wait 10}{n}Qu'est-ce qui te prend,{n}tout à coup ?"
+f078-0053 c34ce5387e375e21 Fei{n}"J'en ai juste pas envie !{n}'Ta force de mon côté' ?{wait 10}{n}Je n'ai aucune force !{p}Qu'avez-vous tous,{wait 5}{n}Doc,{wait 5} tout le monde{wait 5}...{wait 10}{n}Vous me poussez à bout.{p}Et puis il y a ce Gear{wait 5}...{wait 5}{n}Grahf et mon père{wait 5}...{p}Je n'ai pas le temps pour{n}vos problèmes, j'ai déjà{n}assez des miens !!"
+f078-0054 f461ab9d282d8738 Bart{n}"Qu'est-ce qui lui prend ?{wait 10}{n}Il est toujours aussi{n}soupe au lait ?"
+f078-0055 b6a0252ca5317ffc Citan{n}"Non, ce n'est pas ça...{wait 10}{n}Je vous prie de{n}l'excuser.{p}Tout s'est passé si vite{n}qu'il n'a pas encore pu{n}tout assimiler.{wait 10} Essayez{n}de comprendre."
+f079-0000 d0c806996e4a406d Bart{n}"T'es prêt ?"{n}    Je crois{n}    Plus tard
+f079-0001 62b0cd6e04558aec Bart{n}"Bon, alors reviens{n}plus tard."
+f079-0002 0cbee73e2a3d02b7 Bart{n}"T'as une minute ?"{n}    Bien sûr{n}    Plus tard peut-être
+f079-0004 2b23ab6cd12486b2 Sigurd{n}"Fei, sortez d'ici,{n}c'est dangereux !!"
+f079-0005 0240e62e69885119 Fei ! Je bosse encore{n}dessus à cause de ces{n}types.{wait 10}{p}Il faudra encore un peu de{n}temps avant que le{n}Yggdrasil puisse partir.
+f079-0006 470e15a5c997b499 Ah, Fei !{wait 10} Tu peux prendre{n}cet ascenseur pour{n}descendre au hangar des{n}Gears.{p}Va donc jeter un oeil au{n}{name 11} et faire{n}l'entretien que tu veux.
+f079-0007 36c2b72849baa0d4 Allez, allez !!{wait 10}{n}Bougez-vous les fesses et{n}retournez au boulot !{done 60}
+f079-0008 4e49c1cd8348e70b Bart, te revoilà !{done 40}
+f079-0009 d8accef73c008d6b {speed 5}'À fond la barre !!!'
+f079-0010 84180c85f312fbce Oui, chef !!{done 30}
+f079-0011 45d88233f09b4a60 T'as appris quelque chose ?{n}    Oui{n}    Non, quoi ?
+f079-0012 6f657a7182d16b80 Ah, non. N'en parle à{n}personne.
+f079-0013 3b9a741a8bffc7d3 Ah bon ? Tant mieux.{n}(Ouf, je m'en tire)
+f079-0014 b8ac0a5836bbb441 J'ai réussi ! On m'a pris{n}comme apprenti pilote !
+f079-0015 3e1d0776c7efdde9 J'aimerais piloter ce{n}truc au moins une fois.
+f079-0016 6da5e8ba79d9f8f9 Bon retour !{done 40}
+f079-0021 ac02e58a57cc082b Bon retour !{wait 10}{n}Bart !
+f079-0022 189bcaacb1d6c1f8 Bart ! Tu nous as{n}rapporté quoi ?
+f079-0023 efbd94b4e168d5d0 Bart{n}"Eh bien{wait 5}...{wait 10}un Gear tout{n}neuf et deux personnes{n}qu'on a aidées."
+f079-0024 8f01fcc241f19c63 Ehh !{wait 10}{n}Un Gear{wait 5}...{wait 5}c'est nul !{wait 10}{n}T'as rien de plus{n}intéressant ?
+f079-0025 77187ead2b56c0cb Bart{n}"Je me doutais que vous{n}diriez ça..."
+f079-0026 87703d6c470495b4 Bart{n}"Regardez ! C'est un{n}ambre que j'ai trouvé{n}dans une caverne de{p}stalactites sous le{n}désert.{p}C'est rare d'en trouver{n}un avec un insecte{n}dedans !"
+f079-0027 968bd876b34391b7 Ouah !{wait 10}{n}Merci, Bart !
+f079-0028 67be785291974549 On a eu un ambre !{done 30}
+f079-0029 ea345ebcd56dfafc C'est quoi, ça ?
+f079-0030 3255b28f4ad2c498 Viens !{wait 10}{n}Faut le montrer à tout{n}le monde !
+f079-0031 8edc7a07a6be149a Bart{n}"Bon, alors...{wait 10} je vais{n}régler un peu mon Gear...{p}Et si vous alliez prendre{n}le thé avec le vieux{n}Maison ?"
+f079-0032 8f300d361bf143be Bart{n}"Merci, mon vieux Maison."
+f079-0033 a18e9421525351d5 Maison{n}"Par ici, je vous prie."
+f079-0034 3328c540b255bbe8 Bart{n}"Citan m'a raconté toute{n}ton histoire. Tu veux en{n}parler ?{p}Pourquoi tu me l'as pas{n}dit ?{wait 10} Ça a l'air d'avoir{n}été dur."
+f079-0035 23296aad9cc2d4cb Bart{n}"Écoute...{wait 10} désolé d'avoir{n}été un crétin...{wait 10} tout à{n}l'heure..."
+f079-0036 8456b73fe3859bb7 Bart{n}"Tu me pardonnes, hein ?"
+f079-0038 373d2382589a1d9c Oups !!{done 60}
+f079-0039 a46edaf45eb85b2e Bart{n}"Bref... désolé d'y{n}revenir, mais..."
+f079-0040 96b7361009012444 Fei{n}"Non !"
+f079-0041 868c480ced21963a Quoi ?
+f079-0042 a2db94589cb71aca Fei{n}"Moi, je n'aime pas me{n}battre, pas comme toi.{p}Je suis monté dans ce{n}Gear par obligation.{wait 10} Je{n}préférerais ne jamais{n}piloter ces trucs.{p}Si tu tiens tant à ce{n}Gear, garde-le !{n}Je n'en veux pas !"
+f079-0043 6d21defa94d3f6a1 Bart{n}"Tu crois que j'aime me{n}battre ?{wait 10} ...C'est ça ?"
+f079-0044 fdefd536260ae29f Fei{n}"Tu n'aimes pas ça ?{wait 10} On{n}dirait bien.{p}Tu as l'air de n'aimer{n}que te battre."
+f079-0045 62dbba9f1d2faff2 Bart{n}"Ça, je laisse pas passer.{n}Qui aimerait{p}se battre ?{wait 10} Retire ce que{n}t'as dit.{p}Je me bats parce qu'il le{n}faut, que je le veuille ou{n}non. J'ai mes raisons,{n}mais{wait 15} tu comprendrais pas."
+f079-0046 4473dfcddaaf5fad Fei{n}"Je n'ai aucune raison de{n}me battre !{wait 10} Je ne veux{n}pas me battre.{p}Je veux juste une vie{n}calme et tranquille.
+f079-0047 584250994c5ecce4 Et vous me poussez à{n}monter dans un Gear ?{n}Pourquoi ne pas me{n}laisser en paix !?"
+f079-0048 8f35a8c25ca222a2 Bart{n}"C'est que je vois ton{n}talent{wait 10} et je me dis..."
+f079-0049 7f9dbc39760da044 Fei{n}"Moi, je déteste ça ! Dès{n}que je monte dans un Gear,{n}quelqu'un est blessé.{p}Si je me bats, on meurt.{wait 10}{n}Je ne veux plus blesser !{wait 10}{n}Je ne veux plus de morts !{p}Je déteste ça...{wait 10} tu ne{n}comprends pas ?"
+f079-0050 df4b29459c31c297 Bart{n}"Ouais,{wait 10} je connais ça,{wait 10}{n}cette envie de juste{n}fuir la réalité.{p}Mais tu crois que les{n}enfants restés dans ton{n}village{n}comprendraient ?"
+f079-0052 a2b32c7ae5223d17 Bart{n}"Citan m'a raconté ce qui{n}s'est passé à Lahan.{p}Ça aurait été mieux si tu{n}n'avais rien fait ?{wait 10} Bon,{n}c'est arrivé parce que tu{n}étais dans le Gear.{p}Mais même sans toi, des{n}gens seraient morts...{wait 10} Pas{n}vrai ?{wait 10} T'en étais pas la{n}cause.{p}La guerre...{wait 10} non, la cause,{n}c'est ceux qui l'ont{n}déclenchée.{p}Et si tu n'élimines pas la{n}cause, rien ne changera.{wait 10}{n}Moi, je me bats pour{n}éliminer la cause...{p}Là, il n'y a pas d'autre{n}moyen, alors je dois me{n}battre...{wait 10} Mais ça ne veut{n}pas dire que j'aime ça."
+f079-0053 5a1643da45c177a8 Bart{n}"Je comprends que tu te{n}sentes coupable envers les{n}enfants de ton village.{p}Et je sais pourquoi tu{n}ne veux pas faire de mal{n}aux autres.{p}Mais pour te racheter{n}auprès de ces enfants,{wait 10}{n}tu dois pas te battre ?"
+f079-0054 10aa8e0b87a6e4ff Bart{n}"Tu as une raison de te{n}battre.{wait 10} Une raison pour{n}laquelle tu dois lutter.{p}Mais tant que tu l'ignores{n}et que tu fuis, ces{n}enfants ne te pardonneront{n}jamais.{p}N'oublie pas ça."
+f079-0055 8c5683c4221b7f6c Bart{n}"Et autre chose :{p}je ne dis pas que refuser{n}de m'aider, c'est fuir.{p}T'es pas obligé d'aider.{wait 10}{n}C'est mon problème.{wait 10} Je{n}veux pas t'y mêler contre{n}ton gré.{p}Mais,{wait 10} si j'avais ton{n}talent, je pourrais en{n}finir avec tout ça{wait 5}...{p}Et me racheter auprès de{n}ces enfants.{wait 10} C'est ce que{n}je pense, en tout cas..."
+f079-0056 14235ce9659f157a Bref... désolé de t'avoir{n}retenu.{p}Le mécanicien voulait te{n}parler de ton Gear.{p}Tu t'en fiches sûrement,{n}mais écoute au moins ce{n}qu'il a à dire.
+f079-0058 6dd365096e82013f Sigurd{n}"Regardez là-bas..."
+f079-0059 f7782ef7ba508daf Hé, papa...{wait 10} Tu m'entends ?{wait 10}{n}Dès que j'ai croisé le{n}regard de Fei, j'ai su...{p}Il est comme moi.{wait 10} Il me{n}comprendrait...{wait 10} Du moins,{n}c'est ce que je croyais...{wait 10}{n}J'ai rêvé, peut-être ?
+f079-0060 bbaa15b46b2d1d4d Je doute de moi.{wait 10}{n}À suivre tes traces, papa,{n}je serai qu'une potiche.{p}Je n'arrive même pas à{n}accomplir ta volonté,{wait 10}{n}alors sauver Margie...
+f079-0061 0fe88f73e11f4fc8 J'ai dit qu'il fuyait,{n}mais{wait 10} en fait, celui qui{n}veut fuir, c'est moi...
+f079-0062 4e1e0e04e4009d55 Sigurd{n}"Le jeune maître m'a prié{n}de vous présenter ses{n}excuses.{wait 10} Étrange, non ?{p}Il sait qu'il devrait{n}s'excuser lui-même...{p}Mais le jeune maître n'est{n}pas très doué pour ce{n}genre de choses..."
+f079-0063 4fcebc83a692be7d Sigurd{n}"Ça ne se voit peut-être{n}pas, mais il est très{n}seul{wait 5}...{p}Il cherche sans cesse un{n}ami.{wait 10} Nous qui veillons sur{n}lui ne pouvons être ses{n}amis.{p}Même si nous le voulions,{n}il ne nous verrait pas{n}ainsi.{wait 10} Il le sait."
+f079-0064 06e714e946788324 Sigurd{n}"Pourquoi, demandez-vous ?{n}À cause du fardeau qu'il{n}porte.{p}Si jeune, porter une si{n}lourde responsabilité doit{n}être difficile.{p}Mais il fait de son mieux,{n}vous savez ?{p}C'est pour cela que nous{n}restons auprès de lui...{n}Pas parce qu'il est le{n}prince."
+f079-0065 36636c00126e6bf7 Sigurd{n}"Fei,{wait 10} je sens que vous{n}portez vous aussi un lourd{n}fardeau.{p}C'est peut-être égoïste,{n}mais... pourriez-vous{n}aider le jeune maître ?{p}Je ne vous demande pas{n}d'endosser ses problèmes{n}ni ses responsabilités.{p}Mais tous les deux... avec{n}ce que chacun de vous seul{n}connaît, pourriez-vous{p}vous aider l'un l'autre ?{wait 10}{n}S'il vous plaît..."
+f079-0066 e729a34e58a4e9eb Fei{n}"Désolé{wait 5}...{wait 10} J'ai besoin de{n}temps pour réfléchir."
+f079-0067 f6d640a18dcd2eda Sigurd{n}"Bien sûr... prenez votre{n}temps. La décision vous{n}appartient.{p}Quelle que soit votre{n}décision, nous partirons{n}demain à l'aube.{p}Une fois prêt pour demain,{n}reposez-vous un peu.{p}Vous pouvez prendre la{n}chambre du quartier{n}résidentiel, en haut."
+f079-0068 c49b66352b23488e Citan{n}"J'aimerais encore{n}parler un peu avec{p}Sigurd... Allez-y et{n}reposez-vous."
+f079-0070 d6ff0a798f9db7dd Tous les non-combattants,{n}au Yggdrasil !!{wait 10}{n}Immédiatement !{done 60}
+f079-0071 4f5e3ef42a9337cf Ouiiin, j'ai peur !!{done 60}
+f079-0073 6fbade58992004cf {speed 5}Citan{n}"Fei !! Vite ! Allez au{n}{name 11}, maintenant !!"
+f079-0075 7dbe27b4c350d339 Citan{n}"Bart et les autres se{n}battent déjà !{p}Vous n'allez rien faire ?{wait 10}{n}Vous croyez encore que ça{n}ne vous concerne pas ?"
+f079-0077 a774b503fa06bbef Fei{n}"Je..."
+f079-0078 d1fe2e6a1a46e5a2 Fei{n}"Je...{wait 10}{n}Que{wait 10}{n}suis-je ?"
+f079-0079 604ff024b15fd493 Fei{n}"Ce vieux...{wait 10}{n}m'a appelé...{wait 10}{n}tueur de{wait 10} dieu..."
+f079-0080 fbe2dd08b3855bf8 Fei{n}"Je ne veux pas{wait 5} de ce{n}genre de{wait 5} pouvoir{wait 5}..."
+f079-0081 6d6b24088b835ab6 Ma...{wait 10}{n}force...{done 90}
+f079-0082 f5baacb8354f0b0e Mon...{wait 10}{n}foyer...{done 90}
+f079-0083 f2dd9e847b3986b2 Maison{n}"Il faut infiltrer Aveh et{n}sauver Margie sans{n}tarder !{p}La Gebler a trouvé cette{n}base.{wait 10} Laissons une petite{n}garnison et évacuons tant{n}qu'il est temps.{p}Par chance, le Yggdrasil{n}est intact : nous pouvons{n}embarquer immédiatement.{p}Les préparatifs de{n}l'équipage sont terminés.{p}Quand vous serez prêts,{n}monsieur Fei et docteur,{n}veuillez escorter le jeune{n}maître jusqu'au pont."
+f079-0084 31473dd3b0a0255d Maison{n}"Docteur Uzuki,{wait 10} monsieur{n}Fei,{wait 10} je vous remercie du{n}fond du coeur.{p}Je vous serais très{n}reconnaissant de bien{n}vouloir rester nous aider à{n}la sauver !"
+f079-0085 4fbfc45a7bbff58b Bart{n}"Hé, ça va, ça va.{wait 10}{n}Laisse-moi dire au revoir{n}aux filles d'abord."
+f079-0086 fcf7711710d9998b {speed 255}Monter aux logements ?{n}    Monter{n}    Non
+f079-0087 4c181793d516a4c8 {speed 255}Descendre au hangar ?{n}    Descendre{n}    Non
+f079-0088 f45b3bf05c0eace2 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}100 %
+f079-0089 d7ec0f71bb2a3df1 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}80 %
+f079-0090 3a94eb827b413e63 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}60 %
+f079-0091 b49c575128611005 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}40 %
+f079-0092 0062d3614a06a697 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}20 %
+f080-0000 281474a1059c7e95 Helmholz{n}"Tout est prêt !!"
+f080-0001 bacf1fa782f91577 Stratski{n}"Tout est OK ici !"
+f080-0002 b1fdf6643520010f Broyer{n}"Confirmé !{wait 10}{n}C'est leur base,{n}sans aucun doute."
+f080-0003 4dca157dee7dd28a Helmholz{n}"Ce rocher a été{n}facile à percer.{p}Je pensais que ça{n}serait plus{n}dur..."
+f080-0004 023c2b67e7fb86f7 Stratski{n}"Ces -Agneaux- de la{n}surface vivent dans un{n}endroit bien sympa..."
+f080-0005 5b036b98aa33b30c Renk{n}"Regardez-moi ça...!{p}Ils ont bâti cet endroit{n}bien mieux que les{n}installations de Bledavik.{p}Sans doute un fort secret{n}bâti du temps de leur{n}ancien roi..."
+f080-0006 857a8d0cc0af37bd Vance{n}"Et alors...?{wait 10}{n}Finissons-en{n}vite !"
+f080-0007 7cea604473e13ebe Stratski{n}"Alors...{wait 10}{n}où sont les Gears ?"
+f080-0008 42bcf48a4779ae03 Stratski{n}"Par ici ?"
+f080-0009 6980263224499003 Helmholz{n}"À droite !{wait 10}{n}Il y a un hangar !"
+f080-0011 968023611622d745 Vance{n}"Trouvé !!"
+f080-0012 6f2ec3ab71b30cb1 Helmholz{n}"Ce sont des 'Deurmods'.{n}Des Gears de pirates{n}ordinaires."
+f080-0013 1034154c4bad60ab Vance{n}"Ha !{wait 10}{n}Ignorez-les ! On{n}s'en chargera vite."
+f080-0014 43a234433be96169 Stratski{n}"Et si on en prenait ?{wait 10}{n}Même ceux-là, ça vaut{n}l'infiltration."
+f080-0015 3adb2e4a4c572dfc Renk{n}"Très bien !{wait 10}{n}Le Schpariel est déjà en{n}arrière-garde !{p}Préparez-vous à{n}éliminer tout ce{n}qui se dressera sur{n}notre chemin !"
+f080-0016 6e19ac7f492ebe55 Broyer{n}"Quand vous voulez !"
+f080-0017 dd48a4b8feaddcdc Renk{n}"MAINTENANT !!"{done 40}
+f081-0000 2c0296ca283e8ca5 Maison{n}"Aveh comme Kislev se{n}consacrent à fouiller les{n}ruines.{p}La puissance des deux pays{n}croît de jour en jour.{p}Même avec l'aide de tous{n}nos compagnons pour lancer{n}une révolution...{p}...nos forces réunies ne{n}suffiraient toujours pas.{p}La garde de Shakhan nous{n}écraserait sûrement en un{n}clin d'oeil."
+f081-0001 09525cee89b0268c Il nous fallait de la{n}puissance.{p}Nous avons tenté de{n}fouiller les ruines{n}avec le Yggdrasil, sans{n}le succès espéré.
+f081-0002 c3625592a992cde8 Fouiller exige énormément{n}de temps, de main-d'oeuvre{n}et de capitaux.{p}Notre croiseur des sables{n}ne trouve, au mieux, que{n}de petits objets.
+f081-0003 5afc1c3a48254385 Citan{n}"Et la piraterie..."
+f082-0001 89d80d825d17c105 {speed 255}Soeurette...！！{done 30}
+f082-0002 5a3affb72081b210 Vance{n}"Où crois-tu{n}aller comme ça ?"{done 60}
+f082-0003 8dbc383bc6fc78d9 A, arrête...{done 30}
+f082-0004 5519864d00c5a341 Vance{n}"Admirable...{wait 30}{n}Et quel cri pousseras-tu{n}quand je ferai ça ?"{done 60}
+f082-0005 5b3ce10cd4999ce3 Quoi !?
+f082-0006 17b9b2c6a576a0db Fei{n}"Pourquoi te bats-tu ?"
+f082-0007 0532737c1e2ea1a9 Vance{n}"Toi,{wait 10} qu'est-ce{n}que tu fais !?"
+f082-0008 c973324418bbb637 Fei{n}"Qu'est-ce que tu gagnes à{n}te battre ?"
+f082-0009 170529ea9e0db814 Fei{n}"Et si c'était{n}ta maison !?"
+f083-0001 dadf92f0b88703f7 Bart{n}"Je savais que tu{n}changerais d'avis !!"
+f083-0002 aaabc97fdc0b43bd Fei{n}"On en parlera plus tard !{n}Là, un gros problème nous{n}tombe dessus !"
+f083-0003 c56683e157920157 Citan{n}"Je suis un peu{n}rouillé, je le sais...{p}Ce que je peux{n}apprendre a des{n}limites, j'ai commencé{n}si tard.{p}Pourtant, j'ai frappé cet{n}homme de plein fouet sans{n}qu'il tombe. Ils doivent{n}utiliser 'cela'."
+f083-0004 faf98a4b7c08e425 Citan{n}"Jeune homme !{wait 10}{n}Ils utilisent du{n}-Drive- !{p}Des drogues qui décuplent{n}la force au combat.{wait 10}{n}Nos attaques normales ne{n}les blesseront pas !"
+f083-0005 d10efed1b246a360 Bart{n}"Sérieux ?{n}C'est comme ça qu'ils{n}tiennent le coup ?{p}Bon sang...{n}Ça n'en finit{n}pas !"
+f083-0007 2cbd6b340622c821 Bart{n}"D'accord ! On se{n}débrouillera sans lui !"
+f084-0000 a08fd6aa2eee51a3 Ah, Bartholomew.{wait 10}{n}"Les Gears sont tous à{n}bord du Yggdrasil."
+f084-0001 f51a24636296985e Bon travail.{wait 10} Sans votre{n}soutien, cette base ne{n}serait plus là. Embarquons{n}sur le Yggdrasil.
+f084-0002 3bc45ff379f9bc7f Merci, monsieur !!
+f084-0003 4c44f04dab173939 Ce Gear s'appelle{n}{name 14}. Il a été déterré{n}avec le {name 15}.{p}Mais on n'a jamais pu le{n}faire marcher. Trois{n}pilotes d'essai se sont{n}blessés en essayant.{p}Je crois que personne ne{n}peut le dompter.
+f084-0004 b1e496380b93dc35 Le {name 15} est une étoile{n}d'espoir pour nous, les{n}pirates.{p}Le rouge vif de sa carcasse{n}incarne l'ambition de Bart.{p}Mais Bart en fait toujours{n}trop, alors l'entretien est{n}un casse-tête.
+f084-0005 c5d9f469cc2420cb C'est un modèle de série basé sur{n}le {name 15} de Bart, simplifié{n}pour réduire les coûts.{p}Bien réglés, ils sont très bons.{wait 10}{n}C'est là qu'on peut montrer de{n}quoi on est capables.
+f084-0006 b042c9b22c8e6054 Non, les caractéristiques{n}de ce Gear sont{n}inconnues...{wait 10}{p}Et ce genre de chose, je{n}n'y comprends rien.
+f084-0007 5fc16691dc2520d7 On dirait que quelqu'un{n}savait vraiment régler ton{n}Gear...{p}Attaque,{wait 10} défense,{wait 10}{n}amplification d'Éther...{wait 10}{n}une machine d'un équilibre{n}exceptionnel.{p}Mais on n'arrive pas à{n}démonter certaines pièces{n}pour voir à quoi elles{n}servent...{p}On pourrait les appeler{n}des{wait 5}...{wait 10} boîtes noires.{p}Il y en a un paquet sur{n}cette machine{wait 5}...{wait 10} Tu sais à{n}quoi elles servent ?
+f084-0008 499703bb21097bfc Fei{n}"{slow 2}Non..."
+f084-0009 431142b5dccf0ee9 C'est ton Gear, hein ?{wait 10}{n}Celui-là, ça vaut le{n}coup d'y bricoler !{p}Il utilise une{n}technologie incroyable.{p}Je vais l'examiner. Tu{n}repasses plus tard ?
+f084-0010 ba4fc4f8f200b87b Enfin, tous les Gears{n}sont à bord du Yggdrasil.{wait 10}{n}Le tien aussi.
+f084-0011 8dd0c00a23b0011b Chef, laisse-nous bricoler{n}un peu les Gears... Un{n}artisan doit toujours{n}pratiquer son art !
+f084-0012 6dfd7c0bc79577f9 Je file au hangar voisin.
+f084-0013 cb612787d9ee0ba4 Merci, Fei !!
+f084-0014 bc7c8a74804a2e7e Ouah !{wait 10} C'est marrant de{n}nettoyer !
+f084-0015 43391c7fe142678b Merci !!
+f084-0016 b2f3b0cce0634dc0 Quand je serai grand, je{n}veux être pilote...
+f084-0017 a5bb7e5d4a86fe2f Citan{n}"Maison, ce Gear{n}fonctionne-t-il ?"
+f084-0018 a67d6e4370223cff Maison{n}"Pardon ?{wait 10} Oui, il{n}fonctionne, mais..."
+f084-0019 4527d92af7318ed6 Très bien !
+f084-0020 7f898da18028d9a5 Maison{n}"Hors de question !{wait 10} Il est{n}encore en maintenance.{p}Il est loin d'être{n}opérationnel..."
+f084-0021 8f8c535f6552edb6 Sigurd{n}"Tout va bien, Maison."{done 40}
+f084-0022 c77062c46a7c7820 Maison{n}"Monsieur Sigurd !{wait 10} Mais{n}pour un gentilhomme comme{n}notre docteur...?"
+f084-0023 f1c0ed577640e13e Sigurd{n}"Tout ira bien.{wait 10} Il s'en{n}sortira.{p}Ce ne sera peut-être même{n}pas assez pour lui."
+f084-0024 d8bc998ff02fbf9f Monsieur Sigurd...?
+f084-0025 82d40e7630a5b7fc Citan{n}"Bien...{wait 10} Voilà 5 ans que{n}je ne me suis pas battu...{p}J'espère m'en souvenir{n}encore..."
+f084-0027 8425e46234dc36c2 Fei !{done 30}
+f084-0028 d1cc19ecd8e9ee59 Fei{n}"Sigurd, Doc...{wait 10} Qu'y{n}a-t-il...?"
+f084-0029 56835cce19a4629b Sigurd{n}"Nous aimerions vous dire{n}un mot..."
+f084-0030 800e34376907e470 Fei{n}"Ah, d'accord !"
+f084-0031 f1c3e1fa9172895e Bart{n}"...{wait 10}{n}Mer,{wait 10} mer,{wait 10} merc...{wait 10}
+f084-0032 8cd138ecf479a75b Bart{n}"Merci...{wait 10}{n}Fei."
+f084-0034 aaf671224aaef175 Sigurd{n}"Merci, Fei.{wait 10} Sans vous,{n}je ne sais pas comment{n}nous aurions fait."
+f084-0035 72d7a202fb795dd2 Fei{n}"Je...{wait 10} ne sais toujours{n}pas quoi faire."
+f084-0037 7a48bbdd009edaff Fei{n}"Bart n'agit pas dans son{n}propre intérêt.{p}Il suit le chemin qu'il{n}croit juste, pas à pas...{p}...ne souhaitant que le{n}bonheur de ceux qui{n}l'entourent. Alors que{n}moi..."
+f084-0039 0e2477fb490a4632 Fei{n}"Je croyais n'avoir aucun{n}chemin tracé{p}devant moi à suivre.{p}Mais comme il l'a dit, ça{n}revient à fuir.{wait 10} Je dois{n}trouver mon propre chemin.{wait 10}{n}N'est-ce pas, Doc ?"
+f084-0040 e1830062e3c57729 Fei{n}"Si Bart le veut, je vous{n}aiderai.{wait 10} C'est tout ce que{n}je peux faire.{p}Mais je trouverai sans{n}doute ma voie en aidant{n}des gens comme vous.{p}Et je ne peux pas tourner{n}le dos à ce qu'un groupe{n}aussi terrible fait aux{n}autres."
+f084-0041 7694b4eda9ba626c Sigurd{n}"Merci, Fei."
+f084-0042 34a52f4c5005f639 {speed 255}Monter au dock ?{n}    Monter{n}    Non
+f085-0000 e1179fe07e49e88b Bart{n}"Salut, mamie."
+f085-0001 26c27bd94f4eaca7 Bartholomew, mon mari m'a{n}tout raconté.{wait 30}{n}Tu en as vu de dures !{p}Ah...{wait 30} rien que d'y{n}penser... Ce Shakhan me{n}met hors de moi !{p}Écrase-le, Bartholomew !
+f085-0002 6fa2c7b91521157d Peu de gens reviennent en{n}ville.{wait 30} Alors les affaires{n}vont un peu...{p}Mais,{wait 30} ça doit vouloir dire{n}que le climat s'améliore{n}dans tout le pays.{p}Ce n'est plus comme avant,{wait 30}{n}quand les gens venaient se{n}réfugier ici.{p}Bon, vu sous cet angle...{wait 30}{n}les choses vont peut-être{n}plutôt bien.{p}Ah, je parle, je parle{n}sans arrêt.{wait 30} Pardon,{n}hahahaha !
+f085-0003 051f40e0e449266d Ces derniers temps, la{n}ville est bien vide.{p}Mais j'ai la tête dure, je{n}ne fermerai pas boutique !
+f085-0004 7ddbe295984441df Entrez donc !
+f085-0005 c721f5368308911d Que cherchez-vous ?{n}    Objets{n}    Accessoires{n}    Rien
+f085-0006 9a6bb89752a31d94 Merci beaucoup
+f085-0008 c3628984075f2d1f Revenez quand{n}vous voulez !
+f085-0009 f9198ef8ec669478 Que cherchez-vous ?{n}    Objets{n}    Accessoires{n}    Pièces de Gear{n}    Rien
+f085-0014 3d47ddeebfdd4ebf Fei{n}"Bon, il n'y a personne{n}ici.{p}Je vais laisser l'argent{n}ici, alors."
+f085-0015 5ddfa91ad6ec0413     Objets{n}    Accessoires{n}    Rien
+f085-0016 0d8e8c16301a5fce Jeune maître, le vieux de{n}la Salle d'armes m'a{n}envoyé chercher des{n}vivres.{p}Si vous voulez, je peux{n}aussi vous trouver des{n}pièces de Gear. Il suffit{n}de demander.
+f085-0017 3266c6aee0041d0a Bart{n}"Ouah, t'es bien préparé !{n}Alors, s'il te plaît,{n}déniche-nous{p}les pièces nécessaires."
+f085-0018 4f1915f47dc40aa6 Le vieux de la Salle{n}d'armes m'a envoyé{n}chercher des vivres.{p}Si vous voulez, je peux{n}aussi vous trouver des{n}pièces de Gear. Il suffit{n}de demander.
+f085-0019 4b4ecf4152284a7b Il n'y a pas de boutique{n}de souvenirs dans cette{n}ville...{p}C'est pas un site{n}touristique ?{wait 30} Faut{n}croire que non.
+f085-0020 aebfd1ee4db60903 Ah là là... Ce type{n}là-bas...{p}Parfois, ce genre{n}d'ignorants débarque dans{n}notre ville.
+f085-0021 ca5a15393c62fe1d Ils n'ont aucune idée de{n}la situation où nous{n}sommes tous.
+f085-0022 93bced3deb3f412e Je déteste ces gens...{n}Si indifférents à ce qui{n}se passe dans le monde.{p}Ne me dites pas que vous{n}êtes pareils, vous aussi ?
+f085-0023 1aaa1a34265db9ec Cet endroit est devenu{n}insupportable.{p}Ma famille fuit vers le{n}nord, dans les montagnes.{p}Je suis venu acheter des{n}vivres.
+f085-0024 e56396e341189052 Je suis venu dans l'espoir{n}de trouver des souvenirs.{p}En cas d'affrontement, je{n}résisterai pour défendre{n}cet endroit.{p}Si Shakhan tombe, le pays{n}changera.{p}Alors je rentrerai et je{n}demanderai ma copine en{p}mariage et je prendrai un{n}nouvel emploi.
+f085-0025 77b6ccfadf18f53b Hé, mais c'est le{n}jeune maître !
+f085-0026 37677afbad89c250 Hé, toi !
+f085-0027 7c5c3f80e176b49b Hein ?
+f085-0028 7c294580e14b6534 Hein !
+f085-0029 cb70f002be5fdd79 C'est Bartholomew !{p}Tu vas bien ?
+f085-0030 82d8d476fe7377b5 Bart{n}"Ça peut aller !"
+f085-0031 52a14676605c33f4 Fais pas d'excès, hein.{p}Hé, ceux-là derrière, ce{n}sont tes amis ?
+f085-0032 7d6cd2ea61f2ff0d Bart{n}"Ouais. Fei et Citan."
+f085-0033 2f12764e4ea0d4db Les amis du jeune maître{n}sont nos amis.{p}Regardez à votre guise.
