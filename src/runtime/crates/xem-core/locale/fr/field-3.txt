@@ -1683,3 +1683,173 @@ f375-0000 be0dee05ad05a5be {speed 255}Remettez à zéro le{n}niveau d'urgence au
 f375-0001 7f2d3b97e9c767f7 {speed 255}Niveau d'urgence 5{p}{speed 255}Le bouton d'urgence du{n}réacteur a été activé il y a{n}34999999 heures.{p}Au-delà de ce point, risque{n}de contamination par{n}nanomachines.{p}{speed 255}En entrant dans la salle,{n}effectuez un scan manuel et{n}confirmez la sécurité.{p}{speed 255}Après quoi, remettez à zéro{n}le niveau d'urgence au{n}terminal le plus proche.
 f375-0002 7fe3e9bc4a70e9ff Lancer un scan manuel ?{n}     Lancer{n}     Annuler
 f375-0003 85cd1bd5f85cdae7 {speed 255}Patientez.{wait 32}{n}..{wait 32}.{wait 32}...{wait 32}..{wait 32}....{wait 32}..{wait 32}..{wait 32}..{wait 32}{p}Scan terminé.{n}Confirmé : aucune{n}contamination par{n}nanomachines.{p}{speed 255}Pour rentrer à nouveau,{n}remettez à zéro le niveau{n}d'urgence au terminal le{n}plus proche.
+f376-0000 3cebca07ab46d1ea Citan{n}"Cet étage est pleinement{n}opérationnel."
+f376-0001 7dc6d2930b7cd789 'Augmentation de la{n}pression' Patientez.{done 50}
+f376-0002 8d363f2ecd473314 'Pression accrue'{done 32}
+f376-0003 0ac5a03dbf041200 'Dépressurisation'{n}Patientez.{done 50}
+f378-0000 0c98e4badfb4974e Elly{n}"'Réceptacle d'âme neuve !{n}  Que l'âme qui t'habite{n}  trouve la paix.'     "
+f378-0001 eaa895d389046cc4 Elly{n}"Citan...{wait 45}{n}Qui... suis-je...?{p}Que fais-je ?{n}Que dis-je...?"
+f378-0002 dcaaa1b1236274b0 Citan{n}"...{wait 90}{n}En tout cas, il nous faut{n}un mot de passe..."
+f378-0003 b157e8fb9b6bb0c4 Citan{n}"...C'est bien caché...{wait 32}{n}entre les lignes des{n}données...{p}Non... 'fuir' ?...{n}...'de mon plein gré'...{n}Qu'est-ce que c'est ?"
+f378-0004 c0b41747bea6176e Citan{n}"...{wait 90}{n}C'est... un ordinateur{n}sauvage ?{p}Non, un relevé de la{n}structure du vivant...{p}Non, ce n'est pas ça...{n}Un organisme..."
+f379-0001 0f92886fa6aabfd0 Citan{n}"Du sang...?{p}Sans doute, c'est couvert{n}de sang... Et cette{n}chaleur brûlante... Non,{n}peut-être des radiations ?{p}Peut-être un système de{n}désinfection d'urgence...{n}Ces marques prouvent qu'il{n}a servi..."
+f379-0003 d14b0dda5d0ad40a Citan{n}"Mais que..."
+f379-0004 edabdfcaec4f5a82 Citan{n}"Cette enfant semble être{n}une vie artificielle créée{n}à l'intérieur du réacteur.{p}Elle a dû être assemblée{n}dans le réacteur grâce à la{n}série de la base de données{n}de la salle de contrôle...{p}Son corps est très{n}probablement..."
+f379-0005 7218cbe0d476b441 Citan{n}"Arrêtez-vous !!"{done 16}
+f379-0006 825cfa8678bfb8ae Citan{n}"Alors même cet échange{n}était calculé..."
+f379-0007 e11e6b7126e3129a Citan{n}"...Je crois que, sans le{n}vouloir, nous vous avons{n}aidé."
+f379-0008 c1dc0d69d896b527 Citan{n}"Qu'allez-vous faire de{n}cette enfant ?{n}Qu'est-elle ?"
+f379-0009 ed7f88695f1e41c8 Citan{n}"'Salut' ?{wait 45}{n}Joli choix de{n}mots...{p}Mais, venant de vous, ce{n}mot ne sent que le{n}sang."
+f379-0010 534ab19a8272722c Citan{n}"Attention !!{n}Les Éléments ont l'air{n}inoffensifs !{p}Mais les sous-estimer{n}vous coûterait cher !"
+f379-0011 e7490dd9ee839af8 Elly{n}"...Du sang...{wait 63}{n}couverte de sang...{wait 45}{n}mon...{wait 45}sang...{p}Pas de douleur.{n}Juste... le froid{n}et la tristesse..."
+f379-0012 55abb5736b861356 Elly{n}"Elle est restée seule{n}ici tout ce temps..."
+f379-0013 727dedce95b70ead Elly{n}"Attention !!{n}Les Éléments, la garde{n}d'élite de Ramsus...{p}D'apparence inoffensive,{n}ils sont redoutables."
+f379-0014 7d9ec9647e21a1eb Elly{n}"Non, elles sont comme{n}ça d'habitude !{p}C'est ce qui les rend{n}VRAIMENT{n}dangereuses !!"
+f379-0015 7ba12b877e17044f Elly{n}"Non !{n}Ne les laissons pas{n}emmener cette enfant !"
+f379-0016 18583a02ab615a95 Bart{n}"Citan... c'est... quoi ?{n}Même des amas rebelles se{n}régénèrent pas si vite."
+f379-0017 cbcb3a553cc2e04b Bart{n}"Mais quoi...{n}Fais pas la maligne !{n}Dégage de là !"
+f379-0018 e33b18e41b106103 Bart{n}"...{wait 45}{n}Vous êtes{n}sérieuses..."
+f379-0019 a57a14fc934e7b95 Billy{n}"Citan...{wait 10}{n}Cette fillette...?{p}Comment a-t-elle pu{n}devenir humaine...?"
+f379-0020 e9a54f9ed0cc74b8 Billy{n}"Ciel, qui êtes-vous !?{n}Nous n'avons pas de temps{n}à perdre à bavarder !"
+f379-0021 bb500612f605d0c6 Billy{n}"...{wait 45}Auriez-vous trop de{n}temps libre ?"
+f379-0022 540e89e8c832c9e3 Billy{n}"Monseigneur..."
+f379-0023 ab0552fc810432c4 Billy{n}"Une personne honorable ?{n}Je ne vous crois plus{n}honorable, assurément.{p}Éliminer l'Ethos et tous{n}les humains de la surface{n}qui s'opposent à votre{n}volonté..."
+f379-0024 aed1eb864dda18ee Billy{n}"...Quelque chose cloche{n}profondément là-dedans.{p}Chacun devrait avoir la{n}même chance d'atteindre{n}le salut par la foi."
+f379-0026 1a634196bc89b15f Billy{n}"Salut ou pas...{n}Que comptez-vous faire de{n}cette fillette !?{p}Je sais que vos actes{n}ne sont pas honorables.{p}Monseigneur... Je regrette{n}de le dire, mais... je ne{n}peux pas prendre part à{n}vos projets."
+f379-0027 3973b8b27ade8f82 Rico{n}"C'est quoi, ce truc ?{n}Même nous, semi-humains,{n}on guérit pas si vite."
+f379-0028 e73895fb73db43c7 Rico{n}"Vous savez pas ce que{n}vous dites...{p}Vous cherchez la bagarre ?{n}Je préférerais que vous{n}dégagiez."
+f379-0029 0273953b47c4a08b Rico{n}"...{wait 45}Si vous voulez{n}bavarder, laissez-moi{n}passer devant."
+f379-0030 41a9f8fe1dd50092 {name 7}{n}"Quoi ? Quoi ?{p}Elle a quoi, chette{n}petite ? Comment elle est{n}prête si vite, chu ?"
+f379-0031 3ec4a730a8d8ee2e {name 7}{n}"Chu crois qu'on nous{n}inchulte, chu..."
+f379-0032 c3cd8d3454374b03 {name 7}{n}"Comment osez-vous dire ça{n}à une dame, chu !!{p}On n'a pas le chemps de{n}jouer, là !{n}Pouchez-vous !"
+f379-0033 a91bf5d059f6e9d4 {name 7}{n}"...Chu peux partir ?"
+f379-0034 325ba7e5064438c0 Stone{n}"...Construite à partir de{n}machines autonomes à{n}l'échelle moléculaire...{p}Autrement dit, une colonie{n}de nanomachines."
+f379-0035 50c4ab7b9e9d4adb Stone{n}"J'emmène cette colonie{n}de nanomachines avec moi,{n}merci...{p}C'est l'être, le -facteur-{n}clé, par lequel Dieu nous{n}guidera pour libérer{n}l'humanité de son joug."
+f379-0036 62803bf1cced828c Stone{n}"Alors, si vous{n}permettez..."
+f379-0037 4493794e10981ef2 Stone{n}"Ah, frère Billy.{n}Tu es là aussi. Voilà qui{n}simplifie les choses.{p}Tu comprendras, je sais...{n}Cette colonie de{n}nanomachines doit revenir à{n}une personne honorable.{p}Elle est destinée à être le{n}'salut de l'humanité'."
+f379-0038 400a4ab6995b81aa Stone{n}"Où est le mal à éliminer{n}ceux qui ne servent pas{n}le 'salut' ?{p}Voyons, notre foi même ne{n}repose-t-elle pas sur le{n}précepte : 'seuls les élus{n}seront sauvés' ?"
+f379-0039 a8b110828241079a Stone{n}"Tu prétends pouvoir{n}sauver toute l'humanité ?{p}Si Krelian utilise la{n}colonie de nanomachines,{n}nous pourrons au moins{n}sauver quelques élus.{p}Mais tu ne sais pas t'en{n}servir.{n}Tu ne peux sauver{n}personne.{p}Es-tu prêt à assumer la{n}responsabilité de la perte{n}que tu causeras à{n}l'humanité ?"
+f379-0040 879cb9aba56a4221 Stone{n}"Ma tâche, à présent, est{n}d'apporter cette colonie{n}de nanomachines à Krelian.{p}Voyez, contrairement à{n}l'Ethos, nous ne cherchons{n}pas les armes anciennes{n}enfouies dans les ruines.{p}Je ne crois pas que nous{n}soyons en conflit avec vos{n}intérêts."
+f379-0041 ae46cd7fee1e12b6 Stone{n}"Je vois que je n'ai pas su{n}te faire comprendre...{wait 32}{n}Tant pis...{p}Je n'ai plus le temps de{n}te convaincre.{n}Excuse-moi, mais je dois{n}prendre les devants."
+f379-0042 4594531426e16251 Stone{n}"Pardon d'avoir fait{n}attendre ces dames...{p}C'est l'heure de faire{n}votre travail,{n}Éléments."
+f379-0043 9389501b5673d4ff Stone{n}"Tolone ! Seraphita !{n}Gagnez autant de temps{n}que possible !"
+f379-0044 82f79b751921d530 Stone{n}"Merci.{n}Les machines et moi,{n}ça fait deux."
+f379-0045 41ebe97f955f0ffb Stone{n}"En fait, Krelian ne m'a{n}pas dit grand-chose.{p}Rien de plus que le{n}'Salut de l'Humanité'.{p}De toute façon, même si{n}je le savais, je ne vous{n}le dirais pas..."
+f379-0046 bc728a565edf2450 ...Hmpf !
+f379-0047 cac3fe39faff2ea7 Tolone{n}"On sait, on sait !{n}Arrête de donner des{n}ordres !"
+f379-0048 4aa1fd4895de6680 Tolone{n}"Ah, ouais.{n}C'est juste parce que{n}Ramsus l'a ordonné.{p}Franchement...!{n}Voilà qu'il nous fait{n}protéger ce déchet."
+f379-0049 14d6f21315d4cfa1 Tolone{n}"Bon, voilà, les amis...{n}Ça nous aiderait bien que{n}vous perdiez vite."
+f379-0050 fb50d53d58652fa3 Tolone{n}"Oh, par～don, hein !{n}Mais on peut pas encore{n}vous laisser partir...{p}On se fiche un peu de{n}Krelian, mais si on bâcle{n}le boulot, c'est Ramsus{n}qui trinque.{p}Mais grâce à vous, bande{n}d'idiots, qui l'avez{n}ranimée, on va finir cette{n}mission en avance."
+f379-0051 0e6dfdf799d212b5 Tolone{n}"Aïe, Sera...{n}Leur dis pas ça !{p}Juste quand je préparais{n}tout pour qu'on paraisse{n}psychologiquement{n}supérieures ! Zut..."
+f379-0052 3a3ca4b93698a9be Tolone{n}"C'est 'Cerveau{n}Positronique-Photon',{n}idiote !{p}'Gin-tonique-Futon'...?{n}Ça me fait passer pour{n}une poivrote endormie !{p}(C'est déjà assez grave{n}comme ça...{n}'Cyborg à Cerveau{n}Positronique-Photon'...{p}Ça va nous attirer des{n}ennuis avec les créateurs{n}de 'Star Trech' !)"
+f379-0053 6ca24f64f7501ba3 Tolone{n}"Oups !! Pardon."
+f379-0054 23687e8a46f4a330 Tolone{n}"Ça suffit !!"
+f379-0055 ad0be76474b8feee Tolone{n}"Seraphita !!{n}Ça suffit !{p}On a fait le boulot qu'on{n}nous a demandé.{n}On bat en retraite !!"
+f379-0056 e03af14b8f6e1f9d Seraphita{n}"Hé, Tolone. Finissons-en{n}vite pour qu'on puisse{n}sortir d'ici !{p}J'aime pas les endroits{n}sombres !"
+f379-0057 a550b9e887d84712 Seraphita{n}"Hé ! Tolone !{n}Trop mignon{wait 16}...{p}Mais à bien y penser,{n}c'est flippant !!"
+f379-0058 9c8648659c98b531 Seraphita{n}"Oui, on savait pas{n}utiliser ces machines, et{n}on était trop perdues !{p}Merci beaucoup pour votre{n}gentille aide !"
+f379-0059 d9e9ea085c923391 Seraphita{n}"Quoi !... Mais...{p}Quand on te rend service,{n}il faut toujours dire{n}merci. C'est ce que{n}mamie disait..."
+f379-0060 2e0500dd9ffc7e92 Seraphita{n}"Chapeau, Tolone !{n}'Psychologiquement{n}supérieures' ?{p}Tes implants de cyborg à{n}'Cerveau Gin-tonique-Futon'{n}te rendent vraiment{n}maligne !"
+f379-0061 26371013b67086aa Seraphita{n}"Pardon !!"
+f379-0062 b0db80187793448d Seraphita{n}"...Tolone,{n}on veut qu'on nous dise{n}'inoffensives' ?"
+f380-0000 7ea5ed87ed439ee5 ...Je ne peux pas...{n}te livrer...{n}...notre fille...{done 150}
+f380-0001 ac6eeb559c485798 ...Vis...!{done 150}
+f380-0002 e8bfcb715c0fcaec  ...Notre être maudit,{n} lié à la terre...{done 84}
+f380-0003 0cce0642f92ed8db  ...Ô réceptacle de l'âme{n} nouvelle... créé pour ôter{n} ce 'joug'...{done 84}
+f380-0005 7fc20d8bea08a095 ...!{n}  ...!{n}   ...! Non ! Arrête !{done 150}
+f380-0006 7d2019618f1dfabe ...! Non !{n}Pitié, arrête !{done 90}
+f381-0000 fce9b626c0ded00c Hi hi hi...{done 45}
+f381-0001 23cb990c41677c70 ...Dors encore.{done 45}
+f383-0000 c1e198288677bfac Elly{n}"Ce Gear..."{done 24}
+f383-0001 b74d5a0cc3c675dc Elly{n}"...Je le connais, je le{n}connais bien... Oui... la{n}cité-caverne Zeboim...{p}Quand nous avons été{n}ensevelis dans cet{n}immense mausolée."
+f383-0002 df778a28d45b5941 Elly{n}"Hein ?... Quoi ?{p}...{wait 32}Est-ce que{n}je..."
+f383-0003 9375f11b7ef4ec93 Citan{n}"Cette{n}voix...{wait 25}Wiseman !{p}...{wait 32}{n}...Allez-y !!{n}Tous, vite !"
+f383-0004 9bc1e78d42d84bdb Citan{n}"Elly !{n}Elly !{p}Qu'y{n}a-t-il !!"
+f383-0005 47b0c521a1416d11 Citan{n}"Non...{wait 32}{n}Partez devant."
+f383-0006 07c1fb6535590e41 Citan{n}"Évêque Stone !!{n}Attendez !!"
+f383-0007 4ad0481f0a67ca65 Bart{n}"Hé, Citan !"{done 24}
+f383-0008 49120f175efc5a88 Bart{n}"Une ville...{n}Une ville souterraine...{p}C'est aussi... une ruine ?"
+f383-0009 5561735a95d4ba65 Bart{n}"...Ce Gear..."{done 32}
+f383-0010 621d5bc7d7260a55 Bart{n}"Qui es-tu, bon sang ?{p}J'ai pas oublié que je te{n}dois une revanche pour le{n}Yggdrasil ! Dis au moins{n}ton nom !!"
+f383-0011 54dfc616e75ffe8a Bart{n}"Quelle force...{wait 32}{n}Hein ?"
+f383-0012 2ee7c8cbfcbb0fce Billy{n}"Mais que..."{done 24}
+f383-0013 6267a70e8c4cd821 Billy{n}"Les ruines d'une{n}ville...{p}J'en avais entendu{n}parler, mais..."
+f383-0014 5125e9c615587b82 Billy{n}"Qui êtes-vous ?{n}Dites au moins{n}votre nom !"
+f383-0015 4ccb245a00bf9b5b Billy{n}"Vous êtes fort...{wait 32}{n}Hein ?"
+f383-0016 95f277686f37251d Rico{n}"Hé ! Citan !{n}...Ah, tant pis."{done 32}
+f383-0017 727bd98a3285592b Rico{n}"!!!?{wait 16}{n}Bon sang !{p}On était pas sous{n}terre ? Comment on se{n}retrouve en l'air ?"
+f383-0018 8f7d821fa30bdaf1 Rico{n}"!!!?{wait 16}{n}Lui..."{done 32}
+f383-0019 67a8db11cccdcefc Rico{n}"T'es fort...{wait 32}{n}Hein ?"
+f383-0020 8fdf29a3f516e547 Rico{n}"Tu te crois qui, toi ?{n}C'est quoi, ton nom ?"
+f383-0021 2cee4139416fdd86 {name 7}{n}"Ouah ! Chuper !!{n}Du sol chous{n}le sol, chu !"
+f383-0022 ce8901e572ef3b6b Rends-le,{n}rends-le,{n}rends-le...{done 45}
+f383-0023 73c2411a6aca1518 Wiseman{n}"Je le retiens !{n}Vite, suivez-les !!"
+f383-0024 c8aad639e5803fd7 Wiseman{n}"Hein ?{n}...Oh, non..."
+f383-0025 e15a6694cc52ce74 Stone{n}"Hah.{n}Éléments, vous n'êtes pas{n}si douées qu'on le dit...{p}Vous ne savez même pas{n}me faire gagner un peu{n}de temps."
+f383-0027 40a1ee24b69612d5 Stone{n}"Q-que voulez-vous ?{n}Q-qui êtes-vous ?"
+f383-0028 90c353a3e81ac070 Stone{n}"C'est notre chance !!{n}Rejoindre Krelian..."
+f383-0030 25c2bf9190834bc9 Ha ha...{n}C'est à moi.{n}Rends-le !!
+f383-0031 9c206f46ec8268c1 Pour toi, ce n'est{n}qu'un jouet usé.{p}Alors rends-le.{n}Il m'appartient...
+f383-0032 3b2c48ad2690183c Peu importe le nom...{p}Mais, si tu insistes...{wait 50}{n}...Id...
+f383-0033 9fd6a29266f5650e Id{n}"!!{wait 32}{n}...Toi ?..."
+f383-0034 22b79670d345923f Id{n}"Hmpf, un peu tôt,{n}tu ne trouves pas ?{p}...Je vois, c'est cette{n}femme...{p}Très bien.{n}Tu feras un bon jouet...{n}pour aujourd'hui."
+f383-0036 3951a609a2b39494 Id{n}"Hmpf..."
+f383-0037 fd6de5a75ab9eb64 ...Rends-le.{done 32}
+f386-0000 a0233002031d28b3  ici
+f386-0002 1ddd19c498c92741  ？{n} {FFFF}{FFFF}{FFFF}{FFFF}monter{n} {FFFF}{FFFF}{FFFF}{FFFF}descendre{n} {FFFF}{FFFF}{FFFF}{FFFF}annuler{n}?{n}Monter{n}Descendre{n}Annuler
+f388-0000 39cf40129b131f62 Veux-tu...{wait 16}le pouvoir ?{done 84}
+f388-0001 66bdb5d57d002e8b Elly{n}"Rien à faire, ça ne{n}passe pas..."
+f388-0002 476f60d668836c11 Citan{n}"Impossible de{n}passer..."
+f388-0003 55e78dd53fb25ebf Citan{n}"...{wait 32}{n}Il y a une sorte de{n}barrière.{p}Une émotion négative...{n}la haine, convertie je ne{n}sais comment en Éther,{n}forme une barrière...{p}Si nous convertissons à{n}notre tour notre ferme{n}volonté en Éther pour la{n}lui renvoyer..."
+f388-0004 d9ba378e5a1b5990 Citan{n}"C-c'est un Buntline...{p}Un Gear-canon à Éther dont{n}le pilote est lui-même{n}dans le projectile.{p}Avec lui, nous pourrons{n}briser le pouvoir négatif{n}de la haine de Stone !{p}...C-cependant..."
+f388-0005 5d7f3b17b611ee4c Bart{n}"Raté !{n}Ça passe pas !!"
+f388-0006 b58af781a3eccd7f Billy{n}"Espèce de...!{n}Tu as usé des Wels...{n}contre ma mère...!"
+f388-0007 12d09e5ea86b7627 Billy{n}"D-des gens...moi ?"
+f388-0009 56b76d9df7971465 Rico{n}"Rien à faire.{n}Ça passe pas..."
+f388-0010 e98032e1181e7506 Non, tu n'as rien à{n}regretter, Billy !
+f388-0011 bdfd25c35c7c2435 Alors Racquel et toi,{n}vous vous aimiez ?{p}T'as toujours été un{n}crétin narcissique{n}et égoïste !!
+f388-0012 bf325cb26a54f079 Jessie{n}"Laisse-le-moi !!{p}Prends ça, Billy !!{n}Avec ça, tu pourras{n}arracher la barrière !!"
+f388-0016 fcda0eea88132fc1 Grahf{n}"Je suis Grahf, celui qui{n}cherche le pouvoir.{wait 32}{p}Désires-tu le{n}pouvoir ?"
+f388-0017 c5495ba79f038106 Grahf{n}"Ce pouvoir est faux.{n}Penses-tu vaincre{n}avec lui ?"
+f388-0018 8e5be0dad95a4fa4 Grahf{n}"Un faux corps.{n}Un faux éveil.{n}Tout est vain !"
+f388-0019 a33e7eb5de449f0d Grahf{n}"Je t'offrirai{n}le pouvoir !"
+f388-0020 95ec9dbaa2b2a896 Stone{n}"Observer... Quelle{n}méthode détournée...{p}Il suffit d'en finir{n}vite, voilà tout..."
+f388-0021 92fd9c1fec12266f Stone{n}"Tous ceux qui deviennent{n}ennemis des saints Gazel,{n}je les éliminerai.{p}Repens-toi maintenant."
+f388-0022 428b35f45b64dee4 Stone{n}"Q-qui... {wait 7}êtes-vous ?"
+f388-0023 dab9cb3edde8c898 Stone{n}"Le pouvoir ?{n}Hmpf, le pouvoir est{n}ici, en moi !{p}J'ai reçu ce corps{n}de Krelian !"
+f388-0024 51aa810d05936b61 Stone{n}"Comment ça,{n}faux pouvoir ?"
+f388-0026 bee020d0c9ef0086 Stone{n}"Ha... fils de Jesiah,{n}tu souffres ?{p}T'accueillir il y a 4 ans{n}fut une preuve de ma{n}vieille amitié avec ton{n}père...{p}Dans cette amitié tachée{n}de haine, Jesiah et moi{n}nous sommes disputé le{n}commandement de Gebler !"
+f388-0027 555249d1d2cf921a Stone{n}"Jesiah, telle une bête,{n}tu m'as volé Racquel, que{n}j'aimais,{p}et tu as rejeté la tête{n}de{n}Gebler que je convoitais,{n}puis tu as fui Solaris !"
+f388-0028 5566bc77bc1a71bd Stone{n}"Oui, Billy, je vais te{n}dire une bonne chose...{p}Les Faucheurs que tu{n}purges sont tous, en{n}réalité, des gens...{p}Choisis par l'Ethos et{n}convertis par Krelian !{p}Tu massacrais des gens !{n}Ha ha ha... Fils indigne{n}d'un père indigne !{p}Ha ha ha ha ha ha ha !"
+f388-0029 c0e9ffe162e0c363 Stone{n}"Ha, confesse-toi !{n}Expie tes péchés !"
+f388-0030 b7297125972bb393 Stone{n}"!!!{n}...Cette voix...!!"
+f389-0000 fbef6666d53db5d4 Kim{n}"Voici, voici le nouveau{n}réceptacle d'âme qui va{n}briser la malédiction."
+f389-0001 b54871c1ba1d08f4 Kim{n}"Il ne s'est pas encore{n}éveillé.{p}La forme vient des{n}nanomachines, mais la Tour{n}d'Assemblage n'a pas encore{n}fait la simulation neurale.{p}Il est physiquement stable,{n}mais ne fonctionne pas{n}encore comme un être{n}vivant."
+f389-0002 e9963f8e357145ca Kim{n}"Nous avons beau réécrire{n}les codes héréditaires...{p}...les empreintes gravées{n}dans nos corps ne peuvent{n}être arrêtées.{p}Il fallait aller au-delà.{n}Nous avons dû recréer le{n}niveau moléculaire...{n}non...{p}...en fait, le niveau{n}atomique, en prenant pour{n}référence nos structures{n}à tous les deux."
+f389-0003 a96d5cc5e2de70c7 Kim{n}"Cette enfant... porte nos{n}avenirs et nos{n}possibilités..."
+f389-0004 8126eaa2b412ac44 Elly{n}"Une colonie de{n}nanomachines..."
+f390-0001 8f1f5dfa7d7aa6b6 Kim{n}"...Inutile...{n}...Ça ne marchera pas..."
+f390-0002 a9d618976053be42 Kim{n}"Si l'on ne brise pas le{n}sort, les humains de cette{n}planète vont s'éteindre.{p}Non, peu m'importent les{n}humains... La vie{n}elle-même va dépérir si{n}nous ne faisons rien..."
+f390-0003 a945e2d0edf0816a Kim{n}"Une...{wait 45}{n}vie pure...{wait 15}{n}non maudite..."
+f390-0004 c0917ff972ac2c7e Kim{n}"Une vie pure..."
+f392-0000 2d3ea7e9a339d354 {speed 255}...l'ex-champion poids lourd{n}de la WWW et star de 5 films{n}à succès BIG JOE (vrai nom :{n}Joey Balboa) a ajouté le{n}titre de meilleur joueur du{n}match NBA à ses exploits de{n}l'année, dont le Grand{n}Chelem de Wimbledon, la{n}triple couronne du baseball{n}et le prix Pulitzer.{p}Mais, lors de la cérémonie{n}de remise des prix, au{n}moment de serrer les mains,{n}il a glissé, s'est cogné la{n}tête et est rentré chez lui{n}avec des lésions cérébrales,{n}épuisé et persuadé d'être{n}Elvis...
+f392-0001 b71e3c190085b893 {speed 255}L'ELDRIDGE fut équipé du{n}premier moteur quasi perpétuel{n}inépuisable de l'histoire. Ce{n}n'était pas qu'un générateur{n}à haut rendement : il{n}permettait aussi de créer des{n}champs défensifs à partir de{n}son 'espace O.A. (Objet{n}Absolu)' exclusif et d'activer{n}la 'navigation S.V. (Sujet{n}Variable)' hyperluminale, etc.{p} Conçu sur la Matrice S de la{n}proposition d'Heisenberg, qui{n}résout la relation réciproque{n}des particules (ou Onde{n}Cosmique) du Principe{n}d'Incertitude, il était aussi{n}connu sous les noms de 'Moteur{n}Matrice S' ou de 'Moteur{n}d'Heisenberg'.{p} En principe, partant du{n}postulat que tous les{n}phénomènes du futur immédiat,{n}y compris le présent, sont des{n}phénomènes potentiels, il{n}actualise le phénomène le plus{n}favorable parmi ces sujets{n}actifs en phénomène réel et{n}exploite ainsi les décalages{n}de potentiel énergétique qui{n}en résultent.
+f393-0000 2135b6e494cdc7b1 Big Joe{n}"Hola ! Ma boutique te{n}plaît ? Pas mal, hein ?"
+f393-0001 a7bdf6c83ff5b9b2 Chez Joe, bien sûr, tout{n}est de marque Joe.{n}     {speed 255}Objets{n}     Pièces de Gear
+f393-0002 bcd591021d9e445a Big Joe{n}"Alors, amigo ?{n}Hasta luego !!"
+f394-0000 5a781ea8e330d243 Quel est ce film...?
+f394-0001 96d74642d393a179 Une archive de la culture{n}de Zeboim, disparue il y a{n}4000 ans.
+f394-0002 681ef91a96d4013e Arrête !{n}Qui est cette femme...?
+f394-0003 41564e42dcd7e37f Miang, à l'époque de{n}Zeboim. Mais j'ignore{n}qui était son corps{n}hôte.{p}Elle vivait aux côtés du{n}Premier ministre, et{n}manipulait le monde en{n}coulisses.
+f394-0004 eddf40e71ae9f414 Pour ressusciter Dieu ?
+f394-0005 19bc44a02a9ec8e5 Au début, oui. Puis ça a{n}changé.{p}À cette époque, bien des{n}gens étaient stériles. Des{n}humains défectueux...{n}Alors elle a tout refait.
+f394-0006 5b66929e2a0b5776 Peu avant que l'humanité{n}soit anéantie par la guerre,{n}un nouvel être est né pour{n}créer la génération future.{p}Tu te souviens des missiles{n}du site du Mass Driver ?{n}C'était le plus important{n}pour le peuple de Zeboim.{p}Grâce à cela, nous sommes{n}aujourd'hui les descendants{n}des quelques personnes{n}robustes qui ont survécu.
+f396-0000 9460ab0022fe36a0 Fei{n}"...Où sommes-nous{wait 32}...?"
+f396-0001 d8c7d9aca608eaf2 Fei{n}"...C'est ça...{p}La mémoire de mon âme...{n}Elle a été laissée en moi{n}pour toi..."
+f396-0002 91e3c0a48b7c1741 Fei{n}"...Oui, tu es l'enfant que{n}je désirais... ou plutôt{n}que Kim désirait.{p}Kim est en moi, dans mon{n}sang, et transmet sa{n}mémoire de génération en{n}génération depuis 4000 ans.{p}Il existe pour le jour où{n}naîtrait l'enfant que Kim,{n}si longtemps, n'a jamais pu{n}serrer dans ses bras."
+f396-0003 8cfadcd6e182c888 Emeralda{n}"...Moi, souviens...{p}il y a longtemps...{n}toi...{n}...Kim,... mort...{p}juste avant ville{n}mourir... Parce que{n}soldats de ville...{n}tenter utiliser moi..."
+f396-0004 182646f34a7a1f55 Emeralda{n}"Quand moi être prise...{n}Krelian dire que moi...{p}  ...la suprême{n}  'oeuvre d'art' que la{n}  technologie a mise{n}  au monde...      {p}Oui, moi savoir moi être{n}chose.{n}Regarde, mon corps...{p}Différent de Maria,{n}Margie... et Elly.{n}...Imitation d'humain...{n}...mais différent.{p}Kim et Elly dire...{n}moi être ange..."
+f396-0005 4eff5ebfcb23f715 Emeralda{n}"Fei ! Merci d'être Kim{n}remplaçant jusqu'ici !{n}Mais, ça va...{p}Moi devenir forte et{n}rendre{n}Kim et Elly fiers que moi{n}leur fille !"
+f396-0006 079c1ffd6278e1d0 Emeralda{n}"...Q-quoi...?{p}Fei...{wait 32}corps...{n}si... ch... chaud..."
+f396-0007 839d4175e12436cb Emeralda{n}"Fei...{wait 45}{n}serre-moi... fort...{wait 23}{n}Lâche pas."
+f396-0008 efea93f5504a1f6f Emeralda{n}" Fei...{wait 32}{n}corps..."
