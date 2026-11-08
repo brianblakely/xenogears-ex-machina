@@ -393,3 +393,717 @@ f313-0031 349cea77c9e27aba Elly{n}"Alors pourquoi ne pas leur{n}demander ?"
 f313-0032 3d2ae5bc6bfc9b49 Médecin{n}"Je leur demanderai leur{n}aide, mais je ne sais pas{n}s'ils accepteront...{p}Bah, demander ne coûte{n}rien..."
 f313-0033 5997115403a58555 Elly{n}"Bon. Allons{n}les trouver."
 f313-0034 7d3ec5c63531ca4e Citan{n}"J'emmène Fei et les{n}appareils de survie au{n}Yggdrasil.{p}Bart et Elly, cherchez{n}les Etones."
+f314-0000 d5b8822beeea4feb Fei{n}"Je n'aime pas trop me{n}balader comme ça..."
+f314-0002 c0b46acf384dbf4c Fei{n}"Quoi ?{n}Qui est-ce ?"
+f314-0003 bd5395f02ebcd32e Fei{n}"Qu'est-ce que tu fais ?"
+f314-0004 812bb932c8487f02 Elly{n}"Hum...{wait 10}{n}Merci de votre aide."
+f314-0005 fccd8fb5afd91fd1 Elly{n}"Pourquoi êtes-vous si{n}gentil ?"
+f314-0007 250ebd37dd6643cf Elly{n}"Ils n'ont pas l'air{n}si méchants..."
+f314-0010 23d308d5d3997edd Voici le dock souterrain.{n}On répare vos Gears ici.
+f314-0011 c558c694c05c315a Voici le dock souterrain.{n}Votre navire y est amarré.
+f314-0012 1fb784a6a03a6660 Voici le haut de la tour.{n}Le ciel infini !{wait 10}{n}La mer !{wait 10}{n}Mer d'huile en vue.
+f314-0013 d2fabd569f244daa Voici le haut de la tour.{n}Pas de Wels.{n}Pas de Wels...{wait 10}{n}{wait 10}...Pas de Wels, pitié.
+f314-0014 bc3cf51338f8f32e Voici la salle de la grue.{n}Aujourd'hui, pas de grosse{n}prise.
+f314-0015 512d43ed0a822258 Capitaine{n}"Salut, je vois que tu es{n}revenu nous voir. Retiens{n}bien ceci."
+f314-0016 ca1cfb805d4c7f4f Accrochez-vous !!
+f314-0017 46cf2a7b54fd32d3 Signé Square !!
+f314-0019 f2863bf56b451181 DÉJÀ {wait 30} EN{wait 30} VENTE !!!
+f314-0020 d8b66f85cc733304 Capitaine{n}"Gahahahaha..."
+f314-0021 259a4b3965fb4c56 Capitaine{n}"Vous êtes les deux{n}lascars arrivés en{n}flottant avec les Gears."
+f314-0022 59ce01924aec84e9 Capitaine{n}"Gahahahaha. Allons, ne le{n}prenez pas mal.{p}Pour nous, tout ce qu'on{n}tire de la mer est un{n}trésor.{p}Et vous êtes un trésor{n}grand et très précieux.{n}On en a pris soin."
+f314-0023 40141bba6bb3f0e7 Capitaine{n}"Jolie demoiselle. Ah, ne{n}fais pas cette tête.{p}Je ne mords pas. Je vous{n}rendrai vos Gears tout{n}reluisants."
+f314-0024 4c1153f8bb9ea6da Capitaine{n}"Parce que..."
+f314-0025 2bd29220bc053cc4 Je suis !
+f314-0026 c2ab6a7fe745deaf un homme !
+f314-0027 670ef0237e2fd6b7 de la mer !
+f314-0028 25967c1a2a46ce25 Capitaine{n}"Gahahaha..."
+f314-0029 012dd7e2ad255c14 Capitaine{n}"Vous devez mourir de{n}faim. Je vais vous{n}trouver à manger."
+f314-0030 fdda3194f3d83493 Capitaine{n}"Haaaaaaaaaaaaaaaans !{n}J'accueille nos hôtes !{n}Toi, fais le reste."
+f314-0031 5c2e0494c464c8cd Capitaine{n}"Je le sais bien.{n}Comment tu fais pour{n}rester si calme ?"
+f314-0032 8567fecf7228218d Capitaine{n}"Bon, ça va."
+f314-0033 82eff1d62509ea5a Capitaine{n}"Je vais tout préparer."
+f314-0034 2175adbda3737622 Capitaine{n}"Allez attendre en haut,{n}sur le pont. Je les fais{n}porter là-bas."
+f314-0035 807918e169559845 Capitaine{n}"Ça va. La demoiselle{n}est saine et sauve."
+f314-0036 cb4f669ee6b89f9f Capitaine{n}"Les Etones ? Ah, ces types{n}qui étaient là il y a{n}un instant...{p}Ils sont sortis en disant{n}qu'ils devaient enquêter{n}sur un truc. Ils sont{p}peut-être sur le pont, près{n}de l'entrée des vivres."
+f314-0037 05d08fd175bcc9bd Capitaine{n}"Si vous cherchez des{n}noises à ces gars, on{n}vous aidera de notre mieux.{p}Si vous voulez savoir pour{n}l'aquarium parti vers le{n}site des fouilles,{n}demandez à Hans."
+f314-0038 52afcb3a05e86dcf Capitaine{n}"Ah, Citan. Tu es venu{n}par inquiétude ?"
+f314-0039 501454a384b45f83 Citan{n}"Oui, on peut le dire.{n}Mais vous semblez aller{p}mieux que je ne{n}l'imaginais."
+f314-0040 0686f73ec94b3d5a Capitaine{n}"Pardi."
+f314-0041 45db232f9797ea72 Nous sommes
+f314-0042 60e4f51420dde843 les
+f314-0043 bb356f42a396296b Hommes de la Mer !!
+f314-0044 981353c1f1ec696a Capitaine{n}"...C'est ce que j'aimerais{n}dire...{p}...mais en vérité, la{n}situation est très grave.{p}On a des blessés graves et{n}quelques morts.{p}Mais vu ce qui est arrivé{n}aux autres navires, on{n}n'est pas en position de{n}se plaindre.{p}Et à ce propos, Citan.{n}C'est quoi, cet aquarium ?{p}Il a surgi de nulle part,{n}nous a démolis et a laissé{n}les Wels derrière lui.{p}Puis il est allé vers un{n}site de fouilles où il{n}n'y avait rien à trouver.{p}Bizarre, parce qu'on nous{n}avait envoyés sur un site{n}plus grand, plus profond."
+f314-0045 dd492f38039f334c Citan{n}"Comme je le pensais..."
+f314-0046 9d55413c8b8fcfea Capitaine{n}"Certains disent avoir vu{n}un monstre énorme, qui{n}ressemblait à un Gear.{p}On aurait dit qu'il{n}guidait cet aquarium{n}jusqu'au site.{wait 10} En tout{p}cas, c'est ce qu'on m'a{n}raconté."
+f314-0047 72d5bb86caeb1362 Citan{n}"Stone{wait 10}...{wait 10}{n}Il y a donc bien quelque{n}chose là-bas."
+f314-0048 abbfb2bb520c8aef Capitaine{n}"Appelle ça l'instinct du{n}ferrailleur, mais je ne{n}veux pas m'en approcher.{p}Et, Citan, cet aquarium,{n}c'est ton ennemi ?"
+f314-0049 c06ed9c7e67dd771 Citan{n}"On peut...{wait 10}{n}le dire."
+f314-0050 066d441a071ea5e4 Capitaine{n}"Bon, je ne réclame pas{n}vengeance.{p}Mais je ne peux pas non{n}plus rester les bras{n}croisés. Si vous êtes{n}contre lui, on vous aide.{p}Demandez à Hans tout ce{n}que vous voulez sur le{n}site."
+f314-0051 3d87eb16afea3d48 Capitaine{n}"Qu'y a-t-il ? De quoi{n}avez-vous besoin ?{p}Point x1507, z1235 ? Hans,{n}ça te dit quelque chose ?"
+f314-0052 245cc4653ce56e50 Hans{n}"Le point Sargasso."
+f314-0053 e1b9353ff4f57bb1 Capitaine{n}"Quoi ?{n}Le Sargasso ?"
+f314-0054 1ecca272365f2a35 Fei{n}"Sargasso ? C'est quoi ?"
+f314-0055 f2c4b83f8f97a548 Capitaine{n}"Une caverne formée par{n}des microbes au fil de{n}longues années.{p}On dit qu'un trésor y est{n}caché, mais personne n'en{n}est jamais revenu.{p}On raconte que la caverne{n}elle-même est vivante.{n}Vous allez au Sargasso ?"
+f314-0056 5b3266c3a22e3a29 Fei{n}"On dirait bien."
+f314-0057 9019dafb31459357 Capitaine{n}"Vos Gears ne supporteront{n}pas une plongée si{p}profonde. Sinon, vous ne{n}pourriez plus bouger.{p}Installez l'équipement{n}sous-marin ici. Amenez le{n}navire au plus près, puis{n}plongez avec vos Gears.{p}Je vais réveiller ces{n}poivrots tout de suite."
+f314-0058 d566917953d12195 Fei{n}"Vraiment ? Ça ne vous{n}dérange pas ? Merci de{p}toujours nous aider,{n}capitaine."
+f314-0059 143dfc233c07927a Capitaine{n}"De rien."
+f314-0060 c46096ddb8cd312a Capitaine{n}"Ils ont fini,{n}on dirait."
+f314-0061 f4f1769b5b52e6a6 Fei{n}"Rapide."
+f314-0062 0d68384f9eac4737 Capitaine{n}"Pardi.{n}Nous sommes..."
+f314-0063 8aa622606aaeb1e1 Fei{n}"Hommes {wait 10}de la mer, {wait 10}hein ?"
+f314-0064 66f578b9855cee40 Capitaine{n}"Tiens, tiens. {wait 5}{n}On dirait qu'il a saisi{p}l'esprit.{wait 10} Bon, prenez{n}soin de vous."
+f314-0066 2146218d44d7031d Capitaine{n}"Ah, oui, j'ai oublié de{n}t'expliquer comment les{n}piloter sous l'eau.{p}Facile. Dans l'eau, on peut{n}sauter sans toucher le{n}fond. Continue à sauter{n}pour prendre de la vitesse.{p}On nage très bien en Gear,{n}mais il y a des endroits{n}où tu ne passeras pas{p}si tu ne le fais pas{n}correctement."
+f314-0067 90b65f6c865614b0 Fei{n}"Compris.{n}Merci."
+f314-0068 f52e17870cac7eb5 Capitaine{n}"Pas besoin de remercier.{p}Vous pourriez acheter un{n}truc à notre boutique de{n}Gears. Il paraît qu'on a{p}reçu de nouvelles prises{n}à vendre."
+f314-0069 1ba3ecef38a386ad Capitaine{n}"Revenez au Thames quand{n}vous voulez.{p}Il y a toujours une place{n}dans notre dock pour{n}votre navire."
+f314-0070 d24f45608ac78682 Tu as vu le capitaine ?{wait 10} Il{n}est sympa et tout, mais...
+f314-0071 d8febddc95880f5f Hans{n}"Celui qui fait les cent{n}pas, c'est le capitaine."
+f314-0072 aa2645cbbdd081ec Hans{n}"Ça sent les{n}ennuis."
+f314-0073 004aeed4a7c96335 Hans{n}"Le capitaine est un sacré{n}numéro, hein ? Avec lui, le{n}travail ne finit jamais."
+f314-0074 c40b9c49f3276bf8 Hans{n}"L'aquarium a filé plein{n}nord.{p}La pointe nord de cette{n}île...{wait 10} Pourquoi ? Il n'y{n}a rien, sauf une petite{n}mine."
+f314-0075 a00be413106487bc Hans{n}"Le contrat de l'Ethos a{n}coulé à pic, et nous voilà{n}'en rade' !{p}Je crois qu'on va devoir{n}continuer à écumer les{n}mers en ramassant la{n}ferraille.{p}On dirait que le Thames va{n}devoir continuer sa vie{n}d'errance, finalement."
+f314-0076 c301b4fef8301083 Permettez que je me{n}présente. Hans, second{n}du navire.
+f314-0077 1d06a1f231d1e4da Hans{n}"Bien, capitaine.{n}N'exagérez pas."
+f314-0078 00838fa1bb551b29 Hans{n}"Le capitaine et les gars{n}sont si irresponsables."
+f314-0079 5528a4b8c804c2a3 Je suis à ce poste depuis{n}30 ans.{p}Je ne le laisserai pas à{n}un blanc-bec prétentieux.
+f314-0080 11ca0c8b378096be Je suis à ce poste depuis{n}30 ans.{p}Mais quand les Wels ont{n}attaqué, j'ai pensé fuir.
+f314-0081 e0ea75f8b150f47c Cet interphone permet de{n}parler aux autres zones{n}du Thames.
+f314-0082 4816f6f4fd118670 Je me souviens d'avoir vu{n}une haute tour, il y a{n}longtemps. On l'appelait la{n}Tour de Babel.{p}Même moi, je n'en vois pas{n}le sommet, et pourtant j'ai{n}de bons yeux !{p}On dit que les Faucheurs{n}nommés Wels viennent de là.
+f314-0083 d3da4d9cf0d3c9d0 Les Wels m'ont pris par{n}surprise. Il paraît{n}qu'ils viennent de la{n}Tour de Babel.
+f314-0084 da0f99fea7a4852d Hein ?{n}Ce n'est pas un bar ici ?
+f314-0085 609798a8993de760 Hein ?{n}Des Wels ?{n}Où sont-ils ?
+f314-0087 9d5897d008be35e2 Fei{n}"!{wait 3}{n}Ce navire !"
+f314-0088 b79d46060c6892e4 Elly{n}"Hein ?{wait 3}{n}Quoi ?"
+f314-0089 890ed41bdde00dc8 Fei{n}"Le Yggdrasil !"
+f314-0090 538730dcacdec740 Elly{n}"Le navire de Bart ?"
+f314-0091 86fc51db4fc99d1f Fei{n}"Oui.{wait 3}{n}Il est encore en vie.{n}Génial !{p}On ne peut pas rester{n}plantés là ! Allons-y !"
+f314-0092 194fc597c51b8299 Elly{n}"Où ça ?"
+f314-0093 cf51b331426fe95b Fei{n}"À l'aider, voyons !"
+f314-0094 6276ac6d1db11b3b Elly{n}"Sans Gear ?"
+f314-0096 b84ea3f578da4b35 Capitaine{n}"Du calme, petit."
+f314-0097 577ec40572b8ae61 Capitaine{n}"Dock, ici la passerelle !{n}Où en sont les{p}Gears de nos{n}invités ?"
+f314-0098 4997272bdda8d79a Réparations bientôt{n}terminées.
+f314-0099 a76369852b3bda3f Capitaine{n}"Deux minutes."
+f314-0101 eb1ee05a4aa3e812 Capitaine{n}"Deux minutes, pas plus !{p}Puis amenez-les au pont{n}par l'entrée des vivres !"
+f314-0102 f6cfbe2bc652e4e1 O-oui, chef !
+f314-0103 c654ea4d42fff7a0 Capitaine{n}"On monte vos Gears sur{n}le pont. Allez les{n}chercher.{p}Au besoin, il y a une{n}boutique d'équipement à{n}l'entrée des vivres."
+f314-0104 70a7ad799ca6e753 Hans{n}"Que dites-vous là,{n}capitaine ?{p}Et si on se fait{n}bombarder, mêlés à{n}une bagarre ?"
+f314-0105 a0be3339ce3d13ae Capitaine{n}"Silence !!{wait 3} Nos invités{n}se battent pour sauver{n}leurs amis.{p}Ne gêne pas !{wait 5} Si on ne{n}les aide pas, on souille{n}le nom des hommes de la{n}mer !!"
+f314-0106 a70bcacfe8b85596 Hans{n}"...{wait 5}...{wait 20}Bien. Mais le{n}Thames lui-même ne{n}combattra pas."
+f314-0107 709adecace0d9c1d Fei{n}"Merci. C'est déjà plus{n}que suffisant."
+f314-0108 4b6ac89b623dbb56 Capitaine{n}"Quel culot, de se battre{n}juste à côté du Thames !{p}Ça me fait bouillir le{n}sang !"
+f314-0109 a12b37336424cf9b Capitaine{n}"Hé, Hans, ça fait un{n}moment que je n'ai pas{n}tiré au gros canon.{p}Si on en tirait un ou{n}deux coups ?"
+f314-0110 f6c0ea14eda5db1c Hans{n}"Vous plaisantez ?{p}Pourquoi mêler le Thames à{n}une bagarre entre gens qui{n}ne sont ni nos ennemis ni{n}nos alliés ?{p}Et ce gros canon n'est{n}qu'un bric-à-brac inutile{n}que vous avez cloué sur le{n}Thames un soir de cuite !"
+f314-0111 d0e424e8027f00d7 Capitaine{n}"Tu ne comprends vraiment{n}rien au code des hommes{n}de la mer..."
+f314-0112 ea3bb96be5321ae2 Capitaine{n}"Un sous-marin se fait{n}attaquer, on dirait."
+f314-0113 9629b9b116196e2a Fei{n}"Sous-marin ?"
+f314-0114 6153a58f0fa7ae5c Capitaine{n}"Je vois que tu as amené{n}un autre grand gaillard."
+f314-0115 71e0890ce728bd4d Bart{n}"Moi, c'est Bart. Merci{n}d'avoir laissé mon navire{n}accoster ici."
+f314-0116 020e433e0c8b47fd Capitaine{n}"Gahahahahahahaha.{n}Parfait. C'est pour le{n}navire ?"
+f314-0117 93d31a8cbfb3f2c5 Bart{n}"Mon sous-marin, le{n}Yggdrasil, a été endommagé{n}par une attaque ennemie...{p}Il sera hors service un{n}petit moment..."
+f314-0118 8a039573cf1bd27b Margie{n}"Bart ! Tu es horrible.{n}Tu es parti sans moi !"
+f314-0119 ba76f52493d9e587 Bart{n}"Ah, Margie ? Juste quand{n}je commençais à avoir{n}l'air d'un capitaine."
+f314-0120 d01cb49478078501 Margie{n}"Je quitte Nisan pour être{n}coincée sur le Yggdrasil.{p}J'en ai assez.{n}Capitaine ?{n}Bonjour ! Marguerite."
+f314-0121 3d4656558cf6fcfa Bart{n}"Oh, allez ! Écoute, on a{n}une conversation d'homme{n}à homme, là.{p}Alors, Margie, pourquoi tu{n}ne retournes pas sur le{n}Yggdrasil ?"
+f314-0122 257b6d6dfd8c276b Margie{n}"T'es horrible ! Tu{n}commences à parler comme{n}Sig."
+f314-0123 e13dadd7db8371a9 Bart{n}"Quoi !{n}Moi, comme Sig ?"
+f314-0124 80099be5d4e63dce Margie{n}"Tu es toujours si{n}irréfléchi, Bart.{p}Fei et les autres ont{n}dérivé parce que tu as{n}tiré sur ce vaisseau sans{n}réfléchir."
+f314-0125 a3bd2425950f0dd2 Bart{n}"Hé, i-idiote, tu ne{n}devrais pas..."
+f314-0126 7250f20ddf5bea4c Fei{n}"Bart...?{n}Tu... non...{p}Non... tu n'as pas{n}fait ça..."
+f314-0127 9fcdd60715afc9e7 Citan{n}"C'est vrai, Fei."
+f314-0128 53a8aa914cd3da3c Bart{n}"Pas le choix. Comment{n}j'aurais su que vous{n}étiez..."
+f314-0129 1fad8996f2db58a3 Fei{n}"Je suis si furieux que{n}les mots me manquent..."
+f314-0130 aefe7ec2d6a53338 Bart{n}"Fâche-toi pas tant."
+f314-0131 e1f5af2573d9ff8c Bart{n}"Tss. Fallait pas te{n}sortir de Nisan."
+f314-0132 f2ae960a49685ec0 Margie{n}"J'ai entendu, gros{n}mufle !"
+f314-0133 39371af1fa8ca809 Capitaine{n}"Gahahahaha.{wait 15}{n}Bien, bien. C'est beau, la{n}jeunesse."
+f314-0134 69b0a9340b3a9314 Capitaine{n}"Hé, petit. T'es un genre{n}de pirate ?"
+f314-0135 6f37caba1ca9d6ec Bart{n}"Un peu ! Homme de la{n}mer ! J'étais homme du{n}désert, mais..."
+f314-0136 5670a28969319c51 Capitaine{n}"Bravo !! Encore mieux.{n}Un vrai homme de la mer !{p}Bart, c'est ça ? Je vais{n}t'emmener à notre fameuse{n}brasserie."
+f314-0137 2e5921a6f52e4c90 Capitaine{n}"Mademoiselle, puis-je{n}emprunter ce garçon ?"
+f314-0138 7e5a51028f6d6310 Margie{n}"Quel drôle de type."
+f314-0139 a714d6b38877d720 Margie{n}"Fei, tu en veux à{n}Bart ?"
+f314-0140 4cd3cb41d35c22e3 Fei{n}"Non, pas du tout{wait 5}..."
+f314-0141 c927815382d1ce06 Margie{n}"{wait 10}...{wait 10}...C'est à cause{n}d'Elly, alors ?"
+f314-0142 3cc8fc2653728f47 Fei{n}"{wait 5}...{wait 5}...Oui."
+f314-0143 8004394f31ed62d2 Margie{n}"Tout ira bien.{p}Si tu t'inquiètes tant,{n}pourquoi tu ne vas pas{n}la sauver ?"
+f314-0144 b783ab7fc7742005 Margie{n}"Comme...{wait 5}{n}Bart pour moi."
+f314-0146 f671a9e2615abdc9 Fei{n}"Et Elly ?"
+f314-0147 19cfab2847fb5bf2 Hans{n}"Elle règle son Gear.{n}Elle va arriver d'un{n}instant à l'autre."
+f314-0148 b32a4a52ec768274 Bart{n}"Tu veux dire{wait 5}...{wait 10}{n}qu'elle a réussi{n}à s'échapper ?"
+f314-0149 f29e5149c1565c84 Capitaine{n}"Eh bien, tant mieux pour{n}toi. Pas vrai, Fei ?"
+f314-0150 e19026138f96b18a Fei{n}"Ah, oui."
+f314-0151 79c70f67042dc8b3 Fei{n}"Elly, tu vas bien ?"
+f314-0152 d6434cfde01c426d Elly{n}"{wait 10}...{wait 10}Oui."
+f314-0154 257dc56ebf05b796 Elly{n}"Quel est ce sous-marin ?"
+f314-0155 195e62549c71b404 Fei{n}"Ah, le Yggdrasil ?{p}Bien amoché, il est en{n}réparation ici, sur le{n}Thames."
+f314-0156 1fa7a5c61f8c43e5 Elly{n}"Je vois...{wait 10}{p}Je peux souffler un peu ?{n}{wait 5}...{wait 5}Je suis épuisée."
+f314-0157 bccc9d5882fb470d Fei{n}"Bonne idée."
+f314-0158 bd61733a29beed29 Bart{n}"Fei, c'est mon navire."
+f314-0159 26632b822598c6b2 Capitaine{n}"Allons. Elle dit qu'elle{n}est fatiguée. Laisse-la{n}se reposer."
+f314-0160 c910f2e7c1ec129f Elly{n}"Bon, j'y vais."
+f314-0161 d5b57d037fbb5a86 Bart{n}"...{wait 10}{n}Ça ne me plaît pas."
+f314-0162 294f6edf2bc58051 Fei{n}"Bart, toujours..."
+f314-0163 78f23dc6f31490b0 Bart{n}"C'est pas ça. Elle ne va{n}pas nous poignarder dans{n}le dos.{p}J'ai grandi parmi bandits{n}et escrocs. Rien qu'à ses{n}yeux, je le sais."
+f314-0164 790045f8fe7dd9fd Fei{n}"Alors tu acceptes{n}Elly..."
+f314-0165 eaed35b619c1cc1b Bart{n}"C'est justement pour ça{n}que je ne peux pas. Pour{n}elle, ça peut aller.{p}Mais sa famille, là-bas,{n}dans son pays ? Tu crois{n}qu'elle peut vivre avec{n}ça ?{p}Elle en est capable ?{n}Abandonner sa famille,{n}comme ça ? C'est à elle{n}de décider.{p}Elle... Elly doit s'en{n}soucier. On ne peut pas{n}entraîner des gens qui{n}ont des attaches."
+f314-0167 2e5e091e171338bb Bart{n}"Pff, bon, fais comme{n}tu veux."
+f314-0168 78025e8318a684fd Capitaine{n}"C'est quoi, ça !? Tu as{n}vu cet aquarium géant ?"
+f314-0169 6500344b5410b5c2 Hans{n}"Et pourquoi me le{n}demandez-vous...?"
+f314-0170 e0d99cb87a7d1a30 Capitaine{n}"Les autres flottes de{n}ferrailleurs, presque{n}balayées d'un seul tir !?{p}C'est comme ça que l'Ethos{n}nous accueille ?"
+f314-0171 dd68b9ec5bd41546 Hans{n}"J'en doute fort !{p}Pourquoi nous attaquer ?{n}On est juste venus aider{n}aux fouilles..."
+f314-0172 809e75e6cb6f966a C-capitaine ! Des Wels !{n}Des dizaines de Faucheurs{n}sortent de cet{n}aquarium !
+f314-0173 71d0c1b37f271c61 Capitaine{n}"Quoi !?"
+f314-0174 a1391a37ab7dad45 Hans{n}"Pourquoi...?{n}Ce n'est pas{n}possible..."
+f314-0175 714077c712bce491 Capitaine{n}"...{wait 10}...{wait 30}{n}Lancez les Gears !{p}Chargez le gros{n}canon !"
+f314-0176 e487b81b83d8c995 Hans{n}"Capitaine !?"
+f314-0177 01707c4c866187c2 Capitaine{n}"Bien, les gars !{p}On va secourir et sauver{n}les survivants des autres{n}navires...{p}...si possible, tout en{n}battant en retraite !{p}Et abattez ces Wels avec{n}nos deux canons ! Ne{n}laissez pas ces sales Wels{p}approcher de notre{n}Thames !"
+f314-0178 5dd2bfefb3e0486b Capitaine{n}"Hans !{n}Bouge-toi !{p}Prends la barre ! On va{n}montrer à cet aquarium{n}comment les vrais{p}hommes de la mer battent{n}en retraite !"
+f315-0000 5702b5bd2fcbed82 Fei{n}"Vous passez votre vie à{n}errer sur les mers ?"
+f315-0001 7d5fffca9bed4c5f Fei{n}"Pourquoi l'Ethos s'en{n}mêle-t-il...?"
+f315-0003 4f71e2e7b2424d93 Elly{n}"Un gros boulot ?"
+f315-0005 b8af500470f89349 Bart{n}"Ouah ha ha ha."{done 80}
+f315-0006 b7922ec560cec4ba Bart{n}"Ils ont surgi...{n}l'un après l'autre... paf,{wait 10}{n}boum,{wait 10} bam...{wait 10} voilà{n}comment ça s'est fini..."
+f315-0007 e999581bfed4860c Capitaine{n}"Vous en avez mis, du{n}temps,{wait 5} mais rien{n}n'est encore prêt."
+f315-0008 de796984303e28d7 Capitaine{n}"Hé, dépêchez-vous !{n}Ne faites pas attendre{n}nos invités."
+f315-0009 8f2464cdbf5723f7 Capitaine{n}"Désolé, pas de sièges{n}par ici."
+f315-0010 9ab27f7c87684dfc Capitaine{n}"Mais avouez que la vue{n}d'ici est splendide !{p}Cette brasserie est la{n}fierté du Thames.{p}Vous devez trouver bizarre{n}d'avoir une brasserie juste{n}à côté de la{p}passerelle, mais moi, ça me{n}va très bien.{p}Celui qui ne prend pas le{n}temps de savourer un verre{n}finit englouti par les{n}vagues de l'angoisse{wait 5}...{p}...{wait 5}Mais nous, on n'a pas ce{n}problème.{wait 5} Grâce à cette{n}brasserie, tout le monde{p}ici est trop soûl pour s'en{n}faire !"
+f315-0011 c5068aea60606589 Capitaine{n}"Bah, d'habitude, oui.{n}Il y a cette grue qui vous{n}a repêchés.{p}Avec elle ou nos Gears, on{n}tire des trésors du fond{n}de la mer. On est des{n}Ferrailleurs.{p}Mais, ces derniers temps,{n}presque pas de trésors...{wait 10}{n}juste des babioles.{p}Depuis qu'on a commencé le{n}gros boulot, c'est tout ce{n}qu'on a eu."
+f315-0012 a1b792d2215105ea Capitaine{n}"Ah, c'est un boulot pour{n}l'Ethos.{p}L'Ethos prépare un grand{n}chantier de fouilles.{p}J'en ignore les détails,{n}mais on dirait qu'on va{n}déterrer un trésor."
+f315-0013 ffdf6afad17b1196 Capitaine{n}"Qui sait... Mais c'est{n}l'Ethos qui nous achète{n}notre camelote.{p}Alors ce serait mal vu de{n}refuser le boulot."
+f315-0014 ae1d595d9f6113df Capitaine{n}"Bon, le dîner est enfin{n}prêt. Mangeons."
+f315-0015 ac83e7db3a83010a Capitaine{n}"Gahahahha."{done 80}
+f315-0016 e8520aa4670bcaee Capitaine, le second{n}vous demande.
+f315-0017 ef2078608147d101 Bart{n}"Ils ont surgi...{n}l'un après l'autre...{p}paf,{wait 10} boum,{wait 10} bam...{wait 10} voilà{n}comment ça s'est fini..."
+f315-0018 348072ac53b95600 Fei{n}"Hé, Bart, Sigurd te{n}cherchait..."
+f315-0019 2ba21bb9097cbb89 Capitaine{n}"Gahahahahaha.{p}Bien sûr, sans force, on{n}ne peut être un homme de{n}la mer."
+f315-0020 b52f51dbd9101201 Bart{n}"Ouais, regarde ce{n}bras{wait 15}...{wait 15}"
+f315-0021 dfb5aace106285fb La preuve !
+f315-0022 6686c4ec2ed5506d des hommes !
+f315-0023 cf2906b1604490ed de la mer !!
+f315-0025 233b81595ab65db2 Capitaine{n}"Tiens, il interrompt{n}notre histoire d'hommes{n}de la mer.{p}Ce Hans est vraiment un{n}malappris. Qu'est-ce qu'il{n}veut encore ?"
+f315-0026 26069aea6923bead Notre demoiselle est{n}de retour...
+f315-0027 cc8035aaadcc761c Fei{n}"Notre demoiselle{wait 10}...{wait 30}{n}Ah, tu veux dire{n}Elly !"
+f315-0028 e965a80c0be897b9 Capitaine{n}"Crétin ! Fallait le{n}dire plus tôt !"
+f315-0029 ae74a1ef9a4f25d4 Euh...
+f315-0030 83879ff24dc323be Fei{n}"Bon, allons-y."
+f315-0031 00e9d6e241dd47fe Elly{n}"Tu n'as pas mangé depuis{n}longtemps, mais comment{n}peux-tu manger autant ?"
+f315-0032 52449e4a99e1f10b Capitaine{n}"Gah ha ha ha ha... C'est{n}bien, c'est bien.{p}J'aime ta façon de{n}manger. Pas étonnant que{n}tu aies dérivé..."
+f315-0033 6f780d356d453945 Les hommes ont !
+f315-0034 41f4b0a739747877 du courage !
+f315-0035 4b49c9df49e2dc0e et de l'appétit !
+f315-0036 28b166d1a724f64a Capitaine{n}"Gah ha hah..."
+f315-0037 8e76991eef330bdb Elly{n}"?{wait 30}{n}Une secousse ?"
+f315-0038 afe860bd05e14fa0 Fei{n}"Tu te fais des idées."
+f315-0039 e96233ad690ee76b Elly{n}"Sûrement pas !"
+f315-0040 b24bf33938d3427c Capitaine{n}"Compris. J'arrive."
+f315-0041 2ad1d4aa55570050 Capitaine{n}"Il s'est passé quelque{n}chose. Désolé,{p}mais je dois retourner{n}sur la passerelle."
+f315-0042 05254a1a54e66cbe Capitaine{n}"Profitez bien,{n}je vous prie."
+f315-0043 44c4b84d780a2b01 Fei{n}"Elly, c'est une{n}trombe d'eau ?"
+f315-0044 10865000ab52cb9d Elly{n}"C'est trop loin, je ne{n}vois pas bien. Mais on{n}dirait...{wait 10}un combat !"
+f315-0045 b591e879a0e9c43c Fei{n}"Allons aussi à la{n}passerelle."
+f315-0046 d971b8adf1933a16 Elly{n}"Oui."
+f315-0047 1c08b424ea28455b Y a rien de mieux qu'un{n}verre après le boulot.
+f315-0048 b9155f031aa8a5b9 Hé, jamais vu bosser{n}par ici, toi.
+f315-0049 b771f11ee3b4dd6a Hein ? Bah, te prends{n}pas la tête.
+f315-0050 93c4fe663badbc5c Bon, trinquons à la{n}survie du Thames !
+f315-0051 bd53a4410744214e Maintenant, on peut boire{n}encore un peu.
+f315-0052 79ac71a3ca1b37ec Bien dit !
+f315-0053 16ce6abb6c9f2cc6 Aaaaah, mon vieux ! Je{n}mourrais pour ce verre.
+f315-0054 33c16dc0b60b0d5b Hé, tu comptes mourir{n}combien de fois ?
+f315-0055 bf81e3b9163de6c5 Ouais.
+f315-0056 d7b4387ae8529005 Mais ce sera quoi, notre{n}prochain boulot ?
+f315-0057 0fea44ad715821cd Et toi, tu fais quoi ?
+f315-0058 67b20bfc617c43ca Oh, un peu de tout.{n}Laisse tomber.
+f315-0059 e71d147c110a25d5 Les jeunes d'aujourd'hui{n}tiennent pas l'alcool.
+f315-0060 9636e67c8048bbff C'est parce qu'ils boivent{n}pas qu'ils se sont fait{n}rosser par cet aquarium.
+f315-0061 80eaf765b63d2e75 Hé, tu te débrouilles{n}très bien.
+f315-0062 b474f0341fa22dbc  {n}Reçu : Bottes Élite.
+f315-0063 35bb043f1e8a75b0 Ha, t'es pas{n}de taille.
+f315-0064 5c06440697abf71c Hé, on y va{n}mollo ce soir.
+f315-0065 068c2efb54f44fbb T'es un bleu !{n}Des leçons ?{n}    Oui{n}    Non, merci
+f315-0066 f0ccc9655f8d6ad9 {wait 10}...{wait 10}Sûr ?{n}    Oui{n}    Non
+f315-0067 d6aa87268c8e731a {wait 10}...{wait 10}Prêt ?{n}    Oui{n}    Non
+f315-0068 ef92230870a1561b Pff, dégage.
+f315-0069 9cc7e0e263338672 Pff, t'as aucun cran.
+f315-0070 d70c80b9de2e3ee3 Tu vas prendre une leçon !!
+f315-0071 bacb8adb0c423ade Pff, gare aux regrets !
+f315-0072 2302c1ec7e311543 Hé, tu{n}m'éch'coutes...!
+f315-0073 572cc334d9b354f2 Hé, ch'est pas{n}l'tien, ch'est l'mien.
+f315-0074 aa883ecfe646f442 Hé, occupe-toi de ce{n}vieil ivrogne.
+f315-0075 f6e484925420efa3 Hé, occupe-toi de ce{n}vieux soûlard. Pire{n}compagnie que les Wels.
+f315-0076 69a906bfcbba48a3 Non.{n}Pas envie de boire.
+f315-0077 1d8fa2812d654ea7 Quoi, t'as rien bu ?{n}Alors pas de quoi{n}t'inquiéter.
+f315-0078 30fd8aee6c0ec288 Hé, toi, j'ai un super{n}remède pour ceux qui ont{n}trop bu.
+f315-0079 2b19b327b5fe1773  {n} Reçu : Mentsol.
+f315-0080 e57cec0e83bd3ca0 Les hommes sont{n}bêtes. Ravis par{n}ce poison.
+f315-0081 74d8395d4dd4d304 Les hommes sont si{n}faibles. Ils noient la{n}peur des Faucheurs{n}dans ce poison.
+f315-0082 1ce7569251352338 Je suis {wait 30}maî～tre{wait 45}{n}Le grand {wait 30}maî～tre{wait 45}{n}Maître {wait 45}du Thames
+f315-0083 672b54e5b37e0f3d Hé, chuis pas soûl.
+f315-0084 02b544de2c8972b4 Je n'ai jamais touché{n}terre de ma vie.{p}Pense donc. Tes pieds{n}sont pleins de terre.{n}Tu supportes ça ?
+f316-0000 1f1258f0cab45726  {n} Reçu : une Pépite.
+f316-0001 326270543cb80df0 Hé ! {wait 3}{n}Pour mes articles, vois{n}avec cet idiot de mon{n}fils.
+f316-0002 fc17bedae48f7c66 Hé !{wait 3}{n}Je reste ouvert même{n}si les Wels viennent.{p}Pour mes articles, vois{n}avec cet idiot de mon{n}fils.
+f316-0003 4109258b2f7e07e4 Hé !{wait 3}{n}Tu as l'oeil pour les{n}belles choses... Ouah.{wait 3}{n}Tu sais ce que c'est ?
+f316-0004 f75da72f8f9fea0c ...voilà.{n}Chouette, hein ?
+f316-0006 01564af487c33610 Hé, attends.{n}Ce n'est pas à vendre.{n}Désolé, je le garde.
+f316-0007 fe2ace3bbee03cae Hé !{wait 3}{n}Si jeune et déjà du{n}goût. Ouah.{wait 3}{n}Ça, c'est...
+f316-0008 084203ca55b97e65 ...voilà.{n}C'est pas génial ?
+f316-0010 2805b9f786b08489 Hé, attends un peu.{n}Ce n'est pas à vendre.{n}Désolé, je le garde.
+f316-0011 ec0d4f6fd24c2a33 Hé !{wait 3}{n}Tu vas adorer ça, j'en{n}suis absolument sûr.{wait 3}{n}Ça, c'est...
+f316-0014 6c31021f087564bb ...voilà.{n}Pas génial ?
+f316-0017 9b8ea82f1aa20322 Quoi ?{wait 3}{n}Petit crétin !!{p}Tu ne sauras jamais{n}rien de l'âme d'un{n}homme du Thames, ni{n}de son romantisme !
+f316-0018 86a50c3561a4045a Hé, entre donc.
+f316-0019 0e26ce481b0dea35 Bon sang !!{n}Vieil idiot.{p}Tu fabriques que des{n}trucs inutiles ! Fais{n}plutôt ce qui se vend !?
+f316-0020 bcc1906da51f6bf5 Comment ?{n}L'âme du Thames !?{p}Avec des idiots comme toi,{n}le Thames aurait coulé{n}depuis longtemps !
+f316-0021 4f71034ae9b7552c Hé, tu connais le{n}capitaine ? Il est{n}troooop fort ! Je{n}serai comme lui !
+f316-0023 3da0b5d2029b2f2c Homme !
+f316-0024 8070ce85c06f676f de la mer{wait 10}...{wait 10}{n}...Euh ? Oups.
+f316-0025 cc5c39869fa7a64c C'est là.{n}Je dois encore{n}m'entraîner.
+f316-0026 50b5bae81e10feca Je parie que les Wels{n}nous suivent à cause du{n}capitaine.
+f316-0029 3d5a60a63d6d0add perdent pas...{wait 10}...{wait 10}{n}...Hé !
+f316-0030 e3726bf2247a5d0c Ah, là,{n}oui, encore un peu.
+f316-0031 b0d8cd286a0e8590 Hé, bienvenue.{n}Trouvailles rares des{n}fonds marins exposées.
+f316-0032 0f322c00a0c189bf Revenez vite.
+f316-0033 e7cd225b1360b9f8 Ma petite soeur m'a{n}poussé. Elle me harcèle{n}sans cesse. J'ai peur.
+f316-0034 97a83aef5863131a Ma petite soeur m'a{n}poussé. Elle me maltraite{n}sans cesse. J'ai peur.{p}J'ai peur des Wels aussi.
+f316-0035 ebb080f94d83ccac Mon grand frère est un{n}froussard, il a le{n}vertige...{p}Pathétique.{n}Calme-toi, va.
+f316-0036 2b3e499ad2d670a8 Mon grand frère a si peur{n}des Wels qu'il ne va pas{n}aux toilettes tout seul.{p}Pathétique.{n}Calme-toi, va.
+f316-0037 72d39b24dd060549 Trop{wait 10}...{wait 10} chaud.
+f316-0038 09276d94f7dc8ef6 Faucheurs{wait 10}...{wait 10}effrayants.
+f316-0041 3f7826a8e972fd52 J'ai perdu.{n}Prends ça.{n}On remet ça.
+f316-0042 7c8cbb13eeb2bbe2  {n} Reçu : un Zetasol DX.
+f316-0043 0117da60df518947  {n} Reçu : un Physimentsol.
+f316-0044 69c93280191a3e4f  {n} Reçu : un Rosesol.
+f316-0045 f4d5e6d929c4e73d  {n} Reçu : un Rosesol S.
+f316-0046 76a1ec69f45c6e78  {n} Reçu : un Zetasol.
+f316-0047 6e5ac39c201615e6  {n} Reçu : un Aquasol S.
+f316-0048 60c229f663e30ef7  {n}Reçu : un Fatalisor 1.
+f316-0049 0e25dac932352ffb Hum, ce n'est{n}pas prêt.
+f316-0051 dfa95104fdbbce19 Hé, tu as l'air{n}doué au jeu.{p}On joue ?{n}    Partant{n}    Non
+f316-0052 69e556d6ffe1f17d Bah,{n}tu y perds.
+f316-0053 adb88acf1605a850 Je vois, c'est{n}pour ta santé.
+f316-0054 be897d0b1f1db449 Ouh, t'es nul. Reviens{n}quand tu auras un peu{n}progressé !{p}Mieux vaut t'entraîner{n}ailleurs que sur le{n}Thames. Quoi ? Tu ignores{n}de quoi je parle ? Ha !{n}JE SAIS que tu sais de{n}quoi je parle !
+f316-0055 ebf410774b4dc97d Queenie est balèze.
+f316-0056 d58503908e2a5a05 Queenie est canon.
+f316-0057 7183c6b26aa49e40 Quelle surprise de voir{n}des vivants flotter au{n}milieu de la vaste mer.{p}Et en plus, vous aviez{n}deux Gears avec vous.{n}Du jamais-vu.
+f316-0058 5ba5a9d875dd593e Elly{n}"Merci.{n}Grâce à vous..."
+f316-0059 7d492535a2147bcd Remerciez plutôt le{n}capitaine.{p}C'est le capitaine du{n}Thames qui a donné l'ordre{n}de vous repêcher.
+f316-0060 b3a403347c6c7a22 Fei{n}"Thames ? {wait 5}{n}Capitaine...?"
+f316-0061 e429ba92b6ca6508 Le Thames, la ville sur la{n}mer. C'est là que vous{n}êtes.{p}Le capitaine d'ici est un{n}vieux un peu bizarre.{p}Vous verrez en le{n}rencontrant. Mais ce n'est{n}pas un mauvais bougre.
+f316-0062 5fd7afb6ab450d60 Elly{n}"Hum...{n}Et nos Gears ?"
+f316-0063 3b4cba502e19f660 Pas de souci. On les a{n}déjà montés sur le Thames{n}par le dock des vivres.{p}L'eau de mer est entrée,{n}alors les réparer prendra{n}un moment.
+f316-0064 f027e0002681a2bf Fei{n}"Vous réparez{n}nos Gears ?"
+f316-0065 81f414600087105b Vous devez trouver{n}bizarre qu'on soit si{n}gentils.{p}Mais on n'avait pas le{n}choix. Ordre du{n}capitaine...
+f316-0066 ec49e0f5287f380e Bon, je dois y aller.{n}Je suis un homme occupé !{p}Venez à la passerelle{n}après avoir fait le tour{n}du navire.{p}Le capitaine voudra{n}sûrement vous rencontrer.
+f316-0067 9a49c3d7617f1add Elly{n}"Fei,{n}qu'as-tu ?"
+f317-0000 21774acf1970c5cd {speed 255}Où vas-tu ?{n}    4F (Passerelle){n}    3F (Brasserie){n}    2F (Infirmerie){n}    1F (Pont){n}    B1F (Vivres){n}    B2F (Dock){n}    Laisse tomber
+f317-0001 a2312eeeef50ca46 Ouh, nausée.{n}Pitié, arrête{n}de tourner,{n}de tourner...
+f317-0002 7b834b5de6465932 Arrête !!{n}Bwaaah !!{done 30}
+f317-0003 d35ebe9069bd59f9 Bart{n}"Je{wait 10}...{wait 10}ne voulais pas la{n}mêler à ça."
+f317-0004 64315503759d8fb2 Fei{n}"Tu parles de{n}Margie{wait 5}...{p}Pardon, je sais que j'ai{n}promis{wait 5}...{wait 5} que s'il{n}arrivait{n}malheur, je protégerais{p}Margie et le peuple de{n}Nisan."
+f317-0005 3058fb0458f226fb Bart{n}"C'est ça qui t'inquiète ?{n}Ça va, ça a été dur pour{n}toi aussi.{p}Je m'en suis bien sorti.{n}C'est mon job.{wait 15} Quand le{n}Yggdrasil sera{p}réparé, je fonce droit{n}devant..."
+f317-0006 62eb7519c0576ce0 Bart{n}"Bien sûr que je sais que{n}Nisan est en danger.{p}Mais vu le chaos là-bas,{n}je me suis dit que c'était{n}le bon moment pour{n}m'infiltrer.{p}Je ne comptais pas{n}l'emmener. Il me suffisait{n}de la savoir en sécurité{n}là-bas."
+f317-0007 c55721fe06c07856 Citan{n}"Mais je doute que{n}Shakhan reste à{p}regarder sans rien{n}faire..."
+f317-0008 6787827772faa281 Bart{n}"C'est ce qu'ont dit les{n}gens de son Église.{p}Mais c'est encore risqué,{n}alors ils veulent que je{n}reste près d'elle pour la{n}protéger."
+f317-0009 9e3f7cd9b99a4354 Fei{n}"Ah bon{wait 5}...{wait 5} Et tu es{n}d'accord avec ça ?"
+f318-0000 82fe9e891f7405ab Un jour, j'ai trouvé un{n}trésor grand com{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 20}me{wait 30}{n}ça.
+f318-0001 6f7e1ac257399a9e N'importe quoi ! J'en ai{n}trouvé un com{wait 3}-{wait 3}-{wait 3}{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 20}me{wait 30}{n}ça !
+f318-0002 656e9a35ebdd9516 J'en ai un {wait 30}{n}com{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 100}
+f318-0003 d3e4da12655f0c33 ...-{wait 3}-{wait 3}-{wait 3}me...{wait 20}arf...{wait 20}arf{wait 20}{n}...ça.
+f318-0004 f08b717ace5ad6d3 Moi, j'en ai un {wait 30}{n}com-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}{n}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 100}
+f318-0005 c357f337f7b43018 ...-{wait 3}-{wait 3}-{wait 3}me...{wait 30}arf...{wait 30}arf...{wait 30}{n}arf{wait 30}...{wait 60}? Hein ?{wait 30}{n}Je disais quoi, déjà ?
+f318-0006 ef2d6291a023d59b HÉ !!{wait 100}
+f318-0007 5286de27b572fa44 Ah, nooooon !{n}C...chef !!{done 80}
+f318-0008 6de832ae0c5af5cd Tu as déjà trop de Micas.
+f318-0009 9da2c4186313b338  {n}Reçu : une Mica.
+f318-0010 c5e1280484cd6f59 Tu as trop de{n}Bâtons Lune.
+f318-0011 afbeb1051b481a14  {n} Reçu : Bâton Lune.
+f318-0012 159d713b55734177 Trop de{n}DardSerpentG.
+f318-0013 30052a589c3cfa96  {n}Reçu : DardSerpentG.
+f318-0014 ea12ab595195d1d5 Trop de{n}Circuits D.
+f318-0015 3d3d4e5578e14d20  {n}Reçu : un Circuit D.
+f318-0016 414f2576727d6922 Raté !!{n}Tu croyais trouver{n}un trésor, hein ?
+f318-0017 cffc7b28538d55cc Oh, un client ?
+f318-0018 1ec0cdce38915e9f Oh, un client ?{n}On a plein de{n}nouvelles pièces.
+f318-0019 eb8e16f62582aefe Reviens, hein ?
+f318-0020 65acf507c5b7db20 ...{wait 30}Tu es{n}génial ! Le meilleur{n}ferrailleur qui{n}soit...
+f318-0021 a71a87b603c45863 S...sérieux ?{n}Tu reconnais enfin{n}ma grandeur, on{n}dirait.
+f318-0022 bec4b70c8bb4b18c On dit que cette fille{n}est folle de trésors.{p}Un jour, je serai un{n}chasseur de trésors{n}célèbre, et je lui{n}offrirai tout !
+f318-0023 bd2c9d79b5f89384 Qu'est-ce qu'on{n}a remonté ?
+f318-0024 17a7a54b994201d8 Grue{wait 30}{n}géniale !
+f318-0025 d6158d33124b5284 Hé, tu écouterais{n}mes soucis ?{n}    Bien sûr{n}    Non
+f318-0026 bce0259d3f28fbfc Jusqu'ici, je voulais être{n}marin et piloter le{n}Thames !!{n}C'était mon plan...{p}Mais à force de voir tous{n}ces trésors et ces trucs{n}trimballés partout...{p}...Bah, j'ai voulu devenir{n}maître grutier, pour{n}contrôler cette machine{n}à ma guise...
+f318-0027 018133c52b2122f9 À ton avis, je fais quoi ?{n}    Maître grutier{n}    Marin{n}    Je ne sais pas
+f318-0028 e3c6f634765a99ec Oui, t'as raison...{n}maître grutier.
+f318-0029 6f5916cb0239a1d0 Oui, t'as raison...{n}marin.
+f318-0030 86027f89b579f663 Oui, t'as raison...{n}Mieux vaut que je{n}décide moi-même.
+f318-0031 360cadcb6211a3d6 Pff ! J'ai pas besoin de{n}ton aide. Je gère tout{n}seul.
+f318-0032 9e1d81d3686ca9ff L'autre jour, un Gear{n}se battait, et{p}j'ai eu envie d'être{n}pilote de Gear...aïe...{n}Tant de choix.
+f318-0033 0cde620a0b913c7b Pff ! Lui... Il boit en{n}plein jour !
+f318-0034 be121bff77637b2d Ouais !!! {wait 30}{n}Moi...j'ai pas besoin{n}de bosser..hic !
+f318-0035 895ff9d6561d4599 Ouais !!! {wait 30}{n}J'ai...pas be..soiiin...{n}...d'bosser...
+f318-0036 3834a21d98613f43 Cette arme est{n}géniaaale ! Avec elle,{n}je dégomme tous les{n}bandits !{p}BAM ! {wait 15}{n}BLAM ! {wait 15}BOUM ! {wait 15}{n}Rien que d'y penser,{n}je suis tout excitée !
+f318-0037 a3122913a06c8ce6 C'est décidé ! Je serai{n}chasseuse de Wels !{n}BLAM ! {wait 15}BAM ! {wait 15}KABLAM !{p}Je les dégomme tous !{n}Appelle-moi la Dame{n}Chasseuse de Wels...
+f318-0038 4d57eb743e034bc2 Hummm...Je le sens{n}mal...
+f318-0039 28277f458a8b2b20 L'Ethos m'a confié un{n}nouveau boulot, mon premier{n}GROS boulot. J'ai un peu peur{n}de pas être à la hauteur.{p}Ils veulent que je descende{n}très profooond et que je{n}remonte un truc gigantesque.{n}Il y a un truc dingue en bas.
+f318-0040 5d76d9fe2e032641 Le boulot de l'Ethos est{n}tombé à l'eau.{p}Malheureusement, je dois{n}le reporter... mais je{n}suis un peu soulagé.
+f318-0041 267f5b544d99e99e C'est l'entrée des vivres...{n}Ah, je te l'ai déjà dit.
+f318-0042 6ee2849d5b236363 Voici l'entrée des{n}vivres.{p}C'est par ici que les{n}trésors, les armures et{n}le reste remontent du{n}fond de la mer.
+f318-0043 02692d765c90935d Voici l'entrée des{n}vivres... Ah, je te{n}l'ai déjà dit.
+f318-0046 57d6b4ed3b2cb776 Pousse-toi !{n}Je bosse !
+f318-0047 ca37ee9681cadb77 Mon boulot, c'est de{n}surveiller les vivres{n}qui passent. Je vérifie{n}tout.{p}C'est un boulot{n}important, non ?{n}    Oui{n}    Non
+f318-0048 5244b19a1b9a5402 Ah oui ? Alors{n}pousse-toi !{n}Je bosse !
+f318-0049 0f05044fe369e8fe Quoi !? Tu dis que mon{n}boulot ne compte pas ?{n}Sans moi...{n}{wait 3}...{wait 3}...{wait 3}...{wait 3}...{wait 3}...{wait 3}...{wait 3}...{wait 3}{p}...{wait 3}...{wait 3}...{n}B R E F !! Mon boulot{n}est d'une importance{n}extrême !! Ouste ! {p}Je dois bosser !
+f318-0050 b595ece30fa69bd1 Zut ! Je croyais que{n}tout le trésor de ces{n}fouilles allait passer{n}par cette entrée{p}des vivres...
+f318-0051 06ae17e791d57703 Zut !{n}Quelle barbe.{n}Mais je te donne ça{n}quand même.
+f318-0052 4393a04963ea8f89  {n} Reçu : Superlunettes.
+f318-0053 95f8fe30566eaf5d Hein ?{n}Quel mou.
+f318-0054 83b31a3da4904f43 Pff, ça suffit{n}pour aujourd'hui.
+f318-0055 c3eb16018ff8097f Hé, tu veux que je te{n}montre ?{n}    Oui{n}    Non
+f318-0056 88ed39b181805115 Vrai ?{n}    Oui{n}    Non
+f318-0057 441935b8e998a190 Vraiment ?{n}    Oui{n}    Non
+f318-0058 0e8f5b4a414398e8 Pff, va-t'en.{n}Je m'entraîne.
+f318-0059 64ae6ad57a90d3c4 Quoiiii ?{n}T'es un mou.
+f318-0060 99fcbfb8f4104112 Bon, d'accord !{n}Je t'apprends !!
+f318-0061 577849eb4198c4ca Alors, en{n}garde !!
+f319-0000 e1c509788fe8a080 {speed 255}Cour Blindée
+f319-0001 fd7bc80d9f78b251 {speed 255}Entrée des Vivres
+f319-0002 53bd10ace4d8ff58 {speed 255}Ascenseur Spiral
+f319-0003 4b996514de6be288 Pourquoi tu cours dans{n}tous les sens ? Tu ne{n}sais pas où aller ?{n}    Oui{n}    Non
+f319-0004 2a4f5524334a2f5a Pff !{n}Alors dégage. J'ai{n}mieux à faire.
+f319-0005 1cf23058e7fb1668 De loin, les Faucheurs{n}semblent gentils, mais de{n}près, c'est autre chose.{p}Ce sera leur pire erreur{n}s'ils s'attaquent à un{n}costaud comme moi.
+f319-0006 fea3e27ffa963149 Pfiou !! Pathétique.{p}Écoute-moi bien, je ne le{n}dirai qu'une fois.
+f319-0007 e9d59cea91a7e96d Voici le pont !
+f319-0008 fc1c9fb42910aee4 Voici l'entrée de{n}l'ascenseur spiral, qui{n}mène à la passerelle.
+f319-0009 78b116373adec1bf Voici l'entrée des{n}vivres, qui sert aussi{n}de boutique de Gears !!
+f319-0010 27375cb572c10938 Tu sais tout. Alors file{n}d'ici !! Ouste !
+f319-0011 2f8faba7b6177185 Encore une journée...{n}Sous l'eau jour après{n}jour{wait 10}...{wait 10}...{wait 10}soupir...
+f319-0012 099867520e3edc39 Le boulot de l'Ethos{n}étant à l'eau,{p}je n'ai pas d'autre moyen{n}de gagner ma vie que la{n}plongée...{n}soupir...
+f319-0013 ef2fec0bc43b1cab Mais avant d'y aller, je{n}dois faire des exercices{n}d'échauffement.{n}Ha, ho, ha, ho...
+f319-0014 c490e8408f64181a Grâce à mon échauffement,{n}je pourrai sauver tous{n}ceux qui se noient.{n}Oui...{p}l'exercice...{n}Ha, ho, ha, ho...
+f319-0015 206433517cb4084d Fei{n}"Bon{wait 5}...{wait 10} Allons-y."
+f320-0000 c335a1cec558c798 L'Etone ? Vu à l'instant,{n}mais il est reparti.
+f320-0001 fe38699c74351ded Margie{n}"Ah bon ? Et il est allé{n}où ?"
+f320-0002 1349f7d5b9ea0659 Sais pas...
+f320-0003 687fba146213bbd1 Bart{n}"Qu'est-ce que tu fais,{n}Margie ?"
+f320-0004 ce849d4257a42b50 Margie{n}"Salut, Bart. Citan vient{n}de me raconter. Moi aussi,{p}je cherchais cet Etone.{p}Cette personne a déjà vu{n}cet Etone."
+f320-0006 7845f615a51cc198 Arrête de résister !!
+f320-0007 a7104240b079aff2 Elly{n}"Bart !!{n}Là !!"
+f320-0008 f3c5e346abf99730 Sans tes simagrées, je te{n}vendrais plus cher.
+f320-0009 c98dc63656d8c296 Elly{n}"Que{n}faites-vous ?"
+f320-0010 4f900818b818a5cc Quoi ? T'es qui, toi ?
+f320-0011 164c5b1e799b3082 Plutôt que la gamine,{n}si je te vendais, toi ?
+f320-0012 6147de60fad5aef8 Bart{n}"Hé ! Vous cherchez la{n}bagarre !? Venez donc,{n}bande de nazes !"
+f320-0013 61cf3074f457b781 Tu crânes, hein !?
+f320-0014 252347e87d40b671 Ah !
+f320-0015 02d8c1ca9a962dd2 Quoi !?
+f320-0016 41ef00bfc8bbc84d Toi !{n}Tu fais quoi ?
+f320-0017 7793bd988de688fd Minute, ce type est{wait 10}...
+f320-0018 1da6503194eb0c59 Oh, non{wait 10}...{n}Jesiah !!
+f320-0019 46225146aee3e0e1 Tu me le paieras !
+f320-0020 da0060bf7463c4e1 Bart{n}"Qu'est-ce que tu crois{n}faire, là ?"
+f320-0021 d6ab9b37439e8d52 Jesiah{n}"Bouge pas."
+f320-0022 c9ff49ad2d996920 Margie{n}"A-attends..."
+f320-0023 0ef79d048fe8a58e Jesiah{n}"La ferme, sale chien de{n}Solaris."
+f320-0025 20b3ea9783da3cad Attendez !!
+f320-0026 63033b568132e007 Citan{n}"Une carabine et cette{n}technique de tir... tu ne{n}peux être que Jesiah.{p}Non, Jesiah, tu te{n}trompes.{p}Tu agis toujours sans{n}réfléchir. Elle ne faisait{n}qu'aider la petite."
+f320-0027 be25ba947233543b Jesiah{n}"Hein ? Ce baratin{n}lèche-bottes... c'est{n}toi, Hyuga{wait 10}...{wait 10}"
+f320-0028 0acee521c5250485 Fillette{n}"..."
+f320-0029 21d3c6b84e21bb43 Jesiah{n}"Ça va, je sais, Primera.{n}Je me suis trompé."
+f320-0030 39d9c7e43ef89600 Jesiah{n}"Désolé, ma petite.{n}Allez, relève-toi."
+f320-0031 f2d4765a91258855 Jesiah{n}"Apparemment, tu voulais{n}juste l'aider. C'est ce{n}qu'elle dit.{p}Désolé pour le{n}malentendu. Voici{n}Primera. Ma fille.{p}Moi, c'est...{n}Appelle-moi Jessie.{n}Ça suffit que les gamins{n}m'appellent Jesiah."
+f320-0034 bba3039ee1d1c39a Jessie{n}"Elle te remercie.{p}Il lui est arrivé quelque{n}chose, et depuis, elle ne{n}parle plus."
+f320-0035 8024b6163b9a1b9e Citan{n}"...C'est la petite qui a{n}motivé ton mariage{n}précipité ?"
+f320-0036 ac48d0da1dafd263 Jessie{n}"Quelle question{n}grossière, bon sang !{n}Regarde son âge.{p}Primera est ma deuxième{n}enfant. L'autre gamin a{n}déjà 16 ans."
+f320-0037 9fb52ff9e1f80068 Citan{n}"Je te prie de m'excuser.{n}Comment va ta femme ?"
+f320-0038 473b85af617b96f8 Jessie{n}"...{wait 10}Elle est morte. Je{n}n'étais même pas à ses{n}côtés à sa mort."
+f320-0039 266a499d58b4f072 Citan{n}"Je vois...{wait 10} Et tu fais{n}quoi ici ?"
+f320-0040 58510d01a3d3dd18 Jessie{n}"Faut bien faire les{n}courses.{p}Et puis, mon fils a des{n}affaires pas très{n}agréables dans le{n}coin..."
+f320-0041 2a98d00e93a93352 Ah...{n}L'Etone que vous{n}cherchiez vient{n}d'arriver.
+f320-0042 d446140f7708e428 Bart{n}"Quoi !? Où ?"
+f320-0043 1c0a311e5d0840c3 Docteur{n}"...{wait 10}...{wait 10}voilà la raison, et{n}c'est pourquoi nous avons{p}besoin, d'une manière ou{n}d'une autre, de vous."
+f320-0044 0b33f62d238562dd Etone{n}"Je vois{wait 10}...{wait 10}..."
+f320-0045 740a70fe929e0e40 Jessie{n}"Arrête de traîner et{n}aide-les."
+f320-0046 6be6277f34170dc0 Etone{n}"P... père ?{n}Et Prim aussi ?"
+f320-0047 ec5bd23499a56d22 Jessie{n}"Voici mon fils, Billy."
+f320-0048 6bf3af7c650db2fc Billy{n}"Où étais-tu passé ?{p}Ça va très mal au siège."
+f320-0049 b072cd96e032b89f Jessie{n}"Comment ça, très mal ?{p}Je n'ai plus le droit de{n}faire des courses avec{n}ma fille ?"
+f320-0050 fe644e4326036a98 Billy{n}"J'ignore les détails, mais{n}tu as été classé élément{n}indésirable.{p}Qu'est-ce que tu as encore{n}fait ? Bagarre ? Jeu ? Tu as{n}encore couru après la femme{n}d'un autre !?"
+f320-0051 ece9d17b5c9a6359 Jessie{n}"Pff, ce ne sont que des{n}rumeurs sur moi. Rumeurs.{p}N'y crois pas.{n}Depuis que tu es entré à{n}l'Ethos, t'es un coincé."
+f320-0053 9f1f59b9928fe1b6 Jessie{n}"Cette fille a empêché{n}l'enlèvement de Primera.{p}Pourquoi tu ne l'aides pas{n}tout de suite ?"
+f320-0054 efc1705305c46f9e Elly{n}"Eh bien... pourriez-vous{n}nous présenter à{n}l'Ethos ?"
+f320-0055 fec4ffcf6f01d177 Billy{n}"Ah, oui, je vous en prie,{n}pardonnez mon manque de{p}politesse. J'ignorais que{n}vous aviez sauvé ma soeur.{p}Je vais contacter le{n}service médical de notre{n}siège.{p}J'ai d'autres affaires à{n}régler, car je ne suis pas{n}seulement prêtre, mais{n}aussi Etone...{p}Je ne peux donc rien{n}promettre."
+f320-0056 a872237f080df308 Elly{n}"Alors, vous nous{n}présenterez ?"
+f320-0057 2397fd5470eb9da5 Billy{n}"Oui. Passons au siège de{n}l'Ethos après cela."
+f320-0058 7e354b19b5c4d338 Margie{n}"Hum. Prêtre et Etone à la{n}fois... C'est inhabituel,{n}non ?{p}L'Ethos est vraiment bien{n}différent de mon Église de{n}Nisan."
+f320-0059 ddc74c0a05ef09bc Billy{n}"Votre Église de Nisan ?{n}Vous êtes de Nisan ?"
+f320-0060 006d34b431265083 Margie{n}"Oui ! Moi, c'est{n}Marguerite. Ravie,{n}mon Père."
+f320-0061 54a32d9e6317a8ee Billy{n}"Tout le plaisir est pour{n}moi.{p}Je n'ai jamais vraiment eu{n}l'occasion de parler avec{n}d'autres de leur{p}religion. Pourrions-nous{n}en discuter plus tard ?"
+f320-0062 1bf220828da053e9 Margie{n}"Bien sûr, avec plaisir.{p}Mais je ne peux pas{n}m'attarder. Je suis un peu{n}occupée."
+f320-0063 b1d64137432a161b Billy{n}"Merci.{p}Hum... Marguerite ? Où{n}ai-je déjà entendu ce{n}nom ?"
+f320-0064 0b870e91957dddab Bart{n}"Laisse tomber, relax...{p}Je suis venu parler à{n}l'Ethos. On y va."
+f320-0065 3ce63a8543dd8adb Billy{n}"Quel malotru.{p}Vous devriez apprendre à{n}parler avec un peu plus de{n}politesse."
+f320-0066 bb95ac4163ec4cfb Bart{n}"Espèce de...!"
+f320-0067 bb5ea4b465e715d1 Billy{n}"Bien, mes amis,{p}je vais prévenir le siège{n}de l'Ethos de votre venue.{p}Quand vous aurez fini ici,{n}passez à l'Ethos, je vous{n}prie."
+f320-0068 c72a82a1e3be29cc Bart{n}"Oui, oui, je sais. On{n}y va."
+f320-0069 71a9c860795fa5f7 Jessie{n}"Hé, Billy, j'ai des trucs{n}à régler.{p}Si tu rentres au siège,{n}tu peux ramener Primera{n}chez les gamins pour{n}moi ?"
+f320-0070 e7b74fbec4d1d044 Billy{n}"...{wait 10}...{wait 30}D'accord. Viens,{n}Prim."
+f320-0071 ea4bfedfbfe0b92b Jessie{n}"Bon, alors j'y vais.{p}À plus, Hyuga. Je sais{n}qu'on se reverra."
+f320-0072 0218a2fc53a7af38 Citan{n}"Qui sait..."
+f320-0073 7982a1a910d12bb9 Jessie{n}"Bon, peu importe. À plus,{n}mesdemoiselles."
+f320-0074 f36229594e9e0683 Citan{n}"Toujours le même..."
+f320-0075 5ff378ead8d7bd5a Citan{n}"Sigurd a dit qu'il aurait{n}bientôt fini de réparer le{n}Yggdrasil."
+f320-0076 55aceaa135eb9e2c Bart{n}"Vrai ? Super, cette fois,{n}on largue les amarres !"
+f320-0077 ce18b3a337463bd0 Elly{n}"On retourne...{wait 10} à{n}Aveh ?"
+f320-0078 70df98ed40f3b2aa Bart{n}"Tu rigoles ? D'abord, on{n}doit s'occuper de Fei.{p}Ce petit snob a dit qu'il{n}nous présenterait à{n}l'Ethos.{p}Alors je crois qu'on va{n}devoir aller au siège de{n}l'Ethos..."
+f320-0079 ccb45cc5f93b1a4e Elly{n}"...{wait 10}Merci."
+f320-0080 d78c57fff4998753 Bart{n}"Pourquoi toi, tu me{n}remercies ?"
+f320-0081 909840026a3ecad8 Margie{n}"Hé hé, c'est ça, Elly."
+f321-0000 e5e8c96ffc0f67a3 Qui joue ?{n}    {name 128}{n}    {name 129}
+f321-0002 4c0ddf8e5ca95eeb Un-deux
+f321-0003 72fb39f9be7f725a Arrêter ?{n}    Non{n}    Oui
+f321-0004 94eba265fb45597a Prêt ?{done 30}
+f321-0005 8eead0ea9404ac87 Go !
+f321-0006 8f59991fdef9d272 Un duel ? Dans tes{n}rêves ! Ici, seuls les{n}plus rapides gagnent.{n}C'est un jeu de cartes{n}des 'hommes de la{n}mer'.
+f321-0007 41038688b3808b91 Je t'explique les règles.{n}D'abord, 26 cartes pour{n}toi et ton adversaire.
+f321-0008 f0b2b7c9adc739fa Puis je pose 4 cartes{n}devant chaque joueur,{n}qui forment sa main.
+f321-0009 5b31b0619cb40112 Ensuite, j'ajoute une{n}carte sur la gauche, de{n}ton point de vue.
+f321-0010 3dfddb9cc0011834 Jusque-là, je fais tout{n}automatiquement pour toi.{n}Mais à partir d'ici, la{n}partie commence.{p}Tu dois poser tes 4 cartes{n}et tes 21 autres sur les{n}deux cartes du centre{n}avant ton adversaire.{p}Bien sûr, il y a des règles{n}pour poser les cartes.
+f321-0011 3fca4b71a52acd05 Pose une carte sur une{n}autre si les nombres se{n}suivent. Comme le{n}nombre au-dessus...
+f321-0012 235f9ff895edb497 Ici, sur un 3, tu peux{n}jouer un 4.
+f321-0013 d2e69014113d17c3 Ou celui en dessous...
+f321-0014 0319c8f67845ff25 Ici, sur un 4, tu peux{n}jouer un 3.
+f321-0015 91f8420ff1fc8af7 Mais si les nombres{n}ne se suivent pas...
+f321-0016 10017ebd99b0d16b la carte ne peut être jouée.{n}Mais sur un K (13), on peut{n}jouer un A (1), et{n}l'inverse.
+f321-0017 aea7ac87d7d679e1 Je vais t'apprendre à{n}manier les cartes.{n}D'abord...{p}Pour déplacer une carte de{n}ta pioche vers une place{n}vide de ta main de 4 cartes,{n}utilise Gauche et Droite sur{n}la croix pour choisir la{n}place.{p}Puis appuie sur □, △, L1{n}ou R1 pour poser la{n}carte.
+f321-0018 033db63468cffc82 Pour jouer une carte,{n}place-toi sur la carte{n}que tu veux jouer...
+f321-0019 1426e669beadd10f Et appuie sur △{n}ou R1 pour jouer{n}à droite...
+f321-0020 0f378d976545be89 Ou appuie sur □{n}ou L1 pour jouer{n}à gauche.
+f321-0021 8f5c7d9af8c4a7a5 Ton adversaire joue{n}aussi, bien sûr.
+f321-0022 62bf82d0132e66e2 Et si aucun des deux ne{n}peut jouer, même après{n}avoir complété les 4 cartes{n}devant lui ?{p}Dans ce cas, on annonce{n}'un-deux' et une carte de{n}ta pioche est jouée{n}directement.
+f321-0024 5c65b68616e61ccc Si personne ne peut toujours{n}jouer, on recommence.
+f321-0025 cc731f5dbb0fb2cb S'il ne reste plus de carte{n}dans ta pioche pour le{n}'un-deux'...{p}alors la carte la plus à{n}gauche de ta main est{n}jouée directement.
+f321-0027 634c700aae142b81 Et...
+f321-0028 c14ebc0b44531eb6 Le premier qui pose{n}toutes ses cartes gagne.{n}Ici, tu as perdu.
+f321-0029 848d84b8907f18d6 Ah, encore une chose.{p}Avec le bouton Select, tu{n}peux abandonner la partie{n}en cours. Mais, bien sûr,{n}ça compte comme une défaite.
+f323-0000 1acbe66e0bf2f915 "Contact sonar.{n}...{wait 10}...{wait 10}{p}Négatif. Ce modèle...{n}correspond au navire{n}pirate d'Aveh, le{n}Yggdrasil."
+f323-0001 d87f40de60b08ef0 Dominia{n}"Le Yggdrasil ? Il{n}n'avait pas été coulé{n}dans un autre combat ?"
+f323-0002 9f764932a70b562b "Aucune trace du naufrage.{n}Nous étions trop occupés{n}à combattre{p}ce Gear rouge pour{n}vérifier."
+f323-0003 dffa461f93b89174 Dominia{n}"Il n'a donc peut-être{n}pas coulé...{p}Je crois que les données{n}montrent que le Yggdrasil{n}transportait ce Gear."
+f323-0004 c3b345876c60e115 "Un instant{wait 30}...{wait 30}...{wait 30}{n}Oui, c'est exact."
+f323-0005 8542f0e6acaf9e87 Dominia{n}"Parfait. Donne-moi{n}les commandes."
+f323-0006 e5e5131dcce51857 "Parfait ? Que vas-tu{n}faire ?"
+f323-0007 b3910b3eac2f3d8f Dominia{n}"Le couler, bien sûr. Il{n}ne gênera plus jamais le{n}Commandant."
+f323-0008 91cd2e72f6b6f7ab "Attends. Le Commandant{n}nous a ordonné d'enquêter{n}sur la disparition de ce{n}cuirassé volant.{p}Nous ne pouvons pas nous{n}écarter de notre mission.{p}De plus, nous manquons de{n}carburant et devons{n}refaire le plein."
+f323-0009 afea92d08a063f86 Dominia{n}"Nous en avons assez. Je{n}vais le couler."
+f323-0010 e0b2c12f95d081c1 "...Soupir... Une fois{n}lancée, on ne t'arrête{n}plus, hein ?{p}J'espère que tu sais que{n}se battre dans l'eau n'a{n}rien à voir avec se battre{n}sur terre."
+f323-0011 5fae5b6a0695bb0f Dominia{n}"Bien sûr. Désolée,{n}Kelvena."
+f323-0012 75e247e8d4f2f6d1 Bart{n}"Zut ! Je peux à peine{n}manoeuvrer, et toi, tu{n}gigotes partout..."
+f323-0013 52a7095f0854c201 Fei{n}"Ça a l'air dur, ce{n}combat, Bart."
+f323-0014 49ff46380fe09e36 Bart{n}"Fei !? T'es vivant !?"
+f323-0015 54b6415655a8c09c Fei{n}"Hé, c'est ma réplique."
+f323-0016 2b239f44135956c0 Elly{n}"Et ce Gear ?"
+f323-0017 ada422243370924a Dominia{n}"Elhaym !! Que fais-tu{n}ici ?"
+f323-0018 de37b10109434641 Elly{n}"Dominia !? Pourquoi{n}es-tu ici ?"
+f323-0019 8831b3910a1b804f Dominia{n}"Pourquoi ? À Gebler, on{n}n'a pas besoin de{p}raison spéciale pour{n}couler un navire ennemi !{p}C'est notre devoir divin{n}de gouverner ces Agneaux{n}grossiers qui peuplent la{n}terre."
+f323-0020 67f2cd981f777cfa Elly{n}"Mais pourquoi ? En quoi{n}sont-ils autres que nous,{n}les Bergers, les -Abel- ?"
+f323-0021 33c74546cd10438b Dominia{n}"Pour moi, -Agneaux- et{n}-Abel-, c'est pareil.{p}La seule différence{n}décisive, c'est la{n}capacité personnelle.{p}Les ignorants doivent être{n}guidés par les sages.{n}Tel est notre rôle.{p}Vois ce que tu as accompli{n}parmi les Éléments, Elly.{n}Pourquoi douter encore ?{p}Ta supériorité est{n}évidente !"
+f323-0022 bdc2f6b84f834c37 Elly{n}"...Alors, que les sages{n}blessent les faibles, ce{n}serait ça, la capacité ?{p}Je ne voulais pas ça...{wait 30}{n}C'est tout !!"
+f323-0023 f8fc3f4cf5d3f005 Fei{n}"Elly, tu vas bien ?"
+f323-0024 83610f6b333260d0 Dominia{n}"Ce Gear... c'est toi ?{n}Ha ! Je vois.{p}Amusant, Elhaym.{n}Tout ça pour un homme ?{n}Cette histoire était donc{n}vraie, finalement.{p}Tu es née de ces{n}Agneaux méprisables."
+f323-0025 20a5ba9eb59fb85b Elly{n}"Arrête !{n}Tais-toi !"
+f323-0026 9ed143ed52a46f00 Dominia{n}"Hmpf, et tu vas faire{n}quoi, sale bâtarde !?{p}Tu vas me frapper avec{n}le pouvoir de cet{n}incident ?{p}Vas-y. Montre-le.{n}Montre ton vrai{n}pouvoir !"
+f323-0027 9f4cba516bf86042 Elly{n}"...Je vais le montrer.{p}Si vous, à Gebler, êtes{n}des sages...{wait 20}{n}alors {wait 30}je préfère être{n}une idiote !!"
+f324-0000 b7343cf7a21f28dc Dominia{n}"Assez de ces paroles{n}naïves !"
+f324-0001 188a1a009501d59c Elly{n}"Je n'ai rien dit de{n}faux !"
+f324-0002 3a9aca6468c859a0 Dominia{n}"Je n'ai pas la moindre{n}intention de continuer à{n}discuter avec toi !{p}Ta trahison est déjà{n}évidente ! Je vais en{n}finir avec toi ici{n}même !!"
+f324-0003 4d912d8c601adbcf Arrêtez cela tout de{n}suite.
+f324-0004 fd27504370bfaae7 Miang{n}"Tout va bien ?"
+f324-0005 7a221465533e5566 Dominia{n}"Miang ! Pourquoi ?{n}C'est une traîtresse !"
+f324-0006 a9211e085c7eb989 Miang{n}"De tels actes ne sont pas{n}tolérés sur un navire aux{n}ordres de Ramsus...{p}Quel qu'en soit le motif !{p}J'ai examiné les relevés{n}du combat entre le Haishao{n}et le {name 13}...{p}À ce que j'ai vu, c'est{n}vous qui avez attaqué la{n}première, n'est-ce pas ?{p}Elle n'a fait que se{n}défendre, après que vous{n}avez décidé de votre{p}propre chef d'attaquer{n}sans permission.{p}Avant tout, vous deviez{n}être sous le commandement{n}de Kelvena. Obéissiez-vous{p}aux ordres de Kelvena ?"
+f324-0008 928b1ef3c84b8ec5 Miang{n}"Vous ne pouvez accuser{n}aucun soldat de trahison{n}sans l'autorité requise.{p}Même si vous êtes toutes{n}deux Éléments.{wait 10} Et puis{wait 5}...{wait 5}{p}Votre attitude envers le{n}lieutenant ne serait rien{n}d'autre qu'un préjugé{n}personnel{wait 5}...{wait 5}{p}Ou me tromperais-je ?"
+f324-0009 6868350584245538 Dominia{n}"Quoi !? Jamais je..."
+f324-0010 edaf2d9b9984d24b Miang{n}"Pour l'heure, nous ne{n}pouvons dire si elle{p}est coupable ou non de{n}trahison.{p}Pour éclaircir cette{n}affaire, je place le{n}lieutenant sous ma{n}supervision.{p}Est-ce clair ?"
+f324-0011 af31cf60b2b20f84 Dominia{n}"Vous osez !{n}De quel droit !?"
+f324-0012 f0d43a0d471d4c8e Miang{n}"Venez."
+f325-0000 7e474774001f66ee Miang{n}"...{wait 20}Je vois... C'est{n}donc{n}ce qui se passait."
+f325-0002 a97463e3558502c6 Miang{n}"Comme j'ai d'autres{n}affaires à régler,{p}cela vous dérange-t-il de{n}rester ici un moment ?"
+f325-0003 10a63a542011758b Elly{n}"Pas du tout."
+f325-0004 361d9e2518418614 Miang{n}"Vous n'avez à vous soucier{n}de rien. Laissez-moi le{n}reste.{p}Ce qu'il vous faut, c'est{n}vous remettre de votre{n}fatigue."
+f325-0005 4da42d8e9d476436 Miang{n}"Cristallins, bleus...{n}comme la surface d'un{n}lac..."
+f325-0006 47b15cbd4f407cd2 Elly{n}"Euh... pardon ?"
+f325-0007 52153994a212ebf5 Miang{n}"Vos yeux... Si{n}beaux."
+f326-0000 ce41d30012e93e1d GO !{done 30}
+f326-0004 d2495d51ed67f5c6 {speed 255}Yes !!{done 30}
+f326-0005 12f39951bbfb2480 {speed 255}Oui !{done 30}
+f326-0006 081fc8111809d06a {speed 255}Oui !!{done 30}
+f326-0007 43052c5f4ac14ffd {speed 255}Yé !!{done 30}
+f326-0008 098ac432f1925c7e Pourquoi Primera ne{n}joue pas avec Tonton{n}Stone ?{wait 10} Il est troooop{n}intéressant...
+f326-0009 b6d340ebbcd59d7e Ehhh, vous allez chercher{n}la soucoupe volante ?{wait 10}{n}Emmenez-moi aussi !!
+f326-0010 5a101de515c2cc2c Billy{n}"Davy va garder la maison{n}ici.{p}Si tu es sage, tu pourras{n}y aller une autre fois."
+f326-0011 6114d1efc8ecd661 Si, {wait 5}si je, {wait 5} ne suis pas{n}sage, je ne peux pas y{n}aller...{wait 10} Bouhouhou !!
+f326-0012 89f4ba680964320e Pas de soucoupe{n}aujourd'hui.{wait 10} Oh～h !
+f326-0013 4cc7bc705d28e4ab La soucoupe volante, ça{n}t'intéresse ? Demande-moi !{n}{speed 255}    Raconte{n}    Laisse tomber
+f326-0014 2a96e2326240afdb {speed 2}Ahem !! En fait, ça remonte{n}à loin. Il y a 50 ans, un{n}vieillard, Henry Mingas, a{n}dit avoir été enlevé par la{n}soucoupe et avoir eu le{n}corps modifié. Personne ne{n}l'a cru, mais on dit{n}qu'ensuite, il avait des{n}savoirs et des dons inouïs{n}qu'il n'avait jamais eus.{n}Puis, il y a 10 ans, des{n}marques circulaires sont{n}apparues un peu partout. Tu{n}en as entendu parler ? Non ?{n}Bon, on les a appelées les{n}cercles mystérieux. Ce type{n}a fait courir le bruit que{n}c'étaient des sites{n}d'atterrissage de soucoupe,{n}et quand d'autres gens ont{n}disparu, les ragots ont{n}enflé. Mais il y avait{n}d'autres explications, comme{n}les Histoires Coquines, les{n}Rouleaux du Dragon ou la{n}Légende du Plasma. Aucune{n}preuve réelle, donc. Mais{n}les disparitions ont bien eu{n}lieu.{p}{speed 0}{n}Ah, j'oubliais : la{n}soucoupe s'appelait{n}'Shevat'.{n}Certains la{n}vénèrent même.
+f326-0015 e1656b64046e19c2 Alors, ça t'a aidé ?{wait 10}{n}Ahem.
+f326-0016 d93d9f28633cfb20 Quand tu dis ça, ça me{n}donne encore plus envie{n}de raconter...
+f326-0017 79bb31b222a2afc5 Tu cherches Billy ?{wait 10}{n}Alors va au siège de{n}l'Ethos.
+f326-0018 1f4c1f0099dbbbde Yé !!{done 30}
+f326-0019 6d79d25cdf707edc Billy n'est pas là,{n}alors je dois faire de{n}mon mieux.
+f326-0020 b3fe82e64549c5f4 Billy{n}"Rien qu'un moment."
+f326-0021 221318644ad9ed59 On dirait qu'il y a un{n}truc là-dedans, mais on{n}ne peut pas entrer.{wait 10}{p}Une maison hantée ?{wait 10}{n}...brrr...
+f326-0022 ffc6bad2b5cbbbe0 Billy dit qu'il ne faut{n}pas parler aux inconnus...
+f326-0024 fffa50306357cc49 ...huit, neuf, dix !!
+f326-0025 257d9aa556a24cb9 Où sont-ils tous{n}cachés ?
+f326-0026 f7f0bb632eaec7ae Tonton Stone reviendra{n}jouer avec nous ?
+f326-0027 fa461faa4ae8707b Cette fois, tu ne me{n}trouveras pas !
+f326-0028 bd3c8447ad8a503d Billy joue aussi à{n}cache-cache, parfois.
+f326-0029 d53a8210cace598f Hé, où sont les autres ?{n}Dis-moi tout bas où ils{n}se sont cachés.
+f326-0030 b6b3e67b83f36a36 Enfants sages{n}"Oui !!"{done 60}
+f326-0031 f15c192023d9dd48 On adore Tonton Stone !!
+f326-0032 805eecc05f27ada2 ...{wait 10}Mais si je respire{n}un air aussi pur sans arrêt,{n}un lys risque de me pousser{n}dans le nez...{wait 10}{n}Hum, quel dilemme.
+f326-0033 e88ef7514973e68c Pourquoi l'air est-il{n}si salé ?{wait 10} Pas d'air frais{n}par ici ?{p}S'il y en a, je veux en{n}respirer à satiété.
+f326-0035 373b1d3045f3178c GO !!{done 30}
+f326-0036 3366d26e6721f1b7 Merci ! Ça aide{n}beaucoup !
+f326-0037 f7340eb22fdea61b Merci !{wait 10} Un jour, je te{n}le rendrai !
+f326-0038 889c67bc747e8072 Reçu : un Badge Chat.
+f326-0039 6f6476620ea2660d Déjà {num1 0}.{wait 10}{n}Plus que {num1 1}.
+f326-0042 67d0f6aafdd882d5 C'est mon tour de garde,{n}je dois rentrer les{n}poules au poulailler...{p}Tu veux m'aider ?{wait 30}{n}{speed 255}    Bien sûr !!{n}    C'est ton boulot.
+f326-0043 43b0df1d201c1761 Merci !!{wait 10} C'est facile,{n}les poules viennent{n}quand on les appelle.
+f326-0044 b46a0f58c83da157 Hmpf,{wait 30} Billy a dit la{n}même chose.
+f326-0045 cf1c086c4521e407 Tu cherches Billy ?{wait 10}{n}Alors va au siège de{n}l'Ethos.
+f326-0046 12c36224683c3293 Gare !{done 40}
+f326-0047 ca8ebac7afef8cc1 Hum, Tonton Stone est{n}méchant ?{wait 10} Pourquoi tu dis{n}qu'il est bizarre !
+f326-0048 138b1bb17f8dac7b Billy dit qu'il respecte{n}Tonton Stone. Je devrais{n}le respecter aussi.
+f326-0049 6c35a6512cdd4813 Je m'entraîne au cas où il{n}y aurait une urgence,{n}alors ne me dérange pas.
+f326-0051 b2b96541592f4771 La la la la !
+f326-0052 6e2e5f988224ffeb Oui,{wait 10} super !!
+f326-0054 0290a4c5e1a71215 ...Hi hi hi !
+f326-0057 ac4196c9fa1d671e On est tous bons amis...
+f326-0058 4213debe15c0c063 Hein ? 'Pourquoi tu ne{n}joues pas avec elles ?'{wait 30}{n}N'importe quoi...! Je ne{p}peux pas jouer avec des{n}filles !!
+f326-0059 07c41c7b110ae1e1 Elly{n}"Tu veux dire que je ne{n}peux pas jouer parce que{n}je suis une fille ?"
+f326-0060 8cd2d2a13984e32b Toi, si !
+f326-0061 4d9bea2faa5104b3 Hé, monte ici !
+f326-0062 abe5c167cfe45e34 Parle pas aux inconnus !
+f326-0064 ae516f7dcab54694 Ouah !!{n}Tonton Stone !!
+f326-0065 a65441c16c57966d Tonton Stone{n}"Salut,{wait 10} vous êtes tous{n}contents ?"
+f326-0066 a95ba58ebe144bbd Évêque Stone !!
+f326-0067 4b8428f327f3341a Évêque Stone{n}"Oh, Billy, mon fils !"
+f326-0068 ff5af1c0d6fb37f9 Billy{n}"Pardon de vous déranger{n}en plein travail."
+f326-0069 4d3f50aac6a8dd0e Évêque Stone{n}"Et qui sont ces gens ?"
+f326-0070 1e6aacc49574ddc0 Billy{n}"Des voyageurs venus{n}d'un autre pays."
+f326-0071 3b3a0e40c3555bb8 Évêque Stone{n}"Ah...{wait 20} À propos de ton{n}message de tout à{n}l'heure..."
+f326-0072 4fd661f500cf86cd Billy{n}"Oui, {wait 10}pour le travail..."
+f326-0073 3f08d4a962743ca4 Évêque Stone{n}"Oui.{p}Le navire de transport de{n}l'Ethos qui avait disparu{n}a enfin{p}été retrouvé.{wait 10} Mais il ne{n}répond pas..."
+f326-0074 d57c20c7ccd36b7d Billy{n}"C'est-à-dire ?"
+f326-0075 544403b0962d5711 Évêque Stone{n}"Hmmm,{wait 10} peut-être encore{n}les Faucheurs.{p}Billy, tu t'en charges,{n}comme d'habitude ?"
+f326-0076 42cf3ea5502d732e Billy{n}"Bien,{wait 10} sans problème.{n}{wait 10}Comptez sur moi."
+f326-0077 091aeea2e628d741 Évêque Stone{n}"Merci.{wait 10} C'est au nord-est{n}d'ici.{p}Sois prudent, je te prie.{n}C'est une zone dangereuse.{p}Les courants y sont très{n}rapides, et mieux vaut{n}éviter les Ferrailleurs.{p}L'idéal serait d'y aller{n}avec un grand navire..."
+f326-0078 437f4f9c2b6d02c3 Bart{n}"Hé, c'est ce navire géant{n}dont Sig parlait tout à{n}l'heure ?"
+f326-0079 74b043e0865ac090 Billy{n}"J'ignore si c'est le{n}même."
+f326-0080 1a8d414b34c17e82 Bart{n}"D'après ce que j'ai{n}entendu, les courants y{n}sont très rapides.{p}Il paraît que c'est très{n}dangereux pour les petits{n}navires. Mais le Yggdrasil{n}ne craint rien.{p}Vagues géantes ou mer{n}démontée, pas de problème.{n}Et puis, tu as aidé Fei.{p}Embarque.{wait 10} Je t'emmène{n}là-bas.{wait 10} On peut même{n}t'aider à finir le job !"
+f326-0081 460d112ee52a1b10 Elly{n}"Oui. Vous avez sauvé{n}Fei. C'est le moins que{n}nous puissions faire."
+f326-0082 612d384af12b9785 Billy{n}"Merci, mais cela ne vous{n}concerne pas.{wait 10}{n}Seul, je m'en sortirai."
+f326-0083 60941a810961f014 Elly{n}"Cet endroit n'est-il{n}pas dangereux ?{p}Si nous pouvons vous{n}aider en quoi que ce{n}soit..."
+f326-0084 cff8666dee57f806 Billy{n}"Je ne veux pas{n}vous mêler à ça..."
+f326-0085 7366eebfdd9bedfe Évêque Stone{n}"Billy, mon fils, ne{n}gaspille pas leurs bonnes{p}intentions. Ce sous-marin{n}est à eux, n'est-ce pas ?{p}Pourquoi ne pas coopérer{n}avec eux..."
+f326-0086 7b817ca07a00cc30 Billy{n}"...{wait 10}{n}Mais, Monseigneur !"
+f326-0087 68b0204327efc221 Bart{n}"Ouais, voyager seul,{n}c'est{n}pas drôle.{wait 10} On t'aide."
+f326-0088 27952bb0bd54917c Elly{n}"Billy, mieux vaut{n}partir entre amis !"
+f326-0089 e19b206f3ff59fa2 Billy{n}"...{p}Bien, si vous insistez.{n}Merci.{wait 10} Je vous en suis{n}très reconnaissant."
+f326-0090 4ec860d6522b926e Évêque Stone{n}"Je vous remercie{n}profondément.{wait 10} Billy, {wait 5}prends{n}bien soin de ces gens.{p}Présente-toi au siège à ton{n}retour."
+f326-0091 35a79edca864aa47 Billy{n}"Oui, Monseigneur."
+f326-0092 f79343dab4f38fa6 Billy{n}"Merci.{wait 10} Voyons ce que{n}demain nous réserve.{p}Je viendrai une fois mes{n}préparatifs terminés.{n}Partez devant.{p}Je vous en dirai plus en{n}route..."
+f326-0094 a90e2ad09877cdc7 Signal de Billy...!!
+f326-0095 8efcac2b2c9853ef Hé, les gars !! C'est{n}l'équipe G !!
+f326-0096 4ecf38a249033f05 Vent, OK !!{n}Coordonnées cible -{n}X1020, Z303 !
+f326-0097 5896743bfb86a5bb Compris !!{wait 10} Pilote{n}automatique activé !
+f326-0098 289e293154cb694e Catapulte, prête !!
+f326-0099 a5574526a112d8d0 Pousse,{wait 10} tire !!
+f326-0100 03f6b38274e13d49 En position {wait 10}{n}OK !!
+f326-0101 faa64d49177ac7f5 Prêts ?
+f326-0102 fdbe6fb31be7f262 À fond !!
+f326-0103 d7d34dc50731a56d Lancement du jour :{n}bof, moyen.
+f327-0000 33eb169643b0dffc Citan{n}"Bonjour !"
+f327-0001 d61e53aefc734145 Billy{n}"Ah, bonjour.{wait 10} Comment va{n}Fei ?"
+f327-0002 6678850e6f22a278 Elly{n}"Il va bien.{wait 10}{p}Il n'a pas encore repris{n}connaissance, mais il{n}va bientôt se réveiller."
+f327-0003 4f86a5646e1f5798 Billy{n}"Vraiment ? {wait 10}Ravi de{n}l'entendre."
+f327-0004 7fabd8420edaeab5 Elly{n}"Hum, Billy.{wait 10} Je ne sais{n}comment te remercier{n}d'avoir aidé Fei."
+f327-0005 8fa55f34e99318bd Billy{n}"Pas besoin de merci.{p}Nos dieux diffèrent{n}peut-être, mais aucun{n}de nous ne peut laisser{n}tomber qui en a besoin."
+f327-0006 5b51037842fc8551 Elly{n}"Merci infiniment.{wait 10} Au{n}fait, c'est ton{n}orphelinat...?"
+f327-0007 a40300c2607f352b Billy{n}"Surprise qu'il n'y ait{n}que des enfants ?"
+f327-0008 e971f7853d399086 Billy{n}"Ma soeur et moi n'avons{n}plus de parents depuis{n}notre petite enfance...{p}Alors j'ai ouvert un{n}orphelinat, pour que les{n}enfants seuls ne vivent{n}pas ce qu'on a vécu."
+f327-0009 012f33802e17bdf0 Billy{n}"Ils sont tous en bonne{n}santé et fidèles aux{n}préceptes de l'Ethos.{p}Ce sont de bons enfants,{n}qui m'aident même dans{n}mon travail."
+f327-0010 4bca158dd936e2e3 Ciao !!{done 20}
+f327-0011 4fbc181bbcc34876 Hé,{wait 10} tu m'as pas trouvé,{n}c'est pas drôle !
+f327-0012 0e3f8a6fa5d182fa Des bonbons ?{n}    Oui, donne{n}    Non merci
+f327-0013 a0e07dd9903226de Youpi～ !{wait 10} Vidons vite ce{n}pot pour y mettre de{n}jolis coquillages !
+f327-0014 52f459e3cacd0e10 Oh, zut...{wait 10} Je voulais{n}vite vider ce pot pour{n}y mettre de jolis{n}coquillages !
+f327-0015 1ac580da24532927 Au fait... pas un mot{n}à Frère B !
+f327-0016 c5bc65e02f1441a2 Ouh, la frousse.{wait 10} J'ai{n}cru voir Frère B...{p}C'est secret, d'accord ?{n}    D'accord{n}    Bof
+f327-0017 3f5a45dc642e1ae1 Youpi～ ! Merci.{wait 10} Je te{n}donne ce livre si tu{n}gardes le secret, ok ?
+f327-0018 9f78dd1b83ec93dc Reçu : un livre illustré{n}amusant !
+f327-0019 5ee92a04bd38c184 Rabat-joie ! Va-t'en !
+f327-0020 d5c35f26e09e38a2 Une ficelle...{n}    Tirer !!{n}    Ne pas tirer
+f327-0021 258cfa2a6a2d76b8 Sigurd{n}"Bart !!{wait 10} Le radar du{n}Yggdrasil a détecté{n}un navire gigantesque !!"
+f327-0022 19dba417fb69f566 Sigurd{n}"Hyuga !{wait 10} Le radar du{n}Yggdrasil a détecté{n}un navire gigantesque !!"
+f327-0023 f36d00a7baf040f9 Bart{n}"Quoi ?{wait 10} Encore Gebler ?"
+f327-0024 7ce13de8523b6012 Sigurd{n}"Je l'ignore, mais il file{n}vers le sud à 10 repsol/h.{wait 10}{p}Allons à la passerelle."
+f327-0025 eff259d313e2bf89 Bart{n}"Compris !{wait 10} J'arrive."
+f327-0026 60f53b61482af502 Citan{n}"Encore Gebler ?"
+f327-0027 2c57fa3c74236b6a Sigurd{n}"Je l'ignore, mais il file{n}vers le sud à 10 repsol/h.{wait 10}{p}Allons à la passerelle."
+f327-0028 88e115cac0e4b14c Citan{n}"Compris.{wait 10} J'y serai dans{n}un instant."
+f327-0029 289da7397052052e Hé, toi, en noir et{n}blanc.{wait 10} T'es Sigurd ?
+f327-0030 a8fc5ca8c5346764 Sigurd{n}"C'est une façon de parler{n}aux gens ? Pour qui vous{n}prenez-vous ?"
+f327-0031 f31fa8f27a23ed18 Citan{n}"Ah...{wait 10} Ça ne se voit pas,{n}mais c'est notre aîné."
+f327-0032 845b96a310eabf4e Citan{n}"Ah...{wait 10}Ça ne se voit pas,{n}mais c'est notre aîné."
+f327-0033 e42bbfb584aca07e Sigurd{n}"L'aîné ?{wait 10}{n}Jessie ?"
+f327-0035 0c2d3408455eb031 Bart{n}"Il a dit 'Siggy' ?"
+f327-0036 ebff7611a7f47540 Jessie{n}"Un homme aux cheveux{n}argentés et à la peau{p}ambrée. C'est rare, je{n}dirais.{p}Vous faites quoi, tous,{n}ici ?"
+f327-0037 470161f0e9119a1e Citan{n}"Ça s'est trouvé ainsi."
+f327-0039 c1d4893d7da71998 Sigurd{n}"Beaucoup de choses..."
+f327-0040 1f56653eed5de238 Jessie{n}"Bon, parlons-en autour{n}d'un verre.{p}Alors{wait 5}...{wait 5}{n}Pourquoi êtes-vous tous{n}ici ?"
+f327-0041 81c889868cfb3e2e Billy{n}"Siggy, depuis le temps...{wait 20}{n}Et ce cache-oeil ?"
+f327-0042 8dd30405b31dc866 Sigurd{n}"Billy...{wait 20} tu as grandi.{p}Avec ce sourire, tu{n}ressembles trait pour{n}trait à Racquel."
+f327-0043 01e8de77f3acf4da Bart{n}"Hé !{wait 10}{n}Hé, hé, hé !{p}T'es qui, toi ?{wait 10} Tu fais le{n}familier avec mes{n}officiers ?{p}Et c'est quoi, ce{n}'Siggy' ? Fais pas le{n}malin, gamin !"
+f327-0044 9a2730594f8afa18 Billy{n}"Qu'est-ce que tu as ?{n}Pourquoi tu es si{n}arrogant avec Siggy ?{p}Tu te prends pour{n}qui ?"
+f327-0045 966897479dc7289e Jessie{n}"Billy. {wait 10}Ne crie pas sur{n}les gens de Sigurd.{p}C'est malpoli, petit."
+f327-0046 c4fe5a7b8040944b Sigurd{n}"Bart, c'était mon aîné{n}quand j'étais{p}aspirant Élément à la{n}Jugend.{p}Je louais une chambre{n}chez lui."
+f327-0047 1c96e804030b5ec6 Jessie{n}"À l'époque, il portait{n}encore des couches...{p}et c'est toujours un{n}morveux pleurnichard."
+f327-0048 6ce767cfc9694332 Billy{n}"C'est toi qui dois en{n}porter encore, non ?"
+f327-0049 a437bf8660cb45b9 Bart{n}"Sale gosse !{wait 10} C'est quoi,{n}ton problème ?"
+f327-0050 32fc528db8dff490 Jessie{n}"Bon{wait 5}...{wait 5}alors, si on allait{n}direct se mettre une{n}cuite ?"
+f327-0051 9ce2736caff13198 Sigurd{n}"Où comptes-tu{n}aller...?"
+f327-0052 ab40f2b1f8522744 Jessie{n}"Hein ?{wait 10} Il doit bien{n}y avoir un ou deux bars{n}sur ton navire !"
+f327-0053 6abd1b8679779a69 Sigurd{n}"J'ai un léger mal de{n}tête..."
+f327-0054 02552f4a7cd442e5 Jessie{n}"Quoi ?{wait 10} Pas grave.{p}On va soigner ce mal de{n}tête avec un bon{n}verre."
+f327-0055 4d4c90d0e25ee9d4 Citan{n}"Que vas-tu faire ?"
+f327-0057 99337c77b7cfb491 Sigurd{n}"Je ne peux pas lui dire{n}non..."
+f327-0058 615177beef1187d5 Jessie{n}"Qu'est-ce que tu fais ?{n}Allez, viens !"
+f327-0059 d9206ff4026312ed Sigurd{n}"Hé, doucement..."{done 30}
+f327-0060 f3d24b727d243a52 Aïe-aïe-aïe...{done 30}
+f327-0062 a5b109ed4274d0ae Billy{n}"Je n'y vais pas...{wait 10}{n}Allez-y et amusez-vous."
+f327-0063 f4c8b348dd33ed52 Bart{n}"Quel est ce navire géant{n}dont parlait Sig ?"
+f327-0064 ca8f2fbf005099e4 Elly{n}"Quel est ce navire géant{n}dont parlait Sig ?"
+f327-0065 935f038136f87c6b Citan{n}"Désolé, tout le monde.{wait 10}{n}Si vous permettez..."
+f327-0066 c81d961028b86885 Rico{n}"Bon, moi, j'y vais.{n}J'ai du temps à tuer."
+f327-0067 832d0b36e3745aa4 Bart{n}"Ah, super, moi aussi."
+f327-0070 b8412dfcb9e78cf7 Jessie{n}"...HIC...!!{wait 10}{n}Je rentre. {wait 10}Et Billy ?"
+f327-0071 78eb274ddca47d1d Billy{n}"Moins fort !{wait 10} Tu as vu{n}l'heure ?{p}Fais moins de bruit en{n}rentrant, tu vas réveiller{n}les enfants."
+f327-0072 76ca5152479ce6e0 Jessie{n}"Si t'étais venu, tu{n}aurais entendu plein de{n}bonnes histoires.{p}Celles de Sigurd étaient{n}hilarantes."
+f327-0073 a5404b71a1c32635 Billy{n}"Tu sais que Siggy ne boit{n}pas, et tu l'as fait boire{n}quand même ?{wait 10}{p}Toi, le père d'un homme{n}de Dieu..."
+f327-0074 23dddb25f5b57107 Jessie{n}"Hé, hé, ouvre donc les{n}yeux.{p}Tu dois laisser tomber{n}cette vie de curé."
+f327-0075 135358525955d93d Billy{n}"Pas de leçon de quelqu'un{n}sans une once de foi.{wait 10}{p}Ne te mêle pas de ma vie."
+f327-0076 fe7225c922f7d147 Jessie{n}"Ne pas m'en mêler ?{p}Tu as idée du pétrin où{n}ton petit derrière s'est{n}fourré ?"
+f327-0077 5149a47d19c3da86 Billy{n}"Quoi ?{wait 10} Comment{n}le saurais-tu ?"
+f327-0078 294e1cd04d1356a1 Jessie{n}"!?{wait 10}{n}Toi...!!"
+f327-0079 c202f33ab17ab49f Billy{n}"Je ne crois toujours pas{n}que tu sois mon père.{p}Tu n'es pas l'homme que{n}ma mère a aimé."
+f327-0080 24fbbc8db82f7ab1 Jessie{n}"Comment ça...{wait 20} Tu crois{n}que je suis un{n}imposteur ?"
+f327-0081 706c68f1f5668624 Billy{n}"Demande-toi toi-même."
+f327-0083 98a4b000c5f23555 Jessie{n}"T'as raison. Je ne peux{n}sans doute pas le prouver...{p}Bon, tu ne comprends pas{n}encore la vérité.{wait 10} Ce que{n}ces types sont{p}vraiment, où tu vas..."
+f327-0084 b4e59586a56c5153 Billy{n}"Père, que{n}dis-tu...?"
+f327-0085 c6c4c46779b78422 Jessie{n}"Je dis que Racquel est{n}morte pour rien."
+f327-0086 a12350c948474e89 Billy{n}"!!{wait 10}{n}Tu n'as pas le droit de{p}prononcer le nom de ma{n}mère !"
+f327-0087 a568ea5fcc2ea8d1 Jessie{n}"...{wait 10}{n}Je vois. C'est comme ça.{n}D'accord.{p}De toute façon, laisse{n}tomber ce boulot.{wait 10} Prends{n}ça comme le conseil d'un{p}homme qui, pour toi,{n}n'est{n}qu'un étranger."
