@@ -667,3 +667,454 @@ f653-0004 da6cfddc5b3dfc97 Continuer {wait 5}la partie ?{wait 30}{n}    Attendre
 f653-0005 aebed9ed31d54859     Ouvrir le menu{n}    Changer de groupe{n}    Continuer{wait 15}
 f654-0000 370a950e87e9f709 Dans les profondeurs,{n}nous vîmes une forme{n}extraterrestre.{n}Un être gigantesque et{n}grotesque, en partie{n}pourri et pétrifié...{p}  'Cela' dégageait une{n}  inexplicable aura{n}  d'intimidation.{n} {wait 60}{n}Peut-être plus qu'une{n}réaction viscérale.{p}Peut-être la peur de{n}l'Absolu, montant des{n}profondeurs de nos{n}instincts hérités...
 f654-0001 a56ef2503de11cf1 Fei{n}"C'était{wait 5}...{wait 20}{n}le pouvoir suprême ?"
+f655-0000 30861612bf144074 Bart{n}"Bon sang !{n}On y était presque !"
+f655-0001 bed44299ac6c90ec Billy{n}"Si près, et{n}pourtant...!"
+f655-0002 234e7c92c36bf075 Rico{n}"Malédiction !{n}Si près...!"
+f655-0003 cc9fe26d76e99fd5 Emeralda{n}"Ah, si près...!"
+f655-0004 e3759d272ae806c6 {name 7}{n}"Dommage, chu !{n}On y était{n}preschu...!"
+f655-0005 1c3cb31b83f651fa Maria{n}"On y était presque...!"
+f655-0006 cc1b95eaaceb692a Nous parvînmes à une{n}caverne énorme, à même{n}d'engloutir toute la{n}capitale d'Aveh.
+f655-0007 85fe9a2accc7e0c2 Au centre, deux objets{n}luisaient doucement.
+f655-0008 583a088db9c20979 C'était la source du{n}savoir divin{wait 5}...{wait 5}{n}{wait 10}L'Arbre de Razael.
+f655-0009 cbddad75350cda0d Et la caverne même{n}était un ordinateur{n}géant : Razael.
+f655-0010 a954c2dad3485463 Le savoir de dieu,{wait 5}{n}caché dans Razael{wait 5}...{wait 5}{n}Ses données renfermaient{n}l'impensable.
+f655-0011 dc4734f0ca3ed6cc Une grande arme stratégique{n}sans pilote et son{n}bataillon d'armes à{n}interface terminale,{n}parcourant les étoiles.{wait 5}{n}Et un vaisseau-mère géant{n}pour les transporter{wait 5}...
+f655-0012 c677c1fbc74e6377 La création de l'ange{n}-Malakh-{wait 5}...{wait 5}{n}L'armée de dieu, pour{n}régir le vaste univers{wait 5}...{wait 5}{n} {wait 20}{n}Et la construction d'une{n}arche divine{wait 5}...
+f655-0013 ee6bb13e3de9a98d Ces armes se nommaient,{wait 60}{n}'Yabeh', {wait 5}le système d'armes{n}d'invasion interplanétaire.
+f655-0014 aa10ffee5b646073 Ce que le Ministère Gazel{n}cherchait était bien là.
+f655-0016 38fc6a50b71914e6 Nous allions accéder aux{n}données de l'objet nommé...{n} {n}        'Zohar'{p}...le circuit neural central{n}et la source d'énergie qui{n}contrôlait tout le système,{n}des armes au vaisseau-mère...
+f655-0017 b6dc539bed8e0de0 Soudain,{n}'IL' surgit.
+f655-0018 f56cb48ce88d00e0 Krelian{n}"Ah, les données de{n}l'Arbre de Razael...{n}Écartez-vous.{p}Ceci est bien trop{n}lourd pour des gens{n}comme vous."
+f655-0019 8caab63962893d5f Fei{n}"Défendons-les au péril de{n}nos vies ! Pas question de{n}livrer les données !"
+f656-0001 457d59d9263f4fc1 Grahf{n}"Voilà tout ce que tu{n}vaux pour l'instant.{wait 30}{n}Frustré ?{p}Mais c'est{wait 5}...{wait 5}{n}'tout naturel'.{wait 10}{n}Après tout, tu es{n}imparfait."
+f656-0002 06f43c26cd642bd6 Fei{n}"Imparfait !?"
+f656-0003 80ff8338e1a93b51 Grahf{n}"Oui.{n}Quelque chose te manque.{p}Sans colère, tu ne peux{n}pas utiliser ta véritable{n}force !"
+f656-0004 d3360257fe128ce3 Fei{n}"C-colère...?"
+f656-0005 3b20b1827c981128 Grahf{n}"L'envie de massacrer et{n}d'anéantir, la pulsion de{n}détruire l'adversaire...{p}Cette colère est un pouvoir{n}pour l'âme ! En tuant ton{n}ennemi, tu atteins la{p}première sublimation de{n}cette pulsion.{p}C'est précisément cette{n}sublimation qui éveille les{n}pouvoirs cachés au fond de{p}nous !{wait 20}{n}Mais,{wait 5} rivé à la raison{wait 5}...{p}...{wait 5}étouffant ta colère et{n}ton désir, libérer ton vrai{n}pouvoir devient{p}un rêve dans un rêve pour{n}toi.{p}Tu le sais déjà...{n}Quand la colère est née en{n}ton coeur, la machine a{n}répondu, n'est-ce pas ?{p}Ce qui a puisé ce pouvoir{n}dans ta machine, c'était la{n}pulsion de ton âme{wait 5}...{wait 5} Ton{n}'Id'.{p}Le signe du but que tu{n}poursuis{wait 5}...{wait 5}{n}La marque d'un tueur-né !"
+f656-0006 61c8046a86a78d36 Fei{n}"Tu te trompes !{wait 20}{n}C'est absolument{n}faux !"
+f656-0007 aecf3f18dfe6ca88 Fei{n}"J-je ne suis{n}pas 'Id' ! Je..."
+f656-0008 3433df67da4e5487 Grahf{n}"L'heure est venue...{p}Je prendrai ton âme et{n}j'extrairai ton pouvoir{n}jusqu'à sa limite !"
+f656-0010 14b6b4efe61e5b6b Grahf{n}"Hein ?{n}Pourquoi m'en{n}empêches-tu !?"
+f656-0011 ccbf46f5afd8afcc Krelian{n}"C'est l'appât.{p}Si tu tues l'appât, le{n}précieux oiseau que nous{n}voulons capturer{n}s'envolera au loin.{p}Vois-tu{wait 5}...{wait 5}un oiseau très{n}important{wait 5}...{wait 5}{n}'nécessaire pour exaucer{n}mon ardent désir'{wait 5}...{p}Tu le comprends bien,{wait 10}{n}Lacan{wait 10}...?"
+f656-0012 57820f31726e0e20 Grahf{n}"...{wait 30}{n}À ta guise."
+f658-0000 4493ae46833e6f38 Doc...{wait 255}
+f658-0006 efd3a2f5cb3592e7 Attends-moi !{done 255}
+f658-0007 8bf3816c3d3ec1b0 Où...{wait 30}{n}suis-je ?{p}{wait 30}Qui...{wait 30}{n}suis-je ?
+f658-0008 02da993c4936dfa5 C'est...{wait 30}{n}ma mémoire ?
+f658-0009 e03d762cce296499 Tous...{wait 30}{n}Mes{wait 20}...{wait 20}souvenirs.
+f658-0011 f4093395920ae063 Maman ?
+f658-0013 ae8d0172d5f3edc6 Je suis surpris.{n}Très malin de ta part.
+f658-0014 ccaac4a69d540622 Tu es...{n}Id ?
+f658-0015 ca8aa69affc0640b Je t'ai sous-estimé.{n}Je ne pensais pas qu'une{n}personnalité factice{n}comme toi en créerait{n}une quatrième.
+f658-0016 2d5b31c2cb2ee756 Quatrième personnalité ?
+f658-0017 383d291252bcfd3b Il ne peut rien ressentir.{n}Il est enfermé dans son{n}propre ego.{p}Les faits pressants et les{n}vérités que tu ne veux pas{n}affronter.{p}Tu en as peur, alors tu as{n}voulu te couper{n}complètement du monde{n}extérieur.
+f658-0018 631f989a13400f6c Et ainsi, tu as formé une{n}quatrième personnalité.{n}Un quatrième 'Fei'.{n}Le nom...peu importe.{p}Il occupe la scène.{n}C'est lui qui contrôle{n}notre corps.{p}Mais c'est une forme de{n}résistance inutile.
+f658-0019 a17eeb4cf4403771 Suis-moi !
+f658-0020 214343e50e66751d Attends !{n}Qu'est-ce que{n}tu fais ?
+f658-0021 829b9079fb1b9d50 Il a la clé.{n}Je veux juste{n}l'emprunter.{p}J'ai un endroit où{n}aller.
+f658-0022 e82436d741b7a53b Toi aussi...{n}tu viens ?
+f658-0023 09e1937453aff1a5 Tu t'arrêtes{n}ici.
+f658-0024 eec5b98764fb4fc8 Plus loin, c'est mon{n}monde.{n}Tu ne peux pas entrer.
+f658-0026 1fb78ab04ae49d48 Tu es une personnalité{n}fausse et subordonnée...{n}voilà pourquoi.
+f658-0027 304779a0c6689689 Une personnalité{n}fausse et subordonnée ?
+f658-0028 d14f643d7c320ea9 Oui{wait 5}...{wait 10}{n}Il détient une part de mes{n}souvenirs de cette{n}époque{wait 5}...{p}Il a scellé le sens même{n}de mon existence{wait 5}...{p}mon impulsion{wait 5}...{wait 10}{n}ma motivation{wait 5}...{wait 10}{n}mon subconscient{wait 5} -Id-.{p}C'est pourquoi je suis{n}devenu une personnalité{n}de base, vierge.{p}Et, de plus, j'ai bâti une{n}nouvelle personnalité à{n}partir de mes{p}expériences depuis{n}lors...{p}Voilà ce que tu es{n}maintenant !
+f658-0029 8f0803de1b3c570c Lui ?{n}Tu parles de mon père ?
+f658-0030 3be776268612b17b Tu l'appelles Père ?{p}Lui qui n'a jamais{n}rien fait pour toi ?
+f658-0031 3fe5f7720ca7d03c C'est à cause de sa{n}lâcheté{wait 5}...{p}S'il avait seulement su{n}me protéger{wait 5}...
+f658-0032 60984fa446518738 S'il l'avait fait{wait 5}...{wait 10}{n}Mère ne serait pas morte{wait 5}...
+f658-0033 0ac46c74fdb8c48e Ma mère n'est-elle pas{n}morte juste après ma{n}naissance ?{p}Qu'est-il vraiment arrivé{n}à ma mère ?{wait 5} Dis-le-moi,{n}Id !
+f658-0034 d3017f95b290f8ba Inutile que tu le saches.{n}Tu vas bientôt disparaître.{p}Avec ta personnalité de{n}base, le 'lâche'.{p}Je dominerai mon être par{n}le pouvoir de l'Existence.
+f658-0036 cf9198aff8580d40 Bien sûr que tu l'ignores.{n}Mais c'est gravé dans ma{n}mémoire métempsycosique.{p}Ta personnalité étant{n}fausse, jamais tu ne{n}monteras sur la 'scène'{n}de la conscience.{p}Tu ne pourras jamais{n}prendre le contrôle des{n}souvenirs de nos vies{n}antérieures.
+f658-0037 874f6998c87b40a3 Je connais ces rêves{n}et ces visions ! Je{n}les ai vus souvent !
+f658-0038 ad4099404c415b6e Ceux-là{wait 5}...{wait 5}{n}c'est moi qui te{n}les ai montrés{n}exprès.{p}Afin de rompre le{n}sceau, j'ai affaibli{n}le pouvoir de ton{n}existence.{p}Si ta force mentale{n}faiblit,{wait 5} je suis{n}libre de faire ce{n}que je veux.
+f658-0040 6991a5bf554d9599 Il y a encore en toi des{n}choses qui ne t'ont pas{n}été montrées{wait 5}...
+f658-0042 d096eeda99ea9c3f Quelqu'un arrive !{n}Sans doute tes amis.{n}Ils ont dû me suivre.
+f658-0043 d5eb711fc606e1e4 Où vas-tu ?
+f658-0044 750ce5c5f3b30b8a Je viens rétablir le{n}contact avec{n}l'Existence.{p}Pour nouer tous les fils{n}de tes souvenirs depuis{n}les temps anciens{wait 5}...{wait 5}{n}puis les trancher{wait 5}...{p}Tel est le destin du{n}Contact{wait 5}...{wait 15} C'est prêt.{n}L'heure du vrai réveil{n}est venue !{p}J'éliminerai tous ceux{n}qui sont pétris{n}d'hypocrisie depuis le{n}commencement.
+f658-0045 1b2f24617a398925 Attends !{n}Id, attends !
+f658-0046 ed61a24eeb6b0c23 Toi, reste ici{n}et regarde !
+f658-0047 da0d18b52f4f4f8c Oui{wait 10}...{wait 10}{n}C'est l'intérieur d'Id.{p}Un monde empli de haine et{n}de tristesse.{p}Il n'y a rien d'autre{n}ici{wait 5}...{wait 10} Oui{wait 5}...{wait 10} Je comprends{n}enfin, Id.{p}Pourquoi tu hais le monde.{p}Pourquoi il n'y a rien en{n}toi{wait 5}...{wait 10}{n}Rien{wait 5}...{p}Rien ne t'a été donné{wait 5}...{wait 10}{n}Privé de{wait 5}...{wait 10}{n}tout souvenir heureux{wait 5}...{p}Et pourtant{wait 5}...{wait 10}{n}C'est agréable{wait 5}...{wait 10}{n}C'est même bon{wait 5}...{p}J'ai compris{wait 5}...!{wait 10}{n}Inutile de résister.{p}À l'origine, je n'étais{n}qu'une existence créée{n}pour masquer Id.{p}Alors mieux vaudrait{n}retourner là-bas{wait 5}...{p}Unissons-nous{wait 5}...{p}Pour tout{n}effacer{wait 5}...{wait 10}{n}Y compris nous-mêmes{wait 5}...
+f658-0048 dcda1033f51ea35f Souvenez-vous !{n}Ne vouliez-vous pas{n}sauver Elly ?
+f658-0049 c429d98d1df56c36 Réfléchis !{n}Tu ne vas pas{n}sauver Elly ?
+f658-0050 81932ca5c744c02e Souviens-toi...!?{n}Pour elle...Elly !{n}Tu ne l'aides pas !?
+f658-0051 f6451282aabb94c4 Réfléchis, gamin !{n}Tu ne vas pas{n}sauver Elly ?
+f658-0052 17c122c9a137ff86 Souviens !?{n}Elly là-bas...{n}Elle attendre !
+f658-0053 6fc69b07e285d286 Tu peux pas oublier !{n}Celle que tu aimes...{n}Elly !{n}Faut l'aider, chu !
+f658-0054 24775d942aceea49 Souviens-toi...{n}Elly compte{n}sur toi !
+f658-0056 8a08bfb8df43ac9d Elly ?{wait 5}{n}Voilà{wait 5}...!{wait 10}{n}Elly{wait 5}...!
+f659-0000 6979578fca64987f Citan{n}"Qu'est-ce donc{wait 10}...?"
+f659-0001 820748de261f9f6f Citan{n}"Ce doit{wait 5} être{wait 5}{n}l'endroit{wait 10}..."
+f659-0002 fe395b1634c4b452 Bart{n}"Hé, c'est quoi, ça{wait 10}...?"
+f659-0003 e2e2b041500dc71a Bart{n}"Ça doit{wait 20}{n}être ici{wait 10}..."
+f659-0004 e99ba215dfb8ca23 Billy{n}"Qu'est-ce que{wait 5}{n}c'est{wait 10}...?"
+f659-0005 720f3e0906f12bfc Billy{n}"Ce doit être{wait 20}{n}l'endroit{wait 10}...!"
+f659-0006 79e76fbc0c90be04 Rico{n}"C'est quoi, ça{wait 10}...?"
+f659-0007 787ad3cb92364ad3 Rico{n}"Ça doit être{wait 20}{n}le bon coin{wait 10}...{wait 10}"
+f659-0008 5d5010e8b4256af5 Emeralda{n}"Quoi ça{wait 10}...?"
+f659-0009 95d6b0a59214227a Emeralda{n}"Ici être{wait 20}{n}bon endroit{wait 10}...!?"
+f659-0010 e4e03eccd5d1844b {name 7}{n}"C'est quoi, ça, chu ?"
+f659-0011 103642c84ee5c65a {name 7}{n}"Ça doit être{wait 20}{n}chouci{wait 10}..."
+f659-0012 95fc0d17061c92ed Maria{n}"Qu'est-ce{wait 10}...?"
+f659-0013 7f998df4d951796d Maria{n}"C'est{wait 20}{n}ici{wait 10}..."
+f659-0015 fd70a2f90992c2c0 Citan{n}"Ce doit{wait 5} être{n}l'endroit{wait 5}..."
+f660-0000 0ef396883c74e478 Citan{n}"Qu-qu'est-ce...?"
+f660-0001 b5dcd04eec367a33 Bart{n}"Que diable !?"
+f660-0002 cbbee932451c21ea Billy{n}"Qu-qu'est-ce ?"
+f660-0003 40e9bfe3e1d86cb6 Rico{n}"C'est quoi, ça ?"
+f660-0004 88103f218bf694bb Emeralda{n}"Quoi ça...?"
+f660-0006 4fdf5bf74fc00102 Maria{n}"Qu-qu'est-ce...?"
+f661-0000 48a2f70acc73df0a Citan{n}"Fei !?{wait 10} C'est donc{n}la forme transformée{n}du {name 11} !?"
+f661-0001 59300f71680449a8 Bart{n}"C'est Fei, ça !?{wait 10}{n}Hé, tu crois que c'est le{n}{name 11} ?"
+f661-0002 696fbe352b0461a0 Billy{n}"Fei !?{wait 10}{n}Alors, ce doit être...{n}le {name 11} !?"
+f661-0003 b96f18d834be2ffd Rico{n}"Fei !?{wait 15} Ça alors{wait 5}...!{wait 5}{n}Alors ça ne peut être{wait 5} que{n}le {name 11} !?"
+f661-0004 4f6ea0c4f4cb0027 Emeralda{n}"Fei !?{wait 15}{n}Ça être{wait 5}...{wait 5}{n}{name 11} ?"
+f661-0005 114b8ad3676323b8 {name 7}{n}"C'est toi,{wait 5} Fei, chu !?{wait 15}{n}Hé, alors c'est ça, le{n}{name 11} ?"
+f661-0006 f08f8d3cf352c594 Maria{n}"Fei !?{wait 15}{n}A-alors,{wait 5} c'est{wait 5}...{wait 5}{n}le {name 11} ?"
+f661-0008 39b23a86ca8a6169 Emeralda{n}"Fei !?{wait 15}{n}Alors ça{wait 5}...{wait 5}{n}{name 11} ?"
+f662-0000 c0f40bc7390cdac5 Ma mère{wait 10} était Miang.{wait 100}
+f662-0001 62f50a52c41c7ec5 {slow 1}Une famille ordinaire.
+f662-0002 a1a79c5380c79211 {slow 1}Un père sévère, mais fiable.
+f662-0003 78d6359a7e0c2752 {slow 1}Une mère tendre et douce.
+f662-0004 e55fcd1113083293 {slow 1}Jusque-là, c'était{wait 50}{n}le bonheur parfait.
+f662-0005 0774c7da136ef001 {slow 1}Mais un jour...
+f662-0006 0681fa11f3a5dc83 {slow 1}Mère changea soudain.
+f662-0007 9d0c957fde39a063 {slow 1}Elle était comme{wait 10}{n}devenue une tout{n}autre personne.{p}{wait 50}Depuis ce jour...{wait 10}{n}'Fei' perdit{n}son foyer.
+f662-0008 90d226a9161b0c32 {slow 1}Père{wait 10} voyageait beaucoup.{p}Son travail l'accaparait.
+f662-0009 d0f5c4166f42e667 {slow 1}Devant Père, elle{n}semblait normale.
+f662-0010 3c2fa97c2480d72b {slow 1}Quand Fei tentait de parler à{n}Père de l'étrange conduite de{n}Mère et des expériences, lui,{n}absorbé par son travail,{n}n'écoutait pas vraiment.
+f662-0011 b2fd52b5aaffdeef {slow 1}Il croyait à des{n}fantaisies d'enfant.
+f662-0012 a42a67407afbe8de {slow 1}Mais il ne dut pas{n}endurer la douleur{n}bien longtemps...
+f662-0013 691119c1abf2b984 {slow 1}Le subconscient de{n}'Fei' trouva un moyen{n}de fuir le trauma.
+f662-0014 3250dbbf78bd0f42 {slow 1}Il créa un autre moi{n}pour affronter ce{n}qu'il n'aimait pas ou{n}ne supportait pas.
+f662-0015 bc538a03c51a6822 {slow 1}Il s'éloigna de tout{n}danger.{p}Mon rôle était d'endosser{n}tout ce qu'il détestait,{n}dès que cela surgissait.
+f662-0016 d8cfae164ef5045d {slow 1}Séparé de lui, je fus{n}dominé par la haine.{p}Cette haine se mua{n}naturellement en{n}pulsions destructrices.
+f662-0017 d6a72d4e233d6c2b {slow 1}Je voulais tout{n}détruire.
+f662-0018 cb7ae712fb2e47cb {slow 1}Mère, {wait 20}Père, {wait 20}{n}le monde entier{wait 10}...
+f662-0019 c76f74aab567b263 {slow 1}Enfin, Père remarqua{n}l'étrange conduite de{n}Mère, mais trop tard.{p}J'avais rompu pour de bon{n}avec ce lâche...{n}mon moi originel.
+f662-0020 29b38b9644a08055 Les jouets se brisèrent{n}{wait 10}...{wait 10}et{wait 10}...{p}Le coeur de 'Fei'{n}aussi{wait 10}...
+f662-0021 3026f8fc52715644 Pourquoi ma mère{n}ferait-elle ça...?
+f662-0022 10ef93e613562782 Mère répétait les{n}expériences pour{n}étudier le pouvoir{n}qu'elle me savait.{p}Oui,{wait 10} cette{n}femme{wait 10}...{wait 10}{n}Mère,{wait 20} était Miang.
+f662-0023 54dba36a84fc0247 {speed 255}Mensonge !
+f663-0000 f93456357cc55b94 {speed 255}Maman, à l'aide !{done 5}
+f663-0001 e52e50ca14686fc4 {speed 255}Vous faites quoi !?{done 5}
+f663-0002 8ec9ed40a26c1d87 {speed 255}NON{done 5}
+f663-0003 e4dc60ae0ff51e05 {speed 255}NOOON{done 5}
+f663-0004 8845882be5bee9f2 {slow 1}Une scène...{wait 10}{n}    infernale !{wait 100}
+f663-0005 3f0d463dc5a43833 {slow 1}Quand Père était absent,{n}{wait 5}'Fei' fut emmené dans un{n}lieu plein de machines{n}mystérieuses.
+f663-0006 f3b7bd90d89a173f {slow 1}À l'intérieur, nombre de{n}gens en tenue étrange.
+f663-0007 d5f2a691f34042b3 {slow 1}Des sondes de toutes sortes{n}furent introduites dans le{n}corps de 'Fei', et une{n}sorte d'expérience débuta.{p}Les tests{wait 20} firent beaucoup{n}souffrir Fei.
+f663-0008 e63d2628ee9e42aa {slow 1}Mère {wait 10}ne vint pas{n}le secourir.{p}Le petit 'Fei' n'avait{n}aucun moyen de résister.{p}Mais il parvint à{n}l'endurer.
+f663-0009 4db0bd22b117efdd {slow 1}Avec le temps,{wait 10}{n}les tests furent{n}insupportables.
+f663-0010 7f6d635fea71b811 {slow 1}Beaucoup de gens se{n}réunirent autour de{n}'Fei'.{p}Ces gens étaient très{n}compatibles avec les{n}Reliques Anima.{p}Le but de ce contact{n}psychique était de{n}forcer Fei à s'éveiller.
+f663-0011 cd90b5880d5b13c7 {slow 1}Mais personne ne parvint{n}à entrer en contact avec{n}'Fei'.{p}Le pouvoir tiré de 'Fei',{n}malgré lui, les détruisit{n}tous.
+f663-0012 05084972b06d8391 C'est incroyable !{n}Ma mère a permis que{n}cela arrive...?{p}Un contact psychique ?{n}Que veux-tu dire par{n}'m'éveiller' ?
+f663-0013 80da6ddcb7bdb465 {slow 1}Pour éveiller dieu, tout{n}devait être en parfait{n}ordre, sans faille...{p}Ce qui fut divisé jadis{n}doit redevenir un tout{n}complet...
+f663-0014 6213ee9be772503f Ils moururent par{n}dizaines devant Fei.
+f664-0000 66df0ec874f209ab Arrête !{n}Assez !{p}Papa !{n}Papa !
+f664-0001 19e39f93b3309b31 Maman !{wait 10}{n}Aide papa !{p}Hé, maman !{wait 10}{n}Pourquoi tu{n}aides pas papa ?{p}Papa...{wait 10}{n}Il va mourir !
+f664-0002 c9eb2a74e95808a1 Grahf voulait le{n}pouvoir qui est{n}en moi.{p}Pour retrouver son{n}propre corps.{p}Tu comprends{n}maintenant{wait 5}...?{wait 10}{n}Grahf est{wait 5}...{wait 20}Lacan.
+f664-0003 47abeee0b5dfc77e Nous, ses descendants,{n}héritiers de ses pensées{n}et de ses souvenirs{n}résiduels, le savons{n}très bien...{p}Divisé il y a 500 ans...{n}Il allait devenir une{n}part de nous deux...{p}Lacan est devenu Grahf.{n}Il a tout détruit sur la{n}face de la terre.{p}Puis il a maîtrisé la{n}technique pour posséder{n}le corps d'autrui, en{n}habitant leur esprit.{p}Il en est sans doute{n}devenu capable après son{n}contact avec l'Existence.{p}Les corps mouraient, mais{n}l'esprit de Lacan{n}restait en vie,{n}possédant d'autres corps.{p}Ce jour-là, il était venu{n}rendre enfin son âme à la{n}réincarnation parfaite de{n}son corps physique...{p}Le corps de 'Fei'.
+f664-0004 56fff917e0118f62 Père{wait 10}...{wait 10}{n}l'a combattu.{p}Mais il n'a pu{n}protéger ni Mère{n}ni moi.{p}Il faisait pitié à{n}lutter, crachant{n}son propre sang.
+f664-0005 1eb7802c33247508 Grahf a raillé Père, et{n}Mère ne l'a pas aidé{n}quand il en avait besoin.{p}Quant à leur fils...{n}'Il' ne supportait plus{n}ce qui se passait...
+f664-0006 8f9d63a73b3458f0 Il a cédé à ses émotions{n}et libéré son pouvoir.{n}Et, en conséquence...
+f664-0007 5d64c1627d5fde29 {wait 10}...{wait 10}Mère mourut
+f664-0008 153c0976812c83fc {speed 255}Maman !{done 90}
+f664-0009 d6b6855fe22e5cc7 Et 'il' a rejeté sur{n}moi les conséquences{n}de ses actes.{p}Pour fuir la faute{n}d'avoir tué Mère,{n}il m'a utilisé{n}comme bouclier.
+f664-0010 391c89f9f9dbd76d {slow 1}"J'ai {wait 30}aussi tué Mère"
+f664-0011 1f2fa3d295d96bc5 Merci.{n}Rends-le-moi.{n}Je joue avec{n}maman.
+f664-0012 b7d05c94bd945fda C'est pas{wait 10}...{wait 10}{n}la réalité !!
+f664-0013 2d3f2712ad40d493 {speed 255}Mensonges !{done 10}
+f664-0014 e2d1c2ac8591f3a9 {speed 255}C'est faux !{done 10}
+f664-0015 3a9e3518b22497fd {speed 255}Supercherie !!{done 10}
+f665-0000 810ac209be81b166 Quel est ce lieu...?
+f665-0001 674dd80bd674c6c3 ...Que fait-il encore !?{n}Il ne t'a appelé ici que{n}par pur intérêt...
+f665-0002 d703700a5fedf3b5 Voici la coquille de ta{n}personnalité de base, la{n}chambre du 'lâche'.{p}Tu y es sûrement déjà{n}venu bien des fois.
+f665-0003 98582378f0ee20bb Je vois...{n}Je me souviens...{n}Dans mes rêves...
+f665-0004 a5fede211c205abb Tout ce qu'il méprisait et{n}ne voulait pas, il l'a jeté{n}sur moi, tandis qu'il se{n}terrait dans sa coquille...{n}le Fei 'lâche'.
+f665-0005 9f30c9a080b7cb73 La base de nos{n}personnalités.
+f665-0006 d16529b4be5106e6 Qui es-tu ?{n}Ah, tu es mon...
+f665-0007 766492e9d8c0268d Hé... regardons ça{n}ensemble ! C'est mon{n}plus précieux trésor...
+f665-0008 c28759a658ec258f Ha...! Revoyant sans{n}cesse les moments où{n}il était heureux, il{n}vit dans son propre{n}petit monde heureux.
+f665-0009 97dc3f474df5f3c1 Moi, je ne survis que{n}grâce à ce qui reste{n}dans cette lie.
+f665-0010 10e7d750cdd1f87c Regarde ! Voici...{n}'tout' sur moi.
+f665-0011 b4d95ffabbcad74b Il a jeté sur moi tout le{n}mal... mais il a gardé{n}pour lui tous les{n}souvenirs heureux et{n}l'amour de Mère.{p}Et il s'est enfermé avec{n}ces souvenirs dans sa{n}coquille{wait 5}...{wait 5}pour toujours.{wait 10}{n}Voici cet endroit.{p}Tout ce que tu vois, il{n}l'a créé. Il reste{n}accroché à ces{n}souvenirs.
+f665-0012 8ec3f44d59846afc C'est donc ça...
+f665-0013 f99e0726268a6965 Arrête !{n}Arrête ça !{n}Ceci...{n}Ces scènes...{p}Nous ne sommes{n}que ça ?
+f665-0014 67c178546c428bbd Ça suffit !{n}Il n'y a rien ici !{n}Qu'un monde de leurre{n}et de douleur...
+f665-0015 1e9750b17e0d28c7 On n'y peut rien.{n}C'est notre monde...{n}C'est 'tout'...
+f665-0016 2ae093f34cb3f919 Non !{n}Va-t'en !{p}C'est ma chambre !{p}Tu devais toujours{n}rester avec moi !
+f665-0017 75d62f2b2bf20eb9 Pourquoi ne veux-tu pas{n}voir la réalité ?{p}Bonheur... Tristesse...{n}Ne sont-ils pas tous des{n}parties d'un même tout ?{p}Pourquoi le lui cacher ?{n}Montre aussi à Id ce que{n}tu vois toujours !
+f665-0018 7db8bbf07a5a102d Non !{n}C'est à moi !{p}Je veux pas montrer{n}ça à l'assassin de{n}maman !!
+f665-0019 d53cb6c1cba3888b Tu peux parler.{n}C'est toi qui{n}as tué Mère !
+f665-0020 a7245ba5dbfea3ef Pas moi, c'est toi !{n}Je l'ai pas tuée !{p}Maman se fichait{n}de toi{wait 5}...{wait 5}{n}Papa non plus n'a{n}rien vu{wait 5}...{p}Alors tu l'as{n}tuée !{p}Je l'ai pas tuée !{n}C'est pas moi !{n}C'est pas moi...!
+f665-0021 40c5ae8b7434a3ba Assez !!
+f665-0022 4225e05c16c6cad4 ...'Nous' avons tué{n}Mère. La faute nous{n}revient, à nous seuls.{p}Pas parce qu'elle était{n}devenue Miang, ni parce{n}que Père n'a rien vu.{p}Ne cherche pas la cause{n}hors de toi. N'accuse{n}personne, sauf toi.{p}Oui, Mère était Miang.{n}Je connais ta douleur.{n}Nul n'aurait tenu.{p}Mais tu ne peux pas{n}tout rejeter sur Id.{p}Nous ne sommes qu'un.{n}Nous devons nous unir.{n}N'est-ce pas, Fei...
+f665-0023 3916c6efd6226263 Avance par toi-même !{n}Affronte la réalité que tu{n}ne veux pas voir !
+f665-0024 3ba730f6bcda5168 Montre-les à Id.{n}Tout ce que tu as{n}gardé pour toi...
+f665-0025 a9d25d6860943497 Mensonge ! Cette femme...{n}Cette scène...{n}Rien que ses illusions !{p}Moi, ma conscience, je{n}vois clair dans ce piège.{n}On ne m'aura pas !{p}Je...!{n}Je...!
+f665-0026 f8ae2e22cb664c7b Id... ça suffit !{n}Agir ainsi ne{n}résoudra rien.{p}Mère nous a sauvés{n}au dernier instant.{n}C'est la vérité.{n}N'est-ce pas ?{p}Le réel n'est pas{n}que ténèbres, Id...
+f665-0027 63ee1527c403956e Mon pouvoir...{n}ne sauvait personne.{n}Il détruisait, point.{p}Je croyais ne pouvoir{n}me lier aux autres{n}qu'en détruisant.{p}Alors j'ai dû tout{n}détruire. Les gens...{n}Le monde...{wait 20}{n}Même Elly...
+f665-0028 10d578f18eeaf22b Non...{n}Pas tout à fait.{p}Nous pouvons sauver{n}les autres, comme{n}Mère, même Miang,{n}nous a sauvés.{p}Notre pouvoir peut{n}sauver des vies{wait 10}...{wait 10}{n}On sauvera Elly !
+f665-0029 ccde0c604e71a788 ...Une première fois.{n}Mère, chaleureuse...{p}Pour moi...{n}elle semble presque...{n}trop chaleureuse...
+f666-0000 cf60f0eedf0a974c {speed 255}Toi et moi,{n}ne ferons qu'un !!!{done 120}
+f666-0002 067db5049ad3a69b Fei{n}"Ce pendentif...{p}À Sophia...{n}ou à ma mère ?"
+f666-0003 eb937bdf3c31aaec Je t'en prie, Fei...{wait 100}{wait 100}{wait 100}
+f666-0004 46799cd8853e37fc Citan{n}"Fei !!{n}Où est votre{n}vrai moi ?{p}Souvenez-vous !{n}Ne vouliez-vous{n}pas sauver{n}Elly ?"
+f666-0005 d1b2a38cc9259fef Bart{n}"Fei !!{n}Tu veux que tout{n}finisse comme ça ?{p}Réfléchis !{n}Tu vas pas sauver{n}Elly ?"
+f666-0006 bfa94e55bd1ea691 Billy{n}"Fei !!{n}Pour quoi t'es-tu{n}battu jusqu'ici ?{p}Souviens-toi...!?{n}Pour elle... pour Elly !{n}Tu ne la sauves pas !?"
+f666-0007 7dc15844b66596e2 Rico{n}"Fei ! Tu vas{n}rester comme ça{n}encore longtemps ?{p}Réfléchis, gamin !{n}Tu ne devais pas{n}sauver Elly ?"
+f666-0008 777b897396da14d3 Emeralda{n}"Fei !{n}Elly attendre !{p}Souviens !?{n}Elly là-bas...{n}Elle attendre !"
+f666-0009 026a52826291c5f0 {name 7}{n}"Fei !{n}Réveille-toi !{p}Tu peux pas oublier !{n}Celle que tu aimes...{n}Elly !{n}Faut la sauver, chu !"
+f666-0010 341506d75a3db8ac Maria{n}"Fei !{n}Sois fort !{p}Souviens-toi...{n}Elly compte{n}sur toi !"
+f666-0011 f7191e9d65f54108 Citan{n}"Que dites-vous ?"
+f666-0012 d2efb4e27eac5f48 Bart{n}"Mais que...?"
+f666-0014 15121d38e0bf5dd2 Rico{n}"Non...{n}Sérieux !?"
+f666-0016 bbaec077c5fb2e89 {name 7}{n}"Comment cha ?"
+f666-0017 c500779ac6c00724 Maria{n}"Quoi ?"
+f666-0018 742983f064ddf2ae Citan{n}"Contact !?"
+f666-0019 07d3d929b145c37c Bart{n}"Contact !?"
+f666-0020 f4f2292feaac32ee Billy{n}"Contact ?"
+f666-0021 65b2eb41524bff79 Rico{n}"Contact ?"
+f666-0022 a8da03735f1b6707 Emeralda{n}"Contact ?"
+f666-0023 25e9024a2d56a29d {name 7}{n}"Contact !?"
+f666-0024 c3f6d0d60e5abad6 Maria{n}"Contact ?"
+f666-0028 de76c6ec0f60989f Père !!
+f666-0029 ee48f689fca29bd1 Fei{n}"Père !{n}Tu vas bien ?{p}Père !{n}Pardonne-moi...{n}tout est de ma faute..."
+f666-0030 d304ddd387f89503 Khan{n}"Fei{wait 10}...?{p}Tu es redevenu{n}toi-même...{n}enfin entier..."
+f666-0031 5fd5d4fb34d7d73b Fei{n}"Oui, grâce à vous.{n}Si vous ne m'aviez pas{n}tous appelé..."
+f666-0033 74a96d625ce2d0ee Fei{n}"Père !"
+f666-0034 4d3b941e6d21672e Khan{n}"Ne t'en fais pas{wait 10}...{wait 10}{n}Tout va bien{wait 10}...{wait 10}{n}C'est,{wait 10} au fond...{wait 10}moi..."
+f666-0035 2fe98e63585deeef Fei{n}"Père ?"
+f666-0036 c284b7c6d02698c7 Khan{n}"Toi et{wait 10}..."
+f666-0037 c6183c534960e28b Fei{n}"Hein !?{n}G, Grahf !?{n}Comment...?"
+f666-0038 6313b26c5697a273 Grahf{n}"Ha ha...{p}'Moi', j'avais atteint la{n}limite du corps que je{n}possédais, ce jour-là, il{n}y a 3 ans...{p}'Moi', il me fallait un{n}corps pour tenir jusqu'à{n}ton véritable éveil.{p}Voilà pourquoi 'moi', j'ai{n}pris le corps de ton père.{p}Malgré ton éveil, ta{n}fusion et les souvenirs{n}hérités que tu as{n}acquis...{p}...tu ne pouvais pas le{n}savoir, car tu avais{n}perdu la mémoire à cet{n}instant...{p}Au moment où 'moi', je me{n}suis fondu en ton père."
+f666-0039 d6ed2a70b250eff5 Fei{n}"Impossible...!{n}Et Wiseman...?{n}Et mon père...?"
+f666-0040 9122944df856fd7a Grahf{n}"Bien sûr, ce n'étaient que{n}des parts de moi... Khan{n}ne m'a jamais été soumis.{p}Son ego était plus fort que{n}prévu. Dès que je cédais,{n}il se montrait à toi sous{n}les traits de Wiseman."
+f666-0042 1dfa886f31d3ec40 Grahf{n}"Tu t'es éveillé.{n}Ce corps ne me sert{n}plus à rien.{p}Je dois rejoindre mon{n}vrai corps... ce corps{n}réincarné que tu{n}habites."
+f666-0043 8f02a131c02399ce Fei{n}"Arrête...!{n}Père...!"
+f666-0044 37556a9e0614417a Grahf{n}"Je t'entends, Fei... Lui{n}et moi ne sommes qu'un.{n}Je suis Khan, il est moi.{p}Il s'est uni à moi.{n}Toi aussi, tu devrais{n}ouvrir ton coeur et{n}t'unir à moi.{p}Alors nous pourrons{n}tout anéantir !"
+f666-0045 d85087a0e28584c0 Fei{n}"Non{wait 10}...{wait 10}je{wait 10}...{wait 10}ne{wait 10}...{wait 10}te{n}{wait 10}...{wait 10}laisserai{wait 10}...{wait 10}pas{n}{wait 10}...{wait 10}me{wait 10}...{wait 10}contrôler !"
+f666-0046 5f6371bd8470650c Grahf{n}"Hmph.{n}Tu défends ton maître ?{n}Soit.{p}Alors je vais fusionner{n}avec toi et ta machine.{n}Viens, Fei !{n}Bats-toi contre moi !"
+f666-0047 e390c10c926823ee Fei{n}"C'est inutile !{n}Je sais que tu es Lacan,{n}une part de moi-même.{p}Mais ça ne change rien :{n}tu es mon père.{n}Jamais je ne pourrais{n}vraiment te combattre !"
+f666-0048 4eb7d3e24a477e67 Grahf{n}"Tu es si naïf !{p}Pourquoi ne comprends-tu{n}pas que ta naïveté a{n}tué Sophia, et tué ta{n}mère, 'Karen' ?"
+f666-0049 a1146e2a58cf23c9 Fei{n}"Je le sais déjà !{n}Voilà pourquoi j'ai juré{n}de ne plus jamais fuir...{p}...de sauver Elly.{n}Alors laisse-moi passer !{n}Réveille-toi ! Ouvre les{n}yeux, Père... -Lacan- !"
+f666-0050 97f2c9aa0e2be16e Grahf{n}"Dans ce cas{n}...bats-toi !{n}Affronte-moi !!!"
+f666-0051 c519ca7b0ca36d58 Fei{n}"Impossible !"
+f666-0052 f5af61b3ac653e83 Grahf{n}"Je vois...{n}Alors, pas{n}le choix."
+f666-0054 25d3d6a2521c96d9 Grahf{n}"Puisque tu rechignes tant{n}à te battre, je devrai{n}les utiliser comme appât."
+f666-0056 b50e5960599af761 Fei{n}"Arrête !{p}N'avons-nous pas les{n}mêmes souvenirs ? Ne te{n}souviens-tu pas de la{n}tristesse d'autrefois ?{p}Alors pourquoi faut-il{n}tout détruire ? Arrêter{n}Deus ne suffit pas à{n}tout finir !?"
+f666-0057 d5c70f153581830d Grahf{n}"Tu ne comprends toujours{n}pas... même après ton{n}contact avec l'Existence ?{p}Après mon contact avec{n}l'Existence, j'ai compris{n}que, même si Deus était{n}détruit...{p}...tant qu'il y aura des{n}humains sur cette terre,{n}Miang... Elhaym, renaîtra{n}sans cesse.{p}Alors, que tous les êtres{n}vivants périssent avec{n}Deus même. C'est la seule{n}voie vers la liberté.{p}La voie qui nous libère{n}des cycles éternels de la{n}vie, du drame de l'histoire{n}et du joug du destin !{p}Dès que j'aurai éveillé{n}Deus en tant qu'arme,{n}j'anéantirai tous les{n}êtres vivants...{p}Puis, avec ton moi éveillé{n}et cette machine, je{n}réduirai tout à néant...{p}Telle fut ma conclusion.{p}Miang et Elhaym... ne sont{n}pas que des porte-parole{n}de Deus. Cette 'femme' est{n}son corps principal !{p}Pourquoi ne le vois-tu{n}pas ?"
+f666-0058 2517e25ad3844d92 Fei{n}"C'est faux.{n}Elle a donné sa vie pour{n}me protéger du danger !{p}Ses yeux n'étaient pas{n}ceux de Miang ! Mère{n}est revenue au dernier{n}instant !{p}Miang, Mère... même Elly,{n}toutes sont des humaines{n}nées sur cette planète !{n}Peu importe Deus !{p}Tu vas voir...{n}Je ramènerai Elly !{p}Père{wait 10}...{wait 10}{n}Non, Grahf -Lacan- !{n}Si tu ne recules pas..."
+f666-0059 20c13d80d483e66f Grahf{n}"Jamais !"
+f666-0060 80766dd53ec1cc4d Fei{n}"Alors, tant{n}pis...!"
+f666-0061 6fedbeef4e8b7191 {slow 1}L'heure est venue{wait 10}{n}de ne faire qu'un !
+f666-0062 8cd1b0c8c6c2a28e Khan{n}"Qu'est-il{n}arrivé à Fei{wait 10}...{wait 30}{n}Id !?"
+f666-0063 9d968523b02f03b7 Id{n}"Dommage.{n}La nouvelle personnalité{n}de Fei que tu as créée...{p}...et tout l'effort de ta{n}persona pour en faire un{n}tout unique et parfait{n}aura été vain.{p}Il va être englouti{n}par moi !"
+f666-0064 7cbf8ff74875aa35 Khan{n}"Je ne le permettrai pas !{n}Je te détruirai d'abord !"
+f666-0065 551201ca3c9d1f4b Id{n}"Tu parles... mauviette !{n}Mère est morte à cause de{n}ta couardise.{p}Et, par conséquent, il a{n}fui cette réalité en se{n}réfugiant dans ses{n}propres souvenirs !{p}Et moi, je continue{n}d'exister en portant{n}toute cette haine.{p}Tu ne pourrais même pas{n}imaginer ce que c'est !"
+f666-0066 a32922b7060677fc Khan{n}"Mon but n'était pas{n}seulement d'unifier{n}l'esprit de Fei, tu sais !?{p}Ce que nous ressentions{wait 5}...{wait 5}{n}la tristesse,{wait 5} la haine{wait 5}...{wait 5}{n}Même s'il a lui aussi{n}vécu ces choses{wait 5}...{p}Fei avait besoin d'un élan{n}pour devenir assez fort et{n}comprendre tout cela.{p}À présent, Fei devrait{n}pouvoir comprendre tous{n}tes sentiments !{p}Mais tu veux effacer celui{n}qui te comprend{wait 5}{n}...{wait 5}tuer Fei !{wait 15} Que{n}veux-tu donc ?"
+f666-0067 7fc8ab3adda5bc9c Id{n}"Pourquoi me demander ça{n}maintenant ?{p}Mon but est le même que{n}le sien{wait 5}...{wait 10}tout détruire !{wait 10}{n}Ça, et rien d'autre !"
+f666-0068 7b87e9a0c0e194c6 Khan{n}"Ce monde est-il si cruel{n}{wait 5}...{wait 5}qu'il ne reste en toi{n}que de la haine ?"
+f666-0069 b6cf2140f85cc5e7 Id{n}"C'est vous qui m'avez{n}fait ainsi{wait 5}...{wait 5} Toi et{n}cette femme !{wait 10} Avoue !"
+f666-0070 d5ba7b8251e28b2d Khan{n}"Argh{wait 5}...!{wait 30}{n}Fei{wait 5}...!!{wait 10}{n}Tu m'entends ?{p}Prends, je te prie,{n}ces quelques{n}souvenirs que je{n}te donne{wait 5}...{p}Ne fais qu'un{wait 5}...{wait 5}{n}avec toi-même{wait 5}...{wait 5}{n}et avec moi !"
+f666-0071 e27d2592bc5222ee Khan{n}"C'est cela...{n}Karen est devenue Miang."
+f666-0072 619a63cf3b7df7be Khan{n}"Ce n'est rien d'étrange.{n}Miang n'a pas qu'un seul{n}corps hôte.{p}La racine de Miang est{n}scellée dans les gènes{n}de chaque femme. Toutes{n}peuvent devenir Miang."
+f666-0073 26d28fdb2b503c78 Id{n}"Le hasard a voulu que{n}ce soit Mère.{p}À l'origine, seule{n}Elly{n}était 'spéciale' !!"
+f666-0074 73c34dcd4d124576 Khan{n}"Noooooooon !"
+f666-0075 dc2859e960e813d6 Khan{n}"Karen -Miang- a vu que la{n}mémoire de Fei couvrait 2{n}ou 3 fois plus de temps.{p}Elle en a conclu que Fei{n}était le 'Contact' !"
+f666-0076 634ba54f6dfe66e8 {slow 1}{n}Oui, j'étais le Contact.{n}IL m'appela donc...{p}Et c'est pour cela que{n}l'heure était venue...
+f666-0077 49ddfdb6ccbf40e1 Khan{n}"J'ai été un sot.{n}Tout est de ma faute.{p}J'étais si occupé par{n}mes devoirs à Shevat{n}que je n'ai pas vu{n}Karen changer.{p}Je n'ai pu te sauver{n}quand tu avais besoin{n}de mon aide."
+f666-0078 2f332c3709b72e07 Id{n}"Me sauver ? Ha !{n}À quoi bon dire ça{n}maintenant ?{p}Ça ne changera{n}rien !{p}La seule chose que{n}tu puisses faire,{n}c'est mourir de{n}ma main !"
+f666-0079 b6ca21bb8256a2da Khan{n}"Urrrggh !!{p}Malgré tout{wait 5}...{wait 10}{n}je vais{wait 5}...{wait 5}te montrer{wait 5}...{wait 10}que{n}je peux{wait 5}...{wait 5}te sauver{wait 5}...!"
+f666-0081 15d6a42147da3df3 Arrête, Id !{n}Père n'a rien{n}fait de mal !
+f666-0082 ecfd726e4b447317 Je sais. Le vrai{n}coupable, c'est lui.{p}Mère et Père{n}n'y pouvaient rien.
+f666-0083 8f46ff94d4ecbd26 Grahf{n}"Pourquoi ne pas{n}m'achever ?{p}Sans te défaire{n}de moi, tu{n}n'auras jamais{n}ce que tu veux."
+f666-0084 e83be9aff9e4ca91 Fei{n}"Tout va bien... Père.{n}Je comprends.{n}Tu n'es pas Grahf.{p}Tu es mon père.{n}Toi et Grahf, un seul être.{n}Ta volonté et ton but{n}ne changent jamais.{p}Je l'ai compris au combat.{n}Mais arrêtons-nous là.{n}Nos buts doivent être les{n}mêmes.{p}Cela revient à nous unir.{n}Nul besoin de nous battre."
+f666-0085 6d07d16f1dc2eb5f Fei{n}"Arrghh !{n}Quoi...!?{n}Mon corps !?"
+f666-0086 deaf75fcd5949b47 Grahf{n}"Le Zohar te veut !{n}La dernière pièce à unir{n}au système de Deus.{p}Il cherche à s'unifier{n}avec toi... le premier à{n}avoir été séparé de lui."
+f666-0087 e633f518d01be65b Fei{n}"Quoi...!?"
+f666-0088 18f08c43672572a9 Grahf{n}"Lacan l'a toujours voulu.{n}Après tout, je suis une{n}existence imparfaite.{p}Il était inévitable{n}d'en arriver là...{n}vu ce qui s'est passé{n}jadis.{p}Le contact secondaire raté{n}de Lacan avec l'Existence{n}Ondulatoire a divisé sa{n}personnalité en deux.{p}Avec le temps, son corps{n}est mort, mais le Lacan{n}originel a transmigré...{p}Emportant avec lui le{n}destin de devenir Contact,{n}il s'est réincarné en ton{n}corps actuel.{p}La persona restante, rien{n}que ses désirs, a continué{n}à vivre à part, possédant{n}le corps d'autrui.{p}C'est Grahf...{n}c'est moi.{p}J'ai peut-être hérité de{n}la volonté de Lacan, mais{n}je ne suis pas le{n}'Lacan Contact'.{p}Il m'est impossible{n}d'établir un vrai contact.{n}Il n'y aurait ni vraie{n}fusion ni libération.{p}Bien que nos corps soient{n}peut-être différents, je{n}suis toujours ta moitié.{n}Cela ne change pas.{p}Même imparfait, je peux me{n}fondre un temps dans le{n}Zohar et peut-être ainsi{n}te faire gagner du temps.{p}C'est ma seule façon de ne{n}faire qu'un avec toi."
+f666-0089 43bee0094fd9ee09 Grahf{n}"Je ne puis que cela.{n}Le système de Deus va{n}te rechercher bientôt.{p}Avant cela, tu dois{n}détruire le Deus enfin{n}parfait et le{n}Modificateur Zohar.{p}Toi seul peux briser la{n}barrière physique qui{n}entoure le corps de{n}dieu."
+f666-0091 bec1418b22411bed Grahf{n}"Comme tu l'as dit, c'était{n}bien Karen.{p}Depuis des générations,{n}Miang se libère peu à peu{n}de ses chaînes.{p}Maintenant qu'Elhaym a{n}fusionné avec Deus, elle{n}a retrouvé tous ses{n}souvenirs.{p}Tous ses souvenirs : de sa{n}naissance comme complément{n}du Contact, jusqu'à sa{n}transmigration actuelle.{p}Cela inclut toutes les vies{n}qu'elle a vécues comme{n}Miang, et ses remplaçantes,{n}au fil des siècles.{p}Y compris, bien sûr, les{n}souvenirs de ta mère."
+f666-0092 5626dff81d9fbd84 Fei{n}"Les souvenirs{n}de ma mère...?"
+f666-0093 67ef49adbaf050ee Grahf{n}"Fei, brise les chaînes{n}de toute l'humanité...{p}Tu en es déjà capable.{n}Sauve-la, sauve toutes{n}les autres femmes{n}liées à elle !"
+f668-0001 6fa95a80140e8cd3 Qui est là ?{wait 10}{n}Qui m'appelle{wait 5}...?
+f668-0002 8747905dc35845d8 {wait 10}...{wait 10}Je suis{wait 10}...{wait 10}Har{wait 10}...
+f668-0003 67e4b8c9150fe742 Cette lumière...?
+f668-0004 46bc7c28b59b0b7b Je{wait 10}...{wait 10}j'habite le Zohar.{n}Je suis le commencement{n}et la fin.{n}Le premier, le dernier.
+f668-0005 32a6f087d6de6da4 {wait 5}{wait 5}Dieu ?
+f668-0006 4edd242a8074db30 Dieu{wait 10}...{wait 10} Certains{n}m'appelleraient ainsi. D'un{n}certain point de vue, il est{n}juste de me voir ainsi. Mais{n}je ne le suis pas non plus.{n}Je{wait 10}...{wait 10}fais aussi partie de toi.
+f668-0007 e3ce0eccdd3a47e1 Une part de moi ?
+f668-0008 31c61827b056e642 Je suis défini par la façon{n}dont les gens m'observent.{n}En vérité, tu parles à une{n}version virtuelle de moi que{n}tu crées toi-même...{n}Je suis 'ta perception'.
+f668-0009 e7d66f926c3d221b Je ne comprends pas{n}de quoi tu parles.{n}Qui, ou quoi, es-tu ?
+f668-0010 f436c09528096b87 En somme{wait 10}...{wait 10}{n}{wait 10}...{wait 10}EXISTENCE.
+f668-0011 9c25e4379b26ea8c Existence
+f668-0012 eba48acce1140dd1 En vérité, je n'ai pas{n}de forme physique.{n}Je suis une 'Existence' d'une{n}dimension supérieure, un lieu{n}que tu ne peux percevoir...{n}Mais, en termes intelligibles,{n}c'est un monde où tout agit{n}comme une sorte d'onde...{p}C'est l'origine de cet univers{n}quadridimensionnel...{wait 5}{n}Le lieu où le temps et{n}l'espace{n}sont contrôlés...{wait 5}{n}Le vide flottant{wait 10}...{wait 10}{n}L'Existence Ondulatoire.
+f668-0013 aa0c158ffd429c9b Quel rapport entre une telle{n}'Existence'{wait 10}...{wait 10} et moi...?
+f668-0014 f2d3259e830df06e Il y a longtemps, fut créé un{n}'modificateur', un moteur{n}quasi perpétuel à l'énergie{n}infinie. Ce moteur reçut le{n}nom de 'Zohar'.{p}Ce réacteur fut créé par un{n}peuple ancien d'une autre{n}planète, pour obtenir ce que{n}l'on tient pour l'énergie{n}maximale possible dans cet{n}univers quadridimensionnel.{p}Avec le temps, ce peuple usa{n}ce même moteur pour créer{n}l'arme ultime d'invasion{n}interplanétaire, 'Deus'...{n}Le Zohar en fut la source{n}d'énergie principale.{p}Mais l'imprévu survint...{n}Lors des tests de connexion du{n}Zohar au Deus tout juste{n}achevé, le moteur se mit à{n}examiner une infinité de{n}phénomènes potentiels...{p}En quête d'énergie, le moteur{n}relia cette dimension à un{n}espace dimensionnel supérieur.{n}En conséquence, ce réacteur{n}'fusionna' ou se 'synchronisa'{n}avec l'existence ondulatoire de{n}la dimension supérieure{wait 5}...{wait 10}MOI.{p}Je 'descendis' du point de{n}contact créé par la machine,{n}par le 'Chemin de Sephirot',{n}le domaine où tu te trouves{n}à présent, et m'incarnai dans{n}le monde quadridimensionnel.{p}Après mon 'Avènement' dans le{n}monde quadridimensionnel, pour{n}me stabiliser ici, je dus{n}changer, ou matérialiser, ma{n}forme et entrer dans le moteur{n}'modificateur'...{p}En d'autres termes, je fus{n}piégé dans le 'Zohar'...{n}la 'cage de l'existence{n}charnelle'.{p}Depuis mon emprisonnement{n}dans le Zohar, je n'ai cessé{n}de vouloir regagner ma{n}propre dimension...{n}Et j'en suis venu à une{n}conclusion.{p}Je devais inverser le processus{n}par lequel je suis arrivé ici.{n}Je dois être libéré par celui{n}qui m'a insufflé un trait{n}propre à cette dimension -{n}la 'volonté'...{n}Ce quelqu'un, c'est toi.
+f668-0015 9f6df2e34aadbd08 Moi, tu as décidé ?{n}Un trait spécial ??
+f668-0016 7b85d5e31fc73180 Oui. En m'observant, toi,{n}le Contact, tu m'as donné un{n}attribut propre aux humains...{n}J'ai reçu{wait 10}...{wait 10}la volonté{n}d'une mère.
+f668-0017 1a624e33efa756f5 Volonté de mère ?
+f668-0018 0ad658d99e222a86 Souviens-toi. Après ma{n}descente, tu es entré en{n}contact avec le moteur{n}modificateur, 'Zohar'.
+f668-0020 18a7ccd186b6d88b En tant que Contact, enfant,{n}tu as défini mon existence par{n}ton désir de retrouver ta mère.{n}Alors, j'ai préparé la volonté{n}de la mère...{n}Cette volonté, c'est Elhaym.
+f668-0021 be60254a6b87e120 J'ai influencé le{n}caractère d'Elly ?
+f668-0022 2c9552f328cbbade Oui.{n}Ma volonté s'incarna par{n}un bio-ordinateur vital pour{n}Deus.{n}Après s'être combiné à moi, le{n}bio-ordinateur fit évoluer ses{n}fonctions, et cette bio-usine{n}engendra un élément central.{n}C'est elle.{p}Ton contact m'a divisé.{n}Ma forme physique, ma chair,{n}est restée dans le Zohar, ma{n}volonté est allée à Elhaym, et{n}mon pouvoir, à toi.{n}C'est pourquoi j'ai attendu{n}de m'unir à toi.{n}C'est à présent chose faite.{p}Mon seul désir restant est de{n}briser cette 'cage de{n}l'existence charnelle'...{n}Pour cela, je dois devenir{n}parfait, en m'unissant à{n}Elhaym et aussi à mon autre{n}forme physique divisée,{n}'Deus'.{p}La seule façon de regagner ma{n}dimension d'origine est de{n}détruire ce corps physique.{n}Dans le monde à quatre{n}dimensions, le Zohar est{n}parfait, donc, pour le{n}détruire, il me faut la force{n}qui t'a été attribuée...{p}Le Zohar ne peut être détruit{n}que de la main du 'Contact'.
+f668-0023 10d489eccb445cfe Et Elly ?{n}Si le Zohar est détruit,{n}que deviendra Elly !?
+f668-0024 2f050cb79dd2a10e Zohar et Deus ne font qu'un.{n}Elle est liée au système{n}par la volonté d'un autre de{n}ne faire qu'un avec moi.{n}Pour la libérer, il faut{n}détruire le système même{n}qui constitue l'arme Deus...{p}Cependant, ayant été créé{n}comme arme, le système Deus{n}cherche à s'unir à vous{n}tous, dans un but différent{n}du mien.{p}À l'origine, c'est moi qui{n}aurais dû la libérer, moi{n}qui désire regagner la{n}dimension supérieure...{n}Mais, lié au système comme{n}elle, je ne peux y prendre{n}part.{p}Toi seul peux la libérer{n}de ce sortilège.{n}Comme Deus et moi sommes{n}inséparables, toi et elle{n}l'êtes tout autant.
+f668-0025 2f87c719710dceb1 {wait 10}...{wait 10}D'accord.{wait 10}{n}Je détruirai Deus et le{n}Modificateur Zohar.{wait 10}{n}Et{wait 10} je sauverai Elly.
+f668-0026 01044767d13b3ad0 Tu as connu bien des pertes{n}et des privations dans ta vie.{n}C'est très tragique.{p}Notre contact, et le transfert{n}de pouvoir et de volonté qui{n}s'ensuivit entre nous deux, a{n}sans doute contribué à{n}diviser ta personnalité.
+f668-0027 16af71ef6e353425 Je ne suis pas d'accord.{n}Je ne peux m'en prendre{n}qu'à moi-même.{p}Quoi qu'il se soit passé{n}autrefois, avec le temps,{n}la cause devient plus{n}lointaine.{p}C'est un problème qui vient{n}de moi, et que je dois{n}affronter moi-même...
+f668-0028 f277bbdb3c2cf5e7 Je vois...{n}Tu as su accepter ces{n}tragédies, tout endurer,{n}comprendre et trouver ta{n}place dans ce monde.{p}Si tu as pu faire tout cela,{n}je suis certain que tu{n}réussiras ce qui t'attend{n}à présent.
+f668-0029 c0ad1e6876273eb5 Pour nous libérer tous{wait 10}...{wait 10}{n}Par{wait 10}...{wait 10}le{wait 10}...{wait 10}Xe{wait 10}...{wait 10}no{wait 10}...{wait 10}gears{wait 10}{n}{wait 10}...{wait 10}bri{wait 10}...{wait 10}se{wait 10}...{wait 10}le Zohar{wait 10}...{wait 10}
+f668-0030 6ba0e59b39ce06ce Attends !{n}J'ai encore des{n}questions...
+f668-0031 3251c9445ff3424a Le système{wait 10}...{wait 10}s'éveille{wait 10}...{wait 10}{n}Demande{wait 10}...{wait 10}lui{wait 10}...{wait 10}plus tard{wait 10}...
+f668-0032 a6c9399c2052eea4 Sauvegarder ?{wait 30}{n}    Sauvegarder{n}    Non merci{wait 15}
+f668-0033 93c809d291235ae3 Reprendre ?{wait 30}{n}    Attendre{n}    Reprendre {wait 15}
+f668-0034 b52693b4a0a18c27     Ouvrir le menu{n}    Changer de groupe{n}    Reprendre{wait 15}
+f669-0000 a75f0f370f1beecb Fei{n}"Message de test"
+f669-0003 d9160cbf2ae07544 Elly{n}"{wait 5}...{wait 5}C'est...{wait 15}{n}Impossible{wait 5}...{wait 5}?"
+f669-0004 5dcfddc732a584cf Elly{n}"La terre de la genèse,{n}Kadomony...{wait 5}{n}où{wait 5}...{wait 5}tout a commencé.{p}Mais pourquoi personne{n}n'en garde-t-il aucun{n}souvenir{wait 5}..."
+f669-0006 21ad4217791707ca Citan{n}"{wait 5}...{wait 5}Où sommes-nous ?"
+f669-0007 1d81de5ee0d66da9 Citan{n}"Tout de même, Fei.{p}Même avec le destin que{n}vous partagez avec Deus,{n}pourquoi avez-vous des{n}souvenirs si anciens{wait 5}...{wait 5}?"
+f669-0008 cd297244399c8964 Citan{n}"Ceci {wait 5}serait{wait 5}...{wait 5}!"
+f669-0009 895a64d592c97b78 Bart{n}"Où on est, là...?"
+f669-0010 d4b81b842d1abe89 Bart{n}"Ouais, mais, Fei...{p}Même avec ce destin que tu{n}partages avec Deus, d'où{n}te viennent ces souvenirs{n}si anciens{wait 5}...?"
+f669-0011 0629bd1822d990ae Bart{n}"Ça {wait 5}serait{wait 5}...{wait 5}!"
+f669-0012 a9c9beea39274bbb Billy{n}"{wait 5}...{wait 5}Quel est donc ce{n}lieu divin ?"
+f669-0013 9bcd50bf205c188c Billy{n}"{wait 5}...{wait 5}Mais, Fei.{p}Même avec un destin{n}ancestral, il y a une{n}limite à ce que les gens{p}normaux peuvent se{n}souvenir du passé...{wait 5}"
+f669-0014 3a5c9d6fbaf2fdc8 Billy{n}"{wait 5}...{wait 5}Alors ça veut dire{n}que ceci est...!?"
+f669-0015 c6ab6911f2dfe926 Rico{n}"{wait 5}...{wait 5}C'est quoi, ce{n}drôle d'endroit ?"
+f669-0016 2fc6c4ca5c2e78dd Rico{n}"Bon, je pige rien à ce{n}destin antique que tu{n}as avec Deus...{p}Mais quand même, comment{n}tu te rappelles si bien{n}tous ces souvenirs{p}anciens ? C'est pas{n}humain{wait 5}...{wait 5}"
+f669-0017 76a14d9f5c9d89ea Rico{n}"Alors tu me dis que{n}le corps là-dedans,{n}c'est{wait 5}...{wait 5}"
+f669-0018 19eb36ed4ab6c498 Emeralda{n}"{wait 5}...{wait 5}Quoi ici ?"
+f669-0019 6b522b276099370d Emeralda{n}"{wait 5}...{wait 5}Bizarre.{n}Pourquoi toi avoir{n}mémoire ancienne{wait 5}...{wait 5}?"
+f669-0020 b856d5c4c6d0be42 Emeralda{n}"Fei...{wait 5}{n}{wait 5}...{wait 5}Quoi ça ?"
+f669-0021 eea3db5228682045 {name 7}{n}"On est où, là, chu ?"
+f669-0022 bfe91d4492567631 {name 7}{n}"{wait 5}...{wait 5}Chuper incroyable.{p}La tribu {name 7} a une{n}mémoire aussi bonne que{n}tout humain, mais celle de{n}Fei, c'est chuper fort !"
+f669-0023 f32a47e5390781b8 {name 7}{n}"C',{wait 5} c'est quoi, alors ?"
+f669-0024 002de3c267656c7b Maria{n}"{wait 5}...{wait 5}Où sommes-nous ?"
+f669-0025 9e7d5b7c1e973bcd Maria{n}"C'est incroyable.{p}Que tu puisses te{n}souvenir si clairement{n}d'un passé si lointain,{n}je veux dire{wait 5}...{wait 5}"
+f669-0026 62a6c8a667a9d87f Maria{n}"Alors c'est{wait 5}...{wait 5}!?"
+f669-0027 618bccf25aabb9c9 Citan{n}"Où sommes-nous{wait 5}...{wait 5}!?"
+f669-0028 42049f2651329d29 Citan{n}"Tout de même, Fei...{p}Même avec le destin que{n}vous partagez avec Deus,{n}pourquoi avez-vous des{n}souvenirs si anciens{wait 5}...{wait 5}?"
+f669-0029 9f2460bf9e55444d Citan{n}"Ceci {wait 5}serait{wait 5}...{wait 5}!"
+f669-0031 429e6e90282dfb19 Emeralda{n}"{wait 5}...{wait 5}Incroyable.{n}Pourquoi Fei avoir{n}mémoire ancienne{wait 5}...{wait 5}?"
+f669-0032 fcab32eb1fe9e563 Emeralda{n}"Fei...{wait 5}{n}{wait 5}...{wait 5}Quoi ça ?"
+f669-0033 b55f3541ce3ed9ac message de test
+f669-0034 b9b7874143f064f8 Fei{n}"C'est ici que tout{n}a commencé.{wait 30}{n}Voici notre genèse !{p}Nous{wait 5}...{wait 5}non,{wait 15}{n}les humains sont nés ici."
+f669-0035 ace9629b69516c6c Fei{n}"{wait 5}...{wait 5}Il y a longtemps, {wait 5}Deus{n}s'est écrasé sur cette{p}planète, à bord d'un{n}vaisseau colonisateur{n}interplanétaire.{p}Pour revivre un jour,{n}Deus a séparé le noyau du{n}Modificateur Zohar...{p}Après la descente de ce{n}noyau jusqu'ici, une seule{n}femme s'est éveillée et en{n}est sortie."
+f669-0036 9310a5120d3d8711 Fei{n}"C'est la mère de{n}l'humanité entière{wait 5}...{wait 5}"
+f669-0037 99b07c93fc918948 Fei{n}"Après son éveil, elle a{n}mis tout son pouvoir à{n}engendrer plusieurs êtres.{p}Ils allaient devenir les{n}ancêtres de toute{n}l'humanité."
+f669-0038 4099b5d544081b4a Fei{n}"C'étaient l'Empereur et{n}le Ministère Gazel."
+f669-0039 d71eaf80144bc332 Fei{n}"Enfin, elle a créé des{n}répliques d'elle-même{p}pour être les gardiennes{n}de l'humanité."
+f669-0040 3c48c4b53d5fe532 Fei{n}"Deux versions{n}d'elle-même...{p}La Mère -humaine-{n}et l'arme...{p}Le Sujet et{n}le Complément."
+f669-0041 d5de57a6ed1c0a0d Fei{n}"Ce sont Elly{n}et{wait 5}...{wait 5}Miang."
+f669-0042 4c4c733cf2e95d08 Fei{n}"Moi, seul survivant du{n}vaisseau colonisateur,{n}j'ai rencontré Elly et{wait 5}...{p}Tout est parti de{n}là{wait 5}..."
+f669-0043 22d1b7a7d081c7ab Fei{n}"La terre de la genèse,{wait 5}{n}-Kadomony-{wait 5}...{wait 5}{n}C'est ici."
+f669-0044 9f4c387013bc5471 Fei{n}"Normalement, la mémoire{n}humaine ne peut être{p}transmise d'une génération{n}à l'autre.{p}D'ordinaire, l'humain ne{n}peut pas compresser et{n}stocker de souvenirs dans{n}ses introns."
+f669-0045 43f9846f4cd26c64 Fei{n}"Mais Elly, moi...{wait 15}{n}et Miang...{wait 15}{n}sommes différents."
+f669-0046 e8a37c1fb1005065 Fei{n}"À cause de notre lien avec{n}l'Existence Ondulatoire{wait 5}...{p}Autrement dit, grâce à la{n}capacité du Zohar de{n}modifier les phénomènes{p}possibles, nous pouvons{n}stocker des données claires{n}dans nos introns.{p}En d'autres termes, nous{n}pouvons léguer nos{n}souvenirs à nos{n}descendants."
+f669-0047 7aa925f5894dab35 Fei{n}"Tout comme l'Existence{n}Ondulatoire est piégée{n}dans le Zohar...{p}les informations sont fixées{n}en moi, pour ainsi dire, par{n}une part du pouvoir de{n}l'Existence Ondulatoire."
+f669-0048 a27b5349d4804652 Fei{n}"Voici Elly et Miang quand{n}elles ne formaient encore{n}qu'un seul être{wait 5}...{p}Voici la première femme{n}de notre monde{wait 5}..."
+f670-0001 401393c379a4a0b8 "Lacan,{wait 5} qu'as-tu ?"
+f670-0003 98634f5ebc1e0d84 Dans ce rêve,{n}je m'appelais 'Lacan'{wait 5}...{wait 15}{n} {n}J'étais un artiste{wait 5}...{p}J'avais été reconnu comme{n}un artiste de talent, et je{n}peignais le portrait de la{n}Mère de Nisan, 'Sophia'{wait 5}...
+f670-0004 19c332828852f12b Lacan{n}"Hein{wait 5}...{wait 5}non,{wait 10}{n}ce n'est rien."
+f670-0005 4f0dbf8732858299 "{wait 5}...{wait 5}Arrêtons-nous là.{wait 30}{n}Tu as l'air bien fatigué.{wait 15}{n}{wait 5}...{wait 5}Tout va bien ?"
+f670-0006 72efc8be18fa929e Lacan{n}"Je vais bien,{wait 5} merci{wait 5}...{wait 15}{n}Mais,{wait 5} maintenant que{n}vous le dites{wait 5}..."
+f670-0007 2ce2a307e59afa08 Lacan{n}"Si nous arrêtions là ?{wait 20}{n}C'est vous qui devez être{n}lasse,{wait 5} 'Mère Sophia' ?"
+f670-0008 5842f9cacf13eea8 Sophia{n}"Voyons, arrête."
+f670-0009 47f062785a621725 Sophia{n}"Quand nous sommes seuls,{n}cesse de m'appeler ainsi.{p}Appelle-moi simplement{n}'Elly'{wait 5}...{wait 15} Comme tu le{n}faisais autrefois{wait 5}...{wait 30} Et{p}inutile d'être si guindé,{n}si formel."
+f670-0010 f3d253d7b906159c Lacan{n}"Ah, {wait 5}euh, {wait 10}d'accord.{wait 15}{n}Très bi{wait 5}...{wait 5}non, je{p}veux dire{wait 5}...{wait 5}{n}Oui,{wait 5} faisons comme ça,{wait 5}{n}'Elly' !"
+f670-0011 37b2bd068bc41b97 Lacan{n}"Je crois que je vais{n}rentrer chez moi{wait 5}...{wait 10}{p}pour une semaine environ."
+f670-0012 03f706ede4eacc9e Elly{n}"Ah,{wait 5} vraiment ?{wait 5}{n}Qu'y a-t-il ?"
+f670-0013 9150b2a153b67b8c Lacan{n}"Ma peinture est épuisée.{wait 15}{n}Alors{wait 5}...{wait 5}euh, je dois{n}aller en refaire."
+f670-0014 908832406c9121d1 Elly{n}"Tu vas faire tout ce{n}chemin{wait 5}...{wait 5}juste pour ça ?"
+f670-0015 e29e439fc57b748b Lacan{n}"Si je n'y vais pas,{wait 5}{n}je n'aurai pas les{n}bons pigments."
+f670-0016 5b7e2b8fd346680d Elly{n}"Ah{wait 5}...{p}Alors, et si je demandais{n}à l'un de mes fidèles,{wait 5} les{n}-Kahal-,{wait 5} de t'emmener dans{n}l'un de nos Gears ?"
+f670-0017 e3501b2cd4fe200a Elly{n}"Tu arriveras plus vite{wait 15}{n}et bien plus en sécurité."
+f670-0018 d149adbe0bb8b394 J'ai menti...{wait 30}{n}Je n'étais pas à court.{wait 15}{n}J'avais juste peur de{n}finir le portrait.{wait 15}{n}Je voulais continuer à{n}peindre{wait 5}...{wait 5}pour toujours.{p}C'est pourquoi je voulais{n}gagner du temps{wait 5}...{wait 15}{n}Elle m'aurait sans doute{n}méprisé pour cela{wait 5}...{p}Non,{wait 5}{n}elle m'aurait sans doute{n}juste offert son sourire{n}de toujours.{wait 15}{n}C'était ce genre de{n}femme{wait 5}...
+f670-0022 af8f87fe80a2556d Dans ce rêve,{wait 5}{n}je m'appelais 'Sophia'{wait 5}...{wait 15}{n} {n}Mère Sophia{wait 5}...{p}Un nom symbolique{wait 5}...{wait 15}{n}Accordé à celle qui serait{n}l'espoir du peuple{wait 5}...{p}Un nom que j'étais{n}destinée à porter{wait 5}{n}Que je le veuille ou non{wait 5}...
+f670-0031 f6945c15c1a4d01e Elly{n}"Ah, vraiment ?{wait 5}{n}Qu'y a-t-il ?"
+f670-0037 204cbfbb84ac52be Quand tout cela a commencé{wait 5}...{wait 30}{n} {n}Quand il a commencé à me{n}rejeter{wait 5}...{wait 15}{n}Les barrières entre nous{wait 5}...{wait 30}{n}Nos 'positions'{wait 5}...{wait 5}{p}Nos 'circonstances'{wait 5}...{wait 15}{n}Il refusait de les{n}reconnaître{wait 5}...{wait 45}{n} {n}Non{wait 5}...{wait 5}ce fut peut-être moi{wait 5}...
+f670-0038 ee823a338ac1fdd7 C'est pourquoi{wait 5}...{wait 5}{n}je n'en voulais pas{wait 5}...{wait 30}{n} {n}Je voulais que nous deux{n}soyons nous-mêmes{wait 5}...{wait 45}{n} {p}Voilà ce que je désirais{wait 5}...{wait 15}{n}Alors,{wait 5}{n}je voulus être peinte{wait 5}...{wait 30}{n} {n}Telle que je suis{n}vraiment{wait 5}...
+f670-0039 8ddd49f76982f190 Elly{n}"Qu'y a-t-il ?{wait 15}{n}Tu as mauvaise mine."
+f670-0040 d9a1012289275f91 Elly{n}"Ces derniers temps, tu as{n}l'air mélancolique presque{p}tous les jours.{wait 15}{n}Quelque chose ne va pas ?"
+f670-0041 7345a3030056ad92 Lacan{n}"Je ne sais pas.{wait 15}{n}Je ne peux pas peindre{n}en ce moment.{p}Pardon,{wait 5} mais ça te{n}gêne qu'on arrête là{n}pour aujourd'hui{wait 5}..."
+f670-0042 ff45aea13ded5f11 Elly{n}"Je vois{wait 5}...{wait 5}{n}Ce n'est pas bon de trop{n}forcer{wait 5}...{p}Tu devrais te reposer un{n}peu.{wait 30}{n}Je dirai à Krelian de{n}te raccompagner{wait 5}..."
+f670-0043 454d98b59368f205 Krelian{n}"Que fais-tu{wait 5},{n}Lacan ?"
+f670-0044 3e88e848cd2742b3 Lacan{n}"Ah{wait 5}, toi,{wait 5} Krelian{wait 5}...{wait 15}{n}Je songeais{wait 5}...{wait 5}à{p}arrêter de peindre le{n}portrait{wait 5}..."
+f670-0045 3c410b902840fb8c Krelian{n}"Pourquoi arrêter{wait 5}...?"
+f670-0046 d6e1f12f6971fba7 Lacan{n}"Les circonstances.{wait 15}{n}Je ne devrais pas la{n}peindre en ce moment."
+f670-0047 02be7f253f7b4188 Lacan{n}"Tôt ou tard, elle aussi{n}devra partir pour{p}le front.{wait 15}{n}C'est pourquoi{wait 5}..."
+f670-0048 4914c5b3e205b68b Krelian{n}"Le problème est-il là ?"
+f670-0051 155b6a7e6b249ab9 Lacan{n}"{wait 5}...{wait 5}{n}Son sourire{wait 5}...{wait 5}{n}me tue.{p}Plus elle me sourit, plus{n}je{wait 5}...{wait 5}sens mon propre{n}être devenir{n}insignifiant.{p}Dans mon coeur, il y a{n}cette existence vide.{wait 15}{n}Hors la peinture,{wait 5} je n'ai{n}aucune valeur{wait 5}...{p}Malgré tout, elle continue{n}d'accepter ma{n}présence.{wait 15}{p}Je me sens de plus en plus{n}petit."
+f670-0052 5ccc79dffcc9c49a Lacan{n}"Au début, je n'éprouvais{n}pas ce sentiment.{p}Je voulais la peindre{wait 5}{n}une minute de plus{wait 5}...{wait 5}{n}une seconde de plus{wait 5}...{p}Je voulais continuer à{n}peindre pour toujours.{wait 15}{n}Mais,{wait 5} soudain, je n'en{n}ai plus été capable.{p}À mesure que le tableau{n}avançait, le vide en moi{n}a commencé à se{p}manifester dans mes{n}coups de pinceau.{p}J'aurais dû la représenter{n}telle qu'elle est{n}vraiment{wait 5}...{wait 15}{p}mais{wait 5}...{wait 5}ce tableau est{wait 5}...{wait 10}{n}moi-même{wait 5}...{p}Mon moi vide a commencé à{n}y apparaître.{wait 15}{n}C'est pourquoi{wait 5}...{wait 5}{n}je dois arrêter là."
+f670-0053 2671c27f5a508523 Krelian{n}"Toi-même{wait 5}...?"
+f670-0054 1b443ccf41ab3a79 Krelian{n}"Tu fuis, c'est tout !{wait 15}{n}Tu ne supportes pas{n}qu'elle te sourie.{p}En peignant son portrait,{wait 5}{n}tu as perçu le fossé{n}entre ton vide intérieur{p}et sa plénitude{n}intérieure.{p}Et tu n'as pas pu combler{n}ce fossé{wait 5}...{wait 15}{n}Voilà pourquoi tu{n}abandonnes la peinture.{p}Tu la rejettes !{wait 15}{n}Et pourtant, tu n'arrives{n}toujours pas à t'éloigner{n}d'elle, n'est-ce pas ?{p}Malgré cela{wait 5}...{wait 5}{n}pourquoi continue-t-elle{n}donc de te sourire ?{p}Toi qui n'arrives pas à{n}accepter ses{n}sentiments{wait 5}...{wait 15}{p}Toi qui refuses d'accepter{n}ses sentiments{wait 5}..."
+f670-0055 d568370e0d135cae Krelian{n}"Dis-moi pourquoi !?{p}Si c'était moi{wait 5}...{wait 30}{n}qui recevais{wait 5}...{wait 15}{n}de tels{n}sentiments{wait 5}..."
+f670-0056 f559fa54f9657d93 Roni{n}"{wait 5}...{wait 5}Est-ce vraiment{n}sa véritable{n}expression ?"
+f670-0057 18c7b9840a6d5f0c Lacan{n}"Oui{wait 5}...{wait 5}{n}Pour qui ne la connaît pas{n}si bien{wait 5}...{wait 5}je crois{wait 5}..."
+f670-0058 f6a64a4adcbe145e Roni{n}"Son sourire{wait 5}...{wait 15}{n}Je ne sais pas{wait 5}...{p}Le sourire de ce tableau{n}est, d'une certaine façon,{n}différent de celui qu'elle{n}nous montre d'habitude.{p}Je sais que les sentiments{n}de Lacan y sont, mais{wait 5}...{p}Je crois qu'elle ne s'était{n}jamais ouverte et montrée{n}aux autres de cette{n}façon."
+f670-0059 35c17a1c315fc454 Roni{n}"Tu peins une expression{n}si belle de Sophia{wait 5}...{p}Je ne vois vraiment pas{n}pourquoi tu voudrais{n}arrêter."
+f670-0060 6d7ff7a93e8d582e Lacan{n}"Belle{wait 5}...?{p}Laisse tomber.{wait 10}{n}Ce tableau{wait 5}...!?{wait 5}{n}Il est tout sauf{n}beau{wait 5}..."
+f670-0061 4d17f1f9f3bdc394 Roni{n}"Lacan,{wait 5} tu te dis vide.{wait 15}{n}Alors pourquoi viens-tu{n}avec nous ?{p}Nos actions jusqu'ici{wait 5}{n}ne sont pas que charité{wait 5}...{wait 15}{n}C'est un combat pour la{n}liberté.{p}Bien des fois, tu as{n}affronté avec nous des{n}situations de vie ou de{n}mort{wait 5}..."
+f670-0062 cc60d6649632d458 Roni{n}"Un homme au coeur vide{n}ne pourrait pas{p}faire ce genre de{n}chose{wait 30}...{wait 5}n'est-ce pas ?"
+f670-0063 082d7fada42cc026 Lacan{n}"Roni, tu me prêtes trop{n}de mérite.{p}Tant qu'on fait quelque{n}chose pour s'occuper{wait 5}...{wait 5}{n}on peut ignorer le vide{n}intérieur."
+f670-0064 98ea113c07a04bcd Lacan{n}"Dès le début, ma propre{n}existence n'était que{n}vide.{p}Peu importerait que je{n}meure à l'instant{wait 5}...{wait 15}{n}On vit,{wait 5} on meurt{wait 5}...{wait 5}{n}C'est tout{wait 5}..."
+f670-0065 b478b94e90fa1739 Roni{n}"Toujours pessimiste,{wait 10}{n}Lacan{wait 5}...{wait 15}{n}Et en plus, tu mens."
+f670-0067 c288cd39972c6f7e Roni{n}"Tu as juste du mal à{n}exprimer tes propres{n}sentiments.{p}Tu n'es pas vide.{wait 15}{n}Elle le sait.{wait 15}{n}C'est pourquoi elle montre{p}son vrai sourire à toi{n}seul."
+f670-0068 17985cd186b518c0 Lacan{n}"Je ne mérite pas de voir{n}son vrai sourire.{p}Elle est l'espoir du{n}peuple.{wait 15} Son soutien.{wait 15} Elle{n}a bien d'autres choses à{n}accomplir."
+f670-0069 75ffd995237d0934 Lacan{n}"Pourquoi ouvrir son{n}coeur à un simple{n}artiste comme moi{wait 5}..."
+f670-0070 10497833961f6283 Rene{n}"Frérot !{wait 15} Frérot～ !"{done 60}
+f670-0071 f36e32a1e055e2f8 Rene{n}"Hé, frérot{wait 5}...{wait 5}{n}Qu'est-ce que tu fais{n}ici ?"
+f670-0072 22fb3df323636acc Roni{n}"Quoi donc ?"
+f670-0073 f4057ae2393d8456 Zephyr{n}"Le Conseil des Anciens de{n}Shevat a tranché.{p}Demain, nous partirons{n}pour Soylent."
+f670-0074 86655f12b7e8a5cf Roni{n}"Soylent ?{wait 15}{n}C'est à Solaris{wait 5}..."
+f670-0075 18b65eca74ffefd8 Rene{n}"Oui.{wait 15}{n}Et{wait 5}...{wait 5}Sophia vient avec{n}nous."
+f670-0076 d3b46f7adec99922 Krelian{n}"C'est absurde !"
+f670-0077 c1a84c29facbfc58 Krelian{n}"Le nombre de réfugiés{n}augmente encore ! {wait 5}Nous ne{p}pouvons pas nous permettre{n}de laisser Sophia quitter{n}Nisan !{p}Et {wait 5}aller à Soylent !{wait 5}{n}C'est de la folie !{wait 10}{n}C'est trop dangereux !{p}À quoi pensent les{n}anciens ?"
+f670-0078 7a08e9aa0138b290 Zephyr{n}"Non.{wait 15}{n}Ce n'était pas le{n}souhait du conseil."
+f670-0079 965d4f638783210f Zephyr{n}"Sophia l'a voulu.{n}Elle a elle-même, dit-on,{n}exprimé ce souhait."
+f670-0080 4eafbef0d4b824cc Krelian{n}"Ce n'est pas possible{wait 5}...{wait 5}{n}À quoi pense-t-elle ?"
+f670-0081 2aaf03ce3d34b38c Rene{n}"Au début, on avait{n}convenu d'y aller{n}seulement entre nous{wait 5}..."
+f670-0082 388f141976805e8e Krelian{n}"Seuls{wait 5}...?"
+f671-0001 f2ae33547bbeba3c Sophia{n}"La foi{wait 0} en{wait 0} Dieu{wait 0}...{wait 45}{n}Il{wait 0} ne faut{wait 0} pas{wait 0} la chercher{wait 0}{n}à{wait 0} l'extérieur{wait 0} de{wait 0} soi{wait 0}...{wait 30}{n}Car{wait 0} chacun{wait 0} doit{wait 0} la{wait 0} bâtir{wait 0} en{wait 0}{n}son{wait 0} propre{wait 0} for{wait 0} intérieur{wait 0}..."{done 120}
+f671-0002 060af468bb0c1fc3 Krelian{n}"Depuis le temps,{wait 5} Lacan."
+f671-0003 32adcf606f0e2b0c Lacan{n}"Krelian.{wait 15}{n}De retour ?"
+f671-0004 9f9b8bf0bbb6a68c Krelian{n}"Je suis arrivé hier soir.{wait 15}{p}Tu rentres chez toi pour{n}chercher de la peinture ?{p}Sophia me l'a dit.{wait 30}{n}Laisse-moi t'accompagner."
+f671-0005 eff5d3a9982c4016 Lacan{n}"Tu es sûr ?"
+f671-0006 670c6afe6dceeebd Krelian{n}"Bien sûr.{wait 10}{n}Un autre commandera{n}mon unité.{p}À cause de Solaris, les{n}choses sont bien plus{n}dangereuses ces temps-ci.{wait 30}{p}Et puis,{wait 5} tu ne te{n}sentirais pas plus en{n}sécurité avec moi ?"
+f672-0000 d9198c91ec3639b7 Lacan{n}"{wait 5}...{wait 5}Qu'as-tu dit ?{wait 15}{p}Qui est le maître auprès{n}de qui tu étudies ?"
+f672-0002 14beb4539bc1c3b9 Lacan{n}"Mais pourquoi donc{n}étudies-tu ?"
+f672-0003 c36427b704bf0b80 Krelian{n}"Sophia m'a dit que le{n}meilleur moyen d'apaiser{n}son coeur est de lire{wait 5}...{wait 5}{p}C'est une bonne occasion.{n}Et cela a éveillé mon{n}intérêt pour l'étude."
+f672-0004 2fc7fd4aa612ed41 Krelian{n}"{wait 5}...{wait 5}À présent,{wait 15}{n}je lis 3 livres{n}par jour."
+f672-0005 3378bccbc71cbf43 Lacan{n}"Les gens changent{n}vraiment, hein ?"
+f672-0006 9a99c9c7137dc235 Lacan{n}"{wait 5}...{wait 5}L'art militaire,{wait 15}{n}tu ne penses qu'à{n}ça{wait 5}...{wait 5}..."
+f672-0007 f7c8ca315354c947 Krelian{n}"Hé,{wait 5} c'est méchant.{wait 15}{n}Sache que je suis le{n}meilleur de ses élèves."
+f672-0008 aba63b4debf3c0fe Lacan{n}"Je vois{wait 5}...{wait 5}...{wait 15}{p}Tant mieux,{wait 5}{n}tu as l'air d'avoir trouvé{n}quelque chose à quoi te{n}vouer de tout coeur{wait 5}...{wait 5}..."
+f672-0009 29edd43832553517 Krelian{n}"Comment ça ?"
+f672-0010 7f99af931cb7747d Krelian{n}"Toi aussi, tu as{n}quelque chose.{p}Tes peintures sont{n}splendides.{wait 15}{n}Tu devrais en être{n}reconnaissant{wait 5}...{wait 5}..."
+f672-0011 5bf67a8f667c9cca Krelian{n}"Sophia m'a appris que{n}rien n'apaise le coeur{n}comme la lecture{wait 5}...{p}...{wait 5}et me voilà accro{n}à la lecture."
+f672-0012 a09f3d5b1b0c757a Krelian{n}"Sans me vanter{wait 5}...{wait 15}{n}j'ai appris beaucoup de{n}choses que j'ignorais.{p}Dernièrement, je lis{n}ceci."
+f672-0013 09cacb3f1d46b9de Lacan{n}"Qu'est-ce ?"
+f672-0014 8e493881259a56ed Krelian{n}"Un ouvrage que Melchior{n}m'a prêté.{p}Il traite d'une forme{n}d'ingénierie moléculaire{wait 5}...{wait 5}{n}la nanotechnologie.{p}Ce serait un livre trouvé{n}dans les ruines de la{n}vieille civilisation de{n}Zeboim.{p}C'est la copie du rapport{n}de recherche de quelqu'un,{wait 5}{n}mais elle est incomplète.{p}Je crois qu'il contenait{n}des merveilles plus grandes{n}encore, mais nous ne le{n}saurons jamais{wait 5}..."
+f672-0015 60cad3a2e2964ae5 Margie{n}"Elly.{wait 30}{n}Tu es d'accord{n}avec ça ?{p}Tu ne veux pas{n}être avec{n}lui ?"
+f672-0016 8362ecc66a5a099b Elly{n}"Si{wait 5}...{wait 5}{n}Mais,{wait 10} c'est parce que{n}j'ai foi en lui.{p}Être près de quelqu'un{n}n'est pas, en soi, une{n}preuve d'amour, non ?"
+f672-0017 7f2aa42a113ae991 Margie{n}"Mais{wait 5}...{wait 5}{n}les hommes sont égoïstes{wait 5}...{p}Quand c'est sérieux,{wait 10}{n}ils disent{wait 5}...{wait 10}{n} 'C'est trop dangereux{wait 5}...{wait 5}{n}  Tu ne peux pas venir !'{p}Ils traitent les femmes{n}comme si on était faibles."
+f672-0018 921373b894d29ebb Margie{n}"Mais c'est vrai, je{n}n'aide plus beaucoup Bart{n}et les autres{wait 5}..."
+f672-0019 eef032bebbb0c4a3 Elly{n}"Ce n'est pas vrai.{wait 15}{n}Tout le monde{wait 5} veut{n}qu'un être cher l'attende.{p}Quelqu'un qui préserve{n}un lieu où revenir.{p}Sans cette sérénité,{n}personne ne pourrait rien{n}faire{wait 5}..."
+f672-0020 60811ae415b1a4b1 Elly{n}"Les hommes tiennent bon{n}autant qu'ils peuvent, et{n}même un peu plus...{p}C'est mignon, leur façon{n}de faire, non ?"
+f672-0021 59043443dfebb301 Margie{n}"C'est vrai,{wait 15}{n}tu as raison{wait 5}..."
+f672-0022 321758a496eb0afd Elly{n}"Bref, nous aussi, nous{n}avons fort à faire.{p}Et,{wait 5} en attendant,{wait 5}{n}prions pour que tous{n}reviennent indemnes."
+f672-0023 eb1ccfc854416cae Margie{n}"À Dieu ?"
+f672-0024 b11e7d089fd81ed4 Elly{n}"Non{wait 5}...{p}Aux sentiments intimes{n}auxquels chacun{n}croit{wait 5}..."
+f672-0026 745fdc7761a16950 Margie{n}"Je le savais{wait 5}...{wait 15}{n}Oui,{wait 5} c'est ça !"
+f672-0028 5e88d7c10303000d Margie{n}"Elly, c'est bien vrai !{wait 10}{n}Tu dois être la{n}réincarnation de Sophia !{p}Tu ne peux pas connaître{n}les enseignements de{n}l'Église de Nisan, mais ce{n}que tu dis{wait 5}...{p}...{wait 5}c'est exactement ce{n}que Sophia disait{n}toujours."
+f672-0029 31cd8a19893fcbfa Elly{n}"Oui{wait 5}...{wait 30}{n}Peut-être bien."
+f672-0030 7532f0b7bd66aa91 Elly{n}"En venant ici pour la{n}première fois, j'ai eu{n}une impression inouïe."{done 150}
+f672-0031 92c73ba60e55b971 Elly{n}"Familière{wait 5}...{wait 15}{n}Triste{wait 5}...{wait 15}{p}Comme si j'étais venue ici{n}bien des fois en rêve{wait 5}..."
+f672-0032 e671e82d0935c701 Elly{n}"Je connais chaque salle{wait 10}{n}et ce qu'il y a dedans.{p}Je sais que j'ai dû{n}venir ici dans un passé{n}lointain{wait 5}..."
+f672-0033 954e0128a21bed92 Elly{n}"Avant, si tu m'en avais{n}parlé, j'aurais cru à une{n}plaisanterie.{p}Mais maintenant{wait 5}..."
+f672-0034 39f8d320e257f32f À présent, je peux{n}presque y croire.
+f672-0035 0bda7b70e51dfa84 Elly{n}"Ce que je n'ai pu{n}faire à l'époque...{p}J'essaie sans doute{n}de{n}l'accomplir enfin{wait 5}..."
+f672-0036 70bc50dd3323e97f Margie{n}"Ce que tu n'as{n}pas pu faire{wait 5}...?"{done 150}
