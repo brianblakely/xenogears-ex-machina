@@ -164,3 +164,276 @@ f714-0038 5faa90eee3f293a1 Krelian{n}"Venez...{p}C'est l'heure de l'éveil{n}de 
 f714-0039 56062cf78984d264 Fei{n}"Je t'en prie{wait 5}...{wait 5}{n}attends{wait 5}...{wait 20}{n}Elly{wait 5}...!"
 f714-0040 fdff759c1f27a886 Elly{n}"Adieu{wait 5}...{wait 5}Fei.{wait 20}{n}Je te souhaite un{n}'éveil' paisible{wait 5}..."
 f714-0041 53634dff11477085 Citan{n}"Fei !{wait 20}{n}Tenez bon !"
+f716-0000 85b078a5b906c45f Fei{n}"On dirait que ce puits{n}donne sur l'extérieur.{p}On devrait pouvoir{n}sortir par ici."
+f716-0001 49ee4f1e550da1c9 Fei{n}"On dirait que ce puits{n}donne quelque part sur{n}l'extérieur.{p}Mais on n'a pas le temps{n}de faire demi-tour.{wait 20}{n}Allons de l'avant,{n}vite."
+f716-0002 f3a3959a2517908f Que désirez-vous ?{wait 20}{n}    Objets de personnage{n}    Pièces de Gear{n}    Rien
+f717-0000 e98e2e85fed8468b Fei{n}"Faut-il le pouvoir du{n}{name 26} ?"
+f717-0001 89755b178f36b761 Fei{n}"Ça,{n}c'est...{wait 20}Deus !?"
+f717-0002 a53de67fa9b46b5a Fei{n}"...{wait 20}{n}Merci, tout le monde.{p}Attaquer Deus de front...{wait 10}{n}ou détruire d'abord ses{n}supports...{wait 10}{n}Que vaut-il mieux faire ?"
+f717-0003 5d5c702d5c171517 Citan{n}"Je m'en doutais...{wait 20}{n}Le pouvoir du {name 26}..."
+f717-0004 91763ad0549bb5d8 Bart{n}"Il nous faut le pouvoir{n}du {name 26} ?"
+f717-0005 72ef166d524668ed Billy{n}"Je m'en doutais...{wait 20}{n}Il faut le pouvoir du{n}{name 26} ?"
+f717-0006 acce515d32028d67 Rico{n}"Si seulement on avait le{n}pouvoir du {name 26}..."
+f717-0007 814c941ff1c25b15 Emeralda{n}"Moi savoir...{wait 20}{n}Pouvoir du...{n}{name 26}..."
+f717-0008 f30d5024d542cd11 {name 7}{n}"Pas possible sans le{n}{name 26}, chu ?..."
+f717-0009 c908c894f305759e Maria{n}"Je le savais...{wait 20}{n}Le pouvoir du {name 26}..."
+f717-0011 e66e4d9819753cde Citan{n}"Probablement."
+f717-0012 2e4d5dd84ad4fb62 Citan{n}"Une attaque directe au{n}centre, sans gaspiller{n}de carburant...{p}C'est une stratégie. Mais{n}je crois qu'un autre plan{n}serait de vaincre d'abord{n}ce qui l'entoure.{p}Si nous attaquons d'abord{n}les sphères de soutien, il{n}serait sage de nous laisser{n}ces combats.{p}Nous pourrons nous en{n}charger sans épuiser le{n}pouvoir de Fei."
+f717-0013 1181d6eef1af07bb Bart{n}"On s'en fiche de ces{n}sphères ! Écrasons{n}direct le noyau."
+f717-0014 02dabbe41cc27562 Billy{n}"Attaquer le noyau{n}directement ou abattre{n}d'abord les supports...{p}Je crois qu'il vaut mieux{n}laisser Fei décider..."
+f717-0015 41669a2f401684ed Rico{n}"Alors ce gros machin au{n}milieu, c'est le noyau de{n}Deus ?"
+f717-0016 ca96cbaeb4aea92c Emeralda{n}"Comme ça, lui pouvoir{n}utiliser tout le pouvoir{n}du {name 26}...{p}...Pour vaincre Deus.{wait 20}{n}Et oui,{wait 5} bien sûr,{wait 5}{n}pour sauver Elly !"
+f717-0017 732980c55114a76b {name 7}{n}"C'est quoi, ces quatre{n}sphères qui tournent{n}autour, chu ?"
+f717-0018 2f212e166d003257 Maria{n}"Le centre semble{n}soutenu par le pouvoir{n}de ces quatre choses."
+f717-0019 81daeac3bfca2cc4 Fei{n}"Que...{wait 20}s'est-il passé ?"
+f717-0020 a07e3e9613f09b8e Rico{n}"Mon Gear ne bouge{n}plus."
+f717-0021 a73e3dada80de556 Citan{n}"Le Modificateur Zohar a{n}cessé de fonctionner.{p}C'est sans doute pour ça{n}que nos Gears ne peuvent{n}plus bouger.{p}Seule une faible réponse{n}d'énergie provient encore{n}du noyau."
+f717-0022 166bd94761b27cef Fei{n}"Et Elly ?{n}Que lui arrive-t-il dans{n}cette chose ?{p}Les chaînes du système de{n}Deus auraient déjà dû se{n}briser.{p}Alors pourquoi n'avons-nous{n}aucune réponse !?{wait 10}{n}Et si on l'avait blessée,{n}elle aussi, au combat...!?"
+f717-0023 2b97482505202f01 Citan{n}"Fei, calmez-vous !{p}Les capteurs détectent la{n}réponse d'une forme de vie{n}à l'intérieur de Deus.{p}C'est sans doute Elly.{wait 20} Ne{n}vous inquiétez pas...{wait 10} Je{n}crois qu'elle va bien !"
+f717-0024 361750751cc692b2 Fei{n}"Elly !{wait 20}{n}Tu m'entends, Elly !?{n}Deus n'est plus actif.{p}Tout est fini...{wait 20}{n}Alors sors de là.{n}Montre-moi ton visage !{n}Elly !{wait 20} Elly !"
+f717-0025 3b63146963c3fa1e Bart{n}"M,{wait 20} mais quoi...?{n}Il se passe quoi...!?"
+f717-0026 1e4122ce51fb759f Fei{n}"Doc !?{n}Que se passe-t-il ?{n}Qu'est-il arrivé ?"
+f717-0027 27ff093aa4be0ce5 Citan{n}"Je détecte une énergie{n}colossale à l'intérieur{n}de Deus.{p}On dirait que quelque{n}chose, scellé jusqu'ici, a{n}soudain été libéré et{n}croît énormément..."
+f717-0028 9b30af4db675c728 Fei{n}"Impossible...{wait 20}{n}l'Existence{n}Ondulatoire !?"
+f717-0029 003862489b0be215 Bart{n}"L'Existence{n}Ondulatoire ?"
+f717-0030 7a6fb1c63914ffce Fei{n}"Ce ne peut être que ça.{p}L'Existence Ondulatoire{n}vient d'être libérée de sa{n}'cage de l'existence{n}charnelle' du Zohar...{p}Elle essaie sans doute de{n}regagner la dimension{n}supérieure dont elle est{n}originaire."
+f717-0031 35915b2cbdae71cd Citan{n}"Autrement dit...{wait 20}c'est{n}l'effet résiduel du{n}passage dimensionnel !?"
+f717-0032 1705a95e0db0b207 Rico{n}"Comment ça...{n}'effet résiduel' !?"
+f717-0033 9bd8e014d0df6c3d Citan{n}"C'est comme une onde de{n}choc provoquée par le{n}déplacement dimensionnel.{p}Mais...{wait 5}tant d'énergie !?{wait 10}{n}Si toute cette énergie est{n}libérée ici, à présent..."
+f717-0034 e0ec92207632d5ac Fei{n}"...Si tant d'énergie est{n}libérée, qu'arrivera-t-il,{n}Doc !? Dites-moi !"
+f717-0035 1386a276bbf3a611 Citan{n}"...Alors cette planète{n}sera anéantie !{p}Ces chiffres indiquent{n}qu'il y a là bien assez{n}d'énergie pour détruire{n}une planète entière !"
+f717-0036 3f2ef808349a2d6c {name 7}{n}"Comment ça, chu !?"
+f717-0037 9393768cb6939036 Bart{n}"C'est une blague !?"
+f717-0038 02c9caf78dc837f3 Billy{n}"Nous nous sommes tous{n}tant battus...{wait 10}tout ça{n}pour en arriver là...!?"
+f717-0039 34b4293e2b9feb9e Fei{n}"N'y a-t-il...{n}n'y a-t-il rien à{n}faire ?{p}On ne peut pas empêcher{n}l'effet résiduel !?"
+f717-0040 ee7fef7ba04db5f7 Citan{n}"Hélas, nous ne pouvons{n}rien faire...{p}Presque toutes les{n}machines, Gears compris,{n}sont hors d'usage depuis{n}l'arrêt du Zohar.{p}Cette fois, il n'y a rien{n}à faire...{wait 10}{n}Pour être franc avec vous{wait 20}{n}...c'est la fin !"
+f717-0041 1b45a192613aaefa Bart{n}"C'est absurde, bon sang !{n}Comment tout peut finir{n}comme ça !?{p}On s'est battus pour quoi{n}jusqu'ici, alors !?"
+f717-0042 315040707c7e1674 Billy{n}"L, les vibrations{n}s'intensifient..."
+f717-0043 189179e1c399d79f Rico{n}"Minute...!{n}Non, ces vibrations sont{n}différentes !{p}C'est forcément autre{n}chose qui les cause..."
+f717-0044 e804b95e155dd80c Maria{n}"Regardez !"
+f717-0045 7527ef7189c1d979 Bart{n}"Deus est...!"
+f717-0046 43e4497d0dc1af5e Fei{n}"Deus s'élève !?"
+f717-0047 b79bc09e0225199a {name 7}{n}"Quoi encore !?"
+f717-0048 58cf59c85f9c3573 Citan{n}"Deus libère l'énergie{n}restante et commence{n}à accélérer...{p}S'il continue d'accélérer{n}à ce rythme, il quittera{n}bientôt l'atmosphère..."
+f717-0049 b8640931631096db Fei{n}"Serait-ce...!?"
+f717-0050 898e11640651d1ba Bart{n}"Serait-ce quoi !?"
+f717-0051 e0904aa3cc3b2afa Fei{n}"Que c'est Elly !?{n}C'est Elly qui fait{n}bouger Deus...!"
+f717-0052 9b285a443c06665c Rico{n}"Tu es sûr !?"
+f717-0053 355e699246ec03c8 Fei{n}"J'en suis sûr !{p}Elly essaie de nous{n}sauver en éloignant Deus{n}de notre planète !{p}Elle va se sacrifier..."
+f717-0054 fde786d62ef22500 Maria{n}"Impossible...{n}Ah, Elly..."
+f717-0055 360640439d59251c Billy{n}"Il n'y a rien à faire...?{n}On ne va quand même pas{n}rester là à regarder ?"
+f717-0057 0349d629949495ca Fei{n}"Attendez...{wait 5}{n}Il y a encore une chose{n}que je peux faire !"
+f717-0058 b5853682bc0d79a3 {name 7}{n}"Quoi, Fei !?"
+f717-0059 b8b0aba6e0fb98a2 Fei{n}"Mon Gear marche encore.{p}Sans le Zohar, la source{n}d'énergie de vos Gears, le{n}seul Gear encore actif est{n}le mien.{p}Comme Deus, mon Gear et{n}moi avons été en contact{n}avec le Zohar. Nous seuls{n}pouvons bouger à présent.{p}Je vais sauver Elly !"
+f717-0060 621811f91a18a4c1 Citan{n}"C'est absurde !{p}Même si vous atteignez{n}Deus, vous n'aurez pas{n}assez d'énergie pour{n}revenir !"
+f717-0061 6d542a25615e60e9 Fei{n}"Même ainsi, je dois y{n}aller. Elly porte ce{n}fardeau toute seule !{p}S'il lui arrive quelque{n}chose...{wait 10}{n}Je veux être avec elle..."
+f717-0062 05e4b9a54cfbda8b Bart{n}"Hé !{n}Attends une minute !{p}Tu sais que je vais pas{n}rester là à te regarder{n}faire un suicide à deux...{n}si c'est ça ton plan !"
+f717-0064 de326b5b88c37b51 Bart{n}"...{wait 20}{n}T'as intérêt à revenir{n}vivant, compris !?{p}Promets-le !!{n}Promets de revenir...{n}Et je te laisse filer !!"
+f717-0065 99ef5730f29340e7 Fei{n}"...{wait 20}Merci, Bart.{wait 10}{n}Je te le promets.{p}Je promets de revenir...{wait 10}{n}avec Elly !"
+f717-0066 21b62e6e156dc55e Bart{n}"T'as intérêt."
+f717-0067 2ea51c173734b328 Fei{n}"Bien sûr !"
+f717-0068 fd3b2305fc84ae6a Bart{n}"Parfait !{n}Alors file !"
+f717-0069 f4bbdee579907f35 Citan{n}"Mais...!"
+f717-0070 7708185a81a668a7 Bart{n}"Laissez-le, Citan.{p}À ce stade, Fei est le{n}seul qui puisse ramener{n}Elly.{p}On ne peut rien dire ni{n}rien faire de plus."
+f717-0071 2c5a5432f1bcc880 Citan{n}"...Vous avez raison.{wait 20} Fei,{n}tenez votre promesse..."
+f717-0072 336f3cacf6336876 Billy{n}"Quoi qu'il{n}arrive..."
+f717-0073 28170d5f9741d46c Maria{n}"Fei et Elly..."
+f717-0074 0e5a867aa71b1cb4 Emeralda{n}"Vous deux..."
+f717-0075 3f92f33763cc4d71 Rico{n}"Revenez-nous..."
+f717-0076 0776e3cf40004bd0 {name 7}{n}"On vous attendra tous les{n}deux, chu !"
+f717-0077 8866afe53a73afc2 Fei{n}"Merci...{wait 20}{n}Bart...{wait 20}{n}et vous tous...{p}Bon, je ferais mieux{n}d'y aller...{wait 10}{n}Pas d'inquiétude !{n}Je reviens vite !"
+f719-0000 2c055d42eb71178e Où suis-je...!?
+f719-0001 0320a917e8ca7396 C'est Elly !{n}Alors je suis{n}dans Deus !?
+f719-0002 746ac9a47c3ff393 Pas exactement.{p}Ton vrai corps n'est qu'un{n}objet physique...{wait 5} Il a{n}seulement été absorbé par{n}l'enveloppe externe de{n}Deus.{wait 5} Seule ta conscience{n}est ici.{p}Bien sûr, la fille que tu{n}vois devant toi n'est pas{n}non plus un être réel.{wait 5}{n}Ta conscience ne fait que{n}créer son image.
+f719-0004 f9b08e8e16727ddc Existence Ondulatoire ?{wait 5}{n}Non...{wait 5}pas toi...!!{wait 5}{n}Qui es-tu...?
+f719-0005 29b6f75e7ac8e81d Ce n'est pas possible...!?{wait 5}{n}C'est toi, Krelian !?{wait 5}{n}C'est ça, hein...!?{wait 10}{n}Krelian !{wait 10} C'est toi qui as{n}fait ça à Elly !
+f719-0006 8c299a2a4c01a9c0 Le 'Chemin de Sephirot'{n}est connecté.{wait 5} Nul ne{n}peut plus empêcher dieu{n}de regagner son monde.{p}Alors, pourquoi es-tu venu{n}jusqu'ici, Lacan ?
+f719-0007 22a4308ffc82059d Je suis venu emmener avec{n}moi celle que j'aime !{wait 5}{n}Alors libère Elly !{p}Le système de Deus a été{n}détruit.{n}Tout est fini !{p}Moi, je te le demande...{wait 10}{n}Qu'espères-tu obtenir{n}maintenant !?
+f719-0008 ef398d0426e6b1cc Le temps où tout a{n}commencé...{n}Le lieu où tout ne faisait{n}qu'un...{n}C'est là que je retourne !
+f719-0009 c2ba1bdcf249c9f5 Où ça ?
+f719-0010 a799b8c1ed6620ff Avant le début de l'univers,{wait 5}{n}dans les ondes oscillantes{n}de la dimension supérieure,{wait 5}{n}tout ne faisait qu'un.{p}C'est le débordement de ces{n}ondes qui a créé notre{n}univers quadridimensionnel.{p}L'Humanité{wait 5} et les 'Âmes de{n}l'Humanité' qui en sont nées{wait 5}{n}ne sont que les vestiges de{n}ces ondes répandues.{wait 10}{n}Alors...
+f719-0011 b1aa66f451b4d9a1 Tu vas retourner là-bas ?{n}C'est ce que tu voulais ?
+f719-0012 a9749d1556faedb5 Lacan...{wait 5}{n}Pourquoi refuser ainsi de{n}ne faire qu'un avec dieu ?{wait 5}{n}Quel attachement peux-tu{n}avoir pour ce vieux monde{n}misérable ?{p}Quel sens y a-t-il à vivre{n}une existence si brève...{wait 5}{n}à blesser les autres,{wait 5}{n}à se blesser soi-même,{wait 5}{n}à s'user l'un l'autre...{wait 5}{n}pour fatalement mourir et{n}redevenir poussière ?{p}Allons, tout ce que nous{n}pouvons désirer est là...{wait 5}{n}Inutile de se tourmenter{n}en quête d'amour...{wait 5}{n}Car ce lieu est empli{n}de l'amour de dieu.
+f719-0013 6889a4dd8fa1e929 Je n'ai pas perdu espoir{n}en l'humanité autant que{n}toi, Krelian...{p}Un jour, les humains{n}finiront par s'entendre !{n}J'y crois de tout coeur !
+f719-0014 e0348e6555fa8cc0 Comment peux-tu en être{n}si sûr ?{wait 5}{n}Les humains ne parviendront{n}jamais à se comprendre.{p}Tu dis que c'est celle que{n}tu aimes.{wait 5}{n}Mais peux-tu dire que vous{n}vous comprenez vraiment ?{p}Les humains se contentent de{n}se tenir à bonne distance les{n}uns des autres et d'appeler{n}ça {wait 5}'compréhension mutuelle',{wait 5}{n}'union spirituelle'{wait 5} ou{wait 5} 'amour{n}véritable'{wait 5}...{wait 5} mais ce sont{n}des mensonges !{p}L'homme ne peut se lier aux{n}autres sans d'abord se{n}tromper lui-même.{wait 5}{n}C'est ainsi qu'il a été{n}conçu.
+f719-0015 f72f188718555a51 Mais l'ego d'un seul être{n}ne peut décider du destin{n}de tous !{p}Les gens ont le droit de{n}choisir leur destin !{wait 5}{n}C'est pourquoi les humains{n}ont le libre arbitre !
+f719-0016 7dd40ad9ca852eaa Et si cette 'volonté' même{n}était prédéterminée ?{wait 5}{n}Alors ?{p}Oh, quelle sottise !?!{wait 5}{n}Les humains ne sont que des{n}formes de vie primitives{n}dépourvues de choses comme{n}le libre arbitre...{p}L'humanité n'a été autorisée{n}qu'à vivre dans un état{n}imparfait...{wait 5}{n}"telle qu'elle est",{wait 5}{n}"telle qu'elle sera"{wait 5}...{p}C'est justement pour ça...{wait 5}{n}parce que les humains ont{n}cette misérable 'volonté'...{wait 5}{n}qu'ils doivent connaître la{n}tristesse et la perte.{p}Pour que l'un gagne, un{n}autre doit perdre...{wait 5}{n}Impossible de faire partager{n}à l'humanité des "choses" et{n}des "affections" limitées...{p}C'est pourquoi j'en suis venu{n}à conclure que tout doit{n}revenir au point de départ.{p}Revenir au temps où tout ne{n}faisait qu'un...{wait 5}{n}des ondes, rien de plus...{wait 5}{n}Non pas mon ego -Humain-...{wait 5}{n}Mais la volonté des 'Ondes'{wait 5}{n}...la volonté de {wait 5}-dieu-{wait 5}...
+f719-0017 3bf4fc5e849a55dc Mais c'est très bien ainsi...{wait 5}{n}Pas besoin d'être parfaits.{p}En vérité, être imparfait{n}pousse l'humanité à vivre{n}en s'entraidant...{wait 5}{n}C'est ça, être humain...{p}C'est ça, se comprendre !{wait 5}{n}Voilà l'union et l'amour...{wait 5}{n}Je suis heureux...{wait 5}non,{wait 5}{n}fier...{wait 5} d'être humain !
+f719-0018 1fb222081526d690 Elly a placé l'avenir,{wait 5}{n}-demain-,{wait 5} entre nos mains,{n}à nous de choisir...{wait 10}{n}Et elle essaie de tenir{n}Deus loin de notre planète.{p}Elle essaie aussi de{n}guérir ton coeur...{wait 10} toi,{wait 5}{n}qui veux partir,{wait 5} seul,{wait 5}{n}pour être avec dieu...{p}Tu ne comprends donc pas{n}les sentiments d'Elly !?{wait 10}{n}Te faut-il ne faire qu'un{n}avec dieu pour comprendre{n}tout cela ?{p}Moi, je comprends...{wait 5}{n}Je sais ce qu'elle{n}ressent...{wait 5}{n}comme si je le ressentais{n}moi-même...{p}Oui...{wait 5}elle et moi ne faisons{n}qu'un !{wait 10}{n}Nous n'avons pas besoin{n}de l'aide de dieu !!
+f719-0019 e534ce047280017b Eh bien, prouve-le-moi...{wait 10}{n}Montre le pouvoir humain !{wait 10}{n}Montre-moi cet -amour-,{n}qui, dis-tu, te rend{n}indépendant de dieu...
+f719-0021 dcc04aaa1ee73caf Elly{n}"Fei{wait 10}...{p}C'est Krelian...{wait 10}{n}Krelian m'a libérée..."
+f719-0023 7ed3d0e894a1dec9 Elly{n}"Oui. Je l'ai compris après{n}n'avoir fait qu'un avec{n}Krelian...{p}Son coeur était si plein{n}de tristesse.{wait 5} C'est pour ça{n}qu'il voulait que nous deux{n}nous unissions à dieu...{p}Car ce serait le retour{n}au commencement de tout...{wait 20}{n}Il m'a dit...{p}"Ta place est avec lui..."{wait 10}{n}C'est ce qu'il a dit...{wait 5}{n}Tu sais...{wait 5}{n}Il savait déjà !{p}Oui, il savait déjà...{wait 10}{n}mon coeur,{wait 5} le tien...{wait 10}{n}Mais ni nous ni lui ne{n}pouvions rien y faire...{p}Il ne pouvait qu'avancer...{wait 5}{n}même en perdant tout{n}sentiment,{wait 5} en perdant tout{n}ce qui était humain !{p}Pour toute l'humanité...{wait 5}{n}Pas de retour possible...{wait 5}{n}Même se retourner lui{n}rappelait trop de choses...{p}Et tout ce qu'il voulait{wait 5}...{wait 10}{n}c'était pouvoir revenir{wait 5}...{wait 10}{n}Même s'il ne pouvait pas{wait 5}...{p}Pardonne-lui, je t'en prie.{wait 10}{n}Krelian aimait les gens{n}plus que quiconque..."
+f719-0024 2f3b65396aa47ae9 Fei{n}"Moi{wait 5}...{wait 10}{n}Quelque part{wait 5}...{wait 10}{n}je l'ai toujours su...{p}Je savais simplement{n}qu'au fond, il était{n}quelqu'un comme ça..."
+f719-0025 db1e93684ab06164 Elly{n}"{wait 5}...{wait 10}Je suis désolée{wait 5}...{wait 10}{n}Pardonne-moi !{wait 5}{n}J'avais tort...{p}Je pensais que me sacrifier{n}pour sauver les autres{n}était la chose à faire...{p}Mais ce que j'ai fait n'a{n}apporté que de la tristesse{n}à ceux que j'ai laissés.{p}Et cette tristesse en a{n}engendré davantage.{p}Tant que 'je' vivrai en{n}toi, ma vie ne sera pas{n}seulement la mienne."
+f719-0026 acd446fa2f6d5fe4 Fei{n}"Elly...{n}Tu n'avais pas tort.{p}Se sacrifier pour autrui{n}est une noble chose...{wait 10}{n}Même si c'est pour son{n}propre bien, peu importe.{p}Quelqu'un en sera toujours{n}guéri...{wait 10}{n}L'un ou l'autre...{p}L'amour ne trouve son éclat{n}originel que s'il existe un{n}lien entre celui qui donne{n}et celui qui reçoit.{p}Il est incomplet quand l'un{n}ou l'autre est absent...{wait 10}{n}Les deux ne font qu'un.{p}C'est toi, Elly, qui m'as{n}appris ça.{wait 20}{n}Je crois que c'est ça,{n}être humain...{p}Maintenant, je comprends{n}vraiment son importance.{wait 10}{n}Je ne sais pas si c'est la{n}bonne réponse ou non...{p}Mais nous avons tout le{n}temps d'y réfléchir...{p}Ce que Krelian lui-même{n}a toujours cherché...{wait 10}{n}Trouvons la réponse à{n}tout... par nous-mêmes..."
+f719-0027 70010f09914e2f02 Elly{n}"Merci...{n}Fei !"
+f720-0000 c34308775454a960     {speed 255}nouvelle partie{n}    vers lahan{n}    vers shitan{n}    vers kislev{n}    vers alulu{n}    év. orgel{n}    quitter
+f720-0001 6d0f80e3c60897a5     {speed 255}shitan la nuit{n}    attaque de lahan{n}    ruines de lahan{n}    en construction{n}    première fois à shevat{n}    espion arrivé à shevat{n}    quitter
+f720-0002 4a01d02e489627d1     {speed 255}un espion est arrivé{n}    un dock de gears{n}    AHAZEHN arrivé{n}    l'écran du trône{n}    combat aux générateurs{n}    attaque de Soralis {n}    la justice{n}    fuite{n}    trou à melcover{n}    anges de melcover{n}    zeus{n}    quitter
+f720-0003 27a417db819444b0     {speed 255}chuchu est fâchée{n}    chuchu vs AHAZEHN{n}    maria vs AHAZEHN{n}    maria va à Soralis{n}    golgoda{n}    sommeil carbonite{n}    la carbonite a cédé{n}    refuge dans la neige{n}    autres{n}    quitter
+f720-0004 2f844daf0e1200fd mot de passe {wait 10}{n}    quitter{n}    quitter{n}    au début{n}    test avec visage{n}    test sans visage
+f720-0005 0c0514eab7117d71 chuchu{n}"Test de la version{n} anglaise de Xenogears.{p} J'ai besoin d'amour pour{n} me sentir vive et bien.{n} Il n'y a que l'amour qui{n} puisse me faire du bien."
+f720-0006 d65ac9d9670dc393  Ceci est un test de la version{n} anglaise de Xenogears.{n} Maintenant, devant vous, tant{n} de merveilles et de trésors.{n} Je peux trouver la trace d'une{n} tristesse qui passe.{n} J'ai besoin d'amour pour me{n} sentir vivant et bien.{p} Mais il est des moments dans{n} la mémoire de chacun. Quand{n} une vague scène de grandeur{n} passée revient, les mendiants{n} retirent alors la main, comme{n} si le gain de chaque jour{n} suffisait.
+f722-0000 d58f96e16b0901ff {speed 20}Aller à la carte{n}    Ville de Nisan{n}    Cathédrale de Nisan{n}    attends！{n}    vers Map00
+f722-0001 298a5b699a50b8ac     {speed 20}nisan（ville）{n}    nis-11{n}    nis-21{n}    nis-31{n}    nis-41{n}    nis-51{n}    nis-61{n}    nis-71{n}    nis-doc{n}    Vers kikoshi{n}    Carte test pour expl.{n}    Retour
+f722-0002 75bae9c5a510e693 {speed 255}flag de scénario{n}    Tactique1{n}    Continuer
+f722-0003 3ab98488b4bafb85 {speed 255}flag de scénario{n}    Tactique4{n}    Tactique5{n}    Tactique6{n}    Continuer
+f722-0004 546bf3c5663e6de4 Effacement du flag scénario{n}de Nisan...
+f722-0005 c9efc558e8a5f200 Bits désactivés{n}    arrivée à un dock{n}    Accoster
+f722-0006 17bbcfe5abee04f8 Réglage flag de scénario...{p}"define Revoir Elly  (084)"{p}Arrivée à un dock secret...
+f722-0007 70c3942936a27e30     {speed 20}seido1(carte SW : cath. de Nisan){n}    sei-11 (cathédrale{n}    sei-12 (monastère{n}    sei-13 (salle du tableau{n}    escalier1{n}    escalier2{n}    Retour
+f722-0008 a866f928392dcfc1 {speed 255}régler flag ... g-nisan{n}    Réunion1{n}    Réunion2{n}    Tableau1{n}    Tableau2{n}    Tableau3{n}    Tableau4{n}    Tableau5{n}    Tableau7{n}    Tableau8{n}    Pause{n}    Continuer
+f722-0009 d1c549fec96e9132 {speed 255}Entrer à la cathédrale ?{n}    Oui{n}    Non
+f722-0010 5ef3884ffbc966e3 {speed 255}Flag de scénario{n}    Tableau9{n}    Continuer
+f722-0011 2e505110261e5f03 {speed 20}Aller à la carte{n}    Navire d'immigrants{n}    Fort Jasper{n}    Attendez !{n}    Retour à map-00
+f722-0012 6c04545dcb07af0a {speed 255}Chambre de Rdiel{n}    Carte ext. du navire{n}    Retour
+f722-0013 e3ed82ab7c9ec879     {speed 255}Sauvetage de Nisan{n}    Sas extérieur{n}    Grand cimetière{n}    Sas1{n}    Omnigear de Bart{n}    Salle de contrôle{n}    Ascension{n}    Attaque de Shakhan 1{n}    Attaque de Shakhan 2{n}    Éveil de l'Omnigear{n}    Page suivante
+f722-0014 2b5761cdbe85c65e {speed 255}Carte ext. du fort{n}    Chargement du canon{n}    ICB{n}        Avant d'entrer à Jasper{n}        Quitter
+f722-0015 d8d426dcad9662c4 {speed 255}Régler KAZ-GORG{n}    Nisan{n}    Nisan2{n}    Quitter
+f722-0016 1f4b455f5b0ce7d7 {speed 255}Init(0){n}    Arrivée au dock secret{n}    Réunion1{n}    Tableau1{n}    Tableau9{n}    Pause{n}    Tactique2{n}    Exécution1{n}    Exécution5{n}    Départ du dock secret{n}    Quitter
+f722-0018 ae89d4759c271a23 g-nisan = Arrivée au dock secret
+f722-0019 ae364d07495935e9 g-nisan = Réunion1
+f722-0020 9f6d82b68024d1a0 g-nisan = Tableau1
+f722-0021 9f88b2b6803beae8 g-nisan = Tableau9
+f722-0022 d7c4c3acec04014d g-nisan = Pause
+f722-0023 a7c837c3657139e8 g-nisan =Tactique2
+f722-0024 acae20cd4f27142b g-nisan = Exécution1
+f722-0025 acd6e8cd4f49ba17 g-nisan = Exécution5
+f722-0026 1676d3bb34d41bf5 g-nisan = Départ du dock secret
+f722-0027 0b48147041b47572 {speed 255}Reprise de Nisan{n}    Discussion de Soeur Agnes{n}    Ouvrir la porte{n}    Ouvrir le sas{n}    Entrée salle de contrôle{n}    Activation réussie{n}    Shakhan est apparu{n}    Combat Omnigear de Roni1{n}    Repoussé{n}    Aller à la salle{n}    Retour au calme{n}    Quitter
+f722-0028 06dd2cc12cbb0588 define g-nisan Reprise de Nisan
+f722-0029 c614b69e2a604567 define g-nisan Discussion de{n}Soeur Agnes
+f722-0030 b0c8d5bde4731e9f define g-nisan Ouvrir la{n}porte
+f722-0031 0294b87f449e6cf0 define g-nisan Ouvrir le{n}sas
+f722-0032 df3bb708e72dac64 define g-nisan Entrée salle{n}de contrôle
+f722-0033 96cbb2a599fe2df9 define g-nisan Activation{n}réussie
+f722-0034 972bd42dfc738615 define g-nisan Shakhan{n}est apparu
+f722-0035 ddf8a7892d766bc6 define g-nisan Combat Omnigear{n}de Roni1
+f722-0036 7b86bd928b6a59aa define g-nisan Repoussé
+f722-0037 c5f8bf3932652cba define g-nisan Aller salle
+f722-0038 03258ba11f75a6d6 {speed 255}Effacer flags{n}    KAZ-GORG(scénario){n}    Global{n}    KAZ-GORG(tmp){n}    Définir membres ICB{n}    Quitter
+f722-0039 2c7054c2db7b114d {speed 255}Effacer tous les flags{n}    Nisan{n}    Fort Jasper{n}    Quitter
+f722-0040 191c2140c5c571c5     {speed 255}Fuite d'Aveh(Accoster){n}    Arrivée à Nisan{n}    A vu le tableau{n}    Taaactique{n}    Sauvetage de Nisan{n}    Détruire la porte de Babel{n}    Quitter
+f722-0041 64b2f1bae6e031d7     {speed 255}on-ev{n}    on-ev2{n}    ev-tk{n}    fin
+f722-0042 2e3f394ca112feb7  former groupe
+f722-0044 250352a5c3f22dac    {speed 255}Fei{n}   Elly{n}   Citan{n}   Bart{n}   Billy{n}   Rico{n}   Emeralda{n}   {name 7}{n}   page suivante
+f722-0046 be17256e91635f52 Le groupe...
+f723-0001 5531b73fb91482ec voir
+f723-0002 37d2bbc13a1a49bb ouvre
+f723-0003 d3898cddf17948a0 reste
+f723-0004 351344abb1f8318e {speed 255}où ?{p}    ne pas aller{n}    sho{n}    iwa{n}    zombi{n}    ninboku{n}    mahanon{n}    last
+f723-0005 c59550a998d6c148     {speed 255}blg{n}    yav{n}    radi-chr{n}    dehors{n}    radi-2{n}    ret
+f723-0006 6b1304845b28a2e5     {speed 255}yav{n}    ciel{n}    sef{n}    ret
+f723-0008 4970951ef49f3b98     {speed 255}zombi{n}    cabine{n}    moteur{n}    remorque1{n}    remorque2{n}    remorque3{n}    ret
+f723-0011 83400b9ddbb34347 {speed 255}Test saut mappemonde{n}      flag de scénario{n}      numéro de saut{n}      numéro d'événement{n}      Sauter ?{n}      Quitter{n}  S-Flag   = {num1 3}{n}  MapNum   = {num1 2}{n}  JumpNum  = {num1 0}{n}  EventNum = {num1 1}
+f723-0012 b56d2b1934a05f9c {speed 255}flag de scénario{n}      plus{n}      moins{n}      10 plus{n}      10 moins{n}      50 plus{n}      50 moins{n}      fin{n}  sflag   = {num1 3}
+f723-0013 7739f89f1c5cce3c {speed 255}NUMÉRO DE SAUT{n}      plus{n}      moins{n}      10 plus{n}      10 moins{n}      fin{n}  JumpNum  = {num1 0}
+f723-0014 66c8920eced963bf {speed 255}NUMÉRO D'ÉVÉNEMENT{n}      plus{n}      moins{n}      10 plus{n}      10 moins{n}      défaut{n}      fin{n}  EventNum = {num1 1}{n}  défaut   = {num1 3}
+f723-0015 773cb569b37265d5 {speed 255}      aller à la carte{n}      CAMÉRA volante{n}      effacer FLAG global{n}      MENU{n}      ucon + endcamera{n}      setVsync{n}      RENCONTRES désact.{n}      IMPRIMER{n}      c-and-f.src  désact.{n}      DEMOFLAG act.{n}      QUITTER [11/01]
+f723-0019 2992bb3397eacabc {speed 255}    0    réveille{n}    01   réveille{n}    012  réveille{n}    0123 réveille{n}    0    dort{n}    01   dort{n}    012  dort{n}    0123 dort{n}    quitter
+f723-0031 8436443fa3c8d9fe {speed 255}    eyespeed {signed 2} , atspeed {signed 3}{n}      eye +1{n}          -1{n}          +5{n}          -5{n}          x2{n}          /2{n}      at  +1{n}          -1{n}          +5{n}          -5{n}          x2{n}          /2{n}       exécuter
+f723-0035 81754421e02278cf {speed 255}      réveille{n}      dort{n}      +16len{n}      -16len{n}      +64len{n}      -64len{n}      +256len{n}      -256len{n}len actuelle {signed 0}
+f726-0004 0f10349bbcd915bd {speed 255}tu es sûr ?
+f726-0037 255793dda50b2f87 {speed 255}membres
+f728-0063 a1b6c0aaeab614f9 {speed 255}maison de saito
+f728-0065 5ddbf2630ebb2860 {speed 255}quelle classe ?{n}    classe A{n}    classe B{n}    classe C1{n}    classe C2{n}    classe D
+f728-0067 992a94f5431cd4b0 {speed 255}change membre
+f728-0068 94e402b4ddf42ac2 {speed 255}quel menu ?{n}    demoflag{n}    battring{n}    mode musique{n}    groupe+{n}    membre+{n}    changer{n}    mode vidéo{n}    soin HPMP{n}    quitter !
+f728-0069 76cc781199e2b04a attendez !
+f728-0070 44ba94b52ebf8c73 Ciao !
+f728-0071 66cd72d9c5bb0329 {speed 255}demoflag ?{n}    pad{n}    désact.{n}    act.
+f728-0072 efd7986d05d47290 suiv. ?
+f728-0073 b36a569be3c475fe {speed 255}battringmode ?{n}    non{n}    oui
+f728-0082 9c63509d7af2e804 {speed 255}groupe ?{n}    ellie{n}    shitan{n}    barto{n}    rico{n}    billy{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2{n}    quitter
+f728-0083 7b9020669a05bb1a {speed 255}buu!buu!
+f728-0093 720e3c22b2741348 {speed 255}membres{n}    ellie{n}    shitan{n}    barto{n}    billy{n}    rico{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2{n}    quitter
+f728-0094 996cbb542cc73133 {speed 255}voir vidéo{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    p.2{n}    quitter
+f728-0103 fa1e1f69d44550e5 {speed 255}voir vidéo2{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.3{n}    quitter
+f728-0111 40695f86af195b3d {speed 255}voir vidéo3{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.4{n}    quitter
+f728-0118 b9cfdf88ef6fa325 {speed 255}voir vidéo4{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.5{n}    quitter
+f728-0126 38b197d9b6560eab {speed 255}voir vidéo5{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    début{n}    retour{n}    quitter
+f728-0134 56d80f3b5c94d762 {speed 255}musiques{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    quitter
+f728-0135 4ad2462712ade8e0 {speed 255}musique1{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    suiv{n}    quitter
+f728-0144 e13f88dc38cb42e0 {speed 255}musique2{n}    21{n}    22{n}    23{n}    24{n}    25{n}    26{n}    27{n}    préc.{n}    suiv{n}    quitter
+f728-0152 455dcf8a596deac2 {speed 255}musique3{n}    31{n}    32{n}    33{n}    34{n}    35{n}    36{n}    37{n}    préc.{n}    suiv{n}    quitter
+f728-0160 ff7e86c87f7baea0 {speed 255}musique4{n}    41{n}    42{n}    43{n}    44{n}    45{n}    46{n}    47{n}    préc.{n}    suiv{n}    quitter
+f728-0168 66c0bedae1f316a6 {speed 255}musique5{n}    51{n}    52{n}    53{n}    54{n}    55{n}    56{n}    57{n}    préc.{n}    suiv{n}    quitter
+f728-0176 7b7f106a8deef748 {speed 255}musique6{n}    61{n}    62{n}    63{n}    64{n}    65{n}    66{n}    67{n}    préc.{n}    suiv{n}    quitter
+f728-0184 7c40c1216698e1c2 {speed 255}musique7{n}    71{n}    72{n}    73{n}    74{n}    75{n}    76{n}    77{n}    préc.{n}    suiv{n}    quitter
+f728-0192 299ddc89afca7c08 {speed 255}musique8{n}    81{n}    82{n}    83{n}    84{n}    85{n}    86{n}    87{n}    préc.{n}    suiv{n}    quitter
+f728-0200 9ae3bf950b1424eb {speed 255}musique9{n}    91{n}    92{n}    93{n}    94{n}    95{n}    début{n}    préc.{n}    quitter
+f728-0206 80d6751e4f573444 karel{n}objet ?{wait 30}{n}    {speed 255}1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    combat{n}    suiv{n}    quitter
+f728-0207 cb94d51d60a8b1bf karel{n}ah bon
+f728-0208 a7bc6ab51ed735e2 karel{n}objet ?{wait 30}{n}    {speed 255}1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    rea{n}    début{n}    quitter
+f728-0210 f4c02a7a45d7e081 {speed 255}mode test ?{n}    animset{n}    battring{n}    yug4{n}    ellie{n}    quitter
+f728-0211 7dd43a66ceece258 {speed 255}événement battring ?{n}    non{n}    oui
+f728-0212 d92f0b3fa6457a31 {speed 255}test yug4 ?{n}    non{n}    oui
+f728-0213 1d85c383902912f9 {speed 255}ellie{n}    non{n}    oui
+f728-0214 5044ec37d57063dd ah, bon
+f728-0215 82a3f9e40e1d4585 {speed 255}qui ?{n}    fei{n}    shitan{n}    ellie{n}    barto{n}    billy{n}    rico{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2
+f728-0216 52926096ab146170 {speed 255}houkou ?{n}    pad{n}    n{n}    ne{n}    e{n}    se{n}    s{n}    so{n}    o{n}    no
+f728-0217 74646025a3c71f57 {speed 255}change menu{n}    kyotsu{n}    senyou{n}    houkou{n}    quitter
+f728-0218 9a68aaaf500cf059 {speed 255}qui ?{n}    sonomama{n}    henkou
+f728-0219 534805d9c47bb9e4 {speed 255}qui ?{n}    fei{n}    shitan{n}    ellie{n}    barto{n}    chuchu{n}    suivant{n}    début
+f728-0225 2e7e3a0dceffdefa {speed 255}qui ?{n}    eme{n}    eme2{n}    maria{n}    rico{n}    billy{n}    retour{n}    menu
+f728-0232 c3bbe6c7b610e498 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    suiv{n}    menu
+f728-0233 efd994f19e20f279 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    raz{n}    retour{n}    menu
+f728-0235 3f7a8b57cb902a0b {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    préc.{n}    suiv{n}    menu
+f728-0242 90174e7dab5238d8 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    début{n}    préc.{n}    menu
+f728-0248 d1e813911bdba797 {speed 255}motif ?{n}    1{n}    2{n}    début{n}    préc.{n}    menu
+f728-0252 7b09a6339a58a604 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    début{n}    préc.{n}    menu
+f728-0256 0c59afcd7ac11ffb {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    préc.{n}    menu
+f728-0259 1c70617e4871ea1e {speed 255}motif ?{n}    1{n}    préc.{n}    menu
+f728-0261 8885806bd1cc52c9 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    retour{n}    menu
+f728-0262 d45d8fecbf33f752 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    menu
+f728-0264 6d8d7e33337abd95 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    suiv{n}    menu
+f728-0270 aaab007ee1220896 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    préc.{n}    menu
+f728-0271 f29245237f72bc97 {speed 255}menuhenkou{n}    pad{n}    houkou{n}    menu
+f728-0273 ad76e8e8961e747e {speed 255}quoi ?{n}    aflag{n}    sflag{n}    raz{n}    quitter
+f728-0276 e15b938c51030c3a {speed 255}quoi ?{n}    yamamichi{n}    jiken{n}    kega{n}    kakoowari{n}    organ{n}    suivant{n}    
+f728-0282 2c0a303200853bbd {speed 255}quoi ?{n}    taoshita{n}    jouhou{n}    dashu{n}    kyuushitsu{n}    hehito{n}    koujou{n}    ubatta{n}    yug3{n}    last{n}    edit2
+f728-0293 6dac62d1fdec5a91 {speed 255}quoi ?{n}    evtflag{n}    argent{n}    endstart{n}    disk2{n}    raz{n}    quitter
+f728-0294 379a6b175c945134 {speed 255}fric ?{n}    pad{n}    non{n}    oui
+f728-0297 8c7f1d5c8474ae95 {speed 255}+9999999G
+f728-0298 b3a1fc7346c68cfa {speed 255}à zéro !
+f728-0299 633e5cd0c1a3458e {speed 255}ciao !
+f728-0300 357743e93b8d2c2c {speed 255}allpage7{n}page flag ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    quitter
+f728-0301 167f16854db8a65a {speed 255}activer flag ?{n}    minka{n}    enntotsu{n}    test{n}    kaigi2{n}    totsunyuu{n}    yuugata{n}    shinngataki{n}    shosennmae{n}    suivant{n}    quitter
+f728-0310 25feedfa4167004d {speed 255}activer flag ?{n}    resshabotsu{n}    zennyasai{n}    botsukaiwa{n}    saijoi{n}    joe{n}    joukennka{n}    boukyuusai{n}    retour{n}    suivant{n}    quitter
+f728-0318 1413037d02744b81 {speed 255}activer flag ?{n}    kaigi1{n}    mezame1{n}    taimenn{n}    battle{n}    mezame2{n}    reo{n}    hai{n}    retour{n}    suivant{n}    quitter
+f728-0326 08df439dcfab8d93 {speed 255}activer flag ?{n}    bal{n}    suza{n}    choutatsuya{n}    iinnkai{n}    uwasabanashi{n}    daisennsei{n}    daishippai{n}    retour{n}    suivant{n}    quitter
+f728-0334 15bfb1fd7737da0e {speed 255}activer flag ?{n}    Bketsui{n}    tougijou{n}    ookega{n}    akakikemono{n}    king{n}    miss{n}    doore{n}    retour{n}    suivant{n}    quitter
+f728-0342 b39ea26e4ac9177f {speed 255}activer flag ?{n}    doorw{n}    ressha{n}    shuusenn2{n}    shuusenn3{n}    tennboutou{n}    kitoushi{n}    saishuusenn{n}    retour{n}    suivant{n}    quitter
+f728-0350 01e6d5ba28929802 {speed 255}activer flag ?{n}    shitennshi{n}    rennsatsu1{n}    rennsatsu2{n}    jikannjiku{n}    kaigennrei{n}    yumeshoumetsu{n}    keibihei{n}    retour{n}    suivant{n}    quitter
+f728-0358 d55deec1e4abbe12 {speed 255}quoi ?{n}    mezame{n}    iinnkai{n}    daisennsei{n}    nightmear{n}    houmonn{n}    akakikemono{n}    kennja{n}    king{n}    hehito{n}    quitter
+f728-0359 9d1c182f3a297037 {speed 255}où ?{n}    kislevA{n}    kislevD{n}    pastevt{n}    subworld{n}    mapno0{n}    quitter
+f728-0360 e482869344cd86ca {speed 255}où ?{n}    pad{n}    minnka2{n}    minnka2toto{n}    heisha1fa{n}    heisha1fb{n}    heisha2f{n}    ber{n}    armes{n}    objet{n}    minnka1{n}    tour{n}    quitter
+f728-0361 f2dd0dfa2a92cc7d {speed 255}kannkyou?{n}    pad{n}    yuugata
+f728-0362 8648d144bd2b9fae {speed 255}évt ?{n}    pad{n}    kaigi1
+f728-0363 36984636272c0db3 {speed 255}pad
+f728-0366 063c78543c3516b4 {speed 255}évt ?{n}    pad{n}    kaigi1{n}    kaigi2
+f728-0375 1352c7aa286a08da {speed 255}armes
+f728-0378 49c89478eced343d {speed 255}tour
+f728-0381 3e821316ff53a1fa {speed 255}où ?{n}    pad{n}    shukushaima{n}    shukushaitem{n}    shukushashinnshitsu{n}    shukushayokushitsu{n}    kyoukai1{n}    kyoukai2{n}    ber{n}    suivant{n}    quitter
+f728-0383 6c5de96d2b70728b {speed 255}où ?{n}    doore{n}    doorw
+f728-0392 ab01f3eaf699fef4 {speed 255}évt ?{n}    shouzounoma{n}    daiseidou{n}    nisannmachi{n}    kennkyuujo{n}    ronitaishou{n}    monolog{n}    gennsho{n}    mahanonn{n}    suivant{n}    quitter
+f728-0401 117a57a34e8f8368 {speed 255}groupe ?{n}    ellie{n}    shitan{n}    barto{n}    rico{n}    billy{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2
+f728-0417 ec7f43efe956fdd0 {speed 255}choisir maison ?{n}    katou{n}    etou{n}    kazuomi{n}    toshiaki{n}    tane{n}    koumoto{n}    kigoshi{n}    uchimichi{n}    matsuhara{n}    mapnodoor
+f728-0428 0a85d75742341737 {speed 255}évt ?{n}    rahann{n}    aisurumono{n}    hametsu{n}    setsugenn{n}    gorugodagisei{n}    gorugodakyouki{n}    ekusubrig{n}    retour{n}    suivant{n}    quitter
+f728-0448 368b67e8741419d4 {speed 255}évt ?{n}    shouzounoma2{n}    shouzounoma3{n}    ronitaishou2{n}    nisannmachi2{n}    daiseidou2{n}    kennkyuujo{n}    retour{n}    quitter
+f728-0467 532d2e4dd6b55524 {speed 255}où ?{n}    ricoroom{n}    ricoshinnshitsu{n}    minnka1{n}    gild1{n}    gild2{n}    battring1{n}    battring2{n}    retour{n}    quitter
+f728-0475 647c5b9186ebea6d {speed 255}quel monologue ?{n}    1{n}    2{n}    3{n}    quitter
+f728-0479 59e70943f974969a {speed 255}évt ?{n}    memory{n}    nano{n}    yug4{n}    seibo{n}    anima{n}    nisann{n}    hito{n}    mahanonn{n}    suivant{n}    quitter
+f728-0480 5b2327caf2c746c4 {speed 255}début de l'évt ?{n}    passé{n}    pad{n}    quitter
+f728-0487 e0d4221f831f179b {speed 255}histoire de l'évt ?{n}    passé{n}    pad{n}    quitter
+f728-0488 ad8823fa4be201a8 {speed 255}choisir évt{n}    fuyuutairiku{n}    ellieketsui{n}    gorugodanochi{n}    melcover{n}    karbonight{n}    zoharu{n}    powermind{n}    worlddeth{n}    retour{n}    quitter
+f728-0529 e2291262fe7411e5 {speed 255}test évt{n}    feidream{n}    mezameD{n}    taimenn{n}    sennrei{n}    mezameB{n}    iinnkai{n}    shitan{n}    shitanshippai{n}    suivant{n}    quitter
+f728-0543 21a4e968b89c41c4 {speed 255}annuler
+f728-0544 4486904036e39777 {speed 255}test évt{n}    battring{n}    shinngataki{n}    ookege{n}    jikennshinnsou{n}    kenja{n}    king{n}    shinngataki2{n}    retour{n}    suivant{n}    quitter
+f728-0553 401baf04a6f7f58e {speed 255}évt ?{n}    tour{n}    minnka2
+f728-0557 aa11ce66aa637c25 {speed 255}test évt{n}    plese{n}    sennyuu{n}    rankerattack{n}    shukusei{n}    kislevbroken{n}    retour{n}    début{n}    quitter
+f728-0559 67bdbbe7fb7a6c32 {speed 255}évt ?{n}    début{n}    miokuri{n}    rakkago
+f728-0563 9d6d831572a9bf0b {speed 255}évt ?{n}    saikai{n}    buu!buu!
+f729-0003 24e38cb13cd3499d {speed 255}menu{n}    quitter{n}    dajill{n}    wc{FFFF}{n}    schebat{FFFF}{n}    melkaber{n}    histoire de l'humanité{n}    houin
+f729-0004 bb85011812ecfb57     {speed 255}quitter{n}    restes du gear{n}    nouvelle entrée{n}    en libre{n}    après réglage de Shakhan
+f729-0005 a963240913275b32     {speed 255}quitter{n}    Fein blessé{FFFF}{n}    en libre{n}    houin , église effondrée{n}    secret de l'église{n}    travail
