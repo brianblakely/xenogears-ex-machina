@@ -2041,3 +2041,793 @@ f255-0008 60fbe5b2c18b6ee9 Oui, chef.
 f255-0009 ea8b6bbe01eb79af Voilà, ça devrait{n}suffire...
 f255-0010 402493952bfda6f4 Hééé, vous avez entendu ?{n}L'ex-champion contre la{n}bête, ça va commencer.
 f255-0011 a3af03b15be061d9  {n} Reçu : Passe-Partout.
+f259-0000 c2dbaf03e5cfce9b Jeter un oeil ?{n}    Oui{n}    Non
+f262-0000 166824aa57da9721 Hammer{n}"On dirait que des sales{n}types se montrent. Je{n}vais aider aussi.{p}Tu veux quoi ?"{n}    Changer de groupe{n}    Boutique{n}    Rien
+f262-0001 f6f29dd9add99cd8 Hammer{n}"Bonne chance. Je vous{n}rattrape plus tard."
+f262-0002 1a3e1dc96c318409 Hammer{n}"Mouahahah ! Hé, frérot !{n}J'ai tout ouvert pour toi.{p}Quoi ? Le Gear ? Bah, ne{n}t'occupe pas des détails.{n}Les infos, c'est moi !{p}Rien n'est hors de ma{n}portée.{p}Mais, tu sais, il n'y a{n}aucun ennemi dans le coin.{n}C'est louche.{p}Ah, et tu peux changer de{n}groupe, et même acheter.{p}Besoin de quelque chose ?"{n}    Changer de groupe{n}    Boutique{n}    Rien
+f265-0000 eb38cfce31ac2325 Vous avez trop de Micas.
+f265-0001 502dc84a071d285d  {n} Reçu : Mica.
+f265-0002 b52b78c40caf73c7 Vous avez trop de{n}Pépites pour en{n}porter plus.
+f269-0000 7262fd25d5bf4b25 Fei{n}    J'aide !{n}    Euh, plutôt pas...
+f269-0001 28258cbc2602b4fb Fei{n}"Doc, vous savez faire{n}marcher ça !?"
+f269-0002 e2c3b78c11d26e83 Hmmm...
+f269-0003 e1eb319a9273bd87 Citan{n}"Vous comptez rester à{n}réfléchir ? Ou m'aider ?"
+f269-0004 f9a3b72768ff9886 Citan{n}"Bien, on y va ?"{n}    Oui, allons-y{n}    Attendez.
+f269-0005 57987a98182e64a7 Citan{n}"Ce sera peut-être{n}dangereux, alors{n}veuillez vous asseoir."
+f269-0006 0b77519458b14efe Citan{n}"Prévenez-moi quand vous{n}serez tous prêts."
+f269-0007 94ed14754f9de746 Citan{n}"...{wait 30}Disons que{n}j'ai accepté."
+f269-0008 45c2bad046d71fd1 Citan{n}"Restez calmes encore un{n}peu."
+f269-0009 b2614825a56edebc Citan{n}"Je crois que nous{n}y arriverons."
+f269-0010 28720324d67d54d4 Citan{n}"...{wait 60}{n}Voyons si ça marche ?"
+f269-0011 144a8b0e3da37e50 Citan{n}"Pas exactement...{wait 30}{n}Mais, Fei...{p}Vous ne comptiez pas{n}voler ce monstre sans{n}savoir le piloter, si ?"
+f269-0012 224a0956b651c4a4 Citan{n}"Enfin, quoi qu'il{n}en soit..."
+f269-0013 d7477ee82d77bb79 Citan{n}"Tous prêts ?"
+f269-0014 4703cf7bd1468901 Citan{n}"Ça va...{wait 30}{n}secouer un peu."
+f269-0016 0b99956a94c8eabd Rico{n}"Hmph. Et quand est-ce{n}que vous me laisserez{n}descendre ?"
+f269-0017 8ff824ee882634e4 Rico{n}"Regardez-moi ça !{n}Ils ont vraiment fait{n}un truc pareil..."
+f269-0018 a73f6c4b4904d390 Rico{n}"Vous auriez pu nous le{n}dire..."{wait 60}
+f269-0019 8b2944c2d3256448 Elly{n}"Ils étaient donc si{n}près de le mettre en{n}service..."
+f269-0020 755baad7449bb894 Elly{n}"Fei, viens."
+f269-0021 db336694a9bd524e Hammer{n}"Frérot, ce truc est{n}incroyable... Bon sang,{n}quelle émotion."
+f269-0022 9b57dba4201675f1 Hammer{n}"On arrive, frérot.{n}J'ai un peu le trac."
+f270-0000 dc4b2273012c661e Ça glisse{done 40}
+f270-0001 35c4f46e12410e6c Hammer{n}"Aaaaïïïïïïïïïïe !!"
+f270-0002 ef2876b976abc8f2 Fei{n}"Oui{wait 5}..."{wait 80}
+f270-0003 246de91d0a050804 Fei{n}"Qu'y a-t-il, Doc...{wait 15}{n}...{wait 15}!!"
+f270-0004 9ea516e60e76cce5 Fei{n}"...{wait 10}C'est lui."
+f270-0005 a0c8387ded809ba8 Fei{n}"Je sors avec le{n}Gear..."
+f270-0006 aa0e1bd0a7c3dce9 Fei{n}"...{wait 20}Doc. Je ne sais pas{n}comment dire, mais... je{n}le sens mal."
+f270-0007 c4dd576bcd34e34d Fei{n}"Ce n'est pas ça.{n}Ce n'est pas que...{p}C'est une inquiétude{n}que j'ai déjà{n}ressentie..."
+f270-0008 62256841f20c9e03 Fei{n}"Et j'ai l'impression{n}qu'on nous épie..."
+f270-0009 bcb3d8c5f518bbb2 Citan{n}"Vous pensez à cet{n}homme en noir ?{p}Y penser ne vous{n}mènera nulle part. Et{n}puis, ça ne vous{n}ressemble pas..."
+f270-0010 9651164a7aafa56a Citan{n}"Vous aussi !?{p}En fait, j'ai une{n}terrible impression{n}de déjà-vu..."
+f270-0011 b26a9070f8755a0f Citan{n}"Ça tremble moins.{n}Pour l'heure, nous{n}devrions être bien."
+f270-0013 a87a247d65aea94e Citan{n}"Si ce sont eux,{n}tout ira bien.{p}Oubliez ça,{n}Hammer, à la{n}gâchette !"
+f270-0014 6f13e2d37d97197e Citan{n}"Vous devez tirer.{n}Voyez, il arrive."
+f270-0015 e91d8661f9ba5b03 Citan{n}"Hammer ! Du calme,{n}concentrez-vous. Il{n}fonce droit sur nous.{p}Visez bien, appuyez{n}sur la gâchette et{n}tirez."
+f270-0016 52712dedcb613b3c Citan{n}"Bien, gardez la mire là{n}et ne bougez plus. Prêt{n}à tirer dans..."
+f270-0017 b9225589873de28d {speed 255}5...{wait 80}4...{wait 80}3...{wait 80}2...{wait 80}1...{wait 80}{n}Feu !!{done 60}
+f270-0019 c8e8ef3fe23409a7 {speed 255}Rico{n}"Tais-toi !!!"{wait 120}
+f270-0020 c11b8ab1b5f9fd4a Elly{n}"Cette personne...{wait 30}{n}ne me visait pas.{n}Pourquoi...{wait 10}?"
+f270-0022 fd330cbaca1bbb82 Elly{n}"C, c'est..."
+f270-0023 177089a135144554 Elly{n}"Fei,{n}où vas-tu !?"
+f270-0025 be057a66a181b861 Hammer{n}"Ahhh, monsieur Rico...{n}ne vous fâchez pas.{n}C'était pour rire.{p}Je vous dois tout,{n}monsieur Rico. Pfff..."
+f270-0026 0717010694643114 Hammer{n}"Pff !{wait 20} Pourquoi c'est moi{n}qu'on gronde ? C'est moi{n}qui les ai eus..."
+f270-0027 f89d21870d56cf97 Hammer{n}"Frérot, on fait quoi{n}maintenant ? On va à{n}Aveh comme prévu ?"
+f270-0028 6f4ffa8e3a4152d9 Hammer{n}"M, Maître !?"
+f270-0029 b73b858f83b9d28d Hammer{n}"Même Elly..."
+f270-0030 418be0c2adce1dc4 Hammer{n}"Aaaaaaah !{n}Attentiooon !!{p}Maître Citan !! Le zigoto{n}en noir, d'accord, mais{n}frérot et monsieur Rico{n}aussi...?"
+f270-0031 b4a2038558d14fba Hammer{n}"La gâchette{wait 5}...?{wait 5}{n}Ce truc ?{n}J'en fais quoi..."
+f270-0033 cc18c34c07be6705 Hammer{n}"Ils arri～vent !!"
+f270-0034 fca4d9542197c5ad Hammer{n}"Viser..."
+f270-0035 fc1677f4ceb923ab Hammer{n}"C, comme ça ?"
+f270-0036 257b7bd815c63812 Hammer{n}"C,{wait 15} c'est,{wait 15} c'est,{wait 25}{n}çaaaaaaaaa !!!"
+f270-0037 ecf7364939d6178e Hammer{n}"Hé, Maître, vu mon{n}TALENT MONSTRE !?{p}Je suis un génie !{wait 10}{n}...{wait 20}Hein ?"
+f270-0038 2bd04401c2933e1e Hammer{n}"Au fait, et frérot{n}et sa bande ?{p}Ils seraient tombés ?"
+f270-0039 6775d99fee732ca5 Hammer{n}"Bon, au moins, il vous{n}reste moi.{p}Avec moi à vos côtés,{n}ça va être du gâteau.{n}Pas vrai, Maître ?"
+f270-0040 1a6ec6ee49338d75 PAF !!
+f270-0041 3f3c7159a81b8434 Elly{n}"Quoi ?"
+f270-0042 93460c5ba42720a2 Fei{n}"Ah, rien."
+f270-0043 bb2d56171226342f Elly{n}"Bon... Tant mieux..."
+f270-0044 fc7bba3597ba01cf Elly{n}"Mais, Citan, ça va ?{n}On vole à bord d'un{n}si grand vaisseau.{p}Et si Kislev ou Aveh{n}nous repérait..."
+f270-0045 22a7726b307b747d Citan{n}"Tout va bien. J'ai prévu{n}une route au-dessus de la{n}mer.{p}Il n'y a aucune unité{n}militaire par ici.{p}Et puis, cette chose ne{n}tomberait pas si{n}facilement..."
+f270-0046 c60d70d7fd5fd6bc Citan{n}"Impossible !?{wait 10}{n}On nous attaque !?"
+f270-0047 be65aa5a0d46ed01 Fei{n}"Ennemi !?"
+f270-0048 60df569802689885 Citan{n}"Je l'ignore. Mais je ne{n}les croyais pas sous{n}l'eau ici..."
+f270-0049 86b744a273c3bd03 Elly{n}"Ça va aller !?"
+f270-0050 38eb088548395786 Citan{n}"...Hélas, la descente{n}est inévitable.{p}Fei, Elly, sortez avant.{n}Je vous suis ensuite."
+f270-0052 35f3b678f872c497 Citan{n}"Nous n'avons pas le temps{n}d'en discuter, Fei !!{p}Croyez-vous avoir les{n}compétences pour maintenir{n}le Goliath en l'air aussi{n}longtemps que possible !?"
+f270-0054 acd28e57d4d80b93 Citan{n}"Alors sortez{n}vite d'ici."
+f270-0055 ff25da15124ae936 Citan{n}"Eh bien{wait 10}...{wait 10}"
+f270-0056 63005b2f4841c635 Citan{n}"...Vous aussi, Hammer !{n}Vous les accompagnez !"
+f270-0057 25b3b2e1824d0c80 Hammer{n}"À, à vos ordres !!"
+f270-0058 f706ed1d65e1119f Rico{n}"Argh ! Bougeons.{n}On s'en va."
+f270-0059 12dad922ce18c4fd Hammer{n}"OK !!"
+f270-0060 59109e052b3dcf32 Citan{n}"Bon...où donc{n}sont-ils..."
+f270-0061 20482f2aeade9284 Citan{n}"!!{wait 20}{n}Ce vaisseau{wait 10}...{wait 10}"
+f271-0000 5482340ad39f2407 Bart{n}"Ha, ha, ha !!{n}Voilà le Missile Bart !!{p}Le prototype de Kislev{n}n'y résiste pas !!"
+f271-0001 18e73167faadd138 Bart{n}"...Euh,{n}hé{wait 10}..."
+f272-0000 4c57e1b25f890189 Ramsus{n}"Levez l'état d'alerte.{n}Commencez les réparations{p}et le ravitaillement{n}immédiatement."
+f272-0001 6f2223b6bf88939c Miang{n}"Le Premier ministre et{n}le général Vanderkaum{n}sont là, Commandant."
+f272-0002 bedf73ec4055b20a Ramsus{n}"Hmph, quel accueil{n}lamentable."
+f272-0003 2154622c33e05517 Miang{n}"Que vouliez-vous ? Nous{n}sommes à la 'surface'."
+f272-0004 836b8594f0b53a6e Ramsus{n}"Miang, nous{n}débarquons."
+f272-0005 295daacc38239595 Miang{n}"À vos ordres."
+f272-0006 479dc5de768128a6 Coordonnées des récentes{n}vibrations dimensionnelles{n}obtenues.{p}N24, E92, Ignas, région de{n}Lahan, océan au nord-est.{p}Vu la forme d'onde, c'est{n}à coup sûr un Gardien de{n}Porte.
+f272-0007 38c5f84bf7290be7 Aucun vol régulier vers le{n}continent.
+f272-0008 82d6de16762504f9 Ramsus{n}"L'Aphel Aura de{n}Shevat ?"
+f272-0009 fe592f738ba0dafb Non. Masse différente.{n}Un motif bien plus petit.
+f272-0010 554a4e203a8cc731 Les Agneaux, avec un{n}vaisseau équipé d'un{n}Gardien de Porte ? Je n'y{n}crois pas.
+f272-0011 0d770f4eb7a9d171 Ramsus{n}"Ça doit être Kislev.{n}La dernière purge{n}était incomplète."
+f272-0012 9105e1c0ad71d6ce Ramsus{n}"Maudit..."
+f272-0013 c7f39cd12aae5238 Grahf{n}"Pas de poursuite ?"
+f272-0014 61d24cb5ab2b6597 Ramsus{n}"Quoi ?"
+f272-0015 8518fbd1cd1e1e2a Grahf{n}"Celui qui t'a tant fait{n}souffrir est dans ce{n}vaisseau.{p}Et il file vers Aquvy."
+f272-0016 424cf9242f3b64ae Ramsus{n}"Équipage en alerte{n}d'urgence !{p}Attaquons le vaisseau de{n}Kislev."
+f272-0017 f8289289df07bacb Miang{n}"Impossible, Commandant !{n}Nous n'avons pas encore{n}d'ordres de la capitale.{p}Si nous partons d'ici..."
+f272-0018 79e87eecd91aba09 Ramsus{n}"Peu m'importe ! Ils ne{n}m'échapperont pas !"
+f272-0019 7ae1b532f48ac8d5 Nous passerons entre les{n}portes 1 et 2, le plus{n}court chemin vers Aquvy.
+f272-0020 0223d449d12b108b Ramsus{n}"Très bien."
+f272-0021 36a185f155f4b180 Message de Kelvena.{p}Dominia se retire à bord{n}du Haishao. Elle va{n}poursuivre le cuirassé{n}aérien.
+f272-0022 43caee9adcf6ed37 Niveau 8 de vibrations{n}dimensionnelles ! Une{n}énorme formation arrive{n}par ici !
+f272-0023 c414cb3776ebf5b8 Miang{n}"Voici le rapport du{n}combat entre le Haishao{n}et le Gear ennemi."
+f272-0024 2644e9b5b28b8eed Ramsus{n}"!!{n}C'est le..."
+f272-0025 087d464eb25420a3 Miang{n}"J'en suis certaine.{p}En ce moment, il est sur{n}le Thames. Ou alors, en{n}mer, non loin de là."
+f272-0026 8add26047f67c0a1 Ramsus{n}"Changez de cap ! Cap sur{n}le Thames..."
+f272-0027 58b745105ed171cf Miang{n}"Attendez. Il semble que{n}leur vaisseau-mère, le{p}Yggdrasil, puisse{n}plonger.{p}S'ils plongent, ils auront{n}l'avantage sur le Haishao.{p}Nos attaques seraient{n}vaines, puisqu'ils{n}pourraient simplement{n}plonger.{p}Mais si nous éliminons{n}d'abord cette fonction, il{n}n'est pas trop tard.{p}J'ai déjà pris les{n}'mesures' nécessaires."
+f272-0028 227c87597b3702b6 Ramsus{n}"Des mesures ?"
+f272-0030 78b8cc5c693c3584 Ramsus{n}"Très bien. Nous ferons à{n}ta façon."
+f272-0031 bbdaa99f41ff6122 Miang{n}"Merci, Commandant."
+f272-0032 2019f7fac909a81e Ramsus{n}"Au fait... Qu'est-il{n}arrivé entre toi et{p}Dominia ? Elle était{n}furieuse."
+f272-0033 af8b7e280b3f34e3 Miang{n}"Pardon. C'est lié à{n}l'incident du Yggdrasil,{n}tout à l'heure.{p}Ces filles se donnent{n}beaucoup de mal.{n}Surtout pour vous...{p}Être détestée, c'est mon{n}travail."
+f272-0034 9b878ae37da784d2 Ramsus{n}"Écartez-vous !{wait 30}{n}Laissez-moi passer !{p}Ce misérable !{wait 30}{n}Je l'aurai moi-même...!"
+f272-0035 8b765c8fa1f7a14a Kelvena{n}"Calmez-vous, je vous en{n}prie, Commandant !"
+f272-0036 82bfb4c6f73b8fe6 Tolone{n}"On s'occupe de lui et{n}de ses amis !"
+f272-0037 20457b4a21aab299 Ramsus{n}"Et que feriez-vous,{n}idiotes ? Imbéciles !{wait 50}{n}Moi seul le vaincrai !{p}Moi seul, qui transcende{n}tous les autres humains,{n}peux le battre !"
+f272-0038 a5e58d13e824b2eb Ramsus{n}"Dégagez !!"{done 50}
+f272-0039 0ffd19c93982f802 Dominia{n}"Commandant !{n}Attendez !!!"
+f272-0040 5d227ff50cfcd0a5 Lancer la procédure{n}d'amarrage.{done 50}
+f272-0041 9a7c76e207b5e88d Coque bloquée.{done 50}
+f272-0043 884085e4eadd0223 Coque, toutes sections{n}verrouillées.{done 50}
+f272-0044 d2180544dc8f910d Amarrage terminé.{done 50}
+f273-0000 6a9056c2e099cdf5 Plus tôt que{n}prévu{wait 5}...
+f273-0001 5e8a6b775c812321 L'éveil de{n}l'intouchable{wait 5}...
+f273-0002 d251ac3d58f59861 Trois ans ont passé{n}depuis nos dernières{n}nouvelles.{p}D'après le cube,{n}'il' est désormais à{n}Nortune, la capitale{n}impériale de Kislev.
+f273-0003 ba93524a0c915c96 Détestable{wait 5}...{wait 5}{n}Irritant{wait 5}...{wait 5}{n}Maudit{wait 5}...
+f273-0004 8705969dc788b247 Sans 'lui', les{n}Agneaux{wait 5} ne seraient{n}pas devenus 'Animus'.{p}500 ans depuis notre{n}chute aux 'Jours de la{n}Destruction', causés{n}par 'lui'...{p}Nous n'aurions pas à{n}agir de façon aussi{n}laborieuse que{n}maintenant.
+f273-0005 96182b5aa837e825 Les fouilles des{n}'Reliques Anima' dans{n}chaque zone suivent{n}le plan prévu.{p}Il est trop tard pour{n}changer les choses.{wait 10}{n}Mais nous façonnerons{n}ce qui doit advenir.
+f273-0006 c030649e22127c1e Disparais{wait 5}...{wait 5}{n}Va-t'en{wait 5}...{wait 5}{n}Éteins-toi{wait 5}...
+f273-0007 f15e55e000d13042 Nous ignorons par{n}quelle voie cela a{n}fuité, mais...{p}...par chance, le{n}'gardien' a été{n}activé.
+f273-0008 bc14c409082eb99b L'Ethos ?{wait 10}{n}Ou{wait 5}...
+f273-0009 9f712c7fc95937dc Peu importe.{wait 10}{n}Cependant{wait 5}...
+f273-0010 9685dfa9fb8bc6ad Il dit qu'il ne{n}faut pas rompre{n}l'équilibre{n}d'Ignas ?
+f273-0011 6144d6fb511f36b3 Bah, c'est la{n}surface...la terre{n}y est impure !
+f273-0012 3bc60e91a5e28192 Simple excuse.
+f273-0013 e382cc074fe76aec Motif légitime.{wait 10}{n}Même Cain ne{n}s'y opposerait.
+f273-0014 8f843f6130b77d4e Mais nous ne pouvons{n}pas utiliser la 'Clé{n}de Gaetia'.{wait 10} Pas{n}avant l'heure.
+f273-0015 487b42115aeeb06a La 3e flotte est à{n}Bledavik. Sa réserve{n}suffira.
+f273-0016 73b770ec1a3c531a Sa flotte.{wait 10}{n}Les ordres ?
+f273-0017 05f434c9f5824a69 Purger.{p}Sans donner de raisons.{n}Les connaissant, il{n}agirait de façon{n}imprévisible.
+f273-0018 3b9c2f0b53bc19ad Mais pour raser{n}Nortune entière,{n}ne manquerait-on{n}pas d'hommes ?
+f273-0019 9bdfcbc95f708ef5 Nortune a un vieux{n}réacteur. Utilisons-le.{p}La demi-vie des{n}retombées radioactives{n}sera de 1000 ans.{p}Rien ne pourra vivre{n}dans un rayon de 300{n}kelts autour de{n}l'explosion.{p}Cependant, ils y ont{n}déjà survécu par le{n}passé. Ils ne périront{n}pas si facilement.
+f273-0020 155a66ad112a0142 Mais 'lui', au{n}moins, doit être{n}éliminé.
+f273-0021 efe0151893d5b54e Oui.{wait 5}{n}Rien là-bas ne nous{n}sert. Ainsi soit-il,{n}occupez-vous-en.
+f273-0022 b8a49d6aed1f790f Si le coup{n}est direct{wait 5}{n}...
+f273-0023 86abcb10d2d6ad63 Eh bien{wait 5}...
+f273-0024 9faf7ed7b213d7af Les ordres sont donnés.
+f273-0025 621936dd7c23b8e7 Désobéissance{wait 5}...{wait 5}{n}Ramsus devait exhumer{n}les 'Reliques Anima'{n}d'Ignas...{p}et surveiller les{n}Agneaux. Qu'est-ce{n}qu'il{wait 5}...{wait 5}{n}...{wait 5}
+f273-0026 40ec559ea68816c7 Les 'Reliques Anima'{n}sont récupérables à{n}tout moment.{p}De plus, 'il' était,{n}nous dit-on, sur le{n}vaisseau transféré.{p}Ramsus devait être{n}à 'ses' trousses.
+f273-0027 6dd60e9b1ae20fee {wait 5}...{wait 5}{n}Le trauma, donc.
+f273-0028 33b8bfb3b2462357 Non. Ici,{n}Knigret{wait 5}...{wait 5}{n}de graves lésions{n}externes.
+f273-0029 035e48a64ad1ff2e D'après le cube{n}mémoire...{p}nous voyons autour{n}de 'lui' plusieurs{n}porteurs du facteur{n}'Animus'.
+f273-0030 a8fb5f102c7778a7 Serait-ce{n}-Sufradi-, sujet{n}du Projet M ?
+f273-0031 6a6f5968c725f76b Oui.
+f273-0032 14d30f5b36ee5d50 Par hasard ?
+f273-0033 721e6b0db2bd8eec Non, c'est au-delà.{wait 5}{n}Ou ils ont été attirés{n}par{wait 5} 'lui'{wait 5} ou...
+f273-0034 1d946ef175dd6fc2 Étonnamment, on{n}retrouve la même{n}situation qu'il y{n}a 500 ans.
+f273-0035 65e2b03e7fad57f6 On ne peut exclure qu'il{n}ait tout planifié ainsi,{n}exprès.
+f273-0036 0a6c9c73a3ec6199 Le point de{n}transfert est{n}Aquvy{wait 5}...{wait 5}{n}Près du Thames.
+f273-0037 4708e105611d4463 Si c'est Aquvy, Krelian{n}s'y rend.
+f273-0038 d5527ac9aefca08b Krelian ?{wait 10}{n}Il y va ?{wait 10}{n}Pourquoi ?
+f273-0039 f23721410ec9fef0 Il semble qu'ils l'aient{n}trouvé.{wait 10} Plus de 4000 ans{n}qu'il cherche l'héritage{n}de Zeboim.
+f273-0040 b35c31f5f94d62d3 Héritage{wait 5}...{wait 5}{n}C'est la technologie{n}dont il parlait ?
+f273-0042 033234787ca4ba0e Ingénierie moléculaire...{wait 5}{n}...{wait 5}nanotechnologie.{p}Berceau de toute création,{n}capitale de la culture{n}Zeboim...qui repose sous{n}l'océan d'Aquvy.{p}Pendant 19 ans, l'Ethos{n}a gardé ce secret.
+f273-0043 693568b1875df893 Cela vous va,{n}Cain ?
+f273-0044 29e24f808393cd9c Empereur Cain{n}"Oui, cela suffira."
+f273-0045 c72127316363c07b 19 ans{wait 5}...{wait 5}{n}Cela coïncide avec{n}l'époque où la terre{n}s'est déplacée{wait 5}...
+f273-0046 7122fd4d6320d989 Exact.
+f273-0047 577e8d4e664757c9 Mais je ne saisis pas.{n}Cette technique ne nous{n}semble pas cruciale{wait 5}...
+f273-0048 db13b9c473940c42 Il reste un Agneau.{n}Le laisser agir à sa{n}guise est discutable.
+f273-0049 90981c33c6796a3e Parfois, même nous{n}ignorons ce qu'il{n}pense.
+f273-0050 838bbbc94df8699e Empereur Cain{n}"Laissez.{wait 10}{n}J'en prends la{n}responsabilité.{p}Changeons de sujet{wait 5}...{wait 5}{n}N'alliez-vous pas{wait 5}...{wait 5}{n}'l'éliminer' ?"
+f273-0051 9f9436bc6e0bdc92 Ce n'était{wait 5}{n}qu'un hasard.
+f273-0052 bdcbdef2b07c6de0 Le lieu est sans{n}doute Ignas.
+f273-0053 95ed60f016e1f7b5 Je n'ai jamais cru{n}qu'on l'éliminerait{n}si facilement.
+f273-0054 d392b4246f1af436 La purge a{n}échoué.{n}Cela ne doit{n}pas se répéter.
+f273-0055 68ba54370629aa62 Si les 'Animus'{n}sont réunis, raison{n}de plus.
+f273-0057 66619e8f027dadf8 Cain, pourquoi{n}VOUS en soucier ?{n}'Il' ne compte pas{n}pour nous{wait 5}...
+f273-0058 7ffbdbff092016cf Pour nous, ce ne{n}peut être qu'un{n}poison, jamais{n}un remède.
+f273-0059 e88186d67577f0f8 'Anonelbe'{wait 5}...{wait 5}{n}Vous n'y croyez quand{n}même pas encore ?
+f273-0060 403f3ba1d219c83a Ce n'est qu'une{n}illusion.{wait 10} Pas{n}même un idéal.
+f273-0061 679724b5b122485b Le résultat{wait 5}...{wait 5}{n}est ce que je suis.{n}Tel que vous voyez.
+f273-0062 831502f85410da93 Ou plutôt{wait 5}...{wait 5}{n}est-ce 'l'émotion'{wait 5}{n}oubliée de vous{n}depuis longtemps ?
+f273-0063 6bdd0330be653275 Cain{n}"{wait 5}...{wait 5}"
+f273-0064 9895e12d7705b500 Cain, nous{wait 30}{n}sommes 'dieux'.
+f273-0065 ef3eb949cf4d83cf Tout ce qu'on exigeait,{n}c'était de faire son{n}devoir. Je sens là une{n}pensée de cupidité.
+f273-0066 750b99301cf57c28 Credo égoïste...{n}Je doute de sa{wait 5}...{wait 5}{n}foi.
+f273-0067 f4c5a25279dd9ea6 Nous n'avons pas{n}besoin d'une bande{n}de fanatiques.
+f273-0068 b49c7c1372858e10 Ils suivront{n}leurs désirs{n}...c'est leur{n}nature.
+f273-0069 ec0490b59826da92 Mais l'excès est malvenu,{n}il faut agir.{n}Il faut les réprimander.
+f273-0070 cf64a9d725803928 C'est un groupe jetable.{n}On ne peut plus rien y{n}faire à ce stade.
+f273-0071 8761473008e0c496 Oui, plus rien à gagner{n}à les laisser exister.
+f273-0072 f78cc373293abba3 Ils ont déjà fait ce{n}dont nous avions{n}besoin.{p}En ce moment, nous{n}'traitons' chaque zone{n}concernée.
+f273-0073 cb28cf2b78a239a5 Stein est chargé de{n}s'occuper d'Aquvy.
+f273-0074 be5ed2da85f800d6 N'oubliez pas qu'il{n}faut une 'solution{n}adéquate'.
+f273-0075 c3cfbb2013f3f25a Ne venons-nous pas de{n}régler ça ?
+f273-0076 34a312db8f2f7571 De plus, Krelian est{wait 5}...{p}un peu excessif. Ce{n}n'est qu'une machine{n}moléculaire. Pourquoi{n}y tient-il autant ?
+f273-0077 3f25c40c483a7a7a 'Humains'{wait 5} et 'machines',{n}pour nous, c'est la même{n}chose.
+f273-0078 d5b516f7e469e3d4 Oui, tous{n}pareils{wait 5}...
+f273-0079 358a96944b69fa0f De retour{wait 5}...{wait 5}?{n}Alors,{n}du nouveau ?
+f273-0080 3b286af871c122c4 Krelian{n}"Oui.{wait 10}{n}J'ai{wait 5} une colonie de{n}nanomachines."
+f273-0081 48a6a8d8065d5cbe Imprudent.
+f273-0082 313ee8c8b80aa169 De toute façon,{wait 5} le{n}Projet M{wait 10} suit le plan ?{n}Il nous faut des corps{n}supérieurs et des serfs.
+f273-0083 23a78bc6325fa773 Nous avons perdu trop de{n}temps ici.{p}Pas question d'échouer sur{n}le destin final de cette{n}nouvelle civilisation.
+f273-0084 fb113279cb802184 Ils existent grâce{n}à leur 'mère'.
+f273-0085 26a170857b0b00c0 Krelian{n}"Hmm.{p}Vous avez trahi votre{n}'mère', votre 'créateur',{p}pour sauver vos propres{n}ego. Vous n'avez aucun{n}droit de parler ainsi{wait 5}..."
+f273-0086 f0b4c7f7deb2a8c2 C'était{wait 5}...{wait 5}de la folie,{n}c'était le passé.{p}Prisonniers de cette{n}chair maudite{wait 5}...{wait 5}{n}Mais tout a changé.
+f273-0087 7cd08504eddccfc1 Krelian{n}"Je ne reçois pas d'ordres{n}de vous.{p}Vous avez perdu la chair{n}depuis longtemps et vivez{n}en données dans SOL-9000.{p}Oubliez-vous qui vous a{n}ranimés là-dedans ?{p}Une éternité pour l'homme{n}n'est qu'un instant pour{n}un dieu.{wait 10}{p}Je n'ai pas à{n}hésiter."
+f273-0088 2ec6f9c125aea29b ...{wait 5}Inutile.{n}Le contact avec{n}Shevat, permis...
+f273-0089 1369187682d2e719 Une 'Relique Anima' est{n}à Shevat{wait 5}...{wait 5}{p}...Pas d'alignement avant{n}la fin des préparatifs.
+f273-0090 88fe5ecace1804c7 Inutile, si c'est{n}incompatible avec{n}notre type.
+f273-0091 6037f8078e2bcfbd Ensevelir{n}tout Shevat ?
+f273-0092 f3943bcd7e6d88e4 Et les 'Animus' ?
+f273-0093 b828a04f31dd3a83 Il y en a d'autres.{n}Réagissons avec{n}sévérité, pour que{n}cela cesse.
+f273-0094 b33a73a9da728d76 La porte de Shevat ?{n}Tant qu'elle existe,{n}impossible d'entrer.
+f273-0095 2602d3d73bb9ffeb Facile. Avec le canon{n}gravitationnel de{n}l'Achtzehn, on compense{n}le pli spatio-temporel.
+f273-0096 d0d53a36c2aae472 L'Achtzehn ?{n}Opérationnel ?
+f273-0097 3c312864b1d15c73 La rééducation est{n}terminée. Il est prêt.{n}L'escadron aérien est{n}déjà rassemblé.
+f273-0098 07955ed0380fd36b Effets néfastes ?
+f273-0099 469bff4458e4a9b2 L'Escadron aérien 71,{n}régulé, ne devrait pas{n}poser problème.
+f273-0100 dfca1d09eb9292e5 Bien, j'ai hâte{n}de voir ça.
+f273-0101 6c95799d322ae881 Laisser contacter{n}Shevat{wait 5}...
+f273-0102 7857ce0abb20c4b6 Pas que Shevat.{n}La défaite à Ignas,{n}le repli au Thames.{p}Et oui, même Elru,{n}toi{wait 5}...
+f273-0103 4b76c644f6f88244 Inutile comme{n}toujours{wait 5}...
+f273-0104 4afcae15e56164c0 Un échec dès{n}le début{wait 5}...
+f273-0105 3c518172bf920198 'Déchet'{wait 5}...
+f273-0106 0b31175992db4bb3 Ramsus{n}"Qu'avez-vous dit !?"
+f273-0107 0e4335e6310eb81d Hmph...{n}C'est vrai.
+f273-0108 94d262a5e7edd93d Quelle attitude{n}est-ce là ?{wait 5}...{wait 5}{n}Montre donc un peu{n}de loyauté.
+f273-0109 42fd089f8753e4f9 Ramsus{n}"C, comment osez-vous me{n}traiter de 'déchet' avec{n}mépris ? Misérables !"
+f273-0111 017b117138b1af2b Miang{n}"Calmez-vous, Commandant !{n}Ce n'est pas bon pour vous.{p}Vous êtes encore affaibli{n}par la dernière bataille !"
+f273-0112 7b8697147e1c70ac Peu importe.
+f273-0113 5dd195cc7fe5919c Les Agneaux vont sûrement{n}détruire la porte. Mais{n}cette fois, non{wait 5}...
+f273-0114 bd83b95f893c2419 Montre-nous tes{n}pouvoirs 'innés'.
+f273-0115 25cc673cdf4cb7b6 Si tu n'es pas le{n}'déchet' que nous{n}croyons{wait 5}...
+f273-0116 8e2fb6bb0d58f244 Ramsus{n}"Miang{wait 5}...{wait 5}{n}Le vaisseau{wait 5}...{wait 5}{n}Après lui{wait 5}..."
+f273-0117 c796b04682e70bad Ramsus{n}"Cette fois{wait 5}...{wait 5}{n}moi-même{wait 5}...{wait 5} je{n}l'abattrai{wait 5}..."
+f273-0118 8e6c7fd1f6619aaf Miang{n}"Commandant, pas dans{n}cet état, voyons !"
+f273-0119 9f2f029960f079e0 Kelvena{n}"Commandant, nous{n}prenons le relais ?"
+f273-0120 6bbf154841bf907a Miang{n}"Vous ?"
+f273-0121 398305b4c2d82d95 Dominia{n}"Nous tâcherons de ne{n}pas vous décevoir."
+f273-0122 35483c889d8b69d7 Kelvena{n}"Commandant, il vous{n}faut des soins, je{n}vous en prie{wait 5}..."
+f273-0123 127ac41e2835a680 Dominia{n}"Pour que nos idéaux{n}deviennent réalité."
+f273-0124 241f1bb9942f31d6 Kelvena{n}"Bien, nous partons."
+f273-0125 87b8a820df531e45 Plus qu'une seule{n}porte terrestre.
+f273-0126 939c83186b8403e3 Ramsus n'a pas{n}su la défendre{wait 5}...
+f273-0127 d356f71509ece8e9 Quel est le sens de{n}son existence{wait 5}...
+f273-0128 53afa7723a406a84 Une fois 'déchet',{n}toujours 'déchet'.{n}Qu'espérer d'autre ?
+f273-0129 53201897f0ef6afb Mais{wait 5} pas d'alignement{n}avant d'avoir obtenu{n}les données 'Animus'{wait 5}.
+f273-0130 da3878189c4470c9 En effet.{p}Il est plus{n}probable que nous{n}n'obtenions pas le{n}type adéquat.
+f273-0131 4b8fea42b6454a5f Comme par{n}le passé{wait 5}...
+f273-0132 3db023558c90c74b Trop tôt pour lâcher{n}les Agneaux.
+f273-0133 ed5c219848f31e9e Krelian{n}"La porte ? Qui s'en{n}soucie, au fond."
+f273-0135 85787d1ff99a80a7 Impossible.{wait 5}{n}La panique a gagné{n}jusqu'à Etrenank.
+f273-0136 1dc06a276ed3ea91 Krelian{n}"Ces sots que nous{n}appelons citoyens{n}sont manipulés{p}facilement par les{n}seules paroles de{n}l'Empereur."
+f273-0137 a14632b70e9610de Cain y sera-t-il{n}favorable ?
+f273-0138 e95e53c83eff22aa Son corps est déjà à la{n}limite, il ne tiendra pas{n}beaucoup plus{wait 5}...
+f273-0139 6ddf94107263613e Krelian{n}"Comme d'habitude,{wait 5} on{n}peut utiliser un clone.{p}Ces sots ne verront pas{n}la différence.{p}Et même si la barrière{wait 5}{n}cède, ce ne sera pas{n}comme le désastre{n}d'autrefois.{p}De toute façon{wait 5}...{wait 5}{n}sauf erreur, il y a des{n}données fort intrigantes{n}dans ce cube mémoire."
+f273-0140 8e596025ef3283b8 Lesquelles ?
+f273-0141 f4d6070eba9e5732 Krelian{n}"La 'mère'."
+f273-0142 6c4f735e2db2fe4a La 'mère' ?
+f273-0143 77723f9762f7991c Krelian{n}"En effet.{p}La 'mère'{wait 5} existe{n}sans doute parmi les{n}Agneaux."
+f273-0144 5ad0bc5d8901d0aa Donc{wait 5} notre{n}'mère'{wait 5} serait{n}ailleurs ?{wait 5}{p}Pourquoi ne pas{n}l'avoir remarqué{n}avant{wait 5}...{wait 5}?
+f273-0145 d1e74fd198ca8461 Krelian{n}"Le signal{n}de la 'mère'{wait 5}...{p}Sa persona ne se{n}montre qu'une fois{n}un certain âge{n}atteint{wait 5}...{p}Il est aussi très{n}probable qu'elle ait{n}transmigré vers{n}'l'Antitype'."
+f273-0146 86b4c6090bdd307b 'L'Antitype'{wait 5}...{wait 5}{n}La femme de Nisan{wait 5}...{wait 5}?
+f273-0147 06a3546337ca67a4 Krelian{n}"Maintenant{wait 5}...{wait 5}{n}J'aimerais utiliser le{n}produit nanotechnologique,{wait 5}{p}'Emeralda'."
+f273-0148 417de1545a714d0a Ça, du Thames ?{wait 5}{n}Pourquoi ?
+f273-0149 2ebd3e6fd9dcc6b2 Krelian{n}"Pour confirmer.{wait 15}{n}Selon la 'mère',{wait 5} cette{n}colonie de nanomachines{wait 5}...{p}l'organisme artificiel,{wait 5}{n}est né du 'Contact'{wait 5} et{n}de 'l'Antitype'{wait 5} il y a{n}4000 ans."
+f273-0150 4cc0f34e9b96cfaf {wait 5}La mémoire{n}de la 'mère'{wait 5}...
+f273-0151 27a5b5ed5ef4cd4e Krelian{n}"Oui, c'est cela.{wait 10}{n}Nous obtiendrons sans doute{n}une sorte de réaction.{p}Mais même sans réaction,{wait 5}{n}et si 'Emeralda'{wait 5} est{n}détruite,{p}j'ai déjà réuni toutes les{n}données dont j'ai besoin.{p}La perdre n'aura aucune{n}conséquence sur le plan."
+f273-0152 82464b2128736a99 Cain{wait 5}...{wait 5}{n}Un complot risible{n}avec Hyuga{wait 5}...
+f273-0153 bdeaf393c111bdbb Il a certes ses failles,{n}comparé à notre{n}existence numérisée,{p}qui nous permet un{n}niveau supérieur de{n}raisonnement logique{wait 5}...
+f273-0154 90b18282a64a67a9 Il est limité par sa{n}forme humaine.
+f273-0155 8a57ffdd0aab64ad Pourtant{wait 5}...{wait 5}avec{n}un seul engin, il a{n}anéanti Etrenank{wait 5}...{p}Sa puissance n'est pas{n}à sous-estimer{wait 5}...
+f273-0156 126271981ae588ca Le temps nous manque.{wait 10}{n}La clé,{n}utilisons la clé{wait 5}...
+f273-0157 84affd8e58b63752 Krelian{n}"Même vous, vous{n}sentez la pression ?"
+f273-0158 df964f26f6fe85dd Krelian{wait 5}...{wait 5} Quel est{n}l'état de Cain ?
+f273-0159 1b1e86d2575ca736 Krelian{n}"Le traitement usuel de{n}prolongation de la vie.{n}Il tiendra{wait 5}...{wait 5} encore un{p}peu{wait 5}..."
+f273-0160 f0a6e668f322c3bb Nous pourrions donc ne{n}pas arriver à temps{wait 5}...?
+f273-0161 349ad1c9d1d8e684 Krelian{n}"Je ne saurais dire{wait 5}...{p}Vous parliez de la clé.{wait 15}{n}Garantissez-vous qu'il{n}sera éliminé ?"
+f273-0162 09ac08e6a15f6bca Nous l'ignorons.{wait 20}{n}Vous le connaissez{wait 5}...
+f273-0163 81795840fdd7986b S'il est{wait 5} le 'contact',{wait 5}{n}il se peut qu'il ne{n}transmigre pas.
+f273-0164 d0a63c32d5a2534b C'est un organisme{n}fait de plusieurs{n}générations.{wait 5} Le{n}hasard décidera.
+f273-0165 18d732e817d0b4d3 Ne restons pas{n}inertes pour autant.
+f273-0166 834d987c4f21f6d0 Oui.{wait 5} À ce rythme, nous{n}referons la même erreur.{n}Mais nous ne pouvons{n}échouer deux fois.
+f273-0167 512a0eb088cc4b7e Krelian{n}"Bien, ne vous inquiétez{n}pas.{wait 5} J'ai chargé Ramsus{n}de s'occuper de lui."
+f273-0168 83be8b1f8bc890e6 Que peut faire un{n}raté comme lui ?
+f273-0169 d39bf3bb75d162a2 Il n'a même pas su{n}défendre Etrenank.{n}Qu'attendre d'un{n}'déchet' comme lui.
+f273-0170 950bfe1ca78742b5 Krelian{n}"Même avec la{n}'Relique Anima' ?"
+f273-0171 61f417fde25d8405 'Relique'{wait 5}...{wait 5}?
+f273-0172 b2c54063e18c5550 Krelian{n}"La relique récupérée{n}tout à l'heure a été{n}alignée sur son Gear.{p}Plus aucun problème,{n}désormais. Il pourra{n}user de toute sa{n}force."
+f273-0173 df869c320a6477e4 Vous allez vous en charger{n}vous-même ?{wait 20}{p}Bien qu'il ait transmigré,{n}il était des vôtres, non ?{wait 10}{n}Je ne vous comprends pas.
+f273-0174 d5423057c27f20d7 Krelian{n}"J'ai rejeté tous les{n}sentiments humains.{wait 10}{n}Seule{wait 5} 'elle' compte."
+f273-0175 fa316fb4bbf0648a N'est-ce pas{n}une émotion ?
+f273-0176 2bd9bfdd099bfc54 Krelian{n}"{wait 5}...{wait 5}Bien sûr."
+f273-0177 44f29ea2ca0d354b Ce serait{n}un écart{wait 5}...
+f273-0178 29393e557d13e56b Krelian{n}"Vous m'agacez...{wait 25}{n}Voulez-vous cesser{n}d'exister ?"
+f273-0179 8b5bc1790e63a0d6 Bien.{wait 15} Restons-en{n}là.
+f273-0180 ef73547e67e42d0e Comment ça...{n}il vit encore{wait 5}...!?
+f273-0181 b06a9769bbe66709 Krelian{n}"Oui."
+f273-0182 bacdc1b5052ca871 Ridicule.{wait 10}{n}Ramsus ne l'a{n}pas abattu ?
+f273-0183 885efd678c07ed3d Krelian{n}"Elle était aussi dans le{n}Gear que Ramsus a abattu.{wait 10}{n}Elle ne mourra pas."
+f273-0184 7019ba4f2f9de1b4 Une 'mère' existe déjà{wait 5}...{p}Même si elle peut être{n}'l'Antitype',{wait 5} tant que la{n}mère actuelle existe{wait 5}...
+f273-0185 79d415f31c194a31 Krelian{n}"Pour moi,{wait 5} elle{n}n'est{wait 5} pas complète."
+f273-0186 64ac826d349419de Bien exigeant{wait 5}...?{wait 5}{n}N'avez-vous pas rejeté{wait 5}{n}toute émotion humaine ?
+f273-0187 ac9e720816d64ad5 Krelian{n}"Peu m'importe ce que vous{n}pensez. Bref{wait 5}...{p}Quant à lui, je mettrai{n}Ramsus à ses trousses.{wait 10}{n}Une objection ?{wait 10}{n}Où est-il maintenant ?"
+f273-0188 67678680f1b4f008 Etrenank est détruite,{n}mais une partie du cube{n}mémoire reste active.{p}Nous devrions encore{n}pouvoir localiser des{n}individus.
+f273-0189 44e52da29e740fa7 Un instant{wait 5}...{wait 5}{n}Il quitte le lieu de{n}la chute et file vers{n}Ignas.
+f273-0190 3667938e721846b6 Krelian{n}"Je vois.{wait 10} Il a donc quitté{n}la zone{wait 5}...{p}(Cela signifie{wait 5}...{wait 5}{n}que le sceau cédera{n}tôt ou tard{wait 5}...)"
+f273-0191 a019bfbd999eca67 Vous dites ?
+f273-0192 c8cfb979150aa076 Krelian{n}"Ce n'est rien.{wait 15}{n}Attendez tranquillement{n}les bonnes nouvelles."
+f273-0193 e7045ee1e1b5aed3 Et pour récupérer la{n}fille ?{wait 15}{n}La clé commence déjà à{n}résonner.{p}La résurrection{n}est proche.
+f273-0194 d95dec1dba636e06 Krelian{n}"Nous pouvons{n}chercher la fille{n}à tout moment.{p}Pas besoin que{n}ce soit là{wait 5}...{wait 5}{n}Prenons notre{n}temps{wait 5}..."
+f273-0195 276cd1df1452adff Ils germent donc{n}naturellement, car la{n}résurrection de dieu{n}est proche{wait 5}...
+f273-0196 face17380023a40c Ceux qui deviendront le{n}corps de notre{n}serviteur{wait 5}...{wait 5}{p}Je n'aurais jamais cru{n}qu'il y en aurait tant,{n}même sans la clé{wait 5}...
+f273-0197 9970fb7f2a6e8ad9 Mais certains n'ont{n}pas encore commencé à{n}germer{wait 5}...
+f273-0198 48cca3d532a718ff Pas destinés à{n}devenir la chair{n}de dieu ?
+f273-0199 a44cf7718f8d7c63 Ou bien ce sont{n}les ennemis de{n}dieu{wait 5}...
+f273-0200 06f8fd35ccb353aa Relançons les points{n}stratégiques du{n}Soylent{wait 5}...
+f273-0201 3ed8a74796c37ac1 De toute façon, ce sont{n}des mutants incomplets.{wait 10}{n}Inutiles, dans cet état{n}inachevé.
+f273-0202 bce22450134cd2be Apôtres de dieu.{n}Il ne peut y avoir{n}nul mal à en avoir{n}trop...
+f273-0203 3bf8cfafecf7260f La germination de ceux{n}destinés à être le corps{n}du serviteur de dieu.
+f273-0204 822ab76990538420 Comme autrefois, les{n}hommes se réunissent à{n}Nisan. À ce rythme{wait 5}...
+f273-0205 6eb8a24d8dc1f1bf Rien à craindre...{n}Cela pourrait même{n}nous être utile.
+f273-0206 a2663694d7c49725 L'heure approche.{p}Préparons-nous pour ceux{n}qui seront la chair de{n}dieu, et ceux qui le{n}réveilleront, non ?
+f273-0207 57b08d0667ee7ede L'heure est venue{n}d'activer{wait 10} la{n}'Clé de Gaetia'{wait 5}...
+f273-0208 e0925fc08bf6411b Q, quoi !?
+f273-0210 aa989cdc9ebdd2e8 Empereur Cain{n}"Qu'allez-vous encore{n}faire ? Pas question{n}d'utiliser la 'Clé' !"
+f273-0211 799e8023b5ca7277 Cain !{n}Que faites-vous !?
+f273-0212 aed58acfe681ca59 Sans la résurrection{n}de dieu, notre but{n}reste inaccompli !
+f273-0213 f55a846f8bb17675 Ou{wait 5}...{wait 5}comptez-vous{n}périr avec dieu,{n}Cain{wait 5}...?{p}Sans que notre but{n}s'accomplisse{wait 5}...{wait 5}
+f273-0214 7eb705ed56c5c2e1 Empereur Cain{n}"Votre but...?{n}Vous y étiez destinés dès{n}votre naissance.{p}Pourquoi n'avez-vous pas{n}compris qu'il ne naît pas{n}de votre libre arbitre ?"
+f273-0215 fa684cd6dd81d916 Assez entendu{wait 5}...
+f273-0216 5b9cbc60fb9708ad Oui.{n}Notre propre{n}volonté{wait 5}...
+f273-0217 cb94cafe30dfe7a0 Si vous persistez{wait 10}{n}à nous résister{wait 5}...
+f273-0219 d7a0a5ece08bd29c Empereur Cain{n}"Avez-vous oublié ?{wait 10}{n}Je suis votre maître !{p}Je peux vous détruire{n}si je le veux."
+f273-0221 b4f874ef89636ee7 Empereur Cain{n}"Notre part est faite.{p}Passons la barre à la{n}génération suivante.{wait 10}{n}Le peuple vivra{wait 5}...{wait 5}"
+f273-0222 4d471b93f04fd8dd Il n'est plus{n}des nôtres{wait 5}...
+f273-0223 abba8925d989208d Oui.{wait 10} Il ose aller{n}contre nos objectifs.{wait 10}{n}Tout comme l'autre{wait 5}...
+f273-0224 fa96b401ca24145a Nous pouvons encore{wait 5}{n}activer la clé{wait 5}...
+f273-0225 80a478a2ba49e59e Agissons contre{n}celui qui nous{n}gêne{wait 5}...{p}Il faut éliminer{n}Cain{wait 5}...
+f273-0226 5efd3e2f77b5e963 Mais nous ne{n}pouvons lutter{n}contre lui.
+f273-0227 925e14ce8ba3f2c9 Seul{wait 5} 'Cain'{wait 5} peut{n}abattre{wait 5} 'Cain'{wait 5}...
+f273-0228 1e40278a3f4dba89 Alors, 'Mère',{wait 5}{n}pour nous ?
+f273-0229 6f3b387ad94e8ca1 Miang{n}"Peut-être{wait 5}...{wait 5}{n}Krelian a parlé ?"
+f273-0230 cfb90e4329790a76 Une histoire de{n}potentiel, en tant{n}qu'existence de{n}contrepoids...{p}Tout convergeant{n}vers un seul{n}point{wait 5}...
+f273-0231 a3b2a5fb3acbd06e Miang{n}"Je vois{wait 5}...{wait 5}{p}Mais Kahr est encore{n}secoué par sa{wait 5}...{wait 5}défaite{n}d'hier contre Fei.{p}Nous y sommes presque.{wait 10}{n}Il me faut encore{n}un peu de temps{wait 5}...{wait 5}"
+f273-0232 e00fe0181906adfd Attendons donc.{wait 15}{n}Attendons le bon{n}moment{wait 5}...
+f273-0233 44b5a84d4cf4b5e9 Sans valeur{wait 5}...
+f273-0234 c1197ed22364ecea Déchet{wait 5}...
+f273-0235 c035d3503cace4dd Rebut{wait 5}...
+f273-0236 bda444d08ef30c7e À quoi bon{n}exister{wait 5}...?
+f273-0237 9871a4b18edff26b Raté{wait 5}...
+f273-0238 bcabf243525cfb50 Pars{wait 5}...
+f273-0239 0c896e84f2f18477 Tu ne nous{n}sers à rien{wait 5}...
+f273-0240 c6a51441d41de80c Ha !{n}Même un déchet vaut{n}mieux que toi{wait 5}...
+f273-0242 7770e79e08911ca3 Miang{n}"Kahr{wait 5}...{wait 5}{n}Rassurez-vous.{p}Je serai toujours là,{n}près de vous. Nul ne{n}vous connaît comme{n}moi. Alors, ne{wait 5}...{wait 5}"
+f273-0243 03e106b55620e7b6 Ramsus{n}"Miang !{wait 15}{n}C'est{wait 5}...{wait 5}{n}Je ne vaux donc que ça ?{p}Ma force et mes talents{n}s'arrêtent donc là ?{p}Je n'ai pu le vaincre{wait 5}...{wait 5}{n}Et devant cette femme,{n}je n'ai rien pu faire{wait 5}...{p}Est-ce la limite de mon{n}existence !?{wait 25}{n}Mes capacités{wait 5}...{wait 5}!?"
+f273-0244 f955c08dd90057e8 Krelian{n}"{wait 5}...{wait 5}Tu es comme Cain.{p}Un archétype qui surpasse{n}tous les humains.{wait 5}{n}Je t'ai créé ainsi.{p}Mais lui t'empêche de{n}libérer pleinement tes{n}pouvoirs.{p}Des pouvoirs divisés{wait 5}...{wait 5}{n}Cet homme était ta forme{n}originelle.{wait 5} L'être{n}supérieur primordial{wait 5}...{p}Si tu pouvais le vaincre,{n}alors tu serais{wait 5}..."
+f273-0245 e35a46b76dea56ac Miang{n}"Oui.{p}Malgré votre constitution{n}supérieure, l'existence de{n}l'être originel vous gêne.{p}Si vous éliminiez ce{n}pouvoir divisé, alors tout{n}serait à vous{wait 5}...{wait 5}{n}N'est-ce pas, Kahr{wait 5}...?"
+f273-0246 5902e9aa72babd2f Alors{wait 5}...{n}Cain est mort ?
+f273-0248 a745ee536ba280f5 Le sort final de{n}qui est captif d'une{n}chair éternelle{wait 5}...
+f273-0249 54e1345bf466fc35 Si seulement il{n}avait accepté nos{n}idéaux logiques{wait 5}...
+f273-0250 be3cc80860f25ca9 Une fin adéquate pour qui{n}s'est laissé dominer par{n}une chair inutile.{wait 15}{n}Beau travail,{wait 5} Krelian.
+f273-0252 0b1bded57cd3bf99 Rien ne peut plus{n}nous empêcher{n}d'atteindre le but.
+f273-0253 aa968790d607d927 {wait 5}Les 'Reliques Anima'{n}se sont éveillées et{n}alignées sur leurs{n}'Animus' respectifs...{p}Dan,{wait 5} Joseph,{wait 5} Gad{wait 5}...{wait 5}{n}chacune s'est liée à{n}quelqu'un de la surface{n}comme 'Animus'{wait 5}...
+f273-0254 ca983193a9075ace Hyuga : Asher,{wait 5}{n}Ramsus : Zebulun,{wait 5}{n}Krelian : Judah,{wait 5}{n}Sophia : Dinah{wait 5}...
+f273-0255 c1286a5b1535457d Reuben{wait 5}, Simeon{wait 5}, Levi{wait 5}{n}et Issachar{wait 5} l'étaient{n}déjà il y a 500 ans{wait 5}...
+f273-0256 56b540966bf168d8 Et enfin{wait 5}...{wait 5}{n}Grahf : Naphtali{wait 5}...{wait 5}{n}Les 'Reliques Anima'{wait 5}{n}sont toutes activées.
+f273-0257 bdce64762bfc7377 L'identité du{n}{wait 5}masque -Persona-{wait 5}{n}de la {wait 5}'mère'{wait 5} est{n}elle aussi connue.
+f273-0258 932afcc3a2932cf0 L'{wait 5}heure{wait 5} sonne.
+f273-0259 b84533c004bee0ff Ouvrons la porte du{n}domaine de dieu, pour{n}obtenir sa chair et{n}sa sagesse{wait 5}...
+f273-0260 412fd0e12a8b55fc L'heure du véritable{n}éveil{wait 5}...{wait 5}{n}Qui nous mènera vers{n}d'autres horizons{wait 5}...{p}Oui, l'heure de{n}l'évangile est{n}venue{wait 5}...!
+f273-0261 8eddf6abe413665a Allez, humains !{wait 5}{n}Exaltez l'éveil{n}de dieu !
+f273-0262 68c4ca1b0722c7f9 La chair de dieu{n}est récupérée{wait 5}...
+f273-0263 9921a4ab5c93f4ee Anima et Animus sont{n}tous obtenus{wait 5}...
+f273-0264 958335509ffaff23 Il ne nous reste qu'à{n}devenir l'Animus et ne{n}faire plus qu'un avec la{n}{wait 5}mère -Persona-{wait 5}...
+f273-0265 6a8ce8e2f937770c Krelian{n}"{wait 5}...{wait 5}C'est une erreur."
+f273-0266 312ac31fa63bda4d Quoi ?{n}Comment ça, Krelian ?{n}Qu'avez-vous dit ?
+f273-0267 771ded6ca0a0a75a Que faites-vous !?{n}Krelian, avez-vous{n}perdu la raison !?
+f273-0268 b38f808afc05b588 Que faites-vous des{n}banques de mémoire !?
+f273-0269 5446a66c936a00f2 N'y touchez pas !{wait 10}{n}Nous ne pouvons{n}vivre sans elles{wait 5}...!
+f273-0270 ba353bbde67a093a Krelian{n}"Vous étiez les seuls{n}à pouvoir activer la{n}clé...{p}Maintenant qu'elle l'est,{n}je n'ai plus besoin de{n}vous.{wait 15} Je vous efface{n}tous."
+f273-0271 a35d31a94fa8dff2 Insolent !
+f273-0272 d9bcd7bc92ec7f7f Krelian{n}"Le seul obstacle entre{n}moi et mes objectifs était{n}Cain.{p}C'était le seul à avoir le{n}contrôle total du peuple,{n}et donc mon plus grand{n}adversaire.{p}Mais le seul capable{n}d'éliminer Cain était{n}Cain lui-même.{p}J'ai donc créé{wait 5}...{wait 5}{n}'une copie de Cain'.{wait 5}{n}Ramsus a agi comme prévu{n}...en tuant Cain.{p}Maintenant, personne ne{n}peut 'me' arrêter.{wait 10}{n}Et votre pouvoir, votre{n}autorité, je m'en moque.{p}Croyiez-vous vraiment agir{n}librement ?{wait 10} Vous n'êtes{n}que des pièces du système.{p}Créés comme simples armes{n}pour envahir, opprimer{wait 5}...{wait 5}{n}Vous n'êtes que des armes{n}d'interface terminale."
+f273-0273 c309e4dda0449f91 On peut{wait 5}...{wait 5}de{wait 5}{n}venir{wait 5}...{wait 5}dieu !{wait 10}{n}Et{wait 5}...{wait 5}vous,{wait 5}...
+f273-0274 02e746559a665b19 Krelian{n}"Dieu ?{wait 15}{n}Qui a dit que vous{n}seriez dieu ?{p}Quelle impertinence !{wait 5}{n}Nous sommes 'humains'.{wait 5}{n}Nous avons été créés{n}comme terminaux de dieu.{p}C'est pareil pour vous,{n}qui avez été humains.{p}'L'homme ne peut devenir{n}dieu.'{wait 5}{n}...{wait 5}Nous ne pouvons que{n}nous livrer à dieu."
+f273-0275 fe06dc00ebaebc85 Ri{wait 5}...{wait 5}di{wait 5}cu{wait 5}le{wait 5}...{wait 10}{n}Aller{wait 5}...{wait 5} con{wait 5}...{wait 5}tre{wait 5}{n}la{wait 5}...{wait 5} Mère{wait 5}...
+f273-0276 1e51160485b0bec1 Krelian{n}"Je ne la trahis pas.{wait 20}{n}C'est la volonté de{n}'l'autre mère'."
+f273-0277 30789751b2cf747b Vous{wait 5}...{wait 5}croyez{wait 5}...{wait 5}pou{wait 5}...{wait 5}{n}voir{wait 5}...{wait 5}nous{wait 5}...{wait 5}éli{wait 5}...{wait 5}{n}miner{wait 5}...{wait 5}et{wait 5}...{wait 5}res{wait 5}...{wait 5}{n}sus{wait 5}ci{wait 5}...{wait 5}ter{wait 5}...{wait 5}dieu{wait 5}...?
+f273-0278 feb342696e38c47f Krelian{n}"C'est possible.{p}Ses gènes ont été dispersés{n}pour garder le monde en vie{n}après la 'Chute', aux jours{n}de la destruction.{p}Ces gènes vivent encore{n}en chaque humain.{p}Les réceptacles -Anima-{wait 5}...{wait 5}{n}et les récepteurs de leur{n}alignement,{wait 5} les -Animus-{wait 5}...{wait 5}{n}et aussi la {wait 5}-Persona-{wait 5}...{p}En les combinant à mes{n}nanomachines, les humains{n}deviendront des êtres{n}presque égaux à vous.{p}En fait, ils pourraient{n}vous surpasser de loin{n}comme dignes interfaces{n}terminales de dieu.{p}Vous ne me servez donc{n}plus.{wait 15} -Dieu-,{wait 5} forme{n}physique de dieu,{wait 5} ne{n}veut que des résultats{wait 5}...{p}Les moyens lui importent{n}peu{wait 5}...{wait 15}{n}Voici mon 'Plan Arche'{wait 5}...{wait 10}{n}Mon {wait 5}-{wait 5}Projet{wait 5} Noé{wait 5}-{wait 5} !"
+f273-0280 edbbf4cf78c3f8ff Krelian{n}"Cessez vos tourments.{wait 15}{n}Reposez en paix{wait 5}...{wait 10}{n}ancêtres des mortels !"
+f274-0000 b311de29c37d5405 Laisser contacter{n}Shevat{wait 5}...{wait 5}...
+f274-0001 ad721c641b43bc0c Pas que Shevat.{n}La défaite à Ignas,{n}le repli au Thames.{p}Et oui, même Elru,{n}toi{wait 5}...{wait 5}...
+f274-0002 a11b2371b70dd73e Inutile comme{n}toujours{wait 5}...{wait 5}...
+f274-0003 a974fd99cbad61f0 Raté de{n}naissance{wait 5}...
+f274-0005 f25e6d8b44f39b4e Ramsus{n}"Q-qu'avez-vous dit ?"
+f274-0007 144dd66d828f826b Quelle attitude{n}est-ce là ?{wait 5}...{wait 5}...{n}Tu devrais montrer{n}un peu de loyauté.
+f274-0012 592ec15fdc717f99 Les Agneaux{n}vont sûrement{n}détruire la{n}Porte.{p}Mais pas{n}cette fois{wait 5}...
+f274-0014 bc1733dee9fed70c Si tu n'es pas le{n}'déchet' que nous{n}croyons{wait 5}...{wait 5}...
+f274-0015 1efcfcdba1e0aa46 Ramsus{n}"Miang{wait 5}...{wait 5}...{wait 5}{n}Le vaisseau{wait 5}...{wait 5}...{wait 5}{n}Allons-y{wait 5}...{wait 5}..."
+f274-0016 78319414618301eb Ramsus{n}"Cette fois{wait 5}...{wait 5}{n}j'irai moi-même{wait 5}...{wait 5}et{n}je l'achèverai{wait 5}..."
+f274-0021 d0ce02b34cdd66c9 Kelvena{n}"Commandant, il{n}vous faut des{n}soins{wait 5}...{wait 5}..."
+f275-0000 995ae6e4b1997ee6 Franz{n}"La passerelle 3...{n}est détruite !!"
+f275-0001 18d9650e4f1d8012 Franz{n}"Les équipes d'avaries ne{n}pourront plus bouger !!{p}Impossible de colmater la{n}brèche !!"
+f275-0002 84d6ca12e798e9a0 Hangar, armement et même{n}la coque pressurisée{n}sont détruits !!{p}Le sable entre, on ne peut{n}pas l'en empêcher !
+f275-0003 ba43b3f371bc1e2e Monsieur !!{wait 45}{n}Le Gear bouge seul{n}dans le hangar...
+f275-0004 acc33311d03b0152 Moteurs princ. et auxil. :{n}SCRAM automatique.{n}Énergie sur les batteries.{n}Puissance à 0,5,{n}autonomie...500 !!
+f275-0005 a0170e4cfb75da07 Pompe à sable, ailerons{n}à effet et forets de{n}propulsion sont tous hors{n}service !!
+f275-0006 7f0e962aee51c60a Maison{n}"Par ici, je vous prie."
+f275-0007 24163b902343adcf Sigurd{n}"On dirait qu'on nous{n}observe."
+f275-0008 cbaf49e59b478519 Sigurd{n}"Isolez chaque section{n}et passez en mode{n}autonome !!"
+f275-0009 74bbff03dadab407 Sigurd{n}"Peu importe !!{p}...De toute façon, on ne{n}peut pas sauver tout le{n}navire.{p}Notre priorité est de{n}garder la passerelle !!{p}Tout le monde à la{n}passerelle, et vite !"
+f275-0010 438163a0c94e032f Sigurd{n}"...Hyuga... Non... tu es{n}Citan, désormais.{p}Tu dois partir d'ici.{n}Je vais demander à Maison{n}de te conduire à une{n}capsule de sauvetage."
+f275-0011 ae0bf3b132e1637c Sigurd{n}"Nous n'avons pas le droit{n}de te retenir et de t'y{n}mêler.{p}...Si tu croises Kahr et{n}Miang, rends-leur la{n}monnaie de leur pièce pour{n}moi."
+f275-0012 192e95c0ff12857a Sigurd{n}"Maison... Je vous prie,{n}montrez-lui le chemin."
+f275-0013 96a906d4f1c0d0ca Sigurd{n}"Quoi ? Je veux plus{n}de détails !"
+f275-0014 ac1bec32eafed1f5 Citan{n}"Je ne peux pas tous{n}vous laisser ainsi...!?"
+f276-0001 0a6666106f376e3c Citan{n}"...Le vent me pousse{n}vers la frontière{wait 32}...{p}...{wait 5}Qu'est-ce {wait 32}que{n}c'est ?"
+f277-0000 baaa09fc17c32781 Continuer ?{wait 30}{n}    Attendre{n}    Continuer{wait 15}
+f277-0001 1142aea4a9170bdc Sauvegarder ?{wait 30}{n}    Sauvegarder{n}    Non merci{wait 15}
+f277-0003 c48550d3c02ecda1 Citan{n}"C'est... le... Dora.{n}Il était stationné ici ?{n}Quelle négligence...{p}Mais {wait 32}son état...{wait 32}{n}...{wait 32}...{wait 32}...{wait 32}{n}C'est comme les autres{n}détruits par 'lui'..."
+f278-0000 79679c15c1e80312 Citan{n}"Non, Elly ! Revenez{n}immédiatement !!"
+f278-0001 0b15a1e92013720a Elly{n}"Je vais le faire...{n}Alors, je vous en prie,{n}laissez-moi faire !"
+f278-0002 fb85d96808b74e7d Citan{n}"C'est trop dangereux !"
+f278-0003 59c9ce8903ff94ca Elly{n}"Je sais...{p}Comme quand Fei a risqué{n}sa vie pour me sauver...{p}C'est à mon tour de{n}sauver Fei. Si ça l'aide,{n}peu importe ce qui{n}m'arrive !"
+f279-0000 eeece96bfe9f8ce5 Bingo ! L'info était{n}bonne. C'est Kislev...{p}C'est énorme... On{n}dirait{n}un...
+f279-0001 7982d4f563b9c47d C'est le Goliath ! Celui{n}de l'usine souterraine{n}dont on parle tant !!{p}Zut... ils veulent se{n}venger ! Ils vont{n}bombarder Bledavik !
+f280-0000 9ac475bd0ccf1677 Citan{n}"Un navire des sables...{wait 32}{n}Sûrement ces pirates{n}du désert !"
+f281-0000 195e68070ab38db4 Citan{n}"Je vois...{p}Ton 'jeune' ne tirait pas{n}au hasard sur tout et{n}tous, Sigurd."
+f281-0001 c805f5c7d7092aba Citan{n}"Et qu'est-il arrivé à{n}ce 'jeune' que vous{n}appelez 'maître' ?"
+f281-0002 fa9df02c1a9cd1e8 Citan{n}"Tu sembles avoir une{n}grande confiance en{n}lui..."
+f281-0003 ee57f9e4e65cd45e Citan{n}"Pas un hasard. Plutôt{n}une suite inévitable...{n}je suppose."
+f281-0004 0cf55e363aa947f3 Sigurd{n}"Oui, il a bien calculé{n}cette attaque...{wait 16}{n}...ou c'est ce qu'il dit !{p}Comme tu vois...{n}cette fois encore,{n}personne n'est mort."
+f281-0005 adbc4612ea9d0b3c Sigurd{n}"Bien.{wait 16}{n}Je compte sur toi."
+f281-0006 fb23b3dabc32564f Sigurd{n}"Il est tombé dans une{n}caverne souterraine avec{n}l'autre gars, en Gear.{p}C'est près d'un ancien{n}chantier de fouilles, et{n}avec son Gear, il devrait{n}pouvoir remonter...{p}On va le chercher un{n}moment et, sinon, on{n}l'attendra à notre point{n}de rendez-vous."
+f281-0007 cf5679a03a886bde Sigurd{n}"Confiance... Oui, j'ai{n}confiance : il va nous{n}attirer des ennuis."
+f281-0008 25c702cd6515b604 Sigurd{n}"Mais je n'aurais jamais{n}cru te trouver ici,{n}'Hyu'..."
+f281-0009 b8a89ec7e511c9ea Sigurd{n}"...{wait 32}Hyuga... Tu dis que{n}quelque chose va{n}arriver ?"
+f281-0010 2b173c4762198fbf Ouf, Dieu merci... Je ne{n}voulais pas sécher et{n}mourir dans le désert...
+f281-0011 74d50933f14ebea2 La ferme ! Vous avez{n}coulé notre navire ! Ne{n}l'oubliez pas !
+f281-0012 3115d7a9d03c60f4 Hé ! Même fatigué,{n}ne va pas plus loin !
+f281-0013 0a0dd09b5d7b513c Non, toi, la ferme !{n}Estime-toi heureux{n}d'être sauvé !
+f281-0014 b196d866515dc685 Excusez-moi...
+f281-0015 05c34d09253c7022 Quelqu'un de presque mort,{n}sans bras ni jambes, ou à{n}opérer de l'abdomen !?
+f281-0016 f1a17a7204c5722a Personne...?{n}Déprimant...
+f281-0017 364cf9d645793a6a Monsieur Sigurd ! La collecte{n}du fret et des soldats du{n}transport d'Aveh est presque{n}terminée.{p}Le jeune maître reste{n}introuvable... Le peloton du{n}général Maitreya va refaire{n}un ratissage.
+f281-0018 e55c6a9a1c60d26c Oui, monsieur !{wait 24}{n}Membre de l'unité, je{n}me retire aussi.
+f282-0000 fb67455e467adf12 Télégramme reçu{n}de Shevat !{p}Porte affaiblie !{n}On a découvert une{n}ville, peut-être{n}Solaris !!
+f282-0001 650fc343d704caa3 Fei{n}"...{wait 10}{n}...{wait 10}Voyons...{wait 10}voir..."
+f282-0002 5333d9b4cb974bb5 Fei{n}"Ça dit quoi,{n}ce truc ?"
+f282-0003 c2692128203b1885 Fei{n}"Hein...?"
+f282-0004 4a080f1c9754bf30 Fei{n}"H-hé, toi.{n}Moi, c'est Fei.{n}Pas Kim."
+f282-0005 44c379bcaee7c48d Fei{n}"...Kim, ça va..."
+f282-0006 dc3b56e9969ec094 Fei{n}"...Père ?..."
+f282-0007 8d4358d5d2f39e48 Fei{n}"Hein ?...Ah."
+f282-0009 dec4e943e08dad21 Fei{n}"Hum... Ah...{n}...Au fait, tu{n}as un nom ?"
+f282-0010 d35d7ab86b2c8fb6 Fei{n}"D'accord, d'accord.{n}Emeralda, c'est ça ?{p}Bon, Emeralda.{n}Cette fois, je reste{n}avec toi. Promis !"
+f282-0012 2af51cd95405fed2 Elly{n}"Fei te rappelle{n}quelqu'un ?"
+f282-0013 c2a1382a4aa3e693 Elly{n}"Kim ? Le sosie de Fei,{n}c'est ça ?{p}Qui est-il ? C'est lui{n}qui t'a créée ?"
+f282-0014 a5eb9647bbb53109 Elly{n}"Tu lui ressembles,{n}quelqu'un d'important{n}pour elle{wait 24}...{p}sans doute celui qui{n}l'a créée..."
+f282-0015 7fed3bc6a06ea3c1 Elly{n}"Sérieux."
+f282-0016 42ae14e8e8ba6c4c Elly{n}"Vieille...!{p}Je devrais peut-être{n}la renvoyer au fond{n}de la mer..."
+f282-0017 c981ebef82922e5a Elly{n}"Et si tu étais son{n}Kim ? Fei...Kim !!"
+f282-0019 ecae63eea9c99a99 Elly{n}"Fei...?{wait 24}{n}Tu veux dire qu'il te{n}rappelle quelqu'un ?"
+f282-0021 8aa9a31549e0b00f Elly{n}"Tu lui ressembles,{n}quelqu'un d'important{n}pour elle...{p}sans doute celui qui{n}l'a créée..."
+f282-0026 e3d8888ee7837042 Quoi, 'ressemble' ?{n}Kim, c'est Kim ?
+f282-0027 09a9f9b03e1c2627 Comment ça,{n}'créée' ?{n}Kim, c'est Kim !{n}T'as compris ?
+f282-0028 8e1f7abccc8060af Kim ! Kim ! Kim ! Kim !{n}Kim ! Tu es vraiment là !{n}Je croyais rêver. La{n}personne de mon rêve.{p}Oui, Kim ! Je rêvais !{n}Un long, long rêve.
+f282-0029 d8f1a477d4482a5a Je sais !{n}Fei-Kim !{p}Écoute, écoute !{n}J'ai fait un long,{n}long rêve !
+f282-0030 9007692d89bab3d7 Écoute, écoute, Kim !{n}J'ai rêvé de temps{n}très anciens.{p}Kim était bien plus vieux,{n}et j'étais dans un tube{n}transparent...{p}Kim mettait... plein de{n}bougies sur un gâteau{n}blanc et moelleux...{p}Je ne savais pas pourquoi{n}il faisait ça...{p}Mais je sentais qu'il{n}attendait impatiemment{n}que je sorte du tube...
+f282-0031 45b82673cdee1d9d {wait 24}...{wait 24}{n}Mais... bientôt, tous...{n}sont partis...{n}Mon corps a disparu...{p}Puis je suis restée{n}dans le noir très...{n}très longtemps...
+f282-0032 6d09365f43382b8f Dis ! Promets que tu{n}restes, Fei-Kim !?
+f282-0033 0699bde7f6c24d05 Vrai ?{p}Vrai de vrai ?
+f282-0034 65ba2013e75d5a94 Me dérange pas !{n}Qui est la vieille ?{p}Je parle à Kim !
+f282-0035 f65735fb742dbfc8 Oh non ! Méchant,{n}Fei-Kim !{p}C'est moi, Emeralda !{n}Kim m'a appelée comme{n}ça pour mes cheveux{n}couleur émeraude !{p}Tu te souviens pas...?
+f282-0036 919fe0ab0559a9f8 Emeralda{n}"Vrai ?{wait 24} Vrai de vrai ?{wait 32}{n}Youpi !"
+f282-0037 2ca10560d22ca887 Citan{n}"Pour elle, 'Kim' n'est{n}pas qu'un nom.{p}...Comme... un 'père'."
+f282-0038 98ad33dda298b739 Citan{n}"Non, non, je le dis{n}au sens large."
+f282-0039 dc63b45f955a15b6 Citan{n}"...Je doute que Krelian{n}l'ait utilisée comme{n}simple soldat jetable.{p}Elle contenait des{n}informations transmises{n}à Krelian.{p}Qui sait ce qu'il fera{n}à présent. Trouvons{n}Solaris avant cela..."
+f282-0040 f82a03de47dea0f9 Citan{n}"Parfait !!{p}Rentrons à Shevat{n}pour l'instant !"
+f282-0044 20909ca28af4702c Citan{n}"Parfait !!{n}Rentrons à Shevat{n}pour l'instant !"
+f282-0045 a8ca437c2d770efb Bart{n}"Merci de ton aide,{n}vieux Maison !"
+f282-0046 99c16f05a03319b7 Bart{n}"Désolé de t'avoir{n}mêlé à ce bazar...{n}Merci, vraiment.{p}...Mais j'ignorais{n}que tu pilotais un{n}engin pareil."
+f282-0047 1037d8ba1c8c2d50 Maison{n}"Jeune maître, allons à{n}la passerelle."
+f282-0048 373007a05ad9565c Maison{n}"Relevez la tête,{n}je vous en prie.{p}Mon devoir est de vous{n}protéger, jeune maître.{n}Pardonnez mon long{n}retard à vous aider."
+f282-0049 019165485d806067 Maison{n}"Un tour appris il y a{n}bien longtemps...{n}Rien de bien sorcier.{p}Je ne suis pas expert.{n}À vrai dire, j'en suis{n}même un peu gêné."
+f282-0050 fa6cc8e5d4694fc6 Maison{n}"Le verre de mon maître..."{done 32}
+f282-0051 aa144a24f1edb708 Maison{n}"Va-t-il lui{n}arriver{n}malheur...?"
+f282-0052 ba33f483e165543d Sigurd{n}"Jeune maître !{n}L'armée de la Capitale{n}royale revient !{p}On a mordu à l'hameçon.{n}Fuyons avant qu'ils ne{n}nous attrapent !{p}Allez à la passerelle dès{n}que vous serez prêt !"
+f282-0053 09aa4b90226aa519 Shakhan...{n}Plus je le vois, plus il{n}est odieux.{n}Et il perd ses cheveux.
+f282-0054 ec25b3033993d2f6 Jeune maître !{n}Ne vous laissez{n}pas abattre !
+f282-0055 c9a2f7f5cd264138 J'étais inquiet{n}quand Maison est{n}venu avec ça.
+f282-0056 b2dfaf1a9d304f2c Au fait, il paraît qu'il{n}était le chevalier{n}personnel et garde du{n}corps du feu roi...
+f283-0000 fd0ed2546d66115d Citan{n}"Savoir que quelqu'un{n}t'attendait{wait 5}...{p}Cette seule pensée a{n}suffi à te faire revenir{n}à toi{wait 5}...{p}Tu es un grand homme,{wait 20}{n}Sigurd{wait 5}..."
+f283-0001 cfeb619b03770a97 Citan{n}"Nous arrivons donc{n}trop tard..."
+f283-0002 6df79c2fcc1d1519 Citan{n}"Les nanomachines : des{n}robots plus petits que{n}les cellules humaines.{p}À Solaris, on les utilise{n}pour soigner maladies{n}et blessures.{p}...Elle est peut-être une{n}colonie de nanomachines{n}créée par une technologie{n}ancienne, mais avancée."
+f283-0003 394cc0c81f13c321 Citan{n}"Les mots de l'évêque{n}Stone m'inquiètent.{p}Il disait avoir besoin{n}d'elle 'pour libérer{n}l'humanité de son joug'.{p}Peut-être son corps{n}cache-t-il une ancienne{n}information sur la{n}reconstruction humaine...{p}Les semi-humains, comme{n}Rico et Hammer, sont nés{n}de manipulations de{n}l'A.D.N....{p}C'était l'oeuvre de{n}l'ancienne Solaris, pour{n}restaurer l'humanité.{p}Si Krelian compte en faire{n}autant grâce à des{n}nanomachines parfaites...{n}ce serait effrayant."
+f283-0004 6f48daef992f88b2 Sigurd{n}"Pourquoi cette mine{n}sombre ?{p}Demain, nous retournerons{n}à votre château pour la{n}première fois en 12 ans."
+f283-0005 185af64498d15f62 Sigurd{n}"Vous vous y habituerez."
+f283-0006 46b9f9efabe6b6e3 Sigurd{n}"Oui ?"
+f283-0007 fdf64f15c7183fef Sigurd{n}"Solaris m'a enlevé, lavé{n}le cerveau, pour faire de{n}moi un cobaye humain."
+f283-0008 ece415142935f7ac Sigurd{n}"Mais même eux n'ont pas{n}pu effacer mon désir de{n}rentrer chez moi.{p}Je me suis alors souvenu{n}de vous et de Marguerite,{n}non comme des princes,{n}mais comme des enfants.{p}Peu m'importe de rebâtir{n}une dynastie.{p}Je veux reprendre ce{n}royaume, car il est à{n}vous...{wait 10} Parce que c'est{n}votre foyer !"
+f283-0009 05616397e3fa9c2d Sigurd{n}"Oui.{p}Pour cela, nous devons{n}abattre Shakhan demain.{n}N'est-ce pas ?"
+f283-0010 247a87f710d9c1a8 Sigurd{n}"Mais avant...{wait 10}{n}je crois qu'il vous faut{n}un bain !"
+f283-0011 26c0bd749408c4a2 Sigurd{n}"Vous n'avez rien d'un{n}roi, même de loin !{p}Face au chef ennemi...{n}il vous faut une allure{n}noble !"
+f283-0012 d2fc5e3386af7102 Sigurd{n}"C'est une chose, et ça{n}en est une autre !"
+f283-0013 9679236f2892731c Bart{n}"Retourner au château...{p}Une fois le palais royal{n}repris, je crois que je{n}serai le roi{wait 5}...{p}...{wait 5}Je ne suis pas très doué{n}pour ça,{wait 5} hein ?"
+f283-0014 3da35f7902459d5c Bart{n}"Dis,{wait 10} Sig{wait 20}..."
+f283-0015 1b3c11eec461a2e2 Bart{n}"Je crois qu'au fond...{wait 20}{n}peu importe qui est roi,{wait 10}{n}hein ?{p}Du moment que c'est un{n}symbole d'espoir, non ?{wait 20}{n}Pas besoin que ce soit{n}moi."
+f283-0016 7f14826cf7f5cf2e Bart{n}"C'est mon foyer ?"
+f283-0017 102967870373a942 Bart{n}"...D'accord. Alors, on{n}y va !!"
+f283-0018 69dc28535f03d0da Bart{n}"Un bain !?"
+f283-0019 ce0dcdf8955cffe4 Bart{n}"Hé, tu viens de dire que{n}ça ne comptait pas que je{n}sois roi ou pas !!"
+f283-0020 8be4b46d08f3b15c Bart{n}"Citan, ce Krelian a pris{n}la gamine... Et alors ?{p}C'est quoi, au juste, une{n}nanomachine ?"
+f283-0021 a985d6f4a2ddc7fa Bart{n}"...Alors, où est le{n}problème ? C'est bon pour{n}les gens, non ?{p}Ça m'énerve juste que ce{n}soit que pour Solaris."
+f283-0022 5a21f60c24342639 Billy{n}"Citan, que se passe-t-il{n}maintenant que Krelian a{n}pris la petite ?{p}Au fond, qu'est-ce qu'une{n}nanomachine ?"
+f283-0023 18b50190cc38a99a Billy{n}"Même si c'est réservé{n}au peuple de Solaris...{p}Où est le mal à rendre{n}les gens heureux ?"
+f283-0024 ef09aeb13110b0c7 Rico{n}"Citan, ce Krelian a pris{n}la gamine, et alors ?{p}Une nanomachine, c'est{n}quoi, au juste ?"
+f283-0025 00f9bbc10e8892fd Rico{n}"...Alors, où est le{n}problème ? C'est bon{n}pour les gens, non ?{p}Mais ça m'agace que{n}tout aille à Solaris."
+f284-0000 725cd4c00fc24fe0 Fei{n}"...Ne m'appelle pas{n}'fils'. Tu n'es pas mon{n}père."
+f284-0001 1b61bfae4ac4d685 Fei{n}"Toi aussi..."
+f284-0002 8ee6b5ed49116614 Fei{n}"...{wait 5}Ne dis pas de{n}bêtises !{wait 32}{n}Ça ne te ressemble pas{wait 5}...{p}Mais{wait 5}...{wait 5}je m'en occupe.{wait 10}{n}Ne t'en fais pas."
+f284-0003 3680bffc2f3547ee Bart{n}"Même si le cuirassé est{n}vieux, vous n'êtes qu'une{n}petite unité.{p}Ce sera dur, mais vous{n}pouvez changer le destin{n}d'Aveh. J'ai foi en vous."
+f284-0004 ab8ebaabc2bdaad2 Bart{n}"Fei,{wait 5} c'est bizarre que je{n}dise ça, moi qui t'ai mis{n}dans ce pétrin{wait 5}...{p}mais{wait 5}...{wait 5}fais attention,{wait 5}{n}hein !?"
+f284-0005 487ce693de373788 Bart{n}"S'il{wait 5}...{wait 5}m'arrivait{n}quelque chose{wait 5}...{wait 5}veille sur{n}Margie et les autres !"
+f284-0006 c6284b9445c0daaf Maitreya{n}"Chaque escadron décolle{n}d'ici, à tour de rôle,{n}pour rester discret.{p}Rendez-vous dans les{n}Rocheuses, près de la{n}frontière, demain à{n}12h00. Compris ?"
+f284-0007 d9a5c9d311c7ea31 Maitreya{n}"Jeune maître, comptez sur{n}nous !{p}On va traîner Vanderkaum{n}par la queue, d'un bout à{n}l'autre !!"
+f284-0008 73f74420db108a01 Maitreya{n}"Pas vrai, fiston !?"
+f284-0009 01c8e5991d6f36b2 Maitreya{n}"Hein ? Ha, ha, ha, ha..."
+f284-0010 57951b7e0199fd24 Maitreya{n}"Bien, jeune maître...{n}cette bataille vaudra{n}le coup, promis !"
+f284-0011 c9b0ee09fea62667 OK !{done 32}
+f284-0012 d46052413f88c8c1 À fond !{done 32}
+f285-0000 6ad4ae64bc6f24e2 Sigurd{n}"Marguerite en fait trop.{p}Jeune maître, vous devriez{n}être plus doux avec elle."
+f285-0001 c0f51a4e036100da Sigurd{n}"...Je reste ici encore un{n}peu. J'ai des choses à{n}méditer."
+f285-0002 51548b9215bdb66b Sigurd{n}"Citan ? Non, je ne l'ai{n}pas vu...{p}Ne vous en faites pas{n}pour lui. Il ira bien."
+f285-0003 b5b54b995622e3cd Sigurd{n}"Marguerite, maintenant que{n}vous êtes sauvée, puis-je{n}vous demander une chose...?{p}Pourquoi avez-vous affronté{n}l'ennemi toute seule ?"
+f285-0004 4d51b45ae6c0e876 Sigurd{n}"Évidemment, une rumeur{n}infondée de l'ennemi{n}pour vous attirer."
+f285-0006 b24fbd9cf1b968a9 Sigurd{n}"Marguerite en fait trop.{p}Jeune maître, soyez{n}gentil{n}avec elle."
+f285-0007 3158dfa2d78171ea Bart{n}"Alors...{wait 24}tu pensais les{n}sauver toute seule !?{n}Quelle idiotie !!"
+f285-0009 0e69c7b112a8ba06 Bart{n}"La prochaine fois,{n}préviens-nous !! On ira{n}à ta place !"
+f285-0010 61167aed36166b95 Margie{n}"Pardon... mais... j'ai{n}entendu une rumeur en{n}ville, ce jour-là...{p}On disait les soeurs de{n}l'Église prises par Aveh{n}encore en vie..."
+f285-0011 7f32ce3a2008616c Margie{n}"J'y ai cru ! Et alors !?{n}Je me trompais.{p}Mais..."
+f285-0012 e6c9368f584b4a93 Margie{n}"Mais... mamie et maman{n}avaient déjà été{n}exécutées..."
+f285-0013 7c1bed9d40d1aae3 Margie{n}"Pardon...{wait 32}de vous avoir{n}tous entraînés. Je ne{n}recommencerai plus..."
+f285-0014 9604333b4f60503a Margie{n}"Oui...{wait 32}{n}Je le ferai."
+f285-0015 aa7eb09f3b955f73 Maison{n}"Je vous en prie, ne soyez{n}pas si dur avec elle...{p}L'Église de Nisan est le{n}foyer de mademoiselle{n}Marguerite. C'est tout à{n}fait compréhensible."
+f286-0002 f266f596dce5579b Fei{n}"Doc ! Qu'est-ce que..."
+f286-0003 a0b26d4107daede7 Fei{n}"Hypnose...?"
+f286-0004 65539548385a0e25 Bart{n}"Je ne comprends pas. En{n}tout cas, là-haut, quand{n}je l'ai vue,{p}ses yeux n'étaient pas{n}ceux d'une traîtresse."
+f286-0005 6a696d6cb881c190 Bart{n}"Il est retombé en panne{n}juste après la réparation.{n}Que faire, maintenant..."
+f286-0006 8e0393f192746386 Bart{n}"Je le savais depuis le{n}début... C'est une{n}traîtresse !"
+f286-0007 c95681f4325de99c Bart{n}"Bon sang ! Qu'a-t-elle{n}fait !? Et maintenant,{n}je fais quoi !!"
+f286-0008 068e45e16d5a3517 Bart{n}"Fei !!{wait 45}{n}Tu vas la laisser comme{n}ça ?"
+f286-0009 2db9ed0840bd225f Bart{n}"Fei !!{wait 45}{n}Où vas-tu ?"
+f286-0010 fabb633595f132bb Bart{n}"Fei !!{wait 45}{n}Ce n'est pas le moment de{n}jouer avec Martle !!"
+f286-0011 39d54c8f27b38511 Bart{n}"...Citan, si ça vous{n}semblait louche, il{n}fallait l'arrêter."
+f286-0013 7b7258869d6e7c42 Elly{n}"C'est un animal, il n'y{n}est pour rien.{p}Au fait, le second veut{n}te voir."
+f286-0015 0360fdad82ca961d Citan{n}"...{wait 32}Elle a subi une{n}hypnose puissante."
+f286-0016 4f8db040c4fde95d Citan{n}"Une hypnose spéciale qui{n}fait agir la personne de{n}façon préprogrammée.{p}Une condition précise{n}la déclenche... avant{n}cela, rien ne paraît.{p}Elle semblait étrange en{n}sortant de l'infirmerie,{n}alors je l'ai suivie."
+f286-0017 7c40e047c0d58d93 Citan{n}"Si l'on interrompt de{n}force ce comportement{n}en plein conditionnement,{p}cela détruit parfois{n}l'esprit...{p}Mais il est vrai que j'ai{n}réagi un peu tard..."
+f286-0018 9818ba0c6874cefc Citan{n}"Le réparer prendra{n}peut-être du temps..."
+f286-0019 1052a4e0339baa02 Citan{n}"Commençons par l'emmener{n}à l'infirmerie.{p}Fei, allez-y une fois{n}fini. Rassurez-vous.{n}L'hypnotiseur devait être{n}doué.{p}Il n'y a pas de cicatrices{n}mentales."
+f286-0020 f70c6cb216c2fc86 Citan{n}"Attendez ! Laissez-la.{n}Arrêter ça est notre{n}priorité."
+f286-0021 fd6245556473a76b Citan{n}"Voilà... Et comme{n}ceci..."
+f286-0022 7d032dd36e4812f7 C'est son oeuvre...{p}Hypnose ? ...Un coup bas,{n}même pour Solaris !
+f286-0023 b7a8a83f8c7095d5 Quels dégâts aux moteurs{n}principaux ? Il me faut{n}plus de temps pour les{n}examiner de près...{p}Mais ça a l'air moche. Ça{n}peut prendre un moment.
+f286-0024 dc6c5b3744b8b9e4 Quoiii ? Martle ? Hein ?{wait 32}{n}Hé ?
+f286-0025 3a462a5e18cf5063 Hé, ma belle.{p}On dit que tu as été{n}capturée. Ça va ?
+f286-0026 6b05a3491b86969f Calme, Martle ! C'est{n}juste la Solarienne.{n}Pas besoin d'aboyer !
+f286-0027 fe0aff4d582ac1cd ...Hein ?{wait 32}{n}Ah, je vois. Pardon.
+f287-0000 292462add4fd35a5 Quoi qu'il arrive...{wait 32}{n}Hors de question que{n}ce Shakhan le{n}garde...
+f287-0001 3dae2508ab033724 Canonnier !
+f287-0004 58d16093a1b5e374 Les unités de Maitreya{n}sont aux catapultes.{p}Toutes pourront être{n}lancées une minute{n}après l'émersion !
+f287-0005 50028b097d7a537f Parfait ! On y va !
+f287-0006 8fb9370d6356189e Alerte de combat 1 !
+f287-0007 e1664165975e0b07 Surface, paré !{done 32}
+f287-0008 70aff09a264d9e3f Torpilles parées !{done 32}
+f287-0009 f4e00b595f6ae2b1 Anti-Gear, paré !{done 32}
+f287-0010 56f3d614d5b2c4ae Navigation et Machines,{n}parées aussi !{done 32}
+f287-0011 7e79215c3b4d1bca Aux postes de combat !{n}Navigation de surface,{n}pompe à sable en marche !{p}Préparez les canons de{n}tribord à tirer à{n}l'émersion !
+f287-0012 372d2ea6311863ee Assiette à droite !{wait 16}{n}Le vent est fort en haut,{n}on risque de perdre{n}l'équilibre !{p}...{wait 32}{n}Jerico ! Passe-moi la{n}barre !
+f287-0013 bed0c3faf81ea4dd Bart{n}"Quand même,{wait 32} fallait{n}pas le laisser partir{n}si vite... hein...?"
+f287-0014 8745fab5e8be539b Bart{n}"Canonnier !"
+f287-0016 72956d136d381071 Bart{n}"C'est parti !{p}Alerte de combat 1 !"
+f287-0017 85ab705f2e4d6d6a Bart{n}"Postes de combat, tous !{n}Navigation de surface !{n}Fermez les évents !{p}Videz le ballast{n}principal !{wait 32}{n}Préparez le combat{n}antiaérien à l'émersion !"
+f287-0018 53df3a1322880070 Bart{n}"Combat de surface !{n}Canons antiaériens{n}parés.{p}Canonnier ! À moi les{n}Missiles Bart !"
+f287-0019 43e593db0394fe49 Ouaiiis !{p}Après les premiers tirs,{n}passez en mode salves !{p}On va les retenir.{n}Préparez-vous à leur{n}flanquer une raclée{n}inoubliable !
+f287-0020 e59d71c138c60858 Compte sur moi !{pause}{n}Cuirassé ou pas, il{n}transporte un Gear{n}neuf !
+f287-0021 cdd081819cb06412 Canonnier ! Feu !!
+f287-0022 3e3b60de32abe4b5 Bart{n}"Quoi ?"
+f287-0023 7e4bba3b6b4851cc Bart{n}"La capitale est proche.{n}Ça doit être un navire{n}de là-bas."
+f287-0024 fb6e4dfb0fb62741 Bart{n}"Sous le sable ?{wait 16}{n}C'est le seul croiseur des{n}sables de tout Aveh !"
+f287-0025 148f8a4ecd037574 Bart{n}"...Bien ! On commence !{n}Préparez les chaloupes !"{wait 16}
+f287-0026 3eeb141cfdb9a5b1 Bart{n}"Une fois débarqués,{n}cachez le navire !"
+f287-0027 33328149e1f5fc93 Bart{n}"Ça va, vieux{n}Maison."
+f287-0028 7e6e41258300f4b4 Bart{n}"On retourne à Nisan !"
+f287-0029 f79b516d0970e41d Bart{n}"Margie et les autres y{n}sont encore. On retourne !{n}Il le faut !{p}Au fait... Et Fei et sa{n}bande ? S'ils vont bien,{n}on pourrait..."
+f287-0030 48ec7a446c3018b0 Bart{n}"Bon sang ! C'est pas{n}possible !"
+f287-0031 3029409c28984a8b Bart{n}"Derrière...?"
+f287-0032 0e0a5641b1258699 Bart{n}"Quelque chose arrive par{n}derrière !{p}Jerico ! La barre... Non,{n}garde-la ! Vire vite, d'un{n}côté ou de l'autre !!"
+f287-0033 2faefa909c57d249 Bart{n}"Aux postes ! Activez les{n}masqueurs ! Préparez le{n}leurre !"
+f287-0034 bfe8a3defc504f2d Tous aux postes de{n}combat !
+f287-0035 5261e2829cb94045 Bart{n}"Lâchez le leurre !{n}Préparez-vous à couper{n}le moteur !"
+f287-0036 a41db79efe4691ca Bart{n}"Barre...{wait 24} VAS-Y ! Tout{n}du côté opposé, à fond !{p}Coupez le moteur ! Alarme{n}de collision !!"
+f287-0037 55efe98c40db8d56 Coupez le moteur ! Alarme{n}de collision !!
+f287-0038 d68c1aa637b866ff Je n'entends que le bruit{n}du sable qui s'écoule...{n}Aucune activité suspecte{n}au radar !
+f287-0039 add73b1c2c5c41da Franz{n}"Rien que le vent en{n}surface et notre moteur.{p}Au radar et au sonar, la{n}menace est minime."
+f287-0040 8390c63470f32029 Hein...?
+f287-0041 39c068459a6532bb Franz{n}"Non... un instant, j'ai{n}cru capter des sons{n}étranges..."
+f287-0042 cdd095d15137f32c Franz{n}"Mais pas de la{n}surface... De sous{n}le sable !"
+f287-0043 7791369c479f6dd4 Franz{n}"...Je ne le capte plus.{n}C'était peut-être une{n}baleine des sables..."
+f287-0044 0f7a74194b4df299 Franz{n}"Là... Dans la couche de{n}surface !{p}Je détecte des ancres{n}qu'on remonte et des{n}moteurs qu'on démarre !{p}La flotte de défense{n}de la Capitale royale{n}appareille...!"
+f287-0045 f48ddb768be3b534 Franz{n}"Plus de contact depuis{n}qu'on a confirmé leur{n}ordre d'attaque..."
+f287-0046 e6c6cd1c10811151 Franz{n}"Poupe ! 300 ! Bruit de{n}torpilles qu'on prépare !{p}Un croiseur des sables !?{n}Il est gros ! Vitesse 60 !{n}Cap relatif 0-0-0 !{n}Caché dans l'angle mort !"
+f287-0047 6a1ab23199905077 Franz{n}"Je capte une propulsion{n}rapide qui se détache du{n}navire ennemi !{p}Des torpilles !? Deux !{n}Vitesse 87 !{n}Confirmées au sonar.{p}Elles passent en recherche{n}active !"
+f287-0048 46f4fdc536d496e8 Franz{n}"Torpille... 1, nous{n}poursuit encore ! Zut !{n}Impact dans 3 !!"
+f287-0049 591c07b435ffb548 Les tourelles A 'Anton' et B{n}'Belta'{wait 16} pourront lancer les{n}ectropomètres vingt secondes{n}après ouverture des trappes.
+f287-0050 0defa9c954a74920 Gungany... Pardon,{n}Missile{n}Bart, en chargement !{p}De la trappe ouverte{n}à l'illuminateur actif :{n}quinze secondes !
+f287-0051 bc0e68e5becb868c Tir alterné entre A{n}'Anton' et B 'Belta' !{wait 16}{n}Corrections en cours !
+f287-0052 50ce9a007f42c042 Jeune maître ! La bande F{n}est de plus en plus{n}utilisée !{p}C'est la fréquence de la{n}défense de la Capitale{n}royale !
+f287-0053 e9cddc16986c7f6c On a aussi capté un appel{n}de la patrouille frontière{n}avec Kislev !{p}Ils demandent des renforts{n}immédiats à la Capitale{n}royale !{p}On dirait qu'on a vraiment{n}semé la pagaille à la{n}frontière !
+f287-0054 f9523ed3244816ee Brouilleur activé !{n}Leurres, tubes 2 et{n}4{wait 16}... En attente !
+f287-0055 3a66508c87766f95 Mais, second ! Sans ailerons{n}à effet, à pleine vitesse,{n}le navire ne supportera{n}pas la friction !!
+f287-0056 17c32a8f6176ad6d Second !!
+f287-0057 002709630d223319 J-jeune maître !{wait 16}{n}Que se passe-t-il ?{n}Pourquoi cette{n}alarme...
+f287-0058 e45688735ffac6c0 J-jeune maître !!{done 96}
+f287-0059 0948cef44f902f8f Maison{n}"J-jeune maître !{n}Les Missiles Gungany...{p}Il faut l'accord de plus{n}de la moitié de{n}l'équipage pour..."{done 120}
+f287-0060 d46eb3bf86a57211 Maison{n}"J-jeune maître !{wait 16}{n}Que se passe-t-il ?{p}Pourquoi cette{n}alarme...?"
+f287-0061 a76d6dd0874e03f1 Jeune maître, attendez !{n}Ce n'est peut-être qu'un{n}navire réquisitionné, pas{n}un navire de guerre...
+f287-0062 bca7e4b88a54efcd Maison{n}"J-jeune maître !{p}J'ai un pressentiment{n}terrible à ce{n}sujet{wait 5}...{wait 10}{n}Soyez très prudent !"
+f287-0063 ede5fd83f7612689 Maison{n}"O-oui... Jeune maître...{p}On dit que Gebler, sous{n}Ramsus, a mis en déroute{n}leur attaque du fort{n}frontalier.{p}Mieux vaut nous replier{n}pour l'instant et revoir{n}nos plans..."
+f287-0064 92c1d0facb404b93 Maison{n}"Jeune maître..."
+f287-0065 94e25df0dafb0e2a Encore...? Jeune maître !{n}Attendez un instant !
+f287-0066 49e76de1833e4345 Jeune maître !!{done 96}
+f287-0067 84a6d948784deaf4 Sigurd{n}"Jeune maître !{n}Encore !!?"
+f287-0068 7c945ece982a830d Sigurd{n}"Il ne lâche jamais{n}rien, celui-là..."{done 96}
+f287-0069 bf0231e943260632 Sigurd{n}"Même nos espions au QG{n}naval d'Aveh n'ont rien{n}dit d'un nouveau navire.{p}Franz, peux-tu réessayer{n}et identifier la chose ?"
+f287-0070 c9d76a39b59f1938 Sigurd{n}"Inutile ! Jeune maître !"
+f287-0073 31b1aa96ae4420b8 Sigurd{n}"Jeune maître !!!"{done 32}
+f287-0074 0f1fa4c9a7591566 Sigurd{n}"Moteur, paré pour pleine{n}puissance !! Jerico !{n}Passe-moi la barre !"
+f287-0075 d05c37683bac19f1 Sigurd{n}"On peut 'sauter' grâce{n}à l'effet Bernoulli sur{n}les ailes, à la place !!"
+f287-0076 4523176252091f04 Sigurd{n}"Peu importe !{n}Le Yggdrasil n'est rien{n}sans le jeune maître !{p}Pleine puissance !!{n}Vitesse maximale !!"
+f287-0077 ca0fbef8fc17b283 Sigurd{n}"Eeeeeaaaaarrrrgghh !!!!{n}Allez, VAS-Y !!!"{done 64}
+f288-0000 f3ea570ba0c343e4 Maison{n}"...snif...snif... Dire{n}que mademoiselle{n}Marguerite est enfin là...{p}À bien y penser, c'est la{n}deuxième fois que nous{n}fuyons la Capitale royale.{p}Cela semble si lointain...{n}Cette nuit où je les ai{n}emmenés pour fuir..."
+f288-0001 21154f939ee1fd3f Bart{n}"Ouais, et en plus il a eu{n}le culot de voler ce{n}navire en route.{p}Tu savais que c'était{n}le navire amiral du{n}royaume ?"
+f288-0002 b556e7398cdefab8 Maison{n}"Oui, ce fut l'oeuvre de{n}Sigurd.{wait 10} Quel courage,{n}si jeune.{p}Ce Yggdrasil est donc{n}comme un souvenir du feu{n}roi pour le jeune maître."
+f288-0003 b2861f679a36a3f2 Bart{n}"On dirait que tu vas me{n}coller toute ta vie.{p}Même si tu étais mon{n}chevalier personnel, hein ?{n}Je ne suis plus qu'un{n}petit pirate !"
+f288-0004 c50950457bd88070 Maison{n}"Mais un jour, vous serez{n}un souverain dont on sera{n}fier."
+f288-0005 fd671999d00d7fdd Bart{n}"Je dois grandir vite,{n}sinon je ne serai jamais{n}fier de moi.{p}Et je ne pourrai pas le{n}battre !"
+f288-0007 fa1879535a513f07 Maison{n}"Oh, vous ne vous reposez{n}pas un peu ?"
+f288-0008 eff1ab5201faf158 Maison{n}"On dirait que l'heure{n}finale approche...{p}S'il le faut, ce Maison{n}prendra aussi les armes{n}et viendra à votre{n}secours !!"
+f288-0009 a4238967933651d8 Maison{n}"Nous ne pourrons sans{n}doute pas venir, mais{n}nous prierons pour vous."
+f288-0010 0bfc30df4d7b43e2 Maison{n}"...{n}Je n'ai aucun regret !"
+f288-0011 a311e0d8b26fdebe Maison{n}"Tiens, comme c'est animé{n}par ici."
+f288-0012 031d09d17bcf42f3 Maison{n}"Soyez prudents..."
+f288-0013 240ae7389f2f2550 Maison{n}"Monsieur Billy vous{n}attend juste là..."
+f288-0014 439a7887ae5b9b03 Maison{n}"Une ambiance mûre, mais{n}moderne... Voilà ce que je{n}vous offre...{p}La vie de barman n'est pas{n}si mal, vous savez ?"
+f288-0015 d93f54211955dad1 Maison{n}"Que des païens comme nous{n}reçoivent une telle{n}charité...{p}Mon Dieu, Dieu est{n}vraiment{n}très, très tolérant..."
+f288-0016 edb62212e497fc08 Maison{n}"Mademoiselle Elly... et{n}maintenant monsieur Fei...{p}Pourquoi tant de malheurs{n}nous frappent-ils ainsi ?"
+f288-0017 b4204d1318d94e05 Maison{n}"Mademoiselle Elly...{wait 10}{n}Quel genre de sortilège{n}lui a-t-on jeté ?"
+f288-0018 6059c57b46db52cd Maison{n}"J... Jeune maître !{wait 10}{n}J'ai tout appris.{p}Une amitié internationale{n}avec le Thames !?{wait 10}{n}Qui l'eût cru..."
+f288-0019 339d530227f13e7d (...Snif...snif...{wait 10}{n}Les efforts du vieux{n}n'ont pas été vains !)
+f288-0020 d416e48c4e8eee7f Maison{n}"J'ignore où nous{n}sommes.{wait 10} Ce n'est pas{n}sur la carte..."
+f288-0021 d7193b57cf38a786 Maison{n}"Oh ! Docteur Uzuki.{wait 10}{n}Navré de vous causer tant{n}de tracas...{p}Nous aurions dû arrêter le{n}jeune maître...{wait 10}{n}Mille pardons !"
+f288-0022 27aed9176175053b (Aïe{wait 5}...aïe{wait 5}...aïe...{wait 5}...{wait 5}!{wait 10}{n}Mon lumbago chronique a{n}empiré depuis mes efforts{n}à Aveh...)
+f288-0023 41e1c8facbf46315 Maison{n}"Enfin, demain, nous{n}partirons pour Bledavik...{p}Bien que prince, notre{n}jeune maître connaît mal{n}la Capitale royale{wait 5}...{p}J'ai toujours trouvé cela{n}dommage. J'ai pourtant fait{n}de mon mieux pour l'élever{n}en Prince héritier.{p}Mais, avec le recul, j'ai{n}peut-être placé le 'fardeau{n}de la royauté' sur lui trop{n}tôt...{p}Et c'était peut-être trop{n}pour un enfant promis à un{n}avenir comme le sien.{n}{wait 5}...{p}Je dois être le pire{n}précepteur qui ait jamais{n}existé !"
+f288-0024 401b4fd06f730a6f Citan{n}"Mon cher Maison...{wait 10}{n}Je ne le crois pas !{p}Le jeune homme aurait{n}rejeté ce fardeau s'il ne{n}voulait plus le porter !{p}C'est aujourd'hui un homme{n}accompli... parfaitement{n}capable d'endurer fardeaux{n}et pressions.{p}Et je crois que c'est{n}justement vous qui lui en{n}avez donné la force."
+f288-0025 b5797db702606685 Maison{n}"Oh, mon bon{n}Docteur Uzuki..."
+f288-0026 3bb4550ff4f8d1be Maison{n}"Allons à Aveh.{wait 10}{n}Sauvons notre{n}Marguerite !!"
+f288-0027 71a0900aa024f61f Maison{n}"J'espère que vous n'êtes{n}pas trop surpris.{p}Ces derniers temps, des{n}barb{wait 10}...{wait 5} pardon...{wait 5} des{n}garçons bien trop vifs{n}entourent le jeune maître.{p}Alors, votre serviteur,{n}chargé de son éducation, a{n}exigé que cette salle soit{n}créée !!"
+f288-0028 f34202d8f56fabd1 (Mais du coup, j'ai dû{n}trouver un travail en{n}plus...)
+f288-0029 17d9efd4049c69f8 "Que désirez-vous ?"{n}{speed 255}    Objets{n}    Armes/Accessoires{n}    Rien, merci.
+f288-0032 a36ef6b8db988760 Maison{n}"J'espère vous servir à{n}nouveau !"
+f288-0033 3a85b151b201de16 Maison{n}"{speed 2}Ah, jeune maître...! Si le{n}jeune maître ne vient pas{n}plus souvent recevoir une{n}éducation digne d'un prince,{n}le vieux Maison, chargé de{n}l'élever, déshonorera la{n}mémoire du roi Edbart IV...{n}Dieu ait son âme. Et le{n}jeune maître, comme{n}toujours, ne m'écoute même{n}pas ! Le roi était paisible,{n}un homme très généreux...{n}Mais le jeune maître, non{n}content de donner son nom à{n}un missile, abat avec lui un{n}avion inconnu. Et, comble de{n}malheur, son ami Fei et sa{n}bande étaient à bord..."
+f288-0034 c5c9823c87200135 Maison{n}"Bref, il faut s'excuser{n}auprès du Docteur Uzuki et{n}de monsieur Rico, non !?{p}Ils allaient au hangar des{n}Gears..."
+f288-0035 f485885d3953ab63 Citan{n}"Je suis certain qu'Elly{n}est saine et sauve.{wait 10} Il{n}suffit d'y croire...!"
+f288-0036 d171355389c60f1f Citan{n}"Ce sera un plaisir de{n}vous accompagner !!"
+f288-0037 faae77a3b027960f Citan{n}"Rien n'arrêtera plus{n}notre vieil ami...!"
+f288-0039 71265f088ec90721 Citan{n}"Jeune homme,{wait 10} vous vous{n}entendez bien avec le{n}capitaine du Thames.{p}C'était à prévoir.{wait 10}{n}Un homme de la mer, le{n}genre que vous{n}admireriez..."
+f288-0040 ac8bf78c3566d9c2 Sigurd{n}"...{wait 10}{n}Ah, oui... C'est l'heure{n}de partir, n'est-ce pas ?{p}Désolé, vieil ami, mais{n}j'ai du travail..."
+f288-0041 c0ddaaa8b9bc73c7 Jessie{n}"Ah, déjà ?{wait 10} Bon,{n}alors, avant de partir,{n}faisons comme d'habitude...{p}Tu sais...{wait 5} le 'numéro du{n}visage peint sur le ventre{n}et de la danse'...?{wait 5}{n}Tous les trois !"
+f288-0042 25108ddda4021d33 Citan{n}"!!{wait 10}{n}Eh bien, en fait, nous{n}sommes pressés, alors...{p}Nous en reparlerons une{n}autre fois..."
+f288-0043 d60ddf2811326d56 Jessie{n}"Ah, vraiment ?{wait 10}{n}Bon, alors moi aussi, je{n}file, hein !"
+f288-0044 11b1cb71879d0928 Citan{n}"J'ai aussi une question{n}à te poser...{p}Alors retrouvons-nous{n}quand nous aurons plus{n}de temps...!"
+f288-0045 7e4207008dd1aba4 Jessie{n}"Ouais.{wait 10}{n}J'espère vivre assez{n}longtemps pour ça..."
+f288-0048 8c687beffca88ca0 Elly{n}"AAAAAAHHHHH !!{wait 10}{n}Sigurd est...!"
+f288-0049 21c42a62dae1d247 Citan{n}"Encore !?{wait 10}{n}Sigurd se saoule si{n}facilement...!{p}C'est fichu ! On ne peut{n}pas partir aujourd'hui,{wait 10}{n}peut-être demain..."
+f288-0051 651fb17c3c298a5e Jessie{n}"Mots-clés : Nikolai,{wait 10}{n}Maria,{wait 10}{n}un Gear énorme{wait 10}...{wait 5} hein !?"
+f288-0052 eefefcc7609a652f Jessie{n}"Ha...!{wait 10} Ça prouve que{n}le gamin a besoin de ses{n}parents tout le temps !"
+f288-0053 57355c5bda4c4151 Jessie{n}"Ha, ha, ha !! Ça faisait{n}longtemps que je n'avais{n}pas pris une cuite !{p}C'est parce que mon fils{n}m'interdit de boire !{wait 10}{n}Quel super bar vous avez{n}là... mon vieux !"
+f288-0054 6f46c72fa109b60e Maison{n}"Eh bien... euh, merci,{n}mon brave."
+f288-0055 b5cc5889bda624d1 Jessie{n}"Ce vieux est de bonne{n}souche...{wait 10}comme sa gnôle !{wait 10}{n}Il me plaît !! Ha, ha !"
+f288-0058 a4bf4ccdbdb967f1 Agent de Shevat{n}"À l'origine, Shevat était{n}une ville au sommet de la{n}'Tour de Babel'...{p}On dit qu'au sommet, il y{n}avait une station de{n}communication pour joindre{n}l'actuelle Shevat.{p}Si seulement elle existait{n}encore et fonctionnait..."
+f288-0059 d03fcaf179825712 Ouf ! Fini, les cris{n}du vieux.
+f288-0060 ea4259ae6054b8bc La réparation du moteur{n}est enfin terminée.{p}Pourquoi ne pas descendre{n}l'escalier pour admirer{n}notre beau moteur ?
+f288-0061 e7ac88cd1ef6fcfd Billy{n}"Le voyage fut long...{wait 10}{n}Mais rien n'a été vain.{n}Prouvons-le !"
+f288-0062 21828ee0b0f68fbe Billy{n}"Je veux partir avec vous{n}et percer la vérité de ce{n}monde !!{p}Comptez sur moi, à tout{n}moment !"
+f288-0063 ea784862f3a105fa Sigurd{n}"...{wait 10} Je comprends{n}enfin pourquoi tu es{n}descendu à la surface...{p}Bon, je te comprends.{n}Mais que Kahran Ramsus ait{n}pris ses fonctions à Aveh,{n}c'est bien gênant."
+f288-0064 1e38de5cbaa6d86f Citan{n}"La patrie avait sans{n}doute une raison{n}particulière."
+f288-0065 f2dfa839b1780793 Sigurd{n}"Oui...{wait 10}{n}évidemment."
+f288-0066 93ed397f5448e43c Citan{n}"Mais il y a peut-être{n}encore une chance...{p}Toi et moi, surnommés{n}les 'Éléments' à l'école{n}des chefs 'Jugend', nous{n}sommes là !"
+f288-0067 60bc44f0689d2a8b Sigurd{n}"J'espère que tu as{n}raison..."
+f288-0068 899131fb2b921781 Citan{n}"Au fait, elle est{n}toujours...?"
+f288-0069 425f763be3598031 Sigurd{n}"Selon Fei, Kahr avait{n}une assistante à ses{n}côtés...{p}Avec, dit-il, des yeux{n}et des cheveux indigo.{n}...{n}Ce doit donc être elle..."
+f288-0070 96d68cd710872654 Citan{n}"Alors tous les anciens{n}'Éléments' sont à la{n}surface à présent..."
+f288-0071 988d0d93c8f56142 Sigurd{n}"On dirait..."
+f288-0072 988d1d0da0e22321 Sigurd{n}"Hyuga{wait 5}...{wait 10}{n}Pour être franc{wait 5}...{wait 5}{n}elle me fait peur.{p}Elle soutient Kahr et est{n}gentille avec tous, je le{n}sais très bien.{p}Mais parfois, je sentais{n}en elle quelque chose{n}d'étrange qui me faisait{n}peur.{p}Ça me trouble plus que la{n}présence de Kahr sur{n}cette terre."
+f288-0073 76a7ec28bca946c5 Citan{n}"Ce n'est pas possible...{n}Pas elle..."
+f288-0074 c7d19b7163f977c2 Sigurd{n}"Oui, moi non plus, je ne{n}veux pas y croire...{p}Mais tu ne te souviens pas{n}que je sentais toujours{n}ces choses-là avec{n}précision ?"
+f288-0075 a13c9b9270bcaecb Citan{n}"C'est vrai..."
+f288-0076 2a356a33988f836c Citan{n}"Au fait, tu l'as déjà dit{n}au jeune homme...?"
+f288-0077 d2db9f059a724031 Sigurd{n}"Non, pas encore.{p}Je ne veux pas l'inquiéter{n}tant qu'on ne connaît pas{n}les vrais buts de Solaris.{p}Mais je devrai le lui dire{n}un jour...{wait 10}{n}Bref, Hyuga, as-tu des{n}informations ?"
+f288-0078 2ded48c2be8650ff Citan{n}"Pas vraiment...{wait 10}{n}Je suis parti avant la{n}section centrale..."
+f288-0080 4f4248c955b57c6d Fei{n}(Bart, c'est toi !?{wait 10}{n}Quelle frousse...!)
+f288-0081 bdfbe37d95c48046 Bart{n}(Pardon, pardon.{p}On dirait que Sig et ton{n}ami le doc se connaissent{n}très bien...{p}Sig{wait 5}...{wait 5}{n}Zut, moi qui croyais tout{n}savoir sur ce type !)
+f288-0082 80cbbd9a9c2d33ad Fei{n}(Le Doc, revenu quand ?)
+f288-0083 f4274d287e8ad505 Jessie{n}"Je vois.{wait 10} C'est ici que tu{n}as supplié de revenir,{n}hein ?"
+f288-0084 aab454477ade443d Sigurd{n}"Eh bien, oui..."
+f288-0085 62c86ac53d3efe70 Jessie{n}"Après ton départ,{n}Billy a beaucoup{n}pleuré."
+f288-0086 de4108309990d781 Sigurd{n}"...{wait 10}{n}Pardon."
+f288-0087 b6898100502eac12 Citan{n}"À ton départ de Solaris,{n}c'était pareil.{wait 10}{n}Kahr était bien ébranlé."
+f288-0088 df10db97687e69c8 Sigurd{n}"Je ne voulais pas le{n}trahir..."
+f288-0089 31207edeb5ef029e Citan{n}"Sa misanthropie s'en est{n}encore aggravée."
+f288-0090 84bd053e571eddd8 Citan{n}"Assez parlé du passé,{n}vieil ami.{p}Je ne pensais pas te voir{n}errer sur cette terre..."
+f288-0091 37d41d402e1d39b6 Les amis !
+f288-0092 b6705b9cbc312a1f Billy{n}"Bonjour.{p}On m'a dit que vous{n}dormiez encore, alors j'ai{n}pris la liberté{n}d'entrer."
+f288-0093 8c88126159fa24d7 Bart{n}"T'es habillé bien léger,{n}hein. Ça suffit ?"
+f288-0094 796cbe7332d812f7 Rico{n}"Tenue bien légère. Ça{n}suffit ?"
+f288-0095 fb20f660b277b1b7 Billy{n}"Nous, Etones, avons un{n}équipement singulier.{p}Je vous l'explique,{n}puisque nous allons{n}travailler ensemble."
+f288-0096 926210c23c3eab8f Billy{n}"D'abord, mon équipement{n}de base, ce sont des armes à{n}feu, de trois types...{p}'Pistolet',{wait 10}{n}'Pistolet à Éther',{wait 10}{n}et 'Arme Lourde'.{p}Seul le pistolet peut être{n}remplacé par d'autres{n}modèles du même type.{p}Les deux autres, je les ai{n}faits moi-même : rien ne{n}peut les remplacer.{p}On augmente l'attaque d'une{n}arme en remplaçant ses{n}'munitions' ou 'balles' par{n}de plus puissantes !{p}Pour charger des munitions,{n}appuyez à Droite ou à Gauche{n}sur la croix, à l'écran{n}Équiper.{p}Une sous-fenêtre remplace{n}alors la fenêtre Équiper,{n}et vous y choisissez les{n}munitions.{p}Mais attention : le nombre{n}de balles de chaque arme est{n}limité.{p}Pour gérer vos munitions,{n}gardez un bon stock et{n}rechargez souvent !{p}Cela dit, notez que les{n}Pistolets à Éther n'ont pas{n}cette limite.{wait 20}{n}Bon, voilà...{p}Compris ?{n}    {speed 255}Oui{n}    Non, réexpliquez{wait 10}
+f288-0097 c3accc07735496be Bart{n}"J'ai à peu près compris,{n}mais c'est tordu, non ?"
+f288-0098 dc35890769733479 Rico{n}"...Je vois.{wait 10}{n}Bien singulier..."
+f288-0099 83c38b15079cb9f2 Billy{n}"...{wait 5}Quelle belle arme.{wait 10}{n}Elle a sûrement une{n}histoire importante."
+f288-0100 90af6a648f61ca39 Bart{n}"Évidemment !{p}C'est le célèbre fusil{n}'Machiganater', légué de{n}génération en génération{n}chez les Fatima."
+f288-0101 004516612da1ce82 Billy{n}"Quel gâchis...{wait 10}{n}Trop beau pour un simple{n}manieur de fouet..."
+f288-0102 344bc50e265adefe Bart{n}"Hé !{wait 10}{n}Pourquoi t'es grossier{n}avec moi !?"
+f288-0103 cf59abb64324d6f3 Billy{n}"Pardon...{wait 10} C'est que...{wait 10}{n}je ne te croyais pas{n}amateur d'armes."
+f288-0104 9689b45f23d68481 Elly{n}"Bon, de toute façon...{wait 10}{n}Billy...{p}J'aimerais savoir pourquoi{n}tu es devenu un Etone..."
+f288-0105 687f4cf535fd0c57 Bart{n}(Je m'en fiche...){done 30}
+f288-0106 0c7975120b7af69d Billy{n}"...{p}Je vois... Les Etones{n}aident des inconnus, ça{n}doit intriguer..."
+f288-0107 e87259cb4247a8a8 Elly{n}"Non, ce n'est pas ça.{wait 10}{n}Je suis curieuse de tes{n}intentions personnelles.{p}Je ne sais pas... Je ne{n}m'attendais pas à ce que tu{n}sois un Etone..."
+f288-0109 6d86f857afef13f3 Billy{n}"Je vois...{p}Comme notre travail est{n}assez inhabituel, j'en{n}parlerai aussi en{n}expliquant..."
+f288-0110 2262b4d0df0e4e4c Bart{n}"...{wait 10}{n}On y est, on dirait..."
+f288-0111 d934bd5610fe9e51 Citan{n}"...{wait 10}{n}Nous voici arrivés..."
+f288-0112 8b969a252d7deb01 Billy{n}"Serait-ce...?{wait 10}{n}Le transport est attaqué{n}par des Faucheurs..."
+f288-0115 7664374b0b99a6e1 Billy{n}"Qui peut nous aider ?"
+f288-0116 6649f81e8f030939 Billy{n}"Ha ! Ça va sembler{n}pathétique, mais...{p}J'ai presque vendu mon{n}corps pour faire vivre{n}Prim : longtemps, nous{n}n'avions que l'un{n}l'autre...{p}Pourtant, Prim préfère{n}encore le père qu'elle n'a{n}jamais connu... Celui qui{n}est apparu de nulle{n}part..."
+f288-0117 4c7eef98bc29de04 Bart{n}"'Vendre ton corps' !?{n}Tu ignores, gamin...!?{p}Certaines choses vendues{n}se rachètent, et d'autres{n}jamais !{p}Tu n'as pas compris ça !?"
+f288-0118 779c01b7849a6afb Billy{n}"Je me suis retenu, bien{n}sûr.{wait 10} Mais on m'offrait{n}3000G pour une nuit..."
+f288-0119 296c571aa63df9a2 Bart{n}"Idiot !{wait 10} Écoute...{wait 10}{p}Si ta soeur et toi avez{n}besoin d'aide, venez sur{n}mon navire.{p}On vit en autarcie, alors{n}au moins, vous ne manquerez{n}ni de nourriture ni d'un{n}endroit pour dormir !{p}Et ne parle plus jamais de{n}'vendre ton corps' devant{n}moi...!{wait 10} Compris !?"
+f288-0120 d378efde7d3848cf Billy{n}"Se pourrait-il...?{wait 10}{n}Que tu sois vraiment un{n}'chic type'...?"
+f288-0121 d5ce06b63ff843f0 Bart{n}"Pourquoi tu ne dis pas{n}simplement 'merci' ?{wait 10}{n}Pff !"
+f288-0122 721dfe2cea69ef99 Billy{n}"Bon...{wait 10}c'est...{wait 10}enfin...{wait 10}{n}tu n'as encore rien fait{n}pour nous,{wait 10} alors non !"
+f288-0123 8e4ea1f84cdc6e3f Très drôle, gamin,{n}TRÈS drôle !
+f288-0124 f05b7a427c058e64 Elly{n}"'Vendre son corps'{wait 10}...?"
+f288-0125 6b9c2274f5a737b9 Billy{n}"Bien sûr, je ne l'ai pas{n}fait.{p}Mais on m'offrait 3000G{n}par nuit..."
+f288-0127 60829a9ffa6cefd1 Jessie{n}"Quand j'étais à Solaris,{n}j'ai découvert un plan{n}secret...{p}Le Plan 'Malakh' (M).{wait 20}{n}Mené sous les ordres{n}de Krelian...{p}Pour faire avancer le plan,{n}de nombreux Agneaux ont été{n}réunis par l'Ethos pour{n}servir de cobayes.{p}Ou plutôt, pour devenir des{n}Faucheurs ou des -Wels-..."
+f288-0128 a82f4a9ed3913642 Jessie{n}"Dégoûté par Solaris, j'ai{n}décidé de creuser.{p}J'ai appris que le savant{n}en chef du Plan M avait{n}confié la vérité à un Gear{n}de test.{p}Puis il a laissé ce Gear{n}fuir avec sa fille,{wait 5}{n}pour que la vérité ne soit{n}pas découverte...{p}Et ce fut,{wait 5} je le crains,{wait 5} la{n}dernière information que{n}j'ai pu obtenir..."
+f288-0129 4b166594fabb730d Jessie{n}"À cause de ma découverte,{n}je suis descendu à la{n}surface...{p}Et c'est ici que je me{n}suis caché, avec ma femme,{n}Racquel, et mon fils,{n}Billy.{p}Depuis, je cherche ce Gear{n}et la fille."
+f288-0130 bd835f7091866c1a Jessie{n}"Bref,{wait 10} j'ai appris que la{n}fille du savant et le Gear{n}sont peut-être à Shevat.{p}Parfait, sauf que j'ignore{n}comment diable y aller,{n}ou les contacter.{p}Shevat a une barrière si{n}puissante que même Solaris{n}n'y peut rien...{p}Alors, je crois qu'il n'y{n}a{n}rien à faire...{wait 10}{n}Pas de chance !"
+f288-0131 5f853f4e60a0a7eb Le nom de cette{n}fille serait-il{n}Maria...?
+f288-0132 232b5c1724b349de Billy{n}"Ah, vous allez bien ?{wait 10}{n}Vous devriez vous reposer{n}encore un peu...?"
+f288-0133 d330f9342367d04c Agent de Shevat{n}"Oui, je tiens déjà debout{n}et je marche même...{n}Merci."
+f288-0134 cb0073dbeea6308f Fei{n}"Moi aussi, ça va."
+f288-0135 2f21616f3701885e Jessie{n}"Maria, hein...?{wait 10} Hum...{wait 10}{n}Sauf erreur, son père{n}s'appelait Nikolai ?"
+f288-0136 65361703cbc0634b Agent de Shevat{n}"Je n'en sais pas tant...{wait 10}{n}Mais on parle d'une fille{n}et d'un Gear."
+f288-0137 c74425b1d7db6a37 Jessie{n}"Hum,{wait 10} c'est forcément{n}eux.{wait 10} Ce Gear énorme est{n}donc à Shevat !"
+f288-0138 d1ac4da7dbc15294 Jessie{n}"Alors...{wait 10} comment aller à{n}ce Shevat ? On peut{n}contacter l'endroit ?"
+f288-0139 67eaf0c7056adb7d Agent de Shevat{n}"Hélas, ayant été capturé,{n}je n'ai pas non plus de{n}moyen de les joindre."
+f288-0140 985beb52c315d078 Je vois...
+f288-0142 b2a4e2e1e5d972d6 Agent de Shevat{n}"Peut-être un moyen...!{n}Jadis, Shevat se trouvait au{n}sommet de la Tour de Babel.{p}On dit qu'en haut de la tour{n}une station de communication{n}permet de joindre la terre{n}natale de Shevat.{wait 10}{n}Pourvu qu'elle existe..."
+f288-0143 5774f6767a40e94c Citan{n}"Hum...{p}Il se peut bien que la{n}station ait été{n}détruite...{p}D'autant que la tour a{n}été scellée par{n}l'Ethos."
+f288-0144 4b678263bb636814 Jessie{n}"Te revoilà avec ton{n}pessimisme..."
+f288-0145 2e4623ca27233894 Citan{n}"Je suis simplement{n}réaliste."
+f288-0147 f2a8d4c5533a496d Bart{n}"Pas le choix, il faudra{n}essayer d'y aller.{p}Tant que la Porte existe,{n}impossible d'échapper à{n}l'emprise de Solaris.{p}Bref, même si on reprend{n}Aveh à Shakhan, ce ne{n}serait pas une fin heureuse{n}tout de suite."
+f288-0148 5b65161a4a2510f4 Billy{n}"Je crois que nous n'avons{n}pas d'autre choix que{n}d'essayer d'y aller...{p}De toute façon, tant que{n}la Porte existe, nous{n}ne pouvons échapper à{n}l'ombre de Solaris."
+f288-0149 4fe547ba4f40fd1f Citan{n}"Ce 'plan secret' me{n}préoccupe aussi...{p}Le vrai secret, c'est{n}qu'ils utilisent des{n}humains ramassés ici, sur{n}terre..."
+f288-0150 c882e0cf593c604f Fei{n}"Je ne saisis pas bien ce{wait 5}{n}plan secret,{wait 5} ni {wait 5}le rôle{n}de l'Ethos{wait 5} et tout ça...{p}Pour qui Solaris prend-il{n}les gens d'en bas !?"
+f288-0151 d4783f235b384a4c Fei{n}"...Pardon.{wait 10}{n}J'oubliais que c'est{n}ton pays..."
+f288-0152 11eaf68b92a82b1b Elly{n}"Ce que fait mon pays...{wait 10}{n}n'a rien à voir avec moi.{p}Je trouvais moi-même que{n}quelque chose clochait,{n}c'est pour ça que je suis{n}venue ici...{wait 10}{p}Alors, ne t'en fais pas{n}pour moi."
+f288-0153 14b78aa03dcf47d5 Fei{n}"On n'a rien à perdre,{n}alors{n}essayons d'y aller.{p}On doit connaître la vérité{n}sur les papiers trouvés au{n}siège de l'Ethos et sur ce{n}qu'a dit le père de Billy.{p}Et je dois de toute façon{n}aller à Shevat, pour des{n}raisons personnelles."
+f288-0154 5466f9593fbee4f8 Fei{n}"Pas de temps à perdre,{n}hein !?{wait 10} Allons vite à la{n}Tour de Babel !"
