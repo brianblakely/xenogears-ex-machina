@@ -2185,3 +2185,79 @@ f096-0038 3a1139c47e969b94 Tout est prêt.
 f096-0039 64c5705010212985 Rien à signaler, chef !!
 f096-0041 2bdd76b6de17fb80 Les soeurs attendent à{n}la cathédrale.
 f096-0042 c958a1019ed8c577 Bon retour parmi nous.
+f097-0000 b3de97043b737d9f Margie{n}"Les soeurs chantent{n}encore en bas, alors{p}elles mettront un moment à{n}revenir."
+f097-0001 25286652325311d9 Margie{n}"Allons à la salle du{n}tableau.{p}D'ici là, les soeurs{n}seront sûrement{n}revenues."
+f097-0002 33b4523e9724d576 Margie{n}"Je me demande quel genre{n}de personne était Sophia.{p}J'aurais adoré la{n}connaître."
+f097-0003 ecf3795b7d6c6dca Moi aussi, je dois faire{n}de mon mieux !
+f097-0004 194b1f7b1f703dd1 Une nouvelle ère{n}arrive...{wait 30}{n}Moi aussi, je dois faire{n}de mon mieux !
+f097-0005 e19da72f553717a0 Ils sont tous vivants !{wait 30}{n}Dieu merci.
+f097-0006 e686afee02fba46b Nous recopions des{n}parchemins.{p}Au-delà de 100 ans, les{n}parchemins s'usent, alors{n}nous les renouvelons.{p}C'est une de nos tâches{n}quotidiennes.
+f097-0007 a86740ba22ba5891 Prenez soin de vous !
+f097-0008 e026910c109b692b La fin de la monarchie{n}n'apportera pas la paix{n}d'elle-même.{p}Désormais, les citoyens{n}doivent rebâtir ce pays de{n}leurs propres mains.{p}De nouvelles épreuves nous{n}attendent, sans doute.
+f097-0009 caaea02b7c5c4f74 Grâce au ciel, vous{n}êtes sains et saufs !
+f097-0010 caf63d45433aec20 Pourquoi la guerre ne{n}disparaît-elle jamais de{n}ce monde ?{p}Pour moi, elle n'a{n}clairement aucun sens...{p}Sommes-nous destinés à{n}une éternelle discorde ?
+f097-0011 32b57e8680c62c4c Nous attendons avec{n}impatience l'aube du{n}vrai monde !
+f097-0012 2173df963288c992 Reconnaître l'existence de{n}Solaris peut offrir un{n}regard neuf sur l'orthodoxie{n}de Nisan.{p}En ce sens, nous voici enfin{n}à un nouveau point de{n}départ.
+f097-0013 d9933056bc4c0b4c À voir tout le monde si{n}enthousiaste, un nouvel{n}espoir est né en moi !
+f097-0014 992df8f84a79da2d Le chemin à suivre est{n}quelque part, là-dehors.{p}Une issue à la confusion que{n}nous vivons...{p}La soeur assise en face de{n}moi, en diagonale, cherche{n}désespérément cette réponse.
+f097-0015 d5d63844020726f8 Vos exploits méritent d'être{n}racontés aux générations{n}futures.{p}J'en ai parlé avec Soeur{n}Agnes, et nous avons décidé{n}que je consignerais vos{n}voyages et expériences.{p}Alors,{wait 30}{n}je vous en prie, revenez{n}vivants !{p}Vos exploits seront transmis{n}de génération en génération !
+f097-0016 cbfc07f570aa4e32 (...{wait 30} Quelque part...{wait 30}{n}Elle doit être quelque{n}part...{p}La vérité qu'on ignore{n}encore.)
+f097-0017 9e6cef29f2a43851 Ah !?{wait 30} Vous{n}m'avez fait{n}peur.
+f097-0018 0bb96b7973fc191d Fei{n}"Vous êtes très{n}appliquée."
+f097-0019 2f9ff9eb5a6d55ed Ah, eh bien, plus ou{n}moins...{p}C'est qu'après m'être{n}glissée dans la capitale,{n}j'ai beaucoup réfléchi...{p}J'ai fini par comprendre{wait 30}{n}que le monde ne tourne pas{n}rond !
+f097-0020 e8bc89f1ad5e3296 Oui, {wait 30} le monde ne tourne{n}pas rond !
+f097-0022 9a3900be0c89cfef Les autres sont sorties{n}aider les citoyens qu'on{n}évacue.{p}Je suis restée pour aider{n}Soeur Agnes et veiller{n}sur les lieux.
+f097-0023 d6ad8889987503a1 Proclamer la république de{n}son plein gré, c'est{n}incroyable.{p}Ce serait formidable que{n}Bartholomew devienne{n}président.{p}Mais alors, ça ne changerait{n}pas grand-chose à ce qu'on{n}a, non ?{p}En tout cas, maître{n}Bartholomew s'en sortirait{n}très bien.
+f097-0024 ea6de8f0889d731e Agnes{n}"La personne du tableau de{n}la salle du portrait est{n}Sophia.{p}C'est la première Grande{n}Mère de Nisan.{p}Selon la légende, ce{n}portrait a été peint il y{n}a environ 500 ans."
+f097-0025 f098c4a954244555 Agnes{n}"On vous a montré le{n}portrait de Sophia, je{n}crois.{p}La dame de ce tableau est{n}la grande mère fondatrice{n}de Nisan...{p}On dit qu'il a été peint{n}il y a au moins 500 ans."
+f097-0026 3466bb47d8c971c2 Citan{n}"500 ans...{wait 30}{n}C'est vraiment{n}impressionnant.{p}Personnellement, cela{n}m'intrigue. Auriez-vous{n}des documents de cette{n}époque ?"
+f097-0027 458cde40d127448b Agnes{n}"Nous n'avons gardé aucun{n}document de ce genre{n}intact.{p}Tous les écrits sur Sophia{n}ont été perdus...{p}Seul le portrait demeure.{p}Nous savons peu de choses{n}d'elle, nous aussi."
+f097-0028 ec49fb0270ade93f Citan{n}"Quel dommage !{n}Il ne reste donc{n}vraiment rien !?"
+f097-0029 0409c52931aa866c Agnes{n}"Pour quelqu'un qui a aidé{n}Marguerite, j'aimerais{n}pouvoir vous aider...{p}Mais, hélas, je ne peux rien{n}pour vous..."
+f097-0030 5da98ceab310423d Citan{n}"Voyons, cela n'a aucune{n}importance.{n}Ne vous en faites pas{p}pour cela. Je demandais{n}simplement."
+f097-0031 73dec062747157de Citan{n}"Mais cela semble un peu{n}étrange...{p}Si un édifice aussi{n}majestueux a survécu à{n}l'histoire,{p}on s'attendrait à ce qu'un{n}ou deux parchemins aient{n}survécu aussi."
+f097-0032 c646be490158b1db Agnes{n}"La tradition dit que{n}Sophia a vécu il y a{n}environ 500 ans...{p}Elle s'est sacrifiée pour{n}le peuple et a été rappelée{n}auprès de Dieu. C'est tout{n}ce que je sais."
+f097-0033 32e782c240b2001f Citan{n}"...Je vois.{wait 30}{n}Tout s'est perdu dans{n}la nuit de l'histoire."
+f097-0034 d4359b37eb051a96 Agnes{n}"Marguerite m'a laissé{n}entendre tout à l'heure{n}que vous allez à Aveh."
+f097-0035 5b6557267ad16d4b Bart{n}"Ouais. On risque de{n}gêner un peu{p}les gens de Nisan...{p}Mais je ne peux vraiment{n}pas l'éviter."
+f097-0036 0a191e652514f67a Agnes{n}"Oui, je comprends.{p}Seulement, si je puis dire{n}le fond de ma pensée...{p}J'aurais aimé que vous{n}trouviez un moyen de{n}pacifier ce pays sans verser{n}le sang...{p}Mais je ne vous retiendrai{n}pas, maître Bartholomew.{p}Vous avez dû longuement{n}réfléchir avant de décider.{p}Nisan sera à vos côtés,{n}maître Bartholomew."
+f097-0037 233c7b64f7630019 Bart{n}"Merci, ma soeur."
+f097-0038 994803fb7365597b Fei{n}"Oui."
+f097-0039 436b95cd029cfec8 Agnes{n}"Où est maître{n}Bartholomew ?"
+f097-0040 abc8133df97027a2 Fei{n}"Il est en ville, il parle{n}avec Margie."
+f097-0041 97edc61b7a4afe46 Agnes{n}"Je vois, mon fils.{wait 30}{n}Alors, je vous prie,{n}dites-lui ceci...{p} 'Nous restons à vos côtés,{n} maître Bartholomew.'"
+f097-0042 7302ab8a702278a7 Fei{n}"Je lui transmettrai le{n}message, ma soeur."
+f097-0052 ae662336b06efba8 Citan{n}"...Je vois.{n}Tout s'est perdu dans la{n}nuit de l'histoire."
+f097-0062 3916f98b978fbcfa Agnes{n}"Je prierai pour que vos{n}combats vous soient{n}favorables."
+f097-0063 6ca7f955740a73cd Agnes{n}"Vous êtes tous sains et{n}saufs !{n}Ah{wait 30}... Grâce au ciel.{p}Comment va Marguerite ?{p}Ici, nous allons toutes{n}bien, dites-le-lui, je vous{n}prie."
+f097-0064 1af2b666933b20f0 Agnes{n}"Pourvu qu'il ne soit rien{n}arrivé à la dépouille de{n}la Grande Mère...{p}Si le mausolée subit le{n}moindre dommage, je{n}n'aurai plus le droit de{n}vivre."
+f097-0065 d55c3ac0d73334bb Bart{n}"Ne soyez pas si dure avec{n}vous-même.{p}Vous avez fait votre{n}possible pour protéger la{n}ville, non ?{p}Laissez-nous le reste."
+f097-0066 7117b5bb23dc86bb Agnes{n}"Voici venu le pays rêvé{n}par le défunt roi et la{n}Grande Mère.{p}J'espère pouvoir servir{n}maître Bartholomew.{p}Mais avant cela, il faudra{n}définir la vraie relation{n}entre Bartholomew et{n}Marguerite.{p}Réflexion faite, c'est à{n}eux d'en décider..."
+f098-0000 6f9396fbcec6f6e4 Citan{n}"Eh bien...{n}Quel portrait raffiné !{p}Et la belle jeune femme{n}représentée est elle{n}aussi incomparable..."
+f098-0001 774c72e8ed56eb89 Citan{n}"Et plus encore...{wait 30}{n}cela me semble bien{n}familier...!"
+f098-0002 eb7c9193c98a8c14 Citan{n}"Qu'en pensez-vous, Fei ?"
+f098-0003 8f251d73448985da Fei{n}"Oui, je pensais la même{n}chose.{p}Les cheveux ont une autre{n}couleur, mais son allure{n}est exactement la même."
+f098-0004 6c1464362b8aa41d Citan{n}"Comment ? {wait 30}{n}La couleur des cheveux ?{wait 30}{n}Que voulez-vous dire ?"
+f098-0005 7efc74ce5c25d680 Fei{n}"Comment ça ?{n}Regardez...!{p}C'est la fille que j'ai{n}vue dans la forêt..."
+f098-0006 1de2ce67713adab8 Fei{n}"C'est Elly ! Enfin...{n}il y a en elle quelque{n}chose qui est tout Elly..."
+f098-0007 90c3f0c2cd156e4e Fei{n}"Vous ne trouvez pas...?"
+f098-0008 11b647fd85856df9 Citan{n}"Oui, maintenant que{n}vous le dites...{p}Elle ressemble vraiment{n}à Elly."
+f098-0009 65e11ac293e2a235 Citan{n}"Mais ce n'est pas de{n}cela que je parlais...{p}Je voulais dire que la{n}touche et le style de ce{n}tableau ressemblent aux{n}vôtres."
+f098-0010 1d2ae67cb65517f3 Fei{n}"...Vraiment ?"
+f098-0011 eea7f11b3f20627e Fei{n}"Vous croyez...?"
+f098-0012 cada4be717b62bb4 Fei{n}"Pour commencer...{n}je suis loin de{n}peindre aussi bien."
+f098-0013 da5b0a43d5663f46 Citan{n}"Non... c'est très{n}proche de votre style."
+f098-0014 c0414411c45536ca Citan{n}"Pourtant, je sens une{n}certaine tristesse dans ce{n}tableau."
+f098-0015 30a667b285271296 Citan{n}"Elle sourit, mais, d'une{n}certaine façon, elle donne{p}l'impression d'être{n}tourmentée."
+f098-0016 b4ef5820c54f75ae Citan{n}"Peut-être le tableau{n}reflète-t-il son âme ?"
+f098-0017 ef68a9e42203e4d1 Citan{n}"Ou ce sont peut-être les{n}sentiments intimes du{p}peintre qui{n}transpirent."
+f098-0018 8dd295f25a97618a Citan{n}"Ahh...{p}En regardant bien, vous{n}verrez que le tableau{n}n'est pas tout à fait{n}terminé."
+f098-0019 8e0f3b2d278ae869 "Le peintre a posé ses{n}pinceaux alors qu'il{n}était presque fini."
+f098-0020 d5e86959feb4c476 Citan{n}"...Pourquoi donc ?"
+f098-0021 6e09e20b77f7d213 Margie{n}"Je ne sais pas...{p}Mais ma grand-mère savait{n}peut-être quelque chose à{n}ce sujet..."
+f098-0022 a474096a542e404f Margie{n}"Ah ! Et si on demandait{n}à Agnes ?{p}Elle sait peut-être{n}quelque chose."
+f098-0023 d536d2f73d503ed7 Margie{n}"Bon, alors je reste avec{n}Soeur Agnes."
+f098-0024 58a201a9558f2a61 Bart{n}"Bon... on retourne en{n}ville pour l'instant ?"
+f098-0025 d894dfd4d60f1077 Citan{n}"Oui, d'accord...{p}Mais ce tableau a éveillé{n}ma curiosité.{p}Cela vous ennuie si je{n}parle à Soeur Agnes avant{n}de retourner en ville ?"
+f098-0026 ac743420d7f2ace7 Bart{n}"D'accord, pas de souci...{n}On passera dans sa chambre{n}en sortant."
+f098-0028 ae9155cf691ff67d Citan{n}"Un problème, Fei ? Vous{n}avez l'air de rêvasser..."
