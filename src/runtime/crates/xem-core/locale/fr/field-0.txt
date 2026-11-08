@@ -2104,7 +2104,7 @@ f095-0036 c62ae7007aa419ab Margie{n}"La vue d'ici est ma{n}préférée."
 f095-0037 9c204459b7dbbc26 Citan{n}"Oui, à couper le{n}souffle !"
 f095-0038 368ffb713ed82d1f Citan{n}"La lumière qui traverse{n}les vitraux de la façade de{n}la cathédrale...{p}Quelle brillante oeuvre{n}d'art."
 f095-0039 0eba0c5a2aaaaa72 Margie{n}"Vous avez remarqué ? Les{n}deux grands anges n'ont{n}qu'une aile chacun...?"
-f095-0040 259874cb46283fb7      Selon une légende{n}  transmise à Nisan...{p}  Dieu aurait pu créer{n}  des humains parfaits...{p}  Mais alors, les humains{n}    ne s'aideraient{n}pas...{p}  Voilà ce que symbolisent{n}    ces grands anges{n}     à une seule aile...{p} Ils ne peuvent voler{n}      qu'ensemble.
+f095-0040 259874cb46283fb7      Selon une légende{n}  transmise à Nisan...{p}  Dieu aurait pu créer{n}  des humains parfaits...{p}  Mais alors, les humains{n}    ne s'aideraient pas.{p}  Voilà ce que symbolisent{n}    ces grands anges{n}     à une seule aile...{p} Ils ne peuvent voler{n}      qu'ensemble.
 f095-0041 b5c78b0294e4e065 Citan{n}"Ah, c'est donc pour cela.{p}Je vois...{wait 5}{n}À bien regarder, l'ange de{n}gauche semble masculin...{p}...tandis que celui de{n}droite semble féminin."
 f095-0042 ddf071dcc874eb31 Citan{n}"Un trait peu commun, vous{n}ne trouvez pas ?"
 f095-0043 5bc82adfa5942e69 Citan{n}"D'ordinaire, ces{n}figures n'ont pas de{n}sexe défini.{p}Mais ces anges sont{n}clairement de sexes{n}opposés."

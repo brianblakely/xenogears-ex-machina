@@ -879,3 +879,425 @@ f218-0087 208cb06d02f402ed Amazone{n}"Désolée,{wait 15} de vous avoir{n}demand
 f218-0088 6285e90754a1a945 Battler{n}"Merci infiniment pour ce{n}que vous faites{wait 5}...{p}Tenez{wait 5}...{wait 5} Acceptez{n}ceci, je vous prie."
 f218-0090 955c621deae069ad Hammer{n}"Horaires,{wait 5} dates et{n}destinations des trains !{wait 15}{n}J'ai tout... facile !"{done 60}
 f218-0091 521ef33b4dd73df0 Fei{n}"Hammer, cache-toi{n}quelque part.{p}Quand on arrivera à{n}l'arène, je vais tout{n}casser avec mon Gear...{p}Après ça, on improvisera{n}pour fuir la Capitale{n}Impériale{wait 5}...{wait 30}{n}Compris, Hammer ?"
+f219-0000 df25a5cf725e5c48 {wait 5}...{wait 5}Je peux me reposer ici.{wait 15}{n}    Ne pas se reposer{n}    Se reposer
+f219-0001 0032712d099df798 Citan{n}"Pas le temps pour ça.{wait 15}{n}Nous devons nous{n}dépêcher{wait 5}...{wait 5}"
+f219-0002 340c49a919c89baf Citan{n}"Attendez,{wait 5} Fei.{wait 5} Êtes-vous{n}fin prêt ?{wait 15}{p}Sachez qu'à partir de{n}maintenant, pas de{n}retour."
+f219-0003 a505e6024af51c06 Fei{n}"Hein ?{wait 5} Oui,{wait 5} c'est vrai."{wait 15}{n}    Je vais me préparer{n}    Je suis prêt
+f219-0004 13b453d428c03919 Citan{n}"{wait 5}...{wait 5}Très bien.{wait 15} On y va ?{wait 5}{n}Le temps presse."
+f220-0000 3fc7e475001e6b92 Mon fils est déjà parti{wait 5}...{wait 15}{n}Et demain, ma fille va{n}quitter la maison.
+f220-0001 b40b10b7bbd35a32 {wait 5}...{wait 5}...aïe, aïe...
+f220-0002 aef4af26c0301486 {wait 5}...{wait 5}J'aurais dû comprendre{wait 15}{n}que c'était une erreur.
+f220-0003 aa6f729d8bcc2478 {wait 5}...{wait 5}Hein ?{wait 15} Et qui{n}êtes-vous ?{wait 5}{n}Quelle impolitesse{n}d'entrer ainsi chez moi.{p}Inutile de dire ça à{n}un criminel, je{n}suppose{wait 5}...{wait 15} Maintenant,{n}sortez, je vous prie.
+f220-0004 fc5d86e5e2ec46e5 Aïe, aïe{wait 5}...{done 45}
+f220-0005 d236abe64d9f00c5 Construire la maison de{n}mes rêves au Bloc D était{n}une erreur, même pour une{n}bouchée de pain{wait 5}...{done 60}
+f220-0006 52e5e16879b04f89 Contrairement à mon fils,{n}ma fille n'a que 5{n}ans{wait 5}...{wait 5}{p}Elle ne quittera pas la{n}maison de sitôt.{wait 30} Toujours{n}ce souci{wait 5}...{wait 5}
+f220-0007 75c0312b104c54d5 La maison elle-même n'est{n}pas mal, c'est vrai{wait 5}...{wait 15}{p}Mais fallait-il vraiment{n}la bâtir dans ce bloc{n}pénitentiaire ?
+f220-0008 1745c2a459e820f6 Enfin soldat impérial !{wait 15}{n}J'étais un poids pour mes{n}parents. Mais je vais les{n}dédommager{p}en travaillant dur.{wait 5} Un{n}jour, j'habiterai au{n}Bloc A.
+f220-0009 830b19e626743368 Et je trouverai une belle{n}fiancée{wait 5}...{wait 5}et une famille{n}unie{wait 5}...{wait 5}Hé ! Qu'est-ce que{n}tu me fais dire !?
+f220-0010 20b12f3bbcec6e9e Hrnooo,{wait 5} mes yeux{n}tournent.{wait 30} Tout le monde{n}tourne{wait 15}...{wait 5} J'en peux plus.
+f220-0011 fcfd7b2e733190e0 On ne me laisse sortir que{n}pour l'église le{n}week-end... C'est ennuyeux{p}de rester à la{n}maison.{wait 5}...{wait 5}...{p}J'aimerais aller jouer avec{n}ceux de l'église.
+f221-0000 1508c5df7d342382 Fei{n}"{wait 5}...{wait 5}Alors{wait 15} c'est ça,{n}l'arène de Battling."
+f221-0002 547f7db7ec0ac4c9 Portier{n}"Au-delà, c'est le paddock{n}où les concurrents rangent{n}leurs Gears.{p}Désolé, mais pour éviter la{n}triche, l'entrée sans{n}autorisation est interdite."
+f221-0003 645d935620b44171 Superviseur{n}"{wait 5}...{wait 5}Au-delà, c'est le{n}paddock où les{p}concurrents rangent{n}leurs Gears.{p}Pour éviter la triche,{n}l'entrée sans autorisation{n}est interdite. Veuillez{n}reculer{wait 5}..."
+f221-0004 ce3d7d23dfe7be77 Superviseur{n}"La compétition de Battling{n}fait relâche. Je dois vous{p}demander de vous{n}retirer."
+f221-0005 8b1d4186a6015f11 Informateur{n}"Qui ne demande rien{n}n'apprend rien. Demandez{n}et vous recevrez{wait 5}...{wait 5}ou pas.{p}Bref, 'Battler', que{n}veux-tu savoir sur le{n}Battling ?"
+f221-0006 f71beb779b213f80 Informateur{n}"Que dois-je expliquer ?"{wait 15}{n}{speed 255}    Le Battling ?{n}    Commandes de base{n}    Ça ira, merci !
+f221-0007 8e2653f0b786680b Informateur{n}"...{wait 5}Monsieur Fei,{wait 5} tu n'as{n}pas encore inscrit ton{n}Gear.{wait 30}{p}Mais je peux t'expliquer{n}les commandes de base,{n}si tu veux{wait 5}...?"
+f221-0008 23a499432e640a7e Fei{n}"Les commandes ?"{wait 5}{n}    Expliquez-moi ça{n}    Non merci
+f221-0009 11d8aaaf6401b5e2 Informateur{n}"{wait 5}...{wait 5}Ah{wait 5}...{wait 5}bon{wait 5}...{wait 15} Tu veux{n}savoir autre chose ?"
+f221-0010 e4314db180d5e004 Réceptionniste{n}"Les matchs de Battling du{n}jour sont terminés. {wait 15}{n}Revenez une autre fois."
+f221-0011 bcc398d9e7a4b446 Vous recevez '2500G' de{n}prime !
+f221-0012 5e295640b1a872a6 Réceptionniste{n}"Et le Superviseur B vous{n}verse un bonus spécial.{n}Continuez ainsi !"
+f221-0013 db28c48e5fae5b83 Vous recevez '800G' de{n}bonus !
+f221-0014 7ed7bb96a42f9b33 Vous recevez '2000G' de{n}prime !
+f221-0016 c26e717837644c68 Vous recevez '500G' de{n}bonus !
+f221-0017 cec270fd30d7f9d7 Vous recevez '1500G' de{n}prime !
+f221-0019 10cd8d27449e9c77 Vous recevez '400G' de{n}bonus !
+f221-0022 d706eae2fb294206 Vous recevez '1000G' de{n}bonus !
+f221-0025 a43640f806f15a55 Vous recevez '600G' de{n}bonus !
+f221-0032 0e1e548aa225fd82 Vous recevez '1000G' de{n}prime !
+f221-0034 23d7c63710febc72 Vous recevez '300G' de{n}bonus !
+f221-0035 b50145ab5ea4bfb5 Vous recevez '750G' de{n}prime !
+f221-0037 10c59fa857bda529 Vous recevez '200G' de{n}bonus !
+f221-0046 0a555e9022fa92d4 Vous recevez '500G' de{n}prime !
+f221-0049 40ab6f018cb2ef66 Vous recevez '300G' de{n}prime !
+f221-0051 554f3994e77d723c Vous recevez '100G' de{n}bonus !
+f221-0060 f0ac16baa8bcf3d2 Rue{n}"Tu es prêt ?"{wait 15}{n}{speed 255}    Pas encore !{n}    Et comment !
+f221-0061 6139beabaad1d9f5 Rue{n}"Je te l'ai dit, nous{n}n'avons pas beaucoup de{n}temps,{wait 5} alors fais vite !"
+f221-0062 e8c5050fb76887dd Rue{n}"Très bien{wait 5}...{wait 15} Par{n}ici, je te prie{wait 5}..."
+f221-0063 f32758e06ce8774f Rue{n}"{wait 5}...{wait 5}C'est par là !"
+f221-0064 37a754edf4de60e8 Rue{n}"Juste là, c'est le{n}paddock des Gears{wait 5}...{wait 5}{p}Le premier combat{n}approche. Tu ferais mieux{n}de te dépêcher{wait 5}..."
+f221-0065 c42f76a1adafa1a7 Subordonné{n}"Si tu es prêt,{n}parle à Rue."
+f221-0066 413f77da69dd3e8f Subordonné{n}"???"{done 45}
+f221-0067 58b57c5733842ca9 Subordonné{n}"Madame Rue, {wait 5}que fait-on ?"
+f221-0068 a9c43d99a59234a6 Subordonné{n}"Oui,{wait 5} chef !"{done 45}
+f221-0069 14bdd0bbffbec463 Subordonné{n}"Le premier combat va{n}commencer. Ne quitte pas{n}l'arène, s'il te plaît."{done 60}
+f221-0074 3ce5dd4c6908b9e1 Subordonné{n}"Le premier combat va{n}commencer. Ne quitte pas{n}l'arène, s'il te plaît."{done 60}
+f221-0075 7c36967258b62873 Hammer{n}"Je suis mécano, {wait 5}alors j'ai{n}pris la liberté d'ouvrir{n}une boutique ici.{p}Sans plus attendre, {wait 5}frérot,{wait 10}{n}tu m'achètes un truc ?"{wait 15}{n}{speed 255}    Pas maintenant !{n}    Bon, d'accord...
+f221-0076 8a68f87179b7ce8d Hammer{n}"Ah, oui, {wait 5}et ici, je{n}vends des pièces de Gear{n}au lieu d'accessoires."
+f221-0077 4b5ac5d4b3ee61cd Hammer{n}"Voilà ! {wait 5}C'est mon{n}frérot !{wait 10} T'es un chic{n}type ! Merci beaucoup !"
+f221-0078 abceeec517c50d31 Hammer{n}"Tu veux quoi, frérot ?"{wait 15}{n}{speed 255}    Objets de Hammer{n}    Pièces de Hammer
+f221-0079 d5994f0257e156f4 Hammer{n}"Les démarches ont été{n}faites à la dernière{n}minute.{p}Du coup, l'autorisation{n}pour les pièces de Gear ne{n}sera pas là avant les{n}premiers combats.{p}Ah, et, frérot, tu n'as{n}pas encore reçu de Gear.{n}{wait 5}...{wait 5}Quel Gear vont-ils te{n}donner{wait 5}...?"
+f221-0080 fa548153b6cfdc1a Hammer{n}"Merci, frérot, mais tu{n}m'achètes autre chose{n}que des objets ?{p}Ça aide Hammer aussi !{wait 30}{n}{speed 255}    Ça suffit !{n}    Objets de Hammer{n}    Pièces de Hammer
+f221-0081 267689551222b423 Hammer{n}"OK, {wait 5}place au Battling.{n}Donne tout, {wait 5}frérot !{wait 15} Pour{n}l'avenir de Hammer, t{wait 5}..."
+f221-0083 9ce7321c2985838e {speed 255}Hammer{n}"Laisse tomber !"
+f221-0084 5438202a3915523e Hammer{n}"Les démarches ont été{n}faites à la dernière{n}minute.{p}Du coup, l'autorisation{n}pour les pièces de Gear ne{n}sera pas là avant les{n}premiers combats.{p}Ah, et, frérot, tu n'as{n}pas encore reçu de Gear.{n}{wait 5}...{wait 5}Quel Gear vont-ils te{n}fournir{wait 5}...{wait 5}?"
+f221-0085 1482f0f88d97e4cc Hammer{n}"Merci, frérot, mais tu{n}m'achètes autre chose{n}que des pièces ?{p}Ça aide Hammer aussi !{wait 30}{n}{speed 255}    Ça suffit !{n}    Objets de Hammer{n}    Pièces de Hammer
+f221-0086 469d36597bd9d893 Hammer{n}"OK, {wait 5}place au Battling.{n}Donne tout, {wait 5}frérot !{wait 15} Pour{n}l'avenir de Hammer, t{wait 5}..."
+f221-0089 fd3ebb14f1bc7d6c Hammer{n}"Les démarches ont été{n}faites à la dernière{n}minute.{p}Du coup, l'autorisation{n}pour les pièces de Gear ne{n}sera pas là avant les{n}premiers combats.{p}Ah, et, frérot, tu n'as{n}pas encore reçu de Gear.{n}{wait 5}...{wait 5}Quel Gear vont-ils te{n}fournir{wait 5}...{wait 5}?"
+f221-0090 946ed51a1441eb25 Citan{n}"{wait 5}...{wait 5}Ou plutôt, la{n}réception."
+f221-0091 5645e2ea7db48759 Réceptionniste{n}"Cette année, les Jeux{n}Impériaux durent 5 jours.{n}Les 3 premiers jours, il{n}faut gagner 2 matchs{wait 5}...{p}Les qualifiés passent aux{n}combats du deuxième et du{n}troisième jour{wait 5}...{p}Qui gagne 3 combats en{n}demi-finale, le 4e jour,{n}accède à la Ligue Finale{n}du dernier jour."
+f221-0092 c8e155444e7d371f Réceptionniste{n}"Au fait, monsieur Fei,{n}vos adversaires du jour{n}sont{wait 5}...{wait 5}Leonardo Sniper{n}au premier combat{wait 5}...{p}et, si vous le battez, au{n}deuxième combat, vous{n}affronterez{wait 5}...{wait 5}Heinrich{n}Clive."
+f221-0093 4ebaab8ea6ccaee5 Réceptionniste{n}"Vous êtes bien inscrit.{n}{wait 15}Suivez les instructions du{n}superviseur pour disputer{n}votre premier combat."
+f221-0094 7b57b655e176238a Réceptionniste{n}"À cause d'une panne{n}soudaine, votre adversaire{n}d'hier, Leonardo Sniper, a{n}dû abandonner{wait 5}...{p}Heinrich Clive a aussi eu{n}une panne et s'est retiré.{n}{wait 15}Vous, Fei, gagnez donc par{n}forfait et passez au{n}deuxième jour !"
+f221-0095 6ac34116feec8ed7 Réceptionniste{n}"Si vous gagnez 2 matchs{n}aujourd'hui, deuxième jour,{n}vous passez au troisième{n}tour.{p}Participer aux combats{n}du deuxième jour ?"{wait 15}{n}{speed 255}    Ne pas participer{n}    Je participe !
+f221-0096 c7db4192d7932357 Réceptionniste{n}"C'est le dernier combat du{n}deuxième jour. Gagnez et{n}passez au troisième jour.{p}Participer au dernier{n}combat du jour ?"{wait 15}{n}{speed 255}    Ne pas participer{n}    Allons-y !
+f221-0097 829b26c06d9837fa Réceptionniste{n}"C'est le troisième jour{n}des Jeux. Gagnez 2 combats{n}pour aller en demi-finale{n}demain.{p}Participer aux combats{n}du troisième jour ?"{wait 15}{n}{speed 255}    Ne pas participer{n}    En avant !
+f221-0098 533056139e5b9630 Réceptionniste{n}"C'est le dernier combat du{n}troisième jour. Gagnez pour{n}la demi-finale de demain.{p}Participer au dernier{n}combat du jour ?"{wait 15}{n}{speed 255}    Ne pas participer{n}    C'est parti !
+f221-0099 0b60df64add0da0f Réceptionniste{n}"C'est la demi-finale.{n}Gagnez 3 matchs pour aller{n}en Ligue Finale.{p}Participer à la{n}demi-finale ?"{wait 15}{n}{speed 255}    Ne pas participer{n}    Je vais essayer
+f221-0100 39e972c6264dce61 Réceptionniste{n}"{wait 5}...{wait 5}Encore 2 victoires{n}et vous irez en Ligue{n}Finale demain."{p}Disputer le deuxième{n}combat de la demi-finale ?{wait 15}{n}{speed 255}    Ne pas participer{n}    Je participe !
+f221-0101 2302b0294f1d50e9 Réceptionniste{n}"C'est le dernier combat{n}du jour ! Gagnez et allez{n}en Ligue Finale !{p}Participer au dernier{n}combat du jour ?"{wait 15}{n}{speed 255}    Ne pas participer{n}    Bien sûr !
+f221-0102 d3d41cd7b230b817 Réceptionniste{n}"C'est le dernier jour des{n}Jeux... La Ligue Finale !{n}Vous allez défier...{wait 5}{n} Ricardo Banderas !!! "{p}Participer à la{n}Ligue Finale ?{wait 15}{n}{speed 255}    Ne pas participer{n}    Il est à moi !
+f221-0103 3d53169c6a758e0f Réceptionniste{n}"Inscription du pilote{n}'Fei' confirmée. {wait 15}Un{n}instant, je vous prie{wait 5}..."
+f221-0104 370f174dd894f6c2 Le Gear '{name 11}' a été{n}envoyé au paddock de{n}stockage. Préparez-vous à{n}embarquer !
+f221-0105 48311eda89c88d84 Pilote Fei, rendez-vous au{n}paddock des concurrents !
+f221-0106 b1410682d6bbee97 Informateur{n}"Impeccable !{wait 15} Bon, je vais{n}t'expliquer un peu le{n}'Battling'."
+f221-0107 2fd381904797a8b8 Informateur{n}"Le Battling est un sport de{n}combat à un contre un en{n}Gear, dans l'arène de la{n}Capitale Impériale.{p}Les règles sont simples - on{n}se bat jusqu'à ce que l'un{n}des deux casse.{wait 10}{n}Bref, il suffit de mettre{n}l'adversaire en pièces !{p}Pas besoin de lutter jusqu'à{n}ce que ton Gear soit fichu.{wait 5}{n}Tu peux abandonner en plein{n}combat... Si tu ne peux pas{n}gagner{wait 10}...{wait 5}bon, tu sais !"
+f221-0108 05c1ae1c48fa8890 Informateur{n}"Dans les grandes lignes,{n}c'est ça{wait 5}... je crois.{wait 30} Tu{n}as saisi ?
+f221-0109 f07b95ef18141e92 Fei{n}"Eh bien, euh{wait 5}..."{wait 15}{n}{speed 255}    Bien sûr, facile !{n}    Désolé, pas compris !
+f221-0110 efb995aa46eae7b8 Informateur{n}"Ensuite, il faut gagner de{n}l'expérience en vrais{n}combats. {wait 15}Le secret, c'est de{n}s'habituer aux commandes !{p}Mais{wait 5} un vrai combat{n}d'entrée, c'est peut-être{n}trop ?{wait 15} Alors,{wait 5} pourquoi pas{n}notre 'Mode Entraînement'{n}pour te faire la main ?{p}C'est un mode de simulation{n}pour pratiquer les commandes{n}de base.{wait 15} On conseille aux{n}débutants de s'y entraîner{n}d'abord !{p}Il y a aussi le 'Mode{n}Tutoriel', avec des leçons{n}faciles, des commandes de{n}base à l'explication de{n}l'écran."
+f221-0111 6413eda6aa064676 Informateur{n}"Tu veux demander autre{n}chose ?"
+f221-0112 88343870c164d9e3 Informateur{n}"Hein ?{wait 5} Pas compris ?{wait 10}{n}Bizarre ! Bon, encore une{n}fois, depuis le début...{p}(Moi qui le croyais doué...{wait 5}{n}Je me suis trompé...{wait 5} Il a{n}toute sa tête ?){wait 10} Bref, sois{n}attentif !"
+f221-0113 5948a278ae35d255 Informateur{n}"OK, les commandes de base !{n}Alors,{wait 5} que veux-tu faire ?{wait 15}{n}{speed 255}    Savoir les boutons{n}    Mode Tutoriel{n}    Mode Entraînement{n}    Demander autre chose
+f221-0114 c76bb9dac4c65214 Informateur{n}"Bien, les boutons ! Je{n}vais expliquer le rôle de{n}chacun, dans l'ordre...
+f221-0115 57f9f25169251ac0 Informateur{n}"Bon, je vais maintenant{n}expliquer les commandes{n}de base sur le vrai écran."
+f221-0116 a7c66c5fcad3bf79 Informateur{n}"Alors, {wait 10}tu veux essayer{n}les commandes en vrai..."
+f221-0117 c238392f3f782aa7 Informateur{n}"Ah,{wait 5} bon{wait 5}...comme tu veux !{wait 15}{n}Que veux-tu savoir{n}d'autre ?"
+f221-0118 13f4776223de9a18 "Quel bouton dois-je{n}t'expliquer ?{wait 15}{n}{speed 255}    Croix directionnelle{n}    Bouton ×{n}    Bouton □{n}    Bouton △{n}    Bouton ○{n}    Page suivante
+f221-0119 a3e1a26c7a07089c "Lequel dois-je{n}t'expliquer ?"{wait 15}{n}{speed 255}    Bouton L1{n}    Bouton R1{n}    Bouton Start{n}    Retour page 1{n}    Fin des explications
+f221-0120 9e2d1115c48789d2 Informateur{n}"Ah{wait 5}...déjà fatigué ? Tu as{n}besoin d'autre chose ?{wait 15}{n}Demande sans crainte !
+f221-0121 46173255573c368a Informateur{n}"{wait 5}...Ah,{wait 5} c'est comme ça ?{wait 10}{n}Bon,{wait 5} une autre question ?"
+f221-0122 ea6eb64dd74c7581 Informateur{n}"O.K.,{wait 5} la croix{n}directionnelle...{wait 15} si{n}l'adversaire est à ta droite{n}(de ton point de vue) :{p}・ HAUT envoie ton Gear{n} vers le fond de l'écran.{wait 45}{n}・ BAS ramène ton Gear{n} vers l'avant de l'écran.{p}・ DROITE envoie ton Gear{n} vers l'adversaire.{wait 45}{n}・ GAUCHE éloigne ton Gear{n} de l'adversaire.
+f221-0123 61f89738f701988d Informateur{n}"Enfin, près de l'ennemi,{n}GAUCHE active un mouvement{n}spécial : une brève{n}accélération arrière !{p}Ça t'éloigne de l'ennemi en{n}un instant (pour 'fuir') !{wait 30}{n}Retiens bien : à l'opposé{n}de l'adversaire.
+f221-0124 565f09ad7f8b5597 Informateur{n}"En résumé, c'est ça !{wait 30} Ce{n}sera plus facile à saisir{n}en essayant les commandes{n}en pratique !"
+f221-0125 b4c7cd7f46af3bee Informateur{n}"Le bouton × : ATTAQUE.{wait 15}{n}(Il y a 3 boutons d'attaque,{n}et × en fait partie.){p}Ça dépend du Gear, mais il{n}sert surtout au corps à{n}corps.{wait 15} Et pas besoin de{n}t'en tenir à un seul coup.{p}En combinant × et □, tu{n}peux enchaîner jusqu'à{n}trois attaques !{p}Au total, il existe 14{n}combinaisons de ce genre{n}à utiliser !"
+f221-0126 a9bc511fefd0f4c0 Informateur{n}"Le bouton □ : ATTAQUE.{wait 15}{n}(Il y a 3 boutons d'attaque,{n}et □ en fait partie.){p}Ça change selon le Gear,{n}mais il sert surtout au{n}corps à corps.{wait 15} Et pas besoin{n}de te limiter à un coup.{p}En combinant × et □, tu{n}peux faire une série{n}d'au plus trois attaques !{p}Au total, il existe 14{n}combinaisons de ce genre{n}à essayer !"
+f221-0127 fa7742ffc776ede9 Informateur{n}"Le bouton △ : SAUTER !{wait 5}{n}Les commandes de mouvement{n}restent les mêmes en l'air.{p}En plus, tu peux attaquer{n}avec × et □ pendant le{n}saut !{p}Ah, et le bouton R1 sert à{n}tirer des Balles d'Éther !
+f221-0128 c0df007d7f38f4c4 Informateur{n}"Le bouton ○ : SPRINT.{wait 10}{n}Tu cours, voilà tout.{p}Mais tu ne peux pas{n}courir indéfiniment."
+f221-0129 0a56237e181d09d1 Informateur{n}"Pour plus de détails, va{n}au 'Mode Tutoriel' : un{n}autre employé t'y explique{n}tout."
+f221-0130 e7be792955324f7c Informateur{n}"Attaquer n'est pas tout !{wait 10}{n}'La meilleure défense, c'est{n}l'attaque', dit-on, mais se{n}défendre compte aussi.{p}C'est pour ça qu'il y a le{n}bouton L1, pour DÉFENDRE !{n}{wait 15}Mais,{wait 5} il ne bloque pas{n}tous les dégâts, prudence !"
+f221-0131 c30f2747b78dffb8 Informateur{n}"Le bouton R1 lance une{n}attaque spéciale appelée{n}'Balle d'Éther'.{wait 15} Idéal pour{n}frapper l'ennemi de loin !{p}Les 'Balles d'Éther' suivent{n}la cible, alors tu risques{n}d'en dépendre, mais tu{n}pourrais le regretter si tu{n}abuses ! Fais attention !"
+f221-0132 43a8cc3bfa33db2a Informateur{n}"Pour plus de détails, va{n}voir notre 'Mode Tutoriel' :{n}un autre employé y explique{n}tout."
+f221-0133 92ab26bcf1fd47fc Informateur{n}"Le bouton Start permet de{n}mettre le combat en pause.{p}Là, tu peux choisir{n}l'option 'ABANDONNER' si tu{n}penses ne pas pouvoir{n}gagner."
+f221-0134 cfc84a219d7a18e2 Informateur{n}"Je t'explique quoi ?"{wait 15}{n}{speed 255}    Le Battling{n}    Commandes de base{n}    Ça ira, merci !
+f221-0135 d6ff2362c33d5c13 Informateur{n}"...{wait 5}Monsieur Fei,{wait 5} ton Gear{n}n'est pas encore inscrit.{wait 30}{n}Mais je t'explique les{n}bases, si tu veux...?"
+f221-0136 2347f2fcbad4220c Fei{n}"Les commandes ?"{wait 5}{n}    Expliquez-moi ça{n}    Pas besoin, merci
+f221-0138 485bfe8ba2bd6700 Informateur{n}"Oui,{wait 5} je savais que tu{n}t'en sortirais ! {wait 10}Bref,{wait 5}{n}donne tout !
+f221-0139 5a749838bb3dc8f3 Informateur{n}"...{wait 5}Tu es enfin arrivé en{n}Ligue Finale du Battling !{n}Vas-y ! Tu peux le faire !"
+f221-0140 d595cfa64e56a722 Informateur{n}"La Ligue Finale du{n}Battling approche !{p}Avec ton talent, tu peux{n}devenir 'Champion de{n}Battling' ! Bonne chance !
+f221-0141 b230cd5a0b820e11 Informateur{n}"{wait 5}...Tu es sûr de ne pas{n}vouloir écouter ce que j'ai{n}à dire ?{wait 30} En cas de souci,{n}ne m'en veux pas !"
+f221-0143 693f08bc373c7b8d Réceptionniste{n}"Voici la prime versée aux{n}vainqueurs d'un combat de{n}Battling. Bien mérité !"
+f221-0144 7dcb3c200ad05a17 Sbire de Rico{n}"Hé, ta machine a été{n}trafiquée ! Je vais te{n}dénoncer au Comité !"
+f221-0145 d12a88af1b39b7e1 Sbire de Rico{n}"Ouais, il a sûrement mis{n}sur son Gear des pièces{n}contraires au règlement, ou{n}un truc du genre !"
+f221-0146 d67d9ef1318ec46a Rico{n}"Silence !!"
+f221-0147 789403083cf6d6ab Rico{n}"{wait 5}...{wait 5}Arrêtez de me faire{n}honte{wait 5}...{p}Comment des pièces pareilles{n}existeraient-elles dans la{n}Capitale Impériale !?{p}D'autant qu'on ne peut pas{n}quitter la Capitale avec{n}ces colliers !"
+f221-0148 14603d77c672e7d9 Sbire de Rico{n}"M-m-mais{wait 15},{n}Rico{wait 5}...{wait 5}alors !?"
+f221-0149 35aa53beb3300f97 Rico{n}"J'ai dit d'arrêter !?{n}{wait 5}...{wait 5}Taisez-vous !"
+f221-0150 9ebb766f5f6206fa Hammer{n}"Exactement !{wait 5}{n}C'est impossible !{p}Mon frérot a gagné{n}à la loyale !{wait 15} Arrêtez{n}d'inventer de fausses{n}accusations !
+f221-0151 94fcf5aca7361b41 Sbire de Rico{n}"Ah{wait 5}...{wait 5}chef{wait 5}..."
+f221-0152 e1a0581eae590afa Fei{n}"Assez, Hammer !"
+f221-0153 549d269b44d2843a Fei{n}"J'ai eu de la chance...{n}et un bon professeur !"
+f221-0154 1b1e9aa48fb42153 Fei{n}"{wait 5}...Et puis, la blessure{n}à ton bras n'est pas encore{n}tout à fait guérie, non ?{p}Sans cette blessure, je{n}suis sûr que tu aurais{n}gagné..."
+f221-0155 727f63d725d17fe9 Rico{n}"Perdre, c'est perdre...{n}La blessure n'excuse rien.{n}Le Champion, c'est{wait 5}...{wait 5}toi !"
+f221-0157 e9cf2ec8b492cdb2 Rico{n}"{wait 5}...{wait 5}Bon,{wait 5} j'ai un truc à{n}régler. J'y vais."
+f221-0158 29e83e0ad7ec7e17 Sbire de Rico{n}"Champion ! {wait 5}Attends !{wait 15}{n}Emmène-nous{wait 5}..."
+f221-0159 d1e06d3366ee5d09 Rico{n}"Je ne suis plus champion !{n}Vous me gêneriez !{wait 15} Ne me{n}suivez pas !{wait 5} Compris !?"
+f221-0160 623266f36f72175b Sbire de Rico{n}"Gêner ? Mais, Champion !"
+f221-0161 ae1e004b1d659f2e Sbire de Rico{n}"{wait 5}...{wait 5}Ri-co-- !"
+f221-0162 c990b008d41d9b9c Hammer{n}"Ça veut dire que je suis{n}acquitté !{wait 5} Libre !{wait 15} Ah,{n}{wait 5}comme le monde libre{n}nous appelle !"{done 120}
+f221-0163 ba2c3f74218e96ad Rico{n}"{wait 5}...{wait 5}Ne me sors pas ça !{wait 15}{n}Ta force{wait 5}...?{wait 5}{n}C'est ton attitude ?"
+f221-0165 46da9b3d0fdebe6b Rico{n}"Allez, bats-toi encore{n}contre moi !{p}Tu semblais bien plus fort{n}dans les égouts ! Montre ta{n}vraie force !"
+f221-0166 438b7d8b12169fd5 Rico{n}"{wait 5}...{wait 5}Ne me sors pas ça !{wait 15}{n}Tu as peur de quoi ?"
+f221-0168 3d34627845169089 Rico{n}"Allez, mec, on remet ça !{p}Tu semblais bien plus fort{n}dans ces égouts ! Montre ta{n}vraie force !"
+f221-0169 1b2311fbf1bcb71a Hammer{n}"Hé, frérot～ !{wait 15}{n}Tu oublies ton mécano !{wait 15}{n}Attends un peu !"{done 75}
+f221-0170 608b4391b6b521a2 Rue{n}"Bienvenue à l'arène de{n}Battling{wait 5}...{wait 5}{n}monsieur Fei{wait 5}...{p}Il y a peu, vous refusiez{n}catégoriquement de piloter{n}des Gears{wait 5}...{p}Qu'est-ce qui vous a fait{n}changer d'avis à ce point{n}en quelques jours ?"
+f221-0171 c0e7fd707bd00827 Fei{n}"Bah, j'ai mes raisons.{wait 15}{n}Déjà, la vie en prison,{n}ce n'est pas du gâteau."
+f221-0172 15b58efe75ee3742 Fei{n}"{wait 5}...{wait 5}Et il y a aussi la{n}question de ma sécurité !"
+f221-0173 e1b102f2d51d2499 Fei{n}"Finir mes jours avec les{n}monstres des égouts, ce{n}n'est pas si terrible{wait 5}...{p}c'est juste que, {wait 5}enfin,{n}{wait 5}...c'est compliqué."
+f221-0174 6873cfd415406edf Fei{n}"Et il y a ce collier !{wait 15}{n}Il me gêne vraiment !"
+f221-0175 4a2549e4e124b8a6 Rue{n}"Le collier{wait 5}...{wait 5}?"
+f221-0176 fe351a3471c3bb73 Rue{n}"Hahahmm{wait 5}...{wait 5}{n}Vous êtes amusant !{p}Vous visez la victoire,{n}pour votre tout premier{n}Battling ?"
+f221-0177 daad6dd3f8fbc3df Fei{n}"{wait 5}...{wait 5}C'est bizarre ?"
+f221-0178 f159351df38064c5 Rue{n}"Non, non ! Pas du tout...{wait 15}{n}Je vous prie de m'excuser !{p}Vous semblez très sûr de{n}vous aux commandes d'un{n}Gear...{wait 5} J'ai hâte de{wait 5}..."
+f221-0180 c1a720376fa79d70 Rue{n}"Oups{wait 15}...{wait 5}excusez-moi !{wait 15}{p}Bon, je vous conduis aux{n}paddocks. Nous n'avons{n}guère de temps{wait 5}..."
+f221-0181 38fbe3f826e0ab4c Fei{n}"Les paddocks{wait 5}...?"
+f221-0182 d12ddeb6b250b164 Rue{n}"Quoi, vous pensiez vous{n}battre en chair et en os ?{p}{wait 5}...{wait 5}Hahahmm, non que ça{n}me déplaise de voir ça,{n}mais{wait 5}..."
+f221-0183 7585c15b95adadac Rue{n}"Nous vous avions prévenu{n}que le Comité vous{n}fournirait une machine{wait 5}...{wait 15}{p}Vous l'auriez oublié ?"
+f221-0184 cbd263d8f605e8a4 Fei{n}"Ah, {wait 5}euh{wait 5}...{wait 15}{n}Le Gear que je piloterai{n}sera, {wait 5}euh{wait 5}..."
+f221-0185 26e5918f1d9e967b Rue{n}"Bien, suivez-moi.{n}Par ici..."
+f221-0186 52b13250beafc3ca Citan{n}"Un instant ! Nous ne{n}sommes pas prêts{wait 5}...{wait 5} Une{n}minute, je vous prie ?"
+f221-0187 d072ee4a6565d1e9 Rue{n}"{wait 5}...{wait 5}Entendu. {wait 15}Mais le temps{n}presse, alors, je vous en{n}prie, dépêchez-vous{wait 5}..."
+f221-0188 b0fcb70755d45658 Rue{n}"Prévenez les officiels.{wait 15}{n}Pilote confirmé. Pour le{n}premier combat, je suggère{n}le Gear noir..."
+f221-0189 eafce7d13dcfb8b9 Hammer{n}"Tu as survécu au Battling{n}du jour, hein, frérot ?{p}Pourquoi ne pas rentrer à{n}tes quartiers et te reposer{n}un peu ?{p}Ou alors, achète un truc !"{wait 15}{n}    Objets de Hammer{n}    Pièces de Hammer{n}    Rien pour l'instant !
+f221-0190 2531640c7af7162c Hammer{n}"Oh !{wait 5} Encore merci, mec !{wait 15}{n}Ça remplit mes poches ! {wait 10}{n}Alors...{wait 5} tu rentres ?"
+f221-0192 90a014abafaa975d Hammer{n}"Bon, alors, inutile de{n}traîner ici.{p}Mieux vaut rentrer au{n}dortoir au plus vite.{p}Après tant d'exercice, le{n}mieux pour toi, c'est dodo !{p}Dors bien pour effacer la{n}fatigue, car demain, c'est{n}le grand jour !"
+f221-0193 8dcae3d12ed2e8fc Hammer{n}"Frérot,{wait 5} tu as gagné !{n}Te voilà Champion !{n}{wait 5}...{wait 5}ou presque, enfin !{p}La victoire est à portée !{n}Si tu gagnes la Ligue{n}Finale demain, on sera{n}blanchis et libérés !"
+f221-0194 70511819275b0844 Fei{n}"Mais, Hammer,{wait 5} tu sais que{n}mon adversaire est balèze !{wait 5}{n}Sa force est inouïe{wait 5}...{p}Il est Champion de Battling{n}depuis trois ans de suite !{n}Le battre ne sera pas{n}facile du tout{wait 5}...{p}Jusqu'ici, j'ai gagné tant{n}bien que mal,{wait 5} mais demain,{n}c'est une autre histoire !{wait 5}{n}Je doute de gagner."
+f221-0195 9e363a2125d0315e Hammer{n}"{wait 5}...{wait 5}Avec cette attitude,{n}tu vas perdre alors que tu{n}pourrais gagner !{p}Allez, frérot,{wait 5}{n}montre un peu de cran !"
+f221-0196 8d48e57d8956d2f8 Fei{n}"{wait 5}...{wait 5}Hahaha,{wait 15} je ne pensais{n}pas que tu étais du genre{n}à dire un truc pareil !"
+f221-0197 9ca0034e3538d312 Fei{n}"Tu as raison !{wait 5} Je ne{n}gagnerai jamais en étant{n}abattu avant le combat.{p}Merci, Hammer !{wait 15} Allez,{wait 5}{n}on rentre au dortoir."
+f221-0198 1f60cfa3331f154c Hammer{n}"J'aimerais te dire 'pas de{n}souci', mais la Ligue Finale{n}de demain est importante !{p}Tu ne devrais pas soigner{n}l'entretien et les réglages{n}du Gear ? Notre destin en{n}dépend !"
+f221-0199 8f6f668d18a4d09b Fei{n}"...L'entretien, hein ?{n}Me fier à un seul mécano{n}m'inquiète un peu.{p}Je vais demander au Doc{n}de m'aider aussi !"
+f221-0200 c92901eb01e62f8e Hammer{n}"Ça t'inquiète un peu !?{p}Voyons, frérot ! {wait 15}Ton{n}mécano se donne à fond,{n}tu sais !
+f221-0201 c385cb69c512d62b Fei{n}"Ce n'est pas ce que je{n}voulais dire, alors ne{n}te vexe pas, Hammer !{p}Bref, {wait 5}rentrons au dortoir{n}et appelons le Doc,{n}d'accord !?"
+f221-0202 8e098b02a499e683 Hammer{n}"Attends ! {wait 15}Tu ne{n}sauvegardes pas tes données{n}au 'Cube Mémoire' ?
+f221-0203 73f341e768230305 Fei{n}"Oui, je devrais..."
+f221-0204 b82945db1844abd2 Hammer{n}"Ah, et, frérot !{wait 15} Tu as{n}sauvegardé tes données{n}au 'Cube Mémoire', hein ?"
+f221-0205 26aa5b6f03887a91 Réceptionniste{n}"Abandon !"
+f221-0206 6def79b73e487bb5 Réceptionniste{n}"Hmm, pas mal !{n}Continuez ainsi !"
+f221-0207 689fbe3bc6247e1a Réceptionniste{n}"Ouah, vous êtes siii fort !{n}Il n'avait aucune chance !{n}Ah, votre force écrasante{n}me donne des frissons !"
+f221-0208 347bf3f168041abc Réceptionniste{n}"C'est donc ça, 'prendre{n}des risques' ? Bravo pour{n}cette victoire serrée !"
+f221-0209 58c789fe1b9603dd Réceptionniste{n}"Dommage, vous avez perdu !{n}Pas d'erreur flagrante, la{n}prochaine sera la bonne.
+f221-0210 11a5abb870d62b64 Réceptionniste{n}"Un petit conseil !{wait 15}{n}Vous n'êtes pas limité aux{n}attaques physiques des{n}boutons × et □ !{p}Il existe une autre attaque,{n}les 'Balles d'Éther', utiles{n}contre les ennemis éloignés.{wait 15}{n}C'est simple,{wait 5} il suffit{n}d'appuyer sur 'R1',{wait 5} OK !"
+f221-0211 a5a55d2f9b44ea92 Réceptionniste{n}"Alors, pensez à appuyer{n}sur 'R1' pour tirer des{n}'Balles d'Éther' !{p}Ça augmentera vos chances{n}de victoire, c'est sûr !{wait 30}{n}(...on l'espère !?)"
+f221-0212 7a98173727a736d8 Réceptionniste{n}"Attaquer en l'air, top !{n}Maîtrisez bien ça !"
+f221-0213 f9968ee7eb394d79 Réceptionniste{n}"En regardant votre combat,{n}j'ai noté une faiblesse :{n}vous semblez abuser des{n}'Balles d'Éther'.{p}Il faut mieux comprendre la{n}nature de cette attaque...{n}Les 'Balles d'Éther' font{n}beaucoup monter votre{n}'jauge de Chaleur (J.C.)'.{p}En trois tirs, votre J.C.{n}atteint le MAXIMUM. Si vous{n}continuez d'attaquer ainsi,{n}votre machine surchauffe.{p}L'excès de chaleur commence{n}à causer des dégâts et, sans{n}prudence, vos HP tomberont{n}à zéro sans même que vous{n}vous en rendiez compte !"
+f221-0214 34ee4515c35ac26d Réceptionniste{n}"La chaleur accumulée par{n}votre Gear s'affiche dans{n}la J.C. à l'écran.{p}Gérez la chaleur pendant{n}le combat grâce à cette{n}J.C. Et n'oubliez pas de{n}garder la tête froide !"
+f221-0215 90abd3b31fdbcad4 Réceptionniste{n}"La cause principale de la{n}défaite : vous comptez trop{n}sur le 'Sprint' ! Bref, vous{n}courez beaucoup trop !{p}Le Sprint est une bonne{n}tactique, mais la 'jauge de{n}Chaleur (J.C.)', qui montre{n}la chaleur du Gear, monte{n}bien plus vite !{p}On peut continuer le SPRINT{n}même avec la J.C. au{n}MAXIMUM, mais à mesure que{n}le Gear surchauffe, il subit{n}des dégâts !
+f221-0216 07dce4a1ae59b28d Réceptionniste{n}"La chaleur accumulée par{n}votre Gear s'affiche dans{n}la J.C. à l'écran.{p}Gérez la chaleur pendant{n}le combat grâce à cette{n}J.C. Et n'oubliez pas de{n}garder la tête froide !"
+f221-0217 8e1ce07dde1d923d Réceptionniste{n}"{wait 5}...{wait 5}Vous comprenez{n}pourquoi vous avez perdu ?{wait 15}{n}Sinon, je vous explique !"
+f221-0218 1de8885e7f95cb60 Réceptionniste{n}"Je vous dis pourquoi ?"{wait 15}{n}{speed 255}    Pas envie !{n}    Oui, je veux savoir !
+f221-0219 761277a8999c128c Réceptionniste{n}"La défaite a deux causes.{n}D'abord, vous comptez trop{n}sur 'R1' pour tirer des{n}'Balles d'Éther'.{p}Les 'Balles d'Éther' sont{n}utiles contre un ennemi{n}éloigné, mais en abuser{n}nuit au niveau de chaleur{n}de votre propre Gear !{p}Ensuite, vous abusez du{n}'Sprint'. Utiliser l'un ou{n}l'autre avec la 'jauge de{n}Chaleur' au MAXIMUM fait{n}surchauffer votre Gear !{p}En surchauffe, vous subissez{n}des dégâts et, si vous ne{n}faites pas attention, vos{n}H.P. seront vite à zéro !"
+f221-0220 c4b15c9f945b1c12 Réceptionniste{n}"Bref, abuser de l'un ou{n}de l'autre fait du mal{n}à votre Gear !{p}"La chaleur accumulée par{n}votre Gear s'affiche dans{n}la 'jauge de Chaleur'.{p}Servez-vous de cette jauge{n}(J.C.) pour gérer la{n}chaleur en combat.{n}'Gardez la tête froide' !"
+f221-0221 6bebc53f33d5f5ab Réceptionniste{n}"{wait 5}...{wait 5}Comprendre sa défaite{n}aide à mieux combattre la{n}prochaine fois !"
+f221-0222 56f28bc99396c9dc Réceptionniste{n}"Évidemment, les Gears{n}étaient trop inégaux...!{n}Ou bien les pilotes ?{p}Désolée de le dire, mais,{n}de toute façon, vous{n}n'êtes pas un adversaire{n}bien redoutable !"
+f221-0223 78781f4121512fa7 Réceptionniste{n}"C'est en forgeant qu'on{n}devient forgeron ! Essayez{n}notre 'Mode Entraînement' !"
+f221-0224 1cd82534f5d67c8c Réceptionniste{n}"Sur le poteau !{n}Dommage !{n}Presque gagné !"
+f221-0225 572371b0b96702e0 Réceptionniste{n}"Beau match ! Les deux{n}auraient pu gagner sans{n}peine ! À présent, donnez{n}tout pour vous rattraper !"
+f221-0226 aba2085fa4b54aac Réceptionniste{n}"{wait 5}...{wait 5}Vous êtes{n}pacifiste ?{wait 5}...{wait 5}{n}Ou vous ignorez comment{n}piloter un Gear ?{p}Apprenez les commandes de{n}base avec notre Mode{n}Entraînement ! Parlez à la{n}demoiselle du guichet{n}d'à côté."
+f222-0000 a7945fccbff8ae27 Portier{n}"Au-delà se trouve le{n}paddock où les concurrents{n}rangent leurs Gears.{p}Désolé, mais pour éviter{n}la triche des pilotes,{n}l'entrée sans autorisation{n}est interdite."
+f222-0002 51c34bd9163128aa Informateur{n}"Je t'explique quoi ?"{wait 15}{n}{speed 255}    Le Battling ?{n}    Commandes de base ?{n}    Tout va bien, merci !
+f222-0003 b383ff553ad6177a Hôtesse d'échange BP{n}"Que puis-je pour vous ?"{n}{speed 255}    Mes Points de Bataille{n}    Les BP, c'est quoi ?{n}    Échange d'objets{n}    Rien, merci !
+f222-0004 c5fd648c3b841a11 {speed 255}BP ACTUELS :{num1 0}{n}BP TOTAL :{num1 1}
+f222-0005 e5f534c241ec988d Hôtesse d'échange BP{n}"Les Points de Bataille, vous{n}en gagnez à chaque combat{n}remporté.{wait 15} On en enregistre{n}deux types.{p}D'abord,{n}les 'BP Actuels'{wait 30}{n}C'est le nombre de Points de{n}Bataille que vous avez en ce{n}moment.{p}Les 'BP Actuels' s'échangent{n}contre des prix, comme des{n}objets.{wait 30}{n}À chaque échange, les points{n}correspondants sont déduits.{p}Ensuite,{n}le 'BP Total'{wait 30}{n}C'est le total des Points de{n}Bataille cumulés jusqu'ici.{p}En général, le 'BP Total'{n}n'est pas touché par les{n}échanges d'objets.{wait 30} De plus,{n}quand le 'BP Total' atteint{n}certains seuils, il s'échange{n}contre divers 'Objets rares'.{p}Mais attention, acheteurs :{n}prudence ! Rien n'est si{n}simple ! Certains prix{n}réduisent votre 'BP Total' !{n}Alors, soyez attentif lors{n}des échanges !{p}Alors, mieux vaut peut-être{n}choisir des prix qui ne{n}touchent pas au BP Total.{wait 15}{n}...{wait 5}Mais, d'un autre côté, si{n}un objet vous tente trop{wait 5}...{wait 15}{n}eh bien, à vous de voir !"
+f222-0006 41e7f11221e0c8bf "Le 'Menu d'échange'{wait 5}...{wait 5}{n}Faites votre choix !"{wait 30}{n}{speed 255}    Au sujet des échanges{n}    Objets normaux{n}    Objets rares{n}    Je me ravise !
+f222-0007 51a45dd3472c802c Hôtesse d'échange BP{n}"L'échange d'objets normaux{n}permet d'échanger les Points{n}de Bataille gagnés au{n}Battling contre des objets,{n}des pièces de Gear, etc.{p}Comme c'est un 'échange',{n}en cédant vos points, vous{n}les perdez, naturellement !"
+f222-0008 c46304dbb9208015 Hôtesse d'échange BP{n}"Une fois l'objet choisi,{n}aucun remboursement, sauf{n}en cas de défaut ! Alors{n}choisissez bien !"
+f222-0009 539d68c5d4c1b10d Hôtesse d'échange BP{n}"L'autre échange porte sur{n}les objets rares. Quand le{n}total de points atteint un{n}certain niveau, ces objets{n}vous deviennent accessibles.{p}Nos objets sont introuvables{n}ailleurs, et donc très{n}précieux. C'est aussi pour{n}ça que vous ne pouvez en{n}obtenir qu'un de chaque !"
+f222-0010 a1d028b5e2254645 Hôtesse d'échange BP{n}"BP contre quel objet ?"{wait 30}{n}{speed 255}    #00: Graine Anoret{n}    #01: Graine Bulimy{n}    #02: Fil de Samson{n}    #03: Fruit Anoret{n}    #04: Fruit Bulimy{n}    #05: Arm.Légère+1{n}    #06: Arm.Légère+2{n}    ・PAGE 2{n}    Pas maintenant, merci.{n} {n}   BP ACTUELS :{num1 0}
+f222-0011 b215007e3aeb76e8 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Pardon, erreur !{n}    Oui, échangez !{n}{speed 255}  ・#00: 'Graine Anoret'{n}  ・BP ACTUELS -250
+f222-0012 051c7eefd1a98ee9 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Vraiment ?{wait 15} Alors, quel{n}prix voulez-vous contre{n}vos points ?{wait 30} La prochaine{n}fois, visez juste !"
+f222-0013 b6ff86c8ec3e040c Reçu : 'Graine Anoret' !
+f222-0014 8df77edfe5d2496d Hôtesse d'échange BP{n}"Désolée, mon vieux,{wait 5} mais{n}vous n'avez pas assez de{n}points !{wait 5}...{wait 15} Impossible !"
+f222-0015 eb64cd15417861b6 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, mauvais choix !{n}    Oui, je l'échange !{n}{speed 255}  ・#01: 'Graine Bulimy'{n}  ・BP ACTUELS -250
+f222-0016 2104a5ca0e4c04b3 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Ah, d'accord ?{wait 15} Bon,{n}quel objet voulez-vous{n}contre vos points ?{wait 30} Et{n}cette fois, visez juste !"
+f222-0017 4f0a54558ba94df9 Reçu : 'Graine Bulimy' !
+f222-0018 074dc32bd0766de1 Hôtesse d'échange BP{n}"Excusez-moi,{wait 5} mais on dirait{n}que vous n'avez pas les{n}points nécessaires !{wait 5}...{wait 15}{n}Hélas, impossible !"
+f222-0019 b257ae5e008d9ef8 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, mon erreur !{n}    Oui, échangeons !{n}{speed 255}  ・#02: 'Fil de Samson'{n}  ・BP ACTUELS -800
+f222-0020 5fa36e76c314e660 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Ah, sérieux ?{wait 15} Alors,{n}quel objet voulez-vous{n}contre vos points ?{wait 30} Cette{n}fois, choisissez mieux !"
+f222-0021 7299478c78598ae6 Reçu : 'Fil de Samson' !
+f222-0022 294cf3b54bcd79f9 Hôtesse d'échange BP{n}"Mille excuses,{wait 5} mais il{n}vous manque des points !{n}Donc{wait 5}...{wait 15} je ne peux pas{n}faire l'échange !"
+f222-0023 ce68a15a61f06609 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, pardon !{n}    Oui, allons-y !{n}{speed 255}  ・#03: 'Fruit Anoret'{n}  ・BP ACTUELS -750
+f222-0024 ee3da45f0038dfb1 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Bon, ne me blâmez pas !{wait 15}{n}Alors, mon vieux, quel objet{n}contre vos points ?{wait 30} Visez{n}juste cette fois, OK !"
+f222-0025 d9819b7ff118a987 Reçu : 'Fruit Anoret' !
+f222-0026 7b244d1a9d46a605 Hôtesse d'échange BP{n}"Vous essayez d'être drôle ?{wait 5}{n}Parce que vous n'avez pas{n}assez de points{wait 5}...!{wait 15}{n}Sans points, pas d'échange !"
+f222-0027 d686a0774fc947cf Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Ah non, erreur !{n}    Oui, marché conclu !{n}{speed 255}  ・#04: 'Fruit Bulimy'{n}  ・BP ACTUELS -750
+f222-0028 2e50890f3575bec3 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Une erreur, hein ?{wait 15}{n}Bon, quel objet contre{n}vos points ?{wait 30} Soyez plus{n}attentif !"
+f222-0029 cefba32cb7261b38 Reçu : 'Fruit Bulimy' !
+f222-0030 d06f42294a69685d Hôtesse d'échange BP{n}"Oh non,{wait 5} il semble manquer{n}des points{wait 5}...!{wait 15} Sûrement une{n}erreur, mais, désolée, pas{n}d'échange !"
+f222-0031 c2bf324f0c134a97 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, la gaffe !{n}    OK, c'est d'accord !{n}{speed 255}  ・#05: 'Arm.Légère+1'{n}  ・BP ACTUELS -750
+f222-0032 2411bb4f5e63feb9 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}'Oups, la gaffe'...!?{wait 15}{n}Bon, M. Gaffeur, ce sera{n}quoi ?{wait 30} Choisissez bien,{n}s'il vous plaît !"
+f222-0033 fde273b7376d8811 Reçu : 'Arm.Légère+1' !
+f222-0034 d1545fdfeb640eb9 Hôtesse d'échange BP{n}"J'aimerais bien échanger,{wait 5}{n}mais vous n'avez pas assez{n}de points ! Désolée{wait 5}...{wait 15}{n}réessayez plus tard !"
+f222-0035 545452562181b757 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, je me ravise !{n}    Oui, échangeons !{n}{speed 255}  ・#06: 'Arm.Légère+2'{n}  ・BP ACTUELS -1000
+f222-0036 a54e1a76d8f3d74e Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Vous vous ravisez ?{wait 15}{n}Alors, M. Indécis, quel{n}objet contre vos points ?"{wait 30}
+f222-0037 49d67415fea6a666 Reçu : 'Arm.Légère+2' !
+f222-0038 49d4f8f9cc2cc63f Hôtesse d'échange BP{n}"Quoi,{wait 5} vous me croyez née{n}de la dernière pluie !?{wait 15}{n}Vous manquez de points !{wait 5}{n}Rien à faire !"
+f222-0039 87a4aca8b8d7bccc Hôtesse d'échange BP{n}"BP contre quel objet ?"{wait 30}{n}{speed 255}    #07: Arm.Légère+3{n}    #08: Arm. Miroir{n}    #09: Bague Vent{n}    #10: Bague Terre{n}    #11: Bague Feu{n}    #12: Bague Eau{n}    ・PAGE 1{n}    ・PAGE 3{n}    Pas d'échange !{n} {n}   BP ACTUELS :{num1 0}
+f222-0040 fd78768bea4c53cb Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Pardon, erreur !{n}    Oui, échangez !{n}{speed 255}  ・#07: 'Arm.Légère+3'{n}  ・BP ACTUELS -1250
+f222-0041 980ad77bbf1e299e Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Vraiment ?{wait 15} Alors, quel{n}objet voulez-vous contre{n}vos points ?{wait 30} La prochaine{n}fois, visez juste !"
+f222-0042 3f88f40a971b2027 Reçu : 'Arm.Légère+3' !
+f222-0043 342d3f405a1a0b99 Hôtesse d'échange BP{n}"Désolée, mon vieux,{wait 5} mais{n}vous n'avez pas assez de{n}points{wait 5}...!{wait 15} Impossible !"
+f222-0044 d487b31075c6daed Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, mauvais choix !{n}    Oui, je l'échange !{n}{speed 255}  ・#08: 'Arm. Miroir'{n}  ・BP ACTUELS -1500
+f222-0046 2b5b20a45216bb5e Reçu : 'Arm. Miroir' !
+f222-0047 c79a424e97ed29b9 Hôtesse d'échange BP{n}"Excusez-moi,{wait 5} mais on dirait{n}que vous n'avez pas les{n}points nécessaires{wait 5}...!{wait 15}{n}Hélas, impossible !"
+f222-0048 3a91eecb66a12de5 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, mon erreur !{n}    Oui, échangeons !{n}{speed 255}  ・#09: 'Bague Vent'{n}  ・BP ACTUELS -2000
+f222-0049 aae96967c71e6b2c Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Ah, sérieux ?{wait 15} Alors,{n}quel objet voulez-vous{n}contre vos points ?{wait 30} Cette{n}fois, choisissez mieux !"
+f222-0050 ed550da2bc67ceb2 Reçu : 'Bague Vent' !
+f222-0051 8189483647edefab Hôtesse d'échange BP{n}"Mille excuses,{wait 5} mais il{n}vous manque des points !{n}Donc{wait 5}...{wait 15} je ne peux pas{n}faire l'échange !"
+f222-0052 6a0ed615dd5a9bfa Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, pardon !{n}    Oui, allons-y !{n}{speed 255}  ・#10: 'Bague Terre'{n}  ・BP ACTUELS -2000
+f222-0054 f96035dd0873b7a8 Reçu : 'Bague Terre' !
+f222-0056 71716f1697ab7bc7 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Ah non, erreur !{n}    Oui, marché conclu !{n}{speed 255}  ・#11: 'Bague Feu'{n}  ・BP ACTUELS -2000
+f222-0058 3f53679bd376bcba Reçu : 'Bague Feu' !
+f222-0060 ffcfe7ef30a9c668 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, bourde !{n}    OK, c'est d'accord !{n}{speed 255}  ・#12: 'Bague Eau'{n}  ・BP ACTUELS -2000
+f222-0061 0c4acf3bd1ae271c Hôtesse d'échange BP{n}"{wait 5}...{wait 5}'Oups, bourde'...!?{wait 15} Bon,{n}'M. Bourde', ce sera quoi ?{wait 30}{n}Choisissez avec soin, s'il{n}vous plaît !"
+f222-0062 84f1bdf00a9c8f07 Reçu : 'Bague Eau' !
+f222-0064 e53854881931587f Hôtesse d'échange BP{n}"BP contre quel objet ?"{wait 30}{n}{speed 255}    #13: Voile Vent{n}    #14: Voile Terre{n}    #15: Voile Feu{n}    #16: Voile Eau{n}    #17: Élém. Aéro{n}    #18: Élém. Terra{n}    ・PAGE 2{n}    ・PAGE 4{n}    Mieux vaut pas !{n} {n}   BP ACTUELS :{num1 0}
+f222-0065 437b3d443c599294 Hôtesse d'échange BP{n}"Ce prix vous va ?"{wait 30}{n}    Non, je me ravise !{n}    Oui, échangeons !{n}{speed 255}  ・#13: 'Voile Vent'{n}  ・BP ACTUELS -3500
+f222-0066 404c8cc252a1e557 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Vous vous ravisez ?{wait 15}{n}Alors, M. Indécis, quel{n}objet contre vos points ?{wait 30}{n}Décidez-vous, enfin !"
+f222-0067 a0eaf6bb2cfac890 Reçu : 'Voile Vent' !
+f222-0069 f2e76e5050a1065e Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Pardon, erreur !{n}    Oui, échangez !{n}{speed 255}  ・#14: 'Voile Terre'{n}  ・BP ACTUELS -3500
+f222-0070 20c7d96fc77db196 Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Vraiment ?{wait 15} Alors, quel{n}objet voulez-vous contre{n}vos points ?{wait 30} La prochaine{n}fois, visez juste !"
+f222-0071 3806c684f0a6ceda Reçu : 'Voile Terre' !
+f222-0073 f7370395c40b03f1 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, mauvais choix !{n}    Oui, je l'échange !{n}{speed 255}  ・#15: 'Voile Feu'{n}  ・BP ACTUELS -3500
+f222-0075 e9625e6c2e21dbf8 Reçu : 'Voile Feu' !
+f222-0076 b34b1af9005b4385 Hôtesse d'échange BP{n}"Excusez-moi,{wait 5} mais on dirait{n}que vous n'avez pas les{n}points nécessaires{wait 5}...!{wait 15}{n}Hélas, impossible !"
+f222-0077 c9e00e207367a4cc Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, mon erreur !{n}    Oui, échangeons !{n}{speed 255}  ・#16: 'Voile Eau'{n}  ・BP ACTUELS -3500
+f222-0079 be6cbc24a2b629d1 Reçu : 'Voile Eau' !
+f222-0081 cb21bdeedf2203f1 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, pardon !{n}    Oui, allons-y !{n}{speed 255}  ・#17: 'Élém. Aéro'{n}  ・BP ACTUELS -4500
+f222-0083 ffa4a53d2d00b9a3 Reçu : 'Élém. Aéro' !
+f222-0085 1341aaa7bec5abdb Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Ah non, erreur !{n}    Oui, marché conclu !{n}{speed 255}  ・#18: 'Élém. Terra'{n}  ・BP ACTUELS -4500
+f222-0087 9101010d4a1100f3 Reçu : 'Élém. Terra'
+f222-0089 cd7ec690915f96da Hôtesse d'échange BP{n}"BP contre quel objet ?"{wait 30}{n}{speed 255}    #19: Élém. Pyro{n}    #20: Élém. Hydro{n}    #21: Gemme Éther G{n}    #22: Roc Antiéther{n}    ・PAGE 3{n}    ・PAGE 1{n}    Désolé, rien pour moi !{n} {n}   BP ACTUELS :{num1 0}
+f222-0090 88ed7f3a82b19d12 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, la gaffe !{n}    OK, c'est d'accord !{n}{speed 255}  ・#19: 'Élém. Pyro'{n}  ・BP ACTUELS -4500
+f222-0091 c0914ad9958b3fce Hôtesse d'échange BP{n}"{wait 5}...{wait 5}'Oups, la gaffe'...!?{wait 15}{n}Bon, M. Gaffeur, ce sera{n}quoi ?{wait 30} Choisissez bien,{n}s'il vous plaît !"
+f222-0092 300ad36b76983efe Reçu : 'Élém. Pyro' !
+f222-0094 06328be243da22e1 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Non, je me ravise !{n}    Oui, échangeons !{n}{speed 255}  ・#20: 'Élém. Hydro'{n}  ・BP ACTUELS -4500
+f222-0095 146362e85fa51fed Hôtesse d'échange BP{n}"{wait 5}...{wait 5}Vous vous ravisez ?{wait 15}{n}Alors, M. Girouette, quel{n}objet contre vos points ?{wait 30}{n}Décidez-vous, enfin !"
+f222-0096 c9c31f91ee2acd7e Reçu : 'Élém. Hydro' !
+f222-0098 27017d675496e319 Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Pardon, erreur !{n}    Oui, échangez !{n}{speed 255}  ・#21: 'Gemme Éther G'{n}  ・BP ACTUELS -7500
+f222-0100 1b0c518af1ba06db Reçu : 'Gemme Éther G' !
+f222-0102 ecd3396cb111f22f Hôtesse d'échange BP{n}"C'est bien ce prix ?"{wait 30}{n}    Oups, mauvais choix !{n}    Oui, je l'échange !{n}{speed 255}  ・#22: 'Roc Antiéther'{n}  ・BP ACTUELS -8000
+f222-0104 dc06f00babb43f86 Reçu : 'Roc Antiéther' !
+f222-0106 5be52e95736d984d Hôtesse d'échange BP{n}"Contre quel objet ?"{wait 30}{n}{speed 255}    #00: Disque M{n}    #01: Bague Force S{n}    #02: Bague Santé S{n}    #03: Bague Agile S{n}    #04: Ceinture Chic{n}    #05: Poupée Fei{n}    #06: Poupée Bart{n}    ・PAGE 2{n}    Plus tard, merci !{n} {n}   BP TOTAL :{num1 0}
+f222-0107 91c62d6dbacea6e6 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Non, je me trompe !{n}    Oui, échangez !{n}{speed 255}  ・#00: 'Disque M'{n}  ・BP ACTUELS : -3500{n}  ・BP TOTAL : -4000
+f222-0108 11a8cffd0f32def7 Hôtesse d'échange BP{n}"{wait 5}...Ah,{wait 5} vraiment ?{wait 15} Alors,{n}quel prix voulez-vous ?{wait 30}{n}Et la prochaine fois, faites{n}plus attention, s'il vous{n}plaît !"
+f222-0109 edce1ccff5c9e4a8 Hôtesse d'échange BP{n}"Hé,{wait 5} attendez un peu !{wait 15} Vous{n}n'en avez pas déjà un ?{p}Nos précieux prix sont{n}introuvables ailleurs, d'où{n}la limite d'un par personne.{n}Désolée !"
+f222-0110 3d3e03efceeb26d6 Reçu : 'Disque M' !
+f222-0111 02dfdd1133cfde73 Hôtesse d'échange BP{n}"Désolée,{wait 5} mais il semble{n}manquer des points{wait 5}...!{wait 15}{n}Dommage,{wait 5} mais je ne peux{n}pas faire cet échange !"
+f222-0113 ba92f6e1e20b7012 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Non, merci !{n}    Oui, échangeons !{n}{speed 255} ・#01: 'Bague Force S'{n} ・BP TOTAL : 2000
+f222-0116 f4f79e58d32b902d Reçu : 'Bague Force S' !
+f222-0118 4c9aea84b62bffdc Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Désolé, pas question !{n}    Je le veux, échangez !{n}{speed 255}  ・#02: 'Bague Santé S'{n}  ・BP TOTAL : 3000
+f222-0121 55ac027b6071b19b Reçu : 'Bague Santé S' !
+f222-0122 dc31a16377de0427 Hôtesse d'échange BP{n}"Désolée,{wait 5} mais il semble{n}manquer des points !{wait 5} ...{wait 15}{n}Dommage,{wait 5} mais je ne peux{n}pas faire cet échange !"
+f222-0123 c60c8c8b44558fe6 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Pas maintenant !{n}    OK, marché conclu !{n}{speed 255}  ・#03: 'Bague Agile S'{n}  ・BP TOTAL : 4500
+f222-0126 210da60db3a3e6e9 Reçu : 'Bague Agile S' !
+f222-0128 16636af034c215fb Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Merci, mais non !{n}    Oui, volontiers !{n}{speed 255}  ・#04: 'Ceinture Chic'{n}  ・BP TOTAL : 6000
+f222-0131 5a10b5f938b38ba4 Reçu : 'Ceinture Chic' !
+f222-0133 36a26061c453abbc Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    En fait, non !{n}    Oui, j'y tiens !{n}{speed 255}  ・#05: 'Poupée Fei'{n}  ・BP ACTUELS : - 500{n}  ・BP TOTAL : -3000
+f222-0136 04aed8974d9907e2 Reçu : 'Poupée Fei' !
+f222-0139 b85e44ed41b73d96 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Non, pas envie !{n}    Oui, j'échange !{n}{speed 255}  ・#06: 'Poupée Bart'{n}  ・BP ACTUELS : - 500{n}  ・BP TOTAL : -3000
+f222-0142 80990b3acca1d2b9 Reçu : 'Poupée Bart' !
+f222-0145 3fa0157650fa190b Hôtesse d'échange BP{n}"Contre quel objet ?"{wait 30}{n}{speed 255}    #07: Poupée Billy{n}    #08: Garde Phys.{n}    #09: Garde Mentale{n}    #10: Double-Éther{n}    #11: Garde Éther{n}    #12: Pierre de Vie{n}    ・PAGE 1{n}    ・PAGE 3{n}    Je vais passer !{n} {n}   BP TOTAL :{num1 0}
+f222-0146 e37b27811caca2a4 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Tout bien pesé, non !{n}    Oui, j'accepte !{n}{speed 255}  ・#07: 'Poupée Billy'{n}  ・BP ACTUELS : - 500{n}  ・BP TOTAL : -3000
+f222-0149 57926b04d2c2a242 Reçu : 'Poupée Billy' !
+f222-0152 2f8b682bdbbdf157 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Oups, je me trompe !{n}    Entendu, c'est dit !{n}{speed 255}  ・#08: 'Garde Phys.'{n}  ・BP ACTUELS : - 500{n}  ・BP TOTAL : -4000
+f222-0155 f5719d1b689f073b Reçu : 'Garde Phys.' !
+f222-0158 0a452db0c51f2805 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Non, je me trompe !{n}    Oui, échangez !{n}{speed 255}  ・#09: 'Garde Mentale'{n}  ・BP ACTUELS : - 750{n}  ・BP TOTAL : -4500
+f222-0161 5454bd39ddc8b6cd Reçu : 'Garde Mentale' !
+f222-0164 40511cd322fb45f8 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Non, merci !{n}    Oui, échangeons !{n}{speed 255}  ・#10: 'Double-Éther'{n}  ・BP TOTAL : 8000
+f222-0167 ef1941a430764ddf Reçu : 'Double-Éther' !
+f222-0169 071c13a2988ee97c Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Désolé, pas question !{n}    Je le veux, échangez !{n}{speed 255}  ・#11: 'Garde Éther'{n}  ・BP TOTAL : 8500
+f222-0172 9461238a18fe52b1 Reçu : 'Garde Éther' !
+f222-0174 6b23074fc3a2e246 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Pas maintenant !{n}    OK, marché conclu !{n}{speed 255}  ・#12: 'Pierre de Vie'{n}  ・BP TOTAL : 9000
+f222-0177 b476ee2a7ca00085 Reçu : 'Pierre de Vie' !
+f222-0179 ccb554fa2d32a98d Hôtesse d'échange BP{n}"Contre quel objet ?"{wait 30}{n}{speed 255}    #13: Chargeur S{n}    #14: Chargeur X{n}    #15: GNRS50{n}    #16: Fatalisor 3{n}    #17: Bottes Éclair{n}    ・PAGE 2{n}    ・PAGE 1{n}    Plus tard, merci !{n} {n}   BP TOTAL :{num1 0}
+f222-0180 3f44e4379982126f Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Merci, mais non !{n}    Oui, volontiers !{n}{speed 255}  ・#13: 'Chargeur S'{n}  ・BP ACTUELS : - 2500{n}  ・BP TOTAL : -10000
+f222-0183 09be2beeaaf77fa7 Reçu : 'Chargeur S' !
+f222-0186 3676562ff60f5312 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    En fait, non !{n}    Oui, je l'échange !{n}{speed 255}  ・#14: 'Chargeur X'{n}  ・BP ACTUELS : - 3000{n}  ・BP TOTAL : -12500
+f222-0189 cffdda645426883a Reçu : 'Chargeur X' !
+f222-0192 1ccefdf1ee46a5e1 Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Non, pas envie !{n}    Oui, j'échange !{n}{speed 255}  ・#15: 'GNRS50'{n}  ・BP ACTUELS : - 5000{n}  ・BP TOTAL : -15000
+f222-0195 4bed3629be9a4901 Reçu : 'GNRS50' !
+f222-0198 2df67bc552d7292d Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Tout bien pesé, non !{n}    Oui, j'accepte !{n}{speed 255}  ・#16: 'Fatalisor 3'{n}  ・BP ACTUELS : - 7500{n}  ・BP TOTAL : -18000
+f222-0201 a0335149ad6c998e Reçu : 'Fatalisor 3' !
+f222-0204 a1c5816bc4393f3c Hôtesse d'échange BP{n}"Vous voulez ce prix ?"{wait 30}{n}    Pardon, je regarde !{n}    Entendu, c'est dit !{n}{speed 255}  ・#17: 'Bottes Éclair'{n}  ・BP ACTUELS : - 4500{n}  ・BP TOTAL : -30000
+f222-0207 71ff65e9b8c0f437 Reçu : 'Bottes Éclair' !
+f222-0210 6b04e9f894594f05 {speed 255}・Coût réparation  : - 00 G{n}・Points gagnés    : - 45 P{n}・Bonus spécial    : +000 G
+f222-0211 11ac1a8874f23e4a {speed 255}・Coût réparation  : - 00 G{n}・Points gagnés    : - 75 P{n}・Bonus spécial    : +000 G
+f222-0212 910e5bba9f19a0f1 {speed 255}・Coût réparation  : - 00 G{n}・Points gagnés    : -300 P{n}・Bonus spécial    : +000 G
+f222-0213 b1ff87f34aa63250 {speed 255}・Coût réparation  : - 10 G{n}・Points gagnés    : +145 P{n}・Bonus spécial    : +210 G
+f222-0214 4cfe62299b45cfaa {speed 255}・Coût réparation  : - 30 G{n}・Points gagnés    : +175 P{n}・Bonus spécial    : +330 G
+f222-0215 8aaeab7b661cc5e6 {speed 255}・Coût réparation  : - 50 G{n}・Points gagnés    : +450 P{n}・Bonus spécial    : +550 G
+f222-0216 b094da03deba268b {speed 255}・Coût réparation  : - 00 G{n}・Points gagnés    : +215 P{n}・Bonus spécial    : +500 G
+f222-0217 d577d20e10be3630 {speed 255}・Coût réparation  : - 00 G{n}・Points gagnés    : +300 P{n}・Bonus spécial    : +700 G
+f222-0218 b97d54a028caedec {speed 255}・Coût réparation  : -  00 G{n}・Points gagnés    : + 900 P{n}・Bonus spécial    : +1000 G
+f222-0219 6a3acb3563ace8c9 {speed 255}・Coût réparation  : - 50 G{n}・Points gagnés    : + 75 P{n}・Bonus spécial    : +150 G
+f222-0220 42983cf4ab975ceb {speed 255}・Coût réparation  : -100 G{n}・Points gagnés    : +120 P{n}・Bonus spécial    : +300 G
+f222-0221 534dc17bcd976f24 {speed 255}・Coût réparation  : -150 G{n}・Points gagnés    : +245 P{n}・Bonus spécial    : +450 G
+f222-0222 e8bee0a2e91ceb90 {speed 255}・Coût réparation  : - 10 G{n}・Points gagnés    : - 32 P{n}・Bonus spécial    : +000 G
+f222-0223 070cc91f787afcef {speed 255}・Coût réparation  : - 30 G{n}・Points gagnés    : - 48 P{n}・Bonus spécial    : +000 G
+f222-0224 b2a2d116a141c231 {speed 255}・Coût réparation  : - 50 G{n}・Points gagnés    : -150 P{n}・Bonus spécial    : +000 G
+f222-0225 49145c7c047ca976 {speed 255}・Coût réparation  : -  5 G{n}・Points gagnés    : - 27 P{n}・Bonus spécial    : +000 G
+f222-0226 810f99e2b55f9746 {speed 255}・Coût réparation  : - 15 G{n}・Points gagnés    : - 55 P{n}・Bonus spécial    : +000 G
+f222-0227 e3f4321d0078bf4f {speed 255}・Coût réparation  : - 45 G{n}・Points gagnés    : -200 P{n}・Bonus spécial    : +000 G
+f222-0228 17ee02b17f85303b {speed 255}・Coût réparation  : - 15 G{n}・Points gagnés    : - 16 P{n}・Bonus spécial    : +000 G
+f222-0229 c5e568378e53a3de {speed 255}・Coût réparation  : - 45 G{n}・Points gagnés    : - 32 P{n}・Bonus spécial    : +000 G
+f222-0230 d983f0ec0c559b1f {speed 255}・Coût réparation  : - 75 G{n}・Points gagnés    : -175 P{n}・Bonus spécial    : +000 G
+f222-0231 6a230929b3696542 {speed 255}・Coût réparation  : - 15 G{n}・Points gagnés    : - 15 P{n}・Bonus spécial    : +000 G
+f222-0232 e8b71524c1b002f8 {speed 255}・Coût réparation  : - 45 G{n}・Points gagnés    : - 30 P{n}・Bonus spécial    : +000 G
+f222-0233 5d71e2f429a84106 {speed 255}・Coût réparation  : - 75 G{n}・Points gagnés    : -125 P{n}・Bonus spécial    : +000 G
+f222-0234 31b7f69bbf7e1a64 {speed 255}・Coût réparation  : - 30 G{n}・Points gagnés    : - 45 P{n}・Bonus spécial    : +000 G
+f222-0235 1c1bbc8bc85542b6 {speed 255}・Coût réparation  : - 75 G{n}・Points gagnés    : - 75 P{n}・Bonus spécial    : +000 G
+f222-0236 1642eba0613bd272 {speed 255}・Coût réparation  : -100 G{n}・Points gagnés    : -155 P{n}・Bonus spécial    : +000 G
+f222-0237 de03ac305a2ae57b {speed 255}・Coût réparation  : - 50 G{n}・Points gagnés    : -145 P{n}・Bonus spécial    : +000 G
+f222-0238 96ce6d1858801368 {speed 255}・Coût réparation  : -100 G{n}・Points gagnés    : -175 P{n}・Bonus spécial    : +000 G
+f222-0239 e735490d3179e2cd {speed 255}・Coût réparation  : -150 G{n}・Points gagnés    : -300 P{n}・Bonus spécial    : +000 G
+f222-0240 7a82782c6522d0f4 {speed 255}・Coût réparation  : - 50 G{n}・Points gagnés    : - 90 P{n}・Bonus spécial    : +000 G
+f222-0241 4b41cbeeb03f2c46 {speed 255}・Coût réparation  : -100 G{n}・Points gagnés    : -120 P{n}・Bonus spécial    : +000 G
+f222-0242 928436e42d546577 {speed 255}・Coût réparation  : -150 G{n}・Points gagnés    : -175 P{n}・Bonus spécial    : +000 G
+f222-0243 6f0967c1a779e9e4 {speed 255}・Coût réparation  : - 50 G{n}・Points gagnés    : -100 P{n}・Bonus spécial    : +000 G
+f222-0244 dcb98fc4aa3781a5 {speed 255}・Coût réparation  : -100 G{n}・Points gagnés    : -150 P{n}・Bonus spécial    : +000 G
+f222-0245 ae186c01f6be4f45 {speed 255}・Coût réparation  : -150 G{n}・Points gagnés    : -450 P{n}・Bonus spécial    : +000 G
+f222-0246 a559003a4bf33a53 "Quelle musique voulez-vous{n}pendant le combat ?"{n}    Comme d'habitude !{n}    C'est bien comme ça.
+f222-0247 ba2724c80eb73b30 Réceptionniste{n}"Le pilote 'Fei' est bien{n}inscrit.{wait 15} Un instant, je{n}vous prie{wait 5}..."
+f222-0248 f941457d6dec5897 '{name 11}' a été envoyé{n}au paddock des pilotes.{n}Préparez l'embarquement !
+f222-0249 6dcad3ef8d2decda '{name 12}' a été envoyé{n}au paddock des pilotes.{n}Préparez l'embarquement !
+f222-0250 d35902e42dffa662 '{name 26}' a été envoyé{n}au paddock des pilotes.{n}Préparez l'embarquement !
+f222-0251 d7bb535a286a5f56 Pilote Fei !{n}Rendez-vous au paddock{n}des concurrents !{done 60}
+f222-0252 2cbfcc7ffe3bab75 Informateur{n}"OK, parfait !{wait 15} Bon,{wait 5} je vais{n}t'expliquer un peu le{n}'Battling'."
+f222-0253 2642a94976e250e1 Informateur{n}"Le Battling est un sport de{n}combat à un contre un en{n}Gear, disputé dans l'arène{n}de la Capitale Impériale.{p}Les règles sont simples : on{n}se bat jusqu'à ce que l'un{n}des deux casse.{wait 10} Bref, il{n}suffit de mettre ton rival{n}en pièces !{p}Mais pas besoin de lutter{n}jusqu'à démolir ton Gear.{wait 5} Tu{n}peux abandonner le match...{n}alors, si tu ne peux pas{n}gagner{wait 10}...{wait 5} bon, tu sais !{p}Enfin, au Battling, l'armure{n}des Gears est standardisée,{n}pour que les concurrents{n}luttent à armes égales.{p}Bref, les concurrents{n}dépendent entièrement des{n}qualités de base des Gears{n}qu'ils pilotent."
+f222-0254 058f19ef4444a741 Informateur{n}"Bon, voilà le résumé{n}rapide{wait 5}... je crois.{wait 30}{n}Tu as saisi l'idée ?"
+f222-0255 9661ee8c2dde2713 {name 128}{n}"Eh bien, euh{wait 5}..."{wait 15}{n}{speed 255}    Bien sûr, facile !{n}    Désolé, pas compris !
+f222-0259 4df6055609614e47 Informateur{n}"Ah, les commandes de base !{n}Bon{wait 5}, que veux-tu faire ?"{wait 15}{n}{speed 255}    Question sur les boutons{n}    Mode Tutoriel{n}    Mode Entraînement{n}    Autre question
+f222-0260 6096a05c056bc125 Informateur{n}"Bien, les boutons. Je vais{n}t'expliquer le rôle de{n}chacun..."
+f222-0263 abd2115a4470412a Informateur{n}"Ah,{wait 5} bon{wait 5}... à ton aise !{wait 15}{n}Que veux-tu demander{n}d'autre ?"
+f222-0267 973b74f27f347466 Informateur{n}"OK,{wait 5} la croix{n}directionnelle...{wait 15} Si{n}l'adversaire est à ta droite{n}(de ton point de vue) :{p}・ HAUT éloigne ton Gear{n} de l'écran.{wait 45}{n}・ BAS rapproche ton Gear{n} de l'écran.{p}・ DROITE déplace ton Gear{n} vers l'adversaire.{wait 45}{n}・ GAUCHE éloigne ton{n} Gear de l'adversaire."
+f222-0279 49feb74edacff808 Informateur{n}"Oui,{wait 5} je savais que tu{n}t'en sortirais !{wait 10} Bref,{wait 5}{n}donne le meilleur de toi !"
+f222-0281 67c1bd003bcce616 Réceptionniste{n}"Bienvenue à l'arène{n}impériale de Battling !{p}Un match, ça vous dit ?"{n}{speed 255}    Non merci{n}    Oui, je participe !
+f222-0282 20b71219a9030ada Réceptionniste{n}"Les inscriptions au{n}Battling sont ouvertes{n}à toute heure !"
+f222-0283 b730aefc866af04e Réceptionniste{n}"Choisissez un mode."{wait 30}{n}{speed 255}    C'est quoi, un mode ?{n}    Mode Spécial 1{n}    Mode Spécial 2
+f222-0284 0e48f5b48965c3b0 Réceptionniste{n}"Le Battling des Jeux{n}Impériaux est devenu un{n}sport régulier.{wait 30} Il existe{n}désormais deux modes.{p}Le 'Mode Spécial 1' est{n}comme un match normal, sauf{n}pour{wait 5}...{wait 5} hi-hi-hi{wait 5}...{wait 5} bon,{wait 5}{n}voyez vous-même !{wait 15} C'est plus{n}rapide d'essayer que de{n}m'écouter !{p}Le 'Mode Spécial 2' diffère{n}des matchs normaux : chaque{n}victoire vous rapporte des{n}Points de Bataille, à{n}cumuler et à échanger{n}contre des prix !"
+f222-0285 4eafd847d9028cdc Réceptionniste{n}"Choisissez votre Gear :"{wait 30}{n}{speed 255}    {name 26}{n}    {name 12}{n}    {name 11}
+f222-0286 bd0e7f6844573175 Réceptionniste{n}"Choisissez le niveau :"{n}{speed 255}    GEAR-NIVEAU-0{n}    GEAR-NIVEAU-1{n}    GEAR-NIVEAU-2
+f222-0287 4f4ea0f2217a0e86 Réceptionniste{n}"Choisissez le niveau :"{n}{speed 255}    GEAR-NIVEAU-0{n}    GEAR-NIVEAU-1
+f222-0288 586a8388b8f6d65c Écouter pour le plaisir ?{wait 15}{n}{speed 255}    Ne pas écouter{n}    Écouter
+f222-0290 6295d99cdcff43b4 Vous n'avez pas{n}le disque voulu.
+f222-0291 07165c954a586fc2 CHOIX MUSIQUE{wait 15}{n}{speed 255}    Thème{n}    Combat{n}    Donjons{n}    Nature{n}    Le Monde{n}    Requiem{n}    Émotion{n}    Annuler
+f222-0292 783ab2d6515e0909 sel-piste{wait 15}{n}{speed 255}    piste00{n}    piste01{n}    piste02{n}    piste03{n}    piste04{n}    piste05{n}    piste06{n}    piste07{n}    piste08{n}    piste09
+f222-0293 c2c0db5732f917bc piste00
+f222-0294 c2c4415732fbfae5 piste01
+f222-0295 c29edf5732dc3822 piste02
+f222-0296 c2a2455732df1b4b piste03
+f222-0297 c298135732d671d0 piste04
+f222-0298 c29b795732d954f9 piste05
+f222-0299 c2ac775732e7c4c6 piste06
+f222-0300 c2afdd5732eaa7ef piste07
+f222-0301 c2a5ab5732e1fe74 piste08
+f222-0302 c2a9115732e4e19d piste09
+f222-0303 81c5201c3521353d sel-piste{wait 15}{n}{speed 255}    piste00{n}    piste01{n}    piste02
+f222-0307 baf012eeb04ae170 sel-piste{wait 15}{n}{speed 255}    piste00{n}    piste01{n}    piste02{n}    piste03{n}    piste04{n}    piste05{n}    piste06{n}    piste07
+f222-0325 06f8ce911740121a sel-piste{wait 15}{n}{speed 255}    piste00{n}    piste01{n}    piste02{n}    piste03{n}    piste04{n}    piste05{n}    piste06{n}    page-2
+f222-0333 d34ba80b8dc98f96 sel-piste{wait 15}{n}{speed 255}    piste07{n}    piste08{n}    piste09{n}    piste10{n}    piste11{n}    piste12{n}    piste13{n}    page-1
+f222-0337 caeffe57377924a3 piste10
+f222-0338 caec98573776417a piste11
+f222-0339 cadb9a573767d1ad piste12
+f222-0340 cad834573764ee84 piste13
+f222-0350 02058a54dc4d1772 sel-piste{wait 15}{n}{speed 255}    piste00{n}    piste01{n}    piste02{n}    piste03{n}    piste04
+f222-0356 920189a0755a08fc Diana{n}"Depuis ce jour-là, la paix{n}s'est effondrée.{wait 45} Mais,{wait 5} nous{n}sommes en vie{wait 5}...{wait 5} C'est une{n}vérité que rien ne changera.{p}Ce n'est pas comme si tout{n}était fini.{wait 15} Notre planète{n}est juste revenue à son{n}état originel{wait 5}...{wait 5} Et nous{n}sommes toujours en vie.{wait 15}{n}Tout n'est pas perdu{wait 5}...{wait 5}"
+f222-0357 5d608a66ae283210 Diana{n}"Dans tes yeux,{wait 5} je vois que{n}toi non plus, tu n'as pas{n}perdu espoir{wait 5}...{wait 20}{n}Héhé{wait 5}...{wait 5}{n}Je revois le jour où tu es{n}arrivé à la Capitale."
+f222-0358 00558302f1cdee2c Battler{n}"Ah, alors toi aussi, tu as{n}entendu les rumeurs et tu{n}viens tenter le Battling là{n}où se trouvait Kislev ?{p}Le monde a été mis en pièces{n}par des anges de mort, mais{n}nous vivons toujours ainsi.{wait 15}{n}Ce n'est pas notre fin !"
+f222-0359 32d47429cca3fabe Battler{n}"Je suis un 'Battler',{wait 5} un{n}guerrier !{wait 15} Je lutterai,{wait 5}{n}lutterai,{wait 5} lutterai jusqu'au{n}bout,{wait 5} jusqu'à la mort !"
+f222-0360 9e245b9dc907d92b Amazone{n}"Le continent d'Ignas et{n}ses pays... l'Empire de{n}Kislev, le Royaume d'Aveh...{n}tout ça n'existe plus.{p}Notre monde a perdu ces noms{n}ce jour-là{wait 5}...{wait 5} Les survivants{n}se sont réunis dans le champ{n}de neige, loin au sud{wait 5}...{wait 5}{n}C'est 'l'ultime résistance{n}des vivants' !"
+f222-0361 2cbe7162c48068e0 Amazone{n}"J'ai quitté cet endroit{n}une fois, mais c'est la{n}ville où je suis née !{wait 15}{n}Je ne peux pas lui{n}tourner le dos si vite !{p}Alors je suis revenue{wait 5}...{n}Ici, dans l'ancienne{n}Capitale Impériale.{wait 15} Même{n}si la destruction s'abat{n}sur ce monde, je la{n}protégerai toujours !"
+f222-0362 ee671a0fe94bb2e2 Ancien garde de la capitale{n}"Ce jour-là, notre monde fut{n}enseveli par{wait 5}...{wait 5} un ange{wait 5}...{wait 5}{n}un,{wait 5} une sorte de messager{n}de Dieu ?{wait 30} Ma soeur,{wait 5} ma mère,{wait 5}{n}mon père{wait 5}...{wait 5} tous morts !{p}Moi,{wait 5} je suis un soldat de{n}l'armée impériale de Kislev !{wait 15}{n}Et pourtant,{wait 5} ...{wait 5}pourtant,{wait 5}{n}...{wait 5}pourtant,{wait 5} je n'ai rien{n}pu faire !!!{wait 15} Bon sang !{wait 5}{n}...{wait 10}Que tout soit maudit !"
+f222-0363 3036805737ea20e0 Big Joe{n}"La destruction a déferlé{n}sur le monde entier{wait 5}...{p}La mort a frappé tous les{n}vivants{wait 5}...{wait 5}{n}C'était le destin,{wait 5}{n}un destin inévitable !"
+f222-0364 a75e23acb02ac561 Big Joe{n}"Permettez-moi de vous{n}remercier pour tout ce que{n}vous avez fait, les amis.{p}Ça vient du bar Wildcat,{n}dans l'ancienne Capitale{n}Impériale, Nortune.{wait 5} Je l'ai{n}aussi un peu retapé.{p}Il devrait être bien plus{n}accueillant.{wait 5} Mais pour le{n}savoir, il faut l'essayer,{wait 5}{n}alors écoutez, hein !{p}J'ai eu du mal à renoncer{n}à ce look élégant en vieux{n}bois qu'il avait au{n}'Wildcat', mais{wait 5}...{p}bon, bref, vous ne trouvez{n}pas ce nouveau look en faux{n}marbre plutôt chouette ?"
+f222-0365 691ea0025a7c8084 Big Joe{n}"J'ai rapporté ça des ruines{n}désertes du bar de la{n}Capitale Impériale, Nortune.{p}La carcasse était abîmée,{n}alors je l'ai changée{wait 5}...{wait 15} Dur{n}de renoncer à ce look{n}élégant en vieux bois.{p}Mais bref, ce nouveau look{n}en faux marbre, il est{n}chouette, non ?{wait 15} Si seulement{n}j'avais un 'Disque M' !{p}Ça lit les 'Disques M',{wait 5} mais{n}j'ai donné mon 'Disque M'{n}aux demoiselles de{n}l'ex-Capitale Impériale.{p}Et c'était un disque premium{n}précieux, raffiné par la{n}logique d'Éther !{wait 5} Si j'avais{n}su{wait 5}...!"
+f222-0367 a2dcccda64acfc0b Réceptionniste{n}"Hmm, pas mal !{n}Continuez ainsi !"
+f222-0368 7bdb12f0383abcc7 Réceptionniste{n}"Ouah, quelle fooorce !{n}Il n'avait aucune chance !{n}Ah, j'en ai la chair de{n}poule, quelle puissance !"
+f222-0371 57a5e06e51a51bd9 Réceptionniste{n}"Un petit conseil !{wait 15}{n}Vous n'êtes pas limité aux{n}attaques physiques des{n}boutons × et □ !{p}Il y a une autre attaque :{n}les 'Balles d'Éther', pour{n}les ennemis éloignés.{wait 15}{n}C'est simple :{wait 5} appuyez{n}sur 'R1',{wait 5} OK !"
+f222-0374 d923f0c8b973dec9 Réceptionniste{n}"En regardant votre combat,{n}j'ai noté une faiblesse :{n}vous semblez abuser des{n}'Balles d'Éther'.{p}Il faut mieux comprendre la{n}nature de cette attaque...{n}Les 'Balles d'Éther' font{n}beaucoup monter votre{n}'jauge de Chaleur (J.C.)'.{p}En trois tirs, votre J.C.{n}atteint le MAXIMUM. Si vous{n}continuez d'attaquer ainsi,{n}votre machine surchauffe.{p}L'excès de chaleur commence{n}à causer des dégâts et, sans{n}prudence, vos HP tomberont{n}à zéro sans même que vous{n}vous en rendiez compte !"
+f222-0379 dfd1fe819ab7052a Réceptionniste{n}"Je vous dis pourquoi ?"{wait 15}{n}{speed 255}    Non, pas envie !{n}    Oui, je veux savoir !
+f222-0381 d5c3c1b194f5bab0 Réceptionniste{n}"Le souci : abuser de ces{n}aptitudes nuit à votre{n}Gear !{p}La chaleur accumulée par{n}votre Gear s'affiche dans{n}la 'jauge de Chaleur'.{p}Surveillez cette jauge{n}(J.C.) pour gérer la{n}chaleur en combat.{n}'Gardez la tête froide' !"
+f222-0382 b59d43424de75c5e Réceptionniste{n}"{wait 5}...{wait 5}comprendre sa défaite{n}aide à mieux combattre la{n}prochaine fois !"
+f222-0387 41c1fd1d7b4e7195 Réceptionniste{n}"{wait 5}...{wait 5}Vous êtes pacifiste ?{wait 5}...{wait 5}{n}Ou vous ignorez comment{n}piloter un Gear ?{p}Il vous faut les commandes{n}de base, alors essayez donc{n}notre Mode Entraînement !{n}Parlez à la demoiselle du{n}guichet d'à côté."
