@@ -1,0 +1,395 @@
+f300-0000 f677f251376b582f Elly{n}"En position, OK !!"
+f300-0001 68aea895d290ac64 Maria{n}"Les liens qui m'unissent{n}à mon père...{wait 10}{n}ne peuvent être rompus !"
+f300-0002 5a174e76785cb622 Maria{n}"Mon {name 19} est trop{n}grand, alors il est rangé{n}sur le pont.{p}Si tu as besoin du{n}{name 19}, il sera prêt à{n}décoller à tout moment !"
+f300-0003 68dcfd67ba13f052 Emeralda{n}"Emeralda{wait 5}...{wait 10}{n}y va aussi{wait 5}..."
+f300-0004 eacc6d8266a0c362 Fei{n}"Ah{wait 5}...{wait 10}désolé pour tout à{n}l'heure{wait 5}...{wait 10} Pardonne-moi...{wait 10}{n}Mais{wait 5} je veux t'expliquer...{p}Aujourd'hui,{wait 10} pour la{n}première fois,{wait 10} les gens de{n}la surface et de Solaris ne{n}font plus qu'un.{p}Mais{wait 10} ils ne sont pas tous{wait 10}{n}aussi forts que l'équipage{n}de ce navire ou le peuple{n}de Shevat.{p}Même nous, on perd parfois{n}l'avenir de vue...{wait 10} alors{n}imagine les gens normaux.{p}Alors les gens ont besoin{n}de quelqu'un comme toi sur{n}qui s'appuyer...{wait 10}{n}Une lumière qui nous guide.{p}Tu as libéré le coeur des{n}gens qui ont servi d'outils{n}à ce Ministère pendant des{n}siècles.{p}Elly, c'est toi !{wait 10}{n}Et désormais, ton corps{n}n'est plus à toi seule.{p}Voilà pourquoi je ne peux{n}pas te laisser en danger.{wait 10}{n}Et pourquoi je ne veux plus{n}que tu te battes."
+f300-0005 404d11a6c23996fb ...{wait 5}Drôle, non ?
+f300-0007 dfbfe2b90ee4d2ce Elly{n}"On était ennemis,{wait 5} mais{n}maintenant, on est{n}ensemble comme ça{wait 5}..."
+f300-0008 25c845f4cd7e707d Elly{n}"Au début...{wait 10}{n}je crois que je me voyais{n}en toi.{p}On aurait dit qu'on se{n}superposait...{wait 10} Tu étais{n}dans une situation proche{n}de la mienne.{p}Avec toi,{wait 5} je ne me{n}sentais ni seule ni{n}perdue.{wait 10} Alors, j'ai cru{n}que je t'aimais...{p}Mais ce n'était pas ça.{wait 10} Je{n}n'avais simplement pas le{n}courage d'affronter mon{n}vrai moi.{p}Je me suis réfugiée en toi{n}pour tout fuir...{wait 10} J'ai{n}confondu ça avec l'amour."
+f300-0009 6cc3b6b53ef7ff74 Elly{n}"Mais{wait 10} tout a changé.{wait 10}{n}J'affronte mes problèmes.{wait 10}{n}Je suis moi{wait 5}...et tu es toi.{p}Tout est{wait 5} clair pour moi,{n}maintenant.{wait 10} Et j'ai compris{n}que j'ai vraiment besoin{n}de toi...{p}Pas comme d'un refuge{n}contre mes problèmes.{wait 10}{n}J'ai besoin de toi parce{n}que je t'aime vraiment."
+f300-0011 d5908216c1888b9b Elly{n}"Je comprends,{wait 5} Fei.{wait 10}{n}Je sais pourquoi tu{n}crains tant pour moi...{p}Mais tu sais,{wait 5} j'ai{wait 5}...{wait 5}{n}peur.{wait 10} Peur qu'on ne se{n}revoie jamais{wait 5}...{wait 10} C'est{n}juste un pressentiment."
+f300-0012 b52f6ccc4daf1a42 Fei{n}"Ne t'en fais pas,{wait 10}{n}je ne mourrai pas."
+f300-0013 0ed51ebd3f0e289c Elly{n}"Non,{wait 5} ce n'est pas ça{wait 5}...{wait 10}{n}C'est tout autre chose{wait 5}...{p}C'est comme si une force{n}invincible me déchirait{wait 5}...{wait 10}{n}Comme si je n'étais plus{n}moi{wait 5}...{p}Même si tu reviens sain et{n}sauf{wait 5}...{wait 10} Malgré tout{wait 5}...{wait 10} je{n}me sens si inquiète{wait 5}...{p}C'est pour ça que je dois{n}venir avec toi.{wait 10} Je ne{n}supporte pas d'être loin{n}de toi."
+f300-0014 f09affd5a27dfcb2 Fei{n}"Moi aussi...{wait 10} Depuis que{n}je t'ai rencontrée dans{n}cette forêt{wait 5}...{p}Je crois que c'est le même{n}sentiment que le tien...{wait 10}{n}Moi aussi, je me réfugiais{n}en toi.{p}Mais je dois régler mes{n}propres problèmes.{wait 10} Je ne{n}peux pas te les faire{n}porter."
+f300-0015 3f12e6bfbcfb0d0e Fei{n}"Il existe un autre moi...{wait 10}{n}'Id' est en moi.{p}J'ai peur qu'à chaque{n}instant, Id se réveille en{n}moi.{p}Tu es la seule qui ait pu{n}m'empêcher de céder à Id.{p}C'est parce que tu étais{n}toujours à mes côtés que{n}j'ai réussi à ne pas me{n}perdre."
+f300-0016 2d29372da6b0be97 Fei{n}"Je te promets que{wait 5}{n}je reviendrai.{p}Alors...{wait 5}enfin...{wait 5}Elly,{wait 10}{n}je veux que tu sois ma{n}raison de revenir...{wait 10} Mon{n}foyer, là où rentrer...{p}Elly,{wait 5} si tu attends mon{n}retour...{wait 10} même si on est{n}dans des endroits{n}complètement différents...{p}Tant que tu restes{wait 5} à mes{n}côtés...{wait 10} je sais que je{n}pourrai tout faire..."
+f300-0017 824855a46588fedc Ah,{wait 5} Fei{wait 5}...
+f300-0018 5e61c6a376826517 Tu y vas ?
+f300-0019 cf66497d77cf7693 Fei{n}"Oui, désolé.{wait 10}{n}Tu dormais ?"
+f300-0020 18b1983447c678b7 Elly{n}"Ce n'est rien.{wait 10}{n}Je suis restée éveillée{n}tout le temps{wait 5}..."
+f300-0021 8c3ce62a3a39f586 Sans dormir ?
+f300-0022 7b288a73f10fd07c Elly{n}"Mmh.{wait 10}{n}J'ai veillé sur ton{n}sommeil...{p}Et, sans m'en apercevoir,{n}le matin était là..."
+f300-0024 9f1d2d5adccf45ba Fei{n}"B...{wait 5} bon,{wait 10} j'y vais."
+f300-0025 7ada3f42da04febb Elly{n}"D'accord, alors{wait 5}...{wait 10}{n}Fais bien attention{wait 5}..."
+f300-0026 705e21981ac94841 Fei{n}"Oui,{wait 5} promis...{wait 20}{n}Ah !{wait 10} Tu me gardes ça ?"
+f300-0027 d1610aecfa2ec3c4 Elly{n}"Qu'est-ce que c'est ?{wait 10}{n}C'est un{wait 5}...{wait 5}pendentif ?"
+f300-0028 5b36c4a5d1d40b00 Fei{n}"J'ignore à qui il est.{wait 10}{n}Je l'avais apparemment{n}en arrivant à Lahan.{p}Il est peut-être à moi,{wait 5} ou{n}peut-être{wait 5}..."
+f300-0029 55c294ccf59c071f Ou bien{wait 5}...?
+f300-0030 3620053dc7c4677c Fei{n}"Ah, rien...{wait 10}{n}Garde-le-moi, d'accord ?"
+f300-0031 b09626ba229d2a1a Elly{n}"D'accord.{wait 10}{n}Je te le garde."
+f300-0032 4992932d256b5232 Fei{n}"Merci.{wait 10}{n}...{wait 5}Bon,{wait 5}{n}c'est l'heure de partir !"
+f300-0033 c05ea7ee8a0b5bc0 Ah{wait 5}...{wait 5} Fei.
+f300-0034 8e133c73d19069f3 Hm ?
+f300-0035 96f1bde6d92470b5 Elly{n}"Merci{wait 5}..."
+f301-0000 9a177b6355b3a5af Bart{n}"Hé, Margie !{p}Enlève cette peluche{n}bizarre qui traîne devant{n}la passerelle de{p}commandement.{wait 10} Elle nous{n}gêne."
+f301-0001 832523cb3dab9f6c Margie{n}"Ce n'est pas une{n}'peluche bizarre' !{wait 10} Elle{n}a un nom.{p}Elle s'appelle..."
+f301-0002 01d8702d50d5a265 Margie{n}"Elle s'appelle{n}{name 7} !"
+f301-0003 4652afe2b01420f6 Margie{n}"C'est bizarre...{wait 10} Elle{n}était juste là, où je l'ai{n}laissée, à l'instant..."
+f301-0004 9b976321ea2a3fbb Enchanchée, chu !!{wait 10}{n}Moi, c'est {name 7} !{p}Chuis tombée amoureuse de{n}toi la première fois que{n}chu t'ai vu, à Bledavik !!{wait 10}{p}Où que tu ailles, chu{n}viens avec toi !
+f301-0005 8ad209c739687ce0 Bart{n}"Ce qu'on prenait pour une{n}simple peluche{p}est en fait un animal{n}vivant ! C'est dingue !"
+f301-0006 8cdb13e678206ada Margie{n}"Voilà pourquoi elle{n}était si tiède !"
+f301-0007 b32f48e4c700e836 Fei{n}"Q-quoi !?"
+f301-0008 fee1392b10c93186 Bart{n}"T'as du succès, Fei !!"
+f301-0009 4ffe69eb0859ae5f Fei{n}"La ferme !!"
+f301-0010 ecca1f9946117b7d Bart{n}"Bon. En tant que{n}capitaine, je donne{n}mon feu vert !"
+f301-0011 2449847d87898ddd {name 7}{n}"Youpiii !"
+f301-0012 9bb8e859c74f43f5 Fei{n}"...{wait 10}{n}À votre guise !"
+f301-0013 2e87097532c16bf5 Bart{n}"Ha, ha, ha !{p}Bon, je ne veux pas vous{n}déranger, tous les deux,{n}j'attends dehors !"
+f301-0015 28cd5d3ff2a0b689 Margie{n}"Merci pour ton aide au{n}château.{p}Il paraît que tu as fait{n}sensation au tournoi.{p}Bart s'en est vanté, en{n}disant que vous étiez{n}partenaires et tout."
+f301-0016 8c1336890694a61d Fei{n}"...{wait 10}{n}S{wait 10}...sérieux ?"
+f301-0017 c3bc360d26a5ac73 Margie{n}"Quelle honte...{p}Je voudrais aider Bart,{n}mais me voilà encore{n}redevable envers lui."
+f301-0018 16c224f1fdc2cfd4 Margie{n}"Fei, tu as déjà vu le dos{n}de Bart ?{p}Il a le dos couvert de{n}cicatrices, et ça a l'air{n}si douloureux.{p}Il y a longtemps,{wait 5} quand{n}Shakhan nous a capturés{n}tous les deux, Bart m'a{p}protégée pour que je ne{n}sois pas battue..."
+f301-0019 3a9855f6565aa157 Margie{n}"Ce jour-là, j'ai décidé{n}que je serais sa fidèle...{p}pour le servir et le{n}protéger !{p}Mais c'est toujours lui{n}qui me protège..."
+f301-0021 10a405eec3026f42 Margie{n}"Oh, pardon, excuse-moi...{wait 10}{n}Bref, merci beaucoup de{n}m'avoir sauvée !"
+f301-0022 0f05f9f827dacd4b Margie{n}"Vous seuls pourrez{n}nous sauver...{wait 10} Je{n}compte sur vous !"
+f301-0023 5b7068cba2d51af6 Margie{n}"Jeune maître...{n}Interdit de mourir !{wait 10}{n}Promets-le-moi !!"
+f301-0024 1de63ce79400e811 Bart{n}"Bien sûr !{wait 10} Je ne vais{n}pas mourir !{wait 10} Arrête de{n}dire des trucs bizarres !"
+f301-0025 c07148f60028ff55 Margie{n}"Pardon{wait 5}...{wait 10} Oui{wait 5}...{wait 10} tu as{n}raison{wait 5}...{wait 10} Tu vas revenir{wait 5}...{p}Quand tu reviendras, je{n}vais{wait 5}...{wait 10} enfin{wait 5}...{wait 5} Je me{n}disais...{p}...que peut-être je{n}pourrais être{wait 5}...{wait 10} plus{n}près de toi...{wait 10} tu sais..."
+f301-0026 43f67f555c7be1d3 Bart{n}"Hé, oh ! Arrête ça.{wait 10}{n}Tu sais ce que tu{n}dis !?"
+f301-0027 a181dc4588237386 Margie{n}"Hé hé, je blague !!{n}Jeune maître, tu es tout{n}troublé !!"
+f301-0029 b4012853bca0477f Margie{n}"Bizarre...{wait 10} Je ne vois{n}{name 7} nulle part !{p}Où est-elle passée ?"
+f301-0030 fa20d6daa01ba19d Margie{n}"Les amis...{n}Je suis très inquiète..."
+f301-0031 8923e6e3186ec58c Margie{n}"Je me sens un peu{n}à l'écart !{wait 10} Mais{p}l'essentiel commence,{n}hein !?"
+f301-0032 a8a0948ed31b041d Margie{n}"Cette fois, je devrais{n}pouvoir aider Bart !"
+f301-0033 6e4d5b293b988655 Margie{n}"On risque de ne pas se{n}voir pendant un moment."
+f301-0034 0800792713a3891b Margie{n}"Fei ?{wait 10} Non, il n'est{n}pas passé par ici !"
+f301-0035 0363ea8e01008f08 Margie{n}"...Je savais que l'Ethos{n}tramait quelque chose...{p}C'est inadmissible de se{n}servir de la religion pour{n}faire le mal !"
+f301-0036 569f415ae73c18cb Margie{n}"Les Wels...{n}Ça fait un peu peur."
+f301-0037 5390c6fb9319b83c Margie{n}"Un navire fantôme, hein ?{p}Ça me rappelle quand Bart{n}et moi, on se lançait{n}sans cesse des défis..."
+f301-0038 078bd0a28eea7f18 Bart{n}"Ma...Margie,{wait 10} arrête{n}de parler de ça !"
+f301-0039 70916515bed30546 Margie{n}"Hé, hé, hé !{wait 10} Si tu{n}insistes..."
+f301-0040 e7ea5d11cc554f84 Margie{n}"Ouf, tant mieux !"
+f301-0041 3430523336d023f9 Margie{n}"Heureusement qu'on a{n}trouvé des gens si bien.{p}Bon, je ferais mieux de{n}rentrer à mon église !"
+f301-0042 252922ed2fb283bb Margie{n}"Fei, va voir Elly. En un{n}moment pareil, ta place{n}est à ses côtés."
+f301-0043 c601b3a54ef5aae1 {name 7}{n}"Tu ne veux pas que{n}{name 7} vienne avec{n}toi, chu ?"
+f301-0044 d71441f3beffc7a0 Margie{n}"Tu restes ici !"
+f301-0045 b12d4815afd1abd9 Margie{n}"Je suis la seule à avoir{n}échappé aux griffes de{n}Shakhan,{p}en fuyant Nisan avec{n}Bart...{p}Les soeurs vont-elles{n}bien...?{wait 10} Le jeune maître{n}va les aider aussi, pas{n}vrai ?"
+f301-0046 ed1f688a1d9ede69 Margie{n}"Même si c'était la{n}volonté de l'Église, ça{n}laisse un goût amer..."
+f301-0047 533d3557cf4dc56d Margie{n}"Merci, Fei !!"
+f301-0048 fec0a34652354ab8 Margie{n}"Comment oses-tu entrer{n}dans la chambre d'une{n}fille sans frapper !"
+f301-0049 58c3268d70ec0615 Margie{n}"Je ne suis pas de taille{n}à me battre aux côtés de{n}Bart et des siens...{p}Mais je serai la manager !{wait 10}{n}Si tu veux changer de{n}groupe, dis-le-moi !"
+f301-0050 6b33c8b11d879fcc Margie{n}"Changer de groupe ?"{n}    Oui{n}    Non
+f301-0051 3700bc70e8cf91f6 Margie{n}"Oups, pardon ! Pas moyen{n}de changer maintenant !"
+f301-0052 c9f912c80e76129c Margie{n}"Quand tu veux, tu n'as{n}qu'à me redemander !"
+f301-0053 d1b493aefaed0652 {name 7}{n}"Moi... j'ai peut-être{n}embêté tout le monde{n}jusqu'ici, chu.{p}Mais chu supporte pas{n}l'idée que Fei et chous{n}ses amis disparaissent,{n}comme nous...{p}Chu vais me battre, chu,{n}pour que ça n'arrive plus{n}jamais à personne !!"
+f301-0054 6f67b0c1a59ade55 {name 7}{n}"Chuis prête à me{n}battre à tout{n}momenchu !"
+f301-0055 e168eccc6c55cb2e {name 7}{n}"...J'admire Primera.{wait 10}{n}Elle n'est qu'une enfant,{p}mais elle a déjà vécu{n}beaucoup de chuses.{p}Alors, quand je me{n}regarde...{wait 10} Faut que{n}chu me ressaisisse !"
+f301-0056 c59d8d4c384f38fc {name 7}{n}"Stone était un méchant !?{wait 10}{n}Chu ne pourrai jamais lui{n}pardonner, chu !"
+f301-0057 e04d088f396afdc8 {name 7}{n}"Le bateau s'est mis à{n}tanguer d'un coup, et{p}maintenant, chu me chens{n}mal, chu !!"
+f301-0058 90e9f6a191cc4c85 {name 7}{n}"Chuper, de plus en plus{n}de monde ici !!"
+f301-0059 6b9448c4b75453f8 {name 7}{n}"{name 7} non plus{n}n'est pas très douée,{p}alors je vais juste être{n}la mascotte, chu !"
+f301-0060 a29858db71a1cc7d {name 7}{n}"Fei dort encore ?{p}Le baiser d'une demoiselle{n}le réveillerait peut-être.{wait 10}{n}Oh, qu'est-ce que chu{n}dis !? La honte, chu !!"
+f301-0061 1b6908c783df93a6 {name 7}{n}"Fei, tu dors encore ?{p}Un baiser de demoiselle{n}chu réveillera peut-être.{wait 10}{n}Oh, qu'est-ce que chu{n}dis !? La honte, chu !!"
+f301-0062 52d696fcbc01e6d4 {name 7}{n}"Fei dort encore, chu ?{wait 10}{n}Quelle marmotte !"
+f301-0063 1c81d4323020b6e4 {name 7}{n}"Si chu casse quelque{n}chose, Fei va me{p}consoler, hein ? Alors,{n}chu casse quoi ?"
+f301-0064 64ceaf4cd3bb3528 {name 7}{n}"Chu connais pas trop{n}cet endroit.{p}Mais peu importe, chu{n}connais pas grand-chose{n}d'Aveh, de chute façon."
+f301-0065 dc5c98bdcd690535 {name 7}{n}"C'est bruyanchu.{wait 10} C'est{n}une sorte de fête ?"
+f301-0066 b09c670fa08d6ebf {name 7}{n}"Personne, rien à faire,{n}chu ! Quel ennui !"
+f301-0067 08dcdf04a0a670fb {name 7}{n}"Ouah !{wait 10} Une araignée{n}chi appétissante..."
+f301-0068 7f8938a49f6f98e0 Miamchu miamchu
+f301-0069 6f99074240a0cc03 {name 7}{n}"Les cadeaux gagnent le{n}coeur d'une femme,{p}chu !{wait 10} Voici ta{n}récompense !"
+f301-0070 63133ed79243c2e3 Reçu : 'Voile d'Éther' !
+f301-0071 031e4268cc3f3b34 {name 7}{n}"Mes yeux se dessèchent{n}quand chu fais semblant{p}d'être une peluche.{n}Aïchu !"
+f301-0072 7f75fdd0d6256871 Aïe, aïe...{wait 10}{n}Chu me suis déclarée !!{done 60}
+f301-0075 5aecb3c671686206 Billy{n}"Prim !{n}Qu'est-ce que tu fais{p}ici !?{wait 10} Reste à{n}l'orphelinat..."
+f301-0077 4a4dbd891b95b13f Billy{n}"Prim... tu n'écoutes{n}pas ton frère ?"
+f301-0078 6d4de2fe6a11544a Margie{n}"Billy, Primera t'a suivi{n}jusqu'ici parce qu'elle{n}s'inquiète pour toi.{p}Tu ne vois donc pas !?{wait 10}{n}Laisse-la rester encore{n}un peu,{wait 10} d'accord ?"
+f301-0080 b6cdf69c500bb050 Billy{n}"...Bon, d'accord...{wait 10} Ne{n}va nulle part,{n}d'accord ?"
+f301-0082 decfdb9b7982855b Billy{n}"Margie, s'il te plaît,{n}garde ma petite soeur."
+f301-0083 a074f4cb77942e86 {name 7}{n}"Et pourquoi pas à moi,{n}chu ?"
+f301-0084 dc93f81e2b81f1f7 Elle tient un mot...{n}Le lire ?{n}{speed 255}    Le lire{n}    Non, mieux vaut pas !
+f301-0085 4af884575ee19eaf {speed 255}'PriMémo'{n}Grand frère,{n}tiens bon...
+f301-0086 b032d56c110e5fbc {speed 255}'PriMémo'{n}Ton équipement de base{n}compte trois types{n}d'armes...{p} Pistolet,{n} Pistolet à Éther,{n} Arme Lourde.{p}Seul le pistolet peut être{n}remplacé.{p}Tu peux renforcer tes{n}armes en améliorant leurs{n}'munitions' ou leurs{n}'balles'.{p}Pour charger des munitions,{n}appuie à Gauche ou à Droite{n}sur la croix, à l'écran{n}Équiper.{p}Une sous-fenêtre remplace{n}alors la fenêtre Équiper,{n}et tu peux y{p}choisir tes munitions.{p}Une chose à surveiller{n}de près... Le nombre de{p}balles de chaque type est{n}limité !{p}Il est donc important de{n}garder un bon stock de{n}munitions et de recharger{n}dès que possible.{p}Seule exception : le{n}Pistolet à Éther, qu'on{n}peut tirer autant qu'on{n}veut.
+f302-0000 daaf1a654b637e3a C'est tiède...
+f302-0001 2ee24c17c6687959 Bart{n}"Cette Margie...!{p}Laisser une peluche bizarre{n}dans un endroit pareil !{wait 10}{n}À cause de ça, on{p}ne peut pas entrer sur la{n}passerelle."
+f302-0002 e816e73075c1f379 {speed 255}Pas bizarre !{done 15}
+f302-0003 415fb52c64853e9f Bart{n}"Hé, Fei !!{wait 10} Arrête de{n}faire ces voix rigolotes,{n}d'accord !?"
+f302-0004 c54580b70fd69428 Fei{n}"Hein ?{n}{wait 10}Je{wait 10} n'ai rien dit."
+f302-0005 a250ad461f874445 Bart{n}"...{wait 10}{n}Bizarre...{p}Bon, demandons à Margie{n}d'enlever ce truc."
+f302-0006 43bf8cea845f42ec À bord du transport ?{n}    Oui{n}    Un instant
+f302-0007 c130811bad8c9aa5 {speed 255}Lancement imminent.{n}Ne pas ouvrir le sas !{n}              -Sigurd
+f302-0008 d5964ca49bf95ed3 {speed 255}Ne pas ouvrir le sas{n}en cours de route.{n}          -Sigurd
+f302-0009 d015892c7a8bf8ad Elly{n}"Le Yggdrasil ne peut pas{n}partir, Sigurd n'est pas{n}là...{p}Il doit être à la Salle{n}d'armes ou ailleurs."
+f303-0000 57aabb6fb8a0b8e2 Elly{n}"Attends !{wait 10} Tu veux que je{n}reste ici ?{wait 10} Non, je viens{n}avec toi !"
+f303-0001 1d27d2157c9186ee Fei{n}"Non.{wait 10}{n}C'est trop risqué{wait 5}..."
+f303-0002 328b517b23edacba Elly{n}"Pourquoi ?{wait 10} J'ai connu bien{n}des situations dangereuses.{wait 10}{n}Ça ne date pas d'hier !"
+f303-0003 58028d069c244d43 Fei{n}"J'ai dit NON !{wait 10} On ne peut{n}pas t'emmener.{p}S'il te plaît,{n}comprends !"
+f303-0004 187abddc559bd593 Elly{n}"Non, je viens !"
+f303-0005 348e68f7b687beb7 Elly{n}"On s'est battus ensemble{n}tout ce temps !{p}Et là, tout à coup, tu me{n}dis de ne pas venir !? Je{n}ne comprends pas !!"
+f303-0006 cfb7934ff941c47c Fei{n}"Ce n'est pas un combat{n}ordinaire !{p}C'est une bataille pour la{n}sagesse créée par Dieu.{n}C'est la vie ou la mort.{p}Celui qui la contrôlera{n}deviendra le vrai maître{n}du monde !{p}Évidemment, le Ministère{n}va envoyer ses troupes{n}les plus fortes.{p}Rien ne garantit que tu{n}reviendras vivante !"
+f303-0007 d195d84a5134af84 Elly{n}"C'est justement pour ça{n}que je veux venir{wait 5}..."
+f303-0008 9a284afcb5b93ece Fei{n}"Tu n'en as pas la{n}moindre idée{wait 5}..."
+f303-0009 a859187bb30a6e86 Elly{n}"Je ne comprends{n}pas quoi !?"
+f303-0010 cffe0c9216ec305d Fei{n}"Si l'ennemi n'était que le{n}Ministère, ou que des armes{n}mécaniques, ça irait.{p}Mais l'essentiel, ce seront{n}d'anciens êtres humains{wait 5}...{wait 5}{n}Des gens comme nous !"
+f303-0012 111f6084023901aa Fei{n}"Je les ai vus dans ces{n}installations{wait 5}...{wait 5} Des Gears{n}faits d'êtres humains.{p}Comme Hammer{wait 5}...{wait 10}{n}En le sachant, tu pourrais{n}les détruire !?{p}Pour nous sauver, peux-tu{n}vraiment dire que tu serais{n}capable de tuer{p}ceux qui ont été autrefois{n}nos amis !?{p}Alors, tu veux toujours{n}venir !?"
+f303-0013 41b76d947a422180 Elly{n}"B...{wait 10} bon{wait 5}..."
+f303-0014 8343225238863db4 Fei{n}"Tu ne peux même pas tuer{n}une seule personne.{p}Ta présence serait un poids{n}pendant le combat."
+f303-0016 8fe003869a512250 Fei{n}"Tu{wait 5} ne ferais{n}que gêner{wait 20}..."
+f303-0017 8a958596a90d4e11 Bart{n}"Hé, Fei ! T'y es pas allé{n}un peu fort ?"
+f303-0018 e73f0cfe2535ab97 Citan{n}"Ne la blâmons pas.{wait 10} Nous{n}devons au moins{p}comprendre ce qu'elle{n}ressent."
+f303-0019 421d0b9f32b473aa Fei{n}"Je sais ce que ressent{n}Elly.{p}Je savais qu'elle ne{n}m'écouterait pas si je{n}disais juste :{wait 5} 'Reste !'.{p}Après tout, elle a été{n}avec nous pendant si{n}longtemps{wait 5}...{p}C'est pour ça que j'ai dû{n}lui expliquer comme ça{wait 5}..."
+f303-0020 c09e89e65a662c6f Fei{n}"Les gens réunis à Nisan{n}ont besoin d'Elly.{p}Elle doit comprendre{n}combien les gens comptent{n}sur elle.{p}Je ne peux pas la mettre{n}en danger{wait 5}..."
+f303-0021 4dd23840bed8ffa0 Margie{n}"Mais tu lui as parlé un{n}peu durement."
+f303-0022 7e0112cf4c652624 Billy{n}"Tu n'avais pas besoin{n}d'être si froid.{wait 10} Elle{n}pleurait,{wait 10} tu sais ?"
+f303-0023 74ddb6cb46b30ff1 Fei{n}"Mais{wait 5}..."
+f303-0024 533a1fc49f8b0686 Citan{n}"Je suis sûr qu'elle le{n}comprend."
+f303-0025 ae0c50062d75b38f Bart{n}"Exact.{wait 10} Et si c'était{n}{wait 5}toi{wait 5} qui ne pigeais pas ?"
+f303-0026 d09464d4a7d5ca3d Fei{n}"Moi ?...{wait 10}{n}Je ne pige pas ?"
+f303-0027 4cff79538c3dd5e7 Margie{n}"Le coeur{wait 5}...{wait 5}d'une{n}jeune fille{wait 5}...?"
+f303-0028 0bc47a50def9a0da Billy{n}"Elle veut venir, rester{n}avec toi, Fei...{wait 10}{n}Jusqu'au bout."
+f303-0029 8e573473d1ca2927 Oui.
+f303-0030 f5a884c3dabbe508 Bart{n}"À ta place{wait 5}...{wait 10} je la{n}serrerais très fort dans{n}mes bras et je dirais{wait 5}...{p}'Allons-y ensemble !'{n}...{wait 5}Comme ça !"
+f303-0031 c8d92e277bf338a2 Margie{n}"Ah oui ?"
+f303-0032 3fe11403381711a9 Bart{n}"Euh{wait 10}...{wait 5}non...{wait 10}{n}C'est{wait 10} que{wait 5}...{n}euuuh..."
+f303-0033 6489d5806e8cef57 Maison{n}"Jeune maître, n'en{n}faites pas trop{wait 5}..."
+f303-0034 eb466c9f0dcb38d1 Oh, tais-toi !
+f303-0035 58bd82497f180fc1 Bart{n}"Bref, pourquoi tu ne vas{n}pas lui proposer de venir{n}avec toi ?{p}Qu'elle vienne ou non, tu{n}dois lui dire en mots{n}ce que tu ressens.{p}Si tu tiens vraiment à{n}elle, va le lui dire."
+f303-0036 46ef16d1fda52707 Citan{n}"Dire ce qu'on ressent{wait 5}...{wait 10}{n}n'est-ce pas ?"
+f303-0037 01230fa5b693e9f2 Fei{n}"J-je n'ai pas dit{wait 5}...!"
+f303-0038 edcbcd09a2173c71 Bart{n}"Trop tard.{n}On le sait tous."
+f303-0039 3da1d915b7ab0ef0 Citan{n}"Vous vous mentez à{n}vous-même, non ?"
+f303-0040 04c39ca8458600ea Margie{n}"Exact."
+f303-0041 efa935ccbd1641f0 Emeralda{n}"Fei...{wait 5}vas-y...{wait 10}{n}parle{wait 5}...{wait 10}"
+f303-0042 16b47b4f904e4028 Margie{n}"Vas-y...{n}Va la rejoindre !{wait 10}{n}Tu attends quoi ?"
+f303-0043 f42a71b7f003e318 Citan{n}"Bien...{wait 10}{n}Il ne reste qu'une Porte{n}en surface..."
+f303-0044 730c7e6e2b368969 Bart{n}"Le problème, c'est où{n}elle se trouve."
+f303-0045 74c7b1b86893302f Fei{n}"Mais la Reine Zephyr a{n}dit : trois en surface et{n}une à Solaris..."
+f303-0046 1a3f1decd7b9a936 Sigurd{n}"D'après le rapport de{n}Shakhan,{p}les Portes sont disposées{n}en triangle autour de{n}Solaris..."
+f303-0047 a11027782e38e15d Citan{n}"Voyons la carte que la{n}Reine nous a donnée,{p}qui montre la zone avant{n}l'installation des{n}Portes."
+f303-0048 0b4c7799b3f7e2a7 Bart{n}"Et si on essayait les{n}deux ? Ça suffit, non ?"
+f303-0049 d51a4cdc540f7cb1 Sigurd{n}"Ce serait difficile. Ils{n}ne s'attendaient sûrement{p}pas à ce que la deuxième{n}Porte soit détruite.{p}La prochaine fois, ils{n}seront sérieux, c'est sûr.{wait 10}{n}Mieux vaut{p}planifier avec soin, mais{n}vite."
+f303-0050 ef78709f3e5e1c8f Citan{n}"De toute façon, nous ne{n}pourrons pas éviter{p}l'ingérence de Gebler,{n}n'est-ce pas ?"
+f303-0051 dd9e43843e5b9696 Fei{n}"Doc,{wait 10} Elly,{wait 10} où est{n}Solaris, exactement ?"
+f303-0052 48a20baee7398ab1 Elly{n}"À Solaris, il n'y a que{n}la carte de Solaris.{p}J'ignorais tout de la{n}géographie d'ici avant{n}d'arriver."
+f303-0053 16abc0635e223b69 Fei{n}"Même à Gebler ?"
+f303-0054 d622453cbbe05600 Elly{n}"Les liens avec la{n}surface ne sont{p}révélés qu'aux{n}commandants."
+f303-0055 a697c6b2ce126803 Bart{n}"Alors même le père de{n}Billy l'ignore peut-être."
+f303-0056 8264cea6f2783175 Sigurd{n}"Jesiah en est parti en{n}cours de route."
+f303-0057 d00883f001638d87 Citan{n}"Sigurd et moi étions des{n}passagers clandestins{p}et nous n'avons pas eu le{n}temps de regarder dehors.{p}De plus, en franchissant{n}la Porte au départ de{n}Solaris,{p}nous avons été transférés{n}ailleurs par le plan{n}environnemental entre{n}chaque Porte.{p}Vous souvenez-vous du{n}contact avec la Porte de{n}Kislev, dans le Goliath ?{p}C'est la même chose : on{n}perd toute notion de{n}l'endroit où l'on était."
+f303-0058 b1551d5067bce8b5 Fei{n}"Même si la Porte isole{n}l'autre espace, on ne peut{p}pas reconnaître le{n}relief ?{p}Les montagnes, les jungles{n}et tout ça ?"
+f303-0059 5f7c352d9e835f9f Elly{n}"...Je crois{wait 10} qu'il n'y{n}avait pas de montagnes.{p}C'était plutôt comme si on{n}était entourés par{n}l'océan..."
+f303-0060 ddcfe3375aeb233a Bart{n}"L'océan...{wait 20}{n}Pas le nord, alors ?{p}Ici, c'est le pôle,{n}tout est enneigé."
+f303-0061 3372d30adf1d4c22 Fei{n}"C'est décidé, alors.{wait 10} La{n}Porte est au sud d'ici.{p}Au centre du triangle, il{n}n'y a que l'océan.{p}Si les Portes étaient tout{n}au nord, le centre serait{n}le continent.{p}Ça colle avec ce qu'a dit{n}Elly."
+f303-0062 fa13b8d84ea6ae52 Citan{n}"Ce n'est pas impossible."
+f303-0063 2b49e27b76cc8906 Sigurd{n}"Un instant.{wait 10} Il ne{n}peut y avoir aucune{p}installation sur{n}l'océan."
+f303-0064 2c04539a245d59d0 Elly{n}"Alors, sous l'eau ?"
+f303-0065 575f86a54531f3bc Sigurd{n}"Hmm...{wait 10} Mais toute cette{n}zone est très profonde.{p}S'il y en a une, elle doit{n}être tout au fond."
+f303-0066 1c891ce537159e61 Fei{n}"Le Yggdrasil est un{n}sous-marin, non ?{wait 10} Alors,{n}où est le problème ?"
+f303-0067 bd9179354747ab7d Bart{n}"T'es fou !? C'est un{n}sous-marin, pas un{n}bathyscaphe.{p}Il n'est pas fait pour{n}explorer les abysses. La{n}pression de l'eau nous{n}écraserait aussitôt."
+f303-0068 f533b96637d75204 Fei{n}"Voilà un problème..."
+f303-0069 f5b9a4fa57611f6f Citan{n}"Nous pourrions utiliser{n}les bathyscaphes ou les{n}Gears des Ferrailleurs..."
+f303-0070 c923f69711f506a0 Bart{n}"'Ferrailleurs' ? Oui !{wait 10}{n}C'est ça !"
+f303-0072 ec7f87c6120f87b1 Bart{n}"Le capitaine du Thames{n}doit en avoir plein.{p}Il nous en doit une depuis{n}la dernière fois.{wait 10} Allons{n}au Thames."
+f303-0073 a8a3081e6dc68f94 Citan{n}"C'est peut-être notre{n}meilleure option, pour{n}l'instant. Au Thames ?"
+f303-0074 6911d43917afcc75 Citan{n}"Fei{wait 5}...{wait 10} n'est-il pas{n}temps de dévoiler vos{n}sentiments ?"
+f303-0075 9521da8f2550df9d Bart{n}"Allez !{wait 10} Fonce !"
+f303-0076 c33ed5af037662fc Billy{n}"Tu ne sais pas y faire{n}avec les dames, hein ?"
+f303-0077 2c181ecdc2bd15c8 Rico{n}"J'y connais rien, à ces{n}choses-là{wait 5}...{p}...{wait 5}mais Hammer me disait{n}sans cesse :{wait 5} 'Sois gentil{n}avec les femmes !'{wait 5}..."
+f303-0078 8cadea5963808188 Emeralda{n}"Fei{wait 5}...{wait 10}va{wait 5}..."
+f303-0079 7a7826cca0e0f9a2 {name 7}{n}"T'en fais pas pour moi,{n}chu. S'il te plaît, va{n}vite la voir !!"
+f303-0080 cd35b97233d04b17 Maria{n}"On ne la traite pas{n}comme ça !"
+f303-0081 d477e96371afc77e Margie{n}"Les femmes n'aiment pas{n}les hommes insensibles !"
+f303-0082 0ee843d9656e6f85 Maison{n}"Je ne suis guère versé{n}dans l'art de l'amour."
+f303-0083 a5ea3821642c5391 Margie{n}"Ne fuis pas ! Sois un{n}homme et fais face !!"
+f303-0084 e5aa2238f07130c0 Citan{n}"À la salle des machines,{n}le vieux vous giflera !!"
+f303-0085 02014c2b80fe6f64 Bart{n}"Hé, idiot !{wait 10} C'est l'autre{n}pièce."
+f304-0000 17e2907d8fa9427c {name 7}{n}"Chu me change, alors{n}n'entre pas, chu."
+f304-0001 207403ccc509d38e Citan{n}"Cette chambre semble{n}réservée aux dames.{n}Retirons-nous."
+f304-0002 41a9cd24e63fda34 Bart{n}"Pas ici, on dirait..."
+f304-0003 877d1f1133b940d6 Fei n'est pas ici !{wait 10} Où{n}est-il donc allé ?
+f304-0004 6a74b161ff14a8e3 Je suis dé-é-é-solée.{wait 10}{n}L'agent de Shevat est en{n}réanimation...{wait 5} Donc...{wait 10}{n}Visites interdites !!
+f304-0005 e2338b2052c43c3a (J'ai toujours voulu dire{n}ça...!{wait 10} 'Visites{n}interdites !'{wait 10} Je suis{n}tro{wait 5}-o-{wait 5}o-o{wait 5}p contente !!)
+f304-0006 d3afc07b35ed49ce Ouf... Je suis planté ici{n}depuis si longtemps...{p}Je vous ai été utile ?{n}    Bien sûr{n}    Hmmm, bof
+f304-0007 66d8aebf57da1b72 Ça me fait plaisir à{n}entendre... Même si ce{n}n'est pas vrai !
+f304-0008 54af42d96eb75958 Ah bon...!?{wait 10} Bah...{n}beaucoup se perdent ici,{n}tu sais...{wait 10} Ha !{p}(Où en étais-je{n}déjà...!?)
+f304-0009 de058e90d5726f3e Jeune maître, j'ai retenu{n}la leçon !
+f304-0010 43c7d618a6a91a36 Pourquoi je suis là ?{n}Ah, laisse tomber !{n}(Je ne cache pas du tout{n}que j'ai cassé le mur,{n}hein.){p}Ah, au fait...{n}Cette porte mène à la{n}Salle d'armes, et{n}l'escalier, à la Salle{n}des machines.
+f304-0011 d9854dab75b50923 Promis, je respecterai{n}le couvre-feu...{wait 10}{n}Alors, je vous en prie,{n}revenez vivants.
+f304-0012 5fb4692f77e37c50 Quoi ?{wait 10} Fei a disparu ?{n}N...{wait 5} non,{wait 5} aucune idée.{wait 10}{n}(Je ne dormais pas{p}pendant mon service,{n}hein...)
+f304-0013 f68b0de5c629cccf Jeune maître, allez,{n}pardonnez-moi ! Pitié !
+f304-0014 6ea79afb9e38c7d6 Quoi ? Pourquoi je suis là ?{wait 10}{n}On ne peut pas oublier ça ?{p}Ce n'est pas que je sois{n}puni, debout ici, pour{n}avoir violé le couvre-feu,{n}rien de tout ça, hein ?{p}Derrière cette porte, il y a{n}le Hangar des Gears.{wait 10} La{n}boutique de Gears est aussi{n}dans le Hangar des Gears !{p}Attention...!{wait 10} Les Gears{n}sont si grands que tu auras{n}l'air tout petit et que tu{n}risques de te perdre.
+f304-0015 ee00f61dce056dac Vous ne l'avez peut-être pas{n}remarqué, mais depuis votre{n}arrivée, cet arbre a un peu{n}grandi.{p}Ce n'est peut-être qu'un{n}peu, mais ça veut dire que{n}nos espoirs et nos rêves{p}grandissent aussi et{n}portent leurs fruits !
+f304-0016 d5364e700ae98314 Ah, jeune maître !{wait 10} Il{n}a poussé !{p}Il est maintenant plus{n}grand que vous, jeune{n}maître.
+f304-0017 1467853223009acb Grandis ! Grandis...!
+f304-0018 6f5978560ae4cf5a Cet arbre a été planté{n}à la naissance du jeune{n}maître. Il a grandi avec{n}lui.{p}Avec lui, nos espoirs et{n}nos rêves grandissent et{n}portent leurs fruits...{p}Bref, la porte à côté de{n}toi, c'est l'ascenseur.{wait 10}{n}Utilise le bouton dedans{n}pour monter ou descendre.
+f305-0001 2d034373ff5ca84b {speed 255}  - Bledavik -{n}Capitale d'Aveh
+f305-0002 1528c7eccc875532 {speed 255}Repaire de Bart
+f305-0003 be4851e1f5c7625f {speed 255}Route{n}de Nisan
+f305-0005 dc74af07501c31d0 {speed 255}Antre d'Ermite
+f305-0006 1247010d6e78c3e0 {speed 255}Porte d'Ignas
+f305-0007 7d37d2eba61e2afe {speed 255}   - Nortune -{n}Capitale de Kislev
+f305-0008 1271cdbdd1478b3a {speed 255}Usine Goliath
+f305-0010 beb943431a2dddd8 {speed 255}Orphelinat
+f305-0011 47ce766a30aa1049 {speed 255}Tour de Babel
+f305-0012 c746e8574a40460d {speed 255}Fouilles Ethos
+f305-0013 5428bbd156db08e3 {speed 255}Phare
+f305-0014 78b1873fbdbbd276 {speed 255}  Siège{n}  Ethos
+f305-0016 09e4dc5f6a87b0ab {speed 255}Refuge enneigé
+f305-0017 c711b4c04ea9a3f4 {speed 255}Relique{n} Anima 1
+f305-0018 c7297ec04ebdda13 {speed 255}Relique{n} Anima 2
+f305-0021 95b06a572e476ef4 {speed 255}Maison de Taura
+f305-0023 9045995d41b21210 {speed 255}Village de Lahan
+f305-0024 e6417f24095174d6 {speed 255}Maison de Citan
+f307-0028 ba0aa09010de6624 Voilà à quoi ressemble{n}vraiment la région de{n}l'autre côté de la{n}barrière invisible.{p}Les Portes doivent se{n}trouver quelque part{n}sur cette carte.
+f307-0029 9d2ef41e4da85909 D'abord, celle d'Ignas est{wait 5}... {wait 10}ici.
+f307-0030 cf061f7218a20421 Le siège de l'Ethos{n}à Aquvy est ici, et...
+f307-0031 7ebf826029354d44 Fei{n}"Bon, logiquement, la{n}suivante pourrait être{n}ici, ou..."
+f307-0032 4f532193c8e4947c Fei{n}"Ici.{n}L'une des deux."
+f308-0000 928c1cf6a983b3e4 Fei{n}"Elly, tu es réveillée."
+f308-0001 e9c488d6fab678ce Elly{n}"Ah, mmmh..."
+f308-0002 edab5afac79532fe Elly{n}"Où suis-je...?{p}J'allais avec Fei vers le{n}bloc arrière...{wait 20}{n}Fei...!{n}Où es-tu, Fei ?"
+f308-0003 7ca1c94cec1f05a5 Farfouille...{done 60}
+f308-0004 c08f16446f0c2935 Elly{n}"Réveillée...?{n}Qu'est-ce que tu{n}faisais !?"
+f308-0005 aa9eaeba034ac3d4 Fei{n}"Je regardais ce qu'il y{n}a ici. Il y en a pour{p}moins de{wait 20}{n}2 jours..."
+f308-0006 267479b75aae4335 Elly{n}"De quoi ?"
+f308-0007 d2d18507c7ce767e Fei{n}"De nourriture.{n}On a déjà eu de la{n}chance d'en trouver."
+f308-0008 854545d7b2ed978e Elly{n}"Mais où sont-ils tous !?{n}On serait les seuls{n}survivants ?"
+f308-0009 b44275d768743991 Fei{n}"Il faut faire quelque{n}chose. Je vais pêcher{n}quelques poissons."
+f308-0011 4b94b01c3fdc67e2 Fei{n}"...{wait 70}Ils vont bien."
+f308-0013 a08b48c7d87ffc55 Fei{n}"Ils vont bien...{wait 45}le Doc,{wait 30}{n}Rico,{wait 30} Hammer,{wait 30} tout le{p}monde...{wait 45} Ils vont tous{n}s'en sortir."
+f308-0014 bf826534c94aafd9 Coquin...!{done 60}
+f308-0015 53a8ef952fe7f768 Halte-là !{done 60}
+f308-0016 6ce1e34636789452 Elly{n}"Je le savais...{wait 20}J'ai bien{n}vu que ce truc{p}flottait d'une drôle de{n}façon...{p}Mais même en le sachant,{n}impossible de les sortir{n}de là...{wait 20}pas vrai ?{p}Ils sont juste sous nos{n}pieds, mais séparés par{n}l'eau et une paroi{n}épaisse."
+f308-0017 8c94649d7c7eaf2e Elly{n}"Sûrement le {name 11}{n}et le {name 13}.{p}Bon gré mal gré, ils nous{n}ont suivis jusqu'ici.{n}...Mais, à ce point,{p}ils ne servent plus à{n}rien."
+f308-0018 a436c66ae7ad1e52 Elly{n}"On dirait que nos Gears{n}sont là-dessous, Fei.{p}Mais on ne peut pas les{n}atteindre...{p}...{wait 30}Qu'est-ce que tu fais,{n}Fei ?"
+f308-0019 171ca2ac20a32ca7 Fei{n}"Ce que je fais ? Ça ne se{n}voit pas...? J'essaie{n}d'attraper un poisson !{p}Celui-là n'arrête pas de{n}sauter juste devant moi,{n}comme pour se moquer de{n}moi..."
+f308-0020 d59e221e5cda4164 Fei{n}"Petit malin !{n}Je te vois !"
+f308-0021 a5cbd177e25f5331 Elly{n}"Euh,{wait 5} hum,{wait 5} tu ne vas pas{n}le manger, quand même ?"
+f308-0022 c3d777a5336462d8 Fei{n}"Si on ne mange pas, on va{n}mourir{wait 15}...{wait 15}{n}{wait 15}...Ouais !! Je t'ai eu !!"
+f308-0023 3b49461cc7e66ad3 Elly{n}"Tu plaisantes, j'espère.{n}Tu vas être malade."
+f308-0024 1ff8e3c851b45fe0 Fei{n}"Tu n'en veux pas ? Voyons{n}voir... Il nous faut{p}quelque chose pour{n}cuisiner."
+f308-0026 a69792453c6f9fe7 Elly{n}"Hé, arrête ça, voyons. Ce{n}ne sera pas ma faute{p}si tu tombes malade et{n}que tu meurs."
+f308-0027 604b1fa1f23aabd3 Fei{n}"T'en fais pas. Une fois{n}dans l'estomac, c'est{n}pareil."
+f308-0028 9b7039dd852f3e69 Elly{n}"Moi, je ne{wait 10}...{wait 10}{n}Fei !! Regarde{wait 10}..."
+f308-0029 725b5eb2df5b67bf Fei{n}"Quoi !? Il a filé ?"
+f308-0030 95f1075ffb575098 Fei{n}"De quoi tu parles ?{p}Il est toujours là{wait 10}...{wait 10}{n}Mais qu'est-ce{wait 10}...{wait 10}!?{n}{wait 10}...{wait 10}C'est...!"
+f308-0031 9f9437a36c42b7cf Fei{n}"C'est... ce truc que j'ai{n}vu dans le désert. Il vole{p}bien plus haut, cette{n}fois."
+f308-0032 420d37dcadcc8580 Elly{n}"C'est Shevat...{n}C'est son altitude{n}normale."
+f308-0033 329f6700a78f3ab3 Fei{n}"Shevat...{wait 30}{n}Où ai-je entendu...{wait 30}{n}Ah, oui...{p}Ce drôle de type masqué !{n}Il a dit que mon père{n}était dans l'armée{n}là-bas...{p}Alors cette soucoupe{n}volante, c'est le pays où,{n}d'après le Doc et ce type{n}masqué,{p}mon père et ma mère{n}vivaient ?"
+f308-0034 41aa7c7bd926294b Elly{n}"Ah bon ? Je n'en sais{n}rien... C'est un pays hors{n}de portée de Solaris.{p}Shevat utilise le même type{n}de barrière que Solaris, on{n}ne peut donc pas y aller{n}par les moyens habituels."
+f308-0035 868bb8494dc695b3 Fei{n}"Une chose qui vole si{n}haut dans le ciel, un{n}'pays' ?"
+f308-0036 4980726714d9634c Elly{n}"Oui. Pas étonnant que tu{n}sois si surpris.{p}D'habitude, elle plane{n}au-dessus de la région{n}des îles Aquvy.{p}Tu as dû la voir pendant{n}une sorte de mission{n}spéciale. C'est pour ça{p}qu'elle volait si bas..."
+f309-0000 8b0732a5219e4b2e On{wait 3}...{wait 3}dirait,{wait 8}{n}que le courant{n}nous emporte.
+f309-0001 7130f0f9216e0b10 {wait 3}...{wait 5}Encore{wait 5} à la dérive{wait 5}...{wait 10}{n}Exactement comme moi.
+f309-0003 71d55fe46739e042 J'ai juste {wait 3}dérivé,{n}porté par les{n}circonstances.
+f309-0004 e668cc6cba6801a2 Non{wait 3}...{wait 3}{n}ce n'est pas vrai.{p}À Aveh,{wait 3}{n}tu as aidé Bart{n}quand il en avait{n}besoin.{p}Et à Kislev,{wait 3}{n}tu as tout donné{n}pour défendre,{wait 8}{n}pour tous les sauver.{p}Tu t'es{n}inquiété{wait 3} pour moi{n}plusieurs fois.
+f309-0005 740c16ccb0ddcde6 Non{wait 3}...{wait 8}{n}Je {wait 3}suis nul.
+f309-0006 beb9095d8b7d2d76 Pourquoi ?{wait 3}
+f309-0007 0620bf0016fef787 Je crois qu'au fond, je{n}n'essaie pas vraiment{n}d'aider.{p}J'ai l'impression que tout{n}ce que j'ai fait, je l'ai{n}fait pour qu'on ait besoin{n}de moi.{p}Que si je faisais quelque{n}chose pour eux{wait 3}...{wait 3}alors,{n}peut-être{wait 3} que{wait 3} j'aurais{n}une place à moi{wait 3}...{p}Une part de moi se{n}console de cette façon.{p}Je ne dis pas que je ne{n}veux pas aider.{wait 8} Mais,{wait 3}{n}je ne dis pas non plus{n}que je le veux vraiment.{p}Ce n'est peut-être pas{n}'rien', mais ce n'est pas{n}non plus 'entier'.{p}Je dérivais au gré du{n}courant, jusqu'à ce que je{n}te rencontre, Elly.{p}Maintenant, on est perdus{n}au milieu de l'océan.{p}Pardon{wait 3}...{wait 8}de t'avoir{n}entraînée là-dedans.
+f309-0008 b0bf6d6c806e1841 Ce n'est rien.{wait 3}{n}T'en fais pas pour moi.{p}Je me demandais{wait 3}{n}pourquoi je suis ici.{wait 3}{p}J'aurais pu{n}simplement rentrer.{wait 3}{n}Mais, pour une raison{wait 3}{n}ou une autre,{n}je ne l'ai pas fait...{p}Sans doute parce que{n}tu as dit qu'il valait{n}mieux agir que ne rien{n}faire.{p}C'est sans doute pour{n}ça{n}que j'ai senti que je{n}devais agir.{p}Ce n'est pas grave de{n}ne{n}pas se sentir 'entier'.{wait 3}{p}Même si tu ne te sens{n}complet qu'en partie,{n}à force de le répéter,{n}un jour, tu deviendras{n}'entier'.{p}Une partie{wait 3}...{wait 3}{n}c'est mieux que{n}zéro.
+f309-0009 4ff20a4e8901cdc4 C'est vrai{wait 3}...{wait 8}{n}Pardon{wait 3}...
+f309-0010 7a6f3cfde49e35ff Fei{n}"Une fois sauvés,{wait 10}{n}tu vas rentrer ?"
+f309-0011 b3bb21fbdbc58e30 Elly{n}"Je ne crois pas que je{n}rejoigne mon unité.{p}Là, franchement, je n'ai{n}pas envie d'y être{wait 5}...{p}Et puis,{wait 3} je pourrais{n}faire autre chose...{wait 5}{n}Pas besoin d'être dans{n}l'armée.{p}Alors, je pense rentrer{n}dans mon pays."
+f309-0012 6617c59e6f1134dc Fei{n}"C'est possible ?{n}Et l'armée ?"
+f309-0013 b0c80d587faa0735 Elly{n}"Personne ne sait ce que{n}j'ai fait.{p}Ils ont dû me déclarer{n}disparue."
+f309-0014 68ebc5ee9e2a8181 Fei{n}"Hmm.{n}Du moment que{n}tu survis.{p}Tu trouveras{n}sûrement ce que{n}tu veux faire{n}de ta vie."
+f309-0015 b947f8015bb2beac Elly{n}"Tu as dit...{n}un truc sur...{n}se{wait 20} consoler."
+f309-0017 f0ff2b25d4cbf10e Elly{n}"Ne sois pas si dur avec{n}toi-même.{wait 5} Tout le monde{n}veut être utile, parfois.{p}On veut tous donner aux{n}autres un peu de soi, pour{n}être acceptés.{p}...{wait 10}Moi aussi.{wait 10}{n}Tu te souviens quand tu{n}t'es forcé à manger ces{n}rations de secours ?"
+f309-0019 8492955b75a52022 Elly{n}"Hé...{wait 10}tu vas bien ?"
+f309-0020 da64ccee81f523f6 Elly{n}"Je t'avais prévenu.{n}Pas une bête aussi{n}répugnante !"
+f309-0021 dfc964fec846c737 Fei{n}"C'est infect. Rien mangé{n}d'aussi mauvais depuis la{n}cuisine du Doc."
+f309-0023 73624898a4dcfb60 Fei{n}"Mais si on ne{n}fait rien, on{n}va mourir."
+f309-0024 9147ee05d0d6e9b9 Elly{n}"Pas le choix, je crois.{n}Je voulais garder ça{n}encore un peu..."
+f309-0025 6b92caf2668dc939 Elly{n}"Ça devrait tenir un jour{n}de plus...{p}Mais ce ne sont que des{n}calories de secours, je ne{n}garantis pas le goût."
+f309-0026 a98470ac6e15e462 Fei{n}"Hein !?{wait 10}{n}Quoi ?{wait 10}{n}C'est sec et friable ?"
+f309-0027 bd23fea07c55d343 Elly{n}"Je le savais...{n}Tu n'aimes pas,{n}hein ?"
+f309-0028 bd256ec0ce6681b8 Fei{n}"Hein ? N... non...{wait 10}{n}C'est bon.{n}C'est, euh, super.{p}Ce que tu me donnes{n}ne peut pas être si{n}mauvais, hein ?"
+f309-0029 cc6313d5cb4fd197 Elly{n}"Tu t'es forcé à manger{n}ces rations tout à{n}l'heure, pas vrai ?{p}Pour ma survie, mieux{n}valait ne pas partager.{p}Mais te voir manger, même{n}si c'était mauvais, m'a{n}réconfortée.{p}J'étais heureuse de{n}partager... Ça m'a fait{n}un peu de bien."
+f309-0030 134a3f12285a96a6 Fei{n}"Pour toi-même ?"
+f309-0031 4cce634cae560680 Elly{n}"Oui,{wait 5} pour moi-même.{wait 10}{n}C'est égoïste, je l'admets.{p}Mais je crois que ce n'est{n}pas grave, au début.{p}Mais peu à peu, on{n}découvre son propre{n}bonheur...{p}Et un jour, on est capable{n}de partager cette part si{n}importante de soi avec{n}quelqu'un. Un...{wait 20}jour."
+f309-0033 143a5279311f8702 Fei{n}"?{wait 10}{n}Quoi ?"
+f309-0034 6597eb6f25e9c8e2 Elly{n}"...Rien. J'ai eu comme{n}l'impression de te l'avoir{n}dit, il y a longtemps...{p}C'est sûrement mon{n}imagination. Je n'aurais{n}pas pu le dire avant, on{n}se connaît à peine, non ?"
+f309-0035 4e86ba9b6919a2b4 Elly{n}"Oui, sûrement mon{n}imagination{wait 10}..."
+f309-0036 4afd41b591730e1d Fei{n}"Elly !{n}Hé, Elly !{n}Debout !"
+f309-0037 7e529154fc6ce06e Elly{n}"Bonjour, Fei.{n}Tôt levé."
+f309-0038 10504393ecdc7001 Fei{n}"Pas de politesses.{n}Regarde ça !!"
+f311-0000 b298de2bbed33140 Fei{n}"Hé, c'est..."
+f311-0001 a27006b261633720 Rico{n}"Oh, allez, Citan.{p}Juste quand je croyais{n}qu'on était sauvés, on va{n}finir en gruyère."
+f311-0002 6c4e19ccb15de6cf Citan{n}"On ne nous{wait 10} aime{n}guère ici,{wait 10} hein ?"{done 40}
+f311-0004 49f17ae3318b1805 Citan{n}"Fei !{n}Elly !{n}Vous allez bien."
+f311-0005 fca7cbf41a0222a8 Elly{n}"Plus ou moins."
+f311-0006 063c51a3e6a77f8f Rico{n}"Pas le temps pour les{n}effusions."
+f311-0007 1f29047d040ccaff Fei{n}"Oui...{n}Et Bart ?"
+f311-0008 8d7cf1b2bc7e9cdf Citan{n}"Il se bat là-dessous.{p}Il a dit qu'il les{n}retiendrait jusqu'à ce que{n}les grenades sous-marines{n}soient prêtes.{p}Mais il est parti sans{n}préparatifs adaptés au{n}combat sous-marin...{p}Nous nous démenons pour{n}préparer les grenades{n}sous-marines.{p}Vos Gears devraient tenir{n}un combat sous-marin{n}jusqu'à un certain point.{n}Allez l'aider."
+f311-0009 c5f9e22258916a13 Fei{n}"Compris.{n}Viens, Elly."
+f311-0010 26d8722ad5839692 Citan{n}"Fei, où est Elly ?"
+f311-0011 cbf896a7b958c479 Fei{n}"L'ennemi{wait 5}...{wait 10}{n}l'a emmenée."
+f311-0012 2d15cce7393b3986 Bart{n}"Heh, j'en doute..."
+f311-0013 30d47b288b3a17cc Fei{n}"Bart, qu'est-ce que tu{n}veux dire par là !?"
+f311-0014 69e626aa1db37db7 Citan{n}"Arrêtez ça !!{n}Fei !{p}Ce n'est pas le moment{n}de vous disputer.{p}Pour l'instant, il nous{n}faut un endroit où{n}finir de réparer le{n}Yggdrasil."
+f311-0015 5a152489fda7c3a9 Fei{n}"...{wait 10}...{wait 10}Pas de souci. Le{n}navire qui nous a sauvés{n}est tout près.{p}Il s'appelle le Thames et{n}il est grand comme une{n}petite ville. Son{p}capitaine nous aidera."
+f311-0016 7696d51188ccb429 Rico{n}"Ce truc{wait 10}...{wait 10}...{wait 10}{n}le Thames...?"
+f311-0017 512f647d2ba97788 Dominia{n}"Sans..."
+f311-0018 19746f13a0a3e1ff Dominia{n}"...toi..."
+f311-0019 dfad638bd5c07588 Dominia{n}"Je ne te pardonnerai{n}jamais..."
+f311-0020 2938d46bba5ec762 Dominia{n}"Sale..."
+f311-0021 5f0e3e0d785b429c Dominia{n}"TRAÎTRESSE !!"
+f311-0022 ff42889f71af417c Bart{n}"Les voilà !"
+f311-0023 b8e09ad756563028 Elly{n}"Hé, c'est..."
+f311-0024 4a6aab4eacf0d5a7 Bart{n}"...Pff. Elle ne lâche{n}jamais l'affaire."
+f311-0025 68696a7b805c7b64 Elly{n}"Q-quoi ?"
+f311-0026 c4a241ee9d74c1ce Fei{n}"En bas !"
+f311-0027 04d468c355f4eee8 Bart{n}"C'est ce que je pense ?"
+f312-0000 e1332bda50960ae2 Big Joe{n}"J'ai perdu.{n}Voici ton cadeau.{n}Adios."
+f312-0001 c77866bf38c0a3be  {n} Reçu : Manteau Noir.
+f312-0002 e2425fe94d36deaa Big Joe{n}"Ha, trop facile de{n}te battre, amigo !{n}Va-t'en."
+f312-0003 a57442ead935d68d Big Joe{n}"Ha... égalité.{n}Quelle chance,{n}senor..."
+f312-0004 3834a11d3bb8083f Big Joe{n}"Eh, hombre. Tu viens{n}déranger notre amore ?"{p}    Oui{n}    Non
+f312-0005 9d45f1574be680f9 Big Joe{n}"Si ? Quel malappris,{n}muchacho !"
+f312-0006 afd85f4e61449342 Big Joe{n}"Alors, du vent."
+f312-0008 d3e760b349d0f001 Bart{n}"Désolé pour tout{n}à l'heure..."
+f312-0009 595b35e22784e950 Fei{n}"Ça va. C'était aussi ma{n}faute. Ça fait longtemps{n}qu'on ne s'est pas vus.{p}On ne devrait pas se{n}disputer."
+f312-0010 2b9416bad96949da Bart{n}"Aïe, aïe{wait 5}...{wait 5}{p}Le Yggdrasil II, fait{n}trop{n}vite, n'a pas eu ses{n}grenades sous-marines.{p}Et c'est ma faute s'il n'y{n}en avait pas, parce que{n}j'ai fait passer les{n}Missiles Bart avant...{p}...tout le reste."
+f312-0011 498c882cc9e9af8b Fei{n}"Missiles Bart ?"
+f312-0012 32eaf1cc8724570c Bart{n}"Ah, ça... euh, bon,{n}ce n'est pas{n}grand-chose."
+f312-0013 de7c49debefcb774 Fei{n}"?{wait 20}{n}Bref, content de te voir{n}en forme.{p}J'ai toujours su que tu{n}étais vivant."
+f312-0014 02110060023b5737 Bart{n}"Évidemment.{n}Je suis Bart l'immortel.{n}Tu insinues quoi{wait 5}...?{p}Mais là, je me suis pris{n}une raclée par un{n}monstrueux Gear rouge."
+f312-0015 cae1d920c3e10bf4 Fei{n}"Rouge..."
+f312-0016 4bc497c1566e9351 Bart{n}"Ouais. Il m'a battu, puis{n}il nous a laissés couler{n}dans le sable.{p}Mais la suite paraît{n}dingue.{p}On a coulé dans une caverne{n}géante, sous le sable !{wait 10} Et{n}il y avait un croiseur des{n}sables comme le Yggdrasil !{p}On lui a transféré les{n}pièces utiles et la{n}passerelle, et on l'a remis{n}à neuf."
+f312-0017 82889c2e805489e5 Citan{n}"Franchement, j'ai du mal{n}à y croire. Identique,{n}mais il peut flotter.{p}Selon toute probabilité,{n}c'est le prototype du{n}Yggdrasil."
+f312-0018 ec32159e7d927dc9 Bart{n}"Des gens vivaient là il{n}y a très longtemps, avec{n}plein d'armes. C'est là{n}qu'on les a prises."
+f312-0019 fefad3740631a74b Citan{n}"J'ai vu ces armes.{n}Elles viennent sans{n}doute...{wait 10}de Shevat."
+f312-0020 0a233848f6e992cf Fei{n}"Shevat...{wait 5}...{wait 5}{n}ce pays volant..."
+f312-0021 2a6038bf8e890537 Bart{n}"Surtout, on devrait{n}aller faire 'ahoy' au{n}capitaine."
+f313-0000 37e1fb7ae918077f Médecin{n}"Qu'y a-t-il, blessé ?"{n}    Oui{n}    Non
+f313-0001 76dc1a5a76072238 Médecin{n}"Bon. Allonge-toi là et{n}dors."
+f313-0002 83660199731382fd Médecin{n}"Et ne reviens jamais."
+f313-0003 a36bdd908acb7844 Médecin{n}"Alors t'as rien à faire{n}ici. Dehors, ouste !"
+f313-0004 4d1606f84566c2ef Médecin{n}"Franchement, il n'y a{n}que des ivrognes et des{n}bagarreurs ici..."
+f313-0005 da5de74a0ff11384 Médecin{n}"Alors file. Il y a plein{n}de blessés à cause de cet{n}aquarium géant."
+f313-0006 4bf88ea431a1ffa5 Le vent...{n}appelle mon nom.{wait 10}{n}...{wait 10}Ah là là{wait 10}...
+f313-0007 51c826b740079ab8 La mer...{n}pleure.{wait 10}{n}...{wait 10}Ah là là{wait 10}...
+f313-0008 356f3c9facc4a795 Moi seul...{wait 10}...{wait 10}ai survécu.{p}Mes compagnons ont été{n}emportés et dévorés par{n}les Wels...
+f313-0009 b515daf9b064d3e8 Quelle frayeur. On était{n}tout excités parce qu'on{n}allait enfin pouvoir{p}déterrer des trucs sur le{n}site des fouilles.{p}Et là... ZAP !... Un rayon{n}de lumière !{p}C'était si vif que j'ai cru{n}que mes yeux allaient{n}brûler. Mais un Gear du{n}Thames m'a sauvé.{p}Merci à lui...! Mais{n}pourquoi cet aquarium{n}nous a-t-il attaqués ? Il{n}visait les fouilles ?
+f313-0010 69bebe2460fd4093 Quand je bois, je ne{n}quitte pas ce lit.
+f313-0011 cbb1c8c301cff636 Anna{n}"Mon mari a été dévoré par{n}cette chose, le{p}Faucheur -Wels-... Nous{n}trois, on a été sauvés. Et{n}maintenant, que faire ?"
+f313-0012 725537f6362c470e Lance{n}"Hé, tu embêtes ma{n}mère ?"
+f313-0013 56b1f95136b38547 Kanna{n}"Et papa ?"
+f313-0014 0c2e91b0e168266e Médecin{n}"...{wait 15}Je l'ignore.{wait 10} Mais,{n}pour l'instant, il est{p}maintenu en vie par des{n}machines{wait 10}...{wait 10}..."
+f313-0015 4910dccbdb475d76 Citan{n}"...{wait 20}C'est-à-dire...{wait 5} qu'il{n}va s'en sortir{wait 10}...?"
+f313-0016 c9e53c84790913e5 Médecin{n}"...{wait 20}Je ne garantis rien.{wait 10}{n}Je ne sais même pas{p}pourquoi il est dans cet{n}état, au départ."
+f313-0018 9465f20edd61aba0 Elly{n}"...{wait 30}Ma faute{wait 20} ?{wait 15}{n}...{wait 30}Je{wait 10}...{wait 10}"
+f313-0019 7e005f69fc9304be Médecin{n}"...Alors il reste un{n}espoir... à l'infirmerie{n}du siège de l'Ethos."
+f313-0021 7fbfb5c5c17835d7 Elly{n}"Fei...{n}Pouvez-vous sauver{n}Fei ?"
+f313-0022 0913691d702d370c Médecin{n}"Je ne garantis rien. Mais{n}si on l'emmenait à{n}l'hôpital du siège de{n}l'Ethos..."
+f313-0023 78ee740d471f4d67 Elly{n}"Alors, il serait{n}sauvé ?"
+f313-0024 09a61e89ff1fc6e0 Médecin{n}"Là-bas, il se remettrait{n}très probablement...{p}Hélas, les simples citoyens{n}n'ont accès qu'au hall{n}principal du siège de{n}l'Ethos.{p}Il faudrait devenir moines,{n}ou être présentés par{n}quelqu'un de l'Ethos{wait 5}..."
+f313-0026 0502bef438a2c8cf Médecin{n}"Ah, ça me revient.{p}On dit que les Etones,{n}-'expiateurs des{n}péchés'-, viennent du{p}siège de l'Ethos jusqu'au{n}Thames..."
+f313-0027 a249d473e12cc9fe Citan{n}"Et que viennent faire{n}ici ces Etones ?"
+f313-0028 f10f1f4a30cf5890 Médecin{n}"Ils viennent mener une{n}sorte d'enquête."
+f313-0029 ed513d2f17f11758 Bart{n}"Etones...{n}C'est quoi ?"
+f313-0030 faf9f084d1fd8dbd Médecin{n}"Des religieux de l'Ethos{n}qui purifient les{n}'Faucheurs', ou -Wels-, qui{n}apparaissent ici, à Aquvy."
+f313-0031 349cea77c9e27aba Elly{n}"Alors pourquoi ne pas leur{n}demander ?"
+f313-0032 3d2ae5bc6bfc9b49 Médecin{n}"Je leur demanderai leur{n}aide, mais je ne sais pas{n}s'ils accepteront...{p}Bah, demander ne coûte{n}rien..."
+f313-0033 5997115403a58555 Elly{n}"Bon. Allons{n}les trouver."
+f313-0034 7d3ec5c63531ca4e Citan{n}"J'emmène Fei et les{n}appareils de survie au{n}Yggdrasil.{p}Bart et Elly, cherchez{n}les Etones."

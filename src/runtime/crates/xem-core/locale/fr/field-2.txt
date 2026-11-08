@@ -3322,3 +3322,183 @@ f295-0068 489de41cb9367b51 Le moteur tourne à{n}merveille !!
 f295-0069 060ac73b2ff48601 Ne monte pas là-haut.
 f295-0070 9f2b9d7d950b600f Il t'a crié dessus, hein ?{n}Il nous crie dessus aussi.{n}Il ne s'ouvre qu'à son{n}chien, Martle.
 f295-0071 cd26ac12a26793cf Ici, pas d'amateurs.{wait 10}{n}Alors, dégage !
+f296-0000 778cd82e6b984959 Rico{n}"Si tu cherches Citan, il{n}était à la boutique de{n}Gears..."
+f296-0001 7052cae02a3ba903 {name 7}{n}"Chuis épuichée, chu !{wait 10}{n}Puisque tu es là...{wait 10}{n}je veux un massage !!{p}Je rigole, chu..."
+f296-0002 f457e203356769e5 {name 7}{n}"Elly était si gentille...{n}Chu sais qu'elle ne manque{n}pas qu'à moi.{p}Chu sais que Bart, Margie,{n}Billy, Citan, Rico, Maria,{n}Emeralda et Fei aussi{n}la regrettent, chu...{p}Même s'ils ne disent rien,{n}chu le chens... Plantée{n}là, je revois son sourire{n}doux et tendre.{p}Elly va revenir, pas{n}vrai ?"
+f296-0003 1e85f25dde72e655 Fei{n}"...{n}Merci, {name 7}...{p}Merci d'essayer de{n}détendre l'atmosphère pour{n}moi.{wait 5} Je ne l'oublierai{n}pas...{p}En tout cas...{wait 5}{n}Elly doit être en vie !{n}Pas vrai ?"
+f296-0005 d8e77c4d0b820334 Fei{n}"Retournons dans la{n}chambre. Margie avait{n}l'air inquiète."
+f296-0006 c13db87ce5451d5e {name 7}{n}"Ok, chu !{n}Chu viens aussi !"
+f296-0008 cab6ceab38f96086 Voici le {name 17}.{n}Le Gear du champion de{n}Battling, Rico.{p}Hauteur 19 sharls{n}Poids de base 20,8 kahnns{n}Poids total 27,5 kahnns{p}Il a l'air lent, mais il{n}est très agile grâce aux{n}Grind-rollers.{p}Conçu pour le Battling,{n}il a la meilleure{n}résistance.{p}La Griffe-Foreuse du bras{n}gauche peut percer des{n}plaques d'acier jusqu'à{n}0,8 sharl.
+f296-0009 5f44aa3b963f21cb Voici le {name 25}.{n}C'est le Gear de Rico.{p}Hauteur 19,2 sharls{n}Poids de base 22,2 kahnns{n}Poids total 26,7 kahnns{p}Comme les autres Omnigears,{n}c'était une Relique Anima{n}absorbée par Deus et{n}désactivée...{p}Mais les sages de Shevat,{n}Balthasar et Melchior, l'ont{n}reconstruit à partir des{n}données du Xenogears.{p}Ses capacités ont donc{n}augmenté par rapport à{n}l'ancienne version.{p}Son arme standard est la{n}même qu'avant la refonte.
+f296-0010 3df32a02d65f3045 Voici le {name 13}.{n}Le Gear de cette fille de{n}Solaris.{p}Hauteur 15,7 sharls{n}Poids de base 10,2 kahnns{n}Poids total 14,7 kahnns{p}Le châssis et le blindage{n}ont été réduits au minimum{n}pour l'alléger.{p}Mais il renferme{n}l'impressionnante{n}technologie de Solaris.{p}Il résiste aux dégâts bien{n}mieux que son allure ne le{n}laisse croire.{p}Il est moins fait pour les{n}dégâts physiques que pour{n}les attaques d'Éther.{p}Surtout grâce aux{n}stabilisateurs de la queue{n}et aux jupes latérales,{n}qui servent...{p}...aux armes d'Éther{n}téléguidées à forte charge{n}explosive, les 'Aerods'.{p}En gros, il reflète{n}directement le pouvoir{n}d'Éther de cette petite.
+f296-0011 959e4ddeb1859d92 {name 16}{n}C'est le Gear de Billy.{p}Hauteur 15,9 sharls{n}Poids de base 11,6 kahnns{n}Poids total 16,1 kahnns{p}On l'étudie encore, alors{n}je n'en connais pas les{n}détails.
+f296-0012 023532a6479466a7 {name 16}{n}Voici le Gear de Billy.{p}Hauteur 15,9 sharls{n}Poids de base 11,6 kahnns{n}Poids total 16,1 kahnns{p}En surface, c'est un Gear{n}de type Ethos, mais{n}dedans, tout est de type{n}Solaris.{p}Fait pour les Etones, il a{n}sans doute été amené ici{n}par ce Stone juste après{n}sa création à Solaris.{p}Mais c'est justement pour{n}ça que ses capacités sont{n}vraiment impressionnantes.{p}Surtout les Canons{n}Revolver anti-Wels des{n}deux bras. Ils sont{n}très destructeurs.{p}Un Gear ordinaire serait{n}réduit en ferraille d'un{n}seul tir.
+f296-0013 588f9bb93cec4ec6 {name 24}{n}Voici le Gear de Billy.{p}Hauteur 18,8 sharls{n}Poids de base 14,9 kahnns{n}Poids total 19,3 kahnns{p}Comme les autres Omnigears,{n}c'était une Relique Anima{n}absorbée par Deus et donc{n}désactivée.{p}Mais les sages de Shevat,{n}Balthasar et Melchior, ont{n}pu le reconstruire grâce{n}aux données du Xenogears.{p}Ses capacités ont donc{n}augmenté par rapport à{n}l'ancienne version.{p}Son arme standard reste celle{n}d'avant la refonte. Et le{n}Canon Buntline du père de{n}Billy est aussi utilisable.
+f296-0014 2a7abfd33e4e6f04 {name 20}{n}C'est le Gear d'Emeralda.{p}Hauteur 15,4 sharls{n}Poids de base 9,7 kahnns{n}Poids total 13,3 kahnns{p}Les commandes de ce Gear{n}sont très singulières.{p}La colonie de nanomachines{n}du corps d'Emeralda se{n}fond physiquement dans le{n}Gear pour le piloter{n}directement.{p}En théorie, ce Gear{n}n'aurait pas besoin de{n}réparations, mais elles ne{n}réparent qu'Emeralda{n}elle-même.{p}Alors on n'a pas d'autre{n}choix que d'entretenir le{n}Gear nous-mêmes.{p}Sa capacité à planer au ras{n}du sol et à voler est très{n}impressionnante.
+f296-0015 7e7de68d7dc9a867 Voici...{n}euh, {name 7} !?{n}Qu'est-ce que tu fais{n}là !{p}Tu n'as besoin d'aucun{n}entretien, toi !!{p}Tu gênes !{n}Va manger un morceau et{n}faire la sieste, je sais{n}pas, moi !
+f296-0016 d2b457a6cd64d2e6 Renommer ce Gear ?{n}    Oui{n}    Pas maintenant
+f296-0017 57e661e8b0092202 Hmm, {name 7} n'est pas{n}vraiment un objet. Là, je{n}ne peux rien pour toi.
+f296-0018 64ff8926b69fe460 Bart{n}"T... tu sais..."
+f296-0019 92d666bf904d112d Bart{n}"Hé ?"
+f296-0021 aac20477bef9ed7f Bart{n}"Arrête de me snober !{wait 10}{n}Je suis venu m'excuser !"
+f296-0022 dfcf32807a475ac5 Rico{n}"...{p}C'est quoi, ton{n}problème !? Je croyais{n}qu'on avait réglé nos{n}comptes depuis longtemps.{p}Je ne suis pas du genre à{n}ressasser le passé."
+f296-0024 9d1543c51f93ac1f Rico{n}"Ce qui m'intéresse, c'est{n}ces deux Gears, là...{wait 10}{n}Qui es-tu, au juste ?{p}Ça m'épate que tu arrives{n}à les régler aussi bien !{p}Je pensais que seuls Fei{n}et moi savions régler des{n}Gears comme ça..."
+f296-0025 bf2ecb3f1fd82585 Bart{n}"Ouah, t'es vraiment{n}champion de Battling...{n}{wait 5}Oups,{wait 5} l'ex-champion...{p}C'est fou, tu sais si un{n}Gear est bon d'un simple{n}coup d'oeil."
+f296-0026 e3c08d6df1997420 Rico{n}"Faut croire qu'une prison{n}obscure n'apprend pas tout{n}sur le monde.{p}Très intéressant.{wait 10} J'allais{n}suivre ma route, mais j'ai{n}changé d'avis...{wait 10} Je me{n}joins à vous,{wait 5} chef."
+f296-0027 fa44d8c1d7679c66 Bart{n}"Moi, ça me va..."
+f296-0028 9f60546923c38578 Je me doutais que vous{n}alliez bientôt venir...
+f296-0029 d8a7ec7fbdb5d5e4 Elly{n}"Inutile d'essayer de{n}m'arrêter.{p}Même vous, si vous me{n}gênez, je n'aurai pas{n}d'autre choix que...!!"
+f296-0030 ac47db493dd5f9fe Citan{n}"Une dame ne devrait pas{n}parler ainsi.{wait 10} Je suis{n}venu vous dire au revoir."
+f296-0032 c4ec8c9abc465e0c Citan{n}"J'ai fait le plein du{n}{name 11}.{wait 10} Il est prêt à{n}partir à tout moment."
+f296-0034 04ace9a5787b3df9 Citan{n}"...Mais,{wait 10} Elly,{wait 10} vous ne{n}pouvez pas prendre votre{n}Gear, en réparation."
+f296-0035 2c1c22c0aacb886c Elly{n}"Quoi ?{wait 10} Alors{wait 10} que{n}vais-je...?"
+f296-0036 0c78489f947a3738 Citan{n}"Vous savez, cet{n}Omnigear...{wait 10} Et si vous{n}l'empruntiez..."
+f296-0037 ef25f21bc9058fd3 Fei{n}"Pas question.{wait 10} C'est{n}à Shevat. Pas sans leur{n}permission..."
+f296-0038 95d1ac88386bcbd5 Citan{n}"Elly est la seule qui{n}convienne à ce Gear.{p}Personne d'autre ne peut{n}le faire fonctionner."
+f296-0039 aef52aa70dd3ec25 Non...
+f296-0040 f463d44be9d6850e Elly{n}"Jamais !!{n}Je ne monterai jamais{n}là-dedans !!"
+f296-0041 30c4d4586855aff3 Fei{n}"Elly...?{wait 10}{n}Qu'as-tu ?"
+f296-0042 973b50540bc15742 Elly{n}"J'ai tellement peur...{wait 20}{n}C'est pour ça que...{wait 10}{n}jamais je ne voudrai !!"
+f296-0043 96bf71f8eed87bb5 Citan{n}"Voilà un problème..."
+f296-0044 aeadb05386f2b958 Et si je venais avec{n}toi ?
+f296-0045 78b5a3642bfd2693 Fei{n}"Les amis...?"
+f296-0046 6bcc38db12bb3d8a Bart{n}"Désolé...{wait 10} Fei."
+f296-0047 482b2087152feff5 Billy{n}"Excuse-moi..."
+f296-0048 6398ce974afcd588 Margie{n}"Pardon..."
+f296-0049 1dbaf3d1b6ae2e9e Fei{n}"Non...{wait 10}{n}Merci, les amis."
+f296-0050 d4f0be38ff7a72be Citan{n}"Je sais qu'il est dur de{n}partir, mais mieux vaut{n}y aller avant l'aube.{p}J'ai un peu réglé le{n}radar, tout devrait bien{n}se passer !"
+f296-0051 d1aad10a1e40f518 Citan{n}"...Ils sont partis..."
+f296-0052 200dd41441cb27d1 Emeralda{n}"Fei{wait 5}...{wait 10} où{wait 5}..."
+f296-0053 40fcb36948b25404 Citan{n}"Très loin d'ici."
+f296-0054 e8056af4f7623723 Emeralda{n}"Je{wait 5}...{wait 10}vais{wait 5}..."
+f297-0001 6886db63385ae1cf Aïe{wait 5}...
+f297-0002 2abd485992dc5efc Bart{n}"Les Missiles Bart, ce{n}n'était pas une si bonne{n}idée, hein...{p}On a pu vous sauver, vous{n}et vos amis, Citan{wait 5}...{wait 10}{n}Mais qu'est-il arrivé à{n}Fei et Elly{wait 5}..."
+f297-0003 aa0024d03b9be0d2 Bart{n}"Ils sont sûrement{wait 5}...{wait 15} en{n}vie quelque part...{wait 15}{n}Et, encore une fois..."
+f297-0004 4bbf1328d1c1d772 Bart{n}"Zut !{wait 10}{p}La brise marine me pique{n}l'oeil{wait 5}...{wait 10} C'est donc ça{n}qu'on appelle la mer{wait 5}..."
+f297-0005 cd5dd9588d719e79 Bart{n}"Avant tout, je dois{n}présenter mes excuses à{n}ces deux-là."
+f297-0006 1739d7d8ff94ff33 Billy{n}"Père..."
+f297-0007 f11f44e2efd68309 Citan{n}"Billy...{wait 10}{n}Je n'aurais pas dû faire{n}une chose pareille..."
+f297-0009 a449ba22312a0c90 Billy{n}"Non, ce n'est pas{n}votre faute..."
+f297-0010 f60d245012940775 Billy{n}"C'est le meilleur adieu{n}à offrir à mon père."
+f297-0011 04c2c0c89c2523f0 Bien dit...{wait 10}{n}Merci, fiston.
+f297-0012 6880c168fdff9d94 Billy{n}"P-père !"
+f297-0013 b93cffc27d3e315e Citan{n}"Vieil ami !{wait 10}{n}Tu vas bien ?"
+f297-0015 371086920c193c79 Jessie{n}"Tu parles !{p}Pas question de laisser{n}cette fichue ferraille{n}telle quelle !{n}Je{wait 10} l'ai améliorée !"
+f297-0016 d2d4bb92ac9b4c42 Jessie{n}"Aïe, ouille, ouille !!{wait 10}{n}Mais je ne referai plus{n}jamais ça, hein..."
+f297-0017 4a33a89209fd75cf Citan{n}"Mais tout de même...{wait 5}{n}parler de l'enfer...{p}Je suis surpris qu'un{n}homme sans foi comme toi{n}croie à l'au-delà..."
+f297-0019 51f0261e56b53cb1 Jessie{n}"Ah oui ?{wait 10}{n}Alors tu écoutais ?{p}C'était une malédiction.{wait 10}{n}Digne de lui, non ?"
+f297-0020 f2428003d5174132 Citan{n}"C'est tout toi, sans{n}aucun doute."
+f297-0022 bf3ca521fa5d4d4e Primera{n}"Pa{wait 5}...pa{wait 5}..."
+f297-0024 fd15ae22864c48bd Billy{n}"Prim, qu'est-ce que tu{n}viens de dire ?{wait 10}{n}Hein, Prim ?"
+f297-0025 b93ffb50696f67fa Primera{n}"Pa...{wait 5}pa...{wait 5}"
+f297-0026 f5213bb13ec0bd16 Jessie{n}"Ha, ha, t'as entendu ?{wait 10}{n}Le problème de Primera{n}est réglé, on dirait !"
+f297-0027 7f3cc411f93b0407 Billy{n}"Ah...!{wait 10}{n}Prim a parlé !{wait 10}{n}Prim vient de parler !{p}Dis, Prim...{wait 10}{n}Allez, dis mon nom.{wait 10}{n}Dis 'Billy' !"
+f298-0000 84cf19a7ead99287 Rico{n}"Je ne pardonnerai jamais{n}ce qu'ils lui ont fait...{wait 10}{n}Il n'a rien fait de mal !"
+f298-0001 9193a132daad9ca9 Rico{n}"Rien à faire pour{n}l'instant.{wait 10} Si tu{n}veux, je peux aider..."
+f298-0002 deff17022b64f691 Rico{n}"Celui qui battra Fei,{n}c'est moi !{wait 10} Pas question{n}qu'il meure comme ça !"
+f298-0003 8a2c674678c4a5cf Rico{n}"Fais ce que tu dois.{wait 10}{n}Ça ne me regarde pas."
+f298-0004 df61d74448d68ba1 Rico{n}"Cette fille{wait 5} avait un{n}regard de prisonnière."
+f298-0005 334a5374f2463fbc Rico{n}"Entendons-nous bien.{wait 10}{n}Ça ne veut pas dire que{n}je suis de ton côté."
+f298-0006 6a8a4ce3547637fc Hammer{n}"Compte sur mon{n}soutien."
+f298-0007 3fc8732da9ca9968 Hammer{n}"N... navire fantôme...?{wait 10}{n}Moi, je reste ici !"
+f298-0008 09e99a56c2891420 Hammer{n}"Bizarre, un village rien{n}qu'avec des gosses,{n}hein ?"
+f298-0009 d3f3b801d83d266e Hammer{n}"Oh, ça va mieux !?{wait 10}{n}Ça fait plaisir !"
+f298-0010 f0c16af5a1a2d763 Hammer{n}"Frérot, inconscient ?{wait 10}{n}Sans blague ?{p}Qui est l'ennemi qui a{n}réussi à battre le{n}champion de Battling...?"
+f298-0011 234e278a78902b54 Hammer{n}"Typique d'une{n}Solarienne...{wait 10} Va savoir ce{n}qu'Elly mijote..."
+f298-0012 c772d61c5afb4ea4 Rico{n}"Hammer,{wait 5} sale rat !{p}Je t'écrase la tête si tu{n}redis ça !!"
+f298-0013 3899aa89b0a48ae1 Hammer{n}"Dé... désolé !!{wait 10}{n}Pardoooon...!!"
+f298-0014 8b4590fd7e7472e2 Hammer{n}"C'est quoi, cet endroit ?{wait 10}{n}Jamais entendu parler de{n}ce 'Thames'."
+f298-0015 f21b55b01215d15f Hammer{n}"Alors c'est toi, Bart, le{n}'pirate', hein...{p}Hammer, le 'Fournisseur',{n}a une info toute chaude{n}pour toi...{wait 10} Shakhan{n}contrôle toujours Aveh...{p}Il veut intervenir{n}militairement à Nisan.{wait 10}{n}Mais, va savoir pourquoi,{n}Gebler l'en empêche...{p}...Ah,{wait 5} tu le savais{n}déjà ?"
+f298-0016 8635b1b98c06fcf4 Hammer{n}"Je vais rester bien{n}sage ici."
+f298-0017 098dd8f9ea2c0b4d Hammer{n}"On est où, là ?"
+f298-0018 c5b33ffb6bc5864f Hammer,{wait 10}{n}Rico...{wait 10}{n}Debout !
+f298-0019 90e10b1bb0c95d19 Rico{n}"C'est quoi, cet endroit ?{wait 10}{n}Quelque chose pue."
+f298-0020 d5d638dedb19adae Citan{n}"Ceci est le navire de{n}Bart et de son équipage.{p}Ils nous ont recueillis{n}quand le Goliath a été{n}abattu."
+f298-0021 b4a0022fcc47441c Rico{n}"Et c'est qui, ce 'Bart et{n}son équipage' ?"
+f298-0022 56fd884a51694096 Citan{n}"Disons{wait 5}...des{n}bandits...{wait 5}qui pillent{n}Aveh.{p}Bart est leur chef,{wait 10}{n}même s'il est encore{n}jeune."
+f298-0023 4e1644dafabceff5 Rico{n}"Un voleur, de nos jours ?{wait 10}{n}Voilà un homme qui ose.{n}Ça me plaît !!"
+f298-0024 fd7175789a99ef99 Citan{n}"...{wait 10}{n}Et si vous commenciez par{n}aller parler à Bart ?"
+f298-0025 a89b263e46ce2daa Rico{n}"Hmm...{wait 10}{n}Vous lisez en moi !"
+f298-0026 1e759477fe89e4f4 Hammer{n}"Je reste là !"
+f299-0000 3050dc96a99a7b51 Argh... Si je n'étais pas{n}blessé, moi aussi, je{n}pourrais...!
+f299-0002 14e5ff9175e8e7ba Ouaiiis !{n}Donnons tout pour le jeune{n}maître !!
+f299-0003 aa5d236a182d8806 Oh !{done 15}
+f299-0004 7ac0c2032973e94e Tu l'as peut-être remarqué,{n}mais je faisais juste{n}semblant d'être malade...{p}Voir {name 7} se donner{n}tant de mal m'a fait honte.{n}Désormais, je vais avoir{n}plus de courage !
+f299-0005 6eb261bc8aa7dfa0 Sans cette{n}blessure...
+f299-0006 5aa54b6767687a37 Expédition au navire{n}fantôme ?{wait 10} Sans cette{n}blessure, je...
+f299-0007 72aaf2b61adee724 On dirait que Fei va bien,{n}hein.{wait 10} Sans cette{n}blessure...
+f299-0008 5a11ff9a5e99b8ca Fei a une mine{n}affreuse...{wait 10} Sans cette{n}blessure, je...
+f299-0009 8333dfb330d0d3db Elly,{wait 10}{n}pourquoi donc...?
+f299-0010 b1ff8327b0aeda69 Il y avait{wait 10} quelque chose{n}qui clochait chez Elly.
+f299-0011 7addf053f7bacd94 Ça a l'air d'un endroit{n}sympa.{wait 10} Si seulement je{n}n'étais pas blessé...
+f299-0012 cbc9ab3cad67ced6 Ah, jeune maître !{wait 5}{n}Je ne me cache pas.{wait 10}{n}Si seulement je n'étais{n}pas blessé...
+f299-0013 9c8022ef47028743 Tu es l'ex-champion de{n}Battling ?{wait 10} Sans cette{n}blessure, même moi...
+f299-0014 5ee2845b52875272 Si le jeune maître devient{n}roi demain{wait 5}...{wait 10} que{n}deviendrons-nous ? J'en ai{n}assez d'être soldat.{p}Je veux monter une affaire{n}ou un truc du genre{wait 5}...{wait 10}{n}Sans cette blessure{wait 5}...{wait 5}
+f299-0015 3622a6a04ce854e2 Nisan, hein...{wait 10} Ça fait{n}si longtemps.{wait 10} Sans cette{n}blessure, je...
+f299-0016 4811b5fea232782a Tu as gagné le tournoi{n}d'arts martiaux ? Bravo !{wait 10}{n}Sans cette blessure...
+f299-0017 229010ea758dc77b Bien joué. Si seulement{n}je n'étais pas{n}blessé...
+f299-0018 4b3ad853a4022f7b Cette blessure vient du{n}combat ?{wait 10} Non, je suis{n}tombé du lit, là.{wait 10}{n}Pathétique...
+f299-0019 c054f0825ce604bd Bats-toi autant que tu{n}veux et blesse-toi autant{n}que tu veux !
+f299-0020 e12feb5ce65b76e5 {wait 5}...Quoi ?{wait 10} Plus tard.{wait 10}{n}{wait 5}...J'ai le vertige.
+f299-0021 a58d335323c4a1b6 Dis donc, tu ne fais que{n}te peser. Tu ne veux pas{n}que je t'ausculte, pour{n}changer ?{p}Dépister tôt et prévenir{n}tôt, c'est important !
+f299-0022 0335beb70044ec5d Les fantômes, ça ne se{n}blesse pas. Pas drôle !
+f299-0023 18d9178b9cf13ebc Fei...{wait 10} Tu vas bien,{n}hein ?{p}Ah, je suis si contente !{n}C'est merveilleux d'être{n}infirmière !
+f299-0024 8ea9e9581746c07d Fei...{wait 10}{n}Va-t-il bien ?
+f299-0025 018c8ce0cf1f145b Elly...{n}Va-t-elle bien ?
+f299-0026 b5ffe0efbd6166b7 Elly était couchée là il{n}y a un instant...{wait 10}
+f299-0027 0ccfc60a1d41470e Maintenant que tu le dis,{n}où est-elle donc allée ?
+f299-0028 553ebbad24e822b1 Pourquoi ?{wait 10} Pourquoi ?{wait 10}{n}Pourquoi aller voir le{n}médecin du Thames, quand{n}une doctoresse belle et{n}douée comme moi est là ?{p}Je devrais peut-être opérer{n}des poissons.{n}Snif...
+f299-0029 bb7662453f47f51b Si tu te blesses, pas{n}question de tremper dans{n}l'eau de mer !{wait 10} Viens{n}ici tout de suite.
+f299-0030 fc2c5ab0457ffd8a Ah, jeune maître !{wait 10}{n}Vous pourriez augmenter{n}les frais médicaux, s'il{n}vous plaît !?
+f299-0031 9422ce99c436b553 Quel client intéressant !{wait 10}{n}Tu es l'ex-champion de{n}Battling, non ?{p}Alors tu as toujours des{n}blessures bien fraîches,{n}pas vrai ? Hum, hum...
+f299-0032 dbc257a1a8bf956b Demain, enfin, c'est la{n}bataille où{wait 5} le sang{n}giclera,{wait 5} euh,{wait 5} où la chair{n}tombera{wait 5}...{p}Non,{wait 5} pardon,{wait 5} la bataille{n}où le sang bout,{wait 5} où la{n}chair danse, pour libérer{n}la capitale,{wait 5} hein ?
+f299-0033 398b8afc5d6dc198 Youpi !! Enfin, je vais{n}me ravitailler à Nisan.{wait 10}{n}Plus d'aiguilles, à force{n}de rater mes piqûres...
+f299-0034 fd0bd75ee2814e8c Il paraît que tu as gagné{n}le tournoi d'arts{n}martiaux.{p}C'est génial !{wait 10}{n}Au fait...{wait 15}{n}tu t'es blessé ?{p}Ah, pas blessé ?{wait 5}{n}Dommage...{wait 10}{n}Enfin...{wait 5} tant mieux.
+f299-0035 0a63da21f2211200 Bravo, tu as assuré !?{n}Au fait...{wait 10}{n}tu t'es blessé ?{p}Ah, pas blessé ?{wait 10}{n}Dommage...{wait 10}{n}Enfin{wait 5}...{wait 5}tant mieux.{p}Mais si tu te blesses,{n}préviens-moi aussitôt.{n}Je m'occuperai de toi !
+f299-0036 d6b4806c069ac89e Enchantée ! Je suis{n}l'infirmière de bord.{p}Je ferai de mon mieux.{n}Alors, passe quand tu{n}veux !!
+f299-0037 62be0cad5199a269 (Hé hé, hi hi. Quelle{n}excellente première{n}impression !)
+f299-0038 04d67c11eb033c93 {speed 255}Qui veux-tu peser ?{n}    {name 128}{n}    {name 129}{n}    {name 130}{n}    Personne
+f299-0039 838eb210f5230c69 Il n'y a personne.
+f299-0040 2857df217d9b0059 Voyons, il n'y a{n}personne.
+f299-0041 bcbf7056f95a6d91 Hum... poids insuffisant.{wait 10}{n}Il faut mieux manger.
+f299-0042 512675fce6c63e99 Parfait !!{wait 10}{n}Poids idéal.
+f299-0043 2c2a416230032479 Gros excès de poids.{wait 10}{n}Fini les sucreries !
+f299-0044 5b75c04aae6ed914 Ça alors !{wait 10}{n}C'est ce qu'on appelle{wait 10}...{n}Fais attention, hein !
+f299-0045 5a03119db44d4b71 Citan{n}"Cette machine fera{n}l'affaire pour l'instant,{n}mais elle est provisoire."
+f299-0046 fbf743d1d6af88fd Citan{n}"Elle a pu se lever il y a{n}un instant."
+f299-0047 5c382b47891b605d Elly{n}"Je m'inquiète un peu pour{n}Fei...{wait 10} mais comptez sur{n}moi à tout moment !"
+f299-0048 d18287144e82e5e2 Elly{n}"M... moi...{wait 10}{n}Comment suis-je arrivée{n}ici ?"
+f299-0050 698ba768c66483b0 Oui !
+f299-0051 989fff6f20671ccb Ben, non...{done 30}
+f299-0052 8d930a37bc1260e8 Sigurd{n}"Jeune maître, le radar{n}détecte un Gear énorme !{wait 10}{n}Il arrive droit ici !"
+f299-0053 2b24bfcf413ca528 Bart{n}"Quoi !?{wait 10}{n}Encore eux !?"
+f299-0054 6a38d4cd6a47dd0e Sigurd{n}"Cette silhouette...!"
+f299-0055 d1b3bf7fc153a0e2 Bart{n}"Bon !{wait 10} Je dois beaucoup{n}au Thames. Je refuse qu'on{n}se batte chez eux.{p}Faites appareiller le{n}Yggdrasil tout de suite !{wait 10}{n}On sort avec nos Gears !"
+f299-0056 0fa43ac0d35b6aec Oui, chef !!{done 30}
+f299-0057 c880aba1530d935b Bart{n}"Fei,{wait 10} Citan,{wait 10}{n}je compte sur vous !"
+f299-0058 6a72736a0b855f32 Attendez !!{done 20}
+f299-0059 315a2cf3cb64fab3 Citan{n}"Elly, reposez-vous ici.{wait 10}{n}Nous allons..."
+f299-0060 5a480fec28b61969 Elly{n}"Attendez !!{wait 10}{n}Tout ça est arrivé parce{n}que je suis venue ici...{p}C'est ma responsabilité !{wait 10}{n}Alors...{wait 10}{n}Alors laissez-moi venir !"
+f299-0062 588de0e50090a8e9 Bart{n}"Mais qu'est-ce que tu{n}racontes !{p}Tu as oublié ce que tu{n}viens de faire...!?"
+f299-0063 181566579bd98c0e Jeune homme !{done 30}
+f299-0064 cd968bf091209a84 Citan{n}"Elly,{wait 10} notre confiance en{n}vous dépend de cette{n}bataille.{p}Pour votre honneur, vous{n}devez vous battre !"
+f299-0065 f42f19c21afd60d6 Bart{n}"Mais Citan !{wait 10}{n}Je...!"
+f299-0066 3e234abf13c18f04 Citan{n}"Jeune homme,{wait 10} de grâce,{n}faites confiance à Elly."
+f299-0067 160d1bee3f6905b2 Citan{n}"Elly,{wait 10} au moindre geste{n}suspect, c'est moi qui{n}tirerai sur vous.{p}Est-ce clair ?"
+f299-0068 de32629b931f8ad7 Oui.{done 15}
+f299-0069 bb4e7ef58bbb8d26 Citan{n}"Cela vous va, jeune{n}homme ?"
+f299-0070 8ae9c8a40c574752 Bart{n}"...{wait 15}{n}Bon. {wait 5}Fei,{wait 5} Elly,{wait 5}{n}on y va !!"
+f299-0071 635590cc313ecbab Oui !!
+f299-0073 2b3faed833d5a194 Elly{n}"Fei, pardonne-moi..."
+f299-0074 02225e1afd449db8 Citan{n}"Kahr{wait 5}...{wait 10}{n}Écoutez-moi, de grâce !{p}À présent, oublions qui{n}est ami ou ennemi. Il faut{n}nous soutenir, malgré{n}tout...{p}À présent, nous avons{n}besoin de votre aide !"
+f299-0075 4b1a59d49c6b8be5 Ramsus{n}"...{n}Je...suis un...déchet...{p}...un...rebut..."
+f299-0076 d80e2306a153df6d Citan{n}"Cessez de vous apitoyer{n}sur vous-même, et{n}ressaisissez-vous !!"
+f299-0077 ef60d33dd6601d7b Sigurd{n}"Hyuga !?{wait 10}{n}Que fais-tu{wait 5}..."
+f299-0078 d4a791c51e146855 Citan{n}"Déchet{wait 5}...{n}Rebut{wait 5}...{p}Vous pouvez vous apitoyer{n}et vous traiter ainsi tant{n}que vous voudrez, mais{n}qu'en est-il d'elles !?"
+f299-0079 afae79eee517189e Citan{n}"Ces femmes seraient-elles{n}idiotes, déchets ou rebuts{n}pour avoir cru en vous ?{p}Vous n'avez peut-être pas{n}aidé ces jeunes filles{n}démunies pour des motifs{n}si nobles...{p}Mais malgré tout, elles{n}sont restées à vos côtés.{wait 10}{n}Savez-vous pourquoi ?"
+f299-0080 669a49d3781267a1 Elles vous connaissent{n}mieux que personne. Elles{n}savent quelle vraie bonté{n}habite{wait 10} votre coeur.{p}Elles le savent, car elles{n}veulent être aimées.{wait 10} C'est{n}pour ça qu'elles ne vous{n}quitteront pas.{p}Kahr{wait 5}...{wait 10}{n}Ne faites pas d'elles les{n}déchets ou les rebuts dont{n}vous parlez.
+f299-0081 bd31d298dfd8d839 Dominia{n}"Commandant{wait 5}..."
+f299-0082 ca56b67958c74712 Ramsus{n}"Vous toutes{wait 5}..."
+f299-0083 6d1187c39319f3e7 Citan{n}"Vous n'êtes, cela va{n}sans dire, ni déchet ni{n}rebut...{p}Nous le savons mieux que{n}personne."
+f299-0084 1036618421091c9e Ramsus{n}"Je{wait 5}...{wait 10}je n'ai pas vu{wait 5} que{n}ce que je cherchais{wait 5}{n}...{wait 5}était si proche{wait 5}...{p}Je{wait 5}...{wait 5}suis désolé{wait 5}...{wait 10}{n}de ne pas{wait 5} m'en être{n}aperçu plus tôt !"
+f299-0085 339b481eed021187 Dominia{n}"Ah, Commandant...!!"
