@@ -1649,3 +1649,539 @@ f085-0030 82d8d476fe7377b5 Bart{n}"Ça peut aller !"
 f085-0031 52a14676605c33f4 Fais pas d'excès, hein.{p}Hé, ceux-là derrière, ce{n}sont tes amis ?
 f085-0032 7d6cd2ea61f2ff0d Bart{n}"Ouais. Fei et Citan."
 f085-0033 2f12764e4ea0d4db Les amis du jeune maître{n}sont nos amis.{p}Regardez à votre guise.
+f086-0000 36a29e404a7b44db Bart{n}"T'es prêt ?"
+f086-0001 5bc5ae07f5d8af13 Bart{n}"Je t'attends ici, alors{n}appelle-moi quand tu seras{n}prêt."
+f086-0002 cedb3bb3b2c60230 Sigurd{n}"La caverne où va Shakhan{n}se trouve loin à l'ouest{n}de Nisan.{p}Le reste de ses forces s'y{n}rassemble peut-être."
+f086-0003 e564300bfcf30202 Sigurd{n}"Il nous reste un peu de{n}temps avant le départ.{n}Pourquoi ne pas{p}en profiter pour vous{n}préparer ?"
+f086-0004 70a59b003b97fb4d Sigurd{n}"J'aurais dû être franc{n}avec lui plus tôt..."
+f086-0005 942a04fc12ff73aa Citan{n}"Ne t'en fais pas pour{n}cela.{p}Tu as fait ce que tu{n}pouvais à l'époque. Le{n}jeune homme comprendra."
+f086-0006 31c39a079bd136c6 Maison{n}"Je suis certain que le{n}jeune maître n'aurait{n}jamais{p}imaginé une histoire{n}pareille."
+f086-0007 e433cbdd6c311d8c Fei{n}"...{wait 30}Vous le saviez déjà,{n}n'est-ce pas ?"
+f086-0008 6c5e933b700d853c Maison{n}"Eh bien, puisque vous le{n}demandez...{n}oui, je le savais.{p}Mais, pendant le récit de{n}Sigurd, j'ai jugé bon de me{n}taire.{p}Aidez le jeune maître à{n}accepter tout ce qu'il{n}vient d'entendre."
+f086-0009 4c74ffcfb4a70964 Maison{n}"J'ai attendu ce jour si{n}longtemps."
+f086-0010 17886c89d9baa994 Margie{n}"Fais attention."
+f086-0011 443a0d211080e6e7 Margie{n}"Bart m'a raconté. Toi{n}aussi, tu participes au{n}plan ?{p}Alors tu es mêlé à tout{n}ça, toi aussi ?"
+f086-0012 98d34d7ddb318548 Fei{n}"Arrivé jusqu'ici, je{n}reste jusqu'au bout."
+f086-0013 67099c172b9f60d5 Margie{n}"Merci. Je sais que tu{n}t'en sortiras !"
+f086-0014 f995c535767bdad6 Agnes{n}"Soyez prudent,{n}Bartholomew."
+f086-0015 e417d937a3be474b Agnes{n}"Marguerite et{n}Bartholomew...{p}Je suis si heureuse de{n}voir que vous vous{n}entendez si bien."
+f086-0016 74ed6ec2e42a88b0 Margie{n}"Ma soeur, arrêtez donc !{wait 30}{n}Vous me gênez encore."
+f086-0017 bf741875f5001c38 Agnes{n}"Il n'y a pas de quoi{n}avoir honte.{p}Depuis les temps anciens,{n}la Mère de Nisan et le Roi{n}d'Aveh ont toujours...
+f086-0018 48c5c8f371a9e083 Margie{n}"Hé !{wait 30}{n}Assez parlé de ça...{p}Hé...!{wait 30}{n}Aïe, aïe, aïe !"
+f086-0019 c6d025fc813ca3ee Bart{n}"Tiens-toi tranquille,{n}comme je t'ai dit."
+f086-0020 341479417638ea71 Margie{n}"Ohhhhh !{wait 30}{n}T'es méchant !"
+f086-0022 8328d80b1851023c Compris !
+f086-0023 f266b39a27389048 Elly{n}"Je veux voir la vraie{n}nature de la Porte."
+f086-0024 d1566a8bd096da69 Elly{n}"Je peux venir aussi ?"{n}    D'accord{n}    Désolé !
+f086-0025 f37161c2f4becef8 Citan{n}"Hmm...{wait 30} J'aimerais aussi{n}la voir, à vrai dire.{p}Puis-je venir ?{wait 30} Je{n}promets de ne pas gêner."
+f086-0026 82a990ceefe0b58b Citan{n}"Voulez-vous échanger ?"{n}    Bien sûr{n}    Pas question
+f086-0027 db20bdfe397d9b3f Rico{n}"C'est la dernière carte{n}de Shakhan.{p}Quand il aura cassé sa{n}pipe, Kislev et Aveh{n}devraient se calmer.{p}Tout reviendra à la{n}normale."
+f086-0028 3ae10567046171f8 Rico{n}"J'y vais aussi, hein ?"{n}    Super !{n}    Eh bien...
+f086-0029 f1f50ea17bdda9ce Billy{n}"L'Ethos contrôlait deux{n}des trois Portes !"
+f086-0030 0201cc378578b514 "Tu m'emmènes, moi{n}aussi ?"{n}    D'accord !{n}    Désolé, mais...
+f086-0031 671166be8e281061 Maria{n}"Bientôt, on connaîtra la{n}vraie nature de la Porte."
+f086-0032 35aaf37846cc40f5 Maria{n}"On échange ?"{n}    S'il te plaît{n}    Pas besoin
+f086-0033 fc568a03682f6eec {name 7}{n}"{name 7} brûle d'envie{n}d'y aller, chu, comme un{n}gros feu de camp !{p}Fei, je te protège où que{n}tu sois, chu ! Dans le{n}feu ou sous la mer,{n}chu !"
+f086-0034 046a0e784bc93096 {name 7}{n}"Alors j'y vais, chu !"{n}    Bon, d'accord{n}    Désolé !
+f086-0035 f5431d186e085117 En voyage ? Ça doit être{n}fatigant.{p}Vous allez à l'auberge ?{n}On vous y servira sûrement{n}un bon repas.
+f086-0036 8875eeb428fc896a Nous travaillons à la{n}cathédrale, là-bas.
+f086-0037 ff5944b0bc001699 Fei{n}"...Alors vous êtes{n}soeurs ?"
+f086-0038 bc8c1bf7f3946985 Oui, c'est bien ça.{p}Nous parcourons ces{n}terres en pèlerinage...{p}à la recherche du lien{n}entre Nisan et le monde{n}extérieur.
+f086-0039 be2d83b1390976f3 Sigurd{n}"Chaque fois que je viens{n}ici, mon coeur s'apaise."
+f086-0040 3f964aa6f7b6fd2e Sigurd{n}"Bref, jeune maître{wait 5}...{wait 5}{n}je voudrais fixer nos{p}projets pour la suite."
+f086-0041 61e854291b0b6c3e Bart{n}"D'accord.{p}Mais avant ça... j'ai une{n}question à te poser."
+f086-0042 c9de52555d38cc36 Sigurd{n}"...À moi ?"
+f086-0043 f5b8a097a52ced26 Bart{n}"Ouais."
+f086-0044 5e4ec7ae9e79105e Bart{n}"Sig...{p}Toi et cet officier de la{n}Gebler... Quel est le{n}lien entre vous deux...?{p}Tu sais,{wait 30} t'en sais long{n}sur la Gebler,{n}bizarrement !"
+f086-0045 401cf9ead66c0571 Sigurd{n}"...Bien.{wait 30} Je vais{n}vous le dire."
+f086-0046 461559d237d8d9fa Sigurd{n}"Moi et...{wait 30} Citan, ici{n}présent...{p}Nous vivions à Solaris."
+f086-0047 c80e11f1dc010194 Bart{n}"Solaris...{p}...{wait 30}Tu veux dire...{wait 30} là{n}d'où vient la Gebler ?"
+f086-0048 43a462b10bcb31f2 Sigurd{n}"Exactement."
+f086-0049 2e0c3263cb157a77 Sigurd{n}"Solaris... appelle les{n}étrangers des{n}'Agneaux'...{p}On les emploie comme{n}main-d'oeuvre. En gros,{n}c'est de l'esclavage."
+f086-0050 db5596b2cdef588f Bart{n}"De l'esclavage ?"
+f086-0051 2a8808850fa64fb5 Fei{n}"...Les Agneaux..."
+f086-0052 c80f647775d22f73 Fei{n}"Elly aussi a utilisé ce{n}mot."
+f086-0053 1b72b52cbeb93965 Bart{n}"C'est là que tu l'as{n}connu ?"
+f086-0054 b9e95022a4bd256a Citan{n}"Oui, c'est là."
+f086-0055 b695f091d36a7c5a Sigurd{n}"Nous avons travaillé pour{n}le gouvernement de Solaris{n}un temps...{p}Mais nous en sommes venus{n}à détester leurs méthodes{n}et avons fui à la première{n}occasion."
+f086-0056 cac78180998fe6bd Bart{n}"...{wait 30}Vous étiez amis{n}avec ces gens-là ?"
+f086-0057 345f41c8cac308ff Bart{n}"Je t'ai connu tout{n}gamin, et depuis, on est{n}ensemble...{p}Alors ça a dû se passer{n}encore avant."
+f086-0058 c4242e1f538ccdea Bart{n}"Plus jeune, j'aurais sans{n}doute pas compris, mais...{p}...Pourquoi t'as cru que{n}je tiendrais pas le coup ?{n}Tu aurais pu me le dire,{n}non ?{p}Surtout si t'as un lien{n}avec ceux qui soutiennent{n}cet idiot de Shakhan !"
+f086-0059 fccea8ecf5557c84 Bart{n}"J'aurais voulu que tu{n}me le dises plus tôt."
+f086-0060 3bb611ee03e75a33 Sigurd{n}"...{wait 30}Je ne peux plus rien{n}y changer maintenant."
+f086-0061 e8e9fbc7d7983bfb Sigurd{n}"Mais croyez au moins une{n}chose...{p}Nous avons quitté Solaris{n}de notre plein gré, pour{n}nos propres raisons.{p}Maintenant qu'ils sont là,{n}devant nous, nous ne{n}pouvons rester les bras{n}croisés.{p}S'il le faut, je donnerai{n}ma vie pour les arrêter."
+f086-0062 9d5e7ae9ca2f0b53 Bart{n}"D'accord, compris.{wait 10} Mais{n}tu peux m'en dire un peu{n}plus ?"
+f086-0063 2df7027abcc588ad     Où est Solaris ?{n}    Les Agneaux ?{n}    Qui est cet homme ?{n}    Pourquoi être partis ?
+f086-0064 a663835c3a80bc6e     Redemander{n}    Compris
+f086-0065 8fde7efdf424296a Bart{n}"Ce qui me gêne, c'est ce{n}truc{wait 30} des 'Habitants de la{n}Surface'...{p}Comme si Solaris était{n}ailleurs. Genre là-haut,{n}dans les nuages ?"
+f086-0066 c0c0ea07e92c3855 Sigurd{n}"Oui, eh bien..."
+f086-0067 3a394b79776ce7b1 Sigurd{n}"La ville de Solaris est{n}recouverte d'un dôme{n}géant.{p}Et vu le paysage, je{n}pense qu'elle se trouve{n}quelque part, haut dans{n}le ciel."
+f086-0068 090cdef09dd0bb9b Bart{n}"Tu crois...{wait 30} Tu n'y{n}vivais pas ?"
+f086-0069 7b07944730c09260 Sigurd{n}"Elle est totalement isolée{n}du monde extérieur, alors je{n}n'en sais pas grand-chose.{p}Il existe un moyen spécial{n}d'y accéder depuis la{n}surface."
+f086-0070 bf9d083b126eda80 Sigurd{n}"Pour gagner Aveh, nous{n}avons embarqué en secret{n}sur un{p}vol régulier vers la{n}surface."
+f086-0071 64a1f32fefa854cd Citan{n}"Je suis venu bien après{n}Sigurd...{p}Mais j'ai fui de la même{n}façon."
+f086-0072 894cec046019f654 Sigurd{n}"C'est le mot qu'utilisent{n}les Solariens pour{p}désigner ceux qui vivent{n}sur la terre.{p}Comme je l'ai dit, ces{n}'habitants de la surface',{n}ou 'gens de la terre',{p}servent là-bas de{n}main-d'oeuvre."
+f086-0073 dd073365de54e0e2 Sigurd{n}"Cette main-d'oeuvre va des{n}soldats aux postes{n}administratifs.{p}Solaris recrute ses{n}ouvriers parmi les gens de{n}la terre. Les{p}tâches sont réparties selon{n}les aptitudes de chacun.{p}Parfois, on leur lave le{n}cerveau."
+f086-0074 47073fe0a59243d8 Bart{n}"Un lavage de cerveau !?"
+f086-0075 f34c4d2caa9dceec Sigurd{n}"Moi...{wait 5} Quand vous, jeune{n}maître, n'étiez encore{n}qu'un bébé...{p}on m'a utilisé comme{n}cobaye.{n}Ils voyaient sans doute{n}quelque chose en moi."
+f086-0076 5dcb152c3fd92707 Fei{n}"Vous aussi, Doc ?"
+f086-0077 35aeab591e492191 Citan{n}"Non...{p}Je suis né dans les bas{n}niveaux de la ville. Ce{n}n'est pas vraiment un{n}secret...{p}Mais je crois bien être un{n}Solarien{wait 5}..."
+f086-0078 decb36f4c6784cb3 Bart{n}"Alors pourquoi ils{n}enlèvent des gens ?{p}Avec toute leur science,{n}on croirait qu'ils n'ont{n}pas besoin des gens..."
+f086-0079 f641cf2a0f41f113 Citan{n}"Voyez-vous{wait 5}...{wait 5} Il faut{n}toujours des gens pour{n}faire tourner un pays{wait 5}...{p}...{wait 5}Si avancé que soit un{n}pays sur le plan{n}scientifique, sans{p}habitants, il ne tient{n}pas."
+f086-0080 af749ba8f6e7ea77 Sigurd{n}"Les Solariens purs sont{n}rares.{p}Ils ne seraient même pas{n}le quart de la population{n}d'Aveh.{p}Alors ils font vivre leur{n}pays en enlevant des gens{n}de la surface."
+f086-0081 4805df9840658ee6 Sigurd{n}"Il s'appelle Kahr...{n}{wait 30}Kahran Ramsus.{p}Comme vous le savez,{n}c'est le commandant de{n}la Gebler."
+f086-0083 0bc6799e5e35f6c4 Sigurd{n}"Nous l'appelons Kahr.{p}À Solaris, il existe une{n}école d'officiers appelée{n}'Jugend'.{p}Il est devenu commandant à{n}sa sortie."
+f086-0084 2f899d20a664e2fb Citan{n}"C'est un citoyen de rang{n}inférieur, tout comme moi.{p}Mais avec ses capacités{n}incroyables...{p}Diplômé, il a gravi les{n}échelons à une vitesse{n}inégalée."
+f086-0085 c8e29b24447fdea6 Sigurd{n}"Cet homme avait un idéal.{p}Unir tous ses compagnons.{p}Même les gens de la terre,{n}s'ils avaient du talent,{n}entraient dans l'armée."
+f086-0086 159b07bd33f667ef Bart{n}"Alors vous deux,{n}Ramsus vous a{n}choisis...?"
+f086-0087 ec853f423a01b6b9 Citan{n}"Non,{wait 5} il ne nous a pas{n}choisis{wait 5}...{wait 5} Nous nous{n}sommes ralliés à lui."
+f086-0088 015f225f15cbfc34 Sigurd{n}"À l'époque{wait 5}...{wait 5} nous étions{n}d'accord avec lui."
+f086-0089 67a8ae23119b50a5 Citan{n}"En ce temps-là, Ramsus{n}était notre espoir.{p}Il avait de nobles idéaux{n}et voulait changer le{n}système de Solaris.{p}Pour nous, cobayes et{n}citoyens de bas rang, il{n}était{p}vraiment tout ce que nous{n}désirions."
+f086-0090 99a554d162ac8abd Bart{n}"Un bienfaiteur ?"
+f086-0091 473c4a31c5f82585 Sigurd{n}"Oui...{wait 30} même moi, un{n}cobaye, ses idéaux m'ont{n}transformé."
+f086-0092 e744fbd2910f8f53 Bart{n}"Alors pourquoi vous{n}avez voulu fuir{n}Solaris ?"
+f086-0093 12b1004de4df23d2 Sigurd{n}"Ramsus nous a placés à{n}des postes militaires{n}importants...{p}Grâce à cela, nous avons{n}découvert le lien entre{n}Solaris et les gens de la{n}surface."
+f086-0094 8e1c97b1386faddd Bart{n}"Tu veux dire...{n}les Agneaux...?"
+f086-0095 5a01e4f638d9826d Sigurd{n}"Nous, les 'Agneaux', ne{n}servions pas qu'à{n}l'esclavage...{p}Ils choisissaient aussi{n}certains, comme moi, pour{n}servir de cobayes à des{n}expériences{p}visant à perfectionner{n}leurs drogues...{p}Des drogues qui modifient{n}la personnalité, pour{n}rendre les gens plus{p}agressifs et éveiller leurs{n}capacités latentes.{p}Nous étions leurs cobayes{n}humains, pour tester leurs{n}drogues psychotropes !"
+f086-0096 660c453b85565001 Bart{n}"Des cobayes humains...!?{n}Des expériences sur des{n}humains ?"
+f086-0097 3698bb9b05c069fb Sigurd{n}"Oui, par exemple... le{n}'Drive' !{p}Cette drogue, et toutes{n}celles du genre qu'on{n}utilise aujourd'hui,{n}sont nées{p}d'expériences sur des{n}êtres humains..."
+f086-0098 44c261365c66fd72 Citan{n}"Mais ce n'est pas le{n}seul rôle des cobayes."
+f086-0099 bf2d678265101694 Fei{n}"Cette drogue, le 'Drive',{n}n'importe qui dans{p}l'armée de Solaris peut{n}s'en servir ?"
+f086-0100 ecd3bb2371e7f24c Citan{n}"Du moins, quiconque dans{n}les forces de la Gebler{n}envoyées en surface..."
+f086-0101 0b274679549e5873 Bart{n}"Tu t'inquiètes pour{n}elle, hein ?"
+f086-0103 e28bd3788567ebe1 Bart{n}"J'en ai vu{wait 5}...{wait 5} dans{n}sa chambre."
+f086-0104 4f3b7ce5350c2f65 Fei{n}"Non..."
+f086-0105 43aa2f59a6eadc9a Bart{n}"...{wait 5}Bref{wait 5}...{wait 5} utiliser des{n}esclaves comme cobayes{wait 5}...{wait 5}{n}Jusqu'où{p}va la bassesse de ces{n}types{wait 5}...?"
+f086-0106 728ba336612c43d6 Bart{n}"Hmm...{wait 30} Je crois que j'ai{n}à peu près tout compris."
+f086-0107 e8fcffe695b99647 Bart{n}"Vieux Maison !{p}Réserve-nous la mairie.{n}On y finira la{n}discussion.{p}Je vais prendre l'air."
+f086-0117 fb76fea6360319c4 Bart{n}"Bon sang !"
+f086-0118 f91c65da037850e3 Margie{n}"Bonjour !"
+f086-0119 35562509b595a334 Margie{n}"Pourquoi cette tête de{n}déprimé ? Tu ne te sens{n}pas bien ?{p}Ou triste de devoir dire{n}au revoir ? Ou juste{n}nerveux ?"
+f086-0120 c643471765f60d82 Bart{n}"La ferme, idiote !{n}Fiche-moi la paix !"
+f086-0121 aeac5d164eaef181 Margie{n}"Hihi."
+f086-0122 17c599dfb711c9be Margie{n}"Bon... C'est presque{n}l'heure."
+f086-0123 84c7d80a2cb82609 Bart{n}"Ouais, ouais..."
+f086-0124 8bc2e4f8d93c6ad6 Bart{n}"Tout le monde est prêt ?{p}Je vous attends ici, alors{n}prévenez-moi quand vous{n}serez prêts."
+f086-0125 5b346bcd31582aa6 Bart{n}"Pas d'aventures pour toi.{wait 30}{n}Tu vas te tenir tranquille{n}un peu, pour changer."
+f086-0126 fe1b9d1bc8a94465 Margie{n}"Comment ça,{n}'pour changer' ?"
+f086-0127 b98e981b4e10ce04 Bart{n}"Du calme, t'énerve pas.{wait 30}{n}Ha ha ha ha !"
+f086-0128 dfce077cf359e601 Margie{n}"Méchant !"
+f086-0129 337ec914b15866af Sigurd{n}"...{wait 30}D'accord.{p}Veuillez dire à Maison{n}que nous restons ici{n}encore un moment."
+f086-0130 de24668350d925b8 Sigurd{n}"Nouvelles de nos unités{n}de Bledavik.{p}Tout se passe bien. Ils{n}sont dans le château.{p}Ils fouillent les{n}appartements privés de{n}Shakhan, au dernier{n}étage.{p}Autre chose :{wait 30} le{n}Yggdrasil, posté non loin{n}d'ici,{p}a détecté plusieurs Gears{n}au radar."
+f086-0132 8d57bcf8cfbd6358 Sigurd{n}"Certainement.{p}Mais ces Gears sont allés{n}jusqu'à la capitale, puis{n}ont fait demi-tour vers{n}nous."
+f086-0133 ef091f3be8c2f3f2 Fei{n}"Il a vu que ça tournait{n}mal et il a fui."
+f086-0134 f9759938aa9a4587 Bart{n}"Ouais.{wait 30} Mais on dirait{n}qu'il revient par ici."
+f086-0135 64794d6a4d1a78e5 Fei{n}"Qu'est-ce qu'il y a{n}ici...?"
+f086-0136 f8c08cbcedb952fd Sigurd{n}"À ce sujet,{wait 30} les infos de{n}la capitale...{p}N'y a-t-il pas une{n}-Porte- dans la région ?"
+f086-0137 9116f3483df9ae21 Fei{n}"Une -Porte- ?"
+f086-0138 6e7a6b8a837cd26a Citan{n}"Où ?"
+f086-0139 5a54e3c14c4e271e Sigurd{n}"Loin à l'ouest de Nisan."
+f086-0140 e7f09ada4159941c Sigurd{n}"Jeune maître,{n}connaissez-vous la grande{n}caverne qui s'y trouve ?"
+f086-0141 7743a8c52ca5deb5 Bart{n}"Une caverne...{wait 30} Sur le{n}continent ouest ? Près de{n}la mer.{p}Si je me souviens bien,{n}elle est assez grande pour{n}qu'un Gear y entre."
+f086-0142 c48290da8f1415db Sigurd{n}"Oui, celle-là.{p}On a trouvé des indices{n}d'une grande construction{n}dans cette caverne."
+f086-0143 5342483ab2b2ecfe Fei{n}"Shakhan va là-bas..."
+f086-0144 88abe3509d4e8e31 Fei{n}"Que compte-t-il faire ?"
+f086-0145 e1e013469725d9fc Bart{n}"On dirait qu'il va{n}falloir aller voir !"
+f086-0146 8367afa7dacea9c3 Fei{n}"D'accord !"
+f086-0147 58ee5c592c753525 Sigurd{n}"J'attendrai ici des{n}nouvelles de la capitale."
+f086-0148 7f210a47e42e2b17 Citan{n}"Une Porte !{p}J'aimerais la voir de mes{n}propres yeux...{wait 30} mais cette{n}fois, j'y renonce.{p}Il en reste encore deux...{n}Et puis...{p}Si les choses tournaient{n}mal, mieux vaudrait rester{n}ici et veiller sur{n}Marguerite."
+f086-0149 3aa08ac0ff5f4471 Bart{n}"Compris.{wait 30} Je vous laisse{n}le reste !"
+f087-0000 e14b6cb48117cd9c Poursuivant notre{n}pèlerinage depuis le sud,{n}nous sommes enfin arrivés{n}il y a quelques jours.
+f087-0001 00a687df961b7882 Marcher dans le désert,{n}c'est épuisant !
+f087-0002 f69f8c264780ea50 C'est vrai qu'il y a des{n}pirates dans la capitale{n}royale ?
+f087-0003 10f5f52b7a7cad06 Grâce à un accord spécial{n}avec les représentants de{n}la ville, nous avons pu{n}nous loger.
+f087-0004 d17a612488c3c64f Désolé, mais nous sommes{n}complets. Pour nous{n}excuser, acceptez{n}ceci...
+f087-0005 751d9d9971d77ea7  {n} Tisane spéciale !      {n}                            
+f087-0006 0e70d70700ecd07e  A perdu un peu de poids 
+f087-0008 5dbfdda192a7d752 Nous vous prêtons une{n}maison inoccupée.{n}    D'accord, entendu !{n}    Et ça, là-bas ?
+f087-0009 3d55ff749c52d97c Hein ? ...{wait 30}Ça ?{p}Ravi que ça vous plaise !{n}Je vous l'offre.
+f087-0011 2cc813fe9b41da68 Nous vous prêtons une{n}maison inoccupée.
+f087-0012 141d238fe9c0d7a5 Bienvenue !{p}C'est vous qui avez{n}sauvé notre ville, alors{n}c'est gratuit pour vous.
+f087-0013 2ff4edebfd26d8cb Vous restez ?{n}    Oui{n}    Non
+f087-0014 48ca9224fcf616b4 Merci ! À bientôt
+f088-0000 adeb0c104ce97871 Bart{n}"Séparons-nous !{p}Je vais au mausolée.{wait 30}{n}J'emmène Fei et..."{wait 30}
+f088-0001 14c2ecae5f5cf4f2 Bart{n}"Bon, ça me va.{wait 30}{n}Alors, va aider Sig,{n}s'il te plaît !"
+f088-0002 8eb8ad3ae0c5abf0 "Bon, si c'est comme ça,{n}alors..."
+f088-0003 f8544679694c0cc7 Bart{n}"Parfait ! C'est décidé !{p}Les autres aident Sig !"
+f088-0004 719eb5fa0876ab9c Bart{n}"Hein ?{wait 30} T'as pas besoin...{wait 30}{n}Ah, c'est vrai.{p}Désolé, Margie. Viens{n}avec nous."
+f088-0005 d1ea75ec23f52e7c Bart{n}"Parfait, je compte sur{n}vous tous !{p}Quand je retrouverai ce{n}type, il est mort !"
+f088-0006 5e4ae0a27e97c8cc Comment va Bledavik ?
+f088-0007 9ee9a08b86512fed Sous la loi martiale, il{n}est de plus en plus dur de{n}joindre nos agents en{n}ville.{p}Selon les dernières infos{n}reçues, aucun grand{n}mouvement en vue.{p}Nous pensons qu'ils ont{n}trouvé une raison{n}d'attaquer et qu'ils se{n}préparent...
+f088-0008 0b791677b7f4e445 C'est possible.
+f088-0009 d6a3e34115426d08 Mais on dit que le{n}pouvoir de Shakhan à la{n}capitale s'effrite.{p}Il est sans doute plus{n}faible que prévu.
+f088-0010 51eef9d780c15ec3 Quoi qu'il en soit, c'est{n}fait, et nous voilà{n}engagés.
+f088-0011 df0bd9c057ad961b Je pense la même chose.
+f088-0012 f53a2ebe951c83fa Quand on y pense, il{n}y a 12 ans...
+f088-0013 68f8cb408acf175f Depuis le coup d'État de{n}Shakhan, la tension est{n}vive dans notre pays.{p}Marguerite est revenue :{n}je suis d'accord,{n}l'ancienne dynastie doit{n}revenir.
+f088-0014 f3dea8c5c4bb83b0 Nous pensons tous pareil,{n}mais il faut voir la{n}réalité en face.{p}En avons-nous la force,{n}aujourd'hui ?
+f088-0015 9c830ce66a71080e Et maintenant, on dit que{n}Bartholomew, celui qui a{n}ramené Marguerite, a{n}commencé à agir{p}ouvertement. Shakhan doit{n}préparer une grande armée.
+f088-0016 7c4703a1ec2edff7 Shakhan pourrait bientôt{n}venir ici...
+f088-0018 4491b64bc4604dc8 Que deviendrons-nous{n}s'il prend la région ?
+f088-0019 7e8d89a26396a427 Ils vont tuer tout le{n}monde ?
+f088-0020 a98a57450e72c7c3 J'en doute fort.{wait 30} Même lui{n}ne voudra pas risquer une{n}révolte des citoyens.{p}Surtout dans cette{n}situation, il voudra{n}sûrement éviter de se{n}compromettre.
+f088-0021 9a8203e12c0e798b On devrait préparer{n}une cachette, au cas{n}où...
+f088-0022 e3602679667ca91a Peut-être là-bas...
+f088-0023 cadf93a7a63539b4 Sigurd{n}"Je suis allé à l'entrepôt{n}emprunter une table.{p}Le patron a dit... 's'il{n}vous faut quoi que ce soit{n}pour le jeune maître, il{n}suffit de demander.'"
+f088-0024 bb6e60a1270f90e5 Bart{n}"Je lui en suis{n}reconnaissant."
+f088-0025 4243db723d6ee581 Bart{n}"Quand j'étais gamin,{wait 30}{n}j'ai emprunté des trucs{p}là-bas et je me suis{n}attiré de gros ennuis."
+f088-0026 7e7ecb5da8895242 Fei{n}"Emprunté...{wait 30} Qu'est-ce que{n}t'as pris ?"
+f088-0027 6af2ffdbd2a18579 Bart{n}"Un petit bateau-jouet.{wait 30}{n}...Je crois, oui.{p}Je l'ai rempli de feux{n}d'artifice et mis à flot{n}sur le lac de la{n}cathédrale. Je{p}jouais tout le temps à la{n}'marine'."
+f088-0028 7fc96680d7eccc0c Bart{n}"Pas sûr, mais je crois{n}que le lac était ma{n}haute mer...{p}...et que j'étais le{n}commandant de la{n}flotte."
+f088-0029 809c67639c38705e Bart{n}"Bref... oublions ces{n}vieilles histoires.{wait 30}{n}Commençons."
+f088-0030 659588b77c046662 Bart{n}"D'abord...{wait 30} le gros{n}problème, c'est la{n}Gebler."
+f088-0031 1360844f266fe1a4 Citan{n}"Oui, Ramsus est en passe{n}d'atteindre ses{n}objectifs.{p}Qu'il soit aujourd'hui{n}commandant de la Gebler{n}le prouve.{p}Un homme ordinaire{wait 10} ne{n}gravirait pas si vite les{n}échelons de ce pays.{p}Et maintenant, il est{n}ici, à Ignas."
+f088-0032 4be50f3a000f6ac5 Citan{n}"Franchement, la situation{n}n'est guère favorable.{p}Il nous faut trouver un{n}point faible et l'attaquer{n}de toutes nos forces."
+f088-0033 51fdcbd983a07e3d Bart{n}"D'abord, concentrons-nous{n}sur Shakhan.{p}Quand il sera hors jeu et{n}qu'Aveh sera à l'abri, on{p}réfléchira à la Gebler."
+f088-0034 333efae8e96ea57d Bart{n}"Avec nos forces, on{n}devrait{p}pouvoir retenir la garde{n}royale.{p}Le problème, c'est la{n}Gebler pendant ce temps...{p}Ils vont sûrement bouger à{n}la demande de Shakhan.{n}Ils ne vont pas rester{n}sagement à regarder."
+f088-0035 01955a382cfe568b Citan{n}"...Puis-je jeter un oeil{n}là-dessus, je vous prie ?"
+f088-0036 41981c50e2d3abc1 Citan{n}"En résumé, il faut que{n}la Gebler s'éloigne un{n}temps...{p}Au moins le temps de{n}reprendre la capitale{n}royale, Bledavik."
+f088-0037 53d76be7d6b6e3b9 Sigurd{n}"Mais le problème,{n}c'est...{p}attaquer la garde{n}frontalière suffira-t-il à{n}faire réagir le{n}commandement central ?"
+f088-0038 cb6874c8bdae791f Citan{n}"Alors, pour en être sûrs,{n}Nisan devra donner{p}l'impression de s'être{n}alliée à Kislev.{p}S'ils le voient ainsi,{n}ils agiront à coup sûr."
+f088-0039 d3ec8f508427ebea Bart{n}"Vous comptez vous{n}servir de Nisan comme{n}appât ?"
+f088-0040 1befe0bb3c8158f5 Fei{n}"Doc !?"
+f088-0041 3fbba97f366315e2 Sigurd{n}"Shakhan est très{n}sensible aux agissements{n}de Nisan et de Kislev.{p}Si Nisan bouge, il{n}laissera sans doute la{n}Gebler s'en charger,{n}mais..."
+f088-0042 051b20b0ebf39db6 Citan{n}"Bien sûr, je ne souhaite{n}pas le faire d'emblée.{p}Mais, vu la situation,{n}nous devons être prêts à{n}aller jusque-là."
+f088-0044 c18e3569b603fda8 Bart{n}"D'abord, on s'infiltre{n}dans la capitale.{p}Pour renverser Shakhan,{n}on va devoir retrouver{n}nos{p}agents déjà en ville."
+f088-0045 089b17beda11c943 Citan{n}"Nous oublions un{n}point...{p}Les unités de première{n}ligne, à la frontière{n}de Kislev."
+f088-0047 0981a379f9788785 Bart{n}"Bon sang...{wait 30} Ça compromet{n}tout !"
+f088-0048 294925ba2695709f Citan{n}"Ne soyez pas si abattu.{p}Je voulais seulement vous{n}montrer la répartition des{n}forces dans la région.{p}Même dans le pire des cas,{n}s'ils viennent, ce ne sera{n}pas un si gros problème."
+f088-0049 0c923b7c8250c93c Bart{n}"Comment ça ?"
+f088-0050 34acc814fb33df71 Citan{n}"J'ai d'autres infos sur{n}la flotte frontalière{n}d'Aveh.{p}L'ex-commandant suprême{n}d'Aveh y a été muté.{p}Pas vraiment muté,{wait 30} plutôt{wait 30}{n}rétrogradé...{wait 30} Il s'appelle{n}Vanderkaum."
+f088-0052 908dc955494f01ec Sigurd{n}"Tu ne parles pas du{n}Vanderkaum de Jugend ?"
+f088-0053 a95b1bd82bb42c12 Citan{n}"Lui-même."
+f088-0054 4a025bd61082e5d7 Citan{n}"Jeune homme, il n'a pas{n}su s'adapter aux{n}nouvelles tactiques...{p}surtout après l'arrivée{n}des Gears...{p}C'est un homme qui ne{n}renoncera jamais à ses{n}gros canons de marine."
+f088-0055 90fcb084d5ad2cc1 Bart{n}"Bref, il est têtu.{p}Tout en taille, sans{n}vraie force militaire.{n}Une cible rêvée pour{n}des pirates."
+f088-0056 9dfc6122ea20ea38 Maison{n}"Jeune maître !{wait 30} Ce ne{n}sera pas de la{n}piraterie !"
+f088-0057 18971139b1fd1a03 Bart{n}"Je blague."
+f088-0058 e95cc42b553f3e22 Citan{n}"En fait, le nombre de{n}Gears affectés à la flotte{n}aurait été réduit."
+f088-0059 298f10780d6ddf82 Citan{n}"Malgré tout...{wait 30} quelle{n}galanterie de sa part, lui{n}si imbu de lui-même."
+f088-0060 ccef68c1174147a3 Bart{n}"Si bourrin que ça ?{n}Ça va être marrant de le{n}provoquer."
+f088-0061 697c2c06aa12fd0e Maison{n}"Jeune maître !"
+f088-0062 15c166f76f7f4223 Bart{n}"Je sais ! Je sais !{p}Bref, Citan, vous pensez{n}qu'il peut toucher nos{n}Gears ?"
+f088-0063 9c68cf6f4ed1262a Citan{n}"Pas de problème.{p}Même avec Vanderkaum,{n}nous aurons assez de{n}forces pour la diversion.{p}Toutefois, mieux vaut ne{n}pas sous-estimer nos{n}adversaires."
+f088-0064 102bce3abbda9c87 Fei{n}"Moi...!?"
+f088-0065 f914dc0dd928a495 Sigurd{n}"Attendez !{wait 30} Rien ne vous{n}oblige à vous en mêler !"
+f088-0066 21c9d4bd6b5590cc Fei{n}"...Je le fais.{p}Oui, comptez sur moi. On{n}part quand ?"
+f088-0067 f6bd012f37dd2bc5 Bart{n}"...T'es sûr ?"
+f088-0068 1bdf10bf934731cb Fei{n}"On en est arrivés là...{n}Hé, on est amis jusqu'au{n}bout, maintenant !"
+f088-0069 18a417fc1d8873cc Citan{n}"La rapidité est tout. Il{n}faut agir au plus vite."
+f088-0070 4aa96246a3741e98 Bart{n}"Parfait, demain !"
+f088-0071 e5eba94a4e81c3a2 Sigurd{n}"Merci infiniment...{wait 30}{n}Fei...{wait 30}{n}Citan."
+f088-0072 c243a59665e8de9b Bart{n}"C'est ça !"
+f088-0073 e64b758642e52881 Bart{n}"On ne peut pas perdre !{wait 30}{n}Pas de morts inutiles !"
+f088-0074 60fa4711f5d2145a Maison{n}"Bien dit, jeune maître !"
+f088-0075 f283757195be22c2 Margie{n}"Ça va ?{wait 30} Ma soeur, vous{n}êtes blessée ?"
+f088-0076 8f4e09d0eb3a6cb6 Soeur Agnes{n}"Je vais bien.{wait 30}{n}Marguerite,{n}Bartholomew, pardon..."
+f088-0077 eef876a9d6c07d50 Sigurd{n}"J'ai fouillé la zone avec{n}quelques troupes, mais je{n}n'ai trouvé personne."
+f088-0078 d0b62dd966e891d8 Bart{n}"Sérieux ?"
+f088-0079 16aff998530c34ee Soeur Agnes{n}"Tout à l'heure,{wait 30} après{n}votre départ à tous..."
+f088-0080 65adc83ac699bd72 Soeur Agnes{n}"Plus de la moitié des{n}habitants ont fui Nisan.{p}Après cela, la position de{n}Shakhan dans le pays s'est{n}fragilisée, alors...{p}il ne s'est plus soucié de{n}sa réputation et a attaqué{n}cette terre."
+f088-0081 171d16a0fb44178a Citan{n}"Je vois.{wait 30} Un dernier plan{n}désespéré pour renverser{n}la situation..."
+f088-0082 7b806dc4e751c40b Bart{n}"Ma soeur, et les gens{n}restés en ville...?"
+f088-0083 5fe5f581537fdb70 Soeur Agnes{n}"Oui.{wait 30} Cachés dans{n}le mausolée."
+f088-0084 9500d93b196d1751 Fei{n}"Le mausolée...?{wait 30} Cachés{n}dans un tombeau ?"
+f088-0085 8999692d2fdffa90 Margie{n}"On y vénère les Grandes{n}Mères et les Rois d'Aveh{n}d'autrefois."
+f088-0086 66dabbbd8f58f9cd Bart{n}"C'est pas un tombeau{n}ordinaire, pas du tout."
+f088-0087 e6dea89a11563bc0 Soeur Agnes{n}"Bartholomew, à ce{n}sujet..."
+f088-0088 d22e73f8ea687665 Soeur Agnes{n}"Shakhan et le Jaspe{n}Fatima...{p}Il veut le Trésor{n}Fatima."
+f088-0089 a110d86bc25ead93 Citan{n}"Le trésor...?{wait 30} S'il le{n}veut, pourquoi attaquer{n}ici..."
+f088-0090 37e223997c08ea2a Bart{n}"Hein ?{wait 30} Ahh..."{wait 30}
+f088-0091 3bde9e019b19fc42 Bart{n}"En fait, le Trésor Fatima{n}est dans le mausolée.{p}Le testament de mon père y{n}était aussi, mais je n'en{n}ai parlé à personne..."
+f088-0092 fffab362350ee4a7 Fei{n}"Le trésor...{p}Tu parles du truc des{n}rouleaux illustrés que{n}tu m'as montrés à ta{n}base ?"
+f088-0093 f6a0a74b8e9225d5 Bart{n}"Ouais.{p}Si la légende dit vrai,{n}celui qui l'atteindra{n}aura un immense pouvoir."
+f088-0094 a6e09edbe3a7d4a6 Sigurd{n}"Il faut les arrêter{n}coûte que coûte."
+f088-0095 b13132563896c545 Bart{n}"Pas de souci. Le Jaspe,{n}c'est..."
+f088-0096 e41dcd3c1de33668 Soeur Agnes{n}"Ils comptent utiliser les{n}rétines de feu la Mère."
+f088-0097 c4a1ddbc2ed58ac6 Bart{n}"Qu...{wait 30} quoi !!"
+f088-0098 3643ab954979ca6f Soeur Agnes{n}"Prélever la rétine de{n}la défunte Mère{wait 30} et{n}briser le sceau."
+f088-0099 6115b174196a5559 Bart{n}"Utiliser le corps de{n}la mère de Margie ?"
+f088-0100 caa30307439dcc23 Margie{n}"De maman...!!"
+f088-0101 23f439b294ccb784 Soeur Agnes{n}"Pardon. Ils ont utilisé{n}des citoyens innocents et{p}des fidèles de l'Église{n}comme boucliers.{p}Il n'y avait pas d'autre{n}moyen...{p}Ce que Margie nous avait{n}confié sur la vraie{n}nature du Jaspe et son{n}usage.{p}Maintenant, ils savent...{wait 30}{n}Je suis vraiment{n}désolée."
+f088-0102 c25eda68103f506e Bart{n}"Bon...{wait 30} Je vous en veux{n}pas. Ils avaient des{n}otages !"
+f088-0103 a57a3c283cef4e97 Citan{n}"Un moment.{wait 30} Des rétines...{n}De quoi parlez-vous ?"
+f088-0104 7f4d6cfd717a3d66 Bart{n}"Le Jaspe Fatima, ce sont{n}les pupilles bleu topaze{n}de la dynastie Fatima...{p}Autrement dit...{wait 30} notre{n}motif rétinien.{p}Les portes du trésor{n}s'ouvrent avec...{wait 30} Enfin,{n}c'est ce qu'on dit."
+f088-0105 79dbff67e92213e3 Bart{n}"Mais personne ne s'en est{n}jamais servi.{n}Pas pour des broutilles.{p}On n'ouvre les portes que{n}si le royaume est vraiment{n}en danger.{p}C'est pourquoi ni moi,{wait 30}{n}ni mon père,{wait 30}{n}ni mon grand-père,{p}ni mon arrière-grand-père{n}n'en avons jamais usé."
+f088-0106 fa89fb0912d88555 Citan{n}"Voilà donc{wait 30} la vraie{n}nature du Jaspe..."
+f088-0108 6f219e4720fa17ab Bart{n}"Ce vieux gâteux{wait 30} veut{n}profaner le corps d'une{p}sainte ? C'est inouï !"
+f088-0109 79f02d6e4c7a4c7f Citan{n}"Secret bien gardé : les{n}membres{p}de l'Ethos ne sont pas de{n}saints hommes.{p}Ils se contentent de{n}superviser."
+f088-0110 89023e34888dc44d Fei{n}"Évidemment, eux, ils ne{n}ressentiraient rien !{p}Allez, Bart !{wait 30} Avant{n}qu'ils ne rasent le{n}mausolée."
+f088-0111 cda2d8e63693b3bf Bart{n}"D'accord !"
+f088-0112 a17f41844f47a8e0 Sigurd{n}"Jeune maître !{wait 30} J'ai une{n}proposition."
+f088-0113 bb71644cc0cd5b8c Bart{n}"Qu'y a-t-il, Sig ?"
+f088-0114 6b270057f0d9aa23 Sigurd{n}"En ce moment, Aveh est en{n}plein désordre, avec{n}Shakhan hors de contrôle.{p}Sans la Gebler dans les{n}parages, renverser le{n}pouvoir central devrait{n}être facile.{p}C'est le moment idéal pour{n}regagner la capitale."
+f088-0115 6e4634815718703c Citan{n}"C'est une bonne idée.{p}Shakhan voit sans doute le{n}Jaspe Fatima comme sa{n}dernière carte.{p}Pendant que nous gardons{n}le trésor du jeune homme{n}loin de Shakhan...{p}une autre force reprend la{n}capitale. Ainsi, il n'aura{n}plus nulle part où aller."
+f088-0116 a11db16e3b876a37 Bart{n}"Je vois...{wait 30} Ça me plaît.{p}On va lui rendre la{n}monnaie d'un seul coup !"
+f088-0118 b89dbc42829a9c48 Elly{n}"D'accord, j'y vais."
+f088-0119 b2c6bce467f6339d Citan{n}"Si possible, j'aimerais{n}retourner à la capitale{n}avec Sigurd.{p}Deux ex-Solariens{n}détrônant l'Ethos...{n}Quelle ironie."
+f088-0120 dc214e99c265ad65 Billy{n}"J'y vais."
+f088-0121 00782350cae8be82 Rico{n}"Compte sur moi."
+f088-0122 30b3f90bdcb3a5d6 Maria{n}"Je vais aider."
+f088-0123 ed2fdd8111b6f661 {name 7}{n}"Pas le choix, faut que{n}j'y aille, chu !"
+f088-0125 7680175d9834cc4d Elly{n}"J'y vais."
+f088-0129 649d2c0d812ee653 {name 7}{n}"Pas le choix, faut que{n}j'y aille, chu !"
+f089-0000 7d30a10791d1a6d6 Citan{n}"Voici les unités de la{n}Gebler présentes à Aveh,{n}n'est-ce pas ?"
+f089-0001 54b2785579069fa8 Citan{n}"La garde occidentale..."
+f089-0002 a37c8c1c610b078e Citan{n}"la force de défense de la{n}capitale royale..."
+f089-0003 0bbcc766048cab5f Citan{n}"et...{wait 30}les unités en{n}première ligne, à la{n}frontière de Kislev."
+f089-0004 baf8dce8f579d629 Citan{n}"Trois groupes{n}principaux.{p}Chacun mêle forces de{n}la Gebler et d'Aveh.{n}Seuls deux sont{n}vraiment importants."
+f089-0005 da2fc4397908549c Citan{n}"Les unités de défense de{n}la capitale et celles de{n}la frontière de Kislev.{p}La garde occidentale, à la{n}frontière de Nisan, n'est{n}qu'une équipe de{n}surveillance."
+f089-0006 942a1484d0dcbdb7 Sigurd{n}"Pour reprendre la{n}capitale royale...{p}...il faudra éloigner ces{n}unités de défense de{n}Bledavik."
+f089-0007 1a2488d28cfb74c7 Citan{n}"Nous avons quelques Gears{n}fabriqués à Kislev,{n}n'est-ce pas ?"
+f089-0008 0356246a59a7394b Bart{n}"Ouais, on en a{n}capturé quelques-uns{n}il y a un moment."
+f089-0009 d615052081e545dc Citan{n}"Et si nous utilisions ces{n}Gears pour attaquer par{p}surprise la garde{n}occidentale...{p}...ici, à la frontière de{n}Nisan ?"
+f089-0010 963a6994241368b9 Bart{n}"Pigé. On les attire en{n}faisant croire que{p}Kislev envahit Aveh."
+f089-0011 6838eff46673d01d Citan{n}"Le fer de lance de la{n}flotte d'Aveh est le{n}cuirassé Kefeinzel.{p}Il est en service depuis{n}le règne du roi précédent.{p}Vu sa puissance de feu,{n}toute l'unité est{n}surnommée la 'flotte{n}invincible'.{p}Si je me souviens bien, le{n}rapport d'hier plaçait le{n}navire près de la{n}frontière."
+f089-0012 184d660645fc4126 Sigurd{n}"Bien, sachant ce qui{n}nous attend, voici ce que{n}nous ferons..."
+f089-0013 482a81baba04b008 Sigurd{n}"Outre notre unité{n}principale, qui partira{n}pour Bledavik...{p}il faut empêcher la{n}flotte de la frontière{n}de Kislev de revenir{n}vers la capitale."
+f089-0014 1c3cef091b2d52ab Bart{n}"Alors tu proposes une{n}deuxième unité ?"
+f089-0015 5d77452e4b0ffd00 Citan{n}"Quelques soldats{n}d'élite pour contenir{p}l'ennemi... Une petite{n}force serait idéale."
+f089-0016 87cee75a6e26f6dd Sigurd{n}"Une petite force...?"
+f090-0000 32e25a8bbd933b4a Méditer dans une{n}pièce obscure peut{n}éclaircir l'esprit.
+f091-0000 79ae5e9647da0cc7 En fait, Nisan est un lieu{n}très prisé des artistes.{p}En partie pour le paysage,{n}mais surtout pour le{n}portrait{p}de la Grande Mère qui{n}serait dans la cathédrale.{p}Hélas, le public ne peut{n}pas le voir.
+f091-0001 918aababd8a61f44 Non...{wait 30}quelque chose{n}cloche.
+f091-0002 8b653c480aeef533 ...Désolé, mais ne me{n}parlez pas maintenant.{p}La vue du lac, hier{n}matin.{wait 30}{n}Je revois la sensation{n}de cette lumière.
+f091-0003 aee1e88b55480b0c ...J'ai oublié.
+f091-0004 237c290846105598 Ah... ça me revient.
+f091-0005 d1308ca8db2d91e9 J'y suis !
+f091-0006 cbbf7ee527b5110f Je pensais représenter{n}l'arrivée d'une nouvelle{n}ère dans un tableau.
+f091-0007 e0ab32445351a1fe Fei{n}(Des pinceaux...{wait 30}{n}Je n'y ai plus touché{n}depuis le village.)
+f091-0008 cbd1c2bffb69a9cb Hum ?...{wait 30}Vous êtes artiste,{n}vous aussi ?
+f091-0009 df062ceee4427c09 Fei{n}"Ah...{wait 30}non..."
+f091-0010 e8648be7949682e1 Ah...{wait 30}la peinture,{n}quelle merveille.
+f092-0000 e34e85703adf34c8 Je garde le portail à tour{n}de rôle avec le type de{n}dehors.
+f092-0001 db540fb6dafb464e Vous...{wait 30}{n}Vous n'habitez pas ici.{p}Je le vois à votre aura.{wait 30}{n}Moi aussi, j'ai vécu près{n}de la capitale royale.{p}Là-bas, je trompais les{n}gens avec de la fausse{n}marchandise.{p}J'ai fini par en avoir{n}horreur...{p}Puis des pèlerins m'ont{n}parlé de cet endroit.{p}Je garde le portail à tour{n}de rôle avec le type de{n}dehors, et c'est très{n}intéressant.{p}Chaque jour, je vois le{n}visage des pèlerins et je{n}me fais des impressions,{n}comme{p}'cette personne est très{n}tourmentée',{wait 30} ...et ainsi{n}de suite.{p}Je me servais de ce don{n}pour soutirer de l'argent{n}aux gens...{p}Aujourd'hui, je n'y{n}penserais même pas.
+f093-0000 77cbf354b4fac2da Margie{n}"Ouah !{n}Il y a si longtemps que{n}je suis partie !"
+f093-0001 b93c77a0ca14058c Citan{n}"Bien...{p}Avant tout, raccompagnons{n}Marguerite auprès des{n}soeurs !"
+f093-0002 d650f5b4e9e5e9bb Bart{n}"...Hein ?{wait 30} Qu'est-ce qu'il{n}y a, vieux Maison ?"
+f093-0003 aae267493af7b843 Maison{n}"Snif...{n}Dieu du ciel...!{p}Quand je pense que la{n}petite demoiselle{n}Marguerite a enfin pu{n}revenir ici...{p}...{wait 30}{n}C'est si terriblement{n}émouvant !"
+f093-0004 a72b585d28119426 Bart{n}"E...{wait 10}hé !{n}Reprends-toi, mon vieux !"
+f093-0005 1ccffa7e1a0daa27 Maison{n}"P...{wait 10}pardonnez-moi.{n}Quelle honte !{wait 10}{n}Je n'ai pu me retenir..."
+f093-0006 d874b548e1a4ff5b Maison{n}"Je...{p}Je retourne donner des{n}instructions aux hommes{n}restés à bord.{p}Je vous en prie, jeune{n}maître, allez devant et{n}menez mademoiselle{n}Marguerite aux soeurs.{p}...Excusez-moi."
+f093-0007 f5b87e003c976778 Bart{n}"S'il vous plaît, pas un{n}mot de tout ça devant{n}Margie...{p}Elle revient à peine{n}après une si longue{n}captivité...{p}Je veux pas qu'elle{n}s'inquiète... Qu'elle{n}soit heureuse encore un{n}peu."
+f093-0008 83b5c769f69c633c Citan{n}"Vous non plus, ne vous{n}inquiétez pas trop !{p}Pensez seulement à ce qui{n}est le mieux pour l'avenir{n}de cette terre...{p}Ce qui est fait est fait !{n}Vous avez fait ce que vous{n}jugiez{p}juste... Laissez le passé{n}derrière vous."
+f093-0009 d315fb5e91bc9534 Bart{n}"Euh...{n}Je vais bien !"
+f093-0010 1441fd34ee4436e8   Sigurd{n}  "Etrenank, la capitale de{n}  l'empire de Solaris, se{n}  trouve dans le ciel.{p}  Solaris est séparée de la{n}  terre par des champs de{n}  distorsion dimensionnelle{n}  appelés 'Portes'.{p}  Passer de l'un à l'autre{n}  exige des moyens de{n}  transport spéciaux...{wait 30}{n}  comme un aéronef."
+f093-0011 cd7395f023a130c2   Sigurd{n}  "Ramsus nous a placés à{n}  des postes militaires{n}  stratégiques...{p}  Grâce à cela, nous avons{n}  découvert le lien entre{n}  Solaris et les habitants{n}  de la surface."
+f093-0012 bbbcf93e421f6d0d   Bart{n}  "Les...{wait 30}'Agneaux' ?"
+f093-0013 79f90d42a7e51c69        Sigurd{n}       "Nous, les 'Agneaux',{n}       ne servions pas qu'à{n}       l'esclavage...{p}       Ils choisissaient aussi{n}       certains, comme moi, pour{n}       des expériences servant{n}       à affiner leurs drogues...{p}       Des drogues qui changent{n}       le caractère, pour rendre{n}       les gens plus agressifs{n}       et éveiller leurs dons.{p}       Nous étions leurs cobayes{n}       humains, pour tester{n}       leurs drogues{n}       psychotropes !"
+f093-0014 73952a9e297956b9   Bart{n}  "Cobayes humains...!?{n}  Expériences humaines ?"
+f093-0015 f230fe70bfe4e3c8   Sigurd{n}  "Oui, par exemple...
+f093-0017 4ba7c6bd53080201      Cette drogue et toutes{n}     celles du même genre{n}     sont issues de{n}     tests sur des humains..."
+f093-0018 5a6a5aa3db063f04      Citan{n}     "Mais le rôle de ces{n}     cobayes ne s'arrêtait{n}     pas là !"
+f093-0019 afb362747b0fe330 Citan{n}"Un vent nouveau souffle{n}aujourd'hui..."
+f093-0020 3250a91af3c39eb8 Sigurd{n}"Bien, nous partons{n}devant préparer le{n}navire pour le départ."
+f093-0021 2623a9dc3dfe6abe Les représentants de la{n}ville sont réunis dans{n}la salle de l'assemblée{n}depuis ce matin.
+f093-0022 e04977ac52583f43 On dit que c'est parce que{n}Marguerite est revenue...{p}Ils essaient de décider{n}comment la 'paroisse de{n}Nisan' doit traiter avec{n}Aveh.
+f093-0023 cd3632ff2ca8ca54 Je comprends que tout{n}le monde s'inquiète.{p}Mais la Grande Mère{n}est enfin revenue...{p}On devrait faire la{n}fête, non ?
+f093-0024 fae8b11146c42d33 Margie{n}"Ce sont elles qui{n}m'ont élevée quand{n}j'étais petite."
+f093-0025 524f35051a89958c Margie{n}"La prochaine fois, je ne{n}pourrai plus t'appeler{n}'jeune maître'.{p}Il faudra sans doute{n}dire 'Votre Majesté'{wait 5}...{wait 10}{n}Mais ça sonne pas très{n}bien, hein ?"
+f093-0026 5b2f2e5053dc1cae Bart{n}"Peu importe...{n}Ça m'est égal."
+f093-0027 706e3efbb8183fca Maison{n}"Les gens de Nisan ont eu{n}la générosité de nous{n}louer cette maison.{p}Inutile, donc, de{n}chercher une chambre à{n}l'auberge pour un temps.{p}De plus, maître Sigurd{n}souhaite vous parler de{n}la suite, si vous le{n}permettez..."
+f093-0028 90d944681696f31f Bart{n}"D'accord...{n}Et où est Sig ?"
+f093-0029 1ad0d1049df2f88b Maison{n}"Maître Sigurd vous attend{n} à l'intérieur."
+f093-0030 2c6031264124b444 Bart{n}"D'accord, merci, Maison."
+f093-0031 294555d4d3fa1673 Maison{n}"Maître Sigurd vous attend{n}à l'intérieur, jeune{n}maître..."
+f093-0033 a8b667d114d412c0 Maison{n}"Jeu-ne maî--tre !"
+f093-0034 c96a35b35e9f7199 Bart{n}"J'aurais jamais{n}cru que Sig avait{n}un passé pareil..."
+f093-0035 f9af63c142f9492d Citan{n}"Vous vous méfiez{n}encore de Sigurd...?"
+f093-0036 9a9437b572bc179f Bart{n}"Bah... enfin... tout est{n}arrivé si vite.{p}Je m'attendais à autre{n}chose... genre qu'on était{n}rivaux d'enfance ou un{n}truc comme ça...{p}Mais c'est rien à côté de{n}son histoire de tout à{n}l'heure, hein ?"
+f093-0037 4232e3824581a645 Citan{n}"Hmm.{wait 30} Son histoire vous a{n}troublé, car elle n'est pas{n}si simple...{p}Il a autrefois collaboré{n}avec l'un des généraux de{n}la Gebler...{p}Et derrière la Gebler se{n}trouvait un pays dont vous{n}n'aviez jamais entendu{n}parler..."
+f093-0038 6ff299f4a20726e6 Bart{n}"Hé, pourquoi vous me{n}cherchez des poux ?"
+f093-0039 45b37be241e8a68c Citan{n}"Je ne vous cherche pas de{n}poux, ni ne vous blâme. Je{n}veux dire ceci...{p}En pensant à ce qu'il{n}ressent, vous comprendrez{n}pourquoi il n'a pu vous en{n}parler jusqu'ici."
+f093-0040 0b942e5d6bbab523 Citan{n}"À voir comment Solaris a{n}agi jusqu'ici envers les{n}autres pays...{p}...elle n'a jamais visé{n}plus que le maintien de son{n}empire, sa propre{n}'autopréservation'.{p}Et leur armée est immense,{n}vous l'avez vu.{n}Sigurd voyait donc loin...{p}D'abord, il voulait sans{n}doute régler les problèmes{n}du continent d'Ignas.{p}Cela fait, il aurait une{n}base plus solide pour{n}affronter Solaris ensuite.{p}Bien mieux que de se jeter{n}dans une guerre perdue{n}d'avance.{n}Très logique, en vérité."
+f093-0041 daf61a01a9ffcbd3 Bart{n}"On dirait que vous vous{n}comprenez très bien."
+f093-0042 a7fc258c9698d215 Citan{n}"Eh bien, nous ne nous{n}connaissons pas d'hier,{n}n'est-ce pas ?{p}Et nous avons beaucoup{n}parlé avant de décider de{n}fuir Solaris."
+f093-0043 55aef4a62366c42d Bart{n}"À propos...{n}Pourquoi être partis ?{p}Ce Ramsus, c'était pas{n}une 'Étoile de{n}l'Espoir' ou un truc{n}comme ça ?"
+f093-0044 06528bfe08600506 Citan{n}"Si, au début, je le{n}croyais vraiment.{p}Puis j'ai compris que sa{n}pensée ne différait guère{n}de l'ancien système.{p}En gros, la seule{n}différence tenait à ce{n}qu'on privilégiait : le{n}rang ou le mérite.{p}Les mots avaient changé,{n}mais au fond, rien ne le{n}distinguait de ce que{n}faisait déjà Solaris.{p}Il ne voulait nullement{n}offrir à tous une vie{n}meilleure."
+f093-0045 eea8dec8b6cb1192 Bart{n}"Bref, un élitiste. Je{n}l'aime pas trop non{n}plus."
+f093-0046 860a7fdc0b7fc7af Bart{n}"Alors, Citan...{wait 30}{n}Vous croyez que je peux{n}battre la Gebler ?"
+f093-0047 591be1a6cc15c93a Citan{n}"Pourquoi ? Vous comptez{n}les combattre ?"
+f093-0048 7f75b64251e02910 Bart{n}"Tant qu'ils soutiennent{n}Shakhan, on pourra pas{n}l'éviter.{p}Au train où vont les{n}choses, il faudra{n}sûrement les affronter un{n}jour."
+f093-0049 bf3a9b4309d3ac3c Citan{n}"Hmm...{n}J'imagine, mais...{p}Même si nous battions la{n}Gebler ici, il resterait{n}Solaris à affronter.{p}Sans prudence, nous{n}pourrions nous enliser dans{n}une guerre plus longue que{n}contre Shakhan.{p}Continuer ainsi n'est-il{n}pas bien dur pour tout le{n}monde ?{p}Il est temps, je crois, de{n}chercher l'aide de bien{n}plus de gens."
+f093-0050 1d16833d4c71a686 Bart{n}"Alors battre Shakhan ne{n}nous débarrassera pas de{n}la Gebler et cie..."
+f093-0051 4fd52e8123540fce Bart{n}"Je vois où vous voulez{n}en venir...{p}'Pour vaincre la Gebler,{n}conquiers d'abord{n}ton trône !'{n}...C'est ça ?"
+f093-0052 48d68abb815f307d Citan{n}"Hmm...{n}On peut le dire ainsi."
+f093-0053 4cd8fdaa730efa0b Bart{n}"Comment ça... 'On peut{n}le dire ainsi' ?{p}Mais, réflexion faite,{n}il est peut-être temps{n}que j'agisse."
+f093-0054 3cc696771157437c Ce chemin mène à{n}la cathédrale.
+f093-0055 22116fa8baec83aa Ah, Bart ! Content de{n}te voir en forme.
+f093-0056 b5abfc0426d6e5f7 J'ai déjà contacté le{n}monastère.{p}Conduis vite Margie{n}là-haut, s'il te plaît.{p}Elle sera si contente...{n}sans parler des soeurs !
+f093-0057 728e940467772004 Margie{n}"Je dois vite aller voir{n}les soeurs."
+f093-0058 cb0a0826d0b2019f J'ai déjà contacté le{n}monastère.{p}Va vite là-bas montrer{n}que tu vas bien.{p}Elles seront sûrement{n}ravies de te voir !
+f093-0059 ca27ef019f88e63c Bon retour{n}parmi nous !
+f093-0060 dac0b49e5fb9c400 Les gens du port secret{n}nous ont prévenus juste{n}avant votre arrivée.
+f093-0061 35ebf028c806f876 Quel soulagement de vous{n}voir sains et saufs !
+f093-0062 1dc67ed29c6c7325 Mon père dit toujours :{n}"Ici règne la paix."...{p}C'est quoi, la 'paix' ?{n}Je ne comprends pas bien.
+f093-0063 b93269ace8b16e36 Monsieur le{n}pirate !
+f093-0064 ce07720cacd359b3 Un jour, tu me laisseras{n}monter sur ton bateau ?
+f093-0065 6c8a80bf13973b19 Bart{n}"Hahaha ! Peut-être{n}quand tu seras plus{n}grand, petit !"
+f093-0066 fbc00a4b93d4750b Il y a des méchants{n}qui viennent nous{n}chercher ?
+f093-0067 bf2f26d7cafc34be Hé, t'es pas d'ici,{n}hein ?{p}Maman dit qu'il y a plein{n}d'inconnus qui font des{n}bêtises, alors je dois{n}faire attention.{p}T'es un méchant, toi ?
+f093-0068 dee6b36bbe3034c7 Margie est revenue !
+f093-0069 894d5ba8e0fca0cf Papa dit qu'il va y{n}avoir une guerre,{n}alors on devrait{n}partir ailleurs.
+f093-0070 0a3995e4a52b2d2e Comment allez-vous, mon{n}jeune seigneur ?
+f093-0071 2b01288aeed8b621 Bart{n}"M'appelle pas{n}'jeune{n}seigneur' !"
+f093-0072 e4151a45917b387b (Ah ! J'ai oublié...{wait 10}{n}Votre identité devait{n}rester secrète.{p}Seule une poignée de{n}gens ici sait qui vous{n}êtes...{p}Je ferai plus attention,{n}mon jeune seigneur !{wait 30}{n}...{wait 30}Oups.)
+f093-0073 c7690ca32d07a870 Voilà mon jeune{n}seigneur ! On dit que{n}vous avez fait un sacré{n}coup cette fois !
+f093-0074 7093e679e5eddf01 Bart{n}(Chut ! Moins fort !{n}Mon identité devait{n}rester secrète !{p}Et si un espion de la{n}capitale s'était glissé{n}ici et t'avait{n}entendu !?)
+f093-0075 c5a76885922da3ae (Ah... J'y avais même pas{n}pensé !)
+f093-0076 b5cedf24627e497a Mon jeune seigneur !{n}On dit que l'heure est{n}enfin venue.{p}Mais je ne pourrai{n}plus vous appeler{n}ainsi...{n}...Votre Majesté !
+f093-0077 8a9d34b2a0fe407f Bart{n}"Bon...{wait 30}dis 'jeune{n}seigneur'.{wait 10} 'Majesté',{n}c'est trop !{p}C'est pas que l'un ou{n}l'autre m'aille, ni que{n}j'aime qu'on m'appelle{n}ainsi, d'ailleurs !"
+f093-0078 30c655acb89247b5 Comment allez-vous, mon{n}jeune seigneur ?{p}Je savais que vous{n}reviendriez entier !
+f093-0079 aff454ee0ac808ac Vous êtes pèlerin ?{n}Les pèlerins aussi{n}jeunes sont très{n}rares.
+f093-0080 fbb39744af18b93e Comment va mon jeune{n}seigneur ?{p}Je savais que vous{n}reviendriez tous vivants !
+f093-0081 b25eb24740fe5a64 Vous êtes les amis de mon{n}jeune seigneur, pas vrai ?{n}Vous le savez sans doute{n}déjà, mais...{p}Un jour, il dirigera ce{n}pays ! J'ai eu la chance de{n}m'occuper de lui quand il{n}était petit.{p}C'est pour ça que je{n}l'appelle 'jeune seigneur'.{n}Veillez sur lui pour moi,{n}je vous en prie !
+f093-0082 c4633b41eb68d01f Essayez des choses{n}neuves tant que vous{n}êtes jeune !{p}Sans élargir vos{n}horizons, vous le{n}regretterez en{n}vieillissant.
+f093-0083 fad0edd1a25ef40c Alors tu te lances, hein,{n}Bartholomew ?{p}Mais j'ai idée que cet{n}homme ne restera pas les{n}bras croisés à te laisser{n}faire.
+f093-0084 0cb8b04ed54d2743 Fei{n}"Cet{n}homme ?"
+f093-0085 fb7adf99eadfca8e Bart{n}"Il parle de{n}'Shakhan' !"
+f093-0086 8e1e0ad28466ec0a Exact.{n}Venger ton père, c'est{n}bien...{p}...mais je doute que{n}ce soit si facile !
+f093-0087 5425f4f099df4b77 Bart{n}"Je veux blesser{n}personne.{p}Sache que j'y pense{n}toujours."
+f093-0088 1333a06cb4be5def Fais de ton{n}mieux !
+f093-0091 d7fee0d1b96cada8 J'ai eu assez d'ennuis.{n}Je veux vivre en paix.
+f093-0092 582abcec8364b1ad Vous devez venir d'ailleurs.{n}Comment va le monde dehors ?{p}On dit que l'instabilité{n}politique grandit...{p}Rien d'étonnant, avec les{n}gouvernements d'aujourd'hui.
+f093-0093 f040581f33700e3b Alors c'est enfin parti.{n}Mon défunt père disait :{n}"Ne sacrifie pas le grand{n}bonheur aux petites{n}peines."{p}Voir nos enfants en{n}danger, ça fait mal. Mais{n}si ça mène le pays dans le{n}bon sens, ce sera pour{n}eux.
+f093-0094 b17e7b5b2980839a Ahh, quelle belle journée.
+f093-0095 b9d5297157c32be4 Ah, alors c'est vous ?{n}Toute la ville parle de{n}vous !{p}On parle du retour de la{n}Grande Mère...{p}Si on l'appelle Grande{n}Mère, elle doit être bien{n}vieille et fragile !
+f093-0096 510be716ffbd485d Je n'en avais aucune idée...{n}Tiens, la Grande Mère est{n}plus jeune que moi !?{p}Je suis arrivée il y a peu,{n}je ne sais pas grand-chose...{p}Je ne sais pas bien ce qui se{n}passe, mais évitons les{n}ennuis pour l'instant,{n}d'accord !?
+f093-0097 eb814b40e9c23ab6 Cette terre...{n}s'étend tout autouuuur du{n}lac...{p}Qui fait le touuuur de la{n}cathédrale.{p}Pour le plaisir,{n}faites-en le touuuur{n}aussi.{p}Même s'il n'y a rieeeen à{n}voir, notez bien.
+f093-0098 6a1eb71651d1c647 Ça fait chaud au coeur{n}de voir les jeux{n}innocents des enfants.
+f093-0099 cf1643f1f50e26df La plupart des familles{n}avec enfants ont fui la{n}ville.{p}Elles craignaient de se{n}retrouver en pleine{n}bataille.{p}C'est si vide, à présent.{n}Ils me manquent tant...
+f093-0100 1664cf3030c778df Où que l'on aille dans{n}ce monde, la guerre{n}est partout.{p}Cette ville est peut-être{n}le seul endroit à l'écart{n}des conflits.
+f093-0101 7779ec78b53c0db6 Les représentants de la{n}ville discutent dans la{n}salle de l'assemblée{n}depuis ce matin.
+f093-0102 80e037235dccdc3a On dit qu'ils préparent{n}un plan face aux troupes{n}d'Aveh.{p}Certains voient le{n}retour de Margie comme{n}un fardeau.
+f093-0103 4566d80e6c790528 Je comprends que tout le{n}monde s'inquiète.{p}Mais ne devrions-nous pas{n}rendre grâce d'avoir la{n}Grande Mère parmi nous à{n}Nisan...?
+f093-0104 7d016c4c858a1e27 Les représentants de la ville{n}ont fini de débattre et{n}passent déjà à l'action.{p}Ils se sont dispersés pour{n}préparer les défenses et{n}loger les habitants qui{n}veulent fuir.
+f093-0105 a5262c4d5612ca77 Que les cieux vous{n}protègent.
+f093-0106 08e174b448c19e9e Aucun de nous ne sert{n}les cieux à la{n}cathédrale de Nisan...{p}Mais nous prions ici tous{n}les jours, comme ceux qui{n}y vivent depuis longtemps.
+f093-0107 73afd55fa7d78a27 Que tout advienne{n}selon la volonté{n}des cieux...
+f093-0108 406a6178ee1651ad Dieu vous bénisse.{n}Et bonne chance à vous.
+f093-0109 4a8bacb23421b7e1 Je vais t'attraper !
+f093-0110 b1daea0e1cdd6375 Je t'attrape !
+f093-0111 1aee23939fa2dcd2 Pousse-toi,{n}pousse-toi !
+f093-0112 41c2e04d9a2cc26e Pousse-toi !{n}Pousse-toi !
+f093-0115 22ad527a159f09b8  Atelier
+f093-0116 2e6282d19b97e531 Ils discutent{n}toujours là-dedans.
+f094-0000 84560b534716f067 Margie{n}"Alors je vous attends{n}ici."
+f094-0001 e3802850f4695dab Bart{n}"Merci d'avoir attendu !"
+f094-0002 4a1654c4c316ee88 Margie{n}"Bon, on entre !"
+f094-0007 0ff5e716201eedaf {speed 255}Cathédrale de Nisan
+f094-0008 93a0b21fe9a96e68 {speed 255}Carte
+f094-0009 da756a172140b497 {speed 255}Dock secret
+f095-0002 2b79e90925f12aa4 Margie{n}"Me revoilà, vous tous !"
+f095-0003 428de894eedec12c Ah, Margie...{p}Nous sommes si heureuses que{n}tu ailles bien...
+f095-0004 9d6d0e0b3727e96a Margie{n}"Oui, grâce à Bart et à{n}ses hommes."
+f095-0005 5fa4bfefbf68ab74 Nous venons d'apprendre la{n}nouvelle...{p}Alors nous chantions un{n}hymne de louange et de{n}joie.{p}Quelle joie...{n}Ah, quel soulagement !
+f095-0006 937a19b0ce412744 Soeur Agnes{n}"Bon retour parmi nous,{n}Margie.{p}Nous avions foi : toi et{n}ton cousin Bart, vous{n}reviendriez un jour...{p}Nous et tes autres amis,{n}nous t'attendions."
+f095-0007 d7d908874347cbdf Margie{n}"Soeur Agnes !"
+f095-0008 7d78ac5b24834313 Soeur Agnes{n}"Hélas, ta mère et la{n}bienheureuse Reine{n}Mère..."
+f095-0009 f1dbbd6d270f4909 Margie{n}"Je sais, Soeur Agnes{wait 5}...{wait 60}{n}Je l'ai appris à la{n}capitale{wait 5}..."
+f095-0010 2ba6e03330baf891 Margie{n}"...Mais au moins, j'ai pu{n}revenir...{p}Désormais, je n'irai nulle{n}part et je ne vous{n}quitterai plus !{p}Je ne vous causerai plus{n}de souci... plus jamais !"
+f095-0011 05fdca3e3832c18d Soeur Agnes{n}"Dieu te bénisse, ma{n}chérie..."
+f095-0012 f34956319a909da7 Margie{n}"Soeur Agnes, vous n'y{n}êtes pour rien !{p}Me voilà de retour, saine{n}et sauve.{p}Vous ne pourriez pas me{n}gronder un tout petit{n}peu, en souvenir du bon{n}vieux temps ?"
+f095-0013 ab1e7a08ac0c56e0 Soeur Agnes{n}"Ha...{n}Pardon...{p}Mais je suis si{n}heureuse que je n'y{n}peux rien..."
+f095-0014 91beaf1586aa6cca "Ma soeur..."
+f095-0015 c931f1f9855da2bc Soeur Agnes{n}"...Inutile de garder un{n}silence si solennel..."
+f095-0016 3eee2bd498c39dfa Margie{n}"...Merci, et Dieu vous{n}bénisse toutes !"
+f095-0017 1568e8e7e2742da2 Margie{n}"Ah, au fait, ma soeur...{wait 30}{n}Je peux monter ?{p}Ça fait si longtemps,{n}j'aimerais aussi jeter un{n}oeil là-haut."
+f095-0018 4f835fbc0973355c Soeur Agnes{n}"Ah, mais bien sûr, ma{n}chérie !{p}Ne te retiens en rien...{p}Sauf pour une chose...{p}Ne pars plus jamais aussi{n}longtemps."
+f095-0019 5ce9756add64e94d Margie{n}"Ha, ha !{n}Je savais que vous diriez{n}ça.{p}Voilà l'Agnes que je{n}connais !"
+f095-0020 7455a738419fb823 "Margie, je suis si{n}heureuse."
+f095-0021 590faf642df69985 Bart{n}"Ça fait longtemps que je{n}suis pas venu ici."
+f095-0022 e296825d7b319d60 Bart{n}"...?{p}Un problème, Margie ?"
+f095-0023 5897e1ce068613a7 Margie{n}"...Rien.{p}C'est juste{n}que..."
+f095-0024 b7b7896e49ca36c0 Margie{n}"Je crois que je suis un{n}peu émue...{n}Hé, hé, hé..."
+f095-0026 7c9ba663952a32f5 Bart{n}"Bref, repose-toi un peu.{p}...T'en as assez enduré,{n}d'accord ?"
+f095-0027 7ebb108b696f1ceb Margie{n}"...Si tu veux me faire{n}pleurer, c'est raté."
+f095-0028 c653045c2f002770 Margie{n}"Ah, oui !{p}Je fais visiter notre{n}cathédrale à Fei et à{n}Citan...{wait 10} Venez avec moi !"
+f095-0029 3f3603a3207e1b39 Citan{n}"Quelle force, cette jeune{n}femme...{p}Visiblement, elle n'avait{n}qu'une envie : s'effondrer{n}en larmes..."
+f095-0030 05f2f93489f53bd5 Bart{n}"Ouais, c'est vrai...{p}Elle a toujours été{n}comme ça.{p}Elle a beau parler, elle{n}sait bien quelle est sa{n}place...{p}J'aurais peut-être des{n}choses à apprendre{n}d'elle, moi aussi."
+f095-0031 c99cc3ecef1a7d8d Citan{n}"...Magnifique !"
+f095-0032 91ae71d816194bf6 Margie{n}"Quand on était petits et{n}qu'on se faisait gronder{n}pour{p}une bêtise, Bart et moi,{n}on se cachait ici."
+f095-0033 9a184c1b2d35b80f Bart{n}"Hé, arrête avec ces{n}vieilles histoires.{n}Quelle honte !"
+f095-0034 5417e646a40e88b4 Margie{n}"Mais pour moi, Bart n'a{n}guère changé depuis."
+f095-0035 678f6a6d658caf10 Bart{n}"Quoi !?{n}Tu dis que je suis{n}encore un gamin !?"
+f095-0036 c62ae7007aa419ab Margie{n}"La vue d'ici est ma{n}préférée."
+f095-0037 9c204459b7dbbc26 Citan{n}"Oui, à couper le{n}souffle !"
+f095-0038 368ffb713ed82d1f Citan{n}"La lumière qui traverse{n}les vitraux de la façade de{n}la cathédrale...{p}Quelle brillante oeuvre{n}d'art."
+f095-0039 0eba0c5a2aaaaa72 Margie{n}"Vous avez remarqué ? Les{n}deux grands anges n'ont{n}qu'une aile chacun...?"
+f095-0040 259874cb46283fb7      Selon une légende{n}  transmise à Nisan...{p}  Dieu aurait pu créer{n}  des humains parfaits...{p}  Mais alors, les humains{n}    ne s'aideraient{n}pas...{p}  Voilà ce que symbolisent{n}    ces grands anges{n}     à une seule aile...{p} Ils ne peuvent voler{n}      qu'ensemble.
+f095-0041 b5c78b0294e4e065 Citan{n}"Ah, c'est donc pour cela.{p}Je vois...{wait 5}{n}À bien regarder, l'ange de{n}gauche semble masculin...{p}...tandis que celui de{n}droite semble féminin."
+f095-0042 ddf071dcc874eb31 Citan{n}"Un trait peu commun, vous{n}ne trouvez pas ?"
+f095-0043 5bc82adfa5942e69 Citan{n}"D'ordinaire, ces{n}figures n'ont pas de{n}sexe défini.{p}Mais ces anges sont{n}clairement de sexes{n}opposés."
+f095-0044 6f23d0d84b9c0449 Citan{n}"Et l'espace entre eux est{n}le chemin par où Dieu{n}descend sur terre..."
+f095-0045 1784de46401abd41 Citan{n}"Ou le chemin qui mène à{n}Dieu ?{p}Eh bien... je ne sais{n}pas, l'un ou l'autre, ou{n}même les deux."
+f095-0046 79552b59661fa991 Citan{n}"...Je comprends,{n}maintenant !"
+f095-0047 b5d30c9bc8f8f442 Citan{n}"Tout cela concorde avec{n}l'enseignement de Nisan."
+f095-0048 b5cb0e69cb18f4d7 Margie{n}"Ha, ha, ha ! Voyons,{n}docteur Citan Uzuki !{p}Vous êtes trop drôle !"
+f095-0049 919270ed88a0317b Citan{n}"Oh !{n}Pardonnez-moi.{p}C'est une manie..."
+f095-0050 4ec1243f87c37e79 Fei{n}"Le Doc en sait long sur{n}plein de choses...{p}Parfois, je ne comprends{n}même pas ce qu'il dit..."
+f095-0051 a6567f41d5ae0c61 Bart{n}"...Ha !{n}Obligés de voler{n}ensemble...?{p}Ce serait moins pénible{n}s'ils pouvaient voler{n}seuls, pas vrai, Fei ?"
+f095-0052 864229bfd9731816 Margie{n}"Bart !{n}Tu ne saisis pas le{p}sens profond et la beauté{n}de tout ça !"
+f095-0053 82efe4f08fc40e1b Margie{n}"Un jour, j'aimerais{n}pouvoir aider quelqu'un{n}ainsi..."
+f095-0054 88d1a8a8b89c561c Margie{n}"Ah, on n'a pas vu la{n}'Salle de Sophia', hein ?{p}En principe, il faut des{n}formalités pour la voir...{p}Mais cette fois, je peux{n}bien faire une exception."
+f095-0056 d021f6f6f61fd2e8 Margie{n}"Oui, Sophia.{p}Elle est vénérée comme la{n}mère fondatrice de la{n}nation de Nisan...{p}et comme la fondatrice de{n}la religion de Nisan, dont{n}elle a fixé les préceptes.{p}Il y a là-haut une salle{n}avec un portrait de la{n}Mère Sophia."
+f095-0057 f140476d9e337318 Citan{n}"Je veux le voir ! Fei,{n}allons jeter un oeil !"
+f095-0058 40495d9b107400e8 Margie{n}"D'ici, on monte à la{n}galerie du premier{n}étage..."
+f095-0059 2595946bf3e666fb Soeur Agnes{n}"Très bien, mes soeurs !"
+f095-0060 7e7bd6a61a887acb Soeur Agnes{n}"Pour célébrer le retour de{n}notre chère soeur Margie...{p}et exprimer notre joie aux{n}cieux, finissons notre{n}hymne."
+f095-0061 2abc64a69eb6d842 (...Tu as dû tant souffrir{n}à la capitale...)
+f095-0062 7af5482d4eed5779  Entrée interdite aux{n}personnes non autorisées.
+f095-0063 67047a703f28318f Venir ici si jeune, c'est{n}signe d'intérêt !
+f095-0065 69d281e2699aec57 Hé, hé !{n}Ne monte pas là comme ça !
+f095-0066 333540f0f3c2c13f Je suis venue d'une autre{n}ville pour vivre ici...{p}Mais on dit que des jeunes{n}font l'inverse et partent{n}d'ici.{p}Veulent-ils plus que la{n}paix du coeur ?{p}Les jeunes d'aujourd'hui{n}sont ainsi, j'imagine !
+f095-0067 709c95230d146a12 Mon mari était soldat de{n}l'armée de la capitale...{p}Mais il est mort il y a{n}quelques années, près de la{n}frontière de Kislev.{p}Depuis, je viens ici chaque{n}année, à l'anniversaire de{n}sa mort.
+f095-0068 a2f79ee258890c6d J'habite à la capitale,{wait 30}{n}mais, ma foi...{wait 30} le voyage{n}valait le coup !{p}Je n'aurais jamais cru que{n}ce serait si beau !
+f095-0069 96b8d917f96a2485 C'est qui, ce type avec{n}toi ?{p}Il a un problème...!?{p}(...{wait 30} 'maniaque des{n}châteaux' !?)
+f095-0070 6e79403475299652 Fei{n}"Hein ?{wait 30}{n}Ah... Peut-être...{n}{wait 30}Je crois."
+f095-0072 8832c0d0c58bc572 Bart{n}(Hmm...{n}Ouais, t'as raison !)
+f095-0073 70ba94adc0c7f40d Le Château Fatima ne{n}fait pas le poids.
+f095-0074 e99bef7ec4466c4a Bart{n}(Hmm...{n}Ouais, t'as...{wait 60} Quoi !)
+f095-0075 36d544af2e5a2b2a Bart{n}"Hé, toi !{wait 30}{n}Tu dis du mal du Château{n}Fatima !?"
+f095-0076 5f43b341de006e68 Non, je ne voulais pas{n}dire ça...
+f095-0077 11cb68ef984373d8 C'est qui, ce type !?
+f095-0078 addd412cfd9e461c Fei{n}"Hé, hé ! Bart !"
+f095-0079 ee770fc97b962fb1 Bart{n}"Viens pas me chercher.{n}Tu sais même pas à qui{n}tu parles !"
+f095-0080 299009652a50a00c Bart{n}"Bah... Laisse tomber,{n}oublie !"
+f095-0081 bf00729282da1fd1 Je parcours tout ce pays{n}en pèlerinage et je suis{n}allé récemment du côté de{n}la capitale.{p}Je suis revenu ici il y a{n}peu, mais je repartirai{n}sans doute d'ici quelques{n}jours.
+f095-0082 8a6ae4eb6ab12013 Je veux voir de mes yeux{n}ce que deviendra ce{n}pays.
+f095-0083 a198310cd1dfe311 Les préparatifs de l'attaque de{n}l'armée de la capitale doivent{n}commencer près de la frontière{n}de Nisan.{p}Mais un faux pas face à l'ennemi{n}se retournerait contre nous,{n}alors nous agirons en secret{n}pour un temps.{p}J'y vais maintenant, mais j'ai{n}voulu prier avant de partir.
+f096-0000 b4d42b6f3d4cc697 Sigurd{n}"Nos compagnons de Nisan{n}vont attaquer la garde{p}occidentale en uniformes de{n}Kislev,{wait 20} comme prévu.{p}Attendons le bon moment,{n}puis cap sur le palais à{n}bord du Yggdrasil !"
+f096-0001 5ca8a8be53d0839e Bart{n}"Entendu.{wait 30}{n}Mais évitez les morts{n}inutiles.{p}Ça vaut surtout pour les{n}troupes d'Aveh{wait 30} et aussi{n}pour ceux de la Gebler."
+f096-0002 c4ee28797f819f5e Sigurd{n}"Oui.{wait 30}{n}Compris."
+f096-0003 57f18bf749ed8b3a Fei{n}"Alors je vais tout{n}casser avec mon{n}{name 11}."
+f096-0004 dd005d42f2f1eb83 Sigurd{n}"Nous comptons sur vous !"
+f096-0005 63762e6f84e50f7c Margie{n}"La prochaine fois, je{n}ne{p}pourrai plus t'appeler{n}'Bart'{wait 10} ni 'Jeune{n}Maître'.{p}Peut-être,{wait 10} 'Votre{n}Majesté'{wait 10}...?"
+f096-0006 b2c53b823615340d Bart{n}"Arrête ça.{wait 15}{n}Bart, ça suffit...{wait 30}{n}'Grande{wait 10} Mère{wait 10} de{wait 10} Nisan' !"
+f096-0007 c0650f5de9a748ce Margie{n}"Hé...!{wait 30}{n}Tu sais que je déteste{n}ce titre !"
+f096-0009 33391106ac8adbe8 Bart{n}"Bon, on y va !"
+f096-0010 1107f09b7e1000f6 Margie{n}"D'accord.{n}Bonne chance !"
+f096-0011 c54918e26558bd0e Agnes{n}"Marguerite et{n}Bartholomew...{p}Vous voir tous les deux me{n}remplit d'espoir."
+f096-0012 45aada365c0b9712 Agnes{n}"Il y a bien longtemps,{wait 30} avant{n}que les Fatima d'Aveh ne se{n}nomment Fatima...{p}les frères royaux et leurs{n}épouses ont mené bien des{n}règnes, ou ères, prospères.{p}J'attends le jour où, Grande{n}Mère de l'Église de Nisan...{p}tu prendras place sur le{n}trône comme épouse de{n}Bartholomew."
+f096-0013 9ca9085b287cd78c Margie{n}"Quoi !? {wait 15}Hé, {wait 5}attendez !{wait 10}{n}Les reines et la romance,{n}très peu pour moi...!{p}Bart et moi, on est les{n}meilleurs amis !"
+f096-0014 06c02005f6d5937b Agnes{n}"Ha ha, {wait 30}le mariage, c'EST{n}la meilleure des amitiés."
+f096-0015 003ec13f500990d3 Agnes{n}"Eh bien, Marguerite, avec{n}la belle femme que tu{n}deviens...{p}...Bart ne pourra plus{n}t'ignorer bien longtemps."
+f096-0016 1f9a5337e8f04333 Margie{n}"Arrêtez, {wait 30}vous me{n}gênez !"
+f096-0017 53757f966d8a6e94 Sigurd{n}"Je termine les{n}dernières vérifications{n}à bord.{p}Je vous laisse le reste,{n}Maison."
+f096-0018 93786f6f92675c62 Maison{n}"À vos ordres...{n}J'escorterai les{n}autres."
+f096-0019 40d62aa89b9f5190 Bartholomew, toujours en{n}pleine forme, j'espère ?
+f096-0020 c3aacaa3443aa396 Bart{n}"Ouais. Et la ville,{n}comment ça va ?"
+f096-0021 048e96c2fc399068 Depuis qu'on a appris, il{n}y a quelques jours, qu'une{n}armée pourrait venir de la{n}capitale, les délégués de{n}l'Église débattent de la{n}situation.
+f096-0022 09624ae8a9f690ff Bart{n}"Et qu'ont-ils décidé ?"
+f096-0023 d505d2ef45dd2186 Pour l'instant, ils{n}comptent juste renforcer{n}les défenses locales.{p}Et des opposants à Shakhan{n}se rassemblent ici... sans{n}doute{p}parce qu'ils ont eu vent de{n}ce qui se passe.
+f096-0024 054c91dfc0ed7e5a Bart{n}"Voilà qui me{n}rassure."
+f096-0025 6889d72ddab39791 Oui.{p}Mais les habitants{n}commencent à s'inquiéter.{p}Certains se réfugient déjà{n}dans les montagnes, au{n}nord.
+f096-0026 f16f791927668228 Bart{n}"On peut pas leur en{n}vouloir."
+f096-0027 0e4238253a922fc1 Au fait, comment va{n}Marguerite...?
+f096-0028 2e45c448ed28b308 Bart{n}"Mieux qu'on l'espérait.{n}Mais je sais qu'elle a{n}beaucoup souffert."
+f096-0029 da656cdfbb1b8200 Marguerite !{n}Quel bonheur de te voir{n}saine et sauve.
+f096-0030 1db5e95d027d3230 Margie{n}"Merci."
+f096-0031 3efb1b3c6a832802 Toute la ville se{n}réjouit du retour de la{n}Grande Mère.
+f096-0033 f75464e64e498bc3 ...{wait 30}a...Ah !!
+f096-0034 4a68a2440ec625bd R, rien à signaler,{n}chef !!
+f096-0035 1887441e855f3935 Rien à signaler, chef !!
+f096-0036 113900e733fbf853 Monter à bord ?{n}    Oui{n}    Non
+f096-0037 c37093852a35447c La campagne est prête, il{n}ne manque qu'une dernière{n}vérification.{p}Le jeune maître emmène{n}Marguerite à Nisan.
+f096-0038 3a1139c47e969b94 Tout est prêt.
+f096-0039 64c5705010212985 Rien à signaler, chef !!
+f096-0041 2bdd76b6de17fb80 Les soeurs attendent à{n}la cathédrale.
+f096-0042 c958a1019ed8c577 Bon retour parmi nous.
