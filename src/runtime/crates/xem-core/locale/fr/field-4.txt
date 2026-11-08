@@ -776,3 +776,762 @@ f470-0020 6841dd0d25c78ffb Yui{n}"Tu as vu la reine ?{wait 20}{n}Sinon, va la sa
 f470-0021 80a2b7f8ddf36072 Midori{n}"...{p}Chu-chu...{wait 20}{n}Mon amie..."
 f470-0022 e87892f11a6878e2 Midori parle tellechu !{wait 20}{n}Incroyable, tout ce que{n}tu as à rachonter.
 f471-0000 c6d07a9e25f3794a On vit en volant dans le{n}ciel, hein ?{wait 20} Pas facile{n}de se ravitailler.{wait 20} Et on{n}ne peut pas non plus aller{n}tout chercher soi-même.{p}Jusqu'ici, on s'en est{n}sortis, mais si ça dure{n}comme ça...{wait 20} Hmm...{n}il vaudrait mieux faire{n}quelque chose...
+f473-0000 d5b7debe0c85bc99 Maria est{n}votre amie !
+f473-0001 efc0a72f22895af4 Fei{n}"...!?{wait 20}{n}Le {name 11} ne{n}bouge pas !?"
+f473-0002 6921e439467a899e Elly{n}"Le {name 13} aussi{n}ne répond plus !"
+f473-0003 4ede76708bad5af7 Bart{n}"Bon sang !{n}Que se passe-t-il ?{p}Le {name 15} ne{n}fonctionne pas{n}du tout !"
+f473-0004 b4754d409b6889a0 Bart{n}"Le {name 15} ne{n}bouge pas...!?"
+f473-0006 6622cd6a210b3870 Fei{n}"Doc, qu'est-ce{n}qui se passe...!?"
+f473-0007 91b8568c027552bf Elly{n}"Le {name 13} ne{n}bouge pas...!?"
+f473-0009 d28565144496bba5 Bart{n}"Bon sang !{n}Que se passe-t-il ?{p}Le {name 15} ne{n}fonctionne pas{n}du tout !"
+f473-0010 e628bc7b60bd11cd Billy{n}"Le mien aussi{n}est bloqué...!!"
+f473-0011 189a9fd79ffe8a0c Rico{n}"C'est son oeuvre ?"
+f473-0012 ad7adc9bc58dc5f3 Citan{n}"Serait-ce donc ça...?"
+f473-0013 0172085bd7a2b09e Fei{n}"Comme ça, je ne{n}peux rien faire !{p}Vous voulez dire qu'il{n}faut rester plantés là à{n}encaisser ?"
+f473-0014 594e1cb34046cd26 Citan{n}"Je ne dis pas ça.{wait 20}{n}Peut-être...{n}que Maria pourrait..."
+f473-0015 32e692d4dfb807c9 Fei{n}"Compris !{wait 20}{n}Arrivés si loin, pas{n}question de perdre !"
+f473-0016 0b1e503aefb6bbc7 Fei{n}"Bon sang !!{wait 20}{n}Comme ça, je ne{n}peux rien faire !"
+f473-0017 b732eadab0f9ed33 Fei{n}"Reine Zephyr, nous{n}lutterons aussi pour{n}abattre Solaris.{p}Mais d'abord, où se{n}trouve Solaris ?{wait 20}{n}Comment y aller ?"
+f473-0018 e2ce6beb9536f635 Fei{n}"Je vois.{wait 20} Pas{n}question de laisser{n}Nisan à son sort.{p}Bien, d'abord,{n}allons à Nisan !"
+f473-0019 b01c92abdef81a73 Fei{n}"D'accord.{n}Allons-y ensemble,{n}Maria.{p}Désormais, nous{n}sommes amis,{wait 20}{n}toi et... toi et{n}{name 19} aussi."
+f473-0020 e73fa7af6fc62910 Fei{n}"Compris."
+f473-0021 9f47c83e8527efb1 Fei{n}"Allons-y,{n}les amis !"
+f473-0022 25397c7fafe8caac {name 7}{n}"J'y vais."
+f473-0023 93dd05a349b85177 {name 7}{n}"Alors... je t'en prie,{n}emmène-moi avechu."
+f473-0024 5eed9ab415e7a83a {name 7}{n}"Pas de chouci.{wait 20}{n}Les dieux vont{n}nous protéger.{p}On y va, chu."
+f473-0025 da8a8768a191840e Maria{n}"C... c'est..."
+f473-0027 8720aebdb73a13c6 Maria{n}"Achtzehn...{wait 30}{n}c'est le second Gear conçu{n}par mon père...{p}le Gear frère de {name 19}.{wait 20}{n}Mais l'Achtzehn n'a jamais{n}été achevé...!{p}À part {name 19}, mon père{n}n'en a construit aucun{n}autre, et il aurait brûlé{n}les plans...!{p}Alors...{wait 20}{n}Pourquoi...!?"
+f473-0028 ad2da8eaa487f2c1 Maria{n}"Cette voix...{wait 30}{n}Non...{wait 10}{n}Papa !?"
+f473-0029 16693c3473ecff65 Maria{n}"Pourquoi ça...!!{wait 30}{n}Pourquoi papa...!?"
+f473-0030 8ef6c7220be46076 Maria{n}"Mais...!!{wait 30}{n}Mais...{wait 20}{n}La voix de papa...!?"
+f473-0031 6123293389b55a3b Maria{n}"...!!{wait 30}{n}Mais..."
+f473-0032 1fbf4904e66b7c79 Maria{n}"...{wait 30}{n}D'accord...{n}Je comprends."
+f473-0034 18ba0e15edf6a44a Maria{n}"Arrête...!!"{done 30}
+f473-0035 06cf6da634061fd3 Maria{n}"Pourquoi...?{wait 20}{n}Pourquoi ça...?"
+f473-0036 f271f847b80412bd Maria{n}"Aaaah !"{done 30}
+f473-0038 09c8dac2c26fc4bd Maria{n}"Arrête !!{n}Tu ne comprends pas !!"
+f473-0039 e10054ae880be1a8 Maria{n}"Même si c'est le cas,{n}moi...{wait 30}{n}pour moi..."
+f473-0040 cf12f807af48ac9b Maria{n}"...{wait 20}{n}Pardon..."
+f473-0041 3f9e5510b15ce0be Maria{n}"...!?{wait 20}{n}Comment ça, {name 7} !?"
+f473-0044 2679de01c04db6ad Maria{n}"...{wait 20}{n}Oui."
+f473-0045 1243d78f1ff85f17 Maria{n}"Euh...{wait 20}{n}Tu m'emmènes avec toi ?"
+f473-0046 03b586cbf1e8a8c3 Maria{n}"Oui."
+f473-0047 6f03cf5f6f2286c1 Peuple de Shevat !{wait 20}{n}Écoutez-moi !
+f473-0048 cd72b1aa58b49423 Nikolai{n}"J'ai appris que des rats{n}intéressants s'étaient{n}faufilés ici...{p}Juste à temps pour tester{n}l'Achtzehn.{wait 20}{n}Je peux en finir avec vous{n}et avec Shevat d'un coup !{p}Coucou, petits rats, vous{n}pouvez sortir.{wait 20}{n}Venez, mes jolis petits{n}cobayes."
+f473-0049 3b4d6003e5736bcf Nikolai{n}"Pour servir de{n}cobayes à celui-ci."
+f473-0050 f29ec3a7ef8f45d3 Nikolai{n}"Sa nouvelle arme...{wait 20}{n}le Brouilleur Psychique{n}anti-Gear !"
+f473-0051 27a58653e2fce4a4 Nikolai{n}"Ce temps suffira pour{n}vous rayer de la surface{n}de la terre."
+f473-0052 9126c4b41fd02b93 Nikolai{n}"Les humains sont une{n}forme de vie imparfaite{n}et stupide...{p}Je vais vous montrer ce{n}qu'est une forme de vie{n}parfaite !{p}L'Achtzehn, l'union de la{n}sagesse humaine et de la{n}force de l'acier."
+f473-0053 e24cc5eaa5d82134 Zephyr{n}"Calme-toi, Maria !!{p}Ça ne veut pas dire que le{n}Dr Nikolai est à bord !"
+f473-0054 4d7bb3a6d1b9d0b7 Zephyr{n}"Maria !!{wait 20}{n}Ressaisis-toi !{p}Tu veux perdre avant{n}même de te battre...?{wait 20}{n}Contre ceux qui t'ont{n}fait souffrir ?"
+f473-0055 fd1b1beab9271dab Zephyr{n}"Maria...{wait 20}{n}Toi, reste ici."
+f473-0056 0ef7eaec65765fa7 Zephyr{n}"Je compte sur vous.{wait 20}{n}Soyez prudents."
+f473-0057 16d1ad982cfc762a Zephyr{n}"...{wait 20}{n}Écoute, Maria...{p}Si les autres Gears{n}sont immobilisés,{n}toi et {name 19} êtes{n}notre seul espoir.{p}Tu as beaucoup de cran...{wait 20}{n}Tu peux décider seule{n}de ce que tu dois faire."
+f473-0058 3cf07ccca3f55ece Zephyr{n}"Merci à tous.{p}Le générateur a été{n}réparé{n}et la Porte fonctionne{n}normalement.{p}Et, Maria...{n}Tu t'es très bien battue.{wait 20}{n}Je suis navrée pour le{n}Dr Nikolai...{p}C'est Solaris qui a fait{n}subir tout cela au{n}docteur.{p}Nous devons les vaincre{n}au{n}plus vite et rendre au{n}monde sa liberté !"
+f473-0059 96033b7f14bc3308 Zephyr{n}"Trois Portes cachent{n}Solaris aux yeux des{n}hommes.{p}L'une d'elles se trouve{n}sous le siège de l'Ethos,{n}mais...{wait 20} Elle est hors{n}d'atteinte, même en Gear.{p}J'ignore encore où sont{n}les deux autres.{wait 20}{p}Tant que les 3 Portes ne{n}seront pas détruites, le{n}chemin de Solaris restera{n}fermé.{p}De plus, nous avons reçu{n}des nouvelles{n}inquiétantes.{wait 20}{n}Aveh a envahi Nisan."
+f473-0060 66b14bc3f812aacc Zephyr{n}"Leur cible doit se{n}trouver sous terre.{p}Le trésor royal secret{n}d'Aveh.{p}Un Omnigear scellé{n}par Roni Fatima !"
+f473-0061 80679df590201dd5 Zephyr{n}"Votre navire a reçu{n}un module aérien.{p}À l'origine, c'était le{n}navire de Roni, l'ancêtre{n}de Bart.{n}Servez-vous-en librement."
+f473-0062 478a1006498223be Zephyr{n}"J'ai une faveur à vous{n}demander.{wait 20} Fei, emmenez{n}Maria.{p}Depuis toute petite, cette{n}enfant est condamnée à{n}n'avoir d'autre choix que{n}de se battre.{p}Tant qu'elle n'aura pas{n}réglé ses propres combats,{n}elle ne pourra pas avancer.{p}Va, Maria,{wait 20} et trouve le{n}sens de ta vie... par{n}toi-même."
+f473-0063 888277b3e6ec5ee3 Zephyr{n}"L'un des sages, Gaspar,{n}est de retour.{p}C'est lui qui a enseigné{n}les arts martiaux à Khan{n}et à Wiseman.{p}Il pourra sûrement vous{n}enseigner de nouvelles{n}techniques, utiles pour{n}votre voyage.{p}J'ai déjà parlé à Gaspar.{n}Avant de partir, allez{n}apprendre auprès de lui."
+f473-0064 1f89ef6681ab68d7 Jessie{n}"Voilà, c'est fait.{wait 20}{n}Bon, le dernier, c'est...{n}celui-là."
+f473-0065 6ede5a101ba89458 Jessie{n}"Qu'est-ce que l'Achtzehn{n}va encore nous faire ?"
+f473-0066 07625bab4377d2e0 Jessie{n}"Les troupes de Gears{n}de Shevat...!!"
+f473-0067 1559ce090d4deb57 Jessie{n}"Dégagez !{wait 10}{n}Trop fort pour vous !!"
+f473-0068 e9ddeb39c276193c Jessie{n}"Bon sang...!{wait 20}{n}Je vais te démolir !"
+f473-0069 cf61dd0b3d62a7a0 Jessie{n}"Urgh...!!"{done 30}
+f473-0070 204e684d14360809 Jessie{n}"Ça sent pas bon, ça..."
+f473-0071 0fc95475958b68d7 Jessie{n}"Un choc violent a affolé{n}les circuits de réponse{n}des Gears.{p}Pas d'inquiétude, c'est{n}juste temporaire."
+f473-0072 c605bb4e09966f3e Jessie{n}"L'Achtzehn et son Gear{n}frère, {name 19}...{p}Alors c'est normal qu'il{n}ait un bouclier{n}antibrouillage..."
+f473-0073 0c47db0df8343f1e Jessie{n}"Et surtout...{wait 20}{n}Ça me coûte de le dire...{p}Ton père n'est plus{n}là-dedans..."
+f473-0074 54dbebb07db6b701 Jessie{n}"Je vois... tant pis...{wait 20}{n}Attendons-nous au pire."
+f473-0075 2a4a5d065a74d400 Elly{n}"On change de place ?"
+f473-0076 7d8efb29973f0be3 Bart{n}"On échange ?"
+f473-0077 bdfa08650660ae9c Bart{n}"Et ce Gear sinistre...?{p}Tu sais quelque chose,{n}Maria ?"
+f473-0078 59121c5cbf1b6a57 Bart{n}"Mais quoi...?{wait 20}{n}Shakhan ?"
+f473-0079 6d56a7a49100f3dd Bart{n}"Bon sang !!{wait 20}{n}Pas le moment d'hésiter !{p}Je vais à Nisan !{wait 20}{n}On ne laissera pas Shakhan{n}faire sa loi !"
+f473-0080 5d8662ef8b704908 Billy{n}"On change de place ?"
+f473-0081 101eb45ba5cd8603 Rico{n}"On échange ?"
+f473-0082 845e7f71aa60c9d5 Citan{n}"Voulez-vous échanger ?"
+f473-0083 1af57983d44184fb Citan{n}"Bien.{wait 20}{n}Voyons maintenant{n}la suite !"
+f473-0084 54f0d4bcc8ea4217 Citan{n}"Il faut repousser les{n}Gears ennemis et protéger{n}le générateur."
+f473-0085 e68ef79d138ed83a Citan{n}"Pour cela, nous allons{n}former quatre équipes{n}et intercepter l'ennemi.{p}Quatre d'entre nous iront{n}seuls défendre chacun un{n}générateur jusqu'à la mort.{wait 20}{n}Les deux autres restent ici.{p}C'est dangereux... mais nous{n}ne pouvons plus reculer.{wait 20}{n}Si un seul générateur tombe,{n}ce sera notre défaite."
+f473-0086 4633a115a32f0c47 Citan{n}"... Maria,{n}je vous en prie."
+f473-0087 d764b8cbce59503a Citan{n}"Voici la formation des{n}Gears ennemis.{p}Au Générateur 1, il y a{n}deux petits Gears et un{n}contingent de soldats{n}de Solaris...{p}Si vous ne les attaquez{n}pas vite et fort, vous{n}finirez pris dans une{n}fusillade.{p}Au Générateur 2, il y a{n}3 Chevaliers Blancs.{wait 20}{n}Ils sont très rapides{n}et agiles.{p}Au Générateur 3, il y a{n}un grand Gear et un{n}Chevalier Blanc.{p}Prudence, le grand Gear{n}possède une sorte{n}d'attaque spéciale.{p}Au Générateur 4, il y a{n}un grand Gear et un{n}Chevalier Blanc.{p}Le grand Gear semble{n}être un Gear de force."
+f473-0088 0b1b6d5fea40cdbb {speed 255}Citan{n}"Alors, qui va au{n}Générateur 1 ?"{wait 10}{n}    Fei{n}    Citan{n}    Elly{n}    Bart{n}    Rico{n}    Billy{n}    Données ennemies
+f473-0089 bd2ee9e08e736825 Citan{n}"Fei garde déjà un{n}autre générateur."
+f473-0090 bda80f70101c1192 Citan{n}"Je garde déjà un{n}autre générateur."
+f473-0091 c9216e2939b85621 Citan{n}"Elly garde déjà un{n}autre générateur."
+f473-0092 9dcee5280338f9c8 Citan{n}"Bart garde déjà un{n}autre générateur."
+f473-0093 91e2a70ce05a065c Citan{n}"Rico garde déjà un{n}autre générateur."
+f473-0094 3ac1f281cba42baf Citan{n}"Billy garde déjà un{n}autre générateur."
+f473-0095 9316f2760ebd12d9 {speed 255}Générateur 1{n}   Deux petits Gears{n}   et soldats solariens{n}Générateur 2{n}   3 Chevaliers Blancs{n}Générateur 3{n}   Gear d'attaque spé.{n}   et 1 Chevalier Blanc{n}Générateur 4{n}   Gear de force et{n}   1 Chevalier Blanc
+f473-0096 df4e12dc0494ddfe {speed 255}Citan{n}"Qui va au{n}Générateur 2 ?"{wait 10}{n}    Fei{n}    Citan{n}    Elly{n}    Bart{n}    Rico{n}    Billy{n}    Données ennemies{n}    Recommencer
+f473-0097 e9979d920da67877 Citan{n}"Fei garde déjà un{n}autre générateur."
+f473-0103 a425e131d0fe4c2d {speed 255}Générateur 1{n}   Deux petits Gears{n}   et soldats solariens{n}Générateur 2{n}   3 Chevaliers Blancs{n}Générateur 3{n}   Gear d'attaque spé.{n}   et 1 Chevalier Blanc{n}Générateur 4{n}   Gear de force et{n}   1 Chevalier Blanc
+f473-0104 1dfeffc3fce52a5e Citan{n}"Modifier les postes ?"{n}   Non, c'est parfait{n}   Oui, recommencer
+f473-0105 7ad384a96628d8e3 {speed 255}Citan{n}"Qui va au{n}Générateur 3 ?"{wait 10}{n}    Fei{n}    Citan{n}    Elly{n}    Bart{n}    Rico{n}    Billy{n}    Données ennemies{n}    Recommencer
+f473-0107 8701b0200d6604e0 Citan{n}"Je garde déjà un{n}autre générateur."
+f473-0108 73ad865ab92173b3 Citan{n}"Elly garde déjà un{n}autre générateur."
+f473-0109 ef144f241bba75ce Citan{n}"Bart garde déjà un{n}autre générateur."
+f473-0110 7c39883b01f71e52 Citan{n}"Rico garde déjà un{n}autre générateur."
+f473-0111 5c5a51f275f99e49 Citan{n}"Billy garde déjà un{n}autre générateur."
+f473-0114 2c7efdaaa146599c {speed 255}Citan{n}"Qui va au{n}Générateur 4 ?"{wait 10}{n}    Fei{n}    Citan{n}    Elly{n}    Bart{n}    Rico{n}    Billy{n}    Données ennemies{n}    Recommencer
+f473-0123 5920e8152bb75fb0 Citan{n}"Entendu.{wait 20}{n}Voici donc la{n}répartition..."
+f473-0124 af2029dcab0a9350 Générateur 1{n}    Fei
+f473-0125 f37868b7e24f0a7d Générateur 1{n}   Citan
+f473-0126 23b41dfefe890db4 Générateur 1{n}    Elly
+f473-0127 250a0994b4d0cad1 Générateur 1{n}    Bart
+f473-0128 1326641828459c3d Générateur 1{n}    Rico
+f473-0129 0dcdff368f7ee6b8 Générateur 1{n}    Billy
+f473-0130 4af32aed9fa3f3b7 Générateur 2{n}    Fei
+f473-0131 cad8f723b7772038 Générateur 2{n}   Citan
+f473-0132 230680612be5f241 Générateur 2{n}    Elly
+f473-0133 f0467fda6c4ad93c Générateur 2{n}    Bart
+f473-0134 ac5f4ee4aede80dc Générateur 2{n}    Rico
+f473-0135 3e47096e0295c5df Générateur 2{n}   Billy
+f473-0136 e127aa803d3e9f2e Générateur 3{n}    Fei
+f473-0137 685164a7db0a4d2f Générateur 3{n}   Citan
+f473-0138 e660819c36edb0e6 Générateur 3{n}    Elly
+f473-0139 3abded1841ff9df7 Générateur 3{n}    Bart
+f473-0140 d2c64917188ec837 Générateur 3{n}    Rico
+f473-0141 adb5e12e33013610 Générateur 3{n}   Billy
+f473-0142 1b306795d198bb5d Générateur 4{n}    Fei
+f473-0143 c57ed1ee69362722 Générateur 4{n}   Citan
+f473-0144 7afe240340a8d9e3 Générateur 4{n}    Elly
+f473-0145 ce9dcc33855a0eaa Générateur 4{n}    Bart
+f473-0146 9f9e53c3c854e15e Générateur 4{n}    Rico
+f473-0147 048705aaba7a1951 Générateur 4{n}   Billy
+f473-0148 2ec5bb7de0701fad Citan{n}"Cela vous convient ?"{n}    Oui, allons-y !{n}    Non, je veux changer !
+f473-0149 30a329e70cf130b7 Citan{n}"Veuillez terminer vite{n}vos préparatifs pour{n}la bataille.{p}Tout est prêt ?"{wait 10}{n}    Je me prépare{n}    Oui, allons-y !
+f473-0150 98757d054bc6e20e Citan{n}"Quand vous serez{n}prêts, nous irons{n}au combat...{p}Vite, je vous prie !{wait 20}{n}L'ennemi approche !"
+f473-0151 d20e9d375612964f Citan{n}"Entendu.{p}Ceux qui défendent les{n}générateurs, montez dans{n}vos Gears et partez !"
+f473-0152 c4f7597f9c00d595 Citan{n}"Bien, l'ennemi est{n}presque là !{p}Êtes-vous prêts ?"{wait 20}{n}    Il me faut du temps{n}    C'est bon, allons-y !{n}    Modifier les postes
+f473-0153 4b7e596b35f24554 Citan{n}"Dès que vous serez{n}prêts, à l'attaque !{wait 20}{n}Faites vite !"
+f473-0154 78db4891eadee13e Citan{n}"Très bien, alors...{p}Ceux qui défendent les{n}générateurs, montez dans{n}vos Gears et partez !"
+f473-0155 1416d91720858414 Citan{n}"Entendu.{wait 20}{n}Voici les postes{n}actuels..."
+f473-0161 4b398a3c0f91975e Générateur 1{n}   Billy
+f473-0181 c51b14de8a4bd3f0 Citan{n}"Qu'est-ce...!?"
+f473-0182 1b8692df3837840d Citan{n}"De puissantes ondes{n}électriques perturbent{n}les circuits des Gears.{p}Pas d'inquiétude, cela va{n}vite passer.{wait 20}{n}Mais..."
+f473-0183 d502dc65e1da75d4 Citan{n}"Je ne dis pas ça.{wait 20}{n}Et si...{n}Si {name 19}..."
+f474-0000 570dfe98d5894556 ERREUR : L'ORDRE DU GROUPE EST{n}FAUX OU UN MEMBRE DU GROUPE NE{n}DEVRAIT PAS ÊTRE DANS CETTE{n}SCÈNE. SIGNALEZ CE BUG !
+f474-0002 98e3dd5b56cada07 Fei{n}(Elle n'a sans doute pas{n}pu rester tranquille à{n}attendre sur le navire.)
+f474-0006 f958f3ec90d42e66 Elly{n}(Et en plus, je ne vois{n}aucun civil !)
+f474-0007 7beb858502bd6091 Elly{n}(J'ai entendu parler d'un{n}abri caché. Mais sont-ils{n}en sécurité, là-dedans ?)
+f474-0008 f8ca99025c139c7b Elly{n}(Elle n'était sûrement{n}pas en état de rester{n}sans rien faire.)
+f474-0009 68a8561b0fd86a31 Elly{n}(J'espère que ça ira.)
+f474-0010 5a76a3e0b4721ffe Elly{n}"On doit marcher loin ?"
+f474-0011 1af6dadd91ca40ca Elly{n}"...Tu n'y es jamais{n}entrée toi-même ?"
+f474-0012 d255ad9a5d2ae234 Citan{n}(Aucun habitant en vue,{n}mais les gardes de Shakhan{n}sont partout...)
+f474-0013 f11c70afc94cc95d Citan{n}(On dit qu'il y a un abri{n}caché dans la ville...{p}Mais savoir si l'on y est{n}en sécurité, c'est une{n}autre histoire...!)
+f474-0014 a2ce6961644d40e5 Citan{n}(C'est compréhensible.{p}Avec Nisan aux mains de{n}Shakhan, elle ne pouvait{n}rester les bras croisés.)
+f474-0015 0e40b1901dd83d6c Citan{n}(Prions pour le mieux.)
+f474-0018 617db44df4649e94 Bart{n}(Et pas un chat en ville.)
+f474-0019 47cfaa3f6a9a5b2a Bart{n}(Ils doivent être dans{n}l'abri caché.)
+f474-0022 dd117018b44c0ca0 Billy{n}(Aucune trace des{n}habitants non plus.)
+f474-0023 7f25a1b7dcfd1fb3 Billy{n}(J'ai entendu parler d'un{n}abri caché, mais y est-on{n}en sécurité ?)
+f474-0024 af798d39e57ed08f Billy{n}(Margie est la Grande Mère{n}de cette Église, non ?{p}Sachant que Nisan est{n}peut-être tombée aux{n}mains de ces brutes...{p}...elle ne pouvait pas{n}rester les bras croisés.)
+f474-0025 0162826cfd4bc239 Billy{n}(Que tout aille bien.)
+f474-0026 bf1993b5cb6c90a7 Billy{n}"C'est à peu près{n}à quelle distance ?"
+f474-0027 dd12dfc46e39790c Billy{n}"Quoi ? Tu n'y es même{n}jamais entrée ?"
+f474-0028 1a12afc0f81e943a Rico{n}(Où sont passés les{n}habitants ?)
+f474-0029 d548d42f577f6ce5 Rico{n}(On m'a parlé d'un abri{n}caché, mais est-il{n}sûr ?)
+f474-0030 81e5cee758ad39f3 Rico{n}(Et toi, tu ferais quoi ?{n}Grande Mère ou pas...{p}...si on détruisait ta{n}maison, tu ne resterais{n}pas là à regarder.)
+f474-0031 f1a0e0b8a9ebd4f5 Rico{n}(J'espère que ça ira.)
+f474-0032 b78da2b0a51e2aa9 Rico{n}"C'est loin ?"
+f474-0033 1367ccbd85707a99 Rico{n}"Comment ça...?"
+f474-0039 60c3ba6683a08ec4 {name 7}{n}(Où est passé tout le{n}monde en ville, chu ?)
+f474-0040 2a0944fe0e839f60 {name 7}{n}(Chout ira bien ! Il y a{n}un trou secret. C'est ce{n}que j'ai entendu, chu.)
+f474-0041 f45831fb873006e0 {name 7}{n}(Laisse-la !{p}Margie n'est pas fille à{n}rester les bras croisés,{n}chu.)
+f474-0042 705670c64f89a721 {name 7}{n}(Que chout aille bien !)
+f474-0043 21aececd5b164eda {name 7}{n}"Une balade, oui, mais une{n}marche tellechu longue,{n}non.{wait 30} C'est loin, chu ?"
+f474-0044 21db10ee856e5b54 {name 7}{n}"Jamais entrée, chu ?"
+f474-0045 7ebc290543e25f35 Maria{n}(Et aucun civil en vue.)
+f474-0046 f97fc59e6671dc9d Maria{n}(On m'a dit qu'il y avait{n}un abri d'urgence.{p}Se sont-ils réfugiés là ?)
+f474-0047 ce381ae30d5357c2 Maria{n}(Comment lui en vouloir ?{n}Je comprends un peu ce{n}que Margie doit ressentir.{p}Elle ne supporte sûrement{n}pas de rester inactive.)
+f474-0048 dc5541a082741ecc Maria{n}(J'espère que ça ira.)
+f474-0049 fac4372cd59d93d9 Maria{n}"Combien de temps pour{n}y arriver ?"
+f474-0050 66e89e7d3a396669 Maria{n}"Jamais entrée !?"
+f474-0051 b863ea91e18df307 Margie{n}"Bon, tout est scellé.{n}Même moi, je ne suis pas{n}allée bien loin dedans."
+f474-0052 0ed1046fa5a0d1ff Margie{n}"Alors je pars devant, je{n}vous attends à l'entrée."
+f474-0053 cb551a53b7b09144 Margie{n}"Bien !"
+f474-0054 d6e6b64d2f9e20c8 Courage, petit !
+f474-0055 ffd5158b09638f5b Ouais !{wait 30} Président !!
+f474-0056 fc6e5c515cd17f83 Bart{n}"Ha, t'es drôle, toi..."
+f474-0057 c61df18caae60723 Alors ce garçon sera{n}notre président...
+f474-0058 fad3f4977dce9651 Pourvu que les petits{n}reviennent vite...{p}Une bonne ville a des{n}enfants heureux et{n}souriants.
+f474-0059 039503365a5bde1a Pour l'instant, ça ne va{n}pas fort, mais les{n}habitants finiront par{n}revenir.{p}Tout redeviendra comme{n}avant... Je le sais.
+f474-0060 e9d2ca9e766f3fd8 J'espère vraiment que le{n}monde s'améliorera.
+f474-0062 819b3c49346cb662 Fei{n}"On ne peut pas partir{n}comme ça maintenant !"
+f474-0066 3a4e2f24c4eb2ca5 Fei{n}(La ville est bien{n}trop calme, allez{n}savoir pourquoi{wait 10}...)
+f474-0067 530a0f4406cd62ca Bart{n}(J'en sais rien, mais je{n}voudrais croire que tout{n}va encore bien.)
+f474-0068 ff723faa611a739d Fei{n}(Oui, j'ai entendu Bart en{n}parler, je crois.{p}Vous pensez que les gens{n}de la ville y sont allés ?)
+f474-0069 4037bca3976e4208 Bart{n}(Et de ton côté, alors ?)
+f474-0070 0340f1196826cfc0 Sigurd{n}(Les routes étaient{n}tout aussi calmes.)
+f474-0071 8c430a536f9b0a74 Bart{n}(...{wait 30} T'en penses{n}quoi, Sig ?)
+f474-0072 72d017fbd5b88881 Sigurd{n}(Avec le peu que j'ai vu,{n}je ne peux en dire plus.)
+f474-0073 9941d6023016367c Bart{n}(Soit ils n'ont pas encore{n}trouvé ce qu'ils{n}veulent...{p}Soit ils l'ont déjà trouvé{n}et n'ont laissé que{n}quelques gardes...{p}Dans tous les cas, il faut{n}vérifier que les habitants{n}sont sains et saufs avant{n}même de penser à filer.{p}Hé, au fait, Margie tient{n}le coup ?)
+f474-0074 e12e9474187f4e4a Sigurd{n}(En apparence, elle est{n}comme d'habitude...{p}Mais ce qu'elle ressent{n}au fond... ma foi, qui{n}peut le savoir...)
+f474-0075 2e2efd2ee06c283e Bart{n}(Je vois...{wait 30} Merci de{n}la surveiller, Sig.)
+f474-0076 be5f9a676e794d98 Sigurd{n}(De rien. Bien, je vais{n}diriger l'autre unité.)
+f474-0077 084e732c2096da94 Bart{n}(OK. Fais gaffe !)
+f474-0078 a88b47e56513a845 Bart{n}(Margie...{wait 30}{n}Je lui avais dit de{n}rester sur le navire.)
+f474-0079 9b8d5e663383ebca Bart{n}(Ouais, je sais, mais...{wait 30}{n}Bon, elle est déjà là, on{n}ne peut plus l'arrêter.)
+f474-0080 1e16dceee26cb68a Bart{n}(Bon...{wait 30}{n}On y va.)
+f474-0081 1eefa2ad3e6fe240 Fei{n}(Et de votre côté ?)
+f474-0082 da60b3bba2040e92 Sigurd{n}(Les ruelles sont tout{n}aussi calmes.)
+f474-0083 19fa04c0ccc9960a Fei{n}(Je vois.{wait 30}{n}Et là...?)
+f474-0084 b51a4369602f2e61 Sigurd{n}(Hmm, avec le peu que j'ai{n}vu, je ne saurais dire quel{n}sera leur prochain coup.{p}Mais nous ne pouvons pas{n}partir ainsi... Les{n}habitants ont couru un{n}danger pour notre trésor.)
+f474-0085 050a2523d5ac8d75 Fei{n}(Bien, d'accord.{wait 30}{n}Mais, au fait, Margie{n}va bien ?)
+f474-0086 b6968f525d8cc838 Sigurd{n}(Eh bien, à ce sujet...{p}Le jeune maître est assez{n}inquiet, car Marguerite{n}est venue avec nous.)
+f474-0087 3c736ba69b1f7f27 Sigurd{n}(Oui, mais vous savez{n}comment il est...)
+f474-0088 8b7fe0e1c5c6461c Sigurd{n}(Bien, je dois y aller.{p}Nous coordonnerons nos{n}mouvements avec les vôtres{n}et tenterons de percer par{n}le chemin de derrière.)
+f474-0089 d9b22e2a0dc38180 Fei{n}(Bien.)
+f474-0090 e19986dba3bca757 Citan{n}(Mais, après tout ce que{n}nous avons vu et entendu{n}jusqu'ici...{p}Nous devons comprendre que{n}Shakhan n'est plus un{n}problème qui ne concerne{n}que le jeune prince.{p}Si nous n'arrêtons pas{n}Shakhan et ses hommes ici,{n}la prochaine fois, c'est{n}nous qui serons frappés.{p}Préparons-nous et aidons{n}ces gens !)
+f474-0091 2c1550d23bd7343f Fei{n}(Mais, après tout ce qu'on{n}a vu et entendu{n}jusqu'ici...{p}On voit bien que Shakhan{n}n'est plus seulement le{n}problème de Bart.{p}Si on n'arrête pas Shakhan{n}et ses hommes ici, la{n}prochaine fois, c'est nous{n}qui serons en danger.{p}Préparons-nous et aidons{n}nos amis !)
+f474-0092 a24652c0327ca3ab Fei{n}(Bon, allons-y !)
+f474-0094 02fa4f48aa563e2b Fei{n}"Parfait ! On dirait qu'on{n}a eu raison de tous les{n}soldats de la ville."
+f474-0095 8299c6da6797f751 Sigurd{n}"Aucun signe des{n}habitants...{wait 30} encore."
+f474-0096 fb55b17e27f4dd88 Fei{n}"Bon, allons-y.{p}Il est où, ce mausolée ?"
+f474-0097 9d764f5c684e32a7 Bart{n}"Il y a une entrée derrière{n}la cathédrale.{p}Donc, d'abord, on doit{n}prendre la route qui fait{n}le tour de la ville et{n}entrer par-derrière."
+f474-0098 b6427c2cceb482d2 Bart{n}"Jusqu'au mausolée, c'est{n}pas si loin...{p}Mais après, je sais pas{n}combien il en reste."
+f474-0099 a89371ae8700b619 Fei{n}"Tu n'y es jamais entré{n}toi-même, Bart ?"
+f474-0100 9085a08d43a62a5c Bart{n}"Eh oui...{wait 30}{n}C'est aussi ma première{n}fois au-delà du mausolée."
+f474-0101 ae3a4d78c2a836ce Bart{n}"Donc ni Margie ni moi ne{n}savons grand-chose sur{n}l'endroit.{p}Sig et les gars sont déjà{n}partis, donc on ne{n}retournera pas au navire{n}de sitôt.{p}Pour l'instant, on va{n}devoir se débrouiller{n}seuls."
+f474-0102 198193308c381adc Bart{n}"On y va dès qu'on aura{n}fini les préparatifs.{p}Alors, tu peux nous{n}attendre à l'entrée ?"
+f474-0103 b50d665e8bf1f9e0 Bart{n}"Bon...{wait 30}{n}préparons-nous."
+f474-0104 8a0ba87268857176 Fei{n}"Mais on dirait qu'on ne{n}trouvera pas la vendeuse{n}d'outils."
+f474-0105 0fe93f4542a4528b Bart{n}"Hmm... Et si on laissait{n}la somme exacte sur{n}place ?{p}Bon, c'est pas très poli,{n}mais je suis sûr qu'ils{n}me pardonneront..."
+f475-0000 4acfd84e11e4bb59 Fei{n}"Je ne savais pas qu'il y{n}avait un passage secret{n}derrière la cathédrale."
+f475-0001 596bdc4cf85f9c9f Bart{n}"Eh oui.{wait 30}{n}D'habitude, il est fermé."
+f475-0002 d45f94d2fea49174 Fei{n}"Alors le mausolée est{n}là-dedans ?"
+f476-0000 f0b9d6d541c7cf7c  Fei{n}"Attends voir.{wait 30}{n}Ça va... jusqu'où !?"
+f477-0000 8684b4883e59a48c Fei{n}"...Et alors,{wait 30}{n}on fait quoi, là ?"
+f477-0001 99511dfa97ce9f81 Fei{n}"...Tu n'as pas..."
+f477-0002 fed4891e58909316 Fei{n}"Tu n'as pas oublié ce{n}qu'on doit faire, hein ?"
+f477-0003 54c611733cf9db5b Fei{n}(...Est-ce que{wait 30} tout va{n}bien se passer...?{p}Je commence à avoir des{n}doutes...)
+f477-0004 f02d37bc3c1de63b Elly{n}"...Et alors,{wait 30}{n}que fait-on ?"
+f477-0006 c63d77be231113af Fei{n}"Tu n'as pas oublié ce{n}qu'on devait faire...?"
+f477-0007 a3ba605c164a07bd Elly{n}(...Est-ce qu'on{wait 30} va{n}s'en sortir...?{p}J'ai un mauvais{n}pressentiment...)
+f477-0008 66822bb2f31eef79 Citan{n}"Eh bien, quel long{n}escalier !?{p}...Alors, quel est le{n}plan ?"
+f477-0010 3df95e1bc9119909 Fei{n}"Tu n'as pas oublié ce{n}qu'on devait faire...?"
+f477-0011 a55837c2d7f8e93a Citan{n}(...{wait 30}Tout ira-t-il{n}bien...?)
+f477-0012 6a72f62fa8c0398f Fei{n}"...Tu n'as pas..."
+f477-0014 4101c81dcc7bfe2c Balise provisoire.{n}Bart n'est pas en tête{n}du groupe.
+f477-0015 ae372cf0eff405cc Billy{n}"Ouf..."
+f477-0016 30131ae6e493c8df Billy{n}"...{wait 30} On dirait une{n}impasse. Tu comptais{n}faire quelque chose ?{p}Je vais essayer d'aider{n}comme je peux..."
+f477-0017 8402cfacb3a1a0c1 Billy{n}"...Tu n'as pas..."
+f477-0018 a1772bc57479e3c9 Billy{n}"Tu n'as pas oublié ce{n}qu'il fallait faire...?"
+f477-0019 7aad5df4b18e6ab5 Billy{n}"Il va...{wait 30}{n}bien, lui ?"
+f477-0020 d64d4f10e32ac6d7 Rico{n}"Mais quoi...?{wait 30}{n}C'est quoi, ça ?"
+f477-0021 28c17a2fbb7603ac Rico{n}"...Tu n'as pas..."
+f477-0022 a660735e6279df9c Rico{n}"Tu n'as pas oublié ce{n}qu'on devait faire...?"
+f477-0023 70af7975f083257a Rico{n}(On va...{wait 30} on va s'en{n}sortir ?)
+f477-0024 414b984f322a760a Maria{n}"...Quel est cet endroit ?{wait 30}{n}J'avance plus loin ?"
+f477-0025 4bf845b380fd886a Emeralda{n}"...Tu n'as pas..."
+f477-0026 b5463177c447abc2 Emeralda{n}"Tu as oublié ce qu'on{n}devait faire...?"
+f477-0027 0351adb830bfe67a Emeralda{n}(Ça...{wait 30} pas bon.)
+f477-0028 e750cc224374d08a {name 7}{n}"Un cul-de-chac, chu."
+f477-0029 6d85ee81c81bb092 {name 7}{n}"...Oh non..."
+f477-0030 d1ffb2d7d9092a8a {name 7}{n}"Tu as oublié ce qu'on{n}devait faire,{n}chu...?"
+f477-0031 4872c86705a31765 {name 7}{n}(...{wait 30} quelle mémoire{n}de poichon rouge, chu...)
+f477-0032 88f6a759142e055b Maria{n}"Et puis...{wait 10} quoi ?"
+f477-0033 7d60652929717dc9 Maria{n}"...Tu n'as pas..."
+f477-0034 7ecddd108a9217c7 Maria{n}"Tu n'as pas oublié ce{n}qu'il fallait faire...?"
+f477-0035 77fb108b86484ed5 Maria{n}(Hum...{wait 30} Il est moins{n}fiable qu'il n'y paraît.)
+f477-0036 00b2fb9d60998ce9 Margie{n}"Je l'ouvre ?"
+f477-0037 41074f0748ea5170 Il y a une sorte de{n}panneau.
+f477-0038 18982cdb8846f4d0 Y toucher ?{n}    Toucher{n}    Laisser
+f477-0039 797335706af7adfd Bart{n}"Ouais !{n}Voilà !"
+f477-0040 3d48b2e4388a4c44 Bart{n}"On y est."
+f477-0041 ac82c7bb62f68496 Bart{n}"Hé, du calme, ne me{n}presse pas."
+f477-0042 26375be06c00edf4 Bart{n}"Hé, lâche-moi et{n}tais-toi !"
+f477-0043 b475d724f010c2f9 Bart{n}"... Ça date, alors m'en{n}veux pas.{p}...{wait 30} Bon sang, j'ai{n}vraiment oublié."
+f477-0044 87a4aab022662ff1     NON ! Ça va venir !{n}    ...S'il te plaît...
+f478-0001 e3b047eae4c781b4 Mon petit !?
+f478-0003 db718279a6689001 Oui, tant bien que mal...
+f478-0004 87fcd0a791a2d24b Ah, oui, Shakhan ?{wait 30}{n}Non, je ne l'ai pas vu...{p}Seuls ces soldats sont{n}venus, avec des menaces{n}pour que je me taise...{wait 30}{p}Pardonne-moi, mon petit.{wait 30}{n}Si seulement j'avais eu{n}plus de courage.
+f478-0005 8f20813954dcb423 La ville est en sécurité.{n}Remontons là-haut !
+f478-0006 68d867a72bb3db6e Prenez toutes vos{n}affaires !
+f478-0007 a3628e5b3565e942 Mon petit,{wait 30}{n}sois prudent, dehors !{p}Je sais que tu vas{n}réussir.{p}Et quand ce sera fait...{wait 30}{n}promets-moi de te{n}présenter et d'annoncer{n}qui tu es.{p}Je veux te voir debout sur{n}la terrasse du Château{n}Fatima, plein de fierté !
+f478-0008 81c536a45d3076e2 Tu dois gagner, petit.{p}Je te soutiens !
+f478-0014 09555db69e9f62fc C'est Bartholomew !{p}Et Marguerite est avec{n}lui !
+f478-0015 6ba634f6836e7896 Hé, les amis !{wait 30}{n}Tout va bien !
+f478-0016 0bcf814a6c3bba99 Bartholomew,{wait 30}{n}vous êtes vraiment fort.{p}Je vous voyais aller et{n}venir de temps en temps,{n}sans y prêter attention.{p}Au fond, qui êtes-vous ?
+f478-0017 c8fac5862eb2f4fd Vous allez vaincre{n}Shakhan !?{n}Le...{wait 30} feu roi...?
+f478-0018 66b2ac4c577652df Vous êtes donc...
+f478-0023 55198b8efc1d45b6 Le sol...{wait 30}{n}Qu'arrive-t-il à la ville,{n}maintenant !?
+f478-0024 117ed700ef82dd40 C'est vrai !?
+f478-0025 2220d6084c4ae443     Monter{n}    Sortir
+f478-0027 b22c2b2df438fbe6 Bart{n}"Ils sont arrivés ici !"
+f478-0028 90691d16a828e2e8 Bart{n}"Le cercueil !?{wait 30}{n}La mère de Margie est{n}en sécurité !?"
+f478-0029 c42d7fe99494b761 Margie{n}"Tout va bien !{wait 30}{n}Nul n'y a touché."
+f478-0030 b1901012d0eec710 Bart{n}"Ouf...{wait 30} Bon.{wait 30}{n}Je respire."
+f478-0031 971787d18875ca2b Bart{n}"Vous allez...{wait 30} bien ?"
+f478-0032 0ec7f7f34280f206 Bart{n}"Shakhan...{wait 30}{n}Où est-il passé !?"
+f478-0033 1ac77fc70a410ee7 Bart{n}"Il n'est pas encore là{wait 30}{n}...c'est bizarre."
+f478-0034 4830d1e31f36d6d8 Bart{n}"J'ai réglé le problème{n}là-haut.{wait 30}{n}Vous pouvez remonter !"
+f478-0035 cbd0da3abc440e36 Bart{n}"Écoutez-moi bien, tous !{n}Mes..."
+f478-0036 2caf35ecdb80de07 Bart{n}"...Mes amis sont en route{n}pour Bledavik.{p}Leur mission : chasser{n}Shakhan du pouvoir."
+f478-0037 0fc6d9b413904352 Bart{n}"Ce pays doit être{n}rebâti de fond en comble.{p}Moi,{wait 30} j'ai hérité de cette{n}tâche de notre feu roi."
+f478-0038 2f72c9d52578c74d Bart{n}"Si tout va bien, nous{n}pourrons bientôt le{n}réaliser.{p}Croyez en moi, je vous{n}prie, et attendez-moi."
+f478-0040 3b120ed5cc37678f Bart{n}"Je sais pas ce qui s'est{n}passé, ni pourquoi j'ai{n}dit tout ça.{p}Ça me ressemble pas, de{n}parler comme ça..."
+f478-0041 d40729eb7d896fb6 Margie{n}"Tu aurais pu simplement{n}leur dire que tu étais{wait 30} le{n}prince."
+f480-0000 748115025f07802a Fei{n}"...{wait 30}Il fait noir{n}là-dedans."
+f480-0001 a7c218dc267459ba Fei{n}"Il y a quelque chose...{wait 30}{n}qui sent le moisi."
+f480-0002 a4debd269478c531 Elly{n}"...{wait 30}Il fait noir."
+f480-0003 9be10fb3d074a570 Elly{n}"...{wait 30}Odeur{wait 30}{n}de moisi."
+f480-0004 0d256043f02b552e Citan{n}"...{wait 30}Aucune lumière ici."
+f480-0005 d0d494e876221d1f Citan{n}"Hmm, pas d'aération.{wait 30}{n}D'où l'odeur de moisi."
+f480-0006 680154f7df879424 Billy{n}"...{wait 30}Qu'il fait noir."
+f480-0007 644292cb458956fe Billy{n}"...{wait 30}C'est sans doute{wait 30}{n}pour ça que ça sent{n}le moisi..."
+f480-0008 a98e6082682ab4d0 Rico{n}"...{wait 30}Noir."
+f480-0009 ef4a71e1f93db3c9 Rico{n}"...{wait 30}Odeur de moisi."
+f480-0010 3ff35f612b34db41 Maria{n}"...{wait 30}Il fait noir."
+f480-0011 f566505f644e159f Maria{n}"Je me trompe...{wait 30}{n}ou ça sent le moisi ?"
+f480-0012 f5db8b7c8c0f2b94 {name 7}{n}"...{wait 30}Tout noir, chu."
+f480-0013 339e3119758447b1 {name 7}{n}"...{wait 30}Beurk !{wait 30}{n}Ça chent le moisi, chu !"
+f480-0014 3d848f7c9ff6a7dc Emeralda{n}"...{wait 30}Obscurité.{wait 30}{n}Comme être morte."
+f480-0015 d77922c5076215dc Emeralda{n}"...{wait 30}Odeur bizarre."
+f480-0016 1761e77e74bb0b53   Bloc d'énergie utilisé.   {n}   L'ascenseur 1 n'est pas  {n}     en fonctionnement.     
+f480-0017 aa79f8b185a79301    Bloc de l'ascenseur 1{n} (↓Flux directionnel)  
+f480-0018 4896458c15b3c412   Bloc de l'ascenseur 2{n} (↑Flux directionnel) 
+f480-0019 89bfee8b96ca05c3 Bart{n}"Ah, ils ont dû couper le{n}courant vu qu'il n'y a{n}personne ici."
+f480-0020 6315448bbecdf9fd Margie{n}"On utilise cette zone du{n}bas comme mausolée...{p}C'est pourquoi il y a{n}toujours un minimum{n}d'énergie. Mais même les{n}soeurs n'y entrent pas."
+f480-0021 2791dbbc1394fe51 Bart{n}"Bien sûr.{wait 30}{n}Presque personne n'y est{n}jamais entré."
+f481-0000 de9b91f8af4b1fad Fei{n}"C'est...{wait 30}{n}la même statue d'ange que{n}dans la cathédrale."
+f481-0001 5cc66da4240c476a Fei{n}"Le...{wait 30}{n}Jaspe Fatima."
+f481-0002 3706e152f8731c3e Fei{n}"Que peut-il y avoir{n}au-delà{wait 30}...?"
+f481-0003 8db815eeb7c7ca8e Elly{n}"Une statue d'ange ici ?"
+f481-0004 dd62f377259ca7f1 Elly{n}"...{wait 30}Lecture rétinienne !?"
+f481-0005 4d09fc83c4c834b6 Elly{n}"Qu'y a-t-il donc{n}au-delà{wait 30}...?"
+f481-0006 4242343676bf48c5 Citan{n}"Une statue d'ange ici ?"
+f481-0007 3c0e990c88ca323d Citan{n}"Je vois...{wait 30} voici donc le{n}Jaspe Fatima."
+f481-0009 a0c4b4d69e264c21 Erreur Balise provisoire{n}(Bart n'est pas dans le{n}bon ordre)
+f481-0010 765a1fa45e7533ad Erreur  Balise provisoire{n}(Bart n'est pas dans le{n}bon ordre)
+f481-0012 69c60c3949536f08 Billy{n}"...{wait 30}{n}Une statue d'ange..."
+f481-0013 6e0b36dd1cf2518f Billy{n}"Les yeux brillent et...{wait 30}{n}la porte !?"
+f481-0014 6d7578e6647256fe Billy{n}"Qu'y a-t-il{n}au-delà{wait 30}...?"
+f481-0016 2ae74e451f0d54cb Rico{n}"...{wait 30}Bluffant."
+f481-0017 79a979cb6a6b102d Rico{n}"Qu'y a-t-il{n}plus loin{wait 30}...?"
+f481-0019 f8ec1d5414728b7b Maria{n}"...{wait 30}Alors il faut{n}l'ouvrir avec les yeux !?"
+f481-0020 8d44a37cc626bec5 Maria{n}"Qu'y a-t-il donc{n}au-delà...?"
+f481-0021 88d8e25675acf970 {name 7}{n}"Un ange, chu."
+f481-0022 c2d91549d52816b1 {name 7}{n}"Ouah, ouaaah !"
+f481-0023 20f067ca7a229620 {name 7}{n}"C'est comment, de{n}l'autre côté, chu ?"
+f481-0024 7f6495f1079dc79e Emeralda{n}"...Des ailes."
+f481-0025 92d7cb0655b8813c Emeralda{n}"Il y a quoi, devant ?"
+f481-0026 2c996ecda1f4d6d7 Bart{n}"Alors c'est la porte du{n}grand trésor royal."
+f481-0027 d3cc00f367f79247 Bart{n}"C'est l'heure{wait 30} pour le{n}Jaspe Fatima... d'entrer{n}en action...{p}Ah, c'est vrai, un des{n}miens est fermé."
+f481-0028 0afe2c539a92498f Margie{n}"Je suis là."
+f481-0029 34c7d94869ebf1e7 Bart{n}"Ouais.{p}Ce salaud de Shakhan a{n}cru que c'était le{n}pendentif royal."
+f481-0030 cb2c5859fe76dbde Bart{n}"Ça nous arrangeait,{n}alors j'ai gardé le{n}bec fermé."
+f481-0031 0681b1cf7e817d39 Margie{n}"Plus loin doit se trouver{n}le noyau central de la{n}forteresse."
+f482-0000 4da0ab7caab594d7 Fei{n}"Pas verrouillée ?"
+f482-0001 0592d137b2e712c0 Fei{n}"Une lumière très vive{n}vient de jaillir.{p}...{wait 30}Tu as fait un truc{n}qu'il fallait pas ?"
+f482-0002 45dc2ace7513680e Erreur{n}Ce personnage n'est pas{n}à Jasper.{n}Signalez ce bug, merci.
+f482-0003 ed7c2a8bd9cfa059 Fei{n}"Ne me mens pas !{p}Qu'est-ce que tu viens{n}de faire, bon sang ?"
+f482-0004 34adda3b6e47f831 Elly{n}"C'est fermé, je crois."
+f482-0005 e36a1a08144f4838 Elly{n}"Une lumière très forte{n}vient de jaillir.{p}...{wait 30}Tu as fait une{n}bêtise ?"
+f482-0009 9c6b037e356272f1 Citan{n}"C'est sans doute{n}verrouillé."
+f482-0010 009325091104a9ba Citan{n}"Quel était ce faisceau{n}lumineux si intense ?{p}...{wait 30} Vers où était-il{n}pointé ?"
+f482-0014 fb2358baa75b77dd Billy{n}"C'est fermé ?"
+f482-0015 0aeea65c41285f3c Billy{n}"Ça venait d'un canon à{n}faisceau..."
+f482-0016 31c7cc6a6246630e Rico{n}"Ça doit être fermé."
+f482-0017 f92861a2fcac258c Rico{n}"Ce canon à faisceau...{n}Ça sent pas bon du tout !"
+f482-0018 d6a52073e4f44e02 {name 7}{n}"Ch'est fermé, chu."
+f482-0019 6a1aedd21ad85430 {name 7}{n}"Tellechu distrait !"
+f482-0021 cee8f528d65b9daf Emeralda{n}(Hmm... Quelque chose{n}cloche.)
+f482-0026 59991f993bd57cd6 Fei{n}"Hé, mais c'est...{wait 30} le{n}vendeur d'outils !?"
+f482-0027 e2162d15f4940509 Bart{n}"Tu vas bien."
+f482-0028 e6f9307b3fc9a499 Oui, ma femme et moi{n}avons fui ensemble.
+f482-0029 acafc9c88140776e Bart{n}"Tu fais quoi ici,{n}toi !?"
+f482-0030 fbfab2a53bed11ea Eh bien, en revenant en{n}ville, j'ai entendu dire{n}que vous étiez au fond du{n}mausolée...{p}Je me suis dit...{wait 30}{n}'Il se passe quelque{n}chose !'{p}Je ne pouvais pas rester{n}là... alors je suis venu.
+f482-0031 9f4a07596e319826 Bart{n}"C'est dangereux, tu{n}devrais repartir."
+f482-0032 f005aae387b54049 Pas question, je suis venu{n}jusqu'ici, je ne pars pas !{p}Je reste pour vous aider.
+f482-0033 661273bd85384a2f     Objets{n}    Accessoires{n}    Rien, merci
+f482-0034 4d76cc11a3e87218 Allez, Bartholomew !{wait 30}{n}Et vous tous aussi !
+f482-0037 7cedebd752297e87 {item} :{n}vous en avez le maximum.
+f482-0038 764e4e6fa8c7d144 Reçu : {item}.
+f482-0039 ff4545de940ad9b6 Bart{n}"Combien d'énergie ?"
+f482-0040 699fef8b5713e2d2 Rico{n}"Au fait, il reste{n}combien de tirs ?"
+f482-0041 62fd3f8b17ece55e Billy{n}"Le canon à faisceau{n}a des munitions{n}limitées, non ?"
+f482-0042 ce32192eb7f3dcd3 {name 7}{n}"On peut tirer{n}chouvent ?"
+f482-0043 35b902862a896d86 Maria{n}"On a combien de{n}recharges, environ ?"
+f482-0044 79f521c7fb51efb9 Bart{n}"Hé, y avait pas un gros{n}réservoir dans une des{n}salles pas visitées ?"
+f482-0045 a9318936df70330f Rico{n}"Ouais, y avait pas un{n}genre de gros réservoir{n}dans l'autre zone ?"
+f482-0046 634e65a96b00c17b Erreur.{n}Billy n'est pas{n}en tête.
+f482-0047 bee92825197bc2cf {name 7}{n}"Y avait un gros truc{n}rond là-bas, chu."
+f482-0048 f68229647183401a Maria{n}"Il y avait une sorte de{n}grand réservoir au centre{n}de l'autre salle."
+f482-0049 7a65966a929a48e4 Bart{n}"...donc il reste{n}que 3 tirs."
+f482-0050 a0ae34e5b6254024 Rico{n}"...Donc on a{n}3 tirs."
+f482-0051 e5fc78c7d2e7ea0d Billy{n}"Il y en avait 3, je{n}crois... 3 tirs{wait 30}."
+f482-0052 6d11db23fde32b92 {name 7}{n}"Y a 3 réservoirs.{n}Donc 3 tirs, chu !"
+f482-0053 673bc6283ed39d1f Maria{n}"3 réservoirs.{wait 30}{n}3 tirs..."
+f482-0054 875df62757d2620e Bart{n}"Encore un moment avant{n}le tir... Citan va bien,{n}j'espère ?"
+f482-0055 1448b40785db84f3 Rico{n}"On dirait que la charge{n}met encore du temps.{wait 30}{p}Pourvu que tout aille{n}bien à Babel."
+f482-0056 5d03df5ca8f47f6f Erreur d'événement.{n}Billy n'est pas{n}en tête.
+f482-0057 cd35f5edb055567b {name 7}{n}"Faut attendre{n}la charge, chu !"
+f482-0058 019d5cce266a4a95 Maria{n}"Cette charge va{n}prendre un moment.{p}Je vais attendre des{n}nouvelles de ceux{n}de Babel."
+f482-0059 f26d1f876266a936 Bart{n}"Presque !"
+f482-0060 6906b5616e411bf3 Rico{n}"Ça avance.{wait 30}{n}Encore un peu."
+f482-0062 25a42f75a4e0e83e {name 7}{n}"Plus qu'un chouïa !"
+f482-0063 0862efe7b405fe95 Maria{n}"Encore un effort,{n}tenez bon !"
+f482-0064 4a087b6c86073a26 Bart{n}"Un Gear sur le{n}radar !"
+f482-0065 f73b0e79ad01b0e6 Rico{n}"Un truc sur le radar !{n}Des Gears...{wait 30}{n}plusieurs."
+f482-0067 6e8f81d31dd55b8e {name 7}{n}"Y a un truc{n}au radar, chu."
+f482-0068 7a906c3590ea2cf5 Maria{n}"Signal radar !{wait 30}{n}D'après la taille...{n}sûrement des Gears."
+f482-0069 44ad99a0bb4de50d Bart{n}"Les voilà."
+f482-0070 e27166f2c82e51a4 Rico{n}"De la visite."
+f482-0072 f8b218061db4c8e2 {name 7}{n}"L'ennemi{n}arrive, chu !"
+f482-0073 7de81528e02a3ff4 Maria{n}"Les voilà !"
+f482-0074 9232514e3194eb5a Bart{n}"Bon sang !{wait 30}{n}Repérés !"
+f482-0075 8f25764e8f01fde7 Rico{n}"Diable !{wait 30}{n}Ils sont là !"
+f482-0076 1f93cf32ff9f9bef Erreur d'événement.{n}Billy n'est pas{n} en tête.
+f482-0077 3ad98bbaaae6f424 {name 7}{n}"Repérés !"
+f482-0078 1e2acfd0bac1bf04 Maria{n}"Ils savent qu'on est{n}là, on dirait !"
+f482-0079 a9f545147edd6a73 Bart{n}"Je sors riposter !{wait 30}{n}Billy, ça ira, toi ?"
+f482-0080 a229e9c59831d286 Rico{n}"Je sors !{wait 30}{n}Hé, Billy, le reste,{n}c'est à toi !"
+f482-0081 150c4fcbe4c2b575 Erreur d'événement.{n}Billy n'est pas{n}en tête.
+f482-0082 fdb078ecb4e3413d {name 7}{n}"Chu vais cogner !{wait 30}{n}Billy, ça ira tout{n}seul, chu ?"
+f482-0083 6fefa90da40581fe Maria{n}"Nous sortons pour{n}vous couvrir.{p}Billy, la suite{n}dépend de toi."
+f482-0084 a924e3675b27ff5e Bart{n}"Tire pendant qu'on{n}les retient !{wait 30}{n}Bonne chance !"
+f482-0085 cdbc1eac37d43880 Rico{n}"On les retient,{n}alors grouille-toi{n}et fais feu !"
+f482-0087 912c23420d5f184a {name 7}{n}"On va s'en charger !{wait 30}{n}Tire quand tu peux,{n}Billy, chu !"
+f482-0088 7977e43a8407e934 Maria{n}"Je sors."
+f482-0089 5914ef3e981287c0 T'inquiète pas.
+f482-0091 f403ae15a3e35f57 Du calme.
+f482-0094 a116befd1e1300da {name 7}{n}"Pas de{n}chouci."
+f482-0096 09c2ba31cca971f5 Maria{n}"Reste calme et vise{n}bien, je t'en prie !"
+f482-0098 c88ac936eb2c5946 Aucun effet.
+f482-0099 0097a66e699dc163 Bart{n}"...{wait 30}Bloqué."
+f482-0101 07d20e23623bade6 Margie{n}"On va d'abord voir{n}le grand trésor ?"
+f482-0102 3246ad9374168849 Bart{n}"Hmmm...{p}Visiblement, Shakhan{n}n'a pas eu le grand{n}trésor non plus."
+f482-0103 8d456c81e3a54b1c Fei{n}"Oui...{p}Quand on a quitté Nisan,{n}Bart et compagnie ont dit{n}n'être jamais venus ici.{p}Bon, d'abord, trouvons{n}le grand trésor."
+f482-0104 2446177878532bca Bart{n}"Ouais...{p}Le grand trésor est{n}forcément quelque part{n}dans le{p}mausolée. Mais je sais{n}pas dire où{n}exactement.{p}Alors trouvons-le, et{n}on verra ensuite quoi{n}faire."
+f482-0105 b090e0e370a8c59e Bart{n}"Bon...{wait 30}{n}C'est parti !"
+f482-0106 1235781ce9210963 Bart{n}"Y a plein de cadrans{n}et de jauges, ici."
+f482-0107 b052810b8ce3e020 Margie{n}"Le plus impressionnant,{n}c'est quoi ? Ta cabine{n}de pilotage{p}ou celle d'ici ?"
+f482-0108 2fc1108b4a1bca0b Bart{n}"Le mien, voyons..."
+f482-0109 8546f363cec64ef8 Bart{n}"Hum... celui de nos{n}ancêtres est sans doute{n}mieux."
+f482-0110 7973cc465b6f25b0 Bart{n}"Et toi, arrête de poser{n}des questions tordues.{p}D'ailleurs, on dit pas{n}cabine de pilotage. C'est{n}la passerelle, compris ?"
+f482-0111 bc4df6532da1278f Margie{n}"Et ça change quoi ?"
+f482-0112 395778358ff3c07c Bart{n}"Très bien.{wait 30}{n}Je vais y arriver !"
+f482-0114 e17f68658c716949 Bart{n}"Ouaiiis !{n}C'est ça !!"
+f482-0115 e31670ba54151b2a  {n}"Ah, VRAIMENT !?"{wait 30}{n}                                   
+f482-0116 a44fbeffd8d7f636 Bart{n}"Hein ?{wait 30}{n}De quoi vous parlez ?"
+f482-0117 a79e3726410c9d9f Fei{n}"Arrête de plaisanter !{wait 30}{n}Sur quoi t'as appuyé,{n}bon sang !?"
+f482-0118 4f98efaa16b61f42 Bart{n}"...{wait 30}Ahhh...{wait 30}{n}Bon, je dirais pas que{n}c'est un succès total...{p}mais pour l'instant,{n}ça ira."
+f482-0119 e89229c3e3a055d1 Bart{n}"Vous en faites pas !{wait 30}{n}J'ai jamais rien cassé{n}jusqu'ici, hein ?{p}J'ai cassé un truc !?"
+f482-0120 10783beb26134400 Bart{n}"Alors... Mesdames et{n}messieurs, admirez !"
+f482-0121 a946c7bee97a17ae Bart{n}"C'est pas la Tour de{n}Babel, là-bas au loin ?"
+f482-0122 fc048806508307b7 Bart{n}"Alors ?{wait 30}{n}C'est pas trop gé{wait 60}niaaal !?{p}Il flotte grâce au Jaspe{n}Fatima...{p}Je l'appelle Fort Jasper,{n}et on le voit de loin.{p}Ce canon à faisceau de tout{n}à l'heure peut sûrement{n}atteindre la tour !"
+f482-0123 31fdc093f78b0c5c Bart{n}"Bon, je voulais juste vous{n}montrer sa grandeur.{p}Vous avez déjà vu un canon{n}pareil ? Et allez pas le{n}confondre avec la sarbacane{n}de Vanderkaum. Celui-ci est{n}bien plus puissant et bien{n}plus raffiné. Après tout,{n}c'est pour ça que mes{n}ancêtres s'en sont servis{n}pendant des générations{n}pour garder le trésor.{n}Ouais, c'est du sérieux. Et{n}oubliez pas ça.{n}Donc, comme je disais,{n}j'ai encore rien cassé."
+f482-0124 480d20e26fd3f2ff Bart{n}"Bon, on prend ce trésor{n}et on rentre à la maison !{p}D'abord, il faut ouvrir{n}cette porte dans le dôme !{p}Mais l'interrupteur de ce{n}tableau de bord sert à{n}rien, je crois."
+f482-0125 29bf3a02e64d944e Bart{n}"Là !"
+f482-0127 b0f40715e0f2e9ad Fei{n}(Tu n'as pas dit, tout à{n}l'heure, avoir appuyé sur{n}le mauvais bouton ?)
+f482-0128 9d6b96781386d019 Bart{n}"Hé, c'est tous les mêmes.{n}Bah, tant pis, on va{n}appuyer un peu partout."
+f482-0129 eef30de766709a5c Fei{n}"Hé, hé !{n}C'est sûr !?"
+f482-0130 2291123a5cb48824 Bart{n}"Bon,{wait 30} sortons vite le{n}trésor d'ici."
+f482-0131 56e10854cd905ac4 Très bien, prince{n}Bartholomew.{p}Merci d'avoir brisé{n}le sceau.
+f482-0132 eee7e808aae4001a Bart{n}"Cette voix,{wait 30}{n}Shakhan !"
+f482-0133 4a6e8345c249d0b3 Bart{n}"Salaud !{wait 30}{n}C'était un piège !?"
+f482-0134 29873a50cffba034 Shakhan{n}"Bien sûr."
+f482-0135 bad8707f13b68672 Shakhan{n}"Vous ne pensiez pas que{n}la porte s'ouvrirait pour{n}n'importe qui, j'espère ?{p}J'ai simplement laissé{n}fuiter l'information, puis{n}attendu votre arrivée."
+f482-0136 ca66148dc2a22bd9 Bart{n}"Zut, voilà pourquoi je{n}sentais plus ta puanteur{n}depuis un moment !"
+f482-0137 31382c7695ba4169 Shakhan{n}"Connaissant votre nature{n}impulsive, je savais que{n}vous viendriez...{p}Mais je n'aurais jamais{n}cru que vous iriez jusqu'à{n}briser le sceau pour moi."
+f482-0138 3f7a9fc8ae7fed9b Bart{n}"Espèce de...{wait 30}{n}Tu te fiches de moi !"
+f482-0139 d94532b9756a7e6e Shakhan{n}"Mes soldats occupent{n}déjà cette zone.{p}Si ça ne vous plaît pas,{n}venez donc m'affronter !{p}Ha ha ha !"
+f482-0140 af19575a86910c4b Billy{n}"Commençons les{n}préparatifs."
+f482-0141 96bad5668636663e Billy{n}"Et la charge ?"
+f482-0142 69a847c2f8cf4c29 Billy{n}"Argh ! On est si près{n}du tir !"
+f482-0143 7df22336b87d8401 Billy{n}"Je dois y arriver !"
+f482-0144 8c464f2974aa7c93 Billy{n}"Je m'en charge !"
+f482-0145 98cc85b0ec02d085 Billy{n}"Feu !"
+f482-0146 ab91ab2c70a8ed88 Billy{n}"Raté !"
+f483-0000 21305c73973ffaf6 Fei{n}"Un souci ?"
+f483-0001 5b62eb0e10adca21 Fei{n}"C'est toi, ça ?"
+f483-0003 7b4dc23f069c05a9 Elly{n}"C'est toi, ça ?"
+f483-0004 bfa8a0805d80442c Fei{n}"Qu'y a-t-il ?"
+f483-0005 c7488452070c2a19 Citan{n}"C'était le jeune homme{n}qui manipulait ça..."
+f483-0006 e23a0b7ce1962d66 Bart{n}"Sûrement...{wait 30}{n}un bouton...{wait 30}{n}touché par mégarde."
+f483-0007 094e0501beafa66c Billy{n}"Qu'y a-t-il ?"
+f483-0008 c4f20d2981da1104 Billy{n}"Ça doit être ton{n}pilotage de génie."
+f483-0009 09cd01027d2a6015 Rico{n}"Et là ?"
+f483-0010 4d3fde0f5440d3b8 Rico{n}"Hé, c'est quoi ça ?"
+f483-0011 4911dfd6ecff6e9c {name 7}{n}"Qu'y a-t-il, chu ?"
+f483-0012 67edde1489530338 {name 7}{n}"Hé, c'est toi qui{n}tripotes ça, chu !"
+f483-0015 a44f29ae74a966c4 Maria{n}"Qu'y a-t-il ?"
+f483-0016 80bc45bdff52a82a Maria{n}"Ce n'était pas toi{n}aux commandes ?"
+f483-0017 fcbe75b5433422e8 Tolone{n}"Bon, ça suffit.{p}Vous étiez donc sérieux !?{n}Refléter un gros laser sur{n}un miroir, vraiment...{n}Quelle bêtise."
+f483-0018 541c00de1116de06 Tolone{n}"En l'inclinant...?{p}...à cause du taux de{n}perte ?{p}Le taux de perte dans{n}l'atmosphère sera énorme."
+f483-0019 f1177213371769d5 Tolone{n}"...Ne dites pas un mot !{p}...quoi que vous tramiez,{n}le Gear de Tolone, le{n}'Skyghene', va vous{n}écraser à coup sûr !"
+f483-0020 49a13da9e7d5fd3c Tolone{n}"Hmmph,{wait 30} je n'arrive pas à{n}croire que vous ayez{n}trouvé un plan si bête."
+f483-0021 c8ddf9cacdd5acd7 Tolone{n}"Parlez tant que vous le{n}pouvez encore.{p}À cette heure, Dominia et{n}Kelvena doivent avoir pris{n}la Tour de Babel.{p}Maintenant, disparaissez{n}d'ici !"
+f483-0022 3bc4d2511ae20f9d Seraphita{n}"Tolone, Tolone !!{n}Ah, ah, te voilà !!"
+f483-0023 62c45c9e8da9747b Seraphita{n}"Les tractions la tête en{n}bas, c'est super dur !!!{p}Mais moi, j'en fais 300,{n}tu savais ?"
+f483-0024 6d339d0f73a4991a Seraphita{n}"Ah, oui, oui !{n}Ça y est ! Je sais !{p}La soupe au tofu,{wait 30}{n}c'est ça ?"
+f483-0025 7a0ad530cf153310 Seraphita{n}"Qui l'eût cru ?"
+f483-0026 c6af047622a1ec44 Seraphita{n}"...Super !!"
+f483-0027 22471574a8f2b832 Bart{n}"Vas-y, Billy, tire !"
+f483-0028 5f4e5b157e1b08d2 Rico{n}"Vas-y, Billy, tire !"
+f483-0029 adf377b493187c0a {name 7}{n}"Billy, tire, vite, chu !"
+f483-0030 d44a7abebc7de300 Maria{n}"Vas-y, Billy, tire !"
+f483-0031 4b26c620b76ae0d6 Bart{n}"Hé ! {wait 30}{n}Faut essayer pour savoir."
+f483-0032 455ce2e63e1a1380 Rico{n}"On va voir tout de suite{n}si c'est idiot ou pas."
+f483-0033 0d21ef6dbd151f26 {name 7}{n}"Ne vous moquez pas du{n}Jasper de Bart, chu !"
+f483-0034 da020e1d9a832a9c Maria{n}"Impossible de savoir sans{n}essayer.{p}Ce ne serait pas vous qui{n}sous-estimez les habitants{n}de la surface ?"
+f483-0035 f3c18297a7160a97 Bart{n}"Du calme, vise bien !"
+f483-0036 f1ffa0418d71e6da Rico{n}"Du calme.{n}Il reste encore{n}de l'énergie."
+f483-0037 3a5f0099c149a194 {name 7}{n}"Billy, tu auras le{n}prochain, chu !!"
+f483-0038 8920df57381d3f5e Maria{n}"Ne t'en fais pas.{n}Il reste de l'énergie."
+f483-0039 3151826a378966e2 Bart{n}"Les revoilà !"
+f483-0040 0c2318fdbc319682 Rico{n}"Les revoilà !"
+f483-0041 6dd9975ee9e9e1c5 {name 7}{n}"Les revoilà, chu."
+f483-0042 5417cd7605c35d6c Maria{n}"Ces deux-là reviennent."
+f483-0043 febbc4b074616c6a {speed 255}Au Yggdrasil
+f483-0050 2aa31e2e16d31517 Bart{n}"On a émergé !{p}Maintenant, ouvrez{n}le dôme."
+f483-0051 dba3b5a1ed23bc50 Bart{n}"...Hein ?"
+f483-0053 b13a76fa0842cd21 Bart{n}"Hein ?{wait 30} Non,{wait 30} ça{n}bouge déjà."
+f483-0054 e2000522358477b6 Bart{n}"Non.{p}Pas pour ça."
+f483-0055 fb271db8799f54bf Le Fort Jasper a émergé.{p}Vous devriez aller à{n}Babel vérifier les{n}systèmes.
+f483-0056 34ce6205eb85d386 Tolone{n}"Ha !{wait 30}{n}Goût d'Agneau..."
+f483-0057 fecaa23acd6fd33e Seraphita{n}"...Goût...!!"
+f484-0000 1755b05aab875a83     Monter{n}    Laisser
+f485-0000 ede921f12d96d476        Ascenseur 2{n} (↓Contrôle/Bl. énergie) 
+f485-0001 cf11a95d2408f747  Bloc d'énergie 
+f485-0003 7bf35aa67e783460  Bloc de l'ascenseur 2 
+f486-0000 3d1e278b50e67927 Fei{n}"Doc !"
+f486-0007 cb7ce14fdfe80ffa {name 7}{n}"Citan, ch'est toi !"
+f486-0008 3cc2a79e97b170ce Sigurd{n}"Venez, il faut rejoindre{n}Marguerite !"
+f486-0009 b9d5e2611d3ef995 Citan{n}"Faisons vite !"
+f486-0012 fc400b416c2c18cc Bart{n}"...{wait 30}C'est fermé.{wait 30}{n}Ça s'ouvre d'où, ça ?"
+f486-0015 51a656410d583f0f Bart{n}"L'un après l'autre...{wait 30}{n}Ils lâchent jamais, eux ?"
+f486-0016 c4a8605a4d7f66e2 Shakhan{n}"Très impressionnant,{n}prince Bartholomew.{wait 30}{n}Vous ne passerez pas."
+f486-0017 1fbe0c5f36fe2fe1 Bart{n}"Le siège est tombé.{wait 30}{n}Tu vas faire quoi, là ?{p}Et si tu te suicidais{n}avec honneur ?{p}Une mort bien digne{n}d'un homme d'Église."
+f486-0018 d4f417e558667577 Shakhan{n}"L'Ethos est bien plus que{n}vous ne l'imaginez.{p}Nous ne formons pas un seul{n}bloc. Chacun de nous a ses{n}propres desseins.{p}Pas question d'admettre la{n}défaite juste parce que le{n}siège est tombé.{wait 30} J'ai mes{n}propres raisons.{p}Et c'est pour elles que je{n}me suis servi d'Aveh et de{n}Gebler. Le trésor est à{n}moi.{wait 30} Retirez-vous donc."
+f486-0019 aecefa292a6ea20b Bart{n}"...{wait 30}{n}Zut !"
+f486-0020 61b00255d32aa7f8 "Après{n}elle !"
+f486-0021 07c6f34c41a3cdb2 Shakhan{n}"Hmph...{wait 30}{n}Tu essaies vraiment de{n}protéger l'Omnigear ?{p}Que crois-tu qu'une{n}gamine puisse faire ?{p}Comme on dit, tomber de{n}Charybde en Scylla...{n}idiote !"
+f486-0022 5ae525075dd80006 Shakhan{n}"Je vais régler ça une{n}bonne fois pour toutes !{p}Cette sale gamine s'est{n}moquée de moi une fois de{n}trop. Je vais l'envoyer,{p}avec tout ce qui{n}l'accompagne, au fin fond{n}de l'enfer."
+f486-0023 2b2126b9987ca0ec Bart{n}"Bon sang...{wait 30}{n}Pousse-toi,{n}ordure !"
+f486-0024 4f0c7931c212e8a2 Vous êtes allé{n}trop loin.
+f486-0025 afd82b1135659bfb Bart{n}"Sig !{wait 30}{n}Tu fais quoi ici !?"
+f486-0026 0d39a9d5174fd1bf Sigurd{n}"J'ai laissé Maison{n}garder la capitale.{p}Inquiet pour vous, je{n}suis revenu."
+f486-0027 a25280e822043979 Sigurd{n}"Shakhan,{wait 30}{p}ce n'est qu'une question{n}de temps avant que{n}Bledavik nous revienne.{p}À ce stade, vous n'avez{n}nulle part où aller."
+f486-0028 16b840fb099b37d5 Shakhan{n}"Errrgh...{wait 30}{n}Ce n'est pas fini !{p}Margie est toujours{n}avec moi.{p}Pour l'heure, elle{n}sera{n}de nouveau mon otage{p}jusqu'à ce que j'aie{n}cet Omnigear."
+f486-0029 2bda6d27145a2dc1 Bart{n}"Reviens{n}ici !"
+f486-0030 fbc3ccce814ef125 Bart{n}"Zut,{wait 30} ça s'ouvre pas !{wait 30}{n}Fermé de l'intérieur."
+f486-0031 c0593c09ee87900e Sigurd{n}"Jeune maître, attendez,{n}je vous en prie !"
+f487-0000 2b2af777e7dedc1d Bart{n}"Encore une serrure à{n}Jaspe..."
+f487-0001 3958c52aecefec21 Margie{n}"Essayons."
+f487-0002 5bdbcf540de91777 Bart{n}"Argh !{wait 30}{n}J'ai un seul Jaspe{n}Fatima !"
+f487-0003 7a5d9cb4ae7ebf47 Sigurd{n}"Du calme, jeune maître !"
+f487-0004 68df4efba05bc084 Bart{n}"Sig...{wait 30}{n}Je fais quoi !?"
+f487-0005 69849df50d176c58 Sigurd{n}"Montrez votre bon oeil !{wait 30}{n}Je fais l'autre moitié !"
+f487-0006 d54bc346803d686a Bart{n}"...{wait 30}Mais comment...?"
+f487-0007 a890589b0d4e3f6d Sigurd{n}"Allez-y !"
+f487-0008 de41c1aab1185a36 Bart{n}"Voilà !{wait 30} Ouvert."
+f487-0009 d1d518af062e1141 Bart{n}"?{wait 30} Sig...!{wait 30}{n}Comment TON oeil a pu{n}marcher !?"
+f487-0010 3e0bb3dc4daff9bd Sigurd{n}"Le temps presse !{wait 30}{n}Il faut rejoindre{n}Marguerite, vite !"
+f488-0000 b18bc36cfb0f57b6 Shakhan{n}"Argh ! Pourquoi ce{n}retard ?"
+f488-0001 1cb99a74ef841c38 Shakhan{n}"Imbéciles ! Ce n'est{n}qu'une enfant ! Que{n}peut-elle faire !?{p}Vite, attrapez-la !"
+f488-0002 44648eaa268813d4 Mais...{wait 30}{n}Quand même, c'est{n}un Omnigear...
+f488-0003 f5c7a6bcb775dc0e Bart{n}"Margie !{wait 30}{n}T'es où ?"
+f488-0004 5b601550bddf2839 Bart{n}"Margie...{wait 30}{n}Là-dedans...!"
+f488-0005 e2d19788a6cf4368 Fei{n}"Bref, allons-y !"
+f488-0006 a12abbbc8a82d792 Shakhan{n}"Je le tenais presque !"
+f488-0007 4c8e8ccd18991a89 Bart{n}"Hé !{wait 30}{n}Tu m'échapperas pas !"
+f488-0008 8947a18a673aec02 Bart{n}"Ce salaud n'ira nulle{n}part !"
+f488-0009 6ca65d3148058525 Citan{n}"Attendez, jeune homme,{n}je vous prie ! Margie{n}va-t-elle bien ?"
+f488-0010 71769b8db85b40e7 Bart{n}"Ah... oui !"
+f488-0011 be851175ba18250a Bart{n}"Hé, Margie...{wait 30} ça{n}va ? Margie !{wait 30}{n}Margie, réveille-toi !!"
+f491-0000 5a573257e3313f24 Fei{n}"Après tant d'années,{n}il est en parfait{n}état !"
+f491-0001 292e1b8e9aa1f9be Fei{n}"...{wait 30} On dirait vraiment{n}le Gear de Bart."
+f491-0002 540feefdd816a0bd Fei{n}"Le moteur a été{n}scellé..."
+f491-0003 f8befac6b8ba5a39 Fei{n}"Bon, comment je le{n}sors d'ici ?"
+f491-0004 cfc98f706b92ebf8 Fei{n}"Tu as dit{wait 30} qu'il{n}apparaîtrait là-haut si{n}on lisait les yeux.{p}Tu crois qu'on peut bouger{n}ce bâtiment ?"
+f491-0006 50e70e97c4124fb5 Fei{n}"Bien !"
+f491-0007 965b351cd00c63bc Elly{n}"Après tant d'années, il{n}est en parfait état !"
+f491-0008 b7c987254c96548e Elly{n}"Ça...{wait 30} ressemble beaucoup{n}à ton Gear."
+f491-0009 0f90fe63a547f174 Elly{n}"Le moteur est{n}scellé ?"
+f491-0010 ce806c7af00d6373 Elly{n}"Et là, comment je le{n}sors d'ici ?"
+f491-0011 ebb9064d3572d388 Elly{n}"Avant...{wait 30} tu as dit qu'il{n}apparaîtrait là-haut si on{n}lisait les yeux...{wait 30}{p}Tu crois que cette structure{n}pourrait bouger ?"
+f491-0012 87c58791a8521913 Elly{n}"Allons !"
+f491-0013 bc63b3ca4dd6e35e Elly{n}"Oui !"
+f491-0014 8b096ef087259e48 Citan{n}"Dans un état si parfait...{n}incroyable !"
+f491-0015 6820a0cfac8a9f76 Citan{n}"Un instant...{wait 30}{n}il ressemble...{p}...au Gear de Bart.{n}Il doit y avoir un{n}lien."
+f491-0016 ecdeed029036c8fd Citan{n}"Le moteur semble{n}scellé."
+f491-0017 66106e743a941f8e Citan{n}"Bien, et comment le{n}sortir d'ici ?"
+f491-0018 33e2c0c34a35f9d2 Citan{n}"Vous...{wait 30}avez dit que{n}s'il lisait vos yeux, il{n}apparaîtrait là-haut...{p}Cette structure peut-elle{n}se déplacer ?"
+f491-0019 f27c3b5f2e4aa43e Citan{n}"Allons-y !"
+f491-0020 a338776efc23cf7f Citan{n}"Oui !"
+f491-0021 0755b12ec567bd4b Billy{n}"...Ouah !"
+f491-0022 f72116b257fdd0be Billy{n}"Mais...{wait 30} c'est comme le{n}Gear de Bart."
+f491-0023 946732ae4593aed8 Billy{n}"Donc il est scellé..."
+f491-0024 ec467a536754a6ba Billy{n}"Je dois le sortir d'ici.{wait 30}{n}Comment faire ?"
+f491-0025 67d3d3993db1574b "Tu...{wait 30}as dit qu'il{n}apparaîtrait là-haut si{n}on lisait les yeux...{wait 30}{p}Tu crois que cette{n}structure peut bouger ?"
+f491-0026 c8561a7474a2078a Billy{n}"Allons-y !"
+f491-0027 c2cfa83059a70012 Billy{n}"Bien !"
+f491-0028 4b4682d9b55444a7 Rico{n}"...Dingue !"
+f491-0029 aac86b5823078909 Rico{n}"Hé...{wait 30} ça ressemble pas{n}beaucoup au tien ?"
+f491-0030 ee3150ae208d08d9 Rico{n}"Ouais, le moteur est{n}bloqué..."
+f491-0031 61b8a509fc42b598 Rico{n}"Comment je vais sortir{n}ce truc d'ici ?"
+f491-0032 fe52d84fd2c9a524 Rico{n}"T'as pas dit...{wait 30}qu'il{n}apparaîtrait là-haut si{n}on lisait les yeux...{wait 30}{p}Tu crois que cette{n}structure peut bouger ?"
+f491-0033 87ac3b8c76f31611 Rico{n}"Hé, allons-y !"
+f491-0034 7b8a47a4329b6b3b Rico{n}"Voilà !"
+f491-0035 bfdd58aff48c5aff Maria{n}"...Quel engin{n}impressionnant !"
+f491-0036 14f068e209eb736d Maria{n}"Il rappelle un peu ta{n}machine, Bart."
+f491-0037 40019598250d7b0e Maria{n}"Y a-t-il autre chose à{n}faire ?"
+f491-0038 3f74980a63e8e3ac Maria{n}"On va le libérer, non ?"
+f491-0039 1fb2e2d9ff920caa Maria{n}"Avant...{wait 30} tu as dit qu'il{n}apparaîtrait là-haut si on{n}lisait les yeux...{wait 30}{p}Tu crois que cette structure{n}pourrait bouger ?"
+f491-0040 d32e744af0faaba3 Maria{n}"Allons !"
+f491-0041 87820d2edf858ed2 Maria{n}"Allons-y !"
+f491-0042 07a571864b1404dd {name 7}{n}"Ouaaahaaaaah !{wait 30}{n}C'est tellechu{n}impressionnant !"
+f491-0043 0b9542d0681a8810 {name 7}{n}"Il ressemble tellechu au{n}Gear de Bart !"
+f491-0044 0a8a008c7a8055a9 {name 7}{n}"Les ancêtres ont pas{n}encore dit oui, chu !"
+f491-0045 7b8416013369c179 {name 7}{n}"Bon, on le libère, chu."
+f491-0046 fe625467c50fea7d {name 7}{n}"Tu as dit avant...{wait 30}{n}'il apparaîtra là-haut{n}s'il lit les yeux'...{p}Tu penses que cette{n}structure peut bouger,{n}chu ?"
+f491-0047 6ca27eb3d0d021a4 {name 7}{n}"On y va, chu !"
+f491-0048 82b004187eed1211 {name 7}{n}"Va !"
+f491-0050 94d88e129b76d5a8 Emeralda{n}"Comme le Gear de Bart."
+f491-0051 5eefeb24a7bb0b87 Emeralda{n}"Il y a encore des{n}verrous actifs..."
+f491-0052 d12f473d1247540a Emeralda{n}"Là, je crois qu'il va{n}sortir."
+f491-0053 416cd9336b708529 Emeralda{n}"Ça vole pas ?"
+f491-0054 68dab20414301f4c Emeralda{n}"Allons !"
+f491-0055 be3757699cd2d1f4 Emeralda{n}"Oui !"
+f491-0056 31c5c08023812bee Bart{n}"Hein ?{wait 30}{n}Ah, ouais...{wait 30}{n}Maintenant que tu le dis...{p}Bon,{wait 30} si on regarde bien,{n}mon {name 15} était à{n}l'origine un Gear d'Aveh,{n}que j'ai modifié.{p}Ça ne m'étonnerait pas{n}qu'il{n}y ait un lien."
+f491-0057 74b66a56ba27c00a Bart{n}"Ouais, bon...{wait 30} On dirait{n}qu'aucune énergie n'arrive{n}ici, sauf pour l'éclairage{n}de secours."
+f491-0058 98dd34fe3b6a0cd2 Fei{n}"Ce Gear aussi...{wait 30}{n}Ses voyants sont{n}éteints."
+f491-0059 81bb966656b7bfa5 Bart{n}"Hmm.{wait 30}{n}Les panneaux d'en bas{n}servaient à rien...{p}Ça veut dire qu'il doit y{n}avoir un truc par ici."
+f491-0060 87cb9d77e6b1e5ba Bart{n}"Hmm.{wait 30}{n}Il y a peut-être un truc{n}par ici."
+f491-0061 65404abd79c89c49 Bart{n}"Bon, ça devrait{n}marcher."
+f491-0062 c9cdb3dc652be0b9 Margie{n}"Bon, comment je le{n}sors d'ici ?"
+f491-0064 c1d56e6296ef48fe Bart{n}"Bon, on redescend{n}et on essaie."
+f491-0065 1377cbff5f0fe9da Bart{n}"Bon, ça devrait marcher."
+f491-0066 a0b14df0fc503065 Bart{n}"Non.{wait 30} Cette salle avait{n}l'air d'une passerelle.{wait 30}{n}Allons voir !"
+f491-0067 763ae59f70023a2b Bart{n}"Non.{wait 30}{n}Il doit y avoir une sorte{n}de salle de contrôle ici.{wait 30}{p}Trouvons-la !"
+f491-0068 a0c5520277b852eb Bart{n}"Père,{wait 30} on dirait qu'on{n}va devoir bouger ça.{p}Désolé, mais je dois te{n}l'emprunter."
+f491-0069 251d1ccc736e140b Bart{n}"Margie !?{wait 30}{n}C'est toi qui...{wait 30}{n}fais bouger ça ?"
+f491-0070 cfc1ddc3b65ee302 Bart{n}"...Zut !"
+f491-0071 46b39ff799bc9d9b Bart{n}"Ça va, toi !?"
+f491-0072 ec0dde215bb8db90 Margie{n}"Ma jambe...{wait 30}une balle.{wait 30}{n}Héhé...{wait 30}on dirait que je te{n}cause encore des ennuis."
+f491-0073 7dab6c1fbcbc03c1 Bart{n}"Andouille !{wait 30}{n}Pourquoi tu t'es mise en{n}danger comme ça !?"
+f491-0074 bf4e1097fa595de9 Margie{n}"Je...{wait 30}c'est rien. C'était{n}le moins que je pouvais{n}faire pour toi."
+f491-0075 1728222285f8d748 Bart{n}"...{wait 30}Andouille...{p}Bécasse !{wait 30} T'es la reine{n}des andouilles !"
+f491-0076 ec04452b640433f7 Margie{n}"...{wait 30}héhé."
+f491-0077 446e5937ea8cddfc Bart{n}"...{wait 30}Tu peux bouger ?"
+f491-0078 9bd8f62e93f6207b Margie{n}"Mm...{wait 30}je crois, oui."
+f491-0079 50bbca4e0dbbdfec Shakhan{n}"Les petits dégâts{n}se réparent.{p}Visez la cabine !"
+f491-0080 d5c1d3e44246f6dc Bart{n}"Bon sang !"
+f491-0081 dd704842e2fbebba Bart{n}"Sortir là, c'est trop{n}dangereux.{wait 30}{n}Tu tiens le coup ?"
+f491-0082 34332b6c501e1be4 Margie{n}"T'en fais pas{wait 30}{n}pour moi."
+f491-0083 dd8cb12a4455628d Bart{n}"...{wait 30}Zut !"
+f491-0084 68a5ad6ad4b2c098 Bart{n}"Q-quoi,{wait 30} c'est quoi ça !?{wait 30}{n}Y a pas de manche !{p}Comment je vais bouger{n}ce truc ?"
+f491-0085 7cc7e34722aab975 "Tout va bien, jeune{n}maître !?"
+f491-0086 0911564689b1efe0 Bart{n}"...{wait 30}Sig !?{n}Tu sais piloter ce{n}truc ?"{wait 30}
+f491-0087 6eb344aba084efa6 Sigurd{n}"...Quoi donc !?"
+f491-0088 983a5750fdeda7cf Bart{n}"Y a aucune commande !{n}Je fais quoi ?"
+f491-0090 321b68d740d86ace Shakhan{n}"Morveux insolent..."
+f491-0091 6b53552db67fc697 Bart{n}"Co,{wait 30} comment !?{wait 30}{n}Comment il a pu{n}bouger !?"
+f491-0092 88384e9d060c21fd "J'ai compris !{wait 30}{n}Jeune homme, vous devez{n}penser !"
+f491-0093 c356751e39e3e560 Bart{n}"Cette voix...{wait 30} Citan !?"
+f491-0094 4e015a0b211ff54c Citan{n}"Il semble que l'Omnigear{n}ne réponde pas à des{n}commandes mécaniques, mais{n}mentales.{p}Vous vous souvenez de la{n}réaction d'Elly et de{n}l'Omnigear à Shevat ?"
+f491-0095 63eb00d36dc8be29 Bart{n}"...{wait 30}Mais..."
+f491-0096 0626f17f2fdc021b Citan{n}"Margie l'a sans doute{n}déplacé de la même façon.{p}Jeune homme, imaginez le{n}Gear en mouvement.{p}Alors, le Gear devrait{n}réagir à l'image de votre{n}esprit."
+f491-0097 7a412fb2e6d51649 Bart{n}"Si c'est ça...{p}...{wait 30}c'est parti !"
+f491-0098 c2dcb18a9932b962 Shakhan{n}"Maudit sois-tu, gamin !"
+f491-0099 fd2716f0ef9cf1f2 Citan{n}"Heureusement, la balle a{n}traversé.{wait 30} Je vais donner{n}les premiers soins.{p}Plus tard, de retour en{n}ville, il faudra faire{n}examiner la blessure{n}avec soin."
+f491-0100 c8d78c78aa5e03b8 Bart{n}"Tant mieux...{wait 30}Ouf.{wait 30}{p}En la voyant tomber,{n}j'ai craint le pire."
+f491-0102 4f41f32091a9cfc3 Bart{n}"...{wait 30}Ça va mieux ?"
+f491-0103 7d9917e0442ed33c Margie{n}"...{wait 30}Oui.{p}Tu sais,{wait 30} quand je me suis{n}évanouie, j'entendais{n}encore ta voix.{p}Bizarrement... tes cris{n}arrivaient jusqu'à moi.{p}Alors je me suis dit que{n}je devais t'aider..."
+f491-0104 b9b608c4e259b620 Bart{n}"...{wait 30}Ah.{p}On a lutté ensemble,{n}hein ? Tu{wait 30} m'as protégé."{wait 30}
+f491-0105 f84c4b10c32e5435 Bart{n}"Mais,{wait 30} est-ce vraiment{n}le Gear légendaire du{n}parchemin...{p}...de la fondation de{n}notre pays ?"
+f491-0106 958c9fcdf0134584 Bart{n}"À sa façon de répondre,{n}il est pareil à mon{n}{name 15}...{p}...En peut-être un peu{n}plus puissant."
+f491-0107 5f76515ec412981c Citan{n}"Peut-être...{p}Commandes, puissance et{n}armes sont semblables, et{n}s'adaptent à la force des{n}ondes mentales du pilote."
+f491-0108 63764c6db035315f Citan{n}"Le pilote doit donc savoir{n}fusionner mentalement avec{n}le Gear pour obtenir...{p}...sa véritable puissance.{n}Marguerite a pu bouger le{n}Gear grâce à son grand{n}désir de vous aider.{p}C'est sa force qui l'a{n}fait bouger."
+f491-0109 41a9effe25576d2d Bart{n}"Vous voulez dire que je{n}dois m'habituer à lui ?"
+f491-0110 a1c8798f0abe9fd9 Citan{n}"Il semblerait."
+f491-0111 8c5c9464e7ebf19e Bart{n}"Argh.{wait 30} Moi qui ai déjà eu{n}un mal fou à{n}l'obtenir..."
+f491-0112 75cb184f76a64e03 Citan{n}"Ne vous découragez pas.{p}Nous savons maintenant que{n}ces Omnigears ont servi{n}dans la bataille entre la{n}surface et Solaris.{p}Aujourd'hui encore,{n}l'Ethos et Solaris{n}cherchent les Omnigears.{p}Au moins, ils n'ont pas{n}mis la main sur celui-ci.{p}Avec le temps, vous saurez{n}libérer sa puissance.{p}Espérons que ce sera pour{n}de bonnes raisons."
+f491-0113 536b4eabe2ef5f02  {n}     "Paix à tous ceux qui{n}         viendront ici.{wait 30}{n}  Craignant un grand fléau,{n}     nous scellons ce legs{n} et vous confions son sort." {n} 
+f491-0115 82eeb620944da94f Bart{n}"Il y a quelque chose{n}d'écrit ici."
+f491-0116 35a3524988ae1653 Bart{n}"Qui a une lampe ?"
+f491-0117 43cc97801f777859 Bart{n}"Ça...{wait 30}{n}C'est une inscription.{p}C'est en langue Fatima{n}ancienne.{wait 30} ...{wait 30}...Celle de{n}mes ancêtres."
+f491-0118 1fc1a1dd8c31f5e8 Margie{n}"Ça dit quoi ?"
+f492-0000 48d82ab380c934b7  Charger le second tir !
+f493-0000 2a76f765c7c0aa2b Scène suivante
+f493-0001 8d45573624e52201 Quand Fei et les autres sont{n}descendus au fond de Mahanon,{wait 30}{n}je soignais à Nisan ceux qui{n}commençaient à muter{wait 5}...
+f493-0002 644c16c32809165e Des gens mutant{n}les uns après{n}les autres...
+f493-0003 46e592ea4594cae5 Comme un cauchemar éternel,{n}qui me faisait me demander{n}combien de temps encore il{n}nous faudrait les soigner.
+f493-0004 67433ba6d18f8f6c Margie{n}"Ça va ?"
+f493-0005 01d077173e7cd5e1 Margie{n}"Tu ne t'es pas reposée{n}du tout, hein ?{p}Je peux tout gérer seule{n}un moment. Pourquoi tu ne{n}sortirais pas faire un{n}tour ?"
+f493-0006 6271637473a69e22 Elly{n}"Merci.{wait 30}{n}Mais je vais bien.{p}Je préfère m'occuper,{n}comme{n}ça je ne m'inquiète pas{n}trop."
+f493-0007 a8a956171924de5f Margie{n}"Ah bon ?"
+f493-0008 5e3ea30c500a4acd Margie{n}"Hé !{wait 30}{n}Elly, c'est quoi ?"
+f493-0009 87d3c86b29bb7854 Elly{n}"Ça ?"
+f493-0010 bfb8a5e52b20f7fb Margie{n}"Fais voir ?"
+f493-0011 0c807c6dd7affa86 Margie{n}"Je m'en doutais...{n}C'est le Collier de Nisan.{p}Mais pourquoi tu l'as,{n}Elly ?"
+f493-0012 dec161aec9bb3628 Elly{n}"C'est à Fei. Je le garde{n}pour lui...{wait 30}{n}Mais...{p}C'est comme si je l'avais{n}toujours porté..."
+f493-0014 289bdc28b8416ce4 Margie{n}"Quand tu le portes, tu{n}ressembles encore plus{n}à Sophia !"
+f493-0015 8db72b34b42bd929 Elly{n}"Vraiment ? Hmm...{n}La flatterie ne te mènera{n}à rien, tu sais ?{p}Bref, on doit vite essayer{n}le nouvel assembleur{n}suppresseur de mutation sur{n}les autres, là-bas.{p}On ne peut pas les laisser{n}muter davantage."
+f494-0000 a5ea692e5fb1dcb7 Elly{n}"Si on était arrivés les{n}premiers, on aurait marché{n}dessus ?"
+f494-0001 0612719c7a058444 Citan{n}"Serait-ce un piège ?"
+f494-0002 a217b1fe92fcfe98 Billy{n}"Ils essaient peut-être{n}de nous attirer."
+f494-0003 d2c66fd6883d051c Rico{n}"Ça sent le coup monté,{n}si tu veux mon avis."
+f494-0004 08c6d2b75eb1f4f3 Maria{n}"C'est un piège ?"
+f494-0005 ba7f262b3d8a34a4 {name 7}{n}"C'est tellechu louche !"
+f494-0006 3bae0c1b3b066a80 Emeralda{n}"Je sens un truc très{n}louche."
+f494-0007 71d9348a47768d36 Bart{n}"Quoi !?{wait 30}{n}Ce trou n'était pas là{n}la dernière fois."
+f494-0008 254067a659b41685 Fei{n}"Des survivants du{n}dernier combat !"
+f494-0009 8a7d74ddedff6c57 Fei{n}"Ces types... on dirait{n}qu'ils nous attendaient."
+f495-0000 958bacf14aa5704f Elly{n}"Attendez !{wait 30}{p}Ce ne serait pas le{n}générateur de barrière{n}évoqué à Shevat !?"
+f495-0001 1d670b86f32f8e7e Elly{n}"??{wait 30}{n}Il y a un souci."
+f495-0002 2aa5477c3f9367c5 Elly{n}"Ça s'effondre.{wait 30}{n}Il faut sortir d'ici !!"
+f495-0003 e324f062b4587665 Citan{n}"Serait-ce le générateur{n}de la barrière évoquée à{n}Shevat !?"
+f495-0004 77cbf42c950c025d Citan{n}"Quelque chose ne va{n}pas."
+f495-0005 22084277f7f51251 Citan{n}"Ça s'effondre.{wait 30}{n}Il faut sortir{n}sur-le-champ !!"
+f495-0006 f4099fef50eb8e22 Billy{n}"Serait-ce la machine qui{n}crée la barrière...{p}...dont on a parlé à{n}Shevat !?"
+f495-0007 a88355bb46edf49d Billy{n}"Vous ne trouvez pas que{n}quelque chose cloche ?"
+f495-0008 8d169a8e33c8bbbc Billy{n}"Tout s'écroule.{wait 30}{n}Il faut fuir !!"
+f495-0009 3681b978306c577e Rico{n}"Hé, c'est pas la machine{n}qui fait la barrière...{p}...dont ils ont parlé à{n}Shevat !?"
+f495-0010 b1c7c0de66cadcd3 Rico{n}"Quoi !?"
+f495-0011 e1c22ba36fc81b94 Rico{n}"Ça sent mauvais !{wait 30}{n}On ferait mieux de{n}filer, et vite !!"
+f495-0012 3111a8967abba331 {name 7}{n}"C'est pas la machine{n}machin-chouette dont ils{n}ont parlé à Shevat, chu !?"
+f495-0013 6f99a0a3ecc4bac5 {name 7}{n}"Y a un truc qui cloche,{n}chu ?"
+f495-0014 110e53348d05f105 {name 7}{n}"Faut filer, chu !!"
+f495-0015 e2f59685f40e4b37 Emeralda{n}"Ça... c'est pas la{n}Porte ?"
+f495-0016 46c34695eccfe0a9 Emeralda{n}"Ça...{wait 30} cloche ?"
+f495-0017 755fc7908eb9111c Emeralda{n}"Retournons !!"
+f495-0018 7f32b1613d7521f1 Maria{n}"Serait-ce le générateur{n}de la barrière...{p}...évoquée par Zephyr !?"
+f495-0020 1dddbf98fc9a58dc Shakhan{n}"Impossible !?{n}C'est ridicule !?{p}Ceci devait pouvoir{n}extraire assez d'énergie{n}de la Porte !{p}La conception ne devait{n}poser aucun problème.{n}Pourquoi !?{n}Pourquoi rien ne bouge ?"
+f495-0021 4c91eaee34db92f2 Shakhan{n}"Quoi, {wait 7}qui !"
+f495-0022 1d4e155c8af1af2e Shakhan{n}"Le pouvoir ?{n}Quel genre de pouvoir !?{p}J'ai le pouvoir de la{n}Porte ! Je n'ai qu'à faire{n}bouger cette machine !!"
+f495-0023 1cd9c7abe3df0dea Shakhan{n}"Que dites-vous ?{n}Pouvoir superficiel ?"
+f495-0025 d77e1c3da972b676 Grahf{n}"Mon poing est le souffle{n}divin !"
+f495-0026 b4fe2ff5ee746125 Grahf{n}"Fleuris, ô graine{n}tombée, et éveille tes{n}pouvoirs cachés !!"
+f495-0028 b281a30a88376f8b Grahf{n}"Je suis Grahf, celui qui{n}cherche le pouvoir.{wait 32}{n}Désires-tu le pouvoir ?"
+f495-0029 247e85a1d293cb9f Grahf{n}"Tes pouvoirs ne sont que{n}superficiels. Les outils{n}que tu as créés...{p}...avec ton intellect{n}immature... Et tu crois{n}pouvoir vaincre ?"
+f495-0030 5ecc3d461f413b99 Grahf{n}"Vos piètres efforts,{n}habitants de la{n}surface...{p}...sont insignifiants{n}face au seul et unique{n}vrai pouvoir."
+f495-0031 75ec831ad3cacfcd Grahf{n}"Je t'accorderai mes{n}vrais pouvoirs !"
+f495-0032 f3dc5b92715e846e Fei{n}"C'est...{wait 30} le générateur{n}de la Porte !?"
+f495-0033 a7c6e050f9f1b721 Bart{n}"Crapule...{wait 30}{p}En plus du trône d'Aveh,{n}il contrôlait aussi{n}ça."
+f495-0034 1c296c32c41091a6 Shakhan{n}"Exactement."
+f495-0035 269df3c7cc354070 Shakhan{n}"Et dire que vous saviez{n}que la Porte existait...{n}très intéressant."
+f495-0036 c442592da892cb2c Shakhan{n}"La Porte qui séparait{n}Solaris de la Terre était{n}sous la surveillance...{p}...de l'Ethos."
+f495-0037 4a02d4e771dec1ca Shakhan{n}"Au début, on la gardait{n}sans vraiment savoir ce{n}qu'on faisait.{p}Mais avec les années,{n}l'Ethos a mené ses{n}propres expériences pour{n}révéler sa vraie nature."
+f495-0038 8d24a9bbb09d97e9 Shakhan{n}"Ils ont appris à{n}s'en servir."
+f495-0039 baaba2bad215dfb2 Shakhan{n}"Pour fuir Solaris, nous{n}avons découvert...{p}...une nouvelle façon de{n}l'utiliser !"
+f495-0040 34da8e6fa5779c8e Bart{n}"Toi !{wait 30}{n}C'était donc ton but{n}depuis le début."
+f495-0041 ba290059bb376310 Fei{n}"Il a dû entrer par{n}cette caverne !{p}Il voulait seulement{n}l'énergie du générateur{n}de la Porte !"
+f495-0042 1473b507c14d495e Shakhan{n}"Impossible !?{p}C'est ridicule !?{p}Cette machine devait{n}pouvoir extraire assez{n}d'énergie de la Porte !"
+f495-0043 3a76d8c02a6f33b3 Shakhan{n}"La conception ne devait{n}poser aucun problème !{p}Pourquoi ?"
+f495-0044 f8feb67926487ae9 Shakhan{n}"Pourquoi ça bouge pas ?"
+f495-0045 aa13c705c2e08154 Bart{n}"Quoi, t'as raté ton coup ?{p}Mon père se retournerait{n}dans sa tombe s'il savait{n}qu'un idiot pareil m'a{n}roulé."
+f495-0046 bb66c917fe4c560b Shakhan{n}"Je n'avais même pas{n}besoin de ça !{p}Je vais vous éliminer{n}moi-même !"
+f495-0047 685f0457ad032117 Shakhan{n}"Comment...{wait 30}{n}Impossible !"
+f495-0048 b695459aa021a5bf Bart{n}"Shakhan !!{p}Si, il y a 12 ans, tu{n}n'avais pas eu une telle{n}soif de pouvoir, Margie{n}aurait encore sa famille...{p}...et n'aurait pas eu à{n}vivre dans le désert !"
+f495-0049 60a7f46630be5a0c Shakhan{n}"Qu'en sais-tu, sale{n}gosse né sur un{n}trône !?"
+f495-0050 8d6cf105841d8c3c Bart{n}"Le trône ? Tu peux le{n}garder !{p}Un roi doit porter les{n}responsabilités les plus{n}lourdes qui soient ! C'est{n}un sacré fardeau !{p}Un truc que tu comprendras{n}jamais, crapule !!"
+f495-0052 1f88787b701603cd Fei{n}"La Porte est en{n}flammes...!"
+f495-0053 b9ac5fedcf4018c1   Désires-tu {wait 16}le pouvoir ?{done 84}
+f495-0054 e722876a6aca831c Bart{n}"Encore lui !?"
