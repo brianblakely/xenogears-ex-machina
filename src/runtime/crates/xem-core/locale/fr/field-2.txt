@@ -2831,3 +2831,494 @@ f288-0151 d4783f235b384a4c Fei{n}"...Pardon.{wait 10}{n}J'oubliais que c'est{n}t
 f288-0152 11eaf68b92a82b1b Elly{n}"Ce que fait mon pays...{wait 10}{n}n'a rien à voir avec moi.{p}Je trouvais moi-même que{n}quelque chose clochait,{n}c'est pour ça que je suis{n}venue ici...{wait 10}{p}Alors, ne t'en fais pas{n}pour moi."
 f288-0153 14b78aa03dcf47d5 Fei{n}"On n'a rien à perdre,{n}alors{n}essayons d'y aller.{p}On doit connaître la vérité{n}sur les papiers trouvés au{n}siège de l'Ethos et sur ce{n}qu'a dit le père de Billy.{p}Et je dois de toute façon{n}aller à Shevat, pour des{n}raisons personnelles."
 f288-0154 5466f9593fbee4f8 Fei{n}"Pas de temps à perdre,{n}hein !?{wait 10} Allons vite à la{n}Tour de Babel !"
+f289-0000 2bb51c002b60b0ef Ça me dépasse, mais...{wait 10}{n}bref, je compte sur toi !{p}Toi seul peux le faire !
+f289-0001 192d4ade68da55de On ne va pas se voir un{n}moment, mais je prierai{n}pour ta réussite !
+f289-0002 23f1e49baaceda3f On va se tirer...{wait 10} c'est ce{n}que j'allais dire, mais à{n}ce stade, on te suit{n}jusqu'au bout !!
+f289-0003 94429afed897feb5 Il vole pour de vrai !{n}Qui l'eût cru !?
+f289-0004 bf98469dafe88bb5 (Pourvu que je trouve une{n}jolie fiancée !)
+f289-0005 76b33c723e39b6b1 On va les écraser d'un{n}seul coup !!
+f289-0006 09aa2390bfa22742 On est venu de l'infirmerie{n}chercher Fei...{wait 10} Mais les{n}soins y étaient sans doute si{n}mauvais que Fei s'est enfui !
+f289-0007 8fa467f1834f87c9 Ça ressemble plus à un{n}navire-monstre qu'à un{n}navire fantôme...
+f289-0008 0daa91daa0f6d0a8 Navire fantôme...{wait 10} Je parie{n}que c'est l'histoire où du{wait 10}{n}sang coule des douches...{p}Méfiez-vous des douches !
+f289-0009 cae35cfaf454c3eb Qui était cet homme...?{wait 10}{n}On entendait sa voix{n}résonner depuis le salon.
+f289-0010 94ba973b6e0fd882 Quoi !{wait 10} Fei s'est{n}rétabli !? C'est un{n}miracle !!
+f289-0011 15e7642c5a7f5bee Fei était un chic type...{wait 10}{n}Je n'oublierai jamais sa{n}bonté...
+f289-0012 cb9190aeeb6ce87b Elly ne ferait jamais une{n}chose pareille !!{wait 10} J'ai{n}confiance en elle...
+f289-0013 d28daf3610b2f23b Elly se repose à{n}l'infirmerie d'en face.{wait 10}{n}Je parie qu'elle n'arrive{n}pas à dormir dans un lieu{n}aussi délabré.
+f289-0014 2574995c66095385 Même dans un pays{n}étranger, il y a des gens{n}prêts à aider.{p}Ce lieu doit avoir un{n}chef compréhensif.{wait 10}{n}Ça m'émeut tellement...
+f289-0015 0497293820dbe19f On nous accuse d'avoir détruit{n}les troupes d'Aveh ! Je ne{n}comprends pas !{wait 10} C'était{n}l'explosion du réacteur du{n}croiseur de Gebler, non ?{p}Même si on rentre à Ignas,{n}on ne sera que leur cible !{n}Quelle galère !!
+f289-0016 c221c3a43a68ea29 Sur le Goliath, vous ?{wait 10}{n}Écoutez, j'ai bien essayé{n}d'arrêter le jeune maître,{n}hein ?
+f289-0017 972fdec22f5cd521 Professeur, on a un{n}gros boulot demain !{p}Sans dormir, au moins{n}allongez-vous !
+f289-0018 e8fb5d7052ae57a5 (À vrai dire, même moi, je{n}n'arrive pas à dormir tant{n}je suis excité...)
+f289-0019 6b0766534ac697c9 Marguerite est devenue{n}plus forte depuis la{n}dernière fois.{p}C'est vraiment la vraie{n}Grande Mère de Nisan.
+f289-0020 fdcff38e84430ac9 C'est reparti !
+f289-0021 a41a5becbb8b3f57 La base est proche !{wait 10}{n}Ouf, enfin du repos !
+f289-0022 0457e2b232707258 Je dois trimer pour{n}l'avenir de ma fille !
+f289-0023 f289c2dc0af348cb Pour cette mission, le{n}Yggdrasil ne servira pas{n}de canot de sauvetage...{wait 10}{n}Alors, prudence !
+f289-0024 cfad239f4ed411fe Je n'avais pas été si ému{n}depuis la naissance de ma{n}fille...{p}On a traversé tant{n}d'épreuves et perdu tant{n}d'amis...{p}mais je sais que c'était{n}pour une juste cause !
+f289-0025 fe22cf6fbbbe13d2 Ce Shakhan ferait bien de{n}préparer sa propre pierre{n}tombale !!
+f289-0026 82c2cd6b6eb12474 On va devoir rester ici{n}un moment...
+f289-0027 db845611494f923d Je croyais que le Gear{n}était sorti il y a un{n}moment...{wait 10} Non...?
+f289-0028 e3ca0ab83d6a278e Ce Wels était énooorme !
+f289-0029 f2de1022b7ff2812 Navire fantôme !?{wait 10} Waouh,{n}je me sens un vrai pirate{n}maintenant !
+f289-0030 84cb64c517fd1df1 Sigurd vient d'aller à la{n}Salle d'armes avec un drôle{n}de type...{wait 10} Il n'avait pas{n}l'air content du tout.
+f289-0031 b2fc9350f606fd39 Bon, bon,{wait 10} alors tu vas{n}bien...{p}Mais je me méfierais des{n}gens de l'infirmerie.{wait 10}{n}Ha, ha, ha !!
+f289-0032 baac976e1afaafe9 Quoi ? La fille, puis{n}Fei...!?{wait 10} Quelle horreur !
+f289-0033 13eae195af4234c1 Elle a perdu la tête et{n}failli casser la salle des{n}machines ?{p}Les filles d'aujourd'hui{n}ne savent pas s'arrêter !
+f289-0034 c02f2a4aef66a20d Elly était bizarre.{wait 10} Elle{n}s'est disputée avec{n}quelqu'un...?{p}C'est beau, la jeunesse.{wait 10}{n}J'étais pareil à ton âge.
+f289-0035 7529495d259a3772 Enfin de vrais{n}'pirates'.{wait 10}{n}Mais maintenant, la vie{n}sur le sable me manque.
+f289-0036 950a6c93c67d190b Jeune maître, quelle joie{n}de voir le Yggdrasil neuf.{p}Mais rien ne change, au{n}fond, sauf l'habitat.
+f289-0037 140fc031d9ac6ae9 Beaucoup de nos amis sont{n}déjà partis...{p}Parfois, on se demande si{n}on fait le bon choix, mais{n}je sais qu'un jour la paix{n}viendra !
+f289-0038 4186558e71aa5bd5 Quand le jeune maître{n}sera{n}roi,{wait 10} va-t-on oublier mon{n}ardoise au bar d'Aveh ?
+f289-0039 d789e58bddedb701 On nous a dit d'attendre à{n}bord.{wait 10} Mais je voulais{n}descendre à Nisan.
+f289-0040 94ab0667f4c83d13 Tiens ?{wait 10} Le professeur{n}habillé en vert n'est pas{n}avec vous ?
+f289-0041 f72a6baa4d45d354 Quand pourrai-je revoir ma{n}fille ?{wait 10} Je crois que je{n}dois d'abord en finir avec{n}cette guerre...!!
+f289-0042 33bc317ef40e22ef Ma fille m'attend à la{n}base.{p}Je ne l'ai pas vue depuis{n}si longtemps ! On va bien{n}profiter ensemble.
+f289-0043 85b062825c42d43a Repose-toi, et sois{n}prêt pour la bataille{n}décisive !
+f289-0044 5da2728fc04d9d1b Jeune maître, vous voulez{n}dormir ici ?{wait 10} Croyez-moi,{n}mieux vaut pas...
+f289-0045 57b5ac594f9e6a8f Ah ! Tu es Rico, le{n}Champion de Battling ? Je{n}suis de Kislev. Ravi de te{n}rencontrer !!
+f289-0046 67575585c1ee5c41 Bon, je ne suis plus le{n}Champion.{wait 10} Inutile de{n}t'exciter comme ça.
+f289-0047 e7010720b9d9611e Je ne suis pas si beau, mais{n}j'ai une fiancée au pays...{p}sauf que mon pays, c'est{n}Kislev.{p}Quand le jeune maître sera{n}roi d'Aveh, pourrai-je{n}la revoir ?
+f289-0048 eb2ccb56c879da16 On se repose ici.{n}Toi aussi ?{wait 10}{n}    Oui{n}    Non merci
+f289-0049 3e67842c5724620e C'est un peu en désordre,{n}ne fais pas attention.
+f289-0050 18c25cba5df060cb À plus.
+f289-0051 90b5af36e38899ef À bientôt. Préviens-moi{n}quand tu veux te reposer.
+f289-0052 7b2e977c794ce845 Mon Dieu, Bart ! Où est{n}Fei ? Encore une dispute ?{n}Ah là là...
+f289-0053 07c4529e4464fd69 Du moment que tu es en{n}vie, je suis heureuse.
+f289-0054 1fcba182ededbeff Mon Dieu, Bart a fait une{n}chose si admirable !{wait 10} Lui{n}qui était si turbulent...{p}Petit, il était si têtu !{n}Mais il avait un grand{n}sens de la justice.{n}Je suis si fière de lui.
+f289-0055 68981bf43ef69876 Je ne sais pas ce que Bart{n}et toi manigancez, mais{n}s'il arrive quelque chose,{n}je te couvre !{p}Tu peux être tranquille !
+f289-0056 c85cf0a6d075806c J'ai décidé de travailler{n}ici, j'espère que ça ne{n}te{n}dérange pas...{p}Tu as vu mon nigaud de{n}mari, qui joue au chef{n}aux machines ?{p}Il est mal embouché, mais{n}c'est un brave homme.
+f289-0057 dd6a732f382913d0 Le monde est plein de{n}choses que je n'ai{n}jamais vues.{p}Peut-être que je les{n}découvrirai en faisant{n}des efforts...
+f289-0058 22bc6b43a0ebd6d6 Hé-hé-hé-hé !
+f289-0059 d9c1557828c48398 Helen, si courageuse...{wait 10} Si{n}émouvante...
+f289-0060 16f6678a0db399cf La collection de cartes de{n}Mary...{wait 10} Dur de toutes les{n}réunir...
+f290-0000 502079b2172b52b5 Sigurd{n}"Jeune maître, d'après{n}Margie, il y a un individu{n}très gênant chez Gebler."
+f290-0001 7bc7b3db709f2165 Bart{n}"Ah...{n}Et qui diable est ce{n}type ?"
+f290-0002 b1c6d9856820bb5b Sigurd{n}"Kahran Ramsus,{wait 10} de{n}l'Agence spéciale des{n}Affaires extérieures{p}du Saint-Empire de{n}Solaris{wait 5}...{p}Autrement dit, le{n}commandant en chef de{n}Gebler.{p}Il semble que Gebler ne{n}vise pas seulement les{n}fouilles près d'Aveh."
+f290-0003 a547591beec3d715 Bart{n}"Tu veux dire qu'ils ne{n}visent pas le Jaspe ?"
+f290-0004 fcc036f23e2ba4d7 Sigurd{n}"Si c'était tout, ils{n}n'enverraient pas un{n}homme si important !{p}Jeune maître, ce{n}pourrait{n}être plus compliqué que{n}prévu..."
+f290-0005 326eae4b59c22b3d Fei{n}"Le Doc n'est pas{n}encore rentré ?"
+f290-0007 5ded1db0cc8ee89a Sigurd{n}"Hyu...{wait 10} pardon,{wait 10} 'Doc'...{wait 10}{n}Ne t'inquiète pas,{n}il nous rejoindra vite."
+f290-0008 40fb34c6ff02a2f9 Sigurd{n}"Deus a fusionné avec le{n}Zohar et s'est éveillé...{p}Mais nous avons découvert{n}que Deus est au coeur de{n}la structure géante née de{n}la Merkava tombée.{p}Le seul moyen de détruire{n}Deus, c'est d'y pénétrer et{n}de se frayer un chemin{n}jusqu'au centre.{p}Cette structure était la{n}Merkava elle-même, mais{n}l'intérieur a dû beaucoup{n}changer.{p}Nous ignorons quels dangers{n}vous y attendent.{wait 10} Soyez{n}très prudents."
+f290-0009 c11b7bbda8407cb1 Fei{n}"Oui, merci, Sigurd.{n}Je m'en charge.{p}Je vais détruire Deus.{wait 30}{n}Même si ça doit me coûter{n}tout ce que j'ai..."
+f290-0010 f2505d04031d61ce Bart{n}"Fei...{wait 30}{n}Tu es sûr de toi ?"
+f290-0012 86f7e26353cc9a68 Bart{n}"Je sais ce que tu dois{n}penser. Si tu détruis{n}Deus...{p}...la prolifération des{n}nanomachines qui font de{n}la planète une arme{n}cessera...{p}Mais si tu perds Elly,{n}unie à Deus pour ça,{n}à quoi bon ?"
+f290-0017 cbf8cb7bad489815 Sigurd{n}"C'est ça, Fei.{wait 20}{n}C'est notre amie, et elle a{n}beaucoup vécu avec nous.{p}Sauver une amie chère est{n}aussi important que de{n}protéger la planète ou{n}de sauver le monde...{p}Quelle meilleure raison de{n}se battre ? Si tu ne peux{n}même pas sauver tes amis,{n}comment sauver le monde ?{p}N'est-ce pas ?"
+f290-0018 339d83b2fcff5623 Bart{n}"Oui, Sig a raison !{wait 20} Ne{n}renonce jamais, Fei,{n}quoi qu'il arrive !{p}Toi seul peux libérer{n}Elly du sort de Deus.{p}Mais on va te couvrir{n}autant qu'on pourra.{wait 10}{n}Alors..."
+f290-0020 228e9cb60acb5712 Fei{n}"Merci beaucoup.{wait 20}{n}Bart, Sigurd...{wait 10}{n}Je ne renoncerai pas."
+f290-0021 11ae6ead55cb4ba5 Sigurd{n}"Tu t'es proposé pour te{n}battre pour le jeune{n}maître et pour nous tous.{p}C'est à notre tour de nous{n}battre pour toi et Elly.{p}Allons, Fei...{wait 10}{n}conquérir la vraie{n}liberté !!"
+f290-0022 de408b1429ffd955 Sigurd{n}"Le temps presse.{wait 10}{n}Allons conquérir la{n}vraie liberté !!"
+f290-0023 f0143ad44eab4ff2 Sigurd{n}"On part pour Sargasso ?"{n}    Bien sûr !{n}    Attends un peu !
+f290-0024 b84d88f124930a83 Sigurd{n}"Fei n'est pas à{n}l'infirmerie, on dirait...{p}Mais il doit être quelque{n}part à bord..."
+f290-0025 30dca063039b8cdc Sigurd{n}"Allons sur le site de{n}fouilles."
+f290-0026 fed175867d4b2c04 Sigurd{n}"Vite, au Thames !!"
+f290-0027 396e6d47734dcd3c Sigurd{n}"Des pièces neuves sont{n}arrivées à la boutique{n}de Gears, en bas.{p}Pourquoi ne pas y jeter{n}un oeil !?"
+f290-0028 b0d1418780d3365e Sigurd{n}"Nous voici au navire de{n}transport.{wait 10} Prudence,{n}Billy..."
+f290-0029 748f9c817c9964b5 Sigurd{n}"Bonjour.{wait 10} Billy attend{n}à la Salle d'armes."
+f290-0030 f069fddd852d5756 (A... aïe...{wait 10} On dirait{n}une gueule de bois...)
+f290-0031 468240808a2583f5 Sigurd{n}"Billy attend dans la{n}Salle d'armes."
+f290-0032 73ff5db543057eea Sigurd{n}"Je vois. Fei se remettra{n}donc s'il continue à se{n}reposer. Quel soulagement.{p}L'orphelinat se trouve au{n}sud-est du siège de{n}l'Ethos."
+f290-0033 f8087f4563d7b9d6 Sigurd{n}"Apparemment, le siège de{n}l'Ethos est au nord du{n}Thames.{p}Il faut y emmener Fei au{n}plus vite..."
+f290-0034 875924b5578e1d32 Sigurd{n}"À propos... Margie a dit{n}qu'elle avait quelque chose{n}à te dire..."
+f290-0035 03c6e0ca1c770147 Sigurd{n}"Fei est{n}inconscient...?"
+f290-0036 8adcc3293fa5cf0c Sigurd{n}"Quelle négligence.{wait 10}{n}Jamais je n'aurais cru{n}Elly capable de ça...{p}Va donc voir comment{n}elle va, Fei."
+f290-0037 129623b08e2d4592 Sigurd{n}"Où étiez-vous, jeune{n}maître, pendant que nous{n}étions si occupés...?{p}Une visite d'amitié au{n}Thames ? Bon, soit...{p}Maintenant, pour les{n}provisions du{n}sous-marin..."
+f290-0038 a00711e63fbd5132 Bart{n}"Ah, ça ?{wait 10}{n}Voyons... commande 16{n}torpilles de plus !"
+f290-0039 89a50321ae9e3581 Sigurd{n}"Entendu."
+f290-0040 ac91674d47133405 Sigurd{n}"Le jeune maître commence{n}enfin à prendre conscience{n}de son rang de roi."
+f290-0041 0431b6d0a0048cf7 Sigurd{n}"Fei, désolé, mais...{wait 10}{n}Peux-tu dire au jeune{n}maître de venir ici ?"
+f290-0042 f0af23914abb50d0 Sigurd{n}"Jeune maître...{n}Ne faites pas de farces{n}en terre inconnue !"
+f290-0043 301283940cd02f9b Sigurd{n}"Si un dieu nous méprise,{n}un autre dieu a pitié de{n}nous.{p}Sachons chérir les bonnes{n}intentions des gens."
+f290-0044 0a8b68aeed257738 Sigurd{n}"Jeune maître...{n}Vous devriez vous excuser{n}auprès d'eux deux."
+f290-0045 62ab6c7a36b757b9 Sigurd{n}"Pardonne-moi, Hyuga...{wait 10}{n}Je n'ai pas su sauver Fei{n}et Elly..."
+f290-0046 b3fbd6bf452c7a02 Sigurd{n}"Nous devrons entrer à{n}Nisan par la route{n}secrète.{p}Cherchons un arbre isolé{n}dans le désert, qui marque{n}l'endroit où la route est{n}enfouie...!"
+f290-0047 b87443ff2bc5ca94 Sigurd{n}"Enfin l'heure de nous{n}infiltrer dans Aveh.{p}D'abord, notre groupe doit{n}inspecter la ville et{n}dresser un plan d'action."
+f290-0048 68a71b89aa0c3b6e Sigurd{n}"Nous sommes presque au{n}repaire...{p}Faisons-y une halte pour{n}ravitailler et réparer."
+f290-0049 af8f2ec9e16d2bf7 Sigurd{n}"On part avec{n}le Yggdrasil ?"{p}    {speed 255}On y va !{n}    Attends un peu.
+f290-0050 7b70c2e4ef990681 Sigurd{n}"Nous mouillons pour{n}l'heure à Shevat..."{p}    {speed 255}Quitter Shevat.{n}    Je me ravise.
+f290-0051 c8873f8aa1172d98 Bart{n}"Notre Yggdrasil est né à{n}nouveau grâce à la{n}technologie de Shevat.{p}Ce vaisseau s'appellera{n}'le Troisième' !"
+f290-0053 d1c67a2d3a6c024d Sigurd{n}"Les commandes ne sont{n}plus tout à fait celles{n}de l'ancien Yggdrasil.{p}Il faudra donc tout{n}réapprendre !"
+f290-0054 5e87f5ef6a20a01c Oui !{wait 10}{n}Je vais tout donner !
+f290-0055 c0ea6cffbc2091df Sigurd{n}"Nous mouillons pour{n}l'heure au Thames..."{p}    {speed 255}Quitter le Thames.{n}    Je me ravise.
+f290-0056 9d4edc5bfc492f97 Sigurd{n}"C'est donc la première{n}fois que tu vois notre{n}nouveau Yggdrasil II...{p}Laisse-moi te montrer les{n}performances améliorées{n}de notre vaisseau{n}ressuscité !"
+f290-0057 87bc10a9826343a7 Sigurd{n}"Nous mouillons pour{n}l'heure à Nisan..."{p}    {speed 255}Quitter Nisan.{n}    Je me ravise.
+f290-0058 d9c34488acf9080c Sigurd{n}"Nous mouillons à notre{n}repaire..."{p}    {speed 255}Quitter le repaire.{n}    Je me ravise.
+f290-0059 68520e210fb4f6f4 Bart{n}"On a vécu beaucoup de{n}choses ensemble...{p}Cette fois, ça va être{n}costaud...{wait 10}{n}Mais on ne mourra pas !{wait 10}{n}On reviendra vivants !{p}Quand tout ça sera fini,{n}je t'appellerai pour{n}repartir avec moi !"
+f290-0060 ffc2b58493801a0c Bart{n}"Je suis prêt à partir{n}à tout moment !"
+f290-0061 0b2cc1528569f2fa Bart{n}"Sig boit dans la{n}Salle d'armes."
+f290-0063 ffdecb962acc30ff Bart{n}"On est presque à mon{n}repaire !"
+f290-0065 a58e6d1b6a577935 Si Sigurd meurt, je{n}vais...!
+f290-0066 99fccfba11a919b5 Jeune maître, laissez-moi{n}tenir la barre de temps{n}en temps, pitié !?
+f290-0067 25f7ef1c6ea326ef Youpi !!{wait 10} Il va me laisser{n}être apprenti timonier !
+f290-0068 a6ff0e8c3eab8cf1 Grâce à la technologie de{n}Shevat, le Yggdrasil III{n}peut voler, mais...{p}Les commandes ont un peu{n}changé, je dois tout{n}réapprendre.{p}Tu veux voir mes notes ?{n}    {speed 255}Fais voir{n}    Pas maintenant
+f290-0069 0ca79e3224e8751f {speed 255}1){wait 10} Le bouton △ est{n}   l'accélérateur.{n}   Il te fait avancer{n}   très vite !!{p}2){wait 10} Si tu appuies sur la{n}   croix en tenant{n}   le bouton △,{n}   tu peux...{p} descendre avec Haut,{n} monter avec Bas{n} et virer avec Gauche{n} ou Droite.{p}3){wait 10} Pour virer vite,{n} appuie aussi sur L1{n} pour la gauche ou sur{n} R1 pour la droite.{p}4){wait 10} Tu peux reculer{n}   avec le bouton R2.{p}5){wait 10} Appuie sur □ pour{n}   aller à la passerelle.{n}   Appuie sur ○ pour{n}   atterrir.{p} Mais attention... On ne{n} peut pas se poser{n} partout : pas sur les{n} montagnes ni les forêts.{p} Remarque, c'était pareil{n} quand le Yggdrasil était{n} un croiseur des sables.
+f290-0070 6e1f606795356512 Je m'appelle Bingo, apprenti{n}timonier.{wait 10} Sigurd m'apprend{n}à piloter le Yggdrasil !{p}Tu veux voir mes notes ?{n}    {speed 255}Oui, fais voir{n}    Pas maintenant, merci
+f290-0071 240e6123b0925cb4 {speed 255}1){wait 10} Le Yggdrasil se pilote{n}   comme si tu marchais...{n}   Utilise la croix pour aller{n}   dans la direction voulue.{p}2){wait 10} En vol, pour t'arrêter et{n}   descendre avec ton Gear,{n}   appuie sur ○.{p}   Pour t'arrêter et revenir{n}   à la passerelle (ici),{n}   appuie sur □.{p}   De la passerelle, tu vas{n}   partout dans le navire{wait 5} pour{n}   dormir,{wait 5} régler un Gear,{wait 5}{n}   te peser{wait 5} et j'en passe !{p}3){wait 10} En vol, appuie sur Select{n}   pour activer le Système de{n}   Télédétection.{wait 10} Il montre{n}   ta position sur la carte.{p}4){wait 10} Si tu ne sais pas comment{n}   aller où tu veux, demande à{n}   l'officier de navigation,{n}   M. Alei, qui regarde là-bas{n}   à la jumelle.{p}   Il te montrera les cartes{n}   de navigation du navire.
+f290-0072 cf889285eb5c5402 J'ai hâte de devenir{n}un{n}vrai timonier...
+f290-0073 0876e908b67dcd77 Les missiles du navire ne{n}marcheront peut-être pas{n}contre ce monstre...
+f290-0074 373cc8538bd01bb5 On est passé du voyage sur{n}terre au voyage dans les{n}airs... De deux dimensions{n}à trois...{n}C'est dur...
+f290-0075 6d1285415fd88a9e Remplacez tous les tubes{n}lance-torpilles par des{n}lance-missiles.{p}Comme ça, on pourra tirer{n}des Gungany... pardon,{n}des 'Missiles Bart' !
+f290-0076 d872154d7138c1d8 Au fait, comment on tire{n}vers le bas ?
+f290-0077 5a30e398ee3e306d Où en est notre stock de{n}munitions... Hmm, il nous{n}faudra peut-être plus{n}d'obus antiaériens...
+f290-0078 2281475d06af7da2 La boussole reçue de Shevat{n}est géniale. On peut viser{n}15 cibles différentes en{n}même temps !
+f290-0079 86f47c000224e70e Mes chers canons{n}d'artillerie, continuez{n}comme ça !
+f290-0080 76dd9dec1f6d6f5f On voit mieux que dans le{n}désert... Idéal pour{n}observer l'impact des{n}missiles. Les énormes{n}gerbes d'eau doivent être{n}faciles à voir.
+f290-0081 8747674776d21328 Les torpilles à eau sont{n}bien plus simples à{n}construire que les{n}torpilles à sable.{p}Du coup, elles sont deux{n}fois plus puissantes que{n}celles de l'ancien navire.{n}Mais elles coûtent cher.
+f290-0082 38d53179b9c37447 Ouah, mes jambes bougent{n}très bien !
+f290-0083 937d5a908bcf3932 Y a-t-il ici des munitions{n}pour notre navire ? Il est{n}temps de passer le radar{n}en logiciel 'eau' aussi !
+f290-0084 f2eda199e3a813e4 Je ne pensais pas qu'il y{n}aurait autant de torpilles{n}à eau. Les normales ne{n}sont pas mal non plus.{p}Il y en a tant que je{n}n'arrive pas à choisir...!
+f290-0085 b3bccc5035904d4a Avec les canons, on ne{n}sait{n}où vont les obus qu'après{n}avoir tiré.{p}Mais ils sont parfaits{n}pour la piraterie : pas{n}chers et quand même{n}intimidants...{p}Les torpilles, elles, font{n}tout sauter, mais elles{n}coûtent une fortune...
+f290-0086 ccd2bc2fc9299433 Le désert est sec, la{n}poudre y brûle de façon{n}stable et prévisible.{p}Ce serait parfait si la{n}température était la même{n}jour et nuit.
+f290-0087 a276d6d7866b6739 Le mât de ce navire est{n}bas.{wait 10} Ça aiderait si un{n}Gear pouvait observer{n}l'impact des obus...{p}Et, catapultes ouvertes,{n}impossible d'utiliser le{n}canon principal.{wait 10}{n}Ah, les soucis...
+f290-0088 08115eca66ce4d18 Le compas azimutal était{n}décalé. Mieux vaut le{n}réparer pendant qu'on est{n}au mouillage...
+f290-0089 b1293f61120a8799 Je voudrais changer ça{n}pour un radar de tir à{n}meilleur filtre... Ah, et{n}j'adorerais aussi un tube{n}de torpilles plus gros...
+f290-0090 445a616eeca2d9a9 Franz{n}"Ah, jeune maître !{wait 10}{n}Je... je ne tire pas au{n}flanc ! Juré !"
+f290-0092 cfaa5d44cb393a57 Franz{n}"Ah, {wait 10}désolé...{wait 10}{n}Je ne t'avais pas vu !{p}Des sons sympas que{n}j'ai enregistrés ?"{n}    {speed 255}Bien sûr.{n}    Non, merci.
+f290-0093 6691d94580f9635d Franz{n}"Tu en veux encore ?"{n}    {speed 255}Oui, trop bien !{n}    Non, ça suffit !
+f290-0094 204c68ca6636f05d Franz{n}"Ahh...{n}Bon, dommage."
+f290-0095 a9b41c0198d731be Franz{n}"Dommage...{wait 10} Tu aurais pu{n}voir le monde au milieu{n}des parasites !"
+f290-0096 28f43b4b0b04e2f3 {speed 255}'Collection Franz'{n}     Numéro {num1 0}
+f290-0097 66aac6f28d9a7e6c Je commence enfin à{n}m'habituer au ciel...{wait 10}{n}Mais je ne peux pas encore{n}trop me relâcher !
+f290-0098 b672c5d3d8331c81 J'ai encore des sueurs{n}froides au décollage et{n}à l'atterrissage.
+f290-0099 4ebfd0602bdcabd7 ...Bref, il vole parce{n}qu'il{n}a des ailes, c'est ça ?{n}C'est dur à comprendre !
+f290-0100 74c4c9d913ffd041 Hmm, sur l'eau, il faut{n}donc tourner la barre en{n}douceur avant de virer.{n}Encore une leçon.
+f290-0101 9566cd67fb0657d4 Ça alors, même dans{n}l'océan, il y a des{n}rémoras... Celui-ci était{n}plein de coquillages !
+f290-0102 58852152bb4af918 L'autre jour, le jeune{n}maître et moi, on a fait{n}un concours : qui ferait{n}le plus gîter le navire.{p}Le vieux Maison est devenu{n}blanc comme un linge, il{n}disait que toutes les{n}tasses étaient cassées...
+f290-0103 17eec90243db39b8 Des rémoras des sables{n}étaient collés partout{n}sous la coque. Voilà{n}pourquoi on n'avançait{n}pas vite...
+f290-0104 1dc960683ccc6353 ...{wait 10}{n}Allez, on met les{n}gaz !!
+f290-0105 e780c485cc455711 Manoeuvrer en 3D à grande{n}vitesse ? ...Impossible !{n}Je ne suis pas pilote de Gear !{n}Ha ! Mais bon, pas le choix !
+f290-0106 a1c507f570e210e0 Le turbo donne une{n}accélération monstre !{n}Mais c'est amusant.
+f290-0107 9ed74b57b4023da8 Manier la barre... Et les{n}becs en même temps...{n}comme ça... Hein ? C'est{n}quoi, un Flux Vortex ?
+f290-0108 5ad6583e13e6ffe6 ...Décrochage en bout{n}d'aile, renversement...{n}la manoeuvre Helpst...{n}marmonne... marmonne...
+f290-0109 1d0fada81a46613a Hmmm, la barre ne répond pas{n}aussi bien que dans le{n}sable... Elle ne m'inspire{n}aucune confiance !
+f290-0110 e6d783bdf36f6f94 Je commence à m'y faire.{n}Sur l'eau, on bouge plus{n}librement, une fois qu'on{n}a pris le coup de main !
+f290-0111 a404aa6e2c9535ca Le navire est bien plus{n}dur à contrôler après que{n}le jeune maître a pris la{n}barre. Quel casse-cou...
+f290-0112 87c4f61a0832761c Il s'en est passé, des{n}choses, cette fois. Je{n}ferais bien de vérifier ces{n}roues de propulsion !
+f290-0113 50ef5822ac60cc2f Depuis, je n'entends{n}que des parasites...{p}Pourvu qu'il reste{n}des survivants...
+f290-0114 8db14e4ae4f18306 Shevat utilise un mode de{n}communication spécial...{wait 10}{p}On m'a chargé de concevoir{n}un système pour le décoder{n}à bord...{wait 10} Pourvu que{n}j'y arrive !
+f290-0115 356798783ad333f8 Une radiobalise en trois{n}dimensions ?{wait 10} Il nous faut{n}un nouveau Navi-soft !{p}Et c'est à moi de tout{n}faire... Tu parles...!?
+f290-0116 c7ce8a43f084aa64 Franz boude et refuse{n}de m'aider...
+f290-0117 ada461abe30d40cc Décodeur de communication de{n}Shevat,{wait 10} cartes des coordonnées{n}angulaires des radiobalises et{n}de leurs impulsions,{wait 10} table des{n}codes de guidage...{p}On a tant de choses à acheter.{wait 10}{n}Maintenant qu'on vole, tout est{n}devenu bien plus compliqué et{n}plus cher !
+f290-0118 e372b843de349449 Liaison laser...{wait 10} Je...{n}{wait 5}j'en rêve tellement...
+f290-0119 de02a0e997c001fb Dans le désert, on avait{n}plein de soucis avec{n}l'électricité statique{n}qui créait du bruit.
+f290-0120 f97e7b2da6fa8a54 Sur l'eau, on peut prendre{n}la haute fréquence, mais{n}la résolution est faible,{n}c'est dur de distinguer.
+f290-0121 9ffb819e2895c6f5 ...Plus d'ondes radio{n}utilisables, c'est aussi{n}plus de travail pour moi.{wait 10}{n}Content, mais débordé !
+f290-0122 82c1aa183fcee230 On a ajouté des antennes,{n}mais je n'arrive plus à{n}tout suivre, faute de{n}canaux de sélection...{wait 10}{n}Zut !!
+f290-0123 8f29883a37787b7d Quand j'arriverai à un bon{n}moment pour m'arrêter, je{n}crois que je prendrai un{n}oscillateur standard.
+f290-0124 010d4d2318a5527a Avec plus d'ondes{n}utilisables, il va falloir{n}réorganiser aussi le mât{n}des antennes !
+f290-0125 5d8c90e9d800e6f4 Sous le sable, il n'y a{n}que des parasites...{wait 10}{n}À vrai dire, il n'y a{n}rien à faire non plus...
+f290-0126 f4dd2459f8ae4728 Le sable transmet le son{n}bien mieux que l'air.{wait 10} On{n}entendrait presque Shakhan{n}ronchonner !{wait 10} Ha...{n}Je plaisante !
+f290-0127 c63e293f72847654 Nos cartes ne servent{n}plus à grand-chose...
+f290-0128 9d05625e1742da9d Jeune maître, vous savez{n}où nous sommes ?{wait 10} Ce n'est{n}pas sur ma carte !
+f290-0129 d79c17c5439d3a17 Pas sur la carte...{wait 10} Où{n}diable sommes-nous ?
+f290-0130 64092d4c8a18ebf9 Carte neuve en poche !
+f290-0131 b58d95420377b371 Tu veux voir la carte{n}de navigation ?{n}    {speed 255}Oui, montre !{n}    Non, merci.
+f290-0132 f6f3028638b340b9 Bon, d'accord...{wait 10} Dis-moi{n}quand tu voudras voir...{wait 10}{n}Moi, ça m'est égal.
+f290-0133 74fe4361797166f8 Ce Jerico prend les choses{n}au sérieux !{wait 10} Je devrais{n}m'y mettre aussi !
+f290-0134 5b58ad6538192e28 Je pensais être plus libre.{n}Mais à corriger les erreurs{n}de Jerico, je suis encore{n}plus occupé qu'avant...
+f290-0135 654ab3b49d81f7a3 Pourvu que Jerico{n}n'apprenne plus jamais de{n}trucs bizarres...
+f290-0136 4fcc9a492a6860ba Plus besoin de manier les{n}ailerons à effet en douceur,{n}mais garder l'équilibre est{n}plus dur que dans le sable.
+f290-0137 b4932efc9497fbf8 Maintenant, je dois{n}inspecter le réservoir{n}principal agrandi. Je ne{n}m'y suis pas encore fait.
+f290-0138 ab36b476eaeb9083 Ce navire utilise de{n}nombreux ailerons à effet{n}pour pulvériser le sable{n}et avancer à travers.{p}Si on perd l'équilibre, on{n}chavire dans le désert.{wait 10}{n}Tout dépend de notre{n}habileté !
+f290-0139 39f32ea659e13063 Là, je dois réparer des{n}pompes en panne. Ah, et{n}il faut aussi refaire le{n}revêtement des ailerons...
+f290-0140 a178314634ea7d80 Il va falloir refaire la{n}carte après ce qui{n}s'est passé !
+f290-0141 6e69894d0e191598 Si on oublie l'échelle{n}de temps, le travail ne{n}change pas beaucoup.
+f290-0142 8c07b0ad4315d405 Regarde ! Regarde ! La vue{n}aérienne colle à la carte{n}que j'ai faite il y a{n}longtemps... pile-poil !{n}Ça m'émeut beaucoup.
+f290-0143 4071e5166f0aa0bc Le monde est petit. Terre,{n}mer, ciel... je connais{n}tout par coeur !!
+f290-0144 ea0c2dcef1ea80b6 Une carte marine !{n}Il m'en faut une !
+f290-0145 bba0347a8bef0d8f Le capitaine d'ici est{n}sympa ! Il m'a tout appris{n}sur la mer. Mais quand il{n}boit, il est infernal !
+f290-0146 56b052698108078e Ça m'a un peu découragé{n}de voir tant d'endroits{n}absents des cartes...{p}Mais en même temps,{n}j'étais content de pouvoir{n}en dresser de nouvelles...
+f290-0147 59a5717dbb9a3969 L'océan est si immense...{n}Le désert, au moins, avait{n}quelques repères à{n}chercher...{p}Connaître le terrain ne{n}suffit plus. Je dois aussi{n}maîtriser la navigation{n}aux étoiles.
+f290-0148 c1a3664ffcaaf423 Jerico est prudent ces{n}temps-ci, alors la{n}navigation est plus{n}facile.
+f290-0149 838610c7cefadb74 Ah, c'est le joujou du chef{n}navigateur. Regarde la{n}carte.{wait 10} Le désert peut{n}sembler plat et monotone,{n}mais en fait, il est très{n}compliqué.{p}C'est encore pire quand on{n}plonge sous terre...{n}Rochers imprévus, rivières{n}souterraines... Impossible{n}de quitter la carte des{n}yeux une seule seconde !
+f290-0150 025b0f53d40529dc Ce Jerico ! Il laisse le{n}Yggdrasil dériver, et{n}après, horaires et routes{n}sont tout faux...
+f290-0151 c95ed4d15c916d37 Le désert change chaque{n}jour. Alors je refais la{n}carte avec les infos qu'on{n}recueille à chaque sortie.
+f290-0152 257a38d54c51a7e3 La caisse à cartes est le{n}plus grand trésor du{n}Yggdrasil !{wait 10} Ce navire va{n}où il veut grâce à elles.{wait 10}{n}Je les ai faites à la main !
+f290-0153 a04a7bfc282d5a5c Bart{n}"Tiens, mais c'est le{n}docteur Citan Uzuki et{wait 10}...{n}euh,{wait 10} votre ami baraqué !{p}Vous voilà réveillés.{wait 10}{n}Je suis navré pour ce qui{n}est arrivé...{wait 10} Je vous{n}prie de me pardonner..."
+f290-0154 3f2fd5a5a6d3d5f6 Rico{n}"J'ai un nom, tu sais...{wait 10}{n}Ricardo Banderas...{wait 10}{n}Mais on m'appelle Rico !{p}Alors, pourquoi tu nous{n}fais des excuses ?"
+f290-0155 bd1a974ad8aac8a8 Bart{n}"...{wait 10}{n}Bon, j'arrête de tourner{n}autour du pot...{p}D'habitude, je ne suis pas{n}si franc et je ne m'excuse{n}pas autant, mais bon..."
+f290-0156 e68041492f9d48e3 Citan{n}"Ce qu'il veut dire,{n}c'est ceci{wait 5}...{p}Ceux qui nous ont{n}abattus et sauvés sont{n}les mêmes{wait 5}...{wait 5} l'équipage{n}de ce navire !"
+f290-0157 1639d01af77fe5ee Rico{n}"...?{wait 10}{wait 10}{n}Ne me dites pas que...{p}Le Goliath où on était{n}a été abattu par...?"
+f290-0158 3a28c1207291272a Bart{n}"Oui, t'es un peu{n}lent...{wait 5} euh,{wait 5} mon grand !{p}En fait, c'est notre{n}Yggdrasil II qui a abattu{n}ce monstre volant !!{wait 5}{n}Quel spectacle !"
+f290-0159 00f4bc0c5148d5b3 "Il fallait voir ça !{wait 10}{n}Waouh !{wait 10} Mes 'Missiles{n}Bart' ont tout rasé...!!"
+f290-0160 ece2d0867571f2d6 Rico{n}"AAAARRRGGHHH !!{wait 10}{n}Tu ne t'en tireras{n}pas comme ça !!"{done 60}
+f290-0161 68e84c70a1928b45 Sigurd{n}"Fei, le jeune maître{n}n'est toujours pas rentré.{n}Mais que fabrique-t-il ?{p}Ce serait trop te demander{n}d'aller le chercher pour{n}moi ?"
+f290-0162 263e4dabd2d8713f Fei{n}"Pas de problème !{p}Il doit manger et boire{n}avec le capitaine du{n}Thames !"
+f290-0163 0c645978f5b9b0bd Signal de détresse détecté !{wait 10}{n}Le Thames semble attaqué par{n}une bande de Faucheurs !
+f290-0164 7c42ed38db6e137b Bart{n}"C'est donc la purge de{n}Solaris dont parlait{n}Stone !?"
+f290-0166 fd90d404f8c5bf39 Citan{n}"Dépêchons-nous !{wait 10}{n}Sinon, les Faucheurs vont{n}détruire le Thames !"
+f290-0168 66c58cf36579b529 Jessie{n}"Et l'Ethos ? Ils ont{n}complètement dégénéré !{p}Cette racaille va de mal{n}en pis !"
+f290-0169 5c33322e93cc11aa Citan{n}"Tu ne crois pas qu'il est{n}temps de dire la vérité à{n}ton fils, mon vieil ami ?{p}Tu ne faisais pas que{n}traîner par-ci par-là, à{n}boire et à te bagarrer,{n}n'est-ce pas ?{p}Je suis sûr qu'il veut{n}savoir ce que tu as{n}fait...{wait 10}{n}N'est-ce pas, Billy ?"
+f290-0171 6e916acc24774bdb Billy{n}"Oui, ça me soulagerait{n}sûrement.{p}Je sais que mon père{n}s'inquiétait pour moi,{n}mais je ne sais pas trop{n}ce que j'en pense..."
+f290-0172 d2f2010aaa9135a6 Jessie{n}"Comment ça ?"
+f290-0173 bdd31758ff170fcc Billy{n}"Bon, je suis content que{n}Prim arrive à parler, mais{n}elle ne réclame que papa...{p}Pourtant, c'est moi qui me{n}suis occupé d'elle tout ce{n}temps...{wait 10} Qu'est-ce{n}qui lui prend...?"
+f290-0174 b73106e55e45fa68 Citan{n}"Du calme,{wait 10} Billy...{wait 10}{n}Je suis sûr qu'elle est{n}juste intimidée.{p}Bientôt, elle vous{n}réclamera aussi.{wait 10} Tenez, ma{n}propre fille n'appelle{n}même pas son père !"
+f290-0175 d6d0568865267195 Citan{n}"Alors, mon vieil ami...{wait 10}{n}Pourquoi as-tu travaillé{n}seul tout ce temps ?"
+f290-0176 7ab716cb0f19feac Citan{n}"Du calme,{wait 10} Billy...{wait 10}{n}Je suis sûr qu'elle est{n}juste intimidée.{p}Bientôt, elle vous{n}réclamera aussi.{wait 10} Tenez, ma{n}propre fille n'appelle{n}même pas son père !"
+f290-0178 dc3377cd0903b5d5 Jessie{n}"Pas le choix...{wait 10}{n}Enfin, désormais, je vais{n}avoir besoin de vous..."
+f290-0179 67c78a5772748a2e Jessie{n}"Bon, je vous raconte.{wait 10}{n}Allons boire un coup...{wait 10}{n}à la Salle d'armes."
+f290-0180 ddf24a4bb25c54e2 Fei{n}"Pas {wait 10}possible !"
+f290-0181 a90cfa2ff82a6f7c Billy{n}"Une explosion{n}secondaire...!?"
+f290-0182 a9de3715fff16b4e Citan{n}"Oh, non !{wait 10}{n}J'aurais dû le prévoir.{n}Quelle erreur de calcul !!{p}L'explosion a été trop{n}forte.{wait 10} Elle a réagi avec le{n}condensateur principal sous{n}le canon principal...{p}...et causé une explosion{n}secondaire...{wait 10}{n}Comment ai-je pu être{n}aussi bête !?"
+f290-0183 4163f536ace81f9e Bart{n}"Ça veut dire{wait 10}{n}qu'on a exagéré !?"
+f290-0184 8cb59364a4f19607 Citan{n}"Pourquoi ne l'ai-je pas{n}compris plus tôt !?{p}Ça signifie...{wait 10}{n}Que peut-être, nous...{n}Oh, non, Elly...!"
+f290-0185 7221bff149596e4f Fei{n}"Oh...{wait 10} non...{wait 10}{n}Elly...!!"
+f290-0186 f42b11912c5c7383 Billy{n}"Qu... quoi{wait 10}{n}encore ?"
+f290-0187 9ac2640a15bb151b Bart{n}"Hé, {wait 10}Citan !{n}Quoi encore,{n}maintenant !?"
+f290-0188 bd88db7b7f31681d Citan{n}"Il se passe quelque chose{n}au centre de la Merkava...{wait 10}{n}Mais quoi...!?"
+f290-0189 e22a69244b1e1227 Billy{n}"Merci de votre aide,{n}tout le monde.{p}Pour être franc, c'était{n}trop dangereux pour moi{n}seul. Je n'aurais pas{n}réussi sans vous..."
+f290-0190 b7e07118700bbc82 Bart{n}"Ton boulot est toujours{n}aussi dangereux ?{p}Ha, et tu as même appelé{n}un Gear !?{wait 10}{n}Mais à quoi pense l'Ethos,{n}au juste ?"
+f290-0192 d67399c33870d990 Billy{n}"!!{wait 10} ...{wait 5}Nous, Etones,{n}ne faisons qu'accomplir{n}notre mission divine !"
+f290-0193 49cfccf619fabcce Bart{n}"Désolé...{wait 10} Je n'aurais pas{n}dû dire ça.{wait 10} Ne le prends{n}pas trop mal !{p}Alors, tu vas retourner à{n}l'Ethos pour faire ton{n}rapport, c'est ça ?{p}Bon, si tu veux, on te{n}dépose au siège de{n}l'Ethos...{wait 10}{n}C'est sur notre route."
+f290-0195 63352c553a3ed011 Billy{n}"Avec plaisir, si ça ne{n}vous dérange pas...{p}J'ai quelque chose à{n}vous offrir en signe de{n}gratitude.{p}Alors, je vous en prie,{n}accompagnez-moi jusqu'au{n}siège de l'Ethos.{n}Allons-y..."
+f290-0196 f512f1da004e9840 Citan{n}"'Anonelbe'...{p}L'homme de Dieu tant{n}attendu, qui mènera les{n}enfants de ce monde vers{n}un nouvel horizon.{p}Tel est le destin du{n}'Contact'.{wait 10}{n}C'est ainsi que l'Empereur{n}appelait Fei...{p}Mais il ne m'a pas dit{n}pourquoi il l'appelait{n}ainsi..."
+f290-0197 80f473947c495934 Sigurd{n}"Alors, qui est-il{n}vraiment ?"
+f290-0198 2b99ce4793cfa530 Citan{n}"C'est Fei.{wait 30}{n}Mais c'est aussi lui qui...{p}a détruit Elru,{wait 10} gravement{n}blessé Kahr,{wait 10} coulé le{n}Yggdrasil,{wait 10} tué les hommes{n}de Rico à Kislev...{p}...{wait 10}{n}Dois-je continuer ?{wait 10}{n}C'est{wait 5}...{wait 5}{n}{wait 5}...{wait 10}Id."
+f290-0199 ded381b9e14b9dbb Sigurd{n}"Que dis-tu !?{wait 10}{n}Id !?"
+f290-0201 2f536f488f42fd47 Citan{n}"Il{wait 5}...{wait 10} Fei, donc,{wait 10}{n}souffre d'un trouble{n}dissociatif d'identité...{p}Plus connu sous le nom de{n}personnalité multiple."
+f290-0202 1860f7f932d6b83b Jessie{n}"Dis...{wait 5}dissoci...?"
+f290-0203 a0bddc83622df2ea Citan{n}"Trouble dissociatif{n}d'identité...{wait 10} ou{n}personnalité multiple.{p}Un trouble mental où une{n}même personne a plusieurs{n}personnalités."
+f290-0204 346ff5714caa679c Sigurd{n}"Ce n'est pas{n}possible..."
+f290-0205 9c95fd3c1c25c082 Citan{n}"Oh, c'est bien réel !{wait 10}{n}Fei en est la preuve{n}vivante.{p}Je veille sur Fei, qui{n}porte en lui une{n}personnalité destructrice{n}appelée 'Id'."
+f290-0206 9a4b6004b51d0103 Citan{n}"Au début, il était{n}stable...{p}Il n'y a eu aucune{n}dissociation pendant les{n}trois ans où il a vécu à{n}Lahan.{p}Mais après l'attaque de{n}Lahan, tout a changé.{p}Peu à peu, la fréquence et{n}la durée des dissociations{n}ont augmenté.{p}Et puis, à Solaris, il y a{n}eu une manifestation{n}complète d'Id."
+f290-0207 26691a49670179a3 Sigurd{n}"Pourquoi donc ?{wait 10}{n}Il allait bien quand il{n}vivait à Lahan, non ?"
+f290-0208 f1c262b793ab8428 Citan{n}"Mon idée, c'est que{wait 5}...{wait 10}{n}l'apparition de Grahf a{n}quelque peu affecté Fei.{p}Tu dois savoir que Fei a{n}travaillé avec Grahf en{n}tant qu'assassin 'Id' avant{n}d'être emmené à Lahan.{p}C'est alors qu'Elru,{wait 5}{n}la terre natale de Dominia,{wait 5}{n}a été entièrement anéantie.{p}Grahf provoquait exprès la{n}manifestation d'Id{wait 10} 'en'{wait 5}...{wait 5}{n}faute de meilleur terme{wait 5}...{wait 10}{n}Fei."
+f290-0209 51faaf33526b9a84 Jessie{n}"Dans quel but ?"
+f290-0210 8015aa91c217258a Citan{n}"Détruire Dieu{wait 5}...{wait 10}{n}Ainsi parlait Grahf...{p}Je n'en sais pas plus...{n}Mais il y a peut-être autre{n}chose derrière...{wait 10}{n}Une chose est sûre...{p}Grahf encourageait la{n}manifestation d'Id, sans{n}pour autant le maîtriser{n}suffisamment."
+f290-0211 6485dbd97260f92f Sigurd{n}"En d'autres termes, il{n}n'arrivait pas à le{n}contrôler ?"
+f290-0213 1b65bb676ee6dbf2 Jessie{n}"Tu as dit : 'Je n'en sais{n}pas plus, mais il y a{n}peut-être autre chose.'...{p}Que voulais-tu dire ?"
+f290-0214 e0f0d0314565e012 Citan{n}"C'est ce que je vais{n}expliquer.{wait 10} En fait, c'est{n}le point essentiel."
+f290-0215 ca5c42b9da584cc2 Billy{n}"Bon, alors...{n}on y va aussi ?"
+f290-0216 5b3300c040b1b8d2 Le radar a repéré la flotte de{n}l'Ethos et le Thames.{wait 10} Ils sont en{n}mer, au sud d'ici.{wait 10} À pleine{n}vitesse, on y sera en une heure.
+f290-0217 bf384e00e8b35c37 Sigurd{n}"Très bien !{wait 10}{n}Cap sur le Thames !"
+f290-0218 eb28f79904c6d147 Oui, chef !
+f290-0219 05f57f96325ac3cb Second !{wait 10}{n}Le radar, chef...!
+f290-0220 897e2b136312309a Sigurd{n}"Quoi donc !?"
+f290-0221 a28b033b8092b207 Le radar vient de détecter{n}un objet énorme !{wait 10} Pile{n}au-dessus de la flotte !
+f290-0222 723d55efeab5c924 Bart{n}"Ne me dis pas que Stone{n}est déjà là-bas !?"
+f290-0224 5f95a2de7bc22ade Non, bien plus gros que{n}ça !{wait 10} J'estime au moins{n}2000 sharls !
+f290-0225 05ab3dbbe0c9bc50 Billy{n}"C'est gigantesque...{wait 10}{n}Ciel, mais que se{n}passe-t-il...?"
+f291-0001 13fc2731548a7821 On n'a pas trouvé autant{n}de pièces de Gear qu'on{n}l'aurait voulu...{wait 10} mais{n}servez-vous !
+f291-0002 1c01880cfe6853ac Cette porte mène au salon.
+f291-0003 c91a64d9106c4e24 N'oublie pas de préparer{n}tes Gears pour le combat{n}décisif !
+f291-0004 66dcf325a2151214 Ah, jeune maître ! Bravo,{n}vous ne vous êtes pas{n}perdu dans le Yggdrasil !{p}D'habitude, nos invités{n}se perdent tous par ici...
+f291-0005 d31bcad6adad6cc0 La boutique de Gears !{wait 10}{n}Entre si tu veux régler{n}ton Gear.
+f292-0000 acc07a0c9fe75dec Citan{n}"Oh, jeune homme.{wait 10}{n}Vous me cherchiez ?"
+f292-0001 addb560e6ede314d Bart{n}"Hum...{wait 5} Pour le Goliath{n}que j'ai abattu...{wait 10} Je{n}suis,{wait 5} euh,{wait 5} très,{wait 5} euh{wait 5}..."
+f292-0002 affe70f846a064e1 Citan{n}"Ah, c'est ça ? J'imagine{n}que c'était inévitable...{p}Mais la précipitation est{n}votre point faible.{wait 10} Un roi{n}doit toujours garder son{n}calme et bien juger !"
+f292-0003 0fe68cdcf92c2a35 (Maison dit la même chose.)
+f292-0004 e3b567f2f293b843 Bart{n}"Oui, je sais, je sais !{wait 10}{n}Au fait, j'ai une question{n}à vous poser..."
+f292-0005 20a0e05764fad0a9 Citan{n}"Oh ?{wait 10}{n}C'est rare."
+f292-0006 e4ab427540df22c1 Bart{n}"Bon, c'est à propos de ce{n}navire de guerre où on{n}est...{p}...qui est du même type{n}que le Yggdrasil.{p}Il y a des années, mon{n}vieux m'a dit qu'on l'avait{n}démantelé suite à la paix{n}négociée avec Kislev.{p}Donc je savais qu'il{n}existait..."
+f292-0007 a2402db543da0e8b Citan{n}"Hmm.{wait 10}{n}Qu'est-ce qui vous gêne ?"
+f292-0008 8218024eba3419ac Bart{n}"L'emblème du navire...{wait 10}{n}Ce n'est pas notre blason{n}royal !{wait 10} Regardez ça."
+f292-0009 b28384d5909ccee9 Citan{n}"C'est..."
+f292-0010 1de6972faeb68e75 Bart{n}"Vous le savez sûrement.{wait 10}{n}À qui est ce blason ?"
+f292-0011 1b7c9f50948214e9 Citan{n}"Il me semble que c'est{n}celui de Shevat."
+f292-0012 1f9b804a2d25b71a Bart{n}"Shevat ?{wait 10}{n}Comment ça ?"
+f292-0013 00b8e3df886e83d5 Citan{n}"Peut-être le Yggdrasil{n}n'a-t-il pas été construit{n}par votre père.{p}Jadis, une bonne part de{n}cette technologie restait{n}incomprise et, de ce fait,{wait 10}{n}elle a été cachée.{p}Votre père en a peut-être{n}craint la puissance et{n}décidé de la sceller."
+f292-0014 db11db61f79229f9 Bart{n}"Hmm, je vois.{wait 10}{n}Alors il n'était peut-être{n}pas à nous au départ.{p}Si c'est le cas, je veux{n}rencontrer les gars qui{n}ont fait cette merveille."
+f292-0015 f7d059ce264ee40d Citan{n}"Ils sont peut-être plus{n}près de vous que vous ne{n}le pensez..."
+f292-0016 d2ffd9bb78f6b269 Bart{n}"Hein ?{wait 5}{n}Vous dites ?"
+f292-0017 1d5ad7cc5ddaf95b Citan{n}"Rien... Je me demandais{n}juste si Fei et Elly{n}allaient bien."
+f292-0018 8e82fe4b55bcc0e8 Bart{n}"...{wait 10}{n}Désolé, c'est ma{n}faute."
+f292-0019 021ccdc44fd1a9f6 Citan{n}"N... non,{wait 10}{n}je ne disais pas ça...{p}Je suis certain{wait 10} qu'ils{n}vont bien."
+f292-0020 db34ef1f5ff7852a Bart{n}"Même sans aucune preuve,{n}je me sens mieux maintenant{n}que vous l'avez dit...{p}Même si je sais que vous{n}me mentez sans doute{n}effrontément pour me{n}rassurer..."
+f292-0021 48c9964ee644b077 Citan{n}"Assez de soucis...{wait 10}{n}Mais vous devriez vraiment{n}faire vos excuses à Rico.{p}Quoique, cette fois, vous{n}risquez d'y gagner plus{n}qu'un bleu."
+f292-0023 99f95171ec0b6497 Citan{n}"Rico vérifiait son Gear."
+f292-0024 df157e93017fe470 Que voulez-vous faire de{n}votre Gear ?
+f292-0025 c431d784080f4de4 Revenez vite.
+f292-0026 0a8120083b194804 Ah, Bart ! Merci de me{n}laisser monter à bord de{n}ton Yggdrasil !{p}J'ai toujours rêvé d'y{n}monter... Ne t'en fais{n}pas. Nisan veille sur les{n}enfants !
+f292-0027 50c2ddfa257e3b5b J'ai entendu dire qu'il{n}manquait du monde, alors{n}j'ai décidé de venir !{wait 10}{p}À vrai dire, j'en avais{n}assez de mon boulot dans{n}ce petit repaire...
+f292-0029 a57c24a546c62ab3 Revenez-nous, vous{n}m'entendez !?
+f292-0031 a9e12d1cf5dea7ef Au moindre pépin, j'y vais{n}aussi ! C'est ça, l'esprit{n}de l'escouade de Gears du{n}Yggdrasil !
+f292-0032 b945200c48853f4c Je n'ai plus ma place en{n}combat de Gears, mais{n}mieux vaut me tenir prêt{n}quand même !
+f292-0033 3f5d45950d5b8767 J'achète des pièces pour{n}les Gears.{wait 10} Le général{n}Maitreya râlera si on{n}n'essaie pas de monter{n}un Gear de plus.
+f292-0034 1520a19a7484dfda Hé, tu n'as pas encore vu{n}le Gear de Maria, si ?{p}Il est trop grand pour{n}loger dans ce hangar, il{n}reste donc sur le pont.{p}À propos...{p}Tu veux renommer{n}le {name 19} ?{n}    {speed 255}Oui, pourquoi pas !?{n}    Non, plus tard...
+f292-0035 7c91b7059b33c112 Le général Maitreya,{n}Falkon et Farrant sont{n}partis.{wait 10} ...Ils me{n}manquent.
+f292-0036 f08ee5401c23e82c On manque d'équipement{n}sous-marin, de Gears et de{n}pilotes.{wait 10} Heureusement{n}que vous êtes là.
+f292-0037 8f41cbd48b252a23 Quand je viens ici la nuit,{n}j'entends parfois Maitreya{n}et les autres parler et{n}rire.{p}Mais quand je m'approche,{n}les voix s'évanouissent.{wait 10}{n}Je suis sûr qu'ils se{n}sentent seuls,{wait 10} eux aussi.
+f292-0038 8e5f756872a579ab Maitreya admirait ta{n}technique de piqué.{wait 10} On dit{n}que ta chandelle est{n}impeccable.{p}Tu pourrais m'entraîner{n}pendant mon prochain{n}quart ?
+f292-0039 520bcc9df2aa1ebc Là, je dois préparer les{n}pièces des Gears.{wait 10}{n}Maitreya est strict sur{n}ces choses-là.
+f292-0040 f264611b3ffd129c Ce Gear à la structure{n}si fine a encaissé le{n}sceptre du {name 15} ?{p}Quel blindage a-t-on{n}utilisé pour le revêtir ?
+f292-0041 13caf78c35ab1210 Hé, tu as vu le numéro de ce{n}mois du magazine 'Gear Fan' ?{wait 10}{n}Il paraît que la 'Lévitation'{n}est la grande mode !{p}Il y a peu, c'était un{n}équipement spécial que seul{n}le jeune maître avait sur{n}son Gear !
+f293-0000 ebcbee453fe3fecc (Hyuga...{wait 10}{n}J'ignore pourquoi tu es{n}ici.{p}Mais si tu tentes quoi{n}que ce soit...{wait 10}{n}C'est clair ?)
+f293-0001 7705fde650292a82 (Moi aussi, j'ai quitté{n}cette terre. On se connaît{n}à peine, je ne t'en veux{n}pas de te méfier, mais...)
+f293-0002 5bdca172298b2e82 Ah, jeune maître ! C'est{n}rare de vous voir seul.{n}C'est réparé, alors ne{n}vous inquiétez pas.
+f293-0003 b668ca716298a9b8 Que voulez-vous faire ?{n}{speed 255}    Voir le Gear d'ici{n}    Voir le Gear de face{n}    Infos sur le Gear{n}    Rien
+f293-0004 8192bd7c326c8316 Voici le {name 11}.{n}Hauteur 16,3 sharls{n}Poids de base 17,8 kahnns{n}Poids total 22,7 kahnns{n}tout équipé.{p}Un Gear bien équilibré en{n}attaque, défense et{n}capacités d'Éther.{p}Mais certaines pièces ne{n}se démontent pas... On{n}pourrait les appeler des{n}'boîtes noires'...?{p}Elles ne gênent pas{n}l'entretien, mais j'y{n}pense chaque fois que je{n}les vois.
+f293-0005 4a482530a8d668ea Voici le {name 12}.
+f293-0006 5d40c131e7513060 Voici le {name 26}.{n}C'est le Gear de Fei.{p}Hauteur 19,8 sharls{n}Poids de base 18,9 kahnns{n}Poids total 21,4 kahnns{n}tout équipé.{p}Le {name 12} s'est{n}transformé{n}après son contact avec le{n}Zohar.{p}Les instruments d'ici ne{n}peuvent pas déterminer ses{n}caractéristiques précises.{p}Cela dit, je me demande si{n}la capacité de ce Gear a{n}vraiment une limite{n}mesurable...{p}C'est comme si ce Gear se{n}renforçait à mesure que{n}les pouvoirs mentaux de{n}Fei augmentaient...{p}En tout cas, le moteur{n}semble être le même, donc{n}il doit encore avoir besoin{n}de carburant...{p}Mais ça ne m'étonnerait pas{n}que cet engin n'ait même{n}plus besoin de carburant !
+f293-0007 7e42144aeefe4d31 Voici le {name 15},{n}le Gear de notre chef,{n}le jeune maître.{p}Hauteur 17,0 sharls{n}Poids de base 13,9 kahnns{n}Poids total 18,6 kahnns{n}tout équipé.{p}Réglé exprès pour les{n}combats dans le désert.{n}La puissance des réacteurs{n}de lévitation des jambes{n}mérite une mention...{p}Ah, et le cache-oeil et{n}les plumes ornementales{n}ont été ajoutés ensuite,{n}à la demande du jeune{n}maître.
+f293-0008 83956d87390a7e8b On était bien embêtés{n}quand le jeune maître a{n}dit :{wait 10} 'Cassez un capteur{n}et posez un cache-oeil{n}dessus... sans gêner la{n}reconnaissance...' !
+f293-0009 24ff835a4d3e58d8 Voici le {name 23},{n}le Gear du jeune maître...{p}Hauteur 18,3 sharls{n}Poids de base 15,2 kahnns{n}Poids total 19,1 kahnns{n}tout équipé.{p}C'est un Omnigear laissé par{n}Roni Fatima, l'ancêtre de{n}notre jeune maître...{p}On dit que cet Omnigear a{n}été fait en unissant cette...{n}Relique Anima (ou je ne sais{n}quoi...) à une machine.{p}Mais, apparemment, ce châssis{n}était aussi une sorte de Gear{n}avant d'être transformé...{p}Tout l'extérieur et 60 % de{n}l'intérieur sont en matériaux{n}inconnus, mais la base était{n}une machine ordinaire.{p}Ça veut dire qu'on peut{n}améliorer ses performances{n}de base avec d'autres{n}pièces.{p}Mais comme il est mû par la{n}force spirituelle, ces pièces{n}ne changent peut-être pas{n}grand-chose à sa puissance.
+f293-0010 7e30cccd179657d9 Voici le {name 23},{n}le Gear du jeune maître...{p}Hauteur 18,3 sharls{n}Poids de base 15,2 kahnns{n}Poids total 19,1 kahnns{n}tout équipé.{p}Il a été créé par deux des{n}sages de Shevat, Balthasar{n}et Melchior...{p}Ils l'ont conçu à partir des{n}données de l'Omnigear laissé{n}par Roni Fatima, l'ancêtre{n}du jeune maître, et de{n}celles du {name 26}.{p}Il allie la technologie de{n}Gears dernier cri et la{n}nanotechnologie. Mais ses{n}performances sont celles{n}de l'ancien Omnigear.{p}Même quand on l'a trouvé{n}caché sous terre à Nisan,{n}l'arme de base de son{n}équipement était le fouet.{p}Ça doit vouloir dire que les{n}ancêtres du jeune maître{n}maniaient aussi le fouet et{n}le sceptre... C'est dans le{n}sang, hein !?
+f293-0011 168e030c6512ae42 Voici le {name 14},{n}le Gear du docteur Uzuki.{p}Hauteur 16,9 sharls{n}Poids de base 14,0 kahnns{n}Poids total 18,1 kahnns{n}tout équipé.{p}Le châssis de base a été{n}exhumé à la même époque que{n}le Gear du jeune maître.{p}Mais sa puissance était{n}démesurée pour son corps,{n}et il a fallu longtemps{n}pour le régler...{p}En fait, beaucoup de mes{n}gars se sont blessés à{n}cause de ça.{p}Mais le docteur a réglé le{n}problème en un clin d'oeil,{n}et il le pilote si bien...{n}C'était juste incroyable.
+f293-0012 a54f512f169dbd2e Voici le {name 22},{n}le Gear du docteur Uzuki.{p}Hauteur 18,6 sharls{n}Poids de base 17,2 kahnns{n}Poids total 20,4 kahnns{n}tout équipé.{p}Il a été créé par deux des{n}sages de Shevat, Balthasar{n}et Melchior.{p}Ils ont utilisé les données{n}de l'Omnigear Fenrir, venu{n}de Solaris avec le docteur,{n}et du {name 26} de Fei.{p}C'est l'union d'un Gear et{n}de la nanotechnologie, mais{n}ses performances restent{n}celles de l'Omnigear.{p}Son arme standard est{n}l'épée... qui semble être{n}l'arme préférée du docteur.
+f293-0013 ef89dd1d2547f5ca Renommer ce Gear ?{n}{speed 255}    Oui, bien sûr !{n}    Pas maintenant !
+f293-0014 523ce4b2465b023f Citan{n}"Fei !{n}Je m'inquiétais pour{n}vous !"
+f293-0016 c3ae658f8bb8ccf1 Bienvenue sur le croiseur{n}des sables 'Yggdrasil'. Nos{n}excuses pour l'incident de{n}tout à l'heure.
+f293-0017 47ac6af7847846c6 Maison{n}"Je crois que chacun a eu{n}la courtoisie de se{n}présenter.{p}Mais permettez-moi de vous{n}présenter le chef des{n}pirates des sables, maître{n}Bartholomew."
+f293-0018 c0d084c609aa30ad Maison{n}"Au fait, jeune maître,{n}vous êtes-vous excusé{n}auprès de monsieur Fei ?"
+f293-0019 5f92ae873a21f760 Bart{n}"Quoi ? Euh... ben...{wait 10}{n}J'ai dit 'pardon'...{wait 10}{n}Pas vrai ?"
+f293-0021 f70272485fe41c47 Dire 'pardon' après coup{n}ne règle pas tout, jeune{n}maître.
+f293-0022 2323de57bb031268 Second{n}"Pardon d'avoir tardé à me{n}présenter...{p}Je suis 'Sigurd', le second{n}de ce croiseur des sables."
+f293-0023 9080c7f2bec4bbbf Maison{n}"Bien, alors, faites-moi{n}savoir si vous avez besoin{n}de quoi que ce soit."
+f293-0024 0648769d55eca8c9 Bart{n}"...Voilà où on en est...{wait 10}{n}Alors pardonnez-moi,{n}allez !?"
+f293-0025 9261ae2afe931bc5 Sigurd{n}"Jeune maître !{n}Pas de bêtises."
+f293-0026 021711d075eabf31 "Aïe, aïe, aïe !!{n}Pas les oreilles !"{done 15}
+f293-0027 9893282fc548489a Citan{n}"Attendons dans notre{n}cabine, d'ici là...{p}Elle est bien conçue et{n}confortable."
+f293-0029 7f9bc671a525bb7a Citan{n}"Qu'y a-t-il ?{n}Vous semblez abattu."
+f293-0030 d6159603f85d0172 Fei{n}"Non...{wait 10}{n}Bon..."
+f293-0031 a6fba8c02e579ee6 Citan{n}"Que s'est-il passé ?"
+f293-0032 a9f5d75e0043d522 Fei{n}"Non, rien."
+f293-0033 f984c7b0e06edc1e Fei{n}"{slow 1}Je... dois partir{wait 5}...!!"
+f293-0034 b35e6bbc812679c1 Citan{n}"Vous n'êtes pas en état{n}de vous battre...{wait 10}{n}Laissez-nous faire !"
+f293-0035 dfdb44708767972a Billy{n}"Il est temps de régler{n}les comptes... Mais Fei{n}devrait se reposer."
+f293-0037 32d9a1fadaba44ce Citan{n}"Oui.{wait 10}{n}J'emmène Fei à{n}l'infirmerie.{p}Billy, je vous prie,{n}occupez-vous du reste."
+f293-0038 8aca854b8756eb3e Billy{n}"Aidez-nous, si vous le{n}pouvez."
+f293-0040 6a0cc94fd69febba Fei{n}"Ah,{wait 20} Doc..."
+f293-0041 245d183caf7eca0e Citan{n}"Fei, vous vous sentez{n}mieux ?"
+f293-0042 bff716de65dfeae9 Fei{n}"Oui...{wait 20}{n}Je crois..."
+f293-0043 af19a3eb8ebac64a Elly{n}"Je te quitte des yeux une{n}seconde et voilà ce que tu{n}fais...{p}Tu pilotes un Gear alors{n}que tu es à peine remis ?"
+f293-0044 1fb2b5f5e6a3bc3a Elly{n}"Tu pilotes un Gear alors{n}que tu es à peine remis ?"
+f293-0045 28218c9bfa477a45 Billy{n}"Pourquoi tu te promènes ?{n}Je croyais que tu étais à{n}peine remis !{p}Tu ne devrais pas faire{n}ça !"
+f293-0046 98931e12340f66d2 Bart{n}"C'est quoi, ce cirque ?{n}Tu te balades alors que tu{n}es à peine remis ?{p}Un malade, ça reste au lit,{n}au repos !!"
+f293-0047 0ef14de2f8175b83 Rico{n}"Pourquoi tu es debout ?{n}Tu es à peine remis !{wait 10}{n}Retourne au lit !!"
+f293-0048 09e2e276371acb02 Fei{n}"Je ne sais même pas ce{n}que je fais ici...{p}Je n'ai pas encore les{n}idées claires..."
+f293-0051 df84ddbe8fabca6c Citan{n}"Fei !!{wait 10}{n}Vous ne devriez pas{n}encore être debout !!"
+f293-0052 6cb00c273630b9b2 Alkanshel repéré droit{n}devant !!{wait 10}{n}Préparez les Gears pour{n}le lancement !!
+f294-0000 b06d5ef602dfeb1e Bart{n}"...Donc, si on détruit{n}ce fameux Zohar, tout{n}est fini, c'est ça ?"
+f294-0001 c91df354a2fe83f0 Citan{n}"Oui.{p}La source de nos pouvoirs{n}d'Éther, et l'énergie des{n}générateurs qui meuvent{n}nos Gears...{p}Tout cela vient du moteur{n}'Modificateur Zohar', qui{n}peut contrôler n'importe{n}quel phénomène potentiel.{p}Si nous le détruisons,{wait 5}{n}Deus...{wait 5} et les anges{n}-Séraphins-...{wait 5}{n}seront tous désactivés...{p}Et nous devrions aussi{n}pouvoir libérer Elly,{n}liée au système d'armes de{n}Deus en tant que 'Miang'."
+f294-0002 1e46879281f037a7 N'est-ce pas, Fei ?
+f294-0003 91364c1c4b5780bf Fei{n}"Oui.{n}C'est ce qu'a dit{n}l'Existence Ondulatoire."
+f294-0004 9bb9dd55c28db127 Citan{n}"Mais il y a aussi un{n}revers...{p}Cela signifiera aussi{n}que nous ne pourrons plus{n}utiliser nos Gears ni{n}nos pouvoirs d'Éther."
+f294-0005 08c8ff114fab5ab7 Rico{n}"Au fait, c'est quoi, ces{n}anges -Séraphins- ?{p}Cet aspect étrange, comme{n}s'il leur manquait quelque{n}chose...{wait 5} ni vivants ni{n}simples armes..."
+f294-0006 722f6b8dbc036bd0 Citan{n}"Le Zohar capte la{n}conscience humaine et{n}l'incarne en -Séraphins-."
+f294-0007 a3ea395e0fa926cc Billy{n}"Conscience humaine...?"
+f294-0008 b20cda60f7220450 Citan{n}"Le Zohar obéit lui-même au{n}principe d'incertitude.{p}C'est la perception qu'en a{n}l'observateur qui détermine{n}l'entité qu'il devient{n}réellement.{p}Autrement dit, je crois que{n}ces anges sont les esprits{n}des gens incarnés...{p}...Des gens qui ont été{n}absorbés par Deus pour en{n}devenir des parties."
+f294-0009 089ce645ba848750 Bart{n}"Et quel intérêt ont-ils à{n}éliminer toute la{n}civilisation ?"
+f294-0010 ed6870dd6408dcce Maria{n}"Une sorte de haine pour{n}les humains qui ont{n}survécu ?"
+f294-0011 0fadbd6b63e07e93 Citan{n}"Bien sûr que non.{p}Les gens créés et{n}assimilés comme parties{n}de Deus n'auraient pas de{n}telles intentions.{p}Souvenez-vous de ce{n}qu'Elly a dit quand elle{n}est devenue Miang."
+f294-0012 c09c9b92c9fd62bf Fei{n}" 'Les oeuvres de Dieu{n}   deviendront un jour{n}   un obstacle...{p}   Il faut donc les{n}   éliminer...'"
+f294-0013 68e4d22ce36a427b Citan{n}"Oui. C'est pourquoi la{n}Merkava sert à lancer la{n}destruction.{p}Mais... Deus ne suit pas{n}son programme{n}d'extermination de toute{n}la civilisation...{p}Les -Séraphins-, armes{n}d'interface terminale de{n}Deus, se servent de leurs{n}corps faits de...{p}...nanomachines pour{n}absorber un nombre énorme{n}de gens, qu'ils soient{n}vivants ou morts.{p}Il ne fait aucune{n}différence entre mutants{n}et non-mutants. C'est{n}extrêmement étrange...{p}...Le fait que les gens{n}qui{n}devraient être détruits{n}soient aussi absorbés...{p}C'est tout l'inverse de ce{n}qu'il devrait faire."
+f294-0014 b146b5d292bc7a5f Fei{n}"Il lui manquerait des{n}pièces ?"
+f294-0015 a1ff3a02f379a944 Citan{n}"C'est peu probable.{p}En plus des corps qui{n}étaient destinés à devenir{n}ses parties...{p}...Deus, qui possède déjà{n}les capacités des{n}nanomachines, peut employer{n}presque tout matériau...{p}...pour construire son{n}corps. Il a manifestement{n}d'autres intentions."
+f294-0016 8f372d3803ecfb86 Citan{n}"Ces intentions{wait 5}...{wait 10}{n}Krelian appelait Deus mère.{p}Si Deus est la mère, alors{n}ces motifs viennent de la{n}Grande Mère{wait 5}...{p}Empêcher l'enfant de{n}grandir,{wait 10} l'envelopper,{wait 10} pour{n}le ramener dans son ventre{n}et ne faire qu'un avec lui.{p}Tel est son motif. Mais un{n}tel programme ne figure pas{n}dans sa conception.{p}Quelqu'un lui a sans doute{n}insufflé cette volonté.{n}Peut-être Elly, fondue en{n}Deus, ou{wait 10}..."
+f294-0017 2a32281637b2869f Fei{n}"De toute façon, ça ne{n}change rien au fait qu'on{n}doit se battre.{p}Peu importent leurs{n}intentions. Le problème,{n}c'est comment leur faire{n}face.{p}Vous croyez qu'on en est{n}capables, tels qu'on est{n}maintenant ?"
+f294-0018 efc1a190dc2539e1 Zephyr{n}"Ce cuirassé secret,{n}l'Excalibur, prendra aussi{n}part à la bataille finale.{p}De plus, tout le potentiel{n}militaire des forces de la{n}surface se réunira ici."
+f294-0019 91aa41dd8430f665 Bart{n}"Même si on réunit une{n}force énorme...{p}...il reste le problème de{n}l'armement principal de la{n}Merkava.{p}Il faut trouver comment en{n}venir à bout. Tant qu'on ne{n}l'aura pas fait..."
+f294-0020 c6cd7633d1c350d3 Citan{n}"Le canon à ultra-longue{n}portée de la Merkava{n}vaporise toute substance.{p}De plus, une barrière qui{n}couvre tout son périmètre{n}annule toute attaque."
+f294-0021 e68d3923d7d711f5 Zephyr{n}"Nous avons affronté la{n}Merkava maintes fois pour{n}freiner son avance.{p}Mais nous n'avons même{n}pas pu l'approcher. Nous{n}avons dû reculer à chaque{n}fois."
+f294-0022 73823a078cffbf58 Fei{n}"Bon sang !{n}On a beau vouloir sauver{n}Elly...{p}...si on ne peut pas{n}entrer dans la Merkava, ça{n}ne servira à rien."
+f294-0023 9e00586a8433e044 Sigurd{n}"Et il y a le problème de{n}ces -Séraphins-.{p}...Ils servent d'armes{n}d'interface terminale pour{n}la défense à courte portée.{p}Je peux affirmer sans{n}hésiter que leur puissance{n}d'attaque vaut celle de la{n}classe Omnigear."
+f294-0024 1314590bf6d9e53d Bart{n}"Et en plus, ils se{n}régénèrent grâce aux{n}nanomachines."
+f294-0025 a88baa1fba972233 Taura{n}"Ne vous en souciez{n}pas."
+f294-0026 a1eb8bd35361d6d4 Taura{n}"J'ai pu obtenir quelques{n}données du Xenogears...{p}Voyez-vous, le Xenogears a{n}évolué par mutation grâce{n}au contact avec le Zohar.{p}Avec ces données, tous vos{n}nouveaux Gears devraient{n}être prêts sous peu.{p}De plus, toutes les autres{n}armes sont modifiées pour{n}recevoir le 'Dispositif{n}Désassembleur'."
+f294-0027 9acc2091cd43eff6 Billy{n}"Le Désassembleur ?"
+f294-0028 13062ae23520c2f4 Taura{n}"Contrairement aux{n}Nanoassembleurs, qui{n}créent de quoi réparer...{p}...les Désassembleurs{n}peuvent démonter ou{n}détruire la matière.{p}Ils annulent même la{n}régénération des{n}nanomachines en coupant{n}leur programme réparateur.{p}Ce devrait être assez{n}efficace même contre les{n}-Séraphins- de Deus."
+f294-0029 cbdd86d18c6719a8 Fei{n}"D'accord, même si on{n}règle le cas des anges...{p}...que faire de cette{n}Merkava ? On ne peut même{n}pas l'approcher..."
+f294-0030 befad99e1f636058 Citan{n}"Aucune défense n'est{n}parfaite. Il y a un{n}moyen."
+f294-0031 e391e8a6d8b48976 Citan{n}"Voyez ceci."
+f294-0032 2a605859987f7bcb Vu son énorme puissance, le{n}canon principal de la{n}Merkava a besoin d'un{n}intervalle de 1,2 seconde{n}pour recharger.{p}Au moment du tir, une partie{n}de la barrière va s'ouvrir,{n}ne serait-ce que sur une{n}section.{p}La barrière met 1,87 seconde{n}à se reformer dans cette{n}zone. Si nous profitons de{n}ce créneau pour viser et{n}détruire ce canon, nous{n}pourrons approcher.{p}Si nous arrivons assez près,{n}nous pourrons ouvrir un{n}passage par une correction{n}gravito-spatiale.
+f294-0033 d26288f408b37ba9 Citan{n}"Voilà l'idée{n}générale."
+f294-0034 d1093b398a61402e Sigurd{n}"Malheureusement, nous{n}n'avons pas de canon{n}de si longue portée...{p}...capable de viser{n}aussi vite."
+f294-0035 d0d2f94ced2a14e0 Bart{n}"Donc, vous dites qu'il{n}suffit de faire taire ce{n}fichu canon, c'est ça ?"
+f294-0036 4af0beb9b6a0b548 Fei{n}"...Attaquer{n}la Merkava{n}de front !?"
+f294-0037 a16274c44a482984 Billy{n}"Toujours aussi fou...{wait 10}{n}C'est du suicide."
+f294-0038 72edb8166e3c174f Bart{n}"Non, écoute. On ne va{n}pas juste foncer dans le{n}tas.{p}Le Yggdrasil IV et{n}l'Excalibur ont aussi des{n}barrières. C'est ça qu'on{n}va utiliser.{p}Même brièvement, elles{n}peuvent encaisser un tir{n}direct du canon principal{n}de la Merkava.{p}Alors on s'approche, on{n}attend que cette partie de{n}la barrière tombe, et on{n}détruit le canon."
+f294-0039 50370074e8b307ac Fei{n}"La barrière tient{n}combien de temps ?"
+f294-0040 32078529f581a980 Bart{n}"Dans les 20 secondes."
+f294-0041 548d3a0094a55698 Fei{n}"C'est tout ? Peu importe{n}à quelle vitesse on vole.{p}En si peu de temps, on{n}n'aura plus de barrière{n}avant d'être à portée de{n}tir.{p}Et ces chiffres ne valent{n}que si le générateur est à{n}pleine puissance, non ?{p}Et ces chiffres exigent de{n}sacrifier tout le reste de{n}la puissance, propulsion{n}comprise."
+f294-0042 19c3d6f82f0f397f Bart{n}"Je ne dis pas qu'on va{n}foncer en tirant en{n}sachant qu'on va perdre.{p}On va boucher ce truc de{n}force, physiquement !!"
+f294-0044 afc56cab8f1e36d5 Bart{n}"Comme tu l'as dit...{p}La barrière du Yggdrasil IV{n}ou de l'Excalibur ne suffit{n}pas contre la Merkava.{p}Du moins, avec un seul{n}générateur..."
+f294-0045 112c8d4d3bfa88dd Billy{n}"Et donc...?"
+f294-0046 1df437285f5d74c8 Bart{n}"Donc, on peut se défendre{n}contre la Merkava deux fois{n}plus longtemps...{p}...40 secondes, en couplant{n}les 2 générateurs. Ainsi,{n}on peut atteindre le coeur{n}de la Merkava."
+f294-0047 8e6652fd95cf9c12 Maison{n}"Et pour la{n}propulsion..."
+f294-0048 4b49fd368a326191 Bart{n}"Laisse-moi finir."
+f294-0049 54884bfbf157302e Voilà ce qu'on va faire...{n}D'abord, je mets mon Yggdrasil{n}en mode d'assaut lourd et je{n}le charge sur l'Excalibur pour{n}coupler les générateurs.
+f294-0050 f6a12d193fc9a8a1 Comme ça, on réduit la{n}consommation d'énergie au{n}seul maintien de la coque{n}et à la génération de la{n}barrière.{p}Ainsi, l'essentiel de{n}l'énergie pourra servir à{n}générer la barrière.{p}Puis on oriente toute la{n}barrière vers l'avant, en{n}la concentrant en un seul{n}point, là où leur canon{n}principal va frapper.
+f294-0051 2d2e7913ab09c930 Passons au déplacement.{n}D'abord, on génère une{n}barrière en poussant le{n}générateur de l'Excalibur{n}à pleine puissance.{p}Pour la propulsion pendant{n}ce temps, on installe sur{n}le Yggdrasil les grosses{n}fusées à poudre tirées des{n}ruines du Mass Driver.
+f294-0052 b506b54289c43cd9 Quand la barrière de{n}l'Excalibur s'épuise, le{n}générateur du Yggdrasil IV{n}crée une autre barrière.{p}Là, on largue aussi les{n}fusées à poudre et on{n}passe l'Excalibur en vol{n}conventionnel.
+f294-0053 d302a1c9fad105c0 Ainsi, on arrive sous le{n}nez de la Merkava. Après{n}son tir, elle sera sans{n}défense.{p}À ce moment-là, on bouche{n}la gueule du canon de la{n}Merkava avec l'éperon de{n}proue de l'Excalibur.{p}Cela fait, on devrait{n}avoir 0,67 seconde...
+f294-0054 70d5283a89069fa9 Les canons de l'Excalibur{n}détruisent le générateur{n}esclave du Yggdrasil IV,{n}ce qui neutralise au passage{n}la Merkava, et alors... on{n}force le blocus !
+f294-0055 b3d24179cc72e1c5 Bart{n}"...Voilà, en gros,{n}le plan.{p}Unir les barrières des{n}deux navires...{n}Envahir la Merkava...{p}Le moment des tirs de{n}l'Excalibur...{n}Tout ça sera crucial.{p}Si on rate une seule de{n}ces choses, les{n}conséquences seront{n}graves.{p}Alors, les deux équipages{n}devront être en phase.{p}C'est pour ça que je{n}voulais que Sig commande{n}l'Excalibur."
+f294-0056 eb1853b280e2efb5 Sigurd{n}"Aucune{n}objection..."
+f294-0057 71532933ceb3a28e Bart{n}"Alors, Majesté ? Vous{n}nous prêtez votre{n}cuirassé ?"
+f294-0058 74a3916bfcb17423 Zephyr{n}"Faute d'autre solution,{n}suivons ce plan.{p}Utilisez-le comme bon{n}vous semble."
+f294-0059 45e97df2cc7af416 Citan{n}"Mais notre marge ne{n}sera-t-elle pas bien trop{n}étroite...?{p}...Comparez la durée du{n}trajet et celle de la{n}barrière, et vous verrez{n}ce que je veux dire !{p}Un petit contretemps{n}pourrait nous laisser sans{n}barrière avant l'arrivée."
+f294-0060 4afa37701a24563c Sigurd{n}"Et puis, les deux{n}générateurs seront dédiés{n}aux barrières...{p}Cela ne nous laissera-t-il{n}pas sans défense autour ?{p}Nous serons perdus si les{n}anges -Séraphins- nous{n}attaquent en route vers{n}la Merkava."
+f294-0061 ae6771dc1c080154 Fei{n}"On les retiendra.{n}Comptez sur nous !{p}Vous, détruisez juste ce{n}canon principal."
+f294-0062 dd7dde9b76e236ee Bart{n}"Merci.{wait 10}{n}On compte sur vous."
+f294-0063 265f58fd5e1daee6 Fei{n}"Tous les autres lieux{n}ont déjà été détruits.{p}Seul celui-ci reste.{n}Ce sera la vraie{n}'bataille finale'."
+f295-0000 8ce4f79f5201c5a9 Rien que changer ces{n}fusibles par-ci par-là,{n}quelle corvée...{done 30}
+f295-0001 7b245ecc5b176d7f Ça ne doit pas dépasser{n}la puissance{n}nominale.{done 30}
+f295-0002 d42edb7a351b7096 Oh non !{wait 10} La bobine du{n}lévitron a grillé aussi...{done 30}
+f295-0003 587cedd464b9c860 La bobine casse si le tore{n}refroidit d'un coup...{wait 60}{n}C'est gros, mais c'est{n}délicat...{done 60}
+f295-0004 240872afa485feed Circuit électrique{n}optimisé, et...{done 30}
+f295-0005 d31e588c49261912 Le lévitron boude{n}aujourd'hui.{wait 10} Le plasma{n}refroidit trop vite...{done 60}
+f295-0006 bd7f99a434e8c4b4 Le fusible tient bien ?{done 30}
+f295-0007 e8f128dd2c16e5b8 C'est presque l'heure{wait 5}...{wait 10}{n}Au front, on ne servira{n}pas à grand-chose, mais{n}on vous épaulera de notre{n}mieux !
+f295-0008 374968f42eb864a5 Un nouvel engin à la{n}poupe...!{p}Quelle chance de pouvoir{n}travailler sur une chose{n}aussi incroyable à mon{n}âge...{wait 10} Hé hé hé.
+f295-0009 440e5a8d91dee3c8 Ne t'en fais pas. Tout se{n}passe très bien !
+f295-0010 92c5b98644b61ec0 Tu vas sur ce navire{n}fantôme ?{wait 10} Fais bien{n}attention, hein !
+f295-0011 65585299039ee00e Elly{n}"Chef...{n}Je suis vraiment{n}désolée.{wait 10} Je..."
+f295-0012 2062e2c05bd4a29e Ça va.{wait 10} On se trompe tous.{p}Moi, ça ne me dérange pas{n}du tout que les jeunes{n}fassent des erreurs !
+f295-0013 05b832a9e9596ea3 (Mais si tu recommences,{n}ça va barder...!)
+f295-0014 84a99b27047910a8 Je bosse sur ces moteurs{n}depuis des années et des{n}années...{p}Mais je ne comprends pas{n}pourquoi les Générateurs{n}Esclaves produisent un{n}plasma à haute énergie...{p}En fait, nul ne connaît le{n}mécanisme des générateurs,{n}que ce soit des navires{n}ou des Gears.{p}Mais peut-être que cette{n}Solaris sait ce que sont{n}vraiment les Générateurs{n}Esclaves...
+f295-0015 34ca4364b713c5f4 Parfait, parfait !!{wait 10} C'est{n}mieux qu'avant, maintenant{n}qu'on peut refroidir à{n}l'eau.{p}Mais du coup, il faut plus{n}de main-d'oeuvre.
+f295-0016 84ea277d7fd99762 Jeune maître{wait 5}...{wait 10} cet{n}endroit{n}ne vous rappelle pas le{n}jour de l'accident ?
+f295-0017 379e345927a54c64 Bon, le Yggdrasil a{n}coulé...{wait 10} Mais, par chance,{n}on a trouvé celui-ci...{p}Mais chaque fois que je{n}touche à ce moteur, j'ai{n}une drôle de sensation...{p}Comme si ce navire était,{n}d'une certaine façon,{n}'parent' du précédent...{wait 10}{n}Étrange, hein !?
+f295-0018 73ae51c281f1a5c0 Vous avez échoué...{wait 10} Bah,{n}tout le monde a des hauts{n}et des bas dans la vie.
+f295-0019 4a84c5f80a0be322 Jeune maître, oubliez le{n}passé... Ce qui compte,{n}c'est l'avenir.{p}La bataille du jour{n}n'est pas encore finie.
+f295-0020 70adc0e796941032 Le grand moment d'un{n}mécano, c'est la veille{n}d'une mission !{p}Demain, c'est le jour{n}unique où ce navire peut{n}montrer de quoi il est{n}vraiment fait...{p}Je vais te bichonner,{n}ma vieille !
+f295-0021 63b749973030d119 Marguerite est de{n}retour,{n}et l'heure des comptes{n}semble avoir sonné.{p}Moteur !{wait 5} À toi de jouer !{wait 10}{n}Après, toi et moi, on se{n}reposera bien...{wait 10}{n}Un bon repos...
+f295-0022 119138bbc26fa6a1 Beau travail !{wait 10} On a sauvé{n}Marguerite !{p}Un certain Fei, un expert{n}en arts martiaux, nous a{n}aidé là-bas, paraît-il.
+f295-0023 d3a16d4ffb544d6f T... toi, cesse de traîner{n}ici et va t'entraîner{n}sérieusement, comme ce{n}fameux Fei !!
+f295-0024 551f14e69949a681 C'est parti !{n}Cette fois, tu vas sauver{n}Marguerite !{p}Tu as du carburant à{n}revendre... alors allons{n}la chercher !
+f295-0025 9fd7aabf18e2df57 Ouf, enfin je peux la{n}laisser se reposer.{n}Repose-toi bien tant que{n}tu le peux !
+f295-0026 5afbfc97b13acbb8 Ici, moi seul touche à{n}la machine. Pas même le{n}jeune maître !
+f295-0027 c2f9b6c990cc3724 Euh, jeune maître...
+f295-0028 9d8a189f73c3abb5 Ouh là, ouh là !!{n}C'était{wait 10} moins une !{done 30}
+f295-0029 b158820cbf34eb2f Moteur à fond !
+f295-0030 d39cea5543d04baf Les gens de Shevat ont{n}installé plein de{n}trucs...{wait 10} c'est bien plus{n}marrant de bosser !
+f295-0031 befab485ae50da31 À plus !
+f295-0032 37359ae4bbdc69ce ...{wait 10}{n}Tu vas bien, n'est-ce pas ?{wait 10}{n}Tu es Elly, la vraie, hein ?
+f295-0033 d4a0653b16df1a16 Ah, bon sang !!{wait 10} Je vais{n}devoir tout réparer à{n}cause de cette gamine !!
+f295-0034 a2daecaaafc74c3a Ouf...{n}Tant bien que mal, ça{n}marche.{n}Reste à réparer.
+f295-0035 5196169113be287d Jeune maître{wait 5}...{wait 5} vous{n}croyez que le Yggdrasil{n}coulé repose en paix,{n}maintenant ?
+f295-0036 2a6976893a8b16c2 Est-ce que le moteur de{n}notre vieux Yggdrasil{n}coulé pleure au fond du{n}sable...
+f295-0037 1062100ba5f7635e Non, il repose là-bas. On{n}doit croire que c'est le{n}meilleur endroit pour{n}lui,{wait 10} sinon...
+f295-0038 08fd1be68ca6e762 Ce Yggdrasil est toujours là.{wait 10}{n}Tant qu'il tient debout, on{n}pourra prendre bien des{n}revanches !
+f295-0039 c8ec0b4966bf92d3 Le vieux brûle{n}d'enthousiasme...{wait 10}{n}Pourvu que ses veines{n}n'éclatent pas...
+f295-0040 456087e620ef2d43 Pas de souci !{wait 10}{n}Ses veines sont en{n}duralumin, et c'est de{n}l'huile qui y coule.
+f295-0041 91af7d23a10cd635 Le moteur peut enfin se{n}reposer.
+f295-0042 6b744ab3f351a54f Quand on arrivera à Nisan,{n}on pourra de nouveau laisser{n}le moteur se reposer.{p}Tu vois ce gros anneau qui{n}passe par les six piliers,{n}là en bas ?{p}Le plasma produit là-dedans{n}est la source d'énergie du{n}navire.{p}C'est pareil pour les Gears.
+f295-0043 ccfae8b8fff45495 Le vieux est de très bonne{n}humeur !!
+f295-0044 3b8de14badd7e0cf Ne monte pas là-haut.{n}Crois-moi.
+f295-0045 a661ce86b95ad6e7 Il est toujours comme ça.{n}Ne le prends pas mal.{n}Il n'est pas méchant.
+f295-0046 911fc2b7f657d821 Encore une vérif finale !{wait 10}{n}Chaque seconde compte !{wait 5}{n}Vive le jeune maître !
+f295-0047 bc788419d3ead19d Il y a longtemps, quand le{n}moteur est tombé en panne,{n}le jeune maître s'en est{n}mêlé pour le réparer.{p}Sigurd a voulu l'aider, et{n}tous deux se sont blessés{n}à un oeil.
+f295-0048 996f05012f4d833f On est fiers du jeune{n}maître, mais{wait 5}...{wait 5} parfois,{n}il se précipite.{p}Le chef se reproche tout.
+f295-0049 36086895dfebdada Le chef a un faible pour{n}les jeunes filles.
+f295-0050 24c4129b4d0c9ee4 Qu... quoi ! C'est normal{n}qu'un homme soit gentil{n}avec les femmes, non !?
+f295-0051 bef22c6cd882690f (Grrr !!{wait 5} Mais avec ta{n}femme, tu es de glace !!)
+f295-0053 f6b461df44f3c20f J'ai demandé aux gens de{n}Shevat...{wait 10} Mais on dirait{n}que même eux l'ignorent.{p}Ils m'ont dit qu'aujourd'hui,{n}plus personne ne sait comment{n}leur pays vole.
+f295-0054 93ad8cb95cc7fbfb Une machine qui marche{n}depuis la nuit des temps{n}sans entretien, hein...{p}Il faut que je perce le{n}secret de ce mécanisme.
+f295-0055 a46dc04f2fe88b3c Prudence !
+f295-0056 a5ad8eb62c0727a5 !!{wait 10}{n}Par pitié, cette fois,{n}ne casse rien.
+f295-0057 e23d9e91c95f0f7d Comment a-t-il pu{n}comprendre si facilement{n}un appareil aussi{n}compliqué...?{p}Normalement, on ne peut{n}pas dépasser la puissance{n}nominale.{p}Sous quelle hypnose{n}était-il ?
+f295-0058 1eb2d409d99130c9 Le Thames a l'air d'un{n}endroit sympa à visiter.{wait 10}{n}Je vais m'éclipser...
+f295-0059 24187abe5e86b444 C'est quoi, cette histoire{n}de t'éclipser !?{wait 10} Attends{n}d'être ton propre patron !
+f295-0060 88cd199216153d0d Zut,{wait 10} il a entendu !
+f295-0061 8218a448fe4702d2 Bosser,{wait 10} bosser !
+f295-0062 62230492e849b5e2 Il portera fièrement la{n}volonté et la mission de{n}son navire jumeau !!
+f295-0063 456ba850fed7ea57 Désolé, mais je n'ai{n}vraiment pas envie d'en{n}parler.{wait 10} S'il te plaît,{n}laisse-moi tranquille...
+f295-0064 35a5cca7fa5b7137 Ah, jeune maître, vous{n}allez bien !{wait 10} Quel est le{n}plan, désormais ?
+f295-0065 84ccd501f0158ee8 Bon sang !{wait 10} Une panne à un{n}moment pareil ! Qu'est-ce{n}que je fais{wait 5}...{p}Est-ce que j'arriverai à{n}réparer d'ici demain...
+f295-0066 1da20f54c5b496f9 Ça tombe en morceaux...
+f295-0067 e06878cbc69aa49f Nisan est tout près !!{wait 10}{n}Allez, moteur !
+f295-0068 489de41cb9367b51 Le moteur tourne à{n}merveille !!
+f295-0069 060ac73b2ff48601 Ne monte pas là-haut.
+f295-0070 9f2b9d7d950b600f Il t'a crié dessus, hein ?{n}Il nous crie dessus aussi.{n}Il ne s'ouvre qu'à son{n}chien, Martle.
+f295-0071 cd26ac12a26793cf Ici, pas d'amateurs.{wait 10}{n}Alors, dégage !
