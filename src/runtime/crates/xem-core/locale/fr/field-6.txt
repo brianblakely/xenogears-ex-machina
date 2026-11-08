@@ -1118,3 +1118,308 @@ f672-0033 954e0128a21bed92 Elly{n}"Avant, si tu m'en avais{n}parlé, j'aurais cr
 f672-0034 39f8d320e257f32f À présent, je peux{n}presque y croire.
 f672-0035 0bda7b70e51dfa84 Elly{n}"Ce que je n'ai pu{n}faire à l'époque...{p}J'essaie sans doute{n}de{n}l'accomplir enfin{wait 5}..."
 f672-0036 70bc50dd3323e97f Margie{n}"Ce que tu n'as{n}pas pu faire{wait 5}...?"{done 150}
+f673-0000 487bbd5985542e0d Krelian{n}"Hmm{wait 5}...{wait 15}{n}'Cette fois', ton corps{n}est jeune."
+f673-0001 ef9a2c015505641a "{wait 5}...{wait 5}Le précédent était{n}devenu trop vieux."
+f673-0002 f06694ac66a40225 Krelian{n}"...{wait 5}Son nom ?"
+f673-0003 f3d0c6dd2653dc06 "Karen{wait 5}...{wait 15}{n}mais les noms d'individus{n}n'ont nul sens pour moi."
+f673-0004 5b15675d8154ce00 Krelian{n}"Alors{wait 5}...{wait 5}{n}que viens-tu faire ?"
+f673-0005 f0138d044b2e78df Karen{n}"Cette chose, là, dans le{n}Nanoréacteur{wait 5}...{wait 5}c'est ça ?"
+f673-0006 9493b463fb0a7e74 Krelian{n}"Hein ?{wait 5} Ah{wait 5}...{wait 15}{n}Code d'identification{n}0808191 - 'Ramses'.{p}L'Empereur a été informé{n}que c'est un prototype de{n}'Contact' artificiel."
+f673-0007 dc944c54c49f54ea Karen{n}"Dans quel état est-il ?"
+f673-0008 79c835e38f156376 Krelian{n}"Il est entré dans le{n}premier stade de{n}croissance.{p}D'ici sa fixation, il va{n}grandir bien plus vite{n}qu'un humain ordinaire.{p}Mais son développement{n}psychologique sera un{n}peu difficile à{n}contrôler{wait 5}..."
+f673-0009 f71e7b7e12b713a4 Krelian{n}"C'est une réplique{wait 5}...{wait 5}{n}c'était donc à{n}prévoir."
+f673-0010 c0768d61aa91cecf Karen{n}"Il bouge{wait 5}...{wait 15}{n}Il peut nous entendre ?"
+f673-0011 4c69dd4fbd460535 Krelian{n}"Oui{wait 5}...{wait 15}{n}Il a déjà une{n}volonté propre."
+f673-0012 7d379413cd4f1965 Karen{n}"Alors{wait 5}...{wait 15}{n}J'ai mieux{wait 5}...{wait 15}{n}Débarrassons-nous de lui."
+f673-0013 eac2292bf01651db Karen{n}"On n'en a pas besoin{wait 5}...{wait 15}{n}Nous avons mon fils.{wait 15} Il a{n}4 ans cette année."
+f673-0014 4c3aa19cd060b2dd Krelian{n}"Et que tu aies un fils,{n}c'est{wait 5}...{wait 30}{n}important ?"
+f673-0015 1a2b7d3fe4f11a74 Karen{n}"Oui{wait 5}...{p}J'ai vérifié... Aucun{n}doute, c'est un{n}'Contact'."
+f673-0016 62f5ed0ef8502b5c Krelian{n}"Quel est son nom ?"
+f673-0017 f83a9698be0d15b3 Karen{n}"Mon fils s'appelle{wait 5}...{wait 30}{n}'Fei'.{p}Alors{wait 5}...{wait 5}{n}tu comprends ce que{n}cela signifie ?"
+f673-0018 5b81e66d8d7979ba Krelian{n}"Que l'Antitype{n}correspondant{wait 5}..."
+f673-0019 acf2c15b5f07ba42 Karen{n}"Oui{wait 5}...{wait 30}{n}est sans doute déjà né{n}quelque part."
+f673-0020 d2711bd8cc63b867 Karen{n}"{wait 5}...{wait 5}Le dernier !"
+f673-0021 0903c4a171e7460c Krelian{n}"Alors{wait 5}...{wait 15}{n}cette chose{wait 5}...{wait 5}{n}ne vaut rien."
+f673-0022 54daffb61e718693 Karen{n}"Oui, totalement{n}inutile."
+f673-0023 d967da2557b74200 Karen{n}"Ha ha{wait 5}...{wait 15}{n}Cours après lui,{wait 5} 'gamin'.{p}Après un amour que tu{n}n'atteindras jamais,{n}malgré tous tes efforts."
+f673-0024 67f8a346a3df4b47 D'ici là{wait 5}...
+f673-0025 b01632375681de20 Miang{n}"Les chaînes qui liaient{n}l'humanité ont été{n}brisées à cause de lui."
+f673-0026 178b1edb07903b6a Krelian{n}"Cela ne signifie pas{n}que notre plan ait un{n}défaut...{p}Tout reste sous{n}contrôle."
+f673-0027 e8bbfdf478aae246 Krelian{n}"Lors de la récente{n}explosion de la capitale{n}de Solaris...{p}...j'avais préparé un virus{n}de nanomachines destiné à{n}se répandre dans l'air.{p}Je savais qu'ils finiraient{n}par briser le sceau{wait 5}...{wait 15}{n}Mais il était moins une{wait 5}...{p}Les mutations que subissent{n}les humains sont la{n}première réaction au{n}virus{wait 5}...{p}Quand le virus que nous{n}avons répandu dans le monde{n}germe en eux, les humains{n}ne sont plus les mêmes.{p}Ils prennent une forme{n}contrôlable.{p}Il nous faut des humains{n}qui s'éveillent sans{n}dépendre de l'invocation{n}de la clé.{p}Autrement dit, un être qui{n}prenne la place du corps{n}originel de Deus{wait 5}..."
+f673-0028 a7d9ce7c486963bd Miang{n}"C'est comme un cheval de{n}Troie libéré au moment de{n}l'assimilation à Deus{wait 5}...{wait 5}{p}Un virus, littéralement{wait 5}...{wait 15}{n}Mais{wait 5}...{wait 5}cela ne diffère-t-il{n}pas de leurs plans{wait 5}...{wait 5}?"
+f673-0029 9fc9f2136c17157e Krelian{n}"Bien sûr.{wait 15} Ils ne feront{n}pas à leur guise.{wait 30}{n}À moi l'Arche de Deus."
+f674-0000 0fb76da9087a7c4f Roni{n}"Allez, les amis,{wait 5} mangez{n}à volonté.{p}Ça fait longtemps qu'on{n}n'a pas vu pareil repas{n}par ici, hein ?"
+f674-0001 5cac445727396744 Roni{n}"Bon, c'est aussi grâce à{n}mon sens des affaires."
+f674-0002 029e5af429ddd757 Rene{n}"...{wait 5}Qu'as-tu,{wait 5} Lacan ?{wait 15}{n}Tu as l'air abattu.{wait 15}{n}Qu'est-ce qui te gêne ?{p}Un souci, peut-être ?"
+f674-0003 f9b9b1795b6783f0 Lacan{n}"Ce n'est rien{wait 5}...{wait 15}{n}Je pense juste à{n}peindre Sophia.{p}Je ne sais pas pourquoi{n}j'ai accepté de la{n}peindre{wait 5}..."
+f674-0004 0248b13fb8845790 Rene{n}"Sophia{wait 5}...{wait 5} Ton amie{n}d'enfance, devenue la{n}Sainte Mère de Nisan ?"
+f674-0005 2515a0827904a687 Lacan{n}"Ce n'est pas vraiment une{n}amie d'enfance{wait 5}...{p}...{wait 5}Je l'ai connue enfant,{n}au monastère près de{n}chez moi{wait 5}...{p}Elle se soignait à la{n}clinique de là-bas."
+f674-0006 5574818eb356eb5c Lacan{n}"Elle était{wait 5} frêle."
+f674-0007 3978c450431d66aa Rene{n}"Alors{wait 5}...{wait 15}{n}pourquoi la peindre{n}t'inquiète tant ?"
+f674-0008 6099fb826f188c63 Lacan{n}"Elle{wait 5} ne veut pas{wait 15} devenir{n}un symbole de son Église.{p}...{wait 5}En fait,{wait 10} au début,{n}elle ne voulait pas qu'on{n}fasse son portrait.{p}Mais,{wait 5} en apprenant que je{n}serais le peintre,{wait 5} elle a{n}changé d'avis et accepté.{p}C'est ce que je ne{n}comprends pas{wait 5}..."
+f674-0009 5ccee89ec9335c16 Roni{n}"Je vois{wait 5}..."
+f674-0010 a8b63b697f2d8d81 Roni{n}"Alors{wait 5} elle doit avoir{n}un faible pour toi{wait 5}..."
+f674-0011 a6649366dc3f8640 Lacan{n}"De quoi tu{n}parles ?"
+f674-0012 099fd2b27d5e6ded Roni{n}"Les femmes sont ainsi{wait 5}...{wait 15}{n}Pas vrai, Krelian{wait 5}...?"
+f674-0013 7c10757bc2378ae2 Roni{n}"Hé,{wait 5} Krel !"
+f674-0014 d99f879ab22b9e59 Krelian{n}"Hein ?"
+f674-0015 8885cac3b19cc33b Rene{n}"...{wait 5}Qu'y a-t-il ?{wait 15}{n}Tu ne manges pas ?{wait 30}{n}C'est prêt."
+f674-0016 91c8c519bca27eee Krelian{n}"Ah,{wait 5} oui{wait 5}..."
+f674-0017 3491b1b2d4952116 Roni{n}"La Sainte Mère de{n}Nisan,{wait 5} hein ?{p}Quoi, tu veux défier la{n}providence divine ou{n}quelque chose comme ça,{n}Lacan ?"
+f674-0018 31ab19c308f89243 Lacan{n}"Arrête{wait 5}...!{wait 15}{n}Ce n'est{wait 5}...{wait 5}{n}pas ça du tout{wait 5}..."
+f674-0019 011a289c956494fc Lacan{n}"Q-{wait 5}quoi ?"
+f674-0020 a10b2d10599fa626 Il faut te ressaisir{n}un peu{wait 5}...{done 120}
+f674-0021 62d5d5b4dbbe86cb Krelian{n}"Pourtant, il fut un temps{n}où je faisais des choses{n}bien cruelles.{p}Je m'en prenais à tous{wait 5}...{wait 15}{n}Tout mon entourage me{n}craignait{wait 5}...{wait 5}{n}Même mes amis.{p}Je vivais entouré de{n}gens qui me regardaient{n}avec de la peur dans les{n}yeux."
+f678-0000 8b47d368ac9a801f Krelian{n}"Vous vous négligez{n}trop !{p}Pourquoi ne pas vous{n}ménager un peu plus,{n}Madame ?"
+f678-0003 51865d493af46090 Krelian{n}"Lacan !{n}Que fais-tu ?
+f679-0000 ea81602ba1c07498 Roni{n}"Pourquoi ne vas-tu pas{n}te reposer un peu,{wait 15}{n}Krel{wait 5}...?{p}Tu n'as pas dormi depuis{n}avant-hier, hein ?{wait 5} Ne{n}te maltraite pas ainsi !"
+f679-0001 89978e6a032bba77 Krelian{n}"Je vais bien,{wait 10} ce{n}n'est rien{wait 5}..."
+f679-0002 29d9095c829572b9 Roni{n}"Je m'occupe d'elle, alors{n}va dormir.{p}Et si toi aussi, tu tombais{n}malade ?{wait 15} Tu es le chef{n}des forces armées de{n}l'Église, ne l'oublie pas."
+f679-0003 f1e08c9531f17579 Krelian{n}"D'accord{wait 5}...{wait 5}{n}Tu dois avoir raison."
+f679-0004 39c1cab322bd0688 Lacan{n}"Elly{wait 5}...{wait 10}{n}Pardon."
+f679-0005 6ea939d8ee640033 Lacan{n}"Je{wait 5}...{wait 15}{n}Mon erreur de jugement{n}t'a mise dans cet état."
+f679-0006 b6730de540e8ec1e Lacan{n}"J'étais terrifié{wait 5}...{wait 15}{p}C'était comme si tu voyais{n}à travers moi{wait 5}...{wait 15}{n}Tes yeux{wait 5}...{wait 15}{n}Ce regard{wait 5}...{p}C'était moi-même qui me{n}reflétais dans tes yeux{wait 5}...{p}Je me regardais moi-même{wait 5}...{wait 15}{n}Et je me peignais ainsi{wait 5}...{wait 15}{n}Je n'ai pas supporté !{wait 45}{n}C'est pour ça que{wait 5}...{p}Ah, Elly{wait 5}...{wait 15}{n}Qu'as-tu donc pu trouver,{n}au nom du ciel, en moi ?"
+f679-0007 d9f713c5450fb7f1 Lacan{n}"À ton réveil, je pense{n}te le demander{wait 5}...{wait 45}{n}À la réflexion,{wait 5} non{wait 5}...{p}Non,{wait 5} je ne veux pas{n}t'accabler de mes{n}tourments{wait 5}...{wait 30}{p}Et puis, je ne pourrais{n}pas te le demander{wait 5}...{p}Un regard dans tes yeux{n}et je reste sans voix{wait 5}...{wait 45}{n}Je{wait 5} ne saurais même pas te{n}dire{wait 5} ce que j'éprouve{wait 5}..."
+f679-0008 8a0e0f7481d85c82 Sophia{n}"Tu es la personne la plus{n}douce du monde{wait 5}..."
+f679-0010 40de29d84af5a22b Elly{n}"Tu ne supportes pas que{n}d'autres souffrent à cause{n}de tes propres actes.{p}Alors tu gardes tout et{n}portes seul le fardeau.{wait 15}{n}Si tu es blessé au final,{n}peu t'importe{wait 5}..."
+f679-0011 f6d0a8545bd8d39f Elly{n}"C'est ça{wait 5}...{wait 15}{n}que j'aime chez toi."
+f679-0012 ab175dc51a6d1026 Lacan{n}"Arrête !{wait 10} Ne dis pas ça.{wait 15}{n}Si tu deviens une simple{n}femme, tous vont{wait 5}..."
+f679-0013 6c05a0c89e42b068 Elly{n}"Les êtres humains{wait 5}...{wait 5}ne{n}sont pas si fragiles,{n}tu sais ?{p}Ils n'ont pas besoin d'un{n}symbole de pure{n}apparence.{p}Je crois qu'avec de la{n}lumière au coeur,{wait 5} nous{n}pouvons surmonter toute{n}difficulté.{p}Ce que je fais, c'est{wait 5} de{n}montrer à tous que cette{n}lumière existe dans le{n}coeur de chacun."
+f679-0014 cd757293f46bc750 Elly{n}"Je ne suis qu'une femme.{p}Et, pour m'accomplir en{n}tant que femme,{wait 10} je suis{n}prête à tout abandonner{wait 5}...{wait 5}{n}même cette position.{p}Je ne fais que jouer le{n}rôle de Sophia.{wait 15}{n}Mais je reste moi-même.{p}Je n'ai pas changé{wait 5}...{wait 15}{n}Lâche, égoïste,{n}pleurnicheuse{wait 5}...{wait 10}{n}Toujours la même."
+f679-0015 27584ce5d1111063 Elly{n}"Tu serais heureux de vivre{n}un tel mensonge{wait 5}...?{n}Moi{wait 5}...{wait 5}je ne veux pas."
+f679-0016 4a39e95395497975 Elly{n}"Ah, Lacan{wait 5}...{wait 15}{n}Je veux vivre en étant plus{n}honnête avec moi-même{wait 5}...{p}Pouvoir dire à l'homme que{n}j'aime que je l'aime.{wait 15} Et{n}peu importe si je souffre{n}ou si je suis rejetée.{p}Nous n'avons qu'une vie.{wait 5}{n}Je ne veux pas regarder en{n}arrière et regretter de ne{n}pas l'avoir fait{wait 5}..."
+f680-0001 7d058e5b69336713 Miang{n}"Si seulement tu avais eu{n}du pouvoir{wait 5}...{wait 5}{n}tu aurais pu la sauver."
+f680-0002 43ed18dbff71a2bc Miang{n}"Tu le désires, non ?{wait 15}{n}Un pouvoir inégalé{wait 5}...!"
+f680-0003 41ef4def47421c62 Miang{n}"Veux-tu devenir{wait 5}...{wait 15}{n}l'être absolu{wait 5}...!?"
+f681-0000 7c1117cf9c50b296 Lacan{n}"Le voilà{wait 5}...{wait 30}{n}C'est ce que j'ai{n}tant cherché{wait 5}..."{done 60}
+f681-0001 2adb6292581bb499 Mais attends !{wait 15}{n}Je ne veux pas cela !{wait 15}{n}Non !{wait 5}{n}C'est mon vrai désir !{done 120}
+f681-0002 ed6aeae848c970fa .{wait 1}.{wait 1}.{wait 1}V{wait 1}i{wait 1}s{wait 1} {wait 1}!{done 60}
+f682-0000 3ad0f70a26b4fe8c ...{wait 5}Vis !{done 90}
+f682-0001 3377c02baecedb77 Krelian{n}"Nous avons été sacrifiés{n}comme des pions{wait 5}...{p}Pour protéger leur{n}autorité{wait 5}...{wait 5}{n}Sophia a été{wait 5}...{p}Est-ce là le monde idéal{n}que nous cherchions tant ?{wait 15}{n}Qu'avons-nous fait{n}pendant tout ce temps ?{p}Avancer vers les idéaux{n}de Sophia{wait 5}...?{wait 30}{n}Est-ce là notre salut ?"
+f682-0002 93356be89ee0a011 Krelian{n}"Ce n'est pas juste{wait 5}...{wait 15}{n}Ils ont sacrifié Sophia{n}pour ces misérables{wait 5}..."
+f682-0003 58c553a7da294a94 Krelian{n}"Sophia disait{wait 5} que la foi{n}suffit pour ouvrir la voie{n}vers ce que l'on espère.{p}Mais regarde la réalité.{wait 15}{n}Dieu n'a pas exaucé nos{n}prières{wait 5}...{p}Est-ce parce que nous{n}manquions de foi ?{p}Même si la foi nous{n}manquait,{wait 5} Sophia, elle,{n}l'avait.{wait 15} Pourquoi{n}a-t-elle été sacrifiée ?{p}Dieu est-il mort{wait 5}...?{wait 15}{n}Ou est-il juste absent{wait 5}...?{wait 15}{n}Peut-être que Dieu n'a{n}jamais existé, au fond !"
+f682-0004 cefb42dfb9470960 Krelian{n}"Ha, ha, ha, ha{wait 5}...{wait 5}{n}Je vois{wait 5}...{wait 30}{n}C'est ça{wait 5}...{p}Si Dieu n'existe pas dans{n}notre monde, alors{wait 5}...{wait 5}{n}je créerai Dieu de mes{n}propres mains !"
+f682-0006 88c1f58105098c70 Krelian{n}"Sophia{wait 5}...{wait 30} Guidez-moi, je{n}vous prie{wait 5}...{p}Je détruirai tous ces faux{n}semblants d'amour,{wait 5}{n}pour vous{wait 5}..."
+f682-0007 7492be56c99b08e8 Roni{n}"Rassemblons tous nos{n}compagnons survivants.{p}On ne les battra jamais si{n}chacun lutte pour soi{wait 5}...{p}Alors créons un pays{n}qui puisse un jour leur{n}tenir tête{wait 5}..."
+f682-0008 2be556daba07b351 Roni{n}"Que vas-tu faire,{wait 30}{n}Lacan{wait 5}...?"
+f682-0009 b0b1ed3091d29436 Lacan{n}"Je{wait 5}..."
+f682-0010 a85c2ca28ce9ce11 Lacan{n}"{wait 5}...{wait 5}Quel...{wait 5}est...ce...{wait 5}lieu{wait 5}...?{wait 15}{n}{wait 5}...{wait 5}Le lieu de mon{n}exécution{wait 5}...?"
+f682-0011 e3d836370e80dc9a Lacan{n}"{wait 5}...{wait 5}Pourquoi me trahir ?{wait 15}{n}Je nous croyais amis !"
+f682-0012 4e4265a72eb9fd83 Lacan{n}"Qui{wait 5}...{wait 15}{n}est là{wait 5}...?"
+f682-0013 517f9ff56003db4a Lacan{n}"C'est moi{wait 5}...{wait 5}{n}qui ai causé ça{wait 5}...?{wait 15}{n}Que m'est-il arrivé{wait 5}...?"
+f682-0014 3b04bf89223cec70 Que{wait 5}...{wait 5}suis-je{wait 5}...{wait 5}{n}de{wait 5}...{wait 5}venu{wait 5}...?
+f682-0015 712f4c7996626159 Lacan{n}"...{wait 5}Je{wait 5} vivrai{wait 5}...!"
+f682-0016 0a7dbbfeceb243bc Lacan{n}"Même si je dois aller en{n}enfer,{wait 15} je vivrai jusqu'à{n}la fin de ce monde.{p}S'il ne finit pas{wait 5}...{wait 5}{n}je le détruirai de mes{n}propres mains !"
+f682-0017 451e6c840c708338 Si Dieu n'existe pas{n}en ce monde, alors{wait 5}...{wait 5}{n}je créerai Dieu{n}de mes propres mains !{done 180}
+f683-0000 02782bc98460b2f1 Sophia{n}"Lacan ! Vis !"{done 120}
+f683-0001 c1a7b56cafa5c807 Krelian{n}"Sophia !!{wait 15}{n}Que faites-vous !?"
+f683-0002 f85978d11595f3a8 Sophia{n}"Je vais y mettre fin{wait 5}...{wait 15}{n}Vous n'aurez plus{n}à combattre{wait 5}...{p}Alors, Krelian{wait 5}...{p}Je t'en prie,{wait 5} ouvre ton{n}poing{wait 5}...{wait 15} et, main ouverte,{n}soutiens avec tendresse{n}ceux qui vivront{wait 5}..."
+f683-0003 f168b083b43d5fd5 Lacan{n}"Ne sois pas sotte !{wait 5}{n}On va t'aider à fuir !{wait 5}{n}Je t'en prie, arrête{wait 5}...!"
+f683-0004 9110c82ab123279e Sophia{n}"Merci,{wait 5} Lacan{wait 5}...{wait 15}{n}Mais{wait 5}...{wait 5}pardonne-moi{wait 5}...{wait 15}{n}Pas d'autre choix{wait 5}..."
+f683-0006 0c22946fff301a3b Sophia{n}"Les gens s'entraident pour{n}vivre{wait 5}...{wait 5} Cela nous rend{n}heureux{wait 5}...{p}Alors partage ce{n}bonheur{wait 5}...{wait 5}{n}et, je t'en prie{wait 5}...{wait 30}{n}{speed 255}Lacan ! Vis !"
+f684-0000 2042de31a8256b71 Qui est là ?
+f685-0000 9ad858c019c52e5f Fei{n}"C'est... le précieux{n}trésor de ce drôle de{n}papy Chu-chu...{p}Je me demande ce qu'il{n}est devenu quand Shevat{n}est tombée sur terre...{wait 20}{n}Je ne l'ai plus revu...{p}Son trésor...{n}On peut le prendre...?{wait 20}{n}Ça ne le dérangera pas{n}si c'est un prêt..."
+f685-0001 eeaead1847fc9c97 Fei{n}"Juste un emprunt.{n}Juste un emprunt.{p}Hé, c'est pas comme si on{n}était des pilleurs de{n}tombes !{wait 20}{n}Hein !?{p}Alors pas de malédiction{n}ni de fantôme, d'accord !{wait 20}{n}Pitié... on vous en{n}supplie."
+f685-0002 b55524d381c907a9 Fei{n}"Hein !{wait 20}{n}C'est..."
+f685-0003 008514a493bf8fe2 Le mythique{n}'Badge Chifoumi' !!
+f685-0004 a21775f1a1b43a49 Le légendaire{n}'Badge Cache' !!
+f685-0005 1fdca131fb8f0181 Le 'Badge Chat', qui rend{n}fous même les{n}collectionneurs !!
+f685-0006 bb70f1ae62270b86 Fei{n}"Je parie que ce vieux{n}Chu-chu en était ravi...{p}C'était si joliment{n}exposé ici...{wait 20}{n}Impossible de lui prendre."
+f685-0007 57c2df3dc60ef284 Fei{n}"Je parie que ce vieux{n}Chu-chu en était tout{n}content...{p}C'est poli, si{n}brillant...{wait 20}{n}et si joliment exposé{n}ici..."
+f685-0008 7353bf7a3f201e14 Fei{n}"Hum. On dirait un tas de{n}jouets d'enfant alignés...{p}Inutile de prendre ces{n}choses alors qu'on ignore{n}ce que deviendra ce monde."
+f685-0009 3207f0cf86ab5720 Fei{n}"Pas le temps de{n}rester à regarder{n}tout ça."
+f685-0011 6ac69f426bbe2dbf  Reçu :{n}Turban Vif !!
+f685-0012 84b13b330626b43d Reçu :{n}Bottes Éclair !!
+f685-0013 560614f67481ca2d  Reçu :{n}Tenue Héros !!
+f685-0014 879bc46923705872  Reçu :{n}Bague Hercule !!
+f685-0015 46f186ecc51cae2f  Reçu :{n}Obi Yamato !!
+f685-0016 9488be778acf1b29  Reçu :{n}Bague Sorcier !!
+f686-0000 4909f21c1261a642 Nous pouvons peut-être{n}faire quelque chose.{p}Mais j'ai été soldat toute{n}ma vie.{p}Je ne peux pas rester les{n}bras croisés tant qu'il y{n}a des gens à protéger et{n}des ennemis à combattre.
+f686-0001 6698a84873a6f80c ...Ce système diffère de{n}ceux que créent les{n}humains. Ce serait donc{n}une machine faite par des{n}non-humains.{done 60}
+f686-0002 0da1a03d459bd8b8 Ce n'est pas fait par des{n}humains, je le vois bien.{n}Mais est-ce seulement une{n}machine ?{done 60}
+f686-0003 b09039ca2dea4030 Machine ou créature, peu{n}importe. Tout peut être{n}brisé. Reste à savoir{n}comment l'endommager.{done 60}
+f686-0004 3f9dd6826f43b163 Silence !{wait 30}{n}Ma soeur !{wait 30}{n}Emmenez les enfants{n}ailleurs, je vous prie.
+f686-0005 5746ebe6ba34a6a5 Vous voulez les laisser{n}dans le couloir glacé !?{wait 50}{n}Cette pièce est la plus{n}chaude. Pourquoi pas ici ?
+f686-0006 9a4cd07036607427 Notre réunion est très{n}importante. Ils nous{n}dérangent.
+f686-0007 d9ca370a3d04fae3 Calmez-vous, je vous prie.{wait 50}{n}Merci beaucoup de vouloir{n}nous protéger.{p}Mais vous savez que seuls{n}ces gens peuvent changer{n}notre destin...{wait 50}{n}n'est-ce pas ?
+f686-0008 265af1c05a7bbf7a Franchement, comment lutter{n}contre un ennemi pareil ?
+f686-0009 da58ab0ab8a5f033 Vous croyez que ça va{n}attendre qu'on rassemble{n}toutes les armées d'Aveh{n}et de Kislev...?
+f686-0010 d2dc6832ac404541 Je suis prêt à protéger{n}tout le monde ici.
+f686-0011 4ca53c21b1d4ac78 Je veux aider les gens.{n}Mais tout ce que je sais{n}faire, c'est me battre.
+f686-0012 ce35e1eb97984bb3 Avant, combattre me{n}faisait douter, mais pas{n}protéger les gens d'ici.
+f686-0013 d5448fdc5afa8db0 Si on avait plus{n}d'armes...
+f686-0014 ac339b423e086a52 On doit faire ce qu'on{n}peut.
+f686-0015 6d0794c09e78248f Les enfants sont{n}agaçants, mais c'est{n}pour eux que je suis là.
+f686-0016 ea74d715c8b14f56 Les enfants sont tous{n}pareils, à Kislev,{n}Aveh ou Nisan.
+f686-0017 38e2adfa48840ee2 Aucun de nous deux n'a{n}plus rien à perdre.{p}Faites à votre guise.{wait 60}{n}Que le ciel vous aide.
+f686-0018 7c116e177f69b3c8 Plus que jamais, je sens{n}que chaque enfant compte{n}énormément.
+f686-0019 4556d896aeb18b2e C'est la première fois que{n}je vois de la neige.{p}Elle est si légère, si{n}blanche, et un joli motif{n}apparaît un instant, puis{n}fond dans ma paume.{p}C'est incroyable...
+f686-0020 ec4f7c985521e2f4 Je veux voir maman et{n}papa.
+f686-0021 c334c65d3bc973d1 C'est quoi ? Je peux le{n}faire, moi aussi ?
+f686-0022 16d0749f0a56a24f Sa robe est trop{n}mignonne, hein ?
+f686-0023 165b5510d26f2462 Ma mamie l'a fait pour ma{n}maman quand elle était{n}petite. C'est tout chaud.
+f686-0024 be7a45ff2eafc2c9 Bonne chance à vous aussi.{wait 30}{n}Moi...{wait 10}je protégerai ces{n}gens. Soyez tranquilles.
+f686-0025 0694285f95d6fd8f Euh...{wait 30}je vais jouer{n}avec la soeur.{wait 30}
+f686-0026 665c21d94ae8cd49 Je suis Yggdrasil X !{n}Allez ! Attrape-moi{n}si tu peux !{done 60}
+f688-0000 3440cf915583543c Hans{n}"Bon sang... Dès qu'il{n}s'agit de lui..."
+f688-0001 6248d7da4da7931b Fei{n}"Alors, quoi de neuf ?{n}Je ne savais pas que tu{n}avais un fils.{p}Le garçon qui vient de{n}sortir... avait l'air bien{n}fâché pour une raison."
+f688-0002 c7b96a38cfaef439 Hans{n}"J'ai honte que tu aies{n}vu ça.{p}Je me suis marié peu{n}avant le naufrage du{n}Thames."
+f688-0003 a62ceefa27190f40 Hans{n}"Elle s'appelle Anna, ma{n}femme. Le Thames l'a{n}sauvée lors de l'attaque{n}des Faucheurs.{p}Hélas, c'est là qu'elle a{n}perdu son mari{wait 10}...{n}Ne te méprends pas.{p}Pas par pitié, ni rien de{n}ce genre{wait 10}...{wait 20} Ou...{wait 10}{n}Enfin, si, peut-être...{p}Je voulais juste la{n}protéger, c'est tout. Si{n}tu y vois de la pitié,{n}alors tant pis.{p}Le capitaine m'a raillé{n}sans pitié. Il a dit...{p} 'Quoi ! Un froid comme{n} toi, séduire une veuve ?{n} Fais en sorte que le{n} gamin t'apprécie...'{p}Ha, ha... Je crois que le{n}capitaine avait raison.{n}Mon beau-fils ne m'aime{n}toujours pas.{n}J'espère qu'un jour..."
+f688-0004 1d66efab7af29137 Fei{n}"Je vois{wait 10}...{wait 10}{n}Tu as changé !"
+f688-0005 6b13e3d5e273fd75 Hans{n}"Ha, ha. Toi aussi, Fei,{n}tu as changé. Je ne sais{n}pas trop dire comment...{p}Et moi... je ne sais pas{n}trop ce que c'est...{n}Je crois qu'on m'a{n}toujours protégé..."
+f688-0007 ef46308151e5c6aa Hans{n}"Fei, je crois..."
+f688-0008 239c73642ba4cab3 Hans{n}"Je crois qu'un jour,{n}le capitaine descendra{n}cet escalier...{p}Toc-toc-toc,{n}en tapant sa canne..."
+f688-0009 b4f0f5a9492b0f4a Hans{n}"Et il dira...{p} 'Haaaans ! On dirait{n} qu'on va mettre la{n} main sur un trésor{n} inestimable !{p} Pourquoi cette tête ?{n} Tu ne me crois pas ?{n} Là, c'est sérieux...{n} juré !'"
+f688-0010 af705b85bf7c19a8 Hans{n}"{wait 10}...{wait 10}Peut-être{wait 10}{n}un jour..."
+f688-0011 c74ca7dad526d425 Capitaine{n}"Haaaans ! On dirait{n}qu'on tient un trésor{n}inestimable !"
+f688-0013 e9ed9803397bfb1f Capitaine{n}"Pourquoi{n}cette tête !?"
+f688-0014 46f013d257f72b29 Hans{n}"Ca, ca,{wait 10} cap..."
+f688-0015 33405a4bb89817f2 Hans{n}"Capitaine------ !!"
+f688-0016 497bfc0eacd71dd9 Hans{n}"Qu'est-ce que c'est que{n}ces 'Ca, ca, capitaine' ?{n}Arrête ça, nigaud !"
+f688-0017 85f14f07163a2d9e Hans{n}"T,{wait 10} tu sais combien{n}je me suis inquiété !?"
+f688-0018 2daa3a19366d467c Capitaine{n}"Hah !{n}Je te le dis{n}tout le temps.{p}Pas compris ?{n}Alors écoute..."
+f688-0019 bcae889536f521d1 Capitaine{n}"Les hommes !"
+f688-0020 18ebae4068b204dc Capitaine{n}"De la mer...!"
+f688-0021 4ac8ea2405788bd2 Capitaine{n}"Ne renoncent pas !"
+f688-0022 518d183e73cf1db1 Capitaine{n}"Gah, ha, ha, ha-a-a !!"
+f688-0023 10650b4b44dd7312 Hans{n}"Tu...{wait 10}es...{wait 10}{n}vraiment un..."
+f688-0024 80dd8b6f45a9f6eb Capitaine{n}"Hans !{n}Cette fois, c'est vrai !{p}C'est une île au trésor{n}enfoui. Elle s'appelle{n}'Île Homme-Dune'.{p}Un ancien héros y tua{n}un monstre, et la légende{n}dit que sa célèbre épée{n}y repose."
+f688-0025 09cbd95afe4c3056 Hans{n}"Et vos infos...?{n}Vous savez où c'est ?{n}Et le navire ?"
+f688-0026 14700ae3c9811cb2 Capitaine{n}"Où c'est ? Aucune idée !{n}Pas de navire !{n}Oublie les détails !{p}Tu ne vois pas que c'est{n}pour ça que le gamin ne{n}s'attache pas à toi ?"
+f688-0027 d3fcddb7115f885a Hans{n}"Ça ne vous{n}regarde pas !"
+f688-0028 f349fe1ecd207f67 Capitaine{n}"Bon, quand le gamin{n}t'aimera enfin...{p}j'aurai déjà trouvé un{n}navire neuf. D'ici là,{n}donne tout pour ta{n}famille, mon gars !!{p}Donne aux tiens l'amour{n}qu'il leur faut, tant{n}qu'il est encore temps.{n}Gah, ha, ha !!"
+f688-0029 490fb4c10a715153 Anna{n}"Mon mari n'est pas mort{n}il y a si longtemps{wait 10}...{p}Je vous en prie, ne me{n}croyez pas volage...{wait 10}{n}Mais c'est pour lui que{n}je{wait 10}...(rougissant)..."
+f688-0030 8d26353f75b1e5f2 Lance{n}"Il m'apprend l'esprit{n}des Hommes de la{n}Mer !"
+f688-0031 6919e48ed74c0901 Lance{n}"Tu ferais un bon père.{n}Je peux t'appeler papa ?"
+f688-0032 85e3829e7b272031 Capitaine{n}"Gah, ha, ha !{n}Elle est bonne...{p}Un morse avec un{n}fils pingouin !{n}Gah, ha, ha !"
+f688-0033 b637682446d23385 Lance{n}"Pas un pingouin !{n}Un dauphin !!"
+f688-0034 b57fcba2602e2762 Capitaine{n}"Ah oui ?{n}Hans est pingouin."
+f688-0035 29571fa5ff35a02d Lance{n}"Mon père est un dauphin{n}aussi !{p}Oups...{wait 10} Oublie ce que{n}j'ai dit.{wait 10} Je voulais pas{n}l'appeler papa !{wait 10} Qui{n}voudrait d'un tel père !"
+f688-0036 4e94c1bdf1ac7abd Capitaine{n}"Gah, ha, ha-a-a !!"
+f688-0037 1a12e68a54cab4e7 Lance{n}"Je lui dirai{n}jamais 'papa'."
+f688-0038 c739c3cf94965c28 Kanna{n}"Assez, assez !{n}Je me rends, voilà !{n}Tu es trop fort."
+f688-0039 58f0dbfbe0d259ef Kanna{n}"Une fille tapageuse du{n}Thames m'a montré un{n}jeu de cartes.{p}Tu veux jouer ?"{n}    Oui{n}    Non merci
+f688-0040 01ae53d442ddb09e Défi accepté !
+f688-0041 de2e0a649d7af9a7 Peureux.
+f688-0042 ae45f01fd2b74dc6 T'es pas mon père !
+f688-0044 b28a9043063d3bee Fei{n}"Hans !{n}C'est toi !?"
+f688-0045 eb7f699a14459fd0 Hans{n}"Toi...!{n}Vivant !?"
+f688-0046 194733d5b20a179d Fei{n}"Oui, toi aussi...{n}Mais si tu es ici,{n}alors le Thames a..."
+f688-0047 71ee3dbce464fb67 Hans{n}"Le Thames{wait 10}...{wait 10}{n}a sombré.{n}Attaque des 'Anges'...{p}Le Thames a résisté à{n}l'attaque des Faucheurs,{n}mais était sans défense{n}contre ces 'Anges'{wait 10}...{p}Presque personne n'a pu{n}fuir à temps...{wait 10} Ils ont{n}sombré avec le Thames{wait 10}..."
+f688-0048 ec278c7b5120ee20 Bart{n}"Q-quoi... attends.{n}Et le capitaine ?{n}Il va bien, hein ?"
+f688-0049 36962ba1d46f211e Fei{n}"Quoi...? D'ailleurs,{n}où est le capitaine ?{n}Qu'est-il devenu ?"
+f688-0050 d9635f233b75834e Hans{n}"Le capitaine...{wait 10}a dit...{wait 10}{n}qu'il assisterait à la fin{wait 10}{n}du Thames de ses yeux{wait 10}..."
+f688-0051 2d854506b3853aff Bart{n}"T-tu rigoles, hein ?{n}Ce vieux bonhomme, mort...{n}C'est impossible..."
+f688-0052 a7879170685b5380 Fei{n}"Le capitaine, mort...{n}Non, impossible..."
+f688-0053 ecacda1156e67b00 Hans{n}"Non !{wait 20}{n}Le capitaine vit.{n}C'est un homme{n}insubmersible..."
+f688-0055 7c4060ce3dcdd21b Capitaine{n}"Hein ? Comment j'ai{n}survécu ? T'en fais pas{n}pour ces détails !!{p}Si tu t'inquiètes de ça,{n}les gosses te détesteront,{n}comme ils détestent Hans,{n}hé !"
+f688-0056 31b1ce42dbdc9983 On va tous mourir !!{n}À boire !!{n}De la gnô-ô-ô-ôle !!
+f688-0057 349e0ea532eb65c1 Hé, vous ! On gèle,{n}ici. Faites quelque{n}chose ! C'est mauvais{n}pour ma peau !
+f688-0058 24558b0af77f1f2f Tant d'hommes bons sont{n}morts...{p}Quel médecin suis-je, si{n}je ne sauve pas ceux qui{n}meurent sous mes yeux !?{p}Pourquoi un vieillard comme{n}moi a-t-il survécu à{n}ça...
+f688-0059 5a69059207d7f56d Tous sont abattus,{n}et seuls eux semblent{n}heureux.{n}Agaçant, non ?
+f688-0060 36dcdb8195941ea9 Une ville sans détenus...{n}Quel ennui.{n}Remarquez, le monde même{n}est comme une prison.
+f688-0061 bc75103ac444c050 Kanna{n}"J'abandonne !{n}Je pensais pas perdre{n}cinq fois de suite.{p}Tu es très fort.{n}Je te donne ça."
+f688-0063 9904c0fba6ac3f1d Kanna{n}"Wouah, tu es fort !!{n}Déjà {num1 0} victoires{n}de suite !!{p}Tu continues ?"{n}    Bien sûr{n}    Non merci
+f688-0064 b238f0ff7fd0fd72 Kanna{n}"Si tu continues, ta série{n}repart à zéro.{p}D'accord ?"{n}    Continuer la partie{n}    Non, j'arrête
+f688-0065 cd2760ede322c60f Kanna{n}"Hé !{n}Tu files avec{n}tes gains ?"
+f688-0066 e6356b36a0f89c24 Kanna{n}"Tu es fort."
+f688-0067 408dbacc0029981e Kanna{n}"Tu es trop fort !{n}Tiens, voilà..."
+f688-0069 0647469cc7422bec Kanna{n}"Tu continues ?"{n}    Bien sûr{n}    Non merci
+f688-0070 e2a8cef757c99f52 Kanna{n}"Tu es nul.{n}Reviens après."
+f688-0071 da3a19a464d8437f Kanna{n}"Hum, pas mal.{n}Bon, pour l'instant, on{n}est à égalité.{p}Tu continues ?"{n}    Bien sûr{n}    Non merci
+f690-0000 7dbd15d671fc1722 Vous savez, j'ai un fils bêta.{n}Il vivait de la pêche, mais un{n}jour, il a dit avoir vu une{n}cité de tritons sous la mer...{p}Depuis, il n'est plus allé en{n}mer, il est devenu terrien...{wait 20}{n}On ne l'a pas vu depuis des{n}années. J'ignore ce qu'il fait.
+f690-0001 605a9290e1ce7f79 Vous aussi, une pierre rare !{n}C'est une Larme de Sirène...?{wait 20}{n}On en trouve rarement.{p}Et vous, mademoiselle... Vos{n}yeux sont superbes.{wait 20} Un vrai{n}trésor de l'océan. Alors,{n}prêtez-moi cette pierre un{n}petit instant.
+f690-0002 d82d6bc5ce80447f Autrefois, j'avais du{n}succès comme créateur.{wait 20}{n}Voyez, c'est prêt.
+f690-0003 f0cf85d738e01f37 Vous pouvez garder ça.{n}Bonne chance. Et ne vous{n}laissez pas embobiner{n}par un inconnu, chérie !
+f690-0004 b26e822065de32b1  Reçu :{n}Bague Sirène !
+f691-0000 b8143bfc9d40f784 Allez savoir pourquoi,{n}mais ces temps-ci, les{n}familles grandissent.
+f691-0001 8f7fe0ec2f1c9b86 Je ne comptais pas vivre{n}ici,{wait 60} mais la famille de{n}mon fils est avec moi.
+f691-0002 22ad28e3106e1044 Jamais je n'aurais cru{n}vivre ici...{wait 50}Je voulais{n}combler mes parents.
+f691-0003 c0ea94bd521bb895 On a perdu notre maison à{n}Kislev... puis celle d'Aveh.{n}Alors on a décidé de rester{n}ici un certain temps.{p}Mais la prochaine fois, je{n}veux vivre dans la verdure.
+f691-0004 022e9c829c964575 Ce n'est pas mal. Il y a{n}du monde, et c'est drôle{n}de jouer dans la neige.
+f691-0005 d3aa0c3e2afaa9d0 Cette maison est super,{n}il y a plein de chats !
+f691-0006 14b979f1d9ae9cdb Ce n'est pas si mal,{n}comparé au camp{n}militaire et à la maison{n}des chats.
+f691-0007 2becb86535416715 L'évacuation a été dure :{n}ma fille a supplié qu'on{n}emmène tous les chats.
+f691-0008 14ddd95563074fce On se sent si seul sans{n}les chats.
+f692-0000 80d65a48667592fd J'veux pas qu'tu crois...{wait 10}{n}c'que j'fais à un moment{n}pareil...{wait 10} Si j'fais pas{n}ça, j'vais perdre les{n}pédales !
+f692-0001 1ee6093030325959 Youhou !!{done 30}
+f692-0002 43986e3b505ac851 Ah, grand frère Billy !{wait 10}{n}On l'a échappé belle.{p}Ça faisait longtemps qu'on{n}n'avait pas vu Primera, et{n}maintenant elle parle.{wait 10}{n}On était trop surpris !
+f692-0003 0d9c71c98c29b0c8 Mais,{wait 10} on ne pourra plus{n}lancer ton Gear, ni jouer{n}avec...{wait 10}{n}Ça va nous manquer...
+f692-0004 8c8b2bd80293398d Billy{n}"Oui,{wait 10} c'est dommage,{wait 10}{n}mais tu as plein d'amis ici{n}désormais, hein, Bobby ?{p}Tu n'as pas dit que ton{n}objectif était 'se faire{n}100 amis cette année' ?{wait 10}{n}Alors fais-les ici."
+f692-0005 8a2fa71762ad936c Ouais !{wait 10}{n}Mais un jour, je veux{n}lancer ton nouveau Gear,{wait 10}{n}Billy !
+f692-0006 bddb7bd373738231 C'est la pemière fois que je{n}vois la neige, et ouah, c'est{n}gelé, glichant, rigolooo !!
+f692-0007 9a3b8b678deb37dc Juste quand je croyais{n}pouvoir monter dans l'OVNI,{n}il a arrêté de voler !!{p}Et en plus,{wait 10} ce type n'arrête{n}pas de dire des trucs{n}barbants !
+f692-0008 03caa94a75fc7fd2 {slow 2}Nous serons jugés !!{wait 10}{n}La fin est proche...{wait 10}{n}Prenez garde, vous aussi.{wait 10}{n}Selon la prophétie...
+f692-0009 b1a358f53ff278ca On dit qu'une partie de{n}Nortune, l'ex-capitale de{n}Kislev, aurait survécu !{p}Font-ils encore ce truc{n}barbare, le 'Battling'...?{p}Je me le demande bien :{n}que faire de nos hommes,{n}de nos jours...?
+f692-0010 567f6197fbcf1789 Juste quand je pensais que{n}le prince Bartholomew{n}rentrerait ramener la paix{n}sur les terres d'Aveh...{p}Ça montre bien qu'on ne{n}sait jamais ce qui peut{n}arriver en ce monde...
+f692-0011 050295e9b79d871c Ô Reine...{wait 10}{n}Que voient vos yeux...{wait 10}{n}Ce regard triste,{wait 10} de qui{n}a perdu quelque chose...{p}Mais en lui se trouve une{n}bonté capable de tout{n}pardonner...
+f694-0000 8525cbb579b5150f J'ai trouvé un truc...{wait 20}{n}Même si c'est un peu{n}différent du trésor que{n}je cherche.
+f694-0001 f5beca82bfaec83d Je creuse comme un fou.{n}J'ai hâte de trouver{n}quelque chose !
+f694-0002 5a93b3374d068d8c Rien à faire...{n}Je n'ai rien trouvé.{wait 20}{n}Ça semblait toujours{n}presque à ma portée...
+f694-0003 e0ba430842726241 Hé, vous avez un Lingot{n}d'Or, non ?{wait 20}{n}Si vous me le donnez, je{n}creuserai encore un peu.{p}Sinon, je crois que je{n}vais devoir abandonner...{n}Qu'en dites-vous ?
+f694-0004 4d493faacc3436b1 Donner le Lingot d'Or ?{wait 20}{n}    Donner{n}    Pas question
+f694-0005 e541627d4a1ef21f Bien !{wait 20}{n}Je m'y mets illico.{n}Attendez-vous à du bon !
+f694-0006 740cccf853857e43 Donné : Lingot d'Or.
+f694-0007 a9c0a618b9769f72 Ah bon ?{wait 20}{n}Bon, à votre guise.
+f694-0008 3dad27078cbbb7c1 Cette roche est plus dure{n}que prévu. Difficile à{n}creuser, alors patientez{n}encore un petit peu.
+f694-0009 8be4f31f22c1d2c4 Hmmmm...{n}Je crois que je sens{n}une odeur de trésor par{n}ici.
+f694-0010 1cc6f482d42a7ad5 Hé, vous n'auriez pas une{n}pépite d'or ?{wait 20}{n}Si vous me la donnez, je{n}creuse encore un peu ici.{p}Je suis sûr qu'il en{n}sortira quelque chose de{n}bien. Qu'en dites-vous ?
+f694-0011 b4fd8f109a2b4416 Donner la Pépite ?{wait 20}{n}    Donner{n}    Pas question
+f694-0012 26a78804f4eb4946 Bien, entendu !{wait 20}{n}Alors, je vais essayer{n}de creuser par ici...{n}Attendez-vous à du bon !
+f694-0013 81d8915d9f5c5b84 Donné : Pépite.
+f694-0015 a2ec3377e5eba931 {speed 255}"Boîte à Musique de Luxe"{n}  Insérez 100G, merci{n}    Oui, j'insère{n}    Non merci
+f694-0016 9883a8e1e7b53ae4 Hé, pas de blague !{wait 20}{n}Vous n'avez pas assez{n}d'argent !
+f695-0000 226e6068b06f9168 Hé, j'ai toutes sortes{n}de bonnes choses.{wait 20}{n}Hé, besoin de quelque{n}chose ?
+f695-0001 ca2f499e3fe05afc Hé, merci beaucoup !{wait 20}{n}Revenez quand vous voulez{n}quelque chose... hé !?
+f695-0002 a710972b98716c3c Hé-hé, bienvenue.{n}Que puis-je pour vous{n}aujourd'hui, hé ?
+f695-0003 3a33ee85591e3aa9 Hé, merci.{n}À bientôt.
+f695-0004 70dda98518333c76 Il fait bien trop froid.{wait 20}{n}Je déteste le froid !{n}Ça me tue...{p}Si la température continue{n}de baisser ainsi, on va{n}tous geler avant que Deus{n}ne nous achève.
+f695-0005 24b8594e1a517e75 Nous, gens de Shevat,{n}avons toujours rêvé de{n}descendre vivre à la{n}surface de la planète...{p}Mais jamais nous n'aurions{n}cru réaliser ce rêve{n}de cette façon !{wait 20}{n}...C'est insupportable !
+f695-0006 33d795c1968d1d95 Cette base a beau être le{n}dernier refuge de{n}l'humanité...{wait 20}{n}comme vous le voyez, nous{n}manquons de tout.{p}Enfin, nous utilisons un{n}morceau tombé de Shevat{n}comme base principale...{wait 20}{n}Mais ça, vous vous en{n}doutiez, hein.{p}Si nous pouvions abattre{n}Deus ne serait-ce qu'un{n}jour plus tôt...{wait 20}{n}Nous ne tiendrons plus{n}longtemps ainsi.
+f695-0007 fee4dd8ecce369a7 Aveh, Kislev, Nisan...{n}Après tant de combats,{n}nous voilà enfin unis,{n}comme ça...{p}Mais il est sans doute déjà{n}trop tard...{wait 20}{n}C'est toujours pareil :{n}on ne comprend qu'une fois{n}qu'il est trop tard.{p}Comment affronter l'armée{n}de Deus ?{wait 20}{n}La situation est vraiment{n}désespérée.
+f695-0008 37908c1c1e0b4d75 Tant de morts...{wait 20}{n}Si ça continue, d'autres{n}encore vont mourir.{p}Comme il y a 500 ans.{wait 20}{n}Cette tragédie et cette{n}souffrance se répètent...{p}Que va devenir notre{n}monde...{wait 20}{n}Que va-t-il nous{n}arriver...!
+f695-0009 ce8594c7c2998afd Brûle, brûle...!{wait 20}{n}Que brûle ce monde{n}entier...!{p}Ma maison, toute ma{n}famille, ils ont tout{n}détruit...{p}Qu'importe, maintenant,{n}que tout brûle !!{n}Hahahaha...
+f695-0010 8c4197e65b0fcfae On n'est pas né que pour{n}mourir... ou si ?{p}Que va-t-il nous arriver,{n}maintenant ?{wait 20}{n}Et à ce monde...{p}Impossible de tenir sans{n}au moins boire un coup...{wait 20}{n}On a peur, on est seul...
+f695-0011 3febf723bf0e7dfd Vous disiez qu'il vous{n}fallait encore quelque{n}chose ?
+f695-0012 b42ed34b504cf0a7 Hé, l'ami, tu cherchais{n}quelque chose ?{p}Si tu veux un truc, viens{n}me voir au comptoir.{p}Il faut que les choses{n}soient claires, sinon ça{n}m'énerve.
+f695-0013 73a0fbd573ace2a8 Hé, l'ami !{n}Tu as besoin de quoi ?{wait 20}{n}Hé, attends une minute !
+f695-0014 9382b9e13a74bd69 Merci.{n}Reviens, je te ferai un{n}meilleur prix.{wait 20}{n}(Eh... Mieux vaut toi que{n}moi... Haha !)
+f695-0015 3da1d0e5f17b3ac6 Je ne te rends pas ton{n}argent !{wait 20} Ils ont filé{n}après que je te les ai{n}vendus.
+f695-0016 b388be20413e03a8 Hé, ils sont pas mignons,{n}ces Picotiles ?{wait 20} Et c'est{n}une affaire, 'piou, piou' !{n}Alors ?
+f695-0017 8e62a4a8e1816218 Acheter des Picotiles ?{wait 20}{n}    Des Picotiles !{n}    Ne rien acheter
+f695-0018 849c16c6377b6b81 Parfait !{n}20 000G le tout !{wait 20}{n}Pas de marchandage !{n}Allez, payez donc !
+f695-0019 a15d6f0a22882aa4 Payé : 20 000G.
+f695-0020 3b47bbed3eff5ca2 Merci.{wait 20}{n}Ils sont délicieux{n}grillés...
+f695-0022 2a0038af7ae9bd77 Je sais rien !{wait 10}{n}...{wait 5}Rien !
+f695-0023 1d84ad1b681472c5 Pas assez d'argent.{n}Bon, une autre fois...{n}'Radin' ! Piou, piou !
+f695-0024 622f9e5963b48311 Tss, tu te moques de moi ?{n}Ici, on ne plaisante{n}pas, tu sais ?{n}Dégage !
+f695-0025 7a87e578adf79523 Argh ! Ils brûlent !{wait 20}{n}Tous mes livres rares en{n}première édition et mes{n}précieux autographes !!{p}Je sais qu'on manque de{n}tout,{wait 20} mais je n'arrive pas{n}à croire qu'ils brûlent{n}mes trésors !
+f697-0000 ba74874a92b9c35b Fei{n}"C'est bon, Dan.{n}...Ça suffit.{wait 20}{n}Je comprends.{p}C'est ma faute.{wait 20}{n}Pardon de t'avoir causé{n}tant de peine..."
+f697-0001 6303eee77d6ebdf7 Fei{n}"Content qu'on se soit{n}enfin réconciliés.{wait 20}{n}Porte-toi bien, petit."
+f697-0002 0e221f61d20fb262 Fei{n}"Midori ! Je ferais mieux{n}de te rendre ça...{wait 20} C'est{n}ta précieuse bague, non ?{p}Sois sage et obéis à ta{n}mère, Yui, d'accord,{n}Midori !{p}Ah, et...{wait 20}{n}veille sur Dan pour moi,{n}d'accord !?"
+f697-0003 d7aa9c9cf16aa8d7 Fei{n}"Oui...{wait 20}{n}Tu dois avoir raison !"
+f697-0004 347a21566c645999 Fei{n}"Bien...{wait 20}{n}Bon, j'y vais.{n}À plus !"
+f697-0006 ef3acc70b78b3926 Dan{n}"En prison, quand je t'ai{n}vu devenir un monstre,{n}j'ai tout compris.{p}Un monstre vit en toi,{n}Fei, qui n'est pas toi...{n}C'est lui, le méchant...{n}C'est sa faute à lui..."
+f697-0007 affff48e48559f07 Dan{n}"Alors...{wait 20}te pardonner ou{n}pas... Bon... c'est pas{n}la question !{p}Ce n'est pas comme si ça{n}allait tout arranger...{wait 20}{n}mais...{wait 20} euh, c'est que...{p}Je sais pas bien le dire,{n}mais{wait 20} pardon...{wait 20}{n}Je... je, euh...{wait 20}{n}Je...!"
+f697-0009 d43e506fcdaebe9c Midori{n}"Sois prudent, Fei."
+f697-0010 0aa4a6d2c44caf7c Midori{n}"Fei...{wait 20}{n}J'ai eu un peu peur,{n}mais pas trop.{p}Je savais que, dans ce{n}monstre, tu te battais{n}de toutes tes forces,{n}Fei. Je le savais."
+f697-0011 8418b14fbfc94533 Midori{n}"Oui, nous{wait 20}{n}allons tous bien.{p}Fei, sois prudent aussi.{p}Je suis sûre que ta voix{n}parviendra jusqu'à elle,{n}Fei..."
+f697-0012 0f889af3c2b40428 Midori{n}"Tiens...{wait 20}{n}Chu-chu me l'a donné.{p}Fei, tu peux le garder.{wait 20}{n}En échange de ma bague."
+f698-0000 4413ac700ca594aa C'est donc ici qu'on a{n}enfermé Fei !?{wait 20}{n}Bien fait pour lui !
+f698-0001 1b25f4e11ab37bad Dan{n}"Je vais prier sa face en{n}larmes comme une idole !{n}Hé, hé... Tu parles !"
+f698-0003 c63765415dad3b70 Ar...arrête...{wait 20}{n}Arrête... ça !!{done 80}
+f698-0005 bf6888875fa55db2 F...{wait 20}fuyez...{wait 30}{n}Vite...{wait 20}{n}Fu...yez !!{done 30}
+f698-0006 5e4f864320a6e204 Dan{n}"Mon Dieu...!{wait 20}{n}C'est... c'est quoi...!?"
+f698-0007 2de862e2931995c0 Dan{n}"...{wait 20}{n}Horrible..."
+f698-0008 a41213ba96f3d174 Dan{n}"Quoi qu'il ait fait, ça{n}dépasse les bornes...{p}Il vit encore...?{wait 20}{n}Comment peux-tu être{n}en vie !?{p}Toi aussi, tu es humain,{n}non !?{n}Bon sang...!"
+f698-0009 d6b7cbd9b2729725 Dan{n}"...{wait 30}{n}Fei...{wait 20}{n}Hé, Fei...!?"
+f698-0010 bec6ae2b3dc90bef Dan{n}"Hein...!?"
+f698-0011 f3279733d5c4da6d Dan{n}"Midori, c'est toi...{wait 20}{n}Ouf...{n}Tu m'as fait peur !"
+f698-0012 fd6c198901179ed9 Dan{n}"Pleurer...?{n}Qui pleure ?{wait 20}{n}...!?"
+f698-0013 2312f573b6b5ba7b Dan{n}"Tu veux dire que notre{n}ami Fei pleure ?"
+f698-0014 29614b4e9cb2b673 Dan{n}"Comment ça !?"
+f698-0015 418ee499703a8d25 Dan{n}"Hé...!{n}Mais quoi...!?"
+f698-0017 354e10be3b70d3c4 Dan{n}"Ça alors...!?"{done 20}
+f698-0018 6f68432d5567fdfc Il pleure...
+f698-0019 95d7d5f2783007f8 Midori{n}"En colère...{wait 20}{n}Blessé...{p}Il va bientôt{n}s'éveiller...{wait 20} Quelque{n}chose l'appelle..."
+f699-0000 b0b15121bc28de07 Fei{n}"Ça... s'ouvre..."
