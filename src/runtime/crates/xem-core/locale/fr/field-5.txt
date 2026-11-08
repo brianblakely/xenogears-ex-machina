@@ -737,7 +737,7 @@ f579-0076 29c3f427dbb79912 Ancien{n}"Bien sûr.{p}À quoi bon contrôler une{n}p
 f579-0077 225cb5a1d5845de6 Ancien{n}"Oui.{n}Nous seuls, qui n'avons nul{n}sang impur, avons droit{p}au pardon..."
 f579-0078 1eafb13eb14045ff Ancien{n}"Alors, ressuscitons dieu."
 f579-0079 c2eeaa00eb8e64c6 Ancien{n}"Une éternité a passé{n}depuis notre exil du{n}paradis.{p}Si l'heure de la{n}renaissance de dieu{n}ne vient pas,{p}nous devrons suivre la{n}voie de la{n}destruction.{n}Mais..."
-f579-0080 4941de0a90f56c11 Ancien{n}"Avec l'Animus en main,{n}bientôt nous renaîtrons...{wait 30}{n}Puis, le tour de dieu
+f579-0080 4941de0a90f56c11 Ancien{n}"Avec l'Animus en main,{n}bientôt nous renaîtrons...{wait 30}{n}Puis, le tour de dieu"
 f579-0082 cdbddb41d65fdd0a Krelian{n}"Celle-ci attend{n}son éveil..."
 f579-0084 275df2d7aa82481e Fei{n}"Doc
 f579-0085 98fab4f092a8a9cc Fei{n}"Seul le réel...!"

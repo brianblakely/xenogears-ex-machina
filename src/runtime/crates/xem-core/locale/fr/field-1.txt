@@ -1543,7 +1543,7 @@ f194-0001 d6f91005a81b9ef9 Garde impérial{n}"Nous sommes désolés, mais{n}il y
 f194-0002 54b6ed9b638d0054 Garde impérial{n}"Le soleil est couché.{wait 15}{n}Hors de la capitale, c'est{n}trop dangereux. Je ne peux{p}pas vous laisser{n}passer."
 f194-0003 eea3e28a367306a2 Garde impérial{n}"Désolé, mais c'est mon{n}travail.{wait 15} Veuillez{n}quitter les lieux{wait 5}..."
 f194-0006 eb21e9a4cba13d69 Garde impérial{n}"Le soleil est couché.{wait 15}{n}Seul le personnel autorisé{n}peut passer. Veuillez{n}présenter vos{p}laissez-passer."
-f194-0007 ecd6300b587328d8 Garde impérial{n}"Je suis désolé.{wait 5} Champion{n}ou non, le passage sans{n}autorisation{p}est interdit.{wait 15}{n}Veuillez quitter les{n}lieux{wait 5}...{wait 5}
+f194-0007 ecd6300b587328d8 Garde impérial{n}"Je suis désolé.{wait 5} Champion{n}ou non, le passage sans{n}autorisation{p}est interdit.{wait 15}{n}Veuillez quitter les{n}lieux{wait 5}...{wait 5}"
 f194-0008 10d891e4d01f277c Garde impérial{n}"Le soleil est couché.{wait 15} Je{n}suis navré, mais il est{n}impossible de franchir la{p}Porte Principale."
 f194-0009 08d2c7e8fd20e685 Garde impérial{n}"Au coucher du soleil, les{n}portes du nord et du sud{n}ferment. On ne passe que{p}par la Porte Ouest."
 f194-0012 514969fa41ac9b6f Garde impérial{n}"Le Champion de Battling.{wait 15}{n}J'ai admiré votre combat{n}pour le titre.{wait 15} {p}Pardonnez mon impolitesse{n}d'avant. La seule route{n}qui va du nord au sud{p}vous mènera hors de la{n}Capitale Impériale. Au{n}centre se trouve le{n}District Central et, au{p}sud-ouest, le Bloc A de la{n}Capitale Impériale."
@@ -1800,7 +1800,7 @@ f196-0120 d2bc7a038844412d Fei{n}"{wait 5}...{wait 5}Hein ?{wait 15}{n}Qu'est-ce
 f196-0121 1120056bee6e8ee5 'Fermé aujourd'hui.{n}Échange dès demain !{n}                 B-Info'
 f196-0122 bfd0b9295bef427c Fei{n}"{wait 5}...{wait 15}{n}Quoi,{wait 5} même lui dort la{n}nuit ?{wait 5}...Voyons voir."
 f196-0123 f80153dba5effe98 Citan{n}"{wait 5}...{wait 5}Fei.{wait 15}{n}Que faites-vous ?{p}Embêter ce chien à cette{n}heure va réveiller tout le{n}monde. Arrêtez !"
-f196-0124 616c2243a5de194c Fei{n}"Ah, désolé, Doc.{wait 15}{p}Il fait tellement de bruit{n}le jour que je voulais lui{n}jouer un tour{wait 5}...{wait 5}
+f196-0124 616c2243a5de194c Fei{n}"Ah, désolé, Doc.{wait 15}{p}Il fait tellement de bruit{n}le jour que je voulais lui{n}jouer un tour{wait 5}...{wait 5}"
 f196-0125 caaba9872a57062a Citan{n}"Vous n'en faites toujours{n}qu'à votre tête{wait 5}...{wait 5}{n}Dépêchons-nous.{p}L'heure approche.{wait 15} Nous{n}n'avons pas le temps de{n}jouer."
 f196-0126 b5fd1cc45325257c Citan{n}"{wait 5}...{wait 5}Fei{wait 15}{n}Où allez-vous ?{p}Le train de ravitaillement{n}arrivera bientôt.{wait 15}{n}{wait 5}...{wait 5}Nous devons nous{n}dépêcher."
 f196-0127 1df79ae3fb505f1a Fei{n}"Ah, désolé, Doc.{n}{wait 5}...{wait 5}Allons vite à la tour{n}d'observation."
@@ -1813,7 +1813,7 @@ f196-0133 021d1e4e6b35e477 Fei{n}"{wait 5}...{wait 30}{n}Qu'est-ce que c'est{wai
 f196-0134 d2d9245029bb912e {speed 255}Force : beauté explosive !{n}Force : amour débordant !{n}Envolez-vous, jeunesse !{n}À l'arène de Battling !
 f196-0135 76035af287defe8f Fei{n}"{wait 5}...{wait 30}{n}Qu'est-ce que c'est{wait 5}...?"
 f196-0136 013abf2fa95d7cb6 {speed 255}          - ON RECRUTE ! -{n}- Exterminateurs de monstres -{n}Nous cherchons des Battlers{n}pour éliminer les monstres{n}des égouts, toujours plus{n}nombreux, de notre Bloc D !{n}Infos au 'Centre B-Info.'{n}Les prisonniers sans emploi{n}y seront obligés.{n}Sans travail, pas de repas...{n}         - Comité Impérial -{n}                   et{n}            - Centre B-Info. -
-f196-0137 5976b7afd92bd97e Fei{n}"Sans travail, pas de{n}repas ?{p}{wait 5}...{wait 5}Hmmm. Je vais devoir{n}descendre à l'égout{wait 5}...{wait 5}
+f196-0137 5976b7afd92bd97e Fei{n}"Sans travail, pas de{n}repas ?{p}{wait 5}...{wait 5}Hmmm. Je vais devoir{n}descendre à l'égout{wait 5}...{wait 5}"
 f196-0138 1f4a8edd6a1015f9 {speed 255}{n}- Exécution publique -{n}  - de l'ex-Champion -{n}Ce soir, à l'arène de{n}Battling, 'Ricardo Banderas'{n}  sera exécuté pour avoir{n}violé la section B du Code{n}     Impérial et tenté{n}      d'assassiner le{n}      Kaiser Sigmund.{p}L'ex-Champion pourra être{n} gracié, selon le{n}   résultat du combat.{n}   L'adversaire sera{n}  annoncé à l'arène.{n}       -Comité Impérial -
 f196-0139 0416ab79ce6495f5 {speed 255}- Mystère dans l'égout -{n}Ce matin, une nouvelle{n}victime d'un meurtre{n}mystérieux a été trouvée{n}dans les égouts du Bloc D.{n}On pense que la victime est{n}entrée dans les égouts tard{n}dans la nuit et a combattu{n}un monstre mystérieux.{n}C'est la quatrième victime.{n}Pour résoudre l'affaire,{n}Suzarn, de Classe A, doit{n}éliminer ce monstre.{n}    - Comité Impérial -
 f196-0140 a6378c2b7b16ec14 {speed 255}-Résultat de la{n}finale de Battling.-{n}Le triple champion Ricardo{n}Banderas est battu ! Le{n}vainqueur est le jeune Fei,{n}un criminel de Classe A.{n}De prisonnier, il est devenu{n}Battler. Novice, il a battu{n}l'invincible Champion grâce{n}à son habile pilotage de{n}Gear !
@@ -1821,7 +1821,7 @@ f196-0141 6d3565dd24660801 {speed 255}-Résultat de la{n}finale de Battling.-{n}
 f196-0142 d04b59c6428be376 {speed 255}-Résultat de la{n}finale de Battling.-{n}Le triple champion Ricardo{n}Banderas est battu ! Le{n}vainqueur est le jeune Fei,{n}un criminel de Classe C.{n}De prisonnier, il est devenu{n}Battler. Novice, il a battu{n}l'invincible Champion grâce{n}à son habile pilotage de{n}Gear !
 f196-0144 94bce2235ae5199b {speed 255}-Résultat de la{n}finale de Battling.-{n}Le triple champion Ricardo{n}Banderas est battu ! Le{n}vainqueur est le jeune Fei,{n}un criminel de Classe D.{n}De prisonnier, il est devenu{n}Battler. Novice, il a battu{n}l'invincible Champion grâce{n}à son habile pilotage de{n}Gear !
 f196-0145 eb666ad5d7b1568b Papy{n}"Qui es-tu ?{wait 20} Seul le{n}chef d'exploitation peut{n}rester ici !"
-f196-0146 7076076666405a3a Fei{n}"C'est écrit nulle part{wait 5}...{wait 5}
+f196-0146 7076076666405a3a Fei{n}"Ce n'est écrit nulle{n}part{wait 5}...{wait 5}"
 f196-0147 38244b5df1ec45ed Papy{n}"{wait 5}...{wait 15}{speed 255}Quand même, c'est{n}comme ça, point !!"
 f196-0148 4acd0bfc8bd52152 Fei{n}"Bon sang,{wait 5} pas besoin de{n}te{n}fâcher.{wait 15} Je ne savais pas.{p}Mais dis-moi une chose,{wait 15}{n}c'est quoi, ici ?"
 f196-0149 f777ad24646a00a0 Papy{n}"{wait 5}...{wait 5}Bon, d'accord.{wait 15} C'est{n}la Tour d'Observation."

@@ -8615,9 +8615,12 @@ descriptions, the shops', save screens' and system messages, the battles'
 messages, enemy names and event narration, and the world map's place
 names: every one of the 17 086 distinct texts of both discs that holds a
 letter (the other 691 of the 17 777 are glyphs alone, numbers or Japanese
-placeholders of the development data, which stay as they are). 16 030 are
-translated; 1 056, the same in Portuguese (names alone, cries, the
-developers' test menus kept as they were), are listed rather than shipped. Text built at run time (numbers, the party's
+placeholders of the development data, which stay as they are). Brazilian
+Portuguese translates 16 030 of them; 1 056, the same in Portuguese (names
+alone, cries, the developers' test menus kept as they were), are listed
+rather than shipped. French translates 16 029 and lists 1 057: the same
+texts and one enemy name French spells as the original does (Griffon).
+Text built at run time (numbers, the party's
 names) is the game's own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
 anew in the language, and the stat panels' words the menus compose of a

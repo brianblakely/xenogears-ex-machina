@@ -681,7 +681,7 @@ f026-0000 3111a220a3f79f56 Citan{n}"Inutile. L'actionneur du{n}genou et le circu
 f026-0001 8cbb9e10e2d94e4c Citan{n}"Ah, vous avez du mal à{n}dormir ?"
 f026-0002 a57dfb2d99e7565f Elly{n}"Oui..."
 f026-0003 de2b5c8593f5dc71 Citan{n}"J'imagine. Quelle{n}journée vous avez eue."
-f026-0004 591397a39e5224d3 Citan{n}"Voici la machine que Fei a{n}utilisée quand le village a{n}été attaqué.{p}Une autre machine gisait{n}aux abords du village...{p}Nil bayer dars legus?{n}(C'était la vôtre, non ?)"
+f026-0004 591397a39e5224d3 Citan{n}"Voici la machine que Fei a{n}utilisée quand le village a{n}été attaqué.{p}Une autre machine gisait{n}aux abords du village...{p}Nil bayer dars legus ?{n}(C'était la vôtre, non ?)"
 f026-0006 9a908cfb32e717b3 Citan{n}"C'est bien ce que je{n}pensais...{p}Le pilote disparu du Gear{n}qui a fait un atterrissage{n}d'urgence à Lahan...{p}...et la mystérieuse jeune{n}femme égarée dans la{n}forêt... ne font qu'une.{p}À en juger par votre{n}uniforme, je dirais aussi{n}que vous êtes militaire...{n}Je me trompe ?"
 f026-0007 248a7650d0242f97 Elly{n}"Comment...?{n}Qui êtes-vous ?"
 f026-0008 1670336ad2437649 Citan{n}"J'ai examiné les plaques{n}des soldats morts lors de{n}l'attaque de Lahan...{p}Le motif des plaques et{n}celui de votre uniforme{n}sont identiques."
