@@ -73,7 +73,7 @@ f710-0009 57b35c7dae23b9b0 Ramsus{n}"Silence !!{wait 20}{n}Toi{wait 5}...{wait 5
 f710-0010 2924880613fffb26 Dominia{n}"Vous vous trompez !{wait 20}{n}Nous ne pensons qu'à{n}votre bien..."
 f710-0011 1a7876a2ae7397ec Ramsus{n}"Silence !!{p}Au final, je ne peux{n}compter que sur moi !{wait 20}{n}Moi seul peux{n}arranger les choses !"
 f710-0012 ebfe46aa0eb22eda Ramsus{n}"C'est ta fin !!{wait 20}{n}En garde !{wait 20}{n}J'arrive, Fei !!"
-f710-0013 a36c46d5f799cc5b Fei{n}"Qu'est-ce que{wait 5}...?"
+f710-0013 a36c46d5f799cc5b Fei{n}"Qu'est-ce{wait 5}...?"
 f711-0001 a79540d1ff019ab6 C'est ici qu'est né Kahr.{wait 20}{n}Et c'est ici que sa haine{n}envers toi s'est forgée{wait 5}...
 f712-0001 0336e71d534bbbcb Citan{n}"Attendez !!{wait 20}{n}Fei !{p}Ne libérez pas{n}le système !!"
 f712-0002 19a4213c2d1e512a Bart{n}"Citan, attendez !!{p}On ne fait que se mettre{n}en danger !{wait 20}{n}Fichons le camp d'ici{n}pour l'instant !!"
@@ -267,9 +267,9 @@ f719-0024 2f3b65396aa47ae9 Fei{n}"Moi{wait 5}...{wait 10}{n}Quelque part{wait 5}
 f719-0025 db1e93684ab06164 Elly{n}"{wait 5}...{wait 10}Je suis désolée{wait 5}...{wait 10}{n}Pardonne-moi !{wait 5}{n}J'avais tort...{p}Je pensais que me sacrifier{n}pour sauver les autres{n}était la chose à faire...{p}Mais ce que j'ai fait n'a{n}apporté que de la tristesse{n}à ceux que j'ai laissés.{p}Et cette tristesse en a{n}engendré davantage.{p}Tant que 'je' vivrai en{n}toi, ma vie ne sera pas{n}seulement la mienne."
 f719-0026 acd446fa2f6d5fe4 Fei{n}"Elly...{n}Tu n'avais pas tort.{p}Se sacrifier pour autrui{n}est une noble chose...{wait 10}{n}Même si c'est pour son{n}propre bien, peu importe.{p}Quelqu'un en sera toujours{n}guéri...{wait 10}{n}L'un ou l'autre...{p}L'amour ne trouve son éclat{n}originel que s'il existe un{n}lien entre celui qui donne{n}et celui qui reçoit.{p}Il est incomplet quand l'un{n}ou l'autre est absent...{wait 10}{n}Les deux ne font qu'un.{p}C'est toi, Elly, qui m'as{n}appris ça.{wait 20}{n}Je crois que c'est ça,{n}être humain...{p}Maintenant, je comprends{n}vraiment son importance.{wait 10}{n}Je ne sais pas si c'est la{n}bonne réponse ou non...{p}Mais nous avons tout le{n}temps d'y réfléchir...{p}Ce que Krelian lui-même{n}a toujours cherché...{wait 10}{n}Trouvons la réponse à{n}tout... par nous-mêmes..."
 f719-0027 70010f09914e2f02 Elly{n}"Merci...{n}Fei !"
-f720-0000 c34308775454a960     {speed 255}nouvelle partie{n}    vers lahan{n}    vers shitan{n}    vers kislev{n}    vers alulu{n}    év. orgel{n}    quitter
+f720-0000 c34308775454a960     {speed 255}démarrer{n}    vers lahan{n}    vers shitan{n}    vers kislev{n}    vers alulu{n}    év. orgel{n}    quitter
 f720-0001 6d0f80e3c60897a5     {speed 255}shitan la nuit{n}    attaque de lahan{n}    ruines de lahan{n}    en construction{n}    première fois à shevat{n}    espion arrivé à shevat{n}    quitter
-f720-0002 4a01d02e489627d1     {speed 255}un espion est arrivé{n}    un dock de gears{n}    AHAZEHN arrivé{n}    l'écran du trône{n}    combat aux générateurs{n}    attaque de Soralis {n}    la justice{n}    fuite{n}    trou à melcover{n}    anges de melcover{n}    zeus{n}    quitter
+f720-0002 4a01d02e489627d1     {speed 255}un espion est arrivé{n}    un dock de gears{n}    AHAZEHN arrivé{n}    l'écran du trône{n}    combat générateurs{n}    attaque de Soralis {n}    la justice{n}    fuite{n}    trou à melcover{n}    anges de melcover{n}    zeus{n}    quitter
 f720-0003 27a417db819444b0     {speed 255}chuchu est fâchée{n}    chuchu vs AHAZEHN{n}    maria vs AHAZEHN{n}    maria va à Soralis{n}    golgoda{n}    sommeil carbonite{n}    la carbonite a cédé{n}    refuge dans la neige{n}    autres{n}    quitter
 f720-0004 2f844daf0e1200fd mot de passe {wait 10}{n}    quitter{n}    quitter{n}    au début{n}    test avec visage{n}    test sans visage
 f720-0005 0c0514eab7117d71 chuchu{n}"Test de la version{n} anglaise de Xenogears.{p} J'ai besoin d'amour pour{n} me sentir vive et bien.{n} Il n'y a que l'amour qui{n} puisse me faire du bien."
@@ -319,88 +319,88 @@ f722-0042 2e3f394ca112feb7  former groupe
 f722-0044 250352a5c3f22dac    {speed 255}Fei{n}   Elly{n}   Citan{n}   Bart{n}   Billy{n}   Rico{n}   Emeralda{n}   {name 7}{n}   page suivante
 f722-0046 be17256e91635f52 Le groupe...
 f723-0001 5531b73fb91482ec voir
-f723-0002 37d2bbc13a1a49bb ouvre
-f723-0003 d3898cddf17948a0 reste
-f723-0004 351344abb1f8318e {speed 255}où ?{p}    ne pas aller{n}    sho{n}    iwa{n}    zombi{n}    ninboku{n}    mahanon{n}    last
+f723-0002 37d2bbc13a1a49bb ouv.
+f723-0003 d3898cddf17948a0 fixe
+f723-0004 351344abb1f8318e {speed 255}où ?{p}    aucun{n}    sho{n}    iwa{n}    zombi{n}    ninboku{n}    mahanon{n}    last
 f723-0005 c59550a998d6c148     {speed 255}blg{n}    yav{n}    radi-chr{n}    dehors{n}    radi-2{n}    ret
-f723-0006 6b1304845b28a2e5     {speed 255}yav{n}    ciel{n}    sef{n}    ret
-f723-0008 4970951ef49f3b98     {speed 255}zombi{n}    cabine{n}    moteur{n}    remorque1{n}    remorque2{n}    remorque3{n}    ret
-f723-0011 83400b9ddbb34347 {speed 255}Test saut mappemonde{n}      flag de scénario{n}      numéro de saut{n}      numéro d'événement{n}      Sauter ?{n}      Quitter{n}  S-Flag   = {num1 3}{n}  MapNum   = {num1 2}{n}  JumpNum  = {num1 0}{n}  EventNum = {num1 1}
+f723-0006 6b1304845b28a2e5     {speed 255}yav{n}    air{n}    sef{n}    ret
+f723-0008 4970951ef49f3b98     {speed 255}zombi{n}    cabine{n}    moteur{n}    remorq1{n}    remorq2{n}    remorq3{n}    ret
+f723-0011 83400b9ddbb34347 {speed 255}Test saut mappemonde{n}      flag de scénario{n}      numéro de saut{n}      num. événement{n}      Sauter ?{n}      Quitter{n}  S-Flag   = {num1 3}{n}  MapNum   = {num1 2}{n}  JumpNum  = {num1 0}{n}  EventNum = {num1 1}
 f723-0012 b56d2b1934a05f9c {speed 255}flag de scénario{n}      plus{n}      moins{n}      10 plus{n}      10 moins{n}      50 plus{n}      50 moins{n}      fin{n}  sflag   = {num1 3}
 f723-0013 7739f89f1c5cce3c {speed 255}NUMÉRO DE SAUT{n}      plus{n}      moins{n}      10 plus{n}      10 moins{n}      fin{n}  JumpNum  = {num1 0}
 f723-0014 66c8920eced963bf {speed 255}NUMÉRO D'ÉVÉNEMENT{n}      plus{n}      moins{n}      10 plus{n}      10 moins{n}      défaut{n}      fin{n}  EventNum = {num1 1}{n}  défaut   = {num1 3}
-f723-0015 773cb569b37265d5 {speed 255}      aller à la carte{n}      CAMÉRA volante{n}      effacer FLAG global{n}      MENU{n}      ucon + endcamera{n}      setVsync{n}      RENCONTRES désact.{n}      IMPRIMER{n}      c-and-f.src  désact.{n}      DEMOFLAG act.{n}      QUITTER [11/01]
-f723-0019 2992bb3397eacabc {speed 255}    0    réveille{n}    01   réveille{n}    012  réveille{n}    0123 réveille{n}    0    dort{n}    01   dort{n}    012  dort{n}    0123 dort{n}    quitter
+f723-0015 773cb569b37265d5 {speed 255}      aller à la carte{n}      CAMÉRA volante{n}      RAZ FLAG global{n}      MENU{n}      ucon + endcamera{n}      setVsync{n}      RENCONTRES désact.{n}      IMPRIMER{n}      c-and-f.src  arrêt{n}      DEMOFLAG act.{n}      QUITTER [11/01]
+f723-0019 2992bb3397eacabc {speed 255}    0    réveil{n}    01   réveil{n}    012  réveil{n}    0123 réveil{n}    0    repos{n}    01   repos{n}    012  repos{n}    0123 repos{n}    quitter
 f723-0031 8436443fa3c8d9fe {speed 255}    eyespeed {signed 2} , atspeed {signed 3}{n}      eye +1{n}          -1{n}          +5{n}          -5{n}          x2{n}          /2{n}      at  +1{n}          -1{n}          +5{n}          -5{n}          x2{n}          /2{n}       exécuter
-f723-0035 81754421e02278cf {speed 255}      réveille{n}      dort{n}      +16len{n}      -16len{n}      +64len{n}      -64len{n}      +256len{n}      -256len{n}len actuelle {signed 0}
+f723-0035 81754421e02278cf {speed 255}      réveil{n}      repos{n}      +16len{n}      -16len{n}      +64len{n}      -64len{n}      +256len{n}      -256len{n}len actu. {signed 0}
 f726-0004 0f10349bbcd915bd {speed 255}tu es sûr ?
 f726-0037 255793dda50b2f87 {speed 255}membres
 f728-0063 a1b6c0aaeab614f9 {speed 255}maison de saito
 f728-0065 5ddbf2630ebb2860 {speed 255}quelle classe ?{n}    classe A{n}    classe B{n}    classe C1{n}    classe C2{n}    classe D
-f728-0067 992a94f5431cd4b0 {speed 255}change membre
-f728-0068 94e402b4ddf42ac2 {speed 255}quel menu ?{n}    demoflag{n}    battring{n}    mode musique{n}    groupe+{n}    membre+{n}    changer{n}    mode vidéo{n}    soin HPMP{n}    quitter !
+f728-0067 992a94f5431cd4b0 {speed 255}chg. membre
+f728-0068 94e402b4ddf42ac2 {speed 255}quel menu ?{n}    demoflag{n}    battring{n}    musiques{n}    groupe+{n}    membre+{n}    changer{n}    mode vidéo{n}    soin HPMP{n}    quitter !
 f728-0069 76cc781199e2b04a attendez !
-f728-0070 44ba94b52ebf8c73 Ciao !
-f728-0071 66cd72d9c5bb0329 {speed 255}demoflag ?{n}    pad{n}    désact.{n}    act.
-f728-0072 efd7986d05d47290 suiv. ?
-f728-0073 b36a569be3c475fe {speed 255}battringmode ?{n}    non{n}    oui
+f728-0070 44ba94b52ebf8c73 Ciao
+f728-0071 66cd72d9c5bb0329 {speed 255}demoflag?{n}    pad{n}    non{n}    oui
+f728-0072 efd7986d05d47290 suiv?
+f728-0073 b36a569be3c475fe {speed 255}battringmode?{n}    non{n}    oui
 f728-0082 9c63509d7af2e804 {speed 255}groupe ?{n}    ellie{n}    shitan{n}    barto{n}    rico{n}    billy{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2{n}    quitter
 f728-0083 7b9020669a05bb1a {speed 255}buu!buu!
 f728-0093 720e3c22b2741348 {speed 255}membres{n}    ellie{n}    shitan{n}    barto{n}    billy{n}    rico{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2{n}    quitter
-f728-0094 996cbb542cc73133 {speed 255}voir vidéo{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    p.2{n}    quitter
-f728-0103 fa1e1f69d44550e5 {speed 255}voir vidéo2{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.3{n}    quitter
-f728-0111 40695f86af195b3d {speed 255}voir vidéo3{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.4{n}    quitter
-f728-0118 b9cfdf88ef6fa325 {speed 255}voir vidéo4{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.5{n}    quitter
-f728-0126 38b197d9b6560eab {speed 255}voir vidéo5{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    début{n}    retour{n}    quitter
-f728-0134 56d80f3b5c94d762 {speed 255}musiques{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    quitter
-f728-0135 4ad2462712ade8e0 {speed 255}musique1{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    suiv{n}    quitter
-f728-0144 e13f88dc38cb42e0 {speed 255}musique2{n}    21{n}    22{n}    23{n}    24{n}    25{n}    26{n}    27{n}    préc.{n}    suiv{n}    quitter
-f728-0152 455dcf8a596deac2 {speed 255}musique3{n}    31{n}    32{n}    33{n}    34{n}    35{n}    36{n}    37{n}    préc.{n}    suiv{n}    quitter
-f728-0160 ff7e86c87f7baea0 {speed 255}musique4{n}    41{n}    42{n}    43{n}    44{n}    45{n}    46{n}    47{n}    préc.{n}    suiv{n}    quitter
-f728-0168 66c0bedae1f316a6 {speed 255}musique5{n}    51{n}    52{n}    53{n}    54{n}    55{n}    56{n}    57{n}    préc.{n}    suiv{n}    quitter
-f728-0176 7b7f106a8deef748 {speed 255}musique6{n}    61{n}    62{n}    63{n}    64{n}    65{n}    66{n}    67{n}    préc.{n}    suiv{n}    quitter
-f728-0184 7c40c1216698e1c2 {speed 255}musique7{n}    71{n}    72{n}    73{n}    74{n}    75{n}    76{n}    77{n}    préc.{n}    suiv{n}    quitter
-f728-0192 299ddc89afca7c08 {speed 255}musique8{n}    81{n}    82{n}    83{n}    84{n}    85{n}    86{n}    87{n}    préc.{n}    suiv{n}    quitter
-f728-0200 9ae3bf950b1424eb {speed 255}musique9{n}    91{n}    92{n}    93{n}    94{n}    95{n}    début{n}    préc.{n}    quitter
-f728-0206 80d6751e4f573444 karel{n}objet ?{wait 30}{n}    {speed 255}1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    combat{n}    suiv{n}    quitter
-f728-0207 cb94d51d60a8b1bf karel{n}ah bon
-f728-0208 a7bc6ab51ed735e2 karel{n}objet ?{wait 30}{n}    {speed 255}1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    rea{n}    début{n}    quitter
+f728-0094 996cbb542cc73133 {speed 255}vidéos{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    p.2{n}    fin
+f728-0103 fa1e1f69d44550e5 {speed 255}vidéos2{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.3{n}    fin
+f728-0111 40695f86af195b3d {speed 255}vidéos3{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.4{n}    fin
+f728-0118 b9cfdf88ef6fa325 {speed 255}vidéos4{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    retour{n}    p.5{n}    fin
+f728-0126 38b197d9b6560eab {speed 255}vidéos5{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    déb.{n}    retour{n}    fin
+f728-0134 56d80f3b5c94d762 {speed 255}musiques{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    fin
+f728-0135 4ad2462712ade8e0 {speed 255}musique1{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    suiv{n}    fin
+f728-0144 e13f88dc38cb42e0 {speed 255}musique2{n}    21{n}    22{n}    23{n}    24{n}    25{n}    26{n}    27{n}    préc{n}    suiv{n}    fin
+f728-0152 455dcf8a596deac2 {speed 255}musique3{n}    31{n}    32{n}    33{n}    34{n}    35{n}    36{n}    37{n}    préc{n}    suiv{n}    fin
+f728-0160 ff7e86c87f7baea0 {speed 255}musique4{n}    41{n}    42{n}    43{n}    44{n}    45{n}    46{n}    47{n}    préc{n}    suiv{n}    fin
+f728-0168 66c0bedae1f316a6 {speed 255}musique5{n}    51{n}    52{n}    53{n}    54{n}    55{n}    56{n}    57{n}    préc{n}    suiv{n}    fin
+f728-0176 7b7f106a8deef748 {speed 255}musique6{n}    61{n}    62{n}    63{n}    64{n}    65{n}    66{n}    67{n}    préc{n}    suiv{n}    fin
+f728-0184 7c40c1216698e1c2 {speed 255}musique7{n}    71{n}    72{n}    73{n}    74{n}    75{n}    76{n}    77{n}    préc{n}    suiv{n}    fin
+f728-0192 299ddc89afca7c08 {speed 255}musique8{n}    81{n}    82{n}    83{n}    84{n}    85{n}    86{n}    87{n}    préc{n}    suiv{n}    fin
+f728-0200 9ae3bf950b1424eb {speed 255}musique9{n}    91{n}    92{n}    93{n}    94{n}    95{n}    déb.{n}    préc{n}    fin
+f728-0206 80d6751e4f573444 karel{n}objet ?{wait 30}{n}    {speed 255}1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    combat{n}    suiv{n}    fin
+f728-0207 cb94d51d60a8b1bf karel{n}ah ok
+f728-0208 a7bc6ab51ed735e2 karel{n}objet ?{wait 30}{n}    {speed 255}1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    rea{n}    déb.{n}    fin
 f728-0210 f4c02a7a45d7e081 {speed 255}mode test ?{n}    animset{n}    battring{n}    yug4{n}    ellie{n}    quitter
 f728-0211 7dd43a66ceece258 {speed 255}événement battring ?{n}    non{n}    oui
 f728-0212 d92f0b3fa6457a31 {speed 255}test yug4 ?{n}    non{n}    oui
 f728-0213 1d85c383902912f9 {speed 255}ellie{n}    non{n}    oui
 f728-0214 5044ec37d57063dd ah, bon
 f728-0215 82a3f9e40e1d4585 {speed 255}qui ?{n}    fei{n}    shitan{n}    ellie{n}    barto{n}    billy{n}    rico{n}    eme{n}    chuchu{n}    maria{n}    shitan2{n}    eme2
-f728-0216 52926096ab146170 {speed 255}houkou ?{n}    pad{n}    n{n}    ne{n}    e{n}    se{n}    s{n}    so{n}    o{n}    no
-f728-0217 74646025a3c71f57 {speed 255}change menu{n}    kyotsu{n}    senyou{n}    houkou{n}    quitter
+f728-0216 52926096ab146170 {speed 255}houkou?{n}    pad{n}    n{n}    ne{n}    e{n}    se{n}    s{n}    so{n}    o{n}    no
+f728-0217 74646025a3c71f57 {speed 255}chg. menu{n}    kyotsu{n}    senyou{n}    houkou{n}    fin
 f728-0218 9a68aaaf500cf059 {speed 255}qui ?{n}    sonomama{n}    henkou
 f728-0219 534805d9c47bb9e4 {speed 255}qui ?{n}    fei{n}    shitan{n}    ellie{n}    barto{n}    chuchu{n}    suivant{n}    début
-f728-0225 2e7e3a0dceffdefa {speed 255}qui ?{n}    eme{n}    eme2{n}    maria{n}    rico{n}    billy{n}    retour{n}    menu
+f728-0225 2e7e3a0dceffdefa {speed 255}qui ?{n}    eme{n}    eme2{n}    maria{n}    rico{n}    billy{n}    ret.{n}    menu
 f728-0232 c3bbe6c7b610e498 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    suiv{n}    menu
 f728-0233 efd994f19e20f279 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    raz{n}    retour{n}    menu
-f728-0235 3f7a8b57cb902a0b {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    préc.{n}    suiv{n}    menu
-f728-0242 90174e7dab5238d8 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    début{n}    préc.{n}    menu
-f728-0248 d1e813911bdba797 {speed 255}motif ?{n}    1{n}    2{n}    début{n}    préc.{n}    menu
-f728-0252 7b09a6339a58a604 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    début{n}    préc.{n}    menu
-f728-0256 0c59afcd7ac11ffb {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    préc.{n}    menu
-f728-0259 1c70617e4871ea1e {speed 255}motif ?{n}    1{n}    préc.{n}    menu
+f728-0235 3f7a8b57cb902a0b {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    préc{n}    suiv{n}    menu
+f728-0242 90174e7dab5238d8 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    déb.{n}    préc{n}    menu
+f728-0248 d1e813911bdba797 {speed 255}motif ?{n}    1{n}    2{n}    déb.{n}    préc{n}    menu
+f728-0252 7b09a6339a58a604 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    déb.{n}    préc{n}    menu
+f728-0256 0c59afcd7ac11ffb {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    préc{n}    menu
+f728-0259 1c70617e4871ea1e {speed 255}motif ?{n}    1{n}    préc{n}    menu
 f728-0261 8885806bd1cc52c9 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    retour{n}    menu
 f728-0262 d45d8fecbf33f752 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    menu
 f728-0264 6d8d7e33337abd95 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    suiv{n}    menu
-f728-0270 aaab007ee1220896 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    préc.{n}    menu
+f728-0270 aaab007ee1220896 {speed 255}motif ?{n}    1{n}    2{n}    3{n}    4{n}    préc{n}    menu
 f728-0271 f29245237f72bc97 {speed 255}menuhenkou{n}    pad{n}    houkou{n}    menu
-f728-0273 ad76e8e8961e747e {speed 255}quoi ?{n}    aflag{n}    sflag{n}    raz{n}    quitter
+f728-0273 ad76e8e8961e747e {speed 255}quoi ?{n}    aflag{n}    sflag{n}    raz{n}    fin
 f728-0276 e15b938c51030c3a {speed 255}quoi ?{n}    yamamichi{n}    jiken{n}    kega{n}    kakoowari{n}    organ{n}    suivant{n}    
 f728-0282 2c0a303200853bbd {speed 255}quoi ?{n}    taoshita{n}    jouhou{n}    dashu{n}    kyuushitsu{n}    hehito{n}    koujou{n}    ubatta{n}    yug3{n}    last{n}    edit2
 f728-0293 6dac62d1fdec5a91 {speed 255}quoi ?{n}    evtflag{n}    argent{n}    endstart{n}    disk2{n}    raz{n}    quitter
 f728-0294 379a6b175c945134 {speed 255}fric ?{n}    pad{n}    non{n}    oui
 f728-0297 8c7f1d5c8474ae95 {speed 255}+9999999G
-f728-0298 b3a1fc7346c68cfa {speed 255}à zéro !
-f728-0299 633e5cd0c1a3458e {speed 255}ciao !
-f728-0300 357743e93b8d2c2c {speed 255}allpage7{n}page flag ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    quitter
+f728-0298 b3a1fc7346c68cfa {speed 255}raz !
+f728-0299 633e5cd0c1a3458e {speed 255}ciao
+f728-0300 357743e93b8d2c2c {speed 255}allpage7{n}p. flag ?{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    fin
 f728-0301 167f16854db8a65a {speed 255}activer flag ?{n}    minka{n}    enntotsu{n}    test{n}    kaigi2{n}    totsunyuu{n}    yuugata{n}    shinngataki{n}    shosennmae{n}    suivant{n}    quitter
 f728-0310 25feedfa4167004d {speed 255}activer flag ?{n}    resshabotsu{n}    zennyasai{n}    botsukaiwa{n}    saijoi{n}    joe{n}    joukennka{n}    boukyuusai{n}    retour{n}    suivant{n}    quitter
-f728-0318 1413037d02744b81 {speed 255}activer flag ?{n}    kaigi1{n}    mezame1{n}    taimenn{n}    battle{n}    mezame2{n}    reo{n}    hai{n}    retour{n}    suivant{n}    quitter
+f728-0318 1413037d02744b81 {speed 255}act. flag ?{n}    kaigi1{n}    mezame1{n}    taimenn{n}    battle{n}    mezame2{n}    reo{n}    hai{n}    retour{n}    suivant{n}    quitter
 f728-0326 08df439dcfab8d93 {speed 255}activer flag ?{n}    bal{n}    suza{n}    choutatsuya{n}    iinnkai{n}    uwasabanashi{n}    daisennsei{n}    daishippai{n}    retour{n}    suivant{n}    quitter
 f728-0334 15bfb1fd7737da0e {speed 255}activer flag ?{n}    Bketsui{n}    tougijou{n}    ookega{n}    akakikemono{n}    king{n}    miss{n}    doore{n}    retour{n}    suivant{n}    quitter
 f728-0342 b39ea26e4ac9177f {speed 255}activer flag ?{n}    doorw{n}    ressha{n}    shuusenn2{n}    shuusenn3{n}    tennboutou{n}    kitoushi{n}    saishuusenn{n}    retour{n}    suivant{n}    quitter
@@ -428,7 +428,7 @@ f728-0480 5b2327caf2c746c4 {speed 255}début de l'évt ?{n}    passé{n}    pad{
 f728-0487 e0d4221f831f179b {speed 255}histoire de l'évt ?{n}    passé{n}    pad{n}    quitter
 f728-0488 ad8823fa4be201a8 {speed 255}choisir évt{n}    fuyuutairiku{n}    ellieketsui{n}    gorugodanochi{n}    melcover{n}    karbonight{n}    zoharu{n}    powermind{n}    worlddeth{n}    retour{n}    quitter
 f728-0529 e2291262fe7411e5 {speed 255}test évt{n}    feidream{n}    mezameD{n}    taimenn{n}    sennrei{n}    mezameB{n}    iinnkai{n}    shitan{n}    shitanshippai{n}    suivant{n}    quitter
-f728-0543 21a4e968b89c41c4 {speed 255}annuler
+f728-0543 21a4e968b89c41c4 {speed 255}annul.
 f728-0544 4486904036e39777 {speed 255}test évt{n}    battring{n}    shinngataki{n}    ookege{n}    jikennshinnsou{n}    kenja{n}    king{n}    shinngataki2{n}    retour{n}    suivant{n}    quitter
 f728-0553 401baf04a6f7f58e {speed 255}évt ?{n}    tour{n}    minnka2
 f728-0557 aa11ce66aa637c25 {speed 255}test évt{n}    plese{n}    sennyuu{n}    rankerattack{n}    shukusei{n}    kislevbroken{n}    retour{n}    début{n}    quitter

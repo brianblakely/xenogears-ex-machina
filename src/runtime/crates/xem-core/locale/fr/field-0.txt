@@ -9,7 +9,7 @@ f000-0031 08a66e2e01437148 {speed 255}Carte d'un concepteur{n}          non merc
 f000-0032 574c60ada6055fa5 {speed 255}dokodemo door{n}      retour{n}      0-99{n}      100-199{n}      200-299{n}      300-399{n}      400-499{n}      500-599{n}      600-699{n}      700-799
 f000-0033 3e47fea4ff59a5f0       {speed 255}retour{n}      {num1 0}00-{num1 0}09{n}      {num1 0}10-{num1 0}19{n}      {num1 0}20-{num1 0}29{n}      {num1 0}30-{num1 0}39{n}      {num1 0}40-{num1 0}49{n}      {num1 0}50-{num1 0}59{n}      {num1 0}60-{num1 0}69{n}      {num1 0}70-{num1 0}79{n}      {num1 0}80-{num1 0}89{n}      {num1 0}90-{num1 0}99
 f000-0034 12ade478343a4de9       {speed 255}retour{n}      {num1 0}{num1 1}0{n}      {num1 0}{num1 1}1{n}      {num1 0}{num1 1}2{n}      {num1 0}{num1 1}3{n}      {num1 0}{num1 1}4{n}      {num1 0}{num1 1}5{n}      {num1 0}{num1 1}6{n}      {num1 0}{num1 1}7{n}      {num1 0}{num1 1}8{n}      {num1 0}{num1 1}9
-f000-0035 8e3436b84e53cfcd {speed 255}map{num1 2}、mappara ?{n}      {num1 0}0{n}      {num1 0}1{n}      {num1 0}2{n}      {num1 0}3{n}      {num1 0}4{n}      {num1 0}5{n}      {num1 0}6{n}      {num1 0}7{n}      {num1 0}8{n}      {num1 0}9{n}      +10{n}      aléatoire{n}      encore
+f000-0035 8e3436b84e53cfcd {speed 255}map{num1 2}、mappara?{n}      {num1 0}0{n}      {num1 0}1{n}      {num1 0}2{n}      {num1 0}3{n}      {num1 0}4{n}      {num1 0}5{n}      {num1 0}6{n}      {num1 0}7{n}      {num1 0}8{n}      {num1 0}9{n}      +10{n}      aléatoire{n}      encore
 f000-0036 01150d723474ecfc soyez honnête, svp !!
 f000-0037 4af5da0419fb0906 {speed 255}aller à Lahan ?{n}          oui{n}          non
 f000-0038 7c28ce6894a3a70d {speed 255}Voir l'aperçu ?{n}    oui{n}    non
@@ -19,15 +19,15 @@ f000-0041 4ecd32c8544695fc {speed 255}écouter...{n}      musique{n}      effets
 f000-0042 f4b366803ecc4b40     {speed 255}retour{n}    {num1 0}00-{num1 0}09{n}    {num1 0}10-{num1 0}19{n}    {num1 0}20-{num1 0}29{n}    {num1 0}30-{num1 0}39{n}    {num1 0}40-{num1 0}49{n}    {num1 0}50-{num1 0}59{n}    {num1 0}60-{num1 0}69{n}    {num1 0}70-{num1 0}79{n}    {num1 0}80-{num1 0}89{n}    {num1 0}90-{num1 0}99
 f000-0043 4c8e4daf7e0f07e1     {speed 255}retour{n}    {num1 0}{num1 1}0{n}    {num1 0}{num1 1}1{n}    {num1 0}{num1 1}2{n}    {num1 0}{num1 1}3{n}    {num1 0}{num1 1}4{n}    {num1 0}{num1 1}5{n}    {num1 0}{num1 1}6{n}    {num1 0}{num1 1}7{n}    {num1 0}{num1 1}8{n}    {num1 0}{num1 1}9
 f000-0044 7eb9ecf216ecbbce {speed 255}musique n.{num1 0}  changer {num1 1}{n}          suivante{n}          début{n}          précédente{n}          info{n}          vol{n}          ton{n}          tempo{n}          retour{n}appuyez R1 : monte{n}     L1 : baisse{n}     X : défaut
-f000-0045 58c92161404c6556 {speed 255}on peut changer le 'vol'
-f000-0046 502950eb178daaad {speed 255}on peut changer le 'ton'
-f000-0047 cbdb587a2b725894 {speed 255}on peut changer le 'tempo'
+f000-0045 58c92161404c6556 {speed 255}modifier le 'vol'
+f000-0046 502950eb178daaad {speed 255}modifier le 'ton'
+f000-0047 cbdb587a2b725894 {speed 255}modifier le 'tempo'
 f000-0048 9a819fcbff6b29f9 {speed 255}            actuel /  déf{n}vol        {signed 0}       /127{n}ton        {signed 1}       /0 {n}tempo      {signed 2}       /256
 f000-0049 451597426cf2923a     {speed 255}retour{n}    0-99{n}    100-199{n}    200-299{n}    300-399{n}    400-499{n}    500-599
-f000-0052 7e03ad4dc55f0031 {speed 255}effet num. {num1 2}{n}          encore{n}          suivant{n}          précédent{n}          av. musique{n}          ss musique{n}          retour
-f000-0053 dc1f14d63ff8ef71 {speed 255}test des visages{n}    voir  actuel : {num1 0}{n}    +1{n}    -1{n}    +10{n}    -10{n}    retour
-f000-0054 123de4575a72e906 {speed 255}  actuel :{num1 0}{n}    +1{n}    -1{n}    retour
-f000-0055 f18eac83e3364b09 {speed 255}gear{n}      marche{n}      arrêt{n}      un par un{n}      fin
+f000-0052 7e03ad4dc55f0031 {speed 255}effet num. {num1 2}{n}          encore{n}          suivant{n}          précédent{n}          mus. oui{n}          mus. non{n}          retour
+f000-0053 dc1f14d63ff8ef71 {speed 255}test des visages{n}    voir  act.={num1 0}{n}    +1{n}    -1{n}    +10{n}    -10{n}    retour
+f000-0054 123de4575a72e906 {speed 255}  act. ={num1 0}{n}    +1{n}    -1{n}    retour
+f000-0055 f18eac83e3364b09 {speed 255}gear{n}      marche{n}      arrêt{n}      chacun{n}      fin
 f001-0000 588189f49f7f10f6 Fei{n}"Ah, il traîne dans le{n}coin...{p}Il pense au mariage de sa{n}soeur, et on dirait qu'il{n}n'arrive pas à se calmer.{p}Il adore crâner et jouer{n}les grands, mais ce n'est{n}qu'un gamin... C'est{n}plutôt mignon, non ?"
 f001-0001 c1191e6a5f80d94c Fei{n}"Il doit être dans le{n}coin... à faire ses{n}bêtises habituelles !"
 f001-0002 47bad84380235cd1 Fei{n}"Ouf ! C'était moins{n}une...{p}Ce puits est dangereux...{wait 20}{n}Je ferais mieux de ne plus{n}m'en approcher."
@@ -104,7 +104,7 @@ f001-0075 18eb59ac792ce7c8 Salut, Fei ! Alice est{n}vraiment devenue jolie,{n}he
 f001-0076 76690a23b24e3d24 Ah, bonjour, Fei.{p}Quand j'y pense, ça fait{n}un bon moment que tu es{n}arrivé au village...{p}J'imagine que tu ne te{n}souviens toujours de rien{n}d'avant ton arrivée ?{p}Ce doit être terrible de{n}ne pas savoir qui tu es{n}vraiment...{p}Oh, pardon. Comme je suis{n}impoli...{wait 20} Ne le prends pas{n}mal, je t'en prie.
 f001-0077 cb333f68f8843b65 Désolé. C'était tout{n}l'Aquasol que j'avais.{p}Mais de mon engrais{n}spécial,{n}j'en ai à revendre. T'en{n}veux ? Hahaha !
 f001-0078 e718e9717a70772c Ah, d'accord. Tiens !
-f001-0079 1b3680bd46e465b4 Vous obtenez l'Aquasol.
+f001-0079 1b3680bd46e465b4 Aquasol obtenu.
 f001-0080 888243d0fd8ea508 Ah oui, j'avais oublié !{n}Prends un peu de mon{n}Aquasol maison !{p}J'y ai mis mon engrais{n}spécial, alors ça doit{n}marcher du tonnerre !{n}Ha ha ha !
 f001-0082 f2f2c28e2cdf52dd Hmmm...{wait 20} Ah, je me{n}demande juste quoi planter{n}maintenant.
 f001-0083 63db700571d996d8 Entretenir un champ, ça{n}demande beaucoup de{n}travail. Mais c'est un{n}sentiment formidable, Fei.{p}Sur cette vaste terre naît{n}une vie nouvelle...{wait 20} Je ne{n}dis pas que c'est nous{n}qui la créons.{p}La terre, la pluie et le{n}soleil s'unissent pour{n}nourrir ces vies qui{n}luttent pour grandir.{p}Nous, on donne juste{n}un petit coup de main.
@@ -125,15 +125,15 @@ f002-0015 a17e3ade8db64418 Fei{n}"Oui, ne t'inquiète pas.{p}S'il est encore au{
 f002-0016 53a8d1619c0cd7f1 Fei{n}"D'accord ! Mais, Doc...{n}Faites attention,{n}hein !!?"
 f002-0018 7659b5dd83aea4c8 Fei{n}"...{wait 20}{n}Qu'est-ce que c'est !?"
 f002-0021 c1eb6484a7655ce8 Fei{n}"Attendez !!{wait 10}{n}Ne tirez pas !!"
-f002-0023 54418d233359c825 Citan{n}"Je sais.{wait 15} Mais pourquoi{n}livrer bataille justement{n}ici...!?{p}Tout le monde va{n}bien ?"
-f002-0024 e37f9223b716696b Citan{n}"Non, Timothy,{n}attendez !!{p}Vous, Alice et le{n}reste des villageois{n}devez vous réfugier en{n}lieu plus sûr !"
+f002-0023 54418d233359c825 Citan{n}"Je sais.{wait 15} Mais pourquoi{n}se battre justement{n}ici...!?{p}Tout le monde{n}va bien ?"
+f002-0024 e37f9223b716696b Citan{n}"Non, Timothy,{n}attendez !!{p}Vous, Alice et le{n}reste des villageois{n}devez fuir vers un{n}lieu plus sûr !"
 f002-0025 c6c726832467516c Citan{n}"Je comprends ce que vous{n}ressentez, mais laissez le{n}reste à Fei et à moi !{p}Votre priorité doit être{n}votre propre sécurité...{p}Timothy, votre{n}responsabilité est de{n}protéger Alice !"
-f002-0026 5f9dfb20b07734d3 Citan{n}"Maintenant, tous les{n}deux, vite !!"
+f002-0026 5f9dfb20b07734d3 Citan{n}"Allez, vous deux,{n}vite !!"
 f002-0027 61a33c980525feaf Citan{n}"Je vais voir dans les{n}maisons s'il reste{n}quelqu'un.{p}Fei, faites le tour du{n}village, je vous prie, et{n}guidez les retardataires{n}vers un lieu sûr !"
 f002-0028 40e8579c4309a530 Citan{n}"Vous aussi !"
-f002-0029 510cfb407398e065 Citan{n}"Hein...{n}Fei !?"
-f002-0030 c062e5afcb5d6593 Citan{n}"Arrêtez, Fei !!"
-f002-0031 bcb92b9da565aa09 Citan{n}"Ne faites pas ça, Fei !{wait 20}{n}Vous ne devez pas{n}vous battre ici...!!"
+f002-0029 510cfb407398e065 Citan{n}"Hein ?{n}Fei !?"
+f002-0030 c062e5afcb5d6593 Citan{n}"Fei, non !!"
+f002-0031 bcb92b9da565aa09 Citan{n}"Non, Fei, arrêtez !{wait 20}{n}Vous ne devez pas{n}vous battre ici...!!"
 f002-0033 8924a6f075f53e82 Citan{n}"Fei...!!{wait 30} Cette façon de{n}combattre...{p}Oh, non... Ce n'est pas{n}bon du tout !{wait 20} Si 'il'{n}s'éveille ici..."
 f002-0034 6f19f20a46b2c10d Citan{n}"Tu es revenu pour sauver{n}la robe de mariée de ta{n}soeur...!?"
 f002-0035 65159303eb122979 Citan{n}"Heh... Tu es vraiment un{n}petit garçon{n}sentimental...!"
@@ -153,7 +153,7 @@ f002-0049 126c8e60652400f0 Dan{n}"Pardon, docteur Uzuki !{n}J'étais sorti du vi
 f002-0051 a067922a4b22d980 Dan{n}"Fei est...{wait 20}{n}dans ce monstre !?"
 f003-0000 33b1ff61fd10eafc Uh...{wait 30} Hein...?
 f003-0001 066c6aec38e93fb9 Fei{n}"Hein...!{wait 20}{n}Où suis-je...!?"
-f003-0002 3e4033ba2d9472d8 Fei{n}"Doc !!"
+f003-0002 3e4033ba2d9472d8 Fei{n}"Doc !"
 f003-0003 245d8f4e2285ea56 Fei{n}"Doc... Qu'est-ce qui{n}s'est passé...?{p}Où sont le chef Lee,{n}Timothy, Alice...?{wait 20}{n}Qu'est-ce que j'ai...?"
 f003-0004 79bc3863a05696f8 Fei{n}"...!?{wait 20}{n}Dan, comment ça...?"
 f003-0006 73c54eb131f27fdf Fei{n}"Dan...!!{done 30}{n}T, tout le monde...{wait 10}
@@ -166,8 +166,8 @@ f003-0015 9709d35802a4cbb4 Citan{n}"Oui...{wait 20}{n}Eh bien, c'est que..."
 f003-0017 cab54e001ec230c6 Pourquoi fallait-il{n}que tu te battes en{n}plein village...?
 f003-0018 310f69abe8f8169a Comment tu sais{n}piloter un monstre{n}pareil...?
 f003-0019 658cacb6090c1bf8 Maman...?{wait 20}{n}Où est maman...?
-f003-0020 5ee39354490f0597 Tu vois ? Je l'avais{n}dit...{wait 20}{n}J'avais dit que laisser un{n}inconnu entrer au village{n}nous porterait malheur...
-f003-0021 8aeb417746383083 Aïïïe...{wait 20}{n}J'ai mal... Si mal...
+f003-0020 5ee39354490f0597 Je te l'avais dit...{wait 20}{n}Accueillir un inconnu{n}au village, j'avais dit{n}que ça nous porterait{n}malheur...
+f003-0021 8aeb417746383083 Aïïïe...{wait 20}{n}Mal... J'ai mal...
 f003-0022 3066e5107638e5ea Citan{n}"Dan...{wait 20}{p}Rien ne sert de rejeter{n}toute la faute sur Fei.{p}Et puis, tu sais bien que{n}Fei ne maîtrisait pas la{n}panne de ce Gear."
 f003-0023 59feae74917ed0f9 Citan{n}"Mieux vaut peut-être le{n}laisser seul un moment...{p}Il ne sait que faire de sa{n}douleur, de sa colère..."
 f003-0024 c8626a7780c7e5cd Citan{n}"Et, Fei...{wait 20} Il serait{n}peut-être bon que vous{n}quittiez cet endroit.{p}Rien ne garantit que{n}l'unité{n}d'hier n'enverra pas de{n}renforts...{p}Ils voudront sans doute{n}savoir ce qui est arrivé{n}à leurs camarades.{p}De plus, si vous restez{n}ici, je doute que{n}l'ambiance soit des plus{n}gaies... si vous me suivez.{p}C'est sans doute le mieux,{n}pour vous comme pour tous{n}les autres villageois."
@@ -183,11 +183,11 @@ f003-0034 598c0d623e5e878c Dan{n}"Mais...{wait 30}{n}Mais...!!"
 f003-0035 8cafb4fb373b30b4 Dan{n}"JE TE DÉTESTE !!"
 f003-0036 370e5f2a79db0c18 {speed 1}Tu as tué tout le monde{n}avec ce monstre...!!
 f003-0037 dd8c24e224b2d592 {speed 1}Assassin !!{wait 20} Ma{n}soeur...{wait 20}{n}Rends-moi ma soeur !!
-f003-0039 562e6b20cb68d565 Mon Dieu...!{done 30}
+f003-0039 562e6b20cb68d565 Mince...!{done 30}
 f003-0040 c683f13b4fa74acd Non ! Va-t'en !{n}J'ai peur...{done 30}
 f003-0041 cb0f96c2c8c49dad Ouiiinnn...{done 30}
 f004-0000 fefb9e9b10afc2b4 Le village reculé de Lahan,{n} aux confins d'Aveh,{n}à la frontière de Kislev.{done 160}
-f004-0001 76bcceaa7e0c2664 C'est ici que tout{n}commence.{done 150}
+f004-0001 76bcceaa7e0c2664 C'est ici que tout commence.{done 150}
 f004-0002 130c0dad4621c06b Le continent d'Ignas, situé dans{n}l'hémisphère nord de notre monde.{wait 30}{n}Sur ce continent, le plus vaste,{n}une guerre acharnée oppose deux{n}pays depuis des siècles.{wait 30}{n}Au nord se trouve l'Empire de{n}Kislev, et au sud, le royaume{n}désertique d'Aveh.{wait 30}{n}Elle dure depuis si longtemps{n}que le peuple en a oublié la{n}cause, et ne connaît que le vain{n}cycle de la haine et du malheur.{wait 200}{wait 200}{wait 200}
 f004-0003 c4fe3af5aab3a918 Cette guerre sans fin allait{n}bientôt prendre un tour terrible.{wait 30}{n}Car l'Ethos,{wait 10} une institution qui{n}préserve la culture du monde,{wait 10}{n}s'était mis à restaurer outils et{n}armes exhumés des ruines d'une{n}civilisation antique.{wait 30}{n}Les deux pays fouillèrent alors{n}ces ruines et firent restaurer{n}leurs trouvailles par l'Ethos{n}afin d'accroître leur puissance.{wait 200}{wait 220}{wait 220}
 f004-0004 4d747db9b832bc67 Les armes exhumées des ruines{n}changèrent profondément la{n}nature de la guerre.{wait 30}{n}L'issue des batailles entre les{n}deux pays ne se jouait plus{n}d'homme à homme, mais par les{n}'Gears'{wait 10} - gigantesques machines{n}de combat humanoïdes -{wait 10}{n}extraites du fond des ruines.{wait 200}{wait 200}{wait 200}
@@ -260,9 +260,9 @@ f006-0004 c6f2db3b5c60ff7d Tu vas m'attendre ?{wait 20}{n}    Bien sûr, j'atten
 f006-0005 b6dbdafbd2b2a365 Vrai de vrai !?{wait 20} Alors{n}zure-le{n}sur ton petit doigt...!{p}Croix de bois, croix de{n}fer,{n}si tu mens, tu vas en{n}enfer !{p}Alors c'est promis...!{wait 20}{n}Notre amour brûlant est{n}scellé par des liens{n}incassables !
 f006-0006 6ae396334149d71f Alors tu t'en fisses de{n}moi, Fei...{wait 20} T'as un coeur{n}de pierre !{wait 20} Ze te parle{n}plus ! Hmpf !
 f006-0007 ad7031bcd9399619 Hihi...{wait 20} N'oublie pas notre{n}promesse, Fei.
-f007-0000 4f6a66f4e8a36beb Pierre !
+f007-0000 4f6a66f4e8a36beb Pierre
 f007-0001 bd4555daf59e59eb Ciseaux !!
-f007-0002 604c9404b939cac6 Feuille !!
+f007-0002 604c9404b939cac6 Feuille
 f007-0003 94340836c493584b Je vois que tu as battu mon{n}mari !{wait 20} Bon, ça devrait calmer{n}un peu sa passion maniaque{n}pour le jeu.{p}Mais je vois que toi aussi,{n}tu as pris goût au chifoumi !
 f007-0004 ff08c7e9507badab Ah là là...{wait 20} La passion de{n}mon mari pour le chifoumi{n}va nous ruiner...{p}L'autre jour, il a rêvé{n}qu'on le sacrait héros,{n}'Roi du Chifoumi'...{p}Si quelqu'un pouvait le{n}battre pour de bon et le{n}ramener sur terre...{wait 25}{n}Mais il est trop fort...
 f007-0005 e4d91002b870e18d J'abandonne.{wait 20} Tu m'as battu{n}à plate couture, Fei.{p}Ça prouve que je dois{n}m'entraîner davantage.
@@ -278,27 +278,27 @@ f007-0015 d73935ec39ac1e69 Il me faut un peu de{n}risque pour pimenter la{n}part
 f007-0016 6b868cd2019ca131 C'est parti !
 f007-0017 7ba7eb2b557f4d50 Chi... fou...{wait 10}{speed 255}{n}    Pierre{n}    Ciseaux{n}    Feuille {skip 128}{done 1}
 f007-0019 3f990ec618762b0f Oh, pierre aussi !?{n}Pas mal ! Pas mal !{n}On recommence...{done 30}
-f007-0021 854ce3235812a010 Ça alors, pierre !?
+f007-0021 854ce3235812a010 Non, pierre !?
 f007-0022 dd4639ee3ab3cd8a Zut, tu m'as eu !{n}J'y crois pas !{n}Aarrgh...!!
-f007-0024 44a60dc9f6957525 Pierre !?{n}Tu as joué pierre ?
+f007-0024 44a60dc9f6957525 Pierre !?{n}Toi, pierre ?
 f007-0025 af2f93cd2642c0e7 Muahaha.{n}Sérieux ?{n}Ouais ! Gagné !!{n}Ah-hahaha...!!
-f007-0027 95e45ba88781fa48 Ciseaux !{n}Tu as joué ciseaux !?
+f007-0027 95e45ba88781fa48 Ciseaux !{n}Toi, ciseaux !?
 f007-0028 3c225706684a31e3 Ouais ! Gagné !{wait 20}{n}J'assure, baby !{n}Prends ça !!
 f007-0030 4370e73552b7ab06 Hé, ciseaux aussi, hein ?{n}Hmmm... Alors tu joues ainsi ?{pause}{n}Bon, on recommence...{done 30}
-f007-0032 37ec4d2d9e50b1fd Oh, non ! Ciseaux ?{wait 20}{n}Tu as joué ciseaux !?
-f007-0033 1099dd22e4d38977 Ouuuaaahh ! P, perdu !{wait 20}{n}C'est pas possible !!{n}Sale gamin !
+f007-0032 37ec4d2d9e50b1fd Oh non ! Ciseaux ?{wait 20}{n}Toi, ciseaux !?
+f007-0033 1099dd22e4d38977 Ouaaah ! P, perdu !{wait 20}{n}Impossible !!{n}Sale gamin !
 f007-0035 3053c5ef08f45eca Quoi !? Feuille !?{wait 20}{n}Feuille !?
-f007-0036 2950bda039c40d5b Moi ? Perdre !?{wait 20}{n}C'est ridicule...!{n}Ô ciel, quelle déveine !
-f007-0037 e6dbe5e918f92e40 Grraaaaahhh !!{n}Battu par un amateur !?{wait 20}{n}M, moi...!? MOOOOOOOI...!!
+f007-0036 2950bda039c40d5b Moi ? Perdre !?{wait 20}{n}C'est ridicule...!{n}Quelle déveine !
+f007-0037 e6dbe5e918f92e40 Grraaaaahhh !!{n}Battu par un amateur !?{wait 20}{n}M, moi...!? MOOOOOOI...!!
 f007-0038 9ff3a638dde44410 Vous recevez 50G.
 f007-0039 0467ca280cf57bb3 Argh !? 4 défaites !?{n}Comment ai-je pu...!?{pause}{n}C'est très mauvais !!{n}Si je perds encore...!!
-f007-0040 74a2bb7682f255e4 ...{wait 30}{n}......{wait 50}{n}C'est fini...
-f007-0042 488248fee9266dce Ah, feuille !{wait 20}{n}Tu as joué feuille !?
+f007-0040 74a2bb7682f255e4 ...{wait 30}{n}......{wait 50}{n}Terminé...
+f007-0042 488248fee9266dce Ah, feuille !{wait 20}{n}Toi, feuille !?
 f007-0043 e013b7e7298db571 Ouais ! Gagné, paie !{wait 20}{n}Alléluia ! Mon garçon...{n}c'était trop facile !!
-f007-0044 bfcd834be917ad0e Gyahahahaha !! Dommage,{n}Fei !{wait 20} Tu as du pain sur la{n}planche avant d'en gagner 5{n}de suite !!
+f007-0044 bfcd834be917ad0e Gyahahahaha !! Dommage, Fei !{wait 20}{n}Il te faut cent ans de plus{n}pour en gagner 5 de suite !!
 f007-0045 6785e9134785cce9 Vous perdez 50G.
 f007-0047 2953004534873bdb Oh, feuille aussi.{n}Hmmm, je vois, je vois...{pause}{n}C'est reparti...{done 30}
-f007-0048 0458025fc1901a67 Hé...!!{wait 40} Hé !{n}T'as joué en retard !!{n}Sale tricheur !!{p}Seuls les lâches font ça.{wait 20}{n}L'amende est de 15G.{n}Allez, aboule le fric !
+f007-0048 0458025fc1901a67 Hé...!!{wait 40} Hé !{n}T'es en retard !!{n}Sale tricheur !!{p}Ça, c'est lâche.{wait 20}{n}L'amende est de 15G.{n}Allez, aboule !
 f007-0049 7262d2ecb8535a94 Vous perdez 15G.
 f007-0050 e29d0a9d5fdc6f3b Tss ! T'as même pas 15G !{wait 20}{n}T'es fauché ou quoi ?{wait 20}{n}Franchement !
 f008-0000 ecffbcbfecb2db02 Fei{n}"Lahan... J'aime cet{n}endroit.{p}Le chef du village, le{n}chef Lee, prend si bien{n}soin de moi...{p}Tout le monde au village{n}m'a accueilli avec tant{n}de gentillesse..."
@@ -374,11 +374,11 @@ f012-0009 2b8f588dfb9414c6 Fei{n}"Ne t'en fais pas !{n}Ce n'est pas un problème
 f012-0010 7abcac559f02e402 Fei{n}"Bon, je monte là-haut et{n}je te rapporte tout ça !"
 f012-0011 e93247b0203bc9cc Fei{n}"Hein...?{wait 30} Tu veux que je{n}rapporte autre chose de{n}chez Citan ?"
 f012-0014 1179c68fe217f435 Fei{n}"...{wait 30}{n}Bon, je ferais mieux{n}d'y aller !"
-f012-0015 429e2778de166bf9 Alice{n}"...{wait 30}{n}Salue le docteur Uzuki{n}de ma part..."
-f012-0016 a911f2cdbd59dfd8 Alice{n}"Ah !?{wait 20}{n}Fei, tu m'as fait peur !"
+f012-0015 429e2778de166bf9 Alice{n}"...{wait 30}{n}Salue le docteur{n}Uzuki pour moi..."
+f012-0016 a911f2cdbd59dfd8 Alice{n}"Ah !?{wait 20}{n}Fei, quelle peur !"
 f012-0017 2cece9428ab51320 Alice{n}"Oui... Je viens de finir.{wait 30}{n}Ça m'a demandé plus de{n}travail que prévu."
 f012-0018 18e1d7bafd6ddda2 Alice{n}"Merci.{n}..."
-f012-0020 04ab2861b86a4d9a Alice{n}"Ah, euh, Fei..."
+f012-0020 04ab2861b86a4d9a Alice{n}"Euh, Fei..."
 f012-0021 b60743a9d7a92866 Alice{n}"Ah, ce n'est rien..."
 f012-0022 ac4aaa9e5f0d83bf Alice{n}"Hein...{wait 30}{n}Ah, c'est vrai..."
 f012-0023 3417f04a06bb00fc Alice{n}"Fei,{wait 20}{n}tu as vu Dan ?"
@@ -388,14 +388,14 @@ f012-0026 7a6f02e3053a634e Alice{n}"Tu ferais ça ?{wait 20}{n}Ah, mais je ne pe
 f012-0027 4929d22a9bb05450 Alice{n}"Hi hi...{wait 20}{n}Ça, c'est mon Fei !"
 f012-0028 9a888e76e2c08d92 Alice{n}"Ah...{wait 20}{n}Fei, attends !"
 f012-0029 708ca834a20bc478 Alice{n}"Non...{wait 20}{n}Ce n'est pas ça..."
-f012-0030 0788c43677fd8787 Alice{n}"Fei...{wait 20}{n}Tu as déjà vu les choses{n}de cette façon ?"
+f012-0030 0788c43677fd8787 Alice{n}"Fei...{wait 20}{n}Tu as déjà vu les{n}choses ainsi ?"
 f012-0031 551f3277d6a78b53 Alice{n}"Si... Si,{wait 20} tu{n}étais né{n}dans ce village...{p}Et si on s'était{n}rencontrés plus{n}tôt..."
-f012-0032 e6d08ec9324664eb Alice{n}"...{wait 20}{n}Ah, ce n'est rien.{n}Désolée..."
+f012-0032 e6d08ec9324664eb Alice{n}"...{wait 20}{n}Oh, rien du tout.{n}Désolée..."
 f012-0033 a7d3e5df5df1f8a5 Alice{n}"Ah, d'accord...{p}Sois prudent sur le{n}Sentier du Mont.{wait 20}{n}Et salue le docteur{n}Uzuki pour moi !"
-f012-0034 aeb2166cfb073b10 Alice{n}"...{wait 20}{n}C'est le destin...?"
+f012-0034 aeb2166cfb073b10 Alice{n}"...{wait 20}{n}Le destin...?"
 f013-0000 16e65c7239073e39 {speed 255}{n} {n} {n} {n} {n}Au prochain épisode de{n}     "XENOGEARS"...{done 180}{done 180}
-f013-0001 686d5d980920a5cf Fei{n}"Alors c'est demain,{n}hein... Ton mariage avec{n}Alice ! Quel grand jour !"
-f013-0002 59f88d903e64426a Fei{n}"Hé, euh, Timothy.{n}Je voulais juste vous{n}remercier, toi et Alice...{p}Il y a 3 ans, je me suis{n}réveillé dans ce village{n}sans aucun souvenir...{p}Je ne savais ni qui{n}j'étais, ni d'où je{n}venais, ni ce que j'avais{n}fait jusqu'à ce jour...{p}Je ne me souvenais de{n}rien du tout..."
+f013-0001 686d5d980920a5cf Fei{n}"C'est demain, hein...{n}Ton mariage avec Alice !{n}Quel grand jour !"
+f013-0002 59f88d903e64426a Fei{n}"Hé, euh, Timothy.{n}Je veux vous remercier,{n}toi et Alice...{p}Il y a 3 ans, je me suis{n}réveillé dans ce village{n}sans aucun souvenir...{p}Je ne savais ni qui{n}j'étais, ni d'où je{n}venais, ni ce que j'avais{n}fait jusqu'à ce jour...{p}Je ne me souvenais de{n}rien du tout..."
 f013-0003 660808930b7849dd Fei{n}"Malgré tout, Alice et toi{n}m'avez soutenu et donné la{n}force de continuer.{p}Sans vous deux à mes{n}côtés, je ne sais pas ce{n}que je serais devenu..."
 f013-0004 9588770aad495d00 Fei{n}"Timothy...{wait 20}{n}Du fond du{n}coeur, merci !{p}Maintenant, Alice et{n}toi,{n}soyez heureux{n}pour toujours !"
 f013-0005 6908a9d2c16f6c15 Fei{n}"Bien sûr !"
@@ -428,17 +428,17 @@ f013-0031 c0659b841957da85 Père de Timothy{n}"Bonjour, Fei.{p}Notre Timothy est
 f013-0032 ce38d8b6eeba1eda Oncle d'Alice{n}"Je ne sais pas si je dois{n}être heureux ou triste...{p}Demain, notre petite{n}Alice deviendra l'épouse{n}de quelqu'un...{p}Je savais que ce jour{n}viendrait !{wait 20}{n}...C'est le pire quand on{n}élève une fille !"
 f013-0033 369079979316ddb4 Ah là là...{done 20}
 f013-0034 868f07d5fad5eb39 Tu sais, Fei, je suis sûre{n}que notre chef te considère{n}comme son propre{n}petit-fils...{p}Sans aucune famille pendant{n}toutes ces années, à vivre{n}seul si longtemps...{p}C'est pour ça qu'il t'aime{n}tant !
-f014-0000 8362ee9d684bb535 Fei{n}"Ouf !{wait 20}{n}Je crois que j'ai fini..."
-f014-0001 8889d17081d313fb Fei{n}"Bon...{n}Maintenant, une{n}petite pause."
+f014-0000 8362ee9d684bb535 Fei{n}"Ouf !{wait 20}{n}J'ai presque fini..."
+f014-0001 8889d17081d313fb Fei{n}"Bon...{n}C'est l'heure{n}d'une pause."
 f014-0002 aa2a296a1802389f Oups !{done 30}
 f014-0003 2d0be3f83517b6d7 Vous obtenez une Toile.
 f014-0004 cad585689be5b9ef Se coucher ?{n}    Oui{n}    Non
-f014-0005 2fa7ce8f43bf2244 Vous prenez votre bas{n}de laine.
-f014-0006 a667c49397d85cb1 Vous recevez 200G.
-f014-0007 98315d937bb2a980 Servante{n}"Mais maintenant, tu es si{n}robuste et en bonne{n}santé...{p}Et c'est grâce à notre{n}chef Lee. Tu dois lui être{n}très reconnaissant !"
+f014-0005 2fa7ce8f43bf2244 Magot caché récupéré.
+f014-0006 a667c49397d85cb1 200G obtenus.
+f014-0007 98315d937bb2a980 Servante{n}"Mais maintenant, tu es si{n}robuste et en bonne santé...{p}Et c'est grâce à notre{n}chef Lee. Tu dois lui être{n}très reconnaissant !"
 f014-0008 ef44cab05173053e Servante{n}"Bonjour, Fei. Tu as une{n}mine superbe aujourd'hui."
 f014-0009 f429b66fcce4d019 Servante{n}"Comme le temps passe !{wait 20} Ça fait{n}déjà 3 ans que tu es arrivé{n}dans notre village...{p}Quand on t'a vu arriver couvert{n}de sang et trempé, à vrai dire,{n}personne ne pensait que tu{n}survivrais.{p}Et cet étrange homme masqué qui{n}t'a amené ici ce jour-là... Tu{n}crois qu'il pourrait être ton{n}vrai père ?{p}Tu ne te souviens de rien ? On{n}dit que tu faisais d'horribles{n}cauchemars et que tu appelais{n}ton père sans cesse."
-f014-0010 9d54bbf714f134c0 Servante{n}"Ça ne me dérange pas que{n}tu{n}aimes peindre et tout ça...{p}Mais s'il te plaît, ne mets{n}pas tant de désordre.{wait 30}{n}Nettoyer, ce n'est pas{n}facile !"
+f014-0010 9d54bbf714f134c0 Servante{n}"Ça ne me dérange pas que tu{n}aimes peindre et tout ça...{p}Mais s'il te plaît, évite{n}de mettre tant de désordre.{wait 30}{n}Nettoyer n'est pas facile !"
 f015-0000 d5db1033ab947c50 Fei{n}"...?{wait 60}{n}Qu'est-ce que c'était, à{n}l'instant...?"
 f015-0001 5422639210d336d3 Ah, c'est toi, Fei !!
 f015-0002 39e111bd41f749d7 Le bord de la falaise s'est{n}effondré sous les pluies.{wait 30}{n}Toi, Fei, tu peux passer{n}d'un saut en longueur...{p}Mais moi, j'ai trop peur...{wait 30}{n}    Un saut en longueur ?{n}    C'est facile, regarde !!
@@ -474,19 +474,19 @@ f015-0039 2aa44683196a4561 Fei{n}"Ceux que je viens de{n}voir ?"
 f015-0040 b97803cd01116844 Citan{n}"Dépêchons-nous !"
 f015-0041 5c88ba6f88fc51d7 Fei{n}"D'accord !"
 f015-0042 58ca7fa88a0171df Fei{n}"La maison du docteur{n}Uzuki est après le pont,{n}en montant vers le nord."
-f015-0045 8546cda79cb651d8 {item} :{n}vous en avez le maximum.
+f015-0045 8546cda79cb651d8 Vous avez trop de{n}{item}.
 f015-0046 a3548d0847f91de5  {n} Reçu : {item}.
 f017-0000 16e23818a3638a10 Fei{n}"Où êtes-vous, Doc ?"
 f017-0001 2322781c5354fcab Fei{n}"Q, qu'est-ce qui{n}se passe ?"
 f017-0002 e3aed88782829986 Fei{n}"Doc !!{wait 20}{n}Alors vous{n}étiez là !"
 f017-0003 aa888cfc7cdfb558 Fei{n}"Ça va, Doc ?{wait 20}{n}Qu'est-ce que vous{n}faites là-haut ?"
-f017-0004 0bfb29384c5d8f69 Fei{n}"D'accord, Doc. Mais ne{n}traînez pas, hein ?{p}Il fera nuit avant que{n}vous ne le remarquiez."
+f017-0004 0bfb29384c5d8f69 Fei{n}"D'accord, Doc.{n}Mais faites vite.{p}La nuit tombe vite,{n}vous savez."
 f017-0005 1a2440e60fcd7830 Fei{n}"Bon, bonne nuit, Doc."
 f017-0006 620a52ab370e32dc Fei{n}"Qu'y a-t-il, Doc ?{p}Il n'y a pas de quoi{n}s'inquiéter !{wait 20} Bon, en{n}tout{n}cas, à demain."
 f017-0007 e93071c5e6c57070 Citan{n}"Bonne nuit, Fei.{wait 20}{n}Et soyez prudent, je{n}vous prie !"
-f017-0008 74195879c87e7021 Citan{n}"Oh, Fei !{wait 30}{n}Content de vous voir."
+f017-0008 74195879c87e7021 Citan{n}"Oh, Fei !{wait 30}{n}Bienvenue."
 f017-0009 02baffcb9fb631c7 Citan{n}"Je voulais essayer de{n}restaurer ce Crabe{n}Terrestre.{p}Ah, et ne vous souciez pas{n}de cette explosion.{wait 20}{n}Ça arrive tout le temps.{n}Ha, ha, ha...!"
-f017-0010 50372f3390d200e2 Citan{n}"Pouvez-vous patienter un{n}peu ?{wait 20} J'ai presque fini{n}ma journée.{p}Ah, oui. Dans la remise,{n}il y a quelque chose{n}d'intéressant...{wait 20} Pourquoi{n}ne pas y jeter un oeil !?"
+f017-0010 50372f3390d200e2 Citan{n}"Pouvez-vous attendre ?{wait 20}{n}J'ai presque fini ma{n}journée.{p}Ah, oui. Dans la remise,{n}il y a quelque chose{n}d'intéressant...{wait 20}{n}Allez y jeter un oeil !"
 f017-0011 8d4392e65497fd5d Citan{n}"Oui, bonne nuit."
 f017-0012 9ae9daa5a663dbc5 Citan{n}"Ah, Fei !{n}Soyez prudent,{n}je vous prie..."
 f017-0013 6d56ef6158ce0e91 Citan{n}"Ah, je veux dire...{wait 20} le{n}chemin est dangereux quand{n}il fait si sombre..."
@@ -529,56 +529,56 @@ f019-0023 7b04ecc748c6cc5a Yui{n}"Que s'est-il passé...?{wait 20}{n}Sois pruden
 f019-0025 caa055f60e770ce8 Yui{n}"Bonne nuit.{wait 20}{n}Nous avons hâte d'être{n}au mariage de demain."
 f021-0000 45b225168ad051a5 Waouh !?{done 40}
 f021-0001 492c6ff91964a754 Fei{n}"Qu...{wait 30} Qu'est-ce que{n}c'est...?"
-f021-0002 a912e05679680f5c Fei{n}"Alors c'est de ça que{n}parlait le Doc.{p}Voyons...{wait 30}{n}qu'est-ce que ça a de si{n}intéressant..."
-f021-0003 c9b036971eb4c6f3 Fei{n}"Cette musique...?{wait 20}{n}Je l'ai{wait 10} déjà entendue{n}quelque part...?"
+f021-0002 a912e05679680f5c Fei{n}"C'est donc de ça que{n}parlait le Doc.{p}Voyons...{wait 30}{n}qu'a-t-il de si{n}intéressant..."
+f021-0003 c9b036971eb4c6f3 Fei{n}"Cette musique...?{wait 20}{n}Je l'ai{wait 10} entendue{n}quelque part...?"
 f021-0004 662d7276babeda02 Fei{n}"Doc"
 f021-0005 1b066c10f631f140 Citan{n}"Me revoilà, Fei.{n}Désolé pour l'attente."
-f021-0006 be6be5aa2905b888 Citan{n}"La musique est une chose{n}bien mystérieuse...{p}Parfois, elle fait{n}resurgir des souvenirs{n}inattendus.{p}Des pensées, des{n}sentiments, des{n}souvenirs... des choses{n}presque oubliées...{p}Que l'on veuille s'en{n}souvenir ou non..."
+f021-0006 be6be5aa2905b888 Citan{n}"La musique est une chose{n}bien mystérieuse...{p}Parfois, elle fait{n}resurgir des souvenirs{n}inattendus.{p}Des pensées, des émotions,{n}des souvenirs... des{n}choses presque oubliées...{p}Que l'on veuille s'en{n}souvenir ou non..."
 f021-0007 15968f94ab972a99 Citan{n}"On l'a exhumé de ruines{n}anciennes et il est{n}encore en réparation.{p}C'est de toute évidence{n}une sorte d'appareil{n}audio."
 f021-0008 adde888ee6e745c0 Citan{n}"Jadis, des gens écoutaient{n}cette mélodie, comme nous{n}maintenant...{p}Parfois, ils se{n}réjouissaient...{n}Et parfois, ils{n}pleuraient."
-f021-0009 2cc32872e711367e Citan{n}"Au fait, qu'est-ce qui{n}vous amène aujourd'hui ?"
-f021-0010 82bdc3868283fc7c Citan{n}"Ah, oui.{n}Son mariage est demain,{n}n'est-ce pas...?"
+f021-0009 2cc32872e711367e Citan{n}"Au fait, que venez-vous{n}faire aujourd'hui ?"
+f021-0010 82bdc3868283fc7c Citan{n}"Ah, oui.{n}C'est demain qu'elle{n}se marie, non...?"
 f021-0011 1bd158043d1a265a Citan{n}"Entendu.{n}Préparons donc tout{n}cela."
 f021-0012 e4eb6d5da7534afb Citan{n}"Ah, et le dîner sera{n}bientôt prêt.{wait 20} Voulez-vous{n}vous joindre à nous ?"
 f021-0013 7415f92fc8df6484 Citan{n}"J'ai encore quelques{n}affaires à ranger{n}dehors.{p}Cela vous ennuierait{n}de tenir compagnie à{n}Midori à la maison ?"
 f021-0014 08a6c6260732370c Citan{n}"Ha, ha, ha.{n}Faites comme chez vous.{p}Mais je ne réponds pas{n}des maux de ventre{n}causés par la cuisine de{n}ma femme Yui."
-f021-0015 e9453cf71cc742eb Citan{n}"C'est peut-être parce{n}que quelqu'un vit en{n}vous...{p}... Et lui aussi devait{n}aimer cette musique, il y{n}a très longtemps, avant de{n}faire partie de vous..."
+f021-0015 e9453cf71cc742eb Citan{n}"C'est peut-être parce{n}que quelqu'un vit en{n}vous...{p}... Et lui aussi devait{n}aimer cette musique, il y{n}a longtemps, avant de{n}faire partie de vous..."
 f021-0016 9713adee9b3479f6 Citan{n}"Alors le mariage de{n}Timothy et d'Alice est{n}bien demain...{p}Il vaut peut-être mieux{n}vivre une vie ordinaire,{n}dans cet état...{wait 30} Comme un{n}fils de l'homme..."
-f021-0017 2e929ff810933a1d Citan{n}"Enfin, bref.{n}Je ferais mieux de régler{n}au moins le gyroscope..."
-f021-0018 4c47b8deb2b5c8c8 Citan{n}"Hein....!?"{done 50}
-f021-0019 466a0429be7e38f1 Citan{n}"Ce n'est pas possible...{wait 60}{n}C'est... c'est...{n}un présage...?"
-f021-0020 1f83fc1d65268ee5 Citan{n}"...{wait 40}{n}Et maintenant, que va-t-il{n}se passer...?"
+f021-0017 2e929ff810933a1d Citan{n}"Enfin, bref.{n}Je devrais au moins{n}régler le gyroscope..."
+f021-0018 4c47b8deb2b5c8c8 Citan{n}"Hein...!?"{done 50}
+f021-0019 466a0429be7e38f1 Citan{n}"Impossible...{wait 60}{n}C'est... c'est...{n}un présage...?"
+f021-0020 1f83fc1d65268ee5 Citan{n}"...{wait 40}{n}Qu'adviendra-t-il{n}désormais...?"
 f021-0021 34ccc0f5618879ec Qu'en dites-vous ?{wait 30}{n}Pas mal, hein ?
 f021-0022 2f514b64e114c9b2 Fei{n}"Doc, qu'est-ce que{n}c'est...?"
 f021-0024 77ae6c8a194c702e Fei{n}"Ah, c'est vrai !{p}Alice m'a demandé de{n}vous emprunter du{n}matériel photo."
 f021-0025 432cc3bf06c637e0 Fei{n}"Et comment !{wait 30}{n}J'espérais que vous{n}m'inviteriez."
 f021-0026 21d6a17d152e4ade Fei{n}"D'accord.{n}Prenez votre temps, Doc.{p}Je commencerai à manger{n}quand le dîner sera{n}prêt !"
-f021-0027 95ed61706e98c234 Fei{n}"Doc...{wait 20}{n}Je me sens bizarre en{n}écoutant cette musique...{p}Je sens comme une{n}chaleur, là, à{n}l'intérieur..."
-f021-0029 1aac3598fa7d0c0f Il y a quelque chose gravé{n}en petites lettres dans le{n}coin...
+f021-0027 95ed61706e98c234 Fei{n}"Doc...{wait 20}{n}Cette musique me fait{n}un drôle d'effet...{p}Je sens comme une{n}chaleur, là, à{n}l'intérieur..."
+f021-0029 1aac3598fa7d0c0f De petites lettres{n}sont gravées dans{n}le coin...
 f022-0000 33c41ef93eb652fb Fei{n}"Arrête !{n}Bas les pattes,{n}ne touche pas à 'Elly' !"{done 60}
 f022-0001 bac6ee84a8bb9a59 Fei{n}"Ça va !?{n}Tiens bon !"
-f022-0002 a509945b52c99356 Jeune fille mystérieuse{n}"Hein...{wait 30}{n}Retourne-toi !"
-f022-0004 1231a1dab989c875 Jeune fille mystérieuse{n}"J'ai dit...{n}retourne-toi !"
+f022-0002 a509945b52c99356 Inconnue{n}"Hein...{wait 30}{n}Retourne-toi !"
+f022-0004 1231a1dab989c875 Inconnue{n}"J'ai dit...{n}retourne-toi !"
 f022-0005 f2344eb164cd5ab4 Fei{n}"...Tu trembles ?"
-f022-0006 92cf2e3c5b33a869 Jeune fille mystérieuse{n}"Silence !"
-f022-0007 7b5af8b94753f22a Jeune fille mystérieuse{n}"...Tu n'as pas l'air d'un{n}des soldats de Kislev qui{n}me traquent...{wait 50}mais..."{done 100}
-f022-0008 ea034e46549f51a4 Jeune fille mystérieuse{n}"Ne bouge pas !"
-f022-0009 892cf0bdb360a50f Jeune fille mystérieuse{n}"J'ai ordre de tuer tout{n}-Agneau- de la surface que{n}je croise...{p}Ça fait partie de ma{n}mission. Ce n'est rien de{n}personnel."
-f022-0010 9b6e3630c2abe75c Jeune fille mystérieuse{n}"J'ai une question.{wait 40}{n}...Comment sort-on de{n}cette forêt ?"
-f022-0011 428263f4aad58381 Fei{n}"Tu es...perdue ?"
-f022-0012 6a305876498f4c6c Jeune fille mystérieuse{n}"Réponds à la question !{n}Comment je sors d'ici ?"
+f022-0006 92cf2e3c5b33a869 Inconnue{n}"Silence !"
+f022-0007 7b5af8b94753f22a Inconnue{n}"...Tu n'as pas l'air d'un{n}des soldats de Kislev qui{n}me traquent...{wait 50}mais..."{done 100}
+f022-0008 ea034e46549f51a4 Inconnue{n}"Ne bouge pas !"
+f022-0009 892cf0bdb360a50f Inconnue{n}"J'ai ordre de tuer tout{n}-Agneau- de la surface que{n}je croise...{p}Ça fait partie de ma{n}mission. Ce n'est rien de{n}personnel."
+f022-0010 9b6e3630c2abe75c Inconnue{n}"J'ai une question.{wait 40}{n}...Comment sort-on de{n}cette forêt ?"
+f022-0011 428263f4aad58381 Fei{n}"T'es...perdue ?"
+f022-0012 6a305876498f4c6c Inconnue{n}"Réponds à la question !{n}Comment je sors d'ici ?"
 f022-0013 b2baa31e0654e290 Fei{n}"Désolé...{n}mais moi aussi, je{n}cherche la sortie."
-f022-0014 f2030d949cb2a1e4 Jeune fille mystérieuse{n}"Ah..."
+f022-0014 f2030d949cb2a1e4 Inconnue{n}"Ah..."
 f022-0015 5ab98d3949cdb5c3 Fei{n}"Tu vas rester{n}plantée là comme ça{n}encore longtemps ?{p}Si tu comptes me{n}tirer dessus, tire{n}donc une bonne{n}fois."
-f022-0016 db664b67c4601cc0 Jeune fille mystérieuse{n}"Drôle de chose à dire !{n}Tu ne vois pas dans{n}quelle situation tu es ?"
-f022-0017 cdc676ccf72cef51 Fei{n}"Je me fiche de ma{n}situation...{p}Je suis quelqu'un dont la{n}vie ne vaut rien...{n}Ça n'a aucun sens que je{n}vive, de toute façon !"
-f022-0018 5000f49f80c14d56 Jeune fille mystérieuse{n}"Re, {wait 10}recule !"{done 60}
+f022-0016 db664b67c4601cc0 Inconnue{n}"Drôle de chose à dire !{n}Tu ne vois pas dans{n}quelle situation tu es ?"
+f022-0017 cdc676ccf72cef51 Fei{n}"Je me fiche de ma{n}situation...{p}Je ne vaux rien...{n}Ça ne rime à rien{n}que je vive, de{n}toute façon !"
+f022-0018 5000f49f80c14d56 Inconnue{n}"Re, {wait 10}recule !"{done 60}
 f022-0019 8370de4ca079fa40 Fei{n}"Tu vises où ?{wait 30}{n}Ici ! Tire juste ici !{wait 50}{n}Allez..."
-f022-0020 3ba0134dbd8e107d Jeune fille mystérieuse{n}"Tu...{wait 10}{n}tu te moques de moi ?"{done 80}
-f022-0021 dc074ecb91c17b18 Jeune fille mystérieuse{n}"Qu'est-ce que c'est ?{n}Qui es-tu ?"{done 30}
-f022-0024 50e43e6bbf991cdc Jeune fille mystérieuse{n}"Espèce de cinglé !"{done 80}
-f022-0025 f20e0336a3c52763 Jeune fille mystérieuse{n}"Tu ne tournes vraiment{n}pas rond !"{done 30}
-f022-0026 b0ffcdc3857f4764 Jeune fille mystérieuse{n}"Tu pourrais au moins{n}résister un peu !"{done 80}
+f022-0020 3ba0134dbd8e107d Inconnue{n}"Tu...{wait 10}{n}tu te moques ?"{done 80}
+f022-0021 dc074ecb91c17b18 Inconnue{n}"C'est quoi ?{n}Qui es-tu ?"{done 30}
+f022-0024 50e43e6bbf991cdc Inconnue{n}"T'es bizarre !"{done 80}
+f022-0025 f20e0336a3c52763 Inconnue{n}"Tu ne tournes{n}pas rond, toi !"{done 30}
+f022-0026 b0ffcdc3857f4764 Inconnue{n}"Tu pourrais au moins{n}résister un peu !"{done 80}
 f023-0000 4a01054ce06e04f2 {speed 255}Fei{n}"Eux !{wait 60}{n}Eux !!{wait 60}{n}Eux !!!"{done 60}
 f023-0002 7592d7dbc2cb18ae Elly{n}"...Tu es réveillé ?"
 f023-0003 34bffa65fd9c9a43 Elly{n}"Hier, tu as dit que ta{n}vie ne valait rien. Que{n}voulais-tu dire ?"
@@ -639,44 +639,44 @@ f024-0023 3304424e065fa0f6 Citan{n}"La nuit tombe. Campons{n}ici et partons tôt
 f024-0025 90adfefeb9440da3 Elly{n}"Pourquoi lui ai-je{n}dit ça...?"{done 60}
 f024-0026 ca759113e2113de6 Elly{n}"Oui...{n}c'est bien ça...{n}je suis une lâche..."
 f024-0028 14e62e4caec76356 Citan{n}"Fei !{n}Vous allez bien ?"
-f024-0029 ed0abf8f67cec4c4 Fei{n}"Elly est déjà partie ?"
-f024-0030 7db32c0c1a911a49 Citan{n}"Ah, vous étiez{n}réveillé ?"
+f024-0029 ed0abf8f67cec4c4 Fei{n}"Elly est partie ?"
+f024-0030 7db32c0c1a911a49 Citan{n}"Vous étiez réveillé ?"
 f024-0031 f1eb5fdd893f36e3 Fei{n}"Oui, depuis un moment.{n}J'ai entendu une partie de{n}votre discussion."
 f024-0033 3f3adc9c09ceef69 Fei{n}"Alors Elly...{n}c'est ce qu'elle est ?"
-f024-0034 113aa36d9777ae3d Citan{n}"Fei, elle est..."
-f024-0035 664f166c590a6761 Fei{n}"Je sais.{n}Elly n'y est pour rien.{p}Ce qui est arrivé au{n}village, c'est ma faute.{p}J'ai déversé sur Elly tout{n}ce que j'avais sur le{n}coeur. C'est à moi de{n}m'excuser."
+f024-0034 113aa36d9777ae3d Citan{n}"Fei, elle..."
+f024-0035 664f166c590a6761 Fei{n}"Je sais.{n}Elly n'y est pour rien.{p}Ce qui est arrivé au{n}village, c'est ma faute.{p}J'ai passé ma colère sur{n}Elly. C'est à moi de{n}m'excuser."
 f024-0036 5d9dbec290fc8b3f Citan{n}"Fei, ne vous accablez{n}pas. Ce n'était pas{n}votre faute non plus.{p}Vous essayiez seulement{n}de protéger le{n}village."
 f024-0037 7969cfc117f95e85 Fei{n}"Merci, Doc...{n}Au fait, comment vont{n}les gens du village ?"
-f024-0038 68bdf493179b8fc7 Citan{n}"Ne vous inquiétez pas,{n}Yui s'occupe d'eux.{p}Je lui ai demandé de{n}partir vite et de les{n}emmener tous en un{n}certain lieu.{p}Ils y seront en sécurité{n}un moment. Alors, pour{n}l'instant, ne pensez qu'à{n}vous."
+f024-0038 68bdf493179b8fc7 Citan{n}"Ne vous inquiétez pas,{n}Yui s'occupe d'eux.{p}Je lui ai dit de partir{n}vite et de les emmener{n}tous en un certain lieu.{p}Ils y seront à l'abri un{n}moment. Pour l'instant,{n}ne pensez qu'à vous."
 f024-0039 ec28d40fbe120bd6 Fei{n}"Entendu."
 f024-0040 a2869b36bd41c20e Citan{n}"Maintenant, réfléchissons{n}à la suite...{p}Et si nous sortions de{n}cette forêt pour gagner{n}Dazil, la ville du désert ?{p}Nous saurions peut-être ce{n}que trament Aveh et{n}Kislev... Et il faut des{n}pièces pour le {name 11}.{p}Le chef d'Aveh ne va pas{n}rester les bras croisés et{n}laisser impuni le fiasco de{n}l'autre nuit !"
-f024-0041 106b413d6f384469 Fei{n}"Qu'est-ce que c'est...?"
+f024-0041 106b413d6f384469 Fei{n}"C'est quoi...?"
 f024-0042 a3b6855ad73f56c8 Citan{n}"Je présume que{n}c'est un cuirassé{n}volant d'Aveh..."
 f024-0043 741c366321408621 Fei{n}"Un cuirassé volant ?{n}J'ignorais qu'Aveh avait{n}une chose pareille."
 f024-0044 e1402746d4ce5243 Citan{n}"Il ne vient pas{n}d'Aveh à l'origine,{n}bien sûr...{p}Il appartient sans{n}doute aux forces de la{n}Gebler stationnées à{n}Aveh."
-f024-0046 7189e8976c0fa035 Citan{n}"Les forces spéciales du{n}Saint-Empire de{n}Solaris : la Gebler.{p}Je suis sûr que vous en{n}avez déjà entendu{n}parler.{p}C'est une organisation qui{n}apporte une aide militaire{n}à grande échelle au{n}Royaume d'Aveh.{p}Ils sont apparus à Ignas{n}il y a plusieurs mois.{n}Jusque-là, Aveh perdait{n}face à Kislev.{p}Mais, avec l'aide de la{n}Gebler, ils ont{n}reconquis la moitié de{n}leurs pertes.{p}Désormais, ils étendent{n}leur territoire et{n}récoltent les ressources{n}enfouies dans les ruines."
-f024-0047 c6b283a09cc7e61d Fei{n}"J'ai entendu les anciens{n}du village en parler...{wait 30}{n}Elly en fait partie ?"
+f024-0046 7189e8976c0fa035 Citan{n}"Les forces spéciales du{n}Saint-Empire de{n}Solaris : la Gebler.{p}Je suis sûr que vous en{n}avez déjà entendu{n}parler.{p}C'est une organisation{n}qui apporte une aide{n}militaire massive au{n}Royaume d'Aveh.{p}Ils sont apparus à Ignas{n}il y a plusieurs mois.{n}Jusque-là, Aveh perdait{n}face à Kislev.{p}Mais, avec l'aide de la{n}Gebler, ils ont{n}reconquis la moitié de{n}leurs pertes.{p}Désormais, ils étendent{n}leur territoire et{n}exhument les ressources{n}des ruines."
+f024-0047 c6b283a09cc7e61d Fei{n}"Les anciens du village{n}en ont parlé...{wait 30}{n}Elly en fait partie ?"
 f024-0048 a141c49932f3dd06 Citan{n}"C'est bien possible. Ils{n}ont une technologie et une{n}force supérieures.{p}On dit qu'ils sont ici{n}uniquement pour obtenir{n}les ressources des ruines.{p}Je suis surpris qu'ils{n}utilisent quelque chose{n}d'aussi puissant que ce{n}vaisseau...{p}Ce doit être pour contenir{n}les récentes escarmouches{n}à la frontière."
 f024-0049 e88e5f8c9f38e262 Fei{n}"Alors ils combattent{n}l'Empire de Kislev ?"
 f025-0000 1a1372ead309f22a ...Hé.
 f025-0001 9c36e3cf9ecd13f4 Fei{n}"Ouf, tu te réveilles !{n}Tu as dormi si longtemps,{n}je m'inquiétais..."
-f025-0002 fab53a77ff4bc162 Jeune fille mystérieuse{n}"..."
+f025-0002 fab53a77ff4bc162 Inconnue{n}"..."
 f025-0003 1ebccb917dbd0e89 Fei{n}"Comment tu te sens ?"
 f025-0005 b66e7f3c9f0dfd17 Fei{n}"Tu veux toujours me tuer ?{n}Alors vas-y, tire !{p}Mais pas tant qu'on est{n}dans la forêt. Les monstres{n}détestent le bruit, tu{n}sais !?"
-f025-0007 82554ef591427132 Fei{n}"D'accord.{n}Ne me parle pas si{n}tu ne veux pas...{p}Mais ça ne te tuerait pas{n}de me remercier d'avoir{n}soigné tes blessures."
-f025-0009 acad0fb5e28c1c9c Jeune fille mystérieuse{n}"Mer... merci...{wait 30}{n}mais tu n'aurais pas dû{n}m'aider.{p}Ne crois pas que ça va{n}te sauver la vie.{n}Ça ne change rien."
+f025-0007 82554ef591427132 Fei{n}"D'accord.{n}Ne me parle pas si{n}tu ne veux pas...{p}Mais tu pourrais au{n}moins me remercier{n}d'avoir soigné tes{n}blessures."
+f025-0009 acad0fb5e28c1c9c Inconnue{n}"Mer... merci...{wait 30}{n}mais il ne fallait pas{n}m'aider.{p}Ne crois pas que ça va{n}te sauver la vie.{n}Ça ne change rien."
 f025-0010 e4a8678e6128228a Fei{n}"De quoi as-tu{n}si peur ?"
-f025-0011 f8d76ca54e0db657 Jeune fille mystérieuse{n}"Je n'ai pas peur...{n}Je suis juste prudente.{p}C'est normal que je sois{n}prudente, vu que je suis{n}tombée sur un -Agneau- de{n}la surface aussi louche."
+f025-0011 f8d76ca54e0db657 Inconnue{n}"Je n'ai pas peur...{n}Je suis juste prudente.{p}C'est normal que je sois{n}prudente, vu que je suis{n}tombée sur un -Agneau- de{n}la surface aussi louche."
 f025-0012 e7ebd069639c2551 Fei{n}"Hum... Ne t'en fais pas.{n}Je ne vais rien faire.{p}Et puis, tu es bien plus{n}louche que moi."
-f025-0013 b0caef9e8f36927e Jeune fille mystérieuse{n}"Hein...?"
-f025-0014 4b595564494d98e9 Fei{n}"Et comment tu{n}t'appelles ?"
-f025-0015 c92e77288fdab1e4 Jeune fille mystérieuse{n}"Je ne donne pas mon nom à{n}un -Agneau- de la{n}surface."
+f025-0013 b0caef9e8f36927e Inconnue{n}"Hein...?"
+f025-0014 4b595564494d98e9 Fei{n}"C'est quoi, ton nom ?"
+f025-0015 c92e77288fdab1e4 Inconnue{n}"Je ne donne pas mon nom à{n}un -Agneau- de surface."
 f025-0016 f01867f3ccf2000e Fei{n}"Qu'est-ce que c'est{n}que{n}ces 'Agneaux' ?{p}On est perdus dans{n}cette forêt, tous les{n}deux, entourés de{n}monstres dangereux...{p}On ne devrait pas au{n}moins coopérer jusqu'à{n}ce qu'on sorte d'ici ?"
 f025-0018 252e88adbbe63159 Fei{n}"Parfait.{wait 20}{n}Alors, ton nom ?{p}Ça va être dur de coopérer{n}sans même connaître le nom{n}de l'autre.{p}Bref, je m'appelle{n}Fei Fong Wong.{wait 100}{n}Tu peux m'appeler Fei."
-f025-0019 6d2736983627af3e Jeune fille mystérieuse{n}"Je suis...Elhaym.{n}Mais mes parents{n}m'appellent Elly."
-f025-0020 86f29b0311ce3ee7 Fei{n}"'Elly', hein ?{wait 20}{n}D'une certaine façon, je{wait 20}{n}le 'savais'{wait 20} déjà."
+f025-0019 6d2736983627af3e Inconnue{n}"C'est...Elhaym.{n}Mais mes parents{n}disent Elly."
+f025-0020 86f29b0311ce3ee7 Fei{n}"'Elly', hein ?{wait 20}{n}Comme si je le{wait 20}{n}'savais'{wait 20} déjà."
 f025-0022 31956165e0410a15 Fei{n}"C'est trop dangereux de{n}traîner par ici si tard{n}dans la nuit...{p}Attendons le lever du jour{n}avant de chercher une{n}sortie...{wait 20}{n}Ça te va ?"
-f025-0023 c3552b467c68480a Elly{n}"Je suppose qu'on n'a pas{n}le choix, hein ?"
+f025-0023 c3552b467c68480a Elly{n}"On n'a pas le{n}choix, hein ?"
 f026-0000 3111a220a3f79f56 Citan{n}"Inutile. L'actionneur du{n}genou et le circuit de{n}dérivation sont fichus.{p}L'actionneur peut être{n}réparé, mais le circuit{n}doit être remplacé..."
 f026-0001 8cbb9e10e2d94e4c Citan{n}"Ah, vous avez du mal à{n}dormir ?"
 f026-0002 a57dfb2d99e7565f Elly{n}"Oui..."
@@ -725,7 +725,7 @@ f027-0000 afda4d1189638af3 Maudits...{wait 60}{n}Ils me poursuivent encore.{done
 f027-0001 c7d76bcf0de36f71 On est en terres d'Aveh...{wait 60}{n}Pas question d'abandonner.{done 30}
 f027-0002 b3066f7b703ade1b Ce Gear est trop précieux.{done 5}
 f027-0003 7779c0b117eafa71 ...Manquait plus que ça !{wait 60}{n}Je suis en mauvaise passe.{done 30}
-f027-0005 c0a031552380cf50 Qu'y a-t-il ? Répondez !{done 30}
+f027-0005 c0a031552380cf50 Problème ? Répondez !{done 30}
 f027-0006 56e6ffe4090f2629 Bon sang ! Tous au sol !{done 30}
 f027-0007 bff85096da307776 Regroupez-vous au sol.{wait 60}{n}Il faudra les affronter !{done 30}
 f029-0000 5281872144fc5d68 Voici la centrale d'eau.{wait 10}{n}Toute l'eau de Dazil{n}vient de cette pompe.
@@ -819,17 +819,17 @@ f035-0064 3864c11d46a8e666 Des pirates sillonnent le{n}désert sur un croiseur d
 f035-0065 5a1a12d67b786d9c Apporter des pièces de{n}fouille à l'atelier ne{n}paie plus aussi bien.{p}On dit que l'atelier{n}pourrait réduire la{n}voilure... les temps sont{n}durs, hein.
 f035-0066 d191377fdd1a551f Beaucoup d'argent pour peu{n}d'effort ! C'est la{n}meilleure méthode... Voilà{n}le secret !{p}On gagne de l'argent en{n}vendant à l'Ethos les{n}pièces qu'on déterre.{p}Plus la pièce est rare,{n}meilleur est le prix !{wait 20}{n}'Pigé' !?
 f035-0067 dfa119570783e102 Alors... que désirez-vous{n}acheter ?
-f035-0068 f45c00ee4ab3561a Fei{n}"Quelle ville animée."
+f035-0068 f45c00ee4ab3561a Fei{n}"Ça bouge, ici."
 f035-0069 e79e682afa5355a7 Citan{n}"C'est le centre de{n}toutes les fouilles{n}d'Aveh.{p}On vient de tout Ignas{n}pour chercher les{n}ressources enfouies dans{n}les ruines du coin."
-f035-0070 c2fbdca1eaeff9e8 Assoc. Chasse-au-Trésor{n}  Antenne de Dazil
+f035-0070 c2fbdca1eaeff9e8 Chasseurs de Trésors{n}  Antenne de Dazil
 f035-0071 65d847c1b5171f27   -Lucky Avenue-  {n} 'Bar tranquille'
-f035-0072 5864e0074f36f7d1  Adm. de l'Atelier
+f035-0072 5864e0074f36f7d1  Admin. Atelier
 f035-0073 192703e4afcc517b  Atelier
 f035-0074 c404da5297a38b62      Dernière heure !{n}Guerre au désert, encore ?{n} {n}   Une nouvelle unité est{n}   affectée à une base{n}   frontalière de Kislev.{n}   Une force d'élite...
-f035-0075 63efe08a805d1e27 Citan{n}"Retournons à la boutique{n}de tout à l'heure pour{n}louer le buggy."
+f035-0075 63efe08a805d1e27 Citan{n}"Retournons au magasin{n}de tout à l'heure pour{n}louer le buggy."
 f036-0001 0d404a9c09fc6da9 Fei{n}"Au désert ? Doc, vous{n}allez fouiller des ruines{n}ou quoi ?"
 f036-0002 08781412db54e75c Fei{n}"Et quel rapport avec{n}ce Gear ?"
-f036-0003 f96b18405f6bc621 Fei{n}"Mais..."
+f036-0003 f96b18405f6bc621 Fei{n}"Euh..."
 f036-0005 11bb7e5b457121d5 Fei{n}"Vous ne savez pas piloter{n}un Gear militaire ?{n}Pourquoi, Doc ?"
 f036-0006 ceb9fabc34f3fdcf Fei{n}"Comment ça... 'Il faut un{n}entraînement pour piloter{n}un Gear militaire' ?{p}(Le Gear qu'on a trouvé{n}n'était pas militaire ?{n}Alors comment l'ai-je{n}fait marcher, Doc ?)"
 f036-0007 4555f2ad863accfb Citan{n}"Un buggy des sables est{n}un véhicule spécial pour{n}les terrains désertiques.{p}Ses pneus ne s'enlisent{n}pas dans le sable... Il{n}est indispensable pour les{n}longs trajets au désert."
@@ -897,7 +897,7 @@ f040-0032 633e77df44e5e8af 10G la nuit...{n}Vous restez ?{n}    Oui{n}    Non
 f040-0033 e2774b61efb67d1f T'as pas assez de fric.{n}Du balai !
 f040-0034 ac375f141fbcb66c   - Menu -{n} {n}  Bière de Bledavik{n}  Ale d'Aveh{n}  Hob-Jerky{n}  Plateau de fromages
 f040-0035 34249c514e34395f Fei{n}"...Quel endroit{n}bruyant !"
-f040-0036 3303371f5829dfa3 Citan{n}"Eh bien, dans un endroit{n}pareil, il faut s'attendre{n}à ce genre d'ambiance."
+f040-0036 3303371f5829dfa3 Citan{n}"Eh bien, ici, il faut{n}s'attendre à ce genre{n}d'ambiance."
 f040-0037 a7767287efdfcb88 Fei{n}"Mais quand même..."
 f040-0038 162d390c3091be70 Oups !{done 25}
 f043-0000 df0a070ef953d003 Zut, mon portefeuille...{p}Juste quand j'ai assez{n}d'argent pour réparer mon{n}Gear, je perds mon{n}portefeuille.{p}Comment je vais faire ?
@@ -932,35 +932,35 @@ f047-0012 4f2217009de2e0b3 Crétin !
 f047-0013 aa5182fabf010718 Merci. Quand je démarre,{n}pousse.
 f047-0014 8ad1bca37905f654 Voilà, tu peux pousser.
 f047-0015 6bf2144d4cd28c40 Plus fort ! Encore un{n}petit effort.
-f047-0018 f7e8b515a895fbe4 À l'est, yo !{done 50}
-f047-0019 7d519769be7ddb5e à nous ! Ahh yeah !{done 50}
-f047-0020 e3c0e68518b6ef05 c'est pas fait pour{n}les Gears !{done 50}
-f047-0021 91f677d57f1c2734 en train de changer !{done 50}
-f047-0022 1aadb2ea8b20b9f7 on n'en sait rien !{done 50}
-f047-0023 eec31453f8aa8c98 bien trop dangereux !{done 50}
-f047-0024 e54b540f429f20d4 comme vous !{done 50}
-f047-0025 c16abe1ecc5da87a DÉGAGE !{wait 30} VITE !{done 60}
+f047-0018 f7e8b515a895fbe4 Est, yo !{done 50}
+f047-0019 7d519769be7ddb5e à nous ! Yeah !{done 50}
+f047-0020 e3c0e68518b6ef05 pas de Gears par ici !{done 50}
+f047-0021 91f677d57f1c2734 ça change !{done 50}
+f047-0022 1aadb2ea8b20b9f7 on sait pas !{done 50}
+f047-0023 eec31453f8aa8c98 trop dangereux !{done 50}
+f047-0024 e54b540f429f20d4 comme toi !{done 50}
+f047-0025 c16abe1ecc5da87a DE-{wait 30}HORS !{done 60}
 f047-0026 4e0b1ee1ee8a84d0 têtu !{done 50}
-f047-0028 1bfb2c3f07b3015f À l'ouest, ho !{done 80}
-f047-0029 7de71f69befce66a à nous ! Ahh yeah !{done 70}
-f047-0030 e236ae8517680071 c'est pas fait pour{n}les Gears !{done 70}
-f047-0031 92f8bfd57ff79760 en train de changer !{done 70}
+f047-0028 1bfb2c3f07b3015f Ouest, ho !{done 80}
+f047-0029 7de71f69befce66a à nous ! Yeah !{done 70}
+f047-0030 e236ae8517680071 pas de Gears par ici !{done 70}
+f047-0031 92f8bfd57ff79760 ça change !{done 70}
 f047-0032 64911ed1a36ad042 Nous{done 70}
 f047-0033 3c8692bea3b5ae7a serait{done 70}
-f047-0034 0652044d8b279156 un lieu pour les faibles{done 70}
+f047-0034 0652044d8b279156 pour mauviettes{done 70}
 f047-0035 a6ed004e9d4f2a49 Écoute-moi bien.{done 100}
 f047-0036 4e3ab2e1eeb2f10e têtu !{done 60}
 f047-0038 8e04399262c27256 Yo !{wait 30}{n}Les joyeux{done 60}
 f047-0039 5d11a9a72e951a8e Chasseurs de trésors...{done 65}
-f047-0040 a93bd6a33a801c71 Ici, c'est le{done 68}
+f047-0040 a93bd6a33a801c71 C'est notre{done 68}
 f047-0041 2388b41e0958a2b9 Non, non, non, ici{done 53}
-f047-0042 f8582015671ab8b1 La terre est{done 26}
-f047-0043 ae16cb5d82435474 Pourquoi ?{done 75}
+f047-0042 f8582015671ab8b1 Le sol est{done 26}
+f047-0043 ae16cb5d82435474 Et ?{done 75}
 f047-0044 6c7fbbff3b0f6b00 Bref...{done 70}
-f047-0045 18f8c564eb1fcc6b Ici, ce n'est pas{done 95}
-f047-0046 d34bac22b45f60d8 Si t'as toujours pas{n}pigé...{done 110}
+f047-0045 18f8c564eb1fcc6b Ici c'est pas{done 95}
+f047-0046 d34bac22b45f60d8 Si t'as pas encore pigé...{done 110}
 f047-0047 c269c673c9aa4786 Tu veux revenir ?{n}    Oui{n}    Non
-f047-0048 68af29b0238b6469 T'es teeellement{done 70}
+f047-0048 68af29b0238b6469 T'es siiiiii{done 70}
 f047-0049 bcf7c0f6aa112c21 Quitter le désert ?{n}    Oui{n}    Non
 f049-0000 ce81c7b43a9c4edc Fei{n}"Où est passé le Doc ?{n}{wait 10}...{wait 5}Et j'ai aussi perdu ces{n}Gears de vue."
 f049-0001 dc1042d18b946f87 Fei{n}"Qu'est-ce qui se passe ?"
@@ -976,18 +976,18 @@ f053-0001 f831c1e3ce5dac92 Fei{n}"Je ferais mieux de{n}suivre ces Gears."
 f053-0002 b2ba0ac5a91c9942 Fei{n}"Une autre unité ? Ils{n}vont vers la soucoupe ?{p}Je ferais mieux de les{n}suivre pour ne pas les{n}perdre de vue..."
 f054-0000 bf3d0e8a69cff9db Fei{n}"Euh, hum...{wait 30} Qu'est-ce que{n}c'était que tout ça ?"
 f054-0001 f09e9829ea526be2 Fei{n}"Vous me voulez quoi ?{p}Vous exagérez un peu,{n}non, juste parce que j'ai{n}volé une moto..."
-f054-0003 f19018c74934e48f Fei{n}"Doc !{wait 10}{n}Vous allez bien ?"
-f054-0004 25e014eecc40340b Fei{n}"Courir{n}pourquoi...?"
+f054-0003 f19018c74934e48f Fei{n}"Doc !{wait 10}{n}Tout va bien ?"
+f054-0004 25e014eecc40340b Fei{n}"Vite ?{n}Mais quoi ?"
 f054-0005 20ae462107f58509 Fei{n}"...D-d-d'accord."
 f054-0006 00802bb114e5b0cc Fei{n}"{wait 10}...{wait 40}Je vais bien{wait 10}...{wait 30}{n}Mais le Gear a l'air{n}cassé{wait 10}..."
 f054-0008 4cd8951b2ad73a75 Citan{n}"Fei !{wait 5} Je vous ai{n}cherché partout."
 f054-0009 40e9f3a3ebbb9056 Citan{n}"Oui, bien sûr..."
 f054-0011 706082c58f9c308f Citan{n}"Pas le temps de{n}discuter, on dirait."
-f054-0012 81c5d203b2203f2e Citan{n}"Fei, courez !"
+f054-0012 81c5d203b2203f2e Citan{n}"Fei, vite !"
 f054-0013 730b223ca0832650 Citan{n}"Je n'arrive pas à piloter{n}le {name 11} ! Vous seul{n}en êtes capable...{p}Vite, montez à bord !"
-f054-0014 8ee2fff38dcf92c5 Citan{n}"Fei !{n}Vous allez bien !?"
+f054-0014 8ee2fff38dcf92c5 Citan{n}"Fei !{n}Tout va bien !?"
 f054-0016 5f36cc664a299991 Citan{n}"Je suis très heureux que{n}vous soyez indemne.{p}Le Gear n'a reçu que des{n}réparations provisoires.{n}Elles ne pouvaient pas{n}tenir un tel combat."
-f054-0018 e9578563991f4499 Citan{n}"Oh non !{n}L'armée d'Aveh !{n}Pas maintenant...!"
+f054-0018 e9578563991f4499 Citan{n}"Oh non !{n}L'armée d'Aveh !{n}Pas maintenant !"
 f054-0019 3828c9549fc94f32 Citan{n}"Fei, restons{n}calmes{wait 15}...{wait 15}{n}{wait 15}...{wait 40}?"
 f055-0000 4d02bb7582c52e03 Fei{n}"Je ne sais pas comment...{wait 30}{n}mais je les ai battus !"
 f055-0001 2e35f6f0b001f7c8 Fei{n}"Mais qu-quoi ?"
@@ -998,7 +998,7 @@ f055-0005 78c2ee1dacfdadfc Fei{n}"Comme catalyseur !? Tu{n}veux dire que tu as{n
 f055-0006 03be6f29314e40ae Fei{n}"Bon sang..."
 f055-0007 460c8ad268113879 Fei{n}"Tu as besoin de mon{n}pouvoir ? Pour en faire{n}quoi !?"
 f055-0008 8588e60645721107 Fei{n}"Qu'as-tu fait à mon{n}père !? Que s'est-il{n}passé entre vous deux !?"
-f055-0009 4dd2fe1f7284ee83 Fei{n}"Quoi !?"
+f055-0009 4dd2fe1f7284ee83 Fei{n}"Quoi ?"
 f055-0010 1dc06af5b040f4e8 Fei{n}"A-attends !{n}On n'a pas fini de{n}parler !!"
 f055-0011 a5d930e1505b1eec Fei{n}"Tu as attaqué mon village{n}juste pour me mettre dans{n}ce Gear !?{p}Pourquoi !?{wait 20}{n}Pourquoi les villageois{n}ont-ils dû mourir...?"
 f055-0012 d71fc6d9ddbed4b4 Fei{n}"Non !!{wait 30}{n}Je voulais juste sauver le{n}village et ses gens !{p}Je n'ai jamais voulu le{n}détruire !!"
@@ -1006,7 +1006,7 @@ f055-0013 4e53bb195c425814 Fei{n}"Tais-toi !{p}Même si c'est vrai, ce{n}n'est p
 f055-0014 680c4bad662504ee Fei{n}"D-détruire Dieu ?"
 f055-0015 35804c36ea755cc3 Fei{n}"Ne sois pas ridicule ! Je{n}ne vais pas me mêler d'une{n}chose pareille !{p}Si tu veux détruire ton{n}dieu, ou que sais-je...{n}fais-le tout seul !!"
 f055-0016 1abe3dadcea34609 Fei{n}"Mon père ?{wait 25}{n}Tu parles de mon père ?{wait 30}{n}Tu connais mon père !?"
-f055-0017 ed0853103ce39e1c Fei{n}"Quoi ?"
+f055-0017 ed0853103ce39e1c Fei{n}"Hé ?"
 f055-0018 d556ba5d102b9ee7 Citan{n}"Et c'est reparti..."
 f055-0019 5a7ee63819ea06bd Homme en noir{n}"Je vois que ton sang{n}chaud, avide de combat,{n}reste indompté."
 f055-0020 42e0dea5915473aa Homme en noir{n}"Mon nom est{wait 10} Grahf{wait 10}...{wait 10}{n}Celui qui veut le pouvoir.{p}Tu as bien montré toute{n}ta puissance à Lahan,{n}n'est-ce pas, Fei !?"
@@ -1051,24 +1051,24 @@ f059-0007 958474aaff9cc15b Fei{n}"Et c'est reparti...{wait 32}{n}On dirait qu'on
 f059-0008 3f043cb40c0938a6 Fei{n}"...Compris, Doc !{n}Mais une fois fini, courez{n}là-bas aussi, d'accord !?"
 f059-0009 c84007b4a780c733 Citan{n}"Fei ! Vous m'entendez ?{n}J'amène la grue jusqu'au{n}cockpit du {name 11}.{p}Vite !{n}Grimpez par la grue{n}jusqu'au {name 11} !{n}Nous coulons vite !"
 f060-0000 038b73437a0449bc Rien à faire !{n}C'est la fin !
-f060-0001 27b2c9f5e05d85c3 Fei{n}"Quelques minutes...{wait 32}{n}Doc !!"
+f060-0001 27b2c9f5e05d85c3 Fei{n}"Deux minutes...{wait 32}{n}Doc !!"
 f060-0002 a2a160ec82b7ede1 Fei{n}"Partons,{n}Doc !"
 f060-0003 15ffce9b03a03994 Citan{n}"Oh non !"{done 32}
 f060-0004 0a21eff3e8ce1cfe Citan{n}"À en juger par l'angle...{wait 10}{n}un tir a dû percer la{n}coque...{p}Nous coulerons sans doute{n}d'ici quelques minutes."
-f060-0005 d6f0e072a27d76f0 Citan{n}"C'est verrouillé...{wait 32}{n}Sortez-nous de là !{p}Argghh !!"
+f060-0005 d6f0e072a27d76f0 Citan{n}"C'est fermé...{wait 32}{n}Ouvrez-nous !{p}Argghh !!"
 f060-0006 f127c46feffb2c7e Citan{n}"C'est trop tard..."{done 46}
 f060-0007 c528e323062eba33 Citan{n}"Il y a un interrupteur{n}pour la vanne à sable sur{n}le mur de droite, là !{p}Mais attention...{n}Une fois fermée, elle ne{n}pourra plus être rouverte."{done 150}
-f060-0008 b5f5f7a2cee4b370 Citan{n}"Fei ! Si vous fermez la{n}vanne maintenant, nous{n}serons enterrés vivants !"{done 90}
+f060-0008 b5f5f7a2cee4b370 Citan{n}"Fei ! Si vous fermez la{n}vanne maintenant, nous{n}serons enterrés vifs !"{done 90}
 f060-0009 1ccc633f2fd7e616 Citan{n}"Fei ! Vite !"{done 32}
-f060-0010 243a060309995dac Citan{n}"Non ! C'est trop tard..."{done 46}
+f060-0010 243a060309995dac Citan{n}"Non, trop tard..."{done 46}
 f060-0013 ff39f5053e72835a Citan{n}"Fei ! Vite...!"{done 32}
 f061-0000 c6a06c95b7f9477a Sauver sa peau et laisser{n}ses amis sombrer dans une{n}mer de sable... Et la{n}camaraderie, alors ?
-f061-0001 fe0225deddb8281e Citan{n}"Ouuuh..."
+f061-0001 fe0225deddb8281e Citan{n}"Ouuh..."
 f061-0002 3fa2170adcce7ae1 Citan{n}"Oups..."
 f061-0003 e2795f56bd7b353a Citan{n}"Ha ha ha...{wait 16}{n}Eh bien, docteur Citan{n}Uzuki !{p}Vous avez assez secoué vos{n}saccules et chatouillé vos{n}utricules pour une vie !{n}Ouah, quel tournis !"
-f061-0004 55d4054bb5c1d1e4 Citan{n}"Fei, c'était une blague.{wait 18}{n}Voyager à la main n'était{n}pas si désagréable.{p}Je comprends ce que ce{n}prototype ultrasecret{n}de Kislev a de si{n}bien."
-f061-0005 2eb492cb3b1b0d33 Citan{n}"Vraiment...?{wait 24}{n}Remarquable...!"
-f061-0007 ab63c608a271dd73 Fei{n}"Doc !{n}Venez par ici !{n}Vite !"
+f061-0004 55d4054bb5c1d1e4 Citan{n}"Fei, je plaisantais.{wait 18}{n}Voyager dans la main{n}n'était pas si mal.{p}Je comprends ce que ce{n}prototype ultrasecret{n}de Kislev a de si{n}bien."
+f061-0005 2eb492cb3b1b0d33 Citan{n}"Vraiment ?{wait 24}{n}Étonnant !"
+f061-0007 ab63c608a271dd73 Fei{n}"Doc !{n}Par ici !{n}Vite !"
 f061-0008 c2e69bc09890eba5 Fei{n}"Ça va, Doc ?"
 f061-0009 d396d6c10f571b5b Fei{n}"Désolé, Doc ! Je n'ai pas{n}eu le temps d'ouvrir le{n}cockpit...{p}Vous êtes sûr que ça va,{n}Doc ?"
 f061-0010 182fba48da55fe2b Fei{n}"Oui,{wait 16} une fois allumé, il{n}s'est mis à faire plein de{n}choses tout seul...{p}Le système de réponse{n}environnementale et{n}l'antigravité se sont{n}activés{wait 5}...{wait 5}tout seuls !"
@@ -1115,22 +1115,22 @@ f069-0002 850f0ea386be765d Générateur principal de{n}la zone de fouille{n}d'Av
 f069-0003 a2472f5698923c34 Le courant principal a{n}été rétabli.{n}Fonctionnement normal.
 f069-0004 bb535067f2efb889 Le courant principal est{n}actuellement coupé.
 f069-0006 fc135c86cadf8064 Monter dans{n}la nacelle ?{n}    Oui{n}    Non
-f071-0000 1267615164827930 Bart{n}"Je crois que c'est ça."
+f071-0000 1267615164827930 Bart{n}"Ça doit être ça."
 f071-0001 8cadb815ddfb24b0 Bart{n}"Ah oui ?{wait 30} Alors on{n}dirait qu'on a un vrai{n}passionné ici, hein !"
 f071-0002 fb8aabddcf382e15 Bart{n}"Qu'est-ce qu'un vieux{n}comme toi fait dans un{n}endroit pareil ?"
-f071-0003 86b2448b427284aa Bart{n}"Un collectionneur, hein ?{n}Intéressant."
+f071-0003 86b2448b427284aa Bart{n}"Un collectionneur ?{n}Intéressant."
 f071-0004 502ecb6eefe6a2b1 Bart{n}"Les trucs sur cette{n}étagère, c'est toi qui les{n}as trouvés ?"
-f071-0005 2ee05d3dfe88e9d6 Le vieux Bal{n}"Les fossiles, tu dis ?{n}Je les collectionne, entre{n}autres choses.{p}Regardez à votre{n}guise."
+f071-0005 2ee05d3dfe88e9d6 Le vieux Bal{n}"Les fossiles ?{n}Ils font partie de ce{n}que je collectionne.{p}Regardez à votre{n}guise."
 f071-0006 daa628cd34b8148f Le vieux Bal{n}"Ici, on exhume machines{n}anciennes et fossiles{n}d'hommes et de bêtes.{p}Vous remarquez quelque{n}chose sur ces étagères ? Du{n}plus ancien, à gauche, au{n}plus récent, à droite."
 f071-0007 ce420d3b9a5985e0 Bart{n}"T'es archéologue ou un{n}truc du genre, le vieux ?{p}J'ai pas bien compris ce{n}que tu racontes.{p}Pour moi, c'est juste un{n}tas de vieux os. Fei,{n}t'en penses quoi ?"
-f071-0008 c9e2b6901bf012ff Fei{n}"...Voyons.{wait 30}{n}D'abord, il n'y a pas d'os{n}humains jusqu'ici.{p}Ensuite, d'ici vers la{n}droite, quelque chose{n}change un peu... je{n}crois."
+f071-0008 c9e2b6901bf012ff Fei{n}"...Voyons.{wait 30}{n}D'abord, aucun os humain{n}jusqu'ici.{p}Ensuite, d'ici vers la{n}droite, quelque chose{n}change un peu... je{n}crois."
 f071-0009 f0735ff25ab45ebb Le vieux Bal{n}"Oui, à une époque, les{n}fossiles humains{n}disparaissent soudain.{p}C'était il y a environ dix{n}mille ans."
 f071-0010 9050f370673e1416 Bart{n}"Ça veut dire quoi ?"
 f071-0011 ffbc990ec53f4b22 Le vieux Bal{n}"Ne me demande pas. Je{n}ne sais pas au{n}juste...{p}Mais je crois qu'il n'y{n}avait pas d'humains sur{n}cette planète avant ça.{wait 30}{n}Du moins, il semble."
 f071-0012 7572cd11cd2a97a4 Bart{n}"Comment ça ?{n}Et tout ce baratin{n}sur l'évolution ?"
-f071-0013 3b361b947c8b24ce Le vieux Bal{n}"Tu parles de la théorie{n}de l'évolution que prêche{n}l'Ethos, hein ?{p}On ne peut s'y fier !{n}Je crois plutôt aux{n}vieilles légendes et{n}aux mythes."
-f071-0014 8d256405bf5a1279 Fei{n}"Des légendes ?{n}Des mythes ?"
-f071-0015 794757144ef146d3 Le vieux Bal{n}"Vous ne connaissez pas{n}cette histoire...?"
+f071-0013 3b361b947c8b24ce Le vieux Bal{n}"Tu veux dire la théorie{n}de l'évolution de{n}l'Ethos, hein ?{p}On ne peut s'y fier !{n}Je crois plutôt aux{n}vieilles légendes et{n}aux mythes."
+f071-0014 8d256405bf5a1279 Fei{n}"Contes ?{n}Mythes ?"
+f071-0015 794757144ef146d3 Le vieux Bal{n}"Tu ne connais pas{n}cette légende...?"
 f071-0016 c3b071291a5e1242 Le vieux Bal{n}"On dit que les humains et{n}dieu vivaient ensemble dans{n}un paradis céleste.{p}Protégés par dieu, ils{n}ignoraient la peur de la{n}mort et les catastrophes{n}naturelles.{p}Puis, un jour, les humains{n}mangèrent un fruit défendu{n}qui leur donna une sagesse{n}incroyable.{p}Mais dieu chassa les{n}humains du paradis pour{n}leur péché.{p}Amers d'avoir été chassés,{n}les humains se servirent de{n}leur sagesse pour créer des{n}géants.{p}Avec eux, ils voulaient{n}défier dieu lui-même.{n}Mais dieu déchaîna sa{n}colère sur eux.{p}Tous ceux qui défièrent{n}dieu furent anéantis. Mais{n}dieu lui-même n'en sortit{n}pas indemne.{p}Emportant le paradis, le{n}dieu blessé s'enfouit au{n}fond de l'océan pour y{n}dormir des éons.{p}Avant de dormir, dieu usa{n}ses dernières forces pour{n}créer des humains au coeur{n}pur pour habiter ce monde.{p}On dit que ces gens{n}sont...{wait 30}nos ancêtres."
 f071-0017 b07242ac3764af8b Le vieux Bal{n}"Bon, enfin, j'arrête{n}de bavarder."
 f071-0018 f211b29a1be6e02c Fei{n}"Au fait, cette{n}caverne a..."
@@ -1138,51 +1138,51 @@ f071-0019 afe61a79b50363ad Le vieux Bal{n}"Une sortie ?{p}Il y a une sortie dans
 f071-0020 99e661362d50db82 Bart{n}"La barrière ? Le mur{n}géant qu'on voit de ton{n}entrée ?"
 f071-0021 f06b567879ec5558 Le vieux Bal{n}"Oui. De l'autre côté, il{n}y a une ancienne zone de{n}fouille d'Aveh.{p}Le mur a été construit{n}quand Aveh fouillait ici,{n}pour empêcher le sable de{n}tomber d'en haut.{p}Mais les travaux là-bas{n}sont arrêtés."
 f071-0022 82c00ae6feae9447 Fei{n}"Et comment on ouvre un{n}truc aussi énorme ?"
-f071-0023 92886529d45a6681 Bart{n}"Si c'est un mur,{n}on doit pouvoir{n}le démolir."
+f071-0023 92886529d45a6681 Bart{n}"Un mur, ça{n}doit pouvoir{n}se démolir."
 f071-0024 aa60bbbbb66c015f Le vieux Bal{n}"Doucement, les enfants.{p}Aussi bons que soient{n}vos Gears, vous ne{n}démolirez jamais ce mur.{p}Il est bien trop solide.{wait 30}{n}Alors...{n}passons un marché."
-f071-0025 4d00414f73f3fed6 Bart{n}"Un marché ?"
+f071-0025 4d00414f73f3fed6 Bart{n}"Deal ?"
 f071-0026 58da45ede3dba167 Le vieux Bal{n}"Le mur s'est fermé{n}quand les 'Capteurs de{n}sable' ont réagi.{p}Résultat, même moi, je{n}ne peux plus passer de{n}l'autre côté.{p}C'est peut-être quand{n}vous êtes tombés ici.{n}Vous vous battiez{n}là-haut ou quoi ?"
 f071-0027 f8dac1ebe7a297fa Fei{n}"Tu sais tout, toi !{p}Bref, qu'est-ce{n}qu'on peut faire ?"
 f071-0028 bff9d6884f05dd37 Le vieux Bal{n}"C'est simple. Il suffit{n}d'éteindre les Capteurs de{n}sable.{p}Ainsi, la barrière ne se{n}refermera pas.{wait 30}{n}Pendant ce temps, j'ouvre{n}la barrière."
-f071-0029 d8541e62c89e23b5 Fei{n}"D'accord, compris."
+f071-0029 d8541e62c89e23b5 Fei{n}"OK, compris."
 f071-0030 b31d88d9a9293e3a Le vieux Bal{n}"Les capteurs sont à deux{n}endroits. Vous verrez des{n}lumières rouges clignoter.{p}Bon, bonne chance, alors."
-f071-0031 9307bea014d03b72 Fei{n}"Allons-y, Bart."
+f071-0031 9307bea014d03b72 Fei{n}"On y va, Bart."
 f071-0032 932c604985a1137a Le vieux Bal{n}"Ah, avant que vous{n}partiez...{p}Je peux vous céder des{n}pièces et du carburant.{wait 20}{n}Venez me voir si besoin,{n}d'accord ?"
 f071-0033 ccb041fdadf02f5e Bart{n}"Merci, le vieux.{wait 20}{n}Bon, allons remplir notre{n}part du marché !"
-f071-0034 fe4d24402712146e Fei{n}"Bien joué, le vieux !"
+f071-0034 fe4d24402712146e Fei{n}"Bravo, le vieux !"
 f071-0035 169927296150a655 Le vieux Bal{n}"Marché conclu."
-f071-0036 48949e79a437fe33 Bart{n}"Hé, le vieux.{n}Je voudrais te demander{n}un truc."
+f071-0036 48949e79a437fe33 Bart{n}"Hé, le vieux.{n}J'ai une question{n}à te poser."
 f071-0037 4fd056446ba9c4a8 Le vieux Bal{n}"Quoi donc ?"
 f071-0038 ad6b185531ef1871 Bart{n}"Il paraît qu'il existe un{n}Gear bien supérieur aux{n}autres.{p}On l'appelait le{n}'Gear-dieu', fabriqué dans{n}les temps anciens et caché{n}quelque part.{p}Tu sais quelque chose{n}là-dessus ?"
 f071-0039 880dec9601d23153 Le vieux Bal{n}"Un dieu fait par l'homme,{n}créé avec la sagesse de{n}dieu !{p}Un tel Gear aurait la force{n}de mille Gears. D'un geste,{n}il raserait des villes{n}entières.{p}Ses cris de guerre{n}tonneraient jusqu'au ciel.{p}Tu parles sans doute{n}d'un 'Omnigear'."
 f071-0040 b11bc4f0edfe13fc Bart{n}"Tu connais ?{p}C'est peut-être de ça{n}que tu parlais dans ton{n}histoire de la guerre{n}contre dieu..."
 f071-0041 0faf32f6e8465fc6 Le vieux Bal{n}"Ma parole, toi aussi,{n}petit ?{p}Ces histoires inspirent{n}l'âme humaine. Mais ce ne{n}sont que des légendes.{n}Rien de réel."
-f071-0042 7a7472cf7eddb606 Le vieux Bal{n}"Bon, laissez-moi jeter un{n}oeil à vos Gears.{p}Ça ne prendra pas{n}longtemps, alors attendez{n}ici, s'il vous plaît."
-f071-0043 e4e052a38b1a4870 Bart{n}"Hé, attends !{wait 30}{n}Argh, il a disparu..."
+f071-0042 7a7472cf7eddb606 Le vieux Bal{n}"Bon, laissez-moi voir{n}vos Gears.{p}Ça ne sera pas long,{n}alors attendez ici,{n}s'il vous plaît."
+f071-0043 e4e052a38b1a4870 Bart{n}"Hé, attends !{wait 30}{n}Zut, il a filé..."
 f071-0044 18e383afb0298fc1 Fei{n}"Hé, Bart. Tu crois que le{n}Gear de cette histoire est{n}enterré quelque part ?"
-f071-0045 1b9350babed20aae Bart{n}"C'est ce que j'ai{n}entendu dire."
+f071-0045 1b9350babed20aae Bart{n}"C'est ce qu'on{n}m'a raconté."
 f071-0046 ac305040eb476520 Fei{n}"Et si l'un de nos{n}Gears était celui-là ?"
-f071-0047 fe9c4170cbc04522 Bart{n}"Tu parles !{n}Quelles sont les chances{n}que ça arrive ?"
+f071-0047 fe9c4170cbc04522 Bart{n}"Tu parles !{n}Comme si ça pouvait{n}arriver !"
 f071-0049 00042f904da38d52 Bart{n}"Les Gears déterrés ces{n}derniers temps...{p}...n'ont en général que{n}quelques siècles.{n}Ils sont loin de l'âge du{n}Gear de la légende."
-f071-0050 08134c92132b4e4a Fei{n}"Et pourquoi étaient-ils{n}enterrés...?"
-f071-0051 1e3dacaf3722aeab Bart{n}"Je sais pas.{n}Il n'y a aucune archive.{wait 30}{n}Sauf..."
+f071-0050 08134c92132b4e4a Fei{n}"Alors pourquoi{n}les enterrer...?"
+f071-0051 1e3dacaf3722aeab Bart{n}"Je sais pas.{n}Aucune archive.{wait 30}{n}Sauf..."
 f071-0052 446f67bf5a278669 Fei{n}"Sauf...?"
 f071-0053 867268634b715a2b Bart{n}"D'après les légendes, ils{n}ont été enterrés après une{n}grande guerre...{p}Les impacts de balles sur{n}leur blindage semblent le{n}confirmer."
 f071-0054 4d3a3f096453f471 Fei{n}"Tu veux dire qu'il{n}n'y a aucune archive{n}des derniers siècles ?{p}Et d'avant ?"
 f071-0055 31c01de878d4c96a Bart{n}"Ni l'un, ni l'autre.{p}L'Ethos garde toutes les{n}archives de cette{n}période.{p}Ils ont peut-être aussi{n}des archives très{n}anciennes...{p}Tout ce qu'on sait de{n}notre histoire vient des{n}bribes qu'on trouve{n}nous-mêmes."
 f071-0056 2c62795b4abb231f Bart{n}"Bref, Fei, tu penses{n}quoi du vieux ?"
 f071-0057 dfdf9e601b9a25e7 Fei{n}"Comment ça...?"
-f071-0058 f4b6ad5ed973af8b Bart{n}"Pourquoi un vieux vivrait{n}tout seul dans cette{n}caverne abandonnée ?"
+f071-0058 f4b6ad5ed973af8b Bart{n}"Pourquoi un vieux vit{n}tout seul dans cette{n}caverne abandonnée ?"
 f071-0059 5ffac6fcc97c3860 Fei{n}"Je sais pas.{wait 30} Il doit{n}déterrer de vieux Gears{n}ou un truc du genre ?"
-f071-0060 f1cea5380b117f03 Bart{n}"C'est ça ! Alors tu le{n}penses aussi ?"
+f071-0060 f1cea5380b117f03 Bart{n}"C'est ça !{n}Tu le penses aussi ?"
 f071-0061 26f0b6387db88cc8 Fei{n}"Hé !{n}Je disais ça pour rire.{p}Prends pas ça autant au{n}sérieux. C'est que des{n}légendes, tu sais ?"
-f071-0062 00ceb2f3d37f40ae Bart{n}"Non...ce vieux{n}mijote quelque chose !"
-f071-0063 1de19a18459f293c Le vieux Bal{n}"Ce n'est pas possible..."
-f071-0065 6d385e7ec52dc65e Bart{n}"Qu'est-ce qu'il y{n}a, le vieux ?"
-f071-0066 883c813d65fd90b2 Le vieux Bal{n}"Ce Gear est à toi ?"
-f071-0067 deaae3903135d118 Fei{n}"Euh... plus{n}ou moins."
+f071-0062 00ceb2f3d37f40ae Bart{n}"Non...ce vieux{n}manigance un truc !"
+f071-0063 1de19a18459f293c Le vieux Bal{n}"Impossible..."
+f071-0065 6d385e7ec52dc65e Bart{n}"Un souci, le vieux ?"
+f071-0066 883c813d65fd90b2 Le vieux Bal{n}"C'est ton Gear ?"
+f071-0067 deaae3903135d118 Fei{n}"Euh, plus{n}ou moins."
 f071-0068 65f5d4fd65fdcd83 Le vieux Bal{n}"Où l'as-tu trouvé ?"
-f071-0069 a32194f846c4440c Fei{n}"Je l'ai juste emprunté."
+f071-0069 a32194f846c4440c Fei{n}"Je l'emprunte juste."
 f071-0070 0192f72483deda6d C'est...{done 30}
 f071-0071 26d47010fb8eeb40 le{wait 5} réceptacle{wait 5}{wait 5} de{wait 5} l'âme{wait 5}{n}du{wait 5} tueur{wait 5}{wait 5} de{wait 30} dieu{wait 30}...{done 30}
 f071-0072 cc2638bf40c2bc24 Fei{n}"Attends ! Tu viens de{n}dire quoi ?"
@@ -1198,19 +1198,19 @@ f071-0082 4c40e6ddcf059c3b Le vieux Bal{n}"D'abord, essaie de{n}changer le moteu
 f071-0083 e163cfc5a9bfbdd7 Le vieux Bal{n}"Maintenant, allez vite{n}éteindre les Capteurs de{n}sable.{p}Ou vous voulez me{n}demander{n}autre chose ?"{p}    Où sont les capteurs ?{n}    Fonctions des Gears{n}    Des pièces à vendre ?{n}    Rien
 f071-0084 73c3ea6e52f4e991 Le vieux Bal{n}"Hmm, lesquelles ?"{n}    Pour les Gears{n}    Pour les personnages
 f071-0085 79793e2aeb645792 Le vieux Bal{n}"Vous avez éteint le{n}'Capteur de sable' en haut{n}de la Grande Salle...{p}Mais il y a un autre{n}'Capteur de sable' sur le{n}chemin d'où l'on voit les{n}chutes.{p}Il est sur une saillie{n}rocheuse, au nord-ouest{n}de mon robot de{n}réparation.{p}Autre chose ?"{n}    Fonctions des Gears{n}    Des pièces à vendre ?{n}    Rien
-f071-0086 3c151f168197de56 Le vieux Bal{n}"Hmm, que vous faut-il ?"{n}    Pièces de Gear{n}    Objets de personnage
+f071-0086 3c151f168197de56 Le vieux Bal{n}"Hmm, que voulez-vous ?"{n}    Pièces de Gear{n}    Objets de personnage
 f071-0087 28062666bdfd2a77 Le vieux Bal{n}"Vous avez éteint le{n}Capteur de sable de la{n}Grotte des Chutes.{p}Il en reste un, au-dessus{n}du grand rocher de la{n}Grande Salle. Vous l'avez{n}déjà vu.{p}Autre chose ?"{n}    Fonctions des Gears{n}    Des pièces à vendre ?{n}    Rien
 f071-0089 528576d3d184b33f Le vieux Bal{n}"Ah, juste à temps.{n}J'allais justement{n}ouvrir la barrière."
-f071-0090 527759a3e6a1fbda "Ça fait longtemps que je{n}n'ai pas soigné de Gear.{n}Ça va être amusant."
+f071-0090 527759a3e6a1fbda "Ça fait un bail que je{n}n'ai pas révisé un Gear.{n}Ça va être amusant."
 f071-0091 8758becdd598b746 Le vieux Bal{n}"La force d'un Gear dépend{n}des pièces équipées et du{n}pilote.{p}D'abord, le Moteur.{p}Un bon Moteur augmente la{n}Puissance d'attaque et la{n}capacité en carburant.{p}Les HP dépendent du{n}Châssis, et la Défense, de{n}l'Armure équipée.{p}Un conseil : à court de{n}carburant, utilisez{n}'Charge' pour en récupérer{n}un peu en vous défendant.{p}Face à un ennemi puissant,{n}utilisez 'Turbo' pour{n}accroître mobilité et{n}puissance.{p}Mais si vous abusez du{n}Turbo, le carburant va{n}s'épuiser.{p}Alors réfléchissez bien et{n}trouvez votre propre style{n}de combat."
 f071-0092 c7cfdece0f55f2a5 Le vieux Bal{n}"Pour commencer,{n}changez de moteur."
-f071-0093 52febf6edc5d1d2b Ça fait longtemps que je{n}n'ai pas eu de visite.{n}Que s'est-il passé ? Vous{n}êtes tombés d'en haut ?
+f071-0093 52febf6edc5d1d2b Ça fait un bail que je{n}n'ai pas eu de visite.{n}Que s'est-il passé ?{n}Tombés d'en haut ?
 f071-0094 cbc720727e7ba765 Je vois...{n}Pas de chance.{p}Au bruit, je devine que{n}vous pilotez tous deux de{n}bons Gears...{p}Mais les jambes semblent{n}flancher un peu.
 f071-0095 4353b723af09029f Ha ha ha.{n}Un Gear trahit son{n}défaut par le bruit{n}qu'il fait.{p}Je parie que l'un d'eux{n}a besoin d'un nouveau{n}tube hydromécanique aux{n}articulations.{p}Il fait un bruit{n}affreux. Ça doit être{n}dur de marcher comme ça.{p}Ah, au fait, je{n}m'appelle Balthazar.{n}Appelez-moi le vieux{n}Bal.
 f071-0096 6afd18d9e4e0db4b Le vieux Bal{n}"Disons 'prospecteur', ou{n}'collectionneur de trucs'.{p}On trouve beaucoup de{n}choses abandonnées dans{n}cette caverne de{n}stalactites."
 f071-0097 cbc817050d4a977f Bart{n}"Hé, Fei ! Ça alors !{n}Quelqu'un vit ici !"
 f071-0098 1b7b91b5c011ace1 Hmm, ça faisait longtemps,{n}mais j'ai cru entendre des{n}Gears. Les vôtres, je{n}suppose ?{p}Bref, entrez donc et{n}mettez-vous à l'aise.
-f071-0099 f4de4257691af81a Fei{n}"Je ne sais pas où c'est.{n}Tu peux me dire ?"
+f071-0099 f4de4257691af81a Fei{n}"J'ignore où c'est.{n}Tu peux me dire ?"
 f072-0000 3558c724c4992c87 Quoi ?{done 60}
 f072-0001 25002701a09b762c "Hé, descends de là,{n}vite !{wait 30} Je ne vais pas te{n}tuer.{wait 30} Je veux juste que tu{n}laisses ce Gear{wait 60}...{wait 60} Hein ?"
 f072-0002 19d5b9b0650deb6b "Hé !?{wait 30}{n}T'es{wait 20} pas un soldat{n}d'Aveh ?"
@@ -1353,7 +1353,7 @@ f075-0112 cc28f755507b63b1 Citan{n}"Ah, pardonnez-moi.{wait 10}{n}Je voulais jus
 f075-0113 4fb01a0976d3712c Maison{n}"Non, c'est un scénario{n}terriblement réaliste."
 f075-0115 093f315a95fa63d0 Citan{n}"Hum.{wait 10}{n}Que pourrait bien être{n}ce grand trésor{wait 5}...?"
 f075-0116 526b0bad7468448a Maison{n}"Eh bien,{wait 10} je n'en ai pas{n}la moindre idée...{wait 5}"
-f075-0117 41a0815c10d3a4f5 Le Gear...!{n}Il parle du Gear !{wait 10}{n}Ça ne peut être que ça !
+f075-0117 41a0815c10d3a4f5 Le Gear...!{n}Il parle du Gear !{wait 10}{n}Ce doit être ça !
 f075-0118 d434dc0516d3bcf4 Maison{n}"Jeune maître{wait 5}...{wait 10}{n}les Gears vont bien ?"
 f075-0119 56e40557b13b0284 Bart{n}"Ouais...{p}Même étanches, du sable{n}est entré dans les{n}articulations.{p}C'est galère à réparer,{n}alors j'ai laissé{n}l'équipage s'en occuper.{p}Mon boulot, c'est juste de{n}piloter.{p}En plus, je suis nul avec{n}les machines,{wait 10} alors je{n}ferais que gêner."
 f075-0120 22113ed15785e904 Jeune maître{wait 5}...
@@ -1499,7 +1499,7 @@ f079-0036 8456b73fe3859bb7 Bart{n}"Tu me pardonnes, hein ?"
 f079-0038 373d2382589a1d9c Oups !!{done 60}
 f079-0039 a46edaf45eb85b2e Bart{n}"Bref... désolé d'y{n}revenir, mais..."
 f079-0040 96b7361009012444 Fei{n}"Non !"
-f079-0041 868c480ced21963a Quoi ?
+f079-0041 868c480ced21963a Hé ?
 f079-0042 a2db94589cb71aca Fei{n}"Moi, je n'aime pas me{n}battre, pas comme toi.{p}Je suis monté dans ce{n}Gear par obligation.{wait 10} Je{n}préférerais ne jamais{n}piloter ces trucs.{p}Si tu tiens tant à ce{n}Gear, garde-le !{n}Je n'en veux pas !"
 f079-0043 6d21defa94d3f6a1 Bart{n}"Tu crois que j'aime me{n}battre ?{wait 10} ...C'est ça ?"
 f079-0044 fdefd536260ae29f Fei{n}"Tu n'aimes pas ça ?{wait 10} On{n}dirait bien.{p}Tu as l'air de n'aimer{n}que te battre."
@@ -1534,10 +1534,10 @@ f079-0078 d1fe2e6a1a46e5a2 Fei{n}"Je...{wait 10}{n}Que{wait 10}{n}suis-je ?"
 f079-0079 604ff024b15fd493 Fei{n}"Ce vieux...{wait 10}{n}m'a appelé...{wait 10}{n}tueur de{wait 10} dieu..."
 f079-0080 fbe2dd08b3855bf8 Fei{n}"Je ne veux pas{wait 5} de ce{n}genre de{wait 5} pouvoir{wait 5}..."
 f079-0081 6d6b24088b835ab6 Ma...{wait 10}{n}force...{done 90}
-f079-0082 f5baacb8354f0b0e Mon...{wait 10}{n}foyer...{done 90}
+f079-0082 f5baacb8354f0b0e Chez...{wait 10}{n}moi...{done 90}
 f079-0083 f2dd9e847b3986b2 Maison{n}"Il faut infiltrer Aveh et{n}sauver Margie sans{n}tarder !{p}La Gebler a trouvé cette{n}base.{wait 10} Laissons une petite{n}garnison et évacuons tant{n}qu'il est temps.{p}Par chance, le Yggdrasil{n}est intact : nous pouvons{n}embarquer immédiatement.{p}Les préparatifs de{n}l'équipage sont terminés.{p}Quand vous serez prêts,{n}monsieur Fei et docteur,{n}veuillez escorter le jeune{n}maître jusqu'au pont."
 f079-0084 31473dd3b0a0255d Maison{n}"Docteur Uzuki,{wait 10} monsieur{n}Fei,{wait 10} je vous remercie du{n}fond du coeur.{p}Je vous serais très{n}reconnaissant de bien{n}vouloir rester nous aider à{n}la sauver !"
-f079-0085 4fbfc45a7bbff58b Bart{n}"Hé, ça va, ça va.{wait 10}{n}Laisse-moi dire au revoir{n}aux filles d'abord."
+f079-0085 4fbfc45a7bbff58b Bart{n}"Hé, ça va, ça va.{wait 10}{n}Laisse-moi saluer les{n}filles avant de partir."
 f079-0086 fcf7711710d9998b {speed 255}Monter aux logements ?{n}    Monter{n}    Non
 f079-0087 4c181793d516a4c8 {speed 255}Descendre au hangar ?{n}    Descendre{n}    Non
 f079-0088 f45b3bf05c0eace2 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}100 %
@@ -1545,27 +1545,27 @@ f079-0089 d7ec0f71bb2a3df1 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{w
 f079-0090 3a94eb827b413e63 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}60 %
 f079-0091 b49c575128611005 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}40 %
 f079-0092 0062d3614a06a697 Niveau des provisions{n}＞{wait 10}＞{wait 10}＞{wait 10}20 %
-f080-0000 281474a1059c7e95 Helmholz{n}"Tout est prêt !!"
-f080-0001 bacf1fa782f91577 Stratski{n}"Tout est OK ici !"
-f080-0002 b1fdf6643520010f Broyer{n}"Confirmé !{wait 10}{n}C'est leur base,{n}sans aucun doute."
+f080-0000 281474a1059c7e95 Helmholz{n}"C'est prêt !!"
+f080-0001 bacf1fa782f91577 Stratski{n}"OK par ici !"
+f080-0002 b1fdf6643520010f Broyer{n}"Confirmé !{wait 10}{n}Leur base,{n}c'est certain."
 f080-0003 4dca157dee7dd28a Helmholz{n}"Ce rocher a été{n}facile à percer.{p}Je pensais que ça{n}serait plus{n}dur..."
 f080-0004 023c2b67e7fb86f7 Stratski{n}"Ces -Agneaux- de la{n}surface vivent dans un{n}endroit bien sympa..."
-f080-0005 5b036b98aa33b30c Renk{n}"Regardez-moi ça...!{p}Ils ont bâti cet endroit{n}bien mieux que les{n}installations de Bledavik.{p}Sans doute un fort secret{n}bâti du temps de leur{n}ancien roi..."
+f080-0005 5b036b98aa33b30c Renk{n}"Regardez-moi ça...!{p}Ils ont bâti cet endroit{n}bien mieux que les{n}locaux de Bledavik.{p}Sans doute un fort secret{n}bâti du temps de leur{n}ancien roi..."
 f080-0006 857a8d0cc0af37bd Vance{n}"Et alors...?{wait 10}{n}Finissons-en{n}vite !"
 f080-0007 7cea604473e13ebe Stratski{n}"Alors...{wait 10}{n}où sont les Gears ?"
 f080-0008 42bcf48a4779ae03 Stratski{n}"Par ici ?"
-f080-0009 6980263224499003 Helmholz{n}"À droite !{wait 10}{n}Il y a un hangar !"
+f080-0009 6980263224499003 Helmholz{n}"À droite !{wait 10}{n}Un hangar !"
 f080-0011 968023611622d745 Vance{n}"Trouvé !!"
-f080-0012 6f2ec3ab71b30cb1 Helmholz{n}"Ce sont des 'Deurmods'.{n}Des Gears de pirates{n}ordinaires."
+f080-0012 6f2ec3ab71b30cb1 Helmholz{n}"Voici des 'Deurmods'.{n}Des Gears de pirates{n}ordinaires."
 f080-0013 1034154c4bad60ab Vance{n}"Ha !{wait 10}{n}Ignorez-les ! On{n}s'en chargera vite."
 f080-0014 43a234433be96169 Stratski{n}"Et si on en prenait ?{wait 10}{n}Même ceux-là, ça vaut{n}l'infiltration."
-f080-0015 3adb2e4a4c572dfc Renk{n}"Très bien !{wait 10}{n}Le Schpariel est déjà en{n}arrière-garde !{p}Préparez-vous à{n}éliminer tout ce{n}qui se dressera sur{n}notre chemin !"
-f080-0016 6e19ac7f492ebe55 Broyer{n}"Quand vous voulez !"
-f080-0017 dd48a4b8feaddcdc Renk{n}"MAINTENANT !!"{done 40}
+f080-0015 3adb2e4a4c572dfc Renk{n}"Très bien !{wait 10}{n}Le Schpariel est en{n}place à l'arrière !{p}Préparez-vous à{n}éliminer tout ce{n}qui se dressera sur{n}notre chemin !"
+f080-0016 6e19ac7f492ebe55 Broyer{n}"À vos ordres !"
+f080-0017 dd48a4b8feaddcdc Renk{n}"GO !"{done 40}
 f081-0000 2c0296ca283e8ca5 Maison{n}"Aveh comme Kislev se{n}consacrent à fouiller les{n}ruines.{p}La puissance des deux pays{n}croît de jour en jour.{p}Même avec l'aide de tous{n}nos compagnons pour lancer{n}une révolution...{p}...nos forces réunies ne{n}suffiraient toujours pas.{p}La garde de Shakhan nous{n}écraserait sûrement en un{n}clin d'oeil."
 f081-0001 09525cee89b0268c Il nous fallait de la{n}puissance.{p}Nous avons tenté de{n}fouiller les ruines{n}avec le Yggdrasil, sans{n}le succès espéré.
-f081-0002 c3625592a992cde8 Fouiller exige énormément{n}de temps, de main-d'oeuvre{n}et de capitaux.{p}Notre croiseur des sables{n}ne trouve, au mieux, que{n}de petits objets.
-f081-0003 5afc1c3a48254385 Citan{n}"Et la piraterie..."
+f081-0002 c3625592a992cde8 Fouiller exige beaucoup{n}de temps, de bras et{n}de capitaux.{p}Au mieux, notre croiseur{n}trouve de petits objets{n}dans le sable.
+f081-0003 5afc1c3a48254385 Citan{n}"Et le pillage..."
 f082-0001 89d80d825d17c105 {speed 255}Soeurette...！！{done 30}
 f082-0002 5a3affb72081b210 Vance{n}"Où crois-tu{n}aller comme ça ?"{done 60}
 f082-0003 8dbc383bc6fc78d9 A, arrête...{done 30}
@@ -1573,13 +1573,13 @@ f082-0004 5519864d00c5a341 Vance{n}"Admirable...{wait 30}{n}Et quel cri poussera
 f082-0005 5b3ce10cd4999ce3 Quoi !?
 f082-0006 17b9b2c6a576a0db Fei{n}"Pourquoi te bats-tu ?"
 f082-0007 0532737c1e2ea1a9 Vance{n}"Toi,{wait 10} qu'est-ce{n}que tu fais !?"
-f082-0008 c973324418bbb637 Fei{n}"Qu'est-ce que tu gagnes à{n}te battre ?"
+f082-0008 c973324418bbb637 Fei{n}"Que gagnes-tu à{n}te battre ?"
 f082-0009 170529ea9e0db814 Fei{n}"Et si c'était{n}ta maison !?"
 f083-0001 dadf92f0b88703f7 Bart{n}"Je savais que tu{n}changerais d'avis !!"
 f083-0002 aaabc97fdc0b43bd Fei{n}"On en parlera plus tard !{n}Là, un gros problème nous{n}tombe dessus !"
-f083-0003 c56683e157920157 Citan{n}"Je suis un peu{n}rouillé, je le sais...{p}Ce que je peux{n}apprendre a des{n}limites, j'ai commencé{n}si tard.{p}Pourtant, j'ai frappé cet{n}homme de plein fouet sans{n}qu'il tombe. Ils doivent{n}utiliser 'cela'."
-f083-0004 faf98a4b7c08e425 Citan{n}"Jeune homme !{wait 10}{n}Ils utilisent du{n}-Drive- !{p}Des drogues qui décuplent{n}la force au combat.{wait 10}{n}Nos attaques normales ne{n}les blesseront pas !"
-f083-0005 d10efed1b246a360 Bart{n}"Sérieux ?{n}C'est comme ça qu'ils{n}tiennent le coup ?{p}Bon sang...{n}Ça n'en finit{n}pas !"
+f083-0003 c56683e157920157 Citan{n}"Je suis un peu{n}rouillé, je le sais...{p}Ce que je peux{n}apprendre a des{n}limites, j'ai commencé{n}si tard.{p}Pourtant, cet homme a{n}encaissé mon coup sans{n}tomber. Ils doivent{n}utiliser 'cela'."
+f083-0004 faf98a4b7c08e425 Citan{n}"Jeune homme !{wait 10}{n}Ils utilisent du{n}-Drive- !{p}Une drogue qui décuple{n}la force au combat.{wait 10}{n}Nos coups normaux ne{n}les blesseront pas !"
+f083-0005 d10efed1b246a360 Bart{n}"Sérieux ?{n}Voilà pourquoi ils{n}tiennent le coup ?{p}Bon sang...{n}Ça n'en finit{n}pas !"
 f083-0007 2cbd6b340622c821 Bart{n}"D'accord ! On se{n}débrouillera sans lui !"
 f084-0000 a08fd6aa2eee51a3 Ah, Bartholomew.{wait 10}{n}"Les Gears sont tous à{n}bord du Yggdrasil."
 f084-0001 f51a24636296985e Bon travail.{wait 10} Sans votre{n}soutien, cette base ne{n}serait plus là. Embarquons{n}sur le Yggdrasil.
@@ -1642,7 +1642,7 @@ f085-0023 1aaa1a34265db9ec Cet endroit est devenu{n}insupportable.{p}Ma famille 
 f085-0024 e56396e341189052 Je suis venu dans l'espoir{n}de trouver des souvenirs.{p}En cas d'affrontement, je{n}résisterai pour défendre{n}cet endroit.{p}Si Shakhan tombe, le pays{n}changera.{p}Alors je rentrerai et je{n}demanderai ma copine en{p}mariage et je prendrai un{n}nouvel emploi.
 f085-0025 77b6ccfadf18f53b Hé, mais c'est le{n}jeune maître !
 f085-0026 37677afbad89c250 Hé, toi !
-f085-0027 7c5c3f80e176b49b Hein ?
+f085-0027 7c5c3f80e176b49b Hé ?
 f085-0028 7c294580e14b6534 Hein !
 f085-0029 cb70f002be5fdd79 C'est Bartholomew !{p}Tu vas bien ?
 f085-0030 82d8d476fe7377b5 Bart{n}"Ça peut aller !"
@@ -1750,7 +1750,7 @@ f086-0099 bf2d678265101694 Fei{n}"Cette drogue, le 'Drive',{n}n'importe qui dans
 f086-0100 ecd3bb2371e7f24c Citan{n}"Du moins, quiconque dans{n}les forces de la Gebler{n}envoyées en surface..."
 f086-0101 0b274679549e5873 Bart{n}"Tu t'inquiètes pour{n}elle, hein ?"
 f086-0103 e28bd3788567ebe1 Bart{n}"J'en ai vu{wait 5}...{wait 5} dans{n}sa chambre."
-f086-0104 4f3b7ce5350c2f65 Fei{n}"Non..."
+f086-0104 4f3b7ce5350c2f65 Fei{n}"Non."
 f086-0105 43aa2f59a6eadc9a Bart{n}"...{wait 5}Bref{wait 5}...{wait 5} utiliser des{n}esclaves comme cobayes{wait 5}...{wait 5}{n}Jusqu'où{p}va la bassesse de ces{n}types{wait 5}...?"
 f086-0106 728ba336612c43d6 Bart{n}"Hmm...{wait 30} Je crois que j'ai{n}à peu près tout compris."
 f086-0107 e8fcffe695b99647 Bart{n}"Vieux Maison !{p}Réserve-nous la mairie.{n}On y finira la{n}discussion.{p}Je vais prendre l'air."
@@ -1968,25 +1968,25 @@ f093-0014 73952a9e297956b9   Bart{n}  "Cobayes humains...!?{n}  Expériences hum
 f093-0015 f230fe70bfe4e3c8   Sigurd{n}  "Oui, par exemple...
 f093-0017 4ba7c6bd53080201      Cette drogue et toutes{n}     celles du même genre{n}     sont issues de{n}     tests sur des humains..."
 f093-0018 5a6a5aa3db063f04      Citan{n}     "Mais le rôle de ces{n}     cobayes ne s'arrêtait{n}     pas là !"
-f093-0019 afb362747b0fe330 Citan{n}"Un vent nouveau souffle{n}aujourd'hui..."
+f093-0019 afb362747b0fe330 Citan{n}"Aujourd'hui souffle{n}un vent nouveau..."
 f093-0020 3250a91af3c39eb8 Sigurd{n}"Bien, nous partons{n}devant préparer le{n}navire pour le départ."
 f093-0021 2623a9dc3dfe6abe Les représentants de la{n}ville sont réunis dans{n}la salle de l'assemblée{n}depuis ce matin.
 f093-0022 e04977ac52583f43 On dit que c'est parce que{n}Marguerite est revenue...{p}Ils essaient de décider{n}comment la 'paroisse de{n}Nisan' doit traiter avec{n}Aveh.
 f093-0023 cd3632ff2ca8ca54 Je comprends que tout{n}le monde s'inquiète.{p}Mais la Grande Mère{n}est enfin revenue...{p}On devrait faire la{n}fête, non ?
 f093-0024 fae8b11146c42d33 Margie{n}"Ce sont elles qui{n}m'ont élevée quand{n}j'étais petite."
-f093-0025 524f35051a89958c Margie{n}"La prochaine fois, je ne{n}pourrai plus t'appeler{n}'jeune maître'.{p}Il faudra sans doute{n}dire 'Votre Majesté'{wait 5}...{wait 10}{n}Mais ça sonne pas très{n}bien, hein ?"
+f093-0025 524f35051a89958c Margie{n}"Je ne pourrai plus{n}t'appeler 'jeune maître'{n}la prochaine fois.{p}Il faudra sans doute{n}dire 'Votre Majesté'{wait 5}...{wait 10}{n}Mais ça sonne pas très{n}bien, hein ?"
 f093-0026 5b2f2e5053dc1cae Bart{n}"Peu importe...{n}Ça m'est égal."
 f093-0027 706e3efbb8183fca Maison{n}"Les gens de Nisan ont eu{n}la générosité de nous{n}louer cette maison.{p}Inutile, donc, de{n}chercher une chambre à{n}l'auberge pour un temps.{p}De plus, maître Sigurd{n}souhaite vous parler de{n}la suite, si vous le{n}permettez..."
 f093-0028 90d944681696f31f Bart{n}"D'accord...{n}Et où est Sig ?"
 f093-0029 1ad0d1049df2f88b Maison{n}"Maître Sigurd vous attend{n} à l'intérieur."
-f093-0030 2c6031264124b444 Bart{n}"D'accord, merci, Maison."
-f093-0031 294555d4d3fa1673 Maison{n}"Maître Sigurd vous attend{n}à l'intérieur, jeune{n}maître..."
+f093-0030 2c6031264124b444 Bart{n}"OK, merci, Maison."
+f093-0031 294555d4d3fa1673 Maison{n}"Maître Sigurd vous{n}attend à l'intérieur,{n}jeune maître..."
 f093-0033 a8b667d114d412c0 Maison{n}"Jeu-ne maî--tre !"
 f093-0034 c96a35b35e9f7199 Bart{n}"J'aurais jamais{n}cru que Sig avait{n}un passé pareil..."
-f093-0035 f9af63c142f9492d Citan{n}"Vous vous méfiez{n}encore de Sigurd...?"
+f093-0035 f9af63c142f9492d Citan{n}"Vous doutez{n}toujours de{n}Sigurd...?"
 f093-0036 9a9437b572bc179f Bart{n}"Bah... enfin... tout est{n}arrivé si vite.{p}Je m'attendais à autre{n}chose... genre qu'on était{n}rivaux d'enfance ou un{n}truc comme ça...{p}Mais c'est rien à côté de{n}son histoire de tout à{n}l'heure, hein ?"
 f093-0037 4232e3824581a645 Citan{n}"Hmm.{wait 30} Son histoire vous a{n}troublé, car elle n'est pas{n}si simple...{p}Il a autrefois collaboré{n}avec l'un des généraux de{n}la Gebler...{p}Et derrière la Gebler se{n}trouvait un pays dont vous{n}n'aviez jamais entendu{n}parler..."
-f093-0038 6ff299f4a20726e6 Bart{n}"Hé, pourquoi vous me{n}cherchez des poux ?"
+f093-0038 6ff299f4a20726e6 Bart{n}"Hé, pourquoi{n}vous vous en{n}prenez à moi ?"
 f093-0039 45b37be241e8a68c Citan{n}"Je ne vous cherche pas de{n}poux, ni ne vous blâme. Je{n}veux dire ceci...{p}En pensant à ce qu'il{n}ressent, vous comprendrez{n}pourquoi il n'a pu vous en{n}parler jusqu'ici."
 f093-0040 0b942e5d6bbab523 Citan{n}"À voir comment Solaris a{n}agi jusqu'ici envers les{n}autres pays...{p}...elle n'a jamais visé{n}plus que le maintien de son{n}empire, sa propre{n}'autopréservation'.{p}Et leur armée est immense,{n}vous l'avez vu.{n}Sigurd voyait donc loin...{p}D'abord, il voulait sans{n}doute régler les problèmes{n}du continent d'Ignas.{p}Cela fait, il aurait une{n}base plus solide pour{n}affronter Solaris ensuite.{p}Bien mieux que de se jeter{n}dans une guerre perdue{n}d'avance.{n}Très logique, en vérité."
 f093-0041 daf61a01a9ffcbd3 Bart{n}"On dirait que vous vous{n}comprenez très bien."
@@ -1994,28 +1994,28 @@ f093-0042 a7fc258c9698d215 Citan{n}"Eh bien, nous ne nous{n}connaissons pas d'hi
 f093-0043 55aef4a62366c42d Bart{n}"À propos...{n}Pourquoi être partis ?{p}Ce Ramsus, c'était pas{n}une 'Étoile de{n}l'Espoir' ou un truc{n}comme ça ?"
 f093-0044 06528bfe08600506 Citan{n}"Si, au début, je le{n}croyais vraiment.{p}Puis j'ai compris que sa{n}pensée ne différait guère{n}de l'ancien système.{p}En gros, la seule{n}différence tenait à ce{n}qu'on privilégiait : le{n}rang ou le mérite.{p}Les mots avaient changé,{n}mais au fond, rien ne le{n}distinguait de ce que{n}faisait déjà Solaris.{p}Il ne voulait nullement{n}offrir à tous une vie{n}meilleure."
 f093-0045 eea8dec8b6cb1192 Bart{n}"Bref, un élitiste. Je{n}l'aime pas trop non{n}plus."
-f093-0046 860a7fdc0b7fc7af Bart{n}"Alors, Citan...{wait 30}{n}Vous croyez que je peux{n}battre la Gebler ?"
-f093-0047 591be1a6cc15c93a Citan{n}"Pourquoi ? Vous comptez{n}les combattre ?"
+f093-0046 860a7fdc0b7fc7af Bart{n}"Alors, Citan...{wait 30}{n}Je pourrais battre{n}la Gebler ?"
+f093-0047 591be1a6cc15c93a Citan{n}"Pourquoi ?{n}Vous comptez les{n}affronter ?"
 f093-0048 7f75b64251e02910 Bart{n}"Tant qu'ils soutiennent{n}Shakhan, on pourra pas{n}l'éviter.{p}Au train où vont les{n}choses, il faudra{n}sûrement les affronter un{n}jour."
 f093-0049 bf3a9b4309d3ac3c Citan{n}"Hmm...{n}J'imagine, mais...{p}Même si nous battions la{n}Gebler ici, il resterait{n}Solaris à affronter.{p}Sans prudence, nous{n}pourrions nous enliser dans{n}une guerre plus longue que{n}contre Shakhan.{p}Continuer ainsi n'est-il{n}pas bien dur pour tout le{n}monde ?{p}Il est temps, je crois, de{n}chercher l'aide de bien{n}plus de gens."
-f093-0050 1d16833d4c71a686 Bart{n}"Alors battre Shakhan ne{n}nous débarrassera pas de{n}la Gebler et cie..."
-f093-0051 4fd52e8123540fce Bart{n}"Je vois où vous voulez{n}en venir...{p}'Pour vaincre la Gebler,{n}conquiers d'abord{n}ton trône !'{n}...C'est ça ?"
+f093-0050 1d16833d4c71a686 Bart{n}"Battre Shakhan ne nous{n}débarrassera pas de la{n}Gebler et cie..."
+f093-0051 4fd52e8123540fce Bart{n}"Je vois où vous voulez{n}en venir...{p}'Pour battre la Gebler,{n}conquiers d'abord{n}ton trône !'{n}...C'est ça ?"
 f093-0052 48d68abb815f307d Citan{n}"Hmm...{n}On peut le dire ainsi."
 f093-0053 4cd8fdaa730efa0b Bart{n}"Comment ça... 'On peut{n}le dire ainsi' ?{p}Mais, réflexion faite,{n}il est peut-être temps{n}que j'agisse."
 f093-0054 3cc696771157437c Ce chemin mène à{n}la cathédrale.
 f093-0055 22116fa8baec83aa Ah, Bart ! Content de{n}te voir en forme.
 f093-0056 b5abfc0426d6e5f7 J'ai déjà contacté le{n}monastère.{p}Conduis vite Margie{n}là-haut, s'il te plaît.{p}Elle sera si contente...{n}sans parler des soeurs !
-f093-0057 728e940467772004 Margie{n}"Je dois vite aller voir{n}les soeurs."
+f093-0057 728e940467772004 Margie{n}"Vite, je dois{n}voir les soeurs."
 f093-0058 cb0a0826d0b2019f J'ai déjà contacté le{n}monastère.{p}Va vite là-bas montrer{n}que tu vas bien.{p}Elles seront sûrement{n}ravies de te voir !
 f093-0059 ca27ef019f88e63c Bon retour{n}parmi nous !
 f093-0060 dac0b49e5fb9c400 Les gens du port secret{n}nous ont prévenus juste{n}avant votre arrivée.
 f093-0061 35ebf028c806f876 Quel soulagement de vous{n}voir sains et saufs !
 f093-0062 1dc67ed29c6c7325 Mon père dit toujours :{n}"Ici règne la paix."...{p}C'est quoi, la 'paix' ?{n}Je ne comprends pas bien.
 f093-0063 b93269ace8b16e36 Monsieur le{n}pirate !
-f093-0064 ce07720cacd359b3 Un jour, tu me laisseras{n}monter sur ton bateau ?
+f093-0064 ce07720cacd359b3 Tu m'emmèneras sur{n}ton bateau, un jour ?
 f093-0065 6c8a80bf13973b19 Bart{n}"Hahaha ! Peut-être{n}quand tu seras plus{n}grand, petit !"
-f093-0066 fbc00a4b93d4750b Il y a des méchants{n}qui viennent nous{n}chercher ?
-f093-0067 bf2f26d7cafc34be Hé, t'es pas d'ici,{n}hein ?{p}Maman dit qu'il y a plein{n}d'inconnus qui font des{n}bêtises, alors je dois{n}faire attention.{p}T'es un méchant, toi ?
+f093-0066 fbc00a4b93d4750b Des méchants{n}viennent nous{n}chercher ?
+f093-0067 bf2f26d7cafc34be Hé, t'es pas d'ici,{n}hein ?{p}Maman dit que plein{n}d'inconnus font des{n}bêtises, alors je dois{n}faire attention.{p}T'es un méchant, toi ?
 f093-0068 dee6b36bbe3034c7 Margie est revenue !
 f093-0069 894d5ba8e0fca0cf Papa dit qu'il va y{n}avoir une guerre,{n}alors on devrait{n}partir ailleurs.
 f093-0070 0a3995e4a52b2d2e Comment allez-vous, mon{n}jeune seigneur ?
@@ -2023,12 +2023,12 @@ f093-0071 2b01288aeed8b621 Bart{n}"M'appelle pas{n}'jeune{n}seigneur' !"
 f093-0072 e4151a45917b387b (Ah ! J'ai oublié...{wait 10}{n}Votre identité devait{n}rester secrète.{p}Seule une poignée de{n}gens ici sait qui vous{n}êtes...{p}Je ferai plus attention,{n}mon jeune seigneur !{wait 30}{n}...{wait 30}Oups.)
 f093-0073 c7690ca32d07a870 Voilà mon jeune{n}seigneur ! On dit que{n}vous avez fait un sacré{n}coup cette fois !
 f093-0074 7093e679e5eddf01 Bart{n}(Chut ! Moins fort !{n}Mon identité devait{n}rester secrète !{p}Et si un espion de la{n}capitale s'était glissé{n}ici et t'avait{n}entendu !?)
-f093-0075 c5a76885922da3ae (Ah... J'y avais même pas{n}pensé !)
+f093-0075 c5a76885922da3ae (Ah... J'y avais{n}pas pensé !)
 f093-0076 b5cedf24627e497a Mon jeune seigneur !{n}On dit que l'heure est{n}enfin venue.{p}Mais je ne pourrai{n}plus vous appeler{n}ainsi...{n}...Votre Majesté !
 f093-0077 8a9d34b2a0fe407f Bart{n}"Bon...{wait 30}dis 'jeune{n}seigneur'.{wait 10} 'Majesté',{n}c'est trop !{p}C'est pas que l'un ou{n}l'autre m'aille, ni que{n}j'aime qu'on m'appelle{n}ainsi, d'ailleurs !"
-f093-0078 30c655acb89247b5 Comment allez-vous, mon{n}jeune seigneur ?{p}Je savais que vous{n}reviendriez entier !
+f093-0078 30c655acb89247b5 Comment va mon{n}jeune seigneur ?{p}Je savais que vous{n}reviendriez sain{n}et sauf !
 f093-0079 aff454ee0ac808ac Vous êtes pèlerin ?{n}Les pèlerins aussi{n}jeunes sont très{n}rares.
-f093-0080 fbb39744af18b93e Comment va mon jeune{n}seigneur ?{p}Je savais que vous{n}reviendriez tous vivants !
+f093-0080 fbb39744af18b93e Comment va mon jeune{n}seigneur ?{p}Je savais que vous{n}reviendriez tous{n}vivants !
 f093-0081 b25eb24740fe5a64 Vous êtes les amis de mon{n}jeune seigneur, pas vrai ?{n}Vous le savez sans doute{n}déjà, mais...{p}Un jour, il dirigera ce{n}pays ! J'ai eu la chance de{n}m'occuper de lui quand il{n}était petit.{p}C'est pour ça que je{n}l'appelle 'jeune seigneur'.{n}Veillez sur lui pour moi,{n}je vous en prie !
 f093-0082 c4633b41eb68d01f Essayez des choses{n}neuves tant que vous{n}êtes jeune !{p}Sans élargir vos{n}horizons, vous le{n}regretterez en{n}vieillissant.
 f093-0083 fad0edd1a25ef40c Alors tu te lances, hein,{n}Bartholomew ?{p}Mais j'ai idée que cet{n}homme ne restera pas les{n}bras croisés à te laisser{n}faire.
@@ -2046,16 +2046,16 @@ f093-0096 510be716ffbd485d Je n'en avais aucune idée...{n}Tiens, la Grande Mèr
 f093-0097 eb814b40e9c23ab6 Cette terre...{n}s'étend tout autouuuur du{n}lac...{p}Qui fait le touuuur de la{n}cathédrale.{p}Pour le plaisir,{n}faites-en le touuuur{n}aussi.{p}Même s'il n'y a rieeeen à{n}voir, notez bien.
 f093-0098 6a1eb71651d1c647 Ça fait chaud au coeur{n}de voir les jeux{n}innocents des enfants.
 f093-0099 cf1643f1f50e26df La plupart des familles{n}avec enfants ont fui la{n}ville.{p}Elles craignaient de se{n}retrouver en pleine{n}bataille.{p}C'est si vide, à présent.{n}Ils me manquent tant...
-f093-0100 1664cf3030c778df Où que l'on aille dans{n}ce monde, la guerre{n}est partout.{p}Cette ville est peut-être{n}le seul endroit à l'écart{n}des conflits.
+f093-0100 1664cf3030c778df Où que l'on aille dans{n}ce monde, la guerre{n}est partout.{p}Cette ville est sans{n}doute le seul endroit{n}en paix.
 f093-0101 7779ec78b53c0db6 Les représentants de la{n}ville discutent dans la{n}salle de l'assemblée{n}depuis ce matin.
 f093-0102 80e037235dccdc3a On dit qu'ils préparent{n}un plan face aux troupes{n}d'Aveh.{p}Certains voient le{n}retour de Margie comme{n}un fardeau.
 f093-0103 4566d80e6c790528 Je comprends que tout le{n}monde s'inquiète.{p}Mais ne devrions-nous pas{n}rendre grâce d'avoir la{n}Grande Mère parmi nous à{n}Nisan...?
 f093-0104 7d016c4c858a1e27 Les représentants de la ville{n}ont fini de débattre et{n}passent déjà à l'action.{p}Ils se sont dispersés pour{n}préparer les défenses et{n}loger les habitants qui{n}veulent fuir.
 f093-0105 a5262c4d5612ca77 Que les cieux vous{n}protègent.
-f093-0106 08e174b448c19e9e Aucun de nous ne sert{n}les cieux à la{n}cathédrale de Nisan...{p}Mais nous prions ici tous{n}les jours, comme ceux qui{n}y vivent depuis longtemps.
+f093-0106 08e174b448c19e9e Aucun de nous ne sert{n}les cieux à la{n}cathédrale de Nisan...{p}Mais, vivant ici depuis{n}de longues années, nous{n}y prions chaque jour.
 f093-0107 73afd55fa7d78a27 Que tout advienne{n}selon la volonté{n}des cieux...
 f093-0108 406a6178ee1651ad Dieu vous bénisse.{n}Et bonne chance à vous.
-f093-0109 4a8bacb23421b7e1 Je vais t'attraper !
+f093-0109 4a8bacb23421b7e1 Je t'aurai !
 f093-0110 b1daea0e1cdd6375 Je t'attrape !
 f093-0111 1aee23939fa2dcd2 Pousse-toi,{n}pousse-toi !
 f093-0112 41c2e04d9a2cc26e Pousse-toi !{n}Pousse-toi !
