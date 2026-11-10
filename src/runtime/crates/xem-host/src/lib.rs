@@ -156,9 +156,21 @@ pub fn open_gpu(
     Ok((gpu, surface))
 }
 
+/// Configures `surface`, returning wgpu's error rather than raising it as
+/// uncaptured (which ends the run): Android can take the native window away
+/// between a check and the configuration, as when it pauses or recreates the
+/// activity while the app starts (the release smoke's first start, after
+/// #80's merge: "In Surface::configure: Invalid surface").
+fn configure(gpu: &Gpu, surface: &wgpu::Surface, config: &wgpu::SurfaceConfiguration) -> Result<(), String> {
+    let scope = gpu.device.push_error_scope(wgpu::ErrorFilter::Validation);
+    surface.configure(&gpu.device, config);
+    pollster::block_on(scope.pop()).map_or(Ok(()), |error| Err(error.to_string()))
+}
+
 /// The window's swapchain. The surface is absent while suspended: Android
 /// takes the native window away in the background and may replace it (on a
-/// configuration change, say) while the app runs.
+/// configuration change, say) while the app runs; a surface that cannot be
+/// configured is treated as gone.
 pub struct Presenter {
     surface: Option<wgpu::Surface<'static>>,
     /// The native surface `surface` was made for.
@@ -202,7 +214,7 @@ impl Presenter {
             color_space: wgpu::SurfaceColorSpace::Auto,
             view_formats: vec![],
         };
-        surface.configure(&gpu.device, &config);
+        configure(gpu, &surface, &config)?;
         Ok(Self {
             surface: Some(surface),
             native: window.native_surface(),
@@ -238,10 +250,8 @@ impl Presenter {
                     .surface
                     .as_ref()
                     .is_some_and(|surface| surface.get_capabilities(&gpu.adapter).formats.is_empty());
-            if gone {
+            if gone || self.surface.as_ref().is_some_and(|surface| configure(gpu, surface, &self.config).is_err()) {
                 self.surface = None;
-            } else if let Some(surface) = &self.surface {
-                surface.configure(&gpu.device, &self.config);
             }
         }
         true
@@ -271,7 +281,7 @@ impl Presenter {
         let (width, height) = window.pixel_size();
         self.config.width = width.max(1);
         self.config.height = height.max(1);
-        surface.configure(&gpu.device, &self.config);
+        configure(gpu, &surface, &self.config)?;
         self.surface = Some(surface);
         self.native = native;
         Ok(())
@@ -295,14 +305,16 @@ impl Presenter {
             wgpu::CurrentSurfaceTexture::Success(frame) => Some(frame),
             wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
                 drop(frame);
-                surface.configure(&gpu.device, &self.config);
+                if configure(gpu, surface, &self.config).is_err() {
+                    self.surface = None;
+                }
                 None
             }
             wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => None,
             wgpu::CurrentSurfaceTexture::Outdated => {
                 self.resize(gpu, window);
-                if let Some(surface) = &self.surface {
-                    surface.configure(&gpu.device, &self.config);
+                if self.surface.as_ref().is_some_and(|surface| configure(gpu, surface, &self.config).is_err()) {
+                    self.surface = None;
                 }
                 None
             }
