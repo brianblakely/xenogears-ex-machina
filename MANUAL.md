@@ -179,9 +179,11 @@ For a controller combination, hold Back and press the other button.
 
 ## Touch controls
 
-Use the on-screen D-pad and labelled buttons just as you would a controller.
-Keep a finger down to hold a button, and slide across the D-pad to change
-direction. The camera buttons, Start and Settings sit near the top.
+Move with the on-screen stick and use the labelled buttons just as you would
+a controller. Put a thumb down anywhere on the left half of the screen: the
+stick centres itself under it, and sliding the thumb that way walks, steers
+or moves a cursor, diagonals included. Keep a finger down to hold a button.
+The camera buttons, Start and Settings sit near the top.
 
 You can also tap the ground to walk, tap a person to approach and talk, or
 tap an entry or target to choose it. Tap dialogue to advance it. **LOOK**

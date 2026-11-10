@@ -58,6 +58,18 @@ pub struct Key {
     pub hold: bool,
 }
 
+/// The D-pad's eighth (`xem_core::field::dpad_of_sector`) a stick steering
+/// toward screen direction `dir` (Right 0, Down 0x400, Left 0x800, Up 0xC00)
+/// holds: the nearest, or the one `held` before while `dir` stays near it
+/// (a few degrees past the boundary), so a stick held on a boundary keeps
+/// its eighth. The headset's captured stick and the touch deck's share it.
+pub(crate) fn eighth(dir: i32, held: Option<i32>) -> i32 {
+    match held {
+        Some(p) if (((dir - p * 0x200 + 0x800).rem_euclid(0x1000)) - 0x800).abs() < 0x140 => p,
+        _ => ((dir + 0x100) / 0x200).rem_euclid(8),
+    }
+}
+
 /// The game's buttons as the field reads them (after its button
 /// assignment), the action each is, and its key's label: the symbol the
 /// button has under the default assignment (the game's prompts name those).
@@ -249,12 +261,7 @@ impl Arcade {
                         // Screen directions: Right 0, Down 0x400 (toward the
                         // player), Left 0x800, Up 0xC00 (ahead).
                         let dir = (z.atan2(x) / std::f32::consts::TAU * 4096.0).round() as i32;
-                        let dir = (-dir).rem_euclid(4096);
-                        let nearest = ((dir + 0x100) / 0x200).rem_euclid(8);
-                        let sector = match self.sector {
-                            Some(p) if (((dir - p * 0x200 + 0x800).rem_euclid(0x1000)) - 0x800).abs() < 0x140 => p,
-                            _ => nearest,
-                        };
+                        let sector = eighth((-dir).rem_euclid(4096), self.sector);
                         self.sector = Some(sector);
                         let [up, down, left, r] = xem_core::field::dpad_of_sector(sector);
                         for (on, action) in [(up, GameAction::Up), (down, GameAction::Down), (left, GameAction::Left), (r, GameAction::Right)] {

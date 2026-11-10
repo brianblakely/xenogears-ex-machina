@@ -9,6 +9,13 @@ use xem_render::ps1::{DioramaSpace, Table};
 
 /// The widgets' texture size in pixels.
 pub const WIDGET_PIXELS: u32 = 128;
+
+/// A widget's texture size: twice [`WIDGET_PIXELS`] for a touch stick's
+/// well, drawn about two and a half buttons across.
+pub fn pixels(widget: &Widget) -> u32 {
+    if matches!(widget, Widget::Stick(_)) { 2 * WIDGET_PIXELS } else { WIDGET_PIXELS }
+}
+
 /// The keys beside a headset's screen (their scale 1, [`Screen::keys`]):
 /// size in metres and the gap.
 pub const KEY_SIZE: (f32, f32) = (0.22, 0.11);
@@ -297,6 +304,25 @@ pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_rende
         let (cx, cy) = rect.centre();
         (Widget::Key(icon, state), Rect { x: cx - side / 2.0, y: cy - side / 2.0, width: side, height: side })
     }
+}
+
+/// The touch deck's widgets in drawing order and the squares they are
+/// drawn in (target pixels): its controls in the game's context `ui`, then
+/// the stick's well and its knob over it (pressed while a finger holds it).
+pub fn deck_widgets(deck: &crate::touch::Deck, ui: xem_core::context::Context, auto_advance: bool, first_person: bool) -> Vec<(Widget, Rect)> {
+    let held = deck.held();
+    let mut widgets: Vec<(Widget, Rect)> = deck.controls.iter()
+        .map(|&(control, rect)| deck_widget(control, control.label(ui), deck_state(control, held.contains(&control), auto_advance, first_person), rect))
+        .collect();
+    if let (Some(stick), Some(shown)) = (deck.stick, deck.stick_shown()) {
+        let square = |(x, y): (f32, f32), r: f32| Rect { x: x - r, y: y - r, width: 2.0 * r, height: 2.0 * r };
+        // The well's halo (nine tenths of its square) just around the
+        // knob's reach and the knob's glass (as a button's).
+        widgets.push((Widget::Stick(shown.directions), square(shown.centre, stick.radius() / 0.9)));
+        let knob = if shown.held { State::Pressed } else { State::Normal };
+        widgets.push((Widget::Button(Icon::None, knob), square(shown.knob, stick.knob / 2.0)));
+    }
+    widgets
 }
 
 

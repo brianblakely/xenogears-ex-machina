@@ -1168,12 +1168,13 @@ impl View {
         self.player.touch = self.deck.actions();
     }
 
-    /// Lays the touch deck out by the picture last shown.
+    /// Lays the touch deck out by the picture last shown (with no stick
+    /// while first-person inspection shows).
     fn arrange(&mut self, ui: xem_core::context::Context) {
         if let Some(picture) = self.picture {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let density = self.ui.scale_factor();
-            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, ui);
+            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, ui, self.renderer.first_person());
         }
     }
 
@@ -1217,6 +1218,11 @@ impl View {
     /// The touch deck's controls and where they stand (target pixels).
     pub fn deck_controls(&self) -> Vec<(xem_assist::touch::Control, xem_assist::touch::Rect)> {
         self.deck.controls.clone()
+    }
+
+    /// The touch deck's stick: where it rests and its reach (target pixels).
+    pub fn deck_stick(&self) -> Option<xem_assist::touch::Stick> {
+        self.deck.stick
     }
 
     /// Whether the touch controls show: the setting, on Android, or once a
@@ -1351,14 +1357,10 @@ impl View {
             }
         }
         if touch_shown && !visible {
-            let ui = self.game_ui;
-            let held = self.deck.held();
             let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            for (control, rect) in self.deck.controls.clone() {
-                let state = xem_assist::draw::deck_state(control, held.contains(&control), auto_advance, first_person);
-                let (widget, rect) = xem_assist::draw::deck_widget(control, control.label(ui), state, rect);
+            for (widget, rect) in xem_assist::draw::deck_widgets(&self.deck, self.game_ui, auto_advance, first_person) {
                 let rect = Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
+                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, xem_assist::draw::pixels(&widget), style).clone();
                 glass.push((view, None, Some(rect)));
             }
         }
@@ -1562,16 +1564,19 @@ mod tests {
             .filter(|(i, p)| { let x = (i % width as usize) as f32; (x < picture.x || x >= picture.x + picture.width) && p[0] > 120 })
             .count();
         assert_eq!(lit(&xem_render::read_rgba8(&gpu.device, &gpu.queue, &target)), 0);
-        // A finger on the D-pad's Up: the deck shows, Up is held.
+        // A finger on the stick pushed up: the deck shows, Up is held.
         view.arrange(xem_core::context::Context::Walk);
-        let up = view.deck.controls.iter().find(|(c, _)| *c == xem_assist::touch::Control::Up).unwrap().1;
-        assert!(up.x + up.width <= picture.x, "beside the picture: {up:?}");
-        let (cx, cy) = up.centre();
-        view.finger(Finger::Down, 7, (cx / width as f32, cy / height as f32));
-        assert_eq!(view.pad_buttons(PadContext::default(), None) & button::UP, button::UP);
+        let stick = view.deck.stick.expect("a stick");
+        assert!(stick.rest.0 + stick.radius() <= picture.x, "beside the picture: {stick:?}");
+        let at = |x: f32, y: f32| (x / width as f32, y / height as f32);
+        let (cx, cy) = stick.rest;
+        view.finger(Finger::Down, 7, at(cx, cy));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), 0, "held still, it holds nothing");
+        view.finger(Finger::Moved, 7, at(cx, cy - stick.reach));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), button::UP);
         view.render(&gpu, &output, 0.0).unwrap();
         assert!(lit(&xem_render::read_rgba8(&gpu.device, &gpu.queue, &target)) > 1000, "the glass deck is drawn");
-        view.finger(Finger::Up, 7, (cx / width as f32, cy / height as f32));
+        view.finger(Finger::Up, 7, at(cx, cy - stick.reach));
         assert_eq!(view.pad_buttons(PadContext::default(), None), 0);
         // A tap on the picture is kept for the game's context.
         let (px, py) = (picture.x + picture.width / 2.0, picture.y + picture.height / 2.0);
@@ -1808,10 +1813,13 @@ mod tests {
         let walking = FieldControls { field: true, walking: true, menu: false, picture: false };
         let context = PadContext { field: walking, ui: xem_core::context::Context::Walk, ..PadContext::default() };
         let across = |(x, y): (f32, f32)| (x / width as f32, y / height as f32);
-        let control = |view: &View, c: Control| view.deck.controls.iter().find(|(k, _)| *k == c).unwrap().1.centre();
-        let (select, up) = (control(&view, Control::Select), control(&view, Control::Up));
-        // Off, the D-pad walks and (by default) runs.
-        view.finger(Finger::Down, 1, across(up));
+        let select = view.deck.controls.iter().find(|(k, _)| *k == Control::Select).unwrap().1.centre();
+        // Where the stick rests (beside the picture), and pushed up from there.
+        let stick = view.deck.stick.expect("a stick");
+        let (rest, up) = (stick.rest, (stick.rest.0, stick.rest.1 - stick.reach));
+        // Off, the stick pushed up walks and (by default) runs.
+        view.finger(Finger::Down, 1, across(rest));
+        view.finger(Finger::Moved, 1, across(up));
         assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
         view.finger(Finger::Up, 1, across(up));
         // SELECT toggles the view, and is the view's here, not the game's.
@@ -1820,9 +1828,13 @@ mod tests {
         assert!(view.first_person(), "the deck's SELECT toggles the view");
         view.finger(Finger::Up, 2, across(select));
         assert_eq!(view.pad_buttons(context, None), 0);
-        // On, the D-pad holds nothing back for the game: no direction, and no
-        // Run left alone.
-        view.finger(Finger::Down, 3, across(up));
+        // On, the deck (laid out again, as each frame) has no stick: a finger
+        // pushed up where it rested holds nothing for the game, no direction
+        // and no Run left alone.
+        view.arrange(xem_core::context::Context::Walk);
+        assert!(view.deck.stick.is_none(), "no stick while the view shows");
+        view.finger(Finger::Down, 3, across(rest));
+        view.finger(Finger::Moved, 3, across(up));
         assert_eq!(view.pad_buttons(context, None), 0, "the character stays where it stands");
         view.finger(Finger::Up, 3, across(up));
         // A finger dragged right on the picture turns the view left (the
@@ -1836,12 +1848,14 @@ mod tests {
         assert!((yaw + 0.3).abs() < 1e-3 && pitch.abs() < 1e-3, "100 logical pixels turn it 0.3 radians: {yaw} {pitch}");
         view.finger(Finger::Up, 4, across((middle.0 + 100.0, middle.1)));
         assert!(view.taps.is_empty(), "a drag is no tap");
-        // SELECT again: the view goes, and the D-pad walks again.
+        // SELECT again: the view goes, and the stick walks again.
         view.finger(Finger::Down, 2, across(select));
         view.pad_buttons(context, None);
         view.finger(Finger::Up, 2, across(select));
         assert!(!view.first_person());
-        view.finger(Finger::Down, 1, across(up));
+        view.arrange(xem_core::context::Context::Walk);
+        view.finger(Finger::Down, 1, across(rest));
+        view.finger(Finger::Moved, 1, across(up));
         assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
         // Where the map's picture shows, the deck's SELECT is the game's.
         view.finger(Finger::Down, 2, across(select));

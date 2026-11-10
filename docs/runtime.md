@@ -5816,15 +5816,27 @@ bindings changed from the open panel hold when play resumes.
 On a touch screen (Android; phone and tablet browsers) the game's controls
 are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
 letterbox has room (three controls and their gaps, at least 40 dp each),
-else over its corners: a D-pad on the left with Select above it (the
+else over its corners: a stick on the left with Select above it (the
 game's Select, in a field first-person inspection's toggle where the
 game's shows nothing, and held over a dialogue what hides its windows:
 [Hiding a dialogue](#hiding-a-dialogue)), the face buttons on the right (Jump, Cancel and
 Run, Confirm, Menu), the camera's turns at the top corners, Settings and
-Start at the top. A finger holds the control it is on and slides across the
-D-pad's directions; lifting or a cancelled touch lets go (explicit press
-and release). A finger alone dragged on the picture turns inspection's
-view, the scene following it. Battling names the face buttons and
+Start at the top. The stick is relative: a finger touching the screen's
+left half on no other control takes it (one finger at a time), centred
+where it touched, and its travel from there past a dead zone (a quarter of
+the knob's reach, which is three quarters of a button) holds the D-pad's
+eighth, a direction or a diagonal's two, kept a few degrees past a
+boundary (the headset deck's stick's rule, `arcade::eighth`); a finger
+going past the reach drags the centre along, so a short way back turns it
+round. Untouched it rests where a D-pad would stand: a hollow halo with a
+fin for each direction, gilded while held, and its knob, a button that
+follows the finger. A short still touch there is still a tap on the
+picture. A finger holds the control it is on; lifting or a cancelled touch
+lets go (explicit press and release). A finger alone dragged on the
+picture (not one holding the stick) turns inspection's view, the scene
+following it; while that view shows the deck has no stick (it would walk
+nowhere), and a finger holding it as the view comes lets it go, so a
+finger on the left half turns the view too. Battling names the face buttons and
 turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
 adds Board (L2 and R2 together: a Gear boarded or left), a field (walking,
 its scenes and dialogue; not its menu) adds LOOK above the face buttons
@@ -5843,9 +5855,10 @@ it selects the entry and confirms it; in battle it chooses as a click does
 ([The game's interface context](#the-games-interface-context)); in a
 dialogue it advances. The deck
 shows once a finger touches the game (always on Android) under Settings'
-Touch controls. Android logs the deck's place (`touch deck ...`) and its
-smoke test holds Confirm on it; the browser suite plays it with touch
-pointers.
+Touch controls. Android logs the deck's place (`touch deck ...`, and
+`touch stick x y reach` where the stick rests) and its smoke test holds
+Confirm on it and drags the stick to the right; the browser suite plays it
+with touch pointers.
 
 ### Headsets: hands, gaze and control decks
 

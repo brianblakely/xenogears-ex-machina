@@ -718,6 +718,9 @@ impl Host {
                 for (control, rect) in &deck {
                     log(&format!("touch deck {control:?} {:.0} {:.0} {:.0} {:.0}", rect.x, rect.y, rect.width, rect.height));
                 }
+                if let Some(stick) = self.view.deck_stick() {
+                    log(&format!("touch stick {:.0} {:.0} {:.0}", stick.rest.0, stick.rest.1, stick.reach));
+                }
             }
             let (context, targets) = (game.pad_context(), game.targets());
             let buttons = self.view.pad_buttons(context, targets);

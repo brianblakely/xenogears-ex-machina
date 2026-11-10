@@ -425,6 +425,15 @@ PY
     wait_for "xem: pad buttons 0x0000 "
     shot 08-game-touch-deck
 
+    echo "== the touch stick: a finger dragged right from where it touched holds Right"
+    stick=$(grep "xem: touch stick " "$log" | tail -1)
+    [ -n "$stick" ] || fail "no touch stick logged"
+    read -r x y reach <<<"$(sed -E 's/.*touch stick ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3/' <<<"$stick")"
+    mark
+    "${adb[@]}" shell input swipe "$x" "$y" $((x + 2 * reach)) "$y" 1000
+    wait_for "xem: pad buttons 0x0020 "
+    wait_for "xem: pad buttons 0x0000 "
+
     echo "== background and return: the game's clock stops"
     mark
     "${adb[@]}" shell input keyevent KEYCODE_HOME
