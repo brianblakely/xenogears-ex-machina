@@ -27,7 +27,9 @@ def main():
     if args.disc and (not args.disc.is_file() or args.disc.suffix.lower() not in {".chd", ".bin", ".iso"}):
         parser.error("--disc must name an existing CHD, BIN or raw ISO")
     (ROOT / "build").mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="xem portable ", dir=ROOT / "build") as tmp:
+    # Windows can hold the exited executable open a moment longer (its image
+    # section or a virus scan), which only stops the scratch copy's removal.
+    with tempfile.TemporaryDirectory(prefix="xem portable ", dir=ROOT / "build", ignore_cleanup_errors=True) as tmp:
         root = Path(tmp)
         elsewhere = root / "different working directory"
         elsewhere.mkdir()
