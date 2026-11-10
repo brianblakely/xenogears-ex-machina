@@ -9462,7 +9462,13 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   only supports one window"). A run whose activity lost its native window
   before the device opened (sent to the background or stopped for a
   recreation as it started) waits for the window, and a run still waiting
-  for its first surface ends when the quit comes.
+  for its first surface ends when the quit comes. A surface whose native
+  window goes away as it is configured (wgpu's `Invalid surface`, captured
+  in an error scope rather than raised as uncaptured, which ended the run)
+  counts as gone: the start retries on the current window, a running
+  presenter suspends and is resumed. The release smoke's first start after
+  #80 met it: the activity paused and stopped (surface destroyed) between
+  the device opening and the first configuration, and the run aborted.
 
 In `nix develop path:./nix/runtime#android`:
 
