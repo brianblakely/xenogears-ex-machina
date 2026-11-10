@@ -428,12 +428,12 @@ original game uses smaller sprites. It starts off.
 | --- | --- |
 | Fullscreen | Fills your desktop display. Turn it off to play in a window. |
 | Scale: Fit | Fits the picture while keeping its proportions. |
-| Scale: Integer | Enlarges pixels in whole steps, which may leave larger borders. With an aspect ratio other than Native, the height grows in whole steps and the width follows the ratio. |
+| Scale: Integer | Enlarges pixels in whole steps, which may leave larger borders. With Force 4:3, the height grows in whole steps and the width follows 4:3. |
 | Scale: Stretch | Fills the available space, even if it changes the proportions. |
-| Aspect ratio | **Native** keeps the picture's own shape. 4:3, 5:4, 3:2, 16:10, 16:9, 21:9 or 32:9 reshape the picture to that shape. Widescreen is unavailable while a ratio is chosen and comes back as you left it when you choose Native again. Stretch still fills the space. |
+| Force 4:3 | Shows the picture in the 4:3 shape of the televisions of its time. Widescreen is unavailable while it is on and comes back as you left it when you turn it off. Stretch still fills the space. |
 | Filter: Nearest / Linear | Keeps the final picture crisp or softens its edges. |
 | High Framerate | Smooths movement between the game's frames. It starts off and can add a little input delay. |
-| Widescreen | Shows more scenery at the sides to suit a wider screen. Available when Aspect ratio is Native. |
+| Widescreen | Shows more scenery at the sides to suit a wider screen. Available while Force 4:3 is off. |
 | Zoom out | Pulls the exploring camera back, from 1× to 5×. The mouse wheel changes this too. |
 | Show FPS | Shows a small counter of how often the picture updates. |
 

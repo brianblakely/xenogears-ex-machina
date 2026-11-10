@@ -48,8 +48,8 @@ impl Picture {
 
 /// Where an `image`-sized game picture goes inside `area` under `scale`,
 /// centred, shown `aspect` wide for its height (width over height; `None`
-/// keeps the image's own). Sizes are in pixels; under an aspect ratio hosts
-/// give the display's (the game's own lines, which Integer steps).
+/// keeps the image's own). Sizes are in pixels; under Force 4:3 hosts give
+/// the display's (the game's own lines, which Integer steps).
 pub fn present_rect(image: (u32, u32), area: (u32, u32), scale: Scale, aspect: Option<f32>) -> Rect {
     let ih = image.1 as f32;
     let iw = aspect.map_or(image.0 as f32, |aspect| ih * aspect);
@@ -406,21 +406,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn an_aspect_ratio_reshapes_the_placed_picture() {
+    fn a_forced_aspect_reshapes_the_placed_picture() {
         // Whole pixels, as the hosts take them.
         let size = |r: Rect| (r.width.round(), r.height.round());
-        // Native: the image's own proportions.
+        let four_three = Some(4.0 / 3.0);
+        // Its own: the image's proportions.
         assert_eq!(size(present_rect((320, 224), (1920, 1080), Scale::Fit, None)), ((320.0f32 * 1080.0 / 224.0).round(), 1080.0));
-        // 4:3 and 16:9 fitted into a 1920x1080 area, centred.
-        let four_three = present_rect((320, 224), (1920, 1080), Scale::Fit, Some(4.0 / 3.0));
-        assert_eq!((four_three.x, size(four_three)), (240.0, (1440.0, 1080.0)));
-        assert_eq!(size(present_rect((320, 224), (1920, 1080), Scale::Fit, Some(16.0 / 9.0))), (1920.0, 1080.0));
-        // Wider than the area: the width fits, bars above and below.
-        let wide = present_rect((320, 224), (1920, 1080), Scale::Fit, Some(32.0 / 9.0));
-        assert_eq!((wide.y, size(wide)), (270.0, (1920.0, 540.0)));
+        // 4:3 in a wide area: bars at the sides.
+        let wide = present_rect((320, 224), (1920, 1080), Scale::Fit, four_three);
+        assert_eq!((wide.x, size(wide)), (240.0, (1440.0, 1080.0)));
+        // In a tall one the width fits, bars above and below.
+        let tall = present_rect((320, 224), (1080, 1920), Scale::Fit, four_three);
+        assert_eq!((tall.y, size(tall)), (555.0, (1080.0, 810.0)));
         // Integer steps the height in whole multiples, the width following.
-        assert_eq!(size(present_rect((320, 224), (1920, 1080), Scale::Integer, Some(4.0 / 3.0))), ((896.0f32 * 4.0 / 3.0).round(), 896.0));
+        assert_eq!(size(present_rect((320, 224), (1920, 1080), Scale::Integer, four_three)), ((896.0f32 * 4.0 / 3.0).round(), 896.0));
         // Stretch still fills the area.
-        assert_eq!(size(present_rect((320, 224), (1920, 1080), Scale::Stretch, Some(4.0 / 3.0))), (1920.0, 1080.0));
+        assert_eq!(size(present_rect((320, 224), (1920, 1080), Scale::Stretch, four_three)), (1920.0, 1080.0));
     }
 }

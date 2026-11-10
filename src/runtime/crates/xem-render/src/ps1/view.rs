@@ -38,9 +38,9 @@ pub struct ViewConfig {
     /// sides widen the picture to (the display's own height decides them).
     pub side: u32,
     pub aspect: Option<f32>,
-    /// The aspect ratio a flat host shows the picture in
-    /// ([`xem_settings::AspectRatio`]); `None` its own shape (a headset's
-    /// screen keeps it). Rebuilt movie frames are made in it.
+    /// The aspect ratio a flat host forces the picture to (Force 4:3:
+    /// [`Graphics::forced_aspect`]); `None` its own shape (a headset's screen
+    /// keeps it). Rebuilt movie frames are made in it.
     pub shape: Option<f32>,
     pub interpolation: bool,
     /// How far the field camera is pulled back (1 the original, up to 5):
@@ -157,16 +157,16 @@ impl ViewConfig {
             hide_dialogue: false,
         };
         // A headset's virtual screen takes a 16:9 shape when widened, and
-        // keeps its own under an aspect ratio.
+        // keeps its own under Force 4:3.
         let aspect = match (graphics.widened(), host) {
             (false, _) => None,
             (true, HostClass::Headset) => Some(16.0 / 9.0),
             (true, _) => Some(output.0 as f32 / output.1.max(1) as f32),
         };
-        let shape = if host == HostClass::Headset { None } else { graphics.aspect_ratio.ratio() };
+        let shape = if host == HostClass::Headset { None } else { graphics.forced_aspect() };
         let side = aspect.map_or(0, |aspect| display_side((320, 224), aspect));
-        // The picture (about 320x224, wider with wider framing, or in the
-        // aspect ratio's shape) fitted into the output: its height there.
+        // The picture (about 320x224, wider with wider framing, or 4:3 under
+        // Force 4:3) fitted into the output: its height there.
         let fitted = match shape {
             Some(shape) => output.1.min((output.0 as f32 / shape) as u32),
             None => output.1.min(output.0 * 224 / (320 + 2 * side)),
@@ -1384,21 +1384,23 @@ mod tests {
         }
     }
 
-    /// Under an aspect ratio a flat host's picture takes its shape: no wider
+    /// Under Force 4:3 a flat host's picture takes that shape: no wider
     /// framing (Widescreen's choice kept), rebuilt movies made in it, and
-    /// the automatic scale following the height it is shown at (a 1920x1080
-    /// output's 32:9 picture is 540 high: 3, where Native's fills 1080: 5).
-    /// A headset's screen keeps its own shape, its wider framing ended too.
+    /// the automatic scale following the height it is shown at (in a
+    /// 1500x1200 output Native's picture is 1050 high: 5, the 4:3 one 1125:
+    /// 6). A headset's screen keeps its own shape, its wider framing ended
+    /// too.
     #[test]
-    fn an_aspect_ratio_shapes_a_flat_hosts_picture() {
-        use xem_settings::AspectRatio;
+    fn force_4x3_shapes_a_flat_hosts_picture() {
         let wide = Graphics { widescreen: true, ..Graphics::default() };
+        let forced = Graphics { force_4x3: true, ..wide };
         let native = ViewConfig::resolve(&wide, HostClass::Desktop, (1920, 1080), 8);
-        assert_eq!((native.scale, native.side > 0, native.shape), (5, true, None));
-        let shaped = ViewConfig::resolve(&Graphics { aspect_ratio: AspectRatio::R32x9, ..wide }, HostClass::Desktop, (1920, 1080), 8);
-        assert_eq!((shaped.scale, shaped.side, shaped.aspect, shaped.shape), (3, 0, None, Some(32.0 / 9.0)));
-        assert_eq!(ViewConfig::resolve(&Graphics { aspect_ratio: AspectRatio::R4x3, ..wide }, HostClass::Desktop, (1920, 1080), 8).scale, 5);
-        let headset = ViewConfig::resolve(&Graphics { aspect_ratio: AspectRatio::R16x9, ..wide }, HostClass::Headset, (640, 640), 8);
+        assert_eq!((native.side > 0, native.shape), (true, None));
+        let shaped = ViewConfig::resolve(&forced, HostClass::Desktop, (1920, 1080), 8);
+        assert_eq!((shaped.side, shaped.aspect, shaped.shape), (0, None, Some(4.0 / 3.0)));
+        let scale = |graphics: &Graphics| ViewConfig::resolve(graphics, HostClass::Desktop, (1500, 1200), 8).scale;
+        assert_eq!((scale(&Graphics::default()), scale(&forced)), (5, 6));
+        let headset = ViewConfig::resolve(&forced, HostClass::Headset, (640, 640), 8);
         assert_eq!((headset.side, headset.shape), (0, None));
     }
 

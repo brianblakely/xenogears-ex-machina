@@ -463,8 +463,8 @@ impl MovieRenderer {
     /// The movie frame `display` shows, rebuilt and enlarged to fit `output`
     /// (a view of an `Rgba8Unorm` texture of sRGB-encoded values, its size,
     /// and whether it is new), or `None` when the display shows no such
-    /// frame; `reshaped` (the picture shown in an aspect ratio) makes it
-    /// `output` exactly, its shape the one shown. Where it eases into the
+    /// frame; `reshaped` (the picture forced to 4:3) makes it `output`
+    /// exactly, its shape the one shown. Where it eases into the
     /// MDEC's own picture, that comes from `vram`, the native VRAM
     /// (`R16Uint`).
     pub fn present(

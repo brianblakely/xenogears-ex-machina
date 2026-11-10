@@ -971,7 +971,7 @@ impl View {
         // placed in the safe area as the presentation settings place it.
         let display = game.display_info();
         let safe = self.safe_rect();
-        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale, graphics.aspect_ratio.ratio());
+        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale, graphics.forced_aspect());
         config.movies = config.movies.map(|_| (placed.width.round() as u32, placed.height.round() as u32));
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
@@ -1299,11 +1299,11 @@ impl View {
         let presentation = self.settings.borrow().settings().presentation.clone();
         self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
             .map_err(|error| error.to_string())?;
-        // Under an aspect ratio the picture's place follows the game's own
-        // lines, whatever size the frame was drawn at: game frames, rebuilt
-        // movies and the device's picture take the same place.
+        // Under Force 4:3 the picture's place follows the game's own lines,
+        // whatever size the frame was drawn at: game frames, rebuilt movies
+        // and the device's picture take the same place.
         let graphics = self.settings.borrow().settings().graphics;
-        let ratio = graphics.aspect_ratio.ratio();
+        let ratio = graphics.forced_aspect();
         let image = match (&self.game_frame, ratio) {
             (Some((display, _)), Some(_)) => (display.width, display.height),
             _ => game_size,
@@ -1338,8 +1338,8 @@ impl View {
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         let mut glass = Vec::new();
         if let Some(picture) = self.picture {
-            // Each axis as the picture is enlarged along it (an aspect
-            // ratio or Stretch reshapes it).
+            // Each axis as the picture is enlarged along it (Force 4:3 or
+            // Stretch reshapes it).
             let (sx, sy) = (picture.placed.width / (picture.display.0 + 2.0 * picture.side), picture.placed.height / picture.display.1);
             for mark in &self.marks {
                 // A flat picture's marks lie on its screen.
@@ -1985,15 +1985,15 @@ mod tests {
     /// Fit and the Integer scale the frame is rebuilt at the display's size
     /// placed in the safe area (not fitted to the whole target) and shown
     /// there at that size (enlarged once), centred, its picture without
-    /// wider framing's sides (the view's own frames have them); in an aspect
-    /// ratio likewise, reshaped and inside the safe area (Integer stepping
-    /// the display's lines), the view's frames without sides (Widescreen's
+    /// wider framing's sides (the view's own frames have them); under Force
+    /// 4:3 likewise, reshaped and inside the safe area (Integer stepping the
+    /// display's lines), the view's frames without sides (Widescreen's
     /// choice kept); under the Original movies setting the device's own
     /// picture.
     #[cfg(all(has_game_module, not(debug_assertions)))]
     #[test]
     fn a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides() {
-        use xem_settings::{AspectRatio, MovieFilter, Scale, SettingChange};
+        use xem_settings::{MovieFilter, Scale, SettingChange};
         let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
             .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
         if !disc.exists() {
@@ -2028,13 +2028,11 @@ mod tests {
             view.set_game_frame(&gpu, game);
             view.render(&gpu, &output, 0.0).unwrap();
         };
-        for (aspect_ratio, scale) in [
-            (AspectRatio::Native, Scale::Fit), (AspectRatio::Native, Scale::Integer),
-            (AspectRatio::R21x9, Scale::Fit), (AspectRatio::R21x9, Scale::Integer), (AspectRatio::R4x3, Scale::Integer),
-        ] {
-            settings.borrow_mut().apply(SettingChange::Graphics(xem_settings::Graphics { aspect_ratio, ..wide })).unwrap();
+        for (force_4x3, scale) in [(false, Scale::Fit), (false, Scale::Integer), (true, Scale::Fit), (true, Scale::Integer)] {
+            let forced = xem_settings::Graphics { force_4x3, ..wide };
+            settings.borrow_mut().apply(SettingChange::Graphics(forced)).unwrap();
             settings.borrow_mut().apply(SettingChange::Scale(scale)).unwrap();
-            let case = format!("{aspect_ratio:?} {scale:?}");
+            let case = format!("{scale:?}{}", if force_4x3 { ", Force 4:3" } else { "" });
             // Rebuilt within two movie frames (the trace starts with the
             // view's first frame).
             let mut waited = 0;
@@ -2043,7 +2041,7 @@ mod tests {
                 assert!(waited <= 8, "{case}: no rebuilt frame within two movie frames");
             }
             let display = game.display_info();
-            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale, aspect_ratio.ratio());
+            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale, forced.forced_aspect());
             let made = view.renderer.presented_texture().map(|t| (t.width(), t.height())).expect("the rebuilt frame");
             let picture = view.picture.expect("the picture's place");
             let shown = picture.placed;
@@ -2064,8 +2062,8 @@ mod tests {
             assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "{case}: the display alone, without wider framing's sides");
             assert_eq!(
                 view.renderer.config().map(|c| c.side > 0),
-                Some(aspect_ratio == AspectRatio::Native),
-                "{case}: the view's own frames have sides under Native alone"
+                Some(!force_4x3),
+                "{case}: the view's own frames have sides unless forced to 4:3"
             );
         }
         // The Original movies setting: the device's own picture, as it is.

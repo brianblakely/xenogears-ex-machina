@@ -151,7 +151,7 @@ describe('page services', () => {
     const panel=await settingsSection(page,1);
     const before = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
     // The Show FPS switch, at the end of the Picture card's last row.
-    await page.mouse.click(panel.left+586,panel.top+319);
+    await page.mouse.click(panel.left+586,panel.top+307);
     await page.waitForTimeout(200);
     await page.locator('canvas').screenshot({ path: shot('panel-click.png') });
     const after = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;

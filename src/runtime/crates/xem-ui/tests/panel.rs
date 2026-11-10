@@ -868,10 +868,10 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
         tap(&mut ui, x, 722.0);
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
-    // Then Graphics again and its Show FPS switch at 930,1494, below Scale,
-    // Aspect ratio and Filter.
+    // Then Graphics again and its Show FPS switch at 930,1462, below Scale,
+    // Force 4:3 and Filter.
     tap(&mut ui, 210.0, 722.0);
-    tap(&mut ui, 930.0, 1494.0);
+    tap(&mut ui, 930.0, 1462.0);
     assert!(settings.borrow().settings().presentation.show_fps, "the smoke's tap turns Show FPS on");
 
     // Saves' Backups card keeps every button inside it on panels as wide as
@@ -1224,7 +1224,7 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     // Every dropdown remains unchanged by the wheel, even after gaining focus.
     // The widget lets the containing panel or open menu scroll instead.
     for (section_name, section_index, label) in [
-        ("Graphics", 1, "Scale"), ("Graphics", 1, "Aspect ratio"), ("Graphics", 1, "Graphics profile"),
+        ("Graphics", 1, "Scale"), ("Graphics", 1, "Graphics profile"),
         ("Graphics", 1, "Internal resolution"), ("Graphics", 1, "HD-2D quality"),
         ("Controls", 2, "Headset pointer"),
     ] {
@@ -1275,34 +1275,26 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     key(&ui, xem_ui::Key::UpArrow);
     assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Tab leaves the closed dropdown");
 
-    // Any aspect ratio but Native disables the Widescreen switch, showing
-    // wider framing off; neither the switch nor its row changes a setting,
-    // and back on Native the choice frames the picture wider again.
+    // Force 4:3 disables the Widescreen switch, showing wider framing off;
+    // neither the switch nor its row changes a setting, and with Force 4:3
+    // off again the choice frames the picture wider again.
     let widescreen = |ui: &SettingsUi| element(ui, "Widescreen", AccessibleRole::Switch);
     let graphics = || settings.borrow().settings().graphics;
     assert!(graphics().widened(), "on from above");
-    let aspect = element(&ui, "Aspect ratio", AccessibleRole::Combobox);
-    assert_eq!(aspect.accessible_value().as_deref(), Some("Native"), "Native by default");
-    let choose = |ui: &mut SettingsUi, arrow: xem_ui::Key| {
-        press(ui, &aspect);
-        for _ in 0..5 {
-            key(ui, arrow);
-        }
-        key(ui, xem_ui::Key::Return);
-        ui.update().unwrap();
-    };
-    choose(&mut ui, xem_ui::Key::DownArrow);
-    assert_eq!(graphics().aspect_ratio, xem_settings::AspectRatio::R16x9);
-    assert!(graphics().widescreen && !graphics().widened(), "16:9 frames without Widescreen, its choice kept");
+    let force = element(&ui, "Force 4:3", AccessibleRole::Switch);
+    assert_eq!(force.accessible_checked(), Some(false), "off by default");
+    press(&ui, &force);
+    ui.update().unwrap();
+    assert!(graphics().force_4x3 && graphics().widescreen && !graphics().widened(), "4:3 frames without Widescreen, its choice kept");
     assert_eq!((widescreen(&ui).accessible_checked(), widescreen(&ui).accessible_enabled()), (Some(false), Some(false)));
     let revision = settings.borrow().revision();
     press(&ui, &widescreen(&ui));
     press(&ui, &element(&ui, "Widescreen", AccessibleRole::Text));
     ui.update().unwrap();
     assert_eq!(settings.borrow().revision(), revision, "the disabled switch and its row change nothing");
-    choose(&mut ui, xem_ui::Key::UpArrow);
-    assert_eq!(graphics().aspect_ratio, xem_settings::AspectRatio::Native);
-    assert!(graphics().widened(), "back on Native, Widescreen frames the picture again");
+    press(&ui, &force);
+    ui.update().unwrap();
+    assert!(!graphics().force_4x3 && graphics().widened(), "off again, Widescreen frames the picture wider again");
     assert_eq!((widescreen(&ui).accessible_checked(), widescreen(&ui).accessible_enabled()), (Some(true), Some(true)));
 
     section(&mut ui, "Controls", 2);
@@ -1528,7 +1520,7 @@ fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
     ui.update().unwrap();
     assert_eq!((dropdown.accessible_expanded(), scale()), (Some(false), Scale::Integer));
     assert_eq!(closed.get(), 0, "East closed the list, not the panel");
-    // Below it, the aspect ratio; South presses a switch.
+    // Below it, Force 4:3; South presses a switch.
     pad.press(&ui, DOWN);
     pad.press(&ui, DOWN);
     pad.press(&ui, DOWN);

@@ -1989,8 +1989,8 @@ fn check_movie_frame(gpu: &Gpu, software: bool) {
     let redness = |[r, g, _]: [i32; 3]| r - g;
     assert!(redness(pixel(52, 32)) < 8, "dark side tinted {:?} (software {software})", pixel(52, 32));
     assert!(redness(pixel(76, 32)) > 110, "bright side {:?} (software {software})", pixel(76, 32));
-    // Shown in an aspect ratio, the frame is made at the size given, each
-    // axis enlarged on its own (32x16 to 96x72: 3 across, 4.5 down).
+    // Forced to 4:3, the frame is made at the size given, each axis
+    // enlarged on its own (32x16 to 96x72: 3 across, 4.5 down).
     let mut encoder = gpu.device.create_command_encoder(&Default::default());
     let (_, size, _) = movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (96, 72), true, &vram).expect("a movie frame");
     assert_eq!(size, (96, 72));

@@ -780,9 +780,9 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-quality;
     in-out property <bool> gfx-interpolation;
     in-out property <bool> gfx-widescreen;
-    // The picture's shape (0 Native, else a ratio that sets it instead of
-    // Widescreen's framing).
-    in-out property <int> gfx-aspect-ratio;
+    // The picture forced to 4:3 (its shape set instead of Widescreen's
+    // framing).
+    in-out property <bool> gfx-force-4x3;
     // The party's full-resolution sprites in large-scale fields.
     in-out property <bool> gfx-full-size-sprites;
     // The field camera pulled back, percent (100-500).
@@ -977,7 +977,7 @@ export component SettingsPanel inherits Window {
     callback filter-edited(int);
     callback show-fps-edited(bool);
     // A graphics choice by name (renderer, profile, profile-reset, scale,
-    // quality, full-size-sprites, interpolation, widescreen, aspect-ratio,
+    // quality, full-size-sprites, interpolation, widescreen, force-4x3,
     // zoom-out, filter-world, filter-sprites, filter-interface, xr-distance,
     // xr-width, xr-dof, xr-view, xr-scale, xr-height, xr-table-distance,
     // xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset) and value.
@@ -1198,10 +1198,10 @@ export component SettingsPanel inherits Window {
                                     Choice { accessible-label: "Scale"; width: 150px; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
                                 }
                                 Divider { }
-                                Row {
-                                    label: "Aspect ratio";
-                                    // xem_settings::AspectRatio::ALL's order.
-                                    Choice { accessible-label: "Aspect ratio"; width: 150px; model: ["Native", "4:3", "5:4", "3:2", "16:10", "16:9", "21:9", "32:9"]; current-index <=> root.gfx-aspect-ratio; selected => { root.graphics-edited("aspect-ratio", self.current-index); } }
+                                ToggleRow {
+                                    label: "Force 4:3";
+                                    checked <=> root.gfx-force-4x3;
+                                    toggled(on) => { root.graphics-edited("force-4x3", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 Row {
@@ -1289,8 +1289,8 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 ToggleRow {
                                     label: "Widescreen";
-                                    // A chosen aspect ratio sets the shape instead.
-                                    enabled: root.gfx-aspect-ratio == 0;
+                                    // Force 4:3 sets the shape instead.
+                                    enabled: !root.gfx-force-4x3;
                                     checked <=> root.gfx-widescreen;
                                     toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
                                 }

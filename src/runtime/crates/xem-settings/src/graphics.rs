@@ -184,52 +184,6 @@ pub enum Renderer {
     ExMachina,
 }
 
-/// The shape the game picture is shown in, under either renderer: its own
-/// pixels' (Native), or a ratio the picture is reshaped to. Wider framing
-/// applies only under Native ([`Graphics::widened`]); a headset's screen
-/// keeps its own shape.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum AspectRatio {
-    #[default]
-    Native,
-    R4x3,
-    R5x4,
-    R3x2,
-    R16x10,
-    R16x9,
-    R21x9,
-    R32x9,
-}
-
-impl AspectRatio {
-    /// In the order the panel lists them.
-    pub const ALL: [AspectRatio; 8] = [
-        AspectRatio::Native,
-        AspectRatio::R4x3,
-        AspectRatio::R5x4,
-        AspectRatio::R3x2,
-        AspectRatio::R16x10,
-        AspectRatio::R16x9,
-        AspectRatio::R21x9,
-        AspectRatio::R32x9,
-    ];
-
-    /// Width over height; `None` for Native (the picture's own).
-    pub fn ratio(self) -> Option<f32> {
-        let (width, height) = match self {
-            AspectRatio::Native => return None,
-            AspectRatio::R4x3 => (4.0, 3.0),
-            AspectRatio::R5x4 => (5.0, 4.0),
-            AspectRatio::R3x2 => (3.0, 2.0),
-            AspectRatio::R16x10 => (16.0, 10.0),
-            AspectRatio::R16x9 => (16.0, 9.0),
-            AspectRatio::R21x9 => (21.0, 9.0),
-            AspectRatio::R32x9 => (32.0, 9.0),
-        };
-        Some(width / height)
-    }
-}
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TextureFiltering {
@@ -407,12 +361,13 @@ pub struct Graphics {
     pub interpolation: bool,
     /// Wider framing than the original 4:3 screen, to the output's aspect
     /// ratio: the sides show the scene beyond the original screen. Kept as
-    /// chosen; it frames the picture only under the Native aspect ratio
+    /// chosen; it frames the picture only while Force 4:3 is off
     /// ([`Graphics::widened`]).
     pub widescreen: bool,
-    /// The shape the picture is shown in; any but Native sets it instead of
-    /// wider framing.
-    pub aspect_ratio: AspectRatio,
+    /// The picture shown at 4:3 under either renderer, reshaped from its own
+    /// pixels' shape; it sets the shape instead of wider framing. A
+    /// headset's screen keeps its own shape.
+    pub force_4x3: bool,
     /// The field camera pulled back along its own axis, without turning:
     /// 100 (the original, default) to [`MAX_ZOOM_OUT`] percent, the subject
     /// appearing that many times smaller. The world map takes a tenth of
@@ -445,7 +400,7 @@ impl Default for Graphics {
             internal_scale: 0,
             interpolation: false,
             widescreen: false,
-            aspect_ratio: AspectRatio::Native,
+            force_4x3: false,
             zoom_out: 100,
             actors_in_view: true,
             full_size_sprites: false,
@@ -464,11 +419,16 @@ impl Graphics {
         Graphics { zoom_out: zoom.clamp(100, i32::from(MAX_ZOOM_OUT)) as u16, ..*self }
     }
 
-    /// Whether wider framing frames the picture: Widescreen chosen and the
-    /// aspect ratio Native (a chosen ratio sets the shape instead, the
-    /// choice kept for Native).
+    /// Whether wider framing frames the picture: Widescreen chosen and Force
+    /// 4:3 off (which sets the shape instead, the choice kept).
     pub fn widened(&self) -> bool {
-        self.widescreen && self.aspect_ratio == AspectRatio::Native
+        self.widescreen && !self.force_4x3
+    }
+
+    /// The aspect ratio the picture is forced to (width over height): 4:3
+    /// under Force 4:3, else `None` (its own shape).
+    pub fn forced_aspect(&self) -> Option<f32> {
+        self.force_4x3.then_some(4.0 / 3.0)
     }
 
     /// Whether a frame is presented only when the game drew one: Ex

@@ -481,7 +481,7 @@ impl WebRenderer {
             let (eye, fov) = self.xr_eye;
             headset_movie_output(f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scaling.scale, f32::from(graphics.xr.distance_cm) / 100.0, eye, fov)
         } else {
-            let placed = present_rect((display.width, display.height), self.size(), settings.presentation.scale, graphics.aspect_ratio.ratio());
+            let placed = present_rect((display.width, display.height), self.size(), settings.presentation.scale, graphics.forced_aspect());
             (placed.width.round() as u32, placed.height.round() as u32)
         };
         config.movies = config.movies.map(|_| shown);
@@ -573,11 +573,11 @@ impl WebRenderer {
         if let Some(counter) = &mut self.frame_rate {
             counter.frame(std::time::Duration::from_secs_f64(time),self.scale,presentation.show_fps).map_err(|error| error.to_string())?;
         }
-        // Under an aspect ratio the picture's place follows the game's own
-        // lines, whatever size the frame was drawn at: game frames, rebuilt
-        // movies and the device's picture take the same place.
+        // Under Force 4:3 the picture's place follows the game's own lines,
+        // whatever size the frame was drawn at: game frames, rebuilt movies
+        // and the device's picture take the same place.
         let graphics = settings.settings().graphics;
-        let ratio = graphics.aspect_ratio.ratio();
+        let ratio = graphics.forced_aspect();
         let image = match (&self.game_frame, ratio) {
             (Some((display, _)), Some(_)) => (display.width, display.height),
             _ => game_size,
@@ -608,8 +608,8 @@ impl WebRenderer {
         // The assisted controls' marks and the touch deck.
         let mut glass = Vec::new();
         if let Some(picture) = self.picture {
-            // Each axis as the picture is enlarged along it (an aspect
-            // ratio or Stretch reshapes it).
+            // Each axis as the picture is enlarged along it (Force 4:3 or
+            // Stretch reshapes it).
             let (sx, sy) = (picture.placed.width / (picture.display.0 + 2.0 * picture.side), picture.placed.height / picture.display.1);
             for mark in &self.overlay.marks {
                 // The canvas's marks lie on its picture.
