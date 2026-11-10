@@ -5,6 +5,7 @@ import platform
 import shutil
 import subprocess
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -27,9 +28,7 @@ def main():
     if args.disc and (not args.disc.is_file() or args.disc.suffix.lower() not in {".chd", ".bin", ".iso"}):
         parser.error("--disc must name an existing CHD, BIN or raw ISO")
     (ROOT / "build").mkdir(exist_ok=True)
-    # Windows can hold the exited executable open a moment longer (its image
-    # section or a virus scan), which only stops the scratch copy's removal.
-    with tempfile.TemporaryDirectory(prefix="xem portable ", dir=ROOT / "build", ignore_cleanup_errors=True) as tmp:
+    with tempfile.TemporaryDirectory(prefix="xem portable ", dir=ROOT / "build") as tmp:
         root = Path(tmp)
         elsewhere = root / "different working directory"
         elsewhere.mkdir()
@@ -90,7 +89,22 @@ def main():
                     raise SystemExit("first-run disc organization failed")
                 subprocess.run([*headless, "--disc", str(relocated), "--frames", "120"],
                                cwd=elsewhere, env=env, check=True, timeout=120)
+        if args.kind == "windows":
+            released(Path(desktop[0]))
     print(f"{stem}: packaged startup passed")
+
+
+def released(executable):
+    """Wait until Windows lets the exited application's file go, or name what holds it."""
+    for _ in range(60):
+        try:
+            # Its deletion (a running image may be renamed, not deleted).
+            executable.unlink()
+            return
+        except PermissionError:
+            time.sleep(1)
+    tasks = subprocess.run(["tasklist", "/v"], capture_output=True, text=True).stdout
+    raise SystemExit(f"{executable.name} is still held a minute after it exited:\n{tasks}")
 
 
 if __name__ == "__main__":
