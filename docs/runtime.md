@@ -2388,9 +2388,9 @@ Under the Enhanced movies setting `GameView` rebuilds 24-bit movie frames
 from what the MDEC decoded (above, GameView); under Original, and for a
 frame whose macroblocks it does not all know, hosts show the device's own
 picture, each pixel a block. Hosts make the rebuilt picture at the size
-they show it (`ViewConfig::movies`): a window (desktop, Android) the
-display placed in its safe area as the presentation's scale places it, the
-browser's canvas likewise, and a headset's virtual screen as many pixels
+they show it (`ViewConfig::movies`): a desktop window the display placed
+in its safe area as the presentation's scale places it, an Android window
+and the browser's canvas likewise in all of it, and a headset's virtual screen as many pixels
 across as the screen spans in an eye (its width, times the screen's
 two-hand scaling, over its distance, in the eye's pixels per unit of
 tangent), at most the
@@ -2452,7 +2452,7 @@ picture shows for 4, 4, 3 and 5 game frames (one movie frame at 15 a
 second), and the first rebuilt frame is
 the restored timeline's (0.82 and 0.59 levels from its device picture,
 5.55 and 15.75 from the picture shown before the restore), never one from
-before the restore. Through the desktop's and Android's view (frame 840
+before the restore. Through the desktop's view (frame 840
 on, wider framing on, a 1366x768 target whose safe area leaves out 60
 pixels each side and 34 above and below) the title movie is rebuilt at
 1037x700 under Fit and 960x648 under Integer, the display's placed sizes in
@@ -2550,7 +2550,7 @@ within two movie frames (8 game frames), the restores with the restored
 picture (within 6 levels of its device picture and less than half as far
 from it as from the picture shown before). `xem-host`'s
 `a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides`
-(local, disc 1) checks the desktop's and Android's view as above: the
+(local, disc 1) checks the desktop's view as above: the
 rebuilt frame's size the display's placed size in the safe area under Fit
 and under Integer, shown at that size and centred there, without sides
 while the view's own frames have them, and the device's 320x216 picture
@@ -2596,8 +2596,7 @@ measure as much as the device's own picture or more. The desktop's
 desktop's window, `xem-desktop/tests/control.rs` on weston's headless
 backend, checks the settings commands): the view's flag it reports is the
 one the `xem-host` test checks. Android shows only its
-logged flag; its real insets (the `xem-host` test stands in with a safe
-area) and sizes are not checked.
+logged flag; its sizes are not checked.
 
 ### Characters in a wider view
 
@@ -9362,6 +9361,18 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
 - **Startup.** SDL window on the activity's surface; wgpu on Vulkan, the GLES
   backend only when no Vulkan adapter can present (logged); the shared view
   with the settings panel shown (Back toggles it).
+- **The whole screen.** The game's picture fills the window as the
+  presentation places it, and the window the screen: `XemActivity` lays it
+  out over display cutouts (`LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS`, short
+  edges on Android 10), which Android otherwise keeps a landscape window
+  out of (SDL asks only as its window goes fullscreen, in attributes it
+  never applies), and the view takes no safe area: SDL's here is the
+  system's gesture strips (the edges' back gesture, the bars' swipes
+  above and below, still there while immersive mode hides the bars) with
+  the cutouts, and a picture placed in it stood behind black bands on all
+  four sides (issue #78). A camera's hole may cover the edge of a widened
+  picture, as in other full-screen games; the deck keeps to the window's
+  own margins.
 - **Assets.** A file bundled in the APK's assets is read through
   `SDL_IOFromFile` (the AssetManager). The user's disc is imported with SDL's
   open-file dialog, which is Android's `ACTION_OPEN_DOCUMENT` picker (the

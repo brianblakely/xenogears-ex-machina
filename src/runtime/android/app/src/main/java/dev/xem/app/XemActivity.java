@@ -2,23 +2,44 @@ package dev.xem.app;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
 import android.util.Log;
+import android.view.WindowManager;
 
 import org.libsdl.app.SDLActivity;
 
 /**
  * SDL's activity running libmain.so (xem-android). It adds what SDL does not
- * do itself: a persistable read grant on the document SDL's file dialog
- * (ACTION_OPEN_DOCUMENT) returns, so an imported disc stays readable after
- * the app restarts; the document handed to native code even when Android
- * recreated the activity while the picker was shown (SDL's own dialog
- * callback is lost then); and test arguments from the {@code xem.args} extra.
+ * do itself: a window laid out over the display's cutouts, so the game's
+ * picture fills the screen; a persistable read grant on the document SDL's
+ * file dialog (ACTION_OPEN_DOCUMENT) returns, so an imported disc stays
+ * readable after the app restarts; the document handed to native code even
+ * when Android recreated the activity while the picker was shown (SDL's own
+ * dialog callback is lost then); and test arguments from the
+ * {@code xem.args} extra.
  */
 public class XemActivity extends SDLActivity {
     private static final String TAG = "xem";
 
     /** Hands a picked document to libmain (xem-android's disc import). */
     private static native void nativeDocumentPicked(String uri);
+
+    /**
+     * Android keeps a window out of a cutout on the screen's short edges in
+     * landscape (a phone's camera hole) unless it asks to be laid out over
+     * it, leaving a black band beside the game. SDL asks only as its window
+     * goes fullscreen, in attributes it never applies.
+     */
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.layoutInDisplayCutoutMode = Build.VERSION.SDK_INT >= 30
+                ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        getWindow().setAttributes(attributes);
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     protected String[] getLibraries() {
