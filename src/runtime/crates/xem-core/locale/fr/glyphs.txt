@@ -1,0 +1,50 @@
+# The letters French adds to the game's font (docs/runtime.md, Languages).
+# The port composes each from a letter of the player's own font (directory
+# (0, 1) file 6) and an accent drawn here for this project (MIT, like the
+# rest of this repository): no glyph of the original is copied.
+#
+# A glyph's rows are the font's 11 rows of 12 columns (row 0 the top; small
+# letters span rows 3-9, capitals 1-9, descenders reach row 10).
+#
+#   accent <name> <row>=<columns 0-4, # drawn> ...
+#   <char> <base letter> <accent> [drop=<rows>] [clear=<rows>]
+#
+# drop= takes those rows out of the base letter and moves the rows above them
+# down (a capital, shortened to rows 3-9, leaves room for its accent);
+# clear= blanks rows (the dot of i). A letter another language adds too is
+# drawn alike (pt-BR/glyphs.txt): its code is the same in every language.
+# The game draws each as a narrow letter. French writes oe for the ligature
+# the font lacks (coeur, soeur).
+
+accent acute 0=...#. 1=..#..
+accent grave 0=.#... 1=..#..
+accent circumflex 0=..#.. 1=.#.#.
+accent diaeresis 1=.#.#.
+accent cedilla 10=..##.
+
+à a grave
+â a circumflex
+ç c cedilla
+é e acute
+è e grave
+ê e circumflex
+ë e diaeresis
+î i circumflex clear=0,1,2
+ï i diaeresis clear=0,1,2
+ô o circumflex
+ù u grave
+û u circumflex
+ü u diaeresis
+À A grave drop=2,4
+Â A circumflex drop=2,4
+Ç C cedilla
+É E acute drop=3,7
+È E grave drop=3,7
+Ê E circumflex drop=3,7
+Ë E diaeresis drop=3,7
+Î I circumflex drop=2,3
+Ï I diaeresis drop=2,3
+Ô O circumflex drop=3,7
+Ù U grave drop=3,7
+Û U circumflex drop=3,7
+Ü U diaeresis drop=3,7

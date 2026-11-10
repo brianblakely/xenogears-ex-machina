@@ -1,0 +1,1 @@
+- The game's text can now be read in French: choose **Settings → Gameplay → Language → Game text → Français**. Dialogue, narration, menus, item and ability names and descriptions, shop, save and battle messages, enemy names and place names are translated, with French's accented letters drawn from the game's own font.

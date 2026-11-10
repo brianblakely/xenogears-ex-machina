@@ -644,10 +644,16 @@ def may_add_pages(original: Text) -> bool:
             and not any(t.kind in ENDS_WITHOUT_CONFIRM or t.kind == "pause" for t in tokens(original.markup)))
 
 
+# Marks a line never begins with: French sets them after a space ("Quoi ?"),
+# which stays with the word before it.
+NO_BREAK_BEFORE = "?!:"
+
+
 def wrap(original: Text, translation: str, extra: dict[str, int]) -> str:
     """The translation with every line too wide for its window broken at its
-    spaces, and every page with more lines than the window's rows split
-    into pages of even length where a page may be added."""
+    spaces (never before one of NO_BREAK_BEFORE), and every page with more
+    lines than the window's rows split into pages of even length where a
+    page may be added."""
     toks = tokens(translation, extra)
     split: list[list[list[Token]]] = [[[]]]
     for token in toks:
@@ -669,8 +675,10 @@ def wrap(original: Text, translation: str, extra: dict[str, int]) -> str:
             while line and space(line[0]):
                 indent.append(line.pop(0))
             words, current = [], []
-            for token in line:
-                if space(token):
+            for at, token in enumerate(line):
+                follows = line[at + 1] if at + 1 < len(line) else None
+                if space(token) and not (current and follows is not None and follows.kind == "glyph"
+                                         and follows.char in NO_BREAK_BEFORE):
                     if current:
                         words.append(current)
                     current = []

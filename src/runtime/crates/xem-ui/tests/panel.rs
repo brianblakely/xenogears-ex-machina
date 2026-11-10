@@ -814,6 +814,13 @@ fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_setting
     assert_eq!(settings.borrow().settings().language, Language::BrazilianPortuguese);
     assert_eq!(*acks.borrow(), [SettingChange::Language(Language::BrazilianPortuguese)]);
     assert_eq!(choice.accessible_value().as_deref(), Some("Português (Brasil)"));
+    press(&ui, &choice);
+    ui.update().unwrap();
+    element(&ui, "Français", AccessibleRole::ListItem).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().language, Language::French);
+    assert_eq!(acks.borrow().last(), Some(&SettingChange::Language(Language::French)));
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (2, Some("Français")));
     // An agent's change shows.
     settings.borrow_mut().apply(SettingChange::Language(Language::English)).unwrap();
     ui.update().unwrap();

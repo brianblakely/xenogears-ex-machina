@@ -8598,12 +8598,12 @@ other hosts were not run.
 ### Languages
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
-game's own text: **English**, the original's, by default, or **Português
-(Brasil)**. It is a setting (`xem_settings::Settings::language`, saved as
-`"English"` or `"BrazilianPortuguese"`), which the hosts give the session
+game's own text: **English**, the original's, by default, **Português
+(Brasil)** or **Français**. It is a setting (`xem_settings::Settings::language`, saved as
+`"English"`, `"BrazilianPortuguese"` or `"French"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "pt-BR"}`, and `status` says which is
+command `language {language: "en" | "pt-BR" | "fr"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -8615,9 +8615,12 @@ descriptions, the shops', save screens' and system messages, the battles'
 messages, enemy names and event narration, and the world map's place
 names: every one of the 17 086 distinct texts of both discs that holds a
 letter (the other 691 of the 17 777 are glyphs alone, numbers or Japanese
-placeholders of the development data, which stay as they are). 16 030 are
-translated; 1 056, the same in Portuguese (names alone, cries, the
-developers' test menus kept as they were), are listed rather than shipped. Text built at run time (numbers, the party's
+placeholders of the development data, which stay as they are). Brazilian
+Portuguese translates 16 030 of them; 1 056, the same in Portuguese (names
+alone, cries, the developers' test menus kept as they were), are listed
+rather than shipped. French translates 16 029 and lists 1 057: the same
+texts and one enemy name French spells as the original does (Griffon).
+Text built at run time (numbers, the party's
 names) is the game's own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
 anew in the language, and the stat panels' words the menus compose of a
@@ -8625,7 +8628,7 @@ small font's letters (Attack, Hit%, Defense, Evade%, Ether, Weight,
 Agility ...) and the words the menus place letter by letter from their
 tables (Next LV, the Gear shop's FUEL and WEIGHT) are spelled anew with
 that font's letters (below). Other words drawn as pictures stay as drawn:
-the abbreviations LV, Exp, HP and EP (which the Portuguese text keeps
+the abbreviations LV, Exp, HP and EP (which the translations' text keeps
 too) and the weight's unit (lbs.), the battle HUD's words (the italic
 Attack, Defense ... around the command buttons and the small Time, Ap and
 fuel), which are art in the battle's textures, and the memory card titles
@@ -8653,7 +8656,8 @@ the insertions in any order), and each line and page fits its window: a
 field message's lines take up to 52 columns (26 narrow letters, the widest a
 window beside a portrait leaves on the 320-pixel screen) or its table's
 columns if more, and 4 lines a page (the portrait window's rows) or its own
-rows if more; `merge` breaks a longer line at its spaces and splits a longer
+rows if more; `merge` breaks a longer line at its spaces (never before a
+`?`, `!` or `:`, which French sets after a space) and splits a longer
 page into pages where the player's Confirm already ends the text. A timed
 text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
 (its last page's lines are the cursor's: `a9` names them), a message whose
@@ -8734,9 +8738,13 @@ again in place, as the original rows repeat theirs. A row spelled so no
 longer has its original images, so the next pass leaves it.
 
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
-capitals (`locale/pt-BR/glyphs.txt`). Each is a two-byte glyph from 0xFF20
+capitals (`locale/pt-BR/glyphs.txt`), French `à â ç é è ê ë î ï ô ù û ü`
+and their capitals (`locale/fr/glyphs.txt`; it writes oe and ae for the
+ligatures, which the font lacks), 38 letters in all. Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
-its special glyph), the same code in every language that adds the letter.
+its special glyph), the same code in every language that adds the letter
+(the languages' letters numbered in `Language::ALL`'s order, a letter
+another language added first keeping its code and its recipe).
 `text_get_glyph_width` makes them narrow (2 columns), and `text_draw_glyph`
 draws one through the original's own drawing of 0xFFFF: it puts the letter
 in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
@@ -8744,7 +8752,8 @@ in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
 between. The letter is composed from the player's font: the base letter's
 11 rows (the font block `text_install_font` installed), rows taken out
 (a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
-drawn for this project over the top rows (the cedilla on row 10). No glyph
+drawn for this project over the top rows (the diaeresis's two dots on row
+1, the cedilla on row 10). No glyph
 of the original is copied.
 
 With English active every wrapped function is the original's, so the game
@@ -8777,14 +8786,15 @@ check of words and rows,
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
 (field 12's opening message: in English the window reads it in RAM; in
-Brazilian Portuguese it reads the shipped translation of the same message,
-with added letters, and goes on with it once English is chosen, the next
-message read in RAM),
-`the_language_is_recorded_and_a_replay_reaches_the_recordings_memory`, the
-timed scenes the text speed is tested on (maps 4, 27, 131, 288 twice, 326,
-359 and 482: the same end, story value and messages in Brazilian
-Portuguese as in English) and
-`the_opening_chapter_reaches_feis_room_in_brazilian_portuguese` (New Game
+Brazilian Portuguese and in French it reads that language's shipped
+translation of the same message, with added letters, and goes on with it
+once English is chosen, the next message read in RAM),
+`the_language_is_recorded_and_a_replay_reaches_the_recordings_memory`
+(changes to English and French recorded and replayed), the
+timed scenes the text speed is tested on (`the_translations_take_...`:
+maps 4, 27, 131, 288 twice, 326, 359 and 482: the same end, story value
+and messages in each translation as in English) and
+`the_opening_chapter_reaches_feis_room_in_every_language` (New Game
 to Fei's room: the same maps, battle and story value).
 
 ## Desktop host and settings panel
