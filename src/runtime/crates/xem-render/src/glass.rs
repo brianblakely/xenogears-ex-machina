@@ -71,6 +71,9 @@ pub enum Widget {
     Button(Icon, State),
     /// A wide control with a label (quantity buttons, deck keys).
     Key(Icon, State),
+    /// A touch stick's well (its knob is a [`Widget::Button`] over it), the
+    /// D-pad's directions it holds (up, down, left, right) gilded.
+    Stick([bool; 4]),
     /// The region a swipe acts on (a list): corner brackets, stretched
     /// over it by the host.
     Region,
@@ -391,6 +394,25 @@ fn shade(widget: &Widget, style: Style, x: f32, y: f32, size: f32) -> Rgba {
                 over(&mut p, SILVER_DARK, cover(strike, aa));
             }
         }
+        Widget::Stick(held) => {
+            // A dark translucent well inside a hollow silver halo, a fin
+            // inside it pointing out along each of the D-pad's directions,
+            // gilded while the stick holds that direction.
+            let d = (x * x + y * y).sqrt();
+            let r = c * 0.9;
+            let ring = (d - r).abs() - c * 0.03;
+            over(&mut p, RECESS, cover(d - r, aa) * if style.reduced_transparency { 0.8 } else { 0.3 });
+            over(&mut p, RECESS, cover(ring - 2.0, aa * 2.0) * 0.5);
+            over(&mut p, lerp3(SILVER, SILVER_DARK, (y / c + 1.0) / 2.0 * 0.6), cover(ring, aa));
+            for ((fx, fy), lit) in [(0.0, -1.0), (0.0, 1.0), (-1.0, 0.0), (1.0, 0.0)].into_iter().zip(held) {
+                let tip = (fx * c * 0.8, fy * c * 0.8);
+                let base = (fx * c * 0.64, fy * c * 0.64);
+                let side = (-fy * c * 0.1, fx * c * 0.1);
+                let fin = triangle((x, y), tip, (base.0 + side.0, base.1 + side.1), (base.0 - side.0, base.1 - side.1));
+                over(&mut p, RECESS, cover(fin - 1.5, aa) * 0.6);
+                over(&mut p, if *lit { GOLD } else { SILVER }, cover(fin, aa));
+            }
+        }
         Widget::Region => {
             // Four silver corner brackets, each with a gold facet at its
             // corner; the region itself stays clear.
@@ -499,6 +521,24 @@ mod tests {
         assert!(alpha(&opaque, 64, 32, 40) > alpha(&clear, 64, 32, 40), "reduced transparency fills the body");
         let body = &opaque[((40 * 64 + 32) * 4) as usize..][..3];
         assert!(body.iter().all(|v| *v < 120), "dark, for white symbols: {body:?}");
+    }
+
+    #[test]
+    fn a_sticks_well_gilds_the_directions_it_holds_around_an_open_middle() {
+        let pixel = |image: &[u8], x: u32, y: u32| image[((y * 128 + x) * 4) as usize..][..4].to_vec();
+        let gold = |p: &[u8]| p[3] > 200 && p[0] > p[2] + 60;
+        let silver = |p: &[u8]| p[3] > 200 && p[0].abs_diff(p[2]) < 30 && p[0] > 180;
+        // Fins 0.64-0.8 of the half size out: up, down, left, right.
+        let fins = [(64, 17), (64, 111), (17, 64), (111, 64)];
+        let rest = draw(&Widget::Stick([false; 4]), 128, Style::default());
+        assert!(fins.iter().all(|&(x, y)| silver(&pixel(&rest, x, y))), "silver at rest");
+        let held = draw(&Widget::Stick([true, false, false, true]), 128, Style::default());
+        let [up, down, left, right] = fins.map(|(x, y)| pixel(&held, x, y));
+        assert!(gold(&up) && gold(&right) && silver(&down) && silver(&left), "up and right held: {up:?} {right:?} {down:?} {left:?}");
+        assert!(alpha(&held, 128, 64, 6) > 200, "the halo");
+        assert!(alpha(&rest, 128, 64, 64) < 100, "a translucent middle, where the knob sits");
+        let opaque = draw(&Widget::Stick([false; 4]), 128, Style { reduced_transparency: true });
+        assert!(alpha(&opaque, 128, 64, 64) > alpha(&rest, 128, 64, 64), "reduced transparency darkens the well");
     }
 
     #[test]

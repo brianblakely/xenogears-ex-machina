@@ -597,16 +597,17 @@ impl XemApp {
     /// mark, and the deck's held actions.
     fn assist_touch(&mut self) {
         let ui = self.ui;
+        // First-person inspection shows no field camera to walk or point
+        // through: its taps walk nowhere and talk to no one, and the deck
+        // has no stick. Otherwise the field as the picture shows it (pulled
+        // back, say).
+        let inspecting = self.first_person();
         let picture = self.renderer.as_ref().and_then(|r| r.picture);
         if let (Some(picture), Some(renderer)) = (picture, &self.renderer) {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let (width, height) = renderer.size();
-            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui);
+            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui, inspecting);
         }
-        // First-person inspection shows no field camera to walk or point
-        // through: its taps walk nowhere and talk to no one. Otherwise the
-        // field as the picture shows it (pulled back, say).
-        let inspecting = self.first_person();
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
         let Some(session) = self.session.as_mut() else { return };
         let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
@@ -628,16 +629,14 @@ impl XemApp {
         let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
-        let held = self.deck.held();
         if let Some(renderer) = &mut self.renderer {
             if let Some(panel) = renderer.panel() {
                 panel.set_first_person_touch(shown);
             }
             renderer.overlay.marks = marks;
-            renderer.overlay.ui = shown.then_some(ui);
             renderer.overlay.style = style;
             let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, xem_assist::draw::deck_state(*c, held.contains(c), auto_advance, inspecting))).collect();
+            renderer.overlay.deck = if shown { xem_assist::draw::deck_widgets(&self.deck, ui, auto_advance, inspecting) } else { Vec::new() };
         }
         self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
@@ -1869,6 +1868,10 @@ impl XemApp {
                 "controls": self.deck.controls.iter().map(|(c, r)| json!({
                     "control": format!("{c:?}"), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
                 })).collect::<Vec<_>>(),
+                // Where the stick rests and its knob's reach; where it shows
+                // (none while first-person inspection shows).
+                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone() })),
+                "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1], "held": s.held })),
                 "held": self.deck.held().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
             },
             "xr": {

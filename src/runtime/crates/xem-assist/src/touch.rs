@@ -2,20 +2,26 @@
 //! as a Seraph Glass deck beside the picture, and taps on the picture
 //! resolved as the headset's pointer gestures are.
 //!
-//! - The deck: a D-pad on the left with Select above it, the four face
+//! - The deck: a stick on the left with Select above it, the four face
 //!   buttons on the right (Jump, Cancel and Run, Confirm, Menu), the
-//!   camera's turns at the top corners, Start and Settings at the top. A
-//!   finger holds the control it is on, sliding from one to another (the
-//!   D-pad's directions), and lets go when lifted or cancelled: explicit
-//!   press and release. In Battling the face buttons show the bout's own
-//!   names (A, B, Jump, Dash) and the turns its Charge and Special.
-//!   Controls stand in the letterbox beside the picture when it leaves
-//!   room, else over its corners.
-//! - A tap on the picture (a short touch that does not travel) is the
-//!   pointer's tap: walking, on an actor it approaches and talks, on the
-//!   floor it walks there; in a menu or a choice it selects the entry and
-//!   confirms it; in a dialogue it advances. A finger dragged on the
-//!   picture turns first-person inspection's view ([`Deck::take_drag`]).
+//!   camera's turns at the top corners, Start and Settings at the top. The
+//!   stick is relative: a finger touching the screen's left half (on no
+//!   other control) centres it where it touched, and its travel from there
+//!   holds the D-pad's eighth (a direction, or two together on a diagonal)
+//!   beyond a small dead zone, the centre following a finger that goes
+//!   past the knob's reach; untouched it rests where a D-pad would stand.
+//!   A finger holds the control it is on, and lets go when lifted or
+//!   cancelled: explicit press and release. In Battling the face buttons
+//!   show the bout's own names (A, B, Jump, Dash) and the turns its Charge
+//!   and Special. Controls stand in the letterbox beside the picture when
+//!   it leaves room, else over its corners.
+//! - A tap on the picture (a short touch that does not travel, the stick's
+//!   half too) is the pointer's tap: walking, on an actor it approaches and
+//!   talks, on the floor it walks there; in a menu or a choice it selects
+//!   the entry and confirms it; in a dialogue it advances. A finger dragged
+//!   on the picture turns first-person inspection's view
+//!   ([`Deck::take_drag`]); while that view shows there is no stick, so a
+//!   finger on the left half turns it too.
 //! - A shop's quantity list adds the +, -, ALL and NONE keys; the world
 //!   map adds Board (L2 and R2 together: a Gear boarded or left); a field
 //!   (not its menu) adds LOOK (first-person inspection on or off, the app's
@@ -29,6 +35,7 @@ use xem_core::context::Context;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Control {
+    /// The D-pad's directions, which the stick holds (no keys of their own).
     Up,
     Down,
     Left,
@@ -118,8 +125,49 @@ impl Rect {
     }
 }
 
-/// The deck's controls and where they stand.
-pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> Vec<(Control, Rect)> {
+/// The stick (target pixels): where it rests while no finger holds it,
+/// where a finger touching no control takes it, and its knob.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Stick {
+    /// Its centre at rest, where a D-pad would stand.
+    pub rest: (f32, f32),
+    /// The screen's left half.
+    pub zone: Rect,
+    /// How far the knob's centre travels from the stick's centre.
+    pub reach: f32,
+    /// The knob's size (a button's).
+    pub knob: f32,
+}
+
+impl Stick {
+    /// Its well's radius: the knob stays within it.
+    pub fn radius(&self) -> f32 {
+        self.reach + self.knob / 2.0
+    }
+
+    /// The travel within which it holds nothing.
+    pub fn dead_zone(&self) -> f32 {
+        self.reach * STICK_DEAD_ZONE
+    }
+}
+
+/// The knob's reach, in buttons, and the dead zone, in reaches.
+const STICK_REACH: f32 = 0.75;
+const STICK_DEAD_ZONE: f32 = 0.25;
+
+/// How the stick shows (target pixels): its centre and its knob's, whether
+/// a finger holds it, and the D-pad's directions it holds (up, down, left,
+/// right).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StickShown {
+    pub centre: (f32, f32),
+    pub knob: (f32, f32),
+    pub held: bool,
+    pub directions: [bool; 4],
+}
+
+/// The deck's controls and where they stand, and the stick.
+pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> (Vec<(Control, Rect)>, Stick) {
     let (w, h) = target;
     // Generous touch targets: about 12% of the short side, at least 52 dp.
     let mut size = (w.min(h) * 0.13).max(52.0 * density).min(w.min(h) * 0.2);
@@ -140,13 +188,8 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     } else {
         (margin + size * 1.6, w - margin - size * 1.6)
     };
-    let pad = cluster(left_x, low);
     let face = cluster(right_x, low);
     let mut controls = vec![
-        (Control::Up, pad(0.0, -1.0)),
-        (Control::Down, pad(0.0, 1.0)),
-        (Control::Left, pad(-1.0, 0.0)),
-        (Control::Right, pad(1.0, 0.0)),
         (Control::Jump, face(0.0, -1.0)),
         (Control::Cancel, face(1.0, 0.0)),
         (Control::Confirm, face(0.0, 1.0)),
@@ -159,7 +202,7 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     let small = |x: f32| Rect { x: x - size * 0.7, y: top - size * 0.35, width: size * 1.4, height: size * 0.7 };
     controls.push((Control::Settings, small(w / 2.0 - size * 0.85)));
     controls.push((Control::Start, small(w / 2.0 + size * 0.85)));
-    // A wide key above a cluster: Select over the D-pad, the world map's
+    // A wide key above a cluster: Select over the stick, the world map's
     // Board over the face buttons; in a field LOOK there, its scenes' AUTO
     // beside it, each of the two a little narrower.
     let above = |cx: f32| Rect { x: cx - size * 0.8, y: low - 2.3 * (size + gap) - size * 0.35, width: size * 1.6, height: size * 0.7 };
@@ -181,11 +224,12 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
             controls.push((Control::Quantity(i as u8), Rect { x: x - size * 0.8, y, width: size * 1.6, height: size * 0.7 }));
         }
     }
-    controls
+    let zone = Rect { x: 0.0, y: 0.0, width: w / 2.0, height: h };
+    (controls, Stick { rest: (left_x, low), zone, reach: size * STICK_REACH, knob: size })
 }
 
-/// A finger's first touch: where and when, whether it travelled, and where
-/// it is now.
+/// A finger's first touch: where and when, whether it travelled, where it
+/// is now, and the stick while it holds it.
 #[derive(Clone, Copy, Debug)]
 struct Finger {
     control: Option<Control>,
@@ -194,6 +238,37 @@ struct Finger {
     travelled: bool,
     on_picture: bool,
     at: (f32, f32),
+    steer: Option<Steer>,
+}
+
+/// A finger's hold of the stick: its centre (where the finger touched,
+/// following a finger past the reach) and the eighth it holds.
+#[derive(Clone, Copy, Debug)]
+struct Steer {
+    centre: (f32, f32),
+    sector: Option<i32>,
+}
+
+impl Steer {
+    /// The finger now at `at`.
+    fn to(&mut self, at: (f32, f32), stick: &Stick) {
+        let (mut dx, mut dy) = (at.0 - self.centre.0, at.1 - self.centre.1);
+        let travel = (dx * dx + dy * dy).sqrt();
+        if travel > stick.reach {
+            (dx, dy) = (dx * stick.reach / travel, dy * stick.reach / travel);
+            self.centre = (at.0 - dx, at.1 - dy);
+        }
+        self.sector = (travel > stick.dead_zone()).then(|| {
+            // Screen directions: Right 0, Down 0x400, Left 0x800, Up 0xC00.
+            let dir = (dy.atan2(dx) / std::f32::consts::TAU * 4096.0).round() as i32;
+            crate::arcade::eighth(dir.rem_euclid(4096), self.sector)
+        });
+    }
+
+    /// The D-pad's directions held: up, down, left, right.
+    fn directions(&self) -> [bool; 4] {
+        self.sector.map_or([false; 4], xem_core::field::dpad_of_sector)
+    }
 }
 
 /// What a touch did.
@@ -220,6 +295,8 @@ const TAP_TRAVEL: f32 = 14.0;
 pub struct Deck {
     pub controls: Vec<(Control, Rect)>,
     pub picture: Option<Rect>,
+    /// The stick, but while first-person inspection shows.
+    pub stick: Option<Stick>,
     fingers: BTreeMap<u64, Finger>,
     /// How far a lone finger that began on the picture moved, not yet
     /// taken (target pixels).
@@ -227,21 +304,31 @@ pub struct Deck {
 }
 
 impl Deck {
-    /// Lays the deck out for this frame (the target and where the picture is).
-    pub fn arrange(&mut self, target: (f32, f32), picture: Rect, density: f32, ui: Context) {
-        self.controls = layout(target, picture, density, ui);
+    /// Lays the deck out for this frame (the target, where the picture is,
+    /// and whether first-person inspection shows: its view has no stick, a
+    /// finger holding it lets it go and drags as any other).
+    pub fn arrange(&mut self, target: (f32, f32), picture: Rect, density: f32, ui: Context, inspecting: bool) {
+        let (controls, stick) = layout(target, picture, density, ui);
+        self.controls = controls;
         self.picture = Some(picture);
+        self.stick = (!inspecting).then_some(stick);
+        if inspecting {
+            self.fingers.values_mut().for_each(|f| f.steer = None);
+        }
     }
 
     fn control_at(&self, at: (f32, f32)) -> Option<Control> {
         self.controls.iter().find(|(_, r)| r.contains(at)).map(|(c, _)| *c)
     }
 
-    /// A finger touched down.
+    /// A finger touched down: on no control in the stick's half (and no
+    /// other finger holding it), it takes the stick, centred there.
     pub fn down(&mut self, finger: u64, at: (f32, f32), time: f64) -> Touched {
         let control = self.control_at(at);
         let on_picture = control.is_none() && self.picture.is_some_and(|p| p.contains(at));
-        self.fingers.insert(finger, Finger { control, start: at, began: time, travelled: false, on_picture, at });
+        let free = !self.fingers.values().any(|f| f.steer.is_some());
+        let steer = (control.is_none() && free && self.stick.is_some_and(|s| s.zone.contains(at))).then_some(Steer { centre: at, sector: None });
+        self.fingers.insert(finger, Finger { control, start: at, began: time, travelled: false, on_picture, at, steer });
         match control {
             Some(Control::Settings) => Touched::Settings,
             Some(Control::Auto) => Touched::AutoAdvance,
@@ -251,26 +338,26 @@ impl Deck {
         }
     }
 
-    /// A finger moved: a finger on the D-pad slides between its directions;
-    /// one alone on the picture drags it.
+    /// A finger moved: one holding the stick steers it; one alone on the
+    /// picture (the stick's aside) drags it.
     pub fn moved(&mut self, finger: u64, at: (f32, f32)) {
-        let control = self.control_at(at);
-        let alone = self.fingers.values().filter(|f| f.on_picture).count() == 1;
+        let alone = self.fingers.values().filter(|f| f.on_picture && f.steer.is_none()).count() == 1;
+        let stick = self.stick;
         if let Some(f) = self.fingers.get_mut(&finger) {
             let dx = at.0 - f.start.0;
             let dy = at.1 - f.start.1;
             if (dx * dx + dy * dy).sqrt() > TAP_TRAVEL {
                 f.travelled = true;
             }
-            if f.on_picture && alone {
-                self.drag.0 += at.0 - f.at.0;
-                self.drag.1 += at.1 - f.at.1;
+            match (&mut f.steer, stick) {
+                (Some(steer), Some(stick)) => steer.to(at, &stick),
+                _ if f.on_picture && alone => {
+                    self.drag.0 += at.0 - f.at.0;
+                    self.drag.1 += at.1 - f.at.1;
+                }
+                _ => {}
             }
             f.at = at;
-            let dpad = |c: Option<Control>| matches!(c, Some(Control::Up | Control::Down | Control::Left | Control::Right));
-            if dpad(f.control) && dpad(control) {
-                f.control = control;
-            }
         }
     }
 
@@ -296,14 +383,32 @@ impl Deck {
         std::mem::take(&mut self.drag)
     }
 
-    /// The controls fingers hold.
+    /// The controls fingers hold, the stick's directions among them.
     pub fn held(&self) -> BTreeSet<Control> {
-        self.fingers.values().filter_map(|f| f.control).collect()
+        let mut held: BTreeSet<Control> = self.fingers.values().filter_map(|f| f.control).collect();
+        for steer in self.fingers.values().filter_map(|f| f.steer) {
+            let directions = [Control::Up, Control::Down, Control::Left, Control::Right];
+            held.extend(directions.into_iter().zip(steer.directions()).filter_map(|(c, on)| on.then_some(c)));
+        }
+        held
     }
 
     /// The game actions the held controls hold.
     pub fn actions(&self) -> BTreeSet<GameAction> {
         self.held().into_iter().flat_map(Control::actions).collect()
+    }
+
+    /// How the stick shows: where a finger holds it, else at rest.
+    pub fn stick_shown(&self) -> Option<StickShown> {
+        let stick = self.stick?;
+        Some(match self.fingers.values().find_map(|f| f.steer.map(|s| (s, f.at))) {
+            Some((steer, at)) => {
+                let (dx, dy) = (at.0 - steer.centre.0, at.1 - steer.centre.1);
+                let k = stick.reach / (dx * dx + dy * dy).sqrt().max(stick.reach);
+                StickShown { centre: steer.centre, knob: (steer.centre.0 + dx * k, steer.centre.1 + dy * k), held: true, directions: steer.directions() }
+            }
+            None => StickShown { centre: stick.rest, knob: stick.rest, held: false, directions: [false; 4] },
+        })
     }
 }
 
@@ -315,8 +420,18 @@ mod tests {
         let mut deck = Deck::default();
         // A 20:9 phone in landscape with a 4:3 picture in the middle.
         let picture = Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 };
-        deck.arrange((2400.0, 1080.0), picture, 3.0, Context::Walk);
+        deck.arrange((2400.0, 1080.0), picture, 3.0, Context::Walk, false);
         deck
+    }
+
+    fn apart(a: Rect, b: Rect) -> bool {
+        a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height
+    }
+
+    /// The square the stick's well fills at rest.
+    fn well(stick: Stick) -> Rect {
+        let r = stick.radius();
+        Rect { x: stick.rest.0 - r, y: stick.rest.1 - r, width: 2.0 * r, height: 2.0 * r }
     }
 
     #[test]
@@ -329,21 +444,64 @@ mod tests {
             }
             assert!(rect.height >= 40.0 * 3.0 * 0.69, "{control:?} is too small: {rect:?}");
         }
+        let well = well(deck.stick.unwrap());
+        assert!(well.x >= 0.0 && well.x + well.width <= picture.x, "the stick rests beside the picture: {well:?}");
+        assert!(deck.controls.iter().all(|(_, r)| apart(*r, well)), "the stick's well is clear of the keys");
     }
 
     #[test]
-    fn fingers_hold_controls_slide_across_the_dpad_and_release() {
+    fn a_finger_on_the_left_half_steers_the_stick_from_where_it_touched_and_lets_go() {
         let mut deck = deck();
-        let at = |c: Control| deck.controls.iter().find(|(k, _)| *k == c).unwrap().1.centre();
-        let (up, right, confirm) = (at(Control::Up), at(Control::Right), at(Control::Confirm));
-        deck.down(1, up, 0.0);
+        let stick = deck.stick.unwrap();
+        let (reach, dead) = (stick.reach, stick.dead_zone());
+        assert!(dead > 0.0 && dead < reach);
+        // On the picture's left half, nowhere near where the stick rests.
+        let (x, y) = (700.0, 300.0);
+        assert!(deck.control_at((x, y)).is_none() && stick.zone.contains((x, y)));
+        assert_eq!(deck.down(1, (x, y), 0.0), Touched::Nothing);
+        assert_eq!(deck.stick_shown().unwrap().centre, (x, y), "centred where it touched");
+        assert!(deck.actions().is_empty(), "nothing held before it travels");
+        deck.moved(1, (x + dead * 0.8, y));
+        assert!(deck.actions().is_empty(), "within the dead zone");
+        deck.moved(1, (x + reach * 0.6, y));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]));
+        deck.moved(1, (x + reach * 0.5, y - reach * 0.5));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Up, GameAction::Right]), "a diagonal holds two");
+        deck.moved(1, (x, y + reach * 0.7));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Down]));
+        // Its eighth holds a few degrees past a boundary (22.5 degrees off
+        // Down, toward Down and Left).
+        let off = |degrees: f32| (x + reach * 0.7 * (90.0 + degrees).to_radians().cos(), y + reach * 0.7 * (90.0 + degrees).to_radians().sin());
+        deck.moved(1, off(25.0));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Down]), "kept near the boundary");
+        deck.moved(1, off(35.0));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Down, GameAction::Left]));
+        // Past its reach the centre follows: a short way back turns it round.
+        deck.moved(1, (x - 3.0 * reach, y));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Left]));
+        let shown = deck.stick_shown().unwrap();
+        let near = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 0.01 && (a.1 - b.1).abs() < 0.01;
+        assert!(near(shown.centre, (x - 2.0 * reach, y)) && near(shown.knob, (x - 3.0 * reach, y)), "{shown:?}");
+        assert!(shown.held && shown.directions == [false, false, true, false], "{shown:?}");
+        deck.moved(1, (x - 2.0 * reach + dead * 1.5, y));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]));
+        // Another finger holds a button meanwhile; a third on the left half
+        // takes no second stick.
+        let confirm = deck.controls.iter().find(|(k, _)| *k == Control::Confirm).unwrap().1.centre();
         deck.down(2, confirm, 0.1);
-        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Up, GameAction::Confirm]));
-        deck.moved(1, right);
+        deck.down(3, (600.0, 700.0), 0.1);
+        deck.moved(3, (600.0 + reach, 700.0));
         assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right, GameAction::Confirm]));
+        assert_eq!(deck.held(), BTreeSet::from([Control::Right, Control::Confirm]));
         deck.up(2, confirm, 0.2, false);
-        deck.up(1, right, 0.3, true);
-        assert!(deck.actions().is_empty());
+        deck.up(3, (600.0 + reach, 700.0), 0.2, false);
+        deck.up(1, (x, y), 0.3, true);
+        assert!(deck.actions().is_empty(), "lifted and cancelled");
+        assert_eq!(deck.stick_shown().unwrap(), StickShown { centre: stick.rest, knob: stick.rest, held: false, directions: [false; 4] }, "back at rest");
+        // The right half takes no stick.
+        deck.down(4, (1700.0, 300.0), 1.0);
+        deck.moved(4, (1700.0 + reach, 300.0));
+        assert!(deck.actions().is_empty() && !deck.stick_shown().unwrap().held);
     }
 
     #[test]
@@ -358,10 +516,14 @@ mod tests {
         assert_eq!(deck.up(7, (1200.0, 500.0), 3.6, false), Touched::Nothing, "a hold");
         let settings = deck.controls.iter().find(|(k, _)| *k == Control::Settings).unwrap().1.centre();
         assert_eq!(deck.down(8, settings, 4.0), Touched::Settings);
+        // On the stick's half too: a still touch holds nothing and taps.
+        deck.down(9, (700.0, 500.0), 5.0);
+        assert!(deck.stick_shown().unwrap().held && deck.actions().is_empty());
+        assert_eq!(deck.up(9, (703.0, 502.0), 5.2, false), Touched::Tap((703.0, 502.0)));
     }
 
     #[test]
-    fn select_stands_above_the_dpad_clear_of_every_other_control() {
+    fn select_stands_above_the_stick_clear_of_every_other_control() {
         for (target, picture) in [
             // The phone's letterbox, and a 4:3 tablet's picture filling it.
             ((2400.0, 1080.0), Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 }),
@@ -369,14 +531,16 @@ mod tests {
         ] {
             for ui in [Context::Walk, Context::WorldMap { movement: 0, scene: 0 }] {
                 let mut deck = Deck::default();
-                deck.arrange(target, picture, 2.0, ui);
-                let rect = |c: Control| deck.controls.iter().find(|(k, _)| *k == c).unwrap().1;
-                let (select, up) = (rect(Control::Select), rect(Control::Up));
-                assert!(select.y + select.height <= up.y && (select.centre().0 - up.centre().0).abs() < 1.0, "{select:?} over {up:?}");
+                deck.arrange(target, picture, 2.0, ui, false);
+                let select = deck.controls.iter().find(|(k, _)| *k == Control::Select).unwrap().1;
+                let stick = deck.stick.unwrap();
+                let well = well(stick);
+                assert!(select.y + select.height <= well.y && (select.centre().0 - stick.rest.0).abs() < 1.0, "{select:?} over {well:?}");
                 for (other, r) in deck.controls.iter().filter(|(k, _)| *k != Control::Select) {
-                    let apart = r.x >= select.x + select.width || select.x >= r.x + r.width || r.y >= select.y + select.height || select.y >= r.y + r.height;
-                    assert!(apart, "{other:?} {r:?} overlaps Select {select:?} ({ui:?})");
+                    assert!(apart(*r, select), "{other:?} {r:?} overlaps Select {select:?} ({ui:?})");
+                    assert!(apart(*r, well), "{other:?} {r:?} overlaps the stick's well {well:?} ({ui:?})");
                 }
+                assert!(well.x >= 0.0 && well.y + well.height <= target.1, "the stick within the screen: {well:?}");
                 let mut deck = deck;
                 deck.down(1, select.centre(), 0.0);
                 assert_eq!(deck.actions(), BTreeSet::from([GameAction::Select]));
@@ -390,7 +554,7 @@ mod tests {
         let picture = Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 };
         for ui in [Context::Event { map: 4, buttons: 0 }, Context::Dialogue { choice: None }] {
             let mut deck = Deck::default();
-            deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
+            deck.arrange((2400.0, 1080.0), picture, 3.0, ui, false);
             let auto = deck.controls.iter().find(|(k, _)| *k == Control::Auto).expect("AUTO in a scene").1;
             for (other, r) in deck.controls.iter().filter(|(k, _)| *k != Control::Auto) {
                 let apart = r.x >= auto.x + auto.width || auto.x >= r.x + r.width || r.y >= auto.y + auto.height || auto.y >= r.y + r.height;
@@ -402,7 +566,7 @@ mod tests {
         }
         for ui in [Context::Walk, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message: false }] {
             let mut deck = Deck::default();
-            deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
+            deck.arrange((2400.0, 1080.0), picture, 3.0, ui, false);
             assert!(deck.controls.iter().all(|(k, _)| *k != Control::Auto), "no AUTO in {ui:?}");
         }
     }
@@ -418,7 +582,7 @@ mod tests {
         ] {
             for ui in [Context::Walk, Context::Event { map: 4, buttons: 0 }, Context::Dialogue { choice: None }] {
                 let mut deck = Deck::default();
-                deck.arrange(target, picture, 3.0, ui);
+                deck.arrange(target, picture, 3.0, ui, false);
                 let look = deck.controls.iter().find(|(k, _)| *k == Control::Look).expect("LOOK in a field").1;
                 for (other, r) in deck.controls.iter().filter(|(k, _)| *k != Control::Look) {
                     let apart = r.x >= look.x + look.width || look.x >= r.x + r.width || r.y >= look.y + look.height || look.y >= r.y + r.height;
@@ -434,7 +598,7 @@ mod tests {
         let menu = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false };
         for ui in [menu, Context::WorldMap { movement: 1, scene: 0 }, Context::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message: false }, Context::None] {
             let mut deck = Deck::default();
-            deck.arrange((2400.0, 1080.0), picture, 3.0, ui);
+            deck.arrange((2400.0, 1080.0), picture, 3.0, ui, false);
             assert!(deck.controls.iter().all(|(k, _)| *k != Control::Look), "no LOOK in {ui:?}");
         }
         use crate::draw::deck_state;
@@ -448,25 +612,53 @@ mod tests {
     #[test]
     fn a_lone_finger_dragged_on_the_picture_is_taken_as_a_drag() {
         let mut deck = deck();
-        let dpad = deck.controls.iter().find(|(k, _)| *k == Control::Up).unwrap().1.centre();
-        deck.down(1, (1200.0, 500.0), 0.0);
-        deck.moved(1, (1230.0, 490.0));
-        deck.moved(1, (1250.0, 520.0));
+        deck.down(1, (1500.0, 500.0), 0.0);
+        deck.moved(1, (1530.0, 490.0));
+        deck.moved(1, (1550.0, 520.0));
         assert_eq!(deck.take_drag(), (50.0, 20.0), "what it moved since it touched");
         assert_eq!(deck.take_drag(), (0.0, 0.0), "taken once");
-        // A finger on the deck drags nothing; a second on the picture stops
-        // the drag (two fingers are no look).
-        deck.down(2, dpad, 0.1);
-        deck.moved(2, (dpad.0 + 40.0, dpad.1));
-        deck.moved(1, (1260.0, 520.0));
+        // A finger on the stick (on the picture's left half) drags nothing;
+        // a second on the picture's right half stops the drag (two fingers
+        // are no look).
+        deck.down(2, (700.0, 500.0), 0.1);
+        deck.moved(2, (740.0, 500.0));
+        deck.moved(1, (1560.0, 520.0));
         assert_eq!(deck.take_drag(), (10.0, 0.0));
-        deck.down(3, (1000.0, 600.0), 0.2);
-        deck.moved(1, (1300.0, 520.0));
-        deck.moved(3, (1050.0, 600.0));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]), "the stick steers");
+        deck.down(3, (1300.0, 600.0), 0.2);
+        deck.moved(1, (1600.0, 520.0));
+        deck.moved(3, (1350.0, 600.0));
         assert_eq!(deck.take_drag(), (0.0, 0.0));
-        assert_eq!(deck.up(1, (1300.0, 520.0), 0.3, false), Touched::Nothing, "a drag is no tap");
-        deck.moved(3, (1080.0, 600.0));
+        assert_eq!(deck.up(1, (1600.0, 520.0), 0.3, false), Touched::Nothing, "a drag is no tap");
+        deck.moved(3, (1380.0, 600.0));
         deck.release();
         assert_eq!(deck.take_drag(), (0.0, 0.0), "letting go forgets it");
+        assert!(deck.actions().is_empty());
+    }
+
+    #[test]
+    fn first_person_inspection_has_no_stick_and_a_finger_on_the_left_half_turns_the_view() {
+        let mut deck = deck();
+        let picture = deck.picture.unwrap();
+        // A finger holding the stick as the view comes lets it go.
+        deck.down(1, (700.0, 500.0), 0.0);
+        deck.moved(1, (800.0, 500.0));
+        assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]));
+        deck.take_drag();
+        deck.arrange((2400.0, 1080.0), picture, 3.0, Context::Walk, true);
+        assert!(deck.stick.is_none() && deck.stick_shown().is_none() && deck.actions().is_empty());
+        deck.moved(1, (820.0, 490.0));
+        assert_eq!(deck.take_drag(), (20.0, -10.0), "it drags as any finger on the picture");
+        deck.up(1, (820.0, 490.0), 0.5, false);
+        deck.down(2, (600.0, 600.0), 1.0);
+        deck.moved(2, (640.0, 600.0));
+        assert_eq!(deck.take_drag(), (40.0, 0.0));
+        assert!(deck.actions().is_empty());
+        deck.up(2, (640.0, 600.0), 1.5, false);
+        // The view gone, the stick is back.
+        deck.arrange((2400.0, 1080.0), picture, 3.0, Context::Walk, false);
+        deck.down(3, (600.0, 600.0), 2.0);
+        deck.moved(3, (640.0, 600.0));
+        assert_eq!((deck.take_drag(), deck.actions()), ((0.0, 0.0), BTreeSet::from([GameAction::Right])));
     }
 }

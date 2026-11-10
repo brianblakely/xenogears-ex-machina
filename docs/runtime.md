@@ -2388,9 +2388,9 @@ Under the Enhanced movies setting `GameView` rebuilds 24-bit movie frames
 from what the MDEC decoded (above, GameView); under Original, and for a
 frame whose macroblocks it does not all know, hosts show the device's own
 picture, each pixel a block. Hosts make the rebuilt picture at the size
-they show it (`ViewConfig::movies`): a window (desktop, Android) the
-display placed in its safe area as the presentation's scale places it, the
-browser's canvas likewise, and a headset's virtual screen as many pixels
+they show it (`ViewConfig::movies`): a desktop window the display placed
+in its safe area as the presentation's scale places it, an Android window
+and the browser's canvas likewise in all of it, and a headset's virtual screen as many pixels
 across as the screen spans in an eye (its width, times the screen's
 two-hand scaling, over its distance, in the eye's pixels per unit of
 tangent), at most the
@@ -2452,7 +2452,7 @@ picture shows for 4, 4, 3 and 5 game frames (one movie frame at 15 a
 second), and the first rebuilt frame is
 the restored timeline's (0.82 and 0.59 levels from its device picture,
 5.55 and 15.75 from the picture shown before the restore), never one from
-before the restore. Through the desktop's and Android's view (frame 840
+before the restore. Through the desktop's view (frame 840
 on, wider framing on, a 1366x768 target whose safe area leaves out 60
 pixels each side and 34 above and below) the title movie is rebuilt at
 1037x700 under Fit and 960x648 under Integer, the display's placed sizes in
@@ -2550,7 +2550,7 @@ within two movie frames (8 game frames), the restores with the restored
 picture (within 6 levels of its device picture and less than half as far
 from it as from the picture shown before). `xem-host`'s
 `a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides`
-(local, disc 1) checks the desktop's and Android's view as above: the
+(local, disc 1) checks the desktop's view as above: the
 rebuilt frame's size the display's placed size in the safe area under Fit
 and under Integer, shown at that size and centred there, without sides
 while the view's own frames have them, and the device's 320x216 picture
@@ -2596,8 +2596,7 @@ measure as much as the device's own picture or more. The desktop's
 desktop's window, `xem-desktop/tests/control.rs` on weston's headless
 backend, checks the settings commands): the view's flag it reports is the
 one the `xem-host` test checks. Android shows only its
-logged flag; its real insets (the `xem-host` test stands in with a safe
-area) and sizes are not checked.
+logged flag; its sizes are not checked.
 
 ### Characters in a wider view
 
@@ -5816,15 +5815,27 @@ bindings changed from the open panel hold when play resumes.
 On a touch screen (Android; phone and tablet browsers) the game's controls
 are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
 letterbox has room (three controls and their gaps, at least 40 dp each),
-else over its corners: a D-pad on the left with Select above it (the
+else over its corners: a stick on the left with Select above it (the
 game's Select, in a field first-person inspection's toggle where the
 game's shows nothing, and held over a dialogue what hides its windows:
 [Hiding a dialogue](#hiding-a-dialogue)), the face buttons on the right (Jump, Cancel and
 Run, Confirm, Menu), the camera's turns at the top corners, Settings and
-Start at the top. A finger holds the control it is on and slides across the
-D-pad's directions; lifting or a cancelled touch lets go (explicit press
-and release). A finger alone dragged on the picture turns inspection's
-view, the scene following it. Battling names the face buttons and
+Start at the top. The stick is relative: a finger touching the screen's
+left half on no other control takes it (one finger at a time), centred
+where it touched, and its travel from there past a dead zone (a quarter of
+the knob's reach, which is three quarters of a button) holds the D-pad's
+eighth, a direction or a diagonal's two, kept a few degrees past a
+boundary (the headset deck's stick's rule, `arcade::eighth`); a finger
+going past the reach drags the centre along, so a short way back turns it
+round. Untouched it rests where a D-pad would stand: a hollow halo with a
+fin for each direction, gilded while held, and its knob, a button that
+follows the finger. A short still touch there is still a tap on the
+picture. A finger holds the control it is on; lifting or a cancelled touch
+lets go (explicit press and release). A finger alone dragged on the
+picture (not one holding the stick) turns inspection's view, the scene
+following it; while that view shows the deck has no stick (it would walk
+nowhere), and a finger holding it as the view comes lets it go, so a
+finger on the left half turns the view too. Battling names the face buttons and
 turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
 adds Board (L2 and R2 together: a Gear boarded or left), a field (walking,
 its scenes and dialogue; not its menu) adds LOOK above the face buttons
@@ -5843,9 +5854,10 @@ it selects the entry and confirms it; in battle it chooses as a click does
 ([The game's interface context](#the-games-interface-context)); in a
 dialogue it advances. The deck
 shows once a finger touches the game (always on Android) under Settings'
-Touch controls. Android logs the deck's place (`touch deck ...`) and its
-smoke test holds Confirm on it; the browser suite plays it with touch
-pointers.
+Touch controls. Android logs the deck's place (`touch deck ...`, and
+`touch stick x y reach` where the stick rests) and its smoke test holds
+Confirm on it and drags the stick to the right; the browser suite plays it
+with touch pointers.
 
 ### Headsets: hands, gaze and control decks
 
@@ -9349,6 +9361,18 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
 - **Startup.** SDL window on the activity's surface; wgpu on Vulkan, the GLES
   backend only when no Vulkan adapter can present (logged); the shared view
   with the settings panel shown (Back toggles it).
+- **The whole screen.** The game's picture fills the window as the
+  presentation places it, and the window the screen: `XemActivity` lays it
+  out over display cutouts (`LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS`, short
+  edges on Android 10), which Android otherwise keeps a landscape window
+  out of (SDL asks only as its window goes fullscreen, in attributes it
+  never applies), and the view takes no safe area: SDL's here is the
+  system's gesture strips (the edges' back gesture, the bars' swipes
+  above and below, still there while immersive mode hides the bars) with
+  the cutouts, and a picture placed in it stood behind black bands on all
+  four sides (issue #78). A camera's hole may cover the edge of a widened
+  picture, as in other full-screen games; the deck keeps to the window's
+  own margins.
 - **Assets.** A file bundled in the APK's assets is read through
   `SDL_IOFromFile` (the AssetManager). The user's disc is imported with SDL's
   open-file dialog, which is Android's `ACTION_OPEN_DOCUMENT` picker (the
