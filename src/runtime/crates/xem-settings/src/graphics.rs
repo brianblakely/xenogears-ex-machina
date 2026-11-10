@@ -360,8 +360,14 @@ pub struct Graphics {
     /// ([`Graphics::game_paced`]).
     pub interpolation: bool,
     /// Wider framing than the original 4:3 screen, to the output's aspect
-    /// ratio: the sides show the scene beyond the original screen.
+    /// ratio: the sides show the scene beyond the original screen. Kept as
+    /// chosen; it frames the picture only while Force 4:3 is off
+    /// ([`Graphics::widened`]).
     pub widescreen: bool,
+    /// The picture shown at 4:3 under either renderer, reshaped from its own
+    /// pixels' shape; it sets the shape instead of wider framing. A
+    /// headset's screen keeps its own shape.
+    pub force_4x3: bool,
     /// The field camera pulled back along its own axis, without turning:
     /// 100 (the original, default) to [`MAX_ZOOM_OUT`] percent, the subject
     /// appearing that many times smaller. The world map takes a tenth of
@@ -394,6 +400,7 @@ impl Default for Graphics {
             internal_scale: 0,
             interpolation: false,
             widescreen: false,
+            force_4x3: false,
             zoom_out: 100,
             actors_in_view: true,
             full_size_sprites: false,
@@ -410,6 +417,18 @@ impl Graphics {
     pub fn zoomed(&self, notches: i32) -> Graphics {
         let zoom = i32::from(self.zoom_out) + notches * i32::from(ZOOM_STEP);
         Graphics { zoom_out: zoom.clamp(100, i32::from(MAX_ZOOM_OUT)) as u16, ..*self }
+    }
+
+    /// Whether wider framing frames the picture: Widescreen chosen and Force
+    /// 4:3 off (which sets the shape instead, the choice kept).
+    pub fn widened(&self) -> bool {
+        self.widescreen && !self.force_4x3
+    }
+
+    /// The aspect ratio the picture is forced to (width over height): 4:3
+    /// under Force 4:3, else `None` (its own shape).
+    pub fn forced_aspect(&self) -> Option<f32> {
+        self.force_4x3.then_some(4.0 / 3.0)
     }
 
     /// Whether a frame is presented only when the game drew one: Ex

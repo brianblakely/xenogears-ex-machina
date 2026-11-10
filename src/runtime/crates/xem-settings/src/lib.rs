@@ -69,7 +69,8 @@ pub enum Scale {
     /// Largest size that keeps the aspect ratio.
     #[default]
     Fit,
-    /// Largest whole multiple of the image size.
+    /// Largest whole multiple of the image size (under Force 4:3, of its
+    /// height, the width following 4:3).
     Integer,
     /// Fill the area, ignoring the aspect ratio.
     Stretch,
@@ -1199,6 +1200,27 @@ mod tests {
         assert!(read.binaural.enabled);
         assert_eq!(read.binaural.music_immersion, Binaural::default().music_immersion);
         assert_eq!(reset, ["binaural.music_immersion"]);
+    }
+
+    #[test]
+    fn force_4x3_sets_the_shape_and_keeps_widescreen() {
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        let graphics = service.settings().graphics;
+        assert!(!graphics.force_4x3 && graphics.forced_aspect().is_none(), "off by default: the picture's own shape");
+        let wide = Graphics { widescreen: true, ..graphics };
+        service.apply(SettingChange::Graphics(wide)).unwrap();
+        assert!(service.settings().graphics.widened());
+        // Force 4:3 turns the wider framing off and keeps the choice: off
+        // again, the picture is framed wider again.
+        service.apply(SettingChange::Graphics(Graphics { force_4x3: true, ..wide })).unwrap();
+        let forced = service.settings().graphics;
+        assert!(forced.widescreen && !forced.widened());
+        assert_eq!(forced.forced_aspect(), Some(4.0 / 3.0));
+        service.apply(SettingChange::Graphics(wide)).unwrap();
+        assert!(service.settings().graphics.widened(), "off again, Widescreen frames the picture");
+        // A file with both reads as written.
+        let (read, reset) = Settings::read(&serde_json::json!({"graphics": {"widescreen": true, "force_4x3": true}})).unwrap();
+        assert_eq!((read.graphics.widescreen, read.graphics.force_4x3, reset.len()), (true, true, 0));
     }
 
     #[test]

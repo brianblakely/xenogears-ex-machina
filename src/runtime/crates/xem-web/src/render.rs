@@ -481,7 +481,7 @@ impl WebRenderer {
             let (eye, fov) = self.xr_eye;
             headset_movie_output(f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scaling.scale, f32::from(graphics.xr.distance_cm) / 100.0, eye, fov)
         } else {
-            let placed = present_rect((display.width, display.height), self.size(), settings.presentation.scale);
+            let placed = present_rect((display.width, display.height), self.size(), settings.presentation.scale, graphics.forced_aspect());
             (placed.width.round() as u32, placed.height.round() as u32)
         };
         config.movies = config.movies.map(|_| shown);
@@ -573,7 +573,16 @@ impl WebRenderer {
         if let Some(counter) = &mut self.frame_rate {
             counter.frame(std::time::Duration::from_secs_f64(time),self.scale,presentation.show_fps).map_err(|error| error.to_string())?;
         }
-        let placed = present_rect(game_size, target, presentation.scale);
+        // Under Force 4:3 the picture's place follows the game's own lines,
+        // whatever size the frame was drawn at: game frames, rebuilt movies
+        // and the device's picture take the same place.
+        let graphics = settings.settings().graphics;
+        let ratio = graphics.forced_aspect();
+        let image = match (&self.game_frame, ratio) {
+            (Some((display, _)), Some(_)) => (display.width, display.height),
+            _ => game_size,
+        };
+        let placed = present_rect(image, target, presentation.scale, ratio);
         self.picture = match (&self.game_frame, encoded) {
             (Some((display, _)), true) => Some(Picture {
                 placed,
@@ -593,20 +602,21 @@ impl WebRenderer {
         // Movie frames the device shows itself (the Original movies setting,
         // or one Ex Machina cannot rebuild) stay as the decoder made them,
         // each pixel a block; the Original renderer keeps the chosen filter.
-        let graphics = settings.settings().graphics;
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
             game.filter = wgpu::FilterMode::Nearest;
         }
         // The assisted controls' marks and the touch deck.
         let mut glass = Vec::new();
         if let Some(picture) = self.picture {
-            let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
+            // Each axis as the picture is enlarged along it (Force 4:3 or
+            // Stretch reshapes it).
+            let (sx, sy) = (picture.placed.width / (picture.display.0 + 2.0 * picture.side), picture.placed.height / picture.display.1);
             for mark in &self.overlay.marks {
                 // The canvas's marks lie on its picture.
                 let xem_assist::overlay::Place::Screen { centre, x, y } = mark.place else { continue };
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone();
-                glass.push((view, Some((picture.from_screen(centre), (x.0 * scale, x.1 * scale), (y.0 * scale, y.1 * scale))), None));
+                glass.push((view, Some((picture.from_screen(centre), (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None));
             }
         }
         if !self.panel_visible && let Some(ui) = self.overlay.ui {

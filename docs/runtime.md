@@ -2272,8 +2272,8 @@ snapshots are its. The renderer only draws again what it drew:
   53 ms a new frame at 1080x729 (the Android emulator showed movies at 4
   frames a second), the bilinear one 4.4 ms. Otherwise, and under
   the Original setting, hosts show the device's display, unscaled in
-  aspect, each pixel a block; the Original renderer keeps the chosen
-  filter. The title movie ends on the title screen's picture, which the
+  aspect (but for Force 4:3's), each pixel a block; the Original
+  renderer keeps the chosen filter. The title movie ends on the title screen's picture, which the
   game shows next from VRAM: after each of its game frames the session
   notes the frames its player has left (the movie mode playing the boot's
   request; `TraceOp::MovieFramesLeft`), and over its last second the
@@ -2350,7 +2350,8 @@ interchange](#state-interchange)).
 | HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate; the panel shows the selected profile's under its name (HD-2D or Custom) below the card holding Profile, and that heading's Reset Defaults gives them their defaults (`Graphics::profile_reset`: HD-2D's levels, or Custom's none and its original limits Modern's) |
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
-| presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio) |
+| presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio), only while Force 4:3 is off |
+| force 4:3 | the placed picture shown at 4:3 under either renderer (`force_4x3`, in the Picture card beside Scale; off, the default, keeps the picture's own pixels and Widescreen's framing): its width set from the game's own lines (Fit fits the 4:3 shape, Integer steps the lines in whole multiples, Stretch still fills), so game frames, rebuilt movies and the device's picture take one place; while it is on Widescreen's framing is off and its switch disabled, the choice kept (`Graphics::widened`); a headset's screen keeps its own shape, and Force 4:3 ends its wider framing too |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game or right stick up/down moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | full-size sprites | the party on foot in a large-scale field drawn with its full-resolution field sprites at a quarter of their size instead of the map's small ones (off, the default; presentation only: [Full-resolution sprites in large-scale fields](#full-resolution-sprites-in-large-scale-fields)) |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
@@ -2397,7 +2398,9 @@ eye's own width (`headset_movie_output`: a larger screen shows only part of
 itself). Under the Fit and Integer scales it is enlarged once (a phone's
 insets do not resample it again); under Stretch the rebuilt picture keeps
 the display's shape within the stretched rectangle (`fitted`) and the
-compositor stretches it across, a second enlargement one way. A rebuilt
+compositor stretches it across, a second enlargement one way. Under
+Force 4:3 it is made at the placed rectangle itself, each axis enlarged on
+its own, and so enlarged once under every scale. A rebuilt
 frame is the display alone (`Presented::movie`): hosts place it, map
 pointers onto it and set the headset screen's shape without wider
 framing's sides. Each host tells whether its last frame showed a rebuilt

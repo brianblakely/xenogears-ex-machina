@@ -278,7 +278,7 @@ impl Recorder {
             self.view.away();
         } else {
             let mut config = ViewConfig::resolve(&self.graphics, HostClass::Desktop, self.size, self.view.max_scale());
-            let placed = present_rect((display.width, display.height), self.size, xem_settings::Scale::Fit);
+            let placed = present_rect((display.width, display.height), self.size, xem_settings::Scale::Fit, None);
             config.movies = config.movies.map(|_| (placed.width.round() as u32, placed.height.round() as u32));
             self.view.configure(config);
             let restart = self.view.take_restart();
@@ -348,7 +348,7 @@ impl Recorder {
                 (image.create_view(&Default::default()), (width.max(1), height.max(1)), false)
             }
         };
-        let placed = present_rect(size, self.size, xem_settings::Scale::Fit);
+        let placed = present_rect(size, self.size, xem_settings::Scale::Fit, None);
         let mut quad = Quad::screen(&picture, placed, self.size);
         quad.srgb_encoded = encoded;
         quad.opaque = true;

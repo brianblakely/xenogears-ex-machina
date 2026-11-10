@@ -1,0 +1,2 @@
+- **Settings → Graphics → Force 4:3** shows the picture in the 4:3 shape of the televisions of its time. It starts off, keeping the picture as before.
+- While it is on, **Widescreen** is unavailable; turn it off and Widescreen comes back as you left it.
