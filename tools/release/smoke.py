@@ -90,21 +90,29 @@ def main():
                 subprocess.run([*headless, "--disc", str(relocated), "--frames", "120"],
                                cwd=elsewhere, env=env, check=True, timeout=120)
         if args.kind == "windows":
-            released(Path(desktop[0]))
+            # Windows can hold an executable a moment after it exits, which
+            # would fail the scratch directory's removal.
+            for executable in [desktop, headless]:
+                released(Path(executable[0]))
     print(f"{stem}: packaged startup passed")
 
 
 def released(executable):
-    """Wait until Windows lets the exited application's file go, or name what holds it."""
-    for _ in range(60):
+    """Delete an exited executable once Windows lets it go, waiting up to a minute."""
+    started = time.monotonic()
+    held = False
+    while True:
         try:
-            # Its deletion (a running image may be renamed, not deleted).
             executable.unlink()
-            return
+            break
         except PermissionError:
-            time.sleep(1)
-    tasks = subprocess.run(["tasklist", "/v"], capture_output=True, text=True).stdout
-    raise SystemExit(f"{executable.name} is still held a minute after it exited:\n{tasks}")
+            held = True
+            if time.monotonic() - started > 60:
+                tasks = subprocess.run(["tasklist", "/v"], capture_output=True, text=True, errors="replace").stdout
+                raise SystemExit(f"{executable.name} is still held a minute after it exited; running processes:\n{tasks}")
+            time.sleep(0.25)
+    if held:
+        print(f"{executable.name} was held for {time.monotonic() - started:.1f} s after it exited")
 
 
 if __name__ == "__main__":
