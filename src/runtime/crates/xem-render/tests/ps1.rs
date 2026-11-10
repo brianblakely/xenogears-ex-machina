@@ -1975,7 +1975,7 @@ fn check_movie_frame(gpu: &Gpu, software: bool) {
         wgpu::Extent3d { width: 48, height: 16, depth_or_array_layers: 1 },
     );
     let mut encoder = gpu.device.create_command_encoder(&Default::default());
-    let (_, size, new) = movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (128, 72), &vram).expect("a movie frame");
+    let (_, size, new) = movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (128, 72), false, &vram).expect("a movie frame");
     assert_eq!((size, new), ((128, 64), true));
     gpu.queue.submit([encoder.finish()]);
     let pixels = read_rgba8(&gpu.device, &gpu.queue, movie.output().expect("presented"));
@@ -1989,12 +1989,22 @@ fn check_movie_frame(gpu: &Gpu, software: bool) {
     let redness = |[r, g, _]: [i32; 3]| r - g;
     assert!(redness(pixel(52, 32)) < 8, "dark side tinted {:?} (software {software})", pixel(52, 32));
     assert!(redness(pixel(76, 32)) > 110, "bright side {:?} (software {software})", pixel(76, 32));
+    // Shown in an aspect ratio, the frame is made at the size given, each
+    // axis enlarged on its own (32x16 to 96x72: 3 across, 4.5 down).
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let (_, size, _) = movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (96, 72), true, &vram).expect("a movie frame");
+    assert_eq!(size, (96, 72));
+    gpu.queue.submit([encoder.finish()]);
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, movie.output().expect("presented"));
+    let reshaped = |x: usize, y: usize| -> [i32; 3] { std::array::from_fn(|c| i32::from(pixels[(y * 96 + x) * 4 + c])) };
+    assert!(near(reshaped(6, 36), [68, 68, 68]), "reshaped grey {:?} (software {software})", reshaped(6, 36));
+    assert!(near(reshaped(90, 36), [255, 131, 188]), "reshaped red {:?} (software {software})", reshaped(90, 36));
     // Five frames from the end of a movie that ends on the game's picture,
     // a third of the rebuilt one over the MDEC's own; at its last frame, the
     // MDEC's own alone (the device's picture: none rebuilt).
     movie.observe(&[TraceOp::VBlank, TraceOp::MovieFramesLeft(5)]);
     let mut encoder = gpu.device.create_command_encoder(&Default::default());
-    assert!(movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (128, 72), &vram).expect("a movie frame").2);
+    assert!(movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (128, 72), false, &vram).expect("a movie frame").2);
     gpu.queue.submit([encoder.finish()]);
     let pixels = read_rgba8(&gpu.device, &gpu.queue, movie.output().expect("presented"));
     let pixel = |x: usize, y: usize| -> [i32; 3] { std::array::from_fn(|c| i32::from(pixels[(y * 128 + x) * 4 + c])) };

@@ -232,9 +232,10 @@ mark
 tap 210 722
 sleep 1
 shot 01-graphics
-# The compact Graphics card has no heading/help rows; its Show FPS switch
-# is centred here in 01-graphics.png (the old position hit Resolution).
-tap 930 1350
+# The compact Graphics card has no heading/help rows; its Show FPS switch,
+# below Scale, Aspect ratio and Filter, is centred here in 01-graphics.png
+# (xem-ui's panel test checks this tap too).
+tap 930 1494
 # Check the operation itself. During first-boot log traffic the setting was
 # saved and survived restart, but logcat missed its one-line acknowledgement.
 fps_saved=

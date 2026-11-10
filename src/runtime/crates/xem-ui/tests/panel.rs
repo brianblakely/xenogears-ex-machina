@@ -833,7 +833,7 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings, (344, 560), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (344, 560), 1.0).unwrap();
     assert_eq!(ui.component().get_section_count(), SECTIONS.len() as i32);
     // Hosts make the panel min(640 × scale, width - 16) physical pixels
     // wide: a phone browser 360 CSS pixels wide, a 1080-pixel phone at
@@ -860,11 +860,19 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     // its 1080x2400 screen, where the panel (1064x1470 at 2.625) is at 8,465.
     ui.resize((1064, 1470), 2.625);
     ui.update().unwrap();
-    for (x, label, index) in [(210.0, "Graphics", 1), (659.0, "Saves", 5)] {
-        click(&ui, LogicalPosition::new((x - 8.0) / 2.625, (722.0 - 465.0) / 2.625));
+    let tap = |ui: &mut SettingsUi, x: f32, y: f32| {
+        click(ui, LogicalPosition::new((x - 8.0) / 2.625, (y - 465.0) / 2.625));
         ui.update().unwrap();
+    };
+    for (x, label, index) in [(210.0, "Graphics", 1), (659.0, "Saves", 5)] {
+        tap(&mut ui, x, 722.0);
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
+    // Then Graphics again and its Show FPS switch at 930,1494, below Scale,
+    // Aspect ratio and Filter.
+    tap(&mut ui, 210.0, 722.0);
+    tap(&mut ui, 930.0, 1494.0);
+    assert!(settings.borrow().settings().presentation.show_fps, "the smoke's tap turns Show FPS on");
 
     // Saves' Backups card keeps every button inside it on panels as wide as
     // those, a headset's (440) and the desktop's (640, and the sidebar's
@@ -1216,7 +1224,7 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     // Every dropdown remains unchanged by the wheel, even after gaining focus.
     // The widget lets the containing panel or open menu scroll instead.
     for (section_name, section_index, label) in [
-        ("Graphics", 1, "Scale"), ("Graphics", 1, "Graphics profile"),
+        ("Graphics", 1, "Scale"), ("Graphics", 1, "Aspect ratio"), ("Graphics", 1, "Graphics profile"),
         ("Graphics", 1, "Internal resolution"), ("Graphics", 1, "HD-2D quality"),
         ("Controls", 2, "Headset pointer"),
     ] {
@@ -1266,6 +1274,36 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     key(&ui, xem_ui::Key::Tab);
     key(&ui, xem_ui::Key::UpArrow);
     assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Tab leaves the closed dropdown");
+
+    // Any aspect ratio but Native disables the Widescreen switch, showing
+    // wider framing off; neither the switch nor its row changes a setting,
+    // and back on Native the choice frames the picture wider again.
+    let widescreen = |ui: &SettingsUi| element(ui, "Widescreen", AccessibleRole::Switch);
+    let graphics = || settings.borrow().settings().graphics;
+    assert!(graphics().widened(), "on from above");
+    let aspect = element(&ui, "Aspect ratio", AccessibleRole::Combobox);
+    assert_eq!(aspect.accessible_value().as_deref(), Some("Native"), "Native by default");
+    let choose = |ui: &mut SettingsUi, arrow: xem_ui::Key| {
+        press(ui, &aspect);
+        for _ in 0..5 {
+            key(ui, arrow);
+        }
+        key(ui, xem_ui::Key::Return);
+        ui.update().unwrap();
+    };
+    choose(&mut ui, xem_ui::Key::DownArrow);
+    assert_eq!(graphics().aspect_ratio, xem_settings::AspectRatio::R16x9);
+    assert!(graphics().widescreen && !graphics().widened(), "16:9 frames without Widescreen, its choice kept");
+    assert_eq!((widescreen(&ui).accessible_checked(), widescreen(&ui).accessible_enabled()), (Some(false), Some(false)));
+    let revision = settings.borrow().revision();
+    press(&ui, &widescreen(&ui));
+    press(&ui, &element(&ui, "Widescreen", AccessibleRole::Text));
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().revision(), revision, "the disabled switch and its row change nothing");
+    choose(&mut ui, xem_ui::Key::UpArrow);
+    assert_eq!(graphics().aspect_ratio, xem_settings::AspectRatio::Native);
+    assert!(graphics().widened(), "back on Native, Widescreen frames the picture again");
+    assert_eq!((widescreen(&ui).accessible_checked(), widescreen(&ui).accessible_enabled()), (Some(true), Some(true)));
 
     section(&mut ui, "Controls", 2);
     // The cursor hides over an idle game by default; the switch turns it off.
@@ -1490,7 +1528,8 @@ fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
     ui.update().unwrap();
     assert_eq!((dropdown.accessible_expanded(), scale()), (Some(false), Scale::Integer));
     assert_eq!(closed.get(), 0, "East closed the list, not the panel");
-    // South presses a switch.
+    // Below it, the aspect ratio; South presses a switch.
+    pad.press(&ui, DOWN);
     pad.press(&ui, DOWN);
     pad.press(&ui, DOWN);
     pad.press(&ui, SOUTH);

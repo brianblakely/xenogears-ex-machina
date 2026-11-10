@@ -14,7 +14,7 @@ pub mod controls;
 pub mod graphics;
 pub mod look;
 pub mod player;
-pub use graphics::{DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
+pub use graphics::{AspectRatio, DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 pub use xem_core::debug::Request as DebugRequest;
@@ -69,7 +69,8 @@ pub enum Scale {
     /// Largest size that keeps the aspect ratio.
     #[default]
     Fit,
-    /// Largest whole multiple of the image size.
+    /// Largest whole multiple of the image size (under an aspect ratio, of
+    /// its height, the width following the ratio).
     Integer,
     /// Fill the area, ignoring the aspect ratio.
     Stretch,
@@ -1199,6 +1200,29 @@ mod tests {
         assert!(read.binaural.enabled);
         assert_eq!(read.binaural.music_immersion, Binaural::default().music_immersion);
         assert_eq!(reset, ["binaural.music_immersion"]);
+    }
+
+    #[test]
+    fn an_aspect_ratio_sets_the_shape_and_keeps_widescreen_for_native() {
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        let graphics = service.settings().graphics;
+        assert_eq!(graphics.aspect_ratio, AspectRatio::Native, "Native by default");
+        let wide = Graphics { widescreen: true, ..graphics };
+        service.apply(SettingChange::Graphics(wide)).unwrap();
+        assert!(service.settings().graphics.widened());
+        // A ratio turns the wider framing off and keeps the choice: browsing
+        // the ratios and back to Native frames the picture wider again.
+        for aspect_ratio in AspectRatio::ALL.into_iter().skip(1) {
+            service.apply(SettingChange::Graphics(Graphics { aspect_ratio, ..wide })).unwrap();
+            let shown = service.settings().graphics;
+            assert!(shown.widescreen && !shown.widened(), "{aspect_ratio:?}");
+        }
+        service.apply(SettingChange::Graphics(wide)).unwrap();
+        assert!(service.settings().graphics.widened(), "Native frames it wider again");
+        assert_eq!((AspectRatio::Native.ratio(), AspectRatio::R16x10.ratio()), (None, Some(1.6)));
+        // A file with both reads as written.
+        let (read, reset) = Settings::read(&serde_json::json!({"graphics": {"widescreen": true, "aspect_ratio": "R21x9"}})).unwrap();
+        assert_eq!((read.graphics.widescreen, read.graphics.aspect_ratio, reset.len()), (true, AspectRatio::R21x9, 0));
     }
 
     #[test]

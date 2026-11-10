@@ -38,6 +38,10 @@ pub struct ViewConfig {
     /// sides widen the picture to (the display's own height decides them).
     pub side: u32,
     pub aspect: Option<f32>,
+    /// The aspect ratio a flat host shows the picture in
+    /// ([`xem_settings::AspectRatio`]); `None` its own shape (a headset's
+    /// screen keeps it). Rebuilt movie frames are made in it.
+    pub shape: Option<f32>,
     pub interpolation: bool,
     /// How far the field camera is pulled back (1 the original, up to 5):
     /// the subject the camera looks at appears this many times smaller.
@@ -152,16 +156,21 @@ impl ViewConfig {
             full_size_sprites: graphics.full_size_sprites,
             hide_dialogue: false,
         };
-        // A headset's virtual screen takes a 16:9 shape when widened.
-        let aspect = match (graphics.widescreen, host) {
+        // A headset's virtual screen takes a 16:9 shape when widened, and
+        // keeps its own under an aspect ratio.
+        let aspect = match (graphics.widened(), host) {
             (false, _) => None,
             (true, HostClass::Headset) => Some(16.0 / 9.0),
             (true, _) => Some(output.0 as f32 / output.1.max(1) as f32),
         };
+        let shape = if host == HostClass::Headset { None } else { graphics.aspect_ratio.ratio() };
         let side = aspect.map_or(0, |aspect| display_side((320, 224), aspect));
-        // The picture (about 320x224, wider with wider framing) fitted into
-        // the output: its height there, in original lines.
-        let fitted = output.1.min(output.0 * 224 / (320 + 2 * side));
+        // The picture (about 320x224, wider with wider framing, or in the
+        // aspect ratio's shape) fitted into the output: its height there.
+        let fitted = match shape {
+            Some(shape) => output.1.min((output.0 as f32 / shape) as u32),
+            None => output.1.min(output.0 * 224 / (320 + 2 * side)),
+        };
         // Automatic scales stop where the host's budget does.
         let budget = match host {
             HostClass::Desktop => 8,
@@ -203,6 +212,7 @@ impl ViewConfig {
             quality,
             side,
             aspect,
+            shape,
             interpolation: graphics.interpolation,
             zoom: f32::from(graphics.zoom_out.clamp(100, xem_settings::MAX_ZOOM_OUT)) / 100.0,
             movies: (graphics.filtering.movies == xem_settings::MovieFilter::Enhanced).then_some(output),
@@ -989,7 +999,8 @@ impl GameView {
     fn present_movie(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, output: (u32, u32)) -> Option<Flat> {
         self.presented_movie = true;
         self.main.shown = None;
-        let (_, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, &self.renderer.vram)?;
+        let reshaped = self.config.is_some_and(|config| config.shape.is_some());
+        let (_, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, reshaped, &self.renderer.vram)?;
         Some(Flat { picture: Picture::Movie, size, new_frame })
     }
 
@@ -1371,6 +1382,24 @@ mod tests {
                 assert_eq!(ViewConfig::resolve(&graphics, host, (1280, 720), 8).movies, rebuilt, "{host:?}, {movies:?}");
             }
         }
+    }
+
+    /// Under an aspect ratio a flat host's picture takes its shape: no wider
+    /// framing (Widescreen's choice kept), rebuilt movies made in it, and
+    /// the automatic scale following the height it is shown at (a 1920x1080
+    /// output's 32:9 picture is 540 high: 3, where Native's fills 1080: 5).
+    /// A headset's screen keeps its own shape, its wider framing ended too.
+    #[test]
+    fn an_aspect_ratio_shapes_a_flat_hosts_picture() {
+        use xem_settings::AspectRatio;
+        let wide = Graphics { widescreen: true, ..Graphics::default() };
+        let native = ViewConfig::resolve(&wide, HostClass::Desktop, (1920, 1080), 8);
+        assert_eq!((native.scale, native.side > 0, native.shape), (5, true, None));
+        let shaped = ViewConfig::resolve(&Graphics { aspect_ratio: AspectRatio::R32x9, ..wide }, HostClass::Desktop, (1920, 1080), 8);
+        assert_eq!((shaped.scale, shaped.side, shaped.aspect, shaped.shape), (3, 0, None, Some(32.0 / 9.0)));
+        assert_eq!(ViewConfig::resolve(&Graphics { aspect_ratio: AspectRatio::R4x3, ..wide }, HostClass::Desktop, (1920, 1080), 8).scale, 5);
+        let headset = ViewConfig::resolve(&Graphics { aspect_ratio: AspectRatio::R16x9, ..wide }, HostClass::Headset, (640, 640), 8);
+        assert_eq!((headset.side, headset.shape), (0, None));
     }
 
     /// A screen 3 m wide 2.5 m ahead spans 0.6 of an eye 90 degrees wide

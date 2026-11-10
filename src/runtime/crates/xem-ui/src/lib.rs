@@ -502,6 +502,7 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "quality" => next.quality = *QUALITIES.get(index?)?,
         "interpolation" => next.interpolation = value != 0,
         "widescreen" => next.widescreen = value != 0,
+        "aspect-ratio" => next.aspect_ratio = *xem_settings::AspectRatio::ALL.get(index?)?,
         "full-size-sprites" => next.full_size_sprites = value != 0,
         "filter-world" => next.filtering.world = filter()?,
         "filter-sprites" => next.filtering.sprites = filter()?,
@@ -564,7 +565,10 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_scale(i32::from(graphics.internal_scale));
     panel.set_gfx_quality(index_of(&QUALITIES, &graphics.quality));
     panel.set_gfx_interpolation(graphics.interpolation);
-    panel.set_gfx_widescreen(graphics.widescreen);
+    // Under an aspect ratio the switch shows wider framing off (its choice
+    // kept for Native).
+    panel.set_gfx_widescreen(graphics.widened());
+    panel.set_gfx_aspect_ratio(index_of(&xem_settings::AspectRatio::ALL, &graphics.aspect_ratio));
     panel.set_gfx_full_size_sprites(graphics.full_size_sprites);
     panel.set_gfx_zoom_out(i32::from(graphics.zoom_out));
     panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));

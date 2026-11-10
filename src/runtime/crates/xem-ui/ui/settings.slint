@@ -448,6 +448,7 @@ component Choice inherits FocusScope {
 component ToggleRow inherits Rectangle {
     in property <string> label;
     in-out property <bool> checked;
+    in property <bool> enabled: true;
     callback toggled(bool);
     function toggle() {
         root.checked = !root.checked;
@@ -464,6 +465,7 @@ component ToggleRow inherits Rectangle {
         animate background { duration: 140ms; easing: ease-out; }
     }
     row-touch := TouchArea {
+        enabled: root.enabled;
         mouse-cursor: pointer;
         clicked => { root.toggle(); }
     }
@@ -473,12 +475,12 @@ component ToggleRow inherits Rectangle {
             alignment: center;
             spacing: 2px;
             horizontal-stretch: 1;
-            Text { text: root.label; font-size: 13px; color: Theme.text; wrap: word-wrap; }
+            Text { text: root.label; font-size: 13px; color: root.enabled ? Theme.text : Theme.text-tertiary; wrap: word-wrap; }
         }
         VerticalLayout {
             alignment: center;
             horizontal-stretch: 0;
-            Switch { accessible-label: root.label; checked <=> root.checked; toggled => { root.toggled(self.checked); } }
+            Switch { accessible-label: root.label; enabled: root.enabled; checked <=> root.checked; toggled => { root.toggled(self.checked); } }
         }
     }
 }
@@ -778,6 +780,9 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-quality;
     in-out property <bool> gfx-interpolation;
     in-out property <bool> gfx-widescreen;
+    // The picture's shape (0 Native, else a ratio that sets it instead of
+    // Widescreen's framing).
+    in-out property <int> gfx-aspect-ratio;
     // The party's full-resolution sprites in large-scale fields.
     in-out property <bool> gfx-full-size-sprites;
     // The field camera pulled back, percent (100-500).
@@ -972,10 +977,10 @@ export component SettingsPanel inherits Window {
     callback filter-edited(int);
     callback show-fps-edited(bool);
     // A graphics choice by name (renderer, profile, profile-reset, scale,
-    // quality, full-size-sprites, interpolation, widescreen, zoom-out,
-    // filter-world, filter-sprites, filter-interface, xr-distance, xr-width,
-    // xr-dof, xr-view, xr-scale, xr-height, xr-table-distance, xr-tilt,
-    // xr-turns, xr-passthrough, xr-diorama-reset) and value.
+    // quality, full-size-sprites, interpolation, widescreen, aspect-ratio,
+    // zoom-out, filter-world, filter-sprites, filter-interface, xr-distance,
+    // xr-width, xr-dof, xr-view, xr-scale, xr-height, xr-table-distance,
+    // xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset) and value.
     callback graphics-edited(string, int);
     // Recenter: the headset's view placed in front of the head again.
     callback xr-recenter-requested();
@@ -1194,6 +1199,12 @@ export component SettingsPanel inherits Window {
                                 }
                                 Divider { }
                                 Row {
+                                    label: "Aspect ratio";
+                                    // xem_settings::AspectRatio::ALL's order.
+                                    Choice { accessible-label: "Aspect ratio"; width: 150px; model: ["Native", "4:3", "5:4", "3:2", "16:10", "16:9", "21:9", "32:9"]; current-index <=> root.gfx-aspect-ratio; selected => { root.graphics-edited("aspect-ratio", self.current-index); } }
+                                }
+                                Divider { }
+                                Row {
                                     label: "Filter";
                                     Segmented { accessible-label: "Filter"; options: ["Nearest", "Linear"]; current <=> root.filter; selected(index) => { root.filter-edited(index); } }
                                 }
@@ -1278,6 +1289,8 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 ToggleRow {
                                     label: "Widescreen";
+                                    // A chosen aspect ratio sets the shape instead.
+                                    enabled: root.gfx-aspect-ratio == 0;
                                     checked <=> root.gfx-widescreen;
                                     toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
                                 }

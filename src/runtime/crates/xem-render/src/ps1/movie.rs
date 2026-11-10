@@ -463,8 +463,10 @@ impl MovieRenderer {
     /// The movie frame `display` shows, rebuilt and enlarged to fit `output`
     /// (a view of an `Rgba8Unorm` texture of sRGB-encoded values, its size,
     /// and whether it is new), or `None` when the display shows no such
-    /// frame. Where it eases into the MDEC's own picture, that comes from
-    /// `vram`, the native VRAM (`R16Uint`).
+    /// frame; `reshaped` (the picture shown in an aspect ratio) makes it
+    /// `output` exactly, its shape the one shown. Where it eases into the
+    /// MDEC's own picture, that comes from `vram`, the native VRAM
+    /// (`R16Uint`).
     pub fn present(
         &mut self,
         device: &wgpu::Device,
@@ -472,6 +474,7 @@ impl MovieRenderer {
         encoder: &mut wgpu::CommandEncoder,
         display: &DisplayInfo,
         output: (u32, u32),
+        reshaped: bool,
         vram: &wgpu::Texture,
     ) -> Option<(&wgpu::TextureView, (u32, u32), bool)> {
         let enhancement = self.tiles.enhancement();
@@ -480,7 +483,7 @@ impl MovieRenderer {
         }
         let (blocks, columns, rows) = self.tiles.frame(display)?;
         let source = (display.width, display.height);
-        let size = fitted(source, output);
+        let size = if reshaped { (output.0.max(1), output.1.max(1)) } else { fitted(source, output) };
         let identity = blocks.iter().fold(0xCBF2_9CE4_8422_2325u64, |hash, block| {
             (hash ^ Arc::as_ptr(block) as usize as u64).wrapping_mul(0x100_0000_01B3)
         });

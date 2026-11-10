@@ -971,7 +971,7 @@ impl View {
         // placed in the safe area as the presentation settings place it.
         let display = game.display_info();
         let safe = self.safe_rect();
-        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale);
+        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale, graphics.aspect_ratio.ratio());
         config.movies = config.movies.map(|_| (placed.width.round() as u32, placed.height.round() as u32));
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
@@ -1299,7 +1299,16 @@ impl View {
         let presentation = self.settings.borrow().settings().presentation.clone();
         self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
             .map_err(|error| error.to_string())?;
-        let mut placed = present_rect(game_size, (safe.width as u32, safe.height as u32), presentation.scale);
+        // Under an aspect ratio the picture's place follows the game's own
+        // lines, whatever size the frame was drawn at: game frames, rebuilt
+        // movies and the device's picture take the same place.
+        let graphics = self.settings.borrow().settings().graphics;
+        let ratio = graphics.aspect_ratio.ratio();
+        let image = match (&self.game_frame, ratio) {
+            (Some((display, _)), Some(_)) => (display.width, display.height),
+            _ => game_size,
+        };
+        let mut placed = present_rect(image, (safe.width as u32, safe.height as u32), presentation.scale, ratio);
         placed.x += safe.x;
         placed.y += safe.y;
         self.picture = match (&self.game_frame, encoded) {
@@ -1322,7 +1331,6 @@ impl View {
         // Movie frames the device shows itself (the Original movies setting,
         // or one Ex Machina cannot rebuild) stay as the decoder made them,
         // each pixel a block; the Original renderer keeps the chosen filter.
-        let graphics = self.settings.borrow().settings().graphics;
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
             game.filter = wgpu::FilterMode::Nearest;
         }
@@ -1330,14 +1338,16 @@ impl View {
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         let mut glass = Vec::new();
         if let Some(picture) = self.picture {
-            let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
+            // Each axis as the picture is enlarged along it (an aspect
+            // ratio or Stretch reshapes it).
+            let (sx, sy) = (picture.placed.width / (picture.display.0 + 2.0 * picture.side), picture.placed.height / picture.display.1);
             for mark in &self.marks {
                 // A flat picture's marks lie on its screen.
                 let xem_assist::overlay::Place::Screen { centre, x, y } = mark.place else { continue };
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
                 let centre = picture.from_screen(centre);
-                glass.push((view, Some((centre, (x.0 * scale, x.1 * scale), (y.0 * scale, y.1 * scale))), None));
+                glass.push((view, Some((centre, (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None));
             }
         }
         if touch_shown && !visible {
@@ -1975,12 +1985,15 @@ mod tests {
     /// Fit and the Integer scale the frame is rebuilt at the display's size
     /// placed in the safe area (not fitted to the whole target) and shown
     /// there at that size (enlarged once), centred, its picture without
-    /// wider framing's sides (the view's own frames have them); under the
-    /// Original movies setting the device's own picture.
+    /// wider framing's sides (the view's own frames have them); in an aspect
+    /// ratio likewise, reshaped and inside the safe area (Integer stepping
+    /// the display's lines), the view's frames without sides (Widescreen's
+    /// choice kept); under the Original movies setting the device's own
+    /// picture.
     #[cfg(all(has_game_module, not(debug_assertions)))]
     #[test]
     fn a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides() {
-        use xem_settings::{MovieFilter, Scale, SettingChange};
+        use xem_settings::{AspectRatio, MovieFilter, Scale, SettingChange};
         let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
             .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
         if !disc.exists() {
@@ -2015,30 +2028,45 @@ mod tests {
             view.set_game_frame(&gpu, game);
             view.render(&gpu, &output, 0.0).unwrap();
         };
-        for scale in [Scale::Fit, Scale::Integer] {
+        for (aspect_ratio, scale) in [
+            (AspectRatio::Native, Scale::Fit), (AspectRatio::Native, Scale::Integer),
+            (AspectRatio::R21x9, Scale::Fit), (AspectRatio::R21x9, Scale::Integer), (AspectRatio::R4x3, Scale::Integer),
+        ] {
+            settings.borrow_mut().apply(SettingChange::Graphics(xem_settings::Graphics { aspect_ratio, ..wide })).unwrap();
             settings.borrow_mut().apply(SettingChange::Scale(scale)).unwrap();
+            let case = format!("{aspect_ratio:?} {scale:?}");
             // Rebuilt within two movie frames (the trace starts with the
             // view's first frame).
             let mut waited = 0;
             while { step(&mut view, &mut game); !view.presented_movie() } {
                 waited += 1;
-                assert!(waited <= 8, "{scale:?}: no rebuilt frame within two movie frames");
+                assert!(waited <= 8, "{case}: no rebuilt frame within two movie frames");
             }
             let display = game.display_info();
-            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale);
+            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale, aspect_ratio.ratio());
             let made = view.renderer.presented_texture().map(|t| (t.width(), t.height())).expect("the rebuilt frame");
             let picture = view.picture.expect("the picture's place");
-            eprintln!("{scale:?}: {}x{} display rebuilt at {made:?}, placed at {:?}", display.width, display.height, picture.placed);
-            assert!(display.color24 && (display.width, display.height) == (320, 216), "{scale:?}: the title movie's display ({display:?})");
-            assert_eq!(made, (placed.width.round() as u32, placed.height.round() as u32), "{scale:?}: made at the display's size placed in the safe area");
-            assert_eq!((picture.placed.width, picture.placed.height), (made.0 as f32, made.1 as f32), "{scale:?}: shown at the size it was made at");
+            let shown = picture.placed;
+            eprintln!("{case}: {}x{} display rebuilt at {made:?}, placed at {shown:?}", display.width, display.height);
+            assert!(display.color24 && (display.width, display.height) == (320, 216), "{case}: the title movie's display ({display:?})");
+            assert_eq!(made, (placed.width.round() as u32, placed.height.round() as u32), "{case}: made at the display's size placed in the safe area");
+            assert_eq!((shown.width.round() as u32, shown.height.round() as u32), made, "{case}: shown at the size it was made at");
             assert_eq!(
-                (picture.placed.x, picture.placed.y),
-                (safe.x + ((safe.width - picture.placed.width) / 2.0).round(), safe.y + ((safe.height - picture.placed.height) / 2.0).round()),
-                "{scale:?}: centred in the safe area"
+                (shown.x, shown.y),
+                (safe.x + ((safe.width - shown.width) / 2.0).round(), safe.y + ((safe.height - shown.height) / 2.0).round()),
+                "{case}: centred in the safe area"
             );
-            assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "{scale:?}: the display alone, without wider framing's sides");
-            assert!(view.renderer.config().is_some_and(|c| c.side > 0), "{scale:?}: the view's own frames have sides");
+            assert!(
+                shown.x >= safe.x && shown.y >= safe.y
+                    && shown.x + shown.width <= safe.x + safe.width + 0.5 && shown.y + shown.height <= safe.y + safe.height + 0.5,
+                "{case}: inside the safe area"
+            );
+            assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "{case}: the display alone, without wider framing's sides");
+            assert_eq!(
+                view.renderer.config().map(|c| c.side > 0),
+                Some(aspect_ratio == AspectRatio::Native),
+                "{case}: the view's own frames have sides under Native alone"
+            );
         }
         // The Original movies setting: the device's own picture, as it is.
         let original = xem_settings::Graphics {

@@ -1,0 +1,2 @@
+- **Settings → Graphics → Aspect ratio** shows the picture in the shape you choose: 4:3, 5:4, 3:2, 16:10, 16:9, 21:9 or 32:9. **Native**, the default, keeps the picture as before.
+- While a ratio is chosen, **Widescreen** is unavailable; choose **Native** again and it comes back as you left it.
