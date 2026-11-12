@@ -7956,7 +7956,10 @@ From the repository root in `nix develop path:./nix/runtime`:
   localhost over plain HTTP) can open it to other devices: `host` (`"0.0.0.0"`),
   `cert` and `key` (PEM files, such as a self-signed pair: away from localhost the
   page is a secure context only over HTTPS) and `mounts` (`{"/discs/": "discs"}`),
-  paths from the repository. With `/discs/` mounted,
+  paths from the repository. The server has no login or access control:
+  anyone who can reach it and knows or guesses a mounted filename can download
+  that file, including disc images. HTTPS encrypts the transfer but does not
+  restrict access. With `/discs/` mounted,
   `?disc=/discs/Xenogears%20disc%201.chd` (repeatable, disc 1 first) imports the
   image from the server once the page is ready, reading it in HTTP byte ranges
   as a chosen file is read in `Blob` slices; a failure stays in the page's message

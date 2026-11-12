@@ -876,6 +876,7 @@ document.body.dataset.ready = 'true';
 // The first failure stays on screen and stops the rest.
 await guarded(async () => {
   for (const url of params.getAll('disc')) {
-    if (!(await runImport(await disc.openUrl(url))).identity?.disc) return;
+    const status = await runImport(await disc.openUrl(url));
+    if (status.state === 'failed' || !status.identity?.disc) return;
   }
 })();

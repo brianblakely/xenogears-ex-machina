@@ -2,7 +2,8 @@
 // nothing more mounted) and the single byte ranges the page's ?disc= reads.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
@@ -57,6 +58,75 @@ describe('byte ranges', () => {
         assert.equal(response.status, 416, range);
         assert.equal(response.headers.get('content-range'), 'bytes */10', range);
       }
+    } finally {
+      server.close();
+    }
+  });
+});
+
+describe('path containment', () => {
+  test('rejects encoded traversal into a sibling whose name shares the root prefix', async () => {
+    const publicDir = join(dir, 'public');
+    const neighbor = join(dir, 'public-private');
+    mkdirSync(publicDir);
+    mkdirSync(neighbor);
+    writeFileSync(join(neighbor, 'secret.txt'), 'private');
+    const server = await serve({ '/': publicDir });
+    try {
+      const response = await fetch('http://127.0.0.1:' + server.address().port + '/%2e%2e%2fpublic-private/secret.txt');
+      assert.equal(response.status, 404);
+    } finally {
+      server.close();
+    }
+  });
+
+  test('rejects symlinks that escape the root and a mounted share', async () => {
+    const root = join(dir, 'symlink-root');
+    const mount = join(dir, 'symlink-mount');
+    const outside = join(dir, 'symlink-outside');
+    const internal = join(root, 'internal.txt');
+    mkdirSync(root);
+    mkdirSync(mount);
+    mkdirSync(outside);
+    writeFileSync(join(outside, 'secret.txt'), 'private');
+    writeFileSync(join(outside, 'index.html'), 'private index');
+    writeFileSync(internal, 'inside');
+    symlinkSync(join(outside, 'secret.txt'), join(root, 'leak.txt'));
+    symlinkSync(join(outside, 'secret.txt'), join(mount, 'leak.txt'));
+    symlinkSync(outside, join(root, 'leak-directory'));
+    symlinkSync(internal, join(root, 'internal-link.txt'));
+    const server = await serve({ '/': root, '/mounted/': mount });
+    try {
+      for (const path of ['/leak.txt', '/leak-directory/', '/mounted/leak.txt']) {
+        const response = await fetch('http://127.0.0.1:' + server.address().port + path);
+        assert.equal(response.status, 404, path);
+      }
+      const internal = await fetch('http://127.0.0.1:' + server.address().port + '/internal-link.txt');
+      assert.equal(internal.status, 200);
+      assert.equal(await internal.text(), 'inside');
+    } finally {
+      server.close();
+    }
+  });
+});
+
+describe('malformed request paths', () => {
+  test('returns 400 for an invalid percent escape and keeps serving', async () => {
+    writeFileSync(join(dir, 'alive.txt'), 'alive');
+    const server = await serve({ '/': dir });
+    const port = server.address().port;
+    const getRawPath = (path) => new Promise((resolve, reject) => {
+      const req = httpRequest({ host: '127.0.0.1', port, path, method: 'GET' }, (res) => {
+        res.resume();
+        res.on('end', () => resolve(res.statusCode));
+      });
+      req.on('error', reject);
+      req.setTimeout(2000, () => req.destroy(new Error('request timed out')));
+      req.end();
+    });
+    try {
+      for (const path of ['/%', '/%FF']) assert.equal(await getRawPath(path), 400, path);
+      assert.equal(await getRawPath('/alive.txt'), 200);
     } finally {
       server.close();
     }

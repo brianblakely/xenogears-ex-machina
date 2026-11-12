@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
@@ -136,6 +136,39 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
     const bios = ['bios', `0000${(157 - 146).toString(16).padStart(2, '0')}${'00'.repeat(27)}`];
     assert.deepEqual(result.imported, bios, 'the running game has the imported font at once');
     assert.deepEqual(result.booted, bios, 'and a boot takes it');
+  });
+});
+
+
+describe('URL disc import failure handling', () => {
+  test('stops after a failed import even when its identity names a Xenogears disc', async () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'xem-url-disc-'));
+    const shim = [
+      "export * from '/disc.js';",
+      'window.__urlDiscOpens = [];',
+      'export const openUrl = async (url) => { window.__urlDiscOpens.push(url); return { name: url.split("/").at(-1), size: 0, url }; };',
+      "export const importDisc = async () => ({ state: 'failed', error: 'synthetic verification failure', identity: { disc: 1, serial: 'SLUS-00664', boot_path: 'SLUS_006.64;1' } });",
+      '',
+    ].join('\n');
+    writeFileSync(join(fixture, 'disc-regression.js'), shim);
+    const browser = await start({ args: NO_WEBGPU, mounts: { '/test/': fixture } });
+    try {
+      const page = await browser.context.newPage();
+      await page.route('**/main.js', async (route) => {
+        const response = await route.fetch();
+        const source = await response.text();
+        assert.ok(source.includes("import * as disc from './disc.js';"), 'main module import is present');
+        await route.fulfill({ response, body: source.replace("import * as disc from './disc.js';",
+          "import * as disc from '/test/disc-regression.js';") });
+      });
+      await page.goto(browser.base + '?disc=%2Ffirst.bin&disc=%2Fsecond.bin');
+      await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      await page.waitForFunction(() => document.getElementById('message').textContent.includes('synthetic'));
+      assert.deepEqual(await page.evaluate(() => window.__urlDiscOpens), ['/first.bin']);
+      assert.equal(await page.textContent('#message'), 'first.bin: synthetic verification failure');
+    } finally {
+      await browser.close();
+    }
   });
 });
 

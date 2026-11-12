@@ -18,8 +18,8 @@
 
 import { createServer } from 'node:http';
 import { createServer as createSecureServer } from 'node:https';
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { dirname, extname, join, normalize, resolve } from 'node:path';
+import { createReadStream, existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { dirname, extname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const TYPES = {
@@ -33,6 +33,11 @@ const TYPES = {
   '.png': 'image/png',
 };
 
+const within = (root, file) => {
+  const path = relative(root, file);
+  return path !== '..' && !path.startsWith(`..${sep}`) && !isAbsolute(path);
+};
+
 /**
  * Serve `mounts` ({'/': dir, '/fixtures/': other}) on `port` (0: any free port)
  * at `host`, over HTTPS when `tls` ({cert, key}) is given.
@@ -42,15 +47,27 @@ export function serve(mounts, port = 0, { host = '127.0.0.1', tls } = {}) {
     .map(([prefix, dir]) => [prefix, resolve(dir)])
     .sort((a, b) => b[0].length - a[0].length);
   const handler = (request, response) => {
-    const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    let path;
+    try {
+      path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    } catch {
+      response.writeHead(400).end();
+      return;
+    }
     const mount = roots.find(([prefix]) => path.startsWith(prefix));
     let file = mount && normalize(join(mount[1], path.slice(mount[0].length)));
-    if (!mount || !file.startsWith(mount[1])) {
+    if (!mount || !within(mount[1], file)) {
       response.writeHead(404).end();
       return;
     }
     try {
       if (statSync(file).isDirectory()) file = join(file, 'index.html');
+      const root = realpathSync(mount[1]);
+      file = realpathSync(file);
+      if (!within(root, file)) {
+        response.writeHead(404).end();
+        return;
+      }
       const size = statSync(file).size;
       const headers = {
         'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
