@@ -352,6 +352,13 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       await page.evaluate(() => window.xem.setRunning(false));
       await page.evaluate(() => window.xrDevice.quaternion.set(0, 0, 0, 1));
       await frames(6);
+      // Let the table's eased target settle after the walk before measuring scaling drift.
+      await page.waitForFunction(() => {
+        const { diorama_height_cm, diorama_distance_cm } = window.xem.settings.get().settings.graphics.xr;
+        const anchor = window.xem.status().xr.space.anchor;
+        return Math.hypot(anchor[0], anchor[1] - diorama_height_cm / 100,
+          anchor[2] + diorama_distance_cm / 100) < 0.0001;
+      }, null, { timeout: 60_000 });
       const scaling = { pauses: (await status(page)).xr.pauses, pinches: (await status(page)).xr.counts.pinch, revision: (await status(page)).settingsRevision };
       const at = (x) => page.evaluate((x) => {
         window.xrDevice.hands.left.position.set(-x, 1.4, -0.3);
