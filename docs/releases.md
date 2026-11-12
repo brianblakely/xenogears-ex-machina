@@ -1,12 +1,37 @@
 # Releases and portable installation
 
-Updates to `master` build a GitHub release, starting with `v0.5`; subsequent
-updates increment the patch version (`v0.5.1`, `v0.5.2`, …). A retry reuses the
+Updates to `master` build a GitHub release only when native game, host or build
+inputs change. The workflow compares the complete push before reserving a tag
+or starting builds. Documentation, tests, release descriptions, workflow-only
+edits and browser-only changes do not cut a native release or deploy Pages.
+An unresolved comparison fails the check instead of reserving a version.
+An explicit manual workflow run can rebuild; `release/` branches still qualify.
+Versions start with `v0.5`; subsequent releases increment the patch version
+(`v0.5.1`, `v0.5.2`, …). A retry reuses the
 commit's tag. Publication waits for the complete artifact set and automated
 checks. Published files are immutable: a retry must reproduce their checksums.
 The same release's static web application deploys to GitHub Pages.
+If only non-native inputs changed on master while a build ran, that build can
+still become the latest release. It never displaces a newer published version.
 Branches under `release/` run the same builds and artifact checks without
 reserving a tag, publishing a release or deploying Pages.
+
+Release pages use the conversational installation and update guide in
+`tools/release/notes.md`, including a link to that version's [player's manual](../MANUAL.md).
+For each change worth announcing to players, add a new
+`docs/changes/<short-description>.md` with one or more short Markdown bullets.
+Describe what the player can do or what now works; leave code names, test results
+and build details in the PR. Keep existing entries so older releases retain
+their history. Changes without a player-facing effect don't need an entry.
+The publisher includes only entries added since the highest earlier published
+version on the release commit's ancestry, skipping drafts, prereleases and tags
+from failed builds. It reads them from that exact commit, links the full comparison,
+and, when no entry was added, lists the commits since that version as the
+changes instead of claiming none. Below the entries,
+folded under a summary line, it lists every commit since that version
+(merges aside), newest first, each subject linked to its commit; past 500
+the full comparison has the rest. A retry of an
+already published release preserves its copy as well as its downloads.
 
 Download from [GitHub Releases](https://github.com/brianblakely/xenogears-ex-machina/releases).
 [Browser play](https://brianblakely.github.io/xenogears-ex-machina/) needs no local
@@ -100,7 +125,12 @@ controls. Escape opens it; Back+Start does so on a controller.
 Linux AppImages include their library closure, glibc, Mesa drivers and fonts,
 so they do not require a distro package manager or an installed Nix. They
 require a compatible CPU/kernel and enabled unprivileged user namespaces.
-Proprietary NVIDIA graphics use the host's driver libraries.
+Proprietary NVIDIA graphics use the host's driver libraries; nothing else
+comes from the host, whatever library path the app inherits. Steam starts
+its games (a Steam Deck's Gaming Mode its only way) with one naming the
+host's library directories: the launcher is static, and the app gets only
+the image's libraries and NVIDIA's, so the host's C library never meets the
+image's. The release check starts the image that way too.
 `APPIMAGE_EXTRACT_AND_RUN=1 ./filename.AppImage` avoids a
 FUSE requirement. On Ubuntu 24.04 and later, AppArmor restricts unconfined
 user namespaces. Following [Ubuntu's application-profile instructions](https://documentation.ubuntu.com/release-notes/24.04/#unprivileged-user-namespace-restrictions),
@@ -195,9 +225,13 @@ source archive uses `packaging/source-files.txt`, with only the separately
 reviewed KEMAR data allowed as a binary input. Rust notices include the Slint
 Royalty-free 2.0 terms; the settings panel supplies its attribution widget.
 
-During development use the affected suite or focused tests. Before review or
-merging a release change, run `src/runtime/scripts/suite.sh full` once. Its
-logs and exact stage results are under `build/suite/`. Checks without private
+During development use the affected suite or focused tests. Release copy and
+publisher changes need focused release tests, not the runtime suite. Before review
+or merging runtime changes, run `src/runtime/scripts/suite.sh full` once; it skips
+when runtime inputs have no changes against the merge base with `origin/master`.
+Use `--base REF` for another comparison or deliberately use `--force` to bypass
+the guard. Its logs and exact stage results are under `build/suite/`; a skip
+preserves previous logs and does not count as a passing run. Checks without private
 disc inputs must report their skips; they are not original-game playthroughs.
 
 ## v0.5 qualification record

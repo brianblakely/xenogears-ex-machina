@@ -21,6 +21,7 @@ u32 xem_host_actor_view(void);
 
 void xem_original_field_draw_sprite_actors(u_long *ot, s32 buffer);
 void xem_present_skipped_sprites(u_long *ot);
+void xem_present_field_actors(u32 drawing);
 
 /* `m` times `n` (rotations 4.12, translations whole), as CompMatrix forms
  * them, in plain arithmetic: row `i`'s second column and translation. */
@@ -81,14 +82,18 @@ static void xem_keep_actors_in_view(u32 view) {
 
 /* The original pass, the actors the host's view shows kept moving, and
  * (presentation only, present.c) the sprites it left undrawn for overflow
- * that a pulled-back camera sees drawn for the record. */
+ * that a pulled-back camera sees drawn for the record. While it draws, the
+ * party's small sprites of a large-scale field get their full-size
+ * alternatives (sprite_facing.c). */
 void field_draw_sprite_actors(u_long *ot, s32 buffer) {
     u32 view;
 
+    xem_present_field_actors(1);
     xem_original_field_draw_sprite_actors(ot, buffer);
     view = xem_host_actor_view();
     if (view != 0) {
         xem_keep_actors_in_view(view);
     }
     xem_present_skipped_sprites(ot);
+    xem_present_field_actors(0);
 }

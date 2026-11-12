@@ -1,4 +1,6 @@
 fn main() {
+    // About shows a release's version (lib.rs VERSION).
+    println!("cargo::rerun-if-env-changed=XEM_RELEASE_VERSION");
     // Debug info keeps element names in the generated code so tests and agents
     // can inspect the element tree.
     let config = slint_build::CompilerConfiguration::new()

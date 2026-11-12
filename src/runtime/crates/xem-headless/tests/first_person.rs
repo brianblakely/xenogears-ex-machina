@@ -136,7 +136,7 @@ impl Seen {
     }
 
     fn class(&self, i: usize) -> u32 {
-        u32::from(self.classes[i * 4 + 2])
+        u32::from(self.classes[i * 4 + 2]) & xem_render::ps1::AUX_CLASS_MASK
     }
 
     fn save(&self, name: &str) {
@@ -538,7 +538,7 @@ fn from_within_each_field_the_walkmesh_in_view_shows_the_scene_and_the_interface
             // camera's frame (a flat look keeps it where the game drew it).
             let (after_colours, after_classes) = host.flat(&host.after);
             let (flat_colours, _) = host.flat(&host.camera);
-            let after_interface: Vec<bool> = (0..after_classes.len() / 4).map(|i| u32::from(after_classes[i * 4 + 2]) == AUX_INTERFACE).collect();
+            let after_interface: Vec<bool> = (0..after_classes.len() / 4).map(|i| u32::from(after_classes[i * 4 + 2]) & xem_render::ps1::AUX_CLASS_MASK == AUX_INTERFACE).collect();
             let (mut walkmesh, mut walkable) = (Holes::default(), Holes::default());
             let mut by_layer: Vec<Holes> = layers.iter().map(|_| Holes::default()).collect();
             let (mut empty, mut pixels) = (0usize, 0usize);
@@ -1096,7 +1096,11 @@ fn a_story_movie_begun_while_inspecting_shows_on_the_screen_and_the_view_goes_on
     assert!(shown.iter().filter(|s| s.blank > first && s.blank < last).all(|s| s.movie || s.device), "the movie's frames throughout");
     let after: Vec<&Shown> = shown.iter().filter(|s| s.blank > last + 2 && s.blank < entered).collect();
     assert!(after.len() > 60 && after.iter().all(|s| s.on && s.within && s.scene == "field:25"), "after the movie, from within in map 25 again: {}", timeline(&shown));
-    assert!(shown.iter().filter(|s| s.blank > entered).all(|s| !s.on && !s.within), "map 23 ends the view");
+    // Map 23 is the scene from its setup on; its first frame shows a few
+    // blanks later (map 25's last until then) and ends the view.
+    let ended = shown.iter().find(|s| s.blank > entered && !s.on).map(|s| s.blank).expect("map 23 ends the view");
+    assert!(ended <= entered + 8 && shown.iter().filter(|s| s.blank >= ended).all(|s| !s.on && !s.within),
+        "map 23's first frame ends the view (set up at {entered}): {}", timeline(&shown));
 }
 
 /// The Mountain Path's random battle entered while inspecting in a

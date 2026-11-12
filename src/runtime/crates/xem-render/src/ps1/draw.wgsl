@@ -75,6 +75,8 @@ const FEEDBACK: u32 = 524288u;
 const TABLE: u32 = 1048576u;
 const CLIP: u32 = 2097152u;
 const BILLBOARD: u32 = 4194304u;
+// A battle's sky, or a scene's past its depth (ps1/mod.rs FLAG_BACKDROP).
+const BACKDROP: u32 = 8388608u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -414,6 +416,9 @@ fn aux(in: VertexOut) -> vec4<f32> {
     if (in.mode.w & BAKED) != 0u {
         flags |= 1u;
     }
+    if (in.mode.w & BACKDROP) != 0u {
+        flags |= 2u;
+    }
     return vec4<f32>(f32(depth >> 8u), f32(depth & 255u), f32(kind), f32(flags)) / 255.0;
 }
 
@@ -474,8 +479,8 @@ fn fs_opaque_texels_nearer(in: VertexOut) -> NearerTargets {
 // blend weight, colour factors (SrcAlpha, OneMinusSrcAlpha) for mode 0 and
 // (SrcAlpha, One) for the others, alpha (Zero, One). So the colour gets
 // B/2+F/2, B+F, B-F or B+F/4 from weights 0.5, 1, 1 and 0.25, the
-// auxiliary target stays as it was under weight 0 (scene effects keep the
-// depth and class beneath; fs_mark marks an interface window's pixels), and
+// auxiliary target stays as it was under weight 0 (fs_mark then records
+// a translucent model's surface or an interface window's pixels), and
 // both keep their stored alpha.
 fn semi_targets(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
@@ -536,15 +541,27 @@ fn fs_tint(in: VertexOut) -> Targets {
     return Targets(vec4<f32>(in.color.rgb * select(1.0, 0.25, mode == 3u), 0.0), vec4<f32>(0.0));
 }
 
-// The semi-transparent pixels of an interface primitive, marked as
-// interface in the auxiliary target (weight 1 there, its alpha included:
-// flags 255) with the colour left as fs_semi made it (weight 0).
+// A semi-transparent surface's depth and class, with the colour left as
+// fs_semi made it (weight 0). Both targets share one blend state on WebGL2:
+// alpha 1 replaces the auxiliary bytes exactly, so pack its flags above
+// the class instead. effects.wgsl decodes either representation.
 fn mark_targets(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
     if !s.semi {
         discard;
     }
+    // Additive black contributes nothing to a model's silhouette.
+    let kind = (in.mode.w >> CLASS_SHIFT) & 15u;
+    let mode = (in.mode.w >> BLEND_SHIFT) & 3u;
+    if kind == 3u && (mode == 1u || mode == 3u) && all(s.color.rgb == vec3<f32>(0.0)) {
+        discard;
+    }
     var info = aux(in);
+    let bytes = vec4<u32>(round(info * 255.0));
+    let flags = select(bytes.a, bytes.b >> 4u, bytes.a == 255u);
+    if kind == 3u {
+        info.b = f32((bytes.b & 15u) | (flags << 4u)) / 255.0;
+    }
     info.a = 1.0;
     return Targets(vec4<f32>(0.0), info);
 }

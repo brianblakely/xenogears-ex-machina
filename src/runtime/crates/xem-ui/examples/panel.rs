@@ -2,18 +2,21 @@
 //! on a headless device (build/validation/panel/ by default: ignored):
 //!
 //!     cargo run -p xem-ui --example panel -- [--size WxH] [--scale F] [--out DIR] [--name NAME]
-//!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--locate LABEL]...
+//!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--error TEXT]
+//!         [--locate LABEL]... [--pad BUTTON,...]
 //!
 //! One picture per section (`NAME-<index>.png`; only section N with
 //! `--section`), composited over a dark grey as hosts composite it over the
 //! game. A tall size shows a whole section; `--click` presses at logical
 //! positions in turn (Quit's confirmation, say), `--tab` then presses Tab
 //! N times (focus rings) and `--hover` leaves the pointer at one, for hover
-//! states; `--desktop` offers Quit and Fullscreen
+//! states; `--pad` presses gamepad buttons in turn (`controls::PAD_NAMES`,
+//! the gamepad's focus as `SettingsUi::gamepad` moves it); `--desktop`
+//! offers Quit and Fullscreen
 //! as the desktop host does, `--import-disc` the disc card as the browser
-//! and Android hosts do; `--locate` prints where the elements of an
-//! accessible label lie (logical x, y, width, height), for tests that tap
-//! the panel.
+//! and Android hosts do, `--error` the error bar saying TEXT; `--locate`
+//! prints where the elements of an accessible label lie (logical x, y,
+//! width, height), for tests that tap the panel.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -30,8 +33,10 @@ fn main() {
     let mut hover: Option<(f32, f32)> = None;
     let mut clicks: Vec<(f32, f32)> = Vec::new();
     let mut tabs = 0;
+    let mut pad: Vec<String> = Vec::new();
     let mut desktop = false;
     let mut import_disc = false;
+    let mut error = String::new();
     let mut locate: Vec<String> = Vec::new();
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/panel");
     let mut args = std::env::args().skip(1);
@@ -48,10 +53,12 @@ fn main() {
             "--section" => only = Some(value().parse().unwrap()),
             "--desktop" => desktop = true,
             "--import-disc" => import_disc = true,
+            "--error" => error = value(),
             "--locate" => locate.push(value()),
             "--hover" => hover = Some(position(&value())),
             "--click" => clicks.push(position(&value())),
             "--tab" => tabs = value().parse().unwrap(),
+            "--pad" => pad = value().split(',').map(str::to_owned).collect(),
             "--out" => out = value().into(),
             other => panic!("unknown option {other}"),
         }
@@ -61,7 +68,7 @@ fn main() {
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
     let mut ui = SettingsUi::new(shared, settings, size, scale).expect("the panel");
-    ui.set_operation_status("Settings saved.");
+    ui.set_operation_error(&error);
     ui.on_app_request(|request| eprintln!("{request:?}"));
     if desktop {
         ui.on_quit(|| eprintln!("quit"));
@@ -87,6 +94,22 @@ fn main() {
             let text: xem_ui::SharedString = xem_ui::Key::Tab.into();
             ui.dispatch(xem_ui::WindowEvent::KeyPressed { text: text.clone() });
             ui.dispatch(xem_ui::WindowEvent::KeyReleased { text });
+        }
+        let mut now = std::time::Duration::ZERO;
+        let mut poll = |ui: &mut SettingsUi, held: Option<usize>| {
+            ui.update().unwrap();
+            let pressed: Vec<u8> = (0..16).map(|i| u8::from(held == Some(i))).collect();
+            ui.gamepad(&pressed, &[0.0; 4], now);
+            now += std::time::Duration::from_millis(16);
+        };
+        if !pad.is_empty() {
+            ui.cancel_pointer();
+            poll(&mut ui, None);
+        }
+        for button in &pad {
+            let index = xem_settings::controls::PAD_NAMES.iter().position(|name| name == button).expect("a gamepad button");
+            poll(&mut ui, Some(index));
+            poll(&mut ui, None);
         }
         if let Some((x, y)) = hover {
             ui.update().unwrap();

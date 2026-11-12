@@ -22,6 +22,7 @@ void xem_original_worldmap_clouds_draw(void);
 void xem_original_worldmap_terrain_draw(u_long *ot, s32 packets, Camera *camera);
 void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u32 *vertices);
 void xem_reveal_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode, XemGte *placed);
+s32 xem_present_cameras(void);
 void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode);
 void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z);
 
@@ -60,14 +61,14 @@ static s32 xem_worldmap_ground(s32 x, s32 z, s32 *ground) {
     return 1;
 }
 
-/* The scene objects: the original, then, while a camera pulled back or a
- * view looking from around the scene wants culled faces (xem/gte.h), first
- * (a view from anywhere) the ground under the camera's target (a STAGE
- * entry, xem/gte.h), the camera every world-map frame draws its scene
- * objects and terrain with (worldmap_camera_matrix, which places points
- * relative to the camera's target, z negated) and the point it looks at
- * (the target, at (0, its height, 0) there: worldmap_camera_place_orbit),
- * then the objects it leaves undrawn because their origin's projection
+/* The scene objects: the original, then the camera every world-map frame
+ * draws its scene objects and terrain with (worldmap_camera_matrix, which
+ * places points relative to the camera's target, z negated) and the point
+ * it looks at (the target, at (0, its height, 0) there:
+ * worldmap_camera_place_orbit), after the world's point at that target and
+ * (a view from anywhere) the ground under it (STAGE entries, xem/gte.h);
+ * then, while a camera pulled back or a view looking from around the scene
+ * wants culled faces, the objects it leaves undrawn because their origin's projection
  * overflowed (near or behind its camera, or far off its screen) that the
  * view sees (any, looking around) within the original's draw distance
  * (depth 0xD80), drawn again for the record (present.c xem_reveal_model)
@@ -87,21 +88,23 @@ void worldmap_objects_draw(void) {
     s32 i, x, z, radius, ground;
 
     xem_original_worldmap_objects_draw();
-    if (!xem_present_reveals->wanted || xem_present_capture->active || !xem_present_elsewhere()) {
-        return;
-    }
-    if (xem_present_reveals->around & XEM_AROUND_ANYWHERE) {
-        if (xem_worldmap_ground(worldmap_camera.target.vx, worldmap_camera.target.vz, &ground)) {
+    x = worldmap_camera.target.vx >> 12;
+    z = worldmap_camera.target.vz >> 12;
+    if (xem_present_cameras()) {
+        xem_record_entry(XEM_PROJECTION_STAGE, 0, XEM_STAGE_ORIGIN, x, 0, -z);
+        if (xem_present_reveals->wanted && (xem_present_reveals->around & XEM_AROUND_ANYWHERE) &&
+            xem_worldmap_ground(worldmap_camera.target.vx, worldmap_camera.target.vz, &ground)) {
             xem_record_entry(XEM_PROJECTION_STAGE, 0, XEM_STAGE_GROUND, 0, ground, 0);
         }
         xem_present_camera(&worldmap_camera_matrix, 0, worldmap_camera.target.vy >> 12, 0, XEM_CAMERA_WORLDMAP);
+    }
+    if (!xem_present_reveals->wanted || xem_present_capture->active || !xem_present_elsewhere()) {
+        return;
     }
     gte = xem_gte;
     for (i = 0; i < 3; i++) {
         fifo[i] = ring->fifo[i];
     }
-    x = worldmap_camera.target.vx >> 12;
-    z = worldmap_camera.target.vz >> 12;
     scale.vx = scale.vy = scale.vz = 0x800;
     origin.vx = origin.vy = origin.vz = 0;
     for (i = 0; i < worldmap_object_count; i++) {

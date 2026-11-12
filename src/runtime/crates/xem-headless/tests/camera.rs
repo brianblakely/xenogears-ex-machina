@@ -567,18 +567,24 @@ fn state_after(session: &mut Session<NativeModule>, state: &[u8], mode: Mode, fr
     let device = session.runtime.services().gpu.device_mut();
     device.set_trace(reveals.is_some());
     device.set_reveals(reveals);
-    let mut cameras = 0;
+    let mut cameras = Vec::new();
     for n in 0..frames {
         session.execute(&json!({"cmd": "pad", "buttons": mode.buttons(n)}));
         assert!(session.frame().unwrap());
         let trace = session.runtime.services().gpu.device_mut().take_trace();
-        cameras += trace.ops.iter().filter(|op| matches!(op, TraceOp::Camera(c) if c.mode == mode.camera())).count();
+        cameras.extend(trace.ops.iter().filter_map(|op| match op {
+            TraceOp::Camera(c) if c.mode == mode.camera() => Some(c.around),
+            _ => None,
+        }));
     }
-    // A field records its camera for any view from within or around it;
-    // battles and the world map only for one from anywhere.
+    // Every frame the trace takes records its camera, with the bits the
+    // host asked with (the first the game builds after they change, with
+    // those before).
     let around = reveals.map_or(0, |r| r.around);
-    let recording = around & Reveals::ANYWHERE != 0 || (matches!(mode, Mode::Field) && around != 0);
-    assert_eq!(cameras > 0, recording, "{mode:?}: {cameras} cameras recorded with around {around}");
+    assert_eq!(!cameras.is_empty(), reveals.is_some(), "{mode:?}: {} cameras recorded with around {around}", cameras.len());
+    if reveals.is_some() {
+        assert_eq!(cameras.last(), Some(&around), "{mode:?}: the cameras carry the host's bits");
+    }
     let services = session.runtime.services();
     let state = (services.gpu.device().save(), services.spu.chip().save(), services.clock.now);
     (session.memory_hash().unwrap(), state.0, state.1, state.2)

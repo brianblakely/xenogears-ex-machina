@@ -29,7 +29,8 @@
         <!-- The configuration changes SDL handles itself (those of SDL's own
              android-project, plus a SIM's country/network code, touchscreen
              and colour mode), so rotation resizes the window instead of
-             recreating the activity: SDL ends the app on a recreation. -->
+             recreating the activity (a recreation starts SDL_main again:
+             XemActivity.loadLibraries). -->
         <activity
             android:name=".XemActivity"
             android:alwaysRetainTaskState="true"

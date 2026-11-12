@@ -1,0 +1,1 @@
+- Fixed the game sometimes stopping with "interrupt 0 handler suspended" as a battle ended in the Kislev sewers and the other areas with a map picture.

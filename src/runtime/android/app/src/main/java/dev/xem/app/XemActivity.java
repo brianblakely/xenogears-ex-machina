@@ -2,17 +2,22 @@ package dev.xem.app;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
 import android.util.Log;
+import android.view.WindowManager;
 
 import org.libsdl.app.SDLActivity;
 
 /**
  * SDL's activity running libmain.so (xem-android). It adds what SDL does not
- * do itself: a persistable read grant on the document SDL's file dialog
- * (ACTION_OPEN_DOCUMENT) returns, so an imported disc stays readable after
- * the app restarts; the document handed to native code even when Android
- * recreated the activity while the picker was shown (SDL's own dialog
- * callback is lost then); and test arguments from the {@code xem.args} extra.
+ * do itself: a window laid out over the display's cutouts, so the game's
+ * picture fills the screen; a persistable read grant on the document SDL's
+ * file dialog (ACTION_OPEN_DOCUMENT) returns, so an imported disc stays
+ * readable after the app restarts; the document handed to native code even
+ * when Android recreated the activity while the picker was shown (SDL's own
+ * dialog callback is lost then); and test arguments from the
+ * {@code xem.args} extra.
  */
 public class XemActivity extends SDLActivity {
     private static final String TAG = "xem";
@@ -20,9 +25,39 @@ public class XemActivity extends SDLActivity {
     /** Hands a picked document to libmain (xem-android's disc import). */
     private static native void nativeDocumentPicked(String uri);
 
+    /**
+     * Android keeps a window out of a cutout on the screen's short edges in
+     * landscape (a phone's camera hole) unless it asks to be laid out over
+     * it, leaving a black band beside the game. SDL asks only as its window
+     * goes fullscreen, in attributes it never applies.
+     */
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.layoutInDisplayCutoutMode = Build.VERSION.SDK_INT >= 30
+                ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        getWindow().setAttributes(attributes);
+        super.onCreate(savedInstanceState);
+    }
+
     @Override
     protected String[] getLibraries() {
         return new String[] {"SDL3", "main"};
+    }
+
+    /**
+     * Android recreates the activity on changes no configChanges entry
+     * covers (its asset paths: an overlay changing on a device's first
+     * boot), at any time, before SDL_main has started too. SDL ends the
+     * process on a recreation unless it is allowed, and then starts SDL_main
+     * again in the same process. Allowed as soon as the libraries are loaded,
+     * before any recreation is checked; SDL keeps it through SDL_Quit.
+     */
+    @Override
+    public void loadLibraries() {
+        super.loadLibraries();
+        nativeSetenv("SDL_ANDROID_ALLOW_RECREATE_ACTIVITY", "1");
     }
 
     /** {@code am start --esa xem.args --open,<uri>} passes arguments to SDL_main. */
@@ -48,6 +83,21 @@ public class XemActivity extends SDLActivity {
         }
         // SDL ends its file dialog (its callback only reports a cancel).
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /**
+     * SDL finishes the activity whenever SDL_main returns, also when the run
+     * ended for a recreation (the quit of the onDestroy below): the recreated
+     * activity was finished along with it and the launcher came to the
+     * front. The recreated activity starts SDL_main again instead.
+     */
+    @Override
+    public void finish() {
+        if (isChangingConfigurations()) {
+            Log.i(TAG, "SDL_main ended for a recreation: the activity stays");
+            return;
+        }
+        super.finish();
     }
 
     /** How long a quitting SDL_main has to end before SDL's own onDestroy. */

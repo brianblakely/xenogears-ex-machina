@@ -1,0 +1,1 @@
+- The Linux app now starts from Steam, including in a Steam Deck's Gaming Mode.

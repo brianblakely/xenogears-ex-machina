@@ -1,0 +1,1 @@
+- The Gameplay tab in Settings has a new icon to make it easier to spot.

@@ -19,6 +19,9 @@
 //! turns the view on, the next frames' `status` shows `inspecting` and the
 //! route under way stopped, `navigate` and a walk by `act` are refused, it
 //! turns the view to the look asked, and turns it off.
+//! Scripts take the window's picture (`--exit-after-frames N --screenshot`):
+//! the run ends once its Nth frame is presented, the picture written, on a
+//! display far faster than the game too.
 //! Local only: it needs the user's disc 1, a game module build and weston
 //! and lavapipe (nix/runtime's shell).
 //!
@@ -50,10 +53,17 @@ struct Display {
 impl Display {
     /// A display of its own for the test `name`.
     fn start(name: &str, lavapipe: &str) -> Display {
+        Display::with_options(name, lavapipe, &[])
+    }
+
+    /// A display of its own for the test `name`, with weston's further
+    /// `options`.
+    fn with_options(name: &str, lavapipe: &str, options: &[&str]) -> Display {
         let root = std::env::temp_dir().join(format!("xem-desktop-control-{name}-{}", std::process::id()));
         std::fs::create_dir_all(root.join("run")).expect("a runtime directory");
         let weston = Command::new("weston")
             .args(["--backend=headless", "--renderer=pixman", "--width=1280", "--height=800", "--socket=wl-xem", "--idle-time=0"])
+            .args(options)
             .env("XDG_RUNTIME_DIR", root.join("run"))
             .env("VK_ICD_FILENAMES", lavapipe)
             .stdout(Stdio::null())
@@ -78,8 +88,24 @@ impl Drop for Display {
     }
 }
 
-/// `xem-desktop --disc DISC --control` on the display, its settings and
-/// cards in the display's directory; stopped when dropped.
+/// `xem-desktop --disc DISC` on the display, its settings and cards in the
+/// display's directory.
+fn desktop(display: &Display, disc: &Path, lavapipe: &str) -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_xem-desktop"));
+    command
+        .arg("--disc").arg(disc)
+        .arg("--cards").arg(display.root.join("cards"))
+        .env("XDG_RUNTIME_DIR", display.root.join("run"))
+        .env("WAYLAND_DISPLAY", "wl-xem")
+        .env("SDL_VIDEODRIVER", "wayland")
+        .env("SDL_AUDIO_DRIVER", "dummy")
+        .env("VK_ICD_FILENAMES", lavapipe)
+        .env("XEM_DATA_DIR", display.root.join("config/xenogears-ex-machina"));
+    command
+}
+
+/// `xem-desktop --disc DISC --control` on the display ([`desktop`]);
+/// stopped when dropped.
 struct Desktop {
     child: Child,
     input: ChildStdin,
@@ -88,16 +114,8 @@ struct Desktop {
 
 impl Desktop {
     fn launch(display: &Display, disc: &Path, lavapipe: &str) -> Desktop {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_xem-desktop"))
-            .arg("--disc").arg(disc)
-            .arg("--cards").arg(display.root.join("cards"))
+        let mut child = desktop(display, disc, lavapipe)
             .arg("--control")
-            .env("XDG_RUNTIME_DIR", display.root.join("run"))
-            .env("WAYLAND_DISPLAY", "wl-xem")
-            .env("SDL_VIDEODRIVER", "wayland")
-            .env("SDL_AUDIO_DRIVER", "dummy")
-            .env("VK_ICD_FILENAMES", lavapipe)
-            .env("XEM_DATA_DIR", display.root.join("config/xenogears-ex-machina"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -281,4 +299,35 @@ fn agents_turn_first_person_on_turn_it_and_turn_it_off_on_the_desktops_control_c
     assert_eq!(off, json!({"first_person": false, "look": null}));
     let since = desktop.send(json!({"cmd": "status"}))["frames"].as_u64().expect("frames");
     assert_eq!(desktop.status_after(since, 2)["inspecting"], false, "and the session has it off");
+}
+
+/// `--exit-after-frames N --screenshot` ends the run once its Nth frame is
+/// presented, the picture written. The default presentation is game-paced:
+/// it shows a frame only when the game drew one, which on a display faster
+/// than the game (weston here at 1000 Hz) is one refresh in many, so the
+/// last frame is presented whatever the game drew. The run once ended on a
+/// refresh with nothing new, without its picture.
+#[test]
+fn the_desktops_screenshot_is_taken_however_fast_the_display_refreshes() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (Ok(lavapipe), true) = (std::env::var("XEM_LAVAPIPE_ICD"), Command::new("weston").arg("--version").output().is_ok()) else {
+        eprintln!("skipping: no weston or lavapipe (run in nix/runtime's shell)");
+        return;
+    };
+    let display = Display::with_options("screenshot", &lavapipe, &["--refresh-rate=1000000"]);
+    for frames in 40..45 {
+        let picture = display.root.join(format!("{frames}.png"));
+        let status = desktop(&display, &disc, &lavapipe)
+            .arg("--exit-after-frames").arg(frames.to_string())
+            .arg("--screenshot").arg(&picture)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .expect("xem-desktop runs");
+        assert!(status.success(), "{frames} frames: {status}");
+        assert!(picture.is_file(), "{frames} frames: the run ended without its picture");
+    }
 }

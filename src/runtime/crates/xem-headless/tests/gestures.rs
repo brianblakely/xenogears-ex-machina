@@ -201,6 +201,7 @@ impl Player {
         let context = Context {
             attack: self.session.runtime.combo_input(),
             field: self.session.runtime.field_controls(),
+            world_map: self.session.runtime.services().mode == Some(3),
             assignment: self.session.runtime.button_assignment(),
             ui,
             paused: self.session.runtime.game_paused(),

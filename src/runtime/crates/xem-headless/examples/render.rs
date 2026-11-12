@@ -3,9 +3,11 @@
 //!
 //!     cargo run --release -p xem-headless --example render -- [--map N] [--frames N]
 //!         [--scale N] [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen]
-//!         [--zoom PERCENT] [--viewport-culling] [--size WxH] [--compare] [--out out.png]
+//!         [--zoom PERCENT] [--viewport-culling] [--full-size] [--size WxH] [--compare] [--out out.png]
 //!
-//! `--compare` puts the Modern picture beside the chosen profile's.
+//! `--compare` puts the Modern picture (the party's small sprites of a
+//! large-scale field kept) beside the chosen profile's. `--full-size` draws
+//! the party there with its full-resolution sprites.
 //! `--only` draws the Custom profile with just the named HD-2D effects
 //! (lighting, shadows, ao, fog, shafts, bloom, grading, dof).
 //! `XEM_DEBUG_VIEW=shadows|depth|class` shows an effects debug view.
@@ -38,11 +40,13 @@ fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Gra
     session.runtime.services().gpu.device_mut().set_trace(true);
     let _ = view.take_restart();
     let mut size = None;
+    let mut full_size = 0;
     for frame in 0..8 {
         session.frame().expect("frame");
         let device = session.runtime.services().gpu.device_mut();
         device.set_reveals(view.reveals());
         let trace = device.take_trace();
+        full_size = trace.ops.iter().filter(|op| matches!(op, xem_gpu::TraceOp::Draw(p) if p.full_size.is_some())).count();
         view.push(trace);
         let display = session.runtime.services().gpu.device().display();
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
@@ -54,6 +58,7 @@ fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Gra
     eprintln!("{} primitives drawn, {revealed} of them culled by the game", view.frame().primitives().len());
     let [matched, unmatched] = session.runtime.services().gpu.device().trace_matches();
     eprintln!("points matched to their projection {matched}, 2D {unmatched}");
+    eprintln!("{full_size} parts of small party sprites with a full-size frame");
     let mut rgba = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
     rgba.chunks_exact_mut(4).for_each(|p| p[3] = 255);
     (width, height, rgba)
@@ -103,6 +108,7 @@ fn main() {
             "--widescreen" => graphics.widescreen = true,
             "--zoom" => graphics.zoom_out = value().parse().unwrap(),
             "--viewport-culling" => graphics.culling.viewport = true,
+            "--full-size" => graphics.full_size_sprites = true,
             "--size" => {
                 let size = value();
                 let (w, h) = size.split_once('x').expect("WxH");
@@ -155,7 +161,7 @@ fn main() {
         // The same frames again under Modern.
         session.restore_bytes(&snapshot).expect("restore");
         let mut modern = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-        let plain = Graphics { profile: GraphicsProfile::Modern, widescreen: false, zoom_out: 100, ..graphics };
+        let plain = Graphics { profile: GraphicsProfile::Modern, widescreen: false, zoom_out: 100, full_size_sprites: false, ..graphics };
         let (w, h, left) = picture(&gpu, &mut modern, &mut session, &plain, &scene, output);
         assert_eq!(h, height, "both pictures are as high");
         let mut both = Vec::with_capacity(left.len() + rgba.len());

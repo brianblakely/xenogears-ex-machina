@@ -1,5 +1,5 @@
-"""Presentation-only seams: cloud corner provenance, battle glyph class and
-the camera record.
+"""Presentation-only seams: cloud corner provenance, battle glyph class, the
+camera record and a model's or sprite's placement.
 
 Invented inputs exercise the actual port functions without original assets.
 """
@@ -46,6 +46,7 @@ void test_record_camera(void) {
             ("src/port/present.c", "xem_record_entry",
              "void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z)"),
             ("src/port/present.c", "xem_present_camera", "void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode)"),
+            ("src/port/present.c", "xem_record_placement", "void xem_record_placement(u32 owner, u32 packets, u32 size)"),
         ):
             source += "\n" + signature + " {" + function_body(path, name) + "\n"
         fixture = Path(cls.build.name) / "presentation.c"
@@ -55,11 +56,15 @@ void test_record_camera(void) {
         cls.lib.battle_popup_draw_glyph.argtypes = [ctypes.c_void_p, ctypes.c_int]
         cls.ring = (ctypes.c_uint * (8 + 65536 * 10)).in_dll(cls.lib, "xem_gte_ring_storage")
         cls.stores = (ctypes.c_uint * (4 + 65536 * 4)).in_dll(cls.lib, "xem_present_store_storage")
+        cls.reveals = (ctypes.c_uint * 4).in_dll(cls.lib, "xem_present_reveal_storage")
+        cls.capture = (ctypes.c_uint * 2).in_dll(cls.lib, "xem_present_capture_storage")
 
     def setUp(self):
         mem.clear()
         ctypes.memset(ctypes.addressof(self.ring), 0, ctypes.sizeof(self.ring))
         ctypes.memset(ctypes.addressof(self.stores), 0, ctypes.sizeof(self.stores))
+        ctypes.memset(ctypes.addressof(self.reveals), 0, ctypes.sizeof(self.reveals))
+        ctypes.memset(ctypes.addressof(self.capture), 0, ctypes.sizeof(self.capture))
 
     def test_cloud_links_keep_each_corner_source_when_screen_points_collide(self):
         self.ring[6] = 1  # recording
@@ -113,6 +118,40 @@ void test_record_camera(void) {
         self.assertEqual(entry(3), (0, 6, 3, [120, -40, 2600]))
         depth = ((2048 * 300 + 3547 * 500) >> 12) + 2600
         self.assertEqual(entry(4), (depth, 8, 2, [300, -200, 500]))
+        # Made while the host looks from anywhere around the scene: the
+        # mode with the host's `around` bits.
+        self.reveals[3] = 2
+        self.lib.test_record_camera()
+        self.assertEqual(self.ring[8 + 16 * 10 + 6], 2 | 2 << 8)
+
+    def test_a_placement_is_recorded_as_its_axes_translation_and_buffer_while_a_trace_takes_it(self):
+        # The GTE's rotation (rows in 4.12: 30 degrees about y, packed two
+        # halfwords a register) and translation, a model's buffer and its size.
+        for register, word in enumerate([3547, (-2048 & 0xFFFF), 4096, 2048, 3547, 120, -40 & 0xFFFFFFFF, 2600]):
+            self.lib.xem_gte_write_control(register, word)
+        place = lambda: self.lib.xem_record_placement(0x80123450, 0x80140000, 0x200)
+        place()
+        self.assertEqual(self.ring[0], 0, "nothing while no trace takes the records")
+        self.ring[6] = 1  # recording
+        self.capture[0] = 1
+        place()
+        self.assertEqual(self.ring[0], 0, "nothing for a model drawn again for the record")
+        self.capture[0] = 0
+        place()
+        self.assertEqual(self.ring[0], 4, "four entries")
+
+        def entry(i):
+            # sxy, sz | class << 16, x, y, offset, h, owner, view[3]
+            words = list(self.ring[8 + i * 10:8 + (i + 1) * 10])
+            view = [w - (1 << 32) if w >= 1 << 31 else w for w in words[7:10]]
+            return words[1] & 0xFFFF, words[1] >> 16, words[6], view, words[2], words[3]
+
+        # The rotation's columns (axes 0-2), then its translation with the
+        # buffer and its size, owned by the model.
+        columns = [[3547, 0, 2048], [0, 4096, 0], [-2048, 0, 3547]]
+        for k in range(3):
+            self.assertEqual(entry(k)[:4], (k, 11, 0x80123450, columns[k]))
+        self.assertEqual(entry(3), (3, 11, 0x80123450, [120, -40, 2600], 0x80140000, 0x200))
 
     def test_battle_glyphs_are_interface_and_restore_the_callers_class(self):
         self.ring[1] = 2  # a surrounding sprite draw

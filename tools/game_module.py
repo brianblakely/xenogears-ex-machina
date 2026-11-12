@@ -69,8 +69,7 @@ FINGERPRINT_BYTES = 32
 # through them).
 YIELD_IMPORTS = ["xem.yield", "xem.restart", "xem.task_switch"]
 # The module's exports, defined in src/port/.
-EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area", "xem_game_paused",
-           "xem_game_combo_input", "xem_game_field_controls"]
+EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (src/decomp or src/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
@@ -78,13 +77,20 @@ WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix",
            "sprite_draw_parts_cut_below", "sprite_draw_parts_cut_above", "field_instance_is_off_screen",
            "field_draw_models", "worldmap_map_overlay_draw", "pad_dequeue_state", "sound_silence_voices",
            "arena_menu_open_pause", "gpu_draw_panorama", "gpu_draw_panorama_strip", "battle_draw_stage_sky",
-           "field_draw_sprite_actors", "worldmap_objects_draw", "worldmap_clouds_draw",
+           "field_draw_sprite_actors", "worldmap_objects_draw", "worldmap_clouds_draw", "arena_view_draw_arena",
            "worldmap_terrain_draw", "menu_cd_check_disc", "sound_start_driver", "sound_run_tick",
            "menu_sound_mode_screen_run", "sound_start_effect", "sprite_vm_run_generic_command",
            "battle_sprite_command_run"}
 WRAPPED |= {"sprite_request_frame", "sprite_queue_upload", "sprite_reserve_texture_columns", "battle_popup_draw_glyph"}
 WRAPPED |= {"battle_command_panel_fade", "sprite_set_view_matrix", "field_encounter_count_down"}
 WRAPPED |= {"window_reveal_text", "field_movie_run_frames", "movie_mode_read_playback_input"}
+WRAPPED |= {"battle_resolve_action", "battle_results_grant_exp_skills_and_drops", "battle_results_run_screens"}
+WRAPPED |= {"field_dialogue_draw_windows", "battle_draw_script_portrait_and_text", "battle_draw_gauge_bars_and_windows",
+            "battle_draw_list_page_glyphs"}
+WRAPPED |= {"window_queue_message", "window_render_text_line", "window_insert_text", "text_get_message_columns",
+            "text_get_message_rows", "text_get_glyph_width", "text_draw_glyph", "menu_load_resources",
+            "item_shop_load_resources", "gear_shop_load_resources", "member_change_load_resources",
+            "name_entry_load_resources"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

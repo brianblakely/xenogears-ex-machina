@@ -47,8 +47,6 @@ u16 field_pad_port0_allowed_mask;
 s32 field_camera_cut_timer;
 u8 battle_turns_active;
 u8 arena_retreat_rule_enabled;
-u16 sound_driver_flags;
-u8 arena_menu_paused;
 u32 test_requested, test_reached, test_silenced;
 s32 test_arena_mode;
 u32 xem_host_pause_requested(void) {{ return test_requested; }}
@@ -68,23 +66,11 @@ void test_field_masks(u16 input, u16 allowed, s32 cut) {{
             function.restype = ctypes.c_uint
 
     def setUp(self):
-        ctypes.c_ushort.in_dll(self.lib, "sound_driver_flags").value = 0
-        ctypes.c_ubyte.in_dll(self.lib, "arena_menu_paused").value = 0
         for name in ("test_requested", "test_reached", "test_silenced"):
             ctypes.c_uint.in_dll(self.lib, name).value = 0
         ctypes.c_ubyte.in_dll(self.lib, "battle_turns_active").value = 1
         ctypes.c_ubyte.in_dll(self.lib, "arena_retreat_rule_enabled").value = 0
         self.lib.test_field_masks(0xFFFF, 0xFFFF, 0)
-
-    def test_pause_query_reads_original_flags_and_guards_overlay_memory(self):
-        self.assertFalse(self.lib.xem_game_paused(1))
-        ctypes.c_ubyte.in_dll(self.lib, "arena_menu_paused").value = 1
-        self.assertFalse(self.lib.xem_game_paused(1))
-        self.assertTrue(self.lib.xem_game_paused(4))
-        ctypes.c_ubyte.in_dll(self.lib, "arena_menu_paused").value = 0
-        ctypes.c_ushort.in_dll(self.lib, "sound_driver_flags").value = 0x40
-        for mode in (1, 2, 3, 4):
-            self.assertTrue(self.lib.xem_game_paused(mode))
 
     def test_requests_respect_original_input_locks_and_preserve_player_start(self):
         helpers = (self.lib.xem_pause_start, self.lib.xem_field_pause_start,

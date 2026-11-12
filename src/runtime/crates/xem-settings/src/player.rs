@@ -5,13 +5,13 @@
 //! here knows SDL, the DOM or a headset runtime.
 //!
 //! Some inputs mean a short sequence of presses the game reads as it reads
-//! any player's: the Menu action closes the field menu it opened (Cancel
-//! out of each command's screen it is in, then once more at the menu's
-//! commands), a click or a tap on the paused game resumes it (Start), and
-//! the mouse wheel steps a menu's or a choice's cursor. Such presses
-//! ([`Pulse`]) are held and released for whole game frames (the menus act
-//! on a button's press), counted as the host reports the frames run
-//! ([`PlayerInput::frames_ran`]).
+//! any player's: the Menu action closes the menu it opened in a field or on
+//! the world map (Cancel out of each command's screen it is in, then once
+//! more at the menu's commands), a click or a tap on the paused game
+//! resumes it (Start), and the mouse wheel steps a menu's or a choice's
+//! cursor. Such presses ([`Pulse`]) are held and released for whole game
+//! frames (the menus act on a button's press), counted as the host reports
+//! the frames run ([`PlayerInput::frames_ran`]).
 use crate::bindings::{GameAction, GameBindings, Held, Mouse};
 use std::collections::{BTreeSet, VecDeque};
 use xem_core::context::Context as Ui;
@@ -23,6 +23,9 @@ pub struct Context {
     pub attack: bool,
     /// The field's: first-person inspection's toggle and what it holds back.
     pub field: xem_core::FieldControls,
+    /// The world map runs (mode 3): a menu there is the one its menu
+    /// button opened, as a field's is.
+    pub world_map: bool,
     /// The game's button assignment, which actions resolve through.
     pub assignment: xem_core::action::Assignment,
     /// The interface the input reaches (`xem_core::context`).
@@ -33,7 +36,7 @@ pub struct Context {
 
 impl Default for Context {
     fn default() -> Self {
-        Self { attack: false, field: Default::default(), assignment: Default::default(), ui: Ui::None, paused: false }
+        Self { attack: false, field: Default::default(), world_map: false, assignment: Default::default(), ui: Ui::None, paused: false }
     }
 }
 
@@ -44,7 +47,7 @@ const PULSE_GAP: u32 = 2;
 /// before the entry is given up: three, or one on the battle's command ring,
 /// where a refused slot's second press flips the ring to its other page.
 const STALLS: u32 = 3;
-/// The most Cancel presses closing the field menu takes (its deepest screen
+/// The most Cancel presses closing the map's menu takes (its deepest screen
 /// is a few levels down; each press backs out one).
 const MENU_CLOSE_PRESSES: u32 = 8;
 /// Game frames a command's screen takes to go back after a Cancel backs out
@@ -53,6 +56,9 @@ const MENU_CLOSE_PRESSES: u32 = 8;
 const MENU_BACK_FRAMES: u32 = 30;
 /// The most wheel steps queued at once.
 const MAX_WHEEL_STEPS: usize = 3;
+/// Right-stick zoom: one quarter step on a push, then repeat while held.
+const ZOOM_DELAY_MS: f64 = 400.0;
+const ZOOM_REPEAT_MS: f64 = 150.0;
 
 /// Actions pressed for [`PULSE_HOLD`] game frames, then released for
 /// [`PULSE_GAP`].
@@ -84,7 +90,7 @@ pub struct PlayerInput {
     /// Actions a touch screen's controls hold.
     pub touch: BTreeSet<GameAction>,
     pulses: VecDeque<Pulse>,
-    /// Cancel presses left to close the field menu, and game frames until
+    /// Cancel presses left to close the map's menu, and game frames until
     /// the next may back out of a command's screen.
     closing: u32,
     settle: u32,
@@ -92,6 +98,8 @@ pub struct PlayerInput {
     menu_held: bool,
     /// Wheel notches not yet a whole step.
     wheel: f32,
+    /// Right-stick zoom's direction and next repeat, in host milliseconds.
+    zoom: Option<(i32, f64)>,
     /// The pointer over the game's screen (320x224 pixels), whether it moved
     /// since the last steer, the entry it moved onto (steered to until
     /// selected), and a click waiting for it.
@@ -175,6 +183,30 @@ impl PlayerInput {
         self.held.set_gamepad(pressed, axes);
     }
 
+    /// Camera zoom steps at host time `now` (milliseconds): right stick up
+    /// brings it in, down pulls it back. Hosts disable this while settings
+    /// has the input, focus is lost or first-person inspection is on.
+    /// Repeats never catch up after a stalled host frame.
+    pub fn zoom_steps(&mut self, now: f64, enabled: bool) -> i32 {
+        let direction = match self.held.gamepad & (1 << 20 | 1 << 21) {
+            n if n == 1 << 20 => -1,
+            n if n == 1 << 21 => 1,
+            _ => 0,
+        };
+        if !enabled || direction == 0 {
+            self.zoom = None;
+            return 0;
+        }
+        match self.zoom {
+            Some((held, at)) if held == direction => {
+                if now < at { return 0; }
+                self.zoom = Some((direction, now + ZOOM_REPEAT_MS));
+            }
+            _ => self.zoom = Some((direction, now + ZOOM_DELAY_MS)),
+        }
+        direction
+    }
+
     /// Release everything (focus lost, the panel took the input), queued
     /// presses too: nothing pending acts when the input comes back.
     pub fn clear(&mut self) {
@@ -186,6 +218,7 @@ impl PlayerInput {
         self.settle = 0;
         self.menu_held = false;
         self.wheel = 0.0;
+        self.zoom = None;
         self.goal = None;
         self.click = 0;
     }
@@ -385,18 +418,19 @@ impl PlayerInput {
         {
             self.attack_pointed = false;
         }
-        // Menu toggles the field menu: pressed while it runs, it backs out
-        // of each command's screen with Cancel, then presses Cancel at the
+        // Menu toggles the menu it opens in a field or on the world map (not
+        // one run as its own mode): pressed while it runs, it backs out of
+        // each command's screen with Cancel, then presses Cancel at the
         // menu's commands, which closes it: one Cancel each, as a player's
         // (the menu sounds each Cancel it reads, closing too).
-        let field_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && context.field.field;
+        let map_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && (context.field.field || context.world_map);
         let menu = actions.contains(&GameAction::Menu);
-        if field_menu && menu && !self.menu_held {
+        if map_menu && menu && !self.menu_held {
             self.closing = MENU_CLOSE_PRESSES;
             self.settle = 0;
         }
         self.menu_held = menu;
-        if !field_menu {
+        if !map_menu {
             self.closing = 0;
         } else {
             actions.remove(&GameAction::Menu);
@@ -449,6 +483,31 @@ mod tests {
     use xem_core::pad::button;
 
     #[test]
+    fn stick_zoom_steps_repeat_on_host_time_and_release_cleanly() {
+        let mut input = PlayerInput::default();
+        input.gamepad(&[], &[0.0, 0.0, 0.8, 0.9]);
+        assert_eq!(input.buttons(&GameBindings::default(), 0.0, Context::default()), 0, "zoom never turns the camera");
+        assert_eq!(input.zoom_steps(0.0, true), 1, "down pulls back immediately");
+        assert_eq!(input.zoom_steps(399.0, true), 0);
+        assert_eq!(input.zoom_steps(400.0, true), 1);
+        assert_eq!(input.zoom_steps(549.0, true), 0);
+        assert_eq!(input.zoom_steps(550.0, true), 1);
+        assert_eq!(input.zoom_steps(5000.0, true), 1, "a stalled host takes only one step");
+        assert_eq!(input.zoom_steps(5000.0, true), 0, "polling again takes none");
+        input.gamepad(&[], &[0.0, 0.0, 0.8, -0.9]);
+        assert_eq!(input.zoom_steps(5001.0, true), -1, "up brings it in immediately");
+        assert_eq!(input.zoom_steps(6000.0, false), 0, "inspection, settings or lost focus disable zoom");
+        input.clear();
+        assert_eq!(input.zoom_steps(7000.0, true), 0);
+        input.gamepad(&[], &[0.0, 0.0, 0.9, 0.8]);
+        assert_eq!(input.zoom_steps(7001.0, true), 0, "horizontal slices only turn");
+        input.gamepad(&[], &[0.0, 0.0, 0.0, 0.9]);
+        assert_eq!(input.zoom_steps(7002.0, true), 1, "a fresh push takes a fresh step");
+        input.gamepad(&[], &[]);
+        assert_eq!(input.zoom_steps(8000.0, true), 0, "a disconnected pad releases zoom");
+    }
+
+    #[test]
     fn keys_the_gamepad_and_the_mouse_combine_through_the_bindings() {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
@@ -492,7 +551,7 @@ mod tests {
         reassigned.assignment.0.swap(0, 1);
         assert_eq!(input.buttons(&bindings, 0.0, reassigned), button::UP | GameAction::Run.button_with(&reassigned.assignment));
         for ui in [Ui::Event { map: 1, buttons: 0xffff }, Ui::None, Ui::WorldMap { movement: 1, scene: 0 },
-            Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false },
+            Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false, message: false },
             Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false }]
         {
             assert_eq!(input.buttons(&bindings, 0.0, field(ui)), button::UP, "{ui:?} gets no automatic Run");
@@ -576,7 +635,7 @@ mod tests {
             steps: Steps::Direct,
             confirm: true,
         };
-        let battle = field(Ui::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false });
+        let battle = field(Ui::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false, message: false });
         fn steer(input: &mut PlayerInput, ring: &Targets, bindings: &GameBindings, context: Context, frames: usize) -> Vec<u16> {
             (0..frames).map(|_| {
                 input.browse(Some(ring));
@@ -631,7 +690,7 @@ mod tests {
             steps: Steps::Compass,
             confirm: false,
         };
-        let attacking = Context { attack: true, ..field(Ui::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false }) };
+        let attacking = Context { attack: true, ..field(Ui::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false, message: false }) };
         input.hover(Some((5.0, 5.0)));
         assert!(input.click(Some(&attack)));
         input.browse(Some(&attack));
@@ -657,7 +716,7 @@ mod tests {
     fn an_attack_sequence_is_pointed_when_a_pointer_presses_its_first_attack() {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
-        let battle = |page, ap| Context { attack: page != 1, ..field(Ui::Battle { page, attack: page != 1, ap, list: false, targeting: false }) };
+        let battle = |page, ap| Context { attack: page != 1, ..field(Ui::Battle { page, attack: page != 1, ap, list: false, targeting: false, message: false }) };
         run(&mut input, &bindings, battle(5, 7), 1);
         assert!(!input.attack_pointed());
         input.press_pointed([GameAction::AttackWeak]);
@@ -743,6 +802,28 @@ mod tests {
         input.key(&bindings, "Tab", true);
         let shop = field(Ui::Menu { screen: 4, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false });
         assert_eq!(run(&mut input, &bindings, shop, 1), [button::SQUARE]);
+    }
+
+    /// The world map's menu is the one Menu opened there, as a field's is;
+    /// a menu run as its own mode (Settings' debug start of it) keeps
+    /// Menu's button.
+    #[test]
+    fn menu_closes_the_world_maps_menu_but_not_one_run_as_its_own_mode() {
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let world_map = |ui| Context { world_map: true, ui, ..Context::default() };
+        let walking = Ui::WorldMap { movement: 1, scene: 1 };
+        let commands = Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false };
+        input.key(&bindings, "Tab", true);
+        assert_eq!(run(&mut input, &bindings, world_map(walking), 1), [button::SQUARE], "Tab opens the menu");
+        input.key(&bindings, "Tab", false);
+        run(&mut input, &bindings, world_map(commands), 1);
+        input.key(&bindings, "Tab", true);
+        assert_eq!(run(&mut input, &bindings, world_map(commands), 2), [button::CIRCLE, button::CIRCLE], "one Cancel at its commands");
+        input.key(&bindings, "Tab", false);
+        run(&mut input, &bindings, world_map(walking), 4);
+        input.key(&bindings, "Tab", true);
+        assert_eq!(run(&mut input, &bindings, Context { ui: commands, ..Context::default() }, 1), [button::SQUARE], "its own mode's");
     }
 
     #[test]

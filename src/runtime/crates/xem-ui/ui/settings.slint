@@ -1,6 +1,7 @@
 // The app's Settings: sections in a sidebar (a strip of icons when the panel
-// is narrow), each a column of cards of rows, under a header with Quit (on
-// hosts that can quit) and Close and over a status line. An ordinary
+// is narrow), each a column of cards of rows (some under a heading), under a
+// header with Quit (on hosts that can quit) and Close and over an error bar
+// while something failed. An ordinary
 // application style (plan.md: not Seraph Glass) on Slint's fluent-dark
 // widgets; every edit goes through the settings service (lib.rs), and the
 // panel shows what it acknowledged.
@@ -36,38 +37,53 @@ global Theme {
     out property <brush> bad: #ffa3a3;
 }
 
-// Outline icons on a 24-unit grid.
+// What has the focus, for a gamepad's buttons (lib.rs `SettingsUi::gamepad`):
+// a dropdown's open list takes its up and down, and a number box its left
+// and right as steps. `backed` says an editor took its B (Escape) and closed.
+// `shown`: the focus moved by keys or a gamepad since the pointer last
+// pressed, so the controls whose own focus is faint ring it.
+export global PadFocus {
+    in-out property <bool> list-open;
+    in-out property <bool> number-focused;
+    in-out property <bool> backed;
+    in-out property <bool> shown;
+}
+
+// Icons on a 24-unit grid.
 global Icons {
     out property <string> audio: "M4 9.5 L8 9.5 L13 5.5 L13 18.5 L8 14.5 L4 14.5 Z M16.4 9.2 A4 4 0 0 1 16.4 14.8 M18.8 6.8 A7.4 7.4 0 0 1 18.8 17.2";
     out property <string> graphics: "M3.5 5 L20.5 5 L20.5 16 L3.5 16 Z M8.5 20 L15.5 20 M12 16 L12 20";
     out property <string> shortcuts: "M5 6.5 L19 6.5 A2 2 0 0 1 21 8.5 L21 15.5 A2 2 0 0 1 19 17.5 L5 17.5 A2 2 0 0 1 3 15.5 L3 8.5 A2 2 0 0 1 5 6.5 Z M7 10 L7.1 10 M10.3 10 L10.4 10 M13.6 10 L13.7 10 M16.9 10 L17 10 M8 14 L16 14";
     out property <string> controls: "M7 8 L17 8 A4.5 4.5 0 0 1 21.5 12.5 L21.5 14 A2.8 2.8 0 0 1 16.6 15.8 L15.4 14.5 L8.6 14.5 L7.4 15.8 A2.8 2.8 0 0 1 2.5 14 L2.5 12.5 A4.5 4.5 0 0 1 7 8 Z M7.5 9.8 L7.5 12.8 M6 11.3 L9 11.3 M15.8 10.2 L15.8 10.3 M17.6 12.2 L17.6 12.3";
+    out property <string> bug: "M9 8 L9 6 A3 3 0 0 1 15 6 L15 8 M9 5 L7 3 M15 5 L17 3 M7 8 L17 8 L17 15 A5 5 0 0 1 7 15 Z M12 8 L12 20 M7 10 L4 8 M17 10 L20 8 M7 14 L3 14 M17 14 L21 14 M7.7 18 L4 20 M16.3 18 L20 20";
     out property <string> time: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.5 L12 12 L15 14";
     out property <string> saves: "M5 4 L15.5 4 L20 8.5 L20 20 L5 20 Z M8 4 L8 8.5 L15 8.5 L15 4 M8 20 L8 13.5 L17 13.5 L17 20";
-    out property <string> gameplay: "M20 4 L20 8 L10.5 17.5 L6.5 13.5 L16 4 Z M5 12 L12 19 M7.5 16.5 L4 20";
+    // Filled Xenogears silhouette from the reference, with subpixel brush noise removed.
+    // It uses more of the grid so the flared cap remains legible at 18px.
+    out property <string> gameplay: "M7.5 1.66 C7.34 1.76 7.12 1.83 7.03 1.84 C6.8 1.84 6.41 2.14 6.41 2.32 C6.41 2.62 6.76 3.05 8.34 4.67 C10.06 6.46 10.24 6.71 10.07 7.29 C10.03 7.42 10.04 7.91 10.1 8.39 L10.19 9.26 L9.83 9.98 C9.54 10.54 9.41 10.72 9.25 10.76 C9.07 10.79 9.04 10.84 9.04 11.09 C9.04 11.72 8.8 12.5 8.63 12.5 C8.29 12.5 7.61 14.1 7.71 14.66 C7.78 15.04 7.43 15.27 7.09 15.03 C6.82 14.85 6.62 15.22 6.65 15.86 C6.68 16.48 6.13 18.31 5.89 18.38 C5.42 18.53 5.02 20.71 5.34 21.41 C5.98 22.8 7.64 22.9 8.03 21.55 C8.1 21.32 8.27 20.96 8.39 20.75 C8.52 20.54 8.76 20.11 8.92 19.79 C9.07 19.47 9.33 19.01 9.48 18.78 C9.63 18.53 9.79 18.19 9.85 18.02 C9.89 17.85 9.98 17.65 10.03 17.59 C10.23 17.36 10.65 16.55 10.75 16.21 C10.81 16.04 10.95 15.7 11.05 15.49 C11.23 15.13 11.39 14.75 11.79 13.66 C12 13.1 12.57 12.01 12.75 11.82 C12.83 11.72 12.92 11.56 12.92 11.46 C12.92 10.73 13.4 11.11 14.21 12.48 C15.1 14 15.3 14.32 15.47 14.54 C15.79 14.98 16 15.51 16 15.98 C16 16.33 16.04 16.42 16.15 16.46 C16.25 16.48 16.5 16.74 16.73 17.02 C17 17.36 17.26 17.59 17.53 17.71 L17.94 17.9 L18.43 17.66 C18.7 17.52 18.92 17.36 18.91 17.31 C18.89 16.9 18.66 15.97 18.54 15.84 C18.48 15.76 18.36 15.43 18.3 15.12 C18.11 14.15 17.59 13.28 17.1 13.13 C16.91 13.06 16.75 12.69 16.75 12.27 C16.75 11.89 16.46 11.29 16.2 11.11 C16.02 11 15.65 10.54 15.22 9.92 C15.13 9.77 15.09 9.62 15.12 9.42 C15.19 9 14.99 8.62 14.68 8.56 C14.17 8.45 14.03 7.74 14.25 6.5 C14.3 6.2 14.34 5.81 14.34 5.63 C14.33 5.42 14.44 5.12 14.58 4.81 C14.73 4.53 14.83 4.22 14.83 4.11 C14.83 3.96 14.89 3.9 15.07 3.88 C16.25 3.63 15.83 2.94 14.24 2.5 C13.03 2.18 12.16 2.74 12.16 3.87 C12.16 3.97 12.09 4.15 12.01 4.25 L11.84 4.46 L11.36 4 C10.81 3.46 9.94 2.75 9.83 2.75 C9.79 2.75 9.61 2.62 9.42 2.46 C9.22 2.3 9.01 2.17 8.96 2.17 C8.9 2.17 8.72 2.06 8.57 1.92 C8.03 1.47 7.92 1.44 7.5 1.66 Z";
     out property <string> about: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 11 L12 16.5 M12 7.6 L12 7.7";
     out property <string> close: "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5";
     out property <string> reset: "M19.5 8 A8 8 0 1 0 20 15 M19.5 3.5 L19.5 8.5 L14.5 8.5";
     out property <string> power: "M12 3.5 L12 11.5 M6.7 7.7 A7.5 7.5 0 1 0 17.3 7.7";
     out property <string> check: "M5 12.5 L10 17 L19 7.5";
     out property <string> alert: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.8 L12 12.6 M12 16 L12 16.1";
-    out property <string> dot: "M12 10.5 A1.5 1.5 0 1 1 11.99 10.5 Z";
     out property <string> emblem: "M12 2.6 L20.2 7.3 L20.2 16.7 L12 21.4 L3.8 16.7 L3.8 7.3 Z M12 8.4 A3.6 3.6 0 1 1 11.99 8.4 Z";
 }
 
 component Icon inherits Path {
     in property <string> data;
     in property <brush> color: Theme.text-secondary;
+    in property <bool> filled;
     width: 18px;
     height: 18px;
     viewbox-width: 24;
     viewbox-height: 24;
     commands: root.data;
-    stroke: root.color;
-    stroke-width: 1.7px;
+    stroke: root.filled ? transparent : root.color;
+    stroke-width: root.filled ? 0px : 1.7px;
     stroke-line-cap: round;
     stroke-line-join: round;
-    fill: transparent;
+    fill: root.filled ? root.color : transparent;
     accessible-role: none;
 }
 
@@ -121,7 +137,7 @@ component NavItem inherits Rectangle {
         spacing: 10px;
         VerticalLayout {
             alignment: center;
-            Icon { data: root.icon; color: root.icon-color; }
+            Icon { data: root.icon; color: root.icon-color; filled: root.icon == Icons.gameplay; }
         }
         Text {
             text: root.label;
@@ -139,7 +155,7 @@ component NavItem inherits Rectangle {
         spacing: 3px;
         HorizontalLayout {
             alignment: center;
-            Icon { data: root.icon; color: root.icon-color; }
+            Icon { data: root.icon; color: root.icon-color; filled: root.icon == Icons.gameplay; }
         }
         Text {
             text: root.label;
@@ -216,20 +232,112 @@ component Nav inherits FocusScope {
     }
 }
 
-// A group of settings, labelled for assistive navigation.
-component Card inherits Rectangle {
-    in property <string> title;
-    background: Theme.raised;
-    border-radius: 10px;
+// A header button: an icon, and its text beside it when it has one (an
+// icon alone is named by its label); compact on a card's heading line.
+// Tab reaches it; Space or Return presses it.
+component IconButton inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> text;
+    in property <bool> compact;
+    // The icon's colour under the pointer (Quit's warns).
+    in property <brush> hover-icon-color: Theme.text;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.text != "" ? root.text : root.label;
+    accessible-action-default => { root.clicked(); }
+    forward-focus: focus;
+    width: root.text == "" ? root.height : content.preferred-width;
+    height: root.compact ? 26px : 34px;
+    border-radius: root.compact ? 6px : 8px;
+    background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
     border-width: 1px;
-    border-color: Theme.stroke;
-    accessible-role: groupbox;
-    accessible-label: root.title;
-    VerticalLayout {
-        padding: 14px;
-        padding-top: 12px;
+    border-color: touch.has-hover ? Theme.stroke : transparent;
+    animate background, border-color { duration: 140ms; easing: ease-out; }
+    content := HorizontalLayout {
+        padding-left: root.text == "" ? 8px : root.compact ? 8px : 10px;
+        padding-right: root.text == "" ? 8px : root.compact ? 10px : 13px;
+        spacing: root.compact ? 5px : 6px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                width: root.compact ? 14px : 18px;
+                height: root.compact ? 14px : 18px;
+                data: root.icon;
+                color: touch.has-hover ? root.hover-icon-color : Theme.text-secondary;
+            }
+        }
+        if root.text != "": Text {
+            text: root.text;
+            font-size: root.compact ? 12px : 12.5px;
+            color: touch.has-hover ? Theme.text : Theme.text-secondary;
+            vertical-alignment: center;
+            animate color { duration: 140ms; }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    // As the toolkit's Button: no area of its own, so a click does not focus it.
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        key-pressed(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: Rectangle {
+        border-radius: root.border-radius;
+        border-width: 1.5px;
+        border-color: Theme.accent;
+    }
+}
+
+// A group of settings, labelled for assistive navigation, and its heading
+// (if it has one) above it, with the heading's action (if it has one) at
+// the right of its line.
+component Card inherits VerticalLayout {
+    in property <string> title;
+    in property <string> heading;
+    in property <string> heading-action;
+    callback heading-action-clicked();
+    spacing: 7px;
+    padding-top: root.heading != "" ? 6px : 0px;
+    if root.heading != "": HorizontalLayout {
         spacing: 12px;
-        @children
+        Text {
+            text: root.heading;
+            font-size: 12px;
+            font-weight: 600;
+            color: Theme.text-secondary;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        if root.heading-action != "": IconButton {
+            compact: true;
+            icon: Icons.reset;
+            text: root.heading-action;
+            clicked => { root.heading-action-clicked(); }
+        }
+    }
+    Rectangle {
+        background: Theme.raised;
+        border-radius: 10px;
+        border-width: 1px;
+        border-color: Theme.stroke;
+        accessible-role: groupbox;
+        accessible-label: root.title;
+        VerticalLayout {
+            padding: 14px;
+            padding-top: 12px;
+            spacing: 12px;
+            @children
+        }
     }
 }
 
@@ -251,8 +359,9 @@ component Row inherits HorizontalLayout {
     }
 }
 
-// Dropdown selection is deliberate: clicks and arrow keys select, while wheel
-// input continues to the containing scroll view (including the open menu).
+// Dropdown selection is deliberate: clicks and arrow keys select (left and
+// right too while it is closed, as a button group's), while wheel input
+// continues to the containing scroll view (including the open menu).
 component Choice inherits FocusScope {
     in property <[string]> model;
     in-out property <int> current-index;
@@ -273,8 +382,8 @@ component Choice inherits FocusScope {
     min-height: 32px;
     vertical-stretch: 0;
     key-pressed(event) => {
-        if event.text == Key.UpArrow { root.pick(root.current-index - 1); return accept; }
-        if event.text == Key.DownArrow { root.pick(root.current-index + 1); return accept; }
+        if event.text == Key.UpArrow || event.text == Key.LeftArrow { root.pick(root.current-index - 1); return accept; }
+        if event.text == Key.DownArrow || event.text == Key.RightArrow { root.pick(root.current-index + 1); return accept; }
         if event.text == Key.Return || event.text == Key.Space { root.open(); return accept; }
         reject
     }
@@ -302,7 +411,10 @@ component Choice inherits FocusScope {
         close-policy: close-on-click-outside;
         forward-focus: popup-focus;
         popup-focus := FocusScope {
-            focus-changed-event => { root.expanded = self.has-focus; }
+            focus-changed-event => {
+                root.expanded = self.has-focus;
+                PadFocus.list-open = self.has-focus;
+            }
             key-pressed(event) => {
                 if event.text == Key.UpArrow { root.pick(root.current-index - 1); return accept; }
                 if event.text == Key.DownArrow { root.pick(root.current-index + 1); return accept; }
@@ -336,6 +448,7 @@ component Choice inherits FocusScope {
 component ToggleRow inherits Rectangle {
     in property <string> label;
     in-out property <bool> checked;
+    in property <bool> enabled: true;
     callback toggled(bool);
     function toggle() {
         root.checked = !root.checked;
@@ -352,6 +465,7 @@ component ToggleRow inherits Rectangle {
         animate background { duration: 140ms; easing: ease-out; }
     }
     row-touch := TouchArea {
+        enabled: root.enabled;
         mouse-cursor: pointer;
         clicked => { root.toggle(); }
     }
@@ -361,12 +475,12 @@ component ToggleRow inherits Rectangle {
             alignment: center;
             spacing: 2px;
             horizontal-stretch: 1;
-            Text { text: root.label; font-size: 13px; color: Theme.text; wrap: word-wrap; }
+            Text { text: root.label; font-size: 13px; color: root.enabled ? Theme.text : Theme.text-tertiary; wrap: word-wrap; }
         }
         VerticalLayout {
             alignment: center;
             horizontal-stretch: 0;
-            Switch { accessible-label: root.label; checked <=> root.checked; toggled => { root.toggled(self.checked); } }
+            Switch { accessible-label: root.label; enabled: root.enabled; checked <=> root.checked; toggled => { root.toggled(self.checked); } }
         }
     }
 }
@@ -384,8 +498,68 @@ component SliderRow inherits VerticalLayout {
     @children
 }
 
+// The toolkit's slider, ringed while it has the focus of keys or a gamepad
+// (its handle alone barely changes).
+component RingSlider {
+    in property <float> minimum <=> slider.minimum;
+    in property <float> maximum <=> slider.maximum;
+    in property <float> step <=> slider.step;
+    in-out property <float> value <=> slider.value;
+    callback changed <=> slider.changed;
+    callback released <=> slider.released;
+    forward-focus: slider;
+    accessible-role: none;
+    HorizontalLayout {
+        slider := Slider { accessible-label: root.accessible-label; }
+    }
+    if slider.has-focus && PadFocus.shown: Rectangle {
+        x: -6px;
+        y: -3px;
+        width: parent.width + 12px;
+        height: parent.height + 6px;
+        border-radius: 8px;
+        border-width: 1.5px;
+        border-color: Theme.accent;
+    }
+}
+
+// A whole number: its up and down arrows step it, and so do a gamepad's
+// left and right (lib.rs gives them as those arrows while it has the focus).
+component NumberBox inherits SpinBox {
+    changed has-focus => { PadFocus.number-focused = self.has-focus; }
+}
+
+// A button that acts for as long as it is held: by the pointer, or by
+// Return or Space (a gamepad's South) while it has the focus.
+component HoldButton inherits FocusScope {
+    in property <string> text;
+    out property <bool> held: button.pressed || root.key-held;
+    private property <bool> key-held;
+    private property <bool> focused: button.has-focus;
+    changed focused => { if !self.focused { root.key-held = false; } }
+    focus-on-click: false;
+    focus-on-tab-navigation: false;
+    forward-focus: button;
+    // The button takes the press too (it has nothing to do on a click).
+    capture-key-pressed(event) => {
+        if event.text == Key.Return || event.text == Key.Space { root.key-held = true; }
+        reject
+    }
+    key-released(event) => {
+        if root.key-held && (event.text == Key.Return || event.text == Key.Space) {
+            root.key-held = false;
+            return accept;
+        }
+        reject
+    }
+    HorizontalLayout {
+        button := Button { text: root.text; }
+    }
+}
+
 // A short choice of a few options side by side; the arrow keys move it once
-// it has the focus.
+// it has the focus. On a panel too narrow for it an option of several words
+// wraps them.
 component Segmented inherits FocusScope {
     in property <[string]> options;
     in-out property <int> current;
@@ -428,7 +602,9 @@ component Segmented inherits FocusScope {
                 accessible-checked: index == root.current;
                 accessible-enabled: root.enabled;
                 accessible-action-default => { root.pick(index); }
-                min-width: max(52px, label.preferred-width + 20px);
+                min-width: max(52px, label.min-width + 20px);
+                preferred-width: max(52px, label.preferred-width + 20px);
+                min-height: label.preferred-height + 10px;
                 border-radius: 6px;
                 background: index == root.current ? (touch.has-hover && root.enabled ? #ffffff2e : #ffffff26)
                     : touch.pressed && root.enabled ? Theme.pressed : touch.has-hover && root.enabled ? Theme.hover : transparent;
@@ -438,10 +614,13 @@ component Segmented inherits FocusScope {
                 drop-shadow-offset-y: 1px;
                 animate background { duration: 140ms; easing: ease-out; }
                 label := Text {
+                    x: 10px;
+                    width: parent.width - 20px;
                     text: option;
                     font-size: 12.5px;
                     font-weight: index == root.current ? 600 : 400;
                     color: !root.enabled ? Theme.text-tertiary : index == root.current || touch.has-hover ? Theme.text : Theme.text-secondary;
+                    wrap: word-wrap;
                     horizontal-alignment: center;
                     vertical-alignment: center;
                     animate color { duration: 140ms; }
@@ -452,65 +631,6 @@ component Segmented inherits FocusScope {
                 }
             }
         }
-    }
-}
-
-// A header button: an icon, and its text beside it when it has one (an
-// icon alone is named by its label). Tab reaches it; Space or Return presses it.
-component IconButton inherits Rectangle {
-    in property <string> icon;
-    in property <string> label;
-    in property <string> text;
-    // The icon's colour under the pointer (Quit's warns).
-    in property <brush> hover-icon-color: Theme.text;
-    callback clicked();
-    accessible-role: button;
-    accessible-label: root.text != "" ? root.text : root.label;
-    accessible-action-default => { root.clicked(); }
-    forward-focus: focus;
-    width: root.text == "" ? 34px : content.preferred-width;
-    height: 34px;
-    border-radius: 8px;
-    background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
-    border-width: 1px;
-    border-color: touch.has-hover ? Theme.stroke : transparent;
-    animate background, border-color { duration: 140ms; easing: ease-out; }
-    content := HorizontalLayout {
-        padding-left: root.text == "" ? 8px : 10px;
-        padding-right: root.text == "" ? 8px : 13px;
-        spacing: 6px;
-        VerticalLayout {
-            alignment: center;
-            Icon { data: root.icon; color: touch.has-hover ? root.hover-icon-color : Theme.text-secondary; }
-        }
-        if root.text != "": Text {
-            text: root.text;
-            font-size: 12.5px;
-            color: touch.has-hover ? Theme.text : Theme.text-secondary;
-            vertical-alignment: center;
-            animate color { duration: 140ms; }
-        }
-    }
-    touch := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
-    }
-    // As the toolkit's Button: no area of its own, so a click does not focus it.
-    focus := FocusScope {
-        x: 0;
-        width: 0;
-        key-pressed(event) => {
-            if event.text == Key.Space || event.text == Key.Return {
-                root.clicked();
-                return accept;
-            }
-            reject
-        }
-    }
-    if focus.has-focus: Rectangle {
-        border-radius: root.border-radius;
-        border-width: 1.5px;
-        border-color: Theme.accent;
     }
 }
 
@@ -658,9 +778,13 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-profile;
     in-out property <int> gfx-scale;
     in-out property <int> gfx-quality;
-    in-out property <int> gfx-rate;
     in-out property <bool> gfx-interpolation;
     in-out property <bool> gfx-widescreen;
+    // The picture forced to 4:3 (its shape set instead of Widescreen's
+    // framing).
+    in-out property <bool> gfx-force-4x3;
+    // The party's full-resolution sprites in large-scale fields.
+    in-out property <bool> gfx-full-size-sprites;
     // The field camera pulled back, percent (100-500).
     in-out property <int> gfx-zoom-out: 100;
     in-out property <int> gfx-filter-world;
@@ -694,17 +818,19 @@ export component SettingsPanel inherits Window {
     // browser to persist (Request browser persistence; the Rust side lists
     // the operations offered).
     in property <bool> browser-storage;
-    in property <string> gfx-status;
     private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
     private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];
     in-out property <bool> pause-on-focus-loss;
-    // The status line: 0 a note, 1 something done, 2 a problem.
-    in property <string> status;
-    in property <int> status-kind;
+    // What failed (an operation, a change, the game), in the error bar
+    // until the next success or Dismiss; none, no bar.
+    in-out property <string> error;
+    // The app's version, in About.
+    in property <string> version;
     // The host offers first-person inspection (the game controls list it),
     // its touch controls show (a finger dragged on the picture looks), and
     // it plays in a headset (the underhand grab and the controllers' Back,
-    // their right stick's click, toggle it; their right stick turns it).
+    // their right stick's click, toggle it; their right stick turns it; that
+    // Back held hides a dialogue, as Select does elsewhere).
     in property <bool> first-person;
     in property <bool> first-person-touch;
     in property <bool> first-person-headset;
@@ -744,9 +870,24 @@ export component SettingsPanel inherits Window {
         { label: "Time", icon: Icons.time },
         { label: "Saves", icon: Icons.saves },
         { label: "Gameplay", icon: Icons.gameplay },
+        { label: "Debug", icon: Icons.bug },
         { label: "About", icon: Icons.about },
     ];
     out property <int> section-count: root.sections.length;
+    in property <bool> debug-available;
+    in property <bool> debug-busy;
+    in property <string> debug-status: "Boot a game to use Debug.";
+    in-out property <int> debug-map;
+    in-out property <int> debug-entry;
+    in-out property <int> debug-formation: 3;
+    in-out property <int> debug-battle-file;
+    in-out property <[int]> debug-party: [0, 1, 2];
+    in-out property <[int]> debug-gears: [0, 0, 0];
+    in-out property <int> debug-menu;
+    in-out property <int> debug-parameter;
+    in-out property <int> debug-movie;
+    in-out property <int> debug-movie-kind: 1;
+    callback debug-requested(int);
     in property <string> time-status: "Boot a game to use rewind.";
     in property <string> storage-status;
     in property <bool> fast-forward;
@@ -758,10 +899,11 @@ export component SettingsPanel inherits Window {
     in-out property <int> mouse-sensitivity: 50;
     in-out property <int> mouse-deadzone: 40;
     in-out property <bool> run-by-default;
+    // The mouse cursor hides over the game while the mouse is still.
+    in-out property <bool> hide-idle-cursor: true;
     // Where the field's random battles happen (xem_settings::RandomBattles:
-    // 0 not while platforming, 1 the original's), and what that means.
+    // 0 not while platforming, 1 the original's).
     in-out property <int> random-battles;
-    in property <string> random-battles-note;
     // How often the ones left on come (xem_settings::EncounterRate: 0
     // Original, 1 Half).
     in-out property <int> encounter-rate;
@@ -769,6 +911,10 @@ export component SettingsPanel inherits Window {
     // 1 Fast, 2 Instant), auto-advance dialogue and its wait on each page
     // (vertical blanks), and whether movies can be skipped.
     in-out property <int> text-speed;
+    // The language of the game's text (xem_core::locale::Language::ALL, each
+    // named in itself).
+    in property <[string]> languages: ["English"];
+    in-out property <int> language;
     in-out property <bool> auto-advance;
     in-out property <int> auto-advance-dwell: 120;
     in-out property <bool> movie-skip;
@@ -791,7 +937,13 @@ export component SettingsPanel inherits Window {
     private property <bool> rewind-interval-focused;
     private property <bool> rewind-history-focused;
     private property <bool> game-editor-focused;
+    private property <bool> game-pad-editor-focused;
     out property <bool> text-editor-focused: keyboard-editor-focused || gamepad-editor-focused || rewind-interval-focused || rewind-history-focused || game-editor-focused;
+    // The gamepad binding field that has the focus (1 a shortcut's chord, 2 a
+    // game action's inputs, 0 neither): a gamepad's South on it takes the
+    // next buttons pressed together (lib.rs), saying so while it waits.
+    out property <int> binding-field: root.gamepad-editor-focused ? 1 : root.game-pad-editor-focused ? 2 : 0;
+    in-out property <bool> capturing-buttons;
     callback action-selected(int);
     callback binding-edited(int, string, string);
     callback game-action-selected(int);
@@ -805,9 +957,10 @@ export component SettingsPanel inherits Window {
     callback mouse-sensitivity-edited(int);
     callback mouse-deadzone-edited(int);
     callback run-by-default-edited(bool);
+    callback hide-idle-cursor-edited(bool);
     callback random-battles-edited(int);
     // A gameplay option by name (encounter-rate, text-speed, auto-advance,
-    // auto-advance-dwell, movie-skip) and value.
+    // auto-advance-dwell, movie-skip, language) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
@@ -823,11 +976,11 @@ export component SettingsPanel inherits Window {
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
-    // A graphics choice by name (renderer, profile, scale, quality, rate, interpolation,
-    // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
-    // xr-distance, xr-width, xr-dof, xr-view, xr-scale, xr-height,
-    // xr-table-distance, xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset)
-    // and value.
+    // A graphics choice by name (renderer, profile, profile-reset, scale,
+    // quality, full-size-sprites, interpolation, widescreen, force-4x3,
+    // zoom-out, filter-world, filter-sprites, filter-interface, xr-distance,
+    // xr-width, xr-dof, xr-view, xr-scale, xr-height, xr-table-distance,
+    // xr-tilt, xr-turns, xr-passthrough, xr-diorama-reset) and value.
     callback graphics-edited(string, int);
     // Recenter: the headset's view placed in front of the head again.
     callback xr-recenter-requested();
@@ -847,13 +1000,21 @@ export component SettingsPanel inherits Window {
         root.rewind-interval-focused = false;
         root.rewind-history-focused = false;
         root.game-editor-focused = false;
+        root.game-pad-editor-focused = false;
         root.rewind-held(false);
+    }
+
+    // The focus just before the section's first control: the next Tab (a
+    // gamepad's next step) reaches that control.
+    public function focus-section() {
+        section-start.focus();
     }
 
     function select-game-action(index: int) {
         if index >= -1 && index < root.game-bindings.length && index != root.selected-game-action {
             root.selected-game-action = index;
             root.game-editor-focused = false;
+            root.game-pad-editor-focused = false;
             root.game-action-selected(index);
         }
     }
@@ -957,6 +1118,13 @@ export component SettingsPanel inherits Window {
                         }
                     }
                     if !root.wide-layout: Divider { }
+                    // Takes the focus only when asked (focus-section).
+                    section-start := FocusScope {
+                        height: 0px;
+                        focus-on-click: false;
+                        focus-on-tab-navigation: false;
+                        accessible-role: none;
+                    }
                     section-scroll := ScrollView {
                         accessible-role: tab-panel;
                         accessible-label: root.sections[root.selected-section].label;
@@ -980,7 +1148,7 @@ export component SettingsPanel inherits Window {
                                 SliderRow {
                                     label: "Master volume";
                                     value-text: "\{round(root.master-volume)}%";
-                                    Slider { accessible-label: "Master volume"; minimum: 0; maximum: 100; value <=> root.master-volume; changed(value) => { root.master-volume-edited(round(value)); } }
+                                    RingSlider { accessible-label: "Master volume"; minimum: 0; maximum: 100; step: 5; value <=> root.master-volume; changed(value) => { root.master-volume-edited(round(value)); } }
                                 }
                                 Divider { }
                                 Row {
@@ -1001,7 +1169,7 @@ export component SettingsPanel inherits Window {
                                 if root.audio-output == 3: SliderRow {
                                     label: "Music immersion";
                                     value-text: "\{round(root.binaural-immersion)}%";
-                                    Slider { accessible-label: "Music immersion"; minimum: 0; maximum: 100; value <=> root.binaural-immersion; changed(value) => { root.binaural-edited("immersion", round(value)); } }
+                                    RingSlider { accessible-label: "Music immersion"; minimum: 0; maximum: 100; step: 5; value <=> root.binaural-immersion; changed(value) => { root.binaural-edited("immersion", round(value)); } }
                                 }
                                 if root.audio-output == 3: ToggleRow {
                                     label: "VR: Stationary music";
@@ -1028,6 +1196,12 @@ export component SettingsPanel inherits Window {
                                 Row {
                                     label: "Scale";
                                     Choice { accessible-label: "Scale"; width: 150px; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Force 4:3";
+                                    checked <=> root.gfx-force-4x3;
+                                    toggled(on) => { root.graphics-edited("force-4x3", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 Row {
@@ -1058,50 +1232,35 @@ export component SettingsPanel inherits Window {
                                     label: "HD-2D quality";
                                     Choice { accessible-label: "HD-2D quality"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
                                 }
-                                if root.gfx-status != "": Text { text: root.gfx-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
-                            }
-                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
-                                title: "Motion and framing";
-                                Row {
-                                    label: "Presentation";
-                                    Choice { accessible-label: "Presentation rate"; width: 150px; model: ["Every refresh", "Game frames"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
-                                }
                                 Divider { }
                                 ToggleRow {
-                                    label: "Interpolate motion";
-                                    checked <=> root.gfx-interpolation;
-                                    toggled(on) => { root.graphics-edited("interpolation", on ? 1 : 0); }
-                                }
-                                Divider { }
-                                ToggleRow {
-                                    label: "Wider framing";
-                                    checked <=> root.gfx-widescreen;
-                                    toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
-                                }
-                                Divider { }
-                                SliderRow {
-                                    label: "Zoom out";
-                                    value-text: "\{root.gfx-zoom-out / 100}x";
-                                    Slider {
-                                        accessible-label: "Field camera zoom out (mouse wheel)";
-                                        minimum: 100;
-                                        maximum: 500;
-                                        value: root.gfx-zoom-out;
-                                        changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
-                                    }
+                                    label: "Full-resolution sprites in large-scale areas";
+                                    checked <=> root.gfx-full-size-sprites;
+                                    toggled(on) => { root.graphics-edited("full-size-sprites", on ? 1 : 0); }
                                 }
                             }
+                            // The selected profile's effects under its name;
+                            // Reset Defaults gives them (and Custom's limits)
+                            // their default levels.
                             if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): Card {
                                 title: root.gfx-profile == 1 ? "HD-2D effects" : "Effects";
+                                heading: root.gfx-profile == 1 ? "HD-2D" : "Custom";
+                                heading-action: "Reset Defaults";
+                                heading-action-clicked => { root.graphics-edited("profile-reset", 0); }
 
                                 for name[index] in root.effect-names: HorizontalLayout {
+                                    // A slider moved by hand keeps its own value,
+                                    // so a reset or another profile's level moves it.
+                                    property <int> level: root.gfx-effects[index];
+                                    changed level => { slider.value = self.level; }
                                     spacing: 12px;
                                     Text { text: name; font-size: 12.5px; color: Theme.text-secondary; vertical-alignment: center; min-width: 118px; horizontal-stretch: 0; }
-                                    Slider {
+                                    slider := RingSlider {
                                         accessible-label: name;
                                         minimum: index == 8 ? -100 : 0;
                                         maximum: 100;
                                         value: root.gfx-effects[index];
+                                        step: 5;
                                         released(value) => { root.effect-edited(index, round(value)); }
                                     }
                                     Text { text: root.gfx-effects[index]; font-size: 12px; color: Theme.text; vertical-alignment: center; horizontal-alignment: right; min-width: 30px; horizontal-stretch: 0; }
@@ -1111,13 +1270,47 @@ export component SettingsPanel inherits Window {
                                 title: "Original limits";
 
                                 for name[index] in root.fidelity-names: ToggleRow {
+                                    // As the effects' sliders: a switch toggled
+                                    // by hand keeps its own state.
+                                    property <bool> limit: root.gfx-fidelity[index];
+                                    changed limit => { self.checked = self.limit; }
                                     label: name;
                                     checked: root.gfx-fidelity[index];
                                     toggled(on) => { root.fidelity-edited(index, on); }
                                 }
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1: Card {
+                                title: "Motion and framing";
+                                ToggleRow {
+                                    label: "High Framerate";
+                                    checked <=> root.gfx-interpolation;
+                                    toggled(on) => { root.graphics-edited("interpolation", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Widescreen";
+                                    // Force 4:3 sets the shape instead.
+                                    enabled: !root.gfx-force-4x3;
+                                    checked <=> root.gfx-widescreen;
+                                    toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                SliderRow {
+                                    label: "Zoom out";
+                                    value-text: "\{root.gfx-zoom-out / 100}x";
+                                    RingSlider {
+                                        accessible-label: "Field camera zoom out (mouse wheel or right stick up/down)";
+                                        minimum: 100;
+                                        maximum: 500;
+                                        value: root.gfx-zoom-out;
+                                        step: 25;
+                                        changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
+                                    }
+                                }
+                            }
+                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
                                 title: "Filtering";
+                                heading: "Texture Filtering";
                                 Row {
                                     label: "World";
                                     Segmented { accessible-label: "World filtering"; options: ["Nearest", "Linear"]; current <=> root.gfx-filter-world; selected(index) => { root.graphics-edited("filter-world", index); } }
@@ -1137,7 +1330,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 1: Card {
                                 title: "Headset";
-                                Text { text: "VR"; font-size: 12px; font-weight: 600; color: Theme.text-secondary; }
+                                heading: "VR";
 
                                 Row {
                                     label: "View";
@@ -1149,7 +1342,7 @@ export component SettingsPanel inherits Window {
                                     label: root.gfx-xr-view == 1 ? "Screen distance" : "Distance";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        SpinBox { accessible-label: "Headset screen distance in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-distance; edited(value) => { root.graphics-edited("xr-distance", value); } }
+                                        NumberBox { accessible-label: "Headset screen distance in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-distance; edited(value) => { root.graphics-edited("xr-distance", value); } }
                                         Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
                                 }
@@ -1158,7 +1351,7 @@ export component SettingsPanel inherits Window {
                                     label: root.gfx-xr-view == 1 ? "Screen width" : "Width";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        SpinBox { accessible-label: "Headset screen width in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
+                                        NumberBox { accessible-label: "Headset screen width in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
                                         Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
                                 }
@@ -1166,11 +1359,12 @@ export component SettingsPanel inherits Window {
                                 if root.gfx-xr-view == 1: SliderRow {
                                     label: "Diorama scale";
                                     value-text: "\{root.gfx-xr-scale}%";
-                                    Slider {
+                                    RingSlider {
                                         accessible-label: "Diorama scale";
                                         minimum: 25;
                                         maximum: 400;
                                         value: root.gfx-xr-scale;
+                                        step: 5;
                                         changed(value) => { root.graphics-edited("xr-scale", round(value / 5) * 5); }
                                     }
                                 }
@@ -1178,7 +1372,7 @@ export component SettingsPanel inherits Window {
                                     label: "Table height";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        SpinBox { accessible-label: "Diorama table height from the head in centimetres"; width: 104px; minimum: -100; maximum: 30; step-size: 5; value <=> root.gfx-xr-height; edited(value) => { root.graphics-edited("xr-height", value); } }
+                                        NumberBox { accessible-label: "Diorama table height from the head in centimetres"; width: 104px; minimum: -100; maximum: 30; step-size: 5; value <=> root.gfx-xr-height; edited(value) => { root.graphics-edited("xr-height", value); } }
                                         Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
                                 }
@@ -1186,14 +1380,14 @@ export component SettingsPanel inherits Window {
                                     label: "Table distance";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        SpinBox { accessible-label: "Diorama table distance in centimetres"; width: 104px; minimum: 30; maximum: 200; step-size: 5; value <=> root.gfx-xr-table-distance; edited(value) => { root.graphics-edited("xr-table-distance", value); } }
+                                        NumberBox { accessible-label: "Diorama table distance in centimetres"; width: 104px; minimum: 30; maximum: 200; step-size: 5; value <=> root.gfx-xr-table-distance; edited(value) => { root.graphics-edited("xr-table-distance", value); } }
                                         Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
                                 }
                                 if root.gfx-xr-view == 1: SliderRow {
                                     label: "Table tilt";
                                     value-text: "\{root.gfx-xr-tilt}°";
-                                    Slider {
+                                    RingSlider {
                                         accessible-label: "Diorama table tilt";
                                         minimum: 0;
                                         maximum: 45;
@@ -1242,22 +1436,30 @@ export component SettingsPanel inherits Window {
                                 if root.mouse-camera: SliderRow {
                                     label: "Mouse sensitivity";
                                     value-text: "\{root.mouse-sensitivity}%";
-                                    Slider {
+                                    RingSlider {
                                         accessible-label: "Mouse sensitivity";
                                         minimum: 10; maximum: 200;
                                         value: root.mouse-sensitivity;
+                                        step: 5;
                                         changed(value) => { root.mouse-sensitivity-edited(round(value / 5) * 5); }
                                     }
                                 }
                                 if root.mouse-camera: SliderRow {
                                     label: "Mouse deadzone";
                                     value-text: "\{root.mouse-deadzone} px";
-                                    Slider {
+                                    RingSlider {
                                         accessible-label: "Mouse deadzone";
                                         minimum: 0; maximum: 100;
                                         value: root.mouse-deadzone;
+                                        step: 5;
                                         changed(value) => { root.mouse-deadzone-edited(round(value)); }
                                     }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Hide the cursor when the mouse is idle";
+                                    checked <=> root.hide-idle-cursor;
+                                    toggled(on) => { root.hide-idle-cursor-edited(on); }
                                 }
                                 Divider { }
                                 ToggleRow {
@@ -1269,20 +1471,9 @@ export component SettingsPanel inherits Window {
                             if root.selected-section == 2: Card {
                                 title: "Game controls";
 
-                                game-actions := FocusScope {
+                                Rectangle {
                                     accessible-role: list;
                                     accessible-label: "Game controls";
-                                    key-pressed(event) => {
-                                        if event.text == Key.UpArrow {
-                                            root.select-game-action(max(0, root.selected-game-action - 1));
-                                            return accept;
-                                        }
-                                        if event.text == Key.DownArrow {
-                                            root.select-game-action(root.selected-game-action + 1);
-                                            return accept;
-                                        }
-                                        reject
-                                    }
                                     VerticalLayout {
                                         spacing: 1px;
                                         for binding[index] in root.game-bindings: Rectangle {
@@ -1294,72 +1485,103 @@ export component SettingsPanel inherits Window {
                                             accessible-action-default => { root.select-game-action(index); }
                                             border-radius: 7px;
                                             background: index == root.selected-game-action ? Theme.selected : game-touch.pressed ? Theme.pressed : game-touch.has-hover ? Theme.hover : transparent;
-                                            border-width: index == root.selected-game-action ? 1px : 0px;
-                                            border-color: Theme.stroke;
+                                            border-width: index == root.selected-game-action || game-focus.has-focus ? 1px : 0px;
+                                            border-color: game-focus.has-focus ? Theme.accent : Theme.stroke;
                                             animate background { duration: 140ms; easing: ease-out; }
                                             game-touch := TouchArea {
                                                 mouse-cursor: index == root.selected-game-action ? MouseCursor.default : MouseCursor.pointer;
                                                 clicked => { root.select-game-action(index); }
                                             }
-                                            VerticalLayout {
-                                                HorizontalLayout {
-                                                    min-height: 30px;
-                                                    padding-left: 10px;
-                                                    padding-right: 8px;
-                                                    spacing: 6px;
-                                                    Text {
-                                                        text: binding.name;
-                                                        font-size: 12.5px;
-                                                        font-weight: index == root.selected-game-action ? 600 : 400;
-                                                        color: index == root.selected-game-action || game-touch.has-hover ? Theme.text : Theme.text-secondary;
-                                                        vertical-alignment: center;
-                                                        horizontal-stretch: 1;
-                                                        overflow: elide;
+                                            // Each row is a stop for Tab (and a gamepad's up
+                                            // and down): Return or Space opens its editor or
+                                            // closes it, and Escape (a gamepad's East) from
+                                            // anywhere in it closes it.
+                                            game-focus := FocusScope {
+                                                focus-on-click: false;
+                                                key-pressed(event) => {
+                                                    if event.text == Key.Return || event.text == Key.Space {
+                                                        root.select-game-action(index == root.selected-game-action ? -1 : index);
+                                                        return accept;
                                                     }
-                                                    VerticalLayout { alignment: center; Keycap { text: binding.keyboard; } }
-                                                    VerticalLayout { alignment: center; Keycap { text: binding.gamepad; } }
+                                                    if event.text == Key.Escape && index == root.selected-game-action {
+                                                        root.select-game-action(-1);
+                                                        self.focus();
+                                                        PadFocus.backed = true;
+                                                        return accept;
+                                                    }
+                                                    reject
                                                 }
-                                                if index == root.selected-game-action: VerticalLayout {
-                                                    padding: 10px;
-                                                    padding-top: 2px;
-                                                    spacing: 8px;
-                                                    Divider { }
+                                                VerticalLayout {
                                                     HorizontalLayout {
-                                                        spacing: 8px;
-                                                        Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
-                                                        LineEdit {
-                                                            accessible-label: "Game keys";
-                                                            text <=> root.game-keys;
-                                                            changed has-focus => { root.game-editor-focused = self.has-focus; }
-                                                            accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                        min-height: 30px;
+                                                        padding-left: 10px;
+                                                        padding-right: 8px;
+                                                        spacing: 6px;
+                                                        Text {
+                                                            text: binding.name;
+                                                            font-size: 12.5px;
+                                                            font-weight: index == root.selected-game-action ? 600 : 400;
+                                                            color: index == root.selected-game-action || game-touch.has-hover ? Theme.text : Theme.text-secondary;
+                                                            vertical-alignment: center;
+                                                            horizontal-stretch: 1;
+                                                            overflow: elide;
                                                         }
+                                                        VerticalLayout { alignment: center; Keycap { text: binding.keyboard; } }
+                                                        VerticalLayout { alignment: center; Keycap { text: binding.gamepad; } }
                                                     }
-                                                    HorizontalLayout {
+                                                    if index == root.selected-game-action: VerticalLayout {
+                                                        padding: 10px;
+                                                        padding-top: 2px;
                                                         spacing: 8px;
-                                                        Text { text: "Gamepad"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
-                                                        LineEdit {
-                                                            accessible-label: "Game gamepad inputs";
-                                                            text <=> root.game-buttons;
-                                                            changed has-focus => { root.game-editor-focused = self.has-focus; }
-                                                            accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                        Divider { }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                            LineEdit {
+                                                                accessible-label: "Game keys";
+                                                                text <=> root.game-keys;
+                                                                changed has-focus => { root.game-editor-focused = self.has-focus; }
+                                                                accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                            }
                                                         }
-                                                    }
-                                                    HorizontalLayout {
-                                                        spacing: 8px;
-                                                        Text { text: "Mouse"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
-                                                        LineEdit {
-                                                            accessible-label: "Game mouse buttons";
-                                                            text <=> root.game-mouse;
-                                                            changed has-focus => { root.game-editor-focused = self.has-focus; }
-                                                            accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            Text { text: "Gamepad"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                            LineEdit {
+                                                                accessible-label: "Game gamepad inputs";
+                                                                text <=> root.game-buttons;
+                                                                placeholder-text: root.capturing-buttons && self.has-focus ? "Press buttons…" : "";
+                                                                changed has-focus => {
+                                                                    root.game-editor-focused = self.has-focus;
+                                                                    root.game-pad-editor-focused = self.has-focus;
+                                                                }
+                                                                accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                            }
                                                         }
-                                                    }
-                                                    HorizontalLayout {
-                                                        spacing: 8px;
-                                                        alignment: end;
-                                                        Button { text: "Cancel"; clicked => { root.select-game-action(-1); } }
-                                                        Button { text: "Clear"; clicked => { root.game-binding-edited(root.selected-game-action, "", "", ""); } }
-                                                        Button { text: "Save"; primary: true; clicked => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); } }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            Text { text: "Mouse"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                            LineEdit {
+                                                                accessible-label: "Game mouse buttons";
+                                                                text <=> root.game-mouse;
+                                                                changed has-focus => { root.game-editor-focused = self.has-focus; }
+                                                                accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                            }
+                                                        }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            alignment: end;
+                                                            // Keys' focus (a click gives none) returns to the row.
+                                                            Button {
+                                                                text: "Cancel";
+                                                                clicked => {
+                                                                    if self.has-focus { game-focus.focus(); }
+                                                                    root.select-game-action(-1);
+                                                                }
+                                                            }
+                                                            Button { text: "Clear"; clicked => { root.game-binding-edited(root.selected-game-action, "", "", ""); } }
+                                                            Button { text: "Save"; primary: true; clicked => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); } }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1373,6 +1595,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 2: Card {
                                 title: "Headsets and touch screens";
+                                heading: "VR / Touchscreen";
 
                                 ToggleRow {
                                     label: "Hand gestures";
@@ -1411,6 +1634,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 2: Card {
                                 title: "App keys and views";
+                                heading: "Global";
                                 if root.first-person: ControlRow {
                                     action: "First-person view (in a field)";
                                     inputs: root.first-person-headset ? ["Underhand grab", "Right stick click"] : ["Select", "R3"];
@@ -1422,26 +1646,24 @@ export component SettingsPanel inherits Window {
                                         ? (root.first-person-touch ? ["Arrows", "Right stick", "Mouse", "Drag"] : ["Arrows", "Right stick", "Mouse"])
                                         : (root.first-person-touch ? ["Arrows", "Right stick", "Drag"] : ["Arrows", "Right stick"]);
                                 }
+                                ControlRow {
+                                    action: "Hide dialogue (held)";
+                                    inputs: root.first-person-headset ? ["Right stick click"] : ["Select"];
+                                }
                                 ControlRow { action: "Settings"; inputs: ["Esc", "Back+Start"]; }
+                                // A gamepad in the panel (lib.rs `SettingsUi::gamepad`);
+                                // a headset's controllers point at it instead.
+                                if !root.in-headset: ControlRow { action: "In Settings: move, change"; inputs: ["D-pad", "Left stick"]; }
+                                if !root.in-headset: ControlRow { action: "In Settings: choose, go back"; inputs: ["South", "East"]; }
+                                if !root.in-headset: ControlRow { action: "In Settings: sections"; inputs: ["L1", "R1"]; }
                             }
                             // Shortcuts
                             if root.selected-section == 3: Card {
                                 title: "App shortcuts";
 
-                                actions := FocusScope {
+                                Rectangle {
                                     accessible-role: list;
                                     accessible-label: "App shortcuts";
-                                    key-pressed(event) => {
-                                        if event.text == Key.UpArrow {
-                                            root.select-action(root.selected-action - 1);
-                                            return accept;
-                                        }
-                                        if event.text == Key.DownArrow {
-                                            root.select-action(root.selected-action + 1);
-                                            return accept;
-                                        }
-                                        reject
-                                    }
                                     VerticalLayout {
                                         spacing: 1px;
                                         for binding[index] in root.bindings: Rectangle {
@@ -1454,64 +1676,89 @@ export component SettingsPanel inherits Window {
                                             border-radius: 7px;
                                             // The open shortcut and its editor are one piece.
                                             background: index == root.selected-action ? Theme.selected : row-touch.pressed ? Theme.pressed : row-touch.has-hover ? Theme.hover : transparent;
-                                            border-width: index == root.selected-action ? 1px : 0px;
-                                            border-color: Theme.stroke;
+                                            border-width: index == root.selected-action || row-focus.has-focus ? 1px : 0px;
+                                            border-color: row-focus.has-focus ? Theme.accent : Theme.stroke;
                                             animate background { duration: 140ms; easing: ease-out; }
                                             // Beneath the editor's fields and buttons, which take their own presses.
                                             row-touch := TouchArea {
                                                 mouse-cursor: index == root.selected-action ? MouseCursor.default : MouseCursor.pointer;
                                                 clicked => { root.select-action(index); }
                                             }
-                                            VerticalLayout {
-                                                HorizontalLayout {
-                                                    min-height: 32px;
-                                                    padding-left: 10px;
-                                                    padding-right: 8px;
-                                                    spacing: 6px;
-                                                    Text {
-                                                        text: binding.name;
-                                                        font-size: 12.5px;
-                                                        font-weight: index == root.selected-action ? 600 : 400;
-                                                        color: index == root.selected-action || row-touch.has-hover ? Theme.text : Theme.text-secondary;
-                                                        vertical-alignment: center;
-                                                        horizontal-stretch: 1;
-                                                        overflow: elide;
-                                                        animate color { duration: 140ms; }
+                                            // A stop for Tab (and a gamepad's up and down), as
+                                            // the game controls' rows.
+                                            row-focus := FocusScope {
+                                                focus-on-click: false;
+                                                key-pressed(event) => {
+                                                    if event.text == Key.Return || event.text == Key.Space {
+                                                        root.select-action(index == root.selected-action ? -1 : index);
+                                                        return accept;
                                                     }
-                                                    VerticalLayout { alignment: center; Keycap { text: binding.keyboard; } }
-                                                    VerticalLayout { alignment: center; Keycap { text: binding.gamepad; } }
+                                                    if event.text == Key.Escape && index == root.selected-action {
+                                                        root.select-action(-1);
+                                                        self.focus();
+                                                        PadFocus.backed = true;
+                                                        return accept;
+                                                    }
+                                                    reject
                                                 }
-                                                if index == root.selected-action: VerticalLayout {
-                                                    padding: 10px;
-                                                    padding-top: 2px;
-                                                    spacing: 8px;
-                                                    Divider { }
+                                                VerticalLayout {
                                                     HorizontalLayout {
-                                                        spacing: 8px;
-                                                        Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
-                                                        LineEdit {
-                                                            accessible-label: "Keyboard binding";
-                                                            text <=> root.keyboard-binding;
-                                                            changed has-focus => { root.keyboard-editor-focused = self.has-focus; }
-                                                            accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
+                                                        min-height: 32px;
+                                                        padding-left: 10px;
+                                                        padding-right: 8px;
+                                                        spacing: 6px;
+                                                        Text {
+                                                            text: binding.name;
+                                                            font-size: 12.5px;
+                                                            font-weight: index == root.selected-action ? 600 : 400;
+                                                            color: index == root.selected-action || row-touch.has-hover ? Theme.text : Theme.text-secondary;
+                                                            vertical-alignment: center;
+                                                            horizontal-stretch: 1;
+                                                            overflow: elide;
+                                                            animate color { duration: 140ms; }
                                                         }
+                                                        VerticalLayout { alignment: center; Keycap { text: binding.keyboard; } }
+                                                        VerticalLayout { alignment: center; Keycap { text: binding.gamepad; } }
                                                     }
-                                                    HorizontalLayout {
+                                                    if index == root.selected-action: VerticalLayout {
+                                                        padding: 10px;
+                                                        padding-top: 2px;
                                                         spacing: 8px;
-                                                        Text { text: "Buttons"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
-                                                        LineEdit {
-                                                            accessible-label: "Gamepad binding";
-                                                            text <=> root.gamepad-binding;
-                                                            changed has-focus => { root.gamepad-editor-focused = self.has-focus; }
-                                                            accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
+                                                        Divider { }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                            LineEdit {
+                                                                accessible-label: "Keyboard binding";
+                                                                text <=> root.keyboard-binding;
+                                                                changed has-focus => { root.keyboard-editor-focused = self.has-focus; }
+                                                                accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
+                                                            }
                                                         }
-                                                    }
-                                                    HorizontalLayout {
-                                                        spacing: 8px;
-                                                        alignment: end;
-                                                        Button { text: "Cancel"; clicked => { root.select-action(-1); } }
-                                                        Button { text: "Clear"; clicked => { root.binding-edited(root.selected-action, "", ""); } }
-                                                        Button { text: "Save shortcut"; primary: true; clicked => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); } }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            Text { text: "Buttons"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                            LineEdit {
+                                                                accessible-label: "Gamepad binding";
+                                                                text <=> root.gamepad-binding;
+                                                                placeholder-text: root.capturing-buttons && self.has-focus ? "Press buttons…" : "";
+                                                                changed has-focus => { root.gamepad-editor-focused = self.has-focus; }
+                                                                accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
+                                                            }
+                                                        }
+                                                        HorizontalLayout {
+                                                            spacing: 8px;
+                                                            alignment: end;
+                                                            Button {
+                                                                text: "Cancel";
+                                                                clicked => {
+                                                                    if self.has-focus { row-focus.focus(); }
+                                                                    root.select-action(-1);
+                                                                }
+                                                            }
+                                                            Button { text: "Clear"; clicked => { root.binding-edited(root.selected-action, "", ""); } }
+                                                            Button { text: "Save shortcut"; primary: true; clicked => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); } }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1523,6 +1770,7 @@ export component SettingsPanel inherits Window {
                             // Time
                             if root.selected-section == 4: Card {
                                 title: "Rewind";
+                                heading: "Rewind";
 
                                 ToggleRow {
                                     label: "Rewind history";
@@ -1534,7 +1782,7 @@ export component SettingsPanel inherits Window {
                                     label: "Interval";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        SpinBox {
+                                        NumberBox {
                                             accessible-label: "Rewind interval in seconds";
                                             width: 104px;
                                             minimum: 1;
@@ -1551,7 +1799,7 @@ export component SettingsPanel inherits Window {
                                     label: "History length";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        SpinBox {
+                                        NumberBox {
                                             accessible-label: "Rewind history length in seconds";
                                             width: 104px;
                                             minimum: root.rewind-interval-seconds;
@@ -1570,30 +1818,26 @@ export component SettingsPanel inherits Window {
                                     VerticalLayout {
                                         alignment: center;
                                         horizontal-stretch: 0;
-                                        Button { text: "Hold to rewind"; changed pressed => { root.rewind-held(self.pressed); } }
+                                        HoldButton { text: "Hold to rewind"; changed held => { root.rewind-held(self.held); } }
                                     }
                                 }
                             }
                             if root.selected-section == 4: Card {
                                 title: "Fast-forward";
+                                heading: "Fast-Forward";
 
                                 // An action, not a setting (the bindings'
                                 // Toggle fast-forward), for touch screens and
                                 // headsets without a keyboard or a gamepad.
                                 HorizontalLayout {
-                                    spacing: 12px;
-                                    Text { text: root.fast-forward ? "On: the game runs at the speed below; music keeps its tempo." : "Off: the game runs at its own speed."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
-                                    VerticalLayout {
-                                        alignment: center;
-                                        horizontal-stretch: 0;
-                                        Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; clicked => { root.app-action-requested(4); } }
-                                    }
+                                    alignment: end;
+                                    Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; clicked => { root.app-action-requested(4); } }
                                 }
                                 Divider { }
                                 SliderRow {
                                     label: "Speed";
                                     value-text: root.fast-forward-rates[root.fast-forward-rate];
-                                    Slider {
+                                    RingSlider {
                                         accessible-label: "Fast-forward rate";
                                         minimum: 0;
                                         maximum: root.fast-forward-rates.length - 1;
@@ -1679,18 +1923,24 @@ export component SettingsPanel inherits Window {
                             }
                             // Gameplay
                             if root.selected-section == 6: Card {
+                                title: "Language";
+                                Row {
+                                    label: "Game text";
+                                    Choice { accessible-label: "Game text language"; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
+                                }
+                            }
+                            if root.selected-section == 6: Card {
                                 title: "Battles";
                                 Row {
                                     label: "Random battles";
-                                    Choice { accessible-label: "Random battles"; width: 190px; model: ["Not while platforming", "Original"]; current-index <=> root.random-battles; selected => { root.random-battles-edited(self.current-index); } }
+                                    Segmented { accessible-label: "Random battles"; options: ["Not while platforming", "Original"]; current <=> root.random-battles; selected(index) => { root.random-battles-edited(index); } }
                                 }
-                                Text { text: root.random-battles-note; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 Row {
                                     label: "Encounter rate";
                                     Segmented { accessible-label: "Encounter rate"; options: ["Original", "Half"]; current <=> root.encounter-rate; selected(index) => { root.gameplay-edited("encounter-rate", index); } }
                                 }
-                                Text { text: "Half: the field's random battles left on come half as often for the same walk. The world map's keep their rate."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Text { text: "Half also doubles the EXP, G and deathblow progress that battles give."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 6: Card {
                                 title: "Dialogue and movies";
@@ -1698,7 +1948,6 @@ export component SettingsPanel inherits Window {
                                     label: "Text speed";
                                     Segmented { accessible-label: "Text speed"; options: ["Original", "Fast", "Instant"]; current <=> root.text-speed; selected(index) => { root.gameplay-edited("text-speed", index); } }
                                 }
-                                Text { text: "Fast and Instant keep pauses and slow text as written. A page a scene times, as the opening narration does, shows at the original pace until its time is up."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 ToggleRow {
                                     label: "Auto-advance dialogue";
@@ -1708,38 +1957,106 @@ export component SettingsPanel inherits Window {
                                 if root.auto-advance: SliderRow {
                                     label: "Wait on each page";
                                     value-text: "\{root.auto-advance-dwell / 60} s";
-                                    Slider {
+                                    RingSlider {
                                         accessible-label: "Auto-advance wait on each page";
                                         minimum: 30;
                                         maximum: 600;
                                         value: root.auto-advance-dwell;
+                                        step: 15;
                                         changed(value) => { root.gameplay-edited("auto-advance-dwell", round(value / 15) * 15); }
                                     }
                                 }
-                                Text { text: "Choices always wait for you."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 ToggleRow {
                                     label: "Movies can be skipped";
                                     checked <=> root.movie-skip;
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
                                 }
-                                Text { text: "Confirm ends a story movie, and Cross or Start the title's and battles' movies, as the game ends those it lets you skip. Movies in a window play on."; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            // The original kernel menu, with application controls.
+                            if root.selected-section == 7: Card {
+                                title: "Kernel menu";
+                                heading: "Kernel menu";
+                                Text { text: "Starting a test restarts the game with the selected setup. Save your progress first."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                if root.debug-status != "": Text { text: root.debug-status; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Field";
+                                heading: "Field";
+                                Row { label: "Map"; NumberBox { accessible-label: "Debug field map"; minimum: 0; maximum: 1023; value <=> root.debug-map; } }
+                                Row { label: "Entrance"; NumberBox { accessible-label: "Debug field entrance"; minimum: 0; maximum: 65535; value <=> root.debug-entry; } }
+                                Button { text: "Go to developer room"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(6); } }
+                                Button { text: "Start field test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(0); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Battle";
+                                heading: "Battle";
+                                Row { label: "Formation"; NumberBox { accessible-label: "Debug battle formation"; minimum: 0; maximum: 15; value <=> root.debug-formation; } }
+                                Row { label: "File"; NumberBox { accessible-label: "Debug battle file"; minimum: 0; maximum: 255; value <=> root.debug-battle-file; } }
+                                Text { text: "Files 253, 254 and 255 select Event 3, Event 2 and Event 1."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                for slot in 3: VerticalLayout {
+                                    spacing: 6px;
+                                    Row {
+                                        label: "Party member \{slot + 1}";
+                                        Choice { accessible-label: "Debug party member \{slot + 1}"; model: ["Fei", "Elly", "Citan", "Bart", "Billy", "Rico", "Emeralda", "Chu-Chu", "Maria", "Citan (sword)", "Emeralda (adult)", "None"]; current-index: root.debug-party[slot]; selected => { root.debug-party[slot] = self.current-index; } }
+                                    }
+                                    Row {
+                                        label: "Gear \{slot + 1}";
+                                        Choice { accessible-label: "Debug Gear \{slot + 1}"; model: ["Off", "Normal", "Bar"]; current-index: root.debug-gears[slot]; selected => { root.debug-gears[slot] = self.current-index; } }
+                                    }
+                                }
+                                Button { text: "Start battle test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(1); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Worldmap";
+                                heading: "Worldmap";
+                                Button { text: "Start world map test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(2); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Battling";
+                                heading: "Battling";
+                                Button { text: "Start Battling"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(3); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Menu";
+                                heading: "Menu";
+                                Row {
+                                    label: "Screen";
+                                    Choice { accessible-label: "Debug menu screen"; model: ["Normal menu", "Member change", "Load game", "Enter name", "Item shop", "Gear shop", "Disc change"]; current-index <=> root.debug-menu; selected => { root.debug-parameter = 0; } }
+                                }
+                                Row {
+                                    label: root.debug-menu < 4 ? "Character / Gear" : root.debug-menu == 6 ? "Disc" : "Shop";
+                                    NumberBox { accessible-label: "Debug menu parameter"; minimum: 0; maximum: root.debug-menu < 4 ? 30 : root.debug-menu == 6 ? 1 : 255; value <=> root.debug-parameter; }
+                                }
+                                Button { text: "Open test menu"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(4); } }
+                            }
+                            if root.selected-section == 7: Card {
+                                title: "Movie";
+                                heading: "Movie";
+                                Row { label: "Movie"; NumberBox { accessible-label: "Debug movie number"; minimum: 0; maximum: 63; value <=> root.debug-movie; } }
+                                Row { label: "Type"; Choice { accessible-label: "Debug movie type"; model: ["Picture", "Picture and audio", "Audio"]; current-index <=> root.debug-movie-kind; } }
+                                Button { text: "Play test movie"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(5); } }
                             }
                             // About
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Xenogears Ex Machina";
                                 Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Divider { }
+                                Row {
+                                    label: "Version";
+                                    Text { text: root.version; font-size: 13px; color: Theme.text-secondary; }
+                                }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Save titles";
                                 Text { text: "The game draws save titles with your console's BIOS font. Without your BIOS image they use substitute letters, digits and marks drawn for this project, and other characters stay blank. Saves → Import BIOS (save titles) gives the original font."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Binaural sound";
                                 Text { text: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
@@ -1747,40 +2064,50 @@ export component SettingsPanel inherits Window {
                     }
                 }
             }
-            Divider { }
-            // The status line.
-            HorizontalLayout {
-                padding-left: 18px;
-                padding-right: 18px;
-                padding-top: 9px;
-                padding-bottom: 10px;
-                spacing: 8px;
-                min-height: 38px;
-                if root.status != "": VerticalLayout {
-                    alignment: center;
-                    Icon {
-                        width: 15px;
-                        height: 15px;
-                        data: root.status-kind == 1 ? Icons.check : root.status-kind == 2 ? Icons.alert : Icons.dot;
-                        color: root.status-kind == 1 ? Theme.good : root.status-kind == 2 ? Theme.bad : Theme.text-secondary;
-                        stroke-width: root.status-kind == 0 ? 0px : 1.9px;
-                        fill: root.status-kind == 0 ? Theme.text-secondary : transparent;
-                    }
+            // The error bar, only while something failed.
+            if root.error != "": Rectangle {
+                min-height: error-bar.min-height;
+                background: Theme.bad.with-alpha(0.08);
+                accessible-role: groupbox;
+                accessible-label: "Error";
+                Rectangle {
+                    y: 0px;
+                    height: 1px;
+                    background: Theme.bad.with-alpha(0.3);
                 }
-                Text {
-                    text: root.status;
-                    font-size: 12px;
-                    color: root.status-kind == 2 ? Theme.bad : Theme.text-secondary;
-                    wrap: word-wrap;
-                    vertical-alignment: center;
-                    horizontal-stretch: 1;
+                error-bar := HorizontalLayout {
+                    padding-left: 18px;
+                    padding-right: 8px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    spacing: 8px;
+                    VerticalLayout {
+                        alignment: center;
+                        Icon { width: 15px; height: 15px; data: Icons.alert; color: Theme.bad; stroke-width: 1.9px; }
+                    }
+                    Text {
+                        text: root.error;
+                        font-size: 12px;
+                        color: Theme.bad;
+                        wrap: word-wrap;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        // The focus goes back to the section with the bar.
+                        IconButton { icon: Icons.close; label: "Dismiss"; clicked => { root.error = ""; root.focus-section(); } }
+                    }
                 }
             }
         }
         if root.quit-confirming: QuitDialog {
             width: parent.width;
             height: parent.height;
-            cancelled => { root.quit-confirming = false; }
+            cancelled => {
+                root.quit-confirming = false;
+                root.focus-section();
+            }
             confirmed => {
                 root.quit-confirming = false;
                 root.quit-requested();

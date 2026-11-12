@@ -142,21 +142,10 @@ fn menu_blocks(s: &mut Session<NativeModule>) -> Option<(u32, u32)> {
     Some((ram(word(s, state + 0x33C))?, ram(word(s, state + 0x32C))?))
 }
 
-/// Whether a menu's commands take the pad: the context's in fields and the
-/// title (`commands`); the world map runs its menu from its own loop, where
-/// the context is the world map's, so there the same flags are read as
-/// xem_core's context reads them (the menu's images +0x1192 show no window
-/// open, its flags +0x04 set).
+/// Whether a menu's commands take the pad (a field's, the world map's or
+/// the title's).
 fn commands(s: &mut Session<NativeModule>) -> bool {
-    match s.runtime.context() {
-        Context::Menu { commands, .. } => commands,
-        Context::WorldMap { .. } => {
-            let Some(state) = ram(word(s, MENU_STATE_CURRENT)) else { return false };
-            let (Some(flags), Some(images)) = (ram(word(s, state + 0x33C)), ram(word(s, state + 0x350))) else { return false };
-            byte(s, images + 0x1192) == 0 && byte(s, flags + 0x04) != 0
-        }
-        _ => false,
-    }
+    matches!(s.runtime.context(), Context::Menu { commands: true, .. })
 }
 
 fn until_commands(s: &mut Session<NativeModule>, what: &str) {

@@ -181,6 +181,10 @@ impl Rewind {
     pub fn available_seconds(&self) -> f64 {
         self.entries.front().map_or(0.0, |entry| self.played.saturating_sub(entry.played).as_secs_f64())
     }
+    /// The frame of the oldest state retained, if any.
+    pub fn oldest_frame(&self) -> Option<u64> {
+        self.entries.front().map(|entry| entry.frame)
+    }
     fn recount(&mut self) {
         self.entries.shrink_to_fit();
         self.bytes = self.entries.iter().map(|entry| entry.data.capacity()).sum::<usize>()
@@ -195,7 +199,7 @@ impl Rewind {
     pub fn status(&self) -> serde_json::Value {
         serde_json::json!({ "max_bytes": self.budget, "bytes": self.bytes, "interval_seconds": self.interval_seconds,
             "history_seconds": self.history_seconds, "available_seconds": self.available_seconds(),
-            "states": self.entries.len(), "oldest_frame": self.entries.front().map(|s| s.frame),
+            "states": self.entries.len(), "oldest_frame": self.oldest_frame(),
             "newest_frame": self.entries.back().map(|s| s.frame), "error": self.error })
     }
 }

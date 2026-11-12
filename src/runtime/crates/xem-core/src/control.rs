@@ -74,7 +74,17 @@ fn card_presence(command: &Value) -> Option<(usize, bool)> {
     Some((slot as usize, command.get("present")?.as_bool()?))
 }
 
+/// A `language` command's language, by its tag (`locale::Language::code`).
+fn language_of(command: &Value) -> Option<crate::locale::Language> {
+    crate::locale::Language::from_code(command.get("language")?.as_str()?)
+}
+
+fn language_codes() -> String {
+    crate::locale::Language::ALL.map(|l| format!("{:?}", l.code())).join(", ")
+}
+
 pub struct Session<M: GameModule> {
+    pub debug: crate::debug::Debug,
     pub runtime: Runtime<M>,
     pub schema: Option<Schema>,
     snapshots: HashMap<String, Vec<u8>>,
@@ -123,6 +133,10 @@ pub struct Session<M: GameModule> {
     /// next frame presses Confirm.
     auto_waited: u32,
     auto_press: bool,
+    /// The field map the field draws ([`Session::scene`], which hosts call
+    /// each frame they present): the last seen while it asked for no battle
+    /// or other map; none outside the field or after a restore.
+    drawn_field: Option<Value>,
 }
 
 /// The longest auto-advance dwell: a minute of vertical blanks.
@@ -187,6 +201,7 @@ fn names_of(bits: u16) -> Vec<&'static str> {
 impl<M: GameModule> Session<M> {
     pub fn new(runtime: Runtime<M>, schema: Option<Schema>, rewind_clock: impl Fn() -> Duration + 'static) -> Self {
         let mut session = Session {
+            debug: Default::default(),
             runtime,
             schema,
             snapshots: HashMap::new(),
@@ -214,6 +229,7 @@ impl<M: GameModule> Session<M> {
             auto_advance: 0,
             auto_waited: 0,
             auto_press: false,
+            drawn_field: None,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
@@ -300,7 +316,7 @@ impl<M: GameModule> Session<M> {
         self.runtime.services().clock.vblanks
     }
 
-    fn record_control(&mut self, command: Value) {
+    pub(crate) fn record_control(&mut self, command: Value) {
         let vblank = self.vblank();
         if let Some(log) = &mut self.recording { log.controls.push((vblank, command)); }
     }
@@ -383,8 +399,10 @@ impl<M: GameModule> Session<M> {
     /// (src/port/encounters.c): on the maps whose random battles it leaves
     /// on, the draw runs every other field frame, so the same walk brings
     /// half its battles; scripted battles and the world map's stay the
-    /// game's. Off is the original. It changes the game, so it is recorded
-    /// with the inputs, and a replay keeps the recorded one.
+    /// game's. Every battle then gives twice its experience, gold and
+    /// deathblow progress (src/port/rewards.c, the `reward_scale` import).
+    /// Off is the original. It changes the game, so it is recorded with the
+    /// inputs, and a replay keeps the recorded one.
     pub fn set_half_encounters(&mut self, enabled: bool) {
         if self.replay_end.is_some() {
             return;
@@ -457,6 +475,28 @@ impl<M: GameModule> Session<M> {
             self.record_control(json!({"cmd":"movie_skip","enabled":enabled}));
             self.runtime.services().movie_skip = enabled;
         }
+    }
+
+    /// The language of the game's text (docs/runtime.md, Languages): from
+    /// the next text a window takes, the port passes it the language's
+    /// translation (src/port/locale.c); a window goes on with the text it
+    /// began. English is the original's. A translation's length and pages
+    /// change when the game's windows wait and close, so it is recorded with
+    /// the inputs, and a replay keeps the recorded one.
+    pub fn set_language(&mut self, language: crate::locale::Language) {
+        if self.replay_end.is_some() {
+            return;
+        }
+        self.apply_language(language);
+    }
+
+    fn apply_language(&mut self, language: crate::locale::Language) {
+        if self.runtime.services().language != language {
+            self.record_control(json!({"cmd":"language","language":language.code()}));
+            self.runtime.services().language = language;
+        }
+        // Without the translations (a test's module) there is nothing to make active.
+        let _ = crate::locale::activate(self.runtime.memory(), language);
     }
 
     /// Auto-advance dialogue (`crate::dialogue`): once a field dialogue's
@@ -683,6 +723,7 @@ impl<M: GameModule> Session<M> {
             self.set_pad(port, buttons);
         }
         self.apply_assist();
+        self.advance_debug().map_err(Trap::Host)?;
         if self.auto_press {
             let confirm = crate::action::GameAction::Confirm.button_with(&self.runtime.button_assignment());
             if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
@@ -692,6 +733,7 @@ impl<M: GameModule> Session<M> {
         match self.runtime.run_frame() {
             Ok(report) => {
                 if !report.blocked {
+                    self.debug_frame_finished();
                     // Before the controls due next: a recording's change of
                     // the dwell lands after the frame it followed.
                     self.follow_auto_advance();
@@ -703,6 +745,7 @@ impl<M: GameModule> Session<M> {
                 Ok(!report.blocked)
             },
             Err(trap) => {
+                if self.debug.busy() { let _ = self.fail_debug(&trap.to_string()); }
                 self.stopped = Some(trap.to_string());
                 Err(trap)
             }
@@ -861,7 +904,7 @@ impl<M: GameModule> Session<M> {
         self.schema.as_ref().ok_or_else(|| "no schema (build/game/schema.json) loaded".to_string())
     }
 
-    fn inspect(&mut self, path: &str, depth: u32) -> Result<Value, String> {
+    pub(crate) fn inspect(&mut self, path: &str, depth: u32) -> Result<Value, String> {
         let schema = self.schema.as_ref().ok_or("no schema loaded")?;
         let memory = self.runtime.memory();
         let place = schema.locate(path, memory).map_err(|e: InspectError| e.to_string())?;
@@ -869,7 +912,7 @@ impl<M: GameModule> Session<M> {
     }
 
     /// Write a scalar at a path (integers, enums by name, pointers as numbers).
-    fn write_path(&mut self, path: &str, value: &Value) -> Result<(), String> {
+    pub(crate) fn write_path(&mut self, path: &str, value: &Value) -> Result<(), String> {
         let schema = self.schema.as_ref().ok_or("no schema loaded")?;
         let memory = self.runtime.memory();
         let place = schema.locate(path, memory).map_err(|e| e.to_string())?;
@@ -928,6 +971,8 @@ impl<M: GameModule> Session<M> {
         let half_encounters = self.runtime.services().half_encounters;
         let text_speed = self.runtime.services().text_speed;
         let movie_skip = self.runtime.services().movie_skip;
+        let language = self.runtime.services().language.code();
+        let locale_notice = self.runtime.services().locale_notice.clone();
         // What the dialogue options act on, as the game shows it: the
         // field dialogue's prompt (auto-advance counts toward its dwell
         // while it waits) and the movie whose loop reads the press.
@@ -950,7 +995,6 @@ impl<M: GameModule> Session<M> {
             "cycles": services.clock.now,
             "pads": services.pads.0.iter().map(|p| json!({"connected": p.connected, "buttons": names_of(p.buttons)})).collect::<Vec<_>>(),
             "stopped": stopped,
-            "query_trap": self.runtime.query_trap(),
             "recording": self.recording.is_some(),
             "snapshots": self.snapshots.keys().cloned().collect::<Vec<_>>(),
             "frames": self.runtime.frames(),
@@ -967,6 +1011,8 @@ impl<M: GameModule> Session<M> {
             "storage": storage,
             "text_speed": text_speed,
             "movie_skip": movie_skip,
+            "language": language,
+            "locale_notice": locale_notice,
             "auto_advance": self.auto_advance,
             "auto_advance_waited": self.auto_waited,
             "dialogue": dialogue,
@@ -984,17 +1030,18 @@ impl<M: GameModule> Session<M> {
         let arg_u64 = |name: &str| command.get(name).and_then(Value::as_u64);
         let arg_str = |name: &str| command.get(name).and_then(Value::as_str);
         match cmd {
+            "debug" => {
+                let request = serde_json::from_value(command.get("request").cloned().ok_or("debug needs request")?)
+                    .map_err(|e| format!("Invalid debug request: {e}"))?;
+                self.request_debug(request)?;
+                Ok(self.debug_status())
+            }
+            "debug_status" => Ok(self.debug_status()),
+            "debug_tick" => { self.tick_debug()?; Ok(self.debug_status()) }
             "status" => Ok(self.status()),
             "reset" => {
                 self.record_control(json!({"cmd":"reset"}));
-                self.runtime.reset();
-                self.quantity = None;
-                self.set_pad(0, 0);
-                self.set_pad(1, 0);
-                self.rewind.clear();
-                self.rewind.error = None;
-                self.rewind_game_paused = false;
-                self.game_state_restored();
+                self.reset_game();
                 Ok(self.status())
             }
             "fast_forward_configure" => {
@@ -1049,6 +1096,11 @@ impl<M: GameModule> Session<M> {
             "movie_skip" => {
                 let enabled = command.get("enabled").and_then(Value::as_bool).ok_or("movie_skip needs enabled: true or false")?;
                 self.apply_movie_skip(enabled);
+                Ok(self.status())
+            }
+            "language" => {
+                let language = language_of(command).ok_or_else(|| format!("language needs language: one of {}", language_codes()))?;
+                self.apply_language(language);
                 Ok(self.status())
             }
             "auto_advance" => {
@@ -1442,7 +1494,7 @@ impl<M: GameModule> Session<M> {
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "rewind_step", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
-                                        "half_encounters", "text_speed", "movie_skip", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list", "card_present"],
+                                        "half_encounters", "text_speed", "movie_skip", "language", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1502,6 +1554,10 @@ impl<M: GameModule> Session<M> {
                 if self.runtime.services().movie_skip {
                     self.record_control(json!({"cmd":"movie_skip","enabled":true}));
                 }
+                let language = self.runtime.services().language;
+                if language != crate::locale::Language::English {
+                    self.record_control(json!({"cmd":"language","language":language.code()}));
+                }
                 if self.auto_advance != 0 {
                     self.record_control(json!({"cmd":"auto_advance","dwell":self.auto_advance}));
                 }
@@ -1555,14 +1611,20 @@ impl<M: GameModule> Session<M> {
                             Some("card_present") if card_presence(control).is_some() => {},
                             Some("text_speed") if control.get("glyphs").and_then(Value::as_u64).is_some_and(|g| g <= 255) => {},
                             Some("movie_skip") if control.get("enabled").is_some_and(Value::is_boolean) => {},
+                            Some("language") if language_of(control).is_some() => {},
                             Some("auto_advance") if control.get("dwell").and_then(Value::as_u64).is_some_and(|d| d <= u64::from(MAX_AUTO_ADVANCE_DWELL)) => {},
                             Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
                                 && control.get("taken").is_none_or(Value::is_boolean) => {},
                             Some("assist") if control.get("intent").is_some() => {},
                             Some("assist_stop" | "reset") => {},
+                            Some("debug") => {
+                                let request: crate::debug::Request = serde_json::from_value(control.get("request").cloned().ok_or("debug needs request")?)
+                                    .map_err(|e| e.to_string())?;
+                                request.validate()?;
+                            },
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
                             _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, \
-                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, assist and music-clock inputs".into()),
+                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, assist, debug and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1596,6 +1658,8 @@ impl<M: GameModule> Session<M> {
                 self.runtime.services().card.set_present(1, true);
                 self.runtime.services().text_speed = 0;
                 self.runtime.services().movie_skip = false;
+                self.runtime.services().language = crate::locale::Language::English;
+                let _ = crate::locale::activate(self.runtime.memory(), crate::locale::Language::English);
                 self.auto_advance = 0;
                 self.restart_auto_advance();
                 self.runtime.services().sound_mode = None;
@@ -1631,8 +1695,8 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
-                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "auto_advance" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "debug" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
+                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "language" | "auto_advance" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
@@ -1706,6 +1770,7 @@ impl<M: GameModule> Session<M> {
     }
 
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>, String> {
+        if self.debug.busy() { return Err("Wait for the debug operation to finish before saving a state.".into()); }
         self.runtime.snapshot().map_err(|e| e.to_string())
     }
 
@@ -1714,22 +1779,34 @@ impl<M: GameModule> Session<M> {
     }
 
     fn checkpoint(&mut self) {
+        let state = self.take_rewind_state();
+        // For a draw trace, the history as the frame leaves it: the renderer
+        // remembers the screens the game took for as long as a state of the
+        // history can bring them back. Presentation only.
+        let (frame, oldest) = (self.runtime.frames(), self.rewind.oldest_frame());
+        self.runtime.services().gpu.device_mut().trace_history(frame, state, oldest);
+    }
+
+    /// Takes a state of the game's frame into the rewind history when one is
+    /// due; returns whether it did.
+    fn take_rewind_state(&mut self) -> bool {
+        if self.debug.busy() { return false; }
         // A held rewind's frames go back in time: no history of their own.
-        if self.rewind.budget == 0 || self.rewinding { return; }
+        if self.rewind.budget == 0 || self.rewinding { return false; }
         let paused = self.game_paused();
         if paused || self.rewind_game_paused {
             self.reset_rewind_timer();
             self.rewind_game_paused = paused;
-            if paused { return; }
+            if paused { return false; }
         }
         let frame = self.runtime.frames();
         let now = (self.rewind_clock)();
-        if self.rewind.due(now) {
-            match self.runtime.snapshot_content() {
-                Ok(data) => self.rewind.push(frame,data,now),
-                Err(error) => self.rewind.error = Some(error.to_string()),
-            }
+        if !self.rewind.due(now) { return false; }
+        match self.runtime.snapshot_content() {
+            Ok(data) => self.rewind.push(frame,data,now),
+            Err(error) => self.rewind.error = Some(error.to_string()),
         }
+        self.rewind.error.is_none()
     }
 
     /// One older checkpoint for a host's held rewind, taken off the queue
@@ -1801,8 +1878,21 @@ impl<M: GameModule> Session<M> {
         }
     }
 
+    pub(crate) fn reset_game(&mut self) {
+        self.runtime.reset();
+        self.quantity = None;
+        self.set_pad(0, 0);
+        self.set_pad(1, 0);
+        self.rewind.clear();
+        self.rewind.error = None;
+        self.rewind_game_paused = false;
+        self.game_state_restored();
+    }
+
     fn game_state_restored(&mut self) {
+        self.debug = Default::default();
         self.stopped = None;
+        self.drawn_field = None;
         // Assisted movement belonged to the timeline left behind.
         if self.assist.take().is_some() {
             self.assist_outcome = Some(crate::assist::Outcome::Interrupted);
@@ -1841,16 +1931,41 @@ impl<M: GameModule> Session<M> {
     }
 
     /// What the game shows, for presentation tuning (scene metadata):
-    /// "field:<map>", "battle", "worldmap", "arena", "menu", "movie",
-    /// "kernel" or "boot". Read-only.
+    /// "field:<map>", "battle:<enemy file>", "worldmap", "arena", "menu", "movie",
+    /// "kernel" or "boot". Reads the game only.
     pub fn scene(&mut self) -> String {
-        match self.runtime.services().mode {
-            Some(1) => match self.inspect("mode_field_map_id", 0) {
-                Ok(map) => format!("field:{map}"),
-                Err(_) => "field".into(),
-            },
+        let mode = self.runtime.services().mode;
+        if mode != Some(1) {
+            self.drawn_field = None;
+        }
+        match mode {
+            Some(1) => {
+                // A field asking for a battle or another map
+                // (`field_event_request_battle_field`,
+                // `field_event_change_map_entry`, a walk off its edge) sets
+                // the map it goes to at once, then draws its own until it
+                // leaves (field 55's last frames, which the battle's shatter
+                // takes): those frames are still its scene.
+                let requested = ["field_battle_not_requested", "field_map_change_not_requested"]
+                    .into_iter()
+                    .any(|flag| self.inspect(flag, 0).is_ok_and(|value| value == json!(0)));
+                // (A field just entered holds the last field's requests until
+                // its setup clears them: the map as it is then.)
+                match self.inspect("mode_field_map_id", 0) {
+                    Ok(map) if requested => format!("field:{}", self.drawn_field.as_ref().unwrap_or(&map)),
+                    Ok(map) => {
+                        let scene = format!("field:{map}");
+                        self.drawn_field = Some(map);
+                        scene
+                    }
+                    Err(_) => "field".into(),
+                }
+            }
             Some(0) => "kernel".into(),
-            Some(2) => "battle".into(),
+            Some(2) => match self.inspect("formation_active.battle", 0) {
+                Ok(battle) => format!("battle:{battle}"),
+                Err(_) => "battle".into(),
+            },
             Some(3) => "worldmap".into(),
             Some(4) => "arena".into(),
             Some(5) => "menu".into(),

@@ -165,8 +165,8 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       assert.ok(result.unchanged, 'card 1 is as it was, in the session and in IndexedDB');
 
       // The page's own picker (Import card 2, on a key here) accepts every
-      // supported extension and says on the status line what it found: a
-      // raw single save named by its file becomes a fresh card 2.
+      // supported extension and says what it found (the operation's
+      // message): a raw single save named by its file becomes a fresh card 2.
       const accept = await page.$eval('#import-card', (input) => input.accept.split(','));
       for (const extension of ['.mcd', '.mcr', '.mc', '.srm', '.mem', '.bin', '.vm1', '.ddf', '.ps', '.gme', '.vgs', '.vmp', '.mcs', '.ps1', '.psv', '.psx', '.mcb', '.mcx', '.pda']) {
         assert.ok(accept.includes(extension), `the picker accepts ${extension}`);

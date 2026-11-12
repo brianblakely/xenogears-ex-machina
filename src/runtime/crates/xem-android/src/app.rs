@@ -91,15 +91,10 @@ fn run(args: &[String]) -> Result<(), String> {
     let options = options(args)?;
     let run = RUNS.fetch_add(1, Ordering::Relaxed) + 1;
     log(&format!("start (run {run} in this process)"));
+    // Back toggles the settings panel instead of leaving the activity. (A
+    // recreated activity starts SDL_main again: XemActivity allows it.)
     // SAFETY: called before SDL_Init with NUL-terminated strings.
-    unsafe {
-        // Back toggles the settings panel instead of leaving the activity.
-        SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, c"1".as_ptr());
-        // When Android recreates the activity (a change of the app's asset
-        // paths, which no configChanges entry covers), SDL quits this run
-        // and starts SDL_main again in the same process instead of exiting.
-        SDL_SetHint(SDL_HINT_ANDROID_ALLOW_RECREATE_ACTIVITY, c"1".as_ptr());
-    }
+    unsafe { SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, c"1".as_ptr()) };
     let sdl = sdl::Sdl::init()?;
     let window = sdl::Window::new(&sdl, "Xenogears Ex Machina", 1280, 800)?;
     let result = Host::new(&window).and_then(|mut host| host.run(&window, &options));
@@ -155,6 +150,8 @@ fn open_gpu(window: &sdl::Window) -> Result<(Gpu, wgpu::Surface<'static>), Strin
         || wgpu::InstanceDescriptor::new_with_display_handle_from_env(Box::new(window.display()));
     match xem_host::open_gpu(window, descriptor(), Some(wgpu::Backends::VULKAN)) {
         Ok(opened) => Ok(opened),
+        // Not Vulkan's failure: the native window went away meanwhile.
+        Err(error) if !window.has_native_surface() => Err(error),
         Err(error) => {
             log(&format!(
                 "Vulkan unavailable ({error}); falling back to GLES"
@@ -185,8 +182,11 @@ struct Live {
     /// The touch deck's layout was logged.
     deck_logged: bool,
     log_next_frame: bool,
-    /// Start of the current frame-rate span: (time, rendered frames, game vblanks).
+    /// Start of the current frame-rate span: (time, rendered frames, game
+    /// vblanks), and the most render passes a frame's game picture took in
+    /// it (`View::render_passes`).
     fps: (Instant, u64, u64),
+    passes: u32,
 }
 
 impl Live {
@@ -206,6 +206,7 @@ impl Live {
     fn restart_fps(&mut self) {
         let vblanks = self.game.as_mut().map_or(0, Game::vblanks);
         self.fps = (Instant::now(), self.frames, vblanks);
+        self.passes = 0;
     }
 }
 
@@ -319,7 +320,31 @@ impl Host {
             )),
         }
 
-        let (gpu, surface) = open_gpu(window)?;
+        // The activity can lose its native window before the device opens
+        // (sent to the background, or stopped to be recreated on a first
+        // boot's overlay change): wait for the window, or for the quit of
+        // the activity's end, rather than end the run, after which SDL would
+        // finish the activity.
+        let (gpu, surface) = loop {
+            if window.has_native_surface() {
+                match open_gpu(window) {
+                    Ok(opened) => break opened,
+                    Err(error) if !window.has_native_surface() => {
+                        log(&format!("no native window ({error}); waiting"))
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            // SAFETY: SDL is initialised. SDL_PumpEvents blocks while the
+            // activity is paused.
+            unsafe {
+                SDL_PumpEvents();
+                if SDL_HasEvent(SDL_EVENT_QUIT.0) {
+                    return Err("the activity ended before its surface was ready".into());
+                }
+                SDL_Delay(100);
+            }
+        };
         let info = gpu.adapter.get_info();
         log(&format!(
             "gpu {} ({:?}, {} {})",
@@ -410,6 +435,7 @@ impl Host {
             deck_logged: false,
             log_next_frame: true,
             fps: (Instant::now(), 0, 0),
+            passes: 0,
         }));
         // SAFETY: a plain query; the watch is removed in Drop, before `live`
         // is released.
@@ -462,9 +488,11 @@ impl Host {
                 // SAFETY: the union is read according to its type tag.
                 match SDL_EventType(unsafe { event.r#type }) {
                     SDL_EVENT_QUIT => return Ok(()),
+                    // The game picture fills the window: SDL's safe area
+                    // here is the system's gesture strips and display
+                    // cutouts, which the picture may lie under.
                     SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
-                    | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED
-                    | SDL_EVENT_WINDOW_SAFE_AREA_CHANGED => {
+                    | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED => {
                         let mut live = self.live.borrow_mut();
                         if live.presenter.resize(&self.gpu, window) {
                             self.view
@@ -472,10 +500,6 @@ impl Host {
                             let (width, height) = live.presenter.size();
                             log(&format!("resized {width}x{height}"));
                         }
-                        // The game picture stays clear of cutouts and system bars.
-                        let safe = window.safe_area();
-                        self.view.set_safe_area(safe);
-                        log(&format!("safe area {safe:?}"));
                     }
                     // SAFETY: event comes from SDL_PollEvent.
                     _ => unsafe { self.view.handle(window, &event) },
@@ -675,7 +699,6 @@ impl Host {
             }
             self.view
                 .resize(live.presenter.size(), window.display_scale());
-            self.view.set_safe_area(window.safe_area());
             let (width, height) = live.presenter.size();
             log(&format!("surface recreated {width}x{height}"));
         }
@@ -691,6 +714,9 @@ impl Host {
                 live.deck_logged = true;
                 for (control, rect) in &deck {
                     log(&format!("touch deck {control:?} {:.0} {:.0} {:.0} {:.0}", rect.x, rect.y, rect.width, rect.height));
+                }
+                if let Some(stick) = self.view.deck_stick() {
+                    log(&format!("touch stick {:.0} {:.0} {:.0}", stick.rest.0, stick.rest.1, stick.reach));
                 }
             }
             let (context, targets) = (game.pad_context(), game.targets());
@@ -726,6 +752,7 @@ impl Host {
         self.view.render(&self.gpu, &output, time.as_secs_f32())?;
         self.gpu.queue.present(frame);
         live.frames += 1;
+        live.passes = live.passes.max(self.view.render_passes());
         if live.log_next_frame || live.frames.is_multiple_of(LOG_EVERY) {
             // movie=1: the frame showed a movie frame rebuilt from what the
             // MDEC decoded (the Enhanced movies setting).
@@ -745,7 +772,7 @@ impl Host {
                 },
                 None => String::new(),
             };
-            log(&format!("fps rendered={rendered:.1}{game} over {seconds:.1}s"));
+            log(&format!("fps rendered={rendered:.1}{game} over {seconds:.1}s passes={}", live.passes));
             live.restart_fps();
         }
         Ok(())

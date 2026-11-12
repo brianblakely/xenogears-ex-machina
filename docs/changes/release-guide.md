@@ -1,0 +1,1 @@
+- Release pages now help you pick the right download, walk you through installation and updates (including Steam Deck and Steam Machine), and explain what's changed since the last release.

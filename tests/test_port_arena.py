@@ -777,6 +777,22 @@ class Ground(Compare):
             mem.write(0x1F800000 + row, bytes([right]))
             mem.write(0x1F800080 + row, bytes([left]))
 
+    def recording(self, entries):
+        """The projections and culled faces recorded, the host wanting those
+        16 pixels beyond the screen, until the test ends: the culled-face
+        ring's header and its first `entries` records, as words."""
+        ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
+        reveals = (ctypes.c_uint * (4 + 16 * entries)).in_dll(LIB, "xem_present_reveal_storage")
+
+        def presentation(recording, wanted):
+            ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
+            ctypes.memset(ctypes.addressof(reveals), 0, ctypes.sizeof(reveals))
+            ring[6], reveals[1] = recording, wanted
+
+        self.addCleanup(presentation, 0, 0)
+        presentation(1, 16 << 16 | 16)
+        return reveals
+
     def test_cells_match_the_original(self):
         self.spans({0: (2, 6), 1: (0, 3), 2: (5, 5), 3: (7, 4), 4: (1, 0), 5: (0xFF, 9), 126: (60, 64), 127: (0, 9)})
         count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0x300, 0x80),
@@ -820,6 +836,66 @@ class Ground(Compare):
         self.assertEqual(LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0), 0)
         self.assertEqual(mem.u32(S["model_submitted_primitive_count"]), 100)
         self.assertEqual(mem.u32(S["model_drawn_primitive_count"]), 50)
+
+    def test_slivers_are_recorded_for_the_presentation_alone(self):
+        # Flat cells 0x10 below the camera: less than a pixel tall, all
+        # their points on row 122 but for row 0's first cell's lower left,
+        # raised 0x100 (that cell's second triangle has area). The others
+        # have none at whole pixels and face the camera at their sub-pixel
+        # points: while the projections are recorded and the host wants
+        # culled faces, each is recorded as the POLY_FT3 it would have
+        # been, just before a triangle the DMA walk reaches (an empty
+        # ordering-table entry the frame loop links past): the first cell's
+        # first before the triangle its row emits next (that cell's second),
+        # the second cell's two before the one the row emitted last (the
+        # same), and those of row 1, the last, which emits none, before the
+        # one emitted last too, not the slot no triangle came to.
+        reveals = self.recording(5)
+        LIB.xem_gte_write_control(6, 0x10)
+        mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
+        mem.write(HEIGHTS + 0x200, struct.pack("<hH", -0x100, 0x1234) + struct.pack("<hH", 0, 0x1234) * 2)
+        mem.write(HEIGHTS + 0x400, struct.pack("<hH", 0, 0x1234) * 3)
+        self.spans({0: (0, 2), 1: (1, 2)})
+        count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0),
+                                       lambda: asm_ground(GROUND_OT, 0, 0))
+        self.assertEqual(count, 1)
+        self.assertEqual(reveals[0], 5)
+        records = [reveals[4 + 16 * i:4 + 16 * (i + 1)] for i in range(5)]
+        # Orientation 0 of the MapTable (halfwords 0-15), the nibbles of
+        # flags 0x1234 and its page and CLUT word 0x7B000022.
+        uv = [0x7B001030, 0x00221033, 0x1031]
+        turned = [0x7B001030, 0x00221032, 0x1033]
+        # Each before the first cell's second triangle, the only one emitted.
+        expected = [(GROUND_POOL + 0xE100, projections, uvs)
+                    for projections, uvs in ((3, uv), (9, uv), (12, turned), (15, uv), (18, turned))]
+        for record, (node, projections, (page, second, third)) in zip(records, expected):
+            words = record[4:11]
+            self.assertEqual(record[:4], [node & 0x00FFFFFF, 7 | 3 << 8, projections, 0])
+            self.assertEqual(words[0] >> 24, 0x24)
+            self.assertEqual([words[2], words[4], words[6]], [page, second, third])
+            self.assertEqual([w >> 16 for w in words[1:7:2]], [122] * 3)
+
+    def test_a_pass_that_emits_no_triangle_keeps_no_slivers(self):
+        # The same flat cells without the raised corner: no triangle has
+        # area at whole pixels and the pass emits none, so no packet of the
+        # pool is linked this frame. Its slivers, recorded before the pool's
+        # first slot, are not kept: a later frame linking a triangle there
+        # would draw them where they no longer lie. A face recorded before
+        # the pass (another of the frame's) is kept as it was.
+        reveals = self.recording(1)
+        face = [(GROUND_OT + 0x40) & 0x00FFFFFF, 7 | 3 << 8, 2, 0,
+                0x24806040, pair(10, 20), 0x7A001030, pair(30, 20), 0x00111032, pair(10, 40), 0x1031] + [0] * 5
+        reveals[0] = 1
+        reveals[4:20] = face
+        LIB.xem_gte_write_control(6, 0x10)
+        mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
+        mem.write(HEIGHTS + 0x200, struct.pack("<hH", 0, 0x1234) * 3)
+        self.spans({0: (0, 2)})
+        count = self.assertSameEffects(lambda: LIB.arena_stage_draw_ground_cells(GROUND_OT, 0, 0),
+                                       lambda: asm_ground(GROUND_OT, 0, 0))
+        self.assertEqual(count, 0)
+        self.assertEqual(reveals[0], 1)
+        self.assertEqual(list(reveals[4:20]), face)
 
 
 WORK = 0x80190000

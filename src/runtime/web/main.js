@@ -120,6 +120,7 @@ function wireCanvas() {
     return [event.offsetX * scale, event.offsetY * scale];
   };
   const forward = (kind) => (event) => {
+    if (event.pointerType === 'mouse' && kind !== 'leave' && kind !== 'cancel') mouseMovedAt = performance.now();
     const [x, y] = position(event);
     // Fingers play the touch controls and tap the picture (the panel takes
     // them while it shows).
@@ -156,6 +157,13 @@ function wireCanvas() {
   canvas.addEventListener('wheel', forward('wheel'), { passive: false });
 }
 wireCanvas();
+// A still mouse's cursor hides over the game (the setting on by default) and
+// shows again as it moves; a captured pointer has none.
+let mouseMovedAt = performance.now();
+function updateCursor() {
+  const hidden = app.hides_cursor(performance.now() - mouseMovedAt);
+  if ((canvas.style.cursor === 'none') !== hidden) canvas.style.cursor = hidden ? 'none' : '';
+}
 // Immersive play is submitted through an XR-compatible WebGL2 context
 // (WebXR layers on WebGPU are not available to test): a browser that offers
 // immersive VR renders with one from the start; others use WebGPU first.
@@ -191,8 +199,8 @@ const host = {
   },
   /** Import BIOS: the runtime checks the image, IndexedDB takes it beside
    * the cards, then every boot takes its Kanji font and a running game has
-   * it now. Resolves to the status line's message; a refused file or a
-   * failed write changes nothing. */
+   * it now. Resolves to what it did; a refused file or a failed write
+   * changes nothing. */
   async importBios(bytes) {
     try { app.check_bios(bytes); }
     catch (error) { throw new Error(`BIOS not imported: ${error.message ?? error}.`); }
@@ -516,6 +524,7 @@ function frame(time) {
   try {
     pollGamepad();
     app.frame(time);
+    updateCursor();
     disc.serveGameReads(app);
     audio.pump();
     cards.flush().catch(() => {}); // retained for explicit retry; visible in status
@@ -628,10 +637,13 @@ function download(name, bytes, type = 'application/octet-stream') {
 let importCardSlot = 0;
 /** The largest file a memory card or save container is (a DexDrive card). */
 const MAX_CARD_FILE = 0xf40 + 0x20000;
-function operationStatus(message) { page.operationStatus = message; app.set_operation_status(message); }
+/** An operation's outcome (status().page.operationStatus): what it did, the
+ * panel's error bar cleared, or what failed, in the error bar. */
+function operationStatus(message) { page.operationStatus = message; app.set_operation_error(''); }
+function operationError(message) { page.operationStatus = message; app.set_operation_error(message); }
 const operationGuard = (action) => async (event) => {
   try { await action(event); }
-  catch (error) { operationStatus(String(error.message ?? error)); }
+  catch (error) { operationError(String(error.message ?? error)); }
 };
 $('import-state').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
@@ -645,7 +657,7 @@ $('import-state').addEventListener('change', operationGuard(async (event) => {
     throw error;
   }
 }));
-// Any card or save file, by its contents; the status line says what was found.
+// Any card or save file, by its contents; its message says what was found.
 $('import-card').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
   if (file.size > MAX_CARD_FILE) throw new Error(`${file.name} (${file.size} bytes) is larger than any memory card or save file.`);
@@ -676,7 +688,7 @@ const XR_PICKERS = 'File pickers are available in windowed play.';
 $('file').addEventListener('click', (event) => {
   if (!page.xr) return;
   event.preventDefault();
-  operationStatus(XR_PICKERS);
+  operationError(XR_PICKERS);
 });
 
 function control(command) {
@@ -700,6 +712,7 @@ async function appOperation(request) {
   }
 }
 async function executeAppOperation(request) {
+  if ('Debug' in request) return control({ cmd: 'debug', request: request.Debug });
   if ('Rewind' in request || 'UiRewind' in request) {
     const panel = 'UiRewind' in request;
     const held = panel ? request.UiRewind : request.Rewind;
@@ -798,7 +811,8 @@ async function executeAppOperation(request) {
     case 'RetryStorage': await cards.flush({ retry: true }); operationStatus('Pending card writes completed.'); break;
     case 'RequestPersistence': {
       const granted = await storage.requestPersistence(); page.storage = await storage.status();
-      operationStatus(granted ? 'Browser persistence granted. Keep exported backups.' : 'Browser persistence was not granted. Export backups.');
+      if (granted) operationStatus('Browser persistence granted. Keep exported backups.');
+      else operationError('Browser persistence was not granted. Export backups.');
       return { granted };
     }
     // The headset's view in front of the head again (in a session).
@@ -816,7 +830,7 @@ async function executeAppOperation(request) {
 }
 function dispatchAppRequests() {
   for (const request of JSON.parse(app.take_app_requests())) {
-    appOperation(request).catch((error) => operationStatus(String(error.message ?? error)));
+    appOperation(request).catch((error) => operationError(String(error.message ?? error)));
   }
 }
 

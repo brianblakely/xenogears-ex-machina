@@ -14,16 +14,21 @@ pub mod controls;
 pub mod graphics;
 pub mod look;
 pub mod player;
-pub use graphics::{DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
+pub use graphics::{DioramaTurns, EffectLevels, Fidelity, Graphics, GraphicsProfile, HeadsetView, MAX_ZOOM_OUT, MovieFilter, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
+pub use xem_core::debug::Request as DebugRequest;
 /// The platforming areas whose random battles NotWhilePlatforming turns off.
 pub use xem_core::encounters::PLATFORMING_AREAS;
+pub use xem_core::locale::Language;
 
 pub const MAX_VOLUME: u8 = 100;
 /// The mouse camera's deadzone, default and largest, in pixels of motion.
 pub const DEFAULT_MOUSE_DEADZONE: u16 = 40;
 pub const MAX_MOUSE_DEADZONE: u16 = 100;
+/// How long the mouse is still before its cursor hides over the game
+/// ([`Settings::hide_idle_cursor`]), in seconds.
+pub const CURSOR_IDLE_SECONDS: f64 = 3.0;
 pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
 /// The Binaural sound mode's settings (`xem_core::binaural::Config`): the
 /// mode is on with `enabled`; [`Settings::audio_output`] keeps the original
@@ -64,7 +69,8 @@ pub enum Scale {
     /// Largest size that keeps the aspect ratio.
     #[default]
     Fit,
-    /// Largest whole multiple of the image size.
+    /// Largest whole multiple of the image size (under Force 4:3, of its
+    /// height, the width following 4:3).
     Integer,
     /// Fill the area, ignoring the aspect ratio.
     Stretch,
@@ -145,7 +151,8 @@ pub enum EncounterRate {
     #[default]
     Original,
     /// Half as often for the same walk: the draw runs every other field
-    /// frame (`Session::set_half_encounters`).
+    /// frame (`Session::set_half_encounters`), and every battle gives twice
+    /// its experience, gold and deathblow progress (src/port/rewards.c).
     Half,
 }
 
@@ -228,6 +235,9 @@ pub struct Settings {
     pub mouse_deadzone: u16,
     /// Field movement runs unless the player holds the run button.
     pub run_by_default: bool,
+    /// The mouse cursor hides over the game once the mouse has been still for
+    /// [`CURSOR_IDLE_SECONDS`], until it moves again.
+    pub hide_idle_cursor: bool,
     pub rewind_enabled: bool,
     pub rewind_interval_seconds: u32,
     pub rewind_history_seconds: u32,
@@ -246,6 +256,9 @@ pub struct Settings {
     /// mode's), as the game lets it end some; window movies stay the
     /// scripts'.
     pub movie_skip: bool,
+    /// The language of the game's menus, dialogue and battle text
+    /// (`Session::set_language`): the original's English or a translation.
+    pub language: Language,
 }
 
 impl Default for Settings {
@@ -264,6 +277,7 @@ impl Default for Settings {
             mouse_sensitivity: 50,
             mouse_deadzone: DEFAULT_MOUSE_DEADZONE,
             run_by_default: false,
+            hide_idle_cursor: true,
             rewind_enabled: true,
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
             rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
@@ -274,6 +288,7 @@ impl Default for Settings {
             text_speed: TextSpeed::default(),
             auto_advance: AutoAdvance::default(),
             movie_skip: false,
+            language: Language::English,
         }
     }
 }
@@ -290,6 +305,7 @@ pub enum SettingChange {
     MouseSensitivity(u16),
     MouseDeadzone(u16),
     RunByDefault(bool),
+    HideIdleCursor(bool),
     RewindEnabled(bool),
     RewindIntervalSeconds(u32),
     RewindHistorySeconds(u32),
@@ -318,6 +334,7 @@ pub enum SettingChange {
     /// The auto-advance block, whole: on or off and its dwell.
     AutoAdvance(AutoAdvance),
     MovieSkip(bool),
+    Language(Language),
 }
 
 /// An applied and persisted change.
@@ -365,6 +382,12 @@ impl Settings {
 
     pub fn mouse_scale(&self) -> f32 { f32::from(self.mouse_sensitivity) / 100.0 }
 
+    /// Whether the cursor hides over the game, the mouse still for `idle`
+    /// seconds ([`Settings::hide_idle_cursor`]).
+    pub fn hides_cursor(&self, idle: f64) -> bool {
+        self.hide_idle_cursor && idle >= CURSOR_IDLE_SECONDS
+    }
+
     /// The game's sound mode the hosts run it in (`Session::set_sound_mode`):
     /// Stereo under Binaural, whose placement reads the Stereo pan law;
     /// else the original mode chosen.
@@ -405,6 +428,7 @@ impl Settings {
             SettingChange::MouseSensitivity(percent) => next.mouse_sensitivity = *percent,
             SettingChange::MouseDeadzone(pixels) => next.mouse_deadzone = *pixels,
             SettingChange::RunByDefault(enabled) => next.run_by_default = *enabled,
+            SettingChange::HideIdleCursor(enabled) => next.hide_idle_cursor = *enabled,
             SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
             SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
             SettingChange::RewindHistorySeconds(seconds) => next.rewind_history_seconds = *seconds,
@@ -435,6 +459,7 @@ impl Settings {
             SettingChange::TextSpeed(speed) => next.text_speed = *speed,
             SettingChange::AutoAdvance(auto) => next.auto_advance = *auto,
             SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
+            SettingChange::Language(language) => next.language = *language,
         }
         next.validate()?;
         Ok(next)
@@ -736,6 +761,20 @@ impl SettingsService {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn the_idle_cursor_hides_by_default_after_three_seconds() {
+        use super::*;
+        let settings = Settings::default();
+        assert!(settings.hide_idle_cursor, "on by default");
+        assert!(!settings.hides_cursor(2.9) && settings.hides_cursor(CURSOR_IDLE_SECONDS));
+        let off = Settings { hide_idle_cursor: false, ..settings.clone() };
+        assert!(!off.hides_cursor(60.0));
+        assert!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.hide_idle_cursor, "an older file hides it");
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        service.apply(SettingChange::HideIdleCursor(false)).unwrap();
+        assert!(!service.settings().hide_idle_cursor);
+    }
+
+    #[test]
     fn mouse_camera_releases_for_pause_menus_and_every_battle_page() {
         use super::*;
         use xem_core::context::{Context, Choice};
@@ -748,7 +787,7 @@ mod tests {
         assert!(!settings.captures_mouse(Context::Dialogue { choice: Some(Choice { count: 2, index: 0 }) }, false));
         for page in 0..8 {
             for attack in [false, true] {
-                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false }, false));
+                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false, message: false }, false));
             }
         }
     }
@@ -874,6 +913,28 @@ mod tests {
         assert!(!Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.movie_skip);
     }
 
+    #[test]
+    fn the_language_defaults_to_english_persists_and_reads_an_unknown_one_as_english() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().language, Language::English);
+        assert_eq!(service.apply(SettingChange::Language(Language::BrazilianPortuguese)).unwrap().settings.language, Language::BrazilianPortuguese);
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(saved["language"], "BrazilianPortuguese");
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::BrazilianPortuguese, "reopened");
+        // As an agent sends it on `xem-desktop --control`.
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "French"}})).unwrap();
+        assert_eq!(ack["settings"]["language"], "French");
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::French, "reopened");
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "English"}})).unwrap();
+        assert_eq!(ack["settings"]["language"], "English");
+        // Saved before the setting existed, or with a language no longer offered: English.
+        let (read, reset) = Settings::read(&serde_json::json!({"language": "Klingon", "movie_skip": true})).unwrap();
+        assert_eq!((read.language, read.movie_skip, reset), (Language::English, true, vec!["language".to_string()]));
+        assert_eq!(Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.language, Language::English);
+    }
+
     /// The gameplay options' keys as `Settings` saves them.
     const GAMEPLAY: [&str; 5] = ["random_battles", "encounter_rate", "text_speed", "auto_advance", "movie_skip"];
 
@@ -992,6 +1053,20 @@ mod tests {
         // Settings saved before it existed open windowed.
         let (read, reset) = Settings::read(&serde_json::json!({ "presentation": { "show_fps": true } })).unwrap();
         assert!(read.presentation.show_fps && !read.presentation.fullscreen && reset.is_empty());
+    }
+
+    #[test]
+    fn interpolation_decides_whether_presentation_follows_the_game_or_the_display() {
+        use super::*;
+        let graphics = Graphics::default();
+        assert!(!graphics.interpolation && graphics.game_paced(), "off by default: the game's frames only");
+        assert!(!Graphics { interpolation: true, ..graphics }.game_paced(), "on: every display refresh");
+        assert!(!Graphics { renderer: Renderer::Original, ..graphics }.game_paced(), "the original's picture at every refresh");
+        // A file saved with the rate it used to choose keeps its other
+        // choices; the rate goes alone.
+        let (read, reset) = Settings::read(&serde_json::json!({ "graphics": { "present_rate": "Display", "interpolation": true, "zoom_out": 300 } })).unwrap();
+        assert!(read.graphics.interpolation && !read.graphics.game_paced());
+        assert_eq!((read.graphics.zoom_out, reset), (300, vec!["graphics.present_rate".to_string()]));
     }
 
     #[test]
@@ -1125,6 +1200,27 @@ mod tests {
         assert!(read.binaural.enabled);
         assert_eq!(read.binaural.music_immersion, Binaural::default().music_immersion);
         assert_eq!(reset, ["binaural.music_immersion"]);
+    }
+
+    #[test]
+    fn force_4x3_sets_the_shape_and_keeps_widescreen() {
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        let graphics = service.settings().graphics;
+        assert!(!graphics.force_4x3 && graphics.forced_aspect().is_none(), "off by default: the picture's own shape");
+        let wide = Graphics { widescreen: true, ..graphics };
+        service.apply(SettingChange::Graphics(wide)).unwrap();
+        assert!(service.settings().graphics.widened());
+        // Force 4:3 turns the wider framing off and keeps the choice: off
+        // again, the picture is framed wider again.
+        service.apply(SettingChange::Graphics(Graphics { force_4x3: true, ..wide })).unwrap();
+        let forced = service.settings().graphics;
+        assert!(forced.widescreen && !forced.widened());
+        assert_eq!(forced.forced_aspect(), Some(4.0 / 3.0));
+        service.apply(SettingChange::Graphics(wide)).unwrap();
+        assert!(service.settings().graphics.widened(), "off again, Widescreen frames the picture");
+        // A file with both reads as written.
+        let (read, reset) = Settings::read(&serde_json::json!({"graphics": {"widescreen": true, "force_4x3": true}})).unwrap();
+        assert_eq!((read.graphics.widescreen, read.graphics.force_4x3, reset.len()), (true, true, 0));
     }
 
     #[test]

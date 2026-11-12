@@ -260,15 +260,15 @@ class Watchdog(unittest.TestCase):
         self.assertEqual(caught.exception.kind, "timeout")
         self.assertLess(time.monotonic() - began, 2)
 
-    def test_process_exit_and_query_trap_are_failures(self):
+    def test_process_exit_and_a_stopped_game_are_failures(self):
         client = self.client("import sys; input(); sys.exit(3)")
         with self.assertRaises(game_explore.Failure) as caught:
             client({"cmd": "frames"})
         self.assertEqual(caught.exception.kind, "process_exit")
-        client = self.client('input(); print(\'{"query_trap":"bad pointer"}\')')
+        client = self.client('input(); print(\'{"stopped":"host stopped the game"}\')')
         with self.assertRaises(game_explore.Failure) as caught:
             client({"cmd": "status"})
-        self.assertEqual(caught.exception.kind, "query_trap")
+        self.assertEqual(caught.exception.kind, "stopped")
 
     def test_unread_command_and_unmet_seed_condition_fail(self):
         client = self.client("import time; time.sleep(30)", 0.15)

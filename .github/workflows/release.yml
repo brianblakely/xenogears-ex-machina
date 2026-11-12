@@ -14,7 +14,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      native: ${{ steps.inputs.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check native app inputs before reserving a version
+        id: inputs
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/master ]; then
+            python3 tools/release/version.py --commit "$GITHUB_SHA" --check-native-since "$BEFORE"
+          else
+            # Explicit rebuilds and release branches still run qualification.
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
   prepare:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -271,15 +294,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: release-*
           path: artifacts
-      - name: Publish complete artifacts and checksums
+      - name: Publish installation guide, changelog, artifacts and checksums
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: python3 tools/release/publish.py --tag "$TAG" --commit "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
+        run: python3 -m tools.release.publish --tag "$TAG" --commit "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
 
   pages:
     needs: [prepare, publish]

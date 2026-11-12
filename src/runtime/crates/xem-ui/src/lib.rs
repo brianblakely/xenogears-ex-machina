@@ -13,8 +13,8 @@ use std::rc::{Rc, Weak};
 use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, DioramaTurns, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
-    GraphicsProfile, HeadsetView, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS, TextSpeed, EncounterRate,
+    GraphicsProfile, HeadsetView, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
+    GAME_ACTION_ROWS, GameBinding, TextSpeed, EncounterRate, Language,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -28,6 +28,14 @@ pub use slint::platform::{Key, PointerEventButton, WindowEvent};
 pub use slint::{LogicalPosition, LogicalSize, SharedString};
 
 slint::include_modules!();
+
+mod gamepad;
+
+/// The app's version (a release's, else the workspace's), as About shows it.
+pub const VERSION: &str = match option_env!("XEM_RELEASE_VERSION") {
+    Some(version) => version,
+    None => env!("CARGO_PKG_VERSION"),
+};
 
 /// The panel texture's format. It holds sRGB-encoded values: composite it with
 /// `srgb_encoded` set.
@@ -107,6 +115,8 @@ pub struct SettingsUi {
     panel: SettingsPanel,
     settings: Rc<RefCell<SettingsService>>,
     rewind_held: Rc<Cell<bool>>,
+    /// The gamepad on the open panel ([`SettingsUi::gamepad`]).
+    pad: Cell<gamepad::Pad>,
     device: wgpu::Device,
     texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -135,6 +145,7 @@ impl SettingsUi {
             panel,
             settings,
             rewind_held: Rc::new(Cell::new(false)),
+            pad: Cell::default(),
             device,
             texture,
             view,
@@ -175,6 +186,12 @@ impl SettingsUi {
 
     /// Forwards host input. Positions are logical pixels from the panel's top left.
     pub fn dispatch(&self, event: WindowEvent) {
+        // Keys show where the focus is; the pointer's press hides it again.
+        match event {
+            WindowEvent::PointerPressed { .. } => self.panel.global::<PadFocus>().set_shown(false),
+            WindowEvent::KeyPressed { .. } | WindowEvent::KeyPressRepeated { .. } => self.panel.global::<PadFocus>().set_shown(true),
+            _ => {}
+        }
         self.window.window.dispatch_event(event);
         // Publish held-control transitions before the host's next game frame.
         slint::platform::update_timers_and_animations();
@@ -248,7 +265,7 @@ impl SettingsUi {
     }
 
     /// The game waits for disc `number`, which the drive's changer has not
-    /// got: the status line asks for it over the Saves section (where a host
+    /// got: the error bar asks for it over the Saves section (where a host
     /// that imports discs has its button).
     pub fn ask_for_disc(&self, number: u8) {
         let text = if self.panel.get_can_import_disc() {
@@ -259,8 +276,8 @@ impl SettingsUi {
                  beside the one the game started from, then start again."
             )
         };
-        set_status(&self.panel, &text, Status::Problem);
-        self.panel.set_selected_section(SAVES_SECTION);
+        self.panel.set_error(text.into());
+        self.select_section(SAVES_SECTION);
     }
 
     /// What the Disc group says about the imported disc.
@@ -270,6 +287,19 @@ impl SettingsUi {
 
     pub fn on_app_request(&self, f: impl FnMut(AppRequest) + 'static) {
         let f = Rc::new(RefCell::new(f));
+        self.panel.on_debug_requested({
+            let f = f.clone();
+            let panel = self.panel.as_weak();
+            move |tool| {
+                let Some(panel) = panel.upgrade() else { return; };
+                if !panel.get_debug_available() || panel.get_debug_busy() { return; }
+                let request = debug_request(&panel, tool);
+                match request {
+                    Ok(request) => f.borrow_mut()(AppRequest::Debug(request)),
+                    Err(error) => panel.set_error(error.into()),
+                }
+            }
+        });
         self.on_reset({
             let f = f.clone();
             move || f.borrow_mut()(AppRequest::Action(AppAction::Reset))
@@ -311,18 +341,24 @@ impl SettingsUi {
         self.panel.set_time_status(text.into());
     }
 
+    pub fn set_debug_status(&self, available: bool, busy: bool, text: &str) {
+        self.panel.set_debug_available(available);
+        self.panel.set_debug_busy(busy);
+        self.panel.set_debug_status(text.into());
+    }
+
     pub fn set_storage_status(&self, text: &str) {
         self.panel.set_storage_status(text.into());
     }
 
-    /// The status line: what an operation did, or a note.
-    pub fn set_operation_status(&self, text: &str) {
-        set_status(&self.panel, text, Status::Note);
+    /// An operation succeeded: the error bar of an earlier failure goes.
+    pub fn clear_operation_error(&self) {
+        self.panel.set_error("".into());
     }
 
-    /// The status line: a problem (an operation failed, the game stopped).
+    /// The error bar: a problem (an operation failed, the game stopped).
     pub fn set_operation_error(&self, text: &str) {
-        set_status(&self.panel, text, Status::Problem);
+        self.panel.set_error(text.into());
     }
 
     /// Whether this host offers first-person inspection (the Controls
@@ -340,7 +376,8 @@ impl SettingsUi {
 
     /// Whether the host plays in a headset: the Controls section lists the
     /// underhand grab and the controllers' Back (their right stick's click)
-    /// as inspection's toggles, and their right stick as its look.
+    /// as inspection's toggles, their right stick as its look, and that Back
+    /// held as what hides a dialogue (elsewhere Select).
     pub fn set_first_person_headset(&self, headset: bool) {
         self.panel.set_first_person_headset(headset);
     }
@@ -361,8 +398,10 @@ impl SettingsUi {
     }
 
     /// A hidden panel must release a held pointer control even when its next
-    /// mouse-up belongs to the game or another window.
+    /// mouse-up belongs to the game or another window, and what the gamepad
+    /// holds on it ([`SettingsUi::gamepad`]).
     pub fn cancel_pointer(&self) {
+        self.release_gamepad();
         if self.rewind_held.get() {
             self.panel.invoke_rewind_held(false);
         }
@@ -376,6 +415,33 @@ impl SettingsUi {
     pub fn component(&self) -> &SettingsPanel {
         &self.panel
     }
+}
+
+fn debug_request(panel: &SettingsPanel, tool: i32) -> Result<xem_settings::DebugRequest, String> {
+    use xem_settings::DebugRequest;
+    let byte = |n| u8::try_from(n).map_err(|_| "Debug value must be between 0 and 255.".to_string());
+    let word = |n| u16::try_from(n).map_err(|_| "Debug value must be between 0 and 65535.".to_string());
+    let request = match tool {
+        0 => DebugRequest::Field { map: word(panel.get_debug_map())?, entry: word(panel.get_debug_entry())? },
+        1 => {
+            let (party, gears) = (panel.get_debug_party(), panel.get_debug_gears());
+            let mut members = [11; 3];
+            let mut modes = [0; 3];
+            for i in 0..3 {
+                members[i] = byte(party.row_data(i).ok_or("Missing party slot.")?)?;
+                modes[i] = byte(gears.row_data(i).ok_or("Missing Gear slot.")?)?;
+            }
+            DebugRequest::Battle { formation: byte(panel.get_debug_formation())?, file: byte(panel.get_debug_battle_file())?, party: members, gears: modes }
+        }
+        2 => DebugRequest::Worldmap,
+        3 => DebugRequest::Battling,
+        4 => DebugRequest::Menu { screen: byte(panel.get_debug_menu())?, parameter: byte(panel.get_debug_parameter())? },
+        5 => DebugRequest::Movie { movie: byte(panel.get_debug_movie())?, kind: byte(panel.get_debug_movie_kind())? },
+        6 => DebugRequest::Field { map: 0, entry: 0 },
+        _ => return Err("Unknown debug operation.".into()),
+    };
+    request.validate()?;
+    Ok(request)
 }
 
 fn panel_texture(
@@ -410,7 +476,6 @@ const MOVIE_FILTERS: [xem_settings::MovieFilter; 2] = [xem_settings::MovieFilter
 const RENDERERS: [xem_settings::Renderer; 2] = [xem_settings::Renderer::Original, xem_settings::Renderer::ExMachina];
 const PROFILES: [GraphicsProfile; 4] = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Ps1, GraphicsProfile::Custom];
 const QUALITIES: [QualityTier; 5] = [QualityTier::Auto, QualityTier::Low, QualityTier::Medium, QualityTier::High, QualityTier::Ultra];
-const RATES: [PresentRate; 2] = [PresentRate::Display, PresentRate::Game];
 
 fn fidelity_flags(f: &Fidelity) -> [bool; 6] {
     [f.affine_textures, f.vertex_snapping, f.color_15bit, f.dithering, f.native_resolution, f.painter_ordering]
@@ -432,11 +497,13 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
     match key {
         "renderer" => next.renderer = *RENDERERS.get(index?)?,
         "profile" => next.profile = *PROFILES.get(index?)?,
+        "profile-reset" => next = next.profile_reset(),
         "scale" => next.internal_scale = u8::try_from(value).ok()?,
         "quality" => next.quality = *QUALITIES.get(index?)?,
-        "rate" => next.present_rate = *RATES.get(index?)?,
         "interpolation" => next.interpolation = value != 0,
         "widescreen" => next.widescreen = value != 0,
+        "force-4x3" => next.force_4x3 = value != 0,
+        "full-size-sprites" => next.full_size_sprites = value != 0,
         "filter-world" => next.filtering.world = filter()?,
         "filter-sprites" => next.filtering.sprites = filter()?,
         "filter-interface" => next.filtering.interface = filter()?,
@@ -497,9 +564,11 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_profile(index_of(&PROFILES, &graphics.profile));
     panel.set_gfx_scale(i32::from(graphics.internal_scale));
     panel.set_gfx_quality(index_of(&QUALITIES, &graphics.quality));
-    panel.set_gfx_rate(index_of(&RATES, &graphics.present_rate));
     panel.set_gfx_interpolation(graphics.interpolation);
-    panel.set_gfx_widescreen(graphics.widescreen);
+    // Under Force 4:3 the switch shows wider framing off (its choice kept).
+    panel.set_gfx_widescreen(graphics.widened());
+    panel.set_gfx_force_4x3(graphics.force_4x3);
+    panel.set_gfx_full_size_sprites(graphics.full_size_sprites);
     panel.set_gfx_zoom_out(i32::from(graphics.zoom_out));
     panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
@@ -528,16 +597,17 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_mouse_sensitivity(i32::from(settings.mouse_sensitivity));
     panel.set_mouse_deadzone(i32::from(settings.mouse_deadzone));
     panel.set_run_by_default(settings.run_by_default);
+    panel.set_hide_idle_cursor(settings.hide_idle_cursor);
     panel.set_random_battles(match settings.random_battles {
         RandomBattles::NotWhilePlatforming => 0,
         RandomBattles::Original => 1,
     });
-    panel.set_random_battles_note(random_battles_note(settings.random_battles).into());
     panel.set_encounter_rate(i32::from(settings.encounter_rate == EncounterRate::Half));
     panel.set_text_speed(index_of(&TextSpeed::ALL, &settings.text_speed));
     panel.set_auto_advance(settings.auto_advance.enabled);
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
     panel.set_movie_skip(settings.movie_skip);
+    panel.set_language(index_of(&Language::ALL, &settings.language));
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
     panel.set_assist_pointer(match assisted.pointer {
@@ -559,40 +629,8 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     show_game_binding(panel, settings);
 }
 
-/// What a random-battles policy does, naming the areas whose jumping-heavy
-/// maps it turns them off on (an area's other maps keep theirs); a name
-/// with a lowercase word describes its area and takes "the".
-fn random_battles_note(battles: RandomBattles) -> String {
-    match battles {
-        RandomBattles::NotWhilePlatforming => {
-            let areas: Vec<String> = PLATFORMING_AREAS.iter().map(|(name, _)| {
-                if name.split(' ').any(|word| word.starts_with(char::is_lowercase)) { format!("the {name}") } else { name.to_string() }
-            }).collect();
-            let areas = match areas.split_last() {
-                Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
-                _ => areas.concat(),
-            };
-            format!("Off on the jumping-heavy maps of {areas}. Scripted battles and the world map's stay.")
-        }
-        RandomBattles::Original => "Wherever the original game has them.".into(),
-    }
-}
-
 /// The Saves section's index (settings.slint's `sections`).
 const SAVES_SECTION: i32 = 5;
-
-/// The status line's kinds (the panel's `status-kind`).
-#[derive(Clone, Copy)]
-enum Status {
-    Note = 0,
-    Done = 1,
-    Problem = 2,
-}
-
-fn set_status(panel: &SettingsPanel, text: &str, kind: Status) {
-    panel.set_status(text.into());
-    panel.set_status_kind(kind as i32);
-}
 
 /// Every app operation the panel offers with its bindings ([`offered_actions`]),
 /// and the selected one's in its editors.
@@ -663,6 +701,7 @@ fn set_backup_actions(panel: &SettingsPanel) {
 /// Routes panel edits through the settings service and shows every
 /// acknowledged change, whoever made it.
 fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
+    panel.set_version(VERSION.trim_start_matches('v').into());
     set_backup_actions(panel);
     panel.set_fast_forward_rates(
         Rc::new(slint::VecModel::from(
@@ -673,17 +712,15 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         ))
         .into(),
     );
+    panel.set_languages(
+        Rc::new(slint::VecModel::from(Language::ALL.iter().map(|l| slint::SharedString::from(l.name())).collect::<Vec<_>>())).into(),
+    );
     show(panel, settings.borrow().settings());
     let weak = panel.as_weak();
     settings.borrow_mut().subscribe(move |ack| {
         if let Some(panel) = weak.upgrade() {
             show(&panel, &ack.settings);
-            let text = match ack.change {
-                SettingChange::BindApp { .. } => "Shortcut saved.",
-                SettingChange::Replace(_) => "Settings imported and saved.",
-                _ => "Settings saved.",
-            };
-            set_status(&panel, text, Status::Done);
+            panel.set_error("".into());
         }
     });
 
@@ -699,7 +736,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
             if let Err(rejected) = result {
                 // The widget may show the refused value: restore the current one.
                 show(&panel, settings.borrow().settings());
-                set_status(&panel, &describe(&rejected), Status::Problem);
+                panel.set_error(describe(&rejected).into());
             }
         }
     };
@@ -734,6 +771,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
     });
+    panel.on_hide_idle_cursor_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::HideIdleCursor(enabled)))
+    });
     panel.on_random_battles_edited({
         let apply = apply.clone();
         move |index| {
@@ -755,6 +796,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 }
                 "auto-advance-dwell" => u32::try_from(value).ok().map(|dwell| SettingChange::AutoAdvance(xem_settings::AutoAdvance { dwell, ..auto })),
                 "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
+                "language" => usize::try_from(value).ok().and_then(|i| Language::ALL.get(i)).map(|language| SettingChange::Language(*language)),
                 _ => None,
             })
         }

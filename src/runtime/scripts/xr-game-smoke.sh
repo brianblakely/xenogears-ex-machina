@@ -297,10 +297,10 @@ at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/movie25.xemstate" | "$hea
 # Save states and time controls, the player's own play (no session log)
 # from field 30, which an agent's command loads at the first headset frame.
 # Prayer hands open Settings at headset frame 20 (the game held by their
-# pause), pinches on the 440x560 panel choose Saves (298,98) and its Save
+# pause), pinches on the 440x560 panel choose Saves (269,98) and its Save
 # state (122,170); prayer hands close it at 80, open it at 160, and Load
-# state (314,170) restores it; Time (256,98), its Start fast-forward
-# (347,395), and Settings closed at 240. The scripted controller buttons
+# state (314,170) restores it; Time (232,98), its Start fast-forward
+# (347,449), and Settings closed at 240. The scripted controller buttons
 # hold Back+RT at 350 (fast-forward off) and Back+LT from 460 to 500 (a
 # rewind). Then the state file the panel wrote, restored by xem-headless.
 printf '{"cmd":"enter_field","map":30}\n{"cmd":"frames","count":400}\n{"cmd":"state_save","path":"%s"}\n' "$out/field30.xemstate" |
@@ -308,7 +308,7 @@ printf '{"cmd":"enter_field","map":30}\n{"cmd":"frames","count":400}\n{"cmd":"st
 echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
 printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     "$desktop" --xr --control --disc "$disc" --exit-after-frames 560 \
-    --xr-hands "20:prayer,40:pinch@panel:298/98,60:pinch@panel:122/170,80:prayer,160:prayer,180:pinch@panel:314/170,200:pinch@panel:256/98,220:pinch@panel:347/395,240:prayer" \
+    --xr-hands "20:prayer,40:pinch@panel:269/98,60:pinch@panel:122/170,80:prayer,160:prayer,180:pinch@panel:314/170,200:pinch@panel:232/98,220:pinch@panel:347/449,240:prayer" \
     --xr-pad "350:Back+RT,352:none,460:Back+LT,500:none" >"$out/saves.log" 2>"$out/saves.err"
 printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/saves/state.xemstate" |
     "$headless" --disc "$disc" --control >"$out/saves-headless.log" 2>"$out/saves-headless.err"
@@ -346,8 +346,8 @@ cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Held rewinds through Settings' pause, from the same state: Back+Start
 # opens Settings at headset frame 200 and Back+LT is held from 205 to 211;
 # then the right controller's ray (scripted: Monado's controllers point
-# where no test chooses) clicks Time (256,98) at 220 and holds its
-# Hold to rewind (355,325) with the trigger (R1) from 230, Back+Start
+# where no test chooses) clicks Time (232,98) at 220 and holds its
+# Hold to rewind (355,352) with the trigger (R1) from 230, Back+Start
 # closes Settings at 245 with the trigger still held, and it lets go at 270.
 # Before, while the game runs, the agent reads the session's status at
 # headset frame 40 (the gameplay options the settings gave it), applies
@@ -363,7 +363,7 @@ drawn() { # LOG N: wait (at most a minute) until the headset run logging to LOG 
     drawn "$out/held.log" 80
     echo '{"cmd":"status"}'
 } | "$desktop" --xr --control --disc "$disc" --exit-after-frames 300 \
-    --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:256/98,222:none@panel:256/98,230:R1@panel:355/325,245:R1+Back+Start@panel:355/325,247:R1@panel:355/325,270:none" \
+    --xr-pad "200:Back+Start,202:none,205:Back+LT,211:none,220:R1@panel:232/98,222:none@panel:232/98,230:R1@panel:355/352,245:R1+Back+Start@panel:355/352,247:R1@panel:355/352,270:none" \
     >"$out/held.log" 2>"$out/held.err"
 # OpenXR's controller paths for first-person inspection, the player's own
 # play (no session log, so the host gives the session the view's state)
@@ -404,7 +404,7 @@ cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # A hands-only player's held rewind, from the same state, the gaze the
 # eyes': an agent's app command recentres once the session has drawn 100
 # frames; prayer hands open Settings at headset frame 200, a pinch picks
-# Time (256,98) at 220, and a pinch held on its Hold to rewind (355,325)
+# Time (232,98) at 220, and a pinch held on its Hold to rewind (355,352)
 # from 240 (the pinch itself from 242 to 281) rewinds through Settings'
 # pause, the gaze moving down off the button meanwhile at 260 (the panel's
 # pointer moves nowhere while the pinch holds it).
@@ -414,7 +414,7 @@ echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/setti
     for _ in $(seq 600); do grep -q '^xrframe n=100 ' "$out/held-hands.log" 2>/dev/null && break; sleep 0.1; done
     printf '{"cmd":"app","request":{"Action":"Recenter"}}\n'
 ) | "$desktop" --xr --control --disc "$disc" --exit-after-frames 320 \
-    --xr-hands "200:prayer,220:pinch@panel:256/98,240:pinch-hold@panel:355/325,260:rest@panel:355/450" \
+    --xr-hands "200:prayer,220:pinch@panel:232/98,240:pinch-hold@panel:355/352,260:rest@panel:355/390" \
     >"$out/held-hands.log" 2>"$out/held-hands.err"
 # The headset's AUTO key, the player's own play from field 12's dialogue
 # (a state xem-headless saved with its prompt waiting), the gaze the

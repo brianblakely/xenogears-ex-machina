@@ -8,7 +8,7 @@
 //!         [--ff FRAMES] [--original FROM,TO]
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
-//!         [--probe x,y] [--original-actors] [--cards DIR] [--look YAW,PITCH[,TURN]]
+//!         [--probe x,y] [--original-actors] [--full-size] [--cards DIR] [--look YAW,PITCH[,TURN]]
 //!         [--diorama YAW,PITCH,DIST[,SCALE[,FOV]]] [--turns smooth|snap|fixed]
 //!         [--name NAME] [--out DIR]
 //!
@@ -23,7 +23,8 @@
 //! loads a state of the field `--map` at that frame. From the scene, the game runs `frames` frames holding the given
 //! buttons (and tapping one every so many frames, through menus and result
 //! screens, over a script's pads too; `--press` presses one at a kept
-//! frame, for two frames); each game frame is presented `present` times at evenly spaced
+//! frame, for two frames; Select held over a dialogue also hides its
+//! windows, as in the hosts); each game frame is presented `present` times at evenly spaced
 //! host times through the hosts' GameView. `--ff` runs that many game
 //! frames for each presented one, as a host's fast-forward does;
 //! `--original` shows those kept frames with the Original renderer (no
@@ -48,7 +49,8 @@
 //! owner). The field's characters keep moving in the wider or zoomed-out
 //! view as in the hosts (`Session::set_actor_view`), unless
 //! `--original-actors`; the JSON counts the sprite actors the field stops
-//! as off screen per frame (`still`). `--look` shows the field in
+//! as off screen per frame (`still`). `--full-size` draws the party of a
+//! large-scale field with its full-resolution sprites. `--look` shows the field in
 //! first-person inspection, turned YAW degrees to the right and PITCH up
 //! from the camera's heading (and TURN degrees more each kept frame), and
 //! reports where the controlled character stood (`eye`). `--diorama` shows
@@ -341,6 +343,7 @@ fn main() {
             "--zoom" => graphics.zoom_out = value().parse().unwrap(),
             "--interpolate" => graphics.interpolation = true,
             "--original-actors" => graphics.actors_in_view = false,
+            "--full-size" => graphics.full_size_sprites = true,
             "--scale" => graphics.internal_scale = value().parse().unwrap(),
             "--name" => name = value(),
             "--cards" => cards = Some(value().into()),
@@ -527,6 +530,7 @@ fn main() {
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
     let mut clock = setup_clock;
+    let mut dialogue_hiding = xem_settings::look::DialogueHiding::default();
     if !from_boot && skip == 0 {
         session.runtime.services().gpu.device_mut().set_trace(traced);
         let _ = view.take_restart();
@@ -542,6 +546,9 @@ fn main() {
         if script.is_none() || tap.is_some() || !presses.is_empty() {
             session.set_pad(0, buttons | tapped | pressed);
         }
+        // Select held over a dialogue hides its windows, as in the hosts.
+        let select = (buttons | tapped | pressed) & xem_core::pad::button::SELECT != 0;
+        view.set_dialogue_hidden(dialogue_hiding.update(select, &[0; 16], session.runtime.context(), clock * 1000.0));
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
         if let Some((_, _, turn)) = look {
             view.look_around(turn.to_radians(), 0.0);

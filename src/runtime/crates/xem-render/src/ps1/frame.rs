@@ -15,10 +15,12 @@
 //!   same angle): its screen point scales towards the projection centre by
 //!   z / (z + d) and its depth grows by d. The interface keeps its place
 //!   and size; the revealed faces show wherever they fall.
-//! - **Interpolation** moves each scene primitive of the newest frame from
-//!   where the same primitive (same shape, texture, CLUT and texture
-//!   coordinates, or colours when untextured, nearest to it) was in the
-//!   frame before, by `alpha`; the interface moves as the game moves it. It
+//! - **Interpolation** shows the newest frame's scene `alpha` of the way
+//!   from the frame before, through a camera between the two the game drew
+//!   them with (its rotation turned, its target moved): what holds still in
+//!   the world stays where it is, and each model and sprite the port
+//!   recorded the transform of in both frames moves from where its points
+//!   were then ([`Motion`]); the interface moves as the game moves it. It
 //!   presents one game frame late and never touches game state.
 //! - **Looking around** from within the scene (first-person inspection)
 //!   moves every projected vertex into a camera of its own ([`Look`],
@@ -28,22 +30,24 @@
 use super::diorama::Layers;
 use super::{
     AUX_FORMAT, Builder, COLOR_FORMAT, Capture, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
-    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset,
-    texture,
+    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, passes, picture_usage, sampled_screen,
+    samples, scene_offset, texture,
 };
+use glam::{DMat3, DQuat, DVec3};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
-use xem_gpu::{Camera, Class, Eye, Primitive, Shape, TraceOp, VramRect};
+use xem_gpu::{Camera, CameraMode, Class, Eye, Placement, Primitive, Shape, TraceOp, VramRect};
 
 /// How the frame is framed.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Framing {
     /// VRAM pixels added on each side of the display area (wider framing).
     pub side: u32,
-    /// Interpolate between the previous and the newest frame: 0 shows the
-    /// previous, 1 the newest.
-    pub interpolate: Option<f32>,
+    /// Interpolate the newest frame from the frames shown before it at the
+    /// host's time (seconds): the camera, models and sprites each move over
+    /// the time between their own last two moves ([`interpolate`]).
+    pub interpolate: Option<f64>,
     /// How far the camera is pulled back along its axis, in GTE depth
     /// units (0: where the game put it).
     pub pull_back: f32,
@@ -131,18 +135,28 @@ pub struct FrameRenderer {
     /// primitives, and the frame before.
     newest: Option<((u16, u16), u64)>,
     newest_ops: Vec<TraceOp>,
-    /// Where the field's controlled character stood in the newest frame and
-    /// the camera the game drew it with, when the port recorded them
-    /// ([`xem_gpu::TraceOp::Eye`], [`xem_gpu::TraceOp::Camera`]).
+    /// Where the field's controlled character stood in the newest frame,
+    /// the camera the game drew it with and its models' and sprites'
+    /// placements, as the port recorded them ([`xem_gpu::TraceOp::Eye`],
+    /// [`xem_gpu::TraceOp::Camera`], [`xem_gpu::TraceOp::Placement`]).
     eye: Option<Eye>,
     camera: Option<Camera>,
+    placements: Arc<[Placement]>,
     /// How many of them change the picture (not the native pixels a copy,
     /// fill or drawing left, which only follow what was drawn).
     drawn: usize,
-    previous_ops: Vec<TraceOp>,
-    /// Primitives the last replay drew (for the effects), when it replayed.
+    /// What interpolation knows of the frames shown ([`Moved`]), and what
+    /// it knew before the newest arrived with the placements of the frame
+    /// before it; the host's time the newest arrived, and the last given.
+    moved: Moved,
+    prior: (Moved, Arc<[Placement]>),
+    arrived: f64,
+    time: f64,
+    /// Primitives the last replay drew (for the effects), when it replayed,
+    /// and the render passes it and its interface took ([`super::passes`]).
     replayed: Vec<TraceOp>,
     replaying: bool,
+    passes: u32,
     /// The last replay looked from within the scene: its depth is reversed
     /// ([`super::DepthMode::Nearer`]), for the interface drawn over it.
     reversed: bool,
@@ -160,6 +174,9 @@ pub struct FrameRenderer {
     /// The replay's bind group, made with the capture texture of a generation.
     group: Option<(u64, wgpu::BindGroup)>,
     overlay_group: Option<(u64, wgpu::BindGroup)>,
+    /// The screen kept that the replayed frame samples
+    /// ([`super::sampled_screen`]), for the interface drawn over it after.
+    screen: Option<Capture>,
     /// The replay's and the overlay's builder buffers.
     storage: Storage,
     overlay_storage: Storage,
@@ -332,10 +349,15 @@ impl FrameRenderer {
             newest_ops: Vec::new(),
             eye: None,
             camera: None,
+            placements: Arc::default(),
             drawn: 0,
-            previous_ops: Vec::new(),
+            moved: Moved::default(),
+            prior: (Moved::default(), Arc::default()),
+            arrived: 0.0,
+            time: 0.0,
             replayed: Vec::new(),
             replaying: false,
+            passes: 0,
             reversed: false,
             snapshot: None,
             vram: ReplayVram::new(device, "frame replay vram"),
@@ -345,6 +367,7 @@ impl FrameRenderer {
             staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
             group: None,
             overlay_group: None,
+            screen: None,
             storage: Storage::default(),
             overlay_storage: Storage::default(),
             pane: None,
@@ -363,19 +386,23 @@ impl FrameRenderer {
         }
     }
 
-    /// Notes the displayed buffer's log; returns whether a new game frame
-    /// is shown since the last call.
-    pub fn track(&mut self, renderer: &Ps1Renderer, area: DisplayArea) -> bool {
+    /// Notes the displayed buffer's log at the host's time `now` (when
+    /// known: the last time given otherwise); returns whether a new game
+    /// frame is shown since the last call.
+    pub fn track(&mut self, renderer: &Ps1Renderer, area: DisplayArea, now: Option<f64>) -> bool {
+        self.time = now.unwrap_or(self.time);
         let Some(log) = renderer.frame_log(area) else {
             // No log of what the shown buffer holds (a trace started again,
             // a state loaded): nothing to replay until its next clear, rather
             // than an older frame's primitives over the new VRAM.
             self.newest = None;
             self.newest_ops.clear();
-            self.previous_ops.clear();
             self.snapshot = None;
             self.eye = None;
             self.camera = None;
+            self.placements = Arc::default();
+            self.moved = Moved::default();
+            self.prior = (Moved::default(), Arc::default());
             self.drawn = 0;
             return false;
         };
@@ -384,7 +411,11 @@ impl FrameRenderer {
             // The same frame, perhaps grown (a frame drawn over several
             // takes): a log only grows until its buffer is cleared, and
             // takes its records with its first primitive.
-            (self.eye, self.camera) = (log.eye, log.camera);
+            if self.camera != log.camera || !Arc::ptr_eq(&self.placements, &log.placements) {
+                (self.camera, self.placements) = (log.camera, log.placements.clone());
+                self.moved = self.prior.0.next(&self.prior.1, self.camera.as_ref(), &self.placements, self.arrived);
+            }
+            self.eye = log.eye;
             let known = self.newest_ops.len();
             if log.ops.len() > known {
                 self.newest_ops.extend_from_slice(&log.ops[known..]);
@@ -395,13 +426,22 @@ impl FrameRenderer {
             }
             return false;
         }
-        self.previous_ops = std::mem::replace(&mut self.newest_ops, log.ops.clone());
+        self.newest_ops.clone_from(&log.ops);
         self.drawn = drawn(&self.newest_ops, log.rect);
         self.newest = Some(identity);
         self.snapshot = Some(log.start.clone());
         self.eye = log.eye;
         self.camera = log.camera;
+        self.arrived = self.time;
+        self.prior = (std::mem::take(&mut self.moved), std::mem::replace(&mut self.placements, log.placements.clone()));
+        self.moved = self.prior.0.next(&self.prior.1, self.camera.as_ref(), &self.placements, self.arrived);
         true
+    }
+
+    /// Whether interpolation still moves the newest frame's scene at the
+    /// host's time `now`.
+    pub(crate) fn moving(&self, now: f64) -> bool {
+        self.moved.moving(now)
     }
 
     /// Where the field's controlled character stood in the newest frame
@@ -411,7 +451,7 @@ impl FrameRenderer {
     }
 
     /// The camera the game drew the newest frame shown with, when the port
-    /// recorded it (while a view looks from within or around the scene).
+    /// recorded it (a field, a battle or the world map).
     pub fn camera(&self) -> Option<Camera> {
         self.camera
     }
@@ -419,6 +459,12 @@ impl FrameRenderer {
     /// How many of the newest frame's ops change its picture.
     pub fn drawn(&self) -> usize {
         self.drawn
+    }
+
+    /// The render passes the last replay and its interface took (none
+    /// without a replay).
+    pub fn passes(&self) -> u32 {
+        self.passes
     }
 
     /// The native VRAM when the newest frame began (its log's start).
@@ -441,7 +487,7 @@ impl FrameRenderer {
     ) {
         let scale = renderer.scale();
         if !framing.hold || self.newest_ops.is_empty() {
-            self.track(renderer, area);
+            self.track(renderer, area, framing.interpolate);
         }
         // The game may draw a few rows below the displayed viewport (the
         // field draws 224 and shows 216); its distortion copies those rows.
@@ -451,8 +497,9 @@ impl FrameRenderer {
         let pulled = framing.pull_back > 0.0;
         // The interface alone has no scene to look at.
         let look = framing.look.filter(|_| framing.interface != Interface::Only);
+        // VRAM's picture keeps the dialogue the player hides.
         let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || look.is_some() || framing.replay || feedback
-            || framing.interface != Interface::Drawn)
+            || framing.interface != Interface::Drawn || renderer.options().hide_dialogue)
             && !self.newest_ops.is_empty();
         let side = if replay { framing.side } else { 0 };
         self.resize(device, ((area.width.max(1) + 2 * side) * scale, area.height.max(1) * scale));
@@ -460,6 +507,7 @@ impl FrameRenderer {
         self.scale = scale;
         self.side = side;
         self.replaying = replay;
+        self.passes = 0;
         self.overlay.clear();
         self.reversed = false;
         if !replay {
@@ -493,16 +541,14 @@ impl FrameRenderer {
             Some((color, aux, depth)) => (color.clone(), aux.clone(), depth.clone()),
             None => (self.color.clone(), self.aux.clone(), self.depth.clone()),
         };
-        let mut ops = match framing.interpolate {
-            Some(alpha) if !self.previous_ops.is_empty() => interpolate(&self.newest_ops, &self.previous_ops, alpha.clamp(0.0, 1.0)),
-            _ => {
-                // The last replay's buffer, refilled.
-                let mut ops = std::mem::take(&mut self.replayed);
-                ops.clear();
-                ops.extend_from_slice(&self.newest_ops);
-                ops
-            }
-        };
+        // The last replay's buffer, refilled (moved between the frames when
+        // interpolating).
+        let mut ops = std::mem::take(&mut self.replayed);
+        ops.clone_from(&self.newest_ops);
+        let motion = framing.interpolate.and_then(|now| self.moved.motion(now));
+        if let Some(motion) = &motion {
+            motion.apply(&mut ops);
+        }
         // A frame held from before the screen the game took last (a field's
         // menu takes it) drew nothing of it.
         let current = !framing.hold;
@@ -512,11 +558,12 @@ impl FrameRenderer {
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
-        let capture = renderer.capture.rect.filter(|_| current && renderer.capture.scale == scale).map(|rect| (rect, renderer.capture.side));
+        let screen = sampled_screen(&renderer.capture, &renderer.earlier, &ops);
+        let capture = screen.rect.filter(|_| current && screen.scale == scale).map(|rect| (rect, screen.side));
         if let Some((rect, _)) = capture {
             for op in &mut ops {
                 if let TraceOp::Draw(p) = op
-                    && (samples(p, &rect) || renderer.capture.aliases.iter().any(|(r, _)| samples(p, r)))
+                    && (samples(p, &rect) || screen.aliases.iter().any(|(r, _)| samples(p, r)))
                 {
                     p.class = Class::Flat;
                 }
@@ -553,17 +600,25 @@ impl FrameRenderer {
         let mut builder = Builder::reusing(&options, &ops, &mut self.storage);
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.seal = renderer.seal;
+        builder.sky = renderer.sky;
+        builder.additive_model_depth = renderer.additive_model_depth;
         builder.spill = side;
         builder.capture = capture;
-        builder.capture_aliases = if current { &renderer.capture.aliases } else { &[] };
+        builder.capture_aliases = if current { &screen.aliases } else { &[] };
         builder.feedback = feedback.then_some(rect);
         builder.vram = self.snapshot.is_some().then_some(self.vram.held());
         // A frame recorded looking from within or around the scene holds
         // faces from anywhere, not only beside the screen: seen from the
-        // game's camera, none.
+        // game's camera, none. Between two frames, those beside the screen
+        // come into it as the camera turns.
+        let around = self.eye.is_some() || self.camera.is_some_and(|camera| camera.around != 0);
         builder.reveal = if pulled || look.is_some() {
             Reveal::Everywhere
-        } else if side > 0 && self.eye.is_none() && self.camera.is_none() {
+        } else if around {
+            Reveal::Hidden
+        } else if motion.is_some() {
+            Reveal::Everywhere
+        } else if side > 0 {
             Reveal::Sides
         } else {
             Reveal::Hidden
@@ -575,7 +630,7 @@ impl FrameRenderer {
             builder.op(op);
         }
         let origin = (area.x as f32 - side as f32, area.y as f32);
-        let (capture_scale, capture_side, capture) = renderer.capture.uniform();
+        let (capture_scale, capture_side, capture) = screen.uniform();
         let uniform = PassUniform {
             origin: [origin.0, origin.1],
             extent: [(area.width + 2 * side) as f32, render_height as f32],
@@ -609,20 +664,21 @@ impl FrameRenderer {
             ..Default::default()
             });
         }
-        if self.group.as_ref().is_some_and(|(generation, _)| *generation != renderer.capture.generation) {
+        let generation = screen.generation;
+        if self.group.as_ref().is_some_and(|(known, _)| *known != generation) {
             self.group = None;
         }
-        let generation = renderer.capture.generation;
         if self.overlay_group.as_ref().is_some_and(|(known, _)| *known != generation) {
             self.overlay_group = None;
         }
         self.overlay_group.get_or_insert_with(|| (generation,
-            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram.texture, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))));
+            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram.texture, screen, Some((&self.feedback, &self.feedback_aux)))));
         let group = self
             .group
-            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram.texture, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))))
+            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram.texture, screen, Some((&self.feedback, &self.feedback_aux)))))
             .1
             .clone();
+        self.screen = Some(screen.clone());
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
         let target = Target { color: &color, aux: &aux, depth: &depth_view, origin, scale };
         encode(
@@ -636,6 +692,7 @@ impl FrameRenderer {
             &target,
             &builder.commands,
         );
+        self.passes = passes(&builder.commands);
         builder.store(&mut self.storage);
         if extra {
             for (from, to) in [(&color, &self.color), (&aux, &self.aux)] {
@@ -658,7 +715,7 @@ impl FrameRenderer {
         renderer: &mut Ps1Renderer,
         color: Option<&wgpu::Texture>,
     ) {
-        let (Some(area), Some((_, group))) = (self.area, self.overlay_group.clone()) else { return };
+        let (Some(area), Some((_, group)), Some(screen)) = (self.area, self.overlay_group.clone(), self.screen.as_ref()) else { return };
         if self.overlay.is_empty() {
             return;
         }
@@ -668,8 +725,8 @@ impl FrameRenderer {
         builder.reversed = self.reversed;
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.spill = self.side;
-        builder.capture = renderer.capture.rect.filter(|_| renderer.capture.scale == self.scale).map(|rect| (rect, renderer.capture.side));
-        builder.capture_aliases = &renderer.capture.aliases;
+        builder.capture = screen.rect.filter(|_| screen.scale == self.scale).map(|rect| (rect, screen.side));
+        builder.capture_aliases = &screen.aliases;
         for op in &self.overlay {
             builder.op(op);
         }
@@ -683,6 +740,7 @@ impl FrameRenderer {
         let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
         let staging = Some((self.overlay_staging.buffer(), &self.vram.texture));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
+        self.passes += passes(&builder.commands);
         builder.store(&mut self.overlay_storage);
     }
 
@@ -796,89 +854,393 @@ fn drawn(ops: &[TraceOp], rect: VramRect) -> usize {
     }).count()
 }
 
-/// What identifies a primitive between frames: its shape, page, CLUT,
-/// texture coordinates and, untextured, its colours.
-fn identity(p: &Primitive) -> (u8, bool, u32, u16, [i16; 8], [u32; 4]) {
-    let count = p.vertex_count();
-    let mut uv = [0i16; 8];
-    let mut colors = [0u32; 4];
-    for (i, v) in p.vertices[..count].iter().enumerate() {
-        if p.textured {
-            uv[i * 2] = v.u;
-            uv[i * 2 + 1] = v.v;
-        } else {
-            colors[i] = v.color;
-        }
-    }
-    let shape = match p.shape {
-        Shape::Triangle => 0,
-        Shape::Quad => 1,
-        Shape::Rectangle => 2,
-        Shape::Line => 3,
-    };
-    (shape, p.textured, p.environment.draw_mode & 0x1FF, p.clut, uv, colors)
-}
-
 fn center(p: &Primitive) -> (f32, f32) {
     let count = p.vertex_count() as f32;
     let vertices = &p.vertices[..p.vertex_count()];
     (vertices.iter().map(|v| v.fx).sum::<f32>() / count, vertices.iter().map(|v| v.fy).sum::<f32>() / count)
 }
 
-/// Farther than this (VRAM pixels) between frames is a cut, not motion.
-const MAX_MOTION: f32 = 48.0;
+/// A map of view-space points ([`xem_gpu::TraceVertex::view`]): `m · p + t`.
+#[derive(Clone, Copy, Debug)]
+struct Affine {
+    m: DMat3,
+    t: DVec3,
+}
 
-/// `newest`'s primitives moved back towards their matches in `previous`:
-/// alpha 0 is where they were, 1 where they are.
-pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<TraceOp> {
-    // The interface moves as the game moves it, frame by frame.
-    let scene = scene_offset(newest);
-    let mut candidates: HashMap<_, Vec<&Primitive>> = HashMap::new();
-    for op in previous {
-        if let TraceOp::Draw(p) = op {
-            candidates.entry(identity(p)).or_default().push(p);
+impl Affine {
+    /// A recorded camera's or placement's transform: `axes · p / 4096 +
+    /// translation`.
+    fn of(axes: &[[f32; 3]; 3], translation: [f32; 3]) -> Affine {
+        let column = |k: usize| DVec3::from(axes[k].map(f64::from)) / 4096.0;
+        Affine { m: DMat3::from_cols(column(0), column(1), column(2)), t: DVec3::from(translation.map(f64::from)) }
+    }
+
+    /// This map, then `after`.
+    fn then(self, after: Affine) -> Affine {
+        Affine { m: after.m * self.m, t: after.m * self.t + after.t }
+    }
+
+    fn inverse(self) -> Option<Affine> {
+        (self.m.determinant().abs() > 1e-12).then(|| {
+            let m = self.m.inverse();
+            Affine { m, t: -(m * self.t) }
+        })
+    }
+
+    /// `alpha` of the way from this map to `to`, point by point.
+    fn lerp(self, to: Affine, alpha: f64) -> Affine {
+        Affine { m: self.m * (1.0 - alpha) + to.m * alpha, t: self.t.lerp(to.t, alpha) }
+    }
+
+    fn apply(self, p: DVec3) -> DVec3 {
+        self.m * p + self.t
+    }
+
+    /// Its rows, each with its translation, for the vertices.
+    fn rows(self) -> [[f32; 4]; 3] {
+        std::array::from_fn(|i| {
+            let row = self.m.row(i);
+            [row.x as f32, row.y as f32, row.z as f32, self.t[i] as f32]
+        })
+    }
+}
+
+/// A view-space point through [`Affine::rows`].
+fn mapped(rows: &[[f32; 4]; 3], p: [f32; 3]) -> [f32; 3] {
+    rows.map(|r| r[0] * p[0] + r[1] * p[1] + r[2] * p[2] + r[3])
+}
+
+/// The most a camera turns in a game frame (radians): more is a cut.
+const MAX_TURN: f64 = std::f64::consts::FRAC_PI_4;
+
+/// A recorded camera as interpolation takes it: its map of the game's world
+/// to its view (the world map's world placed at its origin), that map's
+/// rotation (of the mirrored world, `flip`, where it mirrors), scale and
+/// what is left of it besides them (its rounding), and the points of the
+/// world it looks at and stands at.
+#[derive(Clone, Copy, Debug)]
+struct View {
+    mode: CameraMode,
+    affine: Affine,
+    rotation: DQuat,
+    scale: f64,
+    flip: bool,
+    rest: DMat3,
+    target: DVec3,
+    eye: DVec3,
+}
+
+impl View {
+    fn of(camera: &Camera) -> Option<View> {
+        let relative = Affine::of(&camera.axes, camera.translation);
+        let origin = DVec3::from(camera.origin.map(f64::from));
+        let affine = Affine { m: relative.m, t: relative.t - relative.m * origin };
+        let determinant = affine.m.determinant();
+        let scale = determinant.abs().cbrt();
+        if !(scale > 1e-6) {
+            return None;
+        }
+        let flip = determinant < 0.0;
+        let mut turn = affine.m * (1.0 / scale);
+        if flip {
+            turn.z_axis = -turn.z_axis;
+        }
+        let rotation = DQuat::from_mat3(&turn).normalize();
+        let rest = affine.m - turned(rotation, scale, flip);
+        let target = DVec3::from(camera.target.map(f64::from)) + origin;
+        Some(View { mode: camera.mode, affine, rotation, scale, flip, rest, target, eye: affine.inverse()?.apply(DVec3::ZERO) })
+    }
+
+    /// Whether the game cut from this camera to `to` rather than moved it:
+    /// to another mode or a mirrored world, or by more than a game frame's
+    /// turn ([`MAX_TURN`]), a quarter of its scale, or the distance from
+    /// where it stands to what it looks at, which it or that point moved.
+    fn cut_to(&self, to: &View) -> bool {
+        let reach = to.eye.distance(to.target).max(1.0);
+        self.mode != to.mode
+            || self.flip != to.flip
+            || self.rotation.angle_between(to.rotation) > MAX_TURN
+            || !(0.8..1.25).contains(&(to.scale / self.scale))
+            || self.eye.distance(to.eye) > reach
+            || self.target.distance(to.target) > reach
+    }
+
+    /// The camera `alpha` of the way to `to` (each itself at its end): its
+    /// rotation turned and its scale changed that far, and what it looks at
+    /// moved that far in the world and in its view, so that it turns about
+    /// that point as the game's camera does.
+    fn between(&self, to: &View, alpha: f64) -> Affine {
+        let scale = self.scale + (to.scale - self.scale) * alpha;
+        let m = turned(self.rotation.slerp(to.rotation, alpha), scale, to.flip) + self.rest * (1.0 - alpha) + to.rest * alpha;
+        let target = self.target.lerp(to.target, alpha);
+        let seen = self.affine.apply(self.target).lerp(to.affine.apply(to.target), alpha);
+        Affine { m, t: seen - m * target }
+    }
+}
+
+/// A rotation scaled, of the mirrored world when `flip`.
+fn turned(rotation: DQuat, scale: f64, flip: bool) -> DMat3 {
+    let mut m = DMat3::from_quat(rotation) * scale;
+    if flip {
+        m.z_axis = -m.z_axis;
+    }
+    m
+}
+
+/// Whether two placements are the same transform of the same thing.
+fn same(a: &Placement, b: &Placement) -> bool {
+    (a.owner, a.packets, a.axes, a.translation) == (b.owner, b.packets, b.axes, b.translation)
+}
+
+/// The placement of the frame before that each of `newest` follows: the
+/// same sprite's, or the same model instance's, whose draws alternate
+/// between two packet buffers a buffer's size apart (the same one where its
+/// subsystem did not flip them) and agree, for each model, on which way
+/// they stepped; none for one not drawn then, or drawn twice differently.
+fn partners<'a>(newest: &[Placement], previous: &'a [Placement]) -> Vec<Option<&'a Placement>> {
+    let mut sprites: HashMap<u32, Option<&Placement>> = HashMap::new();
+    let mut buffers: HashMap<u32, Option<&Placement>> = HashMap::new();
+    for q in previous {
+        let (table, key) = if q.packets == 0 { (&mut sprites, q.owner) } else { (&mut buffers, q.packets) };
+        table.entry(key).and_modify(|known| {
+            if known.is_some_and(|k| !same(k, q)) {
+                *known = None;
+            }
+        }).or_insert(Some(q));
+    }
+    let buffer = |p: &Placement, at: u32| buffers.get(&at).copied().flatten().filter(|q| q.owner == p.owner);
+    // Which way each model's buffers stepped, from the draws only one way
+    // finds one for; for a model none tells, which way most did.
+    let mut steps: HashMap<u32, [u32; 2]> = HashMap::new();
+    let mut all = [0u32; 2];
+    for p in newest.iter().filter(|p| p.packets != 0 && buffer(p, p.packets).is_none()) {
+        let (back, on) = (buffer(p, p.packets.wrapping_sub(p.size)).is_some(), buffer(p, p.packets.wrapping_add(p.size)).is_some());
+        if back != on {
+            steps.entry(p.owner).or_default()[usize::from(on)] += 1;
+            all[usize::from(on)] += 1;
         }
     }
-    let mut used: HashMap<*const Primitive, ()> = HashMap::new();
+    let way = |counts: [u32; 2]| (counts[0] != counts[1]).then_some(counts[1] > counts[0]);
     newest
         .iter()
-        .map(|op| {
-            let TraceOp::Draw(p) = op else { return op.clone() };
-            if !effective_class(p, scene).is_scene() {
-                return op.clone();
-            }
-            let (cx, cy) = center(p);
-            let Some(list) = candidates.get(&identity(p)) else { return op.clone() };
-            let best = list
-                .iter()
-                .filter(|q| !used.contains_key(&(**q as *const Primitive)))
-                .map(|q| {
-                    let (qx, qy) = center(q);
-                    (q, (qx - cx).hypot(qy - cy))
-                })
-                .min_by(|a, b| a.1.total_cmp(&b.1));
-            let Some((q, distance)) = best else { return op.clone() };
-            if distance > MAX_MOTION {
-                return op.clone();
-            }
-            used.insert(*q as *const Primitive, ());
-            let mut moved = p.clone();
-            for (v, w) in moved.vertices.iter_mut().zip(q.vertices.iter()).take(p.vertex_count()) {
-                let lerp = |a: f32, b: f32| b + (a - b) * alpha;
-                v.fx = lerp(v.fx, w.fx);
-                v.fy = lerp(v.fy, w.fy);
-                v.x = v.fx.round() as i32;
-                v.y = v.fy.round() as i32;
-                if v.z > 0.0 && w.z > 0.0 {
-                    v.z = lerp(v.z, w.z);
-                }
-                if let (Some(a), Some(b)) = (v.view, w.view) {
-                    v.view = Some(std::array::from_fn(|i| lerp(a[i], b[i])));
-                }
-            }
-            TraceOp::Draw(moved)
+        .map(|p| match p.packets {
+            0 => sprites.get(&p.owner).copied().flatten(),
+            packets => buffer(p, packets).or_else(|| {
+                let on = steps.get(&p.owner).copied().and_then(way).or_else(|| way(all))?;
+                buffer(p, if on { packets.wrapping_add(p.size) } else { packets.wrapping_sub(p.size) })
+            }),
         })
         .collect()
+}
+
+/// When a moving thing of the frames shown moved last: the host's time the
+/// frame it moved in was first shown, and the time between its last two
+/// moves. Each thing moves at a pace of its own: a battle draws every
+/// display frame while its camera and Gears move every other one and its
+/// effects every one.
+#[derive(Clone, Copy, Debug)]
+struct Clock {
+    since: f64,
+    interval: f64,
+}
+
+impl Clock {
+    /// A thing first shown at `now`.
+    fn new(now: f64) -> Clock {
+        Clock { since: now, interval: 1.0 / 30.0 }
+    }
+
+    /// Its move at `now`: over the time since its move before, 1 to 4
+    /// vertical blanks; after a longer rest, over the time its moves took
+    /// before it.
+    fn moved(self, now: f64) -> Clock {
+        let gap = now - self.since;
+        Clock { since: now, interval: if gap <= 4.0 / 60.0 { gap.max(1.0 / 60.0) } else { self.interval } }
+    }
+
+    /// How far its last move has gone at `now`, 0 to 1.
+    fn alpha(self, now: f64) -> f64 {
+        ((now - self.since) / self.interval).clamp(0.0, 1.0)
+    }
+}
+
+/// A moving thing as interpolation follows it: where it is in the newest
+/// frame shown, where it was before its last move (none for one shown
+/// first, after a cut, or one moved further than the camera stands from
+/// what it looks at: another thing drawn into its memory), and when that
+/// move was ([`Clock`]).
+#[derive(Clone, Copy, Debug)]
+struct Track<T> {
+    now: T,
+    from: Option<T>,
+    clock: Clock,
+}
+
+/// A placement of the newest frame shown: its view-space points to its own
+/// space, and its own space's place in the world.
+#[derive(Clone, Copy, Debug)]
+struct Placed {
+    local: Affine,
+    track: Track<Affine>,
+}
+
+/// What interpolation knows of the frames shown, carried from each to the
+/// next ([`Moved::next`]): the camera, the newest frame's view-space points
+/// to the world, and each of its placements by its number from `first`.
+#[derive(Clone, Debug, Default)]
+struct Moved {
+    camera: Option<Track<View>>,
+    world: Option<Affine>,
+    first: u32,
+    placed: Vec<Option<Placed>>,
+}
+
+impl Moved {
+    /// The frame drawn with `camera` and `placements`, first shown at `now`,
+    /// after this one, whose frame placed `before`: what did not move keeps
+    /// its last move and when it was, what moved moves from where it was.
+    fn next(&self, before: &[Placement], camera: Option<&Camera>, placements: &[Placement], now: f64) -> Moved {
+        let Some(view) = camera.and_then(View::of) else { return Moved::default() };
+        let held = self.camera.is_some_and(|track| track.now.affine.m == view.affine.m && track.now.affine.t == view.affine.t);
+        let camera = match self.camera {
+            Some(track) if held => Track { now: view, ..track },
+            Some(track) => Track { now: view, from: (!track.now.cut_to(&view)).then_some(track.now), clock: track.clock.moved(now) },
+            None => Track { now: view, from: None, clock: Clock::new(now) },
+        };
+        let Some(world) = view.affine.inverse() else { return Moved::default() };
+        let reach = view.eye.distance(view.target).max(1.0);
+        let first = placements.first().map_or(0, |p| p.seq);
+        // Placements are numbered as recorded: a frame's run from its first.
+        let span = placements.last().map_or(0, |p| p.seq.wrapping_sub(first) as usize + 1);
+        let mut placed = vec![None; if span <= 2 * placements.len() + 64 { span } else { 0 }];
+        for (p, q) in placements.iter().zip(partners(placements, before)) {
+            let transform = Affine::of(&p.axes, p.translation);
+            let (Some(local), Some(slot)) = (transform.inverse(), placed.get_mut(p.seq.wrapping_sub(first) as usize)) else { continue };
+            let here = transform.then(world);
+            let was = q.and_then(|q| self.placed.get(q.seq.wrapping_sub(self.first) as usize).copied().flatten().map(|placed| (q, placed.track)));
+            let track = match was {
+                Some((q, track)) if held && (q.axes, q.translation) == (p.axes, p.translation) => Track { now: here, ..track },
+                Some((_, track)) => {
+                    let near = here.apply(DVec3::ZERO).distance(track.now.apply(DVec3::ZERO)) <= reach;
+                    Track { now: here, from: near.then_some(track.now), clock: track.clock.moved(now) }
+                }
+                None => Track { now: here, from: None, clock: Clock::new(now) },
+            };
+            *slot = Some(Placed { local, track });
+        }
+        Moved { camera: Some(camera), world: Some(world), first, placed }
+    }
+
+    /// Whether anything still moves at `now`.
+    fn moving(&self, now: f64) -> bool {
+        let moving = |from: bool, clock: Clock| from && clock.alpha(now) < 1.0;
+        self.camera.is_some_and(|camera| moving(camera.from.is_some(), camera.clock))
+            || self.placed.iter().flatten().any(|placed| moving(placed.track.from.is_some(), placed.track.clock))
+    }
+
+    /// How the newest frame's scene moves at `now`: none where nothing
+    /// still moves.
+    fn motion(&self, now: f64) -> Option<Motion> {
+        if !self.moving(now) {
+            return None;
+        }
+        let (camera, world) = (self.camera.as_ref()?, self.world?);
+        let turning = camera.from.map(|from| (from, camera.clock.alpha(now))).filter(|&(_, alpha)| alpha < 1.0);
+        let moving = |placed: &Placed| placed.track.from.map(|from| (from, placed.track.clock.alpha(now))).filter(|&(_, alpha)| alpha < 1.0);
+        let between = turning.map_or(camera.now.affine, |(from, alpha)| from.between(&camera.now, alpha));
+        Some(Motion {
+            still: world.then(between).rows(),
+            first: self.first,
+            placed: self.placed.iter().map(|placed| {
+                let placed = placed.as_ref()?;
+                let (from, alpha) = moving(placed)?;
+                Some(placed.local.then(from).lerp(world, alpha).then(between).rows())
+            }).collect(),
+        })
+    }
+}
+
+/// How interpolation moves the newest frame's scene ([`Moved::motion`]):
+/// maps of its view-space points to the view of the camera in between, for
+/// what holds still in the world and for each model and sprite still moving
+/// (by its placement in the newest, from `first`).
+struct Motion {
+    still: [[f32; 4]; 3],
+    first: u32,
+    placed: Vec<Option<[[f32; 4]; 3]>>,
+}
+
+impl Motion {
+    fn map(&self, placement: u32) -> &[[f32; 4]; 3] {
+        placement.checked_sub(self.first).and_then(|i| self.placed.get(i as usize)).and_then(Option::as_ref).unwrap_or(&self.still)
+    }
+
+    /// `ops`' scene moved: each projected point (and a sprite's floor point)
+    /// taken through its map and its sub-pixel point and depth moved by as
+    /// much as its projection about the projection centre, as the GTE
+    /// projects it (divided by its depth, but by half the projection
+    /// distance where it is nearer, or behind the camera); a primitive with
+    /// a point without depth stays as drawn, and so does the interface.
+    fn apply(&self, ops: &mut [TraceOp]) {
+        let scene = scene_offset(ops);
+        for op in ops {
+            let TraceOp::Draw(p) = op else { continue };
+            let Some((_, h)) = p.projection else { continue };
+            if !effective_class(p, scene).is_scene() {
+                continue;
+            }
+            let (map, h, count) = (self.map(p.placement), f32::from(h), p.vertex_count());
+            let divisor = |z: f32| z.max(h / 2.0).max(1.0);
+            let mut points = [([0.0f32; 3], [0.0f32; 3]); 4];
+            let movable = (0..count).all(|i| {
+                let Some(q) = view_point(p, i) else { return false };
+                points[i] = (q, mapped(map, q));
+                true
+            });
+            if !movable {
+                continue;
+            }
+            for (v, (q, m)) in p.vertices.iter_mut().zip(points).take(count) {
+                v.fx += h * (m[0] / divisor(m[2]) - q[0] / divisor(q[2]));
+                v.fy += h * (m[1] / divisor(m[2]) - q[1] / divisor(q[2]));
+                v.x = whole(v.fx);
+                v.y = whole(v.fy);
+                // Its depth moves with its point's (the trace gives a point
+                // behind the camera depth 1).
+                if v.z > 0.0 {
+                    v.z = (v.z + m[2] - q[2].max(1.0)).max(1.0);
+                }
+                if v.view.is_some() {
+                    v.view = Some(m);
+                }
+            }
+            // The floor point, taken back as the GTE projected it, moves with
+            // the sprite's points (taken back at its own depth and moved by
+            // its projection there, one nearer than that half parted from
+            // them).
+            if let Some([x, y, z]) = p.ground {
+                let [qx, qy, _] = unproject(p, (x, y, divisor(z)));
+                let m = mapped(map, [qx, qy, z]);
+                p.ground = Some([x + h * (m[0] / divisor(m[2]) - qx / divisor(z)), y + h * (m[1] / divisor(m[2]) - qy / divisor(z)), m[2].max(1.0)]);
+            }
+        }
+    }
+}
+
+/// `ops`, the newest of `frames`' (each first shown at its time, drawn with
+/// its camera and placements), moved as interpolation shows them at the
+/// host's time `now` ([`Motion`]); false, leaving them as drawn, where
+/// nothing moves then.
+pub fn interpolate(ops: &mut [TraceOp], frames: &[(f64, &Camera, &[Placement])], now: f64) -> bool {
+    let mut moved = Moved::default();
+    let mut before: &[Placement] = &[];
+    for &(time, camera, placements) in frames {
+        moved = moved.next(before, Some(camera), placements, time);
+        before = placements;
+    }
+    let Some(motion) = moved.motion(now) else { return false };
+    motion.apply(ops);
+    true
 }
 
 /// Points of the scene that the GTE placed within half a native pixel of a
@@ -1155,24 +1517,28 @@ pub(crate) struct PlaneLayers {
     below: Vec<f32>,
 }
 
-/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
-/// when it holds them, else worked out and kept there.
-pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
-    // Each original part carries the same alternative for its drawing pass.
-    // Replace that pass once, including the original builder's texture cells,
-    // and put those cells back before another sprite/scenery samples VRAM.
+/// Each sprite drawing pass whose parts carry an alternative (`pick`: they
+/// all carry the same one) drawn as the alternative: its cells uploaded, its
+/// parts drawn (each from the pass's first part, `clear` taking the
+/// alternative off it), and the pixels the cells covered put back before
+/// another sprite or the scenery samples VRAM.
+pub(crate) fn substitute_alternatives(
+    ops: &mut Vec<TraceOp>,
+    pick: impl Fn(&xem_gpu::Primitive) -> Option<&std::sync::Arc<xem_gpu::SpriteFacing>>,
+    clear: impl Fn(&mut xem_gpu::Primitive),
+) {
     let mut replaced = std::collections::HashSet::new();
-    let mut facing_ops = Vec::with_capacity(ops.len());
+    let mut substituted = Vec::with_capacity(ops.len());
     for op in ops.drain(..) {
-        let TraceOp::Draw(p) = &op else { facing_ops.push(op); continue };
-        let Some(facing) = &p.facing else { facing_ops.push(op); continue };
-        if !replaced.insert(std::sync::Arc::as_ptr(facing)) { continue; }
-        for (rect, pixels) in &facing.textures {
-            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        let TraceOp::Draw(p) = &op else { substituted.push(op); continue };
+        let Some(alternative) = pick(p) else { substituted.push(op); continue };
+        if !replaced.insert(std::sync::Arc::as_ptr(alternative)) { continue; }
+        for (rect, pixels) in &alternative.textures {
+            substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
-        for part in &facing.parts {
+        for part in &alternative.parts {
             let mut p = p.clone();
-            p.facing = None;
+            clear(&mut p);
             p.shape = xem_gpu::Shape::Quad;
             p.raw = part.words[0] & 0x01000000 != 0;
             p.semi = part.words[0] & 0x02000000 != 0;
@@ -1193,13 +1559,19 @@ pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Op
                 v.u = (uv & 0xFF) as i16;
                 v.v = (uv >> 8 & 0xFF) as i16;
             }
-            facing_ops.push(TraceOp::Draw(p));
+            substituted.push(TraceOp::Draw(p));
         }
-        for (rect, pixels) in &facing.restore {
-            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        for (rect, pixels) in &alternative.restore {
+            substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
     }
-    *ops = facing_ops;
+    *ops = substituted;
+}
+
+/// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`
+/// when it holds them, else worked out and kept there.
+pub(crate) fn first_person_layered(ops: &mut Vec<TraceOp>, look: &Look, kept: Option<(&mut PlaneLayers, ((u16, u16), u64))>) {
+    substitute_alternatives(ops, |p| p.facing.as_ref(), |p| p.facing = None);
     let scene = scene_offset(ops);
     let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     let camera = |q: [f32; 3]| {

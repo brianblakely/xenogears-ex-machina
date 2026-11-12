@@ -107,7 +107,7 @@ pub fn operation_line(request: &AppRequest, result: &Result<String, String>, gam
 }
 
 /// An agent's acknowledgement of an app operation (`app {request}`):
-/// `{"ok": true, "message"}`, the status line's text, or `{"error"}`.
+/// `{"ok": true, "message"}`, what it did, or `{"error"}`.
 pub fn app_reply(result: Result<String, String>) -> serde_json::Value {
     match result {
         Ok(message) => serde_json::json!({ "ok": true, "message": message }),
@@ -156,9 +156,21 @@ pub fn open_gpu(
     Ok((gpu, surface))
 }
 
+/// Configures `surface`, returning wgpu's error rather than raising it as
+/// uncaptured (which ends the run): Android can take the native window away
+/// between a check and the configuration, as when it pauses or recreates the
+/// activity while the app starts (the release smoke's first start, after
+/// #80's merge: "In Surface::configure: Invalid surface").
+fn configure(gpu: &Gpu, surface: &wgpu::Surface, config: &wgpu::SurfaceConfiguration) -> Result<(), String> {
+    let scope = gpu.device.push_error_scope(wgpu::ErrorFilter::Validation);
+    surface.configure(&gpu.device, config);
+    pollster::block_on(scope.pop()).map_or(Ok(()), |error| Err(error.to_string()))
+}
+
 /// The window's swapchain. The surface is absent while suspended: Android
 /// takes the native window away in the background and may replace it (on a
-/// configuration change, say) while the app runs.
+/// configuration change, say) while the app runs; a surface that cannot be
+/// configured is treated as gone.
 pub struct Presenter {
     surface: Option<wgpu::Surface<'static>>,
     /// The native surface `surface` was made for.
@@ -202,7 +214,7 @@ impl Presenter {
             color_space: wgpu::SurfaceColorSpace::Auto,
             view_formats: vec![],
         };
-        surface.configure(&gpu.device, &config);
+        configure(gpu, &surface, &config)?;
         Ok(Self {
             surface: Some(surface),
             native: window.native_surface(),
@@ -238,10 +250,8 @@ impl Presenter {
                     .surface
                     .as_ref()
                     .is_some_and(|surface| surface.get_capabilities(&gpu.adapter).formats.is_empty());
-            if gone {
+            if gone || self.surface.as_ref().is_some_and(|surface| configure(gpu, surface, &self.config).is_err()) {
                 self.surface = None;
-            } else if let Some(surface) = &self.surface {
-                surface.configure(&gpu.device, &self.config);
             }
         }
         true
@@ -271,7 +281,7 @@ impl Presenter {
         let (width, height) = window.pixel_size();
         self.config.width = width.max(1);
         self.config.height = height.max(1);
-        surface.configure(&gpu.device, &self.config);
+        configure(gpu, &surface, &self.config)?;
         self.surface = Some(surface);
         self.native = native;
         Ok(())
@@ -295,14 +305,16 @@ impl Presenter {
             wgpu::CurrentSurfaceTexture::Success(frame) => Some(frame),
             wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
                 drop(frame);
-                surface.configure(&gpu.device, &self.config);
+                if configure(gpu, surface, &self.config).is_err() {
+                    self.surface = None;
+                }
                 None
             }
             wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => None,
             wgpu::CurrentSurfaceTexture::Outdated => {
                 self.resize(gpu, window);
-                if let Some(surface) = &self.surface {
-                    surface.configure(&gpu.device, &self.config);
+                if self.surface.as_ref().is_some_and(|surface| configure(gpu, surface, &self.config).is_err()) {
+                    self.surface = None;
                 }
                 None
             }
@@ -372,17 +384,22 @@ pub struct View {
     marks: Vec<xem_assist::overlay::Mark>,
     atlas: xem_render::glass::Atlas,
     relative_mouse: bool,
+    /// When a mouse last moved or pressed (touches aside), and whether the
+    /// host hid its cursor over the game for it (`Settings::hides_cursor`).
+    mouse_moved: Instant,
+    cursor_hidden: bool,
     /// The first gamepad's buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the app's Toggle
     /// first-person view asked for since the last frame (its key, its chord,
-    /// the deck's LOOK), the mouse motion that turns its view, and when its
-    /// view last turned.
+    /// the deck's LOOK), the mouse motion that turns its view, when its
+    /// view last turned, and Select hiding a dialogue's windows.
     pad: [u8; 16],
     axes: [f32; 4],
     look_toggle: xem_settings::look::Toggle,
     look_asked: bool,
     look_mouse: [f32; 2],
     looked: Option<Instant>,
+    dialogue_hiding: xem_settings::look::DialogueHiding,
     /// The disc the game waits for that the drive's changer has not got.
     wanted_disc: Option<u8>,
 }
@@ -480,12 +497,15 @@ impl View {
             marks: Vec::new(),
             atlas: Default::default(),
             relative_mouse: false,
+            mouse_moved: Instant::now(),
+            cursor_hidden: false,
             pad: [0; 16],
             axes: [0.0; 4],
             look_toggle: Default::default(),
             look_asked: false,
             look_mouse: [0.0; 2],
             looked: None,
+            dialogue_hiding: Default::default(),
             wanted_disc: None,
         })
     }
@@ -503,8 +523,13 @@ impl View {
             return;
         }
         self.wheel -= steps;
+        self.zoom(steps as i32);
+    }
+
+    fn zoom(&mut self, steps: i32) {
+        if steps == 0 { return; }
         let graphics = self.settings.borrow().settings().graphics;
-        let zoomed = graphics.zoomed(steps as i32);
+        let zoomed = graphics.zoomed(steps);
         if zoomed != graphics {
             let _ = self.settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(zoomed));
         }
@@ -523,7 +548,7 @@ impl View {
     /// Import BIOS of a file an agent names (`xem-desktop --control`'s
     /// `bios_import {path}`), as the panel's picker gives one: checked, kept
     /// in the app's directory for every boot and given to `game` if one
-    /// runs; the outcome shows on the status line as the panel's does.
+    /// runs; a failure shows in the error bar as the panel's does.
     pub fn import_bios(&self, game: Option<&mut Game>, path: &str) -> Result<String,String> {
         let result = self.operations.import_bios_file(game,path);
         self.show_result(result.clone());
@@ -532,8 +557,8 @@ impl View {
 
     /// An agent's app operation (`xem-desktop --control`'s `app {request}`,
     /// [`agent_request`]), carried out as the panel's and the bindings' are
-    /// ([`Self::update_app`]): its outcome on the status line, a state's on
-    /// the HUD, and its line where operations are told.
+    /// ([`Self::update_app`]): a failure in the error bar, a state's outcome
+    /// on the HUD, and its line where operations are told.
     pub fn app_command(&mut self, mut game: Option<&mut Game>, request: AppRequest) -> Result<String,String> {
         let result = self.operations.execute(request,None,game.as_deref_mut(),&mut self.settings.borrow_mut());
         if let AppRequest::Action(action) = request { self.state_notice(action,&result); }
@@ -545,10 +570,7 @@ impl View {
     /// Runs Settings requests and bound actions under the host's one game owner.
     /// Returns false while the platform file picker has paused play.
     pub fn update_app(&mut self, window: &sdl::Window, game: &mut Option<Game>) -> bool {
-        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
-        if self.app_input.pad(&self.pad) {
-            self.set_panel_visible(!self.panel_visible());
-        }
+        self.poll_gamepad();
         if !self.panel_visible() { self.ui.cancel_pointer(); }
         // With the mouse camera on, the game holds the mouse (hidden,
         // unbounded motion) while it has the input.
@@ -562,6 +584,15 @@ impl View {
             self.relative_mouse = relative;
             self.player.mouse.clear();
             self.look_mouse = [0.0; 2];
+        }
+        // A still mouse's cursor hides over the game (the relative mode
+        // hides it itself) and shows again as it moves.
+        let hidden = !relative && !self.panel_visible()
+            && self.settings.borrow().settings().hides_cursor(self.mouse_moved.elapsed().as_secs_f64());
+        if hidden != self.cursor_hidden {
+            // SAFETY: SDL's video subsystem runs the window.
+            unsafe { if hidden { SDL_HideCursor() } else { SDL_ShowCursor() } };
+            self.cursor_hidden = hidden;
         }
         let was_busy = self.operations.busy;
         let completed = self.operations.poll(game.as_mut(),&mut self.settings.borrow_mut());
@@ -585,7 +616,10 @@ impl View {
                 }
             }
         }
-        self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
+        // A gamepad binding's field taking the next buttons: they are no chord.
+        if !(self.panel_visible() && self.ui.capturing_buttons()) {
+            self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
+        }
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
             // The view's own: the next frame's toggles carry it out.
@@ -601,6 +635,8 @@ impl View {
             self.show_result(result);
         }
         if let Some(game) = game {
+            let (debug_busy, debug_message) = game.debug_status();
+            self.ui.set_debug_status(true, debug_busy, debug_message);
             let (forward,rewind) = game.time_activity();
             self.frame_rate.set_activity(forward,rewind);
             let settings = self.settings.borrow();
@@ -623,9 +659,24 @@ impl View {
             }
         } else {
             self.frame_rate.set_activity(false,false);
+            self.ui.set_debug_status(false, false, "Boot a game to use Debug.");
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
         }
         !self.operations.busy
+    }
+
+    /// The first gamepad as it is: Back+Start toggles the panel, and the
+    /// open panel takes the gamepad (`SettingsUi::gamepad`); what it holds
+    /// as the panel closes stays the panel's until let go.
+    fn poll_gamepad(&mut self) {
+        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
+        if self.app_input.pad(&self.pad) {
+            self.set_panel_visible(!self.panel_visible());
+        }
+        if self.panel_visible() && self.app_input.focused() {
+            self.ui.gamepad(&self.pad, &self.axes, self.frame_rate_started.elapsed());
+            if !self.panel_visible() { self.app_input.hold_pad(); }
+        }
     }
 
     fn state_notice(&mut self, action: xem_settings::AppAction, result: &Result<String,String>) {
@@ -635,10 +686,11 @@ impl View {
         self.frame_rate.notify_state(saved,result.as_ref().err().map(String::as_str),self.frame_rate_started.elapsed());
     }
 
-    /// An operation's outcome on the panel's status line.
+    /// An operation's outcome in the panel's error bar: a failure shows,
+    /// a success clears an earlier one.
     fn show_result(&self, result: Result<String, String>) {
         match result {
-            Ok(text) => self.ui.set_operation_status(&text),
+            Ok(_) => self.ui.clear_operation_error(),
             Err(error) => self.ui.set_operation_error(&error),
         }
     }
@@ -714,6 +766,14 @@ impl View {
     pub unsafe fn handle(&mut self, window: &sdl::Window, event: &SDL_Event) {
         let visible = self.panel_visible();
         let kind = SDL_EventType(unsafe { event.r#type });
+        let mouse = match kind {
+            SDL_EVENT_MOUSE_MOTION => Some(unsafe { event.motion }.which),
+            SDL_EVENT_MOUSE_BUTTON_DOWN => Some(unsafe { event.button }.which),
+            _ => None,
+        };
+        if mouse.is_some_and(|which| which != SDL_TOUCH_MOUSEID) {
+            self.mouse_moved = Instant::now();
+        }
         match kind {
             SDL_EVENT_KEY_DOWN | SDL_EVENT_KEY_UP => {
                 let key = unsafe { event.key };
@@ -893,6 +953,12 @@ impl View {
         self.presented_movie
     }
 
+    /// The render passes the game's picture last took (VRAM's picture as
+    /// the game drew it and the frame replayed from it), for status reports.
+    pub fn render_passes(&self) -> u32 {
+        self.renderer.stats().passes + self.renderer.frame().passes()
+    }
+
     /// Takes what `game` drew since the last call for the renderer (the
     /// graphics settings choose how it is drawn). A 24-bit display (movie
     /// frames) is shown as the device holds it.
@@ -917,7 +983,7 @@ impl View {
         // placed in the safe area as the presentation settings place it.
         let display = game.display_info();
         let safe = self.safe_rect();
-        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale);
+        let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), self.settings.borrow().settings().presentation.scale, graphics.forced_aspect());
         config.movies = config.movies.map(|_| (placed.width.round() as u32, placed.height.round() as u32));
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
@@ -935,12 +1001,11 @@ impl View {
         }
     }
 
-    /// Whether a presentation is due: always at the display's rate, or
-    /// under the game-paced setting only when the game drew or the panel shows.
+    /// Whether a presentation is due: at the display's rate, or while the
+    /// presentation is game-paced (no interpolation) only when the game drew
+    /// or the panel shows.
     pub fn wants_present(&self) -> bool {
-        let graphics = self.settings.borrow().settings().graphics;
-        graphics.renderer == xem_settings::Renderer::Original
-            || graphics.present_rate == xem_settings::PresentRate::Display
+        !self.settings.borrow().settings().graphics.game_paced()
             || self.fresh_frame
             || self.panel_visible()
             || self.game_frame.is_none()
@@ -981,7 +1046,8 @@ impl View {
     /// battle's attack inputs have the buttons, `xem_settings::bindings`).
     /// In a field they also toggle and turn first-person inspection, which
     /// holds back the buttons that would walk, jump or turn the camera
-    /// (`xem_settings::look`), as the app's Toggle first-person view does.
+    /// (`xem_settings::look`), as the app's Toggle first-person view does;
+    /// Select held over a dialogue hides its windows.
     pub fn pad_buttons(&mut self, context: PadContext, targets: Option<xem_core::menu::Targets>) -> u16 {
         self.game_ui = context.ui;
         self.targets = targets;
@@ -992,6 +1058,8 @@ impl View {
             self.look_mouse = [0.0; 2];
             self.deck.take_drag();
             self.looked = None;
+            self.dialogue_hiding.clear();
+            self.renderer.set_dialogue_hidden(false);
             return 0;
         }
         let now = self.frame_rate_started.elapsed().as_secs_f64() * 1000.0;
@@ -1017,6 +1085,11 @@ impl View {
         let field = context.field;
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
+        // Held over a dialogue, Select hides its windows (presentation only),
+        // presented anew as it changes, paused or not.
+        let hidden = self.dialogue_hiding.update(select, &self.pad, context.ui, now);
+        self.fresh_frame |= hidden != self.renderer.dialogue_hidden();
+        self.renderer.set_dialogue_hidden(hidden);
         let setting = self.settings.borrow().settings().graphics.renderer;
         let drawn = setting == xem_settings::Renderer::ExMachina;
         let asked = std::mem::take(&mut self.look_asked);
@@ -1033,6 +1106,7 @@ impl View {
             self.look_mouse = [0.0; 2];
         }
         let on = self.renderer.first_person();
+        let zoom = self.player.zoom_steps(now, !on);
         // Running by default would leave Run pressed alone once the view
         // holds the directions back.
         self.player.run_by_default = self.settings.borrow().settings().run_by_default && !on;
@@ -1055,6 +1129,7 @@ impl View {
             let (yaw, pitch) = turn.radians(seconds);
             self.renderer.look_around(yaw, pitch);
         }
+        self.zoom(zoom);
         xem_settings::look::game_buttons(buttons, on, field, &context.assignment)
     }
 
@@ -1105,12 +1180,13 @@ impl View {
         self.player.touch = self.deck.actions();
     }
 
-    /// Lays the touch deck out by the picture last shown.
+    /// Lays the touch deck out by the picture last shown (with no stick
+    /// while first-person inspection shows).
     fn arrange(&mut self, ui: xem_core::context::Context) {
         if let Some(picture) = self.picture {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let density = self.ui.scale_factor();
-            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, ui);
+            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, ui, self.renderer.first_person());
         }
     }
 
@@ -1121,7 +1197,7 @@ impl View {
     /// no field camera to walk or point through: its taps walk nowhere and
     /// talk to no one, and no floor marks show.
     pub fn assist(&mut self, game: &mut Game) {
-        let ui = game.pad_context().ui;
+        let ui = game.context();
         self.arrange(ui);
         let taps = std::mem::take(&mut self.taps);
         let inspecting = self.renderer.first_person();
@@ -1154,6 +1230,11 @@ impl View {
     /// The touch deck's controls and where they stand (target pixels).
     pub fn deck_controls(&self) -> Vec<(xem_assist::touch::Control, xem_assist::touch::Rect)> {
         self.deck.controls.clone()
+    }
+
+    /// The touch deck's stick: where it rests and its reach (target pixels).
+    pub fn deck_stick(&self) -> Option<xem_assist::touch::Stick> {
+        self.deck.stick
     }
 
     /// Whether the touch controls show: the setting, on Android, or once a
@@ -1236,7 +1317,16 @@ impl View {
         let presentation = self.settings.borrow().settings().presentation.clone();
         self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
             .map_err(|error| error.to_string())?;
-        let mut placed = present_rect(game_size, (safe.width as u32, safe.height as u32), presentation.scale);
+        // Under Force 4:3 the picture's place follows the game's own lines,
+        // whatever size the frame was drawn at: game frames, rebuilt movies
+        // and the device's picture take the same place.
+        let graphics = self.settings.borrow().settings().graphics;
+        let ratio = graphics.forced_aspect();
+        let image = match (&self.game_frame, ratio) {
+            (Some((display, _)), Some(_)) => (display.width, display.height),
+            _ => game_size,
+        };
+        let mut placed = present_rect(image, (safe.width as u32, safe.height as u32), presentation.scale, ratio);
         placed.x += safe.x;
         placed.y += safe.y;
         self.picture = match (&self.game_frame, encoded) {
@@ -1259,7 +1349,6 @@ impl View {
         // Movie frames the device shows itself (the Original movies setting,
         // or one Ex Machina cannot rebuild) stay as the decoder made them,
         // each pixel a block; the Original renderer keeps the chosen filter.
-        let graphics = self.settings.borrow().settings().graphics;
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
             game.filter = wgpu::FilterMode::Nearest;
         }
@@ -1267,25 +1356,23 @@ impl View {
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         let mut glass = Vec::new();
         if let Some(picture) = self.picture {
-            let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
+            // Each axis as the picture is enlarged along it (Force 4:3 or
+            // Stretch reshapes it).
+            let (sx, sy) = (picture.placed.width / (picture.display.0 + 2.0 * picture.side), picture.placed.height / picture.display.1);
             for mark in &self.marks {
                 // A flat picture's marks lie on its screen.
                 let xem_assist::overlay::Place::Screen { centre, x, y } = mark.place else { continue };
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
                 let centre = picture.from_screen(centre);
-                glass.push((view, Some((centre, (x.0 * scale, x.1 * scale), (y.0 * scale, y.1 * scale))), None));
+                glass.push((view, Some((centre, (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None));
             }
         }
         if touch_shown && !visible {
-            let ui = self.game_ui;
-            let held = self.deck.held();
             let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            for (control, rect) in self.deck.controls.clone() {
-                let state = xem_assist::draw::deck_state(control, held.contains(&control), auto_advance, first_person);
-                let (widget, rect) = xem_assist::draw::deck_widget(control, control.label(ui), state, rect);
+            for (widget, rect) in xem_assist::draw::deck_widgets(&self.deck, self.game_ui, auto_advance, first_person) {
                 let rect = Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
+                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, xem_assist::draw::pixels(&widget), style).clone();
                 glass.push((view, None, Some(rect)));
             }
         }
@@ -1489,16 +1576,19 @@ mod tests {
             .filter(|(i, p)| { let x = (i % width as usize) as f32; (x < picture.x || x >= picture.x + picture.width) && p[0] > 120 })
             .count();
         assert_eq!(lit(&xem_render::read_rgba8(&gpu.device, &gpu.queue, &target)), 0);
-        // A finger on the D-pad's Up: the deck shows, Up is held.
+        // A finger on the stick pushed up: the deck shows, Up is held.
         view.arrange(xem_core::context::Context::Walk);
-        let up = view.deck.controls.iter().find(|(c, _)| *c == xem_assist::touch::Control::Up).unwrap().1;
-        assert!(up.x + up.width <= picture.x, "beside the picture: {up:?}");
-        let (cx, cy) = up.centre();
-        view.finger(Finger::Down, 7, (cx / width as f32, cy / height as f32));
-        assert_eq!(view.pad_buttons(PadContext::default(), None) & button::UP, button::UP);
+        let stick = view.deck.stick.expect("a stick");
+        assert!(stick.rest.0 + stick.radius() <= picture.x, "beside the picture: {stick:?}");
+        let at = |x: f32, y: f32| (x / width as f32, y / height as f32);
+        let (cx, cy) = stick.rest;
+        view.finger(Finger::Down, 7, at(cx, cy));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), 0, "held still, it holds nothing");
+        view.finger(Finger::Moved, 7, at(cx, cy - stick.reach));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), button::UP);
         view.render(&gpu, &output, 0.0).unwrap();
         assert!(lit(&xem_render::read_rgba8(&gpu.device, &gpu.queue, &target)) > 1000, "the glass deck is drawn");
-        view.finger(Finger::Up, 7, (cx / width as f32, cy / height as f32));
+        view.finger(Finger::Up, 7, at(cx, cy - stick.reach));
         assert_eq!(view.pad_buttons(PadContext::default(), None), 0);
         // A tap on the picture is kept for the game's context.
         let (px, py) = (picture.x + picture.width / 2.0, picture.y + picture.height / 2.0);
@@ -1564,10 +1654,33 @@ mod tests {
         press(&view, &[SDL_GAMEPAD_BUTTON_NORTH]);
         assert_eq!(frame(&mut view), button::TRIANGLE, "the reconnected pad plays");
         press(&view, &[]);
+        let tilt = |view: &View, x: f32, y: f32| unsafe {
+            let joystick = SDL_GetGamepadJoystick(*view.gamepads.first().unwrap());
+            SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHTX.0, (x * 32767.0) as i16);
+            SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHTY.0, (y * 32767.0) as i16);
+            SDL_UpdateGamepads();
+        };
+        // Even during a scripted scene (no walking controls), the player
+        // can bring the camera back in to see through the house's walls.
+        tilt(&view, 0.8, 0.9);
+        assert_eq!(frame(&mut view), 0, "the lower slice zooms without turning");
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 125);
+        tilt(&view, 0.8, -0.9);
+        assert_eq!(frame(&mut view), 0);
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 100, "up restores the original zoom");
+        tilt(&view, -0.9, 0.8);
+        assert_eq!(frame(&mut view), button::L1, "the left slice still turns");
+        tilt(&view, 0.9, -0.8);
+        assert_eq!(frame(&mut view), button::R1, "the right slice still turns");
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 100, "turning never zooms");
+        tilt(&view, 0.0, 0.0);
         // Settings changed live, from the open panel: Confirm and Menu
         // swapped (Menu cleared first: an input holds one button).
         view.set_panel_visible(true);
+        tilt(&view, 0.0, 0.9);
         assert_eq!(frame(&mut view), 0, "the panel has the input");
+        assert_eq!(settings.borrow().settings().graphics.zoom_out, 100, "settings takes the stick too");
+        tilt(&view, 0.0, 0.0);
         settings.borrow_mut().apply(xem_settings::SettingChange::BindGame {
             context: xem_settings::InputContext::Play,
             action: xem_settings::GameAction::Menu,
@@ -1589,6 +1702,23 @@ mod tests {
         assert_eq!(frame(&mut view), button::CROSS, "West confirms now");
         press(&view, &[]);
         assert_eq!(frame(&mut view), 0);
+        // The open panel takes the gamepad: East closes it, and what closed
+        // it reaches the game only when pressed again.
+        view.set_panel_visible(true);
+        let poll = |view: &mut View| {
+            view.poll_gamepad();
+            view.pad_buttons(PadContext::default(), None)
+        };
+        assert_eq!(poll(&mut view), 0);
+        press(&view, &[SDL_GAMEPAD_BUTTON_EAST]);
+        assert_eq!(poll(&mut view), 0, "East closed the panel");
+        assert!(!view.panel_visible());
+        assert_eq!(poll(&mut view), 0, "and is the panel's while held");
+        press(&view, &[]);
+        assert_eq!(poll(&mut view), 0);
+        press(&view, &[SDL_GAMEPAD_BUTTON_EAST]);
+        assert_ne!(poll(&mut view), 0, "pressed again, it plays");
+        press(&view, &[]);
         view.gamepad_removed(again);
         unsafe { SDL_DetachVirtualJoystick(again) };
     }
@@ -1695,10 +1825,13 @@ mod tests {
         let walking = FieldControls { field: true, walking: true, menu: false, picture: false };
         let context = PadContext { field: walking, ui: xem_core::context::Context::Walk, ..PadContext::default() };
         let across = |(x, y): (f32, f32)| (x / width as f32, y / height as f32);
-        let control = |view: &View, c: Control| view.deck.controls.iter().find(|(k, _)| *k == c).unwrap().1.centre();
-        let (select, up) = (control(&view, Control::Select), control(&view, Control::Up));
-        // Off, the D-pad walks and (by default) runs.
-        view.finger(Finger::Down, 1, across(up));
+        let select = view.deck.controls.iter().find(|(k, _)| *k == Control::Select).unwrap().1.centre();
+        // Where the stick rests (beside the picture), and pushed up from there.
+        let stick = view.deck.stick.expect("a stick");
+        let (rest, up) = (stick.rest, (stick.rest.0, stick.rest.1 - stick.reach));
+        // Off, the stick pushed up walks and (by default) runs.
+        view.finger(Finger::Down, 1, across(rest));
+        view.finger(Finger::Moved, 1, across(up));
         assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
         view.finger(Finger::Up, 1, across(up));
         // SELECT toggles the view, and is the view's here, not the game's.
@@ -1707,9 +1840,13 @@ mod tests {
         assert!(view.first_person(), "the deck's SELECT toggles the view");
         view.finger(Finger::Up, 2, across(select));
         assert_eq!(view.pad_buttons(context, None), 0);
-        // On, the D-pad holds nothing back for the game: no direction, and no
-        // Run left alone.
-        view.finger(Finger::Down, 3, across(up));
+        // On, the deck (laid out again, as each frame) has no stick: a finger
+        // pushed up where it rested holds nothing for the game, no direction
+        // and no Run left alone.
+        view.arrange(xem_core::context::Context::Walk);
+        assert!(view.deck.stick.is_none(), "no stick while the view shows");
+        view.finger(Finger::Down, 3, across(rest));
+        view.finger(Finger::Moved, 3, across(up));
         assert_eq!(view.pad_buttons(context, None), 0, "the character stays where it stands");
         view.finger(Finger::Up, 3, across(up));
         // A finger dragged right on the picture turns the view left (the
@@ -1723,17 +1860,73 @@ mod tests {
         assert!((yaw + 0.3).abs() < 1e-3 && pitch.abs() < 1e-3, "100 logical pixels turn it 0.3 radians: {yaw} {pitch}");
         view.finger(Finger::Up, 4, across((middle.0 + 100.0, middle.1)));
         assert!(view.taps.is_empty(), "a drag is no tap");
-        // SELECT again: the view goes, and the D-pad walks again.
+        // SELECT again: the view goes, and the stick walks again.
         view.finger(Finger::Down, 2, across(select));
         view.pad_buttons(context, None);
         view.finger(Finger::Up, 2, across(select));
         assert!(!view.first_person());
-        view.finger(Finger::Down, 1, across(up));
+        view.arrange(xem_core::context::Context::Walk);
+        view.finger(Finger::Down, 1, across(rest));
+        view.finger(Finger::Moved, 1, across(up));
         assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
         // Where the map's picture shows, the deck's SELECT is the game's.
         view.finger(Finger::Down, 2, across(select));
         assert_eq!(view.pad_buttons(PadContext { field: FieldControls { picture: true, ..walking }, ..context }, None) & button::SELECT, button::SELECT);
         assert!(!view.first_person());
+    }
+
+    #[test]
+    fn select_held_over_a_dialogue_hides_its_windows_and_stays_the_games() {
+        use xem_assist::touch::Control;
+        use xem_core::FieldControls;
+        use xem_core::context::Context;
+        use xem_core::pad::button;
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let (width, height) = (1280u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings, false).unwrap();
+        let black: Vec<_> = (0..320 * 240).flat_map(|_| [0, 0, 0, 255]).collect();
+        view.set_game_image(&gpu, (320, 240), &black);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("touch target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        view.render(&gpu, &target.create_view(&Default::default()), 0.0).unwrap();
+        let ui = Context::Dialogue { choice: None };
+        let dialogue = PadContext { field: FieldControls { field: true, ..FieldControls::default() }, ui, ..PadContext::default() };
+        let at = |view: &View| {
+            let (x, y) = view.deck.controls.iter().find(|(c, _)| *c == Control::Select).unwrap().1.centre();
+            (x / width as f32, y / height as f32)
+        };
+        view.arrange(ui);
+        let select = at(&view);
+        // The deck's SELECT held: the game has Select, the view hides the
+        // dialogue's windows.
+        view.finger(Finger::Down, 1, select);
+        assert_eq!(view.pad_buttons(dialogue, None), button::SELECT);
+        assert!(view.renderer.dialogue_hidden() && !view.first_person(), "hidden, and no view toggled");
+        view.finger(Finger::Up, 1, select);
+        assert_eq!(view.pad_buttons(dialogue, None), 0);
+        assert!(!view.renderer.dialogue_hidden(), "let go, they show");
+        // Held as the settings panel opens: they show under it.
+        view.finger(Finger::Down, 2, select);
+        view.pad_buttons(dialogue, None);
+        view.set_panel_visible(true);
+        assert_eq!(view.pad_buttons(dialogue, None), 0);
+        assert!(!view.renderer.dialogue_hidden(), "the panel has the input");
+        view.set_panel_visible(false);
+        view.finger(Finger::Up, 2, select);
+        assert_eq!(view.pad_buttons(dialogue, None), 0);
+        // Where the player walks no dialogue shows: SELECT toggles the view.
+        let walking = PadContext { field: FieldControls { walking: true, ..dialogue.field }, ui: Context::Walk, ..dialogue };
+        view.arrange(Context::Walk);
+        view.finger(Finger::Down, 3, at(&view));
+        assert_eq!(view.pad_buttons(walking, None), 0);
+        assert!(view.first_person() && !view.renderer.dialogue_hidden());
     }
 
     #[test]
@@ -1818,8 +2011,11 @@ mod tests {
     /// Fit and the Integer scale the frame is rebuilt at the display's size
     /// placed in the safe area (not fitted to the whole target) and shown
     /// there at that size (enlarged once), centred, its picture without
-    /// wider framing's sides (the view's own frames have them); under the
-    /// Original movies setting the device's own picture.
+    /// wider framing's sides (the view's own frames have them); under Force
+    /// 4:3 likewise, reshaped and inside the safe area (Integer stepping the
+    /// display's lines), the view's frames without sides (Widescreen's
+    /// choice kept); under the Original movies setting the device's own
+    /// picture.
     #[cfg(all(has_game_module, not(debug_assertions)))]
     #[test]
     fn a_rebuilt_movie_frame_is_made_at_its_placed_size_in_the_safe_area_without_sides() {
@@ -1858,30 +2054,43 @@ mod tests {
             view.set_game_frame(&gpu, game);
             view.render(&gpu, &output, 0.0).unwrap();
         };
-        for scale in [Scale::Fit, Scale::Integer] {
+        for (force_4x3, scale) in [(false, Scale::Fit), (false, Scale::Integer), (true, Scale::Fit), (true, Scale::Integer)] {
+            let forced = xem_settings::Graphics { force_4x3, ..wide };
+            settings.borrow_mut().apply(SettingChange::Graphics(forced)).unwrap();
             settings.borrow_mut().apply(SettingChange::Scale(scale)).unwrap();
+            let case = format!("{scale:?}{}", if force_4x3 { ", Force 4:3" } else { "" });
             // Rebuilt within two movie frames (the trace starts with the
             // view's first frame).
             let mut waited = 0;
             while { step(&mut view, &mut game); !view.presented_movie() } {
                 waited += 1;
-                assert!(waited <= 8, "{scale:?}: no rebuilt frame within two movie frames");
+                assert!(waited <= 8, "{case}: no rebuilt frame within two movie frames");
             }
             let display = game.display_info();
-            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale);
+            let placed = present_rect((display.width, display.height), (safe.width as u32, safe.height as u32), scale, forced.forced_aspect());
             let made = view.renderer.presented_texture().map(|t| (t.width(), t.height())).expect("the rebuilt frame");
             let picture = view.picture.expect("the picture's place");
-            eprintln!("{scale:?}: {}x{} display rebuilt at {made:?}, placed at {:?}", display.width, display.height, picture.placed);
-            assert!(display.color24 && (display.width, display.height) == (320, 216), "{scale:?}: the title movie's display ({display:?})");
-            assert_eq!(made, (placed.width.round() as u32, placed.height.round() as u32), "{scale:?}: made at the display's size placed in the safe area");
-            assert_eq!((picture.placed.width, picture.placed.height), (made.0 as f32, made.1 as f32), "{scale:?}: shown at the size it was made at");
+            let shown = picture.placed;
+            eprintln!("{case}: {}x{} display rebuilt at {made:?}, placed at {shown:?}", display.width, display.height);
+            assert!(display.color24 && (display.width, display.height) == (320, 216), "{case}: the title movie's display ({display:?})");
+            assert_eq!(made, (placed.width.round() as u32, placed.height.round() as u32), "{case}: made at the display's size placed in the safe area");
+            assert_eq!((shown.width.round() as u32, shown.height.round() as u32), made, "{case}: shown at the size it was made at");
             assert_eq!(
-                (picture.placed.x, picture.placed.y),
-                (safe.x + ((safe.width - picture.placed.width) / 2.0).round(), safe.y + ((safe.height - picture.placed.height) / 2.0).round()),
-                "{scale:?}: centred in the safe area"
+                (shown.x, shown.y),
+                (safe.x + ((safe.width - shown.width) / 2.0).round(), safe.y + ((safe.height - shown.height) / 2.0).round()),
+                "{case}: centred in the safe area"
             );
-            assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "{scale:?}: the display alone, without wider framing's sides");
-            assert!(view.renderer.config().is_some_and(|c| c.side > 0), "{scale:?}: the view's own frames have sides");
+            assert!(
+                shown.x >= safe.x && shown.y >= safe.y
+                    && shown.x + shown.width <= safe.x + safe.width + 0.5 && shown.y + shown.height <= safe.y + safe.height + 0.5,
+                "{case}: inside the safe area"
+            );
+            assert_eq!((picture.display, picture.side), ((320.0, 216.0), 0.0), "{case}: the display alone, without wider framing's sides");
+            assert_eq!(
+                view.renderer.config().map(|c| c.side > 0),
+                Some(!force_4x3),
+                "{case}: the view's own frames have sides unless forced to 4:3"
+            );
         }
         // The Original movies setting: the device's own picture, as it is.
         let original = xem_settings::Graphics {
@@ -1930,14 +2139,14 @@ mod tests {
         run(&mut game, serde_json::json!({"cmd": "enter_field", "map": 30}));
         run(&mut game, serde_json::json!({"cmd": "frames", "count": 300}));
         for _ in 0..120 {
-            match game.pad_context().ui {
+            match game.context() {
                 Context::Walk => break,
                 Context::Dialogue { .. } => run(&mut game, serde_json::json!({"cmd": "act", "actions": ["Confirm"], "frames": 2})),
                 _ => {}
             }
             run(&mut game, serde_json::json!({"cmd": "frames", "count": 30}));
         }
-        assert_eq!(game.pad_context().ui, Context::Walk, "Fei walks in field 30");
+        assert_eq!(game.context(), Context::Walk, "Fei walks in field 30");
         let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
         let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
         let graphics = |renderer: Renderer| SettingChange::Graphics(xem_settings::Graphics { renderer, zoom_out: 150, ..Default::default() });

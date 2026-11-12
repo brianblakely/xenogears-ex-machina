@@ -965,7 +965,7 @@ mod tests {
     #[test]
     fn the_ring_points_at_its_slots_and_its_arrows_flip_the_page() {
         let ram = battle_memory(1, false);
-        let ring = targets(&ram, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false }).expect("the ring");
+        let ring = targets(&ram, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false, message: false }).expect("the ring");
         // The arrows, then the slots: Attack (Right) is highlighted; Item
         // (Down) is a press of Down away.
         assert_eq!((ring.what, ring.selected, ring.steps, ring.confirm), ("battle_ring", Some(3), Steps::Direct, true));
@@ -996,18 +996,18 @@ mod tests {
         sealed.put(0x8012_1000 + 8 + 6, &0x208Bu16.to_le_bytes());
         sealed.put(0x8012_1000 + 3 * 8 + 6, &0x208Au16.to_le_bytes());
         sealed.put(0x8011_0000 + 0x1C + 10 * 2, &1u16.to_le_bytes());
-        let ring = targets(&sealed, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false }).unwrap();
+        let ring = targets(&sealed, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false, message: false }).unwrap();
         assert_eq!((ring.entries[6].select, ring.entries[4].select), (None, Some(GameAction::Down)), "Arcane sealed, Item not");
         // Without the panel there is nothing to point at.
         let mut hidden = battle_memory(1, false);
         hidden.put(0x8010_00CB, &[0]);
-        assert!(targets(&hidden, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false }).is_none());
+        assert!(targets(&hidden, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false, message: false }).is_none());
     }
 
     #[test]
     fn the_attack_page_presses_its_attacks_and_chooses_its_target_unconfirmed() {
         let ram = battle_memory(5, false);
-        let attack = targets(&ram, Context::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false }).expect("the attack page");
+        let attack = targets(&ram, Context::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false, message: false }).expect("the attack page");
         assert_eq!((attack.what, attack.confirm), ("battle_attack", false));
         let presses: Vec<_> = attack.entries.iter().map(|e| e.press).collect();
         assert_eq!(presses, [Some(GameAction::AttackEnd), Some(GameAction::AttackFierce), Some(GameAction::AttackStrong), Some(GameAction::AttackWeak), None]);
@@ -1021,7 +1021,7 @@ mod tests {
         let target = attack.entries[4];
         assert_eq!(target.ground.map(|g| (g.slot, g.selectable)), Some((3, true)));
         assert!(target.rect.contains((160.0, 150.0)), "{:?}", target.rect);
-        let fixed = targets(&battle_memory(0x64, true), Context::Battle { page: 0x64, attack: true, ap: 6, list: false, targeting: false }).unwrap();
+        let fixed = targets(&battle_memory(0x64, true), Context::Battle { page: 0x64, attack: true, ap: 6, list: false, targeting: false, message: false }).unwrap();
         assert_eq!((fixed.entries.len(), fixed.selected), (4, None), "the attacks keep their places as the panel fades");
     }
 }

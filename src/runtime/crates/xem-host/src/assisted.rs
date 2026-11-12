@@ -157,7 +157,7 @@ impl Assisted {
         if !settings.assisted.gestures {
             return vec![];
         }
-        let ui = game.pad_context().ui;
+        let ui = game.context();
         let inspecting = self.headset.inspecting;
         let field = if inspecting { None } else { game.field().map(|f| overlay::seen(f, viewpoint.as_ref())) };
         let aim = self.headset.aim(input, screen);

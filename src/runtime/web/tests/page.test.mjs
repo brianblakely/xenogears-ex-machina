@@ -151,7 +151,7 @@ describe('page services', () => {
     const panel=await settingsSection(page,1);
     const before = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
     // The Show FPS switch, at the end of the Picture card's last row.
-    await page.mouse.click(panel.left+586,panel.top+262);
+    await page.mouse.click(panel.left+586,panel.top+307);
     await page.waitForTimeout(200);
     await page.locator('canvas').screenshot({ path: shot('panel-click.png') });
     const after = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
@@ -387,7 +387,7 @@ describe('automation over a game module fixture', () => {
     assert.deepEqual(withPanel, [], 'the panel has the input');
   });
 
-  test('fingers play the touch controls beside the picture and let go when lifted', async () => {
+  test('fingers play the touch controls and the stick beside the picture and let go when lifted', async () => {
     const touch = await browser.page('?game=/fixtures/fixture.wasm');
     try {
       await touch.evaluate(async () => {
@@ -396,28 +396,41 @@ describe('automation over a game module fixture', () => {
         window.xem.setRunning(true);
         for (let i = 0; i < 4; i++) await new Promise(requestAnimationFrame);
       });
-      const finger = (type, id, control) => touch.evaluate(async ({ type, id, control }) => {
+      // A finger at `at`: a deck control's name, canvas pixels, or the
+      // canvas's middle.
+      const finger = (type, id, at) => touch.evaluate(async ({ type, id, at }) => {
         const canvas = document.querySelector('canvas');
         const scale = window.devicePixelRatio || 1;
-        const c = window.xem.status().touch.controls.find((k) => k.control === control);
+        const c = typeof at === 'string' ? window.xem.status().touch.controls.find((k) => k.control === at) : null;
+        const [cx, cy] = c ? [c.x + c.width / 2, c.y + c.height / 2] : at ?? [canvas.width / 2, canvas.height / 2];
         const box = canvas.getBoundingClientRect();
-        const x = box.left + (c ? c.x + c.width / 2 : canvas.width / 2) / scale;
-        const y = box.top + (c ? c.y + c.height / 2 : canvas.height / 2) / scale;
-        canvas.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', pointerId: id, clientX: x, clientY: y, bubbles: true, isPrimary: id === 1 }));
+        canvas.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', pointerId: id, clientX: box.left + cx / scale, clientY: box.top + cy / scale, bubbles: true, isPrimary: id === 1 }));
         for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
         const s = window.xem.status();
         return { held: s.touch.held, buttons: window.xem.command({ cmd: 'status' }).pads[0].buttons.sort(), touched: s.touch.touched };
-      }, { type, id, control });
+      }, { type, id, at });
       // The first touch shows the deck (laid out from the picture's place).
       await finger('pointerdown', 9, null);
       await finger('pointerup', 9, null);
-      const controls = await touch.evaluate(() => window.xem.status().touch.controls.map((c) => c.control));
-      assert.ok(controls.includes('Up') && controls.includes('Confirm') && controls.includes('Settings') && controls.includes('Select'), JSON.stringify(controls));
-      assert.deepEqual(await finger('pointerdown', 1, 'Up'), { held: ['Up'], buttons: ['up'], touched: true });
+      const { controls, stick, width } = await touch.evaluate(() => {
+        const s = window.xem.status();
+        return { controls: s.touch.controls.map((c) => c.control), stick: s.touch.stick, width: document.querySelector('canvas').width };
+      });
+      assert.ok(controls.includes('Confirm') && controls.includes('Settings') && controls.includes('Select') && !controls.includes('Up'), JSON.stringify(controls));
+      assert.ok(stick && stick.x < width / 2 && stick.reach > stick.deadZone, `the stick rests on the left: ${JSON.stringify({ stick, width })}`);
+      // The stick: a finger on the screen's left half centres it where it
+      // touched (here below where it rests); its travel holds the D-pad's
+      // eighth.
+      const [x, y] = [stick.x, stick.y + stick.reach / 2];
+      assert.deepEqual(await finger('pointerdown', 1, [x, y]), { held: [], buttons: [], touched: true }, 'still, it holds nothing');
+      assert.deepEqual(await touch.evaluate(() => window.xem.status().touch.stickShown.held), true);
+      assert.deepEqual(await finger('pointermove', 1, [x, y - stick.reach]), { held: ['Up'], buttons: ['up'], touched: true });
       assert.deepEqual(await finger('pointerdown', 2, 'Confirm'), { held: ['Up', 'Confirm'], buttons: ['cross', 'up'], touched: true });
-      assert.deepEqual(await finger('pointermove', 1, 'Right'), { held: ['Right', 'Confirm'], buttons: ['cross', 'right'], touched: true }, 'a finger slides across the D-pad');
-      assert.deepEqual(await finger('pointerup', 2, 'Confirm'), { held: ['Right'], buttons: ['right'], touched: true });
-      assert.deepEqual(await finger('pointercancel', 1, 'Right'), { held: [], buttons: [], touched: true }, 'a cancelled touch lets go');
+      assert.deepEqual(await finger('pointermove', 1, [x + stick.reach, y]), { held: ['Right', 'Confirm'], buttons: ['cross', 'right'], touched: true }, 'the finger steers');
+      assert.deepEqual(await finger('pointermove', 1, [x + stick.reach * 0.7, y + stick.reach * 0.7]), { held: ['Down', 'Right', 'Confirm'], buttons: ['cross', 'down', 'right'], touched: true }, 'a diagonal');
+      assert.deepEqual(await finger('pointerup', 2, 'Confirm'), { held: ['Down', 'Right'], buttons: ['down', 'right'], touched: true });
+      assert.deepEqual(await finger('pointercancel', 1, [x, y]), { held: [], buttons: [], touched: true }, 'a cancelled touch lets go');
+      assert.deepEqual(await touch.evaluate(() => window.xem.status().touch.stickShown), { centre: [stick.x, stick.y], knob: [stick.x, stick.y], held: false }, 'back at rest');
       // SELECT is the game's Select outside a field (in one it toggles
       // first-person inspection where the game's shows nothing).
       assert.deepEqual(await finger('pointerdown', 4, 'Select'), { held: ['Select'], buttons: ['select'], touched: true });

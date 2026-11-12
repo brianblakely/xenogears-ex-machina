@@ -75,7 +75,7 @@ impl Operations {
                 }
                 AppAction::ImportState => game.as_deref_mut().ok_or("Boot a game before importing a state.")?.restore_bytes(&read(&path,64*1024*1024)?)?,
                 AppAction::ImportCard1 | AppAction::ImportCard2 => {
-                    // Any card or save file, by its contents; the status line
+                    // Any card or save file, by its contents; the message
                     // says what was found.
                     let slot = usize::from(dialog.action == AppAction::ImportCard2);
                     let game = game.as_deref_mut().ok_or("Boot a game before importing a card.")?;
@@ -98,8 +98,7 @@ impl Operations {
     /// Import BIOS's work once the player picked `rom`: checked
     /// (`xem_core::bios::check`), kept in the app's directory for every boot
     /// (`xem_game::storage::BIOS_FILE`), then given to the running game.
-    /// The status line's message; a refused file or a failed write keeps
-    /// nothing.
+    /// What it did; a refused file or a failed write keeps nothing.
     fn import_bios(&self, game: Option<&mut Game>, rom: &[u8]) -> Result<String,String> {
         xem_core::bios::check(rom).map_err(|e| format!("BIOS not imported: {e}."))?;
         let directory = self.directory.as_ref().ok_or("No application storage directory.")?;
@@ -114,6 +113,11 @@ impl Operations {
             return Ok(if held { "Rewinding while held." } else { "Rewind released." }.into());
         }
         if self.busy { return Err("Finish the open file picker first.".into()); }
+        if let AppRequest::Debug(request) = request {
+            game.as_deref_mut().ok_or("Boot a game before using Debug.")?
+                .command(&serde_json::json!({"cmd":"debug", "request":request}))?;
+            return Ok("Starting debug test…".into());
+        }
         let AppRequest::Action(action) = request else { unreachable!() };
         match action {
             AppAction::Reset => {

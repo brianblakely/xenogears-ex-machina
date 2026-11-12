@@ -8,6 +8,12 @@ let
   imageRuntime = tools.inputs.appimage.packages.${system}.appimage-runtimes.appimage-type2-runtime;
   imageLauncher = tools.inputs.appimage.packages.${system}.appimage-appruns.userns-chroot;
   fonts = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+  # The launcher's shell and tools are static: a library path they inherit
+  # loads nothing into them. Steam starts its games with one naming the
+  # host's library directories, whose C library the bundle's loader cannot
+  # use (a dynamic shell stopped there, before the game started).
+  shell = pkgs.pkgsStatic.bashNonInteractive;
+  coreutils = pkgs.pkgsStatic.coreutils;
   libraries = with pkgs; [
     glibc
     mesa
@@ -51,24 +57,26 @@ let
         done
         cp ${staged}/*.txt ${staged}/LICENSE $out/share/xem/
         cat >$out/bin/xem <<'SCRIPT'
-        #!${pkgs.runtimeShell}
+        #!${shell}/bin/bash
         set -euo pipefail
         executable=xem-desktop
         if [ "''${1:-}" = --headless ]; then executable=xem-headless; shift; fi
-        if [ "''${1:-}" = --licenses ]; then ${pkgs.coreutils}/bin/cat @out@/share/xem/THIRD_PARTY_NOTICES.txt; exit; fi
+        if [ "''${1:-}" = --licenses ]; then ${coreutils}/bin/cat @out@/share/xem/THIRD_PARTY_NOTICES.txt; exit; fi
         # Mixing the host's ALSA/Wayland/etc. into a bundled glibc process can
         # require newer GLIBC symbols. Mesa stays with this library closure.
         # Only proprietary NVIDIA driver libraries come from the host (the
-        # same isolation used by scripts/xem-gpu-host during development).
+        # same isolation used by scripts/xem-gpu-host during development),
+        # never through an inherited library path (Steam's names the host's
+        # library directories ahead of its runtime's).
         shopt -s nullglob
-        drivers=$(${pkgs.coreutils}/bin/mktemp -d "''${TMPDIR:-/tmp}/xem-drivers.XXXXXXXX")
-        trap '${pkgs.coreutils}/bin/rm -rf "$drivers"' EXIT
+        drivers=$(${coreutils}/bin/mktemp -d "''${TMPDIR:-/tmp}/xem-drivers.XXXXXXXX")
+        trap '${coreutils}/bin/rm -rf "$drivers"' EXIT
         for directory in /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu /run/opengl-driver/lib; do
           for library in "$directory"/libGLX_nvidia.so* "$directory"/libEGL_nvidia.so* "$directory"/libnvidia-*.so*; do
-            ${pkgs.coreutils}/bin/ln -sf "$library" "$drivers/"
+            ${coreutils}/bin/ln -sf "$library" "$drivers/"
           done
         done
-        export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath libraries}:$drivers''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+        export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath libraries}:$drivers
         icds=(${pkgs.mesa}/share/vulkan/icd.d/*.json)
         export VK_ADD_DRIVER_FILES=$(IFS=:; echo "''${icds[*]}")''${VK_ADD_DRIVER_FILES:+:$VK_ADD_DRIVER_FILES}
         export __EGL_VENDOR_LIBRARY_DIRS=${pkgs.mesa}/share/glvnd/egl_vendor.d:''${__EGL_VENDOR_LIBRARY_DIRS:-/usr/share/glvnd/egl_vendor.d}

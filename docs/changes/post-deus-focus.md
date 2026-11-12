@@ -1,0 +1,1 @@
+- HD-2D keeps Krelian and Urobolus in focus during the post-Deus sequence, including the battle that follows, while preserving the soft background.

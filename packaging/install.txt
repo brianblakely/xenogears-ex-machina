@@ -40,7 +40,8 @@ isolation headers or SharedArrayBuffer are required. WebXR depends on the
 browser/headset and asks permission when entering an immersive session.
 
 Escape opens desktop settings. WASD move, E confirms, F cancels, Shift runs,
-Space jumps, Tab opens the game menu, Enter starts and Backspace selects.
+Space jumps, Tab opens the game menu, Enter starts and Backspace selects;
+held while a dialogue shows, Backspace hides its box until let go.
 Controls and application shortcuts can be rebound in Settings.
 
 No original disc, BIOS, music, artwork or personal save is included.

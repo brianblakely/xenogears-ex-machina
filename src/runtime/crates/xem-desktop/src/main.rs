@@ -230,6 +230,7 @@ fn options() -> Result<Options, String> {
                      (by default WASD move, E confirm, F cancel, Shift run, Space jump, Tab the game menu, \
                      which Tab also closes, Left/Right the camera, Enter start, Backspace select). \
                      The mouse points at menu entries and the wheel scrolls them; Back+Start toggles settings.\n\
+                     Outside first-person view, the right stick has four slices: left/right turn the camera, up reduces zoom out, down increases it.\n\
                      Walking in a field, Select (Backspace, or Back alone) toggles a first-person view where \
                      Select shows no map, as does the right stick's click anywhere in a field but its menu, and so \
                      does Toggle first-person view (V, Back+R1, the touch deck's LOOK; rebindable in Shortcuts); \
@@ -578,10 +579,14 @@ impl Host {
             } else {
                 None
             };
-            if self.frame(window, screenshot)? {
+            // The last frame is presented whatever the game drew (game-paced
+            // presentation shows nothing new on most refreshes), and the run
+            // ends once it is, its screenshot written.
+            let presented = self.frame(window, last, screenshot)?;
+            if presented {
                 frames += 1;
             }
-            if last && frames > 0 {
+            if last && presented {
                 return Ok(());
             }
             if let (Some(game), Some((at, path))) = (&mut self.game, &options.save_state_at)
@@ -638,7 +643,7 @@ impl Host {
         match &result {
             Ok(text) => {
                 self.view.ui().set_disc_status(text);
-                self.view.ui().set_operation_status(text);
+                self.view.ui().clear_operation_error();
             }
             Err(error) => self.view.ui().set_operation_error(&format!("{}: {error}", path.display())),
         }
@@ -730,10 +735,12 @@ impl Host {
         self.view.set_safe_area(window.safe_area());
     }
 
-    /// Renders and presents one frame; false if no frame could be acquired.
+    /// Renders and presents one frame when one is due (always when
+    /// `present`); false if none was presented.
     fn frame(
         &mut self,
         window: &sdl::Window,
+        present: bool,
         screenshot: Option<&std::path::Path>,
     ) -> Result<bool, String> {
         if self.presenter.is_suspended() {
@@ -767,7 +774,7 @@ impl Host {
             self.view.set_game_frame(&self.gpu, game);
         }
         marks[2] = Instant::now();
-        if !self.view.wants_present() {
+        if !present && !self.view.wants_present() {
             // Game-paced presentation: nothing new to show yet.
             std::thread::sleep(std::time::Duration::from_millis(1));
             return Ok(false);

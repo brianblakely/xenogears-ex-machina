@@ -91,7 +91,12 @@ while every punctuation glyph and every two-byte glyph stays hex.
 
 Open: punctuation and the two-byte glyphs. The grid's other codes, besides its
 digits 0x10-0x19, have no order that names their characters, and no data maps a
-two-byte glyph to one.
+two-byte glyph to one. `tools/translations.py` (docs/runtime.md, Languages)
+names every one-byte glyph by reading the font's own images (directory (0, 1)
+file 6): the narrow glyphs 0x10-0x60 are ASCII (space `+,-./`, the digits,
+`A-Z[]=a-z!"#%&'():?`), the wide ones from 0x61 full-width digits, signs and
+symbols; 0x93-0xFD and the two-byte glyphs are kana, which only the
+development data's Japanese placeholders use.
 
 Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files skipped),
 42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D occurs only on

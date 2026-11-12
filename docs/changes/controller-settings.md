@@ -1,0 +1,2 @@
+- Settings now works with a controller: move between settings with the D-pad or left stick, change them with left and right, press with the bottom button, go back with the right button and switch sections with L1/R1.
+- To set a controller binding, choose its box with the bottom button and press the buttons you want.

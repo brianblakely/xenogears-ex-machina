@@ -3,6 +3,7 @@
 
 use crate::clock::{Clock, Tick, VBLANK_CYCLES};
 use crate::devices::{self, Context, Device};
+use crate::context::FieldControls;
 use crate::memory::GameMemory;
 use crate::module::{Action, AsyncState, GameModule, Import, ImportHandler, Trap};
 use crate::pad::Pads;
@@ -107,6 +108,16 @@ pub struct Services {
     /// The host lets the player's press end any movie
     /// (src/port/movie_skip.c).
     pub(crate) movie_skip: bool,
+    /// The language of the game's text (src/port/locale.c): the original's
+    /// English, or the translation `locale::activate` made active.
+    pub(crate) language: crate::locale::Language,
+    /// Why the translations are not installed, when they are not
+    /// (`locale::install`); the game shows its original text.
+    pub locale_notice: Option<String>,
+    /// The disc in the drive could not give one of the party's field sprite
+    /// blocks for the full-size alternatives (`full_sprite`): those not read
+    /// yet are not asked again.
+    full_sprites_unreadable: bool,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -218,6 +229,40 @@ impl Services {
         self.route_movie();
     }
 
+    /// Where the port finds `character`'s field sprite block (directory 4,
+    /// file character + 5, unpacked; `presentation::FULL_SPRITES`), read from
+    /// the disc in the drive the first time it is asked for; 0 while none
+    /// is there (no disc in the drive, its bytes still being fetched, or a
+    /// disc that cannot give it). Presentation only: the drive and the game
+    /// see nothing of it, and snapshots hold none of it.
+    fn full_sprite(&mut self, memory: &mut dyn GameMemory, character: u32) -> u32 {
+        use crate::presentation::{FULL_SPRITES, FULL_SPRITE_BYTES, unpack_lzss};
+        if character >= 11 {
+            return 0;
+        }
+        let address = FULL_SPRITES + character * FULL_SPRITE_BYTES;
+        if memory.read_u32(address).is_ok_and(|sections| sections != 0) {
+            return address;
+        }
+        if self.full_sprites_unreadable {
+            return 0;
+        }
+        match self.cd.read_file(4, character + 5) {
+            Ok(None) | Err(xem_disc::Error::NotReady) => 0,
+            Ok(Some(packed)) => match unpack_lzss(&packed, FULL_SPRITE_BYTES as usize) {
+                Some(block) if block.len() >= 4 && memory.write(address, &block).is_ok() => address,
+                _ => {
+                    self.full_sprites_unreadable = true;
+                    0
+                }
+            },
+            Err(_) => {
+                self.full_sprites_unreadable = true;
+                0
+            }
+        }
+    }
+
     fn stub_name(&self, id: u32) -> String {
         if id >= 0x10000 {
             return format!("unmapped inline assembly #{}", id - 0x10000);
@@ -295,6 +340,12 @@ impl ImportHandler for Services {
                 let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
                 Action::Return(if off { 0 } else if self.half_encounters { 2 } else { 1 })
             }
+            // What a battle gives: twice its experience, gold and use counts
+            // while the encounters are halved, wherever the battle is.
+            "reward_scale" => Action::Return(if self.half_encounters { 2 } else { 1 }),
+            // A party character's field sprite block, for the full-size
+            // alternative of its small sprite (src/port/sprite_facing.c).
+            "full_sprite" => Action::Return(self.full_sprite(memory, arg(0))),
             // The original's reveal while a field script counts out a page
             // before its wait for Confirm (the opening narration's).
             "text_speed" => Action::Return(
@@ -321,10 +372,23 @@ impl ImportHandler for Services {
                 Action::Return(0)
             }
             "present" => {
-                if arg(0) == crate::presentation::SPRITE_FACING && self.gpu.device().trace_enabled() {
+                let alternative = [crate::presentation::SPRITE_FACING, crate::presentation::SPRITE_FULL_SIZE].contains(&arg(0));
+                if alternative && self.gpu.device().trace_enabled() {
                     match crate::presentation::sprite_facing(memory, arg(1)) {
-                        Ok((first, last, facing)) => self.gpu.device_mut().trace_sprite_facing(first, last, facing),
+                        Ok((first, last, facing)) if arg(0) == crate::presentation::SPRITE_FACING => {
+                            self.gpu.device_mut().trace_sprite_facing(first, last, facing)
+                        }
+                        Ok((first, last, full_size)) => self.gpu.device_mut().trace_sprite_full_size(first, last, full_size),
                         Err(error) => { self.trap_reason = Some(error); return Action::Trap; }
+                    }
+                }
+                if arg(0) == crate::presentation::DIALOGUE && self.gpu.device().trace_enabled() {
+                    match (memory.read_u32(arg(1)), memory.read_u32(arg(1).wrapping_add(4))) {
+                        (Ok(newest), Ok(oldest)) => self.gpu.device_mut().trace_dialogue(newest, oldest),
+                        _ => {
+                            self.trap_reason = Some("presentation record outside memory".into());
+                            return Action::Trap;
+                        }
                     }
                 }
                 if self.presentation.enabled {
@@ -388,19 +452,6 @@ pub struct FrameReport {
     pub interrupts: u64,
 }
 
-/// What the field says of the player's buttons ([`Runtime::field_controls`]):
-/// whether it runs, whether the player walks there (the player control read
-/// the pad in the last event pass, with no dialogue open, and no menu
-/// runs), whether a menu runs, and whether Select shows the map's picture
-/// there (else the hosts' first-person toggle).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct FieldControls {
-    pub field: bool,
-    pub walking: bool,
-    pub menu: bool,
-    pub picture: bool,
-}
-
 /// A fiber's state between steps: where it starts, or where it suspended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Fiber {
@@ -435,10 +486,6 @@ pub struct Runtime<M: GameModule> {
     /// The executable's text as the BIOS copied it to its address at
     /// power-on (code and initialized data), which a reset copies again.
     executable: Option<(u32, Vec<u8>)>,
-    /// The first trap a host's query of the port met ([`Self::game_paused`],
-    /// [`Self::combo_input`], [`Self::field_controls`]): the query answered
-    /// as if nothing applied, and status reports it.
-    query_trap: Option<String>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -448,7 +495,15 @@ impl<M: GameModule> Runtime<M> {
         // export calls.
         unsafe { module.set_import_handler(services as *mut dyn ImportHandler) };
         let stack_top = module.stack_pointer();
-        let identity = crate::snapshot::StateIdentity { module: module.content_id(), ..Default::default() };
+        let mut identity = crate::snapshot::StateIdentity { module: module.content_id(), ..Default::default() };
+        // Every language's translations, none active: a state names them,
+        // as a translated text a window shows lies among them.
+        match crate::locale::install(module.memory()) {
+            Ok(Some(digest)) => identity.packages.push(crate::locale::package(&digest)),
+            Ok(None) => {}
+            // SAFETY: the box lives until Drop and no export runs yet.
+            Err(error) => unsafe { (*services).locale_notice = Some(format!("translations not installed: {error}")) },
+        }
         Runtime {
             identity,
             module,
@@ -462,7 +517,6 @@ impl<M: GameModule> Runtime<M> {
             stopped_before_vblank: false,
             frames: 0,
             executable: None,
-            query_trap: None,
         }
     }
 
@@ -838,35 +892,17 @@ impl<M: GameModule> Runtime<M> {
         self.frames
     }
 
+    /// Whether the game shows a pause screen ([`crate::context::game_paused`]).
     pub fn game_paused(&mut self) -> bool {
-        let mode = self.services().mode.unwrap_or(u32::MAX);
-        let answer = self.module.game_paused(mode);
-        self.answered("xem_game_paused", answer)
+        let mode = self.services().mode;
+        crate::context::game_paused(self.memory(), mode)
     }
 
-    /// Whether the battle's attack inputs take the player's buttons.
+    /// Whether the battle's attack inputs take the player's buttons
+    /// ([`crate::context::combo_input`]).
     pub fn combo_input(&mut self) -> bool {
-        let mode = self.services().mode.unwrap_or(u32::MAX);
-        let answer = self.module.combo_input(mode);
-        self.answered("xem_game_combo_input", answer)
-    }
-
-    /// A query's answer, or after a trap its default, the first trap kept
-    /// for status and printed (a fault in the port, never the game's).
-    fn answered<T: Default>(&mut self, query: &str, answer: Result<T, Trap>) -> T {
-        answer.unwrap_or_else(|trap| {
-            if self.query_trap.is_none() {
-                let report = format!("{query}: {trap}");
-                eprintln!("xem: the port's query {report}; it answers as if nothing applied");
-                self.query_trap = Some(report);
-            }
-            T::default()
-        })
-    }
-
-    /// The first trap a host's query of the port met, if any.
-    pub fn query_trap(&self) -> Option<&str> {
-        self.query_trap.as_deref()
+        let mode = self.services().mode;
+        crate::context::combo_input(self.memory(), mode)
     }
 
     /// The game's button assignment, which the typed actions resolve
@@ -891,12 +927,11 @@ impl<M: GameModule> Runtime<M> {
         crate::menu::targets(self.memory(), ui)
     }
 
-    /// What the field says of the player's buttons (nothing outside it).
+    /// What the field says of the player's buttons (nothing outside it,
+    /// [`crate::context::field_controls`]).
     pub fn field_controls(&mut self) -> FieldControls {
-        let mode = self.services().mode.unwrap_or(u32::MAX);
-        let bits = self.module.field_controls(mode);
-        let bits = self.answered("xem_game_field_controls", bits);
-        FieldControls { field: mode == 1, walking: bits & 1 != 0, menu: bits & 4 != 0, picture: bits & 2 != 0 }
+        let mode = self.services().mode;
+        crate::context::field_controls(self.memory(), mode)
     }
 }
 

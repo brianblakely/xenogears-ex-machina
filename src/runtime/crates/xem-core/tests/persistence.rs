@@ -44,6 +44,10 @@ const TASK_STACK_TOP: u32 = 0x100C_0000;
 const DRAW_MAP: u32 = 0x8000_0400;
 const DRAW_RAN: u32 = 0x8000_0404;
 const DRAW_PACE: u32 = 0x8000_0410;
+/// What a battle would give, as the port's reward wrappers ask it, kept each
+/// frame the draw runs (xem.reward_scale: 2 while the encounters are
+/// halved, else 1).
+const REWARD_SCALE_SEEN: u32 = 0x8000_0414;
 /// The text speed and movie skip the port's wrappers would get
 /// (xem.text_speed, xem.movie_skip), kept each frame.
 const TEXT_SPEED_SEEN: u32 = 0x8000_0408;
@@ -53,9 +57,11 @@ const MOVIE_SKIP_SEEN: u32 = 0x8000_040c;
 /// for a page while its flags hold 8: a frame whose pad 1 holds Confirm ends
 /// the wait (counted at `PRESSES`, the frame at `LAST_PRESS`), and the next
 /// page waits `NEXT_PAGE` frames later.
-/// Nonzero: the fake's combo query traps, as a port query following a bad
-/// pointer would.
-const QUERY_TRAPS: u32 = 0x8000_0600;
+/// The game's pause flags as the runtime reads them (`xem_core::context`):
+/// the sound driver's (0x40 while a pause screen holds the voices) and
+/// Battling's menu pause.
+const SOUND_DRIVER_FLAGS: u32 = 0x8005_957C;
+const ARENA_MENU_PAUSED: u32 = 0x8009_2758;
 const DIALOGUE: u32 = 0x8000_0500;
 const PRESSES: u32 = 0x8000_0504;
 const LAST_PRESS: u32 = 0x8000_0508;
@@ -164,16 +170,6 @@ impl Counter {
     }
 }
 impl GameModule for Counter {
-    fn game_paused(&mut self, mode: u32) -> Result<bool, Trap> {
-        Ok(self.memory.read_u32(0x8000_0010).unwrap() & 0x40 != 0
-            || (mode == 4 && self.memory.read_u32(0x8000_0010).unwrap() & 0x00ff_0000 != 0))
-    }
-    fn combo_input(&mut self, _mode: u32) -> Result<bool, Trap> {
-        match self.memory.read_u32(QUERY_TRAPS).unwrap() {
-            0 => Ok(true),
-            _ => Err(Trap::Wasm("out of bounds memory access".into())),
-        }
-    }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) { self.handler = Some(handler); }
     fn set_resume_value(&mut self, _: u32) {}
     fn run(&mut self, _: u32, _: u32) -> Result<(), Trap> {
@@ -190,6 +186,8 @@ impl GameModule for Counter {
                 let ran = self.memory.read_u32(DRAW_RAN).unwrap();
                 self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
             }
+            let rewards = self.import("reward_scale", &[]);
+            self.memory.write_u32(REWARD_SCALE_SEEN, rewards).unwrap();
         }
         let glyphs = self.import("text_speed", &[]);
         let skip = self.import("movie_skip", &[]);
@@ -265,21 +263,6 @@ fn frame_at(s: &mut Session<Counter>, clock: &Cell<Duration>, seconds: u64) {
 }
 
 #[test]
-fn a_trap_in_a_hosts_query_is_reported_and_the_game_plays_on() {
-    let mut s = session();
-    assert!(s.runtime.combo_input());
-    assert_eq!(s.execute(&json!({"cmd":"status"}))["query_trap"], json!(null));
-    s.runtime.memory().write(QUERY_TRAPS, &1u32.to_le_bytes()).unwrap();
-    assert!(!s.runtime.combo_input(), "a trapped query answers as if nothing applied");
-    assert!(!s.runtime.combo_input(), "and again");
-    let status = s.execute(&json!({"cmd":"status"}));
-    assert_eq!(status["query_trap"], json!("xem_game_combo_input: game module trap: out of bounds memory access"), "{status}");
-    let frames = s.runtime.frames();
-    assert!(s.frame().unwrap(), "the game is not stopped");
-    assert!(s.runtime.frames() > frames && status["stopped"].is_null());
-}
-
-#[test]
 fn pending_focus_pause_requests_stay_out_of_game_states_and_are_recorded() {
     let mut s = session();
     let saved = s.snapshot_bytes().unwrap();
@@ -304,12 +287,12 @@ fn paused_game_frames_neither_add_snapshots_nor_expire_play_history() {
     s.runtime.services().mode = Some(1);
     frame_at(&mut s, &clock, 1);
     let retained = s.rewind.status();
-    s.runtime.memory().write(0x8000_0010,&0x40u16.to_le_bytes()).unwrap();
+    s.runtime.memory().write(SOUND_DRIVER_FLAGS,&0x40u16.to_le_bytes()).unwrap();
     for second in 2..=40 { frame_at(&mut s, &clock, second); }
     assert_eq!(s.rewind.status(),retained,"pause-screen frames must not consume or age out history");
     s.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES,1,30).unwrap();
     assert_eq!(s.rewind.status(),retained,"configuring history while paused must not add a state");
-    s.runtime.memory().write(0x8000_0010,&0u16.to_le_bytes()).unwrap();
+    s.runtime.memory().write(SOUND_DRIVER_FLAGS,&0u16.to_le_bytes()).unwrap();
     frame_at(&mut s, &clock, 4000);
     assert_eq!(s.rewind.status(),retained,"resume starts a fresh snapshot interval");
     frame_at(&mut s, &clock, 4001);
@@ -319,7 +302,7 @@ fn paused_game_frames_neither_add_snapshots_nor_expire_play_history() {
 
     // Arena overlay memory is reused in other modes: its pause byte only
     // describes a pause while the arena is running.
-    s.runtime.memory().write(0x8000_0012,&[1]).unwrap();
+    s.runtime.memory().write(ARENA_MENU_PAUSED,&[1]).unwrap();
     frame_at(&mut s, &clock, 4002);
     assert_eq!(s.rewind.status()["states"],4);
     s.runtime.services().mode = Some(4);
@@ -329,7 +312,7 @@ fn paused_game_frames_neither_add_snapshots_nor_expire_play_history() {
     let paused_state = s.snapshot_bytes().unwrap();
     s.restore_bytes(&paused_state).unwrap();
     assert_eq!(s.rewind.status()["states"],0,"restoring a paused game must not enqueue it");
-    s.runtime.memory().write(0x8000_0012,&[0]).unwrap();
+    s.runtime.memory().write(ARENA_MENU_PAUSED,&[0]).unwrap();
     frame_at(&mut s, &clock, 4041);
     assert_eq!(s.rewind.status()["states"],1);
 }
@@ -1567,20 +1550,22 @@ fn half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_o
     let mut s = session();
     s.runtime.memory().write_u32(DRAW_MAP, 15).unwrap();
     s.execute(&json!({"cmd":"frames","count":1}));
-    assert_eq!(word(&mut s, DRAW_PACE), 1, "the original's pace");
+    assert_eq!((word(&mut s, DRAW_PACE), word(&mut s, REWARD_SCALE_SEEN)), (1, 1), "the original's pace and rewards");
     let initial = s.snapshot_bytes().unwrap();
     s.execute(&json!({"cmd":"record"}));
     s.execute(&json!({"cmd":"frames","count":1}));
     s.set_half_encounters(true);
     s.execute(&json!({"cmd":"frames","count":3}));
     assert_eq!((word(&mut s, DRAW_PACE), status(&mut s, "half_encounters")), (2, json!(true)), "half, where the draw stays on");
+    assert_eq!(word(&mut s, REWARD_SCALE_SEEN), 2, "and a battle gives twice its rewards");
     s.set_random_battles(&[15]).unwrap();
     s.execute(&json!({"cmd":"frames","count":1}));
     assert_eq!(word(&mut s, DRAW_PACE), 0, "a map turned off stays off");
+    assert_eq!(word(&mut s, REWARD_SCALE_SEEN), 2, "its scripted battles still give twice theirs");
     s.set_random_battles(&[]).unwrap();
     s.set_half_encounters(false);
     s.execute(&json!({"cmd":"frames","count":2}));
-    assert_eq!(word(&mut s, DRAW_PACE), 1);
+    assert_eq!((word(&mut s, DRAW_PACE), word(&mut s, REWARD_SCALE_SEEN)), (1, 1));
     let mut log = s.execute(&json!({"cmd":"stop_recording"}));
     let halves: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "half_encounters").map(|c| c[1]["enabled"].clone()).collect();
     assert_eq!(halves, [json!(true), json!(false)], "each change once");
@@ -1594,6 +1579,7 @@ fn half_encounters_are_recorded_a_replay_keeps_them_and_a_map_turned_off_stays_o
     other.set_half_encounters(false);
     other.execute(&json!({"cmd":"frames","count":1}));
     assert_eq!(word(&mut other, DRAW_PACE), 2, "a replay keeps the recorded halving, not the host's");
+    assert_eq!(word(&mut other, REWARD_SCALE_SEEN), 2, "and its rewards");
     // A recording begun halved starts so; session logs and agents set it.
     s.set_half_encounters(true);
     s.execute(&json!({"cmd":"record"}));
@@ -1711,10 +1697,10 @@ fn auto_advance_presses_confirm_once_a_page_waited_its_dwell_never_at_a_choice_a
     assert_eq!(word(&mut s, PRESSES), 2, "a choice is never answered");
     s.runtime.memory().write(WINDOW_CHOICE, &(-1i16).to_le_bytes()).unwrap();
     // A pause counts nothing.
-    s.runtime.memory().write_u32(0x8000_0010, 0x40).unwrap();
+    s.runtime.memory().write(SOUND_DRIVER_FLAGS, &0x40u16.to_le_bytes()).unwrap();
     s.execute(&json!({"cmd":"frames","count":30}));
     assert_eq!(word(&mut s, PRESSES), 2, "the paused game's page waits");
-    s.runtime.memory().write_u32(0x8000_0010, 0).unwrap();
+    s.runtime.memory().write(SOUND_DRIVER_FLAGS, &0u16.to_le_bytes()).unwrap();
     // A recording and its replay press on the same frames.
     let initial = s.snapshot_bytes().unwrap();
     s.execute(&json!({"cmd":"record"}));

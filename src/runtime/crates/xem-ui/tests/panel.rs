@@ -37,6 +37,16 @@ fn element(ui: &SettingsUi, label: &str, role: AccessibleRole) -> ElementHandle 
         .unwrap_or_else(|| panic!("no {role:?} labelled {label:?}"))
 }
 
+/// A heading stands above its card, outside it.
+fn heading_above(ui: &SettingsUi, heading: &str, card: &str) {
+    let text = element(ui, heading, AccessibleRole::Text);
+    let group = element(ui, card, AccessibleRole::Groupbox);
+    let (bottom, top) = (text.absolute_position().y + text.size().height, group.absolute_position().y);
+    let (left, inside) = (text.absolute_position().x, group.absolute_position().x);
+    assert!(bottom <= top, "{heading:?} ends at {bottom}, below its card's top {top}");
+    assert!(left >= inside, "{heading:?} starts at {left}, left of its card at {inside}");
+}
+
 fn scroll(ui: &mut SettingsUi, delta_y: f32) {
     ui.dispatch(WindowEvent::PointerScrolled {
         position: LogicalPosition::new(220.0, 250.0),
@@ -127,7 +137,8 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the panel has content ({} colours)",
         distinct.len()
     );
-    section(&mut ui, "About", 7);
+    section(&mut ui, "Debug", 7);
+    section(&mut ui, "About", 8);
     assert!(
         ElementHandle::find_by_accessible_label(ui.component(), "#MadeWithSlint")
             .next()
@@ -140,6 +151,10 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
             .is_some(),
         "AboutSlint element present"
     );
+    let version = ui.component().get_version();
+    assert!(!version.is_empty() && version == xem_ui::VERSION.trim_start_matches('v'), "{version}");
+    element(&ui, "Version", AccessibleRole::Text);
+    element(&ui, &version, AccessibleRole::Text);
 
     // (c) Pointer input on the panel goes through the settings service.
     section(&mut ui, "Graphics", 1);
@@ -218,6 +233,9 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
             .all(|e| e.accessible_role() != Some(AccessibleRole::Checkbox)),
         "FF has no checkbox"
     );
+    for note in ["Off: the game runs at its own speed.", "On: the game runs at the speed below; music keeps its tempo."] {
+        assert!(ElementHandle::find_by_accessible_label(ui.component(), note).next().is_none(), "no note beside fast-forward's button");
+    }
     assert_eq!(ui.component().get_rewind_interval_seconds(), 1);
     ui.component().invoke_rewind_interval_edited(3);
     assert_eq!(settings.borrow().settings().rewind_interval_seconds, 3);
@@ -463,7 +481,7 @@ fn graphics_choices_go_through_the_settings_service() {
         move |ack| acks.borrow_mut().push(ack.change.clone())
     });
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 1400), 1.0).unwrap();
     ui.update().unwrap();
     section(&mut ui, "Graphics", 1);
     assert!(
@@ -485,13 +503,54 @@ fn graphics_choices_go_through_the_settings_service() {
     element(&ui, "Bloom", AccessibleRole::Slider);
     ui.component().invoke_effect_edited(5, 20);
     assert_eq!(settings.borrow().settings().graphics.hd2d.bloom, 20);
+    // The effects stand under the HD-2D heading, below the card holding
+    // Profile and above Motion and framing.
+    heading_above(&ui, "HD-2D", "HD-2D effects");
+    let top = |label: &str| element(&ui, label, AccessibleRole::Groupbox).absolute_position().y;
+    let bottom = |label: &str| {
+        let card = element(&ui, label, AccessibleRole::Groupbox);
+        card.absolute_position().y + card.size().height
+    };
+    assert!(bottom("Look") <= element(&ui, "HD-2D", AccessibleRole::Text).absolute_position().y, "the effects follow the Look card");
+    assert!(bottom("HD-2D effects") <= top("Motion and framing"));
+    // Reset Defaults, on the heading's line at its right, gives every
+    // slider its default, one moved by hand too (Lighting, 60 by default).
+    let reset = element(&ui, "Reset Defaults", AccessibleRole::Button);
+    let heading = element(&ui, "HD-2D", AccessibleRole::Text);
+    let card = element(&ui, "HD-2D effects", AccessibleRole::Groupbox);
+    assert!(reset.absolute_position().y + reset.size().height <= card.absolute_position().y, "above the card");
+    assert!(reset.absolute_position().y <= heading.absolute_position().y + heading.size().height, "on the heading's line");
+    let right = card.absolute_position().x + card.size().width - (reset.absolute_position().x + reset.size().width);
+    assert!((0.0..1.0).contains(&right), "at the card's right edge ({right} px in)");
+    press(&ui, &element(&ui, "Lighting", AccessibleRole::Slider));
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.hd2d.lighting, 50, "the slider's middle");
+    press(&ui, &reset);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.hd2d, xem_settings::EffectLevels::HD2D);
+    for (label, level) in [("Lighting", "60"), ("Bloom", "50")] {
+        assert_eq!(element(&ui, label, AccessibleRole::Slider).accessible_value().as_deref(), Some(level), "{label} after Reset Defaults");
+    }
+    ui.component().invoke_effect_edited(5, 20);
     ui.component().invoke_graphics_edited("profile".into(), 3);
-    ui.component().invoke_fidelity_edited(3, true);
+    ui.update().unwrap();
+    // Custom's sliders show its own levels (none by default), under its name.
+    heading_above(&ui, "Custom", "Effects");
+    assert_eq!(element(&ui, "Lighting", AccessibleRole::Slider).accessible_value().as_deref(), Some("0"), "Custom's level, not HD-2D's");
+    press(&ui, &element(&ui, "Dithering", AccessibleRole::Switch));
     ui.component().invoke_effect_edited(8, -40);
+    ui.update().unwrap();
     let graphics = settings.borrow().settings().graphics;
     assert!(graphics.custom_fidelity.dithering, "Custom's own limits change");
     assert_eq!(graphics.custom_effects.focus, -40, "Custom's own levels change");
     assert_eq!(graphics.hd2d.bloom, 20, "HD-2D's levels are kept");
+    // Custom's Reset Defaults: its levels and limits (a switch toggled by
+    // hand too), HD-2D's kept.
+    press(&ui, &element(&ui, "Reset Defaults", AccessibleRole::Button));
+    ui.update().unwrap();
+    let graphics = settings.borrow().settings().graphics;
+    assert_eq!((graphics.custom_effects, graphics.custom_fidelity, graphics.hd2d.bloom), (xem_settings::EffectLevels::OFF, xem_settings::Fidelity::MODERN, 20));
+    assert_eq!(element(&ui, "Dithering", AccessibleRole::Switch).accessible_checked(), Some(false), "the switch shows the reset");
     ui.component().invoke_graphics_edited("scale".into(), 99);
     assert_eq!(settings.borrow().settings().graphics.internal_scale, 3 - 3, "an invalid scale is refused");
     ui.component().invoke_graphics_edited("widescreen".into(), 1);
@@ -640,26 +699,28 @@ fn random_battles_are_chosen_in_the_gameplay_section_through_the_settings_servic
     let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
     ui.update().unwrap();
     section(&mut ui, "Gameplay", 6);
-    let choice = element(&ui, "Random battles", AccessibleRole::Combobox);
-    assert_eq!(choice.accessible_value().as_deref(), Some("Not while platforming"), "the default policy");
-    let note = ui.component().get_random_battles_note().to_string();
-    assert!(note.contains("Babel Tower") && note.contains("Blackmoon Forest"), "{note}");
-    assert!(note.starts_with("Off on the jumping-heavy maps of Blackmoon Forest, the Aveh-Kislev border mountains and Babel Tower."),
-        "the extent, not whole areas: {note}");
+    // A button group, as Encounter rate's below it; its Original is the
+    // section's first.
+    element(&ui, "Random battles", AccessibleRole::RadioGroup);
+    let option = |ui: &SettingsUi, label: &str| {
+        ElementHandle::find_by_accessible_label(ui.component(), label)
+            .filter(|e| e.accessible_role() == Some(AccessibleRole::RadioButton))
+            .min_by(|a, b| a.absolute_position().y.total_cmp(&b.absolute_position().y))
+            .unwrap_or_else(|| panic!("no option {label:?}"))
+    };
+    assert_eq!(ui.component().get_random_battles(), 0, "the default policy");
+    assert_eq!(option(&ui, "Not while platforming").accessible_checked(), Some(true));
     // A choice is the service's: applied, acknowledged and saved.
-    press(&ui, &choice);
-    key(&ui, xem_ui::Key::DownArrow);
-    key(&ui, xem_ui::Key::Return);
+    press(&ui, &option(&ui, "Original"));
     ui.update().unwrap();
     assert_eq!(settings.borrow().settings().random_battles, RandomBattles::Original);
     assert_eq!(acks.borrow().last(), Some(&SettingChange::RandomBattles(RandomBattles::Original)));
-    assert_eq!(choice.accessible_value().as_deref(), Some("Original"));
-    assert!(ui.component().get_random_battles_note().contains("Wherever the original game has them"));
+    assert_eq!(option(&ui, "Original").accessible_checked(), Some(true));
     // An agent's change shows in the panel.
     settings.borrow_mut().apply(SettingChange::RandomBattles(RandomBattles::NotWhilePlatforming)).unwrap();
     ui.update().unwrap();
     assert_eq!(ui.component().get_random_battles(), 0);
-    assert_eq!(choice.accessible_value().as_deref(), Some("Not while platforming"));
+    assert_eq!(option(&ui, "Not while platforming").accessible_checked(), Some(true));
     let mut reloaded = SettingsService::with_defaults(MemoryStore::default());
     reloaded.import(&settings.borrow().export()).unwrap();
     assert_eq!(reloaded.settings().random_battles, RandomBattles::NotWhilePlatforming);
@@ -697,6 +758,17 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
     press(&ui, &auto);
     ui.update().unwrap();
     assert!(shown(&ui, "Auto-advance wait on each page"));
+    for note in [
+        "Choices always wait for you.",
+        "Half: the field's random battles left on come half as often for the same walk. The world map's keep their rate.",
+        "Wherever the original game has them.",
+    ] {
+        assert!(!shown(&ui, note), "no helper text: {note}");
+    }
+    // But for the encounter rate's, below it: Half doubles the rewards.
+    let note = element(&ui, "Half also doubles the EXP, G and deathblow progress that battles give.", AccessibleRole::Text);
+    let rate = element(&ui, "Encounter rate", AccessibleRole::RadioGroup);
+    assert!(note.absolute_position().y >= rate.absolute_position().y + rate.size().height, "below the setting");
     ui.component().invoke_gameplay_edited("auto-advance-dwell".into(), 90);
     press(&ui, &element(&ui, "Movies can be skipped", AccessibleRole::Switch));
     ui.update().unwrap();
@@ -719,12 +791,49 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
 }
 
 #[test]
+fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_settings_service() {
+    use xem_settings::{Language, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Gameplay", 6);
+    let choice = element(&ui, "Game text language", AccessibleRole::Combobox);
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (0, Some("English")), "the original's by default");
+    // Each language listed by its own name; a choice is the service's.
+    press(&ui, &choice);
+    ui.update().unwrap();
+    element(&ui, "Português (Brasil)", AccessibleRole::ListItem).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().language, Language::BrazilianPortuguese);
+    assert_eq!(*acks.borrow(), [SettingChange::Language(Language::BrazilianPortuguese)]);
+    assert_eq!(choice.accessible_value().as_deref(), Some("Português (Brasil)"));
+    press(&ui, &choice);
+    ui.update().unwrap();
+    element(&ui, "Français", AccessibleRole::ListItem).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().language, Language::French);
+    assert_eq!(acks.borrow().last(), Some(&SettingChange::Language(Language::French)));
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (2, Some("Français")));
+    // An agent's change shows.
+    settings.borrow_mut().apply(SettingChange::Language(Language::English)).unwrap();
+    ui.update().unwrap();
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (0, Some("English")));
+}
+
+#[test]
 fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
-    const SECTIONS: [&str; 8] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "About"];
+    const SECTIONS: [&str; 9] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Debug", "About"];
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings, (344, 560), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (344, 560), 1.0).unwrap();
     assert_eq!(ui.component().get_section_count(), SECTIONS.len() as i32);
     // Hosts make the panel min(640 × scale, width - 16) physical pixels
     // wide: a phone browser 360 CSS pixels wide, a 1080-pixel phone at
@@ -747,15 +856,23 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
             section(&mut ui, label, index as i32);
         }
     }
-    // The Android smoke taps Graphics and Saves at 210,722 and 727,722 on
+    // The Android smoke taps Graphics and Saves at 210,722 and 659,722 on
     // its 1080x2400 screen, where the panel (1064x1470 at 2.625) is at 8,465.
     ui.resize((1064, 1470), 2.625);
     ui.update().unwrap();
-    for (x, label, index) in [(210.0, "Graphics", 1), (727.0, "Saves", 5)] {
-        click(&ui, LogicalPosition::new((x - 8.0) / 2.625, (722.0 - 465.0) / 2.625));
+    let tap = |ui: &mut SettingsUi, x: f32, y: f32| {
+        click(ui, LogicalPosition::new((x - 8.0) / 2.625, (y - 465.0) / 2.625));
         ui.update().unwrap();
+    };
+    for (x, label, index) in [(210.0, "Graphics", 1), (659.0, "Saves", 5)] {
+        tap(&mut ui, x, 722.0);
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
+    // Then Graphics again and its Show FPS switch at 930,1462, below Scale,
+    // Force 4:3 and Filter.
+    tap(&mut ui, 210.0, 722.0);
+    tap(&mut ui, 930.0, 1462.0);
+    assert!(settings.borrow().settings().presentation.show_fps, "the smoke's tap turns Show FPS on");
 
     // Saves' Backups card keeps every button inside it on panels as wide as
     // those, a headset's (440) and the desktop's (640, and the sidebar's
@@ -844,18 +961,18 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, LogicalPosition::new(x, y));
         ui.update().unwrap();
     };
-    at(&mut ui, 298.0, 98.0);
+    at(&mut ui, 269.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 5, "the headset smoke's pinch selects Saves");
     at(&mut ui, 122.0, 170.0);
     at(&mut ui, 314.0, 170.0);
-    at(&mut ui, 256.0, 98.0);
+    at(&mut ui, 232.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 4, "and Time");
-    at(&mut ui, 347.0, 395.0);
+    at(&mut ui, 347.0, 449.0);
     assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::SaveState), AppRequest::Action(AppAction::LoadState), toggle]);
     // Its held run's ray: Time's Hold to rewind, held, then the panel
     // hidden mid-hold (xr_play lets go of its pointer then).
     requests.borrow_mut().clear();
-    let hold = LogicalPosition::new(355.0, 325.0);
+    let hold = LogicalPosition::new(355.0, 352.0);
     ui.dispatch(WindowEvent::PointerMoved { position: hold });
     ui.dispatch(WindowEvent::PointerPressed { position: hold, button: PointerEventButton::Left });
     std::thread::sleep(std::time::Duration::from_millis(400));
@@ -876,8 +993,8 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     assert_eq!(ui.component().get_selected_section(), 4, "the WebXR test's pull selects Time");
     ui.set_time_status(Some(true), status);
     ui.update().unwrap();
-    at(&mut ui, 547.0, 322.0);
-    let hold = LogicalPosition::new(555.0, 252.0);
+    at(&mut ui, 547.0, 376.0);
+    let hold = LogicalPosition::new(555.0, 279.0);
     ui.dispatch(WindowEvent::PointerMoved { position: hold });
     ui.dispatch(WindowEvent::PointerPressed { position: hold, button: PointerEventButton::Left });
     ui.update().unwrap();
@@ -900,14 +1017,14 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, screen(x, y));
         ui.update().unwrap();
     };
-    tap(&mut ui, 628.0, 722.0);
+    tap(&mut ui, 572.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 4, "the Android smoke's tap selects Time");
     ui.set_time_status(Some(true), status);
     ui.update().unwrap();
-    tap(&mut ui, 829.0, 1502.0);
+    tap(&mut ui, 829.0, 1644.0);
     // A long press (the narrow form pans under a finger, so a press
     // reaches the button once it has stayed put a moment).
-    let hold = screen(850.0, 1318.0);
+    let hold = screen(850.0, 1389.0);
     ui.dispatch(WindowEvent::PointerMoved { position: hold });
     ui.dispatch(WindowEvent::PointerPressed { position: hold, button: PointerEventButton::Left });
     std::thread::sleep(std::time::Duration::from_millis(400));
@@ -916,12 +1033,12 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     ui.dispatch(WindowEvent::PointerReleased { position: hold, button: PointerEventButton::Left });
     ui.update().unwrap();
     ui.set_time_status(Some(false), status);
-    tap(&mut ui, 727.0, 722.0);
+    tap(&mut ui, 659.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 5, "and Saves");
     tap(&mut ui, 306.0, 1095.0);
     tap(&mut ui, 764.0, 1095.0);
-    tap(&mut ui, 628.0, 722.0);
-    tap(&mut ui, 829.0, 1502.0);
+    tap(&mut ui, 572.0, 722.0);
+    tap(&mut ui, 829.0, 1644.0);
     assert_eq!(
         requests.borrow().as_slice(),
         [toggle, AppRequest::UiRewind(true), AppRequest::UiRewind(false), AppRequest::Action(AppAction::SaveState),
@@ -931,19 +1048,45 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
 }
 
 #[test]
-fn a_missing_disc_is_asked_for_over_the_saves_section() {
+fn only_a_failure_shows_the_error_bar_until_a_success_or_dismiss() {
+    use xem_settings::SettingChange;
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let ui = SettingsUi::new(shared, settings, (640, 560), 1.0).unwrap();
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    ui.update().unwrap();
+    let bar = |ui: &SettingsUi| ElementHandle::find_by_accessible_label(ui.component(), "Error").next().is_some();
+    assert!(!bar(&ui), "no bar while nothing failed");
+    // An acknowledged change says nothing.
+    settings.borrow_mut().apply(SettingChange::ShowFps(true)).unwrap();
+    ui.update().unwrap();
+    assert!(!bar(&ui) && ui.component().get_error().is_empty());
+    // A refused one says why, until a change succeeds.
+    ui.component().invoke_graphics_edited("xr-scale".into(), 401);
+    ui.update().unwrap();
+    assert!(bar(&ui) && ui.component().get_error().starts_with("Not applied:"), "{}", ui.component().get_error());
+    ui.component().invoke_show_fps_edited(false);
+    ui.update().unwrap();
+    assert!(!bar(&ui), "a success clears it");
+    // An operation's failure, until Dismiss or an operation succeeds.
+    ui.set_operation_error("Not saved: no space left on device");
+    ui.update().unwrap();
+    assert!(bar(&ui));
+    press(&ui, &element(&ui, "Dismiss", AccessibleRole::Button));
+    ui.update().unwrap();
+    assert!(!bar(&ui), "Dismiss clears it");
+    ui.set_operation_error("Not saved: no space left on device");
+    ui.clear_operation_error();
+    ui.update().unwrap();
+    assert!(!bar(&ui), "so does a success");
+    // A disc the game asks for, over the Saves section.
     ui.ask_for_disc(2);
     assert_eq!(ui.component().get_selected_section(), 5, "the Saves section");
-    assert!(ui.component().get_status().contains("beside the one the game started from"), "a host without disc import");
+    assert!(ui.component().get_error().contains("beside the one the game started from"), "a host without disc import");
     ui.component().set_selected_section(0);
     ui.on_import_disc(|| {});
     ui.ask_for_disc(2);
-    assert_eq!(ui.component().get_status_kind(), 2, "a problem");
-    assert!(ui.component().get_status().contains("disc 2: import it below"));
+    assert!(ui.component().get_error().contains("disc 2: import it below"));
     assert_eq!(ui.component().get_selected_section(), 5);
 }
 
@@ -978,6 +1121,7 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Stop at ledges").next().is_some());
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Look around in FPV").next().is_some());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Hide dialogue (held)").next().is_some(), "Select held over a dialogue hides it");
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Drag").next().is_none(), "no touch controls, no drag");
     ui.set_first_person_touch(true);
     ui.update().unwrap();
@@ -992,8 +1136,9 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(listed(&ui, "Underhand grab") && listed(&ui, "Right stick click"), "a headset lists its toggles");
     assert!(listed(&ui, "Head"), "and the head among its looks");
+    assert!(listed(&ui, "Hide dialogue (held)"), "and its Back held over a dialogue");
     assert!(!listed(&ui, "R3") && !listed(&ui, "Arrows") && !listed(&ui, "Drag"), "and none of the flat hosts' inputs");
-    for label in ["Underhand grab", "Right stick click", "Head"] {
+    for label in ["Underhand grab", "Right stick click", "Head", "Hide dialogue (held)"] {
         let key = element(&ui, label, AccessibleRole::Text);
         let (at, size) = (key.absolute_position(), key.size());
         assert!(at.x >= 0.0 && at.x + size.width <= 440.0, "{label} at {at:?} {size:?} fits the headset's panel");
@@ -1042,17 +1187,46 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
         assert_eq!(shown(&ui, "HD-2D quality"), quality, "HD-2D quality for profile {profile}");
         assert!(!shown(&ui, "Characters keep moving"));
     }
-    let heading = element(&ui, "VR", AccessibleRole::Text);
-    let distance = element(&ui, "Headset screen distance in centimetres", AccessibleRole::Spinbox);
-    assert!(heading.absolute_position().y < distance.absolute_position().y);
+    // The Look card's last row: the party's full-resolution sprites in
+    // large-scale fields, through the settings service.
+    let switch = element(&ui, "Full-resolution sprites in large-scale areas", AccessibleRole::Switch);
+    let look = element(&ui, "Look", AccessibleRole::Groupbox);
+    let quality = element(&ui, "HD-2D quality", AccessibleRole::Combobox);
+    let (top, bottom) = (look.absolute_position().y, look.absolute_position().y + look.size().height);
+    assert!(switch.absolute_position().y > quality.absolute_position().y + quality.size().height, "below the card's other rows");
+    assert!(switch.absolute_position().y > top && switch.absolute_position().y + switch.size().height < bottom, "inside the card");
+    assert!(!settings.borrow().settings().graphics.full_size_sprites, "off by default");
+    press(&ui, &switch);
+    assert!(settings.borrow().settings().graphics.full_size_sprites);
+    // High Framerate (interpolation) decides the presentation's rate: no
+    // choice of it. Widescreen beside it widens the framing.
+    assert!(!shown(&ui, "Presentation rate") && !shown(&ui, "Presentation"));
+    assert!(!shown(&ui, "Interpolate motion") && !shown(&ui, "Wider framing"), "their old names");
+    press(&ui, &element(&ui, "High Framerate", AccessibleRole::Switch));
+    assert!(!settings.borrow().settings().graphics.game_paced(), "interpolated: every display refresh");
+    press(&ui, &element(&ui, "High Framerate", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().graphics.game_paced(), "not: the game's frames");
+    press(&ui, &element(&ui, "Widescreen", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().graphics.widescreen);
+    // Headings stand above their cards, outside them.
+    for (name, index, headings) in [
+        ("Graphics", 1, [("Texture Filtering", "Filtering"), ("VR", "Headset")]),
+        ("Controls", 2, [("VR / Touchscreen", "Headsets and touch screens"), ("Global", "App keys and views")]),
+        ("Time", 4, [("Rewind", "Rewind"), ("Fast-Forward", "Fast-forward")]),
+    ] {
+        section(&mut ui, name, index);
+        for (heading, card) in headings {
+            heading_above(&ui, heading, card);
+        }
+    }
+    section(&mut ui, "Graphics", 1);
 
     // Every dropdown remains unchanged by the wheel, even after gaining focus.
     // The widget lets the containing panel or open menu scroll instead.
     for (section_name, section_index, label) in [
         ("Graphics", 1, "Scale"), ("Graphics", 1, "Graphics profile"),
         ("Graphics", 1, "Internal resolution"), ("Graphics", 1, "HD-2D quality"),
-        ("Graphics", 1, "Presentation rate"), ("Controls", 2, "Headset pointer"),
-        ("Gameplay", 6, "Random battles"),
+        ("Controls", 2, "Headset pointer"),
     ] {
         section(&mut ui, section_name, section_index);
         let dropdown = element(&ui, label, AccessibleRole::Combobox);
@@ -1101,7 +1275,36 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     key(&ui, xem_ui::Key::UpArrow);
     assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Tab leaves the closed dropdown");
 
+    // Force 4:3 disables the Widescreen switch, showing wider framing off;
+    // neither the switch nor its row changes a setting, and with Force 4:3
+    // off again the choice frames the picture wider again.
+    let widescreen = |ui: &SettingsUi| element(ui, "Widescreen", AccessibleRole::Switch);
+    let graphics = || settings.borrow().settings().graphics;
+    assert!(graphics().widened(), "on from above");
+    let force = element(&ui, "Force 4:3", AccessibleRole::Switch);
+    assert_eq!(force.accessible_checked(), Some(false), "off by default");
+    press(&ui, &force);
+    ui.update().unwrap();
+    assert!(graphics().force_4x3 && graphics().widescreen && !graphics().widened(), "4:3 frames without Widescreen, its choice kept");
+    assert_eq!((widescreen(&ui).accessible_checked(), widescreen(&ui).accessible_enabled()), (Some(false), Some(false)));
+    let revision = settings.borrow().revision();
+    press(&ui, &widescreen(&ui));
+    press(&ui, &element(&ui, "Widescreen", AccessibleRole::Text));
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().revision(), revision, "the disabled switch and its row change nothing");
+    press(&ui, &force);
+    ui.update().unwrap();
+    assert!(!graphics().force_4x3 && graphics().widened(), "off again, Widescreen frames the picture wider again");
+    assert_eq!((widescreen(&ui).accessible_checked(), widescreen(&ui).accessible_enabled()), (Some(true), Some(true)));
+
     section(&mut ui, "Controls", 2);
+    // The cursor hides over an idle game by default; the switch turns it off.
+    let hide = element(&ui, "Hide the cursor when the mouse is idle", AccessibleRole::Switch);
+    assert_eq!(hide.accessible_checked(), Some(true));
+    press(&ui, &hide);
+    assert!(!settings.borrow().settings().hide_idle_cursor);
+    press(&ui, &hide);
+    assert!(settings.borrow().settings().hide_idle_cursor);
     assert!(!shown(&ui, "Mouse sensitivity"));
     press(&ui, &element(&ui, "Turn the camera with the mouse", AccessibleRole::Switch));
     ui.update().unwrap();
@@ -1164,4 +1367,238 @@ fn shortcuts_list_toggle_first_person_view_with_its_key_and_chord_and_rebind_it_
     ui.component().invoke_binding_edited(selected, "KeyG".into(), "Back+South".into());
     ui.update().unwrap();
     assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("KeyG", "Back+R1"), "Save state's chord stays Save state's");
+}
+
+#[test]
+fn debug_controls_submit_kernel_operations_and_developer_room() {
+    use xem_settings::{AppRequest, DebugRequest};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings, (640, 2600), 1.0).unwrap();
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    section(&mut ui, "Debug", 7);
+    press(&ui, &element(&ui, "Go to developer room", AccessibleRole::Button));
+    assert!(requests.borrow().is_empty(), "Debug needs a game session");
+    ui.set_debug_status(true, false, "");
+    ui.component().set_debug_map(22);
+    ui.component().set_debug_entry(4);
+    ui.component().set_debug_menu(3);
+    ui.component().set_debug_parameter(2);
+    ui.component().set_debug_movie(5);
+    ui.component().set_debug_movie_kind(1);
+    ui.update().unwrap();
+    for label in ["Debug party member 3", "Debug Gear 3"] {
+        press(&ui, &element(&ui, label, AccessibleRole::Combobox));
+        key(&ui, xem_ui::Key::DownArrow);
+        key(&ui, xem_ui::Key::Return);
+        ui.update().unwrap();
+    }
+    for (label, expected) in [
+        ("Start field test", DebugRequest::Field { map: 22, entry: 4 }),
+        ("Go to developer room", DebugRequest::Field { map: 0, entry: 0 }),
+        ("Start battle test", DebugRequest::Battle { formation: 3, file: 0, party: [0, 1, 3], gears: [0, 0, 1] }),
+        ("Start world map test", DebugRequest::Worldmap),
+        ("Start Battling", DebugRequest::Battling),
+        ("Open test menu", DebugRequest::Menu { screen: 3, parameter: 2 }),
+        ("Play test movie", DebugRequest::Movie { movie: 5, kind: 1 }),
+    ] {
+        press(&ui, &element(&ui, label, AccessibleRole::Button));
+        assert_eq!(requests.borrow_mut().pop(), Some(AppRequest::Debug(expected)), "{label}");
+    }
+    ui.set_debug_status(true, true, "Starting debug test…");
+    ui.update().unwrap();
+    press(&ui, &element(&ui, "Go to developer room", AccessibleRole::Button));
+    assert!(requests.borrow().is_empty(), "pending operations disable the launch controls");
+}
+
+/// The first gamepad as the hosts poll it while the panel shows: the
+/// standard buttons held (South 0, East 1, West 2, L1 4, R1 5, Back 8,
+/// the pad's Up 12, Down 13, Left 14, Right 15), a poll every 16 ms.
+struct Gamepad {
+    now: std::time::Duration,
+}
+
+impl Gamepad {
+    fn poll(&mut self, ui: &SettingsUi, held: &[usize]) {
+        let mut pressed = [0u8; 16];
+        for &button in held {
+            pressed[button] = 1;
+        }
+        ui.gamepad(&pressed, &[0.0; 4], self.now);
+        self.now += std::time::Duration::from_millis(16);
+    }
+
+    fn press(&mut self, ui: &SettingsUi, button: usize) {
+        self.poll(ui, &[button]);
+        self.poll(ui, &[]);
+    }
+}
+
+#[test]
+fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
+    use xem_settings::{AppAction, AppBinding, AppRequest, AudioOutput, Scale};
+    const SOUTH: usize = 0;
+    const EAST: usize = 1;
+    const WEST: usize = 2;
+    const L1: usize = 4;
+    const R1: usize = 5;
+    const BACK: usize = 8;
+    const UP: usize = 12;
+    const DOWN: usize = 13;
+    const LEFT: usize = 14;
+    const RIGHT: usize = 15;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    let closed = Rc::new(Cell::new(0));
+    ui.on_close({ let closed = closed.clone(); move || closed.set(closed.get() + 1) });
+    ui.on_quit(|| {});
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    let volume = || settings.borrow().settings().master_volume;
+    let mut pad = Gamepad { now: std::time::Duration::ZERO };
+
+    // What is held as the panel shows is no press: the first poll only looks.
+    pad.poll(&ui, &[DOWN]);
+    pad.poll(&ui, &[]);
+    assert_eq!(volume(), 80);
+    // The first press puts the focus on the section's first control, Master
+    // volume, and does nothing else; left and right then move its slider.
+    pad.press(&ui, DOWN);
+    assert_eq!(volume(), 80, "the first press only shows where the focus is");
+    pad.press(&ui, RIGHT);
+    assert_eq!(volume(), 85);
+    pad.press(&ui, LEFT);
+    pad.press(&ui, LEFT);
+    assert_eq!(volume(), 75);
+    // Held, a direction repeats after 0.4 s, then every 80 ms.
+    for _ in 0..36 {
+        pad.poll(&ui, &[RIGHT]);
+    }
+    pad.poll(&ui, &[]);
+    assert_eq!(volume(), 75 + 5 * 4, "a press and three repeats while held for 560 ms");
+    // Down goes on to Sound mode, whose options left and right choose.
+    pad.press(&ui, DOWN);
+    assert_eq!(settings.borrow().settings().audio_output, AudioOutput::Stereo);
+    pad.press(&ui, RIGHT);
+    assert_eq!(settings.borrow().settings().audio_output, AudioOutput::Wide);
+    pad.press(&ui, UP);
+    pad.press(&ui, LEFT);
+    assert_eq!(volume(), 90, "up goes back to the slider");
+
+    // R1 and L1 change sections (round from the last to the first), onto
+    // the new section's first control.
+    pad.press(&ui, R1);
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_selected_section(), 1);
+    pad.press(&ui, DOWN);
+    let scale = || settings.borrow().settings().presentation.scale;
+    assert_eq!(scale(), Scale::Fit);
+    // A closed dropdown steps with left and right; South opens its list,
+    // where up and down choose and South or East closes it.
+    pad.press(&ui, RIGHT);
+    assert_eq!(scale(), Scale::Integer);
+    let dropdown = element(&ui, "Scale", AccessibleRole::Combobox);
+    pad.press(&ui, SOUTH);
+    ui.update().unwrap();
+    assert_eq!(dropdown.accessible_expanded(), Some(true));
+    pad.press(&ui, DOWN);
+    assert_eq!(scale(), Scale::Stretch);
+    pad.press(&ui, LEFT);
+    pad.press(&ui, SOUTH);
+    ui.update().unwrap();
+    assert_eq!(dropdown.accessible_expanded(), Some(false));
+    assert_eq!(scale(), Scale::Stretch, "left and right leave an open list alone");
+    pad.press(&ui, SOUTH);
+    pad.press(&ui, UP);
+    pad.press(&ui, EAST);
+    ui.update().unwrap();
+    assert_eq!((dropdown.accessible_expanded(), scale()), (Some(false), Scale::Integer));
+    assert_eq!(closed.get(), 0, "East closed the list, not the panel");
+    // Below it, Force 4:3; South presses a switch.
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    pad.press(&ui, SOUTH);
+    assert!(settings.borrow().settings().presentation.show_fps);
+    pad.press(&ui, L1);
+    pad.press(&ui, L1);
+    assert_eq!(ui.component().get_selected_section(), 8, "L1 from the first section goes to the last");
+
+    // Shortcuts: each row a stop, South opens its editor, and South on its
+    // gamepad field takes the next buttons pressed together.
+    for _ in 0..5 {
+        pad.press(&ui, L1);
+    }
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_selected_section(), 3);
+    pad.press(&ui, SOUTH);
+    assert_eq!(ui.component().get_selected_action(), 0, "Save state's editor");
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    pad.poll(&ui, &[SOUTH]);
+    assert!(ui.capturing_buttons());
+    assert_eq!(ui.component().get_gamepad_binding().as_str(), "");
+    pad.poll(&ui, &[]);
+    pad.poll(&ui, &[L1]);
+    pad.poll(&ui, &[L1, WEST]);
+    pad.poll(&ui, &[WEST]);
+    assert!(ui.capturing_buttons(), "until every button is let go");
+    pad.poll(&ui, &[]);
+    assert!(!ui.capturing_buttons());
+    assert_eq!(ui.component().get_gamepad_binding().as_str(), "L1+West");
+    // Down to Cancel, right along the buttons to Save shortcut.
+    pad.press(&ui, DOWN);
+    pad.press(&ui, RIGHT);
+    pad.press(&ui, RIGHT);
+    pad.press(&ui, SOUTH);
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F5", "L1+West"));
+    // East closes the editor, the focus back on its row; again, the panel.
+    pad.press(&ui, EAST);
+    assert_eq!((ui.component().get_selected_action(), closed.get()), (-1, 0));
+    pad.press(&ui, SOUTH);
+    assert_eq!(ui.component().get_selected_action(), 0, "South on the row opens it again");
+    pad.press(&ui, SOUTH);
+    assert_eq!(ui.component().get_selected_action(), -1, "and closes it");
+    // Back begins the app's chords: the panel takes nothing while it is held.
+    pad.poll(&ui, &[BACK]);
+    pad.poll(&ui, &[BACK, EAST]);
+    pad.poll(&ui, &[]);
+    assert_eq!(closed.get(), 0);
+    pad.press(&ui, EAST);
+    assert_eq!(closed.get(), 1);
+
+    // Hidden and shown again, the first press enters the section anew.
+    ui.cancel_pointer();
+    pad.poll(&ui, &[]);
+    pad.press(&ui, R1);
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_selected_section(), 4);
+    // Time: a number box steps with left and right, and South holds Hold to
+    // rewind as long as it is held.
+    pad.press(&ui, DOWN);
+    pad.press(&ui, RIGHT);
+    assert_eq!(settings.borrow().settings().rewind_interval_seconds, 2);
+    pad.press(&ui, LEFT);
+    assert_eq!(settings.borrow().settings().rewind_interval_seconds, 1);
+    pad.press(&ui, DOWN);
+    pad.press(&ui, DOWN);
+    requests.borrow_mut().clear();
+    pad.poll(&ui, &[SOUTH]);
+    pad.poll(&ui, &[SOUTH]);
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true)]);
+    pad.poll(&ui, &[]);
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::UiRewind(true), AppRequest::UiRewind(false)]);
+
+    // The quit question: East keeps playing.
+    ui.component().set_quit_confirming(true);
+    ui.update().unwrap();
+    pad.press(&ui, EAST);
+    assert!(!ui.component().get_quit_confirming());
+    assert_eq!(closed.get(), 1);
 }

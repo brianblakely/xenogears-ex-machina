@@ -52,6 +52,38 @@ fn select_shows_a_field_maps_picture_only_where_it_has_one_and_its_item_is_held(
     assert!(controls.field && controls.menu && !controls.walking, "the menu runs: {controls:?}");
 }
 
+/// The hosts ask their queries between frames as often as they refresh:
+/// asked however often, the game runs as it does unasked. They read the
+/// game's memory and run none of its code. When the port answered them, the
+/// field's query ran the game's inventory loop, which counts toward its
+/// polls, and a poll falling in the query suspended the game over its own
+/// suspended frames: the next frame's vertical blank stopped it (#71, a
+/// field with a picture loading after a battle).
+#[test]
+fn the_hosts_queries_leave_the_game_as_it_runs_unasked() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut hashes = Vec::new();
+    for asked in [0, 500] {
+        let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+        // The map with a picture, its item not held: from the field's
+        // loading on, the query reads the whole inventory.
+        run(&mut session, json!({"cmd": "enter_field", "map": 0xEF}));
+        for _ in 0..300 {
+            for _ in 0..asked {
+                session.runtime.combo_input();
+                session.runtime.field_controls();
+                session.runtime.game_paused();
+            }
+            run(&mut session, json!({"cmd": "frames", "count": 1}));
+        }
+        hashes.push(session.execute(&json!({"cmd": "memory_hash"})));
+    }
+    assert_eq!(hashes[0], hashes[1], "asked 500 times a frame");
+}
+
 /// An agent's typed actions and a player's bound keys reach the game as the
 /// same pad: the menu opens from either, and the two runs end equal.
 #[test]
@@ -128,6 +160,7 @@ fn host_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::pl
     let context = xem_settings::player::Context {
         attack: session.runtime.combo_input(),
         field: session.runtime.field_controls(),
+        world_map: session.runtime.services().mode == Some(3),
         assignment: session.runtime.button_assignment(),
         ui: session.runtime.context(),
         paused: session.runtime.game_paused(),
@@ -160,12 +193,12 @@ fn menu_read_cancel(session: &mut Session<NativeModule>) -> bool {
     session.runtime.memory().read(u32::from_le_bytes(bytes) + 0x325, &mut input).is_ok_and(|()| input[0] == 5)
 }
 
-/// Tab for two frames, then host frames until the field menu has closed;
-/// the Cancel presses the menu read meanwhile.
-fn tab_until_closed(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings) -> u32 {
+/// Tab for two frames, then host frames until the menu has closed back to
+/// the context `kind`; the Cancel presses the menu read meanwhile.
+fn tab_until_closed(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings, kind: &str) -> u32 {
     let (mut frames, mut cancels) = (0, 0);
     player.key(bindings, "Tab", true);
-    while context(session)["kind"] != "walk" {
+    while context(session)["kind"] != kind {
         if frames == 2 {
             player.key(bindings, "Tab", false);
         }
@@ -194,7 +227,7 @@ fn tab_toggles_the_field_menu_from_any_of_its_screens() {
     run(&mut session, json!({"cmd": "frames", "count": 400}));
     tap(&mut session, &mut player, &bindings, "Tab", 200);
     assert_eq!(context(&mut session)["commands"], true, "{}", context(&mut session));
-    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings), 1, "one Cancel at the commands");
+    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings, "walk"), 1, "one Cancel at the commands");
     tap(&mut session, &mut player, &bindings, "Tab", 200);
     let menu = context(&mut session);
     assert_eq!(menu["kind"], "menu", "{menu}");
@@ -209,7 +242,31 @@ fn tab_toggles_the_field_menu_from_any_of_its_screens() {
     }
     tap(&mut session, &mut player, &bindings, "KeyE", 60);
     assert_eq!(context(&mut session)["open"], true, "{}", context(&mut session));
-    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings), 2, "out of the item screen, then at the commands");
+    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings, "walk"), 2, "out of the item screen, then at the commands");
+}
+
+/// The world map runs the field's menu from its own loop: Tab opens it
+/// there too and, pressed again, closes it with one Cancel at its commands
+/// (out of Lahan's south exit, as `world-map-lahan-exit.json` goes).
+#[test]
+fn tab_toggles_the_world_maps_menu() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/world-map-lahan-exit.json");
+    let route: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    run(&mut session, json!({"cmd": "schedule", "commands": route["commands"]}));
+    let count = route["frames"].as_u64().unwrap() - session.runtime.frames();
+    run(&mut session, json!({"cmd": "frames", "count": count}));
+    assert_eq!(context(&mut session)["kind"], "world_map");
+    tap(&mut session, &mut player, &bindings, "Tab", 200);
+    let menu = context(&mut session);
+    assert!(menu["kind"] == "menu" && menu["commands"] == true, "{menu}");
+    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings, "world_map"), 1, "one Cancel at the commands");
 }
 
 /// A click on the game while it shows its pause screen (or a tap) resumes

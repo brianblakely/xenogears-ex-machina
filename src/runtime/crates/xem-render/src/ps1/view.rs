@@ -38,6 +38,10 @@ pub struct ViewConfig {
     /// sides widen the picture to (the display's own height decides them).
     pub side: u32,
     pub aspect: Option<f32>,
+    /// The aspect ratio a flat host forces the picture to (Force 4:3:
+    /// [`Graphics::forced_aspect`]); `None` its own shape (a headset's screen
+    /// keeps it). Rebuilt movie frames are made in it.
+    pub shape: Option<f32>,
     pub interpolation: bool,
     /// How far the field camera is pulled back (1 the original, up to 5):
     /// the subject the camera looks at appears this many times smaller.
@@ -107,6 +111,15 @@ fn draws_scene(ops: &[TraceOp]) -> bool {
     ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.class.is_scene() && !p.revealed))
 }
 
+/// Whether a scene's terrain opens hairline cracks at sub-pixel precision
+/// that the original's whole pixels hide: the world map's blocks of
+/// different detail meet in T-junctions, and its and the Battling arena's
+/// far slivers are dropped by whole-pixel winding tests (the port records
+/// them as culled faces).
+fn seals_terrain(scene: &str) -> bool {
+    scene.starts_with("worldmap") || scene == "arena"
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
@@ -140,17 +153,24 @@ impl ViewConfig {
                 interface_linear: linear(graphics.filtering.interface),
             },
             culling: super::Culling { viewport: graphics.culling.viewport, back_faces: graphics.culling.back_faces },
+            full_size_sprites: graphics.full_size_sprites,
+            hide_dialogue: false,
         };
-        // A headset's virtual screen takes a 16:9 shape when widened.
-        let aspect = match (graphics.widescreen, host) {
+        // A headset's virtual screen takes a 16:9 shape when widened, and
+        // keeps its own under Force 4:3.
+        let aspect = match (graphics.widened(), host) {
             (false, _) => None,
             (true, HostClass::Headset) => Some(16.0 / 9.0),
             (true, _) => Some(output.0 as f32 / output.1.max(1) as f32),
         };
+        let shape = if host == HostClass::Headset { None } else { graphics.forced_aspect() };
         let side = aspect.map_or(0, |aspect| display_side((320, 224), aspect));
-        // The picture (about 320x224, wider with wider framing) fitted into
-        // the output: its height there, in original lines.
-        let fitted = output.1.min(output.0 * 224 / (320 + 2 * side));
+        // The picture (about 320x224, wider with wider framing, or 4:3 under
+        // Force 4:3) fitted into the output: its height there.
+        let fitted = match shape {
+            Some(shape) => output.1.min((output.0 as f32 / shape) as u32),
+            None => output.1.min(output.0 * 224 / (320 + 2 * side)),
+        };
         // Automatic scales stop where the host's budget does.
         let budget = match host {
             HostClass::Desktop => 8,
@@ -192,6 +212,7 @@ impl ViewConfig {
             quality,
             side,
             aspect,
+            shape,
             interpolation: graphics.interpolation,
             zoom: f32::from(graphics.zoom_out.clamp(100, xem_settings::MAX_ZOOM_OUT)) / 100.0,
             movies: (graphics.filtering.movies == xem_settings::MovieFilter::Enhanced).then_some(output),
@@ -332,10 +353,6 @@ pub struct GameView {
     pending: Vec<TraceOp>,
     /// The trace must restart from the whole VRAM.
     restart: bool,
-    /// When the newest game frame arrived and the interval before it
-    /// (seconds, the host's clock), for interpolation.
-    arrived: f64,
-    interval: f64,
     /// The scene last presented, the depth the field camera looks at as
     /// the port recorded it, and the depth the camera is pulled back from.
     scene: String,
@@ -353,6 +370,8 @@ pub struct GameView {
     presented_movie: bool,
     /// First-person inspection, while it is on.
     first_person: Option<FirstPerson>,
+    /// The field's dialogue windows are left out ([`DrawOptions::hide_dialogue`]).
+    dialogue_hidden: bool,
     /// What a headset shows, and the diorama's state.
     xr_view: XrView,
     diorama: Diorama,
@@ -422,9 +441,11 @@ impl Target {
         // the game's other buffer now).
         let held = self.frame.area().map(|(area, _)| area).filter(|_| framing.hold && !self.frame.newest().is_empty());
         let area = held.unwrap_or(area);
-        let new_frame = held.is_none() && (self.frame.track(renderer, area) || new_frame);
+        let new_frame = held.is_none() && (self.frame.track(renderer, area, framing.interpolate) || new_frame);
         let effects = config.effects.any() && framing.interface != Interface::Only;
-        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
+        // Interpolation's time matters only while something moves.
+        let settled = Framing { interpolate: framing.interpolate.filter(|&now| self.frame.moving(now)), ..framing };
+        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing: settled };
         if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(effects) {
             return;
         }
@@ -500,8 +521,6 @@ impl GameView {
             config: None,
             pending: Vec::new(),
             restart: true,
-            arrived: 0.0,
-            interval: 1.0 / 30.0,
             scene: String::new(),
             recorded_focus: None,
             focus: None,
@@ -511,6 +530,7 @@ impl GameView {
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
             first_person: None,
+            dialogue_hidden: false,
             xr_view: XrView::Screen,
             diorama: Diorama::default(),
             room: false,
@@ -534,8 +554,10 @@ impl GameView {
         self.config.as_ref()
     }
 
-    /// Applies a configuration (cheap when unchanged).
+    /// Applies a configuration (cheap when unchanged), with the dialogue
+    /// shown or hidden as [`GameView::set_dialogue_hidden`] last said.
     pub fn configure(&mut self, config: ViewConfig) {
+        let config = ViewConfig { draw: DrawOptions { hide_dialogue: self.dialogue_hidden, ..config.draw }, ..config };
         if self.config == Some(config) {
             return;
         }
@@ -586,11 +608,13 @@ impl GameView {
                     Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0 })
                 }
             }
-        } else if side > 0 || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
-            // The sides, and a little more for faces leaning into them.
-            // Modern world terrain also needs sub-pixel slivers the
-            // original's whole-pixel winding test discarded inside them.
-            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0, around: 0 })
+        } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
+            // The sides, and a little more for faces leaning into them, or
+            // what a camera between two frames sees beside the screen.
+            // Modern terrain also needs the sub-pixel slivers the
+            // original's whole-pixel winding tests discarded inside them.
+            let margin = if config.interpolation { 32 } else { 16 };
+            Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0 })
         } else {
             None
         }
@@ -630,6 +654,25 @@ impl GameView {
     /// Whether first-person inspection is on.
     pub fn first_person(&self) -> bool {
         self.first_person.is_some()
+    }
+
+    /// Leaves a dialogue's windows (the field's: their frames, text,
+    /// portraits, prompts and choice cursors; a battle's script message:
+    /// its window, portrait, text and cursor) out of what it presents, or
+    /// shows them again: hosts hide them while the player holds Select over
+    /// a dialogue (`xem_settings::look::DialogueHiding`). The frame shown is
+    /// replayed without them at once, paused or not; the game draws as
+    /// before.
+    pub fn set_dialogue_hidden(&mut self, hidden: bool) {
+        self.dialogue_hidden = hidden;
+        if let Some(config) = self.config {
+            self.configure(config);
+        }
+    }
+
+    /// Whether the field's dialogue windows are left out.
+    pub fn dialogue_hidden(&self) -> bool {
+        self.dialogue_hidden
     }
 
     /// The Binaural listener's view (`xem_core::binaural::ListenerView`)
@@ -913,7 +956,6 @@ impl GameView {
         // on the last that did, seen as the head now is (one they drew in
         // this inspection: they are made anew as it begins).
         self.show_screen(encoder, area, now, new_frame, None, Interface::Only);
-        let alpha = self.alpha(now);
         let hold = self.main.frame.eye().is_none() || projection_centre(self.main.frame.newest()).is_none();
         while self.eyes.len() < looks.len() {
             self.eyes.push(Target::new(&self.device, self.adapter.as_ref()));
@@ -921,7 +963,7 @@ impl GameView {
         for (target, look) in self.eyes.iter_mut().zip(&looks) {
             let framing = Framing {
                 side: self.side,
-                interpolate: config.interpolation.then_some(alpha).filter(|_| !hold),
+                interpolate: config.interpolation.then_some(now).filter(|_| !hold),
                 pull_back: 0.0,
                 replay: config.effects.any(),
                 look: Some(*look),
@@ -957,7 +999,8 @@ impl GameView {
     fn present_movie(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, output: (u32, u32)) -> Option<Flat> {
         self.presented_movie = true;
         self.main.shown = None;
-        let (_, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, &self.renderer.vram)?;
+        let reshaped = self.config.is_some_and(|config| config.shape.is_some());
+        let (_, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, reshaped, &self.renderer.vram)?;
         Some(Flat { picture: Picture::Movie, size, new_frame })
     }
 
@@ -985,9 +1028,10 @@ impl GameView {
             super::PresentedPicture { texture, side: self.main.frame.side(), scale }
         });
         self.renderer.set_presented(presented);
-        // The world map's terrain blocks meet in T-junctions that open at
-        // higher scales; the original's whole pixels hide them.
-        self.renderer.set_seal(scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping);
+        self.renderer.set_seal(seals_terrain(scene) && !config.draw.fidelity.vertex_snapping);
+        let lighting = Lighting::for_scene(scene);
+        self.renderer.set_sky(lighting.sky_depth);
+        self.renderer.set_additive_model_depth(lighting.additive_model_depth);
         self.renderer.draw(encoder, &trace);
         // The frames this trace began are the current scene's.
         let identities: Vec<_> = self.renderer.log_identities().collect();
@@ -1003,7 +1047,7 @@ impl GameView {
     /// (the view's field, the game's frame arrivals, the camera's focus and
     /// the wider framing's sides); returns whether it is a new game frame.
     fn track_shown(&mut self, area: DisplayArea, scene: &str, now: f64) -> bool {
-        let new_frame = self.main.frame.track(&self.renderer, area);
+        let new_frame = self.main.frame.track(&self.renderer, area, Some(now));
         // The scene that drew the frame shown frames it: the field's last
         // frame stays pulled back while a battle loads behind it (and its
         // shatter takes it so), a battle's last one stays as the battle drew
@@ -1016,9 +1060,10 @@ impl GameView {
             self.focus = None;
         }
         // First-person inspection is the field's it began in, and begins
-        // only where a frame shown with the field camera's record (the port
-        // records it from the frame after the view asks, as the field draws
-        // its models) draws the field's scene: a field whose camera shows
+        // only where a frame shown with the field camera's record made
+        // looking around (the port records it so from the frame after the
+        // view asks, as the field draws its models) draws the field's
+        // scene: a field whose camera shows
         // none of it (the title screen's: its logo over a map the game culls
         // whole) has nothing to look around in, which the second new frame
         // of the record alone tells. The first proves nothing: a trace
@@ -1030,7 +1075,7 @@ impl GameView {
                 _ if !self.scene.starts_with("field") => self.first_person = None,
                 Some(field) if *field != self.scene => self.first_person = None,
                 Some(_) => {}
-                None if self.main.frame.camera().is_none() => {}
+                None if self.main.frame.camera().is_none_or(|camera| camera.around == 0) => {}
                 None if draws_scene(self.main.frame.newest()) => view.field = Some(self.scene.clone()),
                 None => {
                     view.sceneless += u8::from(new_frame);
@@ -1041,21 +1086,11 @@ impl GameView {
             }
         }
         if new_frame {
-            // Game frames come every 1-4 vertical blanks; a long gap (a
-            // pause, a load) is not an interval to interpolate over.
-            self.interval = (now - self.arrived).clamp(1.0 / 60.0, 4.0 / 60.0);
-            self.arrived = now;
             self.update_focus(area);
         }
         // The sides widen this display at its own height to the output's shape.
         self.side = self.config.and_then(|config| config.aspect).map_or(0, |aspect| display_side((area.width, area.height), aspect));
         new_frame
-    }
-
-    /// How far interpolation has gone from the frame before the newest to
-    /// the newest at `now`.
-    fn alpha(&self, now: f64) -> f32 {
-        ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32
     }
 
     /// The frame `area` shows (tracked: [`GameView::track_shown`]) as the
@@ -1076,7 +1111,7 @@ impl GameView {
         let zoom = scene_zoom(config.zoom, &self.scene);
         let pull_back = if zoom > 1.0 && look.is_none() && !alone { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
         // The interface moves as the game moves it: nothing to interpolate.
-        let interpolate = (config.interpolation && !alone).then_some(self.alpha(now));
+        let interpolate = (config.interpolation && !alone).then_some(now);
         let framing = Framing { side: self.side, interpolate, pull_back, replay: config.effects.any(), look, interface, hold: false };
         self.main.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
     }
@@ -1286,7 +1321,7 @@ impl GameView {
 
     /// Where headset eye `eye` looked from within the scene at the last
     /// [`GameView::present_headset`] that drew the eyes (its [`Look`]), and
-    /// its auxiliary picture: each pixel's class (blue: `AUX_WORLD`,
+    /// its auxiliary picture: each pixel's class (blue & `AUX_CLASS_MASK`: `AUX_WORLD`,
     /// `AUX_MODEL` and `AUX_SPRITE` where the scene is drawn,
     /// `AUX_BACKGROUND` where nothing is or the game's clear). For checks of
     /// what the eyes see (tests).
@@ -1347,6 +1382,26 @@ mod tests {
                 assert_eq!(ViewConfig::resolve(&graphics, host, (1280, 720), 8).movies, rebuilt, "{host:?}, {movies:?}");
             }
         }
+    }
+
+    /// Under Force 4:3 a flat host's picture takes that shape: no wider
+    /// framing (Widescreen's choice kept), rebuilt movies made in it, and
+    /// the automatic scale following the height it is shown at (in a
+    /// 1500x1200 output Native's picture is 1050 high: 5, the 4:3 one 1125:
+    /// 6). A headset's screen keeps its own shape, its wider framing ended
+    /// too.
+    #[test]
+    fn force_4x3_shapes_a_flat_hosts_picture() {
+        let wide = Graphics { widescreen: true, ..Graphics::default() };
+        let forced = Graphics { force_4x3: true, ..wide };
+        let native = ViewConfig::resolve(&wide, HostClass::Desktop, (1920, 1080), 8);
+        assert_eq!((native.side > 0, native.shape), (true, None));
+        let shaped = ViewConfig::resolve(&forced, HostClass::Desktop, (1920, 1080), 8);
+        assert_eq!((shaped.side, shaped.aspect, shaped.shape), (0, None, Some(4.0 / 3.0)));
+        let scale = |graphics: &Graphics| ViewConfig::resolve(graphics, HostClass::Desktop, (1500, 1200), 8).scale;
+        assert_eq!((scale(&Graphics::default()), scale(&forced)), (5, 6));
+        let headset = ViewConfig::resolve(&forced, HostClass::Headset, (640, 640), 8);
+        assert_eq!((headset.side, headset.shape), (0, None));
     }
 
     /// A screen 3 m wide 2.5 m ahead spans 0.6 of an eye 90 degrees wide

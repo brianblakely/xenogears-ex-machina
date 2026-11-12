@@ -5,6 +5,121 @@ import json
 import subprocess
 from pathlib import Path
 
+from tools.release.version import native_changed, version
+
+
+def published_releases(repository):
+    pages = json.loads(subprocess.check_output([
+        "gh", "api", f"repos/{repository}/releases", "--paginate", "--slurp",
+    ], text=True))
+    releases = []
+    for page in pages:
+        for release in page:
+            number = version(release["tag_name"])
+            if not release["draft"] and not release["prerelease"] and number:
+                releases.append((number, release["tag_name"]))
+    return releases
+
+
+def previous_release(repository, tag, commit):
+    candidates = [(number, name) for number, name in published_releases(repository) if number < version(tag)]
+    for _, previous in sorted(candidates, reverse=True):
+        ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", previous, commit], check=False)
+        if ancestor.returncode == 0:
+            return previous
+        if ancestor.returncode != 1:
+            ancestor.check_returncode()
+    return None
+
+
+def current_native_release(repository, tag, commit):
+    master = json.loads(subprocess.check_output(["gh", "api", f"repos/{repository}/git/ref/heads/master"], text=True))
+    head = master["object"]["sha"]
+    if head != commit:
+        # A docs-only push can arrive while this app builds. The checkout may
+        # predate it; fetch the exact head we are checking, without moving HEAD.
+        subprocess.run(["git", "fetch", "--no-tags", "origin", head], check=True)
+        ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", commit, head], check=False)
+        if ancestor.returncode not in (0, 1):
+            ancestor.check_returncode()
+        if ancestor.returncode == 1 or native_changed(commit, head):
+            return False
+    # An older build with identical inputs must not displace a newer release.
+    return not any(number > version(tag) for number, _ in published_releases(repository))
+
+
+def commits_since(previous, commit):
+    """The commits since the previous release, newest first: (hash, subject)."""
+    log = subprocess.check_output(["git", "log", "--no-merges", "--format=%H%x00%s", f"{previous}..{commit}"],
+                                  text=True)
+    return [tuple(line.split("\0", 1)) for line in log.splitlines() if line]
+
+
+# A release body holds at most 125 000 characters; the comparison lists the rest.
+MAX_COMMITS = 500
+
+
+def commit_list(repository, commits):
+    shown = commits[:MAX_COMMITS]
+    escape = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
+    lines = [f"- {''.join(escape.get(c, c) for c in subject)} "
+             f"([`{sha[:7]}`](https://github.com/{repository}/commit/{sha}))" for sha, subject in shown]
+    if len(commits) > len(shown):
+        lines.append(f"- …and {len(commits) - len(shown)} more in the full comparison.")
+    return "\n".join(lines)
+
+
+def render_commits(repository, previous, commits):
+    count = f"{len(commits)} commit{'' if len(commits) == 1 else 's'}"
+    return (f"<details>\n<summary>{count} since {previous}</summary>\n\n"
+            + commit_list(repository, commits) + "\n\n</details>")
+
+
+def render_notes(repository, tag, previous, changes, commits=()):
+    release_url = f"https://github.com/{repository}/releases"
+    if previous:
+        changelog = f"Here's what's changed since [{previous}]({release_url}/tag/{previous}):\n\n"
+    else:
+        changelog = "Welcome to our first release!\n\n"
+    if changes:
+        changelog += "\n\n".join(changes)
+    elif commits:
+        # No change note was written: list the commits rather than claim nothing changed.
+        changelog += commit_list(repository, commits)
+    else:
+        changelog += "No changes were made since the previous release."
+    if previous:
+        changelog += f"\n\n[See all changes](https://github.com/{repository}/compare/{previous}...{tag})."
+        if changes and commits:
+            changelog += "\n\n" + render_commits(repository, previous, commits)
+    owner, project = repository.split("/")
+    return Path(__file__).with_name("notes.md").read_text().format(
+        tag=tag,
+        downloads=f"{release_url}/download/{tag}/xenogears-ex-machina-{tag}-",
+        guide=f"https://github.com/{repository}/blob/{tag}/docs/releases.md",
+        manual=f"https://github.com/{repository}/blob/{tag}/MANUAL.md",
+        browser=f"https://{owner}.github.io/{project}/",
+        changelog=changelog,
+    )
+
+
+def release_notes(repository, tag, commit):
+    previous = previous_release(repository, tag, commit)
+    directory = "docs/changes/"
+    if previous:
+        command = ["git", "diff", "--name-only", "--diff-filter=A", "-z", previous, commit, "--", directory]
+    else:
+        command = ["git", "ls-tree", "-r", "--name-only", "-z", commit, "--", directory]
+    paths = subprocess.check_output(command, text=True).split("\0")
+    changes = []
+    for path in sorted(path for path in paths if path.endswith(".md")):
+        change = subprocess.check_output(["git", "show", f"{commit}:{path}"], text=True).strip()
+        if not change:
+            raise ValueError(f"empty release note: {path}")
+        changes.append(change)
+    commits = commits_since(previous, commit) if previous else []
+    return render_notes(repository, tag, previous, changes, commits)
+
 
 def expected(tag):
     prefix = f"xenogears-ex-machina-{tag}-"
@@ -47,22 +162,12 @@ def main():
             raise SystemExit("published release differs; refusing to replace it")
         return
     notes = root / "notes.md"
-    notes.write_text(
-        f"Portable Xenogears Ex Machina {args.tag}, built from `{args.commit}`.\n\n"
-        "Place the desktop executable beside your own disc images. First launch organizes them into `discs/`; "
-        "memory cards and save states use `cards/` and `saves/`. Android and Horizon OS share the signed APK.\n\n"
-        "Full-story progression remains unverified. Desktop and headset qualification includes the documented "
-        "Linux and emulation proxies.\n\n"
-        "[Browser play](https://brianblakely.github.io/xenogears-ex-machina/) · "
-        f"[Installation, supported platforms and qualification limits](https://github.com/{args.repository}/blob/{args.tag}/docs/releases.md)\n\n"
-        "`SHA256SUMS` covers all downloads. No original game images, BIOS, extracted assets or personal saves are included.\n"
-    )
+    notes.write_text(release_notes(args.repository, args.tag, args.commit))
     if view.returncode != 0:
         subprocess.run(["gh", "release", "create", args.tag, "--repo", args.repository, "--verify-tag", "--draft",
                         "--title", args.tag, "--notes-file", str(notes)], check=True)
     subprocess.run(["gh", "release", "upload", args.tag, "--repo", args.repository, "--clobber", *map(str, files)], check=True)
-    master = json.loads(subprocess.check_output(["gh", "api", f"repos/{args.repository}/git/ref/heads/master"], text=True))
-    latest = "true" if master["object"]["sha"] == args.commit else "false"
+    latest = str(current_native_release(args.repository, args.tag, args.commit)).lower()
     subprocess.run(["gh", "release", "edit", args.tag, "--repo", args.repository, "--draft=false", f"--latest={latest}",
                     "--notes-file", str(notes)], check=True)
 

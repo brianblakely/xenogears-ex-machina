@@ -191,7 +191,8 @@ pub struct XemApp {
     /// (whatever the bindings say), the toggle, the app's Toggle
     /// first-person view asked for since the last step (its key, its chord,
     /// the deck's LOOK), the mouse motion that turns the view, when it last
-    /// turned (page time), and a headset's stepped turn.
+    /// turned (page time), a headset's stepped turn, and Select hiding a
+    /// dialogue's windows.
     pad: [u8; 16],
     axes: [f32; 4],
     arrows: [bool; 4],
@@ -200,6 +201,7 @@ pub struct XemApp {
     look_mouse: [f32; 2],
     looked: Option<f64>,
     snap: xem_settings::look::SnapTurn,
+    dialogue_hiding: xem_settings::look::DialogueHiding,
 }
 
 /// The arrow keys, in `look::Turn::arrows` order.
@@ -320,6 +322,7 @@ impl XemApp {
             look_mouse: [0.0; 2],
             looked: None,
             snap: Default::default(),
+            dialogue_hiding: Default::default(),
         }
     }
 
@@ -377,9 +380,10 @@ impl XemApp {
         self.step(now)?;
         let fresh = self.display_dirty || self.session.is_none();
         self.take_game_frame(false);
-        // Game-paced presentation draws only when the game drew (or the
-        // panel shows); the canvas keeps the last picture meanwhile.
-        let game_paced = self.settings.borrow().settings().graphics.present_rate == xem_settings::PresentRate::Game;
+        // Game-paced presentation (no interpolation) draws only when the
+        // game drew (or the panel shows); the canvas keeps the last picture
+        // meanwhile.
+        let game_paced = self.settings.borrow().settings().graphics.game_paced();
         if game_paced && !fresh && !self.panel_visible() {
             return Ok(());
         }
@@ -408,7 +412,7 @@ impl XemApp {
             let outcome = self.recenter();
             if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
                 match outcome {
-                    Ok(text) => panel.set_operation_status(&text),
+                    Ok(_) => panel.clear_operation_error(),
                     Err(error) => panel.set_operation_error(&error),
                 }
             }
@@ -593,16 +597,17 @@ impl XemApp {
     /// mark, and the deck's held actions.
     fn assist_touch(&mut self) {
         let ui = self.ui;
+        // First-person inspection shows no field camera to walk or point
+        // through: its taps walk nowhere and talk to no one, and the deck
+        // has no stick. Otherwise the field as the picture shows it (pulled
+        // back, say).
+        let inspecting = self.first_person();
         let picture = self.renderer.as_ref().and_then(|r| r.picture);
         if let (Some(picture), Some(renderer)) = (picture, &self.renderer) {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let (width, height) = renderer.size();
-            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui);
+            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui, inspecting);
         }
-        // First-person inspection shows no field camera to walk or point
-        // through: its taps walk nowhere and talk to no one. Otherwise the
-        // field as the picture shows it (pulled back, say).
-        let inspecting = self.first_person();
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
         let Some(session) = self.session.as_mut() else { return };
         let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
@@ -624,16 +629,14 @@ impl XemApp {
         let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
-        let held = self.deck.held();
         if let Some(renderer) = &mut self.renderer {
             if let Some(panel) = renderer.panel() {
                 panel.set_first_person_touch(shown);
             }
             renderer.overlay.marks = marks;
-            renderer.overlay.ui = shown.then_some(ui);
             renderer.overlay.style = style;
             let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, xem_assist::draw::deck_state(*c, held.contains(c), auto_advance, inspecting))).collect();
+            renderer.overlay.deck = if shown { xem_assist::draw::deck_widgets(&self.deck, ui, auto_advance, inspecting) } else { Vec::new() };
         }
         self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
@@ -773,11 +776,12 @@ impl XemApp {
     /// anywhere in one but its menu by the app's Toggle first-person view;
     /// while it shows, turned by the arrow keys, the right stick, a finger on
     /// the picture and the mouse the game holds, or in a headset by the right
-    /// stick in steps (the head looks around). Whether it shows. Neither
-    /// happens while the settings panel has the input or the page has lost
-    /// focus, when the game's buttons are let go too (the page reads the
-    /// gamepad whatever the focus). The Original renderer ends it.
-    fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
+    /// stick in steps (the head looks around). Whether it shows. Over a
+    /// dialogue (`ui`), Select held hides its windows. None of it happens
+    /// while the settings panel has the input or the page has lost focus,
+    /// when the game's buttons are let go too (the page reads the gamepad
+    /// whatever the focus). The Original renderer ends the view.
+    fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, ui: xem_core::context::Context, now: f64) -> bool {
         // The mouse's and a finger's motion are the view's this frame, or no
         // one's, as Toggle first-person view asked for since the last.
         let mut mouse = std::mem::take(&mut self.look_mouse);
@@ -798,10 +802,16 @@ impl XemApp {
             self.look_toggle.clear();
             self.snap.clear();
             self.looked = None;
+            self.dialogue_hiding.clear();
+            renderer.set_dialogue_hidden(false);
             return renderer.first_person();
         }
         let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| self.input.key_held(k)))
             || self.deck.held().contains(&xem_assist::touch::Control::Select);
+        // Presented anew as it changes, paused or not.
+        let hidden = self.dialogue_hiding.update(select, &self.pad, ui, now);
+        self.display_dirty |= hidden != renderer.dialogue_hidden();
+        renderer.set_dialogue_hidden(hidden);
         let was = renderer.first_person();
         if self.look_toggle.update(select, &self.pad, field) && drawn {
             renderer.set_first_person(!was);
@@ -842,8 +852,12 @@ impl XemApp {
         // First-person inspection is toggled and turned whether the game
         // runs or not (a headset's Pause stands apart from it).
         let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let ui = self.session.as_mut().map_or(xem_core::context::Context::None, |s| s.runtime.context());
         let bindings = self.settings.borrow().settings().game_bindings.clone();
-        let inspecting = self.look(&bindings, field, now);
+        let inspecting = self.look(&bindings, field, ui, now);
+        let zoom_enabled = self.running && !self.panel_visible() && self.app_input.focused() && !inspecting;
+        let zoom = self.input.zoom_steps(now, zoom_enabled);
+        self.zoom(zoom);
         // The Binaural listener looks where the presentation looks, whether
         // the game runs or not, as the head turns it (presentation only).
         if let Some(session) = self.session.as_mut() {
@@ -886,6 +900,7 @@ impl XemApp {
             let context = self.session.as_mut().map_or_else(Default::default, |s| xem_settings::player::Context {
                 attack: s.runtime.combo_input(),
                 field: s.runtime.field_controls(),
+                world_map: s.runtime.services().mode == Some(3),
                 assignment: s.runtime.button_assignment(),
                 ui: s.runtime.context(),
                 paused: s.runtime.game_paused(),
@@ -921,11 +936,11 @@ impl XemApp {
             let start = now_ms();
             let mut batch = 0;
             let mut fetching = false;
-            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, half_encounters, text_speed, movie_skip, auto_advance) = {
+            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, half_encounters, text_speed, movie_skip, auto_advance, language) = {
                 let settings = self.settings.borrow();
                 let settings = settings.settings();
                 (settings.pause_on_focus_loss, settings.game_sound_mode(), settings.binaural, settings.random_battles_off(),
-                 settings.half_encounters(), settings.text_speed.glyphs(), settings.movie_skip, settings.auto_advance_dwell())
+                 settings.half_encounters(), settings.text_speed.glyphs(), settings.movie_skip, settings.auto_advance_dwell(), settings.language)
             };
             if let Some(session) = self.session.as_mut() {
                 session.set_binaural(binaural);
@@ -944,6 +959,7 @@ impl XemApp {
                 session.set_half_encounters(half_encounters);
                 session.set_text_speed(text_speed).map_err(error)?;
                 session.set_movie_skip(movie_skip);
+                session.set_language(language);
                 session.set_auto_advance(auto_advance).map_err(error)?;
                 match session.frame() {
                     Ok(true) => {
@@ -1021,6 +1037,14 @@ impl XemApp {
     /// Hands what the game drew to the renderer (configured for the canvas or
     /// a headset) and updates the panel's status.
     fn take_game_frame(&mut self, headset: bool) {
+        if (!self.running || self.xr_paused()) && let Some(session) = &mut self.session {
+            if session.debug.busy() {
+                if let Err(error) = session.tick_debug() {
+                    if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_error(&error); }
+                }
+                self.display_dirty = true;
+            }
+        }
         let now = now_ms();
         let held = self.rewind_held.iter().any(|held| *held);
         // What `step` runs: a held rewind through settings' pause too.
@@ -1031,10 +1055,12 @@ impl XemApp {
         if let Some(renderer) = &mut self.renderer {
             if let Some(hud) = &mut renderer.frame_rate { hud.set_activity(forward,rewind); }
             if let (Some(panel),Some(session)) = (renderer.panel(),self.session.as_ref()) {
+                panel.set_debug_status(true, session.debug.busy(), &session.debug.message);
                 panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
                     session.rewind.available_seconds(), session.rewind.history_seconds, session.rewind.bytes as f64/1048576.0,
                     session.rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default()));
             } else if let Some(panel) = renderer.panel() {
+                panel.set_debug_status(false, false, "Boot a game to use Debug.");
                 panel.set_time_status(None,"Boot a game to use save states and time controls.");
             }
             match self.session.as_mut() {
@@ -1098,9 +1124,12 @@ impl XemApp {
         }
         let editing = self.text_editor_focused();
         if editing { self.app_input.release_keyboard(); } else { self.app_input.key(code, down); }
+        let capturing = self.capturing_buttons();
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        if !capturing {
+            self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        }
         let captured = self.app_input.captures_key(code,bindings);
         if captured {
             let game = &settings.settings().game_bindings;
@@ -1128,10 +1157,25 @@ impl XemApp {
         if self.app_input.pad(pressed) {
             self.set_panel_visible(!self.panel_visible());
         }
+        // The open panel takes the gamepad on a flat page (`SettingsUi::gamepad`;
+        // a headset's controllers point at it instead); what it holds as the
+        // panel closes stays the panel's until let go.
+        if self.panel_visible() && self.app_input.focused() && self.xr_blend.is_none()
+            && let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel())
+        {
+            panel.gamepad(pressed, axes, std::time::Duration::from_secs_f64(now_ms() / 1000.0));
+            if self.panel_closed.replace(false) {
+                self.set_panel_visible(false);
+                self.app_input.hold_pad();
+            }
+        }
         if self.text_editor_focused() { self.app_input.release_keyboard(); }
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        // A gamepad binding's field taking the next buttons: they are no chord.
+        if !self.capturing_buttons() {
+            self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        }
         self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords), axes);
     }
 
@@ -1191,8 +1235,10 @@ impl XemApp {
             hud.notify_state(saved,failure.as_deref(),std::time::Duration::from_secs_f64(now_ms()/1000.0));
         }
     }
-    pub fn set_operation_status(&self, text: &str) {
-        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_status(text); }
+    /// The panel's error bar: what a page operation's failure says, or none
+    /// (`""`) once one succeeded.
+    pub fn set_operation_error(&self, text: &str) {
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_error(text); }
     }
     pub fn set_storage_status(&self, text: &str) {
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_storage_status(text); }
@@ -1210,6 +1256,12 @@ impl XemApp {
 
     pub fn panel_visible(&self) -> bool {
         self.renderer.as_ref().is_some_and(|r| r.panel_visible)
+    }
+
+    /// Whether the page hides the cursor over the game, the mouse still for
+    /// `idle` milliseconds (`Settings::hides_cursor`); Settings keeps it.
+    pub fn hides_cursor(&self, idle: f64) -> bool {
+        !self.panel_visible() && self.settings.borrow().settings().hides_cursor(idle / 1000.0)
     }
 
     /// Whether play can hold the browser pointer now. A combo is a set of
@@ -1230,6 +1282,10 @@ impl XemApp {
 
     fn text_editor_focused(&self) -> bool {
         self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
+    }
+
+    fn capturing_buttons(&self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.capturing_buttons())
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the
@@ -1280,13 +1336,18 @@ impl XemApp {
         let steps = self.wheel.trunc();
         if steps != 0.0 {
             self.wheel -= steps;
-            let graphics = self.settings.borrow().settings().graphics;
-            let zoomed = graphics.zoomed(steps as i32);
-            if zoomed != graphics {
-                let _ = self.settings.borrow_mut().apply(SettingChange::Graphics(zoomed));
-            }
+            self.zoom(steps as i32);
         }
         true
+    }
+
+    fn zoom(&mut self, steps: i32) {
+        if steps == 0 { return; }
+        let graphics = self.settings.borrow().settings().graphics;
+        let zoomed = graphics.zoomed(steps);
+        if zoomed != graphics {
+            let _ = self.settings.borrow_mut().apply(SettingChange::Graphics(zoomed));
+        }
     }
 
     /// A finger on the canvas (`kind` down, move, up or cancel; canvas
@@ -1700,8 +1761,7 @@ impl XemApp {
     /// What a card or save file the player picked holds, for card `slot`:
     /// `{image, message}`, its raw image (a whole card, or a fresh card
     /// holding a single save; `file_name` names a raw single save) and what
-    /// was found, as the status line reports it ("Card 1: DexDrive card, 3
-    /// saves"). Refused, naming why, for a file no container holds, a card
+    /// was found ("Card 1: DexDrive card, 3 saves"). Refused, naming why, for a file no container holds, a card
     /// whose directory is damaged, and while a session's game has a file
     /// open on that card or is busy with it. Nothing changes: the page writes
     /// the image to IndexedDB, then sets it ([`set_card_image`](Self::set_card_image)).
@@ -1808,6 +1868,10 @@ impl XemApp {
                 "controls": self.deck.controls.iter().map(|(c, r)| json!({
                     "control": format!("{c:?}"), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
                 })).collect::<Vec<_>>(),
+                // Where the stick rests and its knob's reach; where it shows
+                // (none while first-person inspection shows).
+                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone() })),
+                "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1], "held": s.held })),
                 "held": self.deck.held().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
             },
             "xr": {

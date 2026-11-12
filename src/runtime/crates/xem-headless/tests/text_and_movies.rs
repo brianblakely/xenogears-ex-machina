@@ -22,8 +22,14 @@
 //! after one); and the game's opening chapter, New Game to
 //! Fei's room, plays with the settings' defaults to the original's memory
 //! and with every scene option to the same story value through the same
-//! maps and battle. Local only: it needs the user's disc 1 and a game
-//! module build.
+//! maps and battle. In each translation, Brazilian Portuguese and French
+//! (docs/runtime.md, Languages), a window shows its message's translation
+//! and keeps it through a change of language, the next message taking the
+//! new one; the timed scenes and the opening chapter reach the same ends,
+//! story values and messages as in English, the translations' pages taking
+//! only presses; the language is recorded, so a replay reaches the
+//! recording's memory. Local only: it
+//! needs the user's disc 1 and a game module build.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test text_and_movies
 
@@ -36,6 +42,7 @@ use xem_core::action::GameAction;
 use xem_core::context::Context;
 use xem_core::control::Session;
 use xem_core::dialogue::Prompt;
+use xem_core::locale::Language;
 use xem_game::{NativeModule, boot};
 
 const MODE_FIELD_MAP_ID: u32 = 0x8004_F34C;
@@ -136,7 +143,13 @@ fn confirm_loop(session: &mut Session<NativeModule>) -> bool {
 }
 
 fn start(disc: &PathBuf, scene: Scene) -> Session<NativeModule> {
+    start_in(disc, scene, Language::English)
+}
+
+/// [`start`] with the game's text in `language` from boot.
+fn start_in(disc: &PathBuf, scene: Scene, language: Language) -> Session<NativeModule> {
     let (mut session, _) = boot(disc, &Default::default()).expect("boot");
+    session.set_language(language);
     run(&mut session, json!({"cmd": "enter_field", "map": scene.map}));
     if scene.story.is_some() || scene.parameter.is_some() || scene.party.is_some() {
         let mut writes = vec![json!({"path": "game_data.map", "value": scene.map})];
@@ -926,4 +939,227 @@ fn the_options_are_recorded_and_a_replay_reaches_the_recordings_memory() {
     run(&mut other, log);
     run(&mut other, json!({"cmd": "frames", "count": 1800}));
     assert_eq!(run(&mut other, json!({"cmd": "memory_hash"})), hash, "the replay presses and reveals as the recording did");
+}
+
+/// A scene played in English and in each translation (each in a thread of
+/// its own): the translations change how long the windows take and how many
+/// pages they turn, never where the scene goes: the same end, story value
+/// and messages, its timed ones among them.
+fn same_end_in_every_language(scene: Scene, budget: u64) {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let runs: Vec<(Language, Played)> = std::thread::scope(|scope| {
+        let disc = &disc;
+        let runs: Vec<_> = Language::ALL.into_iter().map(|language| scope.spawn(move || {
+            let mut session = start_in(disc, scene, language);
+            (language, play(&mut session, budget, true, scene.loops))
+        })).collect();
+        runs.into_iter().map(|run| run.join().expect("a run")).collect()
+    });
+    let english = &runs[0].1;
+    assert_ne!(english.end, End::Unfinished, "map {}: the scene ends within {budget} frames", scene.map);
+    for (language, played) in &runs {
+        eprintln!("map {}: {} {} frames, {} presses, end {:?}, story {}; messages {:?}",
+            scene.map, language.code(), played.frames, played.presses, played.end, played.story, played.shown);
+        assert_eq!((played.end, played.story), (english.end, english.story), "map {} in {}: the same end and story value", scene.map, language.code());
+        assert_eq!(played.shown, english.shown, "map {} in {}: the same messages", scene.map, language.code());
+        assert!(scene.timed.iter().all(|n| played.shown.contains(n)), "map {} in {}: its timed messages show", scene.map, language.code());
+    }
+}
+
+#[test]
+fn the_translations_take_the_opening_narration_to_lahan() {
+    same_end_in_every_language(Scene { loops: true, ..Scene::at(4, &[0, 1]) }, 16_000);
+}
+
+#[test]
+fn the_translations_take_map_27s_timed_scene_to_the_same_end() {
+    same_end_in_every_language(Scene::at(27, &[0, 1, 2, 3, 4, 5, 6, 7]), 4_000);
+}
+
+#[test]
+fn the_translations_take_map_131s_scene_to_the_same_end() {
+    same_end_in_every_language(Scene::at(131, &[3]), 7_000);
+}
+
+#[test]
+fn the_translations_take_map_288s_scenes_to_the_same_ends() {
+    same_end_in_every_language(Scene { story: Some(75), parameter: Some(2), ..Scene::at(288, &[0x4F]) }, 9_000);
+    same_end_in_every_language(Scene { story: Some(168), parameter: Some(8), party: Some([0, 3, 4]), ..Scene::at(288, &[0x8D]) }, 14_000);
+}
+
+#[test]
+fn the_translations_take_map_326s_and_359s_scenes_to_the_same_ends() {
+    same_end_in_every_language(Scene { story: Some(153), parameter: Some(5), ..Scene::at(326, &[0, 0x23, 0x2E, 0x35, 0x38]) }, 7_000);
+    same_end_in_every_language(Scene { story: Some(158), party: Some([4, 2, 3]), ..Scene::at(359, &[0x8C, 0x8D, 0x8E, 0x8F]) }, 30_000);
+}
+
+#[test]
+fn the_translations_take_map_482s_scene_to_the_same_end() {
+    same_end_in_every_language(Scene::at(482, &[]), 5_000);
+}
+
+/// The opening chapter, New Game to Fei's room, in each translation: the
+/// same maps, battle and story value as in English.
+#[test]
+fn the_opening_chapter_reaches_feis_room_in_every_language() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let runs = std::thread::scope(|scope| {
+        Language::ALL
+            .map(|language| {
+                let disc = &disc;
+                scope.spawn(move || opening(disc, |session| session.set_language(language), true))
+            })
+            .map(|run| run.join().expect("a run"))
+    });
+    let english = &runs[0];
+    assert_eq!(english.end, End::Control, "the chapter ends with the player walking");
+    for (language, played) in Language::ALL.iter().zip(&runs) {
+        eprintln!("the opening chapter in {}: {:?} after {} frames, maps {:?}", language.code(), played.end, played.frames, played.maps);
+        assert_eq!((played.end, played.story, &played.maps, played.battles), (english.end, english.story, &english.maps, english.battles),
+            "{}: the same end, story value, maps and battle", language.code());
+    }
+}
+
+/// The translations as the runtime installs them: (address, bytes through
+/// the 00) of `language`'s translation of the original `text`.
+fn translation(language: Language, text: &[u8]) -> (u32, Vec<u8>) {
+    let image = xem_core::locale::IMAGE.as_ref().expect("the translations");
+    let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
+    // The header's 32 bytes, then each translation's records and their count.
+    let number = Language::ALL.iter().position(|l| *l == language).expect("listed");
+    assert!(number > 0, "the original has no translations");
+    let entry = 32 + 8 * (number - 1);
+    let (records, count) = ((word(entry) - xem_core::locale::BASE) as usize, word(entry + 4) as usize);
+    let hash = xem_core::locale::fnv1a64(text);
+    let record = (0..count).map(|n| records + 16 * n)
+        .find(|at| (u64::from(word(at + 4)) << 32 | u64::from(word(*at))) == hash)
+        .expect("a translation of the message");
+    let address = word(record + 8);
+    let start = (address - xem_core::locale::BASE) as usize;
+    (address, text_through_end(&image.bytes[start..]).to_vec())
+}
+
+/// A text's bytes through its closing 00, walked as the window walks them
+/// (a control's operand may be 00).
+fn text_through_end(bytes: &[u8]) -> &[u8] {
+    let mut n = 0;
+    loop {
+        match bytes[n] {
+            0 => return &bytes[..=n],
+            1..=3 => n += 1,
+            0x0F => n += match bytes[n + 1] { 0x04 | 0x0B => 2, 0x03 => 4, _ => 3 },
+            b if b >= 0xFE => n += 2,
+            _ => n += 1,
+        }
+    }
+}
+
+/// An original text in RAM through its 00.
+fn original_text(session: &mut Session<NativeModule>, at: u32) -> Vec<u8> {
+    let mut bytes = vec![0; 2048];
+    session.runtime.memory().read(at, &mut bytes).expect("RAM");
+    text_through_end(&bytes).to_vec()
+}
+
+/// Field 12's opening message (Fei to Alice) in a window: (its window's
+/// text pointer, the message's original bytes) once it shows.
+fn opening_message(session: &mut Session<NativeModule>) -> (u32, Vec<u8>) {
+    run(session, json!({"cmd": "enter_field", "map": 12}));
+    let reply = run(session, json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    run(session, json!({"cmd": "frames", "count": 30}));
+    let window = (0..4).find(|w| word(session, WINDOWS + w * WINDOW_SIZE + 0xA8) != 0).expect("an open window");
+    let message = word(session, WINDOWS + window * WINDOW_SIZE + 0xA8);
+    let text = word(session, WINDOWS + window * WINDOW_SIZE + 0x18 + 0x1C);
+    (text, original_text(session, message))
+}
+
+/// A field dialogue window shows its message's translation in the language
+/// chosen, and the original in English; a window keeps revealing the text
+/// it began when the language changes, and the next message takes the new
+/// language. Its letters with accents are the language's added glyphs.
+#[test]
+fn a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut english, _) = boot(&disc, &Default::default()).expect("boot");
+    let (pointer, original) = opening_message(&mut english);
+    assert!(ram(pointer), "English: the window reads the message in RAM ({pointer:#x})");
+    for language in [Language::BrazilianPortuguese, Language::French] {
+        a_window_keeps_its_translation(&disc, language, &original);
+    }
+}
+
+fn a_window_keeps_its_translation(disc: &PathBuf, language: Language, original: &[u8]) {
+    let (mut session, _) = boot(disc, &Default::default()).expect("boot");
+    session.set_language(language);
+    assert_eq!(run(&mut session, json!({"cmd": "status"}))["language"], language.code());
+    let (pointer, message) = opening_message(&mut session);
+    assert_eq!(message, original, "the same message");
+    let (address, translated) = translation(language, original);
+    assert!((address..address + translated.len() as u32).contains(&pointer),
+        "{}: the window reads the translation at {address:#x} ({pointer:#x})", language.code());
+    assert!(translated.windows(2).any(|pair| pair[0] == 0xFF && pair[1] >= 0x20), "{}: the translation has an added letter", language.code());
+    // English from here: the window goes on with the translation it began
+    // (and the texts queued before the change).
+    session.set_language(Language::English);
+    run(&mut session, json!({"cmd": "frames", "count": 20}));
+    let window = (0..4).find(|w| word(&mut session, WINDOWS + w * WINDOW_SIZE + 0xA8) != 0).expect("the window");
+    let now = word(&mut session, WINDOWS + window * WINDOW_SIZE + 0x18 + 0x1C);
+    let installed = xem_core::locale::IMAGE.as_ref().unwrap().bytes.len() as u32;
+    assert!((xem_core::locale::BASE..xem_core::locale::BASE + installed).contains(&now), "still a translation ({now:#x})");
+    // Pressing on: the next message the windows take is the original's.
+    for _ in 0..40 {
+        run(&mut session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
+        run(&mut session, json!({"cmd": "frames", "count": 30}));
+        let texts: Vec<u32> = (0..4).map(|w| word(&mut session, WINDOWS + w * WINDOW_SIZE + 0x18 + 0x1C)).collect();
+        if texts.iter().any(|t| ram(*t) && (0..4).any(|w| word(&mut session, WINDOWS + w * WINDOW_SIZE + 0xA8) != 0)) {
+            return;
+        }
+    }
+    panic!("{}: no later message read in English", language.code());
+}
+
+/// The language is recorded with the inputs: a replay changes it where the
+/// recording did and reaches the recording's memory, whatever language the
+/// replaying session had.
+#[test]
+fn the_language_is_recorded_and_a_replay_reaches_the_recordings_memory() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut session = start_in(&disc, Scene::at(12, &[]), Language::BrazilianPortuguese);
+    let initial = session.snapshot_bytes().expect("a state");
+    let from = session.runtime.frames();
+    run(&mut session, json!({"cmd": "record"}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    run(&mut session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
+    session.set_language(Language::English);
+    run(&mut session, json!({"cmd": "frames", "count": 300}));
+    run(&mut session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
+    run(&mut session, json!({"cmd": "language", "language": "fr"}));
+    run(&mut session, json!({"cmd": "frames", "count": 600}));
+    let hash = run(&mut session, json!({"cmd": "memory_hash"}));
+    let played = session.runtime.frames() - from;
+    let mut log = run(&mut session, json!({"cmd": "stop_recording"}));
+    let languages: Vec<&str> = log["controls"].as_array().unwrap().iter()
+        .filter(|c| c[1]["cmd"] == "language").filter_map(|c| c[1]["language"].as_str()).collect();
+    assert_eq!(languages, ["pt-BR", "en", "fr"], "the start's language and each change");
+    log["cmd"] = json!("replay");
+    let (mut other, _) = boot(&disc, &Default::default()).expect("boot");
+    other.restore_bytes(&initial).expect("the recording's start");
+    run(&mut other, log);
+    run(&mut other, json!({"cmd": "frames", "count": played}));
+    assert_eq!(run(&mut other, json!({"cmd": "memory_hash"})), hash, "the replay's windows take the recording's languages");
+    let refused = other.execute(&json!({"cmd": "language", "language": "tlh"}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("\"pt-BR\"") && e.contains("\"fr\"")), "{refused}");
 }

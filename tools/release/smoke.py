@@ -5,10 +5,13 @@ import platform
 import shutil
 import subprocess
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+# Where distributions keep their C library.
+HOST_LIBRARIES = ["/usr/lib/x86_64-linux-gnu", "/usr/lib/aarch64-linux-gnu", "/usr/lib64", "/usr/lib", "/lib64", "/lib"]
 
 
 def main():
@@ -44,10 +47,20 @@ def main():
             binaries = root if args.kind == "windows" else root / "Xenogears Ex Machina.app/Contents/MacOS"
             suffix = ".exe" if args.kind == "windows" else ""
             desktop, headless = [str(binaries / f"xem-desktop{suffix}")], [str(binaries / f"xem-headless{suffix}")]
+        launches = [env]
+        if args.kind == "linux":
+            # As Steam starts its games: its runtime's library path names the
+            # host's library directories, here those holding a C library. The
+            # bundle's loader cannot use the host's.
+            host = [d for d in HOST_LIBRARIES if Path(d, "libc.so.6").is_file()]
+            if not host:
+                raise SystemExit("no host C library to start the AppImage with, as Steam does")
+            launches.append({**env, "LD_LIBRARY_PATH": ":".join(host)})
         for executable in [desktop, headless]:
-            output = subprocess.check_output([*executable, "--version"], cwd=elsewhere, env=env, text=True, timeout=60)
-            if args.version not in output:
-                raise SystemExit(f"wrong packaged version: {output}")
+            for launch in launches:
+                output = subprocess.check_output([*executable, "--version"], cwd=elsewhere, env=launch, text=True, timeout=60)
+                if args.version not in output:
+                    raise SystemExit(f"wrong packaged version: {output}")
         imported = None
         if args.disc:
             imported = root / ("Disc One" + args.disc.suffix)
@@ -76,7 +89,30 @@ def main():
                     raise SystemExit("first-run disc organization failed")
                 subprocess.run([*headless, "--disc", str(relocated), "--frames", "120"],
                                cwd=elsewhere, env=env, check=True, timeout=120)
+        if args.kind == "windows":
+            # Windows can hold an executable a moment after it exits, which
+            # would fail the scratch directory's removal.
+            for executable in [desktop, headless]:
+                released(Path(executable[0]))
     print(f"{stem}: packaged startup passed")
+
+
+def released(executable):
+    """Delete an exited executable once Windows lets it go, waiting up to a minute."""
+    started = time.monotonic()
+    held = False
+    while True:
+        try:
+            executable.unlink()
+            break
+        except PermissionError:
+            held = True
+            if time.monotonic() - started > 60:
+                tasks = subprocess.run(["tasklist", "/v"], capture_output=True, text=True, errors="replace").stdout
+                raise SystemExit(f"{executable.name} is still held a minute after it exited; running processes:\n{tasks}")
+            time.sleep(0.25)
+    if held:
+        print(f"{executable.name} was held for {time.monotonic() - started:.1f} s after it exited")
 
 
 if __name__ == "__main__":

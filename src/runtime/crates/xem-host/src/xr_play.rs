@@ -185,7 +185,7 @@ impl PanelPointer {
 /// One app operation in the headset (the panel's, a chord's, a gesture's,
 /// an agent's `app`): Recenter places this loop's view (the seat moves to
 /// the head); the rest go through `Operations::execute`, as in the window.
-/// Its outcome shows on the status line (a state's on the HUD too), and a
+/// A failure shows in the error bar (a state's outcome on the HUD), and a
 /// line with the game's memory hash after it is printed.
 #[allow(clippy::too_many_arguments)]
 fn operate(
@@ -213,7 +213,7 @@ fn operate(
     }
     println!("{}", crate::operation_line(&request, &result, Some(game)));
     match &result {
-        Ok(message) => ui.set_operation_status(message),
+        Ok(_) => ui.clear_operation_error(),
         Err(error) => ui.set_operation_error(error),
     }
     result
@@ -483,11 +483,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut player = xem_settings::player::PlayerInput::default();
     // First-person inspection's toggle on the controllers (their Back), the
     // app's Toggle first-person view asked for this frame (its chord), its
-    // turn on the right stick, and the last eyes tracked (held through
-    // frames the runtime cannot locate them in).
+    // turn on the right stick, Back hiding a dialogue's windows, and the
+    // last eyes tracked (held through frames the runtime cannot locate them
+    // in).
     let mut look_toggle = xem_settings::look::Toggle::default();
     let mut look_asked = false;
     let mut snap = xem_settings::look::SnapTurn::default();
+    let mut dialogue_hiding = xem_settings::look::DialogueHiding::default();
     let mut tracked_eyes: Option<[HeadsetEye; 2]> = None;
     let mut assist = Assisted::new();
     // The virtual screen as the last frame showed it (where gestures aim).
@@ -626,11 +628,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                             .unwrap_or_else(|error| serde_json::json!({ "error": error }))
                     }
                     // As the panel's Import BIOS once its picker chose a
-                    // file, the outcome on the status line too.
+                    // file, a failure in the error bar too.
                     Some("bios_import") => match command.get("path").and_then(serde_json::Value::as_str) {
                         Some(path) => match operations.import_bios_file(Some(&mut game), path) {
                             Ok(message) => {
-                                ui.set_operation_status(&message);
+                                ui.clear_operation_error();
                                 serde_json::json!({ "ok": true, "message": message })
                             }
                             Err(error) => {
@@ -747,6 +749,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let _ = operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui);
         }
         let (fast_forward,status) = game.time_status();
+        if assist.headset.pauses.settings && game.session.debug.busy() {
+            if let Err(error) = game.session.tick_debug() { ui.set_operation_error(&error); }
+            game.pause();
+        }
+        ui.set_debug_status(true, game.session.debug.busy(), &game.session.debug.message);
         ui.set_time_status(Some(fast_forward),&status);
         ui.set_storage_status(&game.storage_status());
 
@@ -772,7 +779,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 *panel_visible.borrow_mut() = true;
             }
         }
-        let current = settings.borrow().settings().clone();
+        let mut current = settings.borrow().settings().clone();
         // The Binaural listener turns with the head as the seat sees it,
         // paused or not (lost tracking keeps the last turn); the game never
         // sees it.
@@ -791,6 +798,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if visible {
             look_toggle.clear();
             snap.clear();
+            dialogue_hiding.clear();
         } else {
             if look_toggle.update(false, &pressed, context.field) && drawn {
                 view.set_first_person(!view.first_person());
@@ -802,9 +810,17 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 view.look_around(snap.update(axes[2]), 0.0);
             }
         }
+        // The controllers' Back held alone over a dialogue hides its windows.
+        view.set_dialogue_hidden(!visible && dialogue_hiding.update(false, &pressed, context.ui, start.elapsed().as_secs_f64() * 1000.0));
+        if visible || !focused { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }
+        let zoom = player.zoom_steps(start.elapsed().as_secs_f64() * 1000.0, !visible && focused && !view.first_person());
+        let zoomed = current.graphics.zoomed(zoom);
+        if zoomed != current.graphics {
+            let _ = settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(zoomed));
+            current.graphics = zoomed;
+        }
         let mut ran = 0;
         if !game_paused {
-            if visible { player.clear() } else { player.gamepad(&app_input.gamepad_for_game(&current.app_bindings, current.invert_trigger_chords), &axes) }
             // Inspection keeps the character where it stands
             // (`xem_settings::look`); running by default would leave Run
             // pressed alone.
@@ -1177,7 +1193,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             u8::from(assist.headset.pauses.player),
             marks.len(),
             game.assist_state(),
-            serde_json::to_string(&game.pad_context().ui).unwrap_or_default(),
+            serde_json::to_string(&game.context()).unwrap_or_default(),
             u8::from(view.first_person()),
             u8::from(!inside.is_empty()),
             assist.scaling.scale,

@@ -720,7 +720,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('trigger', 0));
         await frames(5);
       };
-      const [SAVES, TIME, SAVE_STATE, LOAD_STATE, FAST_FORWARD] = [[82, 294], [82, 254], [296, 167], [505, 167], [547, 322]];
+      const [SAVES, TIME, SAVE_STATE, LOAD_STATE, FAST_FORWARD] = [[82, 294], [82, 254], [296, 167], [505, 167], [547, 376]];
       // The history full (its 30 s of play) before Settings' pause, which
       // is no play time: the pause takes no states off it.
       await page.waitForFunction(() => window.xem.status().session.rewind.available_seconds >= 28.5, null, { timeout: 90_000 });
@@ -810,7 +810,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       // and Settings hold the game again after. The head turning off the
       // button mid-pinch changes nothing (the pointer moves nowhere while a
       // pinch holds it).
-      const HOLD = [555, 252];
+      const HOLD = [555, 279];
       const held = async (name, press, during, release) => {
         const { frames: ahead, rewind } = (await status(page)).session;
         console.log(`${name}: the history holds ${rewind.states} states from game frame ${rewind.oldest_frame}`);
