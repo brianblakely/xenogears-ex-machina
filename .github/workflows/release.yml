@@ -55,7 +55,7 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - name: Reserve version (first release is v0.5)
+      - name: Reserve version (the next minor version, from v1.5)
         id: version
         env:
           GH_TOKEN: ${{ github.token }}

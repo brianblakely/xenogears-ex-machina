@@ -1,8 +1,8 @@
 # Distribution boundary
 
 `release.yml` builds the playable native and browser application when native
-app inputs on master change. Releases begin at v0.5 and advance the patch
-version automatically.
+app inputs on master change. Releases advance the minor version automatically
+(v1.5, v1.6, …).
 Linux uses AppImage, Windows a portable ZIP, macOS an application bundle ZIP,
 and Android/Horizon a signed APK. The static web build also deploys to Pages.
 Installation and reproduction instructions are in [releases.md](../docs/releases.md).

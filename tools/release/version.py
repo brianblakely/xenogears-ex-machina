@@ -38,19 +38,26 @@ def version(tag):
     return tuple(int(n or 0) for n in match.groups()) if match else None
 
 
+# Each release takes the highest tag's next minor version (v1.5, v1.6, ...),
+# beginning here: the releases before v1.5 advanced the patch version.
+FIRST = (1, 5)
+
+
 def next_tag(tags):
-    versions = [number for tag in tags if (number := version(tag)) is not None]
-    if not versions:
-        return "v0.5"
-    major, minor, patch = max(max(versions), (0, 5, 0))
-    return f"v{major}.{minor}.{patch + 1}"
+    major, minor, _ = max((number for tag in tags if (number := version(tag)) is not None), default=(0, 0, 0))
+    if (major, minor) < FIRST:
+        major, minor = FIRST[0], FIRST[1] - 1
+    return f"v{major}.{minor + 1}"
 
 
 def android_code(tag):
+    """An APK's versionCode, which rises with the version: a thousand minor
+    versions a major one (every published code is below v1.5's: v1.0.12's is
+    1000012)."""
     major, minor, patch = version(tag)
-    if major > 2000 or minor > 99 or patch > 9999:
+    if major > 2000 or minor > 999 or patch > 999:
         raise ValueError("version exceeds Android versionCode allocation")
-    return major * 1_000_000 + minor * 10_000 + patch
+    return major * 1_000_000 + minor * 1_000 + patch
 
 
 def gh(*arguments, data=None):
