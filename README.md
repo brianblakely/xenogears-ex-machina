@@ -158,7 +158,8 @@ files, and needs no BIOS.
 Gameplay options switch off random battles by default in the platforming areas
 players complain about — Blackmoon Forest, the Aveh-Kislev border mountains and
 Babel Tower — and can halve encounters in every field. Text can run faster, up
-to instantly; dialogue can advance on its own; and movies can be skipped.
+to instantly; dialogue can advance on its own; movies can be skipped; and disc
+load times can be switched off, so areas and battles open almost at once.
 
 ### Hear the world around you
 

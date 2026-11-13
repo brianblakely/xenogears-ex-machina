@@ -607,6 +607,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_auto_advance(settings.auto_advance.enabled);
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
     panel.set_movie_skip(settings.movie_skip);
+    panel.set_fast_disc(settings.fast_disc);
     panel.set_language(index_of(&Language::ALL, &settings.language));
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
@@ -796,6 +797,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 }
                 "auto-advance-dwell" => u32::try_from(value).ok().map(|dwell| SettingChange::AutoAdvance(xem_settings::AutoAdvance { dwell, ..auto })),
                 "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
+                "fast-disc" => Some(SettingChange::FastDisc(value != 0)),
                 "language" => usize::try_from(value).ok().and_then(|i| Language::ALL.get(i)).map(|language| SettingChange::Language(*language)),
                 _ => None,
             })

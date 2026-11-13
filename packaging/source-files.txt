@@ -862,6 +862,7 @@ src/runtime/crates/xem-headless/tests/debug.rs
 src/runtime/crates/xem-headless/tests/diorama.rs
 src/runtime/crates/xem-headless/tests/discs.rs
 src/runtime/crates/xem-headless/tests/encounters.rs
+src/runtime/crates/xem-headless/tests/fast_disc.rs
 src/runtime/crates/xem-headless/tests/file_screen.rs
 src/runtime/crates/xem-headless/tests/first_person.rs
 src/runtime/crates/xem-headless/tests/gestures.rs

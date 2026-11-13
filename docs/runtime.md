@@ -532,7 +532,8 @@ again while it reports the lid open, so the check must find it open
 throughout a poll), so the check goes on at once, about half a second to
 the new disc's file index. At the story's change this happens five seconds
 of game time after the request, with the game's change-disc notice shown
-(fast-forward shortens it); elsewhere at once. All of it runs on the
+(fast-forward shortens it; the fast drive of [Disc load
+times](#disc-load-times) does not); elsewhere at once. All of it runs on the
 game's clock, so recordings, rewind and replays reproduce it. Without the
 wanted disc the game waits at its notice; the hosts ask for it (the panel
 opens on Saves with the request in its error bar) and the change happens
@@ -7482,6 +7483,7 @@ as a recorded control of the session, whose zero is the original's:
 | [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line, except while a script counts out a page before its wait for Confirm (`src/port/text_speed.c`, `xem_core::dialogue`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
 | [Auto-advance dialogue](#text-speed-auto-advance-and-movie-skipping) | `auto_advance`: off (the default) or on, a dwell of 30-600 vertical blanks (120) | `auto_advance {dwell}` | the session presses Confirm once a field dialogue's prompt has shown the dwell, never at a choice (`xem_core::dialogue`) | `status.auto_advance`, `status.auto_advance_waited`, `status.dialogue` |
 | [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping) | `movie_skip`: off (the default), on | `movie_skip {enabled}` | the story's movies take the original's early exit on the player's press (`src/port/movie_skip.c`) | `status.movie_skip`; `status.movie` (`ends_on_press`) |
+| [Skip disc load times](#disc-load-times) | `fast_disc`: off (the default), on | `fast_disc {enabled}` | the drive takes no time over its seeks, its pauses and the sectors of the game's loads; movies and their sound keep the disc's pace (`xem_core::devices::cd`, The fast drive) | `status.fast_disc` (loads end in fewer frames) |
 
 Cutscene skipping is not offered: the game marks no next moment the
 player controls clearly enough ([Cutscene skipping](#cutscene-skipping)),
@@ -8486,6 +8488,190 @@ agent's change were read on Monado and IWER, and the AUTO key was aimed at
 on Monado only (no IWER run aims at it); beyond the page auto-advance
 turned there, no headset run played text speeds, auto-advance or movie
 skipping on the game.
+
+### Disc load times
+
+One option in the Gameplay section takes away the time the game waits
+for its disc drive: **Skip disc load times** (`Settings.fast_disc`,
+`SettingChange::FastDisc`; off, the original's, by default), the recorded
+control `fast_disc {enabled}` (`Session::set_fast_disc`), which makes the
+runtime's drive fast (`Cd::set_fast`; `xem_core::devices::cd`, The fast
+drive). It is the drive's alone: no game data and no line of the game
+module changes (so the module, and with it every saved state, stays the
+one it was), a state holds nothing of it, and with it off every response
+of the drive comes at the cycle it came at before.
+
+**What a load costs.** The port runs the game's code in no time and the
+drive answers on the game's clock ([Discs](#discs); cd.rs, Timing), so a
+load lasts what the drive's mechanism takes plus what the game paces
+itself: a second for a stopped motor, up to a second and 300 ms for a
+seek, a 150th of a second a sector (300 KB a second) and 32 ms for a
+pause to complete, beside the 1.5 ms of each command's first response.
+The game reads its disc in four ways, all through libcd's callbacks
+(`src/port/libcd.c`):
+
+| Reader | Command and mode | What its data-ready handler does |
+| --- | --- | --- |
+| the resident's files and file lists (`cd_copy_file_sector`, `cd_copy_list_sector`, `resident/cd_reads_and_streams.c`) | ReadN, Setmode 0xA0 (double speed, whole sectors) | takes each sector's address and data, checks the address, pauses (or seeks to the file expected next) after the last; a list reads through a gap of up to 16 sectors without taking them |
+| the resident's rings (`stream_store_sector`: the field's music waves; `stream_store_image_sector`: a map's textures and a battle action's pictures, strip by strip into VRAM from the transfer's callback) | ReadN, 0xA0 | takes a sector into a free slot; with none free it sets itself aside and retries (status, track count, pause, seek, read again) |
+| the world map's terrain (`worldmap_stream_on_data_ready`) | ReadS, 0xA0 | takes each sector's address, and its data when it is one it wants; pauses at the end of its list |
+| movies (the stream library's `StCdInterrupt`, `src/port/libcd_stream.c`) | ReadS, 0x80 or 0xC8 (no sector addresses; XA-ADPCM for the sound) | takes a sector into its ring, or drops it when the ring is full |
+
+The game waits for the first three by spinning on `cd_sync_reads` or by
+running frames while `cd_get_pending_read_count()` is nonzero
+(`battle_wait_for_disc`); it never reads how far a read has come
+(`cd_get_read_bytes_left` serves a debug print). Its development build
+read the same files through the PC file server (`cd_pc_file_names`),
+where a file is whole before the call that asks for it returns.
+
+**What the fast drive changes.** Only the waits:
+
+- a seek takes the shortest seek's time (`MIN_SEEK_CYCLES`, 0.6 ms)
+  whatever its distance, and a stopped motor is up to speed at once;
+- Pause and Stop complete as when the drive is already paused or stopped
+  (`IDLE_DONE_CYCLES`, 0.2 ms);
+- a read of whole data sectors without XA-ADPCM (the first three readers)
+  *reads on*: its first sector comes `FAST_SECTOR_CYCLES` (1 024 cycles,
+  30 microseconds) after the command's first response, and the sector
+  after one whose data the program took from the sector buffer follows as
+  soon after the program's handler has returned, when the handler asked
+  the drive for nothing. The run loop lets that sector's interrupt in
+  before the game's own code goes on (`Runtime::advance`,
+  `Cd::sector_at_hand`), as the console takes an interrupt that already
+  waits, so a file's sectors cost their handlers and nothing else: a
+  waiting loop is not woken (and its 65 536 iterations to the next poll
+  not run) between them.
+
+**What it keeps.** Every response is given, with the same bytes, in the
+same order, and each command's first response comes after its 1.5 ms: a
+read's first sector still follows the read's acknowledgement. Each data
+sector still has an interrupt of its own and, after it, its transfer's
+callback, in which the rings mark and unload their slots: the drive
+reads on only once the handler of the sector before is done, so two data
+sectors never wait together, at any speed of the host. A sector the
+program does not take is followed at the disc's pace, as on the console:
+a ring with no free slot (the reader's retry then goes its own way, its
+commands 1.5 ms apart), a gap a list reads through, a sector that arrives
+while a stop is requested. So the game's own pacing is the game's: the
+field empties its music ring five sectors a field frame, the fast drive
+fills the ring at once and waits, and the wave bank reaches the sound
+chip no faster than the game hands it over (Lahan's 188 416 bytes of
+samples are there 41 frames after the player walks, where the disc's
+pace takes 65; the reader retried 78 times where the disc's pace never
+fills the ring). Movies and their XA sound keep the disc's
+sector period (they are played, not loaded; only the seek to them is the
+drive's), and the changer's five seconds at the story's disc change stay
+([Discs](#discs)).
+
+What a player can tell is the time: loads end in a few frames, so the
+frame a scene begins on, and with it the frames the field's
+`rand()` has run and where a random battle falls, differ from the
+original's as they differ between two consoles' drives.
+
+**States and replays.** The setting is the host's and no part of a
+state (`Cd::save` is unchanged, the format's fingerprint with it): a
+state saved in the middle of a fast load restores into a session at the
+disc's pace, whose drive goes on from the sector due, and the other way
+round. The control is recorded with the inputs, as the other gameplay
+options are, so a replay keeps the recording's drive whatever the host's
+setting; a session log and a headless session play at the disc's pace
+unless commanded. The interactive hosts give the session the setting
+before every game frame (`Game::update`, the browser's frame loop).
+
+**Measured** headless (suite profile, disc 1; frames are vertical
+blanks), each run at the disc's pace and with the drive fast, driven by
+what the game shows:
+
+| Run | Disc's pace | Fast drive |
+| --- | --- | --- |
+| Lahan (map 1) from `enter_field`: the player walks | 131 | 3 |
+| the same: every load over (the music's waves in the sound chip) | 196 | 44 |
+| map 27 from `enter_field`: every load over | 163 | 5 |
+| boot to the title's commands, Start ending the boot's movie as it shows | 731 | 330 |
+| the opening chapter, boot to Fei's room (the title's New Game, its movie to frame 100, the narration, Lahan, map 14's battle) | 16 302 | 13 936 |
+| map 27's scene to map 28; map 131's and map 482's to the player's control | 1 600; 3 808; 2 516 | 1 442; 3 658; 2 386 |
+| the kernel menu's battle test: to the battle; battle file 0 and file 1 fought to the end | 436; 3 215 and 1 353 | 166; 2 656 and 1 097 |
+| the kernel menu's movie test, movie 1: to its first picture; from there to its frame 380 | 121; 1 511 | 17; 1 511 |
+| Lahan from `enter_field`, walked out through its gate to the world map on foot; frames the map's terrain reader is busy in the first 400 walking there | 686; 80 | 540; 10 |
+| a new game from disc 2 (disc 1 brought by the changer) | 854 | 427 |
+| every field map from `enter_field`, left to itself: frames until its loads are first over, summed over disc 1's 730 maps; over disc 2's 729 | 108 654; 32 453 | 16 908; 5 064 |
+
+The opening chapter shows the same maps (490, 4, 2, 14), fights the
+same battle and reaches the same story value; the three scenes show the
+same messages; each battle asks the disc for the same number of reads
+(46 and 32) and ends in the same context; the movie shows every tenth
+frame as many vertical blanks after its first picture and plays the same
+475 XA sectors; the new game's movie takes the same 321 vertical blanks
+from its frame 20 to its frame 100. 120 frames after their loads are
+over, maps 1 and 27 hold the same VRAM, pixel for pixel, and maps 14 and
+131 hold their music's samples in the sound chip where the disc's pace
+puts them, the bytes of the wave file. Every one of those field maps
+does the same things in the same order at both paces (the maps it shows,
+the messages its windows show, the mode it leaves the field for: a
+scripted battle from some, the kernel menu at once from most of disc 2's
+maps entered from its boot), its loads first over no later with the drive
+fast; disc 2's map 342 traps from that entry at both. With the drive
+turned fast and back every 7 frames, and every 61, in the middle of
+whatever it reads, the opening chapter reaches Fei's room through the
+same maps and battle (14 365 and 14 384 frames), its movie's 321 vertical
+blanks unchanged. In every run the game's own
+counts of disc errors (`cd_file_out_of_order_count`,
+`cd_list_out_of_order_count`, `cd_stream_out_of_order_count`,
+`cd_stat_error_limit_count`, `cd_stat_command_fail_count`,
+`cd_stat_retry_fail_count`, and on the world map the terrain reader's
+two) stay 0. On the host a load's sectors cost their handlers: the
+heaviest frame of Lahan's load took 18 ms here with the drive fast, the
+heaviest at the disc's pace 15 (the frame the field begins on, the
+game's own work), the rest under 5 at both; from boot, `enter_field`
+ran 32 frames where the disc's pace runs 310.
+
+Tests: xem-core's `devices::cd` tests take the fast drive through a
+handler as the port's (its first sector after the acknowledgement and
+the rest as each is taken, every one once and in order; the disc's pace
+after a sector left in the buffer, after a command and behind a response
+not taken; the stream library's modes at the sector period; Pause, Stop,
+Standby and a seek at once; a state saved either way going on under the
+other). `tests/persistence.rs` plays a stand-in's load through the real
+run loop (120 sectors, each by an interrupt of its own, in two frames
+and at most eight steps of the game where the disc's pace takes a step a
+sector) and the control's recording (each change once, a replay keeping
+the recorded drive, a state and the console's reset leaving the host's);
+the format's fingerprint is unchanged. `xem-settings`, `xem-host`,
+`xem-ui` (the Gameplay section's switch), `xem-desktop/tests/control.rs`
+and the browser's `persistence.test.mjs` take the setting from a file
+saved before it existed, an agent's `settings_apply` and the panel to
+the session's `status`. On the game, `xem-headless/tests/fast_disc.rs`
+(about 45 s here, each pair of runs side by side) plays the table's runs
+and their comparisons, the chapter with the setting changed every few
+frames, the kernel menu's other tests' starts (a Gear battle, Battling,
+the menu's six screens: the same mode and kind of context 300 frames
+after each launch), a recording made either way replayed in a session
+set the other way, states of each of the first frames of a fast load
+gone on to the same memory, and the story's disc change with its five
+seconds; its last test enters a sample of the field maps at both paces
+(every 29th of disc 1's; with `XEM_FAST_DISC_SWEEP=1` every map of both
+discs, the table's last row, about eight minutes here on 16 threads).
+
+Not done or not measured: the acknowledgements' 1.5 ms stay, so a load
+of many files still takes a frame or two for every three or four of
+them; a gap a list reads through (27 sectors in two gaps on the way from
+Lahan to the world map) passes at the disc's pace, which that run did not
+find holding up what the player waits for (the map came after as many
+frames with those sectors hurried, in a trial); the music's start after
+its picture is the game's own pace, not shortened. Battles were fought
+from the kernel menu's test on battle files 0 and 1 with one party on
+foot; the Gear battle, the arena and the menu's screens were started but
+not played through with the drive fast, the field maps were entered and
+left to themselves, not played, and no story past the opening chapter
+was played. A movie without XA sound (the stream library's Setmode 0x80
+or 0x88, a field movie with a sound bank of its own) was not reached on
+the game: the drive's unit test covers its mode. Whole sectors without
+XA-ADPCM is what the option reads as a load: a read in another mode
+would keep the disc's pace, and the game makes none. The browser's disc
+source fetches its image in pieces as the drive asks for them; a fast
+load asks for them sooner, and no browser run measured one on the game
+(the browser test ran on the fixture module). No phone, headset, Windows
+or macOS build ran the option on the game, and no person played with it.
 
 ### Cutscene skipping
 

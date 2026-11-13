@@ -156,8 +156,8 @@ impl Drop for Desktop {
 }
 
 /// The session's gameplay controls in a `status`.
-fn gameplay(status: &Value) -> [Value; 5] {
-    ["random_battles_off", "half_encounters", "text_speed", "auto_advance", "movie_skip"].map(|key| status[key].clone())
+fn gameplay(status: &Value) -> [Value; 6] {
+    ["random_battles_off", "half_encounters", "text_speed", "auto_advance", "movie_skip", "fast_disc"].map(|key| status[key].clone())
 }
 
 #[test]
@@ -172,15 +172,15 @@ fn agents_change_the_gameplay_options_on_the_desktops_control_channel_and_the_ne
     };
     let display = Display::start("gameplay", &lavapipe);
     let maps = json!(xem_settings::Settings::default().random_battles_off());
-    let chosen = [json!([]), json!(true), json!(255), json!(90), json!(true)];
+    let chosen = [json!([]), json!(true), json!(255), json!(90), json!(true), json!(true)];
     {
         let mut desktop = Desktop::launch(&display, &disc, &lavapipe);
         let fresh = desktop.status_after(0, 10);
-        assert_eq!(gameplay(&fresh), [maps.clone(), json!(false), json!(0), json!(0), json!(false)], "a fresh settings directory: the defaults");
+        assert_eq!(gameplay(&fresh), [maps.clone(), json!(false), json!(0), json!(0), json!(false), json!(false)], "a fresh settings directory: the defaults");
         let settings = desktop.send(json!({"cmd": "settings"}));
         assert_eq!((&settings["random_battles"], &settings["encounter_rate"], &settings["text_speed"]), (&json!("NotWhilePlatforming"), &json!("Original"), &json!("Original")));
         for (n, change) in [json!({"RandomBattles": "Original"}), json!({"EncounterRate": "Half"}), json!({"TextSpeed": "Instant"}),
-            json!({"AutoAdvance": {"enabled": true, "dwell": 90}}), json!({"MovieSkip": true})].into_iter().enumerate() {
+            json!({"AutoAdvance": {"enabled": true, "dwell": 90}}), json!({"MovieSkip": true}), json!({"FastDisc": true})].into_iter().enumerate() {
             let ack = desktop.send(json!({"cmd": "settings_apply", "change": change}));
             assert_eq!(ack["revision"], json!(n + 1), "{change} -> {ack}");
         }
@@ -194,7 +194,7 @@ fn agents_change_the_gameplay_options_on_the_desktops_control_channel_and_the_ne
     // The desktop saved them: a second launch starts with the choices.
     let saved: Value = serde_json::from_str(&std::fs::read_to_string(display.root.join("config/xenogears-ex-machina/settings.json")).expect("the settings file"))
         .expect("JSON");
-    assert_eq!((&saved["random_battles"], &saved["movie_skip"]), (&json!("Original"), &json!(true)));
+    assert_eq!((&saved["random_battles"], &saved["movie_skip"], &saved["fast_disc"]), (&json!("Original"), &json!(true), &json!(true)));
     let mut again = Desktop::launch(&display, &disc, &lavapipe);
     assert_eq!(gameplay(&again.status_after(0, 10)), chosen, "kept for the next launch");
 }

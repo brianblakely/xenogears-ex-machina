@@ -367,6 +367,7 @@ impl Game {
                 self.session.set_half_encounters(settings.half_encounters());
                 self.session.set_text_speed(settings.text_speed.glyphs())?;
                 self.session.set_movie_skip(settings.movie_skip);
+                self.session.set_fast_disc(settings.fast_disc);
                 self.session.set_language(settings.language);
                 self.session.set_auto_advance(settings.auto_advance_dwell())?;
             }
@@ -663,6 +664,30 @@ mod tests {
     }
 
     #[test]
+    fn frames_give_the_session_the_settings_fast_disc_and_a_session_log_the_discs_pace() {
+        use serde_json::json;
+        use xem_settings::Settings;
+        let session = || Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default);
+        let fast = |game: &mut Game| game.session.execute(&json!({"cmd":"status"}))["fast_disc"].clone();
+        let update = |game: &mut Game, settings: &Settings| {
+            game.paced = Instant::now() - FRAME * 2;
+            game.update(0, settings, || true).unwrap()
+        };
+        let mut game = Game::new(session());
+        assert!(update(&mut game, &Settings::default()) > 0);
+        assert_eq!(fast(&mut game), json!(false), "the default is the disc's pace");
+        let settings = Settings { fast_disc: true, ..Settings::default() };
+        update(&mut game, &settings);
+        assert_eq!(fast(&mut game), json!(true));
+        update(&mut game, &Settings::default());
+        assert_eq!(fast(&mut game), json!(false), "and off again");
+        let mut scripted = Game::new(session());
+        scripted.schedule(&json!({"commands": []})).unwrap();
+        assert!(update(&mut scripted, &settings) > 0);
+        assert_eq!(fast(&mut scripted), json!(false), "a session log plays at the disc's pace");
+    }
+
+    #[test]
     fn an_agents_gameplay_settings_reach_the_session_on_the_next_frame() {
         use serde_json::json;
         use xem_settings::{MemoryStore, SettingsService};
@@ -676,23 +701,23 @@ mod tests {
         };
         let gameplay = |game: &mut Game| {
             let status = game.session.execute(&json!({"cmd":"status"}));
-            ["random_battles_off", "half_encounters", "text_speed", "auto_advance", "movie_skip"].map(|key| status[key].clone())
+            ["random_battles_off", "half_encounters", "text_speed", "auto_advance", "movie_skip", "fast_disc"].map(|key| status[key].clone())
         };
         assert!(update(&mut game, &settings) > 0);
         let maps = json!(xem_core::encounters::platforming_maps());
-        assert_eq!(gameplay(&mut game), [maps.clone(), json!(false), json!(0), json!(0), json!(false)], "a fresh host: the defaults");
+        assert_eq!(gameplay(&mut game), [maps.clone(), json!(false), json!(0), json!(0), json!(false), json!(false)], "a fresh host: the defaults");
         for change in [json!({"RandomBattles":"Original"}), json!({"EncounterRate":"Half"}), json!({"TextSpeed":"Instant"}),
-            json!({"AutoAdvance":{"enabled":true,"dwell":90}}), json!({"MovieSkip":true})] {
+            json!({"AutoAdvance":{"enabled":true,"dwell":90}}), json!({"MovieSkip":true}), json!({"FastDisc":true})] {
             let ack = settings.command(&json!({"cmd":"settings_apply","change":change})).unwrap();
             assert!(ack.get("revision").is_some(), "{change} -> {ack}");
         }
         update(&mut game, &settings);
-        assert_eq!(gameplay(&mut game), [json!([]), json!(true), json!(255), json!(90), json!(true)], "the next frame's status shows each");
+        assert_eq!(gameplay(&mut game), [json!([]), json!(true), json!(255), json!(90), json!(true), json!(true)], "the next frame's status shows each");
         let refused = settings.command(&json!({"cmd":"settings_apply","change":{"AutoAdvance":{"enabled":true,"dwell":601}}})).unwrap();
         assert!(refused["error"].is_string(), "{refused}");
         settings.command(&json!({"cmd":"settings_apply","change":{"RandomBattles":"NotWhilePlatforming"}})).unwrap();
         update(&mut game, &settings);
-        assert_eq!(gameplay(&mut game), [maps, json!(true), json!(255), json!(90), json!(true)], "the refused dwell changed nothing");
+        assert_eq!(gameplay(&mut game), [maps, json!(true), json!(255), json!(90), json!(true), json!(true)], "the refused dwell changed nothing");
     }
 
     /// The user's disc 1 (local only: XEM_DISC1, else discs/ beside the

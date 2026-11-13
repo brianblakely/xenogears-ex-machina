@@ -918,6 +918,9 @@ export component SettingsPanel inherits Window {
     in-out property <bool> auto-advance;
     in-out property <int> auto-advance-dwell: 120;
     in-out property <bool> movie-skip;
+    // The disc drive takes no time over the game's loads
+    // (xem_settings::Settings::fast_disc).
+    in-out property <bool> fast-disc;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
     // ledge brake, touch controls, reduced transparency and motion.
@@ -960,7 +963,7 @@ export component SettingsPanel inherits Window {
     callback hide-idle-cursor-edited(bool);
     callback random-battles-edited(int);
     // A gameplay option by name (encounter-rate, text-speed, auto-advance,
-    // auto-advance-dwell, movie-skip, language) and value.
+    // auto-advance-dwell, movie-skip, fast-disc, language) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
@@ -1971,6 +1974,14 @@ export component SettingsPanel inherits Window {
                                     label: "Movies can be skipped";
                                     checked <=> root.movie-skip;
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
+                                }
+                            }
+                            if root.selected-section == 6: Card {
+                                title: "Loading";
+                                ToggleRow {
+                                    label: "Skip disc load times";
+                                    checked <=> root.fast-disc;
+                                    toggled(on) => { root.gameplay-edited("fast-disc", on ? 1 : 0); }
                                 }
                             }
                             // The original kernel menu, with application controls.

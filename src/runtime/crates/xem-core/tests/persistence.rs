@@ -70,6 +70,21 @@ const PAD_BUFFER: u32 = 0x8000_0510;
 const WINDOW: u32 = 0x800C_2698;
 const WINDOW_FLAGS: u32 = WINDOW + 0x28;
 const WINDOW_CHOICE: u32 = WINDOW + 0x37C;
+/// With `CD_READ` nonzero the stand-in loads that many whole sectors from
+/// LBA 16 as the game's readers do: its step sets the mode and the position
+/// and starts the read once (`CD_STARTED`), then waits a frame at a time;
+/// its CD interrupt handler (counted at `CD_HANDLED`) takes every interrupt
+/// and, of a data sector, the address and the data from the sector buffer
+/// (counted at `CD_TAKEN`, its first data word added to `CD_SUM`), and
+/// pauses the drive after the last one.
+const CD_READ: u32 = 0x8000_0600;
+const CD_STARTED: u32 = 0x8000_0604;
+const CD_TAKEN: u32 = 0x8000_0608;
+const CD_SUM: u32 = 0x8000_060c;
+const CD_HANDLED: u32 = 0x8000_0610;
+const CD_RESULT: u32 = 0x8000_0620;
+const CD_PARAMETER: u32 = 0x8000_0630;
+const CD_SECTOR: u32 = 0x8000_2000;
 
 /// Card images shared with the test, as a host's storage.
 #[derive(Clone)]
@@ -216,6 +231,16 @@ impl GameModule for Counter {
                 }
             }
         }
+        if self.memory.read_u32(CD_READ).unwrap() != 0 && self.memory.read_u32(CD_STARTED).unwrap() == 0 {
+            use xem_core::devices::cd::com;
+            self.memory.write_u32(CD_STARTED, 1).unwrap();
+            // Whole sectors at double speed, from 00:02:16 (LBA 16).
+            self.memory.write(CD_PARAMETER, &[0xA0]).unwrap();
+            self.import("cd_command", &[u32::from(com::SETMODE), CD_PARAMETER, 1]);
+            self.memory.write(CD_PARAMETER, &[0x00, 0x02, 0x16]).unwrap();
+            self.import("cd_command", &[u32::from(com::SETLOC), CD_PARAMETER, 3]);
+            self.import("cd_command", &[u32::from(com::READN), 0, 0]);
+        }
         let fibers = self.memory.read_u32(FIBERS).unwrap();
         self.memory.write_u32(FIBERS, 0).unwrap();
         match fibers {
@@ -233,6 +258,29 @@ impl GameModule for Counter {
         if irq == xem_core::runtime::IRQ_RCNT0+2 {
             let ticks = self.memory.read_u32(0x8000_0008).unwrap();
             self.memory.write_u32(0x8000_0008,ticks+1).unwrap();
+        }
+        let wanted = self.memory.read_u32(CD_READ).unwrap();
+        if irq == xem_core::devices::cd::IRQ_CDROM && wanted != 0 {
+            use xem_core::devices::cd::{com, intr};
+            let count = |memory: &mut Memory, at: u32, by: u32| memory.write_u32(at, memory.read_u32(at).unwrap().wrapping_add(by)).unwrap();
+            count(&mut self.memory, CD_HANDLED, 1);
+            // As libcd's handler: every pending interrupt, in order.
+            loop {
+                let taken = self.import("cd_interrupt", &[CD_RESULT]);
+                if taken & 0xFF == 0 {
+                    break;
+                }
+                if taken & 0xFF == u32::from(intr::DATA_READY) && self.memory.read_u32(CD_TAKEN).unwrap() < wanted {
+                    self.import("cd_get_sector", &[CD_SECTOR, 3]);
+                    self.import("cd_get_sector", &[CD_SECTOR + 12, 0x200]);
+                    let first = self.memory.read_u32(CD_SECTOR + 12).unwrap();
+                    count(&mut self.memory, CD_SUM, first);
+                    count(&mut self.memory, CD_TAKEN, 1);
+                    if self.memory.read_u32(CD_TAKEN).unwrap() == wanted {
+                        self.import("cd_command", &[u32::from(com::PAUSE), 0, 0]);
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -1657,6 +1705,125 @@ fn the_text_speed_and_movie_skipping_are_recorded_and_a_replay_keeps_them() {
     for bad in [json!({"cmd":"text_speed","glyphs":300}), json!({"cmd":"movie_skip"}), json!({"cmd":"auto_advance","dwell":-1})] {
         let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, bad]]}));
         assert!(refused["error"].as_str().is_some_and(|e| e.contains("text-speed, movie-skip, auto-advance")), "{refused}");
+    }
+}
+
+/// A disc of `sectors` data sectors, each one's data its number over and over.
+fn numbered_disc(sectors: u32) -> Box<dyn xem_disc::SectorSource> {
+    use xem_disc::sector::{FORM1_DATA_SIZE, Subheader, build_mode2_sector, submode};
+    let data = Subheader { file: 0, channel: 0, submode: submode::DATA, coding: 0 };
+    Box::new(xem_disc::MemorySource::from_sectors((0..sectors).map(|lba| {
+        let words: Vec<u8> = std::iter::repeat_n(lba.to_le_bytes(), FORM1_DATA_SIZE / 4).flatten().collect();
+        build_mode2_sector(lba, data, &words)
+    })))
+}
+
+/// The stand-in's load of `sectors` sectors (`CD_READ`) played to its end:
+/// the frames it took, the steps of the game in them, the runs of its CD
+/// handler and the sum of the sectors' first words.
+fn load(s: &mut Session<Counter>, sectors: u32) -> (u64, u32, u32, u32) {
+    let (frames, steps) = (s.runtime.frames(), word(s, 0x8000_0000));
+    for at in [CD_STARTED, CD_TAKEN, CD_SUM, CD_HANDLED] {
+        s.runtime.memory().write_u32(at, 0).unwrap();
+    }
+    s.runtime.memory().write_u32(CD_READ, sectors).unwrap();
+    // Its last sector taken and the pause's two responses handled.
+    while word(s, CD_TAKEN) < sectors || s.runtime.services().next_device_event().is_some() {
+        assert!(s.runtime.frames() - frames < 600, "the load ends");
+        assert!(s.frame().unwrap());
+    }
+    s.runtime.memory().write_u32(CD_READ, 0).unwrap();
+    (s.runtime.frames() - frames, word(s, 0x8000_0000) - steps, word(s, CD_HANDLED), word(s, CD_SUM))
+}
+
+#[test]
+fn the_fast_drive_gives_a_load_its_sectors_between_two_steps_of_the_game() {
+    use xem_core::clock::{CPU_HZ, VBLANK_CYCLES};
+    const SECTORS: u32 = 120;
+    let sum: u32 = (16..16 + SECTORS).sum();
+    let mut s = session();
+    s.runtime.services().insert_disc(0, numbered_disc(400));
+    // At the disc's pace: the motor's second, then a sector every 150th of
+    // a second, the game stepped after each one's interrupt.
+    let (frames, steps, handled, read) = load(&mut s, SECTORS);
+    let seconds = 1.0 + f64::from(SECTORS) / 150.0;
+    assert!((frames as f64 - seconds * (CPU_HZ / VBLANK_CYCLES) as f64).abs() <= 3.0, "{frames} frames for {seconds:.2} s of the disc");
+    assert_eq!(read, sum, "every sector once");
+    assert!(handled >= SECTORS && steps >= SECTORS, "{handled} handler runs and {steps} steps: one each a sector");
+    // Fast: the same sectors, each still by an interrupt of its own, all of
+    // them before the game steps again: the frame the load began in ends
+    // it, a step for each command's response and no more.
+    s.set_fast_disc(true);
+    let (frames, steps, handled, read) = load(&mut s, SECTORS);
+    assert_eq!(read, sum, "every sector once");
+    assert!(handled >= SECTORS, "{handled} handler runs: one a sector");
+    assert!(frames <= 2 && steps <= 8, "{frames} frames and {steps} steps of the game");
+    // Back at the disc's pace the drive reads as before (its motor running).
+    s.set_fast_disc(false);
+    let (frames, _, _, read) = load(&mut s, SECTORS);
+    assert_eq!(read, sum);
+    assert!(frames >= u64::from(SECTORS) * 60 / 150, "{frames} frames at the disc's pace again");
+}
+
+#[test]
+fn the_fast_disc_is_recorded_stays_out_of_states_and_a_replay_keeps_it() {
+    let mut s = session();
+    s.runtime.services().insert_disc(0, numbered_disc(400));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(status(&mut s, "fast_disc"), json!(false), "the disc's pace by default");
+    let initial = s.snapshot_bytes().unwrap();
+    s.set_fast_disc(true);
+    assert_eq!(s.snapshot_bytes().unwrap(), initial, "the host's choice is no part of a state");
+    s.set_fast_disc(false);
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    s.set_fast_disc(true);
+    s.set_fast_disc(true);
+    let fast = load(&mut s, 60);
+    s.set_fast_disc(false);
+    let slow = load(&mut s, 60);
+    assert!(fast.0 <= 2 && slow.0 >= 24, "a load of {} frames with the drive fast and {} at the disc's pace", fast.0, slow.0);
+    let end = (s.runtime.frames(), s.memory_hash().unwrap());
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let controls: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "fast_disc").map(|c| c[1].clone()).collect();
+    assert_eq!(controls, [json!({"cmd":"fast_disc","enabled":true}), json!({"cmd":"fast_disc","enabled":false})], "each change once");
+    // The loads are the game's own, begun by memory the log does not hold:
+    // a replay from the same state with the same loads asked for at the
+    // same frames keeps the recorded drive, not the host's.
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.runtime.services().insert_disc(0, numbered_disc(400));
+    other.restore_bytes(&initial).unwrap();
+    other.set_fast_disc(true);
+    assert!(other.execute(&log).get("error").is_none());
+    assert_eq!(status(&mut other, "fast_disc"), json!(false), "a replay starts from the disc's pace");
+    other.execute(&json!({"cmd":"frames","count":2}));
+    other.set_fast_disc(false);
+    assert_eq!(status(&mut other, "fast_disc"), json!(true), "and keeps the recorded drive, not the host's");
+    assert_eq!(load(&mut other, 60), fast);
+    assert_eq!(load(&mut other, 60), slow);
+    assert_eq!((other.runtime.frames(), other.memory_hash().unwrap()), end, "the replay reaches the recording's memory");
+    // A recording begun with the drive fast starts with it; session logs
+    // and agents set it by command, and a state restored leaves it.
+    s.set_fast_disc(true);
+    s.execute(&json!({"cmd":"record"}));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    assert!(log["controls"].as_array().unwrap().iter().any(|c| c[1] == json!({"cmd":"fast_disc","enabled":true})), "{log}");
+    s.restore_bytes(&initial).unwrap();
+    assert_eq!(status(&mut s, "fast_disc"), json!(true), "a restore leaves the host's choice");
+    s.execute(&json!({"cmd":"reset"}));
+    assert_eq!(status(&mut s, "fast_disc"), json!(true), "and so does the console's reset");
+    let frames = s.runtime.frames();
+    let scheduled = s.execute(&json!({"cmd":"schedule","commands":[[frames + 1, {"cmd":"fast_disc","enabled":false}]]}));
+    assert!(scheduled.get("error").is_none(), "{scheduled}");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(status(&mut s, "fast_disc"), json!(false));
+    assert_eq!(s.execute(&json!({"cmd":"fast_disc","enabled":true}))["fast_disc"], json!(true));
+    assert!(s.execute(&json!({"cmd":"readiness"}))["valid_commands"].as_array().unwrap().contains(&json!("fast_disc")));
+    for bad in [json!({"cmd":"fast_disc"}), json!({"cmd":"fast_disc","enabled":1})] {
+        assert!(s.execute(&bad).get("error").is_some(), "{bad}");
+        let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, bad]]}));
+        assert!(refused["error"].as_str().is_some_and(|e| e.contains("fast-disc")), "{refused}");
     }
 }
 
