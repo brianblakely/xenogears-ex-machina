@@ -226,15 +226,39 @@ struct Shown {
     waited: bool,
 }
 
-/// The message dialogue window `i` shows, by its number in the map's table.
+/// The message dialogue window `i` shows, by its number in the map's table:
+/// the table's entry its message is, or the entry whose own translation it
+/// is (a text a language translates in that entry alone,
+/// `xem_core::locale`: the field takes such an entry translated).
 fn message(session: &mut Session<NativeModule>, i: u32) -> Option<u16> {
     let at = word(session, WINDOWS + i * WINDOW_SIZE + 0xA8);
     let table = word(session, MESSAGE_TABLE);
-    if !(0x8000_0000..0x8020_0000).contains(&table) {
+    if !ram(table) {
         return None;
     }
     let count = half(session, table).min(1024);
-    (0..count).find(|n| table + u32::from(half(session, table + 4 + 2 * u32::from(*n))) == at)
+    if ram(at) {
+        return (0..count).find(|n| table + u32::from(half(session, table + 4 + 2 * u32::from(*n))) == at);
+    }
+    // Every language's entries translated alone: where each translation lies, and the entry's name.
+    static ENTRIES: std::sync::LazyLock<BTreeMap<u32, u64>> = std::sync::LazyLock::new(|| {
+        let image = xem_core::locale::IMAGE.as_ref().expect("the translations");
+        let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
+        (0..word(8) as usize).flat_map(|language| {
+            let (records, count) = ((word(32 + 16 * language + 8) - xem_core::locale::BASE) as usize, word(32 + 16 * language + 12) as usize);
+            (0..count).map(move |n| records + 16 * n)
+        }).map(|at| (word(at + 8), u64::from(word(at + 4)) << 32 | u64::from(word(at)))).collect()
+    });
+    thread_local! { static FOUND: std::cell::RefCell<BTreeMap<(u32, u32), Option<u16>>> = const { std::cell::RefCell::new(BTreeMap::new()) }; }
+    if let Some(known) = FOUND.with(|found| found.borrow().get(&(table, at)).copied()) {
+        return known;
+    }
+    let entry = ENTRIES.get(&at).and_then(|name| (0..count).find(|n| {
+        let offset = half(session, table + 4 + 2 * u32::from(*n));
+        xem_core::locale::place_key(&original_text(session, table + u32::from(offset)), *n, offset, count) == *name
+    }));
+    FOUND.with(|found| found.borrow_mut().insert((table, at), entry));
+    entry
 }
 
 /// Plays the scene on as a player who reads at once: Confirm for one
@@ -1031,10 +1055,11 @@ fn the_opening_chapter_reaches_feis_room_in_every_language() {
 fn translation(language: Language, text: &[u8]) -> (u32, Vec<u8>) {
     let image = xem_core::locale::IMAGE.as_ref().expect("the translations");
     let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
-    // The header's 32 bytes, then each translation's records and their count.
+    // The header's 32 bytes, then each translation's records and their count
+    // (and those of its single entries: 16 bytes a language).
     let number = Language::ALL.iter().position(|l| *l == language).expect("listed");
     assert!(number > 0, "the original has no translations");
-    let entry = 32 + 8 * (number - 1);
+    let entry = 32 + 16 * (number - 1);
     let (records, count) = ((word(entry) - xem_core::locale::BASE) as usize, word(entry + 4) as usize);
     let hash = xem_core::locale::fnv1a64(text);
     let record = (0..count).map(|n| records + 16 * n)
@@ -1043,6 +1068,20 @@ fn translation(language: Language, text: &[u8]) -> (u32, Vec<u8>) {
     let address = word(record + 8);
     let start = (address - xem_core::locale::BASE) as usize;
     (address, text_through_end(&image.bytes[start..]).to_vec())
+}
+
+/// As [`translation`], of the text in one table entry alone: the entry's
+/// name is the text's hash carried on over the entry's index, its offset in
+/// its table and the table's count (`xem_core::locale::place_key`).
+fn entry_translation(language: Language, name: u64) -> Option<(u32, Vec<u8>)> {
+    let image = xem_core::locale::IMAGE.as_ref().expect("the translations");
+    let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
+    let number = Language::ALL.iter().position(|l| *l == language).expect("listed");
+    let entry = 32 + 16 * (number - 1) + 8;
+    let (records, count) = ((word(entry) - xem_core::locale::BASE) as usize, word(entry + 4) as usize);
+    let record = (0..count).map(|n| records + 16 * n).find(|at| (u64::from(word(at + 4)) << 32 | u64::from(word(*at))) == name)?;
+    let address = word(record + 8);
+    Some((address, text_through_end(&image.bytes[(address - xem_core::locale::BASE) as usize..]).to_vec()))
 }
 
 /// A text's bytes through its closing 00, walked as the window walks them
@@ -1126,6 +1165,59 @@ fn a_window_keeps_its_translation(disc: &PathBuf, language: Language, original: 
         }
     }
     panic!("{}: no later message read in English", language.code());
+}
+
+/// Perfect Works reads one original text differently from entry to entry:
+/// map 73 opens on two messages, and the second is a text another map's
+/// entry holds too, which Perfect Works reads its own way in this entry
+/// alone. The field takes the entry from its table
+/// (text_get_resource_entry), which gives that entry's translation: the
+/// window's message itself lies among the translations (a text read alike
+/// everywhere stays the original's in RAM, the window's text pointer on its
+/// translation). In English the message is the original's.
+#[test]
+fn perfect_works_reads_a_text_differently_from_entry_to_entry() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let image = xem_core::locale::IMAGE.as_ref().unwrap();
+    let translated = |pointer: u32| (xem_core::locale::BASE..xem_core::locale::BASE + image.bytes.len() as u32).contains(&pointer);
+    // The messages the windows hold once the scene's second one shows.
+    let second_message = |language: Language| {
+        let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+        session.set_language(language);
+        run(&mut session, json!({"cmd": "enter_field", "map": 73}));
+        let reply = run(&mut session, json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+        assert_eq!(reply["met"], true, "{reply}");
+        run(&mut session, json!({"cmd": "frames", "count": 30}));
+        let window = (0..4).find(|w| word(&mut session, WINDOWS + w * WINDOW_SIZE + 0xA8) != 0).expect("an open window");
+        let first = word(&mut session, WINDOWS + window * WINDOW_SIZE + 0xA8);
+        let table = word(&mut session, MESSAGE_TABLE);
+        let (count, offset) = (half(&mut session, table), half(&mut session, table + 4 + 2));
+        let entry = table + u32::from(offset);
+        let original = original_text(&mut session, entry);
+        for _ in 0..40 {
+            run(&mut session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
+            run(&mut session, json!({"cmd": "frames", "count": 30}));
+            let messages: Vec<u32> = (0..4).map(|w| word(&mut session, WINDOWS + w * WINDOW_SIZE + 0xA8)).collect();
+            let name = xem_core::locale::place_key(&original, 1, offset, count);
+            if let Some(message) = messages.iter().copied().find(|m| *m == entry || entry_translation(Language::PerfectWorks, name).is_some_and(|(at, _)| at == *m)) {
+                return (first, entry, message, name, original);
+            }
+        }
+        panic!("{}: the scene's second message did not show", language.code());
+    };
+    let (first, entry, message, name, original) = second_message(Language::PerfectWorks);
+    assert!(ram(first) && ram(entry), "the first message and the table's entry are the original's ({first:#x}, {entry:#x})");
+    let (address, reading) = entry_translation(Language::PerfectWorks, name).expect("Perfect Works translates the entry alone");
+    assert!(message == address && translated(message), "the window's message is the entry's translation ({message:#x}, {address:#x})");
+    assert_ne!(reading, original);
+    // The text itself, wherever else it stands, reads otherwise (or as the original).
+    let everywhere = std::panic::catch_unwind(|| translation(Language::PerfectWorks, &original)).ok();
+    assert!(everywhere.is_none_or(|(_, text)| text != reading), "the entry alone reads so");
+    let (first, entry_in_english, message, _, _) = second_message(Language::English);
+    assert!(ram(first) && message == entry_in_english && entry_in_english == entry, "English: every message the original's");
 }
 
 /// The language is recorded with the inputs: a replay changes it where the

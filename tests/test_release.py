@@ -193,16 +193,23 @@ class ReleaseTests(unittest.TestCase):
                 generate.assert_not_called()
                 self.assertFalse((root / "notes.md").exists())
 
-    def test_first_release_and_monotonic_patch_versions(self):
-        self.assertEqual(next_tag([]), "v0.5")
-        self.assertEqual(next_tag(["v0.5", "unrelated", "v0.5-rc1"]), "v0.5.1")
-        self.assertEqual(next_tag(["v0.5.9", "v0.5.10"]), "v0.5.11")
-        self.assertEqual(next_tag(["v1.0", "v0.5.99"]), "v1.0.1")
+    def test_releases_take_the_next_minor_version_from_v1_5(self):
+        # v1.5 follows the releases that advanced the patch version; each release after it the next minor version.
+        self.assertEqual(next_tag([]), "v1.5")
+        self.assertEqual(next_tag(["v0.5", "unrelated", "v0.5-rc1"]), "v1.5")
+        self.assertEqual(next_tag(["v1.0.12", "v1.0", "v0.5.99"]), "v1.5")
+        self.assertEqual(next_tag(["v1.5", "v1.0.12"]), "v1.6")
+        self.assertEqual(next_tag(["v1.9", "v1.10"]), "v1.11")
+        self.assertEqual(next_tag(["v1.6.2", "v1.6"]), "v1.7")
+        self.assertEqual(next_tag(["v2.0", "v1.99"]), "v2.1")
         self.assertIsNone(version("v0.5.1-extra"))
-        self.assertLess(android_code("v0.5"), android_code("v0.5.1"))
-        self.assertLess(android_code("v0.5.9999"), android_code("v0.6"))
-        with self.assertRaises(ValueError):
-            android_code("v0.5.10000")
+        # An APK's versionCode rises with every release, the published ones among them.
+        codes = [android_code(tag) for tag in ("v0.5", "v0.5.1", "v1.0", "v1.0.12", "v1.5", "v1.6", "v1.100", "v1.999", "v2.0")]
+        self.assertEqual(codes, sorted(set(codes)))
+        self.assertEqual(android_code("v1.0.12"), 1_000_012)
+        for tag in ("v1.1000", "v1.5.1000"):
+            with self.assertRaises(ValueError):
+                android_code(tag)
 
     def test_release_requires_every_platform_and_corresponding_source(self):
         names = expected("v0.5")

@@ -193,6 +193,10 @@ organizes supported images into `discs/` beside the application; images are
 never bundled or uploaded, and saves stay on your device.
 
 The project's authored source is available under the [MIT License](LICENSE).
+The English (Perfect Works) game text is the
+[Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+team's, a separate work under the GNU General Public License, version 3
+([its files and notice](src/runtime/crates/xem-core/locale/en-x-pw/README.md)).
 
 ## Follow the project or get involved
 

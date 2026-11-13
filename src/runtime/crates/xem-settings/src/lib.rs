@@ -1005,6 +1005,9 @@ mod tests {
         let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "French"}})).unwrap();
         assert_eq!(ack["settings"]["language"], "French");
         assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::French, "reopened");
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "PerfectWorks"}})).unwrap();
+        assert_eq!(ack["settings"]["language"], "PerfectWorks");
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::PerfectWorks, "reopened");
         let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "English"}})).unwrap();
         assert_eq!(ack["settings"]["language"], "English");
         // Saved before the setting existed, or with a language no longer offered: English.

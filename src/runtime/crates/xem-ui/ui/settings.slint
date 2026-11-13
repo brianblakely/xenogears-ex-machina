@@ -1946,7 +1946,8 @@ export component SettingsPanel inherits Window {
                                 title: "Language";
                                 Row {
                                     label: "Game text";
-                                    Choice { accessible-label: "Game text language"; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
+                                    // Wide enough for the longest name ("English (Perfect Works)") in the box and in its list.
+                                    Choice { accessible-label: "Game text language"; min-width: 204px; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
                                 }
                             }
                             if root.selected-section == 6: Card {
@@ -2083,6 +2084,10 @@ export component SettingsPanel inherits Window {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
+                            }
+                            if root.selected-section == 8: Card {
+                                title: "English (Perfect Works)";
+                                Text { text: "The game text language English (Perfect Works) is the Xenogears: Perfect Works Build team's retranslation (github.com/PWBuild-Team/Perfect_Works_Build), a separate work under the GNU General Public License, version 3, without warranty. Its text and that licence are in this release's source archive and notices."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 8: Card {
                                 title: "Binaural sound";

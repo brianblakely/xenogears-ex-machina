@@ -1,0 +1,311 @@
+ba037-0056 1026062c1573ded6 Elly: "Huh? Not great..."
+be000-0000 1c9a7465cf9cf365 Fei{n}"Reinforcements,{n}huh!?"
+be000-0001 bf935737eccf0b0e Fei{n}"On my right, too!?{wait 20}{n}Damn it!{wait 20} How many of{n}them are there{wait 8}.{wait 8}.{wait 8}.{wait 8}?"
+be001-0000 b6d00514386295ca Fei{n}"Hyaaaa!"
+be001-0001 7304db17047fe8f2 Fei{n}"*huff,{wait 8} huff*{wait 8}.{wait 2}.{wait 2}.{wait 4}{n}Did I do it!?"
+be001-0002 f196a50032eeaedb Fei{n}"Wh-What the hell are{n}these things!?{p}No matter how often{n}I take them down they{n}just get back up!"
+be001-0003 3a515c379605a74b Fei{n}"Guh!{n}Boy, you're{n}persistent!"
+be001-0004 a65b0c9f44e8d0c8 Fei{n}"*huff,{wait 10} huff*{wait 10}.{wait 10}.{wait 10}.{wait 10}{n}Damn it!{wait 30} Why—{wait 10} How did{n}it come to this...?"
+be002-0000 01a705454b0fd8fb .....{wait 10}XafbEW{wait 10}fadJZ{wait 10}.....{wait 10}{n}...{wait 30}Language converter{n}       enabled{p}＞Identified:{n}␣Lamb, Ignis dialect{wait 30}{n}␣Piloting experience:{n}␣None → Easy Mode set{p}＞Synchronizing{n}␣input interface{n}␣with pilot's normal{n}␣reflex time{p}＞Warning to pilot:{n}␣COMBAT MODE{wait 30}{n}␣About to enter combat{wait 30}{n}␣1200 fuel units left{p}＞Use Command Ring in{n}␣upper left of screen{n}␣to select 'Attack',{n}␣then △, □ or × button{n}␣to commence auto-{n}␣attack sequence{p}＞Power and fuel usage{n}␣varies depending on{n}␣attack type:{n}␣△10   □20   ×30{p}＞Select 'Charge' to{n}␣defend and replenish{n}␣30 fuel units
+be004-0000 dfadf93d42988ee8 Feeeei!!
+be004-0001 18ecf75c53da724a Citan{n}"Fei! I have been{n}searching for you!{n}Here, you can use this!"
+be004-0003 91212eea96e1fb90 Fei{n}"Elly!{n}Are you alright!?{p}Damn!{n}She's unconscious!"
+be004-0004 c9636d8a60531709 Fei{n}"What!? Hold on a{n}second! 'Use this'...?{n}Easy for you to say..."
+be005-0000 8eb2aecc8f3fc995 Pirate{n}"Hmph. Can't you{n}make a better plea{n}for your life?{p}You come jumping out{n}of an Av ship and{n}claim that you're{n}not Av soldiers?{p}Yeah, sure!"
+be005-0001 c60a22ce0d2b0567 Pirate{n}"Urrgh,{wait 10} how pathetic{n}are you!?{p}I don't care if you're{n}the lowliest grunt —{p}how's about showing {n}a little spine and{n}putting up a decent{n}fight!?"
+be005-0002 d242d31f99def28e Pirate{n}"Unbelievable...{n}you're still{n}talking?{p}Stop grumbling,{n}just leave that{n}Gear and go home!"
+be005-0003 1e718d3cc65374d4 Pirate{n}"For someone who doesn't{n}want to fight, you're{n}quite powerful...{p}I see, an{n}all-environment model...{n}So that's it, huh?{p}Now I want it{n}even more!"
+be005-0004 b6dc5d0d3b56b862 Pirate{n}"Oh crap!"
+be005-0005 213808d06897adb7 Pirate{n}"In the heat of battle,{n}I get caught in{n}quicksand!{p}Damn.{n}Me, of all people!"
+be005-0006 6f5c5fb94c61dcf6 Pirate{n}"Damn!{n}It's all your fault!{p}Boy, are you gonna{n}get it later.{wait 10}{n}So be ready!"
+be005-0007 6e5dde6c11df5df4 Fei{n}"Wait a second!{n}We're not{n}Av soldiers!"
+be005-0009 9efbb820df129e47 Fei{n}"Stop it! I'm telling{n}you I'm no soldier! I{n}don't want to fight!"
+be006-0000 78d2c503b2164e69 Bart{n}"Hah! What an idiot.{wait 10}{n}Appearances really can{n}be deceiving, huh, Fei?"
+be006-0001 ae360a215b3c4944 Bart{n}"Anyway...looks like{n}that's the exit.{p}So it'll soon be adios{n}to this old cavern!"
+be006-0003 a4a5846049f9316c Bart{n}"Whoa... What{n}the hell did{n}you just do?"
+be006-0005 9cfb8a2a48c514bb Bart{n}"What d'you mean 'huh'!?{wait 10}{n}What in blazes was that?{wait 10}{n}...Don't you know?"
+be006-0008 9fedf14ea4919a98 Bart{n}"So, now that we've got{n}rid of that nuisance,{p}let's get out of here,{n}huh, Fei?"
+be006-0009 7ebaeb6e2db72217 Fei{n}"............"
+be006-0013 b2ce3dc024c4a4a0 Fei{n}"......Huh?"
+be006-0014 0d5b57dfd380c3b0 Fei{n}"...No,{wait 30} I{wait 30}...{wait 30}{n}......I don't know."
+be006-0015 288ec8cbc20f3d65 Fei{n}"...I don't know that{n}technique... I have no{n}idea how I even did it!"
+be007-0000 2466124aa04536e3 Elly{n}"Noooo!"
+be007-0001 c182e5a6cc12cfcc Fei{n}"...That voice!?{wait 10}{n}.{wait 3}.{wait 3}.{wait 20}Elly?{wait 10}{n}Elly, is that you!?"
+be007-0002 e11a948332d73456 Fei{n}"Elly!?{wait 20} You...{wait 20}{n}Your face...!?{wait 20} D-Don't{n}tell me Bart was right{p}about you using that{n}drug that messes with{n}your personality!?"
+be007-0005 2658eb254e3a27f4 Fei{n}"That's a lie!{n}You once felt a{n}responsibility,{p}blaming yourself for{n}causing the incident{n}in Lahan by landing{n}there.{p}You were considerate{n}of me when I was{n}troubled...{p}The real you would{n}never say anything{n}like this!!"
+be007-0009 ca9d40e3aec9f83b Fei{n}"Are you okay!? Elly!{n}What is it!?{p}Are the effects of{n}the drug wearing{n}off?"
+be007-0012 78f4aed061a0b774 Elly{n}"It doesn't concern{n}you.{p}You're nothing!"
+be007-0013 4458031e1f713502 Elly{n}"Why? It's obvious.{n}It's divine providence!{p}We are the chosen ones,{n}the Abal...{p}The purpose of our{n}existence is to{n}subordinate the{n}land-dwelling Lambs.{p}...Those who stand{n}in our way must be{n}eliminated!"
+be007-0014 8ecdd795f3022a46 Elly{n}"This is my true nature!{n}There is nothing else!"
+be007-0021 9fb114d366cf5619 Elly{n}"H-{wait 20}He...{wait 20}lp...{wait 20}{n}Th-{wait 20}This{wait 20}...is wrong...{wait 20}{n}This isn't{wait 20}...{wait 20}me..."
+be007-0022 c811102b18a4db6b Elly{n}"Uhh!...{wait 10}{n}Aagh{wait 10}...{wait 20} Ah...{wait 10}{n}M-{wait 10}My head..."
+be007-0023 7fb33457d108986b Elly{n}"Ugh...!{wait 30} Silence!{n}Impertinent fool!{p}I will not listen{n}to a Lamb..."
+be007-0024 2cdc4150eb9ab40c Elly{n}"Agghh!"
+be007-0025 1fdde1e51f328361 Elly{n}"Sh-{wait 10}Shut up!{wait 10}{n}I don't need your{n}false sympathy—{p}A-{wait 5}Agh...{wait 20}{n}F{wait 20}...{wait 20}Fei...{wait 20}"
+be007-0026 35646d7bd9f97708 Breuer{n}"Wow!{n}Did you see that!?"
+be007-0027 8c67417c63e850a2 Rank{n}"Those were AERODs!"
+be007-0028 0ef7d2a225d3754d Franz{n}"AERODs?"
+be007-0029 89d27e4c08ba150e Helmholtz{n}"Active Ether-Response{n}Offensive Drones...{p}Commonly known as{n}AERODs...{p}Within Geburah, there{n}are only a handful of{n}people capable of{n}using them...{p}From what I hear,{n}it should only be{n}people from the{n}Elements class."
+be007-0030 1ad7d9d54f129633 Strachey{n}"B-But isn't it like,{n}a secondary effect of {n}Drive?{p}It's no big deal,{n}right...?"
+be008-0000 234a836e6b6c4911 Fei{n}"Is this a joke?{n}What're you doing{n}here, Elly?{p}I thought you agreed{n}to get out of the{n}military!"
+be008-0001 630dae5e4338d25c Fei{n}"So you're saying{n}this is also one of{n}your duties!?"
+be008-0002 0ad38ddb3c06b56c Fei{n}"Are you serious?{n}You do know what you're{n}doing, don't you!?{p}How can you say that,{n}knowing where that ship{n}is headed and what the{n}outcome may be...?"
+be008-0005 07feb59647939c76 Fei{n}"Freedom?{n}Me?"
+be008-0006 7b1f5877a79579d0 Fei{n}"You only have to{n}make that same choice,{n}Elly!"
+be008-0008 59581b54d9d7443e Fei{n}"I don't have a place{n}to belong either..."
+be008-0009 07a92b32c7889384 Fei{n}"...Bart and his crew{n}are all missing...{n}Even the ship...{p}They disappeared after{n}the battle with Geburah.{n}So I don't have a place{n}to belong anymore..."
+be008-0014 a8116207f6f95acd Elly{n}"Don't ask for the{n}impossible!{p}I'm an officer of{n}the Geburah forces!"
+be008-0015 9c257be7e765ffd7 Elly{n}"Yes!{n}My duty is to{n}escort the Hecht.{p}And to eliminate{n}all enemies that{n}get in its way...{p}So you better get{n}out of the way...{p}'cause if you{n}don't move I'll{n}have no choice but{n}to eliminate you!"
+be008-0018 8a5db9490264f67c Elly{n}"To change...{wait 30}{n}How I wanted{n}to change{wait 20}...{p}I've thought{n}about it, but{n}I couldn't do{n}it{wait 10}...{p}I don't have{n}the freedom{n}that you do!"
+be008-0019 4e196da5109c42b6 Elly{n}"Yes! Am I wrong?{n}To be able to choose{n}where you belong...{p}To be able to fight{n}alongside those who{n}believe in their{n}own cause...{p}Even if you have{n}much more anguish{n}to deal with,{p}at least you're{n}free to choose{n}that path!{n}Unlike me...!"
+be008-0020 e8f1aebad22bb4dc Elly{n}"If I could, I would've{n}already done it!{n}But I can't...{p}This is my place. And{n}that's how it is here!"
+be008-0021 a3e40f1f06ab732b Elly{n}"...So...please,{n}understand..."
+be008-0023 30c81bfa4abb69a8 Elly{n}"You don't—{n}Then why are you{n}fighting now?{p}Who are you{n}fighting for...?"
+be008-0024 6d375917770a1579 Elly{n}"?"
+be009-0000 07858fe26a800f4a Entrusted with Arle's{n}Wedding Dress!
+be009-0003 bd479a2cd46120ad Fei{n}"Argh{wait 20}...{wait 20}!{n}What should I{n}do...?"
+be009-0007 4fd4861f2cc9a753 Dan{n}"Shut your mouth! I'll{n}never forgive you...{wait 20}{n}You murderer!!"
+be009-0008 67fbd40321c68a17 Dan{n}"Damn you, Fei!{n}Why won't you{n}fight back?{p}It's a contest,{n}Fei!"
+be009-0009 7fee0ca3f4dc8c11 Dan{n}"...Dammit!{p}Sis and Timothy won't{n}rest in peace if I put{n}you down this easily!{p}Blast! I'll save this{n}duel for later.{p}The next time I meet{n}you, it's gonna be{n}your funeral!{p}Until then,{n}hang on to this!{p}Every time you look{n}at it,{p}I want you to suffer{n}and feel the guilt for{n}what you did!"
+be010-0000 34e46a39fb5bf375 Maria{n}"Father!?{wait 40}{n}Is it really you,{n}Nikola, my father!?"
+be010-0003 d536380dad60524f Maria{n}"!?{wait 60} {wait 40}...{wait 40}{name 19} is{n}trembling.{wait 60}{n}{wait 40}...{wait 40}Are you crying?{p}{wait 40}...{wait 40}Brainwashed by{n}Solaris... My real{n}father is already{wait 40}...{p}{wait 40}...{wait 40}{n}Achtzehn is{wait 40}...{wait 90}{n}not my father!"
+be010-0004 7818f5630c65f07c Maria{n}"{wait 40}...{wait 40}Achtzehn!{n}I will defeat you!!{wait 60}{n}{name 19}, let's go!!"
+be010-0005 60a05b75ba47079a Maria{n}"!!{wait 40} Father!{wait 40}{n}Have you come{n}to your senses!?{p}No!{wait 5}{n}I can't do it!!{p}The Graviton Cannon{wait 5}...{wait 5}{n}You yourself had it{n}sealed away because of{n}its destructive power.{p}If I use that,{n}you'll be{wait 40}..."
+be010-0006 bb6b21ae8f65795b Maria{n}"...{wait 30}I can't. {n}I can't bring{n}myself to do it!!{p}Huh? {name 19}!{wait 30}{n}Stop...{wait 30} I can't{n}control you!{p}Father, are you{n}doing this!?{n}Please, don't make{n}him shoot!!"
+be010-0008 8aee1fbefec7292c Achtzehn{n}"Maria...{wait 40}{n}Have you been a{n}good little girl?{p}Look, this is Achtzehn.{p}I've been able to merge{n}myself with Achtzehn{n}through the M Project{n}research in Solaris.{p}Observe the birth of the{n}ultimate in reflex speed{n}via the unification{n}of man and machine!{p}No normal Gear could{n}ever hope to defeat{n}Achtzehn here!"
+be010-0009 aa803247f69d37c7 Achtzehn{n}"Hmph. 'Horrid'?{wait 40}{n}No, Maria.{wait 40}{n}It is 'glorious'.{p}Yes, yes. I shall do{n}the same for you and{n}your {name 19}, make{n}you one entity."
+be010-0010 ad38f02bc0f975bd Achtzehn{n}"Hah hah hah.{wait 40} Rebelling?{n}I see, you've already{n}reached that age{wait 40}...{p}Come now,{wait 40} don't be so{n}spoiled like that.{wait 40}{n}Come{wait 40}...{wait 40}here.{p}Won't you{wait 40}...listen{n}to{wait 40}...{wait 40}YOUR FATHER!?{n}COME HERE, NOW!"
+be010-0011 f339f08c8f656d6b Achtzehn{n}"What are you saying{wait 40}...{wait 40}?{n}It's me{wait 40}...{wait 40} Your father{wait 40}...{n}Nikola..."
+be010-0012 daf933b3820f5cd0 Nikola{n}"Maria...{wait 40}{n}can you hear me?{p}I'm going to release{n}the seal on your{n}Graviton Cannon by{n}remote control now.{p}Use that to{n}defeat me."
+be010-0013 baa3a0fc2f81db7b Nikola{n}"It doesn't matter!{wait 10}{n}Fire!{wait 10}{n}Nikola{wait 5} is no more...{p}Before I was brainwashed{n}by Solaris, I implanted{n}a conscience circuit in{n}Achtzehn...{p}This would respond and{n}activate in {name 19}'s{n}presence. My message{n}is coming from there.{p}And, during the battle,{n}my data was transferred{n}from Achtzehn to{n}{name 19}.{p}Though my body is{n}lost,{wait 10} my spirit is{n}with {name 19}...{p}No,{wait 10} with you, Maria.{wait 40}{n}Now and forever!"
+be011-0000 eabf230f95c795ce Fei{n}"Sorry about that...{p}If we can defeat this{n}one, we should be{n}able to change the{n}course of this ship.{p}Let's go!"
+be011-0001 c006084b5b2a48ee Fei{n}"Of course not!{p}We're not gonna take{n}'this ship' down.{n}We're gonna take{n}YOU down!"
+be011-0002 a55fceff290e2cbb Rico{n}"What the heck were{n}you doing, Fei!?{p}Were you expectin' me{n}to do all the dirty work{n}of clearing away these{n}punks on my own?"
+be011-0003 85577af2da02612e Dominia{n}"Hmph.{p}One more extra runt{n}isn't going to help{n}you to down the{n}Ship-Bomb Hecht!"
+be011-0004 ebd78f84996c1da4 Dominia{n}"Hah! What insolence!{n}But what do I expect,{n}coming from Lambs...?"
+be012-0002 dbbb72efa62db80c Grahf{n}"The Goliath wasn't{n}built for you to use.{p}You must remain in this{n}land a little longer.{n}I can't allow you to{n}leave..."
+be012-0003 1ba60624f4e3a602 Grahf{n}"So, you can now{n}draw upon more of{n}your power...{p}In that case—"
+be015-0001 5175f6e3115e78c9 Elly{n}"Guh... Fei...{n}I-{wait 10}I won't ever{n}let go!"
+be015-0002 e490a00252eb56a5 Elly{n}"Aaagghh...{p}Fei!{n}Please!!"
+be015-0004 587fdf67c24e7dee Elly{n}"...Yes.{p}If that's what'll{n}satisfy you, then kill{n}me.{wait 30} Go ahead..."
+be015-0005 dee0d3c1175eafc8 Elly{n}"Fei... Please go{n}back to the way{n}you were!!"
+be015-0006 6623ccfcbb60464d Id{n}"Heh... You.{wait 20}{n}You've come to{n}die, huh?"
+be015-0007 e847895e68e323ce Id{n}"Hmph...{wait 30}{n}Good girl...{wait 30}{n}Then die!"
+be015-0009 d19b80be98f9be5a Id{n}"Urrgh!!{wait 30}{n}Wh-What!?"
+be015-0010 fca4a0f7f265a827 Id{n}"Tch...{wait 60}{n}...{wait 30}This woman{wait 30}...{n}Of course{wait 30}..."
+be015-0011 8671213a140ee7ce Id{n}"...{wait 30}Damn it...{wait 30}{n}He's{wait 30}...{wait 30}{n}waking{wait 30}...up{wait 30}..."
+be016-0000 7e1044ba3f2f8a70 Spectators{n}"Booo! Boooo!"{n}"Booooring!"{n}"C'mon, fight properly!!"
+be016-0001 33b8911d108dbdec Spectators{n}"...*grumble, grumble*..."{p}Referee{n}"...{wait 30}Uhh,{wait 45} ahem.{wait 30}{n}It appears that{n}competitor Wiseman{n}has forfeited...{p}The remaining{n}competitor will{n}automatically be{n}awarded victory!"{p}Spectators{n}"What!? Are you serious!?"{n}"Booo! Booooo!!"{n}"Yeah! I won the bet!!"
+be016-0003 9379ed29397babab Fei{n}"(This isn't good.{wait 30}{n}At this rate...)"
+be016-0005 031f6c72d33765ca Fei{n}"Who cares where...?{n}Come on, now...{n}put up a serious fight!"
+be016-0006 2b4b89026e72a1ac Fei{n}"What d'you{n}ask that for?"
+be016-0008 0844505a1bfaae92 Fei{n}"Would you shut up!{n}I'm working on finding{n}my purpose!"
+be016-0013 725af925e582eb88 Fei{n}"!! Wait!{n}I want to{n}ask you—!"
+be016-0018 5c0f70cec3297ab5 Wiseman{n}"Doesn't there have to{n}be a reason or a goal{n}for a person to fight?"
+be016-0019 8da34768f75eb6d2 Wiseman{n}"So you're{n}fighting for no{n}reason or goal?"
+be016-0020 2b5beaff2e93657f Wiseman{n}"...Then forget it!{n}Finding it within you{n}is impossible."
+be016-0023 aa000f5030d383d1 Wiseman{n}"Weak, weak... You won't{n}even graze me with those{n}kinds of attacks...{p}But superficially, at{n}least, it seems you've{n}physically matured."
+be017-0000 024b369ea2376318 Achtzehn{n}"Not bad for{n}a low-class,{n}inferior animal."
+be017-0001 4c22e51de5037150 Achtzehn{n}"Die, you pathetic{n}creature! Die!"
+be018-0000 29fcf4825f5a4cd9 Ramsus{n}"This is your final{n}warning. Hand over{n}Lt. Elehayym!"
+be018-0001 bdb2dce4eb8256fe Ramsus{n}"Do you really{n}refuse?{p}If you regret it{n}afterward it'll{n}be too late!!"
+be018-0002 d6e73f590dded8cc Ramsus{n}"Heh...{wait 20}{n}Well, so be it.{wait 20}{n}No holding back!"
+be018-0003 63324d1d2b31b9da Ramsus{n}"Behold!{wait 10}{n}What's wrong, Fei!?{n}Poor show!{p}You and your{n}{name 11} are as{n}infants before{n}Vendetta here!"
+be018-0004 3aebb8077b9057ba Ramsus{n}"Incredible!{n}This undeniable{n}difference in power!{p}Myyah!{n}Are you watching!?"
+be018-0005 cb27320f5296fe31 Ramsus{n}"With this...{n}With this, I can{n}defeat him!"
+be018-0006 d66b1ed49a1f5d46 Ramsus{n}"Hehehehe...{wait 10}{n}Ahahahahaha!"
+be018-0007 00879aabb7a88e5c Ramsus{n}"Ahahahaha!{wait 10}{n}I can win! I can WIN!{n}I'm not trash!!"
+be018-0008 e1382a1b035febba Ramsus{n}"It's over for{n}you, Fei!!"
+be018-0009 af76b4745ed95957 Ramsus{n}"Mwahahaha!{n}I'm not trash!{wait 40}{n}Heehee!{wait 30} Heehahaha...{p}*huff, huff*...{p}...Huh?"
+be018-0010 ec20e5e5f7fcf253 Ramsus{n}"!!{wait 30} I've gone and{n}taken down the{n}Lieutenant too{wait 30}...{p}Tch,{wait 30}{n}I forgot my orders{wait 30}...{p}Hmph{wait 5}...{wait 30}oh well{wait 5}...{wait 30}{n}To hell with{n}Karellen's orders..."
+be018-0011 be7d1554f5b1f209 Fei{n}"I refuse!"
+be018-0012 8c28cad784d64e95 Fei{n}"Stop this{n}nonsense!"
+be018-0013 8099731406458e45 Fei{n}"What're you saying!?{n}If you do that—"
+be018-0016 81ebf94072ebb2ad Elly{n}"It's me he wants!{p}I can't let you be{n}put in harm's way{n}because of me!"
+be018-0017 059115aa6c9ddc1d Elly{n}"Stop attacking,{n}Ramsus!{p}If it's me you want,{n}just take me!"
+be018-0018 df408d899c43b88b Elly{n}"Aagh!"
+be018-0019 4592afdfa586eeb1 Elly{n}"He's lost it, gotten{n}carried away by the{n}Gear's performance...{p}Fei, we'd better run!"
+be019-0000 54201b2d1f6fa2f5 On my way toward Ignis,{n}I encountered him again.{n}{wait 30} {n}      Carlin Ramsus...{p}Aboard the Omnigear{n}   Vendetta, once more{n}      Ramsus stood{n}           in my way.
+be019-0001 8ca977a3a3e94216 It was an{n} unavoidable{n}     battle.{p}I unleashed System Id,{n}  the new function{n}    that had been{n}      installed in my{n}         Mark II Gear.
+be019-0002 c22259fc08023fdb Ramsus' absolute{n}   self-confidence{n}       was shattered.{p}Leaving only his{n}   cries of disbelief{n}        and resentment,{p} Ramsus' machine{n}    vanished into{n}      the sea of trees.{p}Why he was so{n}  relentless with me,{n}    I don't know.{n}{wait 30} {n}     All he said was...
+be020-0000 cb8a0d5602aefb6a Bart{n}"Alriiiight!{n}Transformation{n}complete!!{p}C'mon monster,{n}let's go!"
+be022-0002 031dac719edf5dc9 Ramsus{n}"Aaargh!{n}This can't be!{n}You m-monster..."
+be022-0003 d4f3f816ef2af96a Ramsus{n}"...Guh!{wait 30}{n}I...{wait 30} I...{wait 30} If it{n}weren't for you{wait 30}...{wait 30}"
+be024-0001 4095a0f25651baa2 Wiseman{n}"I'm already{n}too late!{p}Assist me!{wait 20}{n}Id...{wait 5} We will{n}eliminate him!"
+be024-0002 5d9f121c3412bbc2 Wiseman{n}"The Zohar is Deus'{n}core.{p}Slave generators,{n}Ether{wait 10}...{wait 10}{n}It's the source of all{n}their energy.{p}Having attained its{n}power,{n}the awakened Id wants to{n}annihilate this world!{p}His contact with the{n}Zohar,{p}it was imperative that{n}it only take place after{n}properly unifying Fei's{n}personalities!!"
+be024-0003 5813271f10a4c32f Wiseman{n}"Huh!?{n}Keep back!"
+be024-0005 d221b52c3adf3b2d Id{n}"Hmph. You again?{wait 10}{n}Always getting in my way.{p}But you cannot stop me.{wait 10}{n}You who couldn't even{n}protect his own{n}wife and son!{p}Do you wear that mask{n}because you can't bear{n}to show your face to{n}your son?{wait 20} Well, Khan!?"
+be024-0006 abd9eac74a6aaf02 Id{n}"That's right!{p}This man is Fei's—{wait 20}{n}No,{wait 10} my father,{wait 30}{n}Khan Wong!!"
+be027-0000 01d464559b4a9277 Rico{n}"Is that the best you{n}can do? Where's your{n}determination!?"
+be027-0003 81a8358049b0b466 Rico{n}"Hmph.{n}In that case,{n}it's all over!"
+be027-0005 8b77f99ed0a76c2b Rico{n}"Hah hah hah.{wait 30}{n}That's more like it...{wait 30}{n}You're quite good.{p}You're the first one to{n}ever injure me.{p}Now I don't have to{n}hold back.{wait 30} Exciting!"
+be027-0006 463d01a2f961b59d Fei{n}"Guh{wait 30}...{wait 30}{n}ungh{wait 30}...{wait 30}"
+be027-0007 77a83fdbb6cf8a3d Fei{n}"N-{wait 30}No{wait 30}.{wait 10}.{wait 10}.{wait 10}"
+be027-0008 0b2a714ecf50082a Fei{n}"No{wait 30}...{wait 30} I{wait 30}...{wait 30}{n}won't{wait 30}...{wait 30}{n}fight!"
+be027-0009 4b2bb3613b35faf4 Fei{n}"Guh{wait 30}...{wait 30}ugh,{wait 30}{n}urrgh{wait 30}..."
+be028-0000 8df5858b30e960d0 Bart!!{done 60}
+be028-0001 8936a35be5c8e802 Margie{n}"Baaarty!"
+be028-0004 da40a842737c3625 Bart{n}"It's a nice offer,{n}but no can do.{p}See, for me, 'neither{n}way' is much good."
+be028-0005 0decc58f12c2279b Bart{n}"Tch...{wait 20} Margie!{n}Take cover back{n}there!"
+be028-0006 68ee1428a1e0a488 Bart{n}"Listen, just{n}stay there!"
+be028-0007 867c09d303b3ac9d Ramsus{n}"Then without{n}any further{n}ado..."
+be028-0008 aa2784e91069dce8 Myyah{n}"If you truly want to{n}protect that child,{n}then surrender...{p}Prince Bartholomew!"
+be029-0002 7a40d05f2b6dd436 Ramsus{n}"(He looks...completely{n}different... And there's{n}zero reaction from him.{p}Is it just my{n}imagination?{n}But that technique{n}was indeed his...{p}What's more...{n}the name Fei....{wait 10}{n}Where have I...?)"
+be029-0003 d81030fbbcfa0921 'Fei'...{n}That is my child's name...
+be033-0000 0645071223ea1d73 Sigurd{n}"Young Master!{wait 10}{n}Depth charges away!{n}Please stand back!"
+be033-0003 008609dd9ba37d54 Dominia{n}"Guh!{n}That was nothing.{n}Bring it on!"
+be033-0004 4b56916e6ab7bde7 Dominia{n}"Tch!{n}I was so close.{p}But{wait 10} don't think I'll be{n}leaving empty-handed,{n}now!"
+be033-0005 04e1bd62211007f6 Elly{n}"Wh-What!?"
+be034-0000 53749c5153861ddb Fei{n}"Urgh! You again!?"
+be034-0001 8ef0f79ecd683e9c Fei{n}"What're you{n}talking about!?"
+be034-0002 cca53eb8438880e5 Fei{n}"Aaaagghh!"{done 30}
+be034-0005 2ba39de20dca9617 Ramsus{n}"Over there,{n}Myyah?"
+be034-0006 90620f822e23949c Ramsus{n}"Roger that!"
+be034-0007 105c3727010973b5 Ramsus{n}"Oh how I have{n}searched!{n}My nemesis!!"
+be034-0008 548a72d34aa4b1ca Ramsus{n}"...I see you have a{n}different machine...{p}So, what happened to{n}'that Gear'!?"
+be034-0009 6c94d1f9674fda78 Ramsus{n}"Well, fine...{p}All that matters is{n}that there will be no{n}light for me until{n}you are eliminated!!"
+be034-0010 0acbb539773ecf10 Ramsus{n}"Tch!{n}Is that the best{n}you can do!?{p}Nevertheless...{n}You!{n}I can't let you live!"
+be034-0011 ad2881e78cf27985 Ramsus{n}"And now for the{n}coup de grace!!"
+be034-0012 fffac2423904c304 Ramsus{n}"Wh-What!?{n}AERODs!?{n}Who the...!?"
+be034-0013 f3fb5e7b68464bd7 Ramsus{n}"!!{n}Gaaahhhh!"
+be034-0014 cbd0c64c1c15a0cc Ramsus{n}"Tch!{n}My main tank...{p}But I almost{n}had him!{p}Dammit!{n}...We have to{n}retreat, Myyah!"
+be034-0015 a9a99d82335349c7 Myyah{n}"Yes, it's the{n}black Gear in the{n}center."
+be035-0000 afe520e9e7d52820 - Barrier broken -{done 60}
+be035-0001 8b97c260227f99e4 Citan{n}"I knew it! Jesiah{n}really means to use it!{n}He must be stopped!{p}Billy, can you hear me!?{wait 30}{n}Billy!? ...{wait 45}No good...{n}There is no response!!"
+be035-0002 c610e7eb4db31c47 Citan{n}"I was too late...!{p}Billy!{n}That is a weapon that{n}uses its passenger as{n}a human warhead!"
+be035-0004 7d4f87865153d36c Billy{n}"What!? Th-Then{n}Father is...{p}...Oh my {wait 10}god!!"
+be035-0005 9a38e80e1ad28ce3 Jesse{n}"Billy, with a joint{n}attack from my Gear{n}and your Gear,{p}we can break through{n}that barrier.{p}I'm gonna borrow your{n}shoulder for a moment,{n}so when you get the{n}chance, take aim."
+be035-0006 0330d4cb18bfd7cd Jesse{n}"Billy, d'you see now?{n}Stein's teachings were{n}all a deception.{p}It's just a fabricated{n}belief system, made to{n}compensate for the{n}fragile human heart.{p}But real faith and God{n}aren't things that're{n}given to you by others,{n}right?{p}They're things that you{n}discover within yourself,{n}and by yourself.{p}That which cannot{n}be put into words,{n}that which cannot{n}be expressed...{p}Isn't that what God is{n}all about? 'Question{n}not thy God, for thy{n}God doth not answer.'"
+be035-0007 484cf66b1d89a55d Jesse{n}"I taught you about guns{n}when you were so young so{n}that you'd help people.{p}You say that guns are{n}just tools for killing,{n}but they're not.{p}'Guns' don't kill people.{n}'People' kill people.{p}Have you ever looked at{n}the expressions on the{n}faces of those Verus{n}you've defeated?{p}Changing into a Verus{n}is an excruciatingly{n}painful thing.{p}In order to ease that{n}agony, they seek human{n}blood, and they attack.{p}But even that can't{n}clear their hearts of{n}the true agony.{p}There's only one way{n}they can be saved from{n}that pain, and that's{n}to terminate them.{p}All the Verus you put{n}out of their misery...{n}Didn't you see how{n}at ease they looked?{p}Your gun saved those{n}poor people who'd{n}become Verus.{n}Not everyone can do that.{p}Your faith, which made{n}it possible, is no{n}deception...{n}God exists within you!"
+be035-0008 c25f58633457fcec Jesse{n}"Alright, now!{n}Let's go,{n}Billy, go!"
+be037-0000 9170833db847bc4e Fei{n}"Why d'you suddenly{n}want to fight!? Are you{n}crazy or something!?"
+be037-0002 1a04001d38f7db70 Fei{n}"Y-You're{n}serious?"
+be037-0003 eb6ea4377df2c20d Fei{n}"Urrgh...{wait 30} That technique{n}is the same as mine...{wait 30}{n}How come you...?"
+be038-0000 4cd9fda2a07aa4ec Bart{n}"How many Gears{n}are there!?{p}I think I took out{n}most of the small fry,{n}but—!"
+be038-0002 6de02688b63b5159 Bart's Officer{n}"There are at least{n}four, maybe five of{n}them left!{p}Their performance and{n}technique are a cut{n}above anything we've{n}faced before!"
+be039-0001 a7e3d402d12c0fd3 Elly{n}"Th-{wait 5}They're fast!!"
+be039-0002 7b442450d168d66b Elly{n}"Such a difference{n}in power.{wait 10} Even in{n}my Omnigear...{p}But...{wait 10}{n}if this keeps up..."
+be039-0003 6c924160fe97ce66 Elly{n}"I mustn't lose!!"
+be039-0004 c40cf3f0bd3a8782 Elly{n}"Somehow...I've got to{n}stop their{n}movement..."
+be039-0007 a3643b843c854242 Elly{n}"Wh-{wait 5}What the...!?{wait 10}{n}I thought that had{n}worked..."
+be039-0008 3a0094140a643e8e Ungh...{done 60}
+be039-0011 6a2943e01c4dd398 Kenren{n}"Hmmm, we're really{n}getting no results.{p}There's nothing else{n}for it, Tenpou.{p}It's about time to{n}finish the job."
+be039-0012 c91ad6da73d68795 Kenren{n}"Gehehehe!{wait 10}{n}She's down!?"{p}Tenpou{n}"No wonder.{p}Complex fractures,{n}major hemorrhaging...{p}I dare say the cockpit{n}is a sea of blood."{p}Kenren{n}"She might even be{n}dying!{wait 10} Gehehehe!!"
+be040-0000 1e494d804b2315ce Citan{n}"Oh! Quite the{n}wild stallion...{p}Just the thing for a{n}warm-up, eh?{n}I am pleased!"
+be040-0001 3b789e0f988740f3 Citan{n}"A new contender,{n}eh!?"{done 40}
+be040-0002 a1ca44ac2427f058 Citan{n}"Compared to the pain{n}my friends are going{n}through,{p}yours is{n}nothing...!!{p}I cannot allow people{n}like you to persist in{n}tormenting those who{n}cannot fight back.{p}I will take you on in{n}their stead.{wait 20}{n}Come on!"
+be040-0003 d5502251e93aa332 Breuer{n}"Whooooaaa!!"
+be040-0004 2ca85c62076e880f Breuer{n}"H-Hey,{n}that hurt!!"
+be041-0000 9a1d8256bf29c6eb Myyah{n}"Hehe.{wait 20}.{wait 20}.{wait 20}{n}Adieu, boys..."
+be042-0000 c658248796275094 Myyah{n}"Hehe...{wait 60}{n}Now, one more time{n}from the beginning.{p}Can you beat me this{n}time, I wonder?"
+be042-0001 6d2fc2deef6965d7 Fei{n}"What the...!?{n}But I thought we{n}defeated you...!?"
+be044-0000 3b70951ae92090ec Ramsus{n}"(Th-This can't be...)"{done 120}
+be044-0001 f72e4f238a9b7893 Ramsus{n}"(Ugh! H-Help...)"
+bm003-0019 669f5c0212c25845@0890def86f3a1c71 Offensive Drones
+en008-0014 657722eeae84a40a "Can't take it anymore!"
+en010-0000 92418b3666954139 Av Corporal
+en010-0002 f1890bc944a518e5 Av Soldier
+en010-0006 b0b780b9bce39b1c Av Guard
+en010-0008 4249ac87fd9d8490 Shakhan Guard
+en010-0011 0f8ddc57db8a419f Fire from the engine room!
+en012-0004 ea9d9e544c99cee7 Neo-Tin Robo
+en016-0003 448515f033e22547 Suzanne
+en018-0009 ce811f5b55cdd00b Dan: "This is for Lahan!"
+en018-0010 8e573b077d71559d Dan: "This is for Timothy!"
+en018-0011 59243d0025348e1a Dan: "This is for my sis!"
+en018-0012 4ed202f3cdee1674 Dan: "Eat this!"
+en018-0013 c44cd394ca593d0a Dan: "Why not hit back!?"
+en018-0014 249fca9e051f736d Dan: "Damn you..."
+en018-0016 569d2b0ff2ceb8d5 Wiseman: "Pathetic!"
+en018-0017 b6642338cc3f3f94 Dan: "I'm gonna crush you!"
+en022-0011 6366698cec21dc03 "Hee-hee-hee-hee～!"
+en022-0012 245e08efda6feeef "Death, death, death!"
+en022-0013 0ccafab932d45018 "Kill you next turn!"
+en028-0002 8570010cd66cd9d4@7f372ade75afbe25 OR Weltall
+en028-0003 1ed50ea9c8271b46 OR Weltall
+en028-0009 8b846ef1104ba631 AEROD/Eth Atk
+en030-0000 8a4fc05b1b24f1f6 Cup Knight
+en030-0002 90832fa437a6d044 Sword Knight
+en030-0003 d58132951db55cae Shield Knight
+en030-0004 78f7908f32053485 Wand Knight
+en030-0005 6365a7f2b171728f Cup Knight R
+en030-0006 4948bbf3c2e3dd0d Sword Kt. R
+en030-0007 f47578a3fd8e82a7 Shield Kt. R
+en030-0008 4060ac545763c824 Wand Knight R
+en032-0000 f0b8c245bf76a361 Arc-en-Ciel
+en032-0002 472600faa5e9981b Spirale
+en036-0000 fc76c7731809438c Neo-Verus
+en036-0002 46370abf8423c817 Verus
+en038-0002 01c50dd801fb0c89 C1 Vierge
+en040-0010 19c44a3f8d19cb7f Vanderkam: "I'll kill you!"
+en042-0000 811b3e152626f1da Amphisbaena
+en042-0002 80e374a56cc4fd6d Ophiomorphous
+en044-0000 8c17070d9dfee9f5 Nomad FixBot
+en058-0009 b935bf552ece0d19 Steel Fist
+en060-0002 ae5f9e6544e9c18d Super-AEROD
+en060-0009 05cc14b68431f02d AEROD/Beam Atk
+en060-0011 f137565550a8429d Super-AEROD/Beam Atk
+en060-0015 b88d11c39c422e0a Destroyed Super-AEROD!
+en070-0000 3276bb7c9248dabe Egil Gunner
+en070-0002 710a6d20d7a759c0 Egil Armor
+en070-0003 f3b063fe079751ad Egil Blade
+en076-0002 09b58cf3e78c7e3e Edain
+en080-0002 a84587b5c267c897 Deathscythe
+en082-0002 19619abec1a748b1 Li'l Kobold
+en084-0003 ae91921681f720ac Neo-Tears
+en084-0004 d3697ec77f7fe7dc Neo-Gimmick
+en084-0009 25b3193b02343eec PWR increases when alone
+en086-0000 eabf05e3368e9664 Siebzehn
+en088-0000 6f3dd0fbad50486f Sandtripper
+en090-0000 df73e0253df9d2c5 Sphar
+en090-0002 d84911fc56cf0af9 Sphar Gear
+en090-0005 be583535653b7fe8 Sphar-Meld
+en092-0003 50fd97c0d90b453e Myyah
+en092-0009 63a0890ba066d2e0 Margie: "I'll fight, too!"
+en092-0010 c92529fe5ed993cd Margie: "Go for it, Bart!"
+en096-0011 a5d18d9ad56c6946 "Grrreat!"
+en096-0012 979fcf6bbc8febff "And dynamic!"
+en096-0016 471280fa86beb775 "Hey, it's Joe time!"
+en096-0019 0b5bd1cda2ee516d "Check out my magic pills."
+en098-0000 10ddeafc18aae289 Giant Verus
+en102-0000 ea1af826bcef7e71 Geburah Guard
+en108-0009 b05cf6cd13b3ce38 Ignis Storm/Fire Eth
+en110-0002 7a7df2041ec545e4 Skyscreech
+en112-0009 98959885b111c339 Something feels very bad...
+en112-0010 55564f75481aacea "Y-You better get away..."
+en112-0011 d99a76a563285295 Self-destruct
+en112-0012 c7681cbc42188bf5 Self-modification
+en112-0017 aab85fce3f46055e Throne: "Leave it to me..."
+en112-0019 42bd6fba90b60b44 Cherubina: "I'll have a go."
+en112-0020 5061e0eaf6f203e4 Seraphita: "I'll get you."
+en116-0002 8e8014cae3ca7f3d Throne
+en116-0004 11883b7468e3ea10 Cherubina
+en116-0010 560dc927c7eed043 "Leave it to me..."
+en116-0012 ecfe55cf84358038 "I'll get you."
+en124-0003 71a2d8896c11dedb@a4857efa449b15e4 Twinburner
+en124-0004 9e934cdc5dca3084 Neo-Etone
+en126-0002 eb259e678d2ae045 Sandalphon
+en126-0003 9940343a04d41e97 Harut
+en126-0004 be3d46bf16f2922c Marut
+en126-0011 565d090d18d7710f Warp/stops all but one unit
+en126-0016 bfda92dbf2fbd6a0 Defeated pillar Metatron
+en126-0017 af20141b2e6b6245 Earthly Anointment sealed
+en126-0018 2a8023276b375a91 Defeated pillar Sandalphon
+en126-0019 7d964e29b4dfa97b Healing sealed
+en126-0020 b66791b0c77b45a3 Defeated pillar Harut
+en126-0021 93df715ce8e26f84 Heavenly Anointment sealed
+en126-0022 0a2bd9e02e54d788 Defeated pillar Marut
+en126-0023 de7ab1e05ab5b11c Fuel Drain sealed
+en126-0027 b3ee12d0643ebcf4 Countdown stopped
+en126-0035 b5187981474828bc Only one unit can act
+en128-0019 55d047c4cf0f042c Defeated some divine pillars
+en128-0020 561b9036b4c76c9b Defeated all divine pillars
+en140-0002 fa9a75f781598276 Li'l Ahriman
+en146-0000 144f2194fd6bb74a Wind Aeon
+en146-0002 a71f0eaeaf976f6c Earth Aeon
+en146-0003 a2350da32d8437e7 Power Aeon
+en148-0000 928fe16c400f3cd1 Sword Aeon
+en148-0002 b6aebef8696b2efc Heal Aeon
+en148-0003 2dc93dbb638e6042 Fire Aeon
+en148-0004 d68c22cf136d9b57 Water Aeon
+en152-0000 3fcabc8e10377c8b Ouroboros

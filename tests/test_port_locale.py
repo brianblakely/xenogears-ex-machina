@@ -16,6 +16,7 @@ TEXT = 0x80010000
 TABLE = 0x80011000
 FONT = 0x80012000
 SPECIAL = 0x800501D0
+NAMES = 0x80058000  # game_data: its names first, 31 of 20 bytes
 FIRST = 0x10
 
 # A text with a control of each length and a two-byte glyph: "Hi" 0F 03 r e
@@ -33,20 +34,21 @@ def _map_locale():
         raise OSError(ctypes.get_errno(), "cannot map the translations' region")
 
 
-def region(active, translations, glyphs):
+def region(active, translations, glyphs, entries=()):
     """The host's image (xem_core::locale::build): a header, one language,
-    the glyphs' recipes, the language's records ascending by hash, then the
-    texts. `translations`: (hash, bytes, columns, rows); `glyphs`: (base,
-    drop, clear, accent rows)."""
-    glyphs_at = 32 + 8
+    the glyphs' recipes, the language's records ascending by hash, its
+    records of single entries ascending by name, then the texts.
+    `translations` and `entries`: (hash or name, bytes, columns, rows);
+    `glyphs`: (base, drop, clear, accent rows[, wide])."""
+    glyphs_at = 32 + 16
     records = glyphs_at + 28 * len(glyphs)
-    text = records + 16 * len(translations)
-    out = bytearray(text)
-    struct.pack_into("<IIIII", out, 0, 0x31434C58, active, 1, LOCALE + glyphs_at, len(glyphs))
-    struct.pack_into("<II", out, 32, LOCALE + records, len(translations))
-    for n, (base, drop, clear, accent) in enumerate(glyphs):
-        struct.pack_into("<BBHH11H", out, glyphs_at + 28 * n, base, 0, drop, clear, *accent)
-    for n, (digest, data, columns, rows) in enumerate(sorted(translations)):
+    alone = records + 16 * len(translations)
+    out = bytearray(alone + 16 * len(entries))
+    struct.pack_into("<IIIII", out, 0, 0x32434C58, active, 1, LOCALE + glyphs_at, len(glyphs))
+    struct.pack_into("<IIII", out, 32, LOCALE + records, len(translations), LOCALE + alone, len(entries))
+    for n, (base, drop, clear, accent, *wide) in enumerate(glyphs):
+        struct.pack_into("<BBHH11H", out, glyphs_at + 28 * n, base, *(wide or [0]), drop, clear, *accent)
+    for n, (digest, data, columns, rows) in enumerate([*sorted(translations), *sorted(entries)]):
         struct.pack_into("<IIIBBH", out, records + 16 * n, digest & 0xFFFFFFFF, digest >> 32, LOCALE + len(out), columns, rows, 0)
         out += data
     return bytes(out)
@@ -76,6 +78,7 @@ s32 xem_original_window_render_text_line(u8 *text, void *image, s16 width, s32 f
     return 8 * 4 * 5; /* five narrow glyphs' width in pixels */
 }
 void xem_original_window_insert_text(Window *window, u8 *text) { test_text = (u32)(XemUintptr)text; }
+u8 *xem_original_text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *)resource)[index + 2]; }
 u8 xem_original_text_get_message_columns(u16 *table, s32 index) { return 40; }
 u8 xem_original_text_get_message_rows(u16 *table, s32 index) { return 3; }
 s32 xem_original_text_get_glyph_width(u16 first, u16 second) { return 3; }
@@ -108,7 +111,6 @@ void xem_original_item_shop_load_resources(void) {}
 void xem_original_gear_shop_load_resources(void) {}
 void xem_original_member_change_load_resources(void) {}
 void xem_original_name_entry_load_resources(void) {}
-u8 *text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *)resource)[index + 2]; }
 s32 menu_field_block_part_images[20];
 s32 menu_field_block_part_x_table[20];
 s32 menu_detail_part_images[48];
@@ -117,7 +119,7 @@ u16 gear_shop_gear_values_frame_images[14];
 u16 gear_shop_gear_values_frame_x_table[14];
 ''')
         cls.lib = port_native.build(cls.build.name, ["src/port/locale.c", str(support)],
-                                    symbols={"text_special_glyph_rows": SPECIAL})
+                                    symbols={"text_special_glyph_rows": SPECIAL, "game_data": NAMES})
         _map_locale()
         lib = cls.lib
         lib.xem_text_length.restype = ctypes.c_uint
@@ -125,6 +127,8 @@ u16 gear_shop_gear_values_frame_x_table[14];
         lib.window_queue_message.argtypes = [ctypes.c_void_p, ctypes.c_int]
         lib.window_render_text_line.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_short, ctypes.c_int]
         lib.window_insert_text.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        lib.text_get_resource_entry.restype = ctypes.c_void_p
+        lib.text_get_resource_entry.argtypes = [ctypes.c_void_p, ctypes.c_int]
         lib.text_get_message_columns.restype = ctypes.c_ubyte
         lib.text_get_message_columns.argtypes = [ctypes.c_void_p, ctypes.c_int]
         lib.text_get_message_rows.restype = ctypes.c_ubyte
@@ -158,7 +162,7 @@ u16 gear_shop_gear_values_frame_x_table[14];
         ctypes.memmove(LOCALE, data, len(data))
 
     def translated(self):
-        return LOCALE + 40 + 28 + 16
+        return LOCALE + 48 + 28 + 16
 
     def test_a_text_is_walked_as_the_window_walks_it_and_named_as_the_tools_name_it(self):
         self.assertEqual(self.lib.xem_text_length(TEXT), len(ORIGINAL))
@@ -199,7 +203,68 @@ u16 gear_shop_gear_values_frame_x_table[14];
         self.install(1, columns=30, rows=2)
         self.assertEqual((self.lib.text_get_message_columns(TABLE, 0), self.lib.text_get_message_rows(TABLE, 0)), (40, 3))
 
+    def test_a_table_entry_the_language_translates_alone_is_taken_translated_and_its_text_elsewhere_as_everywhere(self):
+        """A table of three entries, the first two the same text: the language
+        translates the text, and its second entry alone otherwise (named by
+        the text's hash carried on over the entry's index, offset and the
+        table's count, as the tools name it)."""
+        other = ORIGINAL[:-2] + b"\x58\x00"
+        offsets = [18, 18 + len(ORIGINAL), 18 + 2 * len(ORIGINAL)]
+        table = struct.pack("<HHHHHH", 3, 0, *offsets, offsets[2] + len(other)) + bytes([40, 3] * 3) + ORIGINAL * 2 + other
+        self.assertEqual(table[offsets[1] : offsets[1] + len(ORIGINAL)], ORIGINAL)
+        port_native.write(TABLE, table)
+        alone = bytes([0x2E, 0x4B, 0x00])  # "No"
+        name = translations.place_key(ORIGINAL, 1, offsets[1], 3)
+        self.assertEqual(name, translations.fnv1a64(ORIGINAL + struct.pack("<HHH", 1, offsets[1], 3)))
+        everywhere = [(translations.fnv1a64(ORIGINAL), TRANSLATION, 50, 5)]
+        data = region(1, everywhere, (), [(name, alone, 60, 6)])
+        ctypes.memmove(LOCALE, data, len(data))
+        there = LOCALE + 48 + 16 + 16 + len(TRANSLATION)
+        self.assertEqual(ctypes.string_at(there, len(alone)), alone)
+        self.assertEqual(self.lib.text_get_resource_entry(TABLE, 1), there, "the entry translated alone")
+        self.assertEqual(self.lib.text_get_resource_entry(TABLE, 0), TABLE + offsets[0], "the same text in another entry")
+        self.assertEqual(self.lib.text_get_resource_entry(TABLE, 2), TABLE + offsets[2])
+        # The windows pass the entry's translation on as it is, and translate the text of the other entry.
+        self.lib.window_queue_message(None, there)
+        self.assertEqual(self.word("test_message"), there)
+        self.lib.window_queue_message(None, TABLE + offsets[0])
+        self.assertEqual(self.word("test_message"), LOCALE + 48 + 16 + 16)
+        # Each window takes what its own translation needs.
+        sizes = [(self.lib.text_get_message_columns(TABLE, n), self.lib.text_get_message_rows(TABLE, n)) for n in range(3)]
+        self.assertEqual(sizes, [(50, 5), (60, 6), (40, 3)])
+        # A language that translates no entry alone, and the original's text: every entry as it is.
+        for data in (region(1, everywhere, ()), region(0, everywhere, (), [(name, alone, 60, 6)])):
+            ctypes.memset(LOCALE, 0, LOCALE_BYTES)
+            ctypes.memmove(LOCALE, data, len(data))
+            self.assertEqual([self.lib.text_get_resource_entry(TABLE, n) for n in range(3)], [TABLE + offset for offset in offsets])
+
+    def test_a_name_of_the_game_data_is_an_entry_by_its_slot(self):
+        """The party's and the Gears' names are text in the game data, 20
+        bytes a slot: slot n is entry n at 20 n of a table of 31, so the
+        language respells one slot's name and leaves the same name of another."""
+        name = bytes([0x32, 0x51, 0x45, 0x41, 0x4F, 0x00])  # "Stier"
+        for slot in (17, 25):
+            port_native.write(NAMES + 20 * slot, name)
+        respelled = bytes([0x24, 0x48, 0x10]) + name  # "El Stier"
+        data = region(1, [], (), [(translations.place_key(name, 25, 20 * 25, 31), respelled, 16, 1)])
+        ctypes.memmove(LOCALE, data, len(data))
+        there = LOCALE + 48 + 16
+        for call in (lambda t: self.lib.window_insert_text(None, t), lambda t: self.lib.window_render_text_line(t, None, 36, 0)):
+            call(NAMES + 20 * 25)
+            self.assertEqual(self.word("test_text"), there)
+            call(NAMES + 20 * 17)
+            self.assertEqual(self.word("test_text"), NAMES + 20 * 17, "the same name in another slot")
+            port_native.write(TEXT + 0x200, name)
+            call(TEXT + 0x200)
+            self.assertEqual(self.word("test_text"), TEXT + 0x200, "the same text outside the names")
+        # A name the player changed is another text.
+        port_native.write(NAMES + 20 * 25, bytes([0x32, 0x51, 0x45, 0x00]))
+        self.lib.window_insert_text(None, NAMES + 20 * 25)
+        self.assertEqual(self.word("test_text"), NAMES + 20 * 25)
+
     def test_an_added_letter_is_narrow_and_drawn_from_its_base_with_its_accent_through_the_special_glyph(self):
+        self.install(0, glyphs=((0x3D, 1 << 4, 1 << 9, (0x10, 0x20) + (0,) * 9), (0x13, 0, 0, (0,) * 11, 1)))
+        self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x21), 3, "a glyph its recipe makes wide")
         self.install(0)  # installed letters draw whichever language is active
         self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x20), 2)
         self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x21), 3, "past the glyphs installed")

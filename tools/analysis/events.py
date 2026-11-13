@@ -1659,6 +1659,7 @@ class Walk:
     """Every instruction reachable from a set of entry PCs."""
 
     instructions: dict[int, Instruction] = field(default_factory=dict)
+    edges: dict[int, tuple[int, ...]] = field(default_factory=dict)  # the successors followed from each PC
     unknown: list[tuple[int, int]] = field(default_factory=list)  # (pc, extended byte)
     undecodable: list[tuple[int, str]] = field(default_factory=list)
     overlaps: list[tuple[int, int]] = field(default_factory=list)
@@ -1693,7 +1694,7 @@ def walk(bytecode: bytes, entries) -> Walk:
             result.undecodable.append((pc, str(error)))
             continue
         result.instructions[pc] = ins
-        pending.extend(s for s in ins.successors if s < len(bytecode))
+        followed = [s for s in ins.successors if s < len(bytecode)]
         result.inner += [(pc, target) for target in ins.inner]
         for target in (s for s in ins.skips if s < len(bytecode)):
             # Followed only when it steps over the next instruction whole.
@@ -1706,13 +1707,15 @@ def walk(bytecode: bytes, entries) -> Walk:
                 lands = False
             if lands:
                 result.skips += 1
-                pending.append(target)
+                followed.append(target)
             else:
                 result.into.append((pc, target))
         if ins.spec.flow == "table" and not ins.operands[0] & 0x8000:
             slots = table_slots(bytecode, ins.pc + ins.size)
             result.tables.append((pc, len(slots)))
-            pending.extend(slots)
+            followed.extend(slots)
+        result.edges[pc] = tuple(followed)
+        pending.extend(followed)
     ordered = sorted(result.instructions)
     for before, after in zip(ordered, ordered[1:], strict=False):
         if after < before + result.instructions[before].size:
