@@ -231,9 +231,11 @@ publisher changes need focused release tests, not the runtime suite. Before revi
 or merging runtime changes, run `src/runtime/scripts/suite.sh full` once; it skips
 when runtime inputs have no changes against the merge base with `origin/master`.
 Use `--base REF` for another comparison or deliberately use `--force` to bypass
-the guard. Its logs and exact stage results are under `build/suite/`; a skip
-preserves previous logs and does not count as a passing run. Checks without private
-disc inputs must report their skips; they are not original-game playthroughs.
+the guard and run every unit again. Its logs and each unit's result
+(`summary.txt`) are under `build/suite/`: a unit listed as `same` stands on the
+pass it names, its inputs unchanged since. A skip preserves previous logs and
+does not count as a passing run. Checks without private disc inputs must report
+their skips; they are not original-game playthroughs.
 
 ## v0.5 qualification record
 

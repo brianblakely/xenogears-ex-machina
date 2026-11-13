@@ -3,12 +3,16 @@
 #
 #   src/runtime/scripts/xem-gpu-host <command> [args...]
 #
-# Nix binaries do not search the host's /usr/lib, and lavapipe is the shell's
-# default. This selects the host's NVIDIA ICD and makes its driver libraries
-# loadable without putting the rest of /usr/lib (SDL, Wayland, ... built against
-# the host's glibc) ahead of the shell's: the driver libraries are linked into a
-# private directory that is prepended to LD_LIBRARY_PATH, with libXext, the one
-# library the driver needs that the shell does not provide.
+# Nix binaries do not search the host's /usr/lib, and lavapipe (Mesa's software
+# Vulkan, which draws on the processor) is the shell's default. This selects
+# the host's NVIDIA ICD and makes its driver libraries loadable without
+# putting the rest of /usr/lib (SDL, Wayland, ... built against the host's
+# glibc) ahead of the shell's: the driver libraries are linked into a private
+# directory that is prepended to LD_LIBRARY_PATH, with libXext, the one
+# library the driver needs that the shell does not provide. The shell's
+# lavapipe stays listed after the card for what asks for the software
+# rasterizer by name (xem-render's Gpu::reference: pictures compared to the
+# last bit); everything else takes the card.
 set -euo pipefail
 
 icd=${XEM_HOST_ICD:-/usr/share/vulkan/icd.d/nvidia_icd.json}
@@ -23,7 +27,7 @@ for lib in "$libdir"/libGLX_nvidia.so* "$libdir"/libnvidia-*.so* "$libdir"/libEG
     ln -sf "$lib" "$drivers/"
 done
 
-export VK_ICD_FILENAMES=$icd
-export VK_DRIVER_FILES=$icd
+export VK_ICD_FILENAMES=$icd${XEM_LAVAPIPE_ICD:+:$XEM_LAVAPIPE_ICD}
+export VK_DRIVER_FILES=$VK_ICD_FILENAMES
 export LD_LIBRARY_PATH=$drivers${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 exec "$@"

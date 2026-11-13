@@ -985,6 +985,7 @@ src/runtime/scripts/android-smoke.sh
 src/runtime/scripts/android-ui.py
 src/runtime/scripts/arm64-smoke.sh
 src/runtime/scripts/check-headless-deps.sh
+src/runtime/scripts/suite.py
 src/runtime/scripts/suite.sh
 src/runtime/scripts/xem-gpu-host
 src/runtime/scripts/xr-game-smoke.sh

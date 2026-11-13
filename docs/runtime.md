@@ -3103,7 +3103,7 @@ stays; `from_within_a_face_drawn_over_another_in_its_plane_shows_wherever_they_o
 draws a face over a wall 5 200 to 6 800 units ahead, slanting away, which
 shows at all 19 152 pixels they share. The desktop tier runs it and
 `first_person.rs`'s order test (below) again on wgpu's GL backend
-(`suite.sh`'s rust stage: Mesa's llvmpipe through EGL, `XEM_MESA_EGL`),
+(the suite's `rust-gl` units: Mesa's llvmpipe through EGL, `XEM_MESA_EGL`),
 where they agree with lavapipe.
 `xem-headless/tests/first_person.rs` (local, disc 1) qualifies the
 view as a camera mode on the game, flat (the desktop's look) and in a
@@ -6383,88 +6383,182 @@ captures.
 
 ## The test suite
 
-`src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF]`
+`src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF] [--threads N]`
 runs the tests from anywhere in the repository, in the runtime shell. Before
-starting Nix or replacing logs, it checks tracked changes (including staged and
-unstaged edits) and non-ignored untracked files against the merge base of HEAD
-and `origin/master`. Committed branch changes count too. If no runtime sources,
+starting Nix, it checks tracked changes (including staged and unstaged edits)
+and non-ignored untracked files against the merge base of HEAD and
+`origin/master`. Committed branch changes count too. If no runtime sources,
 tests or build inputs changed, it reports a skip and exits successfully without
 running tests. Documentation and standalone release tooling do not trigger the
 runtime suite; use their focused checks. The boundary in `suite.sh` is conservative:
-any runtime input change enables the selected tier, rather than trying to maintain
-a dependency map for every test. Missing Git history is an error, never a silent
-skip. The check does not fetch or cache test results.
+any runtime input change enables the selected tier. Missing Git history is an
+error, never a silent skip. The check does not fetch.
 
 Use `--base REF` to select another comparison point, such as `--base HEAD^` for
 the most recent committed update on master. Use `--force` deliberately to bypass
-change detection, including when private/ignored game inputs, drivers or the test
-environment changed. It also works without a comparison ref. A skip leaves
-`build/suite/` intact and does not establish a new passing result. Help and flag
-parsing need no Nix shell. While developing, run only the platform whose host is
-changing, and `full` once at the end before review or a merge only when runtime
-inputs changed (AGENTS.md): `desktop` (the default, for the
-native and shared code) builds the game module and runs the port's unit
-tests, the Rust workspace's tests and the validation run; `web` the web
-build, the browser suites and the browser tests that measure time
-(WebXR's among them); `android` the APK with both its libraries, the
-emulator's smoke test, the smoke's game again with the APK's arm64-v8a
-library (which the emulator runs through its ARM translation) and the
-game's arm64 build under qemu (`arm64-smoke.sh`); `xr`
-the native build and the OpenXR smoke test. `full` runs them all and what
-CI runs (`.github/workflows/ci.yml`) as on a clone without the user's discs:
-`tools/repository/check.py`, which builds and tests the workspace (here
-without a game module), and the matching toolchain's smoke test
-(`make -C src/decomp smoke`). In `full`, the builds run side by side, each
-in a cargo target directory of its own (`src/runtime/target-*`, none of
-them play.sh's): the native one, then the Rust tests and the validation run
-at once; CI's checks; the web build, then the browser suites (the slice's, the
-longest, from the start beside the others two files at a time; the slice's
-and the persistence tests two at a time within them: at most five
-browsers); the Android APK, and the emulator boots (its boot measures
-nothing); the arm64 build plays the slice's logs under qemu (measuring
-nothing either). What measures frame rates then runs alone, one after another,
-since their emulator, headset and browsers render on the
-processor (beside the browser suites the Android smoke's frame rate fell
-from 56 to 10 a second, the XR smoke's headset frames came late, and their
-checks failed): the Android smoke (with the APK's x86_64 library, then its
-game with the arm64-v8a one), the XR smoke, and the browser tests that
-measure time (the headset's frame rate, rewind frame times, fast-forward's
-music, the stalled page, a resume read within the rewind's one-second
-interval, the Binaural mode's cost). Rust builds use the `suite` profile
-(release's optimization without link-time optimization or debug
-information: after a change to xem-gpu the test binaries rebuild in 37 s,
-against release's 161 s); a failing test target is built again with line
-tables (`suite-debug`) and run with a backtrace into `rust-debug.log`. A
-module build that changes nothing keeps `build/game/game.wasm` and its time,
-so nothing downstream rebuilds (play.sh compares the sources with
-`build/game/stamp`, which each finished module build touches). The
-desktop tier's Rust tests include the original game's long run
-(`xem-headless/tests/long_run.rs`, 36 000 frames twice: 138 s of the
-tier's 866 s in a run here beside other tracks' work), the diorama's
-qualification on the game (`xem-headless/tests/diorama.rs`: 73 s in a
-desktop tier of 946 s, its Rust stage 817 s) and `xem-host`'s original-game tests (rewind frame latency, the
-focus pause's recording, the held rewind), which skip without the disc as
-the others do. The Android smoke compares states with `xem-headless`: the
-android stage builds it (the suite profile, the native target directory:
-nothing to do after the native stage) and gives it to the smoke
-(`XEM_HEADLESS`). The Android
-smoke, run by itself, boots its emulator while the APK builds
-(`XEM_SMOKE_BOOT=1` only boots it, and a later run uses it), and turns off
-the system's "isn't responding" dialogs on its AVD (on a loaded host one
-took its taps). Logs, and each stage's result and time: `build/suite/`.
-Measured here (16 threads, warm builds): `full` 3762 s with every stage
-passing (2026-10-17, at the end of Phases 6-8; 723 s before their tests
-joined it), its longest stages the Rust tests (1492 s), the browser
-suites (1078 s), the XR smoke (994 s), the arm64 build under qemu (754 s)
-and the browser tests that measure time (717 s); `desktop` 804 to 955 s
-in that week's runs beside other tracks' work, its Rust tests 784 to
-889 s (114 s before Phases 6-8); `android` 824 s with an up-to-date APK
-(2026-10-15: the APK's build, 220 s; the arm64 stage, 350 s, beside the
-emulator's boot, 25 s; then the emulator's smoke, 243 s, and the smoke's
-game with the arm64-v8a library, 211 s, which boots the emulator again),
-and earlier 902 s after a change to the translation's compiler flags (the
-APK's build of both libraries, 149 s, and the arm64 stage, 417 s, each
-compiling the translation again).
+change detection and run every unit again, including when private/ignored game
+inputs, drivers or the test environment changed. It also works without a
+comparison ref. A skip leaves `build/suite/` intact and does not establish a new
+passing result. Help and flag parsing need no Nix shell. While developing, run
+only the platform whose host is changing, and `full` once at the end before
+review or a merge only when runtime inputs changed (AGENTS.md): `desktop` (the
+default, for the native and shared code) builds the game module and runs the
+port's unit tests, the Rust workspace's tests and the validation run; `web` the
+web build, the browser suites and the browser tests that measure time (WebXR's
+among them); `android` the APK with both its libraries, the emulator's smoke
+test, the smoke's game again with the APK's arm64-v8a library (which the
+emulator runs through its ARM translation) and the game's arm64 build under qemu
+(`arm64-smoke.sh`); `xr` the native build and the OpenXR smoke test. `full` runs
+them all and what CI runs (`.github/workflows/ci.yml`) as on a clone without the
+user's discs: `tools/repository/check.py`, which builds and tests the workspace
+(here without a game module), and the matching toolchain's smoke test
+(`make -C src/decomp smoke`).
+
+**Units.** The runner (`scripts/suite.py`) makes a run of units: a build, one
+Rust test binary (cargo's messages list them; each runs as cargo runs it, from
+its package's directory), one browser test file, a device's smoke test. A unit
+names the units it needs first, the processor threads and memory it counts
+for, and what it reads. Logs are `build/suite/<unit>.log`; `build/suite/summary.txt` has
+every unit's result and time, and a failure's line names its log and, for a Rust
+test binary, the cargo command that builds it with line tables for a backtrace
+(`--profile suite-debug`).
+
+**What has not changed is not run again.** A unit that passed is not run again
+while what it reads is what it read then: the binaries it runs (by their
+contents: a test binary, its package's programs, `xem-headless`, the web
+build's files, the APK), the files under the paths it names (tracked or not, as
+the working tree has them, so the same before and after a commit), its command
+and environment, the pinned tools (`nix/`), the graphics card's driver, and the
+private inputs (the discs, `.local`) by size and time. The summary lists it as
+`same` with the time of the pass it stands on, and its log is that pass's. A
+unit that failed always runs again; `--force` runs every unit. Builds run every
+time and rebuild what changed; the game module is built only when its sources
+or the matched links changed. So a run costs what changed: a change to `xem-ui`
+rebuilt and ran 9 of the desktop tier's 73 units in 168 s, the tier again with
+nothing changed takes 2 s, and `full` after the platforms' tiers runs what they
+did not (CI's checks).
+
+**Room.** The run keeps no more processor threads busy than `--threads` allows
+(a thread for each core unless given) and is pinned to that many processors, so
+that a unit which starts a thread a processor (a compiler, a browser's
+rasterizer) keeps no more of the machine busy than the run may; each core's
+second thread, worth about a quarter of the first to these tests, stays with
+whatever else the machine does. It counts no more memory than was available
+when it began, less a gigabyte. A unit starts beside others only while the
+machine has it to give at that moment: its memory (what else the machine runs
+may have taken it since), and threads that nothing else keeps busy (the run
+measures the processor time the whole machine works between two looks, takes
+off what its own units counted for, and leaves that many of its threads alone;
+before its first look it goes by the last minute's load average). It looks
+again every ten seconds. Units start in their order; where one must wait
+for room, a later one starts ahead of it only if that does not make it wait
+longer (it is done before the room comes, or fits beside it). Builds follow one
+another, each in a cargo target directory of its own (`src/runtime/target-*`,
+none of them play.sh's), on the run's threads but two, which what is already
+built is tested on meanwhile. Each Rust test binary runs its tests on a share of
+the threads in proportion to its work (the processor time its last run took,
+`build/suite/results.json`; a binary never run here counts as a quarter of the
+run), so that they end together. A unit counts for the memory its last run
+here held with every process it started (the run looks every two seconds at
+what is theirs and not a file's: a browser test file's node and its browsers,
+a smoke's emulator), and a browser test file or the arm64 smoke for the
+threads that run kept busy on average, no fewer than one; a build, which
+takes what there is to build, and a unit never run here count as the runner
+says.
+
+**What measures time** runs alone, one unit after another, once the rest is
+done: the Android smoke (with the APK's x86_64 library, then its game with the
+arm64-v8a one, on the emulator the first left running), the XR smoke, the
+browser tests that measure time (the headset's frame rate, rewind frame times,
+fast-forward's music, the stalled page, a resume read within the rewind's
+one-second interval, the Binaural mode's cost) and the Rust tests that do (a
+frame's latency in `xem-host`, the desktop's window, the settings panel). Their
+emulator and headset render on the processor: beside the browser suites the
+Android smoke's frame rate fell from 56 to 10 a second, the XR smoke's headset
+frames came late, and their checks failed. The XR smoke plays its own runs
+side by side, in four lanes that each have a Monado and a settings directory
+of their own (`xr-game-smoke.sh`): a run keeps about half a processor thread
+busy, its session pacing the game by the clock, so its 35 headset runs (with
+xem-headless's 13 for their RAM) took 1 036 s one after another and take 295 s
+in lanes, every check the same.
+
+**The graphics card.** Where `scripts/xem-gpu-host` finds the host's card, the
+Rust tests and the browsers' WebGL2 draw on it, and Mesa's lavapipe, which
+draws on the processor, stays listed after it for what asks for the software
+rasterizer by name: `xem_render::Gpu::reference` (wgpu's fallback adapter), for
+tests that compare pictures to the last bit (`xem-render/tests/ps1.rs` against
+the software PS1 rasterizer; the diorama's pane against the flat frame, whose
+colours a card rounds its own way: on an RTX 5070 Ti, 82 of the debug battle's
+pane pixels one 15-bit step off). Without a card everything draws on lavapipe
+and SwiftShader as before, each lavapipe device rasterizing in its test's own
+thread (`LP_NUM_THREADS=0`: llvmpipe's pool of a thread a processor for every
+device took half as much processor time again for the same pictures). Measured
+on that card against lavapipe with its pool: `xem-headless`'s render tests 508 s
+of processor time for 2 128, its diorama tests 329 for 1 278, its camera tests
+275 for 600; a browser's forest route 38 s for 70, the browser suites 5 min 30 s
+for 18 min. The browsers' WebGPU stays on SwiftShader (Chromium gives it no
+other adapter headless), the validation sheet on lavapipe (its pictures are for
+people to compare), and so does one of the headset diorama's browser tests
+(`xr-diorama.test.mjs`, the hands over it: its browser starts without the
+card's driver named, `support.mjs`'s `software`, and Chromium then keeps
+SwiftShader): on a card a session's frames come as fast as the game's, and the
+first frames a diorama cannot be built from once inspection ends are then
+three in a row where it holds the last one over two (`ps1/diorama.rs`,
+`MISSES`), which the test of the diorama's return "at once" sees as one frame's
+ease towards the screen (share 0.056) in three runs of five. The file's other
+three tests draw on the card (the file 315 s on SwiftShader, 201 to 246 s so).
+The XR smoke and the Android emulator draw on the processor as before.
+
+**Tests that failed now and then**, and what each waited on:
+- `first-person.test.mjs`, the Binaural listener: it compared the music's parts
+  on the page with the native host's, but the music plays on each host's own
+  time (the page's by its clock, the native example's through the eight frames
+  it plays from the state), so a part had begun on one and not on the other in
+  3 runs of 8. The parts both hear are compared, and that they hear one song.
+- `first-person.test.mjs`, the gamepad: the test's pad appeared with its
+  right stick's click already held when the page was slow to take a frame, and
+  a button found held on a pad just connected is no click. The page now sees
+  the pad idle first.
+- `xr-diorama.test.mjs`, the world map's parallax: after loading the world
+  map's state it waited for "the diorama alone", which the battle's diorama
+  before it already was, and at times measured the screen that stood in before
+  the world map's first diorama (one shift in every row). It now waits for
+  game frames of the loaded state and session frames that present them first.
+- `android-smoke.sh`, a finger's drag on the touch stick (the arm64 pass): the
+  script waits for the log line of the pad's change, and the log of a busy
+  emulator misses lines now and then. In one run the app's own were missing
+  for four seconds (its frame-rate line, due every five seconds, among them)
+  while other processes' arrived. A key's or a finger's hold the log shows
+  nothing of is now made again, three times at most.
+- `xr-diorama.test.mjs`, the anchor under two-hand scaling: the table eases
+  after the camera's target in the session's time, and the scaling began a
+  fixed number of session frames after Fei's walk, before it had come to rest
+  where those frames are short (3.7 mm of travel on a card against the
+  millimetre allowed). It now waits for the table to rest.
+
+Rust builds use the `suite` profile (release's optimization without link-time
+optimization or debug information: after a change to xem-gpu the test binaries
+rebuild in 37 s, against release's 161 s). The desktop tier's Rust tests
+include the original game's long run (`xem-headless/tests/long_run.rs`, 36 000
+frames twice), the diorama's qualification on the game
+(`xem-headless/tests/diorama.rs`) and `xem-host`'s original-game tests (rewind
+frame latency, the focus pause's recording, the held rewind), which skip
+without the disc as the others do. The Android smoke compares states with
+`xem-headless` (`XEM_HEADLESS`, the hosts' build); run by itself it boots its
+emulator while the APK builds, `XEM_SMOKE_KEEP=1` leaves the emulator running
+for a run after it and `XEM_SMOKE_STOP=1` only stops one left running, and it
+turns off the system's "isn't responding" dialogs on its AVD (on a loaded host
+one took its taps).
+
+Measured here (an 8-core, 16-thread machine with 15 GB; 2026-11-13). Before,
+with every thread and software rasterizers throughout: the Rust tests alone
+1 203 s and 8 817 s of processor time, one test binary after another, up to
+6.2 GB in one of them; `desktop` about 23 minutes; `full` 3 762 s on
+2026-10-17, and on 2026-11-10 it ran the machine out of memory. Now, on a
+thread a core (half the threads) and the card: `desktop` 617 s with everything
+to run (the Rust tests 4 410 s of processor time, the run's memory 5.1 GB at
+its most), 2 s with nothing changed; `web` 928 s (1 755 s with SwiftShader for
+everything), 560 s of it the tests that measure time, one at a time.
 
 ## Saves and time controls
 
@@ -7926,8 +8020,8 @@ an agent's change, and that an old file or a policy no longer offered
 reads the default alone; the same test checks that the encounter rate
 defaults to the original's and that Half is saved, reloaded, carried by a
 backup and a value no longer offered resets alone.
-`tests/test_port_encounters.py` (suite.sh's port
-stage) builds `src/port/encounters.c` natively with `-Wall -Werror`
+`tests/test_port_encounters.py` (the suite's `port`
+unit) builds `src/port/encounters.c` natively with `-Wall -Werror`
 against an invented host: the draw runs where the host leaves it on and
 not where it turns it off, asked with the map's low 12 bits, and halved it
 runs on even field frames only. `xem-core/tests/persistence.rs` checks on
@@ -8200,7 +8294,7 @@ all. Battle 71's enemy 4 is met only in Anima Relic 2's random battles
 lose it too.
 
 Tests: `tests/test_platforming.py` (`python3 -m unittest
-tests.test_platforming`, suite.sh's port stage) checks the classifier on
+tests.test_platforming`, the suite's `port` unit) checks the classifier on
 invented walkmeshes, scripts, area files and two invented discs: a slide
 up needs a jump and its way down is a fall, floors join at any height, a
 slide entered level is no stair, a jump links the sides of a valley of
@@ -8229,9 +8323,9 @@ walking from map 15's layer-1 floor into a floorless triangle takes the
 leader off layer 1 into the air and down at least 150 units onto layer
 0's floor.
 With the user's discs extracted, `python3 -m tools.analysis.platforming
---check` proves the shipped table: suite.sh's port stage runs it when
-`.local/extract` and `.local/discs` hold both discs, and says it skips it
-otherwise.
+--check` proves the shipped table: the suite's `platforming` unit runs it
+when `.local/extract` and `.local/discs` hold both discs, and the suite says
+it has none otherwise.
 
 Not done or not measured: the classification is a static approximation of
 the walkmesh. It measures each actor layer on its own and does not follow
@@ -8544,7 +8638,7 @@ player or none; its loop takes no press under the staff roll, once it has
 taken one, through the scripts' mask or with the pad queue full; and the
 movie mode's shows from its player's start until it stops and ends on a
 press unless its request kept it or its end counts down. `tests/test_port_text_speed.py` and
-`tests/test_port_movie_skip.py` (suite.sh's port stage) build the two
+`tests/test_port_movie_skip.py` (the suite's `port` unit) build the two
 wrappers natively with `-Wall -Werror` against an invented host: a speed
 raises a smaller budget and never lowers one, slow text and the one-line
 layout window keep theirs; a field movie gains bit 0x80 only when armed
@@ -9953,7 +10047,7 @@ In `nix develop path:./nix/runtime#android`:
   `fps` lines of two passing runs here gave 2.8 to 3.2 at 1× and 3.9 to
   4.6 under fast-forward), so the section waits on those lines rather
   than on frames. Then, with `xem-headless` (`XEM_HEADLESS`, else the
-  suite's build; the suite's android stage builds it), a state it made
+  suite's build, its `hosts` unit's), a state it made
   1 600 frames into field 30 (frame F) goes where Load state reads it, with
   a session log of no commands ending at F+600 (`files/script.json`: the
   game plays as the original, without the player's input or the host's

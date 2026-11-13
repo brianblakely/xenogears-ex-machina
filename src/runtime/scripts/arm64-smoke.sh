@@ -7,7 +7,7 @@
 # library is built (cargo-ndk, API 29: the NDK's clang compiles the game
 # module's translation), but linked statically against bionic, so that the
 # shell's qemu-aarch64 runs it without an Android system (XEM_SKIP_BUILD=1
-# reuses the build). With the user's disc 1 (XEM_DISC1, else
+# reuses the build, XEM_ARM64_BUILD=1 only builds it). With the user's disc 1 (XEM_DISC1, else
 # discs/"Xenogears disc 1.chd") it then plays the Phase 3 slice's session
 # logs (tests/reference-inputs/slice-*.json: the forest route, the save to an
 # unformatted card 2, the title screen's load of that card as card 1 and as
@@ -48,6 +48,9 @@ if [ -z "${XEM_SKIP_BUILD:-}" ]; then
         cargo ndk -t arm64-v8a -P 29 build -p xem-headless --profile suite)
 fi
 [ -x "$arm64" ] || fail "no arm64 build at $arm64"
+if [ -n "${XEM_ARM64_BUILD:-}" ]; then
+    exit 0
+fi
 if [ ! -f "$disc1" ]; then
     echo "== no local disc 1 image: built only"
     exit 0

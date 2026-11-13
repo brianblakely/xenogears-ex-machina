@@ -606,6 +606,7 @@ class Rewriter:
             lines = poll_back_edges(lines)
             lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
+            self.declare(unit, "xem_loop_spin", "void", [])
         lines = ram_mirrors(lines)
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
@@ -987,22 +988,47 @@ def mips_division(lines):
     return out, helpers
 
 
+# A loop that only waits for the disc's reads: its header reads how many are
+# pending and tests the count, and its body is the branch back.
+PENDING_READS_RE = re.compile(r"^\s*%([-\w.]+) = call i32 @cd_get_pending_read_count\(\)(?: #\d+)?$")
+COUNT_TEST_RE = re.compile(r"^\s*%([-\w.]+) = icmp \w+ i32 %([-\w.]+), -?\d+$")
+CONDITION_RE = re.compile(r"^\s*br i1 %([-\w.]+), label %([-\w.]+), label %[-\w.]+$")
+
+
+def waits_for_reads(header, body):
+    """Whether the block `header` (its instructions) is all of a loop whose
+    body is the block labelled `body`: the pending read count read and
+    tested, on to the body while the test holds."""
+    if len(header) != 3:
+        return False
+    read, test, condition = PENDING_READS_RE.match(header[0]), COUNT_TEST_RE.match(header[1]), CONDITION_RE.match(header[2])
+    return bool(read and test and condition and test.group(2) == read.group(1)
+                and condition.group(1) == test.group(1) and condition.group(2) == body)
+
+
 def poll_back_edges(lines):
     """Insert a call to xem_loop_poll before every loop back-edge (a branch to
     a block earlier in its function). A wait the original spins on memory an
     interrupt writes, or on a call that reads it, then suspends the game in
-    time for the interrupt; the opaque call also keeps the loads in the loop."""
-    out, seen = [], set()
+    time for the interrupt; the opaque call also keeps the loads in the loop.
+    A loop that only waits for the disc's reads (`waits_for_reads`) gets
+    xem_loop_spin, the same poll without the iterations before it suspends."""
+    out, blocks, label, block = [], {}, None, []
     for line in lines:
         if line.startswith("define "):
-            seen = set()
+            blocks, label, block = {}, None, []
         else:
-            label = LABEL_RE.match(line)
-            if label:
-                seen.add(label.group(1))
+            start = LABEL_RE.match(line)
+            if start:
+                label, block = start.group(1), []
+                blocks[label] = block
         branch = BRANCH_RE.match(line)
-        if branch and any(target in seen for target in branch.groups() if target):
-            out.append('  call void @"xem_loop_poll"()')
+        if branch and any(target in blocks for target in branch.groups() if target):
+            # The body is this block: nothing in it but the branch back.
+            spins = branch.group(1) in blocks and not block and waits_for_reads(blocks[branch.group(1)], label)
+            out.append(f'  call void @"xem_loop_{"spin" if spins else "poll"}"()')
+        if line.startswith("  "):
+            block.append(line)
         out.append(line)
     return out
 

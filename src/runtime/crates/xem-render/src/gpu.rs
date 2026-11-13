@@ -35,12 +35,20 @@ impl Gpu {
         instance: wgpu::Instance,
         compatible_surface: Option<&wgpu::Surface<'_>>,
     ) -> Result<Self, GpuError> {
+        let options = wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface,
+            ..Default::default()
+        };
+        Self::open(instance, &options).await
+    }
+
+    async fn open(
+        instance: wgpu::Instance,
+        options: &wgpu::RequestAdapterOptions<'_, '_>,
+    ) -> Result<Self, GpuError> {
         let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface,
-                ..Default::default()
-            })
+            .request_adapter(options)
             .await
             .map_err(GpuError::Adapter)?;
         let (device, queue) = adapter
@@ -60,11 +68,26 @@ impl Gpu {
     }
 
     /// A device without a surface, with backends and flags taken from the
-    /// `WGPU_*` environment variables.
+    /// `WGPU_*` environment variables: the machine's graphics card where it
+    /// has one.
     pub async fn headless() -> Result<Self, GpuError> {
         let instance =
             wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
         Self::new(instance, None).await
+    }
+
+    /// [`Gpu::headless`] on the software rasterizer (wgpu's fallback adapter:
+    /// Mesa's lavapipe or llvmpipe in the runtime shell), for what compares
+    /// pictures to the last bit: it draws the same on every machine, where
+    /// each graphics card rounds its own way.
+    pub async fn reference() -> Result<Self, GpuError> {
+        let instance =
+            wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
+        let options = wgpu::RequestAdapterOptions {
+            force_fallback_adapter: true,
+            ..Default::default()
+        };
+        Self::open(instance, &options).await
     }
 }
 

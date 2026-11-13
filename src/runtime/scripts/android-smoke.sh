@@ -4,8 +4,9 @@
 #   nix develop path:./nix/runtime#android -c src/runtime/scripts/android-smoke.sh
 #
 # Builds the x86_64 APK (XEM_SKIP_BUILD=1 reuses it) while it boots a headless
-# API-34 AVD (swiftshader_indirect: guest Vulkan on SwiftShader; XEM_SMOKE_BOOT=1
-# only boots it, for a later run to use) kept under
+# API-34 AVD (swiftshader_indirect: guest Vulkan on SwiftShader; XEM_SMOKE_KEEP=1
+# leaves it running for a later run to use, and XEM_SMOKE_STOP=1 only stops
+# one left running) kept under
 # .local/android, installs the app fresh and checks from logcat and
 # screenshots (build/android/smoke/*.png): first frame, bundled asset,
 # Vulkan device, a settings change by touch, disc import through the system
@@ -61,16 +62,33 @@ fail() {
     exit 1
 }
 
+booted=$out/booted-at
+emulator_pid=
+# The emulator stops and is gone before this returns: a run right after
+# boots its own (it took the one shutting down for booted, and found it
+# offline).
+stop_emulator() {
+    rm -f "$booted"
+    "${adb[@]}" emu kill >/dev/null 2>&1 || { [ -n "$emulator_pid" ] && kill "$emulator_pid" 2>/dev/null; } || true
+    [ -z "$emulator_pid" ] || wait "$emulator_pid" 2>/dev/null || true
+    for _ in $(seq 60); do
+        pgrep -f -- "-avd xem-smoke -port $port" >/dev/null || break
+        sleep 1
+    done
+}
+if [ -n "${XEM_SMOKE_STOP:-}" ]; then
+    stop_emulator
+    exit 0
+fi
+
 # The emulator boots while the APK and the synthetic disc build; a watcher
-# notes when its boot completes. XEM_SMOKE_BOOT=1 only boots it and leaves it
-# running: a later run finds it booted (its boot noted) and uses it.
+# notes when its boot completes. XEM_SMOKE_KEEP=1 leaves it running at the
+# end: a later run finds it booted (its boot noted) and uses it.
 if [ ! -f "$ANDROID_AVD_HOME/xem-smoke.avd/config.ini" ]; then
     mkdir -p "$ANDROID_AVD_HOME"
     echo no | avdmanager create avd -n xem-smoke -d pixel_6 \
         -k "system-images;android-34;google_apis;x86_64" >/dev/null
 fi
-booted=$out/booted-at
-emulator_pid=
 watcher_pid=
 if [ -f "$booted" ] && [ "$("${adb[@]}" get-state 2>/dev/null)" = device ]; then
     echo "using the emulator booted before"
@@ -92,23 +110,13 @@ logcat_pid=
 cleanup() {
     [ -z "$watcher_pid" ] || kill "$watcher_pid" 2>/dev/null || true
     [ -n "$logcat_pid" ] && kill "$logcat_pid" 2>/dev/null
-    # The emulator stops, whichever run booted it, and is gone before this
-    # run ends: a run right after boots its own (it took the one shutting
-    # down for booted, and found it offline).
-    rm -f "$booted"
-    "${adb[@]}" emu kill >/dev/null 2>&1 || { [ -n "$emulator_pid" ] && kill "$emulator_pid" 2>/dev/null; } || true
-    [ -z "$emulator_pid" ] || wait "$emulator_pid" 2>/dev/null || true
-    for _ in $(seq 60); do
-        pgrep -f -- "-avd xem-smoke -port $port" >/dev/null || break
-        sleep 1
-    done
+    # The emulator stops, whichever run booted it, unless the run after
+    # this one is to use it (XEM_SMOKE_KEEP=1) and it is up.
+    if [ -n "${XEM_SMOKE_KEEP:-}" ] && [ -f "$booted" ] && [ "$("${adb[@]}" get-state 2>/dev/null)" = device ]; then
+        return
+    fi
+    stop_emulator
 }
-if [ -n "${XEM_SMOKE_BOOT:-}" ]; then
-    [ -z "$watcher_pid" ] || wait "$watcher_pid" || true
-    [ -f "$booted" ] || { cleanup; fail "emulator did not boot"; }
-    echo "emulator booted; left running for the smoke test"
-    exit 0
-fi
 trap cleanup EXIT
 
 if [ -z "${XEM_SKIP_BUILD:-}" ]; then
@@ -155,8 +163,9 @@ logcat_pid=$!
 
 mark=1
 mark() { mark=$(($(wc -l <"$log") + 1)); }
-# wait_for REGEX [SECONDS]: the first matching line logged since the last mark.
-wait_for() {
+# seen REGEX [SECONDS]: whether a matching line was logged since the last
+# mark, shown once it is.
+seen() {
     local line
     for _ in $(seq "${2:-30}"); do
         line=$(RE=$1 awk -v start="$mark" 'NR >= start && $0 ~ ENVIRON["RE"] { print; exit }' "$log")
@@ -166,7 +175,26 @@ wait_for() {
         fi
         sleep 1
     done
-    fail "no log line matching: $1"
+    return 1
+}
+# wait_for REGEX [SECONDS]: the first matching line logged since the last mark.
+wait_for() { seen "$@" || fail "no log line matching: $1"; }
+# hold BUTTONS INPUT...: the key or finger of `input INPUT...` holds those pad
+# buttons and lets them go, as the log shows the pad change both ways. The
+# log of a busy emulator misses lines now and then (in one arm64 run the
+# app's own for four seconds: its frame-rate line and both of a drag's), so
+# a hold the log shows nothing of is made again, three times at most.
+hold() {
+    local buttons=$1
+    shift
+    for _ in 1 2 3; do
+        mark
+        "${adb[@]}" shell input "$@"
+        if seen "xem: pad buttons $buttons " 10 && seen "xem: pad buttons 0x0000 " 10; then
+            return 0
+        fi
+    done
+    fail "no log lines of the pad holding $buttons and letting go"
 }
 shot() {
     "${adb[@]}" exec-out screencap -p >"$out/$1.png"
@@ -407,10 +435,7 @@ PY
         "$("${adb[@]}" shell dumpsys meminfo "$package" | grep -E 'TOTAL PSS' | tr -s ' ' | tr -d '\r')"
 
     echo "== a pad press (Enter is Start)"
-    mark
-    "${adb[@]}" shell input keyevent --longpress KEYCODE_ENTER
-    wait_for "xem: pad buttons 0x0008 "
-    wait_for "xem: pad buttons 0x0000 "
+    hold 0x0008 keyevent --longpress KEYCODE_ENTER
     sleep 3
     shot 08-game-start-pressed
 
@@ -420,20 +445,14 @@ PY
     deck=$(grep "xem: touch deck Confirm " "$log" | tail -1)
     [ -n "$deck" ] || fail "no touch deck logged"
     read -r x y w h <<<"$(sed -E 's/.*touch deck Confirm ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3 \4/' <<<"$deck")"
-    mark
-    "${adb[@]}" shell input swipe $((x + w / 2)) $((y + h / 2)) $((x + w / 2)) $((y + h / 2)) 800
-    wait_for "xem: pad buttons 0x4000 "
-    wait_for "xem: pad buttons 0x0000 "
+    hold 0x4000 swipe $((x + w / 2)) $((y + h / 2)) $((x + w / 2)) $((y + h / 2)) 800
     shot 08-game-touch-deck
 
     echo "== the touch stick: a finger dragged right from where it touched holds Right"
     stick=$(grep "xem: touch stick " "$log" | tail -1)
     [ -n "$stick" ] || fail "no touch stick logged"
     read -r x y reach <<<"$(sed -E 's/.*touch stick ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3/' <<<"$stick")"
-    mark
-    "${adb[@]}" shell input swipe "$x" "$y" $((x + 2 * reach)) "$y" 1000
-    wait_for "xem: pad buttons 0x0020 "
-    wait_for "xem: pad buttons 0x0000 "
+    hold 0x0020 swipe "$x" "$y" $((x + 2 * reach)) "$y" 1000
 
     echo "== background and return: the game's clock stops"
     mark

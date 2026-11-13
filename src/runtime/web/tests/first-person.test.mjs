@@ -31,7 +31,7 @@ import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, pixelStats, shot, start, st
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 /** The native desktop host's first-person listener: xem-headless's
- *  first_person example, built beside it (suite.sh's native stage). */
+ *  first_person example, built beside it (the suite's hosts unit). */
 const FIRST_PERSON = join(dirname(HEADLESS), 'examples', 'first_person');
 mkdirSync(SHOTS, { recursive: true });
 
@@ -247,6 +247,9 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
           buttons: Array.from({ length: 17 }, () => ({ pressed: false })), axes: [0, 0, 0, 0] };
         Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [window.testPad] });
       });
+      // The page sees the pad with nothing held before its first click (a
+      // button found held on a pad just connected is no click).
+      await frames(page, 3);
       /** The pad's buttons and axes as they are for `ms` and a few of the page's frames. */
       const gamepad = (buttons = [], axes = [0, 0, 0, 0], ms = 0) => page.evaluate(async ({ buttons, axes, ms }) => {
         window.testPad.buttons.forEach((button, i) => { button.pressed = buttons.includes(i); });
@@ -396,7 +399,17 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       assert.equal(native3.size, 3);
       assert.ok(worst < 1e-3, `each emitter is heard where the native host hears it: ${worst} degrees apart`);
       assert.deepEqual(there.listening_position, heard.listening_position, 'from the same listening position');
-      assert.deepEqual(places(there), places(heard), 'the music in the same places');
+      // The music plays on each host's own time, not by the game's frames
+      // (the page's by its clock while it ran, the native host's through
+      // the frames it plays from the state): a part may have begun on one
+      // and not yet on the other. Each part both hear is in the same place,
+      // and they hear the same song.
+      const [here2, there2] = [places(heard), places(there)];
+      const both = [...here2.keys()].filter((part) => there2.has(part));
+      const songs = (parts) => [...new Set([...parts.keys()].map((part) => part.split('/')[0]))];
+      assert.ok(both.length > 0, `both hear the music: ${[...here2.keys()]} here, ${[...there2.keys()]} natively`);
+      assert.deepEqual(songs(there2), songs(here2), 'the same song');
+      for (const part of both) assert.deepEqual(there2.get(part), here2.get(part), `music part ${part} in the same place`);
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

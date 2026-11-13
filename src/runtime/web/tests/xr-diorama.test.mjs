@@ -352,6 +352,15 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       await page.evaluate(() => window.xem.setRunning(false));
       await page.evaluate(() => window.xrDevice.quaternion.set(0, 0, 0, 1));
       await frames(6);
+      // The table at rest: it eases after the camera's target in the
+      // session's own time, and Fei has just walked.
+      await page.waitForFunction(() => {
+        const anchor = window.xem.status().xr.space?.anchor;
+        const rested = anchor && window.restingAnchor && Math.hypot(...anchor.map((v, i) => v - window.restingAnchor.at[i])) < 1e-5
+          ? window.restingAnchor.frames + 1 : 0;
+        window.restingAnchor = { at: anchor, frames: rested };
+        return rested >= 10;
+      }, null, { timeout: 60_000, polling: 50 });
       const scaling = { pauses: (await status(page)).xr.pauses, pinches: (await status(page)).xr.counts.pinch, revision: (await status(page)).settingsRevision };
       const at = (x) => page.evaluate((x) => {
         window.xrDevice.hands.left.position.set(-x, 1.4, -0.3);
@@ -545,7 +554,13 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
         // hills and the battle's combatants stand nearer than the rows
         // below them, so not nearest first).
         await load(states.get(name));
+        // The scene's own diorama: the session may still show the one of
+        // the scene before, so game frames of this state first, session
+        // frames that present them, and then the diorama alone.
+        const loaded = (await status(page)).loop.gameFrames;
         await page.evaluate(() => window.xem.setRunning(true));
+        await page.waitForFunction((loaded) => window.xem.status().loop.gameFrames >= loaded + 8, loaded, { timeout: 60_000 });
+        await frames(3);
         await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
         await page.evaluate(() => window.xem.setRunning(false));
         await frames(4);
@@ -629,7 +644,15 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
         { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL + RECORDER }] });
+    // On the software renderer wherever the file's other tests draw: a
+    // graphics card presents the session's frames as fast as the game's, and
+    // the first frames a diorama cannot be built from once inspection ends
+    // are then three in a row where it holds the last one over two
+    // (xem-render's ps1/diorama.rs, MISSES), which "and on" below sees as
+    // one frame's ease towards the screen (its share 0.056) in three runs of
+    // five.
+    const browser = await start({ args: NO_WEBGPU, software: true, context: { userAgent: QUEST_BROWSER },
+      initScripts: [{ content: QUEST + HAND_MODEL + RECORDER }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -783,7 +806,8 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       assert.ok(looked[on].within && !looked[on].diorama, `from within from inspection's first session frame: ${around(on)}`);
       assert.ok(off > on && looked.slice(on, off).every((f) => f.within && !f.diorama), 'from within throughout');
       assert.ok(looked[off].diorama && looked[off].share === 0, `the diorama back alone on the first session frame after inspection: ${around(off)}`);
-      assert.ok(looked.slice(off).every((f) => !f.inspecting && f.diorama && f.share === 0), 'and on');
+      const others = looked.slice(off).filter((f) => f.inspecting || !f.diorama || f.share !== 0);
+      assert.deepEqual(others, [], 'and on');
       assert.deepEqual([info.xr.inspecting, info.xr.diorama, info.xr.share], [false, true, 0], 'the diorama back');
       assert.equal(info.xr.dioramaScale, 1.5, 'the player\'s scale');
       assert.equal(info.xr.space.scale, was.scale, 'at the scale it had');

@@ -138,8 +138,21 @@ struct Shown {
 /// presentation (more than one as in fast-forward), holding `buttons(n)` in
 /// frame `n`; returns the frames shown, in order.
 fn present(session: &mut Session<NativeModule>, gpu: &Gpu, frames: u64, per: u64, buttons: impl Fn(u64) -> Vec<&'static str>) -> Vec<Shown> {
+    present_keeping(session, gpu, frames, per, buttons, |camera, ops| Shown { camera, ops: ops.to_vec() })
+}
+
+/// [`present`], keeping of each frame shown (its camera and what it drew)
+/// what `keep` makes of it: a long run's frames in full take gigabytes.
+fn present_keeping<T>(
+    session: &mut Session<NativeModule>,
+    gpu: &Gpu,
+    frames: u64,
+    per: u64,
+    buttons: impl Fn(u64) -> Vec<&'static str>,
+    keep: impl Fn(Option<Camera>, &[TraceOp]) -> T,
+) -> Vec<T> {
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-    let mut shown: Vec<Shown> = Vec::new();
+    let mut shown: Vec<T> = Vec::new();
     let mut identity = None;
     for n in 0..frames {
         session.execute(&json!({"cmd": "pad", "buttons": buttons(n)}));
@@ -163,11 +176,10 @@ fn present(session: &mut Session<NativeModule>, gpu: &Gpu, frames: u64, per: u64
         let Some(now) = frame.identity() else { continue };
         if identity == Some(now) {
             // The same frame, perhaps drawn further.
-            let last = shown.last_mut().expect("a frame");
-            (last.camera, last.ops) = (frame.camera(), frame.newest().to_vec());
+            *shown.last_mut().expect("a frame") = keep(frame.camera(), frame.newest());
         } else {
             identity = Some(now);
-            shown.push(Shown { camera: frame.camera(), ops: frame.newest().to_vec() });
+            shown.push(keep(frame.camera(), frame.newest()));
         }
     }
     shown
@@ -273,10 +285,11 @@ fn scenery_stays_put_as_the_camera_turns(mode: Mode, frames: u64, per: u64, tole
     };
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let mut session = mode.enter(&disc);
-    let shown = present(&mut session, &gpu, frames, per, |n| mode.buttons(n));
-    let recorded = shown.iter().filter(|frame| frame.camera.is_some_and(|c| c.mode == mode.camera())).count();
-    assert!(shown.len() > 100 && recorded * 10 >= shown.len() * 9, "{mode:?}: {recorded} of {} frames shown keep a camera", shown.len());
-    let frames: Vec<Option<(Camera, Points)>> = shown.iter().map(|frame| frame.camera.map(|camera| (camera, scenery(&frame.ops)))).collect();
+    // Each frame shown: its camera, and where its scenery lay.
+    let frames: Vec<Option<(Camera, Points)>> =
+        present_keeping(&mut session, &gpu, frames, per, |n| mode.buttons(n), |camera, ops| camera.map(|camera| (camera, scenery(ops))));
+    let recorded = frames.iter().flatten().filter(|(camera, _)| camera.mode == mode.camera()).count();
+    assert!(frames.len() > 100 && recorded * 10 >= frames.len() * 9, "{mode:?}: {recorded} of {} frames shown keep a camera", frames.len());
     let (mut holds, mut alike): (HashMap<Key, bool>, usize) = (HashMap::new(), 0);
     for pair in frames.windows(2) {
         let [Some((a, first)), Some((b, second))] = pair else { continue };
@@ -318,7 +331,7 @@ fn scenery_stays_put_as_the_camera_turns(mode: Mode, frames: u64, per: u64, tole
     let within = distances.iter().filter(|d| **d <= tolerance).count() as f64 / distances.len().max(1) as f64;
     eprintln!(
         "{mode:?}, {per} a presentation: {recorded} of {} frames shown keep a camera; {} primitives hold still over {alike} frame pairs seen alike; over {checked} frame pairs the camera turned {turned:.1} degrees and moved {travelled:.0} units; through each frame's camera the median still primitive moved at most {worst:.2} a frame, and of all {} distances {:.2}% are within {tolerance} (90th percentile {:.2}, 99th {:.2}); the median {stale:.1} through the frame before's ({} pairs)",
-        shown.len(), still.len(), distances.len(), within * 100.0, quantile(&distances, 0.9), quantile(&distances, 0.99), through_previous.len()
+        frames.len(), still.len(), distances.len(), within * 100.0, quantile(&distances, 0.9), quantile(&distances, 0.99), through_previous.len()
     );
     assert!(checked > 20 && through_previous.len() > 10, "{mode:?}: the camera moved in {} of {checked} frame pairs sharing still scenery", through_previous.len());
     assert!(stale > tolerance * 4.0, "{mode:?}: through the frame before's camera the scenery moves only {stale} (the camera record would not matter)");
@@ -506,8 +519,8 @@ fn a_battles_cameras_carry_its_stage_as_the_game_keeps_it() {
     let mut session = Mode::Battle.enter(&disc);
     // Cross now and then (its attacks), then nothing for two seconds: the
     // combatants back at their places, at rest.
-    let shown = present(&mut session, &gpu, 420, 1, |n| if n < 300 { Mode::Battle.buttons(n) } else { vec![] });
-    let cameras: Vec<Camera> = shown.iter().filter_map(|frame| frame.camera.filter(|c| c.mode == CameraMode::Battle)).collect();
+    let shown = present_keeping(&mut session, &gpu, 420, 1, |n| if n < 300 { Mode::Battle.buttons(n) } else { vec![] }, |camera, _| camera);
+    let cameras: Vec<Camera> = shown.iter().filter_map(|camera| camera.filter(|c| c.mode == CameraMode::Battle)).collect();
     assert!(cameras.len() > 300 && cameras.iter().all(|c| c.stage.is_some()), "every battle camera carries its stage ({} cameras)", cameras.len());
     let scene = session.execute(&json!({"cmd": "inspect", "path": "mode_battle_scene_data"}));
     let data = u32::from_str_radix(scene.as_str().expect("a pointer").trim_start_matches("0x"), 16).unwrap();
