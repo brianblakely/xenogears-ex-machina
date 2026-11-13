@@ -30,7 +30,7 @@ const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
 pub struct Overlay {
     pub marks: Vec<xem_assist::overlay::Mark>,
     /// The touch deck's widgets, while it shows.
-    pub deck: Vec<(xem_render::glass::Widget, xem_assist::touch::Rect)>,
+    pub deck: Vec<xem_assist::draw::DeckWidget>,
     pub style: xem_render::glass::Style,
     pub room: Vec<xem_assist::draw::Placed>,
 }
@@ -616,23 +616,24 @@ impl WebRenderer {
                 let xem_assist::overlay::Place::Screen { centre, x, y } = mark.place else { continue };
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone();
-                glass.push((view, Some((picture.from_screen(centre), (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None));
+                glass.push((view, Some((picture.from_screen(centre), (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None, 1.0));
             }
         }
-        if !self.panel_visible {
-            for (widget, rect) in &self.overlay.deck {
-                let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, widget, xem_assist::draw::pixels(widget), self.overlay.style).clone();
-                glass.push((view, None, Some(Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })));
-            }
+        // The deck at the setting's opacity; it stays under the open panel
+        // (holding nothing), so that the setting shows as it changes.
+        for drawn in &self.overlay.deck {
+            let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &drawn.widget, drawn.pixels, self.overlay.style).clone();
+            glass.push((view, None, Some(Rect { x: drawn.rect.x, y: drawn.rect.y, width: drawn.rect.width, height: drawn.rect.height }), drawn.opacity));
         }
         let mut quads = vec![game];
-        for (view, affine, rect) in &glass {
+        for (view, affine, rect, opacity) in &glass {
             let mut quad = match (affine, rect) {
                 (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target),
                 (None, Some(rect)) => Quad::screen(view, *rect, target),
                 (None, None) => continue,
             };
             quad.srgb_encoded = true;
+            quad.opacity = *opacity;
             quads.push(quad);
         }
         if let Some(counter) = &self.frame_rate && counter.visible() {

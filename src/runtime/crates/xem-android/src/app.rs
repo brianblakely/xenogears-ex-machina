@@ -179,8 +179,9 @@ struct Live {
     frames: u64,
     background: bool,
     terminating: bool,
-    /// The touch deck's layout was logged.
-    deck_logged: bool,
+    /// The touch deck last logged, by its controls' and their places' hash
+    /// (a deck is logged as the game's context or the screen changes it).
+    deck_logged: u64,
     log_next_frame: bool,
     /// Start of the current frame-rate span: (time, rendered frames, game
     /// vblanks), and the most render passes a frame's game picture took in
@@ -432,7 +433,7 @@ impl Host {
             frames: 0,
             background: false,
             terminating: false,
-            deck_logged: false,
+            deck_logged: 0,
             log_next_frame: true,
             fps: (Instant::now(), 0, 0),
             passes: 0,
@@ -708,10 +709,21 @@ impl Host {
         if self.view.update_app(window,&mut live.game) && let Some(game) = &mut live.game {
             let settings = self.view.settings().borrow().settings().clone();
             self.view.assist(game);
-            // The touch deck's place, once laid out (for tests that touch it).
+            // The touch deck's place, as the game's context or the screen
+            // lays another one out (for tests that touch it): each control,
+            // and where the stick rests.
             let deck = self.view.deck_controls();
-            if !deck.is_empty() && !live.deck_logged {
-                live.deck_logged = true;
+            let laid = {
+                use std::hash::{Hash, Hasher};
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                for (control, rect) in &deck {
+                    control.hash(&mut hasher);
+                    [rect.x, rect.y, rect.width, rect.height].map(f32::to_bits).hash(&mut hasher);
+                }
+                hasher.finish()
+            };
+            if !deck.is_empty() && laid != live.deck_logged {
+                live.deck_logged = laid;
                 for (control, rect) in &deck {
                     log(&format!("touch deck {control:?} {:.0} {:.0} {:.0} {:.0}", rect.x, rect.y, rect.width, rect.height));
                 }

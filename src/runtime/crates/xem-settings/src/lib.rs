@@ -122,11 +122,29 @@ pub struct Assisted {
     pub reduced_motion: bool,
     /// Touch screens show the game's controls over the picture.
     pub touch_controls: bool,
+    /// How opaque they are drawn, in percent ([`Assisted::touch_alpha`]).
+    pub touch_opacity: u8,
 }
+
+/// The touch controls' opacity: its range, in percent. They stay faintly
+/// visible at the least (Touch controls hides them), and are drawn as
+/// designed at the most.
+pub const MIN_TOUCH_OPACITY: u8 = 10;
+pub const MAX_TOUCH_OPACITY: u8 = 100;
 
 impl Default for Assisted {
     fn default() -> Self {
-        Self { gestures: true, pointer: XrPointer::Head, ledge_brake: false, reduced_transparency: false, reduced_motion: false, touch_controls: true }
+        Self {
+            gestures: true, pointer: XrPointer::Head, ledge_brake: false, reduced_transparency: false, reduced_motion: false,
+            touch_controls: true, touch_opacity: MAX_TOUCH_OPACITY,
+        }
+    }
+}
+
+impl Assisted {
+    /// The opacity the hosts draw the touch controls with, 0.1 to 1.
+    pub fn touch_alpha(&self) -> f32 {
+        f32::from(self.touch_opacity) / 100.0
     }
 }
 
@@ -556,6 +574,9 @@ impl Settings {
         if !(MIN_AUTO_ADVANCE_DWELL..=MAX_AUTO_ADVANCE_DWELL).contains(&self.auto_advance.dwell) {
             return Err(format!("the auto-advance dwell must be {MIN_AUTO_ADVANCE_DWELL}–{MAX_AUTO_ADVANCE_DWELL} vertical blanks"));
         }
+        if !(MIN_TOUCH_OPACITY..=MAX_TOUCH_OPACITY).contains(&self.assisted.touch_opacity) {
+            return Err(format!("the touch controls' opacity must be {MIN_TOUCH_OPACITY}–{MAX_TOUCH_OPACITY} percent"));
+        }
         self.binaural.validate()?;
         self.game_bindings.validate()?;
         for binding in self.app_bindings.values() { binding.validate()?; }
@@ -840,6 +861,32 @@ mod tests {
         assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.mouse_deadzone, DEFAULT_MOUSE_DEADZONE);
         let (read, reset) = Settings::read(&serde_json::json!({"mouse_deadzone": MAX_MOUSE_DEADZONE + 1})).unwrap();
         assert_eq!((read.mouse_deadzone, reset), (DEFAULT_MOUSE_DEADZONE, vec!["mouse_deadzone".to_string()]));
+    }
+
+    #[test]
+    fn the_touch_controls_opacity_defaults_to_full_validates_and_persists() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        let assisted = service.settings().assisted;
+        assert_eq!((assisted.touch_opacity, assisted.touch_alpha()), (MAX_TOUCH_OPACITY, 1.0), "drawn as designed until the player chooses");
+        for percent in [MIN_TOUCH_OPACITY, 35, 60, MAX_TOUCH_OPACITY] {
+            service.apply(SettingChange::Assisted(Assisted { touch_opacity: percent, ..assisted })).unwrap();
+            let saved = SettingsService::open(store.clone()).unwrap().settings().assisted;
+            assert_eq!(saved, Assisted { touch_opacity: percent, ..assisted }, "the rest of the block stays");
+            assert!((saved.touch_alpha() - f32::from(percent) / 100.0).abs() < 1e-6);
+        }
+        // Never invisible (Touch controls hides them), never over full.
+        for percent in [0, MIN_TOUCH_OPACITY - 1, MAX_TOUCH_OPACITY + 1, u8::MAX] {
+            assert!(service.apply(SettingChange::Assisted(Assisted { touch_opacity: percent, ..assisted })).is_err(), "{percent}%");
+        }
+        assert_eq!(service.settings().assisted.touch_opacity, MAX_TOUCH_OPACITY, "a refused change leaves the last one");
+        // Saved before the setting existed, or out of range: the default,
+        // the block's other choices kept.
+        let (read, reset) = Settings::read(&serde_json::json!({"assisted": {"touch_controls": false, "ledge_brake": true}})).unwrap();
+        assert_eq!((read.assisted.touch_opacity, read.assisted.touch_controls, read.assisted.ledge_brake, reset), (MAX_TOUCH_OPACITY, false, true, vec![]));
+        let (read, reset) = Settings::read(&serde_json::json!({"assisted": {"touch_opacity": 0, "ledge_brake": true}})).unwrap();
+        assert_eq!((read.assisted.touch_opacity, read.assisted.ledge_brake, reset), (MAX_TOUCH_OPACITY, true, vec!["assisted.touch_opacity".to_string()]));
     }
 
     #[test]

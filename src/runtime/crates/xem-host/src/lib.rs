@@ -374,9 +374,10 @@ pub struct View {
     game_ui: xem_core::context::Context,
     targets: Option<xem_core::menu::Targets>,
     picture: Option<Picture>,
-    /// Touch: the control deck, whether a finger has touched the game, what
-    /// touches asked for (taps on the picture in target pixels, quantity
-    /// keys), the marks over the picture, and the widgets' textures.
+    /// Touch: the control deck (laid out for what the game plays), whether
+    /// a finger has touched the game, what touches asked for (taps on the
+    /// picture in target pixels, quantity keys), the marks over the
+    /// picture, and the widgets' textures.
     deck: xem_assist::touch::Deck,
     touched: bool,
     taps: Vec<(f32, f32)>,
@@ -1167,6 +1168,11 @@ impl View {
                 Touched::Settings => self.set_panel_visible(true),
                 Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
                 Touched::FirstPerson => self.look_asked = true,
+                Touched::Run => {
+                    // Run by default, the setting every input shares.
+                    let on = self.settings.borrow().settings().run_by_default;
+                    let _ = self.settings.borrow_mut().apply(xem_settings::SettingChange::RunByDefault(!on));
+                }
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },
@@ -1180,13 +1186,15 @@ impl View {
         self.player.touch = self.deck.actions();
     }
 
-    /// Lays the touch deck out by the picture last shown (with no stick
-    /// while first-person inspection shows).
-    fn arrange(&mut self, ui: xem_core::context::Context) {
+    /// Lays the touch deck out by the picture last shown, for what the game
+    /// plays (`scene`: its context, and whether Select shows a map's picture
+    /// there) and whether first-person inspection shows (no stick then).
+    fn arrange(&mut self, scene: impl Into<xem_assist::touch::Scene>) {
         if let Some(picture) = self.picture {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let density = self.ui.scale_factor();
-            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, ui, self.renderer.first_person());
+            let scene = xem_assist::touch::Scene { inspecting: self.renderer.first_person(), ..scene.into() };
+            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, scene);
         }
     }
 
@@ -1198,7 +1206,10 @@ impl View {
     /// talk to no one, and no floor marks show.
     pub fn assist(&mut self, game: &mut Game) {
         let ui = game.context();
-        self.arrange(ui);
+        // Whether Select shows the field map's picture there (the deck's
+        // MAP), and the buttons the map's scripts test (an activity's).
+        let (picture, tested) = game.deck_scene();
+        self.arrange(xem_assist::touch::Scene { ui, picture, tested, inspecting: false });
         let taps = std::mem::take(&mut self.taps);
         let inspecting = self.renderer.first_person();
         // The field as the picture shows it (pulled back, say).
@@ -1365,25 +1376,33 @@ impl View {
                 let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
                 let centre = picture.from_screen(centre);
-                glass.push((view, Some((centre, (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None));
+                glass.push((view, Some((centre, (x.0 * sx, x.1 * sy), (y.0 * sx, y.1 * sy))), None, 1.0));
             }
         }
-        if touch_shown && !visible {
-            let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            for (widget, rect) in xem_assist::draw::deck_widgets(&self.deck, self.game_ui, auto_advance, first_person) {
-                let rect = Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, xem_assist::draw::pixels(&widget), style).clone();
-                glass.push((view, None, Some(rect)));
+        // The deck at the setting's opacity (what a finger holds whole); it
+        // stays under the open panel, where it holds nothing, so that its
+        // opacity shows beside the panel as the setting changes.
+        if touch_shown {
+            let (lit, opacity) = {
+                let settings = self.settings.borrow();
+                let settings = settings.settings();
+                (xem_assist::draw::Lit { auto_advance: settings.auto_advance.enabled, first_person, run: settings.run_by_default }, settings.assisted.touch_alpha())
+            };
+            for drawn in xem_assist::draw::deck_widgets(&self.deck, lit, opacity) {
+                let rect = Rect { x: drawn.rect.x, y: drawn.rect.y, width: drawn.rect.width, height: drawn.rect.height };
+                let view = self.atlas.view(&gpu.device, &gpu.queue, &drawn.widget, drawn.pixels, style).clone();
+                glass.push((view, None, Some(rect), drawn.opacity));
             }
         }
         let mut quads = vec![game];
-        for (view, affine, rect) in &glass {
+        for (view, affine, rect, opacity) in &glass {
             let mut quad = match (affine, rect) {
                 (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target_size),
                 (None, Some(rect)) => Quad::screen(view, *rect, target_size),
                 (None, None) => continue,
             };
             quad.srgb_encoded = true;
+            quad.opacity = *opacity;
             quads.push(quad);
         }
         if self.frame_rate.visible() {
@@ -1611,6 +1630,105 @@ mod tests {
         assert_eq!(view.taps.len(), 1, "not a tap on the picture");
     }
 
+    /// The touch controls' opacity (Settings' slider): the deck is drawn as
+    /// opaque as the setting says, but a control a finger holds, drawn
+    /// whole; it stays under the open settings panel, holding nothing, so
+    /// that the setting shows beside the panel as it changes. The deck's RUN
+    /// is the Run by default setting, lit while on.
+    #[test]
+    fn the_touch_deck_is_drawn_at_the_settings_opacity_and_its_run_key_is_the_run_by_default_setting() {
+        use xem_assist::touch::Control;
+        use xem_core::FieldControls;
+        use xem_core::context::Context;
+        use xem_core::pad::button;
+        use xem_settings::{Assisted, SettingChange};
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let (width, height) = (1280u32, 720u32);
+        // A target as the windows': sRGB-encoded values in a linear format,
+        // which the deck is composited in.
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8Unorm, (width, height), 1.0, settings.clone(), false).unwrap();
+        let black: Vec<_> = (0..320 * 240).flat_map(|_| [0, 0, 0, 255]).collect();
+        view.set_game_image(&gpu, (320, 240), &black);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("touch target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        view.render(&gpu, &output, 0.0).unwrap();
+        // A finger has touched the game: the deck shows, beside the picture.
+        view.touched = true;
+        view.arrange(Context::Walk);
+        let place = |view: &View, control: Control| view.deck.controls.iter().find(|(k, _)| *k == control).unwrap_or_else(|| panic!("no {control:?}")).1;
+        let across = |rect: xem_assist::touch::Rect| (rect.centre().0 / width as f32, rect.centre().1 / height as f32);
+        // What is drawn in a control's place over the black letterbox: its
+        // summed brightness.
+        let drawn = |view: &mut View, rect: xem_assist::touch::Rect| -> f64 {
+            view.render(&gpu, &output, 0.0).unwrap();
+            let image = xem_render::read_rgba8(&gpu.device, &gpu.queue, &target);
+            let inside = |i: usize| rect.contains(((i % width as usize) as f32, (i / width as usize) as f32));
+            image.chunks_exact(4).enumerate().filter(|(i, _)| inside(*i)).map(|(_, p)| f64::from(p[0]) + f64::from(p[1]) + f64::from(p[2])).sum()
+        };
+        let opacity = |percent: u8| {
+            let assisted = settings.borrow().settings().assisted;
+            settings.borrow_mut().apply(SettingChange::Assisted(Assisted { touch_opacity: percent, ..assisted })).unwrap();
+        };
+        // TALK, and Settings in its corner, away from it.
+        let (talk, gear) = (place(&view, Control::Confirm), place(&view, Control::Settings));
+        let picture = view.picture.expect("the picture's place").placed;
+        assert!(talk.x >= picture.x + picture.width, "TALK beside the picture, over black: {talk:?}");
+        let whole = (drawn(&mut view, talk), drawn(&mut view, gear));
+        assert!(whole.0 > 100_000.0 && whole.1 > 30_000.0, "the deck as designed: {whole:?}");
+        // Half as opaque over black is half as bright; a tenth, faint.
+        opacity(50);
+        let half = (drawn(&mut view, talk), drawn(&mut view, gear));
+        assert!((half.0 / whole.0 - 0.5).abs() < 0.02 && (half.1 / whole.1 - 0.5).abs() < 0.02, "at 50%: {half:?} of {whole:?}");
+        opacity(10);
+        let faint = (drawn(&mut view, talk), drawn(&mut view, gear));
+        assert!((faint.0 / whole.0 - 0.1).abs() < 0.02 && faint.0 > 0.0, "at 10%: {faint:?} of {whole:?}");
+        // A finger on TALK: it shows whole, pressed; Settings stays faint.
+        view.finger(Finger::Down, 1, across(talk));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), button::CROSS);
+        let held = (drawn(&mut view, talk), drawn(&mut view, gear));
+        assert!(held.0 > 5.0 * faint.0 && (held.1 - faint.1).abs() < 1.0, "held: {held:?} against {faint:?}");
+        // The settings panel opens: the deck lets go, and stays drawn under
+        // it (the panel stands over the picture's middle).
+        view.set_panel_visible(true);
+        assert_eq!(view.pad_buttons(PadContext::default(), None), 0, "the panel has the input");
+        let panel = view.panel_rect();
+        assert!(talk.x >= panel.x + panel.width, "TALK beside the panel: {talk:?} {panel:?}");
+        let under = drawn(&mut view, talk);
+        assert!((under - faint.0).abs() < 1.0, "under the open panel at the setting's opacity: {under} against {}", faint.0);
+        opacity(100);
+        let shown = drawn(&mut view, talk);
+        assert!((shown - whole.0).abs() < 1.0, "the setting shows as it changes: {shown}");
+        view.set_panel_visible(false);
+        view.finger(Finger::Up, 1, across(talk));
+        // RUN: the Run by default setting, lit while on; the stick then runs.
+        let run = place(&view, Control::Run);
+        let walking = PadContext { field: FieldControls { field: true, walking: true, menu: false, picture: false }, ui: Context::Walk, ..PadContext::default() };
+        let stick = view.deck.stick.expect("a stick");
+        let at = |x: f32, y: f32| (x / width as f32, y / height as f32);
+        view.finger(Finger::Down, 2, at(stick.rest.0, stick.rest.1));
+        view.finger(Finger::Moved, 2, at(stick.rest.0, stick.rest.1 - stick.reach));
+        assert_eq!(view.pad_buttons(walking, None), button::UP, "walking");
+        let unlit = drawn(&mut view, run);
+        view.finger(Finger::Down, 3, across(run));
+        assert!(settings.borrow().settings().run_by_default, "RUN turns Run by default on");
+        assert_eq!(view.pad_buttons(walking, None), button::UP | button::CIRCLE, "the stick runs; RUN itself holds nothing");
+        view.finger(Finger::Up, 3, across(run));
+        assert_ne!(drawn(&mut view, run), unlit, "lit while on");
+        view.finger(Finger::Down, 3, across(run));
+        view.finger(Finger::Up, 3, across(run));
+        assert!(!settings.borrow().settings().run_by_default, "and off again");
+        assert_eq!(view.pad_buttons(walking, None), button::UP);
+        assert_eq!(drawn(&mut view, run), unlit);
+    }
+
     #[test]
     fn a_reconnected_gamepad_plays_again_and_settings_change_live() {
         use xem_core::pad::button;
@@ -1801,9 +1919,10 @@ mod tests {
     }
 
     #[test]
-    fn the_touch_decks_select_toggles_first_person_and_a_finger_on_the_picture_turns_it() {
-        use xem_assist::touch::Control;
+    fn the_touch_decks_look_takes_the_stick_away_a_finger_on_the_picture_turns_the_view_and_map_is_the_games_select() {
+        use xem_assist::touch::{Control, Scene};
         use xem_core::FieldControls;
+        use xem_core::context::Context;
         use xem_core::pad::button;
         let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
         let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
@@ -1821,11 +1940,15 @@ mod tests {
             view_formats: &[],
         });
         view.render(&gpu, &target.create_view(&Default::default()), 0.0).unwrap();
-        view.arrange(xem_core::context::Context::Walk);
+        view.arrange(Context::Walk);
         let walking = FieldControls { field: true, walking: true, menu: false, picture: false };
-        let context = PadContext { field: walking, ui: xem_core::context::Context::Walk, ..PadContext::default() };
+        let context = PadContext { field: walking, ui: Context::Walk, ..PadContext::default() };
         let across = |(x, y): (f32, f32)| (x / width as f32, y / height as f32);
-        let select = view.deck.controls.iter().find(|(k, _)| *k == Control::Select).unwrap().1.centre();
+        let place = |view: &View, control: Control| view.deck.controls.iter().find(|(k, _)| *k == control).map(|(_, r)| r.centre());
+        let look = place(&view, Control::Look).expect("LOOK where the player walks");
+        // The walking deck has no SELECT (the game's shows nothing here):
+        // LOOK is the view's toggle.
+        assert_eq!(place(&view, Control::Select), None);
         // Where the stick rests (beside the picture), and pushed up from there.
         let stick = view.deck.stick.expect("a stick");
         let (rest, up) = (stick.rest, (stick.rest.0, stick.rest.1 - stick.reach));
@@ -1834,17 +1957,19 @@ mod tests {
         view.finger(Finger::Moved, 1, across(up));
         assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
         view.finger(Finger::Up, 1, across(up));
-        // SELECT toggles the view, and is the view's here, not the game's.
-        view.finger(Finger::Down, 2, across(select));
+        // LOOK toggles the view, and holds nothing of the game's.
+        view.finger(Finger::Down, 2, across(look));
         assert_eq!(view.pad_buttons(context, None), 0);
-        assert!(view.first_person(), "the deck's SELECT toggles the view");
-        view.finger(Finger::Up, 2, across(select));
+        assert!(view.first_person(), "the deck's LOOK toggles the view");
+        view.finger(Finger::Up, 2, across(look));
         assert_eq!(view.pad_buttons(context, None), 0);
-        // On, the deck (laid out again, as each frame) has no stick: a finger
-        // pushed up where it rested holds nothing for the game, no direction
-        // and no Run left alone.
-        view.arrange(xem_core::context::Context::Walk);
+        // On, the deck (laid out again, as each frame) has no stick, jump
+        // or camera turns: a finger pushed up where the stick rested holds
+        // nothing for the game, no direction and no Run left alone.
+        view.arrange(Context::Walk);
         assert!(view.deck.stick.is_none(), "no stick while the view shows");
+        assert_eq!((place(&view, Control::Jump), place(&view, Control::CameraLeft), place(&view, Control::CameraRight)), (None, None, None), "nor what the view holds back");
+        assert_eq!(place(&view, Control::Look), Some(look), "LOOK stays where it was, to leave the view");
         view.finger(Finger::Down, 3, across(rest));
         view.finger(Finger::Moved, 3, across(up));
         assert_eq!(view.pad_buttons(context, None), 0, "the character stays where it stands");
@@ -1860,18 +1985,23 @@ mod tests {
         assert!((yaw + 0.3).abs() < 1e-3 && pitch.abs() < 1e-3, "100 logical pixels turn it 0.3 radians: {yaw} {pitch}");
         view.finger(Finger::Up, 4, across((middle.0 + 100.0, middle.1)));
         assert!(view.taps.is_empty(), "a drag is no tap");
-        // SELECT again: the view goes, and the stick walks again.
-        view.finger(Finger::Down, 2, across(select));
+        // LOOK again: the view goes, and the stick walks again.
+        view.finger(Finger::Down, 2, across(look));
         view.pad_buttons(context, None);
-        view.finger(Finger::Up, 2, across(select));
+        view.finger(Finger::Up, 2, across(look));
         assert!(!view.first_person());
-        view.arrange(xem_core::context::Context::Walk);
+        view.arrange(Context::Walk);
         view.finger(Finger::Down, 1, across(rest));
         view.finger(Finger::Moved, 1, across(up));
         assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
-        // Where the map's picture shows, the deck's SELECT is the game's.
-        view.finger(Finger::Down, 2, across(select));
-        assert_eq!(view.pad_buttons(PadContext { field: FieldControls { picture: true, ..walking }, ..context }, None) & button::SELECT, button::SELECT);
+        view.finger(Finger::Up, 1, across(up));
+        // Where Select shows the map's picture the deck has MAP: the
+        // game's Select, toggling no view.
+        view.arrange(Scene { picture: true, ..Context::Walk.into() });
+        let map = place(&view, Control::Select).expect("MAP where Select shows a picture");
+        assert_eq!(Control::Select.label(view.deck.scene()), "MAP");
+        view.finger(Finger::Down, 2, across(map));
+        assert_eq!(view.pad_buttons(PadContext { field: FieldControls { picture: true, ..walking }, ..context }, None), button::SELECT);
         assert!(!view.first_person());
     }
 
@@ -1921,12 +2051,11 @@ mod tests {
         view.set_panel_visible(false);
         view.finger(Finger::Up, 2, select);
         assert_eq!(view.pad_buttons(dialogue, None), 0);
-        // Where the player walks no dialogue shows: SELECT toggles the view.
-        let walking = PadContext { field: FieldControls { walking: true, ..dialogue.field }, ui: Context::Walk, ..dialogue };
+        // Where the player walks no dialogue shows: the deck has no HIDE
+        // there (nor a SELECT: LOOK toggles the view).
         view.arrange(Context::Walk);
-        view.finger(Finger::Down, 3, at(&view));
-        assert_eq!(view.pad_buttons(walking, None), 0);
-        assert!(view.first_person() && !view.renderer.dialogue_hidden());
+        assert!(view.deck.controls.iter().all(|(c, _)| *c != Control::Select));
+        assert_eq!(Control::Select.label(ui.into()), "HIDE");
     }
 
     #[test]

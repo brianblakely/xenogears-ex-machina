@@ -5231,6 +5231,7 @@ name = "xem-assist"
 version = "0.5.0"
 dependencies = [
  "glam",
+ "png",
  "serde",
  "serde_json",
  "xem-core",

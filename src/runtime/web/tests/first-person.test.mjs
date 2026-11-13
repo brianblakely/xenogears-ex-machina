@@ -5,7 +5,8 @@
 // the walking and jumping keys reach no pad and the character stays, the
 // arrow keys and the mouse the game holds turn it, the wheel's zoom rests
 // and the Binaural listener looks where it looks; a tap on the picture walks
-// nowhere, the touch deck's SELECT toggles the view and a finger dragged on
+// nowhere, the touch deck's LOOK toggles the view (the deck without what
+// the view holds back while it shows) and a finger dragged on
 // the picture turns it; Backspace again gives the keys back; the Original
 // renderer ends it; a gamepad's right stick's click toggles it, its right
 // stick turns it and its Back released alone ends it, none of which acts
@@ -187,13 +188,22 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await finger('pointerup', 9);
       await frames(page, 3);
       assert.equal((await status(page)).session.assist, null, 'a tap on the picture walks nowhere');
+      // While the view shows the deck has LOOK to leave it, and nothing of
+      // what the view holds back (no stick's rest, jump or camera turns).
       const controls = (await status(page)).touch.controls.map((c) => c.control);
-      assert.ok(controls.includes('Select'), JSON.stringify(controls));
-      // The deck's SELECT toggles the view off and on again.
+      assert.ok(controls.includes('Look') && !controls.includes('Jump') && !controls.includes('CameraLeft') && !controls.includes('Select'), JSON.stringify(controls));
+      assert.equal((await status(page)).touch.stick, null, 'no stick while the view shows');
+      // The deck's LOOK toggles the view off and on again; off, the walking
+      // deck is back.
       for (const shows of [false, true]) {
-        await finger('pointerdown', 1, 'Select');
+        await finger('pointerdown', 1, 'Look');
         await page.waitForFunction((shows) => window.xem.status().renderer.firstPerson === shows, shows);
-        await finger('pointerup', 1, 'Select');
+        await finger('pointerup', 1, 'Look');
+        if (!shows) {
+          await frames(page, 3);
+          const walking = (await status(page)).touch;
+          assert.ok(walking.controls.some((c) => c.control === 'Jump') && walking.stick?.rests, JSON.stringify(walking.controls.map((c) => c.control)));
+        }
       }
       r = await renderer(page);
       assert.deepEqual(r.look, { yaw: 0, pitch: 0 }, 'a new view looks along the camera\'s heading');
@@ -309,7 +319,7 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await frames(page, 3);
       assert.equal((await renderer(page)).firstPerson, true, 'V turned it on, once');
       const deck = (await status(page)).touch.controls.map((c) => c.control);
-      assert.ok(deck.includes('Look') && deck.includes('Select'), JSON.stringify(deck));
+      assert.ok(deck.includes('Look'), JSON.stringify(deck));
       await finger('pointerdown', 3, 'Look');
       await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
       await finger('pointerup', 3, 'Look');

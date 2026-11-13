@@ -1375,6 +1375,73 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     assert_eq!(*settings.borrow().settings(), before);
 }
 
+/// The touch controls' opacity: a slider under Touch controls in the
+/// Controls section's VR / Touchscreen card, through the settings service,
+/// from 10% to 100% in steps of 5.
+#[test]
+fn the_touch_controls_opacity_is_a_slider_under_touch_controls_through_the_settings_service() {
+    use xem_settings::{Assisted, MAX_TOUCH_OPACITY, MIN_TOUCH_OPACITY, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 2000), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Controls", 2);
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    let opacity = || settings.borrow().settings().assisted.touch_opacity;
+    let slider = element(&ui, "Touch controls opacity", AccessibleRole::Slider);
+    assert_eq!((slider.accessible_value().as_deref(), opacity()), (Some("100"), MAX_TOUCH_OPACITY), "as designed by default");
+    assert_eq!((slider.accessible_value_minimum(), slider.accessible_value_maximum()), (Some(f32::from(MIN_TOUCH_OPACITY)), Some(f32::from(MAX_TOUCH_OPACITY))), "the setting's range");
+    // In the VR / Touchscreen card, under the Touch controls switch and
+    // above Reduce transparency, with its value beside its name.
+    let card = element(&ui, "Headsets and touch screens", AccessibleRole::Groupbox);
+    let toggle = element(&ui, "Touch controls", AccessibleRole::Switch);
+    let solid = element(&ui, "Reduce transparency", AccessibleRole::Switch);
+    let (top, bottom) = (card.absolute_position().y, card.absolute_position().y + card.size().height);
+    let y = slider.absolute_position().y;
+    assert!(y > top && y + slider.size().height < bottom, "inside the card");
+    assert!(y > toggle.absolute_position().y + toggle.size().height && y + slider.size().height < solid.absolute_position().y, "between Touch controls and Reduce transparency");
+    element(&ui, "Touch controls opacity", AccessibleRole::Text);
+    element(&ui, "100%", AccessibleRole::Text);
+    // A press at its middle: 55%, through the service; the rest of the
+    // block stays.
+    let before = settings.borrow().settings().assisted;
+    press(&ui, &slider);
+    assert_eq!(settings.borrow().settings().assisted, Assisted { touch_opacity: 55, ..before });
+    ui.update().unwrap();
+    element(&ui, "55%", AccessibleRole::Text);
+    // The arrow keys (a gamepad's left and right) step it by 5, to its ends
+    // and no further.
+    key(&ui, xem_ui::Key::LeftArrow);
+    assert_eq!(opacity(), 50);
+    for _ in 0..12 {
+        key(&ui, xem_ui::Key::LeftArrow);
+    }
+    assert_eq!(opacity(), MIN_TOUCH_OPACITY, "never invisible");
+    key(&ui, xem_ui::Key::RightArrow);
+    assert_eq!(opacity(), 15);
+    // A change made elsewhere (an agent's, another host's) shows on it.
+    settings.borrow_mut().apply(SettingChange::Assisted(Assisted { touch_opacity: 80, ..before })).unwrap();
+    assert_eq!(ui.component().get_assist_touch_opacity(), 80.0);
+    ui.update().unwrap();
+    assert_eq!(element(&ui, "Touch controls opacity", AccessibleRole::Slider).accessible_value().as_deref(), Some("80"));
+    // An edit outside the range is brought into it.
+    ui.component().invoke_assist_edited("touch-opacity".into(), 0);
+    assert_eq!(opacity(), MIN_TOUCH_OPACITY);
+    ui.component().invoke_assist_edited("touch-opacity".into(), 250);
+    assert_eq!(opacity(), MAX_TOUCH_OPACITY);
+    settings.borrow_mut().apply(SettingChange::Assisted(Assisted { touch_opacity: 80, ..before })).unwrap();
+    // Without touch controls there is nothing to make opaque: the slider
+    // goes, its value kept for when they come back.
+    press(&ui, &toggle);
+    ui.update().unwrap();
+    assert!(!settings.borrow().settings().assisted.touch_controls && !shown(&ui, "Touch controls opacity"));
+    assert_eq!(opacity(), 80);
+    press(&ui, &element(&ui, "Touch controls", AccessibleRole::Switch));
+    ui.update().unwrap();
+    assert_eq!(element(&ui, "Touch controls opacity", AccessibleRole::Slider).accessible_value().as_deref(), Some("80"));
+}
+
 #[test]
 fn shortcuts_list_toggle_first_person_view_with_its_key_and_chord_and_rebind_it_through_the_service() {
     use slint::Model;

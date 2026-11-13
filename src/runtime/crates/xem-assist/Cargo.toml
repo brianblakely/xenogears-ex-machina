@@ -14,3 +14,6 @@ serde_json.workspace = true
 xem-core = { path = "../xem-core" }
 xem-settings = { path = "../xem-settings" }
 xem-render = { path = "../xem-render" }
+
+[dev-dependencies]
+png.workspace = true

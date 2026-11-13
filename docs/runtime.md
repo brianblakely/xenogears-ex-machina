@@ -2710,11 +2710,12 @@ runs), Select toggles the view where the original's Select shows nothing:
 `field_picture_show` shows a map's picture on ten maps once their item is
 held, and there Select stays the game's (`xem_core::context::field_controls`
 tells the hosts whether the player walks, a menu runs and the picture shows,
-read in the game's memory alike in every host). Select is any of its bound keys (Backspace), the touch
-deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
+read in the game's memory alike in every host). Select is any of its bound keys (Backspace) and a gamepad's Back
 released alone (Back begins the app chords; a headset controller's Back is
 its right stick's click), all of which toggle only there: while the player
-walks where Select shows no picture (Back pressed and let go there). Held
+walks where Select shows no picture (Back pressed and let go there). A
+touch deck has no Select there (its LOOK toggles the view, below; where the
+picture shows, its MAP is the game's Select: [Touch screens](#touch-screens)). Held
 while a dialogue shows, they hide its windows instead, and a Back held over
 one and let go once the player walks again toggles nothing
 ([Hiding a dialogue](#hiding-a-dialogue)). A gamepad's right stick's click (R3)
@@ -3019,7 +3020,7 @@ direction does in a dialogue, that a session log's Up and L1 run without
 stopping the session, that the recording holds exactly what passed, and
 that it replays to the recording's RAM hash with the replaying host
 inspecting from the replay's start; `xem-settings`' look tests the toggles
-(Select's keys and the deck's SELECT alike), the underhand grab's rule
+(Select held by its keys or by a deck's key alike), the underhand grab's rule
 (`look::grab_toggles`: in a field but its menu, under Ex Machina only),
 the `first_person` command (parsed, an unknown field refused, toggled in a
 walk, a dialogue and a picture map, refused under the menu, outside a field
@@ -3033,13 +3034,15 @@ game key; Back then R1 asks once, the game has neither while the chord
 holds, and Back let go after it is no Select toggle), `xem-assist`'s the
 headset's gestures and pointer keys while
 inspecting and two-hand scaling that leaves the screen, the deck's
-SELECT and drag, and LOOK (in a walk, a scene and a dialogue on a
-letterboxed phone, a 16:9 phone and a tablet, clear of every other control
+drag, and LOOK (in a walk, a scene and a dialogue on every screen the
+decks are laid out on, clear of every other control
 and within the screen, pressing none of the game's buttons; in no menu,
 world map, battle or other context; lit while the view shows), `xem-host`'s
-a gamepad's toggles and the touch deck (SELECT
-toggling and staying the game's where the map's picture shows, no Run left
-alone, a 100-pixel drag turning 0.3 radians and tapping nothing; LOOK
+a gamepad's toggles and the touch deck (LOOK
+toggling the view, the stick, the jump and the camera's turns gone from
+the deck while it shows, no Run left
+alone, a 100-pixel drag turning 0.3 radians and tapping nothing, MAP the
+game's Select where the map's picture shows; LOOK
 toggling the view in a dialogue and on a picture map once a press, lit
 while it shows, nothing under the menu or the Original renderer, and an
 agent's command answered with its look), `xr_play`'s a headset's right
@@ -3171,7 +3174,8 @@ with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
 ArrowRight and ArrowUp turn the view right and up; the wheel leaves the
 zoom; the Binaural listener faces right with the view; the mouse under
 pointer lock turns it right and down; a tap on the picture walks nowhere,
-the deck's SELECT toggles it off and on, and a 100-pixel drag turns it
+the deck's LOOK toggles it off and on (the deck without its stick, jump
+and camera turns while it shows), and a 100-pixel drag turns it
 0.3 radians left; Backspace gives W back and the listener its camera; the
 Original renderer ends the view; a gamepad's right stick's click toggles
 it, its right stick turns it right and its Back released alone ends it,
@@ -3183,8 +3187,7 @@ loop runs, `act` Up, `press` Triangle and `navigate` are refused, a bad `on`
 is refused, and it turns it off; then V, the deck's LOOK, the automation's
 `appOperation` Toggle first-person view and the bare command toggle it in
 turn. Its canvas pictures go
-to `build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds
-the game's Select with the deck's SELECT outside a field.
+to `build/web-test/first-person-*.png`.
 
 Not done or not measured: in a headset, comfort is not measured (no people
 tests): the view follows the character's scripted moves (vection, with no
@@ -3269,7 +3272,7 @@ choice cursor, and a battle's event script message (the `battle` context's
 window 0, the speaker's portrait or its text shown) with its window, the
 portrait, the text and the cursor that waits for Confirm. Let go, they
 show again. Select is any of its bound keys (Backspace) and the touch
-deck's SELECT, which hide at once, and a gamepad's Back once it has been
+deck's HIDE (its Select over a dialogue), which hide at once, and a gamepad's Back once it has been
 held alone for 0.15 s (`look::BACK_HIDES_AFTER_MS`), a headset
 controller's Back being its right stick's click. Back plus a face button,
 Start, R1 or a trigger runs the app chords (Back+South saves a state,
@@ -3411,9 +3414,9 @@ at once, Back once held alone and never in a chord, Settings or focus
 taken, the hiding lasting while held, a battle's message, no dialogue, the
 game's buttons kept; Back held over a dialogue until the player walks
 toggling nothing, pressed and let go while walking toggling),
-`xem-host`'s deck test (its SELECT held over a dialogue: Select the
-game's, the windows hidden, shown under the panel and let go; walking, the
-view's toggle), `xem-ui/tests/panel.rs` the row, flat and in a headset,
+`xem-host`'s deck test (its HIDE held over a dialogue: Select the
+game's, the windows hidden, shown under the panel and let go; no such key
+where the player walks), `xem-ui/tests/panel.rs` the row, flat and in a headset,
 and `xem-headless/tests/render.rs`:
 `a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is`
 (field 12's opening dialogue, Fei's window, its text and his portrait, with
@@ -5679,7 +5682,9 @@ reports the frames run):
 
 - **Run by default** (`SettingChange::RunByDefault`, off initially) inverts
   the assigned run button during directional field movement: holding it
-  walks. Keyboard, gamepad, touch and headset inputs share the preference;
+  walks. Keyboard, gamepad, touch and headset inputs share the preference
+  (the touch deck's RUN turns it on and off: [Touch
+  screens](#touch-screens));
   menus, dialogue, scripted events and battles retain their buttons.
 - **Menu toggles the field menu**: pressed while it runs (any screen of
   it), it presses Cancel at the menu's commands, which closes it, after
@@ -5814,51 +5819,202 @@ bindings changed from the open panel hold when play resumes.
 ### Touch screens
 
 On a touch screen (Android; phone and tablet browsers) the game's controls
-are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
-letterbox has room (three controls and their gaps, at least 40 dp each),
-else over its corners: a stick on the left with Select above it (the
-game's Select, in a field first-person inspection's toggle where the
-game's shows nothing, and held over a dialogue what hides its windows:
-[Hiding a dialogue](#hiding-a-dialogue)), the face buttons on the right (Jump, Cancel and
-Run, Confirm, Menu), the camera's turns at the top corners, Settings and
-Start at the top. The stick is relative: a finger touching the screen's
-left half on no other control takes it (one finger at a time), centred
-where it touched, and its travel from there past a dead zone (a quarter of
-the knob's reach, which is three quarters of a button) holds the D-pad's
-eighth, a direction or a diagonal's two, kept a few degrees past a
-boundary (the headset deck's stick's rule, `arcade::eighth`); a finger
-going past the reach drags the centre along, so a short way back turns it
-round. Untouched it rests where a D-pad would stand: a hollow halo with a
-fin for each direction, gilded while held, and its knob, a button that
-follows the finger. A short still touch there is still a tap on the
-picture. A finger holds the control it is on; lifting or a cancelled touch
-lets go (explicit press and release). A finger alone dragged on the
-picture (not one holding the stick) turns inspection's view, the scene
-following it; while that view shows the deck has no stick (it would walk
-nowhere), and a finger holding it as the view comes lets it go, so a
-finger on the left half turns the view too. Battling names the face buttons and
-turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
-adds Board (L2 and R2 together: a Gear boarded or left), a field (walking,
-its scenes and dialogue; not its menu) adds LOOK above the face buttons
-(Toggle first-person view: [First-person
-inspection](#first-person-inspection) on or off anywhere in the field,
-lit while it shows, holding none of the game's buttons), its scenes and
-dialogue AUTO beside it (auto-advance dialogue on or off, lit while on:
-[Text speed, auto-advance and movie
-skipping](#text-speed-auto-advance-and-movie-skipping)), the two each a
-little narrower than the deck's other wide keys, and a shop's quantity
-list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
-is the pointer's tap (`xem_assist::dispatch::tap_at`; on the pause
-screen, Start, as a click): walking, on an actor
-it approaches and talks, on the floor it walks there; in a menu or choice
-it selects the entry and confirms it; in battle it chooses as a click does
-([The game's interface context](#the-games-interface-context)); in a
-dialogue it advances. The deck
-shows once a finger touches the game (always on Android) under Settings'
-Touch controls. Android logs the deck's place (`touch deck ...`, and
-`touch stick x y reach` where the stick rests) and its smoke test holds
-Confirm on it and drags the stick to the right; the browser suite plays it
-with touch pointers.
+are a Seraph Glass deck (`xem_assist::touch`) made for two thumbs and for
+what the game plays now, not the pad's own layout (issue #83): each of the
+game's contexts ([The game's interface
+context](#the-games-interface-context)) has the buttons the game reads
+there, named for what they do, with the one the right thumb rests on the
+largest.
+
+**Layout** (`touch::layout`). A unit is about 13% of the screen's short
+side, at least 52 dp (less where three rows of keys would not fit under the
+corner's buttons, or the stick's well beside the right hand's cluster: a
+screen under about 360 dp high or wide). The right thumb rests on the
+*primary* button, 1.45 units across, its centre 1.7 units from the right
+edge and 1.35 from the lower. Up to three round buttons stand on an arc
+1.4 units about it, a thumb's sweep from its rest: *beside* it toward the
+screen's middle (187 degrees up from the right, just below level),
+*between* (137, a little larger: the next most used) and *above* it (87),
+neighbours a gap of 0.12 units apart. Small keys (1.26 by 0.66 units)
+stand in rows of two above the arc, their outer edge the primary's, and
+the app's Settings (a gear) and the game's pause (Start: two bars) in the
+top right corner (0.8 units). The stick rests as far from the lower left
+corner as the D-pad it stands for would (1.95 units); an activity's L1 and
+L2 stand above it. The deck stands in the letterbox beside the picture
+when it has room for the right hand's cluster (2.96 units across with its
+margins, at 44 dp or more a unit, the primary then as far in as the
+letterbox allows), else over the picture's lower corners at its full size.
+A round button takes a finger on its circle and 8% beyond it (under half
+the gap to its neighbour), a key on its rectangle: no two controls take the
+same finger.
+
+**The decks** (`touch::keys`), each with what it presses. Confirm is every
+deck's primary, always in the same place, so the thumb finds it whatever
+it does now; Settings and the pause keep their corner (a menu, which
+reads no Start, has no pause).
+
+| The game plays | Primary | On the arc | Keys | Stick rests |
+| --- | --- | --- | --- | --- |
+| A field, walking | TALK | the camera's turn left (L1), JUMP, its turn right (R1) | MENU, RUN, LOOK; MAP (Select) where Select shows the map's picture | yes |
+| ... with first-person inspection | TALK | | MENU, LOOK | no stick |
+| ... on a map whose scripts test the pad | | | also what the deck lacks of them: Circle (the run button, held), SELECT, R2; L2 above the stick | |
+| A scene, a dialogue's page | NEXT | | AUTO, HIDE (Select, held), LOOK | no |
+| A dialogue's choice | OK | | AUTO, HIDE, LOOK | yes |
+| ... on a map whose scripts test the pad (an activity) | NEXT or OK, under Cross where tested | Square, Circle and Triangle where tested | AUTO, LOOK, R1 and R2 where tested, SELECT in HIDE's place where tested; L1 and L2 above the stick | where a direction is tested |
+| A menu | OK | BACK | the page's or the character's arrows (L1, R1); CLOSE (Menu) in the field's and the world map's own; DONE (Start) in the name entry; +, -, ALL and NONE on a shop's quantity list | yes |
+| A battle's ring, lists and targets | OK | BACK | | yes |
+| A battle's attack page | Cross, FIERCE | Square, STRONG; Triangle, WEAK | END (Cancel) | yes |
+| A battle's script message | NEXT | | HIDE | no |
+| The world map, on foot or in Gears | ENTER | the camera's turns | MENU, BOARD (L2 and R2 together), VIEW (Select) | yes |
+| The world map, in a vehicle | ENTER | the camera's turns | MENU, LAND (Cancel), VIEW, THROTTLE (Jump, latched) | yes |
+| The world map's scripted scenes | NEXT | | | no |
+| A Battling bout | A | B, SPECIAL (R1), JUMP | DASH (Cancel, latched), CHARGE (L1, latched) | yes |
+| Battling's menus | OK | BACK | | yes |
+| Booting, a movie | OK | | | no |
+
+The buttons are those the game reads, by its recovered source: the field's
+frame takes Confirm, Jump, the held run button, L1 and R1, Menu, Start (the
+pause) and, with the player walking, Select (`field.c`); a dialogue's page
+Confirm alone, a choice Up and Down too (`field_motion.c`); a menu the
+directions, Confirm, Cancel, L1 and R1 (the item list's pages, the
+character shown: `menu_read_input` and the screens it feeds, which do
+nothing with its two other face buttons; the name entry's own ends on
+Start); a battle the directions, Confirm, Cancel and Start, the attack
+page Triangle, Square and Cross for 1, 2 and 3 AP and Cancel to end
+(`battle_read_input`, `battle_command_menu_page_05_attack_inputs`: every
+Deathblow ends with the Fierce attack, the one under the thumb, and the
+game's lists write the three by their symbols, which the buttons keep over
+their names); the world map Confirm, Menu, L1 and R1, Select (its view),
+Start, on foot L2 and R2 together, in a vehicle Cancel (take off and land)
+and Jump (the throttle) (`worldmap_steer_*`, `worldmap.c`); a bout Cross
+and Square (A and B), Triangle (the jump), R1 (the special), Circle held
+(the dash) and L1 held (the charge) (`arena_fighters_bout_and_effects.c`).
+On the 84 maps whose scripts test the pad (a field's activities: puzzles,
+button prompts, the card game) every deck of the field offers the buttons
+they test (`xem_core::context::field_script_buttons`: the map's, whatever
+the context, since one script goes on testing the pad while another holds
+a window open, and beside the player's own control): in a scene or a
+dialogue by the symbols the game's prompts name them with
+(`arcade::activity_label`, the headset deck's too: map 565's console says
+to confirm with Cross and leave with Circle, and its scripts test 0x20 to
+check the code and 0x40 to ask about leaving); where the player walks the
+deck keeps its own names and adds what it lacks.
+
+**Holding.** A finger holds the control it is on; lifting or a cancelled
+touch lets go (explicit press and release). A bout's DASH and CHARGE and a
+vehicle's THROTTLE *latch* instead (`Control::latches`): a touch holds
+them, the next lets go, lit meanwhile, as the headset decks' held keys
+(`arcade::keys`), because the thumb that would hold them has the other
+buttons to press. RUN, AUTO and LOOK are the app's toggles, lit while on
+and holding none of the game's buttons: RUN is the Run by default setting
+(the stick then runs; on a touch screen no finger is free to hold the run
+button beside the jump), AUTO auto-advance dialogue ([Text speed,
+auto-advance and movie
+skipping](#text-speed-auto-advance-and-movie-skipping)) and LOOK Toggle
+first-person view ([First-person inspection](#first-person-inspection)).
+When the context changes, a control the next deck keeps stays held,
+whatever it does now, as a pad's button would (Confirm from TALK to NEXT);
+one it lacks lets go, and so do its latches. Everything lets go when the
+settings panel takes the screen.
+
+**The stick** is relative: a finger touching the screen's left half on no
+other control takes it (one finger at a time), centred where it touched,
+and its travel from there past a dead zone (a quarter of the knob's reach,
+which is three quarters of a unit) holds the D-pad's eighth, a direction
+or a diagonal's two, kept a few degrees past a boundary (the headset
+deck's stick's rule, `arcade::eighth`); a finger going past the reach
+drags the centre along, so a short way back turns it round. It rests in
+view where the game reads the directions (the table's last column): a
+hollow halo with a fin for each direction, gilded while held, and its
+knob, a button that follows the finger. Elsewhere a finger still steers
+it, so that a direction held through a scene walks as soon as the player
+does, and it shows under that finger once it steers (not under a tap on
+the left half). A short still touch there is still a tap on the picture.
+A finger alone dragged on the picture (not one holding the stick) turns
+inspection's view, the scene following it; while that view shows the deck
+has no stick (it would walk nowhere) nor the jump and the camera's turns
+it holds back, and a finger holding the stick as the view comes lets it
+go, so a finger on the left half turns the view too.
+
+**Opacity.** Settings' Touch controls opacity (Controls, VR / Touchscreen,
+under Touch controls; `Assisted::touch_opacity`, 10 to 100 percent in the
+slider's steps of 5, 100 by default: the glass as designed) is how opaque
+the deck is composited (the quads' opacity, over the game's picture or the
+letterbox), on every host that draws it. A control a finger holds is drawn
+whole, so a press shows whatever the setting; the least is 10, never
+invisible (Touch controls hides the deck). The deck stays drawn under the
+open settings panel, where it holds nothing, so the opacity shows beside
+the panel as the slider moves. Reduce transparency is separate: it makes
+the glass bodies dark and solid, and the opacity then fades those.
+
+**Taps.** A tap on the picture (short, not travelling) is the pointer's
+tap (`xem_assist::dispatch::tap_at`; on the pause screen, Start, as a
+click): walking, on an actor it approaches and talks, on the floor it
+walks there; in a menu or choice it selects the entry and confirms it; in
+battle it chooses as a click does ([The game's interface
+context](#the-games-interface-context)); in a dialogue it advances.
+
+The deck shows once a finger touches the game (always on Android) under
+Settings' Touch controls. `cargo run -p xem-assist --example touch_deck`
+draws every deck over a stand-in picture, on a 20:9 phone with the picture
+letterboxed and filling it, as a sheet for review. Android logs each deck
+as the game's context or the screen lays it out (`touch deck <control> x y
+w h`, and `touch stick x y reach` where the stick rests) and its smoke
+test holds Confirm on it and drags the stick to the right; the browser's status has
+the deck (`touch.controls` with each control's label and place, `stick`,
+`held`, `latched`), and its suite plays it with touch pointers.
+
+Tests: `xem-assist`'s `touch` tests check every deck's controls and
+labels and where the stick rests; that on five screens (a 20:9 phone
+letterboxed and wide, a 16:9 phone, a 4:3 tablet, a phone browser in
+portrait) every control lies within the screen at a generous size (the
+primary 63 dp or more, the arc's buttons 44, keys 55 by 29), no two under
+one finger, none over the stick's well; the letterbox rule; Confirm,
+Settings, the pause, LOOK and the camera's turns in their places across
+decks; a round button's and a key's reach; the stick's steering, its rest
+and its steering through a dialogue; taps; the latches (a bout's DASH held
+while A is pressed, let go by its next touch, with the bout, and by the
+panel); a control the next deck lacks letting go; RUN, AUTO and LOOK
+pressing nothing of the game's and lit while on; drags and inspection.
+`xem-render`'s glass tests draw the pause, the gear, the camera's turns
+and an attack's captioned symbol, and keep a round button's longest labels
+on its glass. `xem-settings` checks the opacity's default, range, saving
+and reading; `xem-ui`'s panel test its slider (under Touch controls,
+through the service, its ends, gone with Touch controls off). `xem-host`'s
+`the_touch_deck_is_drawn_at_the_settings_opacity_and_its_run_key_is_the_run_by_default_setting`
+renders the desktop and Android view over a black letterbox: TALK is half
+as bright at 50% and a tenth at 10%, whole while a finger is on it,
+drawn under the open panel at the setting's opacity, and RUN turns Run by
+default on (the stick then holding the run button, RUN lit) and off; its
+other touch tests hold the stick and TALK, keep taps, queue AUTO's toggle,
+toggle the view with LOOK (the stick, the jump and the turns gone while it
+shows) and give the game Select from MAP and HIDE. In the browser
+(`page.test.mjs`, the fixture reporting a field with the player walking):
+the walking deck by its labels, TALK the largest with the arc about it,
+the stick, JUMP's Triangle, RUN through the settings (Circle beside the
+direction while on), TALK drawn about 30% as strongly at 30% and whole
+while held, an opacity of 5 refused, the dialogue's deck as a window opens
+(Confirm in place, the stick steering unseen until it moves), the Circle,
+L1 and R1 that map 0's scripts test added to it by their symbols (Circle
+held holding the game's) and Settings a touch away;
+`first-person.test.mjs` (local) toggles the view with LOOK.
+
+By hand on the Android emulator (the smoke test's pixel_6 AVD, 2400 by
+1080 in landscape, the user's disc 1, fingers as `adb shell input` swipes
+held in place, the pad read from the host's `pad buttons` log): states of
+eight contexts (a field, its menu, a dialogue, a battle's ring and attack
+page, the world map on foot and in a vehicle, a bout) each logged and
+showed its deck; RUN saved `run_by_default` and the stick then held the run
+button beside its direction; DASH stayed held after its touch, with A
+pressed beside it, until its next touch, and THROTTLE likewise; LOOK took
+the stick, the jump and the turns away and a drag turned the view; the
+gear opened Settings with the deck drawn beside the panel, and the slider
+dragged to 40% saved `touch_opacity: 40`, the deck fading as it moved and
+a held JUMP drawn whole.
+
+Not measured: the layout's sizes and places come from a thumb's reach on
+a phone held in landscape (the primary about 14 mm from the right edge and
+11 from the lower on a 52 dp unit), not from trials with people.
 
 ### Headsets: hands, gaze and control decks
 
@@ -8261,7 +8417,7 @@ another action, which stays that action's; an action unbound in
 Shortcuts (an empty binding) stays unbound.
 Touch screens and headsets have AUTO beside the picture in a field's
 scenes and dialogue (`Context::Event` and `Context::Dialogue`): the touch
-deck shows it above the face buttons, a headset beside the screen's right
+deck shows it among the keys above its primary button, a headset beside the screen's right
 edge (`overlay::side_keys`, where no control deck holds the keys there),
 lit while auto-advance is on; a touch, or a tap or pinch aimed at it, is
 the same app action, never a press of the game's.
@@ -9037,8 +9193,8 @@ button group's option of several words wraps them on a panel too narrow for
 its line. About shows the app's version (`xem_ui::VERSION`: a release's
 `XEM_RELEASE_VERSION` without its `v`, else the workspace's). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
-(hand gestures, the headset pointer, Stop at ledges, touch controls,
-reduced transparency and motion); Shortcuts lists every app operation with
+(hand gestures, the headset pointer, Stop at ledges, touch controls and
+their opacity, reduced transparency and motion); Shortcuts lists every app operation with
 its bindings and edits the chosen one in place (Recenter headset view among
 them, with no default binding: the headset card's Recenter button and the
 automation reach it; Toggle first-person view, V and Back+R1, last);
@@ -9274,10 +9430,10 @@ as JSON text or bytes.
   works the panel as the native hosts' does ([Desktop host and settings
   panel](#desktop-host-and-settings-panel)); touch pointers play the touch
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
-  points at menu entries. In a field, Select's keys, the deck's SELECT and
+  points at menu entries. In a field, Select's keys and
   the gamepad's Back alone toggle first-person inspection while the player
   walks where Select shows no picture, held while a dialogue shows they
-  hide its windows ([Hiding a dialogue](#hiding-a-dialogue)), and the gamepad's right stick's
+  (and the deck's HIDE) hide its windows ([Hiding a dialogue](#hiding-a-dialogue)), and the gamepad's right stick's
   click and Toggle first-person view (V, Back+R1, the deck's LOOK; the
   runtime keeps these requests for its next frame, so the page's operations
   never see them) anywhere in it but its menu; the arrow keys, the right
