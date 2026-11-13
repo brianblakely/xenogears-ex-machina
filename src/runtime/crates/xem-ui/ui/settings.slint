@@ -923,11 +923,13 @@ export component SettingsPanel inherits Window {
     in-out property <bool> fast-disc;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
-    // ledge brake, touch controls, reduced transparency and motion.
+    // ledge brake, touch controls and how opaque they are drawn (percent),
+    // reduced transparency and motion.
     in-out property <bool> assist-gestures;
     in-out property <int> assist-pointer;
     in-out property <bool> assist-ledge-brake;
     in-out property <bool> assist-touch;
+    in-out property <float> assist-touch-opacity: 100;
     in-out property <bool> assist-solid;
     in-out property <bool> assist-still;
     in-out property <bool> rewind-enabled;
@@ -966,7 +968,7 @@ export component SettingsPanel inherits Window {
     // auto-advance-dwell, movie-skip, fast-disc, language) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
-    // touch, solid, still) and value.
+    // touch, touch-opacity, solid, still) and value.
     callback assist-edited(string, int);
     callback rewind-enabled-edited(bool);
     callback rewind-interval-edited(int);
@@ -1621,6 +1623,21 @@ export component SettingsPanel inherits Window {
                                     label: "Touch controls";
                                     checked <=> root.assist-touch;
                                     toggled(on) => { root.assist-edited("touch", on ? 1 : 0); }
+                                }
+                                // How opaque the touch controls are drawn
+                                // (xem_settings' MIN_TOUCH_OPACITY to
+                                // MAX_TOUCH_OPACITY, in steps of 5); they
+                                // show beside the panel as it changes.
+                                if root.assist-touch: SliderRow {
+                                    label: "Touch controls opacity";
+                                    value-text: "\{round(root.assist-touch-opacity)}%";
+                                    RingSlider {
+                                        accessible-label: "Touch controls opacity";
+                                        minimum: 10; maximum: 100;
+                                        value <=> root.assist-touch-opacity;
+                                        step: 5;
+                                        changed(value) => { root.assist-edited("touch-opacity", round(value / 5) * 5); }
+                                    }
                                 }
                                 Divider { }
                                 ToggleRow {

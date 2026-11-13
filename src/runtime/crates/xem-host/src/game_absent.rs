@@ -44,6 +44,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn deck_scene(&mut self) -> (bool, u16) {
+        match *self {}
+    }
+
     pub fn field(&mut self) -> Option<xem_core::field::Field> {
         match *self {}
     }

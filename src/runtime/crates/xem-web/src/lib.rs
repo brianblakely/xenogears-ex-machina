@@ -603,10 +603,14 @@ impl XemApp {
         // back, say).
         let inspecting = self.first_person();
         let picture = self.renderer.as_ref().and_then(|r| r.picture);
+        // Whether Select shows the field map's picture here (the deck's
+        // MAP), and the buttons the map's scripts test (an activity's).
+        let (map_picture, tested) = self.session.as_mut().map_or((false, 0), |session| (session.runtime.field_controls().picture, session.runtime.field_script_buttons()));
         if let (Some(picture), Some(renderer)) = (picture, &self.renderer) {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let (width, height) = renderer.size();
-            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui, inspecting);
+            let scene = xem_assist::touch::Scene { ui, inspecting, picture: map_picture, tested };
+            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), scene);
         }
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
         let Some(session) = self.session.as_mut() else { return };
@@ -635,8 +639,12 @@ impl XemApp {
             }
             renderer.overlay.marks = marks;
             renderer.overlay.style = style;
-            let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            renderer.overlay.deck = if shown { xem_assist::draw::deck_widgets(&self.deck, ui, auto_advance, inspecting) } else { Vec::new() };
+            let (lit, opacity) = {
+                let settings = self.settings.borrow();
+                let settings = settings.settings();
+                (xem_assist::draw::Lit { auto_advance: settings.auto_advance.enabled, first_person: inspecting, run: settings.run_by_default }, settings.assisted.touch_alpha())
+            };
+            renderer.overlay.deck = if shown { xem_assist::draw::deck_widgets(&self.deck, lit, opacity) } else { Vec::new() };
         }
         self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
@@ -1246,6 +1254,10 @@ impl XemApp {
     }
 
     pub fn set_panel_visible(&mut self, visible: bool) {
+        // The touch deck lets go under the panel (it stays drawn there).
+        if visible {
+            self.deck.release();
+        }
         if let Some(renderer) = &mut self.renderer {
             if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() {
                 panel.cancel_pointer();
@@ -1367,6 +1379,11 @@ impl XemApp {
                 Touched::Settings => self.set_panel_visible(true),
                 Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
                 Touched::FirstPerson => self.look_asked = true,
+                Touched::Run => {
+                    // Run by default, the setting every input shares.
+                    let on = self.settings.borrow().settings().run_by_default;
+                    let _ = self.settings.borrow_mut().apply(SettingChange::RunByDefault(!on));
+                }
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },
@@ -1867,13 +1884,18 @@ impl XemApp {
             "touch": {
                 "touched": self.touched,
                 "controls": self.deck.controls.iter().map(|(c, r)| json!({
-                    "control": format!("{c:?}"), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
+                    "control": format!("{c:?}"), "label": c.label(self.deck.scene()), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
                 })).collect::<Vec<_>>(),
-                // Where the stick rests and its knob's reach; where it shows
-                // (none while first-person inspection shows).
-                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone() })),
+                // Where the stick rests, its knob's reach, and whether it
+                // rests in view (where the game reads the directions); where
+                // it shows (none while first-person inspection shows, nor at
+                // rest where it does not rest in view).
+                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone(), "rests": s.rests })),
                 "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1], "held": s.held })),
+                // What is held (fingers' controls, latched keys, the stick's
+                // directions) and the latched keys among them.
                 "held": self.deck.held().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
+                "latched": self.deck.latched().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
             },
             "xr": {
                 "input": self.xr_input.is_some(),

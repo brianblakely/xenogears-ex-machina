@@ -29,6 +29,19 @@ fn main() {
         Widget::Region,
         Widget::Key(Icon::Text("FOE 3".into()), State::Active),
         Widget::Key(Icon::Text("ALLY 2".into()), State::Normal),
+        // The touch decks' own: the pause, Settings, the camera's turns,
+        // words on round buttons and an attack by its symbol and name.
+        Widget::Button(Icon::Pause, State::Normal),
+        Widget::Button(Icon::Gear, State::Normal),
+        Widget::Button(Icon::Turn(Dir::Left), State::Normal),
+        Widget::Button(Icon::Turn(Dir::Right), State::Pressed),
+        Widget::Button(Icon::Text("TALK".into()), State::Normal),
+        Widget::Button(Icon::Text("SPECIAL".into()), State::Normal),
+        Widget::Button(Icon::Captioned(Box::new(Icon::Triangle), "WEAK".into()), State::Normal),
+        Widget::Button(Icon::Captioned(Box::new(Icon::Cross), "FIERCE".into()), State::Pressed),
+        Widget::Key(Icon::Text("RUN".into()), State::Active),
+        Widget::Key(Icon::Text("THROTTLE".into()), State::Active),
+        Widget::Stick([true, false, false, true]),
     ];
     let columns = 8u32;
     let band_rows = (widgets.len() as u32).div_ceil(columns);

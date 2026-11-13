@@ -238,6 +238,19 @@ pub fn field_controls(memory: &dyn GameMemory, mode: Option<u32>) -> FieldContro
     FieldControls { field, walking, menu, picture: picture_shown(memory) }
 }
 
+/// The pad buttons the running field map's scripts test
+/// ([`script_buttons`]), whatever the context shows there: an activity's
+/// scripts go on testing the pad while one of them holds a window open, or
+/// beside the player's own control (the `event` context carries them for a
+/// scene alone). Read while the field runs with its overlay loaded; none
+/// otherwise.
+pub fn field_script_buttons(memory: &dyn GameMemory, mode: Option<u32>) -> u16 {
+    if !overlay_runs(memory, mode, 1) {
+        return 0;
+    }
+    u32_at(memory, FIELD_MAP_ID).map_or(0, |map| script_buttons((map & 0xFFF) as u16))
+}
+
 /// Whether Select shows the field map's picture, as `field_picture_show`
 /// finds it: the map (`mode_field_map_id` below its flag bits) has one
 /// and the party holds its item.
@@ -505,6 +518,34 @@ mod tests {
         ram.write(FIELD_MENU_REQUEST, &0xFFu32.to_le_bytes()).unwrap();
         ram.write(FIELD_PLAYER_CONTROL_POLLED, &0u32.to_le_bytes()).unwrap();
         assert_eq!(field_controls(&ram, Some(1)), FieldControls { field: true, ..FieldControls::default() }, "a dialogue, an event");
+    }
+
+    #[test]
+    fn a_fields_script_buttons_are_its_maps_whatever_its_context_and_none_outside_it() {
+        // Map 565's console (its scripts test the directions, Confirm and
+        // Cancel), the player walking: the context alone carries no buttons.
+        let mut ram = field_ram();
+        ram.write(FIELD_MAP_ID, &(0x4000u32 | 565).to_le_bytes()).unwrap();
+        assert_eq!(read_context(&ram, Some(1)), Context::Walk);
+        assert_eq!(field_script_buttons(&ram, Some(1)), 0xf060);
+        // A window open: a dialogue's context, the same buttons.
+        ram.write(FIELD_OPEN_WINDOWS, &1u16.to_le_bytes()).unwrap();
+        assert!(matches!(read_context(&ram, Some(1)), Context::Dialogue { .. }));
+        assert_eq!(field_script_buttons(&ram, Some(1)), 0xf060);
+        // A scene's context carries them itself.
+        ram.write(FIELD_OPEN_WINDOWS, &0u16.to_le_bytes()).unwrap();
+        ram.write(FIELD_PLAYER_CONTROL_POLLED, &0u32.to_le_bytes()).unwrap();
+        assert_eq!(read_context(&ram, Some(1)), Context::Event { map: 565, buttons: 0xf060 });
+        // A map whose scripts test none; another mode; the field's overlay
+        // not loaded yet.
+        ram.write(FIELD_MAP_ID, &30u32.to_le_bytes()).unwrap();
+        assert_eq!(field_script_buttons(&ram, Some(1)), 0);
+        ram.write(FIELD_MAP_ID, &565u32.to_le_bytes()).unwrap();
+        for mode in [None, Some(2), Some(3), Some(5)] {
+            assert_eq!(field_script_buttons(&ram, mode), 0, "{mode:?}");
+        }
+        ram.write(MODE_NEXT_MODE, &1u32.to_le_bytes()).unwrap();
+        assert_eq!(field_script_buttons(&ram, Some(1)), 0, "the overlay still loads");
     }
 
     #[test]

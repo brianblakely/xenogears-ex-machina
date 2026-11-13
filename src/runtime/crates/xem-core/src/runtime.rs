@@ -940,6 +940,13 @@ impl<M: GameModule> Runtime<M> {
         let mode = self.services().mode;
         crate::context::field_controls(self.memory(), mode)
     }
+
+    /// The pad buttons the running field map's scripts test (none outside
+    /// a field, [`crate::context::field_script_buttons`]).
+    pub fn field_script_buttons(&mut self) -> u16 {
+        let mode = self.services().mode;
+        crate::context::field_script_buttons(self.memory(), mode)
+    }
 }
 
 impl<M: GameModule> Runtime<M> {

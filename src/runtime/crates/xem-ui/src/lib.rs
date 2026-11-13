@@ -619,6 +619,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     });
     panel.set_assist_ledge_brake(assisted.ledge_brake);
     panel.set_assist_touch(assisted.touch_controls);
+    panel.set_assist_touch_opacity(f32::from(assisted.touch_opacity));
     panel.set_assist_solid(assisted.reduced_transparency);
     panel.set_assist_still(assisted.reduced_motion);
     panel.set_rewind_enabled(settings.rewind_enabled);
@@ -761,6 +762,8 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 },
                 "ledge-brake" => assisted.ledge_brake = on,
                 "touch" => assisted.touch_controls = on,
+                // The slider's value, within the setting's range.
+                "touch-opacity" => assisted.touch_opacity = value.clamp(i32::from(xem_settings::MIN_TOUCH_OPACITY), i32::from(xem_settings::MAX_TOUCH_OPACITY)) as u8,
                 "solid" => assisted.reduced_transparency = on,
                 "still" => assisted.reduced_motion = on,
                 _ => return,

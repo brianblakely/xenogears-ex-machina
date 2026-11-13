@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, describe, test } from 'node:test';
 import { runInNewContext } from 'node:vm';
-import { NO_WEBGPU, WEBGPU, pixelStats, settingsSection, shot, start, status, syntheticDisc } from './support.mjs';
+import { NO_WEBGPU, WEBGPU, decodePng, pixelStats, settingsSection, shot, start, status, syntheticDisc } from './support.mjs';
 
 async function canvasShot(page, name) {
   const png = await page.locator('canvas').screenshot({ path: shot(name) });
@@ -387,15 +387,22 @@ describe('automation over a game module fixture', () => {
     assert.deepEqual(withPanel, [], 'the panel has the input');
   });
 
-  test('fingers play the touch controls and the stick beside the picture and let go when lifted', async () => {
+  test('fingers play the deck of what the game plays: the stick, its buttons and the app\'s keys, at the opacity set', async () => {
     const touch = await browser.page('?game=/fixtures/fixture.wasm');
     try {
       await touch.evaluate(async () => {
         await window.xem.boot({ executable: false });
-        window.xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+        // The fixture reports the field's mode; with no menu requested, no
+        // window open and the player's control polled, the player walks (on
+        // map 30, whose scripts test no button).
+        window.xem.command({ cmd: 'write_memory', address: 0x80000110, hex: '01000000' });
+        window.xem.command({ cmd: 'write_memory', address: 0x8004F34C, hex: '1e000000' });
+        window.xem.command({ cmd: 'write_memory', address: 0x800ADB64, hex: 'ff' });
+        window.xem.command({ cmd: 'write_memory', address: 0x800ADB68, hex: '01000000' });
         window.xem.setRunning(true);
         for (let i = 0; i < 4; i++) await new Promise(requestAnimationFrame);
       });
+      assert.equal((await touch.evaluate(() => window.xem.command({ cmd: 'context' }))).kind, 'walk');
       // A finger at `at`: a deck control's name, canvas pixels, or the
       // canvas's middle.
       const finger = (type, id, at) => touch.evaluate(async ({ type, id, at }) => {
@@ -409,15 +416,28 @@ describe('automation over a game module fixture', () => {
         const s = window.xem.status();
         return { held: s.touch.held, buttons: window.xem.command({ cmd: 'status' }).pads[0].buttons.sort(), touched: s.touch.touched };
       }, { type, id, at });
-      // The first touch shows the deck (laid out from the picture's place).
+      const deck = () => touch.evaluate(() => {
+        const s = window.xem.status();
+        return {
+          labels: Object.fromEntries(s.touch.controls.map((c) => [c.control, c.label])), controls: s.touch.controls,
+          stick: s.touch.stick, shown: s.touch.stickShown, width: document.querySelector('canvas').width,
+        };
+      });
+      // The first touch shows the deck (laid out from the picture's place):
+      // the walking deck, its buttons named for what they do.
       await finger('pointerdown', 9, null);
       await finger('pointerup', 9, null);
-      const { controls, stick, width } = await touch.evaluate(() => {
-        const s = window.xem.status();
-        return { controls: s.touch.controls.map((c) => c.control), stick: s.touch.stick, width: document.querySelector('canvas').width };
+      const { labels, controls, stick, width } = await deck();
+      assert.deepEqual(labels, {
+        Settings: 'gear', Confirm: 'TALK', CameraLeft: 'turn left', Jump: 'JUMP', CameraRight: 'turn right',
+        Menu: 'MENU', Run: 'RUN', Look: 'LOOK', Start: 'pause',
       });
-      assert.ok(controls.includes('Confirm') && controls.includes('Settings') && controls.includes('Select') && !controls.includes('Up'), JSON.stringify(controls));
-      assert.ok(stick && stick.x < width / 2 && stick.reach > stick.deadZone, `the stick rests on the left: ${JSON.stringify({ stick, width })}`);
+      // TALK under the right thumb, the largest; the arc about it.
+      const place = (name) => controls.find((c) => c.control === name);
+      const [talk, jump] = [place('Confirm'), place('Jump')];
+      assert.ok(talk.x > width / 2 && controls.every((c) => c.control === 'Confirm' || c.width < talk.width || c.width > c.height), JSON.stringify(controls));
+      assert.ok(jump.x < talk.x && jump.y < talk.y && place('CameraRight').y < jump.y && place('CameraLeft').x < jump.x, JSON.stringify(controls));
+      assert.ok(stick && stick.rests && stick.x < width / 2 && stick.reach > stick.deadZone, `the stick rests on the left: ${JSON.stringify({ stick, width })}`);
       // The stick: a finger on the screen's left half centres it where it
       // touched (here below where it rests); its travel holds the D-pad's
       // eighth.
@@ -431,11 +451,94 @@ describe('automation over a game module fixture', () => {
       assert.deepEqual(await finger('pointerup', 2, 'Confirm'), { held: ['Down', 'Right'], buttons: ['down', 'right'], touched: true });
       assert.deepEqual(await finger('pointercancel', 1, [x, y]), { held: [], buttons: [], touched: true }, 'a cancelled touch lets go');
       assert.deepEqual(await touch.evaluate(() => window.xem.status().touch.stickShown), { centre: [stick.x, stick.y], knob: [stick.x, stick.y], held: false }, 'back at rest');
-      // SELECT is the game's Select outside a field (in one it toggles
-      // first-person inspection where the game's shows nothing).
-      assert.deepEqual(await finger('pointerdown', 4, 'Select'), { held: ['Select'], buttons: ['select'], touched: true });
-      assert.deepEqual(await finger('pointerup', 4, 'Select'), { held: [], buttons: [], touched: true });
-      assert.equal((await touch.evaluate(() => window.xem.status().renderer.firstPerson)), false);
+      // JUMP is the game's Triangle while a finger is on it.
+      assert.deepEqual(await finger('pointerdown', 4, 'Jump'), { held: ['Jump'], buttons: ['triangle'], touched: true });
+      assert.deepEqual(await finger('pointerup', 4, 'Jump'), { held: [], buttons: [], touched: true });
+      // RUN is the app's Run by default (no button of the game's): on, the
+      // stick runs (the game's Circle beside the direction).
+      const runs = (on) => touch.waitForFunction((on) => window.xem.settings.get().settings.run_by_default === on, on);
+      assert.deepEqual(await finger('pointerdown', 5, 'Run'), { held: ['Run'], buttons: [], touched: true });
+      await finger('pointerup', 5, 'Run');
+      await runs(true);
+      await finger('pointerdown', 1, [x, y]);
+      assert.deepEqual((await finger('pointermove', 1, [x, y - stick.reach])).buttons, ['circle', 'up']);
+      await finger('pointerup', 1, [x, y - stick.reach]);
+      await finger('pointerdown', 5, 'Run');
+      await finger('pointerup', 5, 'Run');
+      await runs(false);
+      // The touch controls' opacity (Settings' slider): the deck over the
+      // canvas at 100% and at 30%, a held button whole whatever the setting.
+      const brightness = async (control) => {
+        const c = (await deck()).controls.find((k) => k.control === control);
+        const box = await touch.locator('canvas').boundingBox();
+        const scale = await touch.evaluate(() => window.devicePixelRatio || 1);
+        const clip = { x: box.x + c.x / scale, y: box.y + c.y / scale, width: c.width / scale, height: c.height / scale };
+        const { rgba } = decodePng(await touch.screenshot({ clip }));
+        let sum = 0;
+        for (let i = 0; i < rgba.length; i += 4) sum += rgba[i] + rgba[i + 1] + rgba[i + 2];
+        return sum / (rgba.length / 4);
+      };
+      const opacity = async (percent) => {
+        const result = await touch.evaluate((percent) => {
+          const assisted = window.xem.settings.get().settings.assisted;
+          return window.xem.settings.apply({ Assisted: { ...assisted, touch_opacity: percent } });
+        }, percent);
+        for (let i = 0; i < 3; i++) await touch.evaluate(() => new Promise(requestAnimationFrame));
+        return result;
+      };
+      assert.equal((await touch.evaluate(() => window.xem.settings.get().settings.assisted.touch_opacity)), 100, 'as designed by default');
+      // The picture under the deck (no deck: Touch controls off).
+      const assisted = await touch.evaluate(() => window.xem.settings.get().settings.assisted);
+      await touch.evaluate((assisted) => window.xem.settings.apply({ Assisted: { ...assisted, touch_controls: false } }), assisted);
+      for (let i = 0; i < 3; i++) await touch.evaluate(() => new Promise(requestAnimationFrame));
+      const bare = await brightness('Confirm');
+      await touch.evaluate((assisted) => window.xem.settings.apply({ Assisted: assisted }), assisted);
+      for (let i = 0; i < 3; i++) await touch.evaluate(() => new Promise(requestAnimationFrame));
+      const whole = await brightness('Confirm');
+      assert.equal((await opacity(30)).ok, true);
+      const faint = await brightness('Confirm');
+      assert.ok(Math.abs(whole - bare) > 20, `TALK shows over the picture: ${whole} over ${bare}`);
+      const share = (faint - bare) / (whole - bare);
+      assert.ok(share > 0.2 && share < 0.4, `at 30% TALK is drawn about 30% as strongly: ${JSON.stringify({ bare, whole, faint, share })}`);
+      await finger('pointerdown', 6, 'Confirm');
+      const held = await brightness('Confirm');
+      await finger('pointerup', 6, 'Confirm');
+      assert.ok(Math.abs(held - bare) > 2 * Math.abs(faint - bare), `a held button shows whole: ${JSON.stringify({ bare, faint, held })}`);
+      assert.match(JSON.stringify(await opacity(5)), /opacity must be 10–100 percent/, 'never invisible');
+      assert.equal((await opacity(100)).ok, true);
+      // The deck follows what the game plays: a dialogue's page opens (a
+      // window open, none of the four taking a choice): NEXT, AUTO, HIDE
+      // and LOOK; the stick no longer rests in view, yet a finger steers it.
+      await touch.evaluate(async () => {
+        for (let window_ = 0; window_ < 4; window_++) {
+          window.xem.command({ cmd: 'write_memory', address: 0x800C2698 + window_ * 0x498 + 0x40E, hex: '0100' });
+        }
+        window.xem.command({ cmd: 'write_memory', address: 0x800B2174, hex: '0100' });
+        for (let i = 0; i < 4; i++) await new Promise(requestAnimationFrame);
+      });
+      assert.deepEqual((await touch.evaluate(() => window.xem.command({ cmd: 'context' }))), { kind: 'dialogue', choice: null });
+      const dialogue = await deck();
+      assert.deepEqual(dialogue.labels, { Settings: 'gear', Confirm: 'NEXT', Auto: 'AUTO', Select: 'HIDE', Look: 'LOOK', Start: 'pause' });
+      assert.deepEqual(dialogue.controls.find((c) => c.control === 'Confirm'), { ...talk, label: 'NEXT' }, 'Confirm where the thumb left it');
+      assert.ok(!dialogue.stick.rests && dialogue.shown === null, JSON.stringify(dialogue.stick));
+      await finger('pointerdown', 1, [x, y]);
+      assert.deepEqual(await finger('pointermove', 1, [x, y - stick.reach]), { held: ['Up'], buttons: ['up'], touched: true });
+      assert.equal((await deck()).shown.held, true, 'shown under the finger that steers it');
+      await finger('pointerup', 1, [x, y - stick.reach]);
+      // A map whose scripts test the pad (map 0: Circle, L1 and R1) adds
+      // those buttons to its decks, by the symbols the game's prompts name.
+      await touch.evaluate(async () => {
+        window.xem.command({ cmd: 'write_memory', address: 0x8004F34C, hex: '00000000' });
+        for (let i = 0; i < 4; i++) await new Promise(requestAnimationFrame);
+      });
+      const activity = await deck();
+      assert.deepEqual(activity.labels, {
+        Settings: 'gear', Confirm: 'NEXT', Auto: 'AUTO', Select: 'HIDE', Look: 'LOOK',
+        Cancel: 'circle', CameraRight: 'R1', CameraLeft: 'L1', Start: 'pause',
+      });
+      assert.deepEqual(await finger('pointerdown', 7, 'Cancel'), { held: ['Cancel'], buttons: ['circle'], touched: true });
+      assert.deepEqual(await finger('pointerup', 7, 'Cancel'), { held: [], buttons: [], touched: true });
+      assert.ok(activity.controls.find((c) => c.control === 'CameraLeft').x < activity.width / 2, 'L1 over the stick');
       // Settings is a touch away (not only Escape).
       await finger('pointerdown', 3, 'Settings');
       assert.equal(await touch.evaluate(() => window.xem.panel.visible()), true);

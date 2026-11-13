@@ -39,8 +39,18 @@ pub enum Icon {
     Square,
     Plus,
     Minus,
+    /// Two upright bars: the game's pause.
+    Pause,
+    /// A gear: the app's settings.
+    Gear,
+    /// An arc over the top with an arrowhead at its left or right end: the
+    /// camera turned that way.
+    Turn(Dir),
     /// A short uppercase label (A-Z, 0-9, space).
     Text(String),
+    /// A symbol with a small label under it (an attack's button as the
+    /// game's lists write it, with its name).
+    Captioned(Box<Icon>, String),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -96,8 +106,12 @@ const COPPER: [f32; 3] = [0.72, 0.42, 0.26];
 const INNER: [f32; 3] = [0.82, 0.84, 0.86];
 const INVALID: [f32; 3] = [0.62, 0.18, 0.16];
 
-/// Draws over `dst` with straight-alpha `src`.
+/// Draws over `dst` with straight-alpha `src` (nothing where it covers
+/// nothing, as for most of a widget's parts at most of its samples).
 fn over(dst: &mut Rgba, src: [f32; 3], alpha: f32) {
+    if alpha <= 0.0 {
+        return;
+    }
     let a = alpha.clamp(0.0, 1.0);
     let out_a = a + dst.0[3] * (1.0 - a);
     if out_a <= 1e-6 {
@@ -207,11 +221,24 @@ fn text_distance(text: &str, x: f32, y: f32, cx: f32, cy: f32, h: f32) -> f32 {
     let unit = h / 6.0;
     let advance = 5.5 * unit;
     let count = text.chars().count() as f32;
-    let left = cx - (advance * count - 1.5 * unit) / 2.0;
+    let half = (advance * count - 1.5 * unit) / 2.0;
+    // Far off the label's box (further than its strokes and their outline
+    // reach, under a third of its height) no stroke is near: most of a
+    // widget's samples.
+    let reach = 0.4 * h + 1.0;
+    if (x - cx).abs() > half + reach || (y - cy).abs() > h / 2.0 + reach {
+        return f32::MAX;
+    }
+    let left = cx - half;
     let top = cy - h / 2.0;
     let mut best = f32::MAX;
     for (i, c) in text.chars().enumerate() {
         let ox = left + i as f32 * advance;
+        // A letter further across than the nearest stroke so far cannot be
+        // nearer (its strokes lie within its four units).
+        if (ox - x).max(x - ox - 4.0 * unit) >= best {
+            continue;
+        }
         for &(ax, ay, bx, by) in glyph(c.to_ascii_uppercase()) {
             best = best.min(segment(x, y, ox + ax * unit, top + ay * unit, ox + bx * unit, top + by * unit));
         }
@@ -228,10 +255,52 @@ fn text_fit(text: &str, half_width: f32) -> f32 {
     2.0 * half_width * 6.0 / (1.1 * (5.5 * count - 1.5))
 }
 
+/// A label's stroke half-width for letters `h` tall: a key's own
+/// (`stroke`, a symbol's, less a fifth) for letters as tall as a key's,
+/// thinner for the smaller letters of a long or a captioning label, which
+/// would close up otherwise.
+fn text_stroke(h: f32, stroke: f32) -> f32 {
+    (stroke * 0.8).min(h * 0.155)
+}
+
 /// A symbol's distance (negative inside), centred, `r` its half size.
 fn icon_distance(icon: &Icon, x: f32, y: f32, r: f32, stroke: f32) -> f32 {
     match icon {
         Icon::None => f32::MAX,
+        Icon::Pause => rounded(x.abs() - r * 0.36, y, r * 0.17, r * 0.62, r * 0.06),
+        Icon::Gear => {
+            // Eight teeth about a ring with an open middle: every tooth's
+            // sector folded onto the first.
+            let rho = (x * x + y * y).sqrt();
+            let sector = std::f32::consts::FRAC_PI_4;
+            let folded = (y.atan2(x) + sector / 2.0).rem_euclid(sector) - sector / 2.0;
+            let tooth = rounded(rho * folded.cos() - r * 0.66, rho * folded.sin(), r * 0.2, r * 0.15, r * 0.04);
+            (rho - r * 0.6).min(tooth).max(r * 0.27 - rho)
+        }
+        Icon::Turn(dir) => {
+            // An arc from below level on one side over the top to level on
+            // the other, where its arrowhead points on round (down): for a
+            // turn to the right as drawn, mirrored for one to the left.
+            let across = if *dir == Dir::Left { -x } else { x };
+            let (px, py) = (across + r * 0.15, y - r * 0.05);
+            let radius = r * 0.58;
+            let rho = (px * px + py * py).sqrt();
+            // Clockwise from the right (y is down): the arc is the angles
+            // from 0.45 radians past the left back to the right.
+            let angle = py.atan2(px);
+            let along = if angle > std::f32::consts::PI - 0.45 { angle - std::f32::consts::TAU } else { angle };
+            let arc = if along <= 0.0 {
+                (rho - radius).abs()
+            } else {
+                let start = (-radius * 0.45f32.cos(), radius * 0.45f32.sin());
+                ((px - start.0).powi(2) + (py - start.1).powi(2)).sqrt().min(((px - radius).powi(2) + py * py).sqrt())
+            };
+            let head = triangle((px, py), (radius, r * 0.5), (radius - r * 0.34, -r * 0.02), (radius + r * 0.34, -r * 0.02));
+            (arc - stroke).min(head)
+        }
+        Icon::Text(text) => text_distance(text, x, y, 0.0, 0.0, r * 1.1) - text_stroke(r * 1.1, stroke),
+        // Drawn in its two parts ([`paint_icon`]).
+        Icon::Captioned(symbol, _) => icon_distance(symbol, x, y, r, stroke),
         Icon::Arrow(dir) => {
             let (fx, fy) = match dir {
                 Dir::Up => (x, y),
@@ -250,14 +319,30 @@ fn icon_distance(icon: &Icon, x: f32, y: f32, r: f32, stroke: f32) -> f32 {
         Icon::Square => rounded(x, y, r * 0.66, r * 0.66, 1.0).abs() - stroke,
         Icon::Plus => segment(x, y, -r * 0.75, 0.0, r * 0.75, 0.0).min(segment(x, y, 0.0, -r * 0.75, 0.0, r * 0.75)) - stroke,
         Icon::Minus => segment(x, y, -r * 0.75, 0.0, r * 0.75, 0.0) - stroke,
-        Icon::Text(text) => text_distance(text, x, y, 0.0, 0.0, r * 1.1) - stroke * 0.8,
     }
 }
 
+/// How tall a caption's letters are under its symbol, in the symbol's half
+/// sizes: small enough for six letters (STRONG, FIERCE) to stay on a round
+/// button's glass, and the same for a shorter one beside them.
+const CAPTION_HEIGHT: f32 = 0.48;
+
 /// Paints a solid symbol with a dark outline (legible at any transparency).
+/// A captioned one stands above the middle with its label under it.
 fn paint_icon(pixel: &mut Rgba, icon: &Icon, x: f32, y: f32, r: f32, stroke: f32, aa: f32, colour: [f32; 3]) {
-    let d = icon_distance(icon, x, y, r, stroke);
-    over(pixel, RECESS, cover(d - stroke * 0.9, aa) * 0.85);
+    let (d, outline) = match icon {
+        Icon::Captioned(symbol, caption) => {
+            paint_icon(pixel, symbol, x, y + r * 0.36, r * 0.72, stroke * 0.85, aa, colour);
+            let h = (r * CAPTION_HEIGHT).min(1.1 * text_fit(caption, r * 1.3));
+            let line = text_stroke(h, stroke);
+            (text_distance(caption, x, y, 0.0, r * 0.8, h) - line, line * 1.125)
+        }
+        // A label's outline follows its strokes (a key's: nine tenths of a
+        // symbol's stroke).
+        Icon::Text(_) => (icon_distance(icon, x, y, r, stroke), text_stroke(r * 1.1, stroke) * 1.125),
+        _ => (icon_distance(icon, x, y, r, stroke), stroke * 0.9),
+    };
+    over(pixel, RECESS, cover(d - outline, aa) * 0.85);
     over(pixel, colour, cover(d, aa));
 }
 
@@ -347,6 +432,11 @@ fn shade(widget: &Widget, style: Style, x: f32, y: f32, size: f32) -> Rgba {
             let wide = matches!(widget, Widget::Key(..));
             let (hw, hh) = if wide { (c * 0.96, c * 0.46) } else { (c * 0.86, c * 0.86) };
             let shell = if wide { rounded(x, y, hw, hh, hh * 0.45) } else { octagon(x, y, hw) };
+            // Beyond its shadow there is nothing of it (half of a key's
+            // square image).
+            if shell >= 6.0 {
+                return p;
+            }
             let inner = shell + c * 0.1;
             let t = ((y + hh) / (2.0 * hh)).clamp(0.0, 1.0);
             let pressed = *state == State::Pressed;
@@ -379,12 +469,12 @@ fn shade(widget: &Widget, style: Style, x: f32, y: f32, size: f32) -> Rgba {
                 let accent = segment(x, y, -hw * 0.35, -hh * 0.97, hw * 0.35, -hh * 0.97) - c * 0.025;
                 over(&mut p, if matches!(state, State::Hover | State::Active) { GOLD } else { COPPER }, cover(accent, aa) * if disabled { 0.3 } else { 0.9 });
             }
-            // The symbol, solid; a key's long label (THROTTLE) smaller, to
-            // stay on its glass.
+            // The symbol, solid; a long label (a key's THROTTLE, a round
+            // button's STRONG) smaller, to stay on its glass.
             let colour = if disabled { SILVER_DARK } else if pressed { [1.0, 0.97, 0.9] } else { [1.0; 3] };
             let r = if wide { hh * 0.62 } else { c * 0.46 };
             let r = match icon {
-                Icon::Text(text) if wide => r.min(text_fit(text, hw * 0.85)),
+                Icon::Text(text) => r.min(text_fit(text, if wide { hw * 0.85 } else { (hw - c * 0.1) * 0.84 })),
                 _ => r,
             };
             paint_icon(&mut p, icon, x, y, r, c * 0.06, aa, colour);
@@ -541,9 +631,88 @@ mod tests {
         assert!(alpha(&opaque, 128, 64, 64) > alpha(&rest, 128, 64, 64), "reduced transparency darkens the well");
     }
 
+    /// The pixels of `image` (`size` square) drawn in a symbol's solid white.
+    fn white(image: &[u8], size: u32) -> Vec<(u32, u32)> {
+        image.chunks(4).enumerate().filter(|(_, p)| p[0] > 240 && p[1] > 240 && p[2] > 240 && p[3] > 240).map(|(i, _)| (i as u32 % size, i as u32 / size)).collect()
+    }
+
+    #[test]
+    fn the_touch_decks_symbols_are_solid_shapes_on_a_round_buttons_glass() {
+        let button = |icon: Icon| draw(&Widget::Button(icon, State::Normal), 128, Style::default());
+        let is_white = |image: &[u8], x: u32, y: u32| white(image, 128).contains(&(x, y));
+        // A symbol's half size on a round button: 0.46 of the image's half.
+        let r = 64.0 * 0.46;
+        let at = |dx: f32, dy: f32| ((64.0 + dx * r).round() as u32, (64.0 + dy * r).round() as u32);
+        // The pause: two upright bars with the glass between them.
+        let pause = button(Icon::Pause);
+        for (dx, dy, bar) in [(-0.36, 0.0, true), (0.36, 0.0, true), (0.36, 0.5, true), (-0.36, -0.5, true), (0.0, 0.0, false), (0.36, 0.8, false), (0.75, 0.0, false)] {
+            let (x, y) = at(dx, dy);
+            assert_eq!(is_white(&pause, x, y), bar, "the pause at {dx}, {dy}");
+        }
+        // The gear: a ring with an open middle and a tooth each eighth.
+        let gear = button(Icon::Gear);
+        for (dx, dy, solid) in [(0.0, 0.0, false), (0.45, 0.0, true), (0.0, -0.45, true), (0.78, 0.0, true), (0.0, 0.78, true), (-0.55, -0.55, true), (0.95, 0.0, false)] {
+            let (x, y) = at(dx, dy);
+            assert_eq!(is_white(&gear, x, y), solid, "the gear at {dx}, {dy}");
+        }
+        let (sin, cos) = 22.5f32.to_radians().sin_cos();
+        let (x, y) = at(0.78 * cos, 0.78 * sin);
+        assert!(!is_white(&gear, x, y), "no tooth between two");
+        // The camera's turns: one the other's mirror, the arrowhead at the
+        // end it turns to, below the arc's level.
+        let (left, right) = (button(Icon::Turn(Dir::Left)), button(Icon::Turn(Dir::Right)));
+        assert_ne!(left, right);
+        for y in 0..128 {
+            for x in 0..128 {
+                assert_eq!(left[((y * 128 + x) * 4) as usize..][..4], right[((y * 128 + 127 - x) * 4) as usize..][..4], "mirrored at {x}, {y}");
+            }
+        }
+        let drawn = white(&right, 128);
+        let (min_x, max_x) = (drawn.iter().map(|p| p.0).min().unwrap(), drawn.iter().map(|p| p.0).max().unwrap());
+        assert!(min_x >= 64 - 28 && max_x <= 64 + 28, "within the button's glass: {min_x} to {max_x}");
+        let low: Vec<(u32, u32)> = drawn.iter().copied().filter(|p| p.1 > 64 + 6).collect();
+        assert!(low.iter().any(|p| p.0 > 64 + 8) && low.iter().all(|p| p.0 > 64 || p.1 < 64 + 14), "the arrowhead hangs from the right end: {low:?}");
+        // An attack's symbol with its name under it, both on the glass.
+        for (symbol, caption) in [(Icon::Triangle, "WEAK"), (Icon::Square, "STRONG"), (Icon::Cross, "FIERCE")] {
+            let captioned = draw(&Widget::Button(Icon::Captioned(Box::new(symbol.clone()), caption.into()), State::Normal), 256, Style::default());
+            let drawn = white(&captioned, 256);
+            let (upper, lower): (Vec<(u32, u32)>, Vec<(u32, u32)>) = drawn.iter().partition(|p| p.1 < 128 + 12);
+            assert!(upper.len() > 300 && lower.len() > 150, "{caption}: the symbol above ({}) and its name below ({})", upper.len(), lower.len());
+            // The glass inside the shell: 0.76 of the half across at the
+            // middle, less toward the octagon's lower facets.
+            let (left, right) = (lower.iter().map(|p| p.0).min().unwrap(), lower.iter().map(|p| p.0).max().unwrap());
+            let lowest = lower.iter().map(|p| p.1).max().unwrap();
+            assert!(left >= 128 - 78 && right <= 128 + 78 && lowest <= 128 + 80, "{caption}: its name spans {left} to {right}, down to {lowest}");
+            let plain = draw(&Widget::Button(symbol, State::Normal), 256, Style::default());
+            assert_ne!(captioned, plain);
+        }
+    }
+
+    #[test]
+    fn a_round_buttons_longest_labels_stay_on_its_glass() {
+        // The decks' words on round buttons (a bout's SPECIAL the longest),
+        // on a 128-pixel button: its glass within 48 pixels of the middle.
+        for label in ["SPECIAL", "ENTER", "TALK", "JUMP", "NEXT", "BACK", "OK", "A"] {
+            let button = draw(&Widget::Button(Icon::Text(label.into()), State::Normal), 128, Style::default());
+            let drawn = white(&button, 128);
+            assert!(drawn.len() > 60, "{label}: a solid label ({} pixels)", drawn.len());
+            let (left, right) = (drawn.iter().map(|p| p.0).min().unwrap(), drawn.iter().map(|p| p.0).max().unwrap());
+            assert!(left >= 64 - 48 && right <= 64 + 48, "{label}: its letters span pixels {left} to {right}");
+        }
+        // A short label keeps a symbol's size; a long one's strokes thin
+        // with its letters, which stay open.
+        let tall = |label: &str| {
+            let drawn = white(&draw(&Widget::Button(Icon::Text(label.into()), State::Normal), 128, Style::default()), 128);
+            drawn.iter().map(|p| p.1).max().unwrap() - drawn.iter().map(|p| p.1).min().unwrap()
+        };
+        assert!(tall("OK") > tall("TALK") && tall("TALK") > tall("SPECIAL"), "{} {} {}", tall("OK"), tall("TALK"), tall("SPECIAL"));
+        assert!(tall("SPECIAL") >= 10, "still legible: {} pixels tall", tall("SPECIAL"));
+    }
+
     #[test]
     fn labels_draw_every_letter_they_use() {
-        for word in ["ALL", "NONE", "START", "SELECT", "JUMP", "MENU", "CANCEL", "OK", "BACK", "DASH", "CHARGE"] {
+        for word in ["ALL", "NONE", "START", "SELECT", "JUMP", "MENU", "CANCEL", "OK", "BACK", "DASH", "CHARGE", "TALK", "NEXT", "ENTER", "RUN", "LOOK", "AUTO",
+            "HIDE", "MAP", "VIEW", "BOARD", "LAND", "THROTTLE", "END", "WEAK", "STRONG", "FIERCE", "CLOSE", "DONE", "SPECIAL", "L1", "R2"] {
             for c in word.chars() {
                 assert!(!glyph(c).is_empty(), "{c}");
             }

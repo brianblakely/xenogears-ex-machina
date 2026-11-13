@@ -1,0 +1,4 @@
+- The touch controls are rebuilt for your thumbs: the main button sits under your right thumb with the next most useful ones in an arc around it, the stick is under your left, and Settings and Pause are tucked into the top corner.
+- They now change with what you're doing and show only the buttons that do something there: **TALK** and **JUMP** while exploring, **NEXT** in conversations, **OK** and **BACK** in menus, the three attacks by name in battle, **LAND** and **THROTTLE** in a ship, and Battling's own set.
+- **RUN** on the touch controls switches running on and off, and **DASH**, **CHARGE** and **THROTTLE** stay held after a tap so your thumb is free for the other buttons.
+- **Settings → Controls → Touch controls opacity** makes the touch controls fainter or stronger.

@@ -267,6 +267,13 @@ impl Game {
         settings.captures_mouse(self.session.runtime.context(), self.session.runtime.game_paused())
     }
 
+    /// What the touch deck is laid out by beside the context: whether
+    /// Select shows the field map's picture here, and the pad buttons the
+    /// map's scripts test (none outside a field).
+    pub fn deck_scene(&mut self) -> (bool, u16) {
+        (self.session.runtime.field_controls().picture, self.session.runtime.field_script_buttons())
+    }
+
     /// The field as the assisted controls read it (in a field).
     pub fn field(&mut self) -> Option<xem_core::field::Field> {
         if self.session.runtime.services().mode != Some(1) {
