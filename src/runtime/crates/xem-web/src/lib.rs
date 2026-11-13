@@ -1886,12 +1886,12 @@ impl XemApp {
                 "controls": self.deck.controls.iter().map(|(c, r)| json!({
                     "control": format!("{c:?}"), "label": c.label(self.deck.scene()), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
                 })).collect::<Vec<_>>(),
-                // Where the stick rests, its knob's reach, and whether it
-                // rests in view (where the game reads the directions); where
-                // it shows (none while first-person inspection shows, nor at
-                // rest where it does not rest in view).
-                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone(), "rests": s.rests })),
-                "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1], "held": s.held })),
+                // The left thumb's rest, the knob's reach, and whether the
+                // game reads the directions; where it shows (only under a
+                // finger holding it, none while first-person inspection
+                // shows).
+                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone(), "reads": s.reads })),
+                "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1] })),
                 // What is held (fingers' controls, latched keys, the stick's
                 // directions) and the latched keys among them.
                 "held": self.deck.held().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),

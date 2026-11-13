@@ -437,20 +437,22 @@ describe('automation over a game module fixture', () => {
       const [talk, jump] = [place('Confirm'), place('Jump')];
       assert.ok(talk.x > width / 2 && controls.every((c) => c.control === 'Confirm' || c.width < talk.width || c.width > c.height), JSON.stringify(controls));
       assert.ok(jump.x < talk.x && jump.y < talk.y && place('CameraRight').y < jump.y && place('CameraLeft').x < jump.x, JSON.stringify(controls));
-      assert.ok(stick && stick.rests && stick.x < width / 2 && stick.reach > stick.deadZone, `the stick rests on the left: ${JSON.stringify({ stick, width })}`);
-      // The stick: a finger on the screen's left half centres it where it
-      // touched (here below where it rests); its travel holds the D-pad's
-      // eighth.
+      assert.ok(stick && stick.reads && stick.x < width / 2 && stick.reach > stick.deadZone, `the stick on the left: ${JSON.stringify({ stick, width })}`);
+      assert.equal((await deck()).shown, null, 'no stick shows with no finger on it');
+      // The stick: a finger on the screen's left half shows it centred
+      // where it touched (here below the left thumb's rest); its travel
+      // holds the D-pad's eighth.
       const [x, y] = [stick.x, stick.y + stick.reach / 2];
       assert.deepEqual(await finger('pointerdown', 1, [x, y]), { held: [], buttons: [], touched: true }, 'still, it holds nothing');
-      assert.deepEqual(await touch.evaluate(() => window.xem.status().touch.stickShown.held), true);
+      const shown = (await deck()).shown;
+      assert.ok(shown && [shown.centre, shown.knob].every(([cx, cy]) => Math.hypot(cx - x, cy - y) < 1), `shown under the finger as it touches: ${JSON.stringify(shown)}`);
       assert.deepEqual(await finger('pointermove', 1, [x, y - stick.reach]), { held: ['Up'], buttons: ['up'], touched: true });
       assert.deepEqual(await finger('pointerdown', 2, 'Confirm'), { held: ['Up', 'Confirm'], buttons: ['cross', 'up'], touched: true });
       assert.deepEqual(await finger('pointermove', 1, [x + stick.reach, y]), { held: ['Right', 'Confirm'], buttons: ['cross', 'right'], touched: true }, 'the finger steers');
       assert.deepEqual(await finger('pointermove', 1, [x + stick.reach * 0.7, y + stick.reach * 0.7]), { held: ['Down', 'Right', 'Confirm'], buttons: ['cross', 'down', 'right'], touched: true }, 'a diagonal');
       assert.deepEqual(await finger('pointerup', 2, 'Confirm'), { held: ['Down', 'Right'], buttons: ['down', 'right'], touched: true });
       assert.deepEqual(await finger('pointercancel', 1, [x, y]), { held: [], buttons: [], touched: true }, 'a cancelled touch lets go');
-      assert.deepEqual(await touch.evaluate(() => window.xem.status().touch.stickShown), { centre: [stick.x, stick.y], knob: [stick.x, stick.y], held: false }, 'back at rest');
+      assert.equal((await deck()).shown, null, 'gone once let go');
       // JUMP is the game's Triangle while a finger is on it.
       assert.deepEqual(await finger('pointerdown', 4, 'Jump'), { held: ['Jump'], buttons: ['triangle'], touched: true });
       assert.deepEqual(await finger('pointerup', 4, 'Jump'), { held: [], buttons: [], touched: true });
@@ -508,7 +510,7 @@ describe('automation over a game module fixture', () => {
       assert.equal((await opacity(100)).ok, true);
       // The deck follows what the game plays: a dialogue's page opens (a
       // window open, none of the four taking a choice): NEXT, AUTO, HIDE
-      // and LOOK; the stick no longer rests in view, yet a finger steers it.
+      // and LOOK; the game reads no direction, yet a finger steers the stick.
       await touch.evaluate(async () => {
         for (let window_ = 0; window_ < 4; window_++) {
           window.xem.command({ cmd: 'write_memory', address: 0x800C2698 + window_ * 0x498 + 0x40E, hex: '0100' });
@@ -520,10 +522,10 @@ describe('automation over a game module fixture', () => {
       const dialogue = await deck();
       assert.deepEqual(dialogue.labels, { Settings: 'gear', Confirm: 'NEXT', Auto: 'AUTO', Select: 'HIDE', Look: 'LOOK', Start: 'pause' });
       assert.deepEqual(dialogue.controls.find((c) => c.control === 'Confirm'), { ...talk, label: 'NEXT' }, 'Confirm where the thumb left it');
-      assert.ok(!dialogue.stick.rests && dialogue.shown === null, JSON.stringify(dialogue.stick));
+      assert.ok(!dialogue.stick.reads && dialogue.shown === null, JSON.stringify(dialogue.stick));
       await finger('pointerdown', 1, [x, y]);
       assert.deepEqual(await finger('pointermove', 1, [x, y - stick.reach]), { held: ['Up'], buttons: ['up'], touched: true });
-      assert.equal((await deck()).shown.held, true, 'shown under the finger that steers it');
+      assert.ok((await deck()).shown, 'shown under the finger that steers it');
       await finger('pointerup', 1, [x, y - stick.reach]);
       // A map whose scripts test the pad (map 0: Circle, L1 and R1) adds
       // those buttons to its decks, by the symbols the game's prompts name.

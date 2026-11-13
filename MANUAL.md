@@ -183,8 +183,9 @@ The touch controls are laid out for your thumbs, and they change with what
 you're doing, showing only the buttons that do something there.
 
 **Left thumb: the stick.** Put a thumb down anywhere on the left half of the
-screen: the stick centres itself under it, and sliding the thumb that way
-walks, steers or moves a cursor, diagonals included.
+screen: the stick appears centred under it, and sliding the thumb that way
+walks, steers or moves a cursor, diagonals included. It disappears when you
+lift your thumb.
 
 **Right thumb: the buttons.** The big button under your thumb is always the
 main one: **TALK** while exploring, **NEXT** in a conversation, **OK** in

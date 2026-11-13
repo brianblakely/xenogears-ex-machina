@@ -5838,9 +5838,10 @@ screen's middle (187 degrees up from the right, just below level),
 neighbours a gap of 0.12 units apart. Small keys (1.26 by 0.66 units)
 stand in rows of two above the arc, their outer edge the primary's, and
 the app's Settings (a gear) and the game's pause (Start: two bars) in the
-top right corner (0.8 units). The stick rests as far from the lower left
-corner as the D-pad it stands for would (1.95 units); an activity's L1 and
-L2 stand above it. The deck stands in the letterbox beside the picture
+top right corner (0.8 units). The left thumb's rest, where the stick's
+well would stand, is as far from the lower left corner as the D-pad it
+stands for would be (1.95 units), and no control stands over that well; an
+activity's L1 and L2 stand above it. The deck stands in the letterbox beside the picture
 when it has room for the right hand's cluster (2.96 units across with its
 margins, at 44 dp or more a unit, the primary then as far in as the
 letterbox allows), else over the picture's lower corners at its full size.
@@ -5853,7 +5854,7 @@ deck's primary, always in the same place, so the thumb finds it whatever
 it does now; Settings and the pause keep their corner (a menu, which
 reads no Start, has no pause).
 
-| The game plays | Primary | On the arc | Keys | Stick rests |
+| The game plays | Primary | On the arc | Keys | Reads the stick |
 | --- | --- | --- | --- | --- |
 | A field, walking | TALK | the camera's turn left (L1), JUMP, its turn right (R1) | MENU, RUN, LOOK; MAP (Select) where Select shows the map's picture | yes |
 | ... with first-person inspection | TALK | | MENU, LOOK | no stick |
@@ -5923,13 +5924,15 @@ and its travel from there past a dead zone (a quarter of the knob's reach,
 which is three quarters of a unit) holds the D-pad's eighth, a direction
 or a diagonal's two, kept a few degrees past a boundary (the headset
 deck's stick's rule, `arcade::eighth`); a finger going past the reach
-drags the centre along, so a short way back turns it round. It rests in
-view where the game reads the directions (the table's last column): a
-hollow halo with a fin for each direction, gilded while held, and its
-knob, a button that follows the finger. Elsewhere a finger still steers
-it, so that a direction held through a scene walks as soon as the player
-does, and it shows under that finger once it steers (not under a tap on
-the left half). A short still touch there is still a tap on the picture.
+drags the centre along, so a short way back turns it round. It shows only
+under a finger holding it, never at rest: a hollow halo with a fin for each
+direction, gilded while held, and its knob, a button that follows the
+finger, both whole whatever the opacity. Where the game reads the
+directions (the table's last column) it shows as the finger touches.
+Elsewhere a finger still steers it, so that a direction held through a
+scene walks as soon as the player does, and it shows under that finger
+once it steers (not under a tap on the left half). A short still touch
+there is still a tap on the picture.
 A finger alone dragged on the picture (not one holding the stick) turns
 inspection's view, the scene following it; while that view shows the deck
 has no stick (it would walk nowhere) nor the jump and the camera's turns
@@ -5959,20 +5962,21 @@ Settings' Touch controls. `cargo run -p xem-assist --example touch_deck`
 draws every deck over a stand-in picture, on a 20:9 phone with the picture
 letterboxed and filling it, as a sheet for review. Android logs each deck
 as the game's context or the screen lays it out (`touch deck <control> x y
-w h`, and `touch stick x y reach` where the stick rests) and its smoke
+w h`, and `touch stick x y reach` at the left thumb's rest) and its smoke
 test holds Confirm on it and drags the stick to the right; the browser's status has
 the deck (`touch.controls` with each control's label and place, `stick`,
 `held`, `latched`), and its suite plays it with touch pointers.
 
 Tests: `xem-assist`'s `touch` tests check every deck's controls and
-labels and where the stick rests; that on five screens (a 20:9 phone
+labels and whether the game reads the stick; that on five screens (a 20:9 phone
 letterboxed and wide, a 16:9 phone, a 4:3 tablet, a phone browser in
 portrait) every control lies within the screen at a generous size (the
 primary 63 dp or more, the arc's buttons 44, keys 55 by 29), no two under
 one finger, none over the stick's well; the letterbox rule; Confirm,
 Settings, the pause, LOOK and the camera's turns in their places across
-decks; a round button's and a key's reach; the stick's steering, its rest
-and its steering through a dialogue; taps; the latches (a bout's DASH held
+decks; a round button's and a key's reach; the stick's steering, shown
+only under a finger (as it touches where the game reads it, once it
+steers elsewhere) and its steering through a dialogue; taps; the latches (a bout's DASH held
 while A is pressed, let go by its next touch, with the bout, and by the
 panel); a control the next deck lacks letting go; RUN, AUTO and LOOK
 pressing nothing of the game's and lit while on; drags and inspection.
@@ -5991,7 +5995,7 @@ toggle the view with LOOK (the stick, the jump and the turns gone while it
 shows) and give the game Select from MAP and HIDE. In the browser
 (`page.test.mjs`, the fixture reporting a field with the player walking):
 the walking deck by its labels, TALK the largest with the arc about it,
-the stick, JUMP's Triangle, RUN through the settings (Circle beside the
+the stick (none shown until a finger touches, gone once it lifts), JUMP's Triangle, RUN through the settings (Circle beside the
 direction while on), TALK drawn about 30% as strongly at 30% and whole
 while held, an opacity of 5 refused, the dialogue's deck as a window opens
 (Confirm in place, the stick steering unseen until it moves), the Circle,

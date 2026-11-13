@@ -350,10 +350,10 @@ pub struct DeckWidget {
 }
 
 /// The touch deck's widgets in drawing order: its controls as the game's
-/// context names them, then the stick's well and its knob over it (pressed
-/// while a finger holds it). Each is drawn `opacity` opaque (the setting's,
-/// `Assisted::touch_alpha`), but what a finger holds, which shows whole: a
-/// press is seen whatever the setting.
+/// context names them, then, under the finger holding it, the stick's well
+/// and its knob over it, pressed. Each is drawn `opacity` opaque (the
+/// setting's, `Assisted::touch_alpha`), but what a finger holds (the stick
+/// too), which shows whole: a press is seen whatever the setting.
 pub fn deck_widgets(deck: &crate::touch::Deck, lit: Lit, opacity: f32) -> Vec<DeckWidget> {
     let (scene, pressed, latched) = (deck.scene(), deck.pressed(), deck.latched());
     let drawn = |(widget, rect): (Widget, Rect), held: bool| DeckWidget { widget, rect, pixels: pixels(rect.width), opacity: if held { 1.0 } else { opacity } };
@@ -367,9 +367,8 @@ pub fn deck_widgets(deck: &crate::touch::Deck, lit: Lit, opacity: f32) -> Vec<De
         let square = |(x, y): (f32, f32), r: f32| Rect { x: x - r, y: y - r, width: 2.0 * r, height: 2.0 * r };
         // The well's halo (nine tenths of its square) just around the
         // knob's reach and the knob's glass (as a button's).
-        widgets.push(drawn((Widget::Stick(shown.directions), square(shown.centre, stick.radius() / 0.9)), shown.held));
-        let knob = if shown.held { State::Pressed } else { State::Normal };
-        widgets.push(drawn((Widget::Button(Icon::None, knob), square(shown.knob, stick.knob / 2.0)), shown.held));
+        widgets.push(drawn((Widget::Stick(shown.directions), square(shown.centre, stick.radius() / 0.9)), true));
+        widgets.push(drawn((Widget::Button(Icon::None, State::Pressed), square(shown.knob, stick.knob / 2.0)), true));
     }
     widgets
 }

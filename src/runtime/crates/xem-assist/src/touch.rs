@@ -20,9 +20,9 @@
 //!   (on no other control) centres it where it touched, and its travel from
 //!   there holds the D-pad's eighth (a direction, or two together on a
 //!   diagonal) beyond a small dead zone, the centre following a finger that
-//!   goes past the knob's reach. It rests in view where the game reads the
-//!   directions; elsewhere (a dialogue's page, a scene) it shows only under
-//!   a finger that steers it.
+//!   goes past the knob's reach. It shows only under a finger holding it:
+//!   where the game reads the directions as soon as the finger touches,
+//!   elsewhere (a dialogue's page, a scene) once that finger steers it.
 //! - **Holding.** A finger holds the control it is on and lets go when
 //!   lifted or cancelled: explicit press and release. A bout's DASH and
 //!   CHARGE and the ship's THROTTLE latch instead (a touch holds them, the
@@ -266,7 +266,7 @@ pub enum Slot {
 }
 
 /// The deck of `scene`: its controls and where each stands, and whether the
-/// stick rests in view (the game reads the directions there). The buttons
+/// game reads the directions there ([`Stick::reads`]). The buttons
 /// are those the game reads in that context (docs/runtime.md, Touch
 /// screens, lists what each presses).
 pub fn keys(scene: Scene) -> (Vec<(Control, Slot)>, bool) {
@@ -420,11 +420,13 @@ impl Rect {
 /// How far a round button takes a finger, in its radii.
 const ROUND_REACH: f32 = 1.08;
 
-/// The stick (target pixels): where it rests while no finger holds it,
-/// where a finger touching no control takes it, and its knob.
+/// The stick (target pixels): where the left thumb rests (the deck keeps
+/// its well there clear), where a finger touching no control takes it, and
+/// its knob.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Stick {
-    /// Its centre at rest, where a D-pad would stand.
+    /// The left thumb's rest, where a D-pad would stand: its well's centre
+    /// were it held there.
     pub rest: (f32, f32),
     /// The screen's left half.
     pub zone: Rect,
@@ -432,11 +434,11 @@ pub struct Stick {
     pub reach: f32,
     /// The knob's size (a button's).
     pub knob: f32,
-    /// Whether it shows while no finger holds it: where the game reads the
-    /// directions. Elsewhere a finger still steers it (what it holds is
-    /// there when the game reads them again), and it shows under that
-    /// finger once it travels.
-    pub rests: bool,
+    /// Whether the game reads the directions here: the stick shows as soon
+    /// as a finger takes it. Elsewhere a finger still steers it (what it
+    /// holds is there when the game reads them again), and it shows under
+    /// that finger once it travels. With no finger on it, it never shows.
+    pub reads: bool,
 }
 
 impl Stick {
@@ -455,14 +457,13 @@ impl Stick {
 const STICK_REACH: f32 = 0.75;
 const STICK_DEAD_ZONE: f32 = 0.25;
 
-/// How the stick shows (target pixels): its centre and its knob's, whether
-/// a finger holds it, and the D-pad's directions it holds (up, down, left,
-/// right).
+/// How the stick shows under the finger holding it (target pixels): its
+/// centre and its knob's, and the D-pad's directions it holds (up, down,
+/// left, right).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StickShown {
     pub centre: (f32, f32),
     pub knob: (f32, f32),
-    pub held: bool,
     pub directions: [bool; 4],
 }
 
@@ -537,7 +538,7 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, scene: Scene) -> 
     // The keys' rows: above the arc's top, their outer edge the primary's.
     let rows = py + (arc[2].1 - ARC / 2.0 - KEY_LIFT - KEY.1 / 2.0) * u;
     let outer = px + (PRIMARY / 2.0 - KEY.0 / 2.0) * u;
-    let (deck, rests) = keys(scene);
+    let (deck, reads) = keys(scene);
     let controls = deck.into_iter().map(|(control, slot)| (control, match slot {
         Slot::Primary => square(px, py, PRIMARY),
         Slot::Beside => square(px + arc[0].0 * u, py + arc[0].1 * u, ARC),
@@ -548,7 +549,7 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, scene: Scene) -> 
         Slot::Corner(n) => square(w - (CORNER_EDGE + CORNER / 2.0 + f32::from(n) * (CORNER + GAP)) * u, (CORNER_EDGE + CORNER / 2.0) * u, CORNER),
     })).collect();
     let zone = Rect { x: 0.0, y: 0.0, width: w / 2.0, height: h };
-    (controls, Stick { rest: (stick_x, stick_y), zone, reach: u * STICK_REACH, knob: u, rests })
+    (controls, Stick { rest: (stick_x, stick_y), zone, reach: u * STICK_REACH, knob: u, reads })
 }
 
 /// A finger's first touch: where and when, whether it travelled, where it
@@ -765,19 +766,18 @@ impl Deck {
         self.held().into_iter().flat_map(Control::actions).collect()
     }
 
-    /// How the stick shows: where a finger holds it, else at rest where it
-    /// rests in view ([`Stick::rests`]: elsewhere it shows once the finger
-    /// holding it steers, not under a tap on the picture's left half).
+    /// How the stick shows: under the finger holding it, as soon as it
+    /// touches where the game reads the directions ([`Stick::reads`]),
+    /// elsewhere once it steers (not under a tap on the picture's left
+    /// half); with no finger holding it, not at all.
     pub fn stick_shown(&self) -> Option<StickShown> {
         let stick = self.stick?;
-        match self.fingers.values().find_map(|f| f.steer.map(|s| (s, f.at))) {
-            Some((steer, at)) if stick.rests || steer.sector.is_some() => {
-                let (dx, dy) = (at.0 - steer.centre.0, at.1 - steer.centre.1);
-                let k = stick.reach / (dx * dx + dy * dy).sqrt().max(stick.reach);
-                Some(StickShown { centre: steer.centre, knob: (steer.centre.0 + dx * k, steer.centre.1 + dy * k), held: true, directions: steer.directions() })
-            }
-            _ => stick.rests.then_some(StickShown { centre: stick.rest, knob: stick.rest, held: false, directions: [false; 4] }),
-        }
+        let (steer, at) = self.fingers.values().find_map(|f| f.steer.map(|s| (s, f.at)))?;
+        (stick.reads || steer.sector.is_some()).then(|| {
+            let (dx, dy) = (at.0 - steer.centre.0, at.1 - steer.centre.1);
+            let k = stick.reach / (dx * dx + dy * dy).sqrt().max(stick.reach);
+            StickShown { centre: steer.centre, knob: (steer.centre.0 + dx * k, steer.centre.1 + dy * k), directions: steer.directions() }
+        })
     }
 }
 
@@ -883,7 +883,7 @@ mod tests {
         a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height
     }
 
-    /// The square the stick's well fills at rest.
+    /// The square the stick's well would fill under the left thumb's rest.
     fn well(stick: Stick) -> Rect {
         let r = stick.radius();
         Rect { x: stick.rest.0 - r, y: stick.rest.1 - r, width: 2.0 * r, height: 2.0 * r }
@@ -900,7 +900,7 @@ mod tests {
             deck.sort();
             wanted.sort();
             assert_eq!(deck, wanted, "{what}");
-            assert_eq!(keys(scene).1, stick, "{what}: the stick rests in view where the game reads the directions");
+            assert_eq!(keys(scene).1, stick, "{what}: whether the game reads the directions");
         };
         expect("booting", vec![settings, pause, (Confirm, "OK")], false);
         expect("walking", vec![settings, pause, (Confirm, "TALK"), (Jump, "JUMP"), turns[0], turns[1], (Menu, "MENU"), (Run, "RUN"), (Look, "LOOK")], true);
@@ -1105,7 +1105,9 @@ mod tests {
         let stick = deck.stick.unwrap();
         let (reach, dead) = (stick.reach, stick.dead_zone());
         assert!(dead > 0.0 && dead < reach);
-        // On the picture's left half, nowhere near where the stick rests.
+        // Nothing shows before a finger touches. On the picture's left half,
+        // nowhere near the left thumb's rest.
+        assert!(deck.stick_shown().is_none(), "no stick with no finger on it");
         let (x, y) = (700.0, 300.0);
         assert!(deck.control_at((x, y)).is_none() && stick.zone.contains((x, y)));
         assert_eq!(deck.down(1, (x, y), 0.0), Touched::Nothing);
@@ -1132,7 +1134,7 @@ mod tests {
         let shown = deck.stick_shown().unwrap();
         let near = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 0.01 && (a.1 - b.1).abs() < 0.01;
         assert!(near(shown.centre, (x - 2.0 * reach, y)) && near(shown.knob, (x - 3.0 * reach, y)), "{shown:?}");
-        assert!(shown.held && shown.directions == [false, false, true, false], "{shown:?}");
+        assert!(shown.directions == [false, false, true, false], "{shown:?}");
         deck.moved(1, (x - 2.0 * reach + dead * 1.5, y));
         assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]));
         // Another finger holds a button meanwhile; a third on the left half
@@ -1148,21 +1150,21 @@ mod tests {
         deck.up(3, (600.0 + reach, 700.0), 0.2, false);
         deck.up(1, (x, y), 0.3, true);
         assert!(deck.actions().is_empty(), "lifted and cancelled");
-        assert_eq!(deck.stick_shown().unwrap(), StickShown { centre: stick.rest, knob: stick.rest, held: false, directions: [false; 4] }, "back at rest");
+        assert_eq!(deck.stick_shown(), None, "gone once let go");
         // The right half takes no stick.
         deck.down(4, (1700.0, 300.0), 1.0);
         deck.moved(4, (1700.0 + reach, 300.0));
-        assert!(deck.actions().is_empty() && !deck.stick_shown().unwrap().held);
+        assert!(deck.actions().is_empty() && deck.stick_shown().is_none());
     }
 
     #[test]
-    fn the_stick_rests_in_view_only_where_the_game_reads_the_directions_and_steers_everywhere() {
-        // A dialogue's page reads none: no stick at rest, and a tap on the
-        // left half (which advances the page) shows none.
+    fn the_stick_shows_only_under_a_finger_and_steers_everywhere() {
+        // A dialogue's page reads none: a tap on the left half (which
+        // advances the page) shows no stick.
         let dialogue = Scene::from(Context::Dialogue { choice: None });
         let mut deck = deck_of(dialogue);
         let stick = deck.stick.expect("a finger may still steer");
-        assert!(!stick.rests && deck.stick_shown().is_none());
+        assert!(!stick.reads && deck.stick_shown().is_none());
         deck.down(1, (700.0, 500.0), 0.0);
         assert!(deck.stick_shown().is_none(), "no stick under a tap");
         assert_eq!(deck.up(1, (701.0, 500.0), 0.1, false), Touched::Tap((701.0, 500.0)));
@@ -1171,19 +1173,23 @@ mod tests {
         deck.down(2, (700.0, 500.0), 1.0);
         deck.moved(2, (700.0 + stick.reach, 500.0));
         let shown = deck.stick_shown().expect("the stick under the steering finger");
-        assert!(shown.held && shown.centre == (700.0, 500.0) && shown.directions == [false, false, false, true]);
+        assert!(shown.centre == (700.0, 500.0) && shown.directions == [false, false, false, true]);
         assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]));
         deck.arrange(PHONE, LETTERBOXED, 3.0, Context::Walk.into());
         assert_eq!(deck.actions(), BTreeSet::from([GameAction::Right]), "still held as the player walks again");
-        assert!(deck.stick.unwrap().rests);
+        assert!(deck.stick.unwrap().reads);
         deck.up(2, (700.0 + stick.reach, 500.0), 2.0, false);
-        assert_eq!(deck.stick_shown().map(|s| (s.centre, s.held)), Some((deck.stick.unwrap().rest, false)), "at rest where the player walks");
-        // Where a choice, a menu or a battle reads them, it rests in view.
+        assert_eq!(deck.stick_shown(), None, "not at rest where the player walks");
+        // Where the game reads them (walking, a choice, a menu, a battle) a
+        // finger shows it as it touches; with none on it, no deck shows it.
         for (what, scene) in scenes() {
-            let deck = deck_of(scene);
-            let rests = keys(scene).1;
-            assert_eq!(deck.stick_shown().is_some(), rests, "{what}");
+            let mut deck = deck_of(scene);
+            assert!(deck.stick_shown().is_none(), "{what}: not at rest");
             assert_eq!(deck.stick.is_some(), !scene.inspecting, "{what}: no stick but under inspection");
+            if deck.stick.is_some() {
+                deck.down(1, (700.0, 500.0), 0.0);
+                assert_eq!(deck.stick_shown().is_some(), keys(scene).1, "{what}: under a finger as it touches where the game reads the directions");
+            }
         }
     }
 
@@ -1202,7 +1208,7 @@ mod tests {
         assert_eq!(deck.up(8, settings, 4.1, false), Touched::Nothing, "a key is no tap on the picture");
         // On the stick's half too: a still touch holds nothing and taps.
         deck.down(9, (700.0, 500.0), 5.0);
-        assert!(deck.stick_shown().unwrap().held && deck.actions().is_empty());
+        assert!(deck.stick_shown().is_some() && deck.actions().is_empty());
         assert_eq!(deck.up(9, (703.0, 502.0), 5.2, false), Touched::Tap((703.0, 502.0)));
         // Over the picture's corner (no room beside it) a button is no tap.
         let (target, picture, density) = SCREENS[1];

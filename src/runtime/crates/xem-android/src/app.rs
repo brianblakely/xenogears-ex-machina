@@ -711,7 +711,7 @@ impl Host {
             self.view.assist(game);
             // The touch deck's place, as the game's context or the screen
             // lays another one out (for tests that touch it): each control,
-            // and where the stick rests.
+            // and the left thumb's rest, where the stick's well would stand.
             let deck = self.view.deck_controls();
             let laid = {
                 use std::hash::{Hash, Hasher};

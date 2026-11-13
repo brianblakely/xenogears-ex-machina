@@ -189,7 +189,7 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await frames(page, 3);
       assert.equal((await status(page)).session.assist, null, 'a tap on the picture walks nowhere');
       // While the view shows the deck has LOOK to leave it, and nothing of
-      // what the view holds back (no stick's rest, jump or camera turns).
+      // what the view holds back (no stick, jump or camera turns).
       const controls = (await status(page)).touch.controls.map((c) => c.control);
       assert.ok(controls.includes('Look') && !controls.includes('Jump') && !controls.includes('CameraLeft') && !controls.includes('Select'), JSON.stringify(controls));
       assert.equal((await status(page)).touch.stick, null, 'no stick while the view shows');
@@ -202,7 +202,7 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
         if (!shows) {
           await frames(page, 3);
           const walking = (await status(page)).touch;
-          assert.ok(walking.controls.some((c) => c.control === 'Jump') && walking.stick?.rests, JSON.stringify(walking.controls.map((c) => c.control)));
+          assert.ok(walking.controls.some((c) => c.control === 'Jump') && walking.stick?.reads, JSON.stringify(walking.controls.map((c) => c.control)));
         }
       }
       r = await renderer(page);
