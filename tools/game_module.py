@@ -87,10 +87,10 @@ WRAPPED |= {"window_reveal_text", "field_movie_run_frames", "movie_mode_read_pla
 WRAPPED |= {"battle_resolve_action", "battle_results_grant_exp_skills_and_drops", "battle_results_run_screens"}
 WRAPPED |= {"field_dialogue_draw_windows", "battle_draw_script_portrait_and_text", "battle_draw_gauge_bars_and_windows",
             "battle_draw_list_page_glyphs"}
-WRAPPED |= {"window_queue_message", "window_render_text_line", "window_insert_text", "text_get_message_columns",
-            "text_get_message_rows", "text_get_glyph_width", "text_draw_glyph", "menu_load_resources",
-            "item_shop_load_resources", "gear_shop_load_resources", "member_change_load_resources",
-            "name_entry_load_resources"}
+WRAPPED |= {"window_queue_message", "window_render_text_line", "window_insert_text", "text_get_resource_entry",
+            "text_get_message_columns", "text_get_message_rows", "text_get_glyph_width", "text_draw_glyph",
+            "menu_load_resources", "item_shop_load_resources", "gear_shop_load_resources",
+            "member_change_load_resources", "name_entry_load_resources"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

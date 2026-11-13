@@ -854,7 +854,15 @@ fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_setting
     ui.update().unwrap();
     assert_eq!(settings.borrow().settings().language, Language::French);
     assert_eq!(acks.borrow().last(), Some(&SettingChange::Language(Language::French)));
-    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (2, Some("Français")));
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (3, Some("Français")));
+    // Perfect Works' English stands beside the original's.
+    press(&ui, &choice);
+    ui.update().unwrap();
+    element(&ui, "English (Perfect Works)", AccessibleRole::ListItem).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().language, Language::PerfectWorks);
+    assert_eq!(acks.borrow().last(), Some(&SettingChange::Language(Language::PerfectWorks)));
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (1, Some("English (Perfect Works)")));
     // An agent's change shows.
     settings.borrow_mut().apply(SettingChange::Language(Language::English)).unwrap();
     ui.update().unwrap();

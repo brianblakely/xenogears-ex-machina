@@ -1,0 +1,15 @@
+wa043-0011 47c5255063d9d7e8 Breidablik (Av)
+wa043-0012 26133208e84e2227 Noatun (Kislev)
+wa043-0014 e4f2af788ec3e3a8 Tamuz
+wa043-0016 0c0931337817f556 The Church HQ
+wa043-0017 808ad0af10aaa58a Excavation Site
+wa043-0020 dd500e3057dcbcf3 Torah's House
+wa043-0023 ff6d8e75715a88de Snowfield Base
+wa043-0025 fe15130db5cfe6d0 Machanon
+wa043-0027 50bb269a6a525d18 Ignis Gate Cave
+wa043-0030 0add16f9cbdcdc9b Merkabah
+wa043-0032 8b76f83296717175 Anima Dungeon 1
+wa043-0033 8b5196329651aeb2 Anima Dungeon 2
+wa043-0035 4dda596d07041c75 Golgotha
+wa043-0037 adc2eda6458d83fb Route to Nisan
+wa043-0038 2995a9aeadddb73a Fort Jasper

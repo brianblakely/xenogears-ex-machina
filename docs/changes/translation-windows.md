@@ -1,0 +1,1 @@
+- Português (Brasil) and Français: three texts that could run past their windows now fit them (a five-line page beside a portrait, a notice in a narrow window and a debug room's text).

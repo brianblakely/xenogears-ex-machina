@@ -13,16 +13,29 @@
  * installed whichever language is active later, so a window keeps
  * revealing the text it began.
  *
+ * A language may read one original text differently from place to place
+ * (a jukebox whose lists all say "track00" gets each tune's title). Such a
+ * translation is of one table entry alone, named by the text's hash carried
+ * on over the entry's index, its offset in its table and the table's count
+ * of entries (tools/translations.py place_key). The game takes an entry
+ * from a table through text_get_resource_entry, which knows all three: when
+ * the active language translates that entry alone, the entry it returns is
+ * the translation, which the window functions then pass on as it is (it
+ * lies outside RAM, so they name it nothing). The party's and the Gears'
+ * names, text the game data holds 20 bytes a slot, are entries alike: slot
+ * n is entry n at 20 n of a table of 31.
+ *
  * A field message's window takes its columns and rows from the message's
  * table (text_get_message_columns, text_get_message_rows): a translation
  * that needs more gets them. The letters a language adds to the font are
  * two-byte glyphs from 0xFF20 (0xFF xx is a two-byte glyph the original
  * text never uses but for 0xFFFF): text_get_glyph_width gives them the
- * narrow letters' 2 columns, and text_draw_glyph draws each through the
- * original's own drawing of glyph 0xFFFF, whose rows (text_special_glyph_rows)
- * hold the letter while it draws: a letter of the game's font with rows
- * taken out or blanked and an accent drawn over it, the host's recipe. The
- * rows are put back before it returns, and nothing waits in between.
+ * narrow letters' 2 columns, or the wide glyphs' 3 where the host's recipe
+ * says so, and text_draw_glyph draws each through the original's own
+ * drawing of glyph 0xFFFF, whose rows (text_special_glyph_rows) hold the
+ * letter while it draws: a letter of the game's font with rows taken out or
+ * blanked and an accent drawn over it, the host's recipe. The rows are put
+ * back before it returns, and nothing waits in between.
  *
  * The menus' command labels (Status, Equip, Buy ...) are not text: they are
  * sheet entries 0x123-0x149 of the menu's sprite sheet, words drawn in its
@@ -59,7 +72,7 @@
 
 /* The host's translations (xem_core::locale::BASE), its layout below. */
 #define XEM_LOCALE 0x20000000
-#define XEM_LOCALE_MAGIC 0x31434C58 /* "XLC1" */
+#define XEM_LOCALE_MAGIC 0x32434C58 /* "XLC2" */
 /* A language's first added glyph's second byte (0xFF20). */
 #define XEM_LOCALE_FIRST_GLYPH 0x20
 /* The longest text the port names: the original's are under 2 KiB. */
@@ -78,8 +91,10 @@ typedef struct {
 
 /* Language n (1-based) follows the header at n - 1. */
 typedef struct {
-    u32 texts;       /* address of `count` XemLocaleText, ascending by hash */
+    u32 texts;       /* address of `count` XemLocaleText, ascending by hash: a text wherever a window takes it */
     u32 count;
+    u32 entries;     /* address of `entry_count` XemLocaleText, ascending by name: a text in one table entry alone */
+    u32 entry_count;
 } XemLocaleLanguage;
 
 typedef struct {
@@ -93,7 +108,7 @@ typedef struct {
 
 typedef struct {
     u8 base;         /* the one-byte glyph it is drawn from */
-    u8 reserved;
+    u8 wide;         /* 1: it advances the wide glyphs' 3 columns, not a letter's 2 */
     u16 drop;        /* rows taken out of the base (bit n row n), those above moving down */
     u16 clear;       /* rows blanked */
     u16 accent[11];  /* rows drawn over it */
@@ -102,12 +117,12 @@ typedef struct {
 s16 xem_original_window_queue_message(Window *window, s32 message);
 s32 xem_original_window_render_text_line(u8 *text, void *image, s16 width, s32 flags);
 void xem_original_window_insert_text(Window *window, u8 *text);
+u8 *xem_original_text_get_resource_entry(u8 *resource, s32 index);
 u8 xem_original_text_get_message_columns(u16 *table, s32 index);
 u8 xem_original_text_get_message_rows(u16 *table, s32 index);
 s32 xem_original_text_get_glyph_width(u16 first, u16 second);
 void xem_original_text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane);
 u16 *text_get_font(void);
-u8 *text_get_resource_entry(u8 *resource, s32 index);
 /* resident/menu.h's MenuState *menu_state_current, read as its address
  * (the header's layout checks hold for the game's 32-bit pointers only):
  * the menu's sprite sheet is at +0x2DC. */
@@ -173,28 +188,27 @@ u32 xem_text_length(const u8 *text) {
     return 0;
 }
 
-/* The active language's translation of the `length` bytes at `bytes`, by
- * their FNV-1a 64 hash, or NULL. */
-static const XemLocaleText *xem_locale_lookup(const u8 *bytes, u32 length) {
-    const XemLocaleLanguage *language = xem_locale_language();
-    const XemLocaleText *texts;
-    const XemLocaleText *entry;
-    unsigned long long hash = 0xCBF29CE484222325ULL;
-    unsigned long long found;
-    u32 i;
-    u32 low;
-    u32 high;
-    u32 middle;
+#define XEM_FNV_BASIS 0xCBF29CE484222325ULL
 
-    if (language == NULL || length == 0) {
-        return NULL;
-    }
+/* FNV-1a 64 carried on over `length` bytes. */
+static unsigned long long xem_fnv(unsigned long long hash, const u8 *bytes, u32 length) {
+    u32 i;
+
     for (i = 0; i < length; i++) {
         hash = (hash ^ bytes[i]) * 0x100000001B3ULL;
     }
-    texts = (const XemLocaleText *)(XemUintptr)language->texts;
-    low = 0;
-    high = language->count;
+    return hash;
+}
+
+/* The record named `hash` among `count` ascending by name, or NULL. */
+static const XemLocaleText *xem_locale_search(u32 records, u32 count, unsigned long long hash) {
+    const XemLocaleText *texts = (const XemLocaleText *)(XemUintptr)records;
+    const XemLocaleText *entry;
+    unsigned long long found;
+    u32 low = 0;
+    u32 high = count;
+    u32 middle;
+
     while (low < high) {
         middle = low + (high - low) / 2;
         entry = &texts[middle];
@@ -211,15 +225,96 @@ static const XemLocaleText *xem_locale_lookup(const u8 *bytes, u32 length) {
     return NULL;
 }
 
+/* The active language's translation of the `length` bytes at `bytes`, by
+ * their FNV-1a 64 hash, or NULL. */
+static const XemLocaleText *xem_locale_lookup(const u8 *bytes, u32 length) {
+    const XemLocaleLanguage *language = xem_locale_language();
+
+    if (language == NULL || length == 0) {
+        return NULL;
+    }
+    return xem_locale_search(language->texts, language->count, xem_fnv(XEM_FNV_BASIS, bytes, length));
+}
+
 /* The active language's translation of `text`, or NULL. */
 static const XemLocaleText *xem_locale_find(const u8 *text) {
     return xem_locale_language() != NULL ? xem_locale_lookup(text, xem_text_length(text)) : NULL;
 }
 
-static u8 *xem_translate(u8 *text) {
-    const XemLocaleText *found = xem_locale_find(text);
+/* The active language's translation of `text` in one table entry alone:
+ * entry `index` at `offset` of a table of `count`, named by the text's hash
+ * carried on over the three as halfwords (tools/translations.py place_key).
+ * NULL where the language translates no entry alone or not this one. */
+static const XemLocaleText *xem_locale_place(const u8 *text, u32 index, u32 offset, u32 count) {
+    const XemLocaleLanguage *language = xem_locale_language();
+    u8 place[6];
+    u32 length;
 
+    if (language == NULL || language->entry_count == 0) {
+        return NULL;
+    }
+    length = xem_text_length(text);
+    if (length == 0) {
+        return NULL;
+    }
+    place[0] = (u8)index;
+    place[1] = (u8)(index >> 8);
+    place[2] = (u8)offset;
+    place[3] = (u8)(offset >> 8);
+    place[4] = (u8)count;
+    place[5] = (u8)(count >> 8);
+    return xem_locale_search(language->entries, language->entry_count, xem_fnv(xem_fnv(XEM_FNV_BASIS, text, length), place, 6));
+}
+
+/* Entry `index` of the text table `resource` (a count, 0, then the entries'
+ * offsets), as the active language translates that entry alone. */
+static const XemLocaleText *xem_locale_entry(const u8 *resource, s32 index) {
+    const u16 *table = (const u16 *)resource;
+
+    return xem_locale_place(resource + table[index + 2], (u32)index, table[index + 2], table[0]);
+}
+
+/* The party's and the Gears' names as entries: slot n is entry n at 20 n of
+ * a table of 31. They are the first bytes of resident/gamedata.h's GameData
+ * game_data (names[31][0x14]), read here as its bytes: the header's layout
+ * checks hold for the game's 32-bit pointers only. */
+extern u8 game_data[];
+#define XEM_NAME_SLOTS 31
+#define XEM_NAME_BYTES 20
+
+static const XemLocaleText *xem_locale_name(const u8 *text) {
+    u32 offset = (u32)(XemUintptr)text - XEM_ADDRESS_OF(game_data);
+
+    if (offset >= XEM_NAME_SLOTS * XEM_NAME_BYTES || offset % XEM_NAME_BYTES != 0) {
+        return NULL;
+    }
+    return xem_locale_place(text, offset / XEM_NAME_BYTES, offset, XEM_NAME_SLOTS);
+}
+
+static u8 *xem_translate(u8 *text) {
+    const XemLocaleText *found = xem_locale_name(text);
+
+    if (found == NULL) {
+        found = xem_locale_find(text);
+    }
     return found != NULL ? (u8 *)(XemUintptr)found->text : text;
+}
+
+u8 *text_get_resource_entry(u8 *resource, s32 index) {
+    const XemLocaleText *found = xem_locale_language() != NULL ? xem_locale_entry(resource, index) : NULL;
+
+    return found != NULL ? (u8 *)(XemUintptr)found->text : xem_original_text_get_resource_entry(resource, index);
+}
+
+/* The translation of a table's entry: of that entry alone, else of its text. */
+static const XemLocaleText *xem_locale_message(u16 *table, s32 index) {
+    const XemLocaleText *found;
+
+    if (xem_locale_language() == NULL) {
+        return NULL;
+    }
+    found = xem_locale_entry((const u8 *)table, index);
+    return found != NULL ? found : xem_locale_find(xem_original_text_get_resource_entry((u8 *)table, index));
 }
 
 s16 window_queue_message(Window *window, s32 message) {
@@ -236,14 +331,14 @@ void window_insert_text(Window *window, u8 *text) {
 
 u8 text_get_message_columns(u16 *table, s32 index) {
     u8 columns = xem_original_text_get_message_columns(table, index);
-    const XemLocaleText *found = xem_locale_find(text_get_resource_entry((u8 *)table, index));
+    const XemLocaleText *found = xem_locale_message(table, index);
 
     return found != NULL && found->columns > columns ? found->columns : columns;
 }
 
 u8 text_get_message_rows(u16 *table, s32 index) {
     u8 rows = xem_original_text_get_message_rows(table, index);
-    const XemLocaleText *found = xem_locale_find(text_get_resource_entry((u8 *)table, index));
+    const XemLocaleText *found = xem_locale_message(table, index);
 
     return found != NULL && found->rows > rows ? found->rows : rows;
 }
@@ -265,8 +360,10 @@ static const XemLocaleGlyph *xem_locale_glyph(u16 first, u16 second) {
 }
 
 s32 text_get_glyph_width(u16 first, u16 second) {
-    if (xem_locale_glyph(first, second) != NULL) {
-        return 2;
+    const XemLocaleGlyph *glyph = xem_locale_glyph(first, second);
+
+    if (glyph != NULL) {
+        return glyph->wide ? 3 : 2;
     }
     return xem_original_text_get_glyph_width(first, second);
 }

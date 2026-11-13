@@ -384,8 +384,8 @@ game paused until you resume it.
 
 Find these in **Settings → Gameplay**. Each choice is saved for next time.
 
-- **Language — Game text:** **English**, the original, **Português
-  (Brasil)** or **Français**. It changes the game's dialogue, narration, item and ability
+- **Language — Game text:** **English**, the original, **English (Perfect
+  Works)**, **Português (Brasil)** or **Français**. It changes the game's dialogue, narration, item and ability
   names and descriptions, shop and save messages, battle messages and
   place names from the next text the game shows; a box already showing
   text finishes it first, and a menu shows its commands in the language
@@ -393,6 +393,13 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   English: the abbreviations LV, Exp, HP and EP, the battle screen's
   command and gauge words (Attack, Defense, Time, Ap ...) and the save
   titles on the file screens. Settings itself stays in English.
+  **English (Perfect Works)** is the retranslation of the
+  [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+  project (version 0.11.4): its script, names and terms, in the game as you
+  already play it. Its changes to the game itself (rebalanced battles,
+  reworked scenes, new pictures) are not part of it, so a few lines that
+  depend on them, and the save titles, keep the original wording. Names you
+  have changed stay as you set them.
 - **Random battles — Not while platforming:** the default. Turns off random
   encounters in the selected jumping areas of Blackmoon Forest, the
   Aveh–Kislev border mountains and Babel Tower. Choose **Original** for the

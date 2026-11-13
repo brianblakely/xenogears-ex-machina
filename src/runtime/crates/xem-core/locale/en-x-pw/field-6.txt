@@ -1,0 +1,1225 @@
+f607-0000 ff769e35534a4529 Fei{n}"Stop this nonsense!{n}What's this all about,{n}Hammer!?"
+f607-0003 28795cecefb6d07b Fei{n}"Ungh...!{n}Elly...{n}Everyone..."
+f607-0004 8e2acd23525342db Fei{n}"Aaaaaaagh!!!!"
+f607-0005 b58e330b85b635bd Elly{n}"Wh-What're you doing?{n}Hammer?"
+f607-0006 a5f37faaaf2f81ac Elly{n}"M-{wait 5}Mother..."
+f607-0010 91c6b48a9b8da78a Elly{n}"...Mother...{wait 50}{n}Mo...ther..."
+f607-0011 61f36673baf15cc3 Elly{n}"MOTHEEERRR!!"{done 50}
+f607-0013 c61be39f61788238 Elly{n}"Father!!!"
+f607-0015 f2d46ec5639ec243 Elly{n}"Aghhhhhh!!"{done 24}
+f607-0018 6b9f9e6c3ccc1741@6ae2bc2f8e2e1eae Elly{n}"...{wait 24}...{wait 24}...{wait 24}{n}H-How could you...{n}do that to him!?"
+f607-0023 8cef105935693b11 Medina{n}"No. I won't stop.{n}...Because my own{n}child is in danger...{p}and I'm a perfectly{n}'ordinary' mother!!"
+f607-0024 297b0efabfd3c0ba Medina{n}"I was born and raised{n}in an ordinary family.{p}I'm not a soldier like my{n}husband and daughter.{p}I've never touched a gun{n}before, much less had one{n}pointed at me...{wait 45} It's why{n}I'm shaking right now...{p}But no, I will not stop.{p}I'm a quite 'ordinary'{n}mother.{wait 45} And it's because{n}I'm 'ordinary' that I have{n}things I must protect..."
+f607-0025 85532ef8e63d9cff Medina{n}"Elly, slowly{n}come this way.{p}It's alright.{n}I'll protect you{n}no matter what."
+f607-0026 5a80146324c3908d Medina{n}"Come here, Elly.{n}It'll be alright."
+f607-0027 6291d64c26133e38 Medina{n}"It's alright, Elly."
+f607-0028 13302be663eb53ac Hammer{n}"S-{wait 10}Stop!!!"
+f607-0029 9537c3a13610cf8b Hammer{n}"M-{wait 10}Miss Elly will be{n}going back with me!!"
+f607-0031 d8fda915e6c8fc33 Hammer{n}"I-{wait 5}I made a promise to{n}someone called Karellen.{p}He said that he{wait 10} 'wouldn't{n}change me' if I brought{n}Miss Elly back..."
+f607-0032 f4e50d81c2b88563 Hammer{n}"I-{wait 5}I really don't{n}want to do this to{n}Miss Elly either.{p}I-{wait 5}I like her very much.{p}But I have to... I...{n}I have no other choice!{n}Because I'm no good...{p}I don't have physical{n}strength like bro, or{n}the smarts like the Doc!"
+f607-0033 c26cb499e40efd54 Hammer{n}"You all know what{n}I'm talking about...{p}You all think of me{n}as a huckster...{p}a handyman who gets{n}in the way, and{n}that's all...{n}Nothing more..."
+f607-0034 6156a11765734648 Hammer{n}"I'm different from{n}you all! I'm not 'special'{n}like you!{p}An 'ordinary' guy like{n}me has no choice but to{n}do this!!"
+f607-0035 55aa61eff57797a1 Hammer{n}"D-Don't move!!{n}Stop! Stop!"
+f607-0036 2f3753c268b40425 Hammer{n}"...{wait 32}Eep..."
+f607-0038 f415511e50bae57d Hammer{n}"...No!! Don't go!{n}No! N-{wait 5}No..."
+f607-0039 37bb7423119d730b Hammer{n}"...N-{wait 5}NO...!{n}DON'T...GO...!"
+f607-0040 2097024b3fb10f80 Hammer{n}"A-{wait 32}A-{wait 32}Aieeeeee...!"
+f607-0041 029aa863d6d3a8ba Hammer{n}"Waaaaaaah...!"
+f607-0043 3b8e582b100bf02b Executioner{n}"Hahaha...{n}Man and wife, both{n}such adoring parents..."
+f607-0044 1c296bd529b211d0 Executioner{n}"Oh, was I a little too{n}enthusiastic? You had no{n}time to say goodbye.{p}But that's alright.{n}I'll let you see each{n}other again soon on{n}the other side..."
+f607-0046 0af0ce4108d2a6e8 Grahf{n}"You will leave the{n}girl here."
+f607-0047 bcf2f94a8c54c379 Grahf{n}"You've gotten pretty{n}good at this, I see.{wait 20}{n}...However!!"
+f607-0048 68e4845713b7a442 Erich{n}"I'll handle things here!{n}Run, quickly, everyone!"
+f607-0049 0764174e0edfffe7 Erich{n}"G-Gah!"
+f607-0050 e5b2770ca3df6de2 Erich{n}"E-{wait 10}Elly...{wait 45}{n}Go...quickly...{p}Elly, whatever happens,{n}if you have reason enough{n}to believe in something,{n}go and don't look back.{p}For that, we'll gladly{n}be your foundation stones.{wait 10}{n}It's the least I can do{n}to atone...{p}Elly...no matter what{n}anybody says, you're the{n}daughter born to Medina{n}and I...{wait 10} So..."
+f607-0051 3437a50efe63527b Bart{n}"Gaah!!"{done 24}
+f607-0052 5998c017cc44b520 Billy{n}"Aaagh!!"{done 24}
+f607-0053 5f3a51d864f5a533 Emeralda{n}"Aaaagh!!"{done 24}
+f607-0054 88ba3302c72a8aad {name 7}{n}"Ouchuuuu!"{done 24}
+f608-0000 e0caeb4e44505960 Fei{n}"...Stop! Stop it!!"
+f608-0001 bb706c95bbdd4ca4 Fei{n}"Wraaaaaaaagh!!!"
+f608-0002 d3b5c26cbf81b7e9 Executioner{n}"Yes.{n}And quite clearly.{p}No half measures{n}like before."
+f608-0003 482912c177921b58 Myyah{n}"I don't think he'll{n}get off the stage{n}easily this time.{p}Fei's mental energy{n}seems to have become{n}weaker, so...{p}he's looking more like{n}'his old self'..."
+f608-0004 2676abede084ea7e@c3a33e0024b1a366 Myyah{n}"Heh heh heh..."
+f608-0005 de8f7a3877911c12 Myyah{n}"Though time passes,{n}the feelings we have{n}don't change.{p}Even you must have{n}mixed feelings?"
+f608-0006 77e16d5748113933 Myyah{n}"You would have him{n}bring her back?{p}It's a little late.{n}Carl already set out."
+f608-0007 54d5d32b11819a04 Myyah{n}"What?"
+f608-0008 e86057f49ccfa0de Myyah{n}"That was the plan, wasn't{n}it? Though it was me who{n}put you up to it...{p}Nevertheless, almost there.{n}Our one success story.{n}Let's treasure it."
+f608-0009 33bc07de0dc017ff Myyah{n}"Indeed.{p}We must give Carl{n}'a little help',{n}too...no?"
+f608-0010 5360f6fd750881ca Karellen{n}"So he made his{n}appearance..."
+f608-0011 70a810433be519c3 Karellen{n}"What's so amusing?"
+f608-0012 f68ceb7394b3f443 Karellen{n}"Hmph,{wait 32} that's absurd.{p}By the way, what{n}happened to Ramsus?"
+f608-0013 7b954d2f8438c367 Karellen{n}"I want to say he's more{n}hassle than he's worth...{wait 10}{n}but I suppose it's fine.{p}If you think this way{n}we can be certain of{n}more control...{p}But still..."
+f608-0014 d38ffb7238df0ed5 Karellen{n}"How can he just keep{n}on fighting a battle{n}he won't win...?"
+f608-0015 1c63342693b1c46b Karellen{n}"You're a woman whose{n}true intentions I{n}cannot fathom."
+f609-0000 6420f375f79d9e0a Ramsus{n}"Come on, come on, come{n}on, blasted Demon...{wait 45} This{n}time you're finished!!"
+f610-0000 16649a33df44bac3 Bart{n}"Maria saved those{n}of us who got thrown{n}out into the sky.{p}The rest of the gang{n}were also picked up{n}earlier and they're{n}on the Yggdrasil."
+f610-0001 eb1616b59dfc6601 Bart{n}"No mistake...{p}We witnessed the scene{n}with our own eyes —{n}him turning into Id..."
+f610-0002 53a8e4a95d40abd0 Elly{n}"...{p}...Citan...{wait 20}{n}...Maria...?"
+f610-0003 77987fe25a32c1ea Elly{n}"Oh...{p}...Fei...?{n}What about Fei?{p}Is he on the{n}Yggdrasil too?"
+f610-0004 e17ed96b288f1f3b Elly{n}"Solaris!!{n}...That red Gear...!{p}What the hell's{n}happening, Citan!?{wait 10}{n}Citan!! Where's Fei?"
+f610-0006 8ee4d546df731236 Elly{n}"So he's already{n}on the Yggdrasil?"
+f610-0007 08cb70aa1f1251d2 Elly{n}"What!?"
+f610-0008 135ba3f3878f169f Elly{n}"!?{n}It's got to be a mistake!{n}I can't believe that!"
+f610-0009 3b881c328631d22c Elly{n}"Fei...is...Id...{wait 45}{n}No..."
+f610-0010 52f1a222d046cb4d Elly!{wait 24}{n}Are you alright?{wait 24}{n}Elly!
+f610-0011 6a442195ef343ef4 Citan{n}"Elly?{n}Have you come around?"
+f610-0012 16e9e0134c15c140 Citan{n}"Calm down, Elly.{n}Fei...is safe."
+f610-0013 fe6389d6ef5abdc3 Citan{n}"Please calm down and{n}listen, Elly.{p}Fei is the one aboard that{n}Gear.{wait 20} That is the true,{n}transfigured form of{n}{name 11}."
+f611-0001 c30a0b4d9a0258b6 Bart{n}"...{wait 32}...{wait 32}...{wait 32}...{wait 32}{n}...{wait 32}Phew...!{p}We made it...{wait 10}{n}somehow..."
+f611-0002 86cb3d2da9ac0466 Bart{n}"Wh-What the?"
+f611-0003 afcef76fc8c0739b Bart{n}"Oh man!{p}He's noticed us...!!"
+f611-0006 badf7e6ea09f9bd1 Citan{n}"Quickly withdraw from{n}here, please!{p}The energy of Solaris{n}crashing down from{n}stratospheric height{p}will be the equivalent{n}of a nuclear weapon!"
+f611-0008 3749b848eb610759 Citan{n}"Hm?{wait 24}{n}Um...do not ask me!"
+f611-0009 17b57d9f268bf86f Vance{n}"Th-{wait 5}That red Gear...!!{n}It's coming this way!!!!"
+f612-0000 d1120bee9e2a8275 Fei{n}"Damn{wait 5}...{wait 5} {wait 10}The bleeding...{n}The bleeding won't stop{wait 5}...{wait 5}{n}At this rate{wait 5}...{wait 5}{n}At this rate Elly's not{n}gonna make it{wait 5}...{wait 5}!"
+f612-0001 ed1c1e7fe365d9d3 Elly{n}"{wait 5}...{wait 5}Ugh{wait 5}..."
+f612-0002 bec653af8cc590b1 Fei{n}"Elly!{wait 10} Hang in there!{wait 10}{n}Elly!{wait 10} I'll save you,{wait 10}{n}I'll save you no{n}matter what!{wait 10}{n}Elly{wait 5}...!!"
+f612-0004 21bebed416f621f7 Ol' Man Bal{n}"Long time no see..."
+f612-0005 f7850c83a6c48f1c Ol' Man Bal{n}"The host for the spirit{n}of the Slayer of God...{p}To think I'd be tinkering{n}with it once again..."
+f612-0006 c5f1d27696803f2f Fei{n}"Why're you both{n}helping us...?"
+f612-0007 e22aa5eaea4daea4 Torah{n}"There are some things{n}you can't explain away{n}with the word{wait 5}...{wait 10}'fate'.{p}It'd be better for you{n}to witness those things{n}with your own eyes."
+f612-0008 dbb220f3fa1be2d8 Emeralda{n}"Fei{wait 5}...{wait 10}{n}going?"
+f612-0010 3b310389f85155f7 Fei{n}"Hey, where are{n}you going?"
+f612-0011 2bce11b6e9845249 Shevat Emissary{n}"Fei, sir,{wait 10}{n}please hurry!"
+f612-0012 5c4ef2832dc73243 Fei{n}"O-{wait 10}Okay."
+f613-0000 0e4b3bc4e9876883 Elly{n}"It's catching{n}up with us!!"{done 30}
+f613-0002 784326da9280154b Ramsus{n}"Slow!{wait 10}{n}You're too slow!"{done 30}
+f613-0003 7cd300c19850a252 Ramsus{n}"The performance really{n}is different!"{done 30}
+f613-0004 66a5f63befd9215b Ramsus{n}"Elehayym, you say?"
+f613-0005 6be93d246676c9d3 Karellen{n}"Yes.{wait 10} This is her{n}location.{wait 10} I want you{n}to bring her back.{p}She's an important{n}woman to me."
+f613-0006 b9bbc30bd5d3e705 Ramsus{n}"You can't be serious.{wait 10}{n}Why should I be your{n}errand boy?{p}If the woman is so{n}vital, go out there{n}yourself."
+f613-0007 3cf9383527dc161b Karellen{n}"A perfectly{n}understandable{n}response.{p}But can you say{n}the same after{n}seeing this?"
+f613-0008 e7c66734a40c4cea Ramsus{n}"Wh-{wait 10}What is{wait 5}...?"
+f613-0009 1bb1a28674f8864d Karellen{n}"I had your Gear{n}aligned with a{n}Vessel of Anima...{wait 10}{n}It's an Omnigear.{p}Also,{wait 10}{n}she's currently{n}with Fei."
+f613-0011 24c67d9811419259 Karellen{n}"Defeat after defeat{n}against Fei...{p}It's entirely down to{n}the difference in the{n}performance of the Gears...{n}That's what I think.{p}So how about it?{n}Will you draw forth this{n}power to its fullest?{p}Of course,{wait 10} if you don't{n}win with this, then you{n}truly are 'trash'."
+f613-0013 77f68ca0d6bd2523 Karellen{n}"Will you do this{n}for me, Ramsus?"
+f613-0014 107986db438d708e Myyah{n}"Will you go, Carl?"
+f613-0015 7db3424cca985ca8 Ramsus{n}"Yes.{wait 10}{n}All I need is to{n}get rid of him with{n}my own hands."
+f613-0016 0da83be772c22e1e Myyah{n}"Be careful.{wait 10}{n}No matter what anyone says,{n}I believe in your power."
+f613-0017 57c963449e08b3bf          'Fei'!{wait 20}{n} How I loathe that name.{wait 20}{n}  The name that spurns{n}   my very existence.{p}    I made it to the{n}     top on my own.{wait 20}{n}   But because of him,{n}     once again I...
+f613-0018 15d8c245a923b7bf Ramsus{n}"!?{wait 10}{n}That Gear shape...!{p}It's him!{wait 10}{n}I'm not trash!{n}I'm not!"
+f613-0019 30d9c64d3732b750 Fei{n}"Huh...{wait 10}{n}What kinda Gear{n}is that...?"
+f613-0021 df652370c7e6fa1f Elly{n}"An Omnigear!!{p}And according to{n}these readings...{p}it's very different{n}from the one that's{n}paired to Bart or{n}the one in Shevat...{p}...Can it be!?{wait 10} Is this{n}a perfect link!?"
+f613-0022 93eb35ddad0db325 Perfect link{wait 5}...?
+f613-0023 1b585e51738a5a30 Elly{n}"Remember what Citan{n}was saying?{p}An Omnigear is controlled{n}by a person's mental waves.{p}That strength...{n}Its potential varies in{n}proportion to attunement.{p}From the readings,{n}it's like this one is{n}synchronized perfectly."
+f613-0024 833bdbc5695415b5 Ramsus{n}"I've been looking{n}for you, Fei!"
+f613-0026 d3d59d4d6db43dd6 Ramsus{n}"You will hand Lt.{n}Elehayym over to me!"
+f613-0027 b55e7e7c607b462e Fei{n}"What!? Why would we—{p}!?{n}Oh, I get it —{n}this is Karellen's idea?{p}Get serious!{wait 10} Like hell{n}can I agree to that!"
+f613-0028 00e415781cbfc142 Ramsus{n}"So you'd rather I take{n}her away by force?{p}Well,{wait 5} when I do,{wait 5}{n}don't expect to be{n}able to hold her in{n}your arms ever again!"
+f613-0029 8b02a86a3012e238 Elly{n}"Fei!!"
+f613-0030 17e881727d878456 Fei{n}"It's okay.{wait 10}{n}I'll protect you."
+f613-0031 14a0c29fa7469832 Ramsus{n}"Impressive words.{p}Fei, I'm going to{n}take everything away{n}from you!!"
+f614-0000 7f9699b9e082334f Fei{n}"Elly...{wait 10}{n}It's really you..."
+f614-0002 5ccfe43becbb239c Fei{n}"When you came in the{n}room just then...{p}I wondered if maybe{n}you'd forgotten all{n}about me..."
+f614-0003 906c294e3d9f1bff Elly{n}"Huh...?"
+f614-0004 914f6e1fe2a38b9f Fei{n}"It was just...{n}Elly, you seemed a little{n}different from before..."
+f614-0005 7824fe8418d50546 Elly{n}"Do I...{wait 10}look different?"
+f614-0006 e041e570a03448b1 Fei{n}"No, it's not that,{n}not at all..."
+f614-0007 2366e053e779375a Fei{n}"More like...{n}I guess you could{n}call it your aura?{p}It was just a little{n}different..."
+f614-0008 053ca93390445b97 Fei{n}"But it also felt {n}somehow familiar...{p}I felt it when I met{n}you for the first{n}time, too...{p}That strange feeling{n}that we'd met sometime,{n}somewhere..."
+f614-0010 46bbfffbd5b37167 Fei{n}"Yeah?"
+f614-0011 df9478007bfb57ee Elly{n}"I don't remember much{n}of what happened after{n}we were shot down..."
+f614-0012 20a514160e5f2802 Fei{n}"It might be better{n}that you don't{n}remember..."
+f614-0013 3ca3df6303617a18 Elly{n}"But from somewhere{wait 10} I{n}could hear my name...{p}and I felt like I was {n}wrapped up in something{n}very warm...{p}That much I remember{n}very clearly..."
+f614-0016 cdece78f272168d4@6020ba8bc7d62ba5 Elly...
+f614-0017 69e5d1019e826cd8@75e083f5d720f59e Fei...
+f614-0018 53c23bae46b9eea5 Torah{n}"Hey! It's about time{n}you were coming back —{p}we have important{n}things to talk about."
+f614-0020 b9e22269b066bcd8 Fei{n}"Y-{wait 5}Yeah,{wait 5} we'll{n}be right there!"
+f614-0022 b75abf07fc738228 Elly{n}"S-{wait 5}Sure..."
+f614-0023 f8cbb23c64132e74 Citan{n}"Are you sure about this?{p}Even though you had{n}been trying to put the{n}battlefield behind you,{p}to live together quietly{n}for Fei's sake?"
+f614-0024 4b85ecc395f3b8a3 Elly{n}"It dawned on me.{wait 10}{n}That I was running{n}away from reality.{p}At first, I was{n}projecting my own{n}circumstances onto him.{p}I thought that maybe,{wait 10}{n}just maybe, Fei would{n}understand my feelings{wait 5}...{p}I'm not sure whether it{n}was really love or not...{p}Maybe I was just forlorn{n}after losing my mother{n}and father..."
+f614-0026 929711c85fbd32ec Elly{n}"Or{wait 5}...{wait 5}even so{wait 5}...{wait 10}could{n}it still be love?{wait 10}{n}Love{wait 10} for Fei...{p}That's why I think, one{n}more time, he should do{n}what he can, and I will{n}too —{wait 10} separately.{p}I want to try taking{n}a fresh look at one{n}another by doing so..."
+f614-0027 75040bc4a03ca42e Elly{n}"And I want to find{n}out for sure{wait 5}...{wait 10}{n}How I really feel{wait 5}..."
+f614-0029 6d4d43559c9fc7de Citan{n}"In any case, you{n}have changed, Elly.{p}What has happened in the{n}space of three weeks?"
+f614-0030 f7949c268a0f769a Elly{n}"Is that so?{wait 10}{n}I don't think I've{n}changed at all..."
+f614-0031 6db64c05ae613cbb Citan{n}"Oh but you have.{wait 10}{n}You are somehow{wait 10}...more{n}grown up, I would say.{p}You seem like a mother."
+f614-0032 858c2918e390457b Elly{n}"Excuse me!{wait 10}{n}I'm only 18 years old!{p}I'm nowhere near your{n}mother's age!"
+f614-0033 e0bcd4cb5ec6ad61 Citan{n}"No, forgive me.{wait 10} For some{n}reason it is the impression{n}I got, that is all."
+f614-0034 587c75b81b594fc6 Elly{n}"Well, Citan,{wait 10} I{n}should get going."
+f614-0035 06770b4af345da02 Citan{n}"Alright.{wait 10} I will be{n}on my way too as soon{n}as I am done here..."
+f614-0036 43a6e5e2340f394b Emeralda{n}"I-{wait 10}I go too."
+f614-0037 868c480ced21963a@b101774782f3b2eb Huh?
+f614-0039 e5645bbe8b30a238 Elly{n}"Emeralda, we can't{n}spare any more people{n}for something like this.{p}I'll be fine on my own."
+f614-0040 49186bed374da746 Emeralda{n}"If Elly go, I go too.{wait 10}{n}I go for sure."
+f614-0042 794e5f741eff8e09 Emeralda{n}"If you go, I go!"
+f614-0043 3a29ce494106c8d6 Citan{n}"Would it not be okay?{p}It could be that Solaris{n}is on to us regarding{n}the Limiters.{wait 10} They may{n}interfere somehow.{p}I feel uneasy about you{n}going it alone.{wait 10} Emeralda's{n}abilities may be just the{n}thing for this task."
+f614-0044 bc16ee753f9bac65 Citan{n}"(...Besides, by the looks{n}of things she is going to{n}follow you no matter what.{p}Please do your best until{n}I can join you.{wait 10} Alright?)"
+f614-0045 1f8f710fda28abb2 Elly{n}"Okay, you win.{wait 10}{n}The two of us can{n}do this, right?"
+f614-0046 9fb232302704988c Emeralda{n}"Me alone all it takes.{wait 10}{n}Elly just watch."
+f614-0047 5ea9a6ac2701e55d Elly{n}"Fei, where are you going?{n}Torah is calling us!"
+f615-0000 304f7686e4c14650 Torah...{done 30}
+f615-0001 52f432e80e024f2d@ec58a3dc9bc3e8d7 Citan{n}"Fei!"
+f615-0002 214fe14c6676aae9 Fei{n}"Doc!"{wait 30}
+f615-0003 27a3ae855d3f39c4 Citan{n}"I got a message from{n}Torah and hurried{n}straight here!{p}Oh, I am so glad...{wait 10}{n}You were very fortunate to{n}have landed near Torah's{n}laboratory{wait 5}..."
+f615-0004 37f7f776a2f24664 Torah{n}"Hmph,{wait 5} this is no{n}laboratory.{wait 10} More like{n}a man's hideout!"
+f615-0005 e03e4c15a48da852 Torah{n}"Mr. Citan has brought{n}me up to date about you{n}folks.{p}Imagine my shock —{n}a couple, collapsed and{n}all bloody like that."
+f615-0007 8887723aa1f3a0f2 Citan{n}"At any rate,{n}it was a narrow{n}escape.{p}You owe this man{n}many thanks!"
+f615-0008 d97072085ccfe046 Fei{n}"Torah,{wait 10} I really{n}appreciate it{wait 5}...{wait 10}{n}You saving Elly{wait 5}..."
+f615-0009 18b49318c6e60ef1 Fei{n}"But both Elly and{n}I were in such bad{n}shape...{p}Just what is that{n}machine...?"
+f615-0010 39a1f5c29932f85b Torah{n}"It's called a nanoreactor.{p}It's a device that can{n}reconstruct matter at{n}the molecular level.{p}The nanotechnology can not{n}only heal people, but in{n}theory it can produce any{n}kind of substance."
+f615-0011 aba222f009fb4592 Fei{n}"That guy in{n}Solaris... Karellen.{p}Isn't this the{n}same thing he's{n}researching...?"
+f615-0012 41c775c1c294f32c Torah{n}"Yes."
+f615-0013 744569939dee0c49 Torah{n}"The one who taught him{n}about nanotechnology was{wait 10}{n}none other than myself..."
+f615-0014 b80022e5413a27b8 Fei{n}"You?"
+f615-0015 6481508abbae292a Torah{n}"Well,{wait 10} that's enough{n}idle chitchat.{p}It looks like the lady's{n}treatment is done, too."
+f615-0016 26c28beee14e77c8 Torah{n}"Ohh, no need{n}for you to come.{wait 10}{n}Just wait there."
+f615-0021 871f4ba95adaee71 Torah{n}"Ahem, well, why don't{n}you both go out and get{n}some fresh air?{p}It ought to soothe your{n}bodies after all those{n}sudden changes."
+f615-0022 c91e4f9c9e3c7174 Shevat Emissary{n}"Fei, sir...{wait 10}{n}We've got a situation!"
+f615-0023 28759adb3160e4a1 Shevat Emissary{n}"The peace signing between{n}Av and Kislev was due to{n}take place in Shevat today...{p}But a Solaris mobile weapon{n}is fast approaching Shevat!{wait 10}{n}You must please lend us{n}your strength!"
+f615-0024 d71e4f444cac6446 Torah{n}"Such things have{n}nothing to do with{n}this young'un!!"
+f615-0025 298523b8936b3fd0 Shevat Emissary{n}"Master Torah!!"
+f615-0026 74cc016971e53c75 Torah{n}"What selfishness.{wait 10}{n}I've heard about you{n}from Mr. Citan.{p}To have the audacity{n}to show up now you've{n}heard that Id is{n}controllable...{p}Aren't you ashamed?{n}You haven't changed one{n}bit since back then...{p}All you care about is{n}preserving your own{n}positions."
+f615-0027 c8d71f87e8c2a5f8 Torah{n}"Fei, you don't need to{n}listen to this lot who once{n}turned their backs on you!"
+f615-0030 60858fca86bb963a Elly{n}"Go help them.{wait 10}{n}I'll go to the{n}Mass Driver..."
+f615-0032 4c977cd85b2ae65f Elly{n}"Whatever happened before,{n}Shevat needs your strength{n}now.{p}Maybe that would be{n}convenient for certain{n}special individuals.{p}But it's the lives of many{n}ordinary people that make{n}up a country, a world.{wait 10}{n}Don't forget that."
+f615-0033 42a4620e046bdfea Elly{n}"Bart and the others are{n}fighting to protect those{n}lives, aren't they?{p}So please, go help them!"
+f615-0034 617d2a120937c261 Fei{n}"Are you sure?{wait 10}{n}What about you and{n}that Mass Driver?"
+f615-0035 fa0d9035bdc28a02 Elly{n}"Don't worry about{n}that.{wait 10} I'll figure{n}something out."
+f615-0036 8b80d351a4aa10ce Fei{n}"But{wait 15} on your own..."
+f615-0037 7f36e7cc4ba94914 Citan{n}"I will accompany{n}Elly.{wait 10} There is no{n}need to worry.{p}I will be bringing{n}my own Omnigear."
+f615-0038 0897699ca68407c4 Fei{n}"Your...Omnigear?"
+f615-0039 5aed91a62c7a91bd Citan{n}"That is right.{p}Something I took from{n}the homeland back in{n}my Solaris Guardian{n}Angel days.{p}I left it with Master{n}Gaspar in case of{n}emergencies."
+f615-0040 47f861ad57fe304c Fei{n}"Alright.{wait 30}{n}Do everything you{n}can for Elly, Doc."
+f615-0043 59fbf98e7e58ca5d Shevat Emissary{n}"We are in your{n}debt,{wait 10} Fei, sir!!"
+f615-0044 8b427366cd774ac4 Torah{n}"Hmph!{wait 10}{n}Do what you like."
+f615-0045 759f9c5567085b18 Fei{n}"The location's{n}Ignis, right?"
+f615-0046 e7b6e0b32d39f87f Shevat Emissary{n}"Yes.{p}The enemy aiming to wipe{n}out the cities in Ignis{n}has already partially{n}destroyed Breidablik{p}and will reach Nisan{n}airspace in about{n}four hours.{p}Shevat is ready to{n}retaliate with all{n}our might!"
+f615-0047 c52ae6a8e459efea Fei{n}"Four hours...{wait 10} We'll{n}be cutting it close!"
+f615-0048 abb6eecc161e6447 Torah{n}"No need to worry.{p}Balthasar and I have{n}repaired your Gear{n}with nanomachines.{p}It's far more powerful{n}than it was before.{n}Why, you should get there{n}in half the time."
+f615-0049 8677babb273b1166 Fei{n}"Huh?{wait 10}{n}Ol' Man Bal is here?"
+f615-0050 832449fcdd5e1fda Citan{n}"And Emeralda too."
+f616-0001 fe120a8c7e0e7547 Citan{n}"Fei, it will{n}be alright!"
+f616-0002 849ca38522a433d2 Torah{n}"The fate of the world{n}is in your hands.{wait 10} We're{n}counting on you...!{p}I think I'll watch from{n}here..."
+f616-0003 1979588f4c917e5d Torah{n}"Welcome.{wait 10} I'm glad to{n}see you looking well.{p}I want to help you all{n}more...{p}But it seems this body's{n}no good now unless it{n}breathes in the air here...{p}Looks like my time's just{n}about up, ho ho ho!"
+f616-0004 2e07b1f51885ec35 Torah...
+f616-0005 c0fe2203c82658cd Torah{n}"Well, putting that aside,{wait 5}{n}I have some wonderful{n}presents for you."
+f616-0006 44bca7b1031fb88f  {n} Received Manly Mantle!!{done 60}
+f616-0007 df6b44f0213ee620  {n} Received Goddess Robe!!{done 60}
+f616-0008 4174b3666fff4c51 Torah{n}"Do we have{n}a guest?"
+f616-0009 4a34c825aa929ef6 Mysterious Old Man{n}"Hmm...{wait 10}{n}It seems he's{n}finally awake..."
+f616-0010 b693393d341f27e7 There we go...
+f616-0011 6fe129a6a36ac921 Hmph...
+f616-0012 3ac4b4a6bd7c9bb6 Hmm, hmm...
+f616-0013 ccf1f8194cb1b894 Fei{n}"My body has{n}healed..."{done 60}
+f616-0014 b5dd60c4e12ac896 Mysterious Old Man{n}"You've been sleeping{n}in this nanoreactor{n}for three weeks."
+f616-0015 1a136866524ad6cc Fei{n}"Nanoreactor?{wait 10}{n}Who on earth{n}are you...?"
+f616-0016 78986e1cbac858e1 Mysterious Old Man{n}"Me...?"
+f616-0017 ee68ebb3166b33b9 Mysterious Old Man{n}"I've long since {n}forgotten my name...{wait 10}{p}But some people call{n}me Torah."
+f616-0018 6d60b15f22321d20 Torah{n}"You seem to have made{n}a complete recovery.{p}They were terrible wounds,{n}but perhaps your youth and{n}strength aided you..."
+f616-0019 e6afbe1361c16e65 Torah{n}"Your companion's{n}wounds, however,{n}were more serious{p}and may take a while{n}longer to heal..."
+f616-0020 8dab30185ccf6987 Fei{n}"There was{n}another...?"{done 60}
+f616-0023 84f07cbf0cc5838f Torah{n}"Hey! You can't just{n}stare at naked women{n}all day!{p}Come over here!"
+f616-0025 a78e20532b60f8a1 Torah{n}"How're you doing?{p}I bet it felt good{n}to take in the{n}forest air, eh?"
+f616-0026 25758a425d80dc3b Torah{n}"So, it's about the{n}undoing of those{n}Limiters...{p}I found out that we can{n}be set free using the{n}same nanotechnology that{n}regenerated you two."
+f616-0027 2bdaa4599f6c95cc Torah{n}"There are nanoassemblers{n}enclosed in this pod."
+f616-0028 0fed04baaa0d96d6 Citan{n}"If only we could scatter{n}them across the world..."
+f616-0029 5f02e736192fca00 Torah{n}"There's an ancient{n}military installation{n}near here...{p}If we launch this pod{n}using the Mass Driver{n}that's there,{p}then we might be able to{n}spread the nanoassemblers{n}all over the world via{n}atmospheric convection."
+f616-0030 5775dcf7ff14e871 Torah{n}"It's a place I'd like{n}to see for myself,{p}but sadly at this age{n}I'm just not up to it...{p}Ah, it's for the future{n}of you folks, anyway.{p}I say it's better for{n}young'uns to forge their{n}own way, without old{n}timers butting in!"
+f616-0031 869ec4097db58f93 Torah{n}"Look here."
+f616-0032 75ad377f722af784 Torah{n}"Now, of course I'm{n}not asking you to do{n}anything for free.{p}Try this wristband{n}on."
+f616-0034 56f4276d091c839c Citan{n}"Is that what you spoke of{n}in your correspondence{n}the other day?"
+f616-0035 b32ac8fb1fe26cd9 Torah{n}"Yep.{p}This is an 'emotion-{n}suppression device',{n}an application of{n}nanotechnology.{p}From this wristband-like{n}gadget, nanomachines are{n}injected under the skin{p}and make their way into{n}the cranial nerves soon{n}after.{p}There, they refine{n}intracerebral substances{n}such as serotonin, and{n}regulate emotion."
+f616-0037 f69f1aa60a10e63d Torah{n}"Well, I suppose that{n}was a bit of a mouthful...{wait 10}{n}But in short, it means{p}that the manifestation{n}of 'Id', your second{n}personality, can be{n}physically suppressed."
+f616-0040 ccee04a3038d2802 Torah{n}"Well,{n}theoretically, anyway.{wait 10}{n}Plus, there's a bonus.{p}I went ahead and{n}also added a similar{n}suppression mechanism{n}to your Gear..."
+f616-0041 0d5bd458b80f1751 Citan{n}"The aforementioned Id,{n}who sleeps within Fei...{p}This mechanism will{n}unleash his power —{n}and only his power —{n}at will?"
+f616-0042 98eddb2514713025 Torah{n}"That's right.{wait 10} I've{n}dubbed it 'System Id'.{p}Of course, frequent{n}use of it wouldn't be{n}advised.{wait 10} Use it only{n}as a last resort."
+f616-0043 5b034d318c046045 Fei{n}"Elly,{wait 10} Doc,{wait 10}{n}I..."
+f616-0044 be4b34a7bd88b036 Citan{n}"Do not fret, Fei...{p}Right now you are the{n}Fei we all know so well,{n}are you not?{p}Have confidence in{n}yourself... Alright?"
+f616-0045 808d2fec61d84846 Torah{n}"Well, whether you believe{n}in yourself or not,{wait 10} we're{n}depending on you."
+f616-0047 dd56635ff33faca4 Torah{n}"Hm?{wait 10}{n}Do we have{n}a guest?"
+f616-0049 c3e1b8f1e8185833 Torah{n}"As I thought..."
+f616-0050 2b47dd4dfcb123f1 Torah{n}"It was you who brought{n}Fei and the girl to me...{p}I noticed it the minute{n}I saw the two of them.{wait 10}{n}Why, how could I not...?{p}They're the spitting image{n}of you two back then.{wait 10}{n}You and...{wait 10}her."
+f616-0051 cef2ea7a36f335b5 Torah{n}"Isn't that so,{wait 10}{n}Lacan...?"
+f616-0052 9b1592c90833a385 Karellen{n}"Behold, Lacan.{wait 10}{n}We finally made{n}it a reality.{p}With this, the{n}people will be{n}saved."
+f616-0053 cf4e0b7fe621a5fd Karellen{n}"Isn't that right,{wait 10}{n}Melchior?{wait 10} With this,{n}Lady Sophia, too, will—"
+f617-0000 d89cfb50faf23e1c A dream{wait 5}...{wait 45}{n} {n}I had a dream{wait 5}...{wait 15}{n}Or perhaps it was a{n}long-forgotten memory{wait 5}...{wait 30}{n} {n}A dream{wait 5}...{wait 15}{n}A memory{wait 5}...
+f617-0001 f63324f276fb34f2  {n}Something remembered{n}when you're asleep{wait 5}...{wait 30}{n}Something forgotten{n}when you're awake{wait 5}...{wait 45}{n} {n}The depths of the memory{wait 15}{n}are the surface of{n}the dream{wait 5}...{p} {n}Which is truth{wait 10}{n}and which is fiction...{wait 10}{n}you cannot tell until{n}you wake up{wait 5}...{wait 30}{n} {n}Or perhaps{wait 5} it's both{n}truth and fiction{wait 5}...
+f617-0002 27a3c10db9d4a989 Something nebulous{wait 5}...{wait 15}{n}with no boundaries{wait 5}...{wait 30}{n} {n}As indistinct as that{n}thing we call the self{wait 5}...{wait 45}{n} {n}I dreamt such a dream{wait 5}...{wait 30}{n} {n}Long{wait 5}...{wait 15} Longer than{n}words can express...{wait 15}{n}A long, long dream{wait 5}...
+f617-0003 46139ea3a915bdb5 'Elly'{wait 5}...{wait 45}{n} {n}We'd met back when{n}she went by that name...{wait 15}{n}A time when our{n}respective positions{n}didn't matter to us...{p} {n}It was fine that way{wait 5}...{wait 15}{n}Just two people,{wait 5}{n}in that place{wait 5}...{wait 45}{n} {n}That was enough...
+f617-0004 df2e4e3f40c0fcd9 A dream{wait 5}...{wait 45}{n} {n}The life of a man{n}named Lacan{wait 5}...{wait 15}{n}And the lives of{n}several other men{wait 5}...{wait 30}{n} {n}All but dreams{wait 5}...
+f617-0005 f985b147758c48c9 Now that I'm awake,{wait 5}{n}those many long,{wait 5}{n}heartrending{wait 5} dreams{n}are almost utterly{n}beyond recall{wait 5}...{p}In those dreams,{wait 5}{n}I loved one woman{wait 5}...{wait 15}{n}No matter the day,{wait 15}{n}no matter the era,{wait 15}{n}that didn't change{wait 5}...{wait 45}{n} {n}As for her name{wait 5}...
+f617-0006 d466503700489300 Those dreams{wait 5} changed me{wait 5}...{wait 30}{n}Those dreams have become{n}a catalyst, and I feel{n}like I know now what{n}I should do{wait 5}...{wait 15}{n}What I must accomplish{wait 5}...{wait 30}{n} {n}That long, long{n}dream-memory{wait 5}...{wait 30}{n}Perhaps that's the{n}memory of my soul{wait 5}...
+f617-0007 d5801df3cdef6fc4 A dream{wait 5}...{wait 45}{n} {n}I had a dream{wait 5}...{wait 15}{n}Or perhaps it was the{n}memory of someone from{n}a faraway time{wait 5}...{wait 30}{n} {n}A dream{wait 5}...{wait 15}{n}A memory{wait 5}...
+f617-0008 1dac0c2e948b1b73 That day{wait 5}...{wait 5}{n}That time{wait 5}...{wait 30}{n}Words that couldn't{n}be conveyed{wait 5}...{wait 15}{n}Thoughts that couldn't{n}come to fruition{wait 5}...{wait 15}{n} {n}Words and thoughts{wait 5}...{wait 5}{n}The relationship{n}between the two{wait 5}...{p}Without words,{wait 5}{n}thoughts aren't conveyed{wait 5}...{wait 10}{n}Without thoughts,{wait 5}{n}words would disappear{wait 5}...{wait 15}{n}Both are precious{wait 5}...{n} {n}Things that can never{n}be divided{wait 5}...{wait 10}{n}The wings of an angel{wait 5}...{wait 10}{n}A man and a woman{wait 5}...
+f617-0009 83aa187e94b1a2a3 An unchangeable destiny{wait 5}...{wait 15}{n}Feelings I wish{n}I could change{wait 5}...{wait 30}{n} {n}Meeting the one{n}who would change me{wait 5}...{wait 5}{n}And then me changing{wait 5}...{wait 45}{n} {n}I dreamt such a dream{wait 5}...{wait 30}{n} {n}Long{wait 5}...{wait 15} Longer than{n}words can express...{wait 15}{n}A long, long dream{wait 5}...
+f617-0010 e5226887126798df 'Elehayym'{wait 5}...{wait 45}{n} {n}I liked that name...{wait 15}{n}Because it's the name I went{n}by when I first met him{wait 5}...{wait 30}{n} {n}Because it's my real name...{wait 5}
+f617-0011 95533fca6fc53a24 A dream{wait 5}...{wait 45}{n} {n}The life of a woman{n}named Sophia{wait 5}...{wait 15}{n}And the lives of{n}several other women{wait 5}...{wait 30}{n} {n}All but dreams{wait 5}...
+f617-0012 f2c3f321b83796aa Now that I'm awake,{wait 5}{n}those many long,{wait 5}{n}heartrending{wait 5} dreams{n}are almost utterly{n}beyond recall{wait 5}...{p}In those dreams,{wait 5}{n}I loved one man{wait 5}...{wait 15}{n}No matter the day,{wait 15}{n}no matter the era,{wait 15}{n}that did'n't change{wait 5}...{wait 45}{n} {n}As for his name{wait 5}...
+f617-0013 72113b4515afd6da Those dreams{wait 5} changed me{wait 5}...{wait 30}{n}Those dreams have become{n}a catalyst, and I feel{n}like I know now what{n}I should do{wait 5}...{wait 15}{n}What I must accomplish{wait 5}...{wait 30}{n} {n}That long, long{n}dream-memory{wait 5}...{wait 30}{n}Perhaps that's the{n}memory of my soul{wait 5}...
+f617-0014 2865560d2e95fc51 To disperse the nanomachines,{n} Emeralda and I headed for{n}   one of the ruins of the{n}    Zeboim civilization —{n}     the Mass Driver facility.
+f617-0015 132a2402f9e853d1  Fortunately, the facility{n}  was still active, which{n}   allowed us to proceed{n}to the central control room{n}  with little difficulty.
+f617-0016 e66594b224fe7329    Along the way we saw{n}  various missiles and giant{n} rockets that were created{n}during the Zeboim era{wait 5}...{p}They stood like the tombstones{n}of that ancient civilization.{wait 45}{n} {n}    This was a graveyard of{n}   people who'd refused each{n} other out of sheer arrogance.
+f617-0017 cd267a79fbc1722d   Having arrived at the{n}  central control room,{n}  we met up with Citan{n} and worked together to{n}activate the Mass Driver.{wait 45}{n} {n}We succeeded in launching{n} the capsule containing{n}  the Limiter-reversing{n}      nanomachines.
+f617-0018 35411aa73312d21d The nanomachines that were{n} scattered into the upper{n} atmosphere began to self-{n}replicate, spreading across{n}     the whole world.{wait 30}{n} {n} Nanomachines twinkling,{n}   catching the sunlight.{wait 15}{n}     A great river flowing{n}       through the skies{wait 5}...{p} {n}    That glitter{wait 5} would{n}   surely be the light of{n}  hope in our bid to regain{n} true freedom,{wait 30} 'unchaining'{n}the entire population...
+f617-0019 ec47b7b5949da86d While Fei and the others{n}searched for the resting{n}place of the final Vessel{n}of Anima, I returned to{n}Nisan for a time.{wait 30}{n} {n}I don't know why I went back.{wait 30}{n}But{wait 5}...{wait 20}{n}I had a sense of{n}apprehension{wait 5}...{wait 15}that some kind{n}of danger was approaching{n}the people there{wait 5}...{wait 5}
+f617-0020 5529ced9643a696e The people taken in by{n}Nisan were on the road{n}to recovery.{wait 15} There were{n}still some for whom{n}body-tissue reconstruction{n}was impossible, but Torah's{n}nanomachines were advancing{n}day by day.{p}With the nanomachine{n}treatments bearing fruit,{wait 5}{n}the day where everyone would{n}be able to regain their{n}original bodies was near.
+f617-0021 17f8863f75d0d461   An impact{wait 5}...{wait 30}{n} {n}Suddenly there was an{n}explosion in the town of Nisan.{n}The streets erupted into{n}flame{wait 5}...{wait 15}and within the fire{n}a golden Omnigear loomed{wait 5}...{wait 30}{n} {n}  It was Ramsus.{wait 15}{n}  He had assaulted Nisan so{n}  that he could defeat Fei.{wait 30}{n} {n}The very meaning of his{n}existence was at stake{wait 5}...
+f617-0022 018a4632025708dc The warrior-monk forces of{n}Nisan and Shevat,{wait 5} as well{n}as Rank and the others from{n}Solaris who now served to{n}protect this place,{wait 5} fought{n}back but could not thwart{n}the invasion.{p}  The fleeing people took{n}  refuge in the cathedral.{wait 15}{n}  Searching for Fei, Ramsus{n}  routed the warrior-monk{n}  forces and approached{n}  the cathedral...{wait 45}{n} {n}He was{wait 5}...{wait 5}broken{wait 5}...{wait 15}{n}He had his sights set on{n}Fei, and Fei alone...{wait 30}{n} {n}  I stood before him.
+f617-0023 24d70133d95e08d1 Ramsus{n}"Where!?{wait 5} Where is he!?{wait 5}{n}He must be here!{wait 5} Why does{n}he not show himself!?"
+f617-0024 6bea63fb3551c1bc Elly{n}"Ramsus!{wait 15}{n}Fei, the one you{n}seek, isn't here.{p}So it's time to stop{n}this nonsense!"
+f617-0025 36985c114f3ec811 Ramsus{n}"You{wait 5}...{wait 15}{n}Yes{wait 5}...{wait 5}if I{wait 5}..."
+f617-0026 edbb633deae86b99 Ramsus{n}"Show yourself, Fei!{wait 15}{n}If you don't come out,{wait 5}{n}I will crush Elehayym!"
+f617-0027 f1a3ed74c396f0e8 Elly{n}"Ungh{wait 5}...{wait 5}!"
+f617-0029 7e8bc88b5801a851 Rank{n}"Boss!"
+f617-0030 9dc0c75e9e26c1e6 Elly{n}"K-{wait 5}Keep back{wait 5}...{wait 5}"
+f617-0031 1178bb8c897d3443 Ramsus{n}"Won't come out, hmm{wait 5}...?{wait 5}{n}Have it your way.{p}Then from this night{n}forward, you can fall{n}asleep embracing this{n}woman's corpse!"
+f617-0032 f1391fcbf7e0b60f Elly{n}{speed 255}"Aaagghhh!"{done 60}
+f617-0033 29bac96b2a9dd8bf Ramsus{n}"R-{wait 5}Ridiculous!{wait 5}{n}What happened!?{wait 15}{n}Why can't I move!?"
+f617-0035 9a8aadc1cc9e97fc Rank{n}"Are you okay!?"
+f617-0036 f53ccff27a67bbb9 Ramsus{n}"T-{wait 5}To the likes{n}of you{wait 5}..."
+f617-0037 cfeeeae52e2967cc Ramsus{n}"I-{wait 5}I'm inferior not{n}only to him,{wait 5} but to{n}you too{wait 5}...!?{wait 5} Me!"
+f617-0039 925fb92f3f668a7a Elly{n}"Why're you so fixated{n}on Fei...and on being the{n}best at everything?"
+f617-0040 274ee6079192cae3 Ramsus{n}"I was originally made to{n}be a combination of the{n}abilities of you humans{wait 5}...{p}Able to align with all of{n}the Vessels of Anima{wait 5}...{p}Created to be the one{n}who would possess the{n}abilities of Emperor Cain.{p}The ultimate ideal form of{n}a human, you could say{wait 5}...{p}But{wait 5}...{wait 5}HE was born,{wait 5} and{n}because of that{wait 5} I was{wait 5}{n}regarded as{wait 10} waste for{n}disposal.{p}I was given life in a{n}pile of trash...{wait 10}{n}In a dark,{wait 5} cold{wait 5} pile of{wait 5}{n}trash{wait 5}..."
+f617-0041 ef2ce730be639f56 Ramsus{n}"But I crawled out of{n}there!{wait 15} By my own power,{n}that I might live!{p}To show those who'd{n}forsaken me!{p}And I got this far!{wait 15}{n}I myself obtained the{n}warmth I needed to live!"
+f617-0042 f9fa887d0b6d4e6b Ramsus{n}"But{wait 10} he stood before{n}me, blocking the way{n}once again!{p}He tried to rob me of{n}the warmth once again!{p}As long as he exists,{n}I{wait 5}...{wait 10} I don't belong{n}anywhere{wait 5}...!"
+f617-0043 80e2f15e057edc38 Elly{n}"I think I understand{n}why you're so hell-bent{n}on confronting Fei{wait 5}...{p}You don't really{n}know what to do{n}with yourself...{p}It's simply to protect{n}yourself that you attack{n}Fei{wait 5}...{p}It's by attacking others{n}that you affirm your own{n}existence."
+f617-0044 e0160306d87176a1 Elly{n}"That's also why you{n}try to rise above{n}everyone else{wait 5}...{p}Because otherwise{n}you'd become a void{wait 5}...{wait 15}{n}Because your self{n}would disappear{wait 5}...{p}Because the emptiness{n}within your heart would{n}only grow{wait 5}...{p}Because you want to{n}hold on to love{wait 5}..."
+f617-0046 c01e37f1f158e756 Ramsus{n}"You too would{n}rob me of it!?{p}...Of the warmth!?{wait 15}{n}The warmth I've{n}finally obtained!?"
+f617-0047 adf886801db3b259 Elly{n}"Ramsus{wait 5}...{wait 15}{n}No one's attacking you.{p}No one's trying to take{n}away what's precious{n}to you{wait 5}...{p}Your existence isn't{n}under threat or anything{n}like that..."
+f617-0048 fc34b2a72fa4ff86 Elly{n}"You only feel it{n}to be so.{p}So don't hide your{n}heart{wait 5}...{wait 10} Don't be{n}afraid of love{wait 5}..."
+f617-0049 61a109f5fd2097c4 Ramsus{n}"Y-You{wait 5}...{wait 5}{n}You're{wait 5}...{wait 15}{n}Aaarrrgghhh!"
+f617-0050 e263df94234eaf18 Ramsus was afraid.{wait 45}{n} {n} Afraid that his sense of{n}  self would be lost{wait 5}...{wait 15}{n}   As he saw it, Fei was{n}    the one who would{n}     take it from him{wait 5}...{wait 30}{n}      The one who would{n}       rob him of love{wait 5}...{wait 60}{n} {n}He craved love more{n}than anyone else{wait 5}...
+f617-0051 b58f5421c265730f Suddenly, the howling erupted.{wait 30}{n} {n}   Even the people who'd{n}   avoided abnormalities this{n}   far mutated...{wait 20}into Verus.{wait 45}{n} {n}They raised their war{n}cries as if to call out{n}to something.
+f617-0052 b38c9bd031ddfc0a This was because Ramsus{n}had been manipulated into{n}assassinating the Emperor.{wait 45}{n} {n}It was the effect of the{n}'Key of Goetia' invoked{n}by the Ministry, their{n}restraint now gone...{wait 30}{n} {n}The mutagenesis of those{n}people destined by God.
+f617-0053 bad82df6e1218707   The people destined by God,{n}  regardless of whether they{n}  were surface dwellers or{n}  Solarians, began to change{n}  shape one by one{wait 5}...{wait 15}{n} {n}The howling was the voices{n}of the people who'd filled{n}the land, calling out to God.{p}'When humans have filled the{n}land, God will awaken from{n}his long slumber{wait 5}...{wait 5}{n}And the paradise of the{n}heavens, Machanon, too{wait 5}{n}will awaken{wait 5}...'{wait 45}{n} {n} At last we could understand{n} the true meaning of the words{n} spoken by the Ministry,{wait 5} the{n} truth behind the legend.
+f617-0054 1820f48279205f13    This was what they{n}   meant by 'humans{n}   filling the land'...{wait 30}{n} {n}In the end it was{n}Machanon,{wait 5} the resting{n}place of God,{wait 5} that awoke{n}from long slumber and{n}surfaced,{wait 5} as if responding{n}to the calls of the people.{wait 45}{n} {n}   It appeared before us in{n}   all its majestic glory...
+f617-0055 ef261ba99b04e6d9 To obtain 'God and God's{n}wisdom', the Gazel Ministry{n}of Solaris sent a great{n}military force there.{n} {n}...However, neither the{n}nation called Solaris nor the{n}organization known as Geburah{n}existed now.{n} {n}What was there...{wait 10}was but a{n}swarm of countless weapons.
+f617-0056 8a0757548ad98a53 Almost all of the Solarians{n}had been transformed into{n}weapons...{n} {n}The Gazel Ministry{n}reigned over them as{n}their commanders.
+f617-0057 2cc6823427adaa9d There was no way we could{n}allow God or God's wisdom{n}to fall into the hands of{n}the Ministry.{n} {n}We rallied all the might{n}we had, and arranged to{n}head for Machanon.{p}It was going to be a{n}perilous battle.{wait 10}{n}There was no guarantee we{n}would make it back alive.{wait 30}{n} {n}We would make our move{n}the following morning.{wait 10}{n}And so, I made a{n}decision.{wait 10} About her...
+f617-0058 4147b4c22090b6ab   Struck by indescribable{n}   worry, I ascended to{n} Shevat, which was situated{n}  in the sky above Nisan.{p}    Waiting for me there{n}    was a communication{n}      from Karellen...{wait 45}{n} {n}    He told me that if I{n}   wanted to save Fei and{n} the others, I was to come{n} to 'the land of Golgotha'.{wait 30}{n} {n}   Karellen was after me.
+f617-0059 768c35f5a8117afd For the sake of rescuing Fei{n} and the others, I boarded{n} the one Gear remaining in{n}   Shevat:{wait 10} the Omnigear.{wait 45}{n} {n} Any fear of this Gear I'd{n}   felt before was swept{n}   away by the desire to{n}     rescue my friends.
+f617-0060 5d90f2e623f55e9a Rank{n}"You seriously intend{n}to go alone!?"
+f617-0061 46524c37a4a94e24 Elly{n}"Karellen told me{n}to come by myself."
+f617-0062 fdc7e2517db9a027 Elly{n}"I've got no choice but{n}to do as he says.{p}So please, all of you{n}remain in Shevat.{wait 10}{n}Protect everyone here."
+f617-0063 18dc6056b27f217d Helmholtz{n}"But it's a trap!"
+f617-0065 5f5396432ca7e5d3 Strachey{n}"Then why!?"
+f617-0066 afeb58a6e096408a Elly{n}"If I don't go, Fei{n}and the others will be{n}executed for sure...{p}To Karellen, anyone{n}besides me is of no{n}interest."
+f617-0067 d6b1b2630ee8821c Rank{n}"But what guarantee{n}is there that he'll{n}keep his promise?{p}What's he done to{n}prove to you that{n}they can be saved?"
+f617-0068 d82dd143b31b2c35 Elly{n}"Nothing..."
+f617-0069 809ffe3d36703fdb Franz{n}"Then it's suicide!"
+f617-0070 02070f29ea97eb07 Elly{n}"Maybe it is."
+f617-0071 c62e26701487419d Elly{n}"But I wouldn't be here{n}right now if it wasn't{n}for Fei and the others.{p}Because they're comrades{n}who accepted me."
+f617-0072 fb986e064e76a785 Rank{n}"If you go, what about us?{p}Hell, what about the whole{n}mob gathered in Nisan that{n}you'd be leaving behind?{n}What're we supposed to do?{p}Aren't you the spiritual{n}support for us all?"
+f617-0073 9736dd968129e2a5 Elly{n}"The people of Nisan will{n}be fine.{p}They're all people who can{n}walk on their own feet,{n}even without that support.{p}Of course, that goes for{n}you guys, too...{wait 5}right?"
+f617-0074 79eb76db38f9ef6e Breuer{n}"Why would you go to{n}such lengths{wait 5}...?"
+f617-0075 93bc52f63b30024d Elly{n}"You're right...{wait 30}{n}A woman's selfishness...{wait 5}{n}I guess."
+f617-0076 2b3629be98d25d1b Helmholtz{n}"A woman's—?"
+f617-0077 348fb8af36c3c1a0 Elly{n}"I'm no holy woman.{wait 10} I'm{n}really quite ordinary.{p}I get angry{wait 5}...{wait 5}{n}I cry{wait 5}...{wait 5}{n}I laugh{wait 5}...{p}There are times when I{n}hate people,{wait 5} but on the{n}other hand I also know{n}how to love.{p}Be that loving a great{n}many people,{wait 5} or loving{n}one man only...{p}I feel total bliss when{n}I'm in his embrace."
+f617-0078 7dd8e14b439fd830 Elly{n}"Giving what I have, and{n}receiving what he gives{n}to me, we become one.{p}That moment is when I'm{n}most at peace."
+f617-0079 e76d232cbace903e Elly{n}"As one woman...{n}I simply want to save{n}the man that I love."
+f617-0080 36e4508226e42a62 Franz{n}"Boss{wait 5}..."
+f617-0081 3e3faa841560e028 Elly{n}"Forgive me...{wait 15}{n}For being selfish."
+f617-0082 e91b9d7cf97ac895 Elly{n}"I'm going to go do what{n}I can.{wait 10} So I want you all{n}to do what YOU can."
+f617-0083 2986c9aeac18b79f Rank{n}"{wait 5}...{wait 5}"
+f617-0084 f8c0c27a10ee0f38 Elly{n}"Well,{wait 5} I'd better{n}get going..."
+f618-0000 6956c56de5a0de90 The invasion by Solaris'{n}Mobile Surface-Supremacy{n}Weapon was fierce,{wait 5} and{n}Shevat and Nisan's standard{n}Gear battalions were no{n}match for it.{wait 45}{n} {n}It was only a matter of{n}time before the Solaris{n}mobile weapon reached{n}Nisan.{p} {n}While fending off the{n}Solarian Gear units, we{n}headed for the Central{n}District in Noatun,{wait 15} to{n}obtain our one and only{n}means of standing against{n}the mobile weapon.
+f618-0001 6b00793de56c1ea2 The Solaris mobile weapon{n}was destroyed{wait 5}...{wait 5}{n}and a moment's reprieve{n}came to Ignis.{wait 45}{n} {n}Peace was signed,{n}and after 500 years{n}the land of Ignis was{n}united once again.
+f618-0002 45f20af570be264b Excitement spread throughout{n}Av, Nisan, Kislev and Shevat{wait 5}...{wait 5}
+f618-0003 6c02fa93406e2538 The sky shimmered as if{n}to celebrate it.{wait 10} By the{n}hands of Elly's party,{n}the nanomachines had been{n}scattered into the{n}atmosphere.
+f618-0004 d08310a64cdbcb15 ...That was when{n}disaster struck.{p}Soon, the songs of victory{n}that echoed here and there...{wait 10}{n}modulated into the sounds{n}of pandemonium{wait 5}...{wait 5}
+f618-0005 6b1890081ccca4d2 At first we had no idea{n}what had transpired.{wait 10}{n}We witnessed{wait 5}...{wait 5}{n}unearthly things.{wait 10}{n}One after the other,{n}people were mutating{n}into abnormal forms.
+f618-0006 96fd6fb22a60c7f7 A situation that triggered{n}when the Limiters applied{n}by Karellen long ago{n}were undone by the{n}nanomachines...{wait 30}{n} {n}The 'human' form{wait 5}...{wait 5}with its{n}innate abilities released.
+f618-0007 4413539778b4d907 That's when I remembered{n}what Hammer had said back{n}in Solaris.{wait 30}{n} {n}His words were{wait 5}...{wait 5}{n}  'An "ordinary" guy{n}      like me...'
+f618-0008 f94578670ef34c14 After that, we went from{n}place to place, destroying{n}all the Soylent System{n}installations on the surface{n}and freeing the people who'd{n}been held in them.{wait 15}{n} {n}Nisan wholeheartedly{n}took in the people who'd{n}mutated, and there they{n}received treatment.
+f618-0009 6c0ddc41ffcd2ffd Those in the less advanced{n}stages were able to have their{n}anatomies restored by Torah's{n}nanomachines and return to{n}their original form.{wait 20}{n} {n}But for the more heavily{n}afflicted, the results were{n}not as promising{wait 5}...
+f618-0010 07b3497a0d096bb8 Keeping their bodies just{n}barely human in appearance{n}was the best that could{n}be done.{wait 45}{n} {n}However,{wait 5} strangely,{wait 5} they{n}no longer competed with{n}one another for survival{n}as they had when sheltered{n}at the Soylent System.
+f618-0011 c9362bbdf00338e1 Of course, their physical{n}agony had been remedied{n}by the treatment,{wait 5} but it{n}wasn't only that{wait 5}...{wait 30}{n} {n}Most of those received by{n}Nisan were the very ones{n}who — having been{n}admonished by Elly — had{n}realized how people were{n}originally meant to be.
+f618-0012 5d21768a4c43417d In between Soylent-destruction{n}activities, Elly went around{n}nursing the people sheltered{n}in Nisan.{wait 30}{n} {n}She tended to the bodies that{n}had mutated and lent an ear to{n}the people who had no one else{n}to turn to{wait 5}...{wait 5}
+f618-0013 fd1d3ae4f54e4613 Seeing her like that, Elly was{n}the very image of the woman{n}who created Nisan itself{wait 5}...{wait 15}{n} {n}  'Sacred Mother Sophia'{wait 5}...{wait 45}{n} {n}In whispers, it became rumored{n}that Elly was a second advent{n}of this Sophia.
+f618-0014 65864fcff6182469 'Go to Nisan and you will{n}receive salvation{wait 5}...'{wait 30}{n} {n}The news spread, and{n}people from all over{n}gathered in Nisan{n}seeking physical and{n}spiritual aid.{p} {n}Freed from the supervision{n}of Solaris, the surface{n}dwellers were assembling{n}in one place.
+f618-0015 200b031b04bca551 Although the surface{n}dwellers fell into{n}momentary chaos due to{n}being free of the Limiters,{n}somehow they began to{n}recover a state of calm.{p}We decided to search for{n}the remaining Vessels of{n}Anima{wait 5} — {wait 5}objects that were{n}to be elementary parts of{n}the Omnigears.{wait 30}{n} {n}In the past, ten Vessels{n}had been discovered{wait 5}...{wait 15}{n}Around half of those were{n}said to be in the hands{n}of the Ministry.
+f618-0016 c31d8d00faa9e722 According to Zephyr,{wait 5} there{n}were still supposed to be a{n}few Vessels lying in wait{n}on the surface.{wait 30}{n} {n}It was a fact that Solaris{n}was investigating them.{wait 30}{n} {n}There was no way we could{n}let Solaris have them.{p}We visited a place where,{wait 5}{n}at one time,{wait 5} some old records{n}had led Zephyr and her allies{n}to discover a Vessel.{wait 10}{n} {n}Following the information{n}we obtained from there,{wait 5} we{n}headed for a location that{n}seemed to be{wait 5} the ruins of{n}an ancient civilization.
+f618-0017 0c54f13f9a5f2677 Having dealt with the Elements,{wait 5}{n} who'd been after a Vessel{n}  to use as an instrument{n}   of Ramsus' vision,{wait 15}{n} once again we set about{n}  obtaining information on{n}   another place of interest...{wait 30}{n}    in search of the{n}     final Vessel.
+f618-0018 d28b8ab9daa36328 The first Vessel of Anima{n}performed its alignment with{n}Billy, making the form of{n}the Gear he piloted change{n}significantly.{p}   Units that fused with{n}   inanimate matter{wait 5}...{wait 30}{n} {n}For what purpose the Vessels{n}of Anima had been created in{n}ancient times, we still didn't{n}know,{wait 5} but it could easily be{n}imagined that they had some{n}role as weapons.
+f618-0019 4a78670eac6c93e5 Sooner or later, that true{n}power would be unleashed{wait 5}...{wait 15}{n}We couldn't allow it to{n}fall into their hands.{wait 30}{n} {n}In order to obtain the{n}final Vessel,{wait 5} we headed{n}for the ruins of a{n}primitive people,{wait 5}{n}believed to have been built{n}almost 10,000 years ago.
+f618-0020 128b61f9ba997a5f And{wait 5}...{wait 30}{n} {n}There, a reunion{n}with an 'old friend'{n}awaited us{wait 5}...
+f618-0021 64535f91dad14bb1 Hammer disappeared into{n}the chasm with a contented{n}smile{wait 5}...{wait 30}{n} {n}The 'power he briefly{n}obtained'{wait 5}...{wait 15} Was he happy{n}that he'd obtained it{wait 5}...?{p}His smile{wait 5}...{wait 15}{n}Was it the joy of{n}obtaining power{wait 5}...?{wait 15}{n}Or was it the peace of{n}being released from the{n}agony caused by his{n}alteration{wait 5}...?
+f618-0022 854d981f6c8ed19e In the end,{wait 5} we had no{n}choice but to take down our{n}comrade, Hammer,{wait 5} for the{n}sake of our own survival{wait 5}...{wait 45}{n} {n}Wasn't there another way{wait 5}...?{wait 15}{n}I'd never felt fighting{n}to be so futile{wait 5}...
+f618-0023 ca1093d02f91c477 Elly couldn't stop crying{wait 5}...{wait 30}{n}She cried in regret over{n}her own lack of power to{n}do anything to help.{wait 30}{n} {n}Seeing Elly like that,{n}I thought to myself{wait 5}...{wait 15}{n}That I couldn't let her{n}keep fighting{wait 5}...{p}With these unbearable{n}feelings,{wait 10} we returned{n}to Ignis{wait 5}...
+f618-0024 d72af208917bfe8d   I was powerless{wait 5}...{wait 45}{n} {n}All I could do was stand{n}by and watch as Elly was{n}taken away{wait 5}...{wait 60}{n} {n}  I{wait 5}...{wait 15}{n}    Powerless{wait 5}, I...
+f618-0025 fd6b9ddf10db3e11 Wiseman{n}"What're you{n}doing, there?"
+f618-0026 bd70fe965f03fe10 Fei{n}"Oh, it's you{wait 5}...{wait 5}{n}I{wait 5}...{wait 5}wasn't able to{n}beat Grahf{wait 5}...{wait 15}{p}I didn't even stand{n}a chance against him{wait 5}...{wait 5}{n}It was obvious."
+f618-0027 6d98f0c656bdcb44 Fei{n}"There was no way I could{n}win with him aboard that{n}monstrous machine...{p}But still, I{wait 5}...{wait 5}"
+f618-0028 c8f004dc29fbc426 Fei{n}"Elly is such a fool...{p}Even though I explicitly{n}told her not to come{wait 5}...{wait 15}{n}Even though I told her{n}to run away{wait 5}...{p}Even though she must've{n}known it was a trap."
+f618-0029 0327cf8715abd3b8 Wiseman{n}"...{wait 5}Hmph."
+f618-0030 19556f2026bafa51 Wiseman{n}"You certainly won't be{n}able to win like that{wait 5}...{p}Not if you're fighting{n}with that kind of{n}attitude."
+f618-0032 ee2f88400f417e60 Wiseman{n}"It's entirely down to your{n}arrogance that you lost to{n}him and the girl got taken.{p}Were you not depending{n}solely on the power of{n}your machine,{p}on the 'Id power' you{n}seem to think you have{n}the luxury of being able{n}to control?{p}What is the source of{n}Grahf's power?{wait 15} His{n}machine?{wait 15} His technique?{wait 15}{n}His experience?{p}No —{wait 45} it's his emotions.{wait 15}{n}His heart is dominated by{n}anger toward this whole{n}world.{p}That feeling of anger —{wait 10}{n}THAT is the source of{n}his power.{p}You didn't have enough{n}emotion to go up against{n}Grahf.{p}That is why you couldn't{n}beat him.{wait 15}{n}That{wait 15} is strength."
+f618-0033 d5806123a181bc4b Wiseman{n}"It's no wonder you{n}fought the way you did,{p}when you don't{n}understand what true{n}strength is{wait 5}..."
+f618-0035 75be5ef395d1d3eb Wiseman{n}"That girl{wait 5}...{p}By desiring with her whole{n}heart to save you all, she{n}shook off her fear and got{n}aboard that machine."
+f618-0036 78e5774582b544cf Wiseman{n}"You all survived as a{n}direct consequence of her{n}having that emotion...{p}That's what I think.{p}Sure, you were defeated.{wait 15}{n}But that doesn't mean{n}it's over."
+f618-0037 8590ce0b7d4713d1 Wiseman{n}"How will you{n}answer her emotion?{p}This time it's your{n}turn to save her.{wait 45}{n}...{wait 5}Is it not?"
+f618-0039 36490a5458676602 Wiseman{n}"Well, where do{n}you go from here...{wait 10}{n}Fei{wait 5}...?"
+f618-0040 eb70db7406e5384b Fei{n}"I{wait 5}...{wait 15}{n}   I{wait 5}..."
+f618-0041 0f5706008c5d7ad8 In order to rescue Elly,{n}  we searched desperately{n}    for her whereabouts.{wait 30}{n} {n}And then,{wait 5} two weeks{n}later,{wait 5} we located her.{p}Using the data obtained{n}from Raziel and his own{n}nanomachines,{wait 5} Karellen had{n}begun the construction of{n}God's ark,{wait 5} 'Merkabah',{wait 5} and{n}its completion was imminent.{wait 45}{n} {n}  To prevent its launch{n}   and rescue Elly,{wait 5}{n}     we headed for Merkabah.
+f618-0042 9d6e1330d83ac7fd Fei{n}"You{wait 5}...?{wait 30}{n}You all mean to go, too?"
+f618-0043 1b16309dc9cbd5de Dominia{n}"Don't get the wrong{n}idea here.{p}Our Commander was brought{n}into being for the sole{n}purpose of eliminating{n}the Emperor,{p}and his mind is being{n}manipulated by Myyah{n}and Karellen.{p}We simply want to free the{n}Commander from their spell!{p}It's not for the sake{n}of the world{wait 5}...{wait 15}{n}or for Elehayym!"
+f618-0044 d8cc48e3f9150409 Dominia{n}"We have no intention of{n}forming a united front{n}with you or anything!"
+f618-0045 7c44760fdaaf95ab Fei{n}"{wait 5}...{wait 5}Fine.{p}You have your battles to{n}fight,{wait 5} and we have ours{wait 5}...{wait 5}{n}Let's leave it at that."
+f618-0046 35f4751ac1e08daf Fei{n}"But{wait 5}...{wait 5}if things get crazy{n}along the way, turn back.{wait 15}{n}We'll take it from there."
+f618-0047 98e54c0d08d7de5c Dominia{n}"...Hmph.{wait 15}{n}We'll make you eat{n}those words."
+f618-0048 01584b42c670cb98 Having stormed the Merkabah{n}interior,{wait 5} defeating swarms{n}of weapons that self-{n}regenerated through the{n}use of nanomachines,{wait 5}{n}we set our sights on the{n}structure's core{wait 5}...{wait 5}{n} {n}   And then{wait 5}...{wait 5}{n} {n}Yet again,{wait 5} Ramsus{n}      stood in our way.
+f618-0049 4afea4eb70890ec3 God{wait 5}, the interstellar{n}invasion weapon Deus,{wait 5}{n}     awakened...{wait 45}{n}and its ark,{wait 5} Merkabah,{wait 5}{n}    was launched.
+f618-0050 35fe0fd93884f1d7 One after another, Deus{n} absorbed the mutated{n} people destined to be{n}    its components,{n}and set into action to{n}stamp out those who had{n} not mutated — we who{n} would someday become{n}   a threat to it —{n} and our civilization{n}    along with us.
+f618-0051 0c88068208be4c4f The earth's surface{n} was overrun,{wait 20}{n}  by Merkabah{wait 10} and the{n}   swarm of weapons{n}    born from it —{wait 45}{n}     angel-like entities{n}       called 'Aeons'.
+f618-0052 0ae424d9023cf97c There had been no news{n}of Fei,{wait 5} who had chased{n}after the awakened Deus{wait 5}...{wait 45}{n} {n}In the place where{n}Merkabah had originally{n}been,{wait 5} we found him{wait 15}{n}along with his{n}machine, {name 12}.
+f618-0053 e204a0ee2fcc4693 We were overjoyed to{n}  have Fei back{wait 5}...{wait 5}but{wait 15} it{n}    was a fleeting moment.{wait 45}{n} {n}For we had found Fei{wait 5}...{wait 15}{n}  in a deathlike state{n}    of unknown cause.{wait 60}{n} {n}He would not{n}  regain consciousness.
+f618-0054 8ce10fb298c80495 Fearing a reemergence{n} of Fei's—{wait 10}{n}  No,{wait 5} of Id's power,{wait 15}{n}   we and Shevat{n}    reluctantly decided{n}     to put Fei{wait 5}...{wait 60}{n} {n}into carbonite freeze.
+f618-0055 7c8827b1a285093f Citan{n}"{wait 5}...{wait 5}Your Majesty.{wait 30}{n}Why do the people of{n}Shevat fear Fei so much?{p}Even if the powers of{n}Grahf and Id are{n}comparable{wait 5}..."
+f618-0056 62d4a592796e2ade Zephyr{n}"{wait 5}...{wait 30}{n}It is not him{n}that we fear."
+f618-0057 81bdf931a4c32c85 Zephyr{n}"We fear the error that{n}we ourselves made,{p}and are trying our best{n}to conceal it{wait 5}..."
+f618-0058 c575912b7d1fcbc8 Citan{n}"The error that your{n}people made?"
+f618-0059 fd03703c5c90d87b Zephyr{n}"500 years ago,{wait 5} we of{n}Shevat went to war to gain{n}independence from Solaris.{p}But we were possessed by{n}the 'lust for power'{wait 5}...{p}At the height of the{n}upheaval,{p}fearing that the people's{n}will would consolidate{n}under Nisan's Sacred Mother{n}Sophia and not Shevat,{p}our council of elders at{n}that time...{wait 5}made a deal{n}with Solaris."
+f618-0060 7550c1a91ff905c4 Citan{n}"A deal, you say?"
+f618-0061 5a826d390c994195 Zephyr{n}"...{wait 5}Yes."
+f618-0062 4f63e8604f284390 Zephyr{n}"In Solaris back then,{p}the Gazel Ministry were{n}at odds with one woman{n}who held the real power{n}behind the scenes."
+f618-0063 49f0db2375e68aaa Citan{n}"{wait 5}...{wait 5}Would that happen{n}to have been Myyah?"
+f618-0065 3c9d6c3fe47fdfbb Dreading that the power of{n}the people gathered in Nisan{n}would grow any further,{wait 5}{n}the Gazel Ministry schemed{n}to turn their antagonist{n}Myyah over to us, promising{n}split rulership of the{n}surface.{p} {n}But in exchange{wait 5}...{wait 45}{n} {n}we were to offer up the{n}rebel militia assembled in{n}Nisan, and the one they had{n}come to rely on —{wait 5} Sophia...
+f618-0066 3e2dee5f3c291b77 Zephyr{n}"The leaders of Shevat{n}accepted the proposal,{wait 5}{n}and so...{p}A location was chosen —{n}the land where the final{n}decisive battle with{n}Solaris would be fought."
+f618-0067 a3dd3a22d2d267a3 Zephyr{n}"Shevat did not participate{n}in that battle{wait 5}...{p}Thwarted by the mighty{n}armed forces of Solaris,{wait 5}{n}and with their path{n}of retreat cut off,{p}the Nisan rebel militia{n}was massacred{wait 5}...{p}There in the midst of{n}it all were Lacan,{wait 5}{n}Bart's ancestor Roni,{wait 10}{n}myself{wait 10}...{wait 45}and Karellen."
+f618-0068 67faab9e1979e1a8 Citan{n}"Your Highness was{n}there also?"
+f618-0069 02b4043bc81ee23b Zephyr{n}"...{wait 5}Yes.{p}Fenced in by the enemy{n}on all sides,{wait 5} we resigned{n}ourselves to our doom.{p}That was when Sophia, who{n}had taken the helm of the{n}rebel army's flagship,{p}sacrificed herself to{n}secure our escape...{wait 10}in a{n}suicide attack aimed at{n}the enemy's main warship."
+f618-0070 0506c2a8273a40f2 Zephyr{n}"We survived because{n}of Sophia's sacrifice.{p}But her death greatly{n}changed the fates of{n}two men{wait 5}..."
+f618-0071 cca82086aea7b00f  Karellen,{wait 5} who had followed her{n}closely as the leader of Nisan's{n}warrior monks,{wait 5} despaired of his{n}  faith, of a God who did not{n} respond even when called upon.{wait 30}{n} {n}      'I will create God{n}      with my own hands!'{wait 60}{n} {n}  {wait 5}...{wait 5}These were the last words{n}      he uttered before he{n}   disappeared from our sight.
+f618-0072 573e147790226017 And Lacan{wait 5}...{wait 30}{n} {n}Lamenting his own lack{n}of power,{wait 5} his inability{n}to do anything when faced{n}with her death{wait 5}...{wait 45}{n} {n}    {wait 5}...{wait 5}he sought{n}    'the legendary power'.
+f618-0073 65d59e70d93cad62 Citan{n}"The legendary power?"
+f618-0074 e3de7cd899fc3f63 Zephyr{n}"Machanon,{wait 5} the land{n}where God sleeps...{p}Raziel,{wait 5} the source of{n}His wisdom...{p}The Vessels of Anima,{wait 5}{n}created by that wisdom...{p}Besides these{wait 5}...{wait 15}{n}there is another legend."
+f618-0077 05b135367e10279a Citan{n}"Zohar!?{p}That 'phenomena-alteration{n}engine' Myyah spoke of —{p}the power reactor of{n}God...{wait 10}of Deus...{wait 10}and said{n}to be the source of our{n}Ether powers...{p}Was its name not the{n}same!?"
+f618-0078 86a7b08a4a4799b2 Zephyr{n}"That...{wait 5}is surely one{n}and the same thing.{p}The place where the{n}fundamental power of{n}this world exists —{p}the ultimate power,{n}which can only be{n}found by the one{n}destined to do so..."
+f618-0079 c29ce981e2ad40fc Zephyr{n}"Lacan searched for it,{wait 5}{n}having lost all hope for{n}humanity{wait 5}...{p}And so...Lacan became{n}Grahf,{wait 15} and the world{n}collapsed{wait 5}...{p}All of this, a tragedy{n}brought about by the{n}people's lust for power{n}back then{wait 5}...{p}Part of the responsibility{n}is mine for being unable{n}to stop it{wait 5}...{p}Fei, who possesses the{n}same kind of power as the{n}Grahf we helped create{wait 5}...{p}He is a symbol of our own{n}wrongdoing, and so we{n}wanted to seal him away{wait 5}..."
+f618-0080 32f3971d6cb0f3fa The 'power of the Zohar'{n}which Grahf —{wait 5} the man known{n}as Lacan —{wait 5} once sought{wait 5}...{wait 45}{n} {n} Fei, who possesses the same{n} kind of power as Grahf{wait 5}...{wait 60}{n} {n}I had a feeling that before{n}long Fei would seek out that{n}power,{wait 5} that he might awaken.{wait 60}{n} {n}...And that premonition{wait 5}{n}became a reality.
+f618-0081 a07b3065f50a9527    Having broken the{n}   carbonite freeze,{wait 15}{n} {n}'Id'—{wait 30} Fei took off{n}with {name 12},{n}in search of the Zohar.{wait 60}{n} {n}   We followed after him.{wait 45}{n} {n}     And so it was...{wait 15}that we{n}finally arrived at the place{n} where,{wait 5} in the ancient past,{wait 5}{n}     the Zohar had landed{wait 5}...
+f618-0082 8253af36d089f9a4 As for what we{n}witnessed there{wait 5}...
+f618-0083 01631238e09bad27 We set our plan in motion.{wait 45}{n} {n}To silence the Merkabah —{wait 5}{n}   God's ark, boasting{n}  absolute offensive and{n}    defensive power —{wait 5}{n} to storm its interior...{wait 10}{n}and to destroy the Zohar.
+f618-0084 68f86018ffe47dd8 It was then that the{n}land shook violently,{wait 5}{n} the earth's surface{n}swelled,{wait 5} and from the{n}place where Merkabah{n}had crashed, an even{n}more colossal object{n}      appeared.{p}    This was Deus'{n}      final form.{wait 45}{n} {n}   The Merkabah had{n} merely been a vessel,{n}     nothing more.{wait 10}{n}  Through Karellen's{n}nanomachines,{wait 5} Deus had{n}evolved as a planetary-{n} scale weapon,{wait 5} and it{n}  began terraforming.
+f618-0085 076debc1501169a3 The planet itself was{n}about to become a weapon...{wait 45}{n} {n}    We retreated to the{n} snowfield base temporarily{n}  to regain our footing...{wait 10}{n} and decided we would break{n}   into Deus once again.{wait 45}{n} {n}There wasn't much time{n}left for us.
+f618-0089 b564e31a0135c2b8 Resume game?{wait 30}{n}{speed 255}    Wait a minute{n}    Resume game{wait 15}
+f618-0090 9a3e23bda3ba2474 {speed 255}    Open menu{n}    Change party{n}    Resume game{wait 15}
+f619-0000 27e4b288dc60de4a Driving back Solaris'{n}intercepting forces, we set{n}our sights on the surfaced{n}continent, Machanon.{n} {n}It was the central hull{n}of a colossal spacecraft{n}that must've been at{n}least 40 kelts across.{n} {n}From the condition of the{n}hull, we judged this ship{n}to be many thousands of{n}years old.
+f619-0001 ef1a0390c3d23df0 'We are alien beings who{n}came to this world from{n}another celestial body{n}long ago...'{n} {n}Could it be that, at one{n}time, our ancestors had{n}been aboard this ship and{n}landed on this planet...?{n} {n}Upon examination of{n}the interior, we{n}deduced that the ship{n}had crash-landed on{n}this planet due to{n}some kind of incident{n}around 10,000 years{n}earlier.{n} {n}Seeking God — and God's{n}wisdom, 'Raziel's Tree' —{n}which were said to lie{n}in this Machanon,{n}we proceeded further in.
+f619-0002 13be5973de880d81 In the depths,{n}we beheld an{n}abnormal{wait 5} 'thing'.{wait 10}{n}A giant grotesque{n}being, rotting and{n}partly petrified...{n} {n}'It' cast a mysterious{n}air of intimidation{n}upon us.{n} {n}Perhaps that was the{n}fear of 'the Absolute',{n}etched in the very{n}depths of our genes...{n} {n}And then{wait 5}...{wait 5}{n}'it' attacked us.
+f619-0003 066cc6e3bc2ccd36 In the end, the giant{n}decaying being had{n}destroyed itself.{n} {n}We proceeded even{n}further in.{n} {n}The place we arrived at{n}was a vast cavern —{n}large enough to contain{n}the Royal Capital of Av.{n}In its center was{n}a pair of faintly{n}shining objects.
+f619-0004 2735137226550317 There could be no{n}doubt this was the{n}source of God's{n}wisdom —{wait 10} Raziel's Tree.{n} {n}And the cavern itself{n}was a mega-computer{n}called Raziel.{n} {n}The wisdom of God,{wait 5}{n}hidden within Raziel...{n}When we accessed its{n}data, we learned the{n}extraordinary things{n}recorded there.
+f619-0005 b86008bd02cb991e Wandering from star system{n}to star system, an array{n}comprising a large-scale,{n}unmanned strategic weapon{n}and its terminal weapons.{n}And the gargantuan{n}mother ship the size{n}of a peninsula, used for{n}their transportation...
+f619-0006 e05624215531ea2f The weapons array was called{wait 60}{n} {n}   the Interstellar{n}   Strategic-Integration{n}   Weapon System{wait 10} 'Deus'.{n} {n}The construction of a divine{n}ark... The creation of the{n}angels, the Malakhim — a{n}divine army to reign over{n}the universe...{n} {n}What the Gazel Ministry{n}searched for was right here.
+f619-0007 c627f3a522d3c642 The data indicated that{n}the giant decaying being{n}we defeated previously{n}was in fact the nucleus{n}of this system.
+f619-0008 8023e8150cf048a2 Then, just as we were about{n}to try to access the data{n}for the entity that was both{n}the power reactor and the{n}central neural circuit,{n}driving everything from the{n}weapons array to the mother{n}ship — an object called{wait 10}{n} {n}        'Zohar'...{wait 60}{n} {n}HE appeared.
+f619-0009 3aa5756d3b0ec140 Grahf, Karellen{wait 5}...{wait 5} It was{n}obvious they were after{n}the data that was recorded{n}in Raziel.{n} {n}If this data fell into{n}their hands{wait 5}...{wait 5}{n} {n}They had to be stopped{wait 5}...{wait 5}
+f619-0010 a3aaa52e9c31aa9a Karellen{n}"The hidden data in{n}Raziel's Tree...{p}Might I get you to{n}move away from there?{wait 10}{n}For this is something{n}far beyond you all..."
+f619-0011 ef0f39de3cd6718b Fei{n}"We have to protect this{n}place at all costs!{p}We absolutely cannot let{n}them have the Raziel data!"
+f619-0012 cdf73a496bae59d9 Citan{n}"Please, everyone!{n}I will try to get all{n}the data I can!"
+f619-0013 aa153dcda602109c Citan{n}"In the worst-case{n}scenario, I will{n}destroy this place!"
+f619-0014 09c591bd77257cc2 Fei{n}"U-Ungh..."
+f619-0015 d8cfd0245a01e7d0 Grahf{n}"I guess that's{n}all you've got."
+f619-0016 e793668b96227821 Grahf{n}"Is it frustrating?{p}But it's{wait 10} 'only natural'.{wait 10}{n}Because you're imperfect."
+f619-0017 aed39cf779810cd8 Fei{n}"I-{wait 5}Imperfect!?"
+f619-0018 c05e117a6aef3328 Grahf{n}"Yes.{wait 10}{n}Right now, you're{n}lacking something.{p}Namely, it's a lack{n}of wrath that's{n}holding back your{n}inherent power!"
+f619-0019 edad2586b55a27a2 Fei{n}"Wr-Wrath...?"
+f619-0020 3dd2a674e4c85feb Grahf{n}"Wrath is the drive to try{n}to eliminate your foe,{p}the will to destruction and{n}slaughter —{wait 5} the power of{n}the soul!{p}To eliminate your foe{n}is to attain the first{n}sublimation of that drive.{p}It's this very sublimation{n}that draws out one's hidden{n}power!{p}If we cling to reason,{wait 5}{n}suppressing the wrath, the{n}drive — however much —{p}any release of true power{n}will be but a fantasy."
+f619-0021 c01980324b7fe600 Grahf{n}"You know this.{p}When wrath burgeoned in{n}your own heart, did{n}the Gear not respond?{p}What drew out the power of{n}your machine was precisely{n}that: the drive of your{n}soul —{wait 10} it was 'Id'."
+f619-0022 219c50c52247e14c Grahf{n}"The symbol of desire,{wait 10}{n}the symbol you bear{n}as a born assassin!"
+f619-0023 005e6822ee743fda Fei{n}"You're wrong!{wait 20}{n}So very wrong!"
+f619-0024 a05f11d5159832b6 Fei{n}"I...{wait 10}{n}I am not 'Id'!{wait 10}{n}I..."
+f619-0026 20a9a9e29e266409 Grahf{n}"I will devour your soul.{wait 10}{n}And then draw out its{n}power to the very limit!"
+f619-0027 2b2266013ad2f5e1 Karellen{n}"Enough!"
+f619-0028 e7dc3964d78744c9 Grahf{n}"Hm?{n}Why do you stop me!?"
+f619-0029 85f4d4c2bacdf09e Karellen{n}"That one is bait.{p}Kill the bait, and{n}a rare little bird{n}will get away.{p}You know,{wait 10} my precious{n}little bird,{wait 10} 'vital{n}to the fulfillment{n}of my vision'.{p}You understand, don't{n}you,{wait 10} Lacan...?"
+f619-0030 36c64de8021e219c Grahf{n}"...{wait 30}{n}Suit yourself."
+f619-0031 9110230667b47a05 Karellen{n}"We shall crucify them.{wait 10}{n}In the land of Golgotha,{n}to the west of here."
+f619-0032 c1dc8340b2b80b49 Karellen{n}"Gather up all the{n}wrecked Gears!"
+f619-0035 5bf5ed7e95061090 Fei{n}"He—{wait 5} Karellen's after{n}you!{wait 5} Forget about us!{wait 15}{n}Get away, quickly!!"
+f619-0036 1380ef10a1054f73 Elly{n}"I've come like you{n}told me to.{wait 30} It's only{n}me you need.{p}They have nothing{n}to do with this.{wait 5}{n}So let Fei and the{n}others go!"
+f619-0037 7b020b71fe226f02 Karellen{n}"How chivalrous,{wait 5}{n}Elehayym.{p}Why,{wait 5} it's like 'a scene{n}from long ago, recalled{n}before my very eyes'.{p}I see, you came in{n}the Omnigear.{wait 30}{n}That too is{wait 5} 'her Gear'.{p}Hmmm{wait 5}...{wait 45}{n}In that case, allow me{n}to confirm something."
+f619-0038 2f85ed920a72da67 Karellen{n}"If you can defeat{n}these two individuals, {p}then I'll be willing to{n}think over the treatment{n}of your friends.{wait 15}{n}How about it,{wait 15} Elehayym?"
+f619-0039 4f07b4682b065cc5 Fei{n}"No!{wait 15}{n}He's up to something!{wait 10}{n}Don't agree to it!"
+f619-0040 92f491184d1ec76c Citan{n}"That is right!{p}This man only turns on{n}the charm when he has{n}an ulterior motive{n}in mind!{p}For him to keep his{n}word is practically{n}unheard of.{p}What is more, those{n}people are battle{n}machines created{n}by Karellen.{p}Their combat strength{n}is immeasurable!{wait 10}{n}You will have no{n}chance on your own!{p}You must not go along{n}with this!{wait 10} Run!!"
+f619-0041 7afeb9c5e1d48867 Karellen{n}"...My my,{wait 5}{n}such harsh words.{wait 5}{n}I'm not that inhuman.{p}Well, what'll it be,{n}Elehayym?{p}Even if you were to{n}flee now, to escape{n}our blockade is quite{n}impossible."
+f619-0042 652701b584fa9920 Karellen{n}"Wouldn't it be more{n}prudent to try pinning your{n}hopes on a slight chance,{p}rather than on a miracle?"
+f619-0043 1e79e4d16860e803 Fei{n}"Stop this!"
+f619-0044 4a65e690f0f49bb8 Elly{n}"I know what I{n}have to do."
+f619-0045 f671c4efc7c3da07 Karellen{n}"Very good.{wait 5}{n}There's my little bird.{wait 10}{n}Get to it!"
+f619-0046 adccb4d0fed11db5 Fei{n}"Elly{wait 5}...{wait 30}{n}No way{wait 5}..."
+f619-0047 5f9b54e592c4aef3 Karellen{n}"A true awakening{wait 5}...{wait 15}or{wait 5}...{wait 5}{n}protecting its master?{p}Either way, there can be{n}no doubt that she is the{n}being — the Mother — that{n}I've been searching for..."
+f619-0048 44480a388b837ede Karellen{n}"Alright, recover{n}that machine.{p}Preservation of the{n}pilot is paramount.{wait 15}{n}Get her on life{n}support!"
+f619-0049 8e67bec8277f9f7f Karellen{n}"Well then,{wait 5} I shall be{n}taking this girl with me.{p}The rest of you can stay{n}there and reflect on your{n}own powerlessness."
+f619-0050 66a2e524d547570d Grahf{n}"Pathetic{wait 5}..."
+f619-0051 fb75ebdff45ec5b3 Grahf{n}"You can't protect{n}even one woman.{p}It's not even worth{n}the effort of putting{n}a worm like you out of{n}your misery."
+f619-0052 a5daf00aaf3be37b Elly was taken away{wait 5}...{wait 15}{n}And, true to his word,{n}Karellen spared us{wait 5}...{wait 45}{n} {n}I wondered if he'd just{n}been keeping his promise{wait 5}...{wait 15}{n}But I was wrong{wait 5}...{wait 60}{n} {n}There was a real reason{n}he'd allowed us to live{n}and not finished us off{wait 5}...
+f619-0053 78ef8d07b9c3c7f7 And the reason was{wait 5}...
+f620-0000 8940f9a7f08daac9 The people who'd mutated{n}into what we called Verus...{n}the essential human form...{n}gathered at these facilities.
+f620-0001 df11c7ecb3931fa2 Among the humans-turned-{n}Verus were those who attacked{n}the unafflicted and devoured{n}their flesh and blood.
+f620-0002 7aa404a35c4fc8f1 That was because the flesh{n}and blood of the unafflicted{n}could ease the agony of the{n}sudden molecular changes and{n}prolong their lives a little.{wait 30}{n} {n}Their lives were so short...
+f620-0003 5d0ee3bcc85d2be2 Before long, the severely{n}mutated ones started to seek{n}the flesh and blood of those{n}who were less mutated.
+f621-0000 dd2cefd87e0e372f The Soylent System.{wait 30}{n} {n}Facilities built by{n}Solaris long ago.
+f622-0000 df402f2f4d787d51 There, the people seeking{n}absolution for their{n}limited lifespan argued{n}amongst themselves over{n}who had priority.{p}An ugly dispute,{n}to cling to life...{n}So it may have appeared{n}to onlookers...{p}But to me, this —{n}desperately trying to{n}survive — was the{n}'natural human form'{n}of every one of us.
+f622-0001 9ffb84210d1502ef The 'haves' and the{n}'have-nots' were there...{wait 90}{n} {n}And...{wait 10}{n}my former comrades from{n}Solaris were there too...
+f622-0002 56179af89bd40023 They badly needed our{n}flesh and blood.{n}They told us that the{n}'haves' must share{n}with the 'have-nots'.{wait 60}{n} {n}And they asked if{n}'haves' like us could{n}understand their agony...
+f622-0003 fae81f55ae85a1c2 I couldn't answer...{wait 60}{n} {n}No matter what I said, {n}they would have heard it as{n}the arrogance of a 'have'...{wait 60}{n} {n}Nevertheless, if their agony{n}could be healed...{wait 10}I was{n}determined to do so...
+f622-0004 8fc66fc233791243 Just as I'd been in{n}the dream-memory...{wait 60}{n}in the distant past...
+f622-0005 594104062ae35f38 Then, the System suddenly{n}went out of control.{n}One giant lifeform in mid-{n}amalgamation — a 'Meld' —{n}broke through the barrier{n}of the generation equipment{n}and appeared before us.
+f622-0006 5b2b2fb52a3dd721 That thing that was once{n}human but had lost its{n}human form...{wait 10}began eating{n}the people who happened to{n}be there seeking salvation...{p}We had no choice but{n}to fight...{n}To save those people...{n}Indeed, to save 'him'...{p}Because those eyes — the{n}eyes of that thing that{n}was once human — pleaded{n}to us...{wait 10} For death rather{n}than agony...
+f622-0008 cf1aafc37dee8fa3 Elly{n}"Please!{wait 10} Listen to{n}what I have to say!{p}Everyone is on the{n}same side, so stop{n}this arguing!"
+f622-0009 a931bd8bd39dac3c Elly{n}"This facility was built{n}for the Solaris Ministry's{n}ludicrous plan.{p}A facility to turn{n}poor mutated people into{n}weapons, to be the tools{n}of their own ambition.{p}One part of their bid{n}for racial purification."
+f622-0010 09bddaf711e2fa05 Sophia{n}"Yes, if you go under{n}their umbrella of{n}protection now,{p}maybe you can avoid{n}absolute death.{wait 10}{n}But is that any way{n}for a person to live?{p}What meaning is there in{n}living just yourself{n}alone, heartless, and{n}feeding on other people?"
+f622-0011 7f77547ee9247a4d Elly{n}"Everyone wants to{n}be loved, to be{n}needed by someone,{p}so we seek other people...{p}It's lonely to be on your{n}own, so we get close to{n}one another to live...{wait 10}{n}That's who we are...{p}That's how people{n}have survived.{wait 10} You{n}can't clap with only{n}one hand, right?"
+f622-0012 6c448eb40a3bca9f Sophia{n}"If only to ease{n}your agony,{p}I'll give however much{n}of my flesh and blood{n}is necessary.{p}So...{wait 30}don't give up{n}the dignity of being{n}human...{p}Don't let go of your{n}human heart..."
+f622-0013 c92441348759526f Fei{n}"Elly...!{n}Are you okay? {wait 30}{n}Why did you—"
+f622-0014 69858550f36a9995 Elly{n}"You think...I've done{n}something foolish?"
+f622-0015 4f3b7ce5350c2f65@f3a38ec5c33e92d6 Fei{n}"No...{n}But..."
+f622-0016 d219b4bc3e7cbc44 Elly{n}"I just did what I could.{p}Maybe I'm a hypocrite.{n}A privileged 'have'...{p}Maybe it's pity for{n}the 'have-nots'...{p}But if I can know the{n}joy of sharing the life{n}within me little by{n}little like this,{p}then someday it'll be{n}possible for people to{n}truly offer their love{n}to others...{p}I believe that people{n}can do it.{wait 30} So..."
+f622-0018 a8bbd96446165bec Save current data?{wait 30}{n}{speed 255}    Save{n}    Don't save
+f622-0019 a7773c8cfa10a0f5 Resume game?{wait 30}{n}{speed 255}    Wait a minute{n}    Resume game
+f622-0020 0e368c1461523468 {speed 255}    Open menu{n}    Change party{n}    Resume game
+f625-0000 d932d7bba4a64d15   'Go to those facilities,{n}  and be freed from the{n}  unbearable agony...'{wait 30}{n} {n}Seeking that release,{n}the people had gathered.{wait 30}{n} {n}  'There is salvation there...'{wait 30}{n} {n}Though no one had spoken it{n}aloud, the word spread...
+f625-0001 e1601436d5892121 Perhaps it was their{n}mutated blood that{n}spoke to them, saying{n}'gather there'...
+f628-0000 7fe47a32cad8883e Fei{n}"What meaning is there{n}in this fight!?"
+f628-0001 c8331bb66b9352c6 Elly{n}"Enough with this{n}pointless fighting!"
+f628-0002 dee064355c288783 Elly{n}"There are things that{n}the weak, and only the{n}weak, can see...{p}Just because they're{n}weak, that doesn't make{n}them lesser people.{p}It's because they're weak{n}that they're able to foster{n}kindness...{p}It's because they're weak{n}that there's a genuine{n}human connection you could{n}never see from on high.{p}Everyone has a weak side.{n}Was it not so for all of{n}you at first, too?{p}It's because you were weak{n}that you sought one another{n}out... And then tried to{n}grow strong...{p}Don't forget those early{n}feelings... When you lived{n}together side by side..."
+f628-0003 241f794d94276187 Elly{n}"You've got it wrong,{n}Dominia.{p}The paths we walk are{n}different, but the horizon{n}we're aiming for is surely{n}the same...{p}That's why I can't fight{n}you anymore. There's no{n}reason for me to. That's{n}all there is to it."
+f628-0004 0e91908f0a2cbe24 Dominia{n}"What kept you!?"
+f628-0005 515fac8edd667692 Dominia{n}"Silence!{wait 20} Now that it's{n}come to this, there's no{n}choice but to fight.{p}We'll show you the true{n}power of the Elements!{wait 10}{n}Let's go!"
+f628-0006 b9a0c8ed8021d155 Dominia{n}"Elements formation!"{done 40}
+f628-0007 00bf655edad4ad36 Dominia{n}"Stop!"{done 30}
+f628-0008 1bb76d66adb91b38 Dominia{n}"You're showing me{n}mercy, is that it?{p}Trying to show off your{n}privilege as a 'have'..."
+f628-0010 2bc1ba53f27baaa7 Cherubina{n}"Combine!"
+f628-0011 20f99a8ecb14b54f Cherubina{n}"Well{wait 5}...{wait 10}it looks{n}like they sure{n}showed us, huh?"
+f628-0013 1d34a4522b9496b4 Shopkeep Johnny{n}"My family's been merchants{n}for generations. Merchants{n}do battle their own way.{p}And this is my battle!"
+f628-0014 6089da1da072cc04 Shopkeep Johnny{n}"Wanna buy something?{n}Or service your Gears?"
+f628-0015 34c3dce4cf92d5ff     {speed 255}Character{n}    Gear{n}    Never mind
+f628-0016 14ada87829c193c7     {speed 255}Items{n}    Accessories{n}    Go back{n}    Never mind
+f628-0017 3f0667a2f8056f30 Shopkeep Johnny{n}"Thanks for your{n}patronage!"
+f629-0000 9068dd27ee2eb313 Fei{n}"Looks like the{n}component fits{n}nicely."
+f629-0001 02bf89c7422640f0 Fei{n}"Replaced the broken{n}component."
+f629-0002 fc2055ec360948ff Fei{n}"It appears that{n}something fuse-like{n}has blown."
+f629-0003 24cfb71d3f442dd3 Fei{n}"Nothing particularly{n}notable."
+f629-0004 011b9c2110f61abf Fei{n}"I found something{n}fuse-like."
+f629-0005 59bdc58324231506 Fei{n}"There are components{n}of some kind inside."
+f629-0006 2fa808d2cabd4167 Fei{n}"Looks like the{n}power's off."
+f629-0007 5c9baa41c3dd8cb2 Fei{n}"We'll have to{n}replace the broken{n}component."
+f629-0008 82160b62b2fe084c Fei{n}"Maybe in that{n}room over there?"
+f629-0009 31c795afba3b921e Fei{n}"Huh?{wait 30}{n}There's something{n}over there..."
+f629-0010 7704b51f91c7f12e Fei{n}"Hmm.{wait 10} Somehow we{n}have to release{n}the door lock..."
+f629-0011 f1c795d1da7e7330 Fei{n}"Should we take a{n}look around nearby?"
+f629-0012 e0451a2541d2f74f Door lock system{n}     Area A
+f629-0016 b4f168d8fb1e3185 Door lock system{n}activated.
+f629-0017 78d9a858fa4849ed Releasing Area A{n}door lock.
+f630-0000 dd535597d758b697 Fei{n}"Hmmm...?"
+f630-0001 7cba128563aea5c1 Fei{n}"Is this the core{n}of the main system?"
+f630-0002 592bad8f6102a922 Fei{n}"Are there{n}any hints?"
+f630-0004 eae9c3f060beb273 Fei{n}"Maybe that one{n}over there?"
+f630-0005 d9c5558ea1862fdc Area B is unlocked.
+f630-0007 5c4dec3e06ccdf4e Releasing Area B{n}door lock.
+f630-0009 00d70c20f665ee2e Please activate{n}the main system.
+f630-0013 b2fa963a1fe36518 {speed 255} Code A?{n}    1{n}    2{n}    3{n}    4{n}    0{n}    Abort
+f630-0014 01a2f9f94021a803 {speed 255} Code B?{n}    1{n}    2{n}    3{n}    4{n}    0
+f630-0015 74bc3357cd0397fa {speed 255} Code C?{n}    1{n}    2{n}    3{n}    4{n}    0
+f630-0016 6f1b3e23f3b2a351 {speed 255} Code D?{n}    1{n}    2{n}    3{n}    4{n}    0
+f630-0017 327c53755182af2f {speed 255} Confirm code...{n}    A-{num1 0}{n}    B-{num1 1}{n}    C-{num1 2}{n}    D-{num1 3}{n} {n}    Confirm{n}    Retry
+f630-0018 310efb4709b542b0@8084e108001ccaef Main system activated.
+f630-0019 c20834882a1ab550 Code error.
+f630-0023 5ab970710b5c3bd7 The positions of these{n}blocks seem to correspond{n}to the activation-code{n}numbers.
+f630-0024 005c68424926544b Column A's blocks{n}are all closed off.
+f630-0025 f98aa2a89ed3a0fc It's marked{n}'Column A'.
+f630-0026 02bee7b4753a3be8 For use with{n}main system.
+f630-0028 7cd43a65d7772c9c It's marked{n}'Column B'.
+f630-0029 15f1cc5808f782b4 For use with{n}main system.
+f630-0030 b097005e13ef53db The back of the cover{n}is marked 'C-2'.
+f630-0031 a1e933f00e2266c9 One block has the{n}cover open...
+f630-0032 a1e933f00e2266c9@cb7eb3794deaa06a It's marked{n}'Column C'.
+f630-0034 3b28bb77d6f957bf Column D's blocks{n}are all closed off.
+f630-0035 57ca034ecdb8bc72 It's marked{n}'Column D'.
+f631-0000 a4418f74f4acb937 Central elevator{n}is unlocked.
+f631-0001 251998fd58d4b44e Central elevator{n}lock system{n}activated.
+f631-0002 21e6eb2e39f8e405 Releasing central{n}elevator lock.
+f631-0004 d392cedf1d6ccc6b To release the lock on{n}the Vessel of Anima,{p}input the unlock code's{n}numerical values into{n}terminals A to D dotted{n}around its vicinity,{p}after which the main{n}system will be activated.
+f632-0001 2c18ef39ba84a339 Fei{n}"Despite what Solaris{n}is doing to the{n}surface dwellers,{p}and knowing what the{n}situation on the surface{n}is like now, you..."
+f632-0002 cc8314dd9affd7cf Fei{n}"Power and ability have{n}absolutely nothing to{n}do with it.{p}It was pure coincidence{n}that we didn't mutate!"
+f632-0003 a48612c6fc4d8725 Elly{n}"Dominia...{wait 30}{n}Is that really{n}what you think!?"
+f632-0004 4091ea0f20e79358 Elly{n}"You were all once{n}surface dwellers.{p}Didn't you live under{n}the oppression of{n}Solaris?{p}How can you not{n}understand the{n}feelings of the{n}'have-nots'!?"
+f632-0005 bb243fdd1bbc27e4 Elly{n}"That's the providence{n}of the 'haves'!"
+f632-0007 208ab878c09c476c Billy{n}"People are people.{n}No more and no less.{p}Certainly, we recognize{n}the reality that there{n}are weak people and{n}powerless people.{p}But that's precisely why{n}we cannot forsake them.{p}We're all just people!"
+f632-0012 208ab878c09c476c@d95170f41bf3a47f Billy{n}"People are people.{n}No more and no less.{p}Certainly, we recognize{n}the reality that there{n}are weak people and{n}powerless people.{p}But that's precisely why{n}we cannot forsake them.{p}We are all just people!"
+f632-0013 c6e915d9ce96c5db Dominia{n}"I see you've obtained a{n}Gear that's been aligned{n}with a Vessel of Anima."
+f632-0014 4a4b61a35e44c371 Dominia{n}"It has nothing to do with{n}us what the Gazel do, or{n}what becomes of the Lambs.{p}We each have a duty{n}to fulfill.{p}Like yourselves, we don't{n}have time to be so focused{n}on the weak and inferior."
+f632-0015 89caa8b900a72b4b Dominia{n}"It is.{p}The fact is that it's{n}the strong and superior,{n}yourselves included,{p}who've kept their{n}bodies from mutating.{p}Am I wrong?"
+f632-0016 f03073137defbf25 Dominia{n}"So...that's why you{n}lend a hand to those{n}seeking aid?"
+f632-0017 9d7260c6dae46d6e Dominia{n}"Hmph.{wait 30}{n}In that case, show us{n}right here and now...{p}Show us this providence{n}of yours that would{n}favor the 'have-nots'!"
+f632-0018 1b0b6542fb91194d Dominia{n}"Let's go!"{done 30}
+f632-0019 3944850c1704fcda Dominia{n}"Grr...{wait 20}{n}Hand-to-hand we're bound{n}to be at a disadvantage!{p}We'll settle this once{n}and for all in our Gears."
+f632-0020 940020bb85f43442 Dominia{n}"Come,{n}follow me!"
+f632-0021 448b6285ec846241 Cherubina{n}"By all rights, we are the{n}ones who should have it...{p}We need stronger power,{n}to realize Commander{n}Ramsus' dearest wish."
+f632-0022 85154afeb936a44e Cherubina{n}"That's all well{n}and good.{p}But...{wait 20}in the long run,{n}will it really benefit{n}mankind?"
+f632-0023 f1ae2a261f773230 Cherubina{n}"People have to rise up{n}by their own strength,{n}whatever the circumstances.{p}Overprotectiveness only{n}hinders people's{n}independence.{p}It's something that{n}undermines people's{n}growth, and therefore{n}the world's growth.{p}We've experienced that{n}firsthand. We've lived{n}by our own strength,{n}on our own two feet.{p}It's sad that the weak{n}will be weeded out,{n}but we cannot look back.{p}That's the providence{n}under which people live."
+f632-0024 6dce5fdffe18b99e Seraphita{n}"So hand it ooover."
+f632-0025 6b991d3fd53f118f Seraphita{n}"Aren't you kiiind!"
+f632-0026 aea3007067263391 Throne{n}"Yes, and so, for the{n}good of building the{n}nation of our ideals,{p}we can't let you have it."
+f632-0027 408c579b4c646e6a Door lock system {n}     Area B
+f634-0000 3d2deb485e854420     UP{n}    NO
+f634-0001 ec5c44b85491ef27     DOWN{n}    NO
+f634-0002 e041b42541d01426 Door lock system{n}     Area B
+f635-0001 bc932cf7bacbcbc8 Fei{n}"I think I saw some{n}info about this on the{n}upper-level terminal..."
+f635-0002 9363d3c3e0b46b56@017a86dcad7c62c4 Vessel of Anima{n}has been released.
+f635-0003 f1065668d6f55bb6 Enter code number.
+f635-0004 8a811c790e339f50 {speed 255}Address A{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    Cancel
+f635-0010 9363d3c3e0b46b56@a3bb6089526cbc26 Vessel of Anima{n}has been released.
+f635-0012 f39a755f1cd331df {speed 255}Address B{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    Cancel
+f635-0018 9363d3c3e0b46b56@a26c6386a800ba25 Vessel of Anima{n}has been released.
+f635-0020 c05c3c0ff95e593a {speed 255}Address C{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    Cancel
+f635-0026 9363d3c3e0b46b56@e82317cc02ef3141 Vessel of Anima{n}has been released.
+f635-0028 68233259721b0189 {speed 255}Address D{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    Cancel
+f635-0034 9363d3c3e0b46b56@48c1ff1930aa94c2 Vessel of Anima{n}has been{n}released.
+f635-0035 d1912eaece505756     {speed 255}Current code entries{n}    Code addresses{n}    Release lock
+f635-0038 1e477eb6d3fbb0f9 Vessel of Anima{n}released.
+f635-0039 19771b2f348ac633 Please take the{n}central lift.
+f635-0045 584f236f560ad51d Please take the{n}central lift.
+f635-0046 b7b94a5d4a7b1ad9 Code error.
+f638-0002 35861638f993f0a6 Billy{n}"The Vessel of Anima..."
+f638-0004 da67b91090c3f45e Billy{n}"Who's there?{n}Who's calling to me?{p}I don't understand.{n}I don't understand...{p}You're telling me to—{n}You were waiting...?{n}For me...?"
+f640-0000 0b28795f96cc9a78 Elly{n}"So there's a Vessel{n}of Anima in these{n}ruins too."
+f640-0002 e1a730cd3c0e695e Rico{n}"Hmph, ancient folks{n}worshipped useless{n}stuff too, huh?"
+f640-0004 0a66d2b20fcb7101 Rico{n}"Who's that!?{n}What'd you say...?{p}Say somethin' I can{n}understand!{wait 5} Who the hell{n}are ya!?{wait 5} Quit gettin'{n}in people's heads!"
+f640-0007 68e8d3f2cba44c93 Rico{n}"That shape looked{n}familiar."
+f641-0000 b254d31b75a27fcb Fei{n}"Using human{n}strength, there's{n}just no way."
+f641-0001 979f746941224f13 Doesn't look like{n}it'll move any{n}further.
+f641-0002 ef2558b5b18f745c Looks like it'll{n}move if we push it.
+f641-0003 729dc1036e97b39b Looks like it'll{n}move if we push{n}it with our Gears.
+f641-0005 2c8dbe7d9b3a9f1c Shopkeep Johnny{n}"Dungeons mean merchants.{p}...Not so much{n}these days, huh?"
+f641-0006 a656a4f528aeec32 Shopkeep Johnny{n}"Whoa!{n}I'm not the enemy!"
+f641-0007 79798f82b2a737d5 Shopkeep Johnny{n}"My family's been merchants{n}for generations. Merchants{n}do battle their own way.{p}And this is my battle!"
+f641-0008 8ddf1a847a205a96 Shopkeep Johnny{n}"Wanna buy something?{n}Or service your Gears?"
+f641-0009 8b8e3375b868b3ee     {speed 255}Character{n}    Gear{n}    Never mind
+f641-0010 797575a12cea8d25     {speed 255}Items{n}    Accessories{n}    Go back{n}    Never mind
+f641-0011 378a8a887e284c80 Shopkeep Johnny{n}"Thanks for your{n}patronage!"
+f643-0001 84d10ca236e1248a Fei{n}"Looks like there's{n}writing carved on {n}the walls too..."
+f643-0002 16e230d9ad01e008 Find three hidden{n}rocks, and return{n}them to the holes.
+f643-0003 82dbfa2122de5648 'The truth is on the back.'
+f643-0005 7e88bbc6e596d850 'Set your sights higher.'
+f643-0007 87f57509fb80fc80 'The unseen is true too.'
+f643-0008 0a7633330cd0060e Writing is carved{n}on the wall.{p}'Four steps south,{n}Ten steps west.'
+f643-0009 448b25d5ab852802 Writing is carved{n}on the wall.{p}'High above the{n}center pillar...'
+f643-0010 5785d9dc0a016b72 Writing is carved{n}on the wall.{p}'Check the back of {n}the stone pillars.'
+f646-0000 9eedeba88f6c35a7 Writing is carved on{n}the wall.{p}'There is a secret in the{n}third pit from the door.'
+f646-0001 dab07fcdd1623eed Writing is carved on{n}the wall.{p}'Find the hidden passage{n}in this room.'
+f646-0002 ea17170aa105285a Writing is carved on{n}the wall.{p}'The hidden passage is {n}in the third pit.'
+f646-0003 136b0fe97a82e13a Writing is carved on{n}the wall.{p}'The secret is in the{n}wall of the third pit.'
+f646-0004 3995924d1bba66f1 'Move forward without fear{n}of the darkness of the{n}wall of the pit, and{n}the path will open...'
+f647-0000 2c9c8738d5b21ab8 Fei{n}"If we just stand still,{n}we'll be okay."{done 30}
+f647-0004 7b1fa2ee1838e4c8 Fei{n}"Look out!{n}Jump off!"{done 30}
+f648-0000 8bbc1b9ab39ac057 Writing is carved on{n}the wall.{p}'Neither too much nor too{n}little. Find a happy medium{n}to succeed in life!'
+f648-0001 fcd29745fcf3c97a Writing is carved on{n}the wall.{p}'Buttons on either side{n}adjust the water amount.'
+f648-0002 7d675379a72cdff2 Writing is carved{n}on the wall.{p}'The water level is{n}full at 10.'
+f648-0005 e34886d29e5e818b Looks like the water level{n}won't go any higher.
+f648-0006 993c6a5cb1e24bb7 There's some kind of{n}switch on the floor.
+f648-0008 8719c6e42580b0b3 Looks like the water{n}level won't go any lower.
+f648-0009 46f75638504423f3 There's some kind of{n}switch on the floor.
+f648-0010 aaa6e3fc48962287 There's a kind of{n}button, with three{n}marks on it.
+f648-0012 62b3139a27f361bb There's a kind of{n}button, with seven{n}marks on it.
+f650-0001 bd4939f3972e48aa Fei{n}"H-Hammer, i-is that{n}you!?{wait 10} Why d'you look{n}like that!?"
+f650-0002 10b351f96c323ae4 Fei{n}"Hammer, what're{n}you saying!?"
+f650-0003 76a0e3e10e0a48b2 Fei{n}"HAMMEEERRR!"
+f650-0005 f01a237d44c337ec Rico{n}"Hammer, you..."
+f650-0006 9ce6d6ea7b4add93 Rico{n}"You knew...?"
+f650-0010 f669636f345bc585 Hammer{n}"B-Bro..."
+f650-0011 019547491644bfd0 Hammer{n}"Heh heh heh.{n}Long time no see,{n}huh, b-bro...?"
+f650-0012 8d49fae45371c1f4 Hammer{n}"I-I got it too.{n}Super-strength,{n}just like you guys.{p}I-It feels good...becoming{n}one with your Gear.{wait 10} All{n}courtesy of Mr. Karellen.{p}Now, I'll have you leave{n}that Gear and Miss Elly{n}with me.{p}Resistance is useless.{n}'Cause I'm crazy{n}s-strong now..."
+f650-0013 9ed6ad69703d2a29 Hammer{n}"Y-You won't hand{n}them over?{wait 10} ...I see.{p}Then I'll just have{n}to t-take them from{n}you by brute force!"
+f650-0014 205583c28d397041 Hammer{n}"E-Even you, 'Champ',{n}won't win against me{n}now."
+f650-0015 3e11394ee3d27ade Hammer{n}"Here we goooo!"{done 20}
+f650-0016 fdae2a85df7d7b8c Hammer{n}"Heh heh heh...{n}Nah...my bro is strong...{p}Despite me going this{n}far to get strong too..."
+f650-0017 e59d7592fee35d68 Hammer{n}"Champ...{n}Promise me you'll go back{n}to Kislev one day...{p}You are...{n}the Kaiser's{n}rightful heir...{p}The scanner for the {n}Kaiser's...w-wife's{n}room...{p}The son of the Kaiser{n}suddenly dying...{n}along with the Kaiser's{n}wife...{p}Right around when{n}you were born...{n}Don't you remember {n}anything, Champ?{p}The Church... In an act{n}of vengeance against the{n}Kaiser for pushing them{n}out of power...{p}They raised racial{n}tensions with the{n}demihumans...{p}They altered your{n}genes... M-Made your{n}demihuman genes more{n}dominant...{p}K-Kicked you out of the{n}Central District when the{n}Kaiser was off at the {n}front lines...{p}Lied to the Kaiser... {n}Said you died... "
+f652-0000 09a69c18235d69e3 Driving back Solaris'{n}intercepting forces, we set{n}our sights on the surfaced{n}continent, Machanon.
+f652-0001 44df4266afb62d68 It was the central hull{n}of a colossal spacecraft{n}that must've been at{n}least 40 kelts across.
+f653-0000 06ce0ceb382bdb32 Upon examination of{n}the interior, we{n}deduced that the ship{n}had crash-landed on{n}this planet due to{n}some kind of incident{n}around 10,000 years{n}earlier.
+f653-0001 70dcc833e6c0536f 'We are alien beings who{n}came to this world from{n}another celestial body{n}long ago...'{wait 60}{n} {n}Could it be that, at one{n}time, our ancestors had{n}been aboard this ship and{n}landed on this planet...?
+f653-0002 6b8123b9ccc2d262 Seeking God — and God's{n}wisdom, 'Raziel's Tree' —{n}which were said to lie{n}in this Machanon,{n}we proceeded further in.
+f653-0004 da6cfddc5b3dfc97 Continue with the game?{wait 30}{n}    Wait{n}    Continue{wait 15}
+f653-0005 aebed9ed31d54859 {speed 255}    Open a menu{n}    Change members{n}    Continue the game{wait 15}
+f654-0000 370a950e87e9f709 In the depths,{n}we beheld an{n}abnormal{wait 5} 'thing'.{wait 10}{n}A giant grotesque{n}being, rotting and{n}partly petrified...{p}'It' cast a mysterious{n}air of intimidation{n}upon us.{p}Perhaps that was the{n}fear of 'the Absolute',{n}etched in the very{n}depths of our genes...
+f654-0001 a56ef2503de11cf1 Fei{n}"This{wait 5}...{wait 20} This was{n}the true form of{n}the ultimate power?"
+f655-0000 30861612bf144074 Bart{n}"Damn! But we're{n}so close!"
+f655-0001 bed44299ac6c90ec Billy{n}"Right when we're{n}so close...!"
+f655-0002 234e7c92c36bf075 Rico{n}"Dammit! But we're{n}so close...!"
+f655-0003 cc9fe26d76e99fd5 Emeralda{n}"But...so close...!"
+f655-0004 e3759d272ae806c6 {name 7}{n}"When we're so{n}close, chu...!"
+f655-0005 1c3cb31b83f651fa Maria{n}"But we're so close...!"
+f655-0006 cc1b95eaaceb692a The place we arrived at{n}was a vast cavern —{n}large enough to contain{n}the Royal Capital of Av.
+f655-0007 85fe9a2accc7e0c2 In its center was{n}a pair of faintly{n}shining objects.
+f655-0008 583a088db9c20979 There could be no{n}doubt this was the{n}source of God's{n}wisdom —{wait 10} Raziel's Tree.
+f655-0009 cbddad75350cda0d And the cavern itself{n}was a mega-computer{n}called Raziel.
+f655-0010 a954c2dad3485463 The wisdom of God,{wait 5}{n}hidden within Raziel...{p}When we accessed its{n}data, we learned the{n}extraordinary things{n}recorded there.
+f655-0011 dc4734f0ca3ed6cc Wandering from star system{n}to star system, an array{n}comprising a large-scale,{n}unmanned strategic weapon{n}and its terminal weapons.{p}And the gargantuan{n}mother ship the size{n}of a peninsula, used for{n}their transportation...
+f655-0012 c677c1fbc74e6377 The creation of the{n}angels, the Malakhim —{n}a divine army to reign{n}over the universe...{wait 20}{n} {n}The construction of a{n}divine ark...
+f655-0013 ee6bb13e3de9a98d The weapons array was called{wait 60}{n} {n}   the Interstellar{n}   Strategic-Integration{n}   Weapon System{wait 10} 'Deus'.
+f655-0014 aa10ffee5b646073 What the Gazel Ministry{n}searched for was right here.
+f655-0016 38fc6a50b71914e6 Then, just as we were about{n}to try to access the data{n}for the entity that was both{n}the power reactor and the{n}central neural circuit,{p}driving everything from the{n}weapons array to the mother{n}ship — an object called{wait 10}{n} {n}        'Zohar'...
+f655-0017 b6dc539bed8e0de0 HE appeared.
+f655-0018 f56cb48ce88d00e0 Karellen{n}"The hidden data in{n}Raziel's Tree...{p}Might I get you to{n}move away from there?{wait 10}{n}For this is something{n}far beyond you all..."
+f655-0019 8caab63962893d5f Fei{n}"We have to protect this{n}place at all costs!{p}We absolutely cannot let{n}them have the Raziel data!"
+f656-0000 b1d2333b36a127c3 Fei{n}"U-Ungh..."
+f656-0001 457d59d9263f4fc1 Grahf{n}"I guess that's{n}all you've got.{wait 30}{n}Is it frustrating?{p}But it's{wait 10} 'only{n}natural'.{wait 10} Because{n}you're imperfect."
+f656-0002 06f43c26cd642bd6 Fei{n}"I-{wait 5}Imperfect!?"
+f656-0003 80ff8338e1a93b51 Grahf{n}"Yes.{wait 10}{n}Right now, you're{n}lacking something.{p}Namely, it's a lack{n}of wrath that's{n}holding back your{n}inherent power!"
+f656-0004 d3360257fe128ce3 Fei{n}"Wr-Wrath...?"
+f656-0005 3b20b1827c981128 Grahf{n}"Wrath is the drive to try{n}to eliminate your foe,{p}the will to destruction and{n}slaughter —{wait 5} the power of{n}the soul!{p}To eliminate your foe{n}is to attain the first{n}sublimation of that drive.{p}It's this very sublimation{n}that draws out one's hidden{n}power!{p}If we cling to reason,{wait 5}{n}suppressing the wrath, the{n}drive — however much —{p}any release of true power{n}will be but a fantasy.{p}You know this.{wait 10}{n}When wrath burgeoned in{n}your own heart, did{n}the Gear not respond?{p}What drew out the power of{n}your machine was precisely{n}that: the drive of your{n}soul —{wait 10} it was 'Id'.{p}The symbol of desire,{wait 10}{n}the symbol you bear{n}as a born assassin!"
+f656-0006 61c8046a86a78d36 Fei{n}"You're wrong!{wait 20}{n}So very wrong!"
+f656-0007 aecf3f18dfe6ca88 Fei{n}"I...{wait 10}{n}I am not 'Id'!{wait 10}{n}I..."
+f656-0008 3433df67da4e5487 Grahf{n}"It is time...{p}I will devour your{n}soul.{wait 10} And then draw{n}out its power to the{n}very limit!"
+f656-0010 14b6b4efe61e5b6b Grahf{n}"Hm?{wait 10}{n}Why do you stop me!?"
+f656-0011 ccbf46f5afd8afcc Karellen{n}"That one is bait.{p}Kill the bait, and{n}a rare little bird{n}will get away.{p}You know,{wait 10} my precious{n}little bird,{wait 10} 'vital{n}to the fulfillment{n}of my vision'.{p}You understand, don't{n}you,{wait 10} Lacan...?"
+f658-0006 efd3a2f5cb3592e7 Wait for me!{done 120}
+f658-0007 8bf3816c3d3ec1b0 Where...{wait 30}{n}am I?{p}{wait 30}Who...{wait 30}{n}am I?
+f658-0008 02da993c4936dfa5 Is this...{wait 30}{n}my memory?
+f658-0009 e03d762cce296499 Everyone...{wait 30}{n}My...{wait 20}memories?
+f658-0011 f4093395920ae063 Mom?
+f658-0013 ae8d0172d5f3edc6 I'm surprised.{n}That was pretty{n}clever of you.
+f658-0014 ccaac4a69d540622 You...{wait 10}{n}Id?
+f658-0015 ca8aa69affc0640b I underestimated you{n}a bit.{wait 10} I'd never have{n}thought that you, a mock{n}personality, could create{n}a fourth persona.
+f658-0016 2d5b31c2cb2ee756 A fourth persona?
+f658-0017 383d291252bcfd3b He doesn't feel anything.{n}He's shut himself away in{n}the shell of the ego.{p}The facts that overwhelm{n}you and the truths you{n}don't want to face.{p}Fearing those things,{n}you desired complete{n}seclusion from the{n}outside world.
+f658-0018 631f989a13400f6c And so you made up a{n}fourth personality.{n}A fourth Fei persona.{p}His name...{n}doesn't matter.{p}He's the one on{n}the stage now.{n}He's the one in{n}control of our body.{p}But this, too, is a{n}futile resistance.
+f658-0019 a17eeb4cf4403771 Come with me.
+f658-0020 214343e50e66751d Wait, what're{n}you doing!?
+f658-0021 829b9079fb1b9d50 The key's in{n}his possession.{wait 5}{n}I just want him{n}to let me use it.{p}There's somewhere{n}I have to go.
+f658-0024 eec5b98764fb4fc8 From here on is my world.{wait 5}{n}You can't enter.
+f658-0025 81bed6881b77d195@f89a24745d8d256c Why not?
+f658-0026 1fb78ab04ae49d48 Because you're a lower-{n}order, mock persona,{wait 5}{n}subordinate to me.
+f658-0027 304779a0c6689689 A lower-order,{n}mock persona?
+f658-0028 d14f643d7c320ea9 That's right.{wait 10}{n}...That day, he sealed{n}away a part of my memory{wait 5}...{p}The very 'id' that is{n}my reason for being.{p}Because he sealed that{n}away, my base personality{n}was reinitialized.{p}And the personality on{n}top of that, newly formed{n}from the experiences since{n}then...{p}That is what you are now.
+f658-0029 8f0803de1b3c570c He!?{wait 10}{n}Is that Father you're{n}talking about?
+f658-0030 3be776268612b17b You call him Father?{p}He who did nothing{n}for me?
+f658-0031 3fe5f7720ca7d03c It was because of his{n}incompetence that—{p}If only he'd been{n}able to protect me{wait 5}...
+f658-0032 60984fa446518738 Then{wait 5}...{wait 10}{n}Mother needn't have died{wait 5}...
+f658-0033 0ac46c74fdb8c48e Didn't Mom die right{n}after I was born!?{p}What really happened to{n}Mom!?{wait 5} Tell me, Id!
+f658-0034 d3017f95b290f8ba You don't need to know.{wait 5}{n}It's time for you to{n}disappear anyway.{p}Along with that 'coward' who{n}is your base personality.{p}I'll rule myself through{n}the power of 'the Existence'.
+f658-0035 eee93219096b6a37@0e38741c9627b35b  {n}??
+f658-0036 cf9198aff8580d40 Of course you'd have{n}no idea.{wait 5} For that is{n}something etched in my{n}own metempsychotic memory.{p}Being a mock personality,{n}you can't ascend to the{n}'stage' where memories{n}are managed.
+f658-0037 874f6998c87b40a3 I do know about the{n}dreams and the{n}phantom memories.{p}I've seen such{n}things many times!
+f658-0038 ad4099404c415b6e Those are the ones{n}I showed to you{n}intentionally.{p}In order to lift the{n}seal, I opted to weaken{n}your power as an entity{n}unto yourself.{p}When your mental{n}energy is weakened,{n}I can act freely.
+f658-0039 868c480ced21963a@2830739007b9ea44 What!?
+f658-0040 6991a5bf554d9599 Naturally, there was{n}more within me besides{n}what I showed you{wait 5}...
+f658-0042 d096eeda99ea9c3f Looks like someone's here.{wait 5}{n}It's probably your friends.{n}They must've followed me.
+f658-0043 d5eb711fc606e1e4 Where are you going!?
+f658-0044 750ce5c5f3b30b8a I came here to make{n}contact with the{n}Existence once again.{p}To become the one who ties{n}together all the threads of{n}memory that have endured{n}since ancient times,{p}and then severs them...{wait 10}{n}That is the destiny of{n}the Contact.{p}The preparations have{n}been made.{wait 5} It's time for{n}the true awakening.{p}The first thing I'll do{n}is have those who're full{n}of hypocrisy annihilated.
+f658-0046 ed61a24eeb6b0c23          You just stay{n}{speed 255}         {slow 0}there and{n}observe.
+f658-0047 da0d18b52f4f4f8c I see{wait 10}...{wait 10}{n}This is inside Id.{p}A world filled with{n}hatred and sadness.{p}That's all there is{wait 5}...{wait 10}{n}Yes{wait 5}...{wait 10}{n}Now I understand, Id.{p}Why you hate the world...{p}For you there was nothing{wait 5}...{p}Nothing{wait 5}...{wait 10}{n}All the happy memories are—{p}And yet{wait 5}...{wait 10}{n}it feels somehow alright{wait 5}...{p}It feels good{wait 5}...{p}That's right{wait 5}...{wait 10}{n}I don't need to fight it.{p}All I've ever been is an{n}existence to conceal Id.{p}So we should return{n}to that place{wait 5}...{p}Let's stay together{wait 5}...{p}Erase everything{wait 5}...{wait 10}{n}including ourselves{wait 5}...
+f658-0048 dcda1033f51ea35f Remember!{n}Were you not going{n}to rescue Elly?
+f658-0049 c429d98d1df56c36 Think!{n}Are you gonna save{n}her, save Elly?
+f658-0050 81932ca5c744c02e Remember!{n}Are you going to save{n}her, save Elly!?
+f658-0051 f6451282aabb94c4 Think, kid, think!{n}Aren't you gonna{n}save her, save Elly?
+f658-0052 17c122c9a137ff86 Remember!{n}Elly still there...{n}Still waiting!
+f658-0053 6fc69b07e285d286 You mustn't forget!{n}You've gotchu save{n}the one you love,{n}save Elly!!
+f658-0054 24775d942aceea49 Remember!{n}Elly needs{n}you now!
+f658-0056 8a08bfb8df43ac9d Elly?{wait 5}{n}Elly{wait 5}...{wait 10}{n}...That's right!
+f659-0000 6979578fca64987f Citan{n}"What is that{wait 5}...?"
+f659-0001 820748de261f9f6f Citan{n}"So this is{n}the place{wait 5}..."
+f659-0002 fe395b1634c4b452 Bart{n}"What's that?"
+f659-0003 e2e2b041500dc71a Bart{n}"So this is{n}the place{wait 5}...?"
+f659-0004 e99ba215dfb8ca23 Billy{n}"What's that?"
+f659-0005 720f3e0906f12bfc Billy{n}"So this is{n}the place{wait 5}..."
+f659-0006 79e76fbc0c90be04 Rico{n}"What's that?"
+f659-0007 787ad3cb92364ad3 Rico{n}"So this is{n}the place{wait 5}...?"
+f659-0008 5d5010e8b4256af5 Emeralda{n}"What's that?"
+f659-0009 95d6b0a59214227a Emeralda{n}"This...{wait 20}{n}the place{wait 5}..."
+f659-0011 103642c84ee5c65a {name 7}{n}"This has chu be{n}the place{wait 5}..."
+f659-0012 95fc0d17061c92ed Maria{n}"What's that?"
+f659-0013 7f998df4d951796d Maria{n}"So this is{n}the place{wait 5}..."
+f659-0015 fd70a2f90992c2c0 Citan{n}"So this is{n}the place{wait 5}..."
+f660-0000 0ef396883c74e478 Citan{n}"Wh-What is—"
+f660-0001 b5dcd04eec367a33 Bart{n}"Wh-What's this!?"
+f660-0002 cbbee932451c21ea Billy{n}"Wh-What's this!?"
+f660-0003 40e9bfe3e1d86cb6 Rico{n}"Th-The hell's this!?"
+f660-0006 4fdf5bf74fc00102 Maria{n}"Wh-What is—"
+f661-0000 48a2f70acc73df0a Citan{n}"Fei!?{wait 10} S-So does this{n}mean this is {name 11}'s{n}transformed appearance!?"
+f661-0001 59300f71680449a8 Bart{n}"Fei!?{wait 10}{n}This can't be...{n}{name 11}!?"
+f661-0002 696fbe352b0461a0 Billy{n}"Fei!?{wait 10}{n}Can this be{wait 5}{n}{name 11}!?"
+f661-0003 b96f18d834be2ffd Rico{n}"Fei!?{wait 10}{n}Can this be{wait 5}{n}{name 11}!?"
+f661-0004 4f6ea0c4f4cb0027 Emeralda{n}"Fei!?{wait 15}{n}Then this{wait 5}...{wait 5}{n}{name 11}?"
+f661-0005 114b8ad3676323b8 {name 7}{n}"Fei!?{wait 10}{n}Then this thing having{n}a nap is {name 11}?"
+f661-0006 f08f8d3cf352c594 Maria{n}"Fei!?{wait 10}{n}This can't be...{n}{name 11}!?"
+f662-0000 c0f40bc7390cdac5 Mother{wait 10} was Myyah.{wait 100}
+f662-0001 62f50a52c41c7ec5 {slow 1}Ours was an ordinary family.
+f662-0004 e55fcd1113083293 {slow 1}The days until that{n}point were happy ones.
+f662-0006 0681fa11f3a5dc83 {slow 1}Suddenly, Mother changed.
+f662-0007 9d0c957fde39a063 {slow 1}She was like a{wait 10}{n}totally different{n}person.{p}{wait 50}As of that day,{wait 10}{n}the place where 'Fei'{n}belonged was no more.
+f662-0008 90d226a9161b0c32 {slow 1}Father was away{n}from home often.{p}He seemed to have{n}some important work.
+f662-0009 d0f5c4166f42e667 {slow 1}In front of Father,{n}Mother would act{n}normally.
+f662-0010 3c2fa97c2480d72b {slow 1}Tied up with his work, Father{n}paid no heed if 'Fei' spoke of{n}Mother's odd behaviour and{n}what he had been through.
+f662-0011 b2fd52b5aaffdeef {slow 1}He thought it nothing{n}but a child's imagination.
+f662-0012 a42a67407afbe8de {slow 1}But he didn't have to{n}endure any of this{n}for much longer...
+f662-0013 691119c1abf2b984 {slow 1}Unconsciously, 'Fei' came{n}up with a way he could{n}escape the mental agony.
+f662-0014 3250dbbf78bd0f42 {slow 1}He made up a personality{n}to deal with anything{n}difficult, anything he{n}didn't like,{p}dissociated from his{n}original personality.
+f662-0015 bc538a03c51a6822 {slow 1}He took himself {n}out of the loop.{p}From the first moment I{n}appeared, it was my role{n}to have everything he{n}hated pushed onto me.
+f662-0016 d8cfae164ef5045d {slow 1}Ever since I dissociated{n}from him, I've been{n}dominated by hatred.{p}Hatred naturally turned{n}into a destructive impulse.
+f662-0018 cb7ae712fb2e47cb {slow 1}Mother, {wait 20}Father,{wait 20}{n}the world{wait 10}...
+f662-0019 c76f74aab567b263 {slow 1}Eventually, Father did{n}take notice of Mother's{n}odd behavior,{p}but it was already{n}too late.{p}I'd completely{n}dissociated from that{n}coward, my original self.
+f662-0020 29b38b9644a08055 The puppets were broken{wait 5}...{wait 10}{n}and{wait 5}...{p}so too was 'Fei's' heart{wait 5}...
+f662-0021 3026f8fc52715644 Why would Mom{n}do such a{wait 5}...?
+f662-0022 10ef93e613562782 Mother knew of the{n}existence of that power,{n}the one within me,{p}and did the experiments{n}repeatedly to study the{n}truth about it.{p}Yes,{wait 5} that woman—{wait 10}{n}Mother,{wait 20} was Myyah.
+f663-0001 e52e50ca14686fc4 {speed 255}What're you doing!?{done 5}
+f663-0003 e4dc60ae0ff51e05 {speed 255}Noooo!{done 5}
+f663-0004 8845882be5bee9f2 {slow 1}It was a scene{n}from hell.{done 90}
+f663-0005 3f0d463dc5a43833 {slow 1}When Father was away,{wait 10}{n}'Fei' would be taken to{n}a place where mysterious{n}machines were set up.
+f663-0006 f3b7bd90d89a173f {slow 1}There were strangely{n}dressed people there.
+f663-0007 d5f2a691f34042b3 {slow 1}Scanning devices were{n}attached to 'Fei's' body,{n}and some kind of experiment{n}would begin.{p}The experiments{wait 20} were{n}agonizing.
+f663-0008 e63d2628ee9e42aa {slow 1}Mother didn't help.{p}The young 'Fei' had no{n}means of resisting.{p}But he was able to{n}endure{wait 10} 'this part'.
+f663-0009 4db0bd22b117efdd {slow 1}Eventually,{wait 10}{n}the experiments{n}took a turn toward{n}'the unbearable'.
+f663-0010 7f6d635fea71b811 {slow 1}Many people were{n}brought before 'Fei'.{p}These people were those{n}who had a high alignment{n}ratio with the Vessels{n}of Anima.{p}This was mental contact{n}with 'Fei', to get him{n}to awaken.
+f663-0011 cd90b5880d5b13c7 {slow 1}But not one of them{n}could withstand the{n}contact with 'Fei'.{p}The power, drawn out of{n}'Fei' against his will,{n}destroyed them all.
+f663-0012 05084972b06d8391 This is unbelievable!{wait 10}{n}Mom allowed—{p}Mental contact?{wait 10}{n}What does getting me{n}to awaken mean?
+f663-0013 80da6ddcb7bdb465 {slow 1}For God's awakening,{n}not one thing was allowed{n}to be missing...{p}That which was divided long{n}ago must be made whole...
+f663-0014 6213ee9be772503f Countless people died{n}in front of 'Fei'.
+f664-0000 66df0ec874f209ab Stop it!{wait 10}{n}No more!{p}Dad!{wait 10}{n}Dad!!
+f664-0001 19e39f93b3309b31 Mom!{wait 10}{n}Help Dad!{p}C'mon, Mom!{wait 10}{n}Why won't you help?{p}Dad's...{wait 10}{n}Dad's gonna die!
+f664-0002 c9eb2a74e95808a1 Grahf had come{n}seeking the power{n}within me.{p}In order to return{n}to his own body.{p}You understand by{n}now, don't you{wait 5}...?{wait 10}{n}Grahf is{wait 10} Lacan.
+f664-0003 47abeee0b5dfc77e He is our likeness,{n}divided 500 years ago,{n}his lingering sentiment.{p}Lacan, who became Grahf{n}and razed the surface of{n}the world, learned how to{n}inhabit a person's mind.{p}Most likely something{n}he mastered due to his{n}contact with the{n}Existence.{p}Though his body perished,{n}Lacan's mind would live{n}on by possessing the{n}bodies of others.{p}And that day, he came to{n}return in spirit to his{n}own body, which had been{n}reincarnated once again.
+f664-0004 56fff917e0118f62 Father{wait 5}...{wait 10}{n}He fought him.{p}But he couldn't{n}protect Mother or me.{p}Pitifully he fought{n}on even as he coughed{n}up his lifeblood.
+f664-0005 1eb7802c33247508 Father was humiliated by{n}Grahf, and though he{n}sought her aid, Mother{n}would not help him.{p}At this point,{n}'he' could no longer bear{n}what was happening{wait 5}...
+f664-0006 8f9d63a73b3458f0 He gave in to his own{n}emotions, letting his{n}power run wild,{wait 10}{n}and as a result{wait 5}...
+f664-0009 d6b6855fe22e5cc7 And even that outcome,{n}'he' pushed onto me.{p}To escape the{n}responsibility of{n}killing Mother, he let{n}me rise to the surface.
+f664-0010 391c89f9f9dbd76d {slow 1}'I{wait 20} even killed Mother.'
+f664-0011 1f2fa3d295d96bc5 Thanks.{wait 5}{n}Pass it back to me.{wait 5}{n}I'm playing with Mom.
+f664-0012 b7d05c94bd945fda This{wait 5}...{wait 5}{n}isn't reality!!
+f664-0013 2d3f2712ad40d493 {speed 255}It's a lie!{done 10}
+f664-0014 e2d1c2ac8591f3a9 {speed 255}It's fake!{done 10}
+f664-0015 3a9e3518b22497fd {speed 255}Make-believe!!{done 10}
+f665-0000 810ac209be81b166 What is this place...?
+f665-0001 674dd80bd674c6c3 ...Nowhere that concerns you.{wait 5}{n}Has he only called you in{n}here for his own sake...?
+f665-0002 d703700a5fedf3b5 This is the inside of{n}the shell that is our{n}base personality,{wait 5} the{n}room of 'the coward'.{p}You must've been here{n}many times.
+f665-0003 98582378f0ee20bb Yes... {n}I remember...{p}I'm pretty sure I was{n}here in my dreams...
+f665-0004 a5fede211c205abb Everything despised and{n}unwanted, he pushed onto{n}me, while he shut himself{n}away in his own shell...{wait 5}{n}The coward 'Fei'.
+f665-0005 9f30c9a080b7cb73 The personality that{n}was our foundation.
+f665-0006 d16529b4be5106e6 Who're you?{wait 20}{n}...Oh yeah. You're my...
+f665-0007 766492e9d8c0268d Hey, let's watch this{n}together! It's my most{n}treasured possession...
+f665-0008 c28759a658ec258f Hmph.{wait 10} This is how, over{n}and over again, he plays{n}back the time when he was{n}full of happiness, and{n}exists within that time.
+f665-0009 97dc3f474df5f3c1 While I only get to exist{n}within the leftover dregs.
+f665-0010 10e7d750cdd1f87c I'll show it to you...{n}'everything' about me.
+f665-0011 b4d95ffabbcad74b He pushed all the bad{n}things onto me,{wait 5} and only{n}the memories filled with{n}happiness and Mother's love{n}did he keep for himself.{p}And then he shut himself{n}away forever with those{n}memories, inside his own{n}shell.{wait 10} That place is here.{p}The scene before our{n}eyes is what he made.{wait 10}{n}He's just clinging on{n}to that memory.
+f665-0012 8ec3f44d59846afc This{wait 5}...
+f665-0013 f99e0726268a6965 Stop it!{wait 5}{n}Enough already!{p}Is this it,{wait 5} are{n}these scenes all{n}there is to us?
+f665-0014 67c178546c428bbd It's so awful!{wait 5}{n}There's nothing here{n}but...{wait 5}a world full of{n}this deception and pain!
+f665-0015 1e9750b17e0d28c7 Well, too bad.{wait 10}{n}This is our everything...
+f665-0016 2ae093f34cb3f919 No!{wait 5}{n}Get out!{p}This is my room!{p}I thought you'd{n}always be with me!
+f665-0017 75d62f2b2bf20eb9 Why won't you try {n}to see reality!? {p}The good things, the bad{n}things,{wait 5} aren't they parts{n}that make up the whole!?{p}Why won't you show him, too!?{wait 5}{n}Why won't you show Id what{n}you're always watching!?
+f665-0018 7db8bbf07a5a102d No!{wait 5}{n}That's mine!{p}I won't show it to{n}the likes of him —{n}he killed Mom!!
+f665-0019 d53cb6c1cba3888b Look who's talking.{wait 5}{n}Aren't you the one{n}who did the killing?
+f665-0020 a7245ba5dbfea3ef No!{wait 5} I'm not a killer!{wait 5}{n}It was you who killed{n}Mom!{wait 5} I'd never harm her!{p}Mom wouldn't pay{n}attention to you,{wait 5}{n}and Dad didn't notice,{n}so you—{p}So I'd never harm her!{wait 5}{n}I'd never harm her!{wait 5}{n}I'd never—
+f665-0021 40c5ae8b7434a3ba This stops right here!!
+f665-0022 4225e05c16c6cad4 ...It was 'us' who{n}killed Mom.{wait 5} No one{n}else is to blame.{p}It's not because she{n}became Myyah or because{n}Dad didn't notice.{p}Don't look elsewhere{n}for a cause.{wait 5} Don't put{n}the responsibility on{n}anyone but yourself.{p}Sure, maybe Mom was{n}Myyah.{wait 5} I know that{n}the days you went{n}through were tough.{p}It'd be unbearable{n}for anyone.{p}But that doesn't mean{n}you can push it onto{n}Id alone!{p}We're all one person.{wait 5}{n}We must become one.{wait 5}{n}Right, Fei...?
+f665-0023 3916c6efd6226263 Now, walk on your own two{n}feet.{wait 5} Face the reality{n}you don't want to see.
+f665-0024 3ba730f6bcda5168 Show them to Id.{wait 5}{n}The things you've been{n}keeping for yourself...
+f665-0025 a9d25d6860943497 It's a lie!{wait 5} That woman!{wait 5}{n}This scene,{wait 5} it's an{n}illusion he's made up!{p}I,{wait 5} my reason for being,{wait 5}{n}will not be swayed by{n}such a trick!{p}I...!{wait 5}{n}I...!
+f665-0026 f8ae2e22cb664c7b Id{wait 5}...{wait 5}enough.{wait 5}{n}We wouldn't solve{n}anything by trying{n}to trick you.{p}Mom saved us{n}in the end.{wait 5}{n}That's the truth.{wait 5}{n}Right?{p}The reality isn't{n}all grim, Id...
+f665-0027 63ee1527c403956e My...{wait 5} My power{n}couldn't save anyone.{wait 5}{n}It only destroyed.{p}I believed that I would{n}only be able to identify{n}with others by bringing{n}destruction upon them.{p}So I had no choice but{n}to destroy it all...{wait 10}{n}People...{wait 5} The world...{wait 20}{n}Even Elly...
+f665-0028 10d578f18eeaf22b But that's not the case.{p}Just as Mom, despite{n}being Myyah, saved us...{p}our power can save{n}people...{wait 5}save Elly.
+f665-0029 ccde0c604e71a788 ...That's a first.{wait 10}{n}To think that Mother{n}could be so warm...{p}To me...{wait 5}{n}she almost seems...{wait 5}{n}too warm...
+f666-0000 cf60f0eedf0a974c {speed 255}All that's left is to{n}become one with you!!{done 120}
+f666-0001 1302d045c663c60b@47d3972bb309af55 Fei{n}"What's...?"
+f666-0002 067db5049ad3a69b Fei{n}"This pendant...{p}Is this Sophia's...{n}or Mom's...?"
+f666-0003 eb937bdf3c31aaec I'm counting on{n}you, Fei...{wait 100}{wait 100}{wait 100}
+f666-0004 46799cd8853e37fc Citan{n}"Fei!!{n}Where did the real{n}you go!?{p}Remember!{n}Were you not going{n}to rescue Elly?"
+f666-0005 d1b2a38cc9259fef Bart{n}"Fei!!{n}D'you want it to end{n}like this!?{p}Think!{n}Are you gonna save{n}her, save Elly?"
+f666-0006 bfa94e55bd1ea691 Billy{n}"Fei!!{n}What have you been{n}fighting for until now?{p}Remember!{n}Are you going to save{n}her, save Elly!?"
+f666-0007 7dc15844b66596e2 Rico{n}"Fei!{n}How long you plannin'{n}to zone out for!?{p}Think, kid, think!{n}Aren't you gonna{n}save her, save Elly?"
+f666-0008 777b897396da14d3 Emeralda{n}"Fei!{n}Elly waiting!{p}Remember!{n}Elly still there...{n}Still waiting!"
+f666-0009 026a52826291c5f0 {name 7}{n}"Fei!{n}Wake up!!{p}You mustn't forget!{n}You've gotchu save the{n}one you love, save Elly!!"
+f666-0010 341506d75a3db8ac Maria{n}"Fei!{n}Please snap{n}out of it!{p}Remember!{n}Elly needs{n}you now!"
+f666-0011 f7191e9d65f54108 Citan{n}"What did you say!?"
+f666-0012 d2efb4e27eac5f48 Bart{n}"Say what!?"
+f666-0013 0a9ae7663f0a57dc@75f83e0ce21aad90 Billy{n}"What!?"
+f666-0014 15121d38e0bf5dd2 Rico{n}"Wh-What!?"
+f666-0016 bbaec077c5fb2e89 {name 7}{n}"Whatchu say!?"
+f666-0017 c500779ac6c00724 Maria{n}"What did you say!?"
+f666-0018 742983f064ddf2ae Citan{n}"The Contact!?"
+f666-0019 07d3d929b145c37c Bart{n}"The Contact!?"
+f666-0020 f4f2292feaac32ee Billy{n}"The Contact!?"
+f666-0021 65b2eb41524bff79 Rico{n}"The Contact!?"
+f666-0022 a8da03735f1b6707 Emeralda{n}"The Contact!?"
+f666-0023 25e9024a2d56a29d {name 7}{n}"The Contact!?"
+f666-0024 c3f6d0d60e5abad6 Maria{n}"The Contact!?"
+f666-0029 ee48f689fca29bd1 Fei{n}"Dad!{wait 5}{n}Are you okay?{p}Dad!{wait 5}{n}I'm sorry...{wait 5}this is{n}all my fault..."
+f666-0030 d304ddd387f89503 Khan{n}"Fei...?{p}I see, you were able{n}to return to normal...{wait 5}{n}to become whole..."
+f666-0031 5fd5d4fb34d7d73b Fei{n}"Yes, thanks to{n}all of you.{p}If you and the{n}others hadn't called{n}out to me, I—"
+f666-0034 4d3b941e6d21672e Khan{n}"Don't worry{wait 5}...{wait 5}{n}It's for the best{wait 5}...{p}Now{wait 5}...{wait 5}all that's left{wait 5}...{wait 5}{n}is for me to—"
+f666-0036 c284b7c6d02698c7 Khan{n}"With you{wait 5}..."
+f666-0037 c6183c534960e28b Fei{n}"Gaah!{wait 5}{n}G-{wait 5}Grahf!?{wait 5}{n}How the—"
+f666-0038 6313b26c5697a273 Grahf{n}"Ha ha ha...{p}On that day three years{n}ago, the flesh that 'I'{n}possessed had reached{n}its limits...{p}So 'I' obtained the{n}body of your father,{p}flesh to serve as the host{n}for my spirit until such{n}time as you achieved your{n}true awakening.{p}Even if, prior to the{n}fusion of Khan and I,{p}you'd had your awakening,{n}unified, and gained the{n}associated memories,{p}being robbed of your{n}memory at that point{n}you would've had no{n}way of knowing."
+f666-0039 d6ed2a70b250eff5 Fei{n}"N-{wait 5}No...{wait 10}{n}So Wiseman is...{wait 10}{n}Dad is..."
+f666-0040 9122944df856fd7a Grahf{n}"He was a part of{n}me, of course,{p}but that didn't mean{n}I could control Khan{n}completely.{p}The force of his ego was{n}surprisingly strong,{p}surfacing whenever my{n}hold on him weakened,{n}to take the form of{n}Wiseman, and guide you."
+f666-0041 6c2ae1bec8df5783 Fei{n}"Guhhh..."
+f666-0042 1dfa886f31d3ec40 Grahf{n}"You have achieved your{n}awakening.{wait 10} This body is{n}now unnecessary too.{p}All that remains is{n}to return to my{n}original body."
+f666-0043 8f02a131c02399ce Fei{n}"S-{wait 5}Stop...{wait 5}{n}Dad..."
+f666-0044 37556a9e0614417a Grahf{n}"Yes, he hears you, Fei.{wait 10}{n}He and I are two sides{n}of the same coin.{p}I am Khan, Khan is me.{p}Now, open your mind and{n}become one with me.{wait 10}{n}And then we shall{n}erase everything."
+f666-0045 d85087a0e28584c0 Fei{n}"N-{wait 5}No...{wait 10} No way{n}am I...{wait 5}going to be...{wait 5}{n}controlled...{wait 5}by you!"
+f666-0046 5f6371bd8470650c Grahf{n}"Hmph.{wait 10} Protecting{n}its master, hmm?{p}Very well.{wait 10}{n}I'll merge with that{n}machine along with you!{p}Now, have at you, Fei!"
+f666-0047 e390c10c926823ee Fei{n}"Never!{p}Sure, maybe you are Lacan,{n}a part of me.{wait 10} But even so,{n}it doesn't change the fact{n}that you're my dad!{p}I could never seriously{n}fight you!"
+f666-0048 4eb7d3e24a477e67 Grahf{n}"You're so naive!{p}Why don't you understand{n}that such naivety is what{n}killed Sophia,{wait 5} what killed{n}Karen?"
+f666-0049 a1146e2a58cf23c9 Fei{n}"I understand!{wait 10}{n}I do understand that!{p}That's why I swore.{wait 10} That{n}I won't run away anymore.{wait 10}{n}That I'll save Elly{n}no matter what.{p}So don't get in my way!{wait 10}{n}Open your eyes, Lacan!"
+f666-0050 97f2c9aa0e2be16e Grahf{n}"If that's how it{n}is, then fight!{wait 10}{n}Fight me, and—"
+f666-0052 f5af61b3ac653e83 Grahf{n}"I see...{wait 10}{n}Then you leave{n}me no choice."
+f666-0054 25d3d6a2521c96d9 Grahf{n}"You're not up to the task.{wait 10}{n}So I'll feast on THEM."
+f666-0056 b50e5960599af761 Fei{n}"Stop!{p}Our emotions, the sorrow{n}we felt back then, must{n}surely be the same.{p}So why?{wait 10} Why do you try{n}to destroy everything!?{wait 10}{n}Won't it be over if we{n}stop Deus!?"
+f666-0057 d5c70f153581830d Grahf{n}"Are you still not able to{n}comprehend, despite your{n}contact with the Existence?{p}Through my contact, I knew.{wait 10}{n}I knew that, even if I{n}destroyed Deus, as long as{n}people lived in this land,{p}then Myyah...{wait 5}Elehayym{n}would be born time and{n}time again.{p}That being the case, I'll{n}send people, and all living{n}things, to oblivion{n}together with Deus.{p}It's the only way that{n}people,{wait 5} that we,{wait 5} will be{n}freed from lives that are{n}manufactured over and over,{p}freed from the tragedies{n}of history and the spell{n}of fate!{p}Once I've awakened{n}Deus as a weapon and{n}exterminated all life,{p}I'll use your awakened self{n}and that machine to return{n}everything to nothing...{wait 10}{n}That's what I concluded.{p}Neither Myyah nor Elehayym{n}are mere representatives{n}of Deus!{p}That woman is the linchpin.{wait 10}{n}Why don't you see that!?"
+f666-0058 2517e25ad3844d92 Fei{n}"It's not true!{wait 10}{n}Mom died to protect{n}me that day!{p}Her eyes then weren't{n}those of Myyah!{wait 10}{n}In that final moment,{n}Myyah changed back to Mom!{p}Myyah, Mom...{wait 5}and Elly{n}too,{wait 5} they're humans{n}born on this planet!{wait 10}{n}Deus or no Deus!{p}You'll see, I'll bring{n}Elly back for sure!{p}Dad—{wait 5} No, Lacan!{wait 5} If you{n}won't back off, then..."
+f666-0059 20c13d80d483e66f Grahf{n}"Not a chance!"
+f666-0060 80766dd53ec1cc4d Fei{n}"Then so be it!"
+f666-0061 6fedbeef4e8b7191 {slow 1}It is now time for us{n}to truly become one!
+f666-0062 8cd1b0c8c6c2a28e Khan{n}"...What happened{n}to Fei, Id!?"
+f666-0063 9d968523b02f03b7 Id{n}"What a shame.{wait 5}{n}The new Fei personality{n}brought forth by you...{p}Time and again you{n}seemed to be guiding{n}the way to make us one{n}complete personality,{p}but that too will end in{n}vain.{wait 10} He's about to be{n}swallowed up by me!"
+f666-0065 551201ca3c9d1f4b Id{n}"As if you could,{wait 5} craven!{n}Mother is dead because of{n}your incompetence!{p}And HE took refuge inside{n}his memories!{p}While I carried on{n}existing, burdened{n}with all the bad stuff!{p}Do you know what that{n}was like!?"
+f666-0066 a32922b7060677fc Khan{n}"I wasn't merely guiding{n}the way!{p}The feelings you and I had,{wait 5}{n}the sadness,{wait 5} the hatred...{p}Although he experienced{n}those things, Fei was{n}trying to build himself up.{p}As he is now, Fei will{n}surely be able to{n}comprehend your feelings!{p}To erase Fei, the one who{n}will understand you...{wait 10}{n}Is that what you want!?"
+f666-0067 7fc8ab3adda5bc9c Id{n}"You ask me that now!?{p}My aim is the absolute{n}destruction of all,{n}same as 'him'!{wait 10}{n}That and that alone!"
+f666-0068 7b87e9a0c0e194c6 Khan{n}"Is this world so bad{wait 5}...{wait 5}{n}that there's nothing{n}but hatred inside you!?"
+f666-0069 b6cf2140f85cc5e7 Id{n}"It was you and that woman{n}who made me this way!!{wait 5}{n}You hypocrite!!"
+f666-0070 d5ba7b8251e28b2d Khan{n}"...Guh!{wait 30}{n}Can you hear me, Fei!?{p}Receive this,{n}the driving fist{n}of my emotion!{wait 10}{n}And become whole!"
+f666-0071 e27d2592bc5222ee Khan{n}"...That's right.{wait 5}{n}Karen had become Myyah."
+f666-0072 619a63cf3b7df7be Khan{n}"It's not all that strange.{wait 5}{n}The Myyah complement isn't{n}a single person.{p}Her factor is sealed{n}within the genes of{n}almost all women.{p}Every one of them has the{n}potential to become Myyah."
+f666-0073 26d28fdb2b503c78 Id{n}"It just happened to{n}Mother by chance.{p}Of course, only Elly{n}is 'special'!!"
+f666-0074 73c34dcd4d124576 Khan{n}"Whoa!"
+f666-0075 dc2859e960e813d6 Khan{n}"Realizing that Fei's{n}memory-time axis had{n}doubled and redoubled,{p}Myyah was sure.{wait 10}{n}Sure that Fei was{n}'the Contact'!"
+f666-0076 634ba54f6dfe66e8 {slow 1}...Yes, I was the Contact.{wait 10}{n}For this reason, that man{n}was summoned...{p}and the time had come...
+f666-0077 49ddfdb6ccbf40e1 Khan{n}"I was a fool.{wait 5}{n}It's all my fault.{p}I was so busy with my{n}duties for Shevat that{n}I didn't notice Karen's{n}transformation.{p}You needed my help, and{n}I couldn't save you."
+f666-0078 2f332c3709b72e07 Id{n}"Save me!?{wait 5}{n}What's this now!?{p}It's too late to{n}change anything!{p}All you can do now{n}is be sent to{n}oblivion by me!"
+f666-0079 b6ca21bb8256a2da Khan{n}"Urrrggh!!{wait 20}{n}Even so{wait 5}...{wait 10}{n}save you I shall."
+f666-0080 de76c6ec0f60989f@1bdd6a392621da14 Father!!
+f666-0081 15d6a42147da3df3 Stop it, Id!{wait 5}{n}Father is innocent{n}in all this!
+f666-0082 ecfd726e4b447317 I know.{p}It's this one who's{n}really in the wrong.{p}Father and Mother{n}were just catalysts.
+f666-0083 8f46ff94d4ecbd26 Grahf{n}"Why aren't you{n}finishing me off?{p}Unless you get{n}rid of me, your{n}wish cannot be{n}fulfilled."
+f666-0084 e83be9aff9e4ca91 Fei{n}"It's okay now...Dad.{wait 10}{n}I know.{wait 10}{n}You're not like Grahf.{p}You're my dad.{wait 10}{n}You and Grahf are one,{n}and so are your wills{n}and purposes.{p}By fighting you,{n}I understood that.{wait 10}{n}Let's stop now.{p}Our objectives should{n}be in accord.{wait 10} That's the{n}same as becoming one.{wait 10}{n}Fighting sure isn't."
+f666-0085 6d07d16f1dc2eb5f Fei{n}"Argh!{wait 10}{n}Wh-What...!?{wait 10}{n}My body...!"
+f666-0086 deaf75fcd5949b47 Grahf{n}"It's searching.{wait 10}{n}The Zohar.{p}Deus' system seeks{n}the element that is{n}its final fragment.{p}It seeks unification{n}with you who separated{n}from it in the very{n}beginning."
+f666-0087 e633f518d01be65b Fei{n}"Wh-{wait 5}What're you—"
+f666-0088 18f08c43672572a9 Grahf{n}"This is what Lacan{n}wanted.{wait 10} After all, I'm{n}an imperfect existence.{p}It was inevitable that{n}it would come to this.{p}Long ago, his imperfect{n}second contact with the{n}Wave Existence split{n}Lacan's personality in two.{p}In time, his{n}flesh perished,{p}and having the destiny{n}he did as the Contact,{n}the real Lacan was{n}reincarnated as you.{p}But the remaining{n}personality, his{n}feelings alone, lived{n}on by possessing people.{p}That is Grahf...{wait 10} Me.{p}However, I may have{n}inherited Lacan's will,{n}but I'm not the 'Contact{n}Lacan' himself.{p}I'm not good enough.{wait 10}{n}A true unification and{n}liberation wouldn't be{n}possible.{p}And yet, although my body's{n}different, the fact remains{n}that I'm the likeness of{n}your divided self.{p}Even if I'm imperfect, I{n}can unite with the Zohar{n}temporarily, at least{n}buying you some time.{p}Only by doing so can I{n}become one with you."
+f666-0089 43bee0094fd9ee09 Grahf{n}"This is all I can do.{p}At some point, Deus'{n}system will search for{n}you once again.{p}You must destroy the{n}perfected Deus and the{n}Zohar before then.{p}You can destroy the{n}barrier surrounding the{n}body of God, being a part{n}of that body yourself."
+f666-0091 bec1418b22411bed Grahf{n}"As you say,{n}that was Karen.{p}By recurring through{n}the generations, Myyah{n}is being set free from{n}her restraints.{p}Having merged with Deus,{n}Elehayym now has all the{n}memories.{p}Including transmigrated{n}memories from the beginning{n}when she was born as the{n}Contact's counterpart,{p}as well as the memories{n}of every Myyah and those{n}she displaced.{p}Yes, even your mother's{n}memories..."
+f666-0092 5626dff81d9fbd84 Fei{n}"Mom and Myyah's{wait 5}...?"
+f666-0093 67ef49adbaf050ee Grahf{n}"Fei, break all of{n}these spells...{p}You can surely do{n}it now.{wait 10} Save her,{wait 5}{n}save all of them."
+f667-0000 3028d98368653e96 Elehayym!!{done 45}
+f668-0000 181f045957dd7286 ...{wait 20}Fei{wait 10}...{n}{wait 20}Fei{wait 10}...
+f668-0001 6fa95a80140e8cd3 Who's there?{wait 10}{n}Who's talking to me{wait 5}...?
+f668-0002 8747905dc35845d8 I{wait 10} am{wait 10} th—{wait 10}{n}within{wait 10} —har{wait 10}...
+f668-0004 46bc7c28b59b0b7b I...{wait 10} I am that which{n}dwells within the Zohar.{wait 20}{n}The beginning and the end.{wait 10}{n}The first and the last.
+f668-0006 4edd242a8074db30 God{wait 10}...{wait 10}{n}There are those who perceive{n}me as such.{wait 10} Certainly, from one{n}point of view they are correct.{wait 10}{n}But it could also be said that{n}this is not the case.{p}I...{wait 10}am also you yourself.
+f668-0007 e3ce0eccdd3a47e1 Me myself?
+f668-0008 31c61827b056e642 It is by the act of people's{n}observation that I am defined.{wait 10}{n}The me talking before you now{n}is{wait 5} 'a me conjured up by you,{n}so that you may perceive me'.
+f668-0009 e7d66f926c3d221b I don't understand what{n}you're talking about.{p}Who or what on{n}earth are you?
+f668-0010 f436c09528096b87 In a word{wait 10}...{wait 10}{n}Yes:{wait 10} Existence.
+f668-0012 eba48acce1140dd1 I am, essentially, an{n}'existence' of a higher{n}dimension, not possessing{n}what you would call a body.{p}It is a world filled with{n}certain things that behave{n}like waves,{wait 5} things your kind{n}cannot perceive.{p}The place that became the{n}source of your four-dimensional{n}universe, which is governed by{n}space and time.{p}Undulations of nothingness...{wait 10}{n}The Wave Existence.
+f668-0013 aa0c158ffd429c9b What does such an Existence{n}have to do with me...?
+f668-0014 f2d3259e830df06e Long, long ago, a phenomena-{n}alteration or semipermanent{n}infinite-energy engine was{n}created.{wait 10} The engine was given{n}the name 'Zohar'.{p}It was created by an ancient{n}people from another planet to{n}try to obtain the greatest{n}energy imaginable in this{n}four-dimensional universe.{p}Before long, those people also{n}created the ultimate strategic{n}weapon for interplanetary{n}warfare, Deus, and arranged{n}it so that the Zohar served{n}as its main power reactor.{p}But in the middle of a{n}connection experiment between{n}Zohar and the completed Deus,{n}something unexpected happened.{p}Seeking energy —{wait 5} infinite{n}potential phenomena —{wait 5} and{n}being something quite different{n}originally,{wait 5} the engine created{n}a link between this dimension{n}and higher-dimensional space,{p}and as a result, I —{wait 5} a higher-{n}dimensional wave that existed{n}there —{wait 5} synchronized with it.{p}Traversing the point of contact{n}with the higher dimension that{n}the engine had created —{wait 5}{n}the Path of Sephirot, or{n}the domain where you are{n}presently —{wait 5} I materialized{n}in the four-dimensional world.{p}Having 'advented' to the four-{n}dimensional world,{wait 5} in exchange{n}for being stable here as matter{n}I had to be bound by the{n}phenomena-alteration engine —{wait 5}{n}that is, the 'fleshly cage'{n}of the Zohar.{p}Bound by the Zohar,{n}I desired to return to{n}my original dimension...{wait 5}{n}and so I made a determination:{p}reversal of the process I had{n}been through —{wait 5} liberation by{n}the hand of the one who had{n}bestowed upon me a particular{n}feature of this dimension,{wait 5}{n}namely 'a will'...{wait 10}{n}That one is you.
+f668-0015 9f6df2e34aadbd08 I did that?{wait 10}{n}A particular feature??
+f668-0016 7b85d5e31fc73180 Yes.{wait 10}{n}Through the act of observation{n}by you, the Contact, I came to{n}possess a human characteristic:{wait 5}{n}a mother's will.
+f668-0018 0ad658d99e222a86 Surely you remember.{wait 10}{n}Immediately following{n}my advent, you had{n}contact with the Phenomena-{n}Alteration Engine, Zohar.
+f668-0020 18a7ccd186b6d88b Defined by your, the Contact's,{n}childlike desire to return to{n}your mother, I was instilled{n}with a motherly will.{wait 10}{n}That will is Elehayym.
+f668-0021 be60254a6b87e120 Elly?{wait 10}{n}Because of me?
+f668-0022 2c9552f328cbbade Yes.{wait 10}{n}My will materialized through{n}the medium of the bio-computer{n}that was a key part of Deus.{wait 10}{n}Having combined with me, the{n}bio-computer extended its{n}function, and used its bio-{n}plant to generate a single{n}core element.{wait 10} That is her.{p}I was divided by the{n}contact with you.{wait 10}{n}The Zohar my flesh;{wait 5}{n}Elehayym my will.{wait 10}{n}And my power,{n}which flowed into you.{wait 10}{n}That is why I have awaited{n}unification with you.{p}And now,{n}it has been fulfilled.{wait 10}{n}My remaining wish is to unify{n}with Deus —{wait 5} the other part{n}of my divided body —{wait 5} and{n}Elehayym along with it.{wait 10}{n}To become whole, and{n}'break the fleshly cage'.{p}The only way for me to return{n}to my original dimension is{n}via the destruction of this{n}physical body.{p}Annihilation of the Zohar,{n}which has attained perfection{n}in the four-dimensional world,{n}requires the power of you{n}who determined my qualities.{wait 10}{n}The Zohar cannot be{n}destroyed except by{n}the hand of the Contact.
+f668-0023 10d489eccb445cfe What about Elly?{wait 10}{n}If the Zohar is destroyed,{n}what happens to Elly!?
+f668-0024 2f050cb79dd2a10e The Zohar and the Deus system{n}are one.{wait 10} She is bound by the{n}will of another who desires{n}unification with the system,{n}with me.{wait 10} To release her, it{n}is necessary to destroy the{n}Deus weapon system itself.{p}But, having been created as{n}a weapon, it seems the Deus{n}system seeks unification{n}with all of you for a{n}different reason than I do.{p}By all rights, her liberation{n}is something that I, desiring{n}a return to a higher order,{n}should carry out.{wait 10}{n}But like her, I too am{n}bound to the system.{wait 10} I am{n}unable to get involved.{p}Besides, the only one{n}who can free her from{n}the spell is you.{wait 10}{n}Just as Deus and I are{n}inseparable, she and you{n}are also inseparable.
+f668-0025 2f87c719710dceb1 ...{wait 5}Alright.{wait 10}{n}I'll destroy Deus{n}and the Zohar.{wait 10}{n}And I'll rescue Elly.
+f668-0026 01044767d13b3ad0 You have experienced so much{n}loss. It was a tragedy.{p}And your personality being{n}split —{wait 5} perhaps the transfer{n}of power and will due to {n}contact with me was the{n}cause all along.
+f668-0027 16af71ef6e353425 That's not right.{wait 10}{n}It's no use looking{n}elsewhere for the cause.{p}Even if some things did{n}happen in the past, and{n}them mounting up was a{n}contributing factor,{p}they're...all my{n}own problems...
+f668-0028 f277bbdb3c2cf5e7 I see...{wait 10}{n}If you have been able to{n}accept those tragedies,{n}to tolerate and contain{n}them all, and find your{n}own place to stand, then{n}you are sure to succeed.
+f668-0029 c0ad1e6876273eb5 Bring total liberation{wait 5}...{wait 10}{n}Use{wait 5}...{wait 5}Xeno{wait 5}...{wait 5}gears{wait 5}...{wait 10}{n}...{wait 5}Destroy{wait 5}...{wait 5}Zohar{wait 5}...
+f668-0030 6ba0e59b39ce06ce Wait!{wait 10}{n}There's more I{n}want to ask—
+f668-0031 3251c9445ff3424a Try to{wait 5}...{wait 5}awaken the system{wait 5}...{wait 10}{n}And then{wait 5}...{wait 5}you can ask her{wait 5}...
+f669-0004 5dcfddc732a584cf Elly{n}"The land of genesis, {n}Kadmoni...{wait 5}{n}where{wait 5}...{wait 5}everything started.{p}But why do people have no{n}memory of this{wait 5}..."
+f669-0006 21ad4217791707ca Citan{n}"Wh-{wait 5}What is—!?"
+f669-0007 1d81de5ee0d66da9 Citan{n}"But, Fei.{p}Even given your connection{n}to Deus since ancient{n}times, how can you have{n}memories of so long ago?"
+f669-0008 cd297244399c8964 Citan{n}"S-{wait 5}So this is—!?"
+f669-0009 895a64d592c97b78 Bart{n}"...Where are we?"
+f669-0010 d4b81b842d1abe89 Bart{n}"But, Fei...{p}Even with your connection{n}to Deus since ancient{n}times, how can you remember{n}stuff from so long ago{wait 5}...?"
+f669-0011 0629bd1822d990ae Bart{n}"S-{wait 5}So this is—!?"
+f669-0012 a9c9beea39274bbb Billy{n}"...{wait 5}What is this place?"
+f669-0013 9bcd50bf205c188c Billy{n}"...{wait 5}But still.{wait 10} Even with{n}a connection dating back{n}to ancient times,{p}can a person really keep{n}events of long ago in their{n}memory so clearly{wait 5}...?"
+f669-0014 3a5c9d6fbaf2fdc8 Billy{n}"...{wait 5}Then this is—!?"
+f669-0015 c6ab6911f2dfe926 Rico{n}"...Umm,{wait 5} what{n}is this place?"
+f669-0016 2fc6c4ca5c2e78dd Rico{n}"But, Fei.{p}Not that I really get this{n}ancient connection you've{n}got with Deus or whatever,{p}but memories of so long{n}ago...{wait 5}how d'you remember{n}so well?{wait 10} It's beyond normal{n}human comprehension{wait 5}..."
+f669-0017 76a14d9f5c9d89ea Rico{n}"Wait,{wait 5} so this is—!?"
+f669-0018 19eb36ed4ab6c498@c70d7387725df789 Emeralda{n}"...{wait 5}What this place?
+f669-0019 6b522b276099370d Emeralda{n}"...{wait 5}Strange.{wait 10}{n}Fei, why you have memories{n}of long ago{wait 5}...?"
+f669-0020 b856d5c4c6d0be42 Emeralda{n}"...{wait 5}Fei...{wait 5}what this?"
+f669-0022 bfe91d4492567631 {name 7}{n}"...{wait 5}Churuly amazing.{p}The {name 7} tribe{n}have as good a memory{n}as any human, but Fei's{n}memory is something else!"
+f669-0023 f32a47e5390781b8 {name 7}{n}"Th-{wait 5}Then this is—!?"
+f669-0024 002de3c267656c7b Maria{n}"...{wait 5}What is this place?"
+f669-0025 9e7d5b7c1e973bcd Maria{n}"But I'm amazed.{p}That someone can recall{n}the events of bygone{n}days so clearly{wait 5}..."
+f669-0026 62a6c8a667a9d87f Maria{n}"S-{wait 5}So this is—!?"
+f669-0027 618bccf25aabb9c9 Citan{n}"Wh-{wait 5}What is—!?"
+f669-0028 42049f2651329d29 Citan{n}"But, Fei.{p}Even given your connection{n}to Deus since ancient{n}times, how can you have{n}memories of so long ago?"
+f669-0029 9f2460bf9e55444d Citan{n}"S-{wait 5}So this is—!?"
+f669-0031 429e6e90282dfb19 Emeralda{n}"...{wait 5}Strange.{wait 10}{n}Fei, why you have memories{n}of long ago{wait 5}...?"
+f669-0032 fcab32eb1fe9e563 Emeralda{n}"...{wait 5}Fei...{wait 5}what this?"
+f669-0034 b9b7874143f064f8 Fei{n}"The place where it all{n}began.{wait 10} We—{wait 5} No, humankind{n}was born here."
+f669-0035 ace9629b69516c6c Fei{n}"...{wait 5}In the distant past,{p}having fallen toward{n}this planet alongside{n}the immigrant ship,{p}Deus detached the core{n}section of the Zohar{n}in order to regenerate{n}itself someday.{p}...{wait 5}Not long after, from{n}out of this, the core unit{n}that had made landfall,{wait 5}{n}a lone woman awakened."
+f669-0036 9310a5120d3d8711 Fei{n}"The mother of all{n}humankind{wait 5}..."
+f669-0037 99b07c93fc918948 Fei{n}"Having awakened, she used{n}her full capabilities{p}to give birth to several{n}lifeforms who would become{n}the progenitors of all{n}people."
+f669-0039 d71eaf80144bc332 Fei{n}"And finally, she bore{n}copies of herself to be{n}the people's caretakers."
+f669-0040 3c48c4b53d5fe532 Fei{n}"Two selves.{wait 10}{n}The human mother{n}and the weapon.{p}The subject and{n}the complement."
+f669-0041 d5de57a6ed1c0a0d Fei{n}"They are Elly{wait 5}...{wait 5}{n}and Myyah."
+f669-0042 4c4c733cf2e95d08 Fei{n}"I,{wait 5} the sole survivor{n}of the crashed immigrant{n}ship,{wait 5} met Elly and{wait 5}...{p}Everything started{n}from here{wait 5}..."
+f669-0043 22d1b7a7d081c7ab Fei{n}"The land of Kadmoni{wait 5}...{wait 5}{n}This is that place."
+f669-0044 9f4c387013bc5471 Fei{n}"Well..{p}Normally, having people's{n}memories persist across{n}generations in a clear{n}form isn't possible.{p}Human physiology generally{n}doesn't include the ability{n}to pack such precise memory{n}data into the introns."
+f669-0045 43f9846f4cd26c64 Fei{n}"But Elly and I,{wait 10}{n}as well as Myyah,{wait 10}{n}were different."
+f669-0046 e8a37c1fb1005065 Fei{n}"Through our relationship{n}to the Wave Existence...{p}in other words, through{n}the Zohar's ability to{n}shift potential phenomena,{p}we can store clearly{n}defined data in our{n}introns —{wait 5} we can store{n}memories."
+f669-0047 7aa925f5894dab35 Fei{n}"Just as the Wave Existence{n}is bound by the Zohar,{p}you could say this data{n}allows a portion of the{n}Wave Existence's power{n}to bond to me myself."
+f669-0048 a27b5349d4804652 Fei{n}"The form of Elly{n}and Myyah when they{n}were still one{wait 5}...{p}The first woman{n}of this world{wait 5}..."
+f670-0001 401393c379a4a0b8 Lacan,{wait 5} what's wrong?
+f670-0002 f14ed1ce677bcc31 Lacan?
+f670-0003 98634f5ebc1e0d84 In that dream,{n}I went by the name Lacan{wait 5}...{wait 15}{n}I was an artist{wait 5}...{p}Trusted in my abilities as{n}an artist, I'm now painting{n}the portrait of the Sacred{n}Mother of Nisan, Sophia...{wait 5}
+f670-0004 19c332828852f12b Lacan{n}"Oh, uh{wait 5}...{wait 5}no,{wait 10}{n}it's nothing."
+f670-0005 4f0dbf8732858299 {wait 5}...{wait 5}Shall we finish{n}up for today?{p}You look a little tired.{wait 15}{n}{wait 5}...{wait 5}Are you alright?
+f670-0006 72efc8be18fa929e Lacan{n}"Yes, I'm fine,{wait 5}{n}thank you."
+f670-0007 2ce2a307e59afa08 Lacan{n}"But you're right...{n}let's stop for today.{p}Are you not the one who is{n}tired,{wait 5} 'Lady Sophia'?"
+f670-0009 47f062785a621725 Sophia{n}"Would you stop calling{n}me that when it's just{n}the two of us?{p}{wait 5}...{wait 15}Like old times,{n}'Elly' is fine.{wait 30}{n}And you don't have{n}to speak so formally."
+f670-0010 f3d253d7b906159c Lacan{n}"Oh, {wait 5}um, {wait 10}I see.{wait 15}{n}Very well—{wait 10}{n}I mean,{wait 5} sure, Elly..."
+f670-0011 37b2bd068bc41b97 Lacan{n}"I think I might go{n}back home{wait 5}...{wait 10}{n}Only for a week or so."
+f670-0012 03f706ede4eacc9e Elly{n}"Oh?{wait 5} But why?"
+f670-0013 9150b2a153b67b8c Lacan{n}"I ran out of paint.{wait 15}{n}So{wait 5}...{wait 5}I need to go{n}make some more."
+f670-0014 908832406c9121d1 Elly{n}"You're going all{n}the way back there{wait 5}{n}especially for that?"
+f670-0015 e29e439fc57b748b Lacan{n}"I can't get the right{n}pigments otherwise,{n}you see."
+f670-0016 5b7e2b8fd346680d Elly{n}"Oh{wait 5}...{wait 5} Then how about{n}I have one of the Qahal{n}escort you by Gear?"
+f670-0017 e3501b2cd4fe200a Elly{n}"You'll arrive quickly{wait 15}{n}and it'll be much safer."
+f670-0018 d149adbe0bb8b394 I lied...{wait 30}{n}It wasn't that I'd{n}run out of paint.{wait 15}{n}I was scared that the{n}portrait would be{n}completed.{n}I wanted to keep{n}painting forever.{p} {n}So I wanted to{n}buy time{wait 5}...{wait 15}{n}She'd probably despise{n}me for that{wait 5}...{p} {n}Nah,{wait 5} she'd probably just{n}give me the same gentle{n}smile as always.{wait 15}{n}That's the kind {n}of woman she is{wait 5}...
+f670-0022 af8f87fe80a2556d In that dream,{wait 5}{n}I went by the name Sophia...{wait 15}{n} {n}The Sacred Mother Sophia...{p}A symbolic name...{wait 15}{n}The name bestowed upon{n}the one who is to be{n}the hope of the people...{p}The name I was destined{n}to bear{wait 5} whether I wanted{n}to or not...
+f670-0031 f6945c15c1a4d01e Elly{n}"Oh?{wait 5} But why?"
+f670-0037 204cbfbb84ac52be I wonder when it was{wait 5}...{wait 30}{n} {n}When he started pushing{n}me away{wait 5}...{wait 15}{n}The walls separating us{wait 5}...{wait 30}{n}'Positions'{wait 5}...{wait 5}{n}'Circumstances'{wait 5}...{wait 15}{n}He rejected those things{wait 5}...{wait 45}{n} {n}Or{wait 5}...{wait 5}maybe I did...
+f670-0038 ee823a338ac1fdd7 So{wait 5}...{wait 5}{n}I don't want such things...{wait 30}{n} {n}I want the two of us{n}to just be ourselves{wait 5}...{wait 45}{n} {n}That's what I'd hoped for...{wait 15}{n}That's why...{wait 5}{n}I'm having him paint me{wait 5}...{wait 30}{n} {n}Just as I am{wait 5}...
+f670-0039 8ddd49f76982f190 Elly{n}"What's wrong?{wait 15}{n}You don't look well."
+f670-0040 d9a1012289275f91 Elly{n}"It seems like you're{n}depressed every day lately.{wait 15}{n}Did something happen?"
+f670-0041 7345a3030056ad92 Lacan{n}"I don't know what{n}it is, myself.{p}But for some reason{n}my brush just won't{n}do what I want it{n}to do.{p}Sorry,{wait 5} I think I'm{n}done for today{wait 5}..."
+f670-0042 ff45aea13ded5f11 Elly{n}"I see{wait 5}...{wait 5}{n}It's not good to push{n}yourself too hard{wait 5}...{p}Why don't you rest up{n}for a little while?{wait 30}{n}I'll have Karellen{n}take you{wait 5}..."
+f670-0043 454d98b59368f205 Karellen{n}"What're you{n}doing, Lacan?"
+f670-0044 3e88e848cd2742b3 Lacan{n}"Ah,{wait 5} Karellen{wait 5}...{p}I was thinking I'd stop{n}working on the painting...{wait 10}{n}the portrait{wait 5}..."
+f670-0045 3c410b902840fb8c Karellen{n}"Stop{wait 5}...?{wait 5} Why?"
+f670-0046 d6e1f12f6971fba7 Lacan{n}"With things the way they{n}are, you know?{wait 10} It's no time{n}to be painting pictures.{p}I thought it was all over,{n}after what she went through{n}with Nimrod, but now that{n}Solaris has—"
+f670-0047 02be7f253f7b4188 Lacan{n}"Eventually, she too{n}will have to stand at{n}the front lines.{wait 15} So{wait 5}..."
+f670-0048 4914c5b3e205b68b Karellen{n}"Is that really{n}all it is?"
+f670-0050 1314d7d4db6764b5 Karellen{n}"Lacan{wait 5}...?"
+f670-0051 155b6a7e6b249ab9 Lacan{n}"{wait 5}...{wait 15}{n}Her smile is killing me.{p}The more she smiles at{n}me...{wait 5}the more I can't help{n}thinking how insignificant{n}I am.{p}The inside of my heart is{n}this 'hollow' existence.{wait 15}{n}Apart from doing my{n}paintings, I'm a nobody{wait 5}...{p}She takes me as I am,{n}without discrimination.{wait 15}{n}I feel myself getting{n}smaller and smaller."
+f670-0052 5ccc79dffcc9c49a Lacan{n}"I didn't have this{n}feeling in the beginning.{p}I'd want to paint her{n}one minute longer —{n}one second, even.{p}I wanted to keep working{n}on this painting forever.{wait 15}{n}But I can't.{p}As the painting nears{n}completion, the 'hollow'{n}part inside me manifests{n}in my brushstrokes.{p}I'm meant to be painting{n}her as she really is{wait 5}...{wait 15}{n}but{wait 5}...{wait 5}this picture is{wait 5}...{wait 10}{n}my own self{wait 5}...{p}It's my hollow self{n}that's there.{wait 15}{n}That's why{wait 5}...{wait 5}{n}I'm going to stop."
+f670-0053 2671c27f5a508523 Karellen{n}"Your own self{wait 5}...?"
+f670-0054 1b443ccf41ab3a79 Karellen{n}"You're just running away!{wait 15}{n}You can't bear the sight{n}of Lady Sophia smiling.{p}By painting her portrait,{p}you became aware of the{n}gulf between your own{n}inner emptiness and{n}her inner abundance,{p}and you couldn't bridge{n}that gulf.{wait 15} That's why{n}you're quitting painting.{wait 15}{n}You're rejecting her!{p}And yet you can't bring{n}yourself to leave her.{p}Why does she smile at you,{n}despite that!?{p}Even when you can't face{n}up to her feelings,{wait 15} have{n}no intention of facing up{n}to them{wait 5}..."
+f670-0055 d568370e0d135cae Karellen{n}"Why!?{p}If it was me{wait 5}...{wait 30}{n}receiving those{n}feelings{wait 5}..."
+f670-0056 f559fa54f9657d93 Roni{n}"{wait 5}...{wait 5}This is her{n}expression,{wait 5} as{n}she really is?"
+f670-0057 18c7b9840a6d5f0c Lacan{n}"Yeah{wait 5}...{wait 5}{n}To the casual observer...{wait 5}{n}I guess it's{wait 5}..."
+f670-0058 f6a64a4adcbe145e Roni{n}"Her smile{wait 5}...{wait 15}{n}I don't know{wait 5}...{p}The smile she usually{n}shows us and her smile{n}in this painting somehow{n}feel different.{p}Of course, the feelings{n}of a guy like you are{n}definitely in there, but{wait 5}...{p}In public, I don't think{n}she's shown an expression{n}so revealing of her inner{n}self."
+f670-0059 35c17a1c315fc454 Roni{n}"How can you even{n}think of stopping{p}when you're painting{n}Sophia with such a{n}wonderful expression?"
+f670-0060 6d7ff7a93e8d582e Lacan{n}"Wonderful{wait 5}...?{p}Give me a break.{wait 10}{n}This painting...{n}is anything but{wait 5}..."
+f670-0061 4d17f1f9f3bdc394 Roni{n}"Lacan,{wait 5} you say you're{n}hollow.{wait 15} If that's the case,{n}why're you working with us?{p}What we've been doing{n}isn't just about helping{n}people.{wait 15} It's a fight to{n}win our freedom.{p}Time and again, we've{n}been in life-threatening{n}danger."
+f670-0062 cc60d6649632d458 Roni{n}"That's not something a{n}person with nothing in{n}their heart could do.{p}...Right?"
+f670-0063 082d7fada42cc026 Lacan{n}"Roni, you're giving me{n}too much credit.{p}If I'm doing something...{n}if I'm physically active,{wait 5}{n}I can forget about that{n}emptiness of the self."
+f670-0064 98ea113c07a04bcd Lacan{n}"Existence itself is{n}an emptiness from the{n}start.{p}I don't care if I{n}die{wait 5}...{wait 15} That's all{wait 5}..."
+f670-0065 b478b94e90fa1739 Roni{n}"As gloomy as ever,{n}Lacan{wait 5}...{wait 15} And you're{n}telling lies."
+f670-0066 e6490129ed1c2a94@62a7e5830e42e177 Lacan{n}"{wait 5}..."
+f670-0067 c288cd39972c6f7e Roni{n}"It's simply that you're no{n}good at expressing your own{n}emotions.{p}You're not hollow.{wait 15}{n}She knows that.{wait 15}{n}That's why she shows her{n}true smile only to you."
+f670-0068 17985cd186b518c0 Lacan{n}"I'm not worthy of{n}her smile.{p}She's the hope of the{n}people.{wait 15} Their support.{wait 15}{n}There's so much more{n}she has to accomplish."
+f670-0069 75ffd995237d0934 Lacan{n}"As if she'd open her{n}heart for me alone,{wait 5}{n}a mere artist{wait 5}..."
+f670-0070 10497833961f6283 Rene{n}"Bro!{wait 15} Broooo!"{done 60}
+f670-0071 f36e32a1e055e2f8 Rene{n}"Hey bro,{wait 5} so{n}this is where{n}you were."
+f670-0073 f4057ae2393d8456 Zephyr{n}"The decision of Shevat's{n}council of elders was{n}announced.{p}Tomorrow we depart for{n}Soylent."
+f670-0074 86655f12b7e8a5cf Roni{n}"Soylent!?{wait 15}{n}That's in Solaris{wait 5}..."
+f670-0075 18b65eca74ffefd8 Rene{n}"Yep.{wait 15}{n}And{wait 5}...{wait 5}Sophia will now{n}be accompanying us."
+f670-0076 d3b46f7adec99922 Karellen{n}"Ridiculous!"
+f670-0077 c1a84c29facbfc58 Karellen{n}"With the refugees{n}growing in number{n}as they are,{p}there's no way Lady{n}Sophia can leave Nisan!{p}On top of that,{wait 5} going{n}to Soylent is madness!{wait 10}{n}It's too dangerous!{p}What is the council of{n}elders thinking!?"
+f670-0078 7a08e9aa0138b290 Zephyr{n}"No,{wait 5} that is not{n}how it is."
+f670-0079 965d4f638783210f Zephyr{n}"This is Sophia's own will.{wait 10}{n}Apparently she put forward{n}the request herself."
+f670-0080 4eafbef0d4b824cc Karellen{n}"No{wait 5}...{wait 15}{n}What could she{n}have in mind?"
+f670-0081 2aaf03ce3d34b38c Rene{n}"At first we talked{n}about it being just{n}us, but{wait 5}..."
+f670-0082 388f141976805e8e Karellen{n}"Just us{wait 5}...?"
+f671-0001 f2ae33547bbeba3c Sophia{n}"Faith in God...{wait 45}{n}It's not something we{n}search for out there,{wait 30}{n}but something we let{n}blossom within us{wait 5}..."{done 120}
+f671-0002 060af468bb0c1fc3 Karellen{n}"It's been a long{n}time,{wait 5} Lacan."
+f671-0003 32adcf606f0e2b0c Lacan{n}"Karellen.{wait 15}{n}You're back?"
+f671-0004 9f9b8bf0bbb6a68c Karellen{n}"Yes, I just got{n}back last night.{p}You're going home to{n}collect pigments for{n}your paint, right?{p}Lady Sophia told me.{wait 30}{n}Allow me to accompany{n}you."
+f671-0005 eff5d3a9982c4016 Lacan{n}"Are you sure?"
+f671-0006 670c6afe6dceeebd Karellen{n}"It's fine.{wait 10} I'll leave{n}someone else in command{n}of the warrior monks.{p}With things the way they{n}are with Solaris recently,{n}it's not so safe anymore.{wait 30}{p}And you can rest easy{n}if you're with me, right?"
+f672-0000 d9198c91ec3639b7 Lacan{n}"{wait 5}...{wait 5}What did you say?{wait 15}{p}What's the name of the{n}teacher you're studying{n}under now?"
+f672-0001 aa478c1de09b4a79 Karellen{n}"Melchior."
+f672-0002 14beb4539bc1c3b9 Lacan{n}"At a time like{n}this, why study?"
+f672-0003 c36427b704bf0b80 Karellen{n}"Lady Sophia teaches that{n}the best way to calm the{n}spirit is to read a book.{p}That's what got me{n}started.{wait 10} It sparked my{n}interest in studying."
+f672-0004 2fc7fd4aa612ed41 Karellen{n}"{wait 5}...{wait 5}Now,{wait 15} I'm reading{n}three books a day."
+f672-0005 3378bccbc71cbf43 Lacan{n}"What a transformation."
+f672-0006 9a99c9c7137dc235 Lacan{n}"{wait 5}...{wait 5}You{wait 15} who thought{n}about nothing but{n}martial arts{wait 5}...{wait 5}..."
+f672-0007 f7c8ca315354c947 Karellen{n}"Hey,{wait 5} that's mean.{p}Believe it or not,{n}I'm the best of all{n}the master's students."
+f672-0008 aba63b4debf3c0fe Lacan{n}"Is that so{wait 5}...?{p}That's great,{wait 5} to{n}have something to{n}put your heart into{n}like that{wait 5}...{wait 5}..."
+f672-0009 29edd43832553517 Karellen{n}"What do you mean?"
+f672-0010 7f99af931cb7747d Karellen{n}"Don't you have{n}something?{p}A splendid thing —{n}a certain{wait 10} painting?{wait 15}{n}Not all of us are{n}so lucky{wait 5}..."
+f672-0011 5bf67a8f667c9cca Karellen{n}"The best way to calm{n}the spirit is to read{n}a book...{p}That's what Lady Sophia{n}first advised me, and{n}now I'm completely{n}hooked."
+f672-0012 a09f3d5b1b0c757a Karellen{n}"I've become quite the{n}scholar these days,{wait 5} as much{n}as I hate to admit it.{p}Lately, I've been reading{n}this."
+f672-0014 8e493881259a56ed Karellen{n}"Something I borrowed{n}from Master Melchior.{p}Molecular engineering{wait 5}...{wait 5}{n}nanotechnology.{p}It's a book found in the{n}ruins of a civilization{n}called Zeboim, which was{n}destroyed in ancient times.{p}It seems to be a copy of{n}someone's research report,{wait 5}{n}but it's incomplete.{p}I imagine even more{n}incredible things were{n}written in it, but{wait 5}..."
+f672-0015 60cad3a2e2964ae5 Margie{n}"Are you sure{n}about this, Elly?{p}Don't you want to{n}be by his side,{n}really?"
+f672-0016 8362ecc66a5a099b Elly{n}"I do{wait 5}...{wait 5}{n}But {wait 10}I believe in him.{p}Love isn't just about{n}being close together{n}all the time, is it?"
+f672-0017 7f2aa42a113ae991 Margie{n}"But{wait 5}...{wait 5}{n}Men, they're selfish{wait 5}...{p}When something big happens,{n}they say stuff like{wait 5}{n}'it's too dangerous'...{wait 10}{n}'you can't come'...{p}and treat women like{n}weaklings."
+f672-0018 921373b894d29ebb Margie{n}"Although, sure, maybe I'm{n}not much help to Bart and{n}the others right now..."
+f672-0019 eef032bebbb0c4a3 Elly{n}"That's not true.{wait 15}{n}They all want someone {n}special waiting for them.{p}Someone protecting the{n}place they must return{n}to.{p}Otherwise, they'd be{n}anxious,{wait 5} restless..."
+f672-0020 60811ae415b1a4b1 Elly{n}"That's why they act as{n}tough as they possibly{n}can...{p}Men,{wait 5} they're cute huh?"
+f672-0022 321758a496eb0afd Elly{n}"Now, let's do the{n}things that we have{n}to do.{p}And let's pray that{n}everyone comes back{n}safely."
+f672-0023 eb1ccfc854416cae Margie{n}"Pray...{wait 10}{n}to God?"
+f672-0024 b11e7d089fd81ed4 Elly{n}"...{wait 5}No.{p}To our own innermost{n}feelings, where we{n}believe in each{n}other..."
+f672-0028 5e88d7c10303000d Margie{n}"Elly, you are without a{n}doubt Lady Sophia reborn,{n}just as everyone's saying!{p}You're not supposed to know{n}the teachings of Nisan,{p}but the things you're{n}saying are the very words{n}of Lady Sophia that were{n}handed down."
+f672-0029 31cd8a19893fcbfa Elly{n}"Yes{wait 5}...{wait 30}{n}Maybe that's it."
+f672-0030 7532f0b7bd66aa91 Elly{n}"When I visited here{n}for the first time,{p}for some reason I had{n}an odd feeling."{done 150}
+f672-0031 92c73ba60e55b971 Elly{n}"Nostalgic{wait 5}...{wait 15}{n}Sad{wait 5}...{wait 15}{p}As if I'd also visited{n}many times in my dreams{wait 5}..."
+f672-0032 e671e82d0935c701 Elly{n}"I know what rooms are{n}where,{wait 10} and what's in them.{p}I feel like I was here,{n}in the distant past{wait 5}..."
+f672-0033 954e0128a21bed92 Elly{n}"Before, I would've laughed{n}it off, saying 'that's not{n}possible',{wait 5} but...
+f672-0034 39f8d320e257f32f Now, somehow I{n}can believe it."
+f672-0035 0bda7b70e51dfa84 Elly{n}"Maybe the things I{n}couldn't achieve then,{p}I'm trying to{n}achieve now{wait 5}..."
+f672-0036 70bc50dd3323e97f Margie{n}"Things you couldn't{n}achieve{wait 5}...?"{done 150}
+f673-0000 487bbd5985542e0d Karellen{n}"Ohh{wait 5}...{wait 15}{n}'This time' your{n}body is young."
+f673-0001 ef9a2c015505641a {wait 5}...{wait 5}The previous{n}one got old.
+f673-0002 f06694ac66a40225 Karellen{n}"...{wait 5}And the name?"
+f673-0003 f3d0c6dd2653dc06 It's Karen{wait 5}...{wait 15}{n}But individual names{n}are meaningless to me.
+f673-0004 5b15675d8154ce00 Karellen{n}"...{wait 5}So,{wait 5} what{n}brings you here,{n}specifically?"
+f673-0005 f0138d044b2e78df Karen{n}"Is the thing inside{n}that reactor{wait 10} the one?"
+f673-0006 9493b463fb0a7e74 Karellen{n}"Hm?{wait 10} ...Oh.{wait 15}{n}Identification code:{n}0808191-'Ramses'.{p}I'm telling the Emperor{n}that it's the prototype{n}for a man-made symbiote."
+f673-0008 79c835e38f156376 Karellen{n}"It's just entered the{n}so-called primary growth{n}stage.{p}Later growth up until it{n}attaches will be several{n}times faster than that of{n}an ordinary human.{p}But psychological control{n}will be somewhat{n}difficult..."
+f673-0009 f71e7b7e12b713a4 Karellen{n}"It's a reproduction{wait 5}...{wait 5}{n}so that's to be expected."
+f673-0010 c0768d61aa91cecf Karen{n}"It's moving{wait 5}...{wait 15}{n}Can it hear us,{n}I wonder?"
+f673-0011 4c69dd4fbd460535 Karellen{n}"...Yes.{wait 15}{n}A will is already{n}present here."
+f673-0012 7d379413cd4f1965 Karen{n}"I see{wait 5}...{wait 15} Then I{n}have a better way.{wait 15}{n}Let's dispose of it."
+f673-0013 eac2292bf01651db Karen{n}"We don't need this.{wait 15}{n}Because we have my child.{wait 15}{n}It will turn 4 this year."
+f673-0014 4c3aa19cd060b2dd Karellen{n}"You having a child{wait 5}...{wait 30}{n}It's significant?"
+f673-0015 1a2b7d3fe4f11a74 Karen{n}"...Yes.{p}I investigated to find{n}out for sure, and I{n}know a Contact when{n}I see one."
+f673-0016 62f5ed0ef8502b5c Karellen{n}"What's its name?"
+f673-0017 f83a9698be0d15b3 Karen{n}"'Fei'.{n}That is my{n}child's name.{p}So{wait 5}...{wait 5}{n}you understand{n}what this means?"
+f673-0018 5b81e66d8d7979ba Karellen{n}"An Antitype is{wait 5}..."
+f673-0019 acf2c15b5f07ba42 Karen{n}"...Yes.{wait 30}{n}Probably already{n}born somewhere."
+f673-0020 d2711bd8cc63b867 Karen{n}"{wait 5}...{wait 5}The final one."
+f673-0021 0903c4a171e7460c Karellen{n}"In that case{wait 5}...{wait 15}{n}this thing is{wait 10} trash."
+f673-0022 54daffb61e718693 Karen{n}"Trash, indeed."
+f673-0023 d967da2557b74200 Karen{n}"Hahaha{wait 5}...{wait 15}{n}Chase after it, {wait 5}'boy'.{p}A love that's unattainable,{n}no matter how much you{n}want it."
+f673-0025 b01632375681de20 Myyah{n}"So, the restraining{n}'chains' are off,{n}thanks to you, hmm?"
+f673-0026 178b1edb07903b6a Karellen{n}"Not that it really{n}disrupts the plan.{wait 10} It's{n}already under control."
+f673-0027 e8bbfdf478aae246 Karellen{n}"At the time of the{n}explosion in the Solaris{n}Capital earlier,{p}I rigged a nanomachine{n}virus to be scattered{n}into the atmosphere.{p}For I knew they would{n}reverse the Limiters{n}sooner or later{wait 5}...{p}But the timing was a little{n}too close for comfort{wait 5}...{p}The current human{n}abnormalization is{n}the initial response{wait 5}...{p}The virus that was spread{n}across the world{p}is changing the germinated{n}base forms into something{n}we can control, instead of{n}the default.{p}We need people that will{n}awaken without relying on{n}the Key's invocation.{p}Beings to take the place{n}of God's original flesh,{n}so to speak{wait 5}..."
+f673-0028 a7d9ce7c486963bd Myyah{n}"A Trojan horse,{n}unleashed at the time of{n}assimilation with God{wait 5}...{wait 5}{p}A literal virus{wait 5}...{wait 15}{n}But{wait 5}...{wait 5}isn't it different{n}from what the Children{n}have in mind{wait 5}...{wait 5}?"
+f673-0029 9fc9f2136c17157e Karellen{n}"Of course.{wait 15} I won't let{n}them have it their way.{wait 30}{n}The Ark of God is mine."
+f674-0000 0fb76da9087a7c4f Roni{n}"C'mon guys,{wait 5} eat up.{p}These days we don't{n}get our hands on food{n}like this, do we?"
+f674-0001 5cac445727396744 Roni{n}"Yet again, just{n}my skill for doing{n}business, y'know?"
+f674-0002 029e5af429ddd757 Rene{n}"...{wait 5}What's up, Lacan?{wait 15}{n}What's with that moody{n}look on your face?{p}Is there something{n}troubling you?"
+f674-0003 f9b9b1795b6783f0 Lacan{n}"...{wait 5}Nah, it's the usual{n}stuff about Sophia's{n}portrait.{p}I don't understand why{n}she agreed to it being{n}painted{wait 5}..."
+f674-0004 0248b13fb8845790 Rene{n}"Sophia,{wait 10} as in Nisan's{n}Sacred Mother, who you said{n}was your childhood friend?"
+f674-0005 2515a0827904a687 Lacan{n}"Not a childhood friend,{n}exactly.{wait 10} It's just that,{n}when I was a kid,{p}she became a familiar{n}face when she came to the{n}monastery near my home,{n}for convalescence."
+f674-0006 5574818eb356eb5c Lacan{n}"She was frail."
+f674-0007 3978c450431d66aa Rene{n}"So{wait 5}...{wait 15}what is it you{n}don't understand?"
+f674-0008 6099fb826f188c63 Lacan{n}"She's not the kind of{n}person who wants herself{n}to become a symbol,{p}not even for the Sect.{p}...{wait 5}In fact, apparently{n}she wasn't enthusiastic{n}about the painting of{n}the portrait.{p}But then she agreed to{n}it once she heard the{n}painter would be me.{p}That's what I don't{n}understand{wait 5}..."
+f674-0010 a8b63b697f2d8d81 Roni{n}"...{wait 5}That must mean she{n}likes you, this lady{wait 5}..."
+f674-0011 a6649366dc3f8640 Lacan{n}"Wh-{wait 5}What're you{n}talking about?"
+f674-0012 099fd2b27d5e6ded Roni{n}"That's just how it{n}is, a woman's heart{wait 5}...{wait 15}{n}Right, Karel{wait 5}...?"
+f674-0013 7c10757bc2378ae2 Roni{n}"Hey,{wait 5} Karel."
+f674-0014 d99f879ab22b9e59 Karellen{n}"Huh?"
+f674-0015 8885cac3b19cc33b Rene{n}"...{wait 5}What is it?{wait 15}{n}You're not eating?{wait 30}{n}C'mon, it's ready."
+f674-0016 91c8c519bca27eee Karellen{n}"Ah,{wait 5} yeah{wait 5}..."
+f674-0017 3491b1b2d4952116 Roni{n}"The Sacred Mother{n}of Nisan{wait 5}...{p}Aren't you pushing{n}your luck, Lacan?"
+f674-0018 31ab19c308f89243 Lacan{n}"Cut it out{wait 5}...!{wait 15}{n}It's{wait 5}...{wait 5}not like{n}that{wait 5}..."
+f674-0019 011a289c956494fc Lacan{n}"Wh-{wait 5}What?"
+f674-0020 a10b2d10599fa626 Lighten up, man{wait 5}...{done 120}
+f674-0021 62d5d5b4dbbe86cb Karellen{n}"Believe it or not,{p}in the old days there{n}were times when I went{n}too far and did some{n}pretty vicious things.{p}I lashed out at random{wait 5}...{wait 15}{n}and everyone around me{n}feared me.{n}...{wait 5}Even my comrades.{p}I lived my life amidst{n}frightened stares."
+f678-0000 8b47d368ac9a801f Karellen{n}"You're too neglectful{n}of yourself!{p}Why do you not look{n}after yourself more!?"
+f678-0001 a3618322ac39345d Karellen{n}"Lady Sophia!"
+f678-0002 989404bc7fca2e66 Karellen{n}"Lady Sophia{wait 5}..."
+f678-0003 51865d493af46090 Karellen{n}"What're you{n}doing, Lacan!?"
+f679-0000 ea81602ba1c07498 Roni{n}"How about getting some{n}rest,{wait 15} Karel{wait 5}...?{p}Have you had any since{n}the day before yesterday?{wait 10}{n}You're overdoing it."
+f679-0001 89978e6a032bba77 Karellen{n}"It's fine,{wait 10} I don't—"
+f679-0002 29d9095c829572b9 Roni{n}"Look, I'm keeping an eye{n}on things here, so you go{n}get some sleep.{p}What'll we do if you also{n}fall ill now?{wait 15} Don't forget{n}that you're one of our key{n}fighters, too."
+f679-0003 f1e08c9531f17579 Karellen{n}"Okay{wait 5}...{wait 5}{n}I suppose you're right."
+f679-0004 39c1cab322bd0688 Lacan{n}"Elly{wait 5}...{wait 10}{n}I'm so sorry."
+f679-0005 6ea939d8ee640033 Lacan{n}"I{wait 5}...{wait 15} It was my lapse{n}in judgment that let{n}this happen to you."
+f679-0006 b6730de540e8ec1e Lacan{n}"I was scared{wait 5}...{p}Your eyes{wait 5}...{wait 15}your gaze{wait 5}...{wait 15}{n}It was like you could see{n}everything for what it was.{p}That was my own self being{n}reflected in your eyes.{p}I hate seeing myself,{wait 5}{n}painting myself...{wait 5}so...{wait 5}{n}what on earth did you{n}discover within me?"
+f679-0007 d9f713c5450fb7f1 Lacan{n}"When you wake up,{n}I'll try to ask you—{wait 45}{n}On second thought,{wait 5} no.{p}I won't cause you the{n}trouble, not on my account.{wait 30}{n}Besides, I doubt I could{n}ask you{wait 5}...{p}One look into your eyes and{n}I'd be at a loss for words.{wait 45}{n}I wouldn't be able to{n}convey my own feelings{wait 5}..."
+f679-0008 8a0e0f7481d85c82 Sophia{n}"You're the kindest{n}person I know{wait 5}..."
+f679-0009 ec3e87c3b551ac3e Lacan{n}"Elly{wait 5}..."
+f679-0010 40de29d84af5a22b Elly{n}"You're a person who can't{n}bear anyone else being hurt{n}by your own deeds.{p}So you're always holding{n}yourself back.{wait 15} You don't{n}mind if it's you who gets{n}hurt in the end{wait 5}..."
+f679-0012 ab175dc51a6d1026 Lacan{n}"Stop.{wait 10} Don't say that.{p}If you become an{n}ordinary person now,{n}everyone will—"
+f679-0013 6c05a0c89e42b068 Elly{n}"People{wait 5}...{wait 5}they aren't so{n}weak, you know.{p}They don't need a symbol,{n}who's only for appearances.{p}If you hold light within{n}your heart, you can surely{n}overcome any hardship.{wait 5}{n}That's what I believe.{p}All I've been doing is{n}showing that that light{n}exists in the hearts of{n}everyone."
+f679-0014 cd757293f46bc750 Elly{n}"I'm just one woman.{p}If it's for the sake of{n}being true to my nature,{n}I think it's ok to cast{n}aside my current position.{p}I'm only playing the{n}role of Sophia.{wait 15} I'm me.{wait 15}{n}Unchanged since the old{n}days.{p}A cowardly, selfish,{n}crybaby{wait 5}...{wait 10} That's me."
+f679-0015 27584ce5d1111063 Elly{n}"Would you be happy{n}living like that, lying{n}to yourself{wait 5}...?{p}I{wait 5}...{wait 5}don't want that."
+f679-0016 4a39e95395497975 Elly{n}"Oh, Lacan.{wait 15}{n}I want to live more{n}honestly with myself.{p}I want to tell the one I{n}love that I love them.{wait 15}{n}It's okay if I get{n}rejected and hurt.{p}We only have one life, and{n}I don't want to look back{n}when it's too late{wait 5}..."
+f680-0001 7d058e5b69336713 Myyah{n}"...{wait 5}If only you had{n}the power,{wait 5} you could've{n}saved her."
+f680-0002 43ed18dbff71a2bc Myyah{n}"Don't you want it?{wait 15}{n}Unrivaled power."
+f680-0003 41ef4def47421c62 Myyah{n}"Don't you want to become{wait 20}{n}the absolute being{wait 5}...?"
+f681-0000 7c1117cf9c50b296 Lacan{n}"Over there{wait 5}...{wait 30}{n}That which I seek{wait 5}..."{done 60}
+f681-0001 2adb6292581bb499 No!{wait 15}{n}This isn't what I want!{wait 15}{n}Oh but it is{wait 5}...{n}This is exactly what I wanted!{done 120}
+f682-0001 3377c02baecedb77 Karellen{n}"We were pawns{wait 5}...{p}In order to preserve their{n}own authority, they allowed{n}Sophia to be—{p}This...{wait 5} This was the world{n}of the ideals we've been{n}aiming for?{p}What the hell have we been{n}doing?{wait 15} Are these the ideals{n}Sophia had been aiming for?{p}Is this the final chapter{n}in our salvation?"
+f682-0002 93356be89ee0a011 Karellen{n}"This is too much{wait 5}...{p}Sophia was sacrificed{n}for the sake of those{n}bastards{wait 5}..."
+f682-0003 58c553a7da294a94 Karellen{n}"Sophia said that as long{n}as we have faith, the path{n}we wish for will open.{p}But the reality?{wait 15}{n}God didn't answer...{wait 15}{n}Is that because we didn't{n}have faith?{p}Even if we didn't have{n}faith,{wait 5} Sophia did.{wait 15}{n}Why did she have to{n}be sacrificed!?{p}'God is dead'...{wait 5}is that it?{wait 15}{n}Is He not there{wait 5}...?{wait 15}{n}Or maybe such a thing never{n}existed to begin with!?"
+f682-0004 cefb42dfb9470960 Karellen{n}"Hahahaha{wait 5}...{wait 30}{n}I see{wait 5}...{wait 30}{n}Alright{wait 5}...{p}If He does not exist{n}in this world{wait 5}...{wait 5}then{n}I will create God{n}with my own hands!"
+f682-0005 e225abd7406e8f45 Lacan{n}"Karellen{wait 5}..."
+f682-0006 88c1f58105098c70 Karellen{n}"Sophia{wait 5}...{wait 30}guide me{wait 5}...{wait 30}{n}I will put an end to{n}such false idolatry{wait 5}..."
+f682-0007 7492be56c99b08e8 Roni{n}"...{wait 5}...{wait 30}{n}We'll bring together our{n}surviving comrades.{p}It's because we're{n}fighting separately{n}that we can't beat{n}these bastards{wait 5}...{p}So we'll create a nation{n}that'll be able to stand{n}up to them someday,{n}when the time comes{wait 5}..."
+f682-0008 2be556daba07b351 Roni{n}"What will you do,{n}Lacan{wait 5}...?"
+f682-0010 a85c2ca28ce9ce11 Lacan{n}"{wait 5}...{wait 5}What{wait 5} is this place{wait 5}...?{wait 15}{n}{wait 5}...{wait 5}Is this{wait 5} an execution site{wait 5}...?"
+f682-0011 e3d836370e80dc9a Lacan{n}"{wait 5}...{wait 5}Why do you flee?{wait 15}{n}Were we not comrades?"
+f682-0012 4e4265a72eb9fd83 Lacan{n}"...Who's there?{wait 15}{n}What is this thing?"
+f682-0013 517f9ff56003db4a Lacan{n}"Is this{wait 5}...{wait 5}my doing?{wait 15}{n}What's happened to me{wait 5}...?"
+f682-0014 3b04bf89223cec70 Lacan{n}"What...on earth...{wait 5}{n}am I...?
+f682-0015 712f4c7996626159 Lacan{n}"...{wait 5}I will{wait 5} live{wait 5}..."
+f682-0017 451e6c840c708338 If He does not exist{n}in this world{wait 5}...{wait 5}then{n}I will create God{n}with my own hands!{done 180}
+f683-0001 c1a7b56cafa5c807 Karellen{n}"Sophia!!{wait 15}{n}What're you doing!?"
+f683-0002 f85978d11595f3a8 Sophia{n}"...{wait 5}I'm ending this now.{wait 15}{n}You won't need to fight{n}anymore{wait 5}...{p}So, Karellen{wait 5}...{p}Please open your fists{wait 5}...{wait 15}{n}And henceforth, with your{n}open palms, gently envelop{n}those who live{wait 5}..."
+f683-0003 f168b083b43d5fd5 Lacan{n}"Stop this foolishness!{wait 5}{n}We'll make sure you{n}escape!{wait 5} So please{wait 5}...!"
+f683-0004 9110c82ab123279e Sophia{n}"Thank you,{wait 5} Lacan{wait 5}...{wait 15}{n}But{wait 5}...{wait 5}I'm sorry{wait 5}...{p}There's no other way{n}for me now{wait 5}..."
+f683-0007 c153a3ad65e04221 Lacan{n}"Ellyyyyyy!!"{done 180}
+f685-0000 9ad858c019c52e5f Fei{n}"This is...that strange{n}old grandpa {name 7}'s{n}precious treasure...{p}I wonder what happened to{n}him when Shevat crashed{n}down to earth...{wait 20}{n}I haven't seen him...{p}His treasure...{n}Can we just take it...?{wait 20}{n}I'm sure he won't mind{n}if we just borrow it..."
+f685-0001 eeaead1847fc9c97 Fei{n}"Just borrowing it.{n}Just borrowing it.{p}Hey, it's not like{n}we're grave robbers{n}or anything!{wait 20}{n}Right!?{p}So don't hex us,{n}or haunt us, okay!?{wait 20}{n}Please...we're{n}begging you."
+f685-0003 008514a493bf8fe2 The mythical RPS Badge!!
+f685-0004 a21775f1a1b43a49 The legendary H&S Badge!!
+f685-0005 1fdca131fb8f0181 The Tag Badge that even{n}enthusiasts drool over!!
+f685-0006 bb70f1ae62270b86 Fei{n}"That old {name 7} guy{n}must have been so happy...{p}They were displayed{n}so nicely here...{wait 20}{n}I can't take{n}these from him."
+f685-0007 57c2df3dc60ef284 Fei{n}"That old {name 7}{n}guy must have been so{n}very happy...{p}They're polished,{n}so shiny...{wait 20}{n}and displayed so{n}nicely here..."
+f685-0009 3207f0cf86ab5720 Fei{n}"This isn't the time{n}to be looking at{n}things such as this."
+f686-0009 da58ab0ab8a5f033 You think it's just going to{n}sit there while we gather{n}all of Av's and Kislev's{n}armies...?
+f686-0016 ea74d715c8b14f56 Kids are all the same{n}in Kislev, Av and Nisan.
+f686-0025 0694285f95d6fd8f Uh...{wait 30}I'll play with{n}the Sister.{wait 30}
+f688-0002 c7b96a38cfaef439 Hans{n}"I'm embarrassed you just{n}saw that. {p}I got married just before{n}the Tamuz went down."
+f688-0003 a62ceefa27190f40 Hans{n}"Her name is Anna. She's{n}my wife. She was saved by{n}the Tamuz when the ships{n}were attacked by Verus.{p}Unfortunately, that's when{n}she lost her husband{wait 10}...{n}Don't misunderstand me.{p}It wasn't out of feeling{n}sorry for her or anything{n}like that{wait 10}...{wait 20} Or...{wait 10}{n}Well, perhaps it was...{p}I just wanted to protect{n}her, that's all. If you{n}call that feeling sorry,{n}then I suppose I don't{n}mind.{p}The Captain teased me{n}mercilessly. He said...{p} 'What, a cold guy like{n} you, seducing a widow?{n} Just make sure the kid{n} doesn't hate you...'{p}Ha ha... I guess the{n}Captain was right.{n}My stepson doesn't like{n}me yet. {n}But I'm hoping someday..."
+f688-0005 6b13e3d5e273fd75 Hans{n}"Ha ha. You've changed{n}too, Fei. I don't know{n}how to explain it, but...{p}As for me...well, I don't{n}know what it is...{n}I guess I've always had{n}someone protecting me..."
+f688-0014 46f013d257f72b29 Hans{n}"C-{wait 5}C-{wait 5}Cap..."
+f688-0015 33405a4bb89817f2 Hans{n}"Captaaaaain!!"
+f688-0016 497bfc0eacd71dd9 Hans{n}"What's all this shouting{n}out 'Captaaaaain'!?{n}Cut it out, you fool!"
+f688-0017 85f14f07163a2d9e Hans{n}"D-{wait 10}Do you know how{n}worried I've been!?"
+f688-0022 518d183e73cf1db1 Captain{n}"Gahahahaaaa!!"
+f688-0025 09cbd95afe4c3056 Hans{n}"What info do you have...?{n}Do you know where the place{n}is? What about a ship?"
+f688-0029 490fb4c10a715153 Anna{n}"It hasn't been that long{n}since my husband died{wait 10}...{p}Please don't think I'm a{n}loose woman...{wait 10} But it's{n}because of this man that{n}I{wait 10}...*blush*..."
+f688-0039 58f0dbfbe0d259ef Kanna{n}"Some flashy woman in{n}Tamuz taught me a card{n}game.{p}Do you wanna play?"{n}    Yes{n}    No thanks
+f688-0040 01ae53d442ddb09e Kanna{n}"Then it's a challenge!"
+f688-0041 de2e0a649d7af9a7 Kanna{n}"Chicken."
+f688-0046 194733d5b20a179d Fei{n}"Yeah, you too...{n}But if you're here that{n}means the Tamuz was..."
+f688-0047 71ee3dbce464fb67 Hans{n}"The Tamuz{wait 10}...{wait 10}sank.{n}The Aeons attacked...{p}The Tamuz withstood the{n}onslaught of Verus, but{n}was defenseless against{n}those 'angels'{wait 10}...{p}Hardly anyone got out in{n}time...{wait 10} They went down{n}with the Tamuz{wait 10}..."
+f688-0050 d9635f233b75834e Hans{n}"The Captain...{wait 10}said...{wait 10}he'd{n}watch the end of the Tamuz{wait 10}{n}with his own eyes{wait 10}..."
+f688-0051 2d854506b3853aff Bart{n}"Y-You're kidding, right?{n}That ol' guy died...{n}No way..."
+f688-0056 31b1ce42dbdc9983 Everyone's gonna die!!{n}Booze!!{n}Bring booooooze!!
+f688-0058 24558b0af77f1f2f Plenty of good men are{n}dead now...{p}What kind of doctor am I{n}if I can't save people dying{n}right in front of me!?{p}Why should an old man like{n}me survive that...?
+f691-0003 c0ea94bd521bb895 After losing our home in{n}Kislev...we lost our home{n}in Av, too. So we decided{n}to stay here for a while.{p}But next time, I want to{n}live somewhere that's green.
+f692-0000 80d65a48667592fd I don't want you to think...{wait 10}{n}what am I doing at a time{n}like this...{wait 10} If I don't do{n}this, I can't keep my{n}composure!
+f692-0002 43986e3b505ac851 Oh, Brother Billy!{wait 10}{n}We barely made it out{n}with our lives.{p}We hadn't seen Primera{n}in a while and now she{n}can talk.{wait 10}{n}We're so surprised!
+f692-0009 b1a358f53ff278ca I've heard rumors that a{n}part of Noatun, the old{n}capital of Kislev survived!{p}I wonder if they're still{n}conducting that barbaric{n}'Bartelling' thing...?{p}Really, I ask you, what{n}are we to do with our{n}menfolk these days...?
+f692-0010 567f6197fbcf1789 Just when I thought{n}Prince Bartholomew would {n}return and bring peace{n}to the land of Av...{p}Just goes to show, you{n}never know what might{n}happen in this world...
+f694-0015 a2ec3377e5eba931 {speed 255}-Super Deluxe Music Box-{n}  Please insert 100G{n}    Okay, I will{n}    No thanks
+f695-0007 fee4dd8ecce369a7 Av, Kislev, Nisan...{n}We've been feuding for such{n}a long time, but finally we{n}are coming together as one{n}like this...{p}But it's probably already{n}too late...{wait 20}{n}It's always the case.{n}By the time we notice {n}anything, it's way too late.{p}How could we possibly{n}stand up to god's army?{wait 20}{n}The situation's{n}really hopeless.
+f695-0016 b388be20413e03a8 Hey, aren't these Picotiels{n}cute?{wait 20} They're going 'cheap,{n}cheap' too! How about it?
+f695-0017 8e62a4a8e1816218 Wanna buy my Picotiels?{wait 20}{n}    Buy Picotiels!{n}    Don't buy any
+f697-0000 ba74874a92b9c35b Fei{n}"It's alright.{wait 20}{n}Enough now, Dan.{wait 20}{n}I understand.{p}It was my fault.{wait 20}{n}I caused you such{n}pain..."
+f697-0001 6303eee77d6ebdf7 Fei{n}"I'm glad that I could{n}finally make peace with{n}you like this.{p}Take care now, okay?"
+f697-0002 0e221f61d20fb262 Fei{n}"Oh, Midori.{wait 20}{n}I'll give this back.{wait 10} It's {n}your precious ring, right?{p}Be a good girl, and listen{n}to your mother Yui.{p}And...{wait 20}{n}look after Dan for me."
+f697-0003 d7aa9c9cf16aa8d7 Fei{n}"Is that so...?{wait 20}{n}Yeah...I'm sure{n}you're right!"
+f697-0004 347a21566c645999 Fei{n}"Okay, well...{wait 20}{n}time to go."
+f697-0006 ef3acc70b78b3926 Dan{n}"When I saw you in the{n}prison,{wait 5} turned into a{n}monster,{wait 5} I understood.{p}Living inside you, Fei,{n}is a monster that's{n}not you,{wait 10} and it's him{n}who was to blame..."
+f697-0007 affff48e48559f07 Dan{n}"So, I guess...{p}it's not really about{n}whether I forgive you{n}or don't forgive you...{p}It's not like we can put{n}things back to anything{n}like the way they were...{wait 20}{n}but...{wait 20}still...{p}I can't really find{n}the words, but...{wait 20}{n}I-{wait 5}I'm sorry...{wait 20}{n}I...{wait 20} I'm...{wait 20} I...!"
+f697-0010 0aa4a6d2c44caf7c Midori{n}"Fei...{wait 20}{n}It was a little scary,{n}but not really.{p}'Cause I knew that,{n}inside him, you were{n}doing everything you{n}possibly could."
+f697-0011 8418b14fbfc94533 Midori{n}"Yep, we're all gonna{n}be fine.{p}Fei, you be careful too.{p}And Elly...{wait 10}{n}I'm sure your voice is{n}reaching her, Fei..."
+f697-0012 0f889af3c2b40428 Midori{n}"Oh, here...{wait 20} I got{n}this from {name 7}.{p}You can have it.{wait 20}{n}A trade for my ring."
+f698-0000 4413ac700ca594aa So this is where that{n}damn Fei's being held!?{wait 20}{n}Serves him right, I'd say!
+f698-0001 1b25f4e11ab37bad Dan{n}"I think I'll pay my{n}respects to his weeping{n}face!{wait 5} Hehe..."
+f698-0002 8180db6bdced97d5 ...Guh!{wait 20}{n}Ugh...!!{done 80}
+f698-0003 c63765415dad3b70 S...{wait 5}Stop...{wait 20}{n}Stop...{wait 5}it!!{done 80}
+f698-0004 f53fde1d03b4cdcc {slow 2}Dan...{wait 20}{n}Mido...ri...!{done 80}
+f698-0005 bf6888875fa55db2 {slow 2}R...{wait 5}Run...{wait 30}{n}Hur...{wait 5}ry...{wait 20}{n}{slow 0}Hurry!!{done 60}
+f698-0006 5e4f864320a6e204 Dan{n}"*gasp*...!{wait 20}{n}Wh-{wait 5}What the...!?"
+f698-0007 2de862e2931995c0 Dan{n}"...{wait 20}{n}Th-{wait 5}This is awful..."
+f698-0008 a41213ba96f3d174 Dan{n}"No matter what{n}he's done, this is{n}going way too far...{p}He's...alive in there?{wait 20}{n}How can that be!?{p}He's still a human{n}being, dammit...!"
+f698-0009 d6b7cbd9b2729725 Dan{n}"...{wait 30}{n}Fei...{wait 20}{n}Oh, Fei..."
+f698-0011 f3279733d5c4da6d Dan{n}"O-{wait 5}Oh...{wait 5}Midori, it's you.{wait 20}{n}Don't scare me like that!"
+f698-0012 fd6c198901179ed9 Dan{n}"C-{wait 5}Crying...?{wait 20}{n}Who is?{wait 20}{n}...!?"
+f698-0013 2312f573b6b5ba7b Dan{n}"D'you mean Fei!?"
+f698-0014 29614b4e9cb2b673 Dan{n}"What!?"
+f698-0015 418ee499703a8d25 Dan{n}"Whoa...!!{n}Wh-{wait 5}What the...!?"
+f698-0017 354e10be3b70d3c4 Dan{n}"Aaagh!?"{done 20}
+f699-0000 b0b15121bc28de07 Fei{n}"Looks like this{n}will open..."
+f699-0001 aff321c98aa99568@577fe3eeb4bfe748 'Truth-reflecting mirror'.{n}Which do you wish to view?{n}    {name 128}'s reflection{n}    {name 129}'s reflection{n}    {name 130}'s reflection{n}    Quit

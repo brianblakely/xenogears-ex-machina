@@ -8955,12 +8955,13 @@ other hosts were not run.
 ### Languages
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
-game's own text: **English**, the original's, by default, **Português
-(Brasil)** or **Français**. It is a setting (`xem_settings::Settings::language`, saved as
-`"English"`, `"BrazilianPortuguese"` or `"French"`), which the hosts give the session
+game's own text: **English**, the original's, by default, **English
+(Perfect Works)**, **Português (Brasil)** or **Français**. It is a setting
+(`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
+`"BrazilianPortuguese"` or `"French"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "pt-BR" | "fr"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -8977,8 +8978,10 @@ Portuguese translates 16 030 of them; 1 056, the same in Portuguese (names
 alone, cries, the developers' test menus kept as they were), are listed
 rather than shipped. French translates 16 029 and lists 1 057: the same
 texts and one enemy name French spells as the original does (Griffon).
-Text built at run time (numbers, the party's
-names) is the game's own. The menus' command labels (New Game, Status,
+English (Perfect Works) reads 10 513 texts anew, and 210 table entries
+alone besides (below), and lists the 6 589 it leaves as the original's.
+Text built at run time (numbers, and a name the player gave) is the game's
+own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
 anew in the language, and the stat panels' words the menus compose of a
 small font's letters (Attack, Hit%, Defense, Evade%, Ether, Weight,
@@ -9007,7 +9010,9 @@ translators), `lint` checks translators' files, `merge` writes the shipped
 files and `check` checks them against the discs. A translation that is the
 original's own bytes is not shipped (where a language has no translation
 the original shows): `same.txt` names those texts by `<where>` and `<hash>`
-alone, so `check` tells them from texts left untranslated. A translation keeps its
+alone, so `check` tells them from texts left untranslated. A line without
+a translation translates its text to nothing (Perfect Works blanks two
+fragments of an accessory's description). A translation keeps its
 original's controls (the waits, speed changes and timed ends in their order,
 the insertions in any order), and each line and page fits its window: a
 field message's lines take up to 52 columns (26 narrow letters, the widest a
@@ -9018,19 +9023,106 @@ rows if more; `merge` breaks a longer line at its spaces (never before a
 page into pages where the player's Confirm already ends the text. A timed
 text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
 (its last page's lines are the cursor's: `a9` names them), a message whose
-window a script sizes (`cf`, `d0`) and every text outside the field keep
-their pages and fit their windows as they are.
+window a script sizes and every text outside the field keep
+their pages and fit their windows as they are. A battle event's message
+fits the window its script lays out before it (ovl3087's opcode 1a: a width
+in 12-pixel units of 3 columns and rows, of which the frame shows 4; 16 and
+8 where it gives none), which `tools/translations.py` reads from both
+discs' scripts.
+
+**Windows a field script sizes.** `cf` and `d0` place and size the running
+actor's windows: a left, a top, a width of 3 columns a unit and rows, each
+left as the game computes it where the operand is 0, and (`d0`) a style;
+the actor's speaker and centred messages take them until it sets others or
+`f4` clears them, and they outlast the script that set them
+(`field_event_open_message_window`). Most only place a window (1 843 of the
+2 228 `d0` on both discs give neither size), and a script that sizes one
+clears it once its message is dismissed. `sized_windows` follows each
+actor's scripts from its events' entries, passing on the size, the style
+and the character (whose portrait takes 0x11 of a sized window's columns
+and makes its rows 4) that reach each instruction: an event starts as the
+actor was made or as one of its scripts ends, and a call's return takes
+whatever its routine may leave. A message is held to a script's window
+only where one may stand when it shows (136 texts of both discs), and not
+to a size its own original text passes. Before this the tool read the
+layouts in the order of the bytecode, across actors, and took a layout
+that only placed a window, or its width without the three columns a unit,
+for a window of no size: 5 063 texts were held to their English text's own
+lines and width, and could add no page. Portuguese and French each have
+4 510 translations among them, fitted to that shape (they show as they
+should, in less room than their windows have), and three texts each that
+passed their real windows and were broken anew: a five-line page in a
+portrait's four rows (map 155), a notice wider than a 30-column window one
+of its five entries shows it in (map 635) and a debug room's text
+(map 720).
+
+**One text, read differently from place to place.** A translation is of a
+text wherever a window takes it, named by the text's hash. A language may
+also translate a text in one table entry alone, on a line
+`<where> <hash>@<entry> <translation>`: `<where>` names that entry, and
+`<entry>` is the entry's name, the text's hash carried on over the entry's
+index, its offset in its table and the table's count of entries as three
+halfwords (`place_key` in the tools and in `xem_core::locale`). The port
+computes it where the game takes an entry from a table
+(`text_get_resource_entry`), so the entry's own translation is shown there
+and the text's elsewhere. Perfect Works needs it: a jukebox whose lists
+all read "track00", "track01" … gets each tune's title, a line a speaker
+says in one scene only is reworded there, and "Cancel" stays Cancel but
+where a menu's label means Delete. The party's and the Gears' names are
+entries too (`nm000-<slot>`: slot n of `game_data.names` is entry n at 20 n
+of a table of 31), so an Omnigear's name is respelled while the Gear it
+shares the name with keeps it, and a name the player changed is another
+text, left as it is. A name no table holds is respelled in its slot
+alone, so the letters a player types in the name entry are never taken
+for it.
+
+**Perfect Works.** English (Perfect Works) is the text of
+[Xenogears: Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+0.11.4, a retranslation that ships as replacement disc files. Its script and
+names patch holds every text table with the original's entries, one for
+one, so `python3 -m tools.perfect_works` reads each entry beside the
+original's (its release's `gamefiles/script1` and `script2` under
+`.local/perfect-works/`, and the user's discs) and writes the readings as
+translators' lines for `merge`: a text read alike in all its entries once,
+and an entry read otherwise than its text's other entries alone (flagged
+`[here]`). The language brings its own layout (`OWN_LAYOUT` in
+`tools/translations.py`): its build shows each text on the console, so it
+sets its own waits, insertions and pages, a field line may take the
+screen's 70 columns (the fixed box's 72) and a field page its own lines
+where no script sizes the window, and a line the menus and the battle
+render into a line image that image's 57 columns; a choice keeps the lines
+its cursor walks, and a window a script sizes, in the field or the battle,
+shows what it shows whatever the language. Of 50 427 table entries on both discs
+(30 996 and 19 431), 11 499 are Perfect Works' own. Where its own scripts
+show a field message otherwise than the original's do (69 maps' event
+scripts differ; the tool compares how each shows each message), the text
+is held to the original's window. Six field messages' lines are broken
+anew to fit theirs, and two battle messages' to fit their scripts'; eight
+field messages keep the original's text (their windows are their scripts',
+too small for the reading, which a choice or a timed text cannot break),
+as do nine battle messages whose windows Perfect Works' own battle code
+sizes, and two Japanese development texts. One list of choices has a line fewer than its cursor
+walks, as in Perfect Works' build: the line stays, blank. Its font's added
+marks are the language's added glyphs (Letters, below). What is not text
+of these tables is not part of a language and stays the original's:
+Perfect Works' event scripts, battle and menu code, rebalance, pictures
+and memory card titles. The text is the Perfect Works Build team's, under
+the GNU General Public License, version 3
+(`locale/en-x-pw/README.md` and `LICENSE` there; the release notices and
+Settings → About say so).
 
 **In game memory.** Every runtime installs every language's translations
 at construction (`locale::install`, `Runtime::new`) at 0x20000000, outside
 the PS1's addresses and outside snapshots (`snapshot::REGIONS`), as the
 Kanji font is placed; their digest is a package of the state identity
 (`"translations <sha256>"`), so a state restores only where the same
-translations are installed. The image is a header (magic `XLC1`, the active
+translations are installed. The image is a header (magic `XLC2`, the active
 language, the number of languages, the added glyphs' address and count),
-each language's records' address and count, the glyphs' recipes, each
-language's records (hash, the translation's address, the columns and rows
-it needs) ascending by hash, then the translations' bytes.
+each language's records' address and count and its single entries'
+records' address and count, the glyphs' recipes, each language's records
+(hash, the translation's address, the columns and rows it needs) ascending
+by hash and its entries' records ascending by name, then the translations'
+bytes.
 `locale::activate` writes the active language (0 for the original).
 `src/port/locale.c` wraps the three ways a window takes text,
 `window_queue_message`, `window_render_text_line` and `window_insert_text`:
@@ -9040,9 +9132,13 @@ passes the translation's address instead. The game's bytes and pointers
 stay as they are; a window's text pointer then points at the translation,
 which stays installed whatever is active later, so a window goes on with the
 text it began (and the texts queued before a change), and the next text
-takes the new language. `text_get_message_columns` and
+takes the new language. `text_get_resource_entry` returns the translation
+of an entry the active language translates alone, which the three then
+pass on as it is (it lies outside RAM, so they name it nothing); a name
+they are passed in `game_data.names` is looked up as its slot's entry
+first. `text_get_message_columns` and
 `text_get_message_rows` give a field message's window what its translation
-needs beyond its table's.
+(its entry's, else its text's) needs beyond its table's.
 
 **Command labels.** The menus draw their commands from sheet entries
 0x123-0x149 of the menu's sprite sheet (directory (0x10, 0) file 1, archive
@@ -9097,12 +9193,17 @@ longer has its original images, so the next pass leaves it.
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
 capitals (`locale/pt-BR/glyphs.txt`), French `à â ç é è ê ë î ï ô ù û ü`
 and their capitals (`locale/fr/glyphs.txt`; it writes oe and ae for the
-ligatures, which the font lacks), 38 letters in all. Each is a two-byte glyph from 0xFF20
+ligatures, which the font lacks), and Perfect Works the marks its own font
+draws in place of the wide digits ０-３, the wide underscore and the
+brackets: `ö ; *`, a dash `—` and a blank `␣` as wide as a wide glyph, and
+`ﭏ` (El, the lamed and the aleph, which its Omnigears' names begin with)
+(`locale/en-x-pw/glyphs.txt`), 44 glyphs in all. Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
 its special glyph), the same code in every language that adds the letter
 (the languages' letters numbered in `Language::ALL`'s order, a letter
 another language added first keeping its code and its recipe).
-`text_get_glyph_width` makes them narrow (2 columns), and `text_draw_glyph`
+`text_get_glyph_width` makes them narrow (2 columns), or 3 columns where
+the recipe says `wide` (the dash, the blank and El), and `text_draw_glyph`
 draws one through the original's own drawing of 0xFFFF: it puts the letter
 in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
 0xFF and puts the special glyph's rows back, with nothing waiting in
@@ -9110,8 +9211,9 @@ between. The letter is composed from the player's font: the base letter's
 11 rows (the font block `text_install_font` installed), rows taken out
 (a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
 drawn for this project over the top rows (the diaeresis's two dots on row
-1, the cedilla on row 10). No glyph
-of the original is copied.
+1, the cedilla on row 10); a mark the font has no letter for is drawn on
+its space (`blank`), and the semicolon is its colon with its comma's tail.
+No glyph of the original or of Perfect Works' font is copied.
 
 With English active every wrapped function is the original's, so the game
 runs as before: RAM, VRAM and timing are those of the original's text.
@@ -9120,13 +9222,18 @@ Tests: `tests/test_port_locale.py` (the port built natively over stand-ins
 for the originals: a text walked as the window walks it and the tools name
 it, none outside RAM or without its 00; no language, or the original's
 English, passing every pointer through; the active language's translation
-passed to each of the three, the original where it has none; a field
+passed to each of the three, the original where it has none; a table entry
+the language translates alone taken translated, with its own window's
+needs, and the same text in another entry as everywhere; a name of the
+game data translated by its slot, the same name in another slot or changed
+by the player left; a field
 window's columns and rows grown to the translation's, never shrunk; an
-added letter narrow, drawn through 0xFFFF from its base with rows taken out
+added letter narrow or wide as its recipe says, drawn through 0xFFFF from its base with rows taken out
 and blanked and its accent, the special glyph's rows put back), `xem-core`'s
 `locale` tests (markup encoded as the game reads text, the columns and rows
-measured; characters the font lacks, unknown controls and bad operands
-refused; the glyph recipes; the image's layout, records ascending by hash),
+measured, a wide glyph's 3 and a text of nothing; characters the font lacks, unknown controls and bad operands
+refused; the glyph recipes, Perfect Works' marks among them; an entry's name; the image's layout, records ascending by hash
+and entries' by name),
 the native test's command labels (a translated entry drawn into page
 (448, 256), each transfer waited for, the line image freed, the entry one
 part there with the text palette two rows up; an untranslated one and
@@ -9138,7 +9245,11 @@ two and the menus' three Next LV rows spelled by their loaders from their
 first x, narrow letters and spaces set, the slots left repeating the last
 letter; one too long or with a letter the font lacks, and every one without
 an active language, unchanged), `tests/test_translations.py`'s small-font
-check of words and rows,
+check of words and rows, its lines for one entry, its language with
+its own layout and the windows it reads from invented field and battle
+scripts (a layout that sizes, places or clears; a size left standing; a
+portrait's share), `tests/test_perfect_works.py` (Perfect Works' bytes as
+markup, a reading fitted to its window, a text's entries as lines),
 `xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
@@ -9146,6 +9257,9 @@ check of words and rows,
 Brazilian Portuguese and in French it reads that language's shipped
 translation of the same message, with added letters, and goes on with it
 once English is chosen, the next message read in RAM),
+`perfect_works_reads_a_text_differently_from_entry_to_entry` (map 222's
+jukebox: two entries that both read "track00" give two titles, each its
+entry's own shipped line),
 `the_language_is_recorded_and_a_replay_reaches_the_recordings_memory`
 (changes to English and French recorded and replayed), the
 timed scenes the text speed is tested on (`the_translations_take_...`:
