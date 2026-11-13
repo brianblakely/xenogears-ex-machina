@@ -477,6 +477,27 @@ impl<M: GameModule> Session<M> {
         }
     }
 
+    /// Whether the disc drive is fast (`crate::devices::cd`, The fast
+    /// drive): its seeks and pauses take no time and the sectors of the
+    /// game's loads come as fast as the game takes them, so a load lasts
+    /// only what the game itself does with it; movies and their sound keep
+    /// the disc's pace. Off is the original. It changes when the game's
+    /// loads end, so it is recorded with the inputs, and a replay keeps the
+    /// recorded one.
+    pub fn set_fast_disc(&mut self, enabled: bool) {
+        if self.replay_end.is_some() {
+            return;
+        }
+        self.apply_fast_disc(enabled);
+    }
+
+    fn apply_fast_disc(&mut self, enabled: bool) {
+        if self.runtime.services().cd.fast() != enabled {
+            self.record_control(json!({"cmd":"fast_disc","enabled":enabled}));
+            self.runtime.services().cd.set_fast(enabled);
+        }
+    }
+
     /// The language of the game's text (docs/runtime.md, Languages): from
     /// the next text a window takes, the port passes it the language's
     /// translation (src/port/locale.c); a window goes on with the text it
@@ -971,6 +992,7 @@ impl<M: GameModule> Session<M> {
         let half_encounters = self.runtime.services().half_encounters;
         let text_speed = self.runtime.services().text_speed;
         let movie_skip = self.runtime.services().movie_skip;
+        let fast_disc = self.runtime.services().cd.fast();
         let language = self.runtime.services().language.code();
         let locale_notice = self.runtime.services().locale_notice.clone();
         // What the dialogue options act on, as the game shows it: the
@@ -1011,6 +1033,7 @@ impl<M: GameModule> Session<M> {
             "storage": storage,
             "text_speed": text_speed,
             "movie_skip": movie_skip,
+            "fast_disc": fast_disc,
             "language": language,
             "locale_notice": locale_notice,
             "auto_advance": self.auto_advance,
@@ -1096,6 +1119,11 @@ impl<M: GameModule> Session<M> {
             "movie_skip" => {
                 let enabled = command.get("enabled").and_then(Value::as_bool).ok_or("movie_skip needs enabled: true or false")?;
                 self.apply_movie_skip(enabled);
+                Ok(self.status())
+            }
+            "fast_disc" => {
+                let enabled = command.get("enabled").and_then(Value::as_bool).ok_or("fast_disc needs enabled: true or false")?;
+                self.apply_fast_disc(enabled);
                 Ok(self.status())
             }
             "language" => {
@@ -1494,7 +1522,7 @@ impl<M: GameModule> Session<M> {
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "rewind_step", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
-                                        "half_encounters", "text_speed", "movie_skip", "language", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
+                                        "half_encounters", "text_speed", "movie_skip", "fast_disc", "language", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1554,6 +1582,9 @@ impl<M: GameModule> Session<M> {
                 if self.runtime.services().movie_skip {
                     self.record_control(json!({"cmd":"movie_skip","enabled":true}));
                 }
+                if self.runtime.services().cd.fast() {
+                    self.record_control(json!({"cmd":"fast_disc","enabled":true}));
+                }
                 let language = self.runtime.services().language;
                 if language != crate::locale::Language::English {
                     self.record_control(json!({"cmd":"language","language":language.code()}));
@@ -1611,6 +1642,7 @@ impl<M: GameModule> Session<M> {
                             Some("card_present") if card_presence(control).is_some() => {},
                             Some("text_speed") if control.get("glyphs").and_then(Value::as_u64).is_some_and(|g| g <= 255) => {},
                             Some("movie_skip") if control.get("enabled").is_some_and(Value::is_boolean) => {},
+                            Some("fast_disc") if control.get("enabled").is_some_and(Value::is_boolean) => {},
                             Some("language") if language_of(control).is_some() => {},
                             Some("auto_advance") if control.get("dwell").and_then(Value::as_u64).is_some_and(|d| d <= u64::from(MAX_AUTO_ADVANCE_DWELL)) => {},
                             Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
@@ -1624,7 +1656,7 @@ impl<M: GameModule> Session<M> {
                             },
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
                             _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, \
-                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, assist, debug and music-clock inputs".into()),
+                                half-encounters, card-presence, text-speed, movie-skip, auto-advance, fast-disc, assist, debug and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1658,6 +1690,7 @@ impl<M: GameModule> Session<M> {
                 self.runtime.services().card.set_present(1, true);
                 self.runtime.services().text_speed = 0;
                 self.runtime.services().movie_skip = false;
+                self.runtime.services().cd.set_fast(false);
                 self.runtime.services().language = crate::locale::Language::English;
                 let _ = crate::locale::activate(self.runtime.memory(), crate::locale::Language::English);
                 self.auto_advance = 0;
@@ -1696,7 +1729,7 @@ impl<M: GameModule> Session<M> {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
                     if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "debug" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
-                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "language" | "auto_advance" | "music_advance") {
+                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "fast_disc" | "language" | "auto_advance" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

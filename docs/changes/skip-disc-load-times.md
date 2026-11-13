@@ -1,0 +1,2 @@
+- **Settings → Gameplay → Skip disc load times** takes away the waits for the disc drive: areas, battles and menus open almost at once. It starts off, keeping the original loading.
+- Movies and their sound play at their normal speed either way, and your saves and save states work with it on or off.

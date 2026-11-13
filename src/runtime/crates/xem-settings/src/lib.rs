@@ -256,6 +256,10 @@ pub struct Settings {
     /// mode's), as the game lets it end some; window movies stay the
     /// scripts'.
     pub movie_skip: bool,
+    /// The disc drive takes no time over its seeks, its pauses and the
+    /// game's loads (`Session::set_fast_disc`); movies and their sound keep
+    /// the disc's pace.
+    pub fast_disc: bool,
     /// The language of the game's menus, dialogue and battle text
     /// (`Session::set_language`): the original's English or a translation.
     pub language: Language,
@@ -288,6 +292,7 @@ impl Default for Settings {
             text_speed: TextSpeed::default(),
             auto_advance: AutoAdvance::default(),
             movie_skip: false,
+            fast_disc: false,
             language: Language::English,
         }
     }
@@ -334,6 +339,7 @@ pub enum SettingChange {
     /// The auto-advance block, whole: on or off and its dwell.
     AutoAdvance(AutoAdvance),
     MovieSkip(bool),
+    FastDisc(bool),
     Language(Language),
 }
 
@@ -459,6 +465,7 @@ impl Settings {
             SettingChange::TextSpeed(speed) => next.text_speed = *speed,
             SettingChange::AutoAdvance(auto) => next.auto_advance = *auto,
             SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
+            SettingChange::FastDisc(enabled) => next.fast_disc = *enabled,
             SettingChange::Language(language) => next.language = *language,
         }
         next.validate()?;
@@ -914,6 +921,30 @@ mod tests {
     }
 
     #[test]
+    fn disc_load_times_are_the_originals_by_default_and_skipping_them_persists() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert!(!service.settings().fast_disc, "the disc's pace by default");
+        assert!(service.apply(SettingChange::FastDisc(true)).unwrap().settings.fast_disc);
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(saved["fast_disc"], true);
+        assert!(SettingsService::open(store.clone()).unwrap().settings().fast_disc, "reopened");
+        // As an agent sends it on `xem-desktop --control`, and a backup.
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"FastDisc": false}})).unwrap();
+        assert_eq!(ack["settings"]["fast_disc"], false);
+        service.apply(SettingChange::FastDisc(true)).unwrap();
+        let mut other = SettingsService::with_defaults(MemoryStore::default());
+        other.import(&service.export()).unwrap();
+        assert!(other.settings().fast_disc, "a backup carries it");
+        // Saved before the setting existed, or with a value that is none of
+        // its own: the disc's pace, alone.
+        assert!(!Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.fast_disc);
+        let (read, reset) = Settings::read(&serde_json::json!({"fast_disc": "Instant", "movie_skip": true})).unwrap();
+        assert_eq!((read.fast_disc, read.movie_skip, reset), (false, true, vec!["fast_disc".to_string()]));
+    }
+
+    #[test]
     fn the_language_defaults_to_english_persists_and_reads_an_unknown_one_as_english() {
         use super::*;
         let store = SharedStore::default();
@@ -936,7 +967,7 @@ mod tests {
     }
 
     /// The gameplay options' keys as `Settings` saves them.
-    const GAMEPLAY: [&str; 5] = ["random_battles", "encounter_rate", "text_speed", "auto_advance", "movie_skip"];
+    const GAMEPLAY: [&str; 6] = ["random_battles", "encounter_rate", "text_speed", "auto_advance", "movie_skip", "fast_disc"];
 
     #[test]
     fn the_gameplay_options_default_to_not_while_platforming_and_the_original_and_explicit_choices_survive_saves_backups_and_imports() {
@@ -946,7 +977,7 @@ mod tests {
             GAMEPLAY.iter().map(|key| (key.to_string(), value[key].clone())).collect()
         };
         let defaults = serde_json::json!({"random_battles": "NotWhilePlatforming", "encounter_rate": "Original", "text_speed": "Original",
-            "auto_advance": {"enabled": false, "dwell": DEFAULT_AUTO_ADVANCE_DWELL}, "movie_skip": false});
+            "auto_advance": {"enabled": false, "dwell": DEFAULT_AUTO_ADVANCE_DWELL}, "movie_skip": false, "fast_disc": false});
         // A fresh settings file: random battles off in the platforming
         // areas, the original's everything else, as the first save writes.
         let store = SharedStore::default();
@@ -955,8 +986,8 @@ mod tests {
         let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
         assert_eq!(gameplay(&serde_json::from_value(saved).unwrap()), defaults);
         let settings = service.settings();
-        assert_eq!((settings.random_battles_off(), settings.half_encounters(), settings.text_speed.glyphs(), settings.auto_advance_dwell(), settings.movie_skip),
-            (xem_core::encounters::platforming_maps(), false, 0, 0, false), "the sessions get the platforming maps and the original's");
+        assert_eq!((settings.random_battles_off(), settings.half_encounters(), settings.text_speed.glyphs(), settings.auto_advance_dwell(), settings.movie_skip, settings.fast_disc),
+            (xem_core::encounters::platforming_maps(), false, 0, 0, false, false), "the sessions get the platforming maps and the original's");
         // A file saved before the options existed: every key but theirs,
         // with other choices of its own. It reads the defaults for them,
         // keeps the rest and resets nothing, from a real file too.
@@ -975,13 +1006,14 @@ mod tests {
         // An explicit choice of each, acknowledged in turn, survives other
         // changes, a reload, a backup and its import into another service.
         let chosen = [SettingChange::RandomBattles(RandomBattles::Original), SettingChange::EncounterRate(EncounterRate::Half),
-            SettingChange::TextSpeed(TextSpeed::Fast), SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell: 45 }), SettingChange::MovieSkip(true)];
+            SettingChange::TextSpeed(TextSpeed::Fast), SettingChange::AutoAdvance(AutoAdvance { enabled: true, dwell: 45 }), SettingChange::MovieSkip(true),
+            SettingChange::FastDisc(true)];
         let mut file = SettingsService::open(FileStore::new(&path)).unwrap();
         for (n, change) in chosen.into_iter().enumerate() {
             assert_eq!(file.apply(change).unwrap().revision, n as u64 + 1);
         }
         let explicit = serde_json::json!({"random_battles": "Original", "encounter_rate": "Half", "text_speed": "Fast",
-            "auto_advance": {"enabled": true, "dwell": 45}, "movie_skip": true});
+            "auto_advance": {"enabled": true, "dwell": 45}, "movie_skip": true, "fast_disc": true});
         file.apply(SettingChange::MouseCamera(false)).unwrap();
         file.apply(SettingChange::Replace(Settings { master_volume: 70, ..file.settings().clone() })).unwrap();
         let reopened = SettingsService::open(FileStore::new(&path)).unwrap();
@@ -1009,6 +1041,7 @@ mod tests {
             (serde_json::json!({"TextSpeed": "Instant"}), "text_speed", serde_json::json!("Instant")),
             (serde_json::json!({"AutoAdvance": {"enabled": true, "dwell": 90}}), "auto_advance", serde_json::json!({"enabled": true, "dwell": 90})),
             (serde_json::json!({"MovieSkip": true}), "movie_skip", serde_json::json!(true)),
+            (serde_json::json!({"FastDisc": true}), "fast_disc", serde_json::json!(true)),
             (serde_json::json!({"RandomBattles": "NotWhilePlatforming"}), "random_battles", serde_json::json!("NotWhilePlatforming")),
         ].into_iter().enumerate() {
             let ack = reply(&mut service, change.clone());
@@ -1020,11 +1053,12 @@ mod tests {
             (serde_json::json!({"AutoAdvance": {"enabled": true, "dwell": 5}}), "auto-advance dwell must be 30–600"),
             (serde_json::json!({"TextSpeed": "Warp"}), "not a setting change"),
             (serde_json::json!({"RandomBattles": "Never"}), "not a setting change"),
+            (serde_json::json!({"FastDisc": "Instant"}), "not a setting change"),
         ] {
             let refused = reply(&mut service, change.clone());
             assert!(refused["error"].as_str().is_some_and(|e| e.contains(why)), "{change} -> {refused}");
         }
-        assert_eq!(service.revision(), 6, "nothing refused was applied");
+        assert_eq!(service.revision(), 7, "nothing refused was applied");
         assert_eq!(service.settings().auto_advance, AutoAdvance { enabled: true, dwell: 90 });
         assert_eq!(service.command(&serde_json::json!({"cmd": "status"})), None, "another command is the game's");
     }

@@ -384,6 +384,13 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   also accept Start. It starts off. Small movies playing inside a scene
   may still follow that scene's timing. This skips movies, not entire story
   scenes.
+- **Skip disc load times:** takes away the waits for the disc drive, so
+  areas, battles and menus open almost at once. It starts off. Movies and
+  their sound keep their normal speed, an area's music can still begin a
+  moment after its picture, and the pause at the change to disc 2 stays.
+  Nothing about your saves or save states changes, and you can turn it on
+  or off at any time. Because loading ends sooner, chance events such as
+  random battles can fall at different moments than they otherwise would.
 
 To see the scene behind a dialogue box, **hold Select**: Backspace, the
 controller's Back button, or touch **SELECT**. Release it to bring the text

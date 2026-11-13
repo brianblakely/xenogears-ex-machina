@@ -791,6 +791,40 @@ fn text_speed_auto_advance_and_movie_skipping_are_chosen_in_the_gameplay_section
 }
 
 #[test]
+fn skipping_disc_load_times_is_chosen_in_the_gameplay_section_through_the_settings_service() {
+    use xem_settings::SettingChange;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Gameplay", 6);
+    // Off by default, in a card of its own under the dialogue's and movies'.
+    assert!(!ui.component().get_fast_disc(), "the disc's pace by default");
+    let toggle = element(&ui, "Skip disc load times", AccessibleRole::Switch);
+    let movies = element(&ui, "Movies can be skipped", AccessibleRole::Switch);
+    assert!(toggle.absolute_position().y > movies.absolute_position().y + movies.size().height, "below the movies' setting");
+    element(&ui, "Loading", AccessibleRole::Groupbox);
+    // The choice is the service's: applied, acknowledged and saved.
+    press(&ui, &toggle);
+    ui.update().unwrap();
+    assert!(settings.borrow().settings().fast_disc && ui.component().get_fast_disc());
+    press(&ui, &toggle);
+    ui.update().unwrap();
+    assert!(!settings.borrow().settings().fast_disc && !ui.component().get_fast_disc());
+    assert_eq!(*acks.borrow(), [SettingChange::FastDisc(true), SettingChange::FastDisc(false)]);
+    // An agent's change shows.
+    settings.borrow_mut().apply(SettingChange::FastDisc(true)).unwrap();
+    ui.update().unwrap();
+    assert!(ui.component().get_fast_disc());
+}
+
+#[test]
 fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_settings_service() {
     use xem_settings::{Language, SettingChange};
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");

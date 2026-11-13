@@ -64,6 +64,42 @@
 //! closed lid and a disc. A snapshot keeps which disc is in the drive, and
 //! restoring one puts that disc back in; a state waiting for a disc takes it
 //! at once when the restoring session holds it.
+//!
+//! # The fast drive
+//!
+//! The host may make the drive fast ([`Cd::set_fast`], the session's
+//! recorded `fast_disc` control): what its mechanism takes time for then
+//! takes none, so a load lasts what the program itself does with it. Every
+//! response is still given, with the bytes and in the order of the drive at
+//! its own pace, and each command's first response comes after
+//! [`ACK_CYCLES`] as before; only the waits between them change:
+//!
+//! - a seek takes [`MIN_SEEK_CYCLES`] whatever its distance, and the motor
+//!   is up to speed at once (Standby, a read or seek with the motor off);
+//! - Pause and Stop complete as when already paused or stopped
+//!   ([`IDLE_DONE_CYCLES`]);
+//! - a read of whole data sectors (Setmode 0x20 without 0x40, XA-ADPCM)
+//!   *reads on*: its first sector comes [`FAST_SECTOR_CYCLES`] after the
+//!   command's first response, and the sector after one whose data the
+//!   program took from the sector buffer (`cd_get_sector`) follows that
+//!   long after the program is done with it, when it asked the drive for
+//!   nothing else meanwhile.
+//!
+//! Whole data sectors are how this program loads: the resident's reader
+//! (ReadN) and the world map's (ReadS) take each sector with its address,
+//! check it and end the read themselves. A sector they leave in the buffer
+//! (a ring with no free slot, a short gap read through, a handler set
+//! aside for a retry) is followed at the disc's speed, as is every sector
+//! of a read without sector addresses or with XA-ADPCM: the stream
+//! library's movies and their sound, which are played, not loaded. So the
+//! program's own pacing (a ring's consumer, the retries when it falls
+//! behind) goes on as on the console, and no second data sector ever waits
+//! behind one the program has not handled: each still gets its own
+//! interrupt and, after it, its transfer's.
+//!
+//! Being fast changes when the drive's events happen, never what a state
+//! holds: it is the host's, not part of a snapshot, and a state saved with
+//! it restores without it and the other way round.
 
 use std::collections::VecDeque;
 
@@ -98,6 +134,12 @@ pub const SPIN_UP_CYCLES: u64 = CPU_HZ;
 /// The changer's wait at the story's disc change before it opens the lid: five
 /// seconds of game time with the game's change-disc notice shown.
 pub const STORY_CHANGE_CYCLES: u64 = 5 * CPU_HZ;
+/// The shortest seek (Mednafen's floor), and every seek of the fast drive.
+pub const MIN_SEEK_CYCLES: u64 = 20_000;
+/// The fast drive reading on: a sector follows the command's first response,
+/// or the program's taking of the sector before it, by this (about 30
+/// microseconds: some 550 sectors a frame).
+pub const FAST_SECTOR_CYCLES: u64 = 1024;
 /// XA audio kept for the SPU, at most (two seconds at 44100 Hz).
 pub const MAX_AUDIO_FRAMES: usize = 2 * 44_100;
 
@@ -163,7 +205,7 @@ pub mod error {
 /// least 20000 cycles, and a jump of 2250 sectors or more 300 ms longer.
 pub fn seek_cycles(from: u32, to: u32) -> u64 {
     let distance = u64::from(from.abs_diff(to));
-    let mut cycles = (distance * CPU_HZ / (72 * 60 * 75)).max(20_000);
+    let mut cycles = (distance * CPU_HZ / (72 * 60 * 75)).max(MIN_SEEK_CYCLES);
     if distance >= 2250 {
         cycles += CPU_HZ * 3 / 10;
     }
@@ -255,6 +297,12 @@ pub struct Cd {
     pub sector_log: Option<Vec<DeliveredSector>>,
     /// XA sectors played (for verification).
     pub xa_sectors: u64,
+    /// The host's: the drive is fast ([`Cd::set_fast`]); never in a snapshot.
+    fast: bool,
+    /// The program read the sector buffer since it took the newest data
+    /// sector. Settled as its handler returns ([`Cd::read_on`]), so no
+    /// snapshot falls in between.
+    fetched: bool,
 }
 
 impl Default for Cd {
@@ -284,6 +332,8 @@ impl Default for Cd {
             atv: [0x80, 0, 0x80, 0],
             sector_log: None,
             xa_sectors: 0,
+            fast: false,
+            fetched: false,
         }
     }
 }
@@ -303,6 +353,7 @@ impl Cd {
             sequence: self.sequence,
             sector_log: self.sector_log.take(),
             xa_sectors: self.xa_sectors,
+            fast: self.fast,
             ..Cd::default()
         };
     }
@@ -318,6 +369,7 @@ impl Cd {
         state.disc = discs.iter().position(|(number, _)| *number == state.inserted).map(|i| discs.remove(i).1);
         state.shelf = discs;
         state.sector_log = self.sector_log.take();
+        state.fast = self.fast;
         *self = state;
         if let Some(number) = self.wanted.filter(|&number| self.holds(number)) {
             self.change(number);
@@ -529,9 +581,62 @@ impl Cd {
         !self.lid_open && self.disc.is_some()
     }
 
-    /// The cycles before the head is on `to`, spinning up a stopped motor.
+    /// The cycles before the head is on `to`, spinning up a stopped motor;
+    /// the fast drive's shortest seek.
     fn seek_time(&self, to: u32) -> u64 {
+        if self.fast {
+            return MIN_SEEK_CYCLES;
+        }
         seek_cycles(self.position, to) + if self.motor { 0 } else { SPIN_UP_CYCLES }
+    }
+
+    /// Make the drive fast or not (the module's The fast drive): from the
+    /// next command and the next sector the program takes. What is
+    /// scheduled stays where it is.
+    pub fn set_fast(&mut self, fast: bool) {
+        self.fast = fast;
+    }
+
+    pub fn fast(&self) -> bool {
+        self.fast
+    }
+
+    /// Whether a read now reads on: the drive is fast and gives the program
+    /// whole data sectors (the program's loads, not a movie or its sound).
+    fn reads_on(&self) -> bool {
+        self.fast && self.mode & (mode::WHOLE_SECTOR | mode::XA_ADPCM) == mode::WHOLE_SECTOR
+    }
+
+    /// Whether the drive, reading on, has its next sector within
+    /// [`FAST_SECTOR_CYCLES`] of `now` with nothing for the program to take
+    /// first: the run loop then lets that sector's interrupt in before the
+    /// program goes on, as the console takes an interrupt already waiting.
+    pub fn sector_at_hand(&self, now: u64) -> bool {
+        self.reads_on()
+            && self.pending.is_empty()
+            && matches!(self.drive, Drive::Reading { .. })
+            && self.events.iter().any(|(at, _, event)| matches!(event, Event::Sector) && *at <= now + FAST_SECTOR_CYCLES)
+    }
+
+    /// The program ran (a step, an interrupt handler). When it took the
+    /// newest sector's data, the drive, reading on, has the next one at the
+    /// head now, not a sector's time on; not when the program asked the
+    /// drive for something meanwhile (a response is on its way) or has
+    /// another response to take.
+    fn read_on(&mut self, now: u64) {
+        if !std::mem::take(&mut self.fetched) {
+            return;
+        }
+        let asked = self.events.iter().any(|(_, _, event)| matches!(event, Event::Respond(_)));
+        if !self.reads_on() || asked || !self.pending.is_empty() || !matches!(self.drive, Drive::Reading { .. }) {
+            return;
+        }
+        let soon = now + FAST_SECTOR_CYCLES;
+        for (at, _, event) in &mut self.events {
+            if matches!(event, Event::Sector) && *at > soon {
+                *at = soon;
+            }
+        }
     }
 
     /// Start command `com` at `now`; its responses follow on the clock.
@@ -575,8 +680,10 @@ impl Cd {
                 self.drive = Drive::Reading { from: first };
                 let s = self.status(now);
                 self.respond_at(ack, intr::ACKNOWLEDGE, vec![s]);
-                let period = self.sector_cycles();
-                self.schedule(first + period, Event::Sector);
+                // Reading on, the first sector is at the head as the command
+                // is acknowledged; else a sector's time after the seek.
+                let due = if self.reads_on() { ack + FAST_SECTOR_CYCLES } else { first + self.sector_cycles() };
+                self.schedule(due, Event::Sector);
             }
             com::SEEKL | com::SEEKP => {
                 let to = self.target.take().unwrap_or(self.position);
@@ -594,14 +701,14 @@ impl Cd {
                 let s = self.status(now);
                 self.respond_at(ack, intr::ACKNOWLEDGE, vec![s]);
                 self.cancel_read();
-                let done = if busy { PAUSE_CYCLES[self.speed()] } else { IDLE_DONE_CYCLES };
+                let done = if busy && !self.fast { PAUSE_CYCLES[self.speed()] } else { IDLE_DONE_CYCLES };
                 let s = self.status(now);
                 self.respond_at(ack + done, intr::COMPLETE, vec![s]);
             }
             com::STOP => {
                 let s = self.status(now);
                 self.respond_at(ack, intr::ACKNOWLEDGE, vec![s]);
-                let done = if self.motor { STOP_CYCLES[self.speed()] } else { IDLE_DONE_CYCLES };
+                let done = if self.motor && !self.fast { STOP_CYCLES[self.speed()] } else { IDLE_DONE_CYCLES };
                 self.cancel_read();
                 self.motor = false;
                 let s = self.status(now);
@@ -616,7 +723,8 @@ impl Cd {
                     self.respond_at(ack, intr::ACKNOWLEDGE, vec![s]);
                     self.motor = true;
                     let s = self.status(now);
-                    self.respond_at(ack + SPIN_UP_CYCLES, intr::COMPLETE, vec![s]);
+                    let done = if self.fast { IDLE_DONE_CYCLES } else { SPIN_UP_CYCLES };
+                    self.respond_at(ack + done, intr::COMPLETE, vec![s]);
                 }
             }
             com::INIT => {
@@ -822,12 +930,14 @@ impl Cd {
                 self.buffer.extend_from_slice(&sector[24..24 + FORM1_DATA_SIZE]);
             }
             self.buffer_read = 0;
+            self.fetched = false;
         }
         Some((response.intr, response.bytes))
     }
 
     /// The next `len` bytes of the sector buffer (zeros past its end).
     pub fn read_buffer(&mut self, len: usize) -> Vec<u8> {
+        self.fetched = true;
         let mut out = vec![0u8; len];
         let start = self.buffer_read.min(self.buffer.len());
         let end = (start + len).min(self.buffer.len());
@@ -970,10 +1080,12 @@ impl Device for Cd {
         let disc = self.disc.take();
         let log = self.sector_log.take();
         let xa_sectors = self.xa_sectors;
+        let fast = self.fast;
         *self = Cd::default();
         self.disc = disc;
         self.sector_log = log;
         self.xa_sectors = xa_sectors;
+        self.fast = fast;
         let mut r = Reader::new(state);
         let e = |error: crate::snapshot::SnapshotError| error.to_string();
         let discs = r.u32().map_err(e)?;
@@ -1026,6 +1138,10 @@ impl Device for Cd {
 
     fn run_events(&mut self, context: &mut Context<'_>) {
         self.run_due(context.now, context.raised);
+    }
+
+    fn sync(&mut self, context: &mut Context<'_>) {
+        self.read_on(context.now);
     }
 }
 
@@ -1130,6 +1246,202 @@ mod tests {
         assert_eq!(&header[..4], &[0x00, 0x02, 0x26, 0x02]);
         let data = cd.read_buffer(4);
         assert_eq!(data, vec![(26 * 7) as u8, (26 * 7 + 1) as u8, (26 * 7 + 2) as u8, (26 * 7 + 3) as u8]);
+    }
+
+    /// Run the drive to `until` as the port serves it: each event's
+    /// interrupts taken at once by a handler that, with `fetch`, reads a
+    /// data sector's address and data from the buffer (`answer` then
+    /// issues a command of the handler's, given the interrupt), and the
+    /// drive told when the handler is done, as the run loop tells it.
+    fn serve(cd: &mut Cd, now: &mut u64, until: u64, fetch: bool, mut answer: impl FnMut(&mut Cd, u8, u64)) -> Vec<(u64, u8, Vec<u8>)> {
+        let mut out = Vec::new();
+        while let Some(at) = cd.next_event().filter(|&at| at <= until) {
+            *now = at;
+            cd.run_due(at, &mut Vec::new());
+            while let Some((kind, bytes)) = cd.take_interrupt() {
+                if kind == intr::DATA_READY && fetch {
+                    cd.read_buffer(12);
+                    cd.read_buffer(FORM1_DATA_SIZE);
+                }
+                answer(cd, kind, at);
+                out.push((at, kind, bytes));
+            }
+            cd.read_on(at);
+        }
+        *now = until;
+        out
+    }
+
+    /// A drive with a disc of `sectors`, fast or not, in Setmode `mode`
+    /// with the head set for `lba`, at the cycle it is ready for a read.
+    fn ready_drive(sectors: u32, fast: bool, mode: u8, lba: u32) -> (Cd, u64) {
+        let mut cd = Cd::default();
+        cd.insert_disc(0, disc(sectors));
+        cd.set_fast(fast);
+        let mut now = 0;
+        cd.command(com::SETMODE, &[mode], now);
+        run_for(&mut cd, &mut now, 100_000);
+        cd.command(com::SETLOC, &loc(lba), now);
+        run_for(&mut cd, &mut now, 100_000);
+        (cd, now)
+    }
+
+    #[test]
+    fn the_fast_drive_seeks_at_once_and_reads_on_as_the_program_takes_each_sector() {
+        // A load as the resident's reader makes it: whole sectors at double
+        // speed, the motor stopped and the head 9000 sectors away.
+        let (mut cd, start) = ready_drive(10_000, true, 0xA0, 9000);
+        cd.sector_log = Some(Vec::new());
+        let mut now = start;
+        cd.command(com::READN, &[], start);
+        let events = serve(&mut cd, &mut now, start + CPU_HZ / 100, true, |_, _, _| {});
+        // The command's first response comes when it always does, the seek
+        // under way; the sectors follow it, each as the one before is taken.
+        assert_eq!(events[0], (start + ACK_CYCLES, intr::ACKNOWLEDGE, vec![stat::MOTOR | stat::SEEKING]));
+        let sectors = &events[1..];
+        assert!(sectors.len() > 250, "{} sectors in 10 ms", sectors.len());
+        for (n, (at, kind, bytes)) in sectors.iter().enumerate() {
+            assert_eq!((*at, *kind), (start + ACK_CYCLES + (n as u64 + 1) * FAST_SECTOR_CYCLES, intr::DATA_READY));
+            assert_eq!(bytes, &vec![stat::MOTOR | stat::READING]);
+        }
+        let lbas: Vec<u32> = cd.sector_log.as_ref().unwrap().iter().map(|sector| sector.lba).collect();
+        assert_eq!(lbas, (9000..9000 + sectors.len() as u32).collect::<Vec<_>>(), "every sector once, in order");
+        // The drive at its own pace takes the spin-up, the seek and a
+        // sector's time over the first of them.
+        let (mut slow, start) = ready_drive(10_000, false, 0xA0, 9000);
+        let mut now = start;
+        slow.command(com::READN, &[], start);
+        let events = serve(&mut slow, &mut now, start + 2 * CPU_HZ, true, |_, _, _| {});
+        let first = start + SPIN_UP_CYCLES + seek_cycles(0, 9000) + CPU_HZ / 150;
+        assert_eq!((events[1].0, events[2].0), (first, first + CPU_HZ / 150));
+    }
+
+    #[test]
+    fn the_fast_drive_keeps_the_discs_pace_after_a_sector_the_program_leaves_or_answers_with_a_command() {
+        let period = CPU_HZ / 150;
+        // A handler that takes the interrupts and no data (its ring full,
+        // a gap it reads through, no data handler at all): the first
+        // sector comes at once, the rest a sector's time apart.
+        let (mut cd, start) = ready_drive(64, true, 0xA0, 8);
+        let mut now = start;
+        cd.command(com::READN, &[], start);
+        let events = serve(&mut cd, &mut now, start + CPU_HZ / 10, false, |_, _, _| {});
+        let first = start + ACK_CYCLES + FAST_SECTOR_CYCLES;
+        let times: Vec<u64> = events[1..5].iter().map(|event| event.0).collect();
+        assert_eq!(times, [first, first + period, first + 2 * period, first + 3 * period]);
+        // A handler that takes a sector's data and asks the drive for its
+        // status (as the readers do before a retry): the next sector keeps
+        // its time, and the one after a sector taken with nothing asked
+        // follows at once again.
+        let (mut cd, start) = ready_drive(64, true, 0xA0, 8);
+        let mut now = start;
+        cd.command(com::READN, &[], start);
+        let mut data = 0;
+        let events = serve(&mut cd, &mut now, start + CPU_HZ / 10, true, |cd, kind, at| {
+            if kind == intr::DATA_READY {
+                data += 1;
+                if data == 2 {
+                    cd.command(com::GETSTAT, &[], at);
+                }
+            }
+        });
+        let sectors: Vec<u64> = events.iter().filter(|event| event.1 == intr::DATA_READY).map(|event| event.0).take(4).collect();
+        assert_eq!(sectors, [first, first + FAST_SECTOR_CYCLES, first + FAST_SECTOR_CYCLES + period, first + 2 * FAST_SECTOR_CYCLES + period]);
+        // A response the program has not taken holds the next sector too.
+        let (mut cd, start) = ready_drive(64, true, 0xA0, 8);
+        cd.command(com::READN, &[], start);
+        cd.run_due(first, &mut Vec::new());
+        assert_eq!(cd.pending.len(), 2, "the acknowledgement and the first sector wait");
+        cd.read_buffer(12);
+        cd.read_on(first);
+        assert_eq!(cd.next_event(), Some(first + period));
+        assert!(!cd.sector_at_hand(first));
+    }
+
+    #[test]
+    fn the_fast_drive_plays_movies_and_their_sound_at_the_discs_pace() {
+        // The stream library's reads: data sectors without their addresses
+        // (Setmode 0x80, a silent movie's) and with XA-ADPCM (0xC8), whose
+        // handler takes every sector. Only the seek is the fast drive's.
+        for mode in [0x80, 0xC8, 0xE8] {
+            let (mut cd, start) = ready_drive(10_000, true, mode, 9000);
+            let mut now = start;
+            cd.command(com::READS, &[], start);
+            let events = serve(&mut cd, &mut now, start + CPU_HZ / 10, true, |_, _, _| {});
+            let first = start + MIN_SEEK_CYCLES + CPU_HZ / 150;
+            let times: Vec<u64> = events[1..5].iter().map(|event| event.0).collect();
+            assert_eq!(times, [first, first + CPU_HZ / 150, first + 2 * (CPU_HZ / 150), first + 3 * (CPU_HZ / 150)], "Setmode {mode:#x}");
+            assert!(!cd.sector_at_hand(now));
+        }
+    }
+
+    #[test]
+    fn the_fast_drive_pauses_stops_and_spins_up_at_once() {
+        let (mut cd, start) = ready_drive(1000, true, 0xA0, 100);
+        let mut now = start;
+        cd.command(com::READN, &[], start);
+        serve(&mut cd, &mut now, start + CPU_HZ / 100, true, |_, _, _| {});
+        let asked = now;
+        cd.command(com::PAUSE, &[], asked);
+        let events = run_for(&mut cd, &mut now, CPU_HZ);
+        assert_eq!(events, vec![(asked + ACK_CYCLES, intr::ACKNOWLEDGE, vec![stat::MOTOR | stat::READING]),
+            (asked + ACK_CYCLES + IDLE_DONE_CYCLES, intr::COMPLETE, vec![stat::MOTOR])], "the responses of a pause, the second at once");
+        let asked = now;
+        cd.command(com::STOP, &[], asked);
+        let events = run_for(&mut cd, &mut now, CPU_HZ);
+        assert_eq!(events[1], (asked + ACK_CYCLES + IDLE_DONE_CYCLES, intr::COMPLETE, vec![0]));
+        let asked = now;
+        cd.command(com::STANDBY, &[], asked);
+        let events = run_for(&mut cd, &mut now, CPU_HZ);
+        assert_eq!(events[1], (asked + ACK_CYCLES + IDLE_DONE_CYCLES, intr::COMPLETE, vec![stat::MOTOR]));
+        // A seek alone completes just after its first response.
+        cd.command(com::STOP, &[], now);
+        run_for(&mut cd, &mut now, CPU_HZ);
+        cd.command(com::SETLOC, &loc(900), now);
+        run_for(&mut cd, &mut now, CPU_HZ);
+        let asked = now;
+        cd.command(com::SEEKL, &[], asked);
+        let events = run_for(&mut cd, &mut now, CPU_HZ);
+        assert_eq!(events, vec![(asked + ACK_CYCLES, intr::ACKNOWLEDGE, vec![stat::MOTOR | stat::SEEKING]),
+            (asked + ACK_CYCLES + 1, intr::COMPLETE, vec![stat::MOTOR])]);
+    }
+
+    #[test]
+    fn being_fast_is_the_hosts_and_a_state_saved_either_way_continues_under_the_other() {
+        // A fast read saved between two sectors.
+        let (mut cd, start) = ready_drive(4000, true, 0xA0, 3000);
+        let mut now = start;
+        cd.command(com::READN, &[], start);
+        serve(&mut cd, &mut now, start + ACK_CYCLES + 5 * FAST_SECTOR_CYCLES, true, |_, _, _| {});
+        let state = cd.save();
+        // The same drive at its own pace has the same state but for when
+        // its next sector is due: nothing of a state says it was fast.
+        let mut loaded = Cd::default();
+        loaded.insert_disc(0, disc(4000));
+        loaded.load(&state).unwrap();
+        assert!(!loaded.fast(), "a state does not make a drive fast");
+        assert_eq!(loaded.save(), state);
+        // Loaded into a fast drive it goes on as the drive that saved it;
+        // into a drive at its own pace, the sector due comes when it was
+        // due and the ones after it a sector's time apart.
+        let mut fast = Cd::default();
+        fast.insert_disc(0, disc(4000));
+        fast.set_fast(true);
+        fast.load(&state).unwrap();
+        assert!(fast.fast(), "a load leaves the host's choice");
+        let (mut a, mut b, mut c) = (now, now, now);
+        let went_on = serve(&mut cd, &mut a, now + CPU_HZ / 100, true, |_, _, _| {});
+        assert_eq!(serve(&mut fast, &mut b, now + CPU_HZ / 100, true, |_, _, _| {}), went_on);
+        let slow = serve(&mut loaded, &mut c, now + CPU_HZ / 10, true, |_, _, _| {});
+        assert_eq!(slow[0], went_on[0]);
+        assert_eq!(slow[1].0 - slow[0].0, CPU_HZ / 150);
+        // The console's reset and a restored state keep the host's choice.
+        fast.power_on();
+        assert!(fast.fast());
+        let mut restored = Cd::default();
+        restored.load(&state).unwrap();
+        fast.restore_state(restored);
+        assert!(fast.fast());
     }
 
     #[test]

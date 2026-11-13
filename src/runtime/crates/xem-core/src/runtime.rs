@@ -786,8 +786,15 @@ impl<M: GameModule> Runtime<M> {
                 report.interrupts += 1;
                 delivered = true;
             }
+            // The game goes on after its wait's first interrupt, unless the
+            // fast drive, reading on, has its next sector at hand: that
+            // sector's interrupt comes in first, as the console takes one
+            // already waiting before the program runs again.
             if delivered && first_only {
-                return Ok(true);
+                let services = self.services();
+                if !services.cd.sector_at_hand(services.clock.now) {
+                    return Ok(true);
+                }
             }
             // A device event before the clock's next interrupt runs first.
             let device_at = self.services().next_device_event();

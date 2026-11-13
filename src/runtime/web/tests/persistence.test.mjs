@@ -525,7 +525,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
     } finally { await browser.close(); }
   });
 
-  test('half encounters, text speed, movie skipping and auto-advance reach the session from the settings, and T toggles auto-advance', async () => {
+  test('half encounters, text speed, movie skipping, the fast disc and auto-advance reach the session from the settings, and T toggles auto-advance', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true });
     try {
       const page = await browser.page(fixture); await forever(page);
@@ -533,18 +533,18 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       await page.waitForFunction(() => window.xem.status().session.frames > 2);
       const session = async () => (await status(page)).session;
       const before = await session();
-      assert.deepEqual([before.half_encounters, before.text_speed, before.movie_skip, before.auto_advance], [false, 0, false, 0], 'the original by default');
-      for (const change of [{ EncounterRate: 'Half' }, { TextSpeed: 'Instant' }, { MovieSkip: true }]) {
+      assert.deepEqual([before.half_encounters, before.text_speed, before.movie_skip, before.fast_disc, before.auto_advance], [false, 0, false, false, 0], 'the original by default');
+      for (const change of [{ EncounterRate: 'Half' }, { TextSpeed: 'Instant' }, { MovieSkip: true }, { FastDisc: true }]) {
         const reply = await page.evaluate((c) => window.xem.settings.apply(c), change);
         assert.equal(reply.ok, true, JSON.stringify(reply));
       }
-      await page.waitForFunction(() => { const s = window.xem.status().session; return s.half_encounters === true && s.text_speed === 255 && s.movie_skip === true; });
+      await page.waitForFunction(() => { const s = window.xem.status().session; return s.half_encounters === true && s.text_speed === 255 && s.movie_skip === true && s.fast_disc === true; });
       // The app action's default key goes through the settings too.
       await page.keyboard.press('KeyT');
       await page.waitForFunction(() => window.xem.status().session.auto_advance === 120);
       assert.equal((await page.evaluate(() => window.xem.settings.get())).settings.auto_advance.enabled, true);
       const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('xem.settings')));
-      assert.deepEqual([stored.text_speed, stored.movie_skip, stored.auto_advance], ['Instant', true, { enabled: true, dwell: 120 }]);
+      assert.deepEqual([stored.text_speed, stored.movie_skip, stored.fast_disc, stored.auto_advance], ['Instant', true, true, { enabled: true, dwell: 120 }]);
       await page.keyboard.press('KeyT');
       await page.waitForFunction(() => window.xem.status().session.auto_advance === 0);
       await page.evaluate(() => window.xem.setRunning(false));
@@ -555,21 +555,21 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
   test('an old xem.settings reads the gameplay defaults, agents change each option with an acknowledgement, and the choices survive a reload and a backup', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true });
     const ready = async (page) => page.waitForFunction(() => document.body.dataset.ready === 'true');
-    const gameplay = (s) => [s.random_battles, s.encounter_rate, s.text_speed, s.auto_advance, s.movie_skip];
+    const gameplay = (s) => [s.random_battles, s.encounter_rate, s.text_speed, s.auto_advance, s.movie_skip, s.fast_disc];
     try {
       const page = await browser.page(fixture);
       // Settings saved before the gameplay options and the auto-advance
       // shortcut existed, with a choice of their own.
       await page.evaluate(() => {
         const old = window.xem.settings.get().settings;
-        for (const key of ['random_battles', 'encounter_rate', 'text_speed', 'auto_advance', 'movie_skip']) delete old[key];
+        for (const key of ['random_battles', 'encounter_rate', 'text_speed', 'auto_advance', 'movie_skip', 'fast_disc']) delete old[key];
         delete old.app_bindings.ToggleAutoAdvance;
         localStorage.setItem('xem.settings', JSON.stringify({ ...old, master_volume: 40 }));
       });
       await page.reload(); await ready(page);
       const read = (await page.evaluate(() => window.xem.settings.get())).settings;
       assert.deepEqual([...gameplay(read), read.master_volume],
-        ['NotWhilePlatforming', 'Original', 'Original', { enabled: false, dwell: 120 }, false, 40], 'the defaults, the rest kept');
+        ['NotWhilePlatforming', 'Original', 'Original', { enabled: false, dwell: 120 }, false, false, 40], 'the defaults, the rest kept');
       assert.deepEqual(read.app_bindings.ToggleAutoAdvance, { keyboard: ['KeyT'], gamepad: ['Back', 'West'] }, 'the new shortcut reads its default');
       await forever(page);
       await page.evaluate(() => window.xem.setRunning(true));
@@ -577,7 +577,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       // Agents change each through the settings service: acknowledged in turn.
       const first = (await page.evaluate(() => window.xem.settings.get())).revision;
       const changes = [{ RandomBattles: 'Original' }, { EncounterRate: 'Half' }, { TextSpeed: 'Instant' },
-        { AutoAdvance: { enabled: true, dwell: 90 } }, { MovieSkip: true }];
+        { AutoAdvance: { enabled: true, dwell: 90 } }, { MovieSkip: true }, { FastDisc: true }];
       for (const [n, change] of changes.entries()) {
         const reply = await page.evaluate((c) => window.xem.settings.apply(c), change);
         assert.deepEqual([reply.ok, reply.revision], [true, first + n + 1], JSON.stringify(reply));
@@ -588,9 +588,9 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       // The session's status shows each on the next frames.
       await page.waitForFunction(() => {
         const s = window.xem.status().session;
-        return s.random_battles_off.length === 0 && s.half_encounters && s.text_speed === 255 && s.auto_advance === 90 && s.movie_skip;
+        return s.random_battles_off.length === 0 && s.half_encounters && s.text_speed === 255 && s.auto_advance === 90 && s.movie_skip && s.fast_disc;
       });
-      const chosen = ['Original', 'Half', 'Instant', { enabled: true, dwell: 90 }, true];
+      const chosen = ['Original', 'Half', 'Instant', { enabled: true, dwell: 90 }, true, true];
       const backup = await page.evaluate(() => window.xem.settings.export());
       await page.evaluate(() => window.xem.setRunning(false));
       await page.reload(); await ready(page);
