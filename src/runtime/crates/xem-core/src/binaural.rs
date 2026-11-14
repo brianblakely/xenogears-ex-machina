@@ -1043,6 +1043,7 @@ fn read_arena(memory: &dyn GameMemory, scene: &mut Scene) {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
     use crate::memory::OutOfBounds;
 
@@ -1132,12 +1133,12 @@ mod tests {
         ram.word(VOICE_OWNERS + 4 * 5, 0x8015_0000);
         let mut presenter = Presenter::new(on());
         presenter.key_on((1 << 0) | (1 << 22) | (1 << 23) | (1 << 5), &ram);
-        assert!(matches!(presenter.tags[0], Some(Tag::Music { seq: MUSIC, part: 2, .. })));
+        assert_matches!(presenter.tags[0], Some(Tag::Music { seq: MUSIC, part: 2, .. }));
         assert_eq!(presenter.tags[22], Some(Tag::Effect { channel: 14, id: 0x0004_0021, stamp: 77, sprite: 0, emitter: None }));
         assert_eq!(presenter.tags[5], Some(Tag::Other { owner: 0x8015_0000 }));
         // Music is placed; an effect without an emitter keeps its mix and is
         // counted as a gap; so does a voice nobody owns.
-        assert!(matches!(presenter.renderer.route(0), Route::Source(_)));
+        assert_matches!(presenter.renderer.route(0), Route::Source(_));
         assert_eq!(presenter.renderer.route(22), Route::Original);
         assert_eq!(presenter.renderer.route(5), Route::Original);
         assert_eq!(presenter.unresolved.values().sum::<u64>(), 2, "both channels of the effect start");
@@ -1507,7 +1508,7 @@ mod tests {
         ram.word(sprites[1] + 0x50, 0x8018_0000);
         presenter.update_scene(&ram, Some(MODE_BATTLE), false);
         assert_eq!(presenter.place_effect(presenter.tags[4].unwrap()), Placing::Unresolved("its sprite is gone"));
-        assert!(matches!(presenter.renderer.route(4), Route::Source(_)), "its voices keep their place to the end");
+        assert_matches!(presenter.renderer.route(4), Route::Source(_), "its voices keep their place to the end");
         // A start nobody's sprite made stays in its mix.
         effect(&mut ram, 6, 6, 0x0001_005a, 41);
         presenter.effect_started(0x2006, 0x0001_005a, 0, &ram);
@@ -1553,7 +1554,7 @@ mod tests {
         assert_eq!(presenter.tags[3], None);
         assert_eq!(presenter.renderer.route(3), Route::Original);
         presenter.retag(1 << 3, &ram);
-        assert!(matches!(presenter.renderer.route(3), Route::Source(_)));
+        assert_matches!(presenter.renderer.route(3), Route::Source(_));
     }
 
     #[test]

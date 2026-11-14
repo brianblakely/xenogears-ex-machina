@@ -1,0 +1,77 @@
+md014-0069 f50767f6f44185f0 Av tap water
+md014-0081 c56d3204aef12a1c Noatun Gear dock key
+md014-0082 11612e7d7b8cdbea Noatun sewer keys
+md014-0095 a07bcfe27c320655 Old wooden statue
+md014-0097 60a1fd72a10495bf Map of Noatun's sewers
+md014-0098 eeeff5c041a4536b Map of Merkabah
+md021-0018 e8609c324ad333c4 Active Ether Resp
+md040-0135 39af7dd5a98c373a Handmade
+md040-0142 e07167555cf4b6ff Her tribe's treasure
+md045-0052 c402f15e01b02ecf FENR-19000
+md045-0053 23f9f70ffacade52 FENR-23000
+md045-0054 fc425c814145e926 FENR-27000
+md045-0055 e6f2cf3e490bc7d8 FENR-32000
+md045-0074 9834483a07aebc20 ANDV-18500
+md045-0075 800b533c0d9a5b72 ANDV-22200
+md045-0076 ba5974be13a1cf08 ANDV-26000
+md048-0014 1d5d4162889dc243 Weltall 2 use. 17700HP
+md048-0015 60242a2cfc6a1523 Weltall 2 use. 21200HP
+md048-0016 ed430321e59560b9 Weltall 2 use. 25400HP
+md048-0041 aad81a981e2db6d4 Heimdall use. 2500HP
+md048-0042 55b1a36c0e8ac420 Heimdall use. 3200HP
+md048-0043 e3e2ed22af8a3cc2 Heimdall use. 3800HP
+md048-0044 9553c0d6aadad16a Heimdall use. 4500HP
+md048-0045 430ee8fbfcfd5e7c Heimdall use. 5400HP
+md048-0046 c4ebfa7aca3ff7bd Heimdall use. 6400HP
+md048-0047 dc9a6efa80b6c14e Heimdall use. 7800HP
+md048-0048 a8b41118ab7235ee Heimdall use. 9200HP
+md048-0049 9c30c2a59a068a05 Heimdall use. 11000HP
+md048-0050 ee6e08a7f990fd8f Heimdall use. 13000HP
+md048-0051 7ca18632f6b7a131 Heimdall use. 15800HP
+md048-0052 9d0bd34abf98108d El-Fenrir use. 19000HP
+md048-0053 c5dac05dba73ca38 El-Fenrir use. 23000HP
+md048-0054 de5965e8f4278324 El-Fenrir use. 27000HP
+md048-0055 027f8b047ab4062e El-Fenrir use. 32000HP
+md048-0074 7cb4ae9c7649a82a El-Andvari use. 18500HP
+md048-0075 3b7b2670ac271d6c El-Andvari use. 22200HP
+md048-0076 088e699072ca52c2 El-Andvari use. 26000HP
+md048-0089 f97fdbf708025200 El-Renmazuo use. 24800HP
+md048-0105 d17083f9b7814b85 El-Stier use. 30000HP
+md048-0106 d6756ae71f5ae603 El-Stier use. 36000HP
+md048-0126 cc6caf19e1a63cc2 Siebzehn use. 18000HP
+md048-0127 b939e832696b0013 Siebzehn use. 22000HP
+md048-0128 c45ca47be152cfe8 Siebzehn use. 30000HP
+md048-0129 58043b7ec51d1d90 Siebzehn use. 38000HP
+md051-0096 a98d55cd0ae211d6 Unseals Lv1 Fierce finisher
+md051-0097 02b57bd9648e799b Unseals Lv2 Fierce finisher
+md051-0098 b7a616843901b598 Unseals Lv3 Fierce finisher
+md053-0406 821556183a7d4ed4
+md053-0407 c852e85095f096f5@c85f355c1de41b74
+md053-0410 c852e85095f096f5@2ba968f65c00b851
+md053-0413 c852e85095f096f5@3753c6d0890b062a
+md053-0426 c852e85095f096f5@2870558df307a055 Her
+md055-0288 e4b3c26be016c210 Unseals
+md055-0289 1155e067688677df Lv1 Fierce
+md055-0290 78f3188d58feb5de finisher
+md055-0292 1159466768895b08 Lv2 Fierce
+md055-0295 115cac67688c3e31 Lv3 Fierce
+ml003-0009 fbd48597b92ce7e8@ffdd08262d243ad3 Enter
+ml003-0012 b1d8597bcf6b32b6@e87a89d75c8e7f95 Delete
+ml003-0018 1791c9dabe07b510@b7ff1bc68d1a19b7 In use
+ml003-0114 0cf5f5e49f3d454f Handgun
+ml003-0115 e0a75128d6459fca Ether Gun R
+ml003-0116 e04ef528d5fa8da0 Ether Gun L
+ml003-0117 09c406084c9ffb2a Big Gun
+ml003-0118 a824d59d9134c198 Deathblows
+mm000-0056 364f8c06b2af685e To approach your opponent,{n}press the Directional Button{n}toward him/her.{p}To retreat from your opponent,{n}press the Directional Button{n}away from him/her.{p}Pressing Up / Down on the{n}Directional Button will move{n}you away from / toward the{n}screen respectively.{p}Push the △ Button to jump.
+mm000-0067 d3004806fd8363fc Leonardo{n}"Hm! Not bad.{p}Have it your way then...{n}Playtime is now over!{p}Let's get serious..."
+mm000-0068 80c1359972c6bf32 Leonardo{n}"Hmph! That was nothing.{p}Enough messing around, already!{n}Let's get serious..."
+nm000-0012 c80e5fb88c150cac@1c1937958a45bf27 Weltall 2
+nm000-0014 c5a90b63f874554c@b52afb7ffc4291a2 Heimdall
+nm000-0018 c852e85095f096f5@354651d656ba7adb Chu-Chu
+nm000-0021 dd6ba60946233ce9@bbf20a3e22005f94 ﭏRegulus
+nm000-0022 565d731e78a5aad0@a26c3c5b82f9c01e ﭏFenrir
+nm000-0023 8f19483527030a47@bf8ce92e361977b0 ﭏAndvari
+nm000-0024 5b12544288b6cffb@551fd39300c91537 ﭏRenmazuo
+nm000-0025 e48aff134dbdac2b@0b508c1c9764dff6 ﭏStier
+nm000-0027 c5a90b63f874554c@55cf8f11906d907e Heimdall

@@ -40,11 +40,12 @@ def main():
     if not apk.is_file():
         parser.error(f"missing {apk}")
     os.environ["ANDROID_USER_HOME"] = str(ROOT / ".local/android/home")
+    # The emulator smoke runs first and leaves its booted emulator
+    # (XEM_SMOKE_KEEP=1) for the signed APK; the finally block stops it.
     subprocess.run([str(ROOT / "src/runtime/scripts/android-smoke.sh")],
-                   env=dict(os.environ, XEM_SMOKE_BOOT="1"), check=True)
-    # As in android-smoke.sh, let first-boot configuration/activity changes
-    # settle before launching the app. The boot-only stage intentionally does
-    # not wait, so builds can overlap this interval.
+                   env=dict(os.environ, XEM_SMOKE_KEEP="1"), check=True)
+    # As in android-smoke.sh, first-boot configuration/activity changes settle
+    # for 20 s from the boot before the app launches.
     booted = float((ROOT / "build/android/smoke/booted-at").read_text())
     time.sleep(max(0, booted + 20 - time.time()))
     out = ROOT / "build/android/release-smoke"

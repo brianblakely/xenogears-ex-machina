@@ -156,7 +156,12 @@ pub fn adsr_params(phase: Phase, adsr1: u16, adsr2: u16) -> Option<Params> {
 /// Advances an ADSR envelope by one cycle. Transitions are taken at the
 /// start of the cycle from the current level (Attack ends at 0x7FFF, Decay at
 /// or below the sustain level, Release at 0), then the phase steps once.
+#[inline]
 pub fn adsr_tick(phase: &mut Phase, level: &mut i16, counter: &mut u16, adsr1: u16, adsr2: u16) {
+    // Off stays off, at whatever level it is given.
+    if *phase == Phase::Off {
+        return;
+    }
     let next = match *phase {
         Phase::Attack if *level as i32 >= 0x7FFF => Phase::Decay,
         Phase::Decay if (*level as i32) <= sustain_level(adsr1) => Phase::Sustain,

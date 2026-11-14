@@ -746,6 +746,22 @@ src/runtime/crates/xem-binaural/tests/models.rs
 src/runtime/crates/xem-core/Cargo.toml
 src/runtime/crates/xem-core/font/README.md
 src/runtime/crates/xem-core/font/substitute.txt
+src/runtime/crates/xem-core/locale/en-x-pw/LICENSE
+src/runtime/crates/xem-core/locale/en-x-pw/README.md
+src/runtime/crates/xem-core/locale/en-x-pw/battle.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-0.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-1.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-2.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-3.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-4.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-5.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-6.txt
+src/runtime/crates/xem-core/locale/en-x-pw/field-7.txt
+src/runtime/crates/xem-core/locale/en-x-pw/glyphs.txt
+src/runtime/crates/xem-core/locale/en-x-pw/menus.txt
+src/runtime/crates/xem-core/locale/en-x-pw/same.txt
+src/runtime/crates/xem-core/locale/en-x-pw/system.txt
+src/runtime/crates/xem-core/locale/en-x-pw/world.txt
 src/runtime/crates/xem-core/locale/fr/battle.txt
 src/runtime/crates/xem-core/locale/fr/field-0.txt
 src/runtime/crates/xem-core/locale/fr/field-1.txt
@@ -845,6 +861,7 @@ src/runtime/crates/xem-gpu/src/snapshot.rs
 src/runtime/crates/xem-gpu/src/trace.rs
 src/runtime/crates/xem-gpu/tests/gpu.rs
 src/runtime/crates/xem-gpu/tests/private_capture.rs
+src/runtime/crates/xem-gpu/tests/raster.rs
 src/runtime/crates/xem-headless/Cargo.toml
 src/runtime/crates/xem-headless/build.rs
 src/runtime/crates/xem-headless/examples/first_person.rs
@@ -862,6 +879,7 @@ src/runtime/crates/xem-headless/tests/debug.rs
 src/runtime/crates/xem-headless/tests/diorama.rs
 src/runtime/crates/xem-headless/tests/discs.rs
 src/runtime/crates/xem-headless/tests/encounters.rs
+src/runtime/crates/xem-headless/tests/fast_disc.rs
 src/runtime/crates/xem-headless/tests/file_screen.rs
 src/runtime/crates/xem-headless/tests/first_person.rs
 src/runtime/crates/xem-headless/tests/gestures.rs
@@ -968,6 +986,7 @@ src/runtime/scripts/android-smoke.sh
 src/runtime/scripts/android-ui.py
 src/runtime/scripts/arm64-smoke.sh
 src/runtime/scripts/check-headless-deps.sh
+src/runtime/scripts/suite.py
 src/runtime/scripts/suite.sh
 src/runtime/scripts/xem-gpu-host
 src/runtime/scripts/xr-game-smoke.sh
@@ -1188,6 +1207,7 @@ tools/matching_ram.py
 tools/names.py
 tools/nonmatching_score.py
 tools/packed_container.py
+tools/perfect_works.py
 tools/permuter_import.py
 tools/psyq_signatures.py
 tools/reference/README.md

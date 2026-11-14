@@ -918,13 +918,18 @@ export component SettingsPanel inherits Window {
     in-out property <bool> auto-advance;
     in-out property <int> auto-advance-dwell: 120;
     in-out property <bool> movie-skip;
+    // The disc drive takes no time over the game's loads
+    // (xem_settings::Settings::fast_disc).
+    in-out property <bool> fast-disc;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
-    // ledge brake, touch controls, reduced transparency and motion.
+    // ledge brake, touch controls and how opaque they are drawn (percent),
+    // reduced transparency and motion.
     in-out property <bool> assist-gestures;
     in-out property <int> assist-pointer;
     in-out property <bool> assist-ledge-brake;
     in-out property <bool> assist-touch;
+    in-out property <float> assist-touch-opacity: 100;
     in-out property <bool> assist-solid;
     in-out property <bool> assist-still;
     in-out property <bool> rewind-enabled;
@@ -960,10 +965,10 @@ export component SettingsPanel inherits Window {
     callback hide-idle-cursor-edited(bool);
     callback random-battles-edited(int);
     // A gameplay option by name (encounter-rate, text-speed, auto-advance,
-    // auto-advance-dwell, movie-skip, language) and value.
+    // auto-advance-dwell, movie-skip, fast-disc, language) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
-    // touch, solid, still) and value.
+    // touch, touch-opacity, solid, still) and value.
     callback assist-edited(string, int);
     callback rewind-enabled-edited(bool);
     callback rewind-interval-edited(int);
@@ -1619,6 +1624,21 @@ export component SettingsPanel inherits Window {
                                     checked <=> root.assist-touch;
                                     toggled(on) => { root.assist-edited("touch", on ? 1 : 0); }
                                 }
+                                // How opaque the touch controls are drawn
+                                // (xem_settings' MIN_TOUCH_OPACITY to
+                                // MAX_TOUCH_OPACITY, in steps of 5); they
+                                // show beside the panel as it changes.
+                                if root.assist-touch: SliderRow {
+                                    label: "Touch controls opacity";
+                                    value-text: "\{round(root.assist-touch-opacity)}%";
+                                    RingSlider {
+                                        accessible-label: "Touch controls opacity";
+                                        minimum: 10; maximum: 100;
+                                        value <=> root.assist-touch-opacity;
+                                        step: 5;
+                                        changed(value) => { root.assist-edited("touch-opacity", round(value / 5) * 5); }
+                                    }
+                                }
                                 Divider { }
                                 ToggleRow {
                                     label: "Reduce transparency";
@@ -1926,7 +1946,8 @@ export component SettingsPanel inherits Window {
                                 title: "Language";
                                 Row {
                                     label: "Game text";
-                                    Choice { accessible-label: "Game text language"; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
+                                    // Wide enough for the longest name ("English (Perfect Works)") in the box and in its list.
+                                    Choice { accessible-label: "Game text language"; min-width: 204px; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
                                 }
                             }
                             if root.selected-section == 6: Card {
@@ -1971,6 +1992,14 @@ export component SettingsPanel inherits Window {
                                     label: "Movies can be skipped";
                                     checked <=> root.movie-skip;
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
+                                }
+                            }
+                            if root.selected-section == 6: Card {
+                                title: "Loading";
+                                ToggleRow {
+                                    label: "Skip disc load times";
+                                    checked <=> root.fast-disc;
+                                    toggled(on) => { root.gameplay-edited("fast-disc", on ? 1 : 0); }
                                 }
                             }
                             // The original kernel menu, with application controls.
@@ -2055,6 +2084,10 @@ export component SettingsPanel inherits Window {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
+                            }
+                            if root.selected-section == 8: Card {
+                                title: "English (Perfect Works)";
+                                Text { text: "The game text language English (Perfect Works) is the Xenogears: Perfect Works Build team's retranslation (github.com/PWBuild-Team/Perfect_Works_Build), a separate work under the GNU General Public License, version 3, without warranty. Its text and that licence are in this release's source archive and notices."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 8: Card {
                                 title: "Binaural sound";

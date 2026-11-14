@@ -350,8 +350,15 @@ impl Gpu {
 
     /// Writes GP0 words in order.
     pub fn write_gp0_words(&mut self, words: &[u32]) {
-        for &word in words {
-            self.write_gp0(word);
+        let mut at = 0;
+        while at < words.len() {
+            // A transfer's pixels go in as rows, not word by word.
+            if let Receive::ImageLoad(image) = self.receive {
+                at += self.load_image_words(image, &words[at..]);
+            } else {
+                self.write_gp0(words[at]);
+                at += 1;
+            }
         }
     }
 
@@ -458,13 +465,40 @@ impl Gpu {
         };
     }
 
-    fn load_image_word(&mut self, mut image: Image, word: u32) {
+    fn load_image_word(&mut self, image: Image, word: u32) {
+        self.load_image_words(image, &[word]);
+    }
+
+    /// The next words of the transfer into `image`, two pixels each: those
+    /// it still takes (the last word's second pixel may be beyond its end).
+    /// Returns the words taken; the transfer ends with its last pixel.
+    fn load_image_words(&mut self, mut image: Image, words: &[u32]) -> usize {
         let total = image.pixels();
-        for pixel in [word as u16, (word >> 16) as u16] {
-            if image.index < total {
-                let index = image.vram_index(image.index);
-                self.write_masked(index, pixel);
+        let width = u32::from(image.width);
+        // GP0(E6h) can force a written pixel's bit 15 and keep the pixels
+        // whose bit 15 is set, as for a copy.
+        let (force, check) = (if self.mask & 1 != 0 { 0x8000 } else { 0 }, self.mask & 2 != 0);
+        // The pixel's column and row within the rectangle, which wraps at
+        // VRAM's edges.
+        let (mut column, mut line) = (image.index % width, image.index / width);
+        let mut taken = 0;
+        'words: for &word in words {
+            taken += 1;
+            for pixel in [word as u16, (word >> 16) as u16] {
+                let x = (u32::from(image.x) + column) as usize & (VRAM_WIDTH - 1);
+                let y = (u32::from(image.y) + line) as usize & (VRAM_HEIGHT - 1);
+                let at = &mut self.vram[y * VRAM_WIDTH + x];
+                if !(check && *at & 0x8000 != 0) {
+                    *at = pixel | force;
+                }
                 image.index += 1;
+                column += 1;
+                if column == width {
+                    (column, line) = (0, line + 1);
+                }
+                if image.index >= total {
+                    break 'words;
+                }
             }
         }
         self.receive = if image.index >= total {
@@ -473,15 +507,7 @@ impl Gpu {
         } else {
             Receive::ImageLoad(image)
         };
-    }
-
-    /// Writes a pixel the way transfers and copies do: GP0(E6h) can protect
-    /// masked pixels and force bit 15.
-    fn write_masked(&mut self, index: usize, pixel: u16) {
-        if self.mask & 2 != 0 && self.vram[index] & 0x8000 != 0 {
-            return;
-        }
-        self.vram[index] = pixel | if self.mask & 1 != 0 { 0x8000 } else { 0 };
+        taken
     }
 
     /// Writes one word to GP1.
@@ -573,7 +599,7 @@ impl Gpu {
     /// changes (GPUSTAT.13 and .31).
     pub fn vblank(&mut self) {
         if self.display_mode & 0x20 != 0 {
-            self.odd_field = !self.odd_field;
+            self.odd_field.toggle();
         }
         self.trace_vblank();
     }

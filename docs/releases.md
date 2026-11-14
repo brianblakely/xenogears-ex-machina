@@ -6,8 +6,9 @@ or starting builds. Documentation, tests, release descriptions, workflow-only
 edits and browser-only changes do not cut a native release or deploy Pages.
 An unresolved comparison fails the check instead of reserving a version.
 An explicit manual workflow run can rebuild; `release/` branches still qualify.
-Versions start with `v0.5`; subsequent releases increment the patch version
-(`v0.5.1`, `v0.5.2`, …). A retry reuses the
+Each release takes the next minor version (`v1.5`, `v1.6`, `v1.7`, …;
+`tools/release/version.py`); the releases before `v1.5` advanced the patch
+version instead (`v1.0.1` … `v1.0.12`). A retry reuses the
 commit's tag. Publication waits for the complete artifact set and automated
 checks. Published files are immutable: a retry must reproduce their checksums.
 The same release's static web application deploys to GitHub Pages.
@@ -230,9 +231,11 @@ publisher changes need focused release tests, not the runtime suite. Before revi
 or merging runtime changes, run `src/runtime/scripts/suite.sh full` once; it skips
 when runtime inputs have no changes against the merge base with `origin/master`.
 Use `--base REF` for another comparison or deliberately use `--force` to bypass
-the guard. Its logs and exact stage results are under `build/suite/`; a skip
-preserves previous logs and does not count as a passing run. Checks without private
-disc inputs must report their skips; they are not original-game playthroughs.
+the guard and run every unit again. Its logs and each unit's result
+(`summary.txt`) are under `build/suite/`: a unit listed as `same` stands on the
+pass it names, its inputs unchanged since. A skip preserves previous logs and
+does not count as a passing run. Checks without private disc inputs must report
+their skips; they are not original-game playthroughs.
 
 ## v0.5 qualification record
 

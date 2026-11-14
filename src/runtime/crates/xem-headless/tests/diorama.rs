@@ -179,8 +179,17 @@ struct Host {
 
 impl Host {
     fn new(disc: &Path) -> Host {
+        Host::on(disc, pollster::block_on(Gpu::headless()).expect("a wgpu adapter"))
+    }
+
+    /// A host on the software rasterizer, for pictures compared to the last
+    /// bit (a graphics card rounds a pane's colours its own way).
+    fn exact(disc: &Path) -> Host {
+        Host::on(disc, pollster::block_on(Gpu::reference()).expect("a software wgpu adapter"))
+    }
+
+    fn on(disc: &Path, gpu: Gpu) -> Host {
         let (session, _) = boot(disc, &Default::default()).expect("boot");
-        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
         let view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
         Host { session, gpu, view, screen: None, after_scene: None, graphics: Graphics::default(), table: Table::default(), screen_view: false, blanks: 0 }
     }
@@ -860,7 +869,7 @@ fn the_pane_holds_the_interface_as_the_flat_frame_draws_it() {
     ];
     let mut results = Vec::new();
     for (name, commands) in scenes {
-        let mut host = Host::new(&disc);
+        let mut host = Host::exact(&disc);
         for command in commands {
             run(&mut host.session, command);
         }

@@ -8,6 +8,7 @@
 
 #![cfg(all(has_game_module, not(debug_assertions)))]
 
+use std::assert_matches;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 use xem_core::control::Session;
@@ -608,7 +609,7 @@ fn control_queries_survive_a_world_map_encounter() {
     ] {
         run(&mut session, command);
     }
-    assert!(matches!(session.runtime.context(), xem_core::context::Context::WorldMap { movement: 1, .. }));
+    assert_matches!(session.runtime.context(), xem_core::context::Context::WorldMap { movement: 1, .. });
     let bindings = xem_settings::GameBindings::default();
     let mut player = xem_settings::player::PlayerInput::default();
     player.key(&bindings, "KeyS", true);

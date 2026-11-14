@@ -63,17 +63,19 @@ def map_game_memory():
     _MAPPED = True
 
 
-def build(out, sources, symbols=None, defines=()):
+def build(out, sources, symbols=None, defines=(), flags=()):
     """Compile `sources` (paths from the repository root) with the software GTE
     into a shared library in `out`, the names in `symbols` placed at their
-    addresses, and load it."""
+    addresses, and load it. `flags` are further compiler options, for a
+    source written for the module build alone (its prelude's declarations,
+    its 32-bit pointers)."""
     if not CLANG:
         raise RuntimeError("no clang (run inside nix develop path:./nix/runtime)")
     map_game_memory()
     objects = []
     for source in ["src/port/gte.c", *sources]:
         obj = os.path.join(out, source.replace("/", "_") + ".o")
-        subprocess.run([CLANG, *COMMON_FLAGS, *(f"-D{d}" for d in defines), "-c", source, "-o", obj],
+        subprocess.run([CLANG, *COMMON_FLAGS, *(f"-D{d}" for d in defines), *flags, "-c", source, "-o", obj],
                        cwd=ROOT, check=True)
         objects.append(obj)
     library = os.path.join(out, "libport.so")

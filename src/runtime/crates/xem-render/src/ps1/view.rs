@@ -887,7 +887,12 @@ impl GameView {
         if let Some(focus) = trace.focus {
             self.recorded_focus = Some(f32::from(focus));
         }
-        self.pending.extend(trace.ops);
+        // (With nothing waiting before it, the trace's own buffer.)
+        if self.pending.is_empty() {
+            self.pending = trace.ops;
+        } else {
+            self.pending.extend(trace.ops);
+        }
         if self.pending.len() > PENDING_LIMIT {
             self.pending.clear();
             self.restart = true;

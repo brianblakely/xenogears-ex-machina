@@ -58,13 +58,20 @@ export function buildFixtures() {
   return fixtures;
 }
 
-export async function start({ args = [], fixtures: withFixtures = false, mounts: more = {}, context: contextOptions = {},
-  initScripts = [] } = {}) {
+/** A browser on the built page. `software` draws its WebGL2 on SwiftShader
+ *  wherever the others draw: the suite names the host's graphics card's
+ *  Vulkan driver for them (scripts/suite.py), and without those names
+ *  Chromium keeps its own software renderer. For a test that holds only at
+ *  the pace that renderer presents a session's frames at. */
+export async function start({ args = [], software = false, fixtures: withFixtures = false, mounts: more = {},
+  context: contextOptions = {}, initScripts = [] } = {}) {
   if (!existsSync(join(WEB, 'index.html'))) throw new Error(`${WEB} is missing: run src/runtime/web/build.py`);
   const mounts = { '/': WEB, ...more };
   if (withFixtures) mounts['/fixtures/'] = buildFixtures();
   const server = await serve(mounts);
-  const browser = await chromium.launch({ executablePath: process.env.XEM_CHROMIUM, headless: true, args });
+  const env = Object.fromEntries(Object.entries(process.env)
+    .filter(([name]) => !(software && ['VK_ICD_FILENAMES', 'VK_DRIVER_FILES'].includes(name))));
+  const browser = await chromium.launch({ executablePath: process.env.XEM_CHROMIUM, headless: true, args, env });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, ...contextOptions });
   // The suite runs browsers side by side: a page can take longer than
   // Playwright's 30 s to start on a loaded machine (a hang still fails).

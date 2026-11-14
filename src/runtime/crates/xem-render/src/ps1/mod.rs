@@ -2929,7 +2929,9 @@ impl Ps1Renderer {
                         if overlap(&log.rect, &shown) * 10 < u32::from(log.rect.width) * u32::from(log.rect.height) * 9 {
                             log.rect = shown;
                         }
-                        log.previous = std::mem::take(&mut log.ops);
+                        // (The frame before the last makes room for this one.)
+                        std::mem::swap(&mut log.previous, &mut log.ops);
+                        log.ops.clear();
                         log.frames = self.logged;
                         log.start = start;
                         (log.eye, log.camera, log.placements, log.drawn) = (None, None, Default::default(), false);
@@ -3022,7 +3024,9 @@ impl Ps1Renderer {
                     let size = u32::from(l.rect.width) * u32::from(l.rect.height);
                     overlap(&l.rect, &rect) * 10 >= size.max(area) * 9
                 }) {
-                    log.previous = std::mem::replace(&mut log.ops, vec![op.clone()]);
+                    std::mem::swap(&mut log.previous, &mut log.ops);
+                    log.ops.clear();
+                    log.ops.push(op.clone());
                     log.rect = rect;
                     log.frames = frames;
                     log.start = std::sync::Arc::new(self.native.clone());

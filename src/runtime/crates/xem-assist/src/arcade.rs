@@ -72,12 +72,15 @@ pub(crate) fn eighth(dir: i32, held: Option<i32>) -> i32 {
 
 /// The game's buttons as the field reads them (after its button
 /// assignment), the action each is, and its key's label: the symbol the
-/// button has under the default assignment (the game's prompts name those).
+/// button has under the default assignment, which the game's prompts name
+/// (map 565's console: "Confirm with ×, quit with ○", its scripts testing
+/// 0x20 to check the code and 0x40 to ask about leaving; the field's
+/// "Press △ to jump", 0x80, and "the Menu screen with □", 0x10).
 const ACTIVITY_BUTTONS: [(u16, &[GameAction], &str); 14] = [
-    (0x0020, &[GameAction::Confirm], "circle"),
-    (0x0040, &[GameAction::Cancel], "cross"),
-    (0x0010, &[GameAction::Menu], "triangle"),
-    (0x0080, &[GameAction::Jump], "square"),
+    (0x0020, &[GameAction::Confirm], "cross"),
+    (0x0040, &[GameAction::Cancel], "circle"),
+    (0x0010, &[GameAction::Menu], "square"),
+    (0x0080, &[GameAction::Jump], "triangle"),
     (0x0004, &[GameAction::CameraLeft], "L1"),
     (0x0008, &[GameAction::CameraRight], "R1"),
     (0x0001, &[GameAction::L2], "L2"),
@@ -94,6 +97,13 @@ const ACTIVITY_BUTTONS: [(u16, &[GameAction], &str); 14] = [
 /// presses.
 pub fn activity_button(action: GameAction) -> Option<u16> {
     ACTIVITY_BUTTONS.iter().find(|(_, actions, _)| actions[0] == action).map(|(bit, ..)| *bit)
+}
+
+/// The label of an activity deck's key for `action`: the button's symbol
+/// as the game's prompts name it. The headset's deck and the touch deck's
+/// share it.
+pub fn activity_label(action: GameAction) -> Option<&'static str> {
+    ACTIVITY_BUTTONS.iter().find(|(_, actions, _)| actions[0] == action).map(|(.., label)| *label)
 }
 
 /// A deck's keys, top to bottom.
@@ -337,7 +347,7 @@ mod tests {
         let ui = Context::Event { map: 699, buttons: 0xF0F0 };
         let deck = deck(ui).unwrap();
         let labels: Vec<_> = keys(deck).iter().map(|k| k.label).collect();
-        assert_eq!(labels, ["circle", "cross", "triangle", "square", "^", "v", "<", ">"]);
+        assert_eq!(labels, ["cross", "circle", "square", "triangle", "^", "v", "<", ">"]);
         let mut arcade = Arcade::default();
         let played = arcade.update(ui, &[Gesture::Tap { hand: Hand::Left }, Gesture::Swipe { hand: Hand::Left, direction: Swipe::Left }], palm(0.0, 0.0), Vec3::X, Vec3::NEG_Z).unwrap();
         assert_eq!(played.presses, vec![vec![GameAction::Confirm], vec![GameAction::Left]]);
@@ -345,9 +355,18 @@ mod tests {
         arcade.update(ui, &[Gesture::Pinch { hand: Hand::Right }], palm(0.0, -0.3), Vec3::X, Vec3::NEG_Z);
         let held = arcade.update(ui, &[], palm(0.05, -0.35), Vec3::X, Vec3::NEG_Z).unwrap().held;
         assert_eq!(held, BTreeSet::from([GameAction::Up, GameAction::Right]));
-        // Only Cross: a tap presses it, swipes nothing; events elsewhere have no deck.
-        let cross = Context::Event { map: 100, buttons: 0x0040 };
-        assert_eq!(arcade.update(cross, &[Gesture::Tap { hand: Hand::Left }, Gesture::Swipe { hand: Hand::Left, direction: Swipe::Up }], palm(0.0, 0.0), Vec3::X, Vec3::NEG_Z).unwrap().presses, vec![vec![GameAction::Cancel]]);
+        // Only Circle: a tap presses it, swipes nothing; events elsewhere have no deck.
+        let circle = Context::Event { map: 100, buttons: 0x0040 };
+        assert_eq!(keys(super::deck(circle).unwrap()).iter().map(|k| k.label).collect::<Vec<_>>(), ["circle"]);
+        assert_eq!(arcade.update(circle, &[Gesture::Tap { hand: Hand::Left }, Gesture::Swipe { hand: Hand::Left, direction: Swipe::Up }], palm(0.0, 0.0), Vec3::X, Vec3::NEG_Z).unwrap().presses, vec![vec![GameAction::Cancel]]);
         assert!(super::deck(Context::Event { map: 1, buttons: 0 }).is_none());
+        // The symbols are the buttons' as the game's prompts name them: map
+        // 565's console is confirmed with Cross (its scripts test 0x20) and
+        // left with Circle (0x40); the field jumps with Triangle (0x80) and
+        // opens its menu with Square (0x10).
+        for (action, bit, label) in [(GameAction::Confirm, 0x20, "cross"), (GameAction::Cancel, 0x40, "circle"), (GameAction::Jump, 0x80, "triangle"), (GameAction::Menu, 0x10, "square")] {
+            assert_eq!((activity_button(action), activity_label(action)), (Some(bit), Some(label)), "{action:?}");
+        }
+        assert_eq!(keys(super::deck(Context::Event { map: 565, buttons: 0xf060 }).unwrap()).iter().map(|k| k.label).collect::<Vec<_>>(), ["cross", "circle", "^", "v", "<", ">"]);
     }
 }

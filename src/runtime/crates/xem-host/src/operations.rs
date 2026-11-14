@@ -230,7 +230,7 @@ unsafe extern "C" fn chosen(userdata: *mut c_void, files: *const *const c_char, 
 /// last '/': the file's name where the provider puts its path there).
 fn file_name(path: &str) -> String {
     let Some(document) = path.strip_prefix("content://") else {
-        return std::path::Path::new(path).file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
+        return std::path::Path::new(path).file_name().map_or_default(|name| name.to_string_lossy().into_owned());
     };
     let mut bytes = Vec::new();
     let mut at = 0;

@@ -5,6 +5,7 @@
  * host's restart gives the game an empty stack instead.
  */
 #include "common.h"
+#include "resident/cd.h"
 #include "resident/mode.h"
 #include "xem/fiber.h"
 
@@ -159,6 +160,21 @@ void xem_loop_poll(void) {
         xem_loop_iterations = 0;
         xem_host_yield(XEM_YIELD_POLL);
     }
+}
+
+/* The poll of a loop that only waits for the disc's reads: it reads how many
+ * are pending (cd_get_pending_read_count), tests the count and branches back
+ * (tools/game_module.py finds them: cd_sync_reads' wait and the mode loaders').
+ * While reads are pending, reading their count does nothing else, only an
+ * interrupt changes it and an iteration takes no time here: the loop is
+ * where its iterations up to the poll's 0x10000th leave it, without their
+ * being run. With none pending the count's reader asks the drive for its
+ * data and its command, which wait in their own way: those iterations run. */
+void xem_loop_spin(void) {
+    if (cd_pending_read_count != 0 && xem_loop_iterations < 0xFFFF && !xem_present_sprite_facing_active()) {
+        xem_loop_iterations = 0xFFFF;
+    }
+    xem_loop_poll();
 }
 
 /* The game takes one queued pad state (resident pad_dequeue_state): the host

@@ -22,6 +22,13 @@ pub trait GameMemory {
         Ok(())
     }
 
+    /// A region's bytes where they lie, from a backend that holds the memory
+    /// itself (the native module's); none from one that reaches it through
+    /// copies. For what reads much of it between two of the game's steps.
+    fn bytes(&self, _address: u32, _len: usize) -> Option<&[u8]> {
+        None
+    }
+
     fn read_u32(&self, address: u32) -> Result<u32, OutOfBounds> {
         let mut word = [0; 4];
         self.read(address, &mut word)?;

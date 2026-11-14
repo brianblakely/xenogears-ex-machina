@@ -173,12 +173,16 @@ desktop=${CARGO_TARGET_DIR:-$runtime/target}/$profile/xem-desktop
 headless=${CARGO_TARGET_DIR:-$runtime/target}/$profile/xem-headless
 
 rm -rf "$out"
-mkdir -p "$out/config/xenogears-ex-machina"
-echo '{"graphics": {"profile": "Hd2d"}}' >"$out/config/xenogears-ex-machina/settings.json"
-export XEM_DATA_DIR=$out/config/xenogears-ex-machina
-rundir=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/xem-xr.XXXXXX")
-export XDG_RUNTIME_DIR=$rundir
-monado=
+mkdir -p "$out"
+
+# The runs go side by side in four lanes, each a subshell with a Monado and
+# a settings directory of its own: a run keeps under one processor thread
+# busy (the session paces the game by the clock), so one after another they
+# were a quarter of an hour of waiting. After `lane NAME` a lane writes its
+# settings to "$settings", keeps a copy of them in "$saved" and finds the
+# app's own files under "$config"; it begins under the HD-2D profile, and
+# says which of its lines stopped it.
+base=${XDG_RUNTIME_DIR:-/tmp}
 stop() {
     if [[ -n $monado ]]; then
         kill "$monado" 2>/dev/null || true
@@ -186,38 +190,62 @@ stop() {
     fi
     rm -rf "$rundir"
 }
-trap stop EXIT
-env XRT_NO_STDIN=1 XRT_COMPOSITOR_NULL=1 \
-    SIMULATED_ENABLE=1 SIMULATED_ROTATE=1 SIMULATED_LEFT=simple SIMULATED_RIGHT=simple \
-    monado-service >"$out/monado.log" 2>&1 &
-monado=$!
-for _ in $(seq 100); do [[ -S $rundir/monado_comp_ipc ]] && break; sleep 0.1; done
-[[ -S $rundir/monado_comp_ipc ]] || { echo "xr-game-smoke: Monado did not start" >&2; tail "$out/monado.log" >&2; exit 1; }
+lane() {
+    config=$out/config-$1/xenogears-ex-machina
+    settings=$config/settings.json
+    saved=$out/settings-$1.saved
+    mkdir -p "$config"
+    echo '{"graphics": {"profile": "Hd2d"}}' >"$settings"
+    export XEM_DATA_DIR=$config
+    rundir=$(mktemp -d "$base/xem-xr.XXXXXX")
+    export XDG_RUNTIME_DIR=$rundir
+    monado=
+    trap stop EXIT
+    set -E
+    trap 'echo "xr-game-smoke: line $LINENO stopped the '"$1"' lane" >&2' ERR
+    env XRT_NO_STDIN=1 XRT_COMPOSITOR_NULL=1 \
+        SIMULATED_ENABLE=1 SIMULATED_ROTATE=1 SIMULATED_LEFT=simple SIMULATED_RIGHT=simple \
+        monado-service >"$out/monado-$1.log" 2>&1 &
+    monado=$!
+    for _ in $(seq 100); do [[ -S $rundir/monado_comp_ipc ]] && break; sleep 0.1; done
+    [[ -S $rundir/monado_comp_ipc ]] || { echo "xr-game-smoke: Monado did not start" >&2; tail "$out/monado-$1.log" >&2; exit 1; }
+}
 
+# The session logs more than one lane plays: Fei walked into field 30's room
+# (the inspection run's), and field 30's menu opened at game frame 600 and
+# closed at 1100 (the hands run's).
+inspect='[[0, {"cmd": "enter_field", "map": 30}], [500, {"cmd": "pad", "buttons": ["down"]}], [560, {"cmd": "pad", "buttons": []}]]'
+echo "{\"commands\": $inspect}" >"$out/inspect.json"
+hands='[[0, {"cmd": "enter_field", "map": 30}], [600, {"cmd": "act", "actions": ["Menu"], "frames": 2}], [1100, {"cmd": "act", "actions": ["Cancel"], "frames": 2}]]'
+echo "{\"commands\": $hands}" >"$out/hands.json"
+
+# The boot runs, gestures, the first fields, inspection, the diorama's first
+# runs, the scene tour's title, dialogue and world map, and two-hand scaling.
+lane_first() {
 # The boot run with wider framing on (the title movie's frames rebuilt
 # without its sides).
-cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
-echo '{"graphics": {"profile": "Hd2d", "widescreen": true}}' >"$out/config/xenogears-ex-machina/settings.json"
+cp "$settings" "$saved"
+echo '{"graphics": {"profile": "Hd2d", "widescreen": true}}' >"$settings"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-capture "$out/eyes" >"$out/running.log" 2>"$out/running.err"
-cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
+cp "$saved" "$settings"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-pause 60,120 >"$out/paused.log" 2>"$out/paused.err"
 # The title movie under the Original movies setting.
-cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
-echo '{"graphics": {"profile": "Hd2d", "filtering": {"movies": "Original"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+cp "$settings" "$saved"
+echo '{"graphics": {"profile": "Hd2d", "filtering": {"movies": "Original"}}}' >"$settings"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" >"$out/original.log" 2>"$out/original.err"
-cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
+cp "$saved" "$settings"
 # Hand gestures, scripted (Monado's simulated headset tracks no hands): an
 # overhand grab pauses and another resumes, prayer hands open and close
 # Settings, a pinch with the gaze on the panel's Close button closes it,
 # and in field 30 a pinch with the gaze on the floor walks there; both eyes
 # captured twice in each pause (the player's, Settings').
 echo '{"commands": [[0, {"cmd": "enter_field", "map": 30}]]}' >"$out/field30.json"
-cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
-echo '{"graphics": {"profile": "Hd2d"}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+cp "$settings" "$saved"
+echo '{"graphics": {"profile": "Hd2d"}, "assisted": {"pointer": "Eye"}}' >"$settings"
 "$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
     --xr-hands "60:pause,120:pause,140:prayer,170:prayer,180:prayer,190:pinch@panel:410/30,230:pinch@120/150" \
     --xr-capture "$out/gestures" --xr-capture-at 80,110,150,165 >"$out/gestures.log" 2>"$out/gestures.err"
-cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
+cp "$saved" "$settings"
 # Field 12 (a room, a dialogue window and a portrait) under the HD-2D profile.
 echo '{"commands": [[0, {"cmd": "enter_field", "map": 12}]]}' >"$out/field.json"
 "$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 750 --xr-capture "$out/field" >"$out/field.log" 2>"$out/field.err"
@@ -227,8 +255,6 @@ printf '{"cmd":"frames","count":%d}\n{"cmd":"memory_hash"}\n' "$frames" |
 # (whose pads stand in for the player's): the underhand grab at headset
 # frame 150 and again at 270, the Pause grab at 180 and 240, both eyes
 # captured twice while paused; then the same log in xem-headless.
-inspect='[[0, {"cmd": "enter_field", "map": 30}], [500, {"cmd": "pad", "buttons": ["down"]}], [560, {"cmd": "pad", "buttons": []}]]'
-echo "{\"commands\": $inspect}" >"$out/inspect.json"
 "$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 \
     --xr-hands "150:inspect,180:pause,240:pause,270:inspect" --xr-capture "$out/inspect" --xr-capture-at 200,225 >"$out/inspect.log" 2>"$out/inspect.err"
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n' "$inspect" |
@@ -237,7 +263,7 @@ printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1
 # picture is the frame itself, whose alpha is the PS1's mask bit): on at
 # 150, the Pause grab at 180, the underhand grab at 195 and 210 while the
 # game is paused (off, then on), both eyes captured at 230.
-echo '{"graphics": {"profile": "Modern"}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"profile": "Modern"}}' >"$settings"
 "$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-after-frames 240 \
     --xr-hands "150:inspect,180:pause,195:inspect,210:inspect" --xr-capture "$out/modern" --xr-capture-at 230 >"$out/modern.log" 2>"$out/modern.err"
 # The diorama, with the same log as the inspection run (its RAM checked
@@ -248,7 +274,7 @@ echo '{"graphics": {"profile": "Modern"}}' >"$out/config/xenogears-ex-machina/se
 # at 60 open the settings panel beside the pane, a pinch on its Close at 90
 # closes it, and a pinch through the table at a floor point of field 30 (a
 # world point: the gaze aims where the table shows it) walks there.
-echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama"}}}' >"$settings"
 (
     for _ in $(seq 600); do grep -q '^xrframe n=100 ' "$out/diorama.log" 2>/dev/null && break; sleep 0.1; done
     monado-ctl -c >"$out/monado-ctl.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl.log"
@@ -259,13 +285,58 @@ recentring=$!
 wait "$recentring"
 "$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 1000 --xr-capture "$out/field-diorama" --xr-capture-at 120 \
     >"$out/field-diorama.log" 2>"$out/field-diorama.err"
-echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$settings"
 "$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
     --xr-hands "60:prayer,90:pinch@panel:410/30,150:pinch@world:88.67/0/-55.33" >"$out/diorama-walk.log" 2>"$out/diorama-walk.err"
 # The title movie and the title with the diorama as the view, from boot:
 # both on the screen.
-echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$settings"
 "$desktop" --xr --disc "$disc" --exit-at-frame 1800 >"$out/diorama-title.log" 2>"$out/diorama-title.err"
+# The scene tour under HD-2D, both eyes captured in each scene (pictures
+# for people to read, and the checks): from boot the title movie (headset
+# frame 290) and the title, field 490 (560; the underhand grab at 570 turns
+# nothing on); field 12's dialogue (entered at game frame 0: the screen at
+# 100, the grab at 110, the eyes from within at 135, the grab again at
+# 150; then the same log in xem-headless). Field 30 and its menu are the
+# hands run's; the world map follows, and the battles are the scenes lane's.
+echo '{"graphics": {"profile": "Hd2d"}}' >"$settings"
+"$desktop" --xr --disc "$disc" --exit-at-frame 2100 --xr-hands "570:inspect" --xr-capture "$out/title" --xr-capture-at 290,560 \
+    >"$out/title.log" 2>"$out/title.err"
+"$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 1000 --xr-hands "110:inspect,150:inspect" \
+    --xr-capture "$out/dialogue" --xr-capture-at 100,135 >"$out/dialogue.log" 2>"$out/dialogue.err"
+printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 12}]]}\n{"cmd":"run_until","until":{"frames":1000},"max_frames":2000}\n{"cmd":"memory_hash"}\n' |
+    "$headless" --disc "$disc" --control >"$out/dialogue-headless.log" 2>"$out/dialogue-headless.err"
+# The world map (boot mode 3) on the screen: captured at 280, the
+# underhand grab at 300 turns nothing on; two whole-hand pinches spreading
+# at 320 and contracting at 350 beside its control deck's keys; the app's
+# Recenter at 380, then Monado's recentring of LOCAL once the session has
+# drawn 400 frames, both eyes captured at 390 and 440.
+echo '{"commands": [[0, {"cmd": "boot_mode", "mode": 3}]]}' >"$out/worldmap.json"
+(
+    for _ in $(seq 900); do grep -q '^xrframe n=400 ' "$out/worldmap.log" 2>/dev/null && break; sleep 0.1; done
+    monado-ctl -c >"$out/monado-ctl-worldmap.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl-worldmap.log"
+) &
+recentring=$!
+"$desktop" --xr --disc "$disc" --script "$out/worldmap.json" --exit-after-frames 470 --xr-recenter-at 380 \
+    --xr-hands "300:inspect,320:scale-out,350:scale-in" --xr-capture "$out/worldmap" --xr-capture-at 280,390,440 \
+    >"$out/worldmap.log" 2>"$out/worldmap.err"
+wait "$recentring"
+# Two-hand scaling of the diorama, with the inspection run's log (its RAM
+# checked against the same headless run): two whole-hand pinches spread at
+# headset frame 110 and contract at 150, once the log has walked Fei into
+# the room (game frames 500 to 560, by about headset frame 80) and the
+# camera holds still, both eyes captured at 140; and Passthrough asked for,
+# which Monado's simulated HMD cannot show.
+echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama", "passthrough": true}}}' >"$settings"
+"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-hands "110:spread,150:contract" \
+    --xr-capture "$out/diorama-scale" --xr-capture-at 140 >"$out/diorama-scale.log" 2>"$out/diorama-scale.err"
+cp "$settings" "$out/diorama-scale.settings.json"
+}
+
+# The diorama's fallbacks to the screen and its story movie, with the
+# diorama as the view (as the title's run under it leaves the settings).
+lane_fallbacks() {
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$settings"
 # The diorama's fallbacks to the screen, each a session log with the
 # diorama as the view: field 30's menu (opened at game frame 600, closed at
 # 1100: the hands run's log, below); the Mountain Path's random battle and
@@ -273,8 +344,6 @@ echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-mach
 # every 30 frames from 760, the field again from 1600); Lahan left for the
 # world map (tests/reference-inputs/world-map-lahan-exit.json) and a field
 # entered from it at game frame 2860.
-hands='[[0, {"cmd": "enter_field", "map": 30}], [600, {"cmd": "act", "actions": ["Menu"], "frames": 2}], [1100, {"cmd": "act", "actions": ["Cancel"], "frames": 2}]]'
-echo "{\"commands\": $hands}" >"$out/hands.json"
 battle15='[[0, {"cmd": "enter_field", "map": 15, "entry": 0}], [120, {"cmd": "pad", "buttons": ["up"]}], [700, {"cmd": "pad", "buttons": []}]'
 for f in $(seq 760 30 2080); do
     battle15="$battle15, [$f, {\"cmd\": \"press\", \"buttons\": [\"cross\"], \"frames\": 2}]"
@@ -294,6 +363,12 @@ printf '{"cmd":"enter_field","map":25}\n{"cmd":"auto_advance","dwell":1}\n{"cmd"
 at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/movie25.xemstate" | "$headless" --disc "$disc" --control 2>/dev/null |
     python3 -c 'import json, sys; print(json.loads(sys.stdin.readline())["frames"])')
 "$desktop" --xr --disc "$disc" --load-state "$out/movie25.xemstate" --exit-at-frame "$((at + 5300))" >"$out/diorama-movie.log" 2>"$out/diorama-movie.err"
+}
+
+# The player's own play from field 30's state (saves and time controls, hands
+# and controllers, agents' commands, state interchange, headset
+# qualification), and the Binaural mode.
+lane_play() {
 # Save states and time controls, the player's own play (no session log)
 # from field 30, which an agent's command loads at the first headset frame.
 # Prayer hands open Settings at headset frame 20 (the game held by their
@@ -305,12 +380,12 @@ at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/movie25.xemstate" | "$hea
 # rewind). Then the state file the panel wrote, restored by xem-headless.
 printf '{"cmd":"enter_field","map":30}\n{"cmd":"frames","count":400}\n{"cmd":"state_save","path":"%s"}\n' "$out/field30.xemstate" |
     "$headless" --disc "$disc" --control >"$out/saves-prep.log" 2>"$out/saves-prep.err"
-echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"assisted": {"pointer": "Eye"}}' >"$settings"
 printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" |
     "$desktop" --xr --control --disc "$disc" --exit-after-frames 560 \
     --xr-hands "20:prayer,40:pinch@panel:269/98,60:pinch@panel:122/170,80:prayer,160:prayer,180:pinch@panel:314/170,200:pinch@panel:232/98,220:pinch@panel:347/449,240:prayer" \
     --xr-pad "350:Back+RT,352:none,460:Back+LT,500:none" >"$out/saves.log" 2>"$out/saves.err"
-printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/xenogears-ex-machina/saves/state.xemstate" |
+printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$config/saves/state.xemstate" |
     "$headless" --disc "$disc" --control >"$out/saves-headless.log" 2>"$out/saves-headless.err"
 # Hands on the diorama (docs/runtime.md, Headset qualification), the
 # player's own play (no session log, whose inputs would stand in for the
@@ -325,8 +400,8 @@ printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/config/
 # underhand grab at 422 stops the walk and at 465 gives the diorama back
 # with no walk; prayer hands at 520 and 550 open and close the settings
 # panel beside the pane.
-cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
-echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+cp "$settings" "$saved"
+echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}' >"$settings"
 "$desktop" --xr --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 600 \
     --xr-hands "100:pause-left,130:pause-left,160:pause-both,190:pause,220:grab-sideways,250:fist-turn,280:fist-reacquire,310:pause,340:inspect-left,380:inspect-left,420:pinch@world:88.67/0/-55.33,422:inspect-left,465:inspect-left,520:prayer,550:prayer" \
     --xr-capture "$out/diorama-hands" --xr-capture-at 110,125 >"$out/diorama-hands.log" 2>"$out/diorama-hands.err"
@@ -335,14 +410,14 @@ echo '{"graphics": {"xr": {"view": "Diorama"}}, "assisted": {"pointer": "Eye"}}'
 # session has drawn 100 frames, `settings_apply` through --control sets it
 # to the screen, and at 200 to the diorama again (the run's other graphics
 # settings are the defaults, which the block's missing fields take).
-echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$settings"
 for n in 100 200; do
     for _ in $(seq 600); do grep -q "^xrframe n=$n " "$out/diorama-switch.log" 2>/dev/null && break; sleep 0.1; done
     view=$([[ $n == 100 ]] && echo Screen || echo Diorama)
     printf '{"cmd":"settings_apply","change":{"Graphics":{"xr":{"view":"%s"}}}}\n' "$view"
 done | "$desktop" --xr --control --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 320 \
     >"$out/diorama-switch.log" 2>"$out/diorama-switch.err"
-cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
+cp "$saved" "$settings"
 # Held rewinds through Settings' pause, from the same state: Back+Start
 # opens Settings at headset frame 200 and Back+LT is held from 205 to 211;
 # then the right controller's ray (scripted: Monado's controllers point
@@ -375,7 +450,7 @@ drawn() { # LOG N: wait (at most a minute) until the headset run logging to LOG 
 # right from 190 and again from 205 turns the view 30 degrees each push;
 # and an agent's settings_apply to the Original renderer once the session
 # has drawn 230 frames ends it.
-cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
+cp "$settings" "$saved"
 (
     for _ in $(seq 900); do grep -q '^xrframe n=230 ' "$out/controllers.log" 2>/dev/null && break; sleep 0.1; done
     printf '%s\n' '{"cmd":"settings_apply","change":{"Graphics":{"renderer":"Original"}}}'
@@ -383,7 +458,7 @@ cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
 ) | "$desktop" --xr --control --disc "$disc" --load-state "$out/field30.xemstate" --exit-after-frames 280 \
     --xr-pad "40:Back,42:none,60:Down+North+L1,121:none,130:Back,132:none,140:Down,161:none,170:Back,172:none" \
     --xr-stick "190:1/0,196:0/0,205:1/0,211:0/0" >"$out/controllers.log" 2>"$out/controllers.err"
-cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
+cp "$saved" "$settings"
 # First person by an agent's command (--control), the player's own play
 # from the same state: a walk by `navigate` once headset frame 30 is drawn,
 # the view on looking 30 degrees right once 36 is (the walk stops), at 80
@@ -408,7 +483,7 @@ cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # from 240 (the pinch itself from 242 to 281) rewinds through Settings'
 # pause, the gaze moving down off the button meanwhile at 260 (the panel's
 # pointer moves nowhere while the pinch holds it).
-echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"assisted": {"pointer": "Eye"}}' >"$settings"
 (
     printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate"
     for _ in $(seq 600); do grep -q '^xrframe n=100 ' "$out/held-hands.log" 2>/dev/null && break; sleep 0.1; done
@@ -424,7 +499,7 @@ echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/setti
 # reading the session's status at 30, 55 and 110 and the settings at 55.
 printf '{"cmd":"enter_field","map":12}\n{"cmd":"frames","count":450}\n{"cmd":"status"}\n{"cmd":"state_save","path":"%s"}\n' "$out/dialogue12.xemstate" |
     "$headless" --disc "$disc" --control >"$out/auto-prep.log" 2>"$out/auto-prep.err"
-echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"assisted": {"pointer": "Eye"}}' >"$settings"
 {
     printf '{"cmd":"state_load","path":"%s"}\n' "$out/dialogue12.xemstate"
     drawn "$out/auto.log" 30
@@ -445,7 +520,7 @@ echo '{"assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/setti
 # game xem-headless's controls.
 at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" | "$headless" --disc "$disc" --control 2>/dev/null |
     python3 -c 'import json, sys; print(json.loads(sys.stdin.readline())["frames"])')
-echo '{"graphics": {"profile": "Hd2d"}, "pause_on_focus_loss": false}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"profile": "Hd2d"}, "pause_on_focus_loss": false}' >"$settings"
 "$desktop" --xr --disc "$disc" --load-state "$out/field30.xemstate" --save-state-at "$((at + 300)):$out/xr-saved.xemstate" \
     --exit-at-frame "$((at + 600))" >"$out/interchange.log" 2>"$out/interchange.err"
 printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n{"cmd":"state_save","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' \
@@ -468,39 +543,50 @@ printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n{"cmd":"frames"
 # the gaze on walkable floor, then a pinch there at 760, which walks; the
 # left hand's underhand grab at 850 and 890 (inspection on and off), both
 # eyes captured at 840 and 875.
-echo '{"graphics": {"profile": "Modern"}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"profile": "Modern"}, "assisted": {"pointer": "Eye"}}' >"$settings"
 "$desktop" --xr --disc "$disc" --script "$out/hands.json" --exit-after-frames 920 \
     --xr-hands "150:inspect-left,400:pause-left,430:pause-left,460:pause-both,490:pause,520:grab-sideways,550:fist-turn,590:fist-reacquire,620:pause,660:scale-out,690:scale-in,720:scale-pinch@120/150,760:pinch@120/150,850:inspect-left,890:inspect-left" \
     --xr-capture "$out/hands" --xr-capture-at 160,840,875 >"$out/hands.log" 2>"$out/hands.err"
-# The scene tour under HD-2D, both eyes captured in each scene (pictures
-# for people to read, and the checks): from boot the title movie (headset
-# frame 290) and the title, field 490 (560; the underhand grab at 570 turns
-# nothing on); field 12's dialogue (entered at game frame 0: the screen at
-# 100, the grab at 110, the eyes from within at 135, the grab again at
-# 150; then the same log in xem-headless). Field 30 and its menu are the
-# hands run's; the world map and the battles follow.
-echo '{"graphics": {"profile": "Hd2d"}}' >"$out/config/xenogears-ex-machina/settings.json"
-"$desktop" --xr --disc "$disc" --exit-at-frame 2100 --xr-hands "570:inspect" --xr-capture "$out/title" --xr-capture-at 290,560 \
-    >"$out/title.log" 2>"$out/title.err"
-"$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 1000 --xr-hands "110:inspect,150:inspect" \
-    --xr-capture "$out/dialogue" --xr-capture-at 100,135 >"$out/dialogue.log" 2>"$out/dialogue.err"
-printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 12}]]}\n{"cmd":"run_until","until":{"frames":1000},"max_frames":2000}\n{"cmd":"memory_hash"}\n' |
-    "$headless" --disc "$disc" --control >"$out/dialogue-headless.log" 2>"$out/dialogue-headless.err"
-# The world map (boot mode 3) on the screen: captured at 280, the
-# underhand grab at 300 turns nothing on; two whole-hand pinches spreading
-# at 320 and contracting at 350 beside its control deck's keys; the app's
-# Recenter at 380, then Monado's recentring of LOCAL once the session has
-# drawn 400 frames, both eyes captured at 390 and 440.
-echo '{"commands": [[0, {"cmd": "boot_mode", "mode": 3}]]}' >"$out/worldmap.json"
-(
-    for _ in $(seq 900); do grep -q '^xrframe n=400 ' "$out/worldmap.log" 2>/dev/null && break; sleep 0.1; done
-    monado-ctl -c >"$out/monado-ctl-worldmap.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl-worldmap.log"
-) &
-recentring=$!
-"$desktop" --xr --disc "$disc" --script "$out/worldmap.json" --exit-after-frames 470 --xr-recenter-at 380 \
-    --xr-hands "300:inspect,320:scale-out,350:scale-in" --xr-capture "$out/worldmap" --xr-capture-at 280,390,440 \
-    >"$out/worldmap.log" 2>"$out/worldmap.err"
-wait "$recentring"
+# The Binaural mode in field 15 (three emitters the presenter places, and
+# its music), under the default profile: the screen, then first-person
+# inspection from headset frame 120 (the underhand grab) to 255, the
+# player's Pause from 150 to 270 holding the game, and in it the app's
+# Recenter at 190, Monado's recentring of LOCAL once the session has drawn
+# 220 frames, the head lost for 15 frames from 240 and inspection's end;
+# then the same log in xem-headless (its RAM and the controlled character at
+# game frame 1200).
+# The diorama with the same log, at 25% of its scale: the game held by the
+# test's pause from headset frame 150 to 410, and in it whole-hand pinches
+# spreading at 160, 180, 200 and 220 (2.52 times each: 63%, 159%, then the
+# 400% limit twice), Monado's recentring once the session has drawn 240
+# frames (a recentring ends a scaling under way, so none is), the app's
+# Recenter at 265, and contracting at 280 to 380 every 20 frames (0.598
+# times each: 239%, 143%, 85%, 51%, 30%, then the 25% limit).
+echo '{"commands": [[0, {"cmd": "enter_field", "map": 15}]]}' >"$out/field15.json"
+for run in binaural binaural-diorama; do
+    case $run in
+    binaural)
+        echo '{"binaural": {"enabled": true}}' >"$settings"
+        at=220 options=(--xr-hands "120:inspect,150:pause,255:inspect,270:pause" --xr-recenter-at 190 --xr-lose-tracking 240,15) ;;
+    binaural-diorama)
+        echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}, "binaural": {"enabled": true}}' >"$settings"
+        at=240 options=(--xr-pause 150,260 --xr-recenter-at 265
+            --xr-hands "160:spread,180:spread,200:spread,220:spread,280:contract,300:contract,320:contract,340:contract,360:contract,380:contract") ;;
+    esac
+    (
+        for _ in $(seq 900); do grep -q "^xrframe n=$at " "$out/$run.log" 2>/dev/null && break; sleep 0.1; done
+        monado-ctl -c >"$out/monado-ctl-$run.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl-$run.log"
+    ) &
+    recentring=$!
+    "$desktop" --xr --disc "$disc" --script "$out/field15.json" --exit-at-frame 1200 "${options[@]}" >"$out/$run.log" 2>"$out/$run.err"
+    wait "$recentring"
+done
+printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 15}]]}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n{"cmd":"field"}\n' |
+    "$headless" --disc "$disc" --control >"$out/binaural-headless.log" 2>"$out/binaural-headless.err"
+}
+
+# The scene tour's battles, and the battle's and the world map's dioramas.
+lane_scenes() {
 # Battles from the original's debug battle selector (Start with the default
 # scene and party; in Gears with each member's gear column set to Nml
 # first): captured at 560 and 620, the underhand grab at 590 turns nothing
@@ -533,64 +619,33 @@ for f in $(seq 1500 30 2200); do
 done
 fight="$fight]"
 echo "{\"commands\": $fight}" >"$out/fight.json"
-echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$settings"
 "$desktop" --xr --disc "$disc" --script "$out/fight.json" --exit-at-frame 2300 --xr-capture "$out/battle-diorama" --xr-capture-at 600,700 \
     >"$out/battle-diorama.log" 2>"$out/battle-diorama.err"
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2300},"max_frames":3000}\n{"cmd":"memory_hash"}\n' "$fight" |
     "$headless" --disc "$disc" --control >"$out/battle-diorama-headless.log" 2>"$out/battle-diorama-headless.err"
 drive='[[0, {"cmd": "boot_mode", "mode": 3}], [800, {"cmd": "press", "buttons": ["triangle"], "frames": 400}]]'
 echo "{\"commands\": $drive}" >"$out/worlddrive.json"
-echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}}' >"$out/config/xenogears-ex-machina/settings.json"
+echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}}' >"$settings"
 "$desktop" --xr --disc "$disc" --script "$out/worlddrive.json" --exit-at-frame 1500 --xr-capture "$out/worldmap-diorama" --xr-capture-at 350,420 \
     >"$out/worldmap-diorama.log" 2>"$out/worldmap-diorama.err"
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1500},"max_frames":2500}\n{"cmd":"memory_hash"}\n' "$drive" |
     "$headless" --disc "$disc" --control >"$out/worldmap-diorama-headless.log" 2>"$out/worldmap-diorama-headless.err"
-# Two-hand scaling of the diorama, with the inspection run's log (its RAM
-# checked against the same headless run): two whole-hand pinches spread at
-# headset frame 110 and contract at 150, once the log has walked Fei into
-# the room (game frames 500 to 560, by about headset frame 80) and the
-# camera holds still, both eyes captured at 140; and Passthrough asked for,
-# which Monado's simulated HMD cannot show.
-echo '{"graphics": {"profile": "Hd2d", "xr": {"view": "Diorama", "passthrough": true}}}' >"$out/config/xenogears-ex-machina/settings.json"
-"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 --xr-hands "110:spread,150:contract" \
-    --xr-capture "$out/diorama-scale" --xr-capture-at 140 >"$out/diorama-scale.log" 2>"$out/diorama-scale.err"
-cp "$out/config/xenogears-ex-machina/settings.json" "$out/diorama-scale.settings.json"
-# The Binaural mode in field 15 (three emitters the presenter places, and
-# its music), under the default profile: the screen, then first-person
-# inspection from headset frame 120 (the underhand grab) to 255, the
-# player's Pause from 150 to 270 holding the game, and in it the app's
-# Recenter at 190, Monado's recentring of LOCAL once the session has drawn
-# 220 frames, the head lost for 15 frames from 240 and inspection's end;
-# then the same log in xem-headless (its RAM and the controlled character at
-# game frame 1200).
-# The diorama with the same log, at 25% of its scale: the game held by the
-# test's pause from headset frame 150 to 410, and in it whole-hand pinches
-# spreading at 160, 180, 200 and 220 (2.52 times each: 63%, 159%, then the
-# 400% limit twice), Monado's recentring once the session has drawn 240
-# frames (a recentring ends a scaling under way, so none is), the app's
-# Recenter at 265, and contracting at 280 to 380 every 20 frames (0.598
-# times each: 239%, 143%, 85%, 51%, 30%, then the 25% limit).
-echo '{"commands": [[0, {"cmd": "enter_field", "map": 15}]]}' >"$out/field15.json"
-for run in binaural binaural-diorama; do
-    case $run in
-    binaural)
-        echo '{"binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
-        at=220 options=(--xr-hands "120:inspect,150:pause,255:inspect,270:pause" --xr-recenter-at 190 --xr-lose-tracking 240,15) ;;
-    binaural-diorama)
-        echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}, "binaural": {"enabled": true}}' >"$out/config/xenogears-ex-machina/settings.json"
-        at=240 options=(--xr-pause 150,260 --xr-recenter-at 265
-            --xr-hands "160:spread,180:spread,200:spread,220:spread,280:contract,300:contract,320:contract,340:contract,360:contract,380:contract") ;;
-    esac
+}
+
+lanes=()
+for name in first fallbacks play scenes; do
     (
-        for _ in $(seq 900); do grep -q "^xrframe n=$at " "$out/$run.log" 2>/dev/null && break; sleep 0.1; done
-        monado-ctl -c >"$out/monado-ctl-$run.log" 2>&1 || echo "monado-ctl exit $?" >>"$out/monado-ctl-$run.log"
+        lane "$name"
+        "lane_$name"
     ) &
-    recentring=$!
-    "$desktop" --xr --disc "$disc" --script "$out/field15.json" --exit-at-frame 1200 "${options[@]}" >"$out/$run.log" 2>"$out/$run.err"
-    wait "$recentring"
+    lanes+=($!)
 done
-printf '{"cmd":"schedule","commands":[[0, {"cmd": "enter_field", "map": 15}]]}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n{"cmd":"field"}\n' |
-    "$headless" --disc "$disc" --control >"$out/binaural-headless.log" 2>"$out/binaural-headless.err"
+stopped=
+for pid in "${lanes[@]}"; do
+    wait "$pid" || stopped=1
+done
+[[ -z $stopped ]] || exit 1
 
 python3 - "$out" "$frames" "$root" <<'EOF'
 import json, math, re, sys, zlib, struct

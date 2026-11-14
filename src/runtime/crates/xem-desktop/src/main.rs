@@ -694,7 +694,7 @@ impl Host {
                 // As the app's Toggle first-person view, or on, off or
                 // turned: the next frames give the session its state (a
                 // route under way stops).
-                let field = self.game.as_mut().map(|game| game.pad_context().field).unwrap_or_default();
+                let field = self.game.as_mut().map_or_default(|game| game.pad_context().field);
                 xem_settings::look::Command::parse(command)
                     .and_then(|command| self.view.first_person_command(&command, field))
                     .unwrap_or_else(|error| serde_json::json!({ "error": error }))

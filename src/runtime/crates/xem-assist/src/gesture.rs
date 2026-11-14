@@ -458,6 +458,7 @@ pub struct Availability {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::assert_matches;
     use super::*;
     use crate::synthetic::*;
     use glam::{Quat, Vec3};
@@ -540,7 +541,7 @@ pub(crate) mod tests {
         let poses = [(Some(left(open())), Some(open())), (Some(left(half())), Some(half())), (Some(left(fist())), Some(fist()))];
         let gestures = run(&mut recognizer, 0.0, &poses);
         assert_eq!(gestures.len(), 1, "{gestures:?}");
-        assert!(matches!(gestures[0], Gesture::Pause { .. }));
+        assert_matches!(gestures[0], Gesture::Pause { .. });
     }
 
     /// Frames of the right hand with the runtime's standard signals.

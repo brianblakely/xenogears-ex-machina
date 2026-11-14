@@ -34,6 +34,7 @@
 
 #![cfg(all(has_game_module, not(debug_assertions)))]
 
+use std::assert_matches;
 use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -224,11 +225,11 @@ fn the_world_map_goes_on_identically_while_the_party_walks() {
     ok(&mut s, json!({"cmd": "schedule", "commands": route["commands"]}));
     run_to(&mut s, route["frames"].as_u64().unwrap());
     assert_eq!(format!("{:016x}", s.memory_hash().unwrap()), route["memory_hash"].as_str().unwrap());
-    assert!(matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. }));
+    assert_matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. });
     // Walking south, away from Lahan.
     s.set_pad(0, button_bit("down").unwrap());
     let walk = continues_identically(&mut s, 600);
-    assert!(matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. }), "still walking the world map");
+    assert_matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. }, "still walking the world map");
     assert!(walk.hashes.windows(2).filter(|pair| pair[0] != pair[1]).count() > 500, "the world map moves");
     assert!(!walk.sectors.is_empty(), "the drive streams the world map's terrain");
 }

@@ -26,6 +26,7 @@
 
 #![cfg(all(has_game_module, not(debug_assertions)))]
 
+use std::assert_matches;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 use xem_core::control::Session;
@@ -365,7 +366,7 @@ fn the_default_setting_climbs_babel_tower_through_its_doors_and_map_418s_fixed_b
     // above it, the climb to the top); its actors 19-24 start battles when
     // touched. Actor 20 stands at (-160, 0) on layer 0.
     assert_eq!(draw(&mut climb)["period"], json!(0), "map 418 arms no random draw");
-    assert!(matches!(reach(&mut climb, [-160.0, 0.0]), Walked::Battle | Walked::Ended(_)), "the walk to actor 20 ends at its touch");
+    assert_matches!(reach(&mut climb, [-160.0, 0.0]), Walked::Battle | Walked::Ended(_), "the walk to actor 20 ends at its touch");
     let started = (0..60).any(|_| {
         run(&mut climb, json!({"cmd": "frames", "count": 10}));
         mode(&mut climb) == BATTLE_MODE

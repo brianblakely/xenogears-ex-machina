@@ -498,7 +498,7 @@ impl XemApp {
         }
         // The Binaural listener turns with the head as the seat sees it
         // (presentation only).
-        let seat = self.renderer.as_ref().map(|r| r.xr_seat).unwrap_or_default();
+        let seat = self.renderer.as_ref().map_or_default(|r| r.xr_seat);
         if let (Some(session), Some(head)) = (self.session.as_mut(), input.head) {
             session.set_head(Some(xem_core::binaural::head_axes(seat.relative(head.orientation).to_array())));
         }
@@ -603,10 +603,14 @@ impl XemApp {
         // back, say).
         let inspecting = self.first_person();
         let picture = self.renderer.as_ref().and_then(|r| r.picture);
+        // Whether Select shows the field map's picture here (the deck's
+        // MAP), and the buttons the map's scripts test (an activity's).
+        let (map_picture, tested) = self.session.as_mut().map_or((false, 0), |session| (session.runtime.field_controls().picture, session.runtime.field_script_buttons()));
         if let (Some(picture), Some(renderer)) = (picture, &self.renderer) {
             let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
             let (width, height) = renderer.size();
-            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui, inspecting);
+            let scene = xem_assist::touch::Scene { ui, inspecting, picture: map_picture, tested };
+            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), scene);
         }
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
         let Some(session) = self.session.as_mut() else { return };
@@ -635,8 +639,12 @@ impl XemApp {
             }
             renderer.overlay.marks = marks;
             renderer.overlay.style = style;
-            let auto_advance = self.settings.borrow().settings().auto_advance.enabled;
-            renderer.overlay.deck = if shown { xem_assist::draw::deck_widgets(&self.deck, ui, auto_advance, inspecting) } else { Vec::new() };
+            let (lit, opacity) = {
+                let settings = self.settings.borrow();
+                let settings = settings.settings();
+                (xem_assist::draw::Lit { auto_advance: settings.auto_advance.enabled, first_person: inspecting, run: settings.run_by_default }, settings.assisted.touch_alpha())
+            };
+            renderer.overlay.deck = if shown { xem_assist::draw::deck_widgets(&self.deck, lit, opacity) } else { Vec::new() };
         }
         self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
@@ -851,7 +859,7 @@ impl XemApp {
         self.sync_time_controls()?;
         // First-person inspection is toggled and turned whether the game
         // runs or not (a headset's Pause stands apart from it).
-        let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let field = self.session.as_mut().map_or_default(|s| s.runtime.field_controls());
         let ui = self.session.as_mut().map_or(xem_core::context::Context::None, |s| s.runtime.context());
         let bindings = self.settings.borrow().settings().game_bindings.clone();
         let inspecting = self.look(&bindings, field, ui, now);
@@ -936,11 +944,11 @@ impl XemApp {
             let start = now_ms();
             let mut batch = 0;
             let mut fetching = false;
-            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, half_encounters, text_speed, movie_skip, auto_advance, language) = {
+            let (pause_on_focus_loss, sound_mode, binaural, random_battles_off, half_encounters, text_speed, movie_skip, fast_disc, auto_advance, language) = {
                 let settings = self.settings.borrow();
                 let settings = settings.settings();
                 (settings.pause_on_focus_loss, settings.game_sound_mode(), settings.binaural, settings.random_battles_off(),
-                 settings.half_encounters(), settings.text_speed.glyphs(), settings.movie_skip, settings.auto_advance_dwell(), settings.language)
+                 settings.half_encounters(), settings.text_speed.glyphs(), settings.movie_skip, settings.fast_disc, settings.auto_advance_dwell(), settings.language)
             };
             if let Some(session) = self.session.as_mut() {
                 session.set_binaural(binaural);
@@ -959,6 +967,7 @@ impl XemApp {
                 session.set_half_encounters(half_encounters);
                 session.set_text_speed(text_speed).map_err(error)?;
                 session.set_movie_skip(movie_skip);
+                session.set_fast_disc(fast_disc);
                 session.set_language(language);
                 session.set_auto_advance(auto_advance).map_err(error)?;
                 match session.frame() {
@@ -1058,7 +1067,7 @@ impl XemApp {
                 panel.set_debug_status(true, session.debug.busy(), &session.debug.message);
                 panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
                     session.rewind.available_seconds(), session.rewind.history_seconds, session.rewind.bytes as f64/1048576.0,
-                    session.rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default()));
+                    session.rewind.error.as_ref().map_or_default(|e| format!(" — {e}"))));
             } else if let Some(panel) = renderer.panel() {
                 panel.set_debug_status(false, false, "Boot a game to use Debug.");
                 panel.set_time_status(None,"Boot a game to use save states and time controls.");
@@ -1245,6 +1254,10 @@ impl XemApp {
     }
 
     pub fn set_panel_visible(&mut self, visible: bool) {
+        // The touch deck lets go under the panel (it stays drawn there).
+        if visible {
+            self.deck.release();
+        }
         if let Some(renderer) = &mut self.renderer {
             if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() {
                 panel.cancel_pointer();
@@ -1366,6 +1379,11 @@ impl XemApp {
                 Touched::Settings => self.set_panel_visible(true),
                 Touched::AutoAdvance => self.app_requests.borrow_mut().push(AppRequest::Action(xem_settings::AppAction::ToggleAutoAdvance)),
                 Touched::FirstPerson => self.look_asked = true,
+                Touched::Run => {
+                    // Run by default, the setting every input shares.
+                    let on = self.settings.borrow().settings().run_by_default;
+                    let _ = self.settings.borrow_mut().apply(SettingChange::RunByDefault(!on));
+                }
                 Touched::Quantity(key) => self.quantity.push(key),
                 _ => {}
             },
@@ -1703,7 +1721,7 @@ impl XemApp {
     /// answering `{first_person, look}`; the session takes its state with
     /// the next batch of frames the page runs (`status().session.inspecting`).
     fn first_person_command(&mut self, command: &Value) -> Value {
-        let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let field = self.session.as_mut().map_or_default(|s| s.runtime.field_controls());
         let setting = self.settings.borrow().settings().graphics.renderer;
         let Some(renderer) = self.renderer.as_mut() else { return json!({ "error": "no renderer: the page shows no game" }) };
         let was = renderer.first_person();
@@ -1848,7 +1866,7 @@ impl XemApp {
             })
         });
         let settings_revision = self.settings.borrow().revision();
-        let card_errors = self.session.as_mut().map(|s| s.runtime.services().card.errors.clone()).unwrap_or_default();
+        let card_errors = self.session.as_mut().map_or_default(|s| s.runtime.services().card.errors.clone());
         let drive = self.session.as_mut().map(|s| {
             let cd = &s.runtime.services().cd;
             json!({ "disc": cd.inserted(), "wanted": cd.wanted() })
@@ -1866,13 +1884,18 @@ impl XemApp {
             "touch": {
                 "touched": self.touched,
                 "controls": self.deck.controls.iter().map(|(c, r)| json!({
-                    "control": format!("{c:?}"), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
+                    "control": format!("{c:?}"), "label": c.label(self.deck.scene()), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
                 })).collect::<Vec<_>>(),
-                // Where the stick rests and its knob's reach; where it shows
-                // (none while first-person inspection shows).
-                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone() })),
-                "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1], "held": s.held })),
+                // The left thumb's rest, the knob's reach, and whether the
+                // game reads the directions; where it shows (only under a
+                // finger holding it, none while first-person inspection
+                // shows).
+                "stick": self.deck.stick.map(|s| json!({ "x": s.rest.0, "y": s.rest.1, "reach": s.reach, "deadZone": s.dead_zone(), "reads": s.reads })),
+                "stickShown": self.deck.stick_shown().map(|s| json!({ "centre": [s.centre.0, s.centre.1], "knob": [s.knob.0, s.knob.1] })),
+                // What is held (fingers' controls, latched keys, the stick's
+                // directions) and the latched keys among them.
                 "held": self.deck.held().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
+                "latched": self.deck.latched().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
             },
             "xr": {
                 "input": self.xr_input.is_some(),

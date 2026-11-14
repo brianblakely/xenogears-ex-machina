@@ -66,6 +66,15 @@ impl GameMemory for RawMemory {
         Ok(())
     }
 
+    fn bytes(&self, address: u32, len: usize) -> Option<&[u8]> {
+        let start = self.check(address, len).ok()?;
+        // SAFETY: in bounds of the stable module allocation. While the slice
+        // is borrowed from this memory nothing writes through it, and no
+        // export runs: the runtime lends it out only between the game's steps
+        // and within its imports.
+        Some(unsafe { std::slice::from_raw_parts(self.data.add(start), len) })
+    }
+
     fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds> {
         let start = self.check(address, out.len())?;
         // SAFETY: in bounds of the module's memory, which never grows or moves.

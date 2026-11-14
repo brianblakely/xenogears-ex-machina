@@ -1,7 +1,9 @@
 //! The PS1 renderer against xem-gpu's software rasterizer: at scale 1 with
 //! every original limit, the same command words give (nearly) the same
-//! pixels. Runs on whatever adapter wgpu finds (lavapipe in the runtime shell).
+//! pixels. Runs on the software rasterizer (`Gpu::reference`: lavapipe in the
+//! runtime shell), whose pixels are the same on every machine.
 
+use std::assert_matches;
 use xem_render::ps1::{DrawOptions, Fidelity, Ps1Renderer};
 use xem_render::{Gpu, read_rgba8};
 
@@ -99,7 +101,7 @@ fn traced_takes(takes: &[fn(&mut xem_gpu::Gpu)]) -> (xem_gpu::Trace, Vec<xem_gpu
 
 #[test]
 fn original_fidelity_matches_the_software_gpu() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, trace) = traced(|device| {
         upload_texture(device);
         scene(device);
@@ -260,7 +262,7 @@ fn draw(gpu: &Gpu, traces: &(xem_gpu::Trace, xem_gpu::Trace), fidelity: Fidelity
 
 #[test]
 fn each_original_limit_changes_the_picture_on_its_own() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let trace = traced(projected_scene);
     let modern = Fidelity::MODERN;
     let (_, base) = draw(&gpu, &trace, modern, Culling::default());
@@ -313,7 +315,7 @@ fn back_facing_triangle(gpu: &mut xem_gpu::Gpu) {
 
 #[test]
 fn culling_is_off_by_default_and_counted_apart_from_the_gpu_limits() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let trace = traced(|device| {
         projected_scene(device);
         back_facing_triangle(device);
@@ -360,7 +362,7 @@ fn revealing_scene() -> (xem_gpu::Trace, xem_gpu::Trace) {
 
 #[test]
 fn culled_faces_show_beside_the_screen_and_wherever_a_pulled_back_camera_sees_them() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let trace = revealing_scene();
     let red_at = |culling: Culling, framing: Framing| -> Vec<u8> {
         let (mut renderer, picture) = draw(&gpu, &trace, Fidelity::MODERN, culling);
@@ -382,7 +384,7 @@ fn culled_faces_show_beside_the_screen_and_wherever_a_pulled_back_camera_sees_th
 
 #[test]
 fn copying_a_display_buffer_keeps_the_presented_zoom_and_sides_under_pause_uploads() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let trace = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -425,7 +427,7 @@ fn copying_a_display_buffer_keeps_the_presented_zoom_and_sides_under_pause_uploa
 
 #[test]
 fn terrain_slivers_culled_at_whole_pixels_fill_seams_at_one_times_zoom() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, mut scene) = traced(|device| {
         device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
     });
@@ -472,7 +474,7 @@ fn terrain_slivers_turned_over_at_whole_pixels_fill_seams_too_but_not_from_behin
     // (the middle point floored onto the row above the line through the
     // other two). And the same face with a point at depth 0, as a view
     // from around the scene records one behind the camera.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let sliver = |depth: f32| {
         let TraceOp::Draw(mut sliver) = primitive(0, 0, 0) else { unreachable!() };
         sliver.shape = Shape::Triangle;
@@ -519,7 +521,7 @@ fn sealed_faces_stay_within_a_pixel_or_two_of_themselves_whatever_their_points_d
     // at the half projection distance the GTE divided it by. Drawn alone,
     // each lights nothing farther than a moved corner goes (two native
     // pixels) outside its bounds and its edges.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let faces = [
         ([(100.0, 100.0, 600.0), (200.0, 100.5, 1500.0), (150.0, 100.27, 900.0)], false),
         ([(50.0, 100.0, 600.0), (250.0, 100.05, 1500.0), (150.0, 100.04, 900.0)], true),
@@ -585,7 +587,7 @@ fn a_face_reaching_behind_the_camera_is_textured_as_the_gte_placed_its_points() 
     // taken at depth 1, the point drew most of the face with its own texel
     // (v 14 there): a flat patch where the console shows the ground's
     // texture.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, mut scene) = traced(|device| {
         device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
         // A 15-bit texture at (512, 0): red 2u, green 2v, blue full.
@@ -629,7 +631,7 @@ fn a_point_nearer_than_half_the_projection_distance_takes_the_depth_the_gte_divi
     // depth of field, fog, shadows) and depth-tested ordering compares. At
     // the centroid the face's depth through 300, 300 and 96 is 175.6; taken
     // at 23 there, 131.1.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, mut scene) = traced(|device| device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]));
     let TraceOp::Draw(mut face) = primitive(0, 0, 0) else { unreachable!() };
     (face.class, face.textured, face.projection) = (Class::World, false, Some(((160, 120), 192)));
@@ -837,11 +839,11 @@ fn first_person_replaces_a_directional_sprite_once_and_restores_its_texture_cell
     let mut ops = original.clone();
     first_person(&mut ops,&AHEAD);
     assert_eq!(ops.len(),3);
-    assert!(matches!(&ops[0], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x1234]));
+    assert_matches!(&ops[0], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x1234]);
     let TraceOp::Draw(p) = &ops[1] else { unreachable!() };
     assert_eq!(p.vertices.map(|v| (v.u,v.v)),[(24,0),(32,0),(24,16),(32,16)]);
     assert!(p.facing.is_none());
-    assert!(matches!(&ops[2], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x5678]));
+    assert_matches!(&ops[2], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x5678]);
     assert_eq!(original.len(),2,"the normal-camera trace remains available unchanged");
 }
 
@@ -874,7 +876,7 @@ fn floor_scene(gpu: &mut xem_gpu::Gpu) {
 
 #[test]
 fn a_view_from_within_the_scene_shows_its_picture_and_clips_what_reaches_behind_it() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let frame = |trace: &(xem_gpu::Trace, xem_gpu::Trace), framing: Framing| -> Vec<u8> {
         let (mut renderer, _) = draw(&gpu, trace, Fidelity::MODERN, Culling::default());
         let mut frame = FrameRenderer::new(&gpu.device);
@@ -907,7 +909,7 @@ fn a_view_from_within_the_scene_shows_its_picture_and_clips_what_reaches_behind_
 /// itself; scripts/suite.sh runs this on that backend too.
 #[test]
 fn from_within_a_face_drawn_over_another_in_its_plane_shows_wherever_they_overlap_far_away() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // The wall z = 6000 + x / 2 in view space, red, and a green face the
     // game draws over it there, every corner exactly in its plane.
     let wall = |gpu: &mut xem_gpu::Gpu| {
@@ -1014,7 +1016,7 @@ fn colour_at(pixels: &[u8], scale: f32, (x, y): (f32, f32)) -> [u8; 3] {
 
 #[test]
 fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let green = [0, 255, 0];
     // The game camera's own picture: no other viewpoint.
     assert_eq!(shown_from(&gpu, xem_settings::Graphics::default(), false).1, None, "the game camera's own");
@@ -1073,7 +1075,7 @@ fn a_pulled_back_or_inspecting_picture_has_the_viewpoint_it_shows_the_scene_from
 #[test]
 fn inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew() {
     use xem_render::ps1::HeadsetEye;
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let view_of = |traces: &(xem_gpu::Trace, xem_gpu::Trace), host: HostClass| {
         let mut view = GameView::new(&gpu.device, &gpu.queue, None);
         view.configure(ViewConfig::resolve(&xem_settings::Graphics::default(), host, (640, 480), view.max_scale()));
@@ -1180,7 +1182,7 @@ fn inspection_begins_only_over_the_fields_scene_and_its_eyes_begin_anew() {
 
 #[test]
 fn interface_pixels_bypass_the_effects() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let trace = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -1214,7 +1216,7 @@ fn translucent_model_depth_is_opt_in_and_preserves_blending() {
     let battle = Lighting::for_scene("battle");
     assert_eq!(Lighting::for_scene("battle:75"), Lighting { additive_model_depth: true, ..battle }, "Urobolus keeps the other battle settings");
     assert_eq!(Lighting::for_scene("battle:74"), battle, "other battles retain their transparency handling");
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     for blend in 0..4u32 {
         for color in [0x80_8080, 0x40_4040] {
             let traces = traced(|device| {
@@ -1297,7 +1299,7 @@ fn translucent_model_depth_is_opt_in_and_preserves_blending() {
 /// and graded.
 #[test]
 fn a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, mut trace) = traced(projected_scene);
     // The textured quad receding in depth, its texels taken for a movie's.
     for op in &mut trace.ops {
@@ -1337,7 +1339,7 @@ fn a_movies_picture_in_the_scene_keeps_its_colours_through_the_effects() {
 /// are painted over does not take; the world at their depth is hazed.
 #[test]
 fn a_battles_sky_takes_the_effects_but_not_the_haze() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A near quad of the world, then two far ones at one depth: the
     // world's (projection class 0) and the backdrop's (class 10).
     let traces = traced(|device| {
@@ -1406,7 +1408,7 @@ fn a_battles_sky_takes_the_effects_but_not_the_haze() {
 /// depth in the picture lies beyond it.
 #[test]
 fn a_scenes_sky_past_its_depth_takes_no_haze() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A near quad of the world, one deeper, and the sky's far behind them.
     let traces = traced(|device| {
         device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
@@ -1473,7 +1475,7 @@ fn a_scenes_sky_past_its_depth_takes_no_haze() {
 /// buffer in its right side).
 #[test]
 fn a_copy_onto_itself_leaves_the_frame_drawn_there() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -1512,7 +1514,7 @@ fn a_copy_onto_itself_leaves_the_frame_drawn_there() {
 /// sampled still ends it. Every sprite takes the texels the GPU gave it.
 #[test]
 fn a_write_no_draw_of_its_pass_sampled_leaves_the_pass_whole() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // Raw 15-bit sprites from page 0, which holds the screen, and flat quads.
     let sprite = |device: &mut xem_gpu::Gpu, (x, y): (i32, i32), (u, v): (u32, u32)| {
         device.write_gp0_words(&[0x6500_0000, xy(x, y), v << 8 | u, 16 << 16 | 16]);
@@ -1636,6 +1638,87 @@ fn scene_points_weld_to_their_own_game_frames_only() {
     let mut ops = vec![face(0.0), TraceOp::VBlank, face(0.25)];
     weld(&mut ops);
     assert_eq!(first(&ops[2]), (100.25, Some([100.25, 100.0, 1000.0])), "a frame's face is not welded to one an earlier frame drew there");
+}
+
+/// Welding by the rule alone: each point of the scene, in order, takes the
+/// place of the first earlier point of its game frame, of another face,
+/// within half a pixel and of nearly its depth, looked for in the pixels
+/// around it (left before right, upper before lower; in a pixel, the newest
+/// first); a point that finds none is one for the points after it.
+fn weld_by_search(ops: &mut [TraceOp]) {
+    struct Anchor {
+        pixel: (i32, i32),
+        fx: f32,
+        fy: f32,
+        z: f32,
+        view: Option<[f32; 3]>,
+        face: usize,
+    }
+    for frame in ops.split_mut(|op| matches!(op, TraceOp::VBlank)) {
+        let mut anchors: Vec<Anchor> = Vec::new();
+        for (face, op) in frame.iter_mut().enumerate() {
+            let TraceOp::Draw(p) = op else { continue };
+            if !matches!(p.class, Class::World | Class::Model) || !matches!(p.shape, Shape::Triangle | Shape::Quad) {
+                continue;
+            }
+            let count = p.vertex_count();
+            for v in p.vertices.iter_mut().take(count).filter(|v| v.z > 0.0) {
+                let around = |c: f32| [(c - 0.5).floor() as i32, (c + 0.5).floor() as i32];
+                let near = |a: &&Anchor| a.face != face && (a.fx - v.fx).abs() <= 0.5 && (a.fy - v.fy).abs() <= 0.5 && (a.z - v.z).abs() <= (v.z * 0.01).max(4.0);
+                let found = around(v.fx)
+                    .into_iter()
+                    .flat_map(|x| around(v.fy).map(|y| (x, y)))
+                    .find_map(|pixel| anchors.iter().rev().filter(|a| a.pixel == pixel).find(near));
+                match found {
+                    Some(a) => {
+                        (v.fx, v.fy) = (a.fx, a.fy);
+                        if a.view.is_some() && v.view.is_some() {
+                            v.view = a.view;
+                        }
+                    }
+                    None => anchors.push(Anchor { pixel: (v.fx.floor() as i32, v.fy.floor() as i32), fx: v.fx, fy: v.fy, z: v.z, view: v.view, face }),
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn scene_points_weld_as_a_search_of_every_earlier_point_finds() {
+    let mut state = 0x2545_F491_4F6C_DD1Du64;
+    let mut random = |below: u32| {
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        ((state >> 33) as u32) % below
+    };
+    for scene in 0..40 {
+        // Faces whose points crowd a few pixels (also across pixel edges and
+        // the screen's origin), at a few depths, some of them not the scene's
+        // or without a point before the division; several game frames.
+        let spread = [3, 8, 40][scene % 3];
+        let mut ops = Vec::new();
+        for _ in 0..400 + random(600) {
+            if random(60) == 0 {
+                ops.push(TraceOp::VBlank);
+                continue;
+            }
+            let mut op = primitive(0, 0, 0);
+            let TraceOp::Draw(p) = &mut op else { unreachable!("a face") };
+            p.shape = [Shape::Triangle, Shape::Quad, Shape::Quad, Shape::Rectangle, Shape::Line][random(5) as usize];
+            p.class = [Class::World, Class::World, Class::Model, Class::Sprite, Class::Flat][random(5) as usize];
+            for v in &mut p.vertices {
+                v.fx = (random(spread * 8) as f32 - (spread * 4) as f32) / 8.0 + [0.0, 0.01, -0.02][random(3) as usize];
+                v.fy = (random(spread * 8) as f32 - (spread * 4) as f32) / 8.0;
+                v.z = [0.0, 300.0, 302.0, 305.0, 1000.0, 1009.0, 1011.0][random(7) as usize];
+                v.view = (random(4) != 0).then(|| [v.fx * 3.0, v.fy * 3.0, v.z + random(3) as f32]);
+            }
+            ops.push(op);
+        }
+        let mut searched = ops.clone();
+        weld_by_search(&mut searched);
+        assert_ne!(searched, ops, "scene {scene}: some points weld");
+        weld(&mut ops);
+        assert_eq!(ops, searched, "scene {scene}");
+    }
 }
 
 /// A field camera turned `yaw` degrees about the world's up from looking
@@ -1856,7 +1939,7 @@ fn the_interface_draws_as_the_original_at_any_scale() {
     // edges and lines included, but for semi-transparent blends (the GPU
     // blends at 5 bits) and a few texels and colours its exact interpolation
     // rounds the other way.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, trace) = traced(|device| {
         upload_texture(device);
         scene(device);
@@ -1890,7 +1973,7 @@ fn the_interface_draws_as_the_original_at_any_scale() {
 fn a_jumping_sprite_leaves_its_shadow_on_the_floor() {
     // A floor across the screen and a sprite whose feet are at y 100 but
     // whose floor point (the game's ground under it) is at y 140: it jumps.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let project = |x: f32, y: f32, z: u16| Projection { sxy: xy(x as i32, y as i32), sz: z, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0, view: view(x, y, f32::from(z)) };
     let sprite = |x: f32, y: f32| Projection { class: 2, owner: 0x8010_0000, ..project(x, y, 1000) };
     let ground = Projection { class: 3, owner: 0x8010_0000, ..project(160.0, 140.0, 1000) };
@@ -1932,7 +2015,7 @@ fn a_jumping_sprite_leaves_its_shadow_on_the_floor() {
 /// enlargement.
 #[test]
 fn movie_frames_convert_as_the_mdec_and_keep_colour_on_its_side() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // FSR 1's enlargement, and the bilinear one of a GPU that rasterizes in
     // software.
     for software in [false, true] {
@@ -2015,7 +2098,7 @@ fn check_movie_frame(gpu: &Gpu, software: bool) {
 
 #[test]
 fn framebuffer_distortion_keeps_the_reconstructed_scene_and_its_depth() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 216 };
     let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
     let render = |effect: u8, fidelity: Fidelity| {
@@ -2076,7 +2159,7 @@ fn framebuffer_distortion_keeps_the_reconstructed_scene_and_its_depth() {
 
 #[test]
 fn moving_the_back_buffer_does_not_retire_the_still_displayed_frame() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 216 };
@@ -2117,7 +2200,7 @@ fn moving_the_back_buffer_does_not_retire_the_still_displayed_frame() {
 
 #[test]
 fn a_saved_screen_survives_a_second_copy_and_clearing_that_display_alias() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -2190,7 +2273,7 @@ fn saved_screen_pieces(device: &mut xem_gpu::Gpu) {
 /// the field cleared that buffer).
 #[test]
 fn a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_taken_keeps_the_presented_picture() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     for framing in [Framing { side: 40, pull_back: 1000.0, ..Default::default() }, Framing::default()] {
         let traces = traced(projected_scene);
         let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
@@ -2229,7 +2312,7 @@ fn a_screen_made_in_another_buffer_and_copied_over_the_shown_one_before_it_is_ta
 /// the native screen.
 #[test]
 fn a_screen_taken_before_another_draws_as_its_picture() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     for framing in [Framing { side: 40, pull_back: 1000.0, ..Default::default() }, Framing::default()] {
         let traces = traced(projected_scene);
         let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
@@ -2277,7 +2360,7 @@ fn a_screen_taken_before_another_draws_as_its_picture() {
 /// rewind history holds a state of each frame from the first.
 #[test]
 fn a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when_it_was_taken() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -2347,7 +2430,7 @@ fn a_state_loaded_holding_a_screen_taken_before_shows_the_picture_presented_when
 /// screen.
 #[test]
 fn a_screen_taken_is_remembered_while_the_rewind_history_holds_a_state_of_its_time() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -2409,7 +2492,7 @@ fn a_screen_taken_is_remembered_while_the_rewind_history_holds_a_state_of_its_ti
 /// the history shows its picture.
 #[test]
 fn a_screen_held_longer_than_the_rewind_history_is_remembered_from_the_states_holding_it() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -2470,7 +2553,7 @@ fn a_screen_held_longer_than_the_rewind_history_is_remembered_from_the_states_ho
 /// time left behind (a file's) shows the native screen.
 #[test]
 fn a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_state() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
     let pieces = DisplayArea { y: 256, ..area };
     let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
@@ -2539,7 +2622,7 @@ fn a_screen_taken_in_a_time_gone_back_from_is_let_go_once_the_history_takes_a_st
 /// history, and the others their pictures.
 #[test]
 fn the_screens_remembered_keep_to_their_budget_letting_go_of_the_one_held_longest_ago() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
@@ -2616,7 +2699,7 @@ fn the_screens_remembered_keep_to_their_budget_letting_go_of_the_one_held_longes
 /// replayed (wider framing) or as the scaled VRAM holds it.
 #[test]
 fn a_screen_made_in_another_buffer_keeps_the_presented_picture_whatever_frames_a_presentation_holds() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let entry: [fn(&mut xem_gpu::Gpu); 8] = [
         read_as_24_bit,
         |device| {
@@ -2679,7 +2762,7 @@ fn a_screen_made_in_another_buffer_keeps_the_presented_picture_whatever_frames_a
 /// over its buffer at (0, 0), lay beside it).
 #[test]
 fn a_screen_taken_copied_in_vram_brings_its_picture_without_its_sides() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(projected_scene);
     let (mut renderer, before) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
     renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
@@ -2734,7 +2817,7 @@ fn a_buffer_shown_lower_than_a_log_begun_before_starts_it_with_each_frame_drawn_
     // The kernel menu clears its buffers at y 0 and 240 (320x224); the arena
     // then shows its own at y 0 and 256 (320x218), drawing all over each
     // frame without clearing it, and never the rows between.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
     let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
@@ -2782,7 +2865,7 @@ fn two_buffers_cleared_at_once_each_show_the_frames_drawn_all_over_them() {
     // then draws all over the one it builds each frame without clearing it,
     // while the display shows the other: each display finds the log of the
     // frames drawn into its own buffer, not the other's.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
     let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
@@ -2834,7 +2917,7 @@ fn a_buffer_holding_an_area_an_earlier_mode_showed_starts_its_log_with_each_fram
     // and shows them at the same size, then draws all over the one it
     // builds each frame without clearing it: its buffer at y 224 holds the
     // corner of the field's at 256, which it never draws all over.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
     let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
@@ -2881,7 +2964,7 @@ fn a_log_grown_past_its_limit_is_dropped_not_replayed_from_the_vram_it_began_wit
     // drawn into it than a log holds, none drawing all over it, then a
     // sprite of that texture: the frame shown samples the texture as the
     // game loaded it, not the VRAM the log began with.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let (sync, traces) = traced_takes(&[
         |device| {
             device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
@@ -2928,7 +3011,7 @@ fn a_frame_drawn_over_the_other_buffers_picture_starts_its_buffers_log() {
     // display replayed every frame of both buffers since from black, the
     // sprites reading the picture as the replay held it at the first
     // (black): the demo showed black or nearly so.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
     renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 1);
     let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
@@ -3000,7 +3083,7 @@ fn sprites_of_a_picture_drawn_from_translucent_texels_start_no_log() {
     // host ran both before presenting: fast-forward, catching up), whose
     // write of frame 2's pixels, before frame 3's sprites sample them, holds
     // the square.
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         renderer.draw(&mut encoder, trace);
@@ -3054,7 +3137,7 @@ fn sprites_of_a_picture_drawn_from_translucent_texels_start_no_log() {
 
 #[test]
 fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
     renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
     let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
@@ -3379,7 +3462,7 @@ fn game_eye(space: &DioramaSpace, columns: [[i32; 3]; 3]) -> (Mat4, Mat4) {
 
 #[test]
 fn a_diorama_eye_at_the_game_cameras_pose_shows_the_flat_frames_scene() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let traces = traced(|device| diorama_scene(device, LEVEL));
     // Small enough on the table that the whole scene lies inside its volume.
     let mut view = diorama_view(&gpu, &traces, Table { scale: 0.2, ..Table::default() });
@@ -3456,7 +3539,7 @@ fn shown_diorama(gpu: &Gpu, faces: &[Face], table: Table) -> GameView {
 
 #[test]
 fn split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // The yellow part drawn by another sprite standing at the same floor
     // point, as the field splits a character into several.
     let mut faces = FIELD;
@@ -3485,7 +3568,7 @@ fn split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama() {
 
 #[test]
 fn both_eyes_see_one_upright_sprite_apart_only_by_their_disparity() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let mut view = shown_diorama(&gpu, &FIELD, Table { scale: 2.0, ..Table::default() });
     let eyes = [orbit(0.0, 35.0, 0.7, -0.032), orbit(0.0, 35.0, 0.7, 0.032)];
     let (pictures, _, _) = present_diorama(&gpu, &mut view, &eyes, (640, 480), 2.0);
@@ -3504,7 +3587,7 @@ fn both_eyes_see_one_upright_sprite_apart_only_by_their_disparity() {
 
 #[test]
 fn the_diorama_drops_faces_an_eye_sees_from_behind_but_not_double_sided_ones() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A white face the game drew from behind (double-sided), behind the
     // red wall, both above the floor.
     let mut faces = FIELD[..2].to_vec();
@@ -3521,7 +3604,7 @@ fn the_diorama_drops_faces_an_eye_sees_from_behind_but_not_double_sided_ones() {
 
 #[test]
 fn a_fade_tints_the_diorama_and_its_pane_but_not_the_room() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let grey = xem_render::wgpu::Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 };
     let picture = |fade: bool| {
         let traces = traced(|device| {
@@ -3553,7 +3636,7 @@ fn a_fade_tints_the_diorama_and_its_pane_but_not_the_room() {
 
 #[test]
 fn a_subtracting_interface_quad_takes_its_colour_off_the_pane_as_off_the_screen() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A grey window (20..80, 20..50), then a quad subtracting 64 (mode 2)
     // from 10 to 60 across it: over the window and, left of it, over the
     // scene, where the pane holds nothing.
@@ -3589,7 +3672,7 @@ fn a_subtracting_interface_quad_takes_its_colour_off_the_pane_as_off_the_screen(
 
 #[test]
 fn a_picture_the_game_draws_over_its_clear_shows_whole_on_the_wall() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // The game's clear, then a magenta panorama over the screen's top half
     // before the scene, in three panels from above the screen's top (as the
     // debug battle's forest), all on the wall in one plane; the camera
@@ -3624,7 +3707,7 @@ fn a_picture_the_game_draws_over_its_clear_shows_whole_on_the_wall() {
 
 #[test]
 fn frames_without_a_camera_record_or_in_other_modes_show_the_screen() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
     // No camera record: the screen, and no diorama to hold.
     let traces = traced(|device| gte_frame(device, LEVEL, &FIELD, false));
@@ -3659,7 +3742,7 @@ fn frames_without_a_camera_record_or_in_other_modes_show_the_screen() {
 
 #[test]
 fn the_listener_takes_the_tables_axes_only_while_the_diorama_is_presented() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
     let traces = traced(|device| diorama_scene(device, LEVEL));
     let mut view = diorama_view(&gpu, &traces, Table::default());
@@ -3719,7 +3802,7 @@ fn floor(picture: &[u8]) -> (usize, f32) {
 
 #[test]
 fn leaving_the_diorama_eases_to_the_screen_as_the_last_diorama_fades_out() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
     let black = xem_render::wgpu::Color::BLACK;
     let movie = xem_gpu::DisplayInfo { color24: true, ..DISPLAY };
@@ -3767,7 +3850,7 @@ fn leaving_the_diorama_eases_to_the_screen_as_the_last_diorama_fades_out() {
 
 #[test]
 fn frames_without_a_camera_record_or_a_scene_keep_the_diorama_for_two_frames_then_ease_to_the_screen() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
     for case in ["no scene", "no camera"] {
         let mut view = shown_diorama(&gpu, &FIELD, Table::default());
@@ -3810,7 +3893,7 @@ fn turned(degrees: f32) -> [[i32; 3]; 3] {
 
 #[test]
 fn the_diorama_is_built_once_a_game_frame_while_the_table_turns() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
     let mut view = shown_diorama(&gpu, &FIELD, Table::default());
     let builds = |view: &GameView| view.diorama_stats().builds;
@@ -3842,7 +3925,7 @@ fn the_diorama_is_built_once_a_game_frame_while_the_table_turns() {
 #[test]
 fn after_inspection_the_table_eases_on_from_where_it_stood_at_a_frames_step() {
     use xem_render::ps1::HeadsetEye;
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
     let mut view = shown_diorama(&gpu, &FIELD, Table::default());
     // The table's heading in the room (the world's x axis seen from above).
@@ -3887,7 +3970,7 @@ fn after_inspection_the_table_eases_on_from_where_it_stood_at_a_frames_step() {
 
 #[test]
 fn nothing_outside_the_tables_volume_is_drawn() {
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A floor far wider than the table at this scale.
     let mut faces = FIELD[..1].to_vec();
     faces[0].points = [[-3000.0, 200.0, 2000.0], [3000.0, 200.0, 2000.0], [-3000.0, 200.0, 400.0], [3000.0, 200.0, 400.0]];
@@ -3969,7 +4052,7 @@ fn headset_scene(gpu: &mut xem_gpu::Gpu, eye: bool, quads: &[([[f32; 3]; 4], u32
 #[test]
 fn a_headset_sees_from_the_characters_eye_through_each_eyes_field_of_view_with_the_interface_on_its_pane() {
     use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A thousand units ahead of the eye, four quadrants meeting on its line
     // of sight: red up left, green up right, blue down left, yellow down
     // right; and a magenta floor at the character's feet from 300 units
@@ -4092,7 +4175,7 @@ fn a_headset_sees_from_the_characters_eye_through_each_eyes_field_of_view_with_t
 fn a_headsets_eye_keeps_its_colours_composited_and_the_pane_covers_by_its_alpha() {
     use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
     use xem_render::{Compositor, Quad, Rect, wgpu};
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     // A wall of middle tones ahead of the eye (encoded to sRGB twice, they
     // would come out paler), drawn without the mask bit: the frame's alpha
     // there is 0, which is no coverage.
@@ -4237,7 +4320,7 @@ fn without_dialogue(gpu: &mut xem_gpu::Gpu) {
 #[test]
 fn a_dialogue_held_hidden_presents_the_frame_without_its_windows_and_shows_them_again() {
     use xem_settings::{Graphics, GraphicsProfile};
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
     let shown = traced_takes(&[with_dialogue, with_dialogue]);
     let without = traced_takes(&[without_dialogue, without_dialogue]);
     let marked = |trace: &xem_gpu::Trace| trace.ops.iter().filter(|op| matches!(op, TraceOp::Draw(p) if p.dialogue)).count();

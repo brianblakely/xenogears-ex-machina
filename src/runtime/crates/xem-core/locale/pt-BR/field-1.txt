@@ -1180,7 +1180,7 @@ f155-0000 ac054b2c042648e0 Shakhan{n}"Estou impressionado que{n}ela tenha falado
 f155-0001 ef3853d19343bb84     Parar{n}    Torre leste{n}    Entrada{n}    Pátio externo{n}    Cidadela, 3o andar{n}    Salão de jantar
 f155-0002 74b0e7f0eda39d14 Tudo bem assim?
 f155-0003 a9b75d70784fbec4 Shakhan{n}"Não posso impedi-los de{n}vê-la. Não quando se trata{n}dele...{p}Além disso, Marguerite{n}não está falando mesmo.{n}Então não há com que{n}se preocupar...{p}Mas de onde veio o{n}vazamento sobre o Jaspe...?{p}...O 'Ethos'?{n}Ridículo...! Hmmm,{n}se isso continuar, meus{n}planos serão..."
-f155-0004 f8a98d96b7aa16dd Shakhan{n}"É melhor descobrirmos{n}imediatamente quem está{n}vazando nossas{n}informações.{p}Enquanto isso, teremos{n}de aplicar soro da{n}verdade em nossa{n}hóspede, a senhorita{n}Marguerite.{p}Precisamos achar o outro{n}fragmento do 'Jaspe{n}Fatima' o quanto antes."
+f155-0004 f8a98d96b7aa16dd Shakhan{n}"É melhor descobrirmos{n}imediatamente quem está{p}vazando nossas{n}informações.{p}Enquanto isso, teremos{n}de aplicar soro da{n}verdade em nossa{p}hóspede, a senhorita{n}Marguerite.{p}Precisamos achar o outro{n}fragmento do 'Jaspe{n}Fatima' o quanto antes."
 f155-0005 4023c3480501dff9 Mas...
 f160-0000 5c736ab567cc81df Miang{n}"O que houve?{wait 50} Parece que{n}você acabou de ter um{n}pesadelo...{p}Não foi aquele mesmo sonho{n}de novo, foi?"
 f160-0001 5934d68105928ab4 Ramsus{n}"Não...{wait 30} Não foi nada."

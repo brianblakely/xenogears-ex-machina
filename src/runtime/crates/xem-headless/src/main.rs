@@ -11,6 +11,9 @@ use std::process::ExitCode;
 
 #[cfg(has_game_module)]
 mod cd_trace;
+// A build without a game module runs no game and writes no picture of it.
+#[cfg(not(has_game_module))]
+use {png as _, xem_game as _};
 
 struct Options {
     disc: PathBuf,
@@ -64,7 +67,7 @@ fn main() -> ExitCode {
                 println!("Xenogears Ex Machina {} (headless)", option_env!("XEM_RELEASE_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")));
                 return ExitCode::SUCCESS;
             }
-            "--disc" => options.disc = args.next().map(PathBuf::from).unwrap_or_default(),
+            "--disc" => options.disc = args.next().map_or_default(PathBuf::from),
             "--frames" => options.frames = args.next().and_then(|v| v.parse().ok()).unwrap_or(options.frames),
             "--stubs" => options.stubs = args.next().map(PathBuf::from).unwrap_or(options.stubs),
             "--control" => options.control = true,

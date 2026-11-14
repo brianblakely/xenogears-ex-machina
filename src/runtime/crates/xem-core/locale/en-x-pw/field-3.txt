@@ -1,0 +1,1371 @@
+f300-0000 f677f251376b582f Elly{n}"Standing by!!"
+f300-0002 5a174e76785cb622 Maria{n}"My {name 19} is too{n}big, so I'm having it{n}kept on the deck.{p}If you need {name 19}{n}he'll be ready for{n}take-off anytime!"
+f300-0004 eacc6d8266a0c362 Fei{n}"I{wait 5}...{wait 10} I'm sorry about{n}what just happened{wait 5}...{wait 10}{n}Forgive me...{p}But{wait 5} I want to explain.{p}Now,{wait 10} for the first time,{wait 10}{n}be they surface dweller{n}or Solarian, the people's{n}hearts have been united.{p}And yet,{wait 10} not everyone is{n}strong like the crew of{n}this ship, or the people{n}of Shevat.{p}If even we have been on the{n}brink of losing sight of{n}the future,{wait 10} what must it{n}be like for regular people?{p}That's why the people need{n}someone like you to turn{n}to,{wait 10} a ray of light.{p}The hearts of those who'd{n}merely been used as tools{n}of the Ministry for{n}hundreds of years...{p}The one who freed them{n}from that spell was{n}you, Elly.{p}Your safety is no longer{n}just your own concern.{wait 10}{n}You cannot be put in{n}danger.{p}I don't want to have{n}you fight anymore."
+f300-0005 404d11a6c23996fb ...{wait 5}Strange, isn't it?
+f300-0007 dfbfe2b90ee4d2ce Elly{n}"To think we're{n}together like this now,{p}even though we were{n}supposed to be mutual{n}enemies at first..."
+f300-0008 25c845f4cd7e707d Elly{n}"In the beginning,{wait 10}{n}I think I'd projected{n}myself onto you.{p}Superimposed myself over{n}you,{wait 10} as you were in a{n}similar situation to me.{p}It was only when I was{n}with you that I didn't{n}feel loneliness, or{n}anxiety.{p}That's why I'd thought...{n}I must like you.{wait 10}{n}But that wasn't it.{p}I just didn't have the{n}courage to look at my{n}true self.{p}I'd simply been{n}escaping into you.{wait 10}{n}I'd mistaken that{n}for love."
+f300-0009 6cc3b6b53ef7ff74 Elly{n}"But{wait 10} it's different now.{wait 10}{n}I can confront my own{n}situation head-on.{p}I'm me{wait 5}...and you're you.{wait 10}{n}I see that clearly.{p}And I've rediscovered{n}that I do need you.{p}I don't need you because I{n}want to be released from{n}my worries.{wait 10} I need you{n}because I love you."
+f300-0011 d5908216c1888b9b Elly{n}"I understand what you're{n}saying, Fei.{p}I know that you're{n}concerned for my safety.{p}The thing is...{wait 5}I'm afraid.{wait 10}{n}I have a bad feeling...{wait 10}{n}that after this we'll never{n}see each other again..."
+f300-0012 b52f6ccc4daf1a42 Fei{n}"It's alright,{wait 10}{n}I'm not gonna die."
+f300-0013 0ed51ebd3f0e289c Elly{n}"No, no...{wait 5}it's not that.{wait 10}{n}It's something very{n}different{wait 5}...{p}Like I'm being torn{n}apart by something{n}uncontrollable,{wait 10} and{n}I'm no longer me{wait 5}...{p}Even though you'll be{n}coming back,{wait 10} it's still{wait 5}...{wait 10}{n}It's unbearably{n}unsettling{wait 5}...{p}That's why I want to go{n}with you.{wait 10} I don't want{n}to be apart from you{n}for even a moment."
+f300-0014 f09affd5a27dfcb2 Fei{n}"It's the same for me.{wait 10}{n}I've felt it ever since I{n}met you in the forest{wait 5}...{p}I think it's maybe the{n}same thing that you'd{n}been feeling.{p}I was escaping into you,{n}too.{p}But I have to solve my{n}problems on my own.{wait 10}{n}I can't let them be{n}a burden to you."
+f300-0015 3f12e6bfbcfb0d0e Fei{n}"Within me, there's{n}another me — Id.{p}I'm almost crushed by{n}the fear that I'll be{n}completely taken over{n}by him someday.{p}Unstable as I am, it's{n}thanks to you that I can{n}be as you see me now.{p}Because you're always{n}by my side, I can hold{n}on to my own self."
+f300-0016 2d29372da6b0be97 Fei{n}"I will definitely,{wait 5}{n}without fail,{wait 5} come back.{p}So...{wait 5} I...{p}Elly,{wait 10} I want you to be the{n}reason for me to come back{n}no matter what,{wait 10} the home{n}I must return to...{p}If you're waiting for my{n}return, watching over{n}me even though we're in{n}different places,{p}then I'll be able to{n}keep going..."
+f300-0017 824855a46588fedc Fei{wait 5}...
+f300-0018 5e61c6a376826517 You're going?
+f300-0019 cf66497d77cf7693 Fei{n}"Oh, sorry.{wait 10}{n}Did I wake you?"
+f300-0020 18b1983447c678b7 Elly{n}"It's okay.{wait 10}{n}I've been up for{n}quite some time{wait 5}..."
+f300-0021 8c3ce62a3a39f586 You have?
+f300-0022 7b288a73f10fd07c Elly{n}"Uh-huh.{wait 10} I was gazing{n}at your face all morning{n}while you slept..."
+f300-0024 9f1d2d5adccf45ba Fei{n}"W-{wait 5}Well,{wait 10} time to go."
+f300-0025 7ada3f42da04febb Elly{n}"I'll see you.{wait 10}{n}Do be careful{wait 5}..."
+f300-0026 705e21981ac94841 Fei{n}"I will...{p}Oh!{wait 10} That's right.{n}Could you hold on{n}to this for me?"
+f300-0027 d1610aecfa2ec3c4 Elly{n}"What?{wait 10}{n}This is{wait 5}...{wait 5}a pendant?"
+f300-0028 5b36c4a5d1d40b00 Fei{n}"I don't know whose it is.{p}Apparently it was on me{n}when I was carried into{n}Lahan.{p}Maybe it's mine,{wait 5}{n}or maybe it's{wait 5}..."
+f300-0029 55c294ccf59c071f Maybe it's{wait 5}...?
+f300-0030 3620053dc7c4677c Fei{n}"No, never mind.{wait 10}{n}Could you look{n}after it?"
+f300-0031 b09626ba229d2a1a Elly{n}"Alright.{wait 10}{n}I'll hold on{n}to it."
+f300-0032 4992932d256b5232 Fei{n}"Thanks.{wait 10}{n}...{wait 5}Well, then."
+f300-0033 c05ea7ee8a0b5bc0 Oh{wait 5}...{wait 5} Fei?
+f301-0000 9a177b6355b3a5af Bart{n}"Hey, Margie!{p}Get rid of that freaky{n}stuffed toy sitting out{n}front of the bridge.{wait 10}{n}It's in our way."
+f301-0001 832523cb3dab9f6c Margie{n}"She's not a 'freaky{n}stuffed toy'!{wait 10}{n}She has a name!{p}Her name is..."
+f301-0003 4652afe2b01420f6 Margie{n}"But that's weird.{wait 10}{n}She was just here, where I{n}put her, a moment ago..."
+f301-0004 9b976321ea2a3fbb {name 7}{n}"Nice chu meet chu!!{wait 10}{n}I'm {name 7}!{p}I fell in love with you{n}when I first saw you in{n}Breidablik!!{wait 10} Wherever you{n}go, I shall go chu!"
+f301-0005 8ad209c739687ce0 Bart{n}"What we thought was just{n}a stuffed toy is actually{n}a living animal! Bizarre!"
+f301-0006 8cdb13e678206ada Margie{n}"No wonder she felt{n}so oddly warm!"
+f301-0007 b32f48e4c700e836 Fei{n}"Wh-What!?"
+f301-0010 ecca1f9946117b7d Bart{n}"It's alright.{n}I, as the captain, give{n}you my blessing!"
+f301-0012 9bb8e859c74f43f5 Fei{n}"...{wait 10}{n}Whatever!"
+f301-0013 2e87097532c16bf5 Bart{n}"Ha ha ha!{p}Well, I don't want{n}to interrupt you two,{n}so I'll wait outside!"
+f301-0015 28cd5d3ff2a0b689 Margie{n}"Thank you for your help{n}at the castle.{p}I heard you really riled{n}it up at the Tournament.{p}Bart was bragging about{n}how the two of you are{n}buddies and all."
+f301-0016 8c1336890694a61d Fei{n}"...{wait 10}{n}R-{wait 10}Really?"
+f301-0018 16c224f1fdc2cfd4 Margie{n}"Fei, have you seen Bart's{n}back?{p}He's got scars all over{n}his back and it looks so{n}painful.{p}Long ago,{wait 5} when the two of{n}us got caught by Shakhan,{n}Bart took the beating{n}instead of me..."
+f301-0019 3a9855f6565aa157 Margie{n}"At that time, I decided{n}to be his follower...to{n}serve and protect him!{p}But he's the one who's{n}always protecting me..."
+f301-0021 10a405eec3026f42 Margie{n}"Ah, so sorry...{wait 10}{n}Anyway, thanks a lot{n}for saving me!"
+f301-0022 0f05f9f827dacd4b Margie{n}"You guys are all{n}we've got!{wait 10} We're{n}counting on you!"
+f301-0023 5b7068cba2d51af6 Margie{n}"Young Master...{n}You better not die!{wait 10}{n}No, sir!!"
+f301-0024 1de63ce79400e811 Bart{n}"Of course not!{wait 10} I'm not{n}gonna die!{wait 10} Quit sayin'{n}such weird stuff!"
+f301-0025 c07148f60028ff55 Margie{n}"Sorry{wait 5}...{wait 10}{n}Yeah{wait 5}...{wait 10}you're right{wait 5}...{wait 10}{n}You'll make it back{wait 5}...{p}When you do come back,{n}I{wait 5}...{wait 10} I mean{wait 5}...{wait 10}{n}I'd like it if I could{n}be{wait 10} closer to you..."
+f301-0026 43f67f555c7be1d3 Bart{n}"Hey, whoa, what're{n}you saying, Margie?{wait 10}{n}Quit it!!"
+f301-0027 a181dc4588237386 Margie{n}"Hehe, just kidding!!{wait 10}{n}Young Master, you're{n}all panicked!!"
+f301-0034 0800792713a3891b Margie{n}"Fei?{wait 10}{n}No, he hasn't been here!"
+f301-0035 0363ea8e01008f08 Margie{n}"...I knew something was{n}up with the Church...{p}It's not permissible to use{n}religion for wrongdoing!"
+f301-0036 569f415ae73c18cb Margie{n}"Verus...{n}Kinda scary."
+f301-0037 5390c6fb9319b83c Margie{n}"A ghost ship, huh?{p}It reminds me of the days{n}Bart and I used to dare{n}each other..."
+f301-0038 078bd0a28eea7f18 Bart{n}"M-Margie,{wait 10}{n}stop talking about that!"
+f301-0039 70916515bed30546 Margie{n}"Heh heh heh!{wait 10}{n}If you insist..."
+f301-0041 3430523336d023f9 Margie{n}"I'm glad we've met up{n}with such nice people.{p}Anyway, we'd better hurry{n}up and go to the Church!"
+f301-0045 b12d4815afd1abd9 Margie{n}"I was the only one who{n}escaped Shakhan's grasp by{n}fleeing Nisan with Bart...{p}I wonder if the sisters{n}are all right...{wait 10}{n}The Young Master will help{n}them too, won't he?"
+f301-0046 ed1f688a1d9ede69 Margie{n}"Even though it was the{n}Sect's wish, it still left{n}a bitter feeling..."
+f301-0049 58c3268d70ec0615 Margie{n}"I wouldn't be much good{n}fighting alongside Bart{n}and his comrades...{p}But I can be a manager!{wait 10}{n}Let me know when you want{n}to change party members!"
+f301-0050 6b33c8b11d879fcc Margie{n}"Change party members?"{wait 10}{n}{speed 255}    Yes{n}    No
+f301-0052 c9f912c80e76129c Margie{n}"Until next time!"
+f301-0053 d1b493aefaed0652 {name 7}{n}"I...might've been{n}getting in everyone's{n}way up chu now.{p}But I can't bear the{n}thought of Fei and all{n}his friends dying out{n}like we did...{p}I'm going chu fight so{n}that this kind of thing{n}never happens chu{n}anyone again!!"
+f301-0057 e04d088f396afdc8 {name 7}{n}"The ship suddenly started{n}chu roll, and now I don't{n}feel chu good!!"
+f301-0059 6b9448c4b75453f8 {name 7}{n}"{name 7} can't do muchu{n}either, so I'll just be a{n}freeloader chu!"
+f301-0060 a29858db71a1cc7d {name 7}{n}"Fei's still sleeping?{p}A maiden's kiss might{n}wake him up.{wait 10}{n}Oh, what am I saying!?{n}This is chu embarrassing!!"
+f301-0061 1b6908c783df93a6 {name 7}{n}"Fei's still sleeping?{p}A maiden's kiss might{n}wake you up.{wait 10}{n}Oh, what am I saying!?{n}This is chu embarrassing!!"
+f301-0064 64ceaf4cd3bb3528 {name 7}{n}"This place isn't{n}chu familiar.{p}But it doesn't matter{n}because I didn't know{n}muchu about Av in the{n}first place either."
+f301-0067 08dcdf04a0a670fb {name 7}{n}"Wow!{wait 10} A delicious-{n}looking spider..."
+f301-0068 7f8938a49f6f98e0 *munchu munchu*
+f301-0069 6f99074240a0cc03 {name 7}{n}"Presents are the way{n}chu a woman's heart!{wait 10}{n}Here's your reward!"
+f301-0070 63133ed79243c2e3 Received Ether Veiler!
+f301-0071 031e4268cc3f3b34 {name 7}{n}"My eyes dry out when{n}pretending chu be a{n}stuffed toy. Ouchu!"
+f301-0079 2a92f920cae38bd9 ...
+f301-0083 a074f4cb77942e86 {name 7}{n}"Why don't chu{n}ask me chu do{n}that...?"
+f301-0084 dc93f81e2b81f1f7 She's holding a note...{n}Read it?{wait 10}{n}{speed 255}    Read it{n}    No, better not!
+f301-0085 4af884575ee19eaf {speed 255}-PriMemo-{n}You can do it,{n}Big Brother...
+f301-0086 b032d56c110e5fbc {speed 255}-PriMemo-{n}There are three kinds in{n}your basic loadout of guns.{p}The three are:{n}'Handgun' (△ attack),{n}'Ether Gun' (□ attack),{n}and 'Big Gun' (× attack).{p}Only the Handgun can be{n}swapped out for other{n}guns of the same kind.{p}Power up a gun's attack{n}force by loading more{n}powerful ammo.{p}To load ammo, press the{n}right or left directional{n}button at the Equip menu{n}screen.{p}This will display a sub-{n}window in place of the{n}main Equip window, where{n}you can select the ammo.{p}You have a left and a right{n}Ether Gun, which means{n}you can load two types of{n}elemental ammo at once.{p}(Which Ether Gun is fired{n}when using the □ button{n}in battle depends on the{n}sequence of your attacks.{p}To simplify things, you{n}might want to just load{n}the same elemental ammo{n}in both Ether Guns.){p}One thing you have to be{n}careful of is that the{n}number of bullets for{n}each gun is limited.{p}To successfully manage{n}ammo, you must keep an{n}ample supply and reload{n}frequently.{p}But, having said that,{n}note that Ether Guns do{n}not have such a limit.
+f302-0000 daaf1a654b637e3a It's kind of warm{n}to the touch...
+f302-0001 2ee24c17c6687959 Bart{n}"That Margie...!{p}Leaving a freaky stuffed{n}toy in a place like this!{wait 10}{n}Now we can't get onto{n}the bridge."
+f302-0002 e816e73075c1f379 {speed 255}I'm not freaky!{done 15}
+f302-0004 c54580b70fd69428 Fei{n}"Huh?{n}{wait 10}I{wait 10} didn't say anything."
+f302-0005 a250ad461f874445 Bart{n}"...{wait 10}{n}Kinda gives me{n}the creeps...{p}Let's talk to{n}Margie and get{n}her to move it."
+f302-0006 43bf8cea845f42ec Get on the transport ship?{wait 10}{n}{speed 255}    Yes{n}    Wait a minute
+f302-0009 d015892c7a8bf8ad Elly{n}"Seems like they can't{n}launch the Yggdrasil{n}since Sigurd isn't here.{p}He must be in the{n}gun room."
+f303-0000 57aabb6fb8a0b8e2 Elly{n}"Wait a minute!{wait 10} You want{n}me to stay behind?{wait 10} {n}No, I'm going too!"
+f303-0002 328b517b23edacba Elly{n}"Why?{wait 10} I've been in danger{n}many times before now.{wait 10}{n}This isn't the first time!"
+f303-0003 58028d069c244d43 Fei{n}"I said NO!{wait 10}{n}There's no way we{n}can take you.{p}Try to understand!"
+f303-0004 187abddc559bd593 Elly{n}"No!"
+f303-0005 348e68f7b687beb7 Elly{n}"Aren't we comrades{n}who've been fighting{n}together all this time!?{p}I just don't get this{n}'you can't go' all of{n}a sudden!"
+f303-0006 cfb7934ff941c47c Fei{n}"This isn't just{n}any fight!{p}It's a battle over the{n}wisdom created by God.{n}Over whether we live{n}or die.{p}A battle to see who'll{n}command that wisdom,{n}and become the true{n}rulers of this world!?{p}It's clear the Ministry{n}will devote their maximum{n}military strength to the{n}fight this time around.{p}There's no guarantee{n}we'll come back alive!"
+f303-0007 d195d84a5134af84 Elly{n}"That's exactly why{n}I should also—"
+f303-0008 9a284afcb5b93ece Fei{n}"You don't get it{n}at all{wait 5}..."
+f303-0009 a859187bb30a6e86 Elly{n}"What don't I get!?"
+f303-0010 cffe0c9216ec305d Fei{n}"If the enemy was the{n}Ministry and ordinary{n}mechanical units,{p}it would be okay.{p}But when their army is{n}almost entirely made up{n}of people who were once{n}just like us!?"
+f303-0012 111f6084023901aa Fei{n}"We saw them at those{n}facilities{wait 5} —{wait 5} Gears that{n}were made out of people.{p}They're the same as{n}Hammer{wait 5}...{wait 10} Could you{n}destroy them now!?{p}Could you kill people —{n}those who were once our{n}allies — so that we{n}ourselves will survive!?{p}Well!?"
+f303-0013 41b76d947a422180 Elly{n}"Th-{wait 5}That's—"
+f303-0014 8343225238863db4 Fei{n}"Someone who can't{n}kill a single person,{p}getting involved in a{n}battle where you're{n}forced to make that{n}kind of call...{p}They'd only be a burden!"
+f303-0016 8fe003869a512250 Fei{n}"You'd just...{wait 20}{n}get in the way."
+f303-0017 8a958596a90d4e11 Bart{n}"Hey, all things{n}considered, didn't{n}you go too far there?"
+f303-0018 e73f0cfe2535ab97 Citan{n}"Her feelings are quite{n}understandable.{wait 10} You have{n}to give her that much."
+f303-0019 421d0b9f32b473aa Fei{n}"I do know how she feels.{wait 10}{n}All this time, she's been{n}working together with us.{p}I don't imagine she'd{n}listen if I just said{n}'you're not coming'.{p}So I had to say it{n}some other way..."
+f303-0020 c09e89e65a662c6f Fei{n}"The people gathered{n}in Nisan need Elly.{p}She has to realize{n}now how much she's{n}becoming the one who{n}people depend on.{p}I can't let her be{n}put in danger..."
+f303-0021 4dd23840bed8ffa0 Margie{n}"But the way you say{n}it is kinda cold."
+f303-0022 7e0112cf4c652624 Billy{n}"You don't have to say it{n}in such a detached manner.{wait 10}{n}She was crying, you know?"
+f303-0024 533a1fc49f8b0686 Citan{n}"What you{n}just said...{p}I think she{n}understands{n}that too."
+f303-0025 ae0c50062d75b38f Bart{n}"Right.{wait 10}{n}Maybe it's actually you{n}who doesn't get it?"
+f303-0026 d09464d4a7d5ca3d Fei{n}"Me?{wait 10}{n}I don't get it?"
+f303-0027 4cff79538c3dd5e7 Margie{n}"As in...{wait 5}{n}a woman's heart?"
+f303-0028 0bc47a50def9a0da Billy{n}"She wants to go.{wait 10}{n}To be with you, Fei.{wait 10}{n}Until the end."
+f303-0030 f5a884c3dabbe508 Bart{n}"If it was me...{p}I'd hold her tight,{n}and I'd be all...{wait 5}{n}'you coming with me?'"
+f303-0032 3fe11403381711a9 Bart{n}"Um{wait 10}...{wait 5}no...{wait 10}{n}I mean{wait 10}...{n}uhh..."
+f303-0033 6489d5806e8cef57 Mason{n}"Young Master, don't{n}overdo it, now..."
+f303-0034 eb466c9f0dcb38d1 Sh-Shut up!
+f303-0035 58bd82497f180fc1 Bart{n}"Ah, what the hell.{wait 10}{n}A little backup, guys?{n}C'mon.{p}Whether you go together{n}or don't go together.{n}You've gotta explain{n}properly with words.{p}Especially if you care{n}for her that much."
+f303-0036 46ef16d1fda52707 Citan{n}"Feelings into words{wait 5}...{wait 10}{n}right?"
+f303-0037 01230fa5b693e9f2 Fei{n}"B-But I don't—!"
+f303-0038 edcbcd09a2173c71 Bart{n}"Too late now.{n}You can't hide it."
+f303-0039 3da1d915b7ab0ef0 Citan{n}"You are not being{n}honest, are you?"
+f303-0040 04c39ca8458600ea Margie{n}"Mm-hmm."
+f303-0041 efa935ccbd1641f0 Emeralda{n}"Fei...{wait 5}{n}say it...{wait 10}{n}right{wait 5}...{wait 10}"
+f303-0042 16b47b4f904e4028 Margie{n}"Now, go after her,{n}quickly.{wait 10} Okay?"
+f303-0043 f42a71b7f003e318 Citan{n}"So...{wait 10} This means there{n}is only one Gate left{n}on the surface..."
+f303-0044 730c7e6e2b368969 Bart{n}"The problem{n}is, where is{n}it located?"
+f303-0045 74c7b1b86893302f Fei{n}"Queen Zephyr said three{n}were on the surface, and{n}one in Solaris..."
+f303-0046 1a3f1decd7b9a936 Sigurd{n}"The Gates are laid out{n}so as to form the shape of{n}an equilateral triangle,{p}in the center of which{n}is Solaris.{wait 20}{n}Or so Shakhan's report{n}indicates..."
+f303-0047 a11027782e38e15d Citan{n}"Let us take a{n}look at the map{n}the Queen gave us,{p}which is from{n}before the Gates{n}were placed."
+f303-0048 0b4c7799b3f7e2a7 Bart{n}"Why don't we just{n}check out both?"
+f303-0049 d51a4cdc540f7cb1 Sigurd{n}"That could be{n}complicated.{p}I doubt they were{n}expecting the second{n}Gate to be destroyed.{p}So I'm sure they'll{n}get serious next time.{wait 10}{n}We should plan carefully,{n}but quickly."
+f303-0050 ef78709f3e5e1c8f Citan{n}"In any case,{p}we can count on there{n}being interference{n}from Geburah."
+f303-0052 48a20baee7398ab1 Elly{n}"In Solaris there are{n}only maps of Solaris.{p}I didn't even know{n}the different areas{n}on the surface until{n}after coming here."
+f303-0053 16abc0635e223b69 Fei{n}"Even Geburah{n}don't know?"
+f303-0054 d622453cbbe05600 Elly{n}"Its exact location{n}relative to the surface{p}is only revealed to{n}those of quite high{n}rank — commander-in-{n}chief or above."
+f303-0055 a697c6b2ce126803 Bart{n}"If that's the case,{n}even Billy's dad{n}probably doesn't know."
+f303-0056 8264cea6f2783175 Sigurd{n}"Jesiah left before he{n}could attain that rank."
+f303-0057 d00883f001638d87 Citan{n}"And Sigurd and{n}I were stowaways.{p}We did not have the{n}luxury of looking{n}out the window.{p}On top of that,{n}as you exit the Gate{n}out of Solaris you{n}'jump' to some other{p}place entirely —{n}an effect of crossing{n}the boundary between{n}two Gates.{p}You may recall when{n}Kislev's Gatekeeper-{n}equipped vessel,{p}the Goliath{wait 5}...umm{wait 5}...{n}'touched down' upon{n}this one.{p}Similar to that, one{n}loses all sense of{n}where they had just{n}been."
+f303-0058 b1551d5067bce8b5 Fei{n}"Even if it is split{n}off from other places{n}by the Gates,{p}don't you at least{n}have a sense of the{n}surrounding terrain?{p}Like is there a{n}mountain range,{n}or is it covered{n}by jungle?"
+f303-0059 5f7c352d9e835f9f Elly{n}"...I don't{wait 10} think there{n}were mountains.{p}It was more like the{n}ocean was all around."
+f303-0060 ddcfe3375aeb233a Bart{n}"The ocean, huh...?{wait 20}{n}So doesn't that rule{n}out the north?{p}That way's the pole,{n}right?{wait 10} It's snow that'd{n}be all around, never{n}mind the ocean."
+f303-0061 3372d30adf1d4c22 Fei{n}"Then the Gate's location{n}has got to be in the south.{p}In this triangle, there'd{n}be nothing but ocean at the{n}center.{wait 10} That would fit with{n}what Elly just told us.{p}Whereas, if the Gate was{n}positioned at the northern{n}point, then the center{n}would be over a continent."
+f303-0062 fa13b8d84ea6ae52 Citan{n}"I think you{n}are right."
+f303-0063 2b49e27b76cc8906 Sigurd{n}"Wait a minute.{p}I'm pretty sure there{n}are no structures of{n}that kind on the water{n}around there."
+f303-0064 2c04539a245d59d0 Elly{n}"Underwater, then?"
+f303-0065 575f86a54531f3bc Sigurd{n}"Hmm...{wait 10}{n}But the whole region{n}is an ocean trench.{p}If it is there, it could{n}be very deep down..."
+f303-0066 1c891ce537159e61 Fei{n}"The Yggdrasil is{n}a submarine, right?{wait 10}{n}So what's the problem?"
+f303-0067 bd9179354747ab7d Bart{n}"Are you crazy!?{n}It's a submarine,{n}not a bathyscaphe.{p}It can't dive to those{n}sorts of depths. The{n}water pressure would{n}crush us instantly."
+f303-0068 f533b96637d75204 Fei{n}"Beats me, then..."
+f303-0069 f5b9a4fa57611f6f Citan{n}"It might just be{n}manageable...{p}if we could use the{n}bathyscaphes or the{n}Gears that the{n}salvagers use..."
+f303-0070 c923f69711f506a0 Bart{n}"The salvagers?{wait 20}{n}Right!{wait 10}{n}That's it!"
+f303-0072 ec7f87c6120f87b1 Bart{n}"If we visit the{n}Captain of the Tamuz,{p}I bet he'll have{n}stuff like that{n}just lying around!{p}And he owes us for{n}the other day.{wait 10}{n}Let's go to the Tamuz!"
+f303-0073 a8a3081e6dc68f94 Citan{n}"In the current{n}situation, that may{n}be our best shot.{p}Shall we go to the{n}Tamuz?"
+f303-0074 6911d43917afcc75 Citan{n}"Fei{wait 5}...{wait 10}how about being{n}honest about your own{n}feelings at last?"
+f303-0075 9521da8f2550df9d Bart{n}"Go, go, go!{wait 10}{n}Okay?"
+f303-0076 c33ed5af037662fc Billy{n}"Honestly, you don't{n}know much about how to{n}treat women, do you?"
+f303-0077 2c181ecdc2bd15c8 Rico{n}"I don't know much about{n}this kinda thing, but{wait 5}...{p}Hammer always used to{n}say...{wait 5}'you gotta be{n}nice to women!'"
+f303-0079 7a7826cca0e0f9a2 {name 7}{n}"You don't have chu{n}worry about me, so{n}hurry up and go!!"
+f303-0080 cd35b97233d04b17 Maria{n}"I don't think that{n}was any way to talk{n}to her."
+f303-0081 d477e96371afc77e Margie{n}"Nobody likes{n}a meanie!"
+f303-0082 0ee843d9656e6f85 Mason{n}"I'm afraid I'm not{n}well versed in the{n}art of romance."
+f303-0083 a5ea3821642c5391 Margie{n}"It isn't very manly{n}to just run away!!"
+f303-0085 02014c2b80fe6f64 Bart{n}"Hey, stupid!{wait 10} Isn't{n}it the next room?"
+f304-0001 207403ccc509d38e Citan{n}"This room is for{n}the ladies' use, so{n}let us refrain."
+f304-0002 41a9cd24e63fda34 Bart{n}"I'll stop{n}right here..."
+f304-0004 6a74b161ff14a8e3 Sorryyyy.{wait 10}{n}The Shevat agent is in{n}intensive care...{wait 5} So...{wait 10}{n}no visitors are allowed!!
+f304-0005 e2338b2052c43c3a (I've always wanted to say{n}that...!{wait 10}{n}'No visitors are allowed!'{wait 10}{n}Now I'm so{wait 5}o{wait 5}oo{wait 5} happy!!)
+f304-0006 d3afc07b35ed49ce Gawd... I've been standing{n}here for such a long time...{p}Was I of any help to you?{wait 10}{n}{speed 255}    Of course{n}    Hmmm, I dunno
+f304-0009 de058e90d5726f3e Young Master, I've{n}learned my lesson!
+f304-0010 43c7d618a6a91a36 What? Why am I here?{n}Well never mind that!{n}(It's not like I'm hiding{n}the fact that I broke the{n}wall or anything.){p}Oh, and by the way...{n}You can go through this{n}door to the gun room, or{n}go down the stairs to the{n}engine room.
+f304-0012 5fb4692f77e37c50 What?{wait 10} Can't find Fei?{n}N-{wait 5}No,{wait 5} I wouldn't know.{wait 10}{n}(Not that I was sleeping{n}on the job or anything...)
+f304-0013 f68b0de5c629cccf Young Master, c'mon,{n}forgive me! Please!
+f304-0014 6ea79afb9e38c7d6 What? Why am I here?{wait 10}{n}Can't we put that behind us?{p}It's not like I'm being made{n}to stand here as punishment{n}for not obeying lights-out,{n}or anything like that, is it?{p}Beyond this door is the{n}Gear hangar.{wait 10}{n}The Gear shop is located{n}in the Gear hangar too!{p}Now be careful...!{wait 10}{n}The Gears are so big that{n}you'll look very small and{n}you might get lost.
+f304-0016 d5364e700ae98314 Oh, Young Master!{wait 10}{n}This one's gotten bigger!{p}Right now, it's taller{n}than you, Young Master.
+f304-0018 6f5978560ae4cf5a This tree was planted{n}when the Young Master was{n}born. It grew along with{n}the Young Master.{p}With it, our hopes and{n}dreams grow to fruition{n}too...{p}Anyhow, the door next to{n}you is the elevator.{wait 10}{n}Use the switch inside to{n}go up or down.
+f305-0001 2d034373ff5ca84b {speed 255}- Breidablik -{n}Capital of Av
+f305-0003 be4851e1f5c7625f {speed 255}Route{n}to Nisan
+f305-0006 1247010d6e78c3e0 {speed 255}Ignis Gate Cave
+f305-0007 7d37d2eba61e2afe {speed 255}   - Noatun -{n}Capital of Kislev
+f305-0009 8a12f549765f4393 {speed 255}Fort Jasper
+f305-0012 c746e8574a40460d {speed 255}Church Excavation Site
+f305-0014 78b1873fbdbbd276 {speed 255}The Church{n}    HQ
+f305-0016 09e4dc5f6a87b0ab {speed 255}Snowfield Base
+f305-0017 c711b4c04ea9a3f4 {speed 255}Vessel of Anima{n}   Dungeon 1
+f305-0018 c7297ec04ebdda13 {speed 255}Vessel of Anima{n}   Dungeon 2
+f305-0021 95b06a572e476ef4 {speed 255}Torah's House
+f307-0027 1a49a77d3bc14805 {speed 255}Tamuz
+f307-0028 ba0aa09010de6624 Citan{n}"Seeing beyond the{n}invisible walls,{n}this is the true{n}topography of the world.{p}The location of the Gate{n}has to be somewhere on{n}this map."
+f307-0029 9d2ef41e4da85909 Citan{n}"Now, the Ignis Gate is{wait 5}...{wait 10}here."
+f307-0030 cf061f7218a20421 Citan{n}"The Church HQ in{n}Aqvi is here, so..."
+f307-0031 7ebf826029354d44 Fei{n}"Well, thinking logically,{n}the next position could be{n}either here..."
+f307-0032 4f532193c8e4947c Fei{n}"...or here."
+f308-0000 928c1cf6a983b3e4 Fei{n}"Elly, I didn't realize{n}you were awake."
+f308-0001 e9c488d6fab678ce Elly{n}"U-Uhhh..."
+f308-0002 edab5afac79532fe Elly{n}"Where am I...?{p}I was with Fei, heading{n}for the tail section...{wait 20}{n}Fei...!{n}Where are you, Fei?"
+f308-0003 7ca1c94cec1f05a5 *rattle, rattle*{done 60}
+f308-0004 c08f16446f0c2935 Elly{n}"Didn't...realize I{n}was awake...?{p}What the heck have you{n}been so busy with!?"
+f308-0005 aa9eaeba034ac3d4 Fei{n}"Oh, I was just looking{n}around inside here.{p}There's less than{wait 20} two{n}days' worth..."
+f308-0007 d2d18507c7ce767e Fei{n}"Food.{wait 10}{n}We were lucky there{n}was even any."
+f308-0008 854545d7b2ed978e Elly{n}"But where is everyone!?{n}Are we the only survivors?"
+f308-0013 a08b48c7d87ffc55 Fei{n}"They're okay...{wait 45} Doc,{wait 30} Rico,{wait 30}{n}Hammer,{wait 30} everyone...{wait 45} They're{n}all going to be okay."
+f308-0014 bf826534c94aafd9 You little—!{done 60}
+f308-0016 6ce1e34636789452 Elly{n}"I knew it...{p}The way we're floating{n}is pretty unusual when{n}you think about it...{p}Right under us, but{n}covered by water and{n}a thick wall...{p}It probably is{n}{name 11} and{n}{name 13}."
+f308-0017 8c94649d7c7eaf2e Elly{n}"That's good to know...{n}but is there a way to{n}recover them?{p}For better or worse,{n}they've been with us{n}this far...{p}Well, they're no use{n}now, so it's hopeless..."
+f308-0018 a436c66ae7ad1e52 Elly{n}"Fei, it appears our Gears{n}are lodged underneath this.{n}But we can't reach them...{p}...{wait 30}What're you doing, Fei?"
+f308-0021 a5cbd177e25f5331 Elly{n}"Uh,{wait 5} umm,{wait 5} you're not{n}going to catch it and{n}eat it, are you?"
+f308-0026 a69792453c6f9fe7 Elly{n}"Hey, come on, stop it.{n}Don't blame me if you{n}get sick and die."
+f308-0028 9b7039dd852f3e69 Elly{n}"I'm not going to{wait 10}—{wait 30}{n}Fei!! Look there{wait 10}..."
+f308-0030 95f1075ffb575098 Fei{n}"What're you talking{n}about? It's still{n}there{wait 10}...{p}What the{wait 10}...{wait 10}!?"
+f308-0033 329f6700a78f3ab3 Fei{n}"Shevat...{wait 30}{n}Where have I heard...{wait 30}?{n}Yeah, that's right!{p}That weird masked man!{n}He said my father had{n}been in the military...{p}So that saucer is the{n}place the masked man{n}mentioned to me and Doc...{p}the country my father{n}and mother lived in?"
+f308-0034 41aa7c7bd926294b Elly{n}"Really? I wouldn't know...{n}It's a country outside the{n}control of Solaris.{p}Shevat uses the same kind{n}of shielding that Solaris{n}does, so you can't reach{n}it by conventional means."
+f308-0035 868bb8494dc695b3 Fei{n}"How can something that{n}flies that high in the{n}sky be a 'country'?"
+f308-0036 4980726714d9634c Elly{n}"Yes, I don't blame you{n}for being so surprised.{p}It usually hovers over{n}the area known as Aqvi.{p}When you saw it, it was{n}probably on some sort of{n}special mission. That's why{n}it was flying so low..."
+f309-0000 8b0732a5219e4b2e It seems like{wait 3}...{wait 3}{n}we've drifted{n}further off.
+f309-0002 81bed6881b77d195@5b9e8b09982c5120 What d'you mean?
+f309-0003 71d55fe46739e042 In the end, maybe I've{n}just been {wait 3}carried{n}along by circumstances{n}and acting aimlessly.
+f309-0004 e668cc6cba6801a2 No{wait 3}...{wait 3}that's{n}not the case.{p}In Av,{wait 3} didn't{n}you work together{n}with Bart and his{n}people?{p}And Kislev,{wait 3} you{n}said you'd give{n}your all to defend{n}it,{wait 8} to save it.{p}You've even shown{n}concern for me{n}many times.
+f309-0007 0620bf0016fef787 I'm not sure if, deep{n}down, I really{wait 8} want{n}to help.{p}Somehow, I get the{n}feeling that all I've{n}done I did because I{n}wanted to be needed.{p}Because if I did something{n}for them{wait 3}...{wait 3}then maybe{n}{wait 3}I'd {wait 3}have a place to{n}belong{wait 3}...{p}There's a side of me{n}that's comforted that way.{p}Like I said back there in{n}Noatun, that's certainly{n}not zero.{p}But it's not{wait 5}{n}'one' either.{p}While I was acting this{n}way, drifting,{wait 8} I met you,{n}Elly...{p}and now we're stranded{n}out in the ocean.{p}I'm sorry{wait 3}...{wait 8}I got{n}you involved.
+f309-0008 b0bf6d6c806e1841 It's okay.{wait 3}{n}Don't worry about me.{p}I've been thinking{wait 3}{n}about why I'm here,{n}myself.{wait 3}{p}I could've just{n}turned back.{wait 3}{n}But for some reason{wait 3}{n}I didn't...{p}Probably because{n}you said it's better{n}to do something{n}rather than nothing.{p}I think that's why{n}I felt I had to do{n}something too.{p}It doesn't have{n}to be 'one'.{wait 3}{p}Even if it's the{n}tiniest bit, when{n}you repeat that many{n}times over it becomes{n}'one',{wait 8} right?{p}That's{wait 3}...{wait 3}{n}not zero.
+f309-0011 b3bb21fbdbc58e30 Elly{n}"I don't think I'll{n}rejoin my squad.{p}Right now, I feel{n}strongly that I don't{n}want to be part of{n}that,{wait 5} and...{p}Besides,{wait 3} I could probably{n}do something else...{wait 5}{n}I don't have to be in the{n}army.{p}So I think I'll go{n}back to my country."
+f309-0012 6617c59e6f1134dc Fei{n}"Will it be alright?{n}Y'know, with the army?"
+f309-0013 b0c80d587faa0735 Elly{n}"It's not like anyone{n}knows what I did.{p}They've probably already{n}classified me as MIA.{n}It'll be okay."
+f309-0014 68ebc5ee9e2a8181 Fei{n}"I see.{p}I hope you'll{n}be spared any{n}trouble, at{n}least.{p}I'm sure you'll{n}find your{n}calling in{n}life!"
+f309-0016 994803fb7365597b@ee422a3f0393335d Fei{n}"Yeah."
+f309-0017 f0ff2b25d4cbf10e Elly{n}"Don't be too hard on{n}yourself.{wait 5} It's like that{n}for everyone,{p}giving to others something{n}from within ourselves{n}because we want the same{n}in return.{p}...{wait 10}It's like that{n}even for me.{p}You forced yourself to{n}eat those rations for me{n}earlier, didn't you?"
+f309-0020 da64ccee81f523f6 Elly{n}"I told you not to eat{n}such a gross-looking{n}creature..."
+f309-0021 dfc964fec846c737 Fei{n}"It tastes horrible.{p}The last time I had food{n}this bad it was Doc's{n}cooking..."
+f309-0023 73624898a4dcfb60 Fei{n}"But unless we do{n}something, we're{n}really done for."
+f309-0024 9147ee05d0d6e9b9 Elly{n}"I guess there's no other{n}way. I was hoping to save{n}these a little longer..."
+f309-0025 6b92caf2668dc939 Elly{n}"We should get by{n}for another day or{n}so with these...{p}But they're only for{n}emergency calories{n}so I can't vouch{n}for the taste..."
+f309-0027 bd23fea07c55d343 Elly{n}"As I thought...{n}You don't like it,{n}do you?"
+f309-0028 bd256ec0ce6681b8 Fei{n}"Wha? N-No...{wait 10}{n}It's good.{n}Yeah, ah, it's great.{p}Anything you'd go to{n}the trouble of sharing{n}with me can't taste{n}that bad, can it?"
+f309-0029 cc6313d5cb4fd197 Elly{n}"You forced yourself to{n}eat those rations for me{n}earlier, didn't you?{p}If I was considering{n}only my own survival, it{n}would've been better to{n}keep them for myself.{p}But you know, watching you{n}doing your best to eat it,{n}I too felt comforted.{p}I was glad that I'd{n}shared them with you...{n}It made me feel a little{n}better."
+f309-0031 4cce634cae560680 Elly{n}"Yes,{wait 5} for my own sake.{wait 10}{n}Selfish, I admit.{p}But I think it's okay to{n}be like that at first.{p}And if, little by little,{n}you learn the joy of{n}giving...{p}I think someday it'll be{n}possible to share an{n}important part of yourself{n}for the sake of others.{p}Surely...{wait 20}someday."
+f309-0032 7313f3c9e99cb841 Elly{n}"Oh{wait 5}..."
+f309-0034 6597eb6f25e9c8e2 Elly{n}"Hmm. Nothing. It just{n}felt as though I'd told you{n}the same thing long ago...{p}It must be my imagination.{n}It couldn't have been you{n}I said it to — we only{n}met a little while ago."
+f309-0038 10504393ecdc7001 Fei{n}"Come on, sleepyhead!{n}Look! Look at that!!"
+f311-0000 b298de2bbed33140 Fei{n}"N-{wait 5}No way..."
+f311-0001 a27006b261633720 Rico{n}"Whoa, Doc!{p}Just when I thought we{n}were saved, now someone{n}else wants to use us for{n}target practice!?"
+f311-0002 6c4e19ccb15de6cf Citan{n}"We are{wait 10} not too{n}popular,{wait 10} are we?"{done 40}
+f311-0004 49f17ae3318b1805 Citan{n}"Fei!{n}Elly!{n}You are alright."
+f311-0007 1f29047d040ccaff Fei{n}"Agreed.{n}Where's Bart?"
+f311-0008 8d7cf1b2bc7e9cdf Citan{n}"He is fighting down{n}below.{p}He said he had to do{n}something until the{n}depth charges were ready,{p}but I fear he set out{n}without the proper{n}hydropreps...{p}We have our hands{n}full countering the{n}torpedoes.{p}Your Gears should be able{n}to handle underwater{n}warfare to some extent.{n}Please go help him out."
+f311-0012 2d15cce7393b3986 Bart{n}"Pff,{n}I doubt it was{n}like that..."
+f311-0013 30d47b288b3a17cc Fei{n}"What's that supposed{n}to mean, Bart!?"
+f311-0014 69e626aa1db37db7 Citan{n}"Stop it!!{n}Fei! Bart!{p}This is no time for{n}bickering.{p}For now, we must find a{n}place to finish repairing{n}the Yggdrasil."
+f311-0015 5a152489fda7c3a9 Fei{n}"...{wait 10}...{wait 10}Don't worry.{n}The ship that saved{n}us is nearby.{p}They call it the Tamuz,{n}and it's about the size of{n}a small city.{n}Their Captain can help us."
+f311-0016 7696d51188ccb429 Rico{n}"That's{wait 10}...{wait 10}...{wait 10}{n}the Tamuz...?"
+f311-0017 512f647d2ba97788 Dominia{n}"Just you..."
+f311-0018 19746f13a0a3e1ff Dominia{n}"I must..."
+f311-0019 dfad638bd5c07588 Dominia{n}"...get even..."
+f311-0021 5f0e3e0d785b429c Dominia{n}"...TRAITOR!!"
+f311-0022 ff42889f71af417c Bart{n}"Incoming!"
+f311-0025 68696a7b805c7b64 Elly{n}"Wh-What?"
+f311-0026 c4a241ee9d74c1ce Fei{n}"Below us!"
+f312-0000 e1332bda50960ae2 Big Joe{n}"I lose. {n}Here's your present.{n}Aaaand adios."
+f312-0003 a57442ead935d68d Big Joe{n}"Ha...a draw.{n}You got lucky."
+f312-0004 3834a11d3bb8083f Big Joe{n}"Hey, hey. You{n}disturbin' our amore time?"{p}{speed 255}    Yes{n}    No
+f312-0005 9d45f1574be680f9 Big Joe{n}"Si? Maybe you need to{n}be taught some manners!"
+f312-0006 afd85f4e61449342 Big Joe{n}"Well then, go away."
+f312-0009 595b35e22784e950 Fei{n}"It's alright. I was just{n}as bad.{p}We hadn't seen each other{n}in ages, and the first{n}thing we do is..."
+f312-0010 2b9416bad96949da Bart{n}"Heh,{wait 5} yeah...{p}The Yggdrasil II was put{n}together in a hurry and{n}the depth-charge setup{n}isn't exactly great.{p}And, well, I guess it{n}was my fault that prep{n}of the depth charges{n}got delayed,{p}because I prioritized{n}equipping the Bart{n}Missiles over...{wait 10}{n}...everything else."
+f312-0011 498c882cc9e9af8b Fei{n}"Bart{wait 10} Missiles?"
+f312-0012 32eaf1cc8724570c Bart{n}"Oh, uh...{n}um, well,{wait 20} that's{n}not important."
+f312-0013 de7c49debefcb774 Fei{n}"?{wait 20}{n}Anyway, I'm glad you're{n}okay.{p}I knew all along that{n}you'd be alive."
+f312-0014 02110060023b5737 Bart{n}"Of course.{n}You'd be a fool to doubt{n}Bart the Immortal!{p}...At least, that's what{n}I'd like to say here, but{n}just recently things got{n}pretty hairy.{p}I got totally reamed{n}by a crimson monster{n}of a Gear."
+f312-0015 cae1d920c3e10bf4 Fei{n}"A crimson Gear..."
+f312-0016 4bc497c1566e9351 Bart{n}"Yeah. He messed us up{n}then left us to sink into{n}the sand.{p}But this next part sounds{n}wild.{wait 10} The bottom of the{n}desert is a huge, open{n}cavern.{p}Guess what else was sunk{n}there!{n}A submarine that looked{n}just like the Yggdrasil!{p}So we transplanted{n}the bridge and other{n}serviceable parts into{n}that and remodeled it."
+f312-0017 82889c2e805489e5 Citan{n}"I found it a truly{n}unbelievable tale myself,{p}but although it certainly{n}is identical in appearance{n}there is now the potential{n}to move through water.{p}Perhaps this and the{n}Yggdrasil are sister{n}prototypes?"
+f312-0018 ec32159e7d927dc9 Bart{n}"There are signs people{n}had been living there,{n}apparently long ago.{p}Weapons all over the{n}place.{p}We have those people to{n}thank for the remodel{n}turning out so well."
+f312-0019 fefad3740631a74b Citan{n}"Upon inspection, it seems{n}likely the weapons Bart{n}showed me belonged to...{p}Shevat."
+f312-0020 0a233848f6e992cf Fei{n}"Shevat...{wait 5}...{wait 5}{n}The country that flies{n}in the sky..."
+f312-0021 2a6038bf8e890537 Bart{n}"Anyway, moving on,{n}we should go say ahoy{n}to the Captain."
+f313-0000 37e1fb7ae918077f Doctor{n}"What, are you injured?"{wait 10}{n}{speed 255}    Yes{n}    No
+f313-0006 4bf88ea431a1ffa5 The wind...{n}is calling my name.{wait 10}{n}...{wait 10}*sigh*{wait 10}...
+f313-0007 51c826b740079ab8 The sea...{n}is weeping.{wait 10}{n}*sigh*{wait 10}...
+f313-0008 356f3c9facc4a795 Only I...{wait 10}...{wait 10}survived.{p}My comrades were taken off{n}and eaten by the Verus...
+f313-0009 b515daf9b064d3e8 Boy was it a shock. We were{n}all enthused about being{n}able to finally dig up stuff{n}at the excavation site.{p}Then...ZAP...!{n}This beam went by!{p}It was so bright, I thought{n}my eyes were gonna burn up.{n}But then a Gear from Tamuz{n}saved me.{p}Boy am I ever thankful...!{n}But why did that fishbowl{n}thing attack us? Was it{n}trying to get at the site?
+f313-0011 cbb1c8c301cff636 Anna{n}"My husband was eaten by{n}that Verus thing...{n}We three were the only ones{n}saved. What do we do now?"
+f313-0013 56b1f95136b38547 Kanna{n}"What about Dad?"
+f313-0014 0c2e91b0e168266e Doctor{n}"...{wait 15}I don't know.{wait 10}{n}But for now, as long as{n}he's on life support{wait 10}..."
+f313-0015 4910dccbdb475d76 Citan{n}"...{wait 20}You mean...{wait 5}{n}he will be alright{wait 10}...?"
+f313-0016 c9e53c84790913e5 Doctor{n}"...{wait 20}I cannot guarantee that.{wait 10}{n}Unfortunately, I don't know{n}why he's like this."
+f313-0018 9465f20edd61aba0 Elly{n}"...{wait 30}Is it...{wait 20}{n}my fault?{p}...{wait 30}I{wait 10}...{wait 10}"
+f313-0019 7e005f69fc9304be Doctor{n}"...With their help, maybe{n}he'd pull through..."
+f313-0022 0913691d702d370c Doctor{n}"I cannot guarantee it!{n}But the medical unit at{n}the Church headquarters..."
+f313-0023 78ee740d471f4d67 Elly{n}"They could save{n}him, right?"
+f313-0024 09a61e89ff1fc6e0 Doctor{n}"I think he'd most probably{n}pull through...{p}But unfortunately, ordinary{n}citizens are not allowed{n}into the Church HQ any{n}further than the main hall.{p}You would have to become a{n}monk, or be introduced by{n}someone involved with the{n}Church{wait 5}..."
+f313-0026 0502bef438a2c8cf Doctor{n}"Oh, that's right!{p}I heard that one of the{n}Church HQ Etones, or{n}'atoners of sin', is{n}coming to the Tamuz..."
+f313-0027 a249d473e12cc9fe Citan{n}"What purpose would an{n}Etone of the Church{n}have here?"
+f313-0028 f10f1f4a30cf5890 Doctor{n}"It seems they're{n}coming to do some type{n}of investigation."
+f313-0029 ed513d2f17f11758 Bart{n}"What's the{n}deal with these{n}'Etones'?"
+f313-0030 faf9f084d1fd8dbd Doctor{n}"They're people from the{n}Church who're appointed{n}to purge the 'Verus' —{p}terrible revenants that{n}appear here in Aqvi."
+f313-0031 349cea77c9e27aba Elly{n}"So why don't we{n}ask this Etone?"
+f313-0032 3d2ae5bc6bfc9b49 Doctor{n}"We can ask...{p}I don't know whether{n}or not they'd help out{n}with introducing you,{n}but it's worth trying{n}to talk to them."
+f313-0033 5997115403a58555 Elly{n}"I understand.{wait 10} Let's go{n}look for this person."
+f313-0034 7d3ec5c63531ca4e Citan{n}"I will transport Fei to{n}the Yggdrasil along with{n}the life-support machine.{p}Bart and Elly, please go{n}look for this Etone."
+f314-0000 d5b8822beeea4feb Fei{n}"It's not like we{n}were drifting for{n}the fun of it..."
+f314-0002 c0b46acf384dbf4c Fei{n}"What's with{n}that guy...?"
+f314-0003 bd5395f02ebcd32e Fei{n}"What the hell{n}is going on?"
+f314-0004 812bb932c8487f02 Elly{n}"Um...{wait 10}{n}Thank you for having{n}us rescued."
+f314-0005 fccd8fb5afd91fd1 Elly{n}"Why're you being{n}so kind?"
+f314-0010 23d308d5d3997edd This is the lower{n}dock. Your Gears are{n}being repaired here.
+f314-0011 c558c694c05c315a This is the lower dock.{n}Your ship is moored here.
+f314-0013 d2fabd569f244daa This is the top of the tower.{n}No Verus.{n}No Verus...{wait 10}{n}{wait 10}...Please, no Verus.
+f314-0021 259a4b3965fb4c56 Captain{n}"Ahh, you're the vagabonds{n}who were drifting along{n}with the Gears."
+f314-0022 59ce01924aec84e9 Captain{n}"Gahahahaha. Well, don't{n}take it so badly.{p}For us, anything we pull{n}out of the sea is treasure.{p}And you're a super-{n}important treasure.{n}So we're being super{n}courteous."
+f314-0023 40141bba6bb3f0e7 Captain{n}"Oh, what a pretty{n}lady...{wait 10}{n}Don't look so worried.{p}It's not like I'm going{n}to fry you up and eat{n}you just because I'm{n}the fisherman!{p}I'll return your Gears{n}to you squeaky clean."
+f314-0026 c2ab6a7fe745deaf A man!
+f314-0027 670ef0237e2fd6b7 Of the sea!
+f314-0029 012dd7e2ad255c14 Captain{n}"You're probably starved.{n}I'll serve up a feast!"
+f314-0030 fdda3194f3d83493 Captain{n}"Haaaaaaaaaaaaaaaans!{p}I'll make welcome our{n}guests. I leave you in{n}charge."
+f314-0031 5c2e0494c464c8cd Captain{n}"Yes, yes, I know...{n}But how come it's only{n}you who's so calm?"
+f314-0032 8567fecf7228218d Captain{n}"Hoho, I see."
+f314-0036 cb4f669ee6b89f9f Captain{n}"The Etone?{n}Oh, that guy who was{n}here earlier...{p}He left saying he had{n}to go investigate something.{p}You might see him at the{n}deck plaza or the supply{n}entrance."
+f314-0037 05d08fd175bcc9bd Captain{n}"If you're gonna mess with{n}them, we'll help however we{n}can.{p}If you wanna know about the{n}fishbowl headed toward the{n}excavation site, ask Hans."
+f314-0039 501454a384b45f83 Citan{n}"Yes, you could{n}say that.{p}But you seem to have{n}fared better than I{n}expected."
+f314-0041 45db232f9797ea72 We are!
+f314-0043 bb356f42a396296b Of the Sea!!
+f314-0044 981353c1f1ec696a Captain{n}"...Is what I'd like to{n}say...{p}...but the truth is the{n}situation was pretty{n}serious.{p}We've got some that're{n}injured badly and some{n}fatalities.{p}But considering what{n}happened to the other{n}ships, we're in no{n}position to complain.{p}And by the way, Citan. What{n}the hell is up with that{n}fishbowl thing?{p}It came out of nowhere and{n}kicked our butts and, to{n}make matters worse, left{n}behind Verus.{p}And then it headed for{n}some obscure excavation{n}site where there's supposed{n}to be nothing.{p}Odd, since we'd been told{n}to go to a deeper and much{n}bigger excavation site."
+f314-0046 9d55413c8b8fcfea Captain{n}"Some say they caught{n}a glimpse of a weird,{n}enormous Gear.{p}Seemed like it was{n}guiding that fishbowl{n}thing to the excavation{n}site,{wait 10} they said."
+f314-0047 72d5bb86caeb1362 Citan{n}"Stone{wait 10}...{p}There would seem to be{n}little doubt.{wait 10}{n}Something is there..."
+f314-0048 abbfb2bb520c8aef Captain{n}"Call it salvagers'{n}intuition, but I don't{n}wanna get any closer.{p}And Citan, is that{n}fishbowl an enemy of{n}you and your friends?"
+f314-0050 066d441a071ea5e4 Captain{n}"Well, I won't ask you{n}to get revenge for us.{p}But I can't just sit back{n}and do nothing.{p}If you're going to go get{n}in their way, we'll help{n}however we can.{p}You can ask Hans anything{n}about that excavation{n}site."
+f314-0051 3d87eb16afea3d48 Captain{n}"Hey, what's up?{wait 10}{n}D'you need something?{p}Point x1507, z1235?{n}Hey, Hans, we know{n}anything about it?"
+f314-0052 245cc4653ce56e50 Hans{n}"We do indeed —{n}it's Sargasso Point."
+f314-0053 e1b9353ff4f57bb1 Captain{n}"What?{wait 10} It's{n}Sargasso Point?"
+f314-0054 1ecca272365f2a35 Fei{n}"What's that?"
+f314-0055 f2c4b83f8f97a548 Captain{n}"It's a place where{n}caves have been formed{p}by ancient microbes{n}over many, many years.{p}There are rumors of{n}hidden treasure, but no{n}one who's gone there has{n}ever returned.{p}According to some spooky{n}stories, the cave itself{n}is alive.{p}Why, are you going{n}to Sargasso?"
+f314-0057 9019dafb31459357 Captain{n}"Your Gears can't{n}dive that deep.{p}Even if they could, you'd{n}hardly be able to move.{p}Get your Gears outfitted{n}for underwater here.{p}Then go as far as you can{n}in your ship, and dive{n}down with your Gears.{p}I'll rally those{n}winos right now."
+f314-0058 d566917953d12195 Fei{n}"You sure you don't mind?{wait 10}{n}Thanks for always helping{n}us out, Captain."
+f314-0059 143dfc233c07927a Captain{n}"Ohh, don't{n}mention it."
+f314-0060 c46096ddb8cd312a Captain{n}"Alright, looks{n}like they're{n}done."
+f314-0061 f4f1769b5b52e6a6 Fei{n}"Th-{wait 5}That was fast."
+f314-0062 0d68384f9eac4737 Captain{n}"Of course.{n}We're—"
+f314-0063 8aa622606aaeb1e1 Fei{n}"—men, {wait 10}of the{n}sea,{wait 10} right?"
+f314-0064 66f578b9855cee40 Captain{n}"Blimey,{wait 5} I think{n}he's got it.{wait 10}{n}Well, take care."
+f314-0065 5df9abc97ee8c317@bf839bb77a0d8bce Fei{n}"We will."
+f314-0066 2146218d44d7031d Captain{n}"Oh yeah, I forgot to{n}tell you how to use the{n}underwater equipment.{p}Ahh, it's easy.{n}When you're in the water,{n}you can jump without your{n}feet touching the ground.{p}Jump repeatedly to build{n}up speed.{wait 5} You can swim{n}quite comfortably in the{n}Gears.{p}There might be spots{n}you can't get out of{n}unless you make good{n}use of them."
+f314-0068 f52e17870cac7eb5 Captain{n}"No need to thank us.{p}Well,{wait 10} if you feel a{n}little bit indebted you{n}could buy something from{n}our Gear shop.{p}Looks like there may be{n}some new booty on sale."
+f314-0069 1ba3ecef38a386ad Captain{n}"Feel free to come back{n}to Tamuz anytime.{p}There's always room at{n}our dock for your ship."
+f314-0070 d24f45608ac78682 You talked to the Captain?{wait 10}{n}He's nice and all, but...
+f314-0074 c40b9c49f3276bf8 Hans{n}"The fishbowl was headed{n}to an island due north{n}of here.{p}The north edge of that{n}island...{wait 10} But why? There's{n}supposed to be nothing{n}there but a small mine."
+f314-0075 a00be413106487bc Hans{n}"Since our work with the{n}Church has deep-sixed{n}we've lost our 'porpoise'!{p}Guess we'll just have to{n}stick with wandering the{n}seas and salvaging.{p}Seems Tamuz will have to{n}continue this haphazard{n}lifestyle after all."
+f314-0076 c301b4fef8301083 Let me introduce{n}myself.{p}I'm Hans, the{n}ship's first mate.
+f314-0077 1d06a1f231d1e4da Hans{n}"Yessir.{n}Just don't overdo it."
+f314-0078 00838fa1bb551b29 Hans{n}"It's the rest of you{n}that're too sloppy!"
+f314-0079 5528a4b8c804c2a3 I've held on to this seat{n}for thirty years.{p}I'm not losing it to some{n}young upstart.
+f314-0080 11ca0c8b378096be I've held on to this seat{n}for thirty years.{p}But when Verus attacked,{n}I thought about running.
+f314-0081 e0ea75f8b150f47c You can talk to other{n}areas aboard the Tamuz{n}through that intercom.
+f314-0082 4816f6f4fd118670 I remember seein' a high{n}tower a long time ago. It{n}was called Babel Tower.{p}Even I can't see the top of{n}it, and my eyes are good!{p}They say the undead called{n}Verus come from there.
+f314-0083 d3da4d9cf0d3c9d0 I'm surprised about{n}the Verus.{p}I guess the rumor that{n}they come from Babel{n}Tower is false, huh?
+f314-0084 da0f99fea7a4852d Huh?{wait 10} Isn't this{n}the beer hall?
+f314-0085 609798a8993de760 Huh? Verus?{n}Where?
+f314-0091 86fc51db4fc99d1f Fei{n}"Yeah.{wait 3}{n}So he's still alive!{n}Alright!{p}We can't just stand{n}here! Let's go!"
+f314-0093 cf51b331426fe95b Fei{n}"We have to help,{n}right?"
+f314-0094 6276ac6d1db11b3b Elly{n}"Without Gears?"
+f314-0096 b84ea3f578da4b35 Captain{n}"Ohh, wait a moment."
+f314-0097 577ec40572b8ae61 Captain{n}"Lower Dock, this{n}is the bridge!{p}How are our{n}guests' Gears?"
+f314-0098 4997272bdda8d79a The repairs will{n}be complete{n}shortly.
+f314-0101 eb1ee05a4aa3e812 Captain{n}"Finish in two minutes!{p}Then take them out{n}through the supply{n}entrance to the deck!"
+f314-0102 f6cfbe2bc652e4e1 Y-Yessir!
+f314-0103 c654ea4d42fff7a0 Captain{n}"Alright, your Gears{n}are being moved to the{n}deck.{wait 10} Go get 'em.{p}If you need to you can{n}buy equipment at the{n}supply-entrance shop."
+f314-0104 70a7ad799ca6e753 Hans{n}"What're you saying,{n}Captain?{p}This is an important{n}time for us.{p}What if we get caught{n}up in the battle and{n}bombed...?"
+f314-0105 a0be3339ce3d13ae Captain{n}"Be quiet!!{wait 3} Our guests{n}said they'll fight to{n}save their friends.{p}Don't get in the way!{wait 5}{n}If we don't help, it'll{n}tarnish the good name{n}of we men of the sea!!"
+f314-0106 a70bcacfe8b85596 Hans{n}"...{wait 5}...{wait 20}Understood.{n}But the Tamuz itself will{n}not join in any fights!"
+f314-0108 4b6ac89b623dbb56 Captain{n}"They've got guts to bring{n}the sound of gunfire{n}anywhere near the Tamuz!{p}It gets a man of the sea's{n}blood boiling!"
+f314-0109 a12b37336424cf9b Captain{n}"Hey Hans, I haven't{n}fired the cannons in{n}a long time.{p}How about we take a{n}shot or two?"
+f314-0110 f6c0ea14eda5db1c Hans{n}"Are you joking?{p}Why get the Tamuz involved{n}in a fight where there are{n}neither enemies nor allies?{p}And those cannons are{n}nothing but useless pieces{n}of junk you tacked onto the{n}Tamuz on a whim!"
+f314-0111 d0e424e8027f00d7 Captain{n}"Tch.{p}You just don't{n}understand the{n}romanticism of the{n}men of the sea..."
+f314-0112 ea3bb96be5321ae2 Captain{n}"It looks like a{n}submarine is under{n}attack."
+f314-0115 71e0890ce728bd4d Bart{n}"The name's Bart.{p}You...{wait 5}ahem...{wait 5}have my most{n}sincere thanks for letting{n}us stop off here."
+f314-0116 020e433e0c8b47fd Captain{n}"Gahahahahahahaha.{n}Very good, very good.{p}Just stopping off here,{n}you say?"
+f314-0118 8a039573cf1bd27b Margie{n}"Bart!{n}You're terrible. You{n}went ahead without me!"
+f314-0119 ba76f52493d9e587 Bart{n}"Aw, Margie...{n}Just when I was starting{n}to sound like a captain."
+f314-0120 d01cb49478078501 Margie{n}"I get away from Nisan{n}but then I'm stuck on{n}the Yggdrasil.{p}I'm sick of it.{p}Captain?{n}Hi, I'm Marguerite."
+f314-0121 3d4656558cf6fcfa Bart{n}"Aww, man! Look, we're{n}having a man-to-man talk{n}here.{p}So Margie, why don't you{n}go back to the Yggdrasil?"
+f314-0123 e13dadd7db8371a9 Bart{n}"What!?{n}Me, like Sig?"
+f314-0124 80099be5d4e63dce Margie{n}"You're always so{n}thoughtless, Bart.{p}Fei and the others{n}were left adrift{n}because you fired on{n}that plane impulsively."
+f314-0125 a3bd2425950f0dd2 Bart{n}"Argh...{wait 10} S-{wait 5}Stupid...{wait 10} You{n}weren't supposed to..."
+f314-0128 53a8aa914cd3da3c Bart{n}"It... It couldn't be{n}helped. How could I{n}have known you were—"
+f314-0129 1fad8996f2db58a3 Fei{n}"I'm so disgusted I{n}don't know what to{n}say..."
+f314-0131 e1f5af2573d9ff8c Bart{n}"Tch. I shouldn't{n}have taken her out{n}of Nisan."
+f314-0135 6f37caba1ca9d6ec Bart{n}"Oh yeah.{n}A man of the sea!{p}I was a man of the{n}desert, but..."
+f314-0136 5670a28969319c51 Captain{n}"Alright!!{n}Even better.{p}A man of the sea,{n}a man of the sea,{n}indeed!{p}Bart, was it?{n}I'll show you to our{n}famous beer hall."
+f314-0139 a714d6b38877d720 Margie{n}"Fei, are you{n}mad about what{n}Bart did?"
+f314-0140 4cd3cb41d35c22e3 Fei{n}"No, it's not{n}that{wait 5}..."
+f314-0141 c927815382d1ce06 Margie{n}"{wait 10}...Is it{wait 10}...Elly?"
+f314-0144 b783ab7fc7742005 Margie{n}"Just like...{wait 5}how{n}Bart helped me out."
+f314-0147 19cfab2847fb5bf2 Hans{n}"Her Gear was{n}berthed just now.{p}She will be along{n}shortly."
+f314-0149 f29e5149c1565c84 Captain{n}"Well, at any rate we're{n}glad. Right, Fei?"
+f314-0151 79c70f67042dc8b3 Fei{n}"Elly, are you okay!?"
+f314-0154 257dc56ebf05b796 Elly{n}"What happened to that{n}submarine?"
+f314-0155 195e62549c71b404 Fei{n}"Huh?{wait 10} Oh, you mean the{n}Yggdrasil?{p}It took a bad bashing,{n}so now it's here at{n}Tamuz for repairs."
+f314-0156 1fa7a5c61f8c43e5 Elly{n}"I see...{wait 10}{p}I wonder if it'd be{n}okay for me to rest{n}there a while?{n}{wait 5}...{wait 5}I'm exhausted."
+f314-0158 bd61733a29beed29 Bart{n}"Hold up, Fei,{n}it's MY ship!"
+f314-0159 26632b822598c6b2 Captain{n}"Oi, oi, the lady{n}says she's tired.{n}Let her rest."
+f314-0160 c910f2e7c1ec129f Elly{n}"Well, I'll go on{n}ahead."
+f314-0162 294f6edf2bc58051 Fei{n}"Bart! You still—"
+f314-0163 78f23dc6f31490b0 Bart{n}"It's not like that.{n}I'm sure she won't{n}stab us in the back.{p}I spent my youth{n}surrounded by a black-{n}hearted bunch.{p}I can tell this kinda{n}thing when I look a{n}person in the eye."
+f314-0164 790045f8fe7dd9fd Fei{n}"So you appreciate{n}Elly's circumstances—"
+f314-0165 eaed35b619c1cc1b Bart{n}"So this is no good!{p}Things may be okay for{n}her, but what about the{n}family she's left back{n}home?{p}You think there'll be no{n}consequences for them?{n}Can she live with that —{n}giving up on her family?{p}This is where I doubt{n}her determination.{n}She—{wait 10} Elly'll struggle{n}with that, I think.{p}We can't involve someone{n}who has attachments."
+f314-0167 2e5e091e171338bb Bart{n}"Hmph, well,{wait 10} do{n}whatever you want."
+f314-0168 78025e8318a684fd Captain.{n}"Wh-{wait 10}What in blazes{n}is that huge{n}fishbowl thing!?"
+f314-0169 6500344b5410b5c2 Hans{n}"I...{wait 10}have no idea..."
+f314-0170 e0d99cb87a7d1a30 Captain{n}"Almost the entire{n}salvager fleet, blown{n}away by one shot...{p}Don't tell me this is{n}the way the Church{n}greets us!?"
+f314-0171 dd68b9ec5bd41546 Hans{n}"Obviously it is!{p}What're they attacking{n}us for? We only came{n}to help with the{n}excavations..."
+f314-0172 809e75e6cb6f966a C-Captain!{wait 5} Verus!{wait 5}{n}Verus are coming out{n}of that fishbowl thing{n}in their dozens!
+f314-0175 714077c712bce491 Captain{n}"...{wait 10}...{wait 30}{n}Launch the Gears!{n}Load the cannons!"
+f314-0177 01707c4c866187c2 Captain{n}"Alright, y'all!{p}We'll escape while also{n}rescuing as many survivors{n}as possible from the other{n}ships!{p}And shoot down the Verus{n}with our two cannons!{n}Don't let those filthy{n}Verus get near our Tamuz!"
+f315-0001 7d5fffca9bed4c5f Fei{n}"Why is the Church{n}involved...?"
+f315-0005 b8af500470f89349 Bart{n}"Wahahahaaa!"{done 80}
+f315-0006 b7922ec560cec4ba Bart{n}"...and they came out...{n}one after another...{wait 10}{n}slam,{wait 10} bam,{wait 10} crash...{p}That's how it happened..."
+f315-0007 e999581bfed4860c Captain{n}"You took your time, eh?{wait 5}{n}Alas, things aren't ready{n}yet."
+f315-0009 8f2464cdbf5723f7 Captain{n}"Sorry...there's not{n}much room to sit down{n}in this place!"
+f315-0010 9ab27f7c87684dfc Captain{n}"But isn't the view just{n}splendid from here? This{n}beer hall is Tamuz' pride.{p}You probably think it's a{n}wee bit odd having a beer{n}hall next to the bridge,{n}but 'tis fine by me.{p}If you don't take time in{n}life to enjoy a drink,{n}you'll be swallowed by the{n}waves of anxiety{wait 5}...{p}...{wait 5}But we don't have that{n}problem.{wait 5} Thanks to this{n}beer hall, everyone here's{n}too sloshed to worry!"
+f315-0011 c5068aea60606589 Captain{n}"Well, normally.{wait 10}{n}Y'know that crane{n}that fished you out?{p}We use that or the Gears{n}to pull up treasure from{n}the sea. We're salvagers.{p}Recently, however, there's{n}been no treasure at all...{wait 10}{n}Nope, not a thing.{p}Started a big job, you{n}see. A commission."
+f315-0012 a1b792d2215105ea Captain{n}"Yeah, it's a job for{n}the Church.{p}They're planning a{n}really big salvage this{n}time.{wait 5} Even I don't know{n}the details.{p}But I hear there's an{n}incredible treasure{n}slumbering down there."
+f315-0013 ffdf6afad17b1196 Captain{n}"Who knows...?{p}But as a business partner{n}the Church is a boon to{n}us on a daily basis.{p}And even if that weren't{n}the case, it's a disgrace{n}for salvagers to turn{n}down a job."
+f315-0014 ae1d595d9f6113df Captain{n}"Ah, it looks like{n}we're all set at last.{wait 10}{n}Let's eat."
+f315-0015 ac83e7db3a83010a Captain{n}"Gahahahaaa!"{done 80}
+f315-0016 e8520aa4670bcaee Captain, the First{n}Mate is calling you.
+f315-0017 ef2078608147d101 Bart{n}"...and they came out...{n}one after another...{wait 10}{n}slam,{wait 10} bam,{wait 10} crash...{p}That's how it happened..."
+f315-0018 348072ac53b95600 Fei{n}"Hey Bart, Sigurd was{n}asking about you—"
+f315-0019 2ba21bb9097cbb89 Captain{n}"Gahahahahaha!{p}Of course, if you're not{n}strong, you can't be{n}called a man of the sea!"
+f315-0020 b52f51dbd9101201 Bart{n}"Aw yeah, check this{n}arm out{wait 15}...{wait 15}"
+f315-0025 233b81595ab65db2 Captain{n}"Oi, he's interrupting{n}our tales of the men of{n}the sea.{p}That Hans — a charmless{n}fella as usual. What the{n}hell does he want now?"
+f315-0026 26069aea6923bead Something about that{n}young lady coming{n}back...
+f315-0027 cc8035aaadcc761c Fei{n}"That young lady{wait 10}...{wait 30}{n}Elly!?"
+f315-0028 e965a80c0be897b9 Captain{n}"Ya damn fool!{n}Why didn't you{n}tell me earlier?"
+f315-0029 ae74a1ef9a4f25d4 U-{wait 10}Uhh...
+f315-0031 00e9d6e241dd47fe Elly{n}"I know you hadn't{n}eaten for a while...{p}but to wolf down one{n}thing after another{n}like that...?"
+f315-0032 52449e4a99e1f10b Captain{n}"Gah ha ha ha ha...{n}This is great,{n}this is great.{p}I like how you eat.{n}You weren't drifting{n}around just for{n}show..."
+f315-0033 6f780d356d453945 Men!
+f315-0034 41f4b0a739747877 Have courage!
+f315-0035 4b49c9df49e2dc0e And have appetites!
+f315-0038 afe860bd05e14fa0 Fei{n}"You must've{n}imagined it..."
+f315-0042 05254a1a54e66cbe Captain{n}"Please, make{n}yourselves at home."
+f315-0043 44c4b84d780a2b01 Fei{n}"Hey, Elly, is{n}that a waterspout?{wait 10}{n}There...
+f315-0044 10865000ab52cb9d Elly{n}"It's too far. I can't{n}see very well. But it{n}looks like...{wait 10}a battle!?"
+f315-0045 b591e879a0e9c43c Fei{n}"Should we try to{n}go to the bridge,{n}too?"
+f315-0050 93c4fe663badbc5c Well, let's toast to{n}the Tamuz' survival!"
+f315-0056 d7b4387ae8529005 But what will our{n}next job be?
+f315-0062 b474f0341fa22dbc  {n} Received PremierShoes.
+f315-0065 068c2efb54f44fbb You're new!{n}Want me to teach you?{wait 10}{n}{speed 255}    Yeah{n}    No thanks
+f315-0066 f0ccc9655f8d6ad9 {wait 10}...{wait 10}Really?{wait 10}{n}{speed 255}    Yes{n}    No
+f315-0067 d6aa87268c8e731a {wait 10}...{wait 10}Do it?{wait 10}{n}{speed 255}    Yes{n}    No
+f315-0072 2302c1ec7e311543 Hey, are yush {n}lishenin' t' me...?
+f315-0075 f6e484925420efa3 Hey, do something with{n}this old drunk. He's{n}worse company than Verus.
+f315-0078 30fd8aee6c0ec288 Hey man, I've got a good{n}cure for drinking too{n}much.
+f315-0081 74d8395d4dd4d304 Men are so weak.{n}They try to forget about{n}their fear of the Verus{n}with that crap.
+f315-0082 1ce7569251352338 I am {wait 30}the maste～r{wait 45}{n}The best {wait 30}maste～r{wait 45}{n}Tamuz' {wait 45}maste～r.
+f315-0084 02b544de2c8972b4 I haven't been on dry{n}land since I was born.{p}Think about it. You get{n}dirt on your feet.{n}How can you stand it?
+f316-0002 fc17bedae48f7c66 Hey!{wait 3}{n}I'm not closing down even{n}if the Verus show up.{p}If you need something,{n}talk to my stupid son.
+f316-0003 4109258b2f7e07e4 Hey!{wait 3}{n}You've got your eyes on{n}something good... Damn.{wait 3}{n}You know what this is?
+f316-0017 9b8ea82f1aa20322 Whaddya saying?{wait 3}{n}Stupid kid!!{p}There ain't no way you{n}could ever understand{n}the soul and romance of{n}a Tamuz man!
+f316-0020 bcc1906da51f6bf5 What the?{n}The soul of a Tamuz man!?{p}If they were all as dumb as{n}you, the Tamuz'd have gone{n}under long ago!"
+f316-0024 8070ce85c06f676f Of the sea{wait 10}...{wait 10}{n}...Huh? Oops.
+f316-0026 50b5bae81e10feca I'm sure the Verus are{n}followin' us 'cause of{n}the Captain.
+f316-0029 3d5a60a63d6d0add Never lose{wait 10}...{wait 10}{n}...Huh?
+f316-0030 e3726bf2247a5d0c Ah, here.{n}Yep, just a little more.
+f316-0033 e7cd225b1360b9f8 My li'l sister pushed me.{n}She always picks on me.{n}I'm so scared.
+f316-0034 97a83aef5863131a My li'l sister pushed me.{n}She always bullies me.{n}I'm so scared.{p}I'm scared of the Verus{n}too.
+f316-0035 ebb080f94d83ccac My big brother's a real{n}wimp — he's scared of{n}heights...{p}Pathetic. {n}Just calm down.
+f316-0036 2b3e499ad2d670a8 My big brother is so scared{n}of the Verus he won't go{n}to the bathroom alone.{p}Pathetic.{n}Just calm down.
+f316-0038 09276d94f7dc8ef6 The Verus{wait 10}...{wait 10}are scary.
+f316-0043 0117da60df518947  {n} Received Physimentsol.
+f316-0048 60c229f663e30ef7  {n} Received Atk Lv1 Max.
+f316-0051 dfa95104fdbbce19 Hey, you look like{n}you're good.{p}Wanna play?{wait 10}{n}{speed 255}    Okay{n}    Nope
+f316-0052 69e556d6ffe1f17d *sigh*{n}You'll be sorry.
+f316-0054 be897d0b1f1db449 Wow, you suck. Why don't{n}you come back when you've{n}gotten a little better?{p}You'd better practice{n}somewhere other than{n}Tamuz. What? You don't{n}know what I'm talking{n}about? Hah! I KNOW you{n}know what I'm talking{n}about!
+f316-0057 7183c6b26aa49e40 I was so surprised!{n}I thought surely not —{n}people adrift on this{n}vast sea?{p}On top of that, you{n}were with two Gears.{n}That's unheard of.
+f316-0058 5ba5a9d875dd593e Elly{n}"Th-Thanks. {n}You saved us..."
+f316-0059 7d492535a2147bcd You'd better thank the{n}Captain.{p}The one who gave the order{n}for us to pull you two{n}floaters out was the{n}Captain o' the Tamuz.
+f316-0060 b3a403347c6c7a22 Fei{n}"Tamuz? {wait 5}{n}Captain...?"
+f316-0061 e429ba92b6ca6508 The Tamuz, the city at sea.{n}That's the name of the place{n}where you are now.{p}The Captain here is a bit{n}of a strange old chap.{p}You'll see when you meet{n}him. That's not to say{n}he's a bad old blighter.
+f316-0062 5fd7afb6ab450d60 Elly{n}"Um...{n}what about our Gears?"
+f316-0063 3b4cba502e19f660 Ah, no need to worry. We{n}brought them to the Tamuz'{n}interior dock through the{n}supply entrance.{p}Sea water got inside them,{n}so it'll take some time{n}for repairs.
+f316-0064 f027e0002681a2bf Fei{n}"Repairs... You'll{n}do that for us?"
+f316-0065 81f414600087105b Pretty strange for us to{n}be so nice. I bet that's{n}what you're thinking.{p}But really, we had no{n}choice because it's the{n}Captain's orders...
+f317-0000 21774acf1970c5cd Where are you going?{n}{speed 255}    4F (Bridge){n}    3F (Beer Hall){n}    2F (Infirmary){n}    1F (Deck){n}    B1F (Supply Entrance){n}    B2F (Dock){n}    Never mind
+f317-0001 a2312eeeef50ca46 Oh, I feel sick.{n}Oh please,{n}don't spin it,{n}don't spin it...
+f317-0004 64315503759d8fb2 Fei{n}"You mean Margie{wait 5}...{wait 5}{n}Sorry, I know I promised{wait 5}...{p}that if anything happened{n}to you guys, I would{n}protect Margie and the{n}people of Nisan."
+f317-0005 3058fb0458f226fb Bart{n}"You're worried about that?{n}It's okay. Sounds like{n}you've had it tough, too...{p}Besides, I made it through{n}okay.{wait 15} That means protecting{n}them is my job.{p}So once the Yggdrasil{n}repairs were finished, that{n}was the first and foremost{n}thing on my mind..."
+f317-0006 62eb7519c0576ce0 Bart{n}"I knew full well that{n}Nisan was in danger.{p}But it's because of all{n}the chaos right now that I{n}thought I could sneak in.{p}I hadn't planned on{n}bringing her with us{n}after that, though.{p}If I could be sure she'd{n}be safe in Nisan, then{n}leaving her would've been{n}fine."
+f317-0007 c55721fe06c07856 Citan{n}"But, with Shakhan{n}being so quiet..."
+f317-0008 6787827772faa281 Bart{n}"That's what the people{n}from her Sect said, too.{p}In any case, the danger{n}to her has not changed.{p}So they say they want{n}me to stay by her side{n}and protect her."
+f317-0009 9e3f7cd9b99a4354 Fei{n}"And{wait 5}...{wait 5}{n}you're sure you're{n}okay with that?"
+f318-0000 82fe9e891f7405ab Ya know, a while ago,{n}I found treasure that's{n}thi{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 20}s{wait 30} big.
+f318-0001 6f7e1ac257399a9e What're you talkin'{n}about? I found one that's{n}thi{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 20}s{wait 30} big!
+f318-0002 656e9a35ebdd9516 I found one{n}that's{wait 30} thi{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 100}
+f318-0003 d3e4da12655f0c33 i{wait 3}i{wait 3}i{wait 3}s...{wait 20}*pant*...{wait 20}{n}*pant*{wait 20}...big.
+f318-0004 f08b717ace5ad6d3 Well I got one{wait 30}{n}thi{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 100}
+f318-0005 c357f337f7b43018 i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}i{wait 3}s...{wait 30}*pant*...{wait 30}{n}*pant*...{wait 30}*pant*{wait 30}...{wait 60}? Huh?{wait 30}{n}What was I talkin' about?
+f318-0007 5286de27b572fa44 Oh noooooo!{n}B-{wait 10}Boss!!{done 80}
+f318-0013 30052a589c3cfa96  {n} Received SerpentGWhip.
+f318-0021 a71a87b603c45863 R-Really?{n}Looks like you're finally{n}beginning to appreciate{n}my greatness.
+f318-0025 d6158d33124b5284 Hey pal, will ya{n}listen to my problems?{wait 10}{n}{speed 255}    Sure{n}    Nah
+f318-0026 bce0259d3f28fbfc Until recently, I've always{n}wanted to be a seaman and{n}navigate the Tamuz!!{n}That was my plan...{p}But, lookin' at all that{n}treasure and stuff bein'{n}moved around...{p}...Well, it made me wanna{n}become a master crane{n}operator so I could control{n}that machine at my will...
+f318-0027 018133c52b2122f9 What'ya think I should do?{wait 10}{n}{speed 255}    Become a crane master{n}    Be a seaman{n}    I don't know
+f318-0037 a3122913a06c8ce6 That's it! I'm gonna{n}be a Verus hunter!{n}BLAM! {wait 15}BAM! {wait 15}KABLAM!{p}Waste 'em all! Just call{n}me Lady Verus-Hunter...
+f318-0039 28277f458a8b2b20 This new job the Church sent{n}me on is my first BIG job.{n}I'm a little worried whether{n}I'll be able to do it or not.{p}They want me to go down{n}deeeep and get something{n}unimaginably big. Something{n}awesome's down there.
+f318-0040 5d76d9fe2e032641 That job from the{n}Church was ruined.{p}Unfortunately, I'll have{n}to delay that job...but{n}I'm a bit relieved.
+f318-0041 267f5b544d99e99e This is the supply entrance...{wait 10}{n}Uh, I already told you that.
+f318-0043 02692d765c90935d This is the supply entrance...{wait 10}{n}Uh, I already told you that.
+f318-0045 df8250219d37a1e5 {num1 0} okay.{done 80}
+f318-0047 ca37ee9681cadb77 My job is to watch over{n}the supplies that pass {n}through here. I check{n}everything.{p}Isn't it an important{n}job?{wait 10}{n}{speed 255}    Yes{n}    No
+f318-0052 4393a04963ea8f89  {n} Received SuperGoggles.
+f318-0055 c3eb16018ff8097f Wait a minute, you want{n}me to show you?{wait 10}{n}{speed 255}    Yes{n}    No
+f318-0056 88ed39b181805115 For real?{wait 10}{n}{speed 255}    Yes{n}    No
+f318-0057 441935b8e998a190 Really really?{wait 10}{n}{speed 255}    Yes{n}    No
+f319-0000 e1c509788fe8a080 {speed 255}Deck Plaza
+f319-0003 4b996514de6be288 What're you runnin'{n}around for? Don't know{n}where to go, huh?{wait 10}{n}{speed 255}    That's right{n}    No, I'm fine
+f319-0005 1cf23058e7fb1668 The Verus are good{n}from afar but far{n}from good.{p}It's the biggest mistake{n}they'll ever make{n}if they mess with a{n}beefcake like me.
+f319-0007 e9d59cea91a7e96d This is the{n}deck plaza!
+f319-0009 78b116373adec1bf This is the supply{n}entrance but it also{n}serves as a Gear shop!!
+f319-0011 2f8faba7b6177185 Another day on the{n}job... Submerged{n}under the sea day to{n}day{wait 10}...{wait 10}...{wait 10}*sigh*...
+f319-0012 099867520e3edc39 Having that job from{n}the Church ruined,{p}I guess there's no other{n}way for me to make a{n}living 'cept diving...{n}*sigh*...
+f319-0013 ef2fec0bc43b1cab Before going in,{n}I'll have to do some{n}warming-up exercises.{n}Ha, ho, ha, ho...
+f319-0014 c490e8408f64181a With my warm-up{n}exercises, I'll be able{n}to save all the drowning{n}people. Yeah...{p}Exercise...{n}Ha, ho, ha, ho...
+f320-0000 c335a1cec558c798 The Etone?{wait 10} I saw him{n}earlier but I'm afraid{n}he went off somewhere.
+f320-0001 fe38699c74351ded Margie{n}"Really?{n}Where'd he go?"
+f320-0003 687fba146213bbd1 Bart{n}"What're you {n}doing, Margie?"
+f320-0004 ce849d4257a42b50 Margie{n}"Hi, Bart. I just heard{n}from Citan. I was also{n}looking for that Etone.{p}This person saw that{n}Etone earlier."
+f320-0008 f3c5e346abf99730 I can get more money for{n}someone who plays nice!
+f320-0009 c98dc63656d8c296 Elly{n}"What're you doing!?"
+f320-0010 4f900818b818a5cc What?{wait 10} Who the{n}hell're you?
+f320-0011 164c5b1e799b3082 Maybe instead of{n}this brat we'll{n}sell YOU off?
+f320-0012 6147de60fad5aef8 Bart{n}"Oh is that so?{wait 10}{n}Couple of punks..."
+f320-0013 61cf3074f457b781 Bring it on!
+f320-0014 252347e87d40b671 Yikes!
+f320-0016 41ef00bfc8bbc84d You! What d'you{n}think you're doing!?
+f320-0017 7793bd988de688fd W-Wait,{n}th-this guy is{wait 10}...
+f320-0019 46225146aee3e0e1 Damn!{n}You'll regret this!
+f320-0020 da0060bf7463c4e1 Bart{n}"H-Hey! What's the{n}meaning of this!?"
+f320-0022 c9ff49ad2d996920 Margie{n}"W-Wait..."
+f320-0023 0ef79d048fe8a58e Jesiah{n}"Shut up.{wait 30}{n}So, a dog of{n}Solaris."
+f320-0026 63033b568132e007 Citan{n}"That carbine rifle,{n}that skill with the{n}gun...{p}Can it be you, my{n}old mentor,{wait 5} Jesiah!?{p}Jesiah, you have got{n}it all wrong.{wait 5} Jumping{n}to conclusions, as ever!{p}She was only helping{n}that girl."
+f320-0027 be25ba947233543b Jesiah{n}"What?{wait 20}{n}That pompous way of{n}talking{wait 10}...{wait 10} Hyuga!?"
+f320-0029 21d3c6b84e21bb43 Jesiah{n}"Yeah, yeah, I know,{n}Primera.{n}My misunderstanding."
+f320-0030 39d9c7e43ef89600 Jesiah{n}"Sorry, young lady.{n}Stand up, now."
+f320-0031 f2d4765a91258855 Jesiah{n}"Looks like you were{n}just trying to help her.{n}That's what she's saying.{p}Sorry about the{n}misunderstanding.{p}Oh, this is Primera.{n}My daughter.{p}And I'm—{wait 10} Well, it's quite{n}enough that my smartass{n}student here calls me{n}Jesiah,{wait 10} so call me Jesse."
+f320-0034 bba3039ee1d1c39a Jesse{n}"She says thank you.{p}There was a bit of a{n}situation, y'see, and{n}it left her unable to{n}speak."
+f320-0035 8024b6163b9a1b9e Citan{n}"...Is this girl the{n}reason you had that{n}shotgun wedding?"
+f320-0036 ac48d0da1dafd263 Jesse{n}"That's a damn rude thing{n}to ask! Besides, look at{n}how old she is!{p}Primera is my second{n}child. My son from back{n}then is already 16."
+f320-0037 9fb52ff9e1f80068 Citan{n}"My apologies for{n}that.{wait 10} And how is{n}your wife?"
+f320-0038 473b85af617b96f8 Jesse{n}"...{wait 10}She's dead.{p}I wasn't even able to{n}be there for her in her{n}final moments."
+f320-0039 266a499d58b4f072 Citan{n}"I see...{wait 20}{n}So what brings{n}you here now?"
+f320-0040 58510d01a3d3dd18 Jesse{n}"Well, I have to go{n}shopping once in a{n}while, I guess.{p}That son of mine was{n}headed out this way on{n}some unsavory business,{n}so..."
+f320-0041 2a98d00e93a93352 Excuse me...{n}That Etone from before{n}has just arrived.
+f320-0043 1c0a311e5d0840c3 Doctor{n}"...{wait 10}...{wait 10}So that's why we{n}hoped you could help us{n}somehow."
+f320-0044 0b33f62d238562dd Etone{n}"Is that so{wait 10}...?"
+f320-0045 740a70fe929e0e40 Jesse{n}"...Good grief, don't{n}act all superior.{p}Wouldn't it be good{n}to help them out?"
+f320-0046 6be6277f34170dc0 Etone{n}"F-Father?{n}And Prim too!?"
+f320-0047 ec5bd23499a56d22 Jesse{n}"Oh, this is my son Billy."
+f320-0048 6bf3af7c650db2fc Billy{n}"Where have you been{n}all this time!?{p}Things are getting{n}serious at headquarters."
+f320-0049 b072cd96e032b89f Jesse{n}"What's serious?{p}Nothing wrong with going{n}for a walk with my{n}daughter to do some{n}shopping."
+f320-0050 fe644e4326036a98 Billy{n}"I don't know the details,{p}but headquarters has you{n}being searched for on{n}account of your{n}disruptive influence!{p}What did you do this time?{n}Fight? Gamble?{n}Make a move on someone's{n}wife again!?"
+f320-0051 ece9d17b5c9a6359 Jesse{n}"Hmph.{p}Such things are false{n}rumors made by those{n}jealous of my talents.{n}False rumors.{p}I suppose you believe{n}them too. Damn, since you{n}joined the Church you've{n}become such a stiff."
+f320-0053 9f1f59b9928fe1b6 Jesse{n}"Anyway, this lady{n}and her friends{n}saved Primera{p}when she was seemingly{n}about to be kidnapped.{wait 10}{n}Stop whining and help{n}them out."
+f320-0054 efc1705305c46f9e Elly{n}"Um...can we get an{n}introduction to the{n}Church, then?"
+f320-0055 fec4ffcf6f01d177 Billy{n}"A-{wait 5}Ahh, so that's{n}what happened.{p}I'm so sorry for my{n}rudeness — I didn't{n}know you saved my sister.{p}Yes.{n}I will try negotiating this{n}with the medical department{n}at my headquarters.{p}Although I'm a priest, my{n}main work is as an Etone,{n}so, to be clear, I cannot{n}make any promises."
+f320-0056 a872237f080df308 Elly{n}"You'll introduce us?"
+f320-0057 2397fd5470eb9da5 Billy{n}"Yes. Let's stop by the{n}Church headquarters{n}after this."
+f320-0058 7e354b19b5c4d338 Margie{n}"Hmm. Isn't that unusual,{n}to be a priest and an{n}Etone at the same time?{p}The Church, huh? It{n}really is very different{n}back home in Nisan."
+f320-0059 ddc74c0a05ef09bc Billy{n}"Back home? Are you{n}part of the sisterhood{n}in Nisan?"
+f320-0060 006d34b431265083 Margie{n}"Yep. I'm Marguerite.{n}Nice to meet you, Father."
+f320-0061 54a32d9e6317a8ee Billy{n}"The pleasure is mine.{p}Well isn't that something?{n}I've always wanted to have{n}the chance to talk with{n}those of other faiths.{p}Perhaps we could meet{n}afterward?"
+f320-0062 1bf220828da053e9 Margie{n}"Sure, I'd like that.{p}But I'm afraid I won't{n}have a lot of time. We{n}just have so much{n}happening right now."
+f320-0063 b1d64137432a161b Billy{n}"Thank you.{p}Hmm... Marguerite?{n}Where have I heard that{n}name before?"
+f320-0064 0b870e91957dddab Bart{n}"Does it really{n}matter?{p}C'mon, you're to put{n}in a good word for{n}us with the Church.{n}Let's get moving."
+f320-0065 3ce63a8543dd8adb Billy{n}"What an impolite fellow.{p}You should learn how to{n}speak with a little more{n}respect."
+f320-0066 bb95ac4163ec4cfb Bart{n}"What!?"
+f320-0067 bb5ea4b465e715d1 Billy{n}"Well everyone,{p}I'll go on ahead and{n}discuss this with{n}Church headquarters.{p}Please make your way{n}there whenever is{n}convenient."
+f320-0068 c72a82a1e3be29cc Bart{n}"Yeah, yeah,{n}got it. So hurry{n}it up already."
+f320-0069 71a9c860795fa5f7 Jesse{n}"Hey, Billy. I have{n}some business to take{n}care of.{p}If you're going back to{n}the headquarters,{p}can you take Primera{n}back to the brat house{n}for me while you're{n}at it?"
+f320-0070 e7b74fbec4d1d044 Billy{n}"...{wait 10}...{wait 30}Alright.{n}Let's go, Prim."
+f320-0071 ea4bfedfbfe0b92b Jesse{n}"Alright, well, I've got{n}to get going too.{p}Later, Hyuga.{n}No doubt I'll be seein'{n}you again, huh?"
+f320-0072 0218a2fc53a7af38 Citan{n}"Ah, that is{n}certain."
+f320-0073 7982a1a910d12bb9 Jesse{n}"Heh, oh well.{n}See you ladies later."
+f320-0074 f36229594e9e0683 Citan{n}"My my, I suppose a{n}person like that{n}never changes..."
+f320-0075 5ff378ead8d7bd5a Citan{n}"Oh, that is right...{p}Sigurd said he would be{n}done with the Yggdrasil{n}adjustments soon."
+f320-0076 55aceaa135eb9e2c Bart{n}"What, really?{n}Alriiight, this time{n}we'll really set sail."
+f320-0077 ce18b3a337463bd0 Elly{n}"Will you...{wait 10}{n}return to Av?"
+f320-0078 70df98ed40f3b2aa Bart{n}"Are you kidding?{n}We've got to take{n}care of Fei first.{p}Sorry, but that grouchy{n}kid said he'd introduce us,{p}so I guess there's no{n}choice but to go to{n}the Church headquarters."
+f320-0080 d78c57fff4998753 Bart{n}"Heh...{wait 5}why're you the one{n}thanking me?{wait 10} Keen to see{n}Fei back on his feet...?"
+f320-0081 909840026a3ecad8 Margie{n}"Heehee.{n}Yeah, Elly!"
+f321-0000 e5e8c96ffc0f67a3 Who will play?{wait 10}{n}{speed 255}    {name 128}{n}    {name 129}
+f321-0002 4c0ddf8e5ca95eeb One, two...
+f321-0003 72fb39f9be7f725a Do you really mean to quit?{wait 10}{n}{speed 255}    No{n}    Yes
+f321-0004 94eba265fb45597a Ready?{done 30}
+f321-0006 8f59991fdef9d272 Did you think this was{n}a battle all of a sudden?{p}Think again —{n}this here's a card game,{wait 5}{n}a proving ground for{n}'men of the sea',{wait 5}{n}where only the fast{n}will gain glory.
+f321-0007 41038688b3808b91 I'll explain the rules to you.{n}First, I deal you and your{n}opponent twenty-six cards each.
+f321-0008 f0b2b7c9adc739fa Next, both players will{n}have four cards each{n}placed in their hands.
+f321-0009 5b31b0619cb40112 Then I place another card{n}from each player, on their{n}left-hand side.
+f321-0010 3dfddb9cc0011834 Everything so far,{n}I'll do automatically.{wait 5}{n}But after this it's{n}the start of the game.{p}You must play your current{n}hand of four cards as well{n}as the remaining twenty-one{n}faster than your opponent.{p}Of course, there're certain{n}rules for playing them.
+f321-0011 3fca4b71a52acd05 If it's an adjacent value{n}to a played card, like{n}one value higher...
+f321-0012 235f9ff895edb497 In this case, where there's{n}a 3 you can play a 4.
+f321-0013 d2e69014113d17c3 Or if it's one{n}value lower...
+f321-0014 0319c8f67845ff25 In this case, where there's{n}a 4 you can play a 3.
+f321-0015 91f8420ff1fc8af7 If the values aren't{n}adjacent, however...
+f321-0016 10017ebd99b0d16b you won't be able to play.{p}But if there's a K you can{n}play an A, and vice versa.
+f321-0017 aea7ac87d7d679e1 Next I'll teach you how{n}to control the cards.{p}First off, to put a card in{n}your current hand, move to{n}the position you want to{n}put it using the left and{n}right directional buttons,{p}then place it by pressing{n}any one of the □, △, L1{n}or R1 buttons.
+f321-0018 033db63468cffc82 And to play a card,{n}move on to the card{n}you want to play...
+f321-0019 1426e669beadd10f When you want to play{n}to the right, press the{n}△ button or R1 button,
+f321-0020 0f378d976545be89 and when you want to play{n}to the left, press the{n}□ button or L1 button.
+f321-0021 8f5c7d9af8c4a7a5 Of course, your opponent{n}will also be playing.
+f321-0022 62bf82d0132e66e2 In the situation where both{n}players have put four cards{n}each in their hands but have{n}none they can play,{p}with a call of 'one, two',{n}one card from each of your{n}piles will be played.
+f321-0024 5c65b68616e61ccc And if it happens{n}to you both again,{n}this'll be repeated.
+f321-0025 cc731f5dbb0fb2cb In the situation where{n}there're no cards left to{n}play at the 'one, two' call,{p}then the leftmost card in{n}your hand will be played.
+f321-0027 634c700aae142b81 And finally...
+f321-0028 c14ebc0b44531eb6 The first player to use{n}up all their cards wins.{wait 10}{n}In this case, you lose.
+f321-0029 848d84b8907f18d6 Oh, I almost forgot.{p}If you press the SELECT{n}button, you can quit a game{n}midway through.{wait 10} Of course,{n}in that case you lose.
+f323-0000 1acbe66e0bf2f915 Blue-Haired Girl{n}"Warship signature{n}detected.{p}...{wait 10}...{wait 10}It's not{n}our target.{p}This type...{n}It matches with{n}the Av pirate ship,{n}Yggdrasil."
+f323-0001 d87f40de60b08ef0 Dominia{n}"Yggdrasil?{wait 10} Wasn't{n}she sunk in the{n}earlier battle?"
+f323-0002 9f764932a70b562b Blue-Haired Girl{n}"There's no record{n}of its sinking.{p}We were too busy{n}fighting that red{n}Gear to try to{n}confirm it."
+f323-0003 dffa461f93b89174 Dominia{n}"Then there's a chance{n}that it didn't sink...{p}I believe the data shows{n}the Yggdrasil was that{n}Gear's mother ship?"
+f323-0004 c3b345876c60e115 Blue-Haired Girl{n}"One moment{wait 30}...{wait 30}...{wait 30}{n}Yes, that's correct."
+f323-0006 e5e5131dcce51857 Blue-Haired Girl{n}"Excellent?{wait 10}{n}What're you planning{n}on doing?"
+f323-0007 b3910b3eac2f3d8f Dominia{n}"I'll sink her, of course.{n}She'll never trouble the{n}Commander again."
+f323-0008 91cd2e72f6b6f7ab Blue-Haired Girl{n}"Wait!{p}The Commander's orders{n}were to investigate the{n}disappearance of that{n}flying battleship.{p}We can't deviate from {n}our mission.{p}Besides, it's high time{n}we resupply somewhere.{n}Fuel is low."
+f323-0009 afea92d08a063f86 Dominia{n}"It'll be enough.{wait 10}{n}We're doing this."
+f323-0010 e0b2c12f95d081c1 Blue-Haired Girl{n}"...Urgh...{wait 10}{n}Once you start there's no{n}stopping you, is there?{p}I hope you know that{n}fighting in water is{n}totally different from{n}fighting on land."
+f323-0011 5fae5b6a0695bb0f Dominia{n}"Of course.{wait 10}{n}Sorry about this,{n}Cherubina."
+f323-0012 75e247e8d4f2f6d1 Bart{n}"Dammit!{p}I can barely maneuver{n}in the water, yet their{n}motion is silky smooth..."
+f323-0016 2b239f44135956c0 Elly{n}"What's that Gear...?"
+f323-0017 ada422243370924a Dominia{n}"Elehayym!{n}What are you doing{n}in this place?"
+f323-0018 de37b10109434641 Elly{n}"Dominia!?{n}Why are YOU here?"
+f323-0019 8831b3910a1b804f Dominia{n}"Why? We Geburah need{n}no special reasons to{n}sink an enemy ship!{p}These foolish land-{n}dwelling Lambs need{n}to be guided by the{n}exalted ones."
+f323-0020 67f2cd981f777cfa Elly{n}"But why?{wait 10}{n}How're they different from{n}us, the Abal shepherds?"
+f323-0021 33c74546cd10438b Dominia{n}"To me, it's the same{n}whether it be the Lambs{n}or the Abal.{p}There's only the{n}difference in the{n}absolute ability of{n}each individual.{p}The ignorant must{n}be lead by the wise.{n}That's providence.{p}You too had what it takes{n}to become an Element, the{n}embodiment of that{n}providence!{p}Why didn't you!?{n}When you possess that{n}level of skill!?"
+f323-0022 bdc2f6b84f834c37 Elly{n}"...{p}So you're saying an{n}ability to bring harm{n}to the weak is a sign{n}of the exalted ones!?{p}I didn't want anything{n}like that...{wait 30}{n}That's all!!"
+f323-0024 83610f6b333260d0 Dominia{n}"That Gear... You're{n}the one? Hah! So that's{n}how it is.{p}How amusing, Elehayym.{n}All this for a man?{p}I guess those stories{n}were true after all.{n}You were born of those{n}lowly Lambs."
+f323-0026 9ed143ed52a46f00 Dominia{n}"Hmph, what're you going{n}to do about it, you Lamb{n}mongrel!?{p}Are you going to use the{n}power you used in that{n}incident on me now?{p}Go ahead. Show me.{n}Show me your true power!"
+f323-0027 9f4cba516bf86042 Elly{n}"...Fine!{p}If you Geburah{n}are the{n}providence of{n}the wise...{p}then {wait 30}I'd rather{n}be a fool!!"
+f324-0000 b7343cf7a21f28dc Dominia{n}"Still you speak{n}such nonsense!"
+f324-0001 188a1a009501d59c Elly{n}"I'm not saying anything{n}that isn't true!"
+f324-0002 3a9aca6468c859a0 Dominia{n}"I have no intention of{n}discussing this matter{n}further with you!{p}Your traitorous actions{n}are already apparent!{n}I will cut you down{n}right here!!"
+f324-0004 fd27504370bfaae7 Myyah{n}"Are you okay?"
+f324-0005 7a221465533e5566 Dominia{n}"Myyah!{n}What're you doing!?{n}She's a traitor!"
+f324-0006 a9211e085c7eb989 Myyah{n}"Such acts will not be{n}allowed on a ship under{n}Ramsus' command...{p}No matter the reason!{p}I have examined the{n}records of the battle{n}between the Haishao and{n}{name 13}...{p}From what I can tell,{n}it was you who attacked{n}first, wasn't it?{p}She had no choice but to{n}defend herself after you{n}took it upon yourself to{n}attack without permission.{p}Most importantly, at that{n}time you were meant to be{n}under Cherubina's command.{p}Did you follow her{n}instructions during{n}this incident?"
+f324-0008 928b1ef3c84b8ec5 Myyah{n}"Even if you are her{n}peer in the Elements,{p}without the approval of{n}your mission commander,{n}prosecution of any soldier{n}as a traitor is prohibited.{p}Besides...{wait 5}{n}your harsh scrutiny{n}of the Lieutenant —{p}it stems from 'your own{n}personal grudge', so to{n}speak...{wait 5}does it not?"
+f324-0009 6868350584245538 Dominia{n}"What!?{n}I would never—"
+f324-0010 edaf2d9b9984d24b Myyah{n}"As such...{p}whether there has been an{n}act of disloyalty on her{n}part or not remains to be{n}seen.{p}To investigate the truth{n}of this matter further,{n}I'm placing the Lieutenant{n}under my supervision.{p}Is that clear?"
+f324-0012 f0d43a0d471d4c8e Myyah{n}"Let's go."
+f325-0000 7e474774001f66ee Myyah{n}"...{wait 20}I see...{n}So that's what was{n}going on."
+f325-0002 a97463e3558502c6 Myyah{n}"Since I have other{n}matters to attend to,{p}would you mind staying{n}here for a while?"
+f325-0004 361d9e2518418614 Myyah{n}"You don't have to worry{n}about a thing. Leave the{n}rest to me.{p}For now, please recover{n}from the fatigue of your{n}time adrift."
+f325-0005 4da42d8e9d476436 Myyah{n}"Crystalline blue... {n}like the calm surface{n}of a lake..."
+f325-0006 47b15cbd4f407cd2 Elly{n}"Um{wait 10}..."
+f325-0007 52153994a212ebf5 Myyah{n}"Your eyes...{n}They're beautiful."
+f326-0009 b6d340ebbcd59d7e Whaaat, you're going{n}searching for the flying{n}saucer?{wait 10} Take me too!!
+f326-0010 5a101de515c2cc2c Billy{n}"You're keeping an eye{n}on things here, Davy.{p}If you're a good boy{n}you can go sometime."
+f326-0011 6114d1efc8ecd661 I-{wait 5}If {wait 5}I'm not a good{n}boy I can't go...{wait 10}{n}Waahhh!!
+f326-0012 89f4ba680964320e Can't see the flying{n}saucer today.{wait 10} Baaah!
+f326-0013 4cc7bc705d28e4ab Wanna know about the flying{n}saucer? Then just ask me!{wait 10}{n}{speed 255}    Tell me{n}    Never mind
+f326-0014 2a96e2326240afdb {speed 2}Ahem!! Actually it was a{n}long time ago. About fifty{n}years ago, an old man, Henry{n}Mingas, said he was taken by{n}the saucer and his body was{n}altered. Well, no one{n}believed him, but afterward{n}it's said he had amazing{n}knowledge and skills he{n}never had before.{n}Then ten years ago, strange{n}circle-shaped marks were{n}found in many places.{n}You must've heard about it.{n}No? Well anyway, they were{n}called mystery circles. So{n}this guy spread rumors that{n}they were saucer landing{n}sites, and when others{n}began to disappear, there{n}was even more talk. But{n}there were things other{n}than the saucer landing site{n}explanation, such as the{n}Naughty Stories, Dragon{n}Scrolls, or Plasma Legend.{n}So there was no real proof.{n}But real disappearances{n}did happen.{p}{speed 0}Oh, I forgot to mention,{n}the saucer was called{n}'Shevat'.{p}There are even people{n}who worship it.
+f326-0016 d93d9f28633cfb20 Saying that makes{n}me want to tell you{n}even more... Awww.
+f326-0017 79bb31b222a2afc5 You want Billy?{wait 10}{n}You should go to the{n}Church's headquarters.
+f326-0021 221318644ad9ed59 It's like something's{n}in there, but you can't{n}go inside.{p}Some kind of haunted{n}house?{wait 10}{n}...*shiver*...
+f326-0026 f7f0bb632eaec7ae I wonder if Uncle Stone{n}will come back and play?
+f326-0027 fa461faa4ae8707b I still can't find them!
+f326-0029 d53a8210cace598f Hey, where is everyone{n}hiding? You could just{n}tell me secretly.
+f326-0036 3366d26e6721f1b7 Thanks!{n}That's a big help!
+f326-0037 f7340eb22fdea61b Thanks!{wait 10}{n}I'll pay you back!
+f326-0042 67d0f6aafdd882d5 Me, I have the day shift{n}so I have to get all the{n}chickens in the coop...{p}Wanna help me?{wait 30}{n}{speed 255}    Okay!!{n}    That's your job
+f326-0045 cf1c086c4521e407 You want Billy?{wait 10}{n}You should go to the{n}Church's headquarters.
+f326-0047 ca8ebac7afef8cc1 Hmm, Uncle Stone is{n}a bad guy?{wait 10}{n}Why are you saying{n}he's strange!?
+f326-0058 4213debe15c0c063 Huh? Why aren't I{n}playing with them?{wait 30}{n}Don't be silly...!{n}I can't play with girls!!
+f326-0061 4d9bea2faa5104b3 Hey hey,{n}get on this!
+f326-0065 a65441c16c57966d Uncle Stone{n}"Alright, alright...{wait 10}{n}Is everyone doing{n}well?"
+f326-0066 a95ba58ebe144bbd Billy{n}"Bishop Stone!!"
+f326-0067 4b8428f327f3341a Bishop Stone{n}"Why hello, Billy!"
+f326-0068 ff5af1c0d6fb37f9 Billy{n}"We appreciate you{n}visiting us when{n}you're so busy."
+f326-0070 1e6aacc49574ddc0 Billy{n}"They're travelers from{n}another country."
+f326-0071 3b3a0e40c3555bb8 Bishop Stone{n}"Oh...{p}By the way,{n}regarding the matter{n}from our earlier{n}correspondence..."
+f326-0072 4fd661f500cf86cd Billy{n}"Yes.{wait 10} A job,{n}wasn't it?"
+f326-0073 3f08d4a962743ca4 Bishop Stone{n}"That's right.{p}The Church transport ship{n}that had gone missing has{n}finally turned up.{wait 10} But{n}it's not responding..."
+f326-0074 d57c20c7ccd36b7d Billy{n}"Are you saying...?"
+f326-0075 544403b0962d5711 Bishop Stone{n}"Yes,{wait 10} I'm afraid it's{n}most likely Verus again.{p}Billy, can I ask you{n}to do the usual?"
+f326-0076 42cf3ea5502d732e Billy{n}"Right,{wait 10} no problem.{wait 10}{n}Leave it to me, Bishop."
+f326-0077 091aeea2e628d741 Bishop Stone{n}"Thank you.{p}Its position is{n}northeast of here.{n}But please be careful.{p}It's a dangerous part of{n}the sea, with fast-flowing{n}currents that even nearby{n}salvagers try to avoid.{p}If possible you should{n}head there in a large{n}boat or something..."
+f326-0078 437f4f9c2b6d02c3 Bart{n}"Hey, isn't this thing{n}the 'huge ship' Sig was{n}talking about earlier?"
+f326-0079 74b043e0865ac090 Billy{n}"I don't know if that{n}was the same thing or{n}not."
+f326-0080 1a8d414b34c17e82 Bart{n}"So...{p}I'm hearing that the{n}currents are fast and{n}it's a dangerous place{n}for small ships,{wait 10} right?{p}In that case, my Yggdrasil{n}will be quite safe.{n}No matter how big the wave{n}or swell, it's no problem.{p}You did us a favor helping{n}Fei, so...{wait 10}come aboard!{n}We'll take you there.{p}If you like, we could even{n}help you with the job!"
+f326-0081 460d112ee52a1b10 Elly{n}"That's right.{p}After what you did for{n}Fei, it's truly the{n}least we could do."
+f326-0082 612d384af12b9785 Billy{n}"I'm grateful, but this{n}matter is of no concern{n}to any of you.{p}I can handle it alone."
+f326-0083 60941a810961f014 Elly{n}"But isn't that place{n}dangerous? If there's{n}anything we can do..."
+f326-0084 cff8666dee57f806 Billy{n}"But that's exactly{n}why, if I get you{n}involved..."
+f326-0085 7366eebfdd9bedfe Bishop Stone{n}"Billy, my son,{wait 10}{n}don't squander the good{n}intentions of these people.{p}That submarine is theirs,{n}no? Maybe you should ask{n}for their help here..."
+f326-0087 68b0204327efc221 Bart{n}"Yeah, they say no{n}journey is long when{n}you have good company.{p}We'll help!"
+f326-0088 27952bb0bd54917c Elly{n}"Billy, it's best to{n}go as a group!"
+f326-0089 e19b206f3ff59fa2 Billy{n}"...{p}Well, if you insist.{n}Thank you.{wait 10}{n}I appreciate it."
+f326-0090 4ec860d6522b926e Bishop Stone{n}"You have my thanks, also.{wait 10}{n}Billy, fellow travelers,{wait 5}{n}please go carefully.{p}For our peace of mind,{n}please report back to{n}Church headquarters when{n}the work is finished."
+f326-0092 f79343dab4f38fa6 Billy{n}"Thank you.{wait 10}{n}Let's see what tomorrow{n}brings, then.{p}I'll pay you a visit as{n}soon as I've made the job{n}preparations, so please{n}go on ahead and board.{p}I'll give you the full{n}details of the job once{n}we're en route..."
+f326-0095 8efcac2b2c9853ef Hey everyone!!{n}It's shift G!!
+f326-0096 4ecf38a249033f05 Wind direction, check!!{n}Target coordinates{n}X1020, Z303!
+f326-0097 5896743bfb86a5bb Roger!!{wait 10}{n}Engage autopilot!
+f326-0098 289e293154cb694e Catapult,{n}ready!!
+f326-0100 03f6b38274e13d49 {name 16},{wait 10}{n}standing by!!
+f326-0102 fdbe6fb31be7f262 Go get 'em!!
+f327-0001 d61e53aefc734145 Billy{n}"Oh, how nice to{n}see you.{wait 10}{n}How is Fei doing?"
+f327-0002 6678850e6f22a278 Elly{n}"Very well, thank you.{p}He hasn't regained{n}consciousness yet, but he{n}should come around soon."
+f327-0003 4f86a5646e1f5798 Billy{n}"Really?{wait 10}{n}That's good to hear."
+f327-0004 7fabd8420edaeab5 Elly{n}"Um, Billy.{wait 10} I don't know{n}quite how to thank you{n}for helping Fei..."
+f327-0005 8fa55f34e99318bd Billy{n}"Don't mention it.{p}We cannot turn away{n}those who're in need,{n}no matter their faith."
+f327-0006 5b51037842fc8551 Elly{n}"Truly, thank you{n}very much.{p}By the way, is this{n}your orphanage...?"
+f327-0007 a40300c2607f352b Billy{n}"Surprised there are{n}only children?"
+f327-0008 e971f7853d399086 Billy{n}"Actually,{wait 5} from a young age{n}my sister and I didn't have{n}our parents around either.{p}I opened the orphanage{n}so kids without relatives{n}wouldn't have to go{n}through what we did."
+f327-0009 012f33802e17bdf0 Billy{n}"They're all full of life{n}and they properly observe{n}the Church's teachings...{p}Just great kids who even{n}help me with my work{n}sometimes."
+f327-0011 4fbc181bbcc34876 I'm bored,{wait 10} 'cause my{n}brother can't find me!
+f327-0012 0e3f8a6fa5d182fa You want some candy?{wait 10}{n}{speed 255}    Yeah, gimme some{n}    Nah
+f327-0013 a0e07dd9903226de Yaaaay!{wait 10}{n}Let's empty this jar{n}quick so we can put {n}pretty shells in it!
+f327-0014 52f459e3cacd0e10 Aw gee...{wait 10} I wanted to{n}hurry up and empty this{n}jar so we could put{n}pretty shells in it!
+f327-0015 1ac580da24532927 By the way, don't{n}tell my brother!
+f327-0016 c5bc65e02f1441a2 Ah, you scared me.{wait 10}{n}I thought it was{n}my brother...{p}It's a secret, okay?{wait 10}{n}{speed 255}    Okay{n}    I don't know
+f327-0017 3f5a45dc642e1ae1 Yaaaay! Thanks.{wait 10} {n}I'll give you this book{n}if you keep it a secret,{n}'kay?
+f327-0020 d5c35f26e09e38a2 There's a cord...{wait 10}{n}{speed 255}    Pull it!!{n}    Don't
+f327-0021 258cfa2a6a2d76b8 Sigurd{n}"Young Master!!{p}Yggdrasil's radar has{n}picked up the shape of{n}a huge ship!!"
+f327-0022 19dba417fb69f566 Sigurd{n}"Hyuga!{p}Yggdrasil's radar has{n}picked up the shape of{n}a huge ship!!"
+f327-0023 f36d00a7baf040f9 Bart{n}"What?{wait 10} Geburah{n}again?"
+f327-0024 7ce13de8523b6012 Sigurd{n}"I don't know, but it's{n}moving south at 10 repsol{n}per hour.{p}Let's head to the bridge."
+f327-0025 eff259d313e2bf89 Bart{n}"Okay, got it.{wait 10}{n}We'll be there {n}shortly."
+f327-0026 60f53b61482af502 Citan{n}"Is it Geburah{n}again!?"
+f327-0027 2c57fa3c74236b6a Sigurd{n}"I don't know, but it's{n}moving south at 10 repsol{n}per hour.{p}Let's head to the bridge."
+f327-0028 88e115cac0e4b14c Citan{n}"Understood.{wait 10}{n}I will be there shortly."
+f327-0029 289da7397052052e Hey, you with the wig{n}and the suntan.{wait 10}{n}Is that you, Sigurd!?
+f327-0030 a8fc5ca8c5346764 Sigurd{n}"With the wig and the—?{wait 10}{n}Such rudeness all of a{n}sudden!{p}Who do you think you are?"
+f327-0031 f31fa8f27a23ed18 Citan{n}"Ah...{wait 10} You may not{n}be able to tell at{n}first glance, Sigurd,{p}but this man was at one{n}time our mentor..."
+f327-0032 845b96a310eabf4e Citan{n}"Ah...{wait 10} You may not{n}be able to tell at{n}first glance, Sigurd,{p}but this man was at one{n}time our mentor..."
+f327-0033 e42bbfb584aca07e Sigurd{n}"M-Mentor!?{wait 10}{n}Jesse!?"
+f327-0034 5c8084747af415bd Billy{n}"S-{wait 5}Siggy!?"
+f327-0035 0c2d3408455eb031 Bart{n}"Did he just say{wait 10}{n}'Siggy'!?"
+f327-0036 ebff7611a7f47540 Jesse{n}"It's not every day you{n}see a silver-haired man{n}with amber skin, is all.{p}Well, well, you guys.{n}It's become quite the{n}reunion lately!"
+f327-0037 470161f0e9119a1e Citan{n}"Well, these things{n}happen, as they say..."
+f327-0039 c1d4893d7da71998 Sigurd{n}"And for various{n}reasons..."
+f327-0040 1f56653eed5de238 Jesse{n}"Well, you can let me{n}hear the whole story{n}over some drinks.{p}Still{wait 5}...{wait 5}gotta wonder why{n}we're together like this{n}after so long."
+f327-0041 81c889868cfb3e2e Billy{n}"Siggy,{n}it's been a long time...{wait 20}{n}What's with the eyepatch?"
+f327-0043 01e8de77f3acf4da Bart{n}"Hey!{wait 10}{n}Hey hey hey!{p}What's with you,{n}being overly{n}familiar with{n}my officer?{p}What's all this{n}'Siggy' stuff?{n}Don't get cute, kid!"
+f327-0044 9a2730594f8afa18 Billy{n}"What about you, why're you{n}so bossy with Siggy?{wait 10} Who do{n}you think you are?"
+f327-0045 966897479dc7289e Jesse{n}"Billy.{wait 10} Don't pick a{n}fight with Sigurd's{n}people.{p}It's bad form, boy."
+f327-0046 c4fe5a7b8040944b Sigurd{n}"Young Master,{p}Jesse here was my{n}supervisor when I was{n}an Elements candidate{n}at Solaris Jugend.{p}I'd even rented a{n}room in his house."
+f327-0047 1c96e804030b5ec6 Jesse{n}"Back then, Billy{n}wasn't yet out of{n}his diapers,{p}and even now he{n}never tires of{n}being a spoiled{n}brat."
+f327-0049 a437bf8660cb45b9 Bart{n}"You punk!{wait 10}{n}What're you turning{n}on me for!?"
+f327-0050 32fc528db8dff490 Jesse{n}"Well then{wait 5}...{wait 5}shall we{n}go straight off and{n}drink ourselves under?"
+f327-0051 9ce2736caff13198 Sigurd{n}"Go for a{n}drink where,{n}exactly...?"
+f327-0052 ab40f2b1f8522744 Jesse{n}"Whaddya mean?{wait 10}{n}There has to be a bar or{n}two on board your sub?"
+f327-0053 6abd1b8679779a69 Sigurd{n}"Uh, I have a{n}slight headache,{n}so..."
+f327-0054 02552f4a7cd442e5 Jesse{n}"What?{wait 10}{n}That's okay.{p}We'll get rid of that{n}headache with a good{n}drink!"
+f327-0055 4d4c90d0e25ee9d4 Citan{n}"What do we do...?"
+f327-0057 99337c77b7cfb491 Sigurd{n}"We can't just say no{n}to him..."
+f327-0058 615177beef1187d5 Jesse{n}"What're you guys{n}doin'? Let's go!"
+f327-0059 d9206ff4026312ed Sigurd{n}"You see?"{done 30}
+f327-0060 f3d24b727d243a52 Oh dear...{done 30}
+f327-0062 a5b109ed4274d0ae Billy{n}"I'll pass...{wait 10}{n}Please make yourselves{n}at home."
+f327-0063 f4c8b348dd33ed52 Bart{n}"What the heck's this{n}'huge ship' Sig was{n}talking about?"
+f327-0064 ca8f2fbf005099e4 Elly{n}"What on earth is this{n}'huge ship' Sigurd was{n}talking about?"
+f327-0065 935f038136f87c6b Citan{n}"I am sorry, everyone.{wait 10}{n}If I may be excused..."
+f327-0066 c81d961028b86885 Rico{n}"Oh well,{wait 10} I was just{n}waiting for my moment."
+f327-0067 832d0b36e3745aa4 Bart{n}"Oh well, I'll{n}join you."
+f327-0070 b8412dfcb9e78cf7 Jesse{n}"...*HIC*...!!{wait 10}{n}I'm baaack.{p}Billy,{n}you there?"
+f327-0071 78eb274ddca47d1d Billy{n}"Keep it down!{wait 10}{n}What time do you think{n}it is?{p}Be quiet when you come{n}home, or you'll wake{n}the children."
+f327-0072 76ca5152479ce6e0 Jesse{n}"If you'd come you'd{n}have heard a ton of{n}good stories.{p}Not to mention{n}Sigurd's mishap —{n}that was priceless."
+f327-0073 a5404b71a1c32635 Billy{n}"You know Siggy can't take{n}his drink and yet you let{n}him have that much!?{wait 10}{p}To think you're the{n}father of a churchman..."
+f327-0074 23dddb25f5b57107 Jesse{n}"Hey hey, you need to{n}open your eyes.{p}This priest stuff, you{n}gotta quit it."
+f327-0075 135358525955d93d Billy{n}"I don't need to hear that{n}from someone who doesn't{n}have a shred of faith.{wait 10}{p}Don't interfere with my{n}way of life!"
+f327-0076 fe7225c922f7d147 Jesse{n}"Interfere?{p}You, greenhorn, have no{n}idea how vulnerable you{n}still are."
+f327-0077 5149a47d19c3da86 Billy{n}"Greenhorn?{wait 10}{n}As if you would know{n}anything about me."
+f327-0078 294e1cd04d1356a1 Jesse{n}"!?{wait 10}{n}You...!!"
+f327-0079 c202f33ab17ab49f Billy{n}"I still don't believe{n}you're even my dad.{p}I cannot imagine you{n}being the same person{n}Mother loved!"
+f327-0080 24fbbc8db82f7ab1 Jesse{n}"You mean...{wait 20}you think{n}I'm an imposter?"
+f327-0081 706c68f1f5668624 Billy{n}"If I ask myself{n}honestly?"
+f327-0083 98a4b000c5f23555 Jesse{n}"Well there's certainly{n}nothing I can do to prove{n}who I am...{p}Fine, you still don't{n}understand the truth{n}of things.{p}What those guys really{n}are, or where you're{n}headed..."
+f327-0084 b4e59586a56c5153 Billy{n}"Father, what are{n}you saying...?"
+f327-0085 c6c4c46779b78422 Jesse{n}"I'm saying that,{wait 10} as{n}things stand,{wait 20} Racquel{n}died for nothing."
+f327-0086 a12350c948474e89 Billy{n}"!!{wait 10} You're not{n}worthy of speaking{n}Mother's name!"
+f327-0087 a568ea5fcc2ea8d1 Jesse{n}"...{wait 10}{n}I see. That's the way{n}it is. Fine.{p}Anyhow, you have to quit{n}the work you're doing.{p}Consider it a piece of{n}advice from a man who's{n}but a stranger to you."
+f328-0004 3213d93b3cf662f5 Sounds good, huh?{wait 10}{n}My dad gave me this bell{n}so I would never get lost.{p}But my dad has no sense of{n}direction and gets lost a{n}lot too! So he also has{n}the same kind of bell.{p}He went to the Church's{n}headquarters but never{n}came back...{p}He must have gotten lost{n}on the way...{wait 10}{n}He's so silly!
+f328-0005 0d4de02788b668e3 What?{wait 10}{n}That bell...{wait 10}{n}How did you get that?{p}Hey, you didn't happen{n}to meet my dad, did you?{wait 10}{n}Where is he?
+f328-0007 da4a28fae891f8c0 Mister?{wait 10}{n}Did you meet my—
+f328-0008 764dae53496b642b Rico{n}"Listen, son! Your father{n}went to a faraway place...{wait 10}{n}Here, this is his bell!"
+f328-0009 4722cc4bde5b44b3 My father's a liar!!{wait 10}{n}He said we would go away{n}and live by ourselves...{wait 10}{n}just the two of us...{p}I've waited...{wait 10}so long...{wait 10}{n}*sob,{wait 10} sob*...
+f328-0010 ad8219490e365cd9 *sniff,{wait 10} sniffle*...{wait 10}{n}But...{wait 10}thanks.{p}You've{wait 10} held on to{n}Dad's bell for me.{wait 10}{n}It'll cheer me up...!!
+f328-0012 2827096da67d08e4 Received a Church{n} doctrine book.
+f329-0000 7eea6681911b64bd Billy{n}"Thank you.{p}I'll pay you a visit as{n}soon as I've made the job{n}preparations, so please{n}go on ahead and board.{p}I'll give you the full{n}details of the job once{n}we're en route..."
+f329-0002 636ed6aed8a2458a Billy{n}"Can I help you{n}with something?"
+f329-0003 b9ea458b52b2cb97 Billy{n}"You'll have to excuse{n}me, but there's someone{n}I must go and greet.{p}Please don't keep{n}searching through{n}other people's rooms{n}like this."
+f329-0004 84b3e00eda53a346 Billy{n}"What are you doing!?{p}Please don't keep{n}searching through{n}other people's rooms{n}like this."
+f329-0005 d437e5794be34222 There's a space for{n}about three books...
+f329-0007 94b3f21cac2d3744 Fei{n}"Put in the books{n}we got."
+f329-0008 02a48580832eab17 Elly{n}"Put in the books{n}we received."
+f329-0009 c55251f2f3de93a0 Citan{n}"Put in the books{n}we received."
+f329-0010 50af1be28228a68f Bart{n}"Put in the books{n}we got."
+f329-0011 b6ed0650866eb7af Rico{n}"Put in the books{n}we got."
+f329-0015 231e2779397f496d Billy{n}"This is{wait 5}...{wait 5}Father's{wait 5}...{wait 10}{n}Reminds me{wait 5}...{wait 5}{n}of{wait 5}...long ago{wait 5}..."
+f329-0016 104c099a791d5ed8 Billy{n}"That is{wait 5}...{wait 5}Father's{wait 5}...{wait 10}{n}Reminds me{wait 5}...{wait 5}{n}of{wait 5}...long ago{wait 5}..."
+f330-0004 18d81afd92bd10ee Elly{n}"Hey,{wait 10} there's{n}something in{n}the toilet.{p}(But there's no way{n}I'm touching it.)"
+f330-0005 acfd092079f9a276 Received a dirty prize!
+f330-0006 2bc49b5d0e789f57 It's dirty, so you{n}put it back!
+f331-0000 033d7be86bc1d957 Hey, you're going{n}to the 'hideout for{n}skinful termites'?
+f331-0001 6c1526bca19a6aec Zephyr will eat{n}you up...!
+f331-0002 bbcbfe724e85a962 Hey, read me this book...{wait 10}{n}{speed 255}    Alright!{n}    Maybe next time!
+f331-0003 1676ccadae45a14a Yaaay!!
+f331-0004 e484a73f50fad67d {name 128}{n}"Long, long ago there was{n}a woman named Zephyr. {p}She wanted to be a god,{n}so she built a tower that{n}reached up to heaven.{p}Then she built a city at{n}the top. But God got mad{n}and destroyed her tower.{p}So she then had to live{n}in a 'hideout for sinful{n}hermits'.{p}After that she never {n}returned to the earth{n}again... The End."
+f331-0005 141d933318fec74f Is there really a{n}'hideout for{n}skinful termites'?{n}It sounds scary!
+f331-0022 0a3e180bd713d6ce This bed's so fluffy!! {n}Ya wanna fluff it?{wait 10}{n}{speed 255}    I wanna fluff{n}    No thanks
+f331-0023 28ab2c36440efa31 Go ahead.
+f331-0027 badf2a426da2a54e Received an old comic book.
+f331-0028 ca07cc9f1f9145bf I said toilet taken!!
+f332-0000 34d7752f4812da5c How old was I{n}at the time...?{p}I don't really{n}remember.{wait 10}{n}Maybe 8 or 9.{p}It was around then{n}that Dad taught me{n}how to use a gun.
+f332-0001 597619c12de8df16 One day, Dad{n}disappeared.
+f332-0002 86764403f499556b He just ran out on us...
+f332-0004 e5b20b4e1a9eef29 It was a horrible shock{n}even for my young mind,{p}but I couldn't bring{n}myself to cry.{p}Because I still had{n}Mom and Prim.{p}Even so, I stayed in{n}Dad's room alone often.{p}His gun,{wait 10}{n}his smell...{wait 10}{p}From within those things{n}he had left behind,{p}I would try to get some{n}small sense of{wait 10} 'a father'.
+f332-0005 1731cbe82309c33b But even that happiness{n}didn't last long...
+f332-0006 008dca5ad4db54e8 When I was 12, the house{n}was suddenly attacked by{n}a group of Verus, and Mom{n}was killed.{p}They wanted to know Dad's{n}whereabouts, but Mom{n}wouldn't talk.
+f332-0007 fca34b524e385f4d I can still hear it...{wait 20}{n}The sound of the bullets{n}Mom fired in retaliation...{p}Three shots slowly{n}ringing out...{p}I even remember the sound{n}of the empty shells{n}hitting the floor.{p}But then the Verus{n}cried out,{wait 10} and I{n}heard someone fall.
+f332-0008 664dd2f5370d8c53 It was Bishop Stone who{n}rescued us that day.{p}It'd be fair to say our{n}fortunes changed from{n}that meeting onwards.
+f332-0009 81dbf7f963b32d9d Bart{n}"Hey, hey, wait a sec.{wait 10} {n}Do Verus talk?"
+f332-0010 d976743bb800e4f2 Citan{n}"Please wait a moment.{wait 10} {n}Verus can speak in a{n}human language?"
+f332-0011 767b6f5af17a38c6 Billy{n}"Yes.{wait 10}{n}They're not just monsters.{p}Some of them are more{n}intelligent than humans."
+f332-0012 bf83143e62537bd0 Primera and I hid,{n}and so escaped death,{wait 10}{n}but she hasn't spoken{n}a word since.
+f332-0013 6f670095020929a1 Like a godsend, kind,{n}strong Bishop Stone gave{n}me an example to follow.{p}I wanted to save others{n}from evil people the way{n}he saved us.{p}I didn't want any{n}more children to end{n}up like Primera...{p}So I began training at{n}the Church in order to{n}become just like Bishop{n}Stone someday.
+f332-0014 5ad37eaa36de3c6d I left Prim in the care{n}of the Church and{n}joined the monastery.
+f332-0017 5e8943d8de1fde30 I returned home to{n}open the orphanage,{wait 10}{n}and shortly after...
+f332-0018 aa86e1eb1eb671c4 He...{wait 10} Dad{wait 10} unexpectedly{n}came back.
+f332-0019 e054014380649597 But he was different.{wait 10}{n}Some terrible accident{n}had disfigured his face.{p}Not only that, but his{n}character and manner had{n}completely changed too.{p}The Dad I remembered had{n}been a quiet man, but...
+f332-0020 2823607189057f19 No...{wait 10}I'd rather think{n}maybe it was me who didn't{n}remember him clearly...
+f332-0021 2b4cf498322fdecb That's why...{wait 10}{n}I still can't think of{n}him as my real father...
+f332-0022 6a4c6f2ad94b2341 But Prim needs a father,{n}and as a matter of fact{n}she's really taken to him.{p}I think, deep down, I{n}myself do want to have{n}a father, too.
+f332-0023 176f396b3c623206 But...{wait 10}{n}even now I have a hard{n}time believing that's{n}really my dad.
+f332-0024 aecf20d9b198f540 Stone{n}"Four years ago...{p}After searching to the ends{n}of the earth, no trace of{n}him could be found."
+f332-0025 680f633556956aa8 Stone{n}"As for Racquel,{n}defiled by him{wait 5}...{wait 5}{p}and the proof of{n}that defilement, you{n}and your sister{wait 30}..."
+f332-0026 903aa533512984e4 Stone{n}"Using Karellen's{n}remarkable Verus,{wait 10}{n}I saved poor Racquel..."
+f334-0000 73c9d69f9a1b0582 Billy{n}"('Big Brother', is it!?{wait 10}{n}I'll call for help with{n}this.)"
+f335-0000 4f76fd52c598bd79 Elly{n}"Huh? Is there{n}something...?"
+f335-0001 f7b1c2b0317d9175 Elly{n}"Billy, who's{n}'Big Brother'?"
+f335-0002 99491619dc09f156 Elly{n}"There's nothing there.{n}Don't scare me like that.{p}Is it just the fish{n}jumping around?{p}The sea is great, though.{n}Such a cool breeze...{n}So different from the{n}desert!!"
+f335-0003 ebf160e0855b6a35 Elly{n}"!!{p}Didn't you just say we{n}wouldn't stand a chance{n}against it by ourselves?"
+f335-0004 4f59cf3923406190 Citan{n}"Huh? Something{n}behind us...?"
+f335-0005 9ab8233e7349281d Citan{n}"Billy...who is{n}'Big Brother'?
+f335-0006 97873c819b862274 Citan{n}"I do not see anything.{n}Just fish jumping around.{p}Ahh...the sea.{n}The cool breeze...{n}So different from the{n}desert, is it not?"
+f335-0007 8abb15dee3cef943 Citan{n}"!!{p}Did you not say that we{n}would not stand much of{n}a chance against it by{n}ourselves?"
+f335-0008 d70c7337425b0184 Bart{n}"Hm? I felt{n}Something..."
+f335-0009 5fe1af9cb6d832fb Bart{n}"Yo Billy, what's{n}'Big Brother'?"
+f335-0010 7bf3a7d3e02ca6b3 Bart{n}"Nothing there.{n}Just the fish jumping{n}around, I guess.{p}I love the sea. The cool{n}breeze... So different{n}from the desert. I knew I{n}was a 'man of the sea'!"
+f335-0011 5cab4a680991d10a Bart{n}"Hey!{wait 10}{n}What're we gonna do now?{p}Didn't you just say that{n}we wouldn't stand a chance{n}against this thing by{n}ourselves?"
+f335-0012 8dc8b396a559ab97 Rico{n}"Huh? I felt{n}something..."
+f335-0013 90a581d4528f6f43 Rico{n}"Hey Billy, who's{n}'Big Brother'?"
+f335-0014 19cb506032a686a1 Rico{n}"Huh?{n}Just the fish jumping{n}around, I guess.{p}Ahh, I love the sea.{n}The breeze is so cool...{n}Nothing like Kislev."
+f335-0015 7ef9378beaeb45ea Rico{n}"Hey!{wait 10}{n}What're we gonna do now?{p}Didn't you just say that{n}we wouldn't stand a chance{n}against this thing by{n}ourselves?"
+f335-0016 f878a488d0cc0fb0 Billy{n}"Just as I thought. This{n}transport's infested.{p}I must go to the{n}Church and report{n}it to Bishop Stone..."
+f335-0017 17c6408f07e1f4e1 Billy{n}"I think it's most{n}likely a giant Verus.{p}It won't show up so{n}soon after being{n}summoned, though.{p}It's an entity we{n}wouldn't stand much{n}of a chance against{n}by ourselves,{p}but I've pre-emptively{n}called for my Gear,{n}so there's no need to{n}worry."
+f335-0018 899bde22b865d9e3 Billy{n}"...{wait 20}...{wait 20}{n}Faster than I expected.{n}Sorry about that."
+f335-0019 c7814b7c72b1a96d Billy{n}"I think{wait 20} it'll be{n}any time now."
+f336-0000 339a66c681b85d34 Billy{n}"Looks {wait 10}like {wait 2}blood{wait 2}...{wait 2}...{n}What on earth happened{n}on this transport?{p}No, wait, th-this is...{wait 25}{n}water with rust in it.{p}Let's hurry on ahead."
+f336-0001 30bd079521b9fbf8 It's unlocked but the{n}door is rusted shut.{p}Maybe if you ran into it?
+f336-0003 ee4d718133c1d563 Unlock it?{wait 10}{n}{speed 255}    Yes{n}    Hold on a second
+f337-0000 a71a55c8dc558a93 Door lock B opened.
+f337-0001 a21c37a8c78d86f6 Lock B{n}engaged.
+f337-0002 d6537739c33b1799 Lock A{n}engaged.
+f338-0003 515d201149d3fa56 Elly{n}"Verus?{n}By the way Billy, do{n}you have any equipment?"
+f338-0006 fae7e385081ac2a2 Citan{n}"Do you not smell{n}something strange?"
+f338-0007 9a955ee5609b6d90 Citan{n}"Are you{n}afraid?"
+f338-0008 fade1557f2a7130e Citan{n}"Verus?{n}Billy are you equipped{n}for this?"
+f338-0013 6b41deaf7007132e Bart{n}"Verus?{n}So Billy, do you{n}have equipment?"
+f338-0014 38c18c7d5d0b698f Bart{n}"You don't fight hand-to-{n}hand? You're a rare one."
+f338-0018 a7fb801ecf7d9e3a Rico{n}"Verus?{n}Hey, Billy do you{n}have equipment?"
+f338-0020 d1f82e16f4d8e45e Lights switched on.{n}Door lock A opened.
+f338-0021 39a8717331392cf8 Billy{n}"Shall we return{n}to Yggdrasil?"{p}{speed 255}    Go back{n}    Stay
+f338-0022 6b2f2826bda2d82f Lock A{n}engaged.
+f338-0023 843f32fd6e8a2604 Billy{n}"This unusual smell{n}is that of the Verus.{p}It seems they did{n}attack, just as we{n}feared..."
+f338-0024 936cd4a117fcf2b3 Billy{n}"One more thing.{p}There's a red switch{n}on the wall about half-{n}way along this cabin.{p}If you flip that switch{n}the lights should come{n}on."
+f338-0025 86943ebe3df55b69 Billy{n}"...{wait 30}No...{wait 30}{n}Well, just{n}a little."
+f339-0002 ccddf50f92981e89 Elly{n}"It's no use...{p}There's no{n}surviving{n}those wounds."
+f339-0003 ff5186561563bc6e Elly{n}"Anything's{n}possible with{n}him,{wait 10} right?"
+f339-0005 65f4faea0af0548b Citan{n}"...Unfortunately,{n}it seems that he{n}has passed away."
+f339-0006 b957b3eb1c5eebcb Citan{n}"Anything is possible{n}when it comes to him."
+f339-0008 769d81c9f721044b Bart{n}"Forget it.{n}He's gone."
+f339-0009 2af6d9e5960ff5ba Bart{n}"Your old man's capable{n}of anything."
+f339-0010 d30e57fe4b78b199 Billy{n}"What the{wait 10}...!?{wait 10}{n}Just what is going on?"
+f339-0011 e8390be395fba148 Billy{n}"Are you okay!?{wait 10}{n}What happened!?"
+f339-0013 83ef11dd4f1eb94e Billy{n}"Why...{wait 10}?{n}Why did this happen?{p}{wait 10}...{wait 10}...{wait 10}...{wait 10}...{n}Hmm, what's this?"
+f339-0014 f9558755f49aaa29 Billy{n}"This is a shell{n}casing from Dad's{n}gun{wait 10}...{p}Damn him...{n}Don't tell me that{n}being pursued by the{p}Church has got him so{n}worked up that he's{n}stormed the place?"
+f339-0015 e0c6e23dd931c50d Rico{n}"Guess we can't get in{n}the cathedral."
+f339-0016 a9555495aecdac4d Rico{n}"Looks like it's{n}too late for him."
+f339-0017 c8fc80a68e52abcf Rico{n}"Ain't no{n}denying it."
+f339-0019 58f4fac856f84a85 Billy{n}"We have been waiting{n}for you.{p}I have received permission{n}for Fei to be treated at{n}the training-hall medical{n}facility.{p}Let our Church staff{n}take it from here."
+f339-0020 f8b9fc92bab80e9d Elly{n}"Please, take{n}care of Fei{wait 10}..."
+f339-0021 8a0985035432ad2d Billy{n}"The brothers from the{n}Church are on their way{n}to the infirmary.{p}They'll look after Fei.{p}I'll show you around.{n}Please follow me this{n}way."
+f339-0024 246954d4ae8a8be6 Billy{n}"...That man and I are{n}father and son by blood{n}only!{p}I have no other{n}involvement with him."
+f339-0025 ce2d3ee8ef8f9e4a Billy{n}"...{wait 10}That father of mine...{p}Urgh, I wish he'd behave{n}with just a little{n}consideration of my{n}position."
+f339-0026 75d3d84a60d3651b Verlaine{n}"Billy, I hear your{n}father has been putting{n}on quite a show again."
+f339-0027 1f7ae6cfa71fe4b2 Verlaine{n}"It's said that there was{n}an attack on an excavation{n}site and many brothers and{n}workers were injured."
+f339-0028 887a5350077502f8 Verlaine{n}"My goodness, you're{n}such a fine Etone —{p}destroying Verus and{n}demonstrating the{n}righteousness of the{n}Church to the world.{p}But your father{wait 20}..."
+f339-0029 09d2da5cff0b83f4 Verlaine{n}"Don't get me wrong.{p}I don't mean to cast{n}aspersions on you,{n}our good Brother.{p}I just wanted to{n}keep you informed{n}about your father."
+f339-0030 bd80484915383675 This is the training{n}hall. The facility was{n}built for we Etones.
+f339-0031 1d67660aee8bc134 No.{wait 10} Only Church members or{n}people who have passed a{n}background check can enter{n}the cathedral and its{n}related facilities.{p}The same applies to this{n}training hall, but the{n}Bishop made an exception{n}at Brother Billy's request.
+f339-0032 83c79a65876db513 B-{wait 20}Billy{wait 10}...
+f339-0033 eff76f6abb45028d I{wait 10}... I don't know{wait 10}...{wait 10}...{n}Suddenly, {wait 10}I heard gunshots{wait 20}...{wait 30}...{wait 50}
+f339-0035 059ff905aa0afff1 Peace and order are{n}declining day by day{n}here in Aqvi.{p}Saving people who have{n}nowhere else to turn...{wait 15}{n}This, too, is a duty of{n}the Church.
+f339-0036 5fd6ba2df78c1cc9 Many people visit the {n}Church to get help.{n}...They're the same as {n}we Etones.{p}We also came to the{n}Church with hearts {n}filled with sorrow.
+f339-0037 201cf27a4f747988 The Church was created{n}to save people —{n}to save people's souls and{n}revive lost technology.{p}We wish happiness to all{n}the people of the world.
+f339-0038 44c4a55238251e29 I used to live in Av,{n}but I lost my house in{n}the war with Kislev.{p}The Church accepted{n}me as a believer.{n}This is my home now.
+f339-0039 449972d7cb8a94fe The Verus destroyed my{n}village...{p}I'll become an Etone{n}and create a world with{n}no hardships!
+f339-0040 fd4f50f91ff2311d Daaaddyyy.{n}Where did Mommy go?
+f340-0000 af09d00da4194324 Billy{n}"What's going on{wait 5}...?{p}The Etones are in charge{n}of the Church's military,{n}yet they've been killed{n}without signs of struggle."
+f340-0001 f46713bcfdb2ec16 Verus are humans turned{n}into things by God to pay{n}for their sins.{p}They're sealed in the{n}cursed land of the heavens,{n}Shevat.
+f340-0002 cf8a790b17451626 People belonging to the{n}Church must act modestly{n}with generosity.{p}To do that we often read{n}from the sacred scripts{n}to return to a purer soul.
+f340-0003 95e69d0fd6ca9a21 This room was prepared{n}for people who have no{n}one to turn to.{p}We hope to save their{n}souls and give them hope{n}to live.
+f340-0004 dd48cdd8d8d3eb97 They say Babel Tower is{n}connected to Shevat. The{n}exit is under close watch{n}by our people.{p}In spite of that, those{n}accursed Verus continue to{n}appear in this land.{p}That's why the Etones are{n}here to eliminate them.
+f340-0005 6dc2f169b60ed96c We, the Etones, are the{n}swords and shields of the{n}Church, so to speak.{p}We battle enemies such{n}as Verus and thieves,{p}to save people with faith{n}in God.
+f340-0006 e1562377ada34745 Billy! Does your dad{n}hold a grudge against{n}the Church?{p}They say the Church{n}supply dump was bombed{n}again.
+f340-0007 3cf6385116a7fed3 Aha! You!{p}Ask Billy if his dad holds{n}a grudge against the{n}Church or not.{p}They say his father bombed{n}the Church supply dump.{n}Oh, my head hurts.
+f340-0008 6fc9e4b1fc2b669e Plundered by war and{n}salvagers... Destruction{n}by the Verus...{wait 10}{n}We must meet the people's{n}expectations toward the{n}Church.
+f340-0009 d9c3857d337a41e6 Why does Jesse attack{n}the Church buildings?{wait 10}{n}Even when his son{n}is an Etone...
+f340-0012 3962bc9e9ac67863 What happened to the man{n}from the Church?{p}He hasn't been back since{n}he left the room earlier.
+f340-0013 d86fa6a2d6c6b04f Um...someone from the{n}Church got in a huge{n}Gear and saved me.{p}Some man named master{n}attacked us...It was{n}very frightening.
+f340-0014 140014f4c3f265d9 What's going on outside?{n}Suddenly, men in black{n}stormed in here.{p}Etones are fighting back{n}for us now...
+f341-0000 5ce374a93f4a4fbf Verlaine{n}"Hahaha, Billy.{n}How is your{n}beloved father?"
+f341-0001 c01ce92460bdc51d Verlaine{n}"...I have no business with{n}people not associated with{n}the Church."
+f341-0004 0ab675bf926426fd The Bishop's been worried{n}about Verus, refugees,{n}Etones, the faith...
+f341-0005 226842e07877b9d3 ({wait 10}...Too many Verus are out{n}there now. More than we{n}can handle...{p}What are 'they' thinking?)
+f344-0001 066a88b6feeadff9 Billy{n}"God's judgment?{wait 10}{n}What do you mean,{n}Bishop?"
+f344-0002 e41821f644c76a24 Billy{n}"He's gone.{p}What was he trying to tell{n}me? Purge...{wait 15} I wonder{n}what he meant?"
+f344-0003 5b16ce677b6c9108 Billy{n}"There's something{n}on the other side.{p}It's making it{n}impossible to get{n}through here."
+f346-0000 2886f2728901a2e7 Elly{n}"He called us {wait 10}survivors,{n}didn't he? That means, the{n}people of the Church{wait 10}..."
+f346-0001 fa2c429eb198c81b Elly{n}"Get a hold of{n}yourself, Billy.{p}There have to be{n}people who're still{n}alive. Let's help{n}them."
+f346-0002 13d4e9e880d1133c Elly{n}"Yes{wait 10}..."
+f346-0003 efb4be0572c7154d Citan{n}"Elly, is there news of{n}Fei's condition?"
+f346-0004 be8461ab18380872 Citan{n}"I see. Then let us{n}go to the infirmary."
+f346-0005 a7b6138cbcd87e37 Citan{n}"Are the people of the{n}Church alright? He called{n}us survivors, but..."
+f346-0006 e4c57fe8196a3f4d Citan{n}"Billy, pull yourself{n}together.{p}There must still be{n}people who could not{n}escape. Let us hurry{n}to their aid."
+f346-0007 1b476bdd1ecffd91 Citan{n}"Elly, is there news of{n}Fei's condition?"
+f346-0008 f378978f597d24d1 Citan{n}"I see. Then let us{n}go to the infirmary."
+f346-0010 16d43a652aceff39 Citan{n}"Billy, pull yourself{n}together.{p}There must still be{n}people who could not{n}escape. Let us hurry{n}to their aid."
+f346-0011 d0057cf377cde7e9 Bart{n}"Is Fei's treatment{n}finished, Elly?"
+f346-0014 114692120267371c Bart{n}"Hey, Billy, keep it{n}together!{p}We'll help those{n}who're still alive.{n}Let's move!"
+f346-0016 e02b6af7275ca61c Billy{n}"What the...{wait 10}?{n}Who are these guys?{p}Why're they attacking{n}the Church?"
+f346-0017 05015bd836657d20 Billy{n}"No!{wait 10}{n}Then everyone{wait 5}...{wait 5}"
+f346-0019 4d05124246fa13a0 Rico{n}"Should we go to the{n}infirmary, then?"
+f346-0020 df45661324de51d6 Rico{n}"These guys{n}are pros.{p}Experienced{n}killers."
+f346-0021 5797da7f6de93e9f Rico{n}"Get a hold of yourself.{p}With our own hands,{n}we'll help those who're{n}still alive."
+f346-0024 80b7fe2b3a4a70f5 Billy{n}"Let's hurry to{n}the infirmary.{n}This way, please."
+f346-0026 92307bb6a181321a Aaagghh!
+f346-0029 337c229ebb77d207 Billy{n}"That's the confession room.{n}If you have any troubles, we{n}can talk about them later."
+f347-0000 90827078f380ec8a Billy{n}"What's going on?{p}Are these guys in black{n}going to kill all of us{n}who're with the Church?"
+f347-0001 b90c4e9444f1c891 You're an Etone!{p}All that awaits the people{n}of the Church{wait 30} is death!!
+f348-0000 ad26eecfd3895913 Billy, we're done for. They{n}just attacked suddenly...
+f348-0001 bab4e72c26cbf968 Heh heh heh.{n}Here comes our prey.
+f348-0002 0dd7badb88b34b4a Heh heh heh.{n}Kill it!!
+f349-0002 a702d685f57a696e There are tons of books{n}collected by the Church{n}stored in this library.{p}It's a real treasure{n}house of information.
+f351-0000 dcafd25b759d915a Oh man...{wait 20}{n}Suddenly some men in black{n}came and killed everyone.{p}I hurried and hid, so they{n}didn't find me...
+f351-0001 d2892eadad822143 Oh man...{wait 20}{n}Everyone was killed.{n}They killed them all.
+f352-0000 9879558d6105118c Elly{n}"Um... Where is Billy?{n}I'd like to thank him..."
+f352-0002 86a58e8c80a7f821 Citan{n}"Elly, that is not{n}the case.{p}You cannot blame{n}yourself for having{n}been manipulated by{n}post-hypnotic suggestion.{p}More importantly,{n}you saved Fei.{wait 10} If it{n}had not been for your{n}efforts back there,{p}Fei would not have been{n}safeguarded against Carl.{wait 10}{n}Is that not correct?"
+f352-0003 e91dc85c31c47816 Citan{n}"Well, by being{n}here we may disturb{n}the examination,{p}so let us take our{n}leave.{p}It looks like Fei's{n}treatment is going{n}to take a little{n}longer."
+f352-0004 c48061f94fbc6e61 Citan{n}"That would be fine.{n}It will make Fei feel{n}safer.{p}Alright, please let{n}us know when Fei's{n}treatment is finished.{p}We will leave the rest{n}up to you."
+f352-0006 8e60f829fe2eba4b Citan{n}"Thank you for{n}your trouble."
+f352-0008 7572cf932049bd25 Citan{n}"First of all, let us move{n}Fei to the Yggdrasil.{p}It will not be too late to{n}go see Billy afterward."
+f352-0011 d797ec052a01d4a2 Citan{n}"Well, by being{n}here we may disturb{n}the examination,{p}so let us take our{n}leave.{p}It looks like Fei's{n}treatment is going{n}to take a little{n}longer."
+f352-0012 f63939e2443d9689 Citan{n}"That would be fine.{n}It will make Fei feel{n}safer.{p}Alright, please let{n}us know when Fei's{n}treatment is finished.{p}We will leave the rest{n}up to you."
+f352-0017 3c3fe983a0ebf474 Bart{n}"So you're{n}saying..."
+f352-0018 ba52b85676c73ea9 Bart{n}"Elly, you're{n}wrong.{p}You were being{n}manipulated by{n}post-hypnotic{n}suggestion.{p}You don't need to{n}feel guilty.{n}Besides, in the end{n}you saved Fei.{p}You protected him{n}from Ramsus back{n}there. Right?"
+f352-0019 953fd48478262f9c Bart{n}"Hey, we don't want to{n}disturb his recovery.{n}Let's take a little walk.{p}It looks like Fei's{n}treatment is going to{n}take a bit longer."
+f352-0020 93c775283bd586ea Bart{n}"Yeah, you do that.{n}Fei would surely be glad.{p}Alright, call on us when{n}Fei's treatment is{n}finished. I'll leave{n}the rest to you."
+f352-0021 2d3a9ff138352810 Bart{n}"So, did Fei regain{n}consciousness?"
+f352-0022 38117c52ac0a3f33 Bart{n}"Thanks a lot,{n}Doctor!"
+f352-0023 2576b9cb53faf795 Bart{n}"I have to admit{n}Billy has helped{n}us out a lot.{p}I guess we should{n}thank him or{n}something."
+f352-0024 9fa432d7d4b45926 Bart{n}"First, let's take Fei to {n}the Yggdrasil. We can go {n}thank Billy afterward."
+f352-0025 d29924bcd00d2bd2 Rico{n}"Hmm, so..."
+f352-0026 bcee44f05bd990c9 Rico{n}"Back then you'd lost{n}your own will 'cause{n}of the hypnosis.{p}Don't fret over it.{p}And if you hadn't been{n}there in the underwater{n}battle, Ramsus woulda{n}killed Fei."
+f352-0027 44b3f5fadafb1f7c Rico{n}"It looks like Fei's{n}treatment is gonna take{n}a bit longer.{p}Let's kill some time{n}elsewhere for now."
+f352-0028 b3f62148aad83dac Rico{n}"Do what you need to do.{wait 20}{n}When Fei's treatment is{n}done let us know."
+f352-0029 053ba3bab0b3efca Rico{n}"Fei's all{n}fixed up?"
+f352-0030 12a675cc7ef1abd3 Rico{n}"Thanks for taking{n}the time."
+f352-0031 edd60f94d996720f Rico{n}"...I want to say{n}thanks to Billy."
+f352-0032 0d12ae2e9e12ccb6 Rico{n}"First, let's move Fei to{n}the Yggdrasil. And we can{n}take it from there."
+f352-0033 155c1649e5c1ebcf Elly{n}"Even if it was impossible {n}to resist the effects,{p}it's because I was off my{n}guard that I got hypnotized{n}in the first place.{p}I'm partly responsible for{n}what happened.{n}So I'd like to be by his{n}side till he's awake."
+f352-0035 86ff583a08a6b755 Elly{n}"{wait 10}...Fei{wait 10} will regain{n}consciousness,{wait 10} won't{n}he?"
+f352-0036 cd27323ff1deb5a6 Elly{n}"{wait 15}...{wait 15}I'm sorry, Fei.{p}It's all because I{n}caused the engine room{n}to go haywire..."
+f352-0038 9a05330b877dae98 Elly{n}"I...{wait 15}would like to{n}stay here for now.{wait 10}{n}Is that okay?"
+f352-0040 1db56cac3e9c4e56 Billy{n}"All we can do is{n}wait and see."
+f352-0041 6e418ccc24a2be6e He is in stable condition.{n}His treatment is almost{n}complete.
+f352-0042 d17277b43bc6e786 Wh-What's happening?{wait 15}{n}Those men in black are{n}killing the Church's{n}people indiscriminately!
+f352-0044 138b2fc700abde7b Has he recovered?{n}His treatment was a{n}success, so there's no{n}need to worry.
+f352-0045 4d1f12d72299d550 The patient hasn't regained{n}consciousness yet,{p}but we could find no{n}particular abnormalities{n}in his brain tissue.{p}It was most fortunate{n}that his metabolic rate{n}had dropped due to the{n}low water temperature.{p}One false move and I fear{n}the brain tissue would've{n}necrotized, leaving him{n}with permanent damage.
+f352-0046 c2af1ae9ea631b8f Yes. You can set your minds{n}at ease.{wait 15} For the time being,{n}we need to perform a{n}thorough examination.{p}But once we've finished, your{n}ship's medical facilities{n}will be sufficient for any{n}further treatment.
+f352-0047 774e4e00160832b2 His remaining unconscious{n}goes hand in hand with{n}the physical exhaustion.{p}It's the toll taken on{n}his body that keeps him{n}asleep. He will need a{n}few more days to recover.{p}It's alright,{n}he will wake up.
+f352-0048 75cce3b008fbc0d3 Not at all. Just{n}doing my job as a{n}churchman.
+f352-0050 fba90692cf230e0d Unfortunately, the patient{n}hasn't come to yet.{wait 10} But{n}there's no need to worry.{p}When he recovers{n}physically, he'll also{n}regain consciousness.{p}It's fine for you to take{n}him to your ship now.
+f352-0051 a9f41ae00168e6d5 Not at all. Just{n}doing my job as a{n}churchman.
+f353-0004 a89665fddff13d42 Billy{n}"Pontiff!!"
+f353-0009 710c078cbcab3862 Pontiff{n}"It can't be...{n}You're on to us!?"
+f353-0011 cd54ee0aa8e4083a At this late stage you{n}still feign ignorance?
+f355-0002 5b2f5aa4ad961c15 Bart{n}"An inquisitor?"
+f355-0003 d6402e7e769097b9 Billy{n}"...{wait 10}...{wait 10} I...{wait 10}...{wait 10}{n}still can't believe it.{p}That the Church was such a{n}suspicious organization{wait 10}...{wait 10}{n}What was it that I believed{n}in...{wait 10}all this time?"
+f355-0004 5c058bd279d277cb Billy{n}"V-{wait 10}Verlaine!?"
+f355-0006 6b7b9d526c4c185e Billy{n}"That symbol!"
+f355-0007 122afaeceb7c14b3 Billy{n}"Verlaine and his men,{n}an assassination unit{n}for the Bishop!?{p}How can you even{n}say something so{n}irresponsible!?"
+f355-0008 21dedb7b52f52fea Billy{n}"Is it really true,{n}Verlaine?{wait 25} But why the{n}people of the Church!?"
+f355-0009 aa5a53760c6b1f1f Billy{n}"Even if that were true,{n}we have no right to punish{n}people as we please!{p}Judgment is for God to{n}hand down.{wait 20} Is that not{n}what we were taught!?"
+f355-0010 571221f821a35136 Billy{n}"I...{wait 15} I have been{n}passing judgment?"
+f355-0013 0ddbacd8c7f7ffd6 Billy{n}"Bishop! Why Verlaine!?{n}What in the world are you{n}trying to accomplish!?"
+f355-0018 cb4e5f32de0bfff3 Verlaine{n}"Y-{wait 10}You{wait 5}...{wait 5}..."
+f355-0019 8a0909236e5d3714 Jesse{n}"What're you getting{n}flustered about, boy?{p}It was a stun bullet.{wait 10}{n}He's just taking a nap.{p}You should've been{n}able to tell that by{n}the discharge sound!{p}Besides,{wait 10} these guys{n}are not really from{n}the Church!"
+f355-0020 7a511a5c676b610f Jesse{n}"Look!"
+f355-0021 7dc52f5e22589bba Jesse{n}"Yes, that's right.{wait 15}{n}They're agents of Solaris!{p}I dare say an assassination{n}unit under Stone's command!{p}I got word that they were{n}exterminating all Church{n}members, and hurried here.{wait 10}{n}But I was too late...{p}Looks like all Church folks{n}have been done in, except{n}for those who're out on{n}some salvage mission."
+f355-0022 afff37004b9bb9d1 Jesse{n}"I won't let you go{n}that easily, Stein!!"
+f355-0023 fabd126f0f298b6c Jesse{n}"Stein, you aren't{n}goin' anywhere!!"
+f355-0024 4fe792a348f6dc50 Do you mean to rob me of my{n}ultimate pleasure,{wait 15} Verlaine?
+f355-0025 76c819a03ebc5a50 Verlaine{n}"Gaah!!"
+f355-0026 5924fe320d847d27 Verlaine{n}"Ungh!"
+f355-0027 567a7dd3e710c733 Stone{n}"Such a worthless{n}chatterbox doesn't{n}deserve to live."
+f355-0028 9b1152bc498b417b Stone{n}"I am an inquisitor{n}sent to the surface{n}from Solaris."
+f355-0029 a4bca2cb6d6f5196 Stone{n}"The status of bishop{n}is merely a convenience{n}for my activities here.{p}The Church was created as{n}a Solaris sub-organization{n}and given the task of{n}managing surface dwellers.{p}But over the years the{n}Church started to set{n}up convenient doctrines{n}for itself...{p}It then went on to bring{n}together the ignorant{n}masses, and created a god{n}for them to believe in.{p}Then, the Church even{n}went so far as to plot{n}a separation from its{n}creator, Solaris.{p}So Solaris had no choice{n}but to eliminate all those{n}who defied our rule and lit{n}the fire of rebellion.{p}The ones prepared as the{n}'eliminators' were{wait 5}...{wait 10}{n}the Etones.{p}'The atoners of sin',{wait 5} the{n}organization I established{n}within the Church.{p}Ostensibly, their aim was{n}to eliminate the Verus,{wait 5}{n}the revenants that run{n}rampant on the surface.{p}But{wait 10} that was not their{n}primary objective.{p}Behind the scenes, we'd{n}also selected suitable{n}candidates like Verlaine{n}and the others...{p}They were responsible for{n}observing{wait 10} and eliminating{wait 10}{n}any corrupt people who{n}appeared within the Church.{p}For you who moved on from{n}the Church early to found{n}your orphanage, there was{n}no chance to learn of this.{p}{wait 5}...{wait 10}Or rather,{wait 5}{n}I just never told you.{wait 20}{n}There was 'another role'{n}I wanted you to perform!"
+f355-0030 d0f330359f8abe47 Billy{n}"Another{wait 10}...{wait 10}role!?"
+f355-0031 daacdc768f997714 Stone{n}"Billy.{wait 20} There are certain{n}things in this world you'd{n}be happier not knowing.{p}For some people,{n}even lies and deceptions{n}can become the truth{p}if they don't know the{n}inner workings of the{n}system, its true form.{p}Indeed, was the system{n}of{wait 5} 'God'{wait 5} and {wait 5}'faith'{n}set up by the Church{n}not held as truth{p}by you and the people{n}of the surface?"
+f355-0032 a1a24514dd7eacaa Billy{n}"Tell me!{wait 15}{n}What 'other role' were{n}you talking about!?{p}Just what did Verlaine{n}mean when he spoke{n}of me{wait 15} 'judging'!?"
+f355-0033 a2751f5186945ca0 Stone{n}"So you want to know?{wait 20}{n}But can you bear the full{n}weight of the truth?{p}Billy, if you can bear{n}that weight, then I'm{n}willing to tell you."
+f355-0034 c7e177cfd20b3f7d Billy{n}"{wait 10}..."
+f355-0035 23aeddf7daeea907 Stone{n}"The purging of the{n}Verus...{p}You believe that to be the{n}salvation of wandering{n}souls,{wait 5} don't you?{p}In truth, it's all just{n}another control system{n}put in place by Solaris.{p}Those deeds that you{n}believe to be 'salvation'{n}are,{wait 10} in reality—"
+f355-0036 20db3ffd2ddf8f17 Jesse{n}"You've got a nerve,{n}calling that other{n}guy a chatterbox."
+f355-0037 4508984b78ac8d84 Jesse{n}"You haven't changed{n}at all since then...{wait 20}{n}have you, Stein!?"
+f355-0039 f17612740c3f00b1 Stone{n}"Now there's a name that{n}I miss{wait 5}...{wait 5} Whenever I hear{n}that name, the sweet pain{p}of 'the scars engraved{n}upon this body' come{n}flooding back to me.{p}You know what I mean,{n}Jesiah?"
+f355-0040 d73736dd5b5fb364 Jesse{n}"Heh, and your brain{n}matter is still as{n}messed up as ever.{p}{speed 3}Just answer him!{wait 25}{n}{speed 0}Why d'you have to{n}'go about it in{n}this tedious way'!?"
+f355-0041 7667b12f4d43d6ce Stone{n}"That's hardly even{n}worth answering.{p}For me, these moments{n}are 'what make life{n}worth living'.{p}Of course, that includes{n}watching your agonizing{n}death.{p}I feel the urge to slice{n}up your body right where{n}you stand, and drag out{n}your innards...{p}But I can't actually{n}have that luxury.{n}I have a matter to{n}attend to elsewhere.{p}That 'duty' takes priority{n}over any business I have{n}with you. I can't be{n}wasting my time here."
+f355-0042 d3e959816b6d6550 Stone{n}"It won't do for me to{n}be waylaid by insects{n}like you."
+f355-0044 0346ab32e9c7b496 Stone{n}"Now, if you'll excuse me.{p}Oh and Billy — if you have{n}something you wish to{n}discuss, we can talk later.{n}I'll be waiting for you."
+f355-0045 08a11b229e6df1ee I told you so back then,{n}didn't I?{wait 20}{n}You belong with us{wait 5}...
+f355-0046 35068c20131f0aa9 Verlaine{n}"You've been corrupted,{n}Billy.{p}You went forth from the{n}Church, and by keeping the{n}company of those who have{n}no faith of any kind at all,{p}you became blind to those{n}who're truly unclean.{p}I really didn't expect it of{n}you... You who once lived{n}only for your faith.{wait 30} You{n}should've done as we did.{p}But fear not, Billy.{wait 20}{n}I shall cleanse you.{wait 20}{n}You'll live on within me.{wait 20}{n}You'll become one with{n}me in death{wait 10}..."{wait 10}
+f355-0048 92fe2729f2198ee6 Verlaine{n}"That's right{wait 5}...{wait 5}{n}We are servants{n}of the Bishop.{p}Our mission is to pass{n}judgment on fallen{n}priests and sinners and{n}make them repent."
+f355-0049 4d297cd90e2c6f22 Verlaine{n}"The Pontiff and his{n}brethren deserve to die!{p}The desire to renounce their{n}'duties of the Church' as{n}assigned by Solaris, and{n}pursue world domination...{p}They sentenced themselves{n}to death the moment such a{n}desire took hold of them.{p}And that's not all.{p}Saving orphans and{n}refugees{wait 5}...{wait 5} That may{n}seem like charity.{p}But in truth the little boys{n}and girls kept here were{n}used as a means to satisfy{n}the desires of the Pontiff{n}and bishops.{p}Indulging in selfish{n}desires...{wait 20} This is conduct{n}'unbecoming of churchmen'!{p}Such corrupt wretches aren't{n}fit to be representatives{n}of God. That's why we've{n}purged them and made them{n}atone for their sins.{p}These are the Bishop's{n}orders!"
+f355-0050 d655754cbad045e4 Verlaine{n}"God?{wait 20}{n}Where would you say{n}this 'God' is?{p}Don't you know by now?{n}How the Church came about?{p}It was an organization{n}created by Solaris in the{n}distant past, solely for the{n}purpose of managing ignorant{n}surface dwellers.{p}Its doctrines are{n}fabrications, made for{n}controlling the masses.{p}The Church used the two{n}sweet fruits of 'faith'{n}and 'technology' well,{p}skillfully manipulating{n}surface-world affairs{n}and the people's zeal.{p}Thus, the manipulated{n}populace just repeated{n}their wars endlessly.{p}Eventually, battle data{n}on 'humans' and 'weapons'{n}gleaned from these wars{n}was sent to the Solaris{n}homeland...{p}and analyzed to aid in {n}ruling the entire Earth.{p}These intentionally{n}perpetuated wars gave{n}rise to all kinds of{n}psychological problems.{p}But faith in God —{wait 20}{n}salvation — was used as a{n}cushion to soften the blow.{p}It was a well-thought-out{n}system.{wait 20} But the choice of{n}managers was extremely poor.{p}Did you think that if you{n}played the devout servant{n}you would surely be{n}answered by an almighty{n}'God' someday?{p}Can't you see that such{n}a divine being simply 'never{n}existed to begin with'?{p}What's more, though you{n}don't seem to realize it,{n}is that you yourself were{n}'judging the sinners' as{n}much as we were!"
+f355-0051 52cc9c4b3963c743 Verlaine{n}"That's right.{wait 20}{n}Daily you've been{n}dirtying your hands{n}as an accomplice—"
+f356-0000 12aca5a9f86b912d Elly{n}"It's a nasty wound. It'd{n}be too dangerous to leave{n}her in this condition."
+f356-0001 99472bda9f75f5b9 Elly{n}"Let's contact the{n}Yggdrasil and get{n}help to come."
+f356-0002 6787eeb229dcf3a9 Elly{n}"Hang in there, now!{wait 30}{n}Don't worry.{n}We came here to help you!"
+f356-0003 9d4cdca1f5be582d Elly{n}"'Shevat'!?{wait 30} Is{n}this person...{wait 30}{n}from Shevat!?"
+f356-0004 79492fd7eabde740 Citan{n}"That is a terrible{n}wound.{p}If we do not do{n}something, her life{n}will be in danger."
+f356-0005 0d33225c6309059d Citan{n}"Let us contact the{n}Yggdrasil to request{n}assistance."
+f356-0006 c391416afac44eb0 Citan{n}"Hang in there, now!{wait 30}{n}Do not worry.{n}We are on your side!"
+f356-0007 148d5c1e4f0902f2 Citan{n}"'Shevat'!?{wait 30}{n}You are from{wait 30}{n}Shevat!?"
+f356-0008 c56f1e7641169f2c Bart{n}"That's a nasty wound.{n}If we don't help her{n}she's a goner!"
+f356-0009 97ce314893cf006c Bart{n}"Let's call my crew on{n}the Ygg and get them to{n}come and help."
+f356-0010 1d7081150adf113e Bart{n}"Ahoy! Try to keep your{n}eyes open!{p}We're going to get you{n}out of here, okay?"
+f356-0011 9c16b9cf46fbcb82 Bart{n}"'Shevat'!?{wait 30}{n}Hey...did she just{n}say 'Shevat'!?"
+f356-0012 da777ed3c77b1090 Billy{n}"Are you alright!?{n}Snap out of it!"
+f356-0013 58cc7fb3d636e408 Billy{n}"This person will be fine{n}now we've contacted the{n}Yggdrasil.{p}Let's hurry on."
+f356-0014 276892de9473090d Rico{n}"It's a real bad wound."
+f356-0015 0d7ed041625a3753 Rico{n}"Let's get the Yggdrasil{n}to come and help her."
+f356-0016 b056ab3736504975 Rico{n}"Hey you!{n}Stay with us, here! {wait 30}{n}We're on your side!"
+f356-0017 ac76b59fc01669e1 Rico{n}"'Shevat'!?{wait 30}{n}Is she one of the{n}people of Shevat?"
+f356-0020 ae1e2fcce0e9b257 {slow 2}I...{wait 5}...{wait 10}don't...{wait 10}know...{wait 5}...{wait 10}{n}anything...{wait 5}...{wait 5}...{wait 10}{p}I won't...{wait 5}...{wait 5}say...{wait 5}...{wait 10}{n}{slow 3}any...{wait 10}more...
+f356-0022 eae4cea2f8ed1466 {slow 3}Shev{wait 5}...{wait 10}at...{p}{slow 3}Got{wait 5}...{wait 5}to{wait 5}...{wait 5}contact{wait 5}...{wait 10}{n}She{wait 5}...{wait 5}vat{wait 5}...{wait 5}
+f356-0024 0d26efa1167d79df Big Joe{n}"Oh, my best{n}buddies!"
+f359-0000 c1247ab668f40dbe Elly{n}"Could it be...?"
+f359-0001 c16a7fac387e80cb Elly{n}"{wait 5}...{wait 10}On the contrary.{wait 15}{n}This IS Solaris{n}equipment!"
+f359-0002 8d0400f801033084 Elly{n}"Is it such a surprise?{p}Solaris is the only place{n}in the whole world where{n}such advanced equipment{n}could be made."
+f359-0003 6d5ca697e83fb322 Elly{n}"Look, here!{p}The destinations of all{n}resources collected by{n}the Church through{n}trade with each area...{p}Everything is being{n}sent on to the Solaris{n}homeland!"
+f359-0005 51d8682b9a3489e7 Elly{n}"This is in the Solarian{n}language, and it's been{n}encrypted too.{p}Hold on{wait 5}...{wait 5}...{wait 5}{n}Ummm{wait 5}...{wait 5}...{wait 5}{n}What is this{wait 5}...{wait 5}...?{wait 5}{n}...{wait 5}...{wait 5}...{wait 5}...{wait 5}..."
+f359-0006 63a08b26f52b31e7 Elly{n}"I said hold on!{n}It's hard to translate{n}this stuff!{p}Ummm{wait 5}...{wait 5}{n}'{wait 5}...{wait 5}Lambs{wait 5}...{wait 5}{n}Great War{wait 5}...{wait 5}Collapse{wait 5}...{wait 5}{n}re-education{wait 5}...{p}...{wait 5}postwar rehab plan{wait 5}...{wait 5}{n}{wait 5}...{wait 5}based on{wait 5}...{wait 5}{n}{wait 5}...{wait 5}schedule for building{n}Gate foundations{wait 5}...{p}Lambs{wait 5}...{wait 5}02-04 to Ignis{n}{wait 5}...{wait 5}05-08 to Aqvi{wait 5}...{wait 5}{n}11-16{wait 5} to be uniformly{n}distributed{wait 5}...{p}Carry out{wait 5}...{wait 5}establishment{n}of the Church as an{n}organization{wait 5}...{p}{wait 5}...{wait 5}Supervision to be...{n}by assembly of elders{wait 5}...'{p}Supervision by the Gazel!?{n}The Church is{wait 5}—!?"
+f359-0007 381361e1b0f5ec01 Elly{n}"To summarize,{wait 5}{n}it's like this.{p}500 years ago, a large-{n}scale war between Solaris{n}and the surface took place.{p}It's not clear what the{n}outcome was, but after the{n}war, Solaris feared another{n}surface-dweller revolt{wait 5}...{p}So Solaris built the{n}'Gates',{wait 5} barriers that{n}separate Solaris from{n}the surface world.{p}The surface dwellers in the{n}Gated-off world were made{n}to live as a separate race,{n}which had to be supervised.{p}And so the Church was{n}established to actually{n}carry out that supervision.{p}The Church is controlled{n}by the 'Gazel Ministry',{wait 5}{n}Solaris' highest{n}governmental body.{p}Basically,{wait 5} this means the{n}Church is a front,{wait 5} or{n}subsidiary organization,{wait 5}{n}working for Solaris!{p}Excavation findings, goods{n}and natural resources from{n}the surface are transported{n}to Solaris by the Church.{p}This also includes 'human{n}resources', or people used{n}for manual labor and so on.{p}This place{wait 10} is the window{n}between the planet's{n}surface and Solaris up{n}there in the skies above.{p}According to these records,{n}there's been an enormous{n}amount of goods and people{n}transferred to Solaris!"
+f359-0008 7ec005bfa53dd61a Elly{n}"The rest is mainly about{n}population distribution{n}and excavation records.{p}The amount of detailed{n}information about races and{n}their biological data is{n}worrying, though..."
+f359-0009 10d31eafa0099eb1 Elly{n}"Solaris certainly has{n}accommodation for{n}surface dwellers.{p}The Third Class-citizen{n}level.{p}People of various races{n}from the surface are{n}regularly sent there{n}as manual labor."
+f359-0010 106a395b7b99d715 Elly{n}"So, d'you think Solaris{n}is responsible for this{n}attack on the Church?"
+f359-0011 100668b6c473bfb0 Elly{n}"We're going to{n}go on further...{p}Bart and Rico, could{n}you please accompany{n}that person from Shevat{n}to the Yggdrasil?"
+f359-0012 cc9d435139733f14 Elly{n}"We're going to{n}go on further...{p}Citan and Rico, could{n}you please accompany{n}that person from Shevat{n}to the Yggdrasil?"
+f359-0013 3851cf5454692960 Elly{n}"We're going to{n}go on further...{p}Citan and Bart, could{n}you please accompany{n}that person from Shevat{n}to the Yggdrasil?"
+f359-0017 89abf311935ba16d Elly{n}"While I was checking{n}the database I found{n}out something...{p}It seems there's a person{n}from Shevat being held{n}here for some reason by{n}the Church.{p}We're going further on...{p}Bart and Rico, can you{n}please rescue that person{n}and accompany them to the{n}Yggdrasil?"
+f359-0018 39ce8ff379e35659 Elly{n}"While I was checking{n}the database I found{n}out something...{p}It seems there's a person{n}from Shevat being held{n}here for some reason by{n}the Church.{p}We're going further on...{p}Citan and Rico, can you{n}please rescue that person{n}and accompany them to the{n}Yggdrasil?"
+f359-0019 a38bba12fd926a6d Elly{n}"While I was checking{n}the database I found{n}out something...{p}It seems there's a person{n}from Shevat being held{n}here for some reason by{n}the Church.{p}We're going further on...{p}Citan and Bart, can you{n}please rescue that person{n}and accompany them to the{n}Yggdrasil?"
+f359-0020 f6aef77efe6c7155 Elly{n}"While I was checking{n}the database I found{n}out something...{p}It seems there's a person{n}from Shevat being held{n}here for some reason by{n}the Church.{p}We're going further on...{p}Bart and Rico, can you{n}please rescue that person{n}and accompany them to the{n}Yggdrasil?"
+f359-0023 b49b47f381c87558 Citan{n}"Could it be...?"
+f359-0024 97614ae66ee044a3 Citan{n}"I say...{wait 5} A facility{n}like this would be hard{n}to find even in Solaris.{p}Why would the Church{n}have such a setup?"
+f359-0026 c17f5b34d4726462 Citan{n}"Here is a relatively{n}recent record{wait 5}...{p}It, too, indicates that{n}there has been a large{n}number of people sent{n}to Solaris{wait 5}...{p}The majority of them were{n}people who had come to the{n}Church seeking help or{n}spiritual salvation."
+f359-0029 7f22c0705002a3d4 Citan{n}"The 44th Salvage Plan."
+f359-0030 b23ad3a38b9bbe12 Bart{n}"The 44th Salvage Plan?{p}Isn't that what the{n}Captain of the Tamuz{n}was talking about?"
+f359-0031 3f6d3ff4a8ba01bb Citan{n}"This is the only plan{n}that is not linked to{n}Solaris...{p}It must have been{n}initiated by the Church{n}itself, as a completely{n}independent project.{p}It commenced about...{n}nineteen years ago.{wait 10}{n}Allow me to display{n}the data..."
+f359-0032 66d7237e20ed1675 Citan{n}"So, from this, it appears{n}that under Aqvi lies an{n}ultra-ancient civilization.{p}They have been doing a huge{n}number of test digs and{n}obtained a vast quantity of{n}resources from the ruins.{p}Biological weapons{wait 5}...{wait 5}{n}nuclear weapons{wait 5}...{wait 5}{n}Hmm{wait 5}...{wait 5}I see, so this must{n}be their intention{wait 5}...{p}My assessment of the{n}situation would be that the{n}Church is attempting to{n}break away from Solaris{wait 5}...{p}And once freed from its{n}master,{wait 5} it is likely to{n}attempt{wait 5} world domination{wait 5}{n}on its own."
+f359-0033 2d88923e20362e40 Rico{n}"Attempt a breakaway{wait 5}...{wait 5}and{n}attempt world domination{wait 5}...{wait 5}{n}That's kinda ambitious!"
+f359-0034 aa086b0b04838e10 Citan{n}"Indeed, but looking at how{n}the Church has not reported{n}these results,{p}or even the existence of{n}the site, their true{n}intentions are quite{n}obvious...{p}The Church is planning{n}to revolt by monopolizing{n}this ultra-advanced{n}civilization's resources!{p}Alas, such a ploy would{n}not be uncommon."
+f359-0035 e0aa7dcb26f65696 Citan{n}"Yes, that is probably it.{p}Shall we move along? There{n}could be more to find yet!"
+f359-0037 aa81f5128b37b6d6 Bart{n}"The Church data bank?"
+f359-0038 8948b6dcff7ab9b8 Bart{n}"Anyway, we won't be{n}able to investigate{n}this by ourselves.{p}Let's get everyone{n}here."
+f359-0041 f32acff0805a250d Bart{n}"S-{wait 10}Solaris!?"
+f359-0044 9ac76a5095425f55 Citan{n}"It seems to be a{n}transmission record{n}from somewhere{wait 5}...{p}We might be able to{n}find some clues here.{wait 10}{n}Wait one moment{wait 5}..."
+f359-0045 fb11d02985fd4de3 Citan{n}"Alright...{n}Now I am able to redirect{n}it to the main displays."
+f359-0046 4faf33c6a6738c5c Bart{n}"What the heck is this!?{n}Why's the Church looking{n}into this kinda stuff?{p}What's more,{wait 20}{speed 255} that{n}Shakhan's a bishop!?{speed 0}{p}Wasn't he excommunicated{n}from the Church seventeen{n}years ago!?"
+f359-0047 d33fa090a172d014 Bart{n}"There's a terminal switch{n}over here too{wait 10}...{p}Huh?{n}What's with these letters?{wait 10}{n}I can't read this."
+f359-0050 183d33f3e1ca7261 Bart{n}"What...{wait 20}does{n}this all mean?"
+f359-0052 26d6939e58cc4d9d Billy{n}"Well{wait 15}...{wait 15}umm{wait 15}..."
+f359-0053 1092a13beccf9b54 Bart{n}"Exactly.{wait 10}{n}What do you{n}think, Elly?"
+f359-0054 68be81271016a152 Rico{n}"So the surface is the{n}source of their labor{n}supply."
+f359-0055 da6dacecc490fd2b Billy{n}"Judging from our position,{n}this room is right under{n}the cathedral...{p}Does that mean, perhaps,{n}that this is the Church{n}data bank?"
+f359-0056 1f088f81f1ceba66 Billy{n}"This data bank holds all{n}information concerning the{n}Church.{p}From the past to the{n}present — everything!{wait 10}{n}This facility is strictly{n}off-limits to us.{p}Only the bishop class{n}can even enter this area."
+f359-0057 7501bc39ff3c4a05 Billy{n}"What!?{wait 10} Don't ask me...{wait 10}{n}This is my first time{n}in here{wait 5}..."
+f359-0058 16dd73d702cf9ea7 Billy{n}"B-{wait 5}But why would the{n}Church be sending{n}supplies to Solaris!?"
+f359-0061 9b4b72b5c63592c2 Billy{n}"No{wait 5}...{wait 5}{n}How could{wait 5}...?"
+f359-0062 47654a7864d45f92 Billy{n}"Even if that's all true,{wait 5}{n}who on earth just killed{n}the Church people here,{p}and why!?"
+f359-0063 d4181130e5fe61d9 Billy{n}"The Church{wait 5}...{wait 5}{n}My Church{wait 5}...{wait 5}{n}My faith{wait 5}...{wait 5}"
+f359-0065 52e391483d60dd1b Citan{n}"This is all just{n}speculation based on{n}circumstantial evidence.{p}It would be best to{n}confirm what the truth{n}is with your own eyes."
+f359-0066 285256be51d538ea Billy{n}"B-But the door back{n}there is locked..."
+f359-0068 481b9902e7483036 Rico{n}"Regardless, we won't{n}get anywhere with{n}this by ourselves.{p}Let's go get the rest{n}of the gang."
+f359-0070 d22213df65273fdd Rico{n}"The Church is{n}attacked by someone{n}out of the blue.{p}And in the basement{wait 10}{n}we find a Solarian{n}facility."
+f359-0071 7161f7751316b169 Rico{n}"Let's{n}investigate."
+f359-0072 9c978092a5036017 Rico{n}"Doesn't seem to be the{n}case if he's regularly{n}putting in reports."
+f359-0073 2d6ecdaa3ef641d0 Rico{n}"It's all a front!{p}The Church is really a{n}subsidiary organization{n}of Solaris."
+f359-0074 bef1a297c2335d33 Rico{n}"So it means the Church{n}has been controlling us...{n}Heh.{wait 20} Anything else?"
+f359-0077 7149a17b2171526d Elly{n}"I'm sure of it!{wait 30}{n}This has to be the{n}Church data bank!"
+f359-0079 5e946443193a9883 Elly{n}"Is it such a surprise?{p}Solaris is the only place{n}in the whole world where{n}such advanced equipment{n}could be made."
+f359-0080 6d5ca697e83fb322@cb0505ff3b3c6cf2 Elly{n}"{speed 255}Look, here!{speed 0}{p}The destinations of all{n}resources collected by{n}the Church through{n}trade with each area...{p}Everything is being{n}sent on to the Solaris{n}homeland!"
+f359-0088 fa4ed934f363b65d Elly{n}"You go on ahead.{p}Rico and I will take{n}that person from{n}Shevat back to the{n}Yggdrasil."
+f359-0089 0983a122f14dab3d Elly{n}"You go on ahead.{p}Bart and I will take{n}that person from{n}Shevat back to the{n}Yggdrasil."
+f359-0091 9368eb34b6c84cb7 Elly{n}"You go on ahead.{p}Citan and I will take{n}that person from{n}Shevat back to the{n}Yggdrasil."
+f359-0100 f93bc190e75fc1a3 Citan{n}"If the Church is indeed{n}under the control of{n}Solaris, as we suspect...{p}...then there should be{n}something in here that{n}would prove their{n}connection to each other.{p}We should go on further{n}and see if we can find{n}any more clues."
+f359-0101 b49b47f381c87558@631220a4eb4a9325 Citan{n}"I am sure of it.{wait 30}{n}This has to be the{n}Church data bank."
+f359-0102 5dd8b3f34cf4fff1 Citan{n}"I say...{wait 5} A facility{n}like this would be hard{n}to find even in Solaris.{p}Why would the Church{n}have such a setup?"
+f359-0109 983112873769b3b5 Citan{n}"This is the only plan{n}that is not linked to{n}Solaris...{p}It must have been{n}initiated by the Church{n}itself, as a completely{n}independent project.{p}It commenced about...{n}nineteen years ago.{wait 10}{n}Allow me to display{n}the data..."
+f359-0110 3137e6d1a4a66725 Citan{n}"So, from this, it appears{n}that under Aqvi lies an{n}ultra-ancient civilization.{p}They have been doing a huge{n}number of test digs and{n}obtained a vast quantity of{n}resources from the ruins.{p}Biological weapons{wait 5}...{wait 5}{n}nuclear weapons{wait 5}...{wait 5}{n}Hmm{wait 5}...{wait 5}I see, so this must{n}be their intention{wait 5}...{p}My assessment of the{n}situation would be that the{n}Church is attempting to{n}break away from Solaris{wait 5}...{p}And once freed from its{n}master,{wait 5} it is likely to{n}attempt{wait 5} world domination{wait 5}{n}on its own."
+f359-0111 36d8154604b8b8c8 Rico{n}"Attempt a breakaway{wait 5}...{wait 5}and{n}attempt world domination{wait 5}...{wait 5}{n}That's kinda ambitious!"
+f359-0115 67e0dc120dfd228d Bart{n}"But who would've guess{n}that Solaris was behind{n}the Church?{p}Looks like there's more{n}than meets the eye with{n}this case."
+f359-0116 1ab6b383a24240ea Bart{n}"Yeah, sure seems{n}like it...{wait 10} This is{n}a surprise."
+f359-0124 05aa2b60cc982253 Bart{n}"There's a terminal switch{n}over here too{wait 10}...{p}Huh?{n}What's with these letters?{wait 10}{n}I can't read this."
+f359-0140 a75296403bcaac0c {slow 2}      IGNIS CONFLICT STATUS:{n}37th Arms Provision. Upgrading{n}Av's Gears from level D2 to D3.{n}Maintain Kislev Gears at level D2.{n}Current balance = 4:6...{n}     REPORT BY BISHOP SHAKHAN{n}       OF THE IGNIS DIOCESE:{n}Due to intervention by an{n}unpredictable factor, correction{n}is needed. Operation progress rate{n}down 30%...{done 40}
+f359-0141 a33ffcf35609ceff {slow 2}{wait 5}...{wait 5}Completed investigation of{n}the Zeboim city which sank to the{n}bottom of the sea approximately{n}4000 years ago{wait 5}...{wait 5}{n}After one hundred test digs, the{n}city center has been identified{wait 5}...{wait 5}{n}Excavation scheduled to begin{wait 5}...
+f359-0144 b744fe0bdb86e2b2
+f360-0001 b562fcfe6552e1dc Fei{n}"The Captain and his crew{n}are in danger!{wait 10} They don't{n}know anything about this!"
+f360-0002 3764274f162d6e39 Fei{n}"So the Gate is{n}below that shaft..."
+f360-0004 63be1839c263d2f8 Fei{n}"Let's turn back.{n}It's impossible to get{n}to the Gate from here."
+f360-0005 c9818befb40a7d6d Elly{n}"That Gear is huge!"
+f360-0006 43d201359e9bce37 Elly{n}"Riot Gear?"
+f360-0008 6660973916f5565d Elly{n}"The Captain and the crew{n}are in danger!{wait 10} They don't{n}know about any of this!"
+f360-0009 be6278795bfbff31 Elly{n}"There's a Gate under{n}the shaft."
+f360-0010 da23d8853bbd9fde Elly{n}"...How can we get{n}there...?{n}It's just too far."
+f360-0011 3422dc4489ab9cca Elly{n}"It's impossible to get{n}to the Gate from here.{n}Let's turn back."
+f360-0012 44243edc81543f0d Citan{n}"What? {wait 5}...{wait 5}Oh, yes.{wait 10}{n}{wait 5}...{wait 5}But wait{wait 5}...{wait 10}{n}Then that means{wait 5}..."
+f360-0013 5467a45d8447cc18 Citan{n}"The Tamuz fleet{n}is in danger!{p}They are unaware{n}of all of this!"
+f360-0014 78c0397324713b79 Citan{n}"What?{wait 10}{n}Oh,{wait 10} yes."
+f360-0015 9a00dd3bf202d86b Citan{n}"Yes{wait 5}...{wait 5}most{n}likely{wait 5}...{wait 5}"
+f360-0016 5caf2997612c900f Citan{n}"It does not seem{n}possible to get to{n}the Gate from here.{p}Let us think of{n}some other way."
+f360-0017 cb5637a398ceea5d Citan{n}"...Then, how will we{n}get under the shaft?"
+f360-0018 3a2efa8c7237b586 Citan{n}"The Gate is under{n}the shaft."
+f360-0019 5caf2997612c900f@08f1671917ab2b31 Citan{n}"It does not seem{n}possible to go to{n}the gate from here.{p}Let us think of{n}some other way."
+f360-0021 3a2efa8c7237b586@4be1ec8ef5b95372 Citan{n}"The gate is under{n}the shaft."
+f360-0023 e32ede71d01e6405 Bart{n}"Riot Gear!?{wait 10}{n}What the heck is that?"
+f360-0025 23865ba617086bdf Bart{n}"The Captain and his crew{n}are in danger!{wait 10} They don't{n}know anything about this!"
+f360-0026 76eeb24a02e08a0a Bart{n}"There's the Gate under{n}the shaft in back."
+f360-0027 d8b1cde112b70ca0 Bart{n}"...We made it this far,{n}but how can we get to the{n}Gate from here?"
+f360-0028 d91823839fb22b7f Bart{n}"It's impossible to get{n}to the Gate from here.{n}Let's turn back."
+f360-0029 99163d5716efdfa7 Billy{n}"I think the Yggdrasil can{n}catch up with the Gear.{p}Let's hurry and go help{n}the Tamuz fleet."
+f360-0030 40e0c436612ad040 Billy{n}"...And it seems to{n}be a fair distance to{n}reach the Gate..."
+f360-0031 d155fb09492f60bb Billy{n}"Heading to the Gate from{n}here is unthinkable...{n}Let's find some other way."
+f360-0032 74c5d581486460d3 Billy{n}"I understand there's{n}supposed to be a Gate{n}under the shaft in back."
+f360-0033 e6411d777ee1d4c0 Rico{n}"I've never seen a{n}Gear this huge!"
+f360-0034 ea0f162ab32b5376 Rico{n}"A Gear that big{n}can fly!?"
+f360-0036 3899767048b50b88 Rico{n}"Yeah, the Tamuz fleet is{n}in danger.{wait 10} They're no{n}match for that Gear."
+f360-0037 f8f4046c6440fa05 Rico{n}"So the Gate is under{n}the shaft."
+f360-0038 adc115c4e7cac67c Rico{n}"...And how d'you{n}get to the Gate?"
+f360-0040 09fdd30f5097b62d Emeralda{n}"The Gate is under{n}the shaft..."
+f360-0041 f97e26079ca4faf0 Emeralda{n}"...How can we get to the{n}Gate? It seems too far{n}from here?"
+f360-0042 07948148815017bb Emeralda{n}"We must find some other{n}way to get to the Gate."
+f360-0044 d34e2612ec6ecf70 Emeralda{n}"...How can we get to{n}the Gate? It seems too{n}far from here?"
+f360-0046 af1f106804aa8252 {name 7}{n}"So the Gate is{n}under the shaft."
+f360-0047 3bd5175892f434dc {name 7}{n}"But how can we{n}get chu there?"
+f360-0048 486147bd54c3c489 {name 7}{n}"I guess it's impossible{n}chu get chu the Gate{n}from here."
+f360-0049 3eb54d2072b50122 Maria{n}"So the gate is under{n}the shaft?"
+f360-0050 55598b180242a662 Maria{n}"But it may be difficult{n}to get there from here..."
+f360-0051 d1d7a2793e44593a Maria{n}"We must find some other{n}way to get to the Gate..."
+f360-0052 014b4fe1c4e77f59 Jesse{n}"Looks like we{n}just missed him.{wait 30}{n}Our pal Stein is..."
+f360-0053 2430577831511933 Jesse{n}"...there!"
+f360-0054 7d199e5574868cc4 Jesse{n}"The Solaris riot Gear,{wait 10}{n}Arc-en-Ciel.{wait 10} That was it,{n}right, Hyuga?"
+f360-0055 ac669ca9c5e87863 Jesse{n}"The bigger the{n}machine, the less{n}maneuverable it is,{p}so it won't be a problem{n}if you're ridin' in your{n}Gears.{p}But conversely,{n}the firepower of that{n}thing is phenomenal.{p}If it goes up against a{n}bigger target like a ship,{n}BLAM! There'd be no{n}contest.{p}Ain't that right, Hyuga?"
+f360-0056 8eba1b9197a2a0fb Jesse{n}"See what{n}I'm sayin'?"
+f360-0057 f20106f7b8652e4f Jesse{n}"The Solaris riot{n}Gear,{wait 10} Arc-en-Ciel."
+f361-0000 1027348ea711a033 Citan{n}"The Solaris homeland{n}army...{wait 32} Why...here{wait 10} in{n}particular...?{p}Well, anyway, let us{n}go down."
+f361-0001 dad146eefa2bf08a Elly{n}"I heard there's nothing{n}at this excavation site."
+f361-0002 0b67e478e93ead61 Bart{n}"Citan, isn't this place{n}empty?{wait 10} Why's Solaris{n}coming here?"
+f361-0003 015bcfff411565ab Billy{n}"Citan, what{n}could Solaris'{n}objective be?"
+f361-0004 45378606a8b7db6f Rico{n}"Hey Citan, I heard{n}there's nothin' here.{p}Let's turn back and leave{n}Solaris or whoever to it.{n}I'm not into dark,{n}cramped places..."
+f361-0007 8ed77ab9a28f4976 No entry.{n}Church personnel only.
+f363-0000 06c9da55da112c7b Bart{n}"Damn...just in time.{n}That guy and Wiseman...{n}They're really going at it.{p}I can feel the Ether power{n}all the way up here!"
+f363-0001 883e79d93e3e0b97 Billy{n}"Wow...just in time.{n}That man and Wiseman...{p}They're really fighting{n}it out.{n}The Ether power reaches{n}all the way up here..."
+f363-0002 656c81c600083749 Rico{n}"Damn...just in time. That{n}guy in red and Wiseman{n}are really going at it.{p}The Ether power's blowing {n}all the way up here..."
+f364-0000 13a3f9f8aefcc1aa Myyah{n}"...Did you notice?{n}His Gear is trying to{n}awaken once again.{p}When the time is{n}right, he himself{n}will awaken also."
+f364-0001 b3ea8cc8cd0b0ae7 Myyah{n}"His friends are heading {n}for Zeboim. A place sealed{n}up for 4000 years.{p}You know what's there {n}better than anyone,{n}don't you?{p}He's probably not going{n}to hand it over to anyone.{p}But it's something we{n}both need. You know{n}what I mean?"
+f366-0000 765c6c6f41eccf0a Karellen{n}"Retrieve Lambs 03, 05{n}and 11, whether damaged{n}or undamaged.{p}Other than that,{n}eliminate the rest{n}of the trash.{p}Use the test subjects,{n}Verus, for retrieval{n}and elimination."
+f366-0001 22c9e943b6ef296d Karellen{n}"I see...{p}For 500 years I have{n}searched for{wait 10} 'it'...{n}This should be most{n}interesting."
+f366-0002 93a0e4817629e307 Karellen, a number of{n}ships have avoided being{n}vaporized.{n}What should we do?
+f366-0003 c50acd0b08715767 Cleanup is at 80%.{n}Currently, our heading{n}is clear.
+f366-0004 662d423c72837e91 Releasing the Verus.
+f366-0005 eaa8a7ca2e2efb28 Main gun, 20 until the{n}energy is recharged.{p}Engineering, ready for a{n}full demonstration. Main{n}ship, military units are{n}on standby.
+f366-0006 b535f1edc9e4332a We've confirmed the marker{n}location of Stein.{p}Of the 130 research and{n}excavation sites, it's the{n}one on the southernmost edge.
+f368-0000 7654de68abfc524e Citan{n}"Rather strict airlock{n}and scanning equipment...{p}It does not appear to{n}be operating now.{p}...Maybe it was not the{n}inside of the building{n}they wanted to preserve,{wait 10}{n}but the outside..."
+f368-0001 68ea44e05a75ca61 Bart{n}"D-{wait 5}Don't scare{n}me, Doc.{p}Are you saying{n}there's poison gas or{n}even nuclear fuel?"
+f368-0002 d16e00d890e6984f Billy{n}"What a heavily{n}locked-down isolation{n}facility.{p}Could it be a{n}hospital? But the city{n}outside doesn't look{n}all that polluted..."
+f368-0003 271306a0486e15e4 Rico{n}"Some stuff kinda reminds{n}me of the crappy Central{n}District in Noatun, but...{p}Seems like a bunch of{n}clean freaks lived in{n}here."
+f369-0000 9d728ccb768359e3 Elly{n}"Oh...!"{done 40}
+f369-0001 8fb4997cd1d7ddd0 Elly{n}"Y-Yes...{n}...I wonder why...?{p}It's terribly lonely...{n}and nostalgic."
+f369-0002 7fad34f65b9de1dc Citan{n}"Elly...{n}Do you recognize{n}something?"
+f369-0003 37c7d26f8a36562d {speed 255}Connection to the{n}database terminated{n}unexpectedly.{p}If this problem persists,{n}please contact the system{n}administrator.
+f369-0004 eff0b0371a6df8a1 {speed 255}Safety of nanoreactor{n}interior confirmed.{n}Please reset{n}emergency status.
+f369-0005 11cfb48ae03aced1 {speed 255}Reset emergency{n}status?{n}     Reset{n}     Cancel
+f369-0006 da1011b9e23a234e {speed 255}Please wait.{wait 32}..{wait 32}.{wait 32}..{wait 32}{n}Reset complete.{n}Emergency status{n}normal at this time.
+f369-0007 38858835a6a618c0 {speed 255}Failure to reset the{n}emergency status will{n}prevent use of the main{n}interior lab facilities.
+f369-0008 dbf6048386e6d78d {speed 255}- Emergency level 5 -{p}Access denied to all{n}main interior lab{n}databases at this time.
+f369-0009 c80adcb4d892bbb4 {speed 255}- Emergency level 5 -{p}Central nanoreactor{n}section under quarantine{n}at this time.
+f372-0000 b15c1ed19d395246 Elly{n}"What a strange{n}building...{p}It's like it's{n}deliberately making{n}us take a detour."
+f372-0001 c15107ac62777ec4 Elly{n}"To{wait 10} seal something..."
+f372-0002 f857244479e721ab Citan{n}"...Generally speaking,{p}labyrinths are not{n}made to defend against{n}invaders, but to seal{n}something in."
+f372-0003 72fd725b61d578a4 Bart{n}"...This is one weird{n}building...{p}Airlocks, scanners,{n}corridors that twist{n}and turn. And that's it.{p}...Seems whoever built{n}it didn't want people{n}getting very far in...{p}Kind of an empty,{n}fleeting dream now{n}it's been abandoned."
+f372-0004 4821906da3b01089 Bart{n}"...*shudder*...{n}Doc, don't scare me, man!{p}What're we gonna{n}find further in?"
+f372-0005 16164055aa82f8f2 Billy{n}"What a troublesome{n}building... Like it's{n}turning away outsiders."
+f372-0006 2207089c9bfb05fe Billy{n}"Not to 'keep something{n}out', but to 'keep{n}something in'...{p}I wonder what that{n}'something' is?"
+f372-0007 21d270ece3a46d8e Rico{n}"...Endless walls{n}and stairs wastin'{n}our time.{p}Like we're bein'{n}refused entry."
+f373-0000 088f16b9ac1d0598 {speed 255}Connection to the{n}database terminated{n}unexpectedly.{p}If this problem persists,{n}please contact the system{n}administrator.
+f373-0003 9c37f19030ee9cd2 {speed 255}Please wait.{wait 32}..{wait 32}.{wait 32}..{wait 32}{n}Reset complete.{n}Emergency status{n}normal at this time.
+f373-0006 a359e04807fdac0c {speed 255}- Emergency level 5 -{p}Central nanoreactor{n}section under quarantine{n}at this time.
+f373-0007 2aa679f99b172a2f {speed 255}Connection to the{n}database terminated{n}unexpectedly.{p}If this problem persists,{n}please contact the system{n}administrator.
+f373-0011 e144f4224f4f8691 {speed 255}Failure to reset the{n}emergency status will{n}prevent use of the main{n}interior lab facilities.
+f375-0000 be0dee05ad05a5be {speed 255}Please reset the{n}emergency status at{n}the nearest terminal.
+f375-0001 7f2d3b97e9c767f7 {speed 255}- Emergency level 5 -{p}{speed 255}The emergency button of the{n}reactor interior was pushed{n}34999999 hours ago.{p}There is danger of{n}nano contamination{n}beyond this point.{p}{speed 255}Before entry, please{n}be sure to confirm safety{n}by executing a manual scan.{p}{speed 255}After confirming, please{n}reset the emergency status{n}at the nearest terminal.
+f375-0002 7fe3e9bc4a70e9ff {speed 255}Execute manual scan?{n}     Execute{n}     Cancel
+f375-0003 85cd1bd5f85cdae7 {speed 255}Please wait.{wait 32}..{wait 32}.{wait 32}...{wait 32}..{wait 32}..{wait 32}{n}Scan complete.{n}Nano contamination{n}negative at this time.{p}{speed 255}You can now gain entry{n}by resetting the{n}emergency status at{n}the nearest terminal.
+f376-0000 3cebca07ab46d1ea Citan{n}"This floor seems{n}to be fully{n}operational."
+f376-0001 7dc6d2930b7cd789 Equalizing atmospheric{n}pressure. Please wait.{done 50}
+f376-0002 8d363f2ecd473314 Equalization{n}complete.{done 32}
+f376-0003 0ac5a03dbf041200 Decompression{n}in progress.{n}Please wait.{done 50}
+f378-0000 0c98e4badfb4974e Elly{n}"'Oh vessel for a new soul!{n}Peace be upon that soul who{n}resideth in you.'"
+f378-0002 dcaaa1b1236274b0 Citan{n}"...{wait 90}To do anything,{n}it seems we need{n}a password..."
+f378-0003 b157e8fb9b6bb0c4 Citan{n}"...It is well hidden...{wait 32}{n}in the data gaps, but...{p}Oh... ...'flee'...?{wait 32}{n}...'of its own will'...?{wait 32}{n}What is this?"
+f378-0004 c0b41747bea6176e Citan{n}"...{wait 90}Is this...{n}a computer{n}gone haywire?{p}No, an analog{n}of a lifeform...{p}No, rather...{n}A lifeform{n}unto itself..."
+f379-0000 3f889ad5f841b0db Citan{n}"!{wait 10}{n}Elly!"
+f379-0001 0f92886fa6aabfd0 Citan{n}"Blood...?{n}The stain certainly{n}looks like blood...{p}And this...intense heat...{n}Or is it radiation?{p}It is surely a sign that{n}some kind of emergency{n}sterilization system{n}was activated..."
+f379-0003 d14b0dda5d0ad40a Citan{n}"Wh-{wait 5}What{n}the...?"
+f379-0004 edabdfcaec4f5a82 Citan{n}"This girl appears to be an{n}artificial lifeform created{n}in this reactor core.{p}I would guess that she has{n}been reassembled within the{n}reactor based on a sequence{p}from the database in that{n}control room over there.{n}The child's body is most{n}likely—"
+f379-0005 7218cbe0d476b441 Citan{n}"Stop right there!!"{done 20}
+f379-0006 825cfa8678bfb8ae Citan{n}"So,{wait 10} even that{n}conversation was{n}calculated..."
+f379-0007 e11e6b7126e3129a Citan{n}"...Unfortunately,{n}it seems we may have{n}helped you out."
+f379-0008 c1dc0d69d896b527 Citan{n}"What do you plan to{n}do with this child?{n}What exactly is she?"
+f379-0009 ed7f88695f1e41c8 Citan{n}"'Salvation'?{p}A fine word, but...when{n}it comes from you people{n}it has the distinct reek{n}of blood."
+f379-0010 534ab19a8272722c Citan{n}"Be careful!!{wait 10}{n}They may look friendly,{n}but they are Elements!{p}Underestimate them{n}and it will cost you{n}dearly!"
+f379-0011 e7490dd9ee839af8 Elly{n}"...Blood...{wait 63}{n}A bloodstain...{wait 45}{n}My...{wait 45}blood...{p}There was no pain.{n}Just...coldness.{n}Sadness..."
+f379-0012 55abb5736b861356 Elly{n}"That child has been{n}here in solitude for{n}all this time..."
+f379-0013 727dedce95b70ead Elly{n}"...Be careful!!{n}The Elements are direct{n}subordinates of Ramsus...{p}They may look friendly,{n}but their battle prowess{n}is incredible."
+f379-0014 7d9ec9647e21a1eb Elly{n}"No, it wasn't at all!{n}Which is what makes{n}them so scary!"
+f379-0016 18583a02ab615a95 Bart{n}"Citan...what...is this?{n}No organic tissue could{n}regenerate this fast."
+f379-0017 cbcb3a553cc2e04b Bart{n}"What the...?{n}Don't go mouthing off!{n}Get outta my way!"
+f379-0018 e33b18e41b106103 Bart{n}"...{wait 45}{n}We doing this{n}or not...?"
+f379-0019 a57a14fc934e7b95 Billy{n}"Citan...{wait 10}{n}Is this girl...?{p}How did she suddenly{n}take human form...?"
+f379-0020 e9a54f9ed0cc74b8 Billy{n}"Who in the heavens...!?{p}We don't have time{n}to waste keeping you{n}company!"
+f379-0023 ab0552fc810432c4 Billy{n}"Righteous?{n}I no longer believe{n}that you are so.{p}You who tries to eliminate{n}surface dwellers and{n}members of the Church,{p}just because they don't{n}conform to your personal{n}ideals...{n}Such deeds are—"
+f379-0024 aed1eb864dda18ee Billy{n}"...There's something{n}very wrong with that.{p}Everyone should have an{n}equal chance of attaining{n}salvation through faith."
+f379-0026 1a634196bc89b15f Billy{n}"Be it for salvation{n}or otherwise,{p}just what're you going{n}to do with this girl!?{n}I simply cannot believe{n}your deeds are honorable.{p}Bishop...{n}I'm sorry, but...I will{n}not be a part of what{n}you've set your mind to."
+f379-0027 3973b8b27ade8f82 Rico{n}"What's with{n}this thing?{p}Even we demihumans{n}can't regenerate{n}at that speed."
+f379-0028 e73895fb73db43c7 Rico{n}"Buncha nonsense...{p}You really wanna fight?{n}I'd prefer it if you'd{n}just move outta the way."
+f379-0034 325ba7e5064438c0 Stone{n}"—composed of{n}molecular-scale{n}autonomous machines...{p}In other words, a colony{n}of what're called{n}'nanomachines'."
+f379-0035 50c4ab7b9e9d4adb Stone{n}"I'll be taking that{n}nanomachine colony{n}with me, thank you...{p}For it is the one being,{n}the key factor, that will{n}lead us to God's grace{p}and free humanity{n}from its yoke."
+f379-0036 62803bf1cced828c Stone{n}"Now, if you would."
+f379-0037 4493794e10981ef2 Stone{n}"Ah, Brother Billy.{n}You're here too.{n}I can keep this brief.{p}You'll understand,{n}won't you?{p}This nanomachine colony{n}is a being that must be{n}entrusted to the righteous.{p}It is to become the{n}salvation of humankind."
+f379-0038 400a4ab6995b81aa Stone{n}"Is there a problem with{n}eliminating those unfit{n}to receive salvation?{p}Why, isn't faith itself{n}the expectation that{n}'only the chosen will be{n}saved'?"
+f379-0039 a8b110828241079a Stone{n}"Are you saying that you{n}could save all humankind?{p}If Karellen uses the{n}nanomachine colony, at{n}least we chosen ones{n}will be saved.{p}Whereas none of you know{n}how to use it. Nobody in{n}this world would be saved.{p}Could you accept that{n}responsibility for our{n}entire human race?"
+f379-0040 879cb9aba56a4221 Stone{n}"Right now, my job is to{n}bring that nanomachine{n}colony back to Karellen.{p}Unlike the Church, my{n}quarry is not the ancient{n}weapons that lie in the{n}city ruins.{p}I don't think your{n}interests are in{n}conflict with our own."
+f379-0041 ae46cd7fee1e12b6 Stone{n}"I see that I couldn't{n}make you understand...{wait 32}{n}Such a pity...{p}But I don't have any more{n}time to waste convincing{n}you. Please excuse me, as{n}I must hurry on ahead."
+f379-0043 9389501b5673d4ff Stone{n}"Throne! Seraphita!{n}Buy me as much time{n}as possible!"
+f379-0044 82f79b751921d530 Stone{n}"Indeed you have.{n}I'm hopeless{n}with machines."
+f379-0045 41ebe97f955f0ffb Stone{n}"Actually, Karellen{n}hasn't told me very{n}much, either.{p}Only that it's the{n}'salvation of humankind'.{p}Of course, I wouldn't{n}tell you even if I{n}knew..."
+f379-0047 cac3fe39faff2ea7 Throne{n}"We know, we know!{n}Stop ordering us{n}around, already!"
+f379-0048 4aa1fd4895de6680 Throne{n}"Right.{p}It's not like these{n}orders even came{n}from Ramsus, anyway.{p}Seriously,{n}escort duty{n}for some relic?"
+f379-0049 14d6f21315d4cfa1 Throne{n}"Well, that's how it is,{n}folks... It'll help us if{n}you'd hurry up and lose."
+f379-0050 fb50d53d58652fa3 Throne{n}"Well, excuuuuse us!{n}But we can't let you go{n}just yet...{p}We really don't care much{n}about Karellen, but if we{n}do a crappy job it'll{n}make Ramsus look bad.{p}And thanks to you fools{n}so kindly reviving her{n}for us,{p}we can get this mission{n}over with sooner than{n}we thought."
+f379-0051 0e6dfdf799d212b5 Throne{n}"S-{wait 5}Sera...{n}Don't tell them that!{p}Just as I was building{n}things up to make us sound{n}psychologically superior{n}to them! Damn..."
+f379-0052 3a3ca4b93698a9be Throne{n}"That's Positronic Photon{n}Brain, you idiot!{p}'Gin & Tonic Futon'...?{n}You make it sound like I'm{n}a sleepy drunk!{p}(It's already bad enough{n}as it is... 'Positronic{n}Photon Brain'...{p}That's bound to get us{n}into trouble with the{n}makers of 'Star Trech'!)"
+f379-0053 6ca24f64f7501ba3 Throne{n}"Oh!! Sorry."
+f379-0054 23687e8a46f4a330 Throne{n}"That's{n}right!!"
+f379-0055 ad0be76474b8feee Throne{n}"Seraphita!!{n}Enough already!{p}We played our{n}part!!{n}Let's pull out!!"
+f379-0056 e03af14b8f6e1f9d Seraphita{n}"Hey, Throne. Let's hurry{n}up and get this over with{n}so we can get outta here!{p}I don't like dark places!"
+f379-0057 a550b9e887d84712 Seraphita{n}"Hey! Throne!{n}It's so cute{wait 16}...{p}But on second thought,{n}it's creepy!!"
+f379-0058 9c8648659c98b531 Seraphita{n}"Yeah, we didn't know how{n}to operate that machinery,{n}so we were all flustered!{p}Thank you very much{n}for your kind help!"
+f379-0059 d9e9ea085c923391 Seraphita{n}"Aww!{n}...But...{p}When people do you a{n}kindness you should thank{n}them properly. That's what{n}Grandma always said..."
+f379-0060 2e0500dd9ffc7e92 Seraphita{n}"But I'm impressed, Throne!{n}'Psychologically superior'?{p}Your Gin & Tonic Futon{n}Brain cyborg implants{n}sure make you smart!!"
+f379-0062 b0db80187793448d Seraphita{n}"...'Friendly'?{p}Throne, you're{n}gonna let that{n}part slide?"
+f380-0000 7ea5ed87ed439ee5 ...We...won't just...{n}hand her over...to{n}them...{wait 10}alright...?{done 150}
+f380-0001 ac6eeb559c485798 ...L-{wait 5}Live...!{done 150}
+f380-0002 e8bfcb715c0fcaec ...An accursed existence,{wait 5}{n}bound to the earth...{done 84}
+f380-0003 0cce0642f92ed8db ...Oh vessel for a new soul{wait 5}{n}to tear away that{wait 5} 'yoke'...{done 84}
+f380-0005 7fc20d8bea08a095 ...!{n}  ...!{n}   ...! No! Stop!{done 150}
+f381-0001 23cb990c41677c70 ...You just go to sleep.{done 45}
+f383-0000 c1e198288677bfac Elly{n}"That Gear..."{done 40}
+f383-0001 b74d5a0cc3c675dc Elly{n}"...I know...{wait 10} I know{n}it well...{wait 10} Yes...the{n}cavern-city Zeboim...{p}We{wait 10} buried ourselves in{n}this vast mausoleum."
+f383-0002 df778a28d45b5941 Elly{n}"Hmm? ...What?{n}...{wait 32}Just now... I..."
+f383-0003 9375f11b7ef4ec93 Citan{n}"That voice...{wait 25}{n}Wiseman!{p}...{wait 32}{n}...Go!!{n}Everyone, hurry!"
+f383-0004 9bc1e78d42d84bdb Citan{n}"Elly?{wait 10}{n}Elly!{wait 10}{n}What is wrong!?"
+f383-0005 47b0c521a1416d11 Citan{n}"Never mind...{wait 32}{n}Let us hurry on."
+f383-0006 07c1fb6535590e41 Citan{n}"Bishop Stone!!{n}Stop!!!"
+f383-0007 4ad0481f0a67ca65 Bart{n}"H-Hey, Citan!"{done 40}
+f383-0008 49120f175efc5a88 Bart{n}"It's a city... There's a{n}city beneath the ground...{wait 10}{n}This...is a ruin too?"
+f383-0009 5561735a95d4ba65 Bart{n}"...Th{wait 5}-That{n}Gear..."{done 32}
+f383-0010 621d5bc7d7260a55 Bart{n}"Who the hell are you?{p}I haven't forgotten that I{n}owe you for what happened{n}to the Yggdrasil! At least{n}give us your name!!"
+f383-0011 54dfc616e75ffe8a Bart{n}"So{wait 10} strong...{wait 32}{n}Huh?"
+f383-0012 2ee7c8cbfcbb0fce Billy{n}"Wh-What was—"{done 40}
+f383-0013 6267a70e8c4cd821 Billy{n}"These are the{n}ruins of a city...{p}I'd heard the{n}stories, but{wait 10}..."
+f383-0014 5125e9c615587b82 Billy{n}"Who on earth are{n}you? Give us your{n}name, at least!"
+f383-0015 4ccb245a00bf9b5b Billy{n}"S-{wait 5}So strong...{wait 32}{n}Huh?"
+f383-0016 95f277686f37251d Rico{n}"Hey! Citan!{wait 10}{n}...Ah, never mind."{done 40}
+f383-0017 727bd98a3285592b Rico{n}"!!!?{wait 16}{n}What the hell!?{p}We're supposed to be{n}underground... How'd{n}we end up in the air?"
+f383-0018 8f7d821fa30bdaf1 Rico{n}"!!!?{wait 16}{n}You..."{done 32}
+f383-0019 67a8db11cccdcefc Rico{n}"S-{wait 5}So strong...{wait 32}{n}Huh?"
+f383-0023 73c2411a6aca1518 Wiseman{n}"I've got him!{n}Hurry, go after them!!"
+f383-0025 e15a6694cc52ce74 Stone{n}"Tch... Damned Elements,{n}they're all talk... Can't{n}even buy me some time."
+f383-0027 40a1ee24b69612d5 Stone{n}"Wh-What do you want?{n}Wh-Who're you?"
+f383-0028 90c353a3e81ac070 Stone{n}"N-Now's our chance!!{n}To Karellen, quickly..."
+f383-0029 f2e4f007805a6565 Red-Haired Man{n}"Heh heh...{wait 32}{n}Haa ha ha...{wait 42}{n}Haahahahahahaha!!"
+f383-0030 25c2bf9190834bc9 Red-Haired Man{n}"Ha ha...{n}That's 'mine'.{n}Give it back!!"
+f383-0031 9c206f46ec8268c1 Red-Haired Man{n}"That toy is too much{n}for the likes of you.{p}So give it back.{n}It's{wait 10} 'mine'..."
+f383-0032 3b2c48ad2690183c Red-Haired Man{n}"Names don't matter...{p}But if you insist...{wait 50}{n}it's...{wait 30}Id..."
+f383-0033 9fd6a29266f5650e Id{n}"!!{wait 32}{n}...You...?"
+f383-0034 22b79670d345923f Id{n}"Hmph, pretty quick{n}weren't you?{p}...I see —{wait 5}{n}that woman, huh...?{p}Fine.{wait 10}{n}For today's{n}plaything...{n}even you'll do."
+f383-0035 52e939668c209f48 Id{n}"Ha ha...{n}Haa ha ha ha..."
+f388-0000 39cf40129b131f62 Dost thou{wait 16} desire the power?{done 84}
+f388-0001 66bdb5d57d002e8b Elly{n}"N-No good — we're{n}not getting through{n}at all..."
+f388-0002 476f60d668836c11 Citan{n}"We are not getting{n}through..."
+f388-0003 55e78dd53fb25ebf Citan{n}"...{wait 32}{n}There is some kind{n}of barrier.{p}Most likely a negative{n}sentiment...{wait 10}hatred...{n}converted to Ether and{n}acting as a barrier...{p}If we too can somehow{n}channel our strong force{n}of will and change it{n}to Ether..."
+f388-0004 d9ba378e5a1b5990 Citan{n}"Th-That is Buntline...{p}It is an Ether-gun Gear{n}where the pilot rides{n}directly in the warhead.{p}If we use that we can{n}surely overcome Stone's{n}negative hatred power!{p}...H-{wait 10}However..."
+f388-0005 5d7f3b17b611ee4c Bart{n}"N-No good! Can't get{n}through at all!!"
+f388-0006 b58af781a3eccd7f Billy{n}"You son of a—!{n}You used the Verus...{n}against my mother...!"
+f388-0007 12d09e5ea86b7627 Billy{n}"Human beings...?{n}I've...?"
+f388-0008 74d27b1e7f745e8e Billy{n}"...!?"
+f388-0009 56b76d9df7971465 Rico{n}"N-No good. Not getting{n}through at all..."
+f388-0010 e98032e1181e7506 No,{wait 10} there ain't a{n}single thing for you{n}to repent for, Billy!
+f388-0011 bdfd25c35c7c2435 You talk as if you and{n}Racquel were in love?{p}You always were a{n}narcissistic, self-{n}serving fool!!
+f388-0012 bf325cb26a54f079 Jesse{n}"I got us covered!!{p}Use this, Billy!!{n}With this you can{n}rip off that barrier{n}of his!!"
+f388-0016 fcda0eea88132fc1 Grahf{n}"I am Grahf. The Seeker{n}of Power.{wait 10} Dost thou{n}desire the power?"
+f388-0017 c5495ba79f038106 Grahf{n}"In the end, a fake power.{n}Do you really think you{n}can win with that?"
+f388-0020 95ec9dbaa2b2a896 Stone{n}"All this...{wait 10}{n}observing...{wait 10}{n}scheming...{p}Let's just get{n}things done..."
+f388-0021 92fd9c1fec12266f Stone{n}"Those who would do ill{n}to the sacred Gazel, I{n}will eliminate them all.{p}Repent now."
+f388-0022 428b35f45b64dee4 Stone{n}"Wh-{wait 7}Who's there!?"
+f388-0023 dab9cb3edde8c898 Stone{n}"Power?{n}Hmph. There's power{n}right here!{p}I have this body,{n}courtesy of Karellen!"
+f388-0024 51aa810d05936b61 Stone{n}"What do you mean {n}'fake power'?"
+f388-0025 3ba54d114182636c Stone{n}"Aghhh...u-urrghh..."{done 50}
+f388-0026 bee020d0c9ef0086 Stone{n}"Haha...{n}Are you suffering,{n}son of Jesiah!?{p}When I took you in four{n}years ago, that was proof{n}of my old friendship{n}with your father...{p}That hate-stained{n}friendship with Jesiah,{n}who challenged me for{n}command of Geburah!"
+f388-0027 555249d1d2cf921a Stone{n}"Jesiah, who like a beast{n}stole the Racquel I loved,{p}threw away the command of{n}Geburah that I wanted so{n}much, then disappeared{n}from Solaris!"
+f388-0028 5566bc77bc1a71bd Stone{n}"Ahh, yes.{n}Billy, let me tell{n}you something good...{p}The Verus you've{n}been purging this{n}whole time...{p}They're all ordinary{n}people,{wait 20} chosen by the{n}Church and subjected to{n}Karellen's procedures!{p}You've been slaughtering{n}human beings!{p}Ha ha ha... A wretched{n}son befitting a wretched{n}father!{p}Ha ha ha ha ha ha ha!"
+f388-0029 c0e9ffe162e0c363 Stone{n}"Now,{n}confess to me!{p}Pay for your sins{n}with your own{n}flesh and bones!"
+f388-0030 b7297125972bb393 Stone{n}"!!!{n}...Th-This{n}voice...!!"
+f389-0000 fbef6666d53db5d4 Kim{n}"This is it,{wait 5} this is the{n}vessel for a new soul,{wait 5}{n}to break the spell."
+f389-0001 b54871c1ba1d08f4 Kim{n}"It hasn't awakened yet.{p}It's been given exterior{n}form by the nanomachines,{p}but neural simulation by{n}the assembler tower is{n}still to be done.{p}At present, it's physically{n}stable but not functioning{n}as a lifeform."
+f389-0002 e9963f8e357145ca Kim{n}"Even if we were to{n}rewrite the genetic code,{p}we can't do anything{n}about the limitations{n}written into our bodies.{p}It was necessary to explore{n}more deeply.{wait 10} We had to{n}rebuild at the molecular—{n}No, at the atomic level.{p}...Referring to the body-{n}composition patterns of{n}you and I."
+f389-0003 a96d5cc5e2de70c7 Kim{n}"With this child...{wait 5}{n}lies our future,{wait 5}{n}and our potential..."
+f390-0001 8f1f5dfa7d7aa6b6 Kim{n}"...It's no good.{wait 10}{n}...The way things{n}are, it's no good."
+f390-0002 a9d618976053be42 Kim{n}"If we don't break the{n}spell, the people of this{n}planet are done for.{p}No, never mind people.{wait 10}{n}If we don't do something,{n}life itself will be no{n}more..."
+f390-0003 a945e2d0edf0816a Kim{n}"If I could somehow...{wait 45}{n}A pure life...{wait 15}untainted..."
+f390-0004 c0917ff972ac2c7e Kim{n}"Somehow..."
+f392-0000 2d3ea7e9a339d354 {speed 255}...Pulitzer Prize-winning{n}author and former WCW{n}heavyweight champion Big Joe{n}(real name Joey Balboa, now{n}an NBA coach) has, along{n}with his first Grand Slam{n}at NASCAR, achieved a{n}perfect game and secured{n}this year's Triple Crown{n}as well as the Shelley{n}Memorial Award.{p}He fell down while shaking{n}hands at an award ceremony.{n}Hitting the back of his{n}head, he started thinking{n}he was Elvis, and is{n}believed to have later{n}succumbed to his injury{n}at home. They say the flame{n}that burns twice as bright{n}burns half as long...
+f392-0001 b71e3c190085b893 {speed 255}The inexhaustible pseudo-{n}permanent engine that was{n}installed for the first time{n}ever on the 'Eldridge'.{n}Not just a high-efficiency{n}generator, it also makes{n}possible the ship's unique{n}defense field via 'AO{n}(absolute-object) space',{n}its faster-than-light{n}'SV (subject-variable){n}navigation', and so on.{p}Since it is designed based{n}on the scattering matrix{n}proposed by Heisenberg, which{n}is a solution to the inter-{n}relationship of particles{n}under the uncertainty{n}principle (the cosmic web),{n}it is also known as the{n}'S-Matrix Engine' or{n}'Heisenberg Engine'.{p}In essence, it regards the{n}phenomena of the immediate{n}future, including the present,{n}as potential phenomena,{n}actualizing as real events{n}whichever phenomena among{n}these are the most 'convenient'{n}to the active subject, and{n}proactively making use of the{n}resultant energy-potential{n}displacement.
+f393-0000 2135b6e494cdc7b1 Big Joe{n}"How d'ya like my shop?{n}Pretty good, huh?"
+f393-0001 a7bdf6c83ff5b9b2 Big Joe{n}"Nothing but Joe brand!{p}I mean, this is Joe's{n}shop, right!?"{wait 10}{n}     {speed 255}Items{n}     Gear parts
+f393-0002 bcd591021d9e445a Big Joe{n}"So? How d'ya like it?{n}Come again sometime!!"
+f394-0000 5a781ea8e330d243 What's this film...?
+f394-0001 96d74642d393a179 It's a documentary from{n}the Zeboim civilization{n}that was destroyed{n}4000 years ago.
+f394-0002 681ef91a96d4013e Wait!{wait 5}{n}I-Is that woman—!?
+f394-0003 41564e42dcd7e37f The Myyah of the Zeboim{n}era.{wait 10} But I don't know{n}who it was that had{n}become the complement.{p}As a close aide of the{n}nation's leader at that{n}time, she manipulated the{n}world behind the scenes.
+f394-0004 eddf40e71ae9f414 For the resurrection{n}of Deus?
+f394-0005 19bc44a02a9ec8e5 At first, yes.{wait 10} But in the{n}end it was different.{p}Many of the people back then{n}were biologically unfit to{n}bear children.{wait 10} As humans{n}they were damaged goods.{p}So...{wait 5}she started over again.
+f394-0006 5b66929e2a0b5776 She tried to drive humanity{n}to near-extinction by war,{n}and then allow the next age{n}to be inherited by the new{n}lifeforms being born.{p}There was a missile array{n}in the Mass Driver facility,{n}right?{wait 10} That's the legacy of{n}the Zeboim people of that{n}time.{p}And we're the result,{wait 5}{n}the descendants of the{n}few resilient humans{n}who survived.
+f396-0000 9460ab0022fe36a0 Fei{n}"...This place{wait 5}..."
+f396-0001 d8c7d9aca608eaf2 Fei{n}"...That's right...{p}Keeping a memory in{n}my soul for you, I..."
+f396-0002 91e3c0a48b7c1741 Fei{n}"...Yes, you are the{n}child we'd wished for.{p}Kim has been there,{n}in my blood, for the{n}past 4000 years.{p}There for the day when his{n}own child,{wait 5} who he himself{n}was never able to embrace,{wait 5}{n}would finally be born."
+f396-0003 8cfadcd6e182c888 Emeralda{n}"...I remembered...{p}I know all along...{wait 10}{n}that Kim...{wait 10}dead...{p}Right before this town{n}die...{wait 10} Was because of{n}town's soldiers who{n}tried to use me..."
+f396-0004 182646f34a7a1f55 Emeralda{n}"Karellen said,{n}while I being held.{p}Said that I the greatest{n}work of art technology{n}had produced...{p}Yes, even me, thought{n}of myself as 'thing'.{wait 10}{n}With body like this...{p}Fake human...{wait 10}{n}nothing like Maria,{n}Margie...{wait 10}or Elly...{p}But...{wait 10} But I wrong!{wait 10}{n}Kim and Elly said...{wait 10}{n}I'm like angel..."
+f396-0005 4eff5ebfcb23f715 Emeralda{n}"Fei!{wait 10}{n}Thanks for standing{n}in for Kim till now!{p}But it's okay!{wait 10}{n}I get strong, be worthy{n}of child of Kim and Elly!"
+f396-0006 079c1ffd6278e1d0 Emeralda{n}"...Wh-{wait 5}What...?{p}Fei...{wait 32} Body...{wait 5}{n}so...{wait 5}h...{wait 5}hot..."
+f396-0007 839d4175e12436cb Emeralda{n}"Fei...{wait 45}{n}Hold...{wait 5}me...{wait 5}tight..."
+f396-0008 efea93f5504a1f6f Emeralda{n}"Fei...{wait 32}{n}Body is..."

@@ -10,7 +10,7 @@ is built for native and browser hosts and how the hosts are layered. The
 | Decision | Choice |
 | --- | --- |
 | Rust workspace | `src/runtime/` (`src/runtime/Cargo.toml`, crates in `src/runtime/crates/*`, committed `Cargo.lock`) |
-| Toolchain | `nix develop path:./nix/runtime` (Rust 1.97.1 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24, perf 7.2.3); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
+| Toolchain | `nix develop path:./nix/runtime` (Rust 1.100.0 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24, perf 7.2.3); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
 | Data model and link | the recovered C is compiled once to a wasm32 *game module* (ILP32, the original data model); natively it is translated ahead of time with wasm2c, in browsers it runs as is beside the wasm-bindgen runtime |
 | Versions | slint =1.18.1 (`unstable-wgpu-30`, FemtoVG wgpu renderer), wgpu/wgpu-hal =30.0.1, sdl3-sys =0.6.8+SDL-3.4.14, openxr 0.22.0, wasm-bindgen =0.2.127, iwer 2.5.0, playwright-core 1.64.0 |
 | Slint license | Royalty-free 2.0 (attribution shown in the settings panel); GPLv3 is the alternative |
@@ -103,6 +103,24 @@ original address.
   KSEG0. `tests/test_game_module_memory.py` executes those aliases in Wasm;
   the Battling snapshot test runs through the first particle effects and
   past the former frame-725 display-list failure.
+  In the port's own units a constant address within one of the port's own
+  objects (a GTE register, a port static) is no mirror and stays as it is:
+  the optimizer then knows the port's registers apart from each other and
+  from the game's pointers, where a translated address could be any (a
+  step of the software GTE then keeps what it works with out of memory
+  until it is done). A pointer the game hands the port is translated as
+  before; the same test runs a port unit both ways through every alias of
+  a word of RAM.
+- **The port's units as one.** The front end compiles every unit without
+  optimization, so its functions reach the optimizer `noinline`. The game's
+  units keep that, and with it every call and every frame the original has
+  (the game keeps addresses of its stack in RAM). The port's units
+  (`src/port/*.c`) are linked into one module of IR (`llvm-link`) and
+  their functions lose it: the SDK and BIOS routines, the handwritten
+  renderers and the GTE's commands are inlined into each other where the
+  optimizer finds it worth (a battle frame's game work fell from 2.33 ms
+  to 1.80, a field's from 0.90 to 0.73). A coverage build
+  (`--coverage`) keeps the units apart, as its counters name them.
 - **Code addresses.** A function's address, wherever C takes it, is its original
   address. Indirect calls go through generated dispatchers that select the
   function by address and check, from a fingerprint of its original code bytes in
@@ -153,9 +171,28 @@ original address.
   runtime stops the game with a diagnostic. `tests/fiber_module/build.sh`
   runs `src/port/fiber.c` and `src/port/arena_task.c` under asyncify, wasm2c and the
   runtime end to end.
-- **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
-  checks (no signal handlers). Nothing interprets or emulates a CPU. The
-  translation comes in 16 parts compiled in parallel (one file took GCC
+- **Native.** `wasm2c` output is compiled into `xem-game`. Nothing
+  interprets or emulates a CPU. On 64-bit Linux and Android the game's
+  memory is its 2 GiB at the start of 8 GiB of reserved addresses, which
+  hold every address the translation can form (32 bits plus a 32-bit
+  offset): an access beyond the memory faults instead of being compared
+  with the memory's size first (the comparisons took 8% of a game frame's
+  time). The glue's own `SIGSEGV` handler (`xem-game/build.rs`; wasm2c's
+  takes every fault of the process for the game's) turns a fault of the
+  thread running the game, at an address within that reservation, into the
+  module's out-of-bounds trap, and passes any other on to the handler
+  installed before it or to the default action: a fault of the host's own
+  still ends the process as it did. Elsewhere (Windows, macOS, 32-bit
+  hosts) each access keeps its explicit bounds check and no handler is
+  installed. The translation's calls are counted in a word of the instance
+  rather than in wasm2c's per-thread variable, which position-independent
+  code reaches through a call on every function's entry and return (a
+  tenth of a game frame's time): past 500 nested calls the module traps as
+  before (`Call stack exhausted`), and the count starts again after a
+  trap. `tests/fiber_module/build.sh` runs both traps in a stand-in module,
+  again and again and on a second thread, and checks that a fault outside
+  the game's memory (idle, and inside an import) still kills the process.
+  The translation comes in 16 parts compiled in parallel (one file took GCC
   nearly four minutes, the parts 41 s on 16 threads), built without
   semantic interposition so the parts' global functions inline as one
   file's static ones did (a Lahan frame's game work: 1.395 ms, one file
@@ -532,7 +569,8 @@ again while it reports the lid open, so the check must find it open
 throughout a poll), so the check goes on at once, about half a second to
 the new disc's file index. At the story's change this happens five seconds
 of game time after the request, with the game's change-disc notice shown
-(fast-forward shortens it); elsewhere at once. All of it runs on the
+(fast-forward shortens it; the fast drive of [Disc load
+times](#disc-load-times) does not); elsewhere at once. All of it runs on the
 game's clock, so recordings, rewind and replays reproduce it. Without the
 wanted disc the game waits at its notice; the hosts ask for it (the panel
 opens on Saves with the request in its error bar) and the change happens
@@ -2105,7 +2143,12 @@ snapshots are its. The renderer only draws again what it drew:
   of the frame, anywhere, with its pixels, and a copy of the native VRAM
   when the buffer was cleared, and a replay samples its own VRAM copy, from
   that snapshot through the frame's writes in order, so a texture slot the
-  game fills again later in the frame shows each primitive its own texels;
+  game fills again later in the frame shows each primitive its own texels
+  (the writes after the frame's last primitive, what the game loaded and
+  drew elsewhere for the next frame since, change nothing a replay draws
+  and are left out of it; before each replay the copy is set back to the
+  snapshot only where the last replay's writes changed it or, for a new
+  frame's snapshot, where it differs);
   writes outside the display area are not shown; with no log for the shown
   buffer, as after a load, nothing is replayed until its next clear; a trace
   started again on all of VRAM that holds what the logs left, as after a new
@@ -2709,11 +2752,12 @@ runs), Select toggles the view where the original's Select shows nothing:
 `field_picture_show` shows a map's picture on ten maps once their item is
 held, and there Select stays the game's (`xem_core::context::field_controls`
 tells the hosts whether the player walks, a menu runs and the picture shows,
-read in the game's memory alike in every host). Select is any of its bound keys (Backspace), the touch
-deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
+read in the game's memory alike in every host). Select is any of its bound keys (Backspace) and a gamepad's Back
 released alone (Back begins the app chords; a headset controller's Back is
 its right stick's click), all of which toggle only there: while the player
-walks where Select shows no picture (Back pressed and let go there). Held
+walks where Select shows no picture (Back pressed and let go there). A
+touch deck has no Select there (its LOOK toggles the view, below; where the
+picture shows, its MAP is the game's Select: [Touch screens](#touch-screens)). Held
 while a dialogue shows, they hide its windows instead, and a Back held over
 one and let go once the player walks again toggles nothing
 ([Hiding a dialogue](#hiding-a-dialogue)). A gamepad's right stick's click (R3)
@@ -3018,7 +3062,7 @@ direction does in a dialogue, that a session log's Up and L1 run without
 stopping the session, that the recording holds exactly what passed, and
 that it replays to the recording's RAM hash with the replaying host
 inspecting from the replay's start; `xem-settings`' look tests the toggles
-(Select's keys and the deck's SELECT alike), the underhand grab's rule
+(Select held by its keys or by a deck's key alike), the underhand grab's rule
 (`look::grab_toggles`: in a field but its menu, under Ex Machina only),
 the `first_person` command (parsed, an unknown field refused, toggled in a
 walk, a dialogue and a picture map, refused under the menu, outside a field
@@ -3032,13 +3076,15 @@ game key; Back then R1 asks once, the game has neither while the chord
 holds, and Back let go after it is no Select toggle), `xem-assist`'s the
 headset's gestures and pointer keys while
 inspecting and two-hand scaling that leaves the screen, the deck's
-SELECT and drag, and LOOK (in a walk, a scene and a dialogue on a
-letterboxed phone, a 16:9 phone and a tablet, clear of every other control
+drag, and LOOK (in a walk, a scene and a dialogue on every screen the
+decks are laid out on, clear of every other control
 and within the screen, pressing none of the game's buttons; in no menu,
 world map, battle or other context; lit while the view shows), `xem-host`'s
-a gamepad's toggles and the touch deck (SELECT
-toggling and staying the game's where the map's picture shows, no Run left
-alone, a 100-pixel drag turning 0.3 radians and tapping nothing; LOOK
+a gamepad's toggles and the touch deck (LOOK
+toggling the view, the stick, the jump and the camera's turns gone from
+the deck while it shows, no Run left
+alone, a 100-pixel drag turning 0.3 radians and tapping nothing, MAP the
+game's Select where the map's picture shows; LOOK
 toggling the view in a dialogue and on a picture map once a press, lit
 while it shows, nothing under the menu or the Original renderer, and an
 agent's command answered with its look), `xr_play`'s a headset's right
@@ -3099,7 +3145,7 @@ stays; `from_within_a_face_drawn_over_another_in_its_plane_shows_wherever_they_o
 draws a face over a wall 5 200 to 6 800 units ahead, slanting away, which
 shows at all 19 152 pixels they share. The desktop tier runs it and
 `first_person.rs`'s order test (below) again on wgpu's GL backend
-(`suite.sh`'s rust stage: Mesa's llvmpipe through EGL, `XEM_MESA_EGL`),
+(the suite's `rust-gl` units: Mesa's llvmpipe through EGL, `XEM_MESA_EGL`),
 where they agree with lavapipe.
 `xem-headless/tests/first_person.rs` (local, disc 1) qualifies the
 view as a camera mode on the game, flat (the desktop's look) and in a
@@ -3170,7 +3216,8 @@ with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
 ArrowRight and ArrowUp turn the view right and up; the wheel leaves the
 zoom; the Binaural listener faces right with the view; the mouse under
 pointer lock turns it right and down; a tap on the picture walks nowhere,
-the deck's SELECT toggles it off and on, and a 100-pixel drag turns it
+the deck's LOOK toggles it off and on (the deck without its stick, jump
+and camera turns while it shows), and a 100-pixel drag turns it
 0.3 radians left; Backspace gives W back and the listener its camera; the
 Original renderer ends the view; a gamepad's right stick's click toggles
 it, its right stick turns it right and its Back released alone ends it,
@@ -3182,8 +3229,7 @@ loop runs, `act` Up, `press` Triangle and `navigate` are refused, a bad `on`
 is refused, and it turns it off; then V, the deck's LOOK, the automation's
 `appOperation` Toggle first-person view and the bare command toggle it in
 turn. Its canvas pictures go
-to `build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds
-the game's Select with the deck's SELECT outside a field.
+to `build/web-test/first-person-*.png`.
 
 Not done or not measured: in a headset, comfort is not measured (no people
 tests): the view follows the character's scripted moves (vection, with no
@@ -3268,7 +3314,7 @@ choice cursor, and a battle's event script message (the `battle` context's
 window 0, the speaker's portrait or its text shown) with its window, the
 portrait, the text and the cursor that waits for Confirm. Let go, they
 show again. Select is any of its bound keys (Backspace) and the touch
-deck's SELECT, which hide at once, and a gamepad's Back once it has been
+deck's HIDE (its Select over a dialogue), which hide at once, and a gamepad's Back once it has been
 held alone for 0.15 s (`look::BACK_HIDES_AFTER_MS`), a headset
 controller's Back being its right stick's click. Back plus a face button,
 Start, R1 or a trigger runs the app chords (Back+South saves a state,
@@ -3410,9 +3456,9 @@ at once, Back once held alone and never in a chord, Settings or focus
 taken, the hiding lasting while held, a battle's message, no dialogue, the
 game's buttons kept; Back held over a dialogue until the player walks
 toggling nothing, pressed and let go while walking toggling),
-`xem-host`'s deck test (its SELECT held over a dialogue: Select the
-game's, the windows hidden, shown under the panel and let go; walking, the
-view's toggle), `xem-ui/tests/panel.rs` the row, flat and in a headset,
+`xem-host`'s deck test (its HIDE held over a dialogue: Select the
+game's, the windows hidden, shown under the panel and let go; no such key
+where the player walks), `xem-ui/tests/panel.rs` the row, flat and in a headset,
 and `xem-headless/tests/render.rs`:
 `a_dialogue_held_hidden_leaves_its_windows_out_of_the_picture_and_the_game_as_it_is`
 (field 12's opening dialogue, Fei's window, its text and his portrait, with
@@ -5254,6 +5300,58 @@ buffers and uploads only the rows of VRAM a new frame changed; none of it
 changes the game's RAM or the software GPU's VRAM (`memory_hash`,
 `vram_hash`).
 
+A second pass with the same measure (that machine and those settings, 600
+frames; means in ms a game frame before and after, the game alone with
+`--no-trace`) about halved the game's work: Lahan walking alone 1.53 to
+0.74 and traced 1.77 to 0.93, wider 2.82 to 1.52, under HD-2D 1.97 to 1.05;
+a debug battle alone 3.93 to 1.85 and traced 5.15 to 2.61, a Gear battle
+7.46 to 3.89; the world map alone 1.44 to 0.80 and traced 2.14 to 1.26. The
+presentation's CPU work a presentation: Lahan under Modern 0.32 to 0.16,
+under HD-2D 0.56 to 0.38, the battle 0.80 to 0.62. What each step took
+off a battle's frame alone, measured as it was made over the ones before
+it, the largest first:
+
+- the port's units optimized as one, with their own objects' addresses
+  left untranslated ([The game module](#the-game-module)): 23%;
+- the software GPU's fills (`xem-gpu/src/raster.rs`): a loop for each kind
+  of primitive, its texture depth, texture window, modulation, shading and
+  blending constants of the loop; attributes stepped along a row from the
+  triangle's planes, the division at each pixel replaced by a reciprocal
+  multiply that gives the same quotient at every pixel inside the triangle;
+  the three channels of a 15-bit pixel blended at once: 19% then 7%.
+  `xem-gpu/tests/raster.rs` draws random scenes of every primitive beside
+  a model of the rendering rules that works a pixel at a time;
+- the native translation without a bounds check at each access or a
+  per-thread count of calls (The game module, Native): 14%;
+- a display list's nodes read from RAM where it lies, a node's words at
+  once, and image transfers a row at a time: 5%;
+- the SPU: a voice's block decoded from its sixteen bytes at once, a
+  silent voice not mixed, the reverb's filter unrolled: 3% (9% of a
+  field's frame). `xem-spu/tests/spu.rs` holds the digests of long
+  sessions of everything at once, taken from the code before.
+
+(The software GTE stays as it was. A table of the UNR division's 257
+seeds in place of the division each vertex makes was worth 2% of a battle's
+frame and moved the shadow stack, and with it a field's RAM: the port's
+data does not grow, as [The game module](#the-game-module) says. Its
+perspective sums left unchecked where they cannot overflow gave nothing
+that could be measured.)
+
+The trace and the presentation: no allocation for a traced primitive, the
+port's rings read where they lie, a trace's buffer handed on rather than
+copied, the welder's cells a word each; and a replay sets its VRAM back
+only where the last replay's writes changed it (or, for a new frame, where
+it differs, in spans of 64 columns), and leaves out the writes that follow
+the frame's last primitive. Counted over all threads
+(`perf record --all-user`), a field under HD-2D presented twice a game
+frame took 4.46 ms of processor time a game frame before these and 3.76
+after (0.96 of it the game), a battle under Modern presented once 5.87
+and 5.26. Every scene ends at the RAM and VRAM hashes it had, the SPU and
+the Binaural mode sound the same to the sample (digests of recorded
+sessions), and the pictures of eleven scenes (fields, battles and the world
+map under Modern, HD-2D and the original's profile, wider, pulled back and
+in first person) are the same byte for byte.
+
 ### Headsets
 
 The game is shown as a flat, monoscopic virtual screen in front of a seated
@@ -5678,7 +5776,9 @@ reports the frames run):
 
 - **Run by default** (`SettingChange::RunByDefault`, off initially) inverts
   the assigned run button during directional field movement: holding it
-  walks. Keyboard, gamepad, touch and headset inputs share the preference;
+  walks. Keyboard, gamepad, touch and headset inputs share the preference
+  (the touch deck's RUN turns it on and off: [Touch
+  screens](#touch-screens));
   menus, dialogue, scripted events and battles retain their buttons.
 - **Menu toggles the field menu**: pressed while it runs (any screen of
   it), it presses Cancel at the menu's commands, which closes it, after
@@ -5813,51 +5913,206 @@ bindings changed from the open panel hold when play resumes.
 ### Touch screens
 
 On a touch screen (Android; phone and tablet browsers) the game's controls
-are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
-letterbox has room (three controls and their gaps, at least 40 dp each),
-else over its corners: a stick on the left with Select above it (the
-game's Select, in a field first-person inspection's toggle where the
-game's shows nothing, and held over a dialogue what hides its windows:
-[Hiding a dialogue](#hiding-a-dialogue)), the face buttons on the right (Jump, Cancel and
-Run, Confirm, Menu), the camera's turns at the top corners, Settings and
-Start at the top. The stick is relative: a finger touching the screen's
-left half on no other control takes it (one finger at a time), centred
-where it touched, and its travel from there past a dead zone (a quarter of
-the knob's reach, which is three quarters of a button) holds the D-pad's
-eighth, a direction or a diagonal's two, kept a few degrees past a
-boundary (the headset deck's stick's rule, `arcade::eighth`); a finger
-going past the reach drags the centre along, so a short way back turns it
-round. Untouched it rests where a D-pad would stand: a hollow halo with a
-fin for each direction, gilded while held, and its knob, a button that
-follows the finger. A short still touch there is still a tap on the
-picture. A finger holds the control it is on; lifting or a cancelled touch
-lets go (explicit press and release). A finger alone dragged on the
-picture (not one holding the stick) turns inspection's view, the scene
-following it; while that view shows the deck has no stick (it would walk
-nowhere), and a finger holding it as the view comes lets it go, so a
-finger on the left half turns the view too. Battling names the face buttons and
-turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
-adds Board (L2 and R2 together: a Gear boarded or left), a field (walking,
-its scenes and dialogue; not its menu) adds LOOK above the face buttons
-(Toggle first-person view: [First-person
-inspection](#first-person-inspection) on or off anywhere in the field,
-lit while it shows, holding none of the game's buttons), its scenes and
-dialogue AUTO beside it (auto-advance dialogue on or off, lit while on:
-[Text speed, auto-advance and movie
-skipping](#text-speed-auto-advance-and-movie-skipping)), the two each a
-little narrower than the deck's other wide keys, and a shop's quantity
-list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
-is the pointer's tap (`xem_assist::dispatch::tap_at`; on the pause
-screen, Start, as a click): walking, on an actor
-it approaches and talks, on the floor it walks there; in a menu or choice
-it selects the entry and confirms it; in battle it chooses as a click does
-([The game's interface context](#the-games-interface-context)); in a
-dialogue it advances. The deck
-shows once a finger touches the game (always on Android) under Settings'
-Touch controls. Android logs the deck's place (`touch deck ...`, and
-`touch stick x y reach` where the stick rests) and its smoke test holds
-Confirm on it and drags the stick to the right; the browser suite plays it
-with touch pointers.
+are a Seraph Glass deck (`xem_assist::touch`) made for two thumbs and for
+what the game plays now, not the pad's own layout (issue #83): each of the
+game's contexts ([The game's interface
+context](#the-games-interface-context)) has the buttons the game reads
+there, named for what they do, with the one the right thumb rests on the
+largest.
+
+**Layout** (`touch::layout`). A unit is about 13% of the screen's short
+side, at least 52 dp (less where three rows of keys would not fit under the
+corner's buttons, or the stick's well beside the right hand's cluster: a
+screen under about 360 dp high or wide). The right thumb rests on the
+*primary* button, 1.45 units across, its centre 1.7 units from the right
+edge and 1.35 from the lower. Up to three round buttons stand on an arc
+1.4 units about it, a thumb's sweep from its rest: *beside* it toward the
+screen's middle (187 degrees up from the right, just below level),
+*between* (137, a little larger: the next most used) and *above* it (87),
+neighbours a gap of 0.12 units apart. Small keys (1.26 by 0.66 units)
+stand in rows of two above the arc, their outer edge the primary's, and
+the app's Settings (a gear) and the game's pause (Start: two bars) in the
+top right corner (0.8 units). The left thumb's rest, where the stick's
+well would stand, is as far from the lower left corner as the D-pad it
+stands for would be (1.95 units), and no control stands over that well; an
+activity's L1 and L2 stand above it. The deck stands in the letterbox beside the picture
+when it has room for the right hand's cluster (2.96 units across with its
+margins, at 44 dp or more a unit, the primary then as far in as the
+letterbox allows), else over the picture's lower corners at its full size.
+A round button takes a finger on its circle and 8% beyond it (under half
+the gap to its neighbour), a key on its rectangle: no two controls take the
+same finger.
+
+**The decks** (`touch::keys`), each with what it presses. Confirm is every
+deck's primary, always in the same place, so the thumb finds it whatever
+it does now; Settings and the pause keep their corner (a menu, which
+reads no Start, has no pause).
+
+| The game plays | Primary | On the arc | Keys | Reads the stick |
+| --- | --- | --- | --- | --- |
+| A field, walking | TALK | the camera's turn left (L1), JUMP, its turn right (R1) | MENU, RUN, LOOK; MAP (Select) where Select shows the map's picture | yes |
+| ... with first-person inspection | TALK | | MENU, LOOK | no stick |
+| ... on a map whose scripts test the pad | | | also what the deck lacks of them: Circle (the run button, held), SELECT, R2; L2 above the stick | |
+| A scene, a dialogue's page | NEXT | | AUTO, HIDE (Select, held), LOOK | no |
+| A dialogue's choice | OK | | AUTO, HIDE, LOOK | yes |
+| ... on a map whose scripts test the pad (an activity) | NEXT or OK, under Cross where tested | Square, Circle and Triangle where tested | AUTO, LOOK, R1 and R2 where tested, SELECT in HIDE's place where tested; L1 and L2 above the stick | where a direction is tested |
+| A menu | OK | BACK | the page's or the character's arrows (L1, R1); CLOSE (Menu) in the field's and the world map's own; DONE (Start) in the name entry; +, -, ALL and NONE on a shop's quantity list | yes |
+| A battle's ring, lists and targets | OK | BACK | | yes |
+| A battle's attack page | Cross, FIERCE | Square, STRONG; Triangle, WEAK | END (Cancel) | yes |
+| A battle's script message | NEXT | | HIDE | no |
+| The world map, on foot or in Gears | ENTER | the camera's turns | MENU, BOARD (L2 and R2 together), VIEW (Select) | yes |
+| The world map, in a vehicle | ENTER | the camera's turns | MENU, LAND (Cancel), VIEW, THROTTLE (Jump, latched) | yes |
+| The world map's scripted scenes | NEXT | | | no |
+| A Battling bout | A | B, SPECIAL (R1), JUMP | DASH (Cancel, latched), CHARGE (L1, latched) | yes |
+| Battling's menus | OK | BACK | | yes |
+| Booting, a movie | OK | | | no |
+
+The buttons are those the game reads, by its recovered source: the field's
+frame takes Confirm, Jump, the held run button, L1 and R1, Menu, Start (the
+pause) and, with the player walking, Select (`field.c`); a dialogue's page
+Confirm alone, a choice Up and Down too (`field_motion.c`); a menu the
+directions, Confirm, Cancel, L1 and R1 (the item list's pages, the
+character shown: `menu_read_input` and the screens it feeds, which do
+nothing with its two other face buttons; the name entry's own ends on
+Start); a battle the directions, Confirm, Cancel and Start, the attack
+page Triangle, Square and Cross for 1, 2 and 3 AP and Cancel to end
+(`battle_read_input`, `battle_command_menu_page_05_attack_inputs`: every
+Deathblow ends with the Fierce attack, the one under the thumb, and the
+game's lists write the three by their symbols, which the buttons keep over
+their names); the world map Confirm, Menu, L1 and R1, Select (its view),
+Start, on foot L2 and R2 together, in a vehicle Cancel (take off and land)
+and Jump (the throttle) (`worldmap_steer_*`, `worldmap.c`); a bout Cross
+and Square (A and B), Triangle (the jump), R1 (the special), Circle held
+(the dash) and L1 held (the charge) (`arena_fighters_bout_and_effects.c`).
+On the 84 maps whose scripts test the pad (a field's activities: puzzles,
+button prompts, the card game) every deck of the field offers the buttons
+they test (`xem_core::context::field_script_buttons`: the map's, whatever
+the context, since one script goes on testing the pad while another holds
+a window open, and beside the player's own control): in a scene or a
+dialogue by the symbols the game's prompts name them with
+(`arcade::activity_label`, the headset deck's too: map 565's console says
+to confirm with Cross and leave with Circle, and its scripts test 0x20 to
+check the code and 0x40 to ask about leaving); where the player walks the
+deck keeps its own names and adds what it lacks.
+
+**Holding.** A finger holds the control it is on; lifting or a cancelled
+touch lets go (explicit press and release). A bout's DASH and CHARGE and a
+vehicle's THROTTLE *latch* instead (`Control::latches`): a touch holds
+them, the next lets go, lit meanwhile, as the headset decks' held keys
+(`arcade::keys`), because the thumb that would hold them has the other
+buttons to press. RUN, AUTO and LOOK are the app's toggles, lit while on
+and holding none of the game's buttons: RUN is the Run by default setting
+(the stick then runs; on a touch screen no finger is free to hold the run
+button beside the jump), AUTO auto-advance dialogue ([Text speed,
+auto-advance and movie
+skipping](#text-speed-auto-advance-and-movie-skipping)) and LOOK Toggle
+first-person view ([First-person inspection](#first-person-inspection)).
+When the context changes, a control the next deck keeps stays held,
+whatever it does now, as a pad's button would (Confirm from TALK to NEXT);
+one it lacks lets go, and so do its latches. Everything lets go when the
+settings panel takes the screen.
+
+**The stick** is relative: a finger touching the screen's left half on no
+other control takes it (one finger at a time), centred where it touched,
+and its travel from there past a dead zone (a quarter of the knob's reach,
+which is three quarters of a unit) holds the D-pad's eighth, a direction
+or a diagonal's two, kept a few degrees past a boundary (the headset
+deck's stick's rule, `arcade::eighth`); a finger going past the reach
+drags the centre along, so a short way back turns it round. It shows only
+under a finger holding it, never at rest: a hollow halo with a fin for each
+direction, gilded while held, and its knob, a button that follows the
+finger, both whole whatever the opacity. Where the game reads the
+directions (the table's last column) it shows as the finger touches.
+Elsewhere a finger still steers it, so that a direction held through a
+scene walks as soon as the player does, and it shows under that finger
+once it steers (not under a tap on the left half). A short still touch
+there is still a tap on the picture.
+A finger alone dragged on the picture (not one holding the stick) turns
+inspection's view, the scene following it; while that view shows the deck
+has no stick (it would walk nowhere) nor the jump and the camera's turns
+it holds back, and a finger holding the stick as the view comes lets it
+go, so a finger on the left half turns the view too.
+
+**Opacity.** Settings' Touch controls opacity (Controls, VR / Touchscreen,
+under Touch controls; `Assisted::touch_opacity`, 10 to 100 percent in the
+slider's steps of 5, 100 by default: the glass as designed) is how opaque
+the deck is composited (the quads' opacity, over the game's picture or the
+letterbox), on every host that draws it. A control a finger holds is drawn
+whole, so a press shows whatever the setting; the least is 10, never
+invisible (Touch controls hides the deck). The deck stays drawn under the
+open settings panel, where it holds nothing, so the opacity shows beside
+the panel as the slider moves. Reduce transparency is separate: it makes
+the glass bodies dark and solid, and the opacity then fades those.
+
+**Taps.** A tap on the picture (short, not travelling) is the pointer's
+tap (`xem_assist::dispatch::tap_at`; on the pause screen, Start, as a
+click): walking, on an actor it approaches and talks, on the floor it
+walks there; in a menu or choice it selects the entry and confirms it; in
+battle it chooses as a click does ([The game's interface
+context](#the-games-interface-context)); in a dialogue it advances.
+
+The deck shows once a finger touches the game (always on Android) under
+Settings' Touch controls. `cargo run -p xem-assist --example touch_deck`
+draws every deck over a stand-in picture, on a 20:9 phone with the picture
+letterboxed and filling it, as a sheet for review. Android logs each deck
+as the game's context or the screen lays it out (`touch deck <control> x y
+w h`, and `touch stick x y reach` at the left thumb's rest) and its smoke
+test holds Confirm on it and drags the stick to the right; the browser's status has
+the deck (`touch.controls` with each control's label and place, `stick`,
+`held`, `latched`), and its suite plays it with touch pointers.
+
+Tests: `xem-assist`'s `touch` tests check every deck's controls and
+labels and whether the game reads the stick; that on five screens (a 20:9 phone
+letterboxed and wide, a 16:9 phone, a 4:3 tablet, a phone browser in
+portrait) every control lies within the screen at a generous size (the
+primary 63 dp or more, the arc's buttons 44, keys 55 by 29), no two under
+one finger, none over the stick's well; the letterbox rule; Confirm,
+Settings, the pause, LOOK and the camera's turns in their places across
+decks; a round button's and a key's reach; the stick's steering, shown
+only under a finger (as it touches where the game reads it, once it
+steers elsewhere) and its steering through a dialogue; taps; the latches (a bout's DASH held
+while A is pressed, let go by its next touch, with the bout, and by the
+panel); a control the next deck lacks letting go; RUN, AUTO and LOOK
+pressing nothing of the game's and lit while on; drags and inspection.
+`xem-render`'s glass tests draw the pause, the gear, the camera's turns
+and an attack's captioned symbol, and keep a round button's longest labels
+on its glass. `xem-settings` checks the opacity's default, range, saving
+and reading; `xem-ui`'s panel test its slider (under Touch controls,
+through the service, its ends, gone with Touch controls off). `xem-host`'s
+`the_touch_deck_is_drawn_at_the_settings_opacity_and_its_run_key_is_the_run_by_default_setting`
+renders the desktop and Android view over a black letterbox: TALK is half
+as bright at 50% and a tenth at 10%, whole while a finger is on it,
+drawn under the open panel at the setting's opacity, and RUN turns Run by
+default on (the stick then holding the run button, RUN lit) and off; its
+other touch tests hold the stick and TALK, keep taps, queue AUTO's toggle,
+toggle the view with LOOK (the stick, the jump and the turns gone while it
+shows) and give the game Select from MAP and HIDE. In the browser
+(`page.test.mjs`, the fixture reporting a field with the player walking):
+the walking deck by its labels, TALK the largest with the arc about it,
+the stick (none shown until a finger touches, gone once it lifts), JUMP's Triangle, RUN through the settings (Circle beside the
+direction while on), TALK drawn about 30% as strongly at 30% and whole
+while held, an opacity of 5 refused, the dialogue's deck as a window opens
+(Confirm in place, the stick steering unseen until it moves), the Circle,
+L1 and R1 that map 0's scripts test added to it by their symbols (Circle
+held holding the game's) and Settings a touch away;
+`first-person.test.mjs` (local) toggles the view with LOOK.
+
+By hand on the Android emulator (the smoke test's pixel_6 AVD, 2400 by
+1080 in landscape, the user's disc 1, fingers as `adb shell input` swipes
+held in place, the pad read from the host's `pad buttons` log): states of
+eight contexts (a field, its menu, a dialogue, a battle's ring and attack
+page, the world map on foot and in a vehicle, a bout) each logged and
+showed its deck; RUN saved `run_by_default` and the stick then held the run
+button beside its direction; DASH stayed held after its touch, with A
+pressed beside it, until its next touch, and THROTTLE likewise; LOOK took
+the stick, the jump and the turns away and a drag turned the view; the
+gear opened Settings with the deck drawn beside the panel, and the slider
+dragged to 40% saved `touch_opacity: 40`, the deck fading as it moved and
+a held JUMP drawn whole.
+
+Not measured: the layout's sizes and places come from a thumb's reach on
+a phone held in landscape (the primary about 14 mm from the right edge and
+11 from the lower on a 52 dp unit), not from trials with people.
 
 ### Headsets: hands, gaze and control decks
 
@@ -6226,88 +6481,182 @@ captures.
 
 ## The test suite
 
-`src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF]`
+`src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF] [--threads N]`
 runs the tests from anywhere in the repository, in the runtime shell. Before
-starting Nix or replacing logs, it checks tracked changes (including staged and
-unstaged edits) and non-ignored untracked files against the merge base of HEAD
-and `origin/master`. Committed branch changes count too. If no runtime sources,
+starting Nix, it checks tracked changes (including staged and unstaged edits)
+and non-ignored untracked files against the merge base of HEAD and
+`origin/master`. Committed branch changes count too. If no runtime sources,
 tests or build inputs changed, it reports a skip and exits successfully without
 running tests. Documentation and standalone release tooling do not trigger the
 runtime suite; use their focused checks. The boundary in `suite.sh` is conservative:
-any runtime input change enables the selected tier, rather than trying to maintain
-a dependency map for every test. Missing Git history is an error, never a silent
-skip. The check does not fetch or cache test results.
+any runtime input change enables the selected tier. Missing Git history is an
+error, never a silent skip. The check does not fetch.
 
 Use `--base REF` to select another comparison point, such as `--base HEAD^` for
 the most recent committed update on master. Use `--force` deliberately to bypass
-change detection, including when private/ignored game inputs, drivers or the test
-environment changed. It also works without a comparison ref. A skip leaves
-`build/suite/` intact and does not establish a new passing result. Help and flag
-parsing need no Nix shell. While developing, run only the platform whose host is
-changing, and `full` once at the end before review or a merge only when runtime
-inputs changed (AGENTS.md): `desktop` (the default, for the
-native and shared code) builds the game module and runs the port's unit
-tests, the Rust workspace's tests and the validation run; `web` the web
-build, the browser suites and the browser tests that measure time
-(WebXR's among them); `android` the APK with both its libraries, the
-emulator's smoke test, the smoke's game again with the APK's arm64-v8a
-library (which the emulator runs through its ARM translation) and the
-game's arm64 build under qemu (`arm64-smoke.sh`); `xr`
-the native build and the OpenXR smoke test. `full` runs them all and what
-CI runs (`.github/workflows/ci.yml`) as on a clone without the user's discs:
-`tools/repository/check.py`, which builds and tests the workspace (here
-without a game module), and the matching toolchain's smoke test
-(`make -C src/decomp smoke`). In `full`, the builds run side by side, each
-in a cargo target directory of its own (`src/runtime/target-*`, none of
-them play.sh's): the native one, then the Rust tests and the validation run
-at once; CI's checks; the web build, then the browser suites (the slice's, the
-longest, from the start beside the others two files at a time; the slice's
-and the persistence tests two at a time within them: at most five
-browsers); the Android APK, and the emulator boots (its boot measures
-nothing); the arm64 build plays the slice's logs under qemu (measuring
-nothing either). What measures frame rates then runs alone, one after another,
-since their emulator, headset and browsers render on the
-processor (beside the browser suites the Android smoke's frame rate fell
-from 56 to 10 a second, the XR smoke's headset frames came late, and their
-checks failed): the Android smoke (with the APK's x86_64 library, then its
-game with the arm64-v8a one), the XR smoke, and the browser tests that
-measure time (the headset's frame rate, rewind frame times, fast-forward's
-music, the stalled page, a resume read within the rewind's one-second
-interval, the Binaural mode's cost). Rust builds use the `suite` profile
-(release's optimization without link-time optimization or debug
-information: after a change to xem-gpu the test binaries rebuild in 37 s,
-against release's 161 s); a failing test target is built again with line
-tables (`suite-debug`) and run with a backtrace into `rust-debug.log`. A
-module build that changes nothing keeps `build/game/game.wasm` and its time,
-so nothing downstream rebuilds (play.sh compares the sources with
-`build/game/stamp`, which each finished module build touches). The
-desktop tier's Rust tests include the original game's long run
-(`xem-headless/tests/long_run.rs`, 36 000 frames twice: 138 s of the
-tier's 866 s in a run here beside other tracks' work), the diorama's
-qualification on the game (`xem-headless/tests/diorama.rs`: 73 s in a
-desktop tier of 946 s, its Rust stage 817 s) and `xem-host`'s original-game tests (rewind frame latency, the
-focus pause's recording, the held rewind), which skip without the disc as
-the others do. The Android smoke compares states with `xem-headless`: the
-android stage builds it (the suite profile, the native target directory:
-nothing to do after the native stage) and gives it to the smoke
-(`XEM_HEADLESS`). The Android
-smoke, run by itself, boots its emulator while the APK builds
-(`XEM_SMOKE_BOOT=1` only boots it, and a later run uses it), and turns off
-the system's "isn't responding" dialogs on its AVD (on a loaded host one
-took its taps). Logs, and each stage's result and time: `build/suite/`.
-Measured here (16 threads, warm builds): `full` 3762 s with every stage
-passing (2026-10-17, at the end of Phases 6-8; 723 s before their tests
-joined it), its longest stages the Rust tests (1492 s), the browser
-suites (1078 s), the XR smoke (994 s), the arm64 build under qemu (754 s)
-and the browser tests that measure time (717 s); `desktop` 804 to 955 s
-in that week's runs beside other tracks' work, its Rust tests 784 to
-889 s (114 s before Phases 6-8); `android` 824 s with an up-to-date APK
-(2026-10-15: the APK's build, 220 s; the arm64 stage, 350 s, beside the
-emulator's boot, 25 s; then the emulator's smoke, 243 s, and the smoke's
-game with the arm64-v8a library, 211 s, which boots the emulator again),
-and earlier 902 s after a change to the translation's compiler flags (the
-APK's build of both libraries, 149 s, and the arm64 stage, 417 s, each
-compiling the translation again).
+change detection and run every unit again, including when private/ignored game
+inputs, drivers or the test environment changed. It also works without a
+comparison ref. A skip leaves `build/suite/` intact and does not establish a new
+passing result. Help and flag parsing need no Nix shell. While developing, run
+only the platform whose host is changing, and `full` once at the end before
+review or a merge only when runtime inputs changed (AGENTS.md): `desktop` (the
+default, for the native and shared code) builds the game module and runs the
+port's unit tests, the Rust workspace's tests and the validation run; `web` the
+web build, the browser suites and the browser tests that measure time (WebXR's
+among them); `android` the APK with both its libraries, the emulator's smoke
+test, the smoke's game again with the APK's arm64-v8a library (which the
+emulator runs through its ARM translation) and the game's arm64 build under qemu
+(`arm64-smoke.sh`); `xr` the native build and the OpenXR smoke test. `full` runs
+them all and what CI runs (`.github/workflows/ci.yml`) as on a clone without the
+user's discs: `tools/repository/check.py`, which builds and tests the workspace
+(here without a game module), and the matching toolchain's smoke test
+(`make -C src/decomp smoke`).
+
+**Units.** The runner (`scripts/suite.py`) makes a run of units: a build, one
+Rust test binary (cargo's messages list them; each runs as cargo runs it, from
+its package's directory), one browser test file, a device's smoke test. A unit
+names the units it needs first, the processor threads and memory it counts
+for, and what it reads. Logs are `build/suite/<unit>.log`; `build/suite/summary.txt` has
+every unit's result and time, and a failure's line names its log and, for a Rust
+test binary, the cargo command that builds it with line tables for a backtrace
+(`--profile suite-debug`).
+
+**What has not changed is not run again.** A unit that passed is not run again
+while what it reads is what it read then: the binaries it runs (by their
+contents: a test binary, its package's programs, `xem-headless`, the web
+build's files, the APK), the files under the paths it names (tracked or not, as
+the working tree has them, so the same before and after a commit), its command
+and environment, the pinned tools (`nix/`), the graphics card's driver, and the
+private inputs (the discs, `.local`) by size and time. The summary lists it as
+`same` with the time of the pass it stands on, and its log is that pass's. A
+unit that failed always runs again; `--force` runs every unit. Builds run every
+time and rebuild what changed; the game module is built only when its sources
+or the matched links changed. So a run costs what changed: a change to `xem-ui`
+rebuilt and ran 9 of the desktop tier's 73 units in 168 s, the tier again with
+nothing changed takes 2 s, and `full` after the platforms' tiers runs what they
+did not (CI's checks).
+
+**Room.** The run keeps no more processor threads busy than `--threads` allows
+(a thread for each core unless given) and is pinned to that many processors, so
+that a unit which starts a thread a processor (a compiler, a browser's
+rasterizer) keeps no more of the machine busy than the run may; each core's
+second thread, worth about a quarter of the first to these tests, stays with
+whatever else the machine does. It counts no more memory than was available
+when it began, less a gigabyte. A unit starts beside others only while the
+machine has it to give at that moment: its memory (what else the machine runs
+may have taken it since), and threads that nothing else keeps busy (the run
+measures the processor time the whole machine works between two looks, takes
+off what its own units counted for, and leaves that many of its threads alone;
+before its first look it goes by the last minute's load average). It looks
+again every ten seconds. Units start in their order; where one must wait
+for room, a later one starts ahead of it only if that does not make it wait
+longer (it is done before the room comes, or fits beside it). Builds follow one
+another, each in a cargo target directory of its own (`src/runtime/target-*`,
+none of them play.sh's), on the run's threads but two, which what is already
+built is tested on meanwhile. Each Rust test binary runs its tests on a share of
+the threads in proportion to its work (the processor time its last run took,
+`build/suite/results.json`; a binary never run here counts as a quarter of the
+run), so that they end together. A unit counts for the memory its last run
+here held with every process it started (the run looks every two seconds at
+what is theirs and not a file's: a browser test file's node and its browsers,
+a smoke's emulator), and a browser test file or the arm64 smoke for the
+threads that run kept busy on average, no fewer than one; a build, which
+takes what there is to build, and a unit never run here count as the runner
+says.
+
+**What measures time** runs alone, one unit after another, once the rest is
+done: the Android smoke (with the APK's x86_64 library, then its game with the
+arm64-v8a one, on the emulator the first left running), the XR smoke, the
+browser tests that measure time (the headset's frame rate, rewind frame times,
+fast-forward's music, the stalled page, a resume read within the rewind's
+one-second interval, the Binaural mode's cost) and the Rust tests that do (a
+frame's latency in `xem-host`, the desktop's window, the settings panel). Their
+emulator and headset render on the processor: beside the browser suites the
+Android smoke's frame rate fell from 56 to 10 a second, the XR smoke's headset
+frames came late, and their checks failed. The XR smoke plays its own runs
+side by side, in four lanes that each have a Monado and a settings directory
+of their own (`xr-game-smoke.sh`): a run keeps about half a processor thread
+busy, its session pacing the game by the clock, so its 35 headset runs (with
+xem-headless's 13 for their RAM) took 1 036 s one after another and take 295 s
+in lanes, every check the same.
+
+**The graphics card.** Where `scripts/xem-gpu-host` finds the host's card, the
+Rust tests and the browsers' WebGL2 draw on it, and Mesa's lavapipe, which
+draws on the processor, stays listed after it for what asks for the software
+rasterizer by name: `xem_render::Gpu::reference` (wgpu's fallback adapter), for
+tests that compare pictures to the last bit (`xem-render/tests/ps1.rs` against
+the software PS1 rasterizer; the diorama's pane against the flat frame, whose
+colours a card rounds its own way: on an RTX 5070 Ti, 82 of the debug battle's
+pane pixels one 15-bit step off). Without a card everything draws on lavapipe
+and SwiftShader as before, each lavapipe device rasterizing in its test's own
+thread (`LP_NUM_THREADS=0`: llvmpipe's pool of a thread a processor for every
+device took half as much processor time again for the same pictures). Measured
+on that card against lavapipe with its pool: `xem-headless`'s render tests 508 s
+of processor time for 2 128, its diorama tests 329 for 1 278, its camera tests
+275 for 600; a browser's forest route 38 s for 70, the browser suites 5 min 30 s
+for 18 min. The browsers' WebGPU stays on SwiftShader (Chromium gives it no
+other adapter headless), the validation sheet on lavapipe (its pictures are for
+people to compare), and so does one of the headset diorama's browser tests
+(`xr-diorama.test.mjs`, the hands over it: its browser starts without the
+card's driver named, `support.mjs`'s `software`, and Chromium then keeps
+SwiftShader): on a card a session's frames come as fast as the game's, and the
+first frames a diorama cannot be built from once inspection ends are then
+three in a row where it holds the last one over two (`ps1/diorama.rs`,
+`MISSES`), which the test of the diorama's return "at once" sees as one frame's
+ease towards the screen (share 0.056) in three runs of five. The file's other
+three tests draw on the card (the file 315 s on SwiftShader, 201 to 246 s so).
+The XR smoke and the Android emulator draw on the processor as before.
+
+**Tests that failed now and then**, and what each waited on:
+- `first-person.test.mjs`, the Binaural listener: it compared the music's parts
+  on the page with the native host's, but the music plays on each host's own
+  time (the page's by its clock, the native example's through the eight frames
+  it plays from the state), so a part had begun on one and not on the other in
+  3 runs of 8. The parts both hear are compared, and that they hear one song.
+- `first-person.test.mjs`, the gamepad: the test's pad appeared with its
+  right stick's click already held when the page was slow to take a frame, and
+  a button found held on a pad just connected is no click. The page now sees
+  the pad idle first.
+- `xr-diorama.test.mjs`, the world map's parallax: after loading the world
+  map's state it waited for "the diorama alone", which the battle's diorama
+  before it already was, and at times measured the screen that stood in before
+  the world map's first diorama (one shift in every row). It now waits for
+  game frames of the loaded state and session frames that present them first.
+- `android-smoke.sh`, a finger's drag on the touch stick (the arm64 pass): the
+  script waits for the log line of the pad's change, and the log of a busy
+  emulator misses lines now and then. In one run the app's own were missing
+  for four seconds (its frame-rate line, due every five seconds, among them)
+  while other processes' arrived. A key's or a finger's hold the log shows
+  nothing of is now made again, three times at most.
+- `xr-diorama.test.mjs`, the anchor under two-hand scaling: the table eases
+  after the camera's target in the session's time, and the scaling began a
+  fixed number of session frames after Fei's walk, before it had come to rest
+  where those frames are short (3.7 mm of travel on a card against the
+  millimetre allowed). It now waits for the table to rest.
+
+Rust builds use the `suite` profile (release's optimization without link-time
+optimization or debug information: after a change to xem-gpu the test binaries
+rebuild in 37 s, against release's 161 s). The desktop tier's Rust tests
+include the original game's long run (`xem-headless/tests/long_run.rs`, 36 000
+frames twice), the diorama's qualification on the game
+(`xem-headless/tests/diorama.rs`) and `xem-host`'s original-game tests (rewind
+frame latency, the focus pause's recording, the held rewind), which skip
+without the disc as the others do. The Android smoke compares states with
+`xem-headless` (`XEM_HEADLESS`, the hosts' build); run by itself it boots its
+emulator while the APK builds, `XEM_SMOKE_KEEP=1` leaves the emulator running
+for a run after it and `XEM_SMOKE_STOP=1` only stops one left running, and it
+turns off the system's "isn't responding" dialogs on its AVD (on a loaded host
+one took its taps).
+
+Measured here (an 8-core, 16-thread machine with 15 GB; 2026-11-13). Before,
+with every thread and software rasterizers throughout: the Rust tests alone
+1 203 s and 8 817 s of processor time, one test binary after another, up to
+6.2 GB in one of them; `desktop` about 23 minutes; `full` 3 762 s on
+2026-10-17, and on 2026-11-10 it ran the machine out of memory. Now, on a
+thread a core (half the threads) and the card: `desktop` 617 s with everything
+to run (the Rust tests 4 410 s of processor time, the run's memory 5.1 GB at
+its most), 2 s with nothing changed; `web` 928 s (1 755 s with SwiftShader for
+everything), 560 s of it the tests that measure time, one at a time.
 
 ## Saves and time controls
 
@@ -7482,6 +7831,7 @@ as a recorded control of the session, whose zero is the original's:
 | [Text speed](#text-speed-auto-advance-and-movie-skipping) | `text_speed`: `Original` (the default), `Fast`, `Instant` | `text_speed {glyphs}` | a message window's step reveals at least 4 glyphs, or a line, except while a script counts out a page before its wait for Confirm (`src/port/text_speed.c`, `xem_core::dialogue`) | `status.text_speed`; `status.dialogue` (a page's prompt shows sooner) |
 | [Auto-advance dialogue](#text-speed-auto-advance-and-movie-skipping) | `auto_advance`: off (the default) or on, a dwell of 30-600 vertical blanks (120) | `auto_advance {dwell}` | the session presses Confirm once a field dialogue's prompt has shown the dwell, never at a choice (`xem_core::dialogue`) | `status.auto_advance`, `status.auto_advance_waited`, `status.dialogue` |
 | [Movies can be skipped](#text-speed-auto-advance-and-movie-skipping) | `movie_skip`: off (the default), on | `movie_skip {enabled}` | the story's movies take the original's early exit on the player's press (`src/port/movie_skip.c`) | `status.movie_skip`; `status.movie` (`ends_on_press`) |
+| [Skip disc load times](#disc-load-times) | `fast_disc`: off (the default), on | `fast_disc {enabled}` | the drive takes no time over its seeks, its pauses and the sectors of the game's loads; movies and their sound keep the disc's pace (`xem_core::devices::cd`, The fast drive) | `status.fast_disc` (loads end in fewer frames) |
 
 Cutscene skipping is not offered: the game marks no next moment the
 player controls clearly enough ([Cutscene skipping](#cutscene-skipping)),
@@ -7768,8 +8118,8 @@ an agent's change, and that an old file or a policy no longer offered
 reads the default alone; the same test checks that the encounter rate
 defaults to the original's and that Half is saved, reloaded, carried by a
 backup and a value no longer offered resets alone.
-`tests/test_port_encounters.py` (suite.sh's port
-stage) builds `src/port/encounters.c` natively with `-Wall -Werror`
+`tests/test_port_encounters.py` (the suite's `port`
+unit) builds `src/port/encounters.c` natively with `-Wall -Werror`
 against an invented host: the draw runs where the host leaves it on and
 not where it turns it off, asked with the map's low 12 bits, and halved it
 runs on even field frames only. `xem-core/tests/persistence.rs` checks on
@@ -8042,7 +8392,7 @@ all. Battle 71's enemy 4 is met only in Anima Relic 2's random battles
 lose it too.
 
 Tests: `tests/test_platforming.py` (`python3 -m unittest
-tests.test_platforming`, suite.sh's port stage) checks the classifier on
+tests.test_platforming`, the suite's `port` unit) checks the classifier on
 invented walkmeshes, scripts, area files and two invented discs: a slide
 up needs a jump and its way down is a fall, floors join at any height, a
 slide entered level is no stair, a jump links the sides of a valley of
@@ -8071,9 +8421,9 @@ walking from map 15's layer-1 floor into a floorless triangle takes the
 leader off layer 1 into the air and down at least 150 units onto layer
 0's floor.
 With the user's discs extracted, `python3 -m tools.analysis.platforming
---check` proves the shipped table: suite.sh's port stage runs it when
-`.local/extract` and `.local/discs` hold both discs, and says it skips it
-otherwise.
+--check` proves the shipped table: the suite's `platforming` unit runs it
+when `.local/extract` and `.local/discs` hold both discs, and the suite says
+it has none otherwise.
 
 Not done or not measured: the classification is a static approximation of
 the walkmesh. It measures each actor layer on its own and does not follow
@@ -8259,7 +8609,7 @@ another action, which stays that action's; an action unbound in
 Shortcuts (an empty binding) stays unbound.
 Touch screens and headsets have AUTO beside the picture in a field's
 scenes and dialogue (`Context::Event` and `Context::Dialogue`): the touch
-deck shows it above the face buttons, a headset beside the screen's right
+deck shows it among the keys above its primary button, a headset beside the screen's right
 edge (`overlay::side_keys`, where no control deck holds the keys there),
 lit while auto-advance is on; a touch, or a tap or pinch aimed at it, is
 the same app action, never a press of the game's.
@@ -8386,7 +8736,7 @@ player or none; its loop takes no press under the staff roll, once it has
 taken one, through the scripts' mask or with the pad queue full; and the
 movie mode's shows from its player's start until it stops and ends on a
 press unless its request kept it or its end counts down. `tests/test_port_text_speed.py` and
-`tests/test_port_movie_skip.py` (suite.sh's port stage) build the two
+`tests/test_port_movie_skip.py` (the suite's `port` unit) build the two
 wrappers natively with `-Wall -Werror` against an invented host: a speed
 raises a smaller budget and never lowers one, slow text and the one-line
 layout window keep theirs; a field movie gains bit 0x80 only when armed
@@ -8486,6 +8836,190 @@ agent's change were read on Monado and IWER, and the AUTO key was aimed at
 on Monado only (no IWER run aims at it); beyond the page auto-advance
 turned there, no headset run played text speeds, auto-advance or movie
 skipping on the game.
+
+### Disc load times
+
+One option in the Gameplay section takes away the time the game waits
+for its disc drive: **Skip disc load times** (`Settings.fast_disc`,
+`SettingChange::FastDisc`; off, the original's, by default), the recorded
+control `fast_disc {enabled}` (`Session::set_fast_disc`), which makes the
+runtime's drive fast (`Cd::set_fast`; `xem_core::devices::cd`, The fast
+drive). It is the drive's alone: no game data and no line of the game
+module changes (so the module, and with it every saved state, stays the
+one it was), a state holds nothing of it, and with it off every response
+of the drive comes at the cycle it came at before.
+
+**What a load costs.** The port runs the game's code in no time and the
+drive answers on the game's clock ([Discs](#discs); cd.rs, Timing), so a
+load lasts what the drive's mechanism takes plus what the game paces
+itself: a second for a stopped motor, up to a second and 300 ms for a
+seek, a 150th of a second a sector (300 KB a second) and 32 ms for a
+pause to complete, beside the 1.5 ms of each command's first response.
+The game reads its disc in four ways, all through libcd's callbacks
+(`src/port/libcd.c`):
+
+| Reader | Command and mode | What its data-ready handler does |
+| --- | --- | --- |
+| the resident's files and file lists (`cd_copy_file_sector`, `cd_copy_list_sector`, `resident/cd_reads_and_streams.c`) | ReadN, Setmode 0xA0 (double speed, whole sectors) | takes each sector's address and data, checks the address, pauses (or seeks to the file expected next) after the last; a list reads through a gap of up to 16 sectors without taking them |
+| the resident's rings (`stream_store_sector`: the field's music waves; `stream_store_image_sector`: a map's textures and a battle action's pictures, strip by strip into VRAM from the transfer's callback) | ReadN, 0xA0 | takes a sector into a free slot; with none free it sets itself aside and retries (status, track count, pause, seek, read again) |
+| the world map's terrain (`worldmap_stream_on_data_ready`) | ReadS, 0xA0 | takes each sector's address, and its data when it is one it wants; pauses at the end of its list |
+| movies (the stream library's `StCdInterrupt`, `src/port/libcd_stream.c`) | ReadS, 0x80 or 0xC8 (no sector addresses; XA-ADPCM for the sound) | takes a sector into its ring, or drops it when the ring is full |
+
+The game waits for the first three by spinning on `cd_sync_reads` or by
+running frames while `cd_get_pending_read_count()` is nonzero
+(`battle_wait_for_disc`); it never reads how far a read has come
+(`cd_get_read_bytes_left` serves a debug print). Its development build
+read the same files through the PC file server (`cd_pc_file_names`),
+where a file is whole before the call that asks for it returns.
+
+**What the fast drive changes.** Only the waits:
+
+- a seek takes the shortest seek's time (`MIN_SEEK_CYCLES`, 0.6 ms)
+  whatever its distance, and a stopped motor is up to speed at once;
+- Pause and Stop complete as when the drive is already paused or stopped
+  (`IDLE_DONE_CYCLES`, 0.2 ms);
+- a read of whole data sectors without XA-ADPCM (the first three readers)
+  *reads on*: its first sector comes `FAST_SECTOR_CYCLES` (1 024 cycles,
+  30 microseconds) after the command's first response, and the sector
+  after one whose data the program took from the sector buffer follows as
+  soon after the program's handler has returned, when the handler asked
+  the drive for nothing. The run loop lets that sector's interrupt in
+  before the game's own code goes on (`Runtime::advance`,
+  `Cd::sector_at_hand`), as the console takes an interrupt that already
+  waits, so a file's sectors cost their handlers and nothing else: a
+  waiting loop is not woken (and its 65 536 iterations to the next poll
+  not run) between them.
+
+**What it keeps.** Every response is given, with the same bytes, in the
+same order, and each command's first response comes after its 1.5 ms: a
+read's first sector still follows the read's acknowledgement. Each data
+sector still has an interrupt of its own and, after it, its transfer's
+callback, in which the rings mark and unload their slots: the drive
+reads on only once the handler of the sector before is done, so two data
+sectors never wait together, at any speed of the host. A sector the
+program does not take is followed at the disc's pace, as on the console:
+a ring with no free slot (the reader's retry then goes its own way, its
+commands 1.5 ms apart), a gap a list reads through, a sector that arrives
+while a stop is requested. So the game's own pacing is the game's: the
+field empties its music ring five sectors a field frame, the fast drive
+fills the ring at once and waits, and the wave bank reaches the sound
+chip no faster than the game hands it over (Lahan's 188 416 bytes of
+samples are there 41 frames after the player walks, where the disc's
+pace takes 65; the reader retried 78 times where the disc's pace never
+fills the ring). Movies and their XA sound keep the disc's
+sector period (they are played, not loaded; only the seek to them is the
+drive's), and the changer's five seconds at the story's disc change stay
+([Discs](#discs)).
+
+What a player can tell is the time: loads end in a few frames, so the
+frame a scene begins on, and with it the frames the field's
+`rand()` has run and where a random battle falls, differ from the
+original's as they differ between two consoles' drives.
+
+**States and replays.** The setting is the host's and no part of a
+state (`Cd::save` is unchanged, the format's fingerprint with it): a
+state saved in the middle of a fast load restores into a session at the
+disc's pace, whose drive goes on from the sector due, and the other way
+round. The control is recorded with the inputs, as the other gameplay
+options are, so a replay keeps the recording's drive whatever the host's
+setting; a session log and a headless session play at the disc's pace
+unless commanded. The interactive hosts give the session the setting
+before every game frame (`Game::update`, the browser's frame loop).
+
+**Measured** headless (suite profile, disc 1; frames are vertical
+blanks), each run at the disc's pace and with the drive fast, driven by
+what the game shows:
+
+| Run | Disc's pace | Fast drive |
+| --- | --- | --- |
+| Lahan (map 1) from `enter_field`: the player walks | 131 | 3 |
+| the same: every load over (the music's waves in the sound chip) | 196 | 44 |
+| map 27 from `enter_field`: every load over | 163 | 5 |
+| boot to the title's commands, Start ending the boot's movie as it shows | 731 | 330 |
+| the opening chapter, boot to Fei's room (the title's New Game, its movie to frame 100, the narration, Lahan, map 14's battle) | 16 302 | 13 936 |
+| map 27's scene to map 28; map 131's and map 482's to the player's control | 1 600; 3 808; 2 516 | 1 442; 3 658; 2 386 |
+| the kernel menu's battle test: to the battle; battle file 0 and file 1 fought to the end | 436; 3 215 and 1 353 | 166; 2 656 and 1 097 |
+| the kernel menu's movie test, movie 1: to its first picture; from there to its frame 380 | 121; 1 511 | 17; 1 511 |
+| Lahan from `enter_field`, walked out through its gate to the world map on foot; frames the map's terrain reader is busy in the first 400 walking there | 686; 80 | 540; 10 |
+| a new game from disc 2 (disc 1 brought by the changer) | 854 | 427 |
+| every field map from `enter_field`, left to itself: frames until its loads are first over, summed over disc 1's 730 maps; over disc 2's 729 | 108 654; 32 453 | 16 908; 5 064 |
+
+The opening chapter shows the same maps (490, 4, 2, 14), fights the
+same battle and reaches the same story value; the three scenes show the
+same messages; each battle asks the disc for the same number of reads
+(46 and 32) and ends in the same context; the movie shows every tenth
+frame as many vertical blanks after its first picture and plays the same
+475 XA sectors; the new game's movie takes the same 321 vertical blanks
+from its frame 20 to its frame 100. 120 frames after their loads are
+over, maps 1 and 27 hold the same VRAM, pixel for pixel, and maps 14 and
+131 hold their music's samples in the sound chip where the disc's pace
+puts them, the bytes of the wave file. Every one of those field maps
+does the same things in the same order at both paces (the maps it shows,
+the messages its windows show, the mode it leaves the field for: a
+scripted battle from some, the kernel menu at once from most of disc 2's
+maps entered from its boot), its loads first over no later with the drive
+fast; disc 2's map 342 traps from that entry at both. With the drive
+turned fast and back every 7 frames, and every 61, in the middle of
+whatever it reads, the opening chapter reaches Fei's room through the
+same maps and battle (14 365 and 14 384 frames), its movie's 321 vertical
+blanks unchanged. In every run the game's own
+counts of disc errors (`cd_file_out_of_order_count`,
+`cd_list_out_of_order_count`, `cd_stream_out_of_order_count`,
+`cd_stat_error_limit_count`, `cd_stat_command_fail_count`,
+`cd_stat_retry_fail_count`, and on the world map the terrain reader's
+two) stay 0. On the host a load's sectors cost their handlers: the
+heaviest frame of Lahan's load took 18 ms here with the drive fast, the
+heaviest at the disc's pace 15 (the frame the field begins on, the
+game's own work), the rest under 5 at both; from boot, `enter_field`
+ran 32 frames where the disc's pace runs 310.
+
+Tests: xem-core's `devices::cd` tests take the fast drive through a
+handler as the port's (its first sector after the acknowledgement and
+the rest as each is taken, every one once and in order; the disc's pace
+after a sector left in the buffer, after a command and behind a response
+not taken; the stream library's modes at the sector period; Pause, Stop,
+Standby and a seek at once; a state saved either way going on under the
+other). `tests/persistence.rs` plays a stand-in's load through the real
+run loop (120 sectors, each by an interrupt of its own, in two frames
+and at most eight steps of the game where the disc's pace takes a step a
+sector) and the control's recording (each change once, a replay keeping
+the recorded drive, a state and the console's reset leaving the host's);
+the format's fingerprint is unchanged. `xem-settings`, `xem-host`,
+`xem-ui` (the Gameplay section's switch), `xem-desktop/tests/control.rs`
+and the browser's `persistence.test.mjs` take the setting from a file
+saved before it existed, an agent's `settings_apply` and the panel to
+the session's `status`. On the game, `xem-headless/tests/fast_disc.rs`
+(about 45 s here, each pair of runs side by side) plays the table's runs
+and their comparisons, the chapter with the setting changed every few
+frames, the kernel menu's other tests' starts (a Gear battle, Battling,
+the menu's six screens: the same mode and kind of context 300 frames
+after each launch), a recording made either way replayed in a session
+set the other way, states of each of the first frames of a fast load
+gone on to the same memory, and the story's disc change with its five
+seconds; its last test enters a sample of the field maps at both paces
+(every 29th of disc 1's; with `XEM_FAST_DISC_SWEEP=1` every map of both
+discs, the table's last row, about eight minutes here on 16 threads).
+
+Not done or not measured: the acknowledgements' 1.5 ms stay, so a load
+of many files still takes a frame or two for every three or four of
+them; a gap a list reads through (27 sectors in two gaps on the way from
+Lahan to the world map) passes at the disc's pace, which that run did not
+find holding up what the player waits for (the map came after as many
+frames with those sectors hurried, in a trial); the music's start after
+its picture is the game's own pace, not shortened. Battles were fought
+from the kernel menu's test on battle files 0 and 1 with one party on
+foot; the Gear battle, the arena and the menu's screens were started but
+not played through with the drive fast, the field maps were entered and
+left to themselves, not played, and no story past the opening chapter
+was played. A movie without XA sound (the stream library's Setmode 0x80
+or 0x88, a field movie with a sound bank of its own) was not reached on
+the game: the drive's unit test covers its mode. Whole sectors without
+XA-ADPCM is what the option reads as a load: a read in another mode
+would keep the disc's pace, and the game makes none. The browser's disc
+source fetches its image in pieces as the drive asks for them; a fast
+load asks for them sooner, and no browser run measured one on the game
+(the browser test ran on the fixture module). No phone, headset, Windows
+or macOS build ran the option on the game, and no person played with it.
 
 ### Cutscene skipping
 
@@ -8613,12 +9147,13 @@ other hosts were not run.
 ### Languages
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
-game's own text: **English**, the original's, by default, **Português
-(Brasil)** or **Français**. It is a setting (`xem_settings::Settings::language`, saved as
-`"English"`, `"BrazilianPortuguese"` or `"French"`), which the hosts give the session
+game's own text: **English**, the original's, by default, **English
+(Perfect Works)**, **Português (Brasil)** or **Français**. It is a setting
+(`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
+`"BrazilianPortuguese"` or `"French"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "pt-BR" | "fr"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -8635,8 +9170,10 @@ Portuguese translates 16 030 of them; 1 056, the same in Portuguese (names
 alone, cries, the developers' test menus kept as they were), are listed
 rather than shipped. French translates 16 029 and lists 1 057: the same
 texts and one enemy name French spells as the original does (Griffon).
-Text built at run time (numbers, the party's
-names) is the game's own. The menus' command labels (New Game, Status,
+English (Perfect Works) reads 10 513 texts anew, and 210 table entries
+alone besides (below), and lists the 6 589 it leaves as the original's.
+Text built at run time (numbers, and a name the player gave) is the game's
+own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
 anew in the language, and the stat panels' words the menus compose of a
 small font's letters (Attack, Hit%, Defense, Evade%, Ether, Weight,
@@ -8665,7 +9202,9 @@ translators), `lint` checks translators' files, `merge` writes the shipped
 files and `check` checks them against the discs. A translation that is the
 original's own bytes is not shipped (where a language has no translation
 the original shows): `same.txt` names those texts by `<where>` and `<hash>`
-alone, so `check` tells them from texts left untranslated. A translation keeps its
+alone, so `check` tells them from texts left untranslated. A line without
+a translation translates its text to nothing (Perfect Works blanks two
+fragments of an accessory's description). A translation keeps its
 original's controls (the waits, speed changes and timed ends in their order,
 the insertions in any order), and each line and page fits its window: a
 field message's lines take up to 52 columns (26 narrow letters, the widest a
@@ -8676,19 +9215,106 @@ rows if more; `merge` breaks a longer line at its spaces (never before a
 page into pages where the player's Confirm already ends the text. A timed
 text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
 (its last page's lines are the cursor's: `a9` names them), a message whose
-window a script sizes (`cf`, `d0`) and every text outside the field keep
-their pages and fit their windows as they are.
+window a script sizes and every text outside the field keep
+their pages and fit their windows as they are. A battle event's message
+fits the window its script lays out before it (ovl3087's opcode 1a: a width
+in 12-pixel units of 3 columns and rows, of which the frame shows 4; 16 and
+8 where it gives none), which `tools/translations.py` reads from both
+discs' scripts.
+
+**Windows a field script sizes.** `cf` and `d0` place and size the running
+actor's windows: a left, a top, a width of 3 columns a unit and rows, each
+left as the game computes it where the operand is 0, and (`d0`) a style;
+the actor's speaker and centred messages take them until it sets others or
+`f4` clears them, and they outlast the script that set them
+(`field_event_open_message_window`). Most only place a window (1 843 of the
+2 228 `d0` on both discs give neither size), and a script that sizes one
+clears it once its message is dismissed. `sized_windows` follows each
+actor's scripts from its events' entries, passing on the size, the style
+and the character (whose portrait takes 0x11 of a sized window's columns
+and makes its rows 4) that reach each instruction: an event starts as the
+actor was made or as one of its scripts ends, and a call's return takes
+whatever its routine may leave. A message is held to a script's window
+only where one may stand when it shows (136 texts of both discs), and not
+to a size its own original text passes. Before this the tool read the
+layouts in the order of the bytecode, across actors, and took a layout
+that only placed a window, or its width without the three columns a unit,
+for a window of no size: 5 063 texts were held to their English text's own
+lines and width, and could add no page. Portuguese and French each have
+4 510 translations among them, fitted to that shape (they show as they
+should, in less room than their windows have), and three texts each that
+passed their real windows and were broken anew: a five-line page in a
+portrait's four rows (map 155), a notice wider than a 30-column window one
+of its five entries shows it in (map 635) and a debug room's text
+(map 720).
+
+**One text, read differently from place to place.** A translation is of a
+text wherever a window takes it, named by the text's hash. A language may
+also translate a text in one table entry alone, on a line
+`<where> <hash>@<entry> <translation>`: `<where>` names that entry, and
+`<entry>` is the entry's name, the text's hash carried on over the entry's
+index, its offset in its table and the table's count of entries as three
+halfwords (`place_key` in the tools and in `xem_core::locale`). The port
+computes it where the game takes an entry from a table
+(`text_get_resource_entry`), so the entry's own translation is shown there
+and the text's elsewhere. Perfect Works needs it: a jukebox whose lists
+all read "track00", "track01" … gets each tune's title, a line a speaker
+says in one scene only is reworded there, and "Cancel" stays Cancel but
+where a menu's label means Delete. The party's and the Gears' names are
+entries too (`nm000-<slot>`: slot n of `game_data.names` is entry n at 20 n
+of a table of 31), so an Omnigear's name is respelled while the Gear it
+shares the name with keeps it, and a name the player changed is another
+text, left as it is. A name no table holds is respelled in its slot
+alone, so the letters a player types in the name entry are never taken
+for it.
+
+**Perfect Works.** English (Perfect Works) is the text of
+[Xenogears: Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+0.11.4, a retranslation that ships as replacement disc files. Its script and
+names patch holds every text table with the original's entries, one for
+one, so `python3 -m tools.perfect_works` reads each entry beside the
+original's (its release's `gamefiles/script1` and `script2` under
+`.local/perfect-works/`, and the user's discs) and writes the readings as
+translators' lines for `merge`: a text read alike in all its entries once,
+and an entry read otherwise than its text's other entries alone (flagged
+`[here]`). The language brings its own layout (`OWN_LAYOUT` in
+`tools/translations.py`): its build shows each text on the console, so it
+sets its own waits, insertions and pages, a field line may take the
+screen's 70 columns (the fixed box's 72) and a field page its own lines
+where no script sizes the window, and a line the menus and the battle
+render into a line image that image's 57 columns; a choice keeps the lines
+its cursor walks, and a window a script sizes, in the field or the battle,
+shows what it shows whatever the language. Of 50 427 table entries on both discs
+(30 996 and 19 431), 11 499 are Perfect Works' own. Where its own scripts
+show a field message otherwise than the original's do (69 maps' event
+scripts differ; the tool compares how each shows each message), the text
+is held to the original's window. Six field messages' lines are broken
+anew to fit theirs, and two battle messages' to fit their scripts'; eight
+field messages keep the original's text (their windows are their scripts',
+too small for the reading, which a choice or a timed text cannot break),
+as do nine battle messages whose windows Perfect Works' own battle code
+sizes, and two Japanese development texts. One list of choices has a line fewer than its cursor
+walks, as in Perfect Works' build: the line stays, blank. Its font's added
+marks are the language's added glyphs (Letters, below). What is not text
+of these tables is not part of a language and stays the original's:
+Perfect Works' event scripts, battle and menu code, rebalance, pictures
+and memory card titles. The text is the Perfect Works Build team's, under
+the GNU General Public License, version 3
+(`locale/en-x-pw/README.md` and `LICENSE` there; the release notices and
+Settings → About say so).
 
 **In game memory.** Every runtime installs every language's translations
 at construction (`locale::install`, `Runtime::new`) at 0x20000000, outside
 the PS1's addresses and outside snapshots (`snapshot::REGIONS`), as the
 Kanji font is placed; their digest is a package of the state identity
 (`"translations <sha256>"`), so a state restores only where the same
-translations are installed. The image is a header (magic `XLC1`, the active
+translations are installed. The image is a header (magic `XLC2`, the active
 language, the number of languages, the added glyphs' address and count),
-each language's records' address and count, the glyphs' recipes, each
-language's records (hash, the translation's address, the columns and rows
-it needs) ascending by hash, then the translations' bytes.
+each language's records' address and count and its single entries'
+records' address and count, the glyphs' recipes, each language's records
+(hash, the translation's address, the columns and rows it needs) ascending
+by hash and its entries' records ascending by name, then the translations'
+bytes.
 `locale::activate` writes the active language (0 for the original).
 `src/port/locale.c` wraps the three ways a window takes text,
 `window_queue_message`, `window_render_text_line` and `window_insert_text`:
@@ -8698,9 +9324,13 @@ passes the translation's address instead. The game's bytes and pointers
 stay as they are; a window's text pointer then points at the translation,
 which stays installed whatever is active later, so a window goes on with the
 text it began (and the texts queued before a change), and the next text
-takes the new language. `text_get_message_columns` and
+takes the new language. `text_get_resource_entry` returns the translation
+of an entry the active language translates alone, which the three then
+pass on as it is (it lies outside RAM, so they name it nothing); a name
+they are passed in `game_data.names` is looked up as its slot's entry
+first. `text_get_message_columns` and
 `text_get_message_rows` give a field message's window what its translation
-needs beyond its table's.
+(its entry's, else its text's) needs beyond its table's.
 
 **Command labels.** The menus draw their commands from sheet entries
 0x123-0x149 of the menu's sprite sheet (directory (0x10, 0) file 1, archive
@@ -8755,12 +9385,17 @@ longer has its original images, so the next pass leaves it.
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
 capitals (`locale/pt-BR/glyphs.txt`), French `à â ç é è ê ë î ï ô ù û ü`
 and their capitals (`locale/fr/glyphs.txt`; it writes oe and ae for the
-ligatures, which the font lacks), 38 letters in all. Each is a two-byte glyph from 0xFF20
+ligatures, which the font lacks), and Perfect Works the marks its own font
+draws in place of the wide digits ０-３, the wide underscore and the
+brackets: `ö ; *`, a dash `—` and a blank `␣` as wide as a wide glyph, and
+`ﭏ` (El, the lamed and the aleph, which its Omnigears' names begin with)
+(`locale/en-x-pw/glyphs.txt`), 44 glyphs in all. Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
 its special glyph), the same code in every language that adds the letter
 (the languages' letters numbered in `Language::ALL`'s order, a letter
 another language added first keeping its code and its recipe).
-`text_get_glyph_width` makes them narrow (2 columns), and `text_draw_glyph`
+`text_get_glyph_width` makes them narrow (2 columns), or 3 columns where
+the recipe says `wide` (the dash, the blank and El), and `text_draw_glyph`
 draws one through the original's own drawing of 0xFFFF: it puts the letter
 in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
 0xFF and puts the special glyph's rows back, with nothing waiting in
@@ -8768,8 +9403,9 @@ between. The letter is composed from the player's font: the base letter's
 11 rows (the font block `text_install_font` installed), rows taken out
 (a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
 drawn for this project over the top rows (the diaeresis's two dots on row
-1, the cedilla on row 10). No glyph
-of the original is copied.
+1, the cedilla on row 10); a mark the font has no letter for is drawn on
+its space (`blank`), and the semicolon is its colon with its comma's tail.
+No glyph of the original or of Perfect Works' font is copied.
 
 With English active every wrapped function is the original's, so the game
 runs as before: RAM, VRAM and timing are those of the original's text.
@@ -8778,13 +9414,18 @@ Tests: `tests/test_port_locale.py` (the port built natively over stand-ins
 for the originals: a text walked as the window walks it and the tools name
 it, none outside RAM or without its 00; no language, or the original's
 English, passing every pointer through; the active language's translation
-passed to each of the three, the original where it has none; a field
+passed to each of the three, the original where it has none; a table entry
+the language translates alone taken translated, with its own window's
+needs, and the same text in another entry as everywhere; a name of the
+game data translated by its slot, the same name in another slot or changed
+by the player left; a field
 window's columns and rows grown to the translation's, never shrunk; an
-added letter narrow, drawn through 0xFFFF from its base with rows taken out
+added letter narrow or wide as its recipe says, drawn through 0xFFFF from its base with rows taken out
 and blanked and its accent, the special glyph's rows put back), `xem-core`'s
 `locale` tests (markup encoded as the game reads text, the columns and rows
-measured; characters the font lacks, unknown controls and bad operands
-refused; the glyph recipes; the image's layout, records ascending by hash),
+measured, a wide glyph's 3 and a text of nothing; characters the font lacks, unknown controls and bad operands
+refused; the glyph recipes, Perfect Works' marks among them; an entry's name; the image's layout, records ascending by hash
+and entries' by name),
 the native test's command labels (a translated entry drawn into page
 (448, 256), each transfer waited for, the line image freed, the entry one
 part there with the text palette two rows up; an untranslated one and
@@ -8796,7 +9437,11 @@ two and the menus' three Next LV rows spelled by their loaders from their
 first x, narrow letters and spaces set, the slots left repeating the last
 letter; one too long or with a letter the font lacks, and every one without
 an active language, unchanged), `tests/test_translations.py`'s small-font
-check of words and rows,
+check of words and rows, its lines for one entry, its language with
+its own layout and the windows it reads from invented field and battle
+scripts (a layout that sizes, places or clears; a size left standing; a
+portrait's share), `tests/test_perfect_works.py` (Perfect Works' bytes as
+markup, a reading fitted to its window, a text's entries as lines),
 `xem-settings`' and `xem-ui/tests/panel.rs`' language tests, and
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
@@ -8804,6 +9449,9 @@ check of words and rows,
 Brazilian Portuguese and in French it reads that language's shipped
 translation of the same message, with added letters, and goes on with it
 once English is chosen, the next message read in RAM),
+`perfect_works_reads_a_text_differently_from_entry_to_entry` (map 222's
+jukebox: two entries that both read "track00" give two titles, each its
+entry's own shipped line),
 `the_language_is_recorded_and_a_replay_reaches_the_recordings_memory`
 (changes to English and French recorded and replayed), the
 timed scenes the text speed is tested on (`the_translations_take_...`:
@@ -8851,8 +9499,8 @@ button group's option of several words wraps them on a panel too narrow for
 its line. About shows the app's version (`xem_ui::VERSION`: a release's
 `XEM_RELEASE_VERSION` without its `v`, else the workspace's). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
-(hand gestures, the headset pointer, Stop at ledges, touch controls,
-reduced transparency and motion); Shortcuts lists every app operation with
+(hand gestures, the headset pointer, Stop at ledges, touch controls and
+their opacity, reduced transparency and motion); Shortcuts lists every app operation with
 its bindings and edits the chosen one in place (Recenter headset view among
 them, with no default binding: the headset card's Recenter button and the
 automation reach it; Toggle first-person view, V and Back+R1, last);
@@ -9088,10 +9736,10 @@ as JSON text or bytes.
   works the panel as the native hosts' does ([Desktop host and settings
   panel](#desktop-host-and-settings-panel)); touch pointers play the touch
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
-  points at menu entries. In a field, Select's keys, the deck's SELECT and
+  points at menu entries. In a field, Select's keys and
   the gamepad's Back alone toggle first-person inspection while the player
   walks where Select shows no picture, held while a dialogue shows they
-  hide its windows ([Hiding a dialogue](#hiding-a-dialogue)), and the gamepad's right stick's
+  (and the deck's HIDE) hide its windows ([Hiding a dialogue](#hiding-a-dialogue)), and the gamepad's right stick's
   click and Toggle first-person view (V, Back+R1, the deck's LOOK; the
   runtime keeps these requests for its next frame, so the page's operations
   never see them) anywhere in it but its menu; the arrow keys, the right
@@ -9508,7 +10156,7 @@ In `nix develop path:./nix/runtime#android`:
   `fps` lines of two passing runs here gave 2.8 to 3.2 at 1× and 3.9 to
   4.6 under fast-forward), so the section waits on those lines rather
   than on frames. Then, with `xem-headless` (`XEM_HEADLESS`, else the
-  suite's build; the suite's android stage builds it), a state it made
+  suite's build, its `hosts` unit's), a state it made
   1 600 frames into field 30 (frame F) goes where Load state reads it, with
   a session log of no commands ending at F+600 (`files/script.json`: the
   game plays as the original, without the player's input or the host's

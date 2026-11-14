@@ -10,6 +10,7 @@
 
 #![cfg(all(has_game_module, not(debug_assertions)))]
 
+use std::assert_matches;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 use xem_assist::headset::{Carry, Headset, Input, PointerSource, Pose, Quad, Scaling, Screen};
@@ -368,7 +369,7 @@ fn through_a_diorama_a_tap_by_a_villager_talks_to_them() {
     assert!(on_table(&space, villager.position, 0.0), "the villager stands on the table");
     let room = space.room_from_world.transform_point3(Vec3::new(middle.x, middle.y, middle.z));
     player.gesture_toward("tap", Some(room));
-    assert!(matches!(player.session.assist.as_ref().map(|a| &a.intent), Some(xem_core::assist::Intent::Interact { actor: 11 })), "approaching the villager: {:?}", player.session.assist.as_ref().map(|a| &a.intent));
+    assert_matches!(player.session.assist.as_ref().map(|a| &a.intent), Some(xem_core::assist::Intent::Interact { actor: 11 }), "approaching the villager");
     for _ in 0..600 {
         if player.session.assist.is_none() { break; }
         player.rest(1);
@@ -973,7 +974,7 @@ fn interrupted_approaches_never_confirm_into_another_interface() {
     player.rest(4);
     let floor = field.camera.project(xem_core::field::V3::new(at.x + 60.0, at.y, at.z)).unwrap();
     player.gesture("pinch", Some(floor));
-    assert!(matches!(player.session.assist.as_ref().map(|a| &a.intent), Some(xem_core::assist::Intent::Walk { .. })), "the new route");
+    assert_matches!(player.session.assist.as_ref().map(|a| &a.intent), Some(xem_core::assist::Intent::Walk { .. }), "the new route");
 }
 
 /// Eye gaze lost: a pinch walks nowhere (no other target replaces it).

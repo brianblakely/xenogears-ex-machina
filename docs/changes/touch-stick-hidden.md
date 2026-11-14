@@ -1,0 +1,1 @@
+- The touch controls' stick appears only under your thumb while you use it, and is hidden the rest of the time.

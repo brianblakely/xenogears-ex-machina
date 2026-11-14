@@ -87,10 +87,10 @@ WRAPPED |= {"window_reveal_text", "field_movie_run_frames", "movie_mode_read_pla
 WRAPPED |= {"battle_resolve_action", "battle_results_grant_exp_skills_and_drops", "battle_results_run_screens"}
 WRAPPED |= {"field_dialogue_draw_windows", "battle_draw_script_portrait_and_text", "battle_draw_gauge_bars_and_windows",
             "battle_draw_list_page_glyphs"}
-WRAPPED |= {"window_queue_message", "window_render_text_line", "window_insert_text", "text_get_message_columns",
-            "text_get_message_rows", "text_get_glyph_width", "text_draw_glyph", "menu_load_resources",
-            "item_shop_load_resources", "gear_shop_load_resources", "member_change_load_resources",
-            "name_entry_load_resources"}
+WRAPPED |= {"window_queue_message", "window_render_text_line", "window_insert_text", "text_get_resource_entry",
+            "text_get_message_columns", "text_get_message_rows", "text_get_glyph_width", "text_draw_glyph",
+            "menu_load_resources", "item_shop_load_resources", "gear_shop_load_resources",
+            "member_change_load_resources", "name_entry_load_resources"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then
@@ -606,7 +606,8 @@ class Rewriter:
             lines = poll_back_edges(lines)
             lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
-        lines = ram_mirrors(lines)
+            self.declare(unit, "xem_loop_spin", "void", [])
+        lines = ram_mirrors(lines, is_port)
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
         for name, decl in sorted(self.unit_decls.pop(unit.source, {}).items()):
@@ -787,7 +788,7 @@ class Rewriter:
         return found
 
 
-def ram_mirrors(lines):
+def ram_mirrors(lines, own_globals=False):
     """Translate memory operands, never the pointer values the game keeps.
 
     The PS1's low 8 MB and its cached/uncached aliases address the same 2 MB
@@ -800,8 +801,21 @@ def ram_mirrors(lines):
     so mem2reg can promote the original C's local variables normally. Only
     KUSEG's physical range and KSEG0/KSEG1 are PS1 addresses; the host's
     presentation rings at 0x70000000 must retain their own addresses.
+
+    With `own_globals` (the port's units) a constant address within a named
+    global is left as it is too, as the global's own address already is: the
+    module places its globals outside the PS1's aliases, and the optimizer
+    then knows the GTE's registers (the flags every step updates) apart from
+    one another and from what the game's pointers reach.
     """
     out, local, number = [], set(), 0
+
+    def own(pointer):
+        # A constant expression: inbounds element addresses of a named
+        # global, nothing computed from an integer.
+        return (own_globals and pointer.startswith("getelementptr inbounds ") and "ptr @" in pointer
+                and "inttoptr" not in pointer and "ptrtoint" not in pointer
+                and pointer.count("getelementptr") == pointer.count("getelementptr inbounds"))
 
     def address(argument):
         nonlocal number
@@ -809,7 +823,7 @@ def ram_mirrors(lines):
         if not match:
             raise ValueError(f"unhandled memory operand: {argument}")
         attributes, pointer = match.groups()
-        if pointer in local or pointer.startswith("@"):
+        if pointer in local or pointer.startswith("@") or own(pointer):
             return argument
         name = f"%xem.memory.{number}"
         number += 1
@@ -987,22 +1001,47 @@ def mips_division(lines):
     return out, helpers
 
 
+# A loop that only waits for the disc's reads: its header reads how many are
+# pending and tests the count, and its body is the branch back.
+PENDING_READS_RE = re.compile(r"^\s*%([-\w.]+) = call i32 @cd_get_pending_read_count\(\)(?: #\d+)?$")
+COUNT_TEST_RE = re.compile(r"^\s*%([-\w.]+) = icmp \w+ i32 %([-\w.]+), -?\d+$")
+CONDITION_RE = re.compile(r"^\s*br i1 %([-\w.]+), label %([-\w.]+), label %[-\w.]+$")
+
+
+def waits_for_reads(header, body):
+    """Whether the block `header` (its instructions) is all of a loop whose
+    body is the block labelled `body`: the pending read count read and
+    tested, on to the body while the test holds."""
+    if len(header) != 3:
+        return False
+    read, test, condition = PENDING_READS_RE.match(header[0]), COUNT_TEST_RE.match(header[1]), CONDITION_RE.match(header[2])
+    return bool(read and test and condition and test.group(2) == read.group(1)
+                and condition.group(1) == test.group(1) and condition.group(2) == body)
+
+
 def poll_back_edges(lines):
     """Insert a call to xem_loop_poll before every loop back-edge (a branch to
     a block earlier in its function). A wait the original spins on memory an
     interrupt writes, or on a call that reads it, then suspends the game in
-    time for the interrupt; the opaque call also keeps the loads in the loop."""
-    out, seen = [], set()
+    time for the interrupt; the opaque call also keeps the loads in the loop.
+    A loop that only waits for the disc's reads (`waits_for_reads`) gets
+    xem_loop_spin, the same poll without the iterations before it suspends."""
+    out, blocks, label, block = [], {}, None, []
     for line in lines:
         if line.startswith("define "):
-            seen = set()
+            blocks, label, block = {}, None, []
         else:
-            label = LABEL_RE.match(line)
-            if label:
-                seen.add(label.group(1))
+            start = LABEL_RE.match(line)
+            if start:
+                label, block = start.group(1), []
+                blocks[label] = block
         branch = BRANCH_RE.match(line)
-        if branch and any(target in seen for target in branch.groups() if target):
-            out.append('  call void @"xem_loop_poll"()')
+        if branch and any(target in blocks for target in branch.groups() if target):
+            # The body is this block: nothing in it but the branch back.
+            spins = branch.group(1) in blocks and not block and waits_for_reads(blocks[branch.group(1)], label)
+            out.append(f'  call void @"xem_loop_{"spin" if spins else "poll"}"()')
+        if line.startswith("  "):
+            block.append(line)
         out.append(line)
     return out
 
@@ -1134,6 +1173,24 @@ def compile_ir(source, out_ll):
     return result.stderr if result.returncode else None
 
 
+def inlinable(ir):
+    """A port unit's IR with its functions free to be inlined. Every unit
+    reaches the optimizer `noinline` (the front end ran at -O0): right for the
+    game's, which stay as the matched builds have them, call for call; the
+    port's are this project's own, and its small steps (a GTE register's
+    transfer, an address's translation) are called for every vertex."""
+    return re.sub(r"^(attributes #\d+ = \{[^}\n]*?) noinline\b", r"\1", ir, flags=re.M)
+
+
+def link_port(out, paths):
+    """The port's units as one module, so that its functions are inlined
+    across them too (the handwritten routines' ports call the software GTE
+    in another unit for every register they load)."""
+    merged = out / "ir" / "port.ll"
+    run(["llvm-link", "-S", *map(str, paths), "-o", str(merged)])
+    return merged
+
+
 def compile_object(ll, obj):
     """Compile rewritten IR to an object; the compiler's errors, or None."""
     result = subprocess.run([os.environ["XEM_CLANG"], "--target=wasm32-unknown-unknown", "-O2", "-c", str(ll),
@@ -1201,10 +1258,19 @@ def build(args):
         if args.release:
             raise SystemExit(1)
     ll_files = []
+    port_files = []
     for unit in units:
         path = out / "ir" / (unit.source.replace("/", ".") + ".x.ll")
-        path.write_text(rewritten[unit.source])
-        ll_files.append(path)
+        # A coverage build keeps the port as the game's units are: one
+        # object a unit, no function inlined.
+        if unit.image == "port" and not args.coverage:
+            path.write_text(inlinable(rewritten[unit.source]))
+            port_files.append(path)
+        else:
+            path.write_text(rewritten[unit.source])
+            ll_files.append(path)
+    if port_files:
+        ll_files.append(link_port(out, port_files))
     schema, count, type_count = game_schema.build_schema(
         out, [s for s in all_sources if s[1] != "port"], addresses, CFLAGS, args.jobs)
     print(f"{count} globals, {type_count} types: {schema}")

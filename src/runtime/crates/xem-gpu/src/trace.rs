@@ -343,7 +343,7 @@ const BACKDROP: u8 = 10;
 /// What a traced point's projection tells of its primitive: what drew it,
 /// the GTE's screen offset and projection distance, the owner, its depth,
 /// whether the backdrop drew it, and the owner's placement then.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 struct Projected {
     class: Class,
     offset: (i16, i16),
@@ -653,6 +653,10 @@ pub struct Trace {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Recorder {
     ops: Vec<TraceOp>,
+    /// The most ops a take held lately (slowly forgotten): the next trace
+    /// begins with room for as many, rather than growing to it frame after
+    /// frame.
+    room: usize,
     /// The newest [`HISTORY`] projections by their index in the port's
     /// ring (its count when made); `history_end` is one past the newest.
     history: Vec<Projection>,
@@ -772,6 +776,9 @@ const DIALOGUE_RUNS: usize = 8;
 /// the whole VRAM, so a host that runs frames without presenting them
 /// keeps no backlog.
 const TRACE_LIMIT: usize = 100_000;
+/// Ops a trace begins with room for at most ([`Recorder::room`]): a few
+/// frames of the largest scenes.
+const TRACE_ROOM: usize = 16_384;
 
 /// The indices of a polygon command's vertex words.
 fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
@@ -1198,7 +1205,8 @@ impl Gpu {
         let Some(trace) = self.trace.as_mut() else {
             return Trace::default();
         };
-        let mut ops = std::mem::take(&mut trace.ops);
+        trace.room = trace.ops.len().max(trace.room - trace.room / 64).min(TRACE_ROOM);
+        let mut ops = std::mem::replace(&mut trace.ops, Vec::with_capacity(trace.room + trace.room / 8));
         let focus = trace.focus.take();
         if trace.full_sync {
             trace.full_sync = false;
@@ -1253,6 +1261,10 @@ impl Gpu {
         }
         trace.source = node;
         trace.source_index = 0;
+        // (A walk visits thousands of nodes; most traces hold no culled face.)
+        if trace.reveals.is_empty() {
+            return;
+        }
         let Some(mut faces) = trace.reveals.remove(&node) else { return };
         // Linked in front of the same packet, the newest goes first, as the
         // GPU walks an entry's packets.
@@ -1277,6 +1289,15 @@ impl Gpu {
     pub(crate) fn trace_fifo_word(&mut self) {
         if let Some(trace) = &mut self.trace {
             trace.fifo_addresses.push(trace.word_address);
+        }
+    }
+
+    /// A whole command joined the command buffer, its words read from
+    /// `addresses`.
+    pub(crate) fn trace_fifo_words(&mut self, addresses: impl Iterator<Item = u32>) {
+        if let Some(trace) = &mut self.trace {
+            trace.fifo_addresses.clear();
+            trace.fifo_addresses.extend(addresses);
         }
     }
 
@@ -1339,23 +1360,15 @@ impl Gpu {
             width: match depth { 0 => 64, 1 => 128, _ => 256 },
             height: 256,
         };
-        let mut sampled = vec![page_rect];
-        if depth < 2 {
-            sampled.push(VramRect {
-                x: (clut & 0x3F) as u16 * 16,
-                y: (clut >> 6 & 0x1FF) as u16,
-                width: if depth == 0 { 16 } else { 256 },
-                height: 1,
-            });
-        }
-        let mut writes = Vec::new();
-        for rect in sampled {
-            let rect = VramRect { width: rect.width.min(VRAM_WIDTH as u16 - rect.x), ..rect };
-            if let Some(overlap) = rect.intersect(&dirty) {
-                writes.push(overlap);
-            }
-        }
-        if writes.is_empty() {
+        let clut_rect = (depth < 2).then(|| VramRect {
+            x: (clut & 0x3F) as u16 * 16,
+            y: (clut >> 6 & 0x1FF) as u16,
+            width: if depth == 0 { 16 } else { 256 },
+            height: 1,
+        });
+        // What it samples, up to VRAM's right edge, among the drawn pixels.
+        let drawn = |rect: VramRect| VramRect { width: rect.width.min(VRAM_WIDTH as u16 - rect.x), ..rect }.intersect(&dirty).is_some();
+        if !drawn(page_rect) && !clut_rect.is_some_and(drawn) {
             return;
         }
         // Write the whole dirty rectangle once: later samples need it too.
@@ -1522,7 +1535,9 @@ impl Gpu {
         let textured = op & 0x04 != 0 && !self.texture_disabled();
         let raw = op & 0x01 != 0;
         let mut vertices = [TraceVertex::default(); 4];
-        let mut classes = Vec::new();
+        // The points the GTE projected, in order.
+        let mut projected = [Projected::default(); 4];
+        let mut found = 0;
         let (mut clut, mut page) = (0, 0);
         let mut next = 1;
         for (index, vertex) in vertices.iter_mut().take(count).enumerate() {
@@ -1546,8 +1561,12 @@ impl Gpu {
             }
             let (traced, class) = self.trace_vertex(trace, words[at], at, index, color, uv);
             *vertex = traced;
-            classes.extend(class);
+            if let Some(class) = class {
+                projected[found] = class;
+                found += 1;
+            }
         }
+        let mut classes = &projected[..found];
         // Every point projected at the projection distance (H) is drawn at
         // its screen size: interface the GTE places (the field menu's
         // counter backing, the world map's marker), traced as interface.
@@ -1562,7 +1581,7 @@ impl Gpu {
             for v in &mut vertices[..count] {
                 (v.fx, v.fy, v.z, v.view) = (v.x as f32, v.y as f32, 0.0, None);
             }
-            classes.clear();
+            classes = &[];
         }
         let mut environment = self.trace_environment();
         if revealed && op & 0x04 != 0 {
@@ -1572,8 +1591,7 @@ impl Gpu {
         let projection = classes.first().map(|c| (c.offset, c.h));
         let (owner, placement) = classes.first().map_or((0, 0), |c| (c.owner, c.placement));
         let backdrop = classes.len() == count && classes.iter().all(|c| c.backdrop);
-        let classes: Vec<Class> = classes.iter().map(|c| c.class).collect();
-        let class = primitive_class(&classes, count);
+        let class = primitive_class(classes.iter().map(|c| c.class), count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
         let texels = |of: fn(&TraceVertex) -> i16| vertices[..count].iter().map(|v| i32::from(of(v))).fold((i32::MAX, i32::MIN), |(lo, hi), t| (lo.min(t), hi.max(t)));
         let movie = textured && trace.movie_picture(environment.draw_mode, environment.texture_window, texels(|v| v.u), texels(|v| v.v));
@@ -1688,7 +1706,7 @@ impl Gpu {
         let projection = class_a.or(class_b).map(|c| (c.offset, c.h));
         let (owner, placement) = class_a.or(class_b).map_or((0, 0), |c| (c.owner, c.placement));
         let backdrop = class_a.zip(class_b).is_some_and(|(a, b)| a.backdrop && b.backdrop);
-        let classes: Vec<Class> = class_a.into_iter().chain(class_b).map(|c| c.class).collect();
+        let class = primitive_class(class_a.iter().chain(&class_b).map(|c| c.class), 2);
         let primitive = Primitive {
             shape: Shape::Line,
             vertices: [a, b, TraceVertex::default(), TraceVertex::default()],
@@ -1699,7 +1717,7 @@ impl Gpu {
             dither: self.draw_mode & 0x200 != 0 && gouraud,
             clut: 0,
             environment: self.trace_environment(),
-            class: primitive_class(&classes, 2),
+            class,
             projection,
             owner,
             placement,
@@ -1748,15 +1766,16 @@ impl Gpu {
     }
 }
 
-/// A primitive's class: Flat unless every vertex was projected; a sprite
-/// part if any vertex belongs to one.
-fn primitive_class(classes: &[Class], count: usize) -> Class {
-    if classes.len() < count {
+/// A primitive's class from its projected vertices' (`classes`): Flat
+/// unless every one of its `count` vertices was projected; a sprite part if
+/// any vertex belongs to one.
+fn primitive_class(classes: impl Iterator<Item = Class> + Clone, count: usize) -> Class {
+    if classes.clone().count() < count {
         return Class::Flat;
     }
-    if classes.contains(&Class::Sprite) {
+    if classes.clone().any(|class| class == Class::Sprite) {
         Class::Sprite
-    } else if classes.contains(&Class::Model) {
+    } else if classes.clone().any(|class| class == Class::Model) {
         Class::Model
     } else {
         Class::World

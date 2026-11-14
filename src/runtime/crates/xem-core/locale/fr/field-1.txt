@@ -1180,7 +1180,7 @@ f155-0000 ac054b2c042648e0 Shakhan{n}"Je suis impressionné{n}qu'elle ait tant p
 f155-0001 ef3853d19343bb84     Arrêter{n}    Tour est{n}    Entrée{n}    Cour extérieure{n}    Citadelle 3e étage{n}    Salle à manger
 f155-0002 74b0e7f0eda39d14 C'est bon ?
 f155-0003 a9b75d70784fbec4 Shakhan{n}"Je ne peux pas les{n}empêcher de la voir. Pas{n}quand il s'agit de lui...{p}D'ailleurs, Marguerite ne{n}parle pas. Il n'y a donc{n}pas de quoi s'inquiéter...{p}Mais d'où vient la fuite{n}sur le Jaspe...?{p}...L'Ethos ?{n}Ridicule...! Hmmm,{n}si ça continue, mes{n}plans seront..."
-f155-0004 f8a98d96b7aa16dd Shakhan{n}"Nous ferions mieux de{n}découvrir sur-le-champ{n}qui laisse fuiter nos{n}informations.{p}En attendant, il faudra{n}administrer du sérum de{n}vérité à notre invitée,{n}mademoiselle Marguerite.{p}Nous devons trouver{n}l'autre fragment du{n}'Jaspe Fatima' au plus{n}vite."
+f155-0004 f8a98d96b7aa16dd Shakhan{n}"Nous ferions mieux de{n}découvrir sur-le-champ{p}qui laisse fuiter nos{n}informations.{p}En attendant, il faudra{n}administrer du sérum de{n}vérité à notre invitée,{n}mademoiselle Marguerite.{p}Nous devons trouver{n}l'autre fragment du{n}'Jaspe Fatima' au plus{n}vite."
 f155-0005 4023c3480501dff9 Mais...
 f160-0000 5c736ab567cc81df Miang{n}"Qu'y a-t-il ?{wait 50} On dirait{n}que vous sortez d'un{n}cauchemar...{p}Ce n'était pas encore ce{n}même rêve, n'est-ce pas ?"
 f160-0001 5934d68105928ab4 Ramsus{n}"Non...{wait 30} Ce n'est rien."

@@ -607,6 +607,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_auto_advance(settings.auto_advance.enabled);
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
     panel.set_movie_skip(settings.movie_skip);
+    panel.set_fast_disc(settings.fast_disc);
     panel.set_language(index_of(&Language::ALL, &settings.language));
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
@@ -618,6 +619,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     });
     panel.set_assist_ledge_brake(assisted.ledge_brake);
     panel.set_assist_touch(assisted.touch_controls);
+    panel.set_assist_touch_opacity(f32::from(assisted.touch_opacity));
     panel.set_assist_solid(assisted.reduced_transparency);
     panel.set_assist_still(assisted.reduced_motion);
     panel.set_rewind_enabled(settings.rewind_enabled);
@@ -760,6 +762,8 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 },
                 "ledge-brake" => assisted.ledge_brake = on,
                 "touch" => assisted.touch_controls = on,
+                // The slider's value, within the setting's range.
+                "touch-opacity" => assisted.touch_opacity = value.clamp(i32::from(xem_settings::MIN_TOUCH_OPACITY), i32::from(xem_settings::MAX_TOUCH_OPACITY)) as u8,
                 "solid" => assisted.reduced_transparency = on,
                 "still" => assisted.reduced_motion = on,
                 _ => return,
@@ -796,6 +800,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 }
                 "auto-advance-dwell" => u32::try_from(value).ok().map(|dwell| SettingChange::AutoAdvance(xem_settings::AutoAdvance { dwell, ..auto })),
                 "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
+                "fast-disc" => Some(SettingChange::FastDisc(value != 0)),
                 "language" => usize::try_from(value).ok().and_then(|i| Language::ALL.get(i)).map(|language| SettingChange::Language(*language)),
                 _ => None,
             })

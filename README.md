@@ -158,7 +158,8 @@ files, and needs no BIOS.
 Gameplay options switch off random battles by default in the platforming areas
 players complain about — Blackmoon Forest, the Aveh-Kislev border mountains and
 Babel Tower — and can halve encounters in every field. Text can run faster, up
-to instantly; dialogue can advance on its own; and movies can be skipped.
+to instantly; dialogue can advance on its own; movies can be skipped; and disc
+load times can be switched off, so areas and battles open almost at once.
 
 ### Hear the world around you
 
@@ -192,6 +193,10 @@ organizes supported images into `discs/` beside the application; images are
 never bundled or uploaded, and saves stay on your device.
 
 The project's authored source is available under the [MIT License](LICENSE).
+The English (Perfect Works) game text is the
+[Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+team's, a separate work under the GNU General Public License, version 3
+([its files and notice](src/runtime/crates/xem-core/locale/en-x-pw/README.md)).
 
 ## Follow the project or get involved
 

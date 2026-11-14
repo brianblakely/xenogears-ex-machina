@@ -5,7 +5,8 @@
 // the walking and jumping keys reach no pad and the character stays, the
 // arrow keys and the mouse the game holds turn it, the wheel's zoom rests
 // and the Binaural listener looks where it looks; a tap on the picture walks
-// nowhere, the touch deck's SELECT toggles the view and a finger dragged on
+// nowhere, the touch deck's LOOK toggles the view (the deck without what
+// the view holds back while it shows) and a finger dragged on
 // the picture turns it; Backspace again gives the keys back; the Original
 // renderer ends it; a gamepad's right stick's click toggles it, its right
 // stick turns it and its Back released alone ends it, none of which acts
@@ -30,7 +31,7 @@ import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, pixelStats, shot, start, st
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 /** The native desktop host's first-person listener: xem-headless's
- *  first_person example, built beside it (suite.sh's native stage). */
+ *  first_person example, built beside it (the suite's hosts unit). */
 const FIRST_PERSON = join(dirname(HEADLESS), 'examples', 'first_person');
 mkdirSync(SHOTS, { recursive: true });
 
@@ -187,13 +188,22 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await finger('pointerup', 9);
       await frames(page, 3);
       assert.equal((await status(page)).session.assist, null, 'a tap on the picture walks nowhere');
+      // While the view shows the deck has LOOK to leave it, and nothing of
+      // what the view holds back (no stick, jump or camera turns).
       const controls = (await status(page)).touch.controls.map((c) => c.control);
-      assert.ok(controls.includes('Select'), JSON.stringify(controls));
-      // The deck's SELECT toggles the view off and on again.
+      assert.ok(controls.includes('Look') && !controls.includes('Jump') && !controls.includes('CameraLeft') && !controls.includes('Select'), JSON.stringify(controls));
+      assert.equal((await status(page)).touch.stick, null, 'no stick while the view shows');
+      // The deck's LOOK toggles the view off and on again; off, the walking
+      // deck is back.
       for (const shows of [false, true]) {
-        await finger('pointerdown', 1, 'Select');
+        await finger('pointerdown', 1, 'Look');
         await page.waitForFunction((shows) => window.xem.status().renderer.firstPerson === shows, shows);
-        await finger('pointerup', 1, 'Select');
+        await finger('pointerup', 1, 'Look');
+        if (!shows) {
+          await frames(page, 3);
+          const walking = (await status(page)).touch;
+          assert.ok(walking.controls.some((c) => c.control === 'Jump') && walking.stick?.reads, JSON.stringify(walking.controls.map((c) => c.control)));
+        }
       }
       r = await renderer(page);
       assert.deepEqual(r.look, { yaw: 0, pitch: 0 }, 'a new view looks along the camera\'s heading');
@@ -237,6 +247,9 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
           buttons: Array.from({ length: 17 }, () => ({ pressed: false })), axes: [0, 0, 0, 0] };
         Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [window.testPad] });
       });
+      // The page sees the pad with nothing held before its first click (a
+      // button found held on a pad just connected is no click).
+      await frames(page, 3);
       /** The pad's buttons and axes as they are for `ms` and a few of the page's frames. */
       const gamepad = (buttons = [], axes = [0, 0, 0, 0], ms = 0) => page.evaluate(async ({ buttons, axes, ms }) => {
         window.testPad.buttons.forEach((button, i) => { button.pressed = buttons.includes(i); });
@@ -309,7 +322,7 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await frames(page, 3);
       assert.equal((await renderer(page)).firstPerson, true, 'V turned it on, once');
       const deck = (await status(page)).touch.controls.map((c) => c.control);
-      assert.ok(deck.includes('Look') && deck.includes('Select'), JSON.stringify(deck));
+      assert.ok(deck.includes('Look'), JSON.stringify(deck));
       await finger('pointerdown', 3, 'Look');
       await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
       await finger('pointerup', 3, 'Look');
@@ -386,7 +399,17 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       assert.equal(native3.size, 3);
       assert.ok(worst < 1e-3, `each emitter is heard where the native host hears it: ${worst} degrees apart`);
       assert.deepEqual(there.listening_position, heard.listening_position, 'from the same listening position');
-      assert.deepEqual(places(there), places(heard), 'the music in the same places');
+      // The music plays on each host's own time, not by the game's frames
+      // (the page's by its clock while it ran, the native host's through
+      // the frames it plays from the state): a part may have begun on one
+      // and not yet on the other. Each part both hear is in the same place,
+      // and they hear the same song.
+      const [here2, there2] = [places(heard), places(there)];
+      const both = [...here2.keys()].filter((part) => there2.has(part));
+      const songs = (parts) => [...new Set([...parts.keys()].map((part) => part.split('/')[0]))];
+      assert.ok(both.length > 0, `both hear the music: ${[...here2.keys()]} here, ${[...there2.keys()]} natively`);
+      assert.deepEqual(songs(there2), songs(here2), 'the same song');
+      for (const part of both) assert.deepEqual(there2.get(part), here2.get(part), `music part ${part} in the same place`);
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

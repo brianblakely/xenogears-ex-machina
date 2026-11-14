@@ -33,7 +33,7 @@
 //! console's own picture of it, scaled up) in a contact sheet `NAME-sheet.png`,
 //! the last 240 as an animated PNG `NAME.png`, the last one and the
 //! console's own picture of it (`NAME-last.png`, `NAME-console.png`), and
-//! `NAME.json` with the mean and worst cost per stage (the game frame, which
+//! `NAME.json` with the mean and worst cost per stage and every sample (the game frame, which
 //! includes the port's presentation records and the trace's matching;
 //! taking and pushing the trace; the presentation's CPU work; the GPU's)
 //! and, per presented frame, the share of pixels that changed since the one
@@ -758,6 +758,9 @@ fn main() {
         "graphics": graphics,
         "frames": frames, "present": present, "size": [size.0, size.1],
         "stages": stages.iter().map(|s| (s.name.to_string(), s.report())).collect::<serde_json::Map<_, _>>(),
+        // Every sample in order (milliseconds), for what a mean hides: a
+        // game frame's, a trace's, and each presentation's CPU and GPU time.
+        "samples": stages.iter().map(|s| (s.name.to_string(), json!(s.samples))).collect::<serde_json::Map<_, _>>(),
         "changed_pixels": {"mean": mean_change, "per_frame": changes},
         "points": {"matched": matched, "unmatched": unmatched},
         "revealed": revealed,

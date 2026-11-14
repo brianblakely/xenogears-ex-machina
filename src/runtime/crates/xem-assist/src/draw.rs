@@ -10,10 +10,21 @@ use xem_render::ps1::{DioramaSpace, Table};
 /// The widgets' texture size in pixels.
 pub const WIDGET_PIXELS: u32 = 128;
 
-/// A widget's texture size: twice [`WIDGET_PIXELS`] for a touch stick's
-/// well, drawn about two and a half buttons across.
-pub fn pixels(widget: &Widget) -> u32 {
-    if matches!(widget, Widget::Stick(_)) { 2 * WIDGET_PIXELS } else { WIDGET_PIXELS }
+/// The texture size of a touch deck's widget drawn `across` target pixels:
+/// [`WIDGET_PIXELS`], half as much again for one drawn over one and a half
+/// times that (a phone's primary button and its keys, whose labels would
+/// blur enlarged so) and twice for one over three times (the stick's well).
+/// A widget is drawn on the processor once, when first shown: the fewer
+/// pixels, the shorter that takes.
+pub fn pixels(across: f32) -> u32 {
+    let base = WIDGET_PIXELS as f32;
+    if across > 3.0 * base {
+        2 * WIDGET_PIXELS
+    } else if across > 1.5 * base {
+        WIDGET_PIXELS * 3 / 2
+    } else {
+        WIDGET_PIXELS
+    }
 }
 
 /// The keys beside a headset's screen (their scale 1, [`Screen::keys`]):
@@ -257,10 +268,14 @@ pub fn mark_widget(kind: crate::overlay::Kind) -> xem_render::glass::Widget {
     }
 }
 
-/// A control's symbol from its label: the arrows and the face buttons'
-/// shapes by name, else the text.
+/// A control's symbol from its label: the arrows, the face buttons' shapes
+/// and the deck's own symbols by name, a symbol with a word under it
+/// (`triangle:WEAK`), else the text.
 fn icon_of(label: &str) -> Icon {
     use xem_render::glass::Dir;
+    if let Some((symbol, caption)) = label.split_once(':') {
+        return Icon::Captioned(Box::new(icon_of(symbol)), caption.into());
+    }
     match label {
         "^" => Icon::Arrow(Dir::Up),
         "v" => Icon::Arrow(Dir::Down),
@@ -272,33 +287,51 @@ fn icon_of(label: &str) -> Icon {
         "square" => Icon::Square,
         "+" => Icon::Plus,
         "-" => Icon::Minus,
+        "pause" => Icon::Pause,
+        "gear" => Icon::Gear,
+        "turn left" => Icon::Turn(Dir::Left),
+        "turn right" => Icon::Turn(Dir::Right),
         text => Icon::Text(text.into()),
     }
 }
 
-/// A touch control's state: pressed while a finger holds it, AUTO lit
-/// while auto-advance dialogue is on, LOOK while first-person inspection
-/// shows.
-pub fn deck_state(control: crate::touch::Control, held: bool, auto_advance: bool, first_person: bool) -> State {
+/// The app's toggles a touch deck's keys show lit: auto-advance dialogue
+/// (AUTO), first-person inspection (LOOK) and run by default (RUN).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Lit {
+    pub auto_advance: bool,
+    pub first_person: bool,
+    pub run: bool,
+}
+
+/// A touch control's state: pressed while a finger is on it; lit while it
+/// is latched (`latched`: a bout's DASH, the ship's THROTTLE) or the app's
+/// toggle it stands for is on (`lit`).
+pub fn deck_state(control: crate::touch::Control, pressed: bool, latched: bool, lit: Lit) -> State {
     use crate::touch::Control;
-    if held {
+    let on = match control {
+        Control::Auto => lit.auto_advance,
+        Control::Look => lit.first_person,
+        Control::Run => lit.run,
+        _ => latched,
+    };
+    if pressed {
         State::Pressed
-    } else if (control == Control::Auto && auto_advance) || (control == Control::Look && first_person) {
+    } else if on {
         State::Active
     } else {
         State::Normal
     }
 }
 
-/// A touch control's widget, and the square it is drawn in (wide keys
-/// fill the middle of their square image).
-pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_render::glass::State, rect: Rect) -> (xem_render::glass::Widget, Rect) {
-    use crate::touch::Control;
+/// A touch control's widget, and the square it is drawn in: a round button
+/// where it stands in a square, else a key (which fills the middle of its
+/// square image).
+pub fn deck_widget(label: &str, state: xem_render::glass::State, rect: Rect) -> (xem_render::glass::Widget, Rect) {
     use xem_render::glass::Widget;
     let icon = icon_of(label);
-    let round = matches!(control, Control::Up | Control::Down | Control::Left | Control::Right | Control::Jump | Control::Cancel | Control::Confirm | Control::Menu);
-    if round {
-        (Widget::Button(icon, state), Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    if rect.round() {
+        (Widget::Button(icon, state), rect)
     } else {
         let side = rect.width.max(rect.height * 2.0);
         let (cx, cy) = rect.centre();
@@ -306,21 +339,36 @@ pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_rende
     }
 }
 
-/// The touch deck's widgets in drawing order and the squares they are
-/// drawn in (target pixels): its controls in the game's context `ui`, then
-/// the stick's well and its knob over it (pressed while a finger holds it).
-pub fn deck_widgets(deck: &crate::touch::Deck, ui: xem_core::context::Context, auto_advance: bool, first_person: bool) -> Vec<(Widget, Rect)> {
-    let held = deck.held();
-    let mut widgets: Vec<(Widget, Rect)> = deck.controls.iter()
-        .map(|&(control, rect)| deck_widget(control, control.label(ui), deck_state(control, held.contains(&control), auto_advance, first_person), rect))
+/// A touch deck's widget to draw: the square it is drawn in (target
+/// pixels), its texture's size ([`pixels`]) and how opaque.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeckWidget {
+    pub widget: Widget,
+    pub rect: Rect,
+    pub pixels: u32,
+    pub opacity: f32,
+}
+
+/// The touch deck's widgets in drawing order: its controls as the game's
+/// context names them, then, under the finger holding it, the stick's well
+/// and its knob over it, pressed. Each is drawn `opacity` opaque (the
+/// setting's, `Assisted::touch_alpha`), but what a finger holds (the stick
+/// too), which shows whole: a press is seen whatever the setting.
+pub fn deck_widgets(deck: &crate::touch::Deck, lit: Lit, opacity: f32) -> Vec<DeckWidget> {
+    let (scene, pressed, latched) = (deck.scene(), deck.pressed(), deck.latched());
+    let drawn = |(widget, rect): (Widget, Rect), held: bool| DeckWidget { widget, rect, pixels: pixels(rect.width), opacity: if held { 1.0 } else { opacity } };
+    let mut widgets: Vec<DeckWidget> = deck.controls.iter()
+        .map(|&(control, rect)| {
+            let held = pressed.contains(&control);
+            drawn(deck_widget(control.label(scene), deck_state(control, held, latched.contains(&control), lit), rect), held)
+        })
         .collect();
     if let (Some(stick), Some(shown)) = (deck.stick, deck.stick_shown()) {
         let square = |(x, y): (f32, f32), r: f32| Rect { x: x - r, y: y - r, width: 2.0 * r, height: 2.0 * r };
         // The well's halo (nine tenths of its square) just around the
         // knob's reach and the knob's glass (as a button's).
-        widgets.push((Widget::Stick(shown.directions), square(shown.centre, stick.radius() / 0.9)));
-        let knob = if shown.held { State::Pressed } else { State::Normal };
-        widgets.push((Widget::Button(Icon::None, knob), square(shown.knob, stick.knob / 2.0)));
+        widgets.push(drawn((Widget::Stick(shown.directions), square(shown.centre, stick.radius() / 0.9)), true));
+        widgets.push(drawn((Widget::Button(Icon::None, State::Pressed), square(shown.knob, stick.knob / 2.0)), true));
     }
     widgets
 }

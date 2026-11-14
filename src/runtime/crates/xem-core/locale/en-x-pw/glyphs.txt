@@ -1,0 +1,40 @@
+# The characters Perfect Works' English adds to the game's font
+# (docs/runtime.md, Languages): the marks its retranslation writes that the
+# original's narrow letters lack. The port composes each from a glyph of the
+# player's own font (directory (0, 1) file 6) and rows drawn here for this
+# project (MIT, like the rest of this repository): no glyph of the original
+# or of Perfect Works' font is copied.
+#
+# A glyph's rows are the font's 11 rows of 12 columns (row 0 the top; small
+# letters span rows 3-9, capitals 1-9, descenders reach row 10).
+#
+#   accent <name> <row>=<columns 0-11, # drawn> ...
+#   <char> <base glyph> <accent> [drop=<rows>] [clear=<rows>] [wide]
+#
+# The base is a narrow glyph of the font, or `blank` for its space. drop=
+# takes rows out of the base and moves the rows above them down, clear=
+# blanks rows, and `wide` gives the glyph the wide glyphs' 3 columns
+# (12 pixels) in place of a letter's 2. A letter another language adds too
+# is drawn alike (fr/glyphs.txt): its code is the same in every language.
+#
+#   ;  the colon with the comma's tail
+#   *  a raised asterisk (*sigh*)
+#   ö  Löwe
+#   —  a dash the width of a wide glyph, from the hyphen's row (Wha—!?)
+#   ␣  a blank as wide as a wide glyph, which lines up text under one
+#   ﭏ  El, the lamed and the aleph with its two points, before an
+#      Omnigear's name
+
+accent diaeresis 1=.#.#.
+accent tail 9=..#.. 10=.#...
+accent star 1=..#.. 2=#.#.# 3=.###. 4=#.#.# 5=..#..
+accent dash 5=.....#####
+accent none
+accent el 1=#........... 2=#........... 3=####..#...#. 4=...#...#..#. 5=...#...###.. 6=..#...#..#.. 7=.#....#...#. 8=#.....#...#. 10=.......#.#..
+
+ö o diaeresis
+; : tail
+* blank star
+— - dash wide
+␣ blank none wide
+ﭏ blank el wide

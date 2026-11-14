@@ -72,7 +72,7 @@ uninstalling the app or clearing its data.
 ### Finding Settings
 
 Press **Esc**, or hold the controller's **Back/Select** button and press
-**Start**. Touch players can tap **Settings**. Headset controls are explained
+**Start**. Touch players can tap the gear in the top corner. Headset controls are explained
 [below](#playing-in-a-headset).
 
 Choose a section from the sidebar. On a small screen, the sections appear
@@ -179,26 +179,54 @@ For a controller combination, hold Back and press the other button.
 
 ## Touch controls
 
-Move with the on-screen stick and use the labelled buttons just as you would
-a controller. Put a thumb down anywhere on the left half of the screen: the
-stick centres itself under it, and sliding the thumb that way walks, steers
-or moves a cursor, diagonals included. Keep a finger down to hold a button.
-The camera buttons, Start and Settings sit near the top.
+The touch controls are laid out for your thumbs, and they change with what
+you're doing, showing only the buttons that do something there.
+
+**Left thumb: the stick.** Put a thumb down anywhere on the left half of the
+screen: the stick appears centred under it, and sliding the thumb that way
+walks, steers or moves a cursor, diagonals included. It disappears when you
+lift your thumb.
+
+**Right thumb: the buttons.** The big button under your thumb is always the
+main one: **TALK** while exploring, **NEXT** in a conversation, **OK** in
+menus and battles. The next most useful buttons sit in an arc around it,
+smaller keys above that, and **Settings** (the gear) and **Pause** in the
+top corner. Keep a finger down to hold a button.
+
+| While you're… | You get |
+| --- | --- |
+| Exploring | **TALK**, **JUMP**, the two camera turns, **MENU**, **RUN**, **LOOK**, and **MAP** where you carry the area's map |
+| In a conversation or scene | **NEXT**, **AUTO**, **HIDE**, **LOOK** |
+| In a menu or shop | **OK**, **BACK**, the page arrows, **CLOSE**; in shops **+**, **−**, **ALL**, **NONE** for quantities |
+| Choosing in battle | **OK**, **BACK** |
+| Attacking in battle | **△ WEAK**, **□ STRONG**, **✕ FIERCE**, **END** |
+| On the world map | **ENTER**, the camera turns, **MENU**, **VIEW**, and **BOARD** or, in a ship, **LAND** and **THROTTLE** |
+| In a Battling bout | **A**, **B**, **JUMP**, **SPECIAL**, **DASH**, **CHARGE** |
+
+A few of these are switches rather than buttons, and light up while on:
+
+- **RUN** makes the stick run instead of walk (the same as **Run by
+  default** in Settings).
+- **AUTO** advances conversations by itself.
+- **LOOK** switches first-person view on and off; drag on the picture to
+  look around.
+- **DASH**, **CHARGE** and **THROTTLE** stay held after a tap, so your thumb
+  is free for the other buttons. Tap again to let go.
+
+**HIDE** hides the conversation's windows for as long as you hold it. During
+special activities the game tells you which buttons to press, and the
+controls show exactly those, with the same symbols.
 
 You can also tap the ground to walk, tap a person to approach and talk, or
-tap an entry or target to choose it. Tap dialogue to advance it. **LOOK**
-switches first-person view on and off; drag on the picture to look around.
-**AUTO** switches automatic dialogue advance on and off during field scenes.
-
-The controls change for the activity you're playing. Battling gets its own
-attack, jump, dash, charge and special buttons. The world map adds **Board**.
-Shops add **+**, **−**, **ALL** and **NONE** for quantities.
+tap an entry or target to choose it. Tap dialogue to advance it.
 
 In **Settings → Controls**, **Touch controls** shows or hides the touch
-buttons. **Stop at ledges** helps automatic walking stop before a jump;
-you still press Jump yourself. **Reduce transparency** makes the added touch
-and headset controls more solid, and **Reduce motion** tones down their
-animation. These options affect the added controls, not the game's artwork.
+buttons, and **Touch controls opacity** makes them fainter or stronger (a
+button you're pressing always shows clearly). **Stop at ledges** helps
+automatic walking stop before a jump; you still press Jump yourself.
+**Reduce transparency** makes the added touch and headset controls more
+solid, and **Reduce motion** tones down their animation. These options
+affect the added controls, not the game's artwork.
 
 ## Changing your controls
 
@@ -357,8 +385,8 @@ game paused until you resume it.
 
 Find these in **Settings → Gameplay**. Each choice is saved for next time.
 
-- **Language — Game text:** **English**, the original, **Português
-  (Brasil)** or **Français**. It changes the game's dialogue, narration, item and ability
+- **Language — Game text:** **English**, the original, **English (Perfect
+  Works)**, **Português (Brasil)** or **Français**. It changes the game's dialogue, narration, item and ability
   names and descriptions, shop and save messages, battle messages and
   place names from the next text the game shows; a box already showing
   text finishes it first, and a menu shows its commands in the language
@@ -366,6 +394,13 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   English: the abbreviations LV, Exp, HP and EP, the battle screen's
   command and gauge words (Attack, Defense, Time, Ap ...) and the save
   titles on the file screens. Settings itself stays in English.
+  **English (Perfect Works)** is the retranslation of the
+  [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+  project (version 0.11.4): its script, names and terms, in the game as you
+  already play it. Its changes to the game itself (rebalanced battles,
+  reworked scenes, new pictures) are not part of it, so a few lines that
+  depend on them, and the save titles, keep the original wording. Names you
+  have changed stay as you set them.
 - **Random battles — Not while platforming:** the default. Turns off random
   encounters in the selected jumping areas of Blackmoon Forest, the
   Aveh–Kislev border mountains and Babel Tower. Choose **Original** for the
@@ -384,9 +419,16 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   also accept Start. It starts off. Small movies playing inside a scene
   may still follow that scene's timing. This skips movies, not entire story
   scenes.
+- **Skip disc load times:** takes away the waits for the disc drive, so
+  areas, battles and menus open almost at once. It starts off. Movies and
+  their sound keep their normal speed, an area's music can still begin a
+  moment after its picture, and the pause at the change to disc 2 stays.
+  Nothing about your saves or save states changes, and you can turn it on
+  or off at any time. Because loading ends sooner, chance events such as
+  random battles can fall at different moments than they otherwise would.
 
 To see the scene behind a dialogue box, **hold Select**: Backspace, the
-controller's Back button, or touch **SELECT**. Release it to bring the text
+controller's Back button, or the touch **HIDE** key. Release it to bring the text
 back. Hiding the box does not pause the scene or stop automatic dialogue
 advance.
 

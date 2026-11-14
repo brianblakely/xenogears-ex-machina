@@ -80,12 +80,26 @@ pub struct Regs<'a> {
     pub write_enable: bool,
 }
 
+/// The filter's coefficients that are not zero: every second one (the
+/// first of `EVEN` is the newest sample's) and the centre's.
+const EVEN: [i32; 20] = {
+    let mut taps = [0; 20];
+    let mut j = 0;
+    while j < 20 {
+        taps[j] = FIR[2 * j];
+        j += 1;
+    }
+    taps
+};
+const CENTRE: usize = 19;
+
+/// The filter over the ring's newest 39 entries (`pos` the newest). The sum
+/// is far from a 32-bit word's ends whatever the samples.
 fn fir(ring: &[i16; RING], pos: usize) -> i32 {
-    let mut acc = 0i32;
-    for (k, &c) in FIR.iter().enumerate() {
-        if c != 0 {
-            acc += c * ring[(pos + RING - k) % RING] as i32;
-        }
+    let at = |k: usize| ring[(pos + RING - k) % RING] as i32;
+    let mut acc = FIR[CENTRE] * at(CENTRE);
+    for (j, tap) in EVEN.iter().enumerate() {
+        acc += tap * at(2 * j);
     }
     acc
 }
@@ -119,7 +133,7 @@ impl Reverb {
             let base = regs.base as u32 * 8;
             self.cur = ((self.cur + 2) & 0x7FFFE).max(base);
         }
-        self.right_next = !self.right_next;
+        self.right_next.toggle();
 
         [
             sat(fir(&self.output[0], pos) >> 14) as i16,
@@ -127,10 +141,25 @@ impl Reverb {
         ]
     }
 
+    /// The buffer address `rel` bytes from the current one, wrapped within
+    /// the buffer (from mBASE to the end of RAM).
+    #[inline]
     fn address(&self, base: u16, rel: i32) -> usize {
         let base = base as i64 * 8;
         let size = 0x80000 - base;
-        (base + (self.cur as i64 - base + rel as i64).rem_euclid(size)) as usize
+        let offset = self.cur as i64 - base + rel as i64;
+        // Most offsets are within a buffer's length of it: the remainder
+        // without its division.
+        let wrapped = if (0..size).contains(&offset) {
+            offset
+        } else if (-size..0).contains(&offset) {
+            offset + size
+        } else if (size..2 * size).contains(&offset) {
+            offset - size
+        } else {
+            offset.rem_euclid(size)
+        };
+        (base + wrapped) as usize
     }
 
     fn compute(
@@ -211,6 +240,25 @@ mod tests {
         assert_eq!(sum - odd, 0x3FFE);
         for i in 0..39 {
             assert_eq!(FIR[i], FIR[38 - i]);
+        }
+        // What `fir` sums is every coefficient that is not zero.
+        for (k, &c) in FIR.iter().enumerate() {
+            assert_eq!(c, if k % 2 == 0 { EVEN[k / 2] } else if k == CENTRE { 0x4000 } else { 0 }, "coefficient {k}");
+        }
+    }
+
+    #[test]
+    fn a_buffer_address_wraps_as_the_remainder_does() {
+        let mut reverb = Reverb::default();
+        for base in [0u16, 0x8000, 0xE000, 0xFFF0, 0xFFFE, 0xFFFF] {
+            let (start, size) = (base as i64 * 8, 0x80000 - base as i64 * 8);
+            for cur in [0u32, 8, base as u32 * 8, 0x7FFFE, (base as u32 * 8 + 0x1234) & 0x7FFFE] {
+                reverb.cur = cur;
+                for rel in [0, 2, -2, 8, -8, 0x1234, -0x1234, 0x7FFF8, -0x7FFF8, 0x7FFFF * 8, -(0x7FFFF * 8), size as i32, -(size as i32), 2 * size as i32 - 2, -2 * size as i32] {
+                    let expected = start + (cur as i64 - start + rel as i64).rem_euclid(size);
+                    assert_eq!(reverb.address(base, rel) as i64, expected, "mBASE {base:#x}, at {cur:#x}, {rel:+#x}");
+                }
+            }
         }
     }
 }

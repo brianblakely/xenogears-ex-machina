@@ -577,7 +577,7 @@ f634-0000 3d2deb485e854420     MONTER ?{n}    NON
 f634-0001 ec5c44b85491ef27     DESCENDRE ?{n}    NON
 f634-0002 e041b42541d01426 Verrouillage{n}Zone B
 f635-0001 bc932cf7bacbcbc8 Fei{n}"Je crois avoir vu des{n}infos là-dessus sur le{n}terminal d'en haut..."
-f635-0002 9363d3c3e0b46b56 La Relique Anima a{n}été libérée.
+f635-0002 9363d3c3e0b46b56 La Relique{n}Anima a{n}été libérée.
 f635-0003 f1065668d6f55bb6 Entrez le code.
 f635-0004 8a811c790e339f50 {speed 255}ADRESSE A{n}    1{n}    2{n}    3{n}    4{n}    5{n}    6{n}    7{n}    8{n}    9{n}    ANNULER
 f635-0005 8593047978a820cc {speed 255}Ce numéro est verrouillé.{n}Entrez un autre numéro.

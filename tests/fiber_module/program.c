@@ -63,7 +63,22 @@ void xem_run(s32 kind, s32 arg) {
     xem_host_restart(XEM_RESTART_DISPATCH, 9);
 }
 
+/* A game that never returns from its calls: each takes another level of
+ * the stack (two calls, so that none is a loop). */
+static u32 descend(u32 level) {
+    volatile u32 local = level;
+
+    return descend(local + 1) ^ descend(local + 2);
+}
+
+/* The test's calls (fiber_module.rs): 1 stores beyond game memory, 2 calls
+ * without end; any other returns. */
 void xem_call(u32 address) {
+    if (address == 1) {
+        *(volatile u32 *)0xFFFFFFF0u = 1;
+    } else if (address == 2) {
+        note(descend(0));
+    }
 }
 
 void xem_interrupt(u32 irq, u32 detail) {
