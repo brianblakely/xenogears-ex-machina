@@ -1167,14 +1167,14 @@ fn a_random_battle_entered_while_inspecting_holds_the_eyes_while_it_loads_and_sh
         }
         let within = shown.last().is_some_and(|s| s.within);
         if within {
-            eye = host.view.eye_texture(0).map(|t| host.read(t)).unwrap_or_default();
+            eye = host.view.eye_texture(0).map_or_default(|t| host.read(t));
         } else if came.is_some() && taken.is_none() {
-            let screen = host.view.presented_texture().map(|t| host.read(t)).unwrap_or_default();
+            let screen = host.view.presented_texture().map_or_default(|t| host.read(t));
             taken = Some(correlation(&screen, &eye));
         }
         if came.is_some() {
             // The pane's cover through the entry.
-            let pane = host.view.presented_texture().map(|t| host.read(t)).unwrap_or_default();
+            let pane = host.view.presented_texture().map_or_default(|t| host.read(t));
             let covered = pane.chunks_exact(4).filter(|p| p[3] > 0).count() as f32 / (pane.len() / 4).max(1) as f32;
             panes.push((host.blanks, within, covered));
         }

@@ -474,7 +474,11 @@ PY
     after=$(echo "$resumed" | vblank_of)
     echo "  game vblank: $before at background, $during at foreground, $after at the first frame back"
     [ "$during" = "$before" ] || fail "the game ran in the background ($before -> $during)"
-    [ $((after - during)) -le 2 ] || fail "a burst of $((after - during)) game frames on return"
+    # The first frame back runs what came due while the surface returned:
+    # the frames one update may catch up at most (xem-host's MAX_CATCH_UP;
+    # as many of them as its 12 ms hold, four since a game frame takes the
+    # emulator a few), never the span in the background.
+    [ $((after - during)) -le 4 ] || fail "a burst of $((after - during)) game frames on return"
     sleep 5
     shot 09-game-resumed
     wait_for "xem: fps rendered=.* game=" 15

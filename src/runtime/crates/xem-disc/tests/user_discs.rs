@@ -7,6 +7,7 @@
 //! `.local/extract/discN`), whose manifest the index is checked against. Nothing
 //! here writes or keeps disc bytes.
 
+use std::assert_matches;
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -202,10 +203,10 @@ fn check_against_raw_track(
     bin.read_sectors(movie.lba, &mut range).unwrap();
     chd.read_sectors(movie.lba, &mut single).unwrap();
     assert!(range == single);
-    assert!(matches!(
+    assert_matches!(
         chd.read_sector(last + 1, &mut a),
         Err(Error::OutOfRange { .. })
-    ));
+    );
 }
 
 /// The browser design over the real CHD: a chunk store filled on demand.

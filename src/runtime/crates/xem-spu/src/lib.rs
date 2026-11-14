@@ -318,8 +318,15 @@ impl Voice {
     /// Fetches and decodes the block at `address`.
     fn fetch(&mut self, ram: &[u8], repeat: &mut u16, probe: &mut IrqProbe) {
         let mut block = [0u8; 16];
-        for (i, b) in block.iter_mut().enumerate() {
-            *b = ram[((self.address + i as u32) & RAM_MASK) as usize];
+        let start = (self.address & RAM_MASK) as usize;
+        match ram.get(start..start + 16) {
+            Some(bytes) => block.copy_from_slice(bytes),
+            // A block across the end of RAM wraps to its start.
+            None => {
+                for (i, b) in block.iter_mut().enumerate() {
+                    *b = ram[((self.address + i as u32) & RAM_MASK) as usize];
+                }
+            }
         }
         probe.access(self.address, 16);
         self.flags = block[1];
@@ -327,9 +334,8 @@ impl Voice {
             *repeat = (self.address >> 3) as u16;
         }
         self.samples.copy_within(28..31, 0);
-        let mut decoded = [0i16; adpcm::BLOCK_SAMPLES];
-        adpcm::decode_block(&block, &mut self.history, &mut decoded);
-        self.samples[3..].copy_from_slice(&decoded);
+        let decoded: &mut [i16; adpcm::BLOCK_SAMPLES] = (&mut self.samples[3..]).try_into().expect("a block's samples");
+        adpcm::decode_block(&block, &mut self.history, decoded);
         self.fetched = true;
     }
 
@@ -356,16 +362,12 @@ impl Voice {
         self.fetch(ram, repeat, probe);
     }
 
+    #[inline]
     fn interpolate(&self) -> i32 {
         let s = (self.counter >> 12) as usize;
         let i = ((self.counter >> 4) & 0xFF) as usize;
-        gauss::interpolate(
-            self.samples[s],
-            self.samples[s + 1],
-            self.samples[s + 2],
-            self.samples[s + 3],
-            i,
-        )
+        let [oldest, older, old, new] = <[i16; 4]>::try_from(&self.samples[s..s + 4]).expect("four samples");
+        gauss::interpolate(oldest, older, old, new, i)
     }
 }
 
@@ -809,24 +811,32 @@ impl Spu {
                 voice.fetch(ram, repeat, &mut probe);
             }
 
-            let raw = if non & bit != 0 {
-                noise
+            // A voice at level 0 (most are off, and go on through their
+            // blocks as the hardware's do) gives 0 whatever its samples.
+            let out = if voice.level == 0 {
+                0
             } else {
-                voice.interpolate()
+                let raw = if non & bit != 0 {
+                    noise
+                } else {
+                    voice.interpolate()
+                };
+                sat((raw * voice.level as i32) >> 15) as i16
             };
-            let out = sat((raw * voice.level as i32) >> 15) as i16;
             voice.output = out;
             if let Some(tap) = tap.as_deref_mut() {
                 tap.voice[v] = out;
                 tap.volume[v] = voice.volume;
             }
-            let l = (out as i32 * voice.volume[0] as i32) >> 15;
-            let r = (out as i32 * voice.volume[1] as i32) >> 15;
-            dry[0] += l;
-            dry[1] += r;
-            if eon & bit != 0 {
-                wet[0] += l;
-                wet[1] += r;
+            if out != 0 {
+                let l = (out as i32 * voice.volume[0] as i32) >> 15;
+                let r = (out as i32 * voice.volume[1] as i32) >> 15;
+                dry[0] += l;
+                dry[1] += r;
+                if eon & bit != 0 {
+                    wet[0] += l;
+                    wet[1] += r;
+                }
             }
 
             let mut step = pitch as u32;

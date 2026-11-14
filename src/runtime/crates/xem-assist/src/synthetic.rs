@@ -279,6 +279,7 @@ pub fn in_front(frame: [Option<[Vec3; JOINTS]>; 2], position: Vec3, orientation:
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
     use crate::gesture::{Gesture, Hand, Recognizer, Swipe};
 
@@ -330,7 +331,7 @@ mod tests {
         assert_eq!(seen("pause-left"), [Gesture::Pause { hand: Hand::Left }]);
         assert_eq!(seen("inspect-left"), [Gesture::Inspect { hand: Hand::Left }]);
         let both = seen("pause-both");
-        assert!(matches!(both[..], [Gesture::Pause { .. }]), "both hands closing together toggle once: {both:?}");
+        assert_matches!(both[..], [Gesture::Pause { .. }], "both hands closing together toggle once");
         assert_eq!(seen("grab-sideways"), [], "a sideways grab is neither");
         assert_eq!(seen("fist-turn"), [], "a closed fist turning through palm down and up fires nothing");
         assert_eq!(seen("fist-reacquire"), [Gesture::TrackingLost { hand: Hand::Right }], "a hand found closed fires no grab");

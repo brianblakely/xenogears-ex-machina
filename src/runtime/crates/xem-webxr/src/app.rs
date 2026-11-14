@@ -524,8 +524,7 @@ impl App {
             {
                 immersive.info.visibility_state = event
                     .target()
-                    .map(|session| input::js_string(&session, "visibilityState"))
-                    .unwrap_or_default();
+                    .map_or_default(|session| input::js_string(&session, "visibilityState"));
             }
         });
         let mut add = |name: &str, callback: EventCallback| {

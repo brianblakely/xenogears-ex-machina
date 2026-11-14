@@ -1068,6 +1068,7 @@ pub struct EndedFrame {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
 
     #[test]
@@ -1118,7 +1119,7 @@ mod tests {
         let mut refused = RoomState::<u32> { offered: Some(Passthrough::Fb), fb: None };
         let not_permitted = xr::sys::Result::ERROR_NOT_PERMITTED_PASSTHROUGH_FB;
         let decided = refused.frame(true, || Err(XrError::xr("xrCreatePassthroughFB")(not_permitted)));
-        assert!(matches!(&decided, Room::Refused(error) if error.result == Some(not_permitted)), "{decided:?}");
+        assert_matches!(&decided, Room::Refused(error) if error.result == Some(not_permitted));
         assert_eq!((refused.offered, refused.fb), (None, None));
         assert_eq!(shown(&refused.frame(true, never)), None);
     }

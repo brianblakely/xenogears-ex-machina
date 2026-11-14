@@ -20,6 +20,9 @@ done
     "${objects[@]}" -o "$out/raw.wasm"
 wasm-opt -O2 --asyncify --pass-arg=asyncify-imports@xem.yield,xem.restart,xem.task_switch \
     --enable-bulk-memory --enable-sign-ext --enable-mutable-globals "$out/raw.wasm" -o "$out/fiber.wasm"
+# xem-game's build embeds the schema beside the module: the stand-in's has
+# nothing to inspect (and nothing boots it).
+echo '{}' > "$out/schema.json"
 cd src/runtime
 XEM_GAME_WASM="$PWD/../../$out/fiber.wasm" XEM_FIBER_MODULE=1 \
     cargo test -p xem-game --test fiber_module --target-dir "../../$out/target" -- --nocapture

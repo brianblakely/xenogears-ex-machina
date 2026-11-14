@@ -856,3 +856,167 @@ fn disabling_the_spu_keys_everything_off() {
 }
 
 const VOICES_USED: usize = 6;
+
+/// FNV-1a over what a run gave.
+struct Digest(u64);
+
+impl Digest {
+    fn new() -> Digest {
+        Digest(0xCBF2_9CE4_8422_2325)
+    }
+
+    fn bytes(&mut self, bytes: &[u8]) {
+        for &byte in bytes {
+            self.0 = (self.0 ^ u64::from(byte)).wrapping_mul(0x0100_0000_01B3);
+        }
+    }
+
+    fn word(&mut self, word: u64) {
+        self.bytes(&word.to_le_bytes());
+    }
+}
+
+/// A long session of everything at once, from `seed`: SPU RAM full of
+/// sample blocks of every shift, filter and loop flag, the voices keyed on
+/// and off with any pitch, envelope and volume (sweeps among them), noise,
+/// pitch modulation, the reverb unit with any registers, CD input, the IRQ
+/// address among the blocks, transfers, and the register window, all
+/// changing as it runs in spans of a few samples. The digest is of every
+/// output sample, tap, IRQ time, register read back, and the state at the
+/// end.
+fn session(seed: u64) -> u64 {
+    let mut state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1;
+    let mut random = move |limit: u32| {
+        state ^= state >> 12;
+        state ^= state << 25;
+        state ^= state >> 27;
+        ((state.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 32) * u64::from(limit) >> 32) as u32
+    };
+    let mut digest = Digest::new();
+    let mut spu = Spu::new();
+    let irqs = Arc::new(AtomicU32::new(0));
+    let counted = irqs.clone();
+    spu.set_irq_hook(Some(Box::new(move |clock| {
+        counted.fetch_add(clock as u32 | 1, Ordering::Relaxed);
+    })));
+    // Sample data everywhere above the capture buffers: a block's header
+    // any shift and filter, its flags mostly none.
+    let mut ram = vec![0u8; 0x80000 - 0x1000];
+    for (index, byte) in ram.iter_mut().enumerate() {
+        *byte = match index % 16 {
+            0 => (random(16) | random(8) << 4) as u8,
+            1 => match random(24) {
+                0 => FLAG_LOOP_END,
+                1 => FLAG_LOOP_END | FLAG_LOOP_REPEAT,
+                2 | 3 => FLAG_LOOP_START,
+                4 => random(8) as u8,
+                _ => 0,
+            },
+            // Quiet and loud passages.
+            _ if index / 0x4000 % 3 == 0 => [0x00, 0x11, 0xFF, 0xF1, 0x1F][random(5) as usize],
+            _ => random(256) as u8,
+        };
+    }
+    spu.write16(reg::TRANSFER_CONTROL, 4);
+    upload(&mut spu, 0x1000, &ram);
+    let mut window = [0u8; WINDOW_SIZE];
+    for step in 0..400 {
+        // The registers, a few at a time: directly, or through the window.
+        let through_window = random(3) == 0;
+        let mut write = |spu: &mut Spu, offset: usize, value: u16| {
+            if through_window {
+                window[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
+            } else {
+                spu.write16(offset, value);
+            }
+        };
+        for _ in 0..random(12) {
+            let v = random(24) as usize;
+            let (offset, value) = match random(20) {
+                0 | 1 => (voice_reg(v, reg::VOICE_VOLUME_LEFT + 2 * random(2) as usize), random(0x1_0000) as u16),
+                2 => (voice_reg(v, reg::VOICE_VOLUME_LEFT + 2 * random(2) as usize), random(0x4000) as u16),
+                3 | 4 => (voice_reg(v, reg::VOICE_PITCH), [0x400, 0x1000, 0x1001, 0x2ABC, 0x3FFF, 0x4000, 0x7FFF, 0xFFFF][random(8) as usize]),
+                5 => (voice_reg(v, reg::VOICE_PITCH), random(0x1_0000) as u16),
+                6 | 7 => (voice_reg(v, reg::VOICE_START), (0x200 + random(0xFE00)) as u16),
+                8 | 9 => (voice_reg(v, reg::VOICE_ADSR1), random(0x1_0000) as u16),
+                10 | 11 => (voice_reg(v, reg::VOICE_ADSR2), random(0x1_0000) as u16),
+                12 => (voice_reg(v, reg::VOICE_ENVELOPE), random(0x8000) as u16),
+                13 => (voice_reg(v, reg::VOICE_REPEAT), (0x200 + random(0xFE00)) as u16),
+                14 => ([reg::PITCH_MODULATION, reg::NOISE, reg::REVERB_ON][random(3) as usize] + 2 * random(2) as usize, (random(0x1_0000) & random(0x1_0000)) as u16),
+                15 => (reg::MAIN_VOLUME_LEFT + 2 * random(2) as usize, if random(4) == 0 { random(0x1_0000) } else { random(0x4000) } as u16),
+                16 => (reg::REVERB_CONFIG + 2 * random(32) as usize, if random(4) == 0 { random(0x1_0000) } else { random(0x2000) } as u16),
+                17 => ([reg::REVERB_VOLUME_LEFT, reg::REVERB_VOLUME_RIGHT, reg::CD_VOLUME_LEFT, reg::CD_VOLUME_RIGHT][random(4) as usize], random(0x1_0000) as u16),
+                18 => (reg::IRQ_ADDRESS, (0x200 + random(0xFE00)) as u16),
+                _ => (reg::REVERB_BASE, [0xE000, 0xF000, 0xFFF0, 0x8000, 0xFFFF][random(5) as usize]),
+            };
+            write(&mut spu, offset, value);
+        }
+        if random(4) == 0 {
+            let noise = random(64) << 8;
+            let extras = [0, control::REVERB_ENABLE, control::CD_AUDIO, control::CD_REVERB, control::IRQ_ENABLE];
+            let control = ON | noise as u16 | extras[random(5) as usize] | extras[random(5) as usize] | extras[random(5) as usize];
+            // Now and then off, or muted.
+            write(&mut spu, reg::CONTROL, match random(40) { 0 => 0, 1 => control & !control::UNMUTE, _ => control });
+        }
+        if random(2) == 0 {
+            write(&mut spu, reg::KEY_ON + 2 * random(2) as usize, (random(0x1_0000) & random(0x1_0000)) as u16);
+        }
+        if random(3) == 0 {
+            write(&mut spu, reg::KEY_OFF + 2 * random(2) as usize, (random(0x1_0000) & random(0x1_0000)) as u16);
+        }
+        if through_window || random(4) == 0 {
+            spu.sync_window(&mut window);
+            digest.bytes(&window);
+        }
+        if random(6) == 0 {
+            let cd: Vec<i16> = (0..2 * random(600)).map(|_| random(0x1_0000) as u16 as i16).collect();
+            spu.push_cd_audio(&cd);
+        }
+        if random(50) == 0 {
+            let data: Vec<u8> = (0..16 * (1 + random(8))).map(|_| random(256) as u8).collect();
+            upload(&mut spu, 0x1000 + 16 * random(0x7000), &data);
+        }
+        // A span of samples: heard, heard with its taps, or unheard.
+        let samples = 1 + random(if step % 16 == 0 { 2000 } else { 120 });
+        let mut out = vec![0i16; 2 * samples as usize];
+        match random(4) {
+            0 => spu.run(samples, None),
+            1 => {
+                let mut taps = Vec::new();
+                spu.run_tapped(samples, &mut out, &mut taps);
+                for tap in &taps {
+                    for (voice, volume) in tap.voice.iter().zip(&tap.volume) {
+                        digest.word(*voice as u16 as u64 | (volume[0] as u16 as u64) << 16 | (volume[1] as u16 as u64) << 32);
+                    }
+                    digest.word(tap.reverb[0] as u16 as u64 | (tap.reverb[1] as u16 as u64) << 16 | u64::from(tap.muted) << 32);
+                    digest.word(tap.cd[0] as u32 as u64 | (tap.cd[1] as u32 as u64) << 32);
+                    digest.word(tap.main[0] as u16 as u64 | (tap.main[1] as u16 as u64) << 16 | (tap.output[0] as u16 as u64) << 32 | (tap.output[1] as u16 as u64) << 48);
+                }
+            }
+            _ => spu.run(samples, Some(&mut out)),
+        }
+        for sample in &out {
+            digest.bytes(&sample.to_le_bytes());
+        }
+        digest.word(u64::from(irqs.load(Ordering::Relaxed)));
+        digest.word(u64::from(endx(&spu)) | u64::from(spu.read16(reg::STATUS)) << 32);
+    }
+    digest.bytes(&spu.save());
+    digest.0
+}
+
+#[test]
+fn long_sessions_of_everything_at_once_sound_and_end_as_they_always_have() {
+    // What the SPU gave for these sessions when the test was written,
+    // before its loops were made faster: they must go on giving it.
+    let expected: [u64; 6] = [
+        0xAA73_8531_964D_19E8,
+        0xC32F_6B0E_739A_1981,
+        0x5C73_FBE2_3AC0_F360,
+        0x6D97_2AF1_2BDE_D5F3,
+        0xF880_9E39_A9C7_68A5,
+        0x5660_DB50_4D98_E207,
+    ];
+    let given: Vec<u64> = (1..=6).map(session).collect();
+    assert_eq!(given, expected, "{given:#018X?}");
+}

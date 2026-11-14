@@ -861,6 +861,7 @@ src/runtime/crates/xem-gpu/src/snapshot.rs
 src/runtime/crates/xem-gpu/src/trace.rs
 src/runtime/crates/xem-gpu/tests/gpu.rs
 src/runtime/crates/xem-gpu/tests/private_capture.rs
+src/runtime/crates/xem-gpu/tests/raster.rs
 src/runtime/crates/xem-headless/Cargo.toml
 src/runtime/crates/xem-headless/build.rs
 src/runtime/crates/xem-headless/examples/first_person.rs

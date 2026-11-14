@@ -607,7 +607,7 @@ class Rewriter:
             lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
             self.declare(unit, "xem_loop_spin", "void", [])
-        lines = ram_mirrors(lines)
+        lines = ram_mirrors(lines, is_port)
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
         for name, decl in sorted(self.unit_decls.pop(unit.source, {}).items()):
@@ -788,7 +788,7 @@ class Rewriter:
         return found
 
 
-def ram_mirrors(lines):
+def ram_mirrors(lines, own_globals=False):
     """Translate memory operands, never the pointer values the game keeps.
 
     The PS1's low 8 MB and its cached/uncached aliases address the same 2 MB
@@ -801,8 +801,21 @@ def ram_mirrors(lines):
     so mem2reg can promote the original C's local variables normally. Only
     KUSEG's physical range and KSEG0/KSEG1 are PS1 addresses; the host's
     presentation rings at 0x70000000 must retain their own addresses.
+
+    With `own_globals` (the port's units) a constant address within a named
+    global is left as it is too, as the global's own address already is: the
+    module places its globals outside the PS1's aliases, and the optimizer
+    then knows the GTE's registers (the flags every step updates) apart from
+    one another and from what the game's pointers reach.
     """
     out, local, number = [], set(), 0
+
+    def own(pointer):
+        # A constant expression: inbounds element addresses of a named
+        # global, nothing computed from an integer.
+        return (own_globals and pointer.startswith("getelementptr inbounds ") and "ptr @" in pointer
+                and "inttoptr" not in pointer and "ptrtoint" not in pointer
+                and pointer.count("getelementptr") == pointer.count("getelementptr inbounds"))
 
     def address(argument):
         nonlocal number
@@ -810,7 +823,7 @@ def ram_mirrors(lines):
         if not match:
             raise ValueError(f"unhandled memory operand: {argument}")
         attributes, pointer = match.groups()
-        if pointer in local or pointer.startswith("@"):
+        if pointer in local or pointer.startswith("@") or own(pointer):
             return argument
         name = f"%xem.memory.{number}"
         number += 1
@@ -1160,6 +1173,24 @@ def compile_ir(source, out_ll):
     return result.stderr if result.returncode else None
 
 
+def inlinable(ir):
+    """A port unit's IR with its functions free to be inlined. Every unit
+    reaches the optimizer `noinline` (the front end ran at -O0): right for the
+    game's, which stay as the matched builds have them, call for call; the
+    port's are this project's own, and its small steps (a GTE register's
+    transfer, an address's translation) are called for every vertex."""
+    return re.sub(r"^(attributes #\d+ = \{[^}\n]*?) noinline\b", r"\1", ir, flags=re.M)
+
+
+def link_port(out, paths):
+    """The port's units as one module, so that its functions are inlined
+    across them too (the handwritten routines' ports call the software GTE
+    in another unit for every register they load)."""
+    merged = out / "ir" / "port.ll"
+    run(["llvm-link", "-S", *map(str, paths), "-o", str(merged)])
+    return merged
+
+
 def compile_object(ll, obj):
     """Compile rewritten IR to an object; the compiler's errors, or None."""
     result = subprocess.run([os.environ["XEM_CLANG"], "--target=wasm32-unknown-unknown", "-O2", "-c", str(ll),
@@ -1227,10 +1258,19 @@ def build(args):
         if args.release:
             raise SystemExit(1)
     ll_files = []
+    port_files = []
     for unit in units:
         path = out / "ir" / (unit.source.replace("/", ".") + ".x.ll")
-        path.write_text(rewritten[unit.source])
-        ll_files.append(path)
+        # A coverage build keeps the port as the game's units are: one
+        # object a unit, no function inlined.
+        if unit.image == "port" and not args.coverage:
+            path.write_text(inlinable(rewritten[unit.source]))
+            port_files.append(path)
+        else:
+            path.write_text(rewritten[unit.source])
+            ll_files.append(path)
+    if port_files:
+        ll_files.append(link_port(out, port_files))
     schema, count, type_count = game_schema.build_schema(
         out, [s for s in all_sources if s[1] != "port"], addresses, CFLAGS, args.jobs)
     print(f"{count} globals, {type_count} types: {schema}")

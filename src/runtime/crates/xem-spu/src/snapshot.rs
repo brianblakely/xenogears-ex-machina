@@ -107,10 +107,6 @@ impl<'a> Reader<'a> {
         Ok(u64::from_le_bytes(self.array()?))
     }
     pub fn finish(self) -> Result<(), SnapshotError> {
-        if self.data.is_empty() {
-            Ok(())
-        } else {
-            Err(SnapshotError::TrailingData)
-        }
+        self.data.is_empty().ok_or(SnapshotError::TrailingData)
     }
 }

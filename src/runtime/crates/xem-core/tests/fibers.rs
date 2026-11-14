@@ -4,6 +4,7 @@
 //! port's `xem_unwind_area`), a rewind must come with the same area and
 //! shadow stack pointer and resumes after the import that unwound.
 
+use std::assert_matches;
 use std::collections::HashMap;
 
 use xem_core::module::{Action, AsyncState, GameModule, Import, ImportHandler, Trap};
@@ -237,7 +238,7 @@ fn a_returning_task_stops_the_game() {
     let task = vec![Op::Return];
     let mut runtime = Runtime::new(Fake::new(game, task));
     let error = runtime.step().unwrap_err();
-    assert!(matches!(error, Trap::Host(ref reason) if reason.contains("arena task returned")), "{error}");
+    assert_matches!(error, Trap::Host(ref reason) if reason.contains("arena task returned"), "{error}");
 }
 
 #[test]
@@ -245,10 +246,10 @@ fn a_yield_outside_the_task_stops_the_game() {
     let game = vec![Op::Switch(0, 0)];
     let mut runtime = Runtime::new(Fake::new(game, vec![]));
     let error = runtime.step().unwrap_err();
-    assert!(matches!(error, Trap::Host(ref reason) if reason.contains("switched to fiber 0")), "{error}");
+    assert_matches!(error, Trap::Host(ref reason) if reason.contains("switched to fiber 0"), "{error}");
     // Resuming a task fiber that never started is refused too.
     let game = vec![Op::Switch(1, 0)];
     let mut runtime = Runtime::new(Fake::new(game, vec![]));
     let error = runtime.step().unwrap_err();
-    assert!(matches!(error, Trap::Host(ref reason) if reason.contains("not suspended")), "{error}");
+    assert_matches!(error, Trap::Host(ref reason) if reason.contains("not suspended"), "{error}");
 }

@@ -498,7 +498,7 @@ impl XemApp {
         }
         // The Binaural listener turns with the head as the seat sees it
         // (presentation only).
-        let seat = self.renderer.as_ref().map(|r| r.xr_seat).unwrap_or_default();
+        let seat = self.renderer.as_ref().map_or_default(|r| r.xr_seat);
         if let (Some(session), Some(head)) = (self.session.as_mut(), input.head) {
             session.set_head(Some(xem_core::binaural::head_axes(seat.relative(head.orientation).to_array())));
         }
@@ -859,7 +859,7 @@ impl XemApp {
         self.sync_time_controls()?;
         // First-person inspection is toggled and turned whether the game
         // runs or not (a headset's Pause stands apart from it).
-        let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let field = self.session.as_mut().map_or_default(|s| s.runtime.field_controls());
         let ui = self.session.as_mut().map_or(xem_core::context::Context::None, |s| s.runtime.context());
         let bindings = self.settings.borrow().settings().game_bindings.clone();
         let inspecting = self.look(&bindings, field, ui, now);
@@ -1067,7 +1067,7 @@ impl XemApp {
                 panel.set_debug_status(true, session.debug.busy(), &session.debug.message);
                 panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
                     session.rewind.available_seconds(), session.rewind.history_seconds, session.rewind.bytes as f64/1048576.0,
-                    session.rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default()));
+                    session.rewind.error.as_ref().map_or_default(|e| format!(" — {e}"))));
             } else if let Some(panel) = renderer.panel() {
                 panel.set_debug_status(false, false, "Boot a game to use Debug.");
                 panel.set_time_status(None,"Boot a game to use save states and time controls.");
@@ -1721,7 +1721,7 @@ impl XemApp {
     /// answering `{first_person, look}`; the session takes its state with
     /// the next batch of frames the page runs (`status().session.inspecting`).
     fn first_person_command(&mut self, command: &Value) -> Value {
-        let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let field = self.session.as_mut().map_or_default(|s| s.runtime.field_controls());
         let setting = self.settings.borrow().settings().graphics.renderer;
         let Some(renderer) = self.renderer.as_mut() else { return json!({ "error": "no renderer: the page shows no game" }) };
         let was = renderer.first_person();
@@ -1866,7 +1866,7 @@ impl XemApp {
             })
         });
         let settings_revision = self.settings.borrow().revision();
-        let card_errors = self.session.as_mut().map(|s| s.runtime.services().card.errors.clone()).unwrap_or_default();
+        let card_errors = self.session.as_mut().map_or_default(|s| s.runtime.services().card.errors.clone());
         let drive = self.session.as_mut().map(|s| {
             let cd = &s.runtime.services().cd;
             json!({ "disc": cd.inserted(), "wanted": cd.wanted() })

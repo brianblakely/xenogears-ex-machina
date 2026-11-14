@@ -210,7 +210,7 @@ impl Game {
     pub fn time_status(&mut self) -> (bool,String) {
         let rewind = &self.session.rewind;
         let time = format!("{:.0} of {} seconds available · {:.1} MiB used{}", rewind.available_seconds(), rewind.history_seconds, rewind.bytes as f64/1048576.0,
-            rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default());
+            rewind.error.as_ref().map_or_default(|e| format!(" — {e}")));
         (self.session.fast_forward,time)
     }
     /// The storage line: card writes pending, the cards' storage errors and

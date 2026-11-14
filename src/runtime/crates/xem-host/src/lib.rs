@@ -18,6 +18,9 @@ pub mod xr_play;
 #[cfg(all(has_game_module, not(target_os = "macos")))]
 mod assisted;
 mod operations;
+// A build without a game module plays in no headset: nothing takes xem-xr.
+#[cfg(all(not(has_game_module), not(target_os = "macos")))]
+use xem_xr as _;
 
 pub use game::Game;
 pub use operations::agent_request;

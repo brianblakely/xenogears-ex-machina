@@ -308,6 +308,7 @@ pub fn discs_beside(path: &Path, disc: crate::KnownDisc) -> Vec<(crate::KnownDis
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
     use crate::sector::{Sector, Subheader, build_mode2_sector, submode};
 
@@ -331,14 +332,14 @@ mod tests {
         let mut two = vec![0u8; 2 * SECTOR_SIZE];
         src.read_sectors(8, &mut two).unwrap();
         assert_eq!(two[SECTOR_SIZE + 24], 9);
-        assert!(matches!(
+        assert_matches!(
             src.read_sectors(9, &mut two),
             Err(Error::OutOfRange { .. })
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             src.read_sector(10, &mut one),
             Err(Error::OutOfRange { .. })
-        ));
+        );
     }
 
     #[test]
@@ -380,7 +381,7 @@ mod tests {
         )));
         let mut src = BinSource::whole(file.clone()).unwrap();
         let mut one = [0u8; SECTOR_SIZE];
-        assert!(matches!(src.read_sector(3, &mut one), Err(Error::NotReady)));
+        assert_matches!(src.read_sector(3, &mut one), Err(Error::NotReady));
         let missing = file.borrow_mut().take_missing();
         for range in missing {
             file.borrow_mut()

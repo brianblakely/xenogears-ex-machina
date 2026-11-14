@@ -78,7 +78,7 @@ pub fn command<M: GameModule>(session: &mut Session<M>, command: &Value) -> Valu
                     // Any card or save file, by its contents (a raw single
                     // save by its file name), as Import original card 1/2.
                     let bytes = xem_storage::read(path,MAX_FILE).map_err(|e| format!("{}: {e}",path.display()))?;
-                    let file_name = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
+                    let file_name = path.file_name().map_or_default(|name| name.to_string_lossy().into_owned());
                     let message = card.import_file(slot,&bytes,&file_name,now)?;
                     Ok(json!({"ok":true,"slot":slot,"message":message,"card":card.status(slot,now)}))
                 } else {

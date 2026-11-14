@@ -36,6 +36,7 @@
 
 #![cfg(all(has_game_module, not(debug_assertions)))]
 
+use std::assert_matches;
 use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
@@ -409,7 +410,7 @@ fn world_map(disc: &Path, cards: &Path) -> Session<NativeModule> {
     ok(&mut s, json!({ "cmd": "schedule", "commands": route["commands"] }));
     run_to(&mut s, route["frames"].as_u64().unwrap());
     assert_eq!(hash(&mut s), route["memory_hash"].as_str().unwrap(), "the route's end");
-    assert!(matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. }), "on foot on the world map");
+    assert_matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. }, "on foot on the world map");
     s
 }
 
@@ -479,7 +480,7 @@ fn a_world_map_save_loads_from_the_title_onto_the_world_map() {
     // Out of the menu, the party walks on there.
     press(&mut s, "circle", 200);
     assert_eq!(inspect(&mut s, "worldmap_menu_requested", 0), json!(0));
-    assert!(matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. }));
+    assert_matches!(s.runtime.context(), Context::WorldMap { movement: 1, .. });
     let card = card_image(&mut s, 0);
     drop(s);
 

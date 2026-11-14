@@ -132,10 +132,6 @@ impl<'a> Reader<'a> {
     }
 
     pub(crate) fn finish(self) -> Result<(), SnapshotError> {
-        if self.0.is_empty() {
-            Ok(())
-        } else {
-            Err(SnapshotError::TrailingBytes)
-        }
+        self.0.is_empty().ok_or(SnapshotError::TrailingBytes)
     }
 }

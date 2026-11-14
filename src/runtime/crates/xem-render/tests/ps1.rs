@@ -3,6 +3,7 @@
 //! pixels. Runs on the software rasterizer (`Gpu::reference`: lavapipe in the
 //! runtime shell), whose pixels are the same on every machine.
 
+use std::assert_matches;
 use xem_render::ps1::{DrawOptions, Fidelity, Ps1Renderer};
 use xem_render::{Gpu, read_rgba8};
 
@@ -838,11 +839,11 @@ fn first_person_replaces_a_directional_sprite_once_and_restores_its_texture_cell
     let mut ops = original.clone();
     first_person(&mut ops,&AHEAD);
     assert_eq!(ops.len(),3);
-    assert!(matches!(&ops[0], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x1234]));
+    assert_matches!(&ops[0], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x1234]);
     let TraceOp::Draw(p) = &ops[1] else { unreachable!() };
     assert_eq!(p.vertices.map(|v| (v.u,v.v)),[(24,0),(32,0),(24,16),(32,16)]);
     assert!(p.facing.is_none());
-    assert!(matches!(&ops[2], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x5678]));
+    assert_matches!(&ops[2], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x5678]);
     assert_eq!(original.len(),2,"the normal-camera trace remains available unchanged");
 }
 
@@ -1637,6 +1638,87 @@ fn scene_points_weld_to_their_own_game_frames_only() {
     let mut ops = vec![face(0.0), TraceOp::VBlank, face(0.25)];
     weld(&mut ops);
     assert_eq!(first(&ops[2]), (100.25, Some([100.25, 100.0, 1000.0])), "a frame's face is not welded to one an earlier frame drew there");
+}
+
+/// Welding by the rule alone: each point of the scene, in order, takes the
+/// place of the first earlier point of its game frame, of another face,
+/// within half a pixel and of nearly its depth, looked for in the pixels
+/// around it (left before right, upper before lower; in a pixel, the newest
+/// first); a point that finds none is one for the points after it.
+fn weld_by_search(ops: &mut [TraceOp]) {
+    struct Anchor {
+        pixel: (i32, i32),
+        fx: f32,
+        fy: f32,
+        z: f32,
+        view: Option<[f32; 3]>,
+        face: usize,
+    }
+    for frame in ops.split_mut(|op| matches!(op, TraceOp::VBlank)) {
+        let mut anchors: Vec<Anchor> = Vec::new();
+        for (face, op) in frame.iter_mut().enumerate() {
+            let TraceOp::Draw(p) = op else { continue };
+            if !matches!(p.class, Class::World | Class::Model) || !matches!(p.shape, Shape::Triangle | Shape::Quad) {
+                continue;
+            }
+            let count = p.vertex_count();
+            for v in p.vertices.iter_mut().take(count).filter(|v| v.z > 0.0) {
+                let around = |c: f32| [(c - 0.5).floor() as i32, (c + 0.5).floor() as i32];
+                let near = |a: &&Anchor| a.face != face && (a.fx - v.fx).abs() <= 0.5 && (a.fy - v.fy).abs() <= 0.5 && (a.z - v.z).abs() <= (v.z * 0.01).max(4.0);
+                let found = around(v.fx)
+                    .into_iter()
+                    .flat_map(|x| around(v.fy).map(|y| (x, y)))
+                    .find_map(|pixel| anchors.iter().rev().filter(|a| a.pixel == pixel).find(near));
+                match found {
+                    Some(a) => {
+                        (v.fx, v.fy) = (a.fx, a.fy);
+                        if a.view.is_some() && v.view.is_some() {
+                            v.view = a.view;
+                        }
+                    }
+                    None => anchors.push(Anchor { pixel: (v.fx.floor() as i32, v.fy.floor() as i32), fx: v.fx, fy: v.fy, z: v.z, view: v.view, face }),
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn scene_points_weld_as_a_search_of_every_earlier_point_finds() {
+    let mut state = 0x2545_F491_4F6C_DD1Du64;
+    let mut random = |below: u32| {
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        ((state >> 33) as u32) % below
+    };
+    for scene in 0..40 {
+        // Faces whose points crowd a few pixels (also across pixel edges and
+        // the screen's origin), at a few depths, some of them not the scene's
+        // or without a point before the division; several game frames.
+        let spread = [3, 8, 40][scene % 3];
+        let mut ops = Vec::new();
+        for _ in 0..400 + random(600) {
+            if random(60) == 0 {
+                ops.push(TraceOp::VBlank);
+                continue;
+            }
+            let mut op = primitive(0, 0, 0);
+            let TraceOp::Draw(p) = &mut op else { unreachable!("a face") };
+            p.shape = [Shape::Triangle, Shape::Quad, Shape::Quad, Shape::Rectangle, Shape::Line][random(5) as usize];
+            p.class = [Class::World, Class::World, Class::Model, Class::Sprite, Class::Flat][random(5) as usize];
+            for v in &mut p.vertices {
+                v.fx = (random(spread * 8) as f32 - (spread * 4) as f32) / 8.0 + [0.0, 0.01, -0.02][random(3) as usize];
+                v.fy = (random(spread * 8) as f32 - (spread * 4) as f32) / 8.0;
+                v.z = [0.0, 300.0, 302.0, 305.0, 1000.0, 1009.0, 1011.0][random(7) as usize];
+                v.view = (random(4) != 0).then(|| [v.fx * 3.0, v.fy * 3.0, v.z + random(3) as f32]);
+            }
+            ops.push(op);
+        }
+        let mut searched = ops.clone();
+        weld_by_search(&mut searched);
+        assert_ne!(searched, ops, "scene {scene}: some points weld");
+        weld(&mut ops);
+        assert_eq!(ops, searched, "scene {scene}");
+    }
 }
 
 /// A field camera turned `yaw` degrees about the world's up from looking

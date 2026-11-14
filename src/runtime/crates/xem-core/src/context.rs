@@ -393,6 +393,7 @@ fn battle(memory: &dyn GameMemory) -> Option<Context> {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
     use crate::memory::OutOfBounds;
 
@@ -454,7 +455,7 @@ mod tests {
         word(&mut ram, state + 0x350, images);
         ram.write(state + 0x336, &[3]).unwrap();
         ram.write(flags + 0x04, &[1]).unwrap();
-        assert!(matches!(read_context(&ram, Some(3)), Context::Menu { screen: 0, cursor: 3, commands: true, .. }), "it runs");
+        assert_matches!(read_context(&ram, Some(3)), Context::Menu { screen: 0, cursor: 3, commands: true, .. }, "it runs");
         ram.write(MENU_STATE_DEBUG_START, &[1]).unwrap();
         assert_eq!(read_context(&ram, Some(3)), between, "it returned: the map fades back in");
         word(&mut ram, WORLDMAP_MENU_REQUESTED, 0);
@@ -530,7 +531,7 @@ mod tests {
         assert_eq!(field_script_buttons(&ram, Some(1)), 0xf060);
         // A window open: a dialogue's context, the same buttons.
         ram.write(FIELD_OPEN_WINDOWS, &1u16.to_le_bytes()).unwrap();
-        assert!(matches!(read_context(&ram, Some(1)), Context::Dialogue { .. }));
+        assert_matches!(read_context(&ram, Some(1)), Context::Dialogue { .. });
         assert_eq!(field_script_buttons(&ram, Some(1)), 0xf060);
         // A scene's context carries them itself.
         ram.write(FIELD_OPEN_WINDOWS, &0u16.to_le_bytes()).unwrap();

@@ -36,6 +36,21 @@ fn ram_address(address: u32) -> u32 {
     RAM_BASE | (address & (RAM_SIZE - 1))
 }
 
+/// A ring's new entries in the two pieces given (each its address and its
+/// bytes): where they lie, in a memory that holds them so (the native
+/// module's), else copied into `copy`. None beyond the memory.
+fn ring_entries<'a>(memory: &'a dyn GameMemory, [(first, head), (rest, tail)]: [(u32, usize); 2], copy: &'a mut Vec<u8>) -> Option<[&'a [u8]; 2]> {
+    if let (Some(head), Some(tail)) = (memory.bytes(first, head), memory.bytes(rest, tail)) {
+        return Some([head, tail]);
+    }
+    copy.clear();
+    copy.resize(head + tail, 0);
+    let (head, tail) = copy.split_at_mut(head);
+    memory.read(first, head).ok()?;
+    memory.read(rest, tail).ok()?;
+    Some([head, tail])
+}
+
 /// Game memory as DMA sees it. A read outside game memory gives 0 and a
 /// write is dropped (both only reachable through RAM mirrors, which map
 /// inside).
@@ -53,6 +68,42 @@ impl<M: GameMemory + ?Sized> xem_gpu::MemoryMut for DmaMemory<'_, M> {
     }
 }
 
+/// RAM where it lies, as DMA reads it.
+struct Ram<'a>(&'a [u8; RAM_SIZE as usize]);
+
+impl Ram<'_> {
+    /// Where a 24-bit, word-aligned physical address lies in RAM (its
+    /// mirrors over the low 8 MB map inside).
+    fn at(address: u32) -> usize {
+        (address & (RAM_SIZE - 1) & !3) as usize
+    }
+}
+
+impl xem_gpu::Memory for Ram<'_> {
+    fn read_u32(&self, address: u32) -> u32 {
+        let at = Self::at(address);
+        u32::from_le_bytes([self.0[at], self.0[at + 1], self.0[at + 2], self.0[at + 3]])
+    }
+
+    fn read_words(&self, address: u32, words: &mut [u32]) {
+        let at = Self::at(address);
+        match self.0.get(at..at + words.len() * 4) {
+            // Side by side,
+            Some(bytes) => {
+                for (word, bytes) in words.iter_mut().zip(bytes.chunks_exact(4)) {
+                    *word = u32::from_le_bytes(bytes.try_into().expect("four bytes"));
+                }
+            }
+            // or wrapping at RAM's end.
+            None => {
+                for (k, word) in words.iter_mut().enumerate() {
+                    *word = self.read_u32(address.wrapping_add(4 * k as u32));
+                }
+            }
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Gpu {
     gpu: xem_gpu::Gpu,
@@ -66,7 +117,8 @@ pub struct Gpu {
     vblanks: u64,
     /// Presentation only: the port's ring counts already handed to the
     /// draw trace (projections, stores, reveals), and the buffers they are
-    /// read and decoded into, kept between transfers.
+    /// copied (from a memory reached through copies) and decoded into, kept
+    /// between transfers.
     traced: [u32; 3],
     entries: [Vec<u8>; 3],
     projections: Vec<xem_gpu::Projection>,
@@ -138,9 +190,12 @@ impl Gpu {
         let _ = memory.write_u32(arg(2).wrapping_add(4), self.gpu.reveal_reach());
         let _ = memory.write_u32(arg(2).wrapping_add(8), self.gpu.reveal_pull_back());
         let _ = memory.write_u32(arg(2).wrapping_add(12), self.gpu.reveal_around());
+        // Read only from here on.
+        let memory: &dyn GameMemory = memory;
         let mut counts = [0u32; 3];
-        for (n, &(header, offset, (size, bytes))) in rings.iter().enumerate() {
-            self.entries[n].clear();
+        // Each ring's new entries, oldest first, in at most two pieces.
+        let mut entries: [[&[u8]; 2]; 3] = [[&[]; 2]; 3];
+        for ((n, &(header, offset, (size, bytes))), copy) in rings.iter().enumerate().zip(&mut self.entries) {
             let Ok(count) = memory.read_u32(header) else { return };
             counts[n] = count;
             let new = count.wrapping_sub(self.traced[n]).min(size);
@@ -148,22 +203,22 @@ impl Gpu {
             if !tracing || new == 0 {
                 continue;
             }
-            // The newest `new` entries, oldest first, in at most two pieces.
             let first = count.wrapping_sub(new) % size;
             let head = new.min(size - first);
             let base = header.wrapping_add(offset);
-            self.entries[n].resize((new * bytes) as usize, 0);
-            let (a, b) = self.entries[n].split_at_mut((head * bytes) as usize);
-            if memory.read(base.wrapping_add(first * bytes), a).is_err() || memory.read(base, b).is_err() {
-                return;
-            }
+            let pieces = [(base.wrapping_add(first * bytes), (head * bytes) as usize), (base, ((new - head) * bytes) as usize)];
+            let Some(found) = ring_entries(memory, pieces, copy) else { return };
+            entries[n] = found;
         }
         if !tracing {
             return;
         }
+        fn each<'a>([head, rest]: [&'a [u8]; 2], (_, bytes): (u32, u32)) -> impl Iterator<Item = &'a [u8]> {
+            head.chunks_exact(bytes as usize).chain(rest.chunks_exact(bytes as usize))
+        }
         let word = |entry: &[u8], i: usize| u32::from_le_bytes(entry[i * 4..i * 4 + 4].try_into().unwrap());
         self.projections.clear();
-        self.projections.extend(self.entries[0].chunks_exact(PROJECTION_RING.1 as usize).map(|e| xem_gpu::Projection {
+        self.projections.extend(each(entries[0], PROJECTION_RING).map(|e| xem_gpu::Projection {
                 sxy: word(e, 0),
                 sz: word(e, 1) as u16,
                 class: (word(e, 1) >> 16) as u8,
@@ -176,12 +231,10 @@ impl Gpu {
             }));
         self.stores.clear();
         self.stores.extend(
-            self.entries[1]
-                .chunks_exact(STORE_RING.1 as usize)
-                .map(|e| xem_gpu::SxyStore { address: word(e, 0), value: word(e, 1), source: word(e, 3).checked_sub(1) }),
+            each(entries[1], STORE_RING).map(|e| xem_gpu::SxyStore { address: word(e, 0), value: word(e, 1), source: word(e, 3).checked_sub(1) }),
         );
         self.reveals.clear();
-        self.reveals.extend(self.entries[2].chunks_exact(REVEAL_RING.1 as usize).map(|e| {
+        self.reveals.extend(each(entries[2], REVEAL_RING).map(|e| {
             let shape = word(e, 1);
             let count = (shape & 0xFF).min(12) as usize;
             let mut words = [0u32; 12];
@@ -218,31 +271,55 @@ impl Gpu {
             self.completion = None;
             return Ok(());
         }
-        let mut memory = DmaMemory(memory);
         let from_memory = self.chcr & 1 != 0;
-        match (self.chcr >> 9 & 3, from_memory) {
-            (2, true) => {
-                self.gpu.dma_linked_list(&memory, self.madr, LIST_WORD_LIMIT).map_err(|error| error.to_string())?;
-            }
-            (1, direction) | (0, direction) => {
-                let size = match self.bcr & 0xFFFF {
-                    0 => 0x1_0000,
-                    size => size,
-                };
-                let blocks = if self.chcr >> 9 & 3 == 1 { (self.bcr >> 16).max(1) } else { 1 };
-                let words = size * blocks;
-                if direction {
-                    self.gpu.dma_block_write(&memory, self.madr, words);
-                } else {
-                    self.gpu.dma_block_read(&mut memory, self.madr, words);
-                }
-            }
-            (mode, _) => {
-                return Err(format!("GPU DMA mode {mode} (CHCR {:#010x}) is not supported", self.chcr));
-            }
+        // RAM where it lies, from a memory that has it so (the native
+        // module's): a list's thousands of words are read without a call
+        // each.
+        let ram = memory.bytes(RAM_BASE, RAM_SIZE as usize).and_then(|ram| <&[u8; RAM_SIZE as usize]>::try_from(ram).ok());
+        match ram {
+            Some(ram) if from_memory => self.transfer_from(&Ram(ram))?,
+            _ if from_memory => self.transfer_from(&DmaMemory(memory))?,
+            _ => self.transfer_to(&mut DmaMemory(memory))?,
         }
         self.completion = Some(now);
         Ok(())
+    }
+
+    /// The words of a block transfer: BCR's block size (0: 10000h), times
+    /// its count of blocks in block mode.
+    fn block_words(&self) -> u32 {
+        let size = match self.bcr & 0xFFFF {
+            0 => 0x1_0000,
+            size => size,
+        };
+        size * if self.chcr >> 9 & 3 == 1 { (self.bcr >> 16).max(1) } else { 1 }
+    }
+
+    fn unsupported(&self) -> String {
+        format!("GPU DMA mode {} (CHCR {:#010x}) is not supported", self.chcr >> 9 & 3, self.chcr)
+    }
+
+    /// Memory to the GPU: a linked list, or blocks.
+    fn transfer_from<M: xem_gpu::Memory + ?Sized>(&mut self, memory: &M) -> Result<(), String> {
+        match self.chcr >> 9 & 3 {
+            2 => self.gpu.dma_linked_list(memory, self.madr, LIST_WORD_LIMIT).map(|_| ()).map_err(|error| error.to_string()),
+            0 | 1 => {
+                self.gpu.dma_block_write(memory, self.madr, self.block_words());
+                Ok(())
+            }
+            _ => Err(self.unsupported()),
+        }
+    }
+
+    /// The GPU to memory, in blocks.
+    fn transfer_to<M: xem_gpu::MemoryMut + ?Sized>(&mut self, memory: &mut M) -> Result<(), String> {
+        match self.chcr >> 9 & 3 {
+            0 | 1 => {
+                self.gpu.dma_block_read(memory, self.madr, self.block_words());
+                Ok(())
+            }
+            _ => Err(self.unsupported()),
+        }
     }
 }
 

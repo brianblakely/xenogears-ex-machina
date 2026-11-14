@@ -210,6 +210,7 @@ pub fn side_keys(ui: Context, targets: Option<&Targets>, auto_advance: bool) -> 
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
 
     #[test]
@@ -218,7 +219,7 @@ mod tests {
         let marks = marks(ring, Some(Pointed::Screen((50.0, 60.0))), None, None, None, false);
         assert_eq!(marks.len(), 1, "the ring's own arrows show its pages: {marks:?}");
         assert_eq!(marks[0].kind, Kind::Cursor);
-        assert!(matches!(marks[0].place, Place::Screen { centre: (50.0, 60.0), .. }));
+        assert_matches!(marks[0].place, Place::Screen { centre: (50.0, 60.0), .. });
         assert!(super::marks(ring, None, None, None, None, false).is_empty(), "nothing over the ring without a pointer");
         assert!(super::marks(Context::None, Some(Pointed::Screen((1.0, 1.0))), None, None, None, false).is_empty());
         assert!(quantity_keys(Context::Menu { screen: 4, cursor: 2, choice: 0, choices: 0, commands: false, open: true, switch: false, quantities: true }));
@@ -252,14 +253,14 @@ mod tests {
         let marks = marks(Context::Walk, Some(Pointed::World(ray)), Some(&field), Some(destination), None, true);
         assert_eq!(marks.len(), 2, "{marks:?}");
         assert_eq!(marks[0], Mark { kind: Kind::Destination, place: Place::Floor { point: destination, radius: FLOOR_RADIUS * 1.2 } });
-        assert!(matches!(marks[1], Mark { kind: Kind::Floor(Reach::Walk), place: Place::Floor { point, .. } } if point.planar(V3::new(-40.0, 0.0, 150.0)) < 0.5), "{marks:?}");
+        assert_matches!(marks[1], Mark { kind: Kind::Floor(Reach::Walk), place: Place::Floor { point, .. } } if point.planar(V3::new(-40.0, 0.0, 150.0)) < 0.5, "{marks:?}");
         // A ray meeting no floor shows nothing; one on the pane, its cursor.
         let short = crate::dispatch::WorldRay { within: 2.0, ..ray };
         assert_eq!(super::marks(Context::Walk, Some(Pointed::World(short)), Some(&field), None, None, true), []);
         let pane = super::marks(Context::Walk, Some(Pointed::Pane((100.0, 40.0))), Some(&field), None, None, true);
-        assert!(matches!(pane[..], [Mark { kind: Kind::Cursor, place: Place::Screen { centre: (100.0, 40.0), .. } }]), "{pane:?}");
+        assert_matches!(pane[..], [Mark { kind: Kind::Cursor, place: Place::Screen { centre: (100.0, 40.0), .. } }]);
         // On the screen, floor marks lie as the camera shows them.
         let screen = super::marks(Context::Walk, None, Some(&field), Some(destination), None, false);
-        assert!(matches!(screen[..], [Mark { kind: Kind::Destination, place: Place::Screen { .. } }]), "{screen:?}");
+        assert_matches!(screen[..], [Mark { kind: Kind::Destination, place: Place::Screen { .. } }]);
     }
 }

@@ -1,5 +1,6 @@
 //! Synthetic GP0/GP1/DMA streams with the VRAM they must produce.
 
+use std::assert_matches;
 use xem_gpu::{DmaError, Gpu, Memory, MemoryMut, PrimitiveKind, SnapshotError};
 
 fn xy(x: i32, y: i32) -> u32 {
@@ -486,10 +487,10 @@ fn linked_list_dma_reports_loops_and_budget() {
         other => panic!("expected a loop, got {other:?}"),
     }
     ram.node(0x400, 0x400, &[]);
-    assert!(matches!(
+    assert_matches!(
         gpu.dma_linked_list(&ram, 0x400, 100),
         Err(DmaError::Loop { address: 0x400, .. })
-    ));
+    );
     ram.node(0x500, 0x600, &[0, 0]);
     ram.node(0x600, 0xFF_FFFF, &[0, 0]);
     assert_eq!(
@@ -741,10 +742,10 @@ fn snapshot_load_rejects_bad_data_and_keeps_state() {
     let mut register = saved.clone();
     let draw_mode = 12 + 1024 * 512 * 2;
     register[draw_mode + 3] = 0xFF;
-    assert!(matches!(
+    assert_matches!(
         other.load(&register),
         Err(SnapshotError::Invalid(_))
-    ));
+    );
     assert_eq!(other.save(), before);
 
     other.load(&saved).unwrap();
@@ -1228,7 +1229,7 @@ fn transfers_of_decoded_macroblocks_are_traced_as_movie_blocks() {
         .collect();
     assert_eq!(movie, [(48, 240, 1), (48, 256, 2)]);
     let write = trace.ops.iter().position(|op| matches!(op, TraceOp::Write { upload: true, .. })).expect("the slice's write");
-    assert!(matches!(trace.ops[write + 1], TraceOp::Movie { .. }), "the blocks follow their transfer's write");
+    assert_matches!(trace.ops[write + 1], TraceOp::Movie { .. }, "the blocks follow their transfer's write");
 }
 
 /// A macroblock the MDEC decodes again (a still part of a moving picture) is

@@ -788,6 +788,7 @@ impl SettingsService {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     #[test]
     fn the_idle_cursor_hides_by_default_after_three_seconds() {
         use super::*;
@@ -1240,7 +1241,7 @@ mod tests {
 
         for bad in [-1, 101, 1000] {
             let rejected = service.apply(SettingChange::MasterVolume(bad)).unwrap_err();
-            assert!(matches!(rejected, Rejected::Invalid { .. }));
+            assert_matches!(rejected, Rejected::Invalid { .. });
         }
         let jump = |keyboard: &str| SettingChange::BindGame {
             context: InputContext::Play, action: GameAction::Jump, binding: GameBinding::parse(keyboard, "North", ""),
@@ -1277,7 +1278,7 @@ mod tests {
         assert!(!service.settings().binaural.enabled);
         assert_eq!(service.settings().game_sound_mode(), 0);
         let rejected = service.apply(SettingChange::Binaural(Binaural { music_immersion: 101, ..on })).unwrap_err();
-        assert!(matches!(rejected, Rejected::Invalid { .. }));
+        assert_matches!(rejected, Rejected::Invalid { .. });
         // An old file without the block reads with its defaults, a bad value
         // alone resets.
         let (read, reset) = Settings::read(&serde_json::json!({"audio_output": "Mono", "binaural": {"enabled": true, "music_immersion": 400}})).unwrap();
@@ -1329,7 +1330,7 @@ mod tests {
         let mut service = SettingsService::open(store.clone()).unwrap();
         *store.1.borrow_mut() = true;
         let rejected = service.apply(SettingChange::MasterVolume(10)).unwrap_err();
-        assert!(matches!(rejected, Rejected::Storage { .. }));
+        assert_matches!(rejected, Rejected::Storage { .. });
         assert_eq!(
             service.settings().master_volume,
             Settings::default().master_volume

@@ -41,7 +41,7 @@
             config.allowUnfree = true;
             config.android_sdk.accept_license = true;
           };
-          rust = pkgs.rust-bin.stable."1.97.1".minimal.override {
+          rust = pkgs.rust-bin.stable."1.100.0".minimal.override {
             extensions = [
               "clippy"
               "rustfmt"

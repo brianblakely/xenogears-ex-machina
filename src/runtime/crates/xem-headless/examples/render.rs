@@ -145,7 +145,7 @@ fn main() {
         // What the displayed frame's primitives are, by class and projection.
         let info = session.runtime.services().gpu.device().display();
         let area = xem_render::ps1::DisplayArea { x: info.x.into(), y: info.y.into(), width: info.width, height: info.height };
-        let ops = view.renderer().frame_log(area).map(|log| log.ops.clone()).unwrap_or_default();
+        let ops = view.renderer().frame_log(area).map_or_default(|log| log.ops.clone());
         let mut counts = std::collections::BTreeMap::new();
         for op in &ops {
             if let xem_gpu::TraceOp::Draw(p) = op {

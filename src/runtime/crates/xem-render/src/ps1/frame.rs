@@ -239,52 +239,96 @@ impl Pane {
 /// The native VRAM a replay samples: the frame's snapshot, changed by its
 /// writes in order as the replay goes (a texture slot the game fills again
 /// later in the frame shows each primitive its own texels), and a copy of
-/// what the texture holds once the replay's writes are done (the rows of a
-/// snapshot that differ from it are all a replay uploads first).
+/// what the texture holds once the replay's writes are done (all a replay
+/// uploads first is where its snapshot differs from that: where the writes
+/// replayed since changed it, when the snapshot is the same frame's again).
 pub(crate) struct ReplayVram {
     pub(crate) texture: wgpu::Texture,
     held: Vec<u16>,
+    /// The snapshot the texture was last set to, and the columns of each
+    /// row the writes replayed since changed (the first, and one past the
+    /// last).
+    from: Option<Arc<Vec<u16>>>,
+    written: Vec<Option<(u16, u16)>>,
 }
+
+/// The columns [`ReplayVram::start`] compares and sets together.
+const SPAN: usize = 64;
 
 impl ReplayVram {
     pub(crate) fn new(device: &wgpu::Device, label: &str) -> Self {
         let texture = texture(device, label, (VRAM_WIDTH, VRAM_HEIGHT), wgpu::TextureFormat::R16Uint,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST);
-        Self { texture, held: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize] }
+        Self { texture, held: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize], from: None, written: vec![None; VRAM_HEIGHT as usize] }
     }
 
-    /// Sets the texture to `start` before a replay of `ops` (the rows that
-    /// differ from what it holds, in runs, through the queue), and notes what
-    /// the writes among `ops` leave in it.
-    pub(crate) fn start<'a>(&mut self, queue: &wgpu::Queue, start: &[u16], ops: impl Iterator<Item = &'a TraceOp>) {
+    /// Sets the texture to `start` before a replay of `ops` (where it differs
+    /// from what the texture holds: runs of rows, over the columns that
+    /// differ in them, through the queue), and notes what the writes among
+    /// `ops` leave in it.
+    pub(crate) fn start<'a>(&mut self, queue: &wgpu::Queue, start: &Arc<Vec<u16>>, ops: impl Iterator<Item = &'a TraceOp>) {
         let width = VRAM_WIDTH as usize;
+        // The same frame's snapshot again differs only where the writes
+        // replayed since changed it; another's, wherever it does (to whole
+        // spans of columns: a frame's writes lie mostly in its screen buffer,
+        // a third of VRAM's width).
+        if !self.from.as_ref().is_some_and(|from| Arc::ptr_eq(from, start)) {
+            for (row, columns) in self.written.iter_mut().enumerate() {
+                let row = row * width..(row + 1) * width;
+                let (new, old) = (&start[row.clone()], &self.held[row]);
+                *columns = (new != old).then(|| {
+                    let mut spans = new.chunks_exact(SPAN).zip(old.chunks_exact(SPAN));
+                    let first = spans.position(|(new, old)| new != old).unwrap_or(0);
+                    let last = spans.rposition(|(new, old)| new != old).map_or(first, |after| first + 1 + after);
+                    ((first * SPAN) as u16, ((last + 1) * SPAN) as u16)
+                });
+            }
+            self.from = Some(start.clone());
+        }
         let mut row = 0;
         while row < VRAM_HEIGHT as usize {
-            let same = |row: usize| start[row * width..(row + 1) * width] == self.held[row * width..(row + 1) * width];
-            if same(row) {
+            let Some(columns) = self.written[row] else {
                 row += 1;
                 continue;
-            }
+            };
             let first = row;
-            while row < VRAM_HEIGHT as usize && !same(row) {
+            while row < VRAM_HEIGHT as usize && self.written[row] == Some(columns) {
                 row += 1;
             }
-            let rows = first * width..row * width;
+            let (x, columns) = (usize::from(columns.0), usize::from(columns.1 - columns.0));
+            // (The rows' columns lie a VRAM row apart in `start`.)
             queue.write_texture(
-                wgpu::TexelCopyTextureInfo { texture: &self.texture, mip_level: 0, origin: wgpu::Origin3d { x: 0, y: first as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
-                bytemuck::cast_slice(&start[rows.clone()]),
+                wgpu::TexelCopyTextureInfo { texture: &self.texture, mip_level: 0, origin: wgpu::Origin3d { x: x as u32, y: first as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
+                bytemuck::cast_slice(&start[first * width + x..(row - 1) * width + x + columns]),
                 wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: None },
-                wgpu::Extent3d { width: VRAM_WIDTH, height: (row - first) as u32, depth_or_array_layers: 1 },
+                wgpu::Extent3d { width: columns as u32, height: (row - first) as u32, depth_or_array_layers: 1 },
             );
-            self.held[rows.clone()].copy_from_slice(&start[rows]);
+            for line in first..row {
+                let at = line * width + x..line * width + x + columns;
+                self.held[at.clone()].copy_from_slice(&start[at]);
+            }
+        }
+        self.written.fill(None);
+        fn note(written: &mut [Option<(u16, u16)>], row: usize, from: usize, to: usize) {
+            if let Some(columns) = written.get_mut(row) {
+                let (first, last) = columns.unwrap_or((from as u16, to as u16));
+                *columns = Some((first.min(from as u16), last.max(to as u16)));
+            }
         }
         for op in ops {
             if let TraceOp::Write { rect, pixels, .. } = op {
                 let (x, w) = (usize::from(rect.x), usize::from(rect.width));
                 for (k, line) in pixels.chunks(w.max(1)).enumerate() {
-                    let at = (usize::from(rect.y) + k) * width + x;
+                    let row = usize::from(rect.y) + k;
+                    let at = row * width + x;
                     if let Some(target) = self.held.get_mut(at..at + line.len()) {
                         target.copy_from_slice(line);
+                        // (A line past the right edge runs on into the next row.)
+                        let end = x + line.len();
+                        note(&mut self.written, row, x, end.min(width));
+                        if end > width {
+                            note(&mut self.written, row + 1, 0, end - width);
+                        }
                     }
                 }
             }
@@ -591,6 +635,19 @@ impl FrameRenderer {
                 _ => true,
             }),
         }
+        // What VRAM took after the frame's last primitive (the pixels its
+        // buffer was left with, what the game loaded and drew elsewhere for
+        // the next frame since) changes nothing a replay draws: left out,
+        // rather than loaded into the replay's VRAM each time the frame is
+        // shown. (An upload onto the shown area is a picture drawn there.)
+        let shown = VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 };
+        let unseen = |op: &TraceOp| matches!(op, TraceOp::Write { rect, upload, .. } if !*upload || overlap(&shown, rect) == 0);
+        while self.overlay.last().is_some_and(unseen) {
+            self.overlay.pop();
+        }
+        while self.overlay.is_empty() && ops.last().is_some_and(unseen) {
+            ops.pop();
+        }
         // The replay samples VRAM as it was when the frame began, then as the
         // frame's writes (the replay's and the overlay's) changed it, in order.
         if let Some(start) = &self.snapshot {
@@ -598,7 +655,7 @@ impl FrameRenderer {
         }
         let options: DrawOptions = *renderer.options();
         let mut builder = Builder::reusing(&options, &ops, &mut self.storage);
-        builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
+        builder.shown = Some(shown);
         builder.seal = renderer.seal;
         builder.sky = renderer.sky;
         builder.additive_model_depth = renderer.additive_model_depth;
@@ -1257,14 +1314,17 @@ pub fn weld(ops: &mut [TraceOp]) {
 /// [`weld`] with its tables kept from one trace to the next.
 #[derive(Default)]
 pub struct Welder {
-    /// One-pixel cells, open-addressed: a cell's key and its newest anchor
-    /// (its index + 1; 0 an empty slot).
-    cells: Vec<(u64, u32)>,
+    /// One-pixel cells, open-addressed: each its newest anchor (its index
+    /// + 1; 0 an empty slot), which holds the cell's key. A table of a
+    /// word a slot stays in the processor's nearest cache.
+    cells: Vec<u32>,
     anchors: Vec<Anchor>,
 }
 
-/// A point other points weld to, and the anchor before it in its cell.
+/// A point other points weld to, with its cell's key and the anchor before
+/// it in that cell.
 struct Anchor {
+    key: u64,
     fx: f32,
     fy: f32,
     z: f32,
@@ -1302,13 +1362,13 @@ impl Welder {
         }
         let size = (points * 2).next_power_of_two();
         self.cells.clear();
-        self.cells.resize(size, (0, 0));
+        self.cells.resize(size, 0);
         self.anchors.clear();
         let mask = size - 1;
         let key = |x: i32, y: i32| (u64::from(x as u32) << 32) | u64::from(y as u32);
-        let slot = |cells: &[(u64, u32)], key: u64| {
+        let slot = |cells: &[u32], anchors: &[Anchor], key: u64| {
             let mut i = ((key ^ key >> 29).wrapping_mul(0x9E37_79B9_7F4A_7C15) >> 32) as usize & mask;
-            while cells[i].1 != 0 && cells[i].0 != key {
+            while cells[i] != 0 && anchors[cells[i] as usize - 1].key != key {
                 i = (i + 1) & mask;
             }
             i
@@ -1326,7 +1386,7 @@ impl Welder {
                 let mut found = None;
                 'search: for cx in x0..=x1 {
                     for cy in y0..=y1 {
-                        let mut at = self.cells[slot(&self.cells, key(cx, cy))].1;
+                        let mut at = self.cells[slot(&self.cells, &self.anchors, key(cx, cy))];
                         while at != 0 {
                             let a = &self.anchors[at as usize - 1];
                             if a.primitive != primitive && (a.fx - v.fx).abs() <= 0.5 && (a.fy - v.fy).abs() <= 0.5 && (a.z - v.z).abs() <= (v.z * 0.01).max(4.0) {
@@ -1346,10 +1406,11 @@ impl Welder {
                         }
                     }
                     None => {
-                        let i = slot(&self.cells, key(whole(v.fx), whole(v.fy)));
-                        let next = self.cells[i].1;
-                        self.cells[i] = (key(whole(v.fx), whole(v.fy)), self.anchors.len() as u32 + 1);
-                        self.anchors.push(Anchor { fx: v.fx, fy: v.fy, z: v.z, view: v.view, primitive, next });
+                        let key = key(whole(v.fx), whole(v.fy));
+                        let i = slot(&self.cells, &self.anchors, key);
+                        let next = self.cells[i];
+                        self.cells[i] = self.anchors.len() as u32 + 1;
+                        self.anchors.push(Anchor { key, fx: v.fx, fy: v.fy, z: v.z, view: v.view, primitive, next });
                     }
                 }
             }

@@ -349,6 +349,157 @@ class PerspectiveTests(GteTest):
         self.assertEqual(flag, 0)
 
 
+def perspective_reference(data, control, vertex, sf, lm, last):
+    """One vertex of RTPS/RTPT by psx-spx's formulas, a step at a time, on
+    the registers' words (`data` and `control`, which it updates)."""
+    shift = 12 if sf else 0
+
+    def flag(bit):
+        control[FLAG] |= bit
+
+    def mac(i, value):
+        # A 44-bit accumulator: each step flags its overflow and wraps.
+        if value > 0x7FFFFFFFFFF:
+            flag(0x80000000 >> i)
+        elif value < -0x80000000000:
+            flag(0x10000000 >> i)
+        value &= 0xFFFFFFFFFFF
+        return value - (1 << 44) if value & (1 << 43) else value
+
+    def saturate(i, value, lm, flagged=True):
+        low = 0 if lm else -0x8000
+        if value < low or value > 0x7FFF:
+            if flagged:
+                flag(0x02000000 >> i)
+            return low if value < low else 0x7FFF
+        return value
+
+    def mac0(value):
+        if value > 0x7FFFFFFF:
+            flag(0x10000)
+        elif value < -0x80000000:
+            flag(0x8000)
+        return value
+
+    words = [control[RT + i] for i in range(5)]
+    m = [s16(words[i // 2] >> (16 if i & 1 else 0)) for i in range(9)]
+    x, y, z = s16(data[VXY0 + vertex * 2]), s16(data[VXY0 + vertex * 2] >> 16), s32(data[VZ0 + vertex * 2])
+    sums = []
+    for i in range(1, 4):
+        value = mac(i, s32(control[TRX + i - 1]) * 0x1000)
+        value = mac(i, value + m[i * 3 - 3] * x)
+        value = mac(i, value + m[i * 3 - 2] * y)
+        sums.append(mac(i, value + m[i * 3 - 1] * z))
+        data[MAC0 + i] = u32(sums[-1] >> shift)
+    data[IR1] = u32(saturate(1, sums[0] >> shift, lm))
+    data[IR2] = u32(saturate(2, sums[1] >> shift, lm))
+    if sf:
+        data[IR3] = u32(saturate(3, sums[2] >> shift, lm))
+    else:
+        # IR3 clamps from MAC3 by lm; its flag tests MAC3 >> 12 as if lm were 0.
+        data[IR3] = u32(saturate(3, sums[2], lm, False))
+        saturate(3, sums[2] >> 12, 0)
+    depth = sums[2] >> 12
+    if depth < 0 or depth > 0xFFFF:
+        flag(0x40000)
+        depth = max(0, min(0xFFFF, depth))
+    data[SZ0:SZ3] = data[SZ1:SZ3 + 1]
+    data[SZ3] = depth
+    n, overflow = unr_reference(control[H] & 0xFFFF, depth)
+    if overflow:
+        flag(0x20000)
+    screen = []
+    for ir, offset, bit in ((IR1, OFX, 0x4000), (IR2, OFY, 0x2000)):
+        value = mac0(n * s32(data[ir]) + s32(control[offset]))
+        data[MAC0] = u32(value)
+        value >>= 16
+        if value < -0x400 or value > 0x3FF:
+            flag(bit)
+            value = max(-0x400, min(0x3FF, value))
+        screen.append(value)
+    data[SXY0], data[SXY1] = data[SXY1], data[SXY2]
+    data[SXY2] = pair(screen[0], screen[1])
+    if last:
+        value = mac0(n * s16(control[DQA]) + s32(control[DQB]))
+        data[MAC0] = u32(value)
+        value >>= 12
+        if value < 0 or value > 0x1000:
+            flag(0x1000)
+            value = max(0, min(0x1000, value))
+        data[IR0] = value
+
+
+class RandomPerspectiveTests(GteTest):
+    """RTPS and RTPT against the formulas for registers of every kind:
+    ordinary scenes, and translations and matrices at the limits, where the
+    44-bit sums overflow and the screen and depth saturate."""
+
+    def test_random_vertices_project_as_the_formulas_give(self):
+        g = self.g
+        random.seed(0x47544531)
+        word = lambda: random.choice((0, 1, -1, 0x7FFF, -0x8000, random.randint(-0x8000, 0x7FFF), random.randint(-0x400, 0x400)))
+        long = lambda: random.choice((0, random.randint(-0x8000, 0x8000), random.randint(-0x80000000, 0x7FFFFFFF),
+                                      0x7FFFFFFF, -0x80000000, random.randint(0x7FF00000, 0x7FFFFFFF), random.randint(-0x80000000, -0x7FF00000)))
+        flags = set()
+        for case in range(6000):
+            g.reset()
+            if case % 3 == 0:
+                # A scene's vertex: a turned camera some way from a small
+                # model, which lands on the screen.
+                angle = random.uniform(0, 2 * math.pi)
+                c, sn = round(0x1000 * math.cos(angle)), round(0x1000 * math.sin(angle))
+                g.matrix(RT, random.choice((((c, 0, sn), (0, 0x1000, 0), (-sn, 0, c)), ((0x1000, 0, 0), (0, c, -sn), (0, sn, c)))))
+                g.vector(TRX, (random.randint(-200, 200), random.randint(-200, 200), random.randint(600, 4000)))
+                g.c(H, random.randint(200, 600))
+                g.c(OFX, 160 << 16)
+                g.c(OFY, 120 << 16)
+                g.c(DQA, random.randint(-0x2000, 0))
+                g.c(DQB, random.randint(0, 0x2000000))
+                for n in range(3):
+                    g.v(n, *(random.randint(-150, 150) for _ in range(3)))
+            else:
+                ordinary = case % 3 == 1
+                g.matrix(RT, [[random.randint(-0x1000, 0x1000) if ordinary else word() for _ in range(3)] for _ in range(3)])
+                g.vector(TRX, [random.randint(-0x4000, 0x4000) if ordinary else long() for _ in range(3)])
+                g.c(H, random.choice((0, 1, 0x155, 1000, 0xFFFF, random.randint(0, 0xFFFF))))
+                g.c(OFX, random.choice((0, 160 << 16, long())))
+                g.c(OFY, random.choice((0, 120 << 16, long())))
+                g.c(DQA, word())
+                g.c(DQB, long())
+                for n in range(3):
+                    g.v(n, *(random.randint(-0x800, 0x800) if ordinary else word() for _ in range(3)))
+            # What an earlier command left in the FIFOs and the registers.
+            for reg in (IR0, IR1, IR2, IR3, SXY0, SXY1, SXY2, SZ0, SZ1, SZ2, SZ3, MAC0, MAC1, MAC2, MAC3):
+                g.d(reg, random.getrandbits(32))
+            sf, lm, triple = random.getrandbits(1), random.getrandbits(1), random.getrandbits(1)
+            data = [g.d(reg) for reg in range(32)]
+            control = [g.c(reg) for reg in range(32)]
+            control[FLAG] = 0
+            for vertex in range(3 if triple else 1):
+                perspective_reference(data, control, vertex, sf, lm, vertex == 2 or not triple)
+            # The derived registers (`refresh`): SXYP, IRGB and ORGB, and the flags' error bit.
+            data[SXYP] = data[SXY2]
+            collected = sum(max(0, min(0x1F, s32(data[IR1 + i]) >> 7)) << (i * 5) for i in range(3))
+            data[IRGB] = data[ORGB] = collected
+            control[FLAG] &= 0x7FFFF000
+            if control[FLAG] & 0x7F87E000:
+                control[FLAG] |= 0x80000000
+            g.run((0x30 if triple else 0x01) | sf << 19 | lm << 10)
+            got = [g.d(reg) for reg in range(32)]
+            message = (case, sf, lm, triple, [hex(c) for c in control[:8]], [hex(d) for d in data[:6]])
+            self.assertEqual([hex(v) for v in got], [hex(u32(v)) for v in data], message)
+            self.assertEqual(hex(g.c(FLAG)), hex(control[FLAG]), message)
+            flags.add(control[FLAG] & 0x7FFFF000)
+        # Vertices that flag nothing, and every flag a projection can raise:
+        # the 44-bit sums' six, IR1-IR3, the depth, the division, MAC0's two,
+        # the screen's two and IR0.
+        self.assertIn(0, flags)
+        raised = 0
+        for flag in flags:
+            raised |= flag
+        self.assertEqual(hex(raised), hex(0x7FC7F000))
+
+
 class DivisionTests(GteTest):
     def divide(self, h, sz3):
         g = self.g

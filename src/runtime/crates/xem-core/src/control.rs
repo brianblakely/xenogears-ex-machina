@@ -1152,7 +1152,7 @@ impl<M: GameModule> Session<M> {
             "binaural" => {
                 // The Binaural presentation: the given settings change (the
                 // rest stay), and what it does now comes back.
-                let current = self.runtime.services().spu.binaural().map(|p| p.config()).unwrap_or_default();
+                let current = self.runtime.services().spu.binaural().map_or_default(|p| p.config());
                 let mut value = serde_json::to_value(current).map_err(|e| e.to_string())?;
                 let mut changed = false;
                 for (key, setting) in command.as_object().into_iter().flatten().filter(|(key, _)| *key != "cmd") {

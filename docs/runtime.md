@@ -10,7 +10,7 @@ is built for native and browser hosts and how the hosts are layered. The
 | Decision | Choice |
 | --- | --- |
 | Rust workspace | `src/runtime/` (`src/runtime/Cargo.toml`, crates in `src/runtime/crates/*`, committed `Cargo.lock`) |
-| Toolchain | `nix develop path:./nix/runtime` (Rust 1.97.1 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24, perf 7.2.3); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
+| Toolchain | `nix develop path:./nix/runtime` (Rust 1.100.0 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24, perf 7.2.3); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
 | Data model and link | the recovered C is compiled once to a wasm32 *game module* (ILP32, the original data model); natively it is translated ahead of time with wasm2c, in browsers it runs as is beside the wasm-bindgen runtime |
 | Versions | slint =1.18.1 (`unstable-wgpu-30`, FemtoVG wgpu renderer), wgpu/wgpu-hal =30.0.1, sdl3-sys =0.6.8+SDL-3.4.14, openxr 0.22.0, wasm-bindgen =0.2.127, iwer 2.5.0, playwright-core 1.64.0 |
 | Slint license | Royalty-free 2.0 (attribution shown in the settings panel); GPLv3 is the alternative |
@@ -103,6 +103,24 @@ original address.
   KSEG0. `tests/test_game_module_memory.py` executes those aliases in Wasm;
   the Battling snapshot test runs through the first particle effects and
   past the former frame-725 display-list failure.
+  In the port's own units a constant address within one of the port's own
+  objects (a GTE register, a port static) is no mirror and stays as it is:
+  the optimizer then knows the port's registers apart from each other and
+  from the game's pointers, where a translated address could be any (a
+  step of the software GTE then keeps what it works with out of memory
+  until it is done). A pointer the game hands the port is translated as
+  before; the same test runs a port unit both ways through every alias of
+  a word of RAM.
+- **The port's units as one.** The front end compiles every unit without
+  optimization, so its functions reach the optimizer `noinline`. The game's
+  units keep that, and with it every call and every frame the original has
+  (the game keeps addresses of its stack in RAM). The port's units
+  (`src/port/*.c`) are linked into one module of IR (`llvm-link`) and
+  their functions lose it: the SDK and BIOS routines, the handwritten
+  renderers and the GTE's commands are inlined into each other where the
+  optimizer finds it worth (a battle frame's game work fell from 2.33 ms
+  to 1.80, a field's from 0.90 to 0.73). A coverage build
+  (`--coverage`) keeps the units apart, as its counters name them.
 - **Code addresses.** A function's address, wherever C takes it, is its original
   address. Indirect calls go through generated dispatchers that select the
   function by address and check, from a fingerprint of its original code bytes in
@@ -153,9 +171,28 @@ original address.
   runtime stops the game with a diagnostic. `tests/fiber_module/build.sh`
   runs `src/port/fiber.c` and `src/port/arena_task.c` under asyncify, wasm2c and the
   runtime end to end.
-- **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
-  checks (no signal handlers). Nothing interprets or emulates a CPU. The
-  translation comes in 16 parts compiled in parallel (one file took GCC
+- **Native.** `wasm2c` output is compiled into `xem-game`. Nothing
+  interprets or emulates a CPU. On 64-bit Linux and Android the game's
+  memory is its 2 GiB at the start of 8 GiB of reserved addresses, which
+  hold every address the translation can form (32 bits plus a 32-bit
+  offset): an access beyond the memory faults instead of being compared
+  with the memory's size first (the comparisons took 8% of a game frame's
+  time). The glue's own `SIGSEGV` handler (`xem-game/build.rs`; wasm2c's
+  takes every fault of the process for the game's) turns a fault of the
+  thread running the game, at an address within that reservation, into the
+  module's out-of-bounds trap, and passes any other on to the handler
+  installed before it or to the default action: a fault of the host's own
+  still ends the process as it did. Elsewhere (Windows, macOS, 32-bit
+  hosts) each access keeps its explicit bounds check and no handler is
+  installed. The translation's calls are counted in a word of the instance
+  rather than in wasm2c's per-thread variable, which position-independent
+  code reaches through a call on every function's entry and return (a
+  tenth of a game frame's time): past 500 nested calls the module traps as
+  before (`Call stack exhausted`), and the count starts again after a
+  trap. `tests/fiber_module/build.sh` runs both traps in a stand-in module,
+  again and again and on a second thread, and checks that a fault outside
+  the game's memory (idle, and inside an import) still kills the process.
+  The translation comes in 16 parts compiled in parallel (one file took GCC
   nearly four minutes, the parts 41 s on 16 threads), built without
   semantic interposition so the parts' global functions inline as one
   file's static ones did (a Lahan frame's game work: 1.395 ms, one file
@@ -2106,7 +2143,12 @@ snapshots are its. The renderer only draws again what it drew:
   of the frame, anywhere, with its pixels, and a copy of the native VRAM
   when the buffer was cleared, and a replay samples its own VRAM copy, from
   that snapshot through the frame's writes in order, so a texture slot the
-  game fills again later in the frame shows each primitive its own texels;
+  game fills again later in the frame shows each primitive its own texels
+  (the writes after the frame's last primitive, what the game loaded and
+  drew elsewhere for the next frame since, change nothing a replay draws
+  and are left out of it; before each replay the copy is set back to the
+  snapshot only where the last replay's writes changed it or, for a new
+  frame's snapshot, where it differs);
   writes outside the display area are not shown; with no log for the shown
   buffer, as after a load, nothing is replayed until its next clear; a trace
   started again on all of VRAM that holds what the logs left, as after a new
@@ -5257,6 +5299,58 @@ a table of RAM's words and culled faces' words in place, the replay keeps its
 buffers and uploads only the rows of VRAM a new frame changed; none of it
 changes the game's RAM or the software GPU's VRAM (`memory_hash`,
 `vram_hash`).
+
+A second pass with the same measure (that machine and those settings, 600
+frames; means in ms a game frame before and after, the game alone with
+`--no-trace`) about halved the game's work: Lahan walking alone 1.53 to
+0.74 and traced 1.77 to 0.93, wider 2.82 to 1.52, under HD-2D 1.97 to 1.05;
+a debug battle alone 3.93 to 1.85 and traced 5.15 to 2.61, a Gear battle
+7.46 to 3.89; the world map alone 1.44 to 0.80 and traced 2.14 to 1.26. The
+presentation's CPU work a presentation: Lahan under Modern 0.32 to 0.16,
+under HD-2D 0.56 to 0.38, the battle 0.80 to 0.62. What each step took
+off a battle's frame alone, measured as it was made over the ones before
+it, the largest first:
+
+- the port's units optimized as one, with their own objects' addresses
+  left untranslated ([The game module](#the-game-module)): 23%;
+- the software GPU's fills (`xem-gpu/src/raster.rs`): a loop for each kind
+  of primitive, its texture depth, texture window, modulation, shading and
+  blending constants of the loop; attributes stepped along a row from the
+  triangle's planes, the division at each pixel replaced by a reciprocal
+  multiply that gives the same quotient at every pixel inside the triangle;
+  the three channels of a 15-bit pixel blended at once: 19% then 7%.
+  `xem-gpu/tests/raster.rs` draws random scenes of every primitive beside
+  a model of the rendering rules that works a pixel at a time;
+- the native translation without a bounds check at each access or a
+  per-thread count of calls (The game module, Native): 14%;
+- a display list's nodes read from RAM where it lies, a node's words at
+  once, and image transfers a row at a time: 5%;
+- the SPU: a voice's block decoded from its sixteen bytes at once, a
+  silent voice not mixed, the reverb's filter unrolled: 3% (9% of a
+  field's frame). `xem-spu/tests/spu.rs` holds the digests of long
+  sessions of everything at once, taken from the code before.
+
+(The software GTE stays as it was. A table of the UNR division's 257
+seeds in place of the division each vertex makes was worth 2% of a battle's
+frame and moved the shadow stack, and with it a field's RAM: the port's
+data does not grow, as [The game module](#the-game-module) says. Its
+perspective sums left unchecked where they cannot overflow gave nothing
+that could be measured.)
+
+The trace and the presentation: no allocation for a traced primitive, the
+port's rings read where they lie, a trace's buffer handed on rather than
+copied, the welder's cells a word each; and a replay sets its VRAM back
+only where the last replay's writes changed it (or, for a new frame, where
+it differs, in spans of 64 columns), and leaves out the writes that follow
+the frame's last primitive. Counted over all threads
+(`perf record --all-user`), a field under HD-2D presented twice a game
+frame took 4.46 ms of processor time a game frame before these and 3.76
+after (0.96 of it the game), a battle under Modern presented once 5.87
+and 5.26. Every scene ends at the RAM and VRAM hashes it had, the SPU and
+the Binaural mode sound the same to the sample (digests of recorded
+sessions), and the pictures of eleven scenes (fields, battles and the world
+map under Modern, HD-2D and the original's profile, wider, pulled back and
+in first person) are the same byte for byte.
 
 ### Headsets
 
