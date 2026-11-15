@@ -1017,5 +1017,98 @@ class EnvmapMapping(unittest.TestCase):
         return scene, normals
 
 
+# ---------------------------------------------------------------- culled faces
+
+
+class CulledFaces(unittest.TestCase):
+    """A face the screen-bounds test culls within the reach a wider view
+    wants is recorded for it (xem_reveal) with the colours, or the
+    environment map's texture coordinates, its renderer gives a face it
+    keeps, not its packet slot's: those are another frame's, or none (the
+    model's own colour, uncued and unlit, or black). Recording changes
+    nothing the game sees."""
+
+    RENDERERS = (
+        ("model_draw_f3_lit", "f3"), ("model_draw_ft3_lit", "ft3"), ("model_draw_f4_lit", "f4"),
+        ("model_draw_ft4_lit", "ft4"), ("model_draw_gt3_lit", "gt3"), ("model_draw_g3_lit", "g3"),
+        ("model_draw_f3_cued", "f3"), ("model_draw_ft3_cued", "ft3"), ("model_draw_ft3_cued_far", "ft3"),
+        ("model_draw_ft4_cued", "ft4"), ("model_draw_ft4_cued_far", "ft4"), ("model_draw_ft3_envmap", "ft3"),
+    )
+    CODES = {"f3": 0x20, "ft3": 0x24, "g3": 0x30, "gt3": 0x34, "f4": 0x28, "ft4": 0x2C}
+    STALE = 0x123456
+
+    def setUp(self):
+        self.addCleanup(self.recording, False)
+
+    def recording(self, on):
+        """Projections recorded and culled faces wanted 128 pixels beyond the
+        screen (or neither); the culled-face ring's header and first records."""
+        ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
+        reveals = (ctypes.c_uint * (4 + 16 * 4)).in_dll(LIB, "xem_present_reveal_storage")
+        ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
+        ctypes.memset(ctypes.addressof(reveals), 0, ctypes.sizeof(reveals))
+        if on:
+            ring[6], reveals[1] = 1, 128 << 16 | 128
+        return reveals
+
+    def scene(self, name, shape):
+        """One face on the screen and the same beyond its right edge (alike in
+        normals and cached colours), their slots holding a stale colour; and
+        the record's words (from the colour word) the renderer writes."""
+        setup_gte()
+        quad = shape.endswith("4")
+        face = [(-100, -50, 1000), (100, -50, 1000)] + ([(-100, 80, 1000), (100, 80, 1000)] if quad else [(0, 80, 1000)])
+        n = len(face)
+        normals = [(0x100, -0x200, 0xE00), (-0x300, 0x600, 0xB00), (0x900, 0x100, 0x800), (0, -0x700, 0xC00)][:n] * 2
+        step, _, size = FORMATS[shape]
+        scene = Scene(face + [(x + 800, y, z) for x, y, z in face], [tuple(range(n)), tuple(range(n, 2 * n))], size,
+                      normals=normals)
+        image_mapping_code()
+        for i in range(3):
+            mem.put32(scene.slot(i) + 4, self.CODES[shape] << 24 | self.STALE)
+        normal = struct.pack("<4h", 0x300, -0x500, 0xD00, 0)
+        cache = {
+            "model_draw_f3_lit": struct.pack("<I", 0x20406080) + normal, "model_draw_f4_lit": struct.pack("<I", 0x28406080) + normal,
+            "model_draw_ft3_lit": normal, "model_draw_ft4_lit": normal, "model_draw_g3_lit": struct.pack("<I", 0x30406080),
+        }.get(name, b"")
+        for i in range(3):
+            mem.write(CACHE + i * len(cache), cache)
+        mem.put32(G["model_lit_color_cache"], CACHE)
+        mem.put32(G["model_color"], 0x00806040)
+        if name.endswith("envmap"):
+            compared = [(2, 0xFFFF), (4, 0xFFFF), (6, 0xFFFF)]
+        elif shape in ("gt3", "g3"):
+            compared = [(0, 0xFFFFFFFF), (step // 4, 0xFFFFFFFF), (step // 2, 0xFFFFFFFF)]
+        else:
+            compared = [(0, 0xFFFFFFFF)]
+        return scene, compared
+
+    def test_a_culled_face_is_recorded_as_its_renderer_colours_a_face_it_keeps(self):
+        for name, shape in self.RENDERERS:
+            with self.subTest(name=name):
+                scene, compared = self.scene(name, shape)
+                reveals = self.recording(True)
+                scene.draw(name)
+                self.assertEqual(reveals[0], 1, "the face beyond the screen, recorded")
+                record = list(reveals[8:20])
+                kept, culled = scene.words(0), scene.words(1)
+                for j, mask in compared:
+                    self.assertNotEqual(record[j] & mask, culled[1 + j] & mask, f"word {j}: not its slot's")
+                    self.assertEqual(record[j] & mask, kept[1 + j] & mask, f"word {j}: as the face kept")
+
+    def test_recording_them_changes_nothing_the_game_sees(self):
+        for name, shape in self.RENDERERS:
+            with self.subTest(name=name):
+                states = []
+                for on in (False, True):
+                    scene, _ = self.scene(name, shape)
+                    self.recording(on)
+                    scene.draw(name)
+                    states.append((mem.gte_snapshot(LIB), [scene.words(i) for i in range(3)], scene.ot(),
+                                   mem.u32(G["model_drawn_primitive_count"]), mem.u32(G["model_current_packet"]),
+                                   mem.u32(G["model_lit_color_cache"]), mem.read(SPILL, 12)))
+                self.assertEqual(states[0], states[1])
+
+
 if __name__ == "__main__":
     unittest.main()

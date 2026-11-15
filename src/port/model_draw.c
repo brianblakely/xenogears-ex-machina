@@ -45,8 +45,34 @@ extern u32 model_color;                 /* CVECTOR: the depth cue colour word */
  * addresses to. */
 #define XEM_SPILL 0x1F800000
 
+/* How a renderer colours the faces it keeps (presentation only: a culled
+ * face's record is coloured so, xem_reveal_shade). */
+enum {
+    XEM_SHADE_PACKET, /* its packet's own colours: nothing computed */
+    XEM_SHADE_CUED,   /* DPCS of the model colour by the projection's IR0 */
+    XEM_SHADE_NCS,    /* NCS of the cached face normal */
+    XEM_SHADE_NCCS,   /* NCCS of the cached colour word and face normal */
+    XEM_SHADE_NCT,    /* NCT of the vertex normals */
+    XEM_SHADE_NCCT,   /* NCCT of the vertex normals and the cached colour word */
+    XEM_SHADE_ENVMAP, /* texture coordinates from the vertex normals */
+};
+
+/* The sa field of the srl and the sign-extended immediate of the addiu at
+ * a patch site: model_set_envmap_mapping rewrites these in the code bytes
+ * in game memory, so the mapping persists across modes as the original's
+ * self-modified code does, and the renderer reads it back on every call.
+ * Only these fields are interpreted (the patcher keeps the rest of each
+ * word for counts 0-31). */
+typedef struct {
+    u32 shift;
+    u32 offset;
+} XemEnvmapMap;
+
 /* A renderer's registers: a0, a1, s0, s2, s3, s4, v0, v1, the OT depth
- * shift and the record being decoded (t4, t5). */
+ * shift and the record being decoded (t4, t5); the lit renderers' pointer
+ * into the lit-colour cache, past the face being decoded; and, for the
+ * presentation, how the renderer colours its faces and (the environment
+ * map) the face's vertex normals and the mapping read from its code. */
 typedef struct {
     u32 record;
     s32 left;
@@ -59,10 +85,14 @@ typedef struct {
     s32 shift;
     u32 word;
     u32 half;
+    u32 cache;
+    int shade;
+    u32 normal[3];
+    XemEnvmapMap u[3], v[3];
 } XemDraw;
 
 /* Load the drawing state (model_draw_state). */
-static void xem_draw_begin(XemDraw *d, u8 *records, s32 count) {
+static void xem_draw_begin(XemDraw *d, u8 *records, s32 count, int shade) {
     d->record = (u32)(XemUintptr)records;
     d->left = count;
     d->vertices = model_current_vertices;
@@ -72,6 +102,8 @@ static void xem_draw_begin(XemDraw *d, u8 *records, s32 count) {
     d->y_limit = model_screen_y_limit;
     d->x_limit = model_screen_x_limit;
     d->shift = model_ot_depth_shift;
+    d->cache = model_lit_color_cache;
+    d->shade = shade;
 }
 
 /* The shared exit (model_draw_gt3_avg.s, 8002E1F4): step past the last
@@ -202,12 +234,15 @@ static u32 xem_depth_keep(u32 current, u32 candidate, int far) {
 /* How a culled face's depth is found, as the renderer that culled it sorts. */
 enum { XEM_SORT_AVG, XEM_SORT_FAR, XEM_SORT_NEAR };
 
+static void xem_reveal_shade(XemDraw *d, u32 step, u32 *words);
+
 /* Presentation only (xem/gte.h): a face the screen-bounds test just culled,
- * recorded with the GP0 words of its packet slot (the screen points put in)
- * when the host wants culled faces and xem_present_face_visible keeps it,
- * at the OT entry of its depth as the renderer sorts (depth 0, which the
- * renderers leave unlinked, only for a camera pulled back). Reads the GTE
- * and memory only. */
+ * recorded with the GP0 words of its packet slot (the screen points put in,
+ * and the colours or texture coordinates the renderer gives a face it keeps:
+ * xem_reveal_shade) when the host wants culled faces and
+ * xem_present_face_visible keeps it, at the OT entry of its depth as the
+ * renderer sorts (depth 0, which the renderers leave unlinked, only for a
+ * camera pulled back). Reads memory only, and leaves the GTE as it was. */
 static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
     u32 sxy[4], words[12], count = tag >> 24, projections = xem_gte_ring->count, i;
     s32 depth, sz;
@@ -244,6 +279,7 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
     for (i = 0; i < vertices; i++) {
         words[1 + i * step / 4] = sxy[i];
     }
+    xem_reveal_shade(d, step, words);
     xem_present_reveal(xem_ot_entry(d, (u32)depth, d->shift), vertices, projections, words, count);
 }
 
@@ -335,7 +371,7 @@ static void xem_draw_avg_triangles(u8 *records, s32 count, u32 step, u32 tag, u3
     u32 sxy0, sxy1, sxy2, otz, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_PACKET);
     xem_draw_read(&d);
     xem_load_vector(0, xem_vertex0(&d));
     xem_load_vector(1, xem_vertex1(&d));
@@ -394,7 +430,7 @@ static void xem_draw_avg_quads(u8 *records, s32 count, u32 step, u32 tag, u32 si
     s32 nclip;
     int error;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_PACKET);
     xem_draw_read(&d);
     first = xem_vertex0(&d);
     xem_load_vector(1, xem_vertex1(&d));
@@ -478,7 +514,7 @@ static void xem_draw_depth_triangles(u8 *records, s32 count, u32 step, u32 tag, 
     u32 sxy0, sxy1, sxy2, sz2, sz3, depth, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_PACKET);
     xem_draw_read(&d);
     d.shift += 2;
     xem_load_vector(0, xem_vertex0(&d));
@@ -543,7 +579,7 @@ static void xem_draw_depth_quads(u8 *records, s32 count, u32 step, u32 tag, u32 
     u32 first, fourth, sxy0, sxy1, sxy2, sxy3, sz0, sz1, sz2, sz3, depth, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_PACKET);
     xem_draw_read(&d);
     d.shift += 2;
     first = xem_vertex0(&d);
@@ -655,13 +691,12 @@ void model_draw_ft4_near(u8 *records, s32 count) { xem_draw_depth_quads(records,
  * test); its colour word takes the lit RGB and the cached code byte. */
 void model_draw_f3_lit(u8 *records, s32 count) {
     XemDraw d;
-    u32 first, cache, sxy0, sxy1, sxy2, otz, colour, entry, old;
+    u32 first, sxy0, sxy1, sxy2, otz, colour, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_NCCS);
     xem_draw_read(&d);
     first = xem_vertex0(&d);
-    cache = model_lit_color_cache;
     xem_load_vector(1, xem_vertex1(&d));
     xem_load_vector(2, xem_vertex2(&d));
     d.slot -= 20;
@@ -675,7 +710,7 @@ void model_draw_f3_lit(u8 *records, s32 count) {
         xem_draw_next(&d);
         d.slot += 20;
         first = xem_vertex0(&d);
-        cache += 12;
+        d.cache += 12;
         xem_load_vector(1, xem_vertex1(&d));
         xem_load_vector(2, xem_vertex2(&d));
         if (xem_draw_error()) {
@@ -701,8 +736,8 @@ void model_draw_f3_lit(u8 *records, s32 count) {
         d.slot &= XEM_DMA_MASK;
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.drawn++;
-        colour = XEM_U32(cache - 12);
-        xem_load_vector(0, cache - 8);
+        colour = XEM_U32(d.cache - 12);
+        xem_load_vector(0, d.cache - 8);
         xem_gte_write_data(XEM_GTE_RGBC, colour);
         xem_cop2(XEM_GTE_NCCS);
         entry = xem_ot_entry(&d, otz, d.shift);
@@ -710,7 +745,7 @@ void model_draw_f3_lit(u8 *records, s32 count) {
         old = XEM_U32(entry);
         xem_link(&d, entry, old, 0x04000000);
     }
-    model_lit_color_cache = cache;
+    model_lit_color_cache = d.cache;
     xem_draw_end(&d, 20);
 }
 
@@ -731,7 +766,7 @@ static void xem_draw_cued_triangles(u8 *records, s32 count, u32 step, u32 tag, u
     u32 sxy0, sxy1, sxy2, otz, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_CUED);
     xem_draw_read(&d);
     xem_load_vector(0, xem_vertex0(&d));
     xem_load_vector(1, xem_vertex1(&d));
@@ -797,7 +832,7 @@ void model_draw_ft3_cued_far(u8 *records, s32 count) {
     s32 nclip;
     int y;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_CUED);
     xem_draw_read(&d);
     d.shift += 2;
     xem_load_vector(0, xem_vertex0(&d));
@@ -863,11 +898,10 @@ void model_draw_ft3_cued_far(u8 *records, s32 count) {
  * loaded into VXY0 also for a zero OTZ (a delay slot). */
 void model_draw_ft3_lit(u8 *records, s32 count) {
     XemDraw d;
-    u32 first, cache, sxy0, sxy1, sxy2, otz, entry, old;
+    u32 first, sxy0, sxy1, sxy2, otz, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
-    cache = model_lit_color_cache;
+    xem_draw_begin(&d, records, count, XEM_SHADE_NCS);
     xem_draw_read(&d);
     first = xem_vertex0(&d);
     xem_load_vector(1, xem_vertex1(&d));
@@ -883,7 +917,7 @@ void model_draw_ft3_lit(u8 *records, s32 count) {
         xem_draw_next(&d);
         d.slot += 32;
         first = xem_vertex0(&d);
-        cache += 8;
+        d.cache += 8;
         xem_load_vector(1, xem_vertex1(&d));
         xem_load_vector(2, xem_vertex2(&d));
         if (xem_draw_error()) {
@@ -909,19 +943,19 @@ void model_draw_ft3_lit(u8 *records, s32 count) {
         d.slot &= XEM_DMA_MASK;
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.drawn++;
-        xem_lwc2(XEM_GTE_VXY0, cache - 8);
+        xem_lwc2(XEM_GTE_VXY0, d.cache - 8);
         if (otz == 0) {
             xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
-        xem_lwc2(XEM_GTE_VZ0, cache - 4);
+        xem_lwc2(XEM_GTE_VZ0, d.cache - 4);
         xem_cop2(XEM_GTE_NCS);
         entry = xem_ot_entry(&d, otz, d.shift);
         XEM_U32(d.slot + 4) = xem_colour((u32)XEM_U8(d.slot + 7) << 24, xem_mfc2(XEM_GTE_RGB2));
         old = XEM_U32(entry);
         xem_link(&d, entry, old, 0x07000000);
     }
-    model_lit_color_cache = cache;
+    model_lit_color_cache = d.cache;
     xem_draw_end(&d, 32);
 }
 
@@ -984,14 +1018,11 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
     XemDraw d;
     XemNormals n;
     u32 size = cached ? 28 : 40;
-    u32 cache = 0, colour = 0, sxy0, sxy1, sxy2, otz, normal, code, entry, old;
+    u32 colour = 0, sxy0, sxy1, sxy2, otz, normal, code, entry, old;
     s32 nclip;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, cached ? XEM_SHADE_NCCT : XEM_SHADE_NCT);
     n.delta = model_current_normals;
-    if (cached) {
-        cache = model_lit_color_cache;
-    }
     xem_draw_read(&d);
     xem_normals_next(&d, &n);
     d.slot -= size;
@@ -1005,7 +1036,7 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
         d.left--;
         d.record += 8;
         if (cached) {
-            cache += 4;
+            d.cache += 4;
         }
         xem_draw_read(&d);
         d.slot += size;
@@ -1038,7 +1069,7 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
             continue;
         }
         d.drawn++;
-        xem_normals_load(normal, cache, cached ? &colour : NULL);
+        xem_normals_load(normal, d.cache, cached ? &colour : NULL);
         xem_cop2(cached ? XEM_GTE_NCCT : XEM_GTE_NCT);
         entry = xem_ot_entry(&d, otz, d.shift);
         code = cached ? colour & 0xFF000000 : (u32)XEM_U8(d.slot + 7) << 24;
@@ -1049,7 +1080,7 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
         xem_link(&d, entry, old, cached ? 0x06000000 : 0x09000000);
     }
     if (cached) {
-        model_lit_color_cache = cache;
+        model_lit_color_cache = d.cache;
     }
     xem_draw_end(&d, size);
 }
@@ -1070,12 +1101,11 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
     u32 size = textured ? 40 : 24;
     u32 step = textured ? 8 : 4;
     u32 record_bytes = textured ? 8 : 12;
-    u32 first, fourth, cache, sxy0, sxy1, sxy2, sxy3, otz, colour = 0, code, entry, old;
+    u32 first, fourth, sxy0, sxy1, sxy2, sxy3, otz, colour = 0, code, entry, old;
     s32 nclip;
     int error, y0;
 
-    xem_draw_begin(&d, records, count);
-    cache = model_lit_color_cache;
+    xem_draw_begin(&d, records, count, textured ? XEM_SHADE_NCS : XEM_SHADE_NCCS);
     xem_draw_read(&d);
     first = xem_vertex0(&d);
     xem_load_vector(1, xem_vertex1(&d));
@@ -1093,7 +1123,7 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
         first = xem_vertex0_13(&d);
         xem_load_vector(1, xem_vertex1(&d));
         xem_load_vector(2, xem_vertex2(&d));
-        cache += record_bytes;
+        d.cache += record_bytes;
         error = xem_draw_error();
         xem_cop2(XEM_GTE_NCLIP);
         d.slot &= XEM_DMA_MASK;
@@ -1130,14 +1160,14 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
             continue;
         }
         if (textured) {
-            xem_load_vector(0, cache - 8);
+            xem_load_vector(0, d.cache - 8);
             entry = xem_ot_entry(&d, otz, d.shift);
             xem_cop2(XEM_GTE_NCS);
             old = XEM_U32(entry);
             code = (u32)XEM_U8(d.slot + 7) << 24;
         } else {
-            colour = XEM_U32(cache - 12);
-            xem_load_vector(0, cache - 8);
+            colour = XEM_U32(d.cache - 12);
+            xem_load_vector(0, d.cache - 8);
             xem_gte_write_data(XEM_GTE_RGBC, colour);
             xem_cop2(XEM_GTE_NCCS);
             entry = xem_ot_entry(&d, otz, d.shift);
@@ -1151,7 +1181,7 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
         XEM_U32(d.slot + 4) = xem_colour(code, xem_mfc2(XEM_GTE_RGB2));
         xem_link(&d, entry, old, textured ? 0x09000000 : 0x05000000);
     }
-    model_lit_color_cache = cache;
+    model_lit_color_cache = d.cache;
     xem_draw_end(&d, size);
 }
 
@@ -1172,7 +1202,7 @@ static void xem_draw_cued_quads(u8 *records, s32 count, int far) {
     s32 nclip;
     int error, y;
 
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_CUED);
     xem_draw_read(&d);
     if (far) {
         d.shift += 2;
@@ -1269,17 +1299,6 @@ void model_draw_ft4_cued_far(u8 *records, s32 count) { xem_draw_cued_quads(recor
 
 /* ---------------------------------------------------------------- environment map */
 
-/* The sa field of the srl and the sign-extended immediate of the addiu at
- * a patch site: model_set_envmap_mapping rewrites these in the code bytes
- * in game memory, so the mapping persists across modes as the original's
- * self-modified code does, and the renderer reads it back on every call.
- * Only these fields are interpreted (the patcher keeps the rest of each
- * word for counts 0-31). */
-typedef struct {
-    u32 shift;
-    u32 offset;
-} XemEnvmapMap;
-
 static XemEnvmapMap xem_envmap_site(u32 address) {
     XemEnvmapMap map;
 
@@ -1293,6 +1312,72 @@ static u8 xem_envmap_coordinate(u32 value, XemEnvmapMap map) {
     return (u8)((value >> map.shift) + map.offset);
 }
 
+/* ---------------------------------------------------------------- culled faces' colours */
+
+/* Presentation only: into a culled face's record `words` (its packet's GP0
+ * words, `step` bytes a point), the colours or texture coordinates its
+ * renderer gives a face it keeps, from the GTE and the face's inputs as the
+ * renderer left them at the cull (d->shade): the packet slot holds those of
+ * the last frame the face was drawn in, or the model's own (uncued, unlit;
+ * black where the game never wrote one) if it never was, which put a
+ * scene's faces the game culled beside its screen into a wider view
+ * brighter or black among those it drew. The GTE is put back. */
+static void xem_reveal_shade(XemDraw *d, u32 step, u32 *words) {
+    u32 code = (u32)XEM_U8(d->slot + 7) << 24, colour, i, u, v;
+    XemGte saved;
+
+    if (d->shade == XEM_SHADE_PACKET) {
+        return;
+    }
+    saved = xem_gte;
+    switch (d->shade) {
+    case XEM_SHADE_CUED:
+        /* RGBC holds the model colour, IR0 the cue of the face's last point. */
+        xem_cop2(XEM_GTE_DPCS);
+        words[0] = xem_cued_colour(d);
+        break;
+    case XEM_SHADE_NCS:
+        xem_load_vector(0, d->cache - 8);
+        xem_cop2(XEM_GTE_NCS);
+        words[0] = xem_colour(code, xem_mfc2(XEM_GTE_RGB2));
+        break;
+    case XEM_SHADE_NCCS:
+        colour = XEM_U32(d->cache - 12);
+        xem_load_vector(0, d->cache - 8);
+        xem_gte_write_data(XEM_GTE_RGBC, colour);
+        xem_cop2(XEM_GTE_NCCS);
+        words[0] = xem_colour(colour & 0xFF000000, xem_mfc2(XEM_GTE_RGB2));
+        break;
+    case XEM_SHADE_NCT:
+    case XEM_SHADE_NCCT:
+        /* The vertex normals' addresses, spilled for the face. */
+        for (i = 0; i < 3; i++) {
+            xem_load_vector((int)i, XEM_U32(XEM_SPILL + i * 4));
+        }
+        if (d->shade == XEM_SHADE_NCCT) {
+            colour = XEM_U32(d->cache - 4);
+            xem_gte_write_data(XEM_GTE_RGBC, colour);
+            code = colour & 0xFF000000;
+        }
+        xem_cop2(d->shade == XEM_SHADE_NCCT ? XEM_GTE_NCCT : XEM_GTE_NCT);
+        words[0] = xem_colour(code, xem_mfc2(XEM_GTE_RGB0));
+        words[step / 4] = xem_mfc2(XEM_GTE_RGB1);
+        words[step / 2] = xem_mfc2(XEM_GTE_RGB2);
+        break;
+    case XEM_SHADE_ENVMAP:
+        /* Each point's u, v (the low halfword after its SXY word). */
+        for (i = 0; i < 3; i++) {
+            xem_load_vector(0, d->normal[i]);
+            xem_cop2(XEM_GTE_MVMVA(1, 0, 0, 3, 0));
+            u = xem_envmap_coordinate(xem_mfc2(XEM_GTE_MAC1), d->u[i]);
+            v = xem_envmap_coordinate(xem_mfc2(XEM_GTE_MAC2), d->v[i]);
+            words[2 + i * 2] = (words[2 + i * 2] & 0xFFFF0000) | v << 8 | u;
+        }
+        break;
+    }
+    xem_gte = saved;
+}
+
 /* model_draw_ft3_envmap.s: environment-mapped POLY_FT3. Faces are culled as
  * in model_draw_gt3_avg; the SXY words are stored around the NCLIP test, the
  * first two also for a back face. A front-facing face with a nonzero AVSZ3
@@ -1303,17 +1388,16 @@ static u8 xem_envmap_coordinate(u32 value, XemEnvmapMap map) {
 void model_draw_ft3_envmap(u8 *records, s32 count) {
     XemDraw d;
     XemNormals n;
-    XemEnvmapMap u[3], v[3];
     u32 base = XEM_ADDRESS_OF(model_envmap_patch_base[0]);
-    u32 normal[3], sxy0, sxy1, sxy2, otz, entry, old, x, y;
+    u32 sxy0, sxy1, sxy2, otz, entry, old, x, y;
     s32 nclip;
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        u[i] = xem_envmap_site(base + xem_envmap_u_shifts[i]);
-        v[i] = xem_envmap_site(base + xem_envmap_v_shifts[i]);
+        d.u[i] = xem_envmap_site(base + xem_envmap_u_shifts[i]);
+        d.v[i] = xem_envmap_site(base + xem_envmap_v_shifts[i]);
     }
-    xem_draw_begin(&d, records, count);
+    xem_draw_begin(&d, records, count, XEM_SHADE_ENVMAP);
     n.delta = model_current_normals;
     xem_draw_read(&d);
     xem_normals_next(&d, &n);
@@ -1328,7 +1412,7 @@ void model_draw_ft3_envmap(u8 *records, s32 count) {
             break;
         }
         for (i = 0; i < 3; i++) {
-            normal[i] = n.vertex[i] + n.delta;
+            d.normal[i] = n.vertex[i] + n.delta;
         }
         d.left--;
         xem_draw_next(&d);
@@ -1358,12 +1442,12 @@ void model_draw_ft3_envmap(u8 *records, s32 count) {
         xem_store_face_sxy(d.slot + 24, sxy2, 2, 3);
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.slot &= XEM_DMA_MASK;
-        xem_lwc2(XEM_GTE_VXY0, normal[0]);
+        xem_lwc2(XEM_GTE_VXY0, d.normal[0]);
         if (otz == 0) {
             xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
-        xem_lwc2(XEM_GTE_VZ0, normal[0] + 4);
+        xem_lwc2(XEM_GTE_VZ0, d.normal[0] + 4);
         xem_cop2(XEM_GTE_MVMVA(1, 0, 0, 3, 0));
         d.drawn++;
         entry = xem_ot_entry(&d, otz, d.shift);
@@ -1371,11 +1455,11 @@ void model_draw_ft3_envmap(u8 *records, s32 count) {
             x = xem_mfc2(XEM_GTE_MAC1);
             y = xem_mfc2(XEM_GTE_MAC2);
             if (i < 2) {
-                xem_load_vector(0, normal[i + 1]);
+                xem_load_vector(0, d.normal[i + 1]);
                 xem_cop2(XEM_GTE_MVMVA(1, 0, 0, 3, 0));
             }
-            XEM_U8(d.slot + 12 + i * 8) = xem_envmap_coordinate(x, u[i]);
-            XEM_U8(d.slot + 13 + i * 8) = xem_envmap_coordinate(y, v[i]);
+            XEM_U8(d.slot + 12 + i * 8) = xem_envmap_coordinate(x, d.u[i]);
+            XEM_U8(d.slot + 13 + i * 8) = xem_envmap_coordinate(y, d.v[i]);
         }
         old = XEM_U32(entry);
         xem_link(&d, entry, old, 0x07000000);

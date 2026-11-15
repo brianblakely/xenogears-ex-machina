@@ -1736,7 +1736,16 @@ snapshots are its. The renderer only draws again what it drew:
   projected without overflow, within that reach) as the GP0 words it would
   have had and the packet it would have been linked in front of (the
   newest at its ordering-table entry, so it is drawn just where the
-  original would have drawn it), and
+  original would have drawn it). Those words are its packet slot's with
+  its screen points and the colours, or texture coordinates, its renderer
+  gives a face it keeps, computed from the GTE and the face's inputs as
+  the cull left them, with the GTE put back (`model_draw.c`
+  `xem_reveal_shade`: the depth cue, the lighting from the lit-colour cache
+  or the vertex normals, the environment map): the slot holds the colours
+  of the last frame the face was drawn in, or the model's own if it never
+  was, and in Lahan burning (field 2) a roof's faces beside the screen
+  were drawn uncued (80 80 80 among the 6A 61 61 drawn) or black (0 0 0)
+  in the sides (`tests/test_port_model_draw.py` `CulledFaces`). And
   `present.c` draws again, for the record, the field scenery pieces the
   field's bounding test culls (`field_instance_is_off_screen`, when the same
   test with margins widened by the reach keeps them) and the models a box

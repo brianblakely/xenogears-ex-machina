@@ -1,0 +1,1 @@
+- Scenery just beyond the original 4:3 screen, shown in widescreen and when zoomed out, is now shaded like the rest of the scene instead of appearing as bright or black patches (such as the roofs in burning Lahan).
