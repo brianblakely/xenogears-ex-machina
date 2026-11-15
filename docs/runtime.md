@@ -2259,7 +2259,16 @@ snapshots are its. The renderer only draws again what it drew:
   so Fit fills the screen; at most 160) and lets scene primitives (not
   interface ones) draw past the drawing area,
   the culled faces filling the sides (the backdrops' continuations, flat,
-  only there). Pulling the camera back projects every projected vertex
+  only there). Lahan burning's heat haze (field 2), a grid of tiles of the
+  screen drawn back over it along a wave, carries the sides from its edge
+  tiles out to the frame's sides, a texel to a pixel: the grid keeps its
+  outer edges on the screen's while its wave (3 pixels 600 frames in)
+  stretches and narrows the tiles beside them, and the sides, stretched and
+  narrowed with those tiles, swayed by up to 6 pixels at a 16:9 frame's
+  edges over the scene as drawn beneath them, more the wider the frame
+  (`tests/ps1.rs`
+  `the_hazes_edge_columns_leave_the_wider_frames_sides_as_drawn`).
+  Pulling the camera back projects every projected vertex
   again from its point before the division as the game's camera would see
   it from further back along its own axis (x = OFX + H·X / (Z + d), depth
   Z + d, d a multiple of the camera target's depth; points near or behind

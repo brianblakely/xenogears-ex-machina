@@ -1,0 +1,1 @@
+- Fixed the edges of the screen rippling over a still copy of the picture during the burning of Lahan, which was worst in widescreen and after resizing the window.

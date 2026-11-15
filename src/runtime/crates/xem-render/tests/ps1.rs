@@ -2105,25 +2105,7 @@ fn framebuffer_distortion_keeps_the_reconstructed_scene_and_its_depth() {
         let traces = traced(|device| {
             projected_scene(device);
             if effect != 0 {
-                // The field saves strips, draws its grid 32 rows down, then
-                // shifts the screen and restores its bottom saved strips.
-                for row in 0..3 {
-                    for column in 0..5 {
-                        device.write_gp0_words(&[0x8000_0000, xy(column * 64, 192 + row * 16), xy(960, (row * 5 + column) * 16), 16 << 16 | 64]);
-                    }
-                }
-                for x in (0..320).step_by(64) {
-                    device.write_gp0_words(&[0x2D80_8080, xy(x, 32), 0, xy(x + 64, 32), ((0x100 + x as u32 / 64) << 16) | 64,
-                        xy(x, 224), 192 << 8, xy(x + 64, 224), 192 << 8 | 64]);
-                }
-                device.write_gp0_words(&[0x8000_0000, xy(0, 32), 0, 192 << 16 | 320]);
-                for row in 0..3 {
-                    for column in 0..5 {
-                        let (x, y, v) = (column * 64, 192 + row * 16 - if effect == 2 && row == 2 { 32 } else { 0 }, ((row * 5 + column) * 16) as u32);
-                        device.write_gp0_words(&[0x2D80_8080, xy(x, y), v << 8, xy(x + 64, y), (0x10F << 16) | v << 8 | 64,
-                            xy(x, y + 16), (v + 16) << 8, xy(x + 64, y + 16), (v + 16) << 8 | 64]);
-                    }
-                }
+                haze(device, [0, 64, 128, 192, 256, 320], if effect == 2 { 32 } else { 0 });
             }
         });
         let (mut renderer, _) = draw(&gpu, &traces, fidelity, Culling::default());
@@ -2155,6 +2137,87 @@ fn framebuffer_distortion_keeps_the_reconstructed_scene_and_its_depth() {
     assert_eq!(&before[at..at + 3], [0, 0, 0]);
     assert!(warped[at] > 240 && warped[at + 1] > 240 && warped[at + 2] == 0,
         "the wave brings the yellow pixel from hidden row226 into visible row194");
+}
+
+/// The field's heat haze (`field_distortion_draw`) over the frame drawn: it
+/// saves strips of the screen's bottom, draws its grid of the screen 32 rows
+/// down, shifts the screen back up and draws the saved strips below that.
+/// `columns` are the grid's column edges (its wave moves those within; the
+/// outer two stay on the screen's); `lift` raises the strips' last row.
+fn haze(device: &mut xem_gpu::Gpu, columns: [i32; 6], lift: i32) {
+    for row in 0..3 {
+        for column in 0..5 {
+            device.write_gp0_words(&[0x8000_0000, xy(column * 64, 192 + row * 16), xy(960, (row * 5 + column) * 16), 16 << 16 | 64]);
+        }
+    }
+    for (page, edges) in columns.windows(2).enumerate() {
+        let (x0, x1) = (edges[0], edges[1]);
+        device.write_gp0_words(&[0x2D80_8080, xy(x0, 32), 0, xy(x1, 32), ((0x100 + page as u32) << 16) | 64,
+            xy(x0, 224), 192 << 8, xy(x1, 224), 192 << 8 | 64]);
+    }
+    device.write_gp0_words(&[0x8000_0000, xy(0, 32), 0, 192 << 16 | 320]);
+    for row in 0..3 {
+        for column in 0..5 {
+            let (x, y, v) = (column * 64, 192 + row * 16 - if row == 2 { lift } else { 0 }, ((row * 5 + column) * 16) as u32);
+            device.write_gp0_words(&[0x2D80_8080, xy(x, y), v << 8, xy(x + 64, y), (0x10F << 16) | v << 8 | 64,
+                xy(x, y + 16), (v + 16) << 8, xy(x + 64, y + 16), (v + 16) << 8 | 64]);
+        }
+    }
+}
+
+#[test]
+fn the_hazes_edge_columns_leave_the_wider_frames_sides_as_drawn() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 216 };
+    let render = |columns: Option<[i32; 6]>| {
+        let traces = traced(|device| {
+            projected_scene(device);
+            // Stripes of the scene in the sides, 10 pixels each: quads
+            // over each of the screen's edges, each nearer and narrower.
+            let mut projections = Vec::new();
+            let mut packets = Vec::new();
+            for (i, colour) in [0xFF_FFFF, 0x00_00FF, 0x00_FF00, 0xFF_0000].into_iter().enumerate() {
+                let (z, reach) = (1000 - 100 * i as u16, 40 - 10 * i as i32);
+                for (x0, x1) in [(-reach, 10), (310, 320 + reach)] {
+                    let corners = [(x0, -8), (x1, -8), (x0, 248), (x1, 248)];
+                    let first = projections.len();
+                    for (x, y) in corners {
+                        projections.push(Projection { sxy: xy(x, y), sz: z, class: 1, x: x << 16, y: y << 16, offset: (160, 120), h: 256, owner: 0x8010_0000,
+                            view: view(x as f32, y as f32, f32::from(z)) });
+                    }
+                    let words = std::iter::once(0x2800_0000 | colour).chain(corners.map(|(x, y)| xy(x, y))).collect();
+                    packets.push((words, (0..4).map(|k| (k + 1, first + k)).collect()));
+                }
+            }
+            submit(device, &projections, &packets);
+            if let Some(columns) = columns {
+                haze(device, columns, 0);
+            }
+        });
+        let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing { side: 40, ..Default::default() });
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        read_rgba8(&gpu.device, &gpu.queue, frame.color())
+    };
+    let plain = render(None);
+    // Its wave narrows the grid's first and last columns (each 56 pixels
+    // for 64 texels), their outer edges staying on the screen's.
+    let hazed = render(Some([0, 56, 128, 192, 264, 320]));
+    // The sides at scale 2: 80 pixels each of the frame's 800.
+    let (mut sides, mut different) = (0, 0);
+    for y in 0..216 * 2 {
+        for x in (0..80).chain(720..800) {
+            let at = (y * 800 + x) * 4;
+            sides += 1;
+            different += usize::from((0..3).any(|c| plain[at + c].abs_diff(hazed[at + c]) > 12));
+        }
+    }
+    let striped = plain.chunks_exact(4).skip(100 * 800).take(800).filter(|p| p[..3] != [0, 0, 0]).count();
+    assert!(striped >= 150, "the stripes fill the sides: {striped} of row 100's pixels");
+    assert!(different < sides / 100, "the sides squeezed with the columns beside them: {different} of {sides} pixels differ");
 }
 
 #[test]

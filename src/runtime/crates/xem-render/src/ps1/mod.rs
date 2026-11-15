@@ -1345,7 +1345,7 @@ impl<'a> Builder<'a> {
         if let Some(rect) = self.feedback.filter(|_| feedback.is_some() && self.spill > 0)
             && matches!(p.shape, Shape::Triangle | Shape::Quad)
         {
-            push_capture_sides(&mut self.vertices, &corners[..count], 0.0, (rect, self.spill));
+            push_feedback_sides(&mut self.vertices, &corners[..count], (rect, self.spill));
         }
         if widened {
             // Its points at or past the drawing area's sides move out by the
@@ -1547,14 +1547,44 @@ fn push_capture_sides(vertices: &mut Vec<Vertex>, corners: &[Vertex], page_x: f3
     let (dx1, dy1) = (b.position[0] - a.position[0], b.position[1] - a.position[1]);
     let (dx2, dy2) = (c.position[0] - a.position[0], c.position[1] - a.position[1]);
     let along = ((dx1 * dv2 - dx2 * dv1) / det, (dy1 * dv2 - dy2 * dv1) / det);
-    let edges: &[(usize, usize)] = if corners.len() == 4 { &[(0, 1), (1, 3), (3, 2), (2, 0)] } else { &[(0, 1), (1, 2), (2, 0)] };
     let left = f32::from(capture.x) - page_x;
-    for &(i, j) in edges {
+    push_sides(vertices, corners, (left, left + f32::from(capture.width)), |v, _, outward| {
+        let by = outward * side as f32;
+        Vertex { position: [v.position[0] + along.0 * by, v.position[1] + along.1 * by], uv: [v.uv[0] + by, v.uv[1]], ..v }
+    });
+}
+
+/// The sides of the frame beyond a polygon drawn from the frame itself
+/// ([`Builder::feedback`]: the field's heat haze) where an edge of it is
+/// the screen's left or right edge: a strip of the sides' `side` texels
+/// from that edge out to the frame's own side. The haze's grid draws the
+/// screen at its own scale, its outer edges pinned to the screen's and the
+/// columns beside them stretching and shrinking with its wave; mapped as
+/// those columns map theirs, the sides stretched and shrank with them and
+/// the unhazed scene showed past them.
+fn push_feedback_sides(vertices: &mut Vec<Vertex>, corners: &[Vertex], (screen, side): (VramRect, u32)) {
+    let left = f32::from(screen.x);
+    // The frame's texels are its pixels, a vertex half a pixel into its
+    // pixel (Builder::triangles). One past the frame's side (which clips
+    // it), the strip reaches the side's last scaled pixel.
+    let reach = side as f32 + 1.0;
+    push_sides(vertices, corners, (left, left + f32::from(screen.width)), |v, edge, outward| {
+        Vertex { position: [edge + outward * reach + 0.5, v.position[1]], uv: [edge + outward * reach, v.uv[1]], ..v }
+    });
+}
+
+/// For each edge of a polygon whose texels lie on column `edges.0` or
+/// `edges.1` of its texture, a strip continuing the texture past it
+/// (leftwards from the first, rightwards from the second), each of its
+/// outer corners `out` of the edge's corner, that column and the way
+/// outwards (-1 or 1).
+fn push_sides(vertices: &mut Vec<Vertex>, corners: &[Vertex], edges: (f32, f32), out: impl Fn(Vertex, f32, f32) -> Vertex) {
+    let sides: &[(usize, usize)] = if corners.len() == 4 { &[(0, 1), (1, 3), (3, 2), (2, 0)] } else { &[(0, 1), (1, 2), (2, 0)] };
+    for &(i, j) in sides {
         let (p, q) = (corners[i], corners[j]);
-        for (edge, by) in [(left, -(side as f32)), (left + f32::from(capture.width), side as f32)] {
+        for (edge, outward) in [(edges.0, -1.0), (edges.1, 1.0)] {
             if (p.uv[0] - edge).abs() < 0.01 && (q.uv[0] - edge).abs() < 0.01 {
-                let out = |v: Vertex| Vertex { position: [v.position[0] + along.0 * by, v.position[1] + along.1 * by], uv: [v.uv[0] + by, v.uv[1]], ..v };
-                vertices.extend([p, q, out(q), p, out(q), out(p)]);
+                vertices.extend([p, q, out(q, edge, outward), p, out(q, edge, outward), out(p, edge, outward)]);
             }
         }
     }
