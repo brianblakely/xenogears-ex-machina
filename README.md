@@ -13,10 +13,6 @@
   <sub>Windows · macOS · Linux · Android · Meta Horizon OS · Web browsers · Bring your own discs</sub>
 </p>
 
-<p align="center">
-  <a href="https://recomplauncher.com/game/xenogears-ex-machina"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
-</p>
-
 Xenogears: Ex Machina (XEM) is an independent, open-source project to preserve the
 PlayStation role-playing game Xenogears and bring it to modern computers, mobile
 devices and VR headsets.
