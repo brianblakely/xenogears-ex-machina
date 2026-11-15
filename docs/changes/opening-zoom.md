@@ -1,0 +1,1 @@
+- The burning village at the start of a new game always shows at 1× zoom, as zooming out there showed empty space around it; your zoom returns after it.

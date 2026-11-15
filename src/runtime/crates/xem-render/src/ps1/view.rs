@@ -121,9 +121,12 @@ fn seals_terrain(scene: &str) -> bool {
 }
 
 /// The share of the field camera's pull-back a scene takes ("field:12",
-/// "worldmap", ...): the field all of it, the world map a tenth.
+/// "worldmap", ...): the field all of it, the world map a tenth. The
+/// opening's burning Lahan ("field:2:opening") takes none: pulled back,
+/// its camera would show the void around the map's burning houses.
 pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
     match scene.split(':').next() {
+        Some("field") if scene.ends_with(":opening") => 1.0,
         Some("field") => zoom,
         Some("worldmap") => 1.0 + (zoom - 1.0) / 10.0,
         _ => 1.0,
@@ -632,7 +635,8 @@ impl GameView {
         if self.first_person.is_some() || (self.diorama_scene() && self.scene.starts_with("field")) {
             return 1000 | 1024 << 16;
         }
-        let zoom = (config.zoom * 100.0).round().clamp(100.0, 1000.0) as u32;
+        let zoom = if self.scene.starts_with("field") { scene_zoom(config.zoom, &self.scene) } else { config.zoom };
+        let zoom = (zoom * 100.0).round().clamp(100.0, 1000.0) as u32;
         let side = config.side.max(self.side).min(1024);
         if zoom == 100 && side == 0 { 0 } else { zoom | side << 16 }
     }
@@ -1375,6 +1379,16 @@ fn sprite_height(ops: &[TraceOp], owner: u32, feet: [f32; 3], up: [f32; 3]) -> O
 mod tests {
     use super::*;
     use xem_settings::MovieFilter;
+
+    /// A field takes the whole pull-back but the opening's burning Lahan,
+    /// which takes none; the world map a tenth; other modes none.
+    #[test]
+    fn the_openings_burning_lahan_takes_none_of_the_pull_back() {
+        assert_eq!(scene_zoom(2.5, "field:2"), 2.5);
+        assert_eq!(scene_zoom(2.5, "field:2:opening"), 1.0);
+        assert!((scene_zoom(2.5, "worldmap") - 1.15).abs() < 1e-6);
+        assert_eq!(scene_zoom(2.5, "battle:9"), 1.0);
+    }
 
     /// Every kind of host rebuilds movie frames into the output it gives
     /// under Enhanced, and none under Original.

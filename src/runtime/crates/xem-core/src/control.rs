@@ -1964,7 +1964,8 @@ impl<M: GameModule> Session<M> {
     }
 
     /// What the game shows, for presentation tuning (scene metadata):
-    /// "field:<map>", "battle:<enemy file>", "worldmap", "arena", "menu", "movie",
+    /// "field:<map>" ("field:2:opening" for the opening's burning Lahan),
+    /// "battle:<enemy file>", "worldmap", "arena", "menu", "movie",
     /// "kernel" or "boot". Reads the game only.
     pub fn scene(&mut self) -> String {
         let mode = self.runtime.services().mode;
@@ -1984,15 +1985,20 @@ impl<M: GameModule> Session<M> {
                     .any(|flag| self.inspect(flag, 0).is_ok_and(|value| value == json!(0)));
                 // (A field just entered holds the last field's requests until
                 // its setup clears them: the map as it is then.)
-                match self.inspect("mode_field_map_id", 0) {
-                    Ok(map) if requested => format!("field:{}", self.drawn_field.as_ref().unwrap_or(&map)),
+                let map = match self.inspect("mode_field_map_id", 0) {
+                    Ok(map) if requested => self.drawn_field.clone().unwrap_or(map),
                     Ok(map) => {
-                        let scene = format!("field:{map}");
-                        self.drawn_field = Some(map);
-                        scene
+                        self.drawn_field = Some(map.clone());
+                        map
                     }
-                    Err(_) => "field".into(),
-                }
+                    Err(_) => return "field".into(),
+                };
+                // The opening's burning Lahan: map 2 before the story value
+                // (`game_data.vars[0]`, as the field was entered) reaches
+                // Fei's room's 6. The narration enters it at 3; Lahan's map
+                // 15 sends the player there again only from 16.
+                let opening = map == json!(2) && self.inspect("game_data.vars[0]", 0).is_ok_and(|story| story.as_u64().is_some_and(|story| story < 6));
+                if opening { format!("field:{map}:opening") } else { format!("field:{map}") }
             }
             Some(0) => "kernel".into(),
             Some(2) => match self.inspect("formation_active.battle", 0) {

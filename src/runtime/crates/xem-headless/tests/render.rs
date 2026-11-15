@@ -1363,12 +1363,72 @@ fn lahan_burning_draws_each_frame_in_a_few_render_passes() {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
         gpu.queue.submit([encoder.finish()]);
-        assert_eq!(scene, "field:2");
+        assert_eq!(scene, "field:2:opening");
         most = (most.0.max(view.stats().passes), most.1.max(view.frame().passes()));
     }
     eprintln!("{drawn} frames drew {writes} writes; at most {} passes in VRAM's picture, {} in a replay", most.0, most.1);
     assert!(drawn > 100 && writes > 200 * drawn, "the haze's frames write as they draw");
     assert!(most.0 <= 20 && most.1 <= 20, "{most:?} passes");
+}
+
+/// The opening's burning Lahan (map 2 before the story value reaches Fei's
+/// room's 6; the narration enters it at 3) keeps the game's own camera
+/// whatever the zoom out: pulled back, it would show the void around the
+/// map's burning houses. Its characters move as the original's view
+/// shows them, and the culled faces recorded are only the sides'. The same
+/// map later in the story (Lahan's map 15 sends the player there from story
+/// value 16) is pulled back as any field is.
+#[test]
+fn the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd": "enter_field", "map": 2}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let graphics = Graphics { internal_scale: 1, widescreen: true, zoom_out: 250, ..Graphics::default() };
+    // Presented as the hosts do, then what the view shows and asks for.
+    let shown = |session: &mut Session<NativeModule>| {
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        let mut scene = String::new();
+        for n in 0..120u32 {
+            view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1920, 1080), view.max_scale()));
+            session.set_actor_view(view.actor_view()).expect("the view's actor view");
+            assert!(session.frame().unwrap());
+            let device = session.runtime.services().gpu.device_mut();
+            if view.take_restart() || !device.trace_enabled() {
+                device.set_trace(true);
+            }
+            device.set_reveals(view.reveals());
+            view.push(device.take_trace());
+            let display = device.display();
+            scene = session.scene();
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            let _ = view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        (scene, view.viewpoint().is_some(), view.reveals().expect("culled faces for the sides"), view.actor_view() & 0xFFFF)
+    };
+    run_frames(&mut session, 600);
+    let (scene, pulled_back, reveals, zoom) = shown(&mut session);
+    assert_eq!(scene, "field:2:opening");
+    assert!(!pulled_back, "the opening's Lahan shows from the game's camera");
+    assert!(reveals.pull_back == 0 && reveals.reach[1] <= 32, "the sides' culled faces alone: {reveals:?}");
+    assert_eq!(zoom, 100, "characters move as the original's view shows them");
+    let writes = json!([{"path": "game_data.map", "value": 2}, {"path": "game_data.vars[0]", "value": 16}]);
+    let reply = session.execute(&json!({"cmd": "scenario", "writes": writes, "mode": 1}));
+    assert!(reply.get("error").is_none(), "{reply}");
+    run_frames(&mut session, 600);
+    let (scene, pulled_back, reveals, zoom) = shown(&mut session);
+    assert_eq!(scene, "field:2", "Lahan later in the story");
+    assert!(pulled_back && reveals.pull_back > 0 && zoom == 250, "pulled back: {reveals:?}, {zoom}");
+}
+
+fn run_frames(session: &mut Session<NativeModule>, count: u32) {
+    let reply = session.execute(&json!({"cmd": "frames", "count": count}));
+    assert!(reply.get("error").is_none(), "{reply}");
 }
 
 /// Starts the debug battle selector's (`battle_scene_select_values`) first

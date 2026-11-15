@@ -153,6 +153,8 @@ with a movement key or stick cancels an automatic walking route.
 The mouse wheel pulls the camera back or brings it closer: scroll down to
 zoom out and up to zoom in. This works with the Ex Machina picture and is
 most useful while exploring. The world map gets a smaller zoom change.
+The burning village at the start of a new game always shows at 1×; your
+zoom returns after it.
 
 In **Settings → Controls**, turn on **Turn the camera with the mouse** to
 use mouse movement for looking instead. The app takes hold of the pointer
