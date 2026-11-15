@@ -169,6 +169,7 @@ packaging/about.hbs
 packaging/about.toml
 packaging/install.txt
 packaging/linux.nix
+packaging/recomplauncher.json
 packaging/source-files.txt
 plan.md
 play.sh

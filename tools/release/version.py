@@ -22,7 +22,7 @@ def native_changed(base, commit):
         "src/runtime/Cargo.toml", "src/runtime/Cargo.lock", "src/runtime/.cargo/",
         "src/runtime/android/", "src/runtime/scripts/android-build.sh",
         "nix/runtime/", "tools/game_module.py", "tools/game_schema.py",
-        "packaging/linux.nix", "tools/release/package.py", "tools/release/shell.sh",
+        "packaging/linux.nix", "packaging/recomplauncher.json", "tools/release/package.py", "tools/release/shell.sh",
         ":(exclude)src/runtime/crates/xem-web/",
         ":(exclude)src/runtime/crates/xem-webxr/",
         ":(glob,exclude)**/tests/**", ":(glob,exclude)**/examples/**",

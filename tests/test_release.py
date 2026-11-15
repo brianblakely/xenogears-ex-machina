@@ -284,7 +284,7 @@ class NativeReleaseGuardTests(unittest.TestCase):
                      "src/runtime/crates/xem-android/src/lib.rs", "src/runtime/crates/xem-xr/src/lib.rs",
                      "src/runtime/Cargo.toml", "src/runtime/Cargo.lock", "src/runtime/.cargo/config.toml",
                      "src/runtime/android/app/src/main/AndroidManifest.xml", "src/runtime/scripts/android-build.sh",
-                     "nix/runtime/flake.lock", "nix/runtime/freesurround.cpp", "packaging/linux.nix",
+                     "nix/runtime/flake.lock", "nix/runtime/freesurround.cpp", "packaging/linux.nix", "packaging/recomplauncher.json",
                      "tools/release/package.py", "tools/release/shell.sh"]:
             with self.subTest(path=path):
                 base = self.git("rev-parse", "HEAD")

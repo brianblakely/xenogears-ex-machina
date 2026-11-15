@@ -1,0 +1,98 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "Xenogears: Ex Machina",
+  "repo": "brianblakely/xenogears-ex-machina",
+  "game": {
+    "kind": "iso",
+    "label": "Your disc image of Xenogears (USA) Disc 1, SLUS-00664, original or Greatest Hits: a .chd, a .cue with its .bin, or a raw 2352-byte .iso. Keep Disc 2 in the same folder; the game finds it there when it asks for it.",
+    "check": { "iso9660": "SLUS_006.64", "ids": ["SLUS-00664"] },
+    "dumps": [
+      { "name": "USA Disc 1", "size": 718738272, "crc32": "c75e45ff" }
+    ]
+  },
+  "start": {
+    "program": ["xem-desktop.exe", "Xenogears Ex Machina.app/Contents/MacOS/xem-desktop", "xem-desktop"],
+    "args": ["--disc", "{game}"]
+  },
+  "saves": ["{install}/cards", "{install}/saves", "{install}/settings.json"],
+  "config": [
+    {
+      "id": "main",
+      "format": "json",
+      "file": [{ "path": "{install}/settings.json" }]
+    }
+  ],
+  "settings": [
+    {
+      "id": "window",
+      "label": "Window",
+      "help": "Fullscreen covers your display. Escape, or Back+Start on a controller, opens the game's own settings.",
+      "choices": [
+        { "label": "Windowed", "set": { "presentation/fullscreen": "false" } },
+        { "label": "Fullscreen", "set": { "presentation/fullscreen": "true" } }
+      ],
+      "defaults": { "presentation/fullscreen": "false" }
+    },
+    {
+      "id": "look",
+      "label": "Look",
+      "help": "Modern is sharp and high resolution. HD-2D adds lighting, shadows, fog and depth of field. PS1 keeps every limit of the console. Console picture shows the original image, scaled.",
+      "choices": [
+        { "label": "Modern", "set": { "graphics/renderer": "\"ExMachina\"", "graphics/profile": "\"Modern\"" } },
+        { "label": "HD-2D", "set": { "graphics/renderer": "\"ExMachina\"", "graphics/profile": "\"Hd2d\"" } },
+        { "label": "PS1", "set": { "graphics/renderer": "\"ExMachina\"", "graphics/profile": "\"Ps1\"" } },
+        { "label": "Console picture", "set": { "graphics/renderer": "\"Original\"" } }
+      ],
+      "defaults": { "graphics/renderer": "\"ExMachina\"", "graphics/profile": "\"Modern\"" }
+    },
+    {
+      "id": "widescreen",
+      "label": "Widescreen",
+      "help": "Shows more of the scene at the sides instead of black bars.",
+      "choices": [
+        { "label": "Off", "set": { "graphics/widescreen": "false" } },
+        { "label": "On", "set": { "graphics/widescreen": "true" } }
+      ],
+      "defaults": { "graphics/widescreen": "false" },
+      "when": { "graphics/renderer": "\"ExMachina\"" }
+    },
+    {
+      "id": "zoom_out",
+      "label": "Camera zoom out",
+      "help": "Pulls the field camera back to show more around the party. 100 is the original view.",
+      "slider": { "key": "graphics/zoom_out", "min": 100, "max": 500, "step": 25, "format": "%d" },
+      "defaults": { "graphics/zoom_out": "100" },
+      "when": { "graphics/renderer": "\"ExMachina\"" }
+    },
+    {
+      "id": "smooth_motion",
+      "label": "Smooth motion",
+      "help": "Draws in-between frames for high refresh rate screens, with one frame of delay. The game itself always runs at its own speed.",
+      "choices": [
+        { "label": "Off", "set": { "graphics/interpolation": "false" } },
+        { "label": "On", "set": { "graphics/interpolation": "true" } }
+      ],
+      "defaults": { "graphics/interpolation": "false" },
+      "when": { "graphics/renderer": "\"ExMachina\"" }
+    },
+    {
+      "id": "fps",
+      "label": "Show FPS",
+      "help": "The frame rate in a corner of the screen.",
+      "choices": [
+        { "label": "Off", "set": { "presentation/show_fps": "false" } },
+        { "label": "On", "set": { "presentation/show_fps": "true" } }
+      ],
+      "defaults": { "presentation/show_fps": "false" }
+    }
+  ],
+  "folders": {
+    "saves": [{ "path": "{install}/cards" }],
+    "states": [{ "path": "{install}/saves" }]
+  },
+  "actions": [
+    { "id": "cards", "label": "Memory cards", "help": "Your memory cards, card1.mcd and card2.mcd: the game's own saves.", "open": "saves" },
+    { "id": "states", "label": "Save states", "help": "The quick save state.", "open": "states" }
+  ]
+}

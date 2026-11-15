@@ -158,6 +158,9 @@ def main():
             name += ".exe" if args.kind == "windows" else ""
             shutil.copy2(target / "release" / name, binaries / name)
         notices(stage)
+        # RecompLauncher's setup and settings, beside the program (the AppImage
+        # carries it at its root: packaging/linux.nix).
+        shutil.copyfile(ROOT / "packaging/recomplauncher.json", stage / "recomplauncher.json")
         if args.kind == "linux":
             output = ROOT / "build/release-appimage"
             arguments = ["--impure", "--file", str(ROOT / "packaging/linux.nix"), "--argstr", "binaryDirectory", str(stage),

@@ -1,0 +1,1 @@
+- [RecompLauncher](https://recomplauncher.com) can now set up the desktop game from your own Disc 1 image and start it with one button, with the window, look, widescreen, camera zoom, smooth motion and FPS settings on the game's page.

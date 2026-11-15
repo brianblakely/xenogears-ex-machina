@@ -94,11 +94,22 @@ let
         Terminal=false
         EOF
       '';
-  image = tools.inputs.appimage.lib.${system}.mkAppImage {
+  name = "xenogears-ex-machina-${version}-linux-${pkgs.stdenv.hostPlatform.uname.processor}.AppImage";
+  bundled = tools.inputs.appimage.lib.${system}.mkAppImage {
     program = "${application}/bin/xem";
-    name = "xenogears-ex-machina-${version}-linux-${pkgs.stdenv.hostPlatform.uname.processor}.AppImage";
+    inherit name;
     # Nix already supplies SOURCE_DATE_EPOCH; explicit time flags conflict with it.
   };
+  # RecompLauncher reads /recomplauncher.json from the image: appended to its
+  # root as mkAppImage appends AppRun, after the same runtime.
+  image = pkgs.runCommand name { nativeBuildInputs = [ pkgs.squashfsTools ]; } ''
+    mkdir root
+    cp ${./recomplauncher.json} root/recomplauncher.json
+    cp ${bundled} $out
+    chmod u+w $out
+    mksquashfs root/recomplauncher.json $out -offset $(stat -L -c%s ${imageRuntime}) -all-root -no-recovery
+    chmod 755 $out
+  '';
 in
 image
 // {

@@ -90,6 +90,12 @@ destination filenames are refused rather than replaced. Other files, including
 an optional BIOS, are left alone. Disc 1 starts automatically when present;
 the runtime discovers the other disc in that directory for disc transitions.
 
+The desktop downloads also carry `recomplauncher.json`
+(`packaging/recomplauncher.json`; inside the AppImage, at its root), with which
+[RecompLauncher](https://recomplauncher.com) installs the game, checks the
+player's Disc 1 image, starts `xem-desktop --disc IMAGE` and edits a few keys
+of `settings.json`. The image stays where the player keeps it.
+
 The supported images are North American `SLUS-00664` and `SLUS-00669` (original
 and Greatest Hits). Use CHD, BIN/CUE, or raw 2352-byte ISO images. A 2048-byte
 ISO lacks XA audio/movie data and is rejected. Disc identity and whole-image
