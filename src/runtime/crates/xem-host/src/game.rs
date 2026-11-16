@@ -221,6 +221,12 @@ impl Game {
         format!("{} card writes pending. {}",services.card.pending_writes(),problems.join("; "))
     }
 
+    /// Whether the Japanese release's text, movies and voices are installed
+    /// (the settings offer them).
+    pub fn japanese(&mut self) -> bool {
+        self.session.runtime.japanese()
+    }
+
     /// Give the drive's changer the game's other disc `number`.
     pub fn add_disc(&mut self, number: u8, disc: Box<dyn xem_disc::SectorSource>) {
         self.session.runtime.services().add_disc(number, disc);

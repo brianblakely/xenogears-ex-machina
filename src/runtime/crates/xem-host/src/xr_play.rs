@@ -756,7 +756,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         ui.set_debug_status(true, game.session.debug.busy(), &game.session.debug.message);
         ui.set_time_status(Some(fast_forward),&status);
         ui.set_storage_status(&game.storage_status());
-        let japanese = game.session.runtime.japanese();
+        let japanese = game.japanese();
         ui.set_japanese_offered(japanese, settings.borrow().settings());
 
         // The game: whatever frames are due by the wall clock, once per

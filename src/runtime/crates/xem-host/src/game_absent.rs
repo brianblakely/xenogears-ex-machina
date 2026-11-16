@@ -22,6 +22,7 @@ impl Game {
     pub fn mouse_camera_active(&mut self, _: &xem_settings::Settings) -> bool { match *self {} }
     pub fn time_status(&mut self) -> (bool,String) { match *self {} }
     pub fn storage_status(&mut self) -> String { match *self {} }
+    pub fn japanese(&mut self) -> bool { match *self {} }
     pub fn add_disc(&mut self, _: u8, _: Box<dyn xem_disc::SectorSource>) { match *self {} }
     pub fn wanted_disc(&mut self) -> Option<u8> { match *self {} }
     pub fn has_audio(&self) -> bool {

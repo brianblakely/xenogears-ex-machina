@@ -652,7 +652,7 @@ impl View {
             let (fast_forward,status) = game.time_status();
             self.ui.set_time_status(Some(fast_forward),&status);
             self.ui.set_storage_status(&game.storage_status());
-            let japanese = game.session.runtime.japanese();
+            let japanese = game.japanese();
             self.ui.set_japanese_offered(japanese, self.settings.borrow().settings());
             // A disc the game waits for and the changer has not got: ask for it.
             let wanted = game.wanted_disc();
