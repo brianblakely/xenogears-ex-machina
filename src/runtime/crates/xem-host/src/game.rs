@@ -221,6 +221,12 @@ impl Game {
         format!("{} card writes pending. {}",services.card.pending_writes(),problems.join("; "))
     }
 
+    /// Whether the Japanese release's text, movies and voices are installed
+    /// (the settings offer them).
+    pub fn japanese(&mut self) -> bool {
+        self.session.runtime.japanese()
+    }
+
     /// Give the drive's changer the game's other disc `number`.
     pub fn add_disc(&mut self, number: u8, disc: Box<dyn xem_disc::SectorSource>) {
         self.session.runtime.services().add_disc(number, disc);
@@ -376,6 +382,7 @@ impl Game {
                 self.session.set_movie_skip(settings.movie_skip);
                 self.session.set_fast_disc(settings.fast_disc);
                 self.session.set_language(settings.language);
+                self.session.set_voices(settings.voices == xem_settings::Voices::Japanese);
                 self.session.set_auto_advance(settings.auto_advance_dwell())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }

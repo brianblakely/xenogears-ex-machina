@@ -111,6 +111,9 @@ pub struct Services {
     /// The language of the game's text (src/port/locale.c): the original's
     /// English, or the translation `locale::activate` made active.
     pub(crate) language: crate::locale::Language,
+    /// The movies and battle voices are the Japanese release's
+    /// (`Session::set_voices`).
+    pub(crate) japanese_media: bool,
     /// Why the translations are not installed, when they are not
     /// (`locale::install`); the game shows its original text.
     pub locale_notice: Option<String>,
@@ -518,6 +521,25 @@ impl<M: GameModule> Runtime<M> {
             frames: 0,
             executable: None,
         }
+    }
+
+    /// Install the Japanese release's text and font beside the shipped
+    /// languages, and give the drive its movies and voices
+    /// (`crate::japanese`, docs/runtime.md, Japanese): `discs` are the
+    /// Japanese discs by number, which [`crate::japanese::read`] read. Hosts
+    /// do before the game boots. The translations' digest in the state's
+    /// identity gains the Japanese text's (`locale::JAPANESE_PACKAGE`).
+    pub fn install_japanese(&mut self, japanese: &crate::japanese::Japanese, discs: Vec<(u8, Box<dyn xem_disc::SectorSource>)>) -> Result<(), String> {
+        let package = crate::locale::install_japanese(self.module.memory(), japanese)?;
+        self.identity.packages.retain(|package| !package.starts_with(crate::locale::JAPANESE_PACKAGE));
+        self.identity.packages.extend(package);
+        self.services().cd.set_japanese(crate::devices::cd::JapaneseMedia::new(discs, japanese.media.clone()));
+        Ok(())
+    }
+
+    /// Whether the Japanese release's text, movies and voices are installed.
+    pub fn japanese(&mut self) -> bool {
+        crate::locale::japanese_installed(self.module.memory())
     }
 
     /// Copy the executable's text to `address` as the BIOS does at power-on

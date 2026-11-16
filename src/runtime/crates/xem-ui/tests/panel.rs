@@ -869,6 +869,38 @@ fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_setting
     assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (0, Some("English")));
 }
 
+/// Japanese text and the movies' and voices' language show only beside the
+/// Japanese release's discs; a Japanese choice saved without them shows
+/// English, as the game does.
+#[test]
+fn japanese_and_the_movies_and_voices_show_only_beside_the_japanese_discs() {
+    use xem_settings::{Language, SettingChange, Voices};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    settings.borrow_mut().apply(SettingChange::Language(Language::Japanese)).unwrap();
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Gameplay", 6);
+    let languages = |ui: &SettingsUi| {
+        use slint::Model;
+        ui.component().get_languages().iter().map(|l| l.to_string()).collect::<Vec<_>>()
+    };
+    assert_eq!(languages(&ui), ["English", "English (Perfect Works)", "Português (Brasil)", "Français"]);
+    assert_eq!(ui.component().get_language(), 0, "English without the Japanese discs");
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Movies and voices").next().is_none());
+    ui.set_japanese_offered(true, settings.borrow().settings());
+    ui.update().unwrap();
+    assert_eq!(languages(&ui).last().map(String::as_str), Some("日本語"));
+    assert_eq!(ui.component().get_language(), 4, "the Japanese choice");
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Movies and voices").next().is_some());
+    assert_eq!(ui.component().get_voices(), 0, "English by default");
+    ui.component().invoke_gameplay_edited("voices".into(), 1);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().voices, Voices::Japanese);
+    assert_eq!(ui.component().get_voices(), 1);
+}
+
 #[test]
 fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     const SECTIONS: [&str; 9] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Debug", "About"];

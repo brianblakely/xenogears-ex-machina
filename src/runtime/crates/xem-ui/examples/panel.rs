@@ -3,7 +3,7 @@
 //!
 //!     cargo run -p xem-ui --example panel -- [--size WxH] [--scale F] [--out DIR] [--name NAME]
 //!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--error TEXT]
-//!         [--locate LABEL]... [--pad BUTTON,...]
+//!         [--locate LABEL]... [--pad BUTTON,...] [--japanese]
 //!
 //! One picture per section (`NAME-<index>.png`; only section N with
 //! `--section`), composited over a dark grey as hosts composite it over the
@@ -14,7 +14,8 @@
 //! the gamepad's focus as `SettingsUi::gamepad` moves it); `--desktop`
 //! offers Quit and Fullscreen
 //! as the desktop host does, `--import-disc` the disc card as the browser
-//! and Android hosts do, `--error` the error bar saying TEXT; `--locate`
+//! and Android hosts do, `--error` the error bar saying TEXT, `--japanese`
+//! the Japanese release's options chosen, as beside its discs; `--locate`
 //! prints where the elements of an accessible label lie (logical x, y,
 //! width, height), for tests that tap the panel.
 
@@ -36,6 +37,7 @@ fn main() {
     let mut pad: Vec<String> = Vec::new();
     let mut desktop = false;
     let mut import_disc = false;
+    let mut japanese = false;
     let mut error = String::new();
     let mut locate: Vec<String> = Vec::new();
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/panel");
@@ -53,6 +55,7 @@ fn main() {
             "--section" => only = Some(value().parse().unwrap()),
             "--desktop" => desktop = true,
             "--import-disc" => import_disc = true,
+            "--japanese" => japanese = true,
             "--error" => error = value(),
             "--locate" => locate.push(value()),
             "--hover" => hover = Some(position(&value())),
@@ -67,7 +70,13 @@ fn main() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
-    let mut ui = SettingsUi::new(shared, settings, size, scale).expect("the panel");
+    let mut ui = SettingsUi::new(shared, settings.clone(), size, scale).expect("the panel");
+    if japanese {
+        let mut service = settings.borrow_mut();
+        service.apply(xem_settings::SettingChange::Language(xem_settings::Language::Japanese)).unwrap();
+        service.apply(xem_settings::SettingChange::Voices(xem_settings::Voices::Japanese)).unwrap();
+        ui.set_japanese_offered(true, service.settings());
+    }
     ui.set_operation_error(&error);
     ui.on_app_request(|request| eprintln!("{request:?}"));
     if desktop {

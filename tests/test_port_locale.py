@@ -286,6 +286,50 @@ u16 gear_shop_gear_values_frame_x_table[14];
         self.lib.text_draw_glyph(0x30, 0x41, None, 8, 0)
         self.assertEqual(self.word("test_glyph"), 0x30, "any other glyph is the original's")
 
+    def test_the_japanese_texts_glyphs_are_drawn_from_the_japanese_font_through_the_special_glyph(self):
+        """xem_core::japanese's codes: F0 c the Japanese font's one-byte glyph
+        c, (F1 + L - F8) s its two-byte glyph L s, F8 c the game's own glyph c;
+        while Japanese is active the game's two-byte glyphs are drawn by the
+        port (the threshold is lowered)."""
+        jp_font = LOCALE + 0x8000
+        # Its header: the glyphs at 14, threshold F8, the pages 232 glyphs on,
+        # 63 narrow one-byte glyphs, two-byte glyphs F8 00-14 narrow, first code 0x10.
+        font = bytearray(14 + 22 * 232 + 3 * 0x1600)
+        struct.pack_into("<7H", font, 0, 0, 14, 0xF8, 22 * 232, 63, 21, 0x10)
+        marks = {(0, 0x20): 0x0A01, (0xF8, 0x05): 0x0B02, (0xFA, 0x40): 0x0C03}
+        for (lead, second), mark in marks.items():
+            at = 14 + (22 * (second - 0x10) if lead == 0 else 22 * 232 + 22 * second + 0x1600 * (lead - 0xF8))
+            struct.pack_into("<11H", font, at, *[mark + row for row in range(11)])
+        port_native.write(FONT + 14 + 22 * 0x01, struct.pack("<11H", *[0x0D00 + row for row in range(11)]))  # the game's FE 01
+
+        record = LOCALE + 0x7F00
+
+        def install(active):
+            self.install(active)
+            # The header's +20: the Japanese record (its font, then a language of no translations).
+            ctypes.memmove(LOCALE + 20, struct.pack("<I", record), 4)
+            ctypes.memmove(record, struct.pack("<6I", jp_font, len(font), 0, 0, 0, 0), 24)
+            ctypes.memmove(jp_font, bytes(font), len(font))
+
+        def drawn(first, second):
+            ctypes.memset(ctypes.addressof((ctypes.c_uint * 2).in_dll(self.lib, "test_glyph")), 0, 8)
+            self.lib.text_draw_glyph(first, second, None, 8, 0)
+            return tuple((ctypes.c_uint * 2).in_dll(self.lib, "test_glyph")), list((ctypes.c_ushort * 11).in_dll(self.lib, "test_rows"))
+
+        install(2)  # one shipped language: Japanese is the second
+        widths = [self.lib.text_get_glyph_width(*code) for code in ((0xF0, 0x20), (0xF0, 0x60), (0xF1, 0x05), (0xF1, 0x30), (0xF3, 0x40))]
+        self.assertEqual(widths, [2, 3, 2, 3, 3])
+        before = port_native.read(SPECIAL, 22)
+        for code, (lead, second) in (((0xF0, 0x20), (0, 0x20)), ((0xF1, 0x05), (0xF8, 0x05)), ((0xF3, 0x40), (0xFA, 0x40))):
+            self.assertEqual(drawn(*code), ((0xFF, 0xFF), [marks[lead, second] + row for row in range(11)]), code)
+        self.assertEqual(port_native.read(SPECIAL, 22), before, "the special glyph's rows put back")
+        base = [0, 0, 0] + [0x0100 | r for r in range(3, 10)] + [0]
+        self.assertEqual(drawn(0xF8, 0x3D), ((0xFF, 0xFF), base), "the game's own glyph")
+        self.assertEqual(drawn(0xFE, 0x01), ((0xFF, 0xFF), [0x0D00 + row for row in range(11)]), "the game's two-byte glyph")
+        install(0)
+        self.assertEqual(drawn(0xFE, 0x01)[0], (0xFE, 0x01), "the original's without Japanese active")
+        self.assertEqual(drawn(0xF0, 0x20)[0], (0xFF, 0xFF), "a Japanese text begun before a change goes on")
+
     def test_a_menus_command_labels_the_language_translates_are_drawn_into_the_free_page_and_their_entries_show_them(self):
         """Sheet entries 0x123-0x149 (the command labels), by the hash of the
         entry's bytes: a translated one drawn with the text renderer into

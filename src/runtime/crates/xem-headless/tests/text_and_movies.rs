@@ -253,7 +253,18 @@ fn message(session: &mut Session<NativeModule>, i: u32) -> Option<u16> {
     if let Some(known) = FOUND.with(|found| found.borrow().get(&(table, at)).copied()) {
         return known;
     }
-    let entry = ENTRIES.get(&at).and_then(|name| (0..count).find(|n| {
+    // The Japanese text's entries translated alone (installed beside the
+    // Japanese discs, `locale::install_japanese`): its record at the header's +20.
+    let japanese = word(session, xem_core::locale::BASE + 20);
+    let name = ENTRIES.get(&at).copied().or_else(|| {
+        if japanese == 0 {
+            return None;
+        }
+        let (records, count) = (word(session, japanese + 16), word(session, japanese + 20));
+        (0..count).map(|n| records + 16 * n).find(|record| word(session, record + 8) == at)
+            .map(|record| u64::from(word(session, record + 4)) << 32 | u64::from(word(session, record)))
+    });
+    let entry = name.as_ref().and_then(|name| (0..count).find(|n| {
         let offset = half(session, table + 4 + 2 * u32::from(*n));
         xem_core::locale::place_key(&original_text(session, table + u32::from(offset)), *n, offset, count) == *name
     }));

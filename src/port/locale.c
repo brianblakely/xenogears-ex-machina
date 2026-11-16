@@ -86,7 +86,8 @@ typedef struct {
     u32 languages;
     u32 glyphs;      /* address of `glyph_count` XemLocaleGlyph */
     u32 glyph_count;
-    u32 reserved[3];
+    u32 japanese;    /* address of the XemLocaleJapanese, or 0: language `languages` + 1 */
+    u32 reserved[2];
 } XemLocaleHeader;
 
 /* Language n (1-based) follows the header at n - 1. */
@@ -96,6 +97,14 @@ typedef struct {
     u32 entries;     /* address of `entry_count` XemLocaleText, ascending by name: a text in one table entry alone */
     u32 entry_count;
 } XemLocaleLanguage;
+
+/* The Japanese release's text (xem_core::locale::install_japanese), after
+ * the shipped languages: its font block and its translations. */
+typedef struct {
+    u32 font;        /* text_install_font's format */
+    u32 font_bytes;
+    XemLocaleLanguage language;
+} XemLocaleJapanese;
 
 typedef struct {
     u32 hash_low;
@@ -144,7 +153,13 @@ static const XemLocaleHeader *xem_locale_header(void) {
 static const XemLocaleLanguage *xem_locale_language(void) {
     const XemLocaleHeader *header = xem_locale_header();
 
-    if (header == NULL || header->active == 0 || header->active > header->languages) {
+    if (header == NULL || header->active == 0) {
+        return NULL;
+    }
+    if (header->active == header->languages + 1 && header->japanese != 0) {
+        return &((const XemLocaleJapanese *)(XemUintptr)header->japanese)->language;
+    }
+    if (header->active > header->languages) {
         return NULL;
     }
     return (const XemLocaleLanguage *)(header + 1) + (header->active - 1);
@@ -359,11 +374,108 @@ static const XemLocaleGlyph *xem_locale_glyph(u16 first, u16 second) {
     return (const XemLocaleGlyph *)(XemUintptr)header->glyphs + (second - XEM_LOCALE_FIRST_GLYPH);
 }
 
+/* The Japanese text's glyphs (xem_core::japanese): the host lowers the
+ * font's two-byte threshold to 0xF0 while it is active, and its texts
+ * carry the Japanese font's one-byte glyph c as F0 c and its two-byte glyph
+ * L s as (F1 + L - F8) s; F8 c is the game's own one-byte glyph c (a
+ * developers' placeholder 0xF0-0xFD left untranslated). */
+#define XEM_JAPANESE_ONE_BYTE 0xF0
+#define XEM_JAPANESE_LAST_PAGE 0xF7
+#define XEM_OWN_GLYPH 0xF8
+#define XEM_FONT_GLYPH_BYTES 22
+#define XEM_FONT_PAGE_BYTES 0x1600
+
+/* Whether the active language is the Japanese text. */
+static s32 xem_japanese_active(void) {
+    const XemLocaleHeader *header = xem_locale_header();
+
+    return header != NULL && header->japanese != 0 && header->active == header->languages + 1;
+}
+
+/* The rows of glyph (first, second) of a font block (text_install_font:
+ * halfword 1 the glyphs' offset, 2 the threshold, 3 the two-byte pages'
+ * offset, 6 the first one-byte code) of `bytes` bytes: a one-byte glyph
+ * when `first` is 0, else on page `first` - threshold; NULL outside it. */
+static const u16 *xem_font_rows(const u16 *font, u32 bytes, u16 first, u16 second) {
+    u32 at;
+
+    if (first == 0) {
+        if (second < font[6]) {
+            return NULL;
+        }
+        at = font[1] + (second - font[6]) * XEM_FONT_GLYPH_BYTES;
+    } else {
+        if (first < font[2]) {
+            return NULL;
+        }
+        at = font[1] + font[3] + second * XEM_FONT_GLYPH_BYTES + (first - font[2]) * XEM_FONT_PAGE_BYTES;
+    }
+    return at + XEM_FONT_GLYPH_BYTES <= bytes ? (const u16 *)((const u8 *)font + at) : NULL;
+}
+
+/* The rows the port draws (first, second) from, and its columns, when it is
+ * one of the Japanese text's glyphs or (the threshold lowered) a two-byte
+ * glyph of the game's font; NULL when the original draws it. */
+static const u16 *xem_japanese_glyph(u16 first, u16 second, s32 *columns) {
+    const XemLocaleHeader *header = xem_locale_header();
+    const u16 *font = text_get_font();
+    const XemLocaleJapanese *record;
+    const u16 *japanese;
+    u16 lead;
+
+    if (header == NULL || header->japanese == 0) {
+        return NULL;
+    }
+    record = (const XemLocaleJapanese *)(XemUintptr)header->japanese;
+    japanese = (const u16 *)(XemUintptr)record->font;
+    if (first == XEM_JAPANESE_ONE_BYTE) {
+        *columns = (u32)(second - japanese[6]) < japanese[4] ? 2 : 3;
+        return xem_font_rows(japanese, record->font_bytes, 0, second);
+    }
+    if (first > XEM_JAPANESE_ONE_BYTE && first <= XEM_JAPANESE_LAST_PAGE) {
+        lead = japanese[2] + (first - XEM_JAPANESE_ONE_BYTE - 1);
+        *columns = lead == japanese[2] && second < japanese[5] ? 2 : 3;
+        return xem_font_rows(japanese, record->font_bytes, lead, second);
+    }
+    if (font == NULL) {
+        return NULL;
+    }
+    if (first == XEM_OWN_GLYPH) {
+        *columns = xem_original_text_get_glyph_width(0, second);
+        return xem_font_rows(font, 0xFFFFFFFF, 0, second);
+    }
+    if (first >= font[2] && first != 0xFF && xem_japanese_active()) {
+        *columns = xem_original_text_get_glyph_width(first, second);
+        return xem_font_rows(font, 0xFFFFFFFF, first, second);
+    }
+    return NULL;
+}
+
+/* Draw `rows` through the original's drawing of the special glyph 0xFFFF,
+ * whose rows hold them while it draws. */
+static void xem_draw_rows(const u16 *rows, u16 *image, s16 stride, s32 plane) {
+    u16 saved[11];
+    s32 row;
+
+    for (row = 0; row < 11; row++) {
+        saved[row] = text_special_glyph_rows[row];
+        text_special_glyph_rows[row] = rows[row];
+    }
+    xem_original_text_draw_glyph(0xFF, 0xFF, image, stride, plane);
+    for (row = 0; row < 11; row++) {
+        text_special_glyph_rows[row] = saved[row];
+    }
+}
+
 s32 text_get_glyph_width(u16 first, u16 second) {
     const XemLocaleGlyph *glyph = xem_locale_glyph(first, second);
+    s32 columns;
 
     if (glyph != NULL) {
         return glyph->wide ? 3 : 2;
+    }
+    if (xem_japanese_glyph(first, second, &columns) != NULL) {
+        return columns;
     }
     return xem_original_text_get_glyph_width(first, second);
 }
@@ -376,7 +488,12 @@ void text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     s32 from;
     s32 to;
     s32 row;
+    const u16 *japanese = glyph == NULL ? xem_japanese_glyph((u16)first, second, &from) : NULL;
 
+    if (japanese != NULL) {
+        xem_draw_rows(japanese, image, stride, plane);
+        return;
+    }
     if (glyph == NULL || font == NULL) {
         xem_original_text_draw_glyph(first, second, image, stride, plane);
         return;

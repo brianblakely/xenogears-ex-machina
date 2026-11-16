@@ -55,6 +55,15 @@ Keep both discs together in `discs` so the app can find Disc 2 when the game
 asks for it. If it needs help finding a disc, its message will tell you;
 use **Import disc…** to supply the requested image.
 
+To play with the Japanese release's text, movies and voices, also put your
+own Japanese disc images (Disc 1 `SLPS-01160` and Disc 2 `SLPS-01161`, raw
+BIN or CHD images that include the audio and movies) beside the North
+American ones; the app moves them into `discs` with the others. The game still runs from the North American discs; the
+Japanese discs only supply their text and media, and the Japanese options
+in **Settings → Gameplay** appear only when they are there. This works in
+the desktop app; the browser and Android versions don't take Japanese discs
+yet.
+
 On Steam Deck or another SteamOS device, do the setup in Desktop Mode. Add
 the AppImage to Steam as a non-Steam game, then return to Gaming Mode and
 launch it from your library. The release page has the full setup steps.
@@ -403,6 +412,16 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   reworked scenes, new pictures) are not part of it, so a few lines that
   depend on them, and the save titles, keep the original wording. Names you
   have changed stay as you set them.
+  **日本語** (with the Japanese discs, above) is the Japanese release's own
+  text and lettering, read from your Japanese discs. The menus' command
+  words, the battle screen's words and the save titles stay in English, as
+  they are pictures, and names you type stay in English letters. The few
+  lines with no Japanese counterpart, mostly in the developers' test rooms,
+  stay in English.
+- **Language — Movies and voices** (with the Japanese discs only): **English**,
+  the North American release's dubbed anime movies and battle voices, or
+  **日本語**, the Japanese release's. The change takes effect from the next
+  movie or battle the game loads.
 - **Random battles — Not while platforming:** the default. Turns off random
   encounters in the selected jumping areas of Blackmoon Forest, the
   Aveh–Kislev border mountains and Babel Tower. Choose **Original** for the

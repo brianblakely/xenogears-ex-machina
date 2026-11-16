@@ -48,7 +48,12 @@ impl StateIdentity {
         if state.disc != self.disc {
             parts.push(format!("the state's disc is {:?}, this session's is {:?}", state.disc, self.disc));
         }
-        if state.packages != self.packages {
+        // A state from a session without the Japanese release's text and
+        // media holds none of them, and restores in one with them
+        // (`crate::locale::japanese_package`).
+        let ours: Vec<&String> = self.packages.iter()
+            .filter(|p| !p.starts_with(crate::locale::JAPANESE_PACKAGE) || state.packages.contains(p)).collect();
+        if state.packages.iter().collect::<Vec<_>>() != ours {
             parts.push(format!("the state's packages are {:?}, this session's are {:?}", state.packages, self.packages));
         }
         (!parts.is_empty()).then(|| parts.join("; "))

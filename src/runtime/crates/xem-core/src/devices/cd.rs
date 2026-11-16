@@ -257,8 +257,46 @@ pub struct DeliveredSector {
     pub lba: u32,
 }
 
+/// The Japanese release's movies and voices (`crate::japanese`, docs/runtime.md,
+/// Japanese): the Japanese discs, and for each North American disc the files
+/// the drive gives from them. While the game's index (in RAM) gives the
+/// Japanese files (`active`, which the session sets from it between frames,
+/// `Session::set_voices`), a read of their sectors reads the Japanese
+/// disc's: a North American file's own sectors where the Japanese file fits
+/// in them, else sectors after the disc's end. The host's; never in a snapshot.
+pub struct JapaneseMedia {
+    discs: Vec<(u8, Box<dyn SectorSource>)>,
+    media: [Vec<crate::japanese::Substitution>; 2],
+    active: bool,
+}
+
+impl JapaneseMedia {
+    pub fn new(discs: Vec<(u8, Box<dyn SectorSource>)>, media: [Vec<crate::japanese::Substitution>; 2]) -> Self {
+        JapaneseMedia { discs, media, active: false }
+    }
+
+    /// The Japanese disc and sector a read of `lba` of disc `disc` gives.
+    fn sector(&self, disc: u8, lba: u32) -> Option<(usize, u32)> {
+        if !self.active {
+            return None;
+        }
+        let file = self.media.get(usize::from(disc).checked_sub(1)?)?.iter()
+            .find(|s| (s.japanese.lba..s.japanese.lba + s.sectors).contains(&lba))?;
+        let source = self.discs.iter().position(|(number, _)| *number == file.disc)?;
+        Some((source, file.lba + (lba - file.japanese.lba)))
+    }
+
+    /// The first sector after those disc `disc`'s Japanese files take.
+    fn end(&self, disc: u8) -> u32 {
+        usize::from(disc).checked_sub(1).and_then(|n| self.media.get(n))
+            .map_or(0, |media| media.iter().map(|s| s.japanese.lba + s.sectors).max().unwrap_or(0))
+    }
+}
+
 /// The drive.
 pub struct Cd {
+    /// The Japanese release's movies and voices, when the host gave them.
+    japanese: Option<JapaneseMedia>,
     disc: Option<Box<dyn SectorSource>>,
     /// The number of the disc in the drive (0: none, or a disc without one).
     inserted: u8,
@@ -308,6 +346,7 @@ pub struct Cd {
 impl Default for Cd {
     fn default() -> Self {
         Cd {
+            japanese: None,
             disc: None,
             inserted: 0,
             shelf: Vec::new(),
@@ -344,6 +383,7 @@ impl Cd {
     /// the mix as at power-on) with its discs, the lid as it is.
     pub(crate) fn power_on(&mut self) {
         *self = Cd {
+            japanese: self.japanese.take(),
             disc: self.disc.take(),
             inserted: self.inserted,
             shelf: std::mem::take(&mut self.shelf),
@@ -370,6 +410,7 @@ impl Cd {
         state.shelf = discs;
         state.sector_log = self.sector_log.take();
         state.fast = self.fast;
+        state.japanese = self.japanese.take();
         *self = state;
         if let Some(number) = self.wanted.filter(|&number| self.holds(number)) {
             self.change(number);
@@ -423,6 +464,32 @@ impl Cd {
             }
         }
         Ok(None)
+    }
+
+    /// Give the drive the Japanese release's movies and voices.
+    pub fn set_japanese(&mut self, media: JapaneseMedia) {
+        self.japanese = Some(media);
+    }
+
+    /// The files disc `disc` gives from the Japanese discs (none without them).
+    pub fn japanese_media(&self, disc: u8) -> &[crate::japanese::Substitution] {
+        self.japanese.as_ref().and_then(|j| j.media.get(usize::from(disc).checked_sub(1)?)).map_or(&[], Vec::as_slice)
+    }
+
+    /// Whether the drive reads the Japanese files where the game's index gives them.
+    pub fn japanese_active(&self) -> bool {
+        self.japanese.as_ref().is_some_and(|j| j.active)
+    }
+
+    pub fn set_japanese_active(&mut self, active: bool) {
+        if let Some(japanese) = self.japanese.as_mut() {
+            japanese.active = active;
+        }
+    }
+
+    /// Whether the drive neither reads nor seeks nor has a Setloc waiting.
+    pub fn idle(&self) -> bool {
+        self.drive == Drive::Idle && self.target.is_none() && !self.events.iter().any(|(_, _, e)| matches!(e, Event::Sector | Event::SeekDone))
     }
 
     /// Put disc `number` (0 for a disc without one) in the drive, the lid
@@ -828,14 +895,28 @@ impl Cd {
             self.drive = Drive::Idle;
             return;
         };
-        if self.position >= disc.sector_count() {
+        let japanese = self.japanese.as_ref().and_then(|j| j.sector(self.inserted, self.position));
+        let end = self.japanese.as_ref().filter(|j| j.active).map_or(0, |j| j.end(self.inserted));
+        if self.position >= disc.sector_count().max(end) && japanese.is_none() {
             self.drive = Drive::Idle;
             let s = self.status(now);
             self.push_response(Response { intr: intr::DATA_END, bytes: vec![s], sector: None }, raised);
             return;
         }
         let mut raw = Box::new([0u8; SECTOR_SIZE]);
-        match disc.read_sector(self.position, &mut raw) {
+        let read = match japanese {
+            Some((source, lba)) => {
+                let source = &mut self.japanese.as_mut().expect("the Japanese discs").discs[source].1;
+                let read = source.read_sector(lba, &mut raw);
+                // Its header names the sector the drive reads.
+                let at = self.position + 150;
+                raw[12..15].copy_from_slice(&[bcd(at / 4500), bcd(at / 75 % 60), bcd(at % 75)]);
+                read
+            }
+            None if self.position >= disc.sector_count() => Err(DiscError::OutOfRange { lba: self.position, count: 1, sector_count: disc.sector_count() }),
+            None => disc.read_sector(self.position, &mut raw),
+        };
+        match read {
             Ok(()) => {}
             Err(DiscError::NotReady) => {
                 // A browser still fetching the image: the sector stays due now
@@ -1081,7 +1162,9 @@ impl Device for Cd {
         let log = self.sector_log.take();
         let xa_sectors = self.xa_sectors;
         let fast = self.fast;
+        let japanese = self.japanese.take();
         *self = Cd::default();
+        self.japanese = japanese;
         self.disc = disc;
         self.sector_log = log;
         self.xa_sectors = xa_sectors;

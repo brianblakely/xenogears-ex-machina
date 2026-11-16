@@ -58,10 +58,16 @@ pub enum Language {
     PerfectWorks,
     BrazilianPortuguese,
     French,
+    /// The Japanese release's own text, read from the player's Japanese
+    /// discs (`crate::japanese`): installed only beside them.
+    Japanese,
 }
 
 impl Language {
-    pub const ALL: [Language; 4] = [Language::English, Language::PerfectWorks, Language::BrazilianPortuguese, Language::French];
+    pub const ALL: [Language; 5] =
+        [Language::English, Language::PerfectWorks, Language::BrazilianPortuguese, Language::French, Language::Japanese];
+    /// The languages shipped as translations (`locale/<code>/`).
+    const SHIPPED: [Language; 3] = [Language::PerfectWorks, Language::BrazilianPortuguese, Language::French];
 
     /// Its BCP 47 tag, as commands and `locale/` name it.
     pub fn code(self) -> &'static str {
@@ -70,6 +76,7 @@ impl Language {
             Language::PerfectWorks => "en-x-pw",
             Language::BrazilianPortuguese => "pt-BR",
             Language::French => "fr",
+            Language::Japanese => "ja",
         }
     }
 
@@ -84,13 +91,14 @@ impl Language {
             Language::PerfectWorks => "English (Perfect Works)",
             Language::BrazilianPortuguese => "Português (Brasil)",
             Language::French => "Français",
+            Language::Japanese => "日本語",
         }
     }
 
     /// The translations' files (none for the original's English).
     fn sources(self) -> &'static [(&'static str, &'static str)] {
         match self {
-            Language::English => &[],
+            Language::English | Language::Japanese => &[],
             Language::PerfectWorks => &EN_X_PW,
             Language::BrazilianPortuguese => &PT_BR,
             Language::French => &FR,
@@ -99,7 +107,7 @@ impl Language {
 
     fn glyphs(self) -> &'static str {
         match self {
-            Language::English => "",
+            Language::English | Language::Japanese => "",
             Language::PerfectWorks => include_str!("../locale/en-x-pw/glyphs.txt"),
             Language::BrazilianPortuguese => include_str!("../locale/pt-BR/glyphs.txt"),
             Language::French => include_str!("../locale/fr/glyphs.txt"),
@@ -457,10 +465,11 @@ pub fn added_codes(glyphs: &[Glyph]) -> Added {
 pub fn build() -> Result<Image, String> {
     let glyphs = glyphs()?;
     let added = added_codes(&glyphs);
-    let languages: Vec<(Language, Translations)> = Language::ALL[1..]
+    let languages: Vec<(Language, Translations)> = Language::SHIPPED
         .iter()
         .map(|language| parse(language.sources(), &added).map(|t| (*language, t)).map_err(|e| format!("{}: {e}", language.code())))
         .collect::<Result<_, _>>()?;
+
     let address = |offset: usize| BASE + offset as u32;
     let glyphs_at = HEADER_BYTES + LANGUAGE_BYTES * languages.len();
     let mut records = glyphs_at + GLYPH_BYTES * glyphs.len();
@@ -510,6 +519,60 @@ pub static IMAGE: LazyLock<Result<Image, String>> = LazyLock::new(build);
 /// module) gets none, and the game keeps its original text.
 pub fn install(memory: &mut dyn GameMemory) -> Result<Option<String>, String> {
     let image = IMAGE.as_ref().map_err(Clone::clone)?;
+    install_image(memory, image)
+}
+
+/// The state identity's name for the installed Japanese text: a state
+/// without it restores in a session with it (`snapshot::StateIdentity`).
+pub const JAPANESE_PACKAGE: &str = "japanese ";
+
+/// The Japanese text and font (`crate::japanese::read`) after the shipped
+/// languages' image ([`install`]), which stays as it is: at its end a
+/// record of the Japanese font's address and length, then the language's
+/// records as a shipped language's (its texts ascending by hash, its single
+/// entries ascending by name), the font and the texts; the header's word at
+/// +20 gives the record's address, and the language's number is the shipped
+/// languages' count + 1 ([`Language::Japanese`]). Its digest names it in
+/// states' identities ([`JAPANESE_PACKAGE`]).
+pub fn install_japanese(memory: &mut dyn GameMemory, japanese: &crate::japanese::Japanese) -> Result<Option<String>, String> {
+    let image = IMAGE.as_ref().map_err(Clone::clone)?;
+    let start = image.bytes.len().next_multiple_of(16);
+    let address = |offset: usize| BASE + (start + offset) as u32;
+    let named = [&japanese.translations.texts, &japanese.translations.entries];
+    let mut records = JAPANESE_BYTES;
+    let font = records + TEXT_BYTES * named.iter().map(|n| n.len()).sum::<usize>();
+    let mut text = (font + japanese.font.len()).next_multiple_of(4);
+    let mut bytes = vec![0u8; text];
+    let put = |bytes: &mut Vec<u8>, at: usize, value: u32| bytes[at..at + 4].copy_from_slice(&value.to_le_bytes());
+    put(&mut bytes, 0, address(font));
+    put(&mut bytes, 4, japanese.font.len() as u32);
+    bytes[font..font + japanese.font.len()].copy_from_slice(&japanese.font);
+    for (field, named) in [(8, named[0]), (16, named[1])] {
+        put(&mut bytes, field, address(records));
+        put(&mut bytes, field + 4, named.len() as u32);
+        for (name, encoded) in named {
+            put(&mut bytes, records, *name as u32);
+            put(&mut bytes, records + 4, (*name >> 32) as u32);
+            put(&mut bytes, records + 8, address(text));
+            bytes[records + 12] = encoded.columns.min(255) as u8;
+            bytes[records + 13] = encoded.rows.min(255) as u8;
+            records += TEXT_BYTES;
+            bytes.extend_from_slice(&encoded.bytes);
+            text += encoded.bytes.len();
+        }
+    }
+    let Some(_) = install_image(memory, image)? else { return Ok(None) };
+    memory.write(BASE + start as u32, &bytes).map_err(|e| e.to_string())?;
+    memory.write_u32(BASE + 20, address(0)).map_err(|e| e.to_string())?;
+    let digest: String = crate::snapshot::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect();
+    Ok(Some(format!("{JAPANESE_PACKAGE}{digest}")))
+}
+
+/// The Japanese text's record: the font's address and length, then a
+/// language's addresses and counts (src/port/locale.c XemLocaleJapanese).
+const JAPANESE_BYTES: usize = 24;
+
+fn install_image(memory: &mut dyn GameMemory, image: &Image) -> Result<Option<String>, String> {
     match memory.write(BASE, &image.bytes) {
         Ok(()) => Ok(Some(image.digest.clone())),
         Err(OutOfBounds { .. }) => Ok(None),
@@ -517,9 +580,35 @@ pub fn install(memory: &mut dyn GameMemory) -> Result<Option<String>, String> {
 }
 
 /// Make `language` the one the port uses from the next text a window takes.
+///
+/// While Japanese is active the font's two-byte threshold
+/// (`text_font_two_byte_threshold`) is the port's first lead byte for the
+/// Japanese glyphs (`crate::japanese::THRESHOLD`), else the installed
+/// font's own: set here, between frames, once the game has installed its
+/// font (`text_font`).
 pub fn activate(memory: &mut dyn GameMemory, language: Language) -> Result<(), OutOfBounds> {
-    memory.write_u32(BASE + 4, language.number())
+    memory.write_u32(BASE + 4, language.number())?;
+    let font = memory.read_u32(TEXT_FONT)?;
+    if font == 0 {
+        return Ok(());
+    }
+    let japanese = language == Language::Japanese && memory.read_u32(BASE + 20)? != 0;
+    let threshold = if japanese { u32::from(crate::japanese::THRESHOLD) } else { memory.read_u32(font + 4)? & 0xFFFF };
+    if memory.read_u32(TEXT_FONT_TWO_BYTE_THRESHOLD)? != threshold {
+        memory.write_u32(TEXT_FONT_TWO_BYTE_THRESHOLD, threshold)?;
+    }
+    Ok(())
 }
+
+/// Whether the installed translations hold the Japanese text.
+pub fn japanese_installed(memory: &mut dyn GameMemory) -> bool {
+    memory.read_u32(BASE).is_ok_and(|magic| magic == MAGIC) && memory.read_u32(BASE + 20).is_ok_and(|record| record != 0)
+}
+
+/// The game's font block and its two-byte threshold (resident
+/// text_windows_and_pads.c: text_font, text_font_two_byte_threshold).
+const TEXT_FONT: u32 = 0x8005_936C;
+const TEXT_FONT_TWO_BYTE_THRESHOLD: u32 = 0x8005_934C;
 
 /// The state identity's name for the installed translations.
 pub fn package(digest: &str) -> String {
