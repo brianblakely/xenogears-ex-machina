@@ -363,6 +363,16 @@ impl SettingsUi {
 
     /// Whether this host offers first-person inspection (the Controls
     /// section lists its keys and buttons).
+    /// The Japanese release's discs are beside the game's: the panel offers
+    /// Japanese text and the movies' and voices' language.
+    pub fn set_japanese_offered(&self, offered: bool, settings: &Settings) {
+        if self.panel.get_japanese_offered() != offered {
+            self.panel.set_japanese_offered(offered);
+            set_languages(&self.panel);
+            show(&self.panel, settings);
+        }
+    }
+
     pub fn set_first_person(&self, offered: bool) {
         self.panel.set_first_person(offered);
     }
@@ -538,6 +548,16 @@ fn diorama_note(graphics: &Graphics) -> &'static str {
     }
 }
 
+/// The game text languages the panel lists: Japanese only beside the
+/// Japanese discs (`SettingsPanel::japanese_offered`).
+fn set_languages(panel: &SettingsPanel) {
+    let offered = panel.get_japanese_offered();
+    let names: Vec<slint::SharedString> = Language::ALL.iter()
+        .filter(|l| offered || **l != Language::Japanese)
+        .map(|l| slint::SharedString::from(l.name())).collect();
+    panel.set_languages(Rc::new(slint::VecModel::from(names)).into());
+}
+
 fn index_of<T: PartialEq>(options: &[T], value: &T) -> i32 {
     options
         .iter()
@@ -608,7 +628,11 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
     panel.set_movie_skip(settings.movie_skip);
     panel.set_fast_disc(settings.fast_disc);
-    panel.set_language(index_of(&Language::ALL, &settings.language));
+    // Japanese (the last language) only beside the Japanese discs; without
+    // them the game shows its English.
+    let language = index_of(&Language::ALL, &settings.language);
+    panel.set_language(if panel.get_japanese_offered() || settings.language != Language::Japanese { language } else { 0 });
+    panel.set_voices(i32::from(settings.voices == xem_settings::Voices::Japanese));
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
     panel.set_assist_pointer(match assisted.pointer {
@@ -714,9 +738,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         ))
         .into(),
     );
-    panel.set_languages(
-        Rc::new(slint::VecModel::from(Language::ALL.iter().map(|l| slint::SharedString::from(l.name())).collect::<Vec<_>>())).into(),
-    );
+    set_languages(panel);
     show(panel, settings.borrow().settings());
     let weak = panel.as_weak();
     settings.borrow_mut().subscribe(move |ack| {
@@ -802,6 +824,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
                 "fast-disc" => Some(SettingChange::FastDisc(value != 0)),
                 "language" => usize::try_from(value).ok().and_then(|i| Language::ALL.get(i)).map(|language| SettingChange::Language(*language)),
+                "voices" => xem_settings::Voices::ALL.get(usize::try_from(value).unwrap_or(0)).map(|voices| SettingChange::Voices(*voices)),
                 _ => None,
             })
         }

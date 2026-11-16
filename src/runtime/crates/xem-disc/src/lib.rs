@@ -50,12 +50,12 @@ pub mod source;
 pub use cache::ByteLru;
 pub use chd::ChdSource;
 pub use cue::{CueTrack, parse_cue};
-pub use identify::{Identification, KnownDisc, Verification, identify, state_identity, verify};
+pub use identify::{Identification, KnownDisc, Verification, identify, japanese_disc, state_identity, verify};
 pub use index::{Index, Record, game_index};
 pub use read_at::{FileReadAt, PrefetchedFile, ReadAt};
 pub use sector::{Form, SECTOR_SIZE, Sector};
 pub use source::{
-    BinSource, DEFAULT_CACHE_BYTES, Error, MemorySource, Result, SectorSource, discs_beside,
+    BinSource, DEFAULT_CACHE_BYTES, Error, MemorySource, Result, SectorSource, discs_beside, japanese_discs_beside,
     open_path, open_reader,
 };
 

@@ -42,16 +42,48 @@ pub fn boot(disc: &Path, options: &BootOptions) -> Result<(Session<NativeModule>
     let known = xem_disc::identify(source.as_mut())?.disc.ok_or("not a known Xenogears disc")?;
     xem_disc::verify(source.as_mut(), known)?;
     let (mut session, identity) = boot_source(source, options)?;
+    let mut us: [Option<std::path::PathBuf>; 2] = [None, None];
+    us[usize::from(known.number() - 1)] = Some(disc.to_path_buf());
     for (other, path, source) in xem_disc::discs_beside(disc, known) {
         match source {
             Ok(source) => {
                 eprintln!("disc {} beside it: {}", other.number(), path.display());
                 session.runtime.services().add_disc(other.number(), source);
+                us[usize::from(other.number() - 1)] = Some(path);
             }
             Err(error) => eprintln!("disc {} beside it not used: {}: {error}", other.number(), path.display()),
         }
     }
+    install_japanese(&mut session.runtime, disc, &us);
     Ok((session, identity))
+}
+
+/// The Japanese release's text, movies and voices from its discs beside
+/// the North American ones (`us`, by number), when there are any
+/// (`xem_core::japanese`): a disc that does not read leaves the game as it
+/// is, saying why.
+fn install_japanese(runtime: &mut Runtime<NativeModule>, disc: &Path, us: &[Option<PathBuf>; 2]) {
+    let mut japanese = xem_disc::japanese_discs_beside(disc);
+    if japanese.is_empty() {
+        return;
+    }
+    for (number, path, _) in &japanese {
+        eprintln!("Japanese disc {number} beside it: {}", path.display());
+    }
+    let mut us: Vec<Option<Box<dyn SectorSource>>> = us.iter().map(|p| p.as_ref().and_then(|p| xem_disc::open_path(p).ok())).collect();
+    let mut jp: [Option<&mut dyn SectorSource>; 2] = [None, None];
+    for (number, _, source) in japanese.iter_mut() {
+        jp[usize::from(*number - 1)] = Some(source.as_mut());
+    }
+    let [us1, us2] = &mut us[..] else { unreachable!("two discs") };
+    let read = xem_core::japanese::read([us1.as_deref_mut().map(|s| s as _), us2.as_deref_mut().map(|s| s as _)], jp);
+    let installed = read.and_then(|found| {
+        let discs = japanese.into_iter().map(|(number, _, source)| (number, source)).collect();
+        runtime.install_japanese(&found, discs)
+    });
+    if let Err(error) = installed {
+        eprintln!("Japanese discs not used: {error}");
+    }
 }
 
 /// [`boot`] from an opened disc image its host has verified

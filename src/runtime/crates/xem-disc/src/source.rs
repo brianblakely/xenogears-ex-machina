@@ -306,6 +306,34 @@ pub fn discs_beside(path: &Path, disc: crate::KnownDisc) -> Vec<(crate::KnownDis
     found
 }
 
+/// The Japanese release's discs in `path`'s directory ([`open_path`]'s
+/// kinds, by name order): the first image of each of its two discs
+/// ([`japanese_disc`](crate::identify::japanese_disc)), with its number and
+/// path. Their XA audio and movies need raw sectors, as the North American
+/// discs' do; no dump is required of them beyond their boot programs.
+pub fn japanese_discs_beside(path: &Path) -> Vec<(u8, std::path::PathBuf, Box<dyn SectorSource>)> {
+    let directory = path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let Ok(entries) = std::fs::read_dir(directory) else { return Vec::new() };
+    let mut candidates: Vec<std::path::PathBuf> = entries
+        .filter_map(|entry| Some(entry.ok()?.path()))
+        .filter(|candidate| {
+            candidate.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| {
+                ["chd", "cue", "iso", "bin"].iter().any(|kind| ext.eq_ignore_ascii_case(kind))
+            })
+        })
+        .collect();
+    candidates.sort();
+    let mut found: Vec<(u8, std::path::PathBuf, Box<dyn SectorSource>)> = Vec::new();
+    for candidate in candidates {
+        let Ok(mut source) = open_path(&candidate) else { continue };
+        let Some(number) = crate::identify(source.as_mut()).ok().and_then(|id| crate::identify::japanese_disc(&id)) else { continue };
+        if found.iter().all(|(known, _, _)| *known != number) {
+            found.push((number, candidate, source));
+        }
+    }
+    found
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;

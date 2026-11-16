@@ -9166,12 +9166,13 @@ other hosts were not run.
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
 game's own text: **English**, the original's, by default, **English
-(Perfect Works)**, **Português (Brasil)** or **Français**. It is a setting
+(Perfect Works)**, **Português (Brasil)**, **Français** or, beside the
+Japanese release's discs, **日本語** (Japanese, below). It is a setting
 (`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
-`"BrazilianPortuguese"` or `"French"`), which the hosts give the session
+`"BrazilianPortuguese"`, `"French"` or `"Japanese"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "ja"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -9477,6 +9478,137 @@ maps 4, 27, 131, 288 twice, 326, 359 and 482: the same end, story value
 and messages in each translation as in English) and
 `the_opening_chapter_reaches_feis_room_in_every_language` (New Game
 to Fei's room: the same maps, battle and story value).
+
+### Japanese
+
+The Japanese release's discs (SLPS-01160 and SLPS-01161, told by their boot
+programs' SHA-256, `xem_disc::japanese_disc`) beside the North American
+ones give the game the Japanese release's own text, movies and battle
+voices: Settings → Gameplay → Language then lists **日本語** for the game
+text and shows **Movies and voices** (English or 日本語,
+`xem_settings::Voices`, saved as `"English"` or `"Japanese"`), which the
+panel shows only while they are installed (`Runtime::japanese`). Nothing of
+them is shipped: the runtime reads them from the player's discs at boot
+(`xem_core::japanese::read`, about 5 s natively for both pairs of discs),
+as the North American text is read from theirs. The game always runs from
+the North American discs. Native boot (`xem_game::boot`) takes the first
+image of each Japanese disc in the boot disc's directory
+(`xem_disc::japanese_discs_beside`); no dump is required of them beyond
+their boot programs, but raw sectors are, for the XA audio and movies. The
+browser and Android hosts do not import them yet.
+
+**The text.** Both releases draw their text through one renderer from text
+tables of the same files, so the tables `tools/translations.py` reads
+(`tools/analysis/text_control.py` `text_tables`) are read from both
+releases' discs alike and each North American entry is paired with the
+Japanese entry the game shows in its place: the same entry of the same
+table, and for a field map's messages the entry a global alignment of the
+two tables puts beside it. The North American text names a party member
+speaking by spelling the name on its first line, the Japanese text by
+inserting it (`0F 05 n`); the alignment pairs entries as they come, gaining
+where both name the same speaker and losing where they name two, so a map
+the localisation added messages to (disc 1's maps 88, 134, 209, 359 ...)
+pairs each with its own. A table outside the field whose entries differ in
+number keeps its English (one enemy table, 60 entries against 63). Of
+50 427 North American table entries on both discs 49 336 are paired; the
+rest, mostly the developers' test rooms' and maps with no Japanese messages,
+keep their English. The pairs become a language of `xem_core::locale` as a
+shipped translation's lines do: a North American text's Japanese reading
+wherever a window takes it (the reading most of its places give, 17 640
+texts) and the entries read otherwise translated alone (1 375), and the
+party's and Gears' names by their slots from the Japanese game data. The
+port's handling is the shipped languages' (Languages, above): a window's
+text pointer goes to the Japanese reading, a field window grows to its
+needs (or its Japanese table's own columns and rows), and the game's
+bytes stay as they are.
+
+**Its letters.** The Japanese text keeps its own font's codes. The
+Japanese font (directory (0, 1) file 6 of a Japanese disc: 232 one-byte
+glyphs from 0x10, of which 63 narrow, and two-byte pages 0xF8-0xFE, page
+0xF8's first 21 narrow) is installed beside the text, and the text's
+glyphs are carried in two-byte codes of the port's own: one-byte glyph `c`
+as `F0 c`, two-byte glyph `L s` as `(F1 + L - F8) s`. The game's own font
+stays installed and keeps its codes, so the numbers, the names and the
+name entry's letters the game builds from its character table are drawn
+as before. While Japanese is the active language the font's two-byte
+threshold (`text_font_two_byte_threshold`, 0x8005934C) is 0xF0, so that
+the window walks the port's codes as two-byte glyphs, and the font's own
+otherwise; `locale::activate` sets it before every frame once the game has
+installed its font. No original text reaches one-byte codes 0xF0-0xFD but
+the developers' Japanese placeholders, whose untranslated texts are given
+as `F8 c` (the game's own glyph `c`). `src/port/locale.c` draws `F0`-`F7`
+from the Japanese font, `F8 c` from the game's one-byte glyph and (while
+Japanese is active, the threshold lowered) the game's own two-byte page
+0xFE, each through the original's drawing of the special glyph 0xFFFF as
+the added letters are, and gives each its width by the Japanese font's
+narrow counts. A window still revealing a Japanese text when the player
+changes language goes on with it, its glyphs read as one-byte codes until
+it closes. What is not text of the tables stays the original's: the
+menus' command labels and stat words (pictures, which the shipped
+languages draw anew), the battle screen's words and the save titles.
+
+**In game memory.** The shipped languages' image stays as it is; the
+Japanese text follows it: a record of the Japanese font's address and
+length and of the language's records' addresses and counts, the records
+(as a shipped language's), the font and the texts. The header's word at
++20, reserved before, gives the record's address, and the language's
+number is the shipped languages' count + 1 (`locale::install_japanese`).
+Its digest is a package of the state identity (`"japanese <sha256>"`): a
+state saved without the Japanese discs restores beside them, which hold
+all it names, but not the other way (`StateIdentity::difference`).
+
+**Movies and voices.** The anime movies (directory (0x18, 1)) are the same
+frames on both releases, the dubbed ones with other XA sound (of disc 1's
+17, 8 differ in sound; the opening's also in 177 frames of its credits),
+and directory (0x2C, 1) holds the battle voices: the on-foot fighters'
+archives and the Gears' sound banks (`seds`, `wds `), 66 of its 91 files
+differing. Each North American movie is matched with the Japanese movie of
+the same first 48 video sectors and length (within 2%) on either Japanese
+disc (disc 2's numbering differs: 7 of its 12 movies have a Japanese
+counterpart), and each battle voice file with its Japanese disc's file of
+its number where they differ: 83 files of disc 1 and 73 of disc 2. The
+drive (`devices/cd.rs` `JapaneseMedia`) reads a Japanese file in place of
+the North American one's sectors where it fits in them, else at sectors
+after the disc's end, giving each sector the header of the sector it
+stands for. Which file the game reads is its file index's choice: with
+Japanese movies and voices chosen, before each frame and while the drive
+neither reads nor seeks and the game has no read under way
+(`cd_pending_read_count`, `cd_read_bytes_left`), the session writes the
+Japanese files' records over theirs in the game's index in RAM
+(`cd_file_index`, of the disc its directory table numbers), and the
+originals back when English is chosen; the drive reads the Japanese
+sectors exactly while the index holds the Japanese records, so a state
+restored either way reads the files its index gives (`Session::set_voices`).
+The game takes the change at its next load. The Japanese files' lengths
+change the game's loads, so the choice is recorded with the inputs
+(`voices {language: "en" | "ja"}`, `status` says `voices` and whether the
+Japanese discs are installed, `japanese`) and a replay takes the recorded
+one. The movies end on the same frames (map 25's movie 7 at its frame
+1059, map 23 next, as in English).
+
+Tests: `xem-core`'s `japanese` tests (a packed block, the port's codes and
+a text's columns and rows, a placeholder's glyphs, messages paired by
+their speakers, a Japanese file placed in the North American one's
+sectors or after the disc), `xem-settings`' voices test,
+`tests/test_port_locale.py`'s Japanese glyphs (widths by the Japanese
+font's narrow counts, each drawn through 0xFFFF from the Japanese font, the
+game's own glyph and two-byte page, the original's without Japanese
+active), and `xem-headless/tests/japanese.rs` (disc 1 with the Japanese
+discs beside it): field 12's opening message read from the Japanese text
+in its codes with the threshold lowered, and in RAM in English; map 25's
+movie with the Japanese release's sound through most of it, the same frames
+and map 23 after; the debug battle's attacks voiced otherwise; a state
+without the Japanese discs restoring beside them and not the other way; and
+the voices recorded and replayed to the recording's memory. The timed
+scenes and the opening chapter of Languages' tests run in Japanese too
+when the Japanese discs are beside disc 1.
+
+`xem-headless`'s `capture` example records such runs as a video with
+their sound (`cargo run --release -p xem-headless --example capture --
+DISC OUT.mp4 SCRIPT.json...`: each script a list of session commands and
+`{"capture": N}` or `{"press": [buttons], "then": N}` steps, the frames
+enlarged to 640x480 and the SPU's output muxed by ffmpeg), for reviewing
+the movies and voices by ear.
 
 ## Desktop host and settings panel
 

@@ -78,6 +78,20 @@ impl KnownDisc {
     }
 }
 
+/// The Japanese release's discs (SLPS-01160 and SLPS-01161), which the
+/// game never boots: beside the North American discs they give the
+/// Japanese text, movies and voices (docs/runtime.md, Japanese). Its disc
+/// `number` (1 or 2) by the SHA-256 of its boot program, None for any other.
+pub fn japanese_disc(identification: &Identification) -> Option<u8> {
+    [
+        (1, "0bd757d7fd70fef08e2d539d313e4dcc656d8efa5689a006a4655f64a54494e4"),
+        (2, "80a04c38ac283664fbf0337feaf9c23e918370c2529d5d548d69ef7476339603"),
+    ]
+    .into_iter()
+    .find(|(_, sha256)| hex32(sha256) == identification.sha256)
+    .map(|(number, _)| number)
+}
+
 /// What save states name the game by when it boots from a known disc: both
 /// discs hold one program (their boot programs differ only in the file index
 /// each embeds, which the game loads again from the disc it changes to), so

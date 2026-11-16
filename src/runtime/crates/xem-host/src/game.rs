@@ -376,6 +376,7 @@ impl Game {
                 self.session.set_movie_skip(settings.movie_skip);
                 self.session.set_fast_disc(settings.fast_disc);
                 self.session.set_language(settings.language);
+                self.session.set_voices(settings.voices == xem_settings::Voices::Japanese);
                 self.session.set_auto_advance(settings.auto_advance_dwell())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }

@@ -25,6 +25,13 @@ fn known(path: &Path) -> Option<crate::KnownDisc> {
     crate::identify(source.as_mut()).ok()?.disc
 }
 
+/// Whether first-run moves the image into `discs`: one of the game's discs,
+/// or of the Japanese release's, which give their text and media beside them.
+fn organized(path: &Path) -> bool {
+    let Ok(mut source) = crate::open_path(path) else { return false };
+    crate::identify(source.as_mut()).is_ok_and(|id| id.disc.is_some() || crate::identify::japanese_disc(&id).is_some())
+}
+
 fn companions(path: &Path) -> io::Result<Vec<PathBuf>> {
     let mut files = vec![path.to_path_buf()];
     if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("cue")) {
@@ -87,14 +94,15 @@ fn move_files(files: &BTreeSet<PathBuf>, destination: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// Create the installation directories, organize root-level discs, and choose
+/// Create the installation directories, organize root-level discs (the
+/// Japanese release's among them), and choose
 /// disc 1 when present (otherwise disc 2). Boot still performs the full image
 /// verification. Running again preserves existing discs, cards and states.
 pub fn prepare(root: &Path) -> io::Result<Option<PathBuf>> {
     for name in ["discs", "cards", "saves"] { fs::create_dir_all(root.join(name))?; }
     let mut files = BTreeSet::new();
     for path in candidates(root)? {
-        if !files.contains(&path) && known(&path).is_some() {
+        if !files.contains(&path) && organized(&path) {
             files.extend(companions(&path)?);
         }
     }

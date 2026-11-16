@@ -915,6 +915,11 @@ export component SettingsPanel inherits Window {
     // named in itself).
     in property <[string]> languages: ["English"];
     in-out property <int> language;
+    // The Japanese release's discs are beside the game's (docs/runtime.md,
+    // Japanese): the languages list Japanese, and the movies' and battle
+    // voices' language (xem_settings::Voices: 0 English, 1 Japanese) shows.
+    in property <bool> japanese-offered;
+    in-out property <int> voices;
     in-out property <bool> auto-advance;
     in-out property <int> auto-advance-dwell: 120;
     in-out property <bool> movie-skip;
@@ -965,7 +970,7 @@ export component SettingsPanel inherits Window {
     callback hide-idle-cursor-edited(bool);
     callback random-battles-edited(int);
     // A gameplay option by name (encounter-rate, text-speed, auto-advance,
-    // auto-advance-dwell, movie-skip, fast-disc, language) and value.
+    // auto-advance-dwell, movie-skip, fast-disc, language, voices) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, touch-opacity, solid, still) and value.
@@ -1948,6 +1953,11 @@ export component SettingsPanel inherits Window {
                                     label: "Game text";
                                     // Wide enough for the longest name ("English (Perfect Works)") in the box and in its list.
                                     Choice { accessible-label: "Game text language"; min-width: 204px; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
+                                }
+                                if root.japanese-offered: Divider { }
+                                if root.japanese-offered: Row {
+                                    label: "Movies and voices";
+                                    Segmented { accessible-label: "Movies and voices"; options: ["English", "日本語"]; current <=> root.voices; selected(index) => { root.gameplay-edited("voices", index); } }
                                 }
                             }
                             if root.selected-section == 6: Card {

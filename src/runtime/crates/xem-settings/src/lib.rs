@@ -281,6 +281,30 @@ pub struct Settings {
     /// The language of the game's menus, dialogue and battle text
     /// (`Session::set_language`): the original's English or a translation.
     pub language: Language,
+    /// The language of the anime movies and the battle voices
+    /// (`Session::set_voices`): the original's English, or the Japanese
+    /// release's from the player's Japanese discs (offered only beside them).
+    pub voices: Voices,
+}
+
+/// The movies' and voices' language.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Voices {
+    #[default]
+    English,
+    Japanese,
+}
+
+impl Voices {
+    pub const ALL: [Voices; 2] = [Voices::English, Voices::Japanese];
+
+    /// Its name in itself, as the settings list it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Voices::English => "English",
+            Voices::Japanese => "日本語",
+        }
+    }
 }
 
 impl Default for Settings {
@@ -312,6 +336,7 @@ impl Default for Settings {
             movie_skip: false,
             fast_disc: false,
             language: Language::English,
+            voices: Voices::English,
         }
     }
 }
@@ -359,6 +384,7 @@ pub enum SettingChange {
     MovieSkip(bool),
     FastDisc(bool),
     Language(Language),
+    Voices(Voices),
 }
 
 /// An applied and persisted change.
@@ -485,6 +511,7 @@ impl Settings {
             SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
             SettingChange::FastDisc(enabled) => next.fast_disc = *enabled,
             SettingChange::Language(language) => next.language = *language,
+            SettingChange::Voices(voices) => next.voices = *voices,
         }
         next.validate()?;
         Ok(next)
@@ -990,6 +1017,26 @@ mod tests {
         assert!(!Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.fast_disc);
         let (read, reset) = Settings::read(&serde_json::json!({"fast_disc": "Instant", "movie_skip": true})).unwrap();
         assert_eq!((read.fast_disc, read.movie_skip, reset), (false, true, vec!["fast_disc".to_string()]));
+    }
+
+    #[test]
+    fn movies_and_voices_default_to_english_and_japanese_persists() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().voices, Voices::English);
+        assert_eq!(service.apply(SettingChange::Voices(Voices::Japanese)).unwrap().settings.voices, Voices::Japanese);
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(saved["voices"], "Japanese");
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().voices, Voices::Japanese, "reopened");
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Voices": "English"}})).unwrap();
+        assert_eq!(ack["settings"]["voices"], "English");
+        // Saved before the setting existed, or with a value that is none of its own: English.
+        assert_eq!(Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.voices, Voices::English);
+        let (read, reset) = Settings::read(&serde_json::json!({"voices": "Klingon", "movie_skip": true})).unwrap();
+        assert_eq!((read.voices, read.movie_skip, reset), (Voices::English, true, vec!["voices".to_string()]));
+        let (read, _) = Settings::read(&serde_json::json!({"language": "Japanese"})).unwrap();
+        assert_eq!(read.language, Language::Japanese);
     }
 
     #[test]

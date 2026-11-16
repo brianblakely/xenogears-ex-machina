@@ -79,6 +79,15 @@ fn language_of(command: &Value) -> Option<crate::locale::Language> {
     crate::locale::Language::from_code(command.get("language")?.as_str()?)
 }
 
+/// The movies' and voices' language a `voices` command names: "en" or "ja".
+fn voices_of(command: &Value) -> Option<bool> {
+    match command.get("language")?.as_str()? {
+        "en" => Some(false),
+        "ja" => Some(true),
+        _ => None,
+    }
+}
+
 fn language_codes() -> String {
     crate::locale::Language::ALL.map(|l| format!("{:?}", l.code())).join(", ")
 }
@@ -520,6 +529,91 @@ impl<M: GameModule> Session<M> {
         let _ = crate::locale::activate(self.runtime.memory(), language);
     }
 
+    /// The movies' and the battle voices' language (docs/runtime.md,
+    /// Japanese): the Japanese release's, read from the player's Japanese
+    /// discs (`Runtime::install_japanese`), or the original's English.
+    /// Between frames, while the drive neither reads nor seeks and the game
+    /// has no read under way, the game's file index (in RAM) is given the
+    /// Japanese files' records, or their own back ([`Self::frame`]); the
+    /// game takes them at its next load. The Japanese files' lengths change
+    /// the game's loads and movies, so it is recorded with the inputs, and a
+    /// replay keeps the recorded one. Without the Japanese discs it changes
+    /// nothing.
+    pub fn set_voices(&mut self, japanese: bool) {
+        if self.replay_end.is_some() {
+            return;
+        }
+        self.apply_voices(japanese);
+    }
+
+    fn apply_voices(&mut self, japanese: bool) {
+        if self.runtime.services().japanese_media != japanese {
+            self.record_control(json!({"cmd":"voices","language":if japanese { "ja" } else { "en" }}));
+            self.runtime.services().japanese_media = japanese;
+        }
+    }
+
+    /// The game's index gives the files of the movies' and voices' language
+    /// ([`Self::set_voices`]), and the drive reads the Japanese discs where
+    /// it gives theirs: what the index (in RAM, `cd_file_index`, of the disc
+    /// its directory table numbers) holds decides what the drive reads, so
+    /// a restored state reads the files its index gives.
+    fn apply_media(&mut self) {
+        const CD_FILE_INDEX: u32 = 0x8004_FDF0;
+        const CD_DIRECTORY_TABLE: u32 = 0x8004_FDF4;
+        const CD_READ_BYTES_LEFT: u32 = 0x8004_FDF8;
+        const CD_PENDING_READ_COUNT: u32 = 0x8004_FDFC;
+        let wanted = self.runtime.services().japanese_media;
+        let memory = self.runtime.memory();
+        let (Ok(index), Ok(directories)) = (memory.read_u32(CD_FILE_INDEX), memory.read_u32(CD_DIRECTORY_TABLE)) else { return };
+        if index == 0 || directories == 0 {
+            return;
+        }
+        let disc = memory.read_u32(directories + 2 * xem_disc::index::DISC_NUMBER_ENTRY as u32).map_or(0, |n| n as u8);
+        let media = self.runtime.services().cd.japanese_media(disc).to_vec();
+        if media.is_empty() {
+            self.runtime.services().cd.set_japanese_active(false);
+            return;
+        }
+        let record = |r: xem_disc::Record| {
+            let mut bytes = [0u8; 7];
+            bytes[..3].copy_from_slice(&r.lba.to_le_bytes()[..3]);
+            bytes[3..].copy_from_slice(&r.size.to_le_bytes());
+            bytes
+        };
+        let memory = self.runtime.memory();
+        let mut held = (true, true);
+        for file in &media {
+            let mut bytes = [0u8; 7];
+            if memory.read(index + 7 * file.slot as u32, &mut bytes).is_err() {
+                return;
+            }
+            held.0 &= bytes == record(file.english);
+            held.1 &= bytes == record(file.japanese);
+        }
+        let japanese = match held {
+            (_, true) => true,
+            (true, false) => false,
+            // Neither: not the index of the disc it names.
+            (false, false) => {
+                self.runtime.services().cd.set_japanese_active(false);
+                return;
+            }
+        };
+        let reads = memory.read_u32(CD_PENDING_READ_COUNT).is_ok_and(|n| n == 0) && memory.read_u32(CD_READ_BYTES_LEFT).is_ok_and(|n| n == 0);
+        let idle = reads && self.runtime.services().cd.idle();
+        let memory = self.runtime.memory();
+        let japanese = if japanese != wanted && idle {
+            for file in &media {
+                let _ = memory.write(index + 7 * file.slot as u32, &record(if wanted { file.japanese } else { file.english }));
+            }
+            wanted
+        } else {
+            japanese
+        };
+        self.runtime.services().cd.set_japanese_active(japanese);
+    }
+
     /// Auto-advance dialogue (`crate::dialogue`): once a field dialogue's
     /// prompt has shown for `dwell` vertical blanks, and no choice shows or
     /// is about to open there, the session presses Confirm on pad 1 for one
@@ -751,6 +845,11 @@ impl<M: GameModule> Session<M> {
                 pad.buttons |= confirm;
             }
         }
+        self.apply_media();
+        // The font's threshold follows the language once the game installs
+        // its font (`locale::activate`).
+        let language = self.runtime.services().language;
+        let _ = crate::locale::activate(self.runtime.memory(), language);
         match self.runtime.run_frame() {
             Ok(report) => {
                 if !report.blocked {
@@ -995,6 +1094,7 @@ impl<M: GameModule> Session<M> {
         let fast_disc = self.runtime.services().cd.fast();
         let language = self.runtime.services().language.code();
         let locale_notice = self.runtime.services().locale_notice.clone();
+        let japanese = self.runtime.japanese();
         // What the dialogue options act on, as the game shows it: the
         // field dialogue's prompt (auto-advance counts toward its dwell
         // while it waits) and the movie whose loop reads the press.
@@ -1036,6 +1136,8 @@ impl<M: GameModule> Session<M> {
             "fast_disc": fast_disc,
             "language": language,
             "locale_notice": locale_notice,
+            "japanese": japanese,
+            "voices": if self.runtime.services().japanese_media { "ja" } else { "en" },
             "auto_advance": self.auto_advance,
             "auto_advance_waited": self.auto_waited,
             "dialogue": dialogue,
@@ -1124,6 +1226,11 @@ impl<M: GameModule> Session<M> {
             "fast_disc" => {
                 let enabled = command.get("enabled").and_then(Value::as_bool).ok_or("fast_disc needs enabled: true or false")?;
                 self.apply_fast_disc(enabled);
+                Ok(self.status())
+            }
+            "voices" => {
+                let japanese = voices_of(command).ok_or("voices needs language: \"en\" or \"ja\"")?;
+                self.apply_voices(japanese);
                 Ok(self.status())
             }
             "language" => {
@@ -1522,7 +1629,7 @@ impl<M: GameModule> Session<M> {
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "rewind_step", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
-                                        "half_encounters", "text_speed", "movie_skip", "fast_disc", "language", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
+                                        "half_encounters", "text_speed", "movie_skip", "fast_disc", "language", "voices", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1589,6 +1696,9 @@ impl<M: GameModule> Session<M> {
                 if language != crate::locale::Language::English {
                     self.record_control(json!({"cmd":"language","language":language.code()}));
                 }
+                if self.runtime.services().japanese_media {
+                    self.record_control(json!({"cmd":"voices","language":"ja"}));
+                }
                 if self.auto_advance != 0 {
                     self.record_control(json!({"cmd":"auto_advance","dwell":self.auto_advance}));
                 }
@@ -1644,6 +1754,7 @@ impl<M: GameModule> Session<M> {
                             Some("movie_skip") if control.get("enabled").is_some_and(Value::is_boolean) => {},
                             Some("fast_disc") if control.get("enabled").is_some_and(Value::is_boolean) => {},
                             Some("language") if language_of(control).is_some() => {},
+                            Some("voices") if voices_of(control).is_some() => {},
                             Some("auto_advance") if control.get("dwell").and_then(Value::as_u64).is_some_and(|d| d <= u64::from(MAX_AUTO_ADVANCE_DWELL)) => {},
                             Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
                                 && control.get("taken").is_none_or(Value::is_boolean) => {},
@@ -1693,6 +1804,7 @@ impl<M: GameModule> Session<M> {
                 self.runtime.services().cd.set_fast(false);
                 self.runtime.services().language = crate::locale::Language::English;
                 let _ = crate::locale::activate(self.runtime.memory(), crate::locale::Language::English);
+                self.runtime.services().japanese_media = false;
                 self.auto_advance = 0;
                 self.restart_auto_advance();
                 self.runtime.services().sound_mode = None;
@@ -1729,7 +1841,7 @@ impl<M: GameModule> Session<M> {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
                     if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "debug" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles"
-                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "fast_disc" | "language" | "auto_advance" | "music_advance") {
+                        | "half_encounters" | "card_present" | "text_speed" | "movie_skip" | "fast_disc" | "language" | "voices" | "auto_advance" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
