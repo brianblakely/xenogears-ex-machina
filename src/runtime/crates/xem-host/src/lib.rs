@@ -392,7 +392,7 @@ pub struct View {
     /// host hid its cursor over the game for it (`Settings::hides_cursor`).
     mouse_moved: Instant,
     cursor_hidden: bool,
-    /// The first gamepad's buttons as they are (before app chords take
+    /// The gamepads' buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the app's Toggle
     /// first-person view asked for since the last frame (its key, its chord,
     /// the deck's LOOK), the mouse motion that turns its view, when its
@@ -671,11 +671,11 @@ impl View {
         !self.operations.busy
     }
 
-    /// The first gamepad as it is: Back+Start toggles the panel, and the
+    /// The gamepads as they are: Back+Start toggles the panel, and the
     /// open panel takes the gamepad (`SettingsUi::gamepad`); what it holds
     /// as the panel closes stays the panel's until let go.
     fn poll_gamepad(&mut self) {
-        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
+        (self.pad, self.axes) = standard_pad(&self.gamepads);
         if self.app_input.pad(&self.pad) {
             self.set_panel_visible(!self.panel_visible());
         }
@@ -912,7 +912,8 @@ impl View {
         }
     }
 
-    /// A gamepad connected (again): it plays from the next frame.
+    /// A gamepad connected (again): it plays from the next frame, along
+    /// with any others.
     pub fn gamepad_added(&mut self, id: SDL_JoystickID) {
         // SAFETY: SDL opens the device it just announced.
         let pad = unsafe { SDL_OpenGamepad(id) };
@@ -921,14 +922,14 @@ impl View {
         }
     }
 
-    /// A gamepad disconnected: what it held lets go at once, and the next
-    /// gamepad (if any) plays.
+    /// A gamepad disconnected: what it held lets go at once, and the other
+    /// gamepads (if any) play on.
     pub fn gamepad_removed(&mut self, id: SDL_JoystickID) {
         self.gamepads.retain(|&pad| {
             // SAFETY: the pads are SDL's open gamepads, each closed once.
             if unsafe { SDL_GetGamepadID(pad) } == id { unsafe { SDL_CloseGamepad(pad); } false } else { true }
         });
-        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
+        (self.pad, self.axes) = standard_pad(&self.gamepads);
         self.app_input.pad(&self.pad);
     }
 
@@ -1046,7 +1047,7 @@ impl View {
         );
     }
 
-    /// The PS1 pad buttons the keyboard, mouse and the first gamepad hold,
+    /// The PS1 pad buttons the keyboard, mouse and the gamepads hold,
     /// as the pad's data halfword has them (bit 0 Select .. bit 15 Square),
     /// unless the settings panel has the input (`context.combo`: the
     /// battle's attack inputs have the buttons, `xem_settings::bindings`).
@@ -1128,7 +1129,7 @@ impl View {
             let density = self.ui.scale_factor();
             let turn = xem_settings::look::Turn {
                 arrows: ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].map(held),
-                stick: right_stick(self.gamepads.first().copied()),
+                stick: right_stick(&self.gamepads),
                 mouse,
                 touch: [dx / density, dy / density],
             };
@@ -1455,27 +1456,38 @@ fn scancode(code: &str) -> SDL_Scancode {
     unsafe { SDL_GetScancodeFromName(name.as_ptr()) }
 }
 
-/// The first gamepad's right stick, -1 to 1 (x to the right, y down).
-fn right_stick(pad: Option<*mut SDL_Gamepad>) -> [f32; 2] {
-    let Some(pad) = pad else { return [0.0; 2] };
-    [SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY].map(|axis| f32::from(unsafe { SDL_GetGamepadAxis(pad, axis) }) / 32768.0)
+/// The open gamepads' right stick, -1 to 1 (x to the right, y down).
+fn right_stick(pads: &[*mut SDL_Gamepad]) -> [f32; 2] {
+    stick(pads, [SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY])
 }
 
-/// The first gamepad's standard buttons and its axes (left X/Y, right X/Y).
-fn standard_pad(pad: Option<*mut SDL_Gamepad>) -> ([u8;16], [f32; 4]) {
+/// A stick of the open gamepads, -1 to 1: the one pushed furthest. Each
+/// reads its own whole stick, so the x and y are the same stick's.
+fn stick(pads: &[*mut SDL_Gamepad], axes: [SDL_GamepadAxis; 2]) -> [f32; 2] {
+    pads.iter()
+        .map(|&pad| axes.map(|axis| f32::from(unsafe { SDL_GetGamepadAxis(pad, axis) }) / 32768.0))
+        .fold([0.0; 2], |most, [x, y]| if x * x + y * y > most[0] * most[0] + most[1] * most[1] { [x, y] } else { most })
+}
+
+/// The open gamepads' standard buttons and their axes (left X/Y, right
+/// X/Y), all of them together: a handheld's built-in controller can come
+/// with other devices Android counts as gamepads (a second, silent pad, a
+/// D-pad of keys), and any of them is the one the player holds.
+fn standard_pad(pads: &[*mut SDL_Gamepad]) -> ([u8;16], [f32; 4]) {
     let mut pressed = [0;16];
-    let Some(pad) = pad else { return (pressed, [0.0; 4]) };
-    for (i,button) in [(0,SDL_GAMEPAD_BUTTON_SOUTH),(1,SDL_GAMEPAD_BUTTON_EAST),(2,SDL_GAMEPAD_BUTTON_WEST),(3,SDL_GAMEPAD_BUTTON_NORTH),
-        (4,SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),(5,SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),(8,SDL_GAMEPAD_BUTTON_BACK),(9,SDL_GAMEPAD_BUTTON_START),
-        (10,SDL_GAMEPAD_BUTTON_LEFT_STICK),(11,SDL_GAMEPAD_BUTTON_RIGHT_STICK),(12,SDL_GAMEPAD_BUTTON_DPAD_UP),(13,SDL_GAMEPAD_BUTTON_DPAD_DOWN),
-        (14,SDL_GAMEPAD_BUTTON_DPAD_LEFT),(15,SDL_GAMEPAD_BUTTON_DPAD_RIGHT)] {
-        pressed[i] = u8::from(unsafe { SDL_GetGamepadButton(pad,button) });
+    for &pad in pads {
+        for (i,button) in [(0,SDL_GAMEPAD_BUTTON_SOUTH),(1,SDL_GAMEPAD_BUTTON_EAST),(2,SDL_GAMEPAD_BUTTON_WEST),(3,SDL_GAMEPAD_BUTTON_NORTH),
+            (4,SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),(5,SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),(8,SDL_GAMEPAD_BUTTON_BACK),(9,SDL_GAMEPAD_BUTTON_START),
+            (10,SDL_GAMEPAD_BUTTON_LEFT_STICK),(11,SDL_GAMEPAD_BUTTON_RIGHT_STICK),(12,SDL_GAMEPAD_BUTTON_DPAD_UP),(13,SDL_GAMEPAD_BUTTON_DPAD_DOWN),
+            (14,SDL_GAMEPAD_BUTTON_DPAD_LEFT),(15,SDL_GAMEPAD_BUTTON_DPAD_RIGHT)] {
+            pressed[i] |= u8::from(unsafe { SDL_GetGamepadButton(pad,button) });
+        }
+        pressed[6] |= u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_LEFT_TRIGGER) } > 16000);
+        pressed[7] |= u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) } > 16000);
     }
-    pressed[6] = u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_LEFT_TRIGGER) } > 16000);
-    pressed[7] = u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) } > 16000);
-    let axes = [SDL_GAMEPAD_AXIS_LEFTX, SDL_GAMEPAD_AXIS_LEFTY, SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY]
-        .map(|axis| f32::from(unsafe { SDL_GetGamepadAxis(pad, axis) }) / 32768.0);
-    (pressed, axes)
+    let [lx, ly] = stick(pads, [SDL_GAMEPAD_AXIS_LEFTX, SDL_GAMEPAD_AXIS_LEFTY]);
+    let [rx, ry] = right_stick(pads);
+    (pressed, [lx, ly, rx, ry])
 }
 
 impl Drop for View {
@@ -1759,7 +1771,7 @@ mod tests {
             SDL_UpdateGamepads();
         };
         let frame = |view: &mut View| {
-            (view.pad, view.axes) = standard_pad(view.gamepads.first().copied());
+            (view.pad, view.axes) = standard_pad(&view.gamepads);
             view.app_input.pad(&view.pad);
             view.pad_buttons(PadContext::default(), None)
         };
@@ -1862,6 +1874,55 @@ mod tests {
     }
 
     #[test]
+    fn every_open_gamepad_plays_not_only_the_first() {
+        use xem_core::pad::button;
+        // A handheld's built-in controller can follow another device Android
+        // counts as a gamepad and that never moves (issue #92).
+        assert!(unsafe { SDL_Init(SDL_INIT_GAMEPAD) }, "SDL's gamepads");
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (640, 480), 1.0, settings, false).unwrap();
+        let attach = |name: &std::ffi::CStr| {
+            let desc = SDL_VirtualJoystickDesc {
+                r#type: SDL_JOYSTICK_TYPE_GAMEPAD.0 as u16,
+                naxes: SDL_GAMEPAD_AXIS_COUNT.0 as u16,
+                nbuttons: SDL_GAMEPAD_BUTTON_COUNT.0 as u16,
+                name: name.as_ptr(),
+                ..Default::default()
+            };
+            unsafe { SDL_AttachVirtualJoystick(&desc) }
+        };
+        let silent = attach(c"silent test pad");
+        let played = attach(c"played test pad");
+        view.gamepad_added(silent);
+        view.gamepad_added(played);
+        assert_eq!(view.gamepads.len(), 2, "both open");
+        let joystick = unsafe { SDL_GetGamepadJoystick(view.gamepads[1]) };
+        let frame = |view: &mut View| {
+            view.poll_gamepad();
+            view.pad_buttons(PadContext::default(), None)
+        };
+        unsafe {
+            SDL_SetJoystickVirtualButton(joystick, SDL_GAMEPAD_BUTTON_SOUTH.0, true);
+            SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_LEFTX.0, -32768);
+            SDL_UpdateGamepads();
+        }
+        assert_eq!(frame(&mut view) & button::CROSS, button::CROSS, "the second pad's South is Cross");
+        assert_eq!(view.axes[0], -1.0, "and its stick is the left stick");
+        unsafe {
+            SDL_SetJoystickVirtualButton(joystick, SDL_GAMEPAD_BUTTON_SOUTH.0, false);
+            SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_LEFTX.0, 0);
+            SDL_UpdateGamepads();
+        }
+        assert_eq!(frame(&mut view) & button::CROSS, 0, "let go");
+        drop(view);
+        unsafe {
+            SDL_DetachVirtualJoystick(silent);
+            SDL_DetachVirtualJoystick(played);
+        }
+    }
+
+    #[test]
     fn a_gamepad_toggles_first_person_holding_back_the_walking_buttons_while_the_player_walks() {
         use xem_core::FieldControls;
         use xem_core::pad::button;
@@ -1890,7 +1951,7 @@ mod tests {
         };
         // A host frame: the pad as update_app takes it, then the game's buttons.
         let frame = |view: &mut View, field: FieldControls| {
-            (view.pad, view.axes) = standard_pad(view.gamepads.first().copied());
+            (view.pad, view.axes) = standard_pad(&view.gamepads);
             view.app_input.pad(&view.pad);
             view.pad_buttons(PadContext { field, ..PadContext::default() }, None)
         };
