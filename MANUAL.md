@@ -397,7 +397,7 @@ game paused until you resume it.
 Find these in **Settings → Gameplay**. Each choice is saved for next time.
 
 - **Language — Game text:** **English**, the original, **English (Perfect
-  Works)**, **Português (Brasil)** or **Français**. It changes the game's dialogue, narration, item and ability
+  Works)**, **Português (Brasil)**, **Français** or **Español**. It changes the game's dialogue, narration, item and ability
   names and descriptions, shop and save messages, battle messages and
   place names from the next text the game shows; a box already showing
   text finishes it first, and a menu shows its commands in the language
@@ -412,6 +412,10 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   reworked scenes, new pictures) are not part of it, so a few lines that
   depend on them, and the save titles, keep the original wording. Names you
   have changed stay as you set them.
+  **Español** is [Romhack Hispano](https://xenogears.romhackhispano.org/)'s
+  translation (version 1): its text, in the game as you already play it.
+  The menus' command words are drawn anew in Spanish; its subtitled
+  movies and its own pictures are not part of it.
   **日本語** (with the Japanese discs, above) is the Japanese release's own
   text and lettering, read from your Japanese discs. The menus' command
   words, the battle screen's words and the save titles stay in English, as

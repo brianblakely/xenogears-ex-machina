@@ -262,10 +262,11 @@ def fit(original: tr.Text, text: str, extra, strict: bool) -> tuple[str | None, 
     return (None, "; ".join(found)) if found else (wrapped, "broken anew")
 
 
-def lines(texts, found: dict[str, str], otherwise: dict[int, set[int] | None], report: list[str]) -> tuple[list[str], Counter]:
+def lines(texts, found: dict[str, str], otherwise: dict[int, set[int] | None], report: list[str],
+          language: str = LANGUAGE) -> tuple[list[str], Counter]:
     """The translators' lines of the readings of `texts` (the originals,
-    tools.translations.originals), and what became of each."""
-    extra = tr.language_characters(LANGUAGE)
+    tools.translations.originals) in `language`, and what became of each."""
+    extra = tr.language_characters(language)
     entries = tr.entries_by_where(texts)
     tally: Counter = Counter()
     out = []

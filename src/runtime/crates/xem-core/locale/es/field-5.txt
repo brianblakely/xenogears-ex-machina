@@ -1,0 +1,921 @@
+f504-0000 39463ae51d92f373 Nada.
+f504-0001 677c38dad2796d5b El cofre está vacío.
+f504-0002 be528720cda831c8 He oído un sonido por aquí.
+f505-0000 3bab186101318299 Fei{n}"¿Es este, {wait 20}{n}el 3er portal{wait 10}...{wait 10}...{wait 10}{n}...{wait 10}...{wait 10}?"
+f505-0001 3c73b70474bc98f5@c54e2f492ef308a2 Fei{n}"¿Quién eres?"
+f505-0002 725880715d87d4ca Voy{wait 10} a{wait 10}...{wait 20}{n}matarte.
+f505-0003 c19862809480d626 Gear misterioso{n}"¿Cómo os va la vida?{n}Soy Kenren, uno de los{n}seguidores de Karellen.{p}Discúlpenme por favor,{n}quisiera mostrarles mi cara{n}pero como resultado de la{n}fusión humano-máquina..."
+f505-0004 b551c2ee9a2aaafc Elly{n}"¿¡Un seguidor de{n}Karellen!?{p}¿¡Ni de Ramsus o de Los{n}Elementos!?"
+f505-0005 76a2392f679101af Shitan{n}"Tú eres uno de los que{n}dejó Carl para la{n}superficie...{wait 20}{p}Debes tener una buena{n}razón."
+f505-0006 7cde7204b4eb5b96 Bart{n}"¿Un seguidor de Karellen?{p}Pensaba que estabas{n}trabajando para el tío{n}de la armadura dorada."
+f505-0007 5af2080c6141b639 Billy{n}"¿No estás con Ramsus?{wait 10}{p}Pero...{wait 20} Me da muy mala{n}espina este Gear..."
+f505-0008 985885aa6c023c53 Rico{n}"¿¡Quien demonios eres!?{n}No pareces uno de esos{n}lacayos de Ramsus."
+f505-0009 8a86a62b95dec47e {name 7}{n}"Eres Geburah, ¿verdad chu?{wait 10}{n}¿Dónde está el que es más{n}mono?"
+f505-0010 dab29b124c020330 María{n}"Sabía que no era Ramsus.{p}Sí...{wait 20} ese Gear es una{n}versión evolucionada de{n}Siebzehn y Achtzehn."
+f505-0011 3c501ba3c1a07be0 Kenren{n}"Nuestra tarea actual se{n}centra en la inspección{n}de la evidencia.{p}Todo se arruinará si{n}alguien tan profundamente{n}dormido como él aparece{n}aquí.{p}Una persona calmada y fría{n}como yo sería perfecto{n}para el trabajo.{p}Oh, {wait 10}pero haya calma.{n}Yo solo inspeccionaré.{wait 50}{n}Aquí Esmeralda se{n}encargará de vosotros."
+f505-0012 011c1ff2acb93893 Esmeralda{n}"...{wait 10}...{wait 20}Matar{wait 2}te."
+f505-0013 b9c988bb9d9b8d3d Esmeralda{n}"¿Ki...{wait 10}...{wait 10}m{wait 10}...{wait 10}?{wait 30}{n}Ah, ah-a-a, yo..."
+f505-0014 31d016921466fc6e Kenren{n}"...Ya veo...{wait 10}{n}Descosiderado...{wait 20}{n}ahora eso...{p}Deberías verlo como{n}una liberación de...{wait 10}{n}recuerdos, {wait 10}o quizás{n}de una grabación.{p}Ha aparecido justo como{n}Karellen dijo...{p}Es una manifestación del{n}sello.{n}Queda pues demostrado.{n}Así que si me disculpan...{p}He de informar de los{n}resultados.{n}Ah sí, {wait 10}adelante, toma{n}a la chica.{p}Dala el uso que quieras.{n}Después de todo, ella es{n}tu "hija"..."
+f507-0000 85e989e850c48e0d Elly{n}"¿Dónde estoy...?"
+f507-0001 8419bfc63912a84f Elly{n}"¿Comandante... Karellen?"
+f507-0002 48f0e4e9b79e1311 Elly{n}"¡Por favor, para!"
+f507-0003 7b1e5ac6fedc1527 Elly{n}"¿...?"
+f507-0004 597de3b908d19290 Elly{n}"¿Mi otro yo...?"
+f507-0005 f8ebfd334178d371 Elly{n}"¿Dónde está Fei?{n}¿Dónde están todos...?"
+f507-0006 e743801019aa3317 Elly{n}"¡Estás planeando hacer lo{n}mismo que a la gente que{n}vimos en las instalaciones!{p}Todo esto lo haces por tus{n}egoístas ambiciones...{wait 30}{n}¿te das cuenta de lo que{n}estás haciendo?{p}Gente jugando con la vida{n}de otra gente.{n}¡No se puede permitir!"
+f507-0007 0e9b6a7d6b7edfa1 Elly{n}"¿Qué piensas lograr usando{n}esas máquinas moleculares?{p}¿Qué tengo que ver con{n}todo esto?"
+f507-0008 06d487d520110325 Elly{n}"¿Madre...?"
+f507-0010 be06fbbb68e563c7 Elly{n}"¿Comandante?"
+f507-0011 0de230673c0eb749 Elly{n}"¿Qué le ocurre?"
+f507-0013 bf1129cba8db5cfe Elly{n}"¡E-Eso duele!{n}¡P-Por favor!{n}¡Deténgase!"
+f507-0014 e8868b905936dea5 Elly{n}"A quien te refieres cuando{n}hablas de ese hombre...{wait 30}{n}¿Estás hablando de Fei?"
+f507-0015 12e9763d7d9189b3 Elly{n}"R-Ramsus...{wait 20}esa droga...{wait 30}{n}¿Un estabilizador mental?{p}¿Por qué se comporta así?{n}¿Qué le está forzando a {n}hacer esto?{p}Qué sucedió entre usted y{n}Fei..."
+f507-0017 579d5dbdd031d108 Karellen{n}"He revisado todos{n}tus informes."
+f507-0018 2d2305941c38658f Karellen{n}"Elehayym Van Houten.{n}El incidente en Jugend hace{n}un año...{p}Caso 102. La liberación de{n}tus poderes latentes era a{n}través de administración...{p}..sistemática de drogas de{n}aumento de las capacidades{n}cerebrales.{p}En ese instante, tu Ether{n}aumentó por encima de 400.{p}Y en ese momento, hubo dos{n}heridos críticos y a otros{n}tres tuvieron de nuevo que{n}reciclarlos.{p}¿Estoy en lo cierto?"
+f507-0019 84124428128bbf86 Karellen{n}"Pero, este informe está{n}equivocado.{p}Estos no eran los efectos{n}secundarios normales."
+f507-0020 72c9d0b445ae76fb Karellen{n}"El despertar de "tú otro{n}yo" fue la causa."
+f507-0021 e15d87b286a8c5ea Karellen{n}"Serán utilizados como{n}ofrenda para la...{p}...vuelta a la vida del{n}Ministerio Gazel.{p}A la chica, el organismo{n}artificial, le espera el{n}mismo destino.{p}Tengo muestras de sobra{n}para poder trabajar.{p}Estoy en la cuarta etapa{n}del plan. Y lo necesario{n}es el factor final.{p}Por lo tanto tus amigos{n}ya no me interesan.{wait 30}{n}No son útiles para nada.{p}Pero, tú eres distinta."
+f507-0022 0e5a07394df93248 Karellen{n}"Vaya...{wait 30}{n}Así que ya has visto las{n}instalaciones.{p}Ahora aquí abajo los{n}científicos de Solaris{n}están trabajando con{n}ingeniería genética.{p}Es sólo un nido para los{n}tontos que han aprendido{n}el placer despreciable{n}de jugar con sus propias{p}creaciones orgánicas.{wait 20}{n}Lo que buscan es{n}casualidad y la{n}inhumanidad.{p}Yo no voy por ahí. Yo{n}estoy especializado en{n}ingeniería molecular...{n}En nanotecnología."
+f507-0023 9e85a66d1aca166c Karellen{n}"¿Sabes que es eso?{n}Una nanomáquina... Máquinas{n}a nivel molecular.{p}Esto es un ensamblador, una{n}de esas nanomáquinas.{p}Puede romper moléculas y{n}átomos y reconstruirlos en{n}cualquier otra cosa.{p}Cada una de esas esferas es{n}equivalente a un átomo.{p}Hasta hace bien poco,{n}sólo podíamos producir{n}materiales varias veces{n}más grandes.{p}Y gracias a esa chica, lo{n}que obtuvimos de las ruinas{n}de la civilización Zeboim,{p}podimos crear todo mucho{n}más compacto y avanzado.{p}Pensar que este organismo{n}fue creado hace cuatro{n}mil años.{wait 20}{n}Es absolutamente asombroso.{p}Hasta que descubrimos esto,{n}el trabajo era mucho más{n}dificil.{p}Lo mejor que conseguíamos {n}era aplicar soluciones de{n}amino ácidos a las áreas{n}heridas para...{p}...ameliorar o sellar{n}alguna peculiar habilidad.{p}Seguro que has sido{n}expuesta al contacto{n}con la genética en Jugend.{p}Cada enzima dentro del ADN{n}son también máquinas{n}moleculares creadas por{n}la naturaleza.{p}Es decir, todos provenimos{n}de un primer organismo,{n}el primigenio."
+f507-0024 1de370418847bc3c Karellen{n}"Hasta ahora las nano-{n}máquinas solo podían{n}recombinar ADN,{p}no podían revelar la{n}información impresa{n}en el intrón que se{n}encuentra en la sustitución{p}de la doble hélice...{p}Pero, las nuevas nano-{n}máquinas nos dieron la{n}capacidad para llegar{n}a esos datos.{p}Esos datos que en principio{n}no "deberían existir".{n}Y estamos a punto de ver el{n}resultado de todo."
+f507-0025 49ae445000657cab Karellen{n}"Umm, según el informe{n}de transferencia, esta{n}representación...{p}...tiene una frecuencia{n}similar a la esperada."
+f507-0026 135cf347ec5a5e95 Karellen{n}"Y...sí, ¡el Anillo{n}de Uroboros...!{p}Eso es, ¿verdad...?{p}Los actos de Myyah,{n}y de Lacán...{wait 40}{n}Eso lo explica{n}todo."
+f507-0027 b48ab59d0d328a22 Karellen{n}"Elehayym...{n}Tú fuiste la "madre"..."
+f507-0028 01e24933c2322d23 Karellen{n}"Sí.{p}Eso nos dice tus índices en{n}los genes antes de que el{n}reemplazo tenga lugar...{p}Es la forma conceptuada del{n}intrón, y que lleva cierta{n}información que no debería{n}existir.{p}Observa. Este es el Anillo{n}de Uroboros, que contiene{n}la "información del intrón"{n}que sólo...{p}...existe en "cierta{n}gente".{n}Uroboros... si supiésemos{n}todo lo que esconde...{p}¿No quieres conocer toda la{n}información que escondías y{n}tienes para ofrecernos?"
+f507-0029 7c649b0d7ad6e40c Karellen{n}"Elehayym, eres muy bella.{p}Cuando te miro, aprecio el{n}aspecto de la forma humana,{n}su elaboración...{p}No puedo dejar de lado la{n}importancia de este hecho.{p}Una sensación de como si mi{n}máquina molecular fuese{n}indigna de ti.{p}No has cambiado "desde ese{n}día".{p}Te ocurre lo mismo que el{n}"otro hombre", Lacán..."
+f507-0030 554c048d288a45b9 Ramsus{n}"¿Dón...de...?"
+f507-0031 8af2b206338aa6a4 Ramsus{n}"¿Dónde...?{n}¡Te estoy preguntando{n}dónde!"
+f507-0032 5dbc336a69d5ffe5 Ramsus{n}"¡Dónde está!{n}¿Dónde?{p}¡Tú lo sabes!{n}¡Llévame a él!"
+f507-0033 a96bd1a7b0d83ece Ramsus{n}"Fei, Fei, Fei...{p}Ese Fei... Maldito Fei..."
+f507-0034 a56b486cb4e0d4df Ramsus{n}"¡Fei...!{wait 20}{n}¡Pero que tiene que le{n}hace ser mejor que yo!{p}¡No lo aceptaré!{n}¡No lo haré!"
+f509-0000 2865a2a11b4778b6 !No lu nehvali usa!
+f509-0001 f9afaadfb290620b La Plaza Arabot está{n}justo ahí delante.{p}¡Si no tenéis nada que{n}hacer de importancia en{n}ella no podéis pasar!
+f509-0002 10b8de48c76fba3b Tenéis una entrada.{wait 10} {n}Muy bien, podéis pasar.{wait 10} {n}Daros prisa o no{n}llegareis a tiempo.
+f509-0003 5d5be41d354958be Hay asientos especiales{n}para el Discurso.{wait 10} {n}¿Eh?{wait 10} ¿Y las entradas?{wait 10}{n}No podéis pasar...
+f509-0004 1bbe8d21a5425280 ¿Eh?{wait 10} ¿Qué tipo de persona?{wait 10}{n}Pues, una belleza de{n}Solaris, por supuesto.
+f509-0005 06d09a0b6e97eec0 Como servicio a los{n}ciudadanos, estamos{n}aceptando ahora los{p}datos del servicio{n}de matrimonio.{p}La Agencia central de{n}Control escogerá la mejor{n}pareja para usted.{p}Nuestro lema es "Buenas{n}parejas hacen buenos{n}descendentes".{p}Después de todo, nosotros{n}mismos somos la{n}descendencia resultante,{p}por lo que es evidente{n}que somos los mejores.
+f509-0006 af12ddf5af9959cc ¡El Discurso fue la{n}bomba!
+f509-0007 8465aee379319c1f ¿Qué te parecen los{n}Pogoshoes?{wait 10} {n}Los han echo con la{n}nueva tecnología.{p}Son los mejores, no{n}sobrecargan para nada{n}la columna vertebral.{p}El modelo Imperial{n}es una pieza ultra{n}rara súper guapa.
+f509-0008 4bcbe0417f8337aa "El discurso acabó con{n}una enorme fanfarria".{wait 10} {n}Estuvo genial.
+f509-0009 f9903a47b492e990 El Discurso{n}comenzará pronto.
+f509-0010 4d9e4e7fbd9d78df "Éxito del Plan de{n}Eliminación del{n}Portal Imperial"...{p}Fue la voluntad de{n}el Emperador.
+f509-0011 a0d4a12a858a4c3c "Campo de defensa de{n}Solaris destruido"...{wait 10}{n}Ahora es cuando esos{n}salvajes están en peligro.
+f509-0012 7274f98d54d9b7ae Umm, el nuevo modelo de{n}coche anti-grav, "Roach"{n}necesita que trabajen más{n}su diseño.
+f509-0013 3e144810b6aa1aad ¿Has oído la emisión del{n}Emperador y Karellen?{wait 10} {n}Ha sido magnífica...{wait 10}{p}Pero el Ramsus ese es{n}infumable.{wait 10}{n}¡Es un esclavillo de{n}Emperador!
+f509-0014 c935d57ab23efa4e Parece que ha habido{n}una gran refriega en la{n}superficie.{p}Pero eso a nosotros ni{n}nos pincha ni nos corta.{p}Mientras el Emperador{n}esté con nosotros,{n}podemos vivir en paz.{p}Si sales de la sartén,{n}puedes caerte en las{n}brasas...{p}El estúpido de Ramsus{n}no se ha empapado aún{n}del tema.
+f509-0015 1082e66f7a6e934c ¡Larga vida al Emperador!
+f509-0016 c4fe8f5a91ca1434 Aquí puedes conseguir lo{n}que te plazca.{p}Mira, yo debería haber{n}perdido este brazo en un{n}accidente, pero con la{n}bio-soldadura de Solaris,{p}no me ha quedado una sola{n}cicatriz.{p}Aquí no hay crímenes,{n}ni desastres ni las{n}guerras que hay en{n}la tierra.{p}La ciencia hace todos{n}nuestros deseos realidad.
+f509-0017 e1e0348bd738bc3b Cuanto más miro los{n}acorazados de Solaris...{wait 10}{n}más a salvo me siento.
+f509-0018 19ff1114b7b60423 Al mirar para abajo y{n}ver la tierra, pienso...{wait 10}{n}Esas pobres almas no{n}podrían vivir en esta{p}chulada de ciudad.{wait 10}{n}Aún destruyendo el portal,{n}es una pérdida de tiempo...{p}Es inútil su resistencia,{n}nunca podrán alcanzar{n}nuestro paraíso.
+f509-0019 e645ad264de3adf5 ¿Has oído la maravilla de{n}discurso del Emperador?{p}Si es que se me caen hasta{n}las lágrimas solo con oír{n}su bella voz.{wait 10} ¿Tú también?
+f509-0020 d92ac97894b25779 El Emperador dará él mismo{n}el discurso.{p}No puede aguantar ver más{n}el estado de confusión en{n}que estamos así que ha{n}echo acto de presencia.{p}Deberíamos estarle{n}agradecido.
+f509-0021 ccb34b037993f9bf ¡El Emperador es grande{n}pero esto es el DK1200!
+f509-0022 8afe750b7dd23367 ¡Yeaa! ¡El Emperador!
+f509-0023 9c24171e36a49a60 ¡El DK1200 mola{n}mogollón! Con la mejora{n}canta y baila un montón.{wait 10}{p}Estoy deseando{n}descargarme las{n}nuevas canciones.
+f509-0024 2670895e3f9e3c29 Los Security Cubes{n}están siguiendo{n}a dos sospechosos...{p}¿Serán los dos individuos{n}que Karellen mencionó?{p}Eres un Ciudadano de{n}tercera clase pero no{n}harías eso, ¿verdad?
+f509-0025 cc7da32038f98ffa ¿Tenéis una entrada? {wait 10}{n}¡Pues daros prisa que{n}se os hace tarde!
+f509-0026 cdbde4523bc832e3 Más adelante está la Plaza{n}Arabot.{wait 10} {n}El Discurso a la población{n}va a dar comienzo,{p}pero vosotros no tenéis{n}entradas, así que...
+f509-0027 cc574bc68e801081 ...{wait 10}{n}Vaya pintas...{p}Los Ciudadanos de tercera{n}clase deberían vestir{p}de otra manera, no así.
+f509-0028 c7d92bb825aaac72 Va a comenzar el{n}Discurso.{wait 10} {n}Está toda la ciudad{n}muy animada.
+f509-0029 cc574bc68e801081@bf162081914e6db3 ...{wait 10}{n}Vaya pintas....{p}Los Ciudadanos de tercera{n}clase deberían vestir{p}de otra manera, no así.
+f509-0030 a768a3e79953e3ac Peligro inminente.
+f509-0031 fcf6631cea6a1ade Habrá tráfico durante{n}el Discurso.
+f509-0032 a768a3e79953e3ac@0292bfca3662e58e Peligró inminente.
+f509-0033 11c69570aa64d47c ¿Estás Etrenstrolling?{wait 10} {n}¿Qué?{wait 10} Etrenstrolling{n}va de la mano de {n}Etemenanki.{p}Necesitas descargarte{n}la Guía Etren para{n}hacerlo.{p}Central Control siempre{n}tiene cosas guapas.{wait 10}{n}Es su trabajo mantener{n}a la población feliz.
+f509-0034 da3014b3c056d382 ○{wait 5}○{wait 5}○{wait 5}ID check.  {n}!%#?&+!{n}{wait 10}...Check OK.
+f509-0035 8a7ca96b9866f23e ○{wait 5}○{wait 5}○{wait 5}ID check.   {n}!%#?&+!{wait 10}{n}...Check OK.
+f509-0037 2deaf71907273f4c ○ Etren News Flash ○{n}→{wait 5}→{wait 5}→{wait 5}El Discurso {n}comenzará en breve.
+f509-0038 1e582c86950879a7  Servicio de descargas{n}   de música de Solaris.{p}os informamos del top{n}tres de los nuevos temas{n}recién incluidos:{p} DK1200/Anti-g-Love car{n} Skyhook/Elevator Song{n} Remi/Solaris sunset{p}Ya disponible su descarga{n}en los terminales de{n}tu ciudad.{p}Recomendamos a los{n}usuarios del DK 950{n}actualicen al DK 1200.
+f509-0039 b9ae46513f8feaf7 ...Deténganse...{wait 10}{n}Cesen todo tipo{n}de acción...
+f509-0040 01729194313c0dbc ...Personas sospechosas...{n}Vistos en Plaza Arabot...{n}Iniciando investigación...
+f509-0041 be087bd0999671ab Fei{n}"Elly, ¡están{n}aquí!"
+f509-0042 bc6a4e06c4294f13 Elly{n}"¡Como nos cojan los{n}de Seguridad, lo tenemos{n}claro!{wait 10} ¡Fei, por aquí!"
+f509-0043 83ec9873a03cbfe1 ¡Elly!{done 20}
+f509-0044 ef69b18ce373fdc7 ¡...Alto! ¡Deténganse!
+f509-0046 6ce7c4f4f8f5a562 Fei{n}"¡Tengo que saltar!"
+f509-0048 bba6fa65b9f2b7ca ...han...{wait 20} ¿¡escapado!?
+f509-0049 326002b3dffc4ef5 ...afirmativo...
+f509-0050 1fa26038b450fea9 ¡Atacar!{done 30}
+f509-0051 0e646fe2a2d05e9c ¿¡...por aquí!?{done 30}
+f509-0052 26ab44e570ab4590 ...sospechosos en fuga.{n}...iniciando persecución.
+f509-0053 4f2d67c8b7a5c46c Elly{n}"Un discurso a la{n}población...{p}Por lo visto a Solaris{n}no le van muy bien las{n}cosas."
+f509-0054 97c7d54c92ebb831 Fei{n}"¿Eh?{wait 10}{n}¿y por qué hay que{n}verlo? {p}Decidimos encontrar{n}a todos. No tenemos{n}tiempo de ir al{n}festival."
+f509-0055 ab447ad027977e17 Elly{n}"Esto no es un festival{n}ordinario.{p}La gente está inquieta por{n}la desaparición del{n}portal.{p}Probablemente el discurso{n}trate de acallar a las{n}masas.{p}Debemos verificar la{n}postura de Solaris con los{n}habitantes de la{p}superficie.{wait 10}{n}Fei,{wait 10} {n}necesitamos entradas."
+f509-0056 645fe37f34095068 Fei{n}"¿Sí?{wait 10} {n}Creo que debemos obtener{n}información del enemigo."
+f509-0057 3e2ddb3a61a00300 Elly{n}"Venga, vamos.{wait 10} {n}Queda poco para que{n}empiece el Discurso."
+f510-0000 5e904251577703be Elly{n}"¿Estás bien, Fei?"
+f510-0001 ac068374d0939129 Fei{n}"Sí.{wait 10}{n}Ha pasado todo tan de{n}repente..."
+f510-0002 a9eab84e82c75a25 Fei{n}"¡Hay que continuar!{p}¡Esos robots extraños{n}no andan muy lejos!"
+f510-0003 e4c498f820ccfb89 Fei{n}"¿...?{wait 10}{n}¿Qué pasa, Elly?"
+f510-0004 0195f9932441cbbb Elly{n}"...{wait 10}Vaya, conque estamos{n}por aquí...{wait 20} Lo mismo{n}hasta lo conseguimos.{p}¡Pues venga, vamos a ir{n}por aquí!"
+f510-0005 635590cc313ecbab@75da028bc4e0e00b ¡Vale!
+f511-0000 17c6bd39bb2374d5 María{n}"Esta es...{n}¡¡¡la barrera!!!{p}¡¡Por favor, {wait 5}{name 19}!!"
+f511-0001 29aedd1cbd6905c5 María{n}"¡Se está abriendo{wait 5}{n}un campo de gravedad!{p}¡Ha comenzado la{n}corrección de la{n}distorsión del espacio!"
+f512-0000 d329c76e51a0329c Sansón{n}"De aquí en adelante, es{n}mejor que nos dividamos.{p}Esto es un laberinto{n}así que ir con cuidado."
+f512-0001 248692c7ffe104d8 Fei{n}"Lo mismo te digo..."
+f512-0002 f256b65d225fd1d8 Elly{n}"¿De veras que va a{n}salir bien?"
+f513-0000 d74fd66b3b8934e5 ¡¡¡Sansón!!!{done 15}
+f513-0001 627f1ea34ad145d3 Sansón{n}"Todo en orden.{wait 10} ¡Venga,{n}creo que iré yo primero!"
+f513-0002 add57138a63bb913 Elly{n}"¡Espera!{wait 10} {n}¡No eres un Gazel! {wait 10}{n}¿Qué vas a hacer?"
+f513-0003 7e598b73d45526b5 Sansón{n}"Está tirado. Usé{n}técnicas clandestinas{n}para re-escribir mi ID."
+f513-0005 ae4d85d2d12ed8c5 →{wait 10}→{wait 10}×{wait 10}Error en ID.{n}Eliminando.{done 30}
+f513-0006 e1cabbb9e2c1d639 ¡¡¡E-espera!!!{wait 10}{n}¡Ughaaaaaahhh!{done 10}
+f513-0009 86939e44dd70662c Fei{n}"¡¡¡Hija puta!!!{wait 10}{n}¡¡Me cargo la máquina!!"
+f513-0010 f885ba182a9a7171 ¡No!{done 30}
+f513-0011 01f8da2bc91a50ec ¡¡¡Aaah!!!{done 30}
+f513-0012 28b30ba236793c1d Elly{n}"Ni te molestes en{n}intentarlo.{p}No hay nada que hacer, si{n}no es con una ID de Clase{n}1 o una ID militar no{n}podrás pasar..."
+f513-0013 baa3ea89894174a5 Fei{n}"¿Y qué vamos a hacer{n}entonces...?"
+f513-0014 84c01cefda8016d1 Elly{n}"Bueno, tampoco podemos{n}quedarnos aquí...{p}Creo que me la voy a{n}jugar a todo o nada."
+f513-0015 c0e1a3d6d39ccac8 Fei{n}"Mira que si no da{n}resultado, más tarde{n}vendrán los líos...{p}¿No eras tú la{n}precavida? Pues ahora{n}empiezas a parecerte{n}a{wait 10} Bart."
+f513-0016 7dadfd6c4fc6f5eb Fei{n}"Como te pasas...{p}Esto no quiere{n}decir que vaya{n}siempre sin{n}un plan."
+f513-0017 408dcca5dd8cbc0d →{wait 10}→{wait 10}○{wait 10} Confirmada ID.{wait 5} {n}Ciudadano de primera clase,{n}Gazel.{wait 10} Por favor pase de{n}forma ordenada.
+f513-0018 060d9e8de9229096 Fei{n}"¡Funciona, podremos{n}continuar!"
+f513-0020 1c18387b791dda70 Fei{n}"?{wait 10}{n}¿Qué ocurre?"
+f513-0021 3c83595ec0440fc3 Elly{n}"¿Eh?{wait 10} Uh, bueno...{wait 10}{n}Con todo lo que ha{n}pasado...{p}me sorprende que aún{n}no me hayan{n}dado por traidora..."
+f513-0022 56457e2cb3b5484e Fei{n}"¿Crees que es por qué{n}aún no han informado{n}sobre lo ocurrido?{p}Para Geburah, sería{n}como admitir un fallo{n}y tal..."
+f513-0023 10325a632b3188bb Elly{n}"Eso espero..."
+f513-0024 30367a336cd40ca5 Fei{n}"¡Da igual,{wait 2} sigamos!"
+f513-0025 0b083a8c7129a885 Elly{n}"Vale.{wait 20} Oh, quédate{n}juntito a mí...{p}De ese modo, no{n}debería notar tu{n}presencia."
+f513-0026 3f29876b28d31cd1 Elly{n}"Fei, ¿a dónde vas?"
+f515-0000 e9ef682a45a223b7 ¡...{wait 24}Una purga!{done 50}
+f515-0001 d3674ed233d89668 Ramsus{n}"Tú{wait 5}...{wait 32}{n}Si no existieras{wait 5}...{wait 5}{n}Yo{wait 5}...{p}Es por eso...{wait 32}{n}que debo{wait 5}...{wait 5}{n}acabar{wait 5}...{wait 5}{n}contigo{wait 5}...{p}Sólo entonces podré{n}derrotarle{wait 5}..."
+f515-0002 fb68e929f61888e7 Ramsus{n}"¡Uuuuaaaahhhhh!"
+f515-0003 21cd0b36494faca6 Karellen{n}"Claro que puede.{wait 32}{n}Fue creado para ser{n}capaz de hacerlo."
+f515-0004 34ed013c4facb821 Karellen{n}"Oh, seguro...{p}No quiero formar parte de{n}un grupo de viejos con la{n}obsesión de conseguir un{n}cuerpo...{p}...Porque les diera por{n}convertirse en datos del{n}SOL-9000 para sobrevivir.{p}La verdad es{wait 5}...{wait 5}{n}que vuestra existencia es{n}un obstáculo para lograr{n}mis objetivos. Eso es{wait 5}..."
+f515-0005 2a414d8d6c1da4fd Karellen{n}"Sí, eso es cierto.{p}Intento guiar a la gente{n}por "mi propio camino".{n}Y eso no ha cambiado."
+f515-0006 aee6eb58291cdfca Karellen{n}"¡Mátalo,{n}"Ramses"!"
+f515-0007 85e2ea5a77d66012 Shitan{n}"¿Nuestra última{n}oración?"
+f515-0008 f57fb43eb2e172bd Shitan{n}"Sí.{wait 10}{n}Dos{wait 5}... {wait 5}no{wait 5}... {wait 12}tres{n}para ser exactos."
+f515-0009 1fa0bc6a43c7a6f2 Shitan{n}"No se ha podido{n}verificar sus paraderos."
+f515-0010 73953f39cb62344a Shitan{n}"Vuecencia, si me{n}permite preguntarle...{p}¿Por qué tendría que ser{n}trasladado aun lugar{n}como este...?{wait 45}{p}¿Lo dispusieron así{n}los ancianos?"
+f515-0012 2359dcb17fb84e1c Shitan{n}"Disponer de él{n}ahora sería{n}precipitado.{p}No creo que sea{n}demasiado tarde para{n}esperar hasta que{n}consigamos saber{p}cuales son sus{n}propósitos..."
+f515-0013 e0e1addfff32f435 Shitan{n}"Su voluntad{n}es mi voluntad,{n}su Majestad.{p}Bien, si me{n}permite..."
+f515-0014 6dc8d04eba6e52be Shitan{n}"¿Sí...?"
+f515-0015 b360cdd0f7ceb60c Shitan{n}"¿...{wait 32}De qué se trata...?"
+f515-0016 a418b105d4ce85c6 Shitan{n}"Sí, su Majestad.{n}Mi respuesta es{n}sincera y meditada."
+f515-0017 59c2f4f5bdab5374 Shitan{n}"Sí.{p}Los humanos tienen{n}potencial.{n}No requieren más{n}administradores."
+f515-0018 ce07bf60996885ce Shitan{n}"Si,{wait 7} como su Majestad{n}dice, si Fei es..."
+f515-0019 a990294ffe36a741 Emperador{n}"Sí, el "Evangelio".{p}{wait 64}Somos gente expulsada del{n}paraíso, forzada a vivir{n}en la cruel superficie{n}de la tierra.{p}Nosotros que llenamos{n}esta tierra volveremos{n}de nuevo junto con dios{n}en el paraíso{p}y viviremos allí{n}eternamente.{p}Es "Tiempo" de{n}"evangelio". Ese "tiempo"{n}es inminente."
+f515-0020 1e26b3ead181f2e7 Emperador{n}"Nosotros Gazel,{n}debemos hallar el{n}lugar de descanso{p}de dios para{n}entonces resucitarlo.{wait 20}{n}Esa es nuestra{n}oración final..."
+f515-0021 8824991d2363e50f Emperador{n}"Nuestra oración final{n}para escapar del{n}"Destino"...{p}...que se determinó en{n}nuestro génesis."
+f515-0022 839a15587d6cdbf6 Emperador{n}"¿Ha despertado...?"
+f515-0023 a69ce0d163da0724 Emperador{n}"Ya veo."
+f515-0024 1835ef85b46af830 Emperador{n}"Por aquí..."
+f515-0025 b5fd8923fe9df97e Emperador{n}"No.{n}Ellos aguardan a una{n}disposición más inmediata.{p}Yo no les culpo.{wait 32}{n}Les causa un profundo{n}sentimiento de miedo el{n}solo echo de mentarlo."
+f515-0026 648a293d2a0982c9 Emperador{n}"Sí. {wait 12}{n}Es probable..."
+f515-0027 482308c4173bf0de Emperador{n}"Si esa es tu{n}resolución,{n}entonces,{p}que así sea."
+f515-0028 4d0c194d45d420ae Emperador{n}"Aguarda un instante..."
+f515-0029 eb821601aa2c915e Emperador{n}"...Ya veo..."
+f515-0030 0763b40d17255536 Emperador{n}"Ya han dictaminado...{wait 23}{n}su sentencia..."
+f515-0031 198f84f839a16aa5 Emperador{n}"¿Esa es tu{n}conclusión...?"
+f515-0032 d461d3c795a27130 Emperador{n}"Ahnenerbe...{n}¿Crees que puedes{n}hacerlo?"
+f515-0033 7352824dacdec797 Emperador{n}"¿El contacto{n}no es nuestro{n}enemigo?"
+f515-0034 46818f91ee7a326e Emperador{n}"Entonces lo dejo{n}en tus manos...{p}Expiaré mi crimen al{n}hacerlo así..."
+f515-0035 26986621d17e11fd Emperador Caín{n}"¿Qué quieres...{n}Ramsus...?"
+f515-0036 21df1dae66d276e2 Emperador Caín{n}"¿Qué crees que{n}estás haciendo?{n}¡Ramsus...!"
+f515-0037 d4112316d855b23d Emperador Caín{n}"¡Eres idiota!{n}¿Crees que lograrás{n}neutralizar mi poder?"
+f515-0038 20417fecf698b200 Emperador Caín{n}"¿Karellen...?{n}¿Seguro que no quieres{n}seguir de nuestro lado?"
+f515-0039 f999b6185d4d9463 Emperador Caín{n}"¿No has trabajado para el{n}futuro de la humanidad...{n}para que los humanos...{p}...vivan más?{n}Por eso te ayudé..."
+f516-0000 acd5561598a2ff76 Elly{n}"Estoy tan contenta...{n}Todo el mundo está{n}sano y salvo...{p}¿Qué pasará con mi{n}padre...?"
+f516-0001 e67e540d1839965e Shitan{n}"El hangar está justo{n}allí."
+f516-0002 148e7319ccb989d7 Bart{n}"Creo que ya estamos{n}llegando."
+f516-0003 2ca228cac7a2123e Billy {n}"Incluso si volvemos a{n}casa... ¿Prim y sus{n}amigos estarán a salvo?"
+f516-0004 5a0995be8ccd95cd Rico{n}"¡Muy bien!{n}¡Ya casi estamos, Hammer!"
+f516-0005 c4561658c929b858 Esmeralda{n}"¡La salida! ¡la salida!{n}¡la salida!"
+f516-0006 f00814c349959d56 {name 7}{n}"Fiu chu, el cielo{n}es azul..."
+f516-0007 49038e4b43008e45 Medena{n}"Decirle "adiós" a{n}Solaris... es duro...{p}Pase lo que{n}pase sigue{n}siendo mi hogar..."
+f516-0008 cf5a58f6a00bdc18 Hammer{n}"Aquí estoy, después{n}de todo el camino..."
+f517-0000 9310052ebd678722 Ramsus{n}"¡Sigurd!"
+f517-0001 697c2178f98285df Ramsus{n}"¿¡Por qué abandonas{n}este país!? {p}¡Se supone que nos ibas a{n}ayudar a crear una nación{n}ideal!"
+f517-0002 be5655f36651b9c3 Ramsus{n}"¡¡¡...Traidor!!!"{done 64}
+f517-0003 12dff1d073d309d2 Sigurd{n}"No estoy avandonándolo.{p}Desde el principio he{n}estado viviendo aquí{n}para robar la tecnología{n}de este país.{p}Además, hay alguien que{n}me espera.{wait 16}{n}No te amargues."
+f517-0004 dbc12ea76879d69c Sigurd{n}"En este corto periodo, no{n}ha estado mal ir contigo{n}tras los mismos ideales."
+f518-0000 728085b9ebec28cd Karellen{n}"Abrir vuestro corazón,{wait 10}{n}oh, hijos del Emperador."
+f518-0001 33ed70070a847da7 Elly{n}"¡Karellen!"
+f518-0003 bbf888707d286c61 Elly{n}"Aquel es Karellen.{wait 10} {n}Es el auténtico{n}líder de Solaris.{p}No aparece muy{n}a menudo en público.{wait 10}{n}Eso es todo lo que {n}sé."
+f518-0004 a7379268b4a45f81 Fei{n}"¿El es{wait 5}...{wait 5}{n}el líder de{n}Solaris?{p}Que{wait 5}...{wait 10}{n}Me siento{wait 5}...{wait 5}{n}Algo me resulta{n}familiar."
+f518-0005 ff6d1ab2d9bfd328 Karellen{n}"...Eliminamos a voluntad{n}del Emperador el portal que{n}teníamos bajo control.{p}Sin embargo, entre nosotros{n}hay bestias necias que{n}profanan nuestra tierra{n}santa con sus zarpas.{p}Estas bestias querían{n}aprovechar el estrago{n}causado con la destrucción{n}del portal...{p}...para eliminar del trono{n}al Emperador.{p}Esto es un asunto grave,{n}el trono del Emperador ha{n}sido mancillado.{n}Esto no puede quedar así.{p}¡Saber que aquellos{n}imbéciles han sido{n}capturados y encadenados{n}como perros que son!"
+f518-0006 22338e6db95d46a8 {slow 1}     Mis queridos hijos, podéis{n}     estar tranquilos. Decidimos{n}     tiempo atrás el Ministerio{n}     Gazel y yo la destrucción{n}     del portal.{n}     Nosotros Gazel, tocados{n}     por la mano divina de dios,{wait 10}{n}     regresaremos al paraíso...{n}     Dios aguarda durmiente...{wait 10}{n}     Nuestro momento para{n}     alcanzar la inmortalidad{n}     ha llegado.{p}     Hemos abierto la puerta a{n}     "Mahanon"... Lugar de{n}     descanso de dios, fuente de{n}     sabiduría y poder.{n}     Sin duda los habitantes{n}     de la superficie aguardan{n}     el momento de hacerse con{n}     su poder.{n}     Pero no temáis, no habrá{n}     lugar para la preocupación,{n}     pues poderosa es Solaris...
+f519-0000 bb4f7a9e1fffc88e ¡¡¡Uaaaaaaaahhh!!!{done 30}
+f519-0001 a9469932b69e7c29 ¡¡¡Nooooooo!!!{wait 10}{n}¡¡¡Ya no lo aguanto más!!!
+f519-0002 02318b6d3ffab92c ¡Tenéis un problema muy{n}gordo en la cabeza!{p}Trabajando como máquinas{n}día si y día también ...{wait 10}{n}¡No tenéis espíritu!{p}¡¡¡Esto no es vivir!!!{wait 10}{n}Esto es...{wait 10} es...
+f519-0003 0324e45a02b4afb1 ¡Detenerlo!{wait 10}{n}¡Soltarme!
+f519-0004 a8bdb7c10b21f25c {speed 255}¿Vuelves al 14-1-6?{n}    Sí{n}    No
+f519-0005 4a0acba18f40916e Bloque en mantenimiento...
+f519-0006 4139de5772af9367 {speed 255}¿Vuelves al 13-6-1?{n}    Sí{n}    No
+f519-0007 ceb53ee7741516dc {speed 255}¿Vuelves al 12-3-6?{n}    Sí{n}    No
+f519-0008 988022a984a8a54a {speed 255}¿vuelves al 11-1-1?{n}    Sí{n}    No
+f519-0009 30ba34194ccf50b6 {speed 255}¿Vuelves al 10-4-1?{n}    Sí{n}    No
+f519-0010 5e1040fea00d6e58 Vaya un memo... {wait 10}{n}Podría haber vivido con{n}toda calma de no haberle{n}tocado las narices{n}al sistema.
+f519-0011 5959ed7e65a9f0f5 ¿Cómo no puedes estar{n}feliz con todo esto?{wait 10}{n}Haz como te hemos dicho{n}y serás promocionado.{p}¿Por qué ese{n}descontento tuyo?
+f519-0012 854bf5f34866398d Nuestros destinos están{n}atados mutuamente...{p}Por culpa de los{n}inadaptados estos{n}nos castigan a todos.{p}Me repatea las tripas{n}pensar que nuestro trabajo{n}para subir de rango nuestro{n}bloque se va a la mierda.
+f519-0013 84815d9efbf1fe7a Quiero subir un rango hasta{n}el de Ciudadano de segunda.{wait 10}{n}Entonces finalmente viviré{n}con los de la segunda clase.
+f519-0014 721d2767414454c9 Bloque K...{wait 10}{n}Todos han sido {n}"reubicados".{p}Pobre gente... han{n}trabajado tan duro.
+f519-0015 beb87b3afc93f4c7 Aún pensando así, eso{n}no significa que la{n}Administración lo haga.
+f519-0016 1f117229b95496e1 No contraries a la{n}Administración. Puede{n}afectar su rango, ¿sabes?
+f519-0017 8b00b8bd33f4defe Ultimamente unos cuantos{n}han intentado cambiar sus{n}IDs y escapar...{p}Normalmente son capturados{n}y "trasladados", o{n}re-educados.{p}Ni se te pase por la{n}cabeza intentar escapar.
+f519-0018 3277dbcc79eae315 Este es el conducto de{n}la basura.{p}Aquí no tienen nada que{n}hacer los Ciudadanos de{n}tercera clase. {wait 10}{n}Vuelve de donde has venido.
+f519-0019 6da4fcf327e93742 (...hey...{wait 10}{n}Soy yo... yo. {wait 10}{n}¿Nos vamos?)
+f519-0020 9d215ab88c014d19 Esta es la torre de{n}vigilancia.{wait 10} Largo de aquí.
+f519-0021 dfd9f2637846aa5a ¿¡Que estás haciendo!?{wait 10}{n}¡Te han dicho que regreses!
+f519-0022 8deb19bf5bcce5e2 ¡Regresa a tu "shell"{n}inmeditamente!
+f519-0023 8deb19bf5bcce5e2@2799b077ab407c5a ¡Regresa a tu "shell"{n}inmediatamente!
+f520-0000 d56f646b1ce73dec Shitan{n}"Fei, ¡por la rampa{n}de polvo!"
+f520-0002 1f8c3a337d4658ed Fei{n}"¿Dónde estoy...?"
+f521-0000 9355026df2d083b2 ¡¡¡Argh!!!{wait 10}{n}¡¡¡Por su pulpa me van{n}a "trasladar"!!!{p}Dios,{wait 10} si estás ahí...{n}¡Por favor, sálvame!
+f522-0000 b910491ff3a8e49e Sansón{n}"Así que, después de{n}todo está de nuestro{n}lado...{p}Eh, coge esto."
+f522-0001 0961a8abae68e3d9 ¿...Qué es?
+f522-0002 efc4410bde79b190 Sansón{n}"Un Permiso de trabajo de{n}Ciudadano de segunda,{p}como el mío. Con él,{n}podrás desplazarte con{n}libertad sin levantar{n}sospecha.{p}Bueno, si ella está{n}contigo, no debería haber{n}un solo problema.{p}Ale, estaré en la{n}entrada de la torre."
+f522-0003 78ba800c1fcd413e {speed 255}Has recibido un{n}permiso de trabajo.{done 60}
+f522-0004 3488c8cc7a3f8a06 Sansón{n}"Tu amigo deberían andar{n}por aquí cerca.{wait 10}{n}Encuéntralo y vuelve."
+f522-0005 1ae260238dbf4a3f Sansón{n}"Eh,{wait 10} ¿por qué no quiere venir?{wait 10}{n}Con tu poder estaremos a salvo."{n}    Supongo que sí{n}    No, mejor que no
+f522-0006 190ef35185393637 Sansón{n}"Sí, ¡ese es el espíritu!{wait 10}{n}Coge esto."
+f522-0007 658fbd0c472ae871 ¿Qué es esto?
+f522-0010 24e951142fadcdb5 Sansón{n}"¡Ese es el espíritu!{p}¡Pero ten cuidado!{wait 10} No se{n}sabe por que ha venido{n}una chica de Geburah..."
+f522-0011 0224a2db6b934b3d Fei{n}"?{wait 10}{n}¿No tendrá el pelo,{wait 10}{n}castaño rojizo?"
+f522-0012 2ba2e42ce4a7bda8 Sansón{n}"¡Sí, así es!{wait 10}{n}¿Sois amigos?{p}Pensándolo bien, parecía{n}buscar a alguien...{p}Debería andar por aquí{n}cerca. No perderías nada{n}por buscarla."
+f522-0013 afa85fe523cf787c Sansón{n}"¿Sí?{wait 10}{n}Bueno, es muy arriesgado,{n}pero no te dirá nada.{p}Si cambias de idea, ven{n}a hablar conmigo."
+f522-0014 e1477f61ccc9ff72 Fei{n}"¿¡Ti-{wait 10}Timothy!?"
+f522-0015 0fea1f52a7fceda5 Por desgracia no soy{n}Timothy.{wait 10}{n}Me llamo Sansón.{p}¡Anda, sí yo{n}te conozco!
+f522-0016 032ae9a68b002273 Fei{n}"Me...{wait 5} ¿me conoces?{wait 10}{n}¿Tú quien eres...?"
+f522-0017 5e59673ff83f03d3 Sansón{n}"Te conozco del Torneo{n}...{wait 10}Por desgracia perdí{n}en la primera ronda.{p}Perdí el conocimiento{n}de camino a casa..."
+f522-0018 cdc7a325cb30bcd3 ¿Y...?
+f522-0019 91fc9f44d2dad5bc Sansón{n}"Cuando me recuperé,{n}me encontré en este sitio.{p}Todos pasamos por el{n}"traslado". Es una mezcla{n}entre lavado de cerebro y{n}amnesia.{p}Pero conmigo se liaron{n}y aún puedo recordar."
+f522-0020 c9a60d6a89db07a3 Fei{n}"¿Entonces que pasa{n}con este último...?"
+f522-0021 d2f31125fe98f115 Sansón{n}"Sí, él también.{wait 10}{n}Murió en vano...{wait 5}...{p}También uno de mis pocos{n}amigos le ocurrió lo mismo.{p}Yo no voy a correr su misma{n}suerte.{wait 10}{n}¿Has visto la torre de{n}vigilancia cerca de aquí?{p}Voy a ir por ahí al Bloque{n}de la segunda Clase, luego{n}al puerto naval y más tarde{wait 5}{n}¡"arrivederci", Solaris!"
+f522-0022 415033e7a3f2d8b7 Fei{n}"¿Y lo puedes hacer?"
+f522-0023 ff44db50cfdd2d01 Sansón{n}"Pues claro, he conseguido{n}un pase.{wait 10} Me han conseguido{n}curro en el puerto naval.{p}Se supone que solo podré{n}salir cuando me llegue{n}mi turno, pero ya he{n}"solucionado" esa traba.{p}Hey,{wait 10} ¿te apuntas conmigo{n}y te vienes?{p}Con tu fuerza,{n}¡va a estar tirado!"{n}    Sí, vale{n}    No, mejor no
+f522-0024 d8283b0e9361951e ¡Eso es espíritu!{wait 10}{n}Lleva esto contigo.
+f522-0025 75fba4ea00bb7a5f ¿...Qué es esto?
+f522-0028 24e951142fadcdb5@552d8b9d9f60889e Sansón{n}"¡Perfecto, eso es{n}espíritu!{p}¡Pero, ándate con ojo!{wait 10}{n}Anda suelta por aquí un{n}oficial de Geburah...{p}sabe dios que se trae{n}entre manos..."
+f522-0029 0224a2db6b934b3d@29bffebd0bd13851 Fei{n}"¿¡Suelta!?{wait 10}{n}¿¡Geburah!?{p}¿Sabes si ella{n}tiene el pelo{n}castaño rojizo?"
+f522-0030 2ba2e42ce4a7bda8@64b1fc79e89de17d Sansón{n}"¡¡Has atinado de lleno!!{wait 10}{n}Que pasa, ¿sois amigos?{p}Ahora que lo pienso, estaba{n}buscando a alguien...{p}Tiene que estar aún por ahí{n}dando vueltas.{n}Deberías salir a buscarla."
+f522-0031 e453422baf3f4d2a Sansón{n}"¿Sí?{wait 10}{p}Bueno, es muy arriesgado,{n}pero no te dirá nada.{n}Si cambias de idea, ven{n}a hablar conmigo."
+f523-0000 16a1ae301f86b7f3 Aquí no hay vagos...{wait 10}{n}Trabaja,{wait 10} come,{wait 10} y duerme.{wait 10}{n}Sólo con eso podrás vivir{n}aquí...{p}Si alguien se queja, todos{n}seremos castigados.{wait 10}{p}Lo que significaría que{n}seríamos "reorganizados".{wait 10}{n}Nunca volverías.
+f524-0000 13bd8e5c1bee6d63 Elly{n}"¿¡Fei!?"
+f524-0001 f162b58d19577356 Fei{n}"¡Elly!"
+f524-0002 af079a5450ade1ca Elly{n}"Fei, eres tan{n}descuidado...{p}Si vas a intentar{n}infiltrarte en la base,{n}debes ser más sutil.
+f524-0003 c5a6b4fcfde5e481 Fei{n}"Perdón...{wait 10} Bueno,{n}¿dónde estamos?"
+f524-0004 29c296b1038b1cda Elly{n}"Nos encontramos en la{n}Tercera clase de Solaris,{n}bloque F.{p}Hay alrededor de 20 bloques{n}donde viven los habitantes{n}de la superficie.{p}Nosotros los Solarians{n}estamos enterados de toda{n}la información personal...{p}El ADN de todos está{n}inscrito a nivel molecular.{p}Incluso sus clase...{wait 10}{n}¿Sabes como se les conoce{n}a estos ciudadanos?"
+f524-0006 88ebd44ca1c9f180 Elly{n}""Abejas obreras".{wait 10}{n}Viene de la forma de los{n}bloques donde viven.{p}Esta gente proporciona la{n}mano de obra vital para{n}mantener el núcleo de{n}Solaris.{p}Me trajeron de viaje de{n}de campo hace tiempo.{n}"Sus vidas no tienen nada{n}que ver conmigo".{p}Recuerdo haber pensado{n}eso en su momento.{wait 10}{n}Nunca pensé que acabaría{n}aquí de esta manera..."
+f524-0007 33a0648c8a2bde7e Fei{n}"Significa eso que{n}deberías saber como{n}moverte por aquí, ¿no?"
+f524-0008 2c527a0c338f2184 Elly{n}"Ligeramente.{wait 10}{n}Lo primero es escaparse..."
+f524-0009 7b320296f75fedc2 Fei{n}"Ah sí...{n}¿y Doc dónde anda?"
+f524-0010 6930cb6780787994 Elly{n}"Tomó un ruta{n}diferente...{p}Debe haber acabado en un{n}bloque diferente."
+f524-0011 eeb5d65bd4af8d4a Fei{n}"Maldita sea...{wait 10} estamos{n}desmadrados del todo."
+f524-0012 e8e8da5b1d7866c2 Elly{n}"Yo no me preocuparía{n}por Shitan.{wait 10} Conoce la{n}ciudad mejor que yo."
+f524-0013 e4e66a258486fc9f Fei{n}"Y los demás, Bart y{n}el resto...{n}¿cómo les irá?"
+f524-0014 c750e7a7527d5d33 Elly{n}"Jessie está con ellos,{n}debe irles bien."
+f524-0015 269b07f5ae3a6433 Fei{n}"Eso espero..."
+f524-0016 25a3743d2bcc2d97 Elly{n}"No le des más vueltas.{wait 4}{n}Pongámonos en marcha."
+f525-0000 2d6a4f9d6fef5776 Shitan{n}"Seguro que podemos{n}entrar si pulsamos{n}ese interruptor..."
+f525-0001 f289356e12cc7a15 Tarjeta necesaria para{n}activar el Vac-Sys...{wait 10}{n}Inserte tarjeta.
+f525-0002 caf8472369ee3a08 Shitan{n}"...{wait 5}...No funciona.{wait 10}{n}¿Qué vamos a hacer...?"
+f525-0003 99085f4329ee337d Fei{n}"¿Qué vamos a hacer?{n}¿No tienes un plan?"
+f525-0004 2a3aa16c673c8fbc Shitan{n}"No, me temo que no...{wait 10}{n}no creí que nos pasaría{n}algo como esto."
+f525-0006 6a72736a0b855f32@a381e8bca10bd14d ¡Esperad!{done 20}
+f525-0007 35b58fb55974bbf5 Shitan{n}"¡Pero si es Elly!"
+f525-0008 ff9b8740abe79f00 Fei{n}"¿Elly?{n}¿Qué estás haciendo aquí?"
+f525-0009 d1f31c9e67abf293 Elly{n}"Bueno...{wait 10} después de lo que{n}viste, cuando estaba sola,{n}mi madre me dijo...{p}"ve con ellos"..."
+f525-0010 84b2b5b11d8ddd83 Elly{n}"Padre,{wait 10}{n}madre..."
+f525-0012 37e7d01ee6c83ad3 Shitan{n}"...El "Ministerio"...{wait 5}{n}...{wait 5}"
+f525-0013 8d0bb609e08568db Elly{n}"¿"Ministerio"!?{wait 10}{n}¡Mi padre también lo{n}nombró!{wait 10} ¿Qué es?"
+f525-0014 516061eb572b5134 Shitan{n}"...{wait 5}Lo sabrás pronto."
+f525-0015 22bb55f0306f4df0 Fei{n}"¡Tenemos que volver!{wait 10}{n}¡Hay que salvarlos!"
+f525-0016 4462e341b0a7a1d9 Elly{n}"¡No podemos!{wait 10}{n}Si vuelves, te cogerán.{p}Mis padres estarán bien.{n}Su rango les protegerá{n}durante un tiempo.{p}...Si es necesario, cuando{n}esto acabe, yo pagaré por{n}sus pecados."
+f525-0018 76e781c4609ee0cd Elly{n}"Vamos.{p}Seguro que algo está{n}pasando mientras aquí{n}estamos de cháchara."
+f525-0019 976d05a72912e6e6 Shitan{n}"También me preocupa la{n}familia de Elly, pero...{p}su padre se arriesgó para{n}darnos esta tarjeta.{n}Tenemos que seguir."
+f525-0020 8d738273d108b56c ¡De acuerdo!
+f525-0021 eb0681abc52d992c Shitan{n}"¡Vaya un lugar asqueroso!{n}Me repugna.{p}Lo que daría por estar{n}ahora en mi viejo{n}cuchitril, ¿no estás de{n}acuerdo, Fei?"
+f525-0023 c4f449bbfbc4ff08 Fei{n}"OK, ¡adelante!"
+f526-0000 0ee109825d877c72 Fei{n}"¡Ocupémonos de esto{n}y sigamos!"
+f526-0001 6d098cc2e401e274 ¡Intrusos!{wait 10}{n}¡Expulsión{n}inminente!
+f527-0000 7b9eed08fc08c23a Fei{n}"¿Qué vas a hacerme...?"
+f527-0001 906de625c39eb454 Como sospechaba.{n}¡No te has dado cuenta...!
+f527-0002 d770696f824c0b60 Fei{n}"¡Doc! {wait 10}Shitan,{n}¿por qué estás aquí?"
+f527-0003 33ff1678466009e3 Shitan{n}"Vi la imagen de Bart{n}en la pantalla en el{n}discurso."
+f527-0004 58aa560bcfde19ff Fei{n}"¿Lo viste también, Doc?"
+f527-0005 9976de7f110c2c62 Shitan{n}"Sí.{wait 10} Pero no os vi a{n}vosotros.{p}Poco después, escuché{n}algo sobre un intruso{n}en una planta de las{n}Tierras de Arebato.{p}Me imaginé que podías{n}ser tú, y esperé.{p}Después de eso, no se{n}supo si cogieron al{n}intruso."
+f527-0006 596ecc0c60f97a85 Fei{n}"¿Cómo supiste que iba{n}a venir aquí?"
+f527-0007 0980a6267c5a23c8 Shitan{n}"La mejor forma de colarse{n}en el Palacio es a través{n}del conducto de la basura.{p}Y para llegar a la tercera{n}planta, hay que pasar por{n}una torre de vigilancia.{p}Y he estado pensando{wait 5}...{wait 5}{p}¿Está vez podrías ser un{n}poco más cauteloso de lo{n}que eres normalmente?{p}Cuando uno se infiltra en{n}territorio enemigo, lo más{n}básico es ser sigiloso.{p}Y con el ruido que haces{n}siempre, puedes despertar{n}incluso a un muerto."
+f527-0008 d15964daec43620b Fei{n}"Bueno, esta vez intentaré{n}ser más cuidadoso..."
+f527-0009 aed863b91f04e274 Shitan{n}"Cambiando de tema, ¿no{n}estaba Elly contigo?{wait 10}{n}¿Dónde se ha metido?"
+f527-0010 cb936b8aa0a5f95d Fei{n}"Elly...{wait 10} ha vuelto a casa.{p}Nunca debió relacionarse{n}con gente como yo.{p}Y además tiene unos padres{n}estupendos..."
+f527-0011 34388a43339f7708 Shitan{n}"Está bien...{wait 10}{p}Sí, será mejor así.{n}Vamos al conducto."
+f527-0013 fef07315e176bcde Shitan{n}"Fei,{wait 10} quédate cerca de mí.{p}De esa forma no detectarán{n}tu presencia."
+f527-0014 d907dadaa9cc2547 ¿{wait 5}?
+f527-0015 69195138b3537182 Fei{n}"Doc, espera. {n}¿Cómo has podido pasar?{p}Si es verdad lo que dijo{n}Elly, solo los Primera{n}Clase y el personal del{n}ejército pueden pasar."
+f527-0016 de53849b3bf83ad8 Shitan{n}"¿Eh?{wait 20} Bueno{wait 10}...{wait 10}supongo...{p}Es{wait 10} probable que no hayan{n}borrado mi ID desde que{n}me fui del ejército, y {p}todavía estoy en la base{n}de datos."
+f527-0017 dcdf8838d88d582c Solaris al fin y al cabo{n}es un poco descuidado...{wait 10}{n}Jajaja...
+f528-0000 b72d2c4288df3d68 ¡Eh, tú! {wait 10}{n}¿No eres uno de los que{n}estaban en el discurso?
+f528-0002 eeec6698b83a35d3 ¡Estás bajo arresto!{wait 10}{n}¡Por esa puerta!
+f528-0003 e2661de4b2e8d572 ¡Hey!{wait 10} ¿¡Qué hacen{n}saliendo por ahí!?{wait 10}{n}¡Vengan aquí!
+f528-0004 403658def2ab310a Elly{n}"Soy Elehayym Von Houten,{wait 10}{n}Teniente de las Fuerzas{n}Especiales Imperiales.{p}Acabo de completar la{n}recolección de los {n}impuestos especiales del{n}nivel de Clase 3.{p}Estoy custodiando a este{n}habitante de la superficie{n}que estoy trasladado al{n}Cuartel General.{p}¿Alguna objección?"
+f528-0005 e87ff9c5c61cecd5 (¿¡G-Geburah!?)
+f528-0006 53ad1fc6440fc36e S-{wait 5}sin objección alguna,{wait 5}{n}mi Teniente...{p}Adelante, por favor.
+f528-0007 a12ba02640998abd Adelante, por favor.
+f528-0014 6fd82b636a5056c2 ¿De vuelta al tercer{n}nivel?{wait 10} {p}Buen trabajo.{wait 10} {n}A debido ser duro."
+f528-0015 8d3d385497b0036c ¿Duro?
+f528-0016 a34191d0b14f7cbf Menuda valentía por ir a{n}esa zona llena de esos{n}bárbaros...{wait 10} {p}Sólo Geburah puede hacer{n}eso.
+f528-0017 48758fdf4646a3a8 Sí, sí...{wait 10} Debe haber un{n}error. Inténtalo una vez{n}más, por favor.{done 60}
+f528-0018 ebe001fce91270a2 Otra vez no.{wait 10} Por eso{n}odio las oficinas del{n}gobierno...{done 60}
+f528-0020 74882b4de2ac0548 Es un problema con las{n}oficinas del gobierno{n}...crunch...crunch...
+f528-0022 0f3f2fecb5089223 Así que la destrucción{n}del portal fue orden{n}del emperador.{wait 10} {n}Menos mal.
+f528-0024 72d2f486c7df3521 ¿La de detrás tuyo es de{n}Geburah?{wait 10} {n}Escuché que unos Corderos{n}destruyeron el portal...{p}¿Va todo bien?{n}    Sí, todo está bien{n}    No sé que decirte
+f528-0025 4566c89648ca2929 Fiuu, menos mal.
+f528-0026 422e09d44246964a ¿Qué?{wait 10} Venga, déjate{n}de chistes.{wait 10} {n}¡Es imposible!
+f529-0000 86348aac3cb00655 Fei{n}"¿Elly...?{wait 10}{n}¡Hey, Elly!"
+f529-0001 0c31ea34c67856ec Elly{n}"Perdona...{n}¿Has dicho algo?"
+f529-0002 1e315d78b4e4d5fe Fei{n}"¿Que si he dicho algo?{wait 10}{n}¿Te encuentras bien?{wait 10}{n}Estás ida.{p}Tu cabeza no está aquí."
+f529-0003 95da72d1d8699f5f Elly{n}"Per...{wait 5}perdona.{wait 5}{n}Me he quedado embelesada.{wait 5}{n}Y encima todo este ruido."
+f529-0005 482f28b35cb08bb4 Elly{n}"...Fei,{wait 20} ¿Fei?{wait 10}{n}¿Te pasa algo?"
+f529-0006 0e65e3caa036699c Fei{n}"¿Eh? No es...{wait 10} nada...{wait 10}{n}Pero este tío, Karellen.{wait 10}{p}Me siento como...{wait 10}{n}si le conociera{n}de antes..."
+f529-0007 f3616533f5d9fe2b Elly{n}"¿Entiendes lo que{n}dicen?{wait 10}{n}¿Te lo traduzco?"
+f529-0008 b43f3540fb0fe60b Fei{n}"Sí, por favor."
+f529-0010 0f72ee4877c195ce {speed 255}                              {n} {n}           ¿¡ B-Bart !?          {n} {done 20}
+f529-0011 d41320edb95768c7 ¡Argg!
+f529-0012 1a5c84a81a5c7cba Elly{n}(¡No grites!{p}¿Y si descubren que eres{n}forastero?)
+f529-0013 6d0f2b26717ce8f5 Fei{n}(Lo siento, me ha salido{n}del alma.{wait 10}{n}¡Que los han capturado!{p}Maldición...{wait 10}{n}¡Vamos!{wait 10}{n}Tenemos que ayudarlos...{wait 5})
+f529-0014 c5740785164d0080 Elly{n}(¡Espera!{wait 10}{n}Aún sigue hablando...)
+f529-0015 aa44e51616c36270 Elly{n}("Dice:{slow 1} Con la intención{n}de revivir a nuestros{n}progenitores,{p}los antiguos Gazel,{wait 10}{n}pasado mañana,{wait 10} estos{n}habitantes de la{n}superficie{wait 10} serán puestos{p}a disposición del{n}Sistema Soylent".)
+f529-0016 2b00b47fe5f4edca Fei{n}(¿Revivir Gazel?{wait 10}{n}¿Sistema Soylent?{wait 10}{n}¿Qué es eso?)
+f529-0017 18354811bbf5a033 Elly{n}("Gazel", la casta de{n}Solaris...{wait 10} Gazel significa{n}"ciudadanos de primera".{p}...Pero, en este caso,{n}probablemente quiera decir{n}"el Ministerio Gazel".{p}Hace tiempo sus miembros{n}sacrificaron sus cuerpos{n}al proteger a la gente{n}de Solaris.{p}He odio que el Sistema{n}Soylent forma parte vital{n}de sistema de Solaris, pero{n}no sé mucho más del tema.{p}Da igual, probablemente sea{n}una tapadera para algún{n}tipo de experimento...)
+f529-0018 7875954c9e0b4ff1 Fei{n}"¡Voy a coger el toro por{n}los cuernos pero ya!{wait 10}{n}¡Me piro!{p}¡Esos no van a poder{n}conmigo!"
+f529-0019 9dd8afab71f77d88 Elly{n}"¡Por eso te digo que{n}esperes! No sabemos que{n}nos va a ocurrir.{p}¡Sí vamos allí con todo{n}el descaro, podríamos{n}correr la misma suerte!{p}En palacio están en{n}alerta, necesitamos{n}investigar...{p}¡Ni siquiera sabemos donde{n}los tienen prisioneros!{p}Aún nos quedan dos días,{n}estoy segura que hay{n}algún modo para ayudarlos.{wait 10}{n}Tenemos que encontralos."
+f529-0020 2b77e7427e3c787c Fei{n}"¿Dos días? ¿Quién te{n}ha dicho eso?{p}Y si cambian de{n}opinión y es mañana,{n}que...{p}Quiero decir, cabe{n}la posibilidad,{n}¿verdad?"
+f529-0021 07df895199a3fc31 Elly{n}"Quizás...{wait 10} pero no hay{n}nada que podamos hacer,{n}¿correcto?{p}Shitan no estaba,{wait 10} es{n}probable que esté a salvo{n}en algún lugar viendo la{n}retransmisión.{p}Tenemos que encontrarle{n}primero a él. Él conoce{n}mejor que yo la{n}distribución del centro.{p}Vamos a hacer las{n}cosas sin precipitarnos, {wait 10}{n}¿vale?"
+f529-0022 75a31687470c5706 Fei{n}"¿Dónde está?{wait 10}{n}¡Lo necesitamos!"
+f529-0023 6881891102854f10 Elly{n}"¿Cómo lo voy a saber?"
+f529-0024 e2c83e0a72e0b148 Fei{n}"Tú estás pa'llá.{wait 10}{n}¡No tienes plan ni{n}nada parecido!"
+f529-0025 05c86a0d22091613 Elly{n}"¡Yo solo digo que{n}vayamos con cuidado!"
+f529-0026 1dbbcca71c097597 ¡Pero!{done 20}
+f529-0027 729c327131f2dd8a ¡Ahí va!{done 20}
+f529-0028 4bca839c621e5d4c Hey, ¿qué pasa aquí?
+f529-0029 adfc8e0710e41b5d Fei{n}"¡Mira!{wait 10}{n}¡Nos han descubierto!"
+f529-0030 945662b45d100b6e Elly{n}"¡Eso es por haber{n}estado todo el rato{n}alzando la voz!"
+f529-0031 e032f568f7b1fa0c Elly{n}"¡Por aquí!"{done 10}
+f529-0033 44e686d2010dd25d ¡...Alerta, alerta!{wait 10} {n}¡...Hemos localizados{n}dos sospechosos!{p}¡...Envíen de inmediato{n}los cuerpos de seguridad!{done 30}
+f530-0002 6541a54470236b07 Soy tan indeciso, no sé{n}que comprar.{wait 10} {n}No me molestes.
+f530-0003 2744b52ecf6bce29 ¿Qué? ¿No tienen pogoshoes{n}del modelo Imperial?{n}¡Yo mataría por un par!
+f530-0004 dbb98ae2dbce9e4c Acepte nuestras{n}disculpas.{p}Acabamos de vender{n}el último par.{wait 10}
+f530-0005 e881d18188bfab15 ¡Waagghh!
+f530-0006 98d6c54d48419a9c Guau, el modelo Imperial...{done 30}
+f530-0007 f954ed2fe8f7ae54 ¡Yo también quiero{n}el modelo Imperial!
+f530-0008 bcad9322243c1179 El servicio en Solaris es{n}genial, da igual lo grande{n}que sea, siempre están{n}ahí cuando llegas a casa.
+f530-0009 8ecd69156a85a7cc ¡Pero que chulo es el{n}"modelo Imperial"!
+f530-0010 93d3a849327bb442 Fei{n}"Pues pone "modelo{n}Imparial"..."
+f530-0011 b5511a37db25890c ¿Eh?{wait 10}{n}¡Guau, es verdad!{p}¡Pues debe ser{n}de imitación!
+f530-0012 96e01e3f52cfbbd1 Hay tantos modelos{n}Imperiales a la venta...{wait 10}{n}Es una edición limitada,{n}¡me voy a hacer con ellos!
+f530-0013 d8d806427b9cd5e9 ¡Guau, que aleación de{n}combate! {wait 10}{n}¡Cuando crezca voy a{n}unirme también a Geburah!
+f530-0014 49a6f526a3634114 ¡Yupi, con esto podré{n}machacar a los Corderos!
+f530-0015 271a6f118b9bd7b5 Me ha tocado tanto la{n}moral mi hijo que al final{n}he cedido y le compraré{n}la versión Híbrida.{p}Me llenará de orgullo{n}si cuando crezca se{n}alista en Geburah.
+f530-0017 321d7fc24421a634 Umm, que debería hacer...{wait 10}{n}¿Tú qué opinas?{n}    ¿Qué tal ese?{n}    ¿Qué tal el otro?
+f530-0018 a13241e164ccc989 ¿Tú crees?{wait 10} {n}Pero a ti te gusta{n}la ropa rara...{n}¡Me llevaré esa!
+f530-0019 5ecb1ed6cbfc3351 Ummm, ¿en serio?{wait 10}{n}Pues cada vez estoy{n}peor...
+f530-0020 58a241d934c79c89 ¿Qué desea?
+f530-0022 bb4814a1a7977b3e Esto es Ticketmeister.{p}¿Qué está buscando?{n}    {speed 255}Tickets{n}    Comprar y vender{n}    Nada
+f530-0023 da2a45ac7ca36416 ¡Otra muestra de{n}DK1200!{wait 10}{n}En la Sala Imperial.
+f530-0024 fa3bea36a5de32c4 Los asientos VIP para {n}el Discurso se han{n}agotado.{wait 10} Disfrutarlo{n}en el Homevision.
+f530-0025 2278c8f437929df0 Quiero comprar el modelo{n}Imperial de las Pogoshoes,{n}¡y estoy dispuesto a pagar{n}cinco veces lo que valen!
+f530-0026 780a0cc8b2388536 Estamos distribuyendo{n}entradas para el{n}Discurso.{wait 10} Acérquense al{n}21 en Etren Court.
+f530-0027 44d873160a856495 ...{wait 10}{n}He visto esto antes{n}en algún lado...
+f531-0001 0663b539a11d1ca1 Quiero plantas...{p}pero que sean de verdad.
+f531-0002 e7a8cd05ee36beac No puedes comprar plantas{n}de verdad a menos que{n}seas un ciudadano de{n}primera Clase.{p}...Joba...me pueden{n}los celos.
+f531-0004 fee072c6ea589553 (Quiero una muñeca DK1200...)
+f531-0006 4a809d53257deb4d ¡Este Gear de Aleación{n}Imperial que me ha{n}comprado papi es la caña!{p}¡Vuela de verdad!{wait 10}{n}"¡Purga a los Corderos!"{wait 10}{n}¡Guau!
+f532-0001 454c1d2545cf6735 Incluso una ciencia tan{n}avanzada como la de {n}Solaris no puede detener{n}el envejecimiento...{p}Pero dicen que los{n}más poderosos lo han{n}superado...{p}Ellos ya tienen{n}descendientes lustrosos,{n}¿qué más quieren?{wait 10}{n}¿No estás conmigo?
+f532-0003 0432b91d7eec81dc ¿Qué tal el Discurso?{wait 10} {n}Debe haber sido mejor{n}desde los asientos VIP.
+f532-0004 effa28d2727cc732 ¿Ehm?{wait 10} ¡Sois los chavales{n}que les di las entradas!{wait 10}{n}¿Aún estáis aquí? ¡Os vais{n}a perder el Discurso!
+f532-0005 23a825c79b7be552 Vine a ver al Emperador,{n}y me lastimé la espalda...{wait 10}{n}Ellos lo pueden curar todo{n}menos una espalda chunga.{p}Anda que no hemos tenido{n}que sufrir para sacar{n}un par de entradas...
+f532-0006 c7884bfd92fba32f Hey, muchachos.{wait 10}{n}¿Necesitáis entradas para {n}el Discurso?{p}¡Los muchachos como vosotros{n}deberíais ir a verlo!{n}    Pues sí, gracias...{n}    Otro día quizás
+f532-0007 a4640d701ff81313 {speed 255}Obtienes las entradas.{done 60}
+f532-0008 865c45687f21bea5 Olvidaros del dinero. Ir{n}y ya está, que si no os{n}lo perderéis.{wait 10}{n}Yo lo veré en Homevision.
+f532-0009 8ac5f8b5795c55fb Que chiquillos estos...{wait 10}{n}Mejor que los cojáis{n}antes de que cambie de idea.{wait 10}
+f533-0000 c379f7551e3b23f5 !No lu nehvali usa!
+f533-0001 84243834bd25d1d8 Aserejé{wait 5} ja {wait 5}de jé {wait 5}de jebe{wait 15}{n}...Estoy bailando,{n}no molestes.
+f533-0003 2d7b6cfe19bae143 tu de jebere{wait 5} sebiunouva{done 30}
+f533-0005 2d7b6cfe19bae143@bb546eec2908cb13  jabi an de bugui{n}{done 30}
+f533-0006 358a3479dc8af9fd  an de buididipí {n}{done 30}
+f533-0007 358a3479dc8af9fd@f06322acdd582c74  Y la baila,{wait 5}{n}  y la goza,{wait 5}{n}   y la cantaaa...{done 30}
+f534-0001 7b0840b3a5aef8d1 Ve y guarda tus datos{n}en esa Zoharita.{p}Te será fácil descansar{n}si envías tus datos{n}regularmente al Departa-{n}mento Central de Control.{p}Tengo entendido que están{n}por ahí en el suelo para{n}recopilar datos.
+f537-0000 b9bd7d2b8d7271b3@58f8923ae29743b0 ¡Fei!{done 30}
+f537-0001 d4d5b59a95157bdb Elly{n}"¡...!"
+f537-0002 ae19d7513a7c192e Bart{n}"Es peligroso moverse en{n}grupos grandes.{wait 10}{n}Tomemos rutas separadas."
+f537-0003 0426fa163a189adb Shitan{n}"Cierto."
+f537-0004 8e5b689e6fc20196 Hammer{n}"¡No te preocupes, se me da{n}bien reunir información!"
+f537-0005 d36083b5aa3960ed Rico{n}"¡¡¡A ti solo te gusta{n}enterarte de la miseria{n}de los demás!!!{p}Solo vas a estorbar."
+f537-0006 4b741f9f168021c6 Hammer{n}"¡¡¡Perdóname...!!!{wait 10}{n}¡¡Perdón!!"
+f537-0007 aab32baa62b7db71 Shitan{n}"María..."
+f537-0008 c9d9d450d28f3220 María{n}"Sí,{wait 10}{n}¿qué pasa?"
+f537-0009 d2024df708ff073a Shitan{n}"Ya casi está restablecido{n}el trastorno que {name 19}{n}ha causado.{p}Tú y los demás deberíais{n}marcharos antes que el{n}sistema de detección{n}enemiga se active de nuevo.{p}Nosotros nos ocuparemos del{n}resto."
+f537-0010 73e09fa01ff7dc09 María{n}"Vale, {wait 10}ir con{n}cuidado..."
+f537-0011 a11e00ae6f7b6b5f Fei{n}"Que escalofrío, es{n}como si el mundo{n}estuviera del revés."
+f537-0012 ff9f2bf76cd26437 Elly{n}"La gravedad de Solaris es{n}opuesta a la de la tierra.{p}No tenemos tiempo para{n}explicaciones, tienes que{n}conseguir acostumbrarte.{p}Es incómodo para los de{n}la superficie, pero que{n}se le va a hacer."
+f537-0013 c7e2bad80ff05cc7 Fei{n}"Hey, ¿esto qué es?"
+f537-0014 d4a97c21443f57ee Elly{n}"Parece algún tipo de{n}centro de distribución o{n}almacenamiento.{p}No estoy segura, pero{wait 3}{n}es probable que desde aquí{n}expidan suministros extra,{n}materiales y combustible{p}reunidos en la superficie.{p}Se trata de la tecnología{n}y los productos que{n}vosotros lo habitantes de{n}la superficie recibís de{p}la "Iglesia"..."
+f537-0015 a4c5dd2aa35ed8ce Shitan{n}"Por el momento, debemos{n}reunir información..."
+f537-0016 9d2a1577c926850a Fei{n}"¿Es esto un container{n}del sistema de transporte{n}del que ha hablado Elly?"
+f537-0017 6df85a730ddce1ff Elly{n}"Bueno... no estoy{n}segura.{p}Pero creo haberlo{n}visto antes..."
+f537-0018 d753d736b73d9fe7 Fei{n}"¿Le echamos...{wait 5} {n}...{wait 10}un vistazo?"
+f537-0019 dc6d10ed7d02f1a7 Elly{n}"¿Qué estás diciendo? {n}No tenemos tiempo{n}para eso.{p}Tenemos que salir{n}de aquí rápido."
+f537-0020 3a2205213cbab24a Fei{n}"¿No dices que hay que{n}reunir información?{p}Pues con esto{n}probablemente podamos{n}infiltrarnos."
+f537-0021 c9c88b4f9686f63f ¡Que!{done 30}
+f537-0022 b99b812b8d559219 ¡Fei!{done 20}
+f538-0001 8c8baa5af1db7e34 ¿Elly?{wait 10}{n}Elly, ¿eres tú?
+f538-0002 f3d6399591df90fc ¡Madre!
+f538-0003 c46a6e87e9a951e3 Medena, madre de Elly{n}"¡Elly...!{wait 10}{n}Estás bien...{wait 10}{n}que contenta estoy..."
+f538-0004 5fae22dcc52e7451 Medena{n}"El ejército me contó que{n}caíste en combate..."
+f538-0005 0baaa9e866a1c191 Elly{n}"No, madre, no es verdad.{wait 10}{n}Mírame, ¡estoy viva!"
+f538-0006 694735079d18db7c Elly{n}"Madre,{wait 10}{n}¿dónde está padre?"
+f538-0007 f1747e6cd1980988 Medena{n}"Todavía está en el{n}palacio. No tardará{n}mucho en volver..."
+f538-0008 14ff28b30bc68ada@cdad7a8cab083d3a Elly{n}"Vaya..."
+f538-0009 4b39e490404fc965 Medena{n}"Elly, ¿quién{n}te acompaña?"
+f538-0010 64238842f35ae324 Elly{n}"¿Qué?{wait 10} Ah{wait 5}...{wait 10} Um, {wait 10}es de{n}las Fuerzas Especiales,{n}como yo.{p}Ha sido ascendido hace{n}poco a Primera Clase.{wait 30}{n}Gracias a él he podido{n}volver."
+f538-0011 1e46879281f037a7@c578cc2e81967f31 ¿Verdad, Fei?
+f538-0012 5f67e4d56ee64af0 Fei{n}"¿Qué?{wait 10} Um...{wait 10}no...{wait 10}{n}Quiero decir..."
+f538-0013 84995750167a4569 Medena{n}"Entiendo. Por eso va{n}vestido como un habitante{n}de la superficie.{p}Pero, {wait 10}¿por qué no lleva{n}el uniforme de las Fuerzas{n}Especiales, Elly?"
+f538-0014 4de613ad839830c6 Elly{n}"Lo siento madre.{wait 5} Hay un{n}informe que requiere toda{n}mi atención, {wait 10}así que..."
+f538-0015 519bb4b66f1d7704 Elly{n}"Fei, ven conmigo."
+f538-0016 713b5ef65f82f8c7 Erich{n}"Elly...{wait 10}{n}Llévate esto..."
+f538-0017 2e3b4b50eda11e3d {speed 255}Obtienes una{n}Tarjeta del Ejército.{done 60}
+f538-0018 d5b87aa43e257118 Elly{n}"¿...Padre?"
+f538-0019 6c911b5d34b0a591 Erich{n}"Un paso para madurar es{n}escoger tu propio camino{n}en la vida..."
+f538-0020 c1e116a676ba3ee4 Elly{n}"...Padre."
+f538-0021 b5ca6301c4cef037 Erich{n}"Parece que la policía{n}militar ha llegado..."
+f538-0022 c999052fd8f8797c Erich{n}"¿Por qué ha venido aquí la{n}Guardia Imperial{wait 10} en vez de{n}la policía militar?"
+f538-0024 9bbdd03c01737b85 Erich{n}"¿Qué hacéis?{wait 10}{n}El intruso ha huido.{p}¡Mi hija no tiene nada{n}que ver!"
+f538-0025 7cb17c30af268f1b Lo siento, Lord Erich.{wait 10}{n}Entréguenos a su hija.{wait 10}{n}Son órdenes de Lord Karellen.
+f538-0026 46857eccccecfe0f Erich{n}"¿Lord Karellen?{wait 10} Que quiere{n}de mi hija...{wait 30}{n}¿Qué?{p}¡Quieres decir{wait 10} que{n}Gazel está...!"
+f538-0027 56a03d28705535f3 No necesita saberlo.
+f538-0028 79080d46e369140d ¡Atraparla!
+f538-0029 ccff9ce8e03da314 Erich{n}"¡Dejad a mi hija!{n}O si no..."
+f538-0030 71a7b3a1b43c7f22 Elly{n}"¡Padre!"{wait 10}
+f538-0031 9ea94bc6fc263ac9 ¿Q-{wait 10}qué?{wait 10}{n}¡Lord Erich!{wait 10} ¿Se{n}ha vuelto loco?
+f538-0032 001899e0a072a269 Erich{n}"¡Estoy perfectamente!{wait 10}{n}¡Dejarla en paz!"
+f538-0033 59ea1379993ef060 Las órdenes de Lord Karellen {n}son órdenes del Emperador.{p}¿Se da cuenta de lo que{n}pasará si desobedece las{n}órdenes de Lord Karellen?{p}¡Serás degradado a Tercera{n}Clase!
+f538-0034 917feb1828f645d2 Erich{n}"Claro que lo sé.{p}Pero aunque sean órdenes{n}de Lord Karellen ella es{n}mi hija, y no permitiré{n}que os la llevéis.{p}¡Elly,{wait 10} vete!{n}¡Yo me ocuparé de esto!"
+f538-0036 91ff2dfd3de798a9 Erich{n}"No te preocupes por mí.{wait 10}{n}Ve a ayudar a Fei."
+f538-0037 7a0c9faccd0207a2 Elly{n}"Padre..."
+f538-0038 61d46cae8278c089 Medena{n}"Oh, Elly...{wait 10}{n}¿Qué estás haciendo en la{n}habitación de tu padre?{p}¿No recuerdas lo que pasó{n}la última vez?{n}¿Qué voy a hacer{n}contigo...?"
+f539-0000 636377903f291427 Ha pasado mucho tiempo{n}para que toda la familia{n}vuelva a reunirse.
+f539-0001 a35df6c4b0e785d9 ¡Oh!{wait 10}{n}¡Señorita Elly!{wait 10}{n}¡Está viva! Que alegría me{n}da verla de nuevo.{p}Pensaba que había{n}fallecido... ¡el Maestro{n}se pondrá muy contento!{p}Oh sí, ¡este regalo es{n}de parte del Maestro!
+f539-0002 1a256cc2062074a6  {n} {speed 255}Obtienes PsicoVara{done 60}{n}
+f539-0003 16d2adcda6b4761c ¡Por favor, cuídelo mucho!
+f540-0000 2daeb806fd610ff7 Medena{n}"Elly...{wait 10}{n}Soy tan feliz...{wait 10}{n}Déjame verte...{p}Tu padre me dijo que{n}volverías. Y no perdí{n}la esperanza."
+f540-0001 07b0d10d55fc5d15 Elly{n}"...Madre."
+f540-0002 48f8eb9cb688e6f1 Medena{n}"¿Te vas a quedar un{n}poco? No creo pedirte{n}demasiado.{p}Tu padre se volverá{n}loco de contento."
+f540-0003 026d025eed8cc7d8 Elly{n}"Sí...{wait 5} supongo."
+f540-0004 4eb1f3b78e550ce8 Medena{n}"Cocinaré algo especial.{wait 10}{n}Fei, ¿te gustaría comer{n}aquí?{p}Elly nunca trae a sus{n}amigos. {wait 10}{n}Y me gusta que haya más{n}gente."
+f540-0005 0e514b744f815fa9 Medena{n}"Bien,{wait 10} voy a comprar{n}algunas cosas. Poneros{n}cómodos."
+f541-0000 e5be7ea4cdbacc68 Elly{n}"Aquí está el eMac{n}de padre.{p}Si podemos romper la{n}seguridad de la red{n}de palacio, podremos{n}acceder a los datos..."
+f541-0001 e98d3ffdbafbc0a2 Elly{n}"¿ID...?{wait 30}{n}La contraseña tendrá{n}que ver algo conmigo."
+f541-0002 ef809b35ce3e02c9 Elly{n}""E{wait 50}l{wait 5}e{wait 50}h{wait 5}a{wait 5}y{wait 35}y{wait 5}m"..."
+f541-0003 46c4c4800f3e3d3f →{wait 10}→{wait 10}×{wait 10}{n}Acceso denegado. {wait 10}{n}Contraseña incorrecta.
+f541-0004 6675760a5ad48d18 Elly{n}"Que mal...{wait 30}{n}¿Y si lo escribo{n}al revés...?{wait 20} "m{wait 7}y{wait 37}y{wait 7}a{wait 10}h{wait 5}e{wait 5}l{wait 5}E"."
+f541-0005 90c8681b4efbb8ab →{wait 10}→{wait 10}○{wait 10}{n}Bienvenido a Solaris Net.{wait 10}{n}19 mensajes no leídos.
+f541-0006 b7a22d61d5b92567 Elly{n}"¡Sí!{wait 10} ¡Estamos dentro!{wait 10}{n}Veamos, antes estábamos{n}aquí...{p}Guau, {wait 10}¡se conecta{n}desde aquí!"
+f541-0007 5ffdc5b2477b8774 Elly{n}"Fei, deberíamos poder{n}llegar a donde tienen{n}a todos retenidos,{p}desde los conductos de{n}basura que hay en el{n}nivel tres."
+f541-0008 1f2a4dbee337650c Fei{n}"Eso quiere decir que{n}tenemos que volver al{n}principio."
+f541-0009 f171b0bca5332c35 Elly{n}"¡Pero ahora sabemos{n}donde estan!{wait 10}{n}¡Venga, vamos!"
+f541-0010 6e9f834e21bdd149 Elly, ¿a{n}dónde vas?{done 30}
+f541-0011 3f538f2862abe2c7 Elly{n}"¡Padre!"
+f541-0012 7cdac7bbf79b0561 Erich, el padre de Elly{n}"¿Qué estás haciendo,{n}Elly...?{p}Ya te dije en una{n}ocasión que no entraras{n}aquí y menos aún que{n}tocaras el eMac."
+f541-0014 7d311a0dc3178f06 Erich{n}"¿Es la Escuadrilla de{n}Policía?{wait 10}{n}Soy yo, Erich.{p}Ha entrado un ladrón{n}en mi vivienda,{wait 20} por{n}favor, vengan de{n}inmediato."
+f541-0015 f394a4c4b63ac5dc Elly{n}"¡Padre...!{wait 10}{n}¡Fei no es un ladrón!"
+f541-0016 613db3dd6142108d Erich{n}"¿Entonces que es?{p}Un desconocido está en{n}mi habitación...{wait 10}{n}¿y no es un ladrón?"
+f541-0017 1041fd1e21260234 Elly{n}"Hay una explicación...{wait 10}{n}¡!"
+f541-0018 ad07cb7bb0f52ea9 Elly{n}"¡No le dispares!{n}¡Fei sólo quiere salvar{n}a sus amigos!{p}¡Además, también son mis{n}amigos!"
+f541-0019 cc26a6c428f70d9a Erich{n}"¡No! Aunque sea tu{n}amigo...{p}¡No puedo hacer la vista{n}gorda a un habitante de{n}la superficie que quiere{n}entrar a palacio!"
+f541-0020 ba738a736223c9c8 Elly{n}"Vale.{n}{wait 10}Entonces yo también{n}soy una traidora.{p}¡Dispárame a mí también!"
+f541-0021 b92a9fe428d673b7 Erich{n}"¡No!{wait 10}{n}¡Tú te quedarás aquí!{p}¡Aparta! {wait 10}{n}¡Quítate de en medio!{wait 10}{n}¡Elly!"
+f541-0022 9d1b48f4a86dc68c Elly{n}"¡No!"
+f541-0024 456ff30723058e44 Erich{n}"¡Sabes como los traidores{n}son castigados incluso si{n}son Primera Clase!{p}Estarás a salvo si termino{n}con los intrusos que saben{n}algo de nosotros. {wait 10}Sólo me{n}preocupa tu seguridad..."
+f541-0025 6b0d6bc6e2809d4f Elly{n}"¡Estás mintiendo!{p}Tú sólo odias estar en{n}cualquier posición que{n}te ponga en peligro.{p}¿No era por eso por lo{n}que no quisiste que me{n}uniese a Jugend?{p}¡Lo único que querías{n}es que no vieran{n}a tu propia hija!"
+f541-0026 d32dda062bad860d "¡Porque soy mitad{n}habitante de la{n}superficie...!"
+f541-0028 62efbe958ea0226b Erich{n}"No me puedo creer{n}que aún...{p}¿¡Cómo te atreves a decir{n}algo así delante de tu{n}madre...!?"
+f541-0029 43bcd1057bdc5a3d Elly{n}"¡Porque...!"
+f541-0030 03f5a8bc5b6b111d Fei{n}"¡Dejarlo ya!{p}No quiero ver a un padre{n}y su hija pelearse por{n}mi culpa.{p}No os voy a causar más{n}problemas.{n}Así que me iré.{p}Soy un intruso.{n}Si me voy, todo se{n}arreglará."
+f541-0031 13bd8e5c1bee6d63@a878004221ff5be2 Elly{n}"¿Fei?"
+f541-0032 f132e414a9c07aa4 Fei{n}"Elly, {wait 10}no debes decir{n}esas cosas delante de{n}tu madre.{p}Desconozco la verdad,{n}pero ella es tu madre,{n}no una extraña.{n}¿Es eso cierto?"
+f541-0034 fe9ddd162177fc00 Fei{n}"Déjame pasar.{p}Sólo quiero salvar a mis{n}amigos. Como me dispares{n}y no me mates, tendrás{n}serios problemas."
+f541-0035 bfb4fe14160b098a Elly{n}"?{wait 10}{n}¿Padre...?"
+f541-0036 d0b8435a08c3eb4b Erich{n}"El intruso ha escapado.{wait 10}{n}Márchate de una vez.{p}Los guardias no tardarán{n}en llegar."
+f541-0038 321bef5b2107437c Erich{n}"Puede que seas un intruso,{n}pero un intruso que{n}protegió a mi hija.{p}Si te disparo, la{n}perderé para siempre."
+f541-0040 cd90cb0ccbd9a1b7 Elly{n}"¡Déjame ir con Fei...!"
+f541-0041 51c58065806dbba8 Erich{n}"No. {wait 10}{n}No puedo dejar que te{n}vayas."
+f541-0042 81ecda661b45e172 Elly{n}"¡Pero...!"
+f541-0043 e1dba8e8dd365da3 Fei{n}"No pasa nada.{n}Esto ya son líos de los{n}habitantes de la superficie.{p}No quiero volver a{n}causarte más problemas.{wait 10}{n}Ya me apañaré yo solo."
+f541-0044 e0f3c55d21c4206a Elly{n}"ÍFei!"
+f541-0044 e0f3c55d21c4206a@731182c379e695e8 Elly{n}"¡Fei!"
+f541-0045 29c7b02aeba65f77 Fei{n}"Pero Elly, esta vez{n}deja el ejército.{wait 10}{n}Gracias por todo."
+f542-0000 88552ae1a7b7ecbf Elly{n}"Esta es mi habitación..."
+f542-0001 e1fd62185ac17522 Elly{n}"Ahh, por fin un poco{n}de tranquilidad."
+f542-0002 4e919ead8b87b112 Fei{n}"¡Es enorme! ¡Seguro que{n}es más grande que la del{n}jefe del pueblo!"
+f542-0003 bc2198be5d4b7b55 Elly{n}"No será para tanto.{p}Estoy cansada después de{n}correr, así que me daré{n}una ducha."
+f542-0004 9bcf8924abe7f1fe Fei{n}"¿Tienes un baño{n}en la habitación?"
+f542-0005 03f58aae0dafa5a7 Elly{n}"Es lo normal."
+f542-0006 9f77dbbe8a69eb77 ...{wait 10}{n}(De normal, nada...)
+f542-0007 64453294e587d5df Elly{n}"¿Cuándo vas a dejar{n}de mirarme?"
+f542-0008 88fe5dc8255f0862 Fei{n}"Eh, {wait 10}Elly, {n}¿esa era de verdad{n}tu madre?"
+f542-0009 e038b8cb84bc8913 Elly{n}"Sí."
+f542-0010 1675a093cfcaabda Fei{n}"Oh.{wait 10}{n}Es una mujer muy guapa."
+f542-0011 015bb8126a73264b Elly{n}"...{wait 10}{n}Sí, lo es."
+f542-0012 2b431e4d01ccefa4 Fei{n}"Pero no te tenéis{n}los mismos rasgos.{p}¿Te pareces más a tu{n}padre?"
+f542-0013 8209c010564477ff Elly{n}"¿Todavía no te has{n}dado cuenta?"
+f542-0014 d9f9678fde3ec8e1 Fei{n}"¿De qué?"
+f542-0015 d1e8975329eca88c Elly{n}"El color de mi piel,{n}el pelo, los ojos...{p}son diferentes a la{n}gente de Solaris..."
+f542-0016 97f069c8520581fd Fei{n}"¿De verdad?{wait 10}{n}Nunca presto demasiada{n}atención a esas cosas."
+f542-0017 8470361ef91d499d Elly{n}"Hace mucho tiempo, {wait 10}cuando{n}era pequeña, tenía niñera.{wait 10}{n}Y era muy buena conmigo.{p}Pero era una habitante de{n}la superficie. Y los{n}Primera Clase rara vez{n}se dejaban ver con ellos.{p}Pero ella vivía en nuestra{n}casa y cuidó siempre de mí.{wait 10}{p}Perdió a su hija en el área{n}de los de Tercera Clase....{p}Mi padre se apiadó de ella{n}y la acogió en su propia{n}casa. {wait 10}Pero esto nunca se lo{n}contó a nadie..."
+f542-0018 ca97982b08ae8cac Fei{n}"¿Por qué?"
+f542-0019 4fd93f63804b06b8 Elly{n}"Mi padre se preocupaba{n}por las apariencias...{n}Y tenía una razón...{p}Probablemente ella era{n}mi verdadera madre{wait 5}...{wait 5}"
+f542-0021 c0ecb80f961b77a4 Elly{n}"Será mejor dejarlo...{wait 10}{n}Seguro que todo esto ni{n}te interesa...{wait 10}{p}Lo siento."
+f542-0022 f9c914c139d83657 Fei{n}"No pasa nada..."
+f542-0023 796e6435023104b5 Elly{n}"¡Ahora te toca a ti!"
+f542-0024 f13aacd40c6e8c85 Fei{n}"No, gracias.{wait 10}{n}No tengo tiempo para eso."
+f542-0025 1dbbb6b425496f9c Elly{n}"Necesitas relajarte.{wait 10}{n}Y seguro que no te lo{n}ofrecen muy a menudo.{wait 10}{p}¿Lo harás por mí?"
+f542-0026 d79696742820d2c1 Fei{n}"¡Vale, vale, {wait 10}si insistes!"
+f542-0027 f919b90b8035fed0 Elly{n}"Deberías haberme hecho{n}caso la primera vez."
+f542-0028 b619f75526c65fef ¡...!{done 15}
+f542-0029 11829da2fe0be037 ¡Wa---a-a-a!{done 10}
+f542-0030 795958a8d7d66729 Elly{n}"No pasa nada.{wait 10}{n}Disfruta."
+f542-0031 80bd663c0d6e87b4 Fei{n}"Guau... que bien me siento.{p}¡Menuda diferencia con la{n}pocilga de doc!"
+f542-0033 2db8f8ee6b8eed32 Fei{n}"¡Eh, {wait 5}para!{wait 10}{n}¡Deja de mirarme!"
+f542-0034 7065e96c471d9e38 Elly{n}"Tranquilo, no{n}estoy mirando.{p}Solo estoy ajustando la{n}temperatura.{wait 10}{n}¿Qué tal ahora?"
+f542-0035 b92ad00e0fa5ccee Fei{n}"Eh,{wait 10}{n}estoy bien.{n}Y ahora, ¡VETE YA!"
+f542-0036 65beeb3fd1176773 Elly{n}"Ja, ja, ja...{n}Incluso Fei es un{n}poco pudoroso."
+f542-0037 c6525abb574f6211 {wait 5}¿{wait 5}...{wait 5}?
+f542-0038 aa9e62b7fde884a2 Fei{n}"Me siento como nuevo...{n}Ahora que voy a hacer...{wait 10}{n}No podemos relajarnos."
+f542-0039 bc6f642626d55874 Elly{n}"Sí, {wait 10}realmente no{n}me apetece...{wait 10}{p}pero, no hay otra{n}opción..."
+f542-0040 0c2d173e160397e7 Fei{n}"¿Tienes alguna idea?"
+f542-0041 1337be10896cccbb Elly{n}"El terminal de red{n}de mi padre está en{n}su habitación.{wait 10}{p}Se pone hecho una furia{n}cuando lo toco.{p}Contiene información que{n}sólo unas pocas personas{n}tienen acceso."
+f542-0042 9e71eb1e05a64c76 Fei{n}"¿Y nos servirá para dar{n}con Bart y los demás?"
+f542-0043 c656bd9800d86c37 Elly{n}"Eso{wait 5}...{wait 5} espero."
+f542-0046 e6968a2689b1475d Medena{n}"Elly, {wait 10}{n}creo que deberías vivir tu{n}vida como desees vivirla.{p}Si a los que quieres están{n}en problemas, no puedes{n}abandonarlos..."
+f542-0047 1dfd09e30d4d2734 Elly{n}"Madre...{wait 10} siento tanto{wait 10} lo{n}que dije antes..."
+f542-0048 92da9f3b8db52cf7 Medena{n}"...Lo sé.{wait 10}{n}Pero no hay duda de que{n}eres mi hija...{p}No importa lo que pase,{n}siempre serás mi niña{n}del alma..."
+f542-0049 eb1e6489b0d68257 Elly{n}"Mamá..."
+f542-0050 25e1db94b9b3e737 Medena{n}"Y ahora...{n}será mejor que te des{n}prisa..."
+f542-0051 d582f0ed630ab617 Elly{n}"Sí...{wait 10}{n}cuídate mamá..."
+f542-0052 ed30731d510d4134 Medena{n}"Rápido..."
+f543-0001 1e44b77e569076eb Elly{n}"Aquí viven los ciudadanos{n}de Primera Clase.{p}La gente de Solaris llama{n}a la gente de aquí Gazel.{n}Sígueme."
+f543-0002 b534d9379fa0810e Fei{n}"E...espera.{p}Si vamos por ahí vamos{n}a tener problemas con{n}los guardias..."
+f543-0003 c94fe89561af86d5 Elly{n}"No te preocupes.{wait 10}{n}Esta es mi casa."
+f543-0004 03c5ecbf89a0b698 Fei{n}"¿Tu... casa?{wait 10}{n}¿Esta pedazo{n}casa es tuya?"
+f543-0005 562635be973c7205 Elly{n}"Sí.{wait 10}{n}Anda, entra."
+f544-0000 f8c50de67fdb17ad Fei{n}"Ufff,{wait 40} hemos escapado por{n}los pelos de ser tragados."
+f544-0001 6685c9b9c23ca991 Fei{n}"Ha dolido, joder."
+f547-0000 5804235ce925896f Fei{n}"Ufff...{n}No puedo comer más..."
+f547-0001 83f8ac45841b2e2c Fei{n}"Esto me recuerda...{n}tengo mucha hambre..."
+f547-0002 c9ec63dbd0adb2cf Fei{n}"Hagamos un descanso."
+f547-0003 69ddcf240e274c5e Fei{n}"¿Y tú, Doc?"
+f547-0004 e37478827ab06fc4 Fei{n}"¿Estás seguro?{n}Pues entonces..."
+f547-0005 134c2d11ba1b2841 Fei{n}"Comamos.{done 30}
+f547-0006 83565ea0495d8b78 Fei{n}"Ufff,{n}estoy lleno."
+f547-0007 9205a48924d4f853 Fei{n}"¡Ya podemos seguir!"
+f547-0008 368298030952105c Elly{n}"Tienes razón...{p}No sabemos que podrá{n}ocurrir más adelante,{n}hagamos una parada."
+f547-0009 4487c2f7b6001a89 Elly{n}"¡A comer!"{done 30}
+f547-0010 61c35c17ae9fe1ef Shitan{n}"No, gracias, estoy bien."
+f547-0011 84ce330585b7b428 Fei{n}"¡Wala! Aquí hay comida."{done 60}
+f549-0000 594e52ca6a2fc385 Fei{n}"Hay algo escrito{n}en la pared..."
+f549-0001 15c2fe7d49baaf90 {speed 255}¿Qué datos ver?{n}    Código de desbloqueo{n}    Como introducirlo{n}    Especificaciones{n}    Ninguno
+f549-0002 e0831f312421b8b4 Detector de objetos no{n}identificados. Código de{n}desbloqueo '0101'{p}Código de objeto 1{n}'1001'{p}Código de objeto 2{n}'1111'
+f549-0003 168c6d5836e9024f Introducir fila superior.{n}Seleccionar de 1 a 4.
+f549-0004 4bc66b73d7196005 Seleccionar "Fin" para{n}calcular resultados en{n}la fila inferior.
+f549-0005 cd3238b3aa2871e0 Cuando cambias el valor en{n}la fila superior, el cálculo{n}en la fila inferior cambia.
+f549-0006 23b4d6e9b381ca25 Cuando la luz está{n}encendida es 1, si{n}está apagado es 0.
+f550-0000 dd7648db5b83946e     Introducir código{n}    Salir
+f550-0001 67c07a05329652e0     {speed 255}1{n}    2{n}    3{n}    4{n}    Fin
+f550-0002 6457cc816e86c947 Escáner de cuerpos{n}extraños: ACTIVADO
+f550-0003 c309b0eea81603a0 Escáner de cuerpos{n}extraños: DESACTIVADO
+f550-0008 d8f4aedbcb61d40f Código de desactivación{n}del escáner [0101]
+f551-0000 d4d2a4514bc4a431 Fei{n}"¿Esto es lo que...{n}hemos comido antes...?"
+f551-0001 2a61d9618790115f Fei{n}"Arrggg...{wait 30}{n}No quiero saber ni{n}de donde viene."
+f551-0002 94c54c269a44c56b Fei{n}"¿Qué pasa...?{wait 30}{n}¿Qué se supone que es...{n}eso exactamente?"
+f551-0003 1fbf2e5511e40a86 Fei{n}"Mierda, no podemos{n}retroceder."
+f551-0006 aa19530edb8c455b Elly{n}"Ya veo...{wait 30}{p}La medicina que usamos{n}normalmente se fabrica{n}aquí..."
+f551-0007 1ae567168145f727 Elly{n}"Espera...{wait 30}{n}¿Qué tipo de comida{n}es esta...?"
+f551-0008 96bb9b688b534a7c Elly{n}"¿Qué le pasa a esta{n}comida enlatada?"
+f551-0009 c97a40f6eb2141a3 Shitan{n}"Espera, Fei."
+f551-0010 59e4337aac51e3b1 Shitan{n}"Comiste de eso.{wait 30}{n}Tenlo en cuenta cuando{n}abras esa puerta."
+f551-0011 81d67a6e0cafdd32 Shitan{n}"Comprobarlo vosotros{n}mismos."
+f551-0012 ad4679684d0a23bc Shitan{n}"La sala del sensor{n}debería estar por allí."
+f551-0013 37da3b27938515a6 Shitan{n}"Si desconectamos el{n}detector de objetos,{n}podremos avanzar."
+f551-0014 c48fb7f37ec771b2 Detectados objetos extraños,{n}desechando objetos.
+f552-0000 fd8d36eb58100935 Fei{n}"Esto...no...{n}Puede ser..."{done 20}
+f552-0001 a08a7d18aca70ff3 Fei{n}"¡Pero...que demonios...{wait 40}{n}es...{wait 20}todo esto...!{done 40}
+f552-0002 ebab0c9068fab50d Fei{n}"¡Wo-o-o-o-o-!"{done 50}
+f552-0003 f32530015a3cabb4 Fei{n}"¿Puede...ser...real...?{n}Doc..."
+f552-0004 bd98a54f7f49a5b3 Elly{n}"No...{n}Debe ser una broma..."{done 20}
+f552-0006 43a07ffc90ae90e8 Elly{n}"¡No seas ridículo!{p}¡Mi padre nunca tomaría{n}parte en estas cosas!"
+f552-0007 39da970af4129226 Elly{n}"Mi padre...{wait 40}{n}hizo esto...{wait 30}{n}No, no puede ser..."
+f552-0008 3a28a8c8b094ac9b Shitan{n}"El Sistema Soylent.{p}Los laboratorios de{n}experimentos orgánicos{n}de Solaris."
+f552-0009 db9a27f318ff8c8d Shitan{n}"E instalaciones de{n}producción desde comida{n}y medicinas hasta{p}consumibles para mantener{n}los sellos de los{n}Limitadores.{p}También se crean aquí{n}los Wels de Aquvy."
+f552-0010 b83e76be56ab82c8 Shitan{n}"Elly, ¿recuerdas lo que{n}dijo Dominia durante la{n}infiltración de Shebat?{p}Aquí tienes la respuesta.{p}La gente de su país de{n}origen sirvieron para ser{n}el origien de los Wels...{n}el plan M.{p}Se usaron de esa manera {n}por sus habilidades únicas.{p}Ella es la última{n}superviviente.{p}Elly,{wait 20} tu padre, Erich,{n}solía ser el{n}superintendente de{n}estas instalaciones.{p}Jugaba también un papel{n}importante en las{n}investigaciones del{n}padre de María.
+f552-0011 7779a1bb772b1841 Shitan{n}"Naturalmente, Erich se{n}sintió siempre culpable.{p}Así que mantuvo bajo su{n}protección a todos los que{n}pudo como Ciudadanos de{n}Tercera Clase.{p}Y al final dimitió.{n}Y por eso ahora trabaja{n}como administrativo en las{n}Fuerzas Especiales."
+f552-0012 c33128d05fb5fe60 Shitan{n}"Levántate, Fei.{wait 30}{n}Levántate y mira{n}todo esto..."
+f552-0013 af284035301eb249 Shitan{n}"...Todo es real."
+f552-0014 54b362af321e66b9 Shitan{n}"Vamos."
+f552-0015 8f0413066894694d Shitan{n}"Acabar con otra vida y,{wait 30}{n}además consumir su carne.{p}¿Cómo, {wait 20}se puede justificar{n}todo esto...?"
+f561-0000 4c38265f818f2624 Se controlará desde aquel{n}panel adyacente.
+f561-0002 bf5023487eadb14f     ¿Bajar?{n}    No
+f565-0000 72f7276f13516368 Fei{n}"¿Qué es esto?"
+f565-0001 af638b4ec9e51399 Fei{n}"Que raro..."
+f565-0002 01a182f59fdae08b Shitan{n}"Umm..."
+f565-0003 49682ad1adadd20d Shitan{n}"Ese sonido que oímos en la{n}otra habitación va a ser la{n}clave."
+f565-0004 4ab80f4a2db267b9 Shitan{n}"La clave desde estar en{n}una de las habitaciones."
+f565-0005 d2fbc8ea5743d377 {speed 255}Hay un terminal para{n}introducir la clave.{wait 10}{n}    Introducir{n}    Cancelar
+f565-0006 29e255412948d34c {speed 255}La señal auditiva se activa{n}con los botones de Arriba,{n}abajo, izquierda y derecha.{p}Botón × para acabar.{n}Botón ○ para salir.{n}Introduzca la señal ya...
+f565-0007 63b5c474829eb6c1 Señal auditiva confirmada.{n}Desactivando bloqueo.
+f565-0008 721dd8687546550c {speed 255}Clave incorrecta.{n}Introduzca la señal adecuada.
+f566-0000 c8c9cc80664f6837 Fei{n}"¿Eh?{n}Esta tampoco{n}se abrirá."
+f566-0001 148ee4b0803d25d1 Fei{n}"¿Para qué sirve{n}esta instalación?"
+f566-0002 4b7d1ac7ffc61d33 Fei{n}"¿El origen?"
+f566-0003 ffe3b801afc0fbd7 Fei{n}"Así que datos en un{n}banco de memoria..."
+f566-0004 8d277cc83e414ff8 Fei{n}"¿Eso significa que{n}vivimos para aquellos{n}viejales de Gazel?"
+f566-0005 f0c7ac8eb6ff29f0 Fei{n}"¿Quieres decir que los{n}mutantes también están{n}involucrados?"
+f566-0006 6449f974f611263c Fei{n}"Eso es horrible...{wait 40}{n}como han podido..."
+f566-0008 fa2c49755ed01549 Fei{n}"Doc, nos estuvo{n}buscando..."
+f566-0009 816839f430668cbc Fei{n}"Espera un segundo.{n}Puede haber sido suerte."
+f566-0011 ddaa4d0f3a7ca610 Fei{n}"¡Qu-qué...!"
+f566-0012 1e59a92ea1dfb263 Fei{n}"Eh, ¿estás bien?{n}Elly. ¿Elly...?"{done 40}
+f566-0013 40712821931d9f6e Fei{n}"¡Elly!"{done 40}
+f566-0014 53cdd35b4dbdce9c Fei{n}"Doc... ¡Shitan!"{done 40}
+f566-0015 e2bb02b86de7ee18 Fei{n}"¡Mierda!{n}¡Nos la han{n}liado!"
+f566-0016 5314b328edeabd55 Fei{n}"¡Elly!{wait 30} ¡Shitan!{wait 30}{n}¿Dónde estáis?"
+f566-0017 45660e42f1deee10 Fei{n}"¡Joder! ¡Qué faena!{n}No se abre."
+f566-0018 247158fd6338f6ea Elly{n}(¿Cómo... es que{n}conoce el código{n}de desactivación?){done 5}
+f566-0019 104a6747dfd1af4b Elly{n}"¿Cómo puede un humano...{n}vivir diez mil años...?"
+f566-0020 434f537a13aea8a5 Elly{n}"Ellos están obteniendo y{n}transfiriendo datos vitales{n}por medio de las Zoharitas,{p}¡datos que el Ministerio{n}usará para resucitar sus{n}cuerpos...!"
+f566-0021 12e128024195d34d Elly{n}"Shitan, {n}¿cómo sabes todo esto?{p}¡Ni el gobierno ni siquiera{n}el ejército saben esto!"
+f566-0022 4896c3bc81b5f2fa Elly{n}"Vamos, piensa en ello, es{n}como si siguiera un plan.{p}Seguro que hay otro camino{n}diferente para llegar hasta{n}donde están todos.{p}Y la ruta que hemos seguido{n}para llegar aquí no podemos{n}ni descargarla al mapa.{p}¿Y cómo sabía en que calle{n}estaríamos?"
+f566-0023 2a436d14402a4a9b Elly{n}"Es imposible.{p}Lo primero, el camino{n}que escogimos para{n}llegar hasta aquí.{p}El panel mostró que era{n}una instalación de tipo{n}P4.{p}Y ni los altos cargos en{n}el ejército pueden venir{n}aquí.{p}¿Crees que dejarían un{n}sitio como este con esta{n}seguridad tan pobre?"
+f566-0024 b0ed706680b9f40d Elly{n}"¿Cómo pudiste abrirlo?{n}¿Quién eres exactamente?"
+f566-0025 a07d0c0ca62ce805 Elly{n}"¡Algo va mal!{wait 40}{n}Conseguimos entrar en una{n}ley marcial en Solaris, y{p}logramos colarnos hasta el{n}palacio, y llegamoa a la{n}puerta del nivel P4,{p}e incluso sabemos para que{n}sirven las instalaciones.{wait 30}{n}¿Cómo es posible que todo{n}sea coincidencia?"
+f566-0026 6c10ba520b7e98ed Elly{n}"Mi padre... Seguro que ya{n}estabas por entonces cuando{n}él llegó a trabajar aquí."
+f566-0027 729b837ae9f538c3 Elly{n}"Incluso Jessie, que estaba{n}ya en Solaris entonces,{p}no supo nada de lo que hay{n}tras el Proyecto M.{p}Así que, Shitan ¿por qué{n}sabes todo esto? Sabes más{n}detalles incluso que María.{n}Algo no va bien... Lo sé."
+f566-0028 704bb2fc427edd82 Elly{n}"¡Nos ha engañado!"
+f566-0029 108d068b134f1eca Elly{n}"Debería haberme dado{n}cuenta antes. Shitan...{wait 40}{n}¿Quién eres en realidad?"
+f566-0030 74730a1ab94f5b2e Shitan{n}"Por aquí."
+f566-0031 96212796476ab2b3 Shitan{n}"Este lugar parece haber{n}estado aquí desde el{n}origen de los tiempos.{p}Este lugar se usa para{n}investigar como alargar{n}la vida del Emperador y{n}del Ministerio."
+f566-0032 29f2fa61e7d4503b Shitan{n}"Sí...{wait 30} hace diez mil años.{n}Aquí nacieron los humanos.{p}Los primeros humanos fueron{n}El Emperador y los ancianos{n}del Ministerio.
+f566-0033 67fb78f5ceb9746f Shitan{n}"Ahora sólo queda vivo el{n}Emperador. Y su destino es{n}no morir nunca.{p}Lástima que el Ministerio{n}es distinto.{p}Durante la invasión de{n}Diábolos...{wait 30} los ancianos{n}del Ministerio murieron y{n}perdieron sus cuerpos.{p}Y ahora, el Ministerio del{n}Gobierno de Solaris existe{n}como datos en bancos de{n}memoria.{p}Cada uno de ellos son sólo{n}bits de datos."
+f566-0034 bf312ae9673c7b50 Shitan{n}"Sin carne ni alma, son{n}tristes números binarios.{p}En realidad, existen y no{n}existen al mismo tiempo."
+f566-0035 08a34b2ad181f4cc Shitan{n}"Después de la Caída, en{n}pos de resucitar sus{n}cuerpos, y crear unos que{p}fuesen dignos, fueron{n}transferidos a unas{n}instalciones de{n}investigación de lo que{p}fuera una vez el Sistema{n}Soylent en la tierra de{n}Etemenanki.{p}En un principio ese lugar{n}era sólo para devolver los{n}cuerpos al Emperador y al{n}Ministerio, pero comenzó la{p}producción de drogas y de{n}medicamentos con aditivos{n}para controlar a la gente.{p}Las Zoharitas que se usan{n}en la superficie, sirven{n}para obtener datos vitales.{p}Por supuesto, la "Iglesia"{n}también envía datos para{n}ayudar a la causa, de forma{n}constante."
+f566-0038 ccaa37a15ac9016c Shitan{n}"La idea, básicamente, es{n}usar lo que pueda valer."
+f566-0039 88e43d10786f2d67 Fei{n}"Doc, espera..."
+f566-0040 7c2600b8e4a25e43 Elly{n}"¡Espera, Fei!{n}¡Algo no va bien!"
+f568-0000 672dc6813a8fc46a Eh, ¿podrías abrir{n}la puerta?
+f568-0001 49e4c53f874a53d6 Es fácil, sólo tienes{n}que ir a aquel panel.
+f568-0002 11a13423c6ee7157 Gracias...{wait 30}{n}Como recompensa...{wait 40}{n}¡Te comeré!{done 20}
+f568-0003 b237d64755fb793c Mata, matameeeee{done 30}
+f568-0004 c016167f35b373a7 Ayuda...{wait 20} No puedo{n}controlarme...{wait 30} No{n}me mates...{done 30}
+f568-0005 9221d7eaace8fce2 Ibamos a convertirnos{n}en Wels por medio de{n}un experimenPO... ¿Eh?{n}PAPOPREPAMO...{done 40}
+f568-0006 57dc0889bf3680e3 Ouch, duele,{n}duele...{done 30}
+f568-0007 3ac7317654f386f7 Eres tan apetitoso...{done 30}
+f568-0008 c9b351a447d25043 Un mutante convertido{n}en Wels...{done 30}
+f568-0009 2931a1fac195c135 Los Wels están muy{n}buenos...{wait 30} ¿Qué sabor{n}tenéis vosotros?{done 30}
+f568-0010 356cc6471765f615 Soy un humano...{wait 30}{n}Solía ser...{done 30}
+f568-0011 d31920200ecd4478 E-en las alcantarillas...{wait 30}{n}Cuidaste bien de{wait 30}{n}mi hermano...{done 40}
+f570-0000 225e76a95e5d860d Debe controlarse desde{n}el panel de al lado.
+f570-0001 15c867a474464c66     ¿Subir?{n}    No
+f570-0002 6bfc12ba3bd505e7 El ascensor está bloqueado.
+f570-0003 7311b6667d199bd6 B-buen...{wait 20} Buenos días...{done 30}
+f570-0004 2239f2b50fcc2b02 Ayu...{wait 30} Ayuda{wait 30}.. mi...{wait 20}{n}Mi cuerpo...{done 30}
+f570-0005 b400cf6a0f9a6d0d Uh... Mi cabeza... cabe...{wait 20}{n}C-cab ca ca cab ca a...{done 30}
+f570-0006 63208b337913f598 ...{wait 30} mi perro, por favor...{n}Cuida de él...{done 30}
+f570-0007 204a25bce3da5a8b ¡Eh!{n}¡Aquí!{done 40}
+f570-0008 05acb10d51f70c3e ¿No me conocéis?{n}Soy el único con este{n}perro en todo Kislev...
+f570-0009 1abcd796aa1e6f83 ...Aunque no lo parezca,{n}el perro está bien...
+f570-0010 2c9c5d11f23d0431 ...Por favor, no me{n}dejéis salir de aquí...{p}...Aunque me veáis que{n}parezco consciente... no{n}quiero hacer... daño...
+f570-0011 55464bec19299f5e La... has abierto...{wait 30}{n}¡Te dije que no...{wait 40}{n}la abrieras!{done 20}
+f571-0000 490f2c967fc24e48 Parece que se controla{n}desde ese panel adyacente.
+f571-0005 5e488145869811a1 Tengo...{wait 20} como ganas...{wait 30}{n}de comer...{done 30}
+f572-0000 99717d0ec2d5bfc2 Fei{n}"¿Un...Gear?"
+f572-0001 51d19ed492b4f19b Fei{n}"Pero, ¡es enorme!"
+f572-0002 408d5d3602c408b5 Elly{n}"¿Qué...es esa cosa...?"
+f572-0003 91109af2b91ede43 Elly{n}"No...{n}¡Mira! La armadura no{n}está segmentada...{p}Es igual que el Gear de{n}Bart, {name 23} y el que{n}vimos en Shebat...{n}¡Es un Gear-Barah!"
+f572-0004 159e49ea5b4ef0d3 Elly{n}"Sí. Debe ser casi tres{n}veces más poderoso que{n}nuestros Gears."
+f574-0000 25c7ef87e1d4ea8b Fei{n}"¿Son los datos de{n}nuestro viaje?"
+f574-0001 68d19cebb225368d Fei{n}"¿Para qué sirve...?"
+f574-0002 708bf977afaddcad Elly{n}"¿Qué es esto?{n}¿Datos de las Zoharitas?"
+f574-0003 759696c47d0753f3 Elly{n}"¿Este edificio es el{n}Centro de Control de{n}Integración?"
+f574-0004 c2ac927d7d694e62 Shitan{n}"La información de toda{n}las personas que las han{n}usado, se envían aquí,{p}de forma constante."
+f575-0000 02868ef4d8944bde Sistema de seguridad{n}desactivado.
+f575-0001 5e8be72b15179853 Sistema de seguridad{n}cerrado
+f579-0000 1ac15875f6e75623 Fei{n}"Uh,{n}que, que..."{done 30}
+f579-0001 e06d7fe5afe1d0d1 Fei{n}"Es-esto..."{done 30}
+f579-0002 c8893305a9a78814 Fei{n}"¡Uhhaaaahhh!"{done 50}
+f579-0004 dd80c11e1095d1b9 Fei{n}"¿Eh?{n}Esto es..."{done 30}
+f579-0006 d76ae3749d62b53f Fei{n}"No puedo...{n}moverme."{done 40}
+f579-0007 e57d8788ab00aa44 Fei{n}"Uh...{wait 30}{n}Pero que..."
+f579-0008 8d3e2c5b480e185e Fei{n}"¿Qué es todo esto?{wait 20}{n}¿Por qué veo esto?{p}¿Quién? {n}¿Quién está haciendo{n}esto?{p}¡Elly!{n}¡Doc!{p}¿Dónde estáis?{n}Dónde..."
+f579-0009 6f21e7c0f8333eb0 Fei{n}"¿Qué...?"
+f579-0010 9f7dc602b74d8432 Fei{n}"¿Doc?{p}¿Y esos tíos?{n}¿Quiénes son?"
+f579-0011 642c8d919e6c4405 Fei{n}"¿Bart?"{done 40}
+f579-0012 69ca098cf2bf9b31 Fei{n}"¡Billy!"
+f579-0013 b3fe0f347fa5dbbd Fei{n}"¡Doc!{wait 20}{n}¿Qué está pasando?{p}¿Qué les has hecho...?{wait 30}{n}¡Doc! ¡Respóndeme!"
+f579-0014 e78cf3f8123d2894 Fei{n}"¿Ángeles Guardianes de{n}Solaris?{wait 30}{n}¿Monitorizándome?"
+f579-0015 d6826cedcf176057 Fei{n}"¿Los cuerpos de Bart y los{n}otros os pertenecen?{p}¿Es eso verdad?{n}¡Doc!{p}¿Qué están diciendo?"
+f579-0017 2adcab9443215090 Fei{n}"¿...Venganza?"
+f579-0018 0a0e46fe5336c8e7 Fei{n}"¿Esa...{wait 20} es la razón...?{p}Estabas de su parte...{p}Por eso tú, todos..."
+f579-0019 e69b8bc7d4a1da91 Fei{n}"¡Por qué!{p}¡Has hecho y desecho lo{n}que te ha dado la gana{n}con nosotros los habitantes{n}de la superficie!{p}¡El mundo ya te pertenece!{p}¿Qué más quieres?"
+f579-0020 dde89061d044e094 Fei{n}"¿Mahanon, el paraíso{n}etéreo?{wait 30}{n}Se precipitó a la tierra."
+f579-0021 85c6cf0484df2054 Fei{n}"¿Qué quiere decir?"
+f579-0022 9b3cb32ce6d26d2c Fei{n}"¡Eso es ridículo!"
+f579-0024 bbf2c969bd5d8d6e Fei{n}"¿...Así que no{n}estáis planeando{n}usar el poder de{p}Solaris para la{n}dominación del{n}planeta?"
+f579-0026 43c7d7e7859631bb Fei{n}"¿Qué vas a hacerme?{n}¿Y a Bart y los demás?{n}¿Y dónde está Elly?"
+f579-0027 a7fcb0ac6d722892 Fei{n}"Maldito...{wait 30}{n}seas...{wait 30}{n}¿Qué vas a..."
+f579-0028 55b1f3bad70ee006 Fei{n}"¡Mierda!{n}¡No hemos nacido para ser{n}utilizados por ellos!{p}¡No llegamos hasta aquí{n}para esto!{p}Yo, nosotros, todos... {n}Sólo queremos encontrar un{n}lugar donde pertenecer...{p}Eso es por lo que luchamos{n}siempre...{n}Pero ahora la cosa es bien{n}distinta..."
+f579-0029 46d266d54d91f38c Fei{n}"Yo...{wait 40} Yo..."
+f579-0030 7c35a9aaf1e673d1 Fei{n}"¡Para! ¡Por favor!"
+f579-0031 3962a57cd9fe556a Shitan{n}"¿Ya estás consciente?"
+f579-0032 f9efd0f2001c5ac6 Shitan{n}"No intentes moverte. La{n}máquina ha cortado tus{n}impulsos nerviosos.{p}No podrás ni levantar un{n}solo dedo aunque tu cabeza{n}lo pida a gritos."
+f579-0033 7b3ba04903b698d3 Shitan{n}"No te preocupes...{n}Todos tienen su papel...{wait 30}{n}y tú el tuyo.{p}Sólo estoy investigando."
+f579-0034 5643a4f92845a5dd Shitan{n}"El objetivo por el que{n}has estado luchando, ¿eh?{p}Eso ya ha sido discutido{n}por el Ministerio..."
+f579-0035 e3c44b69cc63eb09 Shitan{n}"¿No es más fácil que te{n}asignen a un lugar al que{n}pertenecer que buscarlo?{p}¿No entiendes un simple{n}concepto como ese?"
+f579-0036 eeab9840f454be0f Shitan{n}"Los ideales se esfuman al{n}chocar con la realidad.{p}Pero muchos se dan cuenta,{n}y están satisfechos.{p}Si eligen por ti, evitas{n}arriesgarte.{p}Las desgracias les tocará{n}a otros.{p}La gente se encuentra como{n}asfixiada si existe en{n}soledad y necesita como el{n}oxígeno existir bajo un{p}concepto más amplio, como{n}lo es un gran grupo, una{n}comunidad, o un país.{n}¿Y por qué, te preguntarás?{p}La gente necesita un lugar{n}para existir y ser ellos{n}mismos...{p}Cuando más seguro y estable{n}pueda ser, mejor."
+f579-0037 0593d7ac6b29b11a Shitan{n}"El Ministerio proporciona{n}ese lugar.{p}Bajo una total vigilancia,{n}no hay necesidad de que{n}haya riesgo basado en una{n}búsqueda individual.{p}Sólo viven con una pequeña{n}desilusión porque no han{n}decidido. ¿Qué puede ser{n}más fácil que eso?{p}Es lo que hay. Y de esa{n}manera salimos ganando.{p}La resistencia es inútil.{n}Solamente trae dolor."
+f579-0038 71af54c9e735a825 Shitan{n}"¿Todavía intentas oponerte{n}a todo esto?{p}Mírate, por favor...{p}¿Qué piensas hacer en ese{n}estado? No puedes moverte.{p}No podrías proteger a tus{n}amigos, incluso aunque te{n}necesitasen.{p}No podrías proteger a la{n}persona que más te importa{n}en la vida, Elly."
+f579-0039 23418b155c73cd50 Shitan{n}"No puedes hacer nada."
+f579-0041 b70c3c54fbf61667 Fei{n}"Doc...{n}¿estás ahí?"
+f579-0042 79990e8adff4b5d6 Tú has causado este{n}alboroto.
+f579-0043 a7f4b4484c5e473e Esta voz es la única{n}que escuchas...
+f579-0044 61d4019f0b6c0d56 Maldecido, intocable...
+f579-0045 a9ae2f3b6a81374c Niño querido de dios,{n}aquel que escucha las{n}plegarias...
+f579-0046 54dc242bea0305b4 Muere...
+f579-0047 06c482300d360408 Desaparece...
+f579-0048 ce2f0896bf7c5b16 Arde, con el fuego{n}de dios...
+f579-0049 887d9f6142fa5d98 Ministro de Gazel{n}"Uno de los Ángeles{n}Guardianes de Solaris{n}está aquí, Hyuga Ricdeau.
+f579-0050 1e3b05426a1ef2a5 Ministro de Gazel{n}"Este hombre es Caín...{wait 30}{n}Recibiendo órdenes del que{n}conoces como Emperador...{p}Has entrado en su reino,{n}y has estado bajo su{n}supervisión continua..."
+f579-0051 cad3d568af7707b4 Ministro de Gazel{n}"Oh sí.{p}Hemos guiado Solaris e{n}incluso seleccionado la{n}opción "Animus" que se{n}han elaborado para ti.{p}Y también te hemos{n}guiado hasta aquí."
+f579-0052 566f3a5ff83c0ac1 Ministro de Gazel{n}"El "Animus" es necesario{n}para nuestra resurrección.{p}Los cuerpos son nuestros.{n}Nos pertenecen."
+f579-0053 ef144c1f3ad1e7a0 Ministro de Gazel{n}"Sí, esa es la única{n}razón de nuestra{n}existencia..."
+f579-0054 56fd177b591b0255 Ministro de Gazel{n}"¿Por qué estás así?{p}¿Es por qué uno de los{n}tuyos te ha vendido?"
+f579-0055 bff42f9708316f6a Fei{n}"¡A ti no te estoy{n}hablando!{wait 30}{n}¡Doc, respóndeme!"
+f579-0056 6b9fe06da7902c71 Shitan{n}"Tres años..."
+f579-0057 18e13895fd2160ec Shitan{n}"Llevo contigo tres años.{p}Tuve que averiguar si eras{n}amigo o enemigo..."
+f579-0058 e15d63652da77f4e Ministro de Gazel{n}"Sí, el enemigo.{p}Tu existencia es{n}una amenaza para{n}nosotros..."
+f579-0059 5c99821bca2b61c8 Ministro de Gazel{n}"Necesitábamos{n}no perderte de{n}vista."
+f579-0060 23b194b752b865b3 Ministro de Gazel{n}"El que ordenó esa{n}vigilancia fue Caín..."
+f579-0061 cf8044ede0d8ce5d Ministro de Gazel{n}"Estuvimos planeando la{n}maduración del "Animus",{n}y tu terminación.{p}También enviamos{n}contigo a Hyuga."
+f579-0062 67549c04e31db2a6 Ministro de Gazel{n}"Sin embargo, cada intento{n}de terminarte, fracasaba.{p}Ese basura bueno para{n}nada nunca hizo nada{n}bien..."
+f579-0063 1ed96e68c8baa0fa Ministro de Gazel{n}"Incluso así, ahora{n}tenemos al "Animus".{p}Hyuga ha cumplido sus{n}tareas perfectamente."
+f579-0064 259b29b20a674627 Ministro de Gazel{n}"Debes saber que nuestro{n}plan es resucitar a dios."
+f579-0065 cd0aa847de72ab76 Ministro de Gazel{n}"Después que el hombre{n}ha poblado la tierra...{p}dios despertará de su{n}largo letargo, y Mahanon{n}también lo hará..."
+f579-0066 dd5f08f782967128 Ministro de Gazel{n}"Paraíso...{n}Ja ja ja.{p}Una descripción bastante{n}interesante...{n}para nuestra arca...{p}En el bloque central se{n}encuentra sellado Lord{n}"Mahanon".{p}Es la fuente de toda la{n}sabiduría de dios... un{n}paraíso de conocimiento."
+f579-0067 1c9fe2c6b98e4ff7 Ministro de Gazel{n}"Usando ese conocimiento{n}resucitaremos a dios y{n}construiremos el "arca"{p}que nos lleve a todos{n}por el vasto universo."
+f579-0068 0a5937619d065665 Ministro de Gazel{n}"La construcción de nuestra{n}arca...{p}Para reinar por encima de{n}las fuerzas de dios en este{n}gran universo...{p}La creación de "Malakh", el{n}ángel, era el verdadero fin{n}del Proyecto M..."
+f579-0069 f6f6a35f9bb1bcdf Ministro de Gazel{n}"Somos huérfanos en este{n}universo.{p}Fuimos arrojados a este{n}planeta en soledad, junto{n}con dios."
+f579-0070 6b22d6a86caf20c8 Ministro de Gazel{n}"Los seres humanos no somos{n}de este planeta.{p}Hace tiempo, vinimos aquí{n}desde otro cuerpo divino.{n}Somos seres con origen en{n}otro planeta."
+f579-0071 72e4627f232a3e81 Ministro de Gazel{n}"Todo es verdad.{n}Has visto distintos sitios{n}del mundo.{p}¿Por qué crees que no hay{n}registros de humanos de{n}diez mil años para atrás?"
+f579-0072 b202d8278ccc416e Ministro de Gazel{n}"Es la voluntad de dios.{p}El renacimiento de dios{n}estaba escrito mucho antes{n}del génesis..."
+f579-0073 896336a57afa00cc Ministro de Gazel{n}"Seremos uno con dios.{p}Logrando un nuevo "Animus".{n}Podremos volver a nuestro{n}lugar de origen, los{n}cielos estrellados..."
+f579-0074 afb52ca2452e5139 Ministro de Gazel{n}"Ese es el significado{n}de nuestra existencia."
+f579-0075 ecabe8089eaa78c2 Ministro de Gazel{n}"Ese es nuestro{n}supremo objetivo."
+f579-0076 29c3f427dbb79912 Ministro de Gazel{n}"Sólo te fijas en la hoja,{n}pero nosotros vislumbramos{n}el bosque entero.{p}¿Qué significado tiene{n}conquistar un planeta tan{n}pequeño como este?{p}Dios nos ha dado derecho de{n}conquistar el universo."
+f579-0077 225cb5a1d5845de6 Ministro de Gazel{n}"Sí, nuestra sangre es{n}pura, sólo nosotros{n}tenemos derecho al perdón."
+f579-0078 1eafb13eb14045ff Ministro de Gazel{n}"Así que, nada impedirá{n}que resucitemos a dios."
+f579-0079 c2eeaa00eb8e64c6 Ministro de Gazel{n}"Ha pasado una eternidad{n}desde nuestro exilio del{n}paraíso.{p}Si la época de la vuelta{n}de dios no llega...{p}significará que deberemos{n}emprender el camino de{n}la destrucción.{n}Pero..."
+f579-0080 4941de0a90f56c11 Ministro de Gazel{n}"Hemos obtenido el "Animus"{n}y nuestra resurrección{n}está cerca.{p}Luego dios resucitará."
+f579-0081 fec9646bdc64b3dd Fei{n}"¿Karellen?"
+f579-0082 cdbddb41d65fdd0a Karellen{n}"Este espera solamente{n}el despertar..."
+f579-0083 3d69ecc1e8cc8432 Fei{n}"¿Elly?"
+f579-0085 98fab4f092a8a9cc Fei{n}"¡Solo la verdad...!"
+f579-0086 bcfaf07c83364b11 Fei{n}"Detente...{wait 30} no..."
+f579-0087 150a25c9b188bd02 Shitan{n}"Ahora tendremos tiempo{n}para hablar...{wait 30} Id..."{done 60}
+f579-0088 6e661ce8b047e191 Shitan{n}"...No hay nada que{n}puedas hacer."
+f579-0089 9786c27ce4e26b44 Id{n}"No se te escapa una...{n}justo como esperaba,{n}Shitan, ¿...o era "Doc"?"
+f579-0090 8a0acdd706ed48a3 Shitan{n}"Esperaba conocerte algún{n}día, Id. Quería hablar{n}contigo.{p}Creo que se debe a esta{n}máquina que corta toda{n}conexión nerviosa...{p}Y bien, en estos momentos,{n}¿qué está haciendo Fei?"
+f579-0091 2c60b7d87f0dc86e Id{n}"¿Fei?{n}¿A qué Fei te refieres?"
+f579-0092 10a9d096cc80bc05 Shitan{n}"¿Hay más de uno?"
+f579-0094 f0ef1df341ac3b5a Shitan{n}"¿Id?"
+f579-0095 ebe210f688ab85a9 Id{n}"El que tú llamas Fei{n}está durmiendo."
+f579-0096 34e5c6efd6d0ff46 Shitan{n}"¿Durmiendo?"
+f579-0097 1d113abe96050bbf Id{n}"Cuando yo despierto,{n}él duerme.{p}Por eso es por lo que{n}no recuerda nada de lo{n}que hago."
+f579-0098 06a84a1bfebb2113 Shitan{n}"¿Por qué no lo sabe?"
+f579-0099 77607733a613c10c Id{n}"Salta a la vista.{n}Es mi subordinado.{p}Él no puede cotillear en{n}mis recuerdos. Él ni{n}siquiera debería existir,{n}ni ahora ni nunca.{p}Ese hombre forzó la{n}creación de su{n}personalidad.{p}Fei es un inquilino en{n}el cuarto de la{n}cobardía..."
+f579-0100 2e48098066ef5ae4 Shitan{n}"¿Ese hombre?"
+f579-0101 263c63962dbd4972 Id{n}"Nuestro padre, Karn.{p}Selló mi personalidad en lo{n}más profundo y recóndito{n}de mi consciencia.{p}Por alguna razón{n}inexplicable, nació{n}en ese preciso instante{n}el presente Fei."
+f579-0102 387256e5c772149c Shitan{n}"Cuando has dicho cobardía,{n}¿qué quieres decir?"
+f579-0103 3a084615e5672c5d Id{n}"...{n}¿Por qué preguntas{n}por él?{p}¿Crees que puedes{n}hacer algo?"
+f579-0104 95b81b76404ea89f Shitan{n}"Es raro poder hablar con{n}un auténtico esquizofrénico.{p}Como estudioso, me tiene{n}intrigadísimo."
+f579-0105 bc36ee4f79b41fb0 Id{n}"Con amigos como tú...{n}¿eh, doctor?{p}Me caes bien, Shitan.{n}Pero él, es{n}insignificante.{p}Después de todo, él es un{n}fracaso. Un cobarde como{n}él no merece ser parte de{n}la "existencia de Fei".{p}El patético ese siempre{n}huye de la realidad...{n}Nunca movió un solo dedo{n}cuando lo controlaba.{p}Un cobarde que pasa de{n}vivir... ¡Lo quiero fuera{n}de mi vista!{p}Pero sigue aquí perenne...{wait 10}{n}Joder... me pone enfermo{n}solo de pensar que estamos{n}en el mismo cuerpo."
+f579-0106 e5b0a261b7059dc0 Shitan{n}"Cambiemos de tema.{p}Quisiera saber como y por{n}qué tus personalidades{n}fueron divididas.{p}Ya que eres tú el que estás{n}al mando, asumo que sabrás{n}toda la historia.{p}Normalmente, las{n}personalidades no se{n}dividen de la manera que ha{n}sucedido en tu caso.{p}A menos que haya algún{n}pasado traumático."
+f579-0107 878d679f6590bcf8 Id{n}"¿Quieres que te hable de{n}mis recuerdos? Ya te estás{n}pasando de la raya.{p}No te tomes tantas{n}confianzas solo porque la{n}máquina esta me tenga{n}agarrado.{p}No tientes a la suerte,{n}si quisiera podría{n}romper la contención{n}y te aplastaría.{p}No lo olvides."
+f579-0108 3c6bc124ca326b89 Shitan{n}"¿Y por qué no lo haces?"
+f579-0110 cc0c87b8ae0b2471 Shitan{n}"¿Quieres que te diga por{n}qué no puedes?{p}No tienes control total{n}sobre Fei, ¿verdad?{p}Tu control sobre él no{n}es completo.{p}Para romper los lazos que{n}te atan inviertes una{n}cantidad tremenda de{n}energía mental.{p}En cuanto consumes toda la{n}energía, Fei regresa de{n}nuevo.{p}Básicamente, haces mutis{n}por el foro.{p}Es obvio también, que el{n}dia de tu regreso al{n}escenario es indeterminado.{n}Por eso no lo haces.{p}¿Me equivoco?"
+f579-0111 0a4f2a5c8a033ecc Id{n}"Me conoces demasiado{n}bien. Yo no tengo control{n}total..."
+f579-0112 0c36aa1d6d22d230 Shitan{n}"¿Qué ocurre, Id?"
+f579-0113 9cbe0828db0e3d8e Id{n}"Me has forzado salir a{n}la palestra.{p}En circunstancias normales{n}hubiera podido aguantar.{p}Pero no puedo. La culpa la{n}tiene esa mujer.{p}Su existencia hace a Fei{n}resistente."
+f579-0114 fc1321739068d7be Shitan{n}"¿Hablas de Elly?"
+f579-0115 cd15dc0197f994cb Id{n}"Esa mujer... la misma.{n}A todos{wait 60} debo...{n}eliminar..."
+f579-0116 bfa6b702a6d8abff Shitan{n}"No te entiendo.{n}No te entiendo, Id."
+f579-0117 364eff0f8271d900 Id{n}"Ni falta que te hace.{p}Pero cuando llegue el{n}momento, tómalo según{n}venga.{n}Realidad y muerte..."
+f580-0000 30d4c62caf2b82f5 Fei{n}"¿Qué lugar es este?"
+f580-0001 4be9f372a9350929 Fei{n}"¿Por qué hay hologramas{n}de nosotros en Solaris?"
+f580-0002 ba6c07c8e2f3dfcc Elly{n}"¡H-hologramas de{n}nosotros...!"
+f580-0003 4054b6f3dcfa508f {speed 255}□ Fei{n} Cordero número 001589750{n} Fei Fong Wong{n} Reacción al Ether: Infinita{n} Alineación Anima: Infinita{n} Comentarios:{n} Contacto.{n} Disposición inmediata.
+f580-0004 7e549bcb038dd1b8 {speed 255}□ Elly{n} Pastor número 6920188-2{n} Elehayym Van Houten{n} Reacción al Ether: Infinita{n} Alineación Anima: Infinita{n} Comentarios:{n} Posible Contra-existencia.{n} Concedido aprobación para{n} recuperación, se precisa{n} análisis.
+f580-0005 b66f6f17e1c816c2 {speed 255}□ Shitan{n} Cordero número 584921547{n} Hyuga Ricdeau{n} Respuesta al Ether: 240{n} Alineación Anima: 98{n} Comentarios:{n} Ninguno.
+f580-0006 c4ec44b829dd32cc {speed 255}□ Bart{n} Cordero número 221589542{n} Bartholomei Fátima{n} Respuesta al Ether: 210{n} Alineación Anima: 90{n} Comentarios:{n} Acerca de la recuperación{n} del Anima "Dan", se{n} programa ajuste de Animus.
+f580-0007 7b42641a3ad77f25 {speed 255}□ Billy{n} Pastor número 321658-11{n} Billy Black{n} Respuesta al Ether: 290{n} Alineación Anima: 92{n} Comentarios:{n} Programado ajuste de{n} Animus.
+f580-0008 0dda8216bfd46b46 {speed 255}□ Rico{n} Número de ensayo: 000-215914{n} Ricardo Banderas{n} Respuesta al Ether: 160{n} Alineación Anima: 85{n} Comentarios{n} Creado por la "Iglesia" como{n} un ensayo de mezcla.{n} Usado por la Asociación de{n} Combate para parametrizar{n} potencial de combate. Los{n} datos fueron transferidos.{n} Programado ajuste de Animus.
+f580-0009 cf769bcd61eaad5c {speed 255}□ Esmeralda{n} Nombre en código: Esmeralda{n} Respuesta al Ether: ...{n} Alineación Anima: 0{n} Comentarios: Colonia de{n} nanomáquinas. Análisis de{n} datos completado. Anular y{n} desechar.
+f580-0010 92dd9f27a164b27f {speed 255}□ {name 7}{n} Animal primitivo{n} Respuesta al Ether: ...{n} Alineación Anima: ...{n} Comentarios:{n} Inservible.{n} Anular y desechar.
+f580-0011 bcf3b5fee0377cf8 {speed 255}□ María{n} Cordero número 54109854{n} María Balthasar{n} Respuesta al Ether: 170{n} Alineación Anima: 74{n} Comentarios:{n} Inservible.
+f589-0000 1381897ae175441f@1d5ee7fe0841b3bb Fei{n}"¿Qué ha sido{n}ese sonido?"
+f589-0001 3449a13dd02dd348 Shitan{n}"Eso es..."
+f589-0002 e6efa77e95f0d62e Shitan{n}"Seguro que es algún{n}tipo de clave auditiva."
+f591-0000 1bb52b219970da4b ¡Aguanta ahí, Fei!{done 60}
+f591-0001 07157e59ae90dab2 Fei{n}"...{wait 20}...{wait 20}...{wait 20}{n}¡Tú...{wait 20} eres un traidor!"
+f591-0002 65be875e3075a067 Fei{n}"¡No me detengas, Bart!{n}¡Nos ha traicionado!{n}¡A mí y a Elly!"
+f591-0003 73a0614548f749e1 Fei{n}"¡Déjame!{n}¡Qué me dejes!"
+f591-0004 7a63930fcc1901a5 Fei{n}"¿¡Billy...!?"
+f591-0005 d766ee9af647693d Fei{n}"Qué...{n}Pero Doc sólo...{n}¿Es verdad eso?"
+f591-0006 c31f268c2ddc6fc6 Fei{n}"¿Doc?"
+f591-0007 cc5defc2fb17d0a9 Fei{n}"Me hago ya una idea..."
+f591-0008 9efe4e09fe0fbd88 Fei{n}"¿De veras?"
+f591-0010 b5d447845ea63206 Fei{n}"¡Espera!{n}¿Qué ha pasado con Elly?{n}¿No estabas con ella?"
+f591-0011 aff4f16bf95ba4e9 Fei{n}"¿Por qué solo a Elly...?"
+f591-0012 279298540dfa08d4 Fei{n}"¿Por eso es que, Elly...?"
+f591-0013 a82d37f857ac9a7b Fei{n}"¿Y tú que vas a{n}hacer, Doc...?"
+f591-0014 0cca6adf57c8fabf Fei{n}"¡Doc!{n}¿Y esa espada...?"
+f591-0015 d82785c3b16cb6cb Fei{n}"...Ya veo...{n}...Pero..."
+f591-0016 46e1df6afd1bc2c7 Fei{n}"Andas siempre con la{n}picaresca y..."
+f591-0017 ca4a6d103b31cb12 Bart{n}"Fei, ¿ya has vuelto en si?{n}¡Pues venga, marchando!"
+f591-0018 4b39009150b09837 Bart{n}"¡Pa-para, Fei!"
+f591-0019 01ea6b9776b6182e Bart{n}"¡No sigas, Fei!{n}¡Te equivocas!"
+f591-0020 47cc5c0761cf2cbb Bart{n}"Umph...{wait 32}{n}Si Billy te dice que{n}escuches..."
+f591-0021 b56e0fdb9ece7adc Bart{n}"¡Escucha con mucha{n}atención!{p}Nuestros cuerpos llevan{n}implantado el Limitador.{p}¡Ahora mismo, estas{n}instalaciones son el único{n}lugar dónde pueden ser{n}eliminadas!{p}Shitan engatusó a Karellen{n}y a otros más y nos trajo{n}aquí para eliminarnos el{n}Limitador!"
+f591-0022 c243a59665e8de9b@23fe73497c19fab1 Bart{n}"¡Pues claro!"
+f591-0023 a15e388587adbe94 Bart{n}"Por cierto, Shitan.{n}Eliminaste el Limitador{n}de Fei, ¿verdad?"
+f591-0024 ea559b95aac8c325 Bart{n}"Perfecto. ¡Pues entonces,{n}vayamos saliendo de aquí!"
+f591-0025 54b27a9ad84c61ab Bart{n}"¡Me trae sin cuidado{n}la razón!{p}¡Ahora lo que toca es{n}ayudar a Elly y salir{n}rápido de aquí!"
+f591-0026 7bce9b364ae343a3 Bart{n}"¡Tú, Shitan!{n}¡Deja que me encargue{n}de Fei!{p}¡Ahora que el Limitador{n}es historia, Solaris{n}no tendrá oportunidad!"
+f591-0027 c5e61c44807d664f Bart{n}"¿Vas... en serio?"
+f591-0028 318b454104bcec00 Billy{n}"¡Tranquilízate,{n}Fei! {p}Bart no miente,{n}¡Shitan es quien{n}nos ha ayudado!"
+f591-0029 e9b955b67eb279a2 Billy{n}"¿Qué no tiene Limitador?{n}¿Y eso se debe a que es{n}de Solaris?"
+f591-0030 c0ce58034a2c443d Billy{n}"Tienes razón.{p}Si metemos la pata aquí,{n}meteremos en un buen lío{n}a los que fueron a ayudar{n}a los padres de Elly."
+f591-0031 55bf66a75aa7ab51 Billy{n}"Shitan, iremos al{n}laboratorio privado de{n}Karellen como habíamos{p}planeado.{n}Quedamos todos en el{n}punto de encuentro."
+f591-0032 ddd6ae3c1936947b Shitan{n}"No es sólo esa la única{n}razón por la que os he{n}traido aquí.{p}Aquellos que buscan llegar{n}a ser independientes de{n}Solaris, deben conocer la{n}situación actual...{p}...y su verdadera forma.{wait 10}{n}Quien está haciendo que{n}y por que."
+f591-0033 bc2896b4cdbb1e0d Shitan{n}"Aparentemente,{n}recibí del Emperador{n}una orden en secreto{p}para entrar en contacto{n}con el cuerpo que buscaba{n}el Ministerio y después{n}enviaría los datos...{p}...y si fuera posible{n}traer de vuelta el cuerpo.{wait 20}{n}Ese era mi deber.{p}Como resultado, no tuve{n}más elección que{n}engañaros.{n}Os pido disculpas."
+f591-0034 bf7fb60bae0d2127 Shitan{n}"A parte de eso...{p}...Yo mismo tenia un{n}asunto que debía{n}verificar en estas{n}instalaciones..."
+f591-0035 090cfaa5d7157d9b Shitan{n}"Te lo diré después de{n}que escapemos de aquí.{p}Se trata de algo que{n}debes saber."
+f591-0036 6cbf17b4a7e04c9d Shitan{n}"¿...Qué?"{wait 32}{n}Sí... sí, claro...{n}Eso eso..."
+f591-0037 16734fd59d714527 Shitan{n}"Karellen se la llevó a{n}su laboratorio.{n}No le pude detener.{p}Lo siento."
+f591-0038 7cc6c015b6086fe8 Shitan{n}"No lo sé...{p}Pero hay algo que me{n}choca... cuando Karellen{n}se llevó a Elly,{p}tuve la oportunidad de{n}adquirir la información{n}celular de Elly.{p}Lo analicé y encontré algo{n}muy interesante...{wait 30}{n}...perdón, quiero decir...{n}inusual.{p}No tiene implantado el{n}Limitador."
+f591-0039 043b06bca52da9e7 Shitan{n}"Incluso los ciudadanos de{n}Solaris, cuando nacen, se{n}le implanta el Limitador.{p}Hay excepciones para{n}ciertos individuos como{n}Ramsus o yo mismo.{p}Los Limitadores se pueden{n}eliminar mas tarde con{n}un tratamiento similar{n}por el que ha pasado Bart.{p}Pero para ello requieres{n}un permiso emitido por{n}el Ministerio."
+f591-0040 bde523b28df73578 Shitan{n}"Debe de haber más{n}razones que esa.{p}Desconozco la razón por{n}la que Karellen está tan{n}ensimismado con los datos{n}de la muchacha."
+f591-0041 ea732fdb01582892 Shitan{n}"Queda una cosa por hacer.{n}Iré a destruir el último{n}portal."
+f591-0042 b68dea5786db00cf Shitan{n}"¡Ah, sí! Por cierto, joven{n}amo, sobre los efectos de{n}eliminar el Limitador...{p}Los resultados no serán{n}apreciables de inmediato.{p}Naturalmente ya fueron{n}elimiandos los Limitadores{n}físicos. Yo he quitado los{n}de la sección psicológica.{p}Osease... Elimiandos han{n}sido el miedo subconsciente{n}y la veneración al{n}Ministerio y al emperador.{p}Básicamente, podrás luchar{n}contra ellos sin ningún{n}temor ni duda.{p}No quiere decir que de{n}golpe te hayas vuelto más{n}poderoso."
+f591-0043 5921e3c7f1f7411f Shitan{n}"...Sí. En el momento en{n}que me marchaba, Yui me la{n}entregó.{p}Antes de conocerla solía{n}usarla.{wait 10} Juré durante mucho{n}tiempo no blandirla más,{n}no matar más con ella.{p}Pero ahora no hay tiempo{n}para contemplaciones{n}morales. No es justo que{n}sea el único "inocente"."
+f591-0044 2939766fd919c61e Shitan{n}"¿Si?"
+f593-0000 a6c03d0ab9b15bd7 Jessie{n}"¿¡Cómo has tardado{n}tanto!? ¡No he conseguido{n}demasiada munición!{p}¡Date prisa y haz{n}que salga volando!"
+f593-0001 1b650c13725cdfda Jessie{n}"...{wait 32}{n}¿Qué demonios{n}estás haciendo?"
+f593-0002 401362b32a581f06 Jessie{n}"¿Quieres decir el{n}Emperador?{n}¿Estás seguro, Hyuga...?
+f593-0003 12ad6411158848db Jessie{n}"¡...Siiiiii!{n}¡Que nos vamos de{n}aquí!{wait 35} ¿¡...Eh!?"
+f593-0004 2d1dec6e28bdcf9a Jessie{n}"Carl, eres el{n}enemigo, pero...{p}¿¡Por que estás{n}tan encariñado{n}con el chaval!?{p}¡Tú no eres como el{n}Carl de antes!"
+f593-0005 9abd2dbd064dc3e1 Jessie{n}"¡Hey, que le zurcen!{p}¡No sé que mosca le ha{n}picado, pero no podemos{n}estar de tertulia con él!"
+f593-0006 187f404e4b0d15a3 Jessie{n}"¡Hyuga!"
+f593-0007 0605c4c3550bff01 Shitan{n}"Discúlpame.{n}Tenía otros asuntos{n}que atender."
+f593-0008 9557e875d2c56234 Shitan{n}"Para su Majestad..."
+f593-0009 ced690b7f047c548 Shitan{n}"Sí. Su Majestad comprende{n}la situación.{p}...Dice que se lo dejemos{n}a "ellos"..."
+f593-0010 961581927859bd12 Shitan{n}"¡Listo! ¡Ya está{n}echo, jefe!"
+f593-0011 bb11b06b2d537f8d Shitan{n}"¿...Carl...?"
+f593-0012 1459f8859693652e Shitan{n}"Carl, lo nuestro son{n}situaciones distintas.{p}Esto no quiere decir{n}que te traicione.{n}He decidido ir del lado{n}del grupo de Fei."
+f593-0013 f0cc4abb50a4741f Shitan{n}"C-Carl..."
+f593-0014 a489b8d4fa6854f8 Shitan{n}"Pero..."
+f593-0015 ab1f2761b7c24c05 Shitan{n}"...{wait 45}Vale..."
+f593-0016 9491aa6645c20109 Ramsus{n}"¿Dónde está él,{n}Hyuga...?"
+f593-0017 c8b2bb8ee6c58b52 Ramsus{n}"Vosotros{wait 32}...{n}también me estáis{n}traicionando."
+f593-0018 932fc75c981637f8 Ramsus{n}"¿¡Has dicho "Fei"!?{p}Tú también... estás{n}de su parte... ¡Nunca te{n}perdonaré¡ ¡NUNCA!"
+f593-0019 8877e99a393b6821 Ramsus{n}"¡Calla la boca!{n}Tengo que atraparle con{n}mis propias manos...{p}¡Y todos vosotros que{n}estáis trabajando con{n}él sois mis enemigos!{p}¡Enemigos que roban{n}"mis cosas"! ¡Enemigos!{n}¡Enemigos, Enemigos!"
+f595-0000 a4187891898ecdcf Fei{n}"¡Elly!{wait 45}{n}...{wait 32}...{n}¿Estás bien?"
+f595-0001 93bab20810abdfc3 Elly{n}"Fei...{n}...Sí...{wait 23}sí, estoy bien."
+f595-0002 df886dd037e7072f Bart{n}"Majetes, siento{n}interrumpiros,{p}pero no es momento para{n}estar acaramelados."
+f596-0000 e4e0b3b9e6e9fbbf Elly{n}"Tengo que llevar a mis{n}padres a un lugar seguro{n}rápidamente..."
+f596-0001 574a7066a9841989 Elly{n}"¡Padre!{n}¡Madre!"
+f596-0002 59d2cb6a302af7ca Elly{n}"Gra-gracias, Hammer."
+f596-0004 7816b333715f9578 Shitan{n}"¡Rápido, Fei!{p}Si permanecemos{n}mucho tiempo aquí{n}es fácil que nos{n}encuentren."
+f596-0005 2772f083aceb3987 Shitan{n}"Escucharme todos, no hay{n}tiempo que perder."
+f596-0006 696f95da4077dca8 Shitan{n}"Tenemos que conseguir{n}destacar poco, así que nos{n}dividiremos en dos grupos.{p}Fei, sé que has hecho mucho,{n}pero quisiera que avanzaras{n}tomando la delantera junto{n}con dos compañeros más.{p}Los tres os dirigiréis{n}hacia el suroeste y{n}cruzaréis dos puentes{n}movibles de contacto.{p}Encontraréis un hangar{n}que da al exterior.{n}En el puente peatonal{n}cerca de allí nos veremos.{p}La Zhoarita azul te{n}permitirá establecer{n}contacto con los otros{n}compañeros.{p}De ese modo podrás realizar{n}los cambios de compañeros{n}que precises."
+f596-0007 a7ed78393d37476d Shitan{n}"...Vale. Por favor no{n}hagas excesivos esfuerzos."
+f596-0008 9f4f13108c795a48 Bart{n}"¡Corramos{n}mientras podamos!"
+f596-0009 c1a21994dd40f399 Billy{n}"No bajéis la guardia{n}hasta que esto no acabe.{n}¡Tenemos que volver!"
+f596-0010 37d7163a6a191f38 Rico{n}"Esos estúpidos de{n}Solaris... Espero que{n}aprendan la lección."
+f596-0011 130807f72f5e865a Rico{n}"¡Deberías darle las{n}gracias a Hammer!{p}Hammer dio con tus padres{n}en el momento justo.{n}¿¡A que sí, Hammer!?"
+f596-0012 e39b174753266219 Esmeralda{n}"Fei es Kim,{n}¡vámonos juntos!{n}¡Adelante!"
+f596-0013 e9c5bfa7beffe898 Esmeralda{n}"¡Oh, ese es Fei!{n}¡Fei es Kim está aquí!"
+f596-0014 cf428373408133a3 {name 7}{n}"No estoy en mi tamaño{n}gigante así que chu{n}dejo algo que desear."
+f596-0015 ff1739e35844b853 Erich{n}"Fei, ahora estamos{n}igual."
+f596-0016 6c7e2284e393a3ef Erich{n}"Nos gustaría darte{n}también las gracias.{p}Ya pensaba que nunca{n}volvería ver a mi hija...{p}Gracias, Hammer."
+f596-0017 51a26a66a7b610ac Erich{n}"Yo iré al hangar con{n}antelación, y prepararé{n}algo para nosotros.{p}Ahora que Solaris está{n}en confusión, si voy{n}solo podré hacer y{n}deshacer cuanto quiera."
+f596-0018 4661002403b5ce79 Erich{n}"Sí, lo sé."
+f596-0019 d67fbb530532832a Erich{n}"Elly, Medena...{n}Nos vemos."
+f596-0020 139db63dbd996036 Medena{n}"Fei, ahora estamos{n}en el mismo barco{n}que vosotros."
+f596-0021 ff5451883c7e2058 Medena{n}"¡Elly!"
+f596-0022 6d1c59b56e33e66f Medena{n}"Querido...{n}Te cuidado..."
+f596-0023 5045fd05d8256c76 Hammer{n}"Va-va-vamos, huye...{n}Sí, huye, ¡huye!{p}¡Sí, eso es!"
+f596-0024 c50198f3b5f3bc65 "Yo que tú me preparaba{n}bien antes de ponerme{n}en marcha, así que...{p}¡Aprovecha a comprar{n}antes que Hammer chape!"{n}     {speed 255}¡Objetos!{n}     ¡Accesorios!
+f596-0025 cfd983c119f2a2f4 Hammer{n}"S-sí...{wait 32}{n}Sí...exacto..."
+f596-0026 61b1eba049fd61de Jessie{n}"En mi época este país no{n}era así... Creo...{p}Bueno, quizás fuera{n}demasiado joven."

@@ -39,8 +39,9 @@ place (Perfect Works titles each tune of a jukebox whose lists all read
 controls of the original (new lines move freely; a page may be added only
 where the player's Confirm already ends the text; a choice keeps its last
 page's lines), and each line and page within its window (`limits`). A
-language that brings its own layout (OWN_LAYOUT: Perfect Works, each text as
-its build shows it on the console, tools/perfect_works.py) sets its own
+language that brings its own layout (OWN_LAYOUT: Perfect Works and Romhack
+Hispano's Spanish, each text as its build shows it on the console,
+tools/perfect_works.py, tools/romhack_hispano.py) sets its own
 waits, insertions and pages, and its lines may take the screen's columns in
 the field and the line images' in the menus and the battle (`Place.own`); a
 choice still keeps its cursor's lines. A translation that is the
@@ -329,7 +330,7 @@ BOX = (0x48, 4)
 # (window_render_text_line's 0x39 columns; where a menu's image is narrower
 # the language's build shows what fits it). A window a script sizes, in the
 # field or the battle, holds every language to what it shows.
-OWN_LAYOUT = {"en-x-pw"}
+OWN_LAYOUT = {"en-x-pw", "es"}
 SCREEN_COLUMNS = 70
 ANY_ROWS = 255
 LINE_COLUMNS = 0x39

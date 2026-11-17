@@ -1,0 +1,29 @@
+wa043-0001 17e0f870b0c116e7 Lahan
+wa043-0002 1959f73a7c9ee8d3 Paso rocoso
+wa043-0003 0d88bfa9b5a0f80d Casa de Shitan
+wa043-0004 ea102981d433d942 Bosque Blackmoon
+wa043-0006 6c943255e39dd614 Dajil
+wa043-0009 514742f4a8671ef9 Guarida de Bart
+wa043-0011 47c5255063d9d7e8 Bledavik (Av)
+wa043-0013 2c6592f4095f8d19 Fábrica Goliath
+wa043-0014 e4f2af788ec3e3a8 Tamuz
+wa043-0015 22d1025cfdcf29ef Orfanato
+wa043-0016 0c0931337817f556 Cuartel "Iglesia"
+wa043-0017 808ad0af10aaa58a Ruinas "Iglesia"
+wa043-0018 656a9a9c8804e7e6 Torre Babel
+wa043-0019 06a25984becdcf2e Faro
+wa043-0020 dd500e3057dcbcf3 Casa de Taura
+wa043-0021 76a2dffcc644bedb Conductor
+wa043-0022 4128e6064ff51be4 Eje de Solaris
+wa043-0023 ff6d8e75715a88de Escondite nevado
+wa043-0024 f7552ffb1561d0bb Punto Bethlehem
+wa043-0026 61d9ca06fd6716f3 Ermitaño
+wa043-0027 50bb269a6a525d18 Puerta de Ignis
+wa043-0028 5a5caa3310e7a23c Sistema Soylent
+wa043-0029 3f45ed71fb99e0db Shebat
+wa043-0032 8b76f83296717175 Cont. Anima 1
+wa043-0033 8b5196329651aeb2 Cont. Anima 2
+wa043-0034 6adf4be3137416f2 Suministros
+wa043-0036 28045f04c5b7b9f6 Isla Duneman
+wa043-0037 adc2eda6458d83fb Paso a Nisan
+wa043-0038 2995a9aeadddb73a Jaspe

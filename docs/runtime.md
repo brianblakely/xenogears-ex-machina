@@ -9166,13 +9166,13 @@ other hosts were not run.
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
 game's own text: **English**, the original's, by default, **English
-(Perfect Works)**, **Português (Brasil)**, **Français** or, beside the
+(Perfect Works)**, **Português (Brasil)**, **Français**, **Español** or, beside the
 Japanese release's discs, **日本語** (Japanese, below). It is a setting
 (`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
 `"BrazilianPortuguese"`, `"French"` or `"Japanese"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "ja"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "es" | "ja"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -9191,6 +9191,10 @@ rather than shipped. French translates 16 029 and lists 1 057: the same
 texts and one enemy name French spells as the original does (Griffon).
 English (Perfect Works) reads 10 513 texts anew, and 210 table entries
 alone besides (below), and lists the 6 589 it leaves as the original's.
+Spanish, Romhack Hispano's translation (`tools/romhack_hispano.py`,
+`locale/es/README.md`), reads 16 119 texts anew and 603 table entries
+alone, and lists the 1 039 it leaves as the original's; like Perfect
+Works it brings its own layout.
 Text built at run time (numbers, and a name the player gave) is the game's
 own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn

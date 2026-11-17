@@ -50,7 +50,8 @@ const MAX_GLYPHS: usize = 0xDF;
 
 /// A language of the game's text: the original's English, or a translation.
 /// Perfect Works is the English of the Perfect Works Build's retranslation
-/// (`locale/en-x-pw/README.md`).
+/// (`locale/en-x-pw/README.md`); Spanish is Romhack Hispano's translation
+/// (`locale/es/README.md`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Language {
     #[default]
@@ -58,16 +59,18 @@ pub enum Language {
     PerfectWorks,
     BrazilianPortuguese,
     French,
+    Spanish,
     /// The Japanese release's own text, read from the player's Japanese
     /// discs (`crate::japanese`): installed only beside them.
     Japanese,
 }
 
 impl Language {
-    pub const ALL: [Language; 5] =
-        [Language::English, Language::PerfectWorks, Language::BrazilianPortuguese, Language::French, Language::Japanese];
+    pub const ALL: [Language; 6] =
+        [Language::English, Language::PerfectWorks, Language::BrazilianPortuguese, Language::French, Language::Spanish,
+         Language::Japanese];
     /// The languages shipped as translations (`locale/<code>/`).
-    const SHIPPED: [Language; 3] = [Language::PerfectWorks, Language::BrazilianPortuguese, Language::French];
+    const SHIPPED: [Language; 4] = [Language::PerfectWorks, Language::BrazilianPortuguese, Language::French, Language::Spanish];
 
     /// Its BCP 47 tag, as commands and `locale/` name it.
     pub fn code(self) -> &'static str {
@@ -76,6 +79,7 @@ impl Language {
             Language::PerfectWorks => "en-x-pw",
             Language::BrazilianPortuguese => "pt-BR",
             Language::French => "fr",
+            Language::Spanish => "es",
             Language::Japanese => "ja",
         }
     }
@@ -91,6 +95,7 @@ impl Language {
             Language::PerfectWorks => "English (Perfect Works)",
             Language::BrazilianPortuguese => "Português (Brasil)",
             Language::French => "Français",
+            Language::Spanish => "Español",
             Language::Japanese => "日本語",
         }
     }
@@ -102,6 +107,7 @@ impl Language {
             Language::PerfectWorks => &EN_X_PW,
             Language::BrazilianPortuguese => &PT_BR,
             Language::French => &FR,
+            Language::Spanish => &ES,
         }
     }
 
@@ -111,6 +117,7 @@ impl Language {
             Language::PerfectWorks => include_str!("../locale/en-x-pw/glyphs.txt"),
             Language::BrazilianPortuguese => include_str!("../locale/pt-BR/glyphs.txt"),
             Language::French => include_str!("../locale/fr/glyphs.txt"),
+            Language::Spanish => include_str!("../locale/es/glyphs.txt"),
         }
     }
 
@@ -133,6 +140,8 @@ static EN_X_PW: [(&str, &str); 12] = sources!("en-x-pw": "system.txt", "menus.tx
 static PT_BR: [(&str, &str); 12] = sources!("pt-BR": "system.txt", "menus.txt", "battle.txt", "world.txt",
     "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
 static FR: [(&str, &str); 12] = sources!("fr": "system.txt", "menus.txt", "battle.txt", "world.txt",
+    "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
+static ES: [(&str, &str); 12] = sources!("es": "system.txt", "menus.txt", "battle.txt", "world.txt",
     "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
 
 // The font's one-byte glyphs (directory (0, 1) file 6, read by
@@ -658,8 +667,9 @@ mod tests {
     #[test]
     fn the_added_letters_are_drawn_from_the_fonts_letters_and_the_accents() {
         let glyphs = glyphs().unwrap();
-        // Perfect Works' 6 marks, Brazilian Portuguese's 24 letters, then the 14 French adds (è ë î ï ù û ü and capitals).
-        assert_eq!(glyphs.len(), 44);
+        // Perfect Works' 6 marks, Brazilian Portuguese's 24 letters, the 14 French adds (è ë î ï ù û ü and capitals),
+        // then the 4 Spanish adds (ñ Ñ ¡ ¿).
+        assert_eq!(glyphs.len(), 48);
         let codes = added_codes(&glyphs).codes;
         let a_acute = &glyphs[6];
         assert_eq!((a_acute.character, a_acute.base, a_acute.drop, a_acute.clear, a_acute.wide), ('á', 0x3D, 0, 0, false));
@@ -689,6 +699,16 @@ mod tests {
         assert_eq!((blank.base, blank.accent, blank.wide), (0x10, [0; 11], true));
         let el = &glyphs[5];
         assert_eq!((el.base, el.accent[3], el.wide), (0x10, 0xF2 | 0x2000, true));
+        // Spanish's: ñ is n under the tilde Brazilian Portuguese draws, and
+        // the inverted marks are drawn whole on the font's space.
+        let tilde = glyphs.iter().find(|g| g.character == 'ã').unwrap().accent;
+        let n_tilde = glyphs.iter().find(|g| g.character == 'ñ').unwrap();
+        assert_eq!((n_tilde.base, n_tilde.accent), (0x4A, tilde));
+        assert_eq!(glyphs[44..].iter().map(|g| g.character).collect::<String>(), "ñÑ¡¿");
+        for mark in ['¡', '¿'] {
+            let glyph = glyphs.iter().find(|g| g.character == mark).unwrap();
+            assert_eq!((glyph.base, glyph.wide, glyph.accent[3], glyph.accent[4]), (0x10, false, 0x20, 0), "{mark}");
+        }
         assert!(parse_glyphs("accent dot 0=..#..\nx ※ dot").unwrap_err().contains("narrow glyph"));
         assert!(parse_glyphs("ä a umlaut").unwrap_err().contains("no such accent"));
         assert!(parse_glyphs("accent dot 0=..#..\nx a dot tall").unwrap_err().contains("wide"));
@@ -720,8 +740,8 @@ mod tests {
         assert_eq!(place_key(&text, 3, 0x1234, 9), fnv1a64(&named));
         let image = IMAGE.as_ref().unwrap();
         let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
-        assert_eq!((word(0), word(4), word(8), word(16)), (MAGIC, 0, 3, glyphs.len() as u32));
-        assert_eq!(word(12), BASE + (HEADER_BYTES + 3 * LANGUAGE_BYTES) as u32);
+        assert_eq!((word(0), word(4), word(8), word(16)), (MAGIC, 0, 4, glyphs.len() as u32));
+        assert_eq!(word(12), BASE + (HEADER_BYTES + 4 * LANGUAGE_BYTES) as u32);
         let wide: Vec<usize> = (0..glyphs.len()).filter(|i| image.bytes[(word(12) - BASE) as usize + GLYPH_BYTES * i + 1] == 1).collect();
         assert_eq!(wide, [3, 4, 5], "the glyphs drawn wide");
         let mut next = (word(12) - BASE) as usize + GLYPH_BYTES * glyphs.len();
@@ -748,14 +768,18 @@ mod tests {
         // A line that did not would leave every translation uninstalled.
         let image = IMAGE.as_ref().expect("the shipped translations build");
         let lines = |files: &[(&str, &str)]| files.iter().map(|(_, source)| source.lines().filter(|l| !l.trim().is_empty()).count()).sum::<usize>();
-        let (perfect_works, portuguese, french) = (lines(&EN_X_PW), lines(&PT_BR), lines(&FR));
+        let (perfect_works, portuguese, french, spanish) = (lines(&EN_X_PW), lines(&PT_BR), lines(&FR), lines(&ES));
         assert_eq!(image.languages.iter().map(|(language, texts, entries)| (*language, texts + entries)).collect::<Vec<_>>(),
-            [(Language::PerfectWorks, perfect_works), (Language::BrazilianPortuguese, portuguese), (Language::French, french)]);
+            [(Language::PerfectWorks, perfect_works), (Language::BrazilianPortuguese, portuguese), (Language::French, french),
+             (Language::Spanish, spanish)]);
         assert!(portuguese > 16_000, "Brazilian Portuguese ships its translations ({portuguese})");
         assert!(french > 16_000, "French ships its translations ({french})");
+        assert!(spanish > 16_000, "Spanish ships its translations ({spanish})");
         // Perfect Works reads anew the texts it changes, some of them in one entry alone.
         assert!(perfect_works > 10_000, "Perfect Works ships its translations ({perfect_works})");
-        assert!(image.languages[0].2 > 100 && image.languages[1].2 == 0 && image.languages[2].2 == 0, "only Perfect Works translates single entries");
+        // Perfect Works and Romhack Hispano read some texts differently from entry to entry.
+        assert!(image.languages[0].2 > 100 && image.languages[1].2 == 0 && image.languages[2].2 == 0 && image.languages[3].2 > 100,
+            "Perfect Works and Spanish translate single entries");
     }
 
     #[test]
@@ -771,5 +795,7 @@ mod tests {
         assert_eq!(Language::from_code("en-x-pw"), Some(Language::PerfectWorks));
         assert_eq!((Language::PerfectWorks.name(), Language::PerfectWorks.number()), ("English (Perfect Works)", 1));
         assert_eq!(Language::ALL[..2], [Language::English, Language::PerfectWorks]);
+        assert_eq!(Language::from_code("es"), Some(Language::Spanish));
+        assert_eq!((Language::Spanish.name(), Language::Spanish.number()), ("Español", 4));
     }
 }
