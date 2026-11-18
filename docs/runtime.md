@@ -9166,13 +9166,13 @@ other hosts were not run.
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
 game's own text: **English**, the original's, by default, **English
-(Perfect Works)**, **Português (Brasil)**, **Français** or, beside the
+(Perfect Works)**, **Português (Brasil)**, **Français**, **Italiano** or, beside the
 Japanese release's discs, **日本語** (Japanese, below). It is a setting
 (`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
-`"BrazilianPortuguese"`, `"French"` or `"Japanese"`), which the hosts give the session
+`"BrazilianPortuguese"`, `"French"`, `"Italian"` or `"Japanese"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "ja"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "it" | "ja"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -9189,6 +9189,9 @@ Portuguese translates 16 030 of them; 1 056, the same in Portuguese (names
 alone, cries, the developers' test menus kept as they were), are listed
 rather than shipped. French translates 16 029 and lists 1 057: the same
 texts and one enemy name French spells as the original does (Griffon).
+Italian, translated from the English beside the French, translates 15 953
+and lists 1 136: more cries and short replies read the same in Italian
+("No!", "Oh no...", "Doc!").
 English (Perfect Works) reads 10 513 texts anew, and 210 table entries
 alone besides (below), and lists the 6 589 it leaves as the original's.
 Text built at run time (numbers, and a name the player gave) is the game's
@@ -9404,11 +9407,13 @@ longer has its original images, so the next pass leaves it.
 **Letters.** Brazilian Portuguese adds `á à â ã é ê í ó ô õ ú ç` and their
 capitals (`locale/pt-BR/glyphs.txt`), French `à â ç é è ê ë î ï ô ù û ü`
 and their capitals (`locale/fr/glyphs.txt`; it writes oe and ae for the
-ligatures, which the font lacks), and Perfect Works the marks its own font
+ligatures, which the font lacks), Italian `à è é ì ò ù` and their capitals
+(`locale/it/glyphs.txt`; `ì ò Ì Ò` are its own, the rest those Portuguese and
+French added first), and Perfect Works the marks its own font
 draws in place of the wide digits ０-３, the wide underscore and the
 brackets: `ö ; *`, a dash `—` and a blank `␣` as wide as a wide glyph, and
 `ﭏ` (El, the lamed and the aleph, which its Omnigears' names begin with)
-(`locale/en-x-pw/glyphs.txt`), 44 glyphs in all. Each is a two-byte glyph from 0xFF20
+(`locale/en-x-pw/glyphs.txt`), 48 glyphs in all. Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
 its special glyph), the same code in every language that adds the letter
 (the languages' letters numbered in `Language::ALL`'s order, a letter
@@ -9465,7 +9470,7 @@ markup, a reading fitted to its window, a text's entries as lines),
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
 (field 12's opening message: in English the window reads it in RAM; in
-Brazilian Portuguese and in French it reads that language's shipped
+Brazilian Portuguese, in French and in Italian it reads that language's shipped
 translation of the same message, with added letters, and goes on with it
 once English is chosen, the next message read in RAM),
 `perfect_works_reads_a_text_differently_from_entry_to_entry` (map 222's

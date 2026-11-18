@@ -1,0 +1,23 @@
+wa043-0001 17e0f870b0c116e7 Villaggio Lahan
+wa043-0002 1959f73a7c9ee8d3 Sentiero montano
+wa043-0003 0d88bfa9b5a0f80d Casa di Citan
+wa043-0004 ea102981d433d942 Bosco Luna Nera
+wa043-0009 514742f4a8671ef9 Covo di Bart
+wa043-0013 2c6592f4095f8d19 Fabbrica Goliath
+wa043-0015 22d1025cfdcf29ef Orfanotrofio
+wa043-0016 0c0931337817f556 Sede dell'Ethos
+wa043-0017 808ad0af10aaa58a Scavi dell'Ethos
+wa043-0018 656a9a9c8804e7e6 Torre di Babele
+wa043-0019 06a25984becdcf2e Faro
+wa043-0020 dd500e3057dcbcf3 Casa di Taura
+wa043-0022 4128e6064ff51be4 Pozzo di Solaris
+wa043-0023 ff6d8e75715a88de Rifugio innevato
+wa043-0026 61d9ca06fd6716f3 Tana d'Eremita
+wa043-0027 50bb269a6a525d18 Porta di Ignas
+wa043-0028 5a5caa3310e7a23c Sistema Soylent
+wa043-0032 8b76f83296717175 Reliquia Anima 1
+wa043-0033 8b5196329651aeb2 Reliquia Anima 2
+wa043-0034 6adf4be3137416f2 Nave cargo
+wa043-0036 28045f04c5b7b9f6 Isola Uomo Duna
+wa043-0037 adc2eda6458d83fb Strada per Nisan
+wa043-0038 2995a9aeadddb73a Forte Jasper

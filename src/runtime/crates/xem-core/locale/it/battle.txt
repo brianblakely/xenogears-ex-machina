@@ -1,0 +1,684 @@
+ba015-0004 52b66a8cf98715e0 Ripristina tutti gli HP
+ba015-0005 7af137c46c497cf8 Tutti gli HP a tutti
+ba015-0009 04872d9525c56d5b Ripristina tutti gli EP
+ba015-0010 70cebd1fca249e93 Rimuove lo stato KO
+ba015-0011 a009c3b708ee8c97 Rianima/ripristina HP
+ba015-0012 ca9d05343304f2be Cura effetto FIS
+ba015-0013 f22c40e2926e78fc Cura effetto MEN
+ba015-0014 291b3ff1ae45555a Cura tutti gli effetti
+ba015-0020 62416a8670e5cdc5 Velocità
+ba015-0022 8f4183db7f5ce518 Annulla Finta Morte
+ba015-0023 5f34762eb3fd259d Blocca effetti FIS
+ba015-0024 2859135b5826b623 Blocca effetti MEN
+ba015-0025 02c7f5304b8b0644 Annulla effetti FIS
+ba015-0026 bb54e6e64f244c46 Annulla effetti MEN
+ba015-0027 f2235d77dbc57869 Annulla effetti equip.
+ba015-0032 2cc335acf30ad33f In lotta: +Att dell'arma
+ba037-0001 fdf35417798550d0 Paralisi
+ba037-0007 28e2c4a325c1527a Bart provoca il nemico
+ba037-0011 714fd1b82521115c Abilità Etere inutilizzabili
+ba037-0012 2bd06f2280cad770 Effetto Etere cala
+ba037-0013 5d6f8f535f858271 Blocca gli effetti ETERE
+ba037-0014 685143e990668e3c Velocità aumenta
+ba037-0017 3bfe327b2f0bde84 Precisione aumenta
+ba037-0018 1514ccd420d81e81 Evasione aumenta
+ba037-0021 01bd52710566b9cf Effetto Etere aumenta
+ba037-0024 af1894cb1de6af93 Contrattacco aumenta
+ba037-0025 63a532bacb5ae714 Att aumenta/Dif cala
+ba037-0026 70fe848cd604962e Dif aumenta/Att cala
+ba037-0027 b82925bda433bc62 Aggiunge Vento all'attacco
+ba037-0028 2576b817cd7dedcc Aggiunge Terra all'attacco
+ba037-0029 ef3bc09cf6b020ba Aggiunge Fuoco all'attacco
+ba037-0030 871cd6e7bb7d61cf Aggiunge Acqua all'attacco
+ba037-0031 1b5484e9e951995d Blocca Terra/debolezza Vento
+ba037-0032 e08f5750e46e9b01 Blocca Vento/debolezza Terra
+ba037-0033 762a1f2652398d9c Blocca Acqua/debolezza Fuoco
+ba037-0034 78011f3d73b8ffa2 Blocca Fuoco/debolezza Acqua
+ba037-0037 edf0b9d6be375700 EP cala
+ba037-0038 ef700cba654d25b3 Motore Etere fermo
+ba037-0039 43c96074c4d05213 Perdita di carburante
+ba037-0042 a8ea1976e85141c1 Precisione/Evasione calano
+ba037-0043 bb6e117d9e21a102 Perdita di potenza
+ba037-0045 ba0d8818992307a0 Potenza aumenta
+ba037-0048 f83782a41d598737 Nessun effetto sul Gear
+ba037-0050 c38cd0aad4e3ca1b Sei l'ultimo rimasto
+ba037-0051 480807a6fe42a4a2 Nessun effetto
+ba037-0052 49fe73200fcb26f3 Contrattacco!
+ba037-0056 1026062c1573ded6 Scusa... ho fallito
+ba037-0057 106a76f3697c7aa3 Impossibile aggiungere elem.
+ba037-0058 f7663fe16c0c9cbb Annulla tutti gli effetti
+ba037-0059 8c956fe2db07c3fe Niente munizioni pistola
+ba037-0060 9c90a50cf434860b Niente munizioni cannone
+ba037-0061 d851a2c59a1f5fe6 Ricarica carb. x10
+be000-0000 1c9a7465cf9cf365 Fei{n}"Rinforzi,{n}eh?!"
+be000-0001 bf935737eccf0b0e Fei{n}"Anche a destra!{wait 20}{n}Dannazione!{wait 20} Quanti{n}ce ne sono{wait 8}.{wait 8}.{wait 8}.{wait 8}?"
+be001-0001 7304db17047fe8f2 Fei{n}"Uff,{wait 8} uff{wait 8}.{wait 2}.{wait 2}.{wait 4}{n}Uno è andato!?"
+be001-0002 f196a50032eeaedb Fei{n}"Ma che diavolo sei?{p}Per quante volte{n}ti butto a terra,{n}ti rialzi sempre!"
+be001-0003 3a515c379605a74b Fei{n}"Ugh!{n}Ma quanto sei{n}ostinato!"
+be001-0004 a65b0c9f44e8d0c8 Fei{n}"Uff,{wait 10} uff{wait 10}.{wait 10}.{wait 10}.{wait 10} Dannazione!{wait 30}{n}Perché...?{wait 90} Perché si{n}è arrivati a questo?"
+be001-0005 37b176411a7768ff Citan{n}"Fei!{wait 30} Fermati!{wait 30}{n}Non lottare{n}qui!"
+be002-0000 01a705454b0fd8fb .....{wait 10}XafbEW{wait 10}fadJZ{wait 10}.....{wait 10}{n}...{wait 30}Modificatore{n}  linguistico{n}       attivato.{p}Identificato：{n}  Agnello, dialetto{n}  di Ignas{n}Pilota senza esperienza{n}  →Modo Facile attivo{p}Sincronizzazione{n} dell'interfaccia{n} con i riflessi{n} normali del pilota{p}Avviso al pilota：{n}  M O D O{n}  S C O N T R O{n}Combattimento imminente!{wait 20}{n}Carburante: 1200 unità{p}Usa l'Anello Comandi{n}in alto a sinistra{n}dello schermo e{n}scegli ATTACCO{p}poi i tasti{n} △,□ e × per avviare{n}la sequenza di attacco{n}automatico.{p}Potenza e carburante{n}consumati variano col{n}tipo d'attacco (tasto)：{n}   △10   □20   ×30{n}(CARICA ripristina{n}  30 unità carburante)
+be003-0001 5e305fa2eeb1c500 Fei{n}"Toglietevi di{n}mezzo,{n}bastardi!"
+be004-0001 18ecf75c53da724a Citan{n}"Fei! Ti cercavo{n}dappertutto! Tieni,{n}puoi usare questo!"
+be004-0002 5ecf105a67e6c108 Citan{n}"Fei...{n}Preghiamo che{n}non accada!"
+be004-0003 91212eea96e1fb90 Fei{n}"Elly!{n}Stai bene?!{p}Accidenti!{n}È svenuta!"
+be004-0004 c9636d8a60531709 Fei{n}"Ehi! Aspetta un attimo!{n}Dirmi che posso usarlo{n}è un conto..."
+be004-0005 fd4d5c808d2ba5e2 Fei{n}"Elly...{wait 15}{n}Dannazione!"
+be005-0000 8eb2aecc8f3fc995 Pirata{n}"Hm. Non sai implorare{n}meglio per la tua vita?{p}Saltate fuori da una{n}nave di Aveh e dite{n}di non essere soldati{n}di Aveh!{p}Smettetela di{n}prendermi in giro!"
+be005-0001 c60a22ce0d2b0567 Pirata{n}"Tsk.{n}Ma quanto sei patetico?!{p}Anche se sei il più{n}infimo dei soldati,{n}che ne dici di mostrare{n}un po' di fegato...{p}...e combattere{n}come si deve!"
+be005-0002 d242d31f99def28e Pirata{n}"Che schifo!{n}Perché non la smetti{n}di lamentarti,{p}lasci il Gear e{n}te la dai a gambe?"
+be005-0003 1e718d3cc65374d4 Pirata{n}"Per uno che non vuole{n}combattere, sei{n}piuttosto forte...{p}Capisco,{n}un modello{n}per ogni ambiente...{n}ecco cos'è, eh?{p}Ora lo voglio{n}ancora di più!"
+be005-0004 b6dc5d0d3b56b862 Pirata{n}"Oh, no!{wait 30}{n}Si mette male!!"
+be005-0005 213808d06897adb7 Pirata{n}"In piena battaglia,{n}vado a finire nelle{n}sabbie mobili!{p}Accidenti.{n}Proprio a me!"
+be005-0006 6f5c5fb94c61dcf6 Pirata{n}"Dannazione!{n}È tutta colpa tua!{p}Me la pagherai{n}più tardi.{n}Tieniti pronto!"
+be005-0007 6e5dde6c11df5df4 Fei{n}"Aspetta un po'!{n}Non siamo soldati{n}di Aveh!"
+be005-0008 ab492f19a7c76387 Fei{n}"Te lo giuro,{n}è la verità!"
+be005-0009 9efbb820df129e47 Fei{n}"Basta! Ti dico che{n}non sono un soldato!{n}Non voglio combattere!"
+be006-0000 78d2c503b2164e69 Bart{n}"Ah! Che idiota. Voleva{n}spaventarci: tutto fumo{n}e niente arrosto,{p}eh, Fei!"
+be006-0001 ae360a215b3c4944 Bart{n}"Comunque... sembra che{n}quella sia l'uscita.{p}Presto diremo adios{n}a questa vecchia{n}grotta!"
+be006-0002 ffebff896efda7ff Bart{n}"Ma cosa...!?"
+be006-0003 a4a5846049f9316c Bart{n}"Wooh! Che diavolo{n}hai appena{n}fatto?"
+be006-0004 b1dc16d674f7b21d Bart{n}"Ehi!!"
+be006-0005 9cfb8a2a48c514bb Bart{n}"Come sarebbe{n}'eh?'!? Che diamine{n}era quello?{p}... Non lo sai?"
+be006-0006 1e710b9c80de8397 Bart{n}"È stato incredibile!{n}Hai fatto a pezzi{n}quel coso enorme!{p}Perché non hai usato{n}quella tecnica un po'{n}prima?"
+be006-0007 c9b1b18fee055746 Bart{n}"Hmm. Beh, immagino{n}che non importi.{p}Comunque...{n}grazie per{n}l'aiuto!"
+be006-0008 9fedf14ea4919a98 Bart{n}"Allora, ora che ci{n}siamo tolti di torno{n}quella seccatura,{p}andiamocene da qui,{n}eh, Fei!"
+be006-0011 e9b9a0f8c8182b0e Fei{n}"Togliti di{n}mezzo, Bart!!"
+be006-0013 b2ce3dc024c4a4a0 Fei{n}"......eh?"
+be006-0014 0d5b57dfd380c3b0 Fei{n}"...No,{wait 30} io{wait 30} ehm,{wait 30}{n}......non lo so."
+be006-0015 288ec8cbc20f3d65 Fei{n}"... Non conosco quella{n}tecnica... Non so{n}neanche come ho fatto!"
+be007-0001 c182e5a6cc12cfcc Fei{n}"...Quella voce!?{wait 10}{n}.{wait 3}.{wait 3}.{wait 20}Elly?{wait 10}{n}Elly, sei tu?!?"
+be007-0002 e11a948332d73456 Fei{n}"Elly!?{wait 20}{n}Il tuo viso{wait 20}...!?{wait 20}{n}Che ti succede?{p}Non dirmi che prendi{n}quella droga che{n}cambia la personalità{p}di cui ci ha{n}parlato Bart!?"
+be007-0003 ae75ca504dd5a62b Fei{n}"Elly, basta!{n}Perché dobbiamo{n}combattere!?"
+be007-0004 af515d733224f2be Fei{n}"Elly,{n}torna in te!{p}Le tue emozioni{n}sono controllate{n}dalla droga!"
+be007-0005 2658eb254e3a27f4 Fei{n}"Non è vero!{n}Una volta ti sei{n}sentita responsabile,{p}incolpandoti per{n}aver causato la{n}tragedia di Lahan{n}atterrando lì.{p}Eri premurosa{n}con me quando{n}ero turbato...{p}La vera te non{n}direbbe mai una{n}cosa del genere!!"
+be007-0006 f5391eeafe3cd711 Fei{n}"...Argh!{wait 20}{n}Elly{wait 10}...{wait 20}{n}Devo combattere te!?"
+be007-0007 3b266e0996ea6a08 Fei{n}"...Che è successo?{n}Elly ha qualcosa{n}che non va.{p}Forse adesso{n}posso fermarla!!"
+be007-0008 622fed910291adf0 Fei{n}"Elly!{wait 10}{n}Svegliati e{n}torna in te!"
+be007-0009 ca9d40e3aec9f83b Fei{n}"Stai bene!? Elly!{n}Cosa!?{p}L'effetto della{n}droga sta{n}svanendo?"
+be007-0010 a61165eceac5cafb Fei{n}"È così? Elly!{wait 20}{n}È questo che{n}sta succedendo!?"
+be007-0011 d6bd62bce54e1d3e Fei{n}"Resisti, Elly!{wait 10}{n}Non perdere il tuo{n}vero io!"
+be007-0012 78f4aed061a0b774 Elly{n}"Non sono affari{n}tuoi.{p}E smettila di{n}fare tanto{n}l'amichevole!"
+be007-0013 4458031e1f713502 Elly{n}"Perché? È ovvio.{n}È la provvidenza{n}divina!{p}Noi siamo il popolo{n}eletto, gli Abel...{p}Lo scopo della nostra{n}esistenza è sottomettere{n}gli 'Agnelli' che{n}abitano la terra.{p}...Chi si mette sulla{n}nostra strada deve{n}essere eliminato!"
+be007-0014 8ecdd795f3022a46 Elly{n}"Questa è la mia vera{n}natura! Non ce n'è{n}altra!"
+be007-0015 f16549f1cc3d77b0 Elly{n}"Parli come se tu{n}sapessi... Eppure{n}non sai nulla!"
+be007-0016 3c1c311a1d81bb3a Elly{n}"Hahaha! Contorciti!{n}Balla!! Muori e marcisci{n}qui nell'oblio!"
+be007-0017 cabf0b04945ab7ae Elly{n}"Sembra che per{n}te sia finita.{p}Ora porrò fine{n}alle tue{n}sofferenze!"
+be007-0018 b0562671416b6eb3 Elly{n}"Non temere!{p}In cambio della tua{n}gentilezza, ti{n}ucciderò senza dolore.{n}Addio,{wait 20} Fei{wait 20}...{wait 20}"
+be007-0019 b397622ee7cc58d5 Elly{n}"Fei{wait 20}...{wait 20}{n}Che fai? Non dovresti{n}essere qui!"
+be007-0020 d3fe6ed8adb62f9d Elly{n}"!!{p}Non{wait 20}...{wait 20}è{wait 20}...{wait 20}vero{wait 20}...{wait 20}{n}Io{wait 20}...{wait 20} No{wait 20}...{wait 20}io{wait 20}...{wait 20}non{wait 20}{n}voglio{wait 20} questo...{wait 20} Ugh!"
+be007-0021 9fb114d366cf5619 Elly{n}"A,{wait 20} aiu...{wait 20}to...{wait 20}{n}Q,{wait 20} questa{wait 20}... non...{wait 20}{n}Non sono{wait 20}...{wait 20} io..."
+be007-0022 c811102b18a4db6b Elly{n}"Uhh!...{wait 10}{n}Aagh{wait 10}...{wait 20} Ah...{wait 10}{n}L,{wait 10} la testa..."
+be007-0023 7fb33457d108986b Elly{n}"Ugh!...{wait 30} Silenzio!{n}Sciocco impertinente!{p}Non darò ascolto{n}a un Agnello..."
+be007-0025 1fdde1e51f328361 Elly{n}"S,{wait 10} sta' zitto!{p}Non so che farmene{n}di finta{n}compassione.{p}...{wait 20}Io,{wait 20} io, ...{wait 20} ehm{wait 20}{n}F{wait 20}...{wait 20}Fe...{wait 20}i...{wait 20}"
+be007-0026 35646d7bd9f97708 Broyer{n}"Wow!{n}Hai visto?!"
+be007-0027 8c67417c63e850a2 Renk{n}"Erano Aerods!"
+be007-0029 89d27e4c08ba150e Helmholz{n}"Droni Offensivi a{n}Risposta Eterica{n}Animum...{p}Comunemente noti{n}come Aerods...{p}In Gebler, solo una{n}manciata di persone{n}sa usarli...{p}Da quel che so,{n}dovrebbero essere solo{n}quelli della classe{n}Elements."
+be007-0030 1ad7d9d54f129633 Stratski{n}"M, ma non è tipo,{n}un effetto collaterale{n}del 'Drive'?{p}Niente di grave,{n}vero...?"
+be008-0000 234a836e6b6c4911 Fei{n}"Stai scherzando?{n}Che ci fai{n}qui, Elly?{p}Credevo avessi deciso{n}di lasciare{n}l'esercito!"
+be008-0001 630dae5e4338d25c Fei{n}"Allora anche questo{n}sarebbe uno dei{n}tuoi doveri!?"
+be008-0002 0ad38ddb3c06b56c Fei{n}"Dici sul serio?{n}Sai cosa stai{n}facendo, vero!?{p}Come puoi dirlo sapendo{n}dove è diretta quella{n}nave e quale potrebbe{n}essere l'esito...?"
+be008-0003 71d00f3e8af05d49 Fei{n}"Andiamo, Elly!{n}Di' qualcosa!"
+be008-0004 a8ae6b616c9b7e79 Fei{n}"Allora..."
+be008-0005 07feb59647939c76 Fei{n}"Libertà? {n}Io?"
+be008-0006 7b1f5877a79579d0 Fei{n}"Allora perché non lo{n}fai anche tu, Elly!?"
+be008-0008 59581b54d9d7443e Fei{n}"Neanch'io ho un posto{n}a cui appartenere..."
+be008-0009 07a92b32c7889384 Fei{n}"... Bart e la ciurma,{n}e perfino la loro nave,{n}sono tutti scomparsi...{p}Spariti dopo la{n}battaglia con Gebler.{n}Così non ho più un{n}posto a cui stare..."
+be008-0010 eb5d3704df7aa6f3 Fei{n}"...Ti diverte questo?"
+be008-0011 07594d7951eeff90 Fei{n}"Invadere il paese{n}di altri e{n}distruggere tutto...{p}Trascinare innocenti{n}e farne delle{n}vittime...{p}Ti piace così tanto{n}combattere!? Ti diverte{n}così tanto veder{n}morire la gente!?"
+be008-0012 0153734ebb177feb Fei{n}"Se è così...{n}allora vieni con me!"
+be008-0013 ea37e64873361fe1 Fei{n}"Dimentica{n}tutto e{n}vieni con me!!"
+be008-0014 a8116207f6f95acd Elly{n}"Mi chiedi troppo!{n}Sono un ufficiale{n}delle forze di Gebler!"
+be008-0015 9c257be7e765ffd7 Elly{n}"Sì!{n}Il mio dovere è{n}scortare l'Hecht.{p}Ed eliminare tutti{n}i nemici sul suo{n}cammino...{p}Quindi faresti{n}meglio a toglierti{n}di mezzo...{p}Perché se non ti{n}sposti, non avrò{n}altra scelta che{n}eliminarti!"
+be008-0017 ea2fc7d471b2bff7 Elly{n}"Lo so!{n}So benissimo{n}cosa sto facendo!"
+be008-0018 8a5db9490264f67c Elly{n}"Cambiare.{wait 30}{n}Come avrei voluto{n}cambiare{wait 20}...{p}Ci ho pensato,{n}ma non ci sono{n}riuscita{wait 10}...{p}Io non ho la{n}libertà{n}che hai tu!"
+be008-0019 4e196da5109c42b6 Elly{n}"Sì! Sbaglio forse?{n}Poter scegliere{n}il proprio posto...{p}Poter combattere{n}accanto a chi{n}crede nella propria{n}causa...{p}Anche se devi{n}affrontare molta{n}più angoscia...{p}Almeno tu hai la{n}libertà di scegliere{n}la tua strada!{n}Non come me...!"
+be008-0020 e8f1aebad22bb4dc Elly{n}"Se potessi, lo starei{n}già facendo!{n}Ma non posso...{p}Questo è il mio posto.{n}Ed è così che va!"
+be008-0021 a3e40f1f06ab732b Elly{n}"... Perciò...{n}ti prego,{n}capiscimi..."
+be008-0022 5bda2d580c23b303 Elly{n}"Eh?"
+be008-0023 30c81bfa4abb69a8 Elly{n}"Davvero...{n}Allora, perché stai{n}combattendo ora?{p}Per chi stai{n}combattendo...?"
+be008-0025 dee6aacd11861232 Elly{n}"Non dire assurdità!{n}Non ci troverei mai{n}alcun piacere!"
+be009-0000 07858fe26a800f4a Ottenuto{n} 'Abito Nuziale'{n}   di Alice!
+be009-0001 aeb95c570f41ee6a Fei{n}"Che ci fai{n}qui, Dan!?"
+be009-0002 1968ab92f252ebec Fei{n}"...Ti prego,{n}Dan. Smettila!"
+be009-0003 bd479a2cd46120ad Fei{n}"Ugh{wait 20}...{wait 20}{n}Cosa vuoi{n}che faccia...?"
+be009-0004 395386f8026b7f8d Fei{n}"...{wait 20}Non posso.{p}Non riuscirei mai{n}a decidermi a{n}colpirti, Dan..."
+be009-0005 c06ab71fac26fda4 Fei{n}"Dan{wait 20}...{wait 20}{n}Io{wait 20}...{wait 20}"
+be009-0006 546d0a86dfaa3d4c Dan{n}"Hmph!{n}Sono scappato{n}da casa di Yui!{p}Sono qui per vendicare{n}la morte di mia{n}sorella!"
+be009-0007 4fd4861f2cc9a753 Dan{n}"Chiudi il becco! Non ti{n}perdonerò mai.{wait 20}{n}...Assassino!!"
+be009-0008 67fbd40321c68a17 Dan{n}"Maledetto Fei!{n}Perché non{n}reagisci?{p}Andiamo,{n}ti ho{n}sfidato!"
+be009-0009 7fee0ca3f4dc8c11 Dan{n}"...Accidenti!{p}Batterti così{n}facilmente non{n}basterà a placare{p}l'anima di mia sorella{n}e di Timothy!{p}Al diavolo! Rimando{n}questo duello.{p}La prossima volta che{n}ti incontro, sarà il{n}tuo funerale! Verme!{p}Fino ad allora,{n}tieni questo!{p}Ogni volta che lo{n}guarderai,{p}voglio che tu soffra{n}e senta il peso di{n}ciò che hai fatto!"
+be009-0010 20b62c73815cadc3 Dan{n}"Zitto!{n}Non voglio sentire{n}le tue stupide scuse!{p}Fei, sei proprio{n}un bastardo!!"
+be010-0000 34e46a39fb5bf375 Maria{n}"Padre!?{wait 40}{n}Sei davvero tu,{n}Nikolai, padre mio!?"
+be010-0001 a3d76635194286be Maria{n}"!!!{wait 40}{n}...Perché hai fatto una{n}cosa così orribile!?"
+be010-0003 d536380dad60524f Maria{n}"!?{wait 60}{n}{wait 40}...{wait 40}Seibzehn trema.{wait 60}{n}{wait 40}...{wait 40}Stai piangendo?{p}{wait 40}...{wait 40}Con il lavaggio del{n}cervello di Solaris, il{n}mio vero padre è già{wait 40}...{p}{wait 40}...{wait 40} Achtzehn{wait 40}...{wait 90}{n}non è mio padre!"
+be010-0004 7818f5630c65f07c Maria{n}"{wait 40}...{wait 40}Achtzehn!{n}Ti sconfiggerò!!{wait 60}{n}Seibzehn, andiamo!!"
+be010-0005 60a05b75ba47079a Maria{n}"!!{wait 40} Padre!{wait 40}{n}Sei tornato{n}in te!?{p}No!{wait 5}{n}Non posso farlo!!{p}Il Cannone Graviton{wait 5}...{wait 5}{n}sei stato tu a farlo{n}sigillare per il suo{n}potere distruttivo.{p}Padre, se lo uso{n}contro di te{wait 40}..."
+be010-0006 bb6b21ae8f65795b Maria{n}"...{wait 30}Non posso.{n}Non ho il coraggio{n}di farlo!!{p}Eh! Seibzehn!{wait 30}{n}No...{wait 30} Non riesco a{n}controllarti!{wait 30} Padre,{n}sei tu a farlo!?{p}Ti prego, non farlo{n}sparare!!"
+be010-0007 cff99112e5bc4d81 Maria{n}"...Paaaaaadreeeee!!"
+be010-0008 8aee1fbefec7292c Achtzehn{n}"Maria...{wait 40}{n}Sei stata una{n}brava bambina?{p}Guarda, ecco Achtzehn.{p}Sono riuscito a fondermi{n}con Achtzehn grazie alle{n}ricerche del Progetto M{n}di Solaris.{p}Osserva la nascita{n}della suprema velocità{n}di riflessi, unione{n}di uomo e macchina!{p}Nessun Gear normale{n}potrà mai sperare di{n}sconfiggere Achtzehn!"
+be010-0009 aa803247f69d37c7 Achtzehn{n}"Hmph. 'Orribile?'{wait 40}{n}No, Maria.{wait 40}{n}È 'glorioso'.{p}Sì, sì. Modificherò{n}anche te e il tuo{n}Seibzehn, per farvi{n}un tutt'uno come me."
+be010-0010 ad38f02bc0f975bd Achtzehn{n}"Ah ah ah.{wait 40} Ti ribelli?{n}Capisco, sei già{n}arrivata a quell'età{wait 40}...{p}Su, dai,{wait 40} non fare{n}così la viziata,{wait 40}{n}vieni{wait 40}...{wait 40} qui.{p}Non{wait 40}... vuoi ascoltare{n}tuo{wait 40}... {wait 40}PADRE!!{n}VIENI QUI SUBITO!"
+be010-0011 f339f08c8f656d6b Achtzehn{n}"Cosa dici{wait 40}...{wait 40}{n}Sono io{wait 40}...{wait 40}{n}Tuo padre{wait 40}... Nikolai..."
+be010-0012 daf933b3820f5cd0 Nikolai{n}"Maria...{wait 40}{n}mi senti?{p}Toglierò il sigillo{n}al tuo Cannone{n}Graviton con il{n}comando a distanza!{p}Usalo per{n}sconfiggermi."
+be010-0013 baa3a0fc2f81db7b Nikolai{n}"Spara!!{wait 10} Non{n}importa...{wait 10} Io,{wait 5} Nikolai,{wait 5}{n}non esisto più...{p}Prima del lavaggio del{n}cervello di Solaris, ho{n}messo in Achtzehn un{n}circuito di coscienza...{p}Si sarebbe attivato{n}in presenza di Seibzehn.{n}Il mio messaggio{n}viene da lì.{p}E, durante la battaglia,{n}ho trasferito tutti i{n}miei dati da lì a{n}Seibzehn.{p}Avrò perso il corpo,{wait 10}{n}ma il mio spirito è con{n}Seibzehn,{wait 90} no,{wait 10} con te,{n}Maria.{wait 40} Ora e sempre!"
+be011-0000 eabf230f95c795ce Fei{n}"Scusa il ritardo...{n}Oh, ma vedo che ti sei{n}trovato una ragazza...{p}Se la sconfiggiamo,{n}dovremmo poter{n}cambiare la rotta di{n}questa nave. Andiamo!"
+be011-0001 c006084b5b2a48ee Fei{n}"Certo che no!{p}Non abbatteremo{n}'questa nave'.{n}Abbatteremo{n}'te'!"
+be011-0002 a55fceff290e2cbb Rico{n}"Che diavolo stavi{n}facendo, Fei!?{p}Credevi che avrei fatto{n}da solo tutto il lavoro{n}sporco di spazzar via{n}questi teppisti per te?"
+be011-0003 85577af2da02612e Dominia{n}"Hmph.{p}Un moccioso in più{n}non vi basterà ad{n}abbattere la{n}'Nave-bomba Hecht'!"
+be011-0004 ebd78f84996c1da4 Dominia{n}"Ah! Che insolenza!{n}Ma cosa aspettarsi{n}dagli Agnelli...!"
+be012-0002 dbbb72efa62db80c Grahf{n}"Il Goliath non è stato{n}costruito per te.{p}Devi restare su questa{n}terra ancora un po'.{n}Non posso permetterti{n}di andartene..."
+be012-0003 1ba60624f4e3a602 Grahf{n}"Dunque, ora sai{n}attingere di più{n}al tuo potere...{p}Se è così,{n}allora..."
+be012-0004 b1ae1043d90bbc79 Grahf{n}"Eh!?"{done 30}
+be015-0001 5175f6e3115e78c9 Elly{n}"Ugh...Fei...{n}Non mollerò{n}mai la presa!"
+be015-0002 e490a00252eb56a5 Elly{n}"Uuaaahhh...{p}Fei!{n}Ti prego!!"
+be015-0004 587fdf67c24e7dee Elly{n}"...Sì.{wait 60}{p}Se è questo che ti{n}soddisfa, allora{n}uccidimi.{wait 30} Ora..."
+be015-0005 dee0d3c1175eafc8 Elly{n}"Fei...{n}Ti prego, torna a{n}essere il vero Fei!!"
+be015-0006 6623ccfcbb60464d Id{n}"Heh... Tu.{n}Sei venuta a{n}morire, eh?"
+be015-0007 e847895e68e323ce Id{n}"Hmph...{wait 30}{n}Brava...{wait 30}{n}Ora muori!"
+be015-0008 67b7bae4fb3f61d1 Id{n}"!?{wait 30}{n}Lasciami..."
+be015-0009 d19b80be98f9be5a Id{n}"Errgaah!!{wait 30}{n}C, cosa!?"
+be015-0010 fca4a0f7f265a827 Id{n}"Tch...{wait 60}{n}...{wait 30}Costei{wait 30}...{n}Lo sapevo{wait 30}..."
+be015-0011 8671213a140ee7ce Id{n}"...{wait 30} Dannazione...{wait 30}{n}Si sta{wait 30}...{wait 30}{n}sveglian{wait 30}...do{wait 30}..."
+be016-0000 7e1044ba3f2f8a70 Spettatori{n}"Buu～! Buu～!"{n}"Che noiaaaa!"{n}"Forza, combattete!!"
+be016-0001 33b8911d108dbdec Spettatori{n}"...borbottio borbottio..."{p}Arbitro{n}"...{wait 30}Ehm,{wait 45} ehm.{wait 30}{n}Sembra che il{n}concorrente Wiseman{n}si sia ritirato...{p}Il concorrente{n}rimasto sarà{n}automaticamente{n}dichiarato vincitore!"{p}Spettatori{n}"Cosa!? Fate sul serio!?"{n}"Buuu! Buuuuu!!"{n}"Evvai! Scommessa vinta!!"
+be016-0002 91fa8e59bb9a7cf7 Finale del torneo{done 60}
+be016-0003 9379ed29397babab Fei{n}(Si mette male.{wait 30}{n}Di questo passo...)
+be016-0005 031f6c72d33765ca Fei{n}"Che importa dove...{n}Avanti, forza...{n}Combatti sul serio!"
+be016-0006 2b4b89026e72a1ac Fei{n}"Perché me lo{n}chiedi?"
+be016-0007 a2ffae84035a8f3f Fei{n}"Le mie ragioni per{n}combattere non sono{n}affari tuoi!"
+be016-0008 0844505a1bfaae92 Fei{n}"Vuoi stare zitto!{n}Sto ancora cercando{n}il mio scopo!"
+be016-0010 eff10123c1d67fdc Fei{n}"Che ne{n}sai tu...?"
+be016-0011 21687a46b61fec08 Fei{n}"Argh!{n}Sta' zitto!!"
+be016-0012 b2411a507ce19a7c Fei{n}"!!{wait 30}{n}Come fai a{n}sapere il mio nome!?{p}Di proposito non ho{n}usato il mio vero nome{n}per iscrivermi al{n}torneo.{p}E quella storia della{n}mia guarigione dalle{n}ferite{wait 20}...{wait 40}!?{wait 20} Non sarai{wait 20}{n}chi penso io!?"
+be016-0013 725af925e582eb88 Fei{n}"!! Aspetta!{n}Voglio{n}chiederti...!"
+be016-0015 c0820ded9e267831 Wiseman{n}"...Proprio come{n}pensavo."
+be016-0016 7811d5ca94d1b5a0 Wiseman{n}"Tu, dove hai{n}imparato quella{n}tecnica?"
+be016-0017 d328311128fa6ae9 Wiseman{n}"Hmm.{n}Allora perché{n}combatti?{p}Per te stesso?{n}O per il bene{n}degli altri?"
+be016-0018 5c0f70cec3297ab5 Wiseman{n}"Non deve forse esserci{n}un motivo o uno scopo{n}perché si combatta?"
+be016-0019 8da34768f75eb6d2 Wiseman{n}"Quindi combatti{n}senza motivo{n}né scopo?"
+be016-0020 2b5beaff2e93657f Wiseman{n}"... Allora rinuncia!{n}Perché non potresti{n}mai trovarlo."
+be016-0021 e80fb5657b6b9ad1 Wiseman{n}"Sembri guardare{n}avanti...{p}...ma in realtà,{n}stai solo{n}guardando in basso!{p}Guardi soltanto{n}te stesso.{n}Così, non troverai{n}nulla."
+be016-0022 35b7eb8c9b14a6e5 Wiseman{n}"Lo so... Incrociando{n}i colpi con te, capisco{n}molte cose..."
+be016-0023 aa000f5030d383d1 Wiseman{n}"Debole, debole... Con{n}attacchi simili non mi{n}sfiorerai nemmeno...{p}Ma almeno in superficie,{n}sembra che il tuo corpo{n}sia maturato."
+be016-0024 345429d6760ec749 Wiseman{n}"Ti sei ripreso bene{n}da quelle{n}ferite,{wait 45} Fei..."
+be017-0000 024b369ea2376318 Achtzehn{n}"Per una forma di vita{n}così inferiore e infima,{n}te la cavi bene."
+be017-0001 4c22e51de5037150 Achtzehn{n}"Muori, patetico{n}animale! Muori!"
+be017-0002 6c219ad3ab894c73 {name 7}{n}"Kyow! Fatto!{wait 90}{n}Super super{n}chuasformazione!"
+be017-0003 a21fe34dcdca4455 {name 7}{n}"Chu ho fame..."
+be017-0004 d01ff717a9f966ee {name 7}{n}"Ahichu! Che male..."
+be018-0000 29fcf4825f5a4cd9 Ramsus{n}"Ultimo avviso.{n}Consegnami subito{n}il Ten. Elhaym!"
+be018-0001 bdb2dce4eb8256fe Ramsus{n}"Sei sicuro di{n}volermi rifiutare?{p}Sarà troppo tardi{n}per cambiare{n}idea dopo!"
+be018-0002 d6e73f590dded8cc Ramsus{n}"Humm...{wait 20} Bene allora,{n}ti mostrerò se mi{n}vanto o no!{p}Così sia.{wait 20}{n}Senza risparmiarmi!{wait 20}{n}E senza regole!"
+be018-0003 63324d1d2b31b9da Ramsus{n}"Avanti, avanti!{n}Che pena!{n}Che succede, Fei!?{p}Di fronte al mio{n}'Vendetta', il tuo{n}{name 11} non è{n}che un neonato!"
+be018-0004 3aebb8077b9057ba Ramsus{n}"Incredibile!{n}Questa innegabile{n}differenza di potenza!{p}Miang!{n}Stai guardando!?"
+be018-0005 cb27320f5296fe31 Ramsus{n}"Di questo passo...{n}E con questo potere,{n}posso sconfiggerlo!"
+be018-0007 00879aabb7a88e5c Ramsus{n}"Hyah hah hah hah hah!{n}Vincere! Posso vincere!{n}Non sono io l'inutile!!"
+be018-0008 e1382a1b035febba Ramsus{n}"È finita per te!{n}Fei Fong Wong!"
+be018-0009 af76b4745ed95957 Ramsus{n}"Nuah hah hah hah! Non{n}sono io l'inutile!{wait 40}{n}Hah! {wait 30}Uha,{wait 40} haah...{wait 50} haah{p}... Eh?"
+be018-0010 ec20e5e5f7fcf253 Ramsus{n}"!!{wait 30}{n}Ho fatto fuori anche{n}il tenente{wait 30}...{p}Maledizione,{wait 30}{n}ho scordato gli{n}ordini{wait 30}...{p}Hmph{wait 5}...{wait 30}{n}Pazienza{wait 5}...{wait 30}{n}Al diavolo gli{n}ordini di Krelian..."
+be018-0011 be7d1554f5b1f209 Fei{n}"Mi rifiuto!"
+be018-0012 8c28cad784d64e95 Fei{n}"Smettila di{n}vantarti, idiota!"
+be018-0013 8099731406458e45 Fei{n}"Cosa stai dicendo!?{n}Se lo fai..."
+be018-0014 3941c999fc270b2a Fei{n}"Ramsus...!?{n}Non ci{n}senti...?"
+be018-0015 09bd72cf7e1d6a28 Elly{n}"{wait 30}...{wait 30}{n}Ramsus, ascolti!{n}Mi arrendo!!{p}La prego, smetta{n}di attaccarci{n}all'istante!"
+be018-0016 81ebf94072ebb2ad Elly{n}"È me che vuole!{n}Non posso metterti in{n}pericolo per causa mia!"
+be018-0017 059115aa6c9ddc1d Elly{n}"Smetta di attaccare!{n}Ramsus!{p}Se è me che vuole,{n}allora mi prenda!"
+be018-0019 4592afdfa586eeb1 Elly{n}"Si è perso nella{n}potenza schiacciante{n}di quel suo Gear...{p}Fei, è meglio{n}fuggire!"
+be019-0000 54201b2d1f6fa2f5 Diretto a Ignas,{n}   l'ho rincontrato.{n}{wait 30}{n}       Kahran Ramsus...{p}Ancora una volta Ramsus{n}   mi sbarrava la strada{n}      col suo Omnigear{n}         'Vendetta'...
+be019-0001 8ca977a3a3e94216 Era una battaglia{n}inevitabile.{wait 60} Ho attivato{n}la nuova funzione del{n}mio Gear Mark II{wait 10}...{wait 30}{n}il 'Sistema Id'!
+be019-0002 c22259fc08023fdb L'assoluta sicurezza{n}   di Ramsus{n}      si è infranta...{p}Lasciando solo il suo{n}   grido d'incredulità{n}      e di rancore,{p}la macchina di Ramsus{n}   è sparita in un{n}      mare di verde.{p}Perché fosse così{n}   ossessionato da me...{n}      non lo so.{n}         Ma lui ha detto{n}            questo...
+be020-0000 cb8a0d5602aefb6a Bart{n}"Perfettooooo!{n}Trasformazione{n}completata!{p}Forza, mostro,{n}andiamo!"
+be021-0000 58bd66fb86a62f92 Elly{n}"Ugh...!{n}... Uff... Uff..."
+be021-0001 e8f0ed50f36aa027 "Heh heh heh heh heeeh!{n}Il colpo di grazia!!"
+be021-0002 814dcb984adfb4af "Heh heh heh. A terra!"{p}"C'era da aspettarselo.{n}Fratture multiple{n}e grave emorragia...{p}Non mi stupirei se{n}l'abitacolo fosse un{n}lago di sangue."{p}"Al peggio, la morte?{n}Geh hah hah hah!!"
+be021-0003 137991051c690bed "Eh??"
+be022-0001 286dae3630d828d2 Ramsus{n}"Finalmente ti trovo!{n}Ora devo{n}sfidarti!!"
+be022-0002 031dac719edf5dc9 Ramsus{n}"Guaaah!{n}Non può essere!{n}M, mostro..."
+be022-0003 d4f3f816ef2af96a Ramsus{n}"...Guha!{wait 30}{n}M...{wait 30} maledetto...{wait 30} Se{n}non fosse per te{wait 30}...{wait 30}"
+be024-0000 9183a73dc7bba581 Wiseman{n}"Tutto bene?"
+be024-0001 4095a0f25651baa2 Wiseman{n}"È già{n}troppo tardi!{p}Aiutatemi!{n}Perché sto per...{wait 20}{n}sterminare Id."
+be024-0002 5d9f121c3412bbc2 Wiseman{n}"Lo Zohar è il cuore{n}di Deus.{p}I generatori schiavi{n}e l'Etere{wait 20}...{wait 20}{n}è la fonte di{n}tutta la loro energia.{p}Ottenuto il suo{n}potere, Id, appena{n}risvegliato, intende{n}annientare questo mondo!{p}Il contatto con lo Zohar{n}era previsto dopo la{n}riunificazione del vero{n}io di Fei!"
+be024-0003 5813271f10a4c32f Wiseman{n}"Ah!?{n}Indietro!"
+be024-0005 d221b52c3adf3b2d Id{n}"Hmm, ancora tu?{n}Ti metti sempre{n}sulla mia strada.{p}Ma tu non puoi fermarmi.{n}Tu che non hai saputo{n}proteggere nemmeno tua{n}moglie e tuo figlio!{p}Non hai nemmeno il{n}coraggio di mostrare il{n}volto a tuo figlio.{p}Per questo porti{n}una maschera,{wait 5} non è vero{wait 5}...{wait 30}{n}Khan!?!"
+be024-0006 abd9eac74a6aaf02 Id{n}"Esatto!{p}Quest'uomo è il padre{n}di Fei{wait 5}...{wait 20} no,{wait 5} voglio{n}dire,{wait 5} mio padre,{wait 30}{n}Khan Wong!!"
+be027-0000 01d464559b4a9277 Rico{n}"Tutto qui? Non sai{n}fare altro? Cosa? Non{n}vuoi combattere!?"
+be027-0001 c7df3c9b244aa745 Rico{n}"Che ti prende? Se non{n}reagisci, finirò per{n}spezzarti il collo!"
+be027-0002 0896f89c6cf78e8a Rico{n}"Eh? Cos'è stato?{n}Non ti sento!"
+be027-0003 81a8358049b0b466 Rico{n}"Hmph. Bene{n}allora,{n}è la fine!"
+be027-0004 ba88f6d0eb940c74 Rico{n}"Cosa!?"
+be027-0005 8b77f99ed0a76c2b Rico{n}"Ah ah ah.{wait 30}{n}Così va meglio...{wait 30}{n}Sei davvero bravo.{p}Sei il primo che sia{n}mai riuscito a ferirmi.{wait 30}{n}Ora non devo più{n}trattenermi.{p}Non vedo l'ora{n}di cominciare!"
+be027-0008 0b2a714ecf50082a Fei{n}"No{wait 30}...{wait 30} io{wait 30}...{wait 30}{n}non{wait 30}... {wait 30}{n}combatterò!"
+be027-0010 73630d7c7ac1da6a ...Togliti!
+be028-0002 40b48a6a9852c92b Margie{n}"No!{n}Combatterò{n}anch'io!"
+be028-0003 14f53bff97a8284e Bart{n}"Ah sì?{n}Sai chi sono,{n}eh?{p}Heh! Non è una brutta{n}sensazione essere{n}conosciuto da una{n}bellezza come te."
+be028-0004 da40a842737c3625 Bart{n}"Buono a sapersi.{n}Ma non posso accettare.{p}Vedi, per me,{n}'comunque vada'{n}è un male."
+be028-0005 0decc58f12c2279b Bart{n}"Tch...{wait 20} Margie!{n}Nasconditi{n}là dietro!"
+be028-0006 68ee1428a1e0a488 Bart{n}"Non importa,{n}nasconditi!"
+be028-0007 867c09d303b3ac9d Ramsus{n}"...Allora è{n}deciso."
+be028-0008 aa2784e91069dce8 Miang{n}"Se vuole davvero{n}proteggere la bambina,{n}si arrenda...{p}principe Bartholomew!"
+be029-0000 72b7e96e3d1ba0b8 Margie{n}"Lascia a me{n}il resto!"
+be029-0002 7a40d05f2b6dd436 Ramsus{n}(Sembra... completamente{n}diverso... e non c'è{n}reazione.){p}(È solo la mia{n}immaginazione?{n}Ma quella tecnica{n}era proprio sua...){p}(E per di più...{n}il nome Fei....{n}dove l'ho...)
+be029-0003 d81030fbbcfa0921 Fei...{n}È il nome di mio figlio...
+be033-0000 0645071223ea1d73 Sigurd{n}"Signorino! Sganceranno{n}cariche di profondità!{n}Si tenga indietro!"
+be033-0001 2af23207fbde6aef Kelvena{n}"Ora basta!{n}Dominia!{n}Ritirata!"
+be033-0002 616b15ac4a97d995 Dominia{n}"Forza, Elhaym!{wait 30}{n}Mostrami la tua{n}vera natura!!"{done 40}
+be033-0003 008609dd9ba37d54 Dominia{n}"Hyah!{n}Non era niente.{n}Avanti, avanti!"
+be033-0004 4b56916e6ab7bde7 Dominia{n}"Tch!{n}Ci sono andata vicino.{p}Ma...{wait 10}non pensare che{n}me ne andrò a mani{n}vuote, eh!"
+be033-0005 04e1bd62211007f6 Elly{n}"C, cosa!?"
+be034-0000 53749c5153861ddb Fei{n}"Ah! Ancora tu!?"
+be034-0001 8ef0f79ecd683e9c Fei{n}"Di cosa stai{n}parlando!?"
+be034-0005 2ba39de20dca9617 Ramsus{n}"Miang,{n}è lui?"
+be034-0006 90620f822e23949c Ramsus{n}"Bene.{n}È mio!"
+be034-0007 105c3727010973b5 Ramsus{n}"Ti cercavo!{n}Mio acerrimo{n}rivale!!"
+be034-0008 548a72d34aa4b1ca Ramsus{n}"...Vedo che hai una{n}macchina diversa...{p}Allora, che ne è stato{n}del tuo 'altro Gear'!?"
+be034-0009 6c94d1f9674fda78 Ramsus{n}"Non importa...{p}In ogni caso, finché{n}non ti avrò eliminato,{n}per me non ci sarà{n}mai alcuna 'luce'!!"
+be034-0010 0acbb539773ecf10 Ramsus{n}"Tch!{n}È tutto quello che{n}sai fare!!{p}Peccato!{n}Comunque vada...{n}non ti lascerò vivere!"
+be034-0011 ad2881e78cf27985 Ramsus{n}"E ora il{n}'colpo di grazia'!!"
+be034-0012 fffac2423904c304 Ramsus{n}"C, cosa!?{n}Aerods!?{n}Chi è...!?"
+be034-0014 cbd0c64c1c15a0cc Ramsus{n}"Tch! Il serbatoio{n}principale...{n}Ce l'avevo quasi!{p}Maledizione!{n}...Dobbiamo{n}ritirarci, Miang!"
+be034-0015 a9a99d82335349c7 Miang{n}"Sì, è nel Gear{n}nero lì al{n}centro."
+be035-0000 afe520e9e7d52820 Barriera distrutta{done 60}
+be035-0001 8b97c260227f99e4 Citan{n}"Lo sapevo! Jesiah{n}intende usarla!{n}Bisogna fermarlo!{p}Billy, mi senti!?{wait 30}{n}Billy!?...{wait 45} Niente da{n}fare... Non c'è{n}risposta!!"
+be035-0002 c610e7eb4db31c47 Citan{n}"Troppo tardi...!{n}Billy!{p}È un'arma che usa{n}il suo pilota come{n}testata!"
+be035-0003 6bfdcc7cab3241ba Billy{n}"Padre..."
+be035-0004 7d4f87865153d36c Billy{n}"Cosa!?{n}A, allora,{n}mio padre...{p}...Oh mio {wait 30}Dio!!"
+be035-0005 9a38e80e1ad28ce3 Jessie{n}"Billy, se uniamo{n}i nostri Gear...{p}...possiamo sfondare{n}quella barriera con{n}un attacco{n}combinato.{p}Ti prendo in prestito{n}la spalla un momento,{n}quindi inizia a mirare."
+be035-0006 0330d4cb18bfd7cd Jessie{n}"Billy, ora lo sai,{n}vero?{p}Gli insegnamenti di Stein{n}erano tutti un inganno.{p}Quella fede fasulla era{n}solo un sistema terreno{n}per ripagare chi{n}ha l'anima fragile.{p}Ma la fede e dio non sono{n}cose che ti vengono date{n}dagli altri, giusto?{p}Sono cose che devi{n}scoprire{n}dentro di te,{n}e da solo.{p}Cose che non si possono{n}dire a parole,{n}cose che non si possono{n}esprimere...{p}Dio non è forse questo?{n}'Non interrogare il tuo{n}dio, perché il tuo dio{n}non risponde.'"
+be035-0007 484cf66b1d89a55d Jessie{n}"Ti ho insegnato a usare{n}una pistola da bambino{n}per salvare la gente.{p}Dici che le pistole{n}sono solo strumenti{n}per uccidere la gente.{n}Ma ti sbagli.{p}Non sono le 'pistole'{n}a uccidere la gente.{n}Sono le 'persone'.{p}Hai mai guardato{n}l'espressione sui{n}volti dei mietitori{n}che hai distrutto?{p}È un processo atroce{n}essere trasformati{n}in mietitori.{p}Per lenire quel dolore{n}straziante, cercano{n}sangue umano e attaccano{n}la gente per ottenerlo.{p}Ma questo non sconfigge{n}il vero dolore{n}nei loro cuori.{p}C'è un solo modo per{n}salvarsi da quel dolore.{n}Ed è essere eliminati.{p}Tutti i mietitori che{n}hai liberato dalla loro{n}sofferenza non avevano{n}forse un volto sereno?{p}La tua pistola ha salvato{n}chi era diventato{n}mietitore. Non è da{n}tutti riuscirci.{p}La fede che ti ha{n}permesso di farlo{n}non era un inganno...{n}Dio esiste dentro di te!"
+be035-0008 c25f58633457fcec Jessie{n}"Bene, ora!{n}Andiamo,{n}Billy, vai!"
+be037-0000 9170833db847bc4e Fei{n}"Perché all'improvviso{n}vuoi combattere? Sei{n}impazzito o cosa?"
+be037-0001 1f11f9a8cdea1ee2 Fei{n}"Uah!"
+be037-0002 1a04001d38f7db70 Fei{n}"F, fai sul{n}serio?"
+be037-0003 eb6ea4377df2c20d Fei{n}"Ugh uhh...{wait 30} È la{n}stessa tecnica mia...!{wait 30}{n}Come mai...?"
+be037-0004 74c7e9cf83c42287 Wiseman{n}"Basta parlare!{n}Prendi{n}questo...!"
+be038-0000 4cd9fda2a07aa4ec Bart{n}"Quanti Gear{n}ci sono!?!{p}Credo di aver abbattuto{n}quasi tutti i pesci{n}piccoli, ma...!"
+be038-0001 309e45dc71cbd2d9 Bart{n}"Accidenti!!"
+be038-0002 6de02688b63b5159 Ufficiale di Bart{n}"Ne restano almeno{n}quattro, forse{n}cinque!{p}Prestazioni e tecnica{n}sono di gran lunga{n}superiori a tutti{n}quelli di prima!"
+be039-0000 091afd4558862597 Elly{n}"Se ciò dà a Fei e agli{n}altri anche la minima{n}possibilità di fuga...{p}Allora combatterò!{n}Non m'importa se mi{n}costerà la vita!!"
+be039-0001 a7e3d402d12c0fd3 Elly{n}"Sono troppo veloci!!"
+be039-0002 7b442450d168d66b Elly{n}"Surclassata...{n}Persino con{n}l'Omnigear...{p}Ma...non posso...{n}No...non così..."
+be039-0003 6c924160fe97ce66 Elly{n}"Non posso{n}perdere!!"
+be039-0004 c40cf3f0bd3a8782 Elly{n}"D, devo... in qualche{n}modo... bloccarli..."
+be039-0005 6e5a54262700b92b Elly{n}"Fermati!?{n}Ora o mai più!{n}Haaaaaaaaaah!"
+be039-0006 efdb1fe442b00724 Elly{n}"Ce l'ho{n}fatta!?"
+be039-0007 a3643b843c854242 Elly{n}"C, come può...!?{n}Credevo avesse avuto{n}un qualche effetto..."
+be039-0009 7fc469f20b5db1ef Elly{n}"Ugh...!{n}... Uff...{n}Uff..."
+be039-0010 e6b78f7ec33620dd "Ragazzina, che male!{n}Me la pagherai!!"{p}"Hai sbagliato a{n}sottovalutare{n}la nostra forza!"
+be039-0011 6a2943e01c4dd398 "Hmmm, non ottengo{n}nulla. Pazienza,{n}Mugwort.{p}È ora di{n}finire il lavoro."
+be039-0012 c91ad6da73d68795 "Gahahahah! {n}Già a terra!?"{p}"C'era da aspettarselo.{n}Fratture multiple,{n}grave emorragia...{p}Non mi stupirei se{n}l'abitacolo fosse un{n}lago di sangue."{p}"Al peggio, la morte!{n}Geh hah hah hah!!"
+be039-0013 008ca3add3e99642 "Ma cosa... !?{n}Non è possibile restare{n}in piedi dopo aver{n}subito tanti danni..."
+be040-0000 1e494d804b2315ce Citan{n}"Oh, uno stallone{n}selvaggio, eh?{p}Ebbene, è giunta{n}l'ora{n}che qualcuno la{n}domi..."
+be040-0001 3b789e0f988740f3 Citan{n}"Rinforzi!?"{done 30}
+be040-0002 a1ca44ac2427f058 Citan{n}"In confronto al dolore{n}che stanno patendo{n}i miei amici,{p}il suo non è{n}nulla...!!{p}Non posso permettere{n}che gente come lei{n}continui a tormentare{n}chi non può difendersi.{p}La affronterò io{n}al posto loro.{wait 20}{n}Si faccia avanti!"
+be040-0004 2ca85c62076e880f Broyer{n}"E, ehi,{n}che male!!"
+be041-0000 9a1d8256bf29c6eb Miang{n}"...Ehehm.{wait 20}.{wait 20}.{wait 20}{n}Adieu, ragazzi..."
+be042-0000 c658248796275094 Miang{n}"Heh...{wait 60} Bene allora...,{n}ricominciamo da capo{n}dall'inizio.{p}Credi di potermi{n}battere stavolta?"{wait 30}
+be042-0001 6d2fc2deef6965d7 Fei{n}"Ma cosa...!?{n}Credevo di averti{n}sconfitta...!?"
+be044-0000 3b70951ae92090ec Ramsus{n}(N, non può essere...){done 60}
+be044-0001 f72e4f238a9b7893 Ramsus{n}(Ugh! A, aiu...)
+en004-0000 1e912822f996130c Sciacallo
+en004-0003 fb31de1fa274eef4 Insetto Lucro
+en004-0004 103aebf6de034abf Insetto Nolucro
+en004-0006 532079a31eb89276 Larva Corazzata
+en004-0008 25598763f7c18868 Mostro 8
+en004-0009 39129b464dbbbc0a Carica Sciacallo
+en004-0011 8772919b8a8b084c Gnam-gnam/Assorbe HP
+en004-0012 28a75430615c20a0 Sciame
+en004-0013 1d1dc519c882ea52 Assalto
+en004-0014 759d161a8086acbb È fuggito...
+en006-0000 e042cb7d9ef66a2c Gigapiede
+en006-0003 69755d7686311957 Soldato
+en006-0005 256a8563f7cff835 Mostro 5
+en006-0006 25605363f7c74eba Mostro 6
+en006-0007 2563b963f7ca31e3 Mostro 7
+en006-0009 3b5c4737119b7058 Contro
+en006-0010 1cb28ef2d1252922 Calcio
+en006-0011 391b22b86b23ab08 Risucchio
+en008-0000 bc2072dbd0ef2e57 Elfo silvano
+en008-0002 1bdf346a0016b0b8 Bombardiere
+en008-0007 f7c35e7c1be4c99e Nano
+en008-0009 78b20492eaa983f7 Contrattacco!
+en008-0010 bf924afd36e052f4 Attacco respinto!
+en008-0011 07ad3e8a40e9a9e8 Battito d'ali
+en008-0013 3315c4133dff0375 Sta in agguato
+en008-0014 657722eeae84a40a Non ce la faccio più!
+en010-0000 92418b3666954139 Caporale di Aveh
+en010-0002 f1890bc944a518e5 Soldato di Aveh
+en010-0006 b0b780b9bce39b1c Guardia di Aveh
+en010-0008 4249ac87fd9d8490 Guardia di Shakhan
+en010-0010 741c651dcbfdd26a Amico
+en010-0011 0f8ddc57db8a419f Fuoco dalla sala macchine!
+en012-0000 92690f0ea0bedb1b Uomo Sabbia
+en012-0002 fcdd777ae5762034 Robolatta
+en012-0003 62a1f833468faba1 Uomo Duna
+en012-0004 ea9d9e544c99cee7 Neo Robolatta
+en012-0005 1badae34832ab424 MegaRobolatta
+en014-0004 c1190e80c005156e Pescemartello F1
+en014-0005 b95b0f04cb04dff7 Bacio del risveglio
+en014-0010 a11ac912f4877170 Scarica tossica
+en014-0011 4d86b83c0c95f907 Serenata/HP 1/2 (tutti)
+en018-0009 ce811f5b55cdd00b "Questo è per tutta Lahan!"
+en018-0010 8e573b077d71559d "Questo è per Timothy!"
+en018-0011 59243d0025348e1a "Questo è per mia sorella!"
+en018-0012 4ed202f3cdee1674 "Feccia!"
+en018-0013 c44cd394ca593d0a "Perché non reagisci?"
+en018-0014 249fca9e051f736d "Maledetto..."
+en018-0015 a47ad1dcc97d967b Dopo l'evento
+en018-0016 569d2b0ff2ceb8d5 "Che smidollato!"
+en018-0017 b6642338cc3f3f94 "Ti faccio a pezzi!"
+en020-0000 8570010cd66cd9d4 Weltall Alfa
+en020-0009 8240cf36fb08e58f Reazione
+en022-0000 9354be40862ff76b Assassino
+en022-0010 616b548f1929f8a3 Rete
+en022-0011 6366698cec21dc03 Hi-hi-hi-hi～!
+en022-0012 245e08efda6feeef Morte, morte, morte!
+en022-0013 0ccafab932d45018 Al prossimo, muori!
+en024-0000 dd42c8f9f85cc943 Drago Rankar
+en024-0005 894d6f3020d44ad4 Rankar R
+en024-0006 917758d48723ebd6 WM Rankar 1
+en024-0007 f12c61d4bd78424f WM Rankar 2
+en024-0009 7d09281bffdad8ed "Ti ammazzo～"
+en026-0002 6ab0833ab853a4d9 Vespa corazzata
+en026-0003 9d8d757927cef99a Rana acida
+en026-0004 bed24d3034bec664 Squalo delle sabbie
+en026-0005 a4d3d3ae0525b0d5 Muggine
+en026-0006 76f3549b0a7c601b Rana della pioggia
+en026-0009 9a9e2a92ef724607 Arrivano amici!
+en026-0010 4af928237b7186e6 Pioggia/Att Acqua su tutti
+en026-0011 f046bb7b21d4b997 Acido
+en026-0012 28b1a7e6d2b9d84a Lo Sciame
+en026-0014 54f8a79d5fe5d976 Niente attacchi in acqua!
+en028-0003 1ed50ea9c8271b46 Vero Weltall
+en028-0009 8b846ef1104ba631 Aerod/Etere
+en030-0000 8a4fc05b1b24f1f6 Cavaliere Artiglio
+en030-0002 90832fa437a6d044 Cavaliere Spada
+en030-0003 d58132951db55cae Cavaliere Egida
+en030-0004 78f7908f32053485 Cavaliere Bacchetta
+en030-0005 6365a7f2b171728f Cavaliere Artiglio R
+en030-0006 4948bbf3c2e3dd0d Cavaliere Spada R
+en030-0007 f47578a3fd8e82a7 Cavaliere Egida R
+en030-0008 4060ac545763c824 Cavaliere Bacchetta R
+en030-0010 215ac8872fe362e2 Battipalo/-Armatura
+en030-0011 7bf4b42ab6d09a9b Megaraggio/Att Raggio
+en030-0012 91421d880d4c58be Sparo/Att Raggio
+en032-0009 c0e2c85f59e33b76 Trema!
+en032-0010 c490fda2f5deb96e Si tuffa!
+en032-0011 4a8b68c57089b57d Sta girando!
+en032-0012 c38c7442dad2f5a7 Piacere di conoscerti!
+en032-0013 633ef20c5b7116f3 Limite massa/HP dimezzati
+en032-0014 739bf6d962722920 Lato destro indebolito.
+en032-0015 23ed9130e95a9915 Lato sinistro indebolito.
+en032-0016 f1fc7e72b55bb2cd Autodistruzione totale
+en032-0017 e9c62948eef0e4e1 Dopo: Xenobarriera persa.
+en032-0018 08d403c4119f3715 Danni annullati
+en034-0003 4881fb0e6ada13a6 Meccanico
+en038-0000 06ce1ba795717627 Viverna
+en038-0002 01c50dd801fb0c89 Gear di Miang
+en038-0008 b64f801cfd70f162 Posa Specchio/prevede att
+en038-0011 90041bd04db70906 Specchio/prevede, risponde
+en038-0012 d27565173f049346 Ripara Gear
+en038-0013 4ab4614ffb75f584 Rimuove stato
+en038-0014 9623769c95be3da2 Megafiamma/Att Etere
+en038-0015 a3aad058cf433d7c Braccio elettr./Att Elet.
+en038-0017 f6a3712d521cac57 Ciclone Nereide/Att Acqua
+en038-0018 c7fe0a6c2e2c34fc Risposta: Ciclone Nereide
+en040-0000 b0f947fc058a61d2 Calamità
+en040-0009 aee1024939691d70 Elmo rotto, Dif cala
+en040-0010 19c44a3f8d19cb7f "Ti ammazzo!"
+en042-0010 be0ce691740e309e Anche Att Etere aumenta
+en042-0011 3acec91102f4259b Anche Dif Etere aumenta
+en042-0012 0c58b131b3ea01f8 Onda#4 Devastatore/Att Etere
+en042-0013 a70deaadea535433 Att Etere aumenta
+en042-0015 7d0051bc0786b136 Att Etere cala
+en042-0017 a8e86a213e0867e8 Onda#3 Annientatore/HP a 1
+en042-0018 a10f37b7912afb7b Posa Ignea/accumula POT, Att
+en042-0022 aae757835c31a976 Posa Ignea non spezzata
+en042-0023 534df68ee9b644df Posa Ignea spezzata!
+en042-0024 ec4fad0419574a44 Terrafiamma/Att Etere
+en042-0025 8ac2ce5bda7064cd Annulla Posa Ignea
+en042-0026 771d253614251d8d Accumula potenza!
+en044-0000 8c17070d9dfee9f5 Robo-riparatore nomade
+en044-0002 ac4ef5f17a1c8163 Rottamaio
+en044-0009 f3014d60cbc350b8 Ripara/HP del Gear
+en044-0010 2f67db7498af1f03 Pieno/rende carb.
+en044-0011 abfbe0ef51c2a5f2 Trovata Pepita d'Oro!
+en044-0012 14394f8cd3a79c5f Trovata Lega Pesante!
+en044-0013 28c26b03c9069f5d Trovata Arm. Isolata!
+en044-0014 9d854185d9bc5b95 Ritirata
+en046-0002 580ba4a3036f6eb5 Lanciere
+en048-0000 b09d4136e7ff0425 Zolla marcia
+en048-0002 fd1f5899866bccd5 Picchiatore
+en048-0003 54e11e16e59f3c73 Abbandono
+en048-0004 d8a1d425bd409a22 Orfano
+en048-0009 933390203c0f0f1f Contro ai Colpi mortali
+en048-0011 2dba7b40815e37f3 "Mamma, mamma!"
+en048-0012 fd25c516c6a0e8dd Risponde
+en048-0013 b859a1357b2a3268 Risposta Etere
+en048-0014 8085fc4143b14641 Disco Etere
+en050-0000 115c0fa559df6214 Tribù Gracidante
+en050-0002 60df80831991169d Proibito
+en050-0009 318f7c4bb20e4b6f Megacolpo/Danni = HP persi
+en052-0002 2df80ebc9b39519c Guardia di Shakhan
+en052-0003 6837368d83341fff Macchina-Guardia
+en052-0004 50cf08a6980d3dd8 Monaco di Shakhan
+en052-0005 96847e4d7c648945 Mercenario
+en052-0006 67601d65c4be9068 Difensore
+en052-0011 df7ec57ef61919f6 Colpo Meteora
+en052-0012 149ca0fffb1c0f56 Febbre del Ratto
+en052-0013 8e5d39c8cdb8d32e Critico!
+en052-0014 761fdae34fabfa8b Mira alle braccia!
+en052-0015 3fd95ef638b4dcd9 Mira alle gambe!
+en052-0017 0c6996c80da63f3f Luce di Cura
+en052-0019 65c119a9ce34b3c2 Frantuma-EP/Danni = EP x10
+en052-0020 fd2d6f7848d243f7 Esplosione/HP di tutti x1/2
+en052-0021 52c2543300616173 Risposta anti-Colpo mortale
+en054-0000 b59d9072c8469f2a Ingorgo
+en054-0009 4edd23383abe8ded Allarme/Att Etere
+en054-0010 d67e480ad7a11bce Divieto/Att Etere
+en056-0000 f4a5cef9b8b7ea62 Medusoide
+en056-0002 a20f2e7e7cf59b1f Effimera
+en056-0009 dce390b72beddcda "Ti ammazzo"
+en056-0012 ab46569bec624bed In carica
+en056-0014 41925deb2224a0f2 Att elettrico
+en058-0009 b935bf552ece0d19 Pugno Ferro
+en060-0009 05cc14b68431f02d Aerod/Att Raggio
+en060-0011 f137565550a8429d Super Aerod/Att Raggio
+en060-0012 7076f3ada21299c1 Il drone si nasconde
+en060-0013 53ec46302d386aa8 Il drone emerge
+en060-0014 914bd3dd3b2f9cf2 Attacca e si nasconde
+en060-0015 b88d11c39c422e0a Super Aerod distrutto!
+en062-0000 e282387fd293d300 Squartatore
+en062-0002 4fed1814356b7e17 Fobia
+en062-0004 49b335a9c54d7096 Divoramorte
+en062-0010 8882483c4470a910 Cu...ra...
+en062-0011 7e04182b1a340302 C...ura...
+en062-0012 a3bf3023501c0e40 Sale
+en062-0013 054bd968efaa12ca C.mortale? Ti divora!
+en066-0002 20a01d4c77db0764 Fioriera
+en068-0000 2ea003b12054172e Micropiede
+en068-0002 868aa054a6088ebd Guardia di Solaris
+en068-0003 d07193c5fdc2562e Cubo di sicurezza
+en068-0009 b1811e10391ec4fd Dif +/Dif Etere -
+en068-0011 8b820b5a1a5c7f1d Dif Etere +/Dif -
+en068-0012 f472082b1eeca570 Miniraggio/Raggio
+en070-0000 3276bb7c9248dabe Aquila Artigliera
+en070-0002 710a6d20d7a759c0 Aquila Corazzata
+en070-0003 f3b063fe079751ad Aquila Lama
+en072-0000 147fa8f4f9a09735 Cavaliere Bianco
+en072-0002 b91e5e07997ae634 Cittadella
+en072-0009 731f2cd13195276a Soffio Gel/Att Gel
+en072-0011 8e3b10177dbf48dd Boato/Att Sonico
+en072-0012 bd9e209916395c03 Trapano Valanga
+en074-0002 fbe7bf6d70fa5707 Mammut
+en076-0000 88ed0c52a98d9782 Evocatore
+en076-0003 970da4f0db2709d3 Drone armato
+en076-0009 357789122cb2d03c Att Etere su tutti
+en076-0010 0b37ca33bb889244 Evoca/Att Etere
+en076-0011 41e91dd194cf4615 Tiro Etere Vento
+en076-0012 98166c5d31489d4d Tiro Etere Fuoco
+en076-0013 b1e168b09916481c Tiro Etere Acqua
+en076-0014 335c777e00814236 Spazio magico
+en076-0015 4f406bff3efbb5da 'Infarto!'
+en078-0002 b53fa33941284600 Fis-6 Meccanico
+en078-0009 ed2ea9c9eb3cee60 Aumenta i giri
+en078-0011 c3ca66c52d06e368 Surriscaldamento
+en078-0012 55a27f4d97f4651b Si raffredda
+en078-0014 0c9e024636437cd4 Anche Dif aumenta
+en078-0015 4833e72bcd67c1d6 Anche Vel. aumenta
+en078-0016 0eabb8c8d55237e8 Att, Dif, Vel. calano
+en078-0017 19f82b1f891f7147 Bloccato, non si muove!
+en078-0018 9ff7cbdfa57baab3 Finalmente si muove!
+en080-0002 a84587b5c267c897 Falce della Morte
+en080-0012 8fca61fc2232518b Controrisucchio/carb.
+en080-0013 004397f0c9acadd6 Risucchio/assorbe carb.
+en082-0000 0a90782ee0228d4c Saltatore
+en082-0002 19619abec1a748b1 Piccolo Kobold
+en084-0000 81c93cd09278c751 Lacrime
+en084-0002 1bc345de19f27e09 Trucco
+en084-0003 ae91921681f720ac Neo Lacrime
+en084-0004 d3697ec77f7fe7dc Neo Trucco
+en084-0009 25b3193b02343eec Unione: POT aumenta
+en084-0011 6520f62816f637e2 Cerchio/ruba tutti gli MP
+en086-0009 157841d5b9a61e52 Missili/Att Etere
+en088-0000 6f3dd0fbad50486f Pestasabbia
+en088-0002 57e391ba0abb1736 Quadrupede
+en090-0002 d84911fc56cf0af9 Gear di Sufal
+en090-0005 be583535653b7fe8 Massa Sufal
+en092-0009 63a0890ba066d2e0 "Combatto anch'io!"
+en092-0010 c92529fe5ed993cd "Buona fortuna, Bart!"
+en092-0015 bb644865c336c77f Se muore, muoiono i mostri
+en092-0016 e4664dc2328e7ebe Annulla Posa Specchio
+en092-0017 c07413f9f92379c6 Posa Specchio aumenta
+en092-0018 8f70ac96e1b09d38 Difesa stati
+en094-0000 ba3b7cb38caab3bc Cannone principale
+en094-0002 c02899f6328a7ade Cannoncino
+en094-0010 7d56f89351a56d9b Cannone Kefeinzel pronto!
+en094-0011 e6b391dee8ad1a10 Sgombrate il ponte!
+en094-0017 ef4c16f9a4147d71 Fuoco del Kefeinzel!
+en096-0009 3b6b1c09135e69a9 I fan di Joe attaccano
+en096-0010 59e160d48547d8d9 I fan di Joe tifano
+en096-0011 a5d18d9ad56c6946 Fortissimooo!
+en096-0012 979fcf6bbc8febff E dinamico!
+en096-0013 9de5531caebe06b4 Pillola Gioia
+en096-0014 322d47bb86600c63 Pillola Forza
+en096-0015 bfc31fb9e065c6e0 Pillola Strana
+en096-0016 471280fa86beb775 Ehi, è l'ora di Joe!
+en096-0019 0b5bd1cda2ee516d Ecco le pillole magiche!
+en098-0000 10ddeafc18aae289 Wels gigante
+en098-0013 468bfc0b0e8b05ce Cura lo stato del Gear
+en098-0017 4d6d5873c0277dfa Cresce se colpito da Etere
+en098-0019 35d2ad25e8c78afc Dif cala
+en100-0000 4f937c8fa6b8208c Rinoceronte
+en100-0002 2dc3f0e857ad4658 Pipistratto
+en102-0000 ea1af826bcef7e71 Guardia di Gebler
+en102-0002 da7d236aefefe20a Spadaccino
+en102-0009 b89f6ea86300e848 Munizioni normali
+en102-0013 716f5cbfd263566a Mun.esplos./Etere Fuoco
+en108-0009 b05cf6cd13b3ce38 Tempesta Ignas/Etere Fuoco
+en108-0010 12eb64c4c102c0f2 Inizia a drenare la porta
+en108-0011 ce10e599c381f772 Drena energia dalla porta
+en108-0012 a11ba92e22523f29 Inizia a provocare
+en108-0013 c9812ae12671fa66 Provoca
+en108-0014 e12452d6a23c7d3b Inizia a surriscaldarsi
+en108-0015 520b4f528967aea4 Surriscaldamento
+en108-0016 e5d4c9abf0fb7db2 Ciclo finito, ricomincia
+en108-0017 aa8d028273391838 Fuori portata
+en108-0018 c9d7bf2026246ef9 HP dimezzati
+en108-0019 dc84825223184b93 Carica: attacca più in fretta
+en108-0020 120f903a98ef9f24 Pugno Sigillo
+en108-0021 86a206234fb9b1f6 Posa Ignea/POT per Att
+en108-0026 3f251fea8482421e Accumula forza
+en110-0009 33e33656616748d0 Spada del Vento
+en110-0010 8e5434271a883786 Spada della Terra
+en110-0011 79369b5083185d48 Spada del Fuoco
+en110-0012 eb9712a5f35492e3 Spada dell'Acqua
+en110-0013 ed5c056e573a52eb Senza Spada Terra
+en110-0014 6bdbae15ee16093d Senza Spada Vento
+en110-0015 210b1a346509e6d0 Senza Spada Acqua
+en110-0016 9965fd9d45ee8205 Senza Spada Fuoco
+en112-0009 98959885b111c339 Brutto presentimento...
+en112-0010 55564f75481aacea "Ce ne andiamo da qui?"
+en112-0011 d99a76a563285295 Autodistruzione
+en112-0012 c7681cbc42188bf5 Automodifica
+en112-0017 aab85fce3f46055e Tolone: "Ci penso io..."
+en112-0019 42bd6fba90b60b44 Kelvina: "Ci provo io."
+en112-0020 5061e0eaf6f203e4 Serphita: "Ti prenderò."
+en112-0021 8113ab4d89bac3de Dominia: "Li finisco io!"
+en112-0022 9e6da1332bf96cc5 Lama Kishin!
+en112-0025 6662417654c1ab96 Tornado/Vento
+en112-0026 49c76071c0b2a618 Ciclone Nereide/Acqua
+en112-0027 5f426197db3e6fb7 Roooaaaarr/Fuoco
+en114-0003 2486bd4624fd95c7 Boia
+en114-0009 335437f7b11612fd Magia su tutti
+en114-0010 9188c59066a3ed80 Evento - Elly da sola
+en114-0011 8a095d4f2f52eeea Calcio spaccaroccia
+en114-0012 f6e6fbf9f9cb2fb7 Raggio Grahf/danni MP→HP
+en114-0013 a475156079e29b6b Super Tiro Guidato
+en116-0009 5b46c0784d036f84 Positrone/Etere Vento
+en116-0010 560dc927c7eed043 Tolone "Ci penso io..."
+en116-0012 ecfe55cf84358038 Seraphita "Ti prenderò."
+en116-0013 30257c07d770605d Att Etere aumenta
+en118-0000 d1241af9e7050ab1 Robot delle nevi
+en118-0002 5784026b2dce897d Robot
+en118-0010 189578843c70fad6 Trasformazione
+en120-0000 23a92b23fcb116d1 Fuoco rapido
+en120-0002 0d868e1e1044996a Demolitore
+en120-0003 ec62fe0b2d9ffbc3 Serbatoio
+en120-0010 07f595426cffa087 Autodistruzione/Fuoco
+en122-0002 d75f6a72bcdbc538 Tritone
+en126-0009 070aff49195388de Unzione celeste
+en126-0010 1982d328d2a14b23 Unzione terrena
+en126-0011 565d090d18d7710f Spazio-Tempo/1 azione a turno
+en126-0013 fd05d5a0679623b9 Mira/risposta sul bersaglio
+en126-0014 451f68ef6b632f75 Cura/ripristina
+en126-0015 39c9895385719c97 Drenaggio/ruba carburante
+en126-0016 bfda92dbf2fbd6a0 Pilastro Deus Metaron battuto
+en126-0017 af20141b2e6b6245 Deus: Unzione terr. sigillata
+en126-0018 2a8023276b375a91 Pilastro Deus Sundel battuto
+en126-0019 7d964e29b4dfa97b "Cura" di Deus sigillata
+en126-0020 b66791b0c77b45a3 Pilastro Deus Harlute battuto
+en126-0021 93df715ce8e26f84 Deus: Unzione cel. sigillata
+en126-0022 0a2bd9e02e54d788 Pilastro Deus Marlute battuto
+en126-0023 de7ab1e05ab5b11c "Drenaggio" di Deus sigillato
+en126-0024 b9d5c2d1c0bdfd35 Contrattacca il Gear mirato
+en126-0025 f73b3ee79c88b0f7 Contrattacca tutti
+en126-0027 b3ee12d0643ebcf4 Conto alla rovescia fermo
+en126-0035 b5187981474828bc Una sola azione
+en128-0016 762989c12daf1b97 Frattura Suprema
+en128-0017 33438d8c5596fcbf Frantumacosmo
+en128-0018 2bca533e173bd20f Fulmine di Deus/Att Angelo
+en128-0019 55d047c4cf0f042c Caduti alcuni Pilastri Deus
+en128-0020 561b9036b4c76c9b Caduti tutti i Pilastri
+en130-0002 df7f577cf80bbc02 Uragano furioso
+en130-0009 5d2136c0ecb3d0de HP di tutti dimezzati
+en132-0000 26c9fe61e9123ea0 Piedistallo
+en132-0002 39d955aabcd86d33 Passo aereo
+en132-0003 ff07d094e5c17bf6 Ala d'aquila
+en134-0002 e30e82beb3cde477 Grifone
+en136-0002 5e967cb02cc7e583 Sanguinario
+en136-0003 c83d280614d603a6 Fratelli Sanguinari
+en136-0009 2c31a373d2b534e9 Pioggia rossa/Fuoco tutti
+en136-0011 2b3f323ab2e5bc08 Omicidio/ruba ogni HP
+en136-0012 3edc045f4c99e443 Urlo/blocca l'Etere ecc.
+en136-0013 82e2bb83711cf70a Gel/Confusione
+en140-0000 9f70c8ff711da5bb Papera Beccante
+en140-0002 fa9a75f781598276 Piccolo Allemange
+en140-0009 58ab173cc49fa839 Sguardo amoroso
+en140-0011 3461285102947127 Becco! Qua qua!
+en142-0009 3835ca0b7a542f01 Inferno Vivo!
+en144-0002 55e061bd1b7c1ebb Drago
+en144-0009 a17887d7c4e4fdbe Soffio Drago/Etere
+en146-0000 144f2194fd6bb74a Serafino del Vento
+en146-0002 a71f0eaeaf976f6c Serafino della Terra
+en146-0003 a2350da32d8437e7 Serafino del Potere
+en146-0009 b7b992afaf6856a0 Aureola
+en146-0011 de58945004ca8db6 Aureola/Att Angelo
+en146-0012 04c3a86afaf6f740 Missile Arcang./Att Angelo
+en146-0013 0e503b82f490164f Danni = 10 x EP rimanenti
+en148-0000 928fe16c400f3cd1 Serafino della Spada
+en148-0002 b6aebef8696b2efc Serafino della Cura
+en148-0003 2dc93dbb638e6042 Serafino del Fuoco
+en148-0004 d68c22cf136d9b57 Serafino dell'Acqua
+en148-0013 5d2a793387edfeda Cuore misericordioso
+en148-0014 3bd53c74b1b2f127 Acqua santa/Etere Acqua

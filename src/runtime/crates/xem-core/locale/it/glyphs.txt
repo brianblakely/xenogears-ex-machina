@@ -1,0 +1,32 @@
+# The letters Italian adds to the game's font (docs/runtime.md, Languages).
+# The port composes each from a letter of the player's own font (directory
+# (0, 1) file 6) and an accent drawn here for this project (MIT, like the
+# rest of this repository): no glyph of the original is copied.
+#
+# A glyph's rows are the font's 11 rows of 12 columns (row 0 the top; small
+# letters span rows 3-9, capitals 1-9, descenders reach row 10).
+#
+#   accent <name> <row>=<columns 0-4, # drawn> ...
+#   <char> <base letter> <accent> [drop=<rows>] [clear=<rows>]
+#
+# drop= takes those rows out of the base letter and moves the rows above them
+# down (a capital, shortened to rows 3-9, leaves room for its accent);
+# clear= blanks rows (the dot of i). A letter another language adds too is
+# drawn alike (pt-BR/glyphs.txt, fr/glyphs.txt): its code is the same in
+# every language. The game draws each as a narrow letter.
+
+accent acute 0=...#. 1=..#..
+accent grave 0=.#... 1=..#..
+
+à a grave
+è e grave
+é e acute
+ì i grave clear=0,1,2
+ò o grave
+ù u grave
+À A grave drop=2,4
+È E grave drop=3,7
+É E acute drop=3,7
+Ì I grave drop=2,3
+Ò O grave drop=3,7
+Ù U grave drop=3,7
