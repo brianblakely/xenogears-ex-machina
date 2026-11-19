@@ -44,6 +44,26 @@ done
         cargo ndk "${targets[@]}" -P "$api" -o "$out/jniLibs" build --locked -p xem-android --release
 )
 
-# The first run downloads the pinned Android Gradle Plugin into GRADLE_USER_HOME.
-gradle -p "$root/src/runtime/android" --project-cache-dir "$out/gradle-project-cache" "assemble$variant"
+# The first run downloads the pinned Android Gradle Plugin and its
+# dependencies into GRADLE_USER_HOME, from Google's Maven, Maven Central and
+# the plugin portal (every release run: CI keeps no Gradle cache). Those
+# repositories can briefly answer "not found" for files they have: the
+# release run of 2026-11-19 stopped on Maven Central's
+# protobuf-java-util-3.22.3.pom, which it served again minutes later. Gradle
+# takes a not-found answer as final, so a run that failed to resolve
+# dependencies goes again, asking the repositories afresh, three runs at
+# most; any other failure ends the build at once.
+log=$out/gradle.log
+for attempt in 1 2 3; do
+    refresh=()
+    if [ "$attempt" -gt 1 ]; then refresh=(--refresh-dependencies); fi
+    if gradle -p "$root/src/runtime/android" --project-cache-dir "$out/gradle-project-cache" "${refresh[@]}" "assemble$variant" 2>&1 | tee "$log"; then
+        break
+    fi
+    if [ "$attempt" -eq 3 ] || ! grep -qE 'Could not (resolve|find|GET|HEAD) ' "$log"; then
+        exit 1
+    fi
+    echo "android-build: Gradle could not resolve its dependencies (run $attempt of 3); trying again in $((attempt * 30)) s" >&2
+    sleep $((attempt * 30))
+done
 echo "$out/gradle/app/outputs/apk/${variant,,}/xem-${variant,,}.apk"
