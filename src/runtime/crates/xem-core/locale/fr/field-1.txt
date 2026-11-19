@@ -13,7 +13,7 @@ f102-0004 f9fdc2d1fb871fc3 Bart{n}"Hé, pas mal, papy !"
 f102-0005 1a096b7184644170 L'hôtel dont je{n}parle, c'est...{done 100}
 f102-0006 17320ad44ace967b Hé, toi !{done 60}
 f102-0007 eefc7f6fa2615d07 Ils ont besoin de tout ça{n}pour la guerre ?
-f102-0008 a453432221d85875 Désolé. L'armée vient et{n}confisque ce qu'elle{n}veut. C'est{p}pour ça que mon stock{n}est maigre.
+f102-0008 a453432221d85875 Désolé. L'armée vient et{n}confisque ce qu'elle veut.{n}C'est pour ça que mon{n}stock est maigre.
 f102-0009 2844a293626ef027 Oh non, encore une hausse{n}des prix...
 f102-0010 54b17c2f27ce15d6 Hé, une petite remise !
 f102-0011 f7ec6f1f5d191897 Pourvu que cette{n}guerre finisse vite.
@@ -30,7 +30,7 @@ f102-0021 d45ac7f9cd281cb5 Hein !?{done 20}
 f102-0022 43e6ec5c3b11b48f Hmm, {wait 20}{n}C'était qui, déjà ?{p}{wait 20}J'ai oublié...
 f102-0023 f2116403879a97db Ah, oui !{n}Ça me revient ! {done 100}
 f102-0024 218621e1850c46bb Le prince Bartholomew ?{n}    Oui !{n}    Connais pas !
-f102-0025 2afc4fa15f9fccb3 Hmm...{wait 60}{n}c'est quelqu'un d'autre...{wait 60}{n}Quand on vieillit,{p}la mémoire s'en va,{n}hélas.
+f102-0025 2afc4fa15f9fccb3 Hmm...{wait 60}{n}c'est quelqu'un d'autre...{wait 60}{n}Quand on vieillit, la{n}mémoire s'en va, hélas.
 f102-0026 82e5ac69f0a35404 Ma parole, comme vous avez{n}grandi...{p}Votre Altesse m'a oubliée,{n}mais je travaillais aux{n}cuisines du château.{p}Vous y veniez sans cesse{n}goûter à tout.{p}Déguisé, vous disiez : 'Je{n}suis un pirate ! Donne-moi{n}ta nourriture !'...{p}Ah, le bon vieux temps...
 f102-0027 16cbc56deaaa241a Bienvenue à Bledavik ! On{n}a eu peu de visiteurs ces{n}derniers temps.{p}Vous êtes les premiers{n}depuis un bon moment !
 f102-0028 bce85708d3bc1fd4 Bienvenue à Bledavik !{n}Un festival célèbre la{p}fondation de notre pays,{n}Aveh.{p}Il y a aussi un tournoi{n}d'arts martiaux.{p}Il y a longtemps qu'on{n}n'avait pas eu autant de{n}visiteurs.
@@ -53,7 +53,7 @@ f102-0045 e779b1e139abddd7 (Vite !) {done 20}
 f102-0046 111d7cc0b95a6657 De quoi vous parlez,{n}m'dame ? Je cache rien !{n}Vous voulez voir ?{done 100}
 f102-0047 630493452626bd24 Vous voyez ? {done 30}
 f102-0048 37927ee07f5b19c2 Vous pouvez pas accuser{n}sans preuve !{wait 30}{n}Franchement, m'dame !{done 30}
-f102-0050 d812ceac039fe07c Merci pour l'argent{n}prêté. J'arrête de{n}voler. {wait 30}{p}On va bosser dur tous{n}les deux jusqu'au retour{n}de papa.
+f102-0050 d812ceac039fe07c Merci pour l'argent prêté.{p}J'arrête de voler. {wait 30}{n}On va bosser dur tous les{n}deux jusqu'au retour de{n}papa.
 f102-0051 0679ac9529e01edb Tu veux quoi ? Tu me{n}saoules, dégage !
 f102-0052 91586acbccfa3c45 Hé ! Hé, monsieur !{n}Tu nous donnes à manger ?{n}    Bien sûr{n}    Eh bien...
 f102-0053 280b48097969e65c Alors prête-moi 1000G{n}    Bien sûr{n}    Pas question
@@ -137,7 +137,7 @@ f102-0132 5d6cf03b14311bfb Ceux de Kislev sont très{n}méchants !{n}Et...{wait 
 f102-0133 98656d961652fc1a Allez, sers-t'en ! On{n}est pas là pour{n}rigoler.
 f102-0134 4903237e70f006ac Avec cette caisse, tu{n}montes en un clin d'oeil.{n}Tu t'en sers ?{n}    Utiliser{n}    Pas besoin
 f102-0135 ce058add0175011d C'est 5G.
-f102-0136 db009ee828dd8b6d Quoi, toi aussi, t'es{n}pauvre ?{wait 30}{n}Bon, alors je te dis. Si{p}tu recules un peu et que{n}tu sautes, pas besoin de{n}la caisse.
+f102-0136 db009ee828dd8b6d Quoi, toi aussi, t'es{n}pauvre ?{wait 30}{p}Bon, alors je te dis. Si{n}tu recules un peu et que{n}tu sautes, pas besoin de{n}la caisse.
 f102-0137 81adb66366d854a1 D'accoooord.
 f102-0138 21417e546ea9e515 Il veut plus jouer à{n}cache-cache. Y a rien{n}d'amusant à faire ?
 f102-0139 5de5cf920611f818 Où...{wait 30} où est-ce qu'il{n}s'est caché ?
@@ -177,7 +177,7 @@ f102-0174 47cfc44dd8ec23fa Si le prince Bartholomew{n}revient, il ramènera{n}l'
 f102-0175 8f5ed5eb5bcc8f8f Fonce, petit !
 f102-0176 51de8cab7ce102ee Il fait frais ici. {wait 40}{n}Un air frais monte par{n}la grille.
 f102-0177 b5eb7ab46c68b97d Ouais !{n}C'est un type génial !{n}Mon ami d'enfance.
-f102-0178 33c56bde3f08459e Impossible, impossible.{n}Sans la clé, ça s'ouvre{n}pas !{p}Il y a des années, un{n}garçon s'est perdu{n}là-dessous.{wait 20}{p}Le fils de l'armurier,{n}je crois...
+f102-0178 33c56bde3f08459e Impossible, impossible.{n}Sans la clé, ça s'ouvre{n}pas !{p}Il y a des années, un{n}garçon s'est perdu{n}là-dessous.{wait 20}{p}Le fils de l'armurier, je{n}crois...
 f102-0179 34e5bd665b8c4f8a Je fais la lessive ici{n}depuis 60 ans... Seule{n}l'eau n'a pas changé.{p}Une source coule sous le{n}château.{p}Je craignais qu'à la mort{n}du roi, l'eau tarisse{n}aussi, mais non.{p}Le vieux d'en bas, qui{n}garde l'eau, ne cède pas{n}d'un pouce, même face à{n}Shakhan.
 f102-0180 7f0748f45762c612 Citan{n}"Le jeune homme entrera en{n}douce au château par les{n}canaux souterrains.{p}Une fois prêts, il entrera{n}par le puits d'ici ou par{n}celui de l'autre bout de{n}la ville !"
 f103-0000 c1565abeb7195400 Bien sûr, les affaires{n}marchent mieux en paix.
@@ -1180,7 +1180,7 @@ f155-0000 ac054b2c042648e0 Shakhan{n}"Je suis impressionné{n}qu'elle ait tant p
 f155-0001 ef3853d19343bb84     Arrêter{n}    Tour est{n}    Entrée{n}    Cour extérieure{n}    Citadelle 3e étage{n}    Salle à manger
 f155-0002 74b0e7f0eda39d14 C'est bon ?
 f155-0003 a9b75d70784fbec4 Shakhan{n}"Je ne peux pas les{n}empêcher de la voir. Pas{n}quand il s'agit de lui...{p}D'ailleurs, Marguerite ne{n}parle pas. Il n'y a donc{n}pas de quoi s'inquiéter...{p}Mais d'où vient la fuite{n}sur le Jaspe...?{p}...L'Ethos ?{n}Ridicule...! Hmmm,{n}si ça continue, mes{n}plans seront..."
-f155-0004 f8a98d96b7aa16dd Shakhan{n}"Nous ferions mieux de{n}découvrir sur-le-champ{p}qui laisse fuiter nos{n}informations.{p}En attendant, il faudra{n}administrer du sérum de{n}vérité à notre invitée,{n}mademoiselle Marguerite.{p}Nous devons trouver{n}l'autre fragment du{n}'Jaspe Fatima' au plus{n}vite."
+f155-0004 f8a98d96b7aa16dd Shakhan{n}"Nous ferions mieux de{n}découvrir sur-le-champ qui{p}laisse fuiter nos{n}informations.{p}En attendant, il faudra{n}administrer du sérum de{n}vérité à notre invitée,{n}mademoiselle Marguerite.{p}Nous devons trouver{n}l'autre fragment du{n}'Jaspe Fatima' au plus{n}vite."
 f155-0005 4023c3480501dff9 Mais...
 f160-0000 5c736ab567cc81df Miang{n}"Qu'y a-t-il ?{wait 50} On dirait{n}que vous sortez d'un{n}cauchemar...{p}Ce n'était pas encore ce{n}même rêve, n'est-ce pas ?"
 f160-0001 5934d68105928ab4 Ramsus{n}"Non...{wait 30} Ce n'est rien."
@@ -1434,7 +1434,7 @@ f179-0011 c867c1399c600ee4 Miang{n}"Commandant ?...Ha, ha,{n}ha."
 f179-0012 ddf81828c665ccd6 Miang{n}"Calmez-vous.{wait 32} Affichez{n}l'image analysée à{n}l'écran."
 f179-0013 cad74f3fa8e5d4ea Miang{n}"Commandant ! Attendez,{n}s'il vous plaît !{n}Commandant !!"
 f179-0015 689acf4ac7f99011 Confirmé : bruit de{n}destruction de navire.{p}...puis bruit de chasse{n}rapide. Le navire ennemi{n}remonte sans doute en{n}surface.
-f179-0016 5d380b9628d538f7 Confirmé : un Gear ennemi au{n}combat. Cap direct.{p}Bruit du moteur du navire{n}ennemi en hausse...{n}Accélération,{p}bruit de manoeuvre confirmé,{n}changement de cap...{n}Manoeuvre d'évitement.
+f179-0016 5d380b9628d538f7 Confirmé : un Gear ennemi au{n}combat. Cap direct.{p}Bruit du moteur du navire{n}ennemi en hausse...{p}Accélération, bruit de{n}manoeuvre confirmé,{n}changement de cap...{n}Manoeuvre d'évitement.
 f179-0017 5ca648614270c363 A-attendez !!!{wait 32}{p}Explosions confirmées{n}autour de la flotte.{n}Multiples bruits de{n}destruction de navires !{p}Réactions haute énergie...{n}Quel gain !?{n}Commandant !! Incroyable !{n}Ce...Gear...?{p}Comme si des projectiles{n}réactifs volaient{n}partout...
 f179-0018 f87cae7711c5594a O-oui, commandant...
 f179-0019 d57604095a9fcd8d La statique fluide autour{n}du navire ennemi diminue.{p}Manoeuvrabilité du navire{n}ennemi dans le sable{n}réduite de 60 %.{p}...On dirait que le moteur{n}principal et les ailerons{n}d'effet sont hors service.

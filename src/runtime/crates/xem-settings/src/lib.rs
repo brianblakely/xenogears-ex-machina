@@ -1056,6 +1056,9 @@ mod tests {
         let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "Italian"}})).unwrap();
         assert_eq!(ack["settings"]["language"], "Italian");
         assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::Italian, "reopened");
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "Spanish"}})).unwrap();
+        assert_eq!(ack["settings"]["language"], "Spanish");
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::Spanish, "reopened");
         let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"Language": "PerfectWorks"}})).unwrap();
         assert_eq!(ack["settings"]["language"], "PerfectWorks");
         assert_eq!(SettingsService::open(store.clone()).unwrap().settings().language, Language::PerfectWorks, "reopened");

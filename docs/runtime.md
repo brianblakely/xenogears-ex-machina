@@ -9166,13 +9166,13 @@ other hosts were not run.
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
 game's own text: **English**, the original's, by default, **English
-(Perfect Works)**, **Português (Brasil)**, **Français**, **Italiano** or, beside the
+(Perfect Works)**, **Português (Brasil)**, **Français**, **Italiano**, **Español** or, beside the
 Japanese release's discs, **日本語** (Japanese, below). It is a setting
 (`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
-`"BrazilianPortuguese"`, `"French"`, `"Italian"` or `"Japanese"`), which the hosts give the session
+`"BrazilianPortuguese"`, `"French"`, `"Italian"`, `"Spanish"` or `"Japanese"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "it" | "ja"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "it" | "es" | "ja"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -9191,7 +9191,9 @@ rather than shipped. French translates 16 029 and lists 1 057: the same
 texts and one enemy name French spells as the original does (Griffon).
 Italian, translated from the English beside the French, translates 15 953
 and lists 1 136: more cries and short replies read the same in Italian
-("No!", "Oh no...", "Doc!").
+("No!", "Oh no...", "Doc!"). Spanish, translated alike, translates 16 242
+and lists 847: its opening marks make 219 cries and calls its own that
+differ from the original by them alone ("¡Timothy!", "¿Aerods?").
 English (Perfect Works) reads 10 513 texts anew, and 210 table entries
 alone besides (below), and lists the 6 589 it leaves as the original's.
 Text built at run time (numbers, and a name the player gave) is the game's
@@ -9233,8 +9235,14 @@ field message's lines take up to 52 columns (26 narrow letters, the widest a
 window beside a portrait leaves on the 320-pixel screen) or its table's
 columns if more, and 4 lines a page (the portrait window's rows) or its own
 rows if more; `merge` breaks a longer line at its spaces (never before a
-`?`, `!` or `:`, which French sets after a space) and splits a longer
-page into pages where the player's Confirm already ends the text. A timed
+`?`, `!` or `:`, which French sets after a space). Where the player's
+Confirm already ends the text, a page with more lines than its window's
+rows has each sentence's lines filled anew (a line that ends a sentence, a
+speaker's name above their words and indented lines stay), and one still
+too long is split into pages that end where a sentence ends where they
+can, else a clause, a page ending within a line if it must, each filled
+anew (`paginate`: a page more rather than an end mid-sentence, two more
+not). A timed
 text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
 (its last page's lines are the cursor's: `a9` names them), a message whose
 window a script sizes and every text outside the field keep
@@ -9369,7 +9377,10 @@ parts) is drawn with the game's text renderer
 transfer to VRAM reads as it reads the menus' own, and placed in texture
 page (448, 256), which no menu screen uses (measured on each: the field
 menu and its screens, member change, the title's Load, name entry and both
-shops), left to right in 13-row lines; its entry becomes one part showing
+shops), left to right in 13-row lines, each ending short of the page's
+right edge (the menus draw a part as a quad whose far texel, u + w, is a
+byte: a label ending at 256 would wrap to 0 and show its line backwards,
+as Italian's File and Spanish's Estéreo amplio did); its entry becomes one part showing
 it with the text palette the menus load at (0, 0x1D1), two rows above the
 original's place (the font's 13 rows centre on the picture's 9). An entry
 already drawn so no longer has its original bytes, so a second pass draws
@@ -9409,11 +9420,13 @@ capitals (`locale/pt-BR/glyphs.txt`), French `à â ç é è ê ë î ï ô ù �
 and their capitals (`locale/fr/glyphs.txt`; it writes oe and ae for the
 ligatures, which the font lacks), Italian `à è é ì ò ù` and their capitals
 (`locale/it/glyphs.txt`; `ì ò Ì Ò` are its own, the rest those Portuguese and
-French added first), and Perfect Works the marks its own font
+French added first), Spanish `á é í ó ú ü ñ`, their capitals and the
+opening marks `¡ ¿` (`locale/es/glyphs.txt`; `ñ Ñ ¡ ¿` are its own, the rest
+those Portuguese and French added first), and Perfect Works the marks its own font
 draws in place of the wide digits ０-３, the wide underscore and the
 brackets: `ö ; *`, a dash `—` and a blank `␣` as wide as a wide glyph, and
 `ﭏ` (El, the lamed and the aleph, which its Omnigears' names begin with)
-(`locale/en-x-pw/glyphs.txt`), 48 glyphs in all. Each is a two-byte glyph from 0xFF20
+(`locale/en-x-pw/glyphs.txt`), 52 glyphs in all. Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
 its special glyph), the same code in every language that adds the letter
 (the languages' letters numbered in `Language::ALL`'s order, a letter
@@ -9425,7 +9438,9 @@ in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
 0xFF and puts the special glyph's rows back, with nothing waiting in
 between. The letter is composed from the player's font: the base letter's
 11 rows (the font block `text_install_font` installed), rows taken out
-(a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
+(a capital shortened to rows 3-9), the letter turned a half turn within
+the box its ink fills (`turn`: Spanish's ¡ and ¿ are the font's ! and ?
+upside down) or rows blanked (the dot of i), and an accent
 drawn for this project over the top rows (the diaeresis's two dots on row
 1, the cedilla on row 10); a mark the font has no letter for is drawn on
 its space (`blank`), and the semicolon is its colon with its comma's tail.
@@ -9445,14 +9460,16 @@ game data translated by its slot, the same name in another slot or changed
 by the player left; a field
 window's columns and rows grown to the translation's, never shrunk; an
 added letter narrow or wide as its recipe says, drawn through 0xFFFF from its base with rows taken out
-and blanked and its accent, the special glyph's rows put back), `xem-core`'s
+and blanked and its accent, the special glyph's rows put back; a turned letter its base turned a
+half turn within its ink, its accent upright), `xem-core`'s
 `locale` tests (markup encoded as the game reads text, the columns and rows
 measured, a wide glyph's 3 and a text of nothing; characters the font lacks, unknown controls and bad operands
-refused; the glyph recipes, Perfect Works' marks among them; an entry's name; the image's layout, records ascending by hash
+refused; the glyph recipes, Perfect Works' marks and Spanish's turned marks among them; an entry's name; the image's layout, records ascending by hash
 and entries' by name),
 the native test's command labels (a translated entry drawn into page
 (448, 256), each transfer waited for, the line image freed, the entry one
-part there with the text palette two rows up; an untranslated one and
+part there with the text palette two rows up; one that would end at the
+page's right edge beginning the next line; an untranslated one and
 every one without an active language unchanged) and stat words (spelled
 with the small font's cells, right-aligned where the original ended, a
 closing % kept; one too long or with a letter the font lacks, and every one
@@ -9461,7 +9478,8 @@ two and the menus' three Next LV rows spelled by their loaders from their
 first x, narrow letters and spaces set, the slots left repeating the last
 letter; one too long or with a letter the font lacks, and every one without
 an active language, unchanged), `tests/test_translations.py`'s small-font
-check of words and rows, its lines for one entry, its language with
+check of words and rows, its long pages' sentences filled and their pages
+ended where sentences end, its lines for one entry, its language with
 its own layout and the windows it reads from invented field and battle
 scripts (a layout that sizes, places or clears; a size left standing; a
 portrait's share), `tests/test_perfect_works.py` (Perfect Works' bytes as
@@ -9470,7 +9488,7 @@ markup, a reading fitted to its window, a text's entries as lines),
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
 (field 12's opening message: in English the window reads it in RAM; in
-Brazilian Portuguese, in French and in Italian it reads that language's shipped
+Brazilian Portuguese, in French, in Italian and in Spanish it reads that language's shipped
 translation of the same message, with added letters, and goes on with it
 once English is chosen, the next message read in RAM),
 `perfect_works_reads_a_text_differently_from_entry_to_entry` (map 222's

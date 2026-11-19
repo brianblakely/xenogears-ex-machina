@@ -862,6 +862,13 @@ fn the_game_texts_language_is_chosen_in_the_gameplay_section_through_the_setting
     assert_eq!(settings.borrow().settings().language, Language::Italian);
     assert_eq!(acks.borrow().last(), Some(&SettingChange::Language(Language::Italian)));
     assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (4, Some("Italiano")));
+    press(&ui, &choice);
+    ui.update().unwrap();
+    element(&ui, "Español", AccessibleRole::ListItem).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().language, Language::Spanish);
+    assert_eq!(acks.borrow().last(), Some(&SettingChange::Language(Language::Spanish)));
+    assert_eq!((ui.component().get_language(), choice.accessible_value().as_deref()), (5, Some("Español")));
     // Perfect Works' English stands beside the original's.
     press(&ui, &choice);
     ui.update().unwrap();
@@ -893,13 +900,13 @@ fn japanese_and_the_movies_and_voices_show_only_beside_the_japanese_discs() {
         use slint::Model;
         ui.component().get_languages().iter().map(|l| l.to_string()).collect::<Vec<_>>()
     };
-    assert_eq!(languages(&ui), ["English", "English (Perfect Works)", "Português (Brasil)", "Français", "Italiano"]);
+    assert_eq!(languages(&ui), ["English", "English (Perfect Works)", "Português (Brasil)", "Français", "Italiano", "Español"]);
     assert_eq!(ui.component().get_language(), 0, "English without the Japanese discs");
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Movies and voices").next().is_none());
     ui.set_japanese_offered(true, settings.borrow().settings());
     ui.update().unwrap();
     assert_eq!(languages(&ui).last().map(String::as_str), Some("日本語"));
-    assert_eq!(ui.component().get_language(), 5, "the Japanese choice");
+    assert_eq!(ui.component().get_language(), 6, "the Japanese choice");
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Movies and voices").next().is_some());
     assert_eq!(ui.component().get_voices(), 0, "English by default");
     ui.component().invoke_gameplay_edited("voices".into(), 1);

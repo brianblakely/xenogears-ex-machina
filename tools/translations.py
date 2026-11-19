@@ -958,12 +958,88 @@ def may_add_pages(original: Text) -> bool:
 # which stays with the word before it.
 NO_BREAK_BEFORE = "?!:"
 
+# Where `paginate` ends a page: after a sentence's closing mark, a clause's,
+# or a word (closing quotes and controls that show nothing may follow), and
+# what each costs beside a page more and a line broken in two.
+SENTENCE_ENDS = ".!?…‥！？"
+CLAUSE_ENDS = ",;:"
+CLOSING = "\"')”」』"
+SENTENCE_END, CLAUSE_END, WORD_END = 0, 2, 6
+PAGE, BROKEN_LINE = 4, 1
+
+
+def page_end(toks: list[Token]) -> int:
+    """What ending a page after these tokens costs (SENTENCE_END, CLAUSE_END
+    or WORD_END)."""
+    for token in reversed(toks):
+        if token.kind in INSERT_COLUMNS:
+            return WORD_END
+        if token.kind != "glyph" or token.char in CLOSING or token.char == " ":
+            continue
+        return SENTENCE_END if token.char in SENTENCE_ENDS else CLAUSE_END if token.char in CLAUSE_ENDS else WORD_END
+    return WORD_END
+
+
+def paginate(lines: list[list[Token]], rows: int) -> list[list[list[Token]]]:
+    """A page's lines in pages of at most `rows` lines that end where a
+    sentence ends where they can, else a clause. A page may end within a
+    line, after a sentence or a clause, its rest beginning the next page.
+    The pages are the cheapest by PAGE a page, `page_end` an end and
+    BROKEN_LINE a line broken there (a page more rather than an end after a
+    word, two pages more no), then the most even."""
+    space = lambda t: t.kind == "glyph" and t.code == CODES[" "]  # noqa: E731
+    pieces: list[tuple[int, list[Token], list[Token]]] = []  # its line, its tokens, the spaces after it there
+    for number, line in enumerate(lines):
+        start = at = 0
+        while at < len(line):
+            if space(line[at]) and at > start and page_end(line[start:at]) < WORD_END:
+                end = at
+                while end < len(line) and space(line[end]):
+                    end += 1
+                if end < len(line):
+                    pieces.append((number, line[start:at], line[at:end]))
+                    start = at = end
+                    continue
+            at += 1
+        pieces.append((number, line[start:], []))
+
+    def end_cost(y):  # a page ending before piece y
+        (before, toks, _), after = pieces[y - 1], pieces[y][0]
+        return page_end(toks) + (BROKEN_LINE if before == after else 0)
+
+    best = [((0, 0), 0)]  # by pieces paged: the least (cost, sum of squared page lengths), where the last page begins
+    for y in range(1, len(pieces) + 1):
+        options = []
+        for x in range(y - 1, -1, -1):
+            count = pieces[y - 1][0] - pieces[x][0] + 1
+            if count > rows:
+                break
+            (cost, even), _ = best[x]
+            options.append(((cost + (end_cost(x) if x else 0) + PAGE, even + count * count), x))
+        best.append(min(options, key=lambda option: (option[0], -option[1])))  # a tie fills the first pages
+    pages, y = [], len(pieces)
+    while y:
+        x = best[y][1]
+        page: list[list[Token]] = []
+        for at in range(x, y):
+            number, toks, _ = pieces[at]
+            if at > x and pieces[at - 1][0] == number:
+                page[-1] = page[-1] + pieces[at - 1][2] + toks
+            else:
+                page.append(list(toks))
+        pages.append(page)
+        y = x
+    return pages[::-1]
+
 
 def wrap(original: Text, translation: str, extra: dict[str, int], own_layout: bool = False) -> str:
     """The translation with every line too wide for its window broken at its
-    spaces (never before one of NO_BREAK_BEFORE, and keeping its indent), and
-    every page with more lines than the window's rows split into pages of
-    even length where a page may be added."""
+    spaces (never before one of NO_BREAK_BEFORE, and keeping its indent).
+    Where a page may be added, a page with more lines than the window's rows
+    has each sentence's lines filled anew (a line that ends a sentence, a
+    speaker's name above their quoted words and indented lines stay as they
+    are); if it still has too many, it is split into pages at sentences'
+    ends where it can (`paginate`), each filled anew."""
     columns, rows = limits(original, own_layout)
     toks = tokens(translation, extra)
     split: list[list[list[Token]]] = [[[]]]
@@ -975,8 +1051,8 @@ def wrap(original: Text, translation: str, extra: dict[str, int], own_layout: bo
         else:
             split[-1][-1].append(token)
     space = lambda t: t.kind == "glyph" and t.code == CODES[" "]  # noqa: E731
-    out_pages = []
-    for page in split:
+
+    def fit(page):
         lines = []
         for line in page:
             if width(line) <= columns:
@@ -1010,11 +1086,36 @@ def wrap(original: Text, translation: str, extra: dict[str, int], own_layout: bo
                     row.append(glyph(CODES[" "], " "))
                 row.extend(word)
             lines.append(row)
+        return lines
+
+    def indented(line):
+        return bool(line) and space(line[0])
+
+    def sentences(page, speaker):
+        """The page's lines, each that a sentence goes on past joined to the
+        next (but the speaker's name, the first line, and indented lines)."""
+        out = []
+        for line in page:
+            if (out and out[-1] and line and not indented(out[-1]) and not indented(line)
+                    and page_end(out[-1]) != SENTENCE_END and not (speaker and len(out) == 1)):
+                while space(out[-1][-1]):
+                    out[-1].pop()
+                out[-1] += [glyph(CODES[" "], " "), *line]
+            else:
+                out.append(list(line))
+        return out
+
+    def opens_with_quote(line):
+        return next((t.char == '"' for t in line if t.kind == "glyph" and not space(t)), False)
+
+    out_pages = []
+    for number, page in enumerate(split):
+        lines = fit(page)
         if len(lines) > rows and may_add_pages(original):
-            count = -(-len(lines) // rows)
-            size = -(-len(lines) // count)
-            for start in range(0, len(lines), size):
-                out_pages.append(lines[start : start + size])
+            speaker = number == 0 and len(page) > 1 and opens_with_quote(page[1]) and not opens_with_quote(page[0])
+            lines = fit(sentences(page, speaker))
+            parts = paginate(lines, rows) if len(lines) > rows else [lines]
+            out_pages.extend(fit(sentences(part, speaker and not at)) for at, part in enumerate(parts))
         else:
             out_pages.append(lines)
     joined = []

@@ -1,0 +1,1 @@
+- The game's text can now be read in Spanish: choose **Settings → Gameplay → Language → Game text → Español**. Dialogue, narration, menus, item and ability names and descriptions, shop, save and battle messages, enemy names and place names are translated, with Spanish's accented letters, ñ and the opening ¡ and ¿ drawn from the game's own font.

@@ -39,15 +39,15 @@ def region(active, translations, glyphs, entries=()):
     the glyphs' recipes, the language's records ascending by hash, its
     records of single entries ascending by name, then the texts.
     `translations` and `entries`: (hash or name, bytes, columns, rows);
-    `glyphs`: (base, drop, clear, accent rows[, wide])."""
+    `glyphs`: (base, drop, clear, accent rows[, flags: 1 wide, 2 turned])."""
     glyphs_at = 32 + 16
     records = glyphs_at + 28 * len(glyphs)
     alone = records + 16 * len(translations)
     out = bytearray(alone + 16 * len(entries))
     struct.pack_into("<IIIII", out, 0, 0x32434C58, active, 1, LOCALE + glyphs_at, len(glyphs))
     struct.pack_into("<IIII", out, 32, LOCALE + records, len(translations), LOCALE + alone, len(entries))
-    for n, (base, drop, clear, accent, *wide) in enumerate(glyphs):
-        struct.pack_into("<BBHH11H", out, glyphs_at + 28 * n, base, *(wide or [0]), drop, clear, *accent)
+    for n, (base, drop, clear, accent, *flags) in enumerate(glyphs):
+        struct.pack_into("<BBHH11H", out, glyphs_at + 28 * n, base, *(flags or [0]), drop, clear, *accent)
     for n, (digest, data, columns, rows) in enumerate([*sorted(translations), *sorted(entries)]):
         struct.pack_into("<IIIBBH", out, records + 16 * n, digest & 0xFFFFFFFF, digest >> 32, LOCALE + len(out), columns, rows, 0)
         out += data
@@ -72,10 +72,11 @@ u32 test_text;
 u32 test_glyph[2];
 u16 test_rows[11];
 s16 xem_original_window_queue_message(Window *window, s32 message) { test_message = (u32)message; return 1; }
+s32 test_line_width = 8 * 4 * 5; /* five narrow glyphs' width in pixels */
 s32 xem_original_window_render_text_line(u8 *text, void *image, s16 width, s32 flags) {
     test_text = (u32)(XemUintptr)text;
     if (image != NULL) ((u16 *)image)[0] = 0x1111; /* a mark where the line starts */
-    return 8 * 4 * 5; /* five narrow glyphs' width in pixels */
+    return test_line_width;
 }
 void xem_original_window_insert_text(Window *window, u8 *text) { test_text = (u32)(XemUintptr)text; }
 u8 *xem_original_text_get_resource_entry(u8 *resource, s32 index) { return resource + ((u16 *)resource)[index + 2]; }
@@ -286,6 +287,24 @@ u16 gear_shop_gear_values_frame_x_table[14];
         self.lib.text_draw_glyph(0x30, 0x41, None, 8, 0)
         self.assertEqual(self.word("test_glyph"), 0x30, "any other glyph is the original's")
 
+    def test_a_turned_letter_is_its_base_turned_a_half_turn_within_its_ink_under_an_upright_accent(self):
+        # A stand-in base at 0x57: columns 1-3 of row 2, column 8 (the high
+        # byte's first) of row 3 and column 2 of row 7, its ink rows 2-7 and
+        # columns 1-8; the accent a dot in column 0 of row 0.
+        font = bytearray(port_native.read(FONT, 14 + 22 * 0x50))
+        for row, bits in ((2, 0x70), (3, 0x8000), (7, 0x20)):
+            struct.pack_into("<H", font, 14 + 22 * (0x57 - FIRST) + 2 * row, bits)
+        port_native.write(FONT, bytes(font))
+        self.install(0, glyphs=((0x57, 0, 0, (0x80,) + (0,) * 10, 2), (0x57, 0, 0, (0,) * 11, 3)))
+        self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x20), 2, "a turned letter is narrow")
+        self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x21), 3, "unless its recipe makes it wide too")
+        before = port_native.read(SPECIAL, 22)
+        self.lib.text_draw_glyph(0xFF, 0x20, None, 8, 0)
+        rows = list((ctypes.c_ushort * 11).in_dll(self.lib, "test_rows"))
+        # Row r becomes row 9 - r and column c column 9 - c, in the box its ink filled.
+        self.assertEqual(rows, [0x80, 0, 0x01, 0, 0, 0, 0x40, 0x8003, 0, 0, 0])
+        self.assertEqual(port_native.read(SPECIAL, 22), before, "the special glyph's rows put back")
+
     def test_the_japanese_texts_glyphs_are_drawn_from_the_japanese_font_through_the_special_glyph(self):
         """xem_core::japanese's codes: F0 c the Japanese font's one-byte glyph
         c, (F1 + L - F8) s its two-byte glyph L s, F8 c the game's own glyph c;
@@ -369,6 +388,32 @@ u16 gear_shop_gear_values_frame_x_table[14];
         self.lib.xem_locale_menu_labels(sheet)
         self.assertEqual(self.word("test_loads"), 0)
         self.assertEqual(port_native.read(sheet + offsets, len(entry)), entry)
+
+    def test_a_command_label_that_would_end_at_the_pages_edge_begins_the_next_line(self):
+        """The menus draw a part as a quad whose far texel is u + w in a byte:
+        two labels of 128 pixels would fill the page's 256 and the second end
+        at u 256, which wraps to 0, so the second begins the next line."""
+        sheet = 0x80050000
+        count = 0x150
+        offsets = 4 + 2 * count
+        first = struct.pack("<hh", 1, 0) + struct.pack("<HhHHhhxxxxhhhHHBB", 0, 148, 32, 9, -55, -39, 0, 272, 509, 448, 148, 0, 0)
+        second = struct.pack("<hh", 1, 0) + struct.pack("<HhHHhhxxxxhhhHHBB", 0x40, 157, 19, 9, 10, 20, 0, 272, 509, 448, 148, 0, 0)
+        table = bytearray(struct.pack("<HH", count, 0) + bytes(2 * count))
+        for label in range(count):
+            struct.pack_into("<H", table, 4 + 2 * label, offsets + (len(first) if label == 0x12C else 0))
+        port_native.write(sheet, bytes(table) + first + second)
+        data = region(1, [(translations.fnv1a64(entry), TRANSLATION, 10, 1) for entry in (first, second)], ())
+        ctypes.memmove(LOCALE, data, len(data))
+        ctypes.c_uint.in_dll(self.lib, "test_loads").value = 0
+        ctypes.c_int.in_dll(self.lib, "test_line_width").value = 128
+        try:
+            self.lib.xem_locale_menu_labels(sheet)
+        finally:
+            ctypes.c_int.in_dll(self.lib, "test_line_width").value = 8 * 4 * 5
+        rects = (ctypes.c_uint * 4 * 16).in_dll(self.lib, "test_rects")
+        self.assertEqual([tuple(rects[n]) for n in range(self.word("test_loads"))], [(448, 256, 32, 13), (448, 269, 32, 13)])
+        u, v, w = struct.unpack_from("<HhH", port_native.read(sheet + offsets + len(first) + 4, 6))
+        self.assertEqual((u, v, w), (0, 13, 128), "the second label's part: the next line's start")
 
     def test_a_stat_panels_word_is_spelled_anew_with_the_small_fonts_letters_ending_where_it_ended(self):
         """Sheet entries 0xDE-0xF8 compose a word of the small font's letter
