@@ -10294,7 +10294,12 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
 In `nix develop path:./nix/runtime#android`:
 
 - build: `src/runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick
-  ABIs, both by default) → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
+  ABIs, both by default) → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`.
+  Gradle fetches AGP and its dependencies on a first run (every CI run); a
+  run that fails to resolve them goes again with `--refresh-dependencies`,
+  three runs at most, as a repository can briefly answer "not found" for a
+  file it has (the release run of 2026-11-19 stopped on Maven Central's
+  `protobuf-java-util-3.22.3.pom`). Any other failure ends the build.
 - emulator smoke test: `src/runtime/scripts/android-smoke.sh` (headless API-34
   x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
   screenshots in `build/android/smoke`). With the user's disc 1 at
