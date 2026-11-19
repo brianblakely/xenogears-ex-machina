@@ -33,9 +33,10 @@
  * narrow letters' 2 columns, or the wide glyphs' 3 where the host's recipe
  * says so, and text_draw_glyph draws each through the original's own
  * drawing of glyph 0xFFFF, whose rows (text_special_glyph_rows) hold the
- * letter while it draws: a letter of the game's font with rows taken out or
- * blanked and an accent drawn over it, the host's recipe. The rows are put
- * back before it returns, and nothing waits in between.
+ * letter while it draws: a letter of the game's font with rows taken out,
+ * turned a half turn or blanked and an accent drawn over it, the host's
+ * recipe. The rows are put back before it returns, and nothing waits in
+ * between.
  *
  * The menus' command labels (Status, Equip, Buy ...) are not text: they are
  * sheet entries 0x123-0x149 of the menu's sprite sheet, words drawn in its
@@ -117,11 +118,16 @@ typedef struct {
 
 typedef struct {
     u8 base;         /* the one-byte glyph it is drawn from */
-    u8 wide;         /* 1: it advances the wide glyphs' 3 columns, not a letter's 2 */
+    u8 flags;        /* XEM_LOCALE_GLYPH_WIDE, XEM_LOCALE_GLYPH_TURN */
     u16 drop;        /* rows taken out of the base (bit n row n), those above moving down */
     u16 clear;       /* rows blanked */
     u16 accent[11];  /* rows drawn over it */
 } XemLocaleGlyph;
+
+/* It advances the wide glyphs' 3 columns, not a letter's 2. */
+#define XEM_LOCALE_GLYPH_WIDE 1
+/* The base is turned a half turn within its own ink (¡ and ¿ from ! and ?). */
+#define XEM_LOCALE_GLYPH_TURN 2
 
 s16 xem_original_window_queue_message(Window *window, s32 message);
 s32 xem_original_window_render_text_line(u8 *text, void *image, s16 width, s32 flags);
@@ -451,6 +457,53 @@ static const u16 *xem_japanese_glyph(u16 first, u16 second, s32 *columns) {
     return NULL;
 }
 
+/* A glyph row's column (0-11): the first eight are the low byte's bits 7-0,
+ * the next four the high byte's bits 7-4. */
+static u16 xem_glyph_column(s32 column) {
+    return column < 8 ? (u16)(0x80 >> column) : (u16)(0x8000 >> (column - 8));
+}
+
+/* Turn `rows` a half turn within the box their ink fills, which stays where
+ * it was. */
+static void xem_turn_rows(u16 *rows) {
+    u16 turned[11];
+    u16 ink = 0;
+    s32 top = -1;
+    s32 bottom = -1;
+    s32 left = -1;
+    s32 right = -1;
+    s32 row;
+    s32 column;
+
+    for (row = 0; row < 11; row++) {
+        if (rows[row] != 0) {
+            top = top < 0 ? row : top;
+            bottom = row;
+        }
+        ink |= rows[row];
+        turned[row] = 0;
+    }
+    for (column = 0; column < 12; column++) {
+        if (ink & xem_glyph_column(column)) {
+            left = left < 0 ? column : left;
+            right = column;
+        }
+    }
+    if (top < 0) {
+        return;
+    }
+    for (row = top; row <= bottom; row++) {
+        for (column = left; column <= right; column++) {
+            if (rows[row] & xem_glyph_column(column)) {
+                turned[top + bottom - row] |= xem_glyph_column(left + right - column);
+            }
+        }
+    }
+    for (row = 0; row < 11; row++) {
+        rows[row] = turned[row];
+    }
+}
+
 /* Draw `rows` through the original's drawing of the special glyph 0xFFFF,
  * whose rows hold them while it draws. */
 static void xem_draw_rows(const u16 *rows, u16 *image, s16 stride, s32 plane) {
@@ -472,7 +525,7 @@ s32 text_get_glyph_width(u16 first, u16 second) {
     s32 columns;
 
     if (glyph != NULL) {
-        return glyph->wide ? 3 : 2;
+        return (glyph->flags & XEM_LOCALE_GLYPH_WIDE) ? 3 : 2;
     }
     if (xem_japanese_glyph(first, second, &columns) != NULL) {
         return columns;
@@ -512,6 +565,9 @@ void text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     }
     while (to >= 0) {
         text_special_glyph_rows[to--] = 0;
+    }
+    if (glyph->flags & XEM_LOCALE_GLYPH_TURN) {
+        xem_turn_rows(text_special_glyph_rows);
     }
     for (row = 0; row < 11; row++) {
         if ((glyph->clear >> row) & 1) {

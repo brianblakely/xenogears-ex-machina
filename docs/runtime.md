@@ -9166,13 +9166,13 @@ other hosts were not run.
 
 Settings → Gameplay → Language → **Game text** chooses the language of the
 game's own text: **English**, the original's, by default, **English
-(Perfect Works)**, **Português (Brasil)**, **Français**, **Italiano** or, beside the
+(Perfect Works)**, **Português (Brasil)**, **Français**, **Italiano**, **Español** or, beside the
 Japanese release's discs, **日本語** (Japanese, below). It is a setting
 (`xem_settings::Settings::language`, saved as `"English"`, `"PerfectWorks"`,
-`"BrazilianPortuguese"`, `"French"`, `"Italian"` or `"Japanese"`), which the hosts give the session
+`"BrazilianPortuguese"`, `"French"`, `"Italian"`, `"Spanish"` or `"Japanese"`), which the hosts give the session
 every frame as they give the text speed (`Session::set_language`); agents
 use the same setting (`settings_apply {"Language": ...}`) or the session's
-command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "it" | "ja"}`, and `status` says which is
+command `language {language: "en" | "en-x-pw" | "pt-BR" | "fr" | "it" | "es" | "ja"}`, and `status` says which is
 active (`language`). A language's translation changes how long the game's
 windows take and how many pages they turn, so the language is recorded with
 the inputs, and a replay takes the recorded one.
@@ -9191,7 +9191,9 @@ rather than shipped. French translates 16 029 and lists 1 057: the same
 texts and one enemy name French spells as the original does (Griffon).
 Italian, translated from the English beside the French, translates 15 953
 and lists 1 136: more cries and short replies read the same in Italian
-("No!", "Oh no...", "Doc!").
+("No!", "Oh no...", "Doc!"). Spanish, translated alike, translates 16 242
+and lists 847: its opening marks make 219 cries and calls its own that
+differ from the original by them alone ("¡Timothy!", "¿Aerods?").
 English (Perfect Works) reads 10 513 texts anew, and 210 table entries
 alone besides (below), and lists the 6 589 it leaves as the original's.
 Text built at run time (numbers, and a name the player gave) is the game's
@@ -9409,11 +9411,13 @@ capitals (`locale/pt-BR/glyphs.txt`), French `à â ç é è ê ë î ï ô ù �
 and their capitals (`locale/fr/glyphs.txt`; it writes oe and ae for the
 ligatures, which the font lacks), Italian `à è é ì ò ù` and their capitals
 (`locale/it/glyphs.txt`; `ì ò Ì Ò` are its own, the rest those Portuguese and
-French added first), and Perfect Works the marks its own font
+French added first), Spanish `á é í ó ú ü ñ`, their capitals and the
+opening marks `¡ ¿` (`locale/es/glyphs.txt`; `ñ Ñ ¡ ¿` are its own, the rest
+those Portuguese and French added first), and Perfect Works the marks its own font
 draws in place of the wide digits ０-３, the wide underscore and the
 brackets: `ö ; *`, a dash `—` and a blank `␣` as wide as a wide glyph, and
 `ﭏ` (El, the lamed and the aleph, which its Omnigears' names begin with)
-(`locale/en-x-pw/glyphs.txt`), 48 glyphs in all. Each is a two-byte glyph from 0xFF20
+(`locale/en-x-pw/glyphs.txt`), 52 glyphs in all. Each is a two-byte glyph from 0xFF20
 (0xFF xx reads as a two-byte glyph; the original's text uses only 0xFFFF,
 its special glyph), the same code in every language that adds the letter
 (the languages' letters numbered in `Language::ALL`'s order, a letter
@@ -9425,7 +9429,9 @@ in `text_special_glyph_rows` (0x800501D0), calls the original with 0xFF
 0xFF and puts the special glyph's rows back, with nothing waiting in
 between. The letter is composed from the player's font: the base letter's
 11 rows (the font block `text_install_font` installed), rows taken out
-(a capital shortened to rows 3-9) or blanked (the dot of i), and an accent
+(a capital shortened to rows 3-9), the letter turned a half turn within
+the box its ink fills (`turn`: Spanish's ¡ and ¿ are the font's ! and ?
+upside down) or rows blanked (the dot of i), and an accent
 drawn for this project over the top rows (the diaeresis's two dots on row
 1, the cedilla on row 10); a mark the font has no letter for is drawn on
 its space (`blank`), and the semicolon is its colon with its comma's tail.
@@ -9445,10 +9451,11 @@ game data translated by its slot, the same name in another slot or changed
 by the player left; a field
 window's columns and rows grown to the translation's, never shrunk; an
 added letter narrow or wide as its recipe says, drawn through 0xFFFF from its base with rows taken out
-and blanked and its accent, the special glyph's rows put back), `xem-core`'s
+and blanked and its accent, the special glyph's rows put back; a turned letter its base turned a
+half turn within its ink, its accent upright), `xem-core`'s
 `locale` tests (markup encoded as the game reads text, the columns and rows
 measured, a wide glyph's 3 and a text of nothing; characters the font lacks, unknown controls and bad operands
-refused; the glyph recipes, Perfect Works' marks among them; an entry's name; the image's layout, records ascending by hash
+refused; the glyph recipes, Perfect Works' marks and Spanish's turned marks among them; an entry's name; the image's layout, records ascending by hash
 and entries' by name),
 the native test's command labels (a translated entry drawn into page
 (448, 256), each transfer waited for, the line image freed, the entry one
@@ -9470,7 +9477,7 @@ markup, a reading fitted to its window, a text's entries as lines),
 `xem-headless/tests/text_and_movies.rs` (disc 1):
 `a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_language`
 (field 12's opening message: in English the window reads it in RAM; in
-Brazilian Portuguese, in French and in Italian it reads that language's shipped
+Brazilian Portuguese, in French, in Italian and in Spanish it reads that language's shipped
 translation of the same message, with added letters, and goes on with it
 once English is chosen, the next message read in RAM),
 `perfect_works_reads_a_text_differently_from_entry_to_entry` (map 222's

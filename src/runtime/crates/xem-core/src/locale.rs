@@ -59,16 +59,18 @@ pub enum Language {
     BrazilianPortuguese,
     French,
     Italian,
+    Spanish,
     /// The Japanese release's own text, read from the player's Japanese
     /// discs (`crate::japanese`): installed only beside them.
     Japanese,
 }
 
 impl Language {
-    pub const ALL: [Language; 6] = [Language::English, Language::PerfectWorks, Language::BrazilianPortuguese, Language::French,
-        Language::Italian, Language::Japanese];
+    pub const ALL: [Language; 7] = [Language::English, Language::PerfectWorks, Language::BrazilianPortuguese, Language::French,
+        Language::Italian, Language::Spanish, Language::Japanese];
     /// The languages shipped as translations (`locale/<code>/`).
-    const SHIPPED: [Language; 4] = [Language::PerfectWorks, Language::BrazilianPortuguese, Language::French, Language::Italian];
+    const SHIPPED: [Language; 5] =
+        [Language::PerfectWorks, Language::BrazilianPortuguese, Language::French, Language::Italian, Language::Spanish];
 
     /// Its BCP 47 tag, as commands and `locale/` name it.
     pub fn code(self) -> &'static str {
@@ -78,6 +80,7 @@ impl Language {
             Language::BrazilianPortuguese => "pt-BR",
             Language::French => "fr",
             Language::Italian => "it",
+            Language::Spanish => "es",
             Language::Japanese => "ja",
         }
     }
@@ -94,6 +97,7 @@ impl Language {
             Language::BrazilianPortuguese => "Português (Brasil)",
             Language::French => "Français",
             Language::Italian => "Italiano",
+            Language::Spanish => "Español",
             Language::Japanese => "日本語",
         }
     }
@@ -106,6 +110,7 @@ impl Language {
             Language::BrazilianPortuguese => &PT_BR,
             Language::French => &FR,
             Language::Italian => &IT,
+            Language::Spanish => &ES,
         }
     }
 
@@ -116,6 +121,7 @@ impl Language {
             Language::BrazilianPortuguese => include_str!("../locale/pt-BR/glyphs.txt"),
             Language::French => include_str!("../locale/fr/glyphs.txt"),
             Language::Italian => include_str!("../locale/it/glyphs.txt"),
+            Language::Spanish => include_str!("../locale/es/glyphs.txt"),
         }
     }
 
@@ -140,6 +146,8 @@ static PT_BR: [(&str, &str); 12] = sources!("pt-BR": "system.txt", "menus.txt", 
 static FR: [(&str, &str); 12] = sources!("fr": "system.txt", "menus.txt", "battle.txt", "world.txt",
     "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
 static IT: [(&str, &str); 12] = sources!("it": "system.txt", "menus.txt", "battle.txt", "world.txt",
+    "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
+static ES: [(&str, &str); 12] = sources!("es": "system.txt", "menus.txt", "battle.txt", "world.txt",
     "field-0.txt", "field-1.txt", "field-2.txt", "field-3.txt", "field-4.txt", "field-5.txt", "field-6.txt", "field-7.txt");
 
 // The font's one-byte glyphs (directory (0, 1) file 6, read by
@@ -235,6 +243,9 @@ pub struct Glyph {
     pub accent: [u16; 11],
     /// It advances the wide glyphs' 3 columns, not a letter's 2.
     pub wide: bool,
+    /// The base is turned a half turn within its own ink, before the
+    /// accent is drawn (the opening marks ¡ and ¿ from ! and ?).
+    pub turn: bool,
 }
 
 fn rows(list: &str) -> Result<u16, String> {
@@ -287,16 +298,17 @@ pub fn parse_glyphs(source: &str) -> Result<Vec<Glyph>, String> {
         });
         let base = base.filter(|b| b.wrapping_sub(FIRST_ONE_BYTE) < NARROW_GLYPHS).ok_or_else(|| fail("the base is not a narrow glyph of the font".into()))?;
         let accent = fields.get(2).and_then(|a| accents.get(a)).ok_or_else(|| fail("no such accent".into()))?;
-        let (mut drop, mut clear, mut wide) = (0, 0, false);
+        let (mut drop, mut clear, mut wide, mut turn) = (0, 0, false, false);
         for option in &fields[3..] {
             match option.split_once('=') {
                 Some(("drop", list)) => drop = rows(list).map_err(fail)?,
                 Some(("clear", list)) => clear = rows(list).map_err(fail)?,
                 None if *option == "wide" => wide = true,
-                _ => return Err(fail(format!("{option:?} is not drop=, clear= or wide"))),
+                None if *option == "turn" => turn = true,
+                _ => return Err(fail(format!("{option:?} is not drop=, clear=, wide or turn"))),
             }
         }
-        glyphs.push(Glyph { character, base, drop, clear, accent: *accent, wide });
+        glyphs.push(Glyph { character, base, drop, clear, accent: *accent, wide, turn });
     }
     Ok(glyphs)
 }
@@ -490,7 +502,7 @@ pub fn build() -> Result<Image, String> {
     for (i, glyph) in glyphs.iter().enumerate() {
         let at = glyphs_at + GLYPH_BYTES * i;
         bytes[at] = glyph.base;
-        bytes[at + 1] = u8::from(glyph.wide);
+        bytes[at + 1] = u8::from(glyph.wide) | u8::from(glyph.turn) << 1;
         bytes[at + 2..at + 4].copy_from_slice(&glyph.drop.to_le_bytes());
         bytes[at + 4..at + 6].copy_from_slice(&glyph.clear.to_le_bytes());
         for (row, value) in glyph.accent.iter().enumerate() {
@@ -666,8 +678,8 @@ mod tests {
     fn the_added_letters_are_drawn_from_the_fonts_letters_and_the_accents() {
         let glyphs = glyphs().unwrap();
         // Perfect Works' 6 marks, Brazilian Portuguese's 24 letters, the 14 French adds (è ë î ï ù û ü and
-        // capitals), then the 4 Italian adds (ì ò Ì Ò).
-        assert_eq!(glyphs.len(), 48);
+        // capitals), the 4 Italian adds (ì ò Ì Ò), then the 4 Spanish adds (ñ Ñ ¡ ¿).
+        assert_eq!(glyphs.len(), 52);
         let codes = added_codes(&glyphs).codes;
         let a_acute = &glyphs[6];
         assert_eq!((a_acute.character, a_acute.base, a_acute.drop, a_acute.clear, a_acute.wide), ('á', 0x3D, 0, 0, false));
@@ -689,6 +701,15 @@ mod tests {
         assert_eq!((codes[&'è'], codes[&'ù'], codes[&'ì'], codes[&'Ò']), (FIRST_GLYPH + 30, FIRST_GLYPH + 34, FIRST_GLYPH + 44, FIRST_GLYPH + 47));
         let i_grave = glyphs.iter().find(|g| g.character == 'ì').unwrap();
         assert_eq!((i_grave.base, i_grave.clear, &i_grave.accent[..2]), (0x45, 0b111, &[0x40, 0x20][..]));
+        // Spanish's: the n and the capital N under Portuguese's tilde, then the
+        // opening marks, the font's ! and ? turned a half turn and nothing drawn
+        // over them; á í ó ú keep Portuguese's codes and ü French's.
+        assert_eq!((codes[&'á'], codes[&'ü'], codes[&'ñ'], codes[&'Ñ'], codes[&'¡'], codes[&'¿']),
+            (FIRST_GLYPH + 6, FIRST_GLYPH + 36, FIRST_GLYPH + 48, FIRST_GLYPH + 49, FIRST_GLYPH + 50, FIRST_GLYPH + 51));
+        let n_tilde = glyphs.iter().find(|g| g.character == 'Ñ').unwrap();
+        assert_eq!((n_tilde.base, n_tilde.drop, &n_tilde.accent[..2], n_tilde.turn), (0x2D, 1 << 3 | 1 << 7, &[0x68, 0x90][..], false));
+        let opening = glyphs.iter().filter(|g| g.turn).map(|g| (g.character, g.base, g.accent, g.wide)).collect::<Vec<_>>();
+        assert_eq!(opening, [('¡', 0x57, [0; 11], false), ('¿', 0x60, [0; 11], false)]);
         // Perfect Works' marks: the semicolon is the colon with a tail, the
         // dash the hyphen's row drawn on across a wide glyph, and the blank
         // and El are drawn on the font's space.
@@ -703,7 +724,7 @@ mod tests {
         assert_eq!((el.base, el.accent[3], el.wide), (0x10, 0xF2 | 0x2000, true));
         assert!(parse_glyphs("accent dot 0=..#..\nx ※ dot").unwrap_err().contains("narrow glyph"));
         assert!(parse_glyphs("ä a umlaut").unwrap_err().contains("no such accent"));
-        assert!(parse_glyphs("accent dot 0=..#..\nx a dot tall").unwrap_err().contains("wide"));
+        assert!(parse_glyphs("accent dot 0=..#..\nx a dot tall").unwrap_err().contains("wide or turn"));
     }
 
     #[test]
@@ -732,10 +753,11 @@ mod tests {
         assert_eq!(place_key(&text, 3, 0x1234, 9), fnv1a64(&named));
         let image = IMAGE.as_ref().unwrap();
         let word = |at: usize| u32::from_le_bytes(image.bytes[at..at + 4].try_into().unwrap());
-        assert_eq!((word(0), word(4), word(8), word(16)), (MAGIC, 0, 4, glyphs.len() as u32));
-        assert_eq!(word(12), BASE + (HEADER_BYTES + 4 * LANGUAGE_BYTES) as u32);
-        let wide: Vec<usize> = (0..glyphs.len()).filter(|i| image.bytes[(word(12) - BASE) as usize + GLYPH_BYTES * i + 1] == 1).collect();
-        assert_eq!(wide, [3, 4, 5], "the glyphs drawn wide");
+        assert_eq!((word(0), word(4), word(8), word(16)), (MAGIC, 0, 5, glyphs.len() as u32));
+        assert_eq!(word(12), BASE + (HEADER_BYTES + 5 * LANGUAGE_BYTES) as u32);
+        let flags = |mask: u8| (0..glyphs.len()).filter(|i| image.bytes[(word(12) - BASE) as usize + GLYPH_BYTES * i + 1] & mask != 0).collect::<Vec<_>>();
+        assert_eq!(flags(1), [3, 4, 5], "the glyphs drawn wide");
+        assert_eq!(flags(2), [50, 51], "the glyphs turned");
         let mut next = (word(12) - BASE) as usize + GLYPH_BYTES * glyphs.len();
         for (n, (_, texts, entries)) in image.languages.iter().enumerate() {
             for (field, expected) in [(0, texts), (8, entries)] {
@@ -760,13 +782,14 @@ mod tests {
         // A line that did not would leave every translation uninstalled.
         let image = IMAGE.as_ref().expect("the shipped translations build");
         let lines = |files: &[(&str, &str)]| files.iter().map(|(_, source)| source.lines().filter(|l| !l.trim().is_empty()).count()).sum::<usize>();
-        let (perfect_works, portuguese, french, italian) = (lines(&EN_X_PW), lines(&PT_BR), lines(&FR), lines(&IT));
+        let (perfect_works, portuguese, french, italian, spanish) = (lines(&EN_X_PW), lines(&PT_BR), lines(&FR), lines(&IT), lines(&ES));
         assert_eq!(image.languages.iter().map(|(language, texts, entries)| (*language, texts + entries)).collect::<Vec<_>>(),
             [(Language::PerfectWorks, perfect_works), (Language::BrazilianPortuguese, portuguese), (Language::French, french),
-             (Language::Italian, italian)]);
+             (Language::Italian, italian), (Language::Spanish, spanish)]);
         assert!(portuguese > 16_000, "Brazilian Portuguese ships its translations ({portuguese})");
         assert!(french > 16_000, "French ships its translations ({french})");
         assert!(italian > 15_900, "Italian ships its translations ({italian})");
+        assert!(spanish > 15_900, "Spanish ships its translations ({spanish})");
         // Perfect Works reads anew the texts it changes, some of them in one entry alone.
         assert!(perfect_works > 10_000, "Perfect Works ships its translations ({perfect_works})");
         assert!(image.languages[0].2 > 100 && image.languages[1..].iter().all(|l| l.2 == 0), "only Perfect Works translates single entries");
@@ -783,6 +806,8 @@ mod tests {
         assert_eq!((Language::French.name(), Language::French.number()), ("Français", 3));
         assert_eq!(Language::from_code("it"), Some(Language::Italian));
         assert_eq!((Language::Italian.name(), Language::Italian.number()), ("Italiano", 4));
+        assert_eq!(Language::from_code("es"), Some(Language::Spanish));
+        assert_eq!((Language::Spanish.name(), Language::Spanish.number()), ("Español", 5));
         // Perfect Works' English stands beside the original's.
         assert_eq!(Language::from_code("en-x-pw"), Some(Language::PerfectWorks));
         assert_eq!((Language::PerfectWorks.name(), Language::PerfectWorks.number()), ("English (Perfect Works)", 1));

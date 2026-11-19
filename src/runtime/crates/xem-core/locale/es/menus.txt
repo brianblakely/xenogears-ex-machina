@@ -1,0 +1,958 @@
+mc222-0000 66929c25ec109a28 Ataque
+mc223-0000 19201d19be794a53 Pre%
+mc224-0000 4ab80a62d18b4cb7 Defensa
+mc225-0000 7a093e2acad6ef77 Evas%
+mc226-0000 ca4e90f96b9fd279 Eter
+mc228-0000 b3150d64a6d84094 DefEter
+mc230-0000 3ca343c021183f4d Peso
+mc235-0000 37dc10aa65c41b8c Agilid.
+mc243-0000 734f4638f06b8e07 Defensa
+mc244-0000 9d26741a5639cd98 DefEter
+mc245-0000 7850f10577a825aa comb
+mc246-0000 69640c11c4a3d963 Reacc.
+mc247-0000 cd268d3f57320059 AmpEt.
+mc248-0000 cfb0a973179cf769 CalMax
+mc291-0000 4e7327884f8dc483 Nueva partida
+mc292-0000 55d6026ee2931a1a Continuar
+mc293-0000 90714db145ce1c96 Sonido
+mc294-0000 5863171b11a4c23b Salir
+mc295-0000 78d01d47ae00d7dd Guardar
+mc296-0000 8f4cffc5bafba798 Cargar
+mc297-0000 32a9b7ccd45a3947 Copiar
+mc298-0000 5a8228d083b5dbb4 Borrar
+mc299-0000 c2f666a5234e7783 Estado
+mc300-0000 c391d5c8272fe8b4 Equipar
+mc301-0000 915b93ce0f6ced8c Objetos
+mc302-0000 3fdf049c87dd3564 Habilidades
+mc303-0000 5a66f75a0bf78aa6 Gear
+mc304-0000 524280b586d8680d Archivo
+mc305-0000 4c2fd9c8d280bdd2 Salir
+mc306-0000 8cd723b73632bd8d Técnicas
+mc307-0000 30eb84a7f39b6004 Habilidades
+mc308-0000 5bbdbce0792e4580 Equipar
+mc309-0000 7bbfddb27ed83dd6 Comprar
+mc310-0000 886d5e7ea561a848 Vender
+mc312-0000 905d36194c933f38 Objetos
+mc313-0000 9bf7f82a888c2769 Armas
+mc314-0000 7a6537bd3552c453 Accesorios
+mc315-0000 54e2f8875bc91f31 Equipo
+mc316-0000 b35b86afe6ca555d Opciones de Gear
+mc318-0000 4fa4c046df2e2d17 Equipar
+mc319-0000 92f365dbe6475ae6 Subir/Bajar
+mc320-0000 7e668a15cfee4504 Estéreo
+mc321-0000 ab362bae4dc97179 Estéreo amplio
+mc322-0000 0408a9dd2c30eccf Mono
+mc323-0000 4241da82ef5cb534 Ajustes
+mc324-0000 ccf237e32eb82b65 Armas
+mc325-0000 3c5944c00aaff595 Piezas
+mc326-0000 9c8012e9c1a15c18 Combustible
+mc327-0000 dba3037a22f7a53c Motor
+mc328-0000 48063a2868bd44fc Armazón
+mc329-0000 b2197d8e94cc7e6d Armadura
+md014-0001 037fdcc7464a5b99 Recupera HP (50)
+md014-0002 dc89b9b1b60f75d8 Recupera HP (150)
+md014-0003 5668939b5ca19fcd Recupera HP (500)
+md014-0004 9380aabb7583679b Recupera todos los HP
+md014-0005 c28b8372f96531e6 HP del grupo al máximo
+md014-0006 a85b0a65732e5936 Recupera EP (10)
+md014-0007 8721d63bc300ee5d Recupera EP (20)
+md014-0008 1ee146341d53e890 Recupera EP (30)
+md014-0009 37d8bdeb17ca96ee Recupera todos los EP
+md014-0010 8a65894123ae5e6e Revive del estado KO
+md014-0011 54db709128f4dda5 Revive del KO, HP al máximo
+md014-0012 01d9ac8f0fb057f9 Cura alteraciones FÍS
+md014-0013 f30d07b928ecee0b Cura alteraciones MEN
+md014-0014 84a7a5a4145b2448 Cura toda alteración
+md014-0015 f184335cb9550261 Viento sube/Tierra baja
+md014-0016 33dc7637446c541f Tierra sube/Viento baja
+md014-0017 038a22c925a5c57e Fuego sube/Agua baja
+md014-0018 995b956cb2fa1998 Agua sube/Fuego baja
+md014-0019 30673dbaa61a7d74 Aumenta la Defensa
+md014-0020 eda233c1cbd5ad4b Aumenta la Velocidad
+md014-0021 6638cb010e487016 Permite la Falsa Muerte
+md014-0022 fb6888769254cdff Anula la Falsa Muerte
+md014-0023 26aa464654ca0a0a Bloquea alteraciones FÍS
+md014-0024 d92d70dcd45a7f68 Bloquea alteraciones MEN
+md014-0025 36bd1dfef0ef3481 Anula efectos de apoyo FÍS
+md014-0026 c5404e8cf5a04fef Anula efectos de apoyo MEN
+md014-0027 8a5f808234c402eb Anula apoyo del equipo
+md014-0028 9b3ac70c1240ee9a Añade Viento a los ataques
+md014-0029 d8d4a7c6a13b8ad0 Añade Tierra a los ataques
+md014-0030 1834ad45f64412c2 Añade Fuego a los ataques
+md014-0031 73e2df6dfc1c86c7 Añade Agua a los ataques
+md014-0032 a1e35f1b5f14dd03 Potencia arma +50% (combate)
+md014-0033 5b8dfb09acb48e48 Solo para combatientes
+md014-0049 b61534e4af712bf3 Recupera todos los HP y EP
+md014-0050 9b0f7848c825591a HP y EP del grupo al máximo
+md014-0051 2d9b9d2bfab0c5f3 Aumenta el Ataque + 1
+md014-0052 e75621d543f8445d Aumenta la Defensa + 1
+md014-0053 60e4ef5fba73fa53 Aumenta el Éter + 1
+md014-0054 55f4cd845e379dea Aumenta la Def. Éter + 1
+md014-0055 4c5a0f986ab17f87 Aumenta los HP máx. + 20
+md014-0056 604889935ff1f071 Aumenta los EP máx. + 5
+md014-0057 3e57c5a04793acee Cura 50 HP fuera de combate
+md014-0058 e3ffa6eb9ee3ef1b Cura 150 HP fuera de combate
+md014-0059 d1bcdc3b959bd07c Cura 500 HP fuera de combate
+md014-0060 8453463a083de3da Debe de valer mucho dinero
+md014-0063 7318fa70d5a4d025 Cura 10 EP fuera de combate
+md014-0064 14672de51a2a340c El favorito de los monos
+md014-0065 4faa9cef6b8475c0 Va bien con leche
+md014-0066 3ad419f07d0d12b7 Va bien con pescado
+md014-0067 4fd587d45b06c424 Bebida superapestosa
+md014-0068 faec51f566850107 Agua de la iglesia de Nisan
+md014-0069 f50767f6f44185f0 Agua corriente de Aveh
+md014-0070 cc4b7bb1d06d931a Balines y gas no incluidos
+md014-0071 340554fb4f9fef55 Maqueta 1/6, 24 piezas
+md014-0072 ee79f37d3831a18b Te hace adelgazar un poco
+md014-0073 0565a88c3d671204 Te hace adelgazar muchooo
+md014-0074 08316d25f0bef949 Te hace engordar un poco
+md014-0075 90d8e840f3a77fa2 Te hace engordar muchooo
+md014-0076 3a208d7f356c588c Rey de piedra-papel-tijera
+md014-0077 77e820b28dca1b62 Rey del escondite
+md014-0078 d5874c69efeaf650 Rey del juego de atrapar
+md014-0079 5a67a66160b010c6 Brilla como una joya...
+md014-0080 d4ad88051b1acdea Un típico platillo Adamski
+md014-0081 c56d3204aef12a1c Llave del muelle de Nortune
+md014-0082 11612e7d7b8cdbea Llave de cloacas de Nortune
+md014-0083 22b2e9033038ee58 Tiene finos grabados
+md014-0084 8388661ca311955e 'Las aventuras de Big Joe'
+md014-0085 d3d87eb6b59cbf12 Ya no tiene mucha gracia
+md014-0086 be867ce26829d40f Útiles lecciones infernales
+md014-0087 67334306ee8a6de6 Se retuerce y se menea
+md014-0088 296aa3c63090d25c Un huevo muy nutritivo
+md014-0089 401e6d6fea0ae61b Favorito de los criadores
+md014-0091 d9ea80572a0a27b9 Hilo resistente
+md014-0092 6d414862a5da75d8 Disco de música de jukebox
+md014-0093 0b3d4a3012f3f848 Una muñeca adorable
+md014-0094 bef276743d4d2401 Arena: cámaras prohibidas
+md014-0095 a07bcfe27c320655 Vieja talla de Chu-chu
+md014-0096 0f555399855e4720 Llave oxidada
+md014-0097 60a1fd72a10495bf Mapa de cloacas de Nortune
+md014-0098 eeeff5c041a4536b Mapa de Merkava
+md014-0099 5ed74a6e5cfb1b09 Mapa del hangar de Shevat
+md014-0100 e78169edc0a2d424 Parece inútil
+md014-0101 b3f5c6c7c6b1aa62 Una piedra de color blanco
+md014-0102 961f3799dce1d2d4 Una piedra de color rojo
+md014-0103 616c9f19d5d20254 Una piedra de color negro
+md014-0106 6ccec98014a6d430 Llave de la base de Solaris
+md014-0107 2f741f04437fe63b ID de Solaris, tercera clase
+md014-0108 95efa152b1fd1470 ¡Puaj, qué asco! ¡Piojos!
+md015-0000 98292e86a4ff23ac Atq con bola
+md015-0001 da2fb158017b6c99 de Chi
+md015-0002 b656ac6fa5dcece3 Recupera HP
+md015-0004 38e1834719c71f0d Atq sube
+md015-0006 a32bb2e72b0bb540 Contraataca si
+md015-0007 34063a2f8b25df12 el enemigo ataca
+md015-0008 053aea72a37eeeda Def sube
+md015-0009 23f87cae57873766 Atq baja
+md015-0011 cc17831c28843571 Def baja
+md015-0012 ce6fafc5544c99a9 Explota con
+md015-0013 88f990dce1e9bd00 Chi espacial
+md015-0014 34c4d226999d87d9 Ataca al enemigo/
+md015-0015 6aa35070f964d00d anula efectos
+md015-0032 606633e2a6205da0 Relámpago
+md015-0033 820e22702e6b6655 Atq Viento
+md015-0034 ca0964a635a96dac Onda de tierra
+md015-0035 c962f89d8afdfccf Atq Tierra
+md015-0036 30102b9edd2df512 Manto de fuego
+md015-0037 447a70644b77cc2d Atq Fuego
+md015-0038 75a060f77f4e6d0c Helada súbita
+md015-0039 9a726da44a4ffc16 Atq Agua
+md015-0040 7f94f4cf88391deb Alto voltaje
+md015-0041 951d57ab9e70c722 Atq Viento: área
+md015-0042 7caf8e43e44e342c Derrumbe
+md015-0043 65f69616a9f04ea8 Atq Tierra: área
+md015-0044 a115c8c2885e6e80 Incineración
+md015-0045 5d3d26c5cd314f4a Atq Fuego: área
+md015-0046 2df1f4fed1c3a270 Gran helada
+md015-0047 8467a4893ce76d9b Atq Agua: área
+md015-0048 aa3051cb2f852e5a Destello plasma
+md015-0049 3b5d688aeddf8aa6 Viento: todos
+md015-0050 66c8dabd3851b360 Enterrar vivo
+md015-0051 781ce881a55ce3cc Tierra: todos
+md015-0052 736ec1d1a17f282a Detonación
+md015-0053 49b577035334ac5e Fuego: todos
+md015-0054 6d5b4675a0fc85b7 Avalancha
+md015-0055 e43e1b4fbee6acbd Agua: todos
+md015-0066 11c2a7578627f98f El próximo Éter
+md015-0067 dcb3fb57073a9127 afecta a todos
+md015-0068 fa973155127471dc Bloquea
+md015-0076 1c119685ac027657 Estados FÍS
+md015-0077 7910c0580a98a2b3 eliminados
+md015-0078 a5ea547e8f5602f5 Estados MEN
+md015-0084 131c8df00a532230 Acelera el
+md015-0085 9f54f6a0bd78c9b5 próximo turno
+md015-0096 418c1e7ad19d6710 Enemigo
+md015-0097 b7a06af7e6bc1c4b Prec. baja
+md015-0098 c6c72c01485825b3 Atq Éter con
+md015-0099 984d3ad0beaf1d98 moneda de oro
+md015-0100 6e3821b59b89206d Atrae ataques
+md015-0101 fdd201af60efc8ae hacia sí
+md015-0104 fe49c8da2b5124ea Prec/Evas suben
+md015-0106 6a31351ce9fa827b Contraataca al
+md015-0107 23928103656691dd enemigo
+md015-0108 c72c831ea259e43e Añade Viento
+md015-0109 ec2338161ac81bdb al ataque
+md015-0110 62546dce54bcd9e0 Añade Tierra
+md015-0112 ce6b974d9d0535a6 Añade Fuego
+md015-0114 513104b610cf572b Añade Agua
+md015-0128 478564f18bf0e02c Todos los estados
+md015-0132 419d1b60430c90e0 Cura HP a todos
+md015-0138 5dc7ef1c719fa584 Bloquea
+md015-0146 e76a0123e25ae483 Elimina el
+md015-0147 19e61b2953752227 estado KO
+md015-0164 fd316bfe7950c94a Def Éter sube
+md015-0167 88ba49e695027f0c tiros de espíritu
+md015-0192 9849d278794da735 Nanorrayo
+md015-0194 15e4e212b7c9cc7b Nanocubo
+md015-0196 66ad22cf22cb270e Inmolación
+md015-0198 f0cb8f32374058be Cascada
+md015-0200 47add2c0a6abf972 Aire a plasma
+md015-0204 8af0d2e23dfe4641 Tormenta ígnea
+md015-0206 3dad4c76b0069bfd Géiser
+md015-0230 fe487ab22e47eda0 El enemigo
+md015-0231 5cd1a68a3ae88e31 te ignora
+md015-0232 25debd0ecb8e2521 Elimina
+md015-0234 95ff514d7a630a65 Proyecta aire
+md015-0236 6fb32eeb17e3f9b9 Invoca al Titán
+md015-0238 a9fee610befec4f4 Poder místico
+md015-0239 d0bedf65f44e0521 Atq (todos)
+md015-0256 30b2456465670bf7 Dispara láser
+md015-0257 cef216b81c5d17bd por la cabeza
+md015-0258 7fff6d0ddd1c86fd Dispara misiles
+md015-0259 8309dfce17d24218 traseros
+md015-0260 90d4cf5c6273b522 Megapuñetazo
+md015-0261 37096738af65241f Atq FÍS/neutro
+md015-0262 569bd772b0102c12 Gigapatada
+md015-0264 996b66a0e08371f0 Arma sellada
+md015-0265 1e002c7db3e878c1 Arma de gravedad
+md015-0291 dbf10ee7e28f291a afecta a todos
+md015-0301 846d5c54c4f8c897 estado FÍS
+md015-0303 38ba5e8524ff4951 estado MEN
+md020-0000 5ce4b91dda3c077a Ampliado
+md020-0002 6d3e29186239b93c Recupera
+md020-0003 ef3ac3c245cc9d05 Def del Gear
+md020-0004 a447199a753e6b16 Def Gear sube
+md020-0006 fdde0ab637c04471 Atq Gear sube
+md020-0010 f0c9ea5e6f92c0ff Lente gravedad
+md020-0011 25f78183b7bbe17f Atq Chi espacial
+md020-0032 2bec09be7f97788f Amplifica
+md020-0034 10056c5ece33d0a4 Recupera
+md020-0035 c01aef9fee813f37 Def del Gear
+md020-0036 04cac472a31fa691 Def sube
+md020-0038 38782947196d9d16 Atq sube
+md020-0073 6d1dd25fabf89a67 Atq Viento: área
+md020-0075 a3583f737099a63d Atq Tierra: área
+md020-0077 198099e58d11fb5f Atq Fuego: área
+md020-0098 d81905be49df0785 El próximo Éter
+md020-0100 b82803be8ac7afca Escudo barrera
+md020-0101 a8dc71a81669e580 ante Atq Tierra
+md020-0103 2786e04b2972ae6c ante Atq Viento
+md020-0105 bca26c4584506041 ante Atq Agua
+md020-0107 c767d159498dcad4 ante Atq Fuego
+md020-0109 cc5c27b7a47ed7e2 Atq Gear baja
+md020-0111 fc85d6791191fb05 Def Gear baja
+md020-0128 d9064a84139f5944 Prec. enemiga
+md020-0129 15c67cfcd50a9523 baja
+md020-0130 eae11b9286905007 Lanza un disco
+md020-0131 471855875af0dc7c de ataque veloz
+md020-0132 aacc76aa72092267 Añade Viento
+md020-0133 622f662559e7ee20 al arma del Gear
+md020-0134 86ddc65000632f19 Añade Tierra
+md020-0136 e30dd49e40f202af Añade Fuego
+md020-0138 4271b55b3b6d57e0 Añade Agua
+md020-0192 f0cfd4be82c591c7 Disparo rápido
+md020-0193 64993201c061331a Atq Éter
+md020-0224 2726d374f4a9a6b6 Recupera HP
+md020-0296 49b0ab784bdfa1b3 Aire a plasma
+md020-0297 e050a8722ac1bbd1 Viento: todos
+md020-0298 ada7cd64599be489 Enterrar vivo
+md020-0299 52d1c9f2a172768b Tierra: todos
+md020-0301 f10a28281c4dd3a9 Fuego: todos
+md020-0303 04ec147d576dd0ba Agua: todos
+md020-0321 baede6849d2cd93e Viento
+md020-0323 9ff1de64199f1ed0 Tierra
+md020-0325 dff5f8f53b330092 Fuego
+md020-0327 a9648219e47fc279 Agua
+md020-0329 fdba20c2a52e40c2 Viento: área
+md020-0331 a1b1a1c6bd6f9694 Tierra: área
+md020-0333 64bbbc37a9f5d6da Fuego: área
+md020-0335 a7c32e10ec2df5db Agua: área
+md020-0337 3e78431eb32be4c6 Viento: todos
+md020-0339 46be49697011bdb0 Tierra: todos
+md020-0341 c22cfab397d82aa6 Fuego
+md020-0343 55c1eaff4545a62b Agua
+md020-0386 e225ef7b55a4a18d Lanza un disco
+md020-0388 4340fc90936395ad Añade Viento
+md020-0390 f931c6aa431712d3 Añade Tierra
+md020-0392 ba7ca5b3450109e5 Añade Fuego
+md020-0394 d95a03b0c2eeb3d0 Añade Agua
+md020-0448 233958a83547a0d8 Tiro rápido
+md020-0480 557d11952ce5fbab Onda Chi enorme
+md020-0481 382bca94d0eced46 Atq Gear
+md021-0001 4aee527e4710f7f9 HP Armazón
+md021-0002 8e184d30c5bebeb0 Modo Id
+md021-0003 d6ad41284f186af5 durante 3 turnos
+md021-0004 11fc79edf9569390 Ráfaga Chi X
+md021-0005 669f5c0212c25845 Atq Éter/neutro
+md021-0006 94412fd3d97988be Irradia calor
+md021-0007 c45ee9913b51503e Atq Éter/Fuego
+md021-0018 e8609c324ad333c4 Módulo guiado
+md021-0032 dc3ca8490f744b46 Repara Armazón
+md021-0034 57819620e5352cb8 La Ygg te cubre
+md021-0042 e8455c5c9f35d075 Lanzador MX
+md021-0044 e11e675f0f3eb7e6 Lanzador DMX
+md021-0109 5402e4262e64735a Atq Éter/neutro
+md021-0144 9b61f7bc10def364 Gran cañón Ygg
+md039-0004 3deb5d11aa2c475e Duerme al enemigo
+md039-0010 39fa3c9688bdca32 DUR enemiga baja
+md039-0019 1f48c21c25522c1a Usa Veneno
+md039-0021 493fb3d2f9e2b173 Éter baja
+md039-0031 bded107a8762b34c Rango A
+md039-0032 1cf30c340d130f44 Rango AA
+md039-0033 43a0407237068b6c Rango AAA
+md039-0050 5dfea41cac132f71 100 tiros
+md039-0061 01ba6b77da67b563 Atq Viento (100)
+md039-0062 a0afcce4147f5c0d Atq Tierra (100)
+md039-0063 882d885fc89b25bb Atq Fuego (100)
+md039-0064 dfd064e60201eb60 Atq Agua (100)
+md039-0067 41f5a2fd948c2c39 Atq Viento (ilim.)
+md039-0068 c2116470efd176b3 Atq Tierra (ilim.)
+md039-0069 4628214dcd8f4b81 Atq Fuego (ilim.)
+md039-0070 d7febf22414869fa Atq Agua (ilim.)
+md040-0031 13308ff2e7c4c31e Evasión / Def. Éter +10
+md040-0032 48df75346a342ff0 Éter / Defensa +10
+md040-0049 2be0a2bf177524f5 Defensa sube si aliado KO
+md040-0050 efc059f0258f0504 Defensa baja si aliado KO
+md040-0090 de40c950ccce3dea Ataque +2
+md040-0091 de3d6350cccb5ac1 Ataque +5
+md040-0092 ddfb1e94103dd004 Defensa +2
+md040-0093 de0550941046797f Defensa +5
+md040-0094 5b1f52b09e179eff Aumenta la precisión (+2)
+md040-0095 41c601b08fea3aae Aumenta la precisión (+5)
+md040-0096 d252fad706b1fa01 Evasión +2
+md040-0097 d25660d706b4dd2a Evasión +5
+md040-0098 6ae8cad55c3fa1a2 Éter +2
+md040-0099 6ae564d55c3cbe79 Éter +5
+md040-0100 d9bfe248ec7fc76d Def. Éter +2
+md040-0101 d9c34848ec82aa96 Def. Éter +5
+md040-0102 309667cdffad1e00 Agilidad +1
+md040-0103 30c961cdffd86d67 Agilidad +2
+md040-0104 c5f59ee41c919203 HP máx. +10% / recupera
+md040-0105 64c7c7fd5de4d493 HP máx. +25% / recupera
+md040-0106 e24b3f277b5a1cab Mitad de EP en combate
+md040-0107 a601e26e33b6fe33 Aprende G.mortales antes
+md040-0108 6890f7ec88169b38 EXP obtenida +50%
+md040-0109 a72335c9a2847dec Objetos raros más frecuentes
+md040-0110 132e760a74b5a43a Duplica duración de apoyos
+md040-0111 6f5bf2bd11b9ac5f G.mortal efecto Moneda Cielo
+md040-0112 e8823c53894e6ded Duplica los HP recuperados
+md040-0113 097b4bdd08a9426b Si bajan HP, sube el Ataque
+md040-0115 90cac4d1371bfe0a Aumenta la Evasión
+md040-0116 0fea93d572f5778d Ataque / Def. Éter +10
+md040-0117 4840328e80e3ff46 Ataque / Defensa +5
+md040-0118 1d6bf86b402a6683 Bloquea efectos FÍSICOS
+md040-0119 b6d29f15a5ad80c1 Bloquea efectos MENTALES
+md040-0120 1a32372761ceeb38 Bloquea Veneno
+md040-0121 7084630d4d16e17b Bloquea Sueño
+md040-0122 b03fc9b0eb99d7a8 Bloquea Confusión
+md040-0123 b65870e08bd631e1 Bloquea Olvido
+md040-0124 545a768fcc743a53 Mitad de tiempo entre turnos
+md040-0126 43266c543e59340e Usa 2x EP para 2x efecto
+md040-0127 c9888282880d7cc0 Bloquea ataques que roban EP
+md040-0128 265617bbadce6a9c Defensa contra Viento
+md040-0129 da6deb00cfed8ece Defensa contra Tierra
+md040-0130 bfd473317a15172c Defensa contra Fuego
+md040-0131 a0ea8725fc0991e3 Defensa contra Agua
+md040-0132 b5ecd76f8919f485 Elem. defendido cura HP
+md040-0133 ee7ffba4351ac45d Duplica la Def. elemental
+md040-0134 d51e7429d40b024a Def. elem. bloquea arma Éter
+md040-0135 39af7dd5a98c373a Hecho a mano por Chu-chu (?)
+md040-0138 21d9c48081a65765 Creador desconocido (?)
+md040-0140 c7613e3c8a7857bc Éter y Defensa +10
+md040-0142 e07167555cf4b6ff Tesoro de la tribu Chu-chu
+md044-0015 0be7ddd222dd983e Aleac.Z20/5
+md044-0021 746cd4ec24039d65 Aleac.Z30/10
+md044-0026 af5bbd6e254021fb Aleac.Z40/15
+md044-0030 e4cbfa90fa6b940e Metal RX 50
+md044-0031 466650fbe6786406 Aleac.Z50/20
+md044-0035 215327911cac7173 Metal RX 60
+md044-0036 31cd6446f1f17400 Aleac.Z60/25
+md044-0040 184a849117739a4c Metal RX 70
+md044-0041 668ebab15b0b4da5 Aleac.Z70/25
+md044-0045 0ff2999112d0e779 Metal RX 80
+md044-0046 dfe68706292873d0 Aleac.Z80/30
+md044-0050 06e9f6910d981052 Metal RX 90
+md044-0055 67febdea40a715de Oro Z 100
+md047-0001 7a0462193aff1dc5 Armadura 10
+md047-0002 5f9b31192beabca4 Armadura 20
+md047-0003 68a3d419312393cb Armadura 30
+md047-0004 4ea76319226b97ca Armadura 40
+md047-0005 56d6861926eba4b1 Armadura 50
+md047-0006 3d46d51918900dd0 Armadura 60
+md047-0007 45802a191d18c432 Armadura 75
+md047-0008 344bca191362c34d Armadura 90
+md047-0009 54b271df3f9c7559 Armadura 100
+md047-0010 fe3c6bdf0eaf2897 Armadura 120
+md047-0011 e3d33adeff9ac776 Armadura 150
+md047-0015 8535e8852ababda5 Armadura 200/Arm. Éter 50
+md047-0016 8afda4c5b89a7ce5 Armadura 250
+md047-0020 f23ff5ce7fb3a777 Armadura 300
+md047-0021 34b2c204acaa3e92 Armadura 300/Arm. Éter 100
+md047-0025 122729b57cefcbd8 Armadura 400
+md047-0026 92dfdf7cfb9d7110 Armadura 400/Arm. Éter 150
+md047-0030 7a67b9bd229cd1a5 Armadura 500
+md047-0031 1e5cf4201556c313 Armadura 500/Arm. Éter 200
+md047-0035 af47eda4bcaa98d6 Armadura 600
+md047-0036 aefbb7b1bc249ad5 Armadura 600/Arm. Éter 250
+md047-0040 a1e9cdacb0a956c3 Armadura 700
+md047-0041 8be9ae25a8c90c22 Armadura 700/Arm. Éter 250
+md047-0045 d7a381944b6fe834 Armadura 800
+md047-0046 7ad52613c180fff9 Armadura 800/Arm. Éter 300
+md047-0050 3f40f19bf0925651 Armadura 900
+md047-0055 87ea0359170f5f1d Armadura 1000
+md048-0001 218cf73d39c62729 Para Weltall 1800HP
+md048-0002 31b48e01e4fcb4b5 Para Weltall 2100HP
+md048-0003 b2803f5271750d31 Para Weltall 2500HP
+md048-0004 d05d007924358033 Para Weltall 3000HP
+md048-0005 43314a3709c8d29d Para Weltall 3600HP
+md048-0006 659aebe3ba414015 Para Weltall 4300HP
+md048-0007 1c4cad36bb7aa6a8 Para Weltall 5100HP
+md048-0008 7d39ed16db3bf941 Para Weltall 6100HP
+md048-0009 e8ddc75ff1ba2f20 Para Weltall 7300HP
+md048-0010 05f5d9a6ea088165 Para Weltall 8700HP
+md048-0011 cef7eb6baccf6049 Para Weltall 10400HP
+md048-0012 05f89c831e3b080b Para Weltall 12400HP
+md048-0013 d63b71ba53f021e9 Para Weltall 14800HP
+md048-0014 1d5d4162889dc243 Para Weltall 17700HP
+md048-0015 60242a2cfc6a1523 Para Weltall 21200HP
+md048-0016 ed430321e59560b9 Para Weltall 25400HP
+md048-0017 252999dc0500234a Para Xenogears 30400HP
+md048-0021 91056eb66bd7f6bd Para Vierge 1500HP
+md048-0022 dbdeb05ef199ea2c Para Vierge 1800HP
+md048-0023 ee094f88f1593407 Para Vierge 2200HP
+md048-0024 2b793bd92cb07a5e Para Vierge 2700HP
+md048-0025 ad48c5bbb69ade65 Para Vierge 3300HP
+md048-0026 c73480e0c21b0903 Para Vierge 4000HP
+md048-0027 6b41e8d3dc1f917b Para Vierge 4800HP
+md048-0028 d6d36d832a41ff48 Para Vierge 5800HP
+md048-0029 c20d4a3a6a557e76 Para Vierge 7000HP
+md048-0030 91ee2ea52be1f513 Para Vierge 8400HP
+md048-0031 aae2e324e36dee04 Para Vierge 9800HP
+md048-0032 9cc3984346a46fac Para Vierge 12000HP
+md048-0033 d291fd4fd44e2529 Para Vierge 14300HP
+md048-0034 9495dac360f279d3 Para Vierge 17000HP
+md048-0041 aad81a981e2db6d4 Para Heimdal 2500HP
+md048-0042 55b1a36c0e8ac420 Para Heimdal 3200HP
+md048-0043 e3e2ed22af8a3cc2 Para Heimdal 3800HP
+md048-0044 9553c0d6aadad16a Para Heimdal 4500HP
+md048-0045 430ee8fbfcfd5e7c Para Heimdal 5400HP
+md048-0046 c4ebfa7aca3ff7bd Para Heimdal 6400HP
+md048-0047 dc9a6efa80b6c14e Para Heimdal 7800HP
+md048-0048 a8b41118ab7235ee Para Heimdal 9200HP
+md048-0049 9c30c2a59a068a05 Para Heimdal 11000HP
+md048-0050 ee6e08a7f990fd8f Para Heimdal 13000HP
+md048-0051 7ca18632f6b7a131 Para Heimdal 15800HP
+md048-0052 9d0bd34abf98108d Para Heimdal 19000HP
+md048-0053 c5dac05dba73ca38 Para Heimdal 23000HP
+md048-0054 de5965e8f4278324 Para Heimdal 27000HP
+md048-0055 027f8b047ab4062e Para Heimdal 32000HP
+md048-0061 0e5ad045f8ff596a Para Brigandier 1900HP
+md048-0062 7104ac8a401da080 Para Brigandier 2200HP
+md048-0063 e94bd93ebf19fe99 Para Brigandier 2700HP
+md048-0064 1e38645201526957 Para Brigandier 3200HP
+md048-0065 e48d3ed3addcdcc5 Para Brigandier 3800HP
+md048-0066 9d89d57054b30b16 Para Brigandier 4600HP
+md048-0067 788d490fed6d4f8f Para Brigandier 5400HP
+md048-0068 a06557506a531272 Para Brigandier 6400HP
+md048-0069 7cc06c130729226a Para Brigandier 7700HP
+md048-0070 2d9728e7030d06da Para Brigandier 9100HP
+md048-0071 1ce091ac90e61f98 Para Brigandier 11000HP
+md048-0072 3f2e03a7662bade6 Para Brigandier 13000HP
+md048-0073 50af5c9317d233b4 Para Brigandier 15800HP
+md048-0074 7cb4ae9c7649a82a Para Brigandier 18500HP
+md048-0075 3b7b2670ac271d6c Para Brigandier 22200HP
+md048-0076 088e699072ca52c2 Para Brigandier 26000HP
+md048-0081 8693bb6b6e1ae17a Para Renmazuo 6000HP
+md048-0082 6991a8ed6fda7577 Para Renmazuo 7200HP
+md048-0083 3da09a0e373a6cb6 Para Renmazuo 8600HP
+md048-0084 6c7521c5bd7a0775 Para Renmazuo 10200HP
+md048-0085 e21e43e172c49215 Para Renmazuo 12000HP
+md048-0086 138058e799585e69 Para Renmazuo 14200HP
+md048-0087 7652c9ddcdebf9fe Para Renmazuo 17000HP
+md048-0088 d1f2c327c9759dd4 Para Renmazuo 20800HP
+md048-0089 f97fdbf708025200 Para Renmazuo 24800HP
+md048-0096 0d48eceafd65e297 Para Stier 5800HP
+md048-0097 c47bbad1847ac717 Para Stier 6900HP
+md048-0098 589d20746107a00a Para Stier 8200HP
+md048-0099 f40c3868e28a981b Para Stier 9800HP
+md048-0100 8c1aa200359cc7e7 Para Stier 11700HP
+md048-0101 4d49d02cd895155a Para Stier 13800HP
+md048-0102 aca895e752315b60 Para Stier 16500HP
+md048-0103 3bc7e5f99aee951c Para Stier 20000HP
+md048-0104 1d8b87dfcf3ac61b Para Stier 25000HP
+md048-0105 d17083f9b7814b85 Para Stier 30000HP
+md048-0106 d6756ae71f5ae603 Para Stier 36000HP
+md048-0126 cc6caf19e1a63cc2 Para Seibzehn 18000HP
+md048-0127 b939e832696b0013 Para Seibzehn 22000HP
+md048-0128 c45ca47be152cfe8 Para Seibzehn 30000HP
+md048-0129 58043b7ec51d1d90 Para Seibzehn 38000HP
+md048-0141 4a7581ab70984c80 Para Crescens 14000HP
+md048-0142 f46b881c54b9848b Para Crescens 17200HP
+md048-0143 ca43f63c06216e9f Para Crescens 20800HP
+md048-0144 6572e68c3d1c483b Para Crescens 24800HP
+md049-0001 4305ba104fe51777 Pot. 2 Comb. 1200
+md049-0002 f213383514bd8a9e Pot. 3 Comb. 1200
+md049-0003 727ec92135609d59 Pot. 4 Comb. 1200
+md049-0004 d0e16fcbfac9abd0 Pot. 5 Comb. 1200
+md049-0005 e8928191c51e1813 Pot. 6 Comb. 1200
+md049-0006 d6c61b0c434289fa Pot. 7 Comb. 1200
+md049-0007 bc1576c24ca17ce5 Pot. 8 Comb. 1200
+md049-0008 56b7efcf6418e2c1 Pot. 9 Comb. 1500
+md049-0009 d64d1c5619492273 Pot. 10 Comb. 2000
+md049-0010 ac7019bafba705e9 Pot. 12 Comb. 2000
+md049-0011 cb67789bb690d62a Pot. 13 Comb. 1700
+md049-0012 0d5f8b0eb34e6b7a Pot. 15 Comb. 2000
+md049-0013 8f04d1120051ef5b Pot. 18 Comb. 2000
+md049-0014 d2fa5902f654f457 Pot. 20 Comb. 2700
+md049-0015 068ed8d1aeed9df0 Pot. 23 Comb. 3000
+md049-0016 7ff74f82d701df60 Pot. 28 Comb. 2200
+md049-0019 2d51d8e519e041d5 Pot. 30 Comb. 4200
+md049-0020 2f73ad6f3eb5801e Pot. 35 Comb. 3500
+md049-0024 aee821bd516e27df Pot. 40 Comb. 5400
+md049-0025 3223eb8f0d11091d Pot. 45 Comb. 4600
+md049-0029 45e0880491f3b145 Pot. 50 Comb. 6600
+md049-0030 0fee1d0c379096ad Pot. 55 Comb. 5800
+md049-0034 10a645560d4d4857 Pot. 60 Comb. 7000
+md049-0039 39b68fb75c73c53f Pot. 70 Comb. 8000
+md049-0041 ef1879ce7c4922fc Pot. 70 Comb. 8900
+md049-0044 915868268b9415ec Pot. 80 Comb. 2000
+md049-0049 1120d79ae2d8acdb Pot. 90 Comb. 1500
+md049-0054 2dc2c641bdbb7e1e Pot. 100 Comb. 1000
+md050-0011 f0e607427e7edb00 Cámara dañada
+md050-0022 72165690d3fb7a4a Pérdida de potencia
+md050-0023 332333edbc2dd22e M.Éter silenciada
+md050-0061 8b8de033f30183be Atq Viento (100 tiros)
+md050-0062 5a0ef31d20db2e8c Atq Tierra (100 tiros)
+md050-0063 edf8f6bda4fc1286 Atq Fuego (100 tiros)
+md050-0064 3b0e82f5e92bca09 Atq Agua (100 tiros)
+md050-0065 a068b2069651f32e Anula Def. elem. rival
+md050-0067 f4bb5c1dff6a73a1 Mun.Atq Viento (ilim.)
+md050-0068 6cd134c473bc5193 Mun.Atq Tierra (ilim.)
+md050-0069 7561c8406c521819 Mun. Atq Fuego (ilim.)
+md050-0070 57649fc7c1373194 Mun. Atq Agua (ilim.)
+md051-0001 ed26e401c65aca66 Defensa de armadura +2
+md051-0002 ed237e01c657e73d Defensa de armadura +5
+md051-0003 ed128001c6497770 Defensa de armadura +8
+md051-0004 6dacb2041ad57b15 Defensa de armadura +10
+md051-0005 541d01040c79e434 Defensa de armadura +20
+md051-0006 5c4c240410f9f11b Defensa de armadura +30
+md051-0007 4b585604077acc41 Defensa de armadura +50
+md051-0008 1fc4f703eeb913b6 Defensa de armadura +80
+md051-0009 31a2cdf998809f29 Defensa de armadura +100
+md051-0010 6d8084041aaff200 Defensa de armadura +15
+md051-0011 424fb3040241f51a Defensa de armadura +40
+md051-0012 30ef2503f8666b20 Defensa de armadura +60
+md051-0013 7aaf0a3f254486be Daño de Gel -50%
+md051-0017 cabd0b67893b4d01 Daño de Rayo -50%
+md051-0020 f93d23a350f4ca29 Daño eléctrico -30%
+md051-0023 c10146f4f25a91ae Daño de Tensión -10%
+md051-0024 b47ef2892cf47ffd Daño de Tensión -20%
+md051-0025 237772804ea24aa8 Daño de Tensión -30%
+md051-0026 b09bd716a835748a Daño de Giro -10%
+md051-0027 b280f010b341bbad Daño de Sello -50%
+md051-0028 c27fb543766a5ea0 Daño de Sello -75%
+md051-0029 7931eff771da3433 Daño de Ángel -30%
+md051-0030 168913e6b1c333c1 Daño de Ángel -50%
+md051-0032 6f3cd23a25bdd648 Def. Éter de armadura +50
+md051-0033 87c03cacf0248baa Def. Éter de armadura +100
+md051-0034 b31d3bad08b811a5 Def. Éter de armadura +150
+md051-0035 7cd208c68fba0a19 Def. Éter de armadura +200
+md051-0036 0489caebdda203a9 Defensa contra Éter Tierra
+md051-0037 eeebe86fdd7fc997 Defensa contra Éter Viento
+md051-0038 f669fdb2bfc527d4 Defensa contra Éter Agua
+md051-0039 d175cfcbf7a88287 Defensa contra Éter Fuego
+md051-0041 b4c4ef52e86207cd Aumenta Reacción y Defensa
+md051-0043 e2a1dd3b5b57709d Aumenta la Reacción
+md051-0045 349c2d22173b515e Aumenta Agilidad en páramos
+md051-0046 4b0293eb17e24292 Aumenta Agilidad en nieve
+md051-0047 1939325c9175041a Aumenta Agilidad en desierto
+md051-0048 69c0f4e9b6c741d0 Aumenta Agilidad en agua
+md051-0049 ced0db75cd45ca4c Aumenta M.Éter y Def. Éter
+md051-0060 0c7f885726398d54 Daño de Rayo -75%
+md051-0061 48699fb3757d89bb Daño eléctrico -50%
+md051-0062 d03bfb893d299d22 Daño de Tensión -25%
+md051-0063 5b20c3fe6b85e312 Daño de Gas -20%
+md051-0064 6b0e586d4de7b118 Daño sónico -100%
+md051-0065 e240ec436ac261a9 Daño de Ángel -100%
+md051-0066 cc2ecce5a4293955 Aumenta Agilidad en agua
+md051-0069 2aaa790ce79419e8 Daño de Gel -100%
+md051-0070 6792071ac69967ed Daño de Sello -100%
+md051-0071 7a5a0ab64d8f0e85 Catalizador
+md051-0077 732753b14afa4ca3 Ahorra combustible
+md051-0078 f2b838e44ce4e054 Defender recupera más
+md051-0079 9b7718464e3b1163 Aumenta fuerza de M.Éter
+md051-0080 22d7ad33c012c8ff Evita daños en la cámara
+md051-0082 de7775113cdc7956 Puede bloquear armas Éter
+md051-0083 97299e34e7c7fce5 Protege la Máquina de Éter
+md051-0084 506e6f18b2e96208 Protege el motor del Gear
+md051-0085 e20a6300669dd8f7 Evita confusión del piloto
+md051-0086 4120458463d97335 Evita fugas y robo de comb.
+md051-0087 5f0ca74cdbd03af2 Evita perder Def. armadura
+md051-0088 d4d1be6918c2508a Evita el estado 'Lentitud'
+md051-0089 594d57287a48289c Evita corrosión de armadura
+md051-0090 823adcd8f385099b Recupera 10% de HP Armazón
+md051-0091 8f52f82fe3a7a27d Recupera 30% de HP Armazón
+md051-0092 dad098de4fec211f Recupera 50% de HP Armazón
+md051-0093 92c394eae7e9cfb1 Recupera 70% de HP Armazón
+md051-0094 cc71e92d11d32973 Recupera 90% de HP Armazón
+md051-0095 023ce90754b1e9d2 'Recargar' cura alteraciones
+md051-0096 a98d55cd0ae211d6 Activa G.mortales de nivel 1
+md051-0097 02b57bd9648e799b Activa G.mortales de nivel 2
+md051-0098 b7a616843901b598 Activa G.mortales de nivel 3
+md051-0099 e7e88e591b0e3cf9 Potencia del motor +20%
+md051-0100 cb89aa61971de706 Potencia del motor +50%
+md051-0101 77cb0aaf9606d9a3 'Recargar' repone 50 comb.
+md051-0102 765143f36d8d23d9 'Recargar' repone 100 comb.
+md051-0103 fdf9eb9e055fcf48 'Recargar' repone 200 comb.
+md052-0012 7bd5b9c9cb729818 Pone
+md052-0014 e5e6e0e38f30be49 a dormir
+md052-0019 97f5d3734dd578aa Ataque
+md052-0021 66e55417893328e0 Tierra
+md052-0057 f0507ed7d30dbacd Usa
+md052-0058 e0f4636d9afe43e2 Veneno
+md052-0063 2df92707590e1df3 Def Éter
+md052-0093 371d9c19d73dc97c Rango
+md052-0151 f0fadc478bb9e602 tiros
+md052-0201 0ecee6dec29191fa Viento
+md052-0203 bbbbdee7238e0439 (ilim.)
+md053-0093 fac7048020eb565a Evasión/
+md053-0095 3575339ec78ccce5 +10 cada
+md053-0096 60904d01f6681a81 Éter /
+md053-0097 aeff30969c0c3e02 Defensa
+md053-0148 caacd83efd080c04 sube si
+md053-0149 b9c4a31cfd66a747 aliado KO
+md053-0151 c86f52e86ce2dd85 baja si
+md053-0270 e05677376bacf234 Ataque
+md053-0271 199d83db95cc3745 +2
+md053-0274 19a0e9db95cf1a6e +5
+md053-0282 bf3ed942d3da9529 Precisión
+md053-0288 9204e62c6bde740f Evasión
+md053-0294 801270fddab59abc Éter
+md053-0306 22a29b6d2c890d19 Agilidad
+md053-0307 197821db95ac7482 +1
+md053-0312 3f330e47aff2db7c HP MÁX.
+md053-0313 08bdebe5dd02059a +10% y
+md053-0314 e305bc5f51d01ef7 recupera
+md053-0316 5d5b148dd812b1f6 +25% y
+md053-0318 9e82b4d6bba0b988 Mitad EP
+md053-0319 7a18781e561cdcb9 gastado
+md053-0320 2607839951bf2960 al luchar
+md053-0321 26bef85f491e3bb4 Aprende
+md053-0322 1e8d1edd7ac2d4d1 Golpes
+md053-0323 5564047a5791567c + rápido
+md053-0324 1820ca968c23097a Ptos. EXP
+md053-0325 ed80e1a81ace1a0d obtenidos
+md053-0326 6134beabf955e7eb +50%
+md053-0327 0eb7e9677479f274 Hallazgo
+md053-0328 12ef0f9403d24a90 obj. raro
+md053-0329 fb474e33a6a783bd aumenta
+md053-0330 e33bc1f4c4dc9b8d Apoyos
+md053-0331 9a712231a309e25c duran
+md053-0332 c93b0b1f9621fa0b el doble
+md053-0336 3b7e39cb166e73e6 Duplica
+md053-0337 a0e71905d695ba52 los HP
+md053-0338 93b78cf8055d67f5 curados
+md053-0339 d0aced77cd4fed00 Menos HP
+md053-0340 c8a64fec9036ea73 = más
+md053-0341 9f6311b40844b078 Ataque
+md053-0342 79761faf94abdbaf Aumenta
+md053-0348 df9e352bf6a8b251 Ataque/
+md053-0353 3059c09f42ea0fcd +5 cada
+md053-0355 08851ffe04773e7a FÍSICOS
+md053-0356 e26e5d82a110a01e (efectos)
+md053-0358 a27fcce24ec22190 MENTALES
+md053-0362 135896226f01e193 (efecto)
+md053-0364 96a25f3067897f2d Sueño
+md053-0370 e92444d540e1c9c9 Olvido
+md053-0372 1d867cbe9ac46d17 Mitad de
+md053-0373 c258dc8433e39b29 espera
+md053-0374 3bd407799e3dcc35 por turno
+md053-0378 1303034eca3eab4a 2x EP
+md053-0379 0bcb7db35840f570 para un
+md053-0380 05d8e3353653d242 efecto 2x
+md053-0382 46b5dc028973a210 Robo de
+md053-0383 dee6b12bf60cc7ab EP
+md053-0385 e5d1a21dfd69ca93 vs.Viento
+md053-0386 99e3ff4fc82f00eb elemental
+md053-0388 87ccfccebcd97d6f vs.Tierra
+md053-0391 f874385d1c13831b vs. Fuego
+md053-0394 c312d8267758c40e vs. Agua
+md053-0396 5ce0336f322f9b2e Elemento
+md053-0397 7acd99cee840880c defendido
+md053-0398 e0b90b65ee9f5895 cura HP
+md053-0399 eb6555dce63fb754 Duplica
+md053-0402 fd1146a17252b75d Def.elem.
+md053-0403 92b6584e3e740b79 bloquea
+md053-0404 114dc2e00f4ed0d5 arma Éter
+md053-0405 c61c940088f54b6a Hecho a
+md053-0406 821556183a7d4ed4 mano por
+md053-0414 05d42de9c4bad404 Creador
+md053-0415 44b01c2e1ba6671f anónimo
+md053-0427 c223dbc965b27f36 Tesoro
+md053-0428 c8317292a82b532c del clan
+md054-0030 88747edfdd686b0f Lentitud
+md054-0033 3f3c139fdd10e9dd Cámara
+md054-0034 51494c07898cd288 dañada
+md054-0066 e3c323b3aa09ca3b Baja de
+md054-0067 9bd035a8b4ab3433 potencia
+md054-0069 69f8914fa2e8088b M.Éter
+md054-0070 a4827e6509c43217 anulada
+md054-0197 55a0c05984ebd69f Def elem
+md055-0011 1996b7db95c670f3 +8
+md055-0014 f34b461f53ca7360 +10
+md055-0017 53004f1f8a1ec9d9 +20
+md055-0020 49f7ac1f84e5f2b2 +30
+md055-0023 5b583a1f8ec17cac +50
+md055-0026 41d6211f8071726f +80
+md055-0029 33a64b3b614191a6 +100
+md055-0032 f377741f53effc75 +15
+md055-0035 6460dd1f93fa53d3 +40
+md055-0038 3008d31f76398355 +60
+md055-0040 7a13282353e1e298 daño
+md055-0041 43daa50e1daa72f4 -50%
+md055-0051 872388522320b12f Rayo
+md055-0060 8a971c3178ffefbd Eléctrico
+md055-0062 8fa1211e3f500986 -30%
+md055-0069 257dbd6bd2ede2c4 Tensión
+md055-0071 f22ecd2eff4ff0b0 -10%
+md055-0074 23d841272057354b -20%
+md055-0078 f6d44abe7a6dbfd0 Giro
+md055-0081 93c190926165b1b3 Sello
+md055-0086 5210fffd9d952065 -75%
+md055-0097 c57b45548ffb81dd Def.Éter
+md055-0104 a3ac023ba08a7549 +150
+md055-0107 288d7797b284f49d +200
+md055-0124 42d023e1d790b85f Reacción
+md055-0125 079796f9e8565375 y Defensa
+md055-0137 314f8c22947b0d04 (páramo)
+md055-0140 a8c39c6e4fcca764 (nieve)
+md055-0143 2016b902645b9388 (desierto)
+md055-0146 40290001738b95de (agua)
+md055-0149 a30b242ab92b206c y Def.Éter
+md055-0188 82a6322755e734e0 -25%
+md055-0192 24f1e00fef8e8390 Sónico
+md055-0194 688cf6dd4a5d0d1e -100%
+md055-0200 850da59bccf317e3 (agua)
+md055-0231 d944ccccfa6b66b2 Ahorra
+md055-0233 12b72d99abcd7fb1 en su uso
+md055-0234 5b255caf3099d688 Defender
+md055-0235 efdc585caedc5450 mejorado:
+md055-0239 82d46e28f6564143 en fuerza
+md055-0240 cc6f0dfb5c1dafeb Evita
+md055-0242 a886bb68f13e2799 dañada
+md055-0246 0f05eb42e835a199 Bloquea
+md055-0248 7b3ef71878166243 en armas
+md055-0249 f2ecc711661bb08e Protege
+md055-0253 b7495455f5e186e2 Gear:
+md055-0256 bad62ca7fa82d250 Piloto:
+md055-0258 a788cbd292fd1301 Combust.:
+md055-0259 b22a9007feb2c6c9 sin fugas
+md055-0260 cfaa9cd95a321a35 ni robo
+md055-0262 06e722c3b35c8bca Pérdida de
+md055-0263 5f6c6aad1e738037 Def Armad.
+md055-0265 437f0a68159766bb 'Lentitud'
+md055-0269 110214099572910e corrosión
+md055-0270 6c0fb3186138bffb Recupera
+md055-0271 da318230eb540169 10% de
+md055-0274 f2665caf2d17a27f 30% de
+md055-0277 aaaf6d36f6192dd5 50% de
+md055-0280 264d1a50022da8bb 70% de
+md055-0283 00744bf04347e041 90% de
+md055-0285 06d073cea740f862 'Recargar'
+md055-0286 ada26f52b001073a cura
+md055-0287 7d16d7128c2aac3e estados
+md055-0288 e4b3c26be016c210 Activa
+md055-0289 1155e067688677df nivel 1 de
+md055-0290 78f3188d58feb5de G.mortales
+md055-0292 1159466768895b08 nivel 2 de
+md055-0295 115cac67688c3e31 nivel 3 de
+md055-0298 0d96a9f8ad40acc7 Potencia
+md055-0299 1c7c383cf700cd80 +20%
+md055-0302 fcb03455f9dbc267 +50%
+md055-0304 93922af8053da532 recupera
+md055-0305 af11c60be2f3c44d 50 comb.
+md055-0308 7a42f77e96fc879b 100 comb.
+md055-0311 586b345598631b06 200 comb.
+ml003-0000 df78ff1299c0cecd Nueva partida
+ml003-0001 f09f876134968303 Continuar
+ml003-0002 6c8d785fecee2376 Estado
+ml003-0003 0c15be88b05b6b5c Equipo
+ml003-0004 d41b406ec417f6ed Objetos
+ml003-0005 2a6295f360d65b26 Habilidades
+ml003-0007 13eedaf558a2f894 Archivo
+ml003-0008 2febc4e658aa85c9 Sonido
+ml003-0010 997b889229d85a90 Salir
+ml003-0013 1603966b99affc62 Comprar
+ml003-0014 77ad7194956ee5f4 Vender
+ml003-0015 ec17419ce629755e Saldo
+ml003-0016 8006b52111d0dd33 Técnicas
+ml003-0018 1791c9dabe07b510 Equipar
+ml003-0020 e780f76bb659c02a Accesorios
+ml003-0022 ad29ad7d8794d00d Tarjeta 1
+ml003-0023 ad3aab7d87a33fda Tarjeta 2
+ml003-0024 e13291a69775fc1a Cargar
+ml003-0025 6e4d1423316b9777 Guardar
+ml003-0026 101cad1515d9119f Copiar
+ml003-0027 ae247d5ba963ca6b Borrar
+ml003-0028 4bb0502758ecca75 Cambiar miembro
+ml003-0029 5c064e353111c091 Elige un nombre
+ml003-0032 d95b832f0311d2de Leyendo Memory Cards.
+ml003-0033 f86e0ab37a1c9ed5 No retires ni insertes
+ml003-0034 3bd3175d20a0a82e ninguna Memory Card.
+ml003-0035 b4177832611ab8f4 No hay Memory Card
+ml003-0038 fc51062cc664adeb Formateando
+ml003-0041 6fb6dfd767a7ac61 La Memory Card de la
+ml003-0042 b2c36383ddfb58ee ranura 1 no está
+ml003-0043 5e2005af2ad09c73 formateada.
+ml003-0045 0cc2ad564011ceab ranura 2 no está
+ml003-0047 befc325913c4f11e ¿Formatear la
+ml003-0049 a8d96ac6d1fc0a8f    Sí           No
+ml003-0050 7d6a7f2a1f6cca22 Guardando
+ml003-0053 836bb30d000d8b56 Error al guardar.
+ml003-0054 c3fa5a89b0fcddf5 Inténtalo de nuevo.
+ml003-0056 994e2412847a04da ¿Sobrescribir el
+ml003-0057 d7988614c6c2df93 archivo anterior?
+ml003-0059 dcc783c58722ccc2 Cargando
+ml003-0062 5f12904002ebbd10 Archivo ilegible.
+ml003-0065 ab81d2a813cc4ea5 Copiando
+ml003-0068 0644142e85ab6c5e Error al copiar.
+ml003-0071 3d553356a7ce1a25 ¿Copiar este archivo a
+ml003-0072 62b6a85bddf6185b la Memory Card 1?
+ml003-0074 42705d40c923950a Por favor, inserta una
+ml003-0075 686b533d5f9c4d50 Memory Card en la
+ml003-0076 aa007623f377057a ranura 1.
+ml003-0077 5d46012cbf223409 El archivo ya existe
+ml003-0078 051b2e91e15b98ab en la tarjeta de la
+ml003-0079 8c6695f0a3fbaa10 ranura 1. No se copia.
+ml003-0080 5bb173cbf57ef4be Borrando
+ml003-0083 c7f6f2948baf1792 Error al borrar.
+ml003-0086 c64b0314ef7d651f ¿Borrar este archivo?
+ml003-0089 7a75e4ac0486cf32 ¿Seguro que
+ml003-0090 0f8efdf784e4360a quieres borrarlo?
+ml003-0091 f15a0570cf7514c4 Borrar        Salir
+ml003-0092 9a917dd999838fcc Completado
+ml003-0095 28ac332131e2f29d Bloque libre.
+ml003-0096 d8fd6eccfa2ec455 ¿Guardar?
+ml003-0098 8805fcf9fc16c1cf Sin datos.
+ml003-0101 eb5631d1b85662e0 ¿Cargar este archivo?
+ml003-0109 aaf4fd735911442e Zona
+ml003-0114 0cf5f5e49f3d454f Pistola
+ml003-0115 e0a75128d6459fca Arma Éter D
+ml003-0116 e04ef528d5fa8da0 Arma Éter I
+ml003-0117 09c406084c9ffb2a Cañón
+ml003-0118 a824d59d9134c198 Golpes mortales
+ml003-0120 2d020d09a1320ccb Subir
+ml003-0121 f2b5165d100a42db Bajar
+ml003-0122 c8d8321e051e091d Combustible:
+ml003-0124 4774ae9dc6aef89d En reserva
+ml003-0127 67a627f06c7099af     No         Sí
+ml003-0128 3c748a158d123cc3 ¿Seguro que no
+ml003-0129 0a80aa817a01dfbc necesitas guardar?
+ml003-0131 ac1be6ac08bb824e INSERTA EL DISCO 1
+ml003-0134 abefb8ac0895f939 INSERTA EL DISCO 2
+ml003-0137 f7f98884e6138aac DISCO INCORRECTO
+ml003-0140 0919299d3c9e7069 ¿Cancelar las compras?
+ml003-0144 a13bc93e66dcc647 ¿De acuerdo?
+ml003-0146 20e338c3e0ba8195 ¿Cancelar las ventas?
+ml003-0152 409d215e3ccd7e75 Elige un miembro.
+ml003-0158 360adbec3ff6c3f6 Motor
+ml003-0159 03ef790602f2bf7d Armazón
+ml003-0160 5154cacda5a402e9 Armadura
+ml003-0162 d06fde598599c27e Combust.
+ml003-0163 209f106cdfa6a76c ¿Cambiar el equipo?
+ml003-0166 29b0aa44558dfea9 ¿Recuperar HP y comb.?
+ml003-0169 44c09872450c90e4 Dinero insuficiente.
+ml003-0170 b6e097f6170620ad ¿Comprar el máximo?
+ml003-0172 acb2aa4869eed0b7 No quedan bloques
+ml003-0173 1654f935ac43e0e8 libres.
+ml003-0175 0e2ab443c19c6986 ¡El equipo elegido
+ml003-0176 d54e697295f0b39b tiene valores menores
+ml003-0177 dd98287954ac9167 o iguales al actual!
+ml003-0178 94c0fd4bb457ce59 ¿Cambiar igualmente?
+ml003-0181 625d9480fc822724 ¿Reparar HP del Gear?
+ml003-0184 5646d598878d8e16 HP y combustible
+ml003-0185 4b0202a5e2c031a4 están al máximo.
+ml003-0186 ae80207dbc901896 Nada que recuperar.
+ml003-0188 d351e75c1dbe070a la Memory Card 2?
+ml003-0192 7eb10f23daef0c23 ranura 2.
+ml003-0195 a76d30d7b2b2d6c7 ranura 2. No se copia.
+ml003-0196 7d6c5754701cf17e No es un archivo de
+ml003-0197 34f2857d73aa6064 Xenogears. Podrás
+ml003-0198 a7b072de0c797011 guardar tras borrarlo.
+mm000-0006 9813b2ec12c0e71f Empezar el torneo
+mm000-0007 8da2cd9ed8eab209 Empezar combate Jugador vs CPU
+mm000-0008 fb1fee28d5e4ca7e Empezar Jugador 1 vs Jugador 2
+mm000-0009 8a66d05d80685f7b Empezar el modo demo
+mm000-0010 6025a45e5e8db0cb Fijar número de asaltos
+mm000-0011 147ad315c2b51e17 Fuerza del rival (CPU)
+mm000-0012 3d1fb3f5a2b42d63 Ajuste del modo Elástico
+mm000-0013 fb591fa93c33d0f7 Continuar el combate
+mm000-0014 5faba5e44a2a0ae4 Salir y volver al menú
+mm000-0015 fd9af4e4262120a8 Cambiar los ajustes
+mm000-0016 3646b2bbce163e7a Continuar el entrenamiento
+mm000-0017 507aac3c33f63cea Terminar el entrenamiento
+mm000-0018 8550c3770c185c72 Algoritmo del Gear rival...
+mm000-0019 6942055720f57f6b Velocidad de acción (pred.=4)
+mm000-0020 a0cb36965a4c823b Cámara lenta (pred.=30fps)
+mm000-0021 35fe3dcffca39192 Modo 'No hacer nada'
+mm000-0022 efe31fb71e7bf3cb Modo 'Solo defensa'
+mm000-0023 195c15094521168b 'Usar el controlador 2'
+mm000-0024 f3adf6ac97b7c8e9 Modo 'Ataque feroz'
+mm000-0025 8e692708b01ce69c Modo 'Ataque cercano'
+mm000-0026 0e8a4c39bc48ab4b Modo 'Ataque Bala de Éter'
+mm000-0027 a8c3dbe15ec3f8a8 'Salto + Ataque Bala de Éter'
+mm000-0028 7fac615fc98f16be Modo 'Solo saltar'
+mm000-0029 43be7e103d30e0cf Modo 'Persecución'
+mm000-0030 e0ec6b91bd5125cd Modo 'Huida'
+mm000-0031 ee89801b1c8f22e4 Modo 'Propulsor inverso'
+mm000-0032 3e9dd5aec52f0028 Battling nivel FÁCIL
+mm000-0033 301d808790b0ee7b Battling nivel NORMAL
+mm000-0034 bbe88c1dc4871ecf Battling nivel DIFÍCIL
+mm000-0035 cd153b1ad5b6f037 Elegir el modo del Gear 1
+mm000-0036 e52b3433bd8f4092 Elegir el modo del Gear 2
+mm000-0037 43318720395c233a Elige tu Gear
+mm000-0038 39f3dbd5227824e1 Elige el Gear rival
+mm000-0039 a9b9a24877184755 Elige el primer Gear
+mm000-0040 e0dd4929f962ade5 Elige el segundo Gear
+mm000-0041 353e43b9c4496fb3 Activar/desactivar vibración
+mm000-0042 66426688db857a78 ¿Aceptar? (Botón ○: cancelar)
+mm000-0043 67a791fc95452754 Bienvenido al modo Tutorial.{n}Aquí podrás aprender más sobre{n}los controles del 'Battling'.
+mm000-0044 32ba8eeaa2ad4dcb Elige un tema que quieras ver{n}y pulsa el botón ×.
+mm000-0045 3a63fab2180925bf El Battling es un juego de{n}combate uno contra uno entre{n}Gears, en un campo o arena{n}abierto y circular.{pause}{n}Un asalto termina cuando tu{n}Gear o el del rival recibe{n}demasiado daño y su Durabilidad{n}(H.P.) llega a cero.
+mm000-0046 92bb57239838fc38 La partida se juega en una{n}pantalla que muestra los dos{n}Gears de perfil.
+mm000-0047 2373201658cf29c2 Este es el Gear que controlas.{n}Empiezas el combate en el lado{n}izquierdo de la pantalla.
+mm000-0048 27a3b663c06df4ab Este es el Gear de tu rival.
+mm000-0049 44bfec7fc7af79cc Estas son las barras de{n}Durabilidad, que muestran el{n}daño. La de arriba es la tuya,{n}y la de abajo, la de tu rival.{p}Cuando atacas a tu rival, la{n}Durabilidad de su Gear baja.{n}La Durabilidad de la barra no{n}se puede recuperar.{p}Quien vacíe antes la barra de{n}Durabilidad (H.P.) del rival{n}será el ganador del asalto.
+mm000-0050 291e87fbbe74af08 Esta es tu barra de Calor.{p}Indica la temperatura de tu{n}Gear, que sube cuando usas el{n}Esprint o disparas Balas de{n}Éter.{pause}{n}La temperatura del Gear también{n}puede recuperarse, y eso se{n}refleja en el nivel de la{n}barra.
+mm000-0051 959ae19e5a5f88d7 Esta es la barra de Calor{n}de tu rival.
+mm000-0052 2a8a61af3aebcae2 Una de estas marcas se{n}enciende cada vez que ganas{n}un asalto.{pause}{n}Cuando ganes cierto número{n}de asaltos, obtendrás la{n}victoria del combate.
+mm000-0053 8ea19f1125d7cdb6 Cuando usas Balas de Éter o el{n}Esprint, tu barra de Calor{n}sube. ¡Tienes que evitar{n}calentarte demasiado!{p}La barra baja cuando usas{n}ataques normales o cuando{n}no haces nada en absoluto.{n}{pause}{n}Incluso al correr con{n}normalidad, baja poco a{n}poco.{n}{p}Si abusas de las Balas de Éter{n}y del Esprint, el ritmo de{n}enfriamiento no podrá seguir{n}el paso...{pause}{n}Si la barra de Calor llega a su{n}límite, tu Gear empezará a{n}sobrecalentarse...{n}{pause}{n}A partir de ese momento, usar{n}esas habilidades dañará tu{n}Gear y reducirá su{n}Durabilidad (H.P.).
+mm000-0054 5f7badf8a74d0a37 Cuando el indicador junto a la{n}barra de Calor está en azul,{n}puedes usar Balas de Éter y el{n}Esprint con normalidad.{pause}{n}Pero si usas esas habilidades{n}mientras el indicador está en{n}amarillo...{n}{pause}{n}tu barra de Calor superará su{n}límite y tu barra de{n}Durabilidad (H.P.) bajará.{n}{pause}{n}Cuando el indicador está en{n}rojo, no te queda Durabilidad{n}(H.P.) y no puedes disparar{n}más Balas de Éter.
+mm000-0055 08f2390d62805d6c Una estrategia es atacar a tu{n}rival todo lo que puedas{n}mientras aún te quede{n}Durabilidad (H.P.) de sobra.
+mm000-0056 364f8c06b2af685e Para acercarte a tu rival,{n}pulsa el botón de dirección{n}hacia él/ella.{p}Para alejarte de tu rival,{n}pulsa el botón de dirección{n}en sentido contrario.{p}Arriba / Abajo en el botón de{n}dirección te alejan / acercan{n}de la pantalla,{n}respectivamente.{p}Pulsa el botón △ para saltar.
+mm000-0057 cd98e54ae709062c Mantén pulsado el botón ○ al{n}moverte para hacer Esprint.{n}Correrás al doble de velocidad,{n}pero tu barra de Calor subirá.{pause}{n}No puedes hacer Esprint si la{n}barra de Calor está al máximo{n}o si tu barra de Durabilidad{n}(H.P.) está baja.{p}Además, tu barra de Calor no{n}bajará mientras estés en el{n}aire si saltas durante un{n}Esprint.
+mm000-0058 c2e50a81c64eb8c7 Si estás justo delante de tu{n}rival y pulsas el botón de{n}dirección para alejarte...{pause}{n}...podrás hacer un Retroceso{n}rápido (aceleración momentánea{n}hacia atrás). Úsalo para{n}esquivar al instante los{n}ataques de tu rival.
+mm000-0059 bbfc166a2020c4f5 Al moverte por el desierto, la{n}barra de Calor sube más rápido{n}de lo normal. La aceleración{n}tampoco responde tan bien.
+mm000-0060 2ab013c8d6c9ccea No puedes hacer Esprint en las{n}zonas de agua. El agua absorbe{n}además las Balas de Éter, así{n}que no puedes disparar bajo el{n}agua.{pause}{n}Sin embargo, la barra de Calor{n}baja algo más rápido cuando{n}tu Gear está en el agua.
+mm000-0061 f91739975f6c90f2 Puedes usar los botones □ y ×{n}para atacar.{p}Por ejemplo, si pulsas el botón{n}□ una sola vez, iniciarás una{n}secuencia de ataque.{pause}{n}{wait 120}{n}Si no pulsas otro botón{n}mientras tanto, simplemente{n}realizarás el ataque del botón{n}□ y terminarás.{p}Ahora mira qué pasa si pulsamos{n}otro botón de ataque antes de{n}que termine el movimiento del{n}primer ataque...{pause}{n}Sirve tanto □ como ×, pero{n}aquí probaremos a pulsar el{n}botón × tras nuestro primer{n}ataque con el botón □.{pause}{wait 120}{n}... El ataque del botón ×{n}sigue justo después del ataque{n}del botón □.{n}{pause}{n}Así puedes introducir hasta{n}tres ataques por adelantado y{n}ejecutarlos en una rápida{n}secuencia.{p}El tipo de ataque cambia según{n}el número de veces y el orden{n}en que se pulsan los botones{n}□ y ×.{p}Prueba a combinar los botones{n}de ataque en el orden que{n}quieras. Por ejemplo, {pause}□×□,{wait 120}{n}{pause}□□□,{wait 120} {pause}××□{wait 120} etcétera.{pause}{n}En total hay 14 combinaciones{n}de ataque distintas para que{n}las pruebes.{n}{p}Puedes introducir hasta 3{n}ataques antes de que termine{n}el primero.{pause}{n}Entre tus rivales hay Gears{n}que solo pueden atacar hasta{n}2 veces seguidas.{n}
+mm000-0062 8af35fba8c3a41f7 Para atacar a distancia, pulsa{n}el botón R1 y lanzarás una{n}'Bala de Éter'.{n}{pause}{n}Las Balas de Éter persiguen al{n}enemigo, pero se disipan al{n}chocar con cosas como muros{n}o agua.{p}Con cada disparo, la barra de{n}Calor sube notablemente.{pause}{n}Si no tienes cuidado, puedes{n}perder toda tu Durabilidad{n}(H.P.) solo por disparar Balas{n}de Éter sin parar.{pause}{n}Así que vigila siempre tu{n}barra de Calor para no{n}perder Durabilidad.{n}{p}Si tu rival te dispara una Bala{n}de Éter, haz Esprint o salta{n}para esquivarla.{pause}{n}Además, si golpeas la espalda{n}del enemigo mientras huye,{n}quizá logres derribarlo.
+mm000-0063 e840e9accb260d2c A veces no podrás esquivar el{n}ataque de tu rival con solo{n}apartarte de su camino.{pause}{n}En esos casos, lo mejor es usar{n}el botón L1 para protegerte de{n}los ataques enemigos.{n}{p}Si el enemigo está a punto de{n}golpearte y crees que no{n}podrás esquivarlo...{pause}{n}pulsa el botón L1 para{n}ponerte en guardia.{pause}{n}Si logras protegerte a tiempo,{n}el daño del ataque de tu rival{n}se reducirá a la mitad.{p}Sin embargo, no puedes{n}protegerte de los ataques{n}que vienen por detrás.{p}Puede que al principio cueste,{n}pero cuando te acostumbres,{n}la guardia será seguramente{n}una táctica útil.
+mm000-0064 30fb602e77e00ed7 Battling Elástico
+mm000-0065 84a53dd633c229a6 Aquí termina el tutorial...{n}¿Por qué no pruebas ahora el{n}'Modo Entrenamiento'? ¡Suerte!{n}¡Y diviértete con el Battling!
+mm000-0066 d3cddd8626097272 Sobre el Battling{n}Pantalla{n}Movimiento{n}Ataque{n}Barras de Calor{n}Balas de Éter{n}Defensa{n}Terminar tutorial
+mm000-0067 d3004806fd8363fc Leonard{n}"¡Hm! Nada mal.{p}Como quieras, entonces...{n}¡Se acabó el recreo!{p}Pongámonos serios..."
+mm000-0068 80c1359972c6bf32 Leonard{n}"¡Bah! Eso no fue nada.{p}¡Basta ya de juegos!{n}Pongámonos serios..."
+mr000-0000 341278971bc58b04 Sig. LV
+mr003-0000 0e7be530f1224c27 COMB
+mr004-0000 1deb33570b278e2d PESO

@@ -39,15 +39,15 @@ def region(active, translations, glyphs, entries=()):
     the glyphs' recipes, the language's records ascending by hash, its
     records of single entries ascending by name, then the texts.
     `translations` and `entries`: (hash or name, bytes, columns, rows);
-    `glyphs`: (base, drop, clear, accent rows[, wide])."""
+    `glyphs`: (base, drop, clear, accent rows[, flags: 1 wide, 2 turned])."""
     glyphs_at = 32 + 16
     records = glyphs_at + 28 * len(glyphs)
     alone = records + 16 * len(translations)
     out = bytearray(alone + 16 * len(entries))
     struct.pack_into("<IIIII", out, 0, 0x32434C58, active, 1, LOCALE + glyphs_at, len(glyphs))
     struct.pack_into("<IIII", out, 32, LOCALE + records, len(translations), LOCALE + alone, len(entries))
-    for n, (base, drop, clear, accent, *wide) in enumerate(glyphs):
-        struct.pack_into("<BBHH11H", out, glyphs_at + 28 * n, base, *(wide or [0]), drop, clear, *accent)
+    for n, (base, drop, clear, accent, *flags) in enumerate(glyphs):
+        struct.pack_into("<BBHH11H", out, glyphs_at + 28 * n, base, *(flags or [0]), drop, clear, *accent)
     for n, (digest, data, columns, rows) in enumerate([*sorted(translations), *sorted(entries)]):
         struct.pack_into("<IIIBBH", out, records + 16 * n, digest & 0xFFFFFFFF, digest >> 32, LOCALE + len(out), columns, rows, 0)
         out += data
@@ -285,6 +285,24 @@ u16 gear_shop_gear_values_frame_x_table[14];
         self.assertEqual(port_native.read(SPECIAL, 22), before, "the special glyph's rows put back")
         self.lib.text_draw_glyph(0x30, 0x41, None, 8, 0)
         self.assertEqual(self.word("test_glyph"), 0x30, "any other glyph is the original's")
+
+    def test_a_turned_letter_is_its_base_turned_a_half_turn_within_its_ink_under_an_upright_accent(self):
+        # A stand-in base at 0x57: columns 1-3 of row 2, column 8 (the high
+        # byte's first) of row 3 and column 2 of row 7, its ink rows 2-7 and
+        # columns 1-8; the accent a dot in column 0 of row 0.
+        font = bytearray(port_native.read(FONT, 14 + 22 * 0x50))
+        for row, bits in ((2, 0x70), (3, 0x8000), (7, 0x20)):
+            struct.pack_into("<H", font, 14 + 22 * (0x57 - FIRST) + 2 * row, bits)
+        port_native.write(FONT, bytes(font))
+        self.install(0, glyphs=((0x57, 0, 0, (0x80,) + (0,) * 10, 2), (0x57, 0, 0, (0,) * 11, 3)))
+        self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x20), 2, "a turned letter is narrow")
+        self.assertEqual(self.lib.text_get_glyph_width(0xFF, 0x21), 3, "unless its recipe makes it wide too")
+        before = port_native.read(SPECIAL, 22)
+        self.lib.text_draw_glyph(0xFF, 0x20, None, 8, 0)
+        rows = list((ctypes.c_ushort * 11).in_dll(self.lib, "test_rows"))
+        # Row r becomes row 9 - r and column c column 9 - c, in the box its ink filled.
+        self.assertEqual(rows, [0x80, 0, 0x01, 0, 0, 0, 0x40, 0x8003, 0, 0, 0])
+        self.assertEqual(port_native.read(SPECIAL, 22), before, "the special glyph's rows put back")
 
     def test_the_japanese_texts_glyphs_are_drawn_from_the_japanese_font_through_the_special_glyph(self):
         """xem_core::japanese's codes: F0 c the Japanese font's one-byte glyph

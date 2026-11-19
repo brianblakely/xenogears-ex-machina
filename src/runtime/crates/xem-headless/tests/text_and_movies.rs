@@ -22,7 +22,7 @@
 //! after one); and the game's opening chapter, New Game to
 //! Fei's room, plays with the settings' defaults to the original's memory
 //! and with every scene option to the same story value through the same
-//! maps and battle. In each translation, Brazilian Portuguese, French and Italian
+//! maps and battle. In each translation, Brazilian Portuguese, French, Italian and Spanish
 //! (docs/runtime.md, Languages), a window shows its message's translation
 //! and keeps it through a change of language, the next message taking the
 //! new one; the timed scenes and the opening chapter reach the same ends,
@@ -1143,7 +1143,7 @@ fn a_window_shows_its_messages_translation_and_keeps_it_through_a_change_of_lang
     let (mut english, _) = boot(&disc, &Default::default()).expect("boot");
     let (pointer, original) = opening_message(&mut english);
     assert!(ram(pointer), "English: the window reads the message in RAM ({pointer:#x})");
-    for language in [Language::BrazilianPortuguese, Language::French, Language::Italian] {
+    for language in [Language::BrazilianPortuguese, Language::French, Language::Italian, Language::Spanish] {
         a_window_keeps_its_translation(&disc, language, &original);
     }
 }
