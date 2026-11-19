@@ -1,0 +1,1 @@
+- The list of Settings sections scrolls where it doesn't all fit: the sidebar in a short window, and the tabs on a small screen, which now have more room each. Swipe them or turn the mouse wheel over them; a faded edge shows that more sections lie past it, and the section you choose comes into view.

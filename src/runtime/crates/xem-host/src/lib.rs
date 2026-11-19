@@ -119,24 +119,6 @@ pub fn app_reply(result: Result<String, String>) -> serde_json::Value {
     }
 }
 
-/// The Debug section's line while RetroAchievements' hardcore mode is on
-/// (the session refuses its tests).
-const HARDCORE_DEBUG: &str = "Debug tests are disabled in RetroAchievements hardcore mode.";
-
-/// A time control's refusal on the HUD (fast-forward's toggle, a rewind
-/// held): the panel's error bar is hidden during play, and the player
-/// pressed a key or a chord. (Hardcore mode refuses both; a held rewind
-/// without history is refused too.)
-pub(crate) fn time_notice(hud: &mut FrameRateUi, request: &AppRequest, result: &Result<String, String>, now: std::time::Duration) {
-    let Err(error) = result else { return };
-    let title = match request {
-        AppRequest::Action(xem_settings::AppAction::ToggleFastForward) => "Could not fast-forward",
-        AppRequest::Rewind(true) | AppRequest::UiRewind(true) => "Could not rewind",
-        _ => return,
-    };
-    hud.notify(xem_ui::NoticeKind::Failure, title, error, 8, now);
-}
-
 /// `xem-desktop --save-state-at FRAME:PATH`, in the window and in a
 /// headset: once the game has run FRAME frames (its frame limit holds it
 /// there), its state written to `path` as Save state writes one; the line
@@ -545,7 +527,7 @@ impl View {
 
     /// RetroAchievements for this host (desktop, Android): the account is
     /// kept in `directory` (beside the settings), the panel's Achievements
-    /// section offers sign-in and hardcore mode.
+    /// section offers sign-in.
     pub fn enable_achievements(&mut self, directory: Option<&std::path::Path>) {
         let achievements = achievements::HostAchievements::new(directory);
         achievements.attach(&self.ui);
@@ -614,10 +596,7 @@ impl View {
     /// on the HUD, and its line where operations are told.
     pub fn app_command(&mut self, mut game: Option<&mut Game>, request: AppRequest) -> Result<String,String> {
         let result = self.operations.execute(request,None,game.as_deref_mut(),&mut self.settings.borrow_mut());
-        match request {
-            AppRequest::Action(action) => self.state_notice(action,&result),
-            _ => time_notice(&mut self.frame_rate, &request, &result, self.frame_rate_started.elapsed()),
-        }
+        if let AppRequest::Action(action) = request { self.state_notice(action,&result); }
         self.log_operation(&request,&result,game);
         self.show_result(result.clone());
         result
@@ -693,23 +672,16 @@ impl View {
             let result = self.operations.execute(request,Some(window),game.as_mut(),&mut self.settings.borrow_mut());
             if let AppRequest::Action(action) = request {
                 if result.is_err() || !self.operations.busy { self.state_notice(action,&result); }
-            } else {
-                time_notice(&mut self.frame_rate, &request, &result, self.frame_rate_started.elapsed());
             }
             self.log_operation(&request,&result,game.as_mut());
             self.show_result(result);
         }
         if let Some(achievements) = &mut self.achievements {
-            let hardcore = self.settings.borrow().settings().retroachievements.hardcore;
-            achievements.update(game.as_mut(), hardcore, self.ran > 0, &self.ui, &mut self.frame_rate, self.frame_rate_started.elapsed());
+            achievements.update(game.as_mut(), self.ran > 0, &self.ui, &mut self.frame_rate, self.frame_rate_started.elapsed());
         }
         if let Some(game) = game {
             let (debug_busy, debug_message) = game.debug_status();
-            if game.hardcore() {
-                self.ui.set_debug_status(false, false, HARDCORE_DEBUG);
-            } else {
-                self.ui.set_debug_status(true, debug_busy, debug_message);
-            }
+            self.ui.set_debug_status(true, debug_busy, debug_message);
             let (forward,rewind) = game.time_activity();
             self.frame_rate.set_activity(forward,rewind);
             let settings = self.settings.borrow();
@@ -756,9 +728,6 @@ impl View {
 
     fn state_notice(&mut self, action: xem_settings::AppAction, result: &Result<String,String>) {
         use xem_settings::AppAction::*;
-        if action == ToggleFastForward {
-            return time_notice(&mut self.frame_rate, &AppRequest::Action(action), result, self.frame_rate_started.elapsed());
-        }
         let saved = match action { SaveState | ExportState => true, LoadState | ImportState => false, _ => return };
         if result.as_ref().is_ok_and(|text| text == "File operation canceled.") { return; }
         self.frame_rate.notify_state(saved,result.as_ref().err().map(String::as_str),self.frame_rate_started.elapsed());
@@ -1405,7 +1374,14 @@ impl View {
 
         let target_size = self.target_size;
         let presentation = self.settings.borrow().settings().presentation.clone();
-        self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
+        // The HUD stands at the safe area's top left; while the touch deck
+        // shows, it keeps clear of the deck's controls level with it (its
+        // top buttons on a phone).
+        let scale = self.ui.scale_factor();
+        let hud_at = (safe.x + 8.0 * scale, safe.y + 8.0 * scale);
+        let deck = self.deck.controls.iter().filter(|_| touch_shown).map(|(_, rect)| (rect.x, rect.y, rect.width, rect.height));
+        self.frame_rate.keep_clear(hud_at, scale, deck);
+        self.frame_rate.frame(self.frame_rate_started.elapsed(),scale,presentation.show_fps)
             .map_err(|error| error.to_string())?;
         // Under Force 4:3 the picture's place follows the game's own lines,
         // whatever size the frame was drawn at: game frames, rebuilt movies
@@ -1486,8 +1462,7 @@ impl View {
         }
         if self.frame_rate.visible() {
             let (width,height) = self.frame_rate.size();
-            let margin = 8.0*self.ui.scale_factor();
-            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:safe.x+margin,y:safe.y+margin,width:width as f32,height:height as f32 },target_size);
+            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:hud_at.0,y:hud_at.1,width:width as f32,height:height as f32 },target_size);
             counter.srgb_encoded = true;
             counter.filter = wgpu::FilterMode::Nearest;
             quads.push(counter);
@@ -1724,6 +1699,84 @@ mod tests {
     /// opaque as the setting says, but a control a finger holds, drawn
     /// whole; it stays under the open settings panel, holding nothing, so
     /// that the setting shows beside the panel as it changes. The deck's RUN
+    /// On a phone the touch deck's top buttons stand at the screen's top
+    /// right, level with the HUD: the HUD (the FPS counter, fast-forward,
+    /// an unlock's notice with its badge) narrows to keep a margin from
+    /// them, and takes its whole width again without the deck. For a review
+    /// capture (`XEM_UI_CAPTURE_DIR`), `XEM_HUD_PICTURE` and `XEM_HUD_BADGE`
+    /// may give the game's picture and the badge (PNGs).
+    #[test]
+    fn the_hud_keeps_clear_of_the_touch_decks_top_buttons() {
+        use xem_assist::touch::Control;
+        use xem_core::context::Context;
+        use xem_settings::{Assisted, SettingChange};
+        let rgba = |path: &std::ffi::OsStr| {
+            let mut decoder = png::Decoder::new(std::io::BufReader::new(std::fs::File::open(path).unwrap()));
+            decoder.set_transformations(png::Transformations::normalize_to_color8() | png::Transformations::ALPHA);
+            let mut reader = decoder.read_info().unwrap();
+            let mut pixels = vec![0; reader.output_buffer_size().unwrap()];
+            let frame = reader.next_frame(&mut pixels).unwrap();
+            assert_eq!(frame.color_type, png::ColorType::Rgba);
+            pixels.truncate(frame.buffer_size());
+            ((frame.width, frame.height), pixels)
+        };
+        let encode = |(width, height): (u32, u32), pixels: &[u8]| {
+            let mut out = Vec::new();
+            let mut encoder = png::Encoder::new(&mut out, width, height);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            encoder.write_header().unwrap().write_image_data(pixels).unwrap();
+            out
+        };
+        let (picture_size, picture) = std::env::var_os("XEM_HUD_PICTURE").map(|path| rgba(&path))
+            .unwrap_or_else(|| ((320, 240), (0..320 * 240).flat_map(|_| [96, 96, 96, 255]).collect()));
+        let badge = std::env::var_os("XEM_HUD_BADGE").map(|path| { let (size, pixels) = rgba(&path); encode(size, &pixels) })
+            .unwrap_or_else(|| encode((64, 64), &(0..64 * 64).flat_map(|i| if (i % 64 - 32i32).pow(2) + (i / 64 - 32i32).pow(2) < 400 { [240, 199, 94, 255] } else { [30, 50, 110, 255] }).collect::<Vec<u8>>()));
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        settings.borrow_mut().apply(SettingChange::ShowFps(true)).unwrap();
+        // The Android smoke's emulator: 1080x2400 at density 2.625.
+        let (width, height, scale) = (1080u32, 2400u32, 2.625f32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8Unorm, (width, height), scale, settings.clone(), false).unwrap();
+        view.set_game_image(&gpu, picture_size, &picture);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("phone target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        view.render(&gpu, &output, 0.0).unwrap();
+        let whole = (xem_ui::FrameRateUi::WIDTH * scale).round() as u32;
+        assert_eq!(view.frame_rate.size().0, whole, "no deck: the HUD's whole width");
+        // A finger has touched the game: the deck shows, its top buttons
+        // level with the HUD; fast-forward runs and an achievement unlocks.
+        view.touched = true;
+        view.arrange(Context::Walk);
+        view.frame_rate.set_activity(true, false);
+        let now = view.frame_rate_started.elapsed();
+        view.frame_rate.notify(xem_ui::NoticeKind::Achievement, "Welcome to Lahan", "Arrive in Lahan village · 5 points", Some(&badge), 6, now);
+        view.render(&gpu, &output, 0.0).unwrap();
+        let top = view.deck.controls.iter().filter(|(control, _)| matches!(control, Control::Start | Control::Settings)).map(|(_, rect)| rect.x).fold(f32::MAX, f32::min);
+        let margin = 8.0 * scale;
+        let right = margin + view.frame_rate.size().0 as f32;
+        assert!(view.frame_rate.size().0 < whole && right + margin <= top + 1.0, "the HUD ends at {right}, a margin before the deck's top buttons at {top}");
+        assert_eq!(view.frame_rate.notice().as_deref(), Some("Welcome to Lahan: Arrive in Lahan village · 5 points"));
+        if let Some(directory) = std::env::var_os("XEM_UI_CAPTURE_DIR") {
+            let directory = std::path::PathBuf::from(directory);
+            std::fs::create_dir_all(&directory).unwrap();
+            let image = xem_render::read_rgba8(&gpu.device, &gpu.queue, &target);
+            std::fs::write(directory.join("phone-unlock-with-touch-deck.png"), encode((width, height), &image)).unwrap();
+        }
+        // Touch controls turned off: the deck goes, the HUD is whole again.
+        let assisted = settings.borrow().settings().assisted;
+        settings.borrow_mut().apply(SettingChange::Assisted(Assisted { touch_controls: false, ..assisted })).unwrap();
+        view.render(&gpu, &output, 0.0).unwrap();
+        assert_eq!(view.frame_rate.size().0, whole);
+    }
+
     /// is the Run by default setting, lit while on.
     #[test]
     fn the_touch_deck_is_drawn_at_the_settings_opacity_and_its_run_key_is_the_run_by_default_setting() {

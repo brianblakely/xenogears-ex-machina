@@ -211,7 +211,6 @@ fn operate(
             println!("hud notice={:?}", hud.notice().unwrap_or_default());
         }
     }
-    crate::time_notice(hud, &request, &result, elapsed);
     println!("{}", crate::operation_line(&request, &result, Some(game)));
     match &result {
         Ok(_) => ui.clear_operation_error(),
@@ -763,19 +762,14 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let _ = operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui);
         }
         if let Some(achievements) = &mut achievements {
-            let hardcore = settings.borrow().settings().retroachievements.hardcore;
-            achievements.update(Some(&mut game), hardcore, last_ran > 0, &ui, &mut hud, start.elapsed());
+            achievements.update(Some(&mut game), last_ran > 0, &ui, &mut hud, start.elapsed());
         }
         let (fast_forward,status) = game.time_status();
         if assist.headset.pauses.settings && game.session.debug.busy() {
             if let Err(error) = game.session.tick_debug() { ui.set_operation_error(&error); }
             game.pause();
         }
-        if game.hardcore() {
-            ui.set_debug_status(false, false, crate::HARDCORE_DEBUG);
-        } else {
-            ui.set_debug_status(true, game.session.debug.busy(), &game.session.debug.message);
-        }
+        ui.set_debug_status(true, game.session.debug.busy(), &game.session.debug.message);
         ui.set_time_status(Some(fast_forward),&status);
         ui.set_storage_status(&game.storage_status());
         let japanese = game.japanese();

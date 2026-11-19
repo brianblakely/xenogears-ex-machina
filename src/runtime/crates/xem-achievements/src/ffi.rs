@@ -128,13 +128,15 @@ pub const RC_EXPIRED_TOKEN: c_int = -35;
 
 pub const RC_CLIENT_LOG_LEVEL_INFO: c_int = 3;
 
+/// An achievement's state, as its image shows it (unlocked: in colour).
+pub const RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED: c_int = 2;
+
 pub const RC_CLIENT_EVENT_ACHIEVEMENT_TRIGGERED: u32 = 1;
 pub const RC_CLIENT_EVENT_LEADERBOARD_STARTED: u32 = 2;
 pub const RC_CLIENT_EVENT_LEADERBOARD_FAILED: u32 = 3;
 pub const RC_CLIENT_EVENT_LEADERBOARD_SUBMITTED: u32 = 4;
 pub const RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_SHOW: u32 = 7;
 pub const RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_UPDATE: u32 = 9;
-pub const RC_CLIENT_EVENT_RESET: u32 = 14;
 pub const RC_CLIENT_EVENT_GAME_COMPLETED: u32 = 15;
 pub const RC_CLIENT_EVENT_SERVER_ERROR: u32 = 16;
 pub const RC_CLIENT_EVENT_DISCONNECTED: u32 = 17;
@@ -155,7 +157,6 @@ unsafe extern "C" {
     pub fn rc_client_create(read_memory: rc_client_read_memory_func_t, server_call: rc_client_server_call_t) -> *mut rc_client_t;
     pub fn rc_client_destroy(client: *mut rc_client_t);
     pub fn rc_client_set_hardcore_enabled(client: *mut rc_client_t, enabled: c_int);
-    pub fn rc_client_get_hardcore_enabled(client: *const rc_client_t) -> c_int;
     pub fn rc_client_set_userdata(client: *mut rc_client_t, userdata: *mut c_void);
     pub fn rc_client_get_userdata(client: *const rc_client_t) -> *mut c_void;
     pub fn rc_client_set_host(client: *mut rc_client_t, hostname: *const c_char);
@@ -175,6 +176,8 @@ unsafe extern "C" {
         callback: rc_client_callback_t, userdata: *mut c_void) -> *mut rc_client_async_handle_t;
     pub fn rc_client_unload_game(client: *mut rc_client_t);
     pub fn rc_client_get_game_info(client: *const rc_client_t) -> *const rc_client_game_t;
+    pub fn rc_client_achievement_get_image_url(achievement: *const rc_client_achievement_t, state: c_int, buffer: *mut c_char,
+        buffer_size: usize) -> c_int;
     pub fn rc_client_do_frame(client: *mut rc_client_t);
     pub fn rc_client_idle(client: *mut rc_client_t);
     pub fn rc_client_reset(client: *mut rc_client_t);

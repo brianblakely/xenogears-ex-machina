@@ -19,9 +19,8 @@
 //! prints where the elements of an accessible label lie (logical x, y,
 //! width, height), for tests that tap the panel. `--achievements STATE`
 //! shows RetroAchievements as a native host's client gives it (a stand-in
-//! account and game): `signed-out`, `signed-in` or `hardcore` (signed in
-//! with hardcore mode on, which the Time and Saves sections then say);
-//! without it, as a browser shows it.
+//! account and game): `signed-out` or `signed-in`; without it, as a
+//! browser shows it.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -97,17 +96,12 @@ fn main() {
         ui.set_achievements_offered(true);
         ui.on_achievements_request(|request| eprintln!("{request:?}"));
         let signed_in = state != "signed-out";
-        let hardcore = state == "hardcore";
-        if hardcore {
-            settings.borrow_mut().apply(xem_settings::SettingChange::RetroAchievements(xem_settings::RetroAchievements { hardcore: true })).unwrap();
-        }
         ui.set_achievements(&if signed_in {
             AchievementsView {
                 account: AchievementsAccount::SignedIn,
                 user: "Signed in as Player · 1234 points".into(),
                 game: "Xenogears: 1 of 2 achievements unlocked, 5 of 15 points.".into(),
                 error: String::new(),
-                hardcore_active: hardcore,
             }
         } else {
             AchievementsView { game: "Sign in to load the game's achievements.".into(), ..Default::default() }

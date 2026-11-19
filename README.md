@@ -165,9 +165,8 @@ load times can be switched off, so areas and battles open almost at once.
 
 Sign in to [RetroAchievements](https://retroachievements.org) on a computer,
 Android or a headset and earn Xenogears' achievement set as you play, from the
-game's own memory, just as you would with an emulator. Hardcore mode turns off
-save states, fast-forward and rewind for players who want the console's
-challenge.
+game's own memory, just as you would with an emulator. Each unlock pops up
+over the game with the achievement's badge.
 
 ### Hear the world around you
 

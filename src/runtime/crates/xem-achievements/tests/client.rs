@@ -1,8 +1,9 @@
 //! The client against a stand-in RetroAchievements server (plain HTTP on
 //! this machine, answering as rcheevos' own tests have the server answer):
 //! sign-in by password and by the kept token, the game's achievements
-//! loaded by the disc's hash, unlocks from the game's memory sent as
-//! softcore or hardcore, hardcore's reset requests and sign-out.
+//! loaded by the disc's hash, unlocks from the game's memory (RAM and the
+//! scratchpad) sent as softcore, their notices with the achievements'
+//! badges, and sign-out.
 //!
 //!     cargo test -p xem-achievements --test client
 
@@ -54,6 +55,16 @@ impl GameMemory for Memory {
     }
 }
 
+/// Notices until one of `kind` came (an unlock's waits for its badge).
+fn notices_until(client: &mut Achievements, memory: &Memory, kind: NoticeKind) -> Vec<xem_achievements::Notice> {
+    let mut notices = Vec::new();
+    pump(client, memory, |c| {
+        notices.extend(c.take_notices());
+        notices.iter().any(|n| n.kind == kind)
+    });
+    notices
+}
+
 /// Updates until `done` holds (the server answers on its own thread).
 fn pump(client: &mut Achievements, memory: &Memory, mut done: impl FnMut(&mut Achievements) -> bool) {
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -73,7 +84,7 @@ fn directory(name: &str) -> std::path::PathBuf {
 }
 
 #[test]
-fn a_player_signs_in_loads_the_games_achievements_and_unlocks_them_from_its_memory_in_softcore_and_hardcore() {
+fn a_player_signs_in_loads_the_games_achievements_and_unlocks_them_from_its_memory() {
     let (host, log) = server();
     let directory = directory("unlocks");
     let account = directory.join(xem_achievements::ACCOUNT_FILE);
@@ -81,7 +92,6 @@ fn a_player_signs_in_loads_the_games_achievements_and_unlocks_them_from_its_memo
     client.set_host(&host);
     let mut memory = Memory::new();
     assert_eq!(client.status().account, Account::SignedOut);
-    assert!(!client.follow(true), "hardcore is not in effect while signed out");
 
     // A wrong password: refused with the server's words, nothing kept.
     client.sign_in("Player", "wrong").unwrap();
@@ -108,57 +118,56 @@ fn a_player_signs_in_loads_the_games_achievements_and_unlocks_them_from_its_memo
     assert!(client.take_notices().iter().any(|n| n.title == "Signed in as Player"));
 
     // The game boots: its achievements load by the disc's hash.
-    assert!(!client.follow(false));
     client.boot(Ok(HASH.into()));
     pump(&mut client, &memory, |c| c.status().game.starts_with("Xenogears:"));
     assert_eq!(client.status().game, "Xenogears: 0 of 2 achievements unlocked, 0 of 15 points.");
     let loaded = client.take_notices();
     assert_eq!((loaded[0].title.as_str(), loaded[0].detail.as_str()), ("Xenogears", "0 of 2 achievements unlocked"));
     assert_eq!(requests(&log, "achievementsets")[0]["m"], HASH);
-    assert!(!client.take_reset(), "a game that loaded at its boot needs no reset");
 
     // An achievement's condition, false then true, in RAM.
     for _ in 0..3 { client.frame(&memory); }
     assert!(client.take_notices().is_empty());
     memory.ram[0x1000] = 7;
     client.frame(&memory);
-    let unlocked = client.take_notices();
+    // The unlock's notice waits for the achievement's badge, which the
+    // client asks the server for.
+    assert!(client.take_notices().is_empty(), "the badge is not here yet");
+    let unlocked = notices_until(&mut client, &memory, NoticeKind::Unlocked);
     assert_eq!(unlocked.len(), 1, "{unlocked:?}");
     assert_eq!((unlocked[0].kind, unlocked[0].title.as_str(), unlocked[0].detail.as_str()), (NoticeKind::Unlocked, "Seven", "RAM holds seven · 5 points"));
+    assert_eq!(unlocked[0].badge.as_deref(), Some(stand_in::badge("101").as_slice()));
+    assert_eq!(requests(&log, "badge")[0]["id"], "101");
     pump(&mut client, &memory, |_| !requests(&log, "awardachievement").is_empty());
     let award = &requests(&log, "awardachievement")[0];
     assert_eq!((award["a"].as_str(), award["h"].as_str()), ("101", "0"), "a softcore unlock");
 
-    // Hardcore turned on during play: rcheevos asks for the console's
-    // reset and evaluates nothing until it comes.
-    assert!(client.follow(true));
-    assert!(client.status().hardcore);
-    assert!(client.take_reset(), "the console resets into hardcore");
-    assert!(client.take_notices().iter().any(|n| n.title == "Hardcore mode: the game restarts"), "the player is told why");
+    // A state loaded starts the evaluation again: the scratchpad's
+    // achievement must be seen false before it unlocks.
     memory.scratchpad[0x10] = 9;
-    for _ in 0..3 { client.frame(&memory); }
-    assert!(client.take_notices().is_empty(), "nothing evaluated before the reset");
-    client.timeline(true);
+    client.timeline(false);
+    client.frame(&memory);
+    assert!(client.take_notices().is_empty(), "true from the start: not yet");
     memory.scratchpad[0x10] = 0;
     client.frame(&memory);
     memory.scratchpad[0x10] = 9;
     client.frame(&memory);
-    let unlocked = client.take_notices();
+    let unlocked = notices_until(&mut client, &memory, NoticeKind::Unlocked);
     assert_eq!(unlocked.iter().map(|n| n.title.as_str()).collect::<Vec<_>>(), ["Scratchpad"], "{unlocked:?}");
+    assert_eq!(unlocked[0].badge.as_deref(), Some(stand_in::badge("102").as_slice()), "its own badge");
     pump(&mut client, &memory, |_| requests(&log, "awardachievement").len() == 2);
     let award = &requests(&log, "awardachievement")[1];
-    assert_eq!((award["a"].as_str(), award["h"].as_str()), ("102", "1"), "a hardcore unlock from the scratchpad");
+    assert_eq!((award["a"].as_str(), award["h"].as_str()), ("102", "0"), "a softcore unlock from the scratchpad");
 
-    // Signing out forgets the account; hardcore no longer applies.
+    // Signing out forgets the account.
     client.sign_out();
     assert!(!account.exists());
-    assert!(!client.follow(true));
     assert_eq!(client.status().account, Account::SignedOut);
     std::fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]
-fn a_kept_account_signs_in_at_start_and_hardcore_achievements_loaded_over_unrestricted_play_ask_for_a_reset() {
+fn a_kept_account_signs_in_at_start_and_loads_the_games_achievements() {
     let (host, log) = server();
     let directory = directory("kept");
     std::fs::write(directory.join(xem_achievements::ACCOUNT_FILE), r#"{"username":"Player","token":"TOKEN"}"#).unwrap();
@@ -166,25 +175,39 @@ fn a_kept_account_signs_in_at_start_and_hardcore_achievements_loaded_over_unrest
     client.set_host(&host);
     let memory = Memory::new();
     assert_eq!(client.status().account, Account::SigningIn, "a kept account signs in");
-    // Booted and played with hardcore off; turned on before the
-    // achievements loaded (rcheevos has no game to reset then).
     client.boot(Ok(HASH.into()));
-    assert!(!client.follow(false));
     client.frame(&memory);
-    assert!(client.follow(true), "signed in by the kept account: in effect at once");
     pump(&mut client, &memory, |c| c.status().game.starts_with("Xenogears:"));
     assert_eq!(requests(&log, "login2")[0]["t"], "TOKEN");
-    assert!(client.take_reset(), "hardcore play starts at the console's reset");
-    client.timeline(true);
-    // A reset with hardcore throughout: a later load needs none.
-    client.boot(Ok(HASH.into()));
-    client.frame(&memory);
-    pump(&mut client, &memory, |c| c.status().game.starts_with("Xenogears:"));
-    assert!(!client.take_reset());
     // A disc RetroAchievements does not know.
     client.boot(Ok("00000000000000000000000000000000".into()));
     pump(&mut client, &memory, |c| c.status().game != "Loading the game's achievements…");
     assert_eq!(client.status().game, "RetroAchievements knows no game by this disc.");
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn an_unlock_whose_badge_cannot_be_fetched_shows_without_one() {
+    // The badges' server is unreachable: a port nothing listens on.
+    let closed = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
+    let game = stand_in::game(11248, "Xenogears", &[(101, "Seven", "RAM holds seven", 5, "0xH001000=7")])
+        .replace(stand_in::BADGES, &format!("http://{closed}/Badge"));
+    let (host, _log) = stand_in::server(vec![(HASH, game)]);
+    let directory = directory("badgeless");
+    let mut client = Achievements::new(Some(&directory), "XemTest/1.0");
+    client.set_host(&host);
+    let mut memory = Memory::new();
+    client.sign_in("Player", "secret").unwrap();
+    client.boot(Ok(HASH.into()));
+    pump(&mut client, &memory, |c| c.status().game.starts_with("Xenogears:"));
+    client.frame(&memory);
+    memory.ram[0x1000] = 7;
+    client.frame(&memory);
+    let asked = Instant::now();
+    let notices = notices_until(&mut client, &memory, NoticeKind::Unlocked);
+    let unlocked = notices.iter().find(|n| n.kind == NoticeKind::Unlocked).unwrap();
+    assert_eq!((unlocked.title.as_str(), unlocked.badge.as_deref()), ("Seven", None));
+    assert!(asked.elapsed() < Duration::from_secs(2), "shown once the badge failed, not after the longest wait: {:?}", asked.elapsed());
     std::fs::remove_dir_all(directory).unwrap();
 }
 
@@ -200,6 +223,5 @@ fn a_kept_token_the_server_refuses_is_forgotten() {
     pump(&mut client, &memory, |c| c.status().account == Account::SignedOut);
     assert!(client.status().error.as_deref().unwrap().contains("Invalid User/Token"), "{:?}", client.status());
     assert!(!account.exists(), "signed out until the player signs in again");
-    assert!(!client.follow(true));
     std::fs::remove_dir_all(directory).unwrap();
 }

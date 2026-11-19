@@ -105,41 +105,6 @@ pub trait Observer {
     fn timeline(&mut self, reset: bool);
 }
 
-/// Why RetroAchievements' hardcore mode refuses `command`
-/// ([`Session::set_hardcore`]), or `None` where it allows it: a player
-/// keeps every input and option a console's player has, never a state
-/// saved or loaded, a rewind, fast-forward or a change to the game other
-/// than by the player's input (an agent's writes, setups and replays, the
-/// Debug section's tests).
-fn hardcore_refusal(cmd: &str, command: &Value) -> Option<String> {
-    let enabling = |key: &str| command.get(key).and_then(Value::as_bool) != Some(false);
-    match cmd {
-        "snapshot" | "restore" => Some(HARDCORE_STATES.into()),
-        "rewind" | "rewind_step" => Some(HARDCORE_REWIND.into()),
-        "rewind_configure" if command.get("max_bytes").and_then(Value::as_u64).is_some_and(|bytes| bytes > 0) => Some(HARDCORE_REWIND.into()),
-        // Without `enabled` the command toggles, which turns it on.
-        "fast_forward" if enabling("enabled") => Some(HARDCORE_FAST_FORWARD.into()),
-        "debug" => Some("Debug tests are disabled in RetroAchievements hardcore mode.".into()),
-        "write" | "write_memory" | "enter_field" | "scenario" | "boot_mode" | "schedule" | "replay" | "music_advance" => {
-            Some(format!("{cmd} is disabled in RetroAchievements hardcore mode: only the player's input changes the game."))
-        }
-        _ => None,
-    }
-}
-
-/// What `readiness` lists as valid (in hardcore mode, less its refusals).
-const VALID_COMMANDS: [&str; 52] = ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop",
-    "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot", "restore", "rewind_configure", "rewind", "rewind_step",
-    "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles", "half_encounters",
-    "text_speed", "movie_skip", "fast_disc", "language", "voices", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance",
-    "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list",
-    "card_present"];
-
-/// Hardcore mode's refusals of what the hosts' controls ask for.
-pub const HARDCORE_STATES: &str = "Save states are disabled in RetroAchievements hardcore mode.";
-pub const HARDCORE_REWIND: &str = "Rewind is disabled in RetroAchievements hardcore mode.";
-pub const HARDCORE_FAST_FORWARD: &str = "Fast-forward is disabled in RetroAchievements hardcore mode.";
-
 pub struct Session<M: GameModule> {
     pub debug: crate::debug::Debug,
     pub runtime: Runtime<M>,
@@ -196,8 +161,6 @@ pub struct Session<M: GameModule> {
     drawn_field: Option<Value>,
     /// What follows the game's frames and timeline ([`Observer`]).
     pub observer: Option<Box<dyn Observer>>,
-    /// RetroAchievements' hardcore mode ([`Session::set_hardcore`]).
-    hardcore: bool,
 }
 
 /// The longest auto-advance dwell: a minute of vertical blanks.
@@ -292,39 +255,12 @@ impl<M: GameModule> Session<M> {
             auto_press: false,
             drawn_field: None,
             observer: None,
-            hardcore: false,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
     }
 
-    /// RetroAchievements' hardcore mode, which the native hosts turn on
-    /// while the player is signed in with it on (docs/runtime.md,
-    /// RetroAchievements): from now no state is saved or loaded, nothing
-    /// rewinds or fast-forwards, and only the player's input changes the
-    /// game (the commands [`hardcore_refusal`] names are refused, with
-    /// why). Turning it on stops fast-forward and drops the rewind history
-    /// and the named snapshots.
-    pub fn set_hardcore(&mut self, on: bool) {
-        if self.hardcore == on {
-            return;
-        }
-        self.hardcore = on;
-        if on {
-            self.set_fast_forward(false);
-            self.snapshots.clear();
-            let (interval, history) = (self.rewind.interval_seconds, self.rewind.history_seconds);
-            self.configure_rewind(0, interval, history).expect("the rewind's own interval and history");
-        }
-    }
-
-    /// Whether hardcore mode is on ([`Session::set_hardcore`]).
-    pub fn hardcore(&self) -> bool {
-        self.hardcore
-    }
-
     pub fn configure_rewind(&mut self, budget: usize, interval_seconds: u32, history_seconds: u32) -> Result<(),String> {
-        if self.hardcore && budget > 0 { return Err(HARDCORE_REWIND.into()); }
         self.rewind.configure(budget,interval_seconds,history_seconds,(self.rewind_clock)())?;
         self.checkpoint();
         Ok(())
@@ -1230,15 +1166,11 @@ impl<M: GameModule> Session<M> {
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
             "assist_outcome": self.assist_outcome,
             "inspecting": self.inspecting,
-            "hardcore": self.hardcore,
         })
     }
 
     fn try_execute(&mut self, command: &Value) -> Result<Value, String> {
         let cmd = command.get("cmd").and_then(Value::as_str).ok_or("missing cmd")?;
-        if self.hardcore && let Some(refusal) = hardcore_refusal(cmd, command) {
-            return Err(refusal);
-        }
         let arg_u64 = |name: &str| command.get(name).and_then(Value::as_u64);
         let arg_str = |name: &str| command.get(name).and_then(Value::as_str);
         match cmd {
@@ -1702,9 +1634,6 @@ impl<M: GameModule> Session<M> {
                 // What the game is doing now: the mode the dispatcher entered,
                 // what it waits for, whether it consumed pad input last frame.
                 let stopped = self.stopped.clone();
-                // Hardcore mode's refusals are no valid commands.
-                let hardcore = self.hardcore;
-                let valid: Vec<&str> = VALID_COMMANDS.into_iter().filter(|cmd| !hardcore || hardcore_refusal(cmd, &json!({})).is_none()).collect();
                 let services = self.runtime.services();
                 const MODES: [&str; 7] = ["kernel menu", "field", "battle", "world map", "battling", "menu", "movie"];
                 Ok(json!({
@@ -1717,7 +1646,9 @@ impl<M: GameModule> Session<M> {
                     // mean the game ignores the pad.
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
-                    "valid_commands": valid,
+                    "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
+                                        "restore", "rewind_configure", "rewind", "rewind_step", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles",
+                                        "half_encounters", "text_speed", "movie_skip", "fast_disc", "language", "voices", "auto_advance", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "debug", "debug_status", "debug_tick", "reset", "schedule", "record", "replay", "card_list", "card_present"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -2003,7 +1934,6 @@ impl<M: GameModule> Session<M> {
     }
 
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>, String> {
-        if self.hardcore { return Err(HARDCORE_STATES.into()); }
         if self.debug.busy() { return Err("Wait for the debug operation to finish before saving a state.".into()); }
         self.runtime.snapshot().map_err(|e| e.to_string())
     }
@@ -2050,7 +1980,6 @@ impl<M: GameModule> Session<M> {
     /// game was. Reaching the beginning leaves the game there until the
     /// player releases the input.
     pub fn rewind_step(&mut self) -> Result<bool, String> {
-        if self.hardcore { return Err(HARDCORE_REWIND.into()); }
         if let Some(error) = &self.rewind.error { return Err(error.clone()); }
         if self.rewind.budget == 0 { return Err("Enable rewind history in Settings first.".into()); }
         let was = self.runtime.frames();
@@ -2155,7 +2084,6 @@ impl<M: GameModule> Session<M> {
 
     /// Restore game progress, keeping current app controls and settings.
     pub fn restore_bytes(&mut self, data: &[u8]) -> Result<(), String> {
-        if self.hardcore { return Err(HARDCORE_STATES.into()); }
         self.restore_game_state(data)?;
         self.rewind.clear();
         self.checkpoint();

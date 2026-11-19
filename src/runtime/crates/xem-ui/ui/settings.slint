@@ -1,5 +1,5 @@
-// The app's Settings: sections in a sidebar (a strip of icons when the panel
-// is narrow), each a column of cards of rows (some under a heading), under a
+// The app's Settings: sections in a sidebar (a strip of tabs when the panel
+// is narrow; either scrolls where the sections do not all fit), each a column of cards of rows (some under a heading), under a
 // header with Quit (on hosts that can quit) and Close and over an error bar
 // while something failed. An ordinary
 // application style (plan.md: not Seraph Glass) on Slint's fluent-dark
@@ -18,13 +18,16 @@ struct Section {
     label: string,
     icon: string,
     // The narrow panel's strip shows this under the icon instead of the
-    // label, where the label would crowd the other tabs out (empty: the
-    // label).
+    // label (empty: the label).
     short: string,
 }
 
 global Theme {
     out property <brush> panel: #15171cf7;
+    // The section list's edges fade into the panel: its colour, opaque to
+    // transparent.
+    out property <color> panel-fade: #15171cf7;
+    out property <color> panel-clear: #15171c00;
     out property <brush> raised: #ffffff08;
     out property <brush> hover: #ffffff0f;
     out property <brush> pressed: #ffffff1a;
@@ -109,6 +112,10 @@ component NavItem inherits Rectangle {
     in property <string> icon;
     in property <bool> selected;
     in property <bool> stacked;
+    // A tab's width in the strip (NavStrip's share), a row's height in the
+    // sidebar (NavColumn's).
+    in property <length> tab-width;
+    in property <length> row-height: 38px;
     callback activated();
 
     accessible-role: tab;
@@ -119,16 +126,11 @@ component NavItem inherits Rectangle {
     private property <bool> hovered: touch.has-hover;
     private property <brush> label-color: root.selected || root.hovered ? Theme.text : Theme.text-secondary;
     private property <brush> icon-color: root.selected ? Theme.accent : root.hovered ? Theme.text : Theme.text-secondary;
-    min-height: root.stacked ? 54px : 38px;
-    max-height: root.stacked ? 54px : 38px;
-    // A tab in the strip would be as wide as its label, bold as when
-    // selected, and shares out any room left; a strip too narrow for that
-    // takes the same from every tab (their labels elide), down to a tab
-    // just wider than its icon, so every tab stays inside the panel.
-    min-width: root.stacked ? 24px : 0px;
-    preferred-width: root.stacked ? label-size.preferred-width + 6px : 0px;
+    min-height: root.stacked ? 54px : root.row-height;
+    max-height: root.stacked ? 54px : root.row-height;
+    min-width: root.stacked ? root.tab-width : 0px;
+    preferred-width: root.stacked ? root.tab-width : 0px;
     private property <string> strip-label: root.short != "" ? root.short : root.label;
-    label-size := Text { text: root.strip-label; font-size: 10.5px; font-weight: 600; visible: false; accessible-role: none; }
     border-radius: 8px;
     background: touch.pressed ? Theme.pressed : root.selected ? (root.hovered ? Theme.selected-hover : Theme.selected) : root.hovered ? Theme.hover : transparent;
     animate background { duration: 140ms; easing: ease-out; }
@@ -184,6 +186,160 @@ component NavItem inherits Rectangle {
     }
 }
 
+// The wide panel's sidebar: a column of rows, scrolled by the wheel, a
+// finger, or the selection, which it brings into view, where the panel is
+// too short for them all. Rows are 38 pixels and a gap of 2; a column that
+// scrolls makes them as tall as shows a whole number of them and a half
+// (40 pixels apart at least), so that at rest its edges cut rows through
+// their words, where an edge fades while more rows lie past it. Row j's
+// middle lies at 1 + pitch × (j + ½) down the column.
+component NavColumn inherits Rectangle {
+    in property <[Section]> sections;
+    in-out property <int> current;
+    private property <length> fade: 28px;
+    private property <bool> scrolls: root.sections.length * 40px + 2px > flick.height;
+    private property <int> whole: max(1, floor((flick.height - 1px) / 40px - 0.5));
+    private property <length> pitch: root.scrolls ? (flick.height - 1px) / (root.whole + 0.5) : 40px;
+
+    function scroll-to(y: length) {
+        flick.content-y = max(min(0px, flick.height - flick.content-height), min(0px, y));
+    }
+    // The current row in view clear of the fades, the column moved as
+    // little as rests cutting rows a quarter of the way into one allow
+    // (or at an end of the column, within half a row of it).
+    function reveal() {
+        if !root.scrolls || flick.height <= 0px {
+            root.scroll-to(0px);
+            return;
+        }
+        let top = 2px + root.pitch * root.current;
+        let bottom = top + root.pitch - 2px;
+        let shown = -flick.content-y;
+        let end = flick.content-height - flick.height;
+        if top - root.fade < shown || bottom + root.fade > shown + flick.height {
+            let up = top - root.fade < shown;
+            let wanted = up ? top - root.fade : bottom + root.fade - flick.height;
+            let at = root.pitch * ((up ? floor(wanted / root.pitch - 0.25) : ceil(wanted / root.pitch - 0.25)) + 0.25);
+            root.scroll-to(at < root.pitch / 2 ? 0px : at > end - root.pitch / 2 ? -end : -at);
+        } else {
+            root.scroll-to(flick.content-y);
+        }
+    }
+    init => { root.reveal(); }
+    changed current => { root.reveal(); }
+
+    flick := Flickable {
+        content-width: self.width;
+        content-height: max(self.height, column.preferred-height);
+        changed height => { root.reveal(); }
+        column := VerticalLayout {
+            width: flick.width;
+            height: flick.content-height;
+            padding: 2px;
+            spacing: 2px;
+            alignment: start;
+            for section[index] in root.sections: NavItem {
+                row-height: root.pitch - 2px;
+                label: section.label;
+                icon: section.icon;
+                selected: index == root.current;
+                activated => { root.current = index; }
+            }
+        }
+    }
+    Rectangle {
+        y: 0px;
+        height: root.fade;
+        background: @linear-gradient(180deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-y < 0px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+    Rectangle {
+        y: parent.height - root.fade;
+        height: root.fade;
+        background: @linear-gradient(0deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-y + flick.content-height > flick.height + 1px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+}
+
+// The narrow panel's strip: tabs all as wide, scrolled sideways by a
+// finger, a mouse's wheel, or the selection. They share out the strip's
+// width so that it shows a whole number of them and a half, each wide
+// enough for the widest label (Shortcuts) with room either side: at rest
+// its edges cut tabs through their middles, where the fades show that more
+// lie past them. Tab j's middle lies at pitch × (j + ½) along the strip.
+component NavStrip inherits Rectangle {
+    in property <[Section]> sections;
+    in-out property <int> current;
+    private property <length> fade: 28px;
+    private property <int> whole: max(1, floor(flick.width / 84px - 0.5));
+    private property <length> pitch: flick.width / (root.whole + 0.5);
+
+    function scroll-to(x: length) {
+        flick.content-x = max(min(0px, flick.width - flick.content-width), min(0px, x));
+    }
+    // At rest, the current tab as near the strip's middle as edges cutting
+    // tabs through their middles allow (a quarter of the way past one), or
+    // at an end of the strip within half a tab of it (where the far edge
+    // cuts a tab through its middle).
+    function settle() {
+        if flick.width > 0px {
+            let centred = root.pitch * (root.current + 0.5) - flick.width / 2;
+            let start = root.pitch * (round(centred / root.pitch - 0.25) + 0.25);
+            let end = flick.content-width - flick.width;
+            root.scroll-to(start < root.pitch / 2 ? 0px : start > end - root.pitch / 2 ? -end : -start);
+        }
+    }
+    init => { root.settle(); }
+    changed current => { root.settle(); }
+
+    TouchArea {
+        // A mouse's wheel turns the strip.
+        scroll-event(event) => {
+            if event.delta-x == 0 && event.delta-y != 0 {
+                root.scroll-to(flick.content-x + event.delta-y);
+                return accept;
+            }
+            reject
+        }
+        flick := Flickable {
+            content-width: row.preferred-width;
+            content-height: self.height;
+            changed width => { root.settle(); }
+            row := HorizontalLayout {
+                width: flick.content-width;
+                height: flick.height;
+                padding: 2px;
+                spacing: 4px;
+                for section[index] in root.sections: NavItem {
+                    stacked: true;
+                    tab-width: root.pitch - 4px;
+                    label: section.label;
+                    short: section.short;
+                    icon: section.icon;
+                    selected: index == root.current;
+                    activated => { root.current = index; }
+                }
+            }
+        }
+    }
+    Rectangle {
+        x: 0px;
+        width: root.fade;
+        background: @linear-gradient(90deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-x < 0px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+    Rectangle {
+        x: parent.width - root.fade;
+        width: root.fade;
+        background: @linear-gradient(270deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-x + flick.content-width > flick.width + 1px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+}
+
 // The sections, chosen with the pointer or (once focused) the arrow keys.
 component Nav inherits FocusScope {
     in property <[Section]> sections;
@@ -192,8 +348,9 @@ component Nav inherits FocusScope {
 
     accessible-role: tab-list;
     accessible-label: "Settings sections";
-    // Its items' height (a strip's, or a column's of rows of 38 and gaps of 2).
-    min-height: root.stacked ? 58px : root.sections.length * 40px + 2px;
+    // A strip's height; a column takes the sidebar's (two rows at least)
+    // and scrolls.
+    min-height: root.stacked ? 58px : 82px;
     key-pressed(event) => {
         if event.text == Key.UpArrow || event.text == Key.LeftArrow {
             root.current = max(0, root.current - 1);
@@ -218,29 +375,17 @@ component Nav inherits FocusScope {
         border-width: root.has-focus ? 1px : 0px;
         border-color: Theme.accent;
     }
-    if !root.stacked: VerticalLayout {
-        padding: 2px;
-        spacing: 2px;
-        alignment: start;
-        for section[index] in root.sections: NavItem {
-            label: section.label;
-            icon: section.icon;
-            selected: index == root.current;
-            activated => { root.current = index; }
-        }
+    if !root.stacked: NavColumn {
+        width: parent.width;
+        height: parent.height;
+        sections: root.sections;
+        current <=> root.current;
     }
-    if root.stacked: HorizontalLayout {
-        padding: 2px;
-        spacing: 2px;
-        for section[index] in root.sections: NavItem {
-            stacked: true;
-            horizontal-stretch: 1;
-            label: section.label;
-            short: section.short;
-            icon: section.icon;
-            selected: index == root.current;
-            activated => { root.current = index; }
-        }
+    if root.stacked: NavStrip {
+        width: parent.width;
+        height: parent.height;
+        sections: root.sections;
+        current <=> root.current;
     }
 }
 
@@ -545,8 +690,7 @@ component NumberBox inherits SpinBox {
 // Return or Space (a gamepad's South) while it has the focus.
 component HoldButton inherits FocusScope {
     in property <string> text;
-    // FocusScope's `enabled`: off, it holds nothing.
-    out property <bool> held: root.enabled && (button.pressed || root.key-held);
+    out property <bool> held: button.pressed || root.key-held;
     private property <bool> key-held;
     private property <bool> focused: button.has-focus;
     changed focused => { if !self.focused { root.key-held = false; } }
@@ -566,7 +710,7 @@ component HoldButton inherits FocusScope {
         reject
     }
     HorizontalLayout {
-        button := Button { text: root.text; enabled: root.enabled; }
+        button := Button { text: root.text; }
     }
 }
 
@@ -883,9 +1027,8 @@ export component SettingsPanel inherits Window {
         { label: "Time", icon: Icons.time },
         { label: "Saves", icon: Icons.saves },
         { label: "Gameplay", icon: Icons.gameplay },
-        // RetroAchievements, "RA" in the strip: "Achievements" there would
-        // elide the other labels on a phone's panel.
-        { label: "Achievements", icon: Icons.trophy, short: "RA" },
+        // RetroAchievements, "Cheevos" in the strip, as its players say.
+        { label: "Achievements", icon: Icons.trophy, short: "Cheevos" },
         { label: "Debug", icon: Icons.bug },
         { label: "About", icon: Icons.about },
     ];
@@ -907,21 +1050,17 @@ export component SettingsPanel inherits Window {
     // RetroAchievements (lib.rs `AchievementsView`): offered by the native
     // hosts (its server takes no requests from web pages); the account (0
     // signed out, 1 signing in, 2 signed in) and who is signed in, what the
-    // running game's achievements do, why the last sign-in or load failed;
-    // hardcore mode's setting and whether it is in effect (signed in with
-    // it on), when the Time and Saves sections say what it disables.
+    // running game's achievements do, and why the last sign-in or load
+    // failed.
     in property <bool> ra-offered;
     in property <int> ra-account;
     in property <string> ra-user;
     in property <string> ra-game: "No game: play a disc to load its achievements.";
     in property <string> ra-error;
-    in-out property <bool> ra-hardcore;
-    in property <bool> ra-hardcore-active;
     in-out property <string> ra-username;
     in-out property <string> ra-password;
     callback ra-sign-in-requested(string, string);
     callback ra-sign-out-requested();
-    callback ra-hardcore-edited(bool);
     in property <string> time-status: "Boot a game to use rewind.";
     in property <string> storage-status;
     in property <bool> fast-forward;
@@ -1148,9 +1287,8 @@ export component SettingsPanel inherits Window {
                         Nav {
                             sections: root.sections;
                             current <=> root.selected-section;
-                            vertical-stretch: 0;
+                            vertical-stretch: 1;
                         }
-                        Rectangle { vertical-stretch: 1; }
                     }
                 }
                 if root.wide-layout: Rectangle { width: 1px; background: Theme.divider; }
@@ -1832,10 +1970,6 @@ export component SettingsPanel inherits Window {
                             }
 
                             // Time
-                            if root.selected-section == 4 && root.ra-hardcore-active: Card {
-                                title: "Hardcore mode";
-                                Text { text: "RetroAchievements hardcore mode is on: rewind and fast-forward are disabled."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
-                            }
                             if root.selected-section == 4: Card {
                                 title: "Rewind";
                                 heading: "Rewind";
@@ -1886,7 +2020,7 @@ export component SettingsPanel inherits Window {
                                     VerticalLayout {
                                         alignment: center;
                                         horizontal-stretch: 0;
-                                        HoldButton { text: "Hold to rewind"; enabled: !root.ra-hardcore-active; changed held => { root.rewind-held(self.held); } }
+                                        HoldButton { text: "Hold to rewind"; changed held => { root.rewind-held(self.held); } }
                                     }
                                 }
                             }
@@ -1899,7 +2033,7 @@ export component SettingsPanel inherits Window {
                                 // headsets without a keyboard or a gamepad.
                                 HorizontalLayout {
                                     alignment: end;
-                                    Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; enabled: root.fast-forward || !root.ra-hardcore-active; clicked => { root.app-action-requested(4); } }
+                                    Button { text: root.fast-forward ? "Stop fast-forward" : "Start fast-forward"; clicked => { root.app-action-requested(4); } }
                                 }
                                 Divider { }
                                 SliderRow {
@@ -1971,10 +2105,9 @@ export component SettingsPanel inherits Window {
 
                                 HorizontalLayout {
                                     spacing: 8px;
-                                    Button { text: "Save state"; primary: true; enabled: !root.ra-hardcore-active; clicked => { root.app-action-requested(0); } }
-                                    Button { text: "Load state"; enabled: !root.ra-hardcore-active; clicked => { root.app-action-requested(1); } }
+                                    Button { text: "Save state"; primary: true; clicked => { root.app-action-requested(0); } }
+                                    Button { text: "Load state"; clicked => { root.app-action-requested(1); } }
                                 }
-                                if root.ra-hardcore-active: Text { text: "RetroAchievements hardcore mode is on: save states are disabled. The game's own saves to its memory cards work as on the console."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 5: Card {
                                 title: "Backups";
@@ -2106,17 +2239,6 @@ export component SettingsPanel inherits Window {
                             if root.selected-section == 7 && root.ra-offered: Card {
                                 title: "Game achievements";
                                 Text { text: root.ra-game; font-size: 12.5px; color: Theme.text-secondary; wrap: word-wrap; }
-                            }
-                            if root.selected-section == 7 && root.ra-offered: Card {
-                                title: "Hardcore mode";
-                                heading: "Hardcore";
-                                ToggleRow {
-                                    label: "Hardcore mode";
-                                    checked <=> root.ra-hardcore;
-                                    toggled(on) => { root.ra-hardcore-edited(on); }
-                                }
-                                Text { text: "Save states, fast-forward and rewind are disabled while hardcore mode is on, and your unlocks count as hardcore. Turning it on during play restarts the game, as RetroAchievements requires."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
-                                if root.ra-hardcore && root.ra-account != 2: Text { text: "It takes effect once you are signed in."; font-size: 12px; color: Theme.text-tertiary; wrap: word-wrap; }
                             }
                             // The original kernel menu, with application controls.
                             if root.selected-section == 8: Card {
@@ -2302,7 +2424,11 @@ export component FrameRateOverlay inherits Window {
     in property <int> notice-kind;
     in property <string> notice-title;
     in property <string> notice-detail;
-    private property <bool> notice-detailed: root.notice-kind != 0 && root.notice-detail != "";
+    // An unlock's badge, the server's image of the achievement (none: the
+    // trophy).
+    in property <image> notice-badge;
+    private property <bool> badged: root.notice-kind == 2 && root.notice-badge.width > 0;
+    private property <bool> notice-detailed: root.badged || (root.notice-kind != 0 && root.notice-detail != "");
     background: transparent;
     preferred-width: 304px;
     preferred-height: 110px;
@@ -2350,13 +2476,41 @@ export component FrameRateOverlay inherits Window {
         height: root.notice-detailed ? 72px : 32px;
         accessible-role: text;
         accessible-label: root.notice;
+        // The badge in place of the trophy, its title and description
+        // beside it.
+        if root.badged: Rectangle {
+            x: 10px;
+            y: 10px;
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            clip: true;
+            Image {
+                width: parent.width;
+                height: parent.height;
+                source: root.notice-badge;
+                image-fit: cover;
+                accessible-role: none;
+            }
+        }
+        if root.badged: Rectangle {
+            x: 10px;
+            y: 10px;
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: Theme.gold.with-alpha(0.5);
+        }
         line := HorizontalLayout {
-            y: 0px;
+            x: root.badged ? 62px : 0px;
+            y: root.badged ? 4px : 0px;
+            width: parent.width - self.x;
             height: 32px;
             padding-left: 10px;
             padding-right: 12px;
             spacing: 8px;
-            VerticalLayout {
+            if !root.badged: VerticalLayout {
                 alignment: center;
                 HudIcon {
                     data: root.notice-kind == 1 ? Icons.alert : root.notice-kind == 2 ? Icons.trophy : root.notice-kind == 3 ? Icons.about : Icons.check;
@@ -2370,10 +2524,10 @@ export component FrameRateOverlay inherits Window {
             }
         }
         if root.notice-detailed: Text {
-            x: 34px;
-            y: 30px;
-            width: parent.width - 46px;
-            height: 34px;
+            x: root.badged ? 72px : 34px;
+            y: root.badged ? 32px : 30px;
+            width: parent.width - self.x - 12px;
+            height: root.badged ? 32px : 34px;
             text: root.notice-detail;
             color: Theme.text-secondary;
             font-size: 12px;

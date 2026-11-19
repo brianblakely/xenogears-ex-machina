@@ -226,19 +226,6 @@ impl Default for AutoAdvance {
     }
 }
 
-/// RetroAchievements (docs/runtime.md, RetroAchievements), which the native
-/// hosts offer: the account the player signs in with is kept beside the
-/// settings by the hosts' client (`xem-achievements`), never in them or in
-/// their backups.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
-pub struct RetroAchievements {
-    /// Hardcore mode: while the player is signed in with it on, unlocks
-    /// count as hardcore and the hosts disable save states, fast-forward
-    /// and rewind (`Session::set_hardcore`). Off by default.
-    pub hardcore: bool,
-}
-
 /// The complete application settings.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -298,9 +285,6 @@ pub struct Settings {
     /// (`Session::set_voices`): the original's English, or the Japanese
     /// release's from the player's Japanese discs (offered only beside them).
     pub voices: Voices,
-    /// RetroAchievements' options (hardcore mode), which the native hosts'
-    /// client follows.
-    pub retroachievements: RetroAchievements,
 }
 
 /// The movies' and voices' language.
@@ -353,7 +337,6 @@ impl Default for Settings {
             fast_disc: false,
             language: Language::English,
             voices: Voices::English,
-            retroachievements: RetroAchievements::default(),
         }
     }
 }
@@ -402,8 +385,6 @@ pub enum SettingChange {
     FastDisc(bool),
     Language(Language),
     Voices(Voices),
-    /// RetroAchievements' block, whole (hardcore mode).
-    RetroAchievements(RetroAchievements),
 }
 
 /// An applied and persisted change.
@@ -531,7 +512,6 @@ impl Settings {
             SettingChange::FastDisc(enabled) => next.fast_disc = *enabled,
             SettingChange::Language(language) => next.language = *language,
             SettingChange::Voices(voices) => next.voices = *voices,
-            SettingChange::RetroAchievements(block) => next.retroachievements = *block,
         }
         next.validate()?;
         Ok(next)
@@ -1057,34 +1037,6 @@ mod tests {
         assert_eq!((read.voices, read.movie_skip, reset), (Voices::English, true, vec!["voices".to_string()]));
         let (read, _) = Settings::read(&serde_json::json!({"language": "Japanese"})).unwrap();
         assert_eq!(read.language, Language::Japanese);
-    }
-
-    #[test]
-    fn retroachievements_hardcore_is_off_by_default_persists_and_travels_in_backups_without_the_account() {
-        use super::*;
-        let store = SharedStore::default();
-        let mut service = SettingsService::open(store.clone()).unwrap();
-        assert!(!service.settings().retroachievements.hardcore, "off until the player turns it on");
-        let on = RetroAchievements { hardcore: true };
-        assert!(service.apply(SettingChange::RetroAchievements(on)).unwrap().settings.retroachievements.hardcore);
-        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
-        assert_eq!(saved["retroachievements"], serde_json::json!({"hardcore": true}), "the block holds the option alone");
-        assert!(SettingsService::open(store.clone()).unwrap().settings().retroachievements.hardcore, "reopened");
-        // As an agent sends it on `xem-desktop --control`, and a backup.
-        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"RetroAchievements": {"hardcore": false}}})).unwrap();
-        assert_eq!(ack["settings"]["retroachievements"]["hardcore"], false);
-        service.apply(SettingChange::RetroAchievements(on)).unwrap();
-        let backup = service.export();
-        assert!(!backup.contains("token") && !backup.contains("username"), "no account in a backup: {backup}");
-        let mut other = SettingsService::with_defaults(MemoryStore::default());
-        other.import(&backup).unwrap();
-        assert!(other.settings().retroachievements.hardcore, "a backup carries it");
-        // Saved before the option existed, or with a value that is none of
-        // its own (an account, which is never a setting): off, alone.
-        assert!(!Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.retroachievements.hardcore);
-        let (read, reset) = Settings::read(&serde_json::json!({"retroachievements": {"hardcore": "yes", "token": "x"}, "movie_skip": true})).unwrap();
-        assert_eq!((read.retroachievements.hardcore, read.movie_skip), (false, true));
-        assert_eq!(reset, ["retroachievements.hardcore", "retroachievements.token"]);
     }
 
     #[test]

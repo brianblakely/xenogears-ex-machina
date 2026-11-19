@@ -37,6 +37,45 @@ fn element(ui: &SettingsUi, label: &str, role: AccessibleRole) -> ElementHandle 
         .unwrap_or_else(|| panic!("no {role:?} labelled {label:?}"))
 }
 
+/// The section list's tab `label` brought into view (its middle inside
+/// the list, where a click on it lands) by a mouse's wheel over the list,
+/// as a player brings one in where the sections do not all fit (a strip
+/// turns sideways under it).
+fn reveal(ui: &mut SettingsUi, label: &str) {
+    const TABS: [&str; 10] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Achievements", "Debug", "About"];
+    let shown = |ui: &SettingsUi, label: &str| {
+        ElementHandle::find_by_accessible_label(ui.component(), label).find(|e| e.accessible_role() == Some(AccessibleRole::Tab))
+    };
+    let list = element(ui, "Settings sections", AccessibleRole::TabList);
+    let (start, size) = (list.absolute_position(), list.size());
+    let strip = size.width > size.height;
+    let index = |label: &str| TABS.iter().position(|tab| *tab == label).unwrap();
+    for _ in 0..100 {
+        // Towards the tab: back where it lies before the list's middle (or
+        // before the tabs in view), on where after.
+        let back = match shown(ui, label) {
+            Some(tab) => {
+                let (at, extent) = (tab.absolute_position(), tab.size());
+                let (middle, from, to) = if strip {
+                    (at.x + extent.width / 2.0, start.x, start.x + size.width)
+                } else {
+                    (at.y + extent.height / 2.0, start.y, start.y + size.height)
+                };
+                if middle > from && middle < to {
+                    return;
+                }
+                middle <= from
+            }
+            None => index(label) < index(TABS.into_iter().find(|tab| shown(ui, tab).is_some()).unwrap()),
+        };
+        let position = LogicalPosition::new(start.x + size.width / 2.0, start.y + size.height / 2.0);
+        ui.dispatch(WindowEvent::PointerMoved { position });
+        ui.dispatch(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: if back { 20.0 } else { -20.0 } });
+        ui.update().unwrap();
+    }
+    panic!("the wheel brought no {label} tab into view");
+}
+
 /// A heading stands above its card, outside it.
 fn heading_above(ui: &SettingsUi, heading: &str, card: &str) {
     let text = element(ui, heading, AccessibleRole::Text);
@@ -57,6 +96,7 @@ fn scroll(ui: &mut SettingsUi, delta_y: f32) {
 }
 
 fn section(ui: &mut SettingsUi, label: &str, index: i32) {
+    reveal(ui, label);
     let tab = element(ui, label, AccessibleRole::Tab);
     let at = tab.absolute_position();
     let size = tab.size();
@@ -917,7 +957,7 @@ fn japanese_and_the_movies_and_voices_show_only_beside_the_japanese_discs() {
 }
 
 #[test]
-fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
+fn every_section_tab_scrolls_into_a_narrow_panel_and_answers_a_click() {
     const SECTIONS: [&str; 10] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Achievements", "Debug", "About"];
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
@@ -928,40 +968,78 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
     // wide: a phone browser 360 CSS pixels wide, a 1080-pixel phone at
     // densities 3.0 (360 dp) and 2.75, the Android smoke's emulator (2.625),
     // a browser 320 wide, and the panel's least width.
+    let tab = |ui: &SettingsUi, label: &str| {
+        ElementHandle::find_by_accessible_label(ui.component(), label).find(|e| e.accessible_role() == Some(AccessibleRole::Tab))
+    };
     for (size, scale) in [
         ((344, 560), 1.0), ((1064, 1470), 3.0), ((1064, 1470), 2.75),
         ((1064, 1470), 2.625), ((304, 560), 1.0), ((280, 560), 1.0),
     ] {
         ui.resize(size, scale);
+        ui.component().set_selected_section(0);
         ui.update().unwrap();
         let width = size.0 as f32 / scale;
-        for (index, label) in SECTIONS.into_iter().enumerate() {
-            let tab = element(&ui, label, AccessibleRole::Tab);
-            let (at, extent) = (tab.absolute_position(), tab.size());
-            assert!(
-                at.x >= 0.0 && at.x + extent.width <= width,
-                "the {label} tab lies inside a panel {width} wide: {at:?} {extent:?}"
-            );
-            section(&mut ui, label, index as i32);
+        // The tabs, a thumb wide at least and their labels whole (the
+        // Achievements tab's word "Cheevos"), run on past the panel's edge.
+        assert!(element(&ui, "Audio", AccessibleRole::Tab).size().width >= 64.0);
+        assert!(tab(&ui, "About").is_none(), "About lies past the edge of a panel {width} wide");
+        // A finger reaches each tab beside the one before it (where an edge
+        // cuts it, on the part shown): the strip brings the tab chosen to
+        // its middle, as far as edges cutting tabs through their middles
+        // allow.
+        for (index, label) in SECTIONS.into_iter().enumerate().skip(1) {
+            let next = tab(&ui, label).unwrap_or_else(|| panic!("the {label} tab shows beside the one before it, {width} wide"));
+            let list = element(&ui, "Settings sections", AccessibleRole::TabList);
+            let from = next.absolute_position().x.max(list.absolute_position().x);
+            let to = (next.absolute_position().x + next.size().width).min(list.absolute_position().x + list.size().width);
+            assert!(to - from >= 30.0 && to <= width, "the {label} tab shows {from}..{to} in a panel {width} wide");
+            click(&ui, LogicalPosition::new((from + to) / 2.0, next.absolute_position().y + next.size().height / 2.0));
+            ui.update().unwrap();
+            assert_eq!(ui.component().get_selected_section(), index as i32, "{label}, {width} wide");
+            let (chosen, list) = (tab(&ui, label).unwrap(), element(&ui, "Settings sections", AccessibleRole::TabList));
+            let (from, to) = (chosen.absolute_position().x, chosen.absolute_position().x + chosen.size().width);
+            let (start, end) = (list.absolute_position().x, list.absolute_position().x + list.size().width);
+            assert!(from >= start && to <= end, "the {label} tab chosen shows whole: {from}..{to} in {start}..{end}");
+            let at_start = tab(&ui, "Audio").is_some_and(|audio| (audio.absolute_position().x - start - 2.0).abs() < 0.5);
+            let at_end = tab(&ui, "About").is_some_and(|about| (about.absolute_position().x + about.size().width - end + 2.0).abs() < 0.5);
+            let half_tab = (chosen.size().width + 4.0) / 2.0;
+            assert!(at_start || at_end || ((from + to) / 2.0 - (start + end) / 2.0).abs() <= half_tab + 0.5, "the {label} tab is in the middle: {from}..{to} in {start}..{end}");
+            if label == "Achievements" {
+                assert!(ElementHandle::find_by_accessible_label(ui.component(), "Cheevos").next().is_some(), "the strip calls it Cheevos");
+            }
         }
+        // A mouse's wheel turns it back to its start.
+        let list = element(&ui, "Settings sections", AccessibleRole::TabList);
+        let over = LogicalPosition::new(list.absolute_position().x + list.size().width / 2.0, list.absolute_position().y + list.size().height / 2.0);
+        ui.dispatch(WindowEvent::PointerMoved { position: over });
+        for _ in 0..60 {
+            ui.dispatch(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: 20.0 });
+        }
+        ui.update().unwrap();
+        let audio = tab(&ui, "Audio").expect("the wheel brings Audio back");
+        assert!((audio.absolute_position().x - list.absolute_position().x - 2.0).abs() < 0.5, "at the strip's start: {:?}", audio.absolute_position());
+        assert!(tab(&ui, "About").is_none());
     }
-    // The Android smoke taps Graphics and Saves at 210,722 and 617,722 on
-    // its 1080x2400 screen, where the panel (1064x1470 at 2.625) is at 8,465.
+    // The Android smoke's taps on its 1080x2400 screen, where the panel
+    // (1064x1470 at 2.625) is at 8,465: Graphics at 370,722 and its Show FPS
+    // switch at 930,1462 (below Scale, Force 4:3 and Filter), then Time,
+    // half shown at the strip's edge, at 997,722 and Saves beside it at
+    // 767,722.
     ui.resize((1064, 1470), 2.625);
+    ui.component().set_selected_section(0);
     ui.update().unwrap();
     let tap = |ui: &mut SettingsUi, x: f32, y: f32| {
         click(ui, LogicalPosition::new((x - 8.0) / 2.625, (y - 465.0) / 2.625));
         ui.update().unwrap();
     };
-    for (x, label, index) in [(210.0, "Graphics", 1), (617.0, "Saves", 5)] {
+    tap(&mut ui, 370.0, 722.0);
+    assert_eq!(ui.component().get_selected_section(), 1, "the smoke's tap selects Graphics");
+    tap(&mut ui, 930.0, 1462.0);
+    assert!(settings.borrow().settings().presentation.show_fps, "the smoke's tap turns Show FPS on");
+    for (x, label, index) in [(997.0, "Time", 4), (767.0, "Saves", 5)] {
         tap(&mut ui, x, 722.0);
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
-    // Then Graphics again and its Show FPS switch at 930,1462, below Scale,
-    // Force 4:3 and Filter.
-    tap(&mut ui, 210.0, 722.0);
-    tap(&mut ui, 930.0, 1462.0);
-    assert!(settings.borrow().settings().presentation.show_fps, "the smoke's tap turns Show FPS on");
 
     // Saves' Backups card keeps every button inside it on panels as wide as
     // those, a headset's (440) and the desktop's (640, and the sidebar's
@@ -1042,24 +1120,35 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     assert_eq!(requests.borrow().as_slice(), [toggle, toggle]);
     assert_eq!(acks.get(), 0);
 
-    // xr-game-smoke.sh's pinches at logical points: Saves, Save state and
-    // Load state, Time and Start fast-forward.
+    // xr-game-smoke.sh's pinches at logical points, the panel opened on
+    // Audio: Time (half shown at the strip's edge), then Saves beside it
+    // (the strip brings Time to its middle) and Save state and Load state,
+    // Time beside Saves, and Start fast-forward.
     ui.set_time_status(Some(false), status);
+    ui.component().set_selected_section(0);
+    ui.update().unwrap();
     requests.borrow_mut().clear();
     let at = |ui: &mut SettingsUi, x: f32, y: f32| {
         click(ui, LogicalPosition::new(x, y));
         ui.update().unwrap();
     };
-    at(&mut ui, 253.0, 98.0);
-    assert_eq!(ui.component().get_selected_section(), 5, "the headset smoke's pinch selects Saves");
+    at(&mut ui, 409.0, 98.0);
+    assert_eq!(ui.component().get_selected_section(), 4, "the headset smoke's pinch selects Time");
+    at(&mut ui, 314.0, 98.0);
+    assert_eq!(ui.component().get_selected_section(), 5, "then Saves");
     at(&mut ui, 122.0, 170.0);
     at(&mut ui, 314.0, 170.0);
-    at(&mut ui, 219.0, 98.0);
+    at(&mut ui, 126.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 4, "and Time");
     at(&mut ui, 347.0, 449.0);
     assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::SaveState), AppRequest::Action(AppAction::LoadState), toggle]);
-    // Its held run's ray: Time's Hold to rewind, held, then the panel
-    // hidden mid-hold (xr_play lets go of its pointer then).
+    // Its held runs, the panel opened on Audio: a ray's click or a pinch on
+    // Time, then its Hold to rewind, held, then the panel hidden mid-hold
+    // (xr_play lets go of its pointer then).
+    ui.component().set_selected_section(0);
+    ui.update().unwrap();
+    at(&mut ui, 409.0, 98.0);
+    assert_eq!(ui.component().get_selected_section(), 4, "the held runs' click selects Time");
     requests.borrow_mut().clear();
     let hold = LogicalPosition::new(355.0, 352.0);
     ui.dispatch(WindowEvent::PointerMoved { position: hold });
@@ -1106,7 +1195,7 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, screen(x, y));
         ui.update().unwrap();
     };
-    tap(&mut ui, 537.0, 722.0);
+    tap(&mut ui, 997.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 4, "the Android smoke's tap selects Time");
     ui.set_time_status(Some(true), status);
     ui.update().unwrap();
@@ -1122,11 +1211,12 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     ui.dispatch(WindowEvent::PointerReleased { position: hold, button: PointerEventButton::Left });
     ui.update().unwrap();
     ui.set_time_status(Some(false), status);
-    tap(&mut ui, 617.0, 722.0);
-    assert_eq!(ui.component().get_selected_section(), 5, "and Saves");
+    tap(&mut ui, 767.0, 722.0);
+    assert_eq!(ui.component().get_selected_section(), 5, "and Saves, beside Time");
     tap(&mut ui, 306.0, 1095.0);
     tap(&mut ui, 764.0, 1095.0);
-    tap(&mut ui, 537.0, 722.0);
+    tap(&mut ui, 313.0, 722.0);
+    assert_eq!(ui.component().get_selected_section(), 4, "and Time, beside Saves");
     tap(&mut ui, 829.0, 1644.0);
     assert_eq!(
         requests.borrow().as_slice(),
@@ -1760,16 +1850,16 @@ fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
 }
 
 #[test]
-fn achievements_sign_in_out_and_hardcore_mode_go_through_the_host_and_the_settings_and_hardcore_disables_the_time_controls() {
+fn achievements_sign_in_and_out_go_through_the_host() {
     use xem_ui::{AchievementsAccount, AchievementsRequest, AchievementsView};
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
     let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
     ui.update().unwrap();
-    // A browser's panel: why it has no RetroAchievements, and no toggle.
+    // A browser's panel: why it has no RetroAchievements, and no sign-in.
     section(&mut ui, "Achievements", 7);
-    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Hardcore mode").next().is_none());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements user name").next().is_none());
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements").next().is_some());
 
     // A native host's: the account's fields, typed into, then Sign in.
@@ -1801,30 +1891,4 @@ fn achievements_sign_in_out_and_hardcore_mode_go_through_the_host_and_the_settin
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements user name").next().is_none());
     press(&ui, &element(&ui, "Sign out", AccessibleRole::Button));
     assert_eq!(requests.borrow().last(), Some(&AchievementsRequest::SignOut));
-
-    // Hardcore mode is a setting: the toggle applies it, and it shows what
-    // the service acknowledged, whoever changed it.
-    let toggle = element(&ui, "Hardcore mode", AccessibleRole::Switch);
-    press(&ui, &toggle);
-    ui.update().unwrap();
-    assert!(settings.borrow().settings().retroachievements.hardcore);
-    settings.borrow_mut().apply(xem_settings::SettingChange::RetroAchievements(xem_settings::RetroAchievements { hardcore: false })).unwrap();
-    ui.update().unwrap();
-    assert!(!ui.component().get_ra_hardcore());
-
-    // In effect, it disables save states, Start fast-forward and Hold to
-    // rewind, and the sections say why.
-    for active in [false, true] {
-        ui.set_achievements(&AchievementsView { account: AchievementsAccount::SignedIn, hardcore_active: active, ..Default::default() });
-        section(&mut ui, "Saves", 5);
-        for label in ["Save state", "Load state"] {
-            assert_eq!(element(&ui, label, AccessibleRole::Button).accessible_enabled(), Some(!active), "{label}, hardcore {active}");
-        }
-        section(&mut ui, "Time", 4);
-        for label in ["Start fast-forward", "Hold to rewind"] {
-            assert_eq!(element(&ui, label, AccessibleRole::Button).accessible_enabled(), Some(!active), "{label}, hardcore {active}");
-        }
-        let notes = ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements hardcore mode is on: rewind and fast-forward are disabled.").count();
-        assert_eq!(notes, usize::from(active));
-    }
 }

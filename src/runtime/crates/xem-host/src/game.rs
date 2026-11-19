@@ -162,11 +162,9 @@ impl Game {
         self.session.configure_fast_forward(rate)
     }
     /// Apply changed preferences once. Agent commands keep authority until
-    /// the player changes the corresponding preference again. RetroAchievements'
-    /// hardcore mode keeps the history off ([`Game::set_hardcore`]).
+    /// the player changes the corresponding preference again.
     pub fn sync_time_settings(&mut self, settings: &xem_settings::Settings) -> Result<(), String> {
-        let rewind = settings.rewind_enabled && !self.session.hardcore();
-        let next = (settings.fast_forward_rate,rewind,settings.rewind_interval_seconds,settings.rewind_history_seconds);
+        let next = (settings.fast_forward_rate,settings.rewind_enabled,settings.rewind_interval_seconds,settings.rewind_history_seconds);
         if self.applied_time_settings.is_none_or(|old| old.0 != next.0) { self.configure_fast_forward(next.0)?; }
         if self.applied_time_settings.is_none_or(|old| (old.1,old.2,old.3) != (next.1,next.2,next.3)) {
             self.configure_rewind(next.1,next.2,next.3)?;
@@ -183,33 +181,13 @@ impl Game {
         }
         Ok(())
     }
-    /// RetroAchievements' hardcore mode in the session
-    /// (`Session::set_hardcore`), which the host keeps on while the player
-    /// is signed in with it on: a rewind held lets go, and the history,
-    /// fast-forward and save states are refused until it goes off.
-    pub fn set_hardcore(&mut self, on: bool) {
-        if on && !self.session.hardcore() {
-            let _ = self.set_rewind_held(false, false);
-            let _ = self.set_rewind_held(false, true);
-        }
-        self.session.set_hardcore(on);
-    }
-
-    /// Whether RetroAchievements' hardcore mode is on in the session.
-    pub fn hardcore(&self) -> bool {
-        self.session.hardcore()
-    }
-
     /// RetroAchievements' `client` following this game, between the host's
     /// frames (`crate::achievements`): a game it has not followed is
     /// booted in it by the disc in the drive's hash, and the session's
     /// observer evaluates every frame from then; another disc in the drive
-    /// (the story's disc change) is checked; hardcore mode (the setting
-    /// `hardcore`, in effect while signed in) goes into the session; the
-    /// server's answers are taken (`ran`: frames ran at the last update);
-    /// and a reset the client asks for (hardcore play starts at the
-    /// console's reset) is the console's reset command.
-    pub fn follow_achievements(&mut self, client: &std::rc::Rc<std::cell::RefCell<xem_achievements::Achievements>>, hardcore: bool, ran: bool) {
+    /// (the story's disc change) is checked; and the server's answers are
+    /// taken (`ran`: frames ran at the last update).
+    pub fn follow_achievements(&mut self, client: &std::rc::Rc<std::cell::RefCell<xem_achievements::Achievements>>, ran: bool) {
         let disc = self.session.runtime.services().cd.inserted();
         match &self.achievements {
             Some((by, seen)) if std::rc::Rc::ptr_eq(by, client) => {
@@ -225,16 +203,7 @@ impl Game {
             }
         }
         self.achievements = Some((client.clone(), disc));
-        let active = client.borrow_mut().follow(hardcore);
-        self.set_hardcore(active);
         client.borrow_mut().update(Some(self.session.runtime.memory()), ran);
-        let reset = client.borrow_mut().take_reset();
-        if reset {
-            // The observer hears the reset and starts the evaluation again.
-            if let Err(error) = self.command(&serde_json::json!({"cmd": "reset"})) {
-                eprintln!("RetroAchievements' reset: {error}");
-            }
-        }
     }
 
     /// RetroAchievements' hash of the disc in the drive.
@@ -244,7 +213,6 @@ impl Game {
     }
 
     pub fn set_rewind_held(&mut self, held: bool, from_panel: bool) -> Result<(),String> {
-        if held && self.session.hardcore() { return Err(xem_core::control::HARDCORE_REWIND.into()); }
         if held && self.session.rewind.budget == 0 { return Err("Enable rewind history in Settings first.".into()); }
         if held && let Some(error) = &self.session.rewind.error { return Err(error.clone()); }
         let was_held = self.rewind_held.iter().any(|held| *held);

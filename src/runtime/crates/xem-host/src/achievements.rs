@@ -53,11 +53,10 @@ impl HostAchievements {
     }
 
     /// Between the host's frames: the panel's requests, the game followed
-    /// (`Game::follow_achievements`: its frames evaluated, hardcore mode in
-    /// its session, a reset the client asks for), what happened over the
-    /// game on the HUD and the client's state in the panel. `hardcore` is the
-    /// setting, `ran` whether the game ran frames at the last update.
-    pub fn update(&mut self, game: Option<&mut Game>, hardcore: bool, ran: bool, ui: &SettingsUi, hud: &mut FrameRateUi, now: Duration) {
+    /// (`Game::follow_achievements`: its frames evaluated), what happened
+    /// over the game on the HUD and the client's state in the panel. `ran`
+    /// says whether the game ran frames at the last update.
+    pub fn update(&mut self, game: Option<&mut Game>, ran: bool, ui: &SettingsUi, hud: &mut FrameRateUi, now: Duration) {
         for request in std::mem::take(&mut *self.requests.borrow_mut()) {
             let mut client = self.client.borrow_mut();
             match request {
@@ -71,7 +70,7 @@ impl HostAchievements {
         }
         match game {
             Some(game) => {
-                game.follow_achievements(&self.client, hardcore, ran);
+                game.follow_achievements(&self.client, ran);
                 self.had_game = true;
             }
             None => {
@@ -79,7 +78,6 @@ impl HostAchievements {
                 if std::mem::take(&mut self.had_game) {
                     client.end();
                 }
-                client.follow(hardcore);
                 client.update(None, false);
             }
         }
@@ -94,7 +92,7 @@ impl HostAchievements {
                 xem_achievements::NoticeKind::Info => (NoticeKind::Information, 4),
                 xem_achievements::NoticeKind::Error => (NoticeKind::Failure, 8),
             };
-            hud.notify(kind, &notice.title, &notice.detail, seconds, now);
+            hud.notify(kind, &notice.title, &notice.detail, notice.badge.as_deref(), seconds, now);
         }
         ui.set_achievements(&view(&status));
     }
@@ -116,5 +114,5 @@ fn view(status: &xem_achievements::Status) -> AchievementsView {
             format!("Signed in as {user} · {score} points{}", if *softcore_score > 0 { format!(" ({softcore_score} softcore)") } else { String::new() }),
         ),
     };
-    AchievementsView { account, user, game: status.game.clone(), error: status.error.clone().unwrap_or_default(), hardcore_active: status.hardcore }
+    AchievementsView { account, user, game: status.game.clone(), error: status.error.clone().unwrap_or_default() }
 }

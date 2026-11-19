@@ -571,6 +571,10 @@ impl WebRenderer {
         };
         let presentation = &settings.settings().presentation;
         if let Some(counter) = &mut self.frame_rate {
+            // The HUD keeps clear of the touch deck's controls level with
+            // it (a phone's top buttons), as the native hosts' does.
+            let margin = 8.0 * self.scale;
+            counter.keep_clear((margin, margin), self.scale, self.overlay.deck.iter().map(|drawn| (drawn.rect.x, drawn.rect.y, drawn.rect.width, drawn.rect.height)));
             counter.frame(std::time::Duration::from_secs_f64(time),self.scale,presentation.show_fps).map_err(|error| error.to_string())?;
         }
         // Under Force 4:3 the picture's place follows the game's own lines,

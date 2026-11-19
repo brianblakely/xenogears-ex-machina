@@ -7,13 +7,9 @@
 //! the PlayStation's address space (docs/runtime.md, The game module), so
 //! the achievements written for the console read the same RAM.
 //!
-//! Hardcore mode is RetroAchievements': the host keeps it on in the session
-//! (`Session::set_hardcore`) while the player is signed in with the
-//! setting on ([`Achievements::follow`]). A hardcore session must play from
-//! the console's reset with those restrictions throughout, so the client
-//! asks the host to reset the console ([`Achievements::take_reset`]) when
-//! the setting turns on during play (rcheevos' own request) or when the
-//! achievements load over play that had them off.
+//! Unlocks are softcore: RetroAchievements' hardcore mode is not offered.
+//! An unlock's notice brings the achievement's badge, the image the server
+//! keeps for it ([`Notice::badge`]).
 //!
 //! The account (the player's name and the token the server gave at
 //! sign-in, never the password) is kept in [`ACCOUNT_FILE`] beside the
@@ -23,9 +19,11 @@ mod ffi;
 mod http;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::ffi::{CStr, CString, c_char, c_int, c_void};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::{Duration, Instant};
 
@@ -45,6 +43,10 @@ pub const HOST_VARIABLE: &str = "XEM_RETROACHIEVEMENTS_HOST";
 /// How long after a sign-in with the kept token failed for want of an
 /// answer it is tried again.
 const SIGN_IN_RETRY: Duration = Duration::from_secs(60);
+
+/// How long an unlock's notice waits for its badge before it shows
+/// without one (the server unreachable, slow).
+const BADGE_WAIT: Duration = Duration::from_secs(3);
 
 /// What the account's file holds.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -76,8 +78,6 @@ pub struct Status {
     pub game: String,
     /// Why the last sign-in or load failed, until one succeeds.
     pub error: Option<String>,
-    /// Hardcore mode is in effect: signed in with it on.
-    pub hardcore: bool,
 }
 
 /// What a notice over the game says (the HUD's).
@@ -98,6 +98,33 @@ pub struct Notice {
     pub kind: NoticeKind,
     pub title: String,
     pub detail: String,
+    /// An unlocked achievement's badge: the server's image of it (a PNG,
+    /// 64 pixels square), if it came.
+    #[serde(skip)]
+    pub badge: Option<Arc<[u8]>>,
+}
+
+impl Notice {
+    fn new(kind: NoticeKind, title: String, detail: String) -> Self {
+        Notice { kind, title, detail, badge: None }
+    }
+}
+
+/// A notice the client holds until its achievement's badge came, or
+/// [`BADGE_WAIT`] passed; those after it wait with it, in order.
+struct Held {
+    notice: Notice,
+    /// The badge's URL (RetroAchievements' media server).
+    badge: Option<String>,
+    since: Instant,
+}
+
+/// A badge image, as the client has it.
+enum Badge {
+    Fetching,
+    Fetched(Arc<[u8]>),
+    /// The server had none, or could not be reached.
+    Missing,
 }
 
 /// An asynchronous call's kind, which its generation tells apart from
@@ -131,23 +158,13 @@ impl Call {
 struct Inner {
     memory: Option<*const (dyn GameMemory + 'static)>,
     requests: Sender<http::Request>,
-    notices: Vec<Notice>,
-    reset: bool,
+    notices: Vec<Held>,
     outcomes: Vec<(Call, u64, c_int, String)>,
 }
 
 impl Inner {
-    /// The host is to reset the console ([`Achievements::take_reset`]), and
-    /// the player is told why.
-    fn ask_reset(&mut self) {
-        if !self.reset {
-            self.reset = true;
-            self.notices.push(Notice {
-                kind: NoticeKind::Info,
-                title: "Hardcore mode: the game restarts".into(),
-                detail: "RetroAchievements' hardcore play begins at the console's start.".into(),
-            });
-        }
+    fn notify(&mut self, notice: Notice, badge: Option<String>) {
+        self.notices.push(Held { notice, badge, since: Instant::now() });
     }
 }
 
@@ -183,12 +200,8 @@ pub struct Achievements {
     hash: Option<String>,
     load: Load,
     error: Option<String>,
-    /// The hardcore setting rcheevos has, and whether hardcore is in effect.
-    hardcore: bool,
-    active: bool,
-    /// Hardcore has been in effect for every frame since the console's last
-    /// reset (or boot).
-    clean: bool,
+    /// Badges by URL, for this run of the app.
+    badges: HashMap<String, Badge>,
 }
 
 impl Achievements {
@@ -207,13 +220,13 @@ impl Achievements {
         // The requests name the app as the server's list of clients expects:
         // `Name/version (system) rcheevos/version`.
         let (requests, responses) = http::spawn(format!("{client} ({}) {}", system(), text(clause.as_ptr())));
-        let inner = Box::into_raw(Box::new(Inner { memory: None, requests, notices: Vec::new(), reset: false, outcomes: Vec::new() }));
+        let inner = Box::into_raw(Box::new(Inner { memory: None, requests, notices: Vec::new(), outcomes: Vec::new() }));
         // SAFETY: `inner` lives until the client is destroyed (Drop).
         unsafe {
             ffi::rc_client_set_userdata(handle, inner.cast());
             ffi::rc_client_set_event_handler(handle, event);
             ffi::rc_client_enable_logging(handle, ffi::RC_CLIENT_LOG_LEVEL_INFO, log);
-            // rcheevos starts in hardcore: the setting decides (`follow`).
+            // rcheevos starts in hardcore; play here is softcore.
             ffi::rc_client_set_hardcore_enabled(handle, 0);
             if let Some(host) = std::env::var(HOST_VARIABLE).ok().filter(|host| !host.is_empty()).and_then(|host| CString::new(host).ok()) {
                 ffi::rc_client_set_host(handle, host.as_ptr());
@@ -234,9 +247,7 @@ impl Achievements {
             hash: None,
             load: Load::None,
             error: None,
-            hardcore: false,
-            active: false,
-            clean: false,
+            badges: HashMap::new(),
         }
     }
 
@@ -297,7 +308,7 @@ impl Achievements {
     }
 
     /// Sign out: the kept account is forgotten and the game's achievements
-    /// unload (hardcore mode no longer applies).
+    /// unload.
     pub fn sign_out(&mut self) {
         // SAFETY: the client is live.
         unsafe { ffi::rc_client_logout(self.client) };
@@ -321,28 +332,13 @@ impl Achievements {
         self.kept.is_some()
     }
 
-    /// Follow the hardcore setting: rcheevos takes it, and it is in effect
-    /// while the player is signed in. Returns whether it is in effect, as
-    /// the host keeps it in the session (`Session::set_hardcore`).
-    pub fn follow(&mut self, hardcore: bool) -> bool {
-        if hardcore != self.hardcore {
-            self.hardcore = hardcore;
-            // SAFETY: the client is live; a reset it asks for comes
-            // through `event`.
-            unsafe { ffi::rc_client_set_hardcore_enabled(self.client, c_int::from(hardcore)) };
-        }
-        self.active = hardcore && self.signed_in();
-        self.active
-    }
-
     /// A game booted from the disc whose hash is `hash` (rcheevos', of the
     /// disc in the drive): the last game's achievements unload, this one's
-    /// load once the player is signed in. Hardcore play starts clean.
+    /// load once the player is signed in.
     pub fn boot(&mut self, hash: Result<String, String>) {
         // SAFETY: the client is live.
         unsafe { ffi::rc_client_unload_game(self.client) };
         self.forget_game_calls();
-        self.clean = true;
         match hash {
             Ok(hash) => {
                 self.hash = Some(hash);
@@ -391,9 +387,6 @@ impl Achievements {
     /// The game completed a frame: its achievements are evaluated over
     /// `memory`.
     pub fn frame(&mut self, memory: &dyn GameMemory) {
-        if !self.active {
-            self.clean = false;
-        }
         self.with_memory(memory, |client| {
             // SAFETY: the client is live; the memory is reachable for the call.
             unsafe { ffi::rc_client_do_frame(client) }
@@ -402,7 +395,7 @@ impl Achievements {
 
     /// The game went to another point in time ([`Observer::timeline`]):
     /// the achievements' evaluation starts again (rcheevos' reset after the
-    /// console's reset, which also ends a hardcore reset's wait).
+    /// console's reset).
     pub fn timeline(&mut self, reset: bool) {
         // SAFETY: the client is live.
         unsafe {
@@ -412,7 +405,6 @@ impl Achievements {
                 ffi::rc_client_deserialize_progress(self.client, std::ptr::null());
             }
         }
-        self.clean = reset && self.active;
     }
 
     fn with_memory<R>(&mut self, memory: &dyn GameMemory, call: impl FnOnce(*mut ffi::rc_client_t) -> R) -> R {
@@ -431,12 +423,19 @@ impl Achievements {
     /// game frame ran (`ran`).
     pub fn update(&mut self, memory: Option<&dyn GameMemory>, ran: bool) {
         while let Ok(response) = self.responses.try_recv() {
+            let answer = match response.reply {
+                http::Reply::Rcheevos(answer) => answer,
+                http::Reply::Badge(url) => {
+                    let badge = if response.status == 200 && !response.body.is_empty() { Badge::Fetched(response.body.into()) } else { Badge::Missing };
+                    self.badges.insert(url, badge);
+                    continue;
+                }
+            };
             let server = ffi::rc_api_server_response_t {
                 body: response.body.as_ptr().cast(),
                 body_length: response.body.len(),
                 http_status_code: response.status,
             };
-            let answer = response.answer;
             // SAFETY: rcheevos' own callback with its own data, once; the
             // body lives until it returns.
             let deliver = |_: *mut ffi::rc_client_t| unsafe { (answer.callback)(&server, answer.data as *mut c_void) };
@@ -489,11 +488,9 @@ impl Achievements {
                         }
                         self.kept = Some(kept);
                     }
-                    self.inner().notices.push(Notice {
-                        kind: NoticeKind::Info,
-                        title: format!("Signed in as {}", text(user.display_name)),
-                        detail: format!("RetroAchievements · {} points", user.score),
-                    });
+                    let notice = Notice::new(NoticeKind::Info, format!("Signed in as {}", text(user.display_name)),
+                        format!("RetroAchievements · {} points", user.score));
+                    self.inner().notify(notice, None);
                 } else if result == ffi::RC_INVALID_CREDENTIALS || result == ffi::RC_EXPIRED_TOKEN || self.kept.is_none() {
                     // A password refused, or a kept token no longer valid:
                     // signed out until the player signs in again.
@@ -513,12 +510,7 @@ impl Achievements {
                     self.load = Load::Loaded;
                     self.error = None;
                     let notice = self.loaded_notice();
-                    self.inner().notices.push(notice);
-                    // Hardcore play must start at the console's reset
-                    // with its restrictions throughout.
-                    if self.active && !self.clean {
-                        self.inner().ask_reset();
-                    }
+                    self.inner().notify(notice, None);
                 } else if result == ffi::RC_NO_GAME_LOADED {
                     self.load = Load::Unknown;
                 } else if result == ffi::RC_ABORTED {
@@ -526,12 +518,12 @@ impl Achievements {
                 } else {
                     let error = reason(result, &message);
                     self.load = Load::Failed(error.clone());
-                    self.inner().notices.push(Notice { kind: NoticeKind::Error, title: "Achievements did not load".into(), detail: error });
+                    self.inner().notify(Notice::new(NoticeKind::Error, "Achievements did not load".into(), error), None);
                 }
             }
             Call::ChangeDisc => {
                 if result != ffi::RC_OK && result != ffi::RC_ABORTED {
-                    self.inner().notices.push(Notice { kind: NoticeKind::Error, title: "Disc not recognized".into(), detail: reason(result, &message) });
+                    self.inner().notify(Notice::new(NoticeKind::Error, "Disc not recognized".into(), reason(result, &message)), None);
                 }
             }
         }
@@ -551,16 +543,11 @@ impl Achievements {
 
     fn loaded_notice(&self) -> Notice {
         let summary = self.summary();
-        let mode = if self.active { " · hardcore" } else { "" };
-        Notice {
-            kind: NoticeKind::Info,
-            title: self.title(),
-            detail: if summary.num_core_achievements == 0 {
-                format!("No achievements yet{mode}")
-            } else {
-                format!("{} of {} achievements unlocked{mode}", summary.num_unlocked_achievements, summary.num_core_achievements)
-            },
-        }
+        Notice::new(NoticeKind::Info, self.title(), if summary.num_core_achievements == 0 {
+            "No achievements yet".into()
+        } else {
+            format!("{} of {} achievements unlocked", summary.num_unlocked_achievements, summary.num_core_achievements)
+        })
     }
 
     /// What the panel shows.
@@ -586,19 +573,37 @@ impl Achievements {
             Load::Unknown => "RetroAchievements knows no game by this disc.".into(),
             Load::Failed(error) => format!("The game's achievements did not load: {error}"),
         };
-        Status { account, game, error: self.error.clone(), hardcore: self.active }
+        Status { account, game, error: self.error.clone() }
     }
 
-    /// What happened over the game since the last call (the HUD's notices).
+    /// What happened over the game since the last call (the HUD's
+    /// notices), in order: an unlock's waits for its badge, which it asks
+    /// the server for, until it came or [`BADGE_WAIT`] passed.
     pub fn take_notices(&mut self) -> Vec<Notice> {
-        std::mem::take(&mut self.inner().notices)
-    }
-
-    /// Whether the host should reset the console now (hardcore turned on
-    /// during play, or achievements loaded over play that had it off); the
-    /// reset's timeline (`Observer::timeline`) starts the evaluation again.
-    pub fn take_reset(&mut self) -> bool {
-        std::mem::take(&mut self.inner().reset)
+        let mut held = std::mem::take(&mut self.inner().notices).into_iter();
+        let mut ready = Vec::new();
+        while let Some(mut next) = held.next() {
+            if let Some(url) = &next.badge {
+                match self.badges.get(url) {
+                    Some(Badge::Fetched(image)) => next.notice.badge = Some(image.clone()),
+                    Some(Badge::Missing) => {}
+                    fetching => {
+                        if fetching.is_none() {
+                            self.badges.insert(url.clone(), Badge::Fetching);
+                            let request = http::Request { url: url.clone(), post: None, reply: http::Reply::Badge(url.clone()) };
+                            let _ = self.inner().requests.send(request);
+                        }
+                        if next.since.elapsed() < BADGE_WAIT {
+                            // Callbacks add none meanwhile: rcheevos is not called here.
+                            self.inner().notices = std::iter::once(next).chain(held).collect();
+                            break;
+                        }
+                    }
+                }
+            }
+            ready.push(next.notice);
+        }
+        ready
     }
 
     /// Agents' commands (`xem-desktop --control`): `achievements` (the
@@ -724,7 +729,7 @@ unsafe extern "C" fn server_call(request: *const ffi::rc_api_request_t, callback
         (content_type, text(request.post_data))
     });
     let answer = http::Answer { callback, data: callback_data as usize };
-    let _ = inner.requests.send(http::Request { url: text(request.url), post, answer });
+    let _ = inner.requests.send(http::Request { url: text(request.url), post, reply: http::Reply::Rcheevos(answer) });
 }
 
 unsafe extern "C" fn completed(result: c_int, error_message: *const c_char, client: *mut ffi::rc_client_t, userdata: *mut c_void) {
@@ -739,13 +744,17 @@ unsafe extern "C" fn event(event: *const ffi::rc_client_event_t, client: *mut ff
     let event = unsafe { &*event };
     let achievement = unsafe { event.achievement.as_ref() };
     let leaderboard = unsafe { event.leaderboard.as_ref() };
-    let notice = |kind, title: String, detail: String| Some(Notice { kind, title, detail });
+    let notice = |kind, title: String, detail: String| Some(Notice::new(kind, title, detail));
     let game = || unsafe { ffi::rc_client_get_game_info(client).as_ref() }.map_or_default(|game| text(game.title));
-    let hardcore = unsafe { ffi::rc_client_get_hardcore_enabled(client) } != 0;
+    if event.kind == ffi::RC_CLIENT_EVENT_ACHIEVEMENT_TRIGGERED {
+        if let Some(a) = achievement {
+            let unlocked = Notice::new(NoticeKind::Unlocked, text(a.title), format!("{} · {} points", text(a.description), a.points));
+            inner.notify(unlocked, badge_url(a));
+        }
+        return;
+    }
     let notice = match event.kind {
-        ffi::RC_CLIENT_EVENT_ACHIEVEMENT_TRIGGERED => achievement.and_then(|a| notice(NoticeKind::Unlocked, text(a.title),
-            format!("{} · {} points", text(a.description), a.points))),
-        ffi::RC_CLIENT_EVENT_GAME_COMPLETED => notice(NoticeKind::Completed, format!("{} {}", if hardcore { "Mastered" } else { "Completed" }, game()),
+        ffi::RC_CLIENT_EVENT_GAME_COMPLETED => notice(NoticeKind::Completed, format!("Completed {}", game()),
             "Every achievement unlocked".into()),
         ffi::RC_CLIENT_EVENT_SUBSET_COMPLETED => unsafe { event.subset.as_ref() }.and_then(|subset| notice(NoticeKind::Completed,
             format!("Completed {}", text(subset.title)), "Every achievement of the set unlocked".into())),
@@ -761,13 +770,22 @@ unsafe extern "C" fn event(event: *const ffi::rc_client_event_t, client: *mut ff
         ffi::RC_CLIENT_EVENT_DISCONNECTED => notice(NoticeKind::Error, "RetroAchievements unreachable".into(),
             "Unlocks are kept and sent once it answers.".into()),
         ffi::RC_CLIENT_EVENT_RECONNECTED => notice(NoticeKind::Info, "RetroAchievements reached again".into(), "Kept unlocks sent.".into()),
-        ffi::RC_CLIENT_EVENT_RESET => {
-            inner.ask_reset();
-            None
-        }
         _ => None,
     };
-    inner.notices.extend(notice);
+    if let Some(notice) = notice {
+        inner.notify(notice, None);
+    }
+}
+
+/// The URL of `achievement`'s badge as unlocked (the server's, else one on
+/// RetroAchievements' media server by its badge's name).
+fn badge_url(achievement: &ffi::rc_client_achievement_t) -> Option<String> {
+    let mut url = [0 as c_char; 512];
+    // SAFETY: rcheevos writes at most the buffer's length, a zero ending it.
+    let result = unsafe {
+        ffi::rc_client_achievement_get_image_url(achievement, ffi::RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, url.as_mut_ptr(), url.len())
+    };
+    (result == ffi::RC_OK).then(|| text(url.as_ptr())).filter(|url| url.starts_with("http"))
 }
 
 unsafe extern "C" fn log(message: *const c_char, _client: *const ffi::rc_client_t) {

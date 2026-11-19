@@ -130,9 +130,6 @@ pub struct AchievementsView {
     pub game: String,
     /// Why the last sign-in or load failed (empty: nothing failed).
     pub error: String,
-    /// Hardcore mode is in effect (signed in with it on): the Time and
-    /// Saves sections say what it disables, and disable it.
-    pub hardcore_active: bool,
 }
 
 /// What the Achievements section asks of the host's client.
@@ -314,8 +311,8 @@ impl SettingsUi {
     }
 
     /// Whether the host has a RetroAchievements client (the native hosts):
-    /// the Achievements section offers sign-in and hardcore mode, else says
-    /// why a browser cannot reach the server.
+    /// the Achievements section offers sign-in, else says why a browser
+    /// cannot reach the server.
     pub fn set_achievements_offered(&self, offered: bool) {
         self.panel.set_ra_offered(offered);
     }
@@ -337,7 +334,6 @@ impl SettingsUi {
                 set(panel, next.as_str().into());
             }
         }
-        panel.set_ra_hardcore_active(view.hardcore_active);
     }
 
     /// The Achievements section's Sign in (with the name and password the
@@ -728,7 +724,6 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_rewind_interval_max(xem_settings::MAX_REWIND_INTERVAL_SECONDS as i32);
     panel.set_rewind_history_seconds(settings.rewind_history_seconds as i32);
     panel.set_rewind_history_max(xem_settings::MAX_REWIND_HISTORY_SECONDS as i32);
-    panel.set_ra_hardcore(settings.retroachievements.hardcore);
     show_binding(panel, settings);
     show_game_binding(panel, settings);
 }
@@ -874,10 +869,6 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_run_by_default_edited({
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
-    });
-    panel.on_ra_hardcore_edited({
-        let apply = apply.clone();
-        move |hardcore| apply(Some(SettingChange::RetroAchievements(xem_settings::RetroAchievements { hardcore })))
     });
     panel.on_hide_idle_cursor_edited({
         let apply = apply.clone();
@@ -1179,7 +1170,22 @@ struct Queued {
     kind: NoticeKind,
     title: String,
     detail: String,
+    badge: Option<slint::Image>,
     seconds: u64,
+}
+
+/// An unlocked achievement's badge (a PNG RetroAchievements' server gave)
+/// as the HUD shows it: none for data that is no PNG of a badge's size (at
+/// most 512 pixels square; the server's are 64), read from its header
+/// before it is decoded.
+fn badge_image(png: &[u8]) -> Option<slint::Image> {
+    let size = |at: usize| png.get(at..at + 4).map(|bytes| u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]));
+    let (width, height) = (size(16)?, size(20)?);
+    let header = png.starts_with(b"\x89PNG\r\n\x1a\n") && &png[12..16] == b"IHDR";
+    if !header || !(1..=512).contains(&width) || !(1..=512).contains(&height) {
+        return None;
+    }
+    slint::Image::load_from_data(png, Some("png")).ok()
 }
 
 /// The frame counter, playback activity, state results and RetroAchievements'
@@ -1195,9 +1201,20 @@ pub struct FrameRateUi {
     frames: u32,
     notice_until: Option<Duration>,
     queued: std::collections::VecDeque<Queued>,
+    /// Its width in logical pixels ([`FrameRateUi::set_width`]).
+    width: f32,
+}
+
+/// The HUD's size in physical pixels: `width` logical pixels by 110.
+fn hud_size(scale_factor: f32, width: f32) -> (u32, u32) {
+    ((width * scale_factor).round().max(1.0) as u32, (110.0 * scale_factor).round().max(1.0) as u32)
 }
 
 impl FrameRateUi {
+    /// The HUD's widest, and its least where a host narrows it.
+    pub const WIDTH: f32 = 304.0;
+    pub const LEAST_WIDTH: f32 = 200.0;
+
     pub fn new(gpu: SharedGpu, scale_factor: f32) -> Result<Self, PlatformError> {
         let device = gpu.device.clone();
         provide_gpu(gpu)?;
@@ -1205,7 +1222,7 @@ impl FrameRateUi {
         let window = CREATED
             .take()
             .ok_or_else(|| PlatformError::Other("Slint created no FPS window".into()))?;
-        let size = Self::physical_size(scale_factor);
+        let size = hud_size(scale_factor, Self::WIDTH);
         let (texture, view) = panel_texture(&device, size);
         let mut ui = Self {
             window,
@@ -1218,19 +1235,39 @@ impl FrameRateUi {
             frames: 0,
             notice_until: None,
             queued: Default::default(),
+            width: Self::WIDTH,
         };
         ui.resize(scale_factor);
         ui.component.show()?;
         Ok(ui)
     }
-    fn physical_size(scale_factor: f32) -> (u32, u32) {
-        (
-            (304.0 * scale_factor).round().max(1.0) as u32,
-            (110.0 * scale_factor).round().max(1.0) as u32,
-        )
+    /// The HUD as wide as `logical` pixels allow (between
+    /// [`Self::LEAST_WIDTH`] and [`Self::WIDTH`]): a host keeps it clear of
+    /// what stands beside it, the touch deck's top buttons. Its chips and
+    /// notices fit the width; a notice's words wrap or elide in it.
+    pub fn set_width(&mut self, logical: f32) {
+        let width = logical.clamp(Self::LEAST_WIDTH, Self::WIDTH).round();
+        if width != self.width {
+            self.width = width;
+            self.resize(self.window.window.scale_factor());
+        }
+    }
+    /// Keeps the HUD, standing at `at` (its top left, in target pixels at
+    /// `scale`), 8 logical pixels from what stands level with it
+    /// (`controls`, each x, y, width and height in target pixels: the touch
+    /// deck's, while it shows): it narrows to the room left of them
+    /// ([`Self::set_width`]), whole beside none.
+    pub fn keep_clear(&mut self, at: (f32, f32), scale: f32, controls: impl IntoIterator<Item = (f32, f32, f32, f32)>) {
+        let (top, bottom) = (at.1, at.1 + 110.0 * scale);
+        let width = controls
+            .into_iter()
+            .filter(|&(_, y, _, height)| y < bottom && y + height > top)
+            .map(|(x, ..)| (x - at.0) / scale - 8.0)
+            .fold(Self::WIDTH, f32::min);
+        self.set_width(width);
     }
     fn resize(&mut self, scale_factor: f32) {
-        let size = Self::physical_size(scale_factor);
+        let size = hud_size(scale_factor, self.width);
         if self.size() != size {
             (self.texture, self.view) = panel_texture(&self.device, size);
         }
@@ -1268,25 +1305,28 @@ impl FrameRateUi {
     pub fn notify_state(&mut self, saved: bool, error: Option<&str>, now: Duration) {
         let action = if saved { "save" } else { "load" };
         match error {
-            Some(error) => self.show(NoticeKind::Failure, &format!("Could not {action} state"), error, 8, now),
-            None => self.show(NoticeKind::Success, &format!("State {}", if saved { "saved" } else { "loaded" }), "", 4, now),
+            Some(error) => self.show(NoticeKind::Failure, &format!("Could not {action} state"), error, None, 8, now),
+            None => self.show(NoticeKind::Success, &format!("State {}", if saved { "saved" } else { "loaded" }), "", None, 4, now),
         }
     }
 
-    /// A notice (RetroAchievements', a refused time control) shown for
-    /// `seconds` once those before it expired: one does not hide another.
-    pub fn notify(&mut self, kind: NoticeKind, title: &str, detail: &str, seconds: u64, now: Duration) {
+    /// A notice (RetroAchievements') shown for `seconds` once those before
+    /// it expired: one does not hide another. An unlock's `badge` (the
+    /// achievement's image, a PNG) shows in place of the trophy.
+    pub fn notify(&mut self, kind: NoticeKind, title: &str, detail: &str, badge: Option<&[u8]>, seconds: u64, now: Duration) {
+        let badge = badge.and_then(badge_image);
         if self.notice_until.is_some() {
-            self.queued.push_back(Queued { kind, title: title.into(), detail: detail.into(), seconds });
+            self.queued.push_back(Queued { kind, title: title.into(), detail: detail.into(), badge, seconds });
         } else {
-            self.show(kind, title, detail, seconds, now);
+            self.show(kind, title, detail, badge, seconds, now);
         }
     }
 
-    fn show(&mut self, kind: NoticeKind, title: &str, detail: &str, seconds: u64, now: Duration) {
+    fn show(&mut self, kind: NoticeKind, title: &str, detail: &str, badge: Option<slint::Image>, seconds: u64, now: Duration) {
         let notice = if detail.is_empty() { title.to_string() } else { format!("{title}: {detail}") };
         self.component.set_notice_title(title.into());
         self.component.set_notice_detail(detail.into());
+        self.component.set_notice_badge(badge.unwrap_or_default());
         self.component.set_notice(notice.into());
         self.component.set_notice_kind(kind.index());
         self.notice_until = Some(now.saturating_add(Duration::from_secs(seconds)));
@@ -1310,7 +1350,7 @@ impl FrameRateUi {
             self.notice_until = None;
             self.component.set_notice("".into());
             if let Some(next) = self.queued.pop_front() {
-                self.show(next.kind, &next.title, &next.detail, next.seconds, now);
+                self.show(next.kind, &next.title, &next.detail, next.badge, next.seconds, now);
             }
         }
         if self.window.window.scale_factor() != scale_factor {

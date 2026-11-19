@@ -1,8 +1,10 @@
 //! A stand-in RetroAchievements server for tests (plain HTTP on this
 //! machine), answering as rcheevos' own tests have the server answer: the
 //! account `Player` with the password `secret` (its token `TOKEN`), the
-//! games it is given by their discs' hashes, sessions and unlocks. Every
-//! request's form is logged. xem-host's tests take it too (by path).
+//! games it is given by their discs' hashes, sessions and unlocks, and the
+//! achievements' badges (`GET /Badge/<id>.png`, answered with [`badge`]).
+//! Every request's form is logged (a badge's as `r` `badge` and its `id`).
+//! xem-host's tests take it too (by path).
 #![allow(dead_code)]
 
 use std::collections::BTreeMap;
@@ -14,11 +16,21 @@ use std::sync::{Arc, Mutex};
 /// `user-agent`.
 pub type Log = Arc<Mutex<Vec<BTreeMap<String, String>>>>;
 
+/// Where the achievements' badges are, in a [`game`] answer: the server
+/// puts its own address there (a test may put another first).
+pub const BADGES: &str = "{badges}";
+
+/// The image the server gives as achievement `id`'s badge (not a PNG: the
+/// client keeps what it is given).
+pub fn badge(id: &str) -> Vec<u8> {
+    format!("badge {id}").into_bytes()
+}
+
 /// A game's `achievementsets` answer: `achievements` as
-/// `(id, title, description, points, condition)`.
+/// `(id, title, description, points, condition)`, each with its badge.
 pub fn game(id: u32, title: &str, achievements: &[(u32, &str, &str, u32, &str)]) -> String {
     let list: Vec<String> = achievements.iter().map(|(id, title, description, points, condition)| format!(
-        r#"{{"ID":{id},"Title":"{title}","Description":"{description}","Flags":3,"Points":{points},"MemAddr":"{condition}","Author":"Tester","BadgeName":"00001","Created":1700000000,"Modified":1700000000}}"#
+        r#"{{"ID":{id},"Title":"{title}","Description":"{description}","Flags":3,"Points":{points},"MemAddr":"{condition}","Author":"Tester","BadgeName":"{id:05}","BadgeURL":"{BADGES}/{id}.png","Created":1700000000,"Modified":1700000000}}"#
     )).collect();
     format!(r#"{{"Success":true,"GameId":{id},"Title":"{title}","ConsoleId":12,"ImageIconUrl":"http://server/Images/000001.png",
         "RichPresenceGameId":{id},"RichPresencePatch":"","Sets":[{{"AchievementSetId":1,"GameId":{id},"Title":null,"Type":"core",
@@ -49,12 +61,17 @@ pub fn server(games: Vec<(&'static str, String)>) -> (String, Log) {
     let address = format!("http://{}", listener.local_addr().unwrap());
     let log: Log = Arc::default();
     let requests = log.clone();
+    let badges = format!("{address}/Badge");
     std::thread::spawn(move || {
         for stream in listener.incoming() {
             let Ok(stream) = stream else { continue };
             let mut reader = BufReader::new(stream);
             let mut length = 0;
             let mut user_agent = String::new();
+            let mut request_line = String::new();
+            if reader.read_line(&mut request_line).unwrap_or(0) == 0 {
+                continue;
+            }
             loop {
                 let mut line = String::new();
                 if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
@@ -67,6 +84,14 @@ pub fn server(games: Vec<(&'static str, String)>) -> (String, Log) {
                 if lower.starts_with("user-agent:") {
                     user_agent = line["user-agent:".len()..].trim().to_string();
                 }
+            }
+            if let Some(id) = request_line.strip_prefix("GET /Badge/").and_then(|rest| rest.split_once(".png ")).map(|(id, _)| id.to_string()) {
+                let image = badge(&id);
+                requests.lock().unwrap().push(BTreeMap::from([("r".into(), "badge".into()), ("id".into(), id), ("user-agent".into(), user_agent)]));
+                let mut stream = reader.into_inner();
+                let _ = write!(stream, "HTTP/1.1 200 X\r\nContent-Type: image/png\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", image.len());
+                let _ = stream.write_all(&image);
+                continue;
             }
             let mut body = vec![0; length];
             if reader.read_exact(&mut body).is_err() {
@@ -82,7 +107,7 @@ pub fn server(games: Vec<(&'static str, String)>) -> (String, Log) {
                     _ => (401, r#"{"Success":false,"Error":"Invalid User/Token combination.","Status":401,"Code":"invalid_credentials"}"#.to_string()),
                 },
                 Some("achievementsets") => match games.iter().find(|(hash, _)| form.get("m").map(String::as_str) == Some(*hash)) {
-                    Some((_, answer)) => (200, answer.clone()),
+                    Some((_, answer)) => (200, answer.replace(BADGES, &badges)),
                     None => (404, r#"{"Success":false,"Error":"Unknown game","Code":"not_found","Status":404}"#.to_string()),
                 },
                 Some("startsession") => (200, r#"{"Success":true,"ServerNow":1700000000}"#.to_string()),
