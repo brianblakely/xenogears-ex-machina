@@ -44,6 +44,20 @@ class Fit(unittest.TestCase):
         self.assertTrue(all(len(page) <= 3 for page in pages), wrapped)
         self.assertEqual(tr.problems(original, wrapped, EXTRA), [])
 
+    def test_a_long_pages_sentences_fill_their_lines_and_its_pages_end_where_sentences_end(self):
+        original = text('Fei{n}"Hello there."', columns=40, rows=3)
+        # A sentence's lines fill up; the name and a line a sentence ends stay. It fits: no page more.
+        wrapped = tr.wrap(original, 'Fei{n}"Uno dos.{n}Tres{n}cuatro{n}cinco."', EXTRA)
+        self.assertEqual(wrapped, 'Fei{n}"Uno dos.{n}Tres cuatro cinco."')
+        # Pages of even length would end on "cuatro"; the sentence ends after "dos.".
+        wrapped = tr.wrap(original, 'Fei{n}"Uno dos.{n}Tres cuatro{n}cinco. Seis{n}siete ocho."', EXTRA)
+        self.assertEqual(wrapped, 'Fei{n}"Uno dos.{p}Tres cuatro cinco.{n}Seis siete ocho."')
+        self.assertEqual(tr.problems(original, wrapped, EXTRA), [])
+        # Where none ends a line, a page ends inside one, after the sentence, and the rest fills the next.
+        original = text("Hello", columns=40, rows=2)
+        wrapped = tr.wrap(original, "Uno dos tres cuatro{n}cinco seis.{wait 10} Siete{n}ocho nueve diez.", EXTRA)
+        self.assertEqual(wrapped, "Uno dos tres cuatro{n}cinco seis.{wait 10}{p}Siete ocho nueve{n}diez.")
+
     def test_a_line_never_begins_with_the_mark_french_sets_after_a_space(self):
         original = text("Hello", columns=16, rows=8)
         wrapped = tr.wrap(original, "Tu viens ? Oui ! Va : vite", FRENCH)

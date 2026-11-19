@@ -13,7 +13,7 @@ f102-0004 f9fdc2d1fb871fc3 Bart{n}"Ei, nada mal, vovô!"
 f102-0005 1a096b7184644170 O hotel de que estou{n}falando é...{done 100}
 f102-0006 17320ad44ace967b Ei, você!{done 60}
 f102-0007 eefc7f6fa2615d07 Eles precisam mesmo de{n}tanto assim para a guerra?
-f102-0008 a453432221d85875 Desculpe. O exército{n}simplesmente chega e{n}confisca o que quer. Por{p}isso estou com pouco{n}estoque.
+f102-0008 a453432221d85875 Desculpe. O exército{n}simplesmente chega e{n}confisca o que quer.{p}Por isso estou com pouco{n}estoque.
 f102-0009 2844a293626ef027 Ah, não, você aumentou os{n}preços de novo...
 f102-0010 54b17c2f27ce15d6 Ei, me faz um desconto.
 f102-0011 f7ec6f1f5d191897 Espero que esta guerra{n}acabe logo.
@@ -30,10 +30,10 @@ f102-0021 d45ac7f9cd281cb5 Hã!?{done 20}
 f102-0022 43e6ec5c3b11b48f Hmm, {wait 20}{n}Quem era mesmo?{p}{wait 20}Esqueci...
 f102-0023 f2116403879a97db Ah, é!{n}Lembrei! {done 100}
 f102-0024 218621e1850c46bb Príncipe Bartholomew?{n}    Sim!{n}    Não conheço!
-f102-0025 2afc4fa15f9fccb3 Hmm...{wait 60}{n}deve ser outra pessoa...{wait 60}{n}Quando a gente envelhece,{p}a memória vai embora{n}mesmo.
+f102-0025 2afc4fa15f9fccb3 Hmm...{wait 60}{n}deve ser outra pessoa...{wait 60}{p}Quando a gente envelhece,{n}a memória vai embora{n}mesmo.
 f102-0026 82e5ac69f0a35404 Nossa, como cresceu...{p}Vossa Alteza provavelmente{n}não se lembra de mim, mas{n}eu trabalhava na cozinha{n}do castelo.{p}Vivia entrando lá e{n}provando tudo.{p}Se fantasiava e dizia: 'Eu{n}sou um pirata! Me dá sua{n}comida!'...{p}Ah, que bons tempos...
 f102-0027 16cbc56deaaa241a Bem-vindos a Bledavik! Não{n}temos recebido muitos{n}visitantes ultimamente.{p}Vocês são os primeiros em{n}um bom tempo!
-f102-0028 bce85708d3bc1fd4 Bem-vindos a Bledavik!{n}Estamos fazendo um{n}festival para celebrar a{p}fundação do nosso país,{n}Aveh.{p}Também tem um torneio de{n}artes marciais.{p}Faz tempo que não{n}recebemos tantos{n}visitantes.
+f102-0028 bce85708d3bc1fd4 Bem-vindos a Bledavik!{p}Estamos fazendo um{n}festival para celebrar a{n}fundação do nosso país,{n}Aveh.{p}Também tem um torneio de{n}artes marciais.{p}Faz tempo que não{n}recebemos tantos{n}visitantes.
 f102-0029 6f8e301526bae9c9 Vocês já têm um hotel?{n}    Sim{n}    Ainda não
 f102-0030 9b6ce813fe998210 É mesmo? Que pena. Eu{n}conheço um lugar bom.
 f102-0031 16c77809a819f149 É melhor arrumar um quarto{n}logo, senão vão acabar{n}todos.{p}Eu conheço um hotel bom.
@@ -42,7 +42,7 @@ f102-0033 93c9179f9155fc72 Diga meu nome na recepção{n}e vão fazer um descont
 f102-0034 f58d7d882782178e Tem aparecido muito ladrão{n}de loja ultimamente. É{n}tudo por causa dessa{n}guerra.{p}Está faltando de tudo.
 f102-0035 d433d8a9bc2392b8 Bem-vindos!{wait 20}{n}Vocês vão para a{n}praça do festival?{n}    Sim{n}    Não
 f102-0036 e3e5f401e9c14793 Cá entre nós...{p}O festival dos 500 anos de{n}Aveh não está lá essas{n}coisas. É porque a guerra{n}está piorando...
-f102-0037 ddf0718b0ad57c35 Depois de vir de tão longe,{n}eu tenho que ver o Torneio.{n}Homem adora uma briga. Por{p}que você não está{n}participando?
+f102-0037 ddf0718b0ad57c35 Depois de vir de tão longe,{n}eu tenho que ver o Torneio.{p}Homem adora uma briga. Por{n}que você não está{n}participando?
 f102-0038 67600d3c70d6ce7a Eu sei que sumiram umas{n}coisas... mas aquele{n}garoto não estava com{n}nada. Acho que me enganei.
 f102-0039 3228836ffc98902a Mostre o que você está{n}escondendo!{wait 50} Devolva agora{n}e eu não conto para os{n}seus pais.{done 50}
 f102-0040 eb979a492ec86b5d Que estranho...{done 50}
@@ -53,7 +53,7 @@ f102-0045 e779b1e139abddd7 (Rápido!) {done 20}
 f102-0046 111d7cc0b95a6657 Do que você tá falando,{n}dona? Não tô escondendo{n}nada! Quer ver?{done 100}
 f102-0047 630493452626bd24 Viu? {done 30}
 f102-0048 37927ee07f5b19c2 Não pode acusar os outros{n}sem provas!{wait 30}{n}Qual é, dona!{done 30}
-f102-0050 d812ceac039fe07c Valeu por me emprestar{n}dinheiro. Vou parar de{n}roubar. {wait 30}{p}Nós dois vamos trabalhar{n}duro até o papai voltar.
+f102-0050 d812ceac039fe07c Valeu por me emprestar{n}dinheiro. Vou parar de{n}roubar.{p}{wait 30} Nós dois vamos trabalhar{n}duro até o papai voltar.
 f102-0051 0679ac9529e01edb Que é que você quer? Tá me{n}enchendo, vaza daqui!
 f102-0052 91586acbccfa3c45 Ei! Ei, moço!{n}Dá comida pra gente?{n}    Claro{n}    Bem...
 f102-0053 280b48097969e65c Então me empresta 1000G{n}    Claro{n}    Nem pensar
@@ -91,7 +91,7 @@ f102-0085 92393bbc04093d15 Tá, uma promoção!{n}2 cachos, 16G.{n}Que tal, boni
 f102-0086 c19b5f9c7c825919 Ei, você está carregando{n}coisa demais. Volte{n}depois.
 f102-0087 a5e84d3d18f215b5 Valeu!{n}Você é gente boa.
 f102-0088 93aebfc3fa37e510 Uau!{n}Valeu!{n}Volte sempre.
-f102-0089 94410df15a2dcb7c {wait 50}O quê, esqueceu a{n}carteira?{wait 50}{n}Que pena, mas não posso te{p}dar de graça. Traga a{n}carteira da próxima vez.
+f102-0089 94410df15a2dcb7c {wait 50}O quê, esqueceu a{n}carteira?{wait 50}{p}Que pena, mas não posso te{n}dar de graça. Traga a{n}carteira da próxima vez.
 f102-0090 09a3e82153d37884 Bem...{wait 30}{n}Quem não come banana não{n}vira um soldado forte.
 f102-0091 6d4b939bfee06a12 Mocinho! Mocinho!{n}Olha as frutinhas!{n}Doces e deliciosas...{n}frutinhas baratinhas!{done 100}
 f102-0092 52de6bf229d25774 Vá embora!{done 80}
@@ -137,7 +137,7 @@ f102-0132 5d6cf03b14311bfb Esses caras de Kislev são{n}muito maus!{n}E...{wait 
 f102-0133 98656d961652fc1a Anda, usa logo! A gente{n}não tá aqui de{n}brincadeira.
 f102-0134 4903237e70f006ac Se usar esta caixa, você{n}sobe rapidinho.{n}Vai usar?{n}    Usar{n}    Não preciso
 f102-0135 ce058add0175011d São 5G.
-f102-0136 db009ee828dd8b6d O quê, você também é{n}pobre?{wait 30}{n}Bom, então eu te conto. Se{p}você der uns passos para{n}trás e pular, não precisa{n}da caixa.
+f102-0136 db009ee828dd8b6d O quê, você também é{n}pobre?{wait 30}{p}Bom, então eu te conto. Se{n}você der uns passos para{n}trás e pular, não precisa{n}da caixa.
 f102-0137 81adb66366d854a1 Tá be-em.
 f102-0138 21417e546ea9e515 Ele disse que não brinca{n}mais de esconde-esconde.{n}Não tem nada divertido{n}para fazer?
 f102-0139 5de5cf920611f818 Será...{wait 30}{n}onde ele se escondeu?
@@ -1180,7 +1180,7 @@ f155-0000 ac054b2c042648e0 Shakhan{n}"Estou impressionado que{n}ela tenha falado
 f155-0001 ef3853d19343bb84     Parar{n}    Torre leste{n}    Entrada{n}    Pátio externo{n}    Cidadela, 3o andar{n}    Salão de jantar
 f155-0002 74b0e7f0eda39d14 Tudo bem assim?
 f155-0003 a9b75d70784fbec4 Shakhan{n}"Não posso impedi-los de{n}vê-la. Não quando se trata{n}dele...{p}Além disso, Marguerite{n}não está falando mesmo.{n}Então não há com que{n}se preocupar...{p}Mas de onde veio o{n}vazamento sobre o Jaspe...?{p}...O 'Ethos'?{n}Ridículo...! Hmmm,{n}se isso continuar, meus{n}planos serão..."
-f155-0004 f8a98d96b7aa16dd Shakhan{n}"É melhor descobrirmos{n}imediatamente quem está{p}vazando nossas{n}informações.{p}Enquanto isso, teremos{n}de aplicar soro da{n}verdade em nossa{p}hóspede, a senhorita{n}Marguerite.{p}Precisamos achar o outro{n}fragmento do 'Jaspe{n}Fatima' o quanto antes."
+f155-0004 f8a98d96b7aa16dd Shakhan{n}"É melhor descobrirmos{n}imediatamente quem está{p}vazando nossas{n}informações.{p}Enquanto isso, teremos de{n}aplicar soro da verdade em{n}nossa hóspede, a senhorita{n}Marguerite.{p}Precisamos achar o outro{n}fragmento do 'Jaspe{n}Fatima' o quanto antes."
 f155-0005 4023c3480501dff9 Mas...
 f160-0000 5c736ab567cc81df Miang{n}"O que houve?{wait 50} Parece que{n}você acabou de ter um{n}pesadelo...{p}Não foi aquele mesmo sonho{n}de novo, foi?"
 f160-0001 5934d68105928ab4 Ramsus{n}"Não...{wait 30} Não foi nada."
@@ -1434,7 +1434,7 @@ f179-0011 c867c1399c600ee4 Miang{n}"Comandante?...Ha, ha,{n}ha."
 f179-0012 ddf81828c665ccd6 Miang{n}"Acalmem-se.{wait 32} Coloquem a{n}imagem analisada no{n}monitor."
 f179-0013 cad74f3fa8e5d4ea Miang{n}"Comandante! Espere, por{n}favor! Comandante!!"
 f179-0015 689acf4ac7f99011 Confirmado: ruído de{n}destruição de embarcação.{p}...seguido de rápido ruído{n}de sopro. A embarcação{n}inimiga provavelmente está{n}emergindo rapidamente.
-f179-0016 5d380b9628d538f7 Confirmado: um Gear inimigo{n}em combate. Curso direto.{p}Ruído do motor da embarcação{n}inimiga aumentando...{n}Aumento de velocidade,{p}ruído de manobra confirmado,{n}mudança de curso... Em{n}manobra evasiva.
+f179-0016 5d380b9628d538f7 Confirmado: um Gear inimigo{n}em combate. Curso direto.{p}Ruído do motor da embarcação{n}inimiga aumentando...{p}Aumento de velocidade, ruído{n}de manobra confirmado,{n}mudança de curso... Em{n}manobra evasiva.
 f179-0017 5ca648614270c363 E, espere!!!{wait 32}{p}Explosões confirmadas ao{n}longo do perímetro da{n}frota. Múltiplos ruídos de{n}destruição de embarcações!{p}Reações de alta energia...{n}Que ganho é esse!?{n}Comandante!! Não acredito!{n}Esse...Gear...?{p}É como se projéteis{n}reativos estivessem voando{n}por toda parte...
 f179-0018 f87cae7711c5594a S, sim, senhor...
 f179-0019 d57604095a9fcd8d A estática fluida ao redor{n}da embarcação inimiga está{n}diminuindo.{p}Manobrabilidade na areia{n}da embarcação inimiga{n}reduzida em 60%.{p}...Parece que o motor{n}principal e as aletas de{n}efeito foram desativados.

@@ -209,7 +209,7 @@ f005-0013 b379c8ceebce0df4 Tiens, quelle audace !{wait 20}{n}Très bien, permett
 f005-0014 acb8cc01a30259c9 Vous savez sûrement déjà{n}qu'il y a 3 types d'Attaque -{n}Faible, Forte et Féroce - et{n}que chacune coûte un nombre{n}différent de Points{n}d'Action.{p}L'Attaque Féroce (bouton ×){n}coûte 3 points d'un seul{n}coup. Donc, si vous n'avez{n}que 3 Points d'Action, une{n}seule Attaque Féroce les{n}consomme tous.{p}L'Attaque Faible (bouton △){n}coûte 1 point par coup.{n}Ainsi, avec 3 Points{n}d'Action,{n}vous pouvez frapper le même{n}ennemi 3 fois de suite.{p}L'Attaque Forte (bouton □){n}coûte 2 points par coup.{wait 20}{n}Avec 3 Points d'Action, vous{n}pouvez donc combiner une{n}Attaque Forte et une Attaque{n}Faible pour faire 3 points.{p}On peut marteler le bouton ×{n}et anéantir les ennemis{n}à coups Féroces, mais en{n}dépendre pourrait avoir des{n}conséquences plus tard.
 f005-0015 0f7ba550bef80899 ...En fait, c'est tout ce{n}que j'ai à dire là-dessus.{wait 20}{n}Revenez quand vous voulez{n}des conseils.
 f005-0016 c1fc611e63f6340f Ooooh ! L'option 'Combo' ?{wait 20}{n}Je ne m'y attendais pas !{n}Eh bien, voici l'art du{n}'Combo'.
-f005-0017 c9248bcce49f77ce Quand vous utilisez{n}l'option Attaque, il arrive{n}que vous ne dépensiez pas{n}tous vos Points d'Action.{p}C'est le cas quand vous{n}éliminez un ennemi avec une{n}partie de vos points, ou{n}quand vous annulez au milieu{n}d'un tour d'attaque.{p}Les Points d'Action{n}inutilisés{n}sont stockés dans un{n}'Compteur d'AP'.{p}Quand ce Compteur d'AP{n}atteint une certaine{n}quantité de points, vous{n}pouvez utiliser des{n}'Combos'.{p}Les 'Combos' sont des{n}enchaînements rapides de{n}Coups Fatals déclenchés{n}d'un coup, souvent féroces.{p}Tout ennemi qui encaisse un{n}'Combo' risque fort de{n}mourir.{p}Avec peu d'expérience, vos{n}'Combos' ne feront sans{n}doute pas beaucoup de{n}dégâts.{wait 20} Mais avec le temps,{n}vous réussirez des 'Combos'{n}dévastateurs !
+f005-0017 c9248bcce49f77ce Quand vous utilisez{n}l'option Attaque, il arrive{n}que vous ne dépensiez pas{n}tous vos Points d'Action.{p}C'est le cas quand vous{n}éliminez un ennemi avec une{n}partie de vos points, ou{n}quand vous annulez au milieu{n}d'un tour d'attaque.{p}Les Points d'Action{n}inutilisés sont stockés dans{n}un 'Compteur d'AP'.{p}Quand ce Compteur d'AP{n}atteint une certaine{n}quantité de points, vous{n}pouvez utiliser des{n}'Combos'.{p}Les 'Combos' sont des{n}enchaînements rapides de{n}Coups Fatals déclenchés d'un{n}coup, souvent féroces.{p}Tout ennemi qui encaisse un{n}'Combo' risque fort de{n}mourir.{p}Avec peu d'expérience, vos{n}'Combos' ne feront sans{n}doute pas beaucoup de{n}dégâts.{wait 20} Mais avec le temps,{n}vous réussirez des 'Combos'{n}dévastateurs !
 f005-0018 8e1ff247fe4cc106 ...Et voilà !{wait 20} Alors, si{n}vous avez besoin d'autres{n}conseils, vous savez où{n}me trouver !
 f005-0019 737b4e403105a1da Je vois. Bon, en tout{n}cas... n'hésitez pas à me{n}demander n'importe quoi,{n}n'importe quand !
 f005-0020 6ab36a730c3fda28 Hum hum !{wait 10}{n}HUM HUM !
@@ -334,7 +334,7 @@ f009-0014 073ac1c0b42096f7 Quel rabat-joie.{wait 20}{n}Un type comme toi ne{n}se
 f009-0015 1d1e148376a33c8f Grand-père fait toujours{n}paraître les choses plus{n}faciles qu'elles ne le{n}sont !{p}En vérité, traverser ce{n}Bois Lune Noire est un{n}sacré exploit...{p}Il y vit des bêtes{n}dangereuses et de{n}terribles{n}lézards mangeurs de feu...{p}Crois-moi, mieux vaut ne{n}même pas t'en approcher !
 f009-0016 0e255d94c10c825a Au sud d'ici se trouve le{n}'Bois Lune Noire'. Si tu le{n}traverses, tu arrives à{n}Aveh, la grande terre du{n}feu !{p}Je ne devrais pas perdre{n}mon temps dans ce petit{n}village paumé. Je devrais{n}aller travailler à Aveh...!{p}De belles femmes et du{n}bon vin...{wait 15}{n}Et, en travaillant dur, je{n}serais vite riche !{p}Héhéhé...{n}Ce serait génial !
 f009-0017 b7f85f4da14a7f57 N'écoute pas cet idiot !{n}Il dit toujours ce genre{n}de choses sans réfléchir.{p}En réalité, traverser le{n}Bois Lune Noire est une{n}tâche très difficile...{p}Beaucoup de bêtes{n}dangereuses et de{n}terribles lézards mangeurs{n}de feu y vivent !{p}Tu ferais mieux de rester{n}loin de cet endroit !
-f009-0018 32ee14e01ff1b546 Si tu traverses le 'Bois{n}Lune Noire', au sud d'ici,{n}tu trouveras le royaume du{n}feu, 'Aveh'.{p}Au lieu de dépérir dans ce{n}petit village de montagne,{n}je devrais aller m'amuser{n}à Aveh !{p}De jolies filles, du bon{n}vin...{wait 15}{n}Et un gentleman comme moi{p}attire sûrement les{n}minettes partout où il{n}va !{p}Ha ha ha...{n}Ce serait génial !
+f009-0018 32ee14e01ff1b546 Si tu traverses le 'Bois{n}Lune Noire', au sud d'ici,{n}tu trouveras le royaume du{n}feu, 'Aveh'.{p}Au lieu de dépérir dans ce{n}petit village de montagne,{n}je devrais aller m'amuser{n}à Aveh !{p}De jolies filles, du bon{n}vin...{wait 15}{p}Et un gentleman comme moi{n}attire sûrement les{n}minettes partout où il{n}va !{p}Ha ha ha...{n}Ce serait génial !
 f009-0019 bbf0f21d3a26f95c Tu as entendu les{n}dernières{n}rumeurs !?{p}Il paraît que dans le{n}désert{n}au sud d'Aveh, il y a des{n}trésors enfouis partout !{p}Des centaines de gens{n}creusent partout pour{n}essayer de faire fortune !{p}Une seule trouvaille peut{n}te rendre riche pour de{n}bon.
 f009-0020 9e5760caec60d64e Mais d'un autre côté, on{n}ne sait jamais ce qui est{n}vrai là-dedans...{p}Dans la vie, quand une{n}chose semble trop belle{n}pour être vraie, elle{n}l'est rarement. Bah.
 f009-0021 3433504e90453d77 Ça pose un problème{wait 5}, hic,{wait 5}{n}que je boive à midi ?{wait 20}{n}Comment ne pas boire{wait 5}...{n}Bon sang...
@@ -779,7 +779,7 @@ f035-0021 6e52b6749c7b8c03 Citan{n}"Oui,{wait 5} bien sûr,{wait 5} Fei..."
 f035-0022 33f9b383fa102480 Citan{n}"Alors, Fei, de quoi{n}vouliez-vous me parler ?"
 f035-0023 b9072d270d7284e8 Citan{n}"Ne pas le réparer ? Qu'y{n}a-t-il, Fei ?"
 f035-0024 0a86bf9dce0b527c Citan{n}"...{wait 10}Je vois. Si c'est ce{n}que vous voulez, Fei, très{n}bien.{p}Mais je pense que nous{n}devrions essayer d'emmener{n}le {name 11} aussi loin que{n}possible de là-bas."
-f035-0025 18cecd4f48fd535a Citan{n}"Ce n'est qu'une{n}supposition, mais...{p}Je soupçonne que{n}l'incident de cette{n}nuit-là s'est produit{n}parce que...{p}...les forces spéciales de{n}la Gebler ont volé un Gear{n}militaire de Kislev."
+f035-0025 18cecd4f48fd535a Citan{n}"Ce n'est qu'une{n}supposition, mais...{p}Je soupçonne que l'incident{n}de cette nuit-là s'est{n}produit parce que...{p}...les forces spéciales de{n}la Gebler ont volé un Gear{n}militaire de Kislev."
 f035-0026 e35639369187f6b9 Citan{n}"Exactement.{p}J'ai examiné le Gear brisé{n}au village : un Gear de{n}Kislev, piloté par la{n}Gebler.{p}Il devait contenir une{n}nouvelle technologie, pour{n}que Kislev envoie des{n}troupes à ses trousses."
 f035-0027 7779d6fdd07f30e5 Citan{n}"La Gebler voulait sans{n}doute voler un nouveau{n}Gear expérimental."
 f035-0028 e9589f8946c90ecc Citan{n}"La capitale sait sûrement{n}déjà que les forces{n}spéciales ont échoué.{p}Ils vont ratisser Lahan{n}pour récupérer toutes les{n}pièces du nouveau Gear."
@@ -1503,7 +1503,7 @@ f079-0041 868c480ced21963a Hé ?
 f079-0042 a2db94589cb71aca Fei{n}"Moi, je n'aime pas me{n}battre, pas comme toi.{p}Je suis monté dans ce{n}Gear par obligation.{wait 10} Je{n}préférerais ne jamais{n}piloter ces trucs.{p}Si tu tiens tant à ce{n}Gear, garde-le !{n}Je n'en veux pas !"
 f079-0043 6d21defa94d3f6a1 Bart{n}"Tu crois que j'aime me{n}battre ?{wait 10} ...C'est ça ?"
 f079-0044 fdefd536260ae29f Fei{n}"Tu n'aimes pas ça ?{wait 10} On{n}dirait bien.{p}Tu as l'air de n'aimer{n}que te battre."
-f079-0045 62dbba9f1d2faff2 Bart{n}"Ça, je laisse pas passer.{n}Qui aimerait{p}se battre ?{wait 10} Retire ce que{n}t'as dit.{p}Je me bats parce qu'il le{n}faut, que je le veuille ou{n}non. J'ai mes raisons,{n}mais{wait 15} tu comprendrais pas."
+f079-0045 62dbba9f1d2faff2 Bart{n}"Ça, je laisse pas passer.{n}Qui aimerait se battre ?{wait 10}{n}Retire ce que t'as dit.{p}Je me bats parce qu'il le{n}faut, que je le veuille ou{n}non. J'ai mes raisons,{n}mais{wait 15} tu comprendrais pas."
 f079-0046 4473dfcddaaf5fad Fei{n}"Je n'ai aucune raison de{n}me battre !{wait 10} Je ne veux{n}pas me battre.{p}Je veux juste une vie{n}calme et tranquille.
 f079-0047 584250994c5ecce4 Et vous me poussez à{n}monter dans un Gear ?{n}Pourquoi ne pas me{n}laisser en paix !?"
 f079-0048 8f35a8c25ca222a2 Bart{n}"C'est que je vois ton{n}talent{wait 10} et je me dis..."
@@ -1521,10 +1521,10 @@ f079-0061 0fe88f73e11f4fc8 J'ai dit qu'il fuyait,{n}mais{wait 10} en fait, celui
 f079-0062 4e1e0e04e4009d55 Sigurd{n}"Le jeune maître m'a prié{n}de vous présenter ses{n}excuses.{wait 10} Étrange, non ?{p}Il sait qu'il devrait{n}s'excuser lui-même...{p}Mais le jeune maître n'est{n}pas très doué pour ce{n}genre de choses..."
 f079-0063 4fcebc83a692be7d Sigurd{n}"Ça ne se voit peut-être{n}pas, mais il est très{n}seul{wait 5}...{p}Il cherche sans cesse un{n}ami.{wait 10} Nous qui veillons sur{n}lui ne pouvons être ses{n}amis.{p}Même si nous le voulions,{n}il ne nous verrait pas{n}ainsi.{wait 10} Il le sait."
 f079-0064 06e714e946788324 Sigurd{n}"Pourquoi, demandez-vous ?{n}À cause du fardeau qu'il{n}porte.{p}Si jeune, porter une si{n}lourde responsabilité doit{n}être difficile.{p}Mais il fait de son mieux,{n}vous savez ?{p}C'est pour cela que nous{n}restons auprès de lui...{n}Pas parce qu'il est le{n}prince."
-f079-0065 36636c00126e6bf7 Sigurd{n}"Fei,{wait 10} je sens que vous{n}portez vous aussi un lourd{n}fardeau.{p}C'est peut-être égoïste,{n}mais... pourriez-vous{n}aider le jeune maître ?{p}Je ne vous demande pas{n}d'endosser ses problèmes{n}ni ses responsabilités.{p}Mais tous les deux... avec{n}ce que chacun de vous seul{n}connaît, pourriez-vous{p}vous aider l'un l'autre ?{wait 10}{n}S'il vous plaît..."
+f079-0065 36636c00126e6bf7 Sigurd{n}"Fei,{wait 10} je sens que vous{n}portez vous aussi un lourd{n}fardeau.{p}C'est peut-être égoïste,{n}mais... pourriez-vous{n}aider le jeune maître ?{p}Je ne vous demande pas{n}d'endosser ses problèmes{n}ni ses responsabilités.{p}Mais tous les deux... avec{n}ce que chacun de vous seul{n}connaît, pourriez-vous{n}vous aider l'un l'autre ?{wait 10}{p}S'il vous plaît..."
 f079-0066 e729a34e58a4e9eb Fei{n}"Désolé{wait 5}...{wait 10} J'ai besoin de{n}temps pour réfléchir."
 f079-0067 f6d640a18dcd2eda Sigurd{n}"Bien sûr... prenez votre{n}temps. La décision vous{n}appartient.{p}Quelle que soit votre{n}décision, nous partirons{n}demain à l'aube.{p}Une fois prêt pour demain,{n}reposez-vous un peu.{p}Vous pouvez prendre la{n}chambre du quartier{n}résidentiel, en haut."
-f079-0068 c49b66352b23488e Citan{n}"J'aimerais encore{n}parler un peu avec{p}Sigurd... Allez-y et{n}reposez-vous."
+f079-0068 c49b66352b23488e Citan{n}"J'aimerais encore parler{n}un peu avec Sigurd...{n}Allez-y et reposez-vous."
 f079-0070 d6ff0a798f9db7dd Tous les non-combattants,{n}au Yggdrasil !!{wait 10}{n}Immédiatement !{done 60}
 f079-0071 4f5e3ef42a9337cf Ouiiin, j'ai peur !!{done 60}
 f079-0073 6fbade58992004cf {speed 5}Citan{n}"Fei !! Vite ! Allez au{n}{name 11}, maintenant !!"
@@ -1720,14 +1720,14 @@ f086-0068 090cdef09dd0bb9b Bart{n}"Tu crois...{wait 30} Tu n'y{n}vivais pas ?"
 f086-0069 7b07944730c09260 Sigurd{n}"Elle est totalement isolée{n}du monde extérieur, alors je{n}n'en sais pas grand-chose.{p}Il existe un moyen spécial{n}d'y accéder depuis la{n}surface."
 f086-0070 bf9d083b126eda80 Sigurd{n}"Pour gagner Aveh, nous{n}avons embarqué en secret{n}sur un{p}vol régulier vers la{n}surface."
 f086-0071 64a1f32fefa854cd Citan{n}"Je suis venu bien après{n}Sigurd...{p}Mais j'ai fui de la même{n}façon."
-f086-0072 894cec046019f654 Sigurd{n}"C'est le mot qu'utilisent{n}les Solariens pour{p}désigner ceux qui vivent{n}sur la terre.{p}Comme je l'ai dit, ces{n}'habitants de la surface',{n}ou 'gens de la terre',{p}servent là-bas de{n}main-d'oeuvre."
-f086-0073 dd073365de54e0e2 Sigurd{n}"Cette main-d'oeuvre va des{n}soldats aux postes{n}administratifs.{p}Solaris recrute ses{n}ouvriers parmi les gens de{n}la terre. Les{p}tâches sont réparties selon{n}les aptitudes de chacun.{p}Parfois, on leur lave le{n}cerveau."
+f086-0072 894cec046019f654 Sigurd{n}"C'est le mot qu'utilisent{n}les Solariens pour désigner{p}ceux qui vivent sur la{n}terre.{p}Comme je l'ai dit, ces{n}'habitants de la surface',{n}ou 'gens de la terre',{p}servent là-bas de{n}main-d'oeuvre."
+f086-0073 dd073365de54e0e2 Sigurd{n}"Cette main-d'oeuvre va des{n}soldats aux postes{n}administratifs.{p}Solaris recrute ses{n}ouvriers parmi les gens de{n}la terre.{p}Les tâches sont réparties{n}selon les aptitudes de{n}chacun.{p}Parfois, on leur lave le{n}cerveau."
 f086-0074 47073fe0a59243d8 Bart{n}"Un lavage de cerveau !?"
 f086-0075 f34c4d2caa9dceec Sigurd{n}"Moi...{wait 5} Quand vous, jeune{n}maître, n'étiez encore{n}qu'un bébé...{p}on m'a utilisé comme{n}cobaye.{n}Ils voyaient sans doute{n}quelque chose en moi."
 f086-0076 5dcb152c3fd92707 Fei{n}"Vous aussi, Doc ?"
 f086-0077 35aeab591e492191 Citan{n}"Non...{p}Je suis né dans les bas{n}niveaux de la ville. Ce{n}n'est pas vraiment un{n}secret...{p}Mais je crois bien être un{n}Solarien{wait 5}..."
 f086-0078 decb36f4c6784cb3 Bart{n}"Alors pourquoi ils{n}enlèvent des gens ?{p}Avec toute leur science,{n}on croirait qu'ils n'ont{n}pas besoin des gens..."
-f086-0079 f641cf2a0f41f113 Citan{n}"Voyez-vous{wait 5}...{wait 5} Il faut{n}toujours des gens pour{n}faire tourner un pays{wait 5}...{p}...{wait 5}Si avancé que soit un{n}pays sur le plan{n}scientifique, sans{p}habitants, il ne tient{n}pas."
+f086-0079 f641cf2a0f41f113 Citan{n}"Voyez-vous{wait 5}...{wait 5} Il faut{n}toujours des gens pour{n}faire tourner un pays{wait 5}...{p}...{wait 5}Si avancé que soit un{n}pays sur le plan{n}scientifique,{p}sans habitants, il ne{n}tient pas."
 f086-0080 af749ba8f6e7ea77 Sigurd{n}"Les Solariens purs sont{n}rares.{p}Ils ne seraient même pas{n}le quart de la population{n}d'Aveh.{p}Alors ils font vivre leur{n}pays en enlevant des gens{n}de la surface."
 f086-0081 4805df9840658ee6 Sigurd{n}"Il s'appelle Kahr...{n}{wait 30}Kahran Ramsus.{p}Comme vous le savez,{n}c'est le commandant de{n}la Gebler."
 f086-0083 0bc6799e5e35f6c4 Sigurd{n}"Nous l'appelons Kahr.{p}À Solaris, il existe une{n}école d'officiers appelée{n}'Jugend'.{p}Il est devenu commandant à{n}sa sortie."
@@ -1736,17 +1736,17 @@ f086-0085 c8e29b24447fdea6 Sigurd{n}"Cet homme avait un idéal.{p}Unir tous ses 
 f086-0086 159b07bd33f667ef Bart{n}"Alors vous deux,{n}Ramsus vous a{n}choisis...?"
 f086-0087 ec853f423a01b6b9 Citan{n}"Non,{wait 5} il ne nous a pas{n}choisis{wait 5}...{wait 5} Nous nous{n}sommes ralliés à lui."
 f086-0088 015f225f15cbfc34 Sigurd{n}"À l'époque{wait 5}...{wait 5} nous étions{n}d'accord avec lui."
-f086-0089 67a8ae23119b50a5 Citan{n}"En ce temps-là, Ramsus{n}était notre espoir.{p}Il avait de nobles idéaux{n}et voulait changer le{n}système de Solaris.{p}Pour nous, cobayes et{n}citoyens de bas rang, il{n}était{p}vraiment tout ce que nous{n}désirions."
+f086-0089 67a8ae23119b50a5 Citan{n}"En ce temps-là, Ramsus{n}était notre espoir.{p}Il avait de nobles idéaux{n}et voulait changer le{n}système de Solaris.{p}Pour nous, cobayes et{n}citoyens de bas rang, il{n}était vraiment tout ce que{n}nous désirions."
 f086-0090 99a554d162ac8abd Bart{n}"Un bienfaiteur ?"
 f086-0091 473c4a31c5f82585 Sigurd{n}"Oui...{wait 30} même moi, un{n}cobaye, ses idéaux m'ont{n}transformé."
 f086-0092 e744fbd2910f8f53 Bart{n}"Alors pourquoi vous{n}avez voulu fuir{n}Solaris ?"
 f086-0093 12b1004de4df23d2 Sigurd{n}"Ramsus nous a placés à{n}des postes militaires{n}importants...{p}Grâce à cela, nous avons{n}découvert le lien entre{n}Solaris et les gens de la{n}surface."
 f086-0094 8e1c97b1386faddd Bart{n}"Tu veux dire...{n}les Agneaux...?"
-f086-0095 5a01e4f638d9826d Sigurd{n}"Nous, les 'Agneaux', ne{n}servions pas qu'à{n}l'esclavage...{p}Ils choisissaient aussi{n}certains, comme moi, pour{n}servir de cobayes à des{n}expériences{p}visant à perfectionner{n}leurs drogues...{p}Des drogues qui modifient{n}la personnalité, pour{n}rendre les gens plus{p}agressifs et éveiller leurs{n}capacités latentes.{p}Nous étions leurs cobayes{n}humains, pour tester leurs{n}drogues psychotropes !"
+f086-0095 5a01e4f638d9826d Sigurd{n}"Nous, les 'Agneaux', ne{n}servions pas qu'à{n}l'esclavage...{p}Ils choisissaient aussi{n}certains, comme moi, pour{n}servir de cobayes à des{n}expériences{p}visant à perfectionner{n}leurs drogues...{p}Des drogues qui modifient{n}la personnalité,{p}pour rendre les gens plus{n}agressifs et éveiller leurs{n}capacités latentes.{p}Nous étions leurs cobayes{n}humains, pour tester leurs{n}drogues psychotropes !"
 f086-0096 660c453b85565001 Bart{n}"Des cobayes humains...!?{n}Des expériences sur des{n}humains ?"
 f086-0097 3698bb9b05c069fb Sigurd{n}"Oui, par exemple... le{n}'Drive' !{p}Cette drogue, et toutes{n}celles du genre qu'on{n}utilise aujourd'hui,{n}sont nées{p}d'expériences sur des{n}êtres humains..."
 f086-0098 44c261365c66fd72 Citan{n}"Mais ce n'est pas le{n}seul rôle des cobayes."
-f086-0099 bf2d678265101694 Fei{n}"Cette drogue, le 'Drive',{n}n'importe qui dans{p}l'armée de Solaris peut{n}s'en servir ?"
+f086-0099 bf2d678265101694 Fei{n}"Cette drogue, le 'Drive',{p}n'importe qui dans l'armée{n}de Solaris peut s'en{n}servir ?"
 f086-0100 ecd3bb2371e7f24c Citan{n}"Du moins, quiconque dans{n}les forces de la Gebler{n}envoyées en surface..."
 f086-0101 0b274679549e5873 Bart{n}"Tu t'inquiètes pour{n}elle, hein ?"
 f086-0103 e28bd3788567ebe1 Bart{n}"J'en ai vu{wait 5}...{wait 5} dans{n}sa chambre."
@@ -1767,7 +1767,7 @@ f086-0126 fe1b9d1bc8a94465 Margie{n}"Comment ça,{n}'pour changer' ?"
 f086-0127 b98e981b4e10ce04 Bart{n}"Du calme, t'énerve pas.{wait 30}{n}Ha ha ha ha !"
 f086-0128 dfce077cf359e601 Margie{n}"Méchant !"
 f086-0129 337ec914b15866af Sigurd{n}"...{wait 30}D'accord.{p}Veuillez dire à Maison{n}que nous restons ici{n}encore un moment."
-f086-0130 de24668350d925b8 Sigurd{n}"Nouvelles de nos unités{n}de Bledavik.{p}Tout se passe bien. Ils{n}sont dans le château.{p}Ils fouillent les{n}appartements privés de{n}Shakhan, au dernier{n}étage.{p}Autre chose :{wait 30} le{n}Yggdrasil, posté non loin{n}d'ici,{p}a détecté plusieurs Gears{n}au radar."
+f086-0130 de24668350d925b8 Sigurd{n}"Nouvelles de nos unités{n}de Bledavik.{p}Tout se passe bien. Ils{n}sont dans le château.{p}Ils fouillent les{n}appartements privés de{n}Shakhan, au dernier{n}étage.{p}Autre chose :{wait 30} le{n}Yggdrasil, posté non loin{n}d'ici, a détecté plusieurs{n}Gears au radar."
 f086-0132 8d57bcf8cfbd6358 Sigurd{n}"Certainement.{p}Mais ces Gears sont allés{n}jusqu'à la capitale, puis{n}ont fait demi-tour vers{n}nous."
 f086-0133 ef091f3be8c2f3f2 Fei{n}"Il a vu que ça tournait{n}mal et il a fui."
 f086-0134 f9759938aa9a4587 Bart{n}"Ouais.{wait 30} Mais on dirait{n}qu'il revient par ici."
@@ -1823,7 +1823,7 @@ f088-0021 9a8203e12c0e798b On devrait préparer{n}une cachette, au cas{n}où...
 f088-0022 e3602679667ca91a Peut-être là-bas...
 f088-0023 cadf93a7a63539b4 Sigurd{n}"Je suis allé à l'entrepôt{n}emprunter une table.{p}Le patron a dit... 's'il{n}vous faut quoi que ce soit{n}pour le jeune maître, il{n}suffit de demander.'"
 f088-0024 bb6e60a1270f90e5 Bart{n}"Je lui en suis{n}reconnaissant."
-f088-0025 4243db723d6ee581 Bart{n}"Quand j'étais gamin,{wait 30}{n}j'ai emprunté des trucs{p}là-bas et je me suis{n}attiré de gros ennuis."
+f088-0025 4243db723d6ee581 Bart{n}"Quand j'étais gamin,{wait 30}{p}j'ai emprunté des trucs{n}là-bas et je me suis{n}attiré de gros ennuis."
 f088-0026 7e7ecb5da8895242 Fei{n}"Emprunté...{wait 30} Qu'est-ce que{n}t'as pris ?"
 f088-0027 6af2ffdbd2a18579 Bart{n}"Un petit bateau-jouet.{wait 30}{n}...Je crois, oui.{p}Je l'ai rempli de feux{n}d'artifice et mis à flot{n}sur le lac de la{n}cathédrale. Je{p}jouais tout le temps à la{n}'marine'."
 f088-0028 7fc96680d7eccc0c Bart{n}"Pas sûr, mais je crois{n}que le lac était ma{n}haute mer...{p}...et que j'étais le{n}commandant de la{n}flotte."
@@ -1832,16 +1832,16 @@ f088-0030 659588b77c046662 Bart{n}"D'abord...{wait 30} le gros{n}problème, c'es
 f088-0031 1360844f266fe1a4 Citan{n}"Oui, Ramsus est en passe{n}d'atteindre ses{n}objectifs.{p}Qu'il soit aujourd'hui{n}commandant de la Gebler{n}le prouve.{p}Un homme ordinaire{wait 10} ne{n}gravirait pas si vite les{n}échelons de ce pays.{p}Et maintenant, il est{n}ici, à Ignas."
 f088-0032 4be50f3a000f6ac5 Citan{n}"Franchement, la situation{n}n'est guère favorable.{p}Il nous faut trouver un{n}point faible et l'attaquer{n}de toutes nos forces."
 f088-0033 51fdcbd983a07e3d Bart{n}"D'abord, concentrons-nous{n}sur Shakhan.{p}Quand il sera hors jeu et{n}qu'Aveh sera à l'abri, on{p}réfléchira à la Gebler."
-f088-0034 333efae8e96ea57d Bart{n}"Avec nos forces, on{n}devrait{p}pouvoir retenir la garde{n}royale.{p}Le problème, c'est la{n}Gebler pendant ce temps...{p}Ils vont sûrement bouger à{n}la demande de Shakhan.{n}Ils ne vont pas rester{n}sagement à regarder."
+f088-0034 333efae8e96ea57d Bart{n}"Avec nos forces, on{n}devrait pouvoir retenir la{n}garde royale.{p}Le problème, c'est la{n}Gebler pendant ce temps...{p}Ils vont sûrement bouger à{n}la demande de Shakhan.{n}Ils ne vont pas rester{n}sagement à regarder."
 f088-0035 01955a382cfe568b Citan{n}"...Puis-je jeter un oeil{n}là-dessus, je vous prie ?"
 f088-0036 41981c50e2d3abc1 Citan{n}"En résumé, il faut que{n}la Gebler s'éloigne un{n}temps...{p}Au moins le temps de{n}reprendre la capitale{n}royale, Bledavik."
 f088-0037 53d76be7d6b6e3b9 Sigurd{n}"Mais le problème,{n}c'est...{p}attaquer la garde{n}frontalière suffira-t-il à{n}faire réagir le{n}commandement central ?"
-f088-0038 cb6874c8bdae791f Citan{n}"Alors, pour en être sûrs,{n}Nisan devra donner{p}l'impression de s'être{n}alliée à Kislev.{p}S'ils le voient ainsi,{n}ils agiront à coup sûr."
+f088-0038 cb6874c8bdae791f Citan{n}"Alors, pour en être sûrs,{p}Nisan devra donner{n}l'impression de s'être{n}alliée à Kislev.{p}S'ils le voient ainsi,{n}ils agiront à coup sûr."
 f088-0039 d3ec8f508427ebea Bart{n}"Vous comptez vous{n}servir de Nisan comme{n}appât ?"
 f088-0040 1befe0bb3c8158f5 Fei{n}"Doc !?"
 f088-0041 3fbba97f366315e2 Sigurd{n}"Shakhan est très{n}sensible aux agissements{n}de Nisan et de Kislev.{p}Si Nisan bouge, il{n}laissera sans doute la{n}Gebler s'en charger,{n}mais..."
 f088-0042 051b20b0ebf39db6 Citan{n}"Bien sûr, je ne souhaite{n}pas le faire d'emblée.{p}Mais, vu la situation,{n}nous devons être prêts à{n}aller jusque-là."
-f088-0044 c18e3569b603fda8 Bart{n}"D'abord, on s'infiltre{n}dans la capitale.{p}Pour renverser Shakhan,{n}on va devoir retrouver{n}nos{p}agents déjà en ville."
+f088-0044 c18e3569b603fda8 Bart{n}"D'abord, on s'infiltre{n}dans la capitale.{p}Pour renverser Shakhan, on{n}va devoir retrouver nos{p}agents déjà en ville."
 f088-0045 089b17beda11c943 Citan{n}"Nous oublions un{n}point...{p}Les unités de première{n}ligne, à la frontière{n}de Kislev."
 f088-0047 0981a379f9788785 Bart{n}"Bon sang...{wait 30} Ça compromet{n}tout !"
 f088-0048 294925ba2695709f Citan{n}"Ne soyez pas si abattu.{p}Je voulais seulement vous{n}montrer la répartition des{n}forces dans la région.{p}Même dans le pire des cas,{n}s'ils viennent, ce ne sera{n}pas un si gros problème."
@@ -1896,14 +1896,14 @@ f088-0097 c4a1ddbc2ed58ac6 Bart{n}"Qu...{wait 30} quoi !!"
 f088-0098 3643ab954979ca6f Soeur Agnes{n}"Prélever la rétine de{n}la défunte Mère{wait 30} et{n}briser le sceau."
 f088-0099 6115b174196a5559 Bart{n}"Utiliser le corps de{n}la mère de Margie ?"
 f088-0100 caa30307439dcc23 Margie{n}"De maman...!!"
-f088-0101 23f439b294ccb784 Soeur Agnes{n}"Pardon. Ils ont utilisé{n}des citoyens innocents et{p}des fidèles de l'Église{n}comme boucliers.{p}Il n'y avait pas d'autre{n}moyen...{p}Ce que Margie nous avait{n}confié sur la vraie{n}nature du Jaspe et son{n}usage.{p}Maintenant, ils savent...{wait 30}{n}Je suis vraiment{n}désolée."
+f088-0101 23f439b294ccb784 Soeur Agnes{n}"Pardon.{p}Ils ont utilisé des{n}citoyens innocents et des{n}fidèles de l'Église comme{n}boucliers.{p}Il n'y avait pas d'autre{n}moyen...{p}Ce que Margie nous avait{n}confié sur la vraie{n}nature du Jaspe et son{n}usage.{p}Maintenant, ils savent...{wait 30}{n}Je suis vraiment{n}désolée."
 f088-0102 c25eda68103f506e Bart{n}"Bon...{wait 30} Je vous en veux{n}pas. Ils avaient des{n}otages !"
 f088-0103 a57a3c283cef4e97 Citan{n}"Un moment.{wait 30} Des rétines...{n}De quoi parlez-vous ?"
 f088-0104 7f4d6cfd717a3d66 Bart{n}"Le Jaspe Fatima, ce sont{n}les pupilles bleu topaze{n}de la dynastie Fatima...{p}Autrement dit...{wait 30} notre{n}motif rétinien.{p}Les portes du trésor{n}s'ouvrent avec...{wait 30} Enfin,{n}c'est ce qu'on dit."
 f088-0105 79dbff67e92213e3 Bart{n}"Mais personne ne s'en est{n}jamais servi.{n}Pas pour des broutilles.{p}On n'ouvre les portes que{n}si le royaume est vraiment{n}en danger.{p}C'est pourquoi ni moi,{wait 30}{n}ni mon père,{wait 30}{n}ni mon grand-père,{p}ni mon arrière-grand-père{n}n'en avons jamais usé."
 f088-0106 fa89fb0912d88555 Citan{n}"Voilà donc{wait 30} la vraie{n}nature du Jaspe..."
 f088-0108 6f219e4720fa17ab Bart{n}"Ce vieux gâteux{wait 30} veut{n}profaner le corps d'une{p}sainte ? C'est inouï !"
-f088-0109 79f02d6e4c7a4c7f Citan{n}"Secret bien gardé : les{n}membres{p}de l'Ethos ne sont pas de{n}saints hommes.{p}Ils se contentent de{n}superviser."
+f088-0109 79f02d6e4c7a4c7f Citan{n}"Secret bien gardé : les{n}membres de l'Ethos ne sont{n}pas de saints hommes.{p}Ils se contentent de{n}superviser."
 f088-0110 89023e34888dc44d Fei{n}"Évidemment, eux, ils ne{n}ressentiraient rien !{p}Allez, Bart !{wait 30} Avant{n}qu'ils ne rasent le{n}mausolée."
 f088-0111 cda2d8e63693b3bf Bart{n}"D'accord !"
 f088-0112 a17f41844f47a8e0 Sigurd{n}"Jeune maître !{wait 30} J'ai une{n}proposition."
@@ -1934,7 +1934,7 @@ f089-0011 6838eff46673d01d Citan{n}"Le fer de lance de la{n}flotte d'Aveh est le
 f089-0012 184d660645fc4126 Sigurd{n}"Bien, sachant ce qui{n}nous attend, voici ce que{n}nous ferons..."
 f089-0013 482a81baba04b008 Sigurd{n}"Outre notre unité{n}principale, qui partira{n}pour Bledavik...{p}il faut empêcher la{n}flotte de la frontière{n}de Kislev de revenir{n}vers la capitale."
 f089-0014 1c3cef091b2d52ab Bart{n}"Alors tu proposes une{n}deuxième unité ?"
-f089-0015 5d77452e4b0ffd00 Citan{n}"Quelques soldats{n}d'élite pour contenir{p}l'ennemi... Une petite{n}force serait idéale."
+f089-0015 5d77452e4b0ffd00 Citan{n}"Quelques soldats d'élite{n}pour contenir l'ennemi...{p}Une petite force serait{n}idéale."
 f089-0016 87cee75a6e26f6dd Sigurd{n}"Une petite force...?"
 f090-0000 32e25a8bbd933b4a Méditer dans une{n}pièce obscure peut{n}éclaircir l'esprit.
 f091-0000 79ae5e9647da0cc7 En fait, Nisan est un lieu{n}très prisé des artistes.{p}En partie pour le paysage,{n}mais surtout pour le{n}portrait{p}de la Grande Mère qui{n}serait dans la cathédrale.{p}Hélas, le public ne peut{n}pas le voir.
@@ -1958,7 +1958,7 @@ f093-0004 a72b585d28119426 Bart{n}"E...{wait 10}hé !{n}Reprends-toi, mon vieux 
 f093-0005 1ccffa7e1a0daa27 Maison{n}"P...{wait 10}pardonnez-moi.{n}Quelle honte !{wait 10}{n}Je n'ai pu me retenir..."
 f093-0006 d874b548e1a4ff5b Maison{n}"Je...{p}Je retourne donner des{n}instructions aux hommes{n}restés à bord.{p}Je vous en prie, jeune{n}maître, allez devant et{n}menez mademoiselle{n}Marguerite aux soeurs.{p}...Excusez-moi."
 f093-0007 f5b87e003c976778 Bart{n}"S'il vous plaît, pas un{n}mot de tout ça devant{n}Margie...{p}Elle revient à peine{n}après une si longue{n}captivité...{p}Je veux pas qu'elle{n}s'inquiète... Qu'elle{n}soit heureuse encore un{n}peu."
-f093-0008 83b5c769f69c633c Citan{n}"Vous non plus, ne vous{n}inquiétez pas trop !{p}Pensez seulement à ce qui{n}est le mieux pour l'avenir{n}de cette terre...{p}Ce qui est fait est fait !{n}Vous avez fait ce que vous{n}jugiez{p}juste... Laissez le passé{n}derrière vous."
+f093-0008 83b5c769f69c633c Citan{n}"Vous non plus, ne vous{n}inquiétez pas trop !{p}Pensez seulement à ce qui{n}est le mieux pour l'avenir{n}de cette terre...{p}Ce qui est fait est fait !{n}Vous avez fait ce que vous{n}jugiez juste... Laissez le{n}passé derrière vous."
 f093-0009 d315fb5e91bc9534 Bart{n}"Euh...{n}Je vais bien !"
 f093-0010 1441fd34ee4436e8   Sigurd{n}  "Etrenank, la capitale de{n}  l'empire de Solaris, se{n}  trouve dans le ciel.{p}  Solaris est séparée de la{n}  terre par des champs de{n}  distorsion dimensionnelle{n}  appelés 'Portes'.{p}  Passer de l'un à l'autre{n}  exige des moyens de{n}  transport spéciaux...{wait 30}{n}  comme un aéronef."
 f093-0011 cd7395f023a130c2   Sigurd{n}  "Ramsus nous a placés à{n}  des postes militaires{n}  stratégiques...{p}  Grâce à cela, nous avons{n}  découvert le lien entre{n}  Solaris et les habitants{n}  de la surface."
@@ -2116,7 +2116,7 @@ f095-0048 b5cb0e69cb18f4d7 Margie{n}"Ha, ha, ha ! Voyons,{n}docteur Citan Uzuki 
 f095-0049 919270ed88a0317b Citan{n}"Oh !{n}Pardonnez-moi.{p}C'est une manie..."
 f095-0050 4ec1243f87c37e79 Fei{n}"Le Doc en sait long sur{n}plein de choses...{p}Parfois, je ne comprends{n}même pas ce qu'il dit..."
 f095-0051 a6567f41d5ae0c61 Bart{n}"...Ha !{n}Obligés de voler{n}ensemble...?{p}Ce serait moins pénible{n}s'ils pouvaient voler{n}seuls, pas vrai, Fei ?"
-f095-0052 864229bfd9731816 Margie{n}"Bart !{n}Tu ne saisis pas le{p}sens profond et la beauté{n}de tout ça !"
+f095-0052 864229bfd9731816 Margie{n}"Bart !{p}Tu ne saisis pas le sens{n}profond et la beauté de{n}tout ça !"
 f095-0053 82efe4f08fc40e1b Margie{n}"Un jour, j'aimerais{n}pouvoir aider quelqu'un{n}ainsi..."
 f095-0054 88d1a8a8b89c561c Margie{n}"Ah, on n'a pas vu la{n}'Salle de Sophia', hein ?{p}En principe, il faut des{n}formalités pour la voir...{p}Mais cette fois, je peux{n}bien faire une exception."
 f095-0056 d021f6f6f61fd2e8 Margie{n}"Oui, Sophia.{p}Elle est vénérée comme la{n}mère fondatrice de la{n}nation de Nisan...{p}et comme la fondatrice de{n}la religion de Nisan, dont{n}elle a fixé les préceptes.{p}Il y a là-haut une salle{n}avec un portrait de la{n}Mère Sophia."
@@ -2150,7 +2150,7 @@ f096-0001 5ca8a8be53d0839e Bart{n}"Entendu.{wait 30}{n}Mais évitez les morts{n}
 f096-0002 c4ee28797f819f5e Sigurd{n}"Oui.{wait 30}{n}Compris."
 f096-0003 57f18bf749ed8b3a Fei{n}"Alors je vais tout{n}casser avec mon{n}{name 11}."
 f096-0004 dd005d42f2f1eb83 Sigurd{n}"Nous comptons sur vous !"
-f096-0005 63762e6f84e50f7c Margie{n}"La prochaine fois, je{n}ne{p}pourrai plus t'appeler{n}'Bart'{wait 10} ni 'Jeune{n}Maître'.{p}Peut-être,{wait 10} 'Votre{n}Majesté'{wait 10}...?"
+f096-0005 63762e6f84e50f7c Margie{n}"La prochaine fois, je ne{n}pourrai plus t'appeler{n}'Bart'{wait 10} ni 'Jeune Maître'.{p}Peut-être,{wait 10} 'Votre{n}Majesté'{wait 10}...?"
 f096-0006 b2c53b823615340d Bart{n}"Arrête ça.{wait 15}{n}Bart, ça suffit...{wait 30}{n}'Grande{wait 10} Mère{wait 10} de{wait 10} Nisan' !"
 f096-0007 c0650f5de9a748ce Margie{n}"Hé...!{wait 30}{n}Tu sais que je déteste{n}ce titre !"
 f096-0009 33391106ac8adbe8 Bart{n}"Bon, on y va !"
@@ -2167,7 +2167,7 @@ f096-0019 40d62aa89b9f5190 Bartholomew, toujours en{n}pleine forme, j'espère ?
 f096-0020 c3aacaa3443aa396 Bart{n}"Ouais. Et la ville,{n}comment ça va ?"
 f096-0021 048e96c2fc399068 Depuis qu'on a appris, il{n}y a quelques jours, qu'une{n}armée pourrait venir de la{n}capitale, les délégués de{n}l'Église débattent de la{n}situation.
 f096-0022 09624ae8a9f690ff Bart{n}"Et qu'ont-ils décidé ?"
-f096-0023 d505d2ef45dd2186 Pour l'instant, ils{n}comptent juste renforcer{n}les défenses locales.{p}Et des opposants à Shakhan{n}se rassemblent ici... sans{n}doute{p}parce qu'ils ont eu vent de{n}ce qui se passe.
+f096-0023 d505d2ef45dd2186 Pour l'instant, ils{n}comptent juste renforcer{n}les défenses locales.{p}Et des opposants à Shakhan{n}se rassemblent ici... sans{n}doute parce qu'ils ont eu{n}vent de ce qui se passe.
 f096-0024 054c91dfc0ed7e5a Bart{n}"Voilà qui me{n}rassure."
 f096-0025 6889d72ddab39791 Oui.{p}Mais les habitants{n}commencent à s'inquiéter.{p}Certains se réfugient déjà{n}dans les montagnes, au{n}nord.
 f096-0026 f16f791927668228 Bart{n}"On peut pas leur en{n}vouloir."
@@ -2185,7 +2185,7 @@ f096-0038 3a1139c47e969b94 Tout est prêt.
 f096-0039 64c5705010212985 Rien à signaler, chef !!
 f096-0041 2bdd76b6de17fb80 Les soeurs attendent à{n}la cathédrale.
 f096-0042 c958a1019ed8c577 Bon retour parmi nous.
-f097-0000 b3de97043b737d9f Margie{n}"Les soeurs chantent{n}encore en bas, alors{p}elles mettront un moment à{n}revenir."
+f097-0000 b3de97043b737d9f Margie{n}"Les soeurs chantent encore{n}en bas,{p}alors elles mettront un{n}moment à revenir."
 f097-0001 25286652325311d9 Margie{n}"Allons à la salle du{n}tableau.{p}D'ici là, les soeurs{n}seront sûrement{n}revenues."
 f097-0002 33b4523e9724d576 Margie{n}"Je me demande quel genre{n}de personne était Sophia.{p}J'aurais adoré la{n}connaître."
 f097-0003 ecf3795b7d6c6dca Moi aussi, je dois faire{n}de mon mieux !
@@ -2241,21 +2241,21 @@ f098-0004 6c1464362b8aa41d Citan{n}"Comment ? {wait 30}{n}La couleur des cheveux
 f098-0005 7efc74ce5c25d680 Fei{n}"Comment ça ?{n}Regardez...!{p}C'est la fille que j'ai{n}vue dans la forêt..."
 f098-0006 1de2ce67713adab8 Fei{n}"C'est Elly ! Enfin...{n}il y a en elle quelque{n}chose qui est tout Elly..."
 f098-0007 90c3f0c2cd156e4e Fei{n}"Vous ne trouvez pas...?"
-f098-0008 11b647fd85856df9 Citan{n}"Oui, maintenant que{n}vous le dites...{p}Elle ressemble vraiment{n}à Elly."
+f098-0008 11b647fd85856df9 Citan{n}"Oui, maintenant que vous{n}le dites...{p}Elle ressemble vraiment à{n}Elly."
 f098-0009 65e11ac293e2a235 Citan{n}"Mais ce n'est pas de{n}cela que je parlais...{p}Je voulais dire que la{n}touche et le style de ce{n}tableau ressemblent aux{n}vôtres."
 f098-0010 1d2ae67cb65517f3 Fei{n}"...Vraiment ?"
 f098-0011 eea7f11b3f20627e Fei{n}"Vous croyez...?"
 f098-0012 cada4be717b62bb4 Fei{n}"Pour commencer...{n}je suis loin de{n}peindre aussi bien."
 f098-0013 da5b0a43d5663f46 Citan{n}"Non... c'est très{n}proche de votre style."
 f098-0014 c0414411c45536ca Citan{n}"Pourtant, je sens une{n}certaine tristesse dans ce{n}tableau."
-f098-0015 30a667b285271296 Citan{n}"Elle sourit, mais, d'une{n}certaine façon, elle donne{p}l'impression d'être{n}tourmentée."
+f098-0015 30a667b285271296 Citan{n}"Elle sourit, mais, d'une{n}certaine façon,{p}elle donne l'impression{n}d'être tourmentée."
 f098-0016 b4ef5820c54f75ae Citan{n}"Peut-être le tableau{n}reflète-t-il son âme ?"
-f098-0017 ef68a9e42203e4d1 Citan{n}"Ou ce sont peut-être les{n}sentiments intimes du{p}peintre qui{n}transpirent."
+f098-0017 ef68a9e42203e4d1 Citan{n}"Ou ce sont peut-être les{n}sentiments intimes du{n}peintre qui transpirent."
 f098-0018 8dd295f25a97618a Citan{n}"Ahh...{p}En regardant bien, vous{n}verrez que le tableau{n}n'est pas tout à fait{n}terminé."
 f098-0019 8e0f3b2d278ae869 "Le peintre a posé ses{n}pinceaux alors qu'il{n}était presque fini."
 f098-0020 d5e86959feb4c476 Citan{n}"...Pourquoi donc ?"
 f098-0021 6e09e20b77f7d213 Margie{n}"Je ne sais pas...{p}Mais ma grand-mère savait{n}peut-être quelque chose à{n}ce sujet..."
-f098-0022 a474096a542e404f Margie{n}"Ah ! Et si on demandait{n}à Agnes ?{p}Elle sait peut-être{n}quelque chose."
+f098-0022 a474096a542e404f Margie{n}"Ah ! Et si on demandait à{n}Agnes ?{p}Elle sait peut-être{n}quelque chose."
 f098-0023 d536d2f73d503ed7 Margie{n}"Bon, alors je reste avec{n}Soeur Agnes."
 f098-0024 58a201a9558f2a61 Bart{n}"Bon... on retourne en{n}ville pour l'instant ?"
 f098-0025 d894dfd4d60f1077 Citan{n}"Oui, d'accord...{p}Mais ce tableau a éveillé{n}ma curiosité.{p}Cela vous ennuie si je{n}parle à Soeur Agnes avant{n}de retourner en ville ?"

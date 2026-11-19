@@ -1,0 +1,2 @@
+- Italiano: the menus' command labels (Stato, Equipaggia, Oggetti, Abilità ...) are now drawn in Italian too.
+- In every translation, a message too long for its window now turns its page where a sentence ends rather than mid-sentence, and fills its lines first, so it takes fewer pages.

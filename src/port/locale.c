@@ -636,14 +636,18 @@ void xem_locale_menu_labels(u16 *sheet) {
         }
         width = xem_original_window_render_text_line((u8 *)(XemUintptr)found->text, image, XEM_LABEL_COLUMNS, 0);
         halfwords = (width + 3) / 4;
-        if (halfwords == 0 || halfwords > XEM_LABEL_PAGE_WIDTH) {
+        /* A line ends short of the page's right and bottom edges: the menus
+         * draw a part as a quad whose far texel is u + w and v + h in a byte
+         * (sprite_sheet_draw_scaled), which at the edge wraps to 0 and shows
+         * the page's row backwards. */
+        if (halfwords == 0 || halfwords >= XEM_LABEL_PAGE_WIDTH) {
             continue;
         }
-        if (at_x + halfwords > XEM_LABEL_PAGE_WIDTH) {
+        if (at_x + halfwords >= XEM_LABEL_PAGE_WIDTH) {
             at_x = 0;
             at_y += XEM_LABEL_ROWS;
         }
-        if (at_y + XEM_LABEL_ROWS > 256) {
+        if (at_y + XEM_LABEL_ROWS >= 256) {
             break;
         }
         /* The line image's rows, each `halfwords` wide, one after another. */

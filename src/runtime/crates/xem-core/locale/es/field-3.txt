@@ -5,9 +5,9 @@ f300-0003 68dcfd67ba13f052 Emeralda{n}"Emeralda{wait 5}...{wait 10}{n}también v
 f300-0004 eacc6d8266a0c362 Fei{n}"Ah{wait 5}...{wait 10} siento lo de{n}antes{wait 5}...{wait 10} Perdóname...{wait 10}{n}Pero{wait 5} quiero explicártelo...{p}Ahora,{wait 10} por primera vez,{wait 10}{n}la gente de la superficie y{n}la de Solaris se está{n}uniendo.{p}Pero{wait 10} no todos son{wait 10}{n}tan fuertes como la{n}tripulación de esta nave o{n}la gente de Shevat.{p}Hasta nosotros perdemos a{n}veces de vista nuestro{n}futuro...{wait 10}{p}así que imagina lo que pasa{n}la gente corriente.{p}Por eso la gente necesita a{n}alguien como tú en quien{n}apoyarse...{wait 10}{n}Una luz que nos guíe.{p}Tú liberaste los corazones{n}de la gente a la que ese{n}Ministerio usó como{p}herramientas durante{n}cientos de años.{p}¡Elly, fuiste tú!{wait 10}{n}Y ahora tu cuerpo ya no te{n}pertenece solo a ti.{p}Por eso no puedo dejar que{n}corras ningún peligro.{wait 10}{n}Y por eso no quiero que{n}sigas luchando."
 f300-0005 404d11a6c23996fb ...{wait 5}Qué curioso, ¿verdad?
 f300-0007 dfbfe2b90ee4d2ce Elly{n}"Antes éramos enemigos,{wait 5}{n}y ahora estamos juntos{n}así{wait 5}..."
-f300-0008 25c845f4cd7e707d Elly{n}"Al principio...{wait 10}{n}creo que me veía a mí{n}misma en ti.{p}Parecía que nos{n}superponíamos...{wait 10}{n}Tú estabas en una{p}situación parecida a la{n}mía.{p}Cuando estaba contigo,{wait 5}{n}no me sentía sola ni{n}insegura.{wait 10} Por eso creí que{n}te quería...{p}Pero no era eso.{wait 10}{n}Simplemente no tenía el{n}valor de mirar a mi{n}verdadero yo.{p}Me refugié en ti para huir{n}de todo...{wait 10}{n}Lo confundí con amor."
-f300-0009 6cc3b6b53ef7ff74 Elly{n}"Pero{wait 10} ahora es distinto.{wait 10}{n}Puedo afrontar mis propios{p}problemas.{wait 10}{n}Yo soy yo{wait 5}...y tú eres tú.{p}Ahora todo se ha vuelto{wait 5}{n}claro para mí.{wait 10}{n}También he comprendido que{n}de verdad te necesito...{p}No porque te necesite como{n}refugio para mis problemas.{wait 10}{n}Te necesito porque te amo{n}de verdad."
-f300-0011 d5908216c1888b9b Elly{n}"Entiendo lo que dices,{wait 5}{n}Fei.{wait 10} Sé por qué te preocupa{n}tanto mi seguridad...{p}Pero, ¿sabes?,{wait 5} tengo{wait 5}...{wait 5}{n}miedo.{wait 10}{n}Temo que no volvamos a{p}vernos nunca{wait 5}...{wait 10}{n}Es solo un presentimiento."
+f300-0008 25c845f4cd7e707d Elly{n}"Al principio...{wait 10}{n}creo que me veía a mí{n}misma en ti.{p}Parecía que nos{n}superponíamos...{wait 10}{p}Tú estabas en una{n}situación parecida a la{n}mía.{p}Cuando estaba contigo,{wait 5}{n}no me sentía sola ni{n}insegura.{wait 10} Por eso creí que{n}te quería...{p}Pero no era eso.{wait 10}{n}Simplemente no tenía el{n}valor de mirar a mi{n}verdadero yo.{p}Me refugié en ti para huir{n}de todo...{wait 10}{n}Lo confundí con amor."
+f300-0009 6cc3b6b53ef7ff74 Elly{n}"Pero{wait 10} ahora es distinto.{wait 10}{p}Puedo afrontar mis propios{n}problemas.{wait 10}{n}Yo soy yo{wait 5}...y tú eres tú.{p}Ahora todo se ha vuelto{wait 5}{n}claro para mí.{wait 10}{n}También he comprendido que{n}de verdad te necesito...{p}No porque te necesite como{n}refugio para mis problemas.{wait 10}{n}Te necesito porque te amo{n}de verdad."
+f300-0011 d5908216c1888b9b Elly{n}"Entiendo lo que dices,{wait 5}{n}Fei.{wait 10} Sé por qué te preocupa{n}tanto mi seguridad...{p}Pero, ¿sabes?,{wait 5} tengo{wait 5}...{wait 5}{n}miedo.{wait 10}{p}Temo que no volvamos a{n}vernos nunca{wait 5}...{wait 10}{n}Es solo un presentimiento."
 f300-0012 b52f6ccc4daf1a42 Fei{n}"No te preocupes,{wait 10}{n}no voy a morir."
 f300-0013 0ed51ebd3f0e289c Elly{n}"No,{wait 5} no es eso{wait 5}...{wait 10}{n}Es algo completamente{n}distinto{wait 5}...{p}Es como si algo a lo que{n}no puedo resistirme me{n}desgarrara{wait 5}...{wait 10}{n}Como si ya no fuera yo{wait 5}...{p}Aunque vuelvas sano y{n}salvo{wait 5}...{wait 10} Aun así{wait 5}...{wait 10}{n}me siento tan{n}intranquila{wait 5}...{p}Por eso necesito ir{n}contigo.{wait 10}{n}No soporto estar lejos de{n}ti."
 f300-0014 f09affd5a27dfcb2 Fei{n}"Yo siento lo mismo...{wait 10}{n}Desde que te conocí en{n}aquel bosque{wait 5}...{p}Creo que es el mismo{n}sentimiento que has tenido{n}tú...{wait 10}{p}Yo también me refugiaba en{n}ti.{p}Pero tengo que resolver{n}mis propios problemas.{wait 10}{n}No puedo cargarte con{n}ellos."
@@ -22,11 +22,11 @@ f300-0024 9f1d2d5adccf45ba Fei{n}"B...{wait 5} bueno,{wait 10} me voy."
 f300-0025 7ada3f42da04febb Elly{n}"Está bien{wait 5}...{wait 10}{n}Ten mucho cuidado{wait 5}..."
 f300-0026 705e21981ac94841 Fei{n}"Sí,{wait 5} lo tendré...{wait 20}{n}¡Ah!{wait 10} ¿Me guardas esto?"
 f300-0027 d1610aecfa2ec3c4 Elly{n}"¿Qué es esto?{wait 10}{n}¿Es un{wait 5}...{wait 5} colgante?"
-f300-0028 5b36c4a5d1d40b00 Fei{n}"No sé de quién es.{wait 10}{n}Parece que lo llevaba{p}encima cuando me trajeron{n}a Lahan.{p}Puede que sea mío,{wait 5} o puede{n}que sea{wait 5}..."
+f300-0028 5b36c4a5d1d40b00 Fei{n}"No sé de quién es.{wait 10}{p}Parece que lo llevaba{n}encima cuando me trajeron{n}a Lahan.{p}Puede que sea mío,{wait 5} o puede{n}que sea{wait 5}..."
 f300-0029 55c294ccf59c071f ¿Puede que sea{wait 5}...?
 f300-0030 3620053dc7c4677c Fei{n}"Oh, nada...{wait 10}{n}¿Me lo guardas, por{n}favor?"
 f300-0031 b09626ba229d2a1a Elly{n}"De acuerdo.{wait 10}{n}Te lo guardaré."
-f300-0032 4992932d256b5232 Fei{n}"Gracias.{wait 10}{n}...{wait 5}Bueno,{wait 5}{p}¡supongo que esto es un{n}adiós!"
+f300-0032 4992932d256b5232 Fei{n}"Gracias.{wait 10}{n}...{wait 5}Bueno,{wait 5} ¡supongo que{n}esto es un adiós!"
 f300-0034 8e133c73d19069f3 ¿Sí?
 f300-0035 96f1bde6d92470b5 Elly{n}"Gracias{wait 5}..."
 f301-0000 9a177b6355b3a5af Bart{n}"¡Oye, Margie!{p}Quita ese extraño muñeco{n}de peluche que hay delante{n}del puente.{wait 10}{n}Nos estorba."
@@ -34,7 +34,7 @@ f301-0001 832523cb3dab9f6c Margie{n}"¡No es un 'extraño muñeco{n}de peluche'!
 f301-0002 01d8702d50d5a265 Margie{n}"¡Se llama {name 7}!"
 f301-0003 4652afe2b01420f6 Margie{n}"Pero qué raro.{wait 10}{n}Hace un momento estaba{n}aquí, donde la dejé..."
 f301-0004 9b976321ea2a3fbb ¡¡Encantachu de conocerte,{n}chu!!{wait 10}{n}¡Soy {name 7}!{p}¡¡Me enamoré de ti en{n}cuanto te vi en Bledavik!!{wait 10}{n}¡Adonde tú vayas, iré yo,{n}chu!
-f301-0005 8ad209c739687ce0 Bart{n}"¡Lo que creíamos que era{n}un simple peluche es en{p}realidad un animal vivo!{n}¡Qué raro!"
+f301-0005 8ad209c739687ce0 Bart{n}"¡Lo que creíamos que era{n}un simple peluche es en{n}realidad un animal vivo!{p}¡Qué raro!"
 f301-0006 8cdb13e678206ada Margie{n}"¡Con razón estaba{n}extrañamente tibia!"
 f301-0007 b32f48e4c700e836 Fei{n}"¿¡Q... qué!?"
 f301-0008 fee1392b10c93186 Bart{n}"¡¡Vaya éxito tienes,{n}Fei!!"
@@ -75,7 +75,7 @@ f301-0045 b12d4815afd1abd9 Margie{n}"Fui la única que escapó{n}de las garras d
 f301-0046 ed1f688a1d9ede69 Margie{n}"Aunque fuera el deseo de{n}la Secta, me dejó un sabor{n}amargo..."
 f301-0047 533d3557cf4dc56d Margie{n}"¡¡Gracias, Fei!!"
 f301-0048 fec0a34652354ab8 Margie{n}"¡Cómo te atreves a entrar{n}en la habitación de una{n}chica sin llamar!"
-f301-0049 58c3268d70ec0615 Margie{n}"No soy lo bastante fuerte{n}para luchar junto a Bart y{n}sus compañeros...{p}¡Pero puedo ser la{n}mánager!{wait 10}{n}¡Avísame cuando quieras{p}cambiar los miembros del{n}grupo!"
+f301-0049 58c3268d70ec0615 Margie{n}"No soy lo bastante fuerte{n}para luchar junto a Bart y{n}sus compañeros...{p}¡Pero puedo ser la{n}mánager!{wait 10}{p}¡Avísame cuando quieras{n}cambiar los miembros del{n}grupo!"
 f301-0050 6b33c8b11d879fcc Margie{n}"¿Cambiar de grupo?"{n}    Sí{n}    No
 f301-0051 3700bc70e8cf91f6 Margie{n}"¡Uy, perdona!{n}¡Ahora no puedes cambiar!"
 f301-0052 c9f912c80e76129c Margie{n}"¡Avísame otra vez cuando{n}quieras!"
@@ -95,7 +95,7 @@ f301-0065 dc5c98bdcd690535 {name 7}{n}"Qué ruidochu.{wait 10} ¿Es algún{n}tip
 f301-0066 b09c670fa08d6ebf {name 7}{n}"¡No hay nadie y no hay{n}nada que hacer, chu!{n}¡Qué aburrimiento!"
 f301-0067 08dcdf04a0a670fb {name 7}{n}"¡Uau!{wait 10} Una araña de{n}aspecto delichioso..."
 f301-0068 7f8938a49f6f98e0 Ñamchu ñamchu
-f301-0069 6f99074240a0cc03 {name 7}{n}"¡Los regalos chon el{n}camino al corazón de una{p}mujer!{wait 10}{n}¡Aquí tienes tu{n}recompensa!"
+f301-0069 6f99074240a0cc03 {name 7}{n}"¡Los regalos chon el{n}camino al corazón de una{n}mujer!{wait 10}{p}¡Aquí tienes tu{n}recompensa!"
 f301-0070 63133ed79243c2e3 ¡Recibes 'Velo de Éter'!
 f301-0071 031e4268cc3f3b34 {name 7}{n}"Se me secan los ojos{n}cuando finjo ser un muñeco{n}de peluche. ¡Ayuchu!"
 f301-0072 7f75fdd0d6256871 Ay, madre...{wait 10}{n}¡¡Acabo de declarar mi{n}amor!!{done 60}
@@ -107,9 +107,9 @@ f301-0082 decfdb9b7982855b Billy{n}"Margie, por favor, cuida{n}de mi hermanita."
 f301-0083 a074f4cb77942e86 {name 7}{n}"¿Y por qué no me lo pides{n}a mí, chu?"
 f301-0084 dc93f81e2b81f1f7 Sostiene una nota...{n}¿Leerla?{n}{speed 255}    Leerla{n}    ¡No, mejor no!
 f301-0085 4af884575ee19eaf {speed 255}'PriMemo'{n}Hermano mayor,{n}resiste...
-f301-0086 b032d56c110e5fbc {speed 255}'PriMemo'{n}Tienes tres tipos de armas{n}como equipo estándar...{p} Pistola,{n} Arma Éter,{n} Cañón.{p}La única arma que se puede{n}cambiar es la pistola.{p}Puedes potenciar las armas{n}mejorando su 'munición' o{n}sus 'balas'.{p}Para equipar munición,{n}pulsa Izquierda o Derecha{n}en el botón de dirección en{p}la pantalla del menú{n}Equipo.{p}Así, la ventana de equipo{n}pasará a una subventana{n}donde podrás cambiar el{n}tipo de munición que usas.{p}Hay algo con lo que debes{n}tener cuidado... ¡La{n}cantidad de cada tipo de{n}munición es limitada!{p}Por eso es importante tener{n}una buena reserva de{n}munición y recargar siempre{n}que puedas.{p}La única excepción es el{n}Arma Éter, que puede{n}dispararse un número{n}ilimitado de veces.
+f301-0086 b032d56c110e5fbc {speed 255}'PriMemo'{n}Tienes tres tipos de armas{n}como equipo estándar...{p} Pistola,{n} Arma Éter,{n} Cañón.{p}La única arma que se puede{n}cambiar es la pistola.{p}Puedes potenciar las armas{n}mejorando su 'munición' o{n}sus 'balas'.{p}Para equipar munición,{p}pulsa Izquierda o Derecha{n}en el botón de dirección en{n}la pantalla del menú{n}Equipo.{p}Así, la ventana de equipo{n}pasará a una subventana{n}donde podrás cambiar el{n}tipo de munición que usas.{p}Hay algo con lo que debes{n}tener cuidado... ¡La{n}cantidad de cada tipo de{n}munición es limitada!{p}Por eso es importante tener{n}una buena reserva de{n}munición y recargar siempre{n}que puedas.{p}La única excepción es el{n}Arma Éter, que puede{n}dispararse un número{n}ilimitado de veces.
 f302-0000 daaf1a654b637e3a Está tibio...
-f302-0001 2ee24c17c6687959 Bart{n}"¡Esa Margie...!{p}¡Mira que dejar un muñeco{n}de peluche tan raro en un{n}sitio como este!{wait 10} Por su{p}culpa no podemos entrar en{n}el puente."
+f302-0001 2ee24c17c6687959 Bart{n}"¡Esa Margie...!{p}¡Mira que dejar un muñeco{n}de peluche tan raro en un{n}sitio como este!{wait 10}{p}Por su culpa no podemos{n}entrar en el puente."
 f302-0002 e816e73075c1f379 {speed 255}¡No es raro!{done 15}
 f302-0003 415fb52c64853e9f Bart{n}"¡¡Oye, Fei!!{wait 10}{n}Deja de poner vocecitas,{n}¿¡quieres!?"
 f302-0004 c54580b70fd69428 Fei{n}"¿Eh?{n}{wait 10}Yo{wait 10} no he dicho nada."
@@ -118,9 +118,9 @@ f302-0006 43bf8cea845f42ec ¿Subir al transporte?{n}    Sí{n}    Un momento
 f302-0007 c130811bad8c9aa5 {speed 255}Preparando el despegue.{n}¡No abrir la escotilla!{n}              -Sigurd
 f302-0008 d5964ca49bf95ed3 {speed 255}No abrir la escotilla{n}durante la marcha.{n}          -Sigurd
 f302-0009 d015892c7a8bf8ad Elly{n}"No pueden poner en marcha{n}la Yggdrasil porque Sigurd{n}no está...{p}Debe de estar en la Sala{n}de Armas o en algún otro{n}sitio."
-f303-0000 57aabb6fb8a0b8e2 Elly{n}"¡Espera un momento!{wait 10}{n}¿Quieres que me quede{p}aquí?{wait 10}{n}¡No, voy contigo!"
+f303-0000 57aabb6fb8a0b8e2 Elly{n}"¡Espera un momento!{wait 10}{p}¿Quieres que me quede{n}aquí?{wait 10}{n}¡No, voy contigo!"
 f303-0001 1d27d2157c9186ee Fei{n}"No.{wait 10}{n}Es demasiado peligroso{wait 5}..."
-f303-0002 328b517b23edacba Elly{n}"¿Por qué?{wait 10} He estado en{n}muchas situaciones{p}peligrosas.{wait 10}{n}¡No es la primera vez!"
+f303-0002 328b517b23edacba Elly{n}"¿Por qué?{wait 10} He estado en{n}muchas situaciones{n}peligrosas.{wait 10}{p}¡No es la primera vez!"
 f303-0003 58028d069c244d43 Fei{n}"¡He dicho que NO!{wait 10}{n}No podemos llevarte.{p}¡Por favor, entiéndelo!"
 f303-0004 187abddc559bd593 Elly{n}"¡No, quiero ir!"
 f303-0005 348e68f7b687beb7 Elly{n}"¡Hemos luchado juntos{n}todo este tiempo!{p}¿¡Y de repente me dices{n}que no vaya!?{n}¡¡No lo entiendo!!"
@@ -128,13 +128,13 @@ f303-0006 cfb7934ff941c47c Fei{n}"¡Esta no es una pelea{n}cualquiera!{p}Es una 
 f303-0007 d195d84a5134af84 Elly{n}"Precisamente por eso{n}quiero ir{wait 5}..."
 f303-0008 9a284afcb5b93ece Fei{n}"No tienes ni la menor{n}idea{wait 5}..."
 f303-0009 a859187bb30a6e86 Elly{n}"¿¡Qué es lo que no{n}entiendo!?"
-f303-0010 cffe0c9216ec305d Fei{n}"Si el enemigo fuera solo{n}el Ministerio o simples{p}armas mecánicas, no pasaría{n}nada.{p}Pero la mayoría de los{n}enemigos estarán hechos de{n}lo que una vez fueron{p}humanos{wait 5}...{wait 5} ¡Humanos como tú{n}y yo!"
+f303-0010 cffe0c9216ec305d Fei{n}"Si el enemigo fuera solo{n}el Ministerio o simples{n}armas mecánicas,{p}no pasaría nada.{p}Pero la mayoría de los{n}enemigos estarán hechos de{n}lo que una vez fueron{n}humanos{wait 5}...{wait 5}{p}¡Humanos como tú y yo!"
 f303-0012 111f6084023901aa Fei{n}"Los vi en esas{n}instalaciones{wait 5}...{wait 5} Gears{n}hechos de seres humanos.{p}Eran igual que Hammer{wait 5}...{wait 10}{n}¿¡Podrías destruirlos ahora{n}que lo sabes!?{p}Para salvarnos, ¿¡de verdad{n}puedes decir que serías{n}capaz de matar a quienes{p}una vez fueron nuestros{n}amigos!?{p}Y bien, ¿¡todavía quieres{n}venir!?"
 f303-0013 41b76d947a422180 Elly{n}"B...{wait 10} bueno{wait 5}..."
 f303-0014 8343225238863db4 Fei{n}"Ni siquiera eres capaz de{n}matar a una sola persona.{p}Tu presencia sería una{n}carga durante el combate."
 f303-0016 8fe003869a512250 Fei{n}"Solo{wait 5} serías{n}un estorbo{wait 20}..."
 f303-0017 8a958596a90d4e11 Bart{n}"¡Oye, Fei!{n}¿No crees que te has{n}pasado un poco?"
-f303-0018 e73f0cfe2535ab97 Citan{n}"No podemos culparla.{wait 10}{n}Al menos deberíamos{p}comprender sus{n}sentimientos."
+f303-0018 e73f0cfe2535ab97 Citan{n}"No podemos culparla.{wait 10}{p}Al menos deberíamos{n}comprender sus{n}sentimientos."
 f303-0019 421d0b9f32b473aa Fei{n}"Sé lo que siente Elly.{p}Sabía que no me haría caso{n}si solo le decía:{wait 5}{n}'¡Tú no vienes!'.{p}Teniendo en cuenta que ha{n}luchado a nuestro lado{n}durante tanto tiempo y{n}todo eso{wait 5}...{p}Por eso tuve que{n}explicárselo así{wait 5}..."
 f303-0020 c09e89e65a662c6f Fei{n}"La gente reunida en Nisan{n}necesita a Elly.{p}Tiene que darse cuenta de{n}cuánta gente depende de{n}ella.{p}No puedo ponerla en{n}peligro{wait 5}..."
 f303-0021 4dd23840bed8ffa0 Margie{n}"Pero se lo dijiste de una{n}forma un poco dura."
@@ -165,8 +165,8 @@ f303-0045 74c7b1b86893302f Fei{n}"Pero la reina Zephyr dijo{n}que había tres en
 f303-0046 1a3f1decd7b9a936 Sigurd{n}"Según el informe de{n}Shakhan,{p}las Puertas están{n}dispuestas en triángulo{n}alrededor de Solaris..."
 f303-0047 a11027782e38e15d Citan{n}"Miremos el mapa que nos{n}dio la reina,{p}que muestra la zona antes{n}de que se colocaran las{n}Puertas."
 f303-0048 0b4c7799b3f7e2a7 Bart{n}"¿Y si probamos las dos{n}opciones?{n}¿No basta con eso?"
-f303-0049 d51a4cdc540f7cb1 Sigurd{n}"Sería difícil.{n}Dudo que esperaran que{p}destruyéramos la segunda{n}Puerta.{p}Seguro que la próxima vez{n}irán en serio.{wait 10}{n}Más vale planearlo con{n}cuidado, pero rápido."
-f303-0050 ef78709f3e5e1c8f Citan{n}"En cualquier caso, no{n}podremos evitar la{p}intromisión de Gebler,{n}¿verdad?"
+f303-0049 d51a4cdc540f7cb1 Sigurd{n}"Sería difícil.{p}Dudo que esperaran que{n}destruyéramos la segunda{n}Puerta.{p}Seguro que la próxima vez{n}irán en serio.{wait 10}{n}Más vale planearlo con{n}cuidado, pero rápido."
+f303-0050 ef78709f3e5e1c8f Citan{n}"En cualquier caso, no{n}podremos evitar la{n}intromisión de Gebler,{p}¿verdad?"
 f303-0051 dd9e43843e5b9696 Fei{n}"Doc,{wait 10} Elly,{wait 10} ¿dónde está{n}Solaris exactamente?"
 f303-0052 48a20baee7398ab1 Elly{n}"En Solaris solo hay mapas{n}de Solaris.{p}Ni siquiera conocía la{n}geografía de esta tierra{n}hasta que llegué aquí."
 f303-0053 16abc0635e223b69 Fei{n}"¿Ni siquiera en Gebler?"
@@ -174,7 +174,7 @@ f303-0054 d622453cbbe05600 Elly{n}"Las relaciones con la{n}superficie solo se re
 f303-0055 a697c6b2ce126803 Bart{n}"Si es así, puede que ni{n}siquiera el padre de Billy{n}lo sepa."
 f303-0056 8264cea6f2783175 Sigurd{n}"Jesiah se marchó de allí{n}a mitad de camino."
 f303-0057 d00883f001638d87 Citan{n}"Sigurd y yo viajamos como{n}polizones{p}y no tuvimos tiempo de{n}mirar por la ventana.{p}Además, al atravesar la{n}Puerta desde Solaris,{p}nos trasladamos a otros{n}lugares a través del plano{n}ambiental que hay entre{n}cada Puerta.{p}¿Recuerdan cuando entramos{n}en contacto con la Puerta{n}de Kislev en el Goliath?{p}Ocurre lo mismo, y{n}perdemos toda noción de{n}dónde estábamos antes."
-f303-0058 b1551d5067bce8b5 Fei{n}"Aunque la Puerta aísle{n}ese otro espacio, ¿no se{p}puede reconocer su{n}relieve?{p}¿Montañas, selvas y cosas{n}así?"
+f303-0058 b1551d5067bce8b5 Fei{n}"Aunque la Puerta aísle{n}ese otro espacio,{p}¿no se puede reconocer su{n}relieve?{p}¿Montañas, selvas y cosas{n}así?"
 f303-0059 5f7c352d9e835f9f Elly{n}"...No creo{wait 10} que hubiera{n}montañas.{p}Más bien era como si{n}estuviéramos rodeados por{n}el océano..."
 f303-0060 ddcfe3375aeb233a Bart{n}"El océano...{wait 20}{n}Entonces, ¿no puede ser el{n}norte?{p}Esto es el polo. Está todo{n}cubierto de nieve."
 f303-0061 3372d30adf1d4c22 Fei{n}"Entonces está decidido.{wait 10}{n}La Puerta está al sur de{n}aquí.{p}En el centro del triángulo{n}solo hay océano.{p}Si las Puertas estuvieran{n}en el punto más al norte,{n}el centro sería el{n}continente.{p}Así que coincide con lo que{n}contó Elly."
@@ -183,7 +183,7 @@ f303-0063 2b49e27b76cc8906 Sigurd{n}"Un momento.{wait 10} No debería{n}haber ni
 f303-0064 2c04539a245d59d0 Elly{n}"Entonces, ¿bajo el agua?"
 f303-0065 575f86a54531f3bc Sigurd{n}"Mmm...{wait 10}{n}Pero toda esta zona es muy{n}profunda.{p}Si existe, debe de estar a{n}gran profundidad."
 f303-0066 1c891ce537159e61 Fei{n}"La Yggdrasil es un{n}submarino, ¿no?{wait 10} Entonces,{n}¿cuál es el problema?"
-f303-0067 bd9179354747ab7d Bart{n}"¡Estás loco!{n}Es un submarino, pero no{n}un batiscafo.{p}No está hecho para{n}explorar las profundidades{n}marinas. La presión del{p}agua nos aplastaría al{n}instante."
+f303-0067 bd9179354747ab7d Bart{n}"¡Estás loco!{n}Es un submarino, pero no{n}un batiscafo.{p}No está hecho para{n}explorar las profundidades{n}marinas.{p}La presión del agua nos{n}aplastaría al instante."
 f303-0068 f533b96637d75204 Fei{n}"Tenemos un problema..."
 f303-0069 f5b9a4fa57611f6f Citan{n}"Quizá podamos usar los{n}batiscafos o los Gears que{n}usan los Chatarreros..."
 f303-0070 c923f69711f506a0 Bart{n}"¿'Chatarreros'?{n}¡Claro!{wait 10}{n}¡Eso es!"
@@ -255,11 +255,11 @@ f308-0007 d2d18507c7ce767e Fei{n}"De comida.{n}Ya tuvimos suerte de{n}encontrar 
 f308-0008 854545d7b2ed978e Elly{n}"Pero ¿¡dónde están todos!?{n}¿Somos los únicos{n}supervivientes?"
 f308-0009 b44275d768743991 Fei{n}"Tenemos que hacer algo.{n}Creo que iré a pescar{n}algunos peces."
 f308-0011 4b94b01c3fdc67e2 Fei{n}"...{wait 70}Están bien."
-f308-0013 a08b48c7d87ffc55 Fei{n}"Están bien...{wait 45} el Doc,{wait 30}{n}Rico,{wait 30}{p}Hammer,{wait 30} todos...{wait 45} Todos van{n}a estar bien."
+f308-0013 a08b48c7d87ffc55 Fei{n}"Están bien...{wait 45} el Doc,{wait 30}{n}Rico,{wait 30} Hammer,{wait 30} todos...{wait 45}{n}Todos van a estar bien."
 f308-0014 bf826534c94aafd9 ¡Serás...!{done 60}
 f308-0015 53a8ef952fe7f768 ¡Quieto ahí!{done 60}
 f308-0016 6ce1e34636789452 Elly{n}"Lo sabía...{wait 20} Ya me parecía{n}que esta cosa flotaba de{n}forma extraña...{p}Pero, aun sabiéndolo, no{n}hay forma de sacarlos...{wait 20}{n}¿verdad?{p}Están justo debajo de{n}nosotros, pero cubiertos{n}por el agua y una pared{n}gruesa."
-f308-0017 8c94649d7c7eaf2e Elly{n}"Seguramente son el{n}{name 11} y el {name 13}.{p}Para bien o para mal, nos{n}han acompañado hasta aquí.{n}...Aunque, a estas{p}alturas, ya no sirven para{n}nada."
+f308-0017 8c94649d7c7eaf2e Elly{n}"Seguramente son el{n}{name 11} y el {name 13}.{p}Para bien o para mal, nos{n}han acompañado hasta aquí.{p}...Aunque, a estas{n}alturas, ya no sirven para{n}nada."
 f308-0018 a436c66ae7ad1e52 Elly{n}"Parece que nuestros Gears{n}están aquí debajo, Fei.{p}Pero no podemos{n}alcanzarlos...{p}...{wait 30}¿Qué haces, Fei?"
 f308-0019 171ca2ac20a32ca7 Fei{n}"¿Que qué hago?{n}¿No lo ves...?{n}¡Intento pescar un pez!{p}Este no deja de saltar{n}justo delante de mí, como{n}si quisiera burlarse de{n}mí..."
 f308-0020 d59e221e5cda4164 Fei{n}"¡Pequeño granuja!{n}¡Te estoy viendo!"
@@ -293,7 +293,7 @@ f309-0012 6617c59e6f1134dc Fei{n}"¿Es posible?{n}¿Y qué pasa con el{n}ejérci
 f309-0013 b0c80d587faa0735 Elly{n}"Nadie sabe lo que hice.{p}Seguramente ya me habrán{n}dado por desaparecida."
 f309-0014 68ebc5ee9e2a8181 Fei{n}"Mmm.{n}Espero que al menos{n}sobrevivas.{p}Seguro que encontrarás lo{n}que quieres hacer con tu{n}vida."
 f309-0015 b947f8015bb2beac Elly{n}"Dijiste...{n}algo sobre...{n}que te{wait 20} consolabas."
-f309-0017 f0ff2b25d4cbf10e Elly{n}"No seas tan duro contigo{n}mismo.{wait 5} Todo el mundo{p}quiere sentirse necesitado{n}a veces.{p}Todos queremos dar a los{n}demás algo de nosotros{n}mismos para ser aceptados.{p}...{wait 10}Incluso yo.{wait 10}{n}¿Recuerdas cuando te{n}obligaste a comerte esas{n}raciones de emergencia?"
+f309-0017 f0ff2b25d4cbf10e Elly{n}"No seas tan duro contigo{n}mismo.{wait 5}{p}Todo el mundo quiere{n}sentirse necesitado a{n}veces.{p}Todos queremos dar a los{n}demás algo de nosotros{n}mismos para ser aceptados.{p}...{wait 10}Incluso yo.{wait 10}{n}¿Recuerdas cuando te{n}obligaste a comerte esas{n}raciones de emergencia?"
 f309-0018 1b372635d06dfdad ¡UUUURRRGHH!
 f309-0019 8492955b75a52022 Elly{n}"Oye...{wait 10} ¿estás bien?"
 f309-0020 da64ccee81f523f6 Elly{n}"Te dije que no te{n}comieras un animal de{n}aspecto tan asqueroso."
@@ -306,7 +306,7 @@ f309-0027 bd23fea07c55d343 Elly{n}"Lo sabía...{n}No te gusta, ¿verdad?"
 f309-0028 bd256ec0ce6681b8 Fei{n}"¿Qué? N... no...{wait 10}{n}Está bueno.{n}Sí, eh, está genial.{p}Nada que compartas conmigo{n}podría ser tan malo, ¿no?"
 f309-0029 cc6313d5cb4fd197 Elly{n}"Antes te obligaste a{n}comerte esas raciones,{n}¿verdad?{p}Para sobrevivir yo, habría{n}sido mejor no{n}compartirlas.{p}Pero verte comer aunque{n}supiera mal me reconfortó.{p}Me alegré de haberlas{n}compartido contigo... Me{n}hizo sentir un poco{n}mejor."
 f309-0030 134a3f12285a96a6 Fei{n}"¿Por tu propio bien?"
-f309-0031 4cce634cae560680 Elly{n}"Sí,{wait 5} por mi propio bien.{wait 10}{n}Es egoísta, lo admito.{p}Pero creo que al principio{n}no pasa nada por ser así.{p}Luego, poco a poco, vas{n}descubriendo tu propia{n}felicidad...{p}Y algún día eres capaz de{n}compartir esa parte tan{n}importante de ti con otra{p}persona.{n}Algún...{wait 20} día."
+f309-0031 4cce634cae560680 Elly{n}"Sí,{wait 5} por mi propio bien.{wait 10}{n}Es egoísta, lo admito.{p}Pero creo que al principio{n}no pasa nada por ser así.{p}Luego, poco a poco, vas{n}descubriendo tu propia{n}felicidad...{p}Y algún día eres capaz de{n}compartir esa parte tan{n}importante de ti con otra{n}persona.{p}Algún...{wait 20} día."
 f309-0033 143a5279311f8702 Fei{n}"¿?{wait 10}{n}¿Qué pasa?"
 f309-0034 6597eb6f25e9c8e2 Elly{n}"...Nada. Es que sentí como{n}si ya te hubiera dicho lo{n}mismo hace mucho tiempo...{p}Debe de ser mi imaginación.{n}No puedo habértelo dicho{n}antes, porque acabamos de{n}conocernos, ¿verdad?"
 f309-0035 4e86ba9b6919a2b4 Elly{n}"Sí, seguramente es solo{n}mi imaginación{wait 10}..."
@@ -320,7 +320,7 @@ f311-0004 49f17ae3318b1805 Citan{n}"¡Fei!{n}¡Elly!{n}Están bien."
 f311-0005 fca7cbf41a0222a8 Elly{n}"Más o menos."
 f311-0006 063c51a3e6a77f8f Rico{n}"No es momento para{n}reencuentros{n}lacrimógenos."
 f311-0007 1f29047d040ccaff Fei{n}"Sí...{n}¿Dónde está Bart?"
-f311-0008 8d7cf1b2bc7e9cdf Citan{n}"Está luchando ahí abajo.{p}Dijo que los contendría{n}hasta que las cargas de{n}profundidad estuvieran{n}listas.{p}Pero se fue sin los{n}preparativos adecuados{n}para el combate{n}submarino...{p}Estamos ocupados{n}preparando las cargas de{n}profundidad.{p}Sus Gears deberían poder{n}aguantar un combate{n}submarino hasta cierto{p}punto.{n}Vayan a ayudarlo."
+f311-0008 8d7cf1b2bc7e9cdf Citan{n}"Está luchando ahí abajo.{p}Dijo que los contendría{n}hasta que las cargas de{n}profundidad estuvieran{n}listas.{p}Pero se fue sin los{n}preparativos adecuados{n}para el combate{n}submarino...{p}Estamos ocupados{n}preparando las cargas de{n}profundidad.{p}Sus Gears deberían poder{n}aguantar un combate{n}submarino hasta cierto{n}punto.{p}Vayan a ayudarlo."
 f311-0009 c5f9e22258916a13 Fei{n}"Entendido.{n}Elly, vamos."
 f311-0010 26d8722ad5839692 Citan{n}"Fei,{n}¿dónde está Elly?"
 f311-0011 cbf896a7b958c479 Fei{n}"El enemigo{wait 5}...{wait 10}{n}se la llevó."
@@ -350,16 +350,16 @@ f312-0006 afd85f4e61449342 Big Joe{n}"Entonces, largo."
 f312-0007 329636fd4ddad9ed ¡Oh, Joe, mi amore!
 f312-0008 d3e760b349d0f001 Bart{n}"Siento lo que dije{n}antes..."
 f312-0009 595b35e22784e950 Fei{n}"No pasa nada. Yo también{n}tuve la culpa. Hacía mucho{n}tiempo que no te veía.{p}No deberíamos pelearnos."
-f312-0010 2b9416bad96949da Bart{n}"Ay{wait 5}...{wait 5}{p}La Yggdrasil II se{n}construyó tan deprisa que{n}no tuvimos tiempo de{p}prepararle cargas de{n}profundidad.{p}Además, fue culpa mía que{n}no tuviéramos cargas de{n}profundidad, porque di{p}prioridad a los Misiles{n}Bart sobre...{p}...todo lo demás."
+f312-0010 2b9416bad96949da Bart{n}"Ay{wait 5}...{wait 5}{p}La Yggdrasil II se{n}construyó tan deprisa que{n}no tuvimos tiempo de{p}prepararle cargas de{n}profundidad.{p}Además, fue culpa mía que{n}no tuviéramos cargas de{n}profundidad,{p}porque di prioridad a los{n}Misiles Bart sobre...{p}...todo lo demás."
 f312-0011 498c882cc9e9af8b Fei{n}"¿Misiles Bart?"
 f312-0012 32eaf1cc8724570c Bart{n}"Oh, eh... bueno, tampoco{n}son para tanto."
 f312-0013 de7c49debefcb774 Fei{n}"¿?{wait 20}{n}En fin, me alegro de que{n}estés bien.{p}Siempre supe que estabas{n}vivo."
 f312-0014 02110060023b5737 Bart{n}"Por supuesto.{n}Soy Bart el inmortal.{n}¿Qué intentas decir{wait 5}...?{p}Aunque esta vez me dio una{n}paliza un monstruo de Gear{n}rojo."
 f312-0015 cae1d920c3e10bf4 Fei{n}"Un Gear rojo..."
-f312-0016 4bc497c1566e9351 Bart{n}"Sí. Me derrotó y luego nos{n}dejó hundirnos en la arena.{p}Pero lo que viene ahora{n}parece una locura.{p}¡Nos hundimos en una cueva{n}enorme bajo la arena!{wait 10} ¡Y{n}allí había un crucero de{p}arena igual que la{n}Yggdrasil!{p}Le pusimos las piezas{n}útiles y el puente y lo{n}remodelamos."
+f312-0016 4bc497c1566e9351 Bart{n}"Sí. Me derrotó y luego nos{n}dejó hundirnos en la arena.{p}Pero lo que viene ahora{n}parece una locura.{p}¡Nos hundimos en una cueva{n}enorme bajo la arena!{wait 10}{p}¡Y allí había un crucero de{n}arena igual que la{n}Yggdrasil!{p}Le pusimos las piezas{n}útiles y el puente y lo{n}remodelamos."
 f312-0017 82889c2e805489e5 Citan{n}"Francamente, ni yo mismo{n}me lo creo. Parece igual,{n}pero puede flotar.{p}Lo más probable es que sea{n}el prototipo de la{n}Yggdrasil."
-f312-0018 ec32159e7d927dc9 Bart{n}"Allí vivía gente hace{n}mucho tiempo y tenían{p}muchas armas.{n}Así es como las{n}conseguimos."
-f312-0019 fefad3740631a74b Citan{n}"Bart ya me las enseñó.{n}Lo más probable es que{p}esas armas sean...{wait 10} de{n}Shevat."
+f312-0018 ec32159e7d927dc9 Bart{n}"Allí vivía gente hace{n}mucho tiempo y tenían{n}muchas armas.{p}Así es como las{n}conseguimos."
+f312-0019 fefad3740631a74b Citan{n}"Bart ya me las enseñó.{p}Lo más probable es que{n}esas armas sean...{wait 10} de{n}Shevat."
 f312-0020 0a233848f6e992cf Fei{n}"Shevat...{wait 5}...{wait 5}{n}¿te refieres a ese país{n}aéreo...?"
 f312-0021 2a6038bf8e890537 Bart{n}"Lo más importante es que{n}vayamos a saludar al{n}capitán."
 f313-0000 37e1fb7ae918077f Médico{n}"¿Qué, estás herido?"{n}    Sí{n}    No
@@ -376,7 +376,7 @@ f313-0010 69bebe2460fd4093 Cuando me emborracho, no{n}paso de esta cama.
 f313-0011 cbb1c8c301cff636 Anna{n}"A mi marido se lo comió{n}esa cosa, el Segador{n}-Wels-...{p}Solo nos salvamos nosotros{n}tres. ¿Qué vamos a hacer{n}ahora?"
 f313-0012 725537f6362c470e Lance{n}"Oye, ¿estás molestando a{n}mi mamá?"
 f313-0013 56b1f95136b38547 Kanna{n}"¿Y papá?"
-f313-0014 0c2e91b0e168266e Médico{n}"...{wait 15}No lo sé.{wait 10}{n}Pero por ahora lo{p}mantienen con vida las{n}máquinas{wait 10}...{wait 10}..."
+f313-0014 0c2e91b0e168266e Médico{n}"...{wait 15}No lo sé.{wait 10}{p}Pero por ahora lo{n}mantienen con vida las{n}máquinas{wait 10}...{wait 10}..."
 f313-0015 4910dccbdb475d76 Citan{n}"...{wait 20}¿Quiere decir...{wait 5}{n}que se pondrá bien{wait 10}...?"
 f313-0016 c9e53c84790913e5 Médico{n}"...{wait 20}No garantizo nada.{wait 10}{n}Ni siquiera sé por qué{n}está así."
 f313-0018 9465f20edd61aba0 Elly{n}"...{wait 30}¿Culpa mía{wait 20}?{wait 15}{n}...{wait 30}Yo{wait 10}...{wait 10}"
@@ -420,13 +420,13 @@ f314-0026 c2ab6a7fe745deaf ¡un hombre!
 f314-0027 670ef0237e2fd6b7 ¡del mar!
 f314-0028 25967c1a2a46ce25 Capitán{n}"Gajajaja..."
 f314-0029 012dd7e2ad255c14 Capitán{n}"Seguro que están muertos{n}de hambre.{n}Les traeré algo de comer."
-f314-0030 fdda3194f3d83493 Capitán{n}"¡Haaaaaaaaaaaaaaaans!{n}¡Yo daré la bienvenida a{p}los invitados!{n}Tú encárgate del resto."
+f314-0030 fdda3194f3d83493 Capitán{n}"¡Haaaaaaaaaaaaaaaans!{p}¡Yo daré la bienvenida a{n}los invitados!{n}Tú encárgate del resto."
 f314-0031 5c2e0494c464c8cd Capitán{n}"Claro que lo sé.{n}¿Cómo puedes estar tan{n}tranquilo?"
 f314-0032 8567fecf7228218d Capitán{n}"Bah, sí, sí."
 f314-0033 82eff1d62509ea5a Capitán{n}"Déjame ir a prepararlo{n}todo."
 f314-0034 2175adbda3737622 Capitán{n}"Vayan a esperar arriba,{n}en la cubierta.{n}Haré que los suban allí."
 f314-0035 807918e169559845 Capitán{n}"Todo está bien.{n}La dama volvió sana y{n}salva."
-f314-0036 cb4f669ee6b89f9f Capitán{n}"¿Los Etones?{n}Ah, esos tipos que{p}estuvieron aquí hace un{n}rato...{p}Se fueron diciendo que{n}tenían que investigar algo.{n}Puede que estén en la{p}cubierta, cerca de la{n}entrada de suministros."
+f314-0036 cb4f669ee6b89f9f Capitán{n}"¿Los Etones?{p}Ah, esos tipos que{n}estuvieron aquí hace un{n}rato...{p}Se fueron diciendo que{n}tenían que investigar algo.{p}Puede que estén en la{n}cubierta, cerca de la{n}entrada de suministros."
 f314-0037 05d08fd175bcc9bd Capitán{n}"Si van a meterse con{n}ellos, les ayudaremos en lo{n}que podamos.{p}Si quieren saber algo sobre{n}la pecera que se dirigía a{n}la excavación, pregúntenle{n}a Hans."
 f314-0038 52afcb3a05e86dcf Capitán{n}"Ah, Citan.{n}¿Has venido porque estabas{n}preocupado?"
 f314-0039 501454a384b45f83 Citan{n}"Sí, podría decirse así.{n}Pero parece que están{n}mejor de lo que esperaba."
@@ -440,22 +440,22 @@ f314-0046 9d55413c8b8fcfea Capitán{n}"Algunos dicen que vieron{n}un monstruo en
 f314-0047 72d5bb86caeb1362 Citan{n}"Stone{wait 10}...{wait 10}{n}Parece que allí hay algo,{n}sin duda."
 f314-0048 abbfb2bb520c8aef Capitán{n}"Llámalo intuición de{n}chatarrero, pero no quiero{n}acercarme más.{p}Y, Citan, ¿esa pecera es{n}enemiga tuya?"
 f314-0049 c06ed9c7e67dd771 Citan{n}"Podría...{wait 10}{n}decirse así."
-f314-0050 066d441a071ea5e4 Capitán{n}"Bueno, no te pido{n}venganza.{p}Pero no puedo quedarme de{n}brazos cruzados sin hacer{n}nada. Si están en su{p}contra, les ayudaremos en{n}lo que podamos.{p}Pueden preguntarle a Hans{n}lo que quieran sobre la{n}excavación."
+f314-0050 066d441a071ea5e4 Capitán{n}"Bueno, no te pido{n}venganza.{p}Pero no puedo quedarme de{n}brazos cruzados sin hacer{n}nada.{p}Si están en su contra, les{n}ayudaremos en lo que{n}podamos.{p}Pueden preguntarle a Hans{n}lo que quieran sobre la{n}excavación."
 f314-0051 3d87eb16afea3d48 Capitán{n}"¿Qué pasa?{n}¿Qué necesitan?{p}¿Punto x1507, z1235?{n}Hans, ¿te suena?"
 f314-0052 245cc4653ce56e50 Hans{n}"Es el punto Sargasso."
 f314-0053 e1b9353ff4f57bb1 Capitán{n}"¿Qué?{n}¿El Sargasso?"
 f314-0054 1ecca272365f2a35 Fei{n}"¿Sargasso? ¿Qué es eso?"
 f314-0055 f2c4b83f8f97a548 Capitán{n}"Es una cueva formada por{n}microbios a lo largo de{n}muchos años.{p}Se supone que esconde un{n}tesoro, pero nadie ha{n}vuelto nunca de allí.{p}Cuentan que la propia{n}cueva está viva. ¿Van a ir{n}al Sargasso?"
 f314-0056 5b3266c3a22e3a29 Fei{n}"Eso parece."
-f314-0057 9019dafb31459357 Capitán{n}"Sus Gears no pueden{n}sumergirse a tanta{p}profundidad. Si lo{n}hicieran, no podrían{n}moverse.{p}Instalen aquí su equipo{n}submarino. Luego lleven su{n}nave lo más lejos que{p}puedan y sumérjanse con sus{n}Gears.{p}Voy a despertar ahora mismo{n}a esos borrachos."
-f314-0058 d566917953d12195 Fei{n}"¿De verdad? ¿No le{n}importa? Gracias por{p}ayudarnos siempre,{n}capitán."
+f314-0057 9019dafb31459357 Capitán{n}"Sus Gears no pueden{n}sumergirse a tanta{n}profundidad.{p}Si lo hicieran, no podrían{n}moverse.{p}Instalen aquí su equipo{n}submarino.{p}Luego lleven su nave lo más{n}lejos que puedan y{n}sumérjanse con sus Gears.{p}Voy a despertar ahora mismo{n}a esos borrachos."
+f314-0058 d566917953d12195 Fei{n}"¿De verdad? ¿No le{n}importa?{p}Gracias por ayudarnos{n}siempre, capitán."
 f314-0059 143dfc233c07927a Capitán{n}"No hay de qué."
 f314-0060 c46096ddb8cd312a Capitán{n}"Parece que ya han{n}terminado."
 f314-0061 f4f1769b5b52e6a6 Fei{n}"Qué rápido."
 f314-0062 0d68384f9eac4737 Capitán{n}"Por supuesto.{n}Somos..."
 f314-0063 8aa622606aaeb1e1 Fei{n}"Hombres {wait 10}del mar,{n}{wait 10}¿verdad?"
-f314-0064 66f578b9855cee40 Capitán{n}"Vaya, vaya.{wait 5}{n}Parece que lo ha{p}entendido.{wait 10}{n}Cuídense, entonces."
-f314-0066 2146218d44d7031d Capitán{n}"Ah, sí, olvidé explicarte{n}cómo manejarlos bajo el{n}agua.{p}Es fácil. En el agua puedes{n}saltar sin que tus pies{n}toquen el suelo. Sigue{p}saltando para ganar{n}velocidad.{p}En un Gear se nada bastante{n}bien, pero puede que haya{n}sitios por los que no{p}puedas pasar si no lo haces{n}bien."
+f314-0064 66f578b9855cee40 Capitán{n}"Vaya, vaya.{wait 5}{p}Parece que lo ha{n}entendido.{wait 10}{n}Cuídense, entonces."
+f314-0066 2146218d44d7031d Capitán{n}"Ah, sí, olvidé explicarte{n}cómo manejarlos bajo el{n}agua.{p}Es fácil. En el agua puedes{n}saltar sin que tus pies{n}toquen el suelo.{p}Sigue saltando para ganar{n}velocidad.{p}En un Gear se nada bastante{n}bien,{p}pero puede que haya sitios{n}por los que no puedas pasar{n}si no lo haces bien."
 f314-0067 90b65f6c865614b0 Fei{n}"Entendido.{n}Gracias."
 f314-0068 f52e17870cac7eb5 Capitán{n}"No hace falta que me des{n}las gracias.{p}Quizá puedan comprar algo{n}en nuestra tienda de Gears.{n}Parece que hay nuevo botín{n}a la venta."
 f314-0069 1ba3ecef38a386ad Capitán{n}"Vuelvan al Thames cuando{n}quieran.{p}En nuestro muelle siempre{n}hay sitio para su nave."
@@ -463,8 +463,8 @@ f314-0070 d24f45608ac78682 ¿Has hablado con el{n}capitán?{wait 10}{n}Es simpá
 f314-0071 d8febddc95880f5f Hans{n}"El que anda dando vueltas{n}por allí es el capitán."
 f314-0072 aa2645cbbdd081ec Hans{n}"Parece que va a haber{n}problemas."
 f314-0073 004aeed4a7c96335 Hans{n}"El capitán es genial,{n}¿verdad?{p}Gracias a él, el trabajo{n}nunca se acaba."
-f314-0074 c40b9c49f3276bf8 Hans{n}"La pecera se dirigía{n}directamente al norte.{p}El extremo norte de esa{n}isla...{wait 10}{n}Pero ¿por qué? Allí no hay{p}nada más que una pequeña{n}mina."
-f314-0075 a00be413106487bc Hans{n}"Como nuestro trabajo con{n}el 'Ethos' se ha ido a{p}pique, ¡nos hemos quedado{n}sin 'rumbo'!{p}Supongo que tendremos que{n}seguir vagando por los{n}mares y recogiendo{n}chatarra.{p}Parece que, después de{n}todo, el Thames tendrá que{n}seguir con esta vida{n}errante."
+f314-0074 c40b9c49f3276bf8 Hans{n}"La pecera se dirigía{n}directamente al norte.{p}El extremo norte de esa{n}isla...{wait 10}{p}Pero ¿por qué? Allí no hay{n}nada más que una pequeña{n}mina."
+f314-0075 a00be413106487bc Hans{n}"Como nuestro trabajo con{n}el 'Ethos' se ha ido a{n}pique,{p}¡nos hemos quedado sin{n}'rumbo'!{p}Supongo que tendremos que{n}seguir vagando por los{n}mares y recogiendo{n}chatarra.{p}Parece que, después de{n}todo, el Thames tendrá que{n}seguir con esta vida{n}errante."
 f314-0076 c301b4fef8301083 Permítanme presentarme.{n}Soy Hans, el primer{n}oficial de la nave.
 f314-0077 1d06a1f231d1e4da Hans{n}"Sí, señor.{n}Pero no se exceda."
 f314-0078 00838fa1bb551b29 Hans{n}"El capitán y todos los{n}demás son tan{n}irresponsables."
@@ -493,9 +493,9 @@ f314-0102 f6cfbe2bc652e4e1 ¡S... sí, señor!
 f314-0103 c654ea4d42fff7a0 Capitán{n}"Están subiendo sus Gears{n}a la cubierta.{n}Vayan a buscarlos.{p}Si lo necesitan, pueden{n}comprar equipo en la{n}tienda de la entrada de{n}suministros."
 f314-0104 70a7ad799ca6e753 Hans{n}"¿Qué está diciendo,{n}capitán?{p}¿Y si nos bombardean{n}mientras estamos metidos{n}en medio de una pelea?"
 f314-0105 a0be3339ce3d13ae Capitán{n}"¡¡Silencio!!{wait 3}{n}Nuestros invitados luchan{n}para salvar a sus amigos.{p}¡No les estorbes!{wait 5}{n}¡¡Si no los ayudamos,{n}mancharemos el buen nombre{n}de los hombres del mar!!"
-f314-0106 a70bcacfe8b85596 Hans{n}"...{wait 5}...{wait 20}Sí, señor.{n}Pero el propio Thames no{p}participará en ningún{n}combate."
+f314-0106 a70bcacfe8b85596 Hans{n}"...{wait 5}...{wait 20}Sí, señor.{p}Pero el propio Thames no{n}participará en ningún{n}combate."
 f314-0107 709adecace0d9c1d Fei{n}"Gracias. Es más que{n}suficiente."
-f314-0108 4b6ac89b623dbb56 Capitán{n}"¡Qué agallas tienen para{n}empezar una pelea junto al{p}Thames!{n}¡Me hierve la sangre!"
+f314-0108 4b6ac89b623dbb56 Capitán{n}"¡Qué agallas tienen para{n}empezar una pelea junto al{n}Thames!{p}¡Me hierve la sangre!"
 f314-0109 a12b37336424cf9b Capitán{n}"Oye, Hans, hace mucho que{n}no disparo el cañón{n}grande.{p}¿Qué tal si hacemos un{n}disparo o dos?"
 f314-0110 f6c0ea14eda5db1c Hans{n}"¿Está de broma?{p}¿Por qué meter al Thames en{n}una pelea entre bandos que{n}no son ni enemigos ni{n}aliados?{p}¡Y ese cañón grande no es{n}más que un trasto inútil{n}que usted le clavó al{p}Thames en plena{n}borrachera!"
 f314-0111 d0e424e8027f00d7 Capitán{n}"Tú no entiendes el código{n}de los hombres del mar..."
@@ -508,7 +508,7 @@ f314-0117 93d31a8cbfb3f2c5 Bart{n}"Mi submarino, la{n}Yggdrasil, sufrió daños{
 f314-0118 8a039573cf1bd27b Margie{n}"¡Bart!{n}Eres terrible.{n}¡Te fuiste sin mí!"
 f314-0119 ba76f52493d9e587 Bart{n}"¿Ah, Margie?{n}Justo cuando empezaba a{n}sonar como un capitán."
 f314-0120 d01cb49478078501 Margie{n}"Me escapo de Nisan y{n}luego me quedo atrapada en{n}la Yggdrasil.{p}Estoy harta.{n}¿Capitán?{n}Hola, soy Marguerite."
-f314-0121 3d4656558cf6fcfa Bart{n}"¡Vamos, mujer! Mira, aquí{n}estamos teniendo una{p}conversación de hombre a{n}hombre.{p}Así que, Margie, ¿por qué{n}no vuelves a la{n}Yggdrasil?"
+f314-0121 3d4656558cf6fcfa Bart{n}"¡Vamos, mujer!{p}Mira, aquí estamos{n}teniendo una conversación{n}de hombre a hombre.{p}Así que, Margie, ¿por qué{n}no vuelves a la{n}Yggdrasil?"
 f314-0122 257b6d6dfd8c276b Margie{n}"¡Eres terrible!{n}Empiezas a hablar como{n}Sig."
 f314-0123 e13dadd7db8371a9 Bart{n}"¡¿Qué?!{n}¿Yo, como Sig?"
 f314-0124 80099be5d4e63dce Margie{n}"Siempre eres tan{n}irreflexivo, Bart.{p}Fei y los demás acabaron a{n}la deriva porque{n}disparaste contra esa nave{n}sin pensar."
@@ -556,13 +556,13 @@ f314-0168 78025e8318a684fd Capitán{n}"¿¡Qué es eso!?{n}¿Has visto esa espec
 f314-0169 6500344b5410b5c2 Hans{n}"¿Y por qué me lo pregunta{n}a mí...?"
 f314-0170 e0d99cb87a7d1a30 Capitán{n}"¿No han estado a punto de{n}volar por los aires las{p}otras flotas de{n}chatarreros de un solo{n}disparo?{p}¿Es así como nos recibe el{n}'Ethos'?"
 f314-0171 dd68b9ec5bd41546 Hans{n}"¡Lo dudo mucho!{p}¿Por qué iban a atacarnos?{n}Solo vinimos a ayudar con{n}las excavaciones..."
-f314-0172 809e75e6cb6f966a C... capitán, ¡Segadores{n}Wels!{n}¡Están saliendo docenas de{p}Segadores de esa especie{n}de pecera!
+f314-0172 809e75e6cb6f966a C... capitán, ¡Segadores{n}Wels!{p}¡Están saliendo docenas de{n}Segadores de esa especie{n}de pecera!
 f314-0173 71d0c1b37f271c61 Capitán{n}"¿¡Qué!?"
 f314-0174 a1391a37ab7dad45 Hans{n}"¿Por qué...?{n}Esto no puede estar{n}pasando..."
 f314-0175 714077c712bce491 Capitán{n}"...{wait 10}...{wait 30}{n}¡Lancen los Gears!{n}¡Carguen el cañón grande!"
 f314-0176 e487b81b83d8c995 Hans{n}"¿¡Capitán!?"
-f314-0177 01707c4c866187c2 Capitán{n}"¡Muy bien, muchachos!{p}¡Vamos a socorrer y{n}rescatar a todos los{n}supervivientes de las otras{n}naves...{p}...si es posible, mientras{n}intentamos retirarnos!{p}¡Y derriben a esos Wels con{n}nuestros dos cañones!{n}¡No dejen que esos{p}asquerosos Wels se acerquen{n}a nuestro Thames!"
-f314-0178 5dd2bfefb3e0486b Capitán{n}"¡Hans!{n}¡Atento!{p}¡Toma el timón!{n}¡Vamos a enseñarle a esa{n}pecera cómo se retiran los{p}verdaderos hombres del{n}mar!"
+f314-0177 01707c4c866187c2 Capitán{n}"¡Muy bien, muchachos!{p}¡Vamos a socorrer y{n}rescatar a todos los{n}supervivientes de las otras{n}naves...{p}...si es posible, mientras{n}intentamos retirarnos!{p}¡Y derriben a esos Wels con{n}nuestros dos cañones!{p}¡No dejen que esos{n}asquerosos Wels se acerquen{n}a nuestro Thames!"
+f314-0178 5dd2bfefb3e0486b Capitán{n}"¡Hans!{n}¡Atento!{p}¡Toma el timón!{p}¡Vamos a enseñarle a esa{n}pecera cómo se retiran los{n}verdaderos hombres del{n}mar!"
 f315-0000 5702b5bd2fcbed82 Fei{n}"¿Siempre andan vagando{n}así por los mares?"
 f315-0001 7d5fffca9bed4c5f Fei{n}"¿Por qué está metido el{n}'Ethos'...?"
 f315-0003 4f71e2e7b2424d93 Elly{n}"¿Un gran trabajo?"
@@ -571,10 +571,10 @@ f315-0006 b7922ec560cec4ba Bart{n}"Salieron...{n}uno tras otro... zas,{wait 10}{
 f315-0007 e999581bfed4860c Capitán{n}"Han tardado lo suyo,{wait 5} pero{n}aún no está todo listo."
 f315-0008 de796984303e28d7 Capitán{n}"¡Eh, dense prisa!{n}No hagan esperar a{n}nuestros invitados."
 f315-0009 8f2464cdbf5723f7 Capitán{n}"Lo siento, por aquí no{n}hay dónde sentarse."
-f315-0010 9ab27f7c87684dfc Capitán{n}"Pero ¿no es espléndida la{n}vista desde aquí? Esta{p}cervecería es el orgullo{n}del Thames.{p}Seguramente les parecerá un{n}poco raro tener una{n}cervecería justo al lado{p}del puente, pero a mí me{n}parece bien.{p}Si en la vida no te tomas{n}tiempo para disfrutar de un{n}trago, te acaban tragando{n}las olas de la ansiedad{wait 5}...{p}...{wait 5}Pero nosotros no tenemos{n}ese problema.{wait 5} ¡Gracias a{n}esta cervecería, todos aquí{p}están demasiado borrachos{n}para preocuparse!"
+f315-0010 9ab27f7c87684dfc Capitán{n}"Pero ¿no es espléndida la{n}vista desde aquí?{p}Esta cervecería es el{n}orgullo del Thames.{p}Seguramente les parecerá un{n}poco raro tener una{n}cervecería justo al lado{n}del puente,{p}pero a mí me parece bien.{p}Si en la vida no te tomas{n}tiempo para disfrutar de un{n}trago, te acaban tragando{n}las olas de la ansiedad{wait 5}...{p}...{wait 5}Pero nosotros no tenemos{n}ese problema.{wait 5}{p}¡Gracias a esta cervecería,{n}todos aquí están demasiado{n}borrachos para{n}preocuparse!"
 f315-0011 c5068aea60606589 Capitán{n}"Bueno, normalmente sí.{n}Está esa grúa con la que{n}los pescamos.{p}Con ella o con los Gears{n}sacamos tesoros del mar.{n}Somos Chatarreros.{p}Sin embargo, últimamente{n}casi no ha habido{n}tesoros...{wait 10}{n}solo cositas.{p}Desde que empezamos el{n}gran trabajo, bueno, eso{n}es todo lo que hemos{n}tenido."
 f315-0012 a1b792d2215105ea Capitán{n}"Ah, es un trabajo para el{n}'Ethos'.{p}El 'Ethos' está planeando{n}una operación de{n}recuperación muy grande.{p}No conozco los detalles,{n}pero parece que vamos a{n}buscar algún tesoro{n}enterrado."
-f315-0013 ffdf6afad17b1196 Capitán{n}"Quién sabe... Pero{n}dependemos de que el{p}'Ethos' nos compre lo que{n}sacamos.{p}Así que no quedaría bien{n}rechazar el trabajo."
+f315-0013 ffdf6afad17b1196 Capitán{n}"Quién sabe...{p}Pero dependemos de que el{n}'Ethos' nos compre lo que{n}sacamos.{p}Así que no quedaría bien{n}rechazar el trabajo."
 f315-0014 ae1d595d9f6113df Capitán{n}"Bueno, por fin está lista{n}la cena. Comamos."
 f315-0015 ac83e7db3a83010a Capitán{n}"Gajajajja."{done 80}
 f315-0016 e8520aa4670bcaee Capitán, su primer oficial{n}lo llama.
@@ -641,7 +641,7 @@ f315-0077 1d8fa2812d654ea7 ¿Qué, no has bebido nada?{n}Entonces no te preocupe
 f315-0078 30fd8aee6c0ec288 Oye, tengo un buen remedio{n}para los que beben{n}demasiado.
 f315-0079 2b19b327b5fe1773  {n} Recibes Mentsol.
 f315-0080 e57cec0e83bd3ca0 Los hombres son tontos.{n}Qué felices son con esa{n}porquería.
-f315-0081 74d8395d4dd4d304 Los hombres son tan{n}débiles.{n}Intentan olvidar su miedo{p}a los Segadores con esa{n}porquería.
+f315-0081 74d8395d4dd4d304 Los hombres son tan{n}débiles.{p}Intentan olvidar su miedo{n}a los Segadores con esa{n}porquería.
 f315-0082 1ce7569251352338 Soy {wait 30}el maes～tro{wait 45}{n}El mejor {wait 30}maes～tro{wait 45}{n}Del Thames, {wait 45}el maes～tro.
 f315-0083 672b54e5b37e0f3d Oye, no eshtoy borracho.
 f315-0084 02b544de2c8972b4 Nunca he pisado tierra{n}firme desde que nací.{p}Piénsalo. Tienes tierra en{n}los pies.{n}¿Cómo lo soportas?
@@ -707,11 +707,11 @@ f317-0000 21774acf1970c5cd {speed 255}¿Adónde vas?{n}    4F (Puente){n}    3F 
 f317-0001 a2312eeeef50ca46 Ay, qué mareo.{n}Por favor,{n}no lo gires,{n}no lo gires...
 f317-0002 7b834b5de6465932 ¡¡No lo gires!!{n}¡¡Uggh!!{done 30}
 f317-0003 d35ebe9069bd59f9 Bart{n}"No{wait 10}...{wait 10} quería meterla en{n}esto."
-f317-0004 64315503759d8fb2 Fei{n}"Te refieres a Margie{wait 5}...{p}Perdona, sé que te{n}prometí{wait 5}...{wait 5}{n}que si pasaba algo,{p}protegería a Margie y a la{n}gente de Nisan."
-f317-0005 3058fb0458f226fb Bart{n}"¿Eso te preocupa?{n}No pasa nada, tú también lo{n}has pasado mal.{p}Yo me las arreglé. Ese es{n}mi trabajo.{wait 15} Cuando la{n}Yggdrasil esté reparada,{p}seguiré adelante sin{n}desviarme..."
+f317-0004 64315503759d8fb2 Fei{n}"Te refieres a Margie{wait 5}...{p}Perdona, sé que te{n}prometí{wait 5}...{wait 5}{p}que si pasaba algo,{n}protegería a Margie y a la{n}gente de Nisan."
+f317-0005 3058fb0458f226fb Bart{n}"¿Eso te preocupa?{n}No pasa nada, tú también lo{n}has pasado mal.{p}Yo me las arreglé. Ese es{n}mi trabajo.{wait 15}{p}Cuando la Yggdrasil esté{n}reparada, seguiré adelante{n}sin desviarme..."
 f317-0006 62eb7519c0576ce0 Bart{n}"Claro que sé que Nisan{n}está en peligro.{p}Pero como allí todo está{n}patas arriba, pensé que{n}sería un buen momento para{n}colarme.{p}No pensaba llevármela. Me{n}bastaba con saber que{n}estaba a salvo allí."
 f317-0007 c55721fe06c07856 Citan{n}"Pero dudo mucho que{n}Shakhan se quede de brazos{n}cruzados..."
-f317-0008 6787827772faa281 Bart{n}"Eso es lo que dijo{n}también la gente de su{n}Secta.{p}Pero sigue siendo{n}arriesgado, así que dicen{n}que quieren que me quede{p}cerca de ella y la{n}proteja."
+f317-0008 6787827772faa281 Bart{n}"Eso es lo que dijo{n}también la gente de su{n}Secta.{p}Pero sigue siendo{n}arriesgado,{p}así que dicen que quieren{n}que me quede cerca de ella{n}y la proteja."
 f317-0009 9e3f7cd9b99a4354 Fei{n}"Vaya{wait 5}...{wait 5}{n}¿Y a ti te parece bien?"
 f318-0000 82fe9e891f7405ab ¿Sabes? Hace tiempo{n}encontré un tesoro a{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 20}sí{wait 30}{n}de grande.
 f318-0001 6f7e1ac257399a9e ¿De qué hablas? ¡Yo{n}encontré uno a{wait 3}-{wait 3}-{wait 3}{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 20}sí{wait 30} de{n}grande!
@@ -786,14 +786,14 @@ f319-0009 78b116373adec1bf ¡¡Esta es la entrada de{n}suministros, pero tambié
 f319-0010 27375cb572c10938 Ya lo sabes. ¡¡Ahora largo{n}de aquí!! ¡Andando!
 f319-0011 2f8faba7b6177185 Otro día de trabajo...{n}Sumergido bajo el mar día{n}tras{n}día{wait 10}...{wait 10}...{wait 10}ay...
 f319-0012 099867520e3edc39 Ahora que ese trabajo del{n}'Ethos' se ha ido al{n}traste,{p}supongo que no tengo otra{n}forma de ganarme la vida{n}que bucear...{n}ay...
-f319-0013 ef2fec0bc43b1cab Pero antes de meterme,{n}tendré que hacer algunos{n}ejercicios de{p}calentamiento.{n}Ja, jo, ja, jo...
+f319-0013 ef2fec0bc43b1cab Pero antes de meterme,{n}tendré que hacer algunos{n}ejercicios de{n}calentamiento.{p}Ja, jo, ja, jo...
 f319-0014 c490e8408f64181a Con mis ejercicios de{n}calentamiento podré salvar{n}a todos los que se estén{n}ahogando. Sí...{p}ejercicio...{n}Ja, jo, ja, jo...
 f319-0015 206433517cb4084d Fei{n}"Bien{wait 5}...{wait 10}{n}Vamos."
 f320-0000 c335a1cec558c798 ¿El Etone? Lo vi hace un{n}rato, pero se marchó.
 f320-0001 fe38699c74351ded Margie{n}"¿En serio?{n}¿Adónde se fue?"
 f320-0002 1349f7d5b9ea0659 No lo sé...
 f320-0003 687fba146213bbd1 Bart{n}"¿Qué haces, Margie?"
-f320-0004 ce849d4257a42b50 Margie{n}"Hola, Bart. Citan acaba{n}de contármelo. Yo también{p}estaba buscando a ese{n}Etone.{p}Esta persona ya ha visto{n}antes a ese Etone."
+f320-0004 ce849d4257a42b50 Margie{n}"Hola, Bart. Citan acaba{n}de contármelo.{p}Yo también estaba buscando{n}a ese Etone.{p}Esta persona ya ha visto{n}antes a ese Etone."
 f320-0006 7845f615a51cc198 ¡¡Oye, deja de{n}resistirte!!
 f320-0007 a7104240b079aff2 Elly{n}"¡¡Bart!!{n}¡¡Mira!!"
 f320-0008 f3c5e346abf99730 Si no te resistieras,{n}podría venderte más cara.
@@ -829,7 +829,7 @@ f320-0039 266a499d58b4f072 Citan{n}"Ya veo...{wait 10}{n}¿Y qué haces aquí?"
 f320-0040 58510d01a3d3dd18 Jessie{n}"Alguna vez tengo que ir{n}de compras.{p}Además, mi hijo tiene unos{n}asuntos poco agradables{n}por esta zona..."
 f320-0041 2a98d00e93a93352 Ah...{n}Ese Etone que buscaban{n}acaba de llegar.
 f320-0042 d446140f7708e428 Bart{n}"¿¡Qué!? ¿Dónde?"
-f320-0043 1c0a311e5d0840c3 Médico{n}"...{wait 10}...{wait 10}esa es la razón,{n}así que, de una forma u{p}otra, necesitamos su{n}ayuda."
+f320-0043 1c0a311e5d0840c3 Médico{n}"...{wait 10}...{wait 10}esa es la razón,{p}así que, de una forma u{n}otra, necesitamos su{n}ayuda."
 f320-0044 0b33f62d238562dd Etone{n}"Ya veo{wait 10}...{wait 10}..."
 f320-0045 740a70fe929e0e40 Jessie{n}"Déjate de rodeos y{n}ayúdalos de una vez."
 f320-0046 6be6277f34170dc0 Etone{n}"¿P... padre?{n}¿Y también Prim?"
@@ -846,7 +846,7 @@ f320-0057 2397fd5470eb9da5 Billy{n}"Sí. Pasemos por la sede{n}del 'Ethos' despu
 f320-0058 7e354b19b5c4d338 Margie{n}"Mmm. Sacerdote y Etone a{n}la vez...{n}¿No es algo poco común?{p}Está claro que el 'Ethos'{n}es muy distinto de mi{n}Secta de Nisan."
 f320-0059 ddc74c0a05ef09bc Billy{n}"¿Su Secta de Nisan? ¿Es{n}usted de Nisan?"
 f320-0060 006d34b431265083 Margie{n}"Sí, soy Marguerite.{n}Encantada, padre."
-f320-0061 54a32d9e6317a8ee Billy{n}"El placer es mío.{p}Nunca he tenido ocasión de{n}hablar como es debido con{n}otras personas sobre sus{p}religiones.{n}¿Podríamos hablar más{n}tarde?"
+f320-0061 54a32d9e6317a8ee Billy{n}"El placer es mío.{p}Nunca he tenido ocasión de{n}hablar como es debido con{n}otras personas sobre sus{n}religiones.{p}¿Podríamos hablar más{n}tarde?"
 f320-0062 1bf220828da053e9 Margie{n}"Claro, no hay problema.{p}Pero no puedo dedicarle{n}mucho tiempo. Ahora estoy{n}un poco ocupada."
 f320-0063 b1d64137432a161b Billy{n}"Gracias.{p}Mmm... ¿Marguerite?{n}¿Dónde he oído ese nombre{n}antes?"
 f320-0064 0b870e91957dddab Bart{n}"Olvídalo, tranquilo...{p}He venido a hablar con el{n}'Ethos'.{n}Pongámonos en marcha."
@@ -872,7 +872,7 @@ f321-0002 4c0ddf8e5ca95eeb Un-dos
 f321-0003 72fb39f9be7f725a ¿Abandonar?{n}    No{n}    Sí
 f321-0004 94eba265fb45597a ¿Listo? {done 30}
 f321-0005 8eead0ea9404ac87 ¡Ya!
-f321-0006 8f59991fdef9d272 ¿Creías que iba a{n}enfrentarme a ti así sin{n}más? ¡Ni lo sueñes!{n}En este juego solo ganan{p}los rápidos.{n}Es un juego de cartas de{n}'hombres del mar'.
+f321-0006 8f59991fdef9d272 ¿Creías que iba a{n}enfrentarme a ti así sin{n}más? ¡Ni lo sueñes!{p}En este juego solo ganan{n}los rápidos.{n}Es un juego de cartas de{n}'hombres del mar'.
 f321-0007 41038688b3808b91 Te explicaré las reglas.{n}Primero, te reparto 26 cartas{n}a ti y otras 26 a tu{n}adversario.
 f321-0008 f0b2b7c9adc739fa Luego coloco 4 cartas{n}delante de cada jugador,{n}que forman su mano.
 f321-0009 5b31b0619cb40112 Y luego coloco otra carta a{n}la izquierda, vista desde tu{n}posición.
@@ -888,7 +888,7 @@ f321-0018 033db63468cffc82 Y para jugar una carta,{n}sitúate sobre la carta que
 f321-0019 1426e669beadd10f Y pulsa el botón △ o el{n}botón R1 para jugar a la{n}derecha...
 f321-0020 0f378d976545be89 O pulsa el botón □ o el{n}botón L1 para jugar a la{n}izquierda.
 f321-0021 8f5c7d9af8c4a7a5 Por supuesto, tu{n}adversario también juega{n}sus cartas.
-f321-0022 62bf82d0132e66e2 ¿Y si ninguno de los dos{n}puede jugar una carta, ni{n}siquiera después de reponer{p}las 4 cartas que tienen{n}delante?{p}En ese caso se cantará{n}'un-dos', y se jugará{n}directamente una carta del{n}montón que te queda.
+f321-0022 62bf82d0132e66e2 ¿Y si ninguno de los dos{n}puede jugar una carta,{p}ni siquiera después de{n}reponer las 4 cartas que{n}tienen delante?{p}En ese caso se cantará{n}'un-dos', y se jugará{n}directamente una carta del{n}montón que te queda.
 f321-0024 5c65b68616e61ccc Si ninguno de los dos puede{n}jugar aún, se repetirá.
 f321-0025 cc731f5dbb0fb2cb Si ya no te quedan cartas en{n}el montón para jugar al{n}cantar 'un-dos'...{p}se jugará directamente la{n}carta de más a la izquierda{n}de las que tienes delante.
 f321-0027 634c700aae142b81 Y...
@@ -896,29 +896,29 @@ f321-0028 c14ebc0b44531eb6 El primer jugador que se{n}quede sin cartas gana.{n}E
 f321-0029 848d84b8907f18d6 Ah, y una cosa más.{p}Pulsando el botón Select{n}puedes abandonar la partida a{n}medias. Pero, claro, eso{n}significa que pierdes.
 f323-0000 1acbe66e0bf2f915 "Contacto en el sonar.{n}...{wait 10}...{wait 10}{p}No es eso. Este modelo...{n}Coincide con el barco{n}pirata de Aveh, la{n}Yggdrasil."
 f323-0001 d87f40de60b08ef0 Dominia{n}"¿La Yggdrasil?{n}¿No la habían hundido en{n}otra batalla?"
-f323-0002 9f764932a70b562b "No hay registro de su{n}hundimiento. Estábamos{n}demasiado ocupados luchando{p}contra ese Gear rojo para{n}confirmarlo."
+f323-0002 9f764932a70b562b "No hay registro de su{n}hundimiento.{p}Estábamos demasiado{n}ocupados luchando contra{n}ese Gear rojo para{n}confirmarlo."
 f323-0003 dffa461f93b89174 Dominia{n}"Entonces es posible que{n}no se hundiera...{p}Creo que los datos indican{n}que la Yggdrasil{n}transportaba ese Gear."
 f323-0004 c3b345876c60e115 "Un momento{wait 30}...{wait 30}...{wait 30}{n}Sí, es correcto."
 f323-0005 8542f0e6acaf9e87 Dominia{n}"Excelente.{n}Dame los controles."
 f323-0006 e5e5131dcce51857 "¿Excelente?{n}¿Qué piensas hacer?"
-f323-0007 b3910b3eac2f3d8f Dominia{n}"Hundirla, por supuesto.{n}Nunca más volverá a{p}causarle problemas al{n}Comandante."
+f323-0007 b3910b3eac2f3d8f Dominia{n}"Hundirla, por supuesto.{p}Nunca más volverá a{n}causarle problemas al{n}Comandante."
 f323-0008 91cd2e72f6b6f7ab "Espera. Las órdenes del{n}Comandante eran investigar{n}la desaparición de ese{n}acorazado volante.{p}No podemos desviarnos de{n}nuestra misión.{p}Además, andamos escasos de{n}combustible y tenemos que{n}repostar."
 f323-0009 afea92d08a063f86 Dominia{n}"Tenemos suficiente.{n}Yo la hundiré."
 f323-0010 e0b2c12f95d081c1 "...Uf... Cuando empiezas,{n}no hay quien te pare,{n}¿verdad?{p}Espero que sepas que{n}luchar en el agua no tiene{n}nada que ver con luchar en{n}tierra."
 f323-0011 5fae5b6a0695bb0f Dominia{n}"Por supuesto. Lo siento,{n}Kelvena."
-f323-0012 75e247e8d4f2f6d1 Bart{n}"¡Maldición! Yo apenas{n}puedo maniobrar y tú te{p}mueves por todas{n}partes..."
+f323-0012 75e247e8d4f2f6d1 Bart{n}"¡Maldición!{p}Yo apenas puedo maniobrar{n}y tú te mueves por todas{n}partes..."
 f323-0013 52a7095f0854c201 Fei{n}"Parece que estás librando{n}una pelea dura, Bart."
 f323-0014 49ff46380fe09e36 Bart{n}"¿¡Fei!?{n}¿¡Estás vivo!?"
 f323-0015 54b6415655a8c09c Fei{n}"Oye, eso debería decirlo{n}yo."
 f323-0016 2b239f44135956c0 Elly{n}"¿Y ese Gear?"
 f323-0017 ada422243370924a Dominia{n}"¡¡Elhaym!!{n}¿Qué haces aquí?"
 f323-0018 de37b10109434641 Elly{n}"¿¡Dominia!?{n}¿Por qué estás aquí?"
-f323-0019 8831b3910a1b804f Dominia{n}"¿Por qué? ¡Los de Gebler{n}no necesitamos razones{p}especiales para hundir una{n}nave enemiga!{p}Es nuestro deber divino{n}gobernar a esos burdos{n}Corderos que habitan la{n}tierra."
-f323-0020 67f2cd981f777cfa Elly{n}"Pero ¿por qué?{n}¿En qué se diferencian de{p}nosotros, los Pastores, los{n}-Abel-?"
+f323-0019 8831b3910a1b804f Dominia{n}"¿Por qué?{p}¡Los de Gebler no{n}necesitamos razones{n}especiales para hundir una{n}nave enemiga!{p}Es nuestro deber divino{n}gobernar a esos burdos{n}Corderos que habitan la{n}tierra."
+f323-0020 67f2cd981f777cfa Elly{n}"Pero ¿por qué?{p}¿En qué se diferencian de{n}nosotros, los Pastores, los{n}-Abel-?"
 f323-0021 33c74546cd10438b Dominia{n}"Para mí, los -Corderos- y{n}los -Abel- son lo mismo.{p}La única diferencia clara{n}es la capacidad personal.{p}Los ignorantes deben ser{n}guiados por los sabios.{n}Esa es nuestra labor.{p}Mira lo que has conseguido{n}como miembro de los{n}Elements, Elly.{p}¿Por qué lo cuestionas{n}siquiera?{p}¡Tu superioridad es{n}evidente!"
 f323-0022 bdc2f6b84f834c37 Elly{n}"...¿Así que los sabios{n}haciendo daño a los{p}débiles es una muestra de{n}capacidad?{p}Yo no quería eso...{wait 30}{n}¡¡Eso es todo!!"
 f323-0023 f8fc3f4cf5d3f005 Fei{n}"Elly,{n}¿estás bien?"
-f323-0024 83610f6b333260d0 Dominia{n}"Ese Gear... ¿eres tú?{n}¡Ja! Así que es eso.{p}Qué divertido, Elhaym.{n}¿Todo esto por un hombre?{n}Supongo que aquella{p}historia era cierta,{n}después de todo.{p}Naciste de esos Corderos{n}despreciables."
+f323-0024 83610f6b333260d0 Dominia{n}"Ese Gear... ¿eres tú?{n}¡Ja! Así que es eso.{p}Qué divertido, Elhaym.{n}¿Todo esto por un hombre?{p}Supongo que aquella{n}historia era cierta,{n}después de todo.{p}Naciste de esos Corderos{n}despreciables."
 f323-0025 20a5ba9eb59fb85b Elly{n}"¡Basta!{n}¡No digas ni una palabra{n}más!"
 f323-0026 9ed143ed52a46f00 Dominia{n}"Hmpf, ¿¡y qué vas a hacer{n}al respecto, mestiza!?{p}¿Vas a usar contra mí el{n}poder que usaste en aquel{n}incidente?{p}Adelante. Enséñamelo.{n}¡Enséñame tu verdadero{n}poder!"
 f323-0027 9f4cba516bf86042 Elly{n}"...Lo haré.{p}Si ustedes, los de Gebler,{n}son los sabios...{wait 20}{n}¡¡entonces {wait 30}prefiero ser{n}una tonta!!"
@@ -990,7 +990,7 @@ f326-0054 0290a4c5e1a71215 ...¡Ji, ji, ji!
 f326-0055 9964998dafbd0371 ¡Lu, lu, lu, lu!
 f326-0057 ac4196c9fa1d671e Todos somos buenos{n}amigos...
 f326-0058 4213debe15c0c063 ¿Eh? '¿Por qué no juegas{n}con ellas?'{wait 30}{n}¡No digas tonterías...!{p}¡¡No puedo jugar con{n}chicas!!
-f326-0059 07c41c7b110ae1e1 Elly{n}"Entonces, ¿me estás{n}diciendo que no puedo{p}jugar porque soy una{n}chica?"
+f326-0059 07c41c7b110ae1e1 Elly{n}"Entonces,{p}¿me estás diciendo que no{n}puedo jugar porque soy una{n}chica?"
 f326-0060 8cd2d2a13984e32b ¡Tú sí puedes!
 f326-0061 4d9bea2faa5104b3 ¡Eh, eh,{n}súbete aquí!
 f326-0062 abe5c167cfe45e34 ¡No hables con{n}desconocidos!
@@ -1003,19 +1003,19 @@ f326-0069 4d3f50aac6a8dd0e Obispo Stone{n}"¿Y quiénes son estas{n}personas?"
 f326-0070 1e6aacc49574ddc0 Billy{n}"Son viajeros de otro{n}país."
 f326-0071 3b3a0e40c3555bb8 Obispo Stone{n}"Ah...{wait 20}{n}Por cierto, sobre tu{n}mensaje de antes..."
 f326-0072 4fd661f500cf86cd Billy{n}"Sí, {wait 10}{n}sobre el trabajo..."
-f326-0073 3f08d4a962743ca4 Obispo Stone{n}"Sí.{p}Por fin ha aparecido la{n}nave de transporte del{n}'Ethos' que había{p}desaparecido.{wait 10}{n}Pero no responde..."
+f326-0073 3f08d4a962743ca4 Obispo Stone{n}"Sí.{p}Por fin ha aparecido la{n}nave de transporte del{n}'Ethos' que había{n}desaparecido.{wait 10}{p}Pero no responde..."
 f326-0074 d57c20c7ccd36b7d Billy{n}"¿Qué significa eso?"
 f326-0075 544403b0962d5711 Obispo Stone{n}"Mmm,{wait 10}{n}quizá sean otra vez los{n}Segadores.{p}Billy, ¿puedes encargarte{n}como siempre?"
-f326-0076 42cf3ea5502d732e Billy{n}"Sí,{wait 10}{n}no hay problema. {wait 10}{p}Déjelo en mis manos,{n}obispo."
+f326-0076 42cf3ea5502d732e Billy{n}"Sí,{wait 10} no hay problema. {wait 10}{n}Déjelo en mis manos,{n}obispo."
 f326-0077 091aeea2e628d741 Obispo Stone{n}"Gracias.{wait 10}{n}Está al nordeste de aquí.{p}Ten mucho cuidado.{n}Es una zona peligrosa.{p}Hay corrientes marinas{n}bastante rápidas y lo{n}mejor es mantenerse{p}alejado de los{n}Chatarreros.{p}Más vale que vayas en una{n}nave grande..."
 f326-0078 437f4f9c2b6d02c3 Bart{n}"Oye, ¿esa es la nave{n}gigantesca de la que{n}hablaba Sig antes?"
 f326-0079 74b043e0865ac090 Billy{n}"No sé si era esa o no."
-f326-0080 1a8d414b34c17e82 Bart{n}"Por lo que he oído, es un{n}lugar donde las corrientes{n}son muy rápidas.{p}Dicen que es muy peligroso{n}para las naves pequeñas.{n}Pero la Yggdrasil estará{n}segura allí.{p}Por grandes que sean las{n}olas o el oleaje, no hay{n}problema.{n}Además, ayudaste a Fei.{p}Sube a bordo.{wait 10}{n}Te llevaré hasta allí.{wait 10}{n}¡Qué demonios, hasta{p}podemos ayudarte a{n}terminar tu trabajo!"
+f326-0080 1a8d414b34c17e82 Bart{n}"Por lo que he oído, es un{n}lugar donde las corrientes{n}son muy rápidas.{p}Dicen que es muy peligroso{n}para las naves pequeñas.{n}Pero la Yggdrasil estará{n}segura allí.{p}Por grandes que sean las{n}olas o el oleaje, no hay{n}problema.{n}Además, ayudaste a Fei.{p}Sube a bordo.{wait 10}{n}Te llevaré hasta allí.{wait 10}{p}¡Qué demonios, hasta{n}podemos ayudarte a{n}terminar tu trabajo!"
 f326-0081 460d112ee52a1b10 Elly{n}"Estoy de acuerdo. Usted{n}salvó a Fei.{p}Es lo menos que podemos{n}hacer."
 f326-0082 612d384af12b9785 Billy{n}"Gracias, pero esto no les{n}concierne.{wait 10}{n}Me basto yo solo."
 f326-0083 60941a810961f014 Elly{n}"Pero ¿no es peligroso ese{n}lugar?{p}Si hay algo que podamos{n}hacer para ayudar..."
 f326-0084 cff8666dee57f806 Billy{n}"No quiero meterlos en{n}esto..."
-f326-0085 7366eebfdd9bedfe Obispo Stone{n}"Billy, hijo mío, no{n}desperdicies sus buenas{p}intenciones.{n}Ese submarino es suyo, ¿no?{p}¿Por qué no colaboras con{n}ellos...?"
+f326-0085 7366eebfdd9bedfe Obispo Stone{n}"Billy, hijo mío, no{n}desperdicies sus buenas{n}intenciones.{p}Ese submarino es suyo, ¿no?{p}¿Por qué no colaboras con{n}ellos...?"
 f326-0086 7b817ca07a00cc30 Billy{n}"...{wait 10}{n}¡Pero, obispo!"
 f326-0087 68b0204327efc221 Bart{n}"Sí, viajar solo no tiene{n}gracia.{wait 10}{n}Te ayudaremos."
 f326-0088 27952bb0bd54917c Elly{n}"¡Billy, lo mejor es ir{n}con amigos!"
@@ -1037,8 +1037,8 @@ f327-0000 33eb169643b0dffc Citan{n}"¡Vaya, hola!"
 f327-0001 d61e53aefc734145 Billy{n}"Oh, ¿cómo está?{wait 10}{n}¿Cómo se encuentra Fei?"
 f327-0002 6678850e6f22a278 Elly{n}"Muy bien.{wait 10}{p}Todavía no ha recuperado{n}el conocimiento, pero{n}debería despertar pronto."
 f327-0003 4f86a5646e1f5798 Billy{n}"¿De verdad?{wait 10}{n}Me alegra oírlo."
-f327-0004 7fabd8420edaeab5 Elly{n}"Eh, Billy.{wait 10}{n}No sé muy bien cómo{p}agradecerte que ayudaras a{n}Fei."
-f327-0005 8fa55f34e99318bd Billy{n}"No hay de qué.{p}Puede que creamos en{n}dioses distintos, pero{n}ninguno de nosotros puede{p}abandonar a quien lo{n}necesita."
+f327-0004 7fabd8420edaeab5 Elly{n}"Eh, Billy.{wait 10}{p}No sé muy bien cómo{n}agradecerte que ayudaras a{n}Fei."
+f327-0005 8fa55f34e99318bd Billy{n}"No hay de qué.{p}Puede que creamos en{n}dioses distintos,{p}pero ninguno de nosotros{n}puede abandonar a quien lo{n}necesita."
 f327-0006 5b51037842fc8551 Elly{n}"Muchísimas gracias.{wait 10}{n}Por cierto, ¿este es tu{n}orfanato...?"
 f327-0007 a40300c2607f352b Billy{n}"¿Te sorprende que solo{n}haya niños?"
 f327-0008 e971f7853d399086 Billy{n}"Mi hermana y yo no{n}tenemos padres desde que{n}éramos muy pequeños...{p}Así que abrí un orfanato{n}para que los niños que no{n}tienen a nadie no tuvieran{p}que pasar por lo que{n}pasamos nosotros."
@@ -1054,8 +1054,8 @@ f327-0017 3f5a45dc642e1ae1 ¡Bie～en! Gracias.{wait 10}{n}Te daré este libro s
 f327-0018 9f78dd1b83ec93dc ¡Recibes un libro{n}ilustrado divertido!
 f327-0019 5ee92a04bd38c184 ¡Eres un aguafiestas!{n}¡Vete!
 f327-0020 d5c35f26e09e38a2 Hay una cuerda...{n}    ¡¡Tirar!!{n}    No tirar
-f327-0021 258cfa2a6a2d76b8 Sigurd{n}"¡¡Bart!!{wait 10}{n}¡¡El radar de la Yggdrasil{p}ha detectado una nave{n}enorme!!"
-f327-0022 19dba417fb69f566 Sigurd{n}"¡Hyuga!{wait 10}{n}¡¡El radar de la Yggdrasil{p}ha detectado una nave{n}enorme!!"
+f327-0021 258cfa2a6a2d76b8 Sigurd{n}"¡¡Bart!!{wait 10}{p}¡¡El radar de la Yggdrasil{n}ha detectado una nave{n}enorme!!"
+f327-0022 19dba417fb69f566 Sigurd{n}"¡Hyuga!{wait 10}{p}¡¡El radar de la Yggdrasil{n}ha detectado una nave{n}enorme!!"
 f327-0023 f36d00a7baf040f9 Bart{n}"¿Qué?{wait 10}{n}¿Otra vez Gebler?"
 f327-0024 7ce13de8523b6012 Sigurd{n}"No lo sé, pero se mueve a{n}10 repsol/h hacia el sur.{wait 10}{p}Vamos al puente."
 f327-0025 eff259d313e2bf89 Bart{n}"¡Entendido!{wait 10}{n}Voy enseguida."
@@ -1078,7 +1078,7 @@ f327-0042 8dd30405b31dc866 Sigurd{n}"Billy...{wait 20}{n}cómo has crecido.{p}Co
 f327-0043 01e8de77f3acf4da Bart{n}"¡Eh!{wait 10}{n}¡Eh, eh, eh!{p}¿Quién eres tú?{wait 10}{n}¿Qué confianzas son esas{n}con mis oficiales?{p}¿Y qué es eso de 'Siggy'?{n}¡No te hagas el listo,{n}niño!"
 f327-0044 9a2730594f8afa18 Billy{n}"¿Qué te pasa?{n}¿Por qué eres tan{n}arrogante con Siggy?{p}¿Quién te crees que eres?"
 f327-0045 966897479dc7289e Jessie{n}"Billy.{wait 10}{n}No le grites a la gente de{n}Sigurd.{p}Es de mala educación,{n}chico."
-f327-0046 c4fe5a7b8040944b Sigurd{n}"Bart, este era mi{n}veterano cuando yo era{p}aspirante a los Elements{n}en Jugend.{p}Le alquilaba una{n}habitación en su casa."
+f327-0046 c4fe5a7b8040944b Sigurd{n}"Bart,{p}este era mi veterano{n}cuando yo era aspirante a{n}los Elements en Jugend.{p}Le alquilaba una{n}habitación en su casa."
 f327-0047 1c96e804030b5ec6 Jessie{n}"Por aquel entonces él{n}todavía llevaba pañales...{p}y sigue siendo un mocoso{n}llorón."
 f327-0048 6ce767cfc9694332 Billy{n}"Seguro que tú todavía{n}llevas pañales, ¿verdad?"
 f327-0049 a437bf8660cb45b9 Bart{n}"¡Mocoso!{wait 10}{n}¿Qué problema tienes?"
@@ -1113,11 +1113,11 @@ f327-0081 706c68f1f5668624 Billy{n}"Pregúntatelo a ti mismo."
 f327-0083 98a4b000c5f23555 Jessie{n}"Tienes razón. Supongo que{n}no hay forma de{n}demostrarlo...{p}Muy bien, todavía no{n}entiendes la verdad.{wait 10}{n}Lo que esos tipos son en{n}realidad, adónde vas..."
 f327-0084 b4e59586a56c5153 Billy{n}"Padre, ¿qué estás{n}diciendo...?"
 f327-0085 c6c4c46779b78422 Jessie{n}"Digo que Racquel murió en{n}vano."
-f327-0086 a12350c948474e89 Billy{n}"¡¡!!{wait 10}{n}¡No tienes derecho a{p}pronunciar el nombre de mi{n}madre!"
-f327-0087 a568ea5fcc2ea8d1 Jessie{n}"...{wait 10}{n}Ya veo. Así son las cosas.{n}Muy bien.{p}En cualquier caso, deja{n}ese trabajo.{wait 10}{n}Tómalo como un consejo de{p}un hombre que para ti no{n}es más que un extraño."
+f327-0086 a12350c948474e89 Billy{n}"¡¡!!{wait 10}{p}¡No tienes derecho a{n}pronunciar el nombre de mi{n}madre!"
+f327-0087 a568ea5fcc2ea8d1 Jessie{n}"...{wait 10}{n}Ya veo. Así son las cosas.{n}Muy bien.{p}En cualquier caso, deja{n}ese trabajo.{wait 10}{p}Tómalo como un consejo de{n}un hombre que para ti no{n}es más que un extraño."
 f328-0002 784a9df8ff982235 ¡¡Puedo consolarme{n}yo solito!!
 f328-0003 02620cd69725fcb7 ¡La campanita de papá{n}suena tan bonito!
-f328-0004 3213d93b3cf662f5 Suena bien, ¿verdad?{wait 10}{n}Papá me dio esta campanita{n}para que nunca me{n}perdiera.{p}¡Pero papá no tiene{n}sentido{n}de la orientación y{p}también{n}se pierde mucho! Por eso{n}él tiene una igual.{p}Fue a la sede del Ethos,{n}pero nunca volvió...{p}Seguro que se perdió{n}por el camino...{wait 10}{n}¡Qué tonto es!
+f328-0004 3213d93b3cf662f5 Suena bien, ¿verdad?{wait 10}{n}Papá me dio esta campanita{n}para que nunca me{n}perdiera.{p}¡Pero papá no tiene{n}sentido de la orientación{n}y también se pierde mucho!{p}Por eso él tiene una{n}igual.{p}Fue a la sede del Ethos,{n}pero nunca volvió...{p}Seguro que se perdió{n}por el camino...{wait 10}{n}¡Qué tonto es!
 f328-0005 0d4de02788b668e3 ¿Qué?{wait 10} {n}Esa campanita...{wait 10}{n}¿De dónde la sacaste?{p}Oye, ¿no habrás visto{n}a mi papá por casualidad?{wait 10}{n}¿Dónde está?
 f328-0007 da4a28fae891f8c0 (¡Oh, no!{wait 10} {n}¡¿Entonces no era...{n}su padre...?!)
 f328-0008 764dae53496b642b Rico{n}"¡Escucha, chico! Tu padre{n}se fue muy, muy lejos...{wait 10}{p}¡Toma, esta es su{n}campanita!"
@@ -1125,10 +1125,10 @@ f328-0009 4722cc4bde5b44b3 ¡¡Papá es un mentiroso!!{wait 10}{n}Dijo que nos i
 f328-0010 ad8219490e365cd9 Snif,{wait 10} snif...{wait 10}{n}Pero...{wait 10}gracias.{p}Gracias por devolverme{wait 10}  {n}la campanita de papá.{wait 10}{n}¡Me ayudará a{n}consolarme...!
 f328-0011 5cb656313782dcd1 Para darte las gracias, te{n}daré el libro favorito{n}de mi papá.
 f328-0012 2827096da67d08e4 Recibes 'Libro de{n}  doctrina del Ethos'.
-f329-0000 7eea6681911b64bd Billy{n}"Lo siento. Cuando termine{n}iré yo también, así que{p}adelántense y suban a{n}bordo.{p}Les contaré más por el{n}camino..."
+f329-0000 7eea6681911b64bd Billy{n}"Lo siento.{p}Cuando termine iré yo{n}también, así que{n}adelántense y suban a{n}bordo.{p}Les contaré más por el{n}camino..."
 f329-0002 636ed6aed8a2458a Billy{n}"¿Necesitan algo?"
 f329-0003 b9ea458b52b2cb97 Billy{n}"Disculpen, debo ir a{n}saludar a unas personas.{p}Por favor, no anden{n}registrando las{n}habitaciones{n}ajenas."
-f329-0004 84b3e00eda53a346 Billy{n}"¡¿Qué están haciendo?!{wait 10} {n}Por favor, no anden{p}registrando las{n}habitaciones{n}ajenas."
+f329-0004 84b3e00eda53a346 Billy{n}"¡¿Qué están haciendo?!{wait 10} {p}Por favor, no anden{n}registrando las{n}habitaciones ajenas."
 f329-0005 d437e5794be34222 Hay espacio para{n}3 tomos...
 f329-0007 94b3f21cac2d3744 Fei{n}"Pongo el libro{n}que conseguimos."
 f329-0008 02a48580832eab17 Elly{n}"Pondré el libro{n}que nos dieron."
@@ -1151,7 +1151,7 @@ f331-0002 bbcbfe724e85a962 Oye, léeme este libro...{n}    ¡Está bien!{n}    �
 f331-0003 1676ccadae45a14a ¡¡Bie～n!!
 f331-0004 e484a73f50fad67d {name 128}{n}"Hace mucho, mucho tiempo,{n}había una mujer llamada{n}Zephyr.{p}Quería ser una diosa, así{n}que construyó una torre{n}que{n}llegaba hasta el cielo.{p}Luego construyó una ciudad{n}en lo alto. Pero Dios se{n}puso furioso y destruyó{n}su torre.{p}Así que ella tuvo que irse{n}a vivir a un 'refugio de{n}ermitaños pecadores'.{p}Y desde entonces nunca{n}volvió a la tierra...{n}Fin."
 f331-0005 141d933318fec74f ¿De verdad existe el{n}'Refugio de los hermanitos{n}pescadores'?{n}¡Qué miedo!
-f331-0006 fe8885cf62e9166e ¡Ya lo prometiste! Si no{n}me lo lees la próxima vez,{n}¡serás un mentiroso! ¡Y si{p}mientes, tendrás que{n}clavarte una aguja en el{n}ojo!
+f331-0006 fe8885cf62e9166e ¡Ya lo prometiste! Si no me{n}lo lees la próxima vez,{n}¡serás un mentiroso!{p}¡Y si mientes, tendrás que{n}clavarte una aguja en el{n}ojo!
 f331-0007 45eacc5e90c33644 ¡Shhh!
 f331-0008 243c7afa1c895c5e ¡Billy salió de detrás{n}de las estanterías!{done 30}
 f331-0009 6350a78c442d7539 ¿En serio?{wait 10} {n}Sí que hace cosas{n}raras...{done 30}
@@ -1183,41 +1183,41 @@ f332-0007 fca34b524e385f4d Aún puedo oírlo...{wait 10} {n}El sonido de las bal
 f332-0008 664dd2f5370d8c53 Fue el obispo Stone quien{n}nos ayudó entonces.{wait 10}{p}Conocerlo cambió mi vida{n}a partir de ese día.
 f332-0009 81dbf7f963b32d9d Bart{n}"Eh, eh, espera un{n}momento.{wait 10}{n}¿Los Segadores hablan?"
 f332-0010 d976743bb800e4f2 Citan{n}"Un momento.{wait 10} {n}¿Los Segadores hablaban{n}un idioma humano?"
-f332-0011 767b6f5af17a38c6 "Sí.{wait 10}{n}No son simples monstruos.{n}Algunos son más{p}inteligentes que los{n}humanos."
-f332-0012 bf83143e62537bd0 Primera y yo escapamos de{n}la muerte escondidos en{n}las{p}sombras, pero ella no ha{n}dicho una palabra desde{n}entonces.
-f332-0013 6f670095020929a1 Como un regalo del cielo,{n}el{n}bondadoso y fuerte obispo{p}Stone me dio un ejemplo{n}a seguir.{p}Yo quería ayudar a salvar{n}a quien lo necesitara,{n}como{n}él nos salvó a nosotros.{p}No quería que hubiera{n}más niños como{n}Primera...{p}Así que empecé a formarme{n}en el Ethos para llegar a{n}ser como el obispo Stone.
+f332-0011 767b6f5af17a38c6 "Sí.{wait 10}{n}No son simples monstruos.{p}Algunos son más{n}inteligentes que los{n}humanos."
+f332-0012 bf83143e62537bd0 Primera y yo escapamos de{n}la muerte escondidos en{n}las sombras,{p}pero ella no ha dicho una{n}palabra desde entonces.
+f332-0013 6f670095020929a1 Como un regalo del cielo,{n}el bondadoso y fuerte{n}obispo Stone me dio un{n}ejemplo a seguir.{p}Yo quería ayudar a salvar{n}a quien lo necesitara,{n}como{n}él nos salvó a nosotros.{p}No quería que hubiera{n}más niños como{n}Primera...{p}Así que empecé a formarme{n}en el Ethos para llegar a{n}ser como el obispo Stone.
 f332-0014 5ad37eaa36de3c6d Dejé a Prim al cuidado{n}del Ethos e ingresé{n}en el monasterio.
 f332-0015 a51460450e15a50b Pasaron muchos años...
 f332-0016 0250da28ab3d56aa Terminé mi formación{n}en el monasterio y{n}me convertí en Etone.
 f332-0017 5e8943d8de1fde30 Volví a casa para{n}abrir el orfanato...
 f332-0018 aa86e1eb1eb671c4 Y él...{wait 10}había vuelto{n}inesperadamente.
-f332-0019 e054014380649597 Pero era distinto.{wait 10}{n}Un terrible accidente{n}lo había cambiado.{p}No solo su aspecto:{n}también{n}su carácter y sus modales{p}habían cambiado por{n}completo.{p}Yo lo recordaba como un{n}hombre callado...
+f332-0019 e054014380649597 Pero era distinto.{wait 10}{n}Un terrible accidente{n}lo había cambiado.{p}No solo su aspecto:{n}también su carácter y sus{n}modales habían cambiado{n}por completo.{p}Yo lo recordaba como un{n}hombre callado...
 f332-0020 2823607189057f19 Pero...{wait 10} más que eso,{n}pensé que quizá no lo{n}recordaba de verdad...
 f332-0021 2b4cf498322fdecb Por eso...{wait 10}{n}nunca puedo verlo{n}como un padre...
 f332-0022 6a4c6f2ad94b2341 Pero Prim necesitaba un{n}padre, y se había{n}encariñado con él.{p}En el fondo de mi corazón,{n}yo también creía que{n}quería un padre.
 f332-0023 176f396b3c623206 Pero...{wait 10}{n}aun ahora no consigo{n}creer que sea mi{n}verdadero padre.
 f332-0024 aecf20d9b198f540 Stone{n}"Hace 4 años...{n}Lo buscamos hasta los{n}confines de la tierra,{n}sin hallar rastro de él."
 f332-0025 680f633556956aa8 Stone{n}"Racquel, mancillada por{n}él{wait 5}...{wait 5}{p}y el recuerdo de esa{n}mancha...{wait 30}tú y{n}tu hermana{wait 30}..."
-f332-0026 903aa533512984e4 Stone{n}"Gracias a la sabiduría de{n}Krelian, por medio de los{p}Wels, libré a Racquel{n}de su desdicha..."
+f332-0026 903aa533512984e4 Stone{n}"Gracias a la sabiduría de{n}Krelian,{p}por medio de los Wels,{n}libré a Racquel de su{n}desdicha..."
 f334-0000 73c9d69f9a1b0582 Billy{n}"(¡¡Es mi compañero!!{n}Lo llamaré para que{n}venga)"
 f335-0000 4f76fd52c598bd79 Elly{n}"¿Qué?{n}Hay algo..."
 f335-0001 f7b1c2b0317d9175 Elly{n}"Billy, ¿quién es ese{n}'compañero'?"
 f335-0002 99491619dc09f156 Elly{n}"Ahí no hay nada. No me{n}asustes. Solo son peces{n}saltando.{p}Pero el mar es{n}maravilloso.{n}La brisa es tan fresca...{p}¡¡Qué diferente del{n}desierto!!"
-f335-0003 ebf160e0855b6a35 Elly{n}"!!{n}¿No acabas de decir que{p}no tendríamos ninguna{n}oportunidad contra eso{n}nosotros solos?"
+f335-0003 ebf160e0855b6a35 Elly{n}"!!{p}¿No acabas de decir que no{n}tendríamos ninguna{n}oportunidad contra eso{n}nosotros solos?"
 f335-0004 4f59cf3923406190 Citan{n}"¿Hm?{n}Hay algo detrás..."
 f335-0005 9ab8233e7349281d Citan{n}"Billy... ¿quién es ese{n}'compañero'?"
 f335-0006 97873c819b862274 Citan{n}"Ahí no hay nada.{n}Solo peces saltando.{p}Ahh... el mar. La brisa{n}fresca... ¡¡qué diferente{n}del desierto!!"
 f335-0007 8abb15dee3cef943 Citan{n}"!!{p}¿No dijo usted que{n}nosotros{n}solos no tendríamos muchas{n}posibilidades contra eso?"
 f335-0008 d70c7337425b0184 Bart{n}"¿Eh?{n}¿Hay algo ahí...?"
 f335-0009 5fe1af9cb6d832fb Bart{n}"Oye, Billy, ¿qué es eso{n}de 'compañero'?"
-f335-0010 7bf3a7d3e02ca6b3 Bart{n}"Ahí no hay nada más que{n}unos peces saltando.{p}Me encanta el mar. La{n}brisa{n}fresca... muy distinta del{p}desierto. De ahora en{n}adelante soy un hombre{n}de mar."
+f335-0010 7bf3a7d3e02ca6b3 Bart{n}"Ahí no hay nada más que{n}unos peces saltando.{p}Me encanta el mar. La{n}brisa fresca... muy{n}distinta del desierto.{p}De ahora en adelante soy{n}un hombre de mar."
 f335-0011 5cab4a680991d10a Bart{n}"¡Oye!{p}¿Y ahora qué? ¿No acabas{n}de decir que no tendríamos{n}ninguna oportunidad contra{n}eso nosotros solos?"
 f335-0012 8dc8b396a559ab97 Rico{n}"¿Qué es eso...?"
 f335-0013 90a581d4528f6f43 Rico{n}"Oye, Billy, ¿quién es{n}ese compañero?"
 f335-0014 19cb506032a686a1 Rico{n}"¿Eh? Solo es un pez.{p}Aah, me encanta el mar.{n}La brisa es tan fresca...{n}Nada que ver con Kislev."
 f335-0015 7ef9378beaeb45ea Rico{n}"¡Oye!{p}¿Y ahora qué? ¿No acabas{n}de decir que no tendríamos{n}ninguna oportunidad contra{n}eso nosotros solos?"
 f335-0016 f878a488d0cc0fb0 Billy{n}"Justo lo que pensaba.{n}Este{n}transporte está infestado.{p}Debo ir al Ethos y{n}avisar al obispo{n}Stone..."
-f335-0017 17c6408f07e1f4e1 Billy{n}"...Hmm, seguramente es uno{n}de sus congéneres. Un Wels{n}gigante.{p}Un ser contra el que solos{n}no{n}tendríamos muchas{p}posibilidades. Pero{n}tranquilos,{n}son bastante lentos.{p}Aunque ese Wels lo haya{n}llamado, seguramente no{n}llegará a tiempo.{p}Pero de todos modos llamé{n}a mi Gear, por si acaso."
+f335-0017 17c6408f07e1f4e1 Billy{n}"...Hmm, seguramente es uno{n}de sus congéneres. Un Wels{n}gigante.{p}Un ser contra el que solos{n}no tendríamos muchas{n}posibilidades.{p}Pero tranquilos, son{n}bastante lentos.{p}Aunque ese Wels lo haya{n}llamado, seguramente no{n}llegará a tiempo.{p}Pero de todos modos llamé{n}a mi Gear, por si acaso."
 f335-0018 899bde22b865d9e3 Billy{n}"...{wait 20}...{wait 20}{n}Más rápido de lo previsto.{n}Bueno, ahí viene."
 f335-0019 c7814b7c72b1a96d Billy{n}"Llegará en cualquier{n}momento."
 f336-0000 339a66c681b85d34 Billy{n}"Parece {wait 10}ser {wait 2}sangre {wait 2}...{wait 2}...{n}¿Qué habrá pasado en este{n}transporte...?{p}No, esperen, esto es...{wait 25}{n}agua con óxido.{wait 15}{n}Démonos prisa."
@@ -1240,7 +1240,7 @@ f338-0004 4df2336d3582ac7e Elly{n}"¿Quieres decir que no{n}luchas cuerpo a cuer
 f338-0005 fcd94773c2d8fe9e Citan{n}"Está oscuro..."
 f338-0006 fae7e385081ac2a2 Citan{n}"¿Qué es ese olor?"
 f338-0007 9a955ee5609b6d90 Citan{n}"¿Tiene miedo?"
-f338-0008 fade1557f2a7130e Citan{n}"¿Wels?{n}Billy, ¿está usted{p}equipado{n}para esto?"
+f338-0008 fade1557f2a7130e Citan{n}"¿Wels?{n}Billy, ¿está usted{n}equipado para esto?"
 f338-0009 e70ff02b2737d520 Citan{n}"¿Dice que no lucha cuerpo{n}a cuerpo? Qué poco común."
 f338-0010 abe076f8704cc009 Bart{n}"Está oscuro..."
 f338-0011 7866b9c2132865b4 Bart{n}"Puaj, algo apesta..."
@@ -1281,20 +1281,20 @@ f339-0019 58f4fac856f84a85 Billy{n}"Los estábamos esperando.{p}Me permitieron a
 f339-0020 f8b9fc92bab80e9d Elly{n}"Por favor,{n}cuida de Fei por mí{wait 4}..."
 f339-0021 8a0985035432ad2d Billy{n}"Los hermanos del Ethos{n}están atendiendo a Fei{n}en la enfermería.{p}Permítanme llevarlos.{n}Síganme, por favor,{wait 15}{n}por aquí."
 f339-0022 c72290a573a9f8b9 Billy{n}"Por aquí."
-f339-0024 246954d4ae8a8be6 Billy{n}"¡Solo somos padre e hijo{n}por la sangre!{wait 10} No tengo{p}nada que ver con ese{n}hombre{wait 5}..."
+f339-0024 246954d4ae8a8be6 Billy{n}"¡Solo somos padre e hijo{n}por la sangre!{wait 10}{p}No tengo nada que ver con{n}ese hombre{wait 5}..."
 f339-0025 ce2d3ee8ef8f9e4a Billy{n}"...{wait 10}Ese padre mío...{wait 10}{n}Ojalá pensara en mi{n}posición antes de actuar."
 f339-0026 75d3d84a60d3651b Verlaine{n}"Billy, he oído que tu{n}padre ha vuelto a estar{n}bastante activo."
-f339-0027 1f7ae6cfa71fe4b2 Verlaine{n}"Dicen que hubo un ataque{n}contra una excavación en el{p}que resultaron heridos{n}muchos de mis 'hermanos'{n}y trabajadores."
-f339-0028 887a5350077502f8 Verlaine{n}"En fin, tú eres un Etone{n}ejemplar: destruyes{p}Segadores{n}y demuestras al mundo la{n}justicia del Ethos.{p}Pero tu padre..."
+f339-0027 1f7ae6cfa71fe4b2 Verlaine{n}"Dicen que hubo un ataque{n}contra una excavación en el{p}que resultaron heridos{n}muchos de mis 'hermanos' y{n}trabajadores."
+f339-0028 887a5350077502f8 Verlaine{n}"En fin, tú eres un Etone{n}ejemplar:{p}destruyes Segadores y{n}demuestras al mundo la{n}justicia del Ethos.{p}Pero tu padre..."
 f339-0029 09d2da5cff0b83f4 Verlaine{n}"No me malinterpretes.{n}No sospecho de ti,{n}nuestro buen 'hermano'.{p}Solo quería informarte{n}sobre tu padre."
 f339-0030 bd80484915383675 Este es un centro de{n}entrenamiento. Se{n}construyó{n}para nosotros, los Etones.
-f339-0031 1d67660aee8bc134 No.{n}Solo los miembros del Ethos{n}o las personas de identidad{n}conocida pueden entrar en{p}la{n}catedral y sus{n}dependencias.{p}Lo mismo vale para este{n}centro de entrenamiento,{n}pero el obispo hizo una{n}excepción por el hermano{n}Billy.
+f339-0031 1d67660aee8bc134 No.{p}Solo los miembros del Ethos{n}o las personas de identidad{n}conocida pueden entrar en{n}la catedral y sus{n}dependencias.{p}Lo mismo vale para este{n}centro de entrenamiento,{n}pero el obispo hizo una{n}excepción por el hermano{n}Billy.
 f339-0032 83c79a65876db513 B-{wait 20}Billy{wait 10}...
 f339-0033 eff76f6abb45028d No{wait 10} lo sé{wait 10}...{wait 10}...{n}De repente, {wait 10}oí un disparo{wait 20}...{wait 30}...{wait 50}
 f339-0034 3a9b35918ebae531 La verdadera fe nace de{n}una doctrina estricta.
 f339-0035 059ff905aa0afff1 La paz y el orden aquí en{n}Aquvy empeoran día{n}a día.{p}Salvar a la gente que no{n}tiene adónde acudir...{wait 15}{n}Ese también es un deber{n}del Ethos.
 f339-0036 5fd6ba2df78c1cc9 Mucha gente acude al{n}Ethos en busca de ayuda.{n}...Son como nosotros,{n}los Etones.{p}Nosotros también llegamos{n}al Ethos con el corazón{n}lleno de tristeza.
-f339-0037 201cf27a4f747988 El Ethos se creó para{n}salvar{n}a la gente: para salvar{p}sus{n}almas y recuperar la{n}tecnología perdida.{p}Deseamos la felicidad de{n}todas las personas del{n}mundo.
+f339-0037 201cf27a4f747988 El Ethos se creó para{n}salvar a la gente:{p}para salvar sus almas y{n}recuperar la tecnología{n}perdida.{p}Deseamos la felicidad de{n}todas las personas del{n}mundo.
 f339-0038 44c4a55238251e29 Yo vivía en Aveh, pero{n}perdí mi casa en la guerra{n}con Kislev.{p}El Ethos me acogió como{n}creyente. Ahora este{n}es mi hogar.
 f339-0039 449972d7cb8a94fe Los Segadores destruyeron{n}mi aldea...{p}¡Me convertiré en Etone y{n}crearé un mundo sin{n}penurias!
 f339-0040 fd4f50f91ff2311d Pa--pá.{n}¿Adónde se fue mamá?
@@ -1303,10 +1303,10 @@ f340-0001 f46713bcfdb2ec16 Los Segadores son humanos{n}que Dios convirtió en{n}
 f340-0002 cf8a790b17451626 Quienes pertenecen al{n}Ethos{n}deben actuar con modestia{n}y generosidad.{p}Para ello, leemos a menudo{n}las sagradas escrituras y{n}así recuperamos un alma{n}más pura.
 f340-0003 95e69d0fd6ca9a21 Esta habitación se preparó{n}para quienes no tienen a{n}quién acudir.{p}Esperamos salvar sus almas{n}y darles esperanza para{n}vivir.
 f340-0004 dd48cdd8d8d3eb97 Dicen que la Torre de Babel{n}está conectada con Shevat.{n}Los nuestros vigilan de{n}cerca la salida.{p}Pese a ello, los malditos{n}Segadores siguen{n}apareciendo en esta tierra.{wait 15}{p}Por eso los Etones están{n}aquí: para eliminarlos.
-f340-0005 6dc2f169b60ed96c Nosotros, los Etones,{n}somos,{n}por así decirlo, la espada{p}y{n}el escudo del Ethos.{p}Luchamos contra enemigos{n}como los Segadores{p}y los ladrones, para{n}salvar{n}a quienes tienen fe{n}en Dios.
+f340-0005 6dc2f169b60ed96c Nosotros, los Etones,{n}somos, por así decirlo, la{n}espada y el escudo del{n}Ethos.{p}Luchamos contra enemigos{n}como los Segadores{p}y los ladrones, para{n}salvar{n}a quienes tienen fe{n}en Dios.
 f340-0006 e1562377ada34745 ¡Billy! ¿Tu padre le{n}guarda{n}rencor al Ethos?{p}Dicen que volvieron a{n}bombardear el depósito de{n}suministros del Ethos.
-f340-0007 3cf6385116a7fed3 ¡Ajá! ¡Usted!{p}Pregúntele a Billy si su{n}padre le guarda rencor al{n}Ethos o no.{p}Dicen que su padre{n}bombardeó{n}el depósito de suministros{p}del Ethos.{n}Ay, me duele la cabeza.
-f340-0008 6fc9e4b1fc2b669e Saqueos de la guerra y{n}de los chatarreros... La{n}destrucción de los{n}Segadores...{wait 10}{n}Debemos estar a la altura{p}de{n}lo que el pueblo espera{n}del{n}Ethos.
+f340-0007 3cf6385116a7fed3 ¡Ajá! ¡Usted!{p}Pregúntele a Billy si su{n}padre le guarda rencor al{n}Ethos o no.{p}Dicen que su padre{n}bombardeó el depósito de{n}suministros del Ethos.{n}Ay, me duele la cabeza.
+f340-0008 6fc9e4b1fc2b669e Saqueos de la guerra y de{n}los chatarreros... La{n}destrucción de los{n}Segadores...{wait 10}{p}Debemos estar a la altura{n}de lo que el pueblo espera{n}del Ethos.
 f340-0009 d9c3857d337a41e6 ¿Por qué ataca Jessie los{n}edificios del Ethos?{wait 10}{n}Oí que antes fue un Etone{n}extraordinario...
 f340-0010 383bc2ff698db5e9 ¿Qué está pasando?{n}Tengo miedo.
 f340-0011 c7b36fccc01ca3a7 Mamá...
@@ -1315,8 +1315,8 @@ f340-0013 d86fa6a2d6c6b04f Eh... alguien del Ethos{n}se subió a un Gear enorme{
 f340-0014 140014f4c3f265d9 ¿Qué está pasando afuera?{n}De repente, unos hombres{n}de negro irrumpieron aquí.{p}Ahora los Etones están{n}luchando por nosotros...
 f340-0015 dcf9d4d9ecc8c388 Dígame, por favor, joven.{n}¿No se puede ser feliz{n}sin sacrificios?{p}¿No se puede pasar por la{n}vida sin desdichas...?
 f341-0000 5ce374a93f4a4fbf Verlaine{n}"Ja, jajem, Billy.{n}¿Cómo está tu{n}querido padre?"
-f341-0001 c01ce92460bdc51d Verlaine{n}"...No tengo nada que{n}tratar{p}con gente ajena al{n}Ethos."
-f341-0002 c0c80f0264103e56 Estas son las dependencias{n}del Pontífice. El público{n}no{p}puede entrar aquí. Les{n}ruego que se retiren.
+f341-0001 c01ce92460bdc51d Verlaine{n}"...No tengo nada que{n}tratar con gente ajena al{n}Ethos."
+f341-0002 c0c80f0264103e56 Estas son las dependencias{n}del Pontífice. El público{n}no puede entrar aquí. Les{n}ruego que se retiren.
 f341-0004 0ab675bf926426fd Al obispo le preocupan los{n}Segadores, los refugiados,{n}los Etones, la fe...
 f341-0005 226842e07877b9d3 ("{wait 10}...Ahora hay demasiados{n}Wels ahí fuera. Más de los{n}que podemos controlar...{wait 20}{p}¿En qué estarán pensando{n}'ellos'?")
 f341-0006 18772aa829badf97 ¡Purga! ¡Purga...!
@@ -1325,7 +1325,7 @@ f344-0001 066a88b6feeadff9 Billy{n}"¿El juicio de Dios?{wait 10}{n}¿Qué quier
 f344-0002 e41821f644c76a24 Billy{n}"Se ha ido.{p}¿Qué intentaba decirme?{n}Purga,{wait 15} ¿qué habrá{n}querido decir?"
 f344-0003 5b16ce677b6c9108 Billy{n}"Hay algo allí.{n}Así es imposible pasar{n}por aquí."
 f346-0000 2886f2728901a2e7 Elly{n}"Dijo 'superviviente',{wait 10}{n}¿no? Eso significa que la{n}gente del Ethos está{wait 10}...{wait 10}"
-f346-0001 fa2c429eb198c81b Elly{n}"Vamos, Billy.{wait 10}{n}Tiene que haber{p}supervivientes.{n}Ayudémoslos."
+f346-0001 fa2c429eb198c81b Elly{n}"Vamos, Billy.{wait 10}{p}Tiene que haber{n}supervivientes.{n}Ayudémoslos."
 f346-0002 13d4e9e880d1133c Elly{n}"Sí{wait 10}...{wait 10}{n}Parece que se va{n}a recuperar."
 f346-0003 efb4be0572c7154d Citan{n}"Elly, ¿cómo está Fei?"
 f346-0004 be8461ab18380872 Citan{n}"Ya veo. Entonces,{n}vayamos a la enfermería."
@@ -1370,7 +1370,7 @@ f352-0003 e91dc85c31c47816 Citan{n}"Bueno, no queremos{n}perturbar su recuperaci
 f352-0004 c48061f94fbc6e61 Citan{n}"Estoy de acuerdo.{n}Así Fei estará más{n}tranquilo. Avísanos,{p}por favor, cuando termines{n}de atender a Fei.{n}Dejamos el resto en{n}tus manos."
 f352-0005 07a49f463b885bcf Citan{n}"¿Recuperó Fei el{n}conocimiento?"
 f352-0006 8e60f829fe2eba4b Citan{n}"Disculpe la molestia."
-f352-0007 47429b1e4a546f5a Citan{n}"Estamos en deuda con{n}Billy.{p}Deberíamos ir a darle{n}las gracias."
+f352-0007 47429b1e4a546f5a Citan{n}"Estamos en deuda con{n}Billy.{p}Deberíamos ir a darle las{n}gracias."
 f352-0008 7572cf932049bd25 Citan{n}"Antes que nada, llevemos{n}a Fei a la Yggdrasil.{p}Después aún estaremos a{n}tiempo de ir a ver a{n}Billy."
 f352-0011 d797ec052a01d4a2 Citan{n}"Bueno, no queremos{n}perturbar su recuperación.{n}¿Nos vamos ya?{p}Puede que el tratamiento{n}de Fei tarde un poco{n}más en terminar."
 f352-0012 f63939e2443d9689 Citan{n}"Estoy de acuerdo.{n}Así Fei estará más{n}tranquilo. Avísanos,{p}por favor, cuando termines{n}de atender a Fei.{n}Dejamos el resto en{n}tus manos."
@@ -1382,7 +1382,7 @@ f352-0020 93c775283bd586ea Bart{n}"Sí, haz eso. Seguro que{n}Fei se pondrá con
 f352-0021 2d3a9ff138352810 Bart{n}"Por cierto, ¿recuperó Fei{n}el conocimiento?"
 f352-0022 38117c52ac0a3f33 Bart{n}"¡Muchas gracias!"
 f352-0023 2576b9cb53faf795 Bart{n}"Billy nos ayudó{n}muchísimo. Más vale que{n}vayamos a agradecérselo."
-f352-0024 9fa432d7d4b45926 Bart{n}"Primero, llevemos a Fei a{n}la Yggdrasil. Después{p}iremos a darle las{n}gracias."
+f352-0024 9fa432d7d4b45926 Bart{n}"Primero, llevemos a Fei a{n}la Yggdrasil.{p}Después iremos a darle las{n}gracias."
 f352-0025 d29924bcd00d2bd2 Rico{n}"Hmm, entonces..."
 f352-0026 bcee44f05bd990c9 Rico{n}"En ese momento estabas{n}hipnotizada. No podías{n}evitarlo. No te culpes.{p}Ramsus podría haberlo{n}matado si tú no{n}hubieras estado allí."
 f352-0027 44b3f5fadafb1f7c Rico{n}"Puede que su tratamiento{n}tarde un poco más.{n}Vamos{p}a algún sitio a matar{n}el tiempo."
@@ -1394,7 +1394,7 @@ f352-0032 0d12ae2e9e12ccb6 Rico{n}"Antes que nada, llevemos{n}a Fei a la Yggdras
 f352-0033 155c1649e5c1ebcf Elly{n}"Aunque fuera imposible{n}resistirse, si me{n}hipnotizaron fue{p}porque bajé la guardia.{n}En parte soy responsable{n}de lo que pasó.{p}Así que quiero estar a su{n}lado hasta que despierte."
 f352-0034 7bc4c4100c794555 Elly{n}"Fei{wait 10}...{wait 10}{n}Lo siento."
 f352-0035 86ff583a08a6b755 Elly{n}"{wait 10}...{wait 10}¿Recuperará Fei{n}el conocimiento algún{n}día?"
-f352-0036 cd27323ff1deb5a6 Elly{n}"{wait 15}...{wait 15}Lo siento, Fei.{n}Por mi culpa la sala de{p}máquinas quedó fuera{n}de control..."
+f352-0036 cd27323ff1deb5a6 Elly{n}"{wait 15}...{wait 15}Lo siento, Fei.{p}Por mi culpa la sala de{n}máquinas quedó fuera de{n}control..."
 f352-0037 5d619e34bc996f4d Elly{n}"Gracias..."
 f352-0038 9a05330b877dae98 Elly{n}"Me...{wait 15}gustaría quedarme{n}un rato más.{wait 10}{n}¿Puedo?"
 f352-0039 85c5b30be16e332f Billy{n}"¿Cómo está?"
@@ -1402,7 +1402,7 @@ f352-0040 1db56cac3e9c4e56 Billy{n}"Lo único que podemos{n}hacer es esperar."
 f352-0041 6e418ccc24a2be6e Su estado es estable.{n}El tratamiento está casi{n}terminado.
 f352-0042 d17277b43bc6e786 ¿Q-qué está pasando?{wait 15}{n}¡Esos hombres de negro{n}están matando a la gente{n}del Ethos sin distinción!
 f352-0043 945e6d60a535d0eb Parece que está mejor.{n}Me alegro. Me alegro{n}de verdad.
-f352-0044 138b2fc700abde7b ¿Que si se ha recuperado?{n}El tratamiento fue un{n}éxito,{p}así que no hay de qué{n}preocuparse.
+f352-0044 138b2fc700abde7b ¿Que si se ha recuperado?{n}El tratamiento fue un{n}éxito, así que no hay de{n}qué preocuparse.
 f352-0045 4d1f12d72299d550 El paciente aún no ha{n}recuperado el conocimiento,{n}pero no vemos ninguna{n}anomalía en su cerebro.{p}La baja temperatura del{n}agua redujo su metabolismo{n}y lo salvó.{p}Un paso en falso y podría{n}haber sufrido muerte{n}cerebral.
 f352-0046 c2af1ae9ea631b8f Sí, no se preocupen.{wait 15}{n}Sin embargo, aún debemos{n}hacerle más pruebas{n}durante un tiempo.{p}Después, podrá recibir{n}tratamiento en sus propias{n}instalaciones médicas.
 f352-0047 774e4e00160832b2 Si no ha recuperado el{n}conocimiento, es por{n}agotamiento físico.{n}Se exigió demasiado.{p}Seguramente tardará unos{n}días más, pero no se{n}preocupen, despertará.
@@ -1426,7 +1426,7 @@ f353-0012 dd3d53fe5dad694d Rebelarse contra nosotros{n}le costará la vida.
 f355-0000 35e8c3985c60a136 Elly{n}"¿Un inquisidor?"
 f355-0001 d6c53b8e03216a96 Citan{n}"¿Inquisidor?"
 f355-0002 5b2f5aa4ad961c15 Bart{n}"¿El inquisidor?"
-f355-0003 d6402e7e769097b9 Billy{n}"...{wait 10}...{wait 10} Yo...{wait 10}...{wait 10}{n}todavía no puedo creerlo.{p}El Ethos era una{n}organización tan{n}turbia{wait 10}...{wait 10}{p}¿En qué he estado{n}creyendo...{wait 10}{n}todo este tiempo?"
+f355-0003 d6402e7e769097b9 Billy{n}"...{wait 10}...{wait 10} Yo...{wait 10}...{wait 10}{n}todavía no puedo creerlo.{p}El Ethos era una{n}organización tan turbia{wait 10}...{wait 10}{p}¿En qué he estado{n}creyendo...{wait 10}{n}todo este tiempo?"
 f355-0004 5c058bd279d277cb Billy{n}"V...{wait 10} ¡¿Verlaine?!"
 f355-0005 129a4c8ca3dd464f Billy{n}"¡Padre!{wait 10}{n}¡¿Cómo pudiste hacer{n}eso?!"
 f355-0006 6b7b9d526c4c185e Billy{n}"¡Ese símbolo...!"
@@ -1444,7 +1444,7 @@ f355-0017 dec31ba85158922c Billy{n}"¡La puerta está cerrada!"
 f355-0018 cb4e5f32de0bfff3 Verlaine{n}"T-{wait 10}tú {wait 5}...{wait 5}..."
 f355-0019 8a0909236e5d3714 Jessie{n}"¿Por qué te pones tan{n}nervioso,{wait 15} chico?{p}Era una bala aturdidora.{wait 10}{n}Solo está echando una{n}siesta.{wait 10} ¡Deberías haberlo{n}notado por el sonido!{p}Además,{wait 10} ¡estos asesinos{n}no son {wait 10}del Ethos!"
 f355-0020 7a511a5c676b610f Jessie{n}"¡Mira!"
-f355-0021 7dc52f5e22589bba Jessie{n}"Sí, así es.{wait 15}{n}¡Son agentes de Solaris!{p}¡Seguramente una unidad de{n}asesinos bajo el mando{n}de Stone!{p}Me enteré de que estaban{n}exterminando a todos los{n}miembros del Ethos y vine{p}corriendo.{wait 10} Pero llegué{n}demasiado tarde...{p}Ya han matado a todos los{n}afiliados al Ethos, salvo a{n}los que estaban en una{p}especie de misión de{n}recuperación."
+f355-0021 7dc52f5e22589bba Jessie{n}"Sí, así es.{wait 15}{n}¡Son agentes de Solaris!{p}¡Seguramente una unidad de{n}asesinos bajo el mando{n}de Stone!{p}Me enteré de que estaban{n}exterminando a todos los{n}miembros del Ethos y vine{n}corriendo.{wait 10}{p}Pero llegué demasiado{n}tarde...{p}Ya han matado a todos los{n}afiliados al Ethos,{p}salvo a los que estaban en{n}una especie de misión de{n}recuperación."
 f355-0022 afff37004b9bb9d1 Jessie{n}"¡¡No te dejaré escapar{n}tan fácilmente, Stein!!"
 f355-0023 fabd126f0f298b6c Jessie{n}"¡¡Stein, tú no vas{n}a ninguna parte!!"
 f355-0024 4fe792a348f6dc50 ¿Pretendes quitarme mi{n}máximo placer,{wait 15} Verlaine?
@@ -1452,12 +1452,12 @@ f355-0025 76c819a03ebc5a50 Verlaine{n}"¡¡Gha-ha!!"
 f355-0026 5924fe320d847d27 Verlaine{n}"¡Ugh!"
 f355-0027 567a7dd3e710c733 Stone{n}"Un charlatán inútil{n}como tú no tiene{n}derecho a vivir."
 f355-0028 9b1152bc498b417b Stone{n}"Soy el inquisidor enviado{n}a la Tierra desde{n}Solaris."
-f355-0029 a4bca2cb6d6f5196 Stone{n}"El cargo de obispo no es{n}más que una tapadera para{p}mis actividades en la{n}Tierra.{p}El Ethos se creó como una{n}organización subordinada a{n}Solaris, con la tarea de{p}administrar a los{n}terrícolas.{p}Pero con los años, el Ethos{n}empezó a establecer{n}doctrinas a su propia{n}conveniencia...{p}Después se dedicó a reunir{n}a las masas ignorantes y{n}creó un dios para que{n}creyeran en él.{p}Y luego el Ethos llegó{n}incluso a conspirar para{n}separarse de su creador,{n}Solaris.{p}Así que Solaris no tuvo más{n}remedio que eliminar a los{n}que desafían nuestro{p}dominio{n}y alzan la bandera de la{n}rebelión.{p}Los que fueron preparados{n}como 'eliminadores'{n}fueron{wait 5}...{wait 10} los Etones.{p}Los Etones, 'los{n}Expiadores',{wait 5} la orden que{n}fundé dentro del Ethos,{wait 5}{n}tenían dos propósitos{wait 5}...{p}En apariencia, su objetivo{n}era eliminar a los{wait 5}{n}'Segadores'{wait 5} o {wait 5}-Wels-{wait 5} que{n}asolan la tierra.{p}Pero,{wait 10} ese no era su único{n}propósito.{wait 20} Entre bastidores{n}también teníamos hombres{n}escogidos, como Verlaine{wait 5}...{p}Ellos se encargaban de{n}vigilar{wait 10} y eliminar{wait 10}{n}a cualquier corrupto que{n}apareciera en el Ethos.{p}Tú no tuviste ocasión de{n}saberlo, ya que dejaste{n}el Ethos muy pronto.{p}{wait 5}...{wait 10}O, mejor dicho,{wait 5}{n}nunca te lo conté.{wait 20}{n}¡Quería que desempeñaras{n}'otro papel'!"
+f355-0029 a4bca2cb6d6f5196 Stone{n}"El cargo de obispo no es{n}más que una tapadera para{p}mis actividades en la{n}Tierra.{p}El Ethos se creó como una{n}organización subordinada a{n}Solaris,{p}con la tarea de administrar{n}a los terrícolas.{p}Pero con los años, el Ethos{n}empezó a establecer{n}doctrinas a su propia{n}conveniencia...{p}Después se dedicó a reunir{n}a las masas ignorantes y{n}creó un dios para que{n}creyeran en él.{p}Y luego el Ethos llegó{n}incluso a conspirar para{n}separarse de su creador,{n}Solaris.{p}Así que Solaris no tuvo más{n}remedio que eliminar a los{n}que desafían nuestro{p}dominio y alzan la bandera{n}de la rebelión.{p}Los que fueron preparados{n}como 'eliminadores'{n}fueron{wait 5}...{wait 10} los Etones.{p}Los Etones, 'los{n}Expiadores',{wait 5} la orden que{n}fundé dentro del Ethos,{wait 5}{n}tenían dos propósitos{wait 5}...{p}En apariencia, su objetivo{n}era eliminar a los{wait 5}{n}'Segadores'{wait 5} o {wait 5}-Wels-{wait 5} que{n}asolan la tierra.{p}Pero,{wait 10} ese no era su único{n}propósito.{wait 20} Entre bastidores{n}también teníamos hombres{n}escogidos, como Verlaine{wait 5}...{p}Ellos se encargaban de{n}vigilar{wait 10} y eliminar{wait 10}{n}a cualquier corrupto que{n}apareciera en el Ethos.{p}Tú no tuviste ocasión de{n}saberlo, ya que dejaste{n}el Ethos muy pronto.{p}{wait 5}...{wait 10}O, mejor dicho,{wait 5}{n}nunca te lo conté.{wait 20}{n}¡Quería que desempeñaras{n}'otro papel'!"
 f355-0030 d0f330359f8abe47 Billy{n}"¡¿Otro{wait 10}...{wait 10}{speed 255}papel?!"
-f355-0031 daacdc768f997714 Stone{n}"Billy.{wait 20} Hay cosas en este{n}mundo que es mejor no{n}saber.{p}Incluso las mentiras y los{n}engaños pueden convertirse{n}en la verdad para algunos{n}terrícolas.{p}...{wait 5}Sobre todo para quienes{n}no conocen la verdadera{n}naturaleza de las cosas, ni{p}cómo funcionan sus{n}sistemas.{p}De hecho, los sistemas de{n}{wait 5}-dios-{wait 5} y {wait 5}-fe-{wait 5} establecidos{n}por el Ethos eran la verdad{n}misma,{wait 5} ¿no es así?"
+f355-0031 daacdc768f997714 Stone{n}"Billy.{wait 20} Hay cosas en este{n}mundo que es mejor no{n}saber.{p}Incluso las mentiras y los{n}engaños pueden convertirse{n}en la verdad para algunos{n}terrícolas.{p}...{wait 5}Sobre todo para quienes{n}no conocen la verdadera{n}naturaleza de las cosas,{p}ni cómo funcionan sus{n}sistemas.{p}De hecho, los sistemas de{n}{wait 5}-dios-{wait 5} y {wait 5}-fe-{wait 5} establecidos{n}por el Ethos eran la verdad{n}misma,{wait 5} ¿no es así?"
 f355-0032 a1a24514dd7eacaa Billy{n}"¡Dígame!{wait 15}{n}¿De qué otro 'papel'{n}hablaba?{p}¡¿Qué quiso decir Verlaine{n}cuando habló{n}de{wait 15} 'juicio'?!"
 f355-0033 a2751f5186945ca0 Stone{n}"¿Así que quieres saberlo?{pause}{n}¿Pero podrás soportar todo{n}el peso de la verdad?{p}Billy, si puedes soportar{n}ese peso, estoy dispuesto{n}a contártelo."
-f355-0035 23aeddf7daeea907 Stone{n}"Creías que estabas{n}salvando{p}almas perdidas, ¿no es{n}así...?{p}Por eso llevaste a cabo tu{n}limpieza de los 'Segadores'{n}-Wels- de la tierra,{n}¿verdad?{p}En realidad, no era más que{n}otro sistema de control{n}instaurado por Solaris.{p}Y lo que es más, tu labor{n}de{n}'salvación'...{wait 10}esa misma{p}actividad en la que tanto{n}creías,{wait 10} era{wait 5} en{wait 5} realidad{wait 10}..."
+f355-0035 23aeddf7daeea907 Stone{n}"Creías que estabas{n}salvando almas perdidas,{n}¿no es así...?{p}Por eso llevaste a cabo tu{n}limpieza de los 'Segadores'{n}-Wels- de la tierra,{n}¿verdad?{p}En realidad, no era más que{n}otro sistema de control{n}instaurado por Solaris.{p}Y lo que es más, tu labor{n}de 'salvación'...{wait 10}esa misma{n}actividad en la que tanto{n}creías,{wait 10} era{wait 5} en{wait 5} realidad{wait 10}..."
 f355-0036 20db3ffd2ddf8f17 Jessie{n}"¡Dices demasiadas{n}tonterías!"
 f355-0037 4508984b78ac8d84 Jessie{n}"No has cambiado nada{n}desde entonces...{pause}{n}¡¿verdad, Stein?!"
 f355-0038 b857433d25e32ec5 Billy{n}"¿Stein?"
@@ -1465,7 +1465,7 @@ f355-0039 f17612740c3f00b1 Stone{n}"Hacía mucho tiempo que{n}nadie me llamaba a
 f355-0040 d73736dd5b5fb364 Jessie{n}"Je, tu cerebro sigue sin{n}funcionar bien.{p}{speed 255}¡Respóndeme!{wait 25}{n}{speed 0}¡¿Por qué tienes esa{n}'manera tan retorcida{n}de hacer las cosas'?!"
 f355-0041 7667b12f4d43d6ce Stone{n}"No vale la pena gastar{n}saliva en responder a{n}eso...{p}Considéralo simplemente{n}'mi recompensa en la{n}vida'...{p}Lo cual incluye, por{n}supuesto, verte morir{n}entre agonías.{p}Podría sucumbir al deseo de{n}despedazar tu cuerpo aquí{n}y ahora, y arrancarte las{n}entrañas...{p}Pero ahora no puedo: tengo{n}un asunto que atender en{n}otra parte.{p}Ese 'deber' está por encima{n}de cualquier placer que{n}pudiera tener aquí contigo.{p}¡No tengo tiempo que{n}perder!"
 f355-0042 d3e959816b6d6550 Stone{n}"No puedo perder el tiempo{n}con unos miserables{p}insignificantes como{n}ustedes."
-f355-0043 a4bec8977f4d694b Stone{n}"¡Hasta la próxima! ¡Y{n}como{p}regalo de despedida, estos{n}hombres los entretendrán!"
+f355-0043 a4bec8977f4d694b Stone{n}"¡Hasta la próxima!{p}¡Y como regalo de{n}despedida, estos hombres{n}los entretendrán!"
 f355-0044 0346ab32e9c7b496 Stone{n}"Bien, entonces, con su{n}permiso.{p}¡Ah, Billy! Si tienes algo{n}de lo que quieras hablar,{n}ven a verme luego.{n}Te estaré esperando."
 f355-0045 08a11b229e6df1ee ¿No es esa precisamente la{n}razón por la que te dije{n}entonces...{wait 20} que tu lugar{n}está con nosotros{wait 5}...?
 f355-0046 35068c20131f0aa9 Verlaine{n}"Eres impuro, {wait 10}Billy.{p}Dejaste el Ethos y te{n}juntaste con escoria que{n}no tiene ninguna fe.{n}Y ya ni sabes lo que{n}significa ser impuro.{p}No esperaba esto de ti...{n}Tú, que solo vivías para{n}tu fe.{wait 30}{n}Deberías haber seguido{n}siendo como nosotros.{p}Pero no temas, Billy.{wait 20}{n}Yo te purificaré.{wait 20}{n}Vivirás dentro de mí.{wait 20}{n}Serás uno conmigo en la{n}muerte{wait 10}...{wait 10}"
@@ -1484,7 +1484,7 @@ f356-0006 c391416afac44eb0 Citan{n}"¡Ánimo!{wait 30}{n}No se preocupe.{n}¡Est
 f356-0007 148d5c1e4f0902f2 Citan{n}"¡¿'Shevat'?!{wait 30}{n}¡¿Usted es...{wait 30}{n}de 'Shevat'?!"
 f356-0008 c56f1e7641169f2c Bart{n}"Es una herida grave.{n}¡Si no lo ayudamos,{n}no la cuenta!"
 f356-0009 97ce314893cf006c Bart{n}"Llamemos a mis hombres{n}de la Ygg para que vengan{n}a echarle una mano."
-f356-0010 1d7081150adf113e Bart{n}"¡Eh, marinero! ¡No{n}cierres{p}los ojos!{wait 30} ¡Vamos a{n}sacarte de aquí!"
+f356-0010 1d7081150adf113e Bart{n}"¡Eh, marinero! ¡No{n}cierres los ojos!{wait 30} ¡Vamos a{n}sacarte de aquí!"
 f356-0011 9c16b9cf46fbcb82 Bart{n}"¡¿'Shevat'?!{n}¡¿Acaba de decir...{n}'Shevat'?!"
 f356-0012 da777ed3c77b1090 Billy{n}"¡¿Está bien?!{n}¡Por favor, respóndame!"
 f356-0013 58cc7fb3d636e408 Billy{n}"Avisé a la Yggdrasil para{n}que vengan a ayudarlo.{p}Así que ya está en buenas{n}manos. Démonos prisa."
@@ -1502,35 +1502,35 @@ f359-0003 6d5ca697e83fb322 Elly{n}"{speed 255}¡Miren, aquí! {speed 0}{p}Los de
 f359-0004 f7331589e708d8bb Elly{n}"No{wait 5} lo{wait 5} sé..."
 f359-0005 51d8682b9a3489e7 Elly{n}"Está en idioma solariano,{n}pero cifrado.{p}Esperen{wait 5}...{wait 5}...{wait 5}{n}Mmm{wait 5}...{wait 5}...{wait 5}{n}¿Qué es esto{wait 5}...{wait 5}...?{wait 5}{n}...{wait 5}...{wait 5}...{wait 5}...{wait 5}..."
 f359-0006 63a08b26f52b31e7 Elly{n}"¡Un momento!{n}¡Esto es difícil{n}de traducir!{p}Mmm{wait 5}...{wait 5}{n}{wait 5}...{wait 5}'Corderos'{wait 5}...{wait 5}{n}gran guerra{wait 5}...{wait 5}colapso{wait 5}...{wait 5}{n}reeducación{wait 5}...{p}...{wait 5}plan de rehabilitación{n}de posguerra{wait 5}...{wait 5}{n}{wait 5}...{wait 5}basado en{wait 5}...{wait 5}{p}{wait 5}...{wait 5}calendario para los{n}cimientos de la{n}'Puerta'{wait 5}...{p}'Corderos'{wait 5}...{wait 5}02-04 a Ignas{n}{wait 5}...{wait 5}05-08 a Aquvy{wait 5}...{wait 5}{n}11-16{wait 5} a distribuir{n}uniformemente{wait 5}...{p}Puesto en práctica{wait 5}...{wait 5}{n}{wait 5}...{wait 5}el Ethos fundado{n}como organización{wait 5}...{p}{wait 5}...{wait 5}Supervisión de ancianos{n}{wait 5}...{wait 5}conferencia{wait 5}...{wait 5}{n}¡¿supervisión de los{n}Gazel?!{p}¡¿El Ethos es{wait 5}...?!"
-f359-0007 381361e1b0f5ec01 Elly{n}"En resumen,{wait 5}{n}la cosa es así{wait 5}...{p}Hace 500 años hubo una{n}gran guerra entre Solaris{n}y los habitantes de la{n}superficie.{p}No está claro cómo terminó,{n}pero tras la guerra,{n}Solaris{p}temía otra rebelión de los{n}habitantes de la{n}superficie{wait 5}...{p}Así que Solaris construyó{n}una 'Puerta',{wait 5} o barrera,{wait 5}{n}que separa las tierras de{p}Solaris del resto del{n}mundo.{p}Los habitantes de la{n}superficie que vivían{n}dentro{p}de esta Puerta fueron{n}separados por razas y{n}vigilados.{p}Para llevar a cabo esa{n}vigilancia, Solaris fundó{n}el Ethos.{p}Así que en realidad el{n}Ethos{n}está controlado por el{p}'Ministerio Gazel',{wait 5} el{n}órgano de gobierno supremo{n}de Solaris.{p}Así que,{wait 5} sí,{wait 5} ¡el Ethos es{n}en realidad una 'tapadera',{wait 5}{n}una organización filial{wait 5}{n}al servicio de Solaris!{p}El Ethos transporta a{n}Solaris los hallazgos de{n}las{p}excavaciones, los bienes y{n}los recursos naturales de{n}la superficie.{p}Eso incluye también{n}'recursos humanos', es{n}decir,{p}personas usadas como mano{n}de obra, etcétera.{p}Básicamente, esto es la{n}ventana entre la superficie{n}del planeta y Solaris, allá{n}arriba en el cielo.{p}¡Según estos registros, se{n}ha transferido a Solaris{n}una{p}enorme cantidad de bienes{n}y personas!"
-f359-0008 7ec005bfa53dd61a Elly{n}"El resto trata sobre todo{n}de{p}la distribución de la{n}población y de registros{n}de excavación.{p}Aunque me preocupa un poco{n}tanta información detallada{n}sobre las razas y sus{n}datos biológicos..."
-f359-0009 10d31eafa0099eb1 Elly{n}"En Solaris hay{n}instalaciones{p}para alojar a habitantes de{n}la superficie... ¡Ya sé!{p}El nivel de ciudadanos de{n}tercera clase: allí envían{n}a menudo a terrícolas de{p}diversas razas como mano{n}de obra."
-f359-0010 106a395b7b99d715 Elly{n}"Entonces, ¿creen que{n}Solaris está detrás de{p}este{n}ataque contra el Ethos?"
+f359-0007 381361e1b0f5ec01 Elly{n}"En resumen,{wait 5}{n}la cosa es así{wait 5}...{p}Hace 500 años hubo una{n}gran guerra entre Solaris{n}y los habitantes de la{n}superficie.{p}No está claro cómo terminó,{n}pero tras la guerra,{p}Solaris temía otra rebelión{n}de los habitantes de la{n}superficie{wait 5}...{p}Así que Solaris construyó{n}una 'Puerta',{wait 5} o barrera,{wait 5}{p}que separa las tierras de{n}Solaris del resto del{n}mundo.{p}Los habitantes de la{n}superficie que vivían{n}dentro de esta Puerta{p}fueron separados por razas{n}y vigilados.{p}Para llevar a cabo esa{n}vigilancia, Solaris fundó{n}el Ethos.{p}Así que en realidad el{n}Ethos está controlado por{n}el 'Ministerio Gazel',{wait 5}{p}el órgano de gobierno{n}supremo de Solaris.{p}Así que,{wait 5} sí,{wait 5} ¡el Ethos es{n}en realidad una 'tapadera',{wait 5}{n}una organización filial{wait 5}{n}al servicio de Solaris!{p}El Ethos transporta a{n}Solaris los hallazgos de{n}las excavaciones,{p}los bienes y los recursos{n}naturales de la superficie.{p}Eso incluye también{n}'recursos humanos', es{n}decir, personas usadas como{n}mano de obra, etcétera.{p}Básicamente, esto es la{n}ventana entre la superficie{n}del planeta y Solaris, allá{n}arriba en el cielo.{p}¡Según estos registros, se{n}ha transferido a Solaris{n}una enorme cantidad de{n}bienes y personas!"
+f359-0008 7ec005bfa53dd61a Elly{n}"El resto trata sobre todo{n}de la distribución de la{p}población y de registros de{n}excavación.{p}Aunque me preocupa un poco{n}tanta información detallada{n}sobre las razas y sus{n}datos biológicos..."
+f359-0009 10d31eafa0099eb1 Elly{n}"En Solaris hay{n}instalaciones para alojar a{p}habitantes de la{n}superficie... ¡Ya sé!{p}El nivel de ciudadanos de{n}tercera clase:{p}allí envían a menudo a{n}terrícolas de diversas{n}razas como mano de obra."
+f359-0010 106a395b7b99d715 Elly{n}"Entonces,{p}¿creen que Solaris está{n}detrás de este ataque{n}contra el Ethos?"
 f359-0011 100668b6c473bfb0 Elly{n}"Nosotros seguiremos{n}adelante...{p}Bart, Rico, ¿podrían{n}acompañar a la persona{n}de 'Shevat' hasta{n}la Yggdrasil?"
 f359-0012 cc9d435139733f14 Elly{n}"Nosotros seguiremos{n}adelante...{p}Citan, Rico, ¿podrían{n}acompañar a la persona{n}de 'Shevat' hasta{n}la Yggdrasil?"
 f359-0013 3851cf5454692960 Elly{n}"Nosotros seguiremos{n}adelante...{p}Citan, Bart, ¿podrían{n}acompañar a la persona{n}de 'Shevat' hasta{n}la Yggdrasil?"
-f359-0017 89abf311935ba16d Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona{p}de 'Shevat'. Nosotros{n}seguiremos adelante...{p}Bart, Rico, ¿pueden{n}rescatar{n}a ese 'shevatiano' y{p}acompañarlo hasta la{n}Yggdrasil, por favor?"
-f359-0018 39ce8ff379e35659 Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona{p}de 'Shevat'. Nosotros{n}seguiremos adelante...{p}Citan, Rico, ¿pueden{n}rescatar a ese{n}'shevatiano'{p}y acompañarlo hasta la{n}Yggdrasil, por favor?"
-f359-0019 a38bba12fd926a6d Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona{p}de 'Shevat'. Nosotros{n}seguiremos adelante...{p}Citan, Bart, ¿pueden{n}rescatar a ese{n}'shevatiano'{p}y acompañarlo hasta la{n}Yggdrasil, por favor?"
-f359-0020 f6aef77efe6c7155 Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona{p}de 'Shevat'. Nosotros{n}seguiremos adelante...{p}Bart, Rico, ¿pueden{n}rescatar{n}a ese 'shevatiano' y{p}acompañarlo hasta la{n}Yggdrasil, por favor?"
+f359-0017 89abf311935ba16d Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona de 'Shevat'.{p}Nosotros seguiremos{n}adelante...{p}Bart, Rico, ¿pueden{n}rescatar a ese{n}'shevatiano' y acompañarlo{n}hasta la Yggdrasil,{p}por favor?"
+f359-0018 39ce8ff379e35659 Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona de 'Shevat'.{p}Nosotros seguiremos{n}adelante...{p}Citan, Rico, ¿pueden{n}rescatar a ese{n}'shevatiano' y acompañarlo{n}hasta la Yggdrasil,{p}por favor?"
+f359-0019 a38bba12fd926a6d Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona de 'Shevat'.{p}Nosotros seguiremos{n}adelante...{p}Citan, Bart, ¿pueden{n}rescatar a ese{n}'shevatiano' y acompañarlo{n}hasta la Yggdrasil,{p}por favor?"
+f359-0020 f6aef77efe6c7155 Elly{n}"Mientras revisaba la base{n}de datos, descubrí algo...{p}Parece que el Ethos tiene{n}retenida aquí a una{n}persona de 'Shevat'.{p}Nosotros seguiremos{n}adelante...{p}Bart, Rico, ¿pueden{n}rescatar a ese{n}'shevatiano' y acompañarlo{n}hasta la Yggdrasil,{p}por favor?"
 f359-0023 b49b47f381c87558 Citan{n}"Estoy seguro.{wait 30}{n}Esto tiene que ser el{n}banco de datos del Ethos."
 f359-0024 97614ae66ee044a3 Citan{n}"Vaya...{wait 5}una instalación de{n}esta magnitud sería difícil{p}de encontrar incluso en{n}Solaris.{p}¿Por qué tendría el Ethos{n}algo así?"
 f359-0025 a8c12b4e8ecb3ae0 Citan{n}"Hmm{wait 5}...{wait 10}{n}la trama se complica{wait 5}..."
-f359-0026 c17f5b34d4726462 Citan{n}"Aquí hay un registro{n}relativamente reciente{wait 5}...{p}También indica que se ha{n}enviado a Solaris a una{n}gran cantidad de{n}personas{wait 5}...{p}La mayoría eran personas{n}que habían acudido al{n}Ethos{p}en busca de ayuda o de{n}salvación espiritual."
+f359-0026 c17f5b34d4726462 Citan{n}"Aquí hay un registro{n}relativamente reciente{wait 5}...{p}También indica que se ha{n}enviado a Solaris a una{n}gran cantidad de{n}personas{wait 5}...{p}La mayoría eran personas{n}que habían acudido al{n}Ethos en busca de ayuda o{n}de salvación espiritual."
 f359-0027 0458889499ae7629 Citan{n}"Esta podría ser{n}la respuesta..."
 f359-0028 0a9ae7663f0a57dc Billy{n}"¿Qué?"
 f359-0029 7f22c0705002a3d4 Citan{n}"El plan de recuperación{n}44."
 f359-0030 b23ad3a38b9bbe12 Bart{n}"¿El plan de recuperación{n}44?{p}¿No es de lo que hablaba{n}el capitán del Thames?"
 f359-0031 3f6d3ff4a8ba01bb Citan{n}"Este es el único plan que{n}no está vinculado a{n}Solaris...{p}Debió de iniciarlo el{n}propio Ethos, como un{n}proyecto completamente{n}independiente.{p}Comenzó hace unos{n}... 19 años.{pause}{n}Permítanme mostrar{n}los datos..."
 f359-0032 66d7237e20ed1675 Citan{n}"Según esto, parece que{n}bajo Aquvy yace una{n}civilización ultraantigua.{p}Han hecho un enorme número{n}de sondeos y han obtenido{n}de las ruinas una gran{n}cantidad de recursos.{p}Armas biológicas{wait 5}...{wait 5}{n}armas reactivas{wait 5}...{wait 5}{n}Hmm{wait 5}...{wait 5}ya veo, esta debe{n}de ser su intención{wait 5}...{p}Según mi valoración de las{n}circunstancias, el Ethos{n}intenta separarse de{n}Solaris{wait 5}...{p}Y una vez libre de su{n}amo,{wait 5} es probable que{n}intente{wait 5} dominar el{n}mundo{wait 5} por su cuenta."
-f359-0033 2d88923e20362e40 Rico{n}"Independizarse{wait 5}...{wait 5}e{n}intentar dominar el{p}mundo{wait 5}...{wait 5}{n}¡Qué ambiciosos!"
+f359-0033 2d88923e20362e40 Rico{n}"Independizarse{wait 5}...{wait 5}e{n}intentar dominar el{n}mundo{wait 5}...{wait 5}{p}¡Qué ambiciosos!"
 f359-0034 aa086b0b04838e10 Citan{n}"Sí, pero las verdaderas{n}intenciones del Ethos son{n}bastante evidentes{wait 5}...{p}El hecho de que no informen{n}de los resultados,{wait 5} y menos{n}aún de la existencia del{n}yacimiento,{wait 5} los delata{wait 5}...{p}¡El Ethos planea rebelarse{n}monopolizando los recursos{n}de esta civilización{n}ultraavanzada!{p}De hecho, esta clase de{n}rebeliones ha sido bastante{n}común{wait 5}..."
 f359-0035 e0aa7dcb26f65696 Citan{n}"Sí, seguramente sea eso.{pause}{n}¿Seguimos? ¡Aún podría{n}haber más que descubrir!"
-f359-0036 4b7d551871200425 Citan{n}"No hay problema.{wait 10} He{n}configurado el sistema{p}para{n}que ese cerrojo siga{n}abierto."
+f359-0036 4b7d551871200425 Citan{n}"No hay problema.{wait 10}{p}He configurado el sistema{n}para que ese cerrojo siga{n}abierto."
 f359-0037 aa81f5128b37b6d6 Bart{n}"¿El banco de datos{n}del Ethos?"
 f359-0038 8948b6dcff7ab9b8 Bart{n}"En fin, esto no es algo{n}que podamos revisar{n}nosotros solos.{p}Deberíamos traer aquí a{n}todos los que podamos."
 f359-0039 ac7e2f9d72cc17ce Bart{n}"Así que es eso."
-f359-0040 b97e0becc7f67045 Bart{n}"Sí, pero aun así{wait 5}...{wait 10}{n}este sitio está{p}condenadamente bien{n}equipado.{wait 10} ¡Míralo!"
+f359-0040 b97e0becc7f67045 Bart{n}"Sí, pero aun así{wait 5}...{wait 10}{p}este sitio está{n}condenadamente bien{n}equipado.{wait 10} ¡Míralo!"
 f359-0041 f32acff0805a250d Bart{n}"¡¿Así que {wait 10}Solaris?!"
 f359-0042 ac1b9fabc0032919 Bart{n}"¿Qué está pasando aquí?{n}¿Qué es este lugar?{p}Oye,{wait 10} ¡Billy!{n}¡¿Sabes algo de esto?!"
 f359-0043 59327a3c1ae372f2 Bart{n}"Citan, ¿qué es eso que{n}aparece ahí?"
@@ -1545,14 +1545,14 @@ f359-0051 46f193ec6b667954 Bart{n}"No serán todos, ¿verdad?{wait 10}{n}¿Qué 
 f359-0052 26d6939e58cc4d9d Billy{n}"Bueno{wait 15}...{wait 15}¿eh{wait 15}...?"
 f359-0053 1092a13beccf9b54 Bart{n}"Entonces todo se va{n}aclarando, ¿eh...?{wait 10}{n}¿Qué dices tú, Elly?"
 f359-0054 68be81271016a152 Rico{n}"Así que de aquí sacan{n}su mano de obra."
-f359-0055 da6dacecc490fd2b Billy{n}"A juzgar por nuestra{n}posición, esta sala está{p}justo debajo de la{n}catedral...{p}¿Podría ser este{wait 10} el banco{n}de datos del Ethos?"
-f359-0056 1f088f81f1ceba66 Billy{n}"Este banco de datos{n}guarda{p}toda la información{n}relacionada con el Ethos.{p}Desde el pasado hasta el{n}presente... ¡todo!{wait 10}{n}Esta instalación nos está{n}estrictamente prohibida.{p}Solo los de rango de{n}obispo pueden entrar{n}en esta zona."
+f359-0055 da6dacecc490fd2b Billy{n}"A juzgar por nuestra{n}posición,{p}esta sala está justo debajo{n}de la catedral...{p}¿Podría ser este{wait 10} el banco{n}de datos del Ethos?"
+f359-0056 1f088f81f1ceba66 Billy{n}"Este banco de datos{n}guarda toda la información{n}relacionada con el Ethos.{p}Desde el pasado hasta el{n}presente... ¡todo!{wait 10}{n}Esta instalación nos está{n}estrictamente prohibida.{p}Solo los de rango de{n}obispo pueden entrar{n}en esta zona."
 f359-0057 7501bc39ff3c4a05 Billy{n}"No me preguntes{wait 5}...{wait 10}{n}¿Cómo voy a saberlo{wait 5}...?{wait 10}{p}¡Es la primera vez que{n}entro aquí{wait 5}...!"
 f359-0058 16dd73d702cf9ea7 Billy{n}"P-pero, ¡¿por qué el{n}Ethos enviaría suministros{n}a Solaris?!"
 f359-0059 6f32760713ed76cb Billy{n}"¡No puede ser!{wait 5}{n}¡Nunca había oído{n}nada parecido!"
 f359-0060 e4e427196097aa08 Billy{n}"Se convirtieron en{n}Etones... como yo..."
 f359-0061 9b4b72b5c63592c2 Billy{n}"¡Pero eso es{n}imposible{wait 5}...!{wait 5}{n}¿Cómo puede ser{wait 5}...?"
-f359-0062 47654a7864d45f92 Billy{n}"Aun{wait 5} si así fuera,{wait 5}{n}¡¿quién mataría a toda esa{p}gente del Ethos,{wait 5} y por{n}qué?!"
+f359-0062 47654a7864d45f92 Billy{n}"Aun{wait 5} si así fuera,{wait 5} ¡¿quién{n}mataría a toda esa gente{n}del Ethos,{wait 5} y por qué?!"
 f359-0063 d4181130e5fe61d9 Billy{n}"El Ethos{wait 5}...{wait 5}{n}Mi Ethos{wait 5}...{wait 5}{n}Mi fe{wait 5}...{wait 5}"
 f359-0064 7e643ea95634d76f Bart{n}"¡Oye, Billy!{p}¿Cuánto tiempo piensas{n}seguir así?{n}¡Contrólate!"
 f359-0065 52e391483d60dd1b Citan{n}"Todo esto no es más que{n}especulación basada en{n}pruebas circunstanciales.{p}Sería mejor que usted{n}comprobara la verdad con{n}sus propios ojos."
@@ -1572,13 +1572,13 @@ f359-0079 5e946443193a9883 Elly{n}"¡No pongan esa cara!{p}Por muy vasto que sea
 f359-0088 fa4ed934f363b65d Elly{n}"Sigan ustedes.{p}Rico y yo llevaremos al{n}'shevatiano' de vuelta{n}a la Yggdrasil."
 f359-0089 0983a122f14dab3d Elly{n}"Sigan ustedes.{p}Bart y yo llevaremos al{n}'shevatiano' de vuelta{n}a la Yggdrasil."
 f359-0091 9368eb34b6c84cb7 Elly{n}"Sigan ustedes.{p}Citan y yo llevaremos al{n}'shevatiano' de vuelta{n}a la Yggdrasil."
-f359-0100 f93bc190e75fc1a3 Citan{n}"Si el Ethos está de{n}verdad{p}bajo el control de{n}Solaris,{n}como sospechamos...{p}...entonces aquí debería{n}haber algo que demuestre{n}la conexión entre ambos.{p}Deberían seguir adelante{n}y ver si encuentran{n}más pistas."
-f359-0102 5dd8b3f34cf4fff1 Citan{n}"Vaya...{wait 5} una instalación de{n}esta magnitud sería difícil{p}de encontrar incluso en{n}Solaris.{p}¿Por qué tendría el Ethos{n}algo así?"
+f359-0100 f93bc190e75fc1a3 Citan{n}"Si el Ethos está de{n}verdad bajo el control de{n}Solaris,{p}como sospechamos...{p}...entonces aquí debería{n}haber algo que demuestre{n}la conexión entre ambos.{p}Deberían seguir adelante{n}y ver si encuentran{n}más pistas."
+f359-0102 5dd8b3f34cf4fff1 Citan{n}"Vaya...{wait 5}{p}una instalación de esta{n}magnitud sería difícil de{n}encontrar incluso en{n}Solaris.{p}¿Por qué tendría el Ethos{n}algo así?"
 f359-0109 983112873769b3b5 Citan{n}"Este es el único plan que{n}no está vinculado a{n}Solaris...{p}Debió de iniciarlo el{n}propio Ethos, como un{n}proyecto completamente{n}independiente.{p}Comenzó hace unos{n}...19 años.{pause}{n}Permítanme mostrar{n}los datos..."
 f359-0110 3137e6d1a4a66725 Citan{n}"Según esto, parece que{n}bajo Aquvy yace una{n}civilización ultraantigua.{p}Han hecho un enorme número{n}de sondeos y han obtenido{n}de las ruinas una gran{n}cantidad de recursos.{p}Armas biológicas{wait 5}...{wait 5}{n}armas reactivas{wait 5}...{wait 5}{n}Hmm{wait 5}...{wait 5}ya veo, esta debe{n}de ser su intención{wait 5}...{p}Según mi valoración de las{n}circunstancias, el Ethos{n}intenta separarse de{n}Solaris{wait 5}...{p}Y una vez libre de su{n}amo,{wait 5} es probable que{n}intente{wait 5} dominar el{n}mundo{wait 5} por su cuenta."
-f359-0111 36d8154604b8b8c8 Rico{n}"Independizarse{wait 5}...{wait 5}e{n}intentar dominar el{p}mundo{wait 5}...{wait 5}{n}Es un plan increíble."
-f359-0114 f0e4138a0598b022 Citan{n}"No hay problema. He{n}configurado el sistema{p}para{n}que ese cerrojo siga{n}abierto."
-f359-0115 67e0dc120dfd228d Bart{n}"Pero ¿quién iba a{n}imaginar{p}que Solaris estaba detrás{n}del Ethos?{p}Parece que este asunto{n}esconde más de lo que{n}se ve a simple vista."
+f359-0111 36d8154604b8b8c8 Rico{n}"Independizarse{wait 5}...{wait 5}e{n}intentar dominar el{n}mundo{wait 5}...{wait 5}{p}Es un plan increíble."
+f359-0114 f0e4138a0598b022 Citan{n}"No hay problema.{p}He configurado el sistema{n}para que ese cerrojo siga{n}abierto."
+f359-0115 67e0dc120dfd228d Bart{n}"Pero ¿quién iba a{n}imaginar que Solaris{n}estaba detrás del Ethos?{p}Parece que este asunto{n}esconde más de lo que{n}se ve a simple vista."
 f359-0116 1ab6b383a24240ea Bart{n}"Sí, eso parece...{n}Vaya sorpresa."
 f359-0124 05aa2b60cc982253 Bart{n}"Aquí también hay un{n}interruptor de terminal.{wait 10}{n}...{wait 10}¿Eh?{p}¿Qué son estas letras?{wait 10}{n}No puedo leer esto."
 f359-0132 213324d94b2bd587 Rico{n}"Qué sensación más{n}extraña,{p}pensar que Solaris pudo{n}dirigir nuestra historia."
@@ -1589,14 +1589,14 @@ f359-0142 ffa2860d6aef7a92 {slow 2}Informe 50224: Bloque D, Nortune
 f359-0143 18b0bf2d65810ea1 Transfiriendo todos los datos de{n}Battler. Se envían también a{n}Solaris los datos de salud del{n}Battler Clase A y las tasas{n}estimadas de adaptación al uso{n}de semihumanos Tipo Y...{done 30}
 f359-0144 b744fe0bdb86e2b2 {slow 1}Informe 50227: Bloque D, Nortune
 f360-0000 a6d1e53a1cf25d23 Fei{n}"¡Un momento!{n}Eso significa{wait 5}..."
-f360-0001 b562fcfe6552e1dc Fei{n}"¡El capitán y su{n}tripulación{p}están en peligro!{wait 10} ¡No{n}saben nada de esto!"
+f360-0001 b562fcfe6552e1dc Fei{n}"¡El capitán y su{n}tripulación están en{n}peligro!{wait 10}{p}¡No saben nada de esto!"
 f360-0002 3764274f162d6e39 Fei{n}"Hay un portal bajo{n}el pozo."
 f360-0003 4fa538755951b06b Fei{n}"...Demasiado lejos."
 f360-0004 63be1839c263d2f8 Fei{n}"Olvidémoslo.{n}Es imposible llegar al{n}portal desde aquí."
 f360-0005 c9818befb40a7d6d Elly{n}"¡Ese Gear es enorme!"
 f360-0006 43d201359e9bce37 Elly{n}"¿Un Gear móvil?"
 f360-0007 165f80bd2e695398 Elly{n}"¡Un momento!{n}Eso significa{wait 5}...{wait 5}"
-f360-0008 6660973916f5565d Elly{n}"¡El capitán y la{n}tripulación{p}están en peligro! {wait 10}{n}¡No saben nada de esto!"
+f360-0008 6660973916f5565d Elly{n}"¡El capitán y la{n}tripulación están en{n}peligro!{p}{wait 10} ¡No saben nada de esto!"
 f360-0009 be6278795bfbff31 Elly{n}"Hay un portal bajo{n}el pozo."
 f360-0010 da23d8853bbd9fde Elly{n}"...¿Cómo podemos llegar{n}allí...?{n}Está demasiado lejos."
 f360-0011 3422dc4489ab9cca Elly{n}"Es imposible llegar al{n}portal desde aquí.{n}Olvidémoslo."
@@ -1610,7 +1610,7 @@ f360-0018 3a2efa8c7237b586 Citan{n}"No parece posible{n}llegar al portal{n}desde
 f360-0022 9c7687a8bcfbf0a0 Bart{n}"¡¿Qué{wait 10} es ese Gear{n}enorme?!"
 f360-0023 e32ede71d01e6405 Bart{n}"¡¿Un Gear móvil?!{wait 10}{n}¿Qué demonios es eso?"
 f360-0024 044fbcba04f738a6 Bart{n}"¡Eh, eh, eh!{n}¡¿Eso significa...?!"
-f360-0025 23865ba617086bdf Bart{n}"¡El capitán y la{n}tripulación{p}están en peligro!{wait 10} ¡No{n}saben nada de esto!"
+f360-0025 23865ba617086bdf Bart{n}"¡El capitán y la{n}tripulación están en{n}peligro!{wait 10}{p}¡No saben nada de esto!"
 f360-0026 76eeb24a02e08a0a Bart{n}"Ahí al fondo está el{n}portal, bajo el pozo."
 f360-0027 d8b1cde112b70ca0 Bart{n}"...Llegamos hasta aquí,{n}pero ¿cómo llegamos al{n}portal desde aquí?"
 f360-0028 d91823839fb22b7f Bart{n}"Es imposible llegar al{n}portal desde aquí.{n}Olvidémoslo."
@@ -1656,15 +1656,15 @@ f364-0000 13a3f9f8aefcc1aa  Miang{n}"...¿Lo notó?{n}Su Gear está despertando{
 f364-0001 b3ea8cc8cd0b0ae7  Miang{n}"Sus amigos se dirigen a{n}Zeboim, sellada desde hace{n}4000 años.{p}Usted sabe mejor que yo{n}lo que hay allí.{p}Seguramente él no le dará{n}nada a nadie. Pero es algo{n}que ambos necesitamos.{p}¿Entiende lo que quiero{n}decir?"
 f365-0000 d49326fbb03d2a70 Aquí
 f365-0002 1d4d0022846ecc5a ?{n}Subir{n}Bajar{n}Cancelar
-f366-0000 765c6c6f41eccf0a Krelian{n}"Los Corderos 03, 05 y 11{n}están dañados. Recuperen{p}solo los que estén{n}intactos.{p}Eliminen el resto de la{n}basura.{p}Usen a los sujetos de{n}prueba, los Wels, para la{n}recuperación y la{n}eliminación."
+f366-0000 765c6c6f41eccf0a Krelian{n}"Los Corderos 03, 05 y 11{n}están dañados.{p}Recuperen solo los que{n}estén intactos.{p}Eliminen el resto de la{n}basura.{p}Usen a los sujetos de{n}prueba, los Wels, para la{n}recuperación y la{n}eliminación."
 f366-0001 22c9e943b6ef296d Krelian{n}"Ya veo...{p}Lo que han buscado durante{n}más de 500 años... Esto{n}promete ser interesante."
 f366-0002 93a0e4817629e307 Krelian, hay varios barcos{n}que no han sido{n}vaporizados. ¿Qué{n}debemos hacer?
 f366-0003 c50acd0b08715767 Limpieza al 80%.{n}Por ahora, nuestro rumbo{n}está despejado.
 f366-0004 662d423c72837e91 Liberando a los Wels.
 f366-0005 eaa8a7ca2e2efb28 Cañón principal: 20 hasta{n}que se recargue la{n}energía.{p}Ingeniería, lista para una{n}demostración completa.{n}Nave principal: unidades{n}militares en espera.
-f366-0006 b535f1edc9e4332a Hemos confirmado la{n}ubicación de la baliza de{n}Stein.{p}De los 130 sitios de{n}investigación y{n}excavación,{p}está en el pico más{n}meridional.
+f366-0006 b535f1edc9e4332a Hemos confirmado la{n}ubicación de la baliza de{n}Stein.{p}De los 130 sitios de{n}investigación y{n}excavación, está en el{n}pico más meridional.
 f368-0000 7654de68abfc524e Citan{n}"Una esclusa de aire y un{n}equipo de escaneo bastante{n}rigurosos...{p}Aunque no parecen estar{n}operativos.{p}...El interior está tan{n}bien{n}conservado que el exterior{n}probablemente también..."
-f368-0001 68ea44e05a75ca61 Bart{n}"No me asustes.{n}¿Dices que hay gas{p}venenoso{n}o combustible reactivo?"
+f368-0001 68ea44e05a75ca61 Bart{n}"No me asustes.{p}¿Dices que hay gas{n}venenoso o combustible{n}reactivo?"
 f368-0002 d16e00d890e6984f Billy{n}"Qué instalación de{n}aislamiento tan buena{n}y bien equipada.{p}¿Podría ser{n}un hospital?{p}Pero la ciudad de afuera{n}no parece tan{n}contaminada..."
 f368-0003 271306a0486e15e4 Rico{n}"Algo de esto se parece al{n}asqueroso Distrito Central{n}de Nortune, pero...{p}Parece que aquí vive un{n}montón de maniáticos de{n}la limpieza."
 f368-0004 271dc44d1f6a83b1 {name 7}{n}"¡Qué puerta tan chuper!{n}La de antes me gustó, chu,{n}¡pero esta es aún mejor!"
@@ -1676,12 +1676,12 @@ f369-0003 37c7d26f8a36562d {speed 255}La conexión con la base{n}de datos se int
 f369-0004 eff0b0371a6df8a1 {speed 255}Seguridad interna del{n}reactor confirmada.{n}Restablezca el nivel{n}de emergencia.
 f369-0005 11cfb48ae03aced1 {speed 255}¿Restablecer el nivel{n}de emergencia?{n}     Restablecer{n}     Cancelar
 f369-0006 da1011b9e23a234e {speed 255}Espere, por favor.{wait 32}{n}Restablecimiento hecho.{n}Nivel de emergencia{n}actual: normal.
-f369-0007 38858835a6a618c0 {speed 255}Si no se restablece el{n}nivel de emergencia, no{n}podrán usarse las{p}instalaciones del{n}laboratorio principal.
-f369-0008 dbf6048386e6d78d {speed 255}Nivel de emergencia 5{p}Actualmente, se deniega el{n}acceso a todas las bases{n}de{p}datos del laboratorio{n}principal.
+f369-0007 38858835a6a618c0 {speed 255}Si no se restablece el{n}nivel de emergencia,{p}no podrán usarse las{n}instalaciones del{n}laboratorio principal.
+f369-0008 dbf6048386e6d78d {speed 255}Nivel de emergencia 5{p}Actualmente, se deniega el{n}acceso a todas las bases{n}de datos del laboratorio{n}principal.
 f369-0009 c80adcb4d892bbb4 {speed 255}Nivel de emergencia 5{p}Actualmente, el reactor{n}central está aislado.
 f372-0000 b15c1ed19d395246 Elly{n}"Qué edificio tan{n}extraño...{p}Parece que nos obligan{n}a dar un rodeo."
 f372-0001 c15107ac62777ec4 Elly{n}"Para...{n}sellar algo..."
-f372-0002 f857244479e721ab Citan{n}"...Los laberintos no{n}suelen{p}construirse para{n}protegerse{n}de los enemigos...{p}Normalmente se hacen para{n}sellar algo en su{n}interior."
+f372-0002 f857244479e721ab Citan{n}"...Los laberintos no{n}suelen construirse para{p}protegerse de los{n}enemigos...{p}Normalmente se hacen para{n}sellar algo en su{n}interior."
 f372-0003 72fd725b61d578a4 Bart{n}"...Qué edificio más{n}raro...{p}Esclusas de aire,{n}escáneres,{n}un pasillo circular.{p}Eso es.{n}...Parece que no querían{n}a nadie dentro...{p}Hmm, ahora parece en{n}ruinas,{n}como un sueño vacío{n}y hueco."
 f372-0004 4821906da3b01089 Bart{n}"...Caray...{p}¡No me asustes así!{n}¿Qué crees que hay{n}dentro?"
 f372-0005 16164055aa82f8f2 Billy{n}"Qué edificio tan poco{n}práctico... Parece que{n}rechaza a los forasteros."
@@ -1691,7 +1691,7 @@ f373-0000 088f16b9ac1d0598 {speed 255}La conexión con la base{n}de datos termin
 f373-0003 9c37f19030ee9cd2 {speed 255}Espere, por favor.{wait 32}{n}Restablecimiento hecho.{n}Nivel de emergencia{n}actual: normal.
 f373-0006 a359e04807fdac0c {speed 255}Nivel de emergencia 5{p}Actualmente, el reactor{n}central está aislado.
 f373-0007 2aa679f99b172a2f {speed 255}La conexión con la base{n}de datos se interrumpió{n}de forma inesperada.{p}Si no puede solucionarse,{n}contacte con el{n}administrador del sistema.
-f373-0011 e144f4224f4f8691 {speed 255}Si no se restablece el{n}nivel de emergencia, no{n}podrán usarse las{p}instalaciones del{n}laboratorio principal.
+f373-0011 e144f4224f4f8691 {speed 255}Si no se restablece el{n}nivel de emergencia,{p}no podrán usarse las{n}instalaciones del{n}laboratorio principal.
 f375-0000 be0dee05ad05a5be {speed 255}Restablezca el nivel de{n}emergencia en el terminal{n}más cercano.
 f375-0001 7f2d3b97e9c767f7 {speed 255}Nivel de emergencia 5{p}{speed 255}El botón de emergencia del{n}interior del reactor se{n}activó hace 34999999 horas.{p}A partir de aquí hay peligro{n}de contaminación por{n}nanomáquinas.{p}{speed 255}Al entrar en la sala,{n}ejecute un escaneo manual{n}y confirme la seguridad.{p}{speed 255}Tras confirmarla, restablezca{n}el nivel de emergencia en el{n}terminal más cercano.
 f375-0002 7fe3e9bc4a70e9ff ¿Ejecutar escaneo manual?{n}     Ejecutar{n}     Cancelar
@@ -1700,13 +1700,13 @@ f376-0000 3cebca07ab46d1ea Citan{n}"Este nivel está{n}completamente operativo."
 f376-0001 7dc6d2930b7cd789 'Aumentando la presión'{n}Espere, por favor.{done 50}
 f376-0002 8d363f2ecd473314 'Presión aumentada'{done 32}
 f376-0003 0ac5a03dbf041200 'Reduciendo la presión'{n}Espere, por favor.{done 50}
-f378-0000 0c98e4badfb4974e Elly{n}"'¡Oh, receptáculo de un{n}  alma nueva! Que el alma{p}  que en ti mora halle{n}paz.' "
+f378-0000 0c98e4badfb4974e Elly{n}"'¡Oh, receptáculo de un{n}  alma nueva!{p}Que el alma{n}  que en ti mora halle{n}paz.' "
 f378-0001 eaa895d389046cc4 Elly{n}"Citan...{wait 45}{n}¿Quién... soy yo...?{p}¿Qué estoy haciendo?{n}¿Qué estoy diciendo...?"
-f378-0002 dcaaa1b1236274b0 Citan{n}"...{wait 90}{n}Pase lo que pase,{p}necesitamos una{n}contraseña..."
+f378-0002 dcaaa1b1236274b0 Citan{n}"...{wait 90}{p}Pase lo que pase,{n}necesitamos una{n}contraseña..."
 f378-0003 b157e8fb9b6bb0c4 Citan{n}"...Está bien escondido...{wait 32}{n}en los huecos de los{n}datos...{p}No... ¿'huir'?...{n}...'por mi propia{n}voluntad'...{n}¿Qué es esto?"
-f378-0004 c0b41747bea6176e Citan{n}"...{wait 90}{n}¿Es esto... una{p}computadora{n}salvaje?{p}No, un registro{n}estructural{n}de la vida...{p}No, no es eso...{n}Un organismo..."
+f378-0004 c0b41747bea6176e Citan{n}"...{wait 90}{n}¿Es esto... una{n}computadora salvaje?{p}No, un registro{n}estructural{n}de la vida...{p}No, no es eso...{n}Un organismo..."
 f379-0000 3f889ad5f841b0db Citan{n}"! {p}¡Elly!"
-f379-0001 0f92886fa6aabfd0 Citan{n}"¿Sangre...?{p}Desde luego, está cubierto{n}de sangre... Y este...{n}calor abrasador... No,{n}¿quizá sea radiación?{p}Puede que sea un sistema{n}de{n}desinfección de{p}emergencia...{n}Estas marcas demuestran{n}que se ha usado..."
+f379-0001 0f92886fa6aabfd0 Citan{n}"¿Sangre...?{p}Desde luego, está cubierto{n}de sangre... Y este...{n}calor abrasador... No,{n}¿quizá sea radiación?{p}Puede que sea un sistema{n}de desinfección de{n}emergencia...{p}Estas marcas demuestran{n}que se ha usado..."
 f379-0003 d14b0dda5d0ad40a Citan{n}"¿Pero qué...?"
 f379-0004 edabdfcaec4f5a82 Citan{n}"Esta niña parece ser una{n}forma de vida artificial{n}creada dentro del reactor.{p}Seguramente la ensamblaron{n}en el reactor con esa serie{n}de la base de datos de la{n}sala de control...{p}Lo más probable es que{n}su cuerpo..."
 f379-0005 7218cbe0d476b441 Citan{n}"¡¡Alto ahí!!"{done 16}
@@ -1724,13 +1724,13 @@ f379-0016 18583a02ab615a95 Bart{n}"Citan... ¿qué es... esto?{n}Ni los cúmulos
 f379-0017 cbcb3a553cc2e04b Bart{n}"¿Pero qué...?{n}¡No te pases de lista!{n}¡Quítate de en medio!"
 f379-0018 e33b18e41b106103 Bart{n}"...{wait 45}{n}¿Van en serio{n}con esto...?"
 f379-0019 a57a14fc934e7b95 Billy{n}"Citan...{wait 10}{n}¿Esta niña...?{p}¿Cómo ha podido tomar{n}de repente forma{n}humana...?"
-f379-0020 e9a54f9ed0cc74b8 Billy{n}"¡¿Quiénes son ustedes,{n}por el cielo?! ¡No tenemos{p}tiempo que perder{n}hablando!"
+f379-0020 e9a54f9ed0cc74b8 Billy{n}"¡¿Quiénes son ustedes,{n}por el cielo?!{p}¡No tenemos tiempo que{n}perder hablando!"
 f379-0021 bb500612f605d0c6 Billy{n}"...{wait 45}¿Es que les sobra{n}el tiempo libre?"
 f379-0022 540e89e8c832c9e3 Billy{n}"Monseñor..."
-f379-0023 ab0552fc810432c4 Billy{n}"¿Una persona honorable?{n}Desde luego, ya no lo{p}considero a usted{n}honorable.{p}Eliminar al Ethos y a{n}cualquier humano de la{n}superficie que no comparta{n}su voluntad..."
+f379-0023 ab0552fc810432c4 Billy{n}"¿Una persona honorable?{p}Desde luego, ya no lo{n}considero a usted{n}honorable.{p}Eliminar al Ethos y a{n}cualquier humano de la{n}superficie que no comparta{n}su voluntad..."
 f379-0024 aed1eb864dda18ee Billy{n}"...Hay algo muy{n}equivocado{n}en eso.{p}La salvación por la fe es{n}algo que todos deberían{n}tener la misma oportunidad{n}de alcanzar."
-f379-0026 1a634196bc89b15f Billy{n}"Salvación o no...{n}¡¿Qué piensa hacer con{n}esta niña?!{p}Sé que sus actos no son{n}honorables.{p}Monseñor... Lamento{n}decirlo,{n}pero... no puedo formar{p}parte de lo que se{n}propone hacer."
-f379-0027 3973b8b27ade8f82 Rico{n}"¿Qué le pasa a esta cosa?{n}Ni nosotros, los{p}semihumanos,{n}sanamos tan rápido."
+f379-0026 1a634196bc89b15f Billy{n}"Salvación o no...{n}¡¿Qué piensa hacer con{n}esta niña?!{p}Sé que sus actos no son{n}honorables.{p}Monseñor... Lamento{n}decirlo, pero... no puedo{n}formar parte de lo que se{n}propone hacer."
+f379-0027 3973b8b27ade8f82 Rico{n}"¿Qué le pasa a esta cosa?{p}Ni nosotros, los{n}semihumanos, sanamos tan{n}rápido."
 f379-0028 e73895fb73db43c7 Rico{n}"No saben lo que dicen...{p}¿De verdad quieren pelear?{n}Preferiría que simplemente{n}se apartaran."
 f379-0029 0273953b47c4a08b Rico{n}"...{wait 45}Si van a seguir{n}hablando un rato,{n}déjenme pasar delante."
 f379-0030 41a9f8fe1dd50092 {name 7}{n}"¿Qué pasa? ¿Qué pasa?{p}¿Qué le pasa a echta niña?{n}¿Cómo es que ya está{n}lichta, chu?"
@@ -1738,12 +1738,12 @@ f379-0031 3ec4a730a8d8ee2e {name 7}{n}"Creo que nos están{n}inchultando, chu...
 f379-0032 c3cd8d3454374b03 {name 7}{n}"¡¡Cómo se atreven a{n}decirle{n}eso a una dama, chu!!{p}¡No tenemos tiempo de{n}jugar ahora, chu!{n}¡Apártenche!"
 f379-0033 a91bf5d059f6e9d4 {name 7}{n}"...¿Ya puedo irme, chu?"
 f379-0034 325ba7e5064438c0 Stone{n}"...Construida a partir de{n}máquinas autónomas a{n}escala molecular...{p}En otras palabras, una{n}colonia de nanomáquinas."
-f379-0035 50c4ab7b9e9d4adb Stone{n}"Me llevaré esa colonia{n}de nanomáquinas,{n}gracias...{p}Es el ser, o -factor-{n}clave,{n}con el que Dios nos guiará{p}para liberar a la{n}humanidad de su yugo."
+f379-0035 50c4ab7b9e9d4adb Stone{n}"Me llevaré esa colonia{n}de nanomáquinas,{n}gracias...{p}Es el ser, o -factor-{n}clave, con el que Dios nos{n}guiará para liberar a la{n}humanidad de su yugo."
 f379-0036 62803bf1cced828c Stone{n}"Así que, si me{n}disculpan..."
-f379-0037 4493794e10981ef2 Stone{n}"Ah, hermano Billy.{n}Tú también estás aquí.{n}Esto simplifica las cosas.{p}Sé que lo entenderás...{n}Esta colonia de{n}nanomáquinas{p}debe estar en manos de una{n}persona honorable.{p}Está destinada a ser la{n}'salvación de la{n}humanidad'."
-f379-0038 400a4ab6995b81aa Stone{n}"¿Qué problema hay en{n}eliminar a quienes no son{n}aptos para la 'salvación'?{p}Vamos, ¿acaso nuestra fe{n}no{n}se basa en el precepto de{p}que 'solo los elegidos se{n}salvarán'?"
+f379-0037 4493794e10981ef2 Stone{n}"Ah, hermano Billy.{n}Tú también estás aquí.{n}Esto simplifica las cosas.{p}Sé que lo entenderás...{p}Esta colonia de{n}nanomáquinas debe estar en{n}manos de una persona{n}honorable.{p}Está destinada a ser la{n}'salvación de la{n}humanidad'."
+f379-0038 400a4ab6995b81aa Stone{n}"¿Qué problema hay en{n}eliminar a quienes no son{n}aptos para la 'salvación'?{p}Vamos, ¿acaso nuestra fe{n}no se basa en el precepto{n}de que 'solo los elegidos{n}se salvarán'?"
 f379-0039 a8b110828241079a Stone{n}"¿Dices que puedes salvar{n}a toda la humanidad?{p}Si Krelian usa la colonia{n}de nanomáquinas, al menos{n}podremos salvar a algunos{n}elegidos.{p}Pero tú no sabes cómo{n}utilizarla.{n}No puedes salvar a nadie.{p}¿Estás dispuesto a asumir{n}la responsabilidad de la{n}pérdida que causarás a{n}la humanidad?"
-f379-0040 879cb9aba56a4221 Stone{n}"Mi trabajo ahora es{n}llevarle esta colonia de{n}nanomáquinas a Krelian.{p}Verán, a diferencia del{n}Ethos, no buscamos las{n}armas antiguas que yacen{p}en{n}las ruinas de la ciudad.{p}No creo que choquemos{n}con sus intereses."
+f379-0040 879cb9aba56a4221 Stone{n}"Mi trabajo ahora es{n}llevarle esta colonia de{n}nanomáquinas a Krelian.{p}Verán, a diferencia del{n}Ethos,{p}no buscamos las armas{n}antiguas que yacen en las{n}ruinas de la ciudad.{p}No creo que choquemos{n}con sus intereses."
 f379-0041 ae46cd7fee1e12b6 Stone{n}"Veo que no he logrado{n}hacerte entender...{wait 32}{n}Entonces no hay remedio...{p}No tengo tiempo para seguir{n}convenciéndote.{n}Discúlpame, pero debo{n}adelantarme."
 f379-0042 4594531426e16251 Stone{n}"Siento haberlas hecho{n}esperar, señoritas...{p}Es hora de que hagan{n}su trabajo, Elements."
 f379-0043 9389501b5673d4ff Stone{n}"¡Tolone! ¡Seraphita!{n}¡Gánenme todo el tiempo{n}que puedan!"
@@ -1752,8 +1752,8 @@ f379-0045 41ebe97f955f0ffb Stone{n}"En realidad, Krelian no{n}me{n}ha contado gr
 f379-0046 bc728a565edf2450 ...¡Hmpf!
 f379-0047 cac3fe39faff2ea7 Tolone{n}"¡Ya lo sabemos, ya lo{n}sabemos! ¡Deja de darnos{n}órdenes de una vez!"
 f379-0048 4aa1fd4895de6680 Tolone{n}"Sí, claro.{n}Solo porque son órdenes{n}de Ramsus.{p}¡Cielos...!{n}Ahora nos tiene{n}protegiendo a esta{n}basura."
-f379-0049 14d6f21315d4cfa1 Tolone{n}"Bueno, así están las{n}cosas,{p}amigos... Nos ayudarían{n}mucho si se dieran prisa{n}en perder."
-f379-0050 fb50d53d58652fa3 Tolone{n}"¡Uy, perdo～nen!{n}Pero todavía no podemos{n}dejarlos ir...{p}La verdad, Krelian nos da{n}bastante igual, pero si{n}hacemos un trabajo{p}chapucero,{n}Ramsus quedará mal.{p}Pero, gracias a que{n}ustedes,{n}tontos, la revivieron,{p}terminaremos esta misión{n}antes de lo previsto."
+f379-0049 14d6f21315d4cfa1 Tolone{n}"Bueno, así están las{n}cosas, amigos...{p}Nos ayudarían mucho si se{n}dieran prisa en perder."
+f379-0050 fb50d53d58652fa3 Tolone{n}"¡Uy, perdo～nen!{n}Pero todavía no podemos{n}dejarlos ir...{p}La verdad, Krelian nos da{n}bastante igual, pero si{n}hacemos un trabajo{n}chapucero,{p}Ramsus quedará mal.{p}Pero, gracias a que{n}ustedes, tontos, la{n}revivieron,{p}terminaremos esta misión{n}antes de lo previsto."
 f379-0051 0e6dfdf799d212b5 Tolone{n}"Ay, Sera...{n}¡No les digas eso!{p}¡Justo cuando lo estaba{n}preparando todo para que{n}pareciéramos{p}psicológicamente{n}superiores! Maldición..."
 f379-0052 3a3ca4b93698a9be Tolone{n}"¡Es 'Cerebro{n}Positrónico-Fotónico',{n}idiota!{p}¿'Cerebro{n}Gin-tónico-Futón'...?{n}¡Me haces parecer una{n}borracha dormilona!{p}(Ya es bastante malo de{n}por sí... 'Cíborg de{n}Cerebro{n}Positrónico-Fotónico'...{p}¡Seguro que eso nos mete{n}en{n}líos con los creadores de{n}'Star Trech'!)"
 f379-0053 6ca24f64f7501ba3 Tolone{n}"¡¡Uy!! Perdón."
@@ -1784,7 +1784,7 @@ f383-0006 07c1fb6535590e41 Citan{n}"¡¡Obispo Stone!!{n}¡¡Espere!!"
 f383-0007 4ad0481f0a67ca65 Bart{n}"¡Eh, Citan!"{done 24}
 f383-0008 49120f175efc5a88 Bart{n}"Una ciudad...{n}Una ciudad bajo tierra...{p}¿Esto... también es una{n}ruina?"
 f383-0009 5561735a95d4ba65 Bart{n}"...Ese Gear..."{done 32}
-f383-0010 621d5bc7d7260a55 Bart{n}"¿Quién demonios eres?{p}¡No he olvidado que te{n}debo{n}una por lo que le hiciste{p}a la Yggdrasil! ¡¡Al menos{n}dinos tu nombre!!"
+f383-0010 621d5bc7d7260a55 Bart{n}"¿Quién demonios eres?{p}¡No he olvidado que te{n}debo una por lo que le{n}hiciste a la Yggdrasil!{p}¡¡Al menos dinos tu{n}nombre!!"
 f383-0011 54dfc616e75ffe8a Bart{n}"Demasiado fuerte...{wait 32}{n}¿Eh?"
 f383-0012 2ee7c8cbfcbb0fce Billy{n}"¿Pero qué...?"{done 24}
 f383-0013 6267a70e8c4cd821 Billy{n}"Son las ruinas de una{n}ciudad...{p}Había oído hablar de{n}ella, pero..."
@@ -1816,7 +1816,7 @@ f386-0002 1ddd19c498c92741  ？{n} {FFFF}{FFFF}{FFFF}{FFFF}subir{n} {FFFF}{FFFF}
 f388-0000 39cf40129b131f62 ¿Quieres...{wait 16}el poder?{done 84}
 f388-0001 66bdb5d57d002e8b Elly{n}"Es inútil, no logra{n}atravesarla..."
 f388-0002 476f60d668836c11 Citan{n}"No logramos{n}atravesarla..."
-f388-0003 55e78dd53fb25ebf Citan{n}"...{wait 32}{n}Hay algún tipo de{n}barrera.{p}Algún sentimiento{n}negativo... odio,{n}convertido{p}de algún modo en Éter, que{n}forma una barrera...{p}Si pudiéramos convertir{n}también nuestra firme{n}voluntad en Éter y{n}devolvérsela..."
+f388-0003 55e78dd53fb25ebf Citan{n}"...{wait 32}{n}Hay algún tipo de{n}barrera.{p}Algún sentimiento{n}negativo...{p}odio, convertido de algún{n}modo en Éter, que forma{n}una barrera...{p}Si pudiéramos convertir{n}también nuestra firme{n}voluntad en Éter y{n}devolvérsela..."
 f388-0004 d9ba378e5a1b5990 Citan{n}"E-eso es un Buntline...{p}Un Gear cañón de Éter en{n}el{n}que el piloto va dentro{n}del propio proyectil.{p}¡Si lo usamos, podremos{n}romper el poder negativo{n}del odio de Stone!{p}...S-sin embargo..."
 f388-0005 5d7f3b17b611ee4c Bart{n}"¡Es inútil!{n}¡¡No la atravesó!!"
 f388-0006 b58af781a3eccd7f Billy{n}"¡Maldito...!{n}Usaste a los Wels...{n}¡contra mi madre...!"
@@ -1830,7 +1830,7 @@ f388-0017 c5495ba79f038106 Grahf{n}"Todo este poder es falso.{n}¿Crees que pued
 f388-0018 8e5be0dad95a4fa4 Grahf{n}"Un cuerpo falso.{n}Un falso despertar.{n}¡Todo es inútil!"
 f388-0019 a33e7eb5de449f0d Grahf{n}"¡Yo te daré{n}el poder!"
 f388-0020 95ec9dbaa2b2a896 Stone{n}"Observar... Qué manera{n}tan retorcida...{p}Basta con encargarse de{n}ello y se acabó..."
-f388-0021 92fd9c1fec12266f Stone{n}"A todos los que se{n}vuelvan{p}enemigos de los sagrados{n}Gazel, los eliminaré.{p}Arrepiéntete ahora."
+f388-0021 92fd9c1fec12266f Stone{n}"A todos los que se{n}vuelvan enemigos de los{n}sagrados Gazel,{p}los eliminaré.{p}Arrepiéntete ahora."
 f388-0022 428b35f45b64dee4 Stone{n}"¿Q-quién, {wait 7}quién es{n}usted?"
 f388-0023 dab9cb3edde8c898 Stone{n}"¿Poder?{n}Hmpf, ¡aquí dentro{n}hay poder!{p}¡Recibí este cuerpo{n}de Krelian!"
 f388-0024 51aa810d05936b61 Stone{n}"¿Qué quiere decir{n}con poder falso?"
@@ -1845,7 +1845,7 @@ f389-0002 e9963f8e357145ca Kim{n}"Por muchas veces que{n}reescribamos los códig
 f389-0003 a96d5cc5e2de70c7 Kim{n}"Esta niña... alberga{n}nuestros futuros y{n}posibilidades..."
 f389-0004 8126eaa2b412ac44 Elly{n}"Una colonia de{n}nanomáquinas..."
 f390-0001 8f1f5dfa7d7aa6b6 Kim{n}"...Es inútil...{n}...No va a funcionar..."
-f390-0002 a9d618976053be42 Kim{n}"Tenemos que romper el{n}hechizo como sea, o los{p}humanos de este planeta{n}se extinguirán.{p}No, los humanos me dan{n}igual... La vida misma{n}quedará arruinada si no{n}hacemos algo..."
+f390-0002 a9d618976053be42 Kim{n}"Tenemos que romper el{n}hechizo como sea,{p}o los humanos de este{n}planeta se extinguirán.{p}No, los humanos me dan{n}igual... La vida misma{n}quedará arruinada si no{n}hacemos algo..."
 f390-0003 a945e2d0edf0816a Kim{n}"Una...{wait 45}{n}vida pura...{wait 15}{n}no maldita..."
 f390-0004 c0917ff972ac2c7e Kim{n}"Una vida pura..."
 f392-0000 2d3ea7e9a339d354 {speed 255}...el excampeón de los pesos{n}pesados de la WWW y estrella{n}de 5 películas de éxito BIG{n}JOE (nombre real: Joey{n}Balboa) sumó el título de{n}mejor jugador del partido de{n}la NBA a sus logros del año,{n}entre ellos el Grand Slam de{n}Wimbledon, la triple corona{n}del béisbol y el Pulitzer.{p}Pero en la ceremonia de{n}entrega de premios, al ir a{n}estrechar la mano, resbaló,{n}se golpeó la cabeza y volvió{n}a casa con daño cerebral,{n}quemado y creyéndose{n}Elvis...
@@ -1859,10 +1859,10 @@ f394-0002 681ef91a96d4013e ¡Basta!{n}¿Quién es esta mujer...?
 f394-0003 41564e42dcd7e37f Miang, tal como era en la{n}época de Zeboim.{n}Pero no sé quién era su{n}cuerpo anfitrión.{p}Vivía al lado del Primer{n}Ministro, manipulando{n}el mundo entre{n}bastidores.
 f394-0004 eddf40e71ae9f414 ¿Para resucitar a Deus?
 f394-0005 19bc44a02a9ec8e5 Al principio, sí.{n}Pero después fue distinto.{p}Por aquel entonces, mucha{n}gente no podía tener hijos.{n}Eran humanos defectuosos...{p}Así que... ella lo rehízo{n}todo.
-f394-0006 5b66929e2a0b5776 Justo antes de que la guerra{n}exterminara al hombre, nació{n}un nuevo ser para engendrar{n}a la siguiente generación.{p}¿Recuerdas los misiles de{n}las{n}instalaciones del Mass{p}Driver?{n}Era lo más importante para{n}el pueblo de Zeboim.{p}Gracias a eso, ahora somos{n}descendientes de los pocos{n}fuertes que sobrevivieron.
+f394-0006 5b66929e2a0b5776 Justo antes de que la guerra{n}exterminara al hombre, nació{n}un nuevo ser para engendrar{n}a la siguiente generación.{p}¿Recuerdas los misiles de{n}las instalaciones del Mass{n}Driver?{p}Era lo más importante para{n}el pueblo de Zeboim.{p}Gracias a eso, ahora somos{n}descendientes de los pocos{n}fuertes que sobrevivieron.
 f396-0000 9460ab0022fe36a0 Fei{n}"...¿Dónde estamos{wait 32}...?"
 f396-0001 d8c7d9aca608eaf2 Fei{n}"...Así es...{p}El recuerdo de mi alma...{n}Quedó en mí por tu{n}bien..."
-f396-0002 91e3c0a48b7c1741 Fei{n}"...Sí, eres la hija que{n}yo,{n}o más bien Kim, deseaba.{p}Kim ha sido parte de mí, en{n}mi sangre, transmitiendo su{n}memoria de generación en{p}generación durante 4000{n}años.{p}Existiendo para el día en{n}que{n}naciera la hija a la que{p}Kim{n}nunca pudo abrazar en{n}tanto tiempo."
+f396-0002 91e3c0a48b7c1741 Fei{n}"...Sí, eres la hija que{n}yo,{n}o más bien Kim, deseaba.{p}Kim ha sido parte de mí, en{n}mi sangre,{p}transmitiendo su memoria de{n}generación en generación{n}durante 4000 años.{p}Existiendo para el día en{n}que naciera la hija a la{n}que Kim nunca pudo abrazar{n}en tanto tiempo."
 f396-0003 8cfadcd6e182c888 Emeralda{n}"...Yo, recordar...{p}hace mucho... tú...{n}...Kim,... morir...{p}justo antes de morir la{n}ciudad... Porque{n}soldados de ciudad...{n}intentar usarme..."
 f396-0004 182646f34a7a1f55 Emeralda{n}"Mientras yo estar{n}presa...{n}Krelian decir que yo...{p}  ...la suprema{n}  'obra de arte' que la{n}  tecnología había{n}  traído al mundo...      {p}Sí, yo saber que ser cosa.{n}Mira, mi cuerpo...{p}Diferente de Maria,{n}Margie... y Elly.{n}...Imitación de humano...{n}...pero diferente.{p}Kim y Elly decir...{n}yo ser ángel..."
 f396-0005 4eff5ebfcb23f715 Emeralda{n}"¡Fei! ¡Gracias por ser{n}Kim sustituto hasta ahora!{n}Pero, está bien...{p}¡Yo ser fuerte y hacer que{n}Kim y Elly estar{n}orgullosos{n}de que yo ser su hija!"

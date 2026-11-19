@@ -9235,8 +9235,14 @@ field message's lines take up to 52 columns (26 narrow letters, the widest a
 window beside a portrait leaves on the 320-pixel screen) or its table's
 columns if more, and 4 lines a page (the portrait window's rows) or its own
 rows if more; `merge` breaks a longer line at its spaces (never before a
-`?`, `!` or `:`, which French sets after a space) and splits a longer
-page into pages where the player's Confirm already ends the text. A timed
+`?`, `!` or `:`, which French sets after a space). Where the player's
+Confirm already ends the text, a page with more lines than its window's
+rows has each sentence's lines filled anew (a line that ends a sentence, a
+speaker's name above their words and indented lines stay), and one still
+too long is split into pages that end where a sentence ends where they
+can, else a clause, a page ending within a line if it must, each filled
+anew (`paginate`: a page more rather than an end mid-sentence, two more
+not). A timed
 text (one that ends on `0F 02` or `0F 0D` or pauses on `03`), a choice
 (its last page's lines are the cursor's: `a9` names them), a message whose
 window a script sizes and every text outside the field keep
@@ -9371,7 +9377,10 @@ parts) is drawn with the game's text renderer
 transfer to VRAM reads as it reads the menus' own, and placed in texture
 page (448, 256), which no menu screen uses (measured on each: the field
 menu and its screens, member change, the title's Load, name entry and both
-shops), left to right in 13-row lines; its entry becomes one part showing
+shops), left to right in 13-row lines, each ending short of the page's
+right edge (the menus draw a part as a quad whose far texel, u + w, is a
+byte: a label ending at 256 would wrap to 0 and show its line backwards,
+as Italian's File and Spanish's Estéreo amplio did); its entry becomes one part showing
 it with the text palette the menus load at (0, 0x1D1), two rows above the
 original's place (the font's 13 rows centre on the picture's 9). An entry
 already drawn so no longer has its original bytes, so a second pass draws
@@ -9459,7 +9468,8 @@ refused; the glyph recipes, Perfect Works' marks and Spanish's turned marks amon
 and entries' by name),
 the native test's command labels (a translated entry drawn into page
 (448, 256), each transfer waited for, the line image freed, the entry one
-part there with the text palette two rows up; an untranslated one and
+part there with the text palette two rows up; one that would end at the
+page's right edge beginning the next line; an untranslated one and
 every one without an active language unchanged) and stat words (spelled
 with the small font's cells, right-aligned where the original ended, a
 closing % kept; one too long or with a letter the font lacks, and every one
@@ -9468,7 +9478,8 @@ two and the menus' three Next LV rows spelled by their loaders from their
 first x, narrow letters and spaces set, the slots left repeating the last
 letter; one too long or with a letter the font lacks, and every one without
 an active language, unchanged), `tests/test_translations.py`'s small-font
-check of words and rows, its lines for one entry, its language with
+check of words and rows, its long pages' sentences filled and their pages
+ended where sentences end, its lines for one entry, its language with
 its own layout and the windows it reads from invented field and battle
 scripts (a layout that sizes, places or clears; a size left standing; a
 portrait's share), `tests/test_perfect_works.py` (Perfect Works' bytes as
