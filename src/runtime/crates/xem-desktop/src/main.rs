@@ -396,6 +396,8 @@ fn run_xr(options: &Options) -> Result<(), String> {
         exit_at_frame: options.exit_at_frame,
         save_state_at: options.save_state_at.clone(),
         state_directory: None,
+        // RetroAchievements: the account kept beside the settings, as in the window.
+        achievements: Some(xem_host::achievements::HostAchievements::new(FileStore::default_path().as_deref().and_then(std::path::Path::parent)).client()),
         control: options.control,
     };
     xem_host::xr_play::run(&(), &play, settings, game).map(|_| ())
@@ -490,6 +492,8 @@ impl Host {
             options.show_settings,
         )?;
         view.ui().set_fullscreen_offered(true);
+        // RetroAchievements: the account kept beside the settings.
+        view.enable_achievements(FileStore::default_path().as_deref().and_then(std::path::Path::parent));
         // The panel is the launcher too: Import disc… plays a disc (or gives
         // the running game its other one).
         let disc_asked = Rc::new(std::cell::Cell::new(false));
@@ -655,6 +659,9 @@ impl Host {
     /// to the game's command layer.
     fn command(&mut self, command: &serde_json::Value) -> serde_json::Value {
         if let Some(reply) = self.view.settings().borrow_mut().command(command) {
+            return reply;
+        }
+        if let Some(reply) = self.view.achievements_command(command) {
             return reply;
         }
         match command.get("cmd").and_then(serde_json::Value::as_str) {

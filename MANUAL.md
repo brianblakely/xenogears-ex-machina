@@ -312,6 +312,9 @@ Loading a state replaces your current moment. It keeps your current app
 settings and does not roll your memory-card saves back. Rewind follows the
 same rule, so neither is a way to undo an overwritten memory-card save.
 
+RetroAchievements' [hardcore mode](#hardcore-mode) disables save states
+while it is on.
+
 Save states can move between supported devices using a compatible version
 of the app and the same supported game. Keep the needed disc available.
 If a state comes from an incompatible version, the app explains why it
@@ -452,6 +455,42 @@ To see the scene behind a dialogue box, **hold Select**: Backspace, the
 controller's Back button, or the touch **HIDE** key. Release it to bring the text
 back. Hiding the box does not pause the scene or stop automatic dialogue
 advance.
+
+## RetroAchievements
+
+On a computer, an Android device or a headset, you can earn Xenogears'
+achievements on [RetroAchievements](https://retroachievements.org), as you
+would with an emulator. You need a free retroachievements.org account.
+
+1. Open **Settings → Achievements** (**RA** in the tabs on a small screen).
+2. Enter your user name and password and choose **Sign in**. The app keeps
+   the sign-in token the server gives, never your password, so you stay
+   signed in next time.
+3. Play. When the game starts, a notice shows how many of its achievements
+   you have unlocked. Each unlock shows its trophy, title and points.
+
+The section shows who is signed in and how far you are through the game's
+achievements. **Sign out** forgets the account on this device. The browser
+version can't connect: RetroAchievements' server doesn't accept requests
+from web pages, so use the desktop, Android or headset app.
+
+### Hardcore mode
+
+**Hardcore mode** plays as on the console, and RetroAchievements counts your
+unlocks as hardcore. **Save states, fast-forward and rewind are disabled
+while hardcore mode is on.** So are the Debug tests. The game's own memory
+card saves work as usual, and so do the gameplay options.
+
+Hardcore mode applies only while you're signed in. Turning it on during play,
+or signing in with it already on, restarts the game: RetroAchievements
+requires a hardcore session to begin at the console's start. Save in the game
+first. The **Time** and **Saves**
+sections say when hardcore mode has disabled their controls.
+
+While RetroAchievements hasn't yet registered Xenogears Ex Machina as a
+supported app, its server records hardcore unlocks as ordinary ones, and an
+achievement titled "Warning: Unknown Emulator" appears shortly after the game
+starts in hardcore mode.
 
 ## Making the picture your own
 
@@ -726,6 +765,8 @@ a state may require the version that created it.
 | The mouse pointer has disappeared | Move it, or open Settings. Check the mouse camera and idle-cursor options. |
 | Headset pointing does nothing | Choose a pointer your headset supports and check that tracking is available. |
 | A backup button won't open a file picker in VR | Return to flat/windowed play to import or export files. |
+| Save state, rewind or fast-forward says it's disabled | RetroAchievements' hardcore mode is on: turn it off in Settings → Achievements, or sign out. |
+| You can't sign in to RetroAchievements in a headset | Sign in from flat play (the window, or Android's flat view) first. The headset uses the same account. |
 | The app won't open | Check the platform notes in the installation guide, including Linux permissions and macOS opening restrictions. |
 
 An error bar at the bottom of Settings explains a failed action. **Dismiss**

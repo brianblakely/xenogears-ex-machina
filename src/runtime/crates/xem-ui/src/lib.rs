@@ -109,6 +109,39 @@ impl WindowAdapter for PanelWindow {
     }
 }
 
+/// Whether the player is signed in to RetroAchievements (the panel's
+/// Achievements section).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum AchievementsAccount {
+    #[default]
+    SignedOut,
+    SigningIn,
+    SignedIn,
+}
+
+/// What the Achievements section shows of the host's RetroAchievements
+/// client ([`SettingsUi::set_achievements`]).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AchievementsView {
+    pub account: AchievementsAccount,
+    /// Who is signed in and their points.
+    pub user: String,
+    /// What the running game's achievements do.
+    pub game: String,
+    /// Why the last sign-in or load failed (empty: nothing failed).
+    pub error: String,
+    /// Hardcore mode is in effect (signed in with it on): the Time and
+    /// Saves sections say what it disables, and disable it.
+    pub hardcore_active: bool,
+}
+
+/// What the Achievements section asks of the host's client.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AchievementsRequest {
+    SignIn { username: String, password: String },
+    SignOut,
+}
+
 /// The settings panel bound to a [`SettingsService`].
 pub struct SettingsUi {
     window: Rc<PanelWindow>,
@@ -278,6 +311,50 @@ impl SettingsUi {
         };
         self.panel.set_error(text.into());
         self.select_section(SAVES_SECTION);
+    }
+
+    /// Whether the host has a RetroAchievements client (the native hosts):
+    /// the Achievements section offers sign-in and hardcore mode, else says
+    /// why a browser cannot reach the server.
+    pub fn set_achievements_offered(&self, offered: bool) {
+        self.panel.set_ra_offered(offered);
+    }
+
+    /// What the host's RetroAchievements client says now.
+    pub fn set_achievements(&self, view: &AchievementsView) {
+        let panel = &self.panel;
+        panel.set_ra_account(match view.account {
+            AchievementsAccount::SignedOut => 0,
+            AchievementsAccount::SigningIn => 1,
+            AchievementsAccount::SignedIn => 2,
+        });
+        for (current, next, set) in [
+            (panel.get_ra_user(), &view.user, SettingsPanel::set_ra_user as fn(&SettingsPanel, SharedString)),
+            (panel.get_ra_game(), &view.game, SettingsPanel::set_ra_game),
+            (panel.get_ra_error(), &view.error, SettingsPanel::set_ra_error),
+        ] {
+            if current.as_str() != next {
+                set(panel, next.as_str().into());
+            }
+        }
+        panel.set_ra_hardcore_active(view.hardcore_active);
+    }
+
+    /// The Achievements section's Sign in (with the name and password the
+    /// player typed; the password field empties at once) and Sign out.
+    pub fn on_achievements_request(&self, f: impl FnMut(AchievementsRequest) + 'static) {
+        let f = Rc::new(RefCell::new(f));
+        let panel = self.panel.as_weak();
+        self.panel.on_ra_sign_in_requested({
+            let f = f.clone();
+            move |username, password| {
+                if let Some(panel) = panel.upgrade() {
+                    panel.set_ra_password("".into());
+                }
+                f.borrow_mut()(AchievementsRequest::SignIn { username: username.into(), password: password.into() });
+            }
+        });
+        self.panel.on_ra_sign_out_requested(move || f.borrow_mut()(AchievementsRequest::SignOut));
     }
 
     /// What the Disc group says about the imported disc.
@@ -651,6 +728,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_rewind_interval_max(xem_settings::MAX_REWIND_INTERVAL_SECONDS as i32);
     panel.set_rewind_history_seconds(settings.rewind_history_seconds as i32);
     panel.set_rewind_history_max(xem_settings::MAX_REWIND_HISTORY_SECONDS as i32);
+    panel.set_ra_hardcore(settings.retroachievements.hardcore);
     show_binding(panel, settings);
     show_game_binding(panel, settings);
 }
@@ -796,6 +874,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_run_by_default_edited({
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
+    });
+    panel.on_ra_hardcore_edited({
+        let apply = apply.clone();
+        move |hardcore| apply(Some(SettingChange::RetroAchievements(xem_settings::RetroAchievements { hardcore })))
     });
     panel.on_hide_idle_cursor_edited({
         let apply = apply.clone();
@@ -1070,7 +1152,38 @@ fn backup_actions(browser: bool) -> impl Iterator<Item = (AppAction, &'static st
     })
 }
 
-/// The frame counter, playback activity and state results over the game.
+/// What a notice over the game is (its icon and colour).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NoticeKind {
+    Success,
+    Failure,
+    /// RetroAchievements' unlocks and completions.
+    Achievement,
+    Information,
+}
+
+impl NoticeKind {
+    /// The overlay's `notice-kind`.
+    fn index(self) -> i32 {
+        match self {
+            NoticeKind::Success => 0,
+            NoticeKind::Failure => 1,
+            NoticeKind::Achievement => 2,
+            NoticeKind::Information => 3,
+        }
+    }
+}
+
+/// A notice waiting for the one shown to expire ([`FrameRateUi::notify`]).
+struct Queued {
+    kind: NoticeKind,
+    title: String,
+    detail: String,
+    seconds: u64,
+}
+
+/// The frame counter, playback activity, state results and RetroAchievements'
+/// notices over the game.
 pub struct FrameRateUi {
     window: Rc<PanelWindow>,
     component: FrameRateOverlay,
@@ -1081,6 +1194,7 @@ pub struct FrameRateUi {
     previous: Duration,
     frames: u32,
     notice_until: Option<Duration>,
+    queued: std::collections::VecDeque<Queued>,
 }
 
 impl FrameRateUi {
@@ -1103,6 +1217,7 @@ impl FrameRateUi {
             previous: Duration::ZERO,
             frames: 0,
             notice_until: None,
+            queued: Default::default(),
         };
         ui.resize(scale_factor);
         ui.component.show()?;
@@ -1148,20 +1263,33 @@ impl FrameRateUi {
         self.component.set_fast_forward(fast_forward);
         self.component.set_rewinding(rewinding);
     }
-    /// A result from an explicit save-state operation, never a memory-card write.
+    /// A result from an explicit save-state operation, never a memory-card
+    /// write: shown at once, over whatever showed.
     pub fn notify_state(&mut self, saved: bool, error: Option<&str>, now: Duration) {
-        let notice = match error {
-            Some(error) => format!("Could not {} state: {error}", if saved { "save" } else { "load" }),
-            None => format!("State {}", if saved { "saved" } else { "loaded" }),
-        };
-        self.component.set_notice_title(match error {
-            Some(_) => format!("Could not {} state", if saved { "save" } else { "load" }),
-            None => notice.clone(),
-        }.into());
-        self.component.set_notice_detail(error.unwrap_or_default().into());
+        let action = if saved { "save" } else { "load" };
+        match error {
+            Some(error) => self.show(NoticeKind::Failure, &format!("Could not {action} state"), error, 8, now),
+            None => self.show(NoticeKind::Success, &format!("State {}", if saved { "saved" } else { "loaded" }), "", 4, now),
+        }
+    }
+
+    /// A notice (RetroAchievements', a refused time control) shown for
+    /// `seconds` once those before it expired: one does not hide another.
+    pub fn notify(&mut self, kind: NoticeKind, title: &str, detail: &str, seconds: u64, now: Duration) {
+        if self.notice_until.is_some() {
+            self.queued.push_back(Queued { kind, title: title.into(), detail: detail.into(), seconds });
+        } else {
+            self.show(kind, title, detail, seconds, now);
+        }
+    }
+
+    fn show(&mut self, kind: NoticeKind, title: &str, detail: &str, seconds: u64, now: Duration) {
+        let notice = if detail.is_empty() { title.to_string() } else { format!("{title}: {detail}") };
+        self.component.set_notice_title(title.into());
+        self.component.set_notice_detail(detail.into());
         self.component.set_notice(notice.into());
-        self.component.set_notice_error(error.is_some());
-        self.notice_until = Some(now.saturating_add(Duration::from_secs(if error.is_some() { 8 } else { 4 })));
+        self.component.set_notice_kind(kind.index());
+        self.notice_until = Some(now.saturating_add(Duration::from_secs(seconds)));
     }
     pub fn notice(&self) -> Option<String> {
         self.notice_until.map(|_| self.component.get_notice().into())
@@ -1181,6 +1309,9 @@ impl FrameRateUi {
         if self.notice_until.is_some_and(|until| now >= until) {
             self.notice_until = None;
             self.component.set_notice("".into());
+            if let Some(next) = self.queued.pop_front() {
+                self.show(next.kind, &next.title, &next.detail, next.seconds, now);
+            }
         }
         if self.window.window.scale_factor() != scale_factor {
             self.resize(scale_factor);

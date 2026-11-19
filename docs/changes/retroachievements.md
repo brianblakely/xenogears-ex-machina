@@ -1,0 +1,3 @@
+- Sign in to RetroAchievements in **Settings → Achievements** on a computer, Android or a headset and earn Xenogears' achievements as you play. Each unlock shows on screen with its title and points, and the section shows how far through the game's achievements you are.
+- **Hardcore mode** in the same section plays as on the console: save states, fast-forward and rewind are disabled while it is on, and turning it on during play restarts the game. RetroAchievements counts the unlocks as hardcore once it registers the app; until then its server records them as ordinary unlocks.
+- The browser version can't connect to RetroAchievements: its server doesn't accept requests from web pages.

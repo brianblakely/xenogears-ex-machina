@@ -6496,6 +6496,7 @@ captures.
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence; the game bindings and the player's input (`player`) |
 | `xem-assist` | assisted input: hand gestures, the headset core, touch and arcade decks, gesture resolution, overlay marks, synthetic hands and reliability measures |
 | `xem-storage` | bounded reads and durable replacement of native settings, cards and state files |
+| `xem-achievements` | RetroAchievements for the native hosts: rcheevos (vendored) over the game's memory, the disc's hash, the account and the server's requests ([RetroAchievements](#retroachievements)) |
 
 ## The test suite
 
@@ -6679,7 +6680,7 @@ everything), 560 s of it the tests that measure time, one at a time.
 ## Saves and time controls
 
 The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves,
-Gameplay and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
+Gameplay, Achievements, Debug and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
 Desktop widths use a sidebar; narrow windows use a strip of section tabs.
 Saves' Backups card puts its buttons two to a row on a panel at least 600
 logical pixels wide (a desktop's 640), one to a row on narrower ones (a
@@ -9633,6 +9634,144 @@ DISC OUT.mp4 SCRIPT.json...`: each script a list of session commands and
 enlarged to 640x480 and the SPU's output muxed by ffmpeg), for reviewing
 the movies and voices by ear.
 
+## RetroAchievements
+
+The native hosts (the desktop's window, Android, a headset through OpenXR)
+earn the achievements RetroAchievements keeps for Xenogears (PlayStation,
+its game 11248) as an emulator does, through RetroAchievements' own client:
+rcheevos 12.5.0, vendored unchanged in `crates/xem-achievements/rcheevos/`
+(MIT; its README gives the files and their source), built by the crate's
+`build.rs` without its locks, as every rcheevos call is made on the host's
+thread. The game's memory is the PlayStation's address space (The game
+module), so RetroAchievements' PlayStation map reads the console's RAM: its
+addresses 0x000000-0x1FFFFF are RAM from 0x80000000, and 0x200000-0x2003FF
+the scratchpad at 0x1F800000. The session's observer
+(`xem_core::control::Observer`, `xem_achievements::Evaluate`) evaluates the
+achievements over that memory after every frame the game completes, whoever
+runs it (a host's paced batch, an agent's `frames`, a held rewind playing
+on), and starts their evaluation again where the game goes to another point
+in time: rcheevos' reset after the console's reset, its runtime cleared
+after a state loaded or a rewind step. A state carries no achievement
+progress.
+
+- **The disc.** The server knows the game by rcheevos' own hash of the disc
+  in the drive (`xem_achievements::disc_hash`, rcheevos' PlayStation hash
+  read through the hosts' sector source, `Cd::inserted_source`: the boot
+  program SYSTEM.CNF names, its name and its first `t_size + 2048` bytes).
+  Disc 1 hashes to `1bde22c83a069c43cb32b8521bfdf7ae` and disc 2 to
+  `02ba8ee8c226923babe876bdf3a8f401`, both game 11248 on the server
+  (`r=gameid`, 2026-11-19). A game the client has not followed loads its
+  achievements by the disc in the drive's hash
+  (`Game::follow_achievements`); another disc in the drive (the story's
+  disc change) is checked with rcheevos' change of media.
+- **The account.** Settings → Achievements signs in with the player's name
+  and password; the client keeps the token the server gives, never the
+  password, in `retroachievements.json` beside the settings (the desktop's
+  directory, Android's files directory; readable by the player alone on
+  Unix), outside the settings and their backups. A kept token signs in at
+  start; one the server refuses is forgotten; a sign-in unanswered (no
+  connection) is tried again a minute later. Sign out forgets the account.
+- **Hardcore mode.** RetroAchievements' alone: the setting
+  `retroachievements.hardcore` (off by default; an agent's
+  `{"RetroAchievements": {"hardcore": true}}`) is in effect while the player
+  is signed in (`Achievements::follow`), and the host keeps it in the
+  session then (`Session::set_hardcore`, `Game::set_hardcore`). The session
+  refuses, naming hardcore mode, what a console's player cannot do: a state
+  saved or loaded (Save state and Load state, the state backups, an agent's
+  `state_save`, `state_load`, `snapshot` and `restore`), rewind (the
+  history kept off, a held rewind and `rewind`, `rewind_step` and a history
+  `rewind_configure` refused) and fast-forward (turned off, and refused on),
+  and a change to the game other than by the player's input (`write`,
+  `write_memory`, `enter_field`, `scenario`, `boot_mode`, `schedule`,
+  `replay`, `music_advance` and the Debug section's tests). The player's
+  input, the gameplay options, the memory cards and the console's reset
+  stay. A hardcore session plays from the console's reset with those
+  restrictions throughout, so the console resets when the setting turns on
+  with the game's achievements loaded (rcheevos' reset event), and when the
+  achievements load over play that had them off (signed in later, or turned
+  on before they loaded). `status` reports `hardcore`.
+- **Notices.** Unlocks show on the HUD (`FrameRateUi::notify`) with a gold
+  trophy, the achievement's title, its description and points for six
+  seconds; the game's achievements loaded (how many are unlocked), a
+  completed game or set, leaderboard attempts, the server unreachable or
+  refusing a request, and hardcore mode's restart of the game (why the game
+  starts again) are noticed too. Notices wait for the one shown to
+  expire, so none hides another; a state's result shows at once. A time
+  control refused (fast-forward's toggle, a held rewind) shows on the HUD as
+  a state's does, as the panel's error bar is hidden during play.
+- **The panel.** Achievements (between Gameplay and Debug; "RA" under its
+  trophy in the narrow panel's strip, where "Achievements" would elide the
+  other labels) has the account (the name and password fields, Sign in,
+  then who is signed in, their points and Sign out, and why the last
+  sign-in or load failed), the game's achievements (how many are unlocked,
+  and their points) and Hardcore mode's switch, which says that save
+  states, fast-forward and rewind are disabled while it is on and that
+  turning it on during play restarts the game. While it is in effect, Time
+  and Saves say so and disable Save state, Load state, Start fast-forward
+  and Hold to rewind, and Debug its tests. Android shows its on-screen
+  keyboard while a panel text field has the focus. A headset's panel signs
+  in through the same client as Android's window, but OpenXR gives it no
+  keyboard: the player signs in in the window.
+- **Browsers.** The browser host has no client: RetroAchievements' server
+  sends no `Access-Control-Allow-Origin` and refuses a browser's user agent
+  (`unsupported_client`, checked 2026-11-19), so a page can neither sign in
+  nor send unlocks. Its Achievements section says so, offers no switch, and
+  hardcore mode never applies there.
+- **The server.** rcheevos makes no connection itself: its requests are
+  made one after another on a thread of their own with `ureq` (HTTPS through
+  rustls and ring, Mozilla's roots from webpki-roots, on every native
+  host) and their answers are given to rcheevos on the host's thread between
+  frames (`Achievements::update`). The requests name the app as
+  `XenogearsExMachina/<version> (<system>) rcheevos/12.5`.
+  `XEM_RETROACHIEVEMENTS_HOST` names another server (a test's stand-in).
+  Until RetroAchievements' administrators register that client, its server
+  treats it as unknown (RAWeb's `UserAgentService`): hardcore unlocks are
+  recorded as softcore, and the achievement list it sends begins with a
+  "Warning: Unknown Emulator" achievement, which pops five seconds into a
+  hardcore session (it is unlocked in softcore already).
+- **Agents.** `xem-desktop --control` (the window and `--xr`) answers
+  `achievements` (the account, the game's line, the last error and whether
+  hardcore is in effect), `achievements_sign_in {username, password}` and
+  `achievements_sign_out`, as the panel's.
+
+Tests: `xem-achievements`'s `tests/disc.rs` (a synthetic disc's hashes,
+computed apart from rcheevos with Python's hashlib: the whole boot program
+and one its header gives as smaller; a disc without its boot program
+refused with rcheevos' reason; the user's discs, local, to the hashes the
+server knows), `tests/client.rs` against a stand-in server
+(`tests/stand_in`, plain HTTP answering as rcheevos' own tests have the
+server answer: a wrong password refused with the server's words and nothing
+kept; the right one keeping the token, never the password, in a file the
+player alone reads; the user agent; the game loaded by the disc's hash;
+unlocks from RAM and from the scratchpad sent as softcore and then, after
+hardcore turned on during play asked for the console's reset and evaluated
+nothing until it came, as hardcore; a kept token signing in at start;
+achievements loaded over play that had hardcore off asking for a reset, and
+none after a reset with it on throughout; an unknown disc; a refused token
+forgotten) and the bindings' structure layouts against the C compiler's;
+`xem-core/tests/persistence.rs`'s
+`an_observer_reads_every_completed_frame_and_hears_every_rewind_load_and_reset`
+and `hardcore_mode_refuses_states_rewind_fast_forward_and_changes_but_keeps_the_players_input`;
+`xem-settings`' `retroachievements_hardcore_is_off_by_default_persists_and_travels_in_backups_without_the_account`;
+`xem-ui/tests/panel.rs`'s
+`achievements_sign_in_out_and_hardcore_mode_go_through_the_host_and_the_settings_and_hardcore_disables_the_time_controls`
+and `tests/hud.rs`'s `retroachievements_notices_show_their_detail_one_after_another`;
+and `xem-host/tests/achievements.rs` (local: disc 1), the original game in a
+host's `Game` against the stand-in: its achievements loaded by disc 1's
+hash, one on the pad driver's vertical blank counter (0x80059488)
+unlocked from the game's RAM as softcore, hardcore turned on resetting the
+console (the counter starts again) and refusing a state saved,
+fast-forward and a held rewind, the achievement unlocked again as
+hardcore, and signing out lifting the restrictions.
+
+Not done: badges (the achievements' images) are not shown, nor leaderboard
+trackers or challenge indicators on the HUD (their attempts' start, failure
+and submission are noticed); a state keeps no achievement progress, so a
+load or a rewind starts the achievements' evaluation again; the client has
+signed in to the real server from no host here (no account): the hashes
+are the server's, the requests rcheevos' own, and everything after sign-in
+was tested against the stand-in.
+
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
@@ -9646,13 +9785,16 @@ to a running game's disc changer.
 The panel (`xem-ui/ui/settings.slint`) lists its sections in a sidebar at
 560 logical pixels wide and more, else in a strip of tabs above the section.
 A tab of the strip takes its label's width (bold, as when selected) and
-shares out the rest while the strip has room for all eight: from 390
-logical pixels with the panel's font (the panel on the Android emulator's
-1080-pixel screen at density 2.625 is 405). A narrower strip takes the
-same width from every tab, so the labels still show whole down to 342 (a
-1080-pixel phone at density 3.0 gives 355) and elide below, and no tab
-narrows below 24 pixels: all eight stay inside the panel down to its least
-width, 280. `xem-ui/tests/panel.rs` clicks every tab at six widths from 280
+shares out the rest while the strip has room for all ten (the strip labels
+Achievements "RA" under its trophy, as "Achievements" would elide the other
+labels). A narrower strip takes the same width from every tab, so the
+labels still show whole down to about 398 logical pixels with the panel's
+font (the panel on the Android emulator's 1080-pixel screen at density
+2.625 is 405; nine tabs, before Achievements, showed whole down to about
+372) and elide below, the selected tab's bold label first (a 1080-pixel
+phone at density 2.75 gives 387, at 3.0 355), and no tab narrows below 24
+pixels: all ten stay inside the panel down to its least width, 280.
+`xem-ui/tests/panel.rs` clicks every tab at six widths from 280
 to 405 and checks that the Android smoke's two taps select Graphics and
 Saves at 405, and that Saves' Backups card keeps all of its buttons
 inside it at ten widths from 280 to 640 (one to a row below 600 logical

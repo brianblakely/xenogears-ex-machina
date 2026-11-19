@@ -137,8 +137,9 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the panel has content ({} colours)",
         distinct.len()
     );
-    section(&mut ui, "Debug", 7);
-    section(&mut ui, "About", 8);
+    section(&mut ui, "Achievements", 7);
+    section(&mut ui, "Debug", 8);
+    section(&mut ui, "About", 9);
     assert!(
         ElementHandle::find_by_accessible_label(ui.component(), "#MadeWithSlint")
             .next()
@@ -917,7 +918,7 @@ fn japanese_and_the_movies_and_voices_show_only_beside_the_japanese_discs() {
 
 #[test]
 fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
-    const SECTIONS: [&str; 9] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Debug", "About"];
+    const SECTIONS: [&str; 10] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Achievements", "Debug", "About"];
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
@@ -944,7 +945,7 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
             section(&mut ui, label, index as i32);
         }
     }
-    // The Android smoke taps Graphics and Saves at 210,722 and 659,722 on
+    // The Android smoke taps Graphics and Saves at 210,722 and 617,722 on
     // its 1080x2400 screen, where the panel (1064x1470 at 2.625) is at 8,465.
     ui.resize((1064, 1470), 2.625);
     ui.update().unwrap();
@@ -952,7 +953,7 @@ fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
         click(ui, LogicalPosition::new((x - 8.0) / 2.625, (y - 465.0) / 2.625));
         ui.update().unwrap();
     };
-    for (x, label, index) in [(210.0, "Graphics", 1), (659.0, "Saves", 5)] {
+    for (x, label, index) in [(210.0, "Graphics", 1), (617.0, "Saves", 5)] {
         tap(&mut ui, x, 722.0);
         assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
     }
@@ -1049,11 +1050,11 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, LogicalPosition::new(x, y));
         ui.update().unwrap();
     };
-    at(&mut ui, 269.0, 98.0);
+    at(&mut ui, 253.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 5, "the headset smoke's pinch selects Saves");
     at(&mut ui, 122.0, 170.0);
     at(&mut ui, 314.0, 170.0);
-    at(&mut ui, 232.0, 98.0);
+    at(&mut ui, 219.0, 98.0);
     assert_eq!(ui.component().get_selected_section(), 4, "and Time");
     at(&mut ui, 347.0, 449.0);
     assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::SaveState), AppRequest::Action(AppAction::LoadState), toggle]);
@@ -1105,7 +1106,7 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
         click(ui, screen(x, y));
         ui.update().unwrap();
     };
-    tap(&mut ui, 572.0, 722.0);
+    tap(&mut ui, 537.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 4, "the Android smoke's tap selects Time");
     ui.set_time_status(Some(true), status);
     ui.update().unwrap();
@@ -1121,11 +1122,11 @@ fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_
     ui.dispatch(WindowEvent::PointerReleased { position: hold, button: PointerEventButton::Left });
     ui.update().unwrap();
     ui.set_time_status(Some(false), status);
-    tap(&mut ui, 659.0, 722.0);
+    tap(&mut ui, 617.0, 722.0);
     assert_eq!(ui.component().get_selected_section(), 5, "and Saves");
     tap(&mut ui, 306.0, 1095.0);
     tap(&mut ui, 764.0, 1095.0);
-    tap(&mut ui, 572.0, 722.0);
+    tap(&mut ui, 537.0, 722.0);
     tap(&mut ui, 829.0, 1644.0);
     assert_eq!(
         requests.borrow().as_slice(),
@@ -1534,7 +1535,7 @@ fn debug_controls_submit_kernel_operations_and_developer_room() {
     let requests = Rc::new(RefCell::new(Vec::new()));
     ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
     ui.update().unwrap();
-    section(&mut ui, "Debug", 7);
+    section(&mut ui, "Debug", 8);
     press(&ui, &element(&ui, "Go to developer room", AccessibleRole::Button));
     assert!(requests.borrow().is_empty(), "Debug needs a game session");
     ui.set_debug_status(true, false, "");
@@ -1683,11 +1684,11 @@ fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
     assert!(settings.borrow().settings().presentation.show_fps);
     pad.press(&ui, L1);
     pad.press(&ui, L1);
-    assert_eq!(ui.component().get_selected_section(), 8, "L1 from the first section goes to the last");
+    assert_eq!(ui.component().get_selected_section(), 9, "L1 from the first section goes to the last");
 
     // Shortcuts: each row a stop, South opens its editor, and South on its
     // gamepad field takes the next buttons pressed together.
-    for _ in 0..5 {
+    for _ in 0..6 {
         pad.press(&ui, L1);
     }
     ui.update().unwrap();
@@ -1756,4 +1757,74 @@ fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
     pad.press(&ui, EAST);
     assert!(!ui.component().get_quit_confirming());
     assert_eq!(closed.get(), 1);
+}
+
+#[test]
+fn achievements_sign_in_out_and_hardcore_mode_go_through_the_host_and_the_settings_and_hardcore_disables_the_time_controls() {
+    use xem_ui::{AchievementsAccount, AchievementsRequest, AchievementsView};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    ui.update().unwrap();
+    // A browser's panel: why it has no RetroAchievements, and no toggle.
+    section(&mut ui, "Achievements", 7);
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Hardcore mode").next().is_none());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements").next().is_some());
+
+    // A native host's: the account's fields, typed into, then Sign in.
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.set_achievements_offered(true);
+    ui.on_achievements_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    for (field, text) in [("RetroAchievements user name", "Player"), ("RetroAchievements password", "secret")] {
+        press(&ui, &element(&ui, field, AccessibleRole::TextInput));
+        ui.update().unwrap();
+        assert!(ui.text_editor_focused(), "typing in {field} keeps the app's keys from the bindings");
+        for letter in text.chars() {
+            ui.dispatch(WindowEvent::KeyPressed { text: letter.to_string().into() });
+            ui.dispatch(WindowEvent::KeyReleased { text: letter.to_string().into() });
+        }
+    }
+    press(&ui, &element(&ui, "Sign in", AccessibleRole::Button));
+    ui.update().unwrap();
+    assert_eq!(*requests.borrow(), [AchievementsRequest::SignIn { username: "Player".into(), password: "secret".into() }]);
+    assert_eq!(ui.component().get_ra_password(), "", "the password does not stay in the panel");
+    // Signed in: who, and Sign out.
+    ui.set_achievements(&AchievementsView {
+        account: AchievementsAccount::SignedIn,
+        user: "Signed in as Player · 1234 points".into(),
+        game: "Xenogears: 1 of 2 achievements unlocked, 5 of 15 points.".into(),
+        ..Default::default()
+    });
+    ui.update().unwrap();
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements user name").next().is_none());
+    press(&ui, &element(&ui, "Sign out", AccessibleRole::Button));
+    assert_eq!(requests.borrow().last(), Some(&AchievementsRequest::SignOut));
+
+    // Hardcore mode is a setting: the toggle applies it, and it shows what
+    // the service acknowledged, whoever changed it.
+    let toggle = element(&ui, "Hardcore mode", AccessibleRole::Switch);
+    press(&ui, &toggle);
+    ui.update().unwrap();
+    assert!(settings.borrow().settings().retroachievements.hardcore);
+    settings.borrow_mut().apply(xem_settings::SettingChange::RetroAchievements(xem_settings::RetroAchievements { hardcore: false })).unwrap();
+    ui.update().unwrap();
+    assert!(!ui.component().get_ra_hardcore());
+
+    // In effect, it disables save states, Start fast-forward and Hold to
+    // rewind, and the sections say why.
+    for active in [false, true] {
+        ui.set_achievements(&AchievementsView { account: AchievementsAccount::SignedIn, hardcore_active: active, ..Default::default() });
+        section(&mut ui, "Saves", 5);
+        for label in ["Save state", "Load state"] {
+            assert_eq!(element(&ui, label, AccessibleRole::Button).accessible_enabled(), Some(!active), "{label}, hardcore {active}");
+        }
+        section(&mut ui, "Time", 4);
+        for label in ["Start fast-forward", "Hold to rewind"] {
+            assert_eq!(element(&ui, label, AccessibleRole::Button).accessible_enabled(), Some(!active), "{label}, hardcore {active}");
+        }
+        let notes = ElementHandle::find_by_accessible_label(ui.component(), "RetroAchievements hardcore mode is on: rewind and fast-forward are disabled.").count();
+        assert_eq!(notes, usize::from(active));
+    }
 }

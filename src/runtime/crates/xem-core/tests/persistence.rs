@@ -444,6 +444,105 @@ fn fixed_fast_forward_and_its_recording_are_independent_of_host_batch_size() {
     assert!(replayed.fast_forward);
 }
 
+/// What an observer saw ([`xem_core::control::Observer`]): the frame
+/// counter the stand-in keeps at 0x80000000 after each frame, and each
+/// change of timeline (`true` a reset).
+#[derive(Default)]
+struct Seen {
+    frames: Vec<u32>,
+    timelines: Vec<bool>,
+}
+
+struct Watch(Rc<RefCell<Seen>>);
+
+impl xem_core::control::Observer for Watch {
+    fn frame(&mut self, memory: &dyn GameMemory) {
+        self.0.borrow_mut().frames.push(memory.read_u32(0x8000_0000).unwrap());
+    }
+    fn timeline(&mut self, reset: bool) {
+        self.0.borrow_mut().timelines.push(reset);
+    }
+}
+
+#[test]
+fn an_observer_reads_every_completed_frame_and_hears_every_rewind_load_and_reset() {
+    let (mut s, clock) = timed_session();
+    let seen = Rc::new(RefCell::new(Seen::default()));
+    s.observer = Some(Box::new(Watch(seen.clone())));
+    // A host's frames and an agent's alike.
+    frame_at(&mut s, &clock, 0);
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(seen.borrow().frames, [1, 2, 3], "the memory as each frame left it");
+    let state = s.snapshot_bytes().unwrap();
+    for second in 1..=3 { frame_at(&mut s, &clock, second); }
+    // A loaded state starts the history afresh: the rewind first.
+    assert!(s.execute(&json!({"cmd":"rewind","steps":1})).get("error").is_none());
+    s.restore_bytes(&state).unwrap();
+    s.execute(&json!({"cmd":"reset"}));
+    assert_eq!(seen.borrow().timelines, [false, false, true], "a rewind, a load, then the console's reset");
+}
+
+#[test]
+fn hardcore_mode_refuses_states_rewind_fast_forward_and_changes_but_keeps_the_players_input() {
+    use xem_core::control::{HARDCORE_FAST_FORWARD, HARDCORE_REWIND, HARDCORE_STATES};
+    let (mut s, clock) = timed_session();
+    for second in 0..3 { frame_at(&mut s, &clock, second); }
+    s.execute(&json!({"cmd":"snapshot","name":"before"}));
+    s.execute(&json!({"cmd":"fast_forward","enabled":true}));
+    assert!(s.fast_forward && s.rewind.status()["states"].as_u64().unwrap() > 0);
+
+    s.set_hardcore(true);
+    assert!(!s.fast_forward, "fast-forward stops");
+    assert_eq!((s.rewind.budget, s.rewind.status()["states"].as_u64()), (0, Some(0)), "the history goes");
+    assert_eq!(s.execute(&json!({"cmd":"status"}))["hardcore"], true);
+    let refusal = |s: &mut Session<Counter>, command: serde_json::Value| s.execute(&command)["error"].as_str().map(str::to_owned);
+    for (command, why) in [
+        (json!({"cmd":"snapshot"}), HARDCORE_STATES.to_string()),
+        (json!({"cmd":"restore","name":"before"}), HARDCORE_STATES.to_string()),
+        (json!({"cmd":"rewind","steps":1}), HARDCORE_REWIND.to_string()),
+        (json!({"cmd":"rewind_step"}), HARDCORE_REWIND.to_string()),
+        (json!({"cmd":"rewind_configure","max_bytes":1 << 20}), HARDCORE_REWIND.to_string()),
+        (json!({"cmd":"fast_forward"}), HARDCORE_FAST_FORWARD.to_string()),
+        (json!({"cmd":"fast_forward","enabled":true}), HARDCORE_FAST_FORWARD.to_string()),
+        (json!({"cmd":"debug","request":{"Battle":{"formation":0,"file":0,"party":[0,1,2],"gears":[0,0,0]}}}),
+            "Debug tests are disabled in RetroAchievements hardcore mode.".to_string()),
+        (json!({"cmd":"write_memory","address":0x8000_0100u32,"hex":"07"}),
+            "write_memory is disabled in RetroAchievements hardcore mode: only the player's input changes the game.".to_string()),
+    ] {
+        assert_eq!(refusal(&mut s, command.clone()), Some(why), "{command}");
+    }
+    for command in ["write", "enter_field", "scenario", "boot_mode", "schedule", "replay", "music_advance"] {
+        assert!(refusal(&mut s, json!({"cmd": command})).is_some_and(|e| e.starts_with(&format!("{command} is disabled in RetroAchievements hardcore"))), "{command}");
+    }
+    // An agent's readiness lists none of them.
+    let valid = s.execute(&json!({"cmd":"readiness"}))["valid_commands"].clone();
+    for cmd in ["snapshot", "restore", "rewind", "rewind_step", "fast_forward", "debug", "write", "enter_field", "schedule", "replay"] {
+        assert!(!valid.as_array().unwrap().contains(&json!(cmd)), "{cmd} is no valid command in hardcore mode: {valid}");
+    }
+    for cmd in ["pad", "press", "frames", "reset", "rewind_configure", "fast_forward_configure"] {
+        assert!(valid.as_array().unwrap().contains(&json!(cmd)), "{cmd} stays valid: {valid}");
+    }
+    // The hosts' own paths.
+    assert_eq!(s.snapshot_bytes(), Err(HARDCORE_STATES.into()));
+    let state = s.runtime.snapshot().unwrap();
+    assert_eq!(s.restore_bytes(&state), Err(HARDCORE_STATES.into()));
+    assert_eq!(s.rewind_step(), Err(HARDCORE_REWIND.into()));
+    assert_eq!(s.configure_rewind(1 << 20, 1, 30), Err(HARDCORE_REWIND.into()));
+    // A player's input, the frames, turning fast-forward off, reading the
+    // game and the console's reset stay.
+    for command in [json!({"cmd":"press","buttons":["cross"],"frames":2}), json!({"cmd":"frames","count":3}),
+        json!({"cmd":"fast_forward","enabled":false}), json!({"cmd":"read_memory","address":0x8000_0000u32,"length":4}),
+        json!({"cmd":"rewind_configure","max_bytes":0}), json!({"cmd":"reset"})] {
+        assert!(s.execute(&command).get("error").is_none(), "{command}");
+    }
+    // Off again: everything is the player's again.
+    s.set_hardcore(false);
+    s.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let state = s.snapshot_bytes().unwrap();
+    s.restore_bytes(&state).unwrap();
+    assert!(s.execute(&json!({"cmd":"fast_forward","enabled":true})).get("error").is_none());
+}
+
 #[test]
 fn uncapped_recordings_replay_the_music_clock_at_the_same_game_frames() {
     let mut s = session();

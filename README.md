@@ -161,6 +161,14 @@ Babel Tower — and can halve encounters in every field. Text can run faster, up
 to instantly; dialogue can advance on its own; movies can be skipped; and disc
 load times can be switched off, so areas and battles open almost at once.
 
+### Earn achievements
+
+Sign in to [RetroAchievements](https://retroachievements.org) on a computer,
+Android or a headset and earn Xenogears' achievement set as you play, from the
+game's own memory, just as you would with an emulator. Hardcore mode turns off
+save states, fast-forward and rewind for players who want the console's
+challenge.
+
 ### Hear the world around you
 
 Binaural headphone mode places the soundtrack around you, arranged from the

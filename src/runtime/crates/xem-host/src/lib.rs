@@ -18,6 +18,7 @@ pub mod xr_play;
 #[cfg(all(has_game_module, not(target_os = "macos")))]
 mod assisted;
 mod operations;
+pub mod achievements;
 // A build without a game module plays in no headset: nothing takes xem-xr.
 #[cfg(all(not(has_game_module), not(target_os = "macos")))]
 use xem_xr as _;
@@ -116,6 +117,24 @@ pub fn app_reply(result: Result<String, String>) -> serde_json::Value {
         Ok(message) => serde_json::json!({ "ok": true, "message": message }),
         Err(error) => serde_json::json!({ "error": error }),
     }
+}
+
+/// The Debug section's line while RetroAchievements' hardcore mode is on
+/// (the session refuses its tests).
+const HARDCORE_DEBUG: &str = "Debug tests are disabled in RetroAchievements hardcore mode.";
+
+/// A time control's refusal on the HUD (fast-forward's toggle, a rewind
+/// held): the panel's error bar is hidden during play, and the player
+/// pressed a key or a chord. (Hardcore mode refuses both; a held rewind
+/// without history is refused too.)
+pub(crate) fn time_notice(hud: &mut FrameRateUi, request: &AppRequest, result: &Result<String, String>, now: std::time::Duration) {
+    let Err(error) = result else { return };
+    let title = match request {
+        AppRequest::Action(xem_settings::AppAction::ToggleFastForward) => "Could not fast-forward",
+        AppRequest::Rewind(true) | AppRequest::UiRewind(true) => "Could not rewind",
+        _ => return,
+    };
+    hud.notify(xem_ui::NoticeKind::Failure, title, error, 8, now);
 }
 
 /// `xem-desktop --save-state-at FRAME:PATH`, in the window and in a
@@ -406,6 +425,13 @@ pub struct View {
     dialogue_hiding: xem_settings::look::DialogueHiding,
     /// The disc the game waits for that the drive's changer has not got.
     wanted_disc: Option<u8>,
+    /// RetroAchievements, where the host enabled it ([`View::enable_achievements`]).
+    achievements: Option<achievements::HostAchievements>,
+    /// The game frames the last update ran ([`View::frames_ran`]).
+    ran: u32,
+    /// Android's on-screen keyboard is asked for (a panel text field has
+    /// the focus).
+    keyboard: bool,
 }
 
 impl View {
@@ -511,7 +537,30 @@ impl View {
             looked: None,
             dialogue_hiding: Default::default(),
             wanted_disc: None,
+            achievements: None,
+            ran: 0,
+            keyboard: false,
         })
+    }
+
+    /// RetroAchievements for this host (desktop, Android): the account is
+    /// kept in `directory` (beside the settings), the panel's Achievements
+    /// section offers sign-in and hardcore mode.
+    pub fn enable_achievements(&mut self, directory: Option<&std::path::Path>) {
+        let achievements = achievements::HostAchievements::new(directory);
+        achievements.attach(&self.ui);
+        self.achievements = Some(achievements);
+    }
+
+    /// The RetroAchievements client, for a headset loop that shares it.
+    pub fn achievements_client(&self) -> Option<Rc<RefCell<xem_achievements::Achievements>>> {
+        self.achievements.as_ref().map(achievements::HostAchievements::client)
+    }
+
+    /// An agent's RetroAchievements command (`--control`): `achievements`,
+    /// `achievements_sign_in {username, password}`, `achievements_sign_out`.
+    pub fn achievements_command(&mut self, command: &serde_json::Value) -> Option<serde_json::Value> {
+        self.achievements.as_mut()?.command(command)
     }
 
     /// The mouse wheel over the game: down pulls the field camera back,
@@ -565,7 +614,10 @@ impl View {
     /// on the HUD, and its line where operations are told.
     pub fn app_command(&mut self, mut game: Option<&mut Game>, request: AppRequest) -> Result<String,String> {
         let result = self.operations.execute(request,None,game.as_deref_mut(),&mut self.settings.borrow_mut());
-        if let AppRequest::Action(action) = request { self.state_notice(action,&result); }
+        match request {
+            AppRequest::Action(action) => self.state_notice(action,&result),
+            _ => time_notice(&mut self.frame_rate, &request, &result, self.frame_rate_started.elapsed()),
+        }
         self.log_operation(&request,&result,game);
         self.show_result(result.clone());
         result
@@ -609,6 +661,13 @@ impl View {
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
         let editing = self.panel_visible() && self.ui.text_editor_focused();
         if editing { self.app_input.release_keyboard(); }
+        // Android shows its on-screen keyboard while a panel text field has
+        // the focus (RetroAchievements' sign-in, a number); the desktop
+        // takes text whenever the panel shows (xem-desktop).
+        if cfg!(target_os = "android") && editing != self.keyboard {
+            window.set_text_input(editing);
+            self.keyboard = editing;
+        }
         let mut count = 0;
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
         if !keys.is_null() {
@@ -634,13 +693,23 @@ impl View {
             let result = self.operations.execute(request,Some(window),game.as_mut(),&mut self.settings.borrow_mut());
             if let AppRequest::Action(action) = request {
                 if result.is_err() || !self.operations.busy { self.state_notice(action,&result); }
+            } else {
+                time_notice(&mut self.frame_rate, &request, &result, self.frame_rate_started.elapsed());
             }
             self.log_operation(&request,&result,game.as_mut());
             self.show_result(result);
         }
+        if let Some(achievements) = &mut self.achievements {
+            let hardcore = self.settings.borrow().settings().retroachievements.hardcore;
+            achievements.update(game.as_mut(), hardcore, self.ran > 0, &self.ui, &mut self.frame_rate, self.frame_rate_started.elapsed());
+        }
         if let Some(game) = game {
             let (debug_busy, debug_message) = game.debug_status();
-            self.ui.set_debug_status(true, debug_busy, debug_message);
+            if game.hardcore() {
+                self.ui.set_debug_status(false, false, HARDCORE_DEBUG);
+            } else {
+                self.ui.set_debug_status(true, debug_busy, debug_message);
+            }
             let (forward,rewind) = game.time_activity();
             self.frame_rate.set_activity(forward,rewind);
             let settings = self.settings.borrow();
@@ -687,6 +756,9 @@ impl View {
 
     fn state_notice(&mut self, action: xem_settings::AppAction, result: &Result<String,String>) {
         use xem_settings::AppAction::*;
+        if action == ToggleFastForward {
+            return time_notice(&mut self.frame_rate, &AppRequest::Action(action), result, self.frame_rate_started.elapsed());
+        }
         let saved = match action { SaveState | ExportState => true, LoadState | ImportState => false, _ => return };
         if result.as_ref().is_ok_and(|text| text == "File operation canceled.") { return; }
         self.frame_rate.notify_state(saved,result.as_ref().err().map(String::as_str),self.frame_rate_started.elapsed());
@@ -1263,6 +1335,7 @@ impl View {
     /// The game ran `frames` frames with the last [`View::pad_buttons`].
     pub fn frames_ran(&mut self, frames: u32) {
         self.player.frames_ran(frames);
+        self.ran = frames;
     }
 
     /// Whether the battle's attack sequence under way began with a pointer's

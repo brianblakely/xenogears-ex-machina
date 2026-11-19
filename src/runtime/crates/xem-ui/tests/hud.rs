@@ -83,6 +83,38 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     capture(&gpu, &hud, "fps-with-activity");
 }
 
+#[test]
+fn retroachievements_notices_show_their_detail_one_after_another() {
+    use xem_ui::NoticeKind;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut hud = FrameRateUi::new(shared, 1.0).unwrap();
+    let at = Duration::from_secs;
+    hud.notify(NoticeKind::Information, "Xenogears", "1 of 2 achievements unlocked · hardcore", 4, at(0));
+    hud.frame(at(0), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Xenogears: 1 of 2 achievements unlocked · hardcore"));
+    // An unlock while the game's line shows waits for it, then shows its
+    // own, as tall as a failure's to give the description.
+    hud.notify(NoticeKind::Achievement, "Seven", "RAM holds seven · 5 points", 6, at(1));
+    hud.notify(NoticeKind::Achievement, "Scratchpad", "The scratchpad holds nine · 10 points", 6, at(1));
+    hud.frame(at(3), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Xenogears: 1 of 2 achievements unlocked · hardcore"));
+    hud.frame(at(4), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Seven: RAM holds seven · 5 points"));
+    let chip = ElementHandle::find_by_accessible_label(hud.component(), &hud.notice().unwrap()).next().unwrap();
+    assert_eq!((chip.absolute_position().x, chip.absolute_position().y), (0.0, 0.0));
+    assert_eq!((chip.size().width, chip.size().height), (304.0, 72.0), "the chip grown to give the description");
+    capture(&gpu, &hud, "achievement");
+    hud.frame(at(10), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Scratchpad: The scratchpad holds nine · 10 points"));
+    // A state's result shows at once, over a queued notice's turn.
+    hud.notify_state(true, None, at(11));
+    hud.frame(at(11), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("State saved"));
+    hud.frame(at(15), 1.0, false).unwrap();
+    assert!(hud.notice().is_none() && !hud.visible(), "nothing more queued");
+}
+
 /// Optional review captures use the same texture and assertions as the test.
 fn capture(gpu: &Gpu, hud: &FrameRateUi, name: &str) {
     let Some(dir) = std::env::var_os("XEM_UI_CAPTURE_DIR") else { return };

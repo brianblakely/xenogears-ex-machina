@@ -3,7 +3,7 @@
 //!
 //!     cargo run -p xem-ui --example panel -- [--size WxH] [--scale F] [--out DIR] [--name NAME]
 //!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--error TEXT]
-//!         [--locate LABEL]... [--pad BUTTON,...] [--japanese]
+//!         [--locate LABEL]... [--pad BUTTON,...] [--japanese] [--achievements STATE]
 //!
 //! One picture per section (`NAME-<index>.png`; only section N with
 //! `--section`), composited over a dark grey as hosts composite it over the
@@ -17,7 +17,11 @@
 //! and Android hosts do, `--error` the error bar saying TEXT, `--japanese`
 //! the Japanese release's options chosen, as beside its discs; `--locate`
 //! prints where the elements of an accessible label lie (logical x, y,
-//! width, height), for tests that tap the panel.
+//! width, height), for tests that tap the panel. `--achievements STATE`
+//! shows RetroAchievements as a native host's client gives it (a stand-in
+//! account and game): `signed-out`, `signed-in` or `hardcore` (signed in
+//! with hardcore mode on, which the Time and Saves sections then say);
+//! without it, as a browser shows it.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -39,6 +43,7 @@ fn main() {
     let mut import_disc = false;
     let mut japanese = false;
     let mut error = String::new();
+    let mut achievements: Option<String> = None;
     let mut locate: Vec<String> = Vec::new();
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/panel");
     let mut args = std::env::args().skip(1);
@@ -57,6 +62,7 @@ fn main() {
             "--import-disc" => import_disc = true,
             "--japanese" => japanese = true,
             "--error" => error = value(),
+            "--achievements" => achievements = Some(value()),
             "--locate" => locate.push(value()),
             "--hover" => hover = Some(position(&value())),
             "--click" => clicks.push(position(&value())),
@@ -85,6 +91,27 @@ fn main() {
     }
     if import_disc {
         ui.on_import_disc(|| {});
+    }
+    if let Some(state) = &achievements {
+        use xem_ui::{AchievementsAccount, AchievementsView};
+        ui.set_achievements_offered(true);
+        ui.on_achievements_request(|request| eprintln!("{request:?}"));
+        let signed_in = state != "signed-out";
+        let hardcore = state == "hardcore";
+        if hardcore {
+            settings.borrow_mut().apply(xem_settings::SettingChange::RetroAchievements(xem_settings::RetroAchievements { hardcore: true })).unwrap();
+        }
+        ui.set_achievements(&if signed_in {
+            AchievementsView {
+                account: AchievementsAccount::SignedIn,
+                user: "Signed in as Player · 1234 points".into(),
+                game: "Xenogears: 1 of 2 achievements unlocked, 5 of 15 points.".into(),
+                error: String::new(),
+                hardcore_active: hardcore,
+            }
+        } else {
+            AchievementsView { game: "Sign in to load the game's achievements.".into(), ..Default::default() }
+        });
     }
     let sections = ui.component().get_section_count();
     for section in (0..sections).filter(|section| only.is_none_or(|only| only == *section)) {
