@@ -18,6 +18,7 @@ pub mod xr_play;
 #[cfg(all(has_game_module, not(target_os = "macos")))]
 mod assisted;
 mod operations;
+pub mod achievements;
 // A build without a game module plays in no headset: nothing takes xem-xr.
 #[cfg(all(not(has_game_module), not(target_os = "macos")))]
 use xem_xr as _;
@@ -406,6 +407,13 @@ pub struct View {
     dialogue_hiding: xem_settings::look::DialogueHiding,
     /// The disc the game waits for that the drive's changer has not got.
     wanted_disc: Option<u8>,
+    /// RetroAchievements, where the host enabled it ([`View::enable_achievements`]).
+    achievements: Option<achievements::HostAchievements>,
+    /// The game frames the last update ran ([`View::frames_ran`]).
+    ran: u32,
+    /// Android's on-screen keyboard is asked for (a panel text field has
+    /// the focus).
+    keyboard: bool,
 }
 
 impl View {
@@ -511,7 +519,30 @@ impl View {
             looked: None,
             dialogue_hiding: Default::default(),
             wanted_disc: None,
+            achievements: None,
+            ran: 0,
+            keyboard: false,
         })
+    }
+
+    /// RetroAchievements for this host (desktop, Android): the account is
+    /// kept in `directory` (beside the settings), the panel's Achievements
+    /// section offers sign-in.
+    pub fn enable_achievements(&mut self, directory: Option<&std::path::Path>) {
+        let achievements = achievements::HostAchievements::new(directory);
+        achievements.attach(&self.ui);
+        self.achievements = Some(achievements);
+    }
+
+    /// The RetroAchievements client, for a headset loop that shares it.
+    pub fn achievements_client(&self) -> Option<Rc<RefCell<xem_achievements::Achievements>>> {
+        self.achievements.as_ref().map(achievements::HostAchievements::client)
+    }
+
+    /// An agent's RetroAchievements command (`--control`): `achievements`,
+    /// `achievements_sign_in {username, password}`, `achievements_sign_out`.
+    pub fn achievements_command(&mut self, command: &serde_json::Value) -> Option<serde_json::Value> {
+        self.achievements.as_mut()?.command(command)
     }
 
     /// The mouse wheel over the game: down pulls the field camera back,
@@ -609,6 +640,13 @@ impl View {
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
         let editing = self.panel_visible() && self.ui.text_editor_focused();
         if editing { self.app_input.release_keyboard(); }
+        // Android shows its on-screen keyboard while a panel text field has
+        // the focus (RetroAchievements' sign-in, a number); the desktop
+        // takes text whenever the panel shows (xem-desktop).
+        if cfg!(target_os = "android") && editing != self.keyboard {
+            window.set_text_input(editing);
+            self.keyboard = editing;
+        }
         let mut count = 0;
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
         if !keys.is_null() {
@@ -637,6 +675,9 @@ impl View {
             }
             self.log_operation(&request,&result,game.as_mut());
             self.show_result(result);
+        }
+        if let Some(achievements) = &mut self.achievements {
+            achievements.update(game.as_mut(), self.ran > 0, &self.ui, &mut self.frame_rate, self.frame_rate_started.elapsed());
         }
         if let Some(game) = game {
             let (debug_busy, debug_message) = game.debug_status();
@@ -1263,6 +1304,7 @@ impl View {
     /// The game ran `frames` frames with the last [`View::pad_buttons`].
     pub fn frames_ran(&mut self, frames: u32) {
         self.player.frames_ran(frames);
+        self.ran = frames;
     }
 
     /// Whether the battle's attack sequence under way began with a pointer's
@@ -1332,7 +1374,14 @@ impl View {
 
         let target_size = self.target_size;
         let presentation = self.settings.borrow().settings().presentation.clone();
-        self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
+        // The HUD stands at the safe area's top left; while the touch deck
+        // shows, it keeps clear of the deck's controls level with it (its
+        // top buttons on a phone).
+        let scale = self.ui.scale_factor();
+        let hud_at = (safe.x + 8.0 * scale, safe.y + 8.0 * scale);
+        let deck = self.deck.controls.iter().filter(|_| touch_shown).map(|(_, rect)| (rect.x, rect.y, rect.width, rect.height));
+        self.frame_rate.keep_clear(hud_at, scale, deck);
+        self.frame_rate.frame(self.frame_rate_started.elapsed(),scale,presentation.show_fps)
             .map_err(|error| error.to_string())?;
         // Under Force 4:3 the picture's place follows the game's own lines,
         // whatever size the frame was drawn at: game frames, rebuilt movies
@@ -1413,8 +1462,7 @@ impl View {
         }
         if self.frame_rate.visible() {
             let (width,height) = self.frame_rate.size();
-            let margin = 8.0*self.ui.scale_factor();
-            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:safe.x+margin,y:safe.y+margin,width:width as f32,height:height as f32 },target_size);
+            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:hud_at.0,y:hud_at.1,width:width as f32,height:height as f32 },target_size);
             counter.srgb_encoded = true;
             counter.filter = wgpu::FilterMode::Nearest;
             quads.push(counter);
@@ -1651,6 +1699,84 @@ mod tests {
     /// opaque as the setting says, but a control a finger holds, drawn
     /// whole; it stays under the open settings panel, holding nothing, so
     /// that the setting shows beside the panel as it changes. The deck's RUN
+    /// On a phone the touch deck's top buttons stand at the screen's top
+    /// right, level with the HUD: the HUD (the FPS counter, fast-forward,
+    /// an unlock's notice with its badge) narrows to keep a margin from
+    /// them, and takes its whole width again without the deck. For a review
+    /// capture (`XEM_UI_CAPTURE_DIR`), `XEM_HUD_PICTURE` and `XEM_HUD_BADGE`
+    /// may give the game's picture and the badge (PNGs).
+    #[test]
+    fn the_hud_keeps_clear_of_the_touch_decks_top_buttons() {
+        use xem_assist::touch::Control;
+        use xem_core::context::Context;
+        use xem_settings::{Assisted, SettingChange};
+        let rgba = |path: &std::ffi::OsStr| {
+            let mut decoder = png::Decoder::new(std::io::BufReader::new(std::fs::File::open(path).unwrap()));
+            decoder.set_transformations(png::Transformations::normalize_to_color8() | png::Transformations::ALPHA);
+            let mut reader = decoder.read_info().unwrap();
+            let mut pixels = vec![0; reader.output_buffer_size().unwrap()];
+            let frame = reader.next_frame(&mut pixels).unwrap();
+            assert_eq!(frame.color_type, png::ColorType::Rgba);
+            pixels.truncate(frame.buffer_size());
+            ((frame.width, frame.height), pixels)
+        };
+        let encode = |(width, height): (u32, u32), pixels: &[u8]| {
+            let mut out = Vec::new();
+            let mut encoder = png::Encoder::new(&mut out, width, height);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            encoder.write_header().unwrap().write_image_data(pixels).unwrap();
+            out
+        };
+        let (picture_size, picture) = std::env::var_os("XEM_HUD_PICTURE").map(|path| rgba(&path))
+            .unwrap_or_else(|| ((320, 240), (0..320 * 240).flat_map(|_| [96, 96, 96, 255]).collect()));
+        let badge = std::env::var_os("XEM_HUD_BADGE").map(|path| { let (size, pixels) = rgba(&path); encode(size, &pixels) })
+            .unwrap_or_else(|| encode((64, 64), &(0..64 * 64).flat_map(|i| if (i % 64 - 32i32).pow(2) + (i / 64 - 32i32).pow(2) < 400 { [240, 199, 94, 255] } else { [30, 50, 110, 255] }).collect::<Vec<u8>>()));
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        settings.borrow_mut().apply(SettingChange::ShowFps(true)).unwrap();
+        // The Android smoke's emulator: 1080x2400 at density 2.625.
+        let (width, height, scale) = (1080u32, 2400u32, 2.625f32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8Unorm, (width, height), scale, settings.clone(), false).unwrap();
+        view.set_game_image(&gpu, picture_size, &picture);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("phone target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        view.render(&gpu, &output, 0.0).unwrap();
+        let whole = (xem_ui::FrameRateUi::WIDTH * scale).round() as u32;
+        assert_eq!(view.frame_rate.size().0, whole, "no deck: the HUD's whole width");
+        // A finger has touched the game: the deck shows, its top buttons
+        // level with the HUD; fast-forward runs and an achievement unlocks.
+        view.touched = true;
+        view.arrange(Context::Walk);
+        view.frame_rate.set_activity(true, false);
+        let now = view.frame_rate_started.elapsed();
+        view.frame_rate.notify(xem_ui::NoticeKind::Achievement, "Welcome to Lahan", "Arrive in Lahan village · 5 points", Some(&badge), 6, now);
+        view.render(&gpu, &output, 0.0).unwrap();
+        let top = view.deck.controls.iter().filter(|(control, _)| matches!(control, Control::Start | Control::Settings)).map(|(_, rect)| rect.x).fold(f32::MAX, f32::min);
+        let margin = 8.0 * scale;
+        let right = margin + view.frame_rate.size().0 as f32;
+        assert!(view.frame_rate.size().0 < whole && right + margin <= top + 1.0, "the HUD ends at {right}, a margin before the deck's top buttons at {top}");
+        assert_eq!(view.frame_rate.notice().as_deref(), Some("Welcome to Lahan: Arrive in Lahan village · 5 points"));
+        if let Some(directory) = std::env::var_os("XEM_UI_CAPTURE_DIR") {
+            let directory = std::path::PathBuf::from(directory);
+            std::fs::create_dir_all(&directory).unwrap();
+            let image = xem_render::read_rgba8(&gpu.device, &gpu.queue, &target);
+            std::fs::write(directory.join("phone-unlock-with-touch-deck.png"), encode((width, height), &image)).unwrap();
+        }
+        // Touch controls turned off: the deck goes, the HUD is whole again.
+        let assisted = settings.borrow().settings().assisted;
+        settings.borrow_mut().apply(SettingChange::Assisted(Assisted { touch_controls: false, ..assisted })).unwrap();
+        view.render(&gpu, &output, 0.0).unwrap();
+        assert_eq!(view.frame_rate.size().0, whole);
+    }
+
     /// is the Run by default setting, lit while on.
     #[test]
     fn the_touch_deck_is_drawn_at_the_settings_opacity_and_its_run_key_is_the_run_by_default_setting() {

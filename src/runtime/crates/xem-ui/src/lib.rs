@@ -109,6 +109,36 @@ impl WindowAdapter for PanelWindow {
     }
 }
 
+/// Whether the player is signed in to RetroAchievements (the panel's
+/// Achievements section).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum AchievementsAccount {
+    #[default]
+    SignedOut,
+    SigningIn,
+    SignedIn,
+}
+
+/// What the Achievements section shows of the host's RetroAchievements
+/// client ([`SettingsUi::set_achievements`]).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AchievementsView {
+    pub account: AchievementsAccount,
+    /// Who is signed in and their points.
+    pub user: String,
+    /// What the running game's achievements do.
+    pub game: String,
+    /// Why the last sign-in or load failed (empty: nothing failed).
+    pub error: String,
+}
+
+/// What the Achievements section asks of the host's client.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AchievementsRequest {
+    SignIn { username: String, password: String },
+    SignOut,
+}
+
 /// The settings panel bound to a [`SettingsService`].
 pub struct SettingsUi {
     window: Rc<PanelWindow>,
@@ -278,6 +308,49 @@ impl SettingsUi {
         };
         self.panel.set_error(text.into());
         self.select_section(SAVES_SECTION);
+    }
+
+    /// Whether the host has a RetroAchievements client (the native hosts):
+    /// the Achievements section offers sign-in, else says why a browser
+    /// cannot reach the server.
+    pub fn set_achievements_offered(&self, offered: bool) {
+        self.panel.set_ra_offered(offered);
+    }
+
+    /// What the host's RetroAchievements client says now.
+    pub fn set_achievements(&self, view: &AchievementsView) {
+        let panel = &self.panel;
+        panel.set_ra_account(match view.account {
+            AchievementsAccount::SignedOut => 0,
+            AchievementsAccount::SigningIn => 1,
+            AchievementsAccount::SignedIn => 2,
+        });
+        for (current, next, set) in [
+            (panel.get_ra_user(), &view.user, SettingsPanel::set_ra_user as fn(&SettingsPanel, SharedString)),
+            (panel.get_ra_game(), &view.game, SettingsPanel::set_ra_game),
+            (panel.get_ra_error(), &view.error, SettingsPanel::set_ra_error),
+        ] {
+            if current.as_str() != next {
+                set(panel, next.as_str().into());
+            }
+        }
+    }
+
+    /// The Achievements section's Sign in (with the name and password the
+    /// player typed; the password field empties at once) and Sign out.
+    pub fn on_achievements_request(&self, f: impl FnMut(AchievementsRequest) + 'static) {
+        let f = Rc::new(RefCell::new(f));
+        let panel = self.panel.as_weak();
+        self.panel.on_ra_sign_in_requested({
+            let f = f.clone();
+            move |username, password| {
+                if let Some(panel) = panel.upgrade() {
+                    panel.set_ra_password("".into());
+                }
+                f.borrow_mut()(AchievementsRequest::SignIn { username: username.into(), password: password.into() });
+            }
+        });
+        self.panel.on_ra_sign_out_requested(move || f.borrow_mut()(AchievementsRequest::SignOut));
     }
 
     /// What the Disc group says about the imported disc.
@@ -1070,7 +1143,53 @@ fn backup_actions(browser: bool) -> impl Iterator<Item = (AppAction, &'static st
     })
 }
 
-/// The frame counter, playback activity and state results over the game.
+/// What a notice over the game is (its icon and colour).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NoticeKind {
+    Success,
+    Failure,
+    /// RetroAchievements' unlocks and completions.
+    Achievement,
+    Information,
+}
+
+impl NoticeKind {
+    /// The overlay's `notice-kind`.
+    fn index(self) -> i32 {
+        match self {
+            NoticeKind::Success => 0,
+            NoticeKind::Failure => 1,
+            NoticeKind::Achievement => 2,
+            NoticeKind::Information => 3,
+        }
+    }
+}
+
+/// A notice waiting for the one shown to expire ([`FrameRateUi::notify`]).
+struct Queued {
+    kind: NoticeKind,
+    title: String,
+    detail: String,
+    badge: Option<slint::Image>,
+    seconds: u64,
+}
+
+/// An unlocked achievement's badge (a PNG RetroAchievements' server gave)
+/// as the HUD shows it: none for data that is no PNG of a badge's size (at
+/// most 512 pixels square; the server's are 64), read from its header
+/// before it is decoded.
+fn badge_image(png: &[u8]) -> Option<slint::Image> {
+    let size = |at: usize| png.get(at..at + 4).map(|bytes| u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]));
+    let (width, height) = (size(16)?, size(20)?);
+    let header = png.starts_with(b"\x89PNG\r\n\x1a\n") && &png[12..16] == b"IHDR";
+    if !header || !(1..=512).contains(&width) || !(1..=512).contains(&height) {
+        return None;
+    }
+    slint::Image::load_from_data(png, Some("png")).ok()
+}
+
+/// The frame counter, playback activity, state results and RetroAchievements'
+/// notices over the game.
 pub struct FrameRateUi {
     window: Rc<PanelWindow>,
     component: FrameRateOverlay,
@@ -1081,9 +1200,21 @@ pub struct FrameRateUi {
     previous: Duration,
     frames: u32,
     notice_until: Option<Duration>,
+    queued: std::collections::VecDeque<Queued>,
+    /// Its width in logical pixels ([`FrameRateUi::set_width`]).
+    width: f32,
+}
+
+/// The HUD's size in physical pixels: `width` logical pixels by 110.
+fn hud_size(scale_factor: f32, width: f32) -> (u32, u32) {
+    ((width * scale_factor).round().max(1.0) as u32, (110.0 * scale_factor).round().max(1.0) as u32)
 }
 
 impl FrameRateUi {
+    /// The HUD's widest, and its least where a host narrows it.
+    pub const WIDTH: f32 = 304.0;
+    pub const LEAST_WIDTH: f32 = 200.0;
+
     pub fn new(gpu: SharedGpu, scale_factor: f32) -> Result<Self, PlatformError> {
         let device = gpu.device.clone();
         provide_gpu(gpu)?;
@@ -1091,7 +1222,7 @@ impl FrameRateUi {
         let window = CREATED
             .take()
             .ok_or_else(|| PlatformError::Other("Slint created no FPS window".into()))?;
-        let size = Self::physical_size(scale_factor);
+        let size = hud_size(scale_factor, Self::WIDTH);
         let (texture, view) = panel_texture(&device, size);
         let mut ui = Self {
             window,
@@ -1103,19 +1234,40 @@ impl FrameRateUi {
             previous: Duration::ZERO,
             frames: 0,
             notice_until: None,
+            queued: Default::default(),
+            width: Self::WIDTH,
         };
         ui.resize(scale_factor);
         ui.component.show()?;
         Ok(ui)
     }
-    fn physical_size(scale_factor: f32) -> (u32, u32) {
-        (
-            (304.0 * scale_factor).round().max(1.0) as u32,
-            (110.0 * scale_factor).round().max(1.0) as u32,
-        )
+    /// The HUD as wide as `logical` pixels allow (between
+    /// [`Self::LEAST_WIDTH`] and [`Self::WIDTH`]): a host keeps it clear of
+    /// what stands beside it, the touch deck's top buttons. Its chips and
+    /// notices fit the width; a notice's words wrap or elide in it.
+    pub fn set_width(&mut self, logical: f32) {
+        let width = logical.clamp(Self::LEAST_WIDTH, Self::WIDTH).round();
+        if width != self.width {
+            self.width = width;
+            self.resize(self.window.window.scale_factor());
+        }
+    }
+    /// Keeps the HUD, standing at `at` (its top left, in target pixels at
+    /// `scale`), 8 logical pixels from what stands level with it
+    /// (`controls`, each x, y, width and height in target pixels: the touch
+    /// deck's, while it shows): it narrows to the room left of them
+    /// ([`Self::set_width`]), whole beside none.
+    pub fn keep_clear(&mut self, at: (f32, f32), scale: f32, controls: impl IntoIterator<Item = (f32, f32, f32, f32)>) {
+        let (top, bottom) = (at.1, at.1 + 110.0 * scale);
+        let width = controls
+            .into_iter()
+            .filter(|&(_, y, _, height)| y < bottom && y + height > top)
+            .map(|(x, ..)| (x - at.0) / scale - 8.0)
+            .fold(Self::WIDTH, f32::min);
+        self.set_width(width);
     }
     fn resize(&mut self, scale_factor: f32) {
-        let size = Self::physical_size(scale_factor);
+        let size = hud_size(scale_factor, self.width);
         if self.size() != size {
             (self.texture, self.view) = panel_texture(&self.device, size);
         }
@@ -1148,20 +1300,36 @@ impl FrameRateUi {
         self.component.set_fast_forward(fast_forward);
         self.component.set_rewinding(rewinding);
     }
-    /// A result from an explicit save-state operation, never a memory-card write.
+    /// A result from an explicit save-state operation, never a memory-card
+    /// write: shown at once, over whatever showed.
     pub fn notify_state(&mut self, saved: bool, error: Option<&str>, now: Duration) {
-        let notice = match error {
-            Some(error) => format!("Could not {} state: {error}", if saved { "save" } else { "load" }),
-            None => format!("State {}", if saved { "saved" } else { "loaded" }),
-        };
-        self.component.set_notice_title(match error {
-            Some(_) => format!("Could not {} state", if saved { "save" } else { "load" }),
-            None => notice.clone(),
-        }.into());
-        self.component.set_notice_detail(error.unwrap_or_default().into());
+        let action = if saved { "save" } else { "load" };
+        match error {
+            Some(error) => self.show(NoticeKind::Failure, &format!("Could not {action} state"), error, None, 8, now),
+            None => self.show(NoticeKind::Success, &format!("State {}", if saved { "saved" } else { "loaded" }), "", None, 4, now),
+        }
+    }
+
+    /// A notice (RetroAchievements') shown for `seconds` once those before
+    /// it expired: one does not hide another. An unlock's `badge` (the
+    /// achievement's image, a PNG) shows in place of the trophy.
+    pub fn notify(&mut self, kind: NoticeKind, title: &str, detail: &str, badge: Option<&[u8]>, seconds: u64, now: Duration) {
+        let badge = badge.and_then(badge_image);
+        if self.notice_until.is_some() {
+            self.queued.push_back(Queued { kind, title: title.into(), detail: detail.into(), badge, seconds });
+        } else {
+            self.show(kind, title, detail, badge, seconds, now);
+        }
+    }
+
+    fn show(&mut self, kind: NoticeKind, title: &str, detail: &str, badge: Option<slint::Image>, seconds: u64, now: Duration) {
+        let notice = if detail.is_empty() { title.to_string() } else { format!("{title}: {detail}") };
+        self.component.set_notice_title(title.into());
+        self.component.set_notice_detail(detail.into());
+        self.component.set_notice_badge(badge.unwrap_or_default());
         self.component.set_notice(notice.into());
-        self.component.set_notice_error(error.is_some());
-        self.notice_until = Some(now.saturating_add(Duration::from_secs(if error.is_some() { 8 } else { 4 })));
+        self.component.set_notice_kind(kind.index());
+        self.notice_until = Some(now.saturating_add(Duration::from_secs(seconds)));
     }
     pub fn notice(&self) -> Option<String> {
         self.notice_until.map(|_| self.component.get_notice().into())
@@ -1181,6 +1349,9 @@ impl FrameRateUi {
         if self.notice_until.is_some_and(|until| now >= until) {
             self.notice_until = None;
             self.component.set_notice("".into());
+            if let Some(next) = self.queued.pop_front() {
+                self.show(next.kind, &next.title, &next.detail, next.badge, next.seconds, now);
+            }
         }
         if self.window.window.scale_factor() != scale_factor {
             self.resize(scale_factor);

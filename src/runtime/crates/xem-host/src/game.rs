@@ -52,6 +52,9 @@ pub struct Game {
     /// The presentation shows first-person inspection
     /// (`Session::set_inspecting`).
     inspecting: bool,
+    /// The RetroAchievements client following this game, and the disc in
+    /// the drive it has the hash of ([`Game::follow_achievements`]).
+    achievements: Option<(std::rc::Rc<std::cell::RefCell<xem_achievements::Achievements>>, u8)>,
 }
 
 impl Game {
@@ -93,6 +96,7 @@ impl Game {
             attack_page: false,
             listener_view: None,
             inspecting: false,
+            achievements: None,
         };
         game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
         game
@@ -177,6 +181,37 @@ impl Game {
         }
         Ok(())
     }
+    /// RetroAchievements' `client` following this game, between the host's
+    /// frames (`crate::achievements`): a game it has not followed is
+    /// booted in it by the disc in the drive's hash, and the session's
+    /// observer evaluates every frame from then; another disc in the drive
+    /// (the story's disc change) is checked; and the server's answers are
+    /// taken (`ran`: frames ran at the last update).
+    pub fn follow_achievements(&mut self, client: &std::rc::Rc<std::cell::RefCell<xem_achievements::Achievements>>, ran: bool) {
+        let disc = self.session.runtime.services().cd.inserted();
+        match &self.achievements {
+            Some((by, seen)) if std::rc::Rc::ptr_eq(by, client) => {
+                if *seen != disc {
+                    let hash = self.disc_hash();
+                    client.borrow_mut().change_disc(hash);
+                }
+            }
+            _ => {
+                self.session.observer = Some(Box::new(xem_achievements::Evaluate(client.clone())));
+                let hash = self.disc_hash();
+                client.borrow_mut().boot(hash);
+            }
+        }
+        self.achievements = Some((client.clone(), disc));
+        client.borrow_mut().update(Some(self.session.runtime.memory()), ran);
+    }
+
+    /// RetroAchievements' hash of the disc in the drive.
+    fn disc_hash(&mut self) -> Result<String, String> {
+        let source = self.session.runtime.services().cd.inserted_source().ok_or("no disc in the drive")?;
+        xem_achievements::disc_hash(source)
+    }
+
     pub fn set_rewind_held(&mut self, held: bool, from_panel: bool) -> Result<(),String> {
         if held && self.session.rewind.budget == 0 { return Err("Enable rewind history in Settings first.".into()); }
         if held && let Some(error) = &self.session.rewind.error { return Err(error.clone()); }

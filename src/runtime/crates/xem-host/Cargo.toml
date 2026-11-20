@@ -21,6 +21,7 @@ xem-assist = { path = "../xem-assist" }
 xem-disc = { path = "../xem-disc" }
 xem-game = { path = "../xem-game" }
 xem-storage = { path = "../xem-storage" }
+xem-achievements = { path = "../xem-achievements" }
 png.workspace = true
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]

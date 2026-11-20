@@ -1,5 +1,5 @@
-// The app's Settings: sections in a sidebar (a strip of icons when the panel
-// is narrow), each a column of cards of rows (some under a heading), under a
+// The app's Settings: sections in a sidebar (a strip of tabs when the panel
+// is narrow; either scrolls where the sections do not all fit), each a column of cards of rows (some under a heading), under a
 // header with Quit (on hosts that can quit) and Close and over an error bar
 // while something failed. An ordinary
 // application style (plan.md: not Seraph Glass) on Slint's fluent-dark
@@ -17,10 +17,17 @@ export struct BindingRow {
 struct Section {
     label: string,
     icon: string,
+    // The narrow panel's strip shows this under the icon instead of the
+    // label (empty: the label).
+    short: string,
 }
 
 global Theme {
     out property <brush> panel: #15171cf7;
+    // The section list's edges fade into the panel: its colour, opaque to
+    // transparent.
+    out property <color> panel-fade: #15171cf7;
+    out property <color> panel-clear: #15171c00;
     out property <brush> raised: #ffffff08;
     out property <brush> hover: #ffffff0f;
     out property <brush> pressed: #ffffff1a;
@@ -35,6 +42,8 @@ global Theme {
     out property <brush> accent: Palette.accent-background;
     out property <brush> good: #8fd9a8;
     out property <brush> bad: #ffa3a3;
+    // RetroAchievements' trophies on the HUD.
+    out property <brush> gold: #f0c75e;
 }
 
 // What has the focus, for a gamepad's buttons (lib.rs `SettingsUi::gamepad`):
@@ -62,6 +71,8 @@ global Icons {
     // It uses more of the grid so the flared cap remains legible at 18px.
     out property <string> gameplay: "M7.5 1.66 C7.34 1.76 7.12 1.83 7.03 1.84 C6.8 1.84 6.41 2.14 6.41 2.32 C6.41 2.62 6.76 3.05 8.34 4.67 C10.06 6.46 10.24 6.71 10.07 7.29 C10.03 7.42 10.04 7.91 10.1 8.39 L10.19 9.26 L9.83 9.98 C9.54 10.54 9.41 10.72 9.25 10.76 C9.07 10.79 9.04 10.84 9.04 11.09 C9.04 11.72 8.8 12.5 8.63 12.5 C8.29 12.5 7.61 14.1 7.71 14.66 C7.78 15.04 7.43 15.27 7.09 15.03 C6.82 14.85 6.62 15.22 6.65 15.86 C6.68 16.48 6.13 18.31 5.89 18.38 C5.42 18.53 5.02 20.71 5.34 21.41 C5.98 22.8 7.64 22.9 8.03 21.55 C8.1 21.32 8.27 20.96 8.39 20.75 C8.52 20.54 8.76 20.11 8.92 19.79 C9.07 19.47 9.33 19.01 9.48 18.78 C9.63 18.53 9.79 18.19 9.85 18.02 C9.89 17.85 9.98 17.65 10.03 17.59 C10.23 17.36 10.65 16.55 10.75 16.21 C10.81 16.04 10.95 15.7 11.05 15.49 C11.23 15.13 11.39 14.75 11.79 13.66 C12 13.1 12.57 12.01 12.75 11.82 C12.83 11.72 12.92 11.56 12.92 11.46 C12.92 10.73 13.4 11.11 14.21 12.48 C15.1 14 15.3 14.32 15.47 14.54 C15.79 14.98 16 15.51 16 15.98 C16 16.33 16.04 16.42 16.15 16.46 C16.25 16.48 16.5 16.74 16.73 17.02 C17 17.36 17.26 17.59 17.53 17.71 L17.94 17.9 L18.43 17.66 C18.7 17.52 18.92 17.36 18.91 17.31 C18.89 16.9 18.66 15.97 18.54 15.84 C18.48 15.76 18.36 15.43 18.3 15.12 C18.11 14.15 17.59 13.28 17.1 13.13 C16.91 13.06 16.75 12.69 16.75 12.27 C16.75 11.89 16.46 11.29 16.2 11.11 C16.02 11 15.65 10.54 15.22 9.92 C15.13 9.77 15.09 9.62 15.12 9.42 C15.19 9 14.99 8.62 14.68 8.56 C14.17 8.45 14.03 7.74 14.25 6.5 C14.3 6.2 14.34 5.81 14.34 5.63 C14.33 5.42 14.44 5.12 14.58 4.81 C14.73 4.53 14.83 4.22 14.83 4.11 C14.83 3.96 14.89 3.9 15.07 3.88 C16.25 3.63 15.83 2.94 14.24 2.5 C13.03 2.18 12.16 2.74 12.16 3.87 C12.16 3.97 12.09 4.15 12.01 4.25 L11.84 4.46 L11.36 4 C10.81 3.46 9.94 2.75 9.83 2.75 C9.79 2.75 9.61 2.62 9.42 2.46 C9.22 2.3 9.01 2.17 8.96 2.17 C8.9 2.17 8.72 2.06 8.57 1.92 C8.03 1.47 7.92 1.44 7.5 1.66 Z";
     out property <string> about: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 11 L12 16.5 M12 7.6 L12 7.7";
+    // A cup on a stem and a foot, its handles at either side.
+    out property <string> trophy: "M7 4 L17 4 L17 9 A5 5 0 0 1 7 9 Z M7 6 L4.5 6 A3 3 0 0 0 7.8 11.6 M17 6 L19.5 6 A3 3 0 0 1 16.2 11.6 M12 14 L12 17.5 M9 17.5 L15 17.5 L15.5 20 L8.5 20 Z";
     out property <string> close: "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5";
     out property <string> reset: "M19.5 8 A8 8 0 1 0 20 15 M19.5 3.5 L19.5 8.5 L14.5 8.5";
     out property <string> power: "M12 3.5 L12 11.5 M6.7 7.7 A7.5 7.5 0 1 0 17.3 7.7";
@@ -96,9 +107,15 @@ component Divider inherits Rectangle {
 // label in the narrow panel's strip.
 component NavItem inherits Rectangle {
     in property <string> label;
+    // The strip's word for it, if it is not the label (Section.short).
+    in property <string> short;
     in property <string> icon;
     in property <bool> selected;
     in property <bool> stacked;
+    // A tab's width in the strip (NavStrip's share), a row's height in the
+    // sidebar (NavColumn's).
+    in property <length> tab-width;
+    in property <length> row-height: 38px;
     callback activated();
 
     accessible-role: tab;
@@ -109,15 +126,11 @@ component NavItem inherits Rectangle {
     private property <bool> hovered: touch.has-hover;
     private property <brush> label-color: root.selected || root.hovered ? Theme.text : Theme.text-secondary;
     private property <brush> icon-color: root.selected ? Theme.accent : root.hovered ? Theme.text : Theme.text-secondary;
-    min-height: root.stacked ? 54px : 38px;
-    max-height: root.stacked ? 54px : 38px;
-    // A tab in the strip would be as wide as its label, bold as when
-    // selected, and shares out any room left; a strip too narrow for that
-    // takes the same from every tab (their labels elide), down to a tab
-    // just wider than its icon, so every tab stays inside the panel.
-    min-width: root.stacked ? 24px : 0px;
-    preferred-width: root.stacked ? label-size.preferred-width + 6px : 0px;
-    label-size := Text { text: root.label; font-size: 10.5px; font-weight: 600; visible: false; accessible-role: none; }
+    min-height: root.stacked ? 54px : root.row-height;
+    max-height: root.stacked ? 54px : root.row-height;
+    min-width: root.stacked ? root.tab-width : 0px;
+    preferred-width: root.stacked ? root.tab-width : 0px;
+    private property <string> strip-label: root.short != "" ? root.short : root.label;
     border-radius: 8px;
     background: touch.pressed ? Theme.pressed : root.selected ? (root.hovered ? Theme.selected-hover : Theme.selected) : root.hovered ? Theme.hover : transparent;
     animate background { duration: 140ms; easing: ease-out; }
@@ -158,7 +171,7 @@ component NavItem inherits Rectangle {
             Icon { data: root.icon; color: root.icon-color; filled: root.icon == Icons.gameplay; }
         }
         Text {
-            text: root.label;
+            text: root.strip-label;
             font-size: 10.5px;
             font-weight: root.selected ? 600 : 400;
             color: root.label-color;
@@ -173,6 +186,162 @@ component NavItem inherits Rectangle {
     }
 }
 
+// The wide panel's sidebar: a column of rows, scrolled by the wheel, a
+// finger, or the selection, which it brings into view, where the panel is
+// too short for them all. Rows are 38 pixels and a gap of 2; a column that
+// scrolls makes them as tall as shows a whole number of them and a half
+// (40 pixels apart at least), so that at rest its edges cut rows through
+// their words, where an edge fades while more rows lie past it. Row j's
+// middle lies at 1 + pitch × (j + ½) down the column.
+component NavColumn inherits Rectangle {
+    in property <[Section]> sections;
+    in-out property <int> current;
+    private property <length> fade: 28px;
+    private property <bool> scrolls: root.sections.length * 40px + 2px > flick.height;
+    private property <int> whole: max(1, floor((flick.height - 1px) / 40px - 0.5));
+    private property <length> pitch: root.scrolls ? (flick.height - 1px) / (root.whole + 0.5) : 40px;
+
+    function scroll-to(y: length) {
+        flick.content-y = max(min(0px, flick.height - flick.content-height), min(0px, y));
+    }
+    // The current row in view clear of the fades, the column moved as
+    // little as rests cutting rows a quarter of the way into one allow
+    // (or on to the end it moves toward, within half a row of it: never
+    // back to the end it leaves, which would leave the row under the far
+    // fade).
+    function reveal() {
+        if !root.scrolls || flick.height <= 0px {
+            root.scroll-to(0px);
+            return;
+        }
+        let top = 2px + root.pitch * root.current;
+        let bottom = top + root.pitch - 2px;
+        let shown = -flick.content-y;
+        let end = flick.content-height - flick.height;
+        if top - root.fade < shown || bottom + root.fade > shown + flick.height {
+            let up = top - root.fade < shown;
+            let wanted = up ? top - root.fade : bottom + root.fade - flick.height;
+            let at = root.pitch * ((up ? floor(wanted / root.pitch - 0.25) : ceil(wanted / root.pitch - 0.25)) + 0.25);
+            root.scroll-to(up && at < root.pitch / 2 ? 0px : !up && at > end - root.pitch / 2 ? -end : -at);
+        } else {
+            root.scroll-to(flick.content-y);
+        }
+    }
+    init => { root.reveal(); }
+    changed current => { root.reveal(); }
+
+    flick := Flickable {
+        content-width: self.width;
+        content-height: max(self.height, column.preferred-height);
+        changed height => { root.reveal(); }
+        column := VerticalLayout {
+            width: flick.width;
+            height: flick.content-height;
+            padding: 2px;
+            spacing: 2px;
+            alignment: start;
+            for section[index] in root.sections: NavItem {
+                row-height: root.pitch - 2px;
+                label: section.label;
+                icon: section.icon;
+                selected: index == root.current;
+                activated => { root.current = index; }
+            }
+        }
+    }
+    Rectangle {
+        y: 0px;
+        height: root.fade;
+        background: @linear-gradient(180deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-y < 0px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+    Rectangle {
+        y: parent.height - root.fade;
+        height: root.fade;
+        background: @linear-gradient(0deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-y + flick.content-height > flick.height + 1px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+}
+
+// The narrow panel's strip: tabs all as wide, scrolled sideways by a
+// finger, a mouse's wheel, or the selection. They share out the strip's
+// width so that it shows a whole number of them and a half, each wide
+// enough for the widest label (Shortcuts) with room either side: at rest
+// its edges cut tabs through their middles, where the fades show that more
+// lie past them. Tab j's middle lies at pitch × (j + ½) along the strip.
+component NavStrip inherits Rectangle {
+    in property <[Section]> sections;
+    in-out property <int> current;
+    private property <length> fade: 28px;
+    private property <int> whole: max(1, floor(flick.width / 84px - 0.5));
+    private property <length> pitch: flick.width / (root.whole + 0.5);
+
+    function scroll-to(x: length) {
+        flick.content-x = max(min(0px, flick.width - flick.content-width), min(0px, x));
+    }
+    // At rest, the current tab as near the strip's middle as edges cutting
+    // tabs through their middles allow (a quarter of the way past one), or
+    // at an end of the strip within half a tab of it (where the far edge
+    // cuts a tab through its middle).
+    function settle() {
+        if flick.width > 0px {
+            let centred = root.pitch * (root.current + 0.5) - flick.width / 2;
+            let start = root.pitch * (round(centred / root.pitch - 0.25) + 0.25);
+            let end = flick.content-width - flick.width;
+            root.scroll-to(start < root.pitch / 2 ? 0px : start > end - root.pitch / 2 ? -end : -start);
+        }
+    }
+    init => { root.settle(); }
+    changed current => { root.settle(); }
+
+    TouchArea {
+        // A mouse's wheel turns the strip.
+        scroll-event(event) => {
+            if event.delta-x == 0 && event.delta-y != 0 {
+                root.scroll-to(flick.content-x + event.delta-y);
+                return accept;
+            }
+            reject
+        }
+        flick := Flickable {
+            content-width: row.preferred-width;
+            content-height: self.height;
+            changed width => { root.settle(); }
+            row := HorizontalLayout {
+                width: flick.content-width;
+                height: flick.height;
+                padding: 2px;
+                spacing: 4px;
+                for section[index] in root.sections: NavItem {
+                    stacked: true;
+                    tab-width: root.pitch - 4px;
+                    label: section.label;
+                    short: section.short;
+                    icon: section.icon;
+                    selected: index == root.current;
+                    activated => { root.current = index; }
+                }
+            }
+        }
+    }
+    Rectangle {
+        x: 0px;
+        width: root.fade;
+        background: @linear-gradient(90deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-x < 0px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+    Rectangle {
+        x: parent.width - root.fade;
+        width: root.fade;
+        background: @linear-gradient(270deg, Theme.panel-fade 0%, Theme.panel-clear 100%);
+        opacity: flick.content-x + flick.content-width > flick.width + 1px ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+}
+
 // The sections, chosen with the pointer or (once focused) the arrow keys.
 component Nav inherits FocusScope {
     in property <[Section]> sections;
@@ -181,8 +350,9 @@ component Nav inherits FocusScope {
 
     accessible-role: tab-list;
     accessible-label: "Settings sections";
-    // Its items' height (a strip's, or a column's of rows of 38 and gaps of 2).
-    min-height: root.stacked ? 58px : root.sections.length * 40px + 2px;
+    // A strip's height; a column takes the sidebar's (two rows at least)
+    // and scrolls.
+    min-height: root.stacked ? 58px : 82px;
     key-pressed(event) => {
         if event.text == Key.UpArrow || event.text == Key.LeftArrow {
             root.current = max(0, root.current - 1);
@@ -207,28 +377,17 @@ component Nav inherits FocusScope {
         border-width: root.has-focus ? 1px : 0px;
         border-color: Theme.accent;
     }
-    if !root.stacked: VerticalLayout {
-        padding: 2px;
-        spacing: 2px;
-        alignment: start;
-        for section[index] in root.sections: NavItem {
-            label: section.label;
-            icon: section.icon;
-            selected: index == root.current;
-            activated => { root.current = index; }
-        }
+    if !root.stacked: NavColumn {
+        width: parent.width;
+        height: parent.height;
+        sections: root.sections;
+        current <=> root.current;
     }
-    if root.stacked: HorizontalLayout {
-        padding: 2px;
-        spacing: 2px;
-        for section[index] in root.sections: NavItem {
-            stacked: true;
-            horizontal-stretch: 1;
-            label: section.label;
-            icon: section.icon;
-            selected: index == root.current;
-            activated => { root.current = index; }
-        }
+    if root.stacked: NavStrip {
+        width: parent.width;
+        height: parent.height;
+        sections: root.sections;
+        current <=> root.current;
     }
 }
 
@@ -870,6 +1029,8 @@ export component SettingsPanel inherits Window {
         { label: "Time", icon: Icons.time },
         { label: "Saves", icon: Icons.saves },
         { label: "Gameplay", icon: Icons.gameplay },
+        // RetroAchievements, "Cheevos" in the strip, as its players say.
+        { label: "Achievements", icon: Icons.trophy, short: "Cheevos" },
         { label: "Debug", icon: Icons.bug },
         { label: "About", icon: Icons.about },
     ];
@@ -888,6 +1049,20 @@ export component SettingsPanel inherits Window {
     in-out property <int> debug-movie;
     in-out property <int> debug-movie-kind: 1;
     callback debug-requested(int);
+    // RetroAchievements (lib.rs `AchievementsView`): offered by the native
+    // hosts (its server takes no requests from web pages); the account (0
+    // signed out, 1 signing in, 2 signed in) and who is signed in, what the
+    // running game's achievements do, and why the last sign-in or load
+    // failed.
+    in property <bool> ra-offered;
+    in property <int> ra-account;
+    in property <string> ra-user;
+    in property <string> ra-game: "No game: play a disc to load its achievements.";
+    in property <string> ra-error;
+    in-out property <string> ra-username;
+    in-out property <string> ra-password;
+    callback ra-sign-in-requested(string, string);
+    callback ra-sign-out-requested();
     in property <string> time-status: "Boot a game to use rewind.";
     in property <string> storage-status;
     in property <bool> fast-forward;
@@ -948,7 +1123,10 @@ export component SettingsPanel inherits Window {
     private property <bool> rewind-history-focused;
     private property <bool> game-editor-focused;
     private property <bool> game-pad-editor-focused;
-    out property <bool> text-editor-focused: keyboard-editor-focused || gamepad-editor-focused || rewind-interval-focused || rewind-history-focused || game-editor-focused;
+    private property <bool> ra-username-focused;
+    private property <bool> ra-password-focused;
+    out property <bool> text-editor-focused: keyboard-editor-focused || gamepad-editor-focused || rewind-interval-focused || rewind-history-focused || game-editor-focused
+        || ra-username-focused || ra-password-focused;
     // The gamepad binding field that has the focus (1 a shortcut's chord, 2 a
     // game action's inputs, 0 neither): a gamepad's South on it takes the
     // next buttons pressed together (lib.rs), saying so while it waits.
@@ -1011,6 +1189,8 @@ export component SettingsPanel inherits Window {
         root.rewind-history-focused = false;
         root.game-editor-focused = false;
         root.game-pad-editor-focused = false;
+        root.ra-username-focused = false;
+        root.ra-password-focused = false;
         root.rewind-held(false);
     }
 
@@ -1109,9 +1289,8 @@ export component SettingsPanel inherits Window {
                         Nav {
                             sections: root.sections;
                             current <=> root.selected-section;
-                            vertical-stretch: 0;
+                            vertical-stretch: 1;
                         }
-                        Rectangle { vertical-stretch: 1; }
                     }
                 }
                 if root.wide-layout: Rectangle { width: 1px; background: Theme.divider; }
@@ -2012,14 +2191,65 @@ export component SettingsPanel inherits Window {
                                     toggled(on) => { root.gameplay-edited("fast-disc", on ? 1 : 0); }
                                 }
                             }
+                            // Achievements: RetroAchievements, where the host
+                            // offers it.
+                            if root.selected-section == 7 && !root.ra-offered: Card {
+                                title: "RetroAchievements";
+                                heading: "RetroAchievements";
+                                Text { text: "RetroAchievements needs the desktop, Android or headset app: its server takes no requests from web pages, so a browser can neither sign in nor send unlocks."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 7 && root.ra-offered: Card {
+                                title: "RetroAchievements account";
+                                heading: "RetroAchievements";
+                                if root.ra-account == 0: Text { text: "Sign in with your retroachievements.org account to earn the game's achievements. This device keeps the token the server gives, never your password."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                if root.ra-account == 0: Row {
+                                    label: "User name";
+                                    LineEdit {
+                                        accessible-label: "RetroAchievements user name";
+                                        min-width: 180px;
+                                        text <=> root.ra-username;
+                                        changed has-focus => { root.ra-username-focused = self.has-focus; }
+                                    }
+                                }
+                                if root.ra-account == 0: Row {
+                                    label: "Password";
+                                    LineEdit {
+                                        accessible-label: "RetroAchievements password";
+                                        min-width: 180px;
+                                        input-type: password;
+                                        text <=> root.ra-password;
+                                        changed has-focus => { root.ra-password-focused = self.has-focus; }
+                                        accepted => { root.ra-sign-in-requested(root.ra-username, root.ra-password); }
+                                    }
+                                }
+                                if root.ra-account == 0: HorizontalLayout {
+                                    alignment: end;
+                                    Button { text: "Sign in"; primary: true; clicked => { root.ra-sign-in-requested(root.ra-username, root.ra-password); } }
+                                }
+                                if root.ra-account == 1: Text { text: "Signing in…"; font-size: 13px; color: Theme.text-secondary; }
+                                if root.ra-account == 2: HorizontalLayout {
+                                    spacing: 12px;
+                                    Text { text: root.ra-user; font-size: 13px; color: Theme.text; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        horizontal-stretch: 0;
+                                        Button { text: "Sign out"; clicked => { root.ra-sign-out-requested(); } }
+                                    }
+                                }
+                                if root.ra-error != "": Text { text: root.ra-error; font-size: 12px; color: Theme.bad; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 7 && root.ra-offered: Card {
+                                title: "Game achievements";
+                                Text { text: root.ra-game; font-size: 12.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
                             // The original kernel menu, with application controls.
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Kernel menu";
                                 heading: "Kernel menu";
                                 Text { text: "Starting a test restarts the game with the selected setup. Save your progress first."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 if root.debug-status != "": Text { text: root.debug-status; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Field";
                                 heading: "Field";
                                 Row { label: "Map"; NumberBox { accessible-label: "Debug field map"; minimum: 0; maximum: 1023; value <=> root.debug-map; } }
@@ -2027,7 +2257,7 @@ export component SettingsPanel inherits Window {
                                 Button { text: "Go to developer room"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(6); } }
                                 Button { text: "Start field test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(0); } }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Battle";
                                 heading: "Battle";
                                 Row { label: "Formation"; NumberBox { accessible-label: "Debug battle formation"; minimum: 0; maximum: 15; value <=> root.debug-formation; } }
@@ -2046,17 +2276,17 @@ export component SettingsPanel inherits Window {
                                 }
                                 Button { text: "Start battle test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(1); } }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Worldmap";
                                 heading: "Worldmap";
                                 Button { text: "Start world map test"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(2); } }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Battling";
                                 heading: "Battling";
                                 Button { text: "Start Battling"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(3); } }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Menu";
                                 heading: "Menu";
                                 Row {
@@ -2069,7 +2299,7 @@ export component SettingsPanel inherits Window {
                                 }
                                 Button { text: "Open test menu"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(4); } }
                             }
-                            if root.selected-section == 7: Card {
+                            if root.selected-section == 8: Card {
                                 title: "Movie";
                                 heading: "Movie";
                                 Row { label: "Movie"; NumberBox { accessible-label: "Debug movie number"; minimum: 0; maximum: 63; value <=> root.debug-movie; } }
@@ -2077,7 +2307,7 @@ export component SettingsPanel inherits Window {
                                 Button { text: "Play test movie"; enabled: root.debug-available && !root.debug-busy; clicked => { root.debug-requested(5); } }
                             }
                             // About
-                            if root.selected-section == 8: Card {
+                            if root.selected-section == 9: Card {
                                 title: "Xenogears Ex Machina";
                                 Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
@@ -2086,20 +2316,20 @@ export component SettingsPanel inherits Window {
                                     Text { text: root.version; font-size: 13px; color: Theme.text-secondary; }
                                 }
                             }
-                            if root.selected-section == 8: Card {
+                            if root.selected-section == 9: Card {
                                 title: "Save titles";
                                 Text { text: "The game draws save titles with your console's BIOS font. Without your BIOS image they use substitute letters, digits and marks drawn for this project, and other characters stay blank. Saves → Import BIOS (save titles) gives the original font."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 8: Card {
+                            if root.selected-section == 9: Card {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
                             }
-                            if root.selected-section == 8: Card {
+                            if root.selected-section == 9: Card {
                                 title: "English (Perfect Works)";
                                 Text { text: "The game text language English (Perfect Works) is the Xenogears: Perfect Works Build team's retranslation (github.com/PWBuild-Team/Perfect_Works_Build), a separate work under the GNU General Public License, version 3, without warranty. Its text and that licence are in this release's source archive and notices."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 8: Card {
+                            if root.selected-section == 9: Card {
                                 title: "Binaural sound";
                                 Text { text: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
@@ -2190,9 +2420,17 @@ export component FrameRateOverlay inherits Window {
     in property <bool> fast-forward;
     in property <bool> rewinding;
     in property <string> notice;
-    in property <bool> notice-error;
+    // What the notice is (lib.rs `NoticeKind`): 0 a success, 1 a failure,
+    // 2 an achievement (RetroAchievements' unlocks and completions), 3
+    // information. All but a success give their detail below the title.
+    in property <int> notice-kind;
     in property <string> notice-title;
     in property <string> notice-detail;
+    // An unlock's badge, the server's image of the achievement (none: the
+    // trophy).
+    in property <image> notice-badge;
+    private property <bool> badged: root.notice-kind == 2 && root.notice-badge.width > 0;
+    private property <bool> notice-detailed: root.badged || (root.notice-kind != 0 && root.notice-detail != "");
     background: transparent;
     preferred-width: 304px;
     preferred-height: 110px;
@@ -2236,21 +2474,49 @@ export component FrameRateOverlay inherits Window {
     if root.notice != "": HudChip {
         x: 0px;
         y: root.show-fps || root.fast-forward || root.rewinding ? 38px : 0px;
-        width: root.notice-error ? parent.width : min(parent.width, line.preferred-width);
-        height: root.notice-error ? 72px : 32px;
+        width: root.notice-detailed ? parent.width : min(parent.width, line.preferred-width);
+        height: root.notice-detailed ? 72px : 32px;
         accessible-role: text;
         accessible-label: root.notice;
+        // The badge in place of the trophy, its title and description
+        // beside it.
+        if root.badged: Rectangle {
+            x: 10px;
+            y: 10px;
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            clip: true;
+            Image {
+                width: parent.width;
+                height: parent.height;
+                source: root.notice-badge;
+                image-fit: cover;
+                accessible-role: none;
+            }
+        }
+        if root.badged: Rectangle {
+            x: 10px;
+            y: 10px;
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: Theme.gold.with-alpha(0.5);
+        }
         line := HorizontalLayout {
-            y: 0px;
+            x: root.badged ? 62px : 0px;
+            y: root.badged ? 4px : 0px;
+            width: parent.width - self.x;
             height: 32px;
             padding-left: 10px;
             padding-right: 12px;
             spacing: 8px;
-            VerticalLayout {
+            if !root.badged: VerticalLayout {
                 alignment: center;
                 HudIcon {
-                    data: root.notice-error ? Icons.alert : Icons.check;
-                    color: root.notice-error ? Theme.bad : Theme.good;
+                    data: root.notice-kind == 1 ? Icons.alert : root.notice-kind == 2 ? Icons.trophy : root.notice-kind == 3 ? Icons.about : Icons.check;
+                    color: root.notice-kind == 1 ? Theme.bad : root.notice-kind == 2 ? Theme.gold : root.notice-kind == 3 ? Theme.accent : Theme.good;
                 }
             }
             HudText {
@@ -2259,11 +2525,11 @@ export component FrameRateOverlay inherits Window {
                 accessible-role: none;
             }
         }
-        if root.notice-error: Text {
-            x: 34px;
-            y: 30px;
-            width: parent.width - 46px;
-            height: 34px;
+        if root.notice-detailed: Text {
+            x: root.badged ? 72px : 34px;
+            y: root.badged ? 32px : 30px;
+            width: parent.width - self.x - 12px;
+            height: root.badged ? 32px : 34px;
             text: root.notice-detail;
             color: Theme.text-secondary;
             font-size: 12px;

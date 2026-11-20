@@ -392,6 +392,10 @@ pub struct XrPlay {
     /// Android host's files directory); without one, beside the settings,
     /// as in the window.
     pub state_directory: Option<std::path::PathBuf>,
+    /// RetroAchievements' client, shared with the host's window (Android)
+    /// or the desktop's own: the panel's Achievements section, the HUD's
+    /// notices and the game's evaluation, as in the window.
+    pub achievements: Option<Rc<RefCell<xem_achievements::Achievements>>>,
     /// Answer agents' JSON commands on stdin between the game's frames
     /// (`--control`, [`crate::Control`]): the command layer's, `settings`,
     /// `settings_apply {change}`, `panel {visible}`, `bios_import {path}` and
@@ -469,6 +473,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let quit = quit.clone();
         move || quit.set(true)
     });
+    let mut achievements = options.achievements.clone().map(crate::achievements::HostAchievements::shared);
+    if let Some(achievements) = &achievements {
+        achievements.attach(&ui);
+    }
+    // The game frames the last headset frame ran.
+    let mut last_ran = 0;
     let mut session: XrSession = context
         .create_session(&SessionConfig { panel: Some(panel_px), readback: options.capture.is_some(), ..Default::default() })
         .map_err(|e| e.to_string())?;
@@ -612,6 +622,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 if let Some(reply) = settings.borrow_mut().command(command) {
                     return reply;
                 }
+                if let Some(reply) = achievements.as_mut().and_then(|achievements| achievements.command(command)) {
+                    return reply;
+                }
                 match command.get("cmd").and_then(serde_json::Value::as_str) {
                     Some("panel") => {
                         if let Some(visible) = command.get("visible").and_then(serde_json::Value::as_bool) {
@@ -748,6 +761,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
             let _ = operate(request, &mut operations, &mut game, &settings, &mut assist, head, &mut view, &mut recenters, &mut hud, start.elapsed(), &ui);
         }
+        if let Some(achievements) = &mut achievements {
+            achievements.update(Some(&mut game), last_ran > 0, &ui, &mut hud, start.elapsed());
+        }
         let (fast_forward,status) = game.time_status();
         if assist.headset.pauses.settings && game.session.debug.busy() {
             if let Err(error) = game.session.tick_debug() { ui.set_operation_error(&error); }
@@ -835,6 +851,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             game.follow_sound_mode(&settings);
             player.frames_ran(ran);
         }
+        last_ran = ran;
         let (forward,rewind) = game.time_activity();
         hud.set_activity(forward,rewind);
         hud.frame(start.elapsed(),PANEL_SCALE,current.presentation.show_fps).map_err(|e| e.to_string())?;

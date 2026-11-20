@@ -6070,7 +6070,14 @@ battle it chooses as a click does ([The game's interface
 context](#the-games-interface-context)); in a dialogue it advances.
 
 The deck shows once a finger touches the game (always on Android) under
-Settings' Touch controls. `cargo run -p xem-assist --example touch_deck`
+Settings' Touch controls. While it shows, the HUD (the FPS counter,
+fast-forward and rewind, a state's result, RetroAchievements' notices)
+keeps 8 logical pixels from the deck's controls level with it, a phone's top
+buttons: it narrows to the room left of them (`FrameRateUi::keep_clear`,
+200 logical pixels at least, 304 at most), in the native hosts and the
+browser alike, and a notice's words wrap or elide in it. `xem-host`'s
+`the_hud_keeps_clear_of_the_touch_decks_top_buttons` checks it on the
+Android emulator's screen with an unlock's notice showing. `cargo run -p xem-assist --example touch_deck`
 draws every deck over a stand-in picture, on a 20:9 phone with the picture
 letterboxed and filling it, as a sheet for review. Android logs each deck
 as the game's context or the screen lays it out (`touch deck <control> x y
@@ -6496,6 +6503,7 @@ captures.
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence; the game bindings and the player's input (`player`) |
 | `xem-assist` | assisted input: hand gestures, the headset core, touch and arcade decks, gesture resolution, overlay marks, synthetic hands and reliability measures |
 | `xem-storage` | bounded reads and durable replacement of native settings, cards and state files |
+| `xem-achievements` | RetroAchievements for the native hosts: rcheevos (vendored) over the game's memory, the disc's hash, the account and the server's requests ([RetroAchievements](#retroachievements)) |
 
 ## The test suite
 
@@ -6679,8 +6687,9 @@ everything), 560 s of it the tests that measure time, one at a time.
 ## Saves and time controls
 
 The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves,
-Gameplay and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
-Desktop widths use a sidebar; narrow windows use a strip of section tabs.
+Gameplay, Achievements, Debug and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
+Desktop widths use a sidebar; narrow windows use a strip of section tabs;
+either scrolls where its sections do not all fit.
 Saves' Backups card puts its buttons two to a row on a panel at least 600
 logical pixels wide (a desktop's 640), one to a row on narrower ones (a
 phone's, a headset's 440), so that every label fits its card. Rewind
@@ -8034,8 +8043,8 @@ default, and a policy no longer offered resets alone (`Settings::read`).
 Gameplay section (between Saves and About, with the [dialogue and movie
 options](#text-speed-auto-advance-and-movie-skipping) under it)
 shows the choice as a button group, as Encounter rate's; the browser
-renders the same panel, and a narrow panel's strip of tabs holds all eight
-sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
+renders the same panel, and a narrow panel's strip of tabs scrolls through
+every section ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
 
 **The control.** Before every game frame of a batch outside session logs
 the interactive hosts give the session the resolved maps, as they give it
@@ -9633,6 +9642,125 @@ DISC OUT.mp4 SCRIPT.json...`: each script a list of session commands and
 enlarged to 640x480 and the SPU's output muxed by ffmpeg), for reviewing
 the movies and voices by ear.
 
+## RetroAchievements
+
+The native hosts (the desktop's window, Android, a headset through OpenXR)
+earn the achievements RetroAchievements keeps for Xenogears (PlayStation,
+its game 11248) as an emulator does, through RetroAchievements' own client:
+rcheevos 12.5.0, vendored unchanged in `crates/xem-achievements/rcheevos/`
+(MIT; its README gives the files and their source), built by the crate's
+`build.rs` without its locks, as every rcheevos call is made on the host's
+thread. The game's memory is the PlayStation's address space (The game
+module), so RetroAchievements' PlayStation map reads the console's RAM: its
+addresses 0x000000-0x1FFFFF are RAM from 0x80000000, and 0x200000-0x2003FF
+the scratchpad at 0x1F800000. The session's observer
+(`xem_core::control::Observer`, `xem_achievements::Evaluate`) evaluates the
+achievements over that memory after every frame the game completes, whoever
+runs it (a host's paced batch, an agent's `frames`, a held rewind playing
+on), and starts their evaluation again where the game goes to another point
+in time: rcheevos' reset after the console's reset, its runtime cleared
+after a state loaded or a rewind step. A state carries no achievement
+progress.
+
+- **The disc.** The server knows the game by rcheevos' own hash of the disc
+  in the drive (`xem_achievements::disc_hash`, rcheevos' PlayStation hash
+  read through the hosts' sector source, `Cd::inserted_source`: the boot
+  program SYSTEM.CNF names, its name and its first `t_size + 2048` bytes).
+  Disc 1 hashes to `1bde22c83a069c43cb32b8521bfdf7ae` and disc 2 to
+  `02ba8ee8c226923babe876bdf3a8f401`, both game 11248 on the server
+  (`r=gameid`, 2026-11-19). A game the client has not followed loads its
+  achievements by the disc in the drive's hash
+  (`Game::follow_achievements`); another disc in the drive (the story's
+  disc change) is checked with rcheevos' change of media.
+- **The account.** Settings → Achievements signs in with the player's name
+  and password; the client keeps the token the server gives, never the
+  password, in `retroachievements.json` beside the settings (the desktop's
+  directory, Android's files directory; readable by the player alone on
+  Unix), outside the settings and their backups. A kept token signs in at
+  start; one the server refuses is forgotten; a sign-in unanswered (no
+  connection) is tried again a minute later. Sign out forgets the account.
+- **Play.** Unlocks are softcore: rcheevos starts in hardcore mode, which
+  the client turns off, and the app offers RetroAchievements' hardcore mode
+  nowhere. Save states, rewind, fast-forward and the Debug tests stay
+  available, as in an emulator's softcore play.
+- **Notices.** An unlock shows on the HUD (`FrameRateUi::notify`) with the
+  achievement's badge in place of the trophy (the image the server keeps
+  for it, 64 pixels square: its `BadgeURL`, else one on RetroAchievements'
+  media server by its badge's name, `rc_client_achievement_get_image_url`),
+  its title, its description and points for six seconds. The client fetches
+  a badge when its achievement unlocks, on the requests' thread (a
+  megabyte at most), and keeps it for the app's run; the unlock's notice,
+  and any after it, waits for it at most three seconds and shows the
+  trophy without one (no answer, not a PNG of a badge's size: the HUD reads
+  the PNG's header before Slint decodes it). The game's achievements loaded
+  (how many are unlocked), a completed game or set, leaderboard attempts
+  and the server unreachable or refusing a request are noticed too.
+  Notices wait for the one shown to expire, so none hides another; a
+  state's result shows at once.
+- **The panel.** Achievements (between Gameplay and Debug; "Cheevos" under
+  its trophy in the narrow panel's strip) has the account (the name and
+  password fields, Sign in, then who is signed in, their points and Sign
+  out, and why the last sign-in or load failed) and the game's
+  achievements (how many are unlocked, and their points). Android shows its
+  on-screen keyboard while a panel text field has the focus. A headset's
+  panel signs in through the same client as Android's window, but OpenXR
+  gives it no keyboard: the player signs in in the window.
+- **Browsers.** The browser host has no client: RetroAchievements' server
+  sends no `Access-Control-Allow-Origin` and refuses a browser's user agent
+  (`unsupported_client`, checked 2026-11-19), so a page can neither sign in
+  nor send unlocks. Its Achievements section says so.
+- **The server.** rcheevos makes no connection itself: its requests, and
+  the badges, are made one after another on a thread of their own with
+  `ureq` (HTTPS through rustls and ring, Mozilla's roots from webpki-roots,
+  on every native host) and their answers are given to rcheevos, or kept as
+  badges, on the host's thread between frames (`Achievements::update`). The
+  requests name the app as
+  `XenogearsExMachina/<version> (<system>) rcheevos/12.5`.
+  `XEM_RETROACHIEVEMENTS_HOST` names another server (a test's stand-in).
+  Until RetroAchievements' administrators register that client, its server
+  treats it as unknown (RAWeb's `UserAgentService`), which takes softcore
+  unlocks as a registered client's.
+- **Agents.** `xem-desktop --control` (the window and `--xr`) answers
+  `achievements` (the account, the game's line and the last error),
+  `achievements_sign_in {username, password}` and `achievements_sign_out`,
+  as the panel's.
+
+Tests: `xem-achievements`'s `tests/disc.rs` (a synthetic disc's hashes,
+computed apart from rcheevos with Python's hashlib: the whole boot program
+and one its header gives as smaller; a disc without its boot program
+refused with rcheevos' reason; the user's discs, local, to the hashes the
+server knows), `tests/client.rs` against a stand-in server
+(`tests/stand_in`, plain HTTP answering as rcheevos' own tests have the
+server answer, and serving each achievement's badge: a wrong password
+refused with the server's words and nothing kept; the right one keeping the
+token, never the password, in a file the player alone reads; the user
+agent; the game loaded by the disc's hash; unlocks from RAM and from the
+scratchpad sent as softcore, their notices waiting for their badges and
+bringing them; a state loaded starting the evaluation again, an achievement
+true from it unlocking only once seen false; a kept token signing in at
+start; an unknown disc; a badge's server unreachable, the unlock's notice
+then shown without one at once; a refused token forgotten) and the
+bindings' structure layouts against the C compiler's;
+`xem-core/tests/persistence.rs`'s
+`an_observer_reads_every_completed_frame_and_hears_every_rewind_load_and_reset`;
+`xem-ui/tests/panel.rs`'s `achievements_sign_in_and_out_go_through_the_host`
+and `tests/hud.rs`'s `retroachievements_notices_show_their_detail_one_after_another`
+and `an_unlock_shows_its_badge_in_place_of_the_trophy_below_the_fps_and_the_activity`
+(the badge drawn where the trophy was, below the FPS counter and
+fast-forward's chip; data that is no badge showing the trophy); and
+`xem-host/tests/achievements.rs` (local: disc 1), the original game in a
+host's `Game` against the stand-in: its achievements loaded by disc 1's
+hash, one on the pad driver's vertical blank counter (0x80059488) unlocked
+from the game's RAM as softcore, and signing out leaving the game's
+achievements waiting for a sign-in.
+
+Not done: leaderboard trackers and challenge indicators on the HUD (their
+attempts' start, failure and submission are noticed); a state keeps no
+achievement progress, so a load or a rewind starts the achievements'
+evaluation again; the client has signed in to the real server from no host
+here (no account): the hashes are the server's, the requests rcheevos' own,
+and everything after sign-in was tested against the stand-in.
+
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
@@ -9644,17 +9772,32 @@ panel is the launcher too: Saves' Import disc… opens SDL's file dialog and
 plays the chosen disc (CHD, cue sheet or Redump-verified ISO), or gives it
 to a running game's disc changer.
 The panel (`xem-ui/ui/settings.slint`) lists its sections in a sidebar at
-560 logical pixels wide and more, else in a strip of tabs above the section.
-A tab of the strip takes its label's width (bold, as when selected) and
-shares out the rest while the strip has room for all eight: from 390
-logical pixels with the panel's font (the panel on the Android emulator's
-1080-pixel screen at density 2.625 is 405). A narrower strip takes the
-same width from every tab, so the labels still show whole down to 342 (a
-1080-pixel phone at density 3.0 gives 355) and elide below, and no tab
-narrows below 24 pixels: all eight stay inside the panel down to its least
-width, 280. `xem-ui/tests/panel.rs` clicks every tab at six widths from 280
-to 405 and checks that the Android smoke's two taps select Graphics and
-Saves at 405, and that Saves' Backups card keeps all of its buttons
+560 logical pixels wide and more, else in a strip of tabs above the section
+(the strip labels Achievements "Cheevos" under its trophy). Either scrolls
+where its sections do not all fit: a finger or the mouse's drag, the wheel
+(over the strip, the wheel turns it sideways) and the selection (a
+gamepad's L1/R1, the arrow keys) move it, and an edge fades into the panel
+(a gradient of its colour to transparent over the list) while more
+sections lie past it. The sidebar's rows (38 pixels, a gap of 2) scroll
+only in a panel too short for all ten; then they grow (40 pixels apart at
+least) to show a whole number of them and a half, so that at rest its edges
+cut rows through their words, and the selected row comes into view clear of
+the fades, the column resting a quarter of the way into a row (or at the
+end it moves toward). The strip's tabs are all as wide: they share out its width so that it shows a
+whole number of them and a half, each at least 80 pixels (the widest
+label, Shortcuts, with room either side), so at rest its edges cut tabs
+through their middles, where the fades show that more lie past them. The
+tab chosen settles as near the strip's middle as edges cutting tabs so
+allow, or at an end of the strip within half a tab of it (the Android
+emulator's 405-pixel panel shows four and a half tabs, 86.5 pixels apart;
+a headset's 440, 94.2). `xem-ui/tests/panel.rs` walks a finger along the
+strip at six widths from 280 to 405 (each tab tapped on its part shown
+beside the one before it, then the wheel turning the strip back to its
+start), turns the wheel down the sidebar in panels 300 to 440 pixels tall
+(each row brought in and clicked, the row chosen clear of the fades or the
+column at that end, and the selection turning it to either end), checks
+the Android smoke's and the headset smoke's taps on the strip at their
+sizes, and checks that Saves' Backups card keeps all of its buttons
 inside it at ten widths from 280 to 640 (one to a row below 600 logical
 pixels, where two of its longer labels side by side overflowed it: at 560
 "Request browser persistence" ran past the card's edge). That button and

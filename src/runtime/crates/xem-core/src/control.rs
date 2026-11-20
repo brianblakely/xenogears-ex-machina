@@ -92,6 +92,19 @@ fn language_codes() -> String {
     crate::locale::Language::ALL.map(|l| format!("{:?}", l.code())).join(", ")
 }
 
+/// What follows the game as it plays without changing it: RetroAchievements'
+/// client (`xem-achievements`) reads the game's memory after every frame the
+/// game completes, by whatever runs it (a host's paced batch, an agent's
+/// `frames`, a held rewind playing on), and starts its evaluation again
+/// where the game goes to another point in time.
+pub trait Observer {
+    /// The game completed a frame; `memory` is the game's, read-only.
+    fn frame(&mut self, memory: &dyn crate::memory::GameMemory);
+    /// The game went to another point in time: the console's reset
+    /// (`reset`), else a state loaded or a rewind step.
+    fn timeline(&mut self, reset: bool);
+}
+
 pub struct Session<M: GameModule> {
     pub debug: crate::debug::Debug,
     pub runtime: Runtime<M>,
@@ -146,6 +159,8 @@ pub struct Session<M: GameModule> {
     /// each frame they present): the last seen while it asked for no battle
     /// or other map; none outside the field or after a restore.
     drawn_field: Option<Value>,
+    /// What follows the game's frames and timeline ([`Observer`]).
+    pub observer: Option<Box<dyn Observer>>,
 }
 
 /// The longest auto-advance dwell: a minute of vertical blanks.
@@ -239,6 +254,7 @@ impl<M: GameModule> Session<M> {
             auto_waited: 0,
             auto_press: false,
             drawn_field: None,
+            observer: None,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
@@ -861,6 +877,9 @@ impl<M: GameModule> Session<M> {
                     self.checkpoint();
                     self.trace_title_movie();
                     self.runtime.update_binaural();
+                    if let Some(observer) = &mut self.observer {
+                        observer.frame(self.runtime.memory());
+                    }
                 }
                 Ok(!report.blocked)
             },
@@ -2004,6 +2023,7 @@ impl<M: GameModule> Session<M> {
         self.runtime.restore(data).map_err(|e| e.to_string())?;
         self.note_restore(RestoreKind::StateLoad, from);
         self.game_state_restored();
+        self.observe_timeline(false);
         Ok(())
     }
 
@@ -2012,7 +2032,14 @@ impl<M: GameModule> Session<M> {
         self.runtime.restore_content(data).map_err(|e| e.to_string())?;
         self.note_restore(RestoreKind::RewindStep, from);
         self.game_state_restored();
+        self.observe_timeline(false);
         Ok(())
+    }
+
+    fn observe_timeline(&mut self, reset: bool) {
+        if let Some(observer) = &mut self.observer {
+            observer.timeline(reset);
+        }
     }
 
     /// A recording goes on across a restore and reports it (`restores`).
@@ -2032,6 +2059,7 @@ impl<M: GameModule> Session<M> {
         self.rewind.error = None;
         self.rewind_game_paused = false;
         self.game_state_restored();
+        self.observe_timeline(true);
     }
 
     fn game_state_restored(&mut self) {

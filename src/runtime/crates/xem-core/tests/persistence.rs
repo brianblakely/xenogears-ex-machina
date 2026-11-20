@@ -444,6 +444,44 @@ fn fixed_fast_forward_and_its_recording_are_independent_of_host_batch_size() {
     assert!(replayed.fast_forward);
 }
 
+/// What an observer saw ([`xem_core::control::Observer`]): the frame
+/// counter the stand-in keeps at 0x80000000 after each frame, and each
+/// change of timeline (`true` a reset).
+#[derive(Default)]
+struct Seen {
+    frames: Vec<u32>,
+    timelines: Vec<bool>,
+}
+
+struct Watch(Rc<RefCell<Seen>>);
+
+impl xem_core::control::Observer for Watch {
+    fn frame(&mut self, memory: &dyn GameMemory) {
+        self.0.borrow_mut().frames.push(memory.read_u32(0x8000_0000).unwrap());
+    }
+    fn timeline(&mut self, reset: bool) {
+        self.0.borrow_mut().timelines.push(reset);
+    }
+}
+
+#[test]
+fn an_observer_reads_every_completed_frame_and_hears_every_rewind_load_and_reset() {
+    let (mut s, clock) = timed_session();
+    let seen = Rc::new(RefCell::new(Seen::default()));
+    s.observer = Some(Box::new(Watch(seen.clone())));
+    // A host's frames and an agent's alike.
+    frame_at(&mut s, &clock, 0);
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(seen.borrow().frames, [1, 2, 3], "the memory as each frame left it");
+    let state = s.snapshot_bytes().unwrap();
+    for second in 1..=3 { frame_at(&mut s, &clock, second); }
+    // A loaded state starts the history afresh: the rewind first.
+    assert!(s.execute(&json!({"cmd":"rewind","steps":1})).get("error").is_none());
+    s.restore_bytes(&state).unwrap();
+    s.execute(&json!({"cmd":"reset"}));
+    assert_eq!(seen.borrow().timelines, [false, false, true], "a rewind, a load, then the console's reset");
+}
+
 #[test]
 fn uncapped_recordings_replay_the_music_clock_at_the_same_game_frames() {
     let mut s = session();

@@ -1,0 +1,2 @@
+- Sign in to RetroAchievements in **Settings → Achievements** (**Cheevos** in the tabs on a small screen) on a computer, Android or a headset and earn Xenogears' achievements as you play. Each unlock pops up over the game with the achievement's badge, title and points, and the section shows how far through the game's achievements you are.
+- The browser version can't connect to RetroAchievements: its server doesn't accept requests from web pages.

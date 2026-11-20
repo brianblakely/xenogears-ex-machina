@@ -523,6 +523,13 @@ impl Cd {
         self.inserted
     }
 
+    /// The disc in the drive as the host gave it, for the host to read
+    /// (RetroAchievements' hash of it): the drive's state and timing are
+    /// left as they are.
+    pub fn inserted_source(&mut self) -> Option<&mut dyn SectorSource> {
+        self.disc.as_deref_mut().map(|disc| disc as &mut dyn SectorSource)
+    }
+
     /// The disc a scheduled change brings, and the cycle it goes in at (the
     /// story's wait).
     pub fn change_due(&self) -> Option<(u8, u64)> {

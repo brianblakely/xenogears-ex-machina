@@ -85,7 +85,9 @@ Press **Esc**, or hold the controller's **Back/Select** button and press
 [below](#playing-in-a-headset).
 
 Choose a section from the sidebar. On a small screen, the sections appear
-as tabs along the top. Changes are saved as you make them; control bindings
+as tabs along the top. Where they don't all fit, the sidebar or the tabs
+scroll: swipe them, or turn the mouse wheel over them. A faded edge shows
+that more sections lie past it. Changes are saved as you make them; control bindings
 have their own Save buttons. Close Settings to return to the game.
 
 **Reset** at the top restarts the game, like pressing Reset on a console.
@@ -453,6 +455,25 @@ controller's Back button, or the touch **HIDE** key. Release it to bring the tex
 back. Hiding the box does not pause the scene or stop automatic dialogue
 advance.
 
+## RetroAchievements
+
+On a computer, an Android device or a headset, you can earn Xenogears'
+achievements on [RetroAchievements](https://retroachievements.org), as you
+would with an emulator. You need a free retroachievements.org account.
+
+1. Open **Settings → Achievements** (**Cheevos** in the tabs on a small screen).
+2. Enter your user name and password and choose **Sign in**. The app keeps
+   the sign-in token the server gives, never your password, so you stay
+   signed in next time.
+3. Play. When the game starts, a notice shows how many of its achievements
+   you have unlocked. Each unlock shows the achievement's badge, its title
+   and points.
+
+The section shows who is signed in and how far you are through the game's
+achievements. **Sign out** forgets the account on this device. The browser
+version can't connect: RetroAchievements' server doesn't accept requests
+from web pages, so use the desktop, Android or headset app.
+
 ## Making the picture your own
 
 Open **Settings → Graphics**. You can change the look while playing.
@@ -726,6 +747,7 @@ a state may require the version that created it.
 | The mouse pointer has disappeared | Move it, or open Settings. Check the mouse camera and idle-cursor options. |
 | Headset pointing does nothing | Choose a pointer your headset supports and check that tracking is available. |
 | A backup button won't open a file picker in VR | Return to flat/windowed play to import or export files. |
+| You can't sign in to RetroAchievements in a headset | Sign in from flat play (the window, or Android's flat view) first. The headset uses the same account. |
 | The app won't open | Check the platform notes in the installation guide, including Linux permissions and macOS opening restrictions. |
 
 An error bar at the bottom of Settings explains a failed action. **Dismiss**

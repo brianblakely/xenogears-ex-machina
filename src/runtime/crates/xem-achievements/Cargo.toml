@@ -1,0 +1,22 @@
+[package]
+name = "xem-achievements"
+description = "RetroAchievements for the native hosts: rcheevos' client over the game's memory, the disc's hash, the player's account and the server's requests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+xem-core = { path = "../xem-core" }
+xem-disc = { path = "../xem-disc" }
+xem-storage = { path = "../xem-storage" }
+serde.workspace = true
+serde_json.workspace = true
+# HTTPS to retroachievements.org (MIT OR Apache-2.0): rustls with ring and
+# Mozilla's roots (webpki-roots, CDLA-Permissive-2.0), the same on every
+# native host. Browsers cannot reach the server (it allows no other origin).
+ureq = { version = "=3.5.2", default-features = false, features = ["rustls"] }
+
+[build-dependencies]
+cc.workspace = true

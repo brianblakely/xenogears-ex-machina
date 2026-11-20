@@ -83,6 +83,116 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     capture(&gpu, &hud, "fps-with-activity");
 }
 
+#[test]
+fn retroachievements_notices_show_their_detail_one_after_another() {
+    use xem_ui::NoticeKind;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut hud = FrameRateUi::new(shared, 1.0).unwrap();
+    let at = Duration::from_secs;
+    hud.notify(NoticeKind::Information, "Xenogears", "1 of 2 achievements unlocked", None, 4, at(0));
+    hud.frame(at(0), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Xenogears: 1 of 2 achievements unlocked"));
+    // An unlock while the game's line shows waits for it, then shows its
+    // own, as tall as a failure's to give the description.
+    hud.notify(NoticeKind::Achievement, "Seven", "RAM holds seven · 5 points", None, 6, at(1));
+    hud.notify(NoticeKind::Achievement, "Scratchpad", "The scratchpad holds nine · 10 points", None, 6, at(1));
+    hud.frame(at(3), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Xenogears: 1 of 2 achievements unlocked"));
+    hud.frame(at(4), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Seven: RAM holds seven · 5 points"));
+    let chip = ElementHandle::find_by_accessible_label(hud.component(), &hud.notice().unwrap()).next().unwrap();
+    assert_eq!((chip.absolute_position().x, chip.absolute_position().y), (0.0, 0.0));
+    assert_eq!((chip.size().width, chip.size().height), (304.0, 72.0), "the chip grown to give the description");
+    capture(&gpu, &hud, "achievement");
+    hud.frame(at(10), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Scratchpad: The scratchpad holds nine · 10 points"));
+    // A state's result shows at once, over a queued notice's turn.
+    hud.notify_state(true, None, at(11));
+    hud.frame(at(11), 1.0, false).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("State saved"));
+    hud.frame(at(15), 1.0, false).unwrap();
+    assert!(hud.notice().is_none() && !hud.visible(), "nothing more queued");
+}
+
+#[test]
+fn an_unlock_shows_its_badge_in_place_of_the_trophy_below_the_fps_and_the_activity() {
+    use xem_ui::NoticeKind;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut hud = FrameRateUi::new(shared, 1.0).unwrap();
+    // During play: the FPS counter and fast-forward.
+    for n in 0..=60 {
+        hud.frame(Duration::from_secs_f64(n as f64 / 60.0), 1.0, true).unwrap();
+    }
+    hud.set_activity(true, false);
+    let at = Duration::from_secs;
+    let unlock = "Welcome to Lahan: Arrive in Lahan village · 5 points";
+    hud.notify(NoticeKind::Achievement, "Welcome to Lahan", "Arrive in Lahan village · 5 points", Some(&badge_png()), 6, at(1));
+    hud.frame(at(1), 1.0, true).unwrap();
+    let badge = hud.component().get_notice_badge().size();
+    assert_eq!((badge.width, badge.height), (64, 64));
+    let chip = ElementHandle::find_by_accessible_label(hud.component(), unlock).next().unwrap();
+    assert_eq!((chip.absolute_position().x, chip.absolute_position().y), (0.0, 38.0), "below the FPS counter and the activity");
+    assert_eq!((chip.size().width, chip.size().height), (304.0, 72.0));
+    for label in ["60 FPS", "Fast-forwarding"] {
+        assert!(ElementHandle::find_by_accessible_label(hud.component(), label).next().is_some(), "{label} stays");
+    }
+    // Drawn where the trophy was: the badge's gold disc at the chip's left.
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, hud.texture());
+    let centre = &pixels[((38 + 36) * 304 + 36) * 4..][..4];
+    assert!(centre[0] > 200 && centre[1] > 160 && centre[2] < 130 && centre[3] == 255, "the badge's centre: {centre:?}");
+    capture(&gpu, &hud, "achievement-badge-with-fps-and-fast-forward");
+
+    // Data that is no badge: the trophy, as without one.
+    hud.notify(NoticeKind::Achievement, "Seven", "RAM holds seven · 5 points", Some(b"badge 101"), 6, at(1));
+    hud.frame(at(7), 1.0, true).unwrap();
+    assert_eq!(hud.notice().as_deref(), Some("Seven: RAM holds seven · 5 points"));
+    assert_eq!(hud.component().get_notice_badge().size().width, 0);
+    capture(&gpu, &hud, "achievement-trophy-with-fps-and-fast-forward");
+}
+
+#[test]
+fn the_hud_keeps_clear_of_controls_level_with_it_and_no_narrower_than_its_least() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut hud = FrameRateUi::new(shared, 2.0).unwrap();
+    let at = (16.0, 16.0);
+    // A phone's top buttons from x 600 (target pixels at 2x), level with
+    // the HUD, and a control below it: 8 logical pixels before the buttons.
+    hud.keep_clear(at, 2.0, [(600.0, 40.0, 100.0, 100.0), (100.0, 600.0, 200.0, 200.0)]);
+    assert_eq!(hud.size(), (2 * 284, 220));
+    // Nothing level with it: whole; buttons crowding it: its least width.
+    hud.keep_clear(at, 2.0, [(100.0, 600.0, 200.0, 200.0)]);
+    assert_eq!(hud.size(), (2 * 304, 220));
+    hud.keep_clear(at, 2.0, [(300.0, 40.0, 100.0, 100.0)]);
+    assert_eq!(hud.size(), (2 * 200, 220));
+}
+
+/// A badge as RetroAchievements' server gives one: a 64-pixel PNG (a gold
+/// disc on blue).
+fn badge_png() -> Vec<u8> {
+    let mut rgba = Vec::with_capacity(64 * 64 * 4);
+    for y in 0..64u8 {
+        for x in 0..64u8 {
+            let distance = (f32::from(x) - 31.5).hypot(f32::from(y) - 31.5);
+            rgba.extend(if distance < 19.0 {
+                [240, 199, 94, 255]
+            } else if distance < 23.0 {
+                [255, 236, 170, 255]
+            } else {
+                [24 + y, 48 + x / 2, 112, 255]
+            });
+        }
+    }
+    let mut png = Vec::new();
+    let mut encoder = png::Encoder::new(&mut png, 64, 64);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder.write_header().unwrap().write_image_data(&rgba).unwrap();
+    png
+}
+
 /// Optional review captures use the same texture and assertions as the test.
 fn capture(gpu: &Gpu, hud: &FrameRateUi, name: &str) {
     let Some(dir) = std::env::var_os("XEM_UI_CAPTURE_DIR") else { return };

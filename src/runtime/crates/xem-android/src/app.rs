@@ -416,6 +416,8 @@ impl Host {
         let import_requested = Rc::new(Cell::new(false));
         view.set_host_class(xem_render::ps1::HostClass::Mobile);
         view.set_state_directory(files.clone());
+        // RetroAchievements: the account kept in the files directory.
+        view.enable_achievements(Some(&files));
         // Each app operation's outcome with the game's memory hash after it
         // (android-smoke.sh compares a state's save and load).
         view.on_operation(log);
@@ -665,7 +667,12 @@ impl Host {
         log("entering the headset");
         let settings = self.view.settings().clone();
         // Save state keeps its state in the files directory, as the window does.
-        let play = xem_host::xr_play::XrPlay { state_directory: self.cards.parent().map(PathBuf::from), ..Default::default() };
+        // RetroAchievements: the window's client, one sign-in and one game.
+        let play = xem_host::xr_play::XrPlay {
+            state_directory: self.cards.parent().map(PathBuf::from),
+            achievements: self.view.achievements_client(),
+            ..Default::default()
+        };
         match xem_host::xr_play::run(&platform, &play, settings, game) {
             Ok(ended) => {
                 log("headset session ended");
