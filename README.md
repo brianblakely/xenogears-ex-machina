@@ -13,87 +13,49 @@
   <sub>Windows · macOS · Linux · Steam Deck · Android · Meta Quest · PC VR · Bring your own discs</sub>
 </p>
 
-Xenogears: Ex Machina is an app for playing Xenogears, Square's 1998
-PlayStation RPG, on your computer, Steam Deck, Android phone or tablet, or VR
-headset. Put images of your own discs beside it and play. There's no emulator
-to set up and no BIOS to track down.
+Xenogears: Ex Machina plays Xenogears, Square's 1998 PlayStation RPG, on your
+computer, Steam Deck, Android phone or tablet, or VR headset. Put images of
+your own discs beside it and play both discs, with the original art, music and
+gameplay. There's no emulator to set up and no BIOS to track down.
 
-The whole game is here, both discs, with its original art, music and
-gameplay. Around it, the app adds what you'd expect from a modern release: a
-sharper picture, true widescreen, saving anywhere, rewind, fast-forward, mouse
-and touch controls, more languages, and no random battles in the worst
-jumping sections. It also does things that only work because it understands
-the game it's running, like lighting scenes, letting you look around in first
-person, setting the world on your table in VR and placing sound around your
-head.
+Give Lahan modern lighting and shadows, or see it exactly as the console drew
+it. On a wide screen, the village carries on past the old edges. Click a
+villager and Fei walks over to talk. Stop by the well and look around through
+his eyes. Put on headphones, pick Binaural, and the music plays all around
+you. In VR, set the whole village on your table and walk round it.
 
-## How it's different
+## Lighting, widescreen and a sharper picture
 
-There are two usual ways to play an old console game on new hardware. An
-emulator imitates the PlayStation and runs your disc on that imitation. A
-remake or engine port rebuilds the game by hand in a new engine and works to
-match the original.
-
-Ex Machina takes a different route. The project worked backward from the
-discs to recover the game's own program as readable source code, and checked
-every part of it until it rebuilt into exactly the bytes on the original
-discs. That recovered program is compiled to run directly on your device, not
-inside an imitation PlayStation.
-
-So the game you play is the original. Battle formulas, enemy behavior, event
-scripts, minigames and the odd bug all come from Square's own code, on both
-discs. Nothing was redrawn or rewritten by hand, so it plays the way you
-remember.
-
-The app also knows what the game is doing. An emulator works with the
-triangles and audio a PlayStation would put out, without knowing what they
-mean. Ex Machina knows where Fei is standing, what the camera is looking at,
-which musical part is playing and where each sound comes from. That's how it
-can light a scene, fill the sides of a widescreen picture with real scenery,
-show the world through a character's eyes, put a town on your table in VR,
-place sounds around your head and walk Fei to the spot you clicked.
-
-None of this replaces the original. The console's own picture and sound modes
-are still there, and every gameplay change can be switched off.
-
-## A sharper picture, or the original one
-
-Ex Machina redraws the game's 3D scenes at up to eight times the PlayStation's
-resolution, at any window size. Widescreen doesn't stretch anything: the extra
-room at the sides shows more of the game's own scenery. On high-refresh
-displays, optional motion smoothing fills in frames between the game's own
-while the game keeps its original timing.
-
-Pick a look:
-
-- **Modern:** a clean, sharp picture with steady textures.
-- **HD-2D:** scene lighting, shadows, fog, light shafts, bloom and depth of
-  field over the original sprites and models.
-- **PS1:** the console's low resolution with its wobbling textures, jittering
-  edges, dithering and limited colours. The Custom profile lets you mix those
-  quirks with the modern effects one at a time.
-- **Original:** the picture exactly as the console draws it.
-
-Every look uses the art Square made in 1998. There's no texture pack to
-download and nothing has been repainted. In Gear-sized places like Babel
-Tower and the hangars, where the game swaps the party for tiny low-detail
-sprites, you can have it draw their detailed ones instead.
+Switch on HD-2D and Lahan gets lighting, shadows, fog, light shafts, bloom and
+depth of field, laid over the same sprites and textures Square shipped in
+1998. On a wide screen nothing is stretched: the extra space at the sides
+shows more of Shevat's tower.
 
 <p align="center">
   <img src="docs/images/hd-2d.jpg" width="49%"
     alt="HD-2D, a stunning new look: Fei runs through Lahan Village with scene lighting, shadows and depth of field">
   <img src="docs/images/widescreen.jpg" width="49%"
     alt="Widescreen, see more of the world: Fei runs up Shevat's spiral stairs in a 16:9 view">
+</p>
+
+Scenes are drawn at up to eight times the PlayStation's resolution, at any
+window size, with shapes and textures that hold steady instead of wobbling.
+Roll the mouse wheel and the camera pulls back, up to five times farther. On a
+high-refresh display, High Framerate fills in frames between the game's own
+while the game keeps its timing.
+
+<p align="center">
   <img src="docs/images/8x-resolution.jpg" width="49%"
     alt="8x Resolution, sharper than ever: Solaris split between the original resolution on the left and eight times the resolution on the right">
   <img src="docs/images/zoom-out.jpg" width="49%"
     alt="Zoom Out, watch towns come alive: the field camera pulled far back over Bledavik">
 </p>
 
-The field camera can pull back up to five times farther, so you can take in a
-whole town at once. Movies get cleaned up too: Ex Machina smooths out the
-blocky compression and sharpens the enlarged picture, with the original video
-a toggle away.
+Movies come out sharper, without their blocky compression edges. When you want
+it the way it was, the PS1 look brings back the low resolution, wobbling
+textures, jittering edges and dithering (the Custom profile mixes them with
+the new effects one at a time), and the Original renderer draws every frame
+exactly as the console does.
 
 <p align="center">
   <img src="docs/images/enhanced-movies.jpg" width="49%"
@@ -102,98 +64,83 @@ a toggle away.
     alt="PS1 Renderer, completely accurate visuals: aboard the Thames, drawn the way the console draws it">
 </p>
 
-## Play with whatever you have
+In Babel Tower, the hangars and the docks, where the game shrinks the party to
+tiny sprites beside the Gears, you can have the party drawn with its detailed
+sprites instead.
 
-A keyboard, a mouse, any gamepad, a touch screen, VR controllers or your bare
-hands all work, and you can rebind every control.
+## Look around, or set the world on your table
 
-- **Mouse:** click the ground to walk there, click a person to go and talk to
-  them, and click battle commands and targets. The scroll wheel zooms the
-  camera. The jumps are still yours to make.
-- **Controller:** gamepads work everywhere, Settings included, so you never
-  have to reach for the keyboard. Save states, rewind and fast-forward have
-  their own button combinations.
-- **Touch:** made for two thumbs. Put your left thumb down anywhere and a
-  stick appears under it. The buttons under your right thumb change with what
-  you're doing: TALK and JUMP while exploring, NEXT in conversations, the
-  three attacks by name in battle, and a full set for Battling. You can also
-  tap where you want to go.
+Switch to first person in Citan's workshop and look around: up at the pipes,
+across at the wrenches on his wall. Look with the mouse, a stick or a finger,
+or in a headset just turn your head. It works in any field. The scenery was
+built for set camera angles, so from some spots you'll catch a flat sprite or
+a missing wall.
 
-<p align="center">
-  <img src="docs/images/touch-controls.jpg" width="49%"
-    alt="Touch Controls, play on the go: a Battling bout between Weltall and Vierge, with the stick under the left thumb and A, B, Special, Jump, Charge and Dash under the right">
-  <img src="docs/images/mouse-battles.jpg" width="49%"
-    alt="Mouse Battles, fight with a click: the mouse pointer on the battle command ring in a canyon fight">
-</p>
-
-## Step into the world
-
-In a VR headset, play on a large virtual screen, or set the world down on the
-table in front of you as a diorama. Fields, battles and the world map become a
-miniature you can grow, shrink, turn and tilt. On headsets that can show your
-room, the diorama sits on your real table.
-
-<p align="center">
-  <img src="docs/images/vr-diorama.jpg" width="49%"
-    alt="VR Diorama, the world on your table: a tavern as a lit miniature in the headset view">
-  <img src="docs/images/passthrough.jpg" width="49%"
-    alt="Passthrough, a cinematic virtual experience: a virtual screen in a living room shows the Yggdrasil and a red Gear in the desert">
-</p>
-
-On any screen, you can stop in a field and look around through your
-character's eyes, with the mouse, a stick, a finger or, in VR, your own head.
-Your character stays put while you look. The scenery was built for set camera
-angles, so from some spots you'll catch a flat sprite or a missing wall.
-
-Controllers work fully in VR, and hand tracking is there if you want it: pinch
-to walk, make a fist to pause, press your palms together for Settings, and
-pull both hands apart to enlarge the diorama.
+In a headset, set the world on the table in front of you. Lean over the
+tavern, grow it to four times its size or shrink it to a quarter, tilt it
+toward you, or get up and walk round the table: the people in it turn to show
+you their backs, their sides and their faces. Battles and the world map go on
+the table too.
 
 <p align="center">
   <img src="docs/images/first-person-view.jpg" width="49%"
     alt="First-Person View, see the incredible pixel details: Citan's workshop through Fei's eyes">
+  <img src="docs/images/vr-diorama.jpg" width="49%"
+    alt="VR Diorama, the world on your table: a tavern as a lit miniature in the headset view">
+</p>
+
+With passthrough, the diorama or a big virtual screen appears in your own
+room. Put the controllers down if you like: pinch the ground to walk there,
+close a fist to pause, press your palms together for Settings, and pull your
+hands apart to enlarge the diorama.
+
+<p align="center">
+  <img src="docs/images/passthrough.jpg" width="49%"
+    alt="Passthrough, a cinematic virtual experience: a virtual screen in a living room shows the Yggdrasil and a red Gear in the desert">
   <img src="docs/images/hand-tracking.jpg" width="49%"
     alt="Hand Tracking, no controllers needed: a throne hall diorama in VR">
 </p>
 
 On Windows and Linux, PC VR headsets start with one launch option. On Meta
-Quest the app currently opens as a flat window, and starting it in VR takes an
+Quest the app opens as a flat window for now, and starting it in VR takes an
 extra step. The [manual](MANUAL.md#playing-in-a-headset) covers both.
+
+## Click to walk, tap to talk
+
+Click the ground and Fei walks there, or click someone and he goes over and
+talks to them. In battle, click a command on the ring, then your target. The
+jumps are still yours to make.
+
+On a phone or tablet, put your thumb down anywhere on the left half of the
+screen and a stick appears under it. The big button under your right thumb is
+TALK while you explore, NEXT in a conversation and OK in a menu. When you
+attack in battle, the buttons read WEAK, STRONG and FIERCE, and a Battling
+bout gets its own set.
+
+<p align="center">
+  <img src="docs/images/mouse-battles.jpg" width="49%"
+    alt="Mouse Battles, fight with a click: the mouse pointer on the battle command ring in a canyon fight">
+  <img src="docs/images/touch-controls.jpg" width="49%"
+    alt="Touch Controls, play on the go: a Battling bout between Weltall and Vierge, with the stick under the left thumb and A, B, Special, Jump, Charge and Dash under the right">
+</p>
+
+Any gamepad works everywhere, Settings included, and you can rebind every
+control.
 
 ## Sound all around you
 
-Put on headphones and switch to Binaural. The soundtrack is laid out around
-you from the game's own instrument parts, and sound effects come from where
-they happen in the scene. In VR, effects stay in place as you turn your head,
-and the music can too. The game still decides what plays, when and how loud,
-and the original Mono, Stereo and Wide modes are untouched.
+Choose Binaural with headphones on, and the soundtrack's instrument parts
+spread out around you while the world's sounds come from where they happen in
+the scene. In a headset they stay put as you turn your head, and the music can
+too. The game still decides what plays, when and how loud, and its Mono,
+Stereo and Wide modes sound as they always did.
 
-## A long RPG that fits around your life
+## Save anywhere, rewind, skip the grind
 
-Xenogears is a long game, and a few parts of it have aged. All of these are
-optional:
-
-- **Save anywhere.** A save state keeps the exact moment, mid-battle and
-  mid-conversation included. Take it to your phone or another computer and
-  carry on.
-- **Rewind.** Missed a jump? Back up through the last half minute and try
-  again.
-- **Fast-forward.** Speed through travel and grinding at up to 20 times, or
-  as fast as your machine can go. The music keeps its normal tempo and pitch.
-- **Fewer random battles.** They're off by default in the jumping sections of
-  Blackmoon Forest, the Aveh–Kislev border mountains and Babel Tower. You can
-  also halve encounters everywhere, and each battle then gives double EXP, G
-  and Deathblow progress, so you don't fall behind.
-- **No disc loading.** Areas, battles and menus open almost at once.
-- **Text at your pace.** Fast or instant text, dialogue that advances on its
-  own, and movies you can skip. Hold Select to hide a dialogue box and see the
-  scene behind it.
-- **Your old saves.** Import memory cards and saves from DexDrive, PSP, PS
-  Vita, PS3, emulators and Action Replay or GameShark tools, and export
-  standard memory card files.
-
-Story battles still happen and choices still wait for you. Turn an option off
-and the game plays exactly as it always did.
+Save in the middle of a boss fight and finish it later on your phone. Missed a
+jump in Babel Tower? Hold rewind and back up through the last 30 seconds.
+Cross the world map at 20 times speed while the music keeps its tempo and
+pitch.
 
 <p align="center">
   <img src="docs/images/save-states.jpg" width="49%"
@@ -202,17 +149,30 @@ and the game plays exactly as it always did.
     alt="Fast-Forward, skip the grind: a night-shore battle against a giant Gear running fast">
 </p>
 
+Settings smooth over the parts that have aged:
+
+- No random battles in the jumping sections of Blackmoon Forest, the
+  Aveh–Kislev border mountains and Babel Tower. This one is on from the start.
+- Half as many random battles in every field, each worth double EXP, G and
+  Deathblow progress.
+- No waiting for the disc: areas, battles and menus open almost at once.
+- Instant text, dialogue that turns its own pages, and movies you can skip.
+
+Story battles still happen, choices still wait for you, and a setting turned
+off plays that part as the original did. Hold Select to hide a dialogue box
+and see the scene behind it. Bring your old saves from DexDrive, PSP, PS Vita,
+PS3, emulators and Action Replay or GameShark tools, and take standard memory
+card files back out.
+
 ## In your language
 
-Play with the original English script, the
+Switch between the original English script, the
 [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
-team's English retranslation, or the game's text in French, Italian, Spanish
-or Brazilian Portuguese. They're all built in, so there are no patched discs
-to make, and you can switch at any time.
-
-Put your Japanese discs beside the North American ones on a computer and you
-can also play with the Japanese release's text, or keep your language and
-switch the movies and battle voices to Japanese.
+team's retranslation and the game's text in French, Italian, Spanish or
+Brazilian Portuguese whenever you like, with no patched discs. On a computer,
+put your Japanese discs beside the North American ones to play with the
+Japanese release's text, or keep your language and switch the movies and
+battle voices to Japanese.
 
 A few words the game draws as pictures, like the battle commands and save
 titles, stay in English, and so does the app's Settings screen.
@@ -220,9 +180,9 @@ titles, stay in English, and so does the app's Settings screen.
 ## Achievements
 
 Sign in to [RetroAchievements](https://retroachievements.org) on a computer,
-Android device or headset and earn Xenogears' achievements as you play. Each
-unlock pops up over the game with its badge. Unlocks count as softcore, so
-save states, rewind and fast-forward stay available.
+Android device or headset, and each achievement you earn pops up over the game
+with its badge. Unlocks count as softcore, so save states, rewind and
+fast-forward stay available.
 
 ## The developers' test rooms
 
