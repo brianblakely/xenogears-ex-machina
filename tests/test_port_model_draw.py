@@ -1044,7 +1044,9 @@ class CulledFaces(unittest.TestCase):
         """Projections recorded and culled faces wanted 128 pixels beyond the
         screen (or neither); the culled-face ring's header and first records."""
         ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
-        reveals = (ctypes.c_uint * (4 + 16 * 4)).in_dll(LIB, "xem_present_reveal_storage")
+        # (The header's eight words: count, wanted, pull_back, around, the
+        # viewer and its x and z, one unused: xem/gte.h.)
+        reveals = (ctypes.c_uint * (8 + 16 * 4)).in_dll(LIB, "xem_present_reveal_storage")
         ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
         ctypes.memset(ctypes.addressof(reveals), 0, ctypes.sizeof(reveals))
         if on:
@@ -1090,7 +1092,7 @@ class CulledFaces(unittest.TestCase):
                 reveals = self.recording(True)
                 scene.draw(name)
                 self.assertEqual(reveals[0], 1, "the face beyond the screen, recorded")
-                record = list(reveals[8:20])
+                record = list(reveals[12:24])
                 kept, culled = scene.words(0), scene.words(1)
                 for j, mask in compared:
                     self.assertNotEqual(record[j] & mask, culled[1 + j] & mask, f"word {j}: not its slot's")

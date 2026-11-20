@@ -3629,6 +3629,106 @@ fn split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama() {
     }
 }
 
+/// The billboards face the head round the table, built again as it goes
+/// round with no new game frame: from either side the sprite is as wide
+/// for its height as from the seat's side (not edge-on), and from behind
+/// its later part stays on its right, as the game drew it (not mirrored).
+#[test]
+fn a_dioramas_billboards_face_the_head_round_the_table() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let mut view = shown_diorama(&gpu, &FIELD, Table { scale: 2.0, ..Table::default() });
+    let bounds = |pixels: &[(usize, usize)]| pixels.iter().fold((usize::MAX, usize::MAX, 0, 0), |(x0, y0, x1, y1), &(x, y)| (x0.min(x), y0.min(y), x1.max(x), y1.max(y)));
+    let mut aspects = Vec::new();
+    for yaw in [0.0, 90.0, 180.0, -90.0, 135.0] {
+        let (pictures, _, _) = present_diorama(&gpu, &mut view, &[orbit(yaw, 20.0, 0.8, 0.0)], (640, 480), 2.0);
+        dump(&format!("billboards-{yaw}"), &pictures[0]);
+        let (blue, yellow) = (pixels_of(&pictures[0], [0, 0, 255]), pixels_of(&pictures[0], [255, 255, 0]));
+        assert!(blue.len() > 100 && yellow.len() > 100, "the sprite shows from {yaw} ({} blue, {} yellow pixels)", blue.len(), yellow.len());
+        let ((x0, y0, x1, y1), (u0, _, u1, _)) = (bounds(&blue), bounds(&yellow));
+        assert!(u0 + u1 > x0 + x1, "from {yaw} the yellow part on the blue's right ({u0}..{u1} against {x0}..{x1})");
+        aspects.push((x1 - x0 + 1) as f32 / (y1 - y0 + 1) as f32);
+    }
+    assert!(aspects.iter().all(|aspect| (aspect / aspects[0] - 1.0).abs() < 0.2), "as wide for its height from every side: {aspects:?}");
+}
+
+/// While a field's diorama shows, the view asks the port to draw the
+/// field's sprites again facing the head (`Reveals::viewer`): the point
+/// between the eyes in the field's world. From the seat's side it lies on
+/// the game camera's side of the point the camera looks at (the camera at
+/// the world's origin looks along +z at z 1200), from behind the table
+/// beyond it, and from the table's right on the camera's right; none until
+/// the diorama shows.
+#[test]
+fn a_fields_diorama_asks_for_its_sprites_facing_the_head_between_the_eyes() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let traces = traced(|device| gte_frame(device, LEVEL, &FIELD, true));
+    let mut view = diorama_view(&gpu, &traces, Table { scale: 2.0, ..Table::default() });
+    let head = |yaw: f32| [orbit(yaw, 40.0, 1.0, -0.032), orbit(yaw, 40.0, 1.0, 0.032)];
+    present_diorama(&gpu, &mut view, &head(0.0), (64, 48), 0.0);
+    assert_eq!(view.reveals().map(|r| (r.around, r.viewer)), Some((Reveals::ANYWHERE, None)), "the screen first: no head in the world");
+    let mut viewer = |yaw: f32| {
+        present_diorama(&gpu, &mut view, &head(yaw), (64, 48), 1.0);
+        let space = view.diorama_space().expect("the diorama shows");
+        // The head between the eyes, through the table into the world.
+        let between = head(yaw).map(|(eye, _)| eye.inverse().transform_point3(Vec3::ZERO));
+        let expected = space.world_from_room().transform_point3((between[0] + between[1]) / 2.0);
+        let viewer = view.reveals().and_then(|r| r.viewer).expect("a viewer while the diorama shows");
+        assert!((viewer[0] as f32 - expected.x).abs() <= 0.5 && (viewer[1] as f32 - expected.z).abs() <= 0.5, "{viewer:?} is the head at {expected}");
+        viewer
+    };
+    let (seat, behind, right) = (viewer(0.0), viewer(180.0), viewer(90.0));
+    assert!(seat[1] < 1200 && behind[1] > 1200, "the seat on the camera's side ({seat:?}), behind the table beyond its target ({behind:?})");
+    assert!(seat[0].abs() < 10 && right[0] > 100, "the table's right is the camera's ({seat:?}, {right:?})");
+}
+
+/// A field's sprite the port drew again facing the head
+/// (`Primitive::facing`) stands on the table in the game's place: the
+/// alternative's parts drawn once for all of the sprite's own, where they
+/// stood. With full-size sprites on, the full-size frame the port made for
+/// the same facing (`Primitive::full_size`) stands there instead.
+#[test]
+fn a_fields_diorama_draws_its_sprites_as_the_head_sees_them() {
+    use xem_gpu::{SpriteFacing, SpriteFacingPart};
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let plain = traced(|device| gte_frame(device, LEVEL, &FIELD, true));
+    // The blue part's corners in a colour of their own: the sprite as the
+    // head sees it (magenta), and its full-size frame (white).
+    let corners = FIELD[2].points.map(|point| projection(Mat3x3(LEVEL).view(point), 2, SPRITE));
+    let alternative = |colour: u32| {
+        let words = [0x2800_0000 | colour, corners[0].sxy, 0, corners[1].sxy, 0, corners[2].sxy, 0, corners[3].sxy, 0];
+        Some(std::sync::Arc::new(SpriteFacing { parts: vec![SpriteFacingPart { words, points: corners }], ..Default::default() }))
+    };
+    let (mut faced, mut full) = (plain.clone(), plain.clone());
+    for (traces, full_size) in [(&mut faced, None), (&mut full, alternative(0xFF_FFFF))] {
+        for op in &mut traces.1.ops {
+            if let TraceOp::Draw(p) = op && p.owner == SPRITE {
+                (p.facing, p.full_size) = (alternative(0xFF_00FF), full_size.clone());
+            }
+        }
+    }
+    let pictures: Vec<Vec<u8>> = [(&plain, false), (&faced, false), (&full, true)].map(|(traces, full_size_sprites)| {
+        let mut view = diorama_view(&gpu, traces, Table { scale: 2.0, ..Table::default() });
+        let graphics = xem_settings::Graphics { full_size_sprites, ..Default::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Headset, (640, 480), view.max_scale()));
+        for now in [0.0, 1.0] {
+            present_diorama(&gpu, &mut view, &[orbit(0.0, 40.0, 1.0, 0.0)], (640, 480), now);
+        }
+        present_diorama(&gpu, &mut view, &[orbit(20.0, 30.0, 0.8, 0.0)], (640, 480), 2.0).0.remove(0)
+    }).into();
+    dump("faced", &pictures[1]);
+    let bounds = |pixels: &[(usize, usize)]| pixels.iter().fold((usize::MAX, usize::MAX, 0, 0), |(x0, y0, x1, y1), &(x, y)| (x0.min(x), y0.min(y), x1.max(x), y1.max(y)));
+    let blue = pixels_of(&pictures[0], [0, 0, 255]);
+    let magenta = pixels_of(&pictures[1], [255, 0, 255]);
+    let white = pixels_of(&pictures[2], [255, 255, 255]);
+    assert!(blue.len() > 300 && magenta.len() > 300, "the sprite shows ({} blue pixels, then {} magenta)", blue.len(), magenta.len());
+    for picture in &pictures[1..] {
+        assert!(pixels_of(picture, [0, 0, 255]).is_empty() && pixels_of(picture, [255, 255, 0]).is_empty(), "none of the game's parts");
+    }
+    assert_eq!(bounds(&magenta), bounds(&blue), "where the game's part stood");
+    assert!(pixels_of(&pictures[2], [255, 0, 255]).is_empty(), "the full-size frame in place of the small one");
+    assert_eq!(bounds(&white), bounds(&blue), "the full-size frame where the game's part stood");
+}
+
 #[test]
 fn both_eyes_see_one_upright_sprite_apart_only_by_their_disparity() {
     let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");

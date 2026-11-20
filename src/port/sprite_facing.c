@@ -215,23 +215,43 @@ static void xem_alternative_end(Sprite *sprite, u32 first, u32 last, s32 cut, s3
     xem_host_present(kind, &facing->record, sizeof(facing->record));
 }
 
-void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height) {
-    FieldDescriptor *d, *eye;
-    s32 angle;
+/* The angle a field's actor sprite faces seen from where the view looks
+ * (xem/gte.h `around`) instead of the game's camera: the controlled
+ * character's eyes while the view looks around (first person; its own
+ * sprite, which that view leaves out, keeps the game's facing), or the
+ * host's viewer while a view from anywhere has one (a diorama's head). The
+ * original adds the field camera's view_angle to the actor's heading; here
+ * the view ray runs from that point to the sprite. 0 when the sprite keeps
+ * the game's facing. */
+static s32 xem_viewed_angle(Sprite *sprite, s32 *angle) {
+    FieldDescriptor *d, *eye = NULL;
+    s32 x, z;
 
-    if (!xem_gte_ring->recording || !(xem_present_reveals->around & XEM_AROUND_LOOK) || facing->active ||
-        sprite_in_battle || sprite_in_worldmap || !sprite->animations || !sprite->animation ||
-        (sprite->render.word & 3) != 1 || field_work.controlled >= field_event_actor_count) {
-        return;
+    if (!xem_gte_ring->recording || sprite_in_battle || sprite_in_worldmap) { return 0; }
+    if (xem_present_reveals->around & XEM_AROUND_LOOK) {
+        if (field_work.controlled >= field_event_actor_count) { return 0; }
+        eye = &field_view.components.descriptors[field_work.controlled];
+        x = eye->matrix.t[0];
+        z = eye->matrix.t[2];
+    } else if ((xem_present_reveals->around & XEM_AROUND_ANYWHERE) && xem_present_reveals->viewer) {
+        x = xem_present_reveals->viewer_x;
+        z = xem_present_reveals->viewer_z;
+    } else {
+        return 0;
     }
     d = xem_sprite_descriptor(sprite);
-    if (d == NULL || (d->actor->layer_flags & 0x01000000)) { return; }
-    eye = &field_view.components.descriptors[field_work.controlled];
-    if (d == eye) { return; }
-    /* The original adds view_angle to the actor's heading. In first person
-     * the view ray runs from the controlled actor to this sprite. */
-    angle = ratan2((sprite->z >> 16) - eye->matrix.t[2],
-                   (sprite->x >> 16) - eye->matrix.t[0]) - 0x400 + d->actor->unk108;
+    if (d == NULL || d == eye || (d->actor->layer_flags & 0x01000000)) { return 0; }
+    *angle = ratan2((sprite->z >> 16) - z, (sprite->x >> 16) - x) - 0x400 + d->actor->unk108;
+    return 1;
+}
+
+void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height) {
+    s32 angle;
+
+    if (facing->active || !sprite->animations || !sprite->animation || (sprite->render.word & 3) != 1 ||
+        !xem_viewed_angle(sprite, &angle)) {
+        return;
+    }
     xem_alternative_begin(sprite, 1);
     sprite_set_facing(&facing->sprite, angle);
     /* A replay can end at the same frame after changing inherited group
@@ -299,8 +319,8 @@ void xem_present_sprite_full_size(Sprite *sprite, u32 first, u32 last, s32 cut, 
     FieldDescriptor *d;
     s32 *tiny, *full;
     s32 *sprites;
-    s32 x, y;
-    u32 character, index, frame;
+    s32 x, y, angle;
+    u32 character, index, frame, flip;
 
     /* First person keeps the small sprites, which it faces to the eyes. */
     if (!xem_gte_ring->recording || !facing->field_actors || facing->active || sprite_in_battle || sprite_in_worldmap ||
@@ -323,9 +343,21 @@ void xem_present_sprite_full_size(Sprite *sprite, u32 first, u32 last, s32 cut, 
     }
     full = (s32 *)xem_host_full_sprite(character);
     if (full == NULL || (*(u16 *)((u8 *)full + full[2]) & 0x8000)) { return; }
-    frame = xem_full_size_frame(tiny, full, sprite->frame, sprite->motion.bytes[3]);
+    /* Seen from a diorama's head, the small sprite's frame of the facing
+     * the head sees (xem_present_sprite_facing), mirrored as it is. */
+    frame = sprite->frame;
+    flip = sprite->render.bits.flip;
+    if (sprite->animation && xem_viewed_angle(sprite, &angle)) {
+        xem_alternative_begin(sprite, 1);
+        sprite_set_facing(&facing->sprite, angle);
+        frame = facing->sprite.frame;
+        flip = facing->sprite.render.bits.flip;
+        facing->active = 0;
+    }
+    frame = xem_full_size_frame(tiny, full, frame, sprite->motion.bytes[3]);
     if (frame == 0) { return; }
     xem_alternative_begin(sprite, 0);
+    facing->sprite.render.bits.flip = flip;
     /* Its cells and palette where the original's party sprite keeps them
      * (field_actor_create_sprite's slot 0: VRAM 0x280,0x100, palette
      * 0x100,0xE0), uploaded only to the host's picture, which puts back

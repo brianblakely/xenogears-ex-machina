@@ -1716,26 +1716,38 @@ fn rendering_skipped_offscreen_or_as_a_spectator_leaves_the_game_unchanged() {
     presentation_only(&mut session, &looked_around, &unseen).unwrap_or_else(|at| panic!("looking around changes the whole state: {at}"));
 }
 
+/// The port draws a field's sprites again facing where the view looks from
+/// (`Primitive::facing`): first person's eyes (`Reveals::LOOK`), or a view
+/// from anywhere's viewer (`Reveals::ANYWHERE` with `Reveals::viewer`, a
+/// diorama's head), here Lahan's camera mirrored through the point it looks
+/// at, so the townspeople are seen from behind; a view from anywhere
+/// without a viewer, and the game's own camera, keep the game's facings.
+/// None of it changes RAM (with the RNG), VRAM, sound, time or the state.
 #[test]
-fn first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged() {
-    use xem_gpu::{Reveals, TraceOp};
+fn sprite_facings_replay_from_the_eyes_or_a_viewer_and_leave_original_ram_vram_and_sound_unchanged() {
+    use xem_gpu::{Camera, Reveals, TraceOp};
     let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
     let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
     assert!(session.execute(&json!({"cmd":"enter_field","map":1})).get("error").is_none());
     assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
     let initial = session.snapshot_bytes().unwrap();
-    let run = |session: &mut Session<NativeModule>, around| {
+    let run = |session: &mut Session<NativeModule>, around, viewer| {
         let gpu = session.runtime.services().gpu.device_mut();
         gpu.set_trace(true);
-        gpu.set_reveals(Some(Reveals { reach:[320,240], around, ..Default::default() }));
+        gpu.set_reveals(Some(Reveals { reach:[320,240], around, viewer, ..Default::default() }));
         let mut changed = 0;
+        let mut camera: Option<Camera> = None;
         for _ in 0..90 {
             assert!(session.frame().unwrap());
             let trace = session.runtime.services().gpu.device_mut().take_trace();
             for op in trace.ops {
-                if let TraceOp::Draw(p) = op && let Some(facing) = p.facing {
-                    assert!(!facing.parts.is_empty(),"an assembled facing must have visible parts");
-                    changed += 1;
+                match op {
+                    TraceOp::Draw(p) => if let Some(facing) = p.facing {
+                        assert!(!facing.parts.is_empty(),"an assembled facing must have visible parts");
+                        changed += 1;
+                    },
+                    TraceOp::Camera(c) => camera = Some(*c),
+                    _ => {}
                 }
             }
         }
@@ -1743,36 +1755,44 @@ fn first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_v
             session.runtime.services().gpu.device().save(),
             session.runtime.services().spu.chip().save(),
             session.runtime.services().clock.now);
-        (state, changed, whole(session))
+        (state, changed, whole(session), camera)
     };
-    let (original, no_facings, unfaced) = run(&mut session, 0);
+    let (original, no_facings, unfaced, camera) = run(&mut session, 0, None);
     assert_eq!(no_facings,0);
-    // A view from anywhere has no viewer's position to face: no facings.
+    // Behind the scene: the camera's place mirrored through its target.
+    let camera = camera.expect("the field's camera record");
+    let eye = camera.world_point([0.0; 3]).expect("a camera that spans space");
+    let behind = [2.0 * camera.target[0] - eye[0], 2.0 * camera.target[2] - eye[2]].map(|v| v.round() as i32);
     // (The port takes the bits its GPU commands last handed over, and its
     // rings are no part of a state: the first frame after a restore is
-    // built with the run before's, so this one follows the original's.)
-    session.restore_bytes(&initial).unwrap();
-    let (anywhere, anywhere_facings, from_anywhere) = run(&mut session, Reveals::ANYWHERE);
-    assert_eq!(anywhere_facings,0,"sprite facings replay for first-person looking only");
-    assert_eq!(anywhere,original,"a view from anywhere cannot change original RAM, VRAM, sound or time");
-    presentation_only(&mut session, &from_anywhere, &unfaced).unwrap_or_else(|at| panic!("a view from anywhere changes the whole state: {at}"));
-    session.restore_bytes(&initial).unwrap();
-    let (looking, facings, faced) = run(&mut session, Reveals::LOOK);
-    assert!(facings > 0,"Lahan NPCs must select frames from the player's viewing position");
-    assert_eq!(looking,original,"alternate texture assembly cannot change original RAM (including RNG), VRAM, sound or time");
-    presentation_only(&mut session, &faced, &unfaced).unwrap_or_else(|at| panic!("sprite facings change the whole state: {at}"));
+    // built with the run before's, so each run follows the one before.)
+    let mut views = Vec::new();
+    for (around, viewer, what) in [(Reveals::ANYWHERE, None, "a view from anywhere"), (Reveals::ANYWHERE, Some(behind), "a viewer behind"),
+        (Reveals::LOOK, None, "first person")] {
+        session.restore_bytes(&initial).unwrap();
+        let (state, facings, faced, _) = run(&mut session, around, viewer);
+        assert_eq!(state,original,"{what}: alternate texture assembly cannot change original RAM (including RNG), VRAM, sound or time");
+        presentation_only(&mut session, &faced, &unfaced).unwrap_or_else(|at| panic!("{what} changes the whole state: {at}"));
+        views.push(facings);
+    }
+    eprintln!("facings over 90 frames: anywhere {}, from behind {}, first person {}", views[0], views[1], views[2]);
+    assert_eq!(views[0],0,"a view from anywhere without a viewer keeps the game's facings");
+    assert!(views[1] > 0,"Lahan's townspeople, seen from behind, must select frames from the viewer's position");
+    assert!(views[2] > 0,"Lahan NPCs must select frames from the player's viewing position");
 }
 
 /// In a large-scale field (Babel Tower's map 414, which runs event fe 1e:
 /// the party on foot draws small sprites of the map's own) a traced frame's
 /// small sprite parts carry the full-size frame the port assembles from the
 /// character's own field sprite, which the host reads from the disc the
-/// first time the port asks for it, outside every state region. Assembling
-/// them leaves RAM (with the RNG), VRAM, sound, time and the whole state as
-/// a run without a trace leaves them.
+/// first time the port asks for it, outside every state region; with a
+/// view from anywhere's viewer (a diorama's head) behind the scene, the
+/// frame of the facing the viewer sees. Assembling them leaves RAM (with
+/// the RNG), VRAM, sound, time and the whole state as a run without a
+/// trace leaves them.
 #[test]
 fn large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged() {
-    use xem_gpu::TraceOp;
+    use xem_gpu::{Camera, Reveals, TraceOp};
     let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
     let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
     assert!(session.execute(&json!({"cmd":"enter_field","map":414})).get("error").is_none());
@@ -1782,32 +1802,54 @@ fn large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_an
     // Fei's block, where the host keeps it (xem_core::presentation::FULL_SPRITES).
     let fei = |session: &mut Session<NativeModule>| session.runtime.memory().read_u32(0x70C0_0000).unwrap();
     let initial = session.snapshot_bytes().unwrap();
-    let traced = |session: &mut Session<NativeModule>, trace: bool| {
-        session.runtime.services().gpu.device_mut().set_trace(trace);
-        let mut parts = 0;
+    let traced = |session: &mut Session<NativeModule>, trace: bool, reveals: Option<Reveals>| {
+        let gpu = session.runtime.services().gpu.device_mut();
+        gpu.set_trace(trace);
+        gpu.set_reveals(reveals);
+        // Each frame's full-size cells, and the field's camera.
+        let (mut parts, mut cells, mut camera) = (0, Vec::new(), None::<Camera>);
         for _ in 0..90 {
             assert!(session.frame().unwrap());
+            let mut frame = Vec::new();
             for op in session.runtime.services().gpu.device_mut().take_trace().ops {
-                if let TraceOp::Draw(p) = op && let Some(full_size) = p.full_size {
-                    assert!(!full_size.parts.is_empty() && !full_size.textures.is_empty(), "an assembled frame has parts and cells");
-                    parts += 1;
+                match op {
+                    TraceOp::Draw(p) => if let Some(full_size) = p.full_size {
+                        assert!(!full_size.parts.is_empty() && !full_size.textures.is_empty(), "an assembled frame has parts and cells");
+                        parts += 1;
+                        frame.extend(full_size.textures.iter().map(|(_, pixels)| pixels.clone()));
+                    },
+                    TraceOp::Camera(c) => camera = Some(*c),
+                    _ => {}
                 }
             }
+            cells.push(frame);
         }
         let state = (session.memory_hash().unwrap(),
             session.runtime.services().gpu.device().save(),
             session.runtime.services().spu.chip().save(),
             session.runtime.services().clock.now);
-        (state, parts, whole(session))
+        (state, parts, whole(session), cells, camera)
     };
-    let (original, none, plain) = traced(&mut session, false);
+    let (original, none, plain, _, _) = traced(&mut session, false, None);
     assert_eq!((none, fei(&mut session)), (0, 0), "no trace: no frames, and no block read");
     session.restore_bytes(&initial).unwrap();
-    let (drawn, parts, assembled) = traced(&mut session, true);
+    let (drawn, parts, assembled, cells, camera) = traced(&mut session, true, None);
     assert_eq!(fei(&mut session), 3, "Fei's block (its three sections) read from the disc");
     assert!(parts > 0, "the party's small sprites get their full-size frames");
     assert_eq!(drawn, original, "assembling them cannot change original RAM (including RNG), VRAM, sound or time");
     presentation_only(&mut session, &assembled, &plain).unwrap_or_else(|at| panic!("full-size frames change the whole state: {at}"));
+    // Behind the scene: the camera's place mirrored through its target.
+    let camera = camera.expect("the field's camera record");
+    let eye = camera.world_point([0.0; 3]).expect("a camera that spans space");
+    let behind = [2.0 * camera.target[0] - eye[0], 2.0 * camera.target[2] - eye[2]].map(|v| v.round() as i32);
+    session.restore_bytes(&initial).unwrap();
+    let reveals = Reveals { reach: [320, 240], around: Reveals::ANYWHERE, viewer: Some(behind), ..Default::default() };
+    let (seen, faced_parts, faced, faced_cells, _) = traced(&mut session, true, Some(reveals));
+    let other = cells.iter().zip(&faced_cells).filter(|(a, b)| a != b).count();
+    eprintln!("full-size frames over 90 frames: {parts} parts from the game's camera, {faced_parts} from behind, {other} frames' cells differ");
+    assert!(faced_parts > 0 && other > 0, "seen from behind, the party's full-size frames are the facing the viewer sees");
+    assert_eq!(seen, original, "facing them cannot change original RAM (including RNG), VRAM, sound or time");
+    presentation_only(&mut session, &faced, &plain).unwrap_or_else(|at| panic!("faced full-size frames change the whole state: {at}"));
 }
 
 #[test]

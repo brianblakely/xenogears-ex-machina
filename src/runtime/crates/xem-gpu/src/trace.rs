@@ -93,6 +93,12 @@ pub struct Reveals {
     /// cameras the port records say so ([`Camera::around`]), and in a field
     /// it records where the controlled character stands ([`TraceOp::Eye`]).
     pub around: u8,
+    /// Where a view from anywhere ([`Reveals::ANYWHERE`]) looks from in a
+    /// field's world, when the host knows it (a diorama's head): its x and
+    /// z in the units the field places its actors in. The port draws the
+    /// field's sprites again facing it ([`Primitive::facing`]), as first
+    /// person's face the controlled character's eyes.
+    pub viewer: Option<[i32; 2]>,
 }
 
 impl Reveals {
@@ -102,7 +108,8 @@ impl Reveals {
     pub const LOOK: u8 = 1;
     /// [`Reveals::around`]: the view looks from anywhere around a field, a
     /// battle or the world map (a diorama); the port also records the
-    /// battle's stage and the world map's ground before their cameras.
+    /// battle's stage and the world map's ground before their cameras, and
+    /// draws a field's sprites again facing [`Reveals::viewer`].
     pub const ANYWHERE: u8 = 2;
 }
 
@@ -454,7 +461,8 @@ pub struct Primitive {
     /// For a sprite part: the point on the floor under its sprite (VRAM x,
     /// y and GTE depth), where the port records one.
     pub ground: Option<[f32; 3]>,
-    /// The original animation assembled from the first-person viewing angle.
+    /// The original animation assembled for the angle the view looks from
+    /// (first person's eyes, a diorama's head: [`Reveals::viewer`]).
     /// Presentation only; the GPU's commands and VRAM remain original.
     pub facing: Option<std::sync::Arc<SpriteFacing>>,
     /// A party character's full-size frame, assembled from its own field
@@ -1183,6 +1191,11 @@ impl Gpu {
         self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| u32::from(r.around))
     }
 
+    /// [`Gpu::set_reveals`]'s viewer (none without one).
+    pub fn reveal_viewer(&self) -> Option<[i32; 2]> {
+        self.trace.as_ref().and_then(|t| t.wanted).and_then(|r| r.viewer)
+    }
+
     /// Points traced since the trace started: matched to their projection
     /// (by address or a culled face's record), and not (2D points). For
     /// validation.
@@ -1595,7 +1608,8 @@ impl Gpu {
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
         let texels = |of: fn(&TraceVertex) -> i16| vertices[..count].iter().map(|v| i32::from(of(v))).fold((i32::MAX, i32::MIN), |(lo, hi), t| (lo.min(t), hi.max(t)));
         let movie = textured && trace.movie_picture(environment.draw_mode, environment.texture_window, texels(|v| v.u), texels(|v| v.v));
-        let point = trace.point_index(words[1], 1, 0);
+        // An alternative stands for projections of a sprite's parts alone.
+        let point = trace.point_index(words[1], 1, 0).filter(|&i| trace.projection(i).is_some_and(|p| Class::from_projection(p.class) == Class::Sprite));
         let recorder = self.trace.as_mut().expect("tracing");
         let facing = point.and_then(|point| alternative(&mut recorder.facings, point, &self.vram));
         let full_size = point.and_then(|point| alternative(&mut recorder.full_sizes, point, &self.vram));

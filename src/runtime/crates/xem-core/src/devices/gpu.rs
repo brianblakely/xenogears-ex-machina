@@ -175,14 +175,15 @@ impl Gpu {
     /// how many entries were ever written) of the projection, store and
     /// culled-face rings. Reads only, except for the projection ring's
     /// `recording` word (whether a trace takes the records) and the
-    /// culled-face ring's `wanted`, `pull_back` and `around` words (how far
-    /// beyond its screen the trace wants culled faces, from how far behind
-    /// the game's camera, and whether from the controlled character, looking
-    /// around); without a trace it only notes the counts.
+    /// culled-face ring's `wanted`, `pull_back`, `around` and `viewer` words
+    /// (how far beyond its screen the trace wants culled faces, from how far
+    /// behind the game's camera, whether from the controlled character,
+    /// looking around, or from anywhere, and the point a view from anywhere
+    /// looks from); without a trace it only notes the counts.
     fn trace_projections(&mut self, args: &[u32], memory: &mut dyn GameMemory) {
         let arg = |i: usize| args.get(i).copied().unwrap_or(0);
-        // Entries follow headers of 32, 16 and 16 bytes.
-        let rings = [(arg(0), 32, PROJECTION_RING), (arg(1), 16, STORE_RING), (arg(2), 16, REVEAL_RING)];
+        // Entries follow headers of 32, 16 and 32 bytes.
+        let rings = [(arg(0), 32, PROJECTION_RING), (arg(1), 16, STORE_RING), (arg(2), 32, REVEAL_RING)];
         let tracing = self.gpu.trace_enabled();
         // The projection ring's `recording` word: the port records nothing
         // while no trace takes it (the Original renderer).
@@ -190,6 +191,11 @@ impl Gpu {
         let _ = memory.write_u32(arg(2).wrapping_add(4), self.gpu.reveal_reach());
         let _ = memory.write_u32(arg(2).wrapping_add(8), self.gpu.reveal_pull_back());
         let _ = memory.write_u32(arg(2).wrapping_add(12), self.gpu.reveal_around());
+        let viewer = self.gpu.reveal_viewer();
+        let [x, z] = viewer.unwrap_or_default();
+        let _ = memory.write_u32(arg(2).wrapping_add(16), u32::from(viewer.is_some()));
+        let _ = memory.write_u32(arg(2).wrapping_add(20), x as u32);
+        let _ = memory.write_u32(arg(2).wrapping_add(24), z as u32);
         // Read only from here on.
         let memory: &dyn GameMemory = memory;
         let mut counts = [0u32; 3];

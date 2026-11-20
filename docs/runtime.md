@@ -2742,14 +2742,22 @@ shared with first person): the cells uploaded, the parts drawn, the pixels
 the cells covered put back. The frame logs' replays (interpolation, wider
 and pulled-back views, the diorama) draw it too. First person keeps the
 small sprites, which it faces to the eyes: the port builds no full-size
-frame while the view looks around (`XEM_AROUND_LOOK`). The game's shadows
-stay its own.
+frame while the view looks around (`XEM_AROUND_LOOK`). Seen from a
+diorama's head (a view from anywhere's viewer, [Diorama](#diorama)), the
+frame is the full set's of the facing the head sees: the small sprite's
+facing replayed on a copy first, as `xem_present_sprite_facing` does, and
+its frame and mirroring taken; the substitution clears the small sprite's
+own facing from the parts it draws, so the full-size frame stands in its
+place. The game's shadows stay its own.
 
 On Babel Tower's map 414 (`render.rs`
 `large_scale_fields_get_full_size_party_frames_that_leave_original_ram_vram_and_sound_unchanged`)
 352 traced parts carried a full-size frame in 90 frames, Fei's block read
 the first time, and RAM (with the RNG), VRAM, sound, time and the whole
-state ended as without a trace (`presentation_only`);
+state ended as without a trace (`presentation_only`); with a viewer behind
+the scene (the camera's place mirrored through its target) as many did,
+the cells of 44 of the 90 frames other than from the game's camera, the
+state again as without a trace;
 `the_full_size_setting_draws_the_party_of_a_large_scale_field_with_its_own_sprites`
 presents the same frames with the setting off and on: 1011 pixels differ,
 all within 26x57 around Fei (scale 4, 1280x896). `--example render --
@@ -3536,13 +3544,17 @@ port projects it for the record, the GTE put back): a diorama's table at
 25% showed no terrain over a third of it, behind the world map's camera,
 in steps of its cells; the sprites the port draws
 again facing the character's eyes come with `LOOK` only (`sprite_facing.c`),
-the battle's stage and the world map's ground with `ANYWHERE` only, the
-controlled character's place with either. Every camera record carries the
-bits it was made with (`Camera::around`): a frame recorded with either
+a field's sprites drawn again facing a viewer with `ANYWHERE` and the
+viewer's point (`Reveals::viewer`, the ring's `viewer` words after `around`:
+1, then its x and z in the units the field places its actors in; 0 for
+none), the battle's stage and the world map's ground with `ANYWHERE` only,
+the controlled character's place with either. Every camera record carries
+the bits it was made with (`Camera::around`): a frame recorded with either
 holds culled faces from anywhere, which the game's camera shows none of,
 and first-person inspection and the diorama begin only with frames
 recorded for them. `GameView` asks for `ANYWHERE` while its headset view is
-the [Diorama](#diorama) of a field, a battle or the world map.
+the [Diorama](#diorama) of a field, a battle or the world map, with the
+head as the viewer while a field's diorama shows.
 The port reads the bits (as the reach and the pull-back) that the host wrote
 into the ring's header when the port's GPU commands last handed the rings
 over, and the rings are no part of a state: the first frame the game builds
@@ -3685,10 +3697,12 @@ map 9b83d31eba10763f, as before the stages, the ground and the terrain
 behind the camera were recorded). One
 desert battle frame drawn with `ANYWHERE` held 8 262 primitives, 4 654 of
 them culled faces. `xem-headless/tests/render.rs`
-`first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged`
-replays no sprite facings in 90 frames of Lahan with `ANYWHERE` (after a
-run with the original's bits) and some with `LOOK`, at the same RAM, VRAM,
-sound and clock. `xem-render/tests/ps1.rs`
+`sprite_facings_replay_from_the_eyes_or_a_viewer_and_leave_original_ram_vram_and_sound_unchanged`
+replays no sprite facings in 90 frames of Lahan with `ANYWHERE` and no
+viewer (after a run with the original's bits), 3 036 with `ANYWHERE` and a
+viewer behind the scene (the game camera's place mirrored through its
+target, the townspeople seen from behind) and 2 508 with `LOOK`, each at
+the same RAM, VRAM, sound, clock and state. `xem-render/tests/ps1.rs`
 `each_frame_keeps_the_camera_recorded_before_its_first_primitive` (a cleared
 buffer, one drawn over, a presentation of two frames cleared, drawn over or
 one of each, a state's first presentation of two frames drawn over, a
@@ -3871,13 +3885,13 @@ camera of `--example motion` and the tests below drive it too.
   eye's pass uniform holds its matrices from the world and from the table's
   space to clip space (draw.wgsl `vs_world`), so both eyes and every
   headset frame between two game frames draw one build. A build is made
-  again within a game frame only once the table has turned 10 degrees
-  since it (a game paused while the table turns on towards its camera) or
-  its scale has changed by a quarter: the billboards face the seat's way
-  as the table stood at the build, and while the game draws, a smooth
-  turn moves the table less than that from a game frame to the next (at
-  most 6.9 degrees at 20 frames a second, the camera just short of a cut
-  away). Textures are perspective-correct through clip space.
+  again within a game frame only once the table, or the head round it, has
+  turned 10 degrees since it (a game paused while the table turns on
+  towards its camera, or while the player walks round the table) or its
+  scale has changed by a quarter: the billboards face the head's way as it
+  stood at the build, and while the game draws, a smooth turn moves the
+  table less than that from a game frame to the next (at most 6.9 degrees
+  at 20 frames a second, the camera just short of a cut away). Textures are perspective-correct through clip space.
 - **The table** (`Table`: scale 1, height -0.45 m, distance 0.6 m, tilt 0,
   turns Smooth by default). The host gives the seat's pose in the room (its
   reference space, turned about its up only); the table's top lies at
@@ -3941,18 +3955,79 @@ camera of `--example motion` and the tests below drive it too.
   alone). The table's volume is x and z within 0.45 m of its centre and y
   from 0.25 m below its top to 0.55 m above: what lies outside is not
   drawn (draw.wgsl discards it).
-- **Sprites** stand as upright billboards facing the seat's way, built once
-  a game frame for both eyes: each part's offset from its sprite's floor
-  point on the game's screen laid along the billboards' right and the
-  world's up, as large as the game showed it, the parts the game drew
-  (no facings). The game draws a sprite facing its camera with its feet a
-  little below its floor point (Fei in field 30: his lowest part 48 view
-  units, 8 pixels, below it; in its own 3D the quad passes through the
-  floor and the drawing order shows it) and a character in several sprites
-  at one floor point (Fei: two at the same depth): the sprites at one floor
-  point stand together with their lowest part on the floor, or above it as
-  far as the game drew them above it (a jump). From high above, upright
-  billboards are seen edge-on.
+- **Sprites** stand as upright billboards facing the head's way from the
+  table's centre (level; from the seat, the seat's way), built once a game
+  frame for both eyes: each part's offset from its sprite's floor point on
+  the game's screen laid along the billboards' right and the world's up,
+  as large as the game showed it, the parts the game drew or, in a field,
+  those of the facing the head sees (below). Facing the head, they are
+  seen whole from round the table and the right way round from behind
+  (facing the seat, they stood edge-on from the table's sides and showed
+  their mirrored picture from behind). The game draws a sprite facing its
+  camera with its feet a little below its floor point (Fei in field 30:
+  his lowest part 48 view units, 8 pixels, below it; in its own 3D the
+  quad passes through the floor and the drawing order shows it) and a
+  character in several sprites at one floor point (Fei: two at the same
+  depth): the sprites at one floor point stand together with their lowest
+  part on the floor, or above it as far as the game drew them above it (a
+  jump). From high above, upright billboards are seen edge-on.
+- **Sprites seen from the head.** A field's sprites show the side the head
+  sees, as first-person inspection's show the side the character's eyes
+  see. Each presentation of a field's diorama takes the point between the
+  eyes through the table into the field's world, and `GameView::reveals`
+  hands its x and z to the port with `ANYWHERE` (`Reveals::viewer`, the
+  culled-face ring's `viewer` words: [Camera records](#camera-records)) for
+  the game's next frames. As the original's actor pass draws each actor
+  sprite, the port runs the game's own facing routine on a copy of it
+  (`sprite_facing.c`: `sprite_set_facing` with the angle of the ray from
+  that point to the sprite, `ratan2` minus a quarter turn plus the actor's
+  heading, where the original adds the field camera's `view_angle`, then
+  `sprite_build_frame`), and where the facing it picks (of a character's
+  eight, three of them mirrored) is not the game's, hands the host that
+  frame's parts and cells (`Primitive::facing`), as first person does;
+  nothing reaches the game's RAM, VRAM or pending list. The build draws
+  those parts in place of the sprite's own (`diorama::Faced`, reading the
+  frame's operations in place rather than a copy of them): its cells
+  uploaded to the replay's VRAM first, and the pixels they covered put back
+  after only where something drawn later samples them (found from the
+  frame's end back, in 16x16 blocks of VRAM): each presentation replays
+  the frame from the VRAM it began with, and an upload over what the draws
+  before it sampled ends their run in every eye and the pane. The facing
+  follows the head at the game's frame rate, about a tenth of a second
+  behind: in Lahan (30 frames a second) a frame drawn for a new point
+  shows six or seven vertical blanks after the presentation that took it,
+  two or three until the port's ring holds the point (the game's next GPU
+  transfer after the host hands it over) and four more (two of the game's
+  frames) until a frame drawn with it shows. The game's camera reaches
+  the facings only through the table, which turns with it (The table,
+  above): the point is the head's on the table as it stands, so as L1
+  turns the camera and the table eases after it, the point turns round
+  the table's centre with the table, as walking round the table would
+  turn it. While the head walks or the table turns, a sprite takes its
+  next side that tenth of a second after the head crosses the line where
+  it changes (the facings' point a median 2 to 10 degrees behind the
+  head's: `a_fields_sprites_face_the_head_as_it_moves_and_the_camera_turns`);
+  once both hold still, every facing is the head's. While the game is
+  paused the billboards still turn to the head (a build again at 10
+  degrees), but their facings wait for its next frame. Battles and the
+  world map keep the game's facings (their sprites are drawn by other
+  routines; the world map's follow its camera's heading, which the table
+  eases after). Lahan seen from behind the table
+  (`a_fields_sprites_face_the_head`): 628 of the left eye's 699 sprite
+  pixels differ from the same frames with the game's facings, and no pixel
+  elsewhere; where the game's camera shows a townsperson's back, the head
+  behind the table sees his face. Against the diorama before it
+  (`--example motion -- --map 1 --hold right --diorama
+  180,36.87,0.75,1,100 --bench`, 600 frames presented twice at 1920x1080
+  on this machine's card, two cores, three interleaved runs each), Lahan
+  from behind (about 50 sprites drawn again a frame) took 1.781 ms a game
+  frame against 1.753, 1.755 ms of the presentation's CPU work against
+  1.645 and 0.311 ms of the GPU's against 0.282; from the seat 1.784, 1.704
+  and 0.283 against 1.740, 1.623 and 0.288; the forest and map 217 from
+  behind at most 0.06 ms more of either. Copying the frame's operations to
+  draw the facings in place and putting every facing's pixels back had
+  taken 0.69 ms more CPU work a presentation and 0.06 ms more GPU there.
+  The flat views' costs and RAM and VRAM hashes stayed the same.
 - **Depth and the game's order.** The scene is depth-tested: opaque pixels
   write depth, translucent ones only test it, in the game's order. The
   PS1 draws a primitive over another whatever their depths, and in one
@@ -4157,9 +4232,10 @@ world map's vehicle driven on (Triangle held) for 300 frames at 25% and
 100%. The battles' openings stand on the start view's look-at, the whole
 stage small; then the combatants stand large on their ground (a person
 about 13 cm tall), the Mountain Path's panorama on the wall behind them;
-the Gears are models, whole from every side; the people are billboards
+the Gears are models, whole from every side; the people were billboards
 facing the seat's way, edge-on from 70 degrees round and from above, their
-mirrored picture from behind (as the pane's numbers are); the room's walls
+mirrored picture from behind (as the pane's numbers are; they face the
+head now, edge-on from above alone: Sprites, above); the room's walls
 at map 414's far corners stand cut by the volume. The world map's terrain
 covers the table at both scales, the vehicle at its centre and its shadow
 on the ground, at 100% climbing above it with the ground still on the
@@ -4175,12 +4251,26 @@ game's projection: 0 of the 300 000 pixels outside the interface's
 rectangle differ from the flat frame by more than 24 levels, and the
 interface is on the pane only, its other pixels transparent);
 `split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama`
-(from five sides, two of them beyond the billboards' plane, nothing of
-the earlier sprite shows through the later one; without the lift 219
-pixels of it did from the seat's side, and lifted towards the seat
-whatever the eye, from behind the earlier one covered the later);
+(from five sides, two of them round behind the table, beyond the
+billboards' plane while they faced the seat, nothing of the earlier sprite
+shows through the later one; without the lift 219 pixels of it did from
+the seat's side, and lifted towards the seat whatever the eye, from
+behind the earlier one covered the later);
 `both_eyes_see_one_upright_sprite_apart_only_by_their_disparity` (6.4 cm
 apart: the same rows 287-380 and width in both eyes, 75 pixels apart);
+`a_dioramas_billboards_face_the_head_round_the_table` (with no new game
+frame, from the seat's side, either side, behind and 135 degrees round:
+the sprite as wide for its height as from the seat's side, within a
+fifth, and its later part on its right, as the game drew it; facing the
+seat, it stood edge-on from the sides and mirrored from behind);
+`a_fields_diorama_asks_for_its_sprites_facing_the_head_between_the_eyes`
+(no viewer while the screen shows; then the head between the eyes through
+the table into the world, on the game camera's side of its target from
+the seat, beyond it from behind, on its right from the table's right);
+`a_fields_diorama_draws_its_sprites_as_the_head_sees_them` (a sprite's two
+parts carrying a facing of one part: that part drawn once where the
+game's stood, none of the game's; with full-size sprites on and a
+full-size frame carried too, the full-size frame in place of both);
 `the_diorama_drops_faces_an_eye_sees_from_behind_but_not_double_sided_ones`;
 `a_fade_tints_the_diorama_and_its_pane_but_not_the_room` (mode 2's 64
 off the floor and off the pane's interface, the room's grey and the pane's
@@ -4341,17 +4431,42 @@ on this machine's lavapipe:
   presentations to two eyes make one build a game frame (60 for 60; 120
   for 120 in the battles, which draw a frame every blank); the thickest
   stack of a sprite's parts stands 300 um off its billboard's plane in
-  Lahan (79 parts, 385 lifted) and the debug battle (30, 187), 400 um in
-  the Mountain Path's battle (40, 23), 200 um on the world map (16, 13) and
-  100 um in fields 30 and 12 (`DioramaStats::thickest`): 2D stays 2D; each
+  the debug battle (30 parts, 187 lifted), 400 um in Lahan (81, 387; the
+  sprites facing the head) and the Mountain Path's battle (40, 23), 200 um
+  on the world map (16, 13) and 100 um in fields 30 and 12
+  (`DioramaStats::thickest`): 2D stays 2D; each
   eye of the pair shows exactly what it shows presented alone (0 bytes
   differ), one diorama through two views; and in Lahan, where the sprites
-  stand apart, each of their 54 rows holds as many sprite pixels in either
+  stand apart, each of their 55 rows holds as many sprite pixels in either
   eye (a billboard's row lies at one depth before both). In field 30 (89
   of 107 rows) and field 12 (44 of 50) characters stand one behind another
   and behind furniture, so each eye sees another part of the farther one
   (up to 8 pixels a row; not asserted there); the battles' rows (25 of 25,
   84 of 84) and the world map's (22 of 22) were alike (recorded).
+- `a_fields_sprites_face_the_head`: Lahan from behind the table, as above,
+  played twice to the same frames, the sprites facing the head and with
+  the game's facings (the view's viewer left out of what the trace asks):
+  628 of the left eye's 699 sprite pixels differ, and no other pixel
+  (asserted: more than 500, none elsewhere).
+- `a_fields_sprites_face_the_head_as_it_moves_and_the_camera_turns`: in
+  Lahan, the head moved between the seat and behind the table four times,
+  at either phase of the game's frames: the port's ring held the new point
+  3, 3, 2 and 2 presentations after the one that took it, and a frame
+  drawn with it showed after 7, 7, 6 and 6 (asserted: within three, and
+  four more). L1 held 30 blanks in every 150 (a quarter turn each) with
+  the head seated turned the camera 269.7 degrees, the table 269.5 (0.2
+  behind at the end) and the head's point round the table's centre 269.5;
+  walking round the table at 60 degrees a second, the point turned 359.2
+  for 359 walked (the table 0.2); doing both, 718.7 for 449 walked and the
+  table's 269.8 (asserted: the point's turn within a degree of the walk
+  and the table's turn together; the camera's more than 180 and the
+  table within a degree of it at the end). On the table's sprites (three
+  on average), the way to the point a frame's facings were drawn for, taken
+  six or seven presentations before the frame first showed, lies from the
+  way to the head's point as each presentation took it by a median 2.2 to
+  2.6 degrees as L1 turns (95th percentile 11.3 to 13.0), 6.3 to 7.3
+  walking (8.1 to 9.4) and 8.7 to 10.0 doing both (18.5 to 21.2): of a
+  facing's 45 (recorded).
 - `the_pane_holds_the_interface_as_the_flat_frame_draws_it`: beside the
   diorama a view showing the screen from the same trace, and one from the
   trace without what each frame draws before its scene or projects behind

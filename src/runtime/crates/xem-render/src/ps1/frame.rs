@@ -1598,35 +1598,42 @@ pub(crate) fn substitute_alternatives(
             substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
         for part in &alternative.parts {
-            let mut p = p.clone();
-            clear(&mut p);
-            p.shape = xem_gpu::Shape::Quad;
-            p.raw = part.words[0] & 0x01000000 != 0;
-            p.semi = part.words[0] & 0x02000000 != 0;
-            p.clut = (part.words[2] >> 16) as u16;
-            p.environment.draw_mode = (p.environment.draw_mode & !0x9FF) | (part.words[4] >> 16 & 0x9FF);
-            p.projection = Some((part.points[0].offset, part.points[0].h));
-            for (i, v) in p.vertices.iter_mut().enumerate() {
-                let q = part.points[i];
-                let xy = part.words[i * 2 + 1];
-                let uv = part.words[i * 2 + 2];
-                v.x = i32::from(xy as i16) + i32::from(p.environment.offset.0);
-                v.y = i32::from((xy >> 16) as i16) + i32::from(p.environment.offset.1);
-                v.fx = q.x as f32 / 65536.0 + f32::from(p.environment.offset.0);
-                v.fy = q.y as f32 / 65536.0 + f32::from(p.environment.offset.1);
-                v.z = f32::from(q.sz.max(1));
-                v.view = Some(q.view.map(|value| value as f32));
-                v.color = part.words[0] & 0xFFFFFF;
-                v.u = (uv & 0xFF) as i16;
-                v.v = (uv >> 8 & 0xFF) as i16;
-            }
-            substituted.push(TraceOp::Draw(p));
+            substituted.push(TraceOp::Draw(alternative_part(p, part, &clear)));
         }
         for (rect, pixels) in &alternative.restore {
             substituted.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
         }
     }
     *ops = substituted;
+}
+
+/// Part `part` of a sprite's alternative as a primitive drawn in place of
+/// `p`, the first part of the sprite's drawing pass (`clear` taking the
+/// alternative off it).
+pub(crate) fn alternative_part(p: &xem_gpu::Primitive, part: &xem_gpu::SpriteFacingPart, clear: impl Fn(&mut xem_gpu::Primitive)) -> xem_gpu::Primitive {
+    let mut p = p.clone();
+    clear(&mut p);
+    p.shape = xem_gpu::Shape::Quad;
+    p.raw = part.words[0] & 0x01000000 != 0;
+    p.semi = part.words[0] & 0x02000000 != 0;
+    p.clut = (part.words[2] >> 16) as u16;
+    p.environment.draw_mode = (p.environment.draw_mode & !0x9FF) | (part.words[4] >> 16 & 0x9FF);
+    p.projection = Some((part.points[0].offset, part.points[0].h));
+    for (i, v) in p.vertices.iter_mut().enumerate() {
+        let q = part.points[i];
+        let xy = part.words[i * 2 + 1];
+        let uv = part.words[i * 2 + 2];
+        v.x = i32::from(xy as i16) + i32::from(p.environment.offset.0);
+        v.y = i32::from((xy >> 16) as i16) + i32::from(p.environment.offset.1);
+        v.fx = q.x as f32 / 65536.0 + f32::from(p.environment.offset.0);
+        v.fy = q.y as f32 / 65536.0 + f32::from(p.environment.offset.1);
+        v.z = f32::from(q.sz.max(1));
+        v.view = Some(q.view.map(|value| value as f32));
+        v.color = part.words[0] & 0xFFFFFF;
+        v.u = (uv & 0xFF) as i16;
+        v.v = (uv >> 8 & 0xFF) as i16;
+    }
+    p
 }
 
 /// [`first_person`], the lifts of frame `kept.1`'s faces taken from `kept.0`

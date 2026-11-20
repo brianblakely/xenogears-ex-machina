@@ -2797,11 +2797,12 @@ impl Ps1Renderer {
         }
         self.draws += 1;
         // The full-size frames in place of the small sprites, for the logs'
-        // replays too.
+        // replays too (seen from a diorama's head, the frame of the facing
+        // it sees: the small sprite's facing goes with it).
         let substituted;
         let ops = if self.options.full_size_sprites && trace.ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.full_size.is_some())) {
             let mut ops = trace.ops.clone();
-            frame::substitute_alternatives(&mut ops, |p| p.full_size.as_ref(), |p| p.full_size = None);
+            frame::substitute_alternatives(&mut ops, |p| p.full_size.as_ref(), |p| (p.full_size, p.facing) = (None, None));
             substituted = ops;
             &substituted[..]
         } else {

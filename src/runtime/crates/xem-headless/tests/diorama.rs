@@ -30,6 +30,15 @@
 //!   showing exactly what it shows presented alone; where the sprites stand
 //!   apart (Lahan's townspeople seen from behind the table) each of their
 //!   rows holds as many sprite pixels in either eye.
+//! - Facings: from behind the table Lahan's townspeople show the side the
+//!   head sees (the port's facings for the view's viewer), against the
+//!   same frames with the game's facings only the sprites' pixels differ.
+//!   As the head walks round the table and L1 turns Lahan's camera (the
+//!   table turning with it), the head's point in the field's world turns
+//!   round the table's centre by what the head walked and the table turned
+//!   together, and a frame drawn for a new point shows within seven
+//!   presentations of the one that took it (the port's ring holds the
+//!   point within three).
 //! - The pane: field 12's dialogue, the debug battle's interface and the
 //!   world map's are on the pane exactly as the flat frame draws them where
 //!   they are opaque (but for 21 pixels at the world map compass cone's
@@ -65,7 +74,7 @@ use xem_game::{NativeModule, boot};
 use xem_render::Gpu;
 use xem_render::glam::{Mat4, Vec2, Vec3};
 use xem_render::ps1::{AUX_INTERFACE, AUX_MODEL, AUX_SPRITE, AUX_WORLD, DioramaEye, DioramaSpace, GameView, HeadsetEye, HostClass, Table, ViewConfig, XrView, effective_class, scene_offset};
-use xem_render::xem_gpu::{Camera, CameraMode, Class, Shape, Trace, TraceOp};
+use xem_render::xem_gpu::{Camera, CameraMode, Class, Reveals, Shape, Trace, TraceOp};
 use xem_settings::Graphics;
 
 fn disc() -> Option<PathBuf> {
@@ -173,6 +182,9 @@ struct Host {
     table: Table,
     /// Graphics' headset view the screen (else the diorama on `table`).
     screen_view: bool,
+    /// The port draws a field's sprites facing the head (else the game's
+    /// facings, the view's viewer left out of what it asks).
+    faces: bool,
     /// Vertical blanks run (the presentations' clock: 60 a second).
     blanks: u64,
 }
@@ -191,7 +203,7 @@ impl Host {
     fn on(disc: &Path, gpu: Gpu) -> Host {
         let (session, _) = boot(disc, &Default::default()).expect("boot");
         let view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-        Host { session, gpu, view, screen: None, after_scene: None, graphics: Graphics::default(), table: Table::default(), screen_view: false, blanks: 0 }
+        Host { session, gpu, view, screen: None, after_scene: None, graphics: Graphics::default(), table: Table::default(), screen_view: false, faces: true, blanks: 0 }
     }
 
     /// Adds the views beside the headset's for the pane's checks.
@@ -218,7 +230,8 @@ impl Host {
         if restart || !device.trace_enabled() {
             device.set_trace(true);
         }
-        device.set_reveals(self.view.reveals());
+        let faces = self.faces;
+        device.set_reveals(self.view.reveals().map(|reveals| Reveals { viewer: reveals.viewer.filter(|_| faces), ..reveals }));
         let trace = device.take_trace();
         if let Some(screen) = &mut self.screen {
             screen.push(trace.clone());
@@ -857,6 +870,45 @@ fn sprites_stand_flat_and_both_eyes_see_one_diorama_apart_along_their_rows() {
 }
 
 #[test]
+fn a_fields_sprites_face_the_head() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    const SIZE: (u32, u32) = (640, 480);
+    // Lahan from behind the table, its townspeople's backs to the seat: the
+    // same game frames with the sprites facing the head, and with the
+    // game's facings.
+    let eyes = head(Vec3::new(0.0, 0.0, 2.0 * centre().z), SIZE, 90.0);
+    let pictures: Vec<Pictures> = [true, false].into_iter().map(|faces| {
+        let mut host = Host::new(&disc);
+        host.faces = faces;
+        Scene::Field(1).reach(&mut host);
+        let shown = host.steps(60, &eyes);
+        assert!(shown.last().is_some_and(|s| s.diorama && s.screen == 0.0), "Lahan's diorama alone shows");
+        host.present(&eyes, true).1
+    }).collect();
+    let (faced, unfaced) = (&pictures[0].eyes[0], &pictures[1].eyes[0]);
+    if let Some(directory) = std::env::var_os("XEM_DIORAMA_EYES") {
+        for (name, (picture, _)) in [("faced", faced), ("unfaced", unfaced)] {
+            let path = PathBuf::from(&directory).join(format!("facing-Lahan-{name}.png"));
+            let mut encoder = png::Encoder::new(std::fs::File::create(path).unwrap(), SIZE.0, SIZE.1);
+            encoder.set_color(png::ColorType::Rgba);
+            let shown: Vec<u8> = picture.chunks(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+            encoder.write_header().unwrap().write_image_data(&shown).unwrap();
+        }
+    }
+    // Each pixel that differs is a sprite's in one picture or the other.
+    let sprite = |classes: &[u8], i: usize| u32::from(classes[i * 4 + 2]) == AUX_SPRITE;
+    let differ: Vec<usize> = (0..(SIZE.0 * SIZE.1) as usize).filter(|&i| faced.0[i * 4..i * 4 + 4] != unfaced.0[i * 4..i * 4 + 4]).collect();
+    let elsewhere = differ.iter().filter(|&&i| !sprite(&faced.1, i) && !sprite(&unfaced.1, i)).count();
+    let sprites = (0..(SIZE.0 * SIZE.1) as usize).filter(|&i| sprite(&faced.1, i)).count();
+    eprintln!("Lahan from behind: {} of {sprites} sprite pixels differ with the sprites facing the head, {elsewhere} elsewhere", differ.len());
+    assert!(differ.len() > 500, "the townspeople show other frames from behind ({} pixels differ)", differ.len());
+    assert_eq!(elsewhere, 0, "only the sprites change");
+}
+
+#[test]
 fn the_pane_holds_the_interface_as_the_flat_frame_draws_it() {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
@@ -1292,4 +1344,171 @@ fn switching_the_headset_view_cuts_to_the_screen_and_eases_back_into_the_diorama
     let easing = spans(&back, |s| s.screen > 0.0 && s.screen < 1.0);
     assert_eq!(easing.len(), 1, "eased in once: {easing:?}");
     assert!(back.last().is_some_and(|s| s.diorama && s.screen == 0.0 && s.mode() == Some(CameraMode::Field)), "the field's diorama again");
+}
+
+
+/// The reveal ring's `viewer_x` word (`XEM_PRESENT_REVEAL_ADDRESS` + 20,
+/// `viewer_z` after it): the point the port faces sprites to.
+const RING_VIEWER: u32 = 0x7050_0014;
+
+/// A presentation of Lahan's diorama as the head moves or the camera turns.
+struct Moment {
+    new_frame: bool,
+    /// The head's point in the field's world (`Reveals::viewer`) as this
+    /// presentation took it, and the one the port's ring held.
+    viewer: Option<[i32; 2]>,
+    ring: [i32; 2],
+    /// Sprites the frame shown draws facing the head where the game's
+    /// facing differs (`Primitive::facing`).
+    faced: usize,
+    /// In the world, level (x and z): the sprites standing within the
+    /// table's volume, the table's centre, the way from it to the seat,
+    /// and the way from the camera's target back to it.
+    sprites: Vec<[f32; 2]>,
+    centre: Option<[f32; 2]>,
+    seat: Option<[f32; 2]>,
+    back: Option<[f32; 2]>,
+}
+
+impl Host {
+    /// One vertical blank, `buttons` held, presented to a head at `at`.
+    fn moment(&mut self, at: Vec3, buttons: &[&str]) -> Moment {
+        run(&mut self.session, json!({"cmd": "pad", "buttons": buttons}));
+        let shown = self.step(&head(at, SMALL, 90.0));
+        let space = shown.space.filter(|space| space.camera.mode == CameraMode::Field);
+        let mut faced = std::collections::HashSet::new();
+        let mut sprites: std::collections::HashMap<u32, (Vec3, f32)> = std::collections::HashMap::new();
+        for op in self.view.frame().newest() {
+            let TraceOp::Draw(p) = op else { continue };
+            if let Some(facing) = &p.facing {
+                faced.insert(std::sync::Arc::as_ptr(facing));
+            }
+            let Some(space) = space.filter(|_| p.class == Class::Sprite) else { continue };
+            for point in p.vertices[..p.vertex_count()].iter().filter_map(|v| space.camera.world_point(v.view?)) {
+                let sum = sprites.entry(p.owner).or_insert((Vec3::ZERO, 0.0));
+                *sum = (sum.0 + Vec3::from(point), sum.1 + 1.0);
+            }
+        }
+        let level = |v: Vec3| [v.x, v.z];
+        let ring = [RING_VIEWER, RING_VIEWER + 4].map(|address| word(&mut self.session, address) as i32);
+        Moment {
+            new_frame: shown.new_frame,
+            viewer: self.view.reveals().and_then(|reveals| reveals.viewer),
+            ring,
+            faced: faced.len(),
+            sprites: space.map_or_else(Vec::new, |space| {
+                let table_from_world = space.table_from_room() * space.room_from_world;
+                let within = |t: Vec3| t.x.abs() <= Table::VOLUME.1.x && t.z.abs() <= Table::VOLUME.1.z;
+                sprites.values().map(|&(sum, n)| sum / n).filter(|&w| within(table_from_world.transform_point3(w))).map(level).collect()
+            }),
+            centre: space.map(|space| level(space.world_from_room().transform_point3(centre()))),
+            seat: space.map(|space| level(space.world_from_room().transform_vector3(Vec3::Z))),
+            back: space.map(|space| [-space.camera.axes[0][2], -space.camera.axes[2][2]]),
+        }
+    }
+}
+
+/// The angle from `a` to `b` (level ways in the world), in degrees.
+fn turned(a: [f32; 2], b: [f32; 2]) -> f32 {
+    (a[0] * b[1] - a[1] * b[0]).atan2(a[0] * b[0] + a[1] * b[1]).to_degrees()
+}
+
+/// Over `moments`, how far the camera turned, the table, and the head's
+/// point round the table's centre in the world (degrees), and how far the
+/// table stood behind the camera at the end.
+fn turns(moments: &[Moment]) -> (f32, f32, f32, f32) {
+    let (mut camera, mut table, mut head) = (0.0, 0.0, 0.0);
+    for pair in moments.windows(2) {
+        let [a, b] = pair else { continue };
+        if let (Some(x), Some(y)) = (a.back, b.back) {
+            camera += turned(x, y);
+        }
+        if let (Some(x), Some(y)) = (a.seat, b.seat) {
+            table += turned(x, y);
+        }
+        if let (Some(v), Some(w), Some(c), Some(d)) = (a.viewer, b.viewer, a.centre, b.centre) {
+            head += turned([v[0] as f32 - c[0], v[1] as f32 - c[1]], [w[0] as f32 - d[0], w[1] as f32 - d[1]]);
+        }
+    }
+    let last = moments.last().expect("moments");
+    let behind = last.back.zip(last.seat).map_or(f32::NAN, |(back, seat)| turned(back, seat).abs());
+    (camera, table, head, behind)
+}
+
+/// For each sprite on the table in each of `moments` (`before` the ones
+/// before them), how far the way from the point its frame's facings were
+/// drawn for (taken `lag` presentations before the frame first showed)
+/// lies from the way from the head's point as the presentation took it
+/// (degrees), in order.
+fn trailing(before: &[Moment], moments: &[Moment], lag: usize) -> Vec<f32> {
+    let all: Vec<&Moment> = before.iter().chain(moments).collect();
+    let mut angles = Vec::new();
+    for at in before.len()..all.len() {
+        let Some(head) = all[at].viewer else { continue };
+        let Some(drawn) = (0..=at).rev().find(|&d| all[d].new_frame) else { continue };
+        let Some(point) = drawn.checked_sub(lag).and_then(|d| all[d].viewer) else { continue };
+        for s in &all[at].sprites {
+            angles.push(turned([s[0] - point[0] as f32, s[1] - point[1] as f32], [s[0] - head[0] as f32, s[1] - head[1] as f32]).abs());
+        }
+    }
+    angles.sort_by(f32::total_cmp);
+    angles
+}
+
+#[test]
+fn a_fields_sprites_face_the_head_as_it_moves_and_the_camera_turns() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let mut host = Host::new(&disc);
+    Scene::Field(1).reach(&mut host);
+    // A head at the seat's height and distance from the table's centre,
+    // `angle` degrees round it from the seat (positive to the right).
+    let c = centre();
+    let around = |angle: f32| {
+        let (radius, angle) = (c.z.abs(), angle.to_radians());
+        Vec3::new(c.x + radius * angle.sin(), 0.0, c.z + radius * angle.cos())
+    };
+    // L1 held 30 blanks in every 150 (the camera's turn eases to rest in
+    // between: a quarter turn each).
+    let l1 = |n: u64| -> &'static [&'static str] { if n % 150 < 30 { &["l1"] } else { &[] } };
+    for _ in 0..60 {
+        host.moment(around(0.0), &[]);
+    }
+    // The head between the seat and behind the table, at either phase of
+    // the game's frames (Lahan draws one every other blank): from the
+    // presentation that took the new point, until the port's ring holds it
+    // and until a frame drawn with it shows.
+    let (mut waits, mut last) = (Vec::new(), Vec::new());
+    for (count, angle) in [(40, 180.0), (41, 0.0), (40, 180.0), (41, 0.0)] {
+        let moments: Vec<Moment> = (0..count).map(|_| host.moment(around(angle), &[])).collect();
+        let point = moments[0].viewer;
+        let faced = moments[30].faced;
+        let held = moments.iter().position(|m| Some(m.ring) == point).expect("the ring holds the point");
+        let shows = moments.iter().position(|m| m.new_frame && m.faced == faced).expect("the facings show");
+        waits.push((held, shows));
+        last = moments;
+    }
+    let seated: Vec<Moment> = (0..450).map(|n| host.moment(around(0.0), l1(n))).collect();
+    let walking: Vec<Moment> = (0..360).map(|n| host.moment(around(n as f32), &[])).collect();
+    let both: Vec<Moment> = (0..450).map(|n| host.moment(around(360.0 + n as f32), l1(n))).collect();
+    eprintln!("Lahan, the head moved between the seat and behind the table: the port's ring held the point, and a frame drawn with it showed, so many presentations after the one that took it: {waits:?}");
+    for (name, before, moments, walked) in [("L1 turning the camera, the head seated", &last, &seated, 0.0), ("the head walking round the table at 60 degrees a second", &seated, &walking, 359.0), ("both", &walking, &both, 449.0)] {
+        let (camera, table, head, behind) = turns(moments);
+        let on_table = moments.iter().map(|m| m.sprites.len()).sum::<usize>() as f32 / moments.len() as f32;
+        let trail: Vec<String> = [6, 7].map(|lag| {
+            let angles = trailing(before, moments, lag);
+            let at = |share: f64| angles[((angles.len() as f64 * share) as usize).min(angles.len() - 1)];
+            format!("{lag} before: median {:.1}, 95th percentile {:.1}", at(0.5), at(0.95))
+        }).into();
+        eprintln!("{name}: the camera turned {camera:.1} degrees, the table {table:.1} (behind it at the end by {behind:.1}), the head's point round its centre {head:.1}; with {on_table:.1} sprites on the table, the facings' point trails the head's by (drawn {})", trail.join("; "));
+        assert!((head - walked - table).abs() < 1.0, "{name}: the head's point turned {head} round the table's centre: walked {walked}, the table turned {table}");
+        if walked == 0.0 {
+            assert!(camera > 180.0 && behind < 1.0, "{name}: L1 turned the camera {camera} degrees and the table stood {behind} behind it");
+        }
+    }
+    for (held, shows) in waits {
+        assert!(held <= 3 && shows <= held + 4, "a frame drawn with the head's new point showed {shows} presentations after it (the ring held it after {held})");
+    }
 }

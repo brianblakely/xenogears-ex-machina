@@ -171,13 +171,21 @@ typedef struct {
     /* Set by the host: XEM_AROUND_* bits while that view looks from within
      * or around the scene; 0 while it looks from the game's camera. */
     unsigned int around;
+    /* Set by the host while a view from anywhere looks from a point it
+     * knows in a field's world (a diorama's head): 1 and the point's x and
+     * z in the units the field places its actors in; the port draws the
+     * field's sprites again facing it (sprite_facing.c). 0 for none. */
+    unsigned int viewer;
+    int viewer_x, viewer_z;
+    unsigned int unused;
     XemReveal entries[XEM_PRESENT_REVEALS];
 } XemRevealRing;
 
 /* The `around` bits: the view looks around from the field's controlled
  * character (first-person inspection: sprites are drawn again facing its
  * eyes, sprite_facing.c), or from anywhere around the scene (a diorama:
- * the battle's stage and the world map's ground are recorded too). */
+ * the battle's stage and the world map's ground are recorded too, and a
+ * field's sprites are drawn again facing the host's `viewer`). */
 enum {
     XEM_AROUND_LOOK = 1,
     XEM_AROUND_ANYWHERE = 2,

@@ -12,7 +12,7 @@ use super::{
     DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Interface, Lighting, Look, Ps1Renderer, Quality,
     central_depth,
 };
-use xem_gpu::{Class, DisplayInfo, Eye, Reveals, Trace, TraceOp};
+use xem_gpu::{CameraMode, Class, DisplayInfo, Eye, Reveals, Trace, TraceOp};
 use xem_settings::{Filter, Graphics, QualityTier};
 
 /// What kind of host presents, for the settings' automatic choices.
@@ -55,6 +55,11 @@ pub struct ViewConfig {
 
 /// The widest wider framing: VRAM pixels on each side.
 pub const MAX_WIDE_SIDE: u32 = 160;
+
+/// How far from a field's origin the diorama's viewer is given to the port
+/// (world units): far beyond any field, and short of overflowing its
+/// differences with the sprites' places.
+const VIEWER_REACH: f32 = 16_777_216.0;
 
 /// Wider framing's sides for an output of `width` x `height` pixels: the
 /// original's 320x224 picture widened at the same height to the output's
@@ -378,6 +383,9 @@ pub struct GameView {
     /// What a headset shows, and the diorama's state.
     xr_view: XrView,
     diorama: Diorama,
+    /// Where the head looked from in the field's world at the last
+    /// presentation of a field's diorama ([`Reveals::viewer`]).
+    viewer: Option<[i32; 2]>,
     /// The room shows around a headset's frames ([`GameView::set_room`]).
     room: bool,
 }
@@ -536,6 +544,7 @@ impl GameView {
             dialogue_hidden: false,
             xr_view: XrView::Screen,
             diorama: Diorama::default(),
+            viewer: None,
             room: false,
         }
     }
@@ -581,7 +590,10 @@ impl GameView {
     /// trace should record (`set_reveals`): those in the wider framing's
     /// sides, or, with the camera pulled back in the scene last presented,
     /// those the pulled-back camera sees (judged on its own screen once the
-    /// depth it pulls back by is known); none with viewport culling.
+    /// depth it pulls back by is known); none with viewport culling. Looking
+    /// around in first person or at a diorama, every face, and for a
+    /// field's diorama the head its last presentation looked from
+    /// ([`Reveals::viewer`]).
     pub fn reveals(&self) -> Option<Reveals> {
         let config = self.config?;
         let zoom = scene_zoom(config.zoom, &self.scene);
@@ -589,17 +601,17 @@ impl GameView {
         if self.first_person.is_some() && self.scene.starts_with("field") {
             // Looking around from the controlled character: every face,
             // and where the character stands.
-            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::LOOK })
+            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::LOOK, viewer: None })
         } else if self.diorama_scene() {
-            // A view from anywhere: every face, and the camera each frame
-            // is drawn with.
-            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::ANYWHERE })
+            // A view from anywhere: every face, the camera each frame is
+            // drawn with, and a field's sprites facing the head.
+            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: self.viewer })
         } else if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
             match self.focus {
                 // The margin covers the camera moving between frames.
-                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32, around: 0 }),
+                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32, around: 0, viewer: None }),
                 None => {
                     // Pulled back k times, what lies at the camera's target
                     // depth within k frames of the middle shows, and nearer
@@ -608,7 +620,7 @@ impl GameView {
                     let width = 320.0 + 2.0 * side as f32;
                     let x = (2.0 * (zoom - 1.0) * width + side as f32 + 16.0).min(2048.0);
                     let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
-                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0 })
+                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0, viewer: None })
                 }
             }
         } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
@@ -617,7 +629,7 @@ impl GameView {
             // Modern terrain also needs the sub-pixel slivers the
             // original's whole-pixel winding tests discarded inside them.
             let margin = if config.interpolation { 32 } else { 16 };
-            Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0 })
+            Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0, viewer: None })
         } else {
             None
         }
@@ -1195,6 +1207,14 @@ impl GameView {
         if !drew {
             self.diorama.hide();
         }
+        // Where the head (between the eyes) looks from in a field's world:
+        // the port faces the sprites of the game's next frames to it.
+        self.viewer = self.diorama.space().filter(|space| space.camera.mode == CameraMode::Field && !eyes.is_empty()).and_then(|space| {
+            let head = eyes.iter().map(|eye| eye.view.inverse().transform_point3(glam::Vec3::ZERO)).sum::<glam::Vec3>() / eyes.len() as f32;
+            let point = space.world_from_room().transform_point3(head);
+            let units = |v: f32| v.clamp(-VIEWER_REACH, VIEWER_REACH).round() as i32;
+            point.is_finite().then(|| [units(point.x), units(point.z)])
+        });
         let screen = if drew { screen } else { 1.0 };
         let flat = if screen > 0.0 {
             match (movie, area) {

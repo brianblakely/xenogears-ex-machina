@@ -1,0 +1,1 @@
+- In the VR diorama, characters turn to face you wherever you look at the table from, and in fields they show the side you see them from, as in first-person view: walk round the table, or turn the camera, and you see their backs, their sides and their faces.

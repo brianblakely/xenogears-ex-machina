@@ -782,7 +782,9 @@ class Ground(Compare):
         16 pixels beyond the screen, until the test ends: the culled-face
         ring's header and its first `entries` records, as words."""
         ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
-        reveals = (ctypes.c_uint * (4 + 16 * entries)).in_dll(LIB, "xem_present_reveal_storage")
+        # (The header's eight words: count, wanted, pull_back, around, the
+        # viewer and its x and z, one unused: xem/gte.h.)
+        reveals = (ctypes.c_uint * (8 + 16 * entries)).in_dll(LIB, "xem_present_reveal_storage")
 
         def presentation(recording, wanted):
             ctypes.memset(ctypes.addressof(ring), 0, ctypes.sizeof(ring))
@@ -860,7 +862,7 @@ class Ground(Compare):
                                        lambda: asm_ground(GROUND_OT, 0, 0))
         self.assertEqual(count, 1)
         self.assertEqual(reveals[0], 5)
-        records = [reveals[4 + 16 * i:4 + 16 * (i + 1)] for i in range(5)]
+        records = [reveals[8 + 16 * i:8 + 16 * (i + 1)] for i in range(5)]
         # Orientation 0 of the MapTable (halfwords 0-15), the nibbles of
         # flags 0x1234 and its page and CLUT word 0x7B000022.
         uv = [0x7B001030, 0x00221033, 0x1031]
@@ -886,7 +888,7 @@ class Ground(Compare):
         face = [(GROUND_OT + 0x40) & 0x00FFFFFF, 7 | 3 << 8, 2, 0,
                 0x24806040, pair(10, 20), 0x7A001030, pair(30, 20), 0x00111032, pair(10, 40), 0x1031] + [0] * 5
         reveals[0] = 1
-        reveals[4:20] = face
+        reveals[8:24] = face
         LIB.xem_gte_write_control(6, 0x10)
         mem.write(HEIGHTS, struct.pack("<hH", 0, 0x1234) * 3)
         mem.write(HEIGHTS + 0x200, struct.pack("<hH", 0, 0x1234) * 3)
@@ -895,7 +897,7 @@ class Ground(Compare):
                                        lambda: asm_ground(GROUND_OT, 0, 0))
         self.assertEqual(count, 0)
         self.assertEqual(reveals[0], 1)
-        self.assertEqual(list(reveals[4:20]), face)
+        self.assertEqual(list(reveals[8:24]), face)
 
 
 WORK = 0x80190000

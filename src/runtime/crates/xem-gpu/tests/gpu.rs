@@ -1042,7 +1042,7 @@ fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_poi
     let mut ram = Ram::new();
     let mut gpu = fresh();
     gpu.set_trace(true);
-    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE }));
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None }));
     assert_eq!(gpu.reveal_around(), 2, "the port reads the bits");
     let _ = gpu.take_trace();
     // A camera turned 30 degrees about y, its rows in 4.12 at half scale (a
@@ -1108,7 +1108,7 @@ fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other
     use xem_gpu::{CameraMode, Combatant, Projection, Reveals, Stage, TraceOp};
     let mut gpu = fresh();
     gpu.set_trace(true);
-    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE }));
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None }));
     let _ = gpu.take_trace();
     let entry = |class: u8, sz: u16, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 164), h: 512, owner, view };
     let axes = |records: &mut Vec<Projection>| {

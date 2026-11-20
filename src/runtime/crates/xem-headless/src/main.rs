@@ -286,6 +286,7 @@ fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule
         reach: [number(&command["reach"][0], 0xFFFF) as u16, number(&command["reach"][1], 0xFFFF) as u16],
         pull_back: number(&command["pull_back"], u64::from(u32::MAX)) as u32,
         around: number(&command["around"], 0xFF) as u8,
+        viewer: None,
     };
     let device = session.runtime.services().gpu.device_mut();
     device.set_trace(true);

@@ -629,7 +629,8 @@ Choose **Diorama** to put the 3D scene on a table in front of you:
 The game uses the virtual screen for scenes that don't have a suitable
 3D view. Its screen distance and width still matter in Diorama mode.
 The diorama does not draw the HD-2D effects; the screen keeps them. Sprites
-remain flat artwork even when you look at them in 3D.
+remain flat artwork even when you look at them in 3D, but they turn to face
+you, and in fields they show the side you are looking at them from.
 
 **Recenter** places the view in front of where you're sitting and facing
 now. **Reset diorama** restores the table's size, placement and turns.

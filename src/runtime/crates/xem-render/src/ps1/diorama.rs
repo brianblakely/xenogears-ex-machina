@@ -22,10 +22,13 @@
 //!   are not drawn.
 //! - **Sprites** stand as upright billboards at their floor points, each
 //!   part laid along the billboards' right and the world's up as the game's
-//!   camera showed it, all facing the seat's way (built once a game frame,
-//!   for both eyes); the sprites at one floor point stand together with
-//!   their lowest part on the floor, or above it as far as the game drew
-//!   them above it.
+//!   camera showed it, all facing the head's way from the table's centre
+//!   (built once a game frame, for both eyes); the sprites at one floor
+//!   point stand together with their lowest part on the floor, or above it
+//!   as far as the game drew them above it. A field's show the facing the
+//!   head sees: the view asks the port to draw each again facing the head
+//!   (`Reveals::viewer`), as first-person inspection's face the character's
+//!   eyes, and those parts stand in place of the game's.
 //! - **Depth.** The scene is depth-tested: opaque primitives write depth,
 //!   translucent ones only test it, in the game's order. A face drawn over
 //!   faces it overlaps in its plane (a shadow on a floor, a sprite's part
@@ -57,7 +60,7 @@
 //!   a row without a camera record or a scene keep the diorama of the frame
 //!   before.
 
-use super::frame::{FrameRenderer, ReplayVram, framebuffer_effect, sprite_feet, uniform_buffer, view_point};
+use super::frame::{FrameRenderer, ReplayVram, alternative_part, framebuffer_effect, sprite_feet, uniform_buffer, view_point};
 use super::{
     AUX_FORMAT, Attributes, BLEND_SHIFT, Builder, COLOR_FORMAT, Capture, Command, DepthMode, DisplayArea, DrawOptions, FLAG_BILLBOARD, FLAG_CLIP,
     FLAG_LINE, FLAG_SEMI, FLAG_TABLE, Fidelity, Fragment, PASS_PANE, PASS_WORLD, PassUniform, PipelineKey, Pipelines, Ps1Renderer, Space, Storage,
@@ -184,12 +187,13 @@ const COPLANAR: f32 = 0.000_2;
 /// The cells (world units) [`Layers`] finds faces of a plane by.
 const CELL: f32 = 256.0;
 /// A game frame's build stands until the next game frame, and is made
-/// again within one only once the table has turned this far since (a game
-/// paused while the table turns towards its camera: the billboards face the
-/// seat's way as the table stood at the build). While the game draws, a
-/// smooth turn moves the table less than this from a game frame to the next
-/// (at most 6.9 degrees at 20 frames a second, the camera just short of a
-/// cut away).
+/// again within one only once the table, or the head round it, has turned
+/// this far since (a game paused while the table turns towards its camera,
+/// or while the player walks round the table: the billboards face the
+/// head's way as it stood at the build). While the game draws, a smooth
+/// turn moves the table less than this from a game frame to the next (at
+/// most 6.9 degrees at 20 frames a second, the camera just short of a cut
+/// away).
 const REBUILD_TURN: f32 = 10.0 * std::f32::consts::PI / 180.0;
 /// Game frames in a row without a camera record or a scene to place that
 /// keep the diorama of the frame before (the port records with the bits it
@@ -479,13 +483,30 @@ struct Placed {
     table_from_world: Mat4,
     /// Its turn alone (the heading, the world's y-down made up).
     turn: Mat3,
-    /// The billboards' right, up and towards-the-seat axes in the world.
+    /// The billboards' right, up and towards-the-seat axes in the world
+    /// (towards the head: [`Placed::facing`]).
     right: Vec3,
     up: Vec3,
     toward: Vec3,
     /// Metres per world unit and the heading.
     scale: f32,
     heading: f32,
+}
+
+impl Placed {
+    /// The billboards turned about the world's up to face `head` (a point
+    /// in the room, the table at `room_from_table`): its way from the
+    /// table's centre, level. The seat's way without a head, or with one
+    /// right above the centre.
+    fn facing(self, room_from_table: Mat4, head: Option<Vec3>) -> Placed {
+        // In the table's space: x right, y up, z towards the seat.
+        let Some(level) = head.map(|head| room_from_table.inverse().transform_point3(head) * Vec3::new(1.0, 0.0, 1.0)).filter(|level| level.length() > 1e-3) else {
+            return self;
+        };
+        let toward = level.normalize();
+        let back = self.turn.transpose();
+        Placed { right: back * Vec3::Y.cross(toward), toward: back * toward, ..self }
+    }
 }
 
 /// `angle` within (-π, π].
@@ -674,7 +695,7 @@ fn projection_distance(ops: &[TraceOp], scene: Option<(i16, i16)>) -> Option<f32
 /// draws a sprite facing its camera with its feet a little below its floor
 /// point (in its own 3D, through the floor: its drawing order shows them),
 /// and a character in several sprites at one floor point.
-fn sprite_bottoms(ops: &[TraceOp], feet: &HashMap<u32, [f32; 3]>) -> HashMap<[u32; 3], f32> {
+fn sprite_bottoms<'a>(ops: impl IntoIterator<Item = &'a TraceOp>, feet: &HashMap<u32, [f32; 3]>) -> HashMap<[u32; 3], f32> {
     let mut lowest: HashMap<[u32; 3], f32> = HashMap::new();
     for op in ops {
         let TraceOp::Draw(p) = op else { continue };
@@ -685,6 +706,160 @@ fn sprite_bottoms(ops: &[TraceOp], feet: &HashMap<u32, [f32; 3]>) -> HashMap<[u3
         }
     }
     lowest
+}
+
+/// A frame's sprites as the head sees them: at the first part of each
+/// sprite drawing pass whose parts carry a facing the port drew for the
+/// head (`Primitive::facing`), the operations that draw the facing in their
+/// place (its cells uploaded, its parts, and the pixels its cells covered
+/// put back where anything drawn after samples them), and none for the
+/// pass's other parts. The build reads the frame's operations in place with
+/// these among them ([`Faced::ops`]) rather than a copy of them all (2 to 4
+/// MB a game frame in Lahan).
+#[derive(Default)]
+struct Faced {
+    /// Each by the index in the frame's operations of the part it replaces.
+    at: Vec<(usize, Vec<TraceOp>)>,
+}
+
+impl Faced {
+    fn new(ops: &[TraceOp]) -> Faced {
+        let mut replaced = std::collections::HashSet::new();
+        let (mut at, mut restores) = (Vec::new(), Vec::new());
+        for (index, op) in ops.iter().enumerate() {
+            let TraceOp::Draw(p) = op else { continue };
+            let Some(facing) = &p.facing else { continue };
+            if !replaced.insert(Arc::as_ptr(facing)) {
+                at.push((index, Vec::new()));
+                restores.push(None);
+                continue;
+            }
+            let cells = facing.textures.iter().map(|(rect, pixels)| TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+            let parts = facing.parts.iter().map(|part| TraceOp::Draw(alternative_part(p, part, |p| p.facing = None)));
+            at.push((index, cells.chain(parts).collect()));
+            restores.push(Some(&facing.restore));
+        }
+        if at.is_empty() {
+            return Faced::default();
+        }
+        // A restore that nothing after it samples is left out: each
+        // presentation replays the frame from the VRAM it began with, and
+        // the upload would end the run of draws before it early (in every
+        // eye and the pane). From the frame's end back, what is sampled
+        // after each facing.
+        let mut later = Blocks::default();
+        let mut next = at.len();
+        let mut needed = vec![false; at.len()];
+        for index in (0..ops.len()).rev() {
+            if next > 0 && at[next - 1].0 == index {
+                next -= 1;
+                needed[next] = restores[next].is_some_and(|restore| restore.iter().any(|(rect, _)| later.meets(rect)));
+                at[next].1.iter().rev().for_each(|op| later.apply(op));
+            } else {
+                later.apply(&ops[index]);
+            }
+        }
+        for ((_, faced), (restore, needed)) in at.iter_mut().zip(restores.into_iter().zip(needed)) {
+            if let Some(restore) = restore.filter(|_| needed) {
+                faced.extend(restore.iter().map(|(rect, pixels)| TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true }));
+            }
+        }
+        Faced { at }
+    }
+
+    /// The frame's operations `ops` as the diorama draws them, each with its
+    /// index in `ops` (the facings' with the part's they replace).
+    fn ops<'a>(&'a self, ops: &'a [TraceOp]) -> impl Iterator<Item = (usize, &'a TraceOp)> + 'a {
+        let mut at = self.at.iter().peekable();
+        ops.iter().enumerate().flat_map(move |(index, op)| {
+            let drawn = match at.next_if(|entry| entry.0 == index) {
+                Some((_, faced)) => faced.as_slice(),
+                None => std::slice::from_ref(op),
+            };
+            drawn.iter().map(move |op| (index, op))
+        })
+    }
+}
+
+/// VRAM in blocks of 16x16 halfwords: for each band of 16 rows, a mask of
+/// its 64 blocks (what the operations after a point sample, for
+/// [`Faced::new`]).
+#[derive(Default)]
+struct Blocks([u64; 32]);
+
+impl Blocks {
+    /// The blocks of columns `x0..=x1` (wrapping at VRAM's width) in a
+    /// band's mask.
+    fn columns(x0: i32, x1: i32) -> u64 {
+        if x1 - x0 >= 1023 {
+            return u64::MAX;
+        }
+        let (first, last) = (x0.rem_euclid(1024) / 16, x1.rem_euclid(1024) / 16);
+        let from = |b: i32| u64::MAX << b;
+        let to = |b: i32| if b == 63 { u64::MAX } else { (1u64 << (b + 1)) - 1 };
+        if first <= last { from(first) & to(last) } else { from(first) | to(last) }
+    }
+
+    fn bands((y0, y1): (i32, i32)) -> std::ops::RangeInclusive<usize> {
+        (y0.clamp(0, 511) / 16) as usize..=(y1.clamp(0, 511) / 16) as usize
+    }
+
+    /// Notes columns `x0..=x1` of rows `y0..=y1` sampled: every block they
+    /// touch.
+    fn sample(&mut self, (x0, x1): (i32, i32), rows: (i32, i32)) {
+        let mask = Blocks::columns(x0, x1);
+        Blocks::bands(rows).for_each(|band| self.0[band] |= mask);
+    }
+
+    /// Whether any of `rect` lies in a block noted.
+    fn meets(&self, rect: &VramRect) -> bool {
+        let (x, y) = (i32::from(rect.x), i32::from(rect.y));
+        let mask = Blocks::columns(x, x + i32::from(rect.width).max(1) - 1);
+        Blocks::bands((y, y + i32::from(rect.height).max(1) - 1)).any(|band| self.0[band] & mask != 0)
+    }
+
+    /// `op` comes before what was noted: its texels sampled, or the blocks
+    /// it writes whole, whose pixels what comes after sees as it wrote
+    /// them, no longer noted.
+    fn apply(&mut self, op: &TraceOp) {
+        match op {
+            TraceOp::Draw(p) if p.textured => {
+                let mode = p.environment.draw_mode;
+                let (x, y) = ((mode & 15) as i32 * 64, (mode >> 4 & 1) as i32 * 256);
+                let depth = mode >> 7 & 3;
+                let shift = [2, 1, 0, 0][depth as usize];
+                // The texels about its coordinates (a texel more each way,
+                // for filtering), or its page's whole width or height where
+                // they wrap or a window repeats them.
+                let vertices = &p.vertices[..p.vertex_count()];
+                let span = |of: fn(&TraceVertex) -> i16| {
+                    let (lo, hi) = vertices.iter().map(|v| i32::from(of(v))).fold((i32::MAX, i32::MIN), |(lo, hi), t| (lo.min(t), hi.max(t)));
+                    if p.environment.texture_window & 0xF_FFFF != 0 || lo < 0 || hi > 255 { (0, 255) } else { ((lo - 1).max(0), (hi + 1).min(255)) }
+                };
+                let ((u0, u1), (v0, v1)) = (span(|v| v.u), span(|v| v.v));
+                self.sample((x + (u0 >> shift), x + (u1 >> shift)), (y + v0, y + v1));
+                if depth < 2 {
+                    let (x, y) = (i32::from(p.clut & 63) * 16, i32::from(p.clut >> 6 & 511));
+                    self.sample((x, x + if depth == 0 { 15 } else { 255 }), (y, y));
+                }
+            }
+            TraceOp::Copy { source, width, height, .. } => {
+                let (x, y) = (i32::from(source.0), i32::from(source.1));
+                self.sample((x, x + i32::from(*width).max(1) - 1), (y, y + i32::from(*height).max(1) - 1));
+            }
+            TraceOp::Write { rect, .. } => {
+                // The blocks it covers whole.
+                let (x0, y0) = (i32::from(rect.x), i32::from(rect.y));
+                let (x1, y1) = (x0 + i32::from(rect.width), y0 + i32::from(rect.height));
+                let (first, last, top, bottom) = ((x0 + 15) / 16, x1 / 16 - 1, (y0 + 15) / 16, y1 / 16 - 1);
+                if first <= last && top <= bottom && x1 <= 1024 {
+                    let mask = !Blocks::columns(first * 16, last * 16 + 15);
+                    (top as usize..=(bottom as usize).min(31)).for_each(|band| self.0[band] &= mask);
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Whether every point of `p` has a place in the camera's view space.
@@ -1079,7 +1254,7 @@ impl Target {
 struct Built {
     identity: (Option<((u16, u16), u64)>, usize),
     /// The table's heading and scale it was built for, and its billboards'
-    /// normal in the world (towards the seat then).
+    /// normal in the world (towards the head then).
     heading: f32,
     scale: f32,
     toward: Vec3,
@@ -1129,9 +1304,9 @@ impl Targets {
     /// Builds the frame's diorama ([`build`]) into the vertex and staging
     /// buffers (the last build's no longer); returns its commands.
     #[allow(clippy::too_many_arguments)]
-    fn build(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, options: &DrawOptions, ops: &[TraceOp], camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<(Vec<Command>, DioramaStats)> {
+    fn build(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, options: &DrawOptions, ops: &[TraceOp], faced: &Faced, camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<(Vec<Command>, DioramaStats)> {
         let mut builder = Builder::reusing(options, ops, &mut self.storage);
-        let stats = build(&mut builder, ops, camera, placed, area, room);
+        let stats = build(&mut builder, ops, faced, camera, placed, area, room);
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(device, queue, &builder.staging);
         let commands = std::mem::take(&mut builder.commands);
@@ -1141,11 +1316,12 @@ impl Targets {
 }
 
 /// Builds the diorama of a frame into `builder` (made for `ops`): `ops`
-/// drawn with `camera` and placed as `placed`, the screen at `area`; with
+/// (the sprites as `faced` has them) drawn with `camera` and placed as
+/// `placed`, the screen at `area`; with
 /// `room` (the room shows around the table) the wall leaves out the game's
 /// clear (its fills before the scene), which the room stands in for. `None`
 /// when the camera's axes span no space.
-fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<DioramaStats> {
+fn build(builder: &mut Builder, ops: &[TraceOp], faced: &Faced, camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<DioramaStats> {
     let options = builder.options;
     let world = WorldFrame::new(camera)?;
     let scene = scene_offset(ops);
@@ -1163,7 +1339,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
     // Diorama: the transform keeps the world's handedness).
     let flip = front > 0;
     let feet = sprite_feet(ops);
-    let lowest = sprite_bottoms(ops, &feet);
+    let lowest = sprite_bottoms(faced.ops(ops).map(|(_, op)| op), &feet);
     // The game's order among faces in one plane (docs/runtime.md,
     // Diorama): the scene's faces, and the sprites' billboard parts.
     let (lift, tolerance) = (LIFT / placed.scale, COPLANAR / placed.scale);
@@ -1173,7 +1349,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], camera: &Camera, placed: &Place
     let mut stats = DioramaStats::default();
     builder.shown = Some(shown);
     builder.space = Space::Pane;
-    for (index, op) in ops.iter().enumerate() {
+    for (index, op) in faced.ops(ops) {
         match op {
             // Pictures uploaded to the screen go onto the pane; every
             // upload changes the VRAM the replay samples.
@@ -1439,24 +1615,30 @@ impl Diorama {
             let (Some(camera), Some(start)) = (frame.camera(), frame.snapshot().cloned()) else { return None };
             let ops = frame.newest();
             let h = projection_distance(ops, scene_offset(ops)).unwrap_or(256.0);
-            let placed = self.placement.update(&camera, h, scene, new_frame, now, table)?;
+            // The billboards face the head between the eyes.
+            let head = (!eyes.is_empty()).then(|| eyes.iter().map(|eye| eye.view.inverse().transform_point3(Vec3::ZERO)).sum::<Vec3>() / eyes.len() as f32);
+            let placed = self.placement.update(&camera, h, scene, new_frame, now, table)?.facing(table.room_from_table(seat), head);
             let identity = (frame.identity(), frame.drawn());
             let hidden = renderer.options().hide_dialogue;
             let rebuild = gpu.built.as_ref().is_none_or(|built| {
-                built.identity != identity || built.area != area || built.room != room || built.hidden != hidden || wrap(built.heading - placed.heading).abs() > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
+                built.identity != identity || built.area != area || built.room != room || built.hidden != hidden || wrap(built.heading - placed.heading).abs() > REBUILD_TURN
+                    || built.toward.angle_between(placed.toward) > REBUILD_TURN || (built.scale / placed.scale - 1.0).abs() > 0.25
             });
             if rebuild {
                 let base = *renderer.options();
                 // The screen's limits have no place in a view from anywhere.
                 let fidelity = Fidelity { affine_textures: false, vertex_snapping: false, dithering: false, native_resolution: false, painter_ordering: true, ..base.fidelity };
                 let options = DrawOptions { fidelity, ..base };
-                let Some((commands, stats)) = gpu.build(device, queue, &options, ops, &camera, &placed, area, room) else {
+                // A field's sprites as the head sees them, where the port
+                // drew them again facing it (`Reveals::viewer`).
+                let faced = Faced::new(ops);
+                let Some((commands, stats)) = gpu.build(device, queue, &options, ops, &faced, &camera, &placed, area, room) else {
                     // (Its buffers hold the last build no longer.)
                     gpu.built = None;
                     return None;
                 };
                 self.stats = DioramaStats { builds: self.stats.builds + 1, ..stats };
-                let writes = ops.iter().filter(|op| matches!(op, TraceOp::Write { .. })).cloned().collect();
+                let writes = faced.ops(ops).filter(|(_, op)| matches!(op, TraceOp::Write { .. })).map(|(_, op)| op.clone()).collect();
                 gpu.built = Some(Built { identity, heading: placed.heading, scale: placed.scale, toward: placed.toward, start, writes, camera, placed, area, room, hidden, commands });
             } else if let Some(built) = &mut gpu.built {
                 built.placed = placed;
@@ -1631,7 +1813,7 @@ mod tests {
     fn built_for(ops: &[TraceOp], room: bool) -> (Vec<Vertex>, Vec<Command>, DioramaStats) {
         let options = DrawOptions::default();
         let mut builder = Builder::new(&options, ops);
-        let stats = build(&mut builder, ops, &LEVEL, &placed(), AREA, room).expect("a camera");
+        let stats = build(&mut builder, ops, &Faced::default(), &LEVEL, &placed(), AREA, room).expect("a camera");
         (builder.vertices, builder.commands, stats)
     }
 
