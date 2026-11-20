@@ -206,7 +206,9 @@ component NavColumn inherits Rectangle {
     }
     // The current row in view clear of the fades, the column moved as
     // little as rests cutting rows a quarter of the way into one allow
-    // (or at an end of the column, within half a row of it).
+    // (or on to the end it moves toward, within half a row of it: never
+    // back to the end it leaves, which would leave the row under the far
+    // fade).
     function reveal() {
         if !root.scrolls || flick.height <= 0px {
             root.scroll-to(0px);
@@ -220,7 +222,7 @@ component NavColumn inherits Rectangle {
             let up = top - root.fade < shown;
             let wanted = up ? top - root.fade : bottom + root.fade - flick.height;
             let at = root.pitch * ((up ? floor(wanted / root.pitch - 0.25) : ceil(wanted / root.pitch - 0.25)) + 0.25);
-            root.scroll-to(at < root.pitch / 2 ? 0px : at > end - root.pitch / 2 ? -end : -at);
+            root.scroll-to(up && at < root.pitch / 2 ? 0px : !up && at > end - root.pitch / 2 ? -end : -at);
         } else {
             root.scroll-to(flick.content-y);
         }

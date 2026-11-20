@@ -1088,6 +1088,65 @@ fn every_section_tab_scrolls_into_a_narrow_panel_and_answers_a_click() {
 }
 
 #[test]
+fn every_section_row_scrolls_into_a_short_sidebar_and_answers_a_click() {
+    const SECTIONS: [&str; 10] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "Achievements", "Debug", "About"];
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings, (640, 360), 1.0).unwrap();
+    let row = |ui: &SettingsUi, label: &str| {
+        ElementHandle::find_by_accessible_label(ui.component(), label).find(|e| e.accessible_role() == Some(AccessibleRole::Tab))
+    };
+    // Desktop windows too short for the sidebar's ten rows.
+    for height in [360, 300, 440] {
+        ui.resize((640, height), 1.0);
+        ui.component().set_selected_section(0);
+        ui.update().unwrap();
+        let list = element(&ui, "Settings sections", AccessibleRole::TabList);
+        let (top, bottom) = (list.absolute_position().y, list.absolute_position().y + list.size().height);
+        assert!(list.size().height < 402.0 && list.size().height > list.size().width, "a sidebar too short for ten rows: {:?}", list.size());
+        let at_top = |ui: &SettingsUi| row(ui, "Audio").is_some_and(|audio| (audio.absolute_position().y - top - 2.0).abs() < 0.5);
+        let at_bottom = |ui: &SettingsUi| {
+            row(ui, "About").is_some_and(|about| (about.absolute_position().y + about.size().height - bottom + 2.0).abs() < 0.5)
+        };
+        // At its top, its bottom edge cuts a row through its middle, where
+        // the fade shows, and About lies past it.
+        assert!(at_top(&ui), "the sidebar {height} tall starts at its top");
+        assert!(row(&ui, "About").is_none(), "About lies below the sidebar {height} tall");
+        let cut = SECTIONS.into_iter().filter_map(|label| row(&ui, label)).last().unwrap();
+        let shown = bottom - cut.absolute_position().y;
+        assert!(
+            shown > cut.size().height / 4.0 && shown < cut.size().height * 0.75,
+            "the sidebar's bottom edge cuts a row through its middle: {shown} of {}, {height} tall",
+            cut.size().height
+        );
+        // The wheel brings each row in, a click on it chooses it, and the
+        // sidebar moves the row chosen clear of its fades (or to an end).
+        for (index, label) in SECTIONS.into_iter().enumerate().skip(1) {
+            reveal(&mut ui, label);
+            let next = row(&ui, label).unwrap();
+            let from = next.absolute_position().y.max(top);
+            let to = (next.absolute_position().y + next.size().height).min(bottom);
+            click(&ui, LogicalPosition::new(next.absolute_position().x + next.size().width / 2.0, (from + to) / 2.0));
+            ui.update().unwrap();
+            assert_eq!(ui.component().get_selected_section(), index as i32, "{label}, {height} tall");
+            let chosen = row(&ui, label).unwrap();
+            let (from, to) = (chosen.absolute_position().y, chosen.absolute_position().y + chosen.size().height);
+            assert!(from - top >= 28.0 || at_top(&ui), "the {label} row chosen clears the top fade: {from}..{to} in {top}..{bottom}");
+            assert!(bottom - to >= 28.0 || at_bottom(&ui), "the {label} row chosen clears the bottom fade: {from}..{to} in {top}..{bottom}");
+        }
+        // The selection (L1/R1 on a gamepad, the arrow keys) brings its row
+        // in from either end.
+        ui.component().set_selected_section(0);
+        ui.update().unwrap();
+        assert!(at_top(&ui) && row(&ui, "About").is_none(), "choosing Audio turns the sidebar back to its top");
+        ui.component().set_selected_section(9);
+        ui.update().unwrap();
+        assert!(at_bottom(&ui) && row(&ui, "Audio").is_none(), "choosing About turns the sidebar to its bottom");
+    }
+}
+
+#[test]
 fn time_toggles_fast_forward_with_a_button_where_the_headset_and_android_smokes_press_it() {
     use xem_settings::{AppAction, AppRequest};
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");

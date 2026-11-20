@@ -9782,8 +9782,8 @@ sections lie past it. The sidebar's rows (38 pixels, a gap of 2) scroll
 only in a panel too short for all ten; then they grow (40 pixels apart at
 least) to show a whole number of them and a half, so that at rest its edges
 cut rows through their words, and the selected row comes into view clear of
-the fades, the column resting a quarter of the way into a row (or at an
-end). The strip's tabs are all as wide: they share out its width so that it shows a
+the fades, the column resting a quarter of the way into a row (or at the
+end it moves toward). The strip's tabs are all as wide: they share out its width so that it shows a
 whole number of them and a half, each at least 80 pixels (the widest
 label, Shortcuts, with room either side), so at rest its edges cut tabs
 through their middles, where the fades show that more lie past them. The
@@ -9793,8 +9793,11 @@ emulator's 405-pixel panel shows four and a half tabs, 86.5 pixels apart;
 a headset's 440, 94.2). `xem-ui/tests/panel.rs` walks a finger along the
 strip at six widths from 280 to 405 (each tab tapped on its part shown
 beside the one before it, then the wheel turning the strip back to its
-start), checks the Android smoke's and the headset smoke's taps on the
-strip at their sizes, and checks that Saves' Backups card keeps all of its buttons
+start), turns the wheel down the sidebar in panels 300 to 440 pixels tall
+(each row brought in and clicked, the row chosen clear of the fades or the
+column at that end, and the selection turning it to either end), checks
+the Android smoke's and the headset smoke's taps on the strip at their
+sizes, and checks that Saves' Backups card keeps all of its buttons
 inside it at ten widths from 280 to 640 (one to a row below 600 logical
 pixels, where two of its longer labels side by side overflowed it: at 560
 "Request browser persistence" ran past the card's edge). That button and
