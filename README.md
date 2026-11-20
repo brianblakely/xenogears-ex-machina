@@ -24,12 +24,15 @@ villager and Fei walks over to talk. Stop by the well and look around through
 his eyes. Put on headphones, pick Binaural, and the music plays all around
 you. In VR, set the whole village on your table and walk round it.
 
-## Lighting, widescreen and a sharper picture
+## Features
 
-Switch on HD-2D and Lahan gets lighting, shadows, fog, light shafts, bloom and
-depth of field, laid over the same sprites and textures Square shipped in
-1998. On a wide screen nothing is stretched: the extra space at the sides
-shows more of Shevat's tower.
+### Graphics
+
+- **HD-2D:** lighting, shadows, ambient occlusion, fog, light shafts, bloom,
+  colour grading and depth of field, laid over the original sprites and
+  textures.
+- **Widescreen:** the extra space at the sides shows more of the scene, with
+  nothing stretched.
 
 <p align="center">
   <img src="docs/images/hd-2d.jpg" width="49%"
@@ -38,11 +41,12 @@ shows more of Shevat's tower.
     alt="Widescreen, see more of the world: Fei runs up Shevat's spiral stairs in a 16:9 view">
 </p>
 
-Scenes are drawn at up to eight times the PlayStation's resolution, at any
-window size, with shapes and textures that hold steady instead of wobbling.
-Roll the mouse wheel and the camera pulls back, up to five times farther. On a
-high-refresh display, High Framerate fills in frames between the game's own
-while the game keeps its timing.
+- **Up to 8× resolution** at any window size, with shapes and textures that
+  hold steady instead of wobbling.
+- **Zoom out:** the mouse wheel pulls the field camera back up to five times
+  farther.
+- **High Framerate:** frames filled in between the game's own on
+  high-refresh displays, with the game's timing unchanged.
 
 <p align="center">
   <img src="docs/images/8x-resolution.jpg" width="49%"
@@ -51,11 +55,11 @@ while the game keeps its timing.
     alt="Zoom Out, watch towns come alive: the field camera pulled far back over Bledavik">
 </p>
 
-Movies come out sharper, without their blocky compression edges. When you want
-it the way it was, the PS1 look brings back the low resolution, wobbling
-textures, jittering edges and dithering (the Custom profile mixes them with
-the new effects one at a time), and the Original renderer draws every frame
-exactly as the console does.
+- **Enhanced movies:** sharper, without the blocky compression edges.
+- **PS1 look and Original renderer:** the low resolution, wobbling textures,
+  jittering edges and dithering back again, or every frame drawn exactly as
+  the console draws it. The Custom profile mixes old and new one effect at a
+  time.
 
 <p align="center">
   <img src="docs/images/enhanced-movies.jpg" width="49%"
@@ -64,23 +68,17 @@ exactly as the console does.
     alt="PS1 Renderer, completely accurate visuals: aboard the Thames, drawn the way the console draws it">
 </p>
 
-In Babel Tower, the hangars and the docks, where the game shrinks the party to
-tiny sprites beside the Gears, you can have the party drawn with its detailed
-sprites instead.
+- **Full-size sprites** in Babel Tower, the hangars and the docks, where the
+  game shrinks the party beside the Gears.
 
-## Look around, or set the world on your table
+### First-person view and VR
 
-Switch to first person in Citan's workshop and look around: up at the pipes,
-across at the wrenches on his wall. Look with the mouse, a stick or a finger,
-or in a headset just turn your head. It works in any field. The scenery was
-built for set camera angles, so from some spots you'll catch a flat sprite or
-a missing wall.
-
-In a headset, set the world on the table in front of you. Lean over the
-tavern, grow it to four times its size or shrink it to a quarter, tilt it
-toward you, or get up and walk round the table: the people in it turn to show
-you their backs, their sides and their faces. Battles and the world map go on
-the table too.
+- **First-person view** in any field: look around with the mouse, a stick, a
+  finger or your head. The scenery was built for set camera angles, so some
+  spots show a flat sprite or a missing wall.
+- **VR diorama:** the world on your table, from a quarter to four times its
+  size and tilted toward you. Walk round it and the people in it show their
+  backs, sides and faces. Battles and the world map go on the table too.
 
 <p align="center">
   <img src="docs/images/first-person-view.jpg" width="49%"
@@ -89,10 +87,10 @@ the table too.
     alt="VR Diorama, the world on your table: a tavern as a lit miniature in the headset view">
 </p>
 
-With passthrough, the diorama or a big virtual screen appears in your own
-room. Put the controllers down if you like: pinch the ground to walk there,
-close a fist to pause, press your palms together for Settings, and pull your
-hands apart to enlarge the diorama.
+- **Passthrough:** the diorama or a big virtual screen in your own room.
+- **Hand tracking:** pinch the ground to walk there, close a fist to pause,
+  press your palms together for Settings, pull your hands apart to enlarge
+  the diorama.
 
 <p align="center">
   <img src="docs/images/passthrough.jpg" width="49%"
@@ -105,17 +103,13 @@ On Windows and Linux, PC VR headsets start with one launch option. On Meta
 Quest the app opens as a flat window for now, and starting it in VR takes an
 extra step. The [manual](MANUAL.md#playing-in-a-headset) covers both.
 
-## Click to walk, tap to talk
+### Controls
 
-Click the ground and Fei walks there, or click someone and he goes over and
-talks to them. In battle, click a command on the ring, then your target. The
-jumps are still yours to make.
-
-On a phone or tablet, put your thumb down anywhere on the left half of the
-screen and a stick appears under it. The big button under your right thumb is
-TALK while you explore, NEXT in a conversation and OK in a menu. When you
-attack in battle, the buttons read WEAK, STRONG and FIERCE, and a Battling
-bout gets its own set.
+- **Mouse:** click the ground to walk there, click someone to go and talk to
+  them, click battle commands and targets. Jumps are still yours to make.
+- **Touch:** a stick wherever your left thumb lands, and buttons that change
+  with what you're doing: TALK, NEXT and OK; WEAK, STRONG and FIERCE in
+  battle; a set of their own for Battling.
 
 <p align="center">
   <img src="docs/images/mouse-battles.jpg" width="49%"
@@ -124,23 +118,21 @@ bout gets its own set.
     alt="Touch Controls, play on the go: a Battling bout between Weltall and Vierge, with the stick under the left thumb and A, B, Special, Jump, Charge and Dash under the right">
 </p>
 
-Any gamepad works everywhere, Settings included, and you can rebind every
-control.
+- **Gamepads** work everywhere, Settings included, and every control can be
+  rebound.
 
-## Sound all around you
+### Sound
 
-Choose Binaural with headphones on, and the soundtrack's instrument parts
-spread out around you while the world's sounds come from where they happen in
-the scene. In a headset they stay put as you turn your head, and the music can
-too. The game still decides what plays, when and how loud, and its Mono,
-Stereo and Wide modes sound as they always did.
+- **Binaural audio** for headphones: the soundtrack's instrument parts around
+  you and the world's sounds from where they happen. In a headset they stay
+  put as you turn your head.
+- The original **Mono, Stereo and Wide** modes, as they always sounded.
 
-## Save anywhere, rewind, skip the grind
+### Saves and quality of life
 
-Save in the middle of a boss fight and finish it later on your phone. Missed a
-jump in Babel Tower? Hold rewind and back up through the last 30 seconds.
-Cross the world map at 20 times speed while the music keeps its tempo and
-pitch.
+- **Save states** at any moment, and they move between every device.
+- **Rewind** through the last 30 seconds.
+- **Fast-forward** up to 20×, with the music at its own tempo and pitch.
 
 <p align="center">
   <img src="docs/images/save-states.jpg" width="49%"
@@ -149,46 +141,43 @@ pitch.
     alt="Fast-Forward, skip the grind: a night-shore battle against a giant Gear running fast">
 </p>
 
-Settings smooth over the parts that have aged:
-
-- No random battles in the jumping sections of Blackmoon Forest, the
-  Aveh–Kislev border mountains and Babel Tower. This one is on from the start.
-- Half as many random battles in every field, each worth double EXP, G and
+- **No random battles in the jumping sections** of Blackmoon Forest, the
+  Aveh–Kislev border mountains and Babel Tower (on from the start).
+- **Half the random battles** everywhere else, each worth double EXP, G and
   Deathblow progress.
-- No waiting for the disc: areas, battles and menus open almost at once.
-- Instant text, dialogue that turns its own pages, and movies you can skip.
+- **Skip disc load times:** areas, battles and menus open almost at once.
+- **Instant text, auto dialogue and skippable movies.**
+- **Hide the dialogue box** by holding Select.
+- **Save imports** from DexDrive, PSP, PS Vita, PS3, emulators and Action
+  Replay or GameShark tools, and standard memory card exports.
 
-Story battles still happen, choices still wait for you, and a setting turned
-off plays that part as the original did. Hold Select to hide a dialogue box
-and see the scene behind it. Bring your old saves from DexDrive, PSP, PS Vita,
-PS3, emulators and Action Replay or GameShark tools, and take standard memory
-card files back out.
+Story battles still happen and choices still wait for you. Any setting turned
+off plays that part as the original did.
 
-## In your language
+### Languages
 
-Switch between the original English script, the
-[Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
-team's retranslation and the game's text in French, Italian, Spanish or
-Brazilian Portuguese whenever you like, with no patched discs. On a computer,
-put your Japanese discs beside the North American ones to play with the
-Japanese release's text, or keep your language and switch the movies and
-battle voices to Japanese.
+- The original English script, the
+  [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+  team's retranslation, French, Italian, Spanish and Brazilian Portuguese,
+  switchable at any time with no patched discs.
+- On a computer, with your Japanese discs beside the North American ones:
+  the Japanese release's text, or Japanese movies and battle voices with your
+  own language.
 
 A few words the game draws as pictures, like the battle commands and save
 titles, stay in English, and so does the app's Settings screen.
 
-## Achievements
+### Achievements
 
-Sign in to [RetroAchievements](https://retroachievements.org) on a computer,
-Android device or headset, and each achievement you earn pops up over the game
-with its badge. Unlocks count as softcore, so save states, rewind and
-fast-forward stay available.
+- [RetroAchievements](https://retroachievements.org) on computers, Android
+  and headsets, with badge popups. Unlocks are softcore, so save states,
+  rewind and fast-forward stay available.
 
-## The developers' test rooms
+### Debug menu
 
-**Settings → Debug** opens the test setups built into the original game: jump
-to a map by number, set up a battle, play any movie or visit the developer
-room. Expect spoilers, and save first.
+- **Settings → Debug** opens the original game's test setups: jump to a map
+  by number, set up a battle, play any movie or visit the developer room.
+  Expect spoilers, and save first.
 
 ## Where it runs
 
