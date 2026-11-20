@@ -6,79 +6,78 @@
 <p align="center">
   <a href="https://github.com/brianblakely/xenogears-ex-machina/releases/latest"><b>Download</b></a>
   &nbsp;·&nbsp;
-  <a href="https://brianblakely.github.io/xenogears-ex-machina/"><b>Play in your browser</b></a>
-  &nbsp;·&nbsp;
   <a href="MANUAL.md"><b>Player's manual</b></a>
+  &nbsp;·&nbsp;
+  <a href="docs/releases.md"><b>Installation guide</b></a>
   <br>
-  <sub>Windows · macOS · Linux · Android · Meta Horizon OS · Web browsers · Bring your own discs</sub>
+  <sub>Windows · macOS · Linux · Steam Deck · Android · Meta Quest · PC VR · Bring your own discs</sub>
 </p>
 
-Xenogears: Ex Machina (XEM) is an independent, open-source project to preserve the
-PlayStation role-playing game Xenogears and bring it to modern computers, mobile
-devices and VR headsets.
-It keeps the game's identity — its world, artwork and gameplay — while opening
-the door to modern presentation, more ways to play, and tools for creating new
-adventures.
+Xenogears: Ex Machina is an app for playing Xenogears, Square's 1998
+PlayStation RPG, on your computer, Steam Deck, Android phone or tablet, or VR
+headset. Put images of your own discs beside it and play. There's no emulator
+to set up and no BIOS to track down.
 
-## Project status
+The whole game is here, both discs, with its original art, music and
+gameplay. Around it, the app adds what you'd expect from a modern release: a
+sharper picture, true widescreen, saving anywhere, rewind, fast-forward, mouse
+and touch controls, more languages, and no random battles in the worst
+jumping sections. It also does things that only work because it understands
+the game it's running, like lighting scenes, letting you look around in first
+person, setting the world on your table in VR and placing sound around your
+head.
 
-| Milestone | Status | Scope |
-| --- | --- | --- |
-| Original-game decompilation | **Complete** | Both [supported North American discs](docs/runtime.md#discs); all 26 program components rebuild byte for byte. |
-| Modern platform foundation | **Complete** | One runtime for the Linux desktop, web browsers, Android and VR headsets (Android and VR verified on emulators). |
-| First playable section | **Complete** | An early stretch of the game, with exploration, dialogue, a battle and its rewards, menus, saving and a movie, plays end to end with identical results on every platform. |
-| Modern visuals | **Complete** | Modern, HD-2D-inspired and PS1 looks, true widescreen, high resolution and a VR virtual screen. |
-| Controls for every device | **Complete** | Keyboard, mouse, gamepad, touch, VR controllers and hand tracking. |
-| Conveniences, VR views and headphone audio | **Complete** | Save states, rewind, fast-forward, memory card import, gameplay options, the VR diorama, first-person view, clearer movies and Binaural sound. |
-| Complete game | **Complete** | Both-disc story, optional content and minigames. |
-| Playable release | **Complete** | [v1.0](https://github.com/brianblakely/xenogears-ex-machina/releases/tag/v1.0): portable native downloads and browser play; [supported platforms and setup](docs/releases.md). |
-| Mods and creation tools | Planned | Mod management, gameplay extensions, desktop editors and AI-assisted authoring. |
+## How it's different
 
-[Player's manual](MANUAL.md) · [Full roadmap](plan.md) · [Runtime and feature guide](docs/runtime.md)
-· [Build and verification guide](docs/matching.md)
+There are two usual ways to play an old console game on new hardware. An
+emulator imitates the PlayStation and runs your disc on that imitation. A
+remake or engine port rebuilds the game by hand in a new engine and works to
+match the original.
 
-## Why recover the original code?
+Ex Machina takes a different route. The project worked backward from the
+discs to recover the game's own program as readable source code, and checked
+every part of it until it rebuilt into exactly the bytes on the original
+discs. That recovered program is compiled to run directly on your device, not
+inside an imitation PlayStation.
 
-Decompilation means working backward from the game on disc to reconstruct source
-code that developers can read, study and change. It produces reconstructed source,
-not the studio's original development files. A byte-for-byte match provides a
-precise reference for preserving the original game while adapting it to new
-hardware.
+So the game you play is the original. Battle formulas, enemy behavior, event
+scripts, minigames and the odd bug all come from Square's own code, on both
+discs. Nothing was redrawn or rewritten by hand, so it plays the way you
+remember.
 
-XEM runs that recovered logic directly on modern hardware; it does not wrap a
-PlayStation emulator in a new interface. The browser version runs the same game
-logic.
+The app also knows what the game is doing. An emulator works with the
+triangles and audio a PlayStation would put out, without knowing what they
+mean. Ex Machina knows where Fei is standing, what the camera is looking at,
+which musical part is playing and where each sound comes from. That's how it
+can light a scene, fill the sides of a widescreen picture with real scenery,
+show the world through a character's eyes, put a town on your table in VR,
+place sounds around your head and walk Fei to the spot you clicked.
 
-## Player experience
+None of this replaces the original. The console's own picture and sound modes
+are still there, and every gameplay change can be switched off.
 
-### Play across more devices
+## A sharper picture, or the original one
 
-XEM runs natively on Linux, where development is led on Arch Linux, and in web
-browsers, which run the same compiled game code on WebGPU or WebGL2 (tested in
-Chromium). An Android app, VR through OpenXR and browser-based VR through WebXR
-run the same game too, verified on the Android emulator and simulated headsets.
-Phones and tablets get touch controls made for them. Downloads include Windows,
-macOS, Linux and a shared Android/Meta Horizon OS APK. Full editing tools will be
-desktop-focused; mobile, headset and browser versions are intended for playing
-the game and compatible prebuilt mods.
+Ex Machina redraws the game's 3D scenes at up to eight times the PlayStation's
+resolution, at any window size. Widescreen doesn't stretch anything: the extra
+room at the sides shows more of the game's own scenery. On high-refresh
+displays, optional motion smoothing fills in frames between the game's own
+while the game keeps its original timing.
 
-<p align="center">
-  <img src="docs/images/touch-controls.jpg" width="49%"
-    alt="Touch Controls, play on the go: a Battling bout between Weltall and Vierge on a phone-sized screen, framed by on-screen buttons">
-  <img src="docs/images/mouse-battles.jpg" width="49%"
-    alt="Mouse Battles, fight with a click: the mouse pointer on the battle command ring in a canyon fight">
-</p>
+Pick a look:
 
-### Keep the original art. Choose a new look.
+- **Modern:** a clean, sharp picture with steady textures.
+- **HD-2D:** scene lighting, shadows, fog, light shafts, bloom and depth of
+  field over the original sprites and models.
+- **PS1:** the console's low resolution with its wobbling textures, jittering
+  edges, dithering and limited colours. The Custom profile lets you mix those
+  quirks with the modern effects one at a time.
+- **Original:** the picture exactly as the console draws it.
 
-XEM's renderer redraws the game's own 3D scenes at up to eight times the
-original resolution, at any window size and aspect ratio. True widescreen fills
-the sides with the game's own scenery, the field camera can pull back for a
-wider view, and optional motion interpolation smooths motion on high-refresh
-displays, all while the original gameplay timing stays intact. Choose a modern
-look, an HD-2D-inspired look, or a PS1 look whose original quirks (warping
-textures, vertex snapping, dithering, 15-bit colour) switch on and off one by
-one. The console's own picture is always one setting away.
+Every look uses the art Square made in 1998. There's no texture pack to
+download and nothing has been repainted. In Gear-sized places like Babel
+Tower and the hangars, where the game swaps the party for tiny low-detail
+sprites, you can have it draw their detailed ones instead.
 
 <p align="center">
   <img src="docs/images/hd-2d.jpg" width="49%"
@@ -91,15 +90,10 @@ one. The console's own picture is always one setting away.
     alt="Zoom Out, watch towns come alive: the field camera pulled far back over Bledavik">
 </p>
 
-The HD-2D-inspired look brings scene lighting, shadows, atmosphere and
-adjustable depth of field to the existing game art. It is an effects treatment,
-not an art remake: the original sprites, textures, models and animations remain,
-with no replacement art pack required. Graphics style and flat-screen or VR
-viewing are separate choices.
-
-Full-motion video plays cleaner too. XEM rebuilds each movie frame from the
-game's decoded video, smooths the block seams, then enlarges and sharpens the
-picture, with the original video one setting away.
+The field camera can pull back up to five times farther, so you can take in a
+whole town at once. Movies get cleaned up too: Ex Machina smooths out the
+blocky compression and sharpens the enlarged picture, with the original video
+a toggle away.
 
 <p align="center">
   <img src="docs/images/enhanced-movies.jpg" width="49%"
@@ -108,12 +102,36 @@ picture, with the original video one setting away.
     alt="PS1 Renderer, completely accurate visuals: aboard the Thames, drawn the way the console draws it">
 </p>
 
-### See the world from a new perspective
+## Play with whatever you have
 
-In VR, play on a large virtual screen, or set the world down on the table in
-front of you as a diorama: fields, battles and the world map become a living
-miniature that you can grow or shrink with both hands, turn, tilt and recenter.
-Where a headset browser offers mixed reality, the diorama sits in your own room.
+A keyboard, a mouse, any gamepad, a touch screen, VR controllers or your bare
+hands all work, and you can rebind every control.
+
+- **Mouse:** click the ground to walk there, click a person to go and talk to
+  them, and click battle commands and targets. The scroll wheel zooms the
+  camera. The jumps are still yours to make.
+- **Controller:** gamepads work everywhere, Settings included, so you never
+  have to reach for the keyboard. Save states, rewind and fast-forward have
+  their own button combinations.
+- **Touch:** made for two thumbs. Put your left thumb down anywhere and a
+  stick appears under it. The buttons under your right thumb change with what
+  you're doing: TALK and JUMP while exploring, NEXT in conversations, the
+  three attacks by name in battle, and a full set for Battling. You can also
+  tap where you want to go.
+
+<p align="center">
+  <img src="docs/images/touch-controls.jpg" width="49%"
+    alt="Touch Controls, play on the go: a Battling bout between Weltall and Vierge, with the stick under the left thumb and A, B, Special, Jump, Charge and Dash under the right">
+  <img src="docs/images/mouse-battles.jpg" width="49%"
+    alt="Mouse Battles, fight with a click: the mouse pointer on the battle command ring in a canyon fight">
+</p>
+
+## Step into the world
+
+In a VR headset, play on a large virtual screen, or set the world down on the
+table in front of you as a diorama. Fields, battles and the world map become a
+miniature you can grow, shrink, turn and tilt. On headsets that can show your
+room, the diorama sits on your real table.
 
 <p align="center">
   <img src="docs/images/vr-diorama.jpg" width="49%"
@@ -122,31 +140,60 @@ Where a headset browser offers mixed reality, the diorama sits in your own room.
     alt="Passthrough, a cinematic virtual experience: a virtual screen in a living room shows the Yggdrasil and a red Gear in the desert">
 </p>
 
-Stop anywhere in a field and look around through your character's eyes, on a
-monitor, on a touch screen or in stereo VR, without turning Xenogears into a
-first-person action game.
+On any screen, you can stop in a field and look around through your
+character's eyes, with the mouse, a stick, a finger or, in VR, your own head.
+Your character stays put while you look. The scenery was built for set camera
+angles, so from some spots you'll catch a flat sprite or a missing wall.
 
-Optional hand-tracking controls (pinch to walk, a grab to pause, prayer hands
-for Settings) work alongside full controller support, and touch screens and
-headsets get control decks for Battling, the world map and every scripted field
-activity. VR is an additional way to experience the game, not a requirement to
-play.
+Controllers work fully in VR, and hand tracking is there if you want it: pinch
+to walk, make a fist to pause, press your palms together for Settings, and
+pull both hands apart to enlarge the diorama.
 
 <p align="center">
   <img src="docs/images/first-person-view.jpg" width="49%"
     alt="First-Person View, see the incredible pixel details: Citan's workshop through Fei's eyes">
   <img src="docs/images/hand-tracking.jpg" width="49%"
-    alt="Hand Tracking, no controllers needed: a throne hall diorama in browser VR">
+    alt="Hand Tracking, no controllers needed: a throne hall diorama in VR">
 </p>
 
-### Make a long adventure easier to live with
+On Windows and Linux, PC VR headsets start with one launch option. On Meta
+Quest the app currently opens as a flat window, and starting it in VR takes an
+extra step. The [manual](MANUAL.md#playing-in-a-headset) covers both.
 
-Save your exact moment anywhere and carry it between PC, browser, Android and
-VR. Rewind the last few seconds when a jump or a choice goes wrong, and
-fast-forward through travel and grinding while the music keeps its tempo. Bring
-your old saves: XEM imports PlayStation memory cards and saves from DexDrive,
-PSP and PS Vita, PS3, emulators and save tools, exports standard memory card
-files, and needs no BIOS.
+## Sound all around you
+
+Put on headphones and switch to Binaural. The soundtrack is laid out around
+you from the game's own instrument parts, and sound effects come from where
+they happen in the scene. In VR, effects stay in place as you turn your head,
+and the music can too. The game still decides what plays, when and how loud,
+and the original Mono, Stereo and Wide modes are untouched.
+
+## A long RPG that fits around your life
+
+Xenogears is a long game, and a few parts of it have aged. All of these are
+optional:
+
+- **Save anywhere.** A save state keeps the exact moment, mid-battle and
+  mid-conversation included. Take it to your phone or another computer and
+  carry on.
+- **Rewind.** Missed a jump? Back up through the last half minute and try
+  again.
+- **Fast-forward.** Speed through travel and grinding at up to 20 times, or
+  as fast as your machine can go. The music keeps its normal tempo and pitch.
+- **Fewer random battles.** They're off by default in the jumping sections of
+  Blackmoon Forest, the Aveh–Kislev border mountains and Babel Tower. You can
+  also halve encounters everywhere, and each battle then gives double EXP, G
+  and Deathblow progress, so you don't fall behind.
+- **No disc loading.** Areas, battles and menus open almost at once.
+- **Text at your pace.** Fast or instant text, dialogue that advances on its
+  own, and movies you can skip. Hold Select to hide a dialogue box and see the
+  scene behind it.
+- **Your old saves.** Import memory cards and saves from DexDrive, PSP, PS
+  Vita, PS3, emulators and Action Replay or GameShark tools, and export
+  standard memory card files.
+
+Story battles still happen and choices still wait for you. Turn an option off
+and the game plays exactly as it always did.
 
 <p align="center">
   <img src="docs/images/save-states.jpg" width="49%"
@@ -155,66 +202,98 @@ files, and needs no BIOS.
     alt="Fast-Forward, skip the grind: a night-shore battle against a giant Gear running fast">
 </p>
 
-Gameplay options switch off random battles by default in the platforming areas
-players complain about — Blackmoon Forest, the Aveh-Kislev border mountains and
-Babel Tower — and can halve encounters in every field. Text can run faster, up
-to instantly; dialogue can advance on its own; movies can be skipped; and disc
-load times can be switched off, so areas and battles open almost at once.
+## In your language
 
-### Earn achievements
+Play with the original English script, the
+[Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+team's English retranslation, or the game's text in French, Italian, Spanish
+or Brazilian Portuguese. They're all built in, so there are no patched discs
+to make, and you can switch at any time.
+
+Put your Japanese discs beside the North American ones on a computer and you
+can also play with the Japanese release's text, or keep your language and
+switch the movies and battle voices to Japanese.
+
+A few words the game draws as pictures, like the battle commands and save
+titles, stay in English, and so does the app's Settings screen.
+
+## Achievements
 
 Sign in to [RetroAchievements](https://retroachievements.org) on a computer,
-Android or a headset and earn Xenogears' achievement set as you play, from the
-game's own memory, just as you would with an emulator. Each unlock pops up
-over the game with the achievement's badge.
+Android device or headset and earn Xenogears' achievements as you play. Each
+unlock pops up over the game with its badge. Unlocks count as softcore, so
+save states, rewind and fast-forward stay available.
 
-### Hear the world around you
+## The developers' test rooms
 
-Binaural headphone mode places the soundtrack around you, arranged from the
-game's own sequenced musical parts, and plays the world's sound effects from
-where they happen, following your head in VR. It keeps the game's own choices
-of what sounds, how loud and when. The original Mono, Stereo and Wide modes
-remain exactly as they were.
+**Settings → Debug** opens the test setups built into the original game: jump
+to a map by number, set up a battle, play any movie or visit the developer
+room. Expect spoilers, and save first.
 
-### Create new Xenogears experiences
+## Where it runs
 
-Mod support and desktop creation tools will open the way to custom levels,
-cutscenes, battles and minigames. The plan includes mod management, gameplay
-extensions and graphical editors built around the same game that players use.
+- Windows (64-bit)
+- macOS, on Apple Silicon and Intel
+- Linux, on x86-64 and ARM, including Steam Deck (add it to Steam and play
+  from Gaming Mode)
+- Android 10 and later: phones, tablets and handhelds
+- Meta Quest, and PC VR headsets on Windows and Linux
 
-AI-assisted authoring and automated playtesting are part of that vision, and its
-foundation is in place. Software agents already play and inspect the real game
-through a typed command interface that uses the same actions and settings as
-players, with or without a visible game window, and recorded sessions replay
-exactly on PC, in the browser, on Android and in VR. Human creators and agents
-will work through the same editing, debugging and game services rather than a
-separate approximation of Xenogears.
+Save states and memory cards move between all of them. If you'd like to try it
+without installing anything, there's also a
+[browser version](https://brianblakely.github.io/xenogears-ex-machina/).
 
-## Built around your own copy
+The project tests its Android and headset versions on emulators and simulated
+headsets. If something misbehaves on your device, please
+[let us know](https://github.com/brianblakely/xenogears-ex-machina/issues).
 
-XEM provides source code and tools, not the original game discs. Original disc
-images, artwork, music and other extracted game assets are not distributed with
-the project. Matching builds use data from the user's own supported discs, and
-the native and browser versions import game data locally. Desktop first launch
-organizes supported images into `discs/` beside the application; images are
-never bundled or uploaded, and saves stay on your device.
+## Getting started
 
-The project's authored source is available under the [MIT License](LICENSE).
+You need images of your own North American Xenogears discs: Disc 1
+(`SLUS-00664`) and Disc 2 (`SLUS-00669`), original or Greatest Hits, as CHD or
+BIN/CUE. The game itself isn't included.
+
+- **On a computer:** download the app, put your disc images beside it and open
+  it. It files them into a `discs` folder and starts Disc 1.
+- **On Android or Quest:** install the APK and pick your disc image when the
+  app asks.
+
+Your discs and saves stay on your device. The [player's manual](MANUAL.md)
+covers controls, settings and saves, and the
+[installation guide](docs/releases.md) covers Steam Deck setup, Linux
+permissions, macOS, updates and current limitations.
+
+The whole game runs, both discs. A start-to-finish check of the story and
+every side activity is still under way, so if something looks wrong, please
+[report it](https://github.com/brianblakely/xenogears-ex-machina/issues).
+
+## What's next
+
+Mod support and creation tools come next: mod management, gameplay extensions
+and desktop editors for new areas, scenes, battles and minigames, all built on
+the same game you play. The [roadmap](plan.md) has the details.
+
+## Credits and license
+
+Xenogears: Ex Machina is an independent fan project, not affiliated with or
+endorsed by Square Enix. It includes none of the game's data: no disc images,
+artwork, music or BIOS.
+
+The project's source code is available under the [MIT License](LICENSE).
 The English (Perfect Works) game text is the
 [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
-team's (version 0.11.4), a separate work under the GNU General Public License, version 3
-([its files and notice](src/runtime/crates/xem-core/locale/en-x-pw/README.md)).
+team's (version 0.11.4), a separate work under the GNU General Public License,
+version 3 ([its files and notice](src/runtime/crates/xem-core/locale/en-x-pw/README.md)).
 
-## Follow the project or get involved
+## For developers
 
-Download the [latest release](https://github.com/brianblakely/xenogears-ex-machina/releases/latest)
-or [play in your browser](https://brianblakely.github.io/xenogears-ex-machina/).
-For desktop installation, place the executable beside your disc images in a
-writable folder. First launch creates `discs/`, `cards/` and `saves/`.
-See the [installation and qualification guide](docs/releases.md) for platform
-requirements, upgrades and the emulator-based device matrix. Follow the
-[roadmap](plan.md) for upcoming mod support and creation tools.
+Under the hood, Ex Machina is a matching decompilation: reconstructed C source
+for all 26 program components on both discs, which rebuilds byte for byte into
+the original executables. That source is compiled once into a game module,
+which runs natively on desktop, Android and headsets and as WebAssembly in
+browsers, with a Rust host handling graphics, sound, input and saves.
 
-Developers can start with the [development guide](docs/development.md),
-[runtime guide](docs/runtime.md), [porting handbook](docs/later-phases.md) and
+Start with the [development guide](docs/development.md),
+[runtime guide](docs/runtime.md), [build and verification guide](docs/matching.md),
+[porting handbook](docs/later-phases.md), [roadmap](plan.md) and
 [contribution guidelines](CONTRIBUTING.md).
