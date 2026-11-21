@@ -78,11 +78,11 @@ fn routes_climb_no_higher_than_a_jump_rises_and_land_where_its_arc_carries() {
         let player = *field.player().expect("a player");
         let mesh = &field.layers[player.layer];
         let arc = jump_arc(&player);
-        let reachable = field.reachable(&player);
+        let reachable = &field.reachable(&player)[player.layer];
         let (mut walks, mut jumps, mut none) = (0, 0, 0);
         for t in 0..mesh.triangles.len() {
             let goal = mesh.centroid(t);
-            match field.route(&player, t, goal) {
+            match field.route(&player, player.layer, t, goal) {
                 None => none += 1,
                 Some(route) => match route.jump {
                     None => walks += 1,
@@ -96,7 +96,7 @@ fn routes_climb_no_higher_than_a_jump_rises_and_land_where_its_arc_carries() {
                 },
             }
             if reachable[t] {
-                assert!(field.route(&player, t, goal).is_some(), "map {map}: triangle {t} is reachable yet has no route");
+                assert!(field.route(&player, player.layer, t, goal).is_some(), "map {map}: triangle {t} is reachable yet has no route");
             }
         }
         eprintln!("map {map}: {walks} walks, {jumps} jumps, {none} unreachable");
@@ -120,7 +120,7 @@ fn the_assist_jumps_where_its_route_needs_it_and_waits_under_the_ledge_brake() {
         .filter(|t| field.attributes.get(mesh.triangles[*t].attribute as usize).is_some_and(|a| a & 0x40_0000 == 0))
         .filter_map(|t| {
             let goal = mesh.centroid(t);
-            let route = field.route(&player, t, goal)?;
+            let route = field.route(&player, player.layer, t, goal)?;
             route.jump.is_some().then_some((goal, t, route.length))
         })
         .min_by(|a, b| a.2.total_cmp(&b.2))
@@ -147,7 +147,7 @@ fn the_assist_jumps_where_its_route_needs_it_and_waits_under_the_ledge_brake() {
             waited = true;
             break;
         }
-        assert!(!Field::read(session.runtime.memory()).unwrap().player().unwrap().airborne(), "no jump under the ledge brake");
+        assert_ne!(status["assist"]["phase"], "leaping", "no jump of the assist's under the ledge brake");
     }
     assert!(waited, "it waits at the takeoff");
 }
@@ -161,7 +161,7 @@ fn a_click_past_the_paths_end_walks_on_into_lahans_exit() {
     let field = field(&mut session);
     let player = *field.player().expect("a player");
     let mesh = &field.layers[player.layer];
-    let reachable = field.reachable(&player);
+    let reachable = &field.reachable(&player)[player.layer];
     let toward = V3::new(-300.0, 0.0, -2400.0);
     let (t, floor) = (0..mesh.triangles.len())
         .filter(|t| reachable[*t])
@@ -190,7 +190,7 @@ fn a_walk_to_another_actors_feet_arrives_beside_it() {
     let field = field(&mut session);
     let player = *field.player().expect("a player");
     let mesh = &field.layers[player.layer];
-    let reachable = field.reachable(&player);
+    let reachable = &field.reachable(&player)[player.layer];
     // The nearest still actor standing on floor the player reaches, a body
     // (one that does not pass through others: flags bit 7).
     let (actor, triangle) = field.actors.iter().flatten()
@@ -206,4 +206,46 @@ fn a_walk_to_another_actors_feet_arrives_beside_it() {
     eprintln!("outcome {outcome:?} at {at:?}, {:.0} from it", at.planar(actor));
     assert_eq!(outcome, Some(Outcome::Arrived));
     assert!(at.planar(actor) < 60.0, "beside it");
+}
+
+/// Lahan's stairs (its floors of attribute 0x4, which lift the leader to
+/// layer 1's floor above them): a walk to a floor of layer 1 goes up them
+/// and arrives there, on layer 1; a walk back to the ground goes down again.
+#[test]
+fn a_walk_to_lahans_upper_floor_goes_up_its_stairs_and_back_down() {
+    let Some(mut session) = walking(1) else { return };
+    let field = field(&mut session);
+    let player = *field.player().expect("a player");
+    assert_eq!(player.layer, 0, "Fei starts on the ground");
+    let reachable = field.reachable(&player);
+    // A floor of layer 1 the player reaches, some way from the stairs.
+    let stairs = field.layers[0].triangles.iter().enumerate()
+        .find(|(_, t)| field.attributes.get(t.attribute as usize).is_some_and(|a| a & 4 != 0))
+        .map(|(t, _)| field.layers[0].centroid(t))
+        .expect("Lahan's stairs");
+    let upper = &field.layers[1];
+    let (triangle, goal) = (0..upper.triangles.len())
+        .filter(|t| reachable[1][*t])
+        .map(|t| (t, upper.centroid(t)))
+        .filter(|(_, c)| (120.0..400.0).contains(&c.planar(stairs)))
+        .min_by(|a, b| a.1.planar(stairs).total_cmp(&b.1.planar(stairs)))
+        .expect("layer 1's floor, reached by the stairs");
+    eprintln!("the stairs at {stairs:?}; up to layer 1's triangle {triangle} at {goal:?}");
+    run(&mut session, json!({"cmd": "navigate", "to": [goal.x, goal.z], "triangle": triangle, "layer": 1}));
+    let (outcome, _) = until_done(&mut session, 3000);
+    let me = *Field::read(session.runtime.memory()).unwrap().player().unwrap();
+    eprintln!("outcome {outcome:?} on layer {} at {:?} ({:.0} from the goal)", me.layer, me.position, me.position.planar(goal));
+    assert_eq!(outcome, Some(Outcome::Arrived));
+    assert_eq!(me.layer, 1, "up on layer 1");
+    let floor = upper.height(triangle, me.position.x, me.position.z);
+    assert!(me.position.planar(goal) < 24.0 && (me.position.y - floor).abs() < 8.0, "at the goal, on its floor ({floor}): {:?}", me.position);
+    // Back down to where Fei started.
+    let ground = &Field::read(session.runtime.memory()).unwrap().layers[0];
+    let back = ground.locate(player.position.x, player.position.z).expect("the ground where Fei started");
+    run(&mut session, json!({"cmd": "navigate", "to": [player.position.x, player.position.z], "triangle": back, "layer": 0}));
+    let (outcome, _) = until_done(&mut session, 3000);
+    let me = *Field::read(session.runtime.memory()).unwrap().player().unwrap();
+    eprintln!("back: outcome {outcome:?} on layer {} at {:?}", me.layer, me.position);
+    assert_eq!(outcome, Some(Outcome::Arrived));
+    assert_eq!(me.layer, 0, "down on the ground");
 }

@@ -6088,8 +6088,12 @@ reports the frames run):
 `xem_core::field` reads the field camera (`scaled_world`, the projection,
 `field_view.angle`), the walkmesh (`FieldComponents`: per-layer
 triangles with neighbours and attributes over SVECTOR vertices) and the
-event actors. A screen point picks the floor the camera ray meets on the
-player's layer (`pick`). Hosts point at their picture: when it shows the
+event actors. A screen point picks the floor the camera ray meets nearest
+on the layers actors stand on (`pick`: through an upper layer's floorless
+triangles to what lies below, and as near on the player's layer and
+another, the player's), among the triangles under the ray's stretch within
+each layer's heights, cell by cell along it (`Grid::along`, each walkmesh's
+grids made once while its map lasts). Hosts point at their picture: when it shows the
 scene from another viewpoint than the game camera's (wider views' zoom
 out pulls the camera back along its axis), `GameView::viewpoint` gives
 it (the view's rows and offset in the game camera's view space, its
@@ -6132,50 +6136,80 @@ floor; presented again, the camera is pulled back again; at 250% the
 middle of each of the 30 walkable triangles that picture shows lies
 within a tap's reach, 18 pixels, of an actor, so a tap there talks).
 
-Routes plan over the triangles the player may enter, by the game's own
-rules as `tools/analysis/platforming.py` models them (an attribute blocks
-by the actor's flags, bit 23 blocks layer 0; a bit-22 slide is walked onto
-from a floor only when no more than 8 units above it, by the triangles'
-middles, starts no jump and takes the leader only down or level),
-string-pulled a body's width off the walls. Jumps follow the party's
-measured arc (`field::FOOT_ARC`, 118.25 up and 240 on at the takeoff's
-height on foot; `GEAR_ARC` in its gears): from a floor's edge over a slide
-too high to walk onto, straight out from the edge, a route lands on the
-first floor whose flight passes over it above every slide crossed (a jump
-costs it 200 units beyond its length, so a walk round wins where there is
-one); a goal on mesh cut off by a gap gets a takeoff at the edge of the
+Routes plan over the triangles of every layer actors stand on, by the
+game's own rules as `tools/analysis/platforming.py` models them (an
+attribute blocks by the actor's flags; bit 23 blocks layer 0 and above it
+is a pit; a bit-22 slide is walked onto from a floor only when no more
+than 8 units above it, by the triangles' middles, starts no jump and takes
+the leader only down or level), string-pulled a body's width off the
+walls. A walk into a pit comes down on the highest floor the other layers
+have under its middle below its highest corner, and a floor of attribute
+0x4 (stairs) lifts the leader to the lowest floor another layer has above
+it (`field_actor_update_position`), so a route goes up to a deck and down
+again. Jumps follow the party's arc (`field::FOOT_ARC`, 118.25 up and 240
+on at the takeoff's height on foot; `GEAR_ARC` in its gears, up 24.75 the
+first update and 2 less each after, to 165.75), flown update by update as
+the assist flies it: up from the edge's middle, on along the line straight
+out of the edge 12 units an update after the first two only while the
+lowest it is through the update clears what lies under that stretch (by 1
+over a slide), to a little past where the line reaches a floor. Another
+layer's floor above it, as solid as its triangle is thick (its byte 13
+times 4, `field_collision_find_actor_floor`), stops a rise where the
+leader's head meets it, and a move into it: `field_actor_update_position`
+rolls such a move back (on map 414 a floor 164 above a takeoff stops a
+gear's jump at 131.25). A route walks where a walk reaches its goal; only
+where none does it jumps too, from a floor's edge over a slide too high
+to walk onto (a jump costing it 200 units beyond its length, so a walk
+round wins where one reaches the floor beyond), a jump's flight worked out
+only once the search reaches it as the least of what is open, and kept for
+the map. A goal on mesh cut off by a gap gets a takeoff at the edge of the
 floor the player reaches from which the arc carries over the gap to the
 goal's part, nearest the goal. A slide higher than a jump rises, a mound
 with no floor on top and a gap wider than a jump carries are no way, so a
-route never runs at a cliff it cannot climb. `xem_core::assist` plays a
-route as the pad: the D-pad's
-eighth by the camera's angle (Right 0, Down 0x400, Left 0x800, Up 0xC00
-less `field_view.angle`, measured on the game), held until the route turns
-well away from it; Run beyond 96 units of route, walking within 40;
-around another actor in the way; a step aside when the route stops
-shrinking, and an end when it stays so; a walk held still within 48 units
-of its goal (a wall) has arrived. A goal inside another actor's keep-out
-(a barrel, a villager, a door's trigger box) is walked into, as the D-pad
-walks, not around: a touch the actor runs on contact runs (a door, a
-battle; `field_actor_check_talk_and_touch`), and a body that stops the
-leader ends the walk held still against it. Where the game moves the
-leader to another layer (stairs lift it, a drop lands it on one below),
-the walk goes on to that layer's floor at its goal, or ends where that
-layer has none. At a takeoff the assist presses Jump (four frames) with
-the direction toward the landing, steers the flight there and lets go of
-the direction over it, or once past it (in the air the D-pad moves the
-leader and nothing else does, and a leader let go stops, measured on the
-game), so it drops onto a narrow top; landed, it plans again. A route's
-landing lies 24 units past where the flight reaches a floor, or halfway
-across the floor it goes on over where that is narrower: by a slide's
-edge the leader would come down on the slide and slide back. A jump that
-never leaves the floor is walked up to and tried again, three times at
-most.
+route never runs at a cliff it cannot climb. What a search finds of a
+walkmesh is kept for the next while its map lasts and its collision
+attributes stand (scripts rewrite them: `field_collision_set_attribute_byte`;
+per thread: each
+triangle's ways, worked out as the search reaches it; the flights; the
+last routes' paths, whose rest from any triangle on one is the shortest
+from there; the last search run to its end, which answers every other goal
+from its start, and rules out from any start it reached what it did not
+reach). `xem_core::assist` plays a route as the pad: the D-pad's eighth by
+the camera's angle (Right 0, Down 0x400, Left 0x800, Up 0xC00 less
+`field_view.angle`, measured on the game), held until the route turns well
+away from it; Run beyond 96 units of route, walking within 40; round
+another actor in the way (a little past where the line from the leader
+touches the circle it keeps from it, and against it the eighth either side
+of the way turning away from it: the game refuses a step into it; the
+party's followers, flags bit 24, keep to the leader's path and are walked
+through); a step aside when the route stops shrinking, and an end when it
+stays so (counted anew off a slide, where the game moves the leader); a
+walk held still within 48 units of its goal (a wall) has arrived. A goal
+inside another actor's keep-out (a barrel, a villager, a door's trigger
+box) is walked into, as the D-pad walks, not around: a touch the actor
+runs on contact runs (a door, a battle;
+`field_actor_check_talk_and_touch`), and a body that stops the leader ends
+the walk held still against it. The walk to a takeoff comes in square to
+its edge, from 16 units back (walked at along it, the leader would clip
+the slide beyond). At the takeoff (within 6 units, or held short of it
+within 20 for two frames: the game stops a walk the step short of a slide
+it may not walk onto) the assist presses Jump (four frames) with the
+direction toward the landing, steers the flight there, rising where it is
+while the next stretch's slides lie higher than the flight's clearance (as
+the flight was planned), and lets go of the direction over it, or once
+past it (in the air the D-pad moves the leader and nothing else does, and
+a leader let go stops, measured on the game), so it drops onto a narrow
+top; landed, it plans again. A route's landing lies 24 units past where
+the flight reaches a floor, or halfway across the floor it goes on over
+where that is narrower: by a slide's edge the leader would come down on
+the slide and slide back. A jump that never leaves the floor is walked up
+to and tried again, three times at most.
 With Settings' **Stop at ledges** (the ledge brake) it waits at the
 takeoff instead, and steers the player's own jump the same way.
-`navigate {to: [x, z], triangle?, beyond?} | {screen: [x, y]}`
-walks to a floor point (on `triangle` where floors stand over one another:
-the one a pointer picked), then, with `beyond`, walks on into the door or
+`navigate {to: [x, z], layer?, triangle?, beyond?} | {screen: [x, y]}`
+walks to a floor point (on `layer`, the player's when not given, and on
+`triangle` where floors stand over one another: the one a pointer picked),
+then, with `beyond`, walks on into the door or
 wall the pointer showed past it (at most 90 frames, ending once 20 bring it
 no nearer; a door's map change interrupts it first), `interact {actor}` approaches an actor (or the
 nearest floor within its talk reach) and presses Confirm exactly once when
@@ -6191,6 +6225,27 @@ intent, its phase and the last outcome. Recorded sessions keep the
 intents as resolved (`assist` controls) and replay to the same state;
 nothing records pointer, gaze or headset timing. `field` lists the player
 and the actors with their screen points.
+
+Tests: xem-core's field tests (stairs lift a route to the layer above and
+a pit drops it back; a floor beyond a slide is jumped up to as high as a
+jump rises, and one higher is refused; picking along the grid meets what
+testing every triangle meets, over 2 000 rays), xem-headless's
+`click_to_move` (no route on maps 15 and 1 climbs higher than a jump
+rises; the assist jumps in Lahan and arrives, and waits under the ledge
+brake; a walk to Lahan's upper floor goes up its stairs and back down,
+round a villager standing on the ramp; a click past the south path leaves
+Lahan; a walk to a villager's feet arrives beside him) and `encounters`
+(a click on each of Babel Tower's doors climbs from map 413 to 418).
+Costs on this machine (suite profile, maps 1, 15 and 22, against master's
+planner on the same game state): planning each frame the assist walks
+1.5-4.3 us (master 10-170), a query from a new start (the leader moved
+on, a pointer resting) 12-61 us (master 25-145), a pointer's pick
+0.8-2.8 us (master 9.8-25), `Field::read` as master's (23-56 us). A map's
+first query works out what the leader reaches: 66-150 us to a goal a walk
+reaches (master 75-180), up to 330 us to one it must jump to and 350 to one
+it cannot reach (master 15-30, its route walking at the cliff), once a map;
+what it keeps takes about 100 bytes a walkmesh triangle (0.35 MB in
+Lahan) while the map lasts.
 
 Settings' Controls section lists every action and edits its inputs in
 place (`SettingChange::BindGame {context, action, binding}`, and
@@ -8183,21 +8238,17 @@ are. Android has no agent channel.
 
 - *Through a suppressed area.* From map 413's entrance from map 412
   (where map 412's door leads once the tower's gate is open), in the
-  party's gears, a walk as a player makes it climbs Babel Tower through
-  the original's doors of maps 413, 414, 415 and 416, each arming its
-  draw and each turned off by the default, to map 418, the floor past the
-  tower's platforming maps where the Self-repairing Robot resupplies (two
-  maps below the top, map 420), after 2 574 frames with no battle;
-  touching map 418's actor 20 still starts its fixed battle (formation 2,
-  3 204 frames in). The walk is the assisted route to each map's door
-  (the assist jumps where the route plans a jump), and a running jump
-  toward the door each time it stops short. Where the planner finds no
-  route to the door (it follows no jump from a
-  [slide](#how-the-areas-are-classified), which the tower's ramps take),
-  the walk is a click's there: to the floor it reaches nearest the door
-  along the walkmesh, the foot of the ramp, and on into the door. Under
-  the original the same walk meets a random battle on map 414 after 598
-  frames. Map 172's Repair
+  party's gears, a click on each map's door as a player clicks it climbs
+  Babel Tower through the original's doors of maps 413, 414, 415 and 416,
+  each arming its draw and each turned off by the default, to map 418, the
+  floor past the tower's platforming maps where the Self-repairing Robot
+  resupplies (two maps below the top, map 420), after 2 664 frames with no
+  battle; touching map 418's actor 20 still starts its fixed battle
+  (formation 2, 3 146 frames in). The walk is the assisted route to each
+  map's door: up the tower's ramps by the jumps it plans (on map 416 one
+  rises 134 units out of the pit its path drops into), the floors above
+  stopping no rise it plans. Under the original the same walk meets a
+  random battle on map 414 after 622 frames. Map 172's Repair
   Bot still starts its scripted battle under the default
   ([below](#random-battles-in-platforming-areas)).
 - *A chapter's scenes.* The game's opening from the title's New Game (the
@@ -8498,6 +8549,13 @@ the floor.
 | Fei on foot | map 22, `enter_field` | 118.25 | 240 | up 20.75 an update less 2.0 each (analysis/formats/jump-physics.md), 11 updates up and 11 down |
 | The party in its gears | map 414, `game_data.inGear` set | 131.25 | 204 | up 24.75 less 2.0 for 7 updates, one still update, then a fall from rest, 11 updates |
 
+The gear's still update is the leader's head meeting the floor above:
+there layer 1's floor (its triangle 100 thick, `field_collision_find_actor_floor`)
+lies 164 above the takeoff, and `field_actor_update_position` rolls back a
+rise into it. Clear of floors above, a gear's jump goes on rising 2 less
+each update, to 165.75 (maps 415 and 416, traced frame by frame), as
+`xem_core::field`'s `GEAR_ARC` holds it; the classifier keeps the arc
+measured here, so its gear areas' jump links are lower bounds.
 Both go straight up for two updates, then 12 units an update in the air
 with Run held and 6 without; on the floor Fei runs 16 units an update and
 walks 5, a gear 12 and 6. A jump lands nearer the higher it lands: at a
@@ -8522,8 +8580,8 @@ to the floor at 0 in seven updates and could not step back onto it;
 `xem-headless/tests/jumps.rs` repeats this. A pressed jump starts on no
 slide; a leader stuck on one (not moved) for 32 frames with Jump held jumps
 from it (`field_event_request_player_control`). The assisted movement's
-planner (`xem_core::field`) walks ledges to ledges freely; the classifier
-does not.
+planner (`xem_core::field`) keeps to these rules too ([Assisted
+movement](#assisted-movement)).
 
 **Layers.** A map has two to four collision layers; actors stand on layers
 0 to count - 2 and the top one is the camera's floor

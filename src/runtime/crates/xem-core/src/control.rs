@@ -1464,11 +1464,12 @@ impl<M: GameModule> Session<M> {
                 Ok(serde_json::to_value(field.pick(point)).expect("hit"))
             }
             "navigate" => {
-                // Walk to a floor point: `to` [x, z] in world units (on
-                // `triangle` of the player's layer when given: where floors
-                // stand over one another, the one picked), or the floor a
-                // `screen` point picks; then, with `beyond` [x, z], on into
-                // the door or wall pointed at past it.
+                // Walk to a floor point: `to` [x, z] in world units on
+                // `layer` (the player's when not given; up stairs and down
+                // through pits to another), on `triangle` when given (where
+                // floors stand over one another, the one picked), or the
+                // floor a `screen` point picks; then, with `beyond` [x, z],
+                // on into the door or wall pointed at past it.
                 if self.inspecting {
                     return Err(INSPECTING.into());
                 }
@@ -1479,15 +1480,19 @@ impl<M: GameModule> Session<M> {
                 let player = *field.player().ok_or("no player")?;
                 let hit = if let Some(to) = command.get("to").and_then(Value::as_array) {
                     let (x, z) = (to.first().and_then(Value::as_f64).ok_or("to x")? as f32, to.get(1).and_then(Value::as_f64).ok_or("to z")? as f32);
-                    let mesh = &field.layers[player.layer];
+                    let layer = match command.get("layer").and_then(Value::as_u64) {
+                        Some(layer) => usize::try_from(layer).ok().filter(|l| *l < field.actor_layers()).ok_or("no such layer")?,
+                        None => player.layer,
+                    };
+                    let mesh = &field.layers[layer];
                     let given = command.get("triangle").and_then(Value::as_u64).and_then(|t| usize::try_from(t).ok())
                         .filter(|t| *t < mesh.triangles.len());
                     let triangle = match given {
                         Some(t) => t,
-                        None => mesh.locate(x, z).ok_or("not on the player's floor")?,
+                        None => mesh.locate(x, z).ok_or("not on that layer's floor")?,
                     };
                     let point = crate::field::V3::new(x, mesh.height(triangle, x, z), z);
-                    crate::field::Hit { point, triangle, layer: player.layer, reach: field.reach(&player, triangle, point) }
+                    crate::field::Hit { point, triangle, layer, reach: field.reach(&player, layer, triangle, point) }
                 } else {
                     let screen = command.get("screen").and_then(Value::as_array).ok_or("navigate needs to [x, z] or screen [x, y]")?;
                     let point = (screen.first().and_then(Value::as_f64).ok_or("screen x")? as f32, screen.get(1).and_then(Value::as_f64).ok_or("screen y")? as f32);
@@ -1496,9 +1501,14 @@ impl<M: GameModule> Session<M> {
                 if hit.reach == crate::field::Reach::Invalid {
                     return Err("the player cannot reach that point".into());
                 }
+                // At the floor there when its layer has one (a raised floor
+                // the walk presses on toward, and jumps at), else at the
+                // floor walked to's height (a door, a wall).
                 let beyond = command.get("beyond").and_then(Value::as_array).and_then(|b| {
                     let (x, z) = (b.first()?.as_f64()? as f32, b.get(1)?.as_f64()? as f32);
-                    Some(crate::field::V3::new(x, hit.point.y, z))
+                    let mesh = &field.layers[hit.layer];
+                    let y = mesh.locate(x, z).map_or(hit.point.y, |t| mesh.height(t, x, z));
+                    Some(crate::field::V3::new(x, y, z))
                 });
                 self.start_assist(crate::assist::Intent::Walk { to: hit.point, triangle: hit.triangle, layer: hit.layer, beyond });
                 Ok(json!({ "hit": hit, "status": self.status() }))

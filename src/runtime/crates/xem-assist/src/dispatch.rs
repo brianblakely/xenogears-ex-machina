@@ -206,7 +206,7 @@ fn pinch(ui: Context, aim: Aim, field: Option<&Field>) -> Option<Out> {
         Pointed::Screen(at) => field.pick_walkable(at, FLOOR_REACH)?,
         _ => (floor_pointed(field, aim).filter(|hit| hit.reach != Reach::Invalid)?, None),
     };
-    let mut command = json!({"cmd": "navigate", "to": [hit.point.x, hit.point.z], "triangle": hit.triangle});
+    let mut command = json!({"cmd": "navigate", "to": [hit.point.x, hit.point.z], "triangle": hit.triangle, "layer": hit.layer});
     if let Some(beyond) = beyond {
         command["beyond"] = json!([beyond.x, beyond.z]);
     }
@@ -460,7 +460,7 @@ mod tests {
         use xem_core::field::{Actor, Camera, Layer, Triangle};
         let layer = Layer {
             vertices: vec![V3::new(-200.0, 0.0, 0.0), V3::new(200.0, 0.0, 0.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0)],
-            triangles: vec![Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 }, Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0 }],
+            triangles: vec![Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0, bump: 0 }, Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0, bump: 0 }],
             at: 0,
         };
         let actor = |index: usize, z: f32| Actor { index, position: V3::new(0.0, 0.0, z), layer: 0, triangle: [0; 4], flags: 0, layer_flags: 0, radius: 16, height: 60, heading: 0, heading_goal: 0 };
@@ -478,7 +478,7 @@ mod tests {
         let pinch = [Gesture::Pinch { hand: HAND }];
         let tap = [Gesture::Tap { hand: HAND }];
         let walked = dispatch(&pinch, Context::Walk, down(-80.0, 150.0), Some(&field), None);
-        assert_eq!(walked, [Out::Command { command: json!({"cmd": "navigate", "to": [-80.0, 150.0], "triangle": 0}) }]);
+        assert_eq!(walked, [Out::Command { command: json!({"cmd": "navigate", "to": [-80.0, 150.0], "triangle": 0, "layer": 0}) }]);
         // Beside the villager: a tap talks to them; away from anyone it stops.
         assert_eq!(dispatch(&tap, Context::Walk, down(10.0, 310.0), Some(&field), None), [Out::Command { command: json!({"cmd": "interact", "actor": 1}) }]);
         assert_eq!(dispatch(&tap, Context::Walk, down(-150.0, 100.0), Some(&field), None), [Out::Command { command: json!({"cmd": "assist_stop"}) }]);
@@ -529,10 +529,10 @@ mod tests {
                 V3::new(200.0, 0.0, 200.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0),
             ],
             triangles: vec![
-                Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 },
-                Triangle { v: [2, 3, 1], n: [2, -1, 0], attribute: 0 },
-                Triangle { v: [2, 4, 3], n: [-1, 3, 1], attribute: 1 },
-                Triangle { v: [4, 5, 3], n: [-1, -1, 2], attribute: 1 },
+                Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0, bump: 0 },
+                Triangle { v: [2, 3, 1], n: [2, -1, 0], attribute: 0, bump: 0 },
+                Triangle { v: [2, 4, 3], n: [-1, 3, 1], attribute: 1, bump: 0 },
+                Triangle { v: [4, 5, 3], n: [-1, -1, 2], attribute: 1, bump: 0 },
             ],
             at: 0,
         };

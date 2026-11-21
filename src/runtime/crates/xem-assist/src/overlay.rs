@@ -252,8 +252,8 @@ mod tests {
         let square = xem_core::field::Layer {
             vertices: vec![V3::new(-200.0, 0.0, 0.0), V3::new(200.0, 0.0, 0.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0)],
             triangles: vec![
-                xem_core::field::Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 },
-                xem_core::field::Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0 },
+                xem_core::field::Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0, bump: 0 },
+                xem_core::field::Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0, bump: 0 },
             ],
             at: 0,
         };

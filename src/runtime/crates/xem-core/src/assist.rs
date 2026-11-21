@@ -30,8 +30,15 @@ const RUN_OFF: f32 = 40.0;
 const ARRIVE: f32 = 10.0;
 /// A corner passed within this.
 const CORNER: f32 = 6.0;
-/// Takeoff reached within this.
-const TAKEOFF: f32 = 20.0;
+/// Takeoff reached within this: the jump starts at the floor's edge, where
+/// its flight was planned from (a walking step is 12).
+const TAKEOFF: f32 = 6.0;
+/// Under the ledge brake, the takeoff is waited at from this far: the
+/// player's own jump starts there, on the floor. Held short of it within
+/// this as long as `HELD` frames (the game stops a walk the step short of a
+/// slide it cannot walk onto), the jump starts where the leader stands.
+const BRAKE: f32 = 20.0;
+const HELD: u32 = 2;
 /// Frames without getting nearer before stepping aside, and before giving
 /// up; how much nearer counts.
 const SIDESTEP_FRAMES: u32 = 15;
@@ -47,6 +54,9 @@ const SECTOR_HYSTERESIS: i32 = 0x140;
 /// Over the landing within this, or within half a frame's flight of it,
 /// the direction is let go: the leader stops where it is and drops.
 const LAND: f32 = 3.0;
+/// How far the leader goes in the air in an update with the D-pad held
+/// (the jumps' arcs: FOOT_ARC, GEAR_ARC).
+const AIR_STEP: f32 = 12.0;
 /// Frames Jump is held at a takeoff, and waited on for the leader to leave
 /// the floor before walking up to it again; the jumps tried before giving up.
 const LEAP_FRAMES: u32 = 4;
@@ -140,20 +150,20 @@ pub struct Assist {
     landing: Option<V3>,
     leap: u32,
     jumps: u32,
-    /// Where the leader was the frame before, in the air.
+    /// Where the leader was the frame before, in the air, and how high
+    /// above the takeoff.
     #[serde(skip)]
     flown: Option<V3>,
+    #[serde(skip)]
+    risen: Option<f32>,
     /// Walking on into a door or a wall: the frames so far, the least
     /// distance left and the frames since it last shrank.
     pressed: u32,
     press_best: f32,
     press_still: u32,
-    /// The jumps its route searches found on this map (the walkmesh holds
-    /// still under them), and the jump of the route planned whole last:
-    /// until the leader lands from it, each frame plans the walk to its
-    /// takeoff alone.
-    #[serde(skip)]
-    leaps: field::Leaps,
+    /// The jump of the route planned whole last: until the leader lands
+    /// from it, each frame plans the walk to its takeoff alone (its jumps,
+    /// ways and paths kept per thread for the walkmesh: Field::route).
     #[serde(skip)]
     planned: Option<field::Jump>,
 }
@@ -169,7 +179,7 @@ impl Assist {
     pub fn new(intent: Intent, memory: &dyn crate::memory::GameMemory, ledge_brake: bool) -> Assist {
         Assist {
             intent, phase: Phase::Moving, run: false, sector: None, map: map_id(memory), best: f32::INFINITY, still: 0, frames: 0, confirm: 0, ledge_brake,
-            landing: None, leap: 0, jumps: 0, flown: None, pressed: 0, press_best: f32::INFINITY, press_still: 0, leaps: field::Leaps::default(), planned: None,
+            landing: None, leap: 0, jumps: 0, flown: None, risen: None, pressed: 0, press_best: f32::INFINITY, press_still: 0, planned: None,
         }
     }
 
@@ -193,29 +203,16 @@ impl Assist {
             return end(Outcome::Interrupted);
         }
         self.frames += 1;
-        // The game moved the leader to another layer (stairs lift it to the
-        // floor above, a drop lands it on one below): the walk goes on to
-        // that layer's floor at the goal, or ends where it has none.
-        if let Intent::Walk { to, triangle, layer, .. } = &mut self.intent
-            && *layer != player.layer
-            && !airborne
-        {
-            let Some((mesh, t)) = field.layers.get(player.layer).and_then(|mesh| Some((mesh, mesh.locate(to.x, to.z)?))) else {
-                return end(Outcome::Arrived);
-            };
-            (*triangle, *layer, to.y) = (t, player.layer, mesh.height(t, to.x, to.z));
-            self.planned = None;
-            self.best = f32::INFINITY;
-            self.still = 0;
-        }
-        let (goal, goal_triangle, reach) = match self.intent {
-            Intent::Walk { to, triangle, .. } => (to, triangle, ARRIVE),
+        // The goal and its layer (a route goes up stairs and down through
+        // pits to another layer's floor).
+        let (goal, goal_layer, goal_triangle, reach) = match self.intent {
+            Intent::Walk { to, triangle, layer, .. } => (to, layer, triangle, ARRIVE),
             Intent::Interact { actor } => {
                 let Some(target) = field.actors.get(actor).copied().flatten() else { return end(Outcome::TargetLost) };
                 if self.frames > APPROACH_FRAMES {
                     return end(Outcome::TargetLost);
                 }
-                let mesh = &field.layers[player.layer];
+                let Some(mesh) = field.layers.get(target.layer) else { return end(Outcome::TargetLost) };
                 let talk = f32::from(player.radius) + 32.0 + f32::from(target.radius);
                 // Its floor point, or the nearest one within talk reach.
                 let Some((triangle, floor)) = mesh.nearest(target.position.x, target.position.z) else { return end(Outcome::TargetLost) };
@@ -233,7 +230,7 @@ impl Assist {
                     self.confirm = 1;
                     return Step { actions: vec![GameAction::Confirm], done: None };
                 }
-                (floor, triangle, ARRIVE)
+                (floor, target.layer, triangle, ARRIVE)
             }
         };
         if self.phase == Phase::Pressing
@@ -259,6 +256,21 @@ impl Assist {
             if player.position.planar(landing) < LAND.max(flown / 2.0) || past {
                 return Step::default();
             }
+            // On only while the next stretch's slides lie below by the
+            // flight's clearance, else rising where it is (as the route's
+            // flight was planned: Field::flight).
+            let height = self.planned.map(|jump| jump.takeoff.y - player.position.y);
+            let sinking = self.risen.zip(height).map_or(0.0, |(before, now)| (before - now).max(0.0));
+            self.risen = height;
+            if let (Some(jump), Some(height)) = (self.planned, height) {
+                let line = landing.sub_planar(jump.takeoff);
+                let length = (line.x * line.x + line.z * line.z).sqrt().max(1e-3);
+                let along = player.position.sub_planar(jump.takeoff);
+                let s = (along.x * line.x + along.z * line.z) / length;
+                if field.rise_ahead(&player, &jump, s, s + AIR_STEP) > height - sinking {
+                    return Step::default();
+                }
+            }
             let toward = field::heading(landing.x - player.position.x, landing.z - player.position.z);
             return Step { actions: dpad(screen_sector(toward, &field, &mut self.sector)), done: None };
         }
@@ -267,6 +279,7 @@ impl Assist {
             self.phase = Phase::Moving;
             self.landing = None;
             self.flown = None;
+            self.risen = None;
             self.planned = None;
             self.best = f32::INFINITY;
             self.still = 0;
@@ -274,12 +287,12 @@ impl Assist {
         // A walk's goal inside another actor's keep-out (a barrel, a
         // villager, a door's trigger box): into it, as the D-pad walks (a
         // touch it runs on contact runs), and held still against it, there.
-        let into = if matches!(self.intent, Intent::Walk { .. }) {
+        let into = if matches!(self.intent, Intent::Walk { .. }) && goal_layer == player.layer {
             field.obstacles(&player).into_iter().find(|(centre, keep)| goal.planar(*centre) < *keep)
         } else {
             None
         };
-        if player.position.planar(goal) < reach {
+        if player.position.planar(goal) < reach && player.layer == goal_layer {
             if let Intent::Walk { beyond: Some(beyond), .. } = self.intent {
                 self.phase = Phase::Pressing;
                 return self.press(&field, &player, beyond);
@@ -289,20 +302,22 @@ impl Assist {
         }
         // The walk to the takeoff of the jump planned (the rest as planned),
         // else the route planned whole.
-        let walk = self.planned.and_then(|jump| {
-            let mut route = field.route_with(&player, jump.from, jump.takeoff, &mut self.leaps).filter(|r| r.jump.is_none())?;
+        let walk = self.planned.filter(|jump| jump.layer == player.layer).and_then(|jump| {
+            let approach = field.approach(&player, &jump);
+            let mut route = field.route(&player, jump.layer, jump.from, approach.unwrap_or(jump.takeoff)).filter(|r| r.jump.is_none())?;
+            route.corners.extend(approach.map(|_| jump.takeoff));
             route.corners.extend([jump.toward, goal]);
             route.length = field::path_length(player.position, &route.corners);
-            route.jump = Some(jump);
+            (route.jump, route.jumps) = (Some(jump), true);
             Some(route)
         });
-        let Some(route) = walk.or_else(|| field.route_with(&player, goal_triangle, goal, &mut self.leaps)) else { return end(Outcome::Unreachable) };
+        let Some(route) = walk.or_else(|| field.route(&player, goal_layer, goal_triangle, goal)) else { return end(Outcome::Unreachable) };
         self.planned = route.jump;
         let mut target = route.corners.iter().copied().find(|c| c.planar(player.position) > CORNER).unwrap_or(goal);
         let mut remaining = route.length;
         if let Some(jump) = route.jump {
             let to_takeoff = player.position.planar(jump.takeoff);
-            if to_takeoff < TAKEOFF {
+            if to_takeoff < TAKEOFF || (to_takeoff < BRAKE && (self.ledge_brake || self.still >= HELD)) {
                 self.landing = Some(jump.toward);
                 if self.ledge_brake {
                     self.phase = Phase::AwaitingJump;
@@ -340,7 +355,11 @@ impl Assist {
         // Progress: the route left must shrink now and then (a player
         // waiting at a takeoff makes none and needs none).
         if self.phase == Phase::Moving {
-            if route.length < self.best - PROGRESS {
+            // On a slide the game moves the leader (it has no direction
+            // there): the progress counted anew once off it.
+            if field.sliding(&player) {
+                (self.best, self.still) = (f32::INFINITY, 0);
+            } else if route.length < self.best - PROGRESS {
                 self.best = route.length;
                 self.still = 0;
             } else {
@@ -350,7 +369,7 @@ impl Assist {
                 }
                 // Held beside a walk's goal (another actor's body, a wall):
                 // as near as it gets.
-                if self.still > SIDESTEP_FRAMES && route.jump.is_none()
+                if self.still > SIDESTEP_FRAMES && route.jump.is_none() && player.layer == goal_layer
                     && player.position.planar(goal) < NEAR_ENOUGH.max(into.map_or(0.0, |(_, keep)| keep + 8.0))
                     && matches!(self.intent, Intent::Walk { .. })
                 {
@@ -363,9 +382,10 @@ impl Assist {
         } else if !self.run && remaining > RUN_ON {
             self.run = true;
         }
-        // Around an actor in the way: aim beside it, on the floor's side
+        // Around an actor in the way: aim round it, on the floor's side
         // nearer the target (not the one the walk goes into).
-        let target = detour(&field, &player, target, into.map(|(centre, _)| centre)).unwrap_or(target);
+        let round = detour(&field, &player, target, into.map(|(centre, _)| centre));
+        let target = round.map_or(target, |(point, ..)| point);
         // No progress for a while: step aside, then plan again.
         let target = if self.still > SIDESTEP_FRAMES {
             let toward = target.sub_planar(player.position);
@@ -375,7 +395,24 @@ impl Assist {
             target
         };
         let toward = field::heading(target.x - player.position.x, target.z - player.position.z);
-        let mut actions = dpad(screen_sector(toward, &field, &mut self.sector));
+        // Against the actor gone round: of the D-pad's two eighths either
+        // side of the way, the one turning away from it (a step into it the
+        // game refuses).
+        let sector = match round.filter(|(_, centre, keep)| centre.planar(player.position) < keep + 12.0) {
+            Some((_, centre, _)) => {
+                let dir = field::screen_direction(toward, field.camera.angle, field.alt_dpad);
+                let lo = dir.div_euclid(0x200);
+                let away = |sector: i32| {
+                    let h = (sector * 0x200 - (dir - toward)) as f32 / 4096.0 * std::f32::consts::TAU;
+                    h.cos() * (player.position.x - centre.x) - h.sin() * (player.position.z - centre.z)
+                };
+                let sector = (if away(lo) >= away(lo + 1) { lo } else { lo + 1 }).rem_euclid(8);
+                self.sector = Some(sector);
+                sector
+            }
+            None => screen_sector(toward, &field, &mut self.sector),
+        };
+        let mut actions = dpad(sector);
         if self.run && self.phase == Phase::Moving {
             actions.push(GameAction::Run);
         }
@@ -404,10 +441,10 @@ impl Assist {
     }
 }
 
-/// A point beside the first actor that stands within its keep-out distance
+/// A point round the first actor that stands within its keep-out distance
 /// of the straight line to `target`, on the walkable side nearer `target`
-/// (but the one standing at `into`).
-fn detour(field: &Field, player: &field::Actor, target: V3, into: Option<V3>) -> Option<V3> {
+/// (but the one standing at `into`), and that actor's centre and keep-out.
+fn detour(field: &Field, player: &field::Actor, target: V3, into: Option<V3>) -> Option<(V3, V3, f32)> {
     let from = player.position;
     let along = target.sub_planar(from);
     let length = (along.x * along.x + along.z * along.z).sqrt();
@@ -417,7 +454,8 @@ fn detour(field: &Field, player: &field::Actor, target: V3, into: Option<V3>) ->
     let (ux, uz) = (along.x / length, along.z / length);
     let mesh = field.layers.get(player.layer)?;
     let mut nearest: Option<(f32, V3, f32)> = None;
-    for (centre, keep) in field.obstacles(player).into_iter().filter(|(centre, _)| into != Some(*centre)) {
+    // (A follower is walked through: it keeps to the leader's path.)
+    for (centre, keep) in field.in_the_way(player).into_iter().filter(|(centre, _)| into != Some(*centre)) {
         let (cx, cz) = (centre.x - from.x, centre.z - from.z);
         let t = cx * ux + cz * uz;
         let off = (cx * uz - cz * ux).abs();
@@ -426,10 +464,23 @@ fn detour(field: &Field, player: &field::Actor, target: V3, into: Option<V3>) ->
         }
     }
     let (_, centre, keep) = nearest?;
-    let sides = [1.0f32, -1.0].map(|side| V3::new(centre.x + uz * side * (keep + 6.0), centre.y, centre.z - ux * side * (keep + 6.0)));
+    // On round it: a little past where the line from the leader touches the
+    // circle kept from it, on either side (from a leader already against it,
+    // an eighth of a turn on from where it stands: the game refuses a move
+    // into it), each frame anew.
+    let around = keep + 6.0;
+    let (rx, rz) = (from.x - centre.x, from.z - centre.z);
+    let out = (rx * rx + rz * rz).sqrt().max(1e-3);
+    let turn = (around / out).min(1.0).acos() + std::f32::consts::FRAC_PI_4;
+    let (cx, cz) = (rx / out, rz / out);
+    let sides = [1.0f32, -1.0].map(|side| {
+        let (c, s) = (turn.cos(), side * turn.sin());
+        V3::new(centre.x + (cx * c - cz * s) * around, centre.y, centre.z + (cx * s + cz * c) * around)
+    });
     sides.into_iter()
         .filter(|p| mesh.locate(p.x, p.z).is_some())
         .min_by(|a, b| a.planar(target).total_cmp(&b.planar(target)))
+        .map(|point| (point, centre, keep))
 }
 
 fn map_id(memory: &dyn crate::memory::GameMemory) -> u16 {

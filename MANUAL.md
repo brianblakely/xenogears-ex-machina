@@ -158,8 +158,8 @@ When entering a battle attack sequence, the controls change:
 
 Click the ground to walk there, or click a person to approach and talk.
 A ring marks where you're headed. Fei takes the way round that he can walk,
-and jumps where the way needs it: up onto higher ground, or across a gap
-he can clear. Click a door, a gate or the end of a path to walk up to it
+up stairs to an upper floor and back down, and jumps where the way needs
+it: up onto higher ground, or across a gap he can clear. Click a door, a gate or the end of a path to walk up to it
 and on through it. Choose menu entries and battle targets by clicking them.
 Anywhere else, left-click confirms; right-click cancels. Taking over with a
 movement key or stick cancels an automatic walking route.

@@ -352,7 +352,7 @@ fn navigate_walks_to_a_floor_point_and_the_players_direction_replaces_it() {
     // The farthest walkable triangle's centre.
     let goal = (0..mesh.triangles.len())
         .map(|t| mesh.centroid(t))
-        .filter(|c| field.reach(&player, mesh.locate(c.x, c.z).unwrap(), *c) == Reach::Walk)
+        .filter(|c| field.reach(&player, player.layer, mesh.locate(c.x, c.z).unwrap(), *c) == Reach::Walk)
         .max_by(|a, b| a.planar(player.position).total_cmp(&b.planar(player.position)))
         .unwrap();
     eprintln!("from {:?} to {goal:?} ({:.0} away)", player.position, goal.planar(player.position));
@@ -585,8 +585,8 @@ fn console_reset_reboots_the_original_game_and_keeps_memory_cards() {
     }
 }
 
-/// Leave Lahan through its south exit, then walk until the original world
-/// map rolls an encounter. Query input exactly as the desktop does through
+/// Leave Lahan through its south exit, then walk back and forth until the
+/// original world map rolls an encounter. Query input exactly as the desktop does through
 /// every dispatcher wait, overlay load and battle initialization frame.
 #[test]
 fn control_queries_survive_a_world_map_encounter() {
@@ -600,10 +600,6 @@ fn control_queries_survive_a_world_map_encounter() {
         json!({"cmd":"frames", "count":400}),
         json!({"cmd":"navigate", "to":[-300,-1800]}),
         json!({"cmd":"frames", "count":600}),
-        json!({"cmd":"press", "buttons":["right","down","cross"], "frames":100}),
-        json!({"cmd":"frames", "count":100}),
-        json!({"cmd":"navigate", "to":[-300,-1800]}),
-        json!({"cmd":"frames", "count":500}),
         json!({"cmd":"press", "buttons":["down","cross"], "frames":250}),
         json!({"cmd":"frames", "count":550}),
     ] {
@@ -612,10 +608,16 @@ fn control_queries_survive_a_world_map_encounter() {
     assert_matches!(session.runtime.context(), xem_core::context::Context::WorldMap { movement: 1, .. });
     let bindings = xem_settings::GameBindings::default();
     let mut player = xem_settings::player::PlayerInput::default();
-    player.key(&bindings, "KeyS", true);
     let mut loading = 0;
     let mut battle = false;
-    for _ in 0..600 {
+    // Back and forth (the world map's encounter timers count its steps: a
+    // walk held against the coast takes none).
+    for frame in 0..3000 {
+        if session.runtime.services().mode == Some(3) && frame % 120 == 0 {
+            let south = frame % 240 == 0;
+            player.key(&bindings, "KeyS", south);
+            player.key(&bindings, "KeyW", !south);
+        }
         if session.runtime.services().mode == Some(2) {
             player.clear();
             if session.execute(&json!({"cmd":"inspect", "path":"mode_next_mode"})) == 2 {

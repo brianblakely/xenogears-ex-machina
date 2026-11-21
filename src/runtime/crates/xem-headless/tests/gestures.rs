@@ -297,7 +297,7 @@ fn pinch_walks_where_the_gaze_is_and_pause_holds_the_route() {
     let field = player.field();
     let mesh = &field.layers[0];
     let ground = (0..mesh.triangles.len())
-        .filter_map(|t| field.camera.project(mesh.centroid(t)).filter(|_| field.reach(field.player().unwrap(), t, mesh.centroid(t)) == xem_core::field::Reach::Walk))
+        .filter_map(|t| field.camera.project(mesh.centroid(t)).filter(|_| field.reach(field.player().unwrap(), 0, t, mesh.centroid(t)) == xem_core::field::Reach::Walk))
         .filter(|p| field.actor_at(*p, 30.0).is_none() && field.pick(*p).is_some())
         .max_by(|a, b| a.1.total_cmp(&b.1))
         .expect("open ground");
@@ -331,7 +331,7 @@ fn through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none
     let mesh = &field.layers[me.layer];
     let goal = (0..mesh.triangles.len())
         .map(|t| (t, mesh.centroid(t)))
-        .filter(|(t, c)| field.reach(&me, *t, *c) == xem_core::field::Reach::Walk && on_table(&space, *c, 0.05))
+        .filter(|(t, c)| field.reach(&me, me.layer, *t, *c) == xem_core::field::Reach::Walk && on_table(&space, *c, 0.05))
         .filter(|(_, c)| (60.0..220.0).contains(&c.planar(me.position)))
         .filter(|(_, c)| field.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
         .max_by(|a, b| a.1.planar(me.position).total_cmp(&b.1.planar(me.position)))
@@ -399,7 +399,7 @@ fn pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there()
     // picture: the one the game's camera shows farthest from there.
     let (goal, at, own) = (0..mesh.triangles.len())
         .map(|t| (t, mesh.centroid(t)))
-        .filter(|(t, c)| field.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+        .filter(|(t, c)| field.reach(&me, me.layer, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
         .filter(|(_, c)| field.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
         .filter_map(|(_, c)| {
             let at = shown.camera.project(c).filter(|p| (16.0..304.0).contains(&p.0) && (16.0..208.0).contains(&p.1))?;

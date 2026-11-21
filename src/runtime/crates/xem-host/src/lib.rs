@@ -2590,7 +2590,7 @@ mod tests {
             let mesh = &shown.layers[me.layer];
             (0..mesh.triangles.len())
                 .map(|t| (t, mesh.centroid(t)))
-                .filter(|(t, c)| shown.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+                .filter(|(t, c)| shown.reach(&me, me.layer, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
                 .filter(|(_, c)| shown.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
                 .filter_map(|(_, c)| {
                     let at = shown.camera.project(c).filter(|p| (16.0..304.0).contains(&p.0) && (16.0..208.0).contains(&p.1))?;
@@ -2734,7 +2734,7 @@ mod tests {
         let mesh = &shown.layers[me.layer];
         let (goal, at) = (0..mesh.triangles.len())
             .map(|t| (t, mesh.centroid(t)))
-            .filter(|(t, c)| shown.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+            .filter(|(t, c)| shown.reach(&me, me.layer, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
             .filter(|(_, c)| shown.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
             .find_map(|(_, c)| {
                 let at = shown.camera.project(c).filter(on_picture)?;
