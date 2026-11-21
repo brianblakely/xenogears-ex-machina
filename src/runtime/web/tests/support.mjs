@@ -63,9 +63,10 @@ export function buildFixtures() {
  *  Vulkan driver for them (scripts/suite.py), and without those names
  *  Chromium keeps its own software renderer. For a test that holds only at
  *  the pace that renderer presents a session's frames at. */
-export async function start({ args = [], software = false, fixtures: withFixtures = false, context: contextOptions = {}, initScripts = [] } = {}) {
+export async function start({ args = [], software = false, fixtures: withFixtures = false, mounts: more = {},
+  context: contextOptions = {}, initScripts = [] } = {}) {
   if (!existsSync(join(WEB, 'index.html'))) throw new Error(`${WEB} is missing: run src/runtime/web/build.py`);
-  const mounts = { '/': WEB };
+  const mounts = { '/': WEB, ...more };
   if (withFixtures) mounts['/fixtures/'] = buildFixtures();
   const server = await serve(mounts);
   const env = Object.fromEntries(Object.entries(process.env)
