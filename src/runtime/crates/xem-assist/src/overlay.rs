@@ -9,7 +9,7 @@
 use crate::dispatch::{Out, Pointed};
 use xem_core::action::GameAction;
 use xem_core::context::Context;
-use xem_core::field::{Field, Reach, V3};
+use xem_core::field::{Camera, Field, Reach, V3};
 use xem_core::menu::Targets;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -71,8 +71,10 @@ impl QuantityKey {
     }
 }
 
-/// The floor cursor's radius (world units) and the screen cursor's (pixels).
+/// The floor cursor's radius (world units), the destination's, and the
+/// screen cursor's (pixels).
 const FLOOR_RADIUS: f32 = 14.0;
+const DESTINATION_RADIUS: f32 = FLOOR_RADIUS * 1.2;
 const CURSOR_RADIUS: f32 = 9.0;
 
 fn flat(kind: Kind, centre: (f32, f32), half: (f32, f32)) -> Mark {
@@ -80,14 +82,22 @@ fn flat(kind: Kind, centre: (f32, f32), half: (f32, f32)) -> Mark {
 }
 
 /// A mark lying on the floor at `point`: on a diorama's floor (`diorama`),
-/// else as the field camera shows it.
-fn floor(kind: Kind, field: &Field, point: V3, radius: f32, diorama: bool) -> Option<Mark> {
+/// else as `camera` shows it.
+fn floor(kind: Kind, camera: &Camera, point: V3, radius: f32, diorama: bool) -> Option<Mark> {
     if diorama {
         return Some(Mark { kind, place: Place::Floor { point, radius } });
     }
-    let centre = field.camera.project(point)?;
-    let along = |dx: f32, dz: f32| field.camera.project(V3::new(point.x + dx, point.y, point.z + dz)).map(|p| (p.0 - centre.0, p.1 - centre.1));
+    let centre = camera.project(point)?;
+    let along = |dx: f32, dz: f32| camera.project(V3::new(point.x + dx, point.y, point.z + dz)).map(|p| (p.0 - centre.0, p.1 - centre.1));
     Some(Mark { kind, place: Place::Screen { centre, x: along(radius, 0.0)?, y: along(0.0, -radius)? } })
+}
+
+/// The committed destination's mark lying on the floor at `point`, as
+/// `camera` shows it ([`shown`]: the camera the picture presented was drawn
+/// with, seen from its viewpoint), for hosts that place it as they present
+/// each picture.
+pub fn destination(camera: &Camera, point: V3) -> Option<Mark> {
+    floor(Kind::Destination, camera, point, DESTINATION_RADIUS, false)
 }
 
 /// The marks for this frame: the cursor where `aim` points, the
@@ -105,18 +115,18 @@ pub fn marks(ui: Context, aim: Option<Pointed>, field: Option<&Field>, destinati
         marks.push(flat(Kind::Region, ((x0 + x1) / 2.0, (y0 + y1) / 2.0), ((x1 - x0) / 2.0 + pad, (y1 - y0) / 2.0 + pad)));
     }
     if let (Some(field), Some(point)) = (field, destination) {
-        marks.extend(floor(Kind::Destination, field, point, FLOOR_RADIUS * 1.2, diorama));
+        marks.extend(floor(Kind::Destination, &field.camera, point, DESTINATION_RADIUS, diorama));
     }
     let cursor = |at: (f32, f32)| flat(Kind::Cursor, at, (CURSOR_RADIUS, CURSOR_RADIUS));
     match (ui, aim) {
         (_, None) | (Context::None, _) => {}
         (Context::Walk, Some(Pointed::Screen(at))) => {
-            let on_floor = field.and_then(|f| f.pick(at).and_then(|hit| floor(Kind::Floor(hit.reach), f, hit.point, FLOOR_RADIUS, diorama)));
+            let on_floor = field.and_then(|f| f.pick(at).and_then(|hit| floor(Kind::Floor(hit.reach), &f.camera, hit.point, FLOOR_RADIUS, diorama)));
             marks.push(on_floor.unwrap_or_else(|| cursor(at)));
         }
         (Context::Walk, Some(Pointed::World(ray))) => {
             let hit = field.and_then(|f| f.pick_ray(ray.origin, ray.direction, ray.within).map(|hit| (f, hit)));
-            marks.extend(hit.and_then(|(f, hit)| floor(Kind::Floor(hit.reach), f, hit.point, FLOOR_RADIUS, true)));
+            marks.extend(hit.and_then(|(f, hit)| floor(Kind::Floor(hit.reach), &f.camera, hit.point, FLOOR_RADIUS, true)));
         }
         // A battle target the ray points at: the cursor lying on the floor
         // at its feet, as wide as the target's frame.
@@ -133,16 +143,28 @@ pub fn marks(ui: Context, aim: Option<Pointed>, field: Option<&Field>, destinati
     marks
 }
 
-/// The field as a picture shows it: its camera seen from the picture's
-/// viewpoint (`GameView::viewpoint`) when that is not the game camera's
-/// own (the camera pulled back), so that a pinch, a tap or a click picks
-/// the floor and the actors the picture shows where it points, and floor
-/// marks lie where it shows that floor.
-pub fn seen(mut field: Field, viewpoint: Option<&xem_render::ps1::Viewpoint>) -> Field {
-    if let Some(v) = viewpoint {
-        field.camera = field.camera.seen(v.rows, v.offset, v.h, v.centre);
-    }
+/// The field as a picture shows it ([`shown`]), so that a pinch, a tap or a
+/// click picks the floor and the actors the picture shows where it points,
+/// and floor marks lie where it shows that floor.
+pub fn seen(mut field: Field, drawn: Option<xem_render::ps1::DrawnCamera>, viewpoint: Option<&xem_render::ps1::Viewpoint>) -> Field {
+    field.camera = shown(field.camera, drawn, viewpoint);
     field
+}
+
+/// The field camera as a picture shows the world: the camera the picture
+/// was drawn with (`GameView::drawn_camera`, as the port recorded it with
+/// the frame, a game frame or more behind the one in memory while the
+/// camera moves; between two while interpolation moves the scene), seen
+/// from the picture's viewpoint (`GameView::viewpoint`) when that is not
+/// the game camera's own (the camera pulled back).
+pub fn shown(mut camera: Camera, drawn: Option<xem_render::ps1::DrawnCamera>, viewpoint: Option<&xem_render::ps1::Viewpoint>) -> Camera {
+    if let Some(drawn) = drawn {
+        (camera.m, camera.t) = (drawn.m, drawn.t);
+    }
+    match viewpoint {
+        Some(v) => camera.seen(v.rows, v.offset, v.h, v.centre),
+        None => camera,
+    }
 }
 
 /// The pointer's keys (left of the screen) for hands without the thumb's
@@ -233,6 +255,7 @@ mod tests {
                 xem_core::field::Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 },
                 xem_core::field::Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0 },
             ],
+            at: 0,
         };
         let actor = |index: usize, z: f32| xem_core::field::Actor {
             index, position: V3::new(0.0, 0.0, z), layer: 0, triangle: [0; 4], flags: 0, layer_flags: 0, radius: 16, height: 60, heading: 0, heading_goal: 0,

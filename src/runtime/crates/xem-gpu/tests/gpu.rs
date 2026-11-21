@@ -1042,7 +1042,7 @@ fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_poi
     let mut ram = Ram::new();
     let mut gpu = fresh();
     gpu.set_trace(true);
-    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None }));
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None, margin: 0 }));
     assert_eq!(gpu.reveal_around(), 2, "the port reads the bits");
     let _ = gpu.take_trace();
     // A camera turned 30 degrees about y, its rows in 4.12 at half scale (a
@@ -1108,7 +1108,7 @@ fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other
     use xem_gpu::{CameraMode, Combatant, Projection, Reveals, Stage, TraceOp};
     let mut gpu = fresh();
     gpu.set_trace(true);
-    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None }));
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None, margin: 0 }));
     let _ = gpu.take_trace();
     let entry = |class: u8, sz: u16, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 164), h: 512, owner, view };
     let axes = |records: &mut Vec<Projection>| {
@@ -1364,4 +1364,18 @@ fn a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits() {
     assert_eq!(copied(&mut gpu, xy(0, 256)), 2, "elsewhere: the copy and its destination's pixels");
     gpu.write_gp0(0xE600_0001);
     assert_eq!(copied(&mut gpu, 0), 2, "onto itself, setting the mask bit");
+}
+
+#[test]
+fn the_reveals_margin_is_the_ports_word_while_culled_faces_are_wanted() {
+    use xem_gpu::Reveals;
+    let wanted = Reveals { reach: [32, 32], margin: 286, ..Reveals::default() };
+    let mut gpu = fresh();
+    gpu.set_reveals(Some(wanted));
+    assert_eq!(gpu.reveal_margin(), 0, "none without a trace");
+    gpu.set_trace(true);
+    gpu.set_reveals(Some(wanted));
+    assert_eq!(gpu.reveal_margin(), 286);
+    gpu.set_reveals(Some(Reveals { reach: [0, 0], ..wanted }));
+    assert_eq!(gpu.reveal_margin(), 0, "none while no culled face is wanted");
 }

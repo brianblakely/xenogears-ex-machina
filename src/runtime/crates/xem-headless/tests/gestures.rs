@@ -100,7 +100,7 @@ impl Player {
     fn diorama(&mut self) -> xem_render::ps1::DioramaSpace {
         let device = self.session.runtime.services().gpu.device_mut();
         device.set_trace(true);
-        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE, viewer: None }));
+        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE, viewer: None, margin: 0 }));
         // The port takes the bits with the frame after they change.
         let mut camera = None;
         for _ in 0..4 {
@@ -191,7 +191,7 @@ impl Player {
         self.time += 1.0 / 60.0;
         let ui = self.ui.unwrap_or_else(|| self.session.runtime.context());
         let field = (self.session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(self.session.runtime.memory())).flatten()
-            .map(|f| xem_assist::overlay::seen(f, self.viewpoint.as_ref()));
+            .map(|f| xem_assist::overlay::seen(f, None, self.viewpoint.as_ref()));
         let targets = self.session.runtime.targets();
         let effects = self.headset.update(&input, &self.screen, ui, field.as_ref(), targets.as_ref());
         self.input.touch = effects.held.clone();
@@ -391,7 +391,7 @@ fn pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there()
     let Some(mut player) = walking(30) else { return };
     let viewpoint = player.pulled_back(250);
     let field = player.field();
-    let shown = seen(field.clone(), Some(&viewpoint));
+    let shown = seen(field.clone(), None, Some(&viewpoint));
     let me = *field.player().unwrap();
     let mesh = &field.layers[me.layer];
     let apart = |a: (f32, f32), b: (f32, f32)| ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();

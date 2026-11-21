@@ -85,8 +85,19 @@ impl GameBinding {
         Ok(())
     }
 
-    fn inputs(&self) -> impl Iterator<Item = &str> {
+    pub fn inputs(&self) -> impl Iterator<Item = &str> {
         self.keyboard.iter().chain(&self.gamepad).chain(&self.mouse).map(String::as_str)
+    }
+
+    /// The list of `input`'s kind: keys, gamepad inputs or mouse buttons.
+    fn list_mut(&mut self, input: &str) -> Option<&mut Vec<String>> {
+        if GAMEPAD_INPUTS.contains(&input) {
+            Some(&mut self.gamepad)
+        } else if MOUSE_INPUTS.contains(&input) {
+            Some(&mut self.mouse)
+        } else {
+            crate::controls::keyboard_code(input).then_some(&mut self.keyboard)
+        }
     }
 }
 
@@ -165,6 +176,38 @@ impl GameBindings {
             }
         }
         Ok(())
+    }
+
+    /// `input` (a key's `KeyboardEvent.code`, a gamepad input or a mouse
+    /// button, by name) added to `action`'s inputs in `context`, the oldest
+    /// of its kind giving way to a fifth; the actions there that play
+    /// another button lose it, as one input holds one button.
+    pub fn with_input(&self, context: InputContext, action: GameAction, input: &str) -> Result<Self, String> {
+        let mut next = self.clone();
+        let actions = next.context_mut(context);
+        let list = actions.entry(action).or_default().list_mut(input)
+            .ok_or_else(|| format!("{input} is not a key, gamepad input or mouse button"))?;
+        if !list.iter().any(|held| held == input) {
+            if list.len() == 4 {
+                list.remove(0);
+            }
+            list.push(input.to_owned());
+        }
+        for (_, binding) in actions.iter_mut().filter(|(other, _)| **other != action && other.button() != action.button()) {
+            if let Some(list) = binding.list_mut(input) {
+                list.retain(|held| held != input);
+            }
+        }
+        Ok(next)
+    }
+
+    /// `input` taken from `action`'s inputs in `context`.
+    pub fn without_input(&self, context: InputContext, action: GameAction, input: &str) -> Self {
+        let mut next = self.clone();
+        if let Some(list) = next.context_mut(context).get_mut(&action).and_then(|binding| binding.list_mut(input)) {
+            list.retain(|held| held != input);
+        }
+        next
     }
 
     /// Every input either context names.
@@ -246,6 +289,8 @@ impl Held {
 /// Mouse milliseconds of camera turn per pixel moved, and the most it banks.
 const TURN_MS_PER_PIXEL: f64 = 4.0;
 const MAX_TURN_MS: f64 = 400.0;
+/// Milliseconds of camera turn per notch scrolled sideways.
+const TURN_MS_PER_NOTCH: f64 = 150.0;
 /// Milliseconds without motion after which the mouse has come to rest.
 const REST_MS: f64 = 100.0;
 
@@ -293,6 +338,12 @@ impl Mouse {
         self.drift = drift.clamp(-deadzone, deadzone);
         let dx = (drift - self.drift) * settings.mouse_scale();
         self.turn = (self.turn + f64::from(dx) * TURN_MS_PER_PIXEL).clamp(-MAX_TURN_MS, MAX_TURN_MS);
+    }
+
+    /// The wheel scrolled sideways, `notches` (positive to the right):
+    /// the field camera turns that way, whatever the mouse camera setting.
+    pub fn scrolled(&mut self, notches: f32) {
+        self.turn = (self.turn + f64::from(notches) * TURN_MS_PER_NOTCH).clamp(-MAX_TURN_MS, MAX_TURN_MS);
     }
 
     pub fn clear(&mut self) {
@@ -384,6 +435,13 @@ mod tests {
         assert_eq!(mouse.turn(41.0), None);
         mouse.moved(-0.5, &settings);
         assert_eq!(mouse.turn(42.0), Some(GameAction::CameraLeft));
+        // A notch scrolled sideways turns 150 ms that way.
+        let mut mouse = Mouse::default();
+        assert_eq!(mouse.turn(0.0), None);
+        mouse.scrolled(-1.0);
+        assert_eq!(mouse.turn(10.0), Some(GameAction::CameraLeft));
+        assert_eq!(mouse.turn(155.0), Some(GameAction::CameraLeft), "5 ms of it left at 155");
+        assert_eq!(mouse.turn(170.0), None, "spent");
     }
 
     #[test]

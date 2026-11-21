@@ -253,6 +253,11 @@ fn sample_nearest(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
 }
 
 // Bilinear filtering of the decoded texels, transparent texels excluded.
+// Semi-transparent as the nearest texel; where that one is transparent and
+// its neighbours still cover the fragment, as the heaviest of them, whose
+// colour it shows: a transparent texel's own bit (0) drew the black,
+// semi-transparent edge texels of an additive quad around it opaque, as
+// black curved corners across field 684's rain at any scale (issue #100).
 fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
     let base = uv - vec2<f32>(0.5);
     let cell = vec2<i32>(floor(base));
@@ -260,6 +265,8 @@ fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
     var color = vec3<f32>(0.0);
     var weight = 0.0;
     var total = 0.0;
+    var heaviest = 0.0;
+    var heaviest_semi = false;
     for (var k = 0; k < 4; k++) {
         let d = vec2<i32>(k & 1, k >> 1);
         let t = texel(mode, inside(limits, mode.w, cell + d));
@@ -268,10 +275,14 @@ fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
         if t != 0u {
             color += rgb5(t) * w;
             weight += w;
+            if w > heaviest {
+                heaviest = w;
+                heaviest_semi = (t & 0x8000u) != 0u;
+            }
         }
     }
     let nearest = texel(mode, inside(limits, mode.w, vec2<i32>(floor(uv + vec2<f32>(0.001)))));
-    var out = Sample(vec3<f32>(0.0), 0.0, (nearest & 0x8000u) != 0u);
+    var out = Sample(vec3<f32>(0.0), 0.0, select((nearest & 0x8000u) != 0u, heaviest_semi, nearest == 0u));
     if weight > 0.0 {
         out.color = color / weight;
         out.coverage = weight / total;

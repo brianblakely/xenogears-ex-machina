@@ -196,6 +196,11 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
     assert!(!version.is_empty() && version == xem_ui::VERSION.trim_start_matches('v'), "{version}");
     element(&ui, "Version", AccessibleRole::Text);
     element(&ui, &version, AccessibleRole::Text);
+    // English (Perfect Works) names the Perfect Works Build release its text
+    // is from, as the locale's README does.
+    let readme = include_str!("../../xem-core/locale/en-x-pw/README.md");
+    let release = readme.split("The text is from Perfect Works Build ").nth(1).and_then(|rest| rest.split_whitespace().next());
+    element(&ui, &format!("Perfect Works Build {}", release.expect("the README names the release")), AccessibleRole::Text);
 
     // (c) Pointer input on the panel goes through the settings service.
     section(&mut ui, "Graphics", 1);
@@ -342,7 +347,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         xem_settings::FastForwardRate::Uncapped
     );
     section(&mut ui, "Controls", 2);
-    let inversion = element(&ui, "Invert LT/RT chords", AccessibleRole::Switch);
+    let inversion = element(&ui, "LT and RT rewind and fast-forward", AccessibleRole::Switch);
     let at = inversion.absolute_position();
     let size = inversion.size();
     click(
@@ -398,19 +403,14 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "a later widget update cannot repeat the release"
     );
     section(&mut ui, "Shortcuts", 3);
-    press(&ui, &element(&ui, "Save state", AccessibleRole::ListItem));
+    press(&ui, &element(&ui, "Bind Save state", AccessibleRole::Button));
     ui.update().unwrap();
-    let editor = element(&ui, "Keyboard binding", AccessibleRole::TextInput);
-    let at = editor.absolute_position();
-    let size = editor.size();
-    click(
-        &ui,
-        LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0),
-    );
     assert!(
-        ui.text_editor_focused(),
-        "the host can distinguish binding entry from app shortcuts"
+        ui.listening() && !ui.text_editor_focused(),
+        "the host can tell a binding listening from app shortcuts (and shows no on-screen keyboard)"
     );
+    assert!(ui.cancel_dialog(), "the host's Escape stops it listening");
+    assert!(!ui.listening());
 
     // A narrow window shows the sections as a strip of tabs above the same form.
     section(&mut ui, "Time", 4);
@@ -1348,6 +1348,9 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     section(&mut ui, "Controls", 2);
     press(&ui, &element(&ui, "Run by default", AccessibleRole::Switch));
     assert!(settings.borrow().settings().run_by_default);
+    // The whole list in view: Run's row reads Walk.
+    ui.resize((640, 2000), 1.0);
+    ui.update().unwrap();
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Walk (held)").next().is_some());
     let exported = settings.borrow().export();
     let mut reloaded = SettingsService::with_defaults(MemoryStore::default());
@@ -1385,22 +1388,29 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.resize((640, 2000), 1.0);
     ui.update().unwrap();
     assert!(listed(&ui, "R3") && listed(&ui, "Arrows") && !listed(&ui, "Underhand grab"), "out of the headset, the flat hosts' again");
+    // A binding stopped while it listens binds nothing: the host's Escape
+    // (a key held meanwhile stays taken until let go), or its field pressed
+    // again.
     let saved = settings.borrow().settings().clone();
-    press(&ui, &element(&ui, "Up", AccessibleRole::ListItem));
-    ui.update().unwrap();
-    ui.component().set_game_keys("KeyQ".into());
-    let cancel = element(&ui, "Cancel", AccessibleRole::Button);
-    let clear = element(&ui, "Clear", AccessibleRole::Button);
-    assert!(cancel.absolute_position().x < clear.absolute_position().x);
-    press(&ui, &cancel);
-    assert_eq!(ui.component().get_selected_game_action(), -1);
-    assert_eq!(*settings.borrow().settings(), saved, "Cancel discards unsaved edits");
+    press(&ui, &element(&ui, "Bind Up", AccessibleRole::Button));
+    assert!(ui.listening());
+    assert!(ui.listen_key("KeyQ", true));
+    assert!(ui.cancel_dialog() && !ui.listening());
+    assert!(ui.listen_key("KeyQ", false), "Q's release is the binding's");
+    assert!(!ui.listen_key("KeyQ", false) && !ui.listen_key("KeyQ", true), "and no more once let go");
+    // Pressed again (by its default action, as Return or a gamepad's South
+    // press it; a mouse's click there would bind that button), it stops.
+    let up = element(&ui, "Bind Up", AccessibleRole::Button);
+    up.invoke_accessible_default_action();
+    assert!(ui.listening());
+    up.invoke_accessible_default_action();
+    assert!(!ui.listening(), "pressed again, it stops");
+    assert_eq!(*settings.borrow().settings(), saved, "nothing bound");
     section(&mut ui, "Shortcuts", 3);
-    press(&ui, &element(&ui, "Save state", AccessibleRole::ListItem));
-    ui.update().unwrap();
-    ui.component().set_keyboard_binding("KeyQ".into());
-    press(&ui, &element(&ui, "Cancel", AccessibleRole::Button));
-    assert_eq!(ui.component().get_selected_action(), -1);
+    press(&ui, &element(&ui, "Bind Save state", AccessibleRole::Button));
+    assert!(ui.listening());
+    section(&mut ui, "Controls", 2);
+    assert!(!ui.listening(), "another section stops it");
     assert_eq!(*settings.borrow().settings(), saved);
     section(&mut ui, "Graphics", 1);
     for removed in ["Cull back faces", "Cull at the screen's edges", "How the game is drawn and shown."] {
@@ -1656,22 +1666,115 @@ fn shortcuts_list_toggle_first_person_view_with_its_key_and_chord_and_rebind_it_
     let mut ui = SettingsUi::new(shared, settings.clone(), (640, 2000), 1.0).unwrap();
     ui.update().unwrap();
     section(&mut ui, "Shortcuts", 3);
-    let row = |ui: &SettingsUi| ui.component().get_bindings().iter().find(|row| row.name == "Toggle first-person view").expect("listed");
-    let listed = row(&ui);
-    assert_eq!((listed.keyboard.as_str(), listed.gamepad.as_str()), ("V", "Back+R1"), "its key and chord on the row");
-    press(&ui, &element(&ui, "Toggle first-person view", AccessibleRole::ListItem));
-    ui.update().unwrap();
-    assert_eq!((ui.component().get_keyboard_binding().as_str(), ui.component().get_gamepad_binding().as_str()), ("KeyV", "Back+R1"), "in its editors");
-    // Rebound through the settings service, as every shortcut is; a chord
-    // another shortcut holds is refused and changes nothing.
-    let selected = ui.component().get_selected_action();
-    ui.component().invoke_binding_edited(selected, "KeyG".into(), "Back+R1".into());
+    let tokens = |ui: &SettingsUi, name: &str| -> Vec<String> {
+        let row = ui.component().get_bindings().iter().find(|row| row.name == name).expect("listed");
+        row.tokens.iter().map(|token| token.to_string()).collect()
+    };
+    assert_eq!(tokens(&ui, "Toggle first-person view"), ["V", "Back+R1"], "its key and chord on the row");
+    // Rebound through the settings service, as every shortcut is: its
+    // field listens, and takes the key pressed.
+    press(&ui, &element(&ui, "Bind Toggle first-person view", AccessibleRole::Button));
+    assert!(ui.listen_key("KeyG", true) && ui.listen_key("KeyG", false));
     ui.update().unwrap();
     assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("KeyG", "Back+R1"));
-    assert_eq!(row(&ui).keyboard.as_str(), "G");
-    ui.component().invoke_binding_edited(selected, "KeyG".into(), "Back+South".into());
+    assert_eq!(tokens(&ui, "Toggle first-person view"), ["G", "Back+R1"]);
+    // A chord another shortcut holds moves here, and the note says so.
+    press(&ui, &element(&ui, "Bind Toggle first-person view", AccessibleRole::Button));
+    assert!(ui.listen_key("F5", true) && ui.listen_key("F5", false));
     ui.update().unwrap();
-    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("KeyG", "Back+R1"), "Save state's chord stays Save state's");
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::ToggleFirstPerson], AppBinding::parse("F5", "Back+R1"));
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("", "Back+South"));
+    assert_eq!(ui.component().get_binding_note().as_str(), "F5 no longer does Save state.");
+    element(&ui, "F5 no longer does Save state.", AccessibleRole::Text);
+}
+
+#[test]
+fn binding_fields_listen_for_keys_mouse_buttons_and_chords_and_tokens_remove_them() {
+    use xem_settings::{AppAction, AppBinding, GameAction, GameBinding};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 2400), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Controls", 2);
+    let play = |action| settings.borrow().settings().game_bindings.play[&action].clone();
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    // Each input a token: keys as keycaps, gamepad inputs and mouse buttons in words.
+    for token in ["Up: W", "Up: Up", "Up: Left stick up", "Confirm, talk: E", "Confirm, talk: \\", "Confirm, talk: South", "Confirm, talk: Click", "Run (held): Left Shift"] {
+        assert!(shown(&ui, token), "{token}");
+    }
+
+    // A key: the field listens (saying so), and takes the key once let go.
+    let field = element(&ui, "Bind Jump", AccessibleRole::Button);
+    press(&ui, &field);
+    ui.update().unwrap();
+    assert!(ui.listening());
+    assert!(field.accessible_value().is_some_and(|value| value.starts_with("Press an input")), "{:?}", field.accessible_value());
+    assert!(shown(&ui, "Press a key, a gamepad button or a stick direction, or click the field with a mouse button. Esc cancels."));
+    assert!(ui.listen_key("F1", true) && ui.listen_key("F1", false), "a key no binding names is taken and ignored");
+    assert!(ui.listening());
+    assert!(ui.listen_key("KeyJ", true) && ui.listening(), "held, it waits");
+    assert!(ui.listen_key("KeyJ", false) && !ui.listening());
+    ui.update().unwrap();
+    assert_eq!(play(GameAction::Jump), GameBinding::parse("Space KeyJ", "North", ""));
+    assert!(shown(&ui, "Jump: J"));
+
+    // Another action's key moves here; the note says which lost it.
+    press(&ui, &element(&ui, "Bind Jump", AccessibleRole::Button));
+    assert!(ui.listen_key("KeyE", true) && ui.listen_key("KeyE", false));
+    ui.update().unwrap();
+    assert_eq!(play(GameAction::Jump).keyboard, ["Space", "KeyJ", "KeyE"]);
+    assert_eq!(play(GameAction::Confirm).keyboard, ["Backslash"]);
+    assert!(shown(&ui, "E no longer plays Confirm, talk."));
+
+    // A mouse's button pressed on the listening field binds it; a
+    // finger's tap there stops the listening instead.
+    let field = element(&ui, "Bind Jump", AccessibleRole::Button);
+    press(&ui, &field);
+    let (at, size) = (field.absolute_position(), field.size());
+    let middle = LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0);
+    ui.dispatch(WindowEvent::PointerPressed { position: middle, button: PointerEventButton::Right });
+    ui.dispatch(WindowEvent::PointerReleased { position: middle, button: PointerEventButton::Right });
+    ui.update().unwrap();
+    assert!(!ui.listening());
+    assert_eq!(play(GameAction::Jump).mouse, ["MouseRight"]);
+    assert_eq!(play(GameAction::Cancel).mouse, Vec::<String>::new(), "Cancel's right-click moved");
+    ui.set_pointer_touch(true);
+    let field = element(&ui, "Bind Jump", AccessibleRole::Button);
+    press(&ui, &field);
+    assert!(ui.listening());
+    press(&ui, &field);
+    assert!(!ui.listening(), "the tap stopped it");
+    assert_eq!(play(GameAction::Jump).mouse, ["MouseRight"], "and bound nothing");
+    ui.set_pointer_touch(false);
+
+    // A token's × removes its input; so does its default action, and
+    // Delete on it with the focus there (the focus then on its field).
+    let token = element(&ui, "Jump: Right-click", AccessibleRole::Button);
+    let (at, size) = (token.absolute_position(), token.size());
+    click(&ui, LogicalPosition::new(at.x + size.width - 10.0, at.y + size.height / 2.0));
+    ui.update().unwrap();
+    assert_eq!(play(GameAction::Jump).mouse, Vec::<String>::new());
+    element(&ui, "Jump: J", AccessibleRole::Button).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(play(GameAction::Jump).keyboard, ["Space", "KeyE"]);
+    assert!(!shown(&ui, "Jump: J"));
+
+    // A shortcut takes the keys held together.
+    section(&mut ui, "Shortcuts", 3);
+    press(&ui, &element(&ui, "Bind Reset", AccessibleRole::Button));
+    assert!(shown(&ui, "Hold the keys, or the gamepad buttons, of the shortcut together, then let go. Esc cancels."));
+    for (key, down) in [("ControlLeft", true), ("KeyR", true), ("KeyR", false)] {
+        assert!(ui.listen_key(key, down));
+        assert!(ui.listening(), "until every key is let go");
+    }
+    assert!(ui.listen_key("ControlLeft", false) && !ui.listening());
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::Reset], AppBinding::parse("ControlLeft+KeyR", ""));
+    assert!(shown(&ui, "Reset: Ctrl+R"));
+    element(&ui, "Save state: Back+South", AccessibleRole::Button).invoke_accessible_default_action();
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F5", ""));
 }
 
 #[test]
@@ -1835,41 +1938,40 @@ fn a_gamepad_moves_through_the_panel_changes_its_settings_and_closes_it() {
     pad.press(&ui, L1);
     assert_eq!(ui.component().get_selected_section(), 9, "L1 from the first section goes to the last");
 
-    // Shortcuts: each row a stop, South opens its editor, and South on its
-    // gamepad field takes the next buttons pressed together.
+    // Shortcuts: each token a stop, then its row's field. South on a field
+    // listens, every button then the binding's: the standard buttons
+    // pressed together, once all are let go.
     for _ in 0..6 {
         pad.press(&ui, L1);
     }
     ui.update().unwrap();
     assert_eq!(ui.component().get_selected_section(), 3);
-    pad.press(&ui, SOUTH);
-    assert_eq!(ui.component().get_selected_action(), 0, "Save state's editor");
+    // On Save state's F5, then its Back+South, then its field.
     pad.press(&ui, DOWN);
     pad.press(&ui, DOWN);
     pad.poll(&ui, &[SOUTH]);
-    assert!(ui.capturing_buttons());
-    assert_eq!(ui.component().get_gamepad_binding().as_str(), "");
+    assert!(ui.listening());
     pad.poll(&ui, &[]);
     pad.poll(&ui, &[L1]);
     pad.poll(&ui, &[L1, WEST]);
     pad.poll(&ui, &[WEST]);
-    assert!(ui.capturing_buttons(), "until every button is let go");
+    assert!(ui.listening(), "until every button is let go");
     pad.poll(&ui, &[]);
-    assert!(!ui.capturing_buttons());
-    assert_eq!(ui.component().get_gamepad_binding().as_str(), "L1+West");
-    // Down to Cancel, right along the buttons to Save shortcut.
-    pad.press(&ui, DOWN);
-    pad.press(&ui, RIGHT);
-    pad.press(&ui, RIGHT);
-    pad.press(&ui, SOUTH);
+    assert!(!ui.listening());
     assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F5", "L1+West"));
-    // East closes the editor, the focus back on its row; again, the panel.
-    pad.press(&ui, EAST);
-    assert_eq!((ui.component().get_selected_action(), closed.get()), (-1, 0));
+    // Up to that chord's token: South removes it, the focus going back to
+    // the row's field, where South listens again.
+    pad.press(&ui, UP);
     pad.press(&ui, SOUTH);
-    assert_eq!(ui.component().get_selected_action(), 0, "South on the row opens it again");
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F5", ""));
     pad.press(&ui, SOUTH);
-    assert_eq!(ui.component().get_selected_action(), -1, "and closes it");
+    assert!(ui.listening(), "South on its field");
+    // East is the binding's too while it listens; the host's Escape stops it.
+    pad.poll(&ui, &[EAST]);
+    assert_eq!(closed.get(), 0);
+    assert!(ui.cancel_dialog());
+    pad.poll(&ui, &[]);
+    assert_eq!(settings.borrow().settings().app_bindings[&AppAction::SaveState], AppBinding::parse("F5", ""), "it bound nothing");
     // Back begins the app's chords: the panel takes nothing while it is held.
     pad.poll(&ui, &[BACK]);
     pad.poll(&ui, &[BACK, EAST]);

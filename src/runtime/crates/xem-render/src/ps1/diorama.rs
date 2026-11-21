@@ -1305,7 +1305,7 @@ impl Targets {
     /// buffers (the last build's no longer); returns its commands.
     #[allow(clippy::too_many_arguments)]
     fn build(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, options: &DrawOptions, ops: &[TraceOp], faced: &Faced, camera: &Camera, placed: &Placed, area: DisplayArea, room: bool) -> Option<(Vec<Command>, DioramaStats)> {
-        let mut builder = Builder::reusing(options, ops, &mut self.storage);
+        let mut builder = Builder::reusing(options, ops, scene_offset(ops), &mut self.storage);
         let stats = build(&mut builder, ops, faced, camera, placed, area, room);
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(device, queue, &builder.staging);

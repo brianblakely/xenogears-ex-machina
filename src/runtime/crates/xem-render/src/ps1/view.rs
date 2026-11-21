@@ -233,6 +233,18 @@ impl ViewConfig {
 /// that stopped presenting): one replay's vertices stay tens of MB.
 const PENDING_LIMIT: usize = 100_000;
 
+/// [`GameView::turn_margin`], in degrees beyond edge-on: pulled back, for
+/// the depth it pulls back by changing before frames judged for it are
+/// shown (the camera's target nearer or farther, a zoom notch: at the
+/// pulled-back screen's edge a notch turns a face by about 3 degrees);
+/// with interpolation, what models and sprites turn between frames and how
+/// far beyond its last turn the camera's next may go (the field's turns
+/// 5.7 degrees a frame under L1 or R1), at most a right angle's third.
+const PULL_BACK_MARGIN: f64 = 4.0;
+const TURN_MARGIN: f64 = 4.0;
+const TURN_SHARE: f64 = 1.25;
+const MAX_MARGIN: f64 = 30.0;
+
 /// First-person inspection's projection distance: a 70-degree field of
 /// view across the original's 320 pixels (160 / tan 35°).
 const LOOK_H: f32 = 228.5;
@@ -331,6 +343,15 @@ pub struct Viewpoint {
     pub h: f32,
     pub centre: (f32, f32),
     pub near: f32,
+}
+
+/// The field camera a picture was drawn with ([`GameView::drawn_camera`]):
+/// a world point `p`'s view-space point is `m · p + t` (`m`'s rows per world
+/// unit), as the port recorded it with the frame.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DrawnCamera {
+    pub m: [[f32; 3]; 3],
+    pub t: [f32; 3],
 }
 
 /// A headset's presentation ([`GameView::present_headset`]).
@@ -596,31 +617,40 @@ impl GameView {
     /// ([`Reveals::viewer`]).
     pub fn reveals(&self) -> Option<Reveals> {
         let config = self.config?;
-        let zoom = scene_zoom(config.zoom, &self.scene);
+        // Before a frame shows the scene, it may be a field's, which takes
+        // all of the zoom.
+        let zoom = if self.scene.is_empty() { config.zoom } else { scene_zoom(config.zoom, &self.scene) };
         let side = config.side.max(self.side);
         if self.first_person.is_some() && self.scene.starts_with("field") {
             // Looking around from the controlled character: every face,
             // and where the character stands.
-            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::LOOK, viewer: None })
+            Some(Reveals { reach: [side as u16 + 32, 32], around: Reveals::LOOK, ..Reveals::default() })
         } else if self.diorama_scene() {
             // A view from anywhere: every face, the camera each frame is
             // drawn with, and a field's sprites facing the head.
-            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: self.viewer })
+            Some(Reveals { reach: [side as u16 + 32, 32], around: Reveals::ANYWHERE, viewer: self.viewer, ..Reveals::default() })
         } else if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
             match self.focus {
                 // The margin covers the camera moving between frames.
-                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32, around: 0, viewer: None }),
+                Some(focus) => Some(Reveals {
+                    reach: [side as u16 + 32, 32],
+                    pull_back: ((zoom - 1.0) * focus).round() as u32,
+                    margin: self.turn_margin(&config, PULL_BACK_MARGIN),
+                    ..Reveals::default()
+                }),
                 None => {
                     // Pulled back k times, what lies at the camera's target
                     // depth within k frames of the middle shows, and nearer
                     // things from farther out still: twice that, enough down
-                    // to half the depth.
+                    // to half the depth. Not yet knowing from how far back,
+                    // every face there, whichever way it faces: the frames
+                    // shown before it is known are drawn pulled back.
                     let width = 320.0 + 2.0 * side as f32;
                     let x = (2.0 * (zoom - 1.0) * width + side as f32 + 16.0).min(2048.0);
                     let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
-                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0, viewer: None })
+                    Some(Reveals { reach: [x as u16, y as u16], margin: Reveals::EVERY_WAY, ..Reveals::default() })
                 }
             }
         } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
@@ -629,10 +659,28 @@ impl GameView {
             // Modern terrain also needs the sub-pixel slivers the
             // original's whole-pixel winding tests discarded inside them.
             let margin = if config.interpolation { 32 } else { 16 };
-            Some(Reveals { reach: [side as u16 + margin, margin], pull_back: 0, around: 0, viewer: None })
+            Some(Reveals { reach: [side as u16 + margin, margin], margin: self.turn_margin(&config, 0.0), ..Reveals::default() })
         } else {
             None
         }
+    }
+
+    /// [`Reveals::margin`] for the game's camera's view: at least `least`
+    /// degrees, and with interpolation (which draws the newest frame
+    /// through a camera between it and the one before) a little more than
+    /// the camera turned last, as far as it turns again before the next
+    /// frame; a model or sprite turning between frames needs a little too.
+    /// The faces turned away by less than that, which the game's renderers
+    /// drop, are recorded and drawn where they face the camera between.
+    fn turn_margin(&self, config: &ViewConfig, least: f64) -> u16 {
+        let mut degrees = least;
+        if config.interpolation {
+            degrees = degrees.max(TURN_MARGIN + TURN_SHARE * self.main.frame.camera_turn().to_degrees());
+        }
+        if degrees <= 0.0 {
+            return 0;
+        }
+        (degrees.min(MAX_MARGIN).to_radians().sin() * f64::from(Reveals::EVERY_WAY)).ceil() as u16
     }
 
     /// The view the game's field characters keep moving in (the session's
@@ -755,6 +803,22 @@ impl GameView {
                 near: h / 2.0,
             },
         })
+    }
+
+    /// The field camera the picture presented last was drawn with, as the
+    /// port recorded it with the frame (a game frame or more behind the one
+    /// in the game's memory while the camera moves), or, while interpolation
+    /// moves the scene, the camera between two frames it showed then; none
+    /// while no field frame shows (the interface alone, the device's own
+    /// picture). Hosts point and place floor marks through it, as the
+    /// picture shows the world.
+    pub fn drawn_camera(&self) -> Option<DrawnCamera> {
+        let shown = self.main.shown?;
+        if shown.framing.interface == Interface::Only {
+            return None;
+        }
+        let (m, t) = self.main.frame.drawn_camera(shown.framing.interpolate)?;
+        Some(DrawnCamera { m, t })
     }
 
     /// How far the first-person view has turned from the heading it began

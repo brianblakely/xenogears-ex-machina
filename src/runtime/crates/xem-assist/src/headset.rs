@@ -1048,7 +1048,7 @@ pub(crate) mod tests {
         let mut field = field();
         let vertices = vec![V3::new(-1000.0, 100.0, 0.0), V3::new(1000.0, 100.0, 0.0), V3::new(-1000.0, 100.0, 2000.0), V3::new(1000.0, 100.0, 2000.0)];
         let triangles = vec![Triangle { v: [0, 1, 2], n: [-1, 1, -1], attribute: 0 }, Triangle { v: [1, 3, 2], n: [-1, -1, 0], attribute: 0 }];
-        field.layers = vec![Layer { vertices, triangles }];
+        field.layers = vec![Layer { vertices, triangles, at: 0 }];
         for actor in field.actors.iter_mut().flatten() {
             actor.position.y = 100.0;
         }

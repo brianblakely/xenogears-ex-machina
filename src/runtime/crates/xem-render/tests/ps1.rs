@@ -161,7 +161,7 @@ fn original_fidelity_matches_the_software_gpu() {
 
 use xem_gpu::{Camera, CameraMode, Class, Environment, Placement, Primitive, Projection, Reveal, Reveals, Shape, SxyStore, TraceOp, TraceVertex};
 use xem_render::ps1::{
-    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Look, Quality, first_person, interpolate, pull_back, weld,
+    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Look, Quality, first_person, interpolate, lay_decals, pull_back, weld,
 };
 
 /// A packed GP0 vertex word.
@@ -704,6 +704,189 @@ fn with_view(op: TraceOp, points: &[[f32; 3]]) -> TraceOp {
         v.view = Some(*point);
     }
     TraceOp::Draw(p)
+}
+
+/// A face of the scene at these points before the division, projected at
+/// (160, 120) with H 256 (a quad's in Z order), in `color` (0xBBGGRR).
+fn scene_face(points: &[[f32; 3]], class: Class, color: u32) -> Primitive {
+    let TraceOp::Draw(mut p) = primitive(0, 0, 0) else { unreachable!() };
+    p.shape = if points.len() == 4 { Shape::Quad } else { Shape::Triangle };
+    p.class = class;
+    p.textured = false;
+    p.projection = Some(((160, 120), 256));
+    for (v, &[x, y, z]) in p.vertices.iter_mut().zip(points) {
+        let (fx, fy) = (160.0 + 256.0 * x / z, 120.0 + 256.0 * y / z);
+        *v = TraceVertex { x: fx.floor() as i32, y: fy.floor() as i32, fx, fy, z, view: Some([x, y, z]), color, u: 0, v: 0 };
+    }
+    p
+}
+
+/// A face the game culled, recorded as `points` (in their order) with the
+/// colour `color` (0xBBGGRR), drawn just before the frame's only packet.
+fn culled_face(points: [[f32; 3]; 3], color: u32, recorded: u32) -> (Vec<Projection>, Reveal) {
+    let projections: Vec<Projection> = points.iter().map(|&p| projection(p, 0, 0)).collect();
+    let words = [0x2000_0000 | color, projections[0].sxy, projections[1].sxy, projections[2].sxy];
+    (projections, Reveal { entry: 0x100, vertices: 3, projections: recorded, order: 0, words: xem_gpu::FaceWords::from(&words[..]) })
+}
+
+/// A culled face is drawn only where it faces the camera the picture shows
+/// it from, as the game's renderers drop the faces they draw that face away
+/// (NCLIP): the port records faces turned a little away too
+/// (`Reveals::margin`), for a camera between two of the game's frames (a
+/// turning one, interpolated: High Framerate's holes along the sides of
+/// buildings while the camera turned, issue #103) or pulled back further
+/// than they were judged for (entering a field, a zoom notch).
+#[test]
+fn a_culled_face_shows_only_where_it_faces_the_camera_the_picture_is_drawn_from() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    // A triangle in a plane through the point 300 behind the camera: seen
+    // from closer, its points wind one way; from farther back, the other.
+    // Red recorded as it faces from close up, blue as from far back.
+    let (a, b, c) = ([650.0, 0.0, 1000.0], [650.0, 300.0, 1000.0], [900.0, 0.0, 1500.0]);
+    let (mut projections, red) = culled_face([a, b, c], 0x0000FF, 3);
+    let (more, blue) = culled_face([a, c, b], 0xFF0000, 6);
+    projections.extend(more);
+    let mut ram = Ram(vec![0; 0x4000]);
+    ram.0[0x100 >> 2] = 0x00FF_FFFF;
+    let trace = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        device.trace_projections(0, &projections, &[], &[red, blue]);
+        device.dma_linked_list(&ram, 0x100, 1000).unwrap();
+    });
+    let shown = |pull_back: f32| -> (usize, usize) {
+        let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { pull_back, ..Default::default() });
+        gpu.queue.submit([encoder.finish()]);
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        let count = |rgb: [u8; 3]| pixels.chunks_exact(4).filter(|p| p[..3] == rgb).count();
+        (count([255, 0, 0]), count([0, 0, 255]))
+    };
+    let (red_near, blue_near) = shown(50.0);
+    assert!(red_near > 0 && blue_near == 0, "pulled back 50, it faces the camera as red winds: red {red_near}, blue {blue_near}");
+    let (red_far, blue_far) = shown(2000.0);
+    assert!(blue_far > 0 && red_far == 0, "pulled back 2000, as blue winds: red {red_far}, blue {blue_far}");
+}
+
+/// A translucent face of a model the game culled is drawn only where it
+/// faces the camera too (the port records a model's faces as they face);
+/// the world map's clouds, translucent quads of the world it records
+/// whichever way they wind, show either way.
+#[test]
+fn a_translucent_culled_face_faces_the_camera_unless_the_port_records_it_either_way() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    // Winding away from a camera pulled back 50 (blue above).
+    let (a, b, c) = ([650.0, 0.0, 1000.0], [650.0, 300.0, 1000.0], [900.0, 0.0, 1500.0]);
+    for (class, shown) in [(1, false), (0, true)] {
+        let projections: Vec<Projection> = [a, c, b].iter().map(|&p| projection(p, class, 0)).collect();
+        // A translucent flat red triangle (half the background, half its own).
+        let words = [0x2200_00FF, projections[0].sxy, projections[1].sxy, projections[2].sxy];
+        let face = Reveal { entry: 0x100, vertices: 3, projections: 3, order: 0, words: xem_gpu::FaceWords::from(&words[..]) };
+        let mut ram = Ram(vec![0; 0x4000]);
+        ram.0[0x100 >> 2] = 0x00FF_FFFF;
+        let trace = traced(|device| {
+            device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+            device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+            device.trace_projections(0, &projections, &[], &[face]);
+            device.dma_linked_list(&ram, 0x100, 1000).unwrap();
+        });
+        let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { pull_back: 50.0, ..Default::default() });
+        gpu.queue.submit([encoder.finish()]);
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        let red = pixels.chunks_exact(4).filter(|p| p[0] > 64 && p[1] == 0 && p[2] == 0).count();
+        assert_eq!(red > 0, shown, "class {class}: {red} red pixels");
+    }
+}
+
+/// While the depth the camera is pulled back by is not known yet (the
+/// frames before a field's first frame shown), the port records every face
+/// within the reach whichever way it faces; once it is, those turned away
+/// a little (for that depth changing before the frames judged for it show);
+/// interpolating, those a camera between two frames may see.
+#[test]
+fn the_faces_turned_away_the_port_records_follow_how_the_view_may_turn() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let margin = |degrees: f64| (degrees.to_radians().sin() * 4096.0).ceil() as u16;
+    let reveals = |graphics: xem_settings::Graphics, with_focus: bool| {
+        let frame = move |gpu: &mut xem_gpu::Gpu| {
+            // Only a face off the middle: no depth measured there.
+            let mut faces = [FIELD[1]];
+            faces[0].points = faces[0].points.map(|[x, y, z]| [x - 600.0, y, z]);
+            gte_frame(gpu, LEVEL, &faces, false);
+            if with_focus {
+                gpu.trace_projections(0, &[Projection { sz: 1200, ..projection(FEET, 4, 0) }], &[], &[]);
+            }
+        };
+        let traces = traced(frame);
+        let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (960, 540), view.max_scale()));
+        let _ = view.take_restart();
+        for trace in [&traces.0, &traces.1] {
+            view.push(trace.clone());
+        }
+        // The field's first frame shown begins its scene; the next carries
+        // what the port recorded then.
+        for now in [0.0, 0.1] {
+            if now > 0.0 {
+                view.push(DEVICE.with(|device| {
+                    let mut device = device.borrow_mut();
+                    frame(&mut device);
+                    device.take_trace()
+                }));
+            }
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            let _ = view.present(&mut encoder, &DISPLAY, "field:1", now);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        view.reveals().expect("culled faces wanted")
+    };
+    let pulled = xem_settings::Graphics { zoom_out: 200, ..Default::default() };
+    let unknown = reveals(pulled, false);
+    assert_eq!((unknown.pull_back, unknown.margin), (0, Reveals::EVERY_WAY), "every face while the depth is unknown");
+    let known = reveals(pulled, true);
+    assert_eq!((known.pull_back, known.margin), (1200, margin(4.0)), "pulled back by the focus, a little margin");
+    let wide = reveals(xem_settings::Graphics { widescreen: true, ..Default::default() }, true);
+    assert_eq!(wide.margin, 0, "the game's camera as it drew the frame: none");
+    let smooth = reveals(xem_settings::Graphics { interpolation: true, ..Default::default() }, true);
+    assert_eq!(smooth.margin, margin(4.0), "interpolating with the camera still: what models turn");
+}
+
+/// The field's shadows are sorted by their corners' average depth, its floor
+/// by each face's farthest point: a face of the floor drawn after a shadow
+/// covered its near part (issue #103). A decal moves after the faces drawn
+/// after it that lie behind or under it where they overlap, up to the first
+/// other primitive over it.
+#[test]
+fn a_decal_is_drawn_over_the_floor_it_lies_on_and_under_what_stands_before_it() {
+    let floor = TraceOp::Draw(scene_face(&[[-100.0, 200.0, 1100.0], [100.0, 200.0, 1100.0], [-100.0, 200.0, 900.0], [100.0, 200.0, 900.0]], Class::Model, 0x00FF00));
+    let decal = |(y, near, far): (f32, f32, f32)| {
+        let mut p = scene_face(&[[-50.0, y, far], [50.0, y, far], [-50.0, y, near], [50.0, y, near]], Class::World, 0x80_8080);
+        p.textured = true;
+        p.semi = true;
+        p.environment.draw_mode = 2 << 5;
+        TraceOp::Draw(p)
+    };
+    // 1.5 above the floor.
+    let shadow = decal((198.5, 950.0, 1050.0));
+    let wall = TraceOp::Draw(scene_face(&[[-30.0, 150.0, 800.0], [30.0, 150.0, 800.0], [-30.0, 210.0, 800.0], [30.0, 210.0, 800.0]], Class::Model, 0x0000FF));
+    let beside = TraceOp::Draw(scene_face(&[[400.0, 200.0, 1100.0], [600.0, 200.0, 1100.0], [400.0, 200.0, 900.0], [600.0, 200.0, 900.0]], Class::Model, 0x00FF00));
+    let laid = |ops: &[&TraceOp]| -> Vec<TraceOp> {
+        let mut ops: Vec<TraceOp> = ops.iter().map(|&op| op.clone()).collect();
+        lay_decals(&mut ops);
+        ops
+    };
+    assert_eq!(laid(&[&shadow, &floor]), [floor.clone(), shadow.clone()], "over the floor drawn after it");
+    assert_eq!(laid(&[&shadow, &floor, &beside, &wall]), [floor.clone(), shadow.clone(), beside.clone(), wall.clone()], "under the wall standing before it");
+    assert_eq!(laid(&[&shadow, &wall, &floor]), [shadow.clone(), wall.clone(), floor.clone()], "not over the wall to reach the floor after it");
+    // Seen through the floor, 80 under it.
+    let buried = decal((280.0, 1300.0, 1500.0));
+    assert_eq!(laid(&[&buried, &floor]), [buried.clone(), floor.clone()], "the floor in front of it covers it");
+    assert_eq!(laid(&[&shadow, &TraceOp::VBlank, &floor]), [shadow.clone(), TraceOp::VBlank, floor.clone()], "within its own game frame");
 }
 
 /// The game's own camera as a view from within the scene.
@@ -1291,6 +1474,57 @@ fn translucent_model_depth_is_opt_in_and_preserves_blending() {
             assert_eq!(read_rgba8(&gpu.device, &gpu.queue, renderer.picture().1), original_aux, "leaving the scene restores its prior transparency handling");
         }
     }
+}
+
+/// Linear filtering takes a fragment's semi-transparency from the texels it
+/// shows: where its nearest texel is transparent but its neighbours still
+/// cover it, theirs. Field 684's rain (issue #100) draws huge additive quads
+/// whose transparent texels are ringed by near-black semi-transparent ones;
+/// the transparent texel's own bit drew those fragments opaque, black curved
+/// corners over the whole picture.
+#[test]
+fn a_filtered_fragment_is_as_semi_transparent_as_the_texels_it_shows() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let traces = traced(|device| {
+        // 15-bit texels at (512, 0): near-black (1, 1, 1) with the semi bit,
+        // but for a transparent one at (1, 1).
+        device.write_gp0_words(&[0xA000_0000, 512, 4 << 16 | 4]);
+        for row in 0..4 {
+            let pair = |u: u32| if row == 1 && u == 1 { 0 } else { 0x8421 };
+            device.write_gp0_words(&[pair(0) | pair(1) << 16, pair(2) | pair(3) << 16]);
+        }
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        device.write_gp0_words(&[0x0240_4040, 0, 240 << 16 | 320]);
+        // An additive (B+F) quad of the scene across the patch, each texel
+        // tens of pixels wide.
+        let projections: Vec<Projection> = [(60, 40), (260, 40), (60, 200), (260, 200)].iter()
+            .map(|&(x, y)| Projection { sxy: xy(x, y), sz: 1000, class: 0, x: x << 16, y: y << 16, offset: (160, 120), h: 256, owner: 0, view: view(x as f32, y as f32, 1000.0) })
+            .collect();
+        let p: Vec<u32> = projections.iter().map(|p| p.sxy).collect();
+        let page = (0x108 | 1 << 5) << 16;
+        submit(device, &projections, &[(vec![0x2E80_8080, p[0], 0, p[1], page | 3, p[2], 3 << 8, p[3], 3 << 8 | 3], vec![(1, 0), (3, 1), (5, 2), (7, 3)])]);
+    });
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+    let filtering = xem_render::ps1::Filtering { world_linear: true, ..Default::default() };
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, filtering, ..Default::default() }, 2);
+    for trace in [&traces.0, &traces.1] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+    let background = u16::from(pixels[(10 * 2048 + 10) * 4]);
+    let (mut darker, mut lit, mut clear) = (0, 0, 0);
+    for y in 2 * 44..2 * 196 {
+        for x in 2 * 64..2 * 256 {
+            let red = u16::from(pixels[(y * 2048 + x) * 4]);
+            darker += usize::from(red + 1 < background);
+            lit += usize::from(red > background + 4);
+            clear += usize::from(red == background);
+        }
+    }
+    assert!(lit > 0 && clear > 0, "the quad adds its texels ({lit} pixels) and leaves its transparent one out ({clear})");
+    assert_eq!(darker, 0, "an additive quad darkens nothing (background {background})");
 }
 
 /// A movie's picture the scene draws (a window movie on a screen in a

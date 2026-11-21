@@ -99,9 +99,19 @@ pub struct Reveals {
     /// field's sprites again facing it ([`Primitive::facing`]), as first
     /// person's face the controlled character's eyes.
     pub viewer: Option<[i32; 2]>,
+    /// Faces turned away from the view's camera by less than this count
+    /// too, with the faces the game's renderers drop as facing away (the
+    /// sine of the angle beyond edge-on, in 4096ths; [`Reveals::EVERY_WAY`]
+    /// any face; 0 none): a camera between two of the game's frames (a
+    /// turning one, interpolated) or pulled back further than they were
+    /// judged for sees some of them. A renderer leaves out those that face
+    /// away from the camera it draws them through.
+    pub margin: u16,
 }
 
 impl Reveals {
+    /// [`Reveals::margin`]: every face, whichever way it faces.
+    pub const EVERY_WAY: u16 = 4096;
     /// [`Reveals::around`]: the view looks around from the field's
     /// controlled character (first-person inspection); the port also draws
     /// the field's sprites again facing its eyes.
@@ -678,6 +688,10 @@ pub(crate) struct Recorder {
     /// at, until the DMA walk reaches it, and emptied lists kept for new
     /// entries (thousands a frame when zoomed out).
     reveals: WordMap<Vec<Revealed>>,
+    /// Which entries may hold culled faces, by their word address's low 12
+    /// bits (all that do among them): the walk's thousands of other nodes
+    /// pass by without a lookup.
+    revealed_at: [u128; 32],
     facings: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     full_sizes: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     spare: Vec<Vec<Revealed>>,
@@ -787,6 +801,12 @@ const TRACE_LIMIT: usize = 100_000;
 /// Ops a trace begins with room for at most ([`Recorder::room`]): a few
 /// frames of the largest scenes.
 const TRACE_ROOM: usize = 16_384;
+
+/// Notes in [`Recorder::revealed_at`] that `entry` holds culled faces.
+fn note_revealed_at(bits: &mut [u128; 32], entry: u32) {
+    let at = (entry >> 2) as usize & 4095;
+    bits[at >> 7] |= 1 << (at & 127);
+}
 
 /// The indices of a polygon command's vertex words.
 fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
@@ -1040,8 +1060,9 @@ impl Recorder {
                 };
                 points[k] = self.projection(index).is_some_and(|p| p.sxy == reveal.words[at]).then_some(index);
             }
-            let spare = &mut self.spare;
-            self.reveals.entry(reveal.entry & ADDRESS_MASK).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
+            let (spare, entry) = (&mut self.spare, reveal.entry & ADDRESS_MASK);
+            note_revealed_at(&mut self.revealed_at, entry);
+            self.reveals.entry(entry).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
                 words: reveal.words,
                 projections: points,
                 frame: self.frames,
@@ -1196,6 +1217,11 @@ impl Gpu {
         self.trace.as_ref().and_then(|t| t.wanted).and_then(|r| r.viewer)
     }
 
+    /// [`Gpu::set_reveals`]'s margin as the port's word (0 for none).
+    pub fn reveal_margin(&self) -> u32 {
+        self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| u32::from(r.margin))
+    }
+
     /// Points traced since the trace started: matched to their projection
     /// (by address or a culled face's record), and not (2D points). For
     /// validation.
@@ -1274,8 +1300,10 @@ impl Gpu {
         }
         trace.source = node;
         trace.source_index = 0;
-        // (A walk visits thousands of nodes; most traces hold no culled face.)
-        if trace.reveals.is_empty() {
+        // (A walk visits thousands of nodes; most traces hold no culled face,
+        // and most nodes none of those a trace holds.)
+        let at = (node >> 2) as usize & 4095;
+        if trace.reveals.is_empty() || trace.revealed_at[at >> 7] >> (at & 127) & 1 == 0 {
             return;
         }
         let Some(mut faces) = trace.reveals.remove(&node) else { return };
@@ -1331,6 +1359,10 @@ impl Gpu {
                 faces.retain(|face| now.wrapping_sub(face.frame) < REVEAL_FRAMES);
                 !faces.is_empty()
             });
+            trace.revealed_at = [0; 32];
+            for &entry in trace.reveals.keys() {
+                note_revealed_at(&mut trace.revealed_at, entry);
+            }
             trace.ops.push(TraceOp::VBlank);
             if trace.ops.len() > TRACE_LIMIT {
                 trace.restart();

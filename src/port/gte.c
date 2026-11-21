@@ -46,17 +46,71 @@ int xem_present_elsewhere(void) {
     return xem_present_reveals->pull_back != 0 || xem_present_reveals->around != 0;
 }
 
+int xem_present_dropped(void) {
+    return xem_present_elsewhere() || xem_present_reveals->margin != 0;
+}
+
+/* Whether the face whose first three points are `a`, `b` and `c` (in view
+ * space as the view that wants it sees them, `back` farther) is turned away
+ * from that camera by less than the host's margin: the sine of that angle
+ * beyond edge-on, in 4096ths. Its normal n = (b - a) x (c - a) and the line
+ * from the camera to a give n.a, which has the sign of the face's winding on
+ * the screen (NCLIP's); it is kept while n.a > -margin |n| |a|, compared
+ * squared. (Scalars, as present_visible's points are: the port's units
+ * clear a local array where it begins and translate each access through a
+ * pointer argument, while scalar locals stay in registers.) */
+static inline __attribute__((always_inline)) int present_turned_within(const XemProjection *a, const XemProjection *b,
+                                                                       const XemProjection *c, long long back,
+                                                                       unsigned int margin) {
+    double ax = (double)a->view[0], ay = (double)a->view[1], az = (double)a->view[2] + (double)back;
+    double ux = (double)b->view[0] - ax, uy = (double)b->view[1] - ay, uz = ((double)b->view[2] + (double)back) - az;
+    double wx = (double)c->view[0] - ax, wy = (double)c->view[1] - ay, wz = ((double)c->view[2] + (double)back) - az;
+    double nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+    double d = nx * ax + ny * ay + nz * az, m = (double)margin / 4096.0;
+
+    return d > 0.0 || d * d < m * m * (nx * nx + ny * ny + nz * nz) * (ax * ax + ay * ay + az * az);
+}
+
+/* The projection `i` places after `first` in the ring. */
+static inline __attribute__((always_inline)) const XemProjection *present_entry(unsigned int first, unsigned int i) {
+    return &xem_gte_ring->entries[(first + i) % XEM_GTE_PROJECTIONS];
+}
+
+int xem_present_face_turned(unsigned int projections) {
+    long long back = xem_present_reveals->pull_back;
+    unsigned int first = projections - 3, i;
+
+    if (xem_present_reveals->around != 0) {
+        return 1;
+    }
+    if (xem_gte_ring->count - first > XEM_GTE_PROJECTIONS) {
+        return 0;
+    }
+    /* Each point in front of the near plane (as xem_present_face_visible
+     * judges it), and the face towards the camera or turned away from it by
+     * less than the margin. */
+    for (i = 0; i < 3; i++) {
+        if (((long long)present_entry(first, i)->view[2] + back) * 2 <= (long long)(present_entry(first, i)->h & 0xFFFF)) {
+            return 0;
+        }
+    }
+    return present_turned_within(present_entry(first, 0), present_entry(first, 1), present_entry(first, 2), back,
+                                 xem_present_reveals->margin);
+}
+
 /* xem_present_face_visible's test, the winding only when `facing`. */
 static inline __attribute__((always_inline)) int present_visible(unsigned int projections, unsigned int vertices, int width,
                                                                  int height, int facing) {
     XemProjectionRing *ring = xem_gte_ring;
     XemProjection *p;
-    long long x[4], y[4], cross, z, sx, sy, h, back = xem_present_reveals->pull_back;
-    double fx[4], fy[4];
+    long long x = 0, y = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0, cross, z, sx, sy, h;
+    long long back = xem_present_reveals->pull_back;
+    double fx = 0.0, fy = 0.0, fx0 = 0.0, fy0 = 0.0, fx1 = 0.0, fy1 = 0.0, fx2 = 0.0, fy2 = 0.0;
+    unsigned int margin = xem_present_reveals->margin, first = projections - vertices;
     int i, near_x = 0, near_y = 0;
     int reach_x = (int)(xem_present_reveals->wanted & 0xFFFF), reach_y = (int)(xem_present_reveals->wanted >> 16);
 
-    if (vertices < 3 || vertices > 4 || ring->count - (projections - vertices) > XEM_GTE_PROJECTIONS) {
+    if (vertices < 3 || vertices > 4 || ring->count - first > XEM_GTE_PROJECTIONS) {
         return 0;
     }
     /* Looking around from within the field, any way it faces and wherever
@@ -65,7 +119,7 @@ static inline __attribute__((always_inline)) int present_visible(unsigned int pr
         return 1;
     }
     for (i = 0; i < (int)vertices; i++) {
-        p = &ring->entries[(projections - vertices + (unsigned int)i) % XEM_GTE_PROJECTIONS];
+        p = &ring->entries[(first + (unsigned int)i) % XEM_GTE_PROJECTIONS];
         h = p->h & 0xFFFF;
         if (back != 0) {
             /* Seen from `back` farther: in front of its near plane (half
@@ -75,22 +129,30 @@ static inline __attribute__((always_inline)) int present_visible(unsigned int pr
             if (z * 2 <= h) {
                 return 0;
             }
-            fx[i] = (double)p->view[0] * (double)h / (double)z;
-            fy[i] = (double)p->view[1] * (double)h / (double)z;
+            fx = (double)p->view[0] * (double)h / (double)z;
+            fy = (double)p->view[1] * (double)h / (double)z;
             /* The quotients truncated: the integer division's below 2^21
              * (the product is exact in a double), and either way far beyond
              * any reach above it. */
-            sx = (long long)fx[i] + (short)(p->offset & 0xFFFF);
-            sy = (long long)fy[i] + (short)(p->offset >> 16);
+            sx = (long long)fx + (short)(p->offset & 0xFFFF);
+            sy = (long long)fy + (short)(p->offset >> 16);
         } else {
             /* The divide overflows (a point at or behind the near plane) when H >= SZ3 * 2. */
             if (h >= (p->sz & 0xFFFF) * 2) {
                 return 0;
             }
-            x[i] = (long long)p->x >> 8;
-            y[i] = (long long)p->y >> 8;
+            x = (long long)p->x >> 8;
+            y = (long long)p->y >> 8;
             sx = p->x >> 16;
             sy = p->y >> 16;
+        }
+        /* (The winding's first three points, kept as scalars.) */
+        if (i == 0) {
+            fx0 = fx, fy0 = fy, x0 = x, y0 = y;
+        } else if (i == 1) {
+            fx1 = fx, fy1 = fy, x1 = x, y1 = y;
+        } else if (i == 2) {
+            fx2 = fx, fy2 = fy, x2 = x, y2 = y;
         }
         if (sx >= -reach_x && sx < width + reach_x) {
             near_x = 1;
@@ -106,10 +168,20 @@ static inline __attribute__((always_inline)) int present_visible(unsigned int pr
         return 1;
     }
     if (back != 0) {
-        return fx[0] * fy[1] + fx[1] * fy[2] + fx[2] * fy[0] - fx[0] * fy[2] - fx[1] * fy[0] - fx[2] * fy[1] > 0.0;
+        if (fx0 * fy1 + fx1 * fy2 + fx2 * fy0 - fx0 * fy2 - fx1 * fy0 - fx2 * fy1 > 0.0) {
+            return 1;
+        }
+    } else {
+        cross = x0 * y1 + x1 * y2 + x2 * y0 - x0 * y2 - x1 * y0 - x2 * y1;
+        if (cross > 0) {
+            return 1;
+        }
     }
-    cross = x[0] * y[1] + x[1] * y[2] + x[2] * y[0] - x[0] * y[2] - x[1] * y[0] - x[2] * y[1];
-    return cross > 0;
+    /* Facing away, but by less than the host's margin: a camera between
+     * this frame's and the one before (a turning camera's, interpolated) or
+     * pulled back a little further may see it. */
+    return margin != 0 &&
+           present_turned_within(present_entry(first, 0), present_entry(first, 1), present_entry(first, 2), back, margin);
 }
 
 int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height) {

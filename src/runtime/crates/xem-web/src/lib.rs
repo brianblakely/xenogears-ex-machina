@@ -621,12 +621,14 @@ impl XemApp {
             self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), scene);
         }
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
+        let drawn = self.renderer.as_ref().and_then(|r| r.drawn_camera());
         let Some(session) = self.session.as_mut() else {
             self.walking = None;
             return;
         };
-        let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
-            .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref()));
+        let read = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
+        let camera = read.as_ref().map(|f| f.camera);
+        let field = read.map(|f| xem_assist::overlay::seen(f, drawn, viewpoint.as_ref()));
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
             // A tap on the paused game resumes it, as a click does.
@@ -639,11 +641,9 @@ impl XemApp {
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
         }
-        let destination = match session.assist.as_ref().map(|a| &a.intent) {
-            Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
-            _ => None,
-        };
-        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
+        // A walk's floor point, or the feet of the actor approached: its
+        // mark is placed as each picture is presented (`Renderer::render`).
+        let destination = session.assist.as_ref().filter(|_| !inspecting).zip(field.as_ref()).and_then(|(a, f)| a.intent.heading_to(f));
         self.walking = field.filter(|_| ui == xem_core::context::Context::Walk);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
@@ -651,7 +651,7 @@ impl XemApp {
             if let Some(panel) = renderer.panel() {
                 panel.set_first_person_touch(shown);
             }
-            renderer.overlay.marks = marks;
+            renderer.overlay.heading = destination.zip(camera);
             renderer.overlay.style = style;
             let (lit, opacity) = {
                 let settings = self.settings.borrow();
@@ -693,10 +693,11 @@ impl XemApp {
         self.headset.inspecting = inspecting;
         self.headset.auto_advance = settings.auto_advance.enabled;
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
+        let drawn = self.renderer.as_ref().and_then(|r| r.drawn_camera());
         let (field, targets, controls) = match self.session.as_mut() {
             Some(session) => (
                 (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
-                    .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref())),
+                    .map(|f| xem_assist::overlay::seen(f, drawn, viewpoint.as_ref())),
                 session.runtime.targets(),
                 session.runtime.field_controls(),
             ),
@@ -734,10 +735,9 @@ impl XemApp {
         // screen or the diorama as the scaling has them.
         if let Some(renderer) = &mut self.renderer {
             renderer.xr_scaling = self.xr_scaling;
-            let destination = match self.session.as_ref().and_then(|s| s.assist.as_ref()).map(|a| &a.intent) {
-                Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
-                _ => None,
-            };
+            // A walk's floor point, or the feet of the actor approached.
+            let destination = self.session.as_ref().and_then(|s| s.assist.as_ref()).filter(|_| !inspecting)
+                .zip(field.as_ref()).and_then(|(a, f)| a.intent.heading_to(f));
             let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref(), screen.diorama.is_some()) } else { vec![] };
             renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui));
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
@@ -763,6 +763,8 @@ impl XemApp {
                 let (w, h) = panel.size();
                 let at = |(u, v): (f32, f32)| xem_ui::LogicalPosition::new(u * w as f32 / scale, v * h as f32 / scale);
                 let button = xem_ui::PointerEventButton::Left;
+                // A ray, no mouse: a listening binding takes no click.
+                panel.set_pointer_touch(true);
                 for event in self.xr_pointer.update(hit.map(|(uv, _)| uv), began, held) {
                     panel.dispatch(match event {
                         PanelEvent::Moved(uv) => {
@@ -1147,10 +1149,10 @@ impl XemApp {
         }
         let editing = self.text_editor_focused();
         if editing { self.app_input.release_keyboard(); } else { self.app_input.key(code, down); }
-        let capturing = self.capturing_buttons();
+        let listening = self.listening();
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        if !capturing {
+        if !listening {
             self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
         }
         let captured = self.app_input.captures_key(code,bindings);
@@ -1195,8 +1197,8 @@ impl XemApp {
         if self.text_editor_focused() { self.app_input.release_keyboard(); }
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        // A gamepad binding's field taking the next buttons: they are no chord.
-        if !self.capturing_buttons() {
+        // A binding listening for an input: the buttons are no chord.
+        if !self.listening() {
             self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
         }
         self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords), axes);
@@ -1307,12 +1309,13 @@ impl XemApp {
         }
     }
 
+    /// A panel text field has the keys, or a binding listening for an input.
     fn text_editor_focused(&self) -> bool {
-        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused() || p.listening())
     }
 
-    fn capturing_buttons(&self) -> bool {
-        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.capturing_buttons())
+    fn listening(&self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.listening())
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the
@@ -1363,10 +1366,17 @@ impl XemApp {
                 }
                 return false;
             }
-            // In a menu or a choice the wheel steps the cursor.
-            "wheel" if self.input.wheel(dy / 100.0, self.ui) => return true,
-            "wheel" if self.first_person() => return true,
-            "wheel" => {}
+            "wheel" => {
+                // Sideways the wheel turns the camera, walking or on the
+                // world map; in a menu or a choice it steps the cursor.
+                let turned = dx != 0.0 && !self.first_person() && self.input.scroll_sideways(dx / 100.0, self.ui);
+                if dy == 0.0 && turned {
+                    return true;
+                }
+                if self.input.wheel(dy / 100.0, self.ui) || self.first_person() {
+                    return true;
+                }
+            }
             _ => return false,
         }
         self.wheel += dy / 100.0;
@@ -1420,6 +1430,27 @@ impl XemApp {
         }
         self.input.touch = self.deck.actions();
         true
+    }
+
+    /// A key (`KeyboardEvent.code`) for the open panel's binding listening
+    /// for an input (`SettingsUi::listen_key`): true when it took the key,
+    /// which the page then gives to nothing else.
+    pub fn listen_key(&mut self, code: &str, down: bool) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.listen_key(code, down))
+    }
+
+    /// Escape on the open panel: stops a binding listening for an input,
+    /// saying whether one was (then the panel stays).
+    pub fn cancel_panel_dialog(&mut self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.cancel_dialog())
+    }
+
+    /// Whether the pointer pressing next is a finger or a pen rather than a
+    /// mouse (`SettingsUi::set_pointer_touch`).
+    pub fn set_pointer_touch(&mut self, touch: bool) {
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
+            panel.set_pointer_touch(touch);
+        }
     }
 
     /// Host key input for the panel, as Slint key text.
@@ -1872,6 +1903,7 @@ impl XemApp {
                 "panelError": r.panel_error,
                 "panelVisible": r.panel_visible,
                 "panelTextEditorFocused": r.panel_visible && r.panel().is_some_and(|panel| panel.text_editor_focused()),
+                "panelListening": r.panel_visible && r.panel().is_some_and(|panel| panel.listening()),
                 "panelSection": r.panel().map(|panel| panel.component().get_selected_section()),
                 "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
                 "hud": r.frame_rate.as_ref().map(|hud| json!({"visible":hud.visible(),"notice":hud.notice(),"fast_forward":hud.component().get_fast_forward(),"rewinding":hud.component().get_rewinding()})),

@@ -138,7 +138,7 @@ impl Assisted {
         }
         let context = game.pad_context();
         // The field as the screen last showed it (pulled back, say).
-        let field = if self.headset.inspecting { None } else { game.field().map(|f| overlay::seen(f, view.viewpoint().as_ref())) };
+        let field = if self.headset.inspecting { None } else { game.field().map(|f| overlay::seen(f, view.drawn_camera(), view.viewpoint().as_ref())) };
         let targets = game.targets();
         let effects = self.headset.update(input, screen, context.ui, field.as_ref(), targets.as_ref());
         // What a control deck holds (its stick, its held keys).
@@ -152,17 +152,18 @@ impl Assisted {
     }
 
     /// The marks to draw this frame, as room quads, over the screen showing
-    /// the scene from `viewpoint` ([`GameView::viewpoint`]).
-    pub fn placed(&self, settings: &Settings, input: &Input, screen: &Screen, game: &mut Game, viewpoint: Option<xem_render::ps1::Viewpoint>) -> Vec<Placed> {
+    /// the scene drawn with `drawn` from `viewpoint` ([`GameView::drawn_camera`],
+    /// [`GameView::viewpoint`]).
+    pub fn placed(&self, settings: &Settings, input: &Input, screen: &Screen, game: &mut Game, drawn: Option<xem_render::ps1::DrawnCamera>, viewpoint: Option<xem_render::ps1::Viewpoint>) -> Vec<Placed> {
         if !settings.assisted.gestures {
             return vec![];
         }
         let ui = game.context();
         let inspecting = self.headset.inspecting;
-        let field = if inspecting { None } else { game.field().map(|f| overlay::seen(f, viewpoint.as_ref())) };
+        let field = if inspecting { None } else { game.field().map(|f| overlay::seen(f, drawn, viewpoint.as_ref())) };
         let aim = self.headset.aim(input, screen);
         let targets = game.targets();
-        let destination = if inspecting { None } else { game.destination() };
+        let destination = if inspecting { None } else { game.destination(field.as_ref()) };
         let marks = overlay::marks(ui, aim, field.as_ref(), destination, targets.as_ref(), screen.diorama.is_some());
         xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui))
     }

@@ -8,10 +8,11 @@
 //!   group, a dropdown, a number box, the section tabs); where it takes
 //!   neither, they move the focus as up and down do (along a row of buttons).
 //! - South presses it (Return) for as long as it is held (Hold to rewind); on
-//!   a gamepad binding's field it takes the next buttons pressed together as
-//!   that binding.
-//! - East closes a dropdown's list, the quit question or a binding's editor,
-//!   else the panel.
+//!   a binding's field it listens for an input.
+//! - While a binding listens, every button is the binding's: once all are
+//!   let go after one or more were pressed, a game action takes the first,
+//!   a shortcut the standard buttons pressed together.
+//! - East closes a dropdown's list or the quit question, else the panel.
 //! - L1 and R1 go to the previous and next section, onto its first control.
 //!
 //! The first press after the panel shows only puts the focus on the
@@ -58,13 +59,12 @@ pub(crate) struct Pad {
     capture: Option<Capture>,
 }
 
-/// A gamepad binding's field taking the buttons pressed next.
+/// A listening binding taking the buttons pressed next.
 struct Capture {
-    /// `SettingsPanel::binding-field`: 1 a shortcut's chord, 2 a game action's inputs.
-    field: i32,
-    /// The field's text before, should it end with nothing pressed.
-    before: SharedString,
-    /// Everything was let go since South began it.
+    /// The binding (`SettingsPanel::listen-list`: 1 a shortcut's chord, 2 a
+    /// game action's inputs; and its row).
+    listening: (i32, i32),
+    /// Everything was let go since it began listening.
     armed: bool,
     /// The inputs pressed, in order.
     pressed: Vec<usize>,
@@ -80,24 +80,15 @@ impl SettingsUi {
         self.pad.set(pad);
     }
 
-    /// Whether a gamepad binding's field is taking the buttons pressed next:
-    /// the host's app chords wait meanwhile, so binding Back+South does not
-    /// also save a state.
-    pub fn capturing_buttons(&self) -> bool {
-        self.panel.get_capturing_buttons()
-    }
-
     /// The panel hidden (or the app's input lost): the gamepad lets go of
-    /// what it pressed, a capture ends as it began, and the next press after
-    /// the panel shows again starts afresh.
+    /// what it pressed, a capture ends, and the next press after the panel
+    /// shows again starts afresh.
     pub(crate) fn release_gamepad(&self) {
-        let mut pad = self.pad.take();
+        let pad = self.pad.take();
         if pad.pressing {
             self.key_up(Key::Return);
         }
-        if let Some(capture) = pad.capture.take() {
-            self.end_capture(capture.field, capture.before);
-        }
+        self.pad_held.set(false);
     }
 
     fn poll(&self, pad: &mut Pad, pressed: &[u8], axes: &[f32], now: Duration) {
@@ -106,17 +97,30 @@ impl SettingsUi {
         let held = inputs.gamepad;
         let Some(before) = pad.held.replace(held) else { return };
         let pressed = held & !before;
+        let listening = (self.panel.get_listen_list(), self.panel.get_listen_row());
+        if pad.capture.as_ref().is_some_and(|capture| capture.listening != listening) {
+            // It stopped listening (it took a key or a click, gave up, or
+            // another binding listens).
+            pad.capture = None;
+            self.pad_held.set(false);
+        }
+        if listening.0 != 0 && pad.capture.is_none() {
+            // South's Return began it: let go of it now.
+            if pad.pressing {
+                pad.pressing = false;
+                self.key_up(Key::Return);
+            }
+            pad.capture = Some(Capture { listening, armed: false, pressed: Vec::new() });
+        }
         if let Some(capture) = &mut pad.capture {
-            if self.panel.get_binding_field() != capture.field {
-                // The pointer took the focus elsewhere.
-                let capture = pad.capture.take().unwrap();
-                self.end_capture(capture.field, capture.before);
-            } else if !capture.armed {
+            if !capture.armed {
                 capture.armed = held == 0;
             } else {
                 for input in (0..GAMEPAD_INPUTS.len()).filter(|i| pressed & (1 << i) != 0) {
                     capture.pressed.push(input);
                 }
+                self.pad_held.set(held != 0);
+                self.panel.set_listen_held(held != 0 || !self.keys.borrow().held.is_empty());
                 if held == 0 && !capture.pressed.is_empty() {
                     let capture = pad.capture.take().unwrap();
                     self.finish_capture(capture);
@@ -165,13 +169,8 @@ impl SettingsUi {
             return;
         }
         if pressed & SOUTH != 0 {
-            match self.panel.get_binding_field() {
-                0 => {
-                    self.key_down(Key::Return);
-                    pad.pressing = true;
-                }
-                field => pad.capture = Some(self.begin_capture(field)),
-            }
+            self.key_down(Key::Return);
+            pad.pressing = true;
         }
         if let Some(direction) = step {
             self.step(direction);
@@ -231,33 +230,21 @@ impl SettingsUi {
         }
     }
 
-    fn begin_capture(&self, field: i32) -> Capture {
-        let before = if field == 1 { self.panel.get_gamepad_binding() } else { self.panel.get_game_buttons() };
-        self.set_field(field, SharedString::new());
-        self.panel.set_capturing_buttons(true);
-        Capture { field, before, armed: false, pressed: Vec::new() }
-    }
-
-    /// The buttons pressed, as the field writes them: a shortcut's chord
-    /// joined by `+` (its standard buttons only), a game action's inputs
-    /// (any of which plays it) by spaces; four at most.
+    /// The buttons pressed, as the listening binding takes them: a game
+    /// action the first input, a shortcut the standard buttons pressed
+    /// together (four at most; with none, it listens on).
     fn finish_capture(&self, capture: Capture) {
-        let names: Vec<&str> = capture.pressed.iter()
-            .filter(|&&input| capture.field != 1 || BUTTONS & (1 << input) != 0)
-            .map(|&input| GAMEPAD_INPUTS[input])
-            .take(4)
+        let (list, row) = capture.listening;
+        let names: Vec<String> = capture.pressed.iter()
+            .filter(|&&input| list != 1 || BUTTONS & (1 << input) != 0)
+            .map(|&input| GAMEPAD_INPUTS[input].to_owned())
+            .take(if list == 1 { 4 } else { 1 })
             .collect();
-        let text = names.join(if capture.field == 1 { "+" } else { " " });
-        self.end_capture(capture.field, if text.is_empty() { capture.before } else { text.into() });
-    }
-
-    fn end_capture(&self, field: i32, text: SharedString) {
-        self.set_field(field, text);
-        self.panel.set_capturing_buttons(false);
-    }
-
-    fn set_field(&self, field: i32, text: SharedString) {
-        if field == 1 { self.panel.set_gamepad_binding(text) } else { self.panel.set_game_buttons(text) }
+        self.pad_held.set(false);
+        self.panel.set_listen_held(!self.keys.borrow().held.is_empty());
+        if !names.is_empty() {
+            crate::bind_listened(&self.panel, &self.settings, list, row, &names);
+        }
     }
 
     /// A key pressed and let go; whether a control took it.

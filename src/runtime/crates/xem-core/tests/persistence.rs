@@ -1982,7 +1982,7 @@ fn the_field_command_reports_the_random_draw_and_whether_it_is_off_here() {
 #[test]
 fn inspection_stops_a_route_refuses_new_ones_and_leaves_recorded_ones_to_run() {
     let mut s = session();
-    let intent = xem_core::assist::Intent::Walk { to: xem_core::field::V3::new(10.0, 0.0, 20.0), triangle: 0, layer: 0 };
+    let intent = xem_core::assist::Intent::Walk { to: xem_core::field::V3::new(10.0, 0.0, 20.0), triangle: 0, layer: 0, beyond: None };
     s.execute(&json!({"cmd":"record"}));
     s.start_assist(intent.clone());
     s.set_inspecting(true);
