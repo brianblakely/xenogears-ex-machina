@@ -1808,13 +1808,18 @@ snapshots are its. The renderer only draws again what it drew:
   cross product more each, and 1 to 3 fold; over eight rounds alternating
   with the build before, every row's presentation stayed within 0.010 ms
   of it on average either way, as an identical copy of that build did. The
-  clear colour still within the scene from 300% out is where the scene
-  itself is open, never seen from the game's camera (the forest's floor
-  ending some 2 000 units short of the wall at its edge, a triangle
-  missing from a rock's mesh under a well's lid in Lahan: 2 190, 78 and
-  30 pixels over 200 frames walking the forest at 300% and Lahan at 450%
-  and 500%); recording every face whichever way it faces, at the widest
-  reach, leaves them as they are. Along the scene's outline against the
+  clear colour still within the scene from 300% out is where the game's
+  own scenery is open, which its camera never sees, and the renderer adds
+  no face the game's models lack. In the forest (2 190 pixels over 38 of
+  200 frames walking it at 300%) the floor's and the wall's models end
+  1 000 to 1 900 units apart; the forest clears to black, and the wall
+  beside that gap is black and the floor's rim no brighter than 33 of
+  255, so nothing shows. Under the lid of Lahan's well (78 pixels over
+  four frames walking it at 450%, 30 over two at 500%) the rock's model
+  has no face for one triangle: each of its three edges belongs to one
+  face only, and the quad beside it repeats its second point as its
+  fourth. Recording every face whichever way it faces, at the widest
+  reach, leaves both as they are. Along the scene's outline against the
   void around it, the clear colour is that void (its staircase's notches:
   365 of the 377 pixels a count of enclosed clear colour finds walking
   Lahan with L1 at 450%).
