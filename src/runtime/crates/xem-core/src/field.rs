@@ -18,9 +18,13 @@
 //! triangles (three vertex indices, the neighbours across v0-v1, v1-v2 and
 //! v2-v0 or -1, an attribute index) over SVECTOR vertices in whole world
 //! units, Y down. An attribute word blocks an actor whose flags' bits 8-10
-//! meet its bits 5-7, and bit 23 blocks layer 0; bit 22 marks a ledge that
-//! is entered from below only by jumping; the word reads 0 while the
-//! actor's `layer_flags` bit (layer + 3) is set.
+//! meet its bits 5-7, and bit 23 blocks layer 0 (above it, it is a pit the
+//! leader falls through); bit 22 marks a slide (a
+//! ledge) that is entered from below only by jumping, starts no jump and
+//! takes the actor only down or level; the word reads 0 while the actor's
+//! `layer_flags` bit (layer + 3) is set. Jumps follow the party's measured
+//! arc (tools/analysis/platforming.py, `JUMP_ARC`): a slide is climbed only
+//! as high as a jump rises, a gap crossed only as far as it carries.
 use crate::memory::GameMemory;
 use serde::Serialize;
 
@@ -104,6 +108,26 @@ impl Camera {
         (z > 1.0).then(|| (SCREEN_CENTRE.0 + x * self.h / z, SCREEN_CENTRE.1 + y * self.h / z))
     }
 
+    /// The part of the world triangle `corners` in front of the camera as
+    /// the screen shows it: a polygon of up to four screen points (none
+    /// when it lies wholly behind).
+    pub fn project_clipped(&self, corners: [V3; 3]) -> Vec<(f32, f32)> {
+        const NEAR: f32 = 1.0;
+        let view = corners.map(|p| self.view(p));
+        let mut polygon = Vec::with_capacity(4);
+        for i in 0..3 {
+            let (a, b) = (view[i], view[(i + 1) % 3]);
+            if a[2] > NEAR {
+                polygon.push(a);
+            }
+            if (a[2] > NEAR) != (b[2] > NEAR) {
+                let t = (NEAR - a[2]) / (b[2] - a[2]);
+                polygon.push([0, 1, 2].map(|k| a[k] + (b[k] - a[k]) * t));
+            }
+        }
+        polygon.into_iter().map(|[x, y, z]| (SCREEN_CENTRE.0 + x * self.h / z.max(NEAR), SCREEN_CENTRE.1 + y * self.h / z.max(NEAR))).collect()
+    }
+
     /// The world ray through a screen point: its origin (the eye) and
     /// direction.
     pub fn ray(&self, (sx, sy): (f32, f32)) -> Option<(V3, V3)> {
@@ -164,6 +188,9 @@ pub struct Triangle {
 pub struct Layer {
     pub vertices: Vec<V3>,
     pub triangles: Vec<Triangle>,
+    /// Where the game keeps its triangles (0 for none read from the game):
+    /// with their count, which walkmesh this is.
+    pub at: u32,
 }
 
 impl Layer {
@@ -332,7 +359,7 @@ impl Field {
             let raw = read_bytes(memory, vertices_at, (max_vertex + 1) * 8)?;
             let vertices = (0..=max_vertex).map(|i| V3::new(f32::from(s16(&raw, i * 8)), f32::from(s16(&raw, i * 8 + 2)), f32::from(s16(&raw, i * 8 + 4)))).collect();
             triangles.retain(|t| t.n.iter().all(|n| *n < count as i32));
-            layers.push(Layer { vertices, triangles });
+            layers.push(Layer { vertices, triangles, at: triangles_at });
         }
         let attributes = match attributes_at {
             Some(at) => {
@@ -487,14 +514,34 @@ impl Field {
     }
 
     /// Whether the player can walk to `point` on `goal`, must jump on the
-    /// way, or cannot reach it.
+    /// way, or cannot reach it. A pointer resting on the floor asks it every
+    /// frame: the answers for a game walkmesh are kept a while (by its
+    /// triangles' place and count, the actor's triangle and flags and the
+    /// goal; the walkmesh holds still within a map).
     pub fn reach(&self, actor: &Actor, goal: usize, point: V3) -> Reach {
-        match self.route(actor, goal, point) {
+        let layer = self.layers.get(actor.layer);
+        let key = layer.filter(|l| l.at != 0).zip(self.start(actor))
+            .map(|(l, start)| (l.at, l.triangles.len(), start, goal, actor.flags, actor.layer_flags));
+        thread_local! {
+            static KNOWN: std::cell::RefCell<std::collections::VecDeque<((u32, usize, usize, usize, u32, u32), Reach)>> = Default::default();
+        }
+        if let Some(reach) = key.and_then(|key| KNOWN.with_borrow(|known| known.iter().find(|(k, _)| *k == key).map(|(_, r)| *r))) {
+            return reach;
+        }
+        let reach = match self.route(actor, goal, point) {
             Some(route) if route.jump.is_some() => Reach::Jump,
             Some(_) => Reach::Walk,
-            None if self.blocked(actor.layer, goal, actor) => Reach::Invalid,
             None => Reach::Invalid,
+        };
+        if let Some(key) = key {
+            KNOWN.with_borrow_mut(|known| {
+                if known.len() == 64 {
+                    known.pop_front();
+                }
+                known.push_back((key, reach));
+            });
         }
+        reach
     }
 
     /// The triangle the actor stands on.
@@ -512,67 +559,314 @@ impl Field {
     /// needed (a ledge entered from below, or a gap to the goal's part of
     /// the mesh).
     pub fn route(&self, actor: &Actor, goal: usize, point: V3) -> Option<Route> {
+        self.route_with(actor, goal, point, &mut Leaps::default())
+    }
+
+    /// [`Field::route`], with the jumps found kept in `leaps` for the next
+    /// search of this layer (the assist plans its route again each frame;
+    /// the walkmesh does not change under it).
+    pub fn route_with(&self, actor: &Actor, goal: usize, point: V3, leaps: &mut Leaps) -> Option<Route> {
         let layer = actor.layer;
         let mesh = self.layers.get(layer)?;
         let start = self.start(actor)?;
         if goal >= mesh.triangles.len() || self.blocked(layer, goal, actor) {
             return None;
         }
-        // A* over triangles; entering a ledge higher than where one stands
-        // needs a jump there.
-        let count = mesh.triangles.len();
-        let mut cost = vec![f32::INFINITY; count];
-        let mut from: Vec<Option<(usize, bool)>> = vec![None; count];
-        let mut open = std::collections::BinaryHeap::new();
-        cost[start] = 0.0;
-        open.push(Node(-mesh.centroid(start).planar(point), start));
-        while let Some(Node(_, t)) = open.pop() {
-            if t == goal {
-                break;
-            }
-            for e in 0..3 {
-                let next = mesh.triangles[t].n[e];
-                if next < 0 { continue; }
-                let next = next as usize;
-                if self.blocked(layer, next, actor) { continue; }
-                let climb = self.ledge(layer, next, actor) && !self.ledge(layer, t, actor)
-                    && mesh.centroid(next).y < mesh.centroid(t).y - 8.0;
-                let (a, b) = mesh.edge(t, e);
-                let mid = a.add(b).scale(0.5);
-                let step = mesh.centroid(t).planar(mid) + mid.planar(mesh.centroid(next)) + if climb { 200.0 } else { 0.0 };
-                if cost[t] + step < cost[next] {
-                    cost[next] = cost[t] + step;
-                    from[next] = Some((t, climb));
-                    open.push(Node(-(cost[next] + mesh.centroid(next).planar(point)), next));
+        // A* over triangles walking to neighbours; where no walk reaches the
+        // goal, again with jumps from a floor's edge over a slide too high
+        // to walk onto, to the floor beyond it (the cheap search first: a
+        // walk wins wherever there is one).
+        let mut search = Search::new(mesh.triangles.len());
+        search.seed(start, 0.0, None, mesh.centroid(start).planar(point));
+        self.search(actor, &mut search, goal, point, None);
+        if search.cost[goal].is_infinite() {
+            // Walking reached all it reaches: on from there by the jumps out
+            // of it, then by walking and jumping.
+            leaps.keep_for(layer, mesh.triangles.len(), jump_arc(actor));
+            let others = self.obstacles(actor);
+            let walked: Vec<usize> = (0..mesh.triangles.len()).filter(|t| search.closed[*t]).collect();
+            for t in walked {
+                for e in 0..3 {
+                    if let Some((next, jump)) = self.leap(actor, leaps, &others, t, e)
+                        && !search.closed[next]
+                    {
+                        let cost = search.cost[t] + mesh.centroid(t).planar(jump.takeoff) + jump.takeoff.planar(jump.toward) + JUMP_COST;
+                        search.seed(next, cost, Some((t, Some(jump))), mesh.centroid(next).planar(point));
+                    }
                 }
             }
+            self.search(actor, &mut search, goal, point, Some((leaps, &others)));
         }
+        let Search { cost, from, .. } = search;
         if cost[goal].is_infinite() {
-            return self.route_to_gap(actor, start, goal, point);
+            // The search ran out: what it reached is all the actor reaches.
+            let reachable: Vec<bool> = cost.iter().map(|c| c.is_finite()).collect();
+            return self.route_to_gap(actor, start, goal, point, &reachable);
         }
+        // Back from the goal: the corridor up to the first jump on the way,
+        // and that jump.
         let mut corridor = vec![goal];
         let mut jump = None;
         let mut t = goal;
-        while let Some((previous, climb)) = from[t] {
-            if climb { jump = Some(previous); }
+        while let Some((previous, leap)) = from[t] {
+            if leap.is_some() {
+                corridor.clear();
+                jump = leap;
+            }
             corridor.push(previous);
             t = previous;
         }
         corridor.reverse();
-        let corners = funnel(mesh, &corridor, actor.position, point, f32::from(actor.radius).clamp(4.0, 24.0));
-        let jump = jump.map(|takeoff| {
-            let i = corridor.iter().position(|c| *c == takeoff).expect("on the corridor");
-            let (a, b) = shared_edge(mesh, takeoff, corridor[i + 1]).expect("neighbours");
-            Jump { takeoff: a.add(b).scale(0.5), toward: mesh.centroid(corridor[i + 1]) }
-        });
+        let clearance = f32::from(actor.radius).clamp(4.0, 24.0);
+        let Some(jump) = jump else {
+            let corners = funnel(mesh, &corridor, actor.position, point, clearance);
+            let length = path_length(actor.position, &corners);
+            return Some(Route { corners, jump: None, goal: point, length });
+        };
+        // The walk up to the takeoff, the jump to its landing, the goal.
+        let mut corners = funnel(mesh, &corridor, actor.position, jump.takeoff, clearance);
+        corners.extend([jump.toward, point]);
+        corners.dedup_by(|a, b| a.planar(*b) < 0.5);
         let length = path_length(actor.position, &corners);
-        Some(Route { corners, jump, goal: point, length })
+        Some(Route { corners, jump: Some(jump), goal: point, length })
     }
 
-    /// The goal lies on a part of the mesh the actor cannot walk to: walk to
-    /// the reachable boundary edge nearest it (within a jump's reach), the
-    /// jump the player's own.
-    fn route_to_gap(&self, actor: &Actor, start: usize, goal: usize, point: V3) -> Option<Route> {
+    /// A* over `search` toward `goal` (at `point`), from what it holds open:
+    /// each triangle's cost and the step into it (from where, and the jump
+    /// when it was one). With `leaps` (the jump's arc, other actors' bodies)
+    /// jumps over slides too high to walk onto count as steps. It runs until
+    /// the goal, else until all it reaches is reached; a triangle expanded
+    /// once stays so (the heuristic, the floor distance to the goal, never
+    /// overestimates a step).
+    fn search(&self, actor: &Actor, search: &mut Search, goal: usize, point: V3, mut leaps: Option<(&mut Leaps, &[(V3, f32)])>) {
+        let mesh = &self.layers[actor.layer];
+        while let Some(Node(_, t)) = search.open.pop() {
+            if t == goal {
+                break;
+            }
+            if std::mem::replace(&mut search.closed[t], true) {
+                continue;
+            }
+            for e in 0..3 {
+                let (next, step, jump) = match self.step(actor, t, e) {
+                    Some(next) => {
+                        let (a, b) = mesh.edge(t, e);
+                        let mid = a.add(b).scale(0.5);
+                        (next, mesh.centroid(t).planar(mid) + mid.planar(mesh.centroid(next)), None)
+                    }
+                    None => match leaps.as_mut().and_then(|(leaps, others)| self.leap(actor, leaps, others, t, e)) {
+                        Some((next, jump)) => {
+                            let step = mesh.centroid(t).planar(jump.takeoff) + jump.takeoff.planar(jump.toward) + JUMP_COST;
+                            (next, step, Some(jump))
+                        }
+                        None => continue,
+                    },
+                };
+                if !search.closed[next] {
+                    search.seed(next, search.cost[t] + step, Some((t, jump)), mesh.centroid(next).planar(point));
+                }
+            }
+        }
+        // Left open for a search that goes on from here.
+        search.open.clear();
+    }
+
+    /// Where the actor walks from triangle `t` of its layer across edge `e`:
+    /// a floor walks onto any floor beside it and onto a slide no more than
+    /// `CLIMB` above it; a slide takes it only down or level (heights are
+    /// the triangles' middles, as tools/analysis/platforming.py compares
+    /// them). Triangles that block it, and the mesh's edge, are no way.
+    fn step(&self, actor: &Actor, t: usize, e: usize) -> Option<usize> {
+        let layer = actor.layer;
+        let mesh = &self.layers[layer];
+        let next = usize::try_from(mesh.triangles[t].n[e]).ok().filter(|n| *n < mesh.triangles.len())?;
+        // Above layer 0 a triangle of bit 23 has no floor: the leader falls
+        // through it to another layer, which a route does not follow.
+        if self.blocked(layer, next, actor) || (layer > 0 && self.attribute(layer, next, actor) & ATTR_LAYER0_BLOCK != 0) {
+            return None;
+        }
+        let slide = self.ledge(layer, t, actor) || self.ledge(layer, next, actor);
+        (!(slide && mesh.centroid(next).y < mesh.centroid(t).y - CLIMB)).then_some(next)
+    }
+
+    /// A jump from floor `t`'s edge `e` over the slide beyond it, too high
+    /// to walk onto, straight out from the edge: the floor it lands on, the
+    /// first its flight (`arc`) passes over above every slide it crosses,
+    /// and where on it, a little past where it reaches it. None where the
+    /// flight meets a slide, a triangle the actor may not cross or the
+    /// mesh's edge first, and where another actor's body (`others`: centres
+    /// and the distances kept from them) stands on the takeoff or the
+    /// landing. No jump starts on a slide.
+    fn leap(&self, actor: &Actor, leaps: &mut Leaps, others: &[(V3, f32)], t: usize, e: usize) -> Option<(usize, Jump)> {
+        // From a floor onto a slide it may cross (the edges worth a flight).
+        let layer = actor.layer;
+        let first = usize::try_from(self.layers[layer].triangles[t].n[e]).ok().filter(|n| *n < self.layers[layer].triangles.len())?;
+        if self.ledge(layer, t, actor) || !self.ledge(layer, first, actor) || self.blocked(layer, first, actor) {
+            return None;
+        }
+        let arc = leaps.arc;
+        let (next, jump) = (*leaps.found.entry((t, e)).or_insert_with(|| self.flight(actor, &Arc(arc), t, e)))?;
+        let kept = |p: V3| others.iter().all(|(centre, keep)| centre.planar(p) >= *keep);
+        (kept(jump.takeoff) && kept(jump.toward)).then_some((next, jump))
+    }
+
+    /// [`Field::leap`]'s flight, whoever stands where (the walkmesh's alone).
+    fn flight(&self, actor: &Actor, arc: &Arc, t: usize, e: usize) -> Option<(usize, Jump)> {
+        let layer = actor.layer;
+        let mesh = &self.layers[layer];
+        let first = usize::try_from(mesh.triangles[t].n[e]).ok().filter(|n| *n < mesh.triangles.len())?;
+        if self.ledge(layer, t, actor) || !self.ledge(layer, first, actor) || self.blocked(layer, first, actor) {
+            return None;
+        }
+        let (a, b) = mesh.edge(t, e);
+        let mid = a.add(b).scale(0.5);
+        let takeoff = V3::new(mid.x, mesh.height(t, mid.x, mid.z), mid.z);
+        // Out of `t` across the edge, on the floor.
+        let along = b.sub_planar(a);
+        let length = (along.x * along.x + along.z * along.z).sqrt().max(1e-3);
+        let mut out = V3::new(along.z / length, 0.0, -along.x / length);
+        if out.dot(mesh.centroid(t).sub_planar(takeoff)) > 0.0 {
+            out = out.scale(-1.0);
+        }
+        let at = |s: f32| takeoff.add(out.scale(s));
+        let above = |t: usize, s: f32| {
+            let p = at(s);
+            takeoff.y - mesh.height(t, p.x, p.z)
+        };
+        let (mut current, mut entered) = (first, 0.0f32);
+        for _ in 0..LEAP_TRIANGLES {
+            let (left, exit) = exit(mesh, current, takeoff, out, entered)?;
+            if !self.ledge(layer, current, actor) {
+                // A floor: land a little past where the flight reaches it,
+                // and no farther than halfway across the floor the line
+                // goes on over (not just this triangle: a thin one's middle
+                // lies by its edges, where the leader, let go a little
+                // short, comes down on the slide it cleared and slides
+                // back).
+                let floor = |n: usize| !self.ledge(layer, n, actor) && !self.blocked(layer, n, actor)
+                    && self.attribute(layer, n, actor) & ATTR_LAYER0_BLOCK == 0;
+                let mut floors = vec![(current, left)];
+                let (mut through, mut edge) = (left, exit);
+                while through < entered + 2.0 * LANDING_IN && floors.len() < LEAP_TRIANGLES {
+                    let last = floors[floors.len() - 1].0;
+                    let Some(next) = usize::try_from(mesh.triangles[last].n[edge]).ok().filter(|n| *n < mesh.triangles.len() && floor(*n)) else { break };
+                    let Some((out_of, e)) = crate::field::exit(mesh, next, takeoff, out, through) else { break };
+                    floors.push((next, out_of));
+                    (through, edge) = (out_of, e);
+                }
+                let s = (entered + LANDING_IN).min((entered + through) / 2.0);
+                let under = floors.iter().find(|(_, out_of)| s <= *out_of).map_or(current, |(n, _)| *n);
+                if !arc.carries(s, above(under, s)) {
+                    return None;
+                }
+                let p = at(s);
+                return Some((under, Jump { takeoff, toward: V3::new(p.x, mesh.height(under, p.x, p.z), p.z), from: t }));
+            }
+            if !arc.carries(entered, above(current, entered) + CLEAR) || !arc.carries(left, above(current, left) + CLEAR) {
+                return None;
+            }
+            let next = usize::try_from(mesh.triangles[current].n[exit]).ok().filter(|n| *n < mesh.triangles.len())?;
+            if self.blocked(layer, next, actor) {
+                return None;
+            }
+            (current, entered) = (next, left);
+        }
+        None
+    }
+
+    /// The triangles of the actor's layer it can reach from where it stands,
+    /// walking and jumping over slides ([`Field::step`], [`Field::leap`]; no
+    /// gap's jumps).
+    pub fn reachable(&self, actor: &Actor) -> Vec<bool> {
+        let Some(mesh) = self.layers.get(actor.layer) else { return vec![] };
+        let mut seen = vec![false; mesh.triangles.len()];
+        let Some(start) = self.start(actor) else { return seen };
+        let mut leaps = Leaps::default();
+        leaps.keep_for(actor.layer, mesh.triangles.len(), jump_arc(actor));
+        let others = self.obstacles(actor);
+        seen[start] = true;
+        let mut stack = vec![start];
+        while let Some(t) = stack.pop() {
+            for e in 0..3 {
+                let next = self.step(actor, t, e).or_else(|| self.leap(actor, &mut leaps, &others, t, e).map(|(next, _)| next));
+                if let Some(next) = next
+                    && !seen[next]
+                {
+                    seen[next] = true;
+                    stack.push(next);
+                }
+            }
+        }
+        seen
+    }
+
+    /// The floor a screen point picks to walk to: the one [`Field::pick`]
+    /// finds, when the player can reach it; else (a door, a wall, a house,
+    /// the sky) the floor it can reach shown nearest the point, within
+    /// `reach` screen pixels, and the point the screen point shows at that
+    /// floor's height (beyond it: where a door or an exit stands).
+    pub fn pick_walkable(&self, screen: (f32, f32), reach: f32) -> Option<(Hit, Option<V3>)> {
+        if let Some(hit) = self.pick(screen).filter(|hit| hit.reach != Reach::Invalid) {
+            return Some((hit, None));
+        }
+        let player = self.player()?;
+        let mesh = self.layers.get(player.layer)?;
+        let reachable = self.reachable(player);
+        let (origin, direction) = self.camera.ray(screen)?;
+        // The reachable triangle shown nearest the point (along the ray,
+        // among those it lies on), and where on it.
+        let mut best: Option<(f32, f32, usize, (f32, f32))> = None;
+        for t in (0..mesh.triangles.len()).filter(|t| reachable[*t]) {
+            let shown = self.camera.project_clipped(mesh.corners(t));
+            if shown.len() < 3 {
+                continue;
+            }
+            let (near, distance) = nearest_on_polygon(screen, &shown);
+            let along = if distance == 0.0 {
+                let [p, q, r] = mesh.corners(t);
+                intersect(origin, direction, p, q, r).unwrap_or(f32::INFINITY)
+            } else {
+                f32::INFINITY
+            };
+            if distance <= reach && best.is_none_or(|(d, l, ..)| (distance, along) < (d, l)) {
+                best = Some((distance, along, t, near));
+            }
+        }
+        let (_, _, triangle, near) = best?;
+        // Just inside the triangle as shown, then on its floor.
+        let [a, b, c] = mesh.corners(triangle);
+        let polygon = self.camera.project_clipped([a, b, c]);
+        let centre = polygon.iter().fold((0.0, 0.0), |(x, y), p| (x + p.0, y + p.1));
+        let (cx, cy) = (centre.0 / polygon.len() as f32 - near.0, centre.1 / polygon.len() as f32 - near.1);
+        let step = 0.5 / (cx * cx + cy * cy).sqrt().max(0.5);
+        let shown = (near.0 + cx * step, near.1 + cy * step);
+        let (o, d) = self.camera.ray(shown)?;
+        // On the triangle there (or its plane, a hair outside).
+        let normal = b.sub(a).cross(c.sub(a));
+        let point = match intersect(o, d, a, b, c) {
+            Some(along) => o.add(d.scale(along)),
+            None if normal.dot(d).abs() > 1e-9 => o.add(d.scale(normal.dot(a.sub(o)) / normal.dot(d))),
+            None => mesh.centroid(triangle),
+        };
+        let hit = Hit { point, triangle, layer: player.layer, reach: self.reach(player, triangle, point) };
+        if hit.reach == Reach::Invalid {
+            return None;
+        }
+        // Where the point shows at the floor's height, past it from the player.
+        let beyond = (direction.y.abs() > 1e-6)
+            .then(|| (point.y - origin.y) / direction.y)
+            .filter(|along| *along > 0.0)
+            .map(|along| origin.add(direction.scale(along)))
+            .filter(|b| (BEYOND_MIN..BEYOND_MAX).contains(&b.planar(point)) && b.planar(player.position) > point.planar(player.position));
+        Some((hit, beyond))
+    }
+
+    /// The goal lies on a part of the mesh the actor cannot walk to (an
+    /// island beyond a gap): walk to the edge of where it can walk from
+    /// which a jump carries it to the island (its arc passing over the
+    /// island's nearest edge at that height), the one nearest the goal, and
+    /// jump across.
+    fn route_to_gap(&self, actor: &Actor, start: usize, goal: usize, point: V3, reachable: &[bool]) -> Option<Route> {
         let mesh = &self.layers[actor.layer];
         // Mesh joining the two (through walls the actor may not cross) is no
         // gap to jump.
@@ -590,36 +884,135 @@ impl Field {
         if linked[goal] {
             return None;
         }
-        let mut seen = vec![false; mesh.triangles.len()];
-        let mut stack = vec![start];
-        seen[start] = true;
-        let mut best: Option<(f32, usize, V3)> = None;
+        // The island's floor edges (no slide: a jump lands on a floor).
+        let mut island = vec![false; mesh.triangles.len()];
+        let mut stack = vec![goal];
+        island[goal] = true;
+        let mut shore = Vec::new();
         while let Some(t) = stack.pop() {
             for e in 0..3 {
                 let next = mesh.triangles[t].n[e];
-                let (a, b) = mesh.edge(t, e);
                 if next < 0 {
-                    let mid = a.add(b).scale(0.5);
-                    let d = mid.planar(point);
-                    if best.is_none_or(|(bd, _, _)| d < bd) { best = Some((d, t, mid)); }
-                } else if !seen[next as usize] && !self.blocked(actor.layer, next as usize, actor) {
-                    seen[next as usize] = true;
+                    if !self.ledge(actor.layer, t, actor) {
+                        shore.push(mesh.edge(t, e));
+                    }
+                } else if !island[next as usize] && !self.blocked(actor.layer, next as usize, actor) {
+                    island[next as usize] = true;
                     stack.push(next as usize);
                 }
             }
         }
-        let (distance, takeoff_triangle, takeoff) = best?;
-        if distance > JUMP_REACH || seen[goal] {
-            return None;
+        let arc = jump_arc(actor);
+        let far = arc.0.last().map_or(0.0, |(d, _)| *d);
+        // The shore's bounds, widened by the farthest jump: no takeoff beyond.
+        let (x0, x1, z0, z1) = shore.iter().flat_map(|(u, v)| [*u, *v]).fold((f32::MAX, f32::MIN, f32::MAX, f32::MIN), |(x0, x1, z0, z1), p| {
+            (x0.min(p.x - far), x1.max(p.x + far), z0.min(p.z - far), z1.max(p.z + far))
+        });
+        let others = self.obstacles(actor);
+        // Takeoffs: the walkable floor's open edges (no jump starts on a
+        // slide, nor where another actor stands).
+        let mut best: Option<(f32, usize, V3, V3)> = None;
+        for t in (0..mesh.triangles.len()).filter(|t| reachable[*t] && !self.ledge(actor.layer, *t, actor)) {
+            for e in 0..3 {
+                if mesh.triangles[t].n[e] >= 0 {
+                    continue;
+                }
+                let (a, b) = mesh.edge(t, e);
+                let takeoff = a.add(b).scale(0.5);
+                if !(x0..=x1).contains(&takeoff.x) || !(z0..=z1).contains(&takeoff.z)
+                    || others.iter().any(|(centre, keep)| centre.planar(takeoff) < *keep)
+                {
+                    continue;
+                }
+                let Some((landing, gap)) = shore.iter()
+                    .map(|&(u, v)| {
+                        let (d, along) = segment_planar(takeoff, u, v);
+                        (u.add(v.sub(u).scale(along)), d)
+                    })
+                    .min_by(|x, y| x.1.total_cmp(&y.1)) else { return None };
+                // How high the landing lies above the takeoff (y is down).
+                if !arc.carries(gap + LANDING_IN, takeoff.y - landing.y) {
+                    continue;
+                }
+                let d = takeoff.planar(point);
+                if best.is_none_or(|(bd, ..)| d < bd) {
+                    best = Some((d, t, takeoff, landing));
+                }
+            }
         }
+        let (_, takeoff_triangle, takeoff, shore_point) = best?;
+        // On over the island's edge toward the goal.
+        let toward = shore_point.sub_planar(takeoff);
+        let length = (toward.x * toward.x + toward.z * toward.z).sqrt().max(1e-3);
+        let landing = shore_point.add(V3::new(toward.x / length * LANDING_IN, 0.0, toward.z / length * LANDING_IN));
         let mut route = self.route(actor, takeoff_triangle, takeoff)?;
-        route.jump = Some(Jump { takeoff, toward: point });
+        if route.jump.is_none() {
+            route.jump = Some(Jump { takeoff, toward: landing, from: takeoff_triangle });
+        }
         route.goal = point;
-        route.corners.push(point);
+        route.corners.extend([landing, point]);
         route.corners.dedup_by(|a, b| a.planar(*b) < 0.5);
         route.length = path_length(actor.position, &route.corners);
         Some(route)
     }
+}
+
+/// The jumps found from floors' edges over slides ([`Field::route_with`]):
+/// for one layer of one walkmesh and one arc, each edge's flight (whoever
+/// stands where), kept between searches while that holds.
+#[derive(Clone, Debug, Default)]
+pub struct Leaps {
+    layer: usize,
+    triangles: usize,
+    arc: &'static [(f32, f32)],
+    found: std::collections::HashMap<(usize, usize), Option<(usize, Jump)>>,
+}
+
+impl Leaps {
+    /// Kept for `layer` of `triangles` triangles and `arc`; else emptied.
+    fn keep_for(&mut self, layer: usize, triangles: usize, arc: Arc) {
+        if (self.layer, self.triangles, self.arc.as_ptr()) != (layer, triangles, arc.0.as_ptr()) {
+            *self = Leaps { layer, triangles, arc: arc.0, found: Default::default() };
+        }
+    }
+}
+
+/// A jump's flight: the distance from its takeoff and the height above it
+/// after each field update.
+pub struct Arc(&'static [(f32, f32)]);
+
+impl Arc {
+    /// The most it rises.
+    pub fn rise(&self) -> f32 {
+        self.0.iter().map(|(_, h)| *h).fold(0.0, f32::max)
+    }
+
+    /// Whether it passes `distance` from its takeoff at `rise` above it or
+    /// higher (in the air the leader may go slower than it runs, so any
+    /// update as far or farther counts).
+    pub fn carries(&self, distance: f32, rise: f32) -> bool {
+        self.0.iter().any(|(d, h)| *d >= distance && *h >= rise)
+    }
+}
+
+/// Fei's running jump on foot (map 22) and the party's in its gears (map
+/// 414), as tools/analysis/platforming.py's FOOT and GEAR measured them.
+const FOOT_ARC: [(f32, f32); 22] = [
+    (0.0, 20.75), (0.0, 39.5), (12.0, 56.25), (24.0, 71.0), (36.0, 83.75), (48.0, 94.5), (60.0, 103.25),
+    (72.0, 110.0), (84.0, 114.75), (96.0, 117.5), (108.0, 118.25), (120.0, 117.0), (132.0, 113.75),
+    (144.0, 108.5), (156.0, 101.25), (168.0, 92.0), (180.0, 80.75), (192.0, 67.5), (204.0, 52.25),
+    (216.0, 35.0), (228.0, 15.75), (240.0, 0.0),
+];
+const GEAR_ARC: [(f32, f32); 19] = [
+    (0.0, 24.75), (0.0, 47.5), (12.0, 68.25), (24.0, 87.0), (36.0, 103.75), (48.0, 118.5), (60.0, 131.25),
+    (72.0, 131.25), (84.0, 129.25), (96.0, 125.25), (108.0, 119.25), (120.0, 111.25), (132.0, 101.25),
+    (144.0, 89.25), (156.0, 75.25), (168.0, 59.25), (180.0, 41.25), (192.0, 21.25), (204.0, 0.0),
+];
+
+/// The arc of the actor's jump: on foot when its flags' bits 8-10 are the
+/// foot party's (attribute bit 7 blocks it), else in its gears.
+pub fn jump_arc(actor: &Actor) -> Arc {
+    if (actor.flags >> 8) & 7 == 4 { Arc(&FOOT_ARC) } else { Arc(&GEAR_ARC) }
 }
 
 /// The length of a path from `from` through `corners` on the floor.
@@ -627,8 +1020,47 @@ pub fn path_length(from: V3, corners: &[V3]) -> f32 {
     corners.iter().fold((from, 0.0), |(at, sum), c| (*c, sum + at.planar(*c))).1
 }
 
-/// The farthest a gap to the goal may be for a takeoff to be offered.
-const JUMP_REACH: f32 = 300.0;
+/// A slide more than this above a floor is not walked onto, nor a
+/// triangle more than this above a slide (tools/analysis/platforming.py's
+/// CLIMB, by the triangles' middles).
+const CLIMB: f32 = 8.0;
+/// How far above a slide a jump's flight must pass.
+const CLEAR: f32 = 4.0;
+/// How far past where its flight reaches a floor a jump lands.
+const LANDING_IN: f32 = 24.0;
+/// What a jump costs a route beyond its length (a walk round is better).
+const JUMP_COST: f32 = 200.0;
+/// The most triangles a jump's flight crosses.
+const LEAP_TRIANGLES: usize = 32;
+/// How far the point beyond a picked door or wall may lie past the floor.
+const BEYOND_MIN: f32 = 8.0;
+const BEYOND_MAX: f32 = 600.0;
+
+/// A route search's state ([`Field::search`]): each triangle's cost so far,
+/// the step into it (from where, and the jump when it was one), whether it
+/// was expanded, and what is open.
+struct Search {
+    cost: Vec<f32>,
+    from: Vec<Option<(usize, Option<Jump>)>>,
+    closed: Vec<bool>,
+    open: std::collections::BinaryHeap<Node>,
+}
+
+impl Search {
+    fn new(count: usize) -> Search {
+        Search { cost: vec![f32::INFINITY; count], from: vec![None; count], closed: vec![false; count], open: Default::default() }
+    }
+
+    /// Triangle `t` reached at `cost` (by `from`), `left` from the goal by
+    /// the heuristic: opened if that is less than it had.
+    fn seed(&mut self, t: usize, cost: f32, from: Option<(usize, Option<Jump>)>, left: f32) {
+        if cost < self.cost[t] {
+            self.cost[t] = cost;
+            self.from[t] = from;
+            self.open.push(Node(-(cost + left), t));
+        }
+    }
+}
 
 #[derive(PartialEq)]
 struct Node(f32, usize);
@@ -702,6 +1134,41 @@ fn funnel(mesh: &Layer, corridor: &[usize], start: V3, goal: V3, clearance: f32)
     corners
 }
 
+/// The point of the convex screen polygon `shown` nearest `p`, and how far
+/// from `p` it is (0 inside it).
+fn nearest_on_polygon(p: (f32, f32), shown: &[(f32, f32)]) -> ((f32, f32), f32) {
+    let side = |u: (f32, f32), v: (f32, f32)| (v.0 - u.0) * (p.1 - u.1) - (v.1 - u.1) * (p.0 - u.0);
+    let edges = || (0..shown.len()).map(|i| (shown[i], shown[(i + 1) % shown.len()]));
+    let sides: Vec<f32> = edges().map(|(u, v)| side(u, v)).collect();
+    if sides.iter().all(|d| *d >= 0.0) || sides.iter().all(|d| *d <= 0.0) {
+        return (p, 0.0);
+    }
+    edges().map(|(u, v)| {
+        let (ex, ey) = (v.0 - u.0, v.1 - u.1);
+        let length = ex * ex + ey * ey;
+        let t = if length < 1e-9 { 0.0 } else { (((p.0 - u.0) * ex + (p.1 - u.1) * ey) / length).clamp(0.0, 1.0) };
+        let q = (u.0 + ex * t, u.1 + ey * t);
+        (q, ((q.0 - p.0).powi(2) + (q.1 - p.1).powi(2)).sqrt())
+    }).min_by(|x, y| x.1.total_cmp(&y.1)).expect("three edges")
+}
+
+/// Where the floor ray from `origin` along `direction` (unit, y 0) leaves
+/// triangle `t` after `entered` along it: the distance, and the edge.
+fn exit(mesh: &Layer, t: usize, origin: V3, direction: V3, entered: f32) -> Option<(f32, usize)> {
+    (0..3).filter_map(|e| {
+        let (a, b) = mesh.edge(t, e);
+        let (ex, ez) = (b.x - a.x, b.z - a.z);
+        let det = direction.x * ez - direction.z * ex;
+        if det.abs() < 1e-9 {
+            return None;
+        }
+        let (wx, wz) = (a.x - origin.x, a.z - origin.z);
+        let s = (wx * ez - wz * ex) / det;
+        let u = (wx * direction.z - wz * direction.x) / det;
+        ((-1e-4..=1.0 + 1e-4).contains(&u) && s > entered + 1e-3).then_some((s, e))
+    }).min_by(|x, y| x.0.total_cmp(&y.0))
+}
+
 /// The floor distance from `p` to the segment `a`-`b`, and where along it.
 fn segment_planar(p: V3, a: V3, b: V3) -> (f32, f32) {
     let (abx, abz) = (b.x - a.x, b.z - a.z);
@@ -745,9 +1212,12 @@ pub struct Hit {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub struct Jump {
-    /// Where to take off, and the point to head for through the jump.
+    /// Where to take off, and where to land: the point to head for through
+    /// the jump, letting go of the direction over it.
     pub takeoff: V3,
     pub toward: V3,
+    /// The triangle the takeoff stands on.
+    pub from: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -807,7 +1277,7 @@ mod tests {
             triangles.push(Triangle { v: [a, c, b], n: [-1, lower + 1, if i > 0 { lower - 1 } else { -1 }], attribute: 0 });
             triangles.push(Triangle { v: [c, d, b], n: [if i + 1 < squares { lower + 2 } else { -1 }, -1, lower], attribute: 0 });
         }
-        Layer { vertices, triangles }
+        Layer { vertices, triangles, at: 0 }
     }
 
     fn actor(at: V3) -> Actor {
@@ -861,18 +1331,34 @@ mod tests {
     }
 
     #[test]
-    fn a_higher_ledge_needs_a_jump_and_a_gap_offers_a_takeoff() {
-        let mut layer = strip(3);
-        // The last square is a ledge 40 units up (y is down).
-        for v in [6, 7] { layer.vertices[v].y = -40.0; }
-        layer.triangles[4].attribute = 1;
-        layer.triangles[5].attribute = 1;
-        let f = field(layer, vec![0, ATTR_LEDGE]);
+    fn a_floor_beyond_a_slide_is_jumped_up_to_as_high_as_a_jump_rises_and_a_gap_as_far_as_it_carries() {
+        // Squares 0 and 1 a floor, square 2 a slide rising `height` (y is
+        // down) to square 3, a floor that high.
+        let raised = |height: f32| {
+            let mut layer = strip(4);
+            for v in [6, 7, 8, 9] { layer.vertices[v].y = -height; }
+            layer.triangles[4].attribute = 1;
+            layer.triangles[5].attribute = 1;
+            field(layer, vec![0, ATTR_LEDGE])
+        };
+        let f = raised(60.0);
         let player = *f.player().unwrap();
-        let goal = f.layers[0].locate(250.0, 50.0).unwrap();
-        let route = f.route(&player, goal, V3::new(250.0, 0.0, 50.0)).unwrap();
-        let jump = route.jump.expect("a jump onto the ledge");
-        assert!((jump.takeoff.x - 200.0).abs() < 1.0, "{jump:?}");
+        let goal = f.layers[0].locate(350.0, 50.0).unwrap();
+        let point = V3::new(350.0, -60.0, 50.0);
+        let route = f.route(&player, goal, point).unwrap();
+        let jump = route.jump.expect("a jump up over the slide");
+        assert!((jump.takeoff.x - 200.0).abs() < 1.0 && jump.takeoff.z == 50.0, "from the slide's foot: {jump:?}");
+        assert!(jump.toward.x > 300.0 && (jump.toward.y + 60.0).abs() < 1.0, "onto the raised floor: {jump:?}");
+        assert_eq!(route.corners.last(), Some(&point));
+        assert!(route.corners.iter().any(|c| c.planar(jump.takeoff) < 0.5), "the walk goes to the takeoff: {route:?}");
+        assert_eq!(f.reach(&player, goal, point), Reach::Jump);
+        // The slide is no floor to stand on: walked onto from its foot only.
+        let on_slide = f.layers[0].locate(250.0, 50.0).unwrap();
+        assert!(f.reachable(&player)[on_slide] && f.reachable(&player)[goal]);
+        // Higher than a jump rises (118.25): no way up.
+        let f = raised(150.0);
+        assert!(f.route(&player, goal, V3::new(350.0, -150.0, 50.0)).is_none());
+        assert!(!f.reachable(&player)[goal]);
         // Two strips with a gap between them.
         let mut layer = strip(2);
         let mut far = strip(2);

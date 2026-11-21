@@ -990,7 +990,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         };
         last_screen = Some(screen);
         let style = Assisted::style(&current);
-        let placed = assist.placed(&current, &assisted_input, &screen, &mut game, view.viewpoint());
+        let placed = assist.placed(&current, &assisted_input, &screen, &mut game, view.drawn_camera(), view.viewpoint());
         // The keys beside the screen (the frame log's): how many, the widest
         // and narrowest (metres), and the nearest and farthest a key's inner
         // edge stands from the screen's edge beside it.

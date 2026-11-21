@@ -17,7 +17,10 @@
 //! the Self-repairing Robot resupplies (two maps below the top, map 420),
 //! with no random battle on the way, as a player walks it (the assisted
 //! route, Jump pressed at each takeoff and a running jump where the route
-//! found none), and map 418's fixed battle still starts when the party
+//! found none or stops short: where the planner reaches no door, as a click
+//! there walks, to the floor it reaches nearest the door and on into it;
+//! it follows no jump from a slide, which the tower's ramps take), and map
+//! 418's fixed battle still starts when the party
 //! touches its actor; under the original the same walk meets a random
 //! battle on map 414. Local only: it needs the user's disc 1 and a game
 //! module build.
@@ -281,10 +284,37 @@ enum Walked {
 /// Walks toward `to` (x, z) on the assisted route as a player does: the
 /// assist holds the D-pad and Run, the player presses Jump each time it
 /// waits at a takeoff, until a door leads on, a battle comes or the assist
-/// ends.
+/// ends. Where the planner reaches no route to `to`, as a click there: to
+/// the floor it reaches nearest `to` along the walkmesh (the foot of the
+/// ramp the planner climbs no farther), and on into `to` (a walk that stops
+/// pressing on short of it ends `stuck`).
 fn walk_to(session: &mut Session<NativeModule>, to: [f64; 2]) -> Walked {
     let start = map(session);
-    run(session, json!({"cmd": "navigate", "to": to}));
+    let pressing = session.execute(&json!({"cmd": "navigate", "to": to})).get("error").is_some();
+    if pressing {
+        let field = xem_core::field::Field::read(session.runtime.memory()).expect("a field");
+        let player = *field.player().expect("a player");
+        let mesh = &field.layers[player.layer];
+        let reachable = field.reachable(&player);
+        // Back from `to` over the walkmesh's triangles (as far as their
+        // centroids lie apart), to the first the player reaches.
+        let goal = mesh.locate(to[0] as f32, to[1] as f32).expect("`to` on the player's floor");
+        let mut far = vec![f32::INFINITY; mesh.triangles.len()];
+        let mut done = vec![false; mesh.triangles.len()];
+        far[goal] = 0.0;
+        let triangle = loop {
+            let t = (0..far.len()).filter(|t| !done[*t] && far[*t].is_finite()).min_by(|a, b| far[*a].total_cmp(&far[*b])).expect("a floor the player reaches");
+            if reachable[t] {
+                break t;
+            }
+            done[t] = true;
+            for n in mesh.triangles[t].n.iter().filter_map(|n| usize::try_from(*n).ok()) {
+                far[n] = far[n].min(far[t] + mesh.centroid(t).planar(mesh.centroid(n)));
+            }
+        };
+        let floor = mesh.centroid(triangle);
+        run(session, json!({"cmd": "navigate", "to": [floor.x, floor.z], "triangle": triangle, "beyond": to}));
+    }
     let mut waiting = false;
     for _ in 0..3000 {
         if battle(session) {
@@ -295,7 +325,8 @@ fn walk_to(session: &mut Session<NativeModule>, to: [f64; 2]) -> Walked {
         }
         let status = run(session, json!({"cmd": "status"}));
         if status["assist"].is_null() {
-            return Walked::Ended(status["assist_outcome"].clone());
+            let outcome = status["assist_outcome"].clone();
+            return Walked::Ended(if pressing && outcome == "arrived" { json!("stuck") } else { outcome });
         }
         let at_takeoff = status["assist"]["phase"] == "awaiting_jump";
         if at_takeoff && !waiting {

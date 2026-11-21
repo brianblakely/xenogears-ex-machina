@@ -95,6 +95,9 @@ pub struct WorldRay {
 
 /// Screen pixels within which an actor counts as pointed at.
 const ACTOR_REACH: f32 = 18.0;
+/// Screen pixels within which a point off the floors the player can reach
+/// (a door, a wall, a house) walks to the reachable floor shown nearest it.
+const FLOOR_REACH: f32 = 48.0;
 
 /// The ring's directions in `ring_slot` order.
 const RING_DIRECTIONS: [GameAction; 4] = [GameAction::Right, GameAction::Down, GameAction::Left, GameAction::Up];
@@ -194,8 +197,20 @@ fn pinch(ui: Context, aim: Aim, field: Option<&Field>) -> Option<Out> {
     if ui != Context::Walk {
         return None;
     }
-    let hit = floor_pointed(field?, aim?)?;
-    (hit.reach != Reach::Invalid).then(|| Out::Command { command: json!({"cmd": "navigate", "to": [hit.point.x, hit.point.z]}) })
+    let (field, aim) = (field?, aim?);
+    // On the picture, a point off the floors the player can reach (a door,
+    // a wall) walks to the floor shown nearest it, and on into what it
+    // points at beyond; the floor it is on is the one picked, where floors
+    // stand over one another.
+    let (hit, beyond) = match aim {
+        Pointed::Screen(at) => field.pick_walkable(at, FLOOR_REACH)?,
+        _ => (floor_pointed(field, aim).filter(|hit| hit.reach != Reach::Invalid)?, None),
+    };
+    let mut command = json!({"cmd": "navigate", "to": [hit.point.x, hit.point.z], "triangle": hit.triangle});
+    if let Some(beyond) = beyond {
+        command["beyond"] = json!([beyond.x, beyond.z]);
+    }
+    Some(Out::Command { command })
 }
 
 fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
@@ -446,6 +461,7 @@ mod tests {
         let layer = Layer {
             vertices: vec![V3::new(-200.0, 0.0, 0.0), V3::new(200.0, 0.0, 0.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0)],
             triangles: vec![Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 }, Triangle { v: [2, 3, 1], n: [-1, -1, 0], attribute: 0 }],
+            at: 0,
         };
         let actor = |index: usize, z: f32| Actor { index, position: V3::new(0.0, 0.0, z), layer: 0, triangle: [0; 4], flags: 0, layer_flags: 0, radius: 16, height: 60, heading: 0, heading_goal: 0 };
         Field {
@@ -462,7 +478,7 @@ mod tests {
         let pinch = [Gesture::Pinch { hand: HAND }];
         let tap = [Gesture::Tap { hand: HAND }];
         let walked = dispatch(&pinch, Context::Walk, down(-80.0, 150.0), Some(&field), None);
-        assert_eq!(walked, [Out::Command { command: json!({"cmd": "navigate", "to": [-80.0, 150.0]}) }]);
+        assert_eq!(walked, [Out::Command { command: json!({"cmd": "navigate", "to": [-80.0, 150.0], "triangle": 0}) }]);
         // Beside the villager: a tap talks to them; away from anyone it stops.
         assert_eq!(dispatch(&tap, Context::Walk, down(10.0, 310.0), Some(&field), None), [Out::Command { command: json!({"cmd": "interact", "actor": 1}) }]);
         assert_eq!(dispatch(&tap, Context::Walk, down(-150.0, 100.0), Some(&field), None), [Out::Command { command: json!({"cmd": "assist_stop"}) }]);
@@ -488,9 +504,49 @@ mod tests {
         let (x, z) = (walked["to"][0].as_f64().unwrap(), walked["to"][1].as_f64().unwrap());
         assert!((x + 80.0).abs() < 0.5 && (z - 350.0).abs() < 0.5, "walks to where it was clicked: {walked}");
         assert_eq!(click_at(at(0.0, -30.0, 300.0), &field), Some(json!({"cmd": "interact", "actor": 1})), "the villager approached and talked to");
-        // Past the floor's far edge no one stands and no floor is reached:
-        // the click is the mouse's binding.
-        assert_eq!(click_at(at(0.0, 0.0, 1000.0), &field), None);
+        // Just past the floor's far edge (a door, the way out there): to the
+        // edge, and on toward the point at the floor's height.
+        let edge = click_at(at(0.0, 0.0, 800.0), &field).expect("the floor nearest it walked to");
+        let (x, z) = (edge["to"][0].as_f64().unwrap(), edge["to"][1].as_f64().unwrap());
+        assert!(x.abs() < 2.0 && (390.0..=400.0).contains(&z), "to the far edge below the point: {edge}");
+        let (bx, bz) = (edge["beyond"][0].as_f64().unwrap(), edge["beyond"][1].as_f64().unwrap());
+        assert!(bx.abs() < 2.0 && (bz - 800.0).abs() < 2.0, "and on to the point: {edge}");
+        // Far from any floor (the floor shows above the screen's middle
+        // here) no one stands and no floor is reached: the click is the
+        // mouse's binding.
+        assert_eq!(click_at((160.0, 220.0), &field), None);
+    }
+
+    #[test]
+    fn a_click_on_floor_the_player_cannot_reach_walks_to_the_floor_shown_nearest_it_and_on_into_it() {
+        use xem_core::field::{Layer, Triangle};
+        // The floor's far half is a house the player may not enter
+        // (attribute 1: flags bit 8 against bit 5).
+        let mut field = floor();
+        field.layers[0] = Layer {
+            vertices: vec![
+                V3::new(-200.0, 0.0, 0.0), V3::new(200.0, 0.0, 0.0), V3::new(-200.0, 0.0, 200.0),
+                V3::new(200.0, 0.0, 200.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0),
+            ],
+            triangles: vec![
+                Triangle { v: [0, 2, 1], n: [-1, 1, -1], attribute: 0 },
+                Triangle { v: [2, 3, 1], n: [2, -1, 0], attribute: 0 },
+                Triangle { v: [2, 4, 3], n: [-1, 3, 1], attribute: 1 },
+                Triangle { v: [4, 5, 3], n: [-1, -1, 2], attribute: 1 },
+            ],
+            at: 0,
+        };
+        field.attributes = vec![0, 0x20];
+        for actor in field.actors.iter_mut().flatten() {
+            actor.flags = 0x100;
+        }
+        field.actors.truncate(1);
+        let at = field.camera.project(V3::new(-50.0, 0.0, 300.0)).expect("in front of the camera");
+        let walked = click_at(at, &field).expect("the floor before the house");
+        let (x, z) = (walked["to"][0].as_f64().unwrap(), walked["to"][1].as_f64().unwrap());
+        assert!((x + 50.0).abs() < 20.0 && (180.0..=200.0).contains(&z), "the floor shown nearest the point: {walked}");
+        let (bx, bz) = (walked["beyond"][0].as_f64().unwrap(), walked["beyond"][1].as_f64().unwrap());
+        assert!((bx + 50.0).abs() < 2.0 && (bz - 300.0).abs() < 2.0, "on into the house: {walked}");
     }
 
     /// The debug battle's targets at rest: Fei and the boss (world y down).

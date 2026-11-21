@@ -333,6 +333,15 @@ pub struct Viewpoint {
     pub near: f32,
 }
 
+/// The field camera a picture was drawn with ([`GameView::drawn_camera`]):
+/// a world point `p`'s view-space point is `m · p + t` (`m`'s rows per world
+/// unit), as the port recorded it with the frame.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DrawnCamera {
+    pub m: [[f32; 3]; 3],
+    pub t: [f32; 3],
+}
+
 /// A headset's presentation ([`GameView::present_headset`]).
 pub struct HeadsetPresented<'a> {
     /// Each eye's picture looking from within the scene (an `Rgba8Unorm`
@@ -755,6 +764,22 @@ impl GameView {
                 near: h / 2.0,
             },
         })
+    }
+
+    /// The field camera the picture presented last was drawn with, as the
+    /// port recorded it with the frame (a game frame or more behind the one
+    /// in the game's memory while the camera moves), or, while interpolation
+    /// moves the scene, the camera between two frames it showed then; none
+    /// while no field frame shows (the interface alone, the device's own
+    /// picture). Hosts point and place floor marks through it, as the
+    /// picture shows the world.
+    pub fn drawn_camera(&self) -> Option<DrawnCamera> {
+        let shown = self.main.shown?;
+        if shown.framing.interface == Interface::Only {
+            return None;
+        }
+        let (m, t) = self.main.frame.drawn_camera(shown.framing.interpolate)?;
+        Some(DrawnCamera { m, t })
     }
 
     /// How far the first-person view has turned from the heading it began

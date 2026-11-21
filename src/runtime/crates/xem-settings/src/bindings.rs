@@ -289,6 +289,8 @@ impl Held {
 /// Mouse milliseconds of camera turn per pixel moved, and the most it banks.
 const TURN_MS_PER_PIXEL: f64 = 4.0;
 const MAX_TURN_MS: f64 = 400.0;
+/// Milliseconds of camera turn per notch scrolled sideways.
+const TURN_MS_PER_NOTCH: f64 = 150.0;
 /// Milliseconds without motion after which the mouse has come to rest.
 const REST_MS: f64 = 100.0;
 
@@ -336,6 +338,12 @@ impl Mouse {
         self.drift = drift.clamp(-deadzone, deadzone);
         let dx = (drift - self.drift) * settings.mouse_scale();
         self.turn = (self.turn + f64::from(dx) * TURN_MS_PER_PIXEL).clamp(-MAX_TURN_MS, MAX_TURN_MS);
+    }
+
+    /// The wheel scrolled sideways, `notches` (positive to the right):
+    /// the field camera turns that way, whatever the mouse camera setting.
+    pub fn scrolled(&mut self, notches: f32) {
+        self.turn = (self.turn + f64::from(notches) * TURN_MS_PER_NOTCH).clamp(-MAX_TURN_MS, MAX_TURN_MS);
     }
 
     pub fn clear(&mut self) {
@@ -427,6 +435,13 @@ mod tests {
         assert_eq!(mouse.turn(41.0), None);
         mouse.moved(-0.5, &settings);
         assert_eq!(mouse.turn(42.0), Some(GameAction::CameraLeft));
+        // A notch scrolled sideways turns 150 ms that way.
+        let mut mouse = Mouse::default();
+        assert_eq!(mouse.turn(0.0), None);
+        mouse.scrolled(-1.0);
+        assert_eq!(mouse.turn(10.0), Some(GameAction::CameraLeft));
+        assert_eq!(mouse.turn(155.0), Some(GameAction::CameraLeft), "5 ms of it left at 155");
+        assert_eq!(mouse.turn(170.0), None, "spent");
     }
 
     #[test]

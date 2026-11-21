@@ -5819,6 +5819,12 @@ pixels of motion, 40 by default) holds back the field camera's motion
 within that distance of where the mouse came to rest (no motion for a
 tenth of a second), so a nudge turns nothing; motion past it turns the
 camera, the deadzone following along until the mouse rests again.
+The wheel scrolled sideways (SDL's horizontal wheel, a page's `deltaX`,
+100 pixels a notch) turns the camera too, whatever the mouse camera
+setting: 150 ms of CameraLeft or CameraRight a notch, at most 400 banked
+(`Mouse::scrolled`, `PlayerInput::scroll_sideways`), walking in a field or
+on the world map only (a menu's L1 and R1 change characters), not while
+first person looks around.
 First-person look takes every pixel. A headset's
 controllers are the gamepad (`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
 grips LT/RT, the right stick's click Back, the left's Start, both sticks),
@@ -6026,23 +6032,60 @@ floor; presented again, the camera is pulled back again; at 250% the
 middle of each of the 30 walkable triangles that picture shows lies
 within a tap's reach, 18 pixels, of an actor, so a tap there talks).
 
-Routes plan over the triangles the player may enter (an attribute
-blocks by the actor's flags, bit 23 blocks layer 0, a
-higher bit-22 ledge needs a jump), string-pulled a body's width off the
-walls; a goal on mesh cut off by a gap within 300 units gets a takeoff at
-the nearest edge. `xem_core::assist` plays a route as the pad: the D-pad's
+Routes plan over the triangles the player may enter, by the game's own
+rules as `tools/analysis/platforming.py` models them (an attribute blocks
+by the actor's flags, bit 23 blocks layer 0; a bit-22 slide is walked onto
+from a floor only when no more than 8 units above it, by the triangles'
+middles, starts no jump and takes the leader only down or level),
+string-pulled a body's width off the walls. Jumps follow the party's
+measured arc (`field::FOOT_ARC`, 118.25 up and 240 on at the takeoff's
+height on foot; `GEAR_ARC` in its gears): from a floor's edge over a slide
+too high to walk onto, straight out from the edge, a route lands on the
+first floor whose flight passes over it above every slide crossed (a jump
+costs it 200 units beyond its length, so a walk round wins where there is
+one); a goal on mesh cut off by a gap gets a takeoff at the edge of the
+floor the player reaches from which the arc carries over the gap to the
+goal's part, nearest the goal. A slide higher than a jump rises, a mound
+with no floor on top and a gap wider than a jump carries are no way, so a
+route never runs at a cliff it cannot climb. `xem_core::assist` plays a
+route as the pad: the D-pad's
 eighth by the camera's angle (Right 0, Down 0x400, Left 0x800, Up 0xC00
 less `field_view.angle`, measured on the game), held until the route turns
 well away from it; Run beyond 96 units of route, walking within 40;
 around another actor in the way; a step aside when the route stops
-shrinking, and an end when it stays so. Nothing jumps for the player: at
-a takeoff the assist waits (or presses on toward the landing unless the
-ledge brake is on), holds its direction through the player's jump and
-plans again after landing. `navigate {to: [x, z]} | {screen: [x, y]}`
-walks to a floor point, `interact {actor}` approaches an actor (or the
+shrinking, and an end when it stays so; a walk held still within 48 units
+of its goal (a wall) has arrived. A goal inside another actor's keep-out
+(a barrel, a villager, a door's trigger box) is walked into, as the D-pad
+walks, not around: a touch the actor runs on contact runs (a door, a
+battle; `field_actor_check_talk_and_touch`), and a body that stops the
+leader ends the walk held still against it. Where the game moves the
+leader to another layer (stairs lift it, a drop lands it on one below),
+the walk goes on to that layer's floor at its goal, or ends where that
+layer has none. At a takeoff the assist presses Jump (four frames) with
+the direction toward the landing, steers the flight there and lets go of
+the direction over it, or once past it (in the air the D-pad moves the
+leader and nothing else does, and a leader let go stops, measured on the
+game), so it drops onto a narrow top; landed, it plans again. A route's
+landing lies 24 units past where the flight reaches a floor, or halfway
+across the floor it goes on over where that is narrower: by a slide's
+edge the leader would come down on the slide and slide back. A jump that
+never leaves the floor is walked up to and tried again, three times at
+most.
+With Settings' **Stop at ledges** (the ledge brake) it waits at the
+takeoff instead, and steers the player's own jump the same way.
+`navigate {to: [x, z], triangle?, beyond?} | {screen: [x, y]}`
+walks to a floor point (on `triangle` where floors stand over one another:
+the one a pointer picked), then, with `beyond`, walks on into the door or
+wall the pointer showed past it (at most 90 frames, ending once 20 bring it
+no nearer; a door's map change interrupts it first), `interact {actor}` approaches an actor (or the
 nearest floor within its talk reach) and presses Confirm exactly once when
 the player walks within the original's talk reach and facing, and
-`assist_stop` ends it. A direction of the player's own replaces it; a
+`assist_stop` ends it. A tap, a click or a pinch on the picture picks the
+floor the player can reach (`Field::pick_walkable`): the one under the
+pointer, or where that is none the player can reach (a door, a wall, a
+house, past a path's end) the reachable floor the picture shows nearest the
+pointer within 48 of the game screen's pixels, and the point the pointer
+shows at that floor's height as `beyond`. A direction of the player's own replaces it; a
 dialogue, menu, battle or map change interrupts it; `status` reports the
 intent, its phase and the last outcome. Recorded sessions keep the
 intents as resolved (`assist` controls) and replay to the same state;
@@ -6949,8 +6992,7 @@ the history length. The original game's pause screens stop snapshots and freeze
 the queue's elapsed-play time, preserving history for when play resumes. Pausing
 restarts the snapshot interval on resume. Increasing and decreasing either value
 can be bound to keyboard/gamepad chords.
-The Settings switch **LT and RT rewind and fast-forward** (`invert_trigger_chords`;
-its note says what the triggers do either way) makes LT
+The Settings switch **LT and RT rewind and fast-forward** (`invert_trigger_chords`) makes LT
 rewind and RT toggle fast-forward without Back; Back+LT and Back+RT then send L2 and R2
 to the game, without also sending Select. This preference is saved, included
 in settings backups, and can itself be bound to a keyboard or gamepad chord.
@@ -8045,15 +8087,17 @@ are. Android has no agent channel.
   the original's doors of maps 413, 414, 415 and 416, each arming its
   draw and each turned off by the default, to map 418, the floor past the
   tower's platforming maps where the Self-repairing Robot resupplies (two
-  maps below the top, map 420), after 3 266 frames with no battle;
+  maps below the top, map 420), after 2 574 frames with no battle;
   touching map 418's actor 20 still starts its fixed battle (formation 2,
-  4 740 frames in). The walk is the
-  assisted route to each map's door with Jump pressed at each takeoff, and
-  a running jump toward the door each time the route stops short: the
-  route plans a jump only where it enters a ledge (attribute bit 22, the
-  [slides](#how-the-areas-are-classified)) from below, so it walks into a
-  floor that is only higher and stops there. Under the original the same
-  walk meets a random battle on map 414 after 428 frames. Map 172's Repair
+  3 204 frames in). The walk is the assisted route to each map's door
+  (the assist jumps where the route plans a jump), and a running jump
+  toward the door each time it stops short. Where the planner finds no
+  route to the door (it follows no jump from a
+  [slide](#how-the-areas-are-classified), which the tower's ramps take),
+  the walk is a click's there: to the floor it reaches nearest the door
+  along the walkmesh, the foot of the ramp, and on into the door. Under
+  the original the same walk meets a random battle on map 414 after 598
+  frames. Map 172's Repair
   Bot still starts its scripted battle under the default
   ([below](#random-battles-in-platforming-areas)).
 - *A chapter's scenes.* The game's opening from the title's New Game (the

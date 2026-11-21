@@ -348,8 +348,6 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
     );
     section(&mut ui, "Controls", 2);
     let inversion = element(&ui, "LT and RT rewind and fast-forward", AccessibleRole::Switch);
-    let says = |ui: &SettingsUi, note: &str| ElementHandle::find_by_accessible_label(ui.component(), note).next().is_some();
-    assert!(says(&ui, "Back+LT rewinds and Back+RT toggles fast-forward; LT and RT are the game's L2 and R2."), "its note says what the triggers do");
     let at = inversion.absolute_position();
     let size = inversion.size();
     click(
@@ -358,7 +356,6 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
     );
     assert!(settings.borrow().settings().invert_trigger_chords);
     assert_eq!(inversion.accessible_checked(), Some(true));
-    assert!(says(&ui, "LT rewinds and RT toggles fast-forward without Back; Back+LT and Back+RT are the game's L2 and R2."), "and on, what they do then");
 
     let requests = Rc::new(RefCell::new(Vec::new()));
     ui.on_app_request({

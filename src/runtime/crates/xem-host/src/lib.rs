@@ -393,6 +393,10 @@ pub struct View {
     taps: Vec<(f32, f32)>,
     quantity: Vec<xem_assist::overlay::QuantityKey>,
     marks: Vec<xem_assist::overlay::Mark>,
+    /// Where assisted movement heads and the field camera as the game step
+    /// read it: its mark is placed as each picture is presented, through the
+    /// camera that picture was drawn with (`View::render`).
+    heading: Option<(xem_core::field::V3, xem_core::field::Camera)>,
     atlas: xem_render::glass::Atlas,
     relative_mouse: bool,
     /// When a mouse last moved or pressed (touches aside), and whether the
@@ -515,6 +519,7 @@ impl View {
             taps: Vec::new(),
             quantity: Vec::new(),
             marks: Vec::new(),
+            heading: None,
             atlas: Default::default(),
             relative_mouse: false,
             mouse_moved: Instant::now(),
@@ -930,11 +935,17 @@ impl View {
             }
             SDL_EVENT_MOUSE_WHEEL => {
                 let wheel = unsafe { event.wheel };
-                // Positive y scrolls up (away from the user) unless flipped.
-                let up = if wheel.direction == SDL_MOUSEWHEEL_FLIPPED { -wheel.y } else { wheel.y };
+                // Positive y scrolls up (away from the user) and positive x
+                // to the right, unless flipped.
+                let flip = if wheel.direction == SDL_MOUSEWHEEL_FLIPPED { -1.0 } else { 1.0 };
+                let (up, right) = (wheel.y * flip, wheel.x * flip);
                 // In a menu or a choice it steps the cursor; elsewhere it zooms.
-                if !(self.app_input.focused() && self.player.wheel(-up, self.game_ui)) {
+                if up != 0.0 && !(self.app_input.focused() && self.player.wheel(-up, self.game_ui)) {
                     self.zoom_wheel(-up);
+                }
+                // Sideways it turns the camera, walking or on the world map.
+                if right != 0.0 && self.app_input.focused() && !self.renderer.first_person() {
+                    self.player.scroll_sideways(right, self.game_ui);
                 }
             }
             // Touches on the game: the control deck, and taps on the picture.
@@ -1295,8 +1306,11 @@ impl View {
         self.arrange(xem_assist::touch::Scene { ui, picture, tested, inspecting: false });
         let taps = std::mem::take(&mut self.taps);
         let inspecting = self.renderer.first_person();
-        // The field as the picture shows it (pulled back, say).
-        let field = if inspecting { None } else { game.field().map(|f| xem_assist::overlay::seen(f, self.renderer.viewpoint().as_ref())) };
+        // The field as the picture shows it: the camera it was drawn with,
+        // seen from its viewpoint (pulled back, say).
+        let read = if inspecting { None } else { game.field() };
+        let camera = read.as_ref().map(|f| f.camera);
+        let field = read.map(|f| xem_assist::overlay::seen(f, self.renderer.drawn_camera(), self.renderer.viewpoint().as_ref()));
         if !taps.is_empty() {
             let targets = game.targets();
             for tap in taps {
@@ -1319,8 +1333,8 @@ impl View {
         for key in std::mem::take(&mut self.quantity) {
             let _ = game.command(&serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
         }
-        let destination = if inspecting { None } else { game.destination() };
-        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
+        let destination = if inspecting { None } else { game.destination(field.as_ref()) };
+        self.heading = destination.zip(camera);
         self.walking = field.filter(|_| ui == xem_core::context::Context::Walk);
         self.player.touch = self.deck.actions();
     }
@@ -1378,7 +1392,7 @@ impl View {
         let safe = self.safe_rect();
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
-            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view, p.size, p.movie)),
+            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view.clone(), p.size, p.movie)),
             // The device's own picture (the Original renderer, 24-bit movie
             // frames): taps point through the game's camera.
             None => {
@@ -1387,11 +1401,17 @@ impl View {
             }
         };
         let encoded = presented.is_some();
+        // Where assisted movement heads, on the floor as this picture shows
+        // it: through the camera it was drawn with.
+        self.marks = self.heading.and_then(|(point, camera)| {
+            let camera = xem_assist::overlay::shown(camera, self.renderer.drawn_camera(), self.renderer.viewpoint().as_ref());
+            xem_assist::overlay::destination(&camera, point)
+        }).into_iter().collect();
         // A rebuilt movie frame is the display alone, without wider
         // framing's sides.
-        self.presented_movie = presented.is_some_and(|(_, _, movie)| movie);
+        self.presented_movie = presented.as_ref().is_some_and(|(_, _, movie)| *movie);
         let side = if self.presented_movie { 0.0 } else { side };
-        let presented = presented.map(|(view, size, _)| (view, size));
+        let presented = presented.as_ref().map(|(view, size, _)| (view, *size));
         let (game_view, game_size) = match (presented, &self.game_image) {
             (Some(presented), _) => presented,
             (None, Some((_, view, size))) => (view, *size),
@@ -2551,7 +2571,9 @@ mod tests {
             view.finger(Finger::Down, 1, touched);
             view.finger(Finger::Up, 1, touched);
             view.assist(game);
-            let to = game.destination();
+            // The next picture presented places the mark.
+            view.render(&gpu, &output, 1000.0).unwrap();
+            let to = game.destination(None);
             let mark = view.marks.iter().find(|mark| mark.kind == Kind::Destination).and_then(|mark| match mark.place {
                 Place::Screen { centre, .. } => Some(centre),
                 Place::Floor { .. } => None,
@@ -2591,7 +2613,7 @@ mod tests {
             assert!(!view.first_person(), "{what}: the Original renderer ends inspection");
             assert_eq!(view.renderer.viewpoint(), None, "{what}: the device's own picture is the game camera's");
             let field = game.field().expect("field 30");
-            let stale = seen(field.clone(), Some(&last));
+            let stale = seen(field.clone(), None, Some(&last));
             let (goal, at, shift) = floor(&field, &stale.camera);
             let elsewhere = stale.pick(at).map(|hit| hit.point.planar(goal));
             eprintln!("{what}: the floor at {goal:?} shows at {at:?}, {shift:.1} pixels from the last picture's place; through it a tap there picks {elsewhere:?} units away");
@@ -2605,7 +2627,7 @@ mod tests {
         frames(&mut view, &mut game, 8);
         let pulled = view.renderer.viewpoint().expect("the picture shows the field pulled back");
         let field = game.field().expect("field 30");
-        let shown = seen(field.clone(), Some(&pulled));
+        let shown = seen(field.clone(), view.renderer.drawn_camera(), Some(&pulled));
         let (goal, at, shift) = floor(&shown, &field.camera);
         eprintln!("pulled back {:.0} units: the floor at {goal:?} shows at {at:?}, {shift:.1} pixels from where the game's camera puts it", pulled.offset[2]);
         assert!(shift > 10.0, "the game's camera shows {goal:?} elsewhere than {at:?}");
@@ -2701,6 +2723,8 @@ mod tests {
             view.mouse_button(0, false, pixels);
             assert_eq!(view.player.mouse.buttons(), 0, "up, the button holds nothing");
             view.assist(game);
+            // The next picture presented places the mark.
+            view.render(&gpu, &output, 1000.0).unwrap();
             held
         };
         let on_picture = |at: &(f32, f32)| (16.0..304.0).contains(&at.0) && (16.0..208.0).contains(&at.1);
@@ -2718,7 +2742,7 @@ mod tests {
             })
             .expect("walkable floor a click reaches on the picture");
         assert_eq!(click(&mut view, &mut game, picture.from_screen(at)), 0, "a click on the floor holds no binding");
-        let to = game.destination();
+        let to = game.destination(None);
         assert!(to.is_some_and(|to| to.planar(goal) < 16.0), "a click walks to the floor the picture shows: {to:?} for {goal:?}");
         let mark = view.marks.iter().find(|mark| mark.kind == Kind::Destination).and_then(|mark| match mark.place {
             Place::Screen { centre, .. } => Some(centre),

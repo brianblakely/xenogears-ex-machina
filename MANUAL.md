@@ -157,13 +157,18 @@ When entering a battle attack sequence, the controls change:
 ### Using the mouse
 
 Click the ground to walk there, or click a person to approach and talk.
-Choose menu entries and battle targets by clicking them. Anywhere else,
-left-click confirms; right-click cancels. You still make your own jumps. Taking over
-with a movement key or stick cancels an automatic walking route.
+A ring marks where you're headed. Fei takes the way round that he can walk,
+and jumps where the way needs it: up onto higher ground, or across a gap
+he can clear. Click a door, a gate or the end of a path to walk up to it
+and on through it. Choose menu entries and battle targets by clicking them.
+Anywhere else, left-click confirms; right-click cancels. Taking over with a
+movement key or stick cancels an automatic walking route.
 
 The mouse wheel pulls the camera back or brings it closer: scroll down to
 zoom out and up to zoom in. This works with the Ex Machina picture and is
 most useful while exploring. The world map gets a smaller zoom change.
+Scrolling sideways (a tilting wheel, or two fingers on a touchpad) turns the
+camera left or right while you explore and on the world map.
 The burning village at the start of a new game always shows at 1×; your
 zoom returns after it.
 
@@ -236,8 +241,9 @@ tap an entry or target to choose it. Tap dialogue to advance it.
 
 In **Settings → Controls**, **Touch controls** shows or hides the touch
 buttons, and **Touch controls opacity** makes them fainter or stronger (a
-button you're pressing always shows clearly). **Stop at ledges** helps
-automatic walking stop before a jump; you still press Jump yourself.
+button you're pressing always shows clearly). **Stop at ledges** makes
+automatic walking stop before a jump instead of jumping, so you press Jump
+yourself.
 **Reduce transparency** makes the added touch and headset controls more
 solid, and **Reduce motion** tones down their animation. These options
 affect the added controls, not the game's artwork.

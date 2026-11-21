@@ -621,12 +621,14 @@ impl XemApp {
             self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), scene);
         }
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
+        let drawn = self.renderer.as_ref().and_then(|r| r.drawn_camera());
         let Some(session) = self.session.as_mut() else {
             self.walking = None;
             return;
         };
-        let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
-            .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref()));
+        let read = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
+        let camera = read.as_ref().map(|f| f.camera);
+        let field = read.map(|f| xem_assist::overlay::seen(f, drawn, viewpoint.as_ref()));
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
             // A tap on the paused game resumes it, as a click does.
@@ -639,11 +641,9 @@ impl XemApp {
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
         }
-        let destination = match session.assist.as_ref().map(|a| &a.intent) {
-            Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
-            _ => None,
-        };
-        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
+        // A walk's floor point, or the feet of the actor approached: its
+        // mark is placed as each picture is presented (`Renderer::render`).
+        let destination = session.assist.as_ref().filter(|_| !inspecting).zip(field.as_ref()).and_then(|(a, f)| a.intent.heading_to(f));
         self.walking = field.filter(|_| ui == xem_core::context::Context::Walk);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
@@ -651,7 +651,7 @@ impl XemApp {
             if let Some(panel) = renderer.panel() {
                 panel.set_first_person_touch(shown);
             }
-            renderer.overlay.marks = marks;
+            renderer.overlay.heading = destination.zip(camera);
             renderer.overlay.style = style;
             let (lit, opacity) = {
                 let settings = self.settings.borrow();
@@ -693,10 +693,11 @@ impl XemApp {
         self.headset.inspecting = inspecting;
         self.headset.auto_advance = settings.auto_advance.enabled;
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
+        let drawn = self.renderer.as_ref().and_then(|r| r.drawn_camera());
         let (field, targets, controls) = match self.session.as_mut() {
             Some(session) => (
                 (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
-                    .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref())),
+                    .map(|f| xem_assist::overlay::seen(f, drawn, viewpoint.as_ref())),
                 session.runtime.targets(),
                 session.runtime.field_controls(),
             ),
@@ -734,10 +735,9 @@ impl XemApp {
         // screen or the diorama as the scaling has them.
         if let Some(renderer) = &mut self.renderer {
             renderer.xr_scaling = self.xr_scaling;
-            let destination = match self.session.as_ref().and_then(|s| s.assist.as_ref()).map(|a| &a.intent) {
-                Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
-                _ => None,
-            };
+            // A walk's floor point, or the feet of the actor approached.
+            let destination = self.session.as_ref().and_then(|s| s.assist.as_ref()).filter(|_| !inspecting)
+                .zip(field.as_ref()).and_then(|(a, f)| a.intent.heading_to(f));
             let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref(), screen.diorama.is_some()) } else { vec![] };
             renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui));
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
@@ -1366,10 +1366,17 @@ impl XemApp {
                 }
                 return false;
             }
-            // In a menu or a choice the wheel steps the cursor.
-            "wheel" if self.input.wheel(dy / 100.0, self.ui) => return true,
-            "wheel" if self.first_person() => return true,
-            "wheel" => {}
+            "wheel" => {
+                // Sideways the wheel turns the camera, walking or on the
+                // world map; in a menu or a choice it steps the cursor.
+                let turned = dx != 0.0 && !self.first_person() && self.input.scroll_sideways(dx / 100.0, self.ui);
+                if dy == 0.0 && turned {
+                    return true;
+                }
+                if self.input.wheel(dy / 100.0, self.ui) || self.first_person() {
+                    return true;
+                }
+            }
             _ => return false,
         }
         self.wheel += dy / 100.0;

@@ -885,6 +885,22 @@ impl FrameRenderer {
         &self.newest_ops
     }
 
+    /// The field camera the newest frame shown was drawn with, as the port
+    /// recorded it with the frame: world to view space, its rows (per world
+    /// unit) and translation. At `at`, while interpolation moves the scene,
+    /// the camera in between that and the frame's before, as shown then.
+    pub fn drawn_camera(&self, at: Option<f64>) -> Option<([[f32; 3]; 3], [f32; 3])> {
+        let camera = self.camera.as_ref().filter(|camera| camera.mode == CameraMode::Field)?;
+        let affine = match (at, self.moved.camera) {
+            (Some(now), Some(track)) => match track.from.map(|from| (from, track.clock.alpha(now))) {
+                Some((from, alpha)) if alpha < 1.0 => from.between(&track.now, alpha),
+                _ => track.now.affine,
+            },
+            _ => View::of(camera)?.affine,
+        };
+        Some((std::array::from_fn(|r| std::array::from_fn(|c| affine.m.col(c)[r] as f32)), std::array::from_fn(|r| affine.t[r] as f32)))
+    }
+
     pub fn color(&self) -> &wgpu::Texture {
         &self.color
     }
