@@ -12,9 +12,9 @@ use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 use xem_settings::{
-    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, DioramaTurns, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
+    APP_ACTIONS, AppAction, AppRequest, AudioOutput, DioramaTurns, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
     GraphicsProfile, HeadsetView, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding, TextSpeed, EncounterRate, Language,
+    GAME_ACTION_ROWS, TextSpeed, EncounterRate, Language,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -119,6 +119,17 @@ pub enum AchievementsAccount {
     SignedIn,
 }
 
+/// The keys a listening binding took ([`SettingsUi::listen_key`]).
+#[derive(Default)]
+struct KeyCapture {
+    /// The binding listening as they were pressed (its list and row).
+    listening: (i32, i32),
+    /// The keys pressed, in order: a shortcut's chord, a game action's first.
+    pressed: Vec<String>,
+    /// The keys held now.
+    held: std::collections::BTreeSet<String>,
+}
+
 /// What the Achievements section shows of the host's RetroAchievements
 /// client ([`SettingsUi::set_achievements`]).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -147,6 +158,10 @@ pub struct SettingsUi {
     rewind_held: Rc<Cell<bool>>,
     /// The gamepad on the open panel ([`SettingsUi::gamepad`]).
     pad: Cell<gamepad::Pad>,
+    /// The keys a listening binding took ([`SettingsUi::listen_key`]), and
+    /// whether a gamepad input it took is held.
+    keys: RefCell<KeyCapture>,
+    pad_held: Cell<bool>,
     device: wgpu::Device,
     texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -176,6 +191,8 @@ impl SettingsUi {
             settings,
             rewind_held: Rc::new(Cell::new(false)),
             pad: Cell::default(),
+            keys: RefCell::default(),
+            pad_held: Cell::new(false),
             device,
             texture,
             view,
@@ -274,11 +291,62 @@ impl SettingsUi {
     }
 
     /// Escape or Back on the open panel, and the panel hidden: closes the
-    /// quit confirmation, saying whether it showed (then the panel stays).
+    /// quit confirmation, or stops a binding listening for an input, saying
+    /// whether either was under way (then the panel stays).
     pub fn cancel_dialog(&self) -> bool {
-        let shown = self.panel.get_quit_confirming();
+        let shown = self.panel.get_quit_confirming() || self.listening();
         self.panel.set_quit_confirming(false);
+        self.panel.invoke_stop_listening();
         shown
+    }
+
+    /// Whether a binding listens for the next input: the host's keys go to
+    /// [`SettingsUi::listen_key`] and give no text, the gamepad's buttons
+    /// to the binding ([`SettingsUi::gamepad`]), and the host's app
+    /// shortcuts wait meanwhile, so binding Back+South saves no state.
+    pub fn listening(&self) -> bool {
+        self.panel.get_listen_list() != 0
+    }
+
+    /// A key went down or up on the open panel (its `KeyboardEvent.code`);
+    /// true when a listening binding took it, the host then giving it to
+    /// nothing else. A game action takes the first key pressed, a shortcut
+    /// every key held together (four at most), once all are let go; a key
+    /// no binding may name (Escape is the panel's, F1 no one's) is taken
+    /// and ignored. A key taken stays taken until it is let go.
+    pub fn listen_key(&self, code: &str, down: bool) -> bool {
+        let listening = (self.panel.get_listen_list(), self.panel.get_listen_row());
+        let mut keys = self.keys.borrow_mut();
+        if listening.0 == 0 {
+            return !down && keys.held.remove(code);
+        }
+        if keys.listening != listening {
+            *keys = KeyCapture { listening, ..KeyCapture::default() };
+        }
+        if down {
+            if keys.held.insert(code.to_owned()) && xem_settings::controls::keyboard_code(code)
+                && !keys.pressed.iter().any(|key| key == code) && keys.pressed.len() < 4
+            {
+                keys.pressed.push(code.to_owned());
+            }
+        } else {
+            keys.held.remove(code);
+        }
+        let held = !keys.held.is_empty();
+        let taken = (!held && !keys.pressed.is_empty()).then(|| std::mem::take(&mut keys.pressed));
+        drop(keys);
+        self.panel.set_listen_held(held || self.pad_held.get());
+        if let Some(pressed) = taken {
+            bind_listened(&self.panel, &self.settings, listening.0, listening.1, &pressed);
+        }
+        true
+    }
+
+    /// Whether the pointer that presses the panel next is a finger or a
+    /// headset's ray rather than a mouse: a listening binding takes only a
+    /// mouse's buttons, and a finger's tap on its field stops it instead.
+    pub fn set_pointer_touch(&self, touch: bool) {
+        self.panel.global::<Pointing>().set_touch(touch);
     }
 
     /// Whether this host places its own window (Graphics offers Fullscreen).
@@ -731,63 +799,81 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
 /// The Saves section's index (settings.slint's `sections`).
 const SAVES_SECTION: i32 = 5;
 
-/// Every app operation the panel offers with its bindings ([`offered_actions`]),
-/// and the selected one's in its editors.
+/// Every app operation the panel offers ([`offered_actions`]) with its
+/// chords, keyboard then gamepad, as tokens.
 fn show_binding(panel: &SettingsPanel, settings: &Settings) {
     let browser = panel.get_browser_storage();
-    let rows: Vec<BindingRow> = offered_actions(browser)
-        .map(|(action, title)| {
-            let binding = settings.app_bindings.get(&action).cloned().unwrap_or_default();
-            let keys: Vec<&str> = binding.keyboard.iter().map(|code| key_label(code)).collect();
-            BindingRow { name: title.into(), keyboard: keys.join("+").into(), gamepad: binding.gamepad.join("+").into() }
+    let rows: Vec<(String, Vec<String>)> = offered_actions(browser)
+        .map(|(action, title)| (title.to_owned(), chords(settings, action).into_iter().map(|(_, label)| label).collect()))
+        .collect();
+    show_rows(&panel.get_bindings(), rows, |rows| panel.set_bindings(rows));
+}
+
+/// An app operation's chords as its tokens show them: whether each is the
+/// gamepad's, and its label (`Ctrl+S`, `Back+South`).
+fn chords(settings: &Settings, action: AppAction) -> Vec<(bool, String)> {
+    let binding = settings.app_bindings.get(&action).cloned().unwrap_or_default();
+    let keys = binding.keyboard.iter().map(|code| key_label(code)).collect::<Vec<_>>().join("+");
+    let buttons = binding.gamepad.join("+");
+    [(false, keys), (true, buttons)].into_iter().filter(|(_, chord)| !chord.is_empty()).collect()
+}
+
+/// Every game action with its inputs (keys, gamepad inputs, mouse
+/// buttons) as tokens, in [`GAME_ACTION_ROWS`] order.
+fn show_game_binding(panel: &SettingsPanel, settings: &Settings) {
+    let rows: Vec<(String, Vec<String>)> = GAME_ACTION_ROWS
+        .iter()
+        .map(|(context, action, title)| {
+            let name = if *action == xem_settings::GameAction::Run && settings.run_by_default { "Walk (held)" } else { *title };
+            let binding = settings.game_bindings.context(*context).get(action).cloned().unwrap_or_default();
+            (name.to_owned(), binding.inputs().map(|input| input_label(input).into_owned()).collect())
         })
         .collect();
-    if let Some((action, _)) = usize::try_from(panel.get_selected_action()).ok().and_then(|i| offered_actions(browser).nth(i)) {
-        let binding = settings.app_bindings.get(&action).cloned().unwrap_or_default();
-        panel.set_keyboard_binding(binding.keyboard.join("+").into());
-        panel.set_gamepad_binding(binding.gamepad.join("+").into());
+    show_rows(&panel.get_game_bindings(), rows, |rows| panel.set_game_bindings(rows));
+}
+
+/// `rows` in a list's model: the rows that changed in place, so the list
+/// keeps its rows (and a field its focus), else a new model.
+fn show_rows(model: &slint::ModelRc<BindingRow>, rows: Vec<(String, Vec<String>)>, set: impl FnOnce(slint::ModelRc<BindingRow>)) {
+    let row = |(name, tokens): (String, Vec<String>)| BindingRow {
+        name: name.into(),
+        tokens: slint::ModelRc::new(slint::VecModel::from(tokens.into_iter().map(slint::SharedString::from).collect::<Vec<_>>())),
+    };
+    if model.row_count() != rows.len() {
+        set(slint::ModelRc::new(slint::VecModel::from(rows.into_iter().map(row).collect::<Vec<_>>())));
+        return;
     }
-    // Changed rows in place: the list keeps its rows (and the editor its focus).
-    let model = panel.get_bindings();
-    if model.row_count() == rows.len() {
-        for (index, row) in rows.into_iter().enumerate() {
-            if model.row_data(index).as_ref() != Some(&row) {
-                model.set_row_data(index, row);
-            }
+    for (index, (name, tokens)) in rows.into_iter().enumerate() {
+        let same = model.row_data(index).is_some_and(|shown| {
+            shown.name == name.as_str() && shown.tokens.iter().map(|t| t.to_string()).eq(tokens.iter().cloned())
+        });
+        if !same {
+            model.set_row_data(index, row((name, tokens)));
         }
-    } else {
-        panel.set_bindings(slint::ModelRc::new(slint::VecModel::from(rows)));
     }
 }
 
-/// Every game action with its inputs, in [`GAME_ACTION_ROWS`] order, and the
-/// selected one's in its editors.
-fn show_game_binding(panel: &SettingsPanel, settings: &Settings) {
-    let rows: Vec<BindingRow> = GAME_ACTION_ROWS
-        .iter()
-        .map(|(context, action, title)| {
-            let binding = settings.game_bindings.context(*context).get(action).cloned().unwrap_or_default();
-            let mut keys: Vec<&str> = binding.keyboard.iter().map(|code| key_label(code)).collect();
-            keys.extend(binding.mouse.iter().map(|m| match m.as_str() { "MouseLeft" => "Click", "MouseRight" => "Right-click", _ => "Middle-click" }));
-            keys.dedup();
-            BindingRow { name: (if *action == xem_settings::GameAction::Run && settings.run_by_default { "Walk (held)" } else { *title }).into(), keyboard: keys.join(" ").into(), gamepad: binding.gamepad.join(" ").into() }
-        })
-        .collect();
-    if let Some((context, action, _)) = usize::try_from(panel.get_selected_game_action()).ok().and_then(|i| GAME_ACTION_ROWS.get(i)) {
-        let binding = settings.game_bindings.context(*context).get(action).cloned().unwrap_or_default();
-        panel.set_game_keys(binding.keyboard.join(" ").into());
-        panel.set_game_buttons(binding.gamepad.join(" ").into());
-        panel.set_game_mouse(binding.mouse.join(" ").into());
-    }
-    let model = panel.get_game_bindings();
-    if model.row_count() == rows.len() {
-        for (index, row) in rows.into_iter().enumerate() {
-            if model.row_data(index).as_ref() != Some(&row) {
-                model.set_row_data(index, row);
-            }
-        }
-    } else {
-        panel.set_game_bindings(slint::ModelRc::new(slint::VecModel::from(rows)));
+/// A game input's name on its token: a key's keycap, a gamepad input or a
+/// mouse button in words.
+fn input_label(input: &str) -> std::borrow::Cow<'static, str> {
+    use std::borrow::Cow;
+    match input {
+        "MouseLeft" => Cow::Borrowed("Click"),
+        "MouseRight" => Cow::Borrowed("Right-click"),
+        "MouseMiddle" => Cow::Borrowed("Middle-click"),
+        "ShiftLeft" => Cow::Borrowed("Left Shift"),
+        "ShiftRight" => Cow::Borrowed("Right Shift"),
+        "ControlLeft" => Cow::Borrowed("Left Ctrl"),
+        "ControlRight" => Cow::Borrowed("Right Ctrl"),
+        "AltLeft" => Cow::Borrowed("Left Alt"),
+        "AltRight" => Cow::Borrowed("Right Alt"),
+        "MetaLeft" => Cow::Borrowed("Left Meta"),
+        "MetaRight" => Cow::Borrowed("Right Meta"),
+        _ => match input.strip_prefix("LStick").map(|d| ("Left stick", d)).or_else(|| input.strip_prefix("RStick").map(|d| ("Right stick", d))) {
+            Some((stick, direction)) => Cow::Owned(format!("{stick} {}", direction.to_lowercase())),
+            None if xem_settings::bindings::GAMEPAD_INPUTS.contains(&input) => Cow::Owned(input.to_owned()),
+            None => Cow::Owned(key_label(input).to_owned()),
+        },
     }
 }
 
@@ -1039,50 +1125,86 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         let apply = apply.clone();
         move |index| apply(pick(&FAST_FORWARD_RATES, index).map(SettingChange::FastForwardRate))
     });
-    panel.on_binding_edited({
+    panel.on_shortcut_removed({
         let apply = apply.clone();
-        let panel = panel.as_weak();
-        move |index, keyboard, gamepad| {
-            let browser = panel.upgrade().is_some_and(|panel| panel.get_browser_storage());
-            if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| offered_actions(browser).nth(i)) {
-                apply(Some(SettingChange::BindApp {
-                    action,
-                    binding: AppBinding::parse(&keyboard, &gamepad),
-                }));
+        let weak = panel.as_weak();
+        let settings = settings.clone();
+        move |row, token| {
+            let browser = weak.upgrade().is_some_and(|panel| panel.get_browser_storage());
+            let Some((action, _)) = usize::try_from(row).ok().and_then(|i| offered_actions(browser).nth(i)) else { return };
+            let chord = usize::try_from(token).ok().and_then(|i| chords(settings.borrow().settings(), action).get(i).cloned());
+            if let Some((gamepad, _)) = chord {
+                apply(Some(SettingChange::UnbindAppChord { action, gamepad }));
             }
         }
     });
-    panel.on_game_binding_edited({
+    panel.on_game_input_removed({
         let apply = apply.clone();
-        move |index, keys, buttons, mouse| {
-            if let Some((context, action, _)) = usize::try_from(index).ok().and_then(|i| GAME_ACTION_ROWS.get(i)) {
-                apply(Some(SettingChange::BindGame {
-                    context: *context,
-                    action: *action,
-                    binding: GameBinding::parse(&keys, &buttons, &mouse),
-                }));
+        let settings = settings.clone();
+        move |row, token| {
+            let Some(&(context, action, _)) = usize::try_from(row).ok().and_then(|i| GAME_ACTION_ROWS.get(i)) else { return };
+            let binding = settings.borrow().settings().game_bindings.context(context).get(&action).cloned().unwrap_or_default();
+            if let Some(input) = usize::try_from(token).ok().and_then(|i| binding.inputs().nth(i)) {
+                apply(Some(SettingChange::UnbindGameInput { context, action, input: input.to_owned() }));
+            }
+        }
+    });
+    panel.on_game_mouse_bound({
+        let weak = panel.as_weak();
+        let settings = settings.clone();
+        move |row, button| {
+            let input = match button { 0 => "MouseLeft", 1 => "MouseMiddle", _ => "MouseRight" };
+            if let Some(panel) = weak.upgrade() {
+                bind_listened(&panel, &settings, 2, row, &[input.to_owned()]);
             }
         }
     });
     panel.on_game_bindings_reset(move || apply(Some(SettingChange::ResetGameBindings)));
-    panel.on_game_action_selected({
-        let weak = panel.as_weak();
-        let settings = settings.clone();
-        move |_| {
-            if let Some(panel) = weak.upgrade() {
-                show_game_binding(&panel, settings.borrow().settings());
-            }
+}
+
+/// What a listening binding took (`list` 1 a shortcut's chord, 2 a game
+/// action's input: the first of `inputs`) bound to its `row`'s action; it
+/// listens no more, and the note under its list says which action, if
+/// any, lost it.
+fn bind_listened(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>, list: i32, row: i32, inputs: &[String]) {
+    panel.invoke_stop_listening();
+    let Ok(row) = usize::try_from(row) else { return };
+    let current = settings.borrow().settings().clone();
+    let (change, label, losers) = if list == 2 {
+        let (Some(&(context, action, _)), Some(input)) = (GAME_ACTION_ROWS.get(row), inputs.first()) else { return };
+        let losers: Vec<&str> = GAME_ACTION_ROWS.iter()
+            .filter(|(c, other, _)| *c == context && *other != action && other.button() != action.button())
+            .filter(|(c, other, _)| current.game_bindings.context(*c).get(other).is_some_and(|b| b.inputs().any(|held| held == input)))
+            .map(|(_, _, title)| *title)
+            .collect();
+        (SettingChange::BindGameInput { context, action, input: input.clone() }, input_label(input).into_owned(), losers)
+    } else {
+        let Some((action, _)) = offered_actions(panel.get_browser_storage()).nth(row) else { return };
+        let same = |held: &Vec<String>| held.len() == inputs.len() && inputs.iter().all(|k| held.contains(k));
+        let losers: Vec<&str> = APP_ACTIONS.iter()
+            .filter(|(other, _)| *other != action)
+            .filter(|(other, _)| current.app_bindings.get(other).is_some_and(|b| same(&b.keyboard) || same(&b.gamepad)))
+            .map(|(_, title)| *title)
+            .collect();
+        let label = if inputs.iter().all(|k| xem_settings::controls::PAD_NAMES.contains(&k.as_str())) {
+            inputs.join("+")
+        } else {
+            inputs.iter().map(|k| key_label(k)).collect::<Vec<_>>().join("+")
+        };
+        (SettingChange::BindAppChord { action, chord: inputs.to_vec() }, label, losers)
+    };
+    let result = settings.borrow_mut().apply(change);
+    match result {
+        Ok(_) if !losers.is_empty() => {
+            let verb = if list == 2 { "plays" } else { "does" };
+            panel.set_binding_note(format!("{label} no longer {verb} {}.", losers.join(" or ")).into());
         }
-    });
-    panel.on_action_selected({
-        let weak = panel.as_weak();
-        let settings = settings.clone();
-        move |_| {
-            if let Some(panel) = weak.upgrade() {
-                show_binding(&panel, settings.borrow().settings());
-            }
+        Ok(_) => {}
+        Err(rejected) => {
+            show(panel, settings.borrow().settings());
+            panel.set_error(describe(&rejected).into());
         }
-    });
+    }
 }
 
 /// A key's name on its keycap: `KeyboardEvent.code` without its prefix, a

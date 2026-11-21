@@ -32,7 +32,7 @@ pub const APP_ACTIONS: [(AppAction, &str); 29] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
-    (AppAction::ToggleTriggerInversion, "Invert LT/RT chords"),
+    (AppAction::ToggleTriggerInversion, "Toggle LT and RT rewind and fast-forward"),
     (AppAction::IncreaseFastForwardRate, "Increase fast-forward rate"),
     (AppAction::DecreaseFastForwardRate, "Decrease fast-forward rate"),
     (AppAction::IncreaseRewindInterval, "Increase rewind interval"),
@@ -82,15 +82,52 @@ impl AppBinding {
         Ok(())
     }
 }
-pub(crate) fn keyboard_code(code: &str) -> bool {
+/// The keys a binding may name besides letters, digits, F2-F24 and the
+/// keypad's (`KeyboardEvent.code` names).
+const NAMED_KEYS: [&str; 38] = ["ControlLeft","ControlRight","ShiftLeft","ShiftRight","AltLeft","AltRight","MetaLeft","MetaRight",
+    "ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter","Space","Tab","Backspace","Delete","Insert","Home","End",
+    "PageUp","PageDown","CapsLock","NumLock","ScrollLock","Pause","PrintScreen","BracketLeft","BracketRight","Backslash",
+    "Semicolon","Quote","Backquote","Comma","Period","Slash","Minus","Equal"];
+const NUMPAD_KEYS: [&str; 6] = ["Decimal","Add","Subtract","Multiply","Divide","Enter"];
+
+/// Whether a binding may name the key `code` (a `KeyboardEvent.code` name):
+/// Escape and F1 stay the hosts' own.
+pub fn keyboard_code(code: &str) -> bool {
     if let Some(key) = code.strip_prefix("Key") { return key.len() == 1 && key.bytes().all(|b| b.is_ascii_uppercase()); }
     if let Some(key) = code.strip_prefix("Digit") { return key.len() == 1 && key.bytes().all(|b| b.is_ascii_digit()); }
     if let Some(key) = code.strip_prefix('F') { return key.parse::<u8>().is_ok_and(|n| (2..=24).contains(&n) && key == n.to_string()); }
-    if let Some(key) = code.strip_prefix("Numpad") { return (key.len() == 1 && key.bytes().all(|b| b.is_ascii_digit())) || ["Decimal","Add","Subtract","Multiply","Divide","Enter"].contains(&key); }
-    ["ControlLeft","ControlRight","ShiftLeft","ShiftRight","AltLeft","AltRight","MetaLeft","MetaRight",
-     "ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter","Space","Tab","Backspace","Delete","Insert","Home","End",
-     "PageUp","PageDown","CapsLock","NumLock","ScrollLock","Pause","PrintScreen","BracketLeft","BracketRight","Backslash",
-     "Semicolon","Quote","Backquote","Comma","Period","Slash","Minus","Equal"].contains(&code)
+    if let Some(key) = code.strip_prefix("Numpad") { return (key.len() == 1 && key.bytes().all(|b| b.is_ascii_digit())) || NUMPAD_KEYS.contains(&key); }
+    NAMED_KEYS.contains(&code)
+}
+
+/// Every key a binding may name ([`keyboard_code`]), for hosts that name a
+/// pressed key from their own key codes.
+pub fn keyboard_codes() -> impl Iterator<Item = String> {
+    let letters = (b'A'..=b'Z').map(|c| format!("Key{}", char::from(c)));
+    let digits = (0..10).map(|d| format!("Digit{d}"));
+    let functions = (2..=24).map(|n| format!("F{n}"));
+    let keypad = (0..10).map(|d| format!("Numpad{d}")).chain(NUMPAD_KEYS.iter().map(|k| format!("Numpad{k}")));
+    letters.chain(digits).chain(functions).chain(keypad).chain(NAMED_KEYS.iter().map(|k| (*k).to_owned()))
+}
+
+/// `chord` (gamepad buttons by name, else keys) as `action`'s chord of
+/// its kind, in place of the one it had; any other operation holding the
+/// same chord loses it. Validated with the rest of the settings.
+pub(crate) fn bind_chord(bindings: &mut BTreeMap<AppAction, AppBinding>, action: AppAction, chord: &[String]) -> Result<(), String> {
+    if chord.is_empty() {
+        return Err("a chord holds at least one input".into());
+    }
+    let gamepad = chord.iter().all(|k| PAD_NAMES.contains(&k.as_str()));
+    let same = |held: &Vec<String>| held.len() == chord.len() && chord.iter().all(|k| held.contains(k));
+    for (_, binding) in bindings.iter_mut().filter(|(other, _)| **other != action) {
+        let held = if gamepad { &mut binding.gamepad } else { &mut binding.keyboard };
+        if same(held) {
+            held.clear();
+        }
+    }
+    let binding = bindings.entry(action).or_default();
+    *(if gamepad { &mut binding.gamepad } else { &mut binding.keyboard }) = chord.to_vec();
+    binding.validate()
 }
 /// The app actions' default bindings. Toggle first-person view's chord is
 /// one a headset's right controller holds alone (its stick's click, Back,

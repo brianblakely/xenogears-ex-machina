@@ -763,6 +763,8 @@ impl XemApp {
                 let (w, h) = panel.size();
                 let at = |(u, v): (f32, f32)| xem_ui::LogicalPosition::new(u * w as f32 / scale, v * h as f32 / scale);
                 let button = xem_ui::PointerEventButton::Left;
+                // A ray, no mouse: a listening binding takes no click.
+                panel.set_pointer_touch(true);
                 for event in self.xr_pointer.update(hit.map(|(uv, _)| uv), began, held) {
                     panel.dispatch(match event {
                         PanelEvent::Moved(uv) => {
@@ -1147,10 +1149,10 @@ impl XemApp {
         }
         let editing = self.text_editor_focused();
         if editing { self.app_input.release_keyboard(); } else { self.app_input.key(code, down); }
-        let capturing = self.capturing_buttons();
+        let listening = self.listening();
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        if !capturing {
+        if !listening {
             self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
         }
         let captured = self.app_input.captures_key(code,bindings);
@@ -1195,8 +1197,8 @@ impl XemApp {
         if self.text_editor_focused() { self.app_input.release_keyboard(); }
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
-        // A gamepad binding's field taking the next buttons: they are no chord.
-        if !self.capturing_buttons() {
+        // A binding listening for an input: the buttons are no chord.
+        if !self.listening() {
             self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
         }
         self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords), axes);
@@ -1307,12 +1309,13 @@ impl XemApp {
         }
     }
 
+    /// A panel text field has the keys, or a binding listening for an input.
     fn text_editor_focused(&self) -> bool {
-        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused() || p.listening())
     }
 
-    fn capturing_buttons(&self) -> bool {
-        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.capturing_buttons())
+    fn listening(&self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.listening())
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the
@@ -1420,6 +1423,27 @@ impl XemApp {
         }
         self.input.touch = self.deck.actions();
         true
+    }
+
+    /// A key (`KeyboardEvent.code`) for the open panel's binding listening
+    /// for an input (`SettingsUi::listen_key`): true when it took the key,
+    /// which the page then gives to nothing else.
+    pub fn listen_key(&mut self, code: &str, down: bool) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.listen_key(code, down))
+    }
+
+    /// Escape on the open panel: stops a binding listening for an input,
+    /// saying whether one was (then the panel stays).
+    pub fn cancel_panel_dialog(&mut self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.cancel_dialog())
+    }
+
+    /// Whether the pointer pressing next is a finger or a pen rather than a
+    /// mouse (`SettingsUi::set_pointer_touch`).
+    pub fn set_pointer_touch(&mut self, touch: bool) {
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
+            panel.set_pointer_touch(touch);
+        }
     }
 
     /// Host key input for the panel, as Slint key text.
@@ -1872,6 +1896,7 @@ impl XemApp {
                 "panelError": r.panel_error,
                 "panelVisible": r.panel_visible,
                 "panelTextEditorFocused": r.panel_visible && r.panel().is_some_and(|panel| panel.text_editor_focused()),
+                "panelListening": r.panel_visible && r.panel().is_some_and(|panel| panel.listening()),
                 "panelSection": r.panel().map(|panel| panel.component().get_selected_section()),
                 "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
                 "hud": r.frame_rate.as_ref().map(|hud| json!({"visible":hud.visible(),"notice":hud.notice(),"fast_forward":hud.component().get_fast_forward(),"rewinding":hud.component().get_rewinding()})),

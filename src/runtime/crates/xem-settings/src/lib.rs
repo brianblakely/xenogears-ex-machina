@@ -372,6 +372,18 @@ pub enum SettingChange {
     PauseOnFocusLoss(bool),
     /// One action's inputs in a context, validated with the rest.
     BindGame { context: InputContext, action: GameAction, binding: GameBinding },
+    /// One input (a key's `KeyboardEvent.code`, a gamepad input or a mouse
+    /// button, by name) added to an action's in a context: the actions
+    /// there that play another button lose it ([`GameBindings::with_input`]).
+    BindGameInput { context: InputContext, action: GameAction, input: String },
+    /// One input taken from an action's in a context.
+    UnbindGameInput { context: InputContext, action: GameAction, input: String },
+    /// An app operation's chord of keys, or of gamepad buttons, in place of
+    /// the one of that kind it had; another operation holding the same
+    /// chord loses it.
+    BindAppChord { action: AppAction, chord: Vec<String> },
+    /// An app operation's keyboard chord, or its gamepad chord, removed.
+    UnbindAppChord { action: AppAction, gamepad: bool },
     /// Every game binding back to the defaults.
     ResetGameBindings,
     /// The assisted controls' block, whole.
@@ -501,6 +513,18 @@ impl Settings {
             SettingChange::PauseOnFocusLoss(enabled) => next.pause_on_focus_loss = *enabled,
             SettingChange::BindGame { context, action, binding } => {
                 next.game_bindings.context_mut(*context).insert(*action, binding.clone());
+            }
+            SettingChange::BindGameInput { context, action, input } => {
+                next.game_bindings = next.game_bindings.with_input(*context, *action, input)?;
+            }
+            SettingChange::UnbindGameInput { context, action, input } => {
+                next.game_bindings = next.game_bindings.without_input(*context, *action, input);
+            }
+            SettingChange::BindAppChord { action, chord } => controls::bind_chord(&mut next.app_bindings, *action, chord)?,
+            SettingChange::UnbindAppChord { action, gamepad } => {
+                if let Some(binding) = next.app_bindings.get_mut(action) {
+                    if *gamepad { binding.gamepad.clear() } else { binding.keyboard.clear() }
+                }
             }
             SettingChange::ResetGameBindings => next.game_bindings = GameBindings::default(),
             SettingChange::Assisted(assisted) => next.assisted = *assisted,
@@ -1311,6 +1335,50 @@ mod tests {
         assert_eq!(service.settings().game_bindings.play[&GameAction::Jump].keyboard, ["KeyJ"]);
         service.apply(SettingChange::ResetGameBindings).unwrap();
         assert_eq!(service.settings().game_bindings, GameBindings::default());
+    }
+
+    #[test]
+    fn a_bound_input_or_chord_moves_to_the_action_it_is_bound_to() {
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        let bind = |action, input: &str| SettingChange::BindGameInput { context: InputContext::Play, action, input: input.into() };
+        let play = |service: &SettingsService, action| service.settings().game_bindings.play[&action].clone();
+        // E confirms; bound to Jump it jumps instead, Confirm keeping its others.
+        service.apply(bind(GameAction::Jump, "KeyE")).unwrap();
+        assert_eq!(play(&service, GameAction::Jump), GameBinding::parse("Space KeyE", "North", ""));
+        assert_eq!(play(&service, GameAction::Confirm), GameBinding::parse("Backslash", "South", "MouseLeft"));
+        // Each kind to its list; a mouse button and a stick direction too.
+        service.apply(bind(GameAction::Jump, "MouseMiddle")).unwrap();
+        service.apply(bind(GameAction::Jump, "RStickUp")).unwrap();
+        assert_eq!(play(&service, GameAction::Jump), GameBinding::parse("Space KeyE", "North RStickUp", "MouseMiddle"));
+        // East runs and cancels (both play Circle): bound to Cancel, Run keeps it.
+        service.apply(bind(GameAction::Cancel, "East")).unwrap();
+        assert_eq!(play(&service, GameAction::Run).gamepad, ["East"]);
+        // A fifth key takes the oldest one's place; bound again, nothing changes.
+        for key in ["KeyZ", "KeyX", "KeyC"] {
+            service.apply(bind(GameAction::Jump, key)).unwrap();
+        }
+        service.apply(bind(GameAction::Jump, "KeyC")).unwrap();
+        assert_eq!(play(&service, GameAction::Jump).keyboard, ["KeyE", "KeyZ", "KeyX", "KeyC"]);
+        // Attack has its own inputs: W stays Up while it is the weak attack.
+        service.apply(SettingChange::BindGameInput { context: InputContext::Attack, action: GameAction::AttackWeak, input: "KeyQ".into() }).unwrap();
+        assert_eq!(play(&service, GameAction::Up).keyboard, ["KeyW"]);
+        assert!(service.apply(bind(GameAction::Jump, "Escape")).is_err(), "Escape stays the panel's");
+        assert!(service.apply(bind(GameAction::Jump, "Nothing")).is_err());
+        service.apply(SettingChange::UnbindGameInput { context: InputContext::Play, action: GameAction::Jump, input: "North".into() }).unwrap();
+        assert_eq!(play(&service, GameAction::Jump).gamepad, ["RStickUp"]);
+
+        // A chord: F5 saves; bound to Load state it loads, Save state keeping its gamepad chord.
+        service.apply(SettingChange::BindAppChord { action: AppAction::LoadState, chord: vec!["F5".into()] }).unwrap();
+        let app = |service: &SettingsService, action| service.settings().app_bindings.get(&action).cloned().unwrap_or_default();
+        assert_eq!(app(&service, AppAction::LoadState), AppBinding::parse("F5", "Back+North"));
+        assert_eq!(app(&service, AppAction::SaveState), AppBinding::parse("", "Back+South"));
+        // Buttons in another order are the same chord.
+        service.apply(SettingChange::BindAppChord { action: AppAction::Reset, chord: vec!["South".into(), "Back".into()] }).unwrap();
+        assert_eq!(app(&service, AppAction::Reset), AppBinding::parse("", "South+Back"));
+        assert_eq!(app(&service, AppAction::SaveState), AppBinding::default());
+        assert!(service.apply(SettingChange::BindAppChord { action: AppAction::Reset, chord: vec!["Back".into(), "KeyA".into()] }).is_err(), "keys and buttons are no chord");
+        service.apply(SettingChange::UnbindAppChord { action: AppAction::LoadState, gamepad: false }).unwrap();
+        assert_eq!(app(&service, AppAction::LoadState), AppBinding::parse("", "Back+North"));
     }
 
     #[test]

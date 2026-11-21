@@ -150,6 +150,8 @@ impl PanelPointer {
         if hand.select != self.pressed {
             self.pressed = hand.select;
             let button = PointerEventButton::Left;
+            // A controller's ray, no mouse: a listening binding takes no click.
+            ui.set_pointer_touch(true);
             ui.dispatch(if hand.select {
                 WindowEvent::PointerPressed { position, button }
             } else {
@@ -171,6 +173,8 @@ impl PanelPointer {
         use xem_assist::headset::{PanelEvent, Presser};
         let held = |presser| matches!(presser, Presser::Pinch(hand) if pinch[hand] == Some(true));
         let button = PointerEventButton::Left;
+        // A hand's ray, no mouse: a listening binding takes no click.
+        ui.set_pointer_touch(true);
         for event in self.hands.update(uv, began.map(Presser::Pinch), held) {
             ui.dispatch(match event {
                 PanelEvent::Moved(uv) => WindowEvent::PointerMoved { position: panel_position(ui, panel_px, uv) },

@@ -3120,8 +3120,8 @@ not under its menu nor the Original renderer, `xem-core`'s Binaural test a
 look and a head turn each applied once, and
 `xem-ui/tests/panel.rs` the look row's drag on touch screens, a
 headset's own rows and Shortcuts' Toggle first-person view (V and Back+R1
-on its row and in its editors, rebound to G through the settings service,
-Save state's chord refused). `xem-desktop/tests/control.rs` (weston,
+as its row's tokens, rebound to G through its listening field and the
+settings service, and F5 moving to it from Save state). `xem-desktop/tests/control.rs` (weston,
 local) sends `first_person` to `xem-desktop --control`: refused at the
 title and for an unknown field; in field 30, with a route under way, on
 (answering the camera's heading), the next frames' `status` showing
@@ -6949,12 +6949,13 @@ the history length. The original game's pause screens stop snapshots and freeze
 the queue's elapsed-play time, preserving history for when play resumes. Pausing
 restarts the snapshot interval on resume. Increasing and decreasing either value
 can be bound to keyboard/gamepad chords.
-The Settings checkbox **Invert LT/RT chords** makes LT alone
-rewind and RT alone toggle fast-forward; Back+LT and Back+RT then send L2 and R2
+The Settings switch **LT and RT rewind and fast-forward** (`invert_trigger_chords`;
+its note says what the triggers do either way) makes LT
+rewind and RT toggle fast-forward without Back; Back+LT and Back+RT then send L2 and R2
 to the game, without also sending Select. This preference is saved, included
 in settings backups, and can itself be bound to a keyboard or gamepad chord.
-App bindings remain available while Settings is open; editing a settings text field
-captures keyboard input.
+App bindings remain available while Settings is open; editing a settings text field,
+or a binding listening for an input, captures keyboard input.
 Rewind queues the same serialized game saves used by save states and steps
 back through them. Loading or rewinding keeps app commands, recording controls,
 the FF toggle, FF rate and app settings as currently set. A recording goes on
@@ -9955,14 +9956,40 @@ its line. About shows the app's version (`xem_ui::VERSION`: a release's
 the game's bindings ([Controls](#controls)) and the assisted controls
 (hand gestures, the headset pointer, Stop at ledges, touch controls and
 their opacity, reduced transparency and motion); Shortcuts lists every app operation with
-its bindings and edits the chosen one in place (Recenter headset view among
+its chords (Recenter headset view among
 them, with no default binding: the headset card's Recenter button and the
 automation reach it; Toggle first-person view, V and Back+R1, last);
 Gameplay holds the options
 that change the game itself ([Random battles in platforming
 areas](#random-battles-in-platforming-areas); [Text speed, auto-advance and
-movie skipping](#text-speed-auto-advance-and-movie-skipping)). Cancel closes either binding
-editor without saving its changes. The header's Reset sends the shared
+movie skipping](#text-speed-auto-advance-and-movie-skipping)).
+Both binding lists show each row's inputs (a game action's keys, gamepad
+inputs and mouse buttons) or chords (an app operation's keyboard chord and
+gamepad chord) as tokens: a token's ×, or Return, Space, Delete or
+Backspace on it (a gamepad's South), removes it through the settings
+service (`UnbindGameInput`, `UnbindAppChord`), the focus going to the
+row's field. The field at the row's end (`+`), pressed, listens for an
+input (`listen-list`, `listen-row`), saying "Press an input" (a shortcut's
+"Press a shortcut") with the seconds it still waits, five, a hint under
+the list; pressed again, given up after those seconds (none counted while
+a key or button it took is held), Escape (the hosts' `cancel_dialog`) or
+another section stop it with nothing bound. The hosts give it the keys
+while it listens (`SettingsUi::listen_key`, by `KeyboardEvent.code`: SDL's
+scancode named back through `controls::keyboard_codes` on the desktop and
+Android, the page's own code in a browser; no text input meanwhile, and a
+key it took stays its own until let go) and `SettingsUi::gamepad` the
+gamepad's buttons. A game action takes the first key or gamepad input (a
+stick direction too) pressed once all are let go, or a mouse's button
+pressed on its listening field (`Pointing.touch`, set by the hosts with
+each press, says a finger's or a headset ray's is no mouse's: it stops the
+listening instead), as `SettingChange::BindGameInput`: the oldest of its
+kind gives way to a fifth, and the actions in its context that play
+another button lose it. A shortcut takes the keys, or the standard
+gamepad buttons, held together (four at most) once all are let go, as
+`BindAppChord`, replacing its chord of that kind; another operation with
+the same chord loses it. A key no binding may name (Escape, F1) is taken
+and ignored. The note under the list then says which action lost the input
+or chord ("E no longer plays Confirm, talk."). The header's Reset sends the shared
 `reset` command. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the
 question, Escape or Android's Back keep playing, and hiding the panel drops
@@ -9985,20 +10012,20 @@ in an open dropdown's list; left and right are the arrows for the control
 with the focus (a slider, a button group, a dropdown, a section tab; a
 number box's down and up), and Shift+Tab and Tab where it takes neither
 (along a row of buttons); South is Return, held as long as it is (Hold to
-rewind); East closes an open list, the quit question or a binding's editor
-(its row keeps the focus), else the panel; L1 and R1 go to the previous and
+rewind); East closes an open list or the quit question, else the panel;
+L1 and R1 go to the previous and
 next section, round from the last to the first, onto its first control.
 Directions repeat after 0.4 s every 80 ms. The first press after the panel
 shows only puts the focus on the section's first control (`focus-section`
 and Tab), what was held as it showed is no press, and while Back is held
-(the app chords' modifier) the panel takes none. Each binding list's row is
-a stop of its own (Return or Space opens or closes its editor). On a
-gamepad binding's field South takes the next buttons pressed together,
-once everything was let go, as the field's text ("Press buttons…" while it
-waits): a shortcut's chord joined by `+` in the order pressed (the standard
-buttons only), a game action's inputs (stick directions too) by spaces,
-four at most; meanwhile the host's app chords wait
-(`SettingsUi::capturing_buttons`), so binding Back+South saves no state.
+(the app chords' modifier) the panel takes none. In the binding lists each
+token is a stop, then its row's field: South on a token removes it, on a
+field it listens. While a binding listens every button is its own (East's
+too) from when all were let go: once all are let go again after a press,
+a game action takes the first input pressed, a shortcut the standard
+buttons pressed together (with only stick directions it listens on);
+meanwhile the host's app chords wait (`SettingsUi::listening`), so binding
+Back+South saves no state.
 Buttons held as the panel closes stay the panel's until let go
 (`AppInput::hold_pad`): East closing it does not also cancel in the game.
 The sliders step by the values they keep (Zoom out 25, the volume, effect

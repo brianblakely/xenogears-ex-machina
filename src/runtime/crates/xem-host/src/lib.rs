@@ -646,14 +646,16 @@ impl View {
         }
         let bindings = self.settings.borrow().settings().app_bindings.clone();
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
-        let editing = self.panel_visible() && self.ui.text_editor_focused();
+        let typing = self.panel_visible() && self.ui.text_editor_focused();
+        // A binding listening for an input takes the keys, as a text field does.
+        let editing = typing || self.panel_visible() && self.ui.listening();
         if editing { self.app_input.release_keyboard(); }
         // Android shows its on-screen keyboard while a panel text field has
         // the focus (RetroAchievements' sign-in, a number); the desktop
         // takes text whenever the panel shows (xem-desktop).
-        if cfg!(target_os = "android") && editing != self.keyboard {
-            window.set_text_input(editing);
-            self.keyboard = editing;
+        if cfg!(target_os = "android") && typing != self.keyboard {
+            window.set_text_input(typing);
+            self.keyboard = typing;
         }
         let mut count = 0;
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
@@ -666,8 +668,8 @@ impl View {
                 }
             }
         }
-        // A gamepad binding's field taking the next buttons: they are no chord.
-        if !(self.panel_visible() && self.ui.capturing_buttons()) {
+        // A binding listening for an input: the buttons are no chord.
+        if !(self.panel_visible() && self.ui.listening()) {
             self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
         }
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
@@ -839,6 +841,10 @@ impl View {
                     if !(visible && self.ui.cancel_dialog()) {
                         self.set_panel_visible(!visible);
                     }
+                } else if visible && (self.ui.listening() || !key.down) && !key.repeat
+                    && self.ui.listen_key(&key_code(key.scancode).unwrap_or_default(), key.down)
+                {
+                    // A binding listening for an input took it.
                 } else if visible && let Some(text) = slint_key(key.key) {
                     self.ui.dispatch(match (key.down, key.repeat) {
                         (true, false) => WindowEvent::KeyPressed { text },
@@ -847,7 +853,8 @@ impl View {
                     });
                 }
             }
-            SDL_EVENT_TEXT_INPUT if visible => {
+            // A binding listening for an input takes the keys, not their text.
+            SDL_EVENT_TEXT_INPUT if visible && !self.ui.listening() => {
                 let text = unsafe { std::ffi::CStr::from_ptr(event.text.text) }.to_string_lossy();
                 for character in text.chars() {
                     let text: xem_ui::SharedString = character.to_string().into();
@@ -864,6 +871,9 @@ impl View {
             SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if visible => {
                 let button = unsafe { event.button };
                 let position = self.panel_position(window, button.x, button.y);
+                if button.down {
+                    self.ui.set_pointer_touch(button.which == SDL_TOUCH_MOUSEID);
+                }
                 let button_kind = match i32::from(button.button) {
                     SDL_BUTTON_LEFT => PointerEventButton::Left,
                     SDL_BUTTON_RIGHT => PointerEventButton::Right,
@@ -1532,6 +1542,12 @@ fn scancode(code: &str) -> SDL_Scancode {
         };
     let Ok(name) = std::ffi::CString::new(name) else { return SDL_SCANCODE_UNKNOWN };
     unsafe { SDL_GetScancodeFromName(name.as_ptr()) }
+}
+
+/// A key's `KeyboardEvent.code` name from SDL's scancode, among those a
+/// binding may name (`xem_settings::controls::keyboard_codes`).
+fn key_code(key: SDL_Scancode) -> Option<String> {
+    xem_settings::controls::keyboard_codes().find(|code| scancode(code).0 == key.0)
 }
 
 /// The open gamepads' right stick, -1 to 1 (x to the right, y down).

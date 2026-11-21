@@ -85,8 +85,19 @@ impl GameBinding {
         Ok(())
     }
 
-    fn inputs(&self) -> impl Iterator<Item = &str> {
+    pub fn inputs(&self) -> impl Iterator<Item = &str> {
         self.keyboard.iter().chain(&self.gamepad).chain(&self.mouse).map(String::as_str)
+    }
+
+    /// The list of `input`'s kind: keys, gamepad inputs or mouse buttons.
+    fn list_mut(&mut self, input: &str) -> Option<&mut Vec<String>> {
+        if GAMEPAD_INPUTS.contains(&input) {
+            Some(&mut self.gamepad)
+        } else if MOUSE_INPUTS.contains(&input) {
+            Some(&mut self.mouse)
+        } else {
+            crate::controls::keyboard_code(input).then_some(&mut self.keyboard)
+        }
     }
 }
 
@@ -165,6 +176,38 @@ impl GameBindings {
             }
         }
         Ok(())
+    }
+
+    /// `input` (a key's `KeyboardEvent.code`, a gamepad input or a mouse
+    /// button, by name) added to `action`'s inputs in `context`, the oldest
+    /// of its kind giving way to a fifth; the actions there that play
+    /// another button lose it, as one input holds one button.
+    pub fn with_input(&self, context: InputContext, action: GameAction, input: &str) -> Result<Self, String> {
+        let mut next = self.clone();
+        let actions = next.context_mut(context);
+        let list = actions.entry(action).or_default().list_mut(input)
+            .ok_or_else(|| format!("{input} is not a key, gamepad input or mouse button"))?;
+        if !list.iter().any(|held| held == input) {
+            if list.len() == 4 {
+                list.remove(0);
+            }
+            list.push(input.to_owned());
+        }
+        for (_, binding) in actions.iter_mut().filter(|(other, _)| **other != action && other.button() != action.button()) {
+            if let Some(list) = binding.list_mut(input) {
+                list.retain(|held| held != input);
+            }
+        }
+        Ok(next)
+    }
+
+    /// `input` taken from `action`'s inputs in `context`.
+    pub fn without_input(&self, context: InputContext, action: GameAction, input: &str) -> Self {
+        let mut next = self.clone();
+        if let Some(list) = next.context_mut(context).get_mut(&action).and_then(|binding| binding.list_mut(input)) {
+            list.retain(|held| held != input);
+        }
+        next
     }
 
     /// Every input either context names.
