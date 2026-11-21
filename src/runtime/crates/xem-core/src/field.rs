@@ -1478,6 +1478,8 @@ struct Graph {
     /// solid ([`Triangle::bump`]: a floor in a flight's way).
     grids: Vec<Option<Grid>>,
     solid: Vec<bool>,
+    /// The actor's height: its head above its feet.
+    head: f32,
 }
 
 /// No node.
@@ -1496,14 +1498,15 @@ impl Graph {
         Graph {
             nodes, centre, attr, built: vec![false; total], ways: vec![[(NONE, 0.0, NONE); 3]; total], lifts: vec![(NONE, 0.0); total], leaps: vec![0; total],
             walk_block: (actor.flags >> 8) & 7, air_block: (actor.flags >> 9) & 3, masked: actor.layer_flags & 7,
-            grids: vec![None; field.actor_layers()], solid,
+            grids: vec![None; field.actor_layers()], solid, head: f32::from(actor.height.max(0)),
         }
     }
 
     /// The grids of the layers but `layer` (those with solid triangles
-    /// alone, for `flights`), each made the first time asked for.
-    fn grids(&mut self, field: &Field, layer: usize, flights: bool) {
-        for l in (0..self.grids.len()).filter(|l| *l != layer && (!flights || self.solid[*l])) {
+    /// alone, for flights and floors overhead: `solid_only`), each made the
+    /// first time asked for.
+    fn grids(&mut self, field: &Field, layer: usize, solid_only: bool) {
+        for l in (0..self.grids.len()).filter(|l| *l != layer && (!solid_only || self.solid[*l])) {
             if self.grids[l].is_none() {
                 self.grids[l] = Some(Grid::of(&field.layers[l]));
             }
@@ -1514,6 +1517,24 @@ impl Graph {
     fn blocked(&self, layer: usize, n: usize) -> bool {
         let word = self.attr[n];
         self.walk_block & ((word >> 5) & 7) != 0 || (layer == 0 && word & ATTR_LAYER0_BLOCK != 0)
+    }
+
+    /// Whether a floor of another layer overhead leaves the actor no room
+    /// on node `n` (at its middle): one above its floor, as solid as its
+    /// triangle is thick ([`Triangle::bump`]), that its body (its feet on
+    /// the floor, its head `head` above) meets. field_actor_update_position
+    /// refuses a move there. The grids of the other layers with solid
+    /// triangles are made first ([`Graph::grids`]).
+    fn cramped(&self, field: &Field, n: usize) -> bool {
+        let (layer, _) = self.nodes.split(n);
+        let c = self.centre[n];
+        (0..self.grids.len()).filter(|l| *l != layer && self.solid[*l] && (*l >= 3 || self.masked & (1 << l) == 0)).any(|l| {
+            let mesh = &field.layers[l];
+            self.grids[l].as_ref().and_then(|grid| grid.locate(mesh, c.x, c.z)).is_some_and(|u| {
+                let (bump, top) = (f32::from(mesh.triangles[u].bump), mesh.height(u, c.x, c.z));
+                bump > 0.0 && self.attr[self.nodes.index(l, u)] & ATTR_LAYER0_BLOCK == 0 && top < c.y && c.y - self.head < top + bump
+            })
+        })
     }
 
     /// The floor layer `l` has for the actor under (x, z): its node and
@@ -1550,9 +1571,14 @@ impl Graph {
         let mesh = &field.layers[layer];
         let (here, word) = (self.centre[n], self.attr[n]);
         let neighbours = mesh.triangles[t].n.map(|u| usize::try_from(u).ok().filter(|u| *u < mesh.triangles.len()).map(|u| self.nodes.index(layer, u)));
-        // What lies above or below asks for the other layers' grids.
+        // What lies above or below asks for the other layers' grids, and
+        // whether a floor overhead leaves the actor room for those with
+        // solid triangles'.
         if (layer > 0 && neighbours.iter().flatten().any(|m| self.attr[*m] & ATTR_LAYER0_BLOCK != 0)) || word & ATTR_LIFT != 0 {
             self.grids(field, layer, false);
+        }
+        if self.solid.iter().enumerate().any(|(l, solid)| *solid && l != layer) {
+            self.grids(field, layer, true);
         }
         let pit = |m: usize| layer > 0 && self.attr[m] & ATTR_LAYER0_BLOCK != 0;
         for (e, next) in neighbours.into_iter().enumerate() {
@@ -1561,8 +1587,8 @@ impl Graph {
             let ledge = |m: usize| self.attr[m] & ATTR_LEDGE != 0;
             if !blocked && !pit(next) {
                 // A slide only down or level, and onto one no more than
-                // CLIMB up.
-                if !((ledge(n) || ledge(next)) && self.centre[next].y < here.y - CLIMB) {
+                // CLIMB up; nowhere a floor overhead leaves no room.
+                if !((ledge(n) || ledge(next)) && self.centre[next].y < here.y - CLIMB) && !self.cramped(field, next) {
                     let (a, b) = mesh.edge(t, e);
                     let mid = a.add(b).scale(0.5);
                     self.ways[n][e] = (next as u32, here.planar(mid) + mid.planar(self.centre[next]), NONE);
@@ -1577,7 +1603,9 @@ impl Graph {
                     .filter_map(|l| self.floor_at(field, l, fall.x, fall.z))
                     .filter(|(_, y)| *y > top)
                     .min_by(|a, b| a.1.total_cmp(&b.1));
-                if let Some((below, _)) = below {
+                if let Some((below, _)) = below
+                    && !self.cramped(field, below)
+                {
                     self.ways[n][e] = (below as u32, here.planar(fall) + fall.planar(self.centre[below]), u as u32);
                 }
             }
@@ -1592,7 +1620,9 @@ impl Graph {
                 .filter_map(|l| self.floor_at(field, l, here.x, here.z))
                 .filter(|(_, y)| *y < here.y)
                 .max_by(|a, b| a.1.total_cmp(&b.1));
-            if let Some((above, _)) = above {
+            if let Some((above, _)) = above
+                && !self.cramped(field, above)
+            {
                 self.lifts[n] = (above as u32, here.planar(self.centre[above]));
             }
         }
@@ -2080,6 +2110,36 @@ mod tests {
         assert_eq!(route.corners, [V3::new(450.0, 0.0, 50.0)]);
         assert!(route.jump.is_none());
         assert!((route.length - 400.0).abs() < 60.0, "{}", route.length);
+    }
+
+    #[test]
+    fn a_walk_goes_under_a_floor_overhead_only_with_room_for_the_actors_body() {
+        // The strip's middle square under another layer's floor, solid
+        // (its triangles' thickness) from its top down: 50 above the ground
+        // and 100 thick, it reaches below the ground and leaves no room;
+        // 200 above, its underside is 100 up and an actor 64 high walks
+        // under it.
+        let overhead = |top: f32| {
+            let mut floor = sheet(1, 1, 100.0, |_, _| -top);
+            for v in &mut floor.vertices {
+                v.x += 100.0;
+            }
+            for t in &mut floor.triangles {
+                t.bump = 100;
+            }
+            let mut f = field(strip(3), vec![0]);
+            f.layers.extend([floor, Layer::default()]);
+            f
+        };
+        let goal = |f: &Field| f.layers[0].locate(250.0, 50.0).unwrap();
+        let point = V3::new(250.0, 0.0, 50.0);
+        let f = overhead(50.0);
+        let player = *f.player().unwrap();
+        assert!(f.route(&player, 0, goal(&f), point).is_none(), "no room under it");
+        assert!(!f.reachable(&player)[0][goal(&f)]);
+        let f = overhead(200.0);
+        let route = f.route(&player, 0, goal(&f), point).expect("room under it");
+        assert!(route.jump.is_none());
     }
 
     #[test]

@@ -6195,7 +6195,9 @@ layer's floor above it, as solid as its triangle is thick (its byte 13
 times 4, `field_collision_find_actor_floor`), stops a rise where the
 leader's head meets it, and a move into it: `field_actor_update_position`
 rolls such a move back (on map 414 a floor 164 above a takeoff stops a
-gear's jump at 131.25). A route walks where a walk reaches its goal; only
+gear's jump at 131.25). A walk, a lift and a drop go onto no triangle
+where such a floor meets the leader's body standing at its middle (its
+feet on the floor, its head its height above). A route walks where a walk reaches its goal; only
 where none does it jumps too, from a floor's edge over a slide too high
 to walk onto (a jump costing it 200 units beyond its length, so a walk
 round wins where one reaches the floor beyond), a jump's flight worked out
@@ -6266,8 +6268,10 @@ and the actors with their screen points.
 
 Tests: xem-core's field tests (stairs lift a route to the layer above and
 a pit drops it back; a floor beyond a slide is jumped up to as high as a
-jump rises, and one higher is refused; picking along the grid meets what
-testing every triangle meets, over 2 000 rays), xem-headless's
+jump rises, and one higher is refused; a walk goes under a floor overhead
+only with room for the actor's body; a rewritten collision attribute is
+planned with at once; picking along the grid meets what testing every
+triangle meets, over 2 000 rays), xem-headless's
 `click_to_move` (no route on maps 15 and 1 climbs higher than a jump
 rises; the assist jumps in Lahan and arrives, and waits under the ledge
 brake; a walk to Lahan's upper floor goes up its stairs and back down,
@@ -8593,7 +8597,8 @@ lies 164 above the takeoff, and `field_actor_update_position` rolls back a
 rise into it. Clear of floors above, a gear's jump goes on rising 2 less
 each update, to 165.75 (maps 415 and 416, traced frame by frame), as
 `xem_core::field`'s `GEAR_ARC` holds it; the classifier keeps the arc
-measured here, so its gear areas' jump links are lower bounds.
+measured here, so its gear areas' jump links are lower bounds. With the
+free arc instead its table of areas is the same (`--check` passes).
 Both go straight up for two updates, then 12 units an update in the air
 with Run held and 6 without; on the floor Fei runs 16 units an update and
 walks 5, a gear 12 and 6. A jump lands nearer the higher it lands: at a
