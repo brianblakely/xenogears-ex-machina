@@ -856,6 +856,84 @@ fn the_faces_turned_away_the_port_records_follow_how_the_view_may_turn() {
     assert_eq!(smooth.margin, margin(4.0), "interpolating with the camera still: what models turn");
 }
 
+/// Zoomed out further than the frame shown was recorded for, the picture
+/// would show the clear colour where the game culled the faces the wider
+/// view sees: it shows the zoom that frame covers (`Trace::covers`, the
+/// zoom of the reveals the port judged it under) until frames recorded for
+/// the wider view are shown, and eases into it from there, never further
+/// than the frame shown covers; while the game holds its frame, it stays.
+/// Zooming in shows at once, and so does zooming a held frame out again as
+/// far as it covers (issue #103).
+#[test]
+fn a_zoom_out_shows_the_zoom_the_frame_covers_until_frames_recorded_for_it_arrive() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    // (A frame whose projection the picture's viewpoint follows.)
+    let frame = |gpu: &mut xem_gpu::Gpu| {
+        let mut faces = FIELD;
+        faces[0].class = 0;
+        faces[1].class = 0;
+        gte_frame(gpu, LEVEL, &faces, true);
+        gpu.trace_projections(0, &[projection(FEET, 7, SPRITE), Projection { sz: 1200, ..projection(FEET, 4, 0) }], &[], &[]);
+    };
+    let configure = |view: &mut GameView, zoom_out: u16| {
+        let graphics = xem_settings::Graphics { widescreen: true, zoom_out, ..Default::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (960, 540), view.max_scale()));
+    };
+    let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+    configure(&mut view, 150);
+    let _ = view.take_restart();
+    let mut now = 0.0;
+    // Frames as a host takes them (the reveals for the next set before the
+    // take), each presented twice; the pull-back each presentation showed.
+    let mut tick = |view: &mut GameView, drawn: bool| -> Vec<f32> {
+        if drawn {
+            view.push(DEVICE.with(|device| {
+                let mut device = device.borrow_mut();
+                frame(&mut device);
+                device.set_reveals(view.reveals());
+                device.take_trace()
+            }));
+        }
+        (0..2).map(|_| {
+            now += 1.0 / 120.0;
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            let _ = view.present(&mut encoder, &DISPLAY, "field:1", now);
+            gpu.queue.submit([encoder.finish()]);
+            view.viewpoint().map_or(0.0, |viewpoint| viewpoint.offset[2])
+        }).collect()
+    };
+    DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        *device = xem_gpu::Gpu::new();
+        device.set_trace(true);
+    });
+    let shown: Vec<f32> = (0..12).flat_map(|_| tick(&mut view, true)).collect();
+    assert!(shown[8..].iter().all(|&back| (back - 600.0).abs() < 1.0), "at 150%, half the target's depth back: {shown:?}");
+    // Zoomed out while the game runs.
+    configure(&mut view, 200);
+    let shown: Vec<f32> = (0..12).flat_map(|_| tick(&mut view, true)).collect();
+    assert!(shown[..2].iter().all(|&back| (back - 600.0).abs() < 1.0), "the frames recorded for 150% at 150%: {shown:?}");
+    assert!(shown.windows(2).all(|pair| pair[1] >= pair[0]), "then eased out: {shown:?}");
+    assert!((shown[shown.len() - 1] - 1200.0).abs() < 1.0, "to 200% once frames recorded for it show: {shown:?}");
+    // Zoomed in, at once; zoomed out while the game holds its frame, the
+    // frame's zoom until the game draws again.
+    configure(&mut view, 150);
+    assert!(tick(&mut view, true).iter().all(|&back| (back - 600.0).abs() < 1.0), "zoomed in at once");
+    let _ = (0..4).map(|_| tick(&mut view, true)).count();
+    configure(&mut view, 250);
+    let held: Vec<f32> = (0..8).flat_map(|_| tick(&mut view, false)).collect();
+    assert!(held.iter().all(|&back| (back - 600.0).abs() < 1.0), "held: the frame's own zoom: {held:?}");
+    let shown: Vec<f32> = (0..20).flat_map(|_| tick(&mut view, true)).collect();
+    assert!(shown.windows(2).all(|pair| pair[1] >= pair[0]), "eased out: {shown:?}");
+    assert!((shown[shown.len() - 1] - 1800.0).abs() < 1.0, "once drawn again, 250%: {shown:?}");
+    // Held, zoomed in, then out again as far as the frame covers: at once.
+    for (zoom_out, back) in [(150, 600.0), (200, 1200.0), (300, 1800.0)] {
+        configure(&mut view, zoom_out);
+        let held = tick(&mut view, false);
+        assert!(held.iter().all(|&shown| (shown - back).abs() < 1.0), "held at {zoom_out}%, the frame's 250% at most: {held:?}");
+    }
+}
+
 /// The field's shadows are sorted by their corners' average depth, its floor
 /// by each face's farthest point: a face of the floor drawn after a shadow
 /// covered its near part (issue #103). A decal moves after the faces drawn

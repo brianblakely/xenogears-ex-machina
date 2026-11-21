@@ -107,6 +107,14 @@ pub struct Reveals {
     /// judged for sees some of them. A renderer leaves out those that face
     /// away from the camera it draws them through.
     pub margin: u16,
+    /// The zoom (percent) the view asking for these faces shows the
+    /// game's camera at, for itself: each take returns the least zoom of
+    /// the reveals its faces were judged under ([`Trace::covers`]), how far
+    /// its frames may be shown zoomed out. 0 for none (a view from within
+    /// or around the scene, any). The port does not read it, and the
+    /// device records none of the faces for reveals reaching nowhere
+    /// (`reach` 0, 0) but still returns their zoom.
+    pub zoom: u16,
 }
 
 impl Reveals {
@@ -666,6 +674,11 @@ pub struct Trace {
     /// The GTE depth of the field camera's target, when the port recorded
     /// one since the last take (it does while culled faces are wanted).
     pub focus: Option<u16>,
+    /// The least zoom ([`Reveals::zoom`]) of the reveals the port judged
+    /// what it drew since the last take under: zoomed out further, a frame
+    /// of it lacks the faces the game culled beyond what it reached. None
+    /// when none with a zoom were in effect.
+    pub covers: Option<u16>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -704,6 +717,13 @@ pub(crate) struct Recorder {
     /// What the host wants of culled faces (none when `None`). The port
     /// reads it.
     wanted: Option<Reveals>,
+    /// The reveals as the host gave them (also reaching nowhere: their
+    /// zoom), those in effect when the device last wrote the port's words
+    /// (which the port judges what it draws next under), and the least zoom
+    /// of those the faces since the last take were judged under.
+    asked: Option<Reveals>,
+    written: Option<Reveals>,
+    covers: Option<u16>,
     /// Points traced: matched to their projection, and not (2D points).
     matches: std::cell::Cell<[u64; 2]>,
     /// The newest floor point of each sprite (by owner), the camera focus
@@ -1155,6 +1175,8 @@ impl Gpu {
         self.trace = enabled.then(|| {
             let mut trace = Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() });
             if let Some(mut was) = was {
+                // The port's words stay as the device last wrote them.
+                (trace.written, trace.covers) = (was.written, was.covers);
                 trace.keep_movies(&mut was, true);
                 if !was.dialogue_entered {
                     trace.dialogue = std::mem::take(&mut was.dialogue);
@@ -1173,6 +1195,7 @@ impl Gpu {
     /// records none. Kept while the trace is on; none without a trace.
     pub fn set_reveals(&mut self, reveals: Option<Reveals>) {
         if let Some(trace) = &mut self.trace {
+            trace.asked = reveals;
             trace.wanted = reveals.filter(|r| r.reach != [0, 0]);
         }
     }
@@ -1190,7 +1213,7 @@ impl Gpu {
         self.stats = std::mem::take(&mut live.stats);
         if let Some(mut trace) = live.trace.take() {
             self.set_trace(true);
-            self.set_reveals(trace.wanted);
+            self.set_reveals(trace.asked);
             self.trace.as_mut().expect("turned on").keep_movies(&mut trace, false);
             self.trace_resync();
         }
@@ -1234,6 +1257,14 @@ impl Gpu {
     /// the screen points stored and the faces culled at the screen's edges.
     pub fn trace_projections(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
         if let Some(trace) = &mut self.trace {
+            // What the port drew since it last read the words, it judged
+            // under the reveals written then; it reads them again now.
+            if (!projections.is_empty() || !reveals.is_empty())
+                && let Some(zoom) = trace.written.map(|r| r.zoom).filter(|&zoom| zoom != 0)
+            {
+                trace.covers = Some(trace.covers.map_or(zoom, |covers| covers.min(zoom)));
+            }
+            trace.written = trace.asked;
             trace.ingest(first, projections, stores, reveals);
         }
     }
@@ -1246,7 +1277,7 @@ impl Gpu {
         };
         trace.room = trace.ops.len().max(trace.room - trace.room / 64).min(TRACE_ROOM);
         let mut ops = std::mem::replace(&mut trace.ops, Vec::with_capacity(trace.room + trace.room / 8));
-        let focus = trace.focus.take();
+        let (focus, covers) = (trace.focus.take(), trace.covers.take());
         if trace.full_sync {
             trace.full_sync = false;
             trace.dirty = None;
@@ -1257,12 +1288,12 @@ impl Gpu {
                 pixels: self.vram.as_slice().into(),
                 upload: true,
             });
-            return Trace { ops, focus };
+            return Trace { ops, focus, covers };
         }
         if let Some(rect) = trace.dirty.take() {
             ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect).into(), upload: false });
         }
-        Trace { ops, focus }
+        Trace { ops, focus, covers }
     }
 
     /// The trace starts again from the whole VRAM as it is now (a snapshot

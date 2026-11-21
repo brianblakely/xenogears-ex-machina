@@ -125,6 +125,11 @@ fn seals_terrain(scene: &str) -> bool {
     scene.starts_with("worldmap") || scene == "arena"
 }
 
+/// A zoom in percent, as [`Reveals::zoom`] holds it.
+fn percent(zoom: f32) -> u16 {
+    (zoom * 100.0).round() as u16
+}
+
 /// The share of the field camera's pull-back a scene takes ("field:12",
 /// "worldmap", ...): the field all of it, the world map a tenth. The
 /// opening's burning Lahan ("field:2:opening") takes none: pulled back,
@@ -244,6 +249,9 @@ const PULL_BACK_MARGIN: f64 = 4.0;
 const TURN_MARGIN: f64 = 4.0;
 const TURN_SHARE: f64 = 1.25;
 const MAX_MARGIN: f64 = 30.0;
+/// [`GameView::shown_zoom`]'s time constant (seconds): a zoom covered at
+/// once is reached nineteen-twentieths of the way in three of them.
+const ZOOM_EASE: f64 = 0.035;
 
 /// First-person inspection's projection distance: a 70-degree field of
 /// view across the original's 320 pixels (160 / tan 35°).
@@ -391,6 +399,14 @@ pub struct GameView {
     side: u32,
     /// The scene that drew each frame the renderer logs (by its identity).
     frame_scenes: Vec<(((u16, u16), u64), String)>,
+    /// How far the frames may be shown zoomed out ([`Trace::covers`], in
+    /// percent): the least zoom of the takes in each of the last two
+    /// intervals between new frames shown (the newest first), and of the
+    /// frame shown (none for any); the zoom presented last, when it last
+    /// stepped, and whether it was still easing out then.
+    covers: [Option<u16>; 2],
+    cover: Option<u16>,
+    shown_zoom: Option<(f32, f64, bool)>,
     /// Welds each trace's scene points ([`super::weld`]), its tables kept.
     welder: super::Welder,
     /// Movie frames rebuilt from what the MDEC decoded, and whether the last
@@ -558,6 +574,9 @@ impl GameView {
             focus: None,
             side: 0,
             frame_scenes: Vec::new(),
+            covers: [None; 2],
+            cover: None,
+            shown_zoom: None,
             welder: super::Welder::default(),
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
@@ -632,12 +651,14 @@ impl GameView {
         } else if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
+            let zoom_percent = percent(zoom);
             match self.focus {
                 // The margin covers the camera moving between frames.
                 Some(focus) => Some(Reveals {
                     reach: [side as u16 + 32, 32],
                     pull_back: ((zoom - 1.0) * focus).round() as u32,
                     margin: self.turn_margin(&config, PULL_BACK_MARGIN),
+                    zoom: zoom_percent,
                     ..Reveals::default()
                 }),
                 None => {
@@ -650,7 +671,7 @@ impl GameView {
                     let width = 320.0 + 2.0 * side as f32;
                     let x = (2.0 * (zoom - 1.0) * width + side as f32 + 16.0).min(2048.0);
                     let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
-                    Some(Reveals { reach: [x as u16, y as u16], margin: Reveals::EVERY_WAY, ..Reveals::default() })
+                    Some(Reveals { reach: [x as u16, y as u16], margin: Reveals::EVERY_WAY, zoom: zoom_percent, ..Reveals::default() })
                 }
             }
         } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
@@ -659,9 +680,10 @@ impl GameView {
             // Modern terrain also needs the sub-pixel slivers the
             // original's whole-pixel winding tests discarded inside them.
             let margin = if config.interpolation { 32 } else { 16 };
-            Some(Reveals { reach: [side as u16 + margin, margin], margin: self.turn_margin(&config, 0.0), ..Reveals::default() })
+            Some(Reveals { reach: [side as u16 + margin, margin], margin: self.turn_margin(&config, 0.0), zoom: 100, ..Reveals::default() })
         } else {
-            None
+            // No culled face wanted, but the zoom the frames are drawn for.
+            Some(Reveals { zoom: 100, ..Reveals::default() })
         }
     }
 
@@ -967,6 +989,9 @@ impl GameView {
         if let Some(focus) = trace.focus {
             self.recorded_focus = Some(f32::from(focus));
         }
+        if let Some(covers) = trace.covers {
+            self.covers[0] = Some(self.covers[0].map_or(covers, |known| known.min(covers)));
+        }
         // (With nothing waiting before it, the trace's own buffer.)
         if self.pending.is_empty() {
             self.pending = trace.ops;
@@ -1092,7 +1117,7 @@ impl GameView {
     /// Draws the pending trace into the renderer's picture of VRAM, the
     /// frames it begins tagged with the scene drawing them.
     fn draw_pending(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, scene: &str, config: ViewConfig) {
-        let trace = Trace { ops: std::mem::take(&mut self.pending), focus: None };
+        let trace = Trace { ops: std::mem::take(&mut self.pending), focus: None, covers: None };
         if Self::shows(display) {
             self.renderer.set_display(xem_gpu::VramRect {
                 x: display.x,
@@ -1172,6 +1197,12 @@ impl GameView {
         }
         if new_frame {
             self.update_focus(area);
+            // The port judged the faces of the frame shown now in the takes
+            // since the frame before it was shown, and before (the game
+            // builds a frame while the GPU draws the one before, shown when
+            // it is drawn).
+            self.cover = self.covers.iter().flatten().min().copied();
+            self.covers = [None, self.covers[0]];
         }
         // The sides widen this display at its own height to the output's shape.
         self.side = self.config.and_then(|config| config.aspect).map_or(0, |aspect| display_side((area.width, area.height), aspect));
@@ -1193,12 +1224,43 @@ impl GameView {
     fn show_screen(&mut self, encoder: &mut wgpu::CommandEncoder, area: DisplayArea, now: f64, new_frame: bool, look: Option<Look>, interface: Interface) {
         let Some(config) = self.config else { return };
         let alone = interface == Interface::Only;
-        let zoom = scene_zoom(config.zoom, &self.scene);
+        let step = || new_frame || (config.interpolation && self.main.frame.moving(now));
+        let zoom = Self::shown_zoom(&mut self.shown_zoom, self.cover, scene_zoom(config.zoom, &self.scene), now, step);
         let pull_back = if zoom > 1.0 && look.is_none() && !alone { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
         // The interface moves as the game moves it: nothing to interpolate.
         let interpolate = (config.interpolation && !alone).then_some(now);
         let framing = Framing { side: self.side, interpolate, pull_back, replay: config.effects.any(), look, interface, hold: false };
         self.main.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
+    }
+
+    /// The zoom the game's camera is shown pulled back by (`shown`, the one
+    /// presented last): `target`, the one asked for, but never more than
+    /// the frame shown covers (zoomed out further than the faces the game
+    /// culled were judged for, it shows the clear colour where they were
+    /// left out), eased into from there as frames covering more are shown,
+    /// a step each frame shown (or each presentation while interpolation
+    /// moves the scene, which draws each anyway: `step`, asked only then).
+    /// Zoomed in, or out no further than the frame covers with no easing
+    /// under way (the frame held), at once.
+    fn shown_zoom(shown: &mut Option<(f32, f64, bool)>, cover: Option<u16>, target: f32, now: f64, step: impl FnOnce() -> bool) -> f32 {
+        let limit = match cover {
+            Some(cover) if percent(target) > cover => f32::from(cover) / 100.0,
+            _ => target,
+        };
+        let zoom = match *shown {
+            Some((zoom, _, _)) if limit <= zoom => limit,
+            Some((zoom, then, easing)) => match step() {
+                false if easing => return zoom,
+                false => limit,
+                true => {
+                    let eased = zoom + (limit - zoom) * (1.0 - (-(now - then).max(0.0) / ZOOM_EASE).exp()) as f32;
+                    if limit - eased < 0.01 { limit } else { eased }
+                }
+            },
+            None => limit,
+        };
+        *shown = Some((zoom, now, zoom < limit));
+        zoom
     }
 
     /// Shows the game in a headset as `view`: the flat screen

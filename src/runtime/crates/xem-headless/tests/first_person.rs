@@ -337,7 +337,7 @@ fn after_scene(trace: &Trace) -> Trace {
         .filter(|(i, op)| !matches!(op, TraceOp::Draw(p) if p.backdrop || (!p.class.is_scene() && first.is_some_and(|first| *i < first))))
         .map(|(_, op)| op.clone())
         .collect();
-    Trace { ops, focus: trace.focus }
+    Trace { ops, focus: trace.focus, covers: trace.covers }
 }
 
 /// `trace` with each scene primitive (and each part of a sprite's
@@ -369,7 +369,7 @@ fn identified(trace: &Trace, next: &mut u32) -> Trace {
         }
         op => op.clone(),
     }).collect();
-    Trace { ops, focus: trace.focus }
+    Trace { ops, focus: trace.focus, covers: trace.covers }
 }
 
 /// The colour of a picture's pixel `i`, 0xBBGGRR.

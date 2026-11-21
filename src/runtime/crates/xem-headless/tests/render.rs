@@ -1426,6 +1426,74 @@ fn the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out() {
     assert!(pulled_back && reveals.pull_back > 0 && zoom == 250, "pulled back: {reveals:?}, {zoom}");
 }
 
+/// Zoomed out while the game runs, or while it holds its frame, the
+/// picture shows none of the clear colour where the game culled what the
+/// wider view sees: the frame shown is shown at the zoom it was recorded
+/// for until frames recorded for the wider one arrive, then eased into it
+/// (issue #103: at 1080p, Lahan in widescreen zoomed from 150% to 200%
+/// while walking showed up to 28 448 pixels of it a presentation for five
+/// frames, and held, zoomed from 125% to 300%, over a million until the
+/// game drew again).
+#[test]
+fn zooming_out_shows_none_of_the_clear_colour_running_or_held() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd": "enter_field", "map": 1}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    run_frames(&mut session, 400);
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let configure = |view: &mut GameView, zoom_out: u16| {
+        let graphics = Graphics { widescreen: true, zoom_out, ..Graphics::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (960, 540), view.max_scale()));
+    };
+    // Each presentation's pixels of the clear colour, and its pull-back.
+    let present = |view: &mut GameView, display: &xem_render::xem_gpu::DisplayInfo, scene: &str, now: f64| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, display, scene, now).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        let aux = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.frame().aux());
+        (aux.chunks_exact(4).filter(|a| a[2] & 15 == 0).count(), view.viewpoint().map_or(0.0, |v| v.offset[2]))
+    };
+    configure(&mut view, 150);
+    let (mut zoomed, mut clear) = (Vec::new(), Vec::new());
+    for n in 0..90u32 {
+        if n == 40 {
+            configure(&mut view, 200);
+        }
+        session.execute(&json!({"cmd": "pad", "buttons": if n >= 10 { vec!["up"] } else { vec![] }}));
+        session.set_actor_view(view.actor_view()).expect("the view's actor view");
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        for step in 0..2 {
+            let (pixels, pulled) = present(&mut view, &display, &scene, f64::from(n * 2 + step) / 120.0);
+            if n >= 20 {
+                clear.push((n, pixels));
+                zoomed.push(pulled);
+            }
+        }
+    }
+    assert!(clear.iter().all(|&(_, pixels)| pixels == 0), "the clear colour, zoomed out running: {clear:?}");
+    let (at_150, at_200) = (zoomed[0], zoomed[zoomed.len() - 1]);
+    assert!(at_200 > at_150 * 1.8, "zoomed out to 200%: pulled back {at_150} then {at_200}");
+    // Held: presented again without a game frame.
+    configure(&mut view, 300);
+    let display = session.runtime.services().gpu.device().display();
+    let scene = session.scene();
+    let held: Vec<(usize, f32)> = (0..6).map(|step| present(&mut view, &display, &scene, f64::from(180 + step) / 120.0)).collect();
+    assert!(held.iter().all(|&(pixels, pulled)| pixels == 0 && (pulled - at_200).abs() < 1.0), "held, at the frame's 200%: {held:?}");
+}
+
 fn run_frames(session: &mut Session<NativeModule>, count: u32) {
     let reply = session.execute(&json!({"cmd": "frames", "count": count}));
     assert!(reply.get("error").is_none(), "{reply}");

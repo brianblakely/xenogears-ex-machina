@@ -1823,6 +1823,43 @@ snapshots are its. The renderer only draws again what it drew:
   `a_culled_face_shows_only_where_it_faces_the_camera_the_picture_is_drawn_from`,
   `a_translucent_culled_face_faces_the_camera_unless_the_port_records_it_either_way`
   and `the_faces_turned_away_the_port_records_follow_how_the_view_may_turn`).
+  Zoomed out, the frames recorded or held lack what the wider view sees
+  beyond what their reveals reached: the port reads the reveals each time
+  it hands its records over and judges what it draws next under them, so a
+  frame shows reveals the host set about two frames before (a field builds
+  a frame while the GPU draws the one before, shown once drawn), and a
+  held frame (the game paused, a menu over it) has no other. In Lahan in
+  widescreen zoomed from 150% to 200% while walking, the clear colour
+  showed in the sides of five frames (up to 28 448 pixels a presentation
+  at 1080p; 855 458 in field 684 from 100%), and a held frame zoomed to
+  300% showed over a million until the game drew again. Each take returns
+  the least zoom (`Reveals::zoom`, the one the view asked at) of the
+  reveals the port judged what it drew under (`Trace::covers`: those it
+  read when it last handed its records over, kept when the trace
+  restarts), and `GameView` shows the game's camera zoomed out no further
+  than the frame shown covers (the least of the takes in the last two
+  intervals between new frames shown), easing into the zoom asked for as
+  frames covering it are shown: a step each frame shown, or each
+  presentation while interpolation moves the scene (no presentation draws
+  again for it), with a time constant of 35 ms. Zoomed in, or out no
+  further than the frame covers with no easing under way (a held frame
+  zoomed in and out again), it changes at once. In Lahan (a new frame every
+  other display frame) the zoom stays for the five frames after a change
+  and is within 1% of the new one ten frames later. It costs nothing more:
+  as many presentations draw (it steps only where one draws anyway), each
+  presentation of the frames held and eased takes as long as before, and
+  the 20 frames from a zoom from 150% to 200% or from 100% to 300% while
+  walking in Lahan at 1080p, presented twice each, took 15.8 and 22.9 ms
+  to present against 15.7 and 22.6 (medians of 14 rounds alternating with
+  the build before; 13.2 against 13.1 with the zoom left at 150%, the same
+  work). The clear colour shows in none of those changes now, running
+  (with interpolation, turning, in the forest and field 684 too) or held
+  (`tests/ps1.rs`
+  `a_zoom_out_shows_the_zoom_the_frame_covers_until_frames_recorded_for_it_arrive`,
+  `tests/render.rs` `zooming_out_shows_none_of_the_clear_colour_running_or_held`).
+  A view wanting no culled face at 100% (4:3 without interpolation) asks
+  with its zoom all the same (reaching nowhere: the device records none);
+  with viewport culling it asks for none (its gaps are the game's).
   The flat backdrops that only span the original screen go
   on into the sides as culled faces without projections: a panorama's
   strip continued from the texture column the original ends at
@@ -2396,7 +2433,8 @@ snapshots are its. The renderer only draws again what it drew:
 - **GameView** (`view.rs`) is what hosts use: it resolves the graphics
   settings for a host class, accumulates the trace between presentations,
   tells the host which culled faces the trace should record (`reveals`:
-  the reach, the pull-back and the margin, passed to `Gpu::set_reveals`)
+  the reach, the pull-back, the margin and the zoom, passed to
+  `Gpu::set_reveals`)
   and the view the field's characters keep moving in (`actor_view`,
   below), and presents (`present`; a headset's diorama `present_diorama`:
   [Diorama](#diorama)). A presentation with nothing new to draw (the display refreshing
@@ -2513,7 +2551,7 @@ interchange](#state-interchange)).
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
 | presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio), only while Force 4:3 is off |
 | force 4:3 | the placed picture shown at 4:3 under either renderer (`force_4x3`, in the Picture card beside Scale; off, the default, keeps the picture's own pixels and Widescreen's framing): its width set from the game's own lines (Fit fits the 4:3 shape, Integer steps the lines in whole multiples, Stretch still fills), so game frames, rebuilt movies and the device's picture take one place; while it is on Widescreen's framing is off and its switch disabled, the choice kept (`Graphics::widened`); a headset's screen keeps its own shape, and Force 4:3 ends its wider framing too |
-| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game or right stick up/down moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; the opening's burning Lahan (map 2 before the story value, `game_data.vars[0]`, reaches Fei's room's 6: the scene `field:2:opening`) none either, as pulled back its camera shows the void around the map's burning houses, and its characters move as the original's view shows them (`xem-headless` `render.rs`, `the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out`); independent of the aspect ratio |
+| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game or right stick up/down moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; the opening's burning Lahan (map 2 before the story value, `game_data.vars[0]`, reaches Fei's room's 6: the scene `field:2:opening`) none either, as pulled back its camera shows the void around the map's burning houses, and its characters move as the original's view shows them (`xem-headless` `render.rs`, `the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out`); zoomed out, the picture widens once the game has drawn frames for the wider view, easing into it, and keeps the zoom its frame covers while the game holds its frame ([The renderer](#the-renderer-phase-4), the culled faces); independent of the aspect ratio |
 | full-size sprites | the party on foot in a large-scale field drawn with its full-resolution field sprites at a quarter of their size instead of the map's small ones (off, the default; presentation only: [Full-resolution sprites in large-scale fields](#full-resolution-sprites-in-large-scale-fields)) |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |

@@ -36,7 +36,7 @@ use xem_render::ps1::{GameView, HostClass, ViewConfig};
 use xem_settings::Graphics;
 
 /// What a view from anywhere asks of the trace.
-const ANYWHERE: Reveals = Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None, margin: 0 };
+const ANYWHERE: Reveals = Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None, margin: 0, zoom: 0 };
 
 fn disc() -> Option<PathBuf> {
     let path = std::env::var_os("XEM_DISC1")
