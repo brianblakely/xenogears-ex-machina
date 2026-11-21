@@ -235,6 +235,8 @@ static u32 xem_depth_keep(u32 current, u32 candidate, int far) {
 enum { XEM_SORT_AVG, XEM_SORT_FAR, XEM_SORT_NEAR };
 
 static void xem_reveal_shade(XemDraw *d, u32 step, u32 *words);
+static void xem_reveal_kept(XemDraw *d, u32 vertices, u32 step, u32 count, u32 projections, int sort, u32 sxy0, u32 sxy1,
+                            u32 sxy2, u32 sxy3);
 
 /* Presentation only (xem/gte.h): a face the screen-bounds test just culled,
  * recorded with the GP0 words of its packet slot (the screen points put in,
@@ -244,14 +246,24 @@ static void xem_reveal_shade(XemDraw *d, u32 step, u32 *words);
  * renderer sorts (depth 0, which the renderers leave unlinked, only for a
  * camera pulled back). Reads memory only, and leaves the GTE as it was. */
 static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
-    u32 sxy[4], words[12], count = tag >> 24, projections = xem_gte_ring->count, i;
-    s32 depth, sz;
-    long long sum;
+    u32 count = tag >> 24, projections = xem_gte_ring->count;
 
     if (!xem_present_reveals->wanted || count == 0 || count > 12 ||
         !xem_present_face_visible(projections, vertices, (s32)d->x_limit + 1, (s32)(d->y_limit >> 16) + 1)) {
         return;
     }
+    xem_reveal_kept(d, vertices, step, count, projections, sort, sxy0, sxy1, sxy2, sxy3);
+}
+
+/* xem_reveal's record of a face it keeps. (Apart, so that the faces it
+ * leaves out, most of those it is given, set up none of this: the port's
+ * locals are cleared where they begin.) */
+static void xem_reveal_kept(XemDraw *d, u32 vertices, u32 step, u32 count, u32 projections, int sort, u32 sxy0, u32 sxy1,
+                            u32 sxy2, u32 sxy3) {
+    u32 sxy[4], words[12], i;
+    s32 depth, sz;
+    long long sum;
+
     sxy[0] = sxy0, sxy[1] = sxy1, sxy[2] = sxy2, sxy[3] = sxy3;
     if (sort == XEM_SORT_AVG) {
         if (vertices == 4) {
@@ -284,25 +296,22 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
 }
 
 /* Presentation only: a face the renderer dropped as facing away or at
- * depth 0, which a camera pulled back or looking around (xem/gte.h) may
- * still see: recorded as a culled face while the host's view is there. */
+ * depth 0, which a camera pulled back or looking around (xem/gte.h), or one
+ * between two frames (within the host's margin), may still see: recorded as
+ * a culled face while the host's view is there. */
 static void xem_reveal_dropped(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
-    if (xem_present_elsewhere()) {
+    if (xem_present_dropped()) {
         xem_reveal(d, vertices, step, tag, sort, sxy0, sxy1, sxy2, sxy3);
     }
 }
 
-/* The same for a quad dropped as facing away before its fourth point was
- * projected: that point is projected for the record (from `fourth`), and
- * the GTE and the ring's register provenance are put back afterwards. */
-static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
-    XemGte saved;
+/* xem_reveal_dropped_quad's record: the quad's fourth point projected for
+ * it (from `fourth`), and the GTE and the ring's register provenance put
+ * back afterwards. */
+static void xem_reveal_fourth(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
+    XemGte saved = xem_gte;
     u32 fifo[3], sxy[3], i;
 
-    if (!xem_present_elsewhere()) {
-        return;
-    }
-    saved = xem_gte;
     for (i = 0; i < 3; i++) {
         fifo[i] = xem_gte_ring->fifo[i];
         sxy[i] = xem_mfc2(XEM_GTE_SXY0 + (int)i);
@@ -313,6 +322,17 @@ static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, i
     xem_gte = saved;
     for (i = 0; i < 3; i++) {
         xem_gte_ring->fifo[i] = fifo[i];
+    }
+}
+
+/* The same for a quad dropped as facing away before its fourth point was
+ * projected, which is projected for the record, while the host's margin is
+ * set, only when the first three may be worth recording
+ * (xem_present_face_turned; without the margin each such quad is, and
+ * xem_present_face_visible judges it whole, its points as projected). */
+static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
+    if (xem_present_dropped() && (xem_present_reveals->margin == 0 || xem_present_face_turned(xem_gte_ring->count))) {
+        xem_reveal_fourth(d, fourth, step, tag, sort);
     }
 }
 

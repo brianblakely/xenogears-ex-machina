@@ -17,7 +17,7 @@ mod view;
 
 pub use diorama::{DioramaEye, DioramaPresented, DioramaSpace, DioramaStats, Table, Turns, XrView};
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
-pub use frame::{FrameRenderer, Framing, Interface, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
+pub use frame::{FrameRenderer, Framing, Interface, Look, Welder, central_depth, first_person, interpolate, lay_decals, pull_back, weld};
 pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};
 pub use view::{DrawnCamera, GameView, HeadsetEye, HeadsetPresented, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, Viewpoint, headset_movie_output, scene_zoom, wide_side, xr_view};
 
@@ -840,6 +840,12 @@ fn aux_class(class: Class) -> u32 {
 
 impl<'a> Builder<'a> {
     pub(crate) fn new(options: &'a DrawOptions, ops: &[TraceOp]) -> Self {
+        Self::new_in(options, ops, scene_offset(ops))
+    }
+
+    /// [`Builder::new`] for `ops` whose scene is projected about `scene`
+    /// ([`scene_offset`], known already).
+    pub(crate) fn new_in(options: &'a DrawOptions, ops: &[TraceOp], scene: Option<(i16, i16)>) -> Self {
         let mut balance = 0i64;
         if options.culling.back_faces {
             for op in ops {
@@ -857,7 +863,7 @@ impl<'a> Builder<'a> {
             commands: Vec::new(),
             staging: Vec::new(),
             front: if balance < 0 { -1 } else { 1 },
-            scene: scene_offset(ops),
+            scene,
             stats: DrawStats::default(),
             spill: 0,
             reveal: Reveal::Hidden,
@@ -885,8 +891,8 @@ impl<'a> Builder<'a> {
 
     /// [`Builder::new`] filling `storage`'s buffers ([`Builder::store`] gives
     /// them back).
-    pub(crate) fn reusing(options: &'a DrawOptions, ops: &[TraceOp], storage: &mut Storage) -> Self {
-        let mut builder = Self::new(options, ops);
+    pub(crate) fn reusing(options: &'a DrawOptions, ops: &[TraceOp], scene: Option<(i16, i16)>, storage: &mut Storage) -> Self {
+        let mut builder = Self::new_in(options, ops, scene);
         builder.vertices = std::mem::take(&mut storage.vertices);
         builder.commands = std::mem::take(&mut storage.commands);
         builder.staging = std::mem::take(&mut storage.staging);
@@ -1124,8 +1130,17 @@ impl<'a> Builder<'a> {
             return;
         }
         // Viewport culling is the game's against its own screen, which a
-        // camera within the scene does not look through.
-        if p.revealed && !self.restores_sliver(p) && (self.reveal == Reveal::Hidden || (self.options.culling.viewport && self.near.is_none())) {
+        // camera within the scene does not look through. (The sliver test
+        // last: a replay showing culled faces has thousands.)
+        if p.revealed && (self.reveal == Reveal::Hidden || (self.options.culling.viewport && self.near.is_none())) && !self.restores_sliver(p) {
+            return;
+        }
+        // A face the game culled that faces away from the camera the picture
+        // shows it from, as the game's renderers drop the faces they draw
+        // (NCLIP): the port records those turned away a little too
+        // (`Reveals::margin`), for a camera between two frames or pulled back
+        // further than they were judged for.
+        if p.revealed && self.faces_away(p) {
             return;
         }
         self.stats.primitives += 1;
@@ -1135,6 +1150,24 @@ impl<'a> Builder<'a> {
         }
         let start = self.triangles(p);
         self.commands_for(p, start);
+    }
+
+    /// Whether `p`, a face of the scene drawn from the game's camera (not a
+    /// camera within the scene's or a diorama's eye, which see faces from
+    /// anywhere), winds at its sub-pixel points as NCLIP drops: facing away,
+    /// or edge-on. Sprites' parts wind either way (a mirrored one), and so do
+    /// the world map's clouds, translucent quads of the world the port
+    /// records whichever way they wind; a model's faces, translucent ones
+    /// too, are recorded as they face.
+    fn faces_away(&self, p: &Primitive) -> bool {
+        if self.space != Space::Screen || self.near.is_some() || p.class == Class::Sprite || (p.semi && p.class == Class::World)
+            || !matches!(p.shape, Shape::Triangle | Shape::Quad)
+            || p.vertices[..3].iter().any(|v| v.z <= 0.0)
+        {
+            return false;
+        }
+        let [a, b, c, _] = &p.vertices;
+        (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) <= 0.0
     }
 
     /// Terrain triangles that collapse or turn over at whole-pixel
@@ -1373,10 +1406,12 @@ impl<'a> Builder<'a> {
         let spill = if p.revealed || effective_class(p, self.scene).is_scene() || self.widens(p) || self.captures(p) || self.feedback_source(p).is_some() { self.spill as i32 } else { 0 };
         let rect = |left: i32, right: i32| Some(Scissor { x: left, y: top, width: (right + 1 - left).max(0), height: (bottom + 1 - top).max(0) });
         // A culled face beside the original screen shows only in the sides.
-        let scissors = if p.revealed && self.reveal == Reveal::Sides && !self.restores_sliver(p) {
-            vec![rect(left - spill, left - 1), rect(right + 1, right + spill)]
+        // (Kept in place: thousands of primitives a replay.)
+        let sides = p.revealed && self.reveal == Reveal::Sides && !self.restores_sliver(p);
+        let scissors = if sides {
+            [rect(left - spill, left - 1), rect(right + 1, right + spill)]
         } else {
-            vec![rect(left - spill, right + spill)]
+            [rect(left - spill, right + spill), None]
         };
         let depth = match (!fidelity.painter_ordering || self.near.is_some()) && projected {
             true if self.reversed => DepthMode::Nearer,
@@ -1396,7 +1431,7 @@ impl<'a> Builder<'a> {
                 _ => false,
             };
         let space = self.space;
-        for scissor in scissors {
+        for scissor in scissors.into_iter().take(1 + usize::from(sides)) {
             if !p.semi {
                 self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth, space }, scissor, start..end);
             } else if p.textured {
@@ -1813,6 +1848,10 @@ pub(crate) fn encode(
     target: &Target,
     commands: &[Command],
 ) {
+    // (A presentation with nothing new to draw encodes nothing: no views.)
+    if commands.is_empty() {
+        return;
+    }
     let color_view = target.color.create_view(&Default::default());
     let aux_view = target.aux.create_view(&Default::default());
     let size = target.color.size();
@@ -2818,7 +2857,7 @@ impl Ps1Renderer {
         // The dialogue stays in VRAM's picture: the frames presented while it
         // is hidden are replayed without it.
         let options = DrawOptions { hide_dialogue: false, ..self.options };
-        let mut builder = Builder::reusing(&options, ops, &mut self.storage);
+        let mut builder = Builder::reusing(&options, ops, scene_offset(ops), &mut self.storage);
         builder.seal = self.seal;
         builder.sky = self.sky;
         builder.additive_model_depth = self.additive_model_depth;
@@ -2852,19 +2891,21 @@ impl Ps1Renderer {
         self.stats = DrawStats { passes: passes(&builder.commands), ..builder.stats };
         self.vertices.write(&self.device, &self.queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(&self.device, &self.queue, &builder.staging);
-        let depth_view = self.depth.create_view(&Default::default());
-        let target = Target { color: &self.color, aux: &self.aux, depth: &depth_view, origin: (0.0, 0.0), scale: self.scale };
-        encode(
-            &self.device,
-            &mut self.pipelines,
-            encoder,
-            earlier_group.as_ref().unwrap_or(&self.group),
-            self.vertices.buffer(),
-            Some((self.staging.buffer(), &self.vram)),
-            Copies::InPlace { scratch: &self.scratch, capture: &self.capture, earlier: &self.earlier },
-            &target,
-            &builder.commands,
-        );
+        if !builder.commands.is_empty() {
+            let depth_view = self.depth.create_view(&Default::default());
+            let target = Target { color: &self.color, aux: &self.aux, depth: &depth_view, origin: (0.0, 0.0), scale: self.scale };
+            encode(
+                &self.device,
+                &mut self.pipelines,
+                encoder,
+                earlier_group.as_ref().unwrap_or(&self.group),
+                self.vertices.buffer(),
+                Some((self.staging.buffer(), &self.vram)),
+                Copies::InPlace { scratch: &self.scratch, capture: &self.capture, earlier: &self.earlier },
+                &target,
+                &builder.commands,
+            );
+        }
         builder.store(&mut self.storage);
         if captured && !self.capture.screen {
             self.place_capture(encoder);

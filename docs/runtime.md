@@ -236,12 +236,12 @@ schema and enters a mode through the original dispatcher on an empty stack.
 Pads are set as the BIOS driver reports them; nothing simulates lower-level
 input. `xem-headless --control` adds `screenshot {path}` and `vram {path}`
 (PNG files), `display` (where the display shows VRAM) and `reveal_frames
-{count, reach: [x, y], pull_back, around}`: frames drawn as a view wider or
-pulled back draws them, the draw trace asking the port for the faces the
-game culls, answered with the primitives traced in them (the first frame's
-too), how many were culled faces and an FNV-1a digest of those (their
-shapes and screen points in the order traced; presentation only: the RAM
-goes on as without; [State interchange](#state-interchange)).
+{count, reach: [x, y], pull_back, around, margin}`: frames drawn as a view
+wider or pulled back draws them, the draw trace asking the port for the
+faces the game culls, answered with the primitives traced in them (the
+first frame's too), how many were culled faces and an FNV-1a digest of
+those (their shapes and screen points in the order traced; presentation
+only: the RAM goes on as without; [State interchange](#state-interchange)).
 
 - **Introspection.** `tools/game_schema.py` compiles every unit again with
   debug information and writes `build/game/schema.json`: each global the C
@@ -1761,7 +1761,69 @@ snapshots are its. The renderer only draws again what it drew:
   around its centre in view space; the faces the renderers drop as facing
   away or at depth 0 are recorded as well (a quad's fourth point, not yet
   projected when the winding drops it, is projected for the record with the
-  GTE put back). The flat backdrops that only span the original screen go
+  GTE put back). With the ring's `margin` word (the sine of an angle, in
+  4096ths), the faces turned away from that camera by less than the angle
+  count too, those the renderers drop as facing away with them, judged in
+  floating point from their points before the division (the face's normal
+  against the line from the camera to its first point): a camera that sees
+  them from elsewhere than the one they were judged for may see them.
+  High Framerate draws the newest frame through a camera between it and the
+  one before, and while the camera turned (the field's turns 5.7 degrees a
+  frame under L1 or R1) the sides of buildings, rocks and steps that faced
+  the camera before were missing, holes of the clear colour along them
+  (issue #103: Lahan in widescreen at 150% turning with L1, presented
+  twice a game frame, 43 of 140 frames had holes, 5 319 pixels; now 1, 14
+  pixels; at 4:3 and 100%, 38 frames and 8 115 pixels, now none). Pulled
+  back, the frames shown were judged for a depth a little different (the
+  camera's target nearer or farther, a zoom notch), and a field's first
+  frames, before that depth is known, for the game's camera, which left a
+  long wedge of the clear colour beside a fence of Lahan's for a few
+  frames as it was entered. `GameView::reveals` asks for 4 degrees while
+  pulled back, 4 and 1.25 times the camera's last turn (at most 30) while
+  interpolating, and every face, whichever way it faces, until a field's
+  depth is known; a renderer leaves out the culled faces that face away
+  from the camera it draws them through, as NCLIP leaves out the faces the
+  game draws (`Builder::faces_away`: a face of the scene seen from the
+  game's camera, pulled back or between two frames; sprites' parts and the
+  world's translucent faces, among them the world map's clouds, which the
+  port records whichever way they wind, are drawn as they wind, while a
+  model's translucent faces, recorded as they face, are left out too:
+  entering the forest, field 22, one model's showed their backs for a few
+  frames). The game's RAM is unchanged. In Lahan at 200% in widescreen the
+  port records about 7% more culled faces still (1 402 against 1 316) and
+  13% more turning with High Framerate (1 063 against 944), and on a
+  field's first frame, before its depth is known, every face within the
+  reach (about 4 500); the work they add is paid for on the same paths:
+  the port's face tests keep their points in scalars (its units clear a
+  local array where it begins and translate each access through a pointer
+  argument), a quad dropped as facing away projects its fourth point,
+  while a margin is set, only when the margin may keep it, the trace
+  decodes the port's rings a whole entry at a time and looks for an
+  ordering-table entry's culled faces only where some were recorded, and a
+  replay finds where its scene is projected about once a frame, keeps each
+  primitive's scissors in place and creates no views for draws that encode
+  nothing. Neither costs more than before:
+  in Lahan and the forest at 200% in widescreen at 1080p, still, turning
+  with L1 and with High Framerate, the game's frame took 0.03 to 0.05 ms
+  less on average and the presentation as long or up to 0.02 ms less
+  (`--example motion -- --bench`, 240 frames presented twice each, four
+  rounds alternating with the build before, pinned to two cores, the RTX
+  5070 Ti). Only a view that begins on a field already drawn (as the
+  benchmark does, or a host starting on a state saved there) pays once for
+  the frame recorded before the depth is known, every face within the
+  reach: about 0.5 to 1 ms more of that game frame and 1.7 ms more of its
+  first replay. Entering a field zoomed out, the view presenting across the
+  map change, its first frames record about 6% more culled faces than
+  before, as the rest do (2 681 against 2 517 in Lahan, 1 593 against
+  1 563 in the forest), and cost the same within 0.2 ms, in loads of 141
+  and 216 frames from the map change to the field's first frame presented,
+  as before (2.4 and 3.6 s at 60 frames a second; 155 to 174 ms of the
+  game's, the trace's and the presentation's time against 158 to 201)
+  (`tests/test_port_model_draw.py` `CulledFaces`, `tests/ps1.rs`
+  `a_culled_face_shows_only_where_it_faces_the_camera_the_picture_is_drawn_from`,
+  `a_translucent_culled_face_faces_the_camera_unless_the_port_records_it_either_way`
+  and `the_faces_turned_away_the_port_records_follow_how_the_view_may_turn`).
+  The flat backdrops that only span the original screen go
   on into the sides as culled faces without projections: a panorama's
   strip continued from the texture column the original ends at
   (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
@@ -2301,13 +2363,42 @@ snapshots are its. The renderer only draws again what it drew:
   of in both frames moves from where its points were then
   ([Interpolation](#interpolation)); the interface moves as the game moves
   it.
+  A replay (not a view from within the scene, which tests depth) lays the
+  decals the game puts on its floor over it: the field's shadows
+  (`field_draw_shadows`) and any other textured subtractive quad of the
+  scene are sorted by their corners' average depth (RotAverage4), the
+  floor's faces by their farthest point, so a floor face whose far edge
+  lies under a shadow's near part was drawn after the shadow and covered
+  that part: a character's shadow cut across where it crossed a row of the
+  ground, flickering as the character walked. The original shows it on its
+  screen now and then (walking Lahan's paths, a few frames in a hundred),
+  but beside it, where a pulled-back or wider view shows its characters,
+  the faces the game culled there, drawn where it would have drawn them,
+  cut their shadows in most frames (issue #103's "z-fighting"; Lahan in
+  widescreen at 150%, walking four ways, two of them turning the camera,
+  for 228 frames each, 1 894 pairs of a shadow on the picture and a face
+  of its ground model drawn over it, 634 now: faces standing in front of
+  the shadow, and floor faces drawn after something that does). Each
+  decal moves after the faces drawn after it that its outline overlaps
+  where they lie behind or under it (the line of sight through the middle
+  of their overlap meets the face's plane no more than 64 units nearer
+  than the decal's), up to the first other primitive over it (a face
+  standing in front of it, a sprite's part, anything translucent, the
+  interface), within its own game frame and before the next write, copy or
+  fill (`lay_decals`,
+  `tests/ps1.rs`
+  `a_decal_is_drawn_over_the_floor_it_lies_on_and_under_what_stands_before_it`).
+  The order is found once a frame and kept for its other replays while the
+  depth it is pulled back by and the operations that leaves stay the same
+  (16.6 µs for Lahan's 1 811 with 16 such quads, 6.2 µs for the forest's
+  1 010 with 2, where the scene is projected about found as well).
 - **Effects** (`EffectsRenderer`, `effects.wgsl`). See below.
 - **GameView** (`view.rs`) is what hosts use: it resolves the graphics
   settings for a host class, accumulates the trace between presentations,
   tells the host which culled faces the trace should record (`reveals`:
-  the reach and the pull-back, passed to `Gpu::set_reveals`) and the view
-  the field's characters keep moving in (`actor_view`, below), and
-  presents (`present`; a headset's diorama `present_diorama`:
+  the reach, the pull-back and the margin, passed to `Gpu::set_reveals`)
+  and the view the field's characters keep moving in (`actor_view`,
+  below), and presents (`present`; a headset's diorama `present_diorama`:
   [Diorama](#diorama)). A presentation with nothing new to draw (the display refreshing
   faster than the game draws: the same frame, its ops drawn so far, framing,
   settings and no interpolation; transfers elsewhere in VRAM, textures or a

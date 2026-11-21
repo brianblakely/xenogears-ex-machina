@@ -129,10 +129,11 @@ static s32 xem_terrain_triangle(u32 word, u32 ot, u32 *packet, u32 *count, u32 u
     if ((s32)xem_gte_read_data(XEM_GTE_MAC0) <= 0) {
         /* A sliver can have no area at the original's whole pixels but
          * still cover pixels in the modern view, including at 1x zoom; a
-         * view from elsewhere (pulled back, or from around the scene) may
-         * see any face it drops. Record it without changing the game's
-         * packets or winding test. */
-        if (xem_present_elsewhere() || xem_gte_read_data(XEM_GTE_MAC0) == 0) {
+         * view from elsewhere (pulled back, or from around the scene), or
+         * between two frames within the host's margin, may see a face it
+         * drops. Record it without changing the game's packets or winding
+         * test. */
+        if (xem_present_dropped() || xem_gte_read_data(XEM_GTE_MAC0) == 0) {
             xem_terrain_reveal(word, ot, *packet, uv0, uv1, uv2, sxy0, sxy1, sxy2);
         }
         return XEM_TERRAIN_REJECTED;

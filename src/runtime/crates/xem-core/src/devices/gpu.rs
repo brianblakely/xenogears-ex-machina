@@ -175,11 +175,12 @@ impl Gpu {
     /// how many entries were ever written) of the projection, store and
     /// culled-face rings. Reads only, except for the projection ring's
     /// `recording` word (whether a trace takes the records) and the
-    /// culled-face ring's `wanted`, `pull_back`, `around` and `viewer` words
-    /// (how far beyond its screen the trace wants culled faces, from how far
-    /// behind the game's camera, whether from the controlled character,
-    /// looking around, or from anywhere, and the point a view from anywhere
-    /// looks from); without a trace it only notes the counts.
+    /// culled-face ring's `wanted`, `pull_back`, `around`, `viewer` and
+    /// `margin` words (how far beyond its screen the trace wants culled
+    /// faces, from how far behind the game's camera, whether from the
+    /// controlled character, looking around, or from anywhere, the point a
+    /// view from anywhere looks from, and how far turned away a face may
+    /// be); without a trace it only notes the counts.
     fn trace_projections(&mut self, args: &[u32], memory: &mut dyn GameMemory) {
         let arg = |i: usize| args.get(i).copied().unwrap_or(0);
         // Entries follow headers of 32, 16 and 32 bytes.
@@ -196,6 +197,7 @@ impl Gpu {
         let _ = memory.write_u32(arg(2).wrapping_add(16), u32::from(viewer.is_some()));
         let _ = memory.write_u32(arg(2).wrapping_add(20), x as u32);
         let _ = memory.write_u32(arg(2).wrapping_add(24), z as u32);
+        let _ = memory.write_u32(arg(2).wrapping_add(28), self.gpu.reveal_margin());
         // Read only from here on.
         let memory: &dyn GameMemory = memory;
         let mut counts = [0u32; 3];
@@ -223,22 +225,39 @@ impl Gpu {
             head.chunks_exact(bytes as usize).chain(rest.chunks_exact(bytes as usize))
         }
         let word = |entry: &[u8], i: usize| u32::from_le_bytes(entry[i * 4..i * 4 + 4].try_into().unwrap());
+        // A frame's projections number thousands: each piece's entries
+        // decoded as whole words, without the chain's branch for each.
+        const { assert!(PROJECTION_RING.1 == 40 && STORE_RING.1 == 16) };
+        fn words(entry: &[u8; 40]) -> [u32; 10] {
+            std::array::from_fn(|i| u32::from_le_bytes([entry[i * 4], entry[i * 4 + 1], entry[i * 4 + 2], entry[i * 4 + 3]]))
+        }
         self.projections.clear();
-        self.projections.extend(each(entries[0], PROJECTION_RING).map(|e| xem_gpu::Projection {
-                sxy: word(e, 0),
-                sz: word(e, 1) as u16,
-                class: (word(e, 1) >> 16) as u8,
-                x: word(e, 2) as i32,
-                y: word(e, 3) as i32,
-                offset: (word(e, 4) as i16, (word(e, 4) >> 16) as i16),
-                h: word(e, 5) as u16,
-                owner: word(e, 6),
-                view: [word(e, 7) as i32, word(e, 8) as i32, word(e, 9) as i32],
+        self.projections.reserve(entries[0].iter().map(|piece| piece.len() / PROJECTION_RING.1 as usize).sum());
+        for piece in entries[0] {
+            let (entries, _) = piece.as_chunks::<40>();
+            self.projections.extend(entries.iter().map(|e| {
+                let w = words(e);
+                xem_gpu::Projection {
+                    sxy: w[0],
+                    sz: w[1] as u16,
+                    class: (w[1] >> 16) as u8,
+                    x: w[2] as i32,
+                    y: w[3] as i32,
+                    offset: (w[4] as i16, (w[4] >> 16) as i16),
+                    h: w[5] as u16,
+                    owner: w[6],
+                    view: [w[7] as i32, w[8] as i32, w[9] as i32],
+                }
             }));
+        }
         self.stores.clear();
-        self.stores.extend(
-            each(entries[1], STORE_RING).map(|e| xem_gpu::SxyStore { address: word(e, 0), value: word(e, 1), source: word(e, 3).checked_sub(1) }),
-        );
+        for piece in entries[1] {
+            let (entries, _) = piece.as_chunks::<16>();
+            self.stores.extend(entries.iter().map(|e| {
+                let word = |i: usize| u32::from_le_bytes([e[i * 4], e[i * 4 + 1], e[i * 4 + 2], e[i * 4 + 3]]);
+                xem_gpu::SxyStore { address: word(0), value: word(1), source: word(3).checked_sub(1) }
+            }));
+        }
         self.reveals.clear();
         self.reveals.extend(each(entries[2], REVEAL_RING).map(|e| {
             let shape = word(e, 1);

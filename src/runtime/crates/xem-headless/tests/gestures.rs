@@ -100,7 +100,7 @@ impl Player {
     fn diorama(&mut self) -> xem_render::ps1::DioramaSpace {
         let device = self.session.runtime.services().gpu.device_mut();
         device.set_trace(true);
-        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE, viewer: None }));
+        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE, viewer: None, margin: 0 }));
         // The port takes the bits with the frame after they change.
         let mut camera = None;
         for _ in 0..4 {

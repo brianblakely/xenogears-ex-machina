@@ -1,0 +1,2 @@
+- Fixed holes and dark seams in the scenery with **High Framerate** on while the camera turns, and for a moment after entering an area zoomed out.
+- Characters' shadows are no longer cut off by the ground they stand on, which flickered as they walked, mostly beyond the original 4:3 screen in widescreen or zoomed out.
