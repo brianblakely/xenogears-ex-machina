@@ -5928,7 +5928,24 @@ reports the frames run):
 - **Pointing** at an entry (the mouse over the picture,
   `xem_render::Picture` mapping target pixels to screen pixels) steers the
   game's cursor there with the D-pad; a click on an entry selects it and
-  then confirms it once; a click elsewhere is the mouse's binding. An entry
+  then confirms it once. While the player walks, a left click on the
+  picture goes where a tap there would (`xem_assist::dispatch::click_at`):
+  on an actor it approaches and talks (`interact`), on floor the player
+  can reach it walks there (`navigate`), the destination's mark showing
+  as a tap's; the hosts point it into the field as the last frame's
+  picture showed it (`View::walking`, `XemApp::walking`) and carry its
+  command out with the touches' before the next game frame. It holds
+  none of the mouse's bindings. A click elsewhere (one that reaches no
+  one and no floor, beside the picture, during first-person inspection,
+  or while the mouse camera holds the mouse or, in a browser, takes it
+  with that click) is the mouse's binding. `xem-assist`'s
+  `a_click_walking_walks_to_the_floor_or_talks_to_the_actor_there_and_reaching_nothing_is_the_binding`
+  and `xem-host`'s
+  `mouse_clicks_walk_and_talk_where_taps_would_and_elsewhere_are_the_mouses_binding`
+  (field 30 pulled back at 150%: a floor point, a villager, beside the
+  picture and inspecting) check it, and `web/tests/mouse.test.mjs`
+  (local, disc 1) in a page: in Lahan a click on the floor walks there
+  holding no Confirm, and under the mouse camera it walks nowhere. An entry
   the cursor stops short of (past a list's end) is given up after three
   steps that leave the selection where it was (one on the battle's
   command ring: a slot the game refuses is not pressed again into a page
@@ -5974,9 +5991,9 @@ projection distance and centre, in display pixels from the display's
 corner), and `xem_assist::overlay::seen` sees the field's camera from it
 (`Camera::seen`: the view composed with the camera, its depth sheared
 into x and y where the picture's centre is not the screen's), so that a
-pinch or a tap picks the floor and the actors the picture shows where it
-points, and floor marks lie where it shows that floor (desktop, Android
-and browser taps, OpenXR and WebXR pinches). A host that shows the
+pinch, a tap or a click picks the floor and the actors the picture shows
+where it points, and floor marks lie where it shows that floor (desktop,
+Android and browser taps and mouse clicks, OpenXR and WebXR pinches). A host that shows the
 device's own picture instead (the Original renderer, a 24-bit movie frame
 the view does not draw) says so (`GameView::away`), and the view gives no
 viewpoint until it presents again: that picture is the game camera's,
@@ -10173,7 +10190,9 @@ as JSON text or bytes.
   works the panel as the native hosts' does ([Desktop host and settings
   panel](#desktop-host-and-settings-panel)); touch pointers play the touch
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
-  points at menu entries. In a field, Select's keys and
+  points at menu entries and, while the player walks, walks or goes to
+  talk where it clicks ([The game's interface
+  context](#the-games-interface-context)). In a field, Select's keys and
   the gamepad's Back alone toggle first-person inspection while the player
   walks where Select shows no picture, held while a dialogue shows they
   (and the deck's HIDE) hide its windows ([Hiding a dialogue](#hiding-a-dialogue)), and the gamepad's right stick's

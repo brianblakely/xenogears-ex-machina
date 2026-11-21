@@ -123,6 +123,12 @@ pub struct XemApp {
     /// entries a pointer selects.
     ui: xem_core::context::Context,
     targets: Option<xem_core::menu::Targets>,
+    /// The field as the picture showed it at the last frame while the
+    /// player walked there (not inspecting), which mouse clicks point
+    /// into, and the commands they gave since (walk there, go and talk to
+    /// someone), carried out with the touches' (`XemApp::assist_touch`).
+    walking: Option<xem_core::field::Field>,
+    clicked: Vec<Value>,
     app_input: AppInput,
     rewind_held: [bool;2],
     rewind_next: f64,
@@ -277,6 +283,8 @@ impl XemApp {
             mouse_captured: false,
             ui: xem_core::context::Context::None,
             targets: None,
+            walking: None,
+            clicked: Vec::new(),
             app_input: AppInput::default(),
             rewind_held: [false;2],
             rewind_next: 0.0,
@@ -613,7 +621,10 @@ impl XemApp {
             self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), scene);
         }
         let viewpoint = self.renderer.as_ref().and_then(|r| r.viewpoint());
-        let Some(session) = self.session.as_mut() else { return };
+        let Some(session) = self.session.as_mut() else {
+            self.walking = None;
+            return;
+        };
         let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten()
             .map(|f| xem_assist::overlay::seen(f, viewpoint.as_ref()));
         for tap in std::mem::take(&mut self.taps) {
@@ -623,6 +634,8 @@ impl XemApp {
             let outs = xem_assist::dispatch::tap_at(xem_assist::dispatch::Pointed::Screen(at), ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
             xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input, inspect: false, auto_advance: false }, &mut self.xr_scaling);
         }
+        let clicked = std::mem::take(&mut self.clicked).into_iter().map(|command| xem_assist::dispatch::Out::Command { command }).collect();
+        xem_assist::headset::carry(clicked, &mut WebCarry { session: Some(session), input: &mut self.input, inspect: false, auto_advance: false }, &mut self.xr_scaling);
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
         }
@@ -631,6 +644,7 @@ impl XemApp {
             _ => None,
         };
         let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
+        self.walking = field.filter(|_| ui == xem_core::context::Context::Walk);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         if let Some(renderer) = &mut self.renderer {
@@ -1320,9 +1334,19 @@ impl XemApp {
         match kind {
             "down" if button == 0 => {
                 // A click on an entry of the game's interface selects it and
-                // confirms it; elsewhere it is the mouse's binding.
+                // confirms it, and one on the picture while the player walks
+                // goes where a tap there would (to the person there, to
+                // talk, or to the floor), unless the game holds the mouse
+                // for its camera or takes it with this click; elsewhere it
+                // is the mouse's binding.
                 self.input.hover(screen);
                 if self.input.click(self.targets.as_ref()) { return true; }
+                if !self.mouse_captured && !self.mouse_camera_active()
+                    && let Some(command) = screen.zip(self.walking.as_ref()).and_then(|(at, field)| xem_assist::dispatch::click_at(at, field))
+                {
+                    self.clicked.push(command);
+                    return true;
+                }
                 return self.input.mouse.button(button, true);
             }
             "down" | "up" => return self.input.mouse.button(button, kind == "down"),

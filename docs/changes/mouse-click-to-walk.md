@@ -1,0 +1,1 @@
+- With a mouse, click the ground and Fei walks there, or click someone and he goes over and talks to them, as a tap does on a touch screen. Clicking anywhere else still confirms, as every click does while Turn the camera with the mouse is on.

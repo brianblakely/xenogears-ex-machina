@@ -147,6 +147,18 @@ pub fn tap_at(at: Pointed, ui: Context, field: Option<&Field>, targets: Option<&
     }
 }
 
+/// A mouse click on the game's picture at `at` (its screen pixels) while
+/// the player walks in `field`, where no entry of the interface took it:
+/// the command a tap there gives ([`tap_at`]: the actor there approached
+/// and talked to, or the floor walked to). None where it reaches no one and
+/// no floor the player can walk to: the click is then the mouse's binding.
+pub fn click_at(at: (f32, f32), field: &Field) -> Option<Value> {
+    match tap_at(Pointed::Screen(at), Context::Walk, Some(field), None)? {
+        Out::Command { command } => Some(command),
+        _ => None,
+    }
+}
+
 /// The entry of `targets` `at` points at: on the picture or the pane, its
 /// box ([`Targets::at`]); along a ray through a diorama, the battle target
 /// nearest it ([`Targets::near_ray`]: by its upright axis in the battle's
@@ -465,6 +477,20 @@ mod tests {
         let choice = Context::Dialogue { choice: Some(xem_core::context::Choice { count: 2, index: 0 }) };
         assert_eq!(dispatch(&tap, choice, Some(Pointed::Pane((150.0, 120.0))), None, Some(&list())), [Out::Select { index: 1, confirm: true }]);
         assert!(dispatch(&tap, choice, down(150.0, 120.0), None, Some(&list())).is_empty(), "a ray through the table answers no choice");
+    }
+
+    #[test]
+    fn a_click_walking_walks_to_the_floor_or_talks_to_the_actor_there_and_reaching_nothing_is_the_binding() {
+        let field = floor();
+        let at = |x: f32, y: f32, z: f32| field.camera.project(V3::new(x, y, z)).expect("in front of the camera");
+        let walked = click_at(at(-80.0, 0.0, 350.0), &field).expect("the floor walked to");
+        assert_eq!(walked["cmd"], "navigate", "{walked}");
+        let (x, z) = (walked["to"][0].as_f64().unwrap(), walked["to"][1].as_f64().unwrap());
+        assert!((x + 80.0).abs() < 0.5 && (z - 350.0).abs() < 0.5, "walks to where it was clicked: {walked}");
+        assert_eq!(click_at(at(0.0, -30.0, 300.0), &field), Some(json!({"cmd": "interact", "actor": 1})), "the villager approached and talked to");
+        // Past the floor's far edge no one stands and no floor is reached:
+        // the click is the mouse's binding.
+        assert_eq!(click_at(at(0.0, 0.0, 1000.0), &field), None);
     }
 
     /// The debug battle's targets at rest: Fei and the boss (world y down).

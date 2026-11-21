@@ -157,8 +157,8 @@ When entering a battle attack sequence, the controls change:
 ### Using the mouse
 
 Click the ground to walk there, or click a person to approach and talk.
-Choose menu entries and battle targets by clicking them. Left-click also
-confirms; right-click cancels. You still make your own jumps. Taking over
+Choose menu entries and battle targets by clicking them. Anywhere else,
+left-click confirms; right-click cancels. You still make your own jumps. Taking over
 with a movement key or stick cancels an automatic walking route.
 
 The mouse wheel pulls the camera back or brings it closer: scroll down to
@@ -169,7 +169,8 @@ zoom returns after it.
 
 In **Settings → Controls**, turn on **Turn the camera with the mouse** to
 use mouse movement for looking instead. The app takes hold of the pointer
-while you play; open Settings to use it normally again. **Mouse sensitivity**
+while you play, so a click confirms instead of walking; open Settings to use
+it normally again. **Mouse sensitivity**
 changes how quickly it turns. **Mouse deadzone** lets you move the mouse a
 little before the ordinary field camera starts turning.
 

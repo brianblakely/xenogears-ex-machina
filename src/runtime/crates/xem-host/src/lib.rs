@@ -378,6 +378,12 @@ pub struct View {
     game_ui: xem_core::context::Context,
     targets: Option<xem_core::menu::Targets>,
     picture: Option<Picture>,
+    /// The field as the picture showed it at the last frame while the
+    /// player walked there (not inspecting), which mouse clicks point
+    /// into, and the commands they gave since (walk there, go and talk to
+    /// someone), carried out with the touches' (`View::assist`).
+    walking: Option<xem_core::field::Field>,
+    clicked: Vec<serde_json::Value>,
     /// Touch: the control deck (laid out for what the game plays), whether
     /// a finger has touched the game, what touches asked for (taps on the
     /// picture in target pixels, quantity keys), the marks over the
@@ -502,6 +508,8 @@ impl View {
             game_ui: xem_core::context::Context::None,
             targets: None,
             picture: None,
+            walking: None,
+            clicked: Vec::new(),
             deck: Default::default(),
             touched: false,
             taps: Vec::new(),
@@ -897,16 +905,8 @@ impl View {
             SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if unsafe { event.button }.which != SDL_TOUCH_MOUSEID => {
                 let button = unsafe { event.button };
                 let index = match i32::from(button.button) { SDL_BUTTON_LEFT => 0, SDL_BUTTON_RIGHT => 2, SDL_BUTTON_MIDDLE => 1, _ => -1 };
-                // A click on an entry of the game's interface selects it and
-                // confirms it; elsewhere it is the mouse's binding.
-                let browsed = index == 0 && button.down && !self.relative_mouse && {
-                    let (x, y) = self.window_pixels(window, button.x, button.y);
-                    self.player.hover(self.picture.and_then(|p| p.to_screen(x, y)));
-                    self.player.click(self.targets.as_ref())
-                };
-                if !browsed {
-                    self.player.mouse.button(index, button.down);
-                }
+                let at = self.window_pixels(window, button.x, button.y);
+                self.mouse_button(index, button.down, at);
             }
             SDL_EVENT_MOUSE_WHEEL if visible => {
                 let wheel = unsafe { event.wheel };
@@ -1204,6 +1204,31 @@ impl View {
         Ok(xem_settings::look::reply(self.renderer.first_person(), self.renderer.look_angles()))
     }
 
+    /// A mouse button over the game going down or up (`index` 0 left, 1
+    /// middle, 2 right; `at` in target pixels). A left click on an entry of
+    /// the game's interface selects it and confirms it, and one on the
+    /// picture while the player walks goes where a tap there would (to the
+    /// person there, to talk, or to the floor:
+    /// [`xem_assist::dispatch::click_at`]). Elsewhere, and while the game
+    /// holds the mouse for its camera, it is the mouse's binding.
+    pub fn mouse_button(&mut self, index: i32, down: bool, at: (f32, f32)) {
+        let taken = index == 0 && down && !self.relative_mouse && {
+            let screen = self.picture.and_then(|p| p.to_screen(at.0, at.1));
+            self.player.hover(screen);
+            self.player.click(self.targets.as_ref())
+                || match screen.zip(self.walking.as_ref()).and_then(|(at, field)| xem_assist::dispatch::click_at(at, field)) {
+                    Some(command) => {
+                        self.clicked.push(command);
+                        true
+                    }
+                    None => false,
+                }
+        };
+        if !taken {
+            self.player.mouse.button(index, down);
+        }
+    }
+
     /// A finger on the game (`at` across the target, 0..1).
     pub fn finger(&mut self, phase: Finger, id: u64, at: (f32, f32)) {
         let at = (at.0 * self.target_size.0 as f32, at.1 * self.target_size.1 as f32);
@@ -1247,10 +1272,11 @@ impl View {
 
     /// Touch play, before [`View::pad_buttons`]: the deck laid out by the
     /// picture, taps on the picture resolved in the game's context (walk or
-    /// talk there, select a menu entry), shop quantity keys, and the marks
+    /// talk there, select a menu entry), the walks and talks mouse clicks
+    /// gave ([`View::mouse_button`]), shop quantity keys, and the marks
     /// (the committed destination) to draw. First-person inspection shows
-    /// no field camera to walk or point through: its taps walk nowhere and
-    /// talk to no one, and no floor marks show.
+    /// no field camera to walk or point through: its taps and clicks walk
+    /// nowhere and talk to no one, and no floor marks show.
     pub fn assist(&mut self, game: &mut Game) {
         let ui = game.context();
         // Whether Select shows the field map's picture there (the deck's
@@ -1277,11 +1303,15 @@ impl View {
                 }
             }
         }
+        for command in std::mem::take(&mut self.clicked) {
+            let _ = game.command(&command);
+        }
         for key in std::mem::take(&mut self.quantity) {
             let _ = game.command(&serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
         }
         let destination = if inspecting { None } else { game.destination() };
         self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None, false);
+        self.walking = field.filter(|_| ui == xem_core::context::Context::Walk);
         self.player.touch = self.deck.actions();
     }
 
@@ -2578,6 +2608,134 @@ mod tests {
         let look = view.renderer.viewpoint().expect("the look's viewpoint");
         assert_ne!(look.rows, pulled.rows, "from the character's eye, not the camera pulled back");
         original(&mut view, &mut game, &mut frames, look, "after first-person inspection");
+    }
+
+    /// Mouse clicks while Fei walks in field 30 go where taps would,
+    /// through the picture the view presented (the camera pulled back at
+    /// 150%), with the mouse's binding (Confirm) never held: one where the
+    /// picture shows a floor point walks there, its mark lying there, and
+    /// one on someone the picture shows goes to talk to them. A click beside
+    /// the picture is the mouse's binding, held until the button comes up,
+    /// and so is one during first-person inspection, which shows no field
+    /// camera to walk through.
+    #[cfg(all(has_game_module, not(debug_assertions)))]
+    #[test]
+    fn mouse_clicks_walk_and_talk_where_taps_would_and_elsewhere_are_the_mouses_binding() {
+        use xem_assist::dispatch::click_at;
+        use xem_assist::overlay::{Kind, Place};
+        use xem_core::assist::Intent;
+        use xem_core::context::Context;
+        use xem_core::field::Reach;
+        use xem_settings::SettingChange;
+        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        if !disc.exists() {
+            eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+            return;
+        }
+        let (session, _) = xem_game::boot(&disc, &Default::default()).unwrap();
+        let mut game = Game::new(session);
+        let run = |game: &mut Game, command: serde_json::Value| {
+            game.command(&command).unwrap_or_else(|error| panic!("{command}: {error}"));
+        };
+        run(&mut game, serde_json::json!({"cmd": "enter_field", "map": 30}));
+        run(&mut game, serde_json::json!({"cmd": "frames", "count": 300}));
+        for _ in 0..120 {
+            match game.context() {
+                Context::Walk => break,
+                Context::Dialogue { .. } => run(&mut game, serde_json::json!({"cmd": "act", "actions": ["Confirm"], "frames": 2})),
+                _ => {}
+            }
+            run(&mut game, serde_json::json!({"cmd": "frames", "count": 30}));
+        }
+        assert_eq!(game.context(), Context::Walk, "Fei walks in field 30");
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        settings.borrow_mut().apply(SettingChange::Graphics(xem_settings::Graphics { renderer: xem_settings::Renderer::ExMachina, zoom_out: 150, ..Default::default() })).unwrap();
+        let (width, height) = (1600u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings.clone(), false).unwrap();
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("clicking target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        let mut time = 0.0;
+        let mut frames = |view: &mut View, game: &mut Game, count: usize| {
+            for _ in 0..count {
+                assert!(game.session.frame().unwrap());
+                view.set_game_frame(&gpu, game);
+                time += 1.0 / 60.0;
+                view.render(&gpu, &output, time).unwrap();
+            }
+        };
+        frames(&mut view, &mut game, 8);
+        assert!(view.renderer.viewpoint().is_some(), "the picture shows the field pulled back");
+        view.assist(&mut game);
+        let shown = view.walking.clone().expect("the field the picture shows while Fei walks");
+        let picture = view.picture.expect("the picture's place");
+        // A left click at `pixels` (target pixels), carried out as the
+        // host's frame does (`View::assist`): the mouse's buttons it held.
+        let click = |view: &mut View, game: &mut Game, pixels: (f32, f32)| -> u8 {
+            view.mouse_button(0, true, pixels);
+            let held = view.player.mouse.buttons();
+            view.mouse_button(0, false, pixels);
+            assert_eq!(view.player.mouse.buttons(), 0, "up, the button holds nothing");
+            view.assist(game);
+            held
+        };
+        let on_picture = |at: &(f32, f32)| (16.0..304.0).contains(&at.0) && (16.0..208.0).contains(&at.1);
+        // Walkable floor some way off Fei and away from everyone that the
+        // picture shows.
+        let me = *shown.player().expect("Fei");
+        let mesh = &shown.layers[me.layer];
+        let (goal, at) = (0..mesh.triangles.len())
+            .map(|t| (t, mesh.centroid(t)))
+            .filter(|(t, c)| shown.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+            .filter(|(_, c)| shown.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
+            .find_map(|(_, c)| {
+                let at = shown.camera.project(c).filter(on_picture)?;
+                click_at(at, &shown).is_some_and(|command| command["cmd"] == "navigate").then_some((c, at))
+            })
+            .expect("walkable floor a click reaches on the picture");
+        assert_eq!(click(&mut view, &mut game, picture.from_screen(at)), 0, "a click on the floor holds no binding");
+        let to = game.destination();
+        assert!(to.is_some_and(|to| to.planar(goal) < 16.0), "a click walks to the floor the picture shows: {to:?} for {goal:?}");
+        let mark = view.marks.iter().find(|mark| mark.kind == Kind::Destination).and_then(|mark| match mark.place {
+            Place::Screen { centre, .. } => Some(centre),
+            Place::Floor { .. } => None,
+        });
+        assert!(mark.is_some_and(|mark| (mark.0 - at.0).abs() < 2.0 && (mark.1 - at.1).abs() < 2.0), "the destination's mark lies there: {mark:?} for {at:?}");
+        run(&mut game, serde_json::json!({"cmd": "assist_stop"}));
+        // Someone the picture shows.
+        let (actor, at) = shown.actors.iter().flatten()
+            .filter(|a| a.index != me.index)
+            .find_map(|a| {
+                let at = shown.camera.project(a.position).filter(on_picture)?;
+                let command = click_at(at, &shown)?;
+                (command["cmd"] == "interact").then(|| (command["actor"].as_u64().expect("an actor") as usize, at))
+            })
+            .expect("someone a click reaches on the picture");
+        assert_eq!(click(&mut view, &mut game, picture.from_screen(at)), 0, "a click on someone holds no binding");
+        let intent = game.session.assist.as_ref().map(|assist| assist.intent.clone());
+        assert!(matches!(intent, Some(Intent::Interact { actor: a }) if a == actor), "a click goes to talk to actor {actor}: {intent:?}");
+        run(&mut game, serde_json::json!({"cmd": "assist_stop"}));
+        // Beside the picture: the mouse's binding.
+        let beside = (2.0, height as f32 / 2.0);
+        assert_eq!(picture.to_screen(beside.0, beside.1), None, "{picture:?}");
+        assert_eq!(click(&mut view, &mut game, beside), 1, "beside the picture the click is the mouse's binding");
+        assert!(game.session.assist.is_none(), "it walks nowhere");
+        // First-person inspection: no field camera to walk through.
+        view.renderer.set_first_person(true);
+        frames(&mut view, &mut game, 8);
+        assert!(view.first_person(), "inspection looks from within field 30");
+        view.assist(&mut game);
+        assert!(view.walking.is_none(), "inspecting, clicks point into no field");
+        assert_eq!(click(&mut view, &mut game, picture.from_screen(at)), 1, "inspecting, the click is the mouse's binding");
+        assert!(game.session.assist.is_none(), "inspecting, it goes to no one");
     }
 
     #[test]
