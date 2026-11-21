@@ -14,8 +14,10 @@
   `window_render_text_line` (one-line layout) and the insertions (`window_insert_text`). The
   122 calls in src/decomp/src pass entries of the tables below or text built at
   run time; no function still linked as assembly calls them.
-- Tables (a count, 0, count + 1 offsets and count (columns, rows) pairs, read
-  by `text_get_resource_entry`): field messages (map bundle component 7, field_message_table),
+- Tables (a count, 0, count + 1 offsets and as many (columns, rows) pairs, read
+  by `text_get_resource_entry` and `text_get_message_columns`/`text_get_message_rows`:
+  entries 0 to the count, which is the last entry's number; nothing marks where
+  the text ends): field messages (map bundle component 7, field_message_table),
   system data (`MES SYSDATA`, except the character pairs of resource 27), menu
   labels and menu data (directory 0x10 files 1 and 2; the world map loads the
   menu resources from its own file 0x26, byte-identical to file 1 on both
@@ -99,12 +101,13 @@ symbols; 0x93-0xFD and the two-byte glyphs are kana, which only the
 development data's Japanese placeholders use.
 
 Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files skipped),
-42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D occurs only on
+43429 texts, 2016101 tokens; 13 controls used (12 on disc 2: 0F 0D occurs only on
 disc 1); unknown or undecodable: 0. Unused by the data: 0F 03, 0F 06, 0F 07, 0F 08,
-0F 09, 0F 0B, 0F 0F. 1886 nonzero bytes in 32 tables are reached by no entry. The
-sweep decodes them too, outside the counts: they form 37 whole texts ending in 00
-(messages no entry shows). The 62 initial names decode as 392 glyphs. The sweep also
-reports each disc's `--chars` glyphs (above: 77 on each disc).
+0F 09, 0F 0B, 0F 0F. 1886 nonzero bytes in 32 tables, between a table's first entry
+and the end of its furthest, are reached by no entry. The sweep decodes them too,
+outside the counts: they form 37 whole texts ending in 00 (messages no entry shows).
+The 62 initial names decode as 392 glyphs. The sweep also reports each disc's
+`--chars` glyphs (above: 77 on each disc).
 
 Notes from the handler:
 

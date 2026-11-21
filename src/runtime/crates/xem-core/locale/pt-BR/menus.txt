@@ -614,6 +614,7 @@ md051-0100 cb89aa61971de706 Potência do motor +50%
 md051-0101 77cb0aaf9606d9a3 'Carregar' repõe 50 comb.
 md051-0102 765143f36d8d23d9 'Carregar' repõe 100 comb.
 md051-0103 fdf9eb9e055fcf48 'Carregar' repõe 200 comb.
+md051-0104 7189c9f1f3b940cd 'Carregar' repõe 500 comb.
 md052-0012 7bd5b9c9cb729818 Faz o
 md052-0014 e5e6e0e38f30be49 dormir
 md052-0019 97f5d3734dd578aa Ataque
@@ -783,6 +784,7 @@ md055-0304 93922af8053da532 repõe
 md055-0305 af11c60be2f3c44d 50 Comb.
 md055-0308 7a42f77e96fc879b 100 Comb.
 md055-0311 586b345598631b06 200 Comb.
+md055-0314 aca549eb63b3ea17 500 Comb.
 ml003-0000 df78ff1299c0cecd Novo Jogo
 ml003-0001 f09f876134968303 Continuar
 ml003-0003 0c15be88b05b6b5c Equipamento
@@ -844,7 +846,6 @@ ml003-0095 28ac332131e2f29d Este bloco está livre.
 ml003-0096 d8fd6eccfa2ec455 Salvar?
 ml003-0098 8805fcf9fc16c1cf Sem dados.
 ml003-0101 eb5631d1b85662e0 Carregar este arquivo?
-ml003-0109 aaf4fd735911442e Área
 ml003-0114 0cf5f5e49f3d454f Pistola
 ml003-0115 e0a75128d6459fca Arma Éter D
 ml003-0116 e04ef528d5fa8da0 Arma Éter E
@@ -951,6 +952,7 @@ mm000-0065 84a53dd633c229a6 Aqui termina o tutorial...{n}Que tal experimentar o 
 mm000-0066 d3cddd8626097272 Sobre o Battling{n}Layout da Tela{n}Movimento{n}Ataque{n}Barras de Calor{n}Balas de Éter{n}Defesa{n}Fim do Tutorial
 mm000-0067 d3004806fd8363fc Leonard{n}"Hm! Nada mal.{p}Então que seja do seu jeito...{n}A brincadeira acabou!{p}Agora é pra valer..."
 mm000-0068 80c1359972c6bf32 Leonard{n}"Hunf! Isso não foi nada.{p}Chega de brincadeira, ora!{n}Agora é pra valer..."
+mm000-0069 8e6221dc6d7b698c Fei{n}"????{wait 90}... O que está havendo?"{p}Fei{n}"Mas o quê...!? {wait 90} Meu Gear...!?"
 mr000-0000 341278971bc58b04 Faltam
 mr003-0000 0e7be530f1224c27 COMB
 mr004-0000 1deb33570b278e2d PESO

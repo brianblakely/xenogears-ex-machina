@@ -614,6 +614,7 @@ md051-0100 cb89aa61971de706 Puissance moteur +50%
 md051-0101 77cb0aaf9606d9a3 'Charge' rend 50 carb.
 md051-0102 765143f36d8d23d9 'Charge' rend 100 carb.
 md051-0103 fdf9eb9e055fcf48 'Charge' rend 200 carb.
+md051-0104 7189c9f1f3b940cd 'Charge' rend 500 carb.
 md052-0012 7bd5b9c9cb729818 Met
 md052-0014 e5e6e0e38f30be49 au lit
 md052-0019 97f5d3734dd578aa Attaque
@@ -783,6 +784,7 @@ md055-0304 93922af8053da532 rend
 md055-0305 af11c60be2f3c44d 50 Carb.
 md055-0308 7a42f77e96fc879b 100 Carb.
 md055-0311 586b345598631b06 200 Carb.
+md055-0314 aca549eb63b3ea17 500 Carb.
 ml003-0000 df78ff1299c0cecd Nouvelle partie
 ml003-0001 f09f876134968303 Continuer
 ml003-0003 0c15be88b05b6b5c Équipement
@@ -844,7 +846,6 @@ ml003-0095 28ac332131e2f29d Ce bloc est libre.
 ml003-0096 d8fd6eccfa2ec455 Sauvegarder ?
 ml003-0098 8805fcf9fc16c1cf Aucune donnée.
 ml003-0101 eb5631d1b85662e0 Charger ce fichier ?
-ml003-0109 aaf4fd735911442e Zone
 ml003-0114 0cf5f5e49f3d454f Pistolet
 ml003-0115 e0a75128d6459fca Arme Éther D
 ml003-0116 e04ef528d5fa8da0 Arme Éther E
@@ -951,6 +952,7 @@ mm000-0065 84a53dd633c229a6 Fin du tutoriel... Pourquoi{n}ne pas essayer le 'Mod
 mm000-0066 d3cddd8626097272 Le Battling{n}L'écran{n}Déplacement{n}Attaque{n}Jauges de Chaleur{n}Balles d'Éther{n}Défense{n}Fin du tutoriel
 mm000-0067 d3004806fd8363fc Leonard{n}"Hm ! Pas mal.{p}Très bien, comme tu voudras...{n}Fini de jouer !{p}Place aux choses sérieuses..."
 mm000-0068 80c1359972c6bf32 Leonard{n}"Pff ! Ce n'était rien.{p}Assez joué, voyons !{n}Place aux choses sérieuses..."
+mm000-0069 8e6221dc6d7b698c Fei{n}"????{wait 90}... Que se passe-t-il ?"{p}Fei{n}"Quoi...!? {wait 90} Mon Gear...!?"
 mr000-0000 341278971bc58b04 Suiv. LV
 mr003-0000 0e7be530f1224c27 CARB
 mr004-0000 1deb33570b278e2d POIDS

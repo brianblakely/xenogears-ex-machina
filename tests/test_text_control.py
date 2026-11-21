@@ -33,15 +33,15 @@ THRESHOLD = 0xFE
 
 
 def table(texts: list[bytes]) -> bytes:
-    """count, 0, count + 1 offsets, (columns, rows) pairs, then the texts."""
-    head = 4 + 2 * (len(texts) + 1) + 2 * len(texts)
+    """count (the last entry's number), 0, count + 1 offsets, as many
+    (columns, rows) pairs, then the texts."""
+    head = 4 + 4 * len(texts)
     head += -head % 4
     offsets, body = [], bytearray()
     for text in texts:
         offsets.append(head + len(body))
         body += text
-    offsets.append(head + len(body))
-    out = bytearray(struct.pack(f"<HH{len(offsets)}H", len(texts), 0, *offsets))
+    out = bytearray(struct.pack(f"<HH{len(offsets)}H", len(texts) - 1, 0, *offsets))
     out += bytes([0x20, 0x03]) * len(texts)
     out += bytes(head - len(out))
     return bytes(out + body)
@@ -122,30 +122,35 @@ class ControlTests(unittest.TestCase):
 
 class TableTests(unittest.TestCase):
     def test_text_table(self):
+        # A count of 1: entries 0 and 1, the last ending the table's bytes.
         data = table([bytes([0x41, 0x00]), bytes([0x0F, 0x01, 0x02, 0x42, 0x00])])
-        offsets, end = text_table(data)
-        self.assertEqual(end, len(data))
+        self.assertEqual(struct.unpack_from("<H", data)[0], 1)
+        offsets = text_table(data)
         self.assertEqual([len(decode_text(data, o, THRESHOLD)) for o in offsets], [2, 3])
-        self.assertEqual(text_table(struct.pack("<HHI", 0xFFFF, 0, 0)), ((), 4))
+        self.assertEqual(text_table(struct.pack("<HHI", 0xFFFF, 0, 0)), ())
         with self.assertRaises(TextError):
             text_table(struct.pack("<HHHH", 1, 5, 8, 8))
+        with self.assertRaises(TextError):  # an entry past the table's bytes
+            text_table(struct.pack("<HHHH", 0, 0, 8, 0x0320))
 
     def test_unreached_text_decodes_on_its_own(self):
-        # The entry ends at its first 00; 42 43 00 and 0F 10 00 follow it.
-        data = table([b"\x41\x00\x42\x43\x00\x0f\x10\x00"])
+        # The first entry ends at its first 00; 42 43 00 and 0F 10 00 follow
+        # it, before the last entry.
+        data = table([b"\x41\x00\x42\x43\x00\x0f\x10\x00", b"\x44\x00"])
         result = Sweep()
         result.add("table", data, THRESHOLD)
-        self.assertEqual((result.texts, result.tokens), (1, 2))
+        self.assertEqual((result.texts, result.tokens), (2, 4))
         self.assertEqual((result.unreferenced, result.unreferenced_texts), (4, 1))
         self.assertEqual(len(result.unreferenced_errors), 1)
         self.assertEqual(result.unknown, [])
 
     def test_listing_shows_entries_tokens_and_unreached_text(self):
-        data = table([b"\x41\xfe\x42\x0f\x00\x05\x01\x00\x42\x43\x00\x0f\x10\x00"])
+        data = table([b"\x41\xfe\x42\x0f\x00\x05\x01\x00\x42\x43\x00\x0f\x10\x00", b"\x44\x00"])
         self.assertEqual(
             table_listing(data, THRESHOLD),
             [
                 "     0 +0x000c 32x3: 41 fe42 [wait frames=5] [newline] [end]",
+                "     1 +0x001a 32x3: 44 [end]",
                 "  unreached +0x0014: 42 43 [end]",
                 "  unreached +0x0017: undecodable, +0x17: 0F sub-code 0x10 matches no case"
                 " (the window stalls)",
@@ -157,7 +162,7 @@ class TableTests(unittest.TestCase):
         )
 
     def test_archive_entries(self):
-        text = table([b"\x41\x42\x43\x00"])
+        text = table([b"\x41\x42\x43\x44\x45\x46\x47\x00"])  # 16 bytes, two literal groups
         first = b"\x01\x02\x03\x04"
         # The decoder reads one flag byte past a complete stream (here padding).
         archive = struct.pack("<III", 2, 12, 16) + first + literals(text) + b"\0"
@@ -330,7 +335,7 @@ class CharacterTests(unittest.TestCase):
         chars = {0x41: "A", 0x10: " ", 0x5B: "{"}
         self.assertEqual(render(tokens, chars), "A {42}{fe41}[newline]\\{[end]")
         listing = table_listing(table([data]), THRESHOLD, chars)
-        self.assertEqual(listing, ["     0 +0x000c 32x3: A {42}{fe41}[newline]\\{[end]"])
+        self.assertEqual(listing, ["     0 +0x0008 32x3: A {42}{fe41}[newline]\\{[end]"])
 
 
 if __name__ == "__main__":

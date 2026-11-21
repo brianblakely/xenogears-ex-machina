@@ -614,6 +614,7 @@ md051-0100 cb89aa61971de706 Potenza motore +50%
 md051-0101 77cb0aaf9606d9a3 'Carica' rende 50 carb.
 md051-0102 765143f36d8d23d9 'Carica' rende 100 carb.
 md051-0103 fdf9eb9e055fcf48 'Carica' rende 200 carb.
+md051-0104 7189c9f1f3b940cd 'Carica' rende 500 carb.
 md052-0012 7bd5b9c9cb729818 Mette
 md052-0014 e5e6e0e38f30be49 a nanna
 md052-0019 97f5d3734dd578aa Attacco
@@ -782,6 +783,7 @@ md055-0304 93922af8053da532 rende
 md055-0305 af11c60be2f3c44d 50 Carb.
 md055-0308 7a42f77e96fc879b 100 Carb.
 md055-0311 586b345598631b06 200 Carb.
+md055-0314 aca549eb63b3ea17 500 Carb.
 ml003-0000 df78ff1299c0cecd Nuova partita
 ml003-0001 f09f876134968303 Continua
 ml003-0002 6c8d785fecee2376 Stato
@@ -843,7 +845,6 @@ ml003-0095 28ac332131e2f29d Blocco libero.
 ml003-0096 d8fd6eccfa2ec455 Salvare?
 ml003-0098 8805fcf9fc16c1cf Nessun dato.
 ml003-0101 eb5631d1b85662e0 Caricare questo file?
-ml003-0109 aaf4fd735911442e Zona
 ml003-0114 0cf5f5e49f3d454f Pistola
 ml003-0115 e0a75128d6459fca Arma Etere D
 ml003-0116 e04ef528d5fa8da0 Arma Etere S
@@ -951,6 +952,7 @@ mm000-0065 84a53dd633c229a6 Il tutorial finisce qui...{n}Perché non provi la{n}
 mm000-0066 d3cddd8626097272 Il Battling{n}Lo schermo{n}Movimento{n}Attacco{n}Barre del Calore{n}Proiettili Etere{n}Difesa{n}Fine del tutorial
 mm000-0067 d3004806fd8363fc Leonard{n}"Hm! Niente male.{p}E va bene, come vuoi tu...{n}Basta giocare!{p}Facciamo sul serio..."
 mm000-0068 80c1359972c6bf32 Leonard{n}"Pff! Non era niente.{p}Basta perdere tempo!{n}Facciamo sul serio..."
+mm000-0069 8e6221dc6d7b698c Fei{n}"????{wait 90}... Che succede?"{p}Fei{n}"Ma che...!? {wait 90} Il mio Gear...!?"
 mr000-0000 341278971bc58b04 Pross.LV
 mr003-0000 0e7be530f1224c27 CARB
 mr004-0000 1deb33570b278e2d PESO

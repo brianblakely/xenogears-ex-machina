@@ -9306,20 +9306,25 @@ the inputs, and a replay takes the recorded one.
 menus' item, weapon, accessory, Gear part, art and deathblow names and
 descriptions, the shops', save screens' and system messages, the battles'
 messages, enemy names and event narration, and the world map's place
-names: every one of the 17 086 distinct texts of both discs that holds a
-letter (the other 691 of the 17 777 are glyphs alone, numbers or Japanese
+names: every one of the 17 501 distinct texts of both discs that holds a
+letter (the other 702 of the 18 203 are glyphs alone, numbers or Japanese
 placeholders of the development data, which stay as they are). Brazilian
-Portuguese translates 16 030 of them; 1 056, the same in Portuguese (names
+Portuguese translates 16 416 of them; 1 085, the same in Portuguese (names
 alone, cries, the developers' test menus kept as they were), are listed
-rather than shipped. French translates 16 029 and lists 1 057: the same
-texts and one enemy name French spells as the original does (Griffon).
-Italian, translated from the English beside the French, translates 15 953
-and lists 1 136: more cries and short replies read the same in Italian
-("No!", "Oh no...", "Doc!"). Spanish, translated alike, translates 16 242
-and lists 847: its opening marks make 219 cries and calls its own that
+rather than shipped. French translates 16 422 and lists 1 079, among them
+an enemy name French spells as the original does (Griffon).
+Italian, translated from the English beside the French, translates 16 336
+and lists 1 168: more cries and short replies read the same in Italian
+("No!", "Oh no...", "Doc!"). Spanish, translated alike, translates 16 637
+and lists 867: its opening marks make 229 cries and calls its own that
 differ from the original by them alone ("¡Timothy!", "¿Aerods?").
-English (Perfect Works) reads 10 513 texts anew, and 210 table entries
-alone besides (below), and lists the 6 589 it leaves as the original's.
+English (Perfect Works) reads 10 789 texts anew, and 226 table entries
+alone besides (below), and lists the 6 729 it leaves as the original's.
+Until 20 November 2026 the tools took a table's count for the number of
+its entries and left its last entry out: 426 texts, the last message of
+most field maps (the opening's page on Gebler among them), battle
+messages, names and menu texts, showed in English whatever the language;
+the 415 of them that hold a letter were translated then.
 Text built at run time (numbers, and a name the player gave) is the game's
 own. The menus' command labels (New Game, Status,
 Equip, Buy, Tune up ...), words drawn in the menus' textures, are drawn
@@ -9339,8 +9344,9 @@ accented Latin letters).
 `src/runtime/crates/xem-core/locale/<tag>/*.txt`, one line per text:
 `<where> <hash> <translation>`. `<where>` names the first table entry
 holding the text (`f012-0003`: field map 12's message 3; `s22-0005`:
-system data resource 22's entry 5), `<hash>` is the FNV-1a 64 hash of the
-original's bytes through its closing 00, and the translation is markup:
+system data resource 22's entry 5; a table's entries are 0 to the count its
+header gives, docs/scripts/text-control.md), `<hash>` is the FNV-1a 64 hash
+of the original's bytes through its closing 00, and the translation is markup:
 characters, which become glyphs of the font, and controls in braces, the
 codes `window_reveal_text` interprets (`{n}` a new line, `{p}` a page,
 `{wait 30}`, `{name 128}`, `{item}`, ...). No original text is committed:
@@ -9407,8 +9413,8 @@ text wherever a window takes it, named by the text's hash. A language may
 also translate a text in one table entry alone, on a line
 `<where> <hash>@<entry> <translation>`: `<where>` names that entry, and
 `<entry>` is the entry's name, the text's hash carried on over the entry's
-index, its offset in its table and the table's count of entries as three
-halfwords (`place_key` in the tools and in `xem_core::locale`). The port
+index, its offset in its table and the count its table's header gives (its
+last entry's number) as three halfwords (`place_key` in the tools and in `xem_core::locale`). The port
 computes it where the game takes an entry from a table
 (`text_get_resource_entry`), so the entry's own translation is shown there
 and the text's elsewhere. Perfect Works needs it: a jukebox whose lists
@@ -9438,15 +9444,15 @@ screen's 70 columns (the fixed box's 72) and a field page its own lines
 where no script sizes the window, and a line the menus and the battle
 render into a line image that image's 57 columns; a choice keeps the lines
 its cursor walks, and a window a script sizes, in the field or the battle,
-shows what it shows whatever the language. Of 50 427 table entries on both discs
-(30 996 and 19 431), 11 499 are Perfect Works' own. Where its own scripts
+shows what it shows whatever the language. Of 51 676 table entries on both discs
+(31 852 and 19 824), 11 841 are Perfect Works' own. Where its own scripts
 show a field message otherwise than the original's do (69 maps' event
 scripts differ; the tool compares how each shows each message), the text
 is held to the original's window. Six field messages' lines are broken
 anew to fit theirs, and two battle messages' to fit their scripts'; eight
 field messages keep the original's text (their windows are their scripts',
 too small for the reading, which a choice or a timed text cannot break),
-as do nine battle messages whose windows Perfect Works' own battle code
+as do eleven battle messages whose windows Perfect Works' own battle code
 sizes, and two Japanese development texts. One list of choices has a line fewer than its cursor
 walks, as in Perfect Works' build: the line stays, blank. Its font's added
 marks are the language's added glyphs (Letters, below). What is not text
@@ -9656,13 +9662,13 @@ inserting it (`0F 05 n`); the alignment pairs entries as they come, gaining
 where both name the same speaker and losing where they name two, so a map
 the localisation added messages to (disc 1's maps 88, 134, 209, 359 ...)
 pairs each with its own. A table outside the field whose entries differ in
-number keeps its English (one enemy table, 60 entries against 63). Of
-50 427 North American table entries on both discs 49 336 are paired; the
+number keeps its English (one enemy table, 61 entries against 64). Of
+51 676 North American table entries on both discs 50 570 are paired; the
 rest, mostly the developers' test rooms' and maps with no Japanese messages,
 keep their English. The pairs become a language of `xem_core::locale` as a
 shipped translation's lines do: a North American text's Japanese reading
-wherever a window takes it (the reading most of its places give, 17 640
-texts) and the entries read otherwise translated alone (1 375), and the
+wherever a window takes it (the reading most of its places give, 18 086
+texts) and the entries read otherwise translated alone (1 474), and the
 party's and Gears' names by their slots from the Japanese game data. The
 port's handling is the shipped languages' (Languages, above): a window's
 text pointer goes to the Japanese reading, a field window grows to its

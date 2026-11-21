@@ -102,6 +102,7 @@ f200-0106 77c66048c69439f9 Hammer{n}"Sorella,{wait 10} non ti sei{n}scordata di 
 f200-0107 2603ac24767064d7 Fei{n}"Va bene, Hammer.{wait 5}{n}Allora dimmi dov'è{n}il mio Gear."
 f200-0108 dfb02fd15aae5aa6 Hammer{n}"Eh?{wait 5} Oh!?{wait 15}{n}Sì,{wait 5} il Gear.{wait 15}{n}Me n'ero quasi scordato."
 f200-0109 146320b01f8ee5bc Hammer{n}"Come aveva previsto il{n}doc, fratello,{p}il tuo Gear è stato{n}spostato in un altro dock."
+f200-0119 0502a463605fa86b Citan{n}"Torniamo al Blocco D,{n}per ora?"
 f202-0000 796f2ca354d623d8 Un reattore che l'uomo non{n}può controllare è come{n}un'arma a doppio taglio.{n}Feriremo anche noi stessi.
 f202-0001 ce308a12f6db447c Nella zona nord della{n}capitale, nel blocco{n}industriale, c'è una reliquia{n}di un'antica civiltà... un{n}'reattore' gigante.{p}Quel reattore produce energia{n}oltre la nostra capacità di{n}controllo. È qualcosa che{n}l'uomo non potrà mai{n}dominare...
 f202-0002 98e47391d2a05899 È ormai chiaro che il bersaglio{n}principale dell'attacco contro{n}l'Impero era bombardare il{n}reattore del blocco industriale.{p}Se{wait 5} avessero colpito in pieno il{n}reattore{wait 5}...{wait 5}l'intera capitale{n}sarebbe stata ridotta in cenere.{p}Sarebbe stato un inferno in{n}terra{wait 5} dove nessun essere{n}vivente poteva esistere."
@@ -122,15 +123,18 @@ f202-0016 39115b122a03e80c Cuoco dell'esercito{n}"Sono il cuoco della{n}caserma 
 f202-0017 3083d43b72838388 Argh!{wait 5} Ho fallito{wait 5} di nuovo.{wait 15}{n}Mmmh,{wait 5} c'è qualcosa che{n}non va nella salsa{n}speciale.{p}La cucina all'Etere è{n}davvero profonda.
 f202-0018 fb1364535d845ea1 Il fallimento è un passo{n}importante sulla mia via{n}verso il successo!{wait 15}{p}Il mio sogno è diventare{n}come quel grande cuoco{n}all'Etere del Blocco D.
 f202-0019 dd0543cd09ce2d80 {wait 5}...{wait 5}Mi sono arruolato{n}volontario per proteggere{n}il mio paese{wait 5}...{wait 5} Ma{n}questo{wait 5}...{wait 5}{p}Non mi sono arruolato per{n}questo.
+f202-0020 393a91999e33ed90 Sono una nuova recluta{n}dell'esercito di Kislev.{n}Diplomato tra i migliori{n}all'Accademia ufficiali!{p}E allora perché mi hanno{n}messo nel Blocco A a{n}lavorare sotto il capo{n}cuoco?
 f203-0000 b0e95a43d88d0846 Mmh,{wait 5} per quanto dorma,{n}non mi basta mai.{n}Mi sento ancora debole{wait 5}...{wait 15}{p}Più dormo e più divento{n}fiacco.{p}Dicono che il sonno fa{n}crescere i bambini...sarà{n}vero?
 f203-0001 844a672700c6bcf2 Uuuh, ora non riesco a{n}dormire{wait 5}...{wait 15} Continuo a{n}pensare che Aveh potrebbe{n}attaccare da un momento{p}all'altro e non dormo{wait 5}...{wait 30}{n}Ahh,{wait 5}spero che questa{n}guerra finisca presto.
 f203-0002 dabe0fbe829f1106 Ora ci alleniamo{wait 5}{n}per la parata di difesa{n}del Kaiser Sigmund{wait 5}...{wait 5}{n}e...ehi, chi sei tu?{p}In questa sala ci sono{n}molti alti ufficiali,{wait 5}{n}vogliamo far colpo su di{n}loro e farci promuovere.{wait 5}{p}Quindi sparisci.
 f203-0003 c62e07dee63a3b43 Forza,{wait 5} ricominciamo!{wait 15}{n}Ehi,{wait 5} togliti di mezzo!
 f203-0004 ecd513f20bafb8c3 Be',{wait 5}mi stimavano{n}parecchio, {wait 5}ma l'ufficiale{n}che spingeva per la mia{n}promozione{wait 5} è morto{p}nell'ultimo attacco aereo.
 f203-0005 dea9a3f87f51c5db Quell'occasione era{n}proprio davanti a me.{wait 45}{n}{wait 5}...{wait 5}La vita è dura.{wait 15} Di{n}questo{p}passo,{wait 5} mi manderanno{n}al fronte.
+f203-0006 adccf4eea4b43aee Mmh, quel giovane{n}laggiù{wait 5}...{wait 5}{n}È un peccato lasciarlo{n}soldato semplice{wait 5}...{wait 5}{p}Ma quello laggiù è{n}rimasto seduto lì per{n}tutto il tempo. Chi è?
 f204-0000 6270e4c4f7d2bcdf Ha troppo orgoglio.{wait 15}{n}Non è che noi siamo mai{n}stati così fieri di lui.
 f204-0001 db54b4e48a785589 Probabilmente non vuole{n}perdere contro nessuno.{wait 15}{n}Be',{wait 5} a me non importa.{n}Se prendi sul serio{p}quella gente ogni volta,{n}non ne vale la{n}pena{wait 5}...{wait 5}
 f204-0002 46800240d1f45186 Accidenti! Perché ha un{n}grado più alto del mio,{n}solo perché è bravo coi{n}Gear?{p}Io sono più anziano di lui.
+f204-0003 690111b39d27ef7d {wait 5}...{wait 5}La vita è ingiusta.{wait 15}{n}Cosa avranno di tanto{n}speciale i Battler!?{wait 5}{n}Accidenti!
 f205-0000 c5b17ae3f15a193f Sai, quel disco è{n}rotto.{wait 15} Il juke-box invece{n}è come nuovo. Ci{p}serve solo un disco nuovo{n}per poterlo ascoltare{wait 5}...{wait 5}
 f205-0001 df8b849f1c29a93d Pff, {wait 5}ah ah ah ah!{done 45}
 f205-0002 6df6c1d4e702630c Quella è la nuova{n}cameriera{n}che doveva cominciare{n}oggi. Deve ancora{p}imparare parecchio,{n}quindi andateci piano!
@@ -195,6 +199,7 @@ f205-0104 d04ef944aae03c34 Può una talpa amare una{n}di un'altra tribù?{wait 5
 f205-0105 c53bcc32539ae6d1 {speed 255}...Te lo permetto!!{n}Fai quello che devi{n}fare.
 f205-0106 77facf34c83ae056 Q, quello che{wait 5}...{wait 5}devo{n}fare? Adesso come adesso,{n}non credo di riuscire{wait 5}...{wait 5}
 f205-0107 cbd625937174b7ba {wait 5}...{wait 5}Va bene, lo farò.{wait 15} Ce la{n}prenderemo comoda,{wait 10} piano{wait 10} e{n}imminentemente{wait 10}...giusto?
+f205-0108 ee52a3021f5b6ecd Sì{wait 5}...{wait 5}signore.
 f206-0000 ee2ca0c6613a6a6d Tutto quello che serve per{n}proteggervi dalle varie{n}alterazioni di stato è{n}qui, nel mio negozio!
 f206-0001 9d649b0566427eb4 Tornate a trovarci.
 f206-0002 4d634a132223301f {wait 5}...{wait 5}Una discreta scelta.{p}Ah sì, gli accessori sono{n}tutti dei tesori, quindi{n}comprarli non è uno{n}spreco.{wait 45}{p}Ma ricordate, io non{n}lavoro per il negozio.
@@ -202,6 +207,7 @@ f206-0003 848694e58a63e57a Tutte queste armi,{wait 5}e{n}nessuna adatta a me.{wa
 f206-0004 e4a044a767cd8138 Sigh{wait 5}...{wait 5}non esiste un'arma{n}sicura, leggera e{n}facile da usare?
 f206-0005 c2a05592c0fb95d6 Eccola,{wait 5}...{wait 5}{n}l'arma ideale.
 f206-0006 c409a7e50afd8b5a Ha girato molti paesi{n}in cerca della sua arma{n}ideale.{wait 15} Io sono solo{n}una donna attratta dal{p}suo ardore{wait 5}...{wait 5} Ha detto che{n}andrà avanti finché non la{n}troverà.{wait 15} Il suo viaggio{n}potrebbe non finire mai.
+f206-0007 b712a585641c7787 Abbiamo attraversato quasi{n}tutta Ignas...{wait 5} Quando{n}guarderà me, e non{n}queste armi...?
 f207-0000 f18bdfb3c9b19418 Chiusa con una chiave{n}speciale.{wait 30}{n}Non sembra che si{n}aprirà.
 f207-0001 202b0911533a9a86 Venditore di oggetti{n}"Meglio che mantieni la{n}promessa.{wait 15}{p}Non importa cosa, basta{n}che compri qualcosa.
 f207-0002 fcb23c686f9cd272 Venditore di oggetti{n}"Scusa se prima ti ho{n}sgridato.{wait 15}{p}Quella chiave era uno{n}scherzo."
@@ -213,11 +219,13 @@ f207-0007 d2f016c431c697fa Q, questo va là{wait 5}...{wait 15}{n}Questo{wait 5}
 f207-0008 a276b9a6c008f8a7 Papà fa sempre così coi{n}clienti che arrivano{n}tardi.{wait 5}{p}Il mio passatempo è vedere{n}la faccia che fanno{n}quando succede.
 f207-0009 72bb013bfe862127 Ah ahahah,{wait 5} oh, scusate.
 f207-0010 a98e46a4402c891b Kuhehehe{wait 10}...{wait 5}benvenuto.{wait 15}{n}Se compri qualcosa{n}ti apro la serratura.
+f207-0011 ccf8058d18c6fb96 Ho chiuso a chiave la{n}porta!{done 30}
 f208-0000 151d69145ffb22c7 Quando la guerra sarà{n}finita, lui tornerà{wait 5}...{wait 5} Non{n}se n'è andato perché non{n}sopportava la guerra.{wait 15}{p}Lo so{wait 5}...{wait 5}tornerà.
 f208-0001 4e8b7e2a698735b1 La guerra finirà, nonna.{n}È quasi finita{wait 5}...{wait 5} Quindi{n}non dire 'prima di{n}morire'.'
 f208-0002 4404cc10224ea79c Mia figlia era fidanzata{n}con un uomo,{p}ma lui ha lasciato{n}l'Impero perché non{n}sopportava questa lunga{n}guerra.
 f208-0003 8a858e3f6b744d07 Questa guerra non finirà{n}mai.{wait 5}{p}...{wait 5} Prima di morire voglio{n}vedere il viso di mio{n}nipote.
 f208-0004 30d5741a8a367c36 'G-u-e-r-r-a'. Non so bene{n}cosa voglia dire, ma credo{n}che sia solo battere il{n}nemico, giusto?
+f208-0005 64d0d3f0a31d3dc9 Un ritratto{wait 5}…{wait 5}…{n}...? Quel viso l'ho già{n}visto.
 f209-0000 60f8293633223083 Aaargh!{wait 5} Proprio quando{n}pensavo di potermi{n}finalmente guadagnare da{n}vivere, ecco un mostro{n}fortissimo nelle fogne{wait 5}...{wait 5}{p}D'oh!{wait 5}...
 f209-0001 ea1e24c911963ab4 Pare che il Campione abbia{n}battuto il mostro, ma non{n}vuol dire che fosse{n}l'unico{wait 5}...{wait 30}{p}L'idea non mi piace,{wait 5} ma mi{n}servono soldi.{wait 10} Accidenti!
 f209-0002 38017e97af9f2b9f Ah,{wait 10} devo guadagnarmi da{n}vivere nelle fogne?{wait 15}{n}O seguire la mia vera{n}vocazione?{wait 15}{n}Ooooh,{wait 10} sono così confuso!
@@ -252,10 +260,12 @@ f209-0096 1a996d55c3b9381d Ci sono anche i seguenti{n}'Oggetti rari'{wait 5}...{
 f209-0097 fab92bd9c3601c04 Informatore{n}"Queste sono le ricompense{n}massime per i Battler{n}comuni.{p}I detenuti ricevono premi{n}diversi a seconda del loro{n}Rango di detenuto!"
 f209-0098 683f67ef4f331b9a Informatore{n}"Qui al Centro B-Info.{n}cambiamo in G le prove{n}dello sterminio dei mostri{n}delle fogne.{p}Ma ai 'Battler' e ad altri{n}clienti speciali paghiamo{n}in G anche il 'bottino',{n}prova dello sterminio{n}di altri mostri.{p}'Scaglie','Bulbi{n}Oculari','Zanne' e{n}'Hob-Secca'. Porta qui quel{n}bottino per incassare.{p}Puoi guadagnare un sacco di{n}G!
 f209-0099 1d7db35db753866e 'Scaglie','Bulbi{n}Oculari','Zanne' e{n}'Hob-Secca'. Porta qui quel{n}bottino per incassare.{p}Puoi guadagnare un sacco di{n}G!
+f209-0100 aa1465b16ee1caf5 Informatore{n}"...Beh, se sei a corto{n}di soldi, sai dove{n}andare! Come diciamo{n}sempre...{n}Conviene essere 'B-Info-rmati'!"
 f210-0000 590ff77bc336f288 Senza 'G' non posso{n}potenziare il mio Gear{n}neanche se voglio.{wait 5} Per ora{n}resterà una schiappa.{p}Mi sa che andrò a lavorare{n}nelle fogne{wait 5}...
 f210-0001 685849fa5a665dd0 {wait 5}...{wait 5}Ho fatto un po' di{n}soldi, ma ora hanno parti{n}nuove{wait 5}...{wait 5}{p}Le voglio, ma non ho{n}abbastanza 'G'{wait 5}...{wait 5}.
 f210-0002 c4074a516013368f Gli interessa più il suo{n}Gear che me. Argh!{wait 15}{p}I Gear vogliono parti,{n}carburante e sono più{n}difficili da gestire delle{n}donne.
 f210-0003 47316de461c2e530 Anche sotto le bombe, il{n}suo cuore è per i Gear, i{n}Gear,{wait 5} i Gear.{wait 5}{n}Nient'altro che Gear{wait 5}...{wait 5}
+f210-0004 0ecd26a7d0c5903a Sigh{wait 5}...{wait 30} Forse dovrei{n}cercarmi un altro uomo.{wait 15}{n}Basta con i Battler.{wait 5}
 f211-0000 604f1f37e106b059 Fei{n}"{wait 5}...{wait 15}{n}Alla periferia del Blocco{n}D?"
 f211-0001 1e7615866bcf871c Hammer{n}"Oh, dimenticavo di{n}dirtelo!{p}L'arena di Battling è alla{n}periferia del Blocco D.{wait 15}{p}Parla con la guardia e{n}dovrebbe farti passare.{n}Ciao!"
 f211-0002 d66c4914cadba277 Hammer{n}"Fratello, ho notizie!{wait 15}{n}Notizie!"{done 45}
@@ -424,7 +434,9 @@ f211-0194 81b54fa2275720b2 Citan{n}"La sua ferita al braccio{n}ti preoccupa cos�
 f211-0195 83bc8c6c4efb5853 Fei{n}"Lo so, doc{wait 5}...{wait 5}{n}non abbiamo molto tempo{n}da perdere!{p}E poi, ha ragione lui: in{n}battaglia non ci si{n}trattiene.{wait 10} L'etichetta{n}impone un vero scontro!"
 f211-0196 dea36af0216c8ade Citan{n}"Pare che mi fossi{n}preoccupato troppo.{wait 15}{n}Comunque, ora riposiamoci.{p}Ricorda, prima devi vincere{n}fino alla Lega Finale.{wait 15}{n}E il Campione non è l'unico{n}che devi battere!"
 f211-0199 0aa4f3504f11092b Citan{n}"La sua ferita al braccio{n}ti preoccupa così tanto?{wait 30}{p}Fei, sai bene che non{n}abbiamo{wait 5}..."
+f211-0201 c02d95b08e9af67f Citan{n}"Pare che mi fossi{n}preoccupato troppo.{wait 15}{n}Comunque, ora riposiamoci.{p}Ricorda, prima devi vincere{n}fino alla Lega Finale.{wait 15}{n}E il Campione non è l'unico{n}che devi battere!"
 f212-0000 4f150d81759b0ab2 Ch, chi sei!? Non{n}intr-intralciare il{n}mio lavoro. Io t-tengo in{n}o-ordine questa stanza.
+f212-0001 da430f158bb4de36 'Dopo l'uso, rimettete ogni{n}oggetto al suo posto'{n}           - Il Comitato -
 f213-0000 59732f9e49a60137 Fei{n}"Posso riposare qui{wait 5}..."{wait 15}{n}    Riposa!{n}    Non ancora.
 f213-0001 92a5facc9383f502 Fei{n}"...Ehi, ormai il rango{n}non conta più!{n}Allora, che letto uso?"{p}    Letto di Rango A{n}    Letto di Rango B{n}    Letto di Rango C{n}    Letto di Rango D
 f213-0003 1881f34a430c7534 Fei{n}"Vada per il letto di{n}Rango A!"
@@ -673,6 +685,7 @@ f213-0265 d86038ec4e28f85d Fei{n}"Quell'Hammer{wait 5}...{wait 15}{n}Tutt'a un t
 f213-0266 c0d2a3a27f4aaea5 Citan{n}"{wait 5}...{wait 5}Ma ti sta bene{n}così?{n}Come dicevamo prima{wait 5}...{p}Costretto o no{wait 5}...{wait 5}tu non{n}volevi farlo, vero?{wait 15}{n}Combattere coi Gear,{n}dico!?"
 f213-0268 729a5f08d2a027a4 Citan{n}"Molto probabilmente ci{n}sono altri modi per{n}uscire di qui.{p}Fei, non voglio{n}spingerti a fare cose{n}che non vuoi fare!"
 f213-0269 a6d2511cc6533df6 Fei{n}"Lo so, doc.{p}I Gear continuano a non{n}piacermi. Questo non è{n}cambiato.{p}Quando li piloto, mi rendo{n}conto di quanto sia{n}instabile il mio{p}'essere'{wait 5}...{wait 5}anche se non{n}voglio pensarci!{p}Ma allo stesso tempo, sono{n}anche un legame con una{n}'parte' perduta di me.{p}Se è così, di recente{n}ho deciso che andrò{n}fino in fondo.{p}Anche Elly si tormentava{n}per la stessa cosa. E se{n}continuo solo a deprimermi,{n}non migliorerà niente!"
+f213-0270 0e3c849d6d0bb4e7 Citan{n}"È questo che provi{wait 5}...{wait 5}?{n}Credo di capirti meglio,{n}ora, Fei.{p}Comunque, oggi{n}riposiamoci.{n}Presto avremo{n}molto da fare!"
 f214-0000 42fba57006dd354c La doccia è fuori servizio{n}per sempre.{wait 15}{n}{wait 5}...{wait 5}In realtà, è rotta.{wait 45}{p}Qualcuno che la ripari?{wait 15}{n}Magari.
 f214-0001 08470bf61e4161f7 Bilancia A-ton{n}"Chi vuoi pesare?"{n}{speed 255}    {name 128}{n}    {name 129}{n}    {name 130}{n}    Non pesare nessuno
 f214-0002 21b4f19e8f853dc8 Bilancia A-ton{n}"{name 128}{wait 5}...{wait 5}giusto?"
@@ -683,6 +696,7 @@ f214-0007 23d6d01973144468 Bilancia A-ton{n}"{wait 5}...{wait 5}Torna a trovarmi
 f214-0008 7fd593af149674a7 Bilancia A-ton{n}"Sei troppo leggero{wait 5}...{wait 15}{n}Devi{n}nutrirti di più."
 f214-0009 51bdf48caecf2805 Bilancia A-ton{n}"Mmh,{wait 5} ma{n}guarda.{wait 30}...Rallegrati.{n}{wait 10}Sei al tuo peso ideale."
 f214-0010 6da970770e6deb5c Bilancia A-ton{n}"Mmh,{wait 5} bene bene.{wait 15} Un po'{n}sovrappeso,{wait 5} ma non{n}preoccuparti."
+f214-0011 4dfc5fde3dff4d6b Bilancia A-ton{n}"{wait 5}...{wait 30}Meglio non esagerare{n}col cibo."
 f215-0000 3ca1877553bbd044 15 anni fa, nell'Impero,{n}ci fu una grande rivolta.{n}Ci furono molte{n}vittime{wait 5}...{wait 5}
 f215-0001 ab62fbb7d9fc76d6 Ricardo fu una delle{n}tante vittime{wait 5}...{wait 5}{p}Aveva molti amici, ma{n}quasi tutti sono morti{n}in quella grande rivolta.
 f215-0002 262d4b1f28077b5d Si dice che la causa della{n}rivolta fosse l'attrito{n}tra l''Ethos' e il Kaiser.
@@ -693,6 +707,7 @@ f215-0006 1c6dc14be44a070d Ehm,{wait 5} hai visto mio{n}fratello fuori?{wait 15}
 f215-0007 43a378591dfd29f2 Questo posto{wait 5}...?{wait 5}{n}È una struttura di Nisan.{n}Tu chi sei?
 f215-0008 be78d199c21932ea Io{wait 5}...{wait 5}non sono solo...{wait 5}{n}Anche senza mamma e{n}papà...{wait 15}qui ho tanti{n}amici.{wait 15} E anche le{n}sorelle...{wait 5}Sob...{wait 5}
 f215-0009 aaae126d8933f9e4 Il fuoco{wait 10} ha avvolto{n}tutti.{wait 15} Papà,{wait 5} mamma,{wait 5} la{n}mia casa{wait 5}...tutto.{wait 30} {p}Non so{wait 5}...dopo{n}quello...{wait 5}ero qui.
+f215-0010 d04ad480687e7290 Odio{wait 5}...{wait 5}il fuoco,{wait 5} odio{n}tutti{wait 5}...{wait 5} Papà e mamma{n}sono stati{wait 5}...{wait 5}divorati dal{n}fuoco!{p}L'acqua{wait 5}...{wait 5}se solo ci{n}fosse tanta acqua{wait 5}...
 f217-0000 24c574470f272970 Fei{n}"{wait 5}...{wait 5}Nemmeno qui...{wait 15}{n}Se ne sarà già andato?"
 f217-0002 ee79673156f2ca8c Fei{n}"...Gear, eh?"{done 30}
 f217-0003 94a53943c6c546d0 Fei{n}"Uoh!?"{done 15}
@@ -789,6 +804,7 @@ f217-0106 b1050b05f7227488 Fei{n}"{wait 5}...{wait 5}{p}{wait 5}...{wait 5}Tutto
 f217-0107 629e888e965c2ba6 Hammer{n}"Eh?{n}Che vuoi dire?"
 f217-0108 30ffc3fa6899d02d Fei{n}"{wait 5}...{wait 5}Hai finito?"
 f217-0109 5ecf32935fc4f204 Hammer{n}"{wait 5}...{wait 5}Finito?"
+f217-0110 9ba8f8fa25fede27 Fei{n}"Hai detto abbastanza{wait 5}...{wait 15}{n}Ora potresti toglierti{n}di mezzo?{p}Hammer, scusa, ma dubito{n}che cambierò idea{wait 5}...{wait 30}{n}Odio sia la lotta sia i{n}Gear. Peccato per te!"
 f218-0000 ec6ebf2e16213d64 Fei{n}"{wait 5}...{wait 5}Io sono Fei Fong Wong.{wait 15}{n}E tu come ti chiami?{p}Non ti chiamerai davvero{n}'Campione', no?{n}Almeno questo ho il{n}diritto di saperlo{wait 5}..."
 f218-0001 0ee116e73e64bdee Niente da fare.{n}È chiuso a chiave.{done 30}
 f218-0002 299cdedc941098db Suzarn{n}"Campione, ti abbiamo{n}portato il tipo."
@@ -874,11 +890,13 @@ f218-0087 208cb06d02f402ed Amazzone{n}"Scusate,{wait 15} se abbiamo{n}dovuto chi
 f218-0088 6285e90754a1a945 Battler{n}"Vi siamo davvero grati{n}per quello che fate{wait 5}...{p}Ecco{wait 5}...{wait 5}{n}Prendete questo."
 f218-0090 955c621deae069ad Hammer{n}"Orari, date e{wait 5}{n}destinazioni dei treni!{wait 15}{n}Ho tutto... facile!"{done 60}
 f218-0091 521ef33b4dd73df0 Fei{n}"Hammer, tu nasconditi{n}da qualche parte.{p}Quando arriveremo{n}all'arena, mi scatenerò{n}col mio Gear...{p}Da lì improvviseremo per{n}fuggire dalla capitale{n}imperiale{wait 5}...{wait 30}{n}Hai capito, Hammer?"
+f218-0092 8f3fe02b25c41e0e Hammer{n}"Ricevuto, fratello!{wait 15}{n}Fagli vedere chi sei{n}anche per me,{wait 5} fratello!"
 f219-0000 df25a5cf725e5c48 {wait 5}...{wait 5}Posso riposare qui.{wait 15}{n}    Non riposare{n}    Riposa
 f219-0001 0032712d099df798 Citan{n}"Non c'è tempo.{wait 15}{n}Dobbiamo sbrigarci{wait 5}...{wait 5}"
 f219-0002 340c49a919c89baf Citan{n}"Aspetta,{wait 5} Fei.{wait 5}{n}Sei davvero pronto?{wait 15}{p}Sai che ormai non si{n}può più tornare indietro."
 f219-0003 a505e6024af51c06 Fei{n}"Eh?{wait 5} Sì,{wait 5} hai ragione."{wait 15}{n}    Vado a prepararmi{n}    Sono pronto
 f219-0004 13b453d428c03919 Citan{n}"{wait 5}...{wait 5}Bene.{wait 15}{n}Andiamo?{wait 5}{n}Non c'è molto tempo."
+f219-0005 a4e778b39172b199 Citan{n}"{wait 5}...{wait 5}Manca ancora un po'{n}all'arrivo del{n}treno{wait 5}...{wait 15} Riposiamoci{p}qui per un po'."
 f220-0000 3fc7e475001e6b92 Mio figlio se n'è{n}andato{wait 5}...{wait 15}{n}E domani anche mia figlia{n}lascerà la nostra casa.
 f220-0002 aef4af26c0301486 {wait 5}...{wait 5}Avrei dovuto capire{wait 15}{n}che era un errore.
 f220-0003 aa6f729d8bcc2478 {wait 5}...{wait 5}Eh?{wait 15} E Lei chi{n}sarebbe?{wait 5} Che maleducazione{n}entrare in casa mia. {p}Ma è inutile dirlo a{n}un criminale, suppongo{wait 5}...{wait 15}{n}Ora, se ne vada,{n}per favore.
@@ -889,6 +907,7 @@ f220-0008 1745c2a459e820f6 Finalmente sono un{n}soldato imperiale.{wait 15} Sono
 f220-0009 830b19e626743368 E troverò una bella{n}sposa{wait 5}...{wait 5}e una famiglia{n}unita{wait 5}...{wait 5}Ehi! Che cosa{n}mi fai dire!?
 f220-0010 20b12f3bbcec6e9e Hrnoww,{wait 5} mi gira{n}la testa.{wait 30} Gira tutto{n}quanto{wait 15}...{wait 5} Niente.
 f220-0011 fcfd7b2e733190e0 Mi fanno uscire solo{n}per andare in chiesa nel{n}fine settimana... Mi annoio{n}chiusa in casa.{wait 5}...{wait 5}...{p}Vorrei tanto andare a{n}giocare con quelli della{n}chiesa.
+f220-0012 449948a0361f7722 Che noia, che noia.{n}Mi annoio da morireee!
 f221-0000 1508c5df7d342382 Fei{n}"{wait 5}...{wait 5}Quindi{wait 15} questa è{n}l'Arena di Battling."
 f221-0002 547f7db7ec0ac4c9 Guardiano{n}"Oltre questo punto c'è{n}il paddock dove i{n}concorrenti tengono i Gear.{p}Spiacente, ma per evitare{n}imbrogli, l'accesso non{n}autorizzato è vietato."
 f221-0003 645d935620b44171 Supervisore{n}"{wait 5}...{wait 5}Oltre questo punto c'è{n}il paddock dove i{p}concorrenti tengono i{n}Gear.{p}Per evitare imbrogli,{n}l'accesso non autorizzato{n}è vietato. Restate{n}indietro{wait 5}..."
@@ -1068,6 +1087,7 @@ f221-0223 78781f4121512fa7 Receptionist{n}"La pratica rende perfetti!{p}Le consi
 f221-0224 1cd82534f5d67c8c Receptionist{n}"Così vicino, eppure{n}così lontano! Peccato!{n}C'era quasi!"
 f221-0225 572371b0b96702e0 Receptionist{n}"È stato un bell'incontro!{n}Potevate vincere tutti e{n}due! Ora si impegni di più{n}per rifarsi!"
 f221-0226 aba2085fa4b54aac Receptionist{n}"{wait 5}...{wait 5}Lei è un pacifista?{n}{wait 5}...{wait 5}O non sa come{n}pilotare un Gear?{p}Deve conoscere i comandi di{n}base, quindi forse dovrebbe{n}provare la nostra Modalità{n}Allenamento!{p}Parli con la ragazza al{n}banco accanto al mio."
+f221-0227 6bc1e8e522d71ad2 Receptionist{n}"Senza fare niente non{n}si vince!{n}Prima deve allenarsi{n}per prenderci la mano!"
 f222-0000 a7945fccbff8ae27 Guardiano{n}"Oltre questo punto c'è{n}il paddock dove i{n}concorrenti tengono i Gear.{p}Spiacente, ma per evitare{n}imbrogli dei piloti,{n}l'accesso{n}non autorizzato è vietato."
 f222-0002 51c34bd9163128aa Informatore{n}"Che cosa ti spiego?"{wait 15}{n}{speed 255}    Cos'è il Battling?{n}    Comandi di base?{n}    No, grazie!
 f222-0003 b383ff553ad6177a Addetta cambio BP{n}"Posso esserle utile?"{n}{speed 255}    Punti Battaglia attuali{n}    Cosa sono i BP?{n}    Scambio oggetti{n}    Niente, grazie!
@@ -1418,6 +1438,7 @@ f224-0026 2fcc7b8fabfcec5f Citan{n}"La scossa di prima e{n}quell'eco{wait 5}...{
 f224-0027 0f9d4471d0778da0 Rico{n}"Assurdo!!{p}Come hanno superato la{n}rete di difesa aerea{n}imperiale?"
 f224-0028 83eadd0a28b46391 Citan{n}"Non lo so.{wait 15}{p}L'unica cosa che mi viene{n}in mente è che abbiano{n}usato qualche tecnologia{n}speciale per{p}non essere visti."
 f224-0029 5001845d1826b4d5 Fei{n}"{wait 5}...{wait 5}Qualunque cosa sia,{n}non possiamo ignorarla.{n}Doc,{wait 5} io vado."
+f224-0030 d8239e898c3a7b3d Citan{n}"Capisco.{p}Nella situazione attuale{n}credo di poter uscire{n}da solo.{wait 15}{n}Vai pure,{wait 5} Fei."
 f225-0000 c140446aaa247d62 Rico{n}"{wait 5}...{wait 5}Perché?{wait 15}{n}Perché sei qui?"
 f225-0001 def9c1b0eb04f4f0 Fei{n}"Per riprendermi questo.{wait 15}{n}Non è che sia venuto qui{n}a salvarti{wait 5}...{wait 5} {p}L'ascensore che ho preso{n}per fuggire mi ha portato{n}nell'arena. Ho visto che{n}ti stavano attaccando.{wait 15} Per{p}questo ti ho salvato{wait 5}...{wait 5}{n}niente di più."
 f225-0003 f765296cd01b472c Fei{n}"Pensala come vuoi{wait 5}...{wait 5}{p}Allora,{wait 30} che cosa{n}farai adesso?"
@@ -1430,7 +1451,9 @@ f225-0011 a291def74bd19bd6 Fei{n}"{wait 5}...{wait 5}Hmn?{n}Cos'è{wait 5}...{wa
 f225-0012 885ff669622b87d6 Fei{n}"Un{wait 5}...{wait 5}rombo?{wait 15}{n}Cos'è{wait 5} questa vibrazione?"
 f225-0013 a033f64ebe682118 Rico{n}"Questa vibrazione{wait 5}...{wait 15}{n}È{wait 5}...{wait 5}no?{wait 15} Non viene{n}dal terreno."
 f225-0014 1fc66117ca306560 Rico{n}"È una{wait 5}...{wait 5}vibrazione{wait 15}{n}nell'atmosfera?"
+f225-0015 a8f875bd6466f6b0 Fei{n}"...Accidenti. Non{n}promette{n}niente di buono."{done 90}
 f226-0000 d286561dc74c5062 Agh...sob...uuuuhh...{n}Era un così bravo{n}ragazzo...{n}Chi l'avrebbe mai...{p}Cosa dovrei dire alla{n}sua famiglia...?
+f226-0001 58fd157463884f46 Kyaaaaaah!{n}Qualcuno lo prenda!{n}È la cena di stasera.
 f227-0000 ed3e58fb7e412f3b Che da fare, che da fare.{done 30}
 f227-0001 3762f25b1c181408 Una guerra?{n}Qui dentro è sempre{n}guerra.
 f227-0002 a720d64fbc82e77d Qui siamo a corto{n}di personale.
@@ -1439,6 +1462,7 @@ f227-0004 808adbf2597ddf9c Ehi, sai qualcosa{n}della battaglia{n}...a Lahan?{p}N
 f227-0005 87f886d6471c5491 ...Tornerà,{n}lo so che tornerà...
 f227-0006 7e28ce9fef7c7280 Il mio papà è andato in{n}guerra...{p}Vorrei che tornasse.
 f227-0007 5faee56fbff8ab73 Ho fame
+f227-0009 3ba6c1c2f023ef09 Non c'è niente di{n}utile...
 f228-0000 6751e79a34af7c44 Fei{n}"Usando questa gru come{n}trampolino..."
 f228-0001 1302d045c663c60b Fei{n}"Cos'è questo...?"
 f228-0003 5c560b7b544ed224 Fei{n}"Che spavento..."
@@ -1480,6 +1504,7 @@ f229-0022 a2adbb1d82be5adb Io...{wait 30}non sono umano?{n}...Allora tu non sei{
 f229-0023 632407a992fe0b47 !!{wait 30} Uaaaaahh! Mamma,{n}la mamma è...{done 30}
 f229-0024 45693d55d5ba5e78 ...Mamma...{wait 30}{n}Io...
 f229-0025 45f2528dd158ee88 Io?
+f229-0026 d1e3e09ae770081d Io sono...?
 f230-0000 da073735652f16ce Citan{n}"Ormai Hammer dovrebbe{n}essere riuscito a{p}procurarsi quelle{n}notizie."
 f230-0001 4d0dc61ddb4852f7 Citan{n}"Andiamo a dare{n}un'occhiata al Wildcat."
 f230-0002 06aa8e3271f52be6 Rico{n}"Non c'è nessuno."
@@ -1510,6 +1535,7 @@ f230-0028 602ee50866a35099 "...uuuh...uuuh..."
 f230-0029 6829e0cd818164ac "...uuuh...uuuh."{done 30}
 f230-0030 8417ae60566e5565 Avvio della{n}decontaminazione.{done 30}
 f230-0031 a495fd8f5c11ee8b Attendere nella{n}zona centrale.{done 30}
+f230-0032 bc7c46b32634a4ae Decontaminazione{n}completata.{done 30}{n}ompletata.{done 30}
 f231-0001 89e38dc88e9616f3 Rico{n}"No.{n}Giù non va bene..."
 f231-0002 8fb874a283ff8d36 Rico{n}"Per ora mi nascondo{n}là."
 f231-0003 a93a399038c4cfab Rico{n}"Ehi!{n}Il Kaiser ti chiama."
@@ -1534,6 +1560,7 @@ f231-0023 3b5b35c6014abdd6 Sigmund{n}"Buona giornata."
 f231-0024 125a01d37e8f1c7b Ottimo lavoro.{n}Questa è la sala{n}comando tattico.
 f231-0025 d7786a5e425f70ef Ben fatto.{n}Sul lato destro si arriva{n}al terzo corridoio del{n}seminterrato.
 f231-0026 ec9aa441dca2dfa8 Bene.{n}Sopra di noi ci sono il{n}ponte, la stanza del{n}Kaiser e altre strutture.
+f231-0027 29f055a998cbde6d Soldato{n}"Questo è il Distretto{n}Centrale.{p}La stanza del Kaiser si{n}raggiunge con questo{n}ascensore e le scale{n}dell'ala ovest."
 f232-0000 a05d919d540aeda0 A che è servita tutta{n}quella guerra tra noi{n}e Aveh?{p}Dev'essere stata Solaris{n}a manovrare tutto...
 f232-0001 2e5ed74e6037a682 Ad Aveh ci sono movimenti{n}sospetti. Potrebbero{n}attaccare da un momento{n}all'altro.
 f232-0002 682c23190cb61096 ...Avrei voluto vedere{n}il Goliath in azione...
@@ -1548,10 +1575,12 @@ f232-0010 5aef91779d2e493d Chi l'avrebbe detto che{n}un pirata in lotta con{n}Av
 f232-0011 0be4f68124180dbe Aveh e dei pirati si sono{n}scontrati al confine.{n}Lì è successo qualcosa{n}di grave.
 f232-0012 f9a454e39aa16828 Oggi faccio manutenzione{n}ai Gear nell'hangar...{wait 40}{n}Ma sono solo Gear da{n}combattimento.{p}Tanta gente entra ed esce{n}senza autorizzazione.{n}Si guadagna bene.
 f232-0013 072f49967f987600 Alla fine, l'unico modo{n}per finire questa guerra{n}è colpire Solaris.
+f232-0014 59bfb393941a424e Attualmente Aveh ha un{n}governo fantoccio.{p}È Ramsus, un ufficiale di{n}Gebler, a detenere il{n}vero potere.
 f233-0001 99dcce053f9cd1ed Non dire a nessuno che{n}tengo un animale quaggiù.{p}L'ho trovato alla{n}periferia{n}di Lahan, in fin di vita.{p}Ma guardalo adesso.
 f233-0002 9b7fabedce8f351c Se n'è andato...{wait 40}{n}e...ha lasciato questo.
 f233-0003 13a9c595d00dee8f ...Questo qui,{wait 30} per quanto{n}glielo dica, non capisce...{n}Ehi! Lui,{wait 30} lui è...{n}Dannazione...{wait 30}sob...
 f233-0004 e7fb77390824c9fc Se n'è andato...{p}Il suo cane continua ad{n}aspettare che torni a{n}casa, all'ingresso,{p}lo aspetta sempre{n}...sempre.
+f233-0005 276536c76dab1b04 "Ehi, sono...delle{n}crocchette"
 f234-0000 e5b03564ce683a8c Associato{n}"Qui Soldato 0."
 f234-0001 1c5bc6dffbc76367 Associato{n}"Qui Soldato 1."
 f234-0002 a01eed7f40b4ffd0 Associato{n}"Qui Soldato 4."
@@ -1577,6 +1606,7 @@ f234-0021 f5553aaae1c94d55 Sigmund{n}"Non lo so neanch'io.{p}...Ma abbiamo ancor
 f234-0022 9bd3460fe79df44a Associato{n}"Qui Associato."
 f234-0023 29e5b9721446f4a4 Associato{n}"Che cos'ha detto?"
 f234-0024 06f3ec6139ba2a4a Associato{n}"Il Blocco D?{n}Chissà perché?"
+f234-0025 a3f496a099262241 Associato{n}"Sì, signore..."
 f235-0000 085180cb73c8b9f2 Capitano{n}"La nostra guerra non è{n}ancora finita.{p}Il Distretto Centrale{n}esiste per combattere il{n}vero nemico."
 f235-0001 94005303cac286b1 Capitano{n}"Quando potremo usare la{n}nostra vera forza...?"
 f235-0002 65df627d41b5b643 Perché credi che qui ci{n}sia un ponte di comando?{n}Hah hah hah?
@@ -1600,6 +1630,7 @@ f235-0019 656828b7d5c12a14 Anche i soldati senza nome{n}hanno una vita da vivere
 f235-0021 4375e80a016840ae Ah, la manutenzione dei{n}Gear...?{p}Ho lasciato quel lavoro.
 f235-0022 91abadc44756ae8a Non voglio andare nel{n}Blocco D. Ho brutti ricordi{n}di quel posto.{p}E poi mi rimanderebbero{n}giù se scoprissero che{n}sono arrivato fin quassù.
 f235-0023 a4cab6d3b9cc9bee Un Gear ha decimato{n}un'unità d'élite di Gear{n}a Lahan.
+f235-0025 56a79b8eb191a218 In realtà, c'è stato un{n}sopravvissuto di Lahan.{p}Ma pare che stia avendo{n}un esaurimento nervoso.{n}Cosa sarà successo lì...?
 f236-0000 56407d208c32c9bc Fei{n}"Ehi! Sei lì dentro?{n}Apri.."
 f236-0001 aa1102893bb2df47 Fei{n}"Che ti salta in mente,{n}entrare di nascosto nel{n}Distretto Centrale?{p}Non va bene...{n}...!? {wait 30}Cosa?"
 f236-0002 0012573b58a1bf70 Rico{n}"!?...{wait 30}Questo odore..."
@@ -1610,6 +1641,7 @@ f236-0007 4e0148738ec0bac1 Rico{n}"...{wait 30}L'ho già visto..."
 f236-0008 69d496f6735a4104 Rico{n}"...Quand'è che{wait 30}...è{n}stato..."
 f236-0009 621528f1d5f52d23 Rico{n}"Eh? Cos'è questa{n}stanza...?"{done 40}
 f236-0010 cc90857ab1766166 Sigmund{n}"Che cosa siete...{p}!? {wait 40}Come avete fatto{n}a entrare qui?{p}Dunque, mutante, eri{n}tu..."
+f236-0011 98d69f31dbff7920 Sigmund{n}"Mph.{wait 40}{n}Se non avete altro da{n}dire, andatevene."
 f237-0000 0031e0dcb1619daf Fei{n}"Tu...?{wait 20}{n}Come fai a conoscermi?"
 f237-0001 81ea70b0a7d0ebfa Fei{n}"Ehm, no...{wait 40}{n}Non stavamo..."
 f237-0002 2bfe5e073e11fec2 Fei{n}"Eh?{n}Che vuoi dire?"
@@ -1896,6 +1928,7 @@ f242-0014 aa50d3f0dfa94ff2 Rico{n}"Dove possiamo usarlo?"
 f242-0015 24c4bffd2dbba4f0 Rico{n}"Forse questo..."{done 20}
 f242-0016 367b948f78fb13a8 Fei{n}"Non quello...{n}Ehm, questo...!"{done 30}
 f243-0000 6984f8d6ddb960b0 {wait 5}...Dove{wait 5}...{wait 5}mi{wait 5}...{wait 5}trovo{wait 5}...?{done 60}
+f243-0002 308053b3a24e1482 Non dovresti essere qui.{done 60}
 f244-0000 6d7451e6cfb0e36f Fei{n}"Cos'è quello?"
 f244-0001 845a0405f56da3b1 Citan{n}"Fei, è un attacco aereo{n}di Aveh, o dovrei dire,{n}di Gebler!{p}Sono davvero decisi ad{n}attaccare la capitale{n}imperiale..."
 f244-0002 27b87a973609f17a Fei{n}"Cosa!?{n}E i civili?"
@@ -1942,6 +1975,7 @@ f245-0039 8da0ae3da537f4ff Elly{n}"Non preoccuparti.{n}Il mio Gear viene da{n}So
 f245-0040 b14c51a480b04794 Fei{n}"Elly! Che stai{n}facendo? Se continui{n}così, tu...!"
 f245-0041 d30d5f62625529c1 Elly{n}"Ma...{wait 10}...{wait 10}cos'altro{n}possiamo fare?{p}Almeno ridurrà{n}i danni.{n}...{wait 10}...{wait 10}Scusa.{p}È meglio che non fare{n}niente."
 f245-0043 310d56d4b2ee7217 Elly{n}"...{wait 60}{n}Resisti ancora un po'!{n}Ti prego!"
+f245-0044 5d3725390f8afa1b Elly{n}"{wait 10}...{wait 10}!{wait 30}{n}È{wait 10}...{wait 10}la fine{wait 10}...?"
 f246-0000 97d5e66bc948c9cc Broyer{n}"Eh? Chi è quello?{n}Non sono i pirati{n}di Aveh?"
 f246-0001 288c149299512713 Elly{n}"!? Quello è...{wait 10}...{wait 10}...{wait 10}{n}Fei!{n}Ma che...!?"
 f246-0002 77148192f188d1ea Stratski{n}"Ehi, questa è Kislev!{n}Che ci fa lui qui?"
@@ -1951,6 +1985,7 @@ f246-0006 c9a786315392b09e Broyer{n}"Non c'è due senza tre!{n}Prendiamoli!"
 f246-0007 41fb10683e84b6c4 Elly{n}"Ah!{n}Aspettate!"
 f246-0009 84b82d5715d4c52b Renk{n}"Dall'ultimo scontro ho{n}capito che Lei è amica{n}del pilota di quel Gear.{p}Ma non possiamo proprio{n}fermarci. Non importa{n}che stiamo scortando{n}l'Hecht.{p}Voglio batterlo, non da{n}soldati nemici, ma da{n}rivali in gara...{p}Siamo le forze speciali{n}Gebler e non ci faremo{n}battere!"
 f246-0011 d5ef3ac90da4aa88 Renk{n}"Scusi, ma devo{n}suonargliele. {n}Obiezioni?"
+f246-0012 41aeff98132f57f7 Elly{n}"Io..."
 f247-0000 5e05c545ec691380 Citan{n}"Tutti quanti, di qua!{n}Presto!"
 f247-0001 481c303d65b6c411 Hammer{n}"Maestro, ci sono persone{n}laggiù che non riescono a{n}uscire! Siamo spacciati!"
 f247-0002 f1a6d46e2a930dca Citan{n}"Non arrenderti, Hammer!{n}Anche Fei sta combattendo!{p}Fei{wait 10}...{wait 10}non vuole più vedere{n}degli innocenti perdere la{n}casa, la città, le persone{n}a loro care..."
@@ -1984,8 +2019,10 @@ f248-0011 8f5d4b5b34c8c1d9 Fei{n}"...{wait 10}Non importa."
 f248-0012 bd629a9e05f8bc69 Elly{n}"Riesci a{wait 10}...{wait 10}{n}...{wait 10}perdonarmi?"
 f248-0013 6ecb7485c2b1a46d Fei{n}"...{wait 10}Non è colpa tua,{n}Elly.{wait 10}{n}Non è colpa tua{wait 10}..."
 f248-0015 ad1ae52c219591b6 Fei{n}"Elly, {n}torniamo indietro."
+f248-0016 9539b590ef2b2167 Elly{n}"...{wait 20}'Quella persona'{wait 20}{n}dove{wait 10}..."
 f250-0000 b05561782a8740e3 Fei{n}"!{wait 30}{n}Ehi..."
 f250-0001 f35ec9efc33befc1 Questo è il negozio{n}automatico di Gear.
+f250-0002 e8e6ccc4e4321da4 Grazie, speriamo di{n}potervi servire ancora.
 f251-0000 bb84a56e07cb80ac Citan{n}"Sembra che ci sia gente.{n}Forse è meglio non{n}entrare da qui..."
 f251-0001 5fb02b64ebf25418 Citan{n}"Arriva qualcuno.{n}Nascondiamoci."
 f251-0002 711b8bc92b8401b6 Ogni giorno lavoro,{n}lavoro,{n}lavoro. Non succede mai{n}niente di divertente qui?
@@ -1995,6 +2032,7 @@ f251-0005 44dedba70225840c Già. Ci vuole proprio,{n}ultimamente lavoriamo{n}tro
 f251-0006 0c6dda61cd9c3e73 È chiusa a chiave.
 f251-0007 235b0b42ab9cc9d0 È già aperta.
 f251-0008 5a8e8b2042ff5ff9 Usato il Passe-partout.
+f251-0009 06155fd251bf0581 Non hai la chiave.
 f252-0000 d6d49783f60f522f  {n} Ricevuto: Minigear.
 f252-0001 71a02e65c59c8f24 Quelli della sicurezza{n}hanno un sacco di tempo{n}libero. Beati voi.
 f252-0002 05d49b3ec1b7935d Eh? Oh, ehm, no, n,{n}niente.
@@ -2005,8 +2043,8 @@ f252-0006 7bbe5b294d1afdc0 Ladro!!
 f252-0007 ff30d07361cc3371 La gente crede sempre che{n}abbiamo tempo da vendere.
 f252-0008 b82234266565ec5f Comunque, che stavi{n}facendo laggiù?
 f252-0009 07f840d2384e5799 Oh...be', lascia stare.
+f252-0010 354f84d3a720bc5b Non c'è nessuno.
 f253-0002 481e733ff4f5f1fc  {n} Ricevuto: Antiraggio.
-f254-0000 354f84d3a720bc5b Non c'è nessuno.
 f254-0002 27b6b66895fa6433 Aaahhh lascia perdere!
 f254-0003 ba8f20b6b7128aa8 Che fai?{n}Ce ne andiamo.
 f255-0001 0984002128f67145 Citan{n}"Ehi...Fei, aspetta un{n}momento."
@@ -2020,13 +2058,17 @@ f255-0008 60fbe5b2c18b6ee9 Sissignore.
 f255-0009 ea8b6bbe01eb79af Così dovrebbe andare...
 f255-0010 402493952bfda6f4 Eeeehi, avete sentito?{n}Lo scontro tra l'ex{n}campione e la bestia{n}sta per cominciare.
 f255-0011 a3af03b15be061d9  {n} Ricevuto:{n}Passe-partout.
+f255-0012 e4b2481051adc90f  {n} Ricevuto: Telaio HP30.
+f256-0001 ec456fa8e4004c97  {n}Ricevuto:{n}{item}
 f259-0000 c2dbaf03e5cfce9b Dare un'occhiata?{n}    Sì{n}    No
 f262-0000 166824aa57da9721 Hammer{n}"Pare che escano dei{n}brutti ceffi. Darò una{n}mano anch'io.{p}Cosa vuoi fare?"{n}    Cambia gruppo{n}    Negozio{n}    Niente
 f262-0001 f6f29dd9add99cd8 Hammer{n}"Be', buona fortuna. Vi{n}raggiungo più tardi."
 f262-0002 1a3e1dc96c318409 Hammer{n}"Muahahah! Ehi fratello,{n}ti ho già aperto io{n}le serrature.{p}Cosa? Il Gear? Nah, non{n}badare ai dettagli.{n}Io sono l'uomo delle info!{p}Non c'è niente fuori dalla{n}mia portata.{p}Però, sai, non ci sono{n}nemici in giro.{n}C'è qualcosa di sospetto.{p}Ah sì, puoi cambiare il{n}gruppo e anche fare{n}acquisti.{p}Ti serve qualcosa?"{n}    Cambia gruppo{n}    Negozio{n}    Niente
+f262-0003 09b736595149b384 Hammer{n}"Fateli a pezzi. Vi{n}raggiungo più tardi."
 f265-0000 eb38cfce31ac2325 Hai troppe {n}Mica.
 f265-0001 502dc84a071d285d  {n} Ricevuto: Mica.
 f265-0002 b52b78c40caf73c7 Hai troppe {n}Pepite d'Oro{n}da portare.
+f265-0003 1f1258f0cab45726  {n} Ricevuto: Pepita d'Oro.
 f269-0000 7262fd25d5bf4b25 Fei{n}    Aiuto anch'io!{n}    Ehm, meglio di no...
 f269-0001 28258cbc2602b4fb Fei{n}"Doc, sai come{n}si manovra!?"
 f269-0002 e2c3b78c11d26e83 Ehmmm...
@@ -2049,6 +2091,7 @@ f269-0019 8b2944c2d3256448 Elly{n}"Quindi erano così{n}vicini a renderlo{n}oper
 f269-0020 755baad7449bb894 Elly{n}"Fei, andiamo."
 f269-0021 db336694a9bd524e Hammer{n}"Fratello, questo affare è{n}incredibile... Accidenti{n}che emozione."
 f269-0022 9b57dba4201675f1 Hammer{n}"Ci siamo quasi, fratello.{n}Sono un po' nervoso."
+f269-0023 0c45f133753e1c64 Hammer{n}"...{wait 15}{n}un po' prima..."
 f270-0000 dc4b2273012c661e Sto scivolando{done 40}
 f270-0001 35c4f46e12410e6c Hammer{n}"Aiiiiiiiiiuuuutoooooo!!"
 f270-0002 ef2876b976abc8f2 Fei{n}"Sì{wait 5}..."{wait 80}
@@ -2104,8 +2147,10 @@ f270-0058 f706ed1d65e1119f Rico{n}"Argh! Smettila di{n}cincischiare. Andiamo."
 f270-0059 12dad922ce18c4fd Hammer{n}"Sissignore!!"
 f270-0060 59109e052b3dcf32 Citan{n}"Allora...dove saranno{n}finiti..."
 f270-0061 20482f2aeade9284 Citan{n}"!!{wait 20}{n}Quella nave{wait 10}...{wait 10}"
+f270-0062 273382d2804ff124 Citan{n}"Sigurd{wait 10}...{wait 10}{p}Credo che tu debba{n}rivedere il tuo modo{n}di educare{wait 10}...{wait 10}"
 f271-0000 5482340ad39f2407 Bart{n}"Ah ah ah!!{n}Questa è la potenza del{n}Missile Bart!!{p}Nemmeno il prototipo di{n}Kislev può resistergli!!"
 f271-0001 18e73167faadd138 Bart{n}"...Ehm,{n}ehi{wait 10}..."
+f271-0002 5fa3271cfa0d0a6a Bart{n}"S-stai indietro{wait 10}...{wait 10}{n}Stammi lontano!!"
 f272-0000 4c57e1b25f890189 Ramsus{n}"Revocate lo stato di{n}allerta.{p}Iniziate subito{n}riparazioni e{n}rifornimenti."
 f272-0001 6f2223b6bf88939c Miang{n}"Il Primo Ministro e il{n}generale Vanderkaum sono{n}qui per vederla,{p}Comandante."
 f272-0002 bedf73ec4055b20a Ramsus{n}"Hmph, che{n}accoglienza squallida."
@@ -2149,6 +2194,7 @@ f272-0040 5d227ff50cfcd0a5 Avviare la procedura{n}di attracco. {done 50}
 f272-0041 9a7c76e207b5e88d Scafo bloccato. {done 50}
 f272-0043 884085e4eadd0223 Scafo, tutte le sezioni{n}bloccate. {done 50}
 f272-0044 d2180544dc8f910d Attracco completato. {done 50}
+f272-0045 3d1623415683fca9 Distribuzione gravità{n}normale. Spegnimento del{n}sistema di propulsione. {done 50}
 f273-0000 6a9056c2e099cdf5 Prima del {n}previsto{wait 5}...
 f273-0001 5e8a6b775c812321 Il risveglio{n}dell'intoccabile{wait 5}...
 f273-0002 d251ac3d58f59861 Sono passati 3 anni{n}dalle ultime notizie.{p}Secondo il Cubo Memoria,{n}'lui' ora si trova a{n}Nortune, la capitale{n}imperiale di Kislev.
@@ -2419,6 +2465,7 @@ f273-0276 1e51160485b0bec1 Krelian{n}"Non sono andato contro di{n}lei.{wait 20} 
 f273-0277 30789751b2cf747b Credi{wait 5}...{wait 5}di{wait 5}...{wait 5}poter{wait 5}...{wait 5}{n}eli{wait 5}...{wait 5}minar{wait 5}...{wait 5}ci{wait 5}...{wait 5}{n}e{wait 5}...{wait 5}poi{wait 5}...{wait 5}far{wait 5}...{wait 5}{n}...{wait 5}rivi{wait 5}...{wait 5}vere{wait 5}...{wait 5}dio{wait 5}...?
 f273-0278 feb342696e38c47f Krelian{n}"Si può fare.{p}I vostri geni furono{n}dispersi per mantenere in{n}vita il mondo dopo la{p}'Caduta' nei giorni della{n}distruzione.{p}Quei geni vivono ancora{n}oggi negli esseri umani.{p}I vasi -Anima-{wait 5}...{wait 5}{n}e i destinatari del loro{n}allineamento,{wait 5} gli{n}-Animus-{wait 5}...{wait 5}{p}e anche la {wait 5}-Persona-{wait 5}...{p}Combinandoli con le mie{n}nanomacchine, gli umani{n}diventeranno esseri{n}viventi quasi pari a voi.{p}Anzi, potrebbero superarvi{n}di molto come degne{n}interfacce terminali{n}di dio.{p}Perciò non mi servite più.{wait 15}{n}-Deus-,{wait 5} la manifestazione{n}fisica di dio,{wait 5} vuole solo{n}risultati{wait 5}...{p}I mezzi per lui sono{n}insignificanti{wait 5}...{wait 15}{n}Ecco il mio 'Piano Arca'{wait 5}...{wait 10}{n}Il mio {wait 5}-{wait 5}Progetto{wait 5} Noè{wait 5}-{wait 5}!"
 f273-0280 edbbf4cf78c3f8ff Krelian{n}"Che tutte le vostre pene{n}abbiano fine.{wait 15} Riposate in{n}pace{wait 5}...{wait 10}{p}antenati dell'uomo{n}mortale!"
+f273-0281 a43fbc6592323048 Krelian{n}"Ora,{wait 5} siamo solo{wait 5}{n}tu{wait 5} e{wait 5} io{wait 5}...{wait 15}Sophia!"
 f274-0000 b311de29c37d5405 Permettere il contatto con{n}Shevat{wait 5}...{wait 5}...
 f274-0001 ad721c641b43bc0c Non solo Shevat.{n}La sconfitta a Ignas,{n}la ritirata al Thames.{p}E sì, perfino Elru,{n}tu{wait 5}...{wait 5}...
 f274-0002 a11b2371b70dd73e Inetto...{n}come sempre{wait 5}...{wait 5}...
@@ -2560,6 +2607,7 @@ f284-0009 01c8e5991d6f36b2 Maitreya{n}"Eh? Ah, ah, ah, ah..."
 f284-0010 57951b7e0199fd24 Maitreya{n}"Be',{p}signorino...le promettiamo{n}che questa battaglia{n}servirà a qualcosa!"
 f284-0011 c9b0ee09fea62667 OK!{done 32}
 f284-0012 d46052413f88c8c1 Sono carico!{done 32}
+f284-0013 881517a296ffd9f9 È finalmente giunta{n}l'ora.{done 32}
 f285-0000 6ad4ae64bc6f24e2 Sigurd{n}"Marguerite si sta{n}sforzando troppo.{p}Signorino, dovrebbe essere{n}più gentile con lei."
 f285-0001 c0f51a4e036100da Sigurd{n}"...Resterò qui ancora{n}un po'. Ho alcune cose{n}su cui riflettere."
 f285-0002 51548b9215bdb66b Sigurd{n}"Citan?{n}No, non l'ho visto...{p}Non deve preoccuparsi{n}per lui. Starà bene."
@@ -2574,6 +2622,7 @@ f285-0012 e6c9368f584b4a93 Margie{n}"Ma...la nonna e la mamma{n}erano già state
 f285-0013 7c1bed9d40d1aae3 Margie{n}"Scusate...{wait 32}se vi ho{n}coinvolti tutti. Non lo{n}farò mai più..."
 f285-0014 9604333b4f60503a Margie{n}"Sì...{wait 32}{n}Lo farò."
 f285-0015 aa7eb09f3b955f73 Maison{n}"La prego, non sia{n}così duro con lei...{p}La Setta di Nisan è la{n}casa della signorina{n}Marguerite. È del tutto{n}comprensibile."
+f285-0016 c55cd3e6aed4267e Maison{n}"In ogni caso, la{n}signorina Marguerite è qui{n}illesa.{p}È questo che conta!{p}Prima che la fortuna ci{n}abbandoni, portiamola a{n}Nisan. Lì potremo{n}parlarne meglio.{p}Ora vado a preparare la{n}sua stanza...{wait 10}{n}Signorina Marguerite, mi{n}vuole accompagnare?"
 f286-0002 f266f596dce5579b Fei{n}"Doc!{n}Che cos'è..."
 f286-0003 a0b26d4107daede7 Fei{n}"Ipnosi...?"
 f286-0004 65539548385a0e25 Bart{n}"Non capisco. Almeno{n}quando l'ho vista lassù,{p}non aveva gli occhi{n}di una traditrice."
@@ -2598,6 +2647,7 @@ f286-0024 dc6c5b3744b8b9e4 Che c'èèè? Martle? Eh?{wait 32}{n}Ma?
 f286-0025 3a462a5e18cf5063 Ehi, signorina.{p}Ho sentito che ti avevano{n}catturata. Stai bene?
 f286-0026 6b05a3491b86969f Buono, Martle!{n}È solo la ragazza di{n}Solaris. Non c'è{n}bisogno di abbaiare!
 f286-0027 fe0aff4d582ac1cd ...Oh?{wait 32}{n}Ah, capisco.{n}Scusa.
+f286-0028 cbccd01caba49e6a C-cosa succede?{p}Signorino,{n}l'ha fatto di nuovo?
 f287-0000 292462add4fd35a5 Comunque sia...{wait 32}{n}Non c'è verso che lo{n}lasciamo a quel{n}tizio, Shakhan...
 f287-0001 3dae2508ab033724 Artigliere!
 f287-0004 58d16093a1b5e374 Le unità di Maitreya sono{n}in attesa alle catapulte.{p}Potranno decollare tutte{n}un minuto dopo{n}l'emersione!

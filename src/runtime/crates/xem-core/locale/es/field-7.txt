@@ -9,13 +9,16 @@ f700-0007 bc8bdaff3c3ac114 Citan{n}"Sí, bueno, al principio{n}había perdido la
 f700-0008 f4e54ff8f31e0f32 Zephyr{n}"La nieve sigue cayendo...{wait 20}{n}Cubriendo suavemente todo{n}lo que hay en este mundo...{p}Nuestra pena, nuestra{n}impureza, nuestros{n}errores...{wait 20} Ojalá pudiéramos{n}borrarlos así de fácil...{p}¿Qué hemos...{wait 20}qué he...{wait 20}{n}estado haciendo...{wait 20}{n}buscando...{wait 20}{n}en estos 500 años?"
 f700-0009 dd254ca5c8c68f9f Zephyr{n}"Por cierto...{wait 20}{n}¿Cómo está la persona que{n}rescataron de Merkava?{p}Supe que había recobrado{n}el conocimiento..."
 f700-0010 a144287976b8b188 Zephyr{n}"Estoy segura de que él{n}desea lo mismo."
+f700-0011 07670a5fa825aadf Zephyr{n}"Fei...{n}¿Puedo preguntarle algo?{p}Sobre Elly...{wait 20}{p}¿Y si, aunque rompamos el{n}hechizo del Zohar, ella no{n}vuelve a la{n}normalidad...?"
 f701-0000 839b988fd14ae110 ¡Use esa espada y{n}hágalos pagar!
 f701-0001 524b1ffda61cf896 Soy un célebre experto en{n}armas de Gear...{wait 20}{n}Pero últimamente no hay{n}trabajo interesante...{p}Ya no quedan hombres con{n}agallas para pedirme que{n}les forje un arma con la{n}que combatir a Deus...{p}Si me trae una buena{n}espada, puedo forjarla y{n}convertirla en algo{n}realmente asombroso para{n}usted, cuando quiera...{p}¡Pero no trabajo para{n}nadie tan grosero como{n}para pedirme que revise{n}un arma que aún está{n}equipada en su Gear!
 f701-0002 edb2f0b5b578a9fb ¡Ohh... la Kishin!{wait 20}{n}Qué espada tan insólita{n}tiene usted.{p}¡Parece interesante!{wait 20}{n}¡Déjeme echarle un ojo!
 f701-0003 6f512672385fbfb1 ¡Quedó genial!{wait 20}{n}¡Fue como convertir{n}arados en espadas!{p}¡Use esta espada y{n}haga pagar a Deus y{n}a sus legiones!
 f701-0004 6238e62672a13f2f ¡La 'Hoja Kishin' ha{n}sido mejorada!
+f701-0005 1a141ae97cf27c59 ¡Recibes la 'Hoja Kijin'!
 f703-0000 ad3b74a194a5f3f0 Fei{n}"El mapa del interior{n}de Deus ya está{n}completo.{p}¡Bien!{wait 20}{n}¡Vamos, todos!"
 f703-0001 95cbca30483cf8d7 {speed 255}¿Quieres volver?{n}    Sí{n}    No
+f703-0002 7bec726c91fced8b Es 1006.
 f706-0001 a691e12391dd37ac Elly{n}"...!{n}¡Fei, mira!"
 f706-0002 9507459ca7a7cb12 Elly{n}"¿Crees que hay que usar{n}ese portal para bajar{n}al piso inferior?"
 f706-0003 09512eca49ae17af Elly{n}"Vamos allá, Fei."{n}    Saltar al portal{n}    Todavía no
@@ -74,6 +77,7 @@ f710-0010 2924880613fffb26 Dominia{n}"¡Se equivoca!{wait 20}{n}Solo pensamos en
 f710-0011 1a7876a2ae7397ec Ramsus{n}"¡¡Silencio!!{p}¡Al final, solo puedo{n}contar conmigo mismo!{wait 20}{n}¡Solo yo puedo{n}arreglar esto!"
 f710-0012 ebfe46aa0eb22eda Ramsus{n}"¡¡Este es tu fin!!{wait 20}{n}¡En guardia!{wait 20}{n}¡¡Allá voy, Fei!!"
 f710-0013 a36c46d5f799cc5b Fei{n}"¿Qué es esto{wait 5}...?"
+f710-0015 d99a35c81f39bb69 Ramsus{n}"¡¡Ghuuaaaahh...!!"{done 20}
 f711-0001 a79540d1ff019ab6 Aquí es donde nació Kahr.{wait 20}{n}Y donde se forjó su odio{n}hacia ti{wait 5}...
 f712-0001 0336e71d534bbbcb Citan{n}"¡¡Espera!!{wait 20}{n}¡Fei!{p}¡¡No liberes{n}el sistema!!"
 f712-0002 19a4213c2d1e512a Bart{n}"¡¡Citan, espera!!{p}¡Solo nos estamos{n}poniendo en peligro!{wait 20}{n}¡¡Larguémonos de aquí{n}por ahora!!"
@@ -108,6 +112,7 @@ f712-0030 12af78a2f01b2296 Maria{n}"¡¡Ah...!!{wait 20}{n}¿¡Qué es esto...!?
 f712-0031 f706c15068a48a83 Citan{n}"¿¡Son nuestros...{wait 20}{n}Omnigears!?"
 f712-0032 b146c71e5f454703 Citan{n}"¿¡Intenta separar las{n}Reliquias Anima de{n}nuestros Omnigears!?"
 f712-0033 ae48cf981b24349d Citan{n}"...{p}Parece que las Reliquias{n}Anima han caído en{n}manos del enemigo."
+f712-0035 47dfa1532b72a2fe ¿Quieres saltar dentro?{wait 20}{n}    Sí{n}    No
 f713-0001 7accf6fa91367417 Fei{n}"¡¡Ramsus!!"
 f713-0002 e44a683de3a1b4f3 Bart{n}"Fei, perdón por el{n}retraso.{wait 20} Nuestros{n}Omnigears se averiaron.{p}En fin, ¡démonos prisa{n}y salvemos a Elly!"
 f713-0003 9acd011674db7ac5 Rico{n}"Lástima que nos perdimos{n}la acción.{wait 20} Los Omnigears{n}fallaron por el camino.{p}En fin...{n}¡Rápido, salvemos{n}a Elly!"
@@ -129,6 +134,7 @@ f713-0021 d81a49cb50119e7e Miang{n}"¿¡Guhh...!?"{done 40}
 f713-0022 0ef3712159fd274e Miang{n}"Bien{wait 5}...{wait 5}{n}Así es como lo quería,{n}Kahr{wait 5}...{p}Mi destino es no poder{n}quitarme la vida yo{n}misma{wait 5}...{p}Ahora{wait 5}...{wait 5}todos{wait 5}...{wait 5}mis{wait 5}...{wait 5}{n}deseos{wait 20} se{wait 5}...{wait 5}han{wait 5}...{wait 5}{n}cumplido.{wait 30}{n}¡Gracias{wait 5}...{wait 5}a{wait 5}...{wait 5}ti{wait 5}...!"
 f713-0023 21ddc22097a07932 Ramsus{n}"¿Y yo{wait 5}...?{wait 20}{n}Mi existencia{wait 5}...{wait 5}{n}¿Qué propósito tenía?"
 f713-0024 fe4418b0553b0d50 Ramsus{n}"Yo... yo...{wait 20}{n}¿Para qué nací?{wait 20}{n}¿Para qué he vivido?"
+f713-0026 02d2c8387e626419 Ramsus{n}"¡¡Uh, uhaaaaaaaahhhhh!!"
 f714-0000 624277f620ec3d86 Fei{n}"¡Ghaah!"
 f714-0001 75761f3740e3895d Billy{n}"¿¡Me, me quitó{n}el arma...!?"
 f714-0002 1d239bc228e9bb04 Bart{n}"¿P, por qué{n}hiciste eso,{wait 20}{n}Elly...?"
@@ -171,9 +177,11 @@ f714-0038 5faa90eee3f293a1 Krelian{n}"Vamos...{p}Es la hora del{n}despertar de l
 f714-0039 56062cf78984d264 Fei{n}"Por favor{wait 5}...{wait 5}{n}espera{wait 5}...{wait 20}{n}¡Elly{wait 5}...!"
 f714-0040 fdff759c1f27a886 Elly{n}"Adiós{wait 5}...{wait 5}Fei.{wait 20}{n}Que tengas un{n}'despertar' apacible{wait 5}..."
 f714-0041 53634dff11477085 Citan{n}"¡Fei!{wait 20}{n}¡Aguanta, vamos!"
+f714-0042 6c8f1c2288a0888f Krelian{n}"La mayor parte de mi{n}cuerpo es una colonia{n}de nanomáquinas.{p}No solo para vivir más{n}{wait 5}...{wait 5}sino también para{n}unirme a la 'madre'{wait 5}...{p}Así que no hay de qué{n}sorprenderse. Este daño{n}puedo recuperarlo con{n}bastante rapidez."
 f716-0000 85b078a5b906c45f Fei{n}"Parece que este pozo{n}da al exterior.{p}Seguramente podamos{n}salir por aquí."
 f716-0001 49ee4f1e550da1c9 Fei{n}"Parece que este pozo{n}conecta de algún modo con{n}el exterior.{p}Pero no tenemos tiempo{n}para volver atrás.{wait 20}{n}Sigamos adelante, rápido."
 f716-0002 f3a3959a2517908f ¿Qué desea?{wait 20}{n}    Objetos de personaje{n}    Piezas para Gears{n}    Nada
+f716-0003 d6b76e1c735770fa ¿Qué desea?{wait 20}{n}        Objetos{n}        Piezas para Gears{n}        Salir al exterior{n}        Nada
 f717-0000 e98e2e85fed8468b Fei{n}"¿Necesitamos el poder{n}de {name 26}?"
 f717-0001 89755b178f36b761 Fei{n}"¿¡Esto{n}es...{wait 20}Deus!?"
 f717-0002 a53de67fa9b46b5a Fei{n}"...{wait 20}{n}Gracias a todos.{p}Atacar a Deus de frente...{wait 10}{n}o acabar primero con{n}sus soportes...{wait 10}{n}¿Qué será mejor?"
@@ -249,6 +257,8 @@ f717-0074 0e5a867aa71b1cb4 Emeralda{n}"Los dos..."
 f717-0075 3f92f33763cc4d71 Rico{n}"Vuelvan a casa..."
 f717-0076 0776e3cf40004bd0 {name 7}{n}"¡Los estaremos{n}esperando, chu!"
 f717-0077 8866afe53a73afc2 Fei{n}"Gracias...{wait 20}{n}Bart...{wait 20}{n}y a todos ustedes...{p}Bueno, más vale que{n}me vaya...{wait 10}{n}¡Pero no se preocupen!{n}¡Volveré pronto!"
+f717-0078 924f17120b76e3f2 Fei{n}"Supongo que este será el{n}último viaje que hagamos{n}juntos tú y yo...{p}Cuento contigo...{n}¡compañero!"
+f718-0000 9c2f167cef00725b {slow 3}¡¡Elly!!{done 250}
 f719-0000 2c055d42eb71178e ¿¡Dónde estoy...!?
 f719-0001 0320a917e8ca7396 ¡Es Elly!{n}¿¡Eso significa que{n}estoy dentro de Deus!?
 f719-0002 746ac9a47c3ff393 No exactamente.{p}Tu cuerpo real no es más{n}que un objeto físico...{wait 5}{n}Solo ha sido absorbido por{n}el caparazón exterior de{n}Deus.{wait 5} Aquí solo está{n}tu conciencia.{p}Por supuesto, la chica que{n}ves frente a ti tampoco{n}es un ser real.{wait 5}{n}Tu conciencia solo está{n}creando su imagen.

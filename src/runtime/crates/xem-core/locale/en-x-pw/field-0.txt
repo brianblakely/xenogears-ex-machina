@@ -53,6 +53,7 @@ f001-0076 76690a23b24e3d24 Oh, hello there, Fei.{p}Come to think of it,{n}it's a
 f001-0080 888243d0fd8ea508 Oh yeah, I forgot!{n}Here's some of my{n}homemade Aquasol!{p}I used my special{n}fertilizer in it so{n}it should work real{n}well! Haw haw haw!
 f001-0083 63db700571d996d8 It's a lot of work just{n}trying to raise crops.{n}But it's an excellent{n}feeling, Fei.{p}In this great open land,{n}new life emerges...{wait 20}{n}I'm not saying that's all{n}down to us.{p}It's just the land,{n}rain, and sun combining{n}together to nurture{n}these striving new lives.{p}We're only helping{n}them out.
 f001-0084 5eed9ebfc18e316c Pumpkinberry...{n}Applelily... Radish...{n}Hmmm,{wait 40} they all seem{n}good...
+f001-0086 69ce55906490ccd9 This is the general store.{wait 20}{n}Although they don't have{n}much of a selection...{p}But then again, we're out{n}in the country...{wait 20}so we{n}can't complain{wait 20} (too much).
 f002-0003 8df51d3141eb885b Citan{n}"Are you alright!?{wait 20} {n}What on earth are{n}you doing here!?{p}Do you not know{n}how worried Arle{n}and Timothy are!?"
 f002-0005 a155877b9e54bf3c Citan{n}"Fei is bound...{wait 20}{n}to God's dark,{n}cruel dream..."
 f002-0011 4f4d24a869ded15d Timothy{n}"Agh...!"{done 20}
@@ -79,6 +80,7 @@ f002-0043 6234aaa0d5307b1f Timothy{n}"I'll go look one more{n}time!{wait 20} Arl
 f002-0045 8fff181012ecbd69 Timothy{n}"...{wait 20}{n}But—"
 f002-0047 746362817e6bedad Timothy{n}"Okay!{wait 10} Arle, let's let{n}Doctor Uzuki and Fei{n}handle it from here!"
 f002-0049 126c8e60652400f0 Dan{n}"I'm sorry, Doctor Uzuki!{n}I got out of the village{n}earlier, but I came back...{p}...I just couldn't bear{n}the thought of leaving my{n}sister's wedding dress{n}behind..."
+f002-0052 523508d19cb5219c Fei{n}"*huff, huff*...{wait 20}{n}Damn you...!!"
 f003-0000 33b1ff61fd10eafc Uh...{wait 30} Ungh...?
 f003-0001 066c6aec38e93fb9 Fei{n}"Huh...?{wait 20}{n}Where am I...!?"
 f003-0003 245d8f4e2285ea56 Fei{n}"Doc...{wait 20} What the{n}hell happened...?{p}Where's Chief Lee,{n}Timothy, Arle...?{wait 20}{n}How did I get{wait 5}...?"
@@ -106,6 +108,7 @@ f004-0002 130c0dad4621c06b Ignis, the largest continent in{n}the world, sits in 
 f004-0003 c4fe3af5aab3a918 The chronic, habitual warfare{n}was soon to face a major change.{wait 30}{n}This was due to 'the Church',{wait 10}{n}caretakers of the world's culture,{wait 10}{n}offering to repair tools and{n}weapons excavated from the{n}ruins of an ancient civilization.{wait 30}{n}Both countries began excavating{n}these ruins and, to bolster their{n}military power, had the Church{n}repair the discovered artifacts.{wait 200}{wait 220}{wait 220}
 f004-0004 4d747db9b832bc67 The various weapons excavated{n}from the ruins dramatically{n}changed the form of warfare.{wait 30}{n}The outcome of battles between{n}the two countries was no longer{n}determined by man-to-man combat,{n}but by 'Gears' —{wait 10} giant humanoid{n}fighting machines —{wait 10} that were{n}obtained from deep within the{n}ruins.{wait 200}{wait 200}{wait 200}
 f004-0005 f9b40aaa15b71ee5 Eventually,{wait 10} after both fronts{n}continually turned the tides,{wait 10}{n}Kislev finally gained the upper{n}hand,{wait 30} owing their success to a{n}greater wealth of resources buried{n}within their ruins.{wait 30}{n}But suddenly, a mysterious military{n}force appeared on the continent of{n}Ignis.{wait 20} Called 'Geburah', this{n}force decided to make contact{n}with Av.{wait 200}{wait 200}{wait 200}
+f004-0006 55a28eefa89b6160 With the assistance of this Geburah{n}military force,{wait 5} Av was able to{n}recover from being hopelessly{n}outnumbered to being back on an{n}even standing with Kislev.{wait 30}{n}Then,{wait 10} taking further advantage of{n}its newly gained momentum,{wait 10} Av{n}started to annex Kislev territories{n}one after another,{wait 10} and showed{n}no signs of slowing down in{n}their invasion campaign.{wait 200}{wait 220}{wait 220}
 f005-0000 c25b193c2da1a358 Good day. {n}I'm the village consultant.{wait 20}{n}(But to tell you the truth,{n}the village chief knows far{n}more than I do...{p}However, the chief is an{n}awfully busy person, so{n}I've been placed in charge{n}of answering some of the{n}more mundane questions.)
 f005-0001 b40fed591c58df04 As a special for this week,{n}we're lecturing on our{n}super-duper self-defense{n}techniques.{wait 20} Wouldn't you{n}like to learn about them?
 f005-0003 3ea7e177e928463d {speed 255}    Explain battle commands{n}    Explain 'Defend' option{n}    Explain Action Points{n}    Explain 'Attack' option{n}    Explain 'Combo' option{n}    Nothing now, thanks
@@ -173,6 +176,7 @@ f007-0044 bfcd834be917ad0e Gyahahahaha!! Too bad, Fei!{wait 20}{n}You're a hundr
 f007-0047 2953004534873bdb Oh my, you did paper too.{n}Hmmm, I see...{wait 20}{n}Here we go again...{done 30}
 f007-0048 0458025fc1901a67 Take th—{wait 20}!! Hey! {n}You waited!! Foul!{n}You cheezy cheater!!{p}Only cowards do that.{wait 20}{n}The penalty's 15G.{n}C'mon, cough up!
 f007-0050 e29d0a9d5fdc6f3b Tch! Ya don't even have 15G!{wait 20}{n}What are ya, a pauper?
+f007-0051 1a644a0085a45020 Hmph. {n}Well, see ya later then.
 f008-0000 ecffbcbfecb2db02 Fei{n}"Lahan... I like it.{p}The village chief Lee{n}has taken such good{n}care of me...{p}Everyone in the village{n}has warmly accepted{n}me..."
 f008-0001 ce5214883466f1f5 Fei{n}"Wherever I might've{n}been born and raised,{n}Lahan is now my home."
 f008-0003 77557692294d8126 Fei{n}"But someday I'd like to{n}leave the village and try{n}to find my real home...{p}To walk upon the land where{n}I was born, to meet people{n}who know about me...{p}I want to be sure of who{n}I really am."
@@ -209,12 +213,15 @@ f009-0033 4ad4806a637c5573 Welcome, Fei.{n}You wanna have some fun?{wait 20}{n}I
 f009-0034 244afc6c1df4a223 Oh my, welcome, Fei!{n}You wanna have some fun?{wait 20}{n}I give the best service{n}in Lahan, you know!
 f009-0036 4e30eceea7c39a94 Gee, he's got sharp{n}hearing!{p}Anyway...{wait 20}{n}(Maybe next time, okay,{n}Fei!?{wait 20} I'll be waiting...{wait 14}{n}Rowrrr!)
 f009-0038 ac178d804a1987f3 There he goes again...{wait 20}{n}How could there be a{n}mermaid at the bottom{n}of a sea of sand?
+f009-0039 30eb5160ed320ca4 Huh, Fei?{n}You've never seen{n}the sea of sand?{p}The sea of sand...{n}it's a vast, swirling,{n}bottomless desert.{p}More than half the world{n}is the sea of sand.{wait 30}{n}I'm surprised you haven't{n}heard anything about it.
 f010-0000 a1c573d39c71c162 ...{wait 40}I wonder how{n}he's doing...{p}Av's so far away...{wait 30}{n}...{wait 30}{n}...*sigh*...
 f010-0001 f138c5844d91c150 I wouldn't need anything{n}else if only I could live{n}together with my family.{n}Just the three of us...{p}Why can't men understand{wait 20}{n}something so simple...?
+f010-0002 5ea249ea40ed508b ...*sigh*...{done 30}
 f011-0000 d916d4f9a862f9ab Arle's Aunt{n}"Why hello, Fei.{wait 20} Have you{n}come to visit our Arle?{wait 20}{n}She's upstairs right now.
 f011-0001 96c803708702c47d Arle's Aunt{n}"But doesn't time fly...?{n}It's already been ten{n}years since my brother{n}and his wife passed away.{p}We did our best to raise{n}the two children in their{n}place..."
 f011-0002 cf84995a16dde779 Arle's Aunt{n}"But now, where{n}Arle is concerned{n}I can finally say{n}my job is done.{p}I know Timothy will{n}take good care of{n}her from here on...{p}Now all that's left{n}is Dan...{wait 20}{n}I'm going to have a{n}hard time raising{n}him to adulthood."
 f011-0003 36b275979333bd4e *sigh*...{done 30}
+f011-0004 028cff95654fc2d7 Arle's Aunt{n}"Tomorrow, please pray{n}for Arle's happiness.{p}And I want you to carry{n}on being the best of{n}friends with both Arle{n}and Timothy.{wait 20} Thanks, Fei!"
 f012-0000 f67d63ce2d8087fa Fei{n}"Hello, Arle.{wait 30}{n}Is that your{n}wedding dress?"
 f012-0001 8bd41883c68a1129 Fei{n}"Hmmm...{n}You did a great job there!{p}It'll look wonderful{n}on you, Arle...{n}Congratulations!"
 f012-0002 5a44d8b00af99652 Fei{n}"Hey, uh, Arle..."
@@ -243,6 +250,7 @@ f012-0031 551f3277d6a78b53 Arle{n}"If...{wait 20} If you'd{n}only been born in{n
 f012-0032 e6d08ec9324664eb Arle{n}"...{wait 20}{n}Oh, it's nothing.{n}I'm sorry..."
 f012-0033 a7d3e5df5df1f8a5 Arle{n}"Oh, okay...{p}Be careful on that{n}mountain path.{wait 20}{n}And give my regards{n}to Doctor Uzuki!"
 f012-0034 aeb2166cfb073b10 Arle{n}"...{wait 20}{n}The threads of{n}fate, huh...?"
+f012-0035 8e51fb8fc934016c Arle{n}"I feel...{wait 20}{n}so foolish..."
 f013-0001 686d5d980920a5cf Fei{n}"Yeah, tomorrow, huh?{n}Your wedding with Arle!{n}Now that's a big day!"
 f013-0002 59f88d903e64426a Fei{n}"Hey, uh, Timothy...{n}I just want to thank{n}both you and Arle...{p}Three years ago, I woke{n}up here in Lahan and{n}had completely lost{n}my memory...{p}Who I was, where I'd{n}been, or what I'd been{n}doing up until that day —{p}I couldn't recall a{n}single thing..."
 f013-0003 660808930b7849dd Fei{n}"But you and Arle{n}motivated and encouraged{n}me when I needed it most.{p}If the two of you hadn't{n}been there for me, I {n}don't know what would've{n}happened..."
@@ -311,6 +319,7 @@ f017-0019 ba89f6b6d90e0fcb Found a{n}secret stash!{wait 10}{n}Received 120G!
 f017-0024 457071c3b9d7e644 {speed 255}'The shiny farhead proves{n}it's the rite move! Stop{n}the njections, yew quack.'
 f017-0025 20c06413630bb25e {speed 255}Injured, sick, all{n}accepted. Come on in!{n}But no deceased please.
 f017-0026 b03a4058a45a18b4 Go back down? {wait 20}{n}{speed 255}    Yes{n}    No
+f017-0027 6bb973270aad6d4e Do you want to look{n}through the telescope?{wait 20}{n}{speed 255}    Sure{n}    No
 f019-0000 b4d9670056683200 Fei{n}"Whew!{wait 30}{n}I'm stuffed!"
 f019-0005 2d8aedacedbb8794 Fei gained a bit of weight,{wait 5}{n}but felt...maybe he'd done{n}a bad thing.{wait 20} Just a little.
 f019-0006 9093f8d5343ee2f2 Fei{n}"Well, nothing in{n}particular..."
@@ -344,6 +353,7 @@ f021-0020 1f83fc1d65268ee5 Citan{n}"...{wait 40}{n}Now what could{n}it mean...?"
 f021-0024 77ae6c8a194c702e Fei{n}"Oh yeah, that's right!{p}Arle asked me to borrow{n}some camera equipment{n}from you."
 f021-0025 432cc3bf06c637e0 Fei{n}"Would I ever!{wait 30}{n}I was hoping{n}you'd ask."
 f021-0026 21d6a17d152e4ade Fei{n}"Okay.{n}Take your time, Doc.{p}I'll go ahead and eat{n}when dinner is ready!"
+f021-0030 88e778b805c0c1a5 {speed 255}   'Celebrating the birth{n}       of my daughter...{n} May all the dreams, courage{n}& love in the world be yours...'
 f022-0000 33c41ef93eb652fb Fei{n}"Stop!{n}Keep your hands{n}off 'Elly'!"{done 60}
 f022-0002 a509945b52c99356 Mysterious Woman{n}"T-{wait 30}Turn around!"
 f022-0004 1231a1dab989c875 Mysterious Woman{n}"I said turn{n}around!"
@@ -428,6 +438,7 @@ f024-0046 7189e8976c0fa035 Citan{n}"The Sacred Empire of{n}Solaris' Special Forc
 f024-0047 c6b283a09cc7e61d Fei{n}"I've heard the village{n}elders talk about it...{wait 30}{n}Wait, could Elly be...!?"
 f024-0048 a141c49932f3dd06 Citan{n}"Quite possibly so.{n}Their group has superior{n}technology and power.{p}It is rumored they are{n}here solely to get the{n}resources in the ruins.{p}To think they would bring{n}in such a large ship...{n}It must be to suppress the{n}recent border skirmishes."
 f024-0049 e88e5f8c9f38e262 Fei{n}"So they're fighting{n}the Kislev Empire?"
+f024-0050 c232958e80ba5042 Citan{n}"Yes. It seems there are{n}newly found ruins on the{n}northern edge of Av.{p}Those ruins are under a{n}500-year-old temple.{p}Three weeks ago, Kislev{n}seized those ruins.{n}Most likely they are{n}fighting over that."
 f025-0000 1a1372ead309f22a ...{wait 10}Oh,{wait 10} hey.
 f025-0001 9c36e3cf9ecd13f4 Fei{n}"Looks like you've come{n}around.{p}You didn't move for so long{n}that I started to worry..."
 f025-0003 1ebccb917dbd0e89 Fei{n}"How're you feeling?"
@@ -443,6 +454,7 @@ f025-0019 6d2736983627af3e Mysterious Woman{n}"I'm...Elehayym.{n}But my parents{
 f025-0020 86f29b0311ce3ee7 Fei{n}"Ahh, okay...{wait 20}{n}Somehow I already{wait 20}{n}knew{wait 20} that."
 f025-0021 eee93219096b6a37@c41b2ce1dfa9db13 Elly{n}"??"
 f025-0023 c3552b467c68480a Elly{n}"I guess we have{n}no choice, do we?{n}Very well."
+f025-0024 e6140eadc3d68cc7 Fei{n}"Okay, Elly...{wait 20}{n}How about having{n}something to eat?"
 f026-0000 3111a220a3f79f56 Citan{n}"It is no use. The knee{n}actuator and bypass{n}circuit are both kaput.{p}The actuator can be fixed,{n}but the circuit needs{n}to be replaced..."
 f026-0003 de2b5c8593f5dc71 Citan{n}"I imagined you would.{n}You have had quite a day."
 f026-0004 591397a39e5224d3 Citan{n}"This is the machine Fei{n}boarded when Lahan was{n}attacked.{p}Speaking of which, there{n}was one other machine,{n}abandoned on the outskirts{n}of the village...{p}Nil baya dars legus?{n}(It was yours, right?)"
@@ -479,6 +491,7 @@ f026-0041 eab39e2b79d749cd Citan{n}"Anyway...{p}as things stand{n}it is probably
 f026-0042 69ebf7fbd2fe25c4 Elly{n}"I'll return to{n}headquarters.{n}But then what...?"
 f026-0045 5eafe4428fc0a94d Citan{n}"It is only natural.{wait 10}{n} 'I, too, was{n}  like that once'."
 f026-0046 b56a52c84f27d3c7 Elly{n}"Citan, will{n}you promise—"
+f026-0047 aa802d8ed1361eff Citan{n}"I will be tactful{n}when I tell Fei...{n}You had better go now."
 f027-0000 afda4d1189638af3 Damn them...{wait 60}{n}They're still in pursuit.{done 30}
 f027-0001 c7d76bcf0de36f71 Despite entering Av territory{wait 60}{n}they're not giving up.{done 30}
 f027-0002 b3066f7b703ade1b Clearly this Gear's important.{wait 60}{done 15}
@@ -486,6 +499,8 @@ f027-0003 7779c0b117eafa71 ...Tch. At this point...{wait 60}{n}we're at a disadv
 f027-0004 958b100edb8fe46f ...Van Houten!{done 20}
 f027-0005 c0a031552380cf50 ...What's wrong? Respond!{done 30}
 f027-0006 56e6ffe4090f2629 Damn it! All Gears, descend!{done 30}
+f027-0009 28c8fa1fc0badba6 Elly{n}"Sh-Shrapnel...{n}Shrapnel in my{n}upper-right back.{p}Thruster output{n}dropping.{wait 20} I can't{n}maintain altitude."{done 50}
+f029-0002 407abc7c7044211d  This month's water-{n}  supply schedule.
 f030-0000 7f0d3918ed43115b Since that disaster happened{n}to the Church, they've been{n}running around like fools...{p}Now, just getting parts is a{n}tough enough task.
 f030-0001 7bd8056ccda51673 If requests for repairs{n}keep coming at this pace,{n}we won't be able to keep up.{p}We should ask the Church's{n}headquarters to expand this{n}workshop.
 f030-0003 05e573a42f2fde67 We're out of Gear parts{n}in the warehouse.{n}I'm gonna have to order{n}more from the Church's{n}headquarters.
@@ -495,13 +510,16 @@ f030-0007 c2080bf84863450b There's no competition{n}anymore.{wait 15} *sigh*
 f030-0008 4f8aaf439149b7a8 An unusual interest in{n}this area's ruins is{n}sweeping the country.{p}Large-scale forces have{n}come to excavate all the{n}ruins.
 f030-0009 7495ea60e322ef4e Hey, I haven't seen you{n}'round here before.{p}Don't think that if you{n}cause trouble you'll get{n}away with it!{p}We're Av Army Guards!{n}...Remember that!
 f030-0010 9fb4ac2530e751d7 {speed 255}    This month's goal{n}           ---{n}    Search for parts!
+f030-0011 84e8a4657ceac603 {speed 255}    This month's goals{n}            ---{n}   Don't let the parts{n} in the warehouse run out.{n} {n}   Give repair priority{n}  to military personnel.
 f031-0001 8f3578f4cf6e89a0 The area around this town has{n}the highest concentration of{n}ruins on the southern part{n}of the continent of Ignis.{p}Av and Kislev have been{n}fighting over these ruins{n}forever. I'm old now. I{n}just want to live in peace.
 f031-0003 bfe7f0f6b46c6dea Actually, the water{n}facilities have gotten{n}better since the guild{n}came to this town.
 f031-0004 215d575cbe96108b This is what happens if{n}you let your guard down.{wait 10}{n}What a pain!
 f031-0005 960d092420cad2f1 Lately, Grandpa's been in a{n}'happi' and 'jelly' mood.
 f031-0006 2c2ff6a2f1c8f2b4 Lately, Grandpa's been in{n}a 'blew' and 'gum' mood.
+f031-0007 3f4d3aabb2a735c4 He also has 'dork' and{n}'centanmental' moods.{n}{wait 10}...{wait 10}Whatever that means?
 f032-0001 ef83537394b5dcd7 I've heard a rumor that{n}the Kislev Army attacked{n}a nearby village...{p}...Is it true?
 f034-0000 480b39fff9bc1915 I wonder who built{n}all those ruins? {p}Some say an ancient{n}civilization that{n}ruled this land long{n}ago built them...{p}But after looking at{n}the results of the{n}geologic tests, I{n}have my doubts.
+f034-0001 c151f80ee9d93173 My hubby, I wonder why he{n}has to make such a fuss?{p}Better to just leave ruins{n}and whatnot to those folk{n}from the Church!
 f035-0002 6a03cc5e8ccfe44d Fei{n}"Okay, Doc.{wait 15}{n}Let's check this{n}place out."
 f035-0003 405a0e0e13713ac5 Fei{n}"...{wait 10}{n}Doc, d'you have a moment?{n}I need to talk to you."
 f035-0004 bcb2a4c3f674e10c Fei{n}"...{wait 10}{n}Well, Doc, it's about{n}{name 11}...{p}We can't find the part{n}we need, so would it be{n}alright if we just didn't{n}fix it?"
@@ -578,18 +596,20 @@ f036-0021 a463417ddc0fbdb8 Sorry, it's not back yet.{n}Please wait a bit longer.
 f036-0022 560c825d31cd91f2 Hm? Some new faces.{wait 10}{n}You looking to rent{n}a sand buggy too, huh?
 f036-0023 6e4078a2e0b3b1c2 I'm afraid I'm all out of{n}sand buggies at the moment.{wait 10}{n}Could you wait a while?{p}The one I rented out to{n}some hunters should be{n}back soon.
 f036-0027 fe808a75392b9a0b With worker Gears meant for{n}civilians, we're no match for{n}the army guys excavating using{n}military Gears.{p}That said, even if we got{n}our hands on some military{n}Gears, we wouldn't be able{n}to operate them...
-f036-0029 fe808a75392b9a0b@c40b5b09e589b220 With worker Gears meant for{n}civilians, we're no match{n}for{p}the army guys excavating{n}using{n}military Gears.{p}That said, even if we got{n}our hands on some military{n}Gears, we wouldn't be able{n}to operate them...
+f036-0029 fe808a75392b9a0b@c40b5b09e589b220 With worker Gears meant for{n}civilians,{p}we're no match for the army{n}guys excavating using{n}military Gears.{p}That said, even if we got{n}our hands on some military{n}Gears, we wouldn't be able{n}to operate them...
 f037-0000 fe15b2eb838f257f Soon this area will be{n}totally excavated...{p}We'll have to find{n}another place with{n}buried treasure...
 f037-0002 eefadedb1213d89c Shh!{n}I'm trying to think.{n}So keep it down.
 f037-0003 17100f6c7f24cbfc Since the army no longer{n}controls the dig sites,{n}you can go by yourself...{p}Now the buying prices at{n}the Church's workshop{n}have gone down.{n}What should we do?
 f037-0004 e0cb040c0357c015 I came here looking for{n}fortune...but all the{n}good sites are controlled{n}by the military.{p}I'll have to go home a{n}failure. What should I do?
 f037-0005 505cf2c2c4d2ce24 I wanted to try my luck{n}at treasure hunting.{p}I'm pretty successful.{n}The reason is I found a{n}good partner.{p}Even now he's looking at{n}a map, analyzing our next{n}step. I sure depend on my{n}pal.
+f037-0006 9ccdfbfd8b501682 {speed 255}    - Come to Dazil! -{n} {n} If you dig in the ruins,{n}   you too can be rich!{n} {n}          ------{n}     Treasure-Hunter{n}       Association
 f038-0000 fc88204ef6762086 You can't let up{n}even in peacetime.{p}We always have to keep{n}working hard just in case.
 f038-0001 2ccd80c27e032bed This is the Av Army's{n}Dazil Guard Station.{n}No civilians allowed.{p}If you have no business{n}here, please leave.
 f038-0002 ff69e045ed407a67 This town is the center{n}of all Gear excavating{n}in Av.{p}They take the generators{n}out of excavated Gears to{n}make new models.{p}Basically, protecting{n}this town is all part of{n}crushing those Kislev guys.{p}I left my family at home{n}to come here.{wait 10}{n}I want to finish my duty{n}here and go home.
 f038-0004 1305d848400d0d43 My friend had family in{n}Breidablik, so he went back.{p}That's nice. At least he{n}had someone waiting for him.{wait 15}{n}Me...{wait 5} I'm all alone...{wait 5}{p}I think I'll just cry{n}myself to sleep today.
 f038-0005 b1ad5489efb2a24b The Kislev Army is up{n}to something in the{n}land north of here.{p}But don't worry...{n}If anything happens,{n}Geburah will back us up.
 f039-0001 6daedb54b9e905a6 Citan{n}"This is an Av-run{n}excavation site.{p}The weapons excavated{n}from the ruins — not{n}least the ancient battle{n}machines we call Gears —{p}are valuable resources{n}that could turn the tide{n}of the war.{p}They are an obsession now{n}for the countries in{n}conflict."
+f039-0002 582adda035bd6334 Citan{n}"Anyway, Fei...{wait 10}{n}Let us move on.{p}We have more important{n}things to do than take{n}in the 'sites'!"
 f040-0001 9ee21dfc78ffdfef Big Joe{n}"{wait 10}...{wait 10}*hic*{wait 30}...{wait 10}{n}Where's your friend?{p}There's a war on in the{n}desert and he just goes{n}wandering off there?{p}If your friends are{n}important to you, then{n}don't let them get away.{p}Especially if it's a{n}lady friend...{n}Gahahaha!"
 f040-0002 a05066cdd030b5f8 Big Joe{n}"{wait 10}...{wait 10}*hic*{wait 10}...{wait 30}{n}{wait 30}You drinkin' too?{p}Booze is my life companion!{wait 30}{n}Especially in a sucky{n}world like this.{p}Everyone's searching for{n}dough and dynamite...{n}Ha, how unromantic."
 f040-0003 21ea649a6d854ebc Big Joe{n}"Me?{p}What am I doing here?{p}...Whatever I please,{n}I guess."
@@ -613,8 +633,10 @@ f040-0033 e2774b61efb67d1f You don't have enough{n}money. Get out!
 f040-0034 ac375f141fbcb66c {speed 255}  - Menu -{n} {n}  Breida Beer{n}  Av Ale{n}  Hob-Jerky{n}  Cheese Plate
 f043-0000 df0a070ef953d003 Oh no, my wallet...{p}Just when I get enough{n}money to fix my Gear,{n}I lose my wallet.{p}What am I gonna do?
 f043-0001 5562f81ad444bdbf Bah! Those fools at the{n}Church!{p}Just because they can fix{n}Gears they think they can{n}act all high and mighty.{p}How do they expect us to{n}pay so much?
+f043-0003 b4077210f7edbc48 I told him not to drown{n}his sorrows, but...
 f044-0000 582fa711e9423b73 Sorry, my part supplies{n}are low so I can't sell{n}anything to civilians.
 f044-0002 d482e0bef4604f53 I've got to improve the{n}performance of my Gear{n}with the parts I've {n}bought here...even if {n}it's only a little bit.
+f044-0003 df367ee01f82d670 Something, anything that'll{n}give my Gear's performance{n}a boost just by equipping{n}it.{p}I wonder if they have any{n}such parts here...?{n}...Somehow, I doubt it.
 f045-0000 a2fec34cc1f41f35 Fei{n}"Wow...{wait 10}{n}So this is the Church{n}workshop, Doc?"
 f045-0001 2823f4fbc4e44a23 Citan{n}"Yes it is.{p}The Church workshops are{n}the only places that{n}officially repair Gears.{p}Let us ask about the{n}component we need{n}to fix {name 11}.{p}Time is money, as the old{n}saying goes!{wait 5} Let us do{n}what we need to do as{n}quickly as possible."
 f045-0002 0a2bd904f98c7d78 Citan{n}"Sorry to bother you.{p}Our Gear has broken down,{n}so I would like to buy a{n}part to fix it."
@@ -636,6 +658,7 @@ f047-0035 a6ed004e9d4f2a49 listen very carefully.{done 100}
 f047-0047 c269c673c9aa4786 Do you want to go back?{wait 10}{n}{speed 255}    Yes{n}    No
 f047-0049 bcf7c0f6aa112c21 Leave the desert?{wait 10}{n}{speed 255}    Yes{n}    No
 f049-0000 ce81c7b43a9c4edc Fei{n}"How far has Doc gone?{n}{wait 10}...{wait 5}And now I've lost sight{n}of those Gears, too."
+f049-0003 75d849d5be55cadb Fei{n}"What the heck{n}is that thing!?"
 f050-0000 589c80d1458e3911 Whoooaaa!!{done 150}
 f050-0001 6e91241d73369456 Fei{n}"Does this desert ever end?{wait 15}{n}It'll get dark soon, so I{n}better hurry up and—"
 f050-0002 a12a385c9e07b825 Fei{n}"What's going on here?{n}Gears, a flying saucer...{n}and now these guys...{p}I hope Doc's alright!"
@@ -643,6 +666,7 @@ f050-0003 cf4ac2483023a9c9 Fei{n}"...{wait 60}{n}Hyaaah!"{done 30}
 f050-0004 d9da09fe97c00a75 Fei{n}"Uh, sorry about that!{wait 10}{n}Just let me borrow this{n}for a while!"
 f050-0006 52cee491034369b3 Hey, waiiiit!
 f052-0000 0855871deb3b00a6 Draw the sword?{wait 10}{n}{speed 255}    Yes{n}    No
+f052-0001 5494ac36cea49cd4  {n} Received Yamato Sword!
 f053-0000 fff9bcf4a52a7053 Fei{n}"Wh-What are they!?{wait 10}{n}Are they Av Gears?{p}{wait 10}...{wait 10}{n}I'm worried about Doc{wait 10}..."
 f053-0002 b2ba0ac5a91c9942 Fei{n}"A different unit?{n}Are they going the same{n}direction the saucer went?{p}I'd better follow them!"
 f054-0001 f09e9829ea526be2 Fei{n}"Wh-{wait 20}What's with you{n}guys?{p}Is it such a big deal{n}that I stole one {n}motorcycle...?"
@@ -679,6 +703,7 @@ f055-0031 c98e217170a991d4 Grahf{n}"Hmph, do you really wish{n}to know?{p}But fo
 f055-0032 a0295180b88b5787 Grahf{n}"That power of yours{n}is not yet fit for{n}purpose.{p}It's only reasonable{n}to put it to the test{n}until it becomes so."
 f055-0033 53ab1938ff5355e2 Grahf{n}"What will you do, Fei?{wait 10}{n}If you fall here, then{n}that's it.{p}Perhaps, for you,{n}ignorance would be bliss.{n}But is that what you truly{n}desire...?{p}If what you really want is{n}to know the truth...{p}Then you must show me that{n}you have attained the level{n}of strength I require...{p}To do that you must destroy{n}others using your own{n}power!{p}Only then, in exchange for{n}a scream of death, will you{n}regain all that was lost!!{wait 15}{n}Hahahaha!!"
 f055-0034 be822b65a213ea4d Mwahahahahahaha!
+f055-0035 082a4d25e78ce54e Fei{n}"!!{n}What the hell{n}is that!?"
 f056-0001 7413c06dda8e7899 Fei{n}"No...{wait 32}{n}It's just..."
 f056-0002 463f9ea14308421b Fei{n}"There's that{n}too, but..."
 f056-0003 312e0d858d39ff42 Fei{n}"It's the other stuff he{n}said...{p}What happened at Lahan...{n}was all planned to get me{n}to board that Gear...{n}Or so he claimed.{p}That's got me worried..."
@@ -716,7 +741,10 @@ f061-0007 ab63c608a271dd73 Fei{n}"C'mon, Doc!{n}Over here!{n}Hurry up!"
 f061-0008 c2e69bc09890eba5 Fei{n}"Are you okay, Doc?"
 f061-0009 d396d6c10f571b5b Fei{n}"Sorry about that, Doc!{n}I didn't have time to{n}open up the cockpit...{p}Are you really okay, Doc?"
 f061-0010 182fba48da55fe2b Fei{n}"Yeah,{wait 16} when I started it{n}up, it began doing all{n}kinds of stuff by itself...{p}The environmental-response{n}system and weight-reduction{n}hovering kicked in straight{n}away{wait 5}...{wait 5}automatically!"
+f061-0011 4edfc999865b570e Fei{n}"...!!?"{done 32}
+f062-0000 2731dc6047c8b317 Pirate{n}"Not very manly, is it,{n}just the two of you{n}running away in a Gear?"
 f063-0000 d736a5ff377b5d54 Bingo!{wait 32}{n}Just as the report{n}said — an Av transport.{p}And look at what we{n}have on top...!
+f063-0001 92063a935033039c No mistaking it! {n}That's a new Kislev model!{wait 16} {n}It has to be the stolen{n}Gear everyone's after!!
 f064-0000 b1afa27a623ad792 Bart{n}"Hey, this is huge.{p}What can we do about{n}this?{wait 5} We'll never be{n}able to break it."
 f064-0001 4ae55670017ff8a9 Bart{n}"My sensors detect what{n}appears to be a huge cave{n}on the other side of here.{p}If we could just do{n}something about this{n}boulder...{p}Doesn't seem like we'd be{n}able to break it though."
 f064-0003 b3361fcd9c864361 Bart{n}"Hey now, no matter{n}how you look at it—"
@@ -742,6 +770,7 @@ f065-0004 4ac409dd88369fcb Sand barrier being opened{n}from remote terminal.
 f065-0005 c2f3992dea39944a Sand sensors have confirmed{n}sandfall in quantities greater{n}than the standard safety{n}threshold.{p}The sand barrier on the south{n}wall of the Terrace Stones has{n}been closed to prevent sand from{n}penetrating the excavation site.
 f065-0006 03c0571f4fbdc2d5 There are two sand sensors.{n}One is on top of the ledge{n}located north-northwest{n}of here.{p}Another one is located at{n}the end of the bridge you{n}can see from here.{p}You can get to the bridge{n}via the northwest side{n}of Terrace Stones.
 f065-0007 9d7ea4eb8eaaf958 There is a sand barrier{n}in the southeast of{n}Terrace Stones.{p}Until the barrier reopens,{n}please assemble at the{n}shelter located to the{n}east of the barrier.
+f066-0000 b3afbd7815c69779 Bart{n}"Who'd have thought{n}there'd be someone living{n}in a place like this!?{p}Let's check it out!"
 f069-0000 5ce55ec38e380d54 {n}-  Av excavation site  -{n}- Main power generator -{p}Currently, the main power{n}is on.{wait 10}{n}{speed 255}    Turn off the power{n}    Leave it alone
 f069-0002 850f0ea386be765d {n}-  Av excavation site  -{n}- Main power generator -{p}Currently, the main power{n}is off.{wait 10}{n}{speed 255}    Turn on main power{n}    Leave it alone
 f069-0003 a2472f5698923c34 Starting main generator.{n}＞{wait 14}＞{wait 14}＞{wait 14}＞{wait 14}＞{wait 14}＞{wait 14} DONE.{n}Operating normally.
@@ -822,6 +851,7 @@ f071-0094 cbc720727e7ba765 Old Man{n}"I see...{n}That's too bad.{p}I can tell fr
 f071-0095 4353b723af09029f Old Man{n}"Ha ha ha.{p}It's easy to tell what's{n}wrong with Gears by the{n}sounds they make.{p}My guess is that one{n}of them has a joint{n}that needs a new{n}hydromechanical pipe.{p}It's making a{n}nasty sound.{n}It must be hard to{n}walk with, too.{p}Oh, by the way, the{n}name's Balthasar, but{n}you can call me Bal."
 f071-0096 6afd18d9e4e0db4b Ol' Man Bal{n}"I guess you can call me a{n}'fossicker' or a 'collector{n}of things'.{p}There's much to be found{n}lying around in this here{n}stalactite cavern."
 f071-0098 1b7b91b5c011ace1 Old Man{n}"Ohh, I was just thinking I{n}rarely hear Gear footsteps.{wait 10}{n}They your Gears?{p}Well, come on back here and{n}make yourselves at home."
+f071-0100 c8475de3aa2ec2ad Ol' Man Bal{n}"One is up on the rock{n}ledge above the boulder{n}in the Great Hall.{p}You can find it by climbing{n}the Terrace Stones out{n}there and taking the road{n}to the northwest.{p}The other sensor is on{n}the road from which you{n}can see the waterfalls.{p}You can get to it by going{n}northwest from the place{n}where the Gear is standing.{n}It's on a rock ledge.{p}You can tell that it's a{n}sand sensor by its square{n}shape and the flashing red{n}lights it emits."
 f072-0000 3558c724c4992c87 Hm?{done 60}
 f072-0001 25002701a09b762c Pirate{n}"Hey, come down here now!{p}I'm not gonna kill you.{wait 30}{n}All I want is for you to{n}leave this Gear—{wait 60} Huh?"
 f072-0002 19d5b9b0650deb6b Pirate{n}"Hey!{wait 30}{n}You're{wait 20} not an{n}Av soldier?"
@@ -1151,6 +1181,7 @@ f085-0030 82d8d476fe7377b5 Bart{n}"Well enough!"
 f085-0031 52a14676605c33f4 Don't overdo it, now.{p}Hey, are they friends{n}of yours back there?
 f085-0032 7d6cd2ea61f2ff0d Bart{n}"Yeah.{wait 10}{n}Fei and Citan."
 f085-0033 2f12764e4ea0d4db Friends of the Young Master's{n}are friends of ours.{p}Take your time and{n}look around.
+f085-0034 b2ee6d0ff642f5ee Bart{n}"Thanks!"
 f086-0001 5bc5ae07f5d8af13 Bart{n}"I'll be waiting here,{n}so call me when you're{n}ready to go."
 f086-0002 cedb3bb3b2c60230 Sigurd{n}"The cave Shakhan's{n}heading for is directly{n}west of Nisan.{p}It's possible the{n}remainder of his forces{n}are gathering there."
 f086-0003 e564300bfcf30202 Sigurd{n}"There's still some time{n}until we leave.{wait 5} Don't rush{n}making your preparations."
@@ -1241,6 +1272,7 @@ f086-0143 5342483ab2b2ecfe Fei{n}"Shakhan is headed{n}there...?"
 f086-0144 88abe3509d4e8e31 Fei{n}"What's he up to?"
 f086-0147 58ee5c592c753525 Sigurd{n}"I'll wait here for{n}info from the Capital."
 f086-0148 7f210a47e42e2b17 Citan{n}"A Gate!{p}While I think I would{n}like to see it with my{n}own eyes...{wait 30}this time I{n}will decline.{p}There will still be{n}two remaining...{n}And besides...{p}Just in case things do not{n}go well, it might be better{n}if we stay here and protect{n}Marguerite and the others."
+f086-0150 eb4789bd96c0989d {speed 255}    All set!{n}    Not yet
 f087-0002 f69f8c264780ea50 Is the rumor true that{n}bandits broke into the{n}Royal Capital!?
 f087-0003 10f5f52b7a7cad06 Through a special{n}arrangement with the town{n}representatives, they're{n}renting us lodgings.
 f087-0005 751d9d9971d77ea7 Received special herbal tea!
@@ -1251,6 +1283,7 @@ f087-0011 2cc813fe9b41da68 We're providing the vacant{n}house across the way to 
 f087-0012 141d238fe9c0d7a5 Welcome!{p}Since you're the ones{n}who saved our town,{n}you can stay for free.
 f087-0013 2ff4edebfd26d8cb Stay here?{wait 10}{n}{speed 255}    Yes{n}    No
 f087-0014 48ca9224fcf616b4 Thank you!{n}Come again.
+f087-0015 41e75e907cc834f0 Come again.
 f088-0001 14c2ecae5f5cf4f2 Bart{n}"I see. That'd be good!{wait 30}{n}Then, yes, you aid Sig!"
 f088-0002 8eb8ad3ae0c5abf0 Bart{n}"In that case,{n}it'll be..."
 f088-0003 f8544679694c0cc7 Bart{n}"Alright, that{n}decides it!{p}Everyone else{n}work with Sig!"
@@ -1351,6 +1384,7 @@ f088-0123 ed2fdd8111b6f661 {name 7}{n}"I just have chu go{n}along for this one!"
 f088-0124 edf8874fdb06699b {speed 255}    Elly{n}    Billy{n}    Rico{n}    Maria{n}    {name 7}
 f088-0125 7680175d9834cc4d Elly{n}"Sure, I'll go."
 f088-0129 649d2c0d812ee653 {name 7}{n}"I just have chu go{n}along for this one!"
+f088-0130 bdf05e5e8fa72739 Margie{n}"Hold on.{wait 30}{n}I'm going, too!"
 f089-0000 7d30a10791d1a6d6 Citan{n}"These are the forces{n}deployed by Geburah{p}and currently stationed{n}in Av, correct?"
 f089-0001 54b2785579069fa8 Citan{n}"The western guard..."
 f089-0002 a37c8c1c610b078e Citan{n}"The Royal Capital{n}defense force..."
@@ -1373,8 +1407,10 @@ f091-0007 e0ab32445351a1fe Fei{n}"(Paint brushes...{wait 30}{n}I haven't even to
 f091-0008 cbd1c2bffb69a9cb Hm?...{wait 30} Are you{n}an artist too?
 f091-0009 df062ceee4427c09 Fei{n}"Ah...{wait 30} N-No..."
 f091-0010 e8648be7949682e1 I see...{wait 30}{n}Paintings are great.
+f091-0011 ce33f2db6f2677ad Fei{n}"Ah...{wait 30}{n}Oh,{wait 30} is that so...?"
 f092-0000 e34e85703adf34c8 Me and the guy out front{n}take turns with gate duty.
 f092-0001 db540fb6dafb464e You all...{wait 30}{n}You're not residents{n}here, huh?{p}I can tell from the vibes.{wait 30}{n}I used to live in a town{n}near the Royal Capital too.{p}To tell the truth, I was{n}running scams when I lived{n}there, though.{p}I eventually grew to hate{n}doing that stuff...{p}It was then that I heard{n}talk of this place from a{n}pilgrim who came to town.{p}Now, me and the guy out front{n}take turns with gate duty, but{n}it's a pretty interesting job.{p}Every day, I guess so many{n}things when I see the faces{n}of all the pilgrims!{p}'Ah, this person bears{n}a heavy burden'...{wait 30}{n}that kind of thing.{p}In the old days, keeping my{n}eye on people that way was{n}what earned me money, but...{p}I'd never think of trying{n}to do that again now.
+f092-0002 6d58a25ee7f542d2 I came here from the{n}Royal Capital Army that's{n}stationed down south.{p}Although I work for the{n}current government, on an{n}emotional level I can't{n}forsake Nisan.{p}I hear that lots of other{n}people besides me are{n}gathering here too.{p}So, the residents here{n}are kindly renting me{n}this room...{p}Now I'm just standing by{n}until there's some kind{n}of development.
 f093-0000 77cbf354b4fac2da Margie{n}"Wow! It's been such a{n}long time!"
 f093-0002 d650f5b4e9e5e9bb Bart{n}"...Huh?{wait 30} What is it,{n}Old Mason?"
 f093-0003 aae267493af7b843 Mason{n}"*sniff*...{n}Goodness gracious me...!{p}To think that little Miss{n}Marguerite was finally{n}able to return here...{p}...{wait 30}{n}It is so awfully moving!"
@@ -1449,7 +1485,9 @@ f093-0106 08e174b448c19e9e Neither of us serve{n}heaven within the{n}Nisan cathe
 f093-0108 406a6178ee1651ad I pray for your{n}good fortune.
 f093-0110 b1daea0e1cdd6375 I'll get you!
 f093-0112 41c2e04d9a2cc26e Outta the way,{n}outta the way!
+f093-0117 e00fa3b7fbc5260b ...?
 f094-0000 84560b534716f067 Margie{n}"I'll be waiting{n}here for you, then."
+f094-0010 458b75d549bcec5a     With the help of Fei and the{n}      others, Nisan was freed{n}        from Shakhan's army.{p}     However, the Fatima Jasper{n}     and the legendary treasure{n}       of the Av royal family{n}        were still in danger.{p}   And now, Shakhan was going to{n}    make his next move, and his{n}       true intentions would{n}        be brought to light.
 f095-0004 9d6d0e0b3727e96a Margie{n}"Yes. It's all thanks{n}to Bart and his men."
 f095-0005 5fa4bfefbf68ab74 We just received word...{p}so we were singing a{n}hymn of praise and joy.{p}We're so happy...{n}Oh, what a relief!
 f095-0010 2ba6e03330baf891 Margie{n}"...But at least I{n}have made it back...{p}I'll never go anywhere{n}or leave you from now on!{p}I won't make you all worry{n}anymore... Never again!"
@@ -1500,6 +1538,7 @@ f095-0079 ee770fc97b962fb1 Bart{n}"Now you listen to me,{n}believe it or not I'm
 f095-0081 bf00729282da1fd1 I'm on a pilgrimage all{n}over this country, and{n}recently traveled around{n}the Royal Capital area.{p}I just got back here a{n}few days ago, but will{n}probably be setting out{n}again in a few days time.
 f095-0082 8a6ae4eb6ab12013 I want to see with my{n}own eyes what'll become{n}of this country.
 f095-0083 a198310cd1dfe311 Preparation should be getting{n}underway around about now,{n}in anticipation of the Royal{n}Capital Army's attack near{n}the Nisan borderline.{p}But since provoking them{n}unnecessarily could backfire,{n}we'll be taking action from{n}behind closed doors for now.{p}I plan to go there too,{n}but I thought I'd offer{n}a prayer first.
+f095-0084 38da091b45a9c851 As a matter of fact, the{n}guy next to me and I were{n}born here.{p}Years ago, we both got{n}tired of the peaceful but{n}boring atmosphere here, so{n}we ran away from home.{p}But we both ended up{n}enlisting in the army.{p}It's not like we have any{n}particularly happy memories{n}of here, but...{p}After all's said and done,{n}this is the land of our{n}birth, so, y'know...
 f096-0001 5ca8a8be53d0839e Bart{n}"Got it.{wait 30}{n}But I say again:{n}no needless killing.{p}This goes for the Av{n}troops{wait 30} and the people{n}from Geburah, too."
 f096-0003 57f18bf749ed8b3a Fei{n}"I guess I'm going to{n}raise some hell in my{n}{name 11}, then."
 f096-0005 63762e6f84e50f7c Margie{n}"Next time we meet I won't{n}be able to call you 'Bart'{wait 10}{n}or 'Young Master'.{p}Maybe{wait 10} 'Your Majesty'{wait 10}...?"
@@ -1527,6 +1566,7 @@ f096-0036 113900e733fbf853 Board the ship?{wait 10}{n}{speed 255}    Yes{n}    N
 f096-0037 c37093852a35447c Preparations for the{n}campaign are done — just{n}completing one final check.{p}The Young Master is{n}taking Marguerite to{n}Nisan!
 f096-0039 64c5705010212985 Nothing to report!!
 f096-0041 2bdd76b6de17fb80 The sisters are waiting{n}at the cathedral.
+f096-0046 cfc8e96c9152ac45 {speed 255}    Leave port now{n}    To the bridge
 f097-0001 25286652325311d9 Margie{n}"Let's go ahead to{n}the mural room.{p}The sisters will{n}probably be back{n}shortly."
 f097-0002 33b4523e9724d576 Margie{n}"I wonder what kind of{n}person Lady Sophia was.{p}I would've loved to{n}meet her."
 f097-0003 ecf3795b7d6c6dca I've got to do my best too!
@@ -1563,6 +1603,7 @@ f097-0062 3916f98b978fbcfa Agnes{n}"I wish you all{n}the best of luck."
 f097-0064 1af2b666933b20f0 Agnes{n}"I hope nothing has{n}happened to the Holy{n}Mother's remains...{p}If the mausoleum gets{n}damaged because of me,{n}I will not deserve to{n}live."
 f097-0065 d55c3ac0d73334bb Bart{n}"Don't be so hard{n}on yourself.{p}You sisters have done{n}your best to protect{n}the town, right?{wait 10} Just{n}leave the rest to us."
 f097-0066 7117b5bb23dc86bb Agnes{n}"Finally, we can create{n}the country the late King{n}and Holy Mother desired.{p}I hope that I can be of{n}assistance to Master{n}Bartholemew.{p}Before we do that though,{n}we have to be clear on{n}what's happening between{n}Bartholomew and Marguerite.{p}Of course, that is really{n}up to them, but...{wait 5}{n}at any rate I am rooting{n}for them both."
+f097-0067 699c67fce8a50b4d Agnes{n}"In order to relay your{n}accomplishments to future{n}generations, we have decided{n}to record your journey...{p}As the ones who, along with{n}the Holy Mother Marguerite,{n}led us to our true world...{p}you will all live on{n}forever within the people{n}of this world."
 f098-0000 6f9396fbcec6f6e4 Citan{n}"Oh my...{p}What a striking{n}young lady."
 f098-0001 774c72e8ed56eb89 Citan{n}"Not to mention...{wait 30}{n}there is quite a{n}resemblance."
 f098-0008 11b647fd85856df9 Citan{n}"Yes, now that you mention{n}it... She does indeed{n}resemble Elly."

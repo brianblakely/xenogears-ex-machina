@@ -8,7 +8,9 @@ f700-0007 bc8bdaff3c3ac114 Citan{n}"Yes.{wait 10}{n}He had lost himself at{n}fir
 f700-0008 f4e54ff8f31e0f32 Zephyr{n}"Snow is falling...{wait 20}{n}Gently shrouding everything{n}in this world...{p}Our sorrow, our disgrace,{n}our mistakes...{p}If only we could erase{n}them the same way the{n}world has been covered{n}up by this snow...{p}What have we —{wait 10} have I —{wait 10}{n}been doing these past 500{n}years?"
 f700-0009 dd254ca5c8c68f9f Zephyr{n}"Speaking of which...{p}how have things been{n}with the person you{n}rescued from Merkabah?{p}I heard he recovered{n}consciousness..."
 f700-0010 a144287976b8b188 Zephyr{n}"I am sure he would{n}want that too."
+f700-0011 07670a5fa825aadf Zephyr{n}"Fei...{n}May I ask you something?{p}Elly...{wait 20}{n}What if, even when we break{n}the Zohar's spell, she does{n}not return to normal...?"
 f701-0004 6238e62672a13f2f Kishin Sword was enhanced!
+f701-0005 1a141ae97cf27c59 Received Kijin Sword!
 f703-0000 ad3b74a194a5f3f0 Fei{n}"Mapping of Deus'{n}interior complete.{p}Alright!{wait 20}{n}Let's go, everyone!"
 f706-0006 0280aa46d718628f Citan{n}"Fei,{wait 5} over there..."
 f706-0007 fc7e0e150de2e1ae Citan{n}"If we can go through that{n}gate, we may be able to{n}get to the lower floor."
@@ -59,6 +61,7 @@ f710-0009 57b35c7dae23b9b0 Ramsus{n}"Silence!!{wait 20}{n}You{wait 5}...{wait 5}
 f710-0010 2924880613fffb26 Dominia{n}"That's not how it is!{p}It's precisely because{n}we're thinking of your{n}best interests that—"
 f710-0011 1a7876a2ae7397ec Ramsus{n}"SILENCE!!{p}Ultimately, it's up to{n}me, and no one but me!{wait 20}{n}Only I can make this{n}right!"
 f710-0012 ebfe46aa0eb22eda Ramsus{n}"En garde, Fei!!{wait 20}{n}This is the end for you!!"
+f710-0015 d99a35c81f39bb69 Ramsus{n}"Gaaaaaah!!"{done 20}
 f711-0001 a79540d1ff019ab6 This is where Carl was born.{wait 20}{n}And where his hatred toward{n}you was cultivated{wait 5}...
 f712-0001 0336e71d534bbbcb Citan{n}"Wait!!{wait 20}{n}Fei!{p}We must not let{n}the system loose!!"
 f712-0002 19a4213c2d1e512a Bart{n}"Citan, stop!!{p}It's dangerous for us,{n}too!{wait 20} Let's get outta{n}here for now!!"
@@ -114,6 +117,7 @@ f713-0022 0ef3712159fd274e Myyah{n}"Yes{wait 5}...{wait 5}{n}That's good, Carl{w
 f713-0023 21ddc22097a07932 Ramsus{n}"Then I{wait 5}...{wait 20} My existence{wait 5}...{wait 20}{n}What the hell was the{n}meaning of it?"
 f713-0024 fe4418b0553b0d50 Ramsus{n}"I...{wait 5} I...{wait 20}{n}What was I born for?{wait 20}{n}What was I living for?"
 f713-0025 e01ff22b14d0839d Ramsus{n}"...{wait 20}{n}Myyah..."
+f713-0026 02d2c8387e626419 Ramsus{n}"A-{wait 5}Aaarrrgghh!!!!"
 f714-0000 624277f620ec3d86 Fei{n}"Guh!"
 f714-0001 75761f3740e3895d Billy{n}"M-{wait 5}My gun,{wait 10} she—!?"
 f714-0002 1d239bc228e9bb04 Bart{n}"Wh-Why,{wait 20} Elly...?"
@@ -150,7 +154,9 @@ f714-0037 504d71fa4351b5db Elly{n}"Who knows...?{p}Beings who're able to{n}creat
 f714-0038 5faa90eee3f293a1 Karellen{n}"Come...{wait 20}{n}It is time for the true{n}Mother's awakening."
 f714-0039 56062cf78984d264 Fei{n}"Please{wait 5}...{wait 5}{n}wait{wait 5}...{wait 20}{n}Elly{wait 5}..."
 f714-0041 53634dff11477085 Citan{n}"Fei!{wait 20}{n}Please hang{n}in there!"
+f714-0042 6c8f1c2288a0888f Karellen{n}"My body consists almost{n}entirely of a colony of{n}nanomachines.{p}For extended life{wait 5}...{wait 5}{n}and also for unification{n}with the Mother{wait 5}...{p}This degree of damage{n}can be repaired rather{n}quickly."
 f716-0002 f3a3959a2517908f What would you like?{wait 20}{n}{speed 255}    Character items{n}    Gear items{n}    Nothing
+f716-0003 d6b76e1c735770fa What would you like?{wait 20}{n}{speed 255}        Character items{n}        Gear items{n}        Go back outside{n}        Nothing
 f717-0001 89755b178f36b761 Fei{n}"Is this...{wait 20}Deus!?"
 f717-0002 a53de67fa9b46b5a Fei{n}"...{wait 20}{n}Thanks, everyone.{p}Strike Deus head-on,{wait 5}{n}or disable its supports{n}first...{wait 10}{n}What's it gonna be...?"
 f717-0003 5d5c702d5c171517 Citan{n}"As expected...{wait 20}{n}We need the power{n}of {name 26}..."
@@ -218,6 +224,8 @@ f717-0072 336f3cacf6336876 Billy{n}"You have to..."
 f717-0075 3f92f33763cc4d71 Rico{n}"Come back..."
 f717-0076 0776e3cf40004bd0 {name 7}{n}"We'll be waiting{n}for the chu of you!"
 f717-0077 8866afe53a73afc2 Fei{n}"Thank you...{wait 20}{n}Bart...{wait 20}{n}Everyone...{p}Well, here goes!"
+f717-0078 924f17120b76e3f2 Fei{n}"I guess this is our final{n}journey together...{wait 20} I'm{n}counting on you, partner!"
+f718-0000 9c2f167cef00725b {slow 3}Ellyyyyy!!{done 250}
 f719-0000 2c055d42eb71178e This place...!
 f719-0001 0320a917e8ca7396 Elly!{wait 10}{n}So this place{n}is inside Deus?
 f719-0002 746ac9a47c3ff393 Not exactly.{wait 10}{n}Your actual form is merely{n}an object...{wait 5}assimilated into{n}Deus' outer shell.{wait 10}{n}It is only your consciousness{n}that is here.{p}Naturally, nor is the girl{n}you see before you truly her.{wait 10}{n}It is consciousness{n}constructing her image,{n}nothing more.

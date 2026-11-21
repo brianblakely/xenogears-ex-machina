@@ -9,13 +9,16 @@ f700-0007 bc8bdaff3c3ac114 Citan{n}"Sì, ecco, all'inizio{n}aveva perso fiducia 
 f700-0008 f4e54ff8f31e0f32 Zephyr{n}"La neve continua a{n}cadere...{wait 20}{p}Copre dolcemente ogni cosa{n}in questo mondo...{p}Il nostro dolore, le nostre{n}impurità, i nostri{n}errori...{wait 20}{p}Se solo potessimo{n}cancellarli con la stessa{n}facilità...{p}Che cosa abbiamo...{wait 20}ho...{wait 20}{n}fatto...{wait 20}{n}inseguito...{wait 20}{n}in questi 500 anni?"
 f700-0009 dd254ca5c8c68f9f Zephyr{n}"A proposito...{wait 20}{n}Come sta la persona che{n}avete salvato da Merkava?{p}Ho saputo che ha ripreso{n}conoscenza..."
 f700-0010 a144287976b8b188 Zephyr{n}"Sono certa che anche lui{n}desideri la stessa cosa."
+f700-0011 07670a5fa825aadf Zephyr{n}"Fei...{n}Posso farle una domanda?{p}Riguardo a Elly...{wait 20}{n}E se, anche spezzando{n}l'incantesimo dello Zohar,{n}non tornasse normale..."
 f701-0000 839b988fd14ae110 Usate quella spada e{n}fategliela pagare!
 f701-0001 524b1ffda61cf896 Sono un celebre esperto di{n}armi per Gear...{wait 20}{n}Ma ultimamente non c'è{n}lavoro interessante...{p}Non c'è più nessuno col{n}fegato di chiedermi di{n}forgiare un'arma per{n}combattere Deus...{p}Se mi portate una bella{n}spada, posso trasformarla{n}in qualcosa di davvero{n}incredibile per voi,{n}quando volete...{p}Ma non lavoro per chi è{n}tanto maleducato da{n}chiedermi di esaminare{n}un'arma ancora montata{n}sul suo Gear!
 f701-0002 edb2f0b5b578a9fb Ohh...la Kishin!{wait 20}{n}Che spada insolita{n}avete.{p}Sembra interessante!{wait 20}{n}Fatemi dare un'occhiata!
 f701-0003 6f512672385fbfb1 È venuta benissimo!{wait 20}{n}È stato come trasformare{n}degli aratri in una{n}spada!{p}Usate questa spada e{n}fatela pagare a Deus e{n}alle sue legioni!
 f701-0004 6238e62672a13f2f Lama 'Kishin' potenziata!
+f701-0005 1a141ae97cf27c59 Ricevuta la Lama 'Kijin'!
 f703-0000 ad3b74a194a5f3f0 Fei{n}"La mappatura dell'interno{n}di Deus è completa.{p}Bene!{wait 20}{n}Andiamo, ragazzi!"
 f703-0001 95cbca30483cf8d7 {speed 255}Vuoi tornare indietro?{n}    Sì{n}    No
+f703-0002 7bec726c91fced8b È il 1006.
 f706-0001 a691e12391dd37ac Elly{n}"...!{n}Fei, guarda!"
 f706-0002 9507459ca7a7cb12 Elly{n}"Credi che dobbiamo usare{n}quel portale per scendere{n}al piano di sotto?"
 f706-0003 09512eca49ae17af Elly{n}"Andiamo, Fei."{n}    Salta nel portale{n}    Non ancora
@@ -107,6 +110,7 @@ f712-0030 12af78a2f01b2296 Maria{n}"Ah...!!{wait 20}{n}Cos'è questo...!?"
 f712-0031 f706c15068a48a83 Citan{n}"Sono i nostri...{wait 20}{n}Omnigear!?"
 f712-0032 b146c71e5f454703 Citan{n}"Vuole staccare le{n}Reliquie Anima dai{n}nostri Omnigear!?"
 f712-0033 ae48cf981b24349d Citan{n}"...{p}Sembra che le Reliquie{n}Anima siano cadute nelle{n}mani del nemico."
+f712-0035 47dfa1532b72a2fe Vuoi saltare dentro?{wait 20}{n}    Sì{n}    No
 f713-0002 e44a683de3a1b4f3 Bart{n}"Fei, scusa il ritardo.{wait 20}{n}I nostri Omnigear si sono{n}guastati.{p}Comunque, sbrighiamoci{n}a salvare Elly!"
 f713-0003 9acd011674db7ac5 Rico{n}"Peccato esserci persi{n}l'azione.{wait 20}{p}I nostri Omnigear hanno{n}ceduto per strada.{p}Comunque...{n}Sbrighiamoci a salvare{n}Elly!"
 f713-0004 a4ab018f58866cc4 Citan{n}"Perdonate il ritardo.{n}Il mio Omnigear ha ceduto{n}lungo la strada.{p}Ad ogni modo, affrettiamoci{n}a salvare Elly!"
@@ -164,9 +168,11 @@ f714-0038 5faa90eee3f293a1 Krelian{n}"Vieni...{p}È l'ora del{n}risveglio della{
 f714-0039 56062cf78984d264 Fei{n}"Ti prego{wait 5}...{wait 5}{n}aspetta{wait 5}...{wait 20}{n}Elly{wait 5}...!"
 f714-0040 fdff759c1f27a886 Elly{n}"Addio{wait 5}...{wait 5}Fei.{wait 20}{n}Che il tuo 'risveglio'{n}sia sereno{wait 5}..."
 f714-0041 53634dff11477085 Citan{n}"Fei!{wait 20}{n}Resisti!"
+f714-0042 6c8f1c2288a0888f Krelian{n}"Gran parte del mio{n}corpo è composta da una{n}colonia di nanomacchine.{p}Non solo per la longevità{n}{wait 5}...{wait 5}ma anche per unirmi{n}alla 'madre'{wait 5}...{p}Quindi non stupitevi.{n}Danni come questi si{n}riparano piuttosto{n}in fretta."
 f716-0000 85b078a5b906c45f Fei{n}"Sembra che questo pozzo{n}porti all'esterno.{p}Probabilmente possiamo{n}uscire da qui."
 f716-0001 49ee4f1e550da1c9 Fei{n}"Sembra che questo pozzo{n}porti in qualche modo{n}all'esterno.{p}Ma non abbiamo tempo di{n}tornare indietro.{wait 20}{n}Sbrighiamoci ad andare{n}avanti."
 f716-0002 f3a3959a2517908f Cosa desidera?{wait 20}{n}    Oggetti personaggi{n}    Oggetti Gear{n}    Niente
+f716-0003 d6b76e1c735770fa Cosa desidera?{wait 20}{n}        Oggetti personaggi{n}        Oggetti Gear{n}        Vai fuori{n}        Niente
 f717-0000 e98e2e85fed8468b Fei{n}"Ci serve il potere{n}di {name 26}?"
 f717-0001 89755b178f36b761 Fei{n}"Questo{n}è...{wait 20}Deus!?"
 f717-0002 a53de67fa9b46b5a Fei{n}"...{wait 20}{n}Grazie a tutti.{p}Attaccare Deus{n}direttamente...{wait 10}{p}o eliminare prima i suoi{n}supporti...{wait 10}{n}Cosa sarà meglio?"
@@ -242,6 +248,7 @@ f717-0074 0e5a867aa71b1cb4 Emeralda{n}"Voi due..."
 f717-0075 3f92f33763cc4d71 Rico{n}"Tornate a casa..."
 f717-0076 0776e3cf40004bd0 {name 7}{n}"Vi aspetteremo,{n}chu!"
 f717-0077 8866afe53a73afc2 Fei{n}"Vi ringrazio...{wait 20}{n}Bart...{wait 20}{n}e tutti voi...{p}Beh, è meglio che vada{n}adesso...{wait 10}{n}Ma non preoccupatevi!{n}Tornerò presto!"
+f717-0078 924f17120b76e3f2 Fei{n}"Credo che questo sarà{n}l'ultimo viaggio che{n}faremo insieme, io e te...{p}Conto su di te...{n}compagno!"
 f719-0000 2c055d42eb71178e Dove sono...!?
 f719-0001 0320a917e8ca7396 Quella è Elly!{n}Vuol dire che sono{n}dentro Deus!?
 f719-0002 746ac9a47c3ff393 Non esattamente.{p}Il tuo vero corpo non è che{n}un oggetto fisico...{wait 5} È stato{n}soltanto assorbito{n}nell'involucro esterno di{n}Deus.{wait 5} Qui c'è solo la tua{n}coscienza.{p}Naturalmente, anche la{n}ragazza che vedi davanti a{n}te non è un essere reale.{wait 5}{n}È solo la tua coscienza a{n}crearne l'immagine.
@@ -274,6 +281,7 @@ f720-0003 27a417db819444b0     {speed 255}chuchu arrabbiata{n}    chuchu vs AHAZ
 f720-0004 2f844daf0e1200fd password {wait 10}{n}    esci{n}    esci{n}    all'inizio{n}    test con volto{n}    test senza volto
 f720-0005 0c0514eab7117d71 chuchu{n}"Test della versione{n} inglese di Xenogears.{p} Mi serve amore per{n} sentirmi viva e bene.{n} Solo l'amore può{n} farmi stare bene."
 f720-0006 d65ac9d9670dc393  Questo è un test della versione{n} inglese di Xenogears.{n} Ora davanti a te, tante{n} meraviglie e tanti tesori.{p} Riesco a trovare la traccia di{n} una tristezza che passa.{n} Mi serve amore per sentirmi{n} vivo e bene.{p} Eppure ci sono momenti nella{n} memoria di ognuno. Quando una{n} vaga scena di passata grandezza{n} ritorna, i mendicanti ritirano{n} la mano, come se il guadagno{n} di ogni giorno bastasse.
+f720-0011 b9a97ecde753c6fb {speed 255}cambia peso{n}    yase{n}    futuu{n}    futome{n}    davy
 f722-0000 d58f96e16b0901ff {speed 20}Vai alla mappa{n}    Città di Nisan{n}    Cattedrale di Nisan{n}    aspetta！{n}    a Map00
 f722-0001 298a5b699a50b8ac     {speed 20}nisan（città）{n}    nis-11{n}    nis-21{n}    nis-31{n}    nis-41{n}    nis-51{n}    nis-61{n}    nis-71{n}    nis-doc{n}    Per kikoshi{n}    Mappa test per spieg.{n}    Indietro
 f722-0002 75bae9c5a510e693 {speed 255}flag di scenario{n}    Tattica1{n}    Continua

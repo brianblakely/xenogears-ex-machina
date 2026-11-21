@@ -249,21 +249,17 @@ fn text_tables(disc: &mut Disc) -> (BTreeMap<Table, Vec<u8>>, Vec<u8>) {
     (tables, system)
 }
 
-/// A text table's entries' offsets (a u16 count, 0, then count + 1 offsets;
-/// a count of 0xFFFF a field without messages).
+/// A text table's entries' offsets: a u16 count, 0, then count + 1
+/// offsets, entries 0 to the count, which is the last entry's number (as
+/// many (columns, rows) pairs follow them); a count of 0xFFFF a field
+/// without messages.
 fn entries(table: &[u8]) -> Vec<u16> {
     let (Some(count), Some(0)) = (u16_at(table, 0), u16_at(table, 2)) else { return Vec::new() };
     if count == 0xFFFF {
         return Vec::new();
     }
     let offsets: Option<Vec<u16>> = (0..=usize::from(count)).map(|i| u16_at(table, 4 + 2 * i)).collect();
-    match offsets {
-        Some(mut offsets) if offsets.iter().all(|o| usize::from(*o) <= table.len()) => {
-            offsets.pop();
-            offsets
-        }
-        _ => Vec::new(),
-    }
+    offsets.filter(|offsets| offsets.iter().all(|o| usize::from(*o) < table.len())).unwrap_or_default()
 }
 
 /// The text at `offset` through its 00, walked as window_reveal_text walks
@@ -595,6 +591,8 @@ pub fn read(us: [Option<&mut dyn SectorSource>; 2], jp: [Option<&mut dyn SectorS
                     own.insert(fnv1a64(text), Encoded { bytes, columns: 0, rows: 0 });
                 }
             }
+            // The last entry's number, which names an entry as the port reads it (`place_key`).
+            let count = u16_at(us_table, 0).unwrap_or(0);
             let Some(jp_table) = jp_tables.get(table) else { continue };
             let jp_offsets = entries(jp_table);
             let jp_texts: Vec<Option<&[u8]>> = jp_offsets.iter().map(|o| text_at(jp_table, usize::from(*o), JP_THRESHOLD)).collect();
@@ -612,11 +610,11 @@ pub fn read(us: [Option<&mut dyn SectorSource>; 2], jp: [Option<&mut dyn SectorS
                 if reading.len() <= 1 && text.len() > 1 {
                     continue;
                 }
-                let place = place_key(text, i as u16, us_offsets[i], us_offsets.len() as u16);
+                let place = place_key(text, i as u16, us_offsets[i], count);
                 let mut encoded = transcode(reading, narrow);
                 if table.0 == "f" {
                     // The Japanese table's own window for it.
-                    let pair = 4 + 2 * (jp_offsets.len() + 1) + 2 * j;
+                    let pair = 4 + 2 * jp_offsets.len() + 2 * j;
                     encoded.columns = encoded.columns.max(u32::from(jp_table.get(pair).copied().unwrap_or(0)));
                     encoded.rows = encoded.rows.max(u32::from(jp_table.get(pair + 1).copied().unwrap_or(0)));
                 }

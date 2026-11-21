@@ -62,7 +62,7 @@ ACCESSORY_BITS = {
 
 def names(table: bytes, threshold: int, chars: dict[int, str]) -> list[str]:
     """Each entry of a text table without its 00, read as text_control --chars renders it."""
-    offsets, _ = text_table(table)
+    offsets = text_table(table)
     out = []
     for offset in offsets:
         try:

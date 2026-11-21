@@ -13,3 +13,4 @@ wa043-0033 8b5196329651aeb2 Anima Dungeon 2
 wa043-0035 4dda596d07041c75 Golgotha
 wa043-0037 adc2eda6458d83fb Route to Nisan
 wa043-0038 2995a9aeadddb73a Fort Jasper
+wa043-0040 f239162dac4044ae The Kislev{n}border...{n}It's dangerous{n}beyond here.

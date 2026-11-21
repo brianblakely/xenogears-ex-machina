@@ -205,8 +205,8 @@ def readings(source: Path, report: list[str]) -> tuple[dict[str, str], dict[int,
             if not isinstance(data, bytes) or not isinstance(old, bytes):
                 continue
             prefix = tr.PREFIX[group]
-            ours, _ = tc.text_table(old)
-            theirs, _ = tc.text_table(data)
+            ours = tc.text_table(old)
+            theirs = tc.text_table(data)
             if len(ours) != len(theirs):
                 report.append(f"disc {number} {group} {item}: {len(theirs)} entries for the original's {len(ours)}; left")
                 continue

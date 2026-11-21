@@ -12,6 +12,7 @@ s001-0010 c1fd80419de09245 Givre Aqua
 s002-0007 616a9b6e4da5821f Saule
 s002-0008 dcdf78f81dfa568b Terre Rare
 s002-0009 a928073eb8704d94 Inferno
+s002-0010 230132411af069d7 Tsunami
 s003-0000 9626e7a9edc3c0fb Chasse-Tête
 s003-0001 f5fd1a2918a119c9 Bi-Sonique
 s003-0002 d7b15a4476eefd29 Choc Rythme
@@ -21,6 +22,7 @@ s003-0006 7bb78ef2fae904b9 Justice
 s003-0007 ed0c5551fcc7326f Ange
 s003-0008 dca378d8dade10c7 Brise-Terre
 s003-0009 2963de9c2853b8a4 Proéminence
+s003-0010 4529786ba4b7ad91 Tornade
 s004-0000 1218dce03e70e5cd Coupe-Gorge
 s004-0001 98f34748b9803b2f Gâchettard
 s004-0002 d3dfff236358e7d2 Infernal
@@ -28,6 +30,7 @@ s004-0003 15b35c73874d5864 Casse-Noix
 s004-0005 f22787cdd5888bbd Diabolique
 s004-0007 10051a70b705f8c0 Rêve Royal
 s004-0008 56cf0ae434e5f0ee Porte Bénie
+s004-0009 a9304e9a9dd3fe5f Cher Ami
 s005-0000 fcb184d58edd8428 Rico Fusée
 s005-0001 f1dce7e824e6320f Élan Fatal
 s005-0003 b1d5cc6052ca07f6 Poing Dragon
@@ -36,6 +39,7 @@ s005-0005 e47d83b0e31aebcf Marteau-Pic
 s005-0006 5b9370ebebd85995 Toupie
 s005-0007 972e179b7355e2a8 Roulé Mortel
 s005-0008 da4e08772e432c8d Lariat Igné
+s005-0009 bf4e641ca68ef2e3 Splash Enfer
 s006-0000 5b6434fa029e0ad0 Fauche-Jambe
 s006-0001 01c25c5a4416cf23 Fend-Vagues
 s006-0002 4783242810ecf061 Balayage
@@ -44,9 +48,11 @@ s006-0004 f453f96e162b8135 Grand Bras
 s006-0005 4cf8cc0aee9aeb45 Diviseur
 s006-0006 b0b42df34cf08c70 Bras Volant
 s006-0007 00c2a852f92931dd Main Tornade
+s006-0009 dd8dcf106024f35c Bête Noire
 s009-0007 980207d1d8591553 Vent Joyeux
 s009-0008 db9ef8041b1d0570 Terre Rauque
 s009-0009 22056fde0ddf0b54 Brume Ignée
+s009-0010 9a87142112550c4a Eau Cristal
 s017-0001 2d7baad44328f988 Habit Martial
 s017-0002 a27a4e0d9a234ad2 Tenue Escrime
 s017-0003 c760f5552748448c Gilet Cuir
@@ -178,6 +184,7 @@ s018-0027 9d6426fbef150321 Gauche
 s018-0028 4e4b61948a9f7a2b Retour
 s018-0029 543f3719f354960c Arme
 s018-0030 e64fd9440858326a Munitions
+s018-0031 aaf4fd735911442e Zone
 s020-0000 7db048f4b67a8c1b Tir Guidé
 s020-0001 c95577622ce8d705 Soin Interne
 s020-0002 cdae56762451d0ff Coeur de Fer
@@ -393,6 +400,7 @@ s030-0010 dadb845e3f412dbd Diva Suprême
 s030-0011 b8166caf198f01f8 Danse Ignée
 s030-0012 77e433b10bddffc3 Fouet Éclair
 s030-0013 e9d5e8e6edc6e7eb Rafale Bleue
+s030-0014 4079e37f997e13f9 Diva Noire
 s032-0003 d781716393e17b84 Chaîne
 s032-0004 59521f42a7809c6a Fouet Vipère
 s032-0005 c6f878360675140d Onde Éclair
@@ -404,6 +412,7 @@ s032-0010 2861e2841952f475 Double Cobra
 s032-0011 c5bf8ca3cfd00114 Vol Céleste
 s032-0012 567f2a81c86b64e2 Météore
 s032-0013 a2fc60fc9909fc02 Danse Fatale
+s032-0014 621543889dca4e17 Fin de l'Âme
 s033-0003 c2eb336d715e90f0 Double Clac
 s033-0004 58744c09e7b53e6c Clac Dur
 s033-0005 e41c668f38245b72 Tir Dur
@@ -415,6 +424,7 @@ s033-0010 ba039aaad6d98bb8 Gatling Dure
 s033-0011 575227778236091a Gatling Ciel
 s033-0012 204d5ba21df7edd0 Mille
 s033-0013 6370e949a99ea22a Ascension
+s033-0014 2913221fe1be86b2 Âme Sainte
 s034-0003 2f14ff5086746ff6 Foret Guerre
 s034-0004 c173d2d4d23ff3e6 Tête-Bombe
 s034-0005 f35c68de4f3ce9f4 Perforatrice
@@ -423,6 +433,7 @@ s034-0008 13cb1159c947c20e Marteau G
 s034-0009 9c66675ff09bbf27 Méga Corps
 s034-0011 e55f01227e956593 Ferraille
 s034-0012 e36176de09221c19 Foret Kaiser
+s034-0014 b50269fa4ea7d5a0 Fer Kaiser
 s036-0003 d3e049e9803d3db9 Méga Marteau
 s036-0004 9a30d18ecb958371 Lutte Dynamo
 s036-0005 4d60bbd95a99fba9 Gravipoing
@@ -433,6 +444,7 @@ s036-0009 905eb161409d0aba Presse Astro
 s036-0010 190b3e2c930ce06c Brise-Fer
 s036-0011 f652d648712f31ec Typhon Fer
 s036-0012 5ab1a30ba08052a5 Élan Igné
+s036-0014 e6129bd146a66c73 Frappe Maria
 s037-0003 0d5a4272de4abbdd Coup Bras
 s037-0004 74af77fa4ba90783 Coup Aérien
 s037-0005 035c259cba446da2 Coup Dansé
@@ -444,6 +456,7 @@ s037-0010 73fba8c7ba7651db Mort Rapide
 s037-0011 ad31be0b6c4074e7 Requiem
 s037-0012 cf40f7c6e18c8e56 Onde Noire
 s037-0013 101ae1a20117ba4c Force Noire
+s037-0014 3831911d1dd8b47f Monde Noir
 s040-0006 b467cc5d8a8163db Fouet Rouge
 s050-0001 5606349dc24b6b04 Arm. Extra
 s050-0002 91f12e2427829570 Arm. Extra+1
@@ -542,6 +555,7 @@ s050-0098 cdd3cc584b391ca5 Fatalisor 3
 s050-0101 88cd29bacd0121d2 Chargeur A
 s050-0102 f9793fc23fdb5db4 Chargeur S
 s050-0103 f5f4c47f08816081 Chargeur X
+s050-0104 1e9d7e913db4cf23 Chargeur Z
 s051-0001 0abdb4dcb117ade1 BâtonMagieG
 s051-0002 adf82d0439d3d404 BâtonArcaneG
 s051-0003 82b0cdd3f07e6353 BâtonFerG

@@ -1,0 +1,1 @@
+- Every translation of the game's text now covers the messages it still showed in English: the last message of most maps (the opening narration's page about Gebler among them), some battle dialogue, and a few names and menu texts. This applies to Español, Français, Italiano, Português (Brasil), English (Perfect Works) and the Japanese text read from the Japanese discs.

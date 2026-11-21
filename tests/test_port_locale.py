@@ -205,18 +205,19 @@ u16 gear_shop_gear_values_frame_x_table[14];
         self.assertEqual((self.lib.text_get_message_columns(TABLE, 0), self.lib.text_get_message_rows(TABLE, 0)), (40, 3))
 
     def test_a_table_entry_the_language_translates_alone_is_taken_translated_and_its_text_elsewhere_as_everywhere(self):
-        """A table of three entries, the first two the same text: the language
-        translates the text, and its second entry alone otherwise (named by
-        the text's hash carried on over the entry's index, offset and the
-        table's count, as the tools name it)."""
+        """A table of three entries (its count 2, the last entry's number),
+        the first two the same text: the language translates the text, and
+        its second entry alone otherwise (named by the text's hash carried on
+        over the entry's index, offset and the table's count, as the tools
+        name it)."""
         other = ORIGINAL[:-2] + b"\x58\x00"
-        offsets = [18, 18 + len(ORIGINAL), 18 + 2 * len(ORIGINAL)]
-        table = struct.pack("<HHHHHH", 3, 0, *offsets, offsets[2] + len(other)) + bytes([40, 3] * 3) + ORIGINAL * 2 + other
+        offsets = [16, 16 + len(ORIGINAL), 16 + 2 * len(ORIGINAL)]
+        table = struct.pack("<HHHHH", 2, 0, *offsets) + bytes([40, 3] * 3) + ORIGINAL * 2 + other
         self.assertEqual(table[offsets[1] : offsets[1] + len(ORIGINAL)], ORIGINAL)
         port_native.write(TABLE, table)
         alone = bytes([0x2E, 0x4B, 0x00])  # "No"
-        name = translations.place_key(ORIGINAL, 1, offsets[1], 3)
-        self.assertEqual(name, translations.fnv1a64(ORIGINAL + struct.pack("<HHH", 1, offsets[1], 3)))
+        name = translations.place_key(ORIGINAL, 1, offsets[1], 2)
+        self.assertEqual(name, translations.fnv1a64(ORIGINAL + struct.pack("<HHH", 1, offsets[1], 2)))
         everywhere = [(translations.fnv1a64(ORIGINAL), TRANSLATION, 50, 5)]
         data = region(1, everywhere, (), [(name, alone, 60, 6)])
         ctypes.memmove(LOCALE, data, len(data))

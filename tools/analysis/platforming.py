@@ -787,7 +787,7 @@ def area_names(disc: int, root: Path) -> dict[int, list[str]]:
     for area in sorted(set(dispatch_tables.area_files())):
         data = text_control.unpack(image.sectors(image.slot(*formations.AREA_DIRECTORY, area + 1)))
         table = data[struct.unpack_from("<I", data, NAMES)[0] :]
-        offsets, _ = text_control.text_table(table)
+        offsets = text_control.text_table(table)
         texts, readable = [], 0
         for offset in offsets:
             try:

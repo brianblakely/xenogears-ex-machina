@@ -27,9 +27,10 @@ names patch of its release archive
 (`Xenogears_Perfect_Works_Edition_0.11.4.7z`, `gamefiles/script1` and
 `gamefiles/script2`), which ships as replacement disc files.
 
-It was changed from that form on 13 November 2026, by
-`tools/perfect_works.py` and `tools/translations.py merge` of this
-repository:
+It was changed from that form on 13 November 2026, and again on 20
+November 2026 (the last entry of every text table, which the first reading
+missed), by `tools/perfect_works.py` and `tools/translations.py merge` of
+this repository:
 
 - Each text table entry of those files was read beside the same entry of
   the original discs. An entry Perfect Works Build leaves as the original
@@ -39,9 +40,9 @@ repository:
   control codes as words in braces, and the marks Perfect Works Build's font
   adds (`* ; ö —`, a wide blank and the Hebrew El before an Omnigear's name)
   as the characters of `glyphs.txt`.
-- Seventeen entries keep the original's text because their windows, which
+- Nineteen entries keep the original's text because their windows, which
   scripts and battle code size, are too small for Perfect Works Build's
-  (nine battle messages and eight field messages; its own build lays some
+  (eleven battle messages and eight field messages; its own build lays some
   of them out anew), and two Japanese development texts were left; eight
   entries' lines were broken anew to fit the original's windows, and one
   list of choices keeps a blank line the cursor still walks.

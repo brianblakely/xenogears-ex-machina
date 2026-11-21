@@ -391,7 +391,8 @@ pub fn fnv1a64(bytes: &[u8]) -> u64 {
 
 /// A table entry's name (src/port/locale.c xem_locale_place): the hash of
 /// its text's bytes through their 00, carried on over the entry's index, its
-/// offset in its table and the table's count of entries, two bytes each.
+/// offset in its table and the count its table's header gives (its last
+/// entry's number), two bytes each.
 pub fn place_key(text: &[u8], index: u16, offset: u16, count: u16) -> u64 {
     let place = [index.to_le_bytes(), offset.to_le_bytes(), count.to_le_bytes()].concat();
     place.iter().fold(fnv1a64(text), |hash, byte| (hash ^ u64::from(*byte)).wrapping_mul(0x100_0000_01B3))

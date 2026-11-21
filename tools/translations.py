@@ -25,8 +25,9 @@ translation translates its text to nothing.
 The first form translates a text wherever a window takes it. The second
 translates it in one table entry alone, the one <where> names: <entry> is
 that entry's name (`place_key`: the text's hash carried on over the entry's
-index, its offset in its table and the table's count), which the port
-computes where the game takes an entry from a table (text_get_resource_entry).
+index, its offset in its table and the count the table's header gives, its
+last entry's number), which the port computes where the game takes an entry
+from a table (text_get_resource_entry).
 A language uses it where one original text reads differently from place to
 place (Perfect Works titles each tune of a jukebox whose lists all read
 "track00", "track01" ...).
@@ -338,7 +339,8 @@ LINE_COLUMNS = 0x39
 def place_key(raw: bytes, index: int, offset: int, count: int) -> int:
     """A table entry's name (src/port/locale.c `xem_locale_place`): the hash
     of its text carried on over the entry's index, its offset in its table
-    and the table's count of entries, two bytes each."""
+    and the count the table's header gives (its last entry's number), two
+    bytes each."""
     return fnv1a64(raw + struct.pack("<HHH", index & 0xFFFF, offset, count))
 
 
@@ -734,7 +736,8 @@ def originals() -> dict[str, Text]:
             if data is None or isinstance(data, Exception):
                 continue
             prefix = PREFIX[group]
-            offsets, _ = tc.text_table(data)
+            offsets = tc.text_table(data)
+            count = struct.unpack_from("<H", data, 0)[0]  # the last entry's number, as the port reads it
             widest = 0
             for index, offset in enumerate(offsets):
                 raw = text_bytes(data, offset)
@@ -744,8 +747,8 @@ def originals() -> dict[str, Text]:
                 widest = max(widest, *(max(p) for p in shape))
                 pair = None
                 if prefix == "f":
-                    pair = struct.unpack_from("<BB", data, 4 + 2 * (len(offsets) + 1) + 2 * index)
-                entry = f"{place_key(raw, index, offset, len(offsets)):016x}"
+                    pair = struct.unpack_from("<BB", data, 4 + 2 * len(offsets) + 2 * index)
+                entry = f"{place_key(raw, index, offset, count):016x}"
                 script = battles.get(item, {}).get(index) if prefix == "be" else scripts.get(item)
                 entries.append((number, prefix, item, index, where, raw, markup, shape, pair, script, entry))
             key = (prefix, item)

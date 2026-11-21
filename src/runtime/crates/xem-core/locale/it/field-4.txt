@@ -4,6 +4,7 @@ f400-0002 fae060660bbb2db7 Kim{n}"Ma non è ancora finita.{p}Anzi, in questo ste
 f400-0003 f9312f1956f56f26 Kim{n}"Sì, beh... oggi, almeno,{n}voglio passare una{n}giornata senza pensieri."
 f400-0004 fe03debeac8ab833 Elly{n}"Sì, buon anno, Kim!{p}Non so perché, ma{n}poco fa... sembravi{n}un vecchio che parla."
 f400-0005 80e7b70fa74bff1c Elly{n}"...Sì.{wait 32} {p}Ma siamo riusciti a{n}cavarcela senza farci{n}coinvolgere."
+f400-0006 5295cb54d8b4092a Elly{n}"...Non parliamone più...{p}Non rimuginiamo sull'anno{n}passato... Non all'inizio{n}di un anno nuovo."
 f401-0000 c9a5468e567d1411 Kim{n}"Stupidi! Idioti!{n}Una banda di sciocchi!"
 f401-0001 627baba6e26b0cea Kim{n}"Non m'importa se mi{n}sentono.{p}Anche tutti quelli qui{n}sono degli sciocchi!"
 f401-0002 7758e731c5b39dbe Kim{n}"Pensaci.{p}Che senso ha combattersi{n}a vicenda su un pianeta{n}minuscolo come questo?{p}Combattere per paura di{n}essere messi alle{n}strette...{p}Lanciarsi in battaglia{n}come se ci fosse solo un{n}tot di 'posti riservati'{p}per il diritto alla{n}vita..."
@@ -16,11 +17,13 @@ f401-0009 f73bee2e6d21af5d Elly{n}"Kim... parli troppo{n}forte."
 f401-0011 51ada1e5b0d3ef45 Elly{n}"...Kim, mi è dispiaciuto{n}per quel bambino.{p}Ma non credo che la gente{n}di Ravine abbia distrutto{n}il generatore con{n}quell'intenzione.{p}Non hanno altri modi{n}per esprimersi.{p}La colpa è del governo."
 f401-0013 e56597d563d56ff9 Elly{n}"Sono... una sciocca{n}anch'io?"
 f401-0014 10b6a308ad7bebb4 Elly{n}"Oggi ho fatto una visita{n}all'ospedale...{p}Hanno detto che non posso{n}avere figli a causa di{n}danni genetici{n}ereditari."
+f401-0015 17f406b7d18753c0 Elly{n}"...Non posso dare la vita.{n}Sono una creatura che{n}attende l'estinzione.{p}...Sono una sciocca{n}anch'io?"
 f402-0000 123a506a1413e9c3 Bart{n}"Il capitano del Thames ha{n}detto che la base di questo{n}faro ha migliaia di anni.{p}È solida, così ci hanno{n}messo una luce in cima per{n}farne un faro, ma nessuno{n}sa cosa c'è dentro."
 f402-0001 0b8c5c6d3a9261f9 Billy{n}"La base di questo faro è{n}stata costruita diverse{n}migliaia di anni fa.{p}Ha proprio l'altezza{n}giusta, così ne hanno fatto{n}un faro... Ma nessuno sa{n}cosa ci sia dentro."
 f402-0002 9fda5186c3b6337e Rico{n}"Hammer ha detto che la{n}base di questo faro ha{n}migliaia di anni.{p}È solida, così ci hanno{n}messo una luce in cima{n}per farne un faro.{p}Ma nessuno sa cosa{n}c'è dentro."
 f402-0003 502ace1ff83e19a3 Maria{n}"Questa torre era qui{n}molto prima che Shevat{p}volasse nel vasto cielo{n}azzurro.{p}La gente ci ha messo una{n}luce in cima per farne{n}un faro. Ma nessuno sa{n}cosa ci sia dentro."
 f402-0004 3f7a1a40db40255b Citan{n}"La base di questo faro{n}fu costruita diverse{n}migliaia di anni fa.{p}Gli isolani vi aggiunsero{n}una luce per farne un{n}faro. Ma nessuno sa cosa{n}sia in realtà."
+f402-0005 dc163b3d9d81685b Citan{n}"La base di questo faro{n}fu costruita diverse{n}migliaia di anni fa.{p}Gli isolani vi aggiunsero{n}una luce per farne un{n}faro. Ma nessuno sa cosa{n}sia in realtà."
 f403-0002 dea0d893029a127b Fei{n}"...Sembra che possiamo{n}scendere dai Gear ed{n}entrare qui a piedi."
 f403-0003 eca00cc3c32b0f54 Fei{n}"...La città che abbiamo{n}visto dalle rovine di{n}Emeralda...{p}...{wait 32}Ne abbiamo fatta{n}di strada da lì..."
 f405-0000 0a9f735799426fbb Fei{n}"Questa è la Torre di{n}Babele...{wait 40}{n}La via per il cielo..."
@@ -28,12 +31,14 @@ f405-0001 6aed2694ce174a3a Fei{n}"Uau...{wait 30}Non riesco{n}nemmeno a vedere l
 f405-0002 0cb40f3073098812 Fei{n}"Perché mai hanno{n}costruito qui questa{n}cosa enorme?"
 f405-0003 b2a204cc86b57727 Fei{n}"Accidenti!{n}Il sigillo dell'Ethos!"
 f405-0004 86c9f99f28c362e0 Fei{n}"Dannazione, che rabbia!{p}Se non riusciamo a{n}spezzare questo{n}sigillo..."
+f405-0005 5c85e5a1e93f9e3d Fei{n}"Maledizione! Cos'è,{n}cos'è questo?{wait 40} {n}Che torre è questa...?"
 f406-0001 b2946305b566c64c Fei{n}"Sembra una specie di{n}stazione di collegamento."
 f406-0002 d0985d4e651d0f93 {speed 255}Tasto direzionale su:{n}                Ferma la corda{n}Tasto direzionale sin./des.:{n}                Oscilla{n}Tasto direzionale sin./des.{n}e tasto △:  Salta
 f407-0000 1521f6ec7bbda84d Fei{n}"Sembra una specie di{n}stazione di collegamento{n}con l'alta atmosfera."
 f407-0001 42199f1002a57a07 Fei{n}"Se scendiamo, forse{n}non riusciremo a tornare."
 f407-0002 17aadd6700ddb5ca Fei{n}"Possiamo controllarla{n}da questa stanza?"
 f407-0003 b5cd490910755bf4 Fei{n}"Sembra che il sistema{n}di movimento funzioni{n}ancora."
+f407-0004 37326eb0f7a75d34 Fei{n}"Sembra che si possa{n}entrare da qui."
 f408-0000 8cb99864d97f6a30 Fei{n}"Questa sembra la sala{n}di controllo della{n}stazione di collegamento."
 f408-0001 4088a8cc789ef255 Fei{n}"Proviamo a toccare{n}un po' di cose qui..."
 f409-0000 09dc413062672fc6 Fei{n}"Sembra che da qui si{n}possa arrivare alla{n}stanza di sopra..."
@@ -74,6 +79,7 @@ f411-0024 62afab70bac4a617 Miang{n}"Con le sue ferite{n}è impossibile."
 f411-0025 d01d2f8d4e53987f Miang{n}"Ponte! Assicurate la{n}ritirata!{p}Cannone principale,{n}elevazione 0.8.{p}Fuoco di copertura 30!{n}Fuoco!"
 f411-0026 630f030642063f74 Miang{n}"Dall'alto!?{wait 40}{n}No... non può essere!?{n}Ponte!"
 f411-0027 3d0621e52405b9d9 Miang{n}"...Proprio come temevo...{n}Shevat!{p}Cambiate rotta, 180{n}gradi. Subito!{p}Tutte le navi alla massima{n}velocità! Ritirata da{n}questa posizione!"
+f411-0028 e8b58d39d3b52e6c Questa porta è{n}completamente arrugginita.
 f412-0000 c4281a048fbc17c0 Fei{n}"Non possiamo passare{n}dalla porta di sotto?"
 f412-0001 9afc3199e9875fc3 Fei{n}"Non è controllata dalla{n}stanza che abbiamo{n}appena trovato?"
 f412-0002 a29acf76307295eb Fei{n}"Tu sei...{wait 10}{n}Dominia!?{p}Aspetta, {wait 20}credi che{n}abbiano scoperto il{n}nostro piano?"
@@ -142,6 +148,8 @@ f420-0012 a1f47611f7ec2970 Ragazzina misteriosa{n}"Preparati!"
 f420-0013 7e441686b29e2fa2 Ragazzina misteriosa{n}"Scusa. Volevo solo{n}mettere alla prova{n}la tua forza."
 f420-0014 a9d4cc4a1848a8b2 Ragazzina misteriosa{n}"La regina vi attende{n}lassù."
 f420-0015 efce12e472f3e12a Ragazzina misteriosa{n}"Sì, regina Zephyr."{done 40}
+f420-0016 e0d99a9b0e54d77c Basta così,{n}Maria. Falli{n}entrare.{done 40}
+f421-0000 f3d8920cefb672d9 Città aerea di Shevat{done 180}
 f423-0000 b2d1b61978f8ca1a Quale missione scegli?{wait 20}{n}    Generatore 1{n}    Generatore 2{n}    Generatore 3{n}    Generatore 4
 f423-0001 f406539b0f4ef1d5 Questa unità nemica è{n}già stata respinta.{wait 20}{n}Scegli un altro{n}generatore.
 f423-0005 2e2de2ec5670ae46 Vuoi controllare il tuo{n}equipaggiamento?{wait 20}{n}    Sì{n}    No
@@ -156,6 +164,7 @@ f423-0016 2b648f6436344a3c Siamo in stato di{n}emergenza.{wait 20}{n}Non potete 
 f423-0017 96a2921556d0502a {speed 255}Antica capitale di Shevat{n}    Aphel Aura
 f423-0018 9b7bba92238761bc {speed 255} Ingresso del{n}Palazzo di Shevat
 f423-0019 8ce807172200a5bf Trovata una Pietra Alba!
+f423-0020 64095f81b776e06b {speed 255}  Shevat, piano inferiore{n}Ingresso del molo centrale
 f424-0000 6e562ee8f343a349 Fei{n}"Uh... non si muove.{wait 20}{n}È rotta...?{p}...?{wait 20}{n}C'è qualcosa scritto qui{n}in piccolo...{p}'Chi otterrà l'alba, il{n}vespro e l'oscurità salirà{n}la via per il cielo...{wait 20}{n}Wiseman'{p}Cosa vuol dire?"
 f424-0001 c4e030d536e96562 Fei{n}"Bene, allora...{n}Mettiamo qui le tre pietre{n}che abbiamo trovato..."
 f424-0002 051863b0e5cee816 La Pietra di Passaggio{n}si è rianimata.
@@ -187,6 +196,7 @@ f424-0028 8b3b4a7b7889a4e1 Questa è la fine della{n}città.{wait 20} Se non ve 
 f424-0029 ca2dc12c2c36f3eb Oh, quindi aspettate{n}di incontrare Maria?{wait 10}{n}    Sì, esatto!{n}    No, affatto.
 f424-0030 416795e841548257 Se è così, allora...{n}laggiù c'è una casa dove{n}non abita più nessuno.
 f424-0031 37a51ef5c7e722f2 Maria andava spesso lì{n}a sedersi da sola al piano{n}di sopra di quella casa,{n}a pensare.{p}Perché non date un'occhiata{n}al posto, per vedere cosa{n}trovate mentre la{n}aspettate lì...
+f424-0032 cf728b207c2f66b2 Oh? No?{wait 10} Allora scusate.{wait 20}{n}Comunque, perché non vi{n}riposate e rilassate nella{n}nostra bella città...
 f425-0000 561720d089008a2f Cosa sto facendo?{n}...uff...{wait 30}puff...
 f425-0001 e9dbb8c4d9a13fe1 Non si vede!?{n}...uff...{wait 30}puff...
 f425-0002 affb38e17392472b Mi alleno.{n}...uff...{wait 30}puff...
@@ -213,6 +223,7 @@ f425-0022 16ceee3d479d1791 Beh, se non stiamo{n}attenti, anche il nostro{n}desti
 f425-0024 dad3fbedf7922e28 Sì, dicono che questa città{n}fosse come tutte le altre{n}quando stava a terra,{n}500 anni fa.{p}Ma dopo la sconfitta contro{n}Solaris, lanciarono in cielo{n}solo il quartiere del{n}palazzo.{p}È una storia incredibile,{n}ma in realtà adesso siamo{n}proprio su quella parte{n}della città, a fluttuare{n}nel cielo.{p}Nella vita non sai mai{n}cosa aspettarti.
 f425-0025 4199ae398b4de935 Detto tra noi, io sono{n}l'unica speranza di Shevat.{n}Sono l'agente segreto...{wait 20}{n}In altre parole, una spia!{p}Allora? Non sono forte?{wait 20}{n}...Ma, a pensarci bene, se{n}siete qui anche voi, non{n}siete diversi da me...{n}sigh...
 f425-0026 ebe42b99c59e5eb1 Avete già incontrato la{n}regina Zephyr?{wait 20} È una{n}persona molto buona.{p}Tutti noi possiamo vivere{n}così perché la regina{n}ci ha salvati.
+f425-0027 a50b5b3b4807f9b8 Quella grande statua bianca{n}di un angelo all'ingresso{n}del palazzo raffigura una{n}certa donna che si sacrificò{n}nella guerra di 500 anni fa.{p}È così triste.{wait 20} Forse era{n}l'amata eroina della{n}ribellione di allora.
 f427-0000 9217e5bafb4f71bf Uah...!?{done 30}
 f427-0001 fa1c6bc7f9c26979 Oh, siete solo voi.{n}Non spaventatemi.{wait 20}{n}Accidenti, dov'è il{n}liquore? Liquore!!
 f427-0003 233a1bd2fe1d94ef Chi siete, facce nuove?{n}Non spaventatemi...{wait 20}{n}Mi chiedevo se ci fosse{n}qualcosa da bere qui.
@@ -223,6 +234,7 @@ f428-0003 6e01f5ae1ce52f5c Ricevuto "Forza Estrema"!
 f428-0004 53abcb70282e893f {speed 2}Ricevuto: 'Panalphasol'!{n}Ricevuto: 'Hob-Bistecca'!{n}Ricevuto: 'Physimentsol'!{n}Ricevuto: 'Crine Sansone'!{n}Ricevuto: 'Obi Yamato'!{n}Ricevuto: 'Stella Dura'!{n}Ricevuto: 'Stella Rapida'!{n}Ricevuto: 'Drive ETE'!{n}Ricevuto: 'Drive VIT'!{n}Ricevuto: 'Drive FOR'!{n}Ricevuto: 'Drive DIFETE'!{n}Ricevuto: 'Drive HP'!{n}Ricevuto: 'Drive EP'!
 f428-0005 197590edd8407d27 Ricevuto per caso{n}Idolo Chu-chu!!
 f428-0006 87a935bbc1313a48 Non m'importa come sia{n}cominciato tutto, né cosa{n}succederà alla fine.{p}Io vivo con {name 7}{n}e muoio con {name 7}!{p}Al diavolo gli umani!{n}Bugiardi, avidi,{n}egoisti...!{p}Me ne vado.{wait 20}{n}Ne ho abbastanza...!
+f428-0007 63db60146671d4bb Vuoi salire?{wait 10}{n}    Sì{n}    No
 f429-0000 d6fe208c5cc6beec Se volete riflettere in{n}silenzio, abbassate la{n}luce con l'interruttore{n}della scatola che si trova{n}in fondo.
 f429-0001 41927e9380499fb3 "Specchio infranto,{n}un milione di sfumature,{n}la vecchia eco svanisce.{p}Ma solo tu ed io{n}troveremo 'la risposta'{n}un giorno..."
 f429-0002 2eb691dbed9482ce 'Una promessa lontana'...{wait 20}{n}Una poesia composta{n}tanto tempo fa...{p}Saprete trovare 'la{n}risposta' che dovrebbe{n}esistere da qualche{n}parte...?
@@ -236,6 +248,7 @@ f429-0009 a3d3257b49000d92 Non credete?{wait 15}
 f429-0010 2bfd48e5f137387f Oh, siete voi?{wait 20}{n}Mi spiace, ma anche se i{n}"Fratelli degli Abissi"{n}sono aperti, per un po'{n}non serviamo nessuno.
 f429-0011 51c84c74493c0d36 Salve e benvenuti...{wait 20}{n}Come vedete, i "Fratelli{n}degli Abissi" sono{n}aperti... solo che al{n}momento non serviamo.
 f429-0012 cdfec15c78414bed Inserisci 20G.{wait 20}{n}    Inserisci{n}    Lascia stare
+f429-0014 f4d2b5f9566c294f {speed 255}    La valle del vento{n}    Una promessa lontana{n}    Perse... Schegge stridenti{n}    Il nostro villaggio è N.1{n}    Noi feriti seguiamo la luce{n}    I forti inseguono i sogni
 f430-0000 bdd8c5d503c7e9fa Fei{n}"Oh...?{wait 20}{n}Questo..."
 f430-0001 327d4d00802d01da Fei{n}"Sì, sulla superficie sono{n}tutti gentili e sono anche{n}brave persone..."
 f430-0002 c15b1fea453d9203 Fei{n}"Non tutti sono{n}necessariamente gentili{n}e buoni..."
@@ -284,6 +297,7 @@ f430-0045 46a660cc29db7ae4 Sei proprio schietto.{n}Mi piace.{wait 20}{n}Ti do qu
 f430-0046 fec0359f61f404d2 Ricevuto: Aquasol S
 f430-0048 689538d3c5a521ae Ricevuto: Aquasol DX
 f430-0049 761e6cec12eba0e7 Eh?{wait 20} Che strano.{n}Hai odore di terra e di{n}alberi, sì-sì.{p}Taaanto tempo fa la Tribù{n}Chu-chu viveva nei{n}boschi,{wait 20} senza che nessuno{n}la disturbasse, sì-sì.{p}Chissà se un giorno{n}potremo tornare sulla{n}terra e vivere di nuovo{n}nei boschi...?
+f430-0050 1cf3b4537e219ede Vuoi scendere?{wait 10}{n}    Sì{n}    No
 f431-0000 653ae706914d80e0 Fei{n}"Argh!{wait 20}{n}Non me lo lascerò{n}sfuggire."
 f431-0001 070cf48d1885ff96 Fei{n}"Argh!{wait 20}{n} ci siamo!"
 f431-0002 f9e287f138565441 Fei{n}"Sei sicuro che si possa{n}pescare?{wait 20} Anche senza{n}esca?"
@@ -311,6 +325,7 @@ f432-0000 7d40826220b31205 Fei{n}"Sembra che si possa{n}aprire..."
 f432-0001 f85fe082e5c435f8 Fei{n}"Eh...?{wait 20}{n}Questa bambola ha{n}qualcosa in mano."
 f432-0002 aff321c98aa99568 'Specchio della verità'{n}Quale riflesso vuoi vedere?{n}    Riflesso di {name 128}{n}    Riflesso di {name 129}{n}    Riflesso di {name 130}{n}    Esci
 f432-0003 d33fc6d7be826a47 Non c'è nessuno.
+f432-0005 ba4a3b60c71f5df2 Ricevuto: Pietra Vespro!
 f434-0000 db38b470a4e612dd Fei{n}"Questo è...!"
 f434-0001 2922b9f7e4c5625e Fei{n}"Sono stati uccisi{n}da Solaris..."
 f434-0003 282aeed9bb03fbcb Fei{n}"E...{wait 20}ehi, aspetta!"
@@ -338,6 +353,7 @@ f434-0025 62430cc1587885df Maria{n}"Non c'è...{wait 20}{n}non c'è fine...{wait
 f434-0026 841ba9f8973d9e4f Maria{n}"Allora eravate qui."
 f434-0027 287b3e3a536b6b3c Maria{n}"La regina dice che questa{n}casa fu distrutta nella{p}grande guerra di 500 anni{n}fa.{p}È stata lasciata così di{n}proposito, come ricordo{n}della guerra."
 f434-0028 937c03ef76d3eda2 Maria{n}"Grazie per avermi{n}aspettato.{wait 20}{p}Venite con me al Palazzo,{n}per favore."
+f434-0029 7d560076442d31a9 Trovato un 'Lontano{n}ricordo d'infanzia'.{p}Ma nessuno potrebbe{n}portarlo via.
 f435-0000 ddac2329916b04cb Salve, gente della{n}superficie. Guardate{n}questa foto.{wait 20}{p}Siamo io e mia moglie,{n}tanto tempo fa.
 f435-0001 8beaae780dcd734f Sarà difficile crederlo,{n}ma un tempo anche noi{n}eravamo giovani,{wait 20}{n}pieni di sogni e speranze.{p}Mia moglie è morta due anni{n}fa.{wait 20}{p}Così ho chiesto alla gente{n}del mondo di sotto di{n}seppellire le sue ceneri{n}nella terra.{p}Anche la mia ora arriverà{n}presto...{wait 20}{p}Voi giovani potreste{n}seppellire anche le mie{n}ceneri nella terra...?{p}Sono stanco di...{n}aspettare... e di{n}credere...{wait 20}{p}Voglio riposare in pace{n}nella terra.
 f435-0002 609dbe961af98a12 Ma mi chiedevo come{n}sarebbe vivere senza{n}invecchiare, come la{n}regina Zephyr...{p}Cosa avrà visto e sentito{n}in questi 500 anni?{p}Ciò che ha visto e sentito{n}le avrà davvero portato{n}felicità...?{wait 20}{n}Questo non lo so.
@@ -377,6 +393,7 @@ f437-0026 1baf97a801603618 Maria{n}"Andate pure avanti e{n}prendete l'ascensore{
 f437-0027 122b0bffc34b512b Maria{n}"Vi mostrerò la strada{n}per il Palazzo quando{n}sarà il momento.{p}Fino ad allora, fate un{n}giro per la città."
 f437-0028 0cd81ae8b59c4ea7 Maria{n}"A più tardi."
 f437-0029 2749fc59a58e3203 Vuoi scendere?{n}    Sì{n}    No
+f437-0030 38a0710daf617aa0 Vuoi salire?{n}    Sì{n}    No
 f438-0000 2a7934d9a654ce2f Fei{n}"Non c'è un altro modo per{n}scendere all'hangar?"
 f438-0001 bc5fd521c273b345 Fei{n}"Non importa.{wait 20}{n}Comunque non possiamo{n}perdere tempo qui."
 f438-0002 42d9cd6477138cda Fei{n}"Bene!{wait 20}{n}Allora andiamo!"
@@ -454,6 +471,7 @@ f441-0056 3c274be694289d3b ...Forse.{done 40}
 f441-0057 5e694a00c63b9bc4 {speed 2}Dicono che lo scontro tra{n}voi e {name 19} sia stato{n}equilibrato?{p}Incredibile...{wait 20}{n}Ci sono ancora persone{n}della superficie capaci{n}di tanto.{p}Nessun problema. Se{n}lavoriamo tutti insieme,{n}possiamo dare una lezione{n}a Solaris!
 f441-0058 2ef93f53e550302b ...Forse{done 40}
 f441-0059 c6e3f03fd6d169e0 Come ha potuto Solaris{n}fare una cosa così{n}terribile...!!{wait 20}{n}Dannazione!{p}È insopportabile...{n}vedere il genio, il{n}dottor Nikolai, finire{n}la sua vita così...
+f441-0060 dc4b6912811185ec Però, è proprio un{n}mostro...{wait 20}Il padre di{n}Maria ha progettato{n}qualcosa di straordinario.{p}Pare sia uno scienziato di{n}Solaris, ma lo rispetto{n}comunque. È la prova che{n}i geni esistono davvero.
 f442-0000 8689175983e3d40c Maria{n}"Arrivo, Solaris!{p}Io e {name 19}{n}saremo le ali nere che{n}vi porteranno tutti{n}alla morte!!"
 f442-0001 90e36f0a00aa8196 Nikolai{n}"{name 19}!!{wait 20}{n}Quella è Maria?"
 f442-0002 2236428376975c26 Maria{n}"...{n}È vero che sono{n}Maria Balthasar.{p}Ma tu...{wait 40}{n}chi sei...?"
@@ -465,7 +483,9 @@ f442-0007 fe6b9da2f7f82026 Maria{n}"...{wait 30}{n}Papà..."
 f442-0009 f3b06d1cfd5d0cc9 Nikolai{n}"{name 19}...{wait 20}{n}Cosa? Osi ribellarti{n}a me, il tuo creatore?"
 f442-0010 45ee202a0cd582ac Maria{n}"Q... questo è...!!{wait 20}{n}{name 19}!?"
 f442-0011 df44e2085fb01c01 Nikolai{n}"Interessante...{wait 20}{n}Ti affronterò.{p}Ti mostrerò quanto è{n}grande Nikolai, e il{n}potere dell'Achtzehn.{wait 20}{n}Fatti sotto, {name 19}!!"
+f442-0013 354b6e7dbd1c5989 Maria{n}"{name 19} e io saremo{n}le ali oscure che vi{n}porteranno tutti alla{n}'morte'!!"
 f444-0004 5d9ff317318ea7a0 Maria{n}"Questa è la mappa dei{n}livelli inferiori del{n}pozzo d'emergenza.{p}Potrete usarla quando{n}arriveremo al piano{n}parecchi livelli più{n}in basso."
+f444-0005 50fd71f447fa44f7 Questa è la mappa dei{n}livelli inferiori del{n}pozzo d'emergenza.{p}Usala quando arriverai al{n}piano parecchi livelli{n}più in basso di questo.
 f445-0000 04dbf14e88732278 Maria{n}"A questo piano potete{n}usare la mappa che avete{n}trovato prima.{p}È sempre utile avere{n}una mappa da guardare{n}quando ci si perde, no!?"
 f445-0001 18a4b1472bba5010 Fei{n}"Ehi, quella mappa che{n}abbiamo trovato di{n}sopra...{p}Sembra quella di questo{n}piano.{p}Se ci perdiamo, possiamo{n}guardare quella mappa."
 f445-0003 dd2a571d7e273361 Elly{n}"Non vuole aprirsi."
@@ -475,17 +495,14 @@ f445-0007 f4bc4b79d399e76d Billy{n}"Non sembra che{n}si apra..."
 f445-0008 d1a401c4381cc0cd Rico{n}"Non si apre.."
 f445-0011 93148572cee08d8b Chu-chu{n}"Perché non chi apri..."
 f445-0012 da4fa1f9a1d2e96f Maria{n}"Non si apre.{wait 20}{n}Dev'essere chiusa a{n}chiave."
-f445-0013 38a0710daf617aa0 Vuoi salire?{n}    Sì{n}    No
 f445-0014 dac5df51e8976cfd Big Joe{n}"Sto riflettendo sulla{n}vita... quindi lasciami{n}in pace."
 f445-0015 09442bc655e16292 Big Joe{n}"Hm? Sembra che quella{n}porta ora si apra."
 f445-0016 97d4ef94753e3b0b Big Joe{n}"Avete aperto questa porta{n}apposta per Big Joe!{n}Grazie mille!"
 f445-0017 299987829481234e Big Joe{n}"Quella porta proprio{n}non si apre...{p}Niente da fare...{n}Perfino Big Joe{n}si è arreso!"
 f445-0018 0325c33874235340 Impossibile ricevere{n}{item}.{n}Ne hai già troppi.
 f447-0000 0673916414407067 Fei{n}"Ehi!{n}Si muove!?"{done 70}
-f447-0001 1cf3b4537e219ede Vuoi scendere?{wait 10}{n}    Sì{n}    No
 f448-0000 f8cc5424f6a73e49 Maria{n}"Passato quel tombino,{n}potremo entrare{n}nell'hangar."
 f449-0000 ecbb546e92d4e723 Maria{n}"Se premi questo{n}interruttore puoi cambiare{p}il senso di rotazione del{n}mulino."
-f449-0001 63db60146671d4bb Vuoi salire?{wait 10}{n}    Sì{n}    No
 f451-0000 5931f05fb0747aa5 Maria{n}"Da questa parte, prego."
 f451-0001 c6a0753dc4f1e394 Non ci è permesso andar{n}via di qui, qualunque cosa{n}accada.{p}Perciò, vi prego, abbiate{n}cura di Maria per noi!
 f451-0002 b35d8091819ead75 Come vanno le cose in{n}superficie, ultimamente?{p}Scommetto che la gente{n}laggiù vive alla cieca ma{n}in pace come al solito.
@@ -519,6 +536,7 @@ f451-0029 8a87a770e05ec513 Bene, allora cosa{n}desiderate?
 f451-0030 5e516a90acb9d2ff     Oggetti{n}    Armi/Armature{n}    Parti di Gear{n}    Niente
 f451-0031 4b5de2921a4fa5ed Grazie mille.{wait 20}{n}Se vi serve qualcosa,{n}tornate pure.
 f451-0032 9a036e4704e27c0c Taaanto tempo fa ho sentito{n}che una Chu-chu solitaria{n}era stata portata via dalla{n}città da un saggio...{p}Sembra che stia bene.{wait 20} E{n}per giunta è diventata così{n}grande e maestosa...{p}Che sorpresa!{wait 20}{n}Chissà cosa mangiava.
+f451-0033 b61d506a7f32bae2 Taaanto tempo fa, Wiseman{n}portò via dalla città una{n}Chu-chu solitaria, così{n}ho sentito dire...{p}Non ho saputo cosa sia{n}successo dopo.{wait 20}{n}Spero che quella Chu-chu{n}stia bene...
 f452-0000 0208f0199250e56a Ascolta, Hyuga.{wait 20}{n}Vengo anch'io a Solaris.
 f452-0001 83c52de29572d489 Fei{n}"Perché{wait 20}...sei qui!?"
 f452-0002 4757844eeb681763 Citan{n}"Sì...{wait 20}{n}Ci conto."
@@ -528,6 +546,7 @@ f452-0005 e5d50e54878c2b40 Wiseman{n}"Fei, {n}va' con Shevat.{p}Tuo padre, Khan,
 f452-0006 755cab58d6602f1a Wiseman{n}"Avanti, entra."
 f452-0007 521f92bd646bd70e Wiseman{n}"Finalmente sei qui...{wait 20}{n}Dove sei stato?"
 f452-0008 831de75c8d88b1bf Wiseman{n}"Te l'ho già detto.{p}Ho imparato le arti{n}marziali con tuo padre{n}a Shevat.{p}La regina ti aspetta.{n}Va' pure."
+f452-0009 728ca6817be9e047 Maria{n}"Prego, entra."
 f453-0000 6916943050bf8682 Maestà,{n}è successo qualcosa{n}di terribile...!!
 f453-0001 a45b2b8d34eef7da Fei{n}"Maestà...{wait 20}{n}Voi...{n}Una bambina...?"
 f453-0002 f05f21c95e9b8d06 Fei{n}"522...!?{wait 20}{n}È davvero{n}possibile...?"
@@ -643,6 +662,7 @@ f453-0114 b665236ff2cd2b1a Jessie{n}"Allora la sua personalità{n}attuale è sol
 f453-0115 85e5cd62ea1f2c4d Jessie{n}"Allora vuol dire che alla{n}fine potrebbe essere{n}sopraffatto da Id?"
 f453-0116 168e290dbb92da2e Jessie{n}"...E questo vuol dire{n}cosa?"
 f453-0117 58ac0ec5037fffe4 Jessie{n}"Ne sei sicuro?"
+f453-0118 cb699e48bf2a4923 Maria{n}"Maestà...!"{done 30}
 f454-0000 6204a1a9038114e9 Fei e gli altri hanno{n}fatto rimuovere a Gaspar{n}una parte del Limitatore{n}inserito nei loro geni.
 f454-0001 c7e80457500773bb Sì sì, e poi...{p}{name 7} e i suoi amici{n}si riunirono e{n}festeggiarono{n}d'essere sani e salvi...{p}Fu naturale per loro{n}fare una festa,{wait 20} e la loro{n}notte dolce e pericolosa{n}continuò senza fine...{p}proprio come un{n}sogno infinito...
 f454-0002 d69d84a3066747b7 No, lasciamo perdere...{wait 20}{n}Questa è tutta un'altra{n}storia...
@@ -657,6 +677,7 @@ f454-0011 3266a20d5a61fec6 Gaspar{n}"No, non li ho più{n}visti da allora...{p}E
 f454-0012 e4e3de7f6562fe5c Gaspar{n}"Bene, allora vado a dare{n}un'occhiata ai loro{n}Limitatori."
 f454-0013 df51e03f853727f0 Maestà, l'Omnigear{n}sotterraneo si muove!!{wait 20}{p}La ragazza di nome Elly{n}era lì vicino e ha reagito{n}alla sua presenza!!
 f455-0000 94810854f2efe050 Fei{n}"È un ritratto piuttosto{n}vecchio.{wait 20} È il ritratto{n}di una famiglia?{p}I genitori, una ragazza e{n}un fratellino...{wait 20}{n}Sembrano tutti sorridere{n}felici."
+f455-0001 c557a437ce2521a0 Fei{n}"È un vecchio ritratto...{wait 20}{n}Sembra la famiglia della{n}regina Zephyr.{p}Genitori di bell'aspetto{n}e...{wait 20}quello accanto alla{n}regina è suo fratello...?{wait 20}{n}Sorridono tutti.{p}Solo la regina non è{n}cambiata...{wait 20}in 500{n}anni..."
 f456-0000 6dd893fdda91b99c Nikolai{n}"Capisco...{wait 20} Sei una forma{n}di vita gigante originaria{n}di questo pianeta...{p}Non sei...{wait 20}un giovane{n}rankar.{p}Nome della specie:{n}dotesque{name 7}polin{n}(intelletto{n}astronomicamente basso)!{p}Non si sono ancora{n}estinti?{p}Eppure, con l'ingegneria{n}genetica, dovevano essere{n}stati rimpiccioliti...{p}Probabilmente uno dei{n}superstiti a cui i saggi{n}di Shevat hanno rimosso i{n}Limitatori.{p}Interessante... Saresti{n}un'ottima cavia.{n}Ti userò per molti{n}esperimenti!"
 f456-0001 47f20216d14a40ce Maria{n}"No, {name 7}!{wait 20}{n}Non farlo!"
 f456-0002 39309e99aeb401a9 Maria{n}"Avete finito di parlare{n}con la regina?{p}Cosa avete intenzione di{n}fare...?{wait 20} Combatterete{n}contro Solaris al fianco{n}della gente di Shevat?"
@@ -679,6 +700,7 @@ f456-0024 70f22ee987062407 Citan{n}"Allora anche tu...{wait 30}{n}Ti prego, abbi
 f456-0025 b219783f1d21fb5e Yui{n}"Stai partendo, vero...{wait 20}{n}Per Solaris..."
 f456-0026 d5367ae999160afe Yui{n}"Soffrirai...{wait 20}{n}E soffriranno anche{n}loro..."
 f456-0027 4d950e376bfc49b5 Yui{n}"Non dire altro.{wait 20}{n}Lo so già..."
+f456-0028 bdef406db782b6d9 Yui{n}"Ecco, tieni.{wait 20}{n}Questa è la tua spada...{p}Ti prego...{wait 20}{n}Ti prego, torna vivo!"
 f459-0002 be58417510a681f6 Bart{n}"Cosa!?{wait 20}{n}Raccogliere dati di{n}combattimento!?{p}Allora questa guerra che{n}dura da secoli sul{n}continente di Ignas...{p}Era solo una farsa {n}architettata da Solaris!?"
 f459-0003 3b2245d0bbd359ba Rico{n}"...Capisco...allora era{n}così."
 f459-0004 6d38d80c2aa8d559 Billy{n}"L'Ethos...{n}sotto controllo...?{p}Gli abitanti della{n}superficie...come animali{n}domestici...?{wait 30}{n}Allora io ero..."
@@ -689,6 +711,7 @@ f459-0008 010e73c6c0b23a4b Non è una farsa.{wait 20}{n}Per loro è un'important
 f459-0009 ddb162d3c3e9a815 E non lo fanno neanche{n}per divertimento.{wait 20}{n}È un'importante{n}simulazione.{p}Creare organismi adatti{n}che possano entrare in{n}sintonia con le 'Reliquie{n}Anima' è uno dei loro{n}obiettivi principali.{p}In ogni caso, gli Agnelli{n}resteranno le cavie di{n}Solaris, a meno che{n}qualcuno non li fermi.
 f459-0010 b35f3bdc76716094 Voi abitanti della{n}superficie fareste bene a{n}pensarci seriamente.{wait 20}{p}Gli Agnelli resteranno le{n}cavie di Solaris, a meno{n}che qualcuno non li fermi.
 f459-0011 7c5693b019036c8b Dove si trovino i tre saggi,{n}Melchior, Balthasar e{n}Gaspar, non si sa dalla{n}grande guerra.{p}Si dice perfino che abbiano{n}perso la fiducia negli{n}uomini per via della{n}tragedia di Nisan.{p}Le attività di Solaris sono{n}di nuovo aumentate...{wait 20}{n}Chissà dove sono e cosa{n}stanno facendo.
+f459-0012 005d9e710e6f0834 Un uomo di nome Krelian fu{n}la mente dietro l'impianto{n}del Limitatore negli{n}Agnelli.{p}In origine era un Agnello.{n}Imparò l'ingegneria{n}molecolare direttamente{n}dal saggio Melchior.{p}Ma la usò per un atto{n}così terribile!{wait 20}{n}Un mostro incredibile!
 f460-0000 a6eb1f21c03f20be Quello è Lacan...{n}No, l'essere oscuro.{n}Il secondo avvento di{n}Grahf!{p}Dobbiamo trattenerlo e{n}sigillarlo, o non sappiamo{n}cosa potrebbe succedere!
 f460-0001 491461c08de65746 Zephyr{n}"Smettetela subito!{p}Non possiamo almeno{n}aspettare che Wiseman{n}torni prima di prendere{n}una decisione?"
 f460-0002 a02a5dfccf7e0116 Per quanto sia uno{n}stratega, perché Vostra{n}Maestà gli dà tanta{n}importanza?{p}Ho taciuto tutto questo{n}tempo dalla morte di Khan,{n}perché è stato reclutato{n}direttamente dalla regina.{p}Tuttavia, mi chiedo perché{n}usare una persona i cui{n}principi ignorano del tutto{n}il sacrificio.
@@ -711,6 +734,7 @@ f460-0019 9c16eabc52348c7d Hmhmm...{wait 20}{n}Così le Reliquie Anima{n}furono 
 f460-0020 f72e4a08d097f0a4 Tutto sommato, quell'unità{n}era destinata a fondersi{n}con qualcosa di{n}inorganico.{p}Sarebbe questa l'ipotesi{n}corretta...
 f460-0021 58b009161424ca6c È stupido che gli umani{n}cerchino chu di affidarsi{n}a cose simili...
 f460-0022 66b4ace32aae9885 Oh cielo, ho detto chu{n}troppo.{wait 20} Dimenticate{n}quello che ho detto.
+f460-0023 cdc3bb8a8968c571 Ehm, e, già... la reliquia,{n}la reliquia...{wait 20} Chissà dov'è{n}finita la piccola Reliquia{n}Anima...
 f461-0000 86eabab30e1f1be2 Bart{n}"Roni Fatima?{n}Non è un mio antenato?{p}Quindi dite che il mio{n}antenato, Roni, combatté{n}al fianco della regina{n}Zephyr contro Solaris...?{p}Hmm..."
 f461-0001 ef9c4a530e18fb3f Un tempo, Solaris e il suo{n}Gazel Ministry, composto da{n}12 anziani...{p}...dominavano il mondo con{n}una potenza militare{n}maggiore di quella attuale.{p}La gente della superficie{n}era trattata come schiava...{p}Chiunque resistesse veniva{n}punito rapidamente e senza{n}pietà.{p}Trattavano le persone come{n}se non fossero esseri{n}viventi.{p}Alla fine la gente della{n}superficie cominciò a{n}ribellarsi ovunque, il che{n}portò infine...{p}...alla guerra tra Solaris e{n}Shevat di 500 anni fa.
 f461-0002 ab6aadc195045184 La grande guerra che si{n}combatté tra Solaris e{n}Shevat, 500 anni fa...{p}Fu una battaglia eroica,{p}con in gioco la libertà e{n}l'indipendenza degli{n}abitanti della{n}superficie...{p}L'esercito ribelle, che{n}aveva in Shevat il suo{n}cuore...{p}...riuscì ad attaccare la{n}cittadella interna di{n}Solaris, ma solo a prezzo{n}di enormi sacrifici...{p}Tuttavia, quando eravamo{n}quasi arrivati, accadde{n}l'impensabile...{p}Apparve un nuovo nemico che{n}nemmeno Solaris aveva{n}previsto.{p}Fu allora che cominciò{n}l'incubo. Un incubo mai{n}visto prima.{p}Un incubo che preghiamo di{n}non dover mai più{n}rivedere...
@@ -720,19 +744,25 @@ f461-0005 e55a8909a9d2ef4e Quei giganti che un tempo{n}combatterono per salvarci
 f461-0006 16e59278be2057e5 Dopo la guerra e il Crollo{n}di Diabolos, al pari degli{n}abitanti della{n}superficie...{p}...le forze di Solaris,{n}duramente provate,{n}cominciarono a ritirarsi{n}verso la loro patria...{p}...portando con sé come{n}schiavi un gran numero di{n}abitanti della superficie.{p}Non potemmo fermarli.{p}L'unico modo per gli{n}abitanti della superficie,{p}devastati dalla guerra, di{n}sopravvivere era dipendere{n}da Solaris...{p}Dopo un breve momento di{n}speranza, Solaris tornò a{n}regnare sulle nostre{n}vite...{p}Era iniziata un'epoca{n}fredda e dura.{p}Sono passati 500 anni e il{n}loro dominio continua{n}ancora...{p}Nessuno sa quanto{n}durerà ancora...
 f461-0007 8381cc7fa7618422 Sopravvissuti alla grande{n}guerra di 500 anni fa e al{n}Crollo di Diabolos...{p}...noi e il resto dei{n}nostri compagni ci{n}ritirammo su Shevat.{p}A quel tempo, Shevat era in{n}costruzione in cima alla{n}Torre di Babele...{p}...ma riuscimmo a fuggire{n}in cielo prima che Solaris{n}riprendesse il potere sulla{n}terraferma.{p}Da allora vaghiamo per i{n}cieli, osservando le{n}attività della terra{n}sottostante.
 f461-0008 cf68b2c58f0b3e89 Probabilmente lo sapete{n}già...{p}...ma questa Shevat è{n}protetta da una Porta{n}speciale, resa possibile da{n}una tecnologia antica.{p}Nemmeno Solaris può{n}infrangere questa barriera.{n}Grazie a ciò, fino a oggi{n}abbiamo evitato invasioni.{p}Ma anche così, non abbiamo{n}la forza di attaccare{n}Solaris...{p}È una situazione di stallo.{n}In sostanza, ci limitiamo a{n}guardarci in cagnesco.
+f461-0009 dd7619613e018ac4 Dopo la guerra, Solaris usò{n}una Porta, come la nostra,{n}per separarsi dalla{n}superficie.{p}Poi cancellò ogni ricordo{n}della sua esistenza dalla{n}mente degli abitanti della{n}superficie.{p}Per questo, gli abitanti{n}della superficie ancora non{n}sanno di essere stati{n}dominati in segreto da{n}Solaris per tutto il tempo.{p}Nascere in una falsa realtà{n}e crescerci, e morirci...{n}senza mai avvicinarsi{n}alla verità.{p}...Questa è la vita di un{n}abitante della superficie.
 f462-0000 f6f66d53c434ccd8 Oh, e Lei chi è...?{wait 20}{n}Ho la sensazione di averLa{n}già incontrata...{p}Hmm... somiglia a Khan,{n}colui che ci insegnò{n}l'arte del combattimento.{p}Nessuno sa dove sia da{n}quando è sceso in{n}superficie per una missione{n}della regina...{p}Con la sua abilità dubito{n}che gli sia successo{n}qualcosa.{wait 20}{n}Ma chissà dove sarà?
 f462-0001 65385a2a6b8b515d Siete appena arrivati{n}dalla{n}superficie, vero?{wait 20}{n}Ho sentito parlare di voi.{p}Dicono che avete salvato{n}un nostro collega{n}catturato dall'Ethos.{wait 20}{n}Grazie infinite.
+f462-0002 47aa70e02be2b52b Vorrei che mi affidassero{n}una missione!{wait 20} {n}Darei una bella lezione{n}a quei Solariani...
 f463-0000 ced3baebe15f2c55 Ahh... capisco,{n}allora sei il figlio di{n}Khan.{wait 20}{n}Hai già incontrato la{n}regina{n}Zephyr?{p}Non riesce ancora a{n}dimenticare la tragedia di{n}Nisan, durante la grande{n}guerra di 500 anni fa.{wait 20}{n}Anche se non è colpa{n}sua...{p}Immagino che non riesca a{n}perdonarsi di aver tradito{n}e abbandonato i suoi {n}compagni, pur non sapendo{n}nulla di ciò che stava{n}accadendo...
 f463-0001 5a31ff3eae393dbb Oh, forse ho detto troppo.{n}Non dovrei sapere niente.{wait 20}{n}Comunque, continua così{n}nella lotta per rovesciare{n}Solaris, ragazzo!
+f463-0002 812b669e55811a38 Continua così nella lotta{n}per rovesciare Solaris.{wait 20}{n}Conto su di te.
 f464-0000 ac7a09b709e6622d Il padre di Maria, il dottor{n}Nikolai,{p}è stato catturato da Solaris{n}e da allora non si è saputo{n}più nulla di lui.{p}In ogni caso, sono sicuro{n}che lo costringono a fare{n}ricerche sui Gear...{p}Se sviluppassero {n}{name 19} in una nuova{n}arma Gear e cominciassero{n}a produrla in serie...{p}Be', a dir poco, sarebbe{n}più di quanto potremmo mai{n}affrontare...
+f464-0001 749199c55b5be684 Balthasar ha portato Maria{n}a Shevat circa 5 anni fa,{wait 20}{n}insieme a quel{n}{name 19}.{p}Balthasar ha detto di{n}essersi infiltrato da solo{n}a Solaris per cercare di{n}salvare il dottor Nikolai{n}e Maria.{p}Mi ha raccontato ridendo{n}che era riuscito a fuggire{n}con Maria e a portarsi via{n}quel {name 19} come{n}souvenir.
 f465-0000 6db8cfbe4ecdd234 Molto tempo fa, gli umani{n}vivevano con Dio in un{n}paradiso nel cielo{n}chiamato Mahanon. Il luogo{n}era protetto dal potere di{n}Dio.{p}Gli umani non conoscevano{n}la paura né la morte.{p}Ma un giorno gli umani{n}entrarono nel giardino{n}proibito di Dio e{n}mangiarono{n}un frutto che donò loro{n}un'enorme intelligenza{n}e potere.{p}Dio scoprì l'accaduto e{n}gli umani furono cacciati{n}dal paradiso. I tempi{n}prosperi erano finiti, e{n}cominciò un'era di dolore{n}e di odio...
 f465-0001 b5f0154a3697e0c2 Questa era la prima parte{n}della leggenda della{n}genesi tramandata fin{n}dall'antichità.{wait 20}{n}Si dice che una leggenda{n}come questa contenga un{n}fondo di verità...
 f465-0002 467922ed91688827 Gli umani cacciati dal{n}paradiso furono tanto{n}stolti da ribellarsi{n}a Dio.{p}Per resistere al potere{n}di Dio, crearono dodici{n}Reliquie Anima e si{n}proclamarono dèi...{p}Per 10 giorni e 10 notti{n}il mondo versò il suo{n}sangue e Mahanon fu{n}avvolta{n}dalle fiamme.{p}Ma la forza umana non{n}poteva competere con Dio,{n}e gli umani arroganti{n}furono distrutti dalla sua{n}ira.{p}Solo pochi giusti rimasero{n}sulla terra.{p}Tuttavia, anche Dio era{n}stanco e ferito.{n}Decise di riposare nelle{n}profondità più remote{n}della{n}terra. {p}Il riposo di Dio fu lungo.{n}Ma per Dio l'eternità è{n}solo un istante.{p}Da allora, i giusti che{n}non si erano ribellati a{n}Dio dovettero vivere da{n}soli in una natura ostile,{n}nella paura costante della{n}morte...
 f465-0003 0a417262c73723dd La leggenda dice anche{n}questo:{wait 20}{n}quando i figli dei giusti{n}rinasceranno, Dio si{n}risveglierà dal suo lungo{n}riposo e tenderà loro una{n}mano.{p}Se la leggenda è vera,{n}cosa porterà Dio agli{n}uomini al suo risveglio?{wait 20}{n}Che genere di essere è{n}Dio?
+f465-0004 3b7f810178660395 Non si sa quanto ci sia di{n}vero nella leggenda della{n}genesi...{p}Tuttavia, le 'Reliquie{n}Anima', create dalla{n}sapienza divina, esistono{n}davvero.{p}Il Gazel Ministry di{n}Solaris è disperatamente{n}in cerca della 'Reliquia{n}Anima' e di Mahanon, il{n}luogo dove riposerebbe Dio.{p}Se Solaris otterrà quel{n}potere, nessuno potrà più{n}fermarla.{wait 20}{n}Che ne sarà del mondo,{n}allora...?
 f466-0000 edcb6a7879b72ada Margie{n}"Eh eh, sono venuta qui{n}anch'io!{p}Dentro la Yggdrasil c'è{n}odore di spogliatoio{n}maschile.{wait 20}{n}Non lo sopporto più."
 f466-0001 6a85cae3d6973ee0 Margie{n}"Questo paese è dolce e{n}tranquillo...{wait 20}ma ci sento{n}una tristezza nascosta.{p}Un'eco triste di tanto{n}tempo fa...{n}lontanissima...{wait 20}{p}Cos'è successo qui 500{n}anni fa?"
 f466-0002 cd4a6904a628c081 Margie{n}"Allora, che ti serve?"{wait 20}{n}    Cambia gruppo{n}    Niente
 f466-0003 ddfd737e5d170e7d Margie{n}"Va bene.{wait 20}{n}Allora, sta' attento!"
+f466-0004 f9a99a54c39ae989 Vuoi riposare nel letto?{wait 20}{n}    Certo!{n}    No, grazie
 f467-0000 b6542293e83acb7a Fei{n}"Me l'ha raccontato il{n}doc.{n}Id...{p}...Chi l'avrebbe mai detto{n}che dentro di me c'è{n}un altro me..."
 f467-0001 96252ae12a28b283 Fei{n}"Dicono che sono il{n}secondo{n}avvento di Grahf.{p}Colui che ha distrutto{n}tutto questo mondo...{p}Pare che Grahf fosse un{n}abitante della superficie{n}di nome Lacan..."
 f467-0002 37230a06a090e0f0 Fei{n}"Grahf mi ha chiamato{n}colui{n}che avrebbe distrutto Dio{p}In un certo senso, ora{n}capisco cosa intendeva.{p}Anche se il potere di Id{n}non è ancora a quel{n}livello,{p}se è della stessa natura{n}di quello di Grahf...{n}io..."
@@ -750,8 +780,11 @@ f467-0014 b0f04fc3ddf75ebd Questa è una Gabbia di{n}Carbonite che pietrifica{n}
 f467-0015 7bc647220c309680 A proposito, voi abitanti{n}della superficie conoscete{n}la tragedia di Nisan della{n}grande guerra?{p}Ve ne hanno parlato{n}i superiori?{n}    Sì{n}    No
 f467-0016 097ac1d4409bcf5a Mi sorprende che ve{n}l'abbiano detto. Allora{n}sapete di che si tratta?{p}Non credete a tutto quello{n}che dicono quei vecchi.{wait 20}{n}Non ne verrà niente{n}di buono.
 f467-0017 9b0c1120fd1e4fe7 Ne dubitavo. Quei vecchi{n}evitano educatamente di{n}parlarne.{p}Credono che la verità{n}sparisca se voltano le{n}spalle al passato?{wait 20}{n}Branco di sciocchi!
+f467-0018 61f65b9148164ca1 Sta' attento, abitante{n}della superficie. Te la{n}vedrai brutta se apri il{n}tuo cuore a quei vecchi.{p}Proprio come fecero a{n}Nisan, 500 anni fa...
+f468-0000 173c5ac878259647 Questa è una macchina{n}creata per addormentare{n}criminali feroci e mostri{n}pericolosi.{p}Non si prevede di usarla{n}di nuovo, ma è sempre{n}pronta, per ogni{n}evenienza.{p}Chi non ha niente da fare{n}qui se ne vada.{wait 20}{n}Fuori, subito.
 f469-0000 7fef9eec8792d5bf Quel giorno, 500 anni fa,{n}quella donna era di certo{n}qui...{wait 20}Non c'era altra{n}scelta che tenerla{n}prigioniera...{p}Avremmo potuto vincere, a{n}costo di molti sacrifici!{wait 20}{n}Se solo quel traditore non{n}fosse sparito con la donna!!{p}La donna fuggita liberò la{n}bestia. La bestia succhiò il{n}sangue degli umani e ne{n}divorò la carne...{wait 20}{n}E fece a pezzi il mondo...!
 f469-0001 e84d0cf39bccb1b3 Mi scusi... signorina...{wait 20}{n}Lei somiglia alla ragazza{n}che era come un angelo e{n}fu sacrificata nella{n}grande guerra...{p}Immagino lo smarrimento di{n}Zephyr e dei suoi seguaci.{wait 20}{p}Furono loro i veri{n}responsabili della morte{n}di Sophia.{p}In realtà, veniamo ancora{n}puniti per quel crimine di{n}500 anni fa!{wait 20}{n}È quasi ridicolo,{n}ahah...!
+f469-0002 b81fe5d582046e35 Da allora, la gente{n}brancola nel buio.{wait 20}{n}Da 500 anni espia{n}un crimine...{p}Voglio che tu faccia{n}attenzione, giovane. Non{n}seguire la stessa strada{n}del traditore...{wait 20}annegato{n}nell'odio e nell'amore...
 f470-0000 5af7ffa4a10c9874 Fei{n}"...!?{wait 20}{n}Yui!?{p}P...perché{n}è qui...!?"
 f470-0002 456202d3610b3950 Fei{n}"Mi dispiace di averLe{n}dato tanti problemi."
 f470-0003 5853ddffc505e08e Fei{n}"Sì...{wait 20}{n}ma..."
@@ -773,7 +806,9 @@ f470-0019 dfd11b21e366bd8e Yui{n}"C'è un intruso a Shevat?{wait 20}{n}È uno di
 f470-0020 6841dd0d25c78ffb Yui{n}"Hai già incontrato la{n}regina?{wait 20}{p}Se non l'hai fatto, va' a{n}salutarla appena puoi."
 f470-0021 80a2b7f8ddf36072 Midori{n}"...{p}Chu-chu...{wait 20}{n}Amica mia..."
 f470-0022 e87892f11a6878e2 Midori parla davvero{n}tanto!{wait 20} È incredibile{n}quante cose hai da{n}racchontare, chu.
+f470-0023 64bbec602e95eb01 Possiamo conversare anche{n}senza parlare.{wait 20} L'hai{n}già dimenticato?
 f471-0000 c6d07a9e25f3794a Voliamo su nel cielo,{n}giusto?{wait 20}{n}Non è facile procurarsi{n}rifornimenti.{wait 20} E non{n}possiamo nemmeno andare a{n}prenderci tutto da soli.{p}Finora in qualche modo ce{n}l'abbiamo fatta, ma se la{n}situazione continua{n}così...{wait 20}{n}Hmm... dovremmo fare{n}qualcosa...
+f471-0001 e42ec04f3a462adc Hmm... anche questo mese{n}sarà molto dura.{wait 20} Dovremo{n}ridurre un po' le razioni{n}per farcela...{p}Ma probabilmente tutti si{n}lamenteranno...{wait 20}{n}Come faccio...?
 f473-0000 d5b7debe0c85bc99 Sei diventato amico{n}di Maria!
 f473-0001 efc0a72f22895af4 Fei{n}"...!?{wait 20}{n}{name 11} non si{n}muove!?"
 f473-0002 6921e439467a899e Elly{n}"Neanche {name 13}{n}risponde!"
@@ -911,6 +946,7 @@ f473-0161 4b398a3c0f91975e Generatore 1{n}   Billy
 f473-0181 c51b14de8a4bd3f0 Citan{n}"Che cos'era...!?"
 f473-0182 1b8692df3837840d Citan{n}"Potenti onde elettriche{n}disturbano i circuiti di{n}risposta dei Gear.{p}Non preoccupatevi, passerà{n}presto.{wait 20}{n}Ma..."
 f473-0183 d502dc65e1da75d4 Citan{n}"Non intendo questo.{wait 20}{n}E se...{n}Se {name 19}..."
+f473-0184 938d550067b58976 Citan{n}"Se {name 19} è il Gear{n}gemello dell'Achtzehn...{n}allora forse...chissà...{p}...Voglio dire che non{n}sarebbe sorprendente se{n}fosse dotato di uno scudo{n}antidisturbo."
 f474-0000 570dfe98d5894556 ERRORE: L'ORDINE DEL GRUPPO È{n}SBAGLIATO O NEL GRUPPO C'È UN{n}MEMBRO CHE NON DOVREBBE STARE{n}IN QUESTA SCENA.{p}SEGNALA IL BUG!
 f474-0002 98e3dd5b56cada07 Fei (Probabilmente non{n}riusciva a stare{n}tranquilla restando sulla{n}nave.)
 f474-0006 f958f3ec90d42e66 Elly{n}(E per di più non vedo{n}nessun civile!)
@@ -999,10 +1035,13 @@ f474-0102 198193308c381adc Bart{n}"Arriviamo appena finiti{n}i preparativi.{p}Pu
 f474-0103 b50d665e8bf1f9e0 Bart{n}"Bene...{wait 30}{n}prepariamoci."
 f474-0104 8a0ba87268857176 Fei{n}"Però, a quanto pare,{p}non credo che riusciremo a{n}trovare la venditrice di{n}attrezzi."
 f474-0105 0fe93f4542a4528b Bart{n}"Hmm... E se lasciassimo{n}qui i soldi necessari?{p}Certo, non sarà molto{n}educato, ma sono sicuro{n}che mi perdoneranno..."
+f474-0106 0c29dbafe1f30912 "Inseguimento di Shakhan{n}dalla mappa del mondo{n}alla Porta."
 f475-0000 4acfd84e11e4bb59 Fei{n}"Non sapevo che ci fosse{n}un passaggio segreto{n}dietro la cattedrale."
 f475-0001 596bdc4cf85f9c9f Bart{n}"Già.{wait 30}{n}Di solito è chiuso."
 f475-0002 d45f94d2fea49174 Fei{n}"Quindi il mausoleo è{n}lì dentro?"
+f475-0003 2a9a702a32b23b5b Bart{n}"Esatto.{p}Se la città dovesse mai{n}trovarsi in pericolo, la{n}gente dovrebbe rifugiarsi{n}qui dentro."
 f476-0000 f0b9d6d541c7cf7c  Fei{n}"Un momento.{wait 30}{n}Fin dove...arriva{n}questo!?"
+f476-0001 1baa8150811a6afd  Bart{n}"Tieni duro.{n}Manca poco."
 f477-0000 8684b4883e59a48c Fei{n}"...Allora,{wait 30}{n}che succede adesso?"
 f477-0001 99511dfa97ce9f81 Fei{n}"...Non avrai mica..."
 f477-0002 fed4891e58909316 Fei{n}"Non avrai mica{n}dimenticato{n}cosa dobbiamo fare?"
@@ -1044,6 +1083,7 @@ f477-0041 ac82c7bb62f68496 Bart{n}"Ehi, calma, non mettermi{n}fretta."
 f477-0042 26375be06c00edf4 Bart{n}"Ehi, piantala e{n}sta' zitta!"
 f477-0043 b475d724f010c2f9 Bart{n}"... È passato un po' di{n}tempo, non prendertela{n}con me.{p}...{wait 30} Accidenti,{n}l'ho proprio dimenticato."
 f477-0044 87a4aab022662ff1     NO! Mi ricorderò!{n}    ...Ti prego...
+f477-0045 92480d3055ae4833 Bart{n}"Ma certo!! Ah!{wait 30}{n}Ecco, è proprio come{n}pensavo!"
 f478-0001 e3b047eae4c781b4 Ragazzo mio!?
 f478-0003 db718279a6689001 Sì, in qualche modo...
 f478-0004 87fcd0a791a2d24b Ah sì, Shakhan?{wait 30}{n}No, non l'ho visto...{p}Gli unici venuti qui sono{n}stati quei soldati che mi{n}hanno minacciata perché{n}stessi zitta...{wait 30}{p}Mi dispiace, ragazzo mio.{wait 30}{n}Se solo fossi stata più{n}coraggiosa.
@@ -1073,6 +1113,8 @@ f478-0037 0fc6d9b413904352 Bart{n}"Questo paese va{n}ricostruito da zero.{p}Io,{
 f478-0038 2f72c9d52578c74d Bart{n}"Se tutto va bene, presto{n}potremo farlo diventare{n}realtà.{p}Vi prego, credetemi,{n}e aspettatemi."
 f478-0040 3b120ed5cc37678f Bart{n}"Non so cosa sia successo{n}o cosa mi abbia fatto dire{n}quelle cose.{p}Non è da me dire{n}roba del genere..."
 f478-0041 d40729eb7d896fb6 Margie{n}"Avresti potuto dirgli{n}semplicemente che eri{n}{wait 30}il principe."
+f478-0042 a0dc1d9e76d5aaa1 Bart{n}"No,{wait 30} non posso ancora.{p}Devo esaudire l'ultima{n}volontà di mio padre."
+f479-0000 cf446a6291fb190c     Scendi{n}    Lascia stare
 f480-0000 748115025f07802a Fei{n}"...{wait 30}Qui dentro è{n}buio pesto."
 f480-0001 a7c218dc267459ba Fei{n}"C'è qualcosa...{wait 30}che puzza{n}di muffa."
 f480-0002 a4debd269478c531 Elly{n}"...{wait 30}È buio."
@@ -1095,6 +1137,7 @@ f480-0018 4896458c15b3c412   Blocco ascensore n.2{n} (↑Flusso direzionale)
 f480-0019 89bfee8b96ca05c3 Bart{n}"Ah, avranno tolto la{n}corrente perché non c'è{n}nessuno."
 f480-0020 6315448bbecdf9fd Margie{n}"Usiamo quest'area di{n}sotto{n}come mausoleo...{p}Perciò c'è sempre un{n}minimo di energia.{n}Ma nemmeno alle sorelle{n}è permesso entrarci."
 f480-0021 2791dbbc1394fe51 Bart{n}"Ovvio.{wait 30}{n}Lì dentro non è entrato{n}praticamente nessuno."
+f480-0022 ded06b1e112fe058 Bart{n}"Andiamo avanti!{p}Dobbiamo arrivare al{n}tesoro prima che arrivi{n}Shakhan."
 f481-0000 de9b91f8af4b1fad Fei{n}"Questa è...{wait 30}{n}la stessa statua d'angelo{n}della cattedrale."
 f481-0001 5cc66da4240c476a Fei{n}"Il...{wait 30}{n}Diaspro Fatima."
 f481-0002 3706e152f8731c3e Fei{n}"Cosa ci sarà più{n}avanti{wait 30}...?"
@@ -1123,6 +1166,7 @@ f481-0028 0afe2c539a92498f Margie{n}"Ci sono io."
 f481-0029 34c7d94869ebf1e7 Bart{n}"Già.{p}Quel teppista di Shakhan{n}l'ha scambiato per il{n}ciondolo reale."
 f481-0030 cb2c5859fe76dbde Bart{n}"Ma così ci ha reso le{n}cose più facili, perciò ho{n}tenuto la bocca chiusa."
 f481-0031 0681b1cf7e817d39 Margie{n}"Più avanti ci sarà il{n}nucleo centrale della{n}fortezza."
+f481-0032 b04be1fffa249dc8 Margie{n}"Si dice che, se quella{n}luce misteriosa brilla{n}sui nostri occhi,{p}la fortezza risalirà{n}in superficie.{p}Dicono che sia stata{n}costruita prima della{n}fondazione del paese{n}di Aveh.{p}Allora, siete pronti?"
 f482-0000 4da0ab7caab594d7 Fei{n}"Non è chiusa a chiave?"
 f482-0001 0592d137b2e712c0 Fei{n}"È appena uscita una luce{n}fortissima.{p}...{wait 30}Hai appena fatto{n}qualcosa che non dovevi{n}fare?"
 f482-0002 45dc2ace7513680e Errore{n}Questo personaggio{n}non è a Jasper.{n}Segnala questo bug.
@@ -1245,6 +1289,7 @@ f482-0143 7df22336b87d8401 Billy{n}"Devo farcela!"
 f482-0144 8c464f2974aa7c93 Billy{n}"Lascia fare a me!"
 f482-0145 98cc85b0ec02d085 Billy{n}"Fuoco!"
 f482-0146 ab91ab2c70a8ed88 Billy{n}"Mancato!"
+f482-0147 a83f56aba939c414 Billy{n}"VAI!"
 f483-0000 21305c73973ffaf6 Fei{n}"Che succede?"
 f483-0001 5b62eb0e10adca21 Fei{n}"L'hai mosso tu?"
 f483-0003 7b4dc23f069c05a9 Elly{n}"L'hai mosso tu?"
@@ -1293,7 +1338,9 @@ f483-0054 e2000522358477b6 Bart{n}"No.{p}Non è per quello."
 f483-0055 fb271db8799f54bf Il Forte Jasper è già{n}emerso.{p}Fareste meglio ad andare{n}alla Torre di Babele a{n}controllare i sistemi.
 f483-0056 34ce6205eb85d386 Tolone{n}"Ah!{wait 30}{n}Sapore di Agnello..."
 f483-0057 fecaa23acd6fd33e Seraphita{n}"...Sapore...!!"
+f483-0058 b34c556b4284e115 Tolone{n}"Ti avevo detto{n}di stare zitta!"
 f484-0000 1755b05aab875a83     Sali{n}    Lascia stare
+f484-0001 cb448eff61899cd0     Scendi{n}    Lascia stare
 f485-0000 ede921f12d96d476      Ascensore n. 2{n} (↓Sala contr./Bl.energ.)
 f485-0001 cf11a95d2408f747  Blocco energia
 f485-0003 7bf35aa67e783460  Blocco ascensore n. 2
@@ -1318,6 +1365,7 @@ f486-0028 16b840fb099b37d5 Shakhan{n}"Errrgh...{wait 30}{n}Non è ancora finita!
 f486-0029 2bda6d27145a2dc1 Bart{n}"Aspetta!"
 f486-0030 fbc3ccce814ef125 Bart{n}"Dannazione,{wait 30} non si apre!{wait 30}{n}È chiusa dall'interno."
 f486-0031 c0593c09ee87900e Sigurd{n}"Signorino, aspetti, La{n}prego!"
+f486-0032 df97a90cba2cdbf0 Sigurd{n}"Dove stava andando!?{n}Marguerite è in grave{n}pericolo!"
 f487-0000 2b2af777e7dedc1d Bart{n}"C'è un'altra serratura{n}a Diaspro..."
 f487-0001 3958c52aecefec21 Margie{n}"Proviamo."
 f487-0002 5bdbcf540de91777 Bart{n}"Argh!{wait 30}{n}Ho un solo {n}Diaspro Fatima!"
@@ -1341,6 +1389,7 @@ f488-0008 8947a18a673aec02 Bart{n}"Quel teppista non va{n}da nessuna parte!"
 f488-0009 6ca65d3148058525 Citan{n}"Aspetta, signorino, ti{n}prego! Margie starà bene?"
 f488-0010 71769b8db85b40e7 Bart{n}"Ehm... ah, già!"
 f488-0011 be851175ba18250a Bart{n}"Ehi, Margie...{wait 30} stai{n}bene? Margie!{wait 30}{n}Margie, svegliati!!"
+f489-0000 554037b9dc121498 È finita.{n}Cambia con il prossimo.
 f491-0000 5a573257e3313f24 Fei{n}"Per essere rimasto chiuso{n}qui così a lungo, è in{n}ottime condizioni!"
 f491-0001 292e1b8e9aa1f9be Fei{n}"...{wait 30} Somiglia parecchio{n}al Gear di Bart."
 f491-0002 540feefdd816a0bd Fei{n}"L'unità motrice è stata{n}sigillata..."
@@ -1455,6 +1504,7 @@ f491-0116 35a3524988ae1653 Bart{n}"Qualcuno ha una luce?"
 f491-0117 43cc97801f777859 Bart{n}"Questa...{wait 30}{n}È un'iscrizione.{p}È in antico fatimiano.{n}{wait 30}...{wait 30}...È dei miei{n}antenati."
 f491-0118 1fc1a1dd8c31f5e8 Margie{n}"Cosa dice?"
 f492-0000 48d82ab380c934b7  Carica il secondo colpo!
+f492-0001 0eb412e56e299596  Carica il terzo colpo!
 f493-0000 2a76f765c7c0aa2b Alla scena successiva
 f493-0001 8d45573624e52201 Quando Fei e gli altri scesero{n}nel cuore di Mahanon,{wait 30} io{n}a Nisan curavo chi aveva{n}appena cominciato a mutare{wait 5}...
 f493-0002 644c16c32809165e Persone che mutavano, una{n}dopo l'altra...
@@ -1470,6 +1520,7 @@ f493-0011 0c807c6dd7affa86 Margie{n}"Proprio come pensavo...{n}È il Ciondolo di
 f493-0012 dec161aec9bb3628 Elly{n}"È di Fei. Lo tengo io{n}per lui...{wait 30}{n}Ma...{p}È come se l'avessi{n}sempre portato..."
 f493-0014 289bdc28b8416ce4 Margie{n}"Quando lo indossi,{n}somigli ancora di più{n}a Sophia!"
 f493-0015 8db72b34b42bd929 Elly{n}"Davvero? Hmm...{n}Con le lusinghe non{n}otterrai niente, sai?{p}Comunque, dobbiamo provare{n}in fretta il nuovo{n}assemblatore soppressore di{p}mutazioni su quelle altre{n}persone laggiù.{p}Non possiamo permettere{n}che cambino ancora."
+f493-0017 4ef287617f30d817 Elly{n}"Oh no...{n}È successo qualcosa{n}a Fei e agli altri!"
 f494-0000 a5ea692e5fb1dcb7 Elly{n}"Chissà, se fossimo{n}arrivati prima ci avremmo{n}messo il piede sopra?"
 f494-0001 0612719c7a058444 Citan{n}"Potrebbe essere una{n}trappola?"
 f494-0002 a217b1fe92fcfe98 Billy{n}"Forse stanno cercando{n}di attirarci."
@@ -1480,6 +1531,7 @@ f494-0006 3bae0c1b3b066a80 Emeralda{n}"Sento qualcosa di molto{n}sospetto."
 f494-0007 71d9348a47768d36 Bart{n}"Ma che!?{wait 30}{n}Quel buco l'ultima volta{n}non c'era."
 f494-0008 254067a659b41685 Fei{n}"Sono superstiti{n}dell'ultima{n}battaglia!"
 f494-0009 8a7d74ddedff6c57 Fei{n}"Quei tipi... sembrava che{n}ci stessero aspettando."
+f494-0010 6facd49be07bf20e Bart{n}"Comunque sia, dobbiamo{n}andare avanti! Sarà una{n}vergogna eterna se{p}ce li lasciamo scappare!"
 f495-0000 958bacf14aa5704f Elly{n}"Aspettate!{wait 30}{p}Non è il generatore della{n}barriera di cui abbiamo{n}sentito parlare a{n}Shevat!?"
 f495-0001 1d670b86f32f8e7e Elly{n}"??{wait 30}{n}C'è qualcosa che non va."
 f495-0002 2aa5477c3f9367c5 Elly{n}"Sta crollando.{wait 30}{n}Dobbiamo uscire!!"
@@ -1531,3 +1583,5 @@ f495-0050 8d6cf105841d8c3c Bart{n}"Il trono? Tienitelo pure!{p}Un re deve portar
 f495-0052 1f88787b701603cd Fei{n}"La Porta è in fiamme...!"
 f495-0053 b9ac5fedcf4018c1      Non desideri {wait 16}il potere?{done 84}
 f495-0054 e722876a6aca831c Bart{n}"Ancora lui!?"
+f495-0055 8870d6c0f9e7326a Fei{n}"Come ha fatto a{n}entrare qui!?"
+f496-0000 1d842c358de510f0 Tornare alla Yggdrasil?{n}    Sì{n}    No

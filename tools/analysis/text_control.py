@@ -12,8 +12,10 @@ last operand; the inserted text's 00 returns to the byte after it.
 
 Text lives in tables read by text_get_resource_entry: entry n starts at the u16 offset
 at byte 4 + 2n. Every located table also holds its count at +0, 0 at +2, count
-+ 1 offsets (the last ends the text) and count (columns, rows) byte pairs
-after them (text_get_message_columns/text_get_message_rows read the pairs). Windows get text only
++ 1 offsets and as many (columns, rows) byte pairs after them
+(text_get_message_columns/text_get_message_rows read the pairs past count + 3
+halfwords): its entries are 0 to count, the count being its last entry's
+number, and nothing marks where the text ends. Windows get text only
 through window_queue_message (queue), window_render_text_line (one-line layout) and the
 insertions; their callers pass entries of these tables, or text built at run
 time from character codes through the byte pairs of system resource 27
@@ -258,20 +260,21 @@ def decode_text(data: bytes, offset: int, threshold: int) -> tuple[Token, ...]:
         offset += token.length
 
 
-def text_table(data: bytes) -> tuple[tuple[int, ...], int]:
-    """Entry offsets of a text table and the offset ending its text; a count
-    of 0xFFFF marks a field without messages."""
+def text_table(data: bytes) -> tuple[int, ...]:
+    """Entry offsets of a text table: entries 0 to the count its header
+    gives (text_get_message_columns finds the pairs past count + 1 offsets,
+    a pair an entry); a count of 0xFFFF marks a field without messages."""
     if len(data) < 4:
         raise TextError(0, "text table shorter than its header")
     count, zero = struct.unpack_from("<HH", data, 0)
     if count == 0xFFFF:
-        return (), 4
-    if zero != 0 or 4 + 2 * (count + 1) + 2 * count > len(data):
+        return ()
+    if zero != 0 or 4 + 4 * (count + 1) > len(data):
         raise TextError(0, "not a text table (count, 0, offsets, sizes)")
     offsets = struct.unpack_from(f"<{count + 1}H", data, 4)
-    if any(o > len(data) for o in offsets):
+    if any(o >= len(data) for o in offsets):
         raise TextError(4, "text offset outside its table")
-    return offsets[:count], offsets[count]
+    return offsets
 
 
 def font_threshold(font: bytes) -> int:
@@ -679,7 +682,7 @@ def whole_texts(disc: Disc, threshold: int) -> set[bytes]:
         if not isinstance(data, bytes):
             continue
         try:
-            offsets, _ = text_table(data)
+            offsets = text_table(data)
         except TextError:
             continue
         for offset in set(offsets):
@@ -732,11 +735,11 @@ class Sweep:
         they use."""
         codes = set()
         try:
-            offsets, end = text_table(data)
+            offsets = text_table(data)
         except TextError as error:
             self.unknown.append(f"{where}: {error}")
             return codes
-        covered = bytearray(len(data))
+        covered, end = bytearray(len(data)), 0
         for offset in sorted(set(offsets)):
             try:
                 tokens = decode_text(data, offset, threshold)
@@ -747,14 +750,15 @@ class Sweep:
             self.tokens += len(tokens)
             last = tokens[-1].offset + tokens[-1].length
             covered[offset:last] = b"\1" * (last - offset)
+            end = max(end, last)
             for token in tokens:
                 if token.mnemonic == "glyph":
                     self.uses["glyph (2 bytes)" if token.length == 2 else "glyph (1 byte)"] += 1
                 else:
                     self.uses[token.code] += 1
                     codes.add(token.code)
-        if offsets:
-            self.unreached(where, data, covered, min(offsets), min(end, len(data)), threshold)
+        if offsets:  # nothing marks where a table's text ends: up to its furthest entry's
+            self.unreached(where, data, covered, min(offsets), end, threshold)
         return codes
 
     def unreached(
@@ -827,11 +831,11 @@ def render(tokens: tuple[Token, ...], chars: dict[int, str] | None = None) -> st
 def table_listing(data: bytes, threshold: int, chars: dict[int, str] | None = None) -> list[str]:
     """Each entry of a text table: number, offset, (columns, rows) and its
     tokens (render); then the texts in bytes no entry reaches."""
-    offsets, end = text_table(data)
+    offsets = text_table(data)
     if not offsets:
         return ["  no messages (count 0xFFFF)"]
-    pairs = 4 + 2 * (len(offsets) + 1)
-    lines, covered = [], bytearray(len(data))
+    pairs = 4 + 2 * len(offsets)
+    lines, covered, end = [], bytearray(len(data)), 0
     for number, offset in enumerate(offsets):
         size = f"{data[pairs + 2 * number]}x{data[pairs + 2 * number + 1]}"
         try:
@@ -841,8 +845,9 @@ def table_listing(data: bytes, threshold: int, chars: dict[int, str] | None = No
             continue
         last = tokens[-1].offset + tokens[-1].length
         covered[offset:last] = b"\1" * (last - offset)
+        end = max(end, last)
         lines.append(f"  {number:4d} +0x{offset:04x} {size}: {render(tokens, chars)}")
-    _, texts = unreached_texts(data, covered, min(offsets), min(end, len(data)), threshold)
+    _, texts = unreached_texts(data, covered, min(offsets), end, threshold)
     for offset, tokens in texts:
         text = f"undecodable, {tokens}" if isinstance(tokens, TextError) else render(tokens, chars)
         lines.append(f"  unreached +0x{offset:04x}: {text}")

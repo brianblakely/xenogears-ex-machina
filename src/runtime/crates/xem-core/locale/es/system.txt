@@ -12,6 +12,7 @@ s001-0010 c1fd80419de09245 Helada Aqua
 s002-0007 616a9b6e4da5821f Brisa Sauce
 s002-0008 dcdf78f81dfa568b Tierra Rara
 s002-0009 a928073eb8704d94 Infierno
+s002-0010 230132411af069d7 Ola Helada
 s003-0000 9626e7a9edc3c0fb Cazacabezas
 s003-0001 f5fd1a2918a119c9 Bi-Sónico
 s003-0002 d7b15a4476eefd29 Choque Ritmo
@@ -28,6 +29,7 @@ s004-0003 15b35c73874d5864 Cascanueces
 s004-0005 f22787cdd5888bbd Diabólico
 s004-0007 10051a70b705f8c0 Sueño Real
 s004-0008 56cf0ae434e5f0ee Arco Santo
+s004-0009 a9304e9a9dd3fe5f Amigo Mío
 s005-0000 fcb184d58edd8428 Rico Cohete
 s005-0001 f1dce7e824e6320f Embate Letal
 s005-0003 b1d5cc6052ca07f6 Puño Dragón
@@ -36,6 +38,7 @@ s005-0005 e47d83b0e31aebcf Martinete
 s005-0006 5b9370ebebd85995 Trompo
 s005-0007 972e179b7355e2a8 Giro Mortal
 s005-0008 da4e08772e432c8d Lariat Ígneo
+s005-0009 bf4e641ca68ef2e3 Ola Infernal
 s006-0000 5b6434fa029e0ad0 Cortapiernas
 s006-0001 01c25c5a4416cf23 Cortaolas
 s006-0002 4783242810ecf061 Barrido
@@ -44,9 +47,11 @@ s006-0004 f453f96e162b8135 Gran Brazo
 s006-0005 4cf8cc0aee9aeb45 Divisor
 s006-0006 b0b42df34cf08c70 Brazo Aéreo
 s006-0007 00c2a852f92931dd Mano Tornado
+s006-0009 dd8dcf106024f35c Bestia Negra
 s009-0007 980207d1d8591553 Brisa Alegre
 s009-0008 db9ef8041b1d0570 Tierra Ronca
 s009-0009 22056fde0ddf0b54 Bruma Ígnea
+s009-0010 9a87142112550c4a Agua Cristal
 s017-0001 2d7baad44328f988 Traje Marcial
 s017-0002 a27a4e0d9a234ad2 Traje Esgrima
 s017-0003 c760f5552748448c Chaleco Cuero
@@ -178,6 +183,7 @@ s018-0027 9d6426fbef150321 Izquierda
 s018-0028 4e4b61948a9f7a2b Volver
 s018-0029 543f3719f354960c Arma
 s018-0030 e64fd9440858326a Munición
+s018-0031 aaf4fd735911442e Zona
 s020-0000 7db048f4b67a8c1b Tiro Guiado
 s020-0001 c95577622ce8d705 Cura Interna
 s020-0002 cdae56762451d0ff Valor Férreo
@@ -391,6 +397,7 @@ s030-0010 dadb845e3f412dbd Gran Diva
 s030-0011 b8166caf198f01f8 Danza Ígnea
 s030-0012 77e433b10bddffc3 Azote Fulgor
 s030-0013 e9d5e8e6edc6e7eb Ráfaga Azul
+s030-0014 4079e37f997e13f9 Diva Oscura
 s032-0003 d781716393e17b84 Cadena
 s032-0004 59521f42a7809c6a Azote Víbora
 s032-0005 c6f878360675140d Onda Chispa
@@ -402,6 +409,7 @@ s032-0010 2861e2841952f475 Cobra Doble
 s032-0011 c5bf8ca3cfd00114 Asalto Aéreo
 s032-0012 567f2a81c86b64e2 Meteoro
 s032-0013 a2fc60fc9909fc02 Danza Letal
+s032-0014 621543889dca4e17 Fin del Alma
 s033-0003 c2eb336d715e90f0 Doble Chas
 s033-0004 58744c09e7b53e6c Chas Duro
 s033-0005 e41c668f38245b72 Tiro Duro
@@ -413,6 +421,7 @@ s033-0010 ba039aaad6d98bb8 Gatling Dura
 s033-0011 575227778236091a Gatling Aire
 s033-0012 204d5ba21df7edd0 Mil
 s033-0013 6370e949a99ea22a Ascensión
+s033-0014 2913221fe1be86b2 Alma Santa
 s034-0003 2f14ff5086746ff6 Broca Guerra
 s034-0004 c173d2d4d23ff3e6 Cabeza Bomba
 s034-0005 f35c68de4f3ce9f4 Perforadora
@@ -421,6 +430,7 @@ s034-0008 13cb1159c947c20e Martillo G
 s034-0009 9c66675ff09bbf27 Megacuerpo
 s034-0011 e55f01227e956593 Chatarra
 s034-0012 e36176de09221c19 Broca Kaiser
+s034-0014 b50269fa4ea7d5a0 Kaiser Metal
 s036-0003 d3e049e9803d3db9 Megamartillo
 s036-0004 9a30d18ecb958371 Lucha Dínamo
 s036-0005 4d60bbd95a99fba9 Gravipuño
@@ -431,6 +441,7 @@ s036-0009 905eb161409d0aba Prensa Astro
 s036-0010 190b3e2c930ce06c Rompehierro
 s036-0011 f652d648712f31ec Tifón Hierro
 s036-0012 5ab1a30ba08052a5 Embate Ígneo
+s036-0014 e6129bd146a66c73 Golpe Maria
 s037-0003 0d5a4272de4abbdd Golpe Brazo
 s037-0004 74af77fa4ba90783 Golpe Aéreo
 s037-0005 035c259cba446da2 Golpe Danza
@@ -442,6 +453,7 @@ s037-0010 73fba8c7ba7651db Carga Letal
 s037-0011 ad31be0b6c4074e7 Réquiem
 s037-0012 cf40f7c6e18c8e56 Onda Oscura
 s037-0013 101ae1a20117ba4c Poder Negro
+s037-0014 3831911d1dd8b47f Mundo Negro
 s040-0006 b467cc5d8a8163db Azote Sangre
 s050-0001 5606349dc24b6b04 Arm. Extra
 s050-0002 91f12e2427829570 Arm. Extra+1
@@ -540,6 +552,7 @@ s050-0098 cdd3cc584b391ca5 Mortífero 3
 s050-0101 88cd29bacd0121d2 Cargador A
 s050-0102 f9793fc23fdb5db4 Cargador S
 s050-0103 f5f4c47f08816081 Cargador X
+s050-0104 1e9d7e913db4cf23 Cargador Z
 s051-0001 0abdb4dcb117ade1 Vara MágicaG
 s051-0002 adf82d0439d3d404 Vara ArcanaG
 s051-0003 82b0cdd3f07e6353 Vara HierroG

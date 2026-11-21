@@ -33,13 +33,14 @@ def accessory(stats: int) -> bytes:
 
 
 def table(*texts: bytes) -> bytes:
-    """A text table: count, 0, count + 1 offsets, count (columns, rows) pairs, texts."""
-    head = 4 + 2 * (len(texts) + 1) + 2 * len(texts)
+    """A text table: count (the last entry's number), 0, count + 1 offsets,
+    as many (columns, rows) pairs, texts."""
+    head = 4 + 4 * len(texts)
     offsets, position = [], head
     for text in texts:
         offsets.append(position)
         position += len(text) + 1
-    data = struct.pack(f"<HH{len(texts) + 1}H", len(texts), 0, *offsets, position)
+    data = struct.pack(f"<HH{len(texts)}H", len(texts) - 1, 0, *offsets)
     return data + bytes(2 * len(texts)) + b"".join(text + b"\0" for text in texts)
 
 

@@ -21,3 +21,4 @@ wa043-0034 6adf4be3137416f2 Carguero
 wa043-0036 28045f04c5b7b9f6 Isla Hombre-Duna
 wa043-0037 adc2eda6458d83fb Camino a Nisan
 wa043-0038 2995a9aeadddb73a Fuerte Jasper
+wa043-0040 f239162dac4044ae La frontera{n}de Kislev...{n}Aquí empieza{n}el peligro.

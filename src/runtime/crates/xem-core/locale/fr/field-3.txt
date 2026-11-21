@@ -245,6 +245,7 @@ f307-0029 9d2ef41e4da85909 D'abord, celle d'Ignas est{wait 5}... {wait 10}ici.
 f307-0030 cf061f7218a20421 Le siège de l'Ethos{n}d'Aquvy est ici...
 f307-0031 7ebf826029354d44 Fei{n}"Bon, logiquement, la{n}suivante pourrait être{n}ici, ou..."
 f307-0032 4f532193c8e4947c Fei{n}"Ici.{n}L'une des deux."
+f307-0033 d2fdbdd40355c35e Elly{n}"Nord ou sud, hein...{wait 20}{n}Au moins, on a une chance{n}sur deux de deviner juste."
 f308-0000 928c1cf6a983b3e4 Fei{n}"Elly, tu es réveillée."
 f308-0001 e9c488d6fab678ce Elly{n}"Ah, mmmh..."
 f308-0002 edab5afac79532fe Elly{n}"Où suis-je...?{p}J'allais avec Fei vers le{n}bloc arrière...{wait 20}{n}Fei...!{n}Où es-tu, Fei ?"
@@ -313,6 +314,7 @@ f309-0035 4e86ba9b6919a2b4 Elly{n}"Oui, sûrement mon{n}imagination{wait 10}..."
 f309-0036 4afd41b591730e1d Fei{n}"Elly !{n}Hé, Elly !{n}Debout !"
 f309-0037 7e529154fc6ce06e Elly{n}"Bonjour, Fei.{n}Tôt levé."
 f309-0038 10504393ecdc7001 Fei{n}"Pas de politesses.{n}Regarde ça !!"
+f309-0039 5bda2d580c23b303 Elly{n}"Hm?"
 f311-0000 b298de2bbed33140 Fei{n}"Hé, c'est..."
 f311-0001 a27006b261633720 Rico{n}"Oh, allez, Citan.{p}Juste quand je croyais{n}qu'on était sauvés, on va{n}finir en gruyère."
 f311-0002 6c4e19ccb15de6cf Citan{n}"On ne nous{wait 10} aime{n}guère ici,{wait 10} hein ?"{done 40}
@@ -361,6 +363,7 @@ f312-0018 ec32159e7d927dc9 Bart{n}"Des gens vivaient là il{n}y a très longtemp
 f312-0019 fefad3740631a74b Citan{n}"J'ai vu ces armes.{n}Elles viennent sans{n}doute...{wait 10}de Shevat."
 f312-0020 0a233848f6e992cf Fei{n}"Shevat...{wait 5}...{wait 5}{n}ce pays volant..."
 f312-0021 2a6038bf8e890537 Bart{n}"Surtout, on devrait{n}aller faire 'ahoy' au{n}capitaine."
+f312-0022 eebb63001d66259d Fei{n}"...Ouais."
 f313-0000 37e1fb7ae918077f Médecin{n}"Qu'y a-t-il, blessé ?"{n}    Oui{n}    Non
 f313-0001 76dc1a5a76072238 Médecin{n}"Bon. Allonge-toi là et{n}dors."
 f313-0002 83660199731382fd Médecin{n}"Et ne reviens jamais."
@@ -393,6 +396,7 @@ f313-0031 349cea77c9e27aba Elly{n}"Alors pourquoi ne pas leur{n}demander ?"
 f313-0032 3d2ae5bc6bfc9b49 Médecin{n}"Je leur demanderai leur{n}aide, mais je ne sais pas{n}s'ils accepteront...{p}Bah, demander ne coûte{n}rien..."
 f313-0033 5997115403a58555 Elly{n}"Bon. Allons{n}les trouver."
 f313-0034 7d3ec5c63531ca4e Citan{n}"J'emmène Fei et les{n}appareils de survie au{n}Yggdrasil.{p}Bart et Elly, cherchez{n}les Etones."
+f313-0035 f98ed438cbfcd5b1 Bart{n}"...Compris."
 f314-0000 d5b8822beeea4feb Fei{n}"Je n'aime pas trop me{n}balader comme ça..."
 f314-0002 c0b46acf384dbf4c Fei{n}"Quoi ?{n}Qui est-ce ?"
 f314-0003 bd5395f02ebcd32e Fei{n}"Qu'est-ce que tu fais ?"
@@ -560,6 +564,7 @@ f314-0175 714077c712bce491 Capitaine{n}"...{wait 10}...{wait 30}{n}Lancez les Ge
 f314-0176 e487b81b83d8c995 Hans{n}"Capitaine !?"
 f314-0177 01707c4c866187c2 Capitaine{n}"Bien, les gars !{p}On va secourir et sauver{n}les survivants des autres{n}navires...{p}...si possible, tout en{n}battant en retraite !{p}Et abattez ces Wels avec{n}nos deux canons !{p}Ne laissez pas ces sales{n}Wels approcher de notre{n}Thames !"
 f314-0178 5dd2bfefb3e0486b Capitaine{n}"Hans !{n}Bouge-toi !{p}Prends la barre ! On va{n}montrer à cet aquarium{n}comment les vrais hommes{p}de la mer battent en{n}retraite !"
+f314-0179 cf6838b0290f43cd Hans{n}"O-oui, capitaine !"
 f315-0000 5702b5bd2fcbed82 Fei{n}"Vous passez votre vie à{n}errer sur les mers ?"
 f315-0001 7d5fffca9bed4c5f Fei{n}"Pourquoi l'Ethos s'en{n}mêle-t-il...?"
 f315-0003 4f71e2e7b2424d93 Elly{n}"Un gros boulot ?"
@@ -642,7 +647,7 @@ f315-0081 74d8395d4dd4d304 Les hommes sont si{n}faibles. Ils noient la{n}peur de
 f315-0082 1ce7569251352338 Je suis {wait 30}maî～tre{wait 45}{n}Le grand {wait 30}maî～tre{wait 45}{n}Maître {wait 45}du Thames
 f315-0083 672b54e5b37e0f3d Hé, chuis pas soûl.
 f315-0084 02b544de2c8972b4 Je n'ai jamais touché{n}terre de ma vie.{p}Pense donc. Tes pieds{n}sont pleins de terre.{n}Tu supportes ça ?
-f316-0000 1f1258f0cab45726  {n} Reçu : une Pépite.
+f315-0085 7255bb02abb40642 Je ne suis pas descendu à{n}terre cette fois non plus.{n}Pourtant, je comptais bien{n}le faire.
 f316-0001 326270543cb80df0 Hé ! {wait 3}{n}Pour mes articles,{n}vois avec mon idiot{n}de fils.
 f316-0002 fc17bedae48f7c66 Hé !{wait 3}{n}Je reste ouvert même{n}si les Wels viennent.{p}Pour mes articles, vois{n}avec cet idiot de mon{n}fils.
 f316-0003 4109258b2f7e07e4 Hé !{wait 3}{n}Tu as l'oeil pour les{n}belles choses... Ouah.{wait 3}{n}Tu sais ce que c'est ?
@@ -698,6 +703,7 @@ f316-0064 f027e0002681a2bf Fei{n}"Vous réparez{n}nos Gears ?"
 f316-0065 81f414600087105b Vous devez trouver{n}bizarre qu'on soit si{n}gentils.{p}Mais on n'avait pas le{n}choix. Ordre du{n}capitaine...
 f316-0066 ec49e0f5287f380e Bon, je dois y aller.{n}Je suis un homme occupé !{p}Venez à la passerelle{n}après avoir fait le tour{n}du navire.{p}Le capitaine voudra{n}sûrement vous rencontrer.
 f316-0067 9a49c3d7617f1add Elly{n}"Fei,{n}qu'as-tu ?"
+f316-0068 064a780a481261e6 Fei{n}"J'ai l'impression d'avoir{n}déjà vu ce type quelque{n}part...{wait 10}{p}Laisse tomber."
 f317-0000 21774acf1970c5cd {speed 255}Où vas-tu ?{n}    4F (Passerelle){n}    3F (Brasserie){n}    2F (Infirmerie){n}    1F (Pont){n}    B1F (Vivres){n}    B2F (Dock){n}    Laisse tomber
 f317-0001 a2312eeeef50ca46 Ouh, nausée.{n}Pitié, arrête{n}de tourner,{n}de tourner...
 f317-0002 7b834b5de6465932 Arrête !!{n}Bwaaah !!{done 30}
@@ -708,6 +714,7 @@ f317-0006 62eb7519c0576ce0 Bart{n}"Bien sûr que je sais que{n}Nisan est en dang
 f317-0007 c55721fe06c07856 Citan{n}"Mais je doute que Shakhan{n}reste à regarder sans rien{n}faire..."
 f317-0008 6787827772faa281 Bart{n}"C'est ce qu'ont dit les{n}gens de son Église.{p}Mais c'est encore risqué,{n}alors ils veulent que je{n}reste près d'elle pour la{n}protéger."
 f317-0009 9e3f7cd9b99a4354 Fei{n}"Ah bon{wait 5}...{wait 5} Et tu es{n}d'accord avec ça ?"
+f317-0010 14807cedfe8cb14f Bart{n}"{wait 5}...{wait 20}Ouais."
 f318-0000 82fe9e891f7405ab Un jour, j'ai trouvé un{n}trésor grand com{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 20}me{wait 30}{n}ça.
 f318-0001 6f7e1ac257399a9e N'importe quoi ! J'en ai{n}trouvé un com{wait 3}-{wait 3}-{wait 3}{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 20}me{wait 30}{n}ça !
 f318-0002 656e9a35ebdd9516 J'en ai un {wait 30}{n}com{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 3}-{wait 100}
@@ -768,6 +775,7 @@ f318-0058 0e8f5b4a414398e8 Pff, va-t'en.{n}Je m'entraîne.
 f318-0059 64ae6ad57a90d3c4 Quoiiii ?{n}T'es un mou.
 f318-0060 99fcbfb8f4104112 Bon, d'accord !{n}Je t'apprends !!
 f318-0061 577849eb4198c4ca Alors, en{n}garde !!
+f318-0062 491caaf006d54275 Cette entrée de{n}ravitaillement compte{n}4 coffres.{p}Ils sont bien visibles,{n}mais sauras-tu tous les{n}récupérer ?
 f319-0000 e1c509788fe8a080 {speed 255}Cour Blindée
 f319-0001 fd7bc80d9f78b251 {speed 255}Entrée des Vivres
 f319-0002 53bd10ace4d8ff58 {speed 255}Ascenseur Spiral
@@ -784,6 +792,7 @@ f319-0012 099867520e3edc39 Le boulot de l'Ethos{n}étant à l'eau,{p}je n'ai pas
 f319-0013 ef2fec0bc43b1cab Mais avant d'y aller, je{n}dois faire des exercices{n}d'échauffement.{n}Ha, ho, ha, ho...
 f319-0014 c490e8408f64181a Grâce à mon échauffement,{n}je pourrai sauver tous{n}ceux qui se noient.{n}Oui...{p}l'exercice...{n}Ha, ho, ha, ho...
 f319-0015 206433517cb4084d Fei{n}"Bon{wait 5}...{wait 10} Allons-y."
+f319-0016 3fc85bf5d8366f2b Elly{n}"A-attends..."
 f320-0000 c335a1cec558c798 L'Etone ? Vu à l'instant,{n}mais il est reparti.
 f320-0001 fe38699c74351ded Margie{n}"Ah bon ? Et il est allé{n}où ?"
 f320-0002 1349f7d5b9ea0659 Sais pas...
@@ -861,6 +870,7 @@ f320-0078 70df98ed40f3b2aa Bart{n}"Tu rigoles ? D'abord, on{n}doit s'occuper de 
 f320-0079 ccb45cc5f93b1a4e Elly{n}"...{wait 10}Merci."
 f320-0080 d78c57fff4998753 Bart{n}"Pourquoi toi, tu me{n}remercies ?"
 f320-0081 909840026a3ecad8 Margie{n}"Hé hé, c'est ça, Elly."
+f320-0082 4309c0b79e0e2669 Elly{n}"...Oui, c'est vrai."
 f321-0000 e5e8c96ffc0f67a3 Qui joue ?{n}    {name 128}{n}    {name 129}
 f321-0002 4c0ddf8e5ca95eeb Un-deux
 f321-0003 72fb39f9be7f725a Arrêter ?{n}    Non{n}    Oui
@@ -888,6 +898,7 @@ f321-0025 cc731f5dbb0fb2cb S'il ne reste plus de carte{n}dans ta pioche pour le{
 f321-0027 634c700aae142b81 Et...
 f321-0028 c14ebc0b44531eb6 Le premier qui pose{n}toutes ses cartes gagne.{n}Ici, tu as perdu.
 f321-0029 848d84b8907f18d6 Ah, encore une chose.{p}Avec le bouton Select, tu{n}peux abandonner la partie{n}en cours. Mais, bien sûr,{n}ça compte comme une défaite.
+f321-0030 6f99cd11d1e6413f Au fait, il y a plein de{n}bons joueurs à bord du{n}Thames.{p}Et si tu commençais par{n}affronter mon pote ici ?{n}    Bien sûr{n}    Non merci
 f323-0000 1acbe66e0bf2f915 "Contact sonar.{n}...{wait 10}...{wait 10}{p}Négatif. Ce modèle...{n}correspond au navire{n}pirate d'Aveh, le{n}Yggdrasil."
 f323-0001 d87f40de60b08ef0 Dominia{n}"Le Yggdrasil ? Il{n}n'avait pas été coulé{n}dans un autre combat ?"
 f323-0002 9f764932a70b562b "Aucune trace du naufrage.{n}Nous étions trop occupés à{n}combattre ce Gear rouge{n}pour vérifier."
@@ -916,6 +927,7 @@ f323-0024 83610f6b333260d0 Dominia{n}"Ce Gear... c'est toi ?{n}Ha ! Je vois.{p}A
 f323-0025 20a5ba9eb59fb85b Elly{n}"Arrête !{n}Tais-toi !"
 f323-0026 9ed143ed52a46f00 Dominia{n}"Hmpf, et tu vas faire{n}quoi, sale bâtarde !?{p}Tu vas me frapper avec{n}le pouvoir de cet{n}incident ?{p}Vas-y. Montre-le.{n}Montre ton vrai{n}pouvoir !"
 f323-0027 9f4cba516bf86042 Elly{n}"...Je vais le montrer.{p}Si vous, à Gebler, êtes{n}des sages...{wait 20}{n}alors {wait 30}je préfère être{n}une idiote !!"
+f323-0028 a811c66401437f25 Dominia{n}"Soit. Alors tu seras{n}traitée comme la{n}traîtresse que tu es."
 f324-0000 b7343cf7a21f28dc Dominia{n}"Assez de ces paroles{n}naïves !"
 f324-0001 188a1a009501d59c Elly{n}"Je n'ai rien dit de{n}faux !"
 f324-0002 3a9aca6468c859a0 Dominia{n}"Je n'ai pas la moindre{n}intention de continuer à{n}discuter avec toi !{p}Ta trahison est déjà{n}évidente ! Je vais en{n}finir avec toi ici{n}même !!"
@@ -928,6 +940,7 @@ f324-0009 6868350584245538 Dominia{n}"Quoi !? Jamais je..."
 f324-0010 edaf2d9b9984d24b Miang{n}"Pour l'heure,{p}nous ne pouvons dire si{n}elle est coupable ou non{n}de trahison.{p}Pour éclaircir cette{n}affaire, je place le{n}lieutenant sous ma{n}supervision.{p}Est-ce clair ?"
 f324-0011 af31cf60b2b20f84 Dominia{n}"Vous osez !{n}De quel droit !?"
 f324-0012 f0d43a0d471d4c8e Miang{n}"Venez."
+f324-0013 6e40d8deb20761f6 Dominia{n}"{wait 5}...{wait 30}{n}Qu{wait 5}...{wait 5}qu'est-ce que{n}c'était ? Ces yeux{wait 5}...{wait 5}"
 f325-0000 7e474774001f66ee Miang{n}"...{wait 20}Je vois... C'est{n}donc{n}ce qui se passait."
 f325-0002 a97463e3558502c6 Miang{n}"Comme j'ai d'autres{n}affaires à régler,{p}cela vous dérange-t-il de{n}rester ici un moment ?"
 f325-0003 10a63a542011758b Elly{n}"Pas du tout."
@@ -1192,6 +1205,7 @@ f332-0024 aecf20d9b198f540 Stone{n}"Il y a 4 ans...{n}Nous avons cherché aux{n}
 f332-0025 680f633556956aa8 Stone{n}"Racquel, souillée par{n}lui{wait 5}...{wait 5}{p}et le rappel de cette{n}souillure...{wait 30}toi et{n}ta soeur{wait 30}..."
 f332-0026 903aa533512984e4 Stone{n}"Grâce à Krelian et aux{n}Wels, j'ai délivré{n}Racquel de sa misère..."
 f334-0000 73c9d69f9a1b0582 Billy{n}"(Mon compagnon !!{n}Je vais l'appeler ici)"
+f334-0001 3d977edff14d46df Euh{wait 10}...{wait 20}{n}Je compte sur {wait 30}toi.{done 20}
 f335-0000 4f76fd52c598bd79 Elly{n}"Hein ?{n}Quelque chose..."
 f335-0001 f7b1c2b0317d9175 Elly{n}"Billy, qui est{n}ce 'compagnon' ?"
 f335-0002 99491619dc09f156 Elly{n}"Il n'y a rien. Ne me fais{n}pas peur. Ce ne sont que{n}des poissons qui sautent.{p}Que la mer est belle !{n}La brise est si fraîche...{n}Ça change du désert !!"
@@ -1212,6 +1226,7 @@ f335-0016 f878a488d0cc0fb0 Billy{n}"Comme je le pensais. Ce{n}cargo est infesté
 f335-0017 17c6408f07e1f4e1 Billy{n}"...Hum, ce doit être son{n}compagnon. Un Wels géant.{p}Un être contre lequel nous{n}aurions peu de chances{n}seuls. Mais rassurez-vous,{n}ils sont très lents.{p}Même si ce Wels l'a{n}appelé, il n'arrivera{n}sans doute pas à temps.{p}Mais, à tout hasard, j'ai{n}quand même appelé mon{n}Gear."
 f335-0018 899bde22b865d9e3 Billy{n}"...{wait 20}...{wait 20}{n}Plus rapide que prévu.{n}Bon, le voici."
 f335-0019 c7814b7c72b1a96d Billy{n}"Il va arriver d'un{n}instant à l'autre."
+f335-0020 2ac06f930ee1f1f9 Billy{n}"Les enfants sont tombés{n}à pic. Je leur dois une{n}fière chandelle.{p}Bon, préparez-vous, le{n}voilà qui arrive."
 f336-0000 339a66c681b85d34 Billy{n}"On dirait {wait 10}du {wait 2}sang {wait 2}...{wait 2}...{n}Que s'est-il passé sur ce{n}cargo...{p}Non, attendez, c'est...{wait 25}{n}de l'eau rouillée.{wait 15}{n}Dépêchons-nous."
 f336-0001 30bd079521b9fbf8 La porte n'est pas fermée{n}à clé, mais la rouille la{n}bloque.{p}Et si vous fonciez{n}dessus ?
 f336-0002 eac0a4d71352951a Et si vous fonciez{n}dessus ?
@@ -1290,6 +1305,7 @@ f339-0037 201cf27a4f747988 L'Ethos a été créé pour{n}sauver les gens : sauve
 f339-0038 44c4a55238251e29 Je vivais à Aveh, mais{n}j'ai perdu ma maison dans{n}la guerre contre Kislev.{p}L'Ethos m'a accueilli{n}parmi ses fidèles. Ici,{n}c'est chez moi, désormais.
 f339-0039 449972d7cb8a94fe Les Faucheurs ont détruit{n}mon village...{p}Je deviendrai un Etone et{n}je bâtirai un monde sans{n}souffrance !
 f339-0040 fd4f50f91ff2311d Pa--pa.{n}Où est partie maman ?
+f339-0041 256eb1e531287c4b On ne sait pas encore{n}comment va Fei.{wait 30}{n}... Restons ici encore{n}un peu.
 f340-0000 af09d00da4194324 Billy{n}"Que se passe-t-il{wait 5}...{wait 5}{p}Les Etones sont la force{n}armée de l'Ethos, et{n}pourtant ils ont été tués{n}sans signe de lutte."
 f340-0001 f46713bcfdb2ec16 Les Faucheurs sont des{n}humains que Dieu a changés{n}en créatures pour expier{n}leurs crimes.{wait 15}{p}Ils sont scellés dans la{n}terre maudite des cieux,{n}Shevat.
 f340-0002 cf8a790b17451626 Qui appartient à l'Ethos{n}doit agir avec modestie et{n}générosité.{p}Pour cela, nous lisons{n}souvent les saintes{n}Écritures, pour retrouver{n}une âme plus pure.
@@ -1306,6 +1322,7 @@ f340-0012 3962bc9e9ac67863 Qu'est devenu l'homme de{n}l'Ethos ?{p}Il est sorti t
 f340-0013 d86fa6a2d6c6b04f Hum... quelqu'un de{n}l'Ethos a piloté un Gear{n}énorme pour me sauver.{p}Un homme appelé 'maître'{n}nous a attaqués...{n}C'était terrifiant.
 f340-0014 140014f4c3f265d9 Que se passe-t-il là{n}dehors ? Soudain, des{n}hommes en noir ont envahi{n}les lieux.{p}En ce moment, les Etones{n}se battent pour nous...
 f340-0015 dcf9d4d9ecc8c388 Dites-moi, jeune homme.{n}Ne peut-on être heureux{n}sans sacrifice ?{p}Ne peut-on vivre sa vie{n}sans souffrance...?
+f340-0016 55d5431d47f01f88 Tout le monde...{n}Tout le monde est mort.
 f341-0000 5ce374a93f4a4fbf Verlaine{n}"Ha-hahm, Billy. Comment{n}va ton père bien-aimé ?"
 f341-0001 c01ce92460bdc51d Verlaine{n}"...Je n'ai pas affaire à{n}ceux qui ne sont pas de{n}l'Ethos."
 f341-0002 c0c80f0264103e56 Ce sont les appartements{n}du Pontife. Le public n'y{n}est pas admis. Veuillez{n}vous retirer.
@@ -1316,6 +1333,7 @@ f344-0000 ad3bb6434333bd45 Billy{n}"Monseigneur !{wait 10}{n}Vous allez bien ?"
 f344-0001 066a88b6feeadff9 Billy{n}"Le jugement de Dieu ?{wait 10}{n}Que voulez-vous dire ?"
 f344-0002 e41821f644c76a24 Billy{n}"Il nous a quittés.{p}Que voulait-il me dire ?{n}Purge,{wait 15} qu'entendait-il{n}par là ?"
 f344-0003 5b16ce677b6c9108 Billy{n}"Il y a quelque chose là.{n}Impossible de passer par{n}ici comme ça."
+f344-0004 ca227a4941dded86 {slow 2}O, oh... Billy{wait 5}...{wait 10}{n}Tu es sain et sauf{wait 5}...{p}...{wait 5}La purge{wait 5}...{n}a commencé...{p}Nous{wait 10} autres pécheurs...avons{n}attiré le jugement{wait 5} de Dieu{wait 5}{n}sur{wait 5} les hommes{wait 5}...
 f346-0000 2886f2728901a2e7 Elly{n}"Il a dit survivant,{wait 10}{n}non ? Alors les gens de{n}l'Ethos{wait 10}...{wait 10}"
 f346-0001 fa2c429eb198c81b Elly{n}"Viens, Billy.{wait 10}{n}Il reste sûrement des{n}survivants. Aidons-les."
 f346-0002 13d4e9e880d1133c Elly{n}"Oui{wait 10}...{wait 10}{n}On dirait qu'il va{n}s'en remettre."
@@ -1344,17 +1362,21 @@ f346-0027 504aed9de8aa37de Billy{n}"{name 128}, l'infirmerie,{n}ce n'est pas par
 f346-0028 a29fd9eae72a38ca Billy{n}"Ce n'est pas par là.{n}Par cet escalier."
 f346-0029 337c229ebb77d207 Billy{n}"C'est le confessionnal. En{n}cas de souci, nous pourrons{n}en parler plus tard."
 f346-0030 46deb3b20966c784 Billy{n}"C'est la bibliothèque.{n}Mais aller voir Fei n'est{n}pas plus important ?"
+f346-0031 92c215b5d4a79d8f Billy{n}"C'est le réfectoire.{n}{wait 10}...{wait 10}Vous avez faim ?"
 f347-0000 90827078f380ec8a Billy{n}Que se passe-t-il ?{p}Ces hommes en noir vont{n}nous tuer tous, nous qui{n}sommes de l'Ethos ?
 f347-0001 b90c4e9444f1c891 Tu es un Etone !{p}Ceux de l'Ethos n'ont{n}qu'un avenir{wait 30} : la{n}mort !!
 f348-0000 ad26eecfd3895913 Billy, on a perdu. Ils{n}ont surgi d'un coup...
 f348-0001 bab4e72c26cbf968 Hé, hé, hé.{n}Voilà notre proie.
 f348-0002 0dd7badb88b34b4a Hé, hé, hé.{n}À mort !!
+f348-0003 1918996ecd51e94b Hé, hé, hé.{n}Ça va être amusant !
 f349-0000 4d6c48bf5c551ffd Billy{n}"{wait 10}...{wait 10}Inutile.{wait 15}{n}Il est décédé."
 f349-0002 a702d685f57a696e Cette bibliothèque abrite{n}une infinité de livres{n}réunis par l'Ethos.{p}C'est un véritable trésor{n}d'informations.
 f349-0003 ce5c831e887f5829 Connaissez-vous l'immense{n}tour nommée Tour de Babel ?{p}On dit qu'elle fut bâtie{n}par des gens qui voulaient{n}atteindre un dieu dans le{n}ciel.{p}Selon la tradition, Dieu{n}s'irrita de leur insolence,{n}et sa foudre détruisit la{n}tour.
 f349-0004 8fd48a78264659e3 Ceux qui bâtirent la Tour{n}de Babel craignaient tant{n}la vengeance de Dieu{n}qu'ils fuirent au ciel.{p}Ce lieu, c'est Shevat, la{n}'demeure des ermites{n}pécheurs'.
+f349-0005 b738d474724eba0e On m'a affecté au site de{n}fouilles de Dazil.{p}Je dois réexaminer les{n}données techniques des{n}ruines.
 f351-0000 dcafd25b759d915a ...snif, snif...{pause}{n}Des hommes en noir sont{n}soudain venus et ont tué{n}tout le monde.{p}Je me suis vite caché,{n}alors ils ne m'ont pas{n}trouvé...
 f351-0001 d2892eadad822143 ...snif, snif...{pause}{n}Ils sont tous morts.{n}On les a tous tués.
+f351-0002 f1bf5b4f92e48a61 Ah, que de travail !{pause}{n}Encore plein de réfugiés.{n}Il faut bien les nourrir{n}pour les réconforter !!
 f352-0000 9879558d6105118c Elly{n}"Hum... Où est Billy ? Je{n}voulais le remercier..."
 f352-0001 eca416d76493c9ce Citan{n}"Bien..."
 f352-0002 86a58e8c80a7f821 Citan{n}"Elly, ce n'est pas vrai.{n}On ne peut pas résister à{n}l'hypnose.{p}De plus, vous avez sauvé{n}Fei.{p}Sans vous, Fei n'aurait{n}pas été protégé de Kahr.{n}N'est-ce pas ?"
@@ -1402,6 +1424,7 @@ f352-0048 75cce3b008fbc0d3 Je vous en prie, ce n'est{n}rien. J'ai simplement fai
 f352-0049 a15eab5ac52d3bf1 Bonjour à tous. Ses soins{n}sont terminés.
 f352-0050 fba90692cf230e0d Malheureusement, le patient{n}n'a pas encore repris{n}connaissance. Mais il n'y a{n}pas lieu de s'inquiéter.{p}Une fois remis{n}physiquement, il reprendra{n}aussi connaissance. Vous{n}pouvez l'emmener au navire.
 f352-0051 a9f41ae00168e6d5 Je vous en prie, ce n'est{n}rien. J'ai simplement fait{n}mon devoir de religieux.
+f352-0052 991eecd35d8d94db Ah oui, frère Billy...{p}Il est retourné à{n}l'orphelinat.{n}Il s'inquiétait pour les{n}enfants restés là-bas.
 f353-0000 4937e76aade69570 Elly{n}"Fermé à clé."
 f353-0001 d96b8cb39cfe409c Citan{n}"Cela semble verrouillé."
 f353-0002 82fa5daecdc52f8f Bart{n}"C'est fermé."
@@ -1415,6 +1438,7 @@ f353-0009 710c078cbcab3862 Pontife{n}"C'est découvert ?"
 f353-0010 1bb2227ec48dd579 Pontife{n}"Ghaaaaaa !!"{done 30}
 f353-0011 cd54ee0aa8e4083a Vous comptez encore{n}feindre l'ignorance ?
 f353-0012 dd3d53fe5dad694d Vous rebeller contre nous{n}vous coûtera la vie.
+f353-0013 34dab718375fd126 Vous dirigez peut-être{n}l'Ethos, mais vous ne{n}savez pas quand vous avez{n}perdu.
 f355-0000 35e8c3985c60a136 Elly{n}"Un inquisiteur ?"
 f355-0001 d6c53b8e03216a96 Citan{n}"Inquisiteur ?"
 f355-0002 5b2f5aa4ad961c15 Bart{n}"L'inquisiteur ?"
@@ -1482,6 +1506,7 @@ f356-0017 ac76b59fc01669e1 Rico{n}"'Shevat' !?{n}Il est du peuple{n}de 'Shevat' 
 f356-0020 ae1e2fcce0e9b257 {slow 2}Je...{wait 5}...{wait 10}ne...{wait 10}sais...{wait 5}...{wait 10}{n}rien...{wait 5}...{wait 5}...{wait 10}{p}Je ne...{wait 5}...{wait 5}peux en dire...{n}{slow 3}plus...{wait 5}que...{wait 10}ça...
 f356-0022 eae4cea2f8ed1466 {slow 3}She{wait 5}...{wait 10}vat...{p}{slow 3}Je{wait 5}...{wait 5}dois{wait 5}...{wait 5}contacter{wait 5}...{wait 10}{n}Shev{wait 5}...{wait 5}vat{wait 5}...{wait 5}
 f356-0024 0d26efa1167d79df Big Joe{n}"Oh, mon grand amigo !"
+f356-0025 6724a822ead4a46a Big Joe{n}"Tu es venu jusqu'ici pour{n}me sauver, hein ?{n}Bravo, bravo.{p}Un jour, tu te vanteras{n}de m'avoir sauvé !{pause}{n}Adios amigos !"
 f359-0000 c1247ab668f40dbe Elly{n}"Aucun doute !{wait 30}{n}Ce doit être la base de{n}données de l'Ethos !"
 f359-0001 c16a7fac387e80cb Elly{n}"{wait 5}...{wait 10}Attendez !{wait 15}{n}...{wait 10}Ce matériel{n}vient de Solaris !"
 f359-0002 8d0400f801033084 Elly{n}"Ne soyez pas si surpris !{p}Aussi vaste que soit ce{n}monde, un matériel aussi{n}avancé ne peut venir que{n}de Solaris."
@@ -1575,6 +1600,7 @@ f359-0141 a33ffcf35609ceff {slow 2}{wait 5}...{wait 5}Enquête terminée sur{n}Z
 f359-0142 ffa2860d6aef7a92 {slow 2}Rapport 50224 : Bloc D, Nortune
 f359-0143 18b0bf2d65810ea1 Transfert de toutes les données{n}Battler. Envoi également à{n}Solaris des données de santé du{n}Battler Classe A et des taux{n}estimés d'adaptation à l'usage{n}de semi-humains Type Y...{done 30}
 f359-0144 b744fe0bdb86e2b2 {slow 1}Rapport 50227 : Bloc D, Nortune
+f359-0145 fa27391f2950299f L'expulsion forcée de l'Ethos{n}du gouvernement du district{n}central par Sigmund complique{n}la coordination.{n}Élimination de Sigmund prévue{n}quand il ne sera plus utile.{n}Demande l'autorisation{n}d'employer Ricardo, cobaye{n}de Battling, pour l'exécuter...{done 30}
 f360-0000 a6d1e53a1cf25d23 Fei{n}"Attends !{n}Ça veut dire{wait 5}..."
 f360-0001 b562fcfe6552e1dc Fei{n}"Le capitaine et ses{n}hommes sont en danger !{wait 10}{n}Ils ne savent rien !"
 f360-0002 3764274f162d6e39 Fei{n}"Sous le puits, il y a un{n}portail."
@@ -1628,6 +1654,7 @@ f360-0054 7d199e5574868cc4 Jessie{n}"Le Gear mobile de{n}Solaris... l'Alkanshel,
 f360-0055 ac669ca9c5e87863 Jessie{n}"Il est gros, mais il{n}manoeuvre lentement, alors{n}avec nos Gears, on s'en{n}sortira.{p}Mais sa puissance de feu{n}est phénoménale. Contre{n}une grosse cible, comme un{n}navire, BOUM ! Terminé.{pause}{n}Pas vrai, Hyuga ?"
 f360-0056 8eba1b9197a2a0fb Jessie{n}"Je l'avais dit, hein ?"
 f360-0057 f20106f7b8652e4f Jessie{n}"Le Gear mobile de{n}Solaris, l'Alkanshel."
+f360-0058 a5dd8992e8a9f5c6 Jessie{n}"Il est gros, mais lent à{n}manoeuvrer, alors avec nos{n}Gears, on s'en sortira.{p}Mais sa puissance de feu{n}est phénoménale. Contre{n}une grosse cible, comme un{n}navire, BOUM ! Terminé."
 f361-0000 1027348ea711a033 Citan{n}"L'armée principale de{n}Solaris...{wait 32}{n}pourquoi... tout cela...{p}Bien, descendons."
 f361-0001 dad146eefa2bf08a Elly{n}"On dit que ce site de{n}fouilles est vide."
 f361-0002 0b67e478e93ead61 Bart{n}"Y a rien là-dedans.{p}Pourquoi Solaris vient{n}par ici ?"
@@ -1639,8 +1666,10 @@ f361-0007 8ed77ab9a28f4976 Entrée interdite.{n}Accès réservé à l'Ethos.
 f363-0000 06c9da55da112c7b Bart{n}"Ouah... juste à temps.{n}Ce type et Wiseman...{n}Ça se castagne sec.{p}On sent la puissance de{n}l'Éther jusqu'ici !"
 f363-0001 883e79d93e3e0b97 Billy{n}"Ciel... juste à temps.{n}Cet homme et Wiseman...{p}Ils se battent de toutes{n}leurs forces. Leur Éther{n}parvient jusqu'ici..."
 f363-0002 656c81c600083749 Rico{n}"Zut... juste à temps.{n}Le type en rouge et{n}Wiseman se battent sec.{p}La puissance de l'Éther{n}souffle jusqu'ici..."
+f363-0003 46f00ac2d271ba51 En panne
 f364-0000 13a3f9f8aefcc1aa  Miang{n}"...Vous l'avez senti ?{n}Son Gear s'éveille de{n}nouveau.{p}Bientôt, lui aussi{n}s'éveillera."
 f364-0001 b3ea8cc8cd0b0ae7  Miang{n}"Ses amis se rendent à{n}Zeboim, un lieu scellé{n}depuis 4000 ans.{p}Vous savez mieux que moi{n}ce qui s'y trouve.{p}Il ne cédera sans doute{n}rien à personne. Mais nous{n}en avons besoin tous les{n}deux. Vous comprenez ?"
+f364-0002 0a574ee886e3def3  Miang{n}"...alors, je vous prie."
 f365-0000 d49326fbb03d2a70 Ici
 f365-0002 1d4d0022846ecc5a ?{n}Monter{n}Descendre{n}Annuler
 f366-0000 765c6c6f41eccf0a Krelian{n}"Les Agneaux 03, 05 et 11{n}sont abîmés. Récupérez{n}seulement les intacts.{p}Éliminez les rebuts.{p}Utilisez les cobayes, les{n}Wels, pour récupérer et{n}éliminer."
@@ -1650,6 +1679,7 @@ f366-0003 c50acd0b08715767 Nettoyage à 80 %.{n}Pour l'instant, notre{n}route es
 f366-0004 662d423c72837e91 On lâche les Wels.
 f366-0005 eaa8a7ca2e2efb28 Canon principal : encore{n}20 avant la recharge{n}d'énergie.{p}Ingénierie : prête pour{n}une pleine démonstration.{n}Navire amiral : unités{n}militaires en alerte.
 f366-0006 b535f1edc9e4332a Position de la balise de{n}Stein confirmée.{p}Des 130 sites de recherche{n}et de fouilles, il est sur{n}le pic le plus méridional.
+f366-0007 efadeda06e764c2f Les troupes d'assaut{n}pénètrent dans Zeboim.
 f368-0000 7654de68abfc524e Citan{n}"Sas de décompression et{n}scanners très rigoureux...{p}Mais ils ne semblent pas{n}fonctionner.{p}...Si l'intérieur est{n}aussi{n}bien conservé, l'extérieur{n}l'est sans doute aussi..."
 f368-0001 68ea44e05a75ca61 Bart{n}"Me fais pas peur !{n}Y a du gaz toxique ou{n}du carburant réactif ?"
 f368-0002 d16e00d890e6984f Billy{n}"Une installation{n}d'isolement si bien{n}équipée.{p}Serait-ce un hôpital ?{p}Mais la ville dehors ne{n}semble pas si{n}polluée..."
@@ -1674,6 +1704,7 @@ f372-0004 4821906da3b01089 Bart{n}"...Brrr...{p}Me fiche pas la trouille !{n}Y a
 f372-0005 16164055aa82f8f2 Billy{n}"Quel bâtiment peu{n}commode... Il semble{n}rejeter les étrangers."
 f372-0006 2207089c9bfb05fe Billy{n}"Non pas pour garder une{n}chose dehors, mais pour{n}garder une chose dedans...{p}Mais quelle est cette{n}chose ?"
 f372-0007 21d270ece3a46d8e Rico{n}"...Que d'escaliers et de{n}murs, quel gâchis.{p}On dirait que c'est pour{n}nous tenir dehors."
+f372-0008 9014eb015c11ccd1 Rico{n}"Scellé...{p}...Quand on vit longtemps{n}en prison, ça pèse au{n}début, puis on s'y fait{p}et on finit par en{n}dépendre.{p}Peu importe ce qui est{n}enfermé ici, ce sera notre{n}ennemi. Comme n'importe{n}qui de Solaris."
 f373-0000 088f16b9ac1d0598 {speed 255}La connexion à la base de{n}données a été interrompue{n}de manière inattendue.{p}S'il est impossible de{n}corriger le problème,{n}contactez l'administrateur{n}système.
 f373-0003 9c37f19030ee9cd2 {speed 255}Patientez.{wait 32}{n}Remise à zéro faite.{n}Pour l'instant, niveau{n}d'urgence normal.
 f373-0006 a359e04807fdac0c {speed 255}Niveau d'urgence 5{p}Réacteur central{n}actuellement isolé.
@@ -1683,15 +1714,18 @@ f375-0000 be0dee05ad05a5be {speed 255}Remettez à zéro le{n}niveau d'urgence au
 f375-0001 7f2d3b97e9c767f7 {speed 255}Niveau d'urgence 5{p}{speed 255}Le bouton d'urgence du{n}réacteur a été activé il y a{n}34999999 heures.{p}Au-delà de ce point, risque{n}de contamination par{n}nanomachines.{p}{speed 255}En entrant dans la salle,{n}effectuez un scan manuel et{n}confirmez la sécurité.{p}{speed 255}Après quoi, remettez à zéro{n}le niveau d'urgence au{n}terminal le plus proche.
 f375-0002 7fe3e9bc4a70e9ff Lancer un scan manuel ?{n}     Lancer{n}     Annuler
 f375-0003 85cd1bd5f85cdae7 {speed 255}Patientez.{wait 32}{n}..{wait 32}.{wait 32}...{wait 32}..{wait 32}....{wait 32}..{wait 32}..{wait 32}..{wait 32}{p}Scan terminé.{n}Confirmé : aucune{n}contamination par{n}nanomachines.{p}{speed 255}Pour rentrer à nouveau,{n}remettez à zéro le niveau{n}d'urgence au terminal le{n}plus proche.
+f375-0004 ff069e60c7684214 {speed 255}En entrant dans la salle,{n}vous devez effectuer un{n}scan manuel.
 f376-0000 3cebca07ab46d1ea Citan{n}"Cet étage est pleinement{n}opérationnel."
 f376-0001 7dc6d2930b7cd789 'Augmentation de la{n}pression' Patientez.{done 50}
 f376-0002 8d363f2ecd473314 'Pression accrue'{done 32}
 f376-0003 0ac5a03dbf041200 'Dépressurisation'{n}Patientez.{done 50}
+f376-0004 b7e2b93053340d38 'Pression réduite'{done 32}
 f378-0000 0c98e4badfb4974e Elly{n}"'Réceptacle d'âme neuve !{n}  Que l'âme qui t'habite{n}  trouve la paix.'     "
 f378-0001 eaa895d389046cc4 Elly{n}"Citan...{wait 45}{n}Qui... suis-je...?{p}Que fais-je ?{n}Que dis-je...?"
 f378-0002 dcaaa1b1236274b0 Citan{n}"...{wait 90}{n}En tout cas, il nous faut{n}un mot de passe..."
 f378-0003 b157e8fb9b6bb0c4 Citan{n}"...C'est bien caché...{wait 32}{n}entre les lignes des{n}données...{p}Non... 'fuir' ?...{n}...'de mon plein gré'...{n}Qu'est-ce que c'est ?"
 f378-0004 c0b41747bea6176e Citan{n}"...{wait 90}{n}C'est... un ordinateur{n}sauvage ?{p}Non, un relevé de la{n}structure du vivant...{p}Non, ce n'est pas ça...{n}Un organisme..."
+f378-0005 497515aa80eaf1e6 Citan{n}"Non, Elly !{n}Nous ignorons ce qui{n}pourrait arriver !"
 f379-0001 0f92886fa6aabfd0 Citan{n}"Du sang...?{p}Sans doute, c'est couvert{n}de sang... Et cette{n}chaleur brûlante... Non,{n}peut-être des radiations ?{p}Peut-être un système de{n}désinfection d'urgence...{n}Ces marques prouvent qu'il{n}a servi..."
 f379-0003 d14b0dda5d0ad40a Citan{n}"Mais que..."
 f379-0004 edabdfcaec4f5a82 Citan{n}"Cette enfant semble être{n}une vie artificielle créée{n}à l'intérieur du réacteur.{p}Elle a dû être assemblée{n}dans le réacteur grâce à la{n}série de la base de données{n}de la salle de contrôle...{p}Son corps est très{n}probablement..."
@@ -1752,14 +1786,17 @@ f379-0059 d9e9ea085c923391 Seraphita{n}"Quoi !... Mais...{p}Quand on te rend ser
 f379-0060 2e0500dd9ffc7e92 Seraphita{n}"Chapeau, Tolone !{n}'Psychologiquement{n}supérieures' ?{p}Tes implants de cyborg à{n}'Cerveau Gin-tonique-Futon'{n}te rendent vraiment{n}maligne !"
 f379-0061 26371013b67086aa Seraphita{n}"Pardon !!"
 f379-0062 b0db80187793448d Seraphita{n}"...Tolone,{n}on veut qu'on nous dise{n}'inoffensives' ?"
+f379-0063 ec1c0b16a5578247 Seraphita{n}"A～hh !{n}Tolone !{n}Attends-moi !"
 f380-0000 7ea5ed87ed439ee5 ...Je ne peux...{n}te livrer...{n}...notre fille...{done 150}
 f380-0001 ac6eeb559c485798 ...Vis...!{done 150}
 f380-0002 e8bfcb715c0fcaec  ...Notre être maudit,{n} lié à la terre...{done 84}
 f380-0003 0cce0642f92ed8db  ...Ô réceptacle de l'âme{n} nouvelle... créé pour ôter{n} ce 'joug'...{done 84}
 f380-0005 7fc20d8bea08a095 ...!{n} ...!{n}  ...! Non, arrête !{done 150}
 f380-0006 7d2019618f1dfabe ...! Non !{n}Pitié, arrête !{done 90}
+f380-0007 9849627393abadfa Hein ?{n}Où est passé Fei...?
 f381-0000 fce9b626c0ded00c Hi hi hi...{done 45}
 f381-0001 23cb990c41677c70 ...Dors encore.{done 45}
+f381-0003 3bab5e3bfecadc3e Hi hi hi...{wait 32}{n}...À plus...{done 45}
 f383-0000 c1e198288677bfac Elly{n}"Ce Gear..."{done 24}
 f383-0001 b74d5a0cc3c675dc Elly{n}"...Je le connais, je le{n}connais bien... Oui... la{n}cité-caverne Zeboim...{p}Quand nous avons été{n}ensevelis dans cet{n}immense mausolée."
 f383-0002 df778a28d45b5941 Elly{n}"Hein ?... Quoi ?{p}...{wait 32}Est-ce que{n}je..."
@@ -1795,6 +1832,7 @@ f383-0033 9fd6a29266f5650e Id{n}"!!{wait 32}{n}...Toi ?..."
 f383-0034 22b79670d345923f Id{n}"Hmpf, un peu tôt,{n}tu ne trouves pas ?{p}...Je vois, c'était{n}cette femme...{p}Très bien.{n}Tu seras mon jouet...{n}pour aujourd'hui."
 f383-0036 3951a609a2b39494 Id{n}"Hmpf..."
 f383-0037 fd6de5a75ab9eb64 ...Rends-le.{done 32}
+f383-0038 73c874727f6e6d7c Rends-le,{n}rends-le...{done 50}
 f386-0000 a0233002031d28b3  ici
 f386-0002 1ddd19c498c92741  ？{n} {FFFF}{FFFF}{FFFF}{FFFF}monter{n} {FFFF}{FFFF}{FFFF}{FFFF}descendre{n} {FFFF}{FFFF}{FFFF}{FFFF}annuler{n}?{n}Monter{n}Descendre{n}Annuler
 f388-0000 39cf40129b131f62 Veux-tu...{wait 16}le pouvoir ?{done 84}
@@ -1828,10 +1866,12 @@ f389-0001 b54871c1ba1d08f4 Kim{n}"Il ne s'est pas encore{n}éveillé.{p}La forme
 f389-0002 e9963f8e357145ca Kim{n}"Nous avons beau réécrire{n}les codes héréditaires...{p}...les empreintes gravées{n}dans nos corps ne peuvent{n}être arrêtées.{p}Il fallait aller au-delà.{n}Nous avons dû recréer le{n}niveau moléculaire...{n}non...{p}...en fait, le niveau{n}atomique, en prenant pour{n}référence nos structures{n}à tous les deux."
 f389-0003 a96d5cc5e2de70c7 Kim{n}"Cette enfant... porte nos{n}avenirs et nos{n}possibilités..."
 f389-0004 8126eaa2b412ac44 Elly{n}"Une colonie de{n}nanomachines..."
+f389-0005 36fc6aff194d214e Elly{n}"Cette enfant serait-elle{n}l'ange qui nous donnera{n}plus de temps ?"
 f390-0001 8f1f5dfa7d7aa6b6 Kim{n}"...Inutile...{n}...Ça ne marchera pas..."
 f390-0002 a9d618976053be42 Kim{n}"Si l'on ne brise pas le{n}sort, les humains de cette{n}planète vont s'éteindre.{p}Non, peu m'importent les{n}humains... La vie{n}elle-même va dépérir si{n}nous ne faisons rien..."
 f390-0003 a945e2d0edf0816a Kim{n}"Une...{wait 45}{n}vie pure...{wait 15}{n}non maudite..."
 f390-0004 c0917ff972ac2c7e Kim{n}"Une vie pure..."
+f391-0000 abe87942ad348609 {speed 255} "Essai sur les Générateurs{n}Esclaves exhumés et leurs{n}effets particuliers"{p} Moteurs étranges découverts{n}dans des structures enfouies{n}sous terre aux temps anciens,{n}les "Sous-générateurs" ou{n}"Générateurs Esclaves"{n}(ci-après abrégés en "G.E."){n}sont, après diverses études,{n}notoirement connus pour avoir{n}une puissance divisée en{n}3 niveaux.{p}Cependant, il a été établi{n}qu'il existe un mode supérieur{n}qui surpasse de loin ces{n}niveaux de puissance.{n} Par commodité, nous{n}l'appellerons 'Hypermode'.{p}L'Hypermode se déclenche avec{n}une certaine probabilité{n}quand le niveau d'attaque{n}d'un G.E. atteint trois.{n}L'exposé ci-dessous couvre{n}les diverses conditions et{n}probabilités de déclenchement{n}établies à ce jour, en{n}supposant qu'un G.E. a été{n}installé dans une machine de{n}combat humanoïde (ou "Gear").{p}Dans tous les cas, il existe{n}une constante de base, dont{n}nous observons qu'elle vaut{n}environ 5.{n} La probabilité se calcule{n}en multipliant cette{n}constante par le dixième du{n}pourcentage de HP perdus.{p}Par exemple, si les HP d'un{n}Gear ont baissé de 50% de{n}leur total, la probabilité{n}de déclenchement serait de{n}     5 x 50/10 = 25 (%){n} Dans ce cas, donc, quand le{n}niveau d'attaque atteint 3,{n}il y a 25% de chances que{n}l'Hypermode se déclenche.{p}Par ailleurs, il existe des{n}valeurs de correction, qui{n}s'ajoutent à la valeur de{n}base à chaque attaque lancée,{n}des niveaux 1 à 3.{n} Autrement dit, les chances{n}de déclencher l'Hypermode{n}augmentent plus un Gear{n}attaque et plus il est{n}attaqué.{p}L'Hypermode d'un G.E., induit{n}selon la probabilité décrite{n}plus haut, peut émettre des{n}quantités incommensurables{n}d'énergie : de ce point de{n}vue, il pourrait sembler{n}idéal comme moteur principal{n}d'une machine de combat.{p}Cependant, en réalité, ils{n}n'ont pas encore pu servir{n}de source d'énergie pour une{n}guerre réelle, notamment en{n}raison de leur caractère{n}imprévisible et du fait{n}qu'aucun châssis de Gear{n}n'est assez robuste pour{n}supporter de telles{n}émissions d'énergie.
 f392-0000 2d3ea7e9a339d354 {speed 255}...l'ex-champion poids lourd{n}de la WWW et star de 5 films{n}à succès BIG JOE (vrai nom :{n}Joey Balboa) a ajouté le{n}titre de meilleur joueur du{n}match NBA à ses exploits de{n}l'année, dont le Grand{n}Chelem de Wimbledon, la{n}triple couronne du baseball{n}et le prix Pulitzer.{p}Mais, lors de la cérémonie{n}de remise des prix, au{n}moment de serrer les mains,{n}il a glissé, s'est cogné la{n}tête et est rentré chez lui{n}avec des lésions cérébrales,{n}épuisé et persuadé d'être{n}Elvis...
 f392-0001 b71e3c190085b893 {speed 255}L'ELDRIDGE fut équipé du{n}premier moteur quasi perpétuel{n}inépuisable de l'histoire. Ce{n}n'était pas qu'un générateur{n}à haut rendement : il{n}permettait aussi de créer des{n}champs défensifs à partir de{n}son 'espace O.A. (Objet{n}Absolu)' exclusif et d'activer{n}la 'navigation S.V. (Sujet{n}Variable)' hyperluminale, etc.{p} Conçu sur la Matrice S de la{n}proposition d'Heisenberg, qui{n}résout la relation réciproque{n}des particules (ou Onde{n}Cosmique) du Principe{n}d'Incertitude, il était aussi{n}connu sous les noms de 'Moteur{n}Matrice S' ou de 'Moteur{n}d'Heisenberg'.{p} En principe, partant du{n}postulat que tous les{n}phénomènes du futur immédiat,{n}y compris le présent, sont des{n}phénomènes potentiels, il{n}actualise le phénomène le plus{n}favorable parmi ces sujets{n}actifs en phénomène réel et{n}exploite ainsi les décalages{n}de potentiel énergétique qui{n}en résultent.
 f393-0000 2135b6e494cdc7b1 Big Joe{n}"Hola ! Ma boutique te{n}plaît ? Pas mal, hein ?"
@@ -1844,6 +1884,7 @@ f394-0003 41564e42dcd7e37f Miang, à l'époque de{n}Zeboim. Mais j'ignore{n}qui 
 f394-0004 eddf40e71ae9f414 Pour ressusciter Dieu ?
 f394-0005 19bc44a02a9ec8e5 Au début, oui. Puis ça a{n}changé.{p}À cette époque, bien des{n}gens étaient stériles. Des{n}humains défectueux...{n}Alors elle a tout refait.
 f394-0006 5b66929e2a0b5776 Peu avant que l'humanité{n}soit anéantie par la guerre,{n}un nouvel être est né pour{n}créer la génération future.{p}Tu te souviens des missiles{n}du site du Mass Driver ?{n}C'était le plus important{n}pour le peuple de Zeboim.{p}Grâce à cela, nous sommes{n}aujourd'hui les descendants{n}des quelques personnes{n}robustes qui ont survécu.
+f394-0007 ef0ffb81bc379dcc Fei{n}"Une économie en déclin...{n}La criminalité en hausse...{n}Des villes délabrées...{p}Une nation de fanatiques{n}en quête de leur propre{n}espace vital...{p}...croyant en des chefs de{n}sectes religieuses et se{n}ralliant à des dirigeants{n}totalitaires.{p}Ces gens étaient privés de{n}descendance à cause de{n}lésions génétiques...{p}...et se seraient éteints{n}s'ils avaient été livrés à{n}eux-mêmes.{p}Alors, Elly et moi, portant{n}les espoirs du peuple,{n}avons créé Emeralda..."
 f396-0000 9460ab0022fe36a0 Fei{n}"...Où sommes-nous{wait 32}...?"
 f396-0001 d8c7d9aca608eaf2 Fei{n}"...C'est ça...{p}La mémoire de mon âme...{n}Elle a été laissée en moi{n}pour toi..."
 f396-0002 91e3c0a48b7c1741 Fei{n}"...Oui, tu es l'enfant que{n}je désirais... ou plutôt{n}que Kim désirait.{p}Kim est en moi, dans mon{n}sang, et transmet sa{n}mémoire de génération en{n}génération depuis 4000 ans.{p}Il existe pour le jour où{n}naîtrait l'enfant que Kim,{n}si longtemps, n'a jamais pu{n}serrer dans ses bras."
@@ -1853,3 +1894,4 @@ f396-0005 4eff5ebfcb23f715 Emeralda{n}"Fei ! Merci d'être Kim{n}remplaçant jus
 f396-0006 079c1ffd6278e1d0 Emeralda{n}"...Q-quoi...?{p}Fei...{wait 32}corps...{n}si... ch... chaud..."
 f396-0007 839d4175e12436cb Emeralda{n}"Fei...{wait 45}{n}serre-moi... fort...{wait 23}{n}Lâche pas."
 f396-0008 efea93f5504a1f6f Emeralda{n}" Fei...{wait 32}{n}corps..."
+f396-0009 ecb4fb82e63727ca Emeralda{n}"...Moi devenue adulte{n}...adulte... moi...{p}Moi plus gêner toi,{n}maintenant !!"

@@ -66,6 +66,7 @@ ml003-0118 a824d59d9134c198 Deathblows
 mm000-0056 364f8c06b2af685e To approach your opponent,{n}press the Directional Button{n}toward him/her.{p}To retreat from your opponent,{n}press the Directional Button{n}away from him/her.{p}Pressing Up / Down on the{n}Directional Button will move{n}you away from / toward the{n}screen respectively.{p}Push the △ Button to jump.
 mm000-0067 d3004806fd8363fc Leonardo{n}"Hm! Not bad.{p}Have it your way then...{n}Playtime is now over!{p}Let's get serious..."
 mm000-0068 80c1359972c6bf32 Leonardo{n}"Hmph! That was nothing.{p}Enough messing around, already!{n}Let's get serious..."
+mm000-0069 8e6221dc6d7b698c Fei{n}"????{wait 90} ...What's going on?"{p}Fei{n}"What the...!? {wait 90} My Gear's...!?"
 nm000-0012 c80e5fb88c150cac@1c1937958a45bf27 Weltall 2
 nm000-0014 c5a90b63f874554c@b52afb7ffc4291a2 Heimdall
 nm000-0018 c852e85095f096f5@354651d656ba7adb Chu-Chu

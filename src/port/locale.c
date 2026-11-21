@@ -16,14 +16,15 @@
  * A language may read one original text differently from place to place
  * (a jukebox whose lists all say "track00" gets each tune's title). Such a
  * translation is of one table entry alone, named by the text's hash carried
- * on over the entry's index, its offset in its table and the table's count
- * of entries (tools/translations.py place_key). The game takes an entry
- * from a table through text_get_resource_entry, which knows all three: when
- * the active language translates that entry alone, the entry it returns is
- * the translation, which the window functions then pass on as it is (it
- * lies outside RAM, so they name it nothing). The party's and the Gears'
- * names, text the game data holds 20 bytes a slot, are entries alike: slot
- * n is entry n at 20 n of a table of 31.
+ * on over the entry's index, its offset in its table and the count its
+ * table's header gives, its last entry's number (tools/translations.py
+ * place_key). The game takes an entry from a table through
+ * text_get_resource_entry, which knows all three: when the active language
+ * translates that entry alone, the entry it returns is the translation,
+ * which the window functions then pass on as it is (it lies outside RAM, so
+ * they name it nothing). The party's and the Gears' names, text the game
+ * data holds 20 bytes a slot, are entries alike: slot n is entry n at 20 n
+ * of a table of 31.
  *
  * A field message's window takes its columns and rows from the message's
  * table (text_get_message_columns, text_get_message_rows): a translation
@@ -263,7 +264,8 @@ static const XemLocaleText *xem_locale_find(const u8 *text) {
 }
 
 /* The active language's translation of `text` in one table entry alone:
- * entry `index` at `offset` of a table of `count`, named by the text's hash
+ * entry `index` at `offset` of a table whose header counts `count` (its last
+ * entry's number), named by the text's hash
  * carried on over the three as halfwords (tools/translations.py place_key).
  * NULL where the language translates no entry alone or not this one. */
 static const XemLocaleText *xem_locale_place(const u8 *text, u32 index, u32 offset, u32 count) {

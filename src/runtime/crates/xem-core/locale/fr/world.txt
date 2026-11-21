@@ -21,3 +21,4 @@ wa043-0034 6adf4be3137416f2 Cargo
 wa043-0036 28045f04c5b7b9f6 Île Homme-Dune
 wa043-0037 adc2eda6458d83fb Route de Nisan
 wa043-0038 2995a9aeadddb73a Fort Jasper
+wa043-0040 f239162dac4044ae La frontière{n}de Kislev...{n}Ici commence{n}le danger.
