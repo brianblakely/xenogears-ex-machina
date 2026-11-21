@@ -803,6 +803,50 @@ fn a_translucent_culled_face_faces_the_camera_unless_the_port_records_it_either_
     }
 }
 
+/// A quad the game culled can fold along the silhouette (its points off one
+/// plane, nearly edge-on): NCLIP's first triangle faces away from the camera
+/// the picture is drawn from while its second faces it. That half shows;
+/// left out with the rest, a hairline of the clear colour opened along the
+/// fold (issue #103: up to 44 pixels a frame walking Lahan at 300%).
+#[test]
+fn a_culled_quad_folded_along_the_silhouette_shows_the_half_that_faces_the_camera() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    // Folded along 1-2, both corners seen on the same side of it: 0 beyond
+    // the fold (the first triangle facing away), 3 before it (the second
+    // facing the camera).
+    let points = [[-100.0, -100.0, 1300.0], [-100.0, 100.0, 1000.0], [100.0, -100.0, 1000.0], [-27.0, -27.0, 700.0]];
+    let projections: Vec<Projection> = points.iter().map(|&p| projection(p, 0, 0)).collect();
+    let words = [0x2800_00FF, projections[0].sxy, projections[1].sxy, projections[2].sxy, projections[3].sxy];
+    let face = Reveal { entry: 0x100, vertices: 4, projections: 4, order: 0, words: xem_gpu::FaceWords::from(&words[..]) };
+    let mut ram = Ram(vec![0; 0x4000]);
+    ram.0[0x100 >> 2] = 0x00FF_FFFF;
+    let trace = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        device.trace_projections(0, &projections, &[], &[face]);
+        device.dma_linked_list(&ram, 0x100, 1000).unwrap();
+    });
+    let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let pull_back = 50.0;
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { pull_back, ..Default::default() });
+    gpu.queue.submit([encoder.finish()]);
+    let (width, _) = frame.size();
+    let scale = width as f32 / 320.0;
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    let red = |[x, y]: [f32; 2]| {
+        let i = ((y * scale) as u32 * width + (x * scale) as u32) as usize * 4;
+        pixels[i..i + 3] == [255, 0, 0]
+    };
+    // The corners as the camera pulled back sees them, and a point within
+    // each half alone.
+    let seen = points.map(|[x, y, z]| [160.0 + 256.0 * x / (z + pull_back), 120.0 + 256.0 * y / (z + pull_back)]);
+    let within = |[a, b, c]: [usize; 3]| [0, 1].map(|axis| (seen[a][axis] + seen[b][axis] + seen[c][axis]) / 3.0);
+    assert!(red(within([1, 3, 2])), "the half facing the camera shows");
+    assert!(!red(within([0, 1, 3])), "the half facing away does not");
+}
+
 /// While the depth the camera is pulled back by is not known yet (the
 /// frames before a field's first frame shown), the port records every face
 /// within the reach whichever way it faces; once it is, those turned away

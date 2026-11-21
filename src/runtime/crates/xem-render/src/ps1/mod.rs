@@ -1139,16 +1139,23 @@ impl<'a> Builder<'a> {
         // shows it from, as the game's renderers drop the faces they draw
         // (NCLIP): the port records those turned away a little too
         // (`Reveals::margin`), for a camera between two frames or pulled back
-        // further than they were judged for.
+        // further than they were judged for. A quad folded along the
+        // silhouette (its points off one plane, nearly edge-on) can turn its
+        // second triangle to the camera while NCLIP's first faces away: that
+        // half shows, or a hairline of the clear colour opens along the fold.
+        let mut first = 0;
         if p.revealed && self.faces_away(p) {
-            return;
+            if !second_faces(p) {
+                return;
+            }
+            first = 1;
         }
         self.stats.primitives += 1;
         self.stats.revealed += u32::from(p.revealed);
         if self.feedback_source(p).is_some() {
             self.start_feedback();
         }
-        let start = self.triangles(p);
+        let start = self.triangles_from(p, first);
         self.commands_for(p, start);
     }
 
@@ -1251,6 +1258,11 @@ impl<'a> Builder<'a> {
 
     /// A primitive's triangles; returns the index of its first vertex.
     pub(crate) fn triangles(&mut self, p: &Primitive) -> u32 {
+        self.triangles_from(p, 0)
+    }
+
+    /// [`Self::triangles`] from a quad's `first` triangle (1: its second alone).
+    fn triangles_from(&mut self, p: &Primitive, first: usize) -> u32 {
         let fidelity = &self.options.fidelity;
         let count = p.vertex_count();
         let Attributes { mode, limits, class, projected, original, captured, captured_from, feedback, perspective } = self.attributes(p);
@@ -1303,7 +1315,7 @@ impl<'a> Builder<'a> {
                 let [left, top, right, bottom] = p.environment.area.map(i32::from);
                 // Reaching behind that camera's near plane, clipped there.
                 let clipped = near.filter(|near| p.vertices[..count].iter().any(|v| v.view.is_some_and(|[_, _, z]| z < near.distance)));
-                for triangle in [[0, 1, 2], [1, 2, 3]].iter().take(if p.shape == Shape::Quad { 2 } else { 1 }) {
+                for triangle in &[[0, 1, 2], [1, 2, 3]][first..if p.shape == Shape::Quad { 2 } else { 1 }] {
                     if let Some(near) = clipped {
                         let ((ox, oy), _) = p.projection.unwrap_or_default();
                         let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
@@ -1816,6 +1828,13 @@ fn fits(p: &Primitive, triangle: [usize; 3]) -> bool {
     let ys = triangle.map(|i| p.vertices[i].y);
     let span = |v: [i32; 3]| v.iter().max().unwrap() - v.iter().min().unwrap();
     span(xs) < 1024 && span(ys) < 512
+}
+
+/// Whether a quad's second triangle faces the camera at its sub-pixel points
+/// (wound as the face is, 1-3-2), its fourth point in front of the camera.
+fn second_faces(p: &Primitive) -> bool {
+    let [_, a, c, b] = &p.vertices;
+    p.shape == Shape::Quad && b.z > 0.0 && (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) > 0.0
 }
 
 /// The sign of a triangle's screen-space area.

@@ -1772,8 +1772,9 @@ snapshots are its. The renderer only draws again what it drew:
   frame under L1 or R1) the sides of buildings, rocks and steps that faced
   the camera before were missing, holes of the clear colour along them
   (issue #103: Lahan in widescreen at 150% turning with L1, presented
-  twice a game frame, 43 of 140 frames had holes, 5 319 pixels; now 1, 14
-  pixels; at 4:3 and 100%, 38 frames and 8 115 pixels, now none). Pulled
+  twice a game frame, 43 of 140 frames had holes, 5 319 pixels; now none,
+  the last 14 a fold, below; at 4:3 and 100%, 38 frames and 8 115 pixels,
+  now none). Pulled
   back, the frames shown were judged for a depth a little different (the
   camera's target nearer or farther, a zoom notch), and a field's first
   frames, before that depth is known, for the game's camera, which left a
@@ -1789,7 +1790,35 @@ snapshots are its. The renderer only draws again what it drew:
   port records whichever way they wind, are drawn as they wind, while a
   model's translucent faces, recorded as they face, are left out too:
   entering the forest, field 22, one model's showed their backs for a few
-  frames). The game's RAM is unchanged. In Lahan at 200% in widescreen the
+  frames). A quad can fold along the silhouette, its four points off one
+  plane and nearly edge-on: NCLIP's triangle (its first three points) then
+  faces away from the camera the picture is drawn through while its second
+  faces it, and leaving the whole face out opened a hairline of the clear
+  colour along the fold, down slopes and rocks (14 pixels in a frame of
+  that turn at 150%, up to 44 a frame walking Lahan at 300%, 12 over two
+  frames walking it with L1 at 450%, 15 over two turning in the forest at
+  150%). The renderer draws that half alone (`second_faces`), and none of
+  those runs shows a crack now, nor Lahan walking at 200% with High
+  Framerate (`tests/ps1.rs`
+  `a_culled_quad_folded_along_the_silhouette_shows_the_half_that_faces_the_camera`,
+  `tests/render.rs` `walking_zoomed_out_opens_no_crack_along_the_slopes`);
+  elsewhere the half shows where something farther did (5 to 32 pixels of
+  the benchmark's last frames at 1080p). It costs nothing measurable: in
+  the benchmark's scenes 60 to 100 of a frame's culled quads face away, a
+  cross product more each, and 1 to 3 fold; over eight rounds alternating
+  with the build before, every row's presentation stayed within 0.010 ms
+  of it on average either way, as an identical copy of that build did. The
+  clear colour still within the scene from 300% out is where the scene
+  itself is open, never seen from the game's camera (the forest's floor
+  ending some 2 000 units short of the wall at its edge, a triangle
+  missing from a rock's mesh under a well's lid in Lahan: 2 190, 78 and
+  30 pixels over 200 frames walking the forest at 300% and Lahan at 450%
+  and 500%); recording every face whichever way it faces, at the widest
+  reach, leaves them as they are. Along the scene's outline against the
+  void around it, the clear colour is that void (its staircase's notches:
+  365 of the 377 pixels a count of enclosed clear colour finds walking
+  Lahan with L1 at 450%).
+  The game's RAM is unchanged. In Lahan at 200% in widescreen the
   port records about 7% more culled faces still (1 402 against 1 316) and
   13% more turning with High Framerate (1 063 against 944), and on a
   field's first frame, before its depth is known, every face within the
