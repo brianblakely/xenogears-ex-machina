@@ -1293,6 +1293,57 @@ fn translucent_model_depth_is_opt_in_and_preserves_blending() {
     }
 }
 
+/// Linear filtering takes a fragment's semi-transparency from the texels it
+/// shows: where its nearest texel is transparent but its neighbours still
+/// cover it, theirs. Field 684's rain (issue #100) draws huge additive quads
+/// whose transparent texels are ringed by near-black semi-transparent ones;
+/// the transparent texel's own bit drew those fragments opaque, black curved
+/// corners over the whole picture.
+#[test]
+fn a_filtered_fragment_is_as_semi_transparent_as_the_texels_it_shows() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let traces = traced(|device| {
+        // 15-bit texels at (512, 0): near-black (1, 1, 1) with the semi bit,
+        // but for a transparent one at (1, 1).
+        device.write_gp0_words(&[0xA000_0000, 512, 4 << 16 | 4]);
+        for row in 0..4 {
+            let pair = |u: u32| if row == 1 && u == 1 { 0 } else { 0x8421 };
+            device.write_gp0_words(&[pair(0) | pair(1) << 16, pair(2) | pair(3) << 16]);
+        }
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        device.write_gp0_words(&[0x0240_4040, 0, 240 << 16 | 320]);
+        // An additive (B+F) quad of the scene across the patch, each texel
+        // tens of pixels wide.
+        let projections: Vec<Projection> = [(60, 40), (260, 40), (60, 200), (260, 200)].iter()
+            .map(|&(x, y)| Projection { sxy: xy(x, y), sz: 1000, class: 0, x: x << 16, y: y << 16, offset: (160, 120), h: 256, owner: 0, view: view(x as f32, y as f32, 1000.0) })
+            .collect();
+        let p: Vec<u32> = projections.iter().map(|p| p.sxy).collect();
+        let page = (0x108 | 1 << 5) << 16;
+        submit(device, &projections, &[(vec![0x2E80_8080, p[0], 0, p[1], page | 3, p[2], 3 << 8, p[3], 3 << 8 | 3], vec![(1, 0), (3, 1), (5, 2), (7, 3)])]);
+    });
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+    let filtering = xem_render::ps1::Filtering { world_linear: true, ..Default::default() };
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, filtering, ..Default::default() }, 2);
+    for trace in [&traces.0, &traces.1] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+    let background = u16::from(pixels[(10 * 2048 + 10) * 4]);
+    let (mut darker, mut lit, mut clear) = (0, 0, 0);
+    for y in 2 * 44..2 * 196 {
+        for x in 2 * 64..2 * 256 {
+            let red = u16::from(pixels[(y * 2048 + x) * 4]);
+            darker += usize::from(red + 1 < background);
+            lit += usize::from(red > background + 4);
+            clear += usize::from(red == background);
+        }
+    }
+    assert!(lit > 0 && clear > 0, "the quad adds its texels ({lit} pixels) and leaves its transparent one out ({clear})");
+    assert_eq!(darker, 0, "an additive quad darkens nothing (background {background})");
+}
+
 /// A movie's picture the scene draws (a window movie on a screen in a
 /// field's world, [`Primitive::movie`]) keeps its colours through the
 /// effects, as the movie shown alone does, while the scene around it is lit

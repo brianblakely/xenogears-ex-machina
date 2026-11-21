@@ -1900,10 +1900,19 @@ snapshots are its. The renderer only draws again what it drew:
   buffering, the saved-screen slot and copies between screen regions work as
   on the console; textures are decoded in the shader from the native VRAM copy
   (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
-  selecting semi-transparency, modulation, raw textures). A fill shows the
-  colour VRAM keeps of it (15 bits), expanded as texels are (to the full
-  range, or as the console's 15-bit colours), so texels painted to match it
-  match it here too. Each vertex sits at
+  selecting semi-transparency, modulation, raw textures). Filtered linearly,
+  a pixel takes the colour of the four texels around it that are not
+  transparent and is drawn where they cover at least half of it,
+  semi-transparent as the nearest texel, or, where that one is transparent,
+  as the nearest of the others: with the transparent texel's own bit, the
+  near-black semi-transparent texels round the transparent ones of field
+  684's rain, huge additive quads, were drawn opaque, black curved corners
+  over the whole picture in Fei's flashback at any scale (issue #100;
+  `tests/ps1.rs`
+  `a_filtered_fragment_is_as_semi_transparent_as_the_texels_it_shows`). A
+  fill shows the colour VRAM keeps of it (15 bits), expanded as texels are
+  (to the full range, or as the console's 15-bit colours), so texels
+  painted to match it match it here too. Each vertex sits at
   its own sub-pixel point when it has one (a point shared by neighbouring
   faces lands in the same place in each), and a polygon samples only its own
   texels (no bleeding from the page at higher scales or when filtered). Seen
