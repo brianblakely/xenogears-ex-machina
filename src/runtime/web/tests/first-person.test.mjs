@@ -162,7 +162,9 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await page.mouse.move(box.x + box.width / 2 + 100, box.y + box.height / 2 + 40, { steps: 4 });
       await frames(page, 4);
       const after = (await renderer(page)).look;
-      assert.ok(after.yaw - before.yaw > 0.1, `the mouse turned it right: ${JSON.stringify([before, after])}`);
+      // (At the default sensitivity a pixel turns it 0.0009375 rad: the
+      // 100 pixels across, 0.094, and the 40 down 0.0375.)
+      assert.ok(after.yaw - before.yaw > 0.05, `the mouse turned it right: ${JSON.stringify([before, after])}`);
       assert.ok(after.pitch < before.pitch, `and down: ${JSON.stringify([before, after])}`);
       await page.evaluate(() => document.exitPointerLock());
       await page.waitForFunction(() => !document.pointerLockElement);
