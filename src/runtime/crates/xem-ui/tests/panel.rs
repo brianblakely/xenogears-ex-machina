@@ -196,6 +196,11 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
     assert!(!version.is_empty() && version == xem_ui::VERSION.trim_start_matches('v'), "{version}");
     element(&ui, "Version", AccessibleRole::Text);
     element(&ui, &version, AccessibleRole::Text);
+    // English (Perfect Works) names the Perfect Works Build release its text
+    // is from, as the locale's README does.
+    let readme = include_str!("../../xem-core/locale/en-x-pw/README.md");
+    let release = readme.split("The text is from Perfect Works Build ").nth(1).and_then(|rest| rest.split_whitespace().next());
+    element(&ui, &format!("Perfect Works Build {}", release.expect("the README names the release")), AccessibleRole::Text);
 
     // (c) Pointer input on the panel goes through the settings service.
     section(&mut ui, "Graphics", 1);
