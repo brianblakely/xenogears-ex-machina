@@ -182,7 +182,11 @@ typedef struct {
      * face) count too, and with them the faces the renderers drop as facing
      * away: a camera between two of the game's frames (a turning one,
      * interpolated) or pulled back further than they were judged for sees
-     * some of them. 0 for none. */
+     * some of them. 0 for none. With no reach (`wanted` 0: the game's own
+     * framing through its own camera, whose picture at sub-pixel points
+     * wants the faces whole pixels turned over, and the folds beside them),
+     * of the dropped faces within the screen, the ones thin at whole pixels
+     * alone. */
     unsigned int margin;
     XemReveal entries[XEM_PRESENT_REVEALS];
 } XemRevealRing;

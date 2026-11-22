@@ -1501,22 +1501,53 @@ fn zooming_out_shows_none_of_the_clear_colour_running_or_held() {
 /// pixels a frame at 1080p).
 #[test]
 fn walking_zoomed_out_opens_no_crack_along_the_slopes() {
-    let Some(disc) = disc() else {
+    let Some(cracks) = cracks_walking_lahan(Graphics { profile: GraphicsProfile::Modern, widescreen: true, zoom_out: 300, ..Graphics::default() }, (960, 540), &["up", "r1"]) else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
+    assert!(cracks.is_empty(), "frames with cracks of the clear colour (frame, pixels): {cracks:?}");
+}
+
+/// A walk through the game's own camera, at 100% without High Framerate, in
+/// widescreen and in the original's framing: no crack either. At sub-pixel
+/// points the faces the game's whole-pixel winding tests dropped still face
+/// the camera (slivers along slopes and walls), and one culled beside the
+/// screen reaches a little into it; the port recorded neither for a still
+/// camera, and the picture had cracks of the clear colour across the ground
+/// and along walls, the ones issue #103 reports (at 1080p, 12 of this
+/// walk's 110 frames in widescreen, 296 pixels, and 4 in 4:3, 202).
+#[test]
+fn walking_at_the_games_own_camera_opens_no_crack() {
+    let mut cracks = Vec::new();
+    for widescreen in [true, false] {
+        let graphics = Graphics { profile: GraphicsProfile::Modern, widescreen, ..Graphics::default() };
+        let Some(found) = cracks_walking_lahan(graphics, (1920, 1080), &["down", "l1"]) else {
+            eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+            return;
+        };
+        cracks.push((widescreen, found));
+    }
+    assert!(cracks.iter().all(|(_, found)| found.is_empty()), "frames with cracks of the clear colour (widescreen, [(frame, pixels)]): {cracks:?}");
+}
+
+/// Lahan through `graphics` in a window of `size`, the leader walking with
+/// `buttons` held from frame 20 (a direction and a shoulder button: the
+/// camera turning), for 110 frames: each presentation's frame with clear
+/// colour enclosed by the scene, and how many pixels
+/// ([`enclosed_clear_colour`]). None without disc 1.
+fn cracks_walking_lahan(graphics: Graphics, size: (u32, u32), buttons: &[&str]) -> Option<Vec<(u32, usize)>> {
+    let disc = disc()?;
     let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
     let entered = session.execute(&json!({"cmd": "enter_field", "map": 1}));
     assert!(entered.get("error").is_none(), "{entered}");
     run_frames(&mut session, 400);
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-    let graphics = Graphics { profile: GraphicsProfile::Modern, widescreen: true, zoom_out: 300, ..Graphics::default() };
-    view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (960, 540), view.max_scale()));
+    view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, size, view.max_scale()));
     let scene = session.scene();
     session.runtime.services().gpu.device_mut().set_trace(true);
     let _ = view.take_restart();
-    let walk = ["up", "r1"].iter().map(|b| xem_core::control::button_bit(b).unwrap()).fold(0, |a, b| a | b);
+    let walk = buttons.iter().map(|b| xem_core::control::button_bit(b).unwrap()).fold(0, |a, b| a | b);
     let mut cracks = Vec::new();
     for n in 0..110u32 {
         session.set_pad(0, if n >= 20 { walk } else { 0 });
@@ -1539,7 +1570,7 @@ fn walking_zoomed_out_opens_no_crack_along_the_slopes() {
             cracks.push((n, found));
         }
     }
-    assert!(cracks.is_empty(), "frames with cracks of the clear colour (frame, pixels): {cracks:?}");
+    Some(cracks)
 }
 
 /// Pixels of the clear colour (aux class 0) within the scene: with scene

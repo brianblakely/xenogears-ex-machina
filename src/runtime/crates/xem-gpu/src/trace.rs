@@ -105,7 +105,9 @@ pub struct Reveals {
     /// any face; 0 none): a camera between two of the game's frames (a
     /// turning one, interpolated) or pulled back further than they were
     /// judged for sees some of them. A renderer leaves out those that face
-    /// away from the camera it draws them through.
+    /// away from the camera it draws them through. With no reach (the
+    /// game's own framing through its own camera), the port records, of the
+    /// dropped faces within the screen, the ones thin at whole pixels alone.
     pub margin: u16,
     /// The zoom (percent) the view asking for these faces shows the
     /// game's camera at, for itself: each take returns the least zoom of
@@ -1196,7 +1198,7 @@ impl Gpu {
     pub fn set_reveals(&mut self, reveals: Option<Reveals>) {
         if let Some(trace) = &mut self.trace {
             trace.asked = reveals;
-            trace.wanted = reveals.filter(|r| r.reach != [0, 0]);
+            trace.wanted = reveals.filter(|r| r.reach != [0, 0] || r.margin != 0);
         }
     }
 

@@ -1807,18 +1807,61 @@ snapshots are its. The renderer only draws again what it drew:
   the benchmark's scenes 60 to 100 of a frame's culled quads face away, a
   cross product more each, and 1 to 3 fold; over eight rounds alternating
   with the build before, every row's presentation stayed within 0.010 ms
-  of it on average either way, as an identical copy of that build did. The
-  clear colour still within the scene from 300% out is where the game's
-  own scenery is open, which its camera never sees, and the renderer adds
-  no face the game's models lack. In the forest (2 190 pixels over 38 of
-  200 frames walking it at 300%) the floor's and the wall's models end
-  1 000 to 1 900 units apart; the forest clears to black, and the wall
-  beside that gap is black and the floor's rim no brighter than 33 of
-  255, so nothing shows. Under the lid of Lahan's well (78 pixels over
-  four frames walking it at 450%, 30 over two at 500%) the rock's model
-  has no face for one triangle: each of its three edges belongs to one
-  face only, and the quad beside it repeats its second point as its
-  fourth. Recording every face whichever way it faces, at the widest
+  of it on average either way, as an identical copy of that build did.
+  Through the game's own camera at 100% without High Framerate the port
+  recorded none of the faces its winding tests drop, and a field's picture
+  at sub-pixel points had cracks of the clear colour across the ground and
+  along walls, thin wedges and lines (issue #103's two pictures; walking
+  Lahan by click between two stops and turning the camera at each, at
+  1080p: 122 of 760 walking presentations in widescreen, 5 680 pixels, up
+  to 348 in one, 11 of 192 turning and 9 of 240 standing; 86, 6 and 4 in
+  4:3; none with High Framerate on, whose margin records those faces). The
+  view asks for them at 100% too, in a field drawn at sub-pixel points.
+  In widescreen with the margin of a camera still between two frames: the
+  faces whole pixels turned over (thinner than one of the original's) and
+  the folds beside them. In the original's framing with no reach and the
+  least margin, the faces whole pixels turned over alone: the port then
+  tests no face culled beside the screen, and of the faces NCLIP drops
+  only the ones thin at whole pixels (`xem_reveal_sliver`: the product
+  NCLIP tests within twice the extents of the face's two edges of 0,
+  integers alone, ahead of the margin's own test), where the wider margin
+  cost the game's frame 2%. A renderer draws the ones
+  that face the camera at their sub-pixel points inside the picture
+  (`Builder::restores_sliver`: a model's as the terrain's), and in
+  widescreen every recorded face where it falls: one culled beside the
+  screen reaches up to a pixel into it, and cut off at the screen's side
+  it left a column of the clear colour there. None of those presentations
+  has a crack now, nor the walk to the fence by Lahan's well and the
+  camera's eight directions there, where 74 of 296 walking presentations
+  had (`tests/render.rs`
+  `walking_at_the_games_own_camera_opens_no_crack`, `tests/ps1.rs`
+  `a_models_faces_culled_at_whole_pixels_show_from_the_games_own_camera`
+  and
+  `a_face_culled_beside_the_screen_shows_where_its_sub_pixel_points_reach_into_it`,
+  `tests/test_port_model_draw.py`
+  `test_with_no_reach_the_margin_records_the_faces_thin_at_whole_pixels_alone`).
+  A window that asks for nothing beside the screen now asks for these, so
+  its saved state differs from a plain session's in the port's
+  presentation records, and in nothing else (`xem-host` `tests/states.rs`).
+  At 100% without High Framerate, six rounds against the build before
+  these fixes, the game's frame and the presentation's CPU together:
+  standing, Lahan -0.002 ms in 4:3 and +0.010 in widescreen, the forest
+  -0.001 and -0.014 (an identical copy of a build differs by up to 0.011
+  there); with the camera turning throughout, +0.002 in widescreen and
+  +0.038 in 4:3 (+0.011 in another run of the same test: 0.013 to 0.026
+  over the build before this fix, in the game's frame, where the faces a
+  turn brings edge-on are tested and the slivers among them recorded). The
+  clear colour still within the scene from 300% out: in the forest (2 190
+  pixels over 38 of 200 frames walking it at 300%) the floor's and the
+  wall's models end 1 000 to 1 900 units apart, which the game's camera
+  never sees; the forest clears to black, and the wall beside that gap is
+  black and the floor's rim no brighter than 33 of 255, so nothing shows.
+  Under the lid of Lahan's well (78 pixels over four frames walking it at
+  450%, 30 over two at 500%) a quad of the rock loses its second triangle
+  to the welder (`Welder::weld_frame`), which welds its fourth point onto
+  its second's, a fifth of a pixel off on the game's screen, where the
+  faces beside it keep that point: still open. Recording every face
+  whichever way it faces, at the widest
   reach, leaves both as they are. Along the scene's outline against the
   void around it, the clear colour is that void (its staircase's notches:
   365 of the 377 pixels a count of enclosed clear colour finds walking

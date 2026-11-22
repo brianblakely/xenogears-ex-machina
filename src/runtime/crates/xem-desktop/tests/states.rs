@@ -6,7 +6,8 @@
 //! (`--exit-at-frame`), writing its state at F+300 (`--save-state-at`): its
 //! RAM and scratchpad hash at both frames is the plain session's, the window
 //! presented frames meanwhile (XEM_FRAME_STATS), and its state is the plain
-//! session's at that frame byte for byte (the window asks for no reveals),
+//! session's at that frame but for the port's presentation records (the
+//! window asks for the faces its sub-pixel picture needs within the screen),
 //! loads in a plain session to its hash and goes on to the window's end. Local only:
 //! it needs the user's disc 1, a game module build and weston and lavapipe
 //! (nix/runtime's shell).
@@ -99,7 +100,6 @@ fn the_desktops_window_plays_a_native_state_on_and_saves_one_that_goes_on_native
     std::fs::write(&made, &state).unwrap();
     frames(&mut plain, 300);
     let halfway = hash(&mut plain);
-    let plain_halfway = plain.snapshot_bytes().unwrap();
     frames(&mut plain, 300);
     let end = hash(&mut plain);
 
@@ -151,10 +151,12 @@ fn the_desktops_window_plays_a_native_state_on_and_saves_one_that_goes_on_native
     let presented: Vec<u64> = err.lines().filter_map(|l| l.strip_prefix("xem-desktop stats: ")).filter_map(|l| l.split(' ').next()?.parse().ok()).collect();
     assert!(presented.iter().sum::<u64>() > 100, "the window presented frames: {presented:?}");
     // The window's state, natively: its RAM, and on to the window's end. It
-    // asked for no reveals (no wider framing, pull-back or inspection), so
-    // it is the plain session's state at that frame, byte for byte.
+    // asked for nothing beside the screen (no wider framing, pull-back or
+    // inspection), only for the faces its sub-pixel picture needs within it
+    // (the slivers the winding tests drop, issue #103): the state is the
+    // plain session's at that frame but for the port's presentation
+    // records (xem-host's `states.rs` compares the two whole).
     let window = std::fs::read(&saved).unwrap();
-    assert!(window == plain_halfway, "the window's state is the plain session's at frame {}, byte for byte", at + 300);
     let mut other = boot(&disc, &Default::default()).expect("boot").0;
     other.restore_bytes(&window).expect("the window's state loads");
     assert_eq!((other.runtime.frames(), hash(&mut other)), (at + 300, halfway), "the window's state natively");

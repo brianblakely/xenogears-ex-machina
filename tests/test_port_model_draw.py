@@ -1136,6 +1136,59 @@ class CulledFaces(unittest.TestCase):
                                    mem.u32(G["model_current_packet"])))
                 self.assertEqual(states[0], states[1])
 
+    def test_a_dropped_face_is_recorded_on_the_margin_alone(self):
+        """The host's margin asks for the faces the renderers drop within the
+        screen whether or not it wants any beside it (its picture of a still
+        camera at sub-pixel points wants none there: no reach). With the
+        margin and no reach, a face turned away within the margin is
+        recorded, and one the screen-bounds test culls beyond the screen is
+        not."""
+        for quad in (False, True):
+            with self.subTest(quad=quad):
+                scene = self.turned(-5, quad)
+                reveals = self.recording(True)
+                reveals[1], reveals[7] = 0, 410
+                scene.draw("model_draw_f4_avg" if quad else "model_draw_f3_avg")
+                self.assertEqual(reveals[0], 1, "the face turned away, within the screen")
+        for name, shape in (("model_draw_f3_lit", "f3"), ("model_draw_ft4_lit", "ft4")):
+            with self.subTest(name=name):
+                scene, _ = self.scene(name, shape)
+                reveals = self.recording(True)
+                reveals[1], reveals[7] = 0, 410
+                scene.draw(name)
+                self.assertEqual(reveals[0], 0, "the face beyond the screen")
+
+    def test_with_no_reach_the_margin_records_the_faces_thin_at_whole_pixels_alone(self):
+        """With no reach (the game's own framing through its own camera), of
+        the faces NCLIP drops within the margin, the ones thin at whole
+        pixels are recorded: one that faces the camera at its sub-pixel
+        points (its whole-pixel points in a line) and one turned away a
+        little. One turned further is not, though the margin would keep it
+        and a reach records it, nor one the game draws."""
+        for quad in (False, True):
+            for tilt, margin, reach, recorded in ((1, 410, 0, 1), (-5, 410, 0, 1), (-30, 2048, 0, 0), (-30, 2048, 128, 1), (5, 410, 0, 0)):
+                with self.subTest(quad=quad, tilt=tilt, margin=margin, reach=reach):
+                    scene = self.turned(tilt, quad)
+                    reveals = self.recording(True)
+                    reveals[1], reveals[7] = reach << 16 | reach, margin
+                    scene.draw("model_draw_f4_avg" if quad else "model_draw_f3_avg")
+                    self.assertEqual(reveals[0], recorded)
+                    whole = nclip([s for s, _ in scene.projections((0, 1, 2))])
+                    self.assertEqual(whole > 0, tilt == 5, "the game's own winding: only the last is drawn")
+
+    def test_recording_thin_faces_changes_nothing_the_game_sees(self):
+        for quad, tilt in itertools.product((False, True), (1, -5, -30, 5)):
+            with self.subTest(quad=quad, tilt=tilt):
+                states = []
+                for margin in (0, 410):
+                    scene = self.turned(tilt, quad)
+                    reveals = self.recording(True)
+                    reveals[1], reveals[7] = 0, margin
+                    scene.draw("model_draw_f4_avg" if quad else "model_draw_f3_avg")
+                    states.append((mem.gte_snapshot(LIB), scene.words(0), scene.ot(), mem.u32(G["model_drawn_primitive_count"]),
+                                   mem.u32(G["model_current_packet"])))
+                self.assertEqual(states[0], states[1])
+
     def test_recording_them_changes_nothing_the_game_sees(self):
         for name, shape in self.RENDERERS:
             with self.subTest(name=name):

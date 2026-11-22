@@ -727,13 +727,16 @@ impl FrameRenderer {
         // A frame recorded looking from within or around the scene holds
         // faces from anywhere, not only beside the screen: seen from the
         // game's camera, none. Between two frames, those beside the screen
-        // come into it as the camera turns.
+        // come into it as the camera turns. Drawn at sub-pixel points, a
+        // face the game culled beside its screen reaches up to a pixel
+        // into it, where its neighbours end at the same points: cut off at
+        // the screen's side, it left a column of the clear colour there.
         let around = self.eye.is_some() || self.camera.is_some_and(|camera| camera.around != 0);
         builder.reveal = if pulled || look.is_some() {
             Reveal::Everywhere
         } else if around {
             Reveal::Hidden
-        } else if motion.is_some() {
+        } else if motion.is_some() || (side > 0 && !options.fidelity.vertex_snapping) {
             Reveal::Everywhere
         } else if side > 0 {
             Reveal::Sides

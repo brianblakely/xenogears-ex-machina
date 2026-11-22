@@ -267,9 +267,12 @@ fn the_desktops_window_plays_a_restored_state_as_a_plain_session_does() {
     // The original's own: a plain session with none of the host's controls.
     let mut original = plain(&disc, &state, None);
     assert_eq!(format!("{:016x}", original.memory_hash().unwrap()), hash, "the window plays the state as the original does");
-    // The window asked for no reveals (no wider framing, pull-back or
-    // inspection): the whole state is the plain session's.
-    assert!(original.snapshot_bytes().unwrap() == shown, "the window's whole state is the plain session's, byte for byte");
+    // The window asked for nothing beside the screen (no wider framing,
+    // pull-back or inspection), only for the faces its sub-pixel picture
+    // needs within it (the slivers the winding tests drop, issue #103): the
+    // whole state is the plain session's but for the port's presentation
+    // records.
+    presentation_only(&mut original, &shown, "the window");
 }
 
 #[test]

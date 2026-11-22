@@ -467,6 +467,98 @@ fn terrain_slivers_culled_at_whole_pixels_fill_seams_at_one_times_zoom() {
     }
 }
 
+/// A culled face of a model (a field's scenery), red, at whole-pixel and
+/// sub-pixel points in front of the camera.
+fn culled_model_face(shape: Shape, points: &[(i32, i32, f32, f32)]) -> TraceOp {
+    let TraceOp::Draw(mut face) = primitive(0, 0, 0) else { unreachable!() };
+    face.shape = shape;
+    face.revealed = true;
+    face.textured = false;
+    for (v, &(x, y, fx, fy)) in face.vertices.iter_mut().zip(points) {
+        (v.x, v.y, v.fx, v.fy, v.z, v.color) = (x, y, fx, fy, 1000.0, 0x0000FF);
+    }
+    TraceOp::Draw(face)
+}
+
+/// A model's face (a field's scenery) that collapses or turns over at whole
+/// pixels was dropped by the game's winding test. At its sub-pixel points it
+/// faces the camera, and the faces around it no longer cover it: it shows
+/// from the game's own camera, in the plain picture and in a widescreen
+/// replay's, as the terrain's slivers do, and so does the half of a folded
+/// quad that faces the camera. Left out, cracks of the clear colour ran
+/// along a field's slopes and walls at 100% without High Framerate (issue
+/// #103). At the original's whole pixels neither shows.
+#[test]
+fn a_models_faces_culled_at_whole_pixels_show_from_the_games_own_camera() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let (sync, mut scene) = traced(|device| {
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    });
+    // A triangle with no height at whole pixels, 0.8 of one at its own points.
+    scene.ops.push(culled_model_face(Shape::Triangle, &[(50, 100, 50.0, 100.1), (250, 100, 250.0, 100.1), (150, 100, 150.0, 100.9)]));
+    // A quad whose first triangle (NCLIP's) faces away and whose second
+    // faces the camera.
+    scene.ops.push(culled_model_face(Shape::Quad, &[(100, 160, 100.0, 160.0), (100, 200, 100.0, 200.0), (140, 160, 140.0, 160.0), (110, 170, 110.0, 170.0)]));
+    for snapping in [false, true] {
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+        renderer.set_options(DrawOptions { fidelity: Fidelity { vertex_snapping: snapping, ..Fidelity::MODERN }, ..Default::default() }, 2);
+        for trace in [&sync, &scene] {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, trace);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        // Within the sliver, within the quad's second half alone, and within
+        // its first alone: in the picture as drawn, then in a widescreen
+        // replay's (40 pixels a side).
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+        let shows = |x: usize, y: usize| pixels[(y * 2048 + x) * 4] != 0;
+        assert_eq!((shows(300, 201), shows(234, 354), shows(207, 327)), (!snapping, !snapping, false), "the picture as drawn, snapping {snapping}");
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer,
+            DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { side: 40, ..Default::default() });
+        gpu.queue.submit([encoder.finish()]);
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        let shows = |x: usize, y: usize| pixels[(y * 800 + x) * 4] != 0;
+        assert_eq!((shows(380, 201), shows(314, 354), shows(287, 327)), (!snapping, !snapping, false), "a widescreen replay, snapping {snapping}");
+    }
+}
+
+/// Drawn at sub-pixel points, a face the game culled beside its screen
+/// reaches up to a pixel into it, where the faces it drew end at the same
+/// points: a widescreen picture shows that part too. Cut off at the
+/// screen's side, it left a column of the clear colour there (issue #103).
+/// At the original's whole pixels the face stays beside the screen.
+#[test]
+fn a_face_culled_beside_the_screen_shows_where_its_sub_pixel_points_reach_into_it() {
+    let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
+    let (sync, mut scene) = traced(|device| {
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    });
+    // Left of the screen at whole pixels (its right edge at -1), its
+    // sub-pixel edge 0.8 further right: drawn, 0.3 of a pixel into the screen.
+    scene.ops.push(culled_model_face(Shape::Quad, &[(-30, 50, -30.0, 50.0), (-1, 50, -0.2, 50.0), (-30, 150, -30.0, 150.0), (-1, 150, -0.2, 150.0)]));
+    for snapping in [false, true] {
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+        renderer.set_options(DrawOptions { fidelity: Fidelity { vertex_snapping: snapping, ..Fidelity::MODERN }, ..Default::default() }, 2);
+        for trace in [&sync, &scene] {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, trace);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer,
+            DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { side: 40, ..Default::default() });
+        gpu.queue.submit([encoder.finish()]);
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        let shows = |x: usize| pixels[(201 * 800 + x) * 4] != 0;
+        // In the side, the screen's first column (80, at twice the size),
+        // and past where the face reaches.
+        assert_eq!((shows(60), shows(80), shows(82)), (true, !snapping, false), "snapping {snapping}");
+    }
+}
+
 #[test]
 fn terrain_slivers_turned_over_at_whole_pixels_fill_seams_too_but_not_from_behind_the_camera() {
     // A far sliver the arena's ground drops: facing the camera at its
@@ -851,7 +943,10 @@ fn a_culled_quad_folded_along_the_silhouette_shows_the_half_that_faces_the_camer
 /// frames before a field's first frame shown), the port records every face
 /// within the reach whichever way it faces; once it is, those turned away
 /// a little (for that depth changing before the frames judged for it show);
-/// interpolating, those a camera between two frames may see.
+/// interpolating, those a camera between two frames may see; and through the
+/// game's own camera, at sub-pixel points, those its whole-pixel winding
+/// tests dropped (issue #103: with none recorded, cracks of the clear colour
+/// along a field's slopes and walls at 100% without High Framerate).
 #[test]
 fn the_faces_turned_away_the_port_records_follow_how_the_view_may_turn() {
     let gpu = pollster::block_on(Gpu::reference()).expect("a wgpu adapter");
@@ -894,8 +989,15 @@ fn the_faces_turned_away_the_port_records_follow_how_the_view_may_turn() {
     assert_eq!((unknown.pull_back, unknown.margin), (0, Reveals::EVERY_WAY), "every face while the depth is unknown");
     let known = reveals(pulled, true);
     assert_eq!((known.pull_back, known.margin), (1200, margin(4.0)), "pulled back by the focus, a little margin");
+    // Through the game's camera as it drew the frame, a picture at sub-pixel
+    // points still needs the faces its whole-pixel winding tests dropped
+    // that those points turn to the camera, inside the screen as beside it.
     let wide = reveals(xem_settings::Graphics { widescreen: true, ..Default::default() }, true);
-    assert_eq!(wide.margin, 0, "the game's camera as it drew the frame: none");
+    assert_eq!(wide.margin, margin(4.0), "the game's camera as it drew the frame, at sub-pixel points: as with the camera still between two");
+    let plain = reveals(xem_settings::Graphics::default(), true);
+    assert_eq!((plain.reach, plain.margin), ([0, 0], 1), "in the original's framing, with no reach beside it, the least: the faces whole pixels turned over");
+    let whole = reveals(xem_settings::Graphics { widescreen: true, profile: xem_settings::GraphicsProfile::Ps1, ..Default::default() }, true);
+    assert_eq!(whole.margin, 0, "at the original's whole pixels: none");
     let smooth = reveals(xem_settings::Graphics { interpolation: true, ..Default::default() }, true);
     assert_eq!(smooth.margin, margin(4.0), "interpolating with the camera still: what models turn");
 }

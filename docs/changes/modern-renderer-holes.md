@@ -1,3 +1,4 @@
+- Fixed thin cracks of the background colour across the ground and along walls in fields, at the default 100% zoom with **High Framerate** off, in widescreen and 4:3.
 - Fixed holes and dark seams in the scenery with **High Framerate** on while the camera turns, and for a moment after entering an area zoomed out.
 - Fixed hairline cracks of the background colour along the edges of slopes and rocks, zoomed out or with **High Framerate** on.
 - Characters' shadows are no longer cut off by the ground they stand on, which flickered as they walked, mostly beyond the original 4:3 screen in widescreen or zoomed out.

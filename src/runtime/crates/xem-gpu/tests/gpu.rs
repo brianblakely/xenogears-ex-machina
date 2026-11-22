@@ -1376,7 +1376,12 @@ fn the_reveals_margin_is_the_ports_word_while_culled_faces_are_wanted() {
     gpu.set_trace(true);
     gpu.set_reveals(Some(wanted));
     assert_eq!(gpu.reveal_margin(), 286);
+    // The margin alone asks for the faces the renderers drop within the
+    // screen (a still camera's picture at sub-pixel points); with neither,
+    // no culled face is wanted.
     gpu.set_reveals(Some(Reveals { reach: [0, 0], ..wanted }));
+    assert_eq!((gpu.reveal_reach(), gpu.reveal_margin()), (0, 286), "the margin without a reach");
+    gpu.set_reveals(Some(Reveals { reach: [0, 0], margin: 0, ..wanted }));
     assert_eq!(gpu.reveal_margin(), 0, "none while no culled face is wanted");
 }
 

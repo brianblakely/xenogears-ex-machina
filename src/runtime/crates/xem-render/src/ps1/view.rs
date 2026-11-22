@@ -247,6 +247,9 @@ const PENDING_LIMIT: usize = 100_000;
 /// 5.7 degrees a frame under L1 or R1), at most a right angle's third.
 const PULL_BACK_MARGIN: f64 = 4.0;
 const TURN_MARGIN: f64 = 4.0;
+/// The least margin, in degrees: of the faces the game's winding tests
+/// drop, the ones that face the camera at their sub-pixel points.
+const SLIVER_MARGIN: f64 = 0.01;
 const TURN_SHARE: f64 = 1.25;
 const MAX_MARGIN: f64 = 30.0;
 /// [`GameView::shown_zoom`]'s time constant (seconds): a zoom covered at
@@ -674,16 +677,41 @@ impl GameView {
                     Some(Reveals { reach: [x as u16, y as u16], margin: Reveals::EVERY_WAY, zoom: zoom_percent, ..Reveals::default() })
                 }
             }
-        } else if side > 0 || config.interpolation || (seals_terrain(&self.scene) && !config.draw.fidelity.vertex_snapping) {
-            // The sides, and a little more for faces leaning into them, or
-            // what a camera between two frames sees beside the screen.
-            // Modern terrain also needs the sub-pixel slivers the
-            // original's whole-pixel winding tests discarded inside them.
-            let margin = if config.interpolation { 32 } else { 16 };
-            Some(Reveals { reach: [side as u16 + margin, margin], margin: self.turn_margin(&config, 0.0), zoom: 100, ..Reveals::default() })
         } else {
-            // No culled face wanted, but the zoom the frames are drawn for.
-            Some(Reveals { zoom: 100, ..Reveals::default() })
+            // The game's camera at 100%. The sides, and a little more for
+            // faces leaning into them, or what a camera between two frames
+            // sees beside the screen; Modern terrain's sub-pixel slivers, in
+            // reach of the screen. A field's picture drawn at sub-pixel
+            // points needs, inside it, the faces the original's whole-pixel
+            // winding tests discarded that those points turn to the camera
+            // (slivers thinner than one of its pixels, and the folds beside
+            // them: `Builder::restores_sliver`): with none recorded, a still
+            // camera's had cracks of the clear colour along its slopes and
+            // walls (issue #103), where the same frame between two had
+            // none. Those faces lie within the screen: with nothing wanted
+            // beside it, a margin alone asks for them, and the port tests
+            // no face culled there. With sides the margin is that of a
+            // camera still between two frames, which costs nothing
+            // measurable beside what the sides record; with none, where the
+            // port records nothing else, the least, the faces whole pixels
+            // turned over alone (a fold beside them can keep a few pixels:
+            // the wider margin costs the game's frame 2% there).
+            let sub_pixel = !config.draw.fidelity.vertex_snapping;
+            let terrain = sub_pixel && seals_terrain(&self.scene);
+            let reach = if config.interpolation {
+                [side as u16 + 32, 32]
+            } else if side > 0 || terrain {
+                [side as u16 + 16, 16]
+            } else {
+                [0, 0]
+            };
+            let least = match (sub_pixel && self.scene.starts_with("field"), reach) {
+                (false, _) => 0.0,
+                (true, [0, 0]) => SLIVER_MARGIN,
+                (true, _) => TURN_MARGIN,
+            };
+            let margin = self.turn_margin(&config, least);
+            Some(Reveals { reach, margin, zoom: 100, ..Reveals::default() })
         }
     }
 

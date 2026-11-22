@@ -1177,19 +1177,27 @@ impl<'a> Builder<'a> {
         (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) <= 0.0
     }
 
-    /// Terrain triangles that collapse or turn over at whole-pixel
-    /// precision were discarded by NCLIP. Their sub-pixel area still fills
-    /// seams at 1x (in front of the camera: a face a view from around the
-    /// scene records behind it has no depth).
+    /// Faces that collapse or turn over at whole-pixel precision were
+    /// discarded by NCLIP. Their sub-pixel area still fills seams at 1x (in
+    /// front of the camera: a face a view from around the scene records
+    /// behind it has no depth): the terrain's triangles where it is sealed,
+    /// and a model's faces (a field's scenery: left out, cracks of the clear
+    /// colour ran along its slopes and walls from the game's own camera,
+    /// issue #103), a quad's facing half too where it folds
+    /// ([`second_faces`]).
     fn restores_sliver(&self, p: &Primitive) -> bool {
-        if !self.seal || self.options.fidelity.vertex_snapping || self.options.culling.viewport
-            || p.class != Class::World || p.shape != Shape::Triangle || winding(p, [0, 1, 2]) > 0
+        let restored = match p.class {
+            Class::World => self.seal && p.shape == Shape::Triangle,
+            Class::Model => matches!(p.shape, Shape::Triangle | Shape::Quad),
+            _ => false,
+        };
+        if !restored || self.options.fidelity.vertex_snapping || self.options.culling.viewport || winding(p, [0, 1, 2]) > 0
             || p.vertices[..3].iter().any(|v| v.z <= 0.0)
         {
             return false;
         }
         let [a, b, c, _] = &p.vertices;
-        (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) > 0.0
+        (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) > 0.0 || second_faces(p)
     }
 
     /// What a primitive's vertices carry besides their points: its drawing
