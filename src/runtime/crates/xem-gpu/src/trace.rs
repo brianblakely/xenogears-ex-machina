@@ -99,9 +99,29 @@ pub struct Reveals {
     /// field's sprites again facing it ([`Primitive::facing`]), as first
     /// person's face the controlled character's eyes.
     pub viewer: Option<[i32; 2]>,
+    /// Faces turned away from the view's camera by less than this count
+    /// too, with the faces the game's renderers drop as facing away (the
+    /// sine of the angle beyond edge-on, in 4096ths; [`Reveals::EVERY_WAY`]
+    /// any face; 0 none): a camera between two of the game's frames (a
+    /// turning one, interpolated) or pulled back further than they were
+    /// judged for sees some of them. A renderer leaves out those that face
+    /// away from the camera it draws them through. With no reach (the
+    /// game's own framing through its own camera), the port records, of the
+    /// dropped faces within the screen, the ones thin at whole pixels alone.
+    pub margin: u16,
+    /// The zoom (percent) the view asking for these faces shows the
+    /// game's camera at, for itself: each take returns the least zoom of
+    /// the reveals its faces were judged under ([`Trace::covers`]), how far
+    /// its frames may be shown zoomed out. 0 for none (a view from within
+    /// or around the scene, any). The port does not read it, and the
+    /// device records none of the faces for reveals reaching nowhere
+    /// (`reach` 0, 0) but still returns their zoom.
+    pub zoom: u16,
 }
 
 impl Reveals {
+    /// [`Reveals::margin`]: every face, whichever way it faces.
+    pub const EVERY_WAY: u16 = 4096;
     /// [`Reveals::around`]: the view looks around from the field's
     /// controlled character (first-person inspection); the port also draws
     /// the field's sprites again facing its eyes.
@@ -656,6 +676,11 @@ pub struct Trace {
     /// The GTE depth of the field camera's target, when the port recorded
     /// one since the last take (it does while culled faces are wanted).
     pub focus: Option<u16>,
+    /// The least zoom ([`Reveals::zoom`]) of the reveals the port judged
+    /// what it drew since the last take under: zoomed out further, a frame
+    /// of it lacks the faces the game culled beyond what it reached. None
+    /// when none with a zoom were in effect.
+    pub covers: Option<u16>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -678,6 +703,10 @@ pub(crate) struct Recorder {
     /// at, until the DMA walk reaches it, and emptied lists kept for new
     /// entries (thousands a frame when zoomed out).
     reveals: WordMap<Vec<Revealed>>,
+    /// Which entries may hold culled faces, by their word address's low 12
+    /// bits (all that do among them): the walk's thousands of other nodes
+    /// pass by without a lookup.
+    revealed_at: [u128; 32],
     facings: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     full_sizes: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     spare: Vec<Vec<Revealed>>,
@@ -690,6 +719,13 @@ pub(crate) struct Recorder {
     /// What the host wants of culled faces (none when `None`). The port
     /// reads it.
     wanted: Option<Reveals>,
+    /// The reveals as the host gave them (also reaching nowhere: their
+    /// zoom), those in effect when the device last wrote the port's words
+    /// (which the port judges what it draws next under), and the least zoom
+    /// of those the faces since the last take were judged under.
+    asked: Option<Reveals>,
+    written: Option<Reveals>,
+    covers: Option<u16>,
     /// Points traced: matched to their projection, and not (2D points).
     matches: std::cell::Cell<[u64; 2]>,
     /// The newest floor point of each sprite (by owner), the camera focus
@@ -787,6 +823,12 @@ const TRACE_LIMIT: usize = 100_000;
 /// Ops a trace begins with room for at most ([`Recorder::room`]): a few
 /// frames of the largest scenes.
 const TRACE_ROOM: usize = 16_384;
+
+/// Notes in [`Recorder::revealed_at`] that `entry` holds culled faces.
+fn note_revealed_at(bits: &mut [u128; 32], entry: u32) {
+    let at = (entry >> 2) as usize & 4095;
+    bits[at >> 7] |= 1 << (at & 127);
+}
 
 /// The indices of a polygon command's vertex words.
 fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
@@ -1040,8 +1082,9 @@ impl Recorder {
                 };
                 points[k] = self.projection(index).is_some_and(|p| p.sxy == reveal.words[at]).then_some(index);
             }
-            let spare = &mut self.spare;
-            self.reveals.entry(reveal.entry & ADDRESS_MASK).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
+            let (spare, entry) = (&mut self.spare, reveal.entry & ADDRESS_MASK);
+            note_revealed_at(&mut self.revealed_at, entry);
+            self.reveals.entry(entry).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
                 words: reveal.words,
                 projections: points,
                 frame: self.frames,
@@ -1134,6 +1177,8 @@ impl Gpu {
         self.trace = enabled.then(|| {
             let mut trace = Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() });
             if let Some(mut was) = was {
+                // The port's words stay as the device last wrote them.
+                (trace.written, trace.covers) = (was.written, was.covers);
                 trace.keep_movies(&mut was, true);
                 if !was.dialogue_entered {
                     trace.dialogue = std::mem::take(&mut was.dialogue);
@@ -1152,7 +1197,8 @@ impl Gpu {
     /// records none. Kept while the trace is on; none without a trace.
     pub fn set_reveals(&mut self, reveals: Option<Reveals>) {
         if let Some(trace) = &mut self.trace {
-            trace.wanted = reveals.filter(|r| r.reach != [0, 0]);
+            trace.asked = reveals;
+            trace.wanted = reveals.filter(|r| r.reach != [0, 0] || r.margin != 0);
         }
     }
 
@@ -1169,7 +1215,7 @@ impl Gpu {
         self.stats = std::mem::take(&mut live.stats);
         if let Some(mut trace) = live.trace.take() {
             self.set_trace(true);
-            self.set_reveals(trace.wanted);
+            self.set_reveals(trace.asked);
             self.trace.as_mut().expect("turned on").keep_movies(&mut trace, false);
             self.trace_resync();
         }
@@ -1196,6 +1242,11 @@ impl Gpu {
         self.trace.as_ref().and_then(|t| t.wanted).and_then(|r| r.viewer)
     }
 
+    /// [`Gpu::set_reveals`]'s margin as the port's word (0 for none).
+    pub fn reveal_margin(&self) -> u32 {
+        self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| u32::from(r.margin))
+    }
+
     /// Points traced since the trace started: matched to their projection
     /// (by address or a culled face's record), and not (2D points). For
     /// validation.
@@ -1208,6 +1259,14 @@ impl Gpu {
     /// the screen points stored and the faces culled at the screen's edges.
     pub fn trace_projections(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
         if let Some(trace) = &mut self.trace {
+            // What the port drew since it last read the words, it judged
+            // under the reveals written then; it reads them again now.
+            if (!projections.is_empty() || !reveals.is_empty())
+                && let Some(zoom) = trace.written.map(|r| r.zoom).filter(|&zoom| zoom != 0)
+            {
+                trace.covers = Some(trace.covers.map_or(zoom, |covers| covers.min(zoom)));
+            }
+            trace.written = trace.asked;
             trace.ingest(first, projections, stores, reveals);
         }
     }
@@ -1220,7 +1279,7 @@ impl Gpu {
         };
         trace.room = trace.ops.len().max(trace.room - trace.room / 64).min(TRACE_ROOM);
         let mut ops = std::mem::replace(&mut trace.ops, Vec::with_capacity(trace.room + trace.room / 8));
-        let focus = trace.focus.take();
+        let (focus, covers) = (trace.focus.take(), trace.covers.take());
         if trace.full_sync {
             trace.full_sync = false;
             trace.dirty = None;
@@ -1231,12 +1290,12 @@ impl Gpu {
                 pixels: self.vram.as_slice().into(),
                 upload: true,
             });
-            return Trace { ops, focus };
+            return Trace { ops, focus, covers };
         }
         if let Some(rect) = trace.dirty.take() {
             ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect).into(), upload: false });
         }
-        Trace { ops, focus }
+        Trace { ops, focus, covers }
     }
 
     /// The trace starts again from the whole VRAM as it is now (a snapshot
@@ -1274,8 +1333,10 @@ impl Gpu {
         }
         trace.source = node;
         trace.source_index = 0;
-        // (A walk visits thousands of nodes; most traces hold no culled face.)
-        if trace.reveals.is_empty() {
+        // (A walk visits thousands of nodes; most traces hold no culled face,
+        // and most nodes none of those a trace holds.)
+        let at = (node >> 2) as usize & 4095;
+        if trace.reveals.is_empty() || trace.revealed_at[at >> 7] >> (at & 127) & 1 == 0 {
             return;
         }
         let Some(mut faces) = trace.reveals.remove(&node) else { return };
@@ -1331,6 +1392,10 @@ impl Gpu {
                 faces.retain(|face| now.wrapping_sub(face.frame) < REVEAL_FRAMES);
                 !faces.is_empty()
             });
+            trace.revealed_at = [0; 32];
+            for &entry in trace.reveals.keys() {
+                note_revealed_at(&mut trace.revealed_at, entry);
+            }
             trace.ops.push(TraceOp::VBlank);
             if trace.ops.len() > TRACE_LIMIT {
                 trace.restart();

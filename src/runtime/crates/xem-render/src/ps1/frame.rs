@@ -135,6 +135,15 @@ pub struct FrameRenderer {
     /// primitives, and the frame before.
     newest: Option<((u16, u16), u64)>,
     newest_ops: Vec<TraceOp>,
+    /// Where those primitives' scene is projected about ([`scene_offset`]),
+    /// once for each change of them rather than for each replay's steps.
+    newest_scene: Option<(i16, i16)>,
+    /// The order a replay of the newest frame draws its ops in, its decals
+    /// laid over their floor ([`decal_order`]), and what it was found for:
+    /// the frame, how many ops its replay held, from how far back it was
+    /// seen and which the pull-back dropped (a replay's interpolated camera
+    /// turns a little; the order holds).
+    decals: Option<(DecalKey, Vec<u32>)>,
     /// Where the field's controlled character stood in the newest frame,
     /// the camera the game drew it with and its models' and sprites'
     /// placements, as the port recorded them ([`xem_gpu::TraceOp::Eye`],
@@ -267,6 +276,12 @@ impl ReplayVram {
     /// differ in them, through the queue), and notes what the writes among
     /// `ops` leave in it.
     pub(crate) fn start<'a>(&mut self, queue: &wgpu::Queue, start: &Arc<Vec<u16>>, ops: impl Iterator<Item = &'a TraceOp>) {
+        self.sync(queue, start);
+        self.note_writes(ops);
+    }
+
+    /// [`ReplayVram::start`]'s first half: the texture set to `start`.
+    pub(crate) fn sync(&mut self, queue: &wgpu::Queue, start: &Arc<Vec<u16>>) {
         let width = VRAM_WIDTH as usize;
         // The same frame's snapshot again differs only where the writes
         // replayed since changed it; another's, wherever it does (to whole
@@ -309,6 +324,12 @@ impl ReplayVram {
             }
         }
         self.written.fill(None);
+    }
+
+    /// [`ReplayVram::start`]'s second half: what the writes among `ops`
+    /// leave in the texture, noted.
+    pub(crate) fn note_writes<'a>(&mut self, ops: impl Iterator<Item = &'a TraceOp>) {
+        let width = VRAM_WIDTH as usize;
         fn note(written: &mut [Option<(u16, u16)>], row: usize, from: usize, to: usize) {
             if let Some(columns) = written.get_mut(row) {
                 let (first, last) = columns.unwrap_or((from as u16, to as u16));
@@ -391,6 +412,8 @@ impl FrameRenderer {
             overlay_staging: Stream::new(device, "frame overlay staging", wgpu::BufferUsages::COPY_SRC),
             newest: None,
             newest_ops: Vec::new(),
+            newest_scene: None,
+            decals: None,
             eye: None,
             camera: None,
             placements: Arc::default(),
@@ -441,6 +464,7 @@ impl FrameRenderer {
             // than an older frame's primitives over the new VRAM.
             self.newest = None;
             self.newest_ops.clear();
+            self.newest_scene = None;
             self.snapshot = None;
             self.eye = None;
             self.camera = None;
@@ -464,14 +488,17 @@ impl FrameRenderer {
             if log.ops.len() > known {
                 self.newest_ops.extend_from_slice(&log.ops[known..]);
                 self.drawn += drawn(&log.ops[known..], log.rect);
+                self.newest_scene = scene_offset(&self.newest_ops);
             } else if log.ops.len() < known {
                 self.newest_ops.clone_from(&log.ops);
                 self.drawn = drawn(&self.newest_ops, log.rect);
+                self.newest_scene = scene_offset(&self.newest_ops);
             }
             return false;
         }
         self.newest_ops.clone_from(&log.ops);
         self.drawn = drawn(&self.newest_ops, log.rect);
+        self.newest_scene = scene_offset(&self.newest_ops);
         self.newest = Some(identity);
         self.snapshot = Some(log.start.clone());
         self.eye = log.eye;
@@ -498,6 +525,13 @@ impl FrameRenderer {
     /// recorded it (a field, a battle or the world map).
     pub fn camera(&self) -> Option<Camera> {
         self.camera
+    }
+
+    /// How far that camera turned from the one the frame before was drawn
+    /// with, at its last move (radians; 0 after a cut, for a first frame or
+    /// without a camera).
+    pub fn camera_turn(&self) -> f64 {
+        self.moved.camera.as_ref().and_then(|track| track.from.map(|from| from.rotation.angle_between(track.now.rotation))).unwrap_or(0.0)
     }
 
     /// How many of the newest frame's ops change its picture.
@@ -565,6 +599,11 @@ impl FrameRenderer {
             }
             return;
         }
+        // The replay samples VRAM as it was when the frame began: set to that
+        // first, while the snapshot the renderer just took is still at hand.
+        if let Some(start) = &self.snapshot {
+            self.vram.sync(queue, start);
+        }
         let render_height = if feedback { u32::from(rect.height).max(area.height) } else { area.height };
         let render_size = (self.size.0, render_height * scale);
         if feedback && (self.feedback.size().width != render_size.0 || self.feedback.size().height != render_size.1) {
@@ -589,9 +628,12 @@ impl FrameRenderer {
         // interpolating).
         let mut ops = std::mem::take(&mut self.replayed);
         ops.clone_from(&self.newest_ops);
+        // (Neither moving nor pulling back changes where the scene is
+        // projected about; taking screens for a picture of themselves does.)
+        let mut scene = self.newest_scene;
         let motion = framing.interpolate.and_then(|now| self.moved.motion(now));
         if let Some(motion) = &motion {
-            motion.apply(&mut ops);
+            motion.apply(&mut ops, scene);
         }
         // A frame held from before the screen the game took last (a field's
         // menu takes it) drew nothing of it.
@@ -612,14 +654,17 @@ impl FrameRenderer {
                     p.class = Class::Flat;
                 }
             }
+            scene = scene_offset(&ops);
         }
+        let mut dropped = 0;
         if let Some(look) = &look {
             first_person_layered(&mut ops, look, self.newest.map(|frame| (&mut renderer.plane_layers, frame)));
+            scene = scene_offset(&ops);
         } else if pulled {
-            pull_back(&mut ops, framing.pull_back);
+            dropped = pull_back_in(&mut ops, framing.pull_back, scene);
         }
-        self.overlay_scene = scene_offset(&ops);
-        self.overlay = split_overlay(&mut ops, feedback.then_some(rect));
+        self.overlay_scene = scene;
+        self.overlay = split_overlay(&mut ops, feedback.then_some(rect), scene);
         // The interface left out wherever the game drew it, or kept alone
         // (with the writes and copies its textures follow).
         let scene = self.overlay_scene;
@@ -648,13 +693,28 @@ impl FrameRenderer {
         while self.overlay.is_empty() && ops.last().is_some_and(unseen) {
             ops.pop();
         }
-        // The replay samples VRAM as it was when the frame began, then as the
-        // frame's writes (the replay's and the overlay's) changed it, in order.
-        if let Some(start) = &self.snapshot {
-            self.vram.start(queue, start, ops.iter().chain(&self.overlay));
+        // Then as the frame's writes (the replay's and the overlay's) changed
+        // it, in order.
+        if self.snapshot.is_some() {
+            self.vram.note_writes(ops.iter().chain(&self.overlay));
         }
+        // A replay from the game's camera draws the decals the game lays on
+        // its floor over it: found once for the frame, the depth it is
+        // pulled back by and the ops that leaves (those a camera between two
+        // frames finds within its near plane may change), and drawn in that
+        // order at each replay.
+        let order = match (look, self.newest) {
+            (None, Some(frame)) => {
+                let key = (frame, ops.len(), framing.pull_back.to_bits(), dropped);
+                if self.decals.as_ref().is_none_or(|(known, _)| *known != key) {
+                    self.decals = Some((key, decal_order(&ops, scene).unwrap_or_default()));
+                }
+                self.decals.as_ref().map(|(_, order)| order.as_slice()).filter(|order| !order.is_empty())
+            }
+            _ => None,
+        };
         let options: DrawOptions = *renderer.options();
-        let mut builder = Builder::reusing(&options, &ops, &mut self.storage);
+        let mut builder = Builder::reusing(&options, &ops, scene, &mut self.storage);
         builder.shown = Some(shown);
         builder.seal = renderer.seal;
         builder.sky = renderer.sky;
@@ -667,13 +727,16 @@ impl FrameRenderer {
         // A frame recorded looking from within or around the scene holds
         // faces from anywhere, not only beside the screen: seen from the
         // game's camera, none. Between two frames, those beside the screen
-        // come into it as the camera turns.
+        // come into it as the camera turns. Drawn at sub-pixel points, a
+        // face the game culled beside its screen reaches up to a pixel
+        // into it, where its neighbours end at the same points: cut off at
+        // the screen's side, it left a column of the clear colour there.
         let around = self.eye.is_some() || self.camera.is_some_and(|camera| camera.around != 0);
         builder.reveal = if pulled || look.is_some() {
             Reveal::Everywhere
         } else if around {
             Reveal::Hidden
-        } else if motion.is_some() {
+        } else if motion.is_some() || (side > 0 && !options.fidelity.vertex_snapping) {
             Reveal::Everywhere
         } else if side > 0 {
             Reveal::Sides
@@ -683,8 +746,9 @@ impl FrameRenderer {
         builder.near = look.map(|look| Near { distance: look.near, h: look.h, shift: look.shift });
         builder.reversed = look.is_some();
         self.reversed = look.is_some();
-        for op in &ops {
-            builder.op(op);
+        match order {
+            Some(order) => order.iter().for_each(|&i| builder.op(&ops[i as usize])),
+            None => ops.iter().for_each(|op| builder.op(op)),
         }
         let origin = (area.x as f32 - side as f32, area.y as f32);
         let (capture_scale, capture_side, capture) = screen.uniform();
@@ -708,8 +772,8 @@ impl FrameRenderer {
         clear(encoder, [&color, &aux]);
         let far = if look.is_some() { 0.0 } else { 1.0 };
         let depth_view = depth.create_view(&Default::default());
-        let visible_depth_view = self.depth.create_view(&Default::default());
-        for view in std::iter::once(&depth_view).chain(extra.then_some(&visible_depth_view)) {
+        let visible_depth_view = extra.then(|| self.depth.create_view(&Default::default()));
+        for view in std::iter::once(&depth_view).chain(visible_depth_view.as_ref()) {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("frame depth clear"),
             color_attachments: &[],
@@ -777,8 +841,7 @@ impl FrameRenderer {
             return;
         }
         let options: DrawOptions = *renderer.options();
-        let mut builder = Builder::reusing(&options, &self.overlay, &mut self.overlay_storage);
-        builder.scene = self.overlay_scene;
+        let mut builder = Builder::reusing(&options, &self.overlay, self.overlay_scene, &mut self.overlay_storage);
         builder.reversed = self.reversed;
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.spill = self.side;
@@ -883,6 +946,22 @@ impl FrameRenderer {
     /// The primitives of the newest game frame shown, as the game drew them.
     pub fn newest(&self) -> &[TraceOp] {
         &self.newest_ops
+    }
+
+    /// The field camera the newest frame shown was drawn with, as the port
+    /// recorded it with the frame: world to view space, its rows (per world
+    /// unit) and translation. At `at`, while interpolation moves the scene,
+    /// the camera in between that and the frame's before, as shown then.
+    pub fn drawn_camera(&self, at: Option<f64>) -> Option<([[f32; 3]; 3], [f32; 3])> {
+        let camera = self.camera.as_ref().filter(|camera| camera.mode == CameraMode::Field)?;
+        let affine = match (at, self.moved.camera) {
+            (Some(now), Some(track)) => match track.from.map(|from| (from, track.clock.alpha(now))) {
+                Some((from, alpha)) if alpha < 1.0 => from.between(&track.now, alpha),
+                _ => track.now.affine,
+            },
+            _ => View::of(camera)?.affine,
+        };
+        Some((std::array::from_fn(|r| std::array::from_fn(|c| affine.m.col(c)[r] as f32)), std::array::from_fn(|r| affine.t[r] as f32)))
     }
 
     pub fn color(&self) -> &wgpu::Texture {
@@ -1238,8 +1317,7 @@ impl Motion {
     /// projects it (divided by its depth, but by half the projection
     /// distance where it is nearer, or behind the camera); a primitive with
     /// a point without depth stays as drawn, and so does the interface.
-    fn apply(&self, ops: &mut [TraceOp]) {
-        let scene = scene_offset(ops);
+    fn apply(&self, ops: &mut [TraceOp], scene: Option<(i16, i16)>) {
         for op in ops {
             let TraceOp::Draw(p) = op else { continue };
             let Some((_, h)) = p.projection else { continue };
@@ -1296,7 +1374,7 @@ pub fn interpolate(ops: &mut [TraceOp], frames: &[(f64, &Camera, &[Placement])],
         before = placements;
     }
     let Some(motion) = moved.motion(now) else { return false };
-    motion.apply(ops);
+    motion.apply(ops, scene_offset(ops));
     true
 }
 
@@ -1422,8 +1500,7 @@ impl Welder {
 /// scene (the interface over it, in order with the VRAM writes and copies
 /// its textures follow), culled faces aside (a replay draws some late):
 /// what lies over the finished scene.
-fn split_overlay(ops: &mut Vec<TraceOp>, feedback: Option<VramRect>) -> Vec<TraceOp> {
-    let scene = scene_offset(ops);
+fn split_overlay(ops: &mut Vec<TraceOp>, feedback: Option<VramRect>, scene: Option<(i16, i16)>) -> Vec<TraceOp> {
     let last = ops.iter().rposition(|op| matches!(op, TraceOp::Draw(p) if !p.revealed && effective_class(p, scene).is_scene()))
         .max(feedback.and_then(|area| framebuffer_end(ops, area)));
     let tail = ops.split_off(last.map_or(0, |i| i + 1));
@@ -1512,7 +1589,13 @@ fn settle_copies(ops: &mut [TraceOp], captures: &[(VramRect, bool)], feedback: O
 /// projection distance, as the GTE allows) is dropped. Interface
 /// primitives stay as they are.
 pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
-    let scene = scene_offset(ops);
+    let _ = pull_back_in(ops, distance, scene_offset(ops));
+}
+
+/// [`pull_back`] for `ops` whose scene is projected about `scene`; which
+/// of them it dropped, as a digest of their places (0 for none).
+fn pull_back_in(ops: &mut Vec<TraceOp>, distance: f32, scene: Option<(i16, i16)>) -> u64 {
+    let (mut at, mut dropped) = (0u64, 0u64);
     let moved = |center: (f32, f32), x: &mut f32, y: &mut f32, z: &mut f32| {
         let k = *z / (*z + distance);
         *x = center.0 + (*x - center.0) * k;
@@ -1520,6 +1603,7 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
         *z += distance;
     };
     ops.retain_mut(|op| {
+        at += 1;
         let TraceOp::Draw(p) = op else { return true };
         let Some(((ox, oy), h)) = p.projection else { return true };
         if !effective_class(p, scene).is_scene() {
@@ -1528,6 +1612,7 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
         let h = f32::from(h);
         let count = p.vertex_count();
         if p.vertices[..count].iter().any(|v| v.view.is_some_and(|[_, _, z]| (z + distance) * 2.0 <= h)) {
+            dropped ^= at.wrapping_mul(0x9E37_79B9_7F4A_7C15).rotate_left(29);
             return false;
         }
         // The projection centre in VRAM: the GTE's offset plus the drawing offset.
@@ -1549,6 +1634,266 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
         }
         true
     });
+    dropped
+}
+
+/// What a replay's decal order was found for ([`FrameRenderer`]'s
+/// `decals`): the frame's log identity, how many ops the replay held, the
+/// depth it was pulled back by (its bits) and which ops that dropped.
+type DecalKey = (((u16, u16), u64), usize, u32, u64);
+
+/// How much nearer the camera (depth along its line of sight, view-space
+/// units) a face drawn after a decal must lie where it overlaps the decal to
+/// stand in front of it: the field's shadows lie 1 to 1.5 above its floor,
+/// those of characters beyond the original screen up to 12 off it, tilted,
+/// seen at a slant; a step of Lahan's ground is 190 high.
+const DECAL_GAP: f32 = 64.0;
+/// How much nearer than a decal's nearest corner the faces drawn after it
+/// reach before none drawn later can lie under it (the order runs from far
+/// to near; a floor face is sorted by its farthest point, or by its middle,
+/// half a row of the ground or less from it).
+const FLOOR_REACH: f32 = 256.0;
+
+/// The decals the game lays on its floor (a field's shadows,
+/// field_draw_shadows: subtractive textured quads of the scene) are sorted
+/// by their corners' average depth, the floor's faces by their farthest
+/// point: a floor face whose far edge lies under a decal's near part is
+/// drawn after the decal and covers that part. A character's shadow is cut
+/// across where it crosses a row of the ground, flickering as it walks; the
+/// original shows it rarely, but beside its screen, which a pulled-back or
+/// wider view shows, the faces the game culled there (drawn where it would
+/// have drawn them) cut its characters' shadows there often. Each decal
+/// moves after the faces drawn after it that its outline overlaps where they
+/// lie behind or under it (not [`DECAL_GAP`] nearer the camera than it), up
+/// to the first other primitive over it (what stands in front of it or is
+/// drawn over it, which stays over it), within the draws of its own game
+/// frame before the next write, copy or fill.
+pub fn lay_decals(ops: &mut [TraceOp]) {
+    if let Some(order) = decal_order(ops, scene_offset(ops)) {
+        let laid: Vec<TraceOp> = order.iter().map(|&i| ops[i as usize].clone()).collect();
+        ops.clone_from_slice(&laid);
+    }
+}
+
+/// The order [`lay_decals`] draws `ops` in (their indices), `scene` where
+/// their scene is projected about; none where no decal moves.
+pub(crate) fn decal_order(ops: &[TraceOp], scene: Option<(i16, i16)>) -> Option<Vec<u32>> {
+    let mut order: Option<Vec<u32>> = None;
+    let mut at = 0;
+    while at < ops.len() {
+        let i = order.as_ref().map_or(at, |order| order[at] as usize);
+        let floor = match &ops[i] {
+            TraceOp::Draw(p) => Decal::of(p, scene).and_then(|decal| decal.floor_end(ops, order.as_deref(), at)),
+            _ => None,
+        };
+        match floor {
+            // The op now at `at` is the next one; the decal is looked at
+            // again where it went, with nothing more of its floor after it.
+            Some(last) => order.get_or_insert_with(|| (0..ops.len() as u32).collect())[at..=last].rotate_left(1),
+            None => at += 1,
+        }
+    }
+    order
+}
+
+/// A decal of [`lay_decals`]: a textured subtractive quad of the scene's
+/// world with all of its points projected, its outline where the picture
+/// shows it, its corners in the view space of the camera the picture is
+/// drawn through, that camera there (the game's, pulled back along its axis
+/// by `back`) and its projection.
+struct Decal {
+    outline: Outline,
+    bounds: [f32; 4],
+    corners: [glam::Vec3; 4],
+    back: f32,
+    centre: (f32, f32),
+    h: f32,
+}
+
+impl Decal {
+    fn of(p: &Primitive, scene: Option<(i16, i16)>) -> Option<Decal> {
+        if p.shape != Shape::Quad || !p.textured || !p.semi || p.environment.draw_mode >> 5 & 3 != 2 || effective_class(p, scene) != Class::World {
+            return None;
+        }
+        let ((ox, oy), h) = p.projection?;
+        let mut corners = [glam::Vec3::ZERO; 4];
+        for (i, corner) in corners.iter_mut().enumerate() {
+            *corner = glam::Vec3::from(view_point(p, i)?);
+        }
+        let outline = Outline::of(p);
+        Some(Decal {
+            bounds: bounds(outline.points().iter().copied()),
+            outline,
+            corners,
+            // Pulled back, a point lies that much deeper than its point before
+            // the division ([`pull_back`]).
+            back: (p.vertices[0].z - corners[0].z).max(0.0),
+            centre: (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1)),
+            h: f32::from(h),
+        })
+    }
+
+    /// The last place after this decal's (`at` in `order`, the ops' order
+    /// so far: theirs where none) of a face lying behind or under it where
+    /// they overlap, before any other primitive over it.
+    fn floor_end(&self, ops: &[TraceOp], order: Option<&[u32]>, at: usize) -> Option<usize> {
+        // (Depths as drawn: the points' own, pulled back alike.)
+        let nearest = self.corners.iter().map(|c| c.z).fold(f32::MAX, f32::min) + self.back;
+        let mut last = None;
+        for j in at + 1..ops.len() {
+            let q = match &ops[order.map_or(j, |order| order[j] as usize)] {
+                TraceOp::Draw(q) => q,
+                TraceOp::Camera(_) | TraceOp::Placement(_) | TraceOp::Eye(_) | TraceOp::History { .. } => continue,
+                _ => break,
+            };
+            let vertices = &q.vertices[..q.vertex_count()];
+            if vertices.iter().all(|v| v.z > 0.0) && vertices.iter().map(|v| v.z).fold(f32::MIN, f32::max) < nearest - FLOOR_REACH {
+                break;
+            }
+            // (An outline's bounds are its points'.)
+            if !bounds_meet(&self.bounds, &bounds(vertices.iter().map(|v| (v.fx, v.fy)))) {
+                continue;
+            }
+            match self.under(q, &Outline::of(q)) {
+                Some(true) => last = Some(j),
+                Some(false) => break,
+                None => {}
+            }
+        }
+        last
+    }
+
+    /// Whether the face `q`, whose outline is `outline`, lies behind or
+    /// under this decal where they overlap (none where they do not; false
+    /// for anything over it that is not a face of the scene: a sprite, a
+    /// translucent primitive, a line, the interface).
+    fn under(&self, q: &Primitive, outline: &Outline) -> Option<bool> {
+        if q.shape == Shape::Line {
+            return Some(false);
+        }
+        let overlap = clipped(self.outline.points(), outline.points());
+        let overlap = overlap.points();
+        if overlap.len() < 3 || area(overlap).abs() < 1e-3 {
+            return None;
+        }
+        if q.semi || q.class == Class::Sprite || q.shape == Shape::Rectangle {
+            return Some(false);
+        }
+        let (Some(a), Some(b), Some(c)) = (view_point(q, 0), view_point(q, 1), view_point(q, 2)) else { return Some(false) };
+        // The line of sight through the middle of the overlap, from the
+        // camera the picture is drawn through: where it meets each plane.
+        let n = overlap.len() as f32;
+        let (sx, sy) = overlap.iter().fold((0.0, 0.0), |(x, y), p| (x + p.0 / n, y + p.1 / n));
+        let eye = glam::Vec3::new(0.0, 0.0, -self.back);
+        let sight = glam::Vec3::new((sx - 0.5 - self.centre.0) / self.h, (sy - 0.5 - self.centre.1) / self.h, 1.0);
+        let meets = |a: glam::Vec3, b: glam::Vec3, c: glam::Vec3| {
+            let normal = (b - a).cross(c - a);
+            let along = normal.dot(sight);
+            (along.abs() > 1e-6 * normal.length()).then(|| normal.dot(a - eye) / along)
+        };
+        let [d0, d1, d2, _] = self.corners;
+        let (Some(decal), Some(face)) = (meets(d0, d1, d2), meets(glam::Vec3::from(a), glam::Vec3::from(b), glam::Vec3::from(c))) else { return Some(false) };
+        Some(face >= decal - DECAL_GAP)
+    }
+}
+
+/// A primitive's screen outline, convex: a polygon's points round it (a
+/// quad's run in Z order: 0 1 / 2 3), a line's two.
+struct Outline {
+    points: [(f32, f32); 4],
+    len: usize,
+}
+
+impl Outline {
+    fn of(p: &Primitive) -> Outline {
+        let order: &[usize] = match p.shape {
+            Shape::Triangle => &[0, 1, 2],
+            Shape::Quad | Shape::Rectangle => &[0, 1, 3, 2],
+            Shape::Line => &[0, 1],
+        };
+        let mut points = [(0.0, 0.0); 4];
+        for (point, &i) in points.iter_mut().zip(order) {
+            *point = (p.vertices[i].fx, p.vertices[i].fy);
+        }
+        Outline { points, len: order.len() }
+    }
+
+    fn points(&self) -> &[(f32, f32)] {
+        &self.points[..self.len]
+    }
+}
+
+/// The bounding box of `points`: least x and y, then greatest.
+fn bounds(points: impl Iterator<Item = (f32, f32)>) -> [f32; 4] {
+    points.fold([f32::MAX, f32::MAX, f32::MIN, f32::MIN], |[x0, y0, x1, y1], (x, y)| [x0.min(x), y0.min(y), x1.max(x), y1.max(y)])
+}
+
+/// Whether two bounding boxes overlap.
+fn bounds_meet(&[ax0, ay0, ax1, ay1]: &[f32; 4], &[bx0, by0, bx1, by1]: &[f32; 4]) -> bool {
+    ax1 > bx0 && bx1 > ax0 && ay1 > by0 && by1 > ay0
+}
+
+/// Twice the signed area of a polygon.
+fn area(p: &[(f32, f32)]) -> f32 {
+    (0..p.len()).map(|k| {
+        let ((x0, y0), (x1, y1)) = (p[k], p[(k + 1) % p.len()]);
+        x0 * y1 - x1 * y0
+    }).sum()
+}
+
+/// A convex polygon [`clipped`] leaves: two outlines' overlap, at most
+/// eight points (sixteen for slivers the rounding splits).
+#[derive(Clone, Copy)]
+struct Clipped {
+    points: [(f32, f32); 16],
+    len: usize,
+}
+
+impl Clipped {
+    fn points(&self) -> &[(f32, f32)] {
+        &self.points[..self.len]
+    }
+
+    fn push(&mut self, point: (f32, f32)) {
+        if let Some(slot) = self.points.get_mut(self.len) {
+            *slot = point;
+            self.len += 1;
+        }
+    }
+}
+
+/// The convex polygon `subject` (at most four points) clipped to the convex
+/// polygon `clip` (Sutherland-Hodgman).
+fn clipped(subject: &[(f32, f32)], clip: &[(f32, f32)]) -> Clipped {
+    let mut out = Clipped { points: [(0.0, 0.0); 16], len: 0 };
+    let turn = area(clip).signum();
+    if turn == 0.0 {
+        return out;
+    }
+    subject.iter().for_each(|&p| out.push(p));
+    for k in 0..clip.len() {
+        let (a, b) = (clip[k], clip[(k + 1) % clip.len()]);
+        let inside = |p: (f32, f32)| ((b.0 - a.0) * (p.1 - a.1) - (b.1 - a.1) * (p.0 - a.0)) * turn >= 0.0;
+        let input = out;
+        let input = input.points();
+        out.len = 0;
+        for i in 0..input.len() {
+            let (p, q) = (input[i], input[(i + 1) % input.len()]);
+            let (pin, qin) = (inside(p), inside(q));
+            if pin {
+                out.push(p);
+            }
+            if pin != qin {
+                let (dp, dq) = ((b.0 - a.0) * (p.1 - a.1) - (b.1 - a.1) * (p.0 - a.0), (b.0 - a.0) * (q.1 - a.1) - (b.1 - a.1) * (q.0 - a.0));
+                let t = dp / (dp - dq);
+                out.push((p.0 + (q.0 - p.0) * t, p.1 + (q.1 - p.1) * t));
+            }
+        }
+        if out.len == 0 {
+            break;
+        }
+    }
+    out
 }
 
 /// `ops` seen from `look`, a camera within the scene: each projected vertex

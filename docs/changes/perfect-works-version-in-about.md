@@ -1,0 +1,1 @@
+- **Settings → About** now shows which Perfect Works Build release the English (Perfect Works) text comes from.

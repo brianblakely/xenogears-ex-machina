@@ -15,12 +15,11 @@
 //! original's doors (413, 414, 415 and 416, all armed, all off under the
 //! default) to map 418, the floor past the tower's platforming maps where
 //! the Self-repairing Robot resupplies (two maps below the top, map 420),
-//! with no random battle on the way, as a player walks it (the assisted
-//! route, Jump pressed at each takeoff and a running jump where the route
-//! found none), and map 418's fixed battle still starts when the party
-//! touches its actor; under the original the same walk meets a random
-//! battle on map 414. Local only: it needs the user's disc 1 and a game
-//! module build.
+//! with no random battle on the way, as a player clicks each door (the
+//! assisted route walks the tower's floors and jumps up its ramps), and map
+//! 418's fixed battle still starts when the party touches its actor; under
+//! the original the same walk meets a random battle on map 414. Local only:
+//! it needs the user's disc 1 and a game module build.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test encounters
 
@@ -259,14 +258,6 @@ fn map(session: &mut Session<NativeModule>) -> u16 {
     u16::from_le_bytes(id) & 0xFFF
 }
 
-/// The party leader's position (x, z) and the field camera's angle.
-fn leader(session: &mut Session<NativeModule>) -> ([f64; 2], f64) {
-    let field = run(session, json!({"cmd": "field"}));
-    let actor = field["actors"].as_array().expect("actors").iter().find(|a| a["index"] == field["player"]).expect("the leader").clone();
-    let at = |axis: &str| actor["position"][axis].as_f64().expect("a coordinate");
-    ([at("x"), at("z")], field["camera_angle"].as_f64().expect("a camera angle"))
-}
-
 /// How a walk ended.
 #[derive(Debug, PartialEq)]
 enum Walked {
@@ -278,14 +269,12 @@ enum Walked {
     Ended(Value),
 }
 
-/// Walks toward `to` (x, z) on the assisted route as a player does: the
-/// assist holds the D-pad and Run, the player presses Jump each time it
-/// waits at a takeoff, until a door leads on, a battle comes or the assist
-/// ends.
-fn walk_to(session: &mut Session<NativeModule>, to: [f64; 2]) -> Walked {
+/// Walks to `to` (x, z) as a player clicks it: the assisted route walks
+/// and jumps there (`navigate`), until a door leads on, a battle comes or
+/// the assist ends.
+fn reach(session: &mut Session<NativeModule>, to: [f64; 2]) -> Walked {
     let start = map(session);
     run(session, json!({"cmd": "navigate", "to": to}));
-    let mut waiting = false;
     for _ in 0..3000 {
         if battle(session) {
             return Walked::Battle;
@@ -297,44 +286,9 @@ fn walk_to(session: &mut Session<NativeModule>, to: [f64; 2]) -> Walked {
         if status["assist"].is_null() {
             return Walked::Ended(status["assist_outcome"].clone());
         }
-        let at_takeoff = status["assist"]["phase"] == "awaiting_jump";
-        if at_takeoff && !waiting {
-            run(session, json!({"cmd": "act", "actions": ["Jump"], "frames": 4}));
-        }
-        waiting = at_takeoff;
         run(session, json!({"cmd": "frames", "count": 1}));
     }
     panic!("map {start}: the walk to {to:?} never ended");
-}
-
-/// A running jump toward `to`, the player's own: the assist plans jumps
-/// only onto ledges, so a raised floor it walks into stops it.
-fn hop(session: &mut Session<NativeModule>, to: [f64; 2]) {
-    const EIGHTHS: [&[&str]; 8] =
-        [&["Right"], &["Right", "Down"], &["Down"], &["Down", "Left"], &["Left"], &["Left", "Up"], &["Up"], &["Up", "Right"]];
-    let (from, camera) = leader(session);
-    let heading = (from[1] - to[1]).atan2(to[0] - from[0]) / std::f64::consts::TAU * 4096.0;
-    let toward = EIGHTHS[((heading + camera).rem_euclid(4096.0) / 512.0).round() as usize % 8];
-    let with = |extra: &[&str]| {
-        let actions = [toward, extra].concat();
-        json!({"cmd": "hold", "actions": actions})
-    };
-    for (actions, frames) in [(with(&["Run"]), 8), (with(&["Run", "Jump"]), 3), (with(&["Run"]), 40), (json!({"cmd": "hold", "actions": []}), 10)] {
-        run(session, actions);
-        run(session, json!({"cmd": "frames", "count": frames}));
-    }
-}
-
-/// Walks to `to` until a door leads on or a battle comes, with a running
-/// jump each time the assisted route stops short.
-fn reach(session: &mut Session<NativeModule>, to: [f64; 2]) -> Walked {
-    for _ in 0..8 {
-        match walk_to(session, to) {
-            Walked::Ended(outcome) if outcome == "stuck" => hop(session, to),
-            walked => return walked,
-        }
-    }
-    panic!("map {}: never reached {to:?}", map(session));
 }
 
 /// Babel Tower from map 413 up: each map's door (its actor's `place`, a

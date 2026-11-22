@@ -1426,6 +1426,195 @@ fn the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out() {
     assert!(pulled_back && reveals.pull_back > 0 && zoom == 250, "pulled back: {reveals:?}, {zoom}");
 }
 
+/// Zoomed out while the game runs, or while it holds its frame, the
+/// picture shows none of the clear colour where the game culled what the
+/// wider view sees: the frame shown is shown at the zoom it was recorded
+/// for until frames recorded for the wider one arrive, then eased into it
+/// (issue #103: at 1080p, Lahan in widescreen zoomed from 150% to 200%
+/// while walking showed up to 28 448 pixels of it a presentation for five
+/// frames, and held, zoomed from 125% to 300%, over a million until the
+/// game drew again).
+#[test]
+fn zooming_out_shows_none_of_the_clear_colour_running_or_held() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd": "enter_field", "map": 1}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    run_frames(&mut session, 400);
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let configure = |view: &mut GameView, zoom_out: u16| {
+        let graphics = Graphics { widescreen: true, zoom_out, ..Graphics::default() };
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (960, 540), view.max_scale()));
+    };
+    // Each presentation's pixels of the clear colour, and its pull-back.
+    let present = |view: &mut GameView, display: &xem_render::xem_gpu::DisplayInfo, scene: &str, now: f64| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, display, scene, now).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        let aux = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.frame().aux());
+        (aux.chunks_exact(4).filter(|a| a[2] & 15 == 0).count(), view.viewpoint().map_or(0.0, |v| v.offset[2]))
+    };
+    configure(&mut view, 150);
+    let (mut zoomed, mut clear) = (Vec::new(), Vec::new());
+    for n in 0..90u32 {
+        if n == 40 {
+            configure(&mut view, 200);
+        }
+        session.execute(&json!({"cmd": "pad", "buttons": if n >= 10 { vec!["up"] } else { vec![] }}));
+        session.set_actor_view(view.actor_view()).expect("the view's actor view");
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        for step in 0..2 {
+            let (pixels, pulled) = present(&mut view, &display, &scene, f64::from(n * 2 + step) / 120.0);
+            if n >= 20 {
+                clear.push((n, pixels));
+                zoomed.push(pulled);
+            }
+        }
+    }
+    assert!(clear.iter().all(|&(_, pixels)| pixels == 0), "the clear colour, zoomed out running: {clear:?}");
+    let (at_150, at_200) = (zoomed[0], zoomed[zoomed.len() - 1]);
+    assert!(at_200 > at_150 * 1.8, "zoomed out to 200%: pulled back {at_150} then {at_200}");
+    // Held: presented again without a game frame.
+    configure(&mut view, 300);
+    let display = session.runtime.services().gpu.device().display();
+    let scene = session.scene();
+    let held: Vec<(usize, f32)> = (0..6).map(|step| present(&mut view, &display, &scene, f64::from(180 + step) / 120.0)).collect();
+    assert!(held.iter().all(|&(pixels, pulled)| pixels == 0 && (pulled - at_200).abs() < 1.0), "held, at the frame's 200%: {held:?}");
+}
+
+/// Walking Lahan zoomed out to 300% while the camera turns, the picture opens
+/// no crack of the clear colour inside the scene: a quad the game culled
+/// folded along a slope's silhouette shows the half that faces the camera
+/// (issue #103: hairlines along the folds in 6 of the frames, up to 44
+/// pixels a frame at 1080p).
+#[test]
+fn walking_zoomed_out_opens_no_crack_along_the_slopes() {
+    let Some(cracks) = cracks_walking_lahan(Graphics { profile: GraphicsProfile::Modern, widescreen: true, zoom_out: 300, ..Graphics::default() }, (960, 540), &["up", "r1"]) else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    assert!(cracks.is_empty(), "frames with cracks of the clear colour (frame, pixels): {cracks:?}");
+}
+
+/// A walk through the game's own camera, at 100% without High Framerate, in
+/// widescreen and in the original's framing: no crack either. At sub-pixel
+/// points the faces the game's whole-pixel winding tests dropped still face
+/// the camera (slivers along slopes and walls), and one culled beside the
+/// screen reaches a little into it; the port recorded neither for a still
+/// camera, and the picture had cracks of the clear colour across the ground
+/// and along walls, the ones issue #103 reports (at 1080p, 12 of this
+/// walk's 110 frames in widescreen, 296 pixels, and 4 in 4:3, 202).
+#[test]
+fn walking_at_the_games_own_camera_opens_no_crack() {
+    let mut cracks = Vec::new();
+    for widescreen in [true, false] {
+        let graphics = Graphics { profile: GraphicsProfile::Modern, widescreen, ..Graphics::default() };
+        let Some(found) = cracks_walking_lahan(graphics, (1920, 1080), &["down", "l1"]) else {
+            eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+            return;
+        };
+        cracks.push((widescreen, found));
+    }
+    assert!(cracks.iter().all(|(_, found)| found.is_empty()), "frames with cracks of the clear colour (widescreen, [(frame, pixels)]): {cracks:?}");
+}
+
+/// Lahan through `graphics` in a window of `size`, the leader walking with
+/// `buttons` held from frame 20 (a direction and a shoulder button: the
+/// camera turning), for 110 frames: each presentation's frame with clear
+/// colour enclosed by the scene, and how many pixels
+/// ([`enclosed_clear_colour`]). None without disc 1.
+fn cracks_walking_lahan(graphics: Graphics, size: (u32, u32), buttons: &[&str]) -> Option<Vec<(u32, usize)>> {
+    let disc = disc()?;
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd": "enter_field", "map": 1}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    run_frames(&mut session, 400);
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, size, view.max_scale()));
+    let scene = session.scene();
+    session.runtime.services().gpu.device_mut().set_trace(true);
+    let _ = view.take_restart();
+    let walk = buttons.iter().map(|b| xem_core::control::button_bit(b).unwrap()).fold(0, |a, b| a | b);
+    let mut cracks = Vec::new();
+    for n in 0..110u32 {
+        session.set_pad(0, if n >= 20 { walk } else { 0 });
+        session.set_actor_view(view.actor_view()).expect("the view's actor view");
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        let aux = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.frame().aux());
+        let (w, h) = view.frame().size();
+        let found = enclosed_clear_colour(&aux, w as usize, h as usize);
+        if found > 0 {
+            cracks.push((n, found));
+        }
+    }
+    Some(cracks)
+}
+
+/// Pixels of the clear colour (aux class 0) within the scene: with scene
+/// faces within 6 pixels on both sides, across or down, and in a region of
+/// the clear colour that is no part of the void around the scene (under
+/// 2 000 pixels, clear of the picture's edges).
+fn enclosed_clear_colour(aux: &[u8], w: usize, h: usize) -> usize {
+    let class = |x: usize, y: usize| aux[(y * w + x) * 4 + 2] & 15;
+    let scene = |x: usize, y: usize| (2..=4).contains(&class(x, y));
+    let mut region = vec![0u32; w * h];
+    let mut sizes = vec![0usize];
+    for start in 0..w * h {
+        if region[start] != 0 || class(start % w, start / w) != 0 {
+            continue;
+        }
+        let id = sizes.len() as u32;
+        let (mut stack, mut size) = (vec![start], 0);
+        region[start] = id;
+        while let Some(i) = stack.pop() {
+            let (x, y) = (i % w, i / w);
+            size += if x == 0 || y == 0 || x == w - 1 || y == h - 1 { 2000 } else { 1 };
+            for (nx, ny) in [(x.wrapping_sub(1), y), (x + 1, y), (x, y.wrapping_sub(1)), (x, y + 1)] {
+                if nx < w && ny < h && region[ny * w + nx] == 0 && class(nx, ny) == 0 {
+                    region[ny * w + nx] = id;
+                    stack.push(ny * w + nx);
+                }
+            }
+        }
+        sizes.push(size);
+    }
+    (0..w * h)
+        .filter(|&i| {
+            let (x, y) = (i % w, i / w);
+            let near = |dx: isize, dy: isize| {
+                (1..=6).any(|d| {
+                    let (nx, ny) = (x as isize + dx * d, y as isize + dy * d);
+                    nx >= 0 && ny >= 0 && (nx as usize) < w && (ny as usize) < h && scene(nx as usize, ny as usize)
+                })
+            };
+            region[i] != 0 && sizes[region[i] as usize] < 2000 && ((near(-1, 0) && near(1, 0)) || (near(0, -1) && near(0, 1)))
+        })
+        .count()
+}
+
 fn run_frames(session: &mut Session<NativeModule>, count: u32) {
     let reply = session.execute(&json!({"cmd": "frames", "count": count}));
     assert!(reply.get("error").is_none(), "{reply}");

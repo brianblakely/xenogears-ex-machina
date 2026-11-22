@@ -235,6 +235,8 @@ static u32 xem_depth_keep(u32 current, u32 candidate, int far) {
 enum { XEM_SORT_AVG, XEM_SORT_FAR, XEM_SORT_NEAR };
 
 static void xem_reveal_shade(XemDraw *d, u32 step, u32 *words);
+static void xem_reveal_kept(XemDraw *d, u32 vertices, u32 step, u32 count, u32 projections, int sort, u32 sxy0, u32 sxy1,
+                            u32 sxy2, u32 sxy3);
 
 /* Presentation only (xem/gte.h): a face the screen-bounds test just culled,
  * recorded with the GP0 words of its packet slot (the screen points put in,
@@ -244,14 +246,24 @@ static void xem_reveal_shade(XemDraw *d, u32 step, u32 *words);
  * renderer sorts (depth 0, which the renderers leave unlinked, only for a
  * camera pulled back). Reads memory only, and leaves the GTE as it was. */
 static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
-    u32 sxy[4], words[12], count = tag >> 24, projections = xem_gte_ring->count, i;
-    s32 depth, sz;
-    long long sum;
+    u32 count = tag >> 24, projections = xem_gte_ring->count;
 
     if (!xem_present_reveals->wanted || count == 0 || count > 12 ||
         !xem_present_face_visible(projections, vertices, (s32)d->x_limit + 1, (s32)(d->y_limit >> 16) + 1)) {
         return;
     }
+    xem_reveal_kept(d, vertices, step, count, projections, sort, sxy0, sxy1, sxy2, sxy3);
+}
+
+/* xem_reveal's record of a face it keeps. (Apart, so that the faces it
+ * leaves out, most of those it is given, set up none of this: the port's
+ * locals are cleared where they begin.) */
+static void xem_reveal_kept(XemDraw *d, u32 vertices, u32 step, u32 count, u32 projections, int sort, u32 sxy0, u32 sxy1,
+                            u32 sxy2, u32 sxy3) {
+    u32 sxy[4], words[12], i;
+    s32 depth, sz;
+    long long sum;
+
     sxy[0] = sxy0, sxy[1] = sxy1, sxy[2] = sxy2, sxy[3] = sxy3;
     if (sort == XEM_SORT_AVG) {
         if (vertices == 4) {
@@ -283,36 +295,79 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
     xem_present_reveal(xem_ot_entry(d, (u32)depth, d->shift), vertices, projections, words, count);
 }
 
+/* xem_reveal for a face the renderer dropped, which the host's margin asks
+ * for with or without a reach beside the screen: its picture of a still
+ * camera at sub-pixel points wants the ones inside the screen alone (the
+ * faces culled beside it, most of a field's, are not tested for it). */
+static void xem_reveal_within(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
+    u32 count = tag >> 24, projections = xem_gte_ring->count;
+
+    if (count == 0 || count > 12 ||
+        !xem_present_face_visible(projections, vertices, (s32)d->x_limit + 1, (s32)(d->y_limit >> 16) + 1)) {
+        return;
+    }
+    xem_reveal_kept(d, vertices, step, count, projections, sort, sxy0, sxy1, sxy2, sxy3);
+}
+
+/* Whether the face whose first three screen points are `a`, `b` and `c`,
+ * which NCLIP dropped, is thin at whole pixels: one that may face the
+ * camera at its sub-pixel points (each coordinate lies less than a pixel
+ * from its whole one, which moves the product NCLIP tests by less than the
+ * extents of the edges a-b and a-c, summed, and 2), or lies within about a
+ * pixel of that, as a quad folded along a silhouette does (twice the bound
+ * here). Integers alone: nearly every face a field drops fails it. */
+static int xem_reveal_sliver(u32 a, u32 b, u32 c) {
+    s32 x1 = (s16)b - (s16)a, y1 = (s16)(b >> 16) - (s16)(a >> 16);
+    s32 x2 = (s16)c - (s16)a, y2 = (s16)(c >> 16) - (s16)(a >> 16);
+    s32 extent = (x1 < 0 ? -x1 : x1) + (y1 < 0 ? -y1 : y1) + (x2 < 0 ? -x2 : x2) + (y2 < 0 ? -y2 : y2);
+
+    return x1 * y2 - x2 * y1 + 2 * extent + 4 > 0;
+}
+
 /* Presentation only: a face the renderer dropped as facing away or at
- * depth 0, which a camera pulled back or looking around (xem/gte.h) may
- * still see: recorded as a culled face while the host's view is there. */
+ * depth 0, which a camera pulled back or looking around (xem/gte.h), or one
+ * between two frames (within the host's margin), may still see: recorded as
+ * a culled face while the host's view is there. With no reach (the game's
+ * own framing through its own camera: XemRevealRing's margin), the ones
+ * thin at whole pixels alone. */
 static void xem_reveal_dropped(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
-    if (xem_present_elsewhere()) {
-        xem_reveal(d, vertices, step, tag, sort, sxy0, sxy1, sxy2, sxy3);
+    if (xem_present_dropped() && (xem_present_reveals->wanted || xem_reveal_sliver(sxy0, sxy1, sxy2))) {
+        xem_reveal_within(d, vertices, step, tag, sort, sxy0, sxy1, sxy2, sxy3);
     }
 }
 
-/* The same for a quad dropped as facing away before its fourth point was
- * projected: that point is projected for the record (from `fourth`), and
- * the GTE and the ring's register provenance are put back afterwards. */
-static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
-    XemGte saved;
+/* xem_reveal_dropped_quad's record: the quad's fourth point projected for
+ * it (from `fourth`), and the GTE and the ring's register provenance put
+ * back afterwards. */
+static void xem_reveal_fourth(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
+    XemGte saved = xem_gte;
     u32 fifo[3], sxy[3], i;
 
-    if (!xem_present_elsewhere()) {
-        return;
-    }
-    saved = xem_gte;
     for (i = 0; i < 3; i++) {
         fifo[i] = xem_gte_ring->fifo[i];
         sxy[i] = xem_mfc2(XEM_GTE_SXY0 + (int)i);
     }
     xem_load_vector(0, fourth);
     xem_cop2(XEM_GTE_RTPS);
-    xem_reveal(d, 4, step, tag, sort, sxy[0], sxy[1], sxy[2], xem_mfc2(XEM_GTE_SXY2));
+    xem_reveal_within(d, 4, step, tag, sort, sxy[0], sxy[1], sxy[2], xem_mfc2(XEM_GTE_SXY2));
     xem_gte = saved;
     for (i = 0; i < 3; i++) {
         xem_gte_ring->fifo[i] = fifo[i];
+    }
+}
+
+/* The same for a quad dropped as facing away before its fourth point was
+ * projected, which is projected for the record, while the host's margin is
+ * set, only when the first three may be worth recording
+ * (xem_present_face_turned; without the margin each such quad is, and
+ * xem_present_face_visible judges it whole, its points as projected). */
+static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
+    if (!xem_present_reveals->wanted &&
+        !xem_reveal_sliver(xem_mfc2(XEM_GTE_SXY0), xem_mfc2(XEM_GTE_SXY1), xem_mfc2(XEM_GTE_SXY2))) {
+        return;
+    }
+    if (xem_present_dropped() && (xem_present_reveals->margin == 0 || xem_present_face_turned(xem_gte_ring->count))) {
+        xem_reveal_fourth(d, fourth, step, tag, sort);
     }
 }
 

@@ -1042,7 +1042,7 @@ fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_poi
     let mut ram = Ram::new();
     let mut gpu = fresh();
     gpu.set_trace(true);
-    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None }));
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None, margin: 0, zoom: 0 }));
     assert_eq!(gpu.reveal_around(), 2, "the port reads the bits");
     let _ = gpu.take_trace();
     // A camera turned 30 degrees about y, its rows in 4.12 at half scale (a
@@ -1108,7 +1108,7 @@ fn a_battles_camera_carries_its_stage_and_the_world_maps_its_ground_and_no_other
     use xem_gpu::{CameraMode, Combatant, Projection, Reveals, Stage, TraceOp};
     let mut gpu = fresh();
     gpu.set_trace(true);
-    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None }));
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE, viewer: None, margin: 0, zoom: 0 }));
     let _ = gpu.take_trace();
     let entry = |class: u8, sz: u16, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 164), h: 512, owner, view };
     let axes = |records: &mut Vec<Projection>| {
@@ -1364,4 +1364,68 @@ fn a_copy_onto_itself_is_traced_only_when_it_sets_mask_bits() {
     assert_eq!(copied(&mut gpu, xy(0, 256)), 2, "elsewhere: the copy and its destination's pixels");
     gpu.write_gp0(0xE600_0001);
     assert_eq!(copied(&mut gpu, 0), 2, "onto itself, setting the mask bit");
+}
+
+#[test]
+fn the_reveals_margin_is_the_ports_word_while_culled_faces_are_wanted() {
+    use xem_gpu::Reveals;
+    let wanted = Reveals { reach: [32, 32], margin: 286, ..Reveals::default() };
+    let mut gpu = fresh();
+    gpu.set_reveals(Some(wanted));
+    assert_eq!(gpu.reveal_margin(), 0, "none without a trace");
+    gpu.set_trace(true);
+    gpu.set_reveals(Some(wanted));
+    assert_eq!(gpu.reveal_margin(), 286);
+    // The margin alone asks for the faces the renderers drop within the
+    // screen (a still camera's picture at sub-pixel points); with neither,
+    // no culled face is wanted.
+    gpu.set_reveals(Some(Reveals { reach: [0, 0], ..wanted }));
+    assert_eq!((gpu.reveal_reach(), gpu.reveal_margin()), (0, 286), "the margin without a reach");
+    gpu.set_reveals(Some(Reveals { reach: [0, 0], margin: 0, ..wanted }));
+    assert_eq!(gpu.reveal_margin(), 0, "none while no culled face is wanted");
+}
+
+/// Each take says how far its frames may be shown zoomed out: the least
+/// zoom of the reveals the port judged what it drew since the last take
+/// under, those in effect when the device last wrote the port's words (it
+/// reads them each time it hands its records over), not those set since.
+/// Reveals reaching nowhere record no culled face but keep their zoom; a
+/// view from around the scene has none.
+#[test]
+fn a_take_covers_the_zoom_of_the_reveals_what_it_holds_was_judged_under() {
+    use xem_gpu::{Projection, Reveals};
+    let at = |zoom| Some(Reveals { reach: [32, 32], pull_back: 1000, zoom, ..Reveals::default() });
+    // Something the GTE projected since the last hand-over.
+    let drawn = [Projection::default()];
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    gpu.set_reveals(at(150));
+    gpu.trace_projections(0, &drawn, &[], &[]);
+    assert_eq!(gpu.take_trace().covers, None, "drawn before the words were written");
+    gpu.trace_projections(1, &drawn, &[], &[]);
+    gpu.set_reveals(at(200));
+    assert_eq!(gpu.take_trace().covers, Some(150), "drawn under the words written before, not those set since");
+    gpu.trace_projections(2, &drawn, &[], &[]);
+    gpu.trace_projections(3, &drawn, &[], &[]);
+    assert_eq!(gpu.take_trace().covers, Some(150), "the least of a take's");
+    gpu.trace_projections(4, &drawn, &[], &[]);
+    gpu.trace_projections(5, &[], &[], &[]);
+    assert_eq!(gpu.take_trace().covers, Some(200), "a hand-over with nothing drawn since judges nothing");
+    gpu.set_reveals(Some(Reveals { zoom: 100, ..Reveals::default() }));
+    gpu.trace_projections(6, &drawn, &[], &[]);
+    gpu.trace_projections(7, &drawn, &[], &[]);
+    assert_eq!(gpu.reveal_reach(), 0, "no culled face wanted");
+    assert_eq!(gpu.take_trace().covers, Some(100), "but the zoom the frames are drawn for");
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], around: Reveals::ANYWHERE, ..Reveals::default() }));
+    gpu.trace_projections(8, &drawn, &[], &[]);
+    gpu.trace_projections(9, &drawn, &[], &[]);
+    assert_eq!(gpu.take_trace().covers, Some(100), "the first drawn still at 100%");
+    gpu.trace_projections(10, &drawn, &[], &[]);
+    assert_eq!(gpu.take_trace().covers, None, "around the scene: any");
+    gpu.set_reveals(at(150));
+    gpu.trace_projections(11, &drawn, &[], &[]);
+    gpu.set_trace(true);
+    gpu.set_reveals(at(200));
+    gpu.trace_projections(12, &drawn, &[], &[]);
+    assert_eq!(gpu.take_trace().covers, Some(150), "restarted, the words the port read last");
 }

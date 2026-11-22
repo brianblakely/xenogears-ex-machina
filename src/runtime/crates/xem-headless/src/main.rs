@@ -267,18 +267,19 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// `reveal_frames {count, reach: [x, y], pull_back, around}`: plays `count`
-/// frames (1 by default) as a host whose view reaches `reach` pixels beyond
-/// the original's screen (not 0, 0) draws them, from `pull_back` GTE depth
-/// units behind the game's camera, looking `around` ([`xem_gpu::Reveals`]):
-/// the draw trace on, asking the port for the faces the game culls, taken
-/// after each frame and off again at the end. Presentation only: the game's
-/// RAM goes on as without it. For a camera pulled back the port judges each
-/// culled face on that camera's screen in floating point, the game module's
-/// only floating point. Answers the frames played, the primitives traced in
-/// them, how many of those are faces the game culled, and an FNV-1a digest
-/// of those (each one's shape and screen points, in the order traced), or
-/// the trap.
+/// `reveal_frames {count, reach: [x, y], pull_back, around, margin}`: plays
+/// `count` frames (1 by default) as a host whose view reaches `reach` pixels
+/// beyond the original's screen (not 0, 0) draws them, from `pull_back` GTE
+/// depth units behind the game's camera, looking `around`, with faces turned
+/// away by less than `margin` too ([`xem_gpu::Reveals`]): the draw trace on,
+/// asking the port for the faces the game culls, taken after each frame and
+/// off again at the end. Presentation only: the game's RAM goes on as
+/// without it. For a camera pulled back, or a face turned away within the
+/// margin, the port judges each culled face in floating point, the game
+/// module's only floating point. Answers the frames played, the primitives
+/// traced in them, how many of those are faces the game culled, and an
+/// FNV-1a digest of those (each one's shape and screen points, in the order
+/// traced), or the trap.
 #[cfg(has_game_module)]
 fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule>, command: &serde_json::Value) -> serde_json::Value {
     let number = |value: &serde_json::Value, limit: u64| value.as_u64().unwrap_or(0).min(limit);
@@ -287,6 +288,8 @@ fn reveal_frames(session: &mut xem_core::control::Session<xem_game::NativeModule
         pull_back: number(&command["pull_back"], u64::from(u32::MAX)) as u32,
         around: number(&command["around"], 0xFF) as u8,
         viewer: None,
+        margin: number(&command["margin"], u64::from(xem_gpu::Reveals::EVERY_WAY)) as u16,
+        zoom: 0,
     };
     let device = session.runtime.services().gpu.device_mut();
     device.set_trace(true);

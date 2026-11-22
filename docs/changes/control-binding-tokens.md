@@ -1,0 +1,2 @@
+- Rebinding controls is quicker: in **Settings → Controls** and **Settings → Shortcuts** every key, button and mouse button an action uses shows as a token you can remove with its **×**. Choose **+** and press the key, controller button or stick direction you want (or click the **+** with a mouse button) to add it; an input another action used moves to the new one.
+- The trigger setting is now called **LT and RT rewind and fast-forward**: on, LT rewinds and RT toggles fast-forward without holding Back.

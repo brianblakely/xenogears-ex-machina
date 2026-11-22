@@ -333,11 +333,13 @@ impl Game {
         }
     }
 
-    /// Where assisted walking is headed.
-    pub fn destination(&self) -> Option<xem_core::field::V3> {
-        match self.session.assist.as_ref()?.intent {
-            xem_core::assist::Intent::Walk { to, .. } => Some(to),
-            xem_core::assist::Intent::Interact { .. } => None,
+    /// Where assisted movement is headed in `field` (the field as read
+    /// now): a walk's floor point, or the feet of the actor approached.
+    pub fn destination(&self, field: Option<&xem_core::field::Field>) -> Option<xem_core::field::V3> {
+        let intent = &self.session.assist.as_ref()?.intent;
+        match intent {
+            xem_core::assist::Intent::Walk { to, .. } => Some(*to),
+            xem_core::assist::Intent::Interact { .. } => intent.heading_to(field?),
         }
     }
 

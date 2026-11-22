@@ -783,7 +783,7 @@ class Ground(Compare):
         ring's header and its first `entries` records, as words."""
         ring = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
         # (The header's eight words: count, wanted, pull_back, around, the
-        # viewer and its x and z, one unused: xem/gte.h.)
+        # viewer and its x and z, the margin: xem/gte.h.)
         reveals = (ctypes.c_uint * (8 + 16 * entries)).in_dll(LIB, "xem_present_reveal_storage")
 
         def presentation(recording, wanted):

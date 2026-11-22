@@ -177,7 +177,17 @@ typedef struct {
      * field's sprites again facing it (sprite_facing.c). 0 for none. */
     unsigned int viewer;
     int viewer_x, viewer_z;
-    unsigned int unused;
+    /* Set by the host: faces turned away from the view's camera by less
+     * than this (the sine of the angle beyond edge-on, in 4096ths; 4096 any
+     * face) count too, and with them the faces the renderers drop as facing
+     * away: a camera between two of the game's frames (a turning one,
+     * interpolated) or pulled back further than they were judged for sees
+     * some of them. 0 for none. With no reach (`wanted` 0: the game's own
+     * framing through its own camera, whose picture at sub-pixel points
+     * wants the faces whole pixels turned over, and the folds beside them),
+     * of the dropped faces within the screen, the ones thin at whole pixels
+     * alone. */
+    unsigned int margin;
     XemReveal entries[XEM_PRESENT_REVEALS];
 } XemRevealRing;
 
@@ -298,12 +308,24 @@ unsigned int xem_present_sxy_source(int reg);
  * game's camera: pulled back, or around from within the field. */
 int xem_present_elsewhere(void);
 
+/* Whether the faces the renderers drop as facing away count (judged by
+ * xem_present_face_visible): from a camera elsewhere, or within the host's
+ * margin (XemRevealRing). */
+int xem_present_dropped(void);
+
 /* Whether a culled face is worth recording: its `vertices` points are the
  * projections just before `projections`; each projected without overflow,
- * the first three wind as NCLIP keeps, and one lies within the host's reach
- * of a `width` x `height` screen (as the pulled-back camera sees them, when
- * the host pulls it back; any face while it looks around). */
+ * the first three wind as NCLIP keeps (or turn away by less than the host's
+ * margin), and one lies within the host's reach of a `width` x `height`
+ * screen (as the pulled-back camera sees them, when the host pulls it back;
+ * any face while it looks around). */
 int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height);
+
+/* Whether a face whose first three points are the projections just before
+ * `projections` may be worth recording (xem_present_face_visible's winding
+ * and margin, and its near plane, without its reach): to leave out a face
+ * a renderer dropped before projecting the rest of its points for it. */
+int xem_present_face_turned(unsigned int projections);
 
 /* The same without the winding: a primitive the game draws whichever way
  * its points wind (the world map's clouds). */

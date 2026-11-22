@@ -236,12 +236,12 @@ schema and enters a mode through the original dispatcher on an empty stack.
 Pads are set as the BIOS driver reports them; nothing simulates lower-level
 input. `xem-headless --control` adds `screenshot {path}` and `vram {path}`
 (PNG files), `display` (where the display shows VRAM) and `reveal_frames
-{count, reach: [x, y], pull_back, around}`: frames drawn as a view wider or
-pulled back draws them, the draw trace asking the port for the faces the
-game culls, answered with the primitives traced in them (the first frame's
-too), how many were culled faces and an FNV-1a digest of those (their
-shapes and screen points in the order traced; presentation only: the RAM
-goes on as without; [State interchange](#state-interchange)).
+{count, reach: [x, y], pull_back, around, margin}`: frames drawn as a view
+wider or pulled back draws them, the draw trace asking the port for the
+faces the game culls, answered with the primitives traced in them (the
+first frame's too), how many were culled faces and an FNV-1a digest of
+those (their shapes and screen points in the order traced; presentation
+only: the RAM goes on as without; [State interchange](#state-interchange)).
 
 - **Introspection.** `tools/game_schema.py` compiles every unit again with
   debug information and writes `build/game/schema.json`: each global the C
@@ -1761,7 +1761,183 @@ snapshots are its. The renderer only draws again what it drew:
   around its centre in view space; the faces the renderers drop as facing
   away or at depth 0 are recorded as well (a quad's fourth point, not yet
   projected when the winding drops it, is projected for the record with the
-  GTE put back). The flat backdrops that only span the original screen go
+  GTE put back). With the ring's `margin` word (the sine of an angle, in
+  4096ths), the faces turned away from that camera by less than the angle
+  count too, those the renderers drop as facing away with them, judged in
+  floating point from their points before the division (the face's normal
+  against the line from the camera to its first point): a camera that sees
+  them from elsewhere than the one they were judged for may see them.
+  High Framerate draws the newest frame through a camera between it and the
+  one before, and while the camera turned (the field's turns 5.7 degrees a
+  frame under L1 or R1) the sides of buildings, rocks and steps that faced
+  the camera before were missing, holes of the clear colour along them
+  (issue #103: Lahan in widescreen at 150% turning with L1, presented
+  twice a game frame, 43 of 140 frames had holes, 5 319 pixels; now none,
+  the last 14 a fold, below; at 4:3 and 100%, 38 frames and 8 115 pixels,
+  now none). Pulled
+  back, the frames shown were judged for a depth a little different (the
+  camera's target nearer or farther, a zoom notch), and a field's first
+  frames, before that depth is known, for the game's camera, which left a
+  long wedge of the clear colour beside a fence of Lahan's for a few
+  frames as it was entered. `GameView::reveals` asks for 4 degrees while
+  pulled back, 4 and 1.25 times the camera's last turn (at most 30) while
+  interpolating, and every face, whichever way it faces, until a field's
+  depth is known; a renderer leaves out the culled faces that face away
+  from the camera it draws them through, as NCLIP leaves out the faces the
+  game draws (`Builder::faces_away`: a face of the scene seen from the
+  game's camera, pulled back or between two frames; sprites' parts and the
+  world's translucent faces, among them the world map's clouds, which the
+  port records whichever way they wind, are drawn as they wind, while a
+  model's translucent faces, recorded as they face, are left out too:
+  entering the forest, field 22, one model's showed their backs for a few
+  frames). A quad can fold along the silhouette, its four points off one
+  plane and nearly edge-on: NCLIP's triangle (its first three points) then
+  faces away from the camera the picture is drawn through while its second
+  faces it, and leaving the whole face out opened a hairline of the clear
+  colour along the fold, down slopes and rocks (14 pixels in a frame of
+  that turn at 150%, up to 44 a frame walking Lahan at 300%, 12 over two
+  frames walking it with L1 at 450%, 15 over two turning in the forest at
+  150%). The renderer draws that half alone (`second_faces`), and none of
+  those runs shows a crack now, nor Lahan walking at 200% with High
+  Framerate (`tests/ps1.rs`
+  `a_culled_quad_folded_along_the_silhouette_shows_the_half_that_faces_the_camera`,
+  `tests/render.rs` `walking_zoomed_out_opens_no_crack_along_the_slopes`);
+  elsewhere the half shows where something farther did (5 to 32 pixels of
+  the benchmark's last frames at 1080p). It costs nothing measurable: in
+  the benchmark's scenes 60 to 100 of a frame's culled quads face away, a
+  cross product more each, and 1 to 3 fold; over eight rounds alternating
+  with the build before, every row's presentation stayed within 0.010 ms
+  of it on average either way, as an identical copy of that build did.
+  Through the game's own camera at 100% without High Framerate the port
+  recorded none of the faces its winding tests drop, and a field's picture
+  at sub-pixel points had cracks of the clear colour across the ground and
+  along walls, thin wedges and lines (issue #103's two pictures; walking
+  Lahan by click between two stops and turning the camera at each, at
+  1080p: 122 of 760 walking presentations in widescreen, 5 680 pixels, up
+  to 348 in one, 11 of 192 turning and 9 of 240 standing; 86, 6 and 4 in
+  4:3; none with High Framerate on, whose margin records those faces). The
+  view asks for them at 100% too, in a field drawn at sub-pixel points.
+  In widescreen with the margin of a camera still between two frames: the
+  faces whole pixels turned over (thinner than one of the original's) and
+  the folds beside them. In the original's framing with no reach and the
+  least margin, the faces whole pixels turned over alone: the port then
+  tests no face culled beside the screen, and of the faces NCLIP drops
+  only the ones thin at whole pixels (`xem_reveal_sliver`: the product
+  NCLIP tests within twice the extents of the face's two edges of 0,
+  integers alone, ahead of the margin's own test), where the wider margin
+  cost the game's frame 2%. A renderer draws the ones
+  that face the camera at their sub-pixel points inside the picture
+  (`Builder::restores_sliver`: a model's as the terrain's), and in
+  widescreen every recorded face where it falls: one culled beside the
+  screen reaches up to a pixel into it, and cut off at the screen's side
+  it left a column of the clear colour there. None of those presentations
+  has a crack now, nor the walk to the fence by Lahan's well and the
+  camera's eight directions there, where 74 of 296 walking presentations
+  had (`tests/render.rs`
+  `walking_at_the_games_own_camera_opens_no_crack`, `tests/ps1.rs`
+  `a_models_faces_culled_at_whole_pixels_show_from_the_games_own_camera`
+  and
+  `a_face_culled_beside_the_screen_shows_where_its_sub_pixel_points_reach_into_it`,
+  `tests/test_port_model_draw.py`
+  `test_with_no_reach_the_margin_records_the_faces_thin_at_whole_pixels_alone`).
+  A window that asks for nothing beside the screen now asks for these, so
+  its saved state differs from a plain session's in the port's
+  presentation records, and in nothing else (`xem-host` `tests/states.rs`).
+  At 100% without High Framerate, six rounds against the build before
+  these fixes, the game's frame and the presentation's CPU together:
+  standing, Lahan -0.002 ms in 4:3 and +0.010 in widescreen, the forest
+  -0.001 and -0.014 (an identical copy of a build differs by up to 0.011
+  there); with the camera turning throughout, +0.002 in widescreen and
+  +0.038 in 4:3 (+0.011 in another run of the same test: 0.013 to 0.026
+  over the build before this fix, in the game's frame, where the faces a
+  turn brings edge-on are tested and the slivers among them recorded). The
+  clear colour still within the scene from 300% out: in the forest (2 190
+  pixels over 38 of 200 frames walking it at 300%) the floor's and the
+  wall's models end 1 000 to 1 900 units apart, which the game's camera
+  never sees; the forest clears to black, and the wall beside that gap is
+  black and the floor's rim no brighter than 33 of 255, so nothing shows.
+  Under the lid of Lahan's well (78 pixels over four frames walking it at
+  450%, 30 over two at 500%) a quad of the rock loses its second triangle
+  to the welder (`Welder::weld_frame`), which welds its fourth point onto
+  its second's, a fifth of a pixel off on the game's screen, where the
+  faces beside it keep that point: still open. Recording every face
+  whichever way it faces, at the widest
+  reach, leaves both as they are. Along the scene's outline against the
+  void around it, the clear colour is that void (its staircase's notches:
+  365 of the 377 pixels a count of enclosed clear colour finds walking
+  Lahan with L1 at 450%).
+  The game's RAM is unchanged. In Lahan at 200% in widescreen the
+  port records about 7% more culled faces still (1 402 against 1 316) and
+  13% more turning with High Framerate (1 063 against 944), and on a
+  field's first frame, before its depth is known, every face within the
+  reach (about 4 500); the work they add is paid for on the same paths:
+  the port's face tests keep their points in scalars (its units clear a
+  local array where it begins and translate each access through a pointer
+  argument), a quad dropped as facing away projects its fourth point,
+  while a margin is set, only when the margin may keep it, the trace
+  decodes the port's rings a whole entry at a time and looks for an
+  ordering-table entry's culled faces only where some were recorded, and a
+  replay finds where its scene is projected about once a frame, keeps each
+  primitive's scissors in place and creates no views for draws that encode
+  nothing. Neither costs more than before:
+  in Lahan and the forest at 200% in widescreen at 1080p, still, turning
+  with L1 and with High Framerate, the game's frame took 0.03 to 0.05 ms
+  less on average and the presentation as long or up to 0.02 ms less
+  (`--example motion -- --bench`, 240 frames presented twice each, four
+  rounds alternating with the build before, pinned to two cores, the RTX
+  5070 Ti). Only a view that begins on a field already drawn (as the
+  benchmark does, or a host starting on a state saved there) pays once for
+  the frame recorded before the depth is known, every face within the
+  reach: about 0.5 to 1 ms more of that game frame and 1.7 ms more of its
+  first replay. Entering a field zoomed out, the view presenting across the
+  map change, its first frames record about 6% more culled faces than
+  before, as the rest do (2 681 against 2 517 in Lahan, 1 593 against
+  1 563 in the forest), and cost the same within 0.2 ms, in loads of 141
+  and 216 frames from the map change to the field's first frame presented,
+  as before (2.4 and 3.6 s at 60 frames a second; 155 to 174 ms of the
+  game's, the trace's and the presentation's time against 158 to 201)
+  (`tests/test_port_model_draw.py` `CulledFaces`, `tests/ps1.rs`
+  `a_culled_face_shows_only_where_it_faces_the_camera_the_picture_is_drawn_from`,
+  `a_translucent_culled_face_faces_the_camera_unless_the_port_records_it_either_way`
+  and `the_faces_turned_away_the_port_records_follow_how_the_view_may_turn`).
+  Zoomed out, the frames recorded or held lack what the wider view sees
+  beyond what their reveals reached: the port reads the reveals each time
+  it hands its records over and judges what it draws next under them, so a
+  frame shows reveals the host set about two frames before (a field builds
+  a frame while the GPU draws the one before, shown once drawn), and a
+  held frame (the game paused, a menu over it) has no other. In Lahan in
+  widescreen zoomed from 150% to 200% while walking, the clear colour
+  showed in the sides of five frames (up to 28 448 pixels a presentation
+  at 1080p; 855 458 in field 684 from 100%), and a held frame zoomed to
+  300% showed over a million until the game drew again. Each take returns
+  the least zoom (`Reveals::zoom`, the one the view asked at) of the
+  reveals the port judged what it drew under (`Trace::covers`: those it
+  read when it last handed its records over, kept when the trace
+  restarts), and `GameView` shows the game's camera zoomed out no further
+  than the frame shown covers (the least of the takes in the last two
+  intervals between new frames shown), easing into the zoom asked for as
+  frames covering it are shown: a step each frame shown, or each
+  presentation while interpolation moves the scene (no presentation draws
+  again for it), with a time constant of 35 ms. Zoomed in, or out no
+  further than the frame covers with no easing under way (a held frame
+  zoomed in and out again), it changes at once. In Lahan (a new frame every
+  other display frame) the zoom stays for the five frames after a change
+  and is within 1% of the new one ten frames later. It costs nothing more:
+  as many presentations draw (it steps only where one draws anyway), each
+  presentation of the frames held and eased takes as long as before, and
+  the 20 frames from a zoom from 150% to 200% or from 100% to 300% while
+  walking in Lahan at 1080p, presented twice each, took 15.8 and 22.9 ms
+  to present against 15.7 and 22.6 (medians of 14 rounds alternating with
+  the build before; 13.2 against 13.1 with the zoom left at 150%, the same
+  work). The clear colour shows in none of those changes now, running
+  (with interpolation, turning, in the forest and field 684 too) or held
+  (`tests/ps1.rs`
+  `a_zoom_out_shows_the_zoom_the_frame_covers_until_frames_recorded_for_it_arrive`,
+  `tests/render.rs` `zooming_out_shows_none_of_the_clear_colour_running_or_held`).
+  A view wanting no culled face at 100% (4:3 without interpolation) asks
+  with its zoom all the same (reaching nowhere: the device records none);
+  with viewport culling it asks for none (its gaps are the game's).
+  The flat backdrops that only span the original screen go
   on into the sides as culled faces without projections: a panorama's
   strip continued from the texture column the original ends at
   (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
@@ -1900,10 +2076,19 @@ snapshots are its. The renderer only draws again what it drew:
   buffering, the saved-screen slot and copies between screen regions work as
   on the console; textures are decoded in the shader from the native VRAM copy
   (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
-  selecting semi-transparency, modulation, raw textures). A fill shows the
-  colour VRAM keeps of it (15 bits), expanded as texels are (to the full
-  range, or as the console's 15-bit colours), so texels painted to match it
-  match it here too. Each vertex sits at
+  selecting semi-transparency, modulation, raw textures). Filtered linearly,
+  a pixel takes the colour of the four texels around it that are not
+  transparent and is drawn where they cover at least half of it,
+  semi-transparent as the nearest texel, or, where that one is transparent,
+  as the nearest of the others: with the transparent texel's own bit, the
+  near-black semi-transparent texels round the transparent ones of field
+  684's rain, huge additive quads, were drawn opaque, black curved corners
+  over the whole picture in Fei's flashback at any scale (issue #100;
+  `tests/ps1.rs`
+  `a_filtered_fragment_is_as_semi_transparent_as_the_texels_it_shows`). A
+  fill shows the colour VRAM keeps of it (15 bits), expanded as texels are
+  (to the full range, or as the console's 15-bit colours), so texels
+  painted to match it match it here too. Each vertex sits at
   its own sub-pixel point when it has one (a point shared by neighbouring
   faces lands in the same place in each), and a polygon samples only its own
   texels (no bleeding from the page at higher scales or when filtered). Seen
@@ -2292,13 +2477,43 @@ snapshots are its. The renderer only draws again what it drew:
   of in both frames moves from where its points were then
   ([Interpolation](#interpolation)); the interface moves as the game moves
   it.
+  A replay (not a view from within the scene, which tests depth) lays the
+  decals the game puts on its floor over it: the field's shadows
+  (`field_draw_shadows`) and any other textured subtractive quad of the
+  scene are sorted by their corners' average depth (RotAverage4), the
+  floor's faces by their farthest point, so a floor face whose far edge
+  lies under a shadow's near part was drawn after the shadow and covered
+  that part: a character's shadow cut across where it crossed a row of the
+  ground, flickering as the character walked. The original shows it on its
+  screen now and then (walking Lahan's paths, a few frames in a hundred),
+  but beside it, where a pulled-back or wider view shows its characters,
+  the faces the game culled there, drawn where it would have drawn them,
+  cut their shadows in most frames (issue #103's "z-fighting"; Lahan in
+  widescreen at 150%, walking four ways, two of them turning the camera,
+  for 228 frames each, 1 894 pairs of a shadow on the picture and a face
+  of its ground model drawn over it, 634 now: faces standing in front of
+  the shadow, and floor faces drawn after something that does). Each
+  decal moves after the faces drawn after it that its outline overlaps
+  where they lie behind or under it (the line of sight through the middle
+  of their overlap meets the face's plane no more than 64 units nearer
+  than the decal's), up to the first other primitive over it (a face
+  standing in front of it, a sprite's part, anything translucent, the
+  interface), within its own game frame and before the next write, copy or
+  fill (`lay_decals`,
+  `tests/ps1.rs`
+  `a_decal_is_drawn_over_the_floor_it_lies_on_and_under_what_stands_before_it`).
+  The order is found once a frame and kept for its other replays while the
+  depth it is pulled back by and the operations that leaves stay the same
+  (16.6 µs for Lahan's 1 811 with 16 such quads, 6.2 µs for the forest's
+  1 010 with 2, where the scene is projected about found as well).
 - **Effects** (`EffectsRenderer`, `effects.wgsl`). See below.
 - **GameView** (`view.rs`) is what hosts use: it resolves the graphics
   settings for a host class, accumulates the trace between presentations,
   tells the host which culled faces the trace should record (`reveals`:
-  the reach and the pull-back, passed to `Gpu::set_reveals`) and the view
-  the field's characters keep moving in (`actor_view`, below), and
-  presents (`present`; a headset's diorama `present_diorama`:
+  the reach, the pull-back, the margin and the zoom, passed to
+  `Gpu::set_reveals`)
+  and the view the field's characters keep moving in (`actor_view`,
+  below), and presents (`present`; a headset's diorama `present_diorama`:
   [Diorama](#diorama)). A presentation with nothing new to draw (the display refreshing
   faster than the game draws: the same frame, its ops drawn so far, framing,
   settings and no interpolation; transfers elsewhere in VRAM, textures or a
@@ -2413,7 +2628,7 @@ interchange](#state-interchange)).
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
 | presentation | High Framerate (interpolation): off (the default) presents a frame only when the game drew one, on presents every display refresh, the camera, models and sprites of a field, a battle or the world map moving smoothly between the game's frames (one game frame of latency); Widescreen: wider framing (to the output's aspect ratio), only while Force 4:3 is off |
 | force 4:3 | the placed picture shown at 4:3 under either renderer (`force_4x3`, in the Picture card beside Scale; off, the default, keeps the picture's own pixels and Widescreen's framing): its width set from the game's own lines (Fit fits the 4:3 shape, Integer steps the lines in whole multiples, Stretch still fills), so game frames, rebuilt movies and the device's picture take one place; while it is on Widescreen's framing is off and its switch disabled, the choice kept (`Graphics::widened`); a headset's screen keeps its own shape, and Force 4:3 ends its wider framing too |
-| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game or right stick up/down moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; the opening's burning Lahan (map 2 before the story value, `game_data.vars[0]`, reaches Fei's room's 6: the scene `field:2:opening`) none either, as pulled back its camera shows the void around the map's burning houses, and its characters move as the original's view shows them (`xem-headless` `render.rs`, `the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out`); independent of the aspect ratio |
+| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game or right stick up/down moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; the opening's burning Lahan (map 2 before the story value, `game_data.vars[0]`, reaches Fei's room's 6: the scene `field:2:opening`) none either, as pulled back its camera shows the void around the map's burning houses, and its characters move as the original's view shows them (`xem-headless` `render.rs`, `the_openings_burning_lahan_keeps_the_games_camera_at_any_zoom_out`); zoomed out, the picture widens once the game has drawn frames for the wider view, easing into it, and keeps the zoom its frame covers while the game holds its frame ([The renderer](#the-renderer-phase-4), the culled faces); independent of the aspect ratio |
 | full-size sprites | the party on foot in a large-scale field drawn with its full-resolution field sprites at a quarter of their size instead of the map's small ones (off, the default; presentation only: [Full-resolution sprites in large-scale fields](#full-resolution-sprites-in-large-scale-fields)) |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
@@ -3120,8 +3335,8 @@ not under its menu nor the Original renderer, `xem-core`'s Binaural test a
 look and a head turn each applied once, and
 `xem-ui/tests/panel.rs` the look row's drag on touch screens, a
 headset's own rows and Shortcuts' Toggle first-person view (V and Back+R1
-on its row and in its editors, rebound to G through the settings service,
-Save state's chord refused). `xem-desktop/tests/control.rs` (weston,
+as its row's tokens, rebound to G through its listening field and the
+settings service, and F5 moving to it from Save state). `xem-desktop/tests/control.rs` (weston,
 local) sends `first_person` to `xem-desktop --control`: refused at the
 title and for an unknown field; in field 30, with a route under way, on
 (answering the camera's heading), the next frames' `status` showing
@@ -5819,6 +6034,12 @@ pixels of motion, 40 by default) holds back the field camera's motion
 within that distance of where the mouse came to rest (no motion for a
 tenth of a second), so a nudge turns nothing; motion past it turns the
 camera, the deadzone following along until the mouse rests again.
+The wheel scrolled sideways (SDL's horizontal wheel, a page's `deltaX`,
+100 pixels a notch) turns the camera too, whatever the mouse camera
+setting: 150 ms of CameraLeft or CameraRight a notch, at most 400 banked
+(`Mouse::scrolled`, `PlayerInput::scroll_sideways`), walking in a field or
+on the world map only (a menu's L1 and R1 change characters), not while
+first person looks around.
 First-person look takes every pixel. A headset's
 controllers are the gamepad (`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
 grips LT/RT, the right stick's click Back, the left's Start, both sticks),
@@ -5982,8 +6203,12 @@ reports the frames run):
 `xem_core::field` reads the field camera (`scaled_world`, the projection,
 `field_view.angle`), the walkmesh (`FieldComponents`: per-layer
 triangles with neighbours and attributes over SVECTOR vertices) and the
-event actors. A screen point picks the floor the camera ray meets on the
-player's layer (`pick`). Hosts point at their picture: when it shows the
+event actors. A screen point picks the floor the camera ray meets nearest
+on the layers actors stand on (`pick`: through an upper layer's floorless
+triangles to what lies below, and as near on the player's layer and
+another, the player's), among the triangles under the ray's stretch within
+each layer's heights, cell by cell along it (`Grid::along`, each walkmesh's
+grids made once while its map lasts). Hosts point at their picture: when it shows the
 scene from another viewpoint than the game camera's (wider views' zoom
 out pulls the camera back along its axis), `GameView::viewpoint` gives
 it (the view's rows and offset in the game camera's view space, its
@@ -6026,28 +6251,120 @@ floor; presented again, the camera is pulled back again; at 250% the
 middle of each of the 30 walkable triangles that picture shows lies
 within a tap's reach, 18 pixels, of an actor, so a tap there talks).
 
-Routes plan over the triangles the player may enter (an attribute
-blocks by the actor's flags, bit 23 blocks layer 0, a
-higher bit-22 ledge needs a jump), string-pulled a body's width off the
-walls; a goal on mesh cut off by a gap within 300 units gets a takeoff at
-the nearest edge. `xem_core::assist` plays a route as the pad: the D-pad's
-eighth by the camera's angle (Right 0, Down 0x400, Left 0x800, Up 0xC00
-less `field_view.angle`, measured on the game), held until the route turns
-well away from it; Run beyond 96 units of route, walking within 40;
-around another actor in the way; a step aside when the route stops
-shrinking, and an end when it stays so. Nothing jumps for the player: at
-a takeoff the assist waits (or presses on toward the landing unless the
-ledge brake is on), holds its direction through the player's jump and
-plans again after landing. `navigate {to: [x, z]} | {screen: [x, y]}`
-walks to a floor point, `interact {actor}` approaches an actor (or the
+Routes plan over the triangles of every layer actors stand on, by the
+game's own rules as `tools/analysis/platforming.py` models them (an
+attribute blocks by the actor's flags; bit 23 blocks layer 0 and above it
+is a pit; a bit-22 slide is walked onto from a floor only when no more
+than 8 units above it, by the triangles' middles, starts no jump and takes
+the leader only down or level), string-pulled a body's width off the
+walls. A walk into a pit comes down on the highest floor the other layers
+have under its middle below its highest corner, and a floor of attribute
+0x4 (stairs) lifts the leader to the lowest floor another layer has above
+it (`field_actor_update_position`), so a route goes up to a deck and down
+again. Jumps follow the party's arc (`field::FOOT_ARC`, 118.25 up and 240
+on at the takeoff's height on foot; `GEAR_ARC` in its gears, up 24.75 the
+first update and 2 less each after, to 165.75), flown update by update as
+the assist flies it: up from the edge's middle, on along the line straight
+out of the edge 12 units an update after the first two only while the
+lowest it is through the update clears what lies under that stretch (by 1
+over a slide), to a little past where the line reaches a floor. Another
+layer's floor above it, as solid as its triangle is thick (its byte 13
+times 4, `field_collision_find_actor_floor`), stops a rise where the
+leader's head meets it, and a move into it: `field_actor_update_position`
+rolls such a move back (on map 414 a floor 164 above a takeoff stops a
+gear's jump at 131.25). A walk, a lift and a drop go onto no triangle
+where such a floor meets the leader's body standing at its middle (its
+feet on the floor, its head its height above). A route walks where a walk reaches its goal; only
+where none does it jumps too, from a floor's edge over a slide too high
+to walk onto (a jump costing it 200 units beyond its length, so a walk
+round wins where one reaches the floor beyond), a jump's flight worked out
+only once the search reaches it as the least of what is open, and kept for
+the map. A goal on mesh cut off by a gap gets a takeoff at the edge of the
+floor the player reaches from which the arc carries over the gap to the
+goal's part, nearest the goal. A slide higher than a jump rises, a mound
+with no floor on top and a gap wider than a jump carries are no way, so a
+route never runs at a cliff it cannot climb. What a search finds of a
+walkmesh is kept for the next while its map lasts and its collision
+attributes stand (scripts rewrite them: `field_collision_set_attribute_byte`;
+per thread: each
+triangle's ways, worked out as the search reaches it; the flights; the
+last routes' paths, whose rest from any triangle on one is the shortest
+from there; the last search run to its end, which answers every other goal
+from its start, and rules out from any start it reached what it did not
+reach). `xem_core::assist` plays a route as the pad: the D-pad's eighth by
+the camera's angle (Right 0, Down 0x400, Left 0x800, Up 0xC00 less
+`field_view.angle`, measured on the game), held until the route turns well
+away from it; Run beyond 96 units of route, walking within 40; round
+another actor in the way (a little past where the line from the leader
+touches the circle it keeps from it, and against it the eighth either side
+of the way turning away from it: the game refuses a step into it; the
+party's followers, flags bit 24, keep to the leader's path and are walked
+through); a step aside when the route stops shrinking, and an end when it
+stays so (counted anew off a slide, where the game moves the leader); a
+walk held still within 48 units of its goal (a wall) has arrived. A goal
+inside another actor's keep-out (a barrel, a villager, a door's trigger
+box) is walked into, as the D-pad walks, not around: a touch the actor
+runs on contact runs (a door, a battle;
+`field_actor_check_talk_and_touch`), and a body that stops the leader ends
+the walk held still against it. The walk to a takeoff comes in square to
+its edge, from 16 units back (walked at along it, the leader would clip
+the slide beyond). At the takeoff (within 6 units, or held short of it
+within 20 for two frames: the game stops a walk the step short of a slide
+it may not walk onto) the assist presses Jump (four frames) with the
+direction toward the landing, steers the flight there, rising where it is
+while the next stretch's slides lie higher than the flight's clearance (as
+the flight was planned), and lets go of the direction over it, or once
+past it (in the air the D-pad moves the leader and nothing else does, and
+a leader let go stops, measured on the game), so it drops onto a narrow
+top; landed, it plans again. A route's landing lies 24 units past where
+the flight reaches a floor, or halfway across the floor it goes on over
+where that is narrower: by a slide's edge the leader would come down on
+the slide and slide back. A jump that never leaves the floor is walked up
+to and tried again, three times at most.
+With Settings' **Stop at ledges** (the ledge brake) it waits at the
+takeoff instead, and steers the player's own jump the same way.
+`navigate {to: [x, z], layer?, triangle?, beyond?} | {screen: [x, y]}`
+walks to a floor point (on `layer`, the player's when not given, and on
+`triangle` where floors stand over one another: the one a pointer picked),
+then, with `beyond`, walks on into the door or
+wall the pointer showed past it (at most 90 frames, ending once 20 bring it
+no nearer; a door's map change interrupts it first), `interact {actor}` approaches an actor (or the
 nearest floor within its talk reach) and presses Confirm exactly once when
 the player walks within the original's talk reach and facing, and
-`assist_stop` ends it. A direction of the player's own replaces it; a
+`assist_stop` ends it. A tap, a click or a pinch on the picture picks the
+floor the player can reach (`Field::pick_walkable`): the one under the
+pointer, or where that is none the player can reach (a door, a wall, a
+house, past a path's end) the reachable floor the picture shows nearest the
+pointer within 48 of the game screen's pixels, and the point the pointer
+shows at that floor's height as `beyond`. A direction of the player's own replaces it; a
 dialogue, menu, battle or map change interrupts it; `status` reports the
 intent, its phase and the last outcome. Recorded sessions keep the
 intents as resolved (`assist` controls) and replay to the same state;
 nothing records pointer, gaze or headset timing. `field` lists the player
 and the actors with their screen points.
+
+Tests: xem-core's field tests (stairs lift a route to the layer above and
+a pit drops it back; a floor beyond a slide is jumped up to as high as a
+jump rises, and one higher is refused; a walk goes under a floor overhead
+only with room for the actor's body; a rewritten collision attribute is
+planned with at once; picking along the grid meets what testing every
+triangle meets, over 2 000 rays), xem-headless's
+`click_to_move` (no route on maps 15 and 1 climbs higher than a jump
+rises; the assist jumps in Lahan and arrives, and waits under the ledge
+brake; a walk to Lahan's upper floor goes up its stairs and back down,
+round a villager standing on the ramp; a click past the south path leaves
+Lahan; a walk to a villager's feet arrives beside him) and `encounters`
+(a click on each of Babel Tower's doors climbs from map 413 to 418).
+Costs on this machine (suite profile, maps 1, 15 and 22, against master's
+planner on the same game state): planning each frame the assist walks
+1.5-4.3 us (master 10-170), a query from a new start (the leader moved
+on, a pointer resting) 12-61 us (master 25-145), a pointer's pick
+0.8-2.8 us (master 9.8-25), `Field::read` as master's (23-56 us). A map's
+first query works out what the leader reaches: 66-150 us to a goal a walk
+reaches (master 75-180), up to 330 us to one it must jump to and 350 to one
+it cannot reach (master 15-30, its route walking at the cliff), once a map;
+what it keeps takes about 100 bytes a walkmesh triangle (0.35 MB in
+Lahan) while the map lasts.
 
 Settings' Controls section lists every action and edits its inputs in
 place (`SettingChange::BindGame {context, action, binding}`, and
@@ -6949,12 +7266,12 @@ the history length. The original game's pause screens stop snapshots and freeze
 the queue's elapsed-play time, preserving history for when play resumes. Pausing
 restarts the snapshot interval on resume. Increasing and decreasing either value
 can be bound to keyboard/gamepad chords.
-The Settings checkbox **Invert LT/RT chords** makes LT alone
-rewind and RT alone toggle fast-forward; Back+LT and Back+RT then send L2 and R2
+The Settings switch **LT and RT rewind and fast-forward** (`invert_trigger_chords`) makes LT
+rewind and RT toggle fast-forward without Back; Back+LT and Back+RT then send L2 and R2
 to the game, without also sending Select. This preference is saved, included
 in settings backups, and can itself be bound to a keyboard or gamepad chord.
-App bindings remain available while Settings is open; editing a settings text field
-captures keyboard input.
+App bindings remain available while Settings is open; editing a settings text field,
+or a binding listening for an input, captures keyboard input.
 Rewind queues the same serialized game saves used by save states and steps
 back through them. Loading or rewinding keeps app commands, recording controls,
 the FF toggle, FF rate and app settings as currently set. A recording goes on
@@ -8040,19 +8357,17 @@ are. Android has no agent channel.
 
 - *Through a suppressed area.* From map 413's entrance from map 412
   (where map 412's door leads once the tower's gate is open), in the
-  party's gears, a walk as a player makes it climbs Babel Tower through
-  the original's doors of maps 413, 414, 415 and 416, each arming its
-  draw and each turned off by the default, to map 418, the floor past the
-  tower's platforming maps where the Self-repairing Robot resupplies (two
-  maps below the top, map 420), after 3 266 frames with no battle;
-  touching map 418's actor 20 still starts its fixed battle (formation 2,
-  4 740 frames in). The walk is the
-  assisted route to each map's door with Jump pressed at each takeoff, and
-  a running jump toward the door each time the route stops short: the
-  route plans a jump only where it enters a ledge (attribute bit 22, the
-  [slides](#how-the-areas-are-classified)) from below, so it walks into a
-  floor that is only higher and stops there. Under the original the same
-  walk meets a random battle on map 414 after 428 frames. Map 172's Repair
+  party's gears, a click on each map's door as a player clicks it climbs
+  Babel Tower through the original's doors of maps 413, 414, 415 and 416,
+  each arming its draw and each turned off by the default, to map 418, the
+  floor past the tower's platforming maps where the Self-repairing Robot
+  resupplies (two maps below the top, map 420), after 2 664 frames with no
+  battle; touching map 418's actor 20 still starts its fixed battle
+  (formation 2, 3 146 frames in). The walk is the assisted route to each
+  map's door: up the tower's ramps by the jumps it plans (on map 416 one
+  rises 134 units out of the pit its path drops into), the floors above
+  stopping no rise it plans. Under the original the same walk meets a
+  random battle on map 414 after 622 frames. Map 172's Repair
   Bot still starts its scripted battle under the default
   ([below](#random-battles-in-platforming-areas)).
 - *A chapter's scenes.* The game's opening from the title's New Game (the
@@ -8353,6 +8668,14 @@ the floor.
 | Fei on foot | map 22, `enter_field` | 118.25 | 240 | up 20.75 an update less 2.0 each (analysis/formats/jump-physics.md), 11 updates up and 11 down |
 | The party in its gears | map 414, `game_data.inGear` set | 131.25 | 204 | up 24.75 less 2.0 for 7 updates, one still update, then a fall from rest, 11 updates |
 
+The gear's still update is the leader's head meeting the floor above:
+there layer 1's floor (its triangle 100 thick, `field_collision_find_actor_floor`)
+lies 164 above the takeoff, and `field_actor_update_position` rolls back a
+rise into it. Clear of floors above, a gear's jump goes on rising 2 less
+each update, to 165.75 (maps 415 and 416, traced frame by frame), as
+`xem_core::field`'s `GEAR_ARC` holds it; the classifier keeps the arc
+measured here, so its gear areas' jump links are lower bounds. With the
+free arc instead its table of areas is the same (`--check` passes).
 Both go straight up for two updates, then 12 units an update in the air
 with Run held and 6 without; on the floor Fei runs 16 units an update and
 walks 5, a gear 12 and 6. A jump lands nearer the higher it lands: at a
@@ -8377,8 +8700,8 @@ to the floor at 0 in seven updates and could not step back onto it;
 `xem-headless/tests/jumps.rs` repeats this. A pressed jump starts on no
 slide; a leader stuck on one (not moved) for 32 frames with Jump held jumps
 from it (`field_event_request_player_control`). The assisted movement's
-planner (`xem_core::field`) walks ledges to ledges freely; the classifier
-does not.
+planner (`xem_core::field`) keeps to these rules too ([Assisted
+movement](#assisted-movement)).
 
 **Layers.** A map has two to four collision layers; actors stand on layers
 0 to count - 2 and the top one is the camera's floor
@@ -9955,14 +10278,40 @@ its line. About shows the app's version (`xem_ui::VERSION`: a release's
 the game's bindings ([Controls](#controls)) and the assisted controls
 (hand gestures, the headset pointer, Stop at ledges, touch controls and
 their opacity, reduced transparency and motion); Shortcuts lists every app operation with
-its bindings and edits the chosen one in place (Recenter headset view among
+its chords (Recenter headset view among
 them, with no default binding: the headset card's Recenter button and the
 automation reach it; Toggle first-person view, V and Back+R1, last);
 Gameplay holds the options
 that change the game itself ([Random battles in platforming
 areas](#random-battles-in-platforming-areas); [Text speed, auto-advance and
-movie skipping](#text-speed-auto-advance-and-movie-skipping)). Cancel closes either binding
-editor without saving its changes. The header's Reset sends the shared
+movie skipping](#text-speed-auto-advance-and-movie-skipping)).
+Both binding lists show each row's inputs (a game action's keys, gamepad
+inputs and mouse buttons) or chords (an app operation's keyboard chord and
+gamepad chord) as tokens: a token's ×, or Return, Space, Delete or
+Backspace on it (a gamepad's South), removes it through the settings
+service (`UnbindGameInput`, `UnbindAppChord`), the focus going to the
+row's field. The field at the row's end (`+`), pressed, listens for an
+input (`listen-list`, `listen-row`), saying "Press an input" (a shortcut's
+"Press a shortcut") with the seconds it still waits, five, a hint under
+the list; pressed again, given up after those seconds (none counted while
+a key or button it took is held), Escape (the hosts' `cancel_dialog`) or
+another section stop it with nothing bound. The hosts give it the keys
+while it listens (`SettingsUi::listen_key`, by `KeyboardEvent.code`: SDL's
+scancode named back through `controls::keyboard_codes` on the desktop and
+Android, the page's own code in a browser; no text input meanwhile, and a
+key it took stays its own until let go) and `SettingsUi::gamepad` the
+gamepad's buttons. A game action takes the first key or gamepad input (a
+stick direction too) pressed once all are let go, or a mouse's button
+pressed on its listening field (`Pointing.touch`, set by the hosts with
+each press, says a finger's or a headset ray's is no mouse's: it stops the
+listening instead), as `SettingChange::BindGameInput`: the oldest of its
+kind gives way to a fifth, and the actions in its context that play
+another button lose it. A shortcut takes the keys, or the standard
+gamepad buttons, held together (four at most) once all are let go, as
+`BindAppChord`, replacing its chord of that kind; another operation with
+the same chord loses it. A key no binding may name (Escape, F1) is taken
+and ignored. The note under the list then says which action lost the input
+or chord ("E no longer plays Confirm, talk."). The header's Reset sends the shared
 `reset` command. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the
 question, Escape or Android's Back keep playing, and hiding the panel drops
@@ -9985,20 +10334,20 @@ in an open dropdown's list; left and right are the arrows for the control
 with the focus (a slider, a button group, a dropdown, a section tab; a
 number box's down and up), and Shift+Tab and Tab where it takes neither
 (along a row of buttons); South is Return, held as long as it is (Hold to
-rewind); East closes an open list, the quit question or a binding's editor
-(its row keeps the focus), else the panel; L1 and R1 go to the previous and
+rewind); East closes an open list or the quit question, else the panel;
+L1 and R1 go to the previous and
 next section, round from the last to the first, onto its first control.
 Directions repeat after 0.4 s every 80 ms. The first press after the panel
 shows only puts the focus on the section's first control (`focus-section`
 and Tab), what was held as it showed is no press, and while Back is held
-(the app chords' modifier) the panel takes none. Each binding list's row is
-a stop of its own (Return or Space opens or closes its editor). On a
-gamepad binding's field South takes the next buttons pressed together,
-once everything was let go, as the field's text ("Press buttons…" while it
-waits): a shortcut's chord joined by `+` in the order pressed (the standard
-buttons only), a game action's inputs (stick directions too) by spaces,
-four at most; meanwhile the host's app chords wait
-(`SettingsUi::capturing_buttons`), so binding Back+South saves no state.
+(the app chords' modifier) the panel takes none. In the binding lists each
+token is a stop, then its row's field: South on a token removes it, on a
+field it listens. While a binding listens every button is its own (East's
+too) from when all were let go: once all are let go again after a press,
+a game action takes the first input pressed, a shortcut the standard
+buttons pressed together (with only stick directions it listens on);
+meanwhile the host's app chords wait (`SettingsUi::listening`), so binding
+Back+South saves no state.
 Buttons held as the panel closes stay the panel's until let go
 (`AppInput::hold_pad`): East closing it does not also cancel in the game.
 The sliders step by the values they keep (Zoom out 25, the volume, effect

@@ -390,6 +390,18 @@ impl PlayerInput {
         true
     }
 
+    /// Mouse wheel notches scrolled sideways (positive to the right) over
+    /// the game: walking in a field or on the world map, the camera turns
+    /// that way (its L1 or R1 held a while, as the mouse camera's motion
+    /// holds them). False elsewhere (a menu's L1 and R1 change characters).
+    pub fn scroll_sideways(&mut self, notches: f32, ui: Ui) -> bool {
+        if !matches!(ui, Ui::Walk | Ui::WorldMap { .. }) {
+            return false;
+        }
+        self.mouse.scrolled(notches);
+        true
+    }
+
     /// The actions held at `now` (milliseconds).
     pub fn actions(&mut self, bindings: &GameBindings, now: f64, context: Context) -> BTreeSet<GameAction> {
         let epoch = epoch(context.ui);

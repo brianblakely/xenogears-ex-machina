@@ -137,7 +137,11 @@ function wireCanvas() {
     }
     // Mouse motion turns the field camera (sideways) or first-person
     // inspection's view; the wheel zooms the field camera.
-    if (kind === 'down') startAudioOnGesture();
+    if (kind === 'down') {
+      startAudioOnGesture();
+      // Only a mouse's buttons bind to a game action listening for one.
+      app.set_pointer_touch(event.pointerType !== 'mouse');
+    }
     const [dx, dy] = kind === 'wheel' ? [event.deltaX, event.deltaY] : [event.movementX ?? 0, event.movementY ?? 0];
     if (app.pointer(kind, x, y, event.button ?? 0, dx, dy)) event.preventDefault();
     // With the mouse camera on, the game keeps the mouse (hidden, unbounded
@@ -757,7 +761,7 @@ async function executeAppOperation(request) {
       const invert = window.xem.settings.get().settings.invert_trigger_chords;
       const reply = window.xem.settings.apply({ InvertTriggerChords: !invert });
       if (!reply.ok) throw new Error(reply.reason);
-      operationStatus('LT/RT chord preference saved.'); return reply;
+      operationStatus(invert ? 'Back+LT rewinds and Back+RT toggles fast-forward.' : 'LT rewinds and RT toggles fast-forward.'); return reply;
     }
     case 'ToggleFastForward': {
       const reply = control({ cmd: 'fast_forward' });
@@ -842,8 +846,9 @@ for (const type of ['keydown', 'keyup']) {
     const down = type === 'keydown';
     if (down) startAudioOnGesture();
     if (down && event.key === 'Escape') {
-      // Unless this Escape released the mouse and opened the panel already.
-      if (performance.now() - pointerReleasedAt > 250) app.set_panel_visible(!app.panel_visible());
+      // Escape stops a binding listening for an input; else it toggles the
+      // panel, unless this Escape released the mouse and opened it already.
+      if (!app.cancel_panel_dialog() && performance.now() - pointerReleasedAt > 250) app.set_panel_visible(!app.panel_visible());
       releasePointerForGame();
       event.preventDefault();
       return;
@@ -852,7 +857,10 @@ for (const type of ['keydown', 'keyup']) {
     const panel = app.panel_visible();
     // A game key is released even while the panel has the input.
     const game = app.game_key(event.code, down);
-    if (text !== null && panel) {
+    if (panel && app.listen_key(event.code, down)) {
+      // A binding listening for an input took the key (F5 reloads nothing).
+      event.preventDefault();
+    } else if (text !== null && panel) {
       app.key(text, down);
       event.preventDefault();
     } else if (game) {

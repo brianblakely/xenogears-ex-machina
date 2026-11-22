@@ -1,0 +1,6 @@
+- Clicking or tapping to walk is smarter: Fei follows paths he can actually walk instead of running at cliffs, jumps by himself up onto higher ground and across gaps he can clear, and stops when he walks into a barrel or a person instead of pushing on. A click on a door or a trigger walks into it. Turn on **Stop at ledges** to make your own jumps.
+- Click a door, a gate or the end of a path and Fei walks up to it and on through it.
+- The ring marking where you clicked now stays on the spot while the camera follows Fei, and shows wherever he is headed.
+- Scroll sideways (a tilting mouse wheel or two fingers on a touchpad) to turn the camera.
+- Click an upper floor, a deck or a balcony and Fei takes the stairs up to it, and comes back down the stairs or off an open edge.
+- Fei climbs ramps like Babel Tower's by himself, jumping as high as the party really jumps, and walks round people standing in his way.

@@ -100,7 +100,7 @@ impl Player {
     fn diorama(&mut self) -> xem_render::ps1::DioramaSpace {
         let device = self.session.runtime.services().gpu.device_mut();
         device.set_trace(true);
-        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE, viewer: None }));
+        device.set_reveals(Some(xem_render::xem_gpu::Reveals { reach: [32, 32], pull_back: 0, around: xem_render::xem_gpu::Reveals::ANYWHERE, viewer: None, margin: 0, zoom: 0 }));
         // The port takes the bits with the frame after they change.
         let mut camera = None;
         for _ in 0..4 {
@@ -191,7 +191,7 @@ impl Player {
         self.time += 1.0 / 60.0;
         let ui = self.ui.unwrap_or_else(|| self.session.runtime.context());
         let field = (self.session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(self.session.runtime.memory())).flatten()
-            .map(|f| xem_assist::overlay::seen(f, self.viewpoint.as_ref()));
+            .map(|f| xem_assist::overlay::seen(f, None, self.viewpoint.as_ref()));
         let targets = self.session.runtime.targets();
         let effects = self.headset.update(&input, &self.screen, ui, field.as_ref(), targets.as_ref());
         self.input.touch = effects.held.clone();
@@ -297,7 +297,7 @@ fn pinch_walks_where_the_gaze_is_and_pause_holds_the_route() {
     let field = player.field();
     let mesh = &field.layers[0];
     let ground = (0..mesh.triangles.len())
-        .filter_map(|t| field.camera.project(mesh.centroid(t)).filter(|_| field.reach(field.player().unwrap(), t, mesh.centroid(t)) == xem_core::field::Reach::Walk))
+        .filter_map(|t| field.camera.project(mesh.centroid(t)).filter(|_| field.reach(field.player().unwrap(), 0, t, mesh.centroid(t)) == xem_core::field::Reach::Walk))
         .filter(|p| field.actor_at(*p, 30.0).is_none() && field.pick(*p).is_some())
         .max_by(|a, b| a.1.total_cmp(&b.1))
         .expect("open ground");
@@ -331,7 +331,7 @@ fn through_a_diorama_a_pinch_walks_to_the_floor_gazed_at_and_the_pane_shows_none
     let mesh = &field.layers[me.layer];
     let goal = (0..mesh.triangles.len())
         .map(|t| (t, mesh.centroid(t)))
-        .filter(|(t, c)| field.reach(&me, *t, *c) == xem_core::field::Reach::Walk && on_table(&space, *c, 0.05))
+        .filter(|(t, c)| field.reach(&me, me.layer, *t, *c) == xem_core::field::Reach::Walk && on_table(&space, *c, 0.05))
         .filter(|(_, c)| (60.0..220.0).contains(&c.planar(me.position)))
         .filter(|(_, c)| field.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
         .max_by(|a, b| a.1.planar(me.position).total_cmp(&b.1.planar(me.position)))
@@ -391,7 +391,7 @@ fn pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there()
     let Some(mut player) = walking(30) else { return };
     let viewpoint = player.pulled_back(250);
     let field = player.field();
-    let shown = seen(field.clone(), Some(&viewpoint));
+    let shown = seen(field.clone(), None, Some(&viewpoint));
     let me = *field.player().unwrap();
     let mesh = &field.layers[me.layer];
     let apart = |a: (f32, f32), b: (f32, f32)| ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
@@ -399,7 +399,7 @@ fn pulled_back_a_pinch_walks_to_the_floor_the_picture_shows_and_marks_it_there()
     // picture: the one the game's camera shows farthest from there.
     let (goal, at, own) = (0..mesh.triangles.len())
         .map(|t| (t, mesh.centroid(t)))
-        .filter(|(t, c)| field.reach(&me, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
+        .filter(|(t, c)| field.reach(&me, me.layer, *t, *c) == Reach::Walk && (60.0..240.0).contains(&c.planar(me.position)))
         .filter(|(_, c)| field.actors.iter().flatten().all(|a| a.index == me.index || a.position.planar(*c) > 40.0))
         .filter_map(|(_, c)| {
             let at = shown.camera.project(c).filter(|p| (16.0..304.0).contains(&p.0) && (16.0..208.0).contains(&p.1))?;

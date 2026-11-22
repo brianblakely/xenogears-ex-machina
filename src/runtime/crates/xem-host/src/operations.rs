@@ -141,8 +141,9 @@ impl Operations {
                 Ok(if enabled { "Rewind history disabled." } else { "Rewind history enabled." }.into())
             }
             AppAction::ToggleTriggerInversion => {
-                settings.apply(SettingChange::InvertTriggerChords(!settings.settings().invert_trigger_chords)).map_err(|e| e.to_string())?;
-                Ok("LT/RT chord preference saved.".into())
+                let invert = !settings.settings().invert_trigger_chords;
+                settings.apply(SettingChange::InvertTriggerChords(invert)).map_err(|e| e.to_string())?;
+                Ok(if invert { "LT rewinds and RT toggles fast-forward." } else { "Back+LT rewinds and Back+RT toggles fast-forward." }.into())
             }
             AppAction::ToggleFastForward => {
                 let game = game.as_deref_mut().ok_or("No game session.")?;

@@ -1,0 +1,1 @@
+- Fixed black curved shapes over the picture in some scenes, such as the rain in Fei's flashback, with **Texture Filtering** set to **Linear** for the world.

@@ -54,7 +54,7 @@ impl Game {
         match *self {}
     }
 
-    pub fn destination(&self) -> Option<xem_core::field::V3> {
+    pub fn destination(&self, _field: Option<&xem_core::field::Field>) -> Option<xem_core::field::V3> {
         match *self {}
     }
 

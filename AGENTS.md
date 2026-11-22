@@ -15,6 +15,10 @@
   captures only for a concrete unresolved question.
 - Do not preserve obsolete compatibility paths, fallbacks, migrations or duplicated
   requirement registries. Prefer the simplest implementation and existing tools.
+- Work must not create runtime performance regressions. When a change touches
+  per-frame or load paths (the game module, src/port/, rendering, audio, input, the
+  hosts' loops), measure it against master on the same scenes and machine, and fix
+  any slower frame, presentation, load or larger memory use before review.
 - Use the pinned Nix shells. While developing, test only the platform whose host you
   are changing: `src/runtime/scripts/suite.sh desktop` (native and shared code, about
   fifteen minutes), `web`, `android` or `xr`, or narrower focused tests. Run

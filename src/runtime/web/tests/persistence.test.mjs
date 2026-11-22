@@ -1011,29 +1011,37 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
     } finally {await browser.close()}
   });
 
-  test('typing R in Settings timing and binding fields does not rewind', async () => {
+  test('typing R in Settings timing fields and a listening binding does not rewind', async () => {
     const browser=await start({args:NO_WEBGPU,fixtures:true});
     try {
       const page=await browser.page(fixture); await forever(page);
       await page.evaluate(async()=>{await window.xem.runFrames(150);window.xem.setRunning(true)});
       await page.click('#settings');
-      // Time (its rewind fields), then select a shortcut to open its editors.
-      for(const section of [4,3]) {
-        const panel = await settingsSection(page,section);
-        if(section === 3) await page.mouse.click(panel.left+270,panel.top+97); // Save state row
-        for(let field=0;field<2;field++) {
-          for(let tabs=0;tabs<40;tabs++) {
-            await page.keyboard.press('Tab');
-            if((await status(page)).renderer.panelTextEditorFocused) break;
-          }
-          assert.equal((await status(page)).renderer.panelTextEditorFocused,true,`Settings section ${section}, field ${field} has focus`);
-          const before=(await status(page)).session.frames;
-          await page.keyboard.down('KeyR'); await page.waitForTimeout(250);
-          const after=await status(page); await page.keyboard.up('KeyR');
-          assert.ok(after.session.frames>before,`typing R rewound from ${before} to ${after.session.frames}`);
-          assert.notEqual(after.page.operationStatus,'Rewinding while held.');
+      const typeR = async (what) => {
+        const before=(await status(page)).session.frames;
+        await page.keyboard.down('KeyR'); await page.waitForTimeout(250);
+        const after=await status(page); await page.keyboard.up('KeyR');
+        assert.ok(after.session.frames>before,`typing R in ${what} rewound from ${before} to ${after.session.frames}`);
+        assert.notEqual(after.page.operationStatus,'Rewinding while held.');
+      };
+      // Time's rewind fields take typing.
+      await settingsSection(page,4);
+      for(let field=0;field<2;field++) {
+        for(let tabs=0;tabs<40;tabs++) {
+          await page.keyboard.press('Tab');
+          if((await status(page)).renderer.panelTextEditorFocused) break;
         }
+        assert.equal((await status(page)).renderer.panelTextEditorFocused,true,`Time's field ${field} has focus`);
+        await typeR(`Time's field ${field}`);
       }
+      // A shortcut's field listening takes the key: R becomes Save state's.
+      const panel = await settingsSection(page,3);
+      await page.mouse.click(panel.left+586,panel.top+96); // Save state's field
+      assert.equal((await status(page)).renderer.panelListening,true,'Save state listens');
+      await typeR('a listening binding');
+      assert.equal((await status(page)).renderer.panelListening,false,'let go, R is bound');
+      const bound=(await page.evaluate(()=>window.xem.settings.get())).settings.app_bindings;
+      assert.deepEqual([bound.SaveState.keyboard,bound.Rewind.keyboard],[['KeyR'],[]],'Save state took R from Rewind');
       assert.deepEqual(page.errors,[]);
     } finally {await browser.close()}
   });

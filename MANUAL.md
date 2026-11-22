@@ -157,13 +157,18 @@ When entering a battle attack sequence, the controls change:
 ### Using the mouse
 
 Click the ground to walk there, or click a person to approach and talk.
-Choose menu entries and battle targets by clicking them. Anywhere else,
-left-click confirms; right-click cancels. You still make your own jumps. Taking over
-with a movement key or stick cancels an automatic walking route.
+A ring marks where you're headed. Fei takes the way round that he can walk,
+up stairs to an upper floor and back down, and jumps where the way needs
+it: up onto higher ground, or across a gap he can clear. Click a door, a gate or the end of a path to walk up to it
+and on through it. Choose menu entries and battle targets by clicking them.
+Anywhere else, left-click confirms; right-click cancels. Taking over with a
+movement key or stick cancels an automatic walking route.
 
 The mouse wheel pulls the camera back or brings it closer: scroll down to
 zoom out and up to zoom in. This works with the Ex Machina picture and is
 most useful while exploring. The world map gets a smaller zoom change.
+Scrolling sideways (a tilting wheel, or two fingers on a touchpad) turns the
+camera left or right while you explore and on the world map.
 The burning village at the start of a new game always shows at 1×; your
 zoom returns after it.
 
@@ -236,46 +241,38 @@ tap an entry or target to choose it. Tap dialogue to advance it.
 
 In **Settings → Controls**, **Touch controls** shows or hides the touch
 buttons, and **Touch controls opacity** makes them fainter or stronger (a
-button you're pressing always shows clearly). **Stop at ledges** helps
-automatic walking stop before a jump; you still press Jump yourself.
+button you're pressing always shows clearly). **Stop at ledges** makes
+automatic walking stop before a jump instead of jumping, so you press Jump
+yourself.
 **Reduce transparency** makes the added touch and headset controls more
 solid, and **Reduce motion** tones down their animation. These options
 affect the added controls, not the game's artwork.
 
 ## Changing your controls
 
-Open **Settings → Controls → Game controls**, choose an action, and edit
-its keyboard, controller or mouse entries. Choose **Save** when you're done.
-**Clear** removes that action's bindings; **Restore defaults** restores the
-game controls. The four attack actions have their own entries.
+Open **Settings → Controls → Game controls**. Each action lists what plays
+it: its keys, controller inputs and mouse buttons, one token each. Choose
+the **×** on a token to remove that input. To add one, choose the **+** at
+the end of the action's row: it says **Press an input** and listens for a
+few seconds. Press the key, controller button or stick direction you want,
+or click the **+** with the mouse button you want. Press Esc (or wait) to
+stop listening without binding anything. **Restore defaults** restores the
+game controls. The four attack actions have their own rows.
 
-With a controller, move to the **Gamepad** box and press the bottom button.
-The box says **Press buttons…**: press the button you want and let go (press
-several together to make each of them an alternative), then move down to
-**Save**. On a keyboard, type the input names into the boxes. For example:
+With a controller, move to a **+** and press the bottom button, then press
+the input you want and let go. On a token, the bottom button removes it.
 
-| Type this | To use this input |
-| --- | --- |
-| `KeyJ` | The J key |
-| `Space` | Space bar |
-| `ShiftLeft` | Left Shift |
-| `ArrowUp` | Up arrow |
-| `South`, `East`, `West`, `North` | Bottom, right, left, top controller button |
-| `L1`, `R1`, `LT`, `RT` | Shoulder buttons and triggers |
-| `LStickUp` or `RStickLeft` | A stick direction |
-| `MouseLeft`, `MouseRight`, `MouseMiddle` | A mouse button |
+An action holds at most four inputs of each kind; a fifth replaces the
+oldest. An input another action uses moves to the new one, and a note under
+the list says which action lost it (actions that play the same game button,
+such as Cancel and Run, can share an input).
 
-Separate alternatives with a space or comma: `KeyE Backslash` lets either
-key confirm. If an input is already assigned to another action, clear that
-assignment first. The app explains conflicts beneath Settings.
-
-Open **Settings → Shortcuts** to change app shortcuts instead. Here a plus
-sign means “hold together”: `ControlLeft+KeyS` means left Ctrl and S;
-`Back+South` means Back and the bottom controller button. With a
-controller, press the bottom button on the **Buttons** box, then hold the
-buttons of the new shortcut together and let go; they fill the box (while it
-waits, your buttons start no shortcut). Choose **Save shortcut** to keep the
-change, **Clear** to remove it, or **Cancel** to leave the edit.
+Open **Settings → Shortcuts** to change app shortcuts the same way. A
+shortcut has one keyboard chord and one controller chord, each a token such
+as `Ctrl+S` or `Back+South`. After choosing **+**, hold the keys (or the
+controller buttons) of the new shortcut together and let go: it replaces
+the shortcut's chord of that kind. While a **+** listens, your keys and
+buttons start no shortcut.
 
 You can also assign shortcuts to features that start without one: backup
 imports and exports, retrying card writes, changing rewind length or
@@ -286,9 +283,10 @@ Settings.
 **Run by default**, under Controls, swaps walking and running while you
 move. Hold the usual Run button when you want to walk.
 
-**Invert LT/RT chords** makes LT alone rewind and RT alone toggle
-fast-forward. With this on, hold Back with a trigger to use the game's
-ordinary L2 or R2 action.
+**LT and RT rewind and fast-forward** makes LT rewind and RT toggle
+fast-forward without holding Back. With this on, hold Back with a trigger to
+use the game's ordinary L2 or R2 action; with it off (the default), Back+LT
+rewinds, Back+RT toggles fast-forward and the triggers alone are L2 and R2.
 
 ## Saving, loading and backups
 

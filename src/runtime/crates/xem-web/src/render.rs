@@ -28,6 +28,10 @@ const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
 /// on and keys beside the screen) and the settings panel.
 #[derive(Default)]
 pub struct Overlay {
+    /// Where assisted movement heads and the field camera as the game step
+    /// read it, and its mark over the picture, placed as each picture is
+    /// presented through the camera that picture was drawn with.
+    pub heading: Option<(xem_core::field::V3, xem_core::field::Camera)>,
     pub marks: Vec<xem_assist::overlay::Mark>,
     /// The touch deck's widgets, while it shows.
     pub deck: Vec<xem_assist::draw::DeckWidget>,
@@ -458,6 +462,11 @@ impl WebRenderer {
         self.renderer.viewpoint()
     }
 
+    /// The camera the screen's picture was drawn with (`GameView::drawn_camera`).
+    pub fn drawn_camera(&self) -> Option<xem_render::ps1::DrawnCamera> {
+        self.renderer.drawn_camera()
+    }
+
     /// Where the first-person view or the diorama's seat faces, and the
     /// camera of the frame shown, for the Binaural listener
     /// (`GameView::listener_axes`).
@@ -542,7 +551,7 @@ impl WebRenderer {
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
-            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size, p.movie)),
+            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view.clone(), p.size, p.movie)),
             // The device's own picture (the Original renderer, 24-bit movie
             // frames): taps point through the game's camera.
             None => {
@@ -551,11 +560,17 @@ impl WebRenderer {
             }
         };
         let encoded = presented.is_some();
+        // Where assisted movement heads, on the floor as this picture shows
+        // it: through the camera it was drawn with.
+        self.overlay.marks = self.overlay.heading.and_then(|(point, camera)| {
+            let camera = xem_assist::overlay::shown(camera, self.renderer.drawn_camera(), self.renderer.viewpoint().as_ref());
+            xem_assist::overlay::destination(&camera, point)
+        }).into_iter().collect();
         // A rebuilt movie frame is the display alone, without wider
         // framing's sides.
-        self.movie = presented.is_some_and(|(_, _, movie)| movie);
+        self.movie = presented.as_ref().is_some_and(|(_, _, movie)| *movie);
         let side = if self.movie { 0.0 } else { side };
-        let presented = presented.map(|(view, size, _)| (view, size));
+        let presented = presented.as_ref().map(|(view, size, _)| (view, *size));
         let (game_view, game_size) = match (presented, &self.game_image) {
             (Some(presented), _) => presented,
             (None, Some((_, view, size))) => (view, *size),
