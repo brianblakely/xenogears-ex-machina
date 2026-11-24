@@ -160,8 +160,7 @@ off plays that part as the original did.
   [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
   team's retranslation, French, Italian, Spanish and Brazilian Portuguese,
   switchable at any time with no patched discs.
-- **Movie subtitles** in the language of the game text, timed by the
-  Perfect Works Build team.
+- **Movie subtitles** in the language of the game text.
 - On a computer, with your Japanese discs beside the North American ones:
   the Japanese release's text, or Japanese movies and battle voices with your
   own language.
