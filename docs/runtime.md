@@ -2941,7 +2941,10 @@ reads each of the new-game movie's 36 lines from exactly the first movie
 frame Perfect Works times it on to the last before its end and no line on
 any other frame, and draws its first line in all seven languages from the
 game's own fonts (Japanese with the Japanese discs beside disc 1;
-`XEM_SUBTITLE_PNGS` writes the drawings). A lookup took 313 ns a frame
+`XEM_SUBTITLE_PNGS` writes the drawings); and each of the eleven movies,
+played on its own disc by the debug menu's movie request (the movie mode,
+whose frames the lookup reads as it does a field movie's), shows every one
+of its lines on exactly its frames (all 128). A lookup took 313 ns a frame
 there (13 200 frames, release build, this machine); a line is drawn and
 uploaded only when it changes.
 

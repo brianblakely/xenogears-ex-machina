@@ -22,11 +22,11 @@ among it, stays under the MIT licence (`LICENSE` at the repository root).
 ## Source and changes
 
 The subtitles are Perfect Works Build 0.11.4's (4 October 2026, tag
-`0.11.4-stable`), the subtitles of its FMV undub: their timings from the
-tables its movie player keeps in its executables
-(`in_game/sub_executable/disc1/SLUS_006.64` and `disc2/SLUS_006.69`), their
-text from the subtitle pictures it shows (`in_game/fmv1/*.str`,
-`in_game/fmv2/*.str`).
+`0.11.4-stable`), the subtitles of its movies with the Japanese voices (its
+undub option): their timings from the tables its movie player keeps in its
+executables (`in_game/sub_executable/disc1/SLUS_006.64` and
+`disc2/SLUS_006.69`), their text from the subtitle pictures it shows
+(`in_game/fmv1/*.str`, `in_game/fmv2/*.str`).
 
 They were changed from that form for this project on 24 November 2026:
 
