@@ -419,6 +419,10 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   they are pictures, and names you type stay in English letters. The few
   lines with no Japanese counterpart, mostly in the developers' test rooms,
   stay in English.
+- **Language — Movie subtitles:** shows what is said in the movies, in the
+  language you chose for the game text. It starts off. The subtitles were
+  timed to the Japanese voices, so with the English voices a line can begin
+  a moment early or late and say the same in other words.
 - **Language — Movies and voices** (with the Japanese discs only): **English**,
   the North American release's dubbed anime movies and battle voices, or
   **日本語**, the Japanese release's. The change takes effect from the next
@@ -441,10 +445,6 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   also accept Start. It starts off. Small movies playing inside a scene
   may still follow that scene's timing. This skips movies, not entire story
   scenes.
-- **Movie subtitles:** shows what is said in the movies, in the language
-  you chose for the game text. It starts off. The subtitles were timed to
-  the Japanese voices, so with the English voices a line can begin a moment
-  early or late and say the same in other words.
 - **Skip disc load times:** takes away the waits for the disc drive, so
   areas, battles and menus open almost at once. It starts off. Movies and
   their sound keep their normal speed, an area's music can still begin a

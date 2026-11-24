@@ -3,8 +3,8 @@
 // new-game route, shows its line (1.15.30, two lines) over the picture while
 // Movie subtitles is on (status().renderer.subtitle) and none once it is
 // off, the same frames run again from a snapshot: the two canvases differ
-// only in the subtitle's band, which holds the text's white and the
-// outline's dark. In
+// only in the subtitle's band, which holds the game text palette's white
+// and the dark blue of the edge around the glyphs. In
 // a headset browser (Quest Browser's user agent, IWER's Meta Quest 3) the
 // same frame on the virtual screen differs, on and off, only below the
 // middle of both views, where the screen's bottom stands.
@@ -68,7 +68,7 @@ describe('movie subtitles', { skip: !available && 'needs the user\'s disc 1 and 
       const { y, height } = pictures[true].picture;
       const ratio = withLine.height / (await page.evaluate(() => document.querySelector('canvas').height));
       const band = [Math.floor((y + height * 160 / 224) * ratio), Math.ceil((y + height * 205 / 224) * ratio)];
-      let inBand = 0, outside = 0, white = 0, dark = 0;
+      let inBand = 0, outside = 0, white = 0, edge = 0;
       for (let row = 0; row < withLine.height; row += 1) {
         for (let column = 0; column < withLine.width; column += 1) {
           const at = (row * withLine.width + column) * 4;
@@ -76,16 +76,17 @@ describe('movie subtitles', { skip: !available && 'needs the user\'s disc 1 and 
           if (!differs) continue;
           if (row >= band[0] && row < band[1]) {
             inBand += 1;
-            const level = (withLine.rgba[at] + withLine.rgba[at + 1] + withLine.rgba[at + 2]) / 3;
-            if (level > 200) white += 1;
-            if (level < 50) dark += 1;
+            const [r, g, b] = [withLine.rgba[at], withLine.rgba[at + 1], withLine.rgba[at + 2]];
+            if (r > 200 && g > 200 && b > 200) white += 1;
+            // text_palette's edge, 0xC086: (49, 33, 132).
+            if (Math.abs(r - 49) + Math.abs(g - 33) + Math.abs(b - 132) < 40) edge += 1;
           } else {
             outside += 1;
           }
         }
       }
-      console.log(`subtitle: ${inBand} pixels changed in its band (${white} white, ${dark} dark), ${outside} elsewhere`);
-      assert.ok(inBand > 2_000 && white > 500 && dark > 500, 'the line drawn in white with a dark outline');
+      console.log(`subtitle: ${inBand} pixels changed in its band (${white} white, ${edge} in the edge's blue), ${outside} elsewhere`);
+      assert.ok(inBand > 2_000 && white > 500 && edge > 500, 'the line drawn in the game text\'s white and edge');
       assert.equal(outside, 0, 'nothing else changes');
       assert.deepEqual(page.errors, []);
     } finally {

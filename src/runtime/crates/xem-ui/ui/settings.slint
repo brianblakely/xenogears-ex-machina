@@ -2197,6 +2197,13 @@ export component SettingsPanel inherits Window {
                                     // Wide enough for the longest name ("English (Perfect Works)") in the box and in its list.
                                     Choice { accessible-label: "Game text language"; min-width: 204px; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
                                 }
+                                Divider { }
+                                // The movies' subtitles, in the game text's language.
+                                ToggleRow {
+                                    label: "Movie subtitles";
+                                    checked <=> root.movie-subtitles;
+                                    toggled(on) => { root.gameplay-edited("movie-subtitles", on ? 1 : 0); }
+                                }
                                 if root.japanese-offered: Divider { }
                                 if root.japanese-offered: Row {
                                     label: "Movies and voices";
@@ -2245,12 +2252,6 @@ export component SettingsPanel inherits Window {
                                     label: "Movies can be skipped";
                                     checked <=> root.movie-skip;
                                     toggled(on) => { root.gameplay-edited("movie-skip", on ? 1 : 0); }
-                                }
-                                Divider { }
-                                ToggleRow {
-                                    label: "Movie subtitles";
-                                    checked <=> root.movie-subtitles;
-                                    toggled(on) => { root.gameplay-edited("movie-subtitles", on ? 1 : 0); }
                                 }
                             }
                             if root.selected-section == 6: Card {

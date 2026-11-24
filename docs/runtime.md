@@ -2878,7 +2878,7 @@ logged flag; its sizes are not checked.
 
 The movie subtitles setting (`Settings.movie_subtitles`,
 `SettingChange::MovieSubtitles`; off by default; Settings, Gameplay,
-Dialogue and movies, **Movie subtitles**) shows what the eleven voiced
+Language, **Movie subtitles**, under Game text) shows what the eleven voiced
 movies say over them, in the language of the game's text
 (`Settings.language`: there is no separate subtitle language). It changes
 nothing in the game: the hosts draw it over the picture, and the session
@@ -2914,9 +2914,11 @@ tells whether one shows.
 **Drawing.** `xem_core::subtitles::draw` draws a line as the game draws
 its text: each glyph's 11 rows from the font the game installed
 (`text_font`), a narrow glyph 8 pixels on and a wide one 12, a language's
-added letters made from it as `src/port/locale.c` makes them; white with a
-pixel's dark outline, each line centred, 14 pixels below the last, in the
-display's own pixels. Japanese is drawn from the Japanese release's font,
+added letters made from it as `src/port/locale.c` makes them; in the
+game's own text colours (`text_palette`: the glyphs in its white, 0xF7BD,
+and the edge around them in its dark blue, 0xC086, on the eight pixels
+beside each as `text_draw_glyph` edges them), each line centred, 14 pixels
+below the last, in the display's own pixels. Japanese is drawn from the Japanese release's font,
 installed with the Japanese text, by the codes `subtitles/ja-font.txt`
 gives its characters (read from that font's glyphs; it has no 億 or 塩, so
 the one line that needed them writes the numbers in digits). Hosts draw a
@@ -2947,8 +2949,9 @@ whose frames the lookup reads as it does a field movie's), shows every one
 of its lines on exactly its frames (all 128). In browsers, local only,
 `web/tests/subtitles.test.mjs`: from a snapshot on the new-game movie's
 line 1.15.30 the canvas with the setting on differs from the same frames
-with it off only in the subtitle's band (17 309 pixels there, half the
-text's white and half the outline's dark, none elsewhere), and in a
+with it off only in the subtitle's band (17 309 pixels there, about half
+the text's white and half the edge's, none elsewhere; measured with a
+near-black edge, before the edge took the game's blue), and in a
 headset browser (IWER's Quest 3) only below the middle of both views (about
 330 points of a 4-pixel grid in each). On Monado's simulated headset the
 desktop's OpenXR session showed line 1.15.11 at the bottom of the screen

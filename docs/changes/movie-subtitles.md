@@ -1,1 +1,1 @@
-- **Settings → Gameplay → Movie subtitles** shows what is said in the movies, in the language chosen for the game text: English, English (Perfect Works), Français, Italiano, Español, Português (Brasil) or 日本語. It starts off.
+- **Settings → Gameplay → Language → Movie subtitles** shows what is said in the movies, in the language chosen for the game text: English, English (Perfect Works), Français, Italiano, Español, Português (Brasil) or 日本語. It starts off.

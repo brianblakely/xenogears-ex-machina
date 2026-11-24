@@ -18,8 +18,9 @@
 //! from it as src/port/locale.c makes them. Japanese comes from the Japanese
 //! release's font, installed beside the translations with the Japanese text
 //! (`locale::install_japanese`), by the codes `subtitles/ja-font.txt` gives
-//! its characters. Each line of a subtitle is centred, white with a dark
-//! outline, in the display's own pixels.
+//! its characters. Each line of a subtitle is centred, in the display's own
+//! pixels, in the colours the game draws its text in: its glyphs in the text
+//! palette's white and the edge around them in its dark blue.
 
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
@@ -44,9 +45,21 @@ const PAGE_BYTES: u32 = 0x1600;
 const COLUMN_PIXELS: u32 = 4;
 /// From one line of a subtitle to the next, in pixels.
 pub const LINE_PITCH: u32 = 14;
-/// The text and its outline (sRGB-encoded RGBA).
-const TEXT: [u8; 4] = [0xEC, 0xEC, 0xEC, 0xFF];
-const OUTLINE: [u8; 4] = [0x14, 0x14, 0x1C, 0xFF];
+/// The game's text colours (`text_palette`, 80050190: entry 1 a glyph's
+/// pixels, entry 2 the edge text_draw_glyph draws around them), 15-bit,
+/// expanded to 8 bits as the display expands them (`xem_gpu`'s `expand5`).
+const TEXT: [u8; 4] = rgba(0xF7BD);
+const OUTLINE: [u8; 4] = rgba(0xC086);
+
+const fn expand5(value: u16) -> u8 {
+    let value = (value & 31) as u8;
+    value << 3 | value >> 2
+}
+
+/// A 15-bit colour as opaque RGBA (sRGB-encoded).
+const fn rgba(colour: u16) -> [u8; 4] {
+    [expand5(colour), expand5(colour >> 5), expand5(colour >> 10), 0xFF]
+}
 
 const TIMINGS: &str = include_str!("../subtitles/timings.txt");
 const JAPANESE_FONT: &str = include_str!("../subtitles/ja-font.txt");
@@ -357,7 +370,8 @@ fn japanese_glyphs(memory: &dyn GameMemory, subtitles: &Subtitles, markup: &str)
 }
 
 /// The subtitle's lines drawn: each centred, its glyphs' ink in the text's
-/// colour and the pixels around it in the outline's, with a pixel's border.
+/// colour and the pixels around it (the eight beside each, as the game edges
+/// its glyphs) in the edge's, with a pixel's border.
 fn picture(lines: &[Vec<Glyph>]) -> Picture {
     let widths: Vec<u32> = lines.iter().map(|glyphs| glyphs.iter().map(|g| g.advance).sum()).collect();
     let width = widths.iter().copied().max().unwrap_or(0) + 2;
@@ -551,11 +565,15 @@ mod tests {
     }
 
     fn ink(picture: &Picture) -> Vec<String> {
-        picture.rgba.chunks(4 * picture.width as usize).map(|row| row.chunks(4).map(|p| match p {
-            [0xEC, ..] => '#',
-            [0x14, ..] => 'o',
-            _ => '.',
+        picture.rgba.chunks(4 * picture.width as usize).map(|row| row.chunks(4).map(|p| {
+            if p == TEXT { '#' } else if p == OUTLINE { 'o' } else { '.' }
         }).collect()).collect()
+    }
+
+    #[test]
+    fn the_text_and_its_edge_are_the_game_text_palettes() {
+        // text_palette's 0xF7BD and 0xC086: a light grey and a dark blue.
+        assert_eq!((TEXT, OUTLINE), ([239, 239, 239, 0xFF], [49, 33, 132, 0xFF]));
     }
 
     #[test]
