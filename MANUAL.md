@@ -441,6 +441,12 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   also accept Start. It starts off. Small movies playing inside a scene
   may still follow that scene's timing. This skips movies, not entire story
   scenes.
+- **Movie subtitles:** shows what is said in the movies, in the language
+  you chose for the game text. It starts off. The subtitles are the
+  [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
+  team's, timed to the Japanese voices and translated for the other
+  languages, so with the English voices a line can begin a moment early or
+  late and say the same in other words.
 - **Skip disc load times:** takes away the waits for the disc drive, so
   areas, battles and menus open almost at once. It starts off. Movies and
   their sound keep their normal speed, an area's music can still begin a

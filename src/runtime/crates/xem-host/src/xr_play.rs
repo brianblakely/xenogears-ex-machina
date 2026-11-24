@@ -520,6 +520,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut captured = false;
     let mut state_saved = false;
     let mut movie = MovieFrame::default();
+    // The movie's subtitle line (the movie subtitles setting), drawn when it
+    // changes.
+    let mut subtitles: xem_render::subtitles::SubtitleLayer<(xem_core::subtitles::Line, xem_core::locale::Language)> = Default::default();
     loop {
         for event in session.poll_events().map_err(|e| e.to_string())? {
             match event {
@@ -910,6 +913,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             (display, scene)
         };
         let from_view = !original && (GameView::shows(&display) || view.shows_movie(&display));
+        {
+            let runtime = &mut game.session.runtime;
+            let line = current.movie_subtitles.then(|| runtime.subtitle()).flatten();
+            subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| runtime.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
+        }
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         // Inspection looks from within the scene through the eyes (held
         // through frames the runtime cannot locate them in), every headset
@@ -1017,6 +1025,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 };
                 (hud.view().clone(),placement,size)
             });
+            // The movie's subtitle on the screen, by the display pixels the
+            // screen spans.
+            let subtitle_quad = subtitles.shown().map(|(texture, size)| {
+                let shows = if from_view { (display.width as f32, display.height as f32) } else { (presented_size.0 as f32, presented_size.1 as f32) };
+                let (placement, extent) = xem_render::subtitles::on_quad(pose, Vec2::new(width, height), shows, side, size);
+                (texture.clone(), placement, extent)
+            });
             let filter = match current.presentation.filter {
                 Filter::Nearest => wgpu::FilterMode::Nearest,
                 Filter::Linear => wgpu::FilterMode::Linear,
@@ -1103,12 +1118,21 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                             quad.filter = filter;
                             quad
                         });
+                        // The movie's subtitle on the screen, where the movie
+                        // shows, fading with it.
+                        let subtitle = subtitle_quad.as_ref().filter(|_| texture.is_some()).map(|(texture, pose, size)| {
+                            let mut quad = Quad::world(texture, view_proj, *pose, *size);
+                            quad.srgb_encoded = true;
+                            quad.filter = wgpu::FilterMode::Nearest;
+                            quad.opacity = share;
+                            quad
+                        });
                         let glass = marks.iter().chain(hud_quad.iter()).map(|(texture, pose, size)| {
                             let mut quad = Quad::world(texture, view_proj, *pose, *size);
                             quad.srgb_encoded = true;
                             quad
                         });
-                        within.into_iter().chain(screen).chain(diorama).chain(pane).chain(glass).collect()
+                        within.into_iter().chain(screen).chain(diorama).chain(pane).chain(subtitle).chain(glass).collect()
                     });
                     // The room around the screen (with passthrough the real
                     // one: nothing, the drawn colour premultiplied, its

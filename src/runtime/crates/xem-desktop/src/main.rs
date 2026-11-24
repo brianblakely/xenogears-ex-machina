@@ -711,11 +711,12 @@ impl Host {
                     let mut reply = game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error }));
                     // `status` also tells what the window showed last, as a
                     // browser's does: `movie`, a movie frame rebuilt from what
-                    // the MDEC decoded (the Enhanced movies setting).
+                    // the MDEC decoded (the Enhanced movies setting), and
+                    // `subtitle`, a movie's subtitle over the picture.
                     if command.get("cmd").and_then(serde_json::Value::as_str) == Some("status")
                         && let Some(status) = reply.as_object_mut()
                     {
-                        status.insert("renderer".into(), serde_json::json!({ "movie": self.view.presented_movie() }));
+                        status.insert("renderer".into(), serde_json::json!({ "movie": self.view.presented_movie(), "subtitle": self.view.subtitle_shown() }));
                     }
                     reply
                 }

@@ -31,6 +31,7 @@ pub mod presentation;
 pub mod runtime;
 pub mod rewind;
 pub mod snapshot;
+pub mod subtitles;
 
 pub use memory::{GameMemory, SliceMemory};
 pub use module::{Action, GameModule, Import, Trap};

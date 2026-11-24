@@ -217,7 +217,7 @@ pub struct Added {
 
 impl Added {
     /// text_get_glyph_width: a glyph's columns.
-    fn columns(&self, code: u16) -> u32 {
+    pub(crate) fn columns(&self, code: u16) -> u32 {
         if code < 0x100 {
             if (code as u8).wrapping_sub(FIRST_ONE_BYTE) < NARROW_GLYPHS { 2 } else { 3 }
         } else if (FIRST_GLYPH..0xFFFF).contains(&code) && !self.wide.contains(&code) {
@@ -583,7 +583,7 @@ pub fn install_japanese(memory: &mut dyn GameMemory, japanese: &crate::japanese:
     }
     let Some(_) = install_image(memory, image)? else { return Ok(None) };
     memory.write(BASE + start as u32, &bytes).map_err(|e| e.to_string())?;
-    memory.write_u32(BASE + 20, address(0)).map_err(|e| e.to_string())?;
+    memory.write_u32(JAPANESE_RECORD, address(0)).map_err(|e| e.to_string())?;
     let digest: String = crate::snapshot::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect();
     Ok(Some(format!("{JAPANESE_PACKAGE}{digest}")))
 }
@@ -591,6 +591,8 @@ pub fn install_japanese(memory: &mut dyn GameMemory, japanese: &crate::japanese:
 /// The Japanese text's record: the font's address and length, then a
 /// language's addresses and counts (src/port/locale.c XemLocaleJapanese).
 const JAPANESE_BYTES: usize = 24;
+/// The header's word giving the Japanese text's record (0 without one).
+pub(crate) const JAPANESE_RECORD: u32 = BASE + 20;
 
 fn install_image(memory: &mut dyn GameMemory, image: &Image) -> Result<Option<String>, String> {
     match memory.write(BASE, &image.bytes) {
@@ -612,7 +614,7 @@ pub fn activate(memory: &mut dyn GameMemory, language: Language) -> Result<(), O
     if font == 0 {
         return Ok(());
     }
-    let japanese = language == Language::Japanese && memory.read_u32(BASE + 20)? != 0;
+    let japanese = language == Language::Japanese && memory.read_u32(JAPANESE_RECORD)? != 0;
     let threshold = if japanese { u32::from(crate::japanese::THRESHOLD) } else { memory.read_u32(font + 4)? & 0xFFFF };
     if memory.read_u32(TEXT_FONT_TWO_BYTE_THRESHOLD)? != threshold {
         memory.write_u32(TEXT_FONT_TWO_BYTE_THRESHOLD, threshold)?;
@@ -622,12 +624,13 @@ pub fn activate(memory: &mut dyn GameMemory, language: Language) -> Result<(), O
 
 /// Whether the installed translations hold the Japanese text.
 pub fn japanese_installed(memory: &mut dyn GameMemory) -> bool {
-    memory.read_u32(BASE).is_ok_and(|magic| magic == MAGIC) && memory.read_u32(BASE + 20).is_ok_and(|record| record != 0)
+    memory.read_u32(BASE).is_ok_and(|magic| magic == MAGIC) && memory.read_u32(JAPANESE_RECORD).is_ok_and(|record| record != 0)
 }
 
 /// The game's font block and its two-byte threshold (resident
 /// text_windows_and_pads.c: text_font, text_font_two_byte_threshold).
-const TEXT_FONT: u32 = 0x8005_936C;
+/// The font the game installed (`text_font`: text_install_font's block).
+pub(crate) const TEXT_FONT: u32 = 0x8005_936C;
 const TEXT_FONT_TWO_BYTE_THRESHOLD: u32 = 0x8005_934C;
 
 /// The state identity's name for the installed translations.

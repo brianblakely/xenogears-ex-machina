@@ -31,6 +31,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
+use xem_render::subtitles::SubtitleLayer;
 use xem_render::xem_gpu::DisplayInfo;
 use xem_render::{
     Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect,
@@ -351,6 +352,9 @@ pub struct View {
     /// The game's display as the device shows it (24-bit movie frames, and
     /// hosts that set a picture directly), instead of the test scene.
     game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    /// The movie's subtitle line (the movie subtitles setting), drawn when
+    /// it changes and shown over the picture.
+    subtitles: SubtitleLayer<(xem_core::subtitles::Line, xem_core::locale::Language)>,
     /// The game drawn by the renderer: the trace is pushed into `renderer`
     /// as the game runs; `game_frame` is the display and scene to present.
     renderer: GameView,
@@ -497,6 +501,7 @@ impl View {
             quit,
             gamepads: Vec::new(),
             game_image: None,
+            subtitles: SubtitleLayer::default(),
             renderer: GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter)),
             game_frame: None,
             fresh_frame: false,
@@ -1022,6 +1027,11 @@ impl View {
         self.presented_movie
     }
 
+    /// Whether a movie's subtitle shows over the picture.
+    pub fn subtitle_shown(&self) -> bool {
+        self.subtitles.shown().is_some()
+    }
+
     /// The render passes the game's picture last took (VRAM's picture as
     /// the game drew it and the frame replayed from it), for status reports.
     pub fn render_passes(&self) -> u32 {
@@ -1034,6 +1044,9 @@ impl View {
     pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
         let (forward,rewind) = game.time_activity();
         self.frame_rate.set_activity(forward,rewind);
+        let runtime = &mut game.session.runtime;
+        let line = self.settings.borrow().settings().movie_subtitles.then(|| runtime.subtitle()).flatten();
+        self.subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| runtime.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
         let graphics = self.settings.borrow().settings().graphics;
         if graphics.renderer == xem_settings::Renderer::Original {
             // The console's own picture, as the device shows it (nothing to
@@ -1510,6 +1523,13 @@ impl View {
             }
         }
         let mut quads = vec![game];
+        // The movie's subtitle over the picture, under everything else.
+        if let (Some(picture), Some((view, size))) = (&self.picture, self.subtitles.shown()) {
+            let mut subtitle = Quad::screen(view, xem_render::subtitles::flat(picture, size), target_size);
+            subtitle.srgb_encoded = true;
+            subtitle.filter = wgpu::FilterMode::Nearest;
+            quads.push(subtitle);
+        }
         for (view, affine, rect, opacity) in &glass {
             let mut quad = match (affine, rect) {
                 (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target_size),

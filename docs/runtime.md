@@ -2874,6 +2874,77 @@ backend, checks the settings commands): the view's flag it reports is the
 one the `xem-host` test checks. Android shows only its
 logged flag; its sizes are not checked.
 
+### Subtitles
+
+The movie subtitles setting (`Settings.movie_subtitles`,
+`SettingChange::MovieSubtitles`; off by default; Settings, Gameplay,
+Dialogue and movies, **Movie subtitles**) shows what the eleven voiced
+movies say over them, in the language of the game's text
+(`Settings.language`: there is no separate subtitle language). It changes
+nothing in the game: the hosts draw it over the picture, and the session
+neither records it nor reads it.
+
+**Lines and timings.** `xem-core/subtitles/` holds Perfect Works Build
+0.11.4's subtitles (its README: their source, licence and changes).
+`timings.txt` names 128 lines by movie, the disc and the movie's file in
+directory (0x18, 1) (disc 1's files 3, 4, 7, 8, 9, 10, 11 and 15, the
+new-game movie; disc 2's 2, 6 and 10), and gives the movie frames each
+shows on, as Perfect Works' own movie player times them (the tables its
+executable keeps beside the file index). `<language>.txt` gives each line's
+text in the markup of the game's text, `{n}` ending a line. English is
+Perfect Works' text with the original's names (Krelian for Karellen);
+French, Italian, Spanish, Brazilian Portuguese and Japanese are translated
+from it for this project. Perfect Works timed the lines to the Japanese
+voices; the English voices speak over the same frames.
+
+**Which line.** `xem_core::subtitles::line` reads, between steps, the movie
+playing and the frame it shows (`xem_core::movie`),
+the file the movie player streams (`movie_file`, 801E8974) and the
+directory it started it in (`movie_saved_directory` and
+`movie_saved_index`, 801E899C and 801E89A0: (0x18, 1) for these movies,
+whether a field movie or the movie mode plays them), with the disc in the
+drive. A line shows from its first frame until its end, by the frame
+numbers of the movie's own sectors, which Perfect Works' player counts
+too. The Japanese release's movies (Movies and voices: 日本語) are the same
+frames under the same files and take the same lines. `status.subtitle`
+gives the line (`"line": "1.15.1"`) and its text in the game's language
+whether or not a host shows it; the browser's `status().renderer.subtitle`
+tells whether one shows.
+
+**Drawing.** `xem_core::subtitles::draw` draws a line as the game draws
+its text: each glyph's 11 rows from the font the game installed
+(`text_font`), a narrow glyph 8 pixels on and a wide one 12, a language's
+added letters made from it as `src/port/locale.c` makes them; white with a
+pixel's dark outline, each line centred, 14 pixels below the last, in the
+display's own pixels. Japanese is drawn from the Japanese release's font,
+installed with the Japanese text, by the codes `subtitles/ja-font.txt`
+gives its characters (read from that font's glyphs; it has no 億 or 塩, so
+the one line that needed them writes the numbers in digits). Hosts draw a
+line again only when it or the language changes
+(`xem_render::subtitles::SubtitleLayer`) and place it as they place the
+picture: centred on the display, its bottom 20/224 of the display's height
+above the display's, each of its pixels as large as one of the display's
+(`flat` on a window or canvas, `on_quad` on a headset's screen, fading
+with the screen), drawn after the picture and before the marks, the touch
+deck, the HUD and the panel, with nearest filtering. It shows alike over a
+rebuilt movie, the device's own picture (Original) and the Original
+renderer.
+
+Tests: `xem-core` `subtitles` (every language has every line; each line's
+glyphs exist and fit the movies' 320 pixels less 8 each side; the line
+from invented memory; drawing from an invented font, an added letter as the
+port makes it), `xem-render` `subtitles` (placement on a window and on a
+headset's screen), `xem-settings`
+`movie_subtitles_are_off_by_default_and_persist`, and, local only,
+`xem-headless/tests/subtitles.rs`: on disc 1's new-game route the runtime
+reads each of the new-game movie's 36 lines from exactly the first movie
+frame Perfect Works times it on to the last before its end and no line on
+any other frame, and draws its first line in all seven languages from the
+game's own fonts (Japanese with the Japanese discs beside disc 1;
+`XEM_SUBTITLE_PNGS` writes the drawings). A lookup took 313 ns a frame
+there (13 200 frames, release build, this machine); a line is drawn and
+uploaded only when it changes.
+
 ### Characters in a wider view
 
 The field's character pass marks each sprite actor whose raised point

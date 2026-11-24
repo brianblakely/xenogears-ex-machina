@@ -910,7 +910,19 @@ src/runtime/crates/xem-core/src/presentation.rs
 src/runtime/crates/xem-core/src/rewind.rs
 src/runtime/crates/xem-core/src/runtime.rs
 src/runtime/crates/xem-core/src/snapshot.rs
+src/runtime/crates/xem-core/src/subtitles.rs
 src/runtime/crates/xem-core/src/time.rs
+src/runtime/crates/xem-core/subtitles/LICENSE
+src/runtime/crates/xem-core/subtitles/README.md
+src/runtime/crates/xem-core/subtitles/en-x-pw.txt
+src/runtime/crates/xem-core/subtitles/en.txt
+src/runtime/crates/xem-core/subtitles/es.txt
+src/runtime/crates/xem-core/subtitles/fr.txt
+src/runtime/crates/xem-core/subtitles/it.txt
+src/runtime/crates/xem-core/subtitles/ja-font.txt
+src/runtime/crates/xem-core/subtitles/ja.txt
+src/runtime/crates/xem-core/subtitles/pt-BR.txt
+src/runtime/crates/xem-core/subtitles/timings.txt
 src/runtime/crates/xem-core/tests/fibers.rs
 src/runtime/crates/xem-core/tests/persistence.rs
 src/runtime/crates/xem-desktop/Cargo.toml
@@ -983,6 +995,7 @@ src/runtime/crates/xem-headless/tests/saves.rs
 src/runtime/crates/xem-headless/tests/slice.rs
 src/runtime/crates/xem-headless/tests/sound_mode.rs
 src/runtime/crates/xem-headless/tests/states.rs
+src/runtime/crates/xem-headless/tests/subtitles.rs
 src/runtime/crates/xem-headless/tests/text_and_movies.rs
 src/runtime/crates/xem-host/Cargo.toml
 src/runtime/crates/xem-host/build.rs
@@ -1027,6 +1040,7 @@ src/runtime/crates/xem-render/src/ps1/scenes.json
 src/runtime/crates/xem-render/src/ps1/view.rs
 src/runtime/crates/xem-render/src/scene.rs
 src/runtime/crates/xem-render/src/scene.wgsl
+src/runtime/crates/xem-render/src/subtitles.rs
 src/runtime/crates/xem-render/tests/ps1.rs
 src/runtime/crates/xem-render/tests/render.rs
 src/runtime/crates/xem-settings/Cargo.toml

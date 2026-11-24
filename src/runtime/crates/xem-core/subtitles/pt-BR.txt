@@ -1,0 +1,131 @@
+# Português (Brasil): Perfect Works Build's subtitles (en.txt) translated into
+# Brazilian Portuguese for this project (subtitles/README.md). A line: its name
+# (timings.txt), then its text in the markup of the game's text, {n} ending a line.
+1.3.1 Vamos nos unir como um só...
+1.4.1 Nunca pensei que nos{n}reencontraríamos assim...
+1.4.2 Ou é o destino...
+1.4.3 ou uma ironia.
+1.4.4 Porém,
+1.4.5 Eu o protegerei de suas garras...
+1.4.6 Nem que me custe a vida!
+1.7.1 - Mana!
+1.7.2 - Mana!{n}- Pare!
+1.8.1 Largue a arma!
+1.8.2 Um movimento em falso e eu atiro!
+1.9.1 Ei, espera aí! Não me{n}deixa pra trás! Espera!
+1.9.2 É triste ficar sozinho.
+1.9.3 A...
+1.9.4 Fei...
+1.9.5 Fei!
+1.10.1 Não fale como se não{n}tivesse parte da culpa!
+1.10.2 Não! Não fui eu!
+1.10.3 Morreram porque você foi pilotar{n}o Gear e começar a lutar!
+1.10.4 Não fui eu! Eu não sabia!
+1.10.5 Não é qualquer um que{n}pilota aquelas máquinas!
+1.10.6 - Não fui eu!
+1.10.7 - Não fui eu!{n}- Por que não se responsabiliza?
+1.10.8 Eu...
+1.10.9 não tenho esse tipo de poder.
+1.10.10 Por que está tentando{n}jogar a culpa nos outros?
+1.10.11 Eu...
+1.10.12 não tenho habilidades especiais...
+1.10.13 Você é um covarde!
+1.10.14 Isso mesmo!
+1.10.15 Eu sou um covarde!
+1.11.1 Quem é você?
+1.11.2 Quem—
+1.11.3 Espere...eu conheço você...
+1.11.4 Foi você quem matou...ela.
+1.11.5 ...Ela?
+1.11.6 Não... Quem a matou foi...
+1.11.7 Não, não fui eu...
+1.11.8 Eu...
+1.11.9 Isso mesmo. Foi você,
+1.11.10 'covarde'.
+1.15.1 Emergência. Alerta de nível 1.
+1.15.2 Omega 1 está reiniciando.
+1.15.3 Alpha 1 começou a{n}remontar seus genomas.
+1.15.4 Substituição de éxons confirmada!
+1.15.5 Bases nucleotídicas chegando a{n}850 milhões... 1,2 bilhão!{n}É rápido demais!!
+1.15.6 Confirmado: Alpha 1 acessou{n}o computador central Raziel!
+1.15.7 Fake-Net ativada! Alpha 1 escapou!
+1.15.8 Ativando firewall de emergência...
+1.15.9 Negado!
+1.15.10 Contaminação generalizada do{n}Paradigm OS... Capitão!?
+1.15.11 Cortem os cabos manualmente!
+1.15.12 Entendido! Parafusos explosivos...
+1.15.13 Ejeção confirmada!
+1.15.14 ...Não! Sem efeito!
+1.15.15 Omega 1 continua avançando!{n}Não vai parar!
+1.15.16 Ele tomou o controle de{n}98% das nossas armas!
+1.15.17 Está se comunicando com o{n}sistema de navegação Faust{n}em velocidade incrível.
+1.15.18 Lógica de espaço de fase{n}sendo sobrescrita!
+1.15.19 A ergosfera se expande,
+1.15.20 e um plano se forma{n}dentro do núcleo!
+1.15.21 Mudando para o modo de dobra!!
+1.15.22 Alpha 1 está transmitindo{n}novas coordenadas ao Faust!
+1.15.23 As coordenadas inseridas{n}foram NZ128, EZ061...
+1.15.24 ...Lost Jerusalem!!
+1.15.25 Desse jeito...essa maldita{n}coisa vai invadir...
+1.15.26 Sala de máquinas!
+1.15.27 Forcem a conexão do{n}freio de emergência!!
+1.15.28 ...Sala de máquinas?
+1.15.29 Sala de máq—
+1.15.30 Todos os civis e tripulantes,{n}evacuem já para as naves de fuga.
+1.15.31 Lançamento em sequência após{n}a evacuação completa.
+1.15.32 Declaro esta nave abandonada.
+1.15.33 ...Todos vocês...saiam agora...
+1.15.34 Foi dada a ordem de evacuação.
+1.15.35 A nave será abandonada.
+1.15.36 Todos os tripulantes, dirijam-se já{n}aos portões de embarque. Repito—
+2.2.1 Feeei!
+2.2.2 O que aconteceu?
+2.2.3 A explosão causou uma{n}perturbação na ionosfera.{n}Não consigo obter leitura.
+2.2.4 Devem ter sido atingidos.
+2.2.5 Não pode ser!
+2.2.6 Ele prometeu que voltaria!
+2.2.7 Ele prometeu!
+2.2.8 Ooooi!
+2.6.1 Vamos voltar ao nosso mundo.
+2.6.2 O caminho de volta...
+2.6.3 passa por aquela luz.
+2.6.4 Pode ser tarde demais...
+2.6.5 O deslocamento dimensional{n}já começou.
+2.6.6 Consegue correr?
+2.6.7 Claro.
+2.6.8 Com você ao meu lado...
+2.6.9 (Fei! Sobreviva!)
+2.6.10 Ellyyyyy!
+2.6.11 Krelian...
+2.6.12 você...
+2.6.13 Não resta muito tempo.
+2.6.14 O caminho está se fechando.
+2.6.15 Deus está nos deixando.
+2.6.16 Agora este mundo é da humanidade.
+2.6.17 São livres para seguir seu caminho.
+2.6.18 Krelian...você não vai voltar?
+2.6.19 Não...
+2.6.20 Perdi minha humanidade há muito.
+2.6.21 Cometi pecados{n}demais para contar.
+2.6.22 Não posso mais viver{n}como um ser humano.
+2.6.23 O único que me perdoará...
+2.6.24 ...é deus.
+2.6.25 Não é verdade!
+2.6.26 Com certeza todos vão entender!
+2.6.27 Há tempo de sobra para se redimir!{n}Eu acredito em você, Krelian!
+2.6.28 Bondoso como sempre, Lacan.
+2.6.29 Acho que é isso que{n}significa ser humano...
+2.6.30 Mas eu já decidi:
+2.6.31 Caminharei com deus.
+2.6.32 Além disso, se eu voltasse agora...
+2.6.33 haveria um lugar para mim...?
+2.6.34 Chegou a hora.
+2.6.35 Krelian...
+2.6.36 Eu...
+2.6.37 invejo vocês dois...
+2.10.1 Sinto muito...
+2.10.2 Não consegui salvar você.
+2.10.3 Agora só posso aliviar sua dor...
+2.10.4 Me perdoe...
+2.10.5 Elly...
+2.10.6 você...

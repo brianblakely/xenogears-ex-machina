@@ -1088,6 +1088,12 @@ impl XemApp {
                 panel.set_debug_status(false, false, "Boot a game to use Debug.");
                 panel.set_time_status(None,"Boot a game to use save states and time controls.");
             }
+            // The movie's subtitle line, while the setting shows them.
+            if let Some(session) = self.session.as_mut() {
+                let runtime = &mut session.runtime;
+                let line = self.settings.borrow().settings().movie_subtitles.then(|| runtime.subtitle()).flatten();
+                renderer.set_subtitle(line, |(line, language)| runtime.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
+            }
             match self.session.as_mut() {
                 Some(session) if self.display_dirty => {
                     let graphics = self.settings.borrow().settings().graphics;
@@ -1914,6 +1920,8 @@ impl XemApp {
                 // The last frame showed a movie frame rebuilt from what the
                 // MDEC decoded (the Enhanced movies setting).
                 "movie": r.movie,
+                // A movie's subtitle shows over the picture.
+                "subtitle": r.subtitle_shown(),
                 // First-person inspection, and how far its view has turned
                 // from the heading it began with (radians, yaw right, pitch up).
                 "firstPerson": r.first_person(),

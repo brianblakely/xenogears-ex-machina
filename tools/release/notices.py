@@ -45,8 +45,9 @@ def main():
         for label, variable, name in [("SDL", "XEM_SDL3_SRC", "LICENSE.txt"), ("WABT wasm2c runtime", "XEM_WABT_SRC", "LICENSE")]:
             notices.write(f"\n\n{label}\n\n" + (Path(os.environ[variable]) / name).read_text())
         notices.write("\n\nrcheevos 12.5.0 (RetroAchievements' client library)\n\n" + (ROOT / RCHEEVOS_LICENSE).read_text())
-        # The Perfect Works text's licence (packaging/about.hbs names the work).
-        notices.write("\n\nEnglish (Perfect Works) game text\n\n" + (ROOT / PERFECT_WORKS_LICENSE).read_text())
+        # The Perfect Works text's and subtitles' licence (packaging/about.hbs
+        # names the works; subtitles/LICENSE is the same text).
+        notices.write("\n\nEnglish (Perfect Works) game text and movie subtitles\n\n" + (ROOT / PERFECT_WORKS_LICENSE).read_text())
     print(output)
 
 

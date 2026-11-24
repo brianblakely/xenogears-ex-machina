@@ -542,6 +542,20 @@ impl<M: GameModule> Runtime<M> {
         crate::locale::japanese_installed(self.module.memory())
     }
 
+    /// The subtitle line the movie playing shows now, and the language of
+    /// the game's text it is shown in (`crate::subtitles`): read between
+    /// steps, whether or not the hosts show subtitles.
+    pub fn subtitle(&mut self) -> Option<(crate::subtitles::Line, crate::locale::Language)> {
+        let services = self.services();
+        let (mode, disc, language) = (services.mode, services.cd.inserted(), services.language);
+        crate::subtitles::line(self.module.memory(), mode, disc).map(|line| (*line, language))
+    }
+
+    /// `line` in `language` drawn with the fonts the game holds now.
+    pub fn subtitle_picture(&mut self, line: &crate::subtitles::Line, language: crate::locale::Language) -> Option<crate::subtitles::Picture> {
+        crate::subtitles::draw(self.module.memory(), line, language)
+    }
+
     /// Copy the executable's text to `address` as the BIOS does at power-on
     /// (and keep it for a reset).
     pub fn load_executable(&mut self, address: u32, text: &[u8]) -> Result<(), crate::memory::OutOfBounds> {

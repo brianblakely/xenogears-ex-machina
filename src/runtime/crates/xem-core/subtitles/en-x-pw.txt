@@ -1,0 +1,132 @@
+# English (Perfect Works): Perfect Works Build's subtitles as its movies
+# show them (subtitles/README.md). A line: its name (timings.txt), then its
+# text in the markup of the game's text (locale/, tools/translations.py),
+# {n} ending a line of the subtitle.
+1.3.1 Let us join together as one...
+1.4.1 I never thought we'd meet{n}again quite like this...
+1.4.2 It's either fate...
+1.4.3 or irony.
+1.4.4 However,
+1.4.5 I will keep him from your clutches...
+1.4.6 Even if it kills me!
+1.7.1 - Sis!
+1.7.2 - Sis!{n}- Stop!
+1.8.1 Throw down your weapon!
+1.8.2 Make one wrong move and I'll shoot!
+1.9.1 Hey, hold on! Don't{n}leave me behind! Wait!
+1.9.2 It's lonely to be on your own.
+1.9.3 A...
+1.9.4 Fei...
+1.9.5 Fei!
+1.10.1 You talk as if it's not{n}your responsibility!
+1.10.2 No! I didn't do it!
+1.10.3 They died because you had to pilot{n}the Gear and start fighting!
+1.10.4 It wasn't me! I didn't know!
+1.10.5 Not just anyone can pilot{n}those machines, you know!
+1.10.6 - I didn't do it!
+1.10.7 - I didn't do it!{n}- Why won't you take responsibility?
+1.10.8 I...
+1.10.9 don't have that kind of power.
+1.10.10 Why are you trying to{n}put the blame on others?
+1.10.11 I...
+1.10.12 don't have any special abilities...
+1.10.13 You're a coward!
+1.10.14 That's right!
+1.10.15 I'm a coward!
+1.11.1 Who are you?
+1.11.2 Who—
+1.11.3 Wait...I know you...
+1.11.4 You're the one who killed...her.
+1.11.5 ...Her?
+1.11.6 No... The one who killed her was...
+1.11.7 No, it wasn't me...
+1.11.8 I...
+1.11.9 That's right. It was you,
+1.11.10 'coward'.
+1.15.1 This is an emergency. Level 1 alert.
+1.15.2 Omega 1 is rebooting.
+1.15.3 Alpha 1 has begun{n}reassembling its genomes.
+1.15.4 Exon substitution confirmed!
+1.15.5 Nucleotide bases reaching{n}850 million... 1.2 billion!{n}It's way too fast!!
+1.15.6 Confirmed: Alpha 1 has{n}accessed the Raziel mainframe!
+1.15.7 Fake-Net deployed! Alpha 1 evaded!
+1.15.8 Activating emergency firewall...
+1.15.9 Denied!
+1.15.10 Widespread contamination of the{n}Paradigm OS... Captain!?
+1.15.11 Cut the cables manually!
+1.15.12 Roger! Using the explosive bolts...
+1.15.13 Ejection confirmed!
+1.15.14 ...No! No effect!
+1.15.15 Omega 1 still progressing!{n}It won't stop!
+1.15.16 It's taken control of{n}98% of our weapons!
+1.15.17 It's communicating with the{n}Faust navigation system at{n}an incredible speed.
+1.15.18 Phase-space logic{n}is being overridden!
+1.15.19 Ergosphere is expanding,
+1.15.20 and a plane is forming{n}within the core!
+1.15.21 We're switching to warp mode!!
+1.15.22 Alpha 1 is transmitting{n}new coordinates to Faust!
+1.15.23 The coordinates entered{n}were NZ128, EZ061...
+1.15.24 ...Lost Jerusalem!!
+1.15.25 At this rate...the damn{n}thing is sure to invade...
+1.15.26 Engine Room!
+1.15.27 Force in the{n}emergency-brake connector!!
+1.15.28 ...Engine Room?
+1.15.29 Engin—
+1.15.30 All civilians and crew members,{n}evacuate now to the escape shuttles.
+1.15.31 Launch in sequence following{n}complete evacuation.
+1.15.32 We hereby abandon this ship.
+1.15.33 ...All of you...leave now...
+1.15.34 An evacuation order has been issued.
+1.15.35 The ship will be abandoned.
+1.15.36 All crew members, quickly proceed{n}to shuttle boarding gates. Repeat—
+2.2.1 Feeei!
+2.2.2 What happened?
+2.2.3 There's a disturbance in the{n}ionosphere due to the explosion.{n}I can't get a reading.
+2.2.4 They were probably caught in it.
+2.2.5 There's no way!
+2.2.6 He promised he'd come back!
+2.2.7 He promised!
+2.2.8 Ahoooy!
+2.6.1 Let's return to our world.
+2.6.2 The way back...
+2.6.3 is through that light.
+2.6.4 It might be too late...
+2.6.5 The dimensional shift{n}has already begun.
+2.6.6 Can you run?
+2.6.7 Of course.
+2.6.8 As long as you're by my side...
+2.6.9 (Fei! Live!)
+2.6.10 Ellyyyyy!
+2.6.11 Karellen...
+2.6.12 you...
+2.6.13 There's not much time left.
+2.6.14 The path is closing.
+2.6.15 God is leaving us.
+2.6.16 Now this world belongs to mankind.
+2.6.17 You're free to walk your own path.
+2.6.18 Karellen...you're not going back?
+2.6.19 No...
+2.6.20 I lost my humanity long ago.
+2.6.21 I've committed too{n}many sins to count.
+2.6.22 I can't live as a{n}human being anymore.
+2.6.23 The only one who will forgive me...
+2.6.24 ...is God.
+2.6.25 That's not true!
+2.6.26 I'm sure everyone will understand!
+2.6.27 There's plenty of time for you to{n}atone! I believe in you, Karellen!
+2.6.28 Still as kind as ever, Lacan.
+2.6.29 I guess that's what it{n}means to be human...
+2.6.30 But I've already decided:
+2.6.31 I will walk with God.
+2.6.32 Besides, if I turned back now...
+2.6.33 would there be a place for me...?
+2.6.34 It is time.
+2.6.35 Karellen...
+2.6.36 I...
+2.6.37 envy you two...
+2.10.1 I'm sorry...
+2.10.2 I couldn't save you.
+2.10.3 All I can do now is ease your pain...
+2.10.4 I'm so sorry...
+2.10.5 Elly...
+2.10.6 you...
