@@ -2944,7 +2944,16 @@ game's own fonts (Japanese with the Japanese discs beside disc 1;
 `XEM_SUBTITLE_PNGS` writes the drawings); and each of the eleven movies,
 played on its own disc by the debug menu's movie request (the movie mode,
 whose frames the lookup reads as it does a field movie's), shows every one
-of its lines on exactly its frames (all 128). A lookup took 313 ns a frame
+of its lines on exactly its frames (all 128). In browsers, local only,
+`web/tests/subtitles.test.mjs`: from a snapshot on the new-game movie's
+line 1.15.30 the canvas with the setting on differs from the same frames
+with it off only in the subtitle's band (17 309 pixels there, half the
+text's white and half the outline's dark, none elsewhere), and in a
+headset browser (IWER's Quest 3) only below the middle of both views (about
+330 points of a 4-pixel grid in each). On Monado's simulated headset the
+desktop's OpenXR session showed line 1.15.11 at the bottom of the screen
+in both eyes (a run by hand, as `scripts/xr-game-smoke.sh` runs its lanes;
+not part of it). A lookup took 313 ns a frame
 there (13 200 frames, release build, this machine); a line is drawn and
 uploaded only when it changes.
 
