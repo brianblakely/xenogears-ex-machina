@@ -101,9 +101,11 @@
 # - state interchange: that state loaded in the headset (--load-state) and
 #   played on 600 game frames under HD-2D has xem-headless's RAM at the
 #   300th, where the headset writes its state (--save-state-at), and at
-#   the 600th; the headset's state is xem-headless's at that frame byte for
-#   byte (the screen without wider framing asks for no reveals), loads
-#   natively to its RAM and goes on to the same end;
+#   the 600th; the headset's state loads natively to its RAM and goes on to
+#   the same end (not xem-headless's state byte for byte: the screen asks
+#   for the faces its sub-pixel picture needs, issue #103, which leaves the
+#   port's dead stack unlike xem-headless's; xem-host's tests/states.rs
+#   compares whole states);
 # - headset qualification: through the player's Pause and Settings' own the
 #   head stays tracked and the eyes' pictures follow it while the game
 #   stands still; either hand's overhand grab pauses and resumes, both
@@ -525,8 +527,8 @@ at=$(printf '{"cmd":"state_load","path":"%s"}\n' "$out/field30.xemstate" | "$hea
 echo '{"graphics": {"profile": "Hd2d"}, "pause_on_focus_loss": false}' >"$settings"
 "$desktop" --xr --disc "$disc" --load-state "$out/field30.xemstate" --save-state-at "$((at + 300)):$out/xr-saved.xemstate" \
     --exit-at-frame "$((at + 600))" >"$out/interchange.log" 2>"$out/interchange.err"
-printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n{"cmd":"state_save","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' \
-    "$out/field30.xemstate" "$out/headless-saved.xemstate" | "$headless" --disc "$disc" --control >"$out/interchange-headless.log" 2>"$out/interchange-headless.err"
+printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' \
+    "$out/field30.xemstate" | "$headless" --disc "$disc" --control >"$out/interchange-headless.log" 2>"$out/interchange-headless.err"
 printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n{"cmd":"frames","count":300}\n{"cmd":"memory_hash"}\n' \
     "$out/xr-saved.xemstate" | "$headless" --disc "$disc" --control >"$out/interchange-native.log" 2>"$out/interchange-native.err"
 # Headset qualification on the screen view (docs/runtime.md, Headset
@@ -1362,12 +1364,8 @@ if saved and ended and at is not None and len(reference) == 2 and len(native) ==
     check(ended.group(2) == reference[1], f"the headset's RAM at frame {at + 600} {ended.group(2)}, xem-headless's {reference[1]}")
     check(native[0] == saved.group(2), f"the headset's state loads natively to RAM {native[0]}, not its {saved.group(2)}")
     check(native[1] == reference[1], f"the headset's state goes on natively to RAM {native[1]}, not {reference[1]}")
-    # The screen without wider framing asks for no reveals: the whole state
-    # is xem-headless's at that frame.
-    check(open(f"{out}/xr-saved.xemstate", "rb").read() == open(f"{out}/headless-saved.xemstate", "rb").read(),
-          "the headset's state is not xem-headless's at the same frame, byte for byte")
     print(f"interchange: xem-headless's field 30 state at frame {at} played on in the headset to {saved.group(2)} at {at + 300} "
-          f"(saved, xem-headless's state byte for byte) and {ended.group(2)} at {at + 600}, xem-headless's; the headset's state "
+          f"(saved) and {ended.group(2)} at {at + 600}, xem-headless's; the headset's state "
           f"natively {native[0]}, then {native[1]}")
 
 # Headset qualification. Paused head tracking (the gestures run): through

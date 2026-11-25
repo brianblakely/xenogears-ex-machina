@@ -5,9 +5,9 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
@@ -17,8 +17,27 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../.
 export const WEB = process.env.XEM_WEB_ROOT ?? join(ROOT, 'build', 'web');
 /** Screenshots the tests take, for people to look at. */
 export const SHOTS = join(ROOT, 'build', 'web-test');
-export const USER_DISC = process.env.XEM_DISC1 ?? join(ROOT, 'discs', 'Xenogears disc 1.chd');
-export const USER_DISC2 = process.env.XEM_DISC2 ?? join(ROOT, 'discs', 'Xenogears disc 2.chd');
+/** `disc` linked from a directory that holds the user's North American
+ *  discs alone. Booted from beside the Japanese release's discs,
+ *  xem-headless installs their text, movies and voices, which a page never
+ *  has, and the page refuses a state that holds them. A link is replaced by
+ *  a rename, so tests starting side by side never see it missing. */
+function alone(disc) {
+  if (!existsSync(disc)) return disc;
+  const directory = join(ROOT, 'build', 'web-test', 'discs');
+  const link = join(directory, basename(disc));
+  const target = resolve(disc);
+  try {
+    if (readlinkSync(link) === target) return link;
+  } catch {}
+  mkdirSync(directory, { recursive: true });
+  const fresh = `${link}.${process.pid}`;
+  symlinkSync(target, fresh);
+  renameSync(fresh, link);
+  return link;
+}
+export const USER_DISC = alone(process.env.XEM_DISC1 ?? join(ROOT, 'discs', 'Xenogears disc 1.chd'));
+export const USER_DISC2 = alone(process.env.XEM_DISC2 ?? join(ROOT, 'discs', 'Xenogears disc 2.chd'));
 // The native host the tests compare with (XEM_HEADLESS: another build's, as the test suite's).
 export const HEADLESS = process.env.XEM_HEADLESS ?? join(ROOT, 'src', 'runtime', 'target', 'release', 'xem-headless');
 
