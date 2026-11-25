@@ -19,20 +19,19 @@
   per-frame or load paths (the game module, src/port/, rendering, audio, input, the
   hosts' loops), measure it against master on the same scenes and machine, and fix
   any slower frame, presentation, load or larger memory use before review.
-- Use the pinned Nix shells. While developing, test only the platform whose host you
-  are changing: `src/runtime/scripts/suite.sh desktop` (native and shared code, about
-  fifteen minutes), `web`, `android` or `xr`, or narrower focused tests. Run
-  `suite.sh full` (every platform and what CI runs, about an hour) once at the
-  end before review or a merge only when runtime inputs changed, never after each
-  change. Documentation, release copy and standalone tooling changes need their
-  focused checks, not the runtime suite.
-  The suite skips before starting Nix if runtime sources, tests and build inputs
-  have no changes against the merge base with `origin/master`; staged, unstaged,
-  committed branch changes and non-ignored untracked files count. It does not
-  fetch. Use `--base REF` for another comparison (e.g. `--base HEAD^` to check a
-  committed update on master), or deliberately use `--force` to run regardless,
-  including after changing private/ignored inputs or the test environment. Do not
-  use `--force` solely because a review or merge is coming.
-  A skip is not a passing test run; it leaves previous logs intact.
+- Use the pinned Nix shells. While developing, run focused tests: the changed
+  crate's or file's tests and a repro on the affected platform. Never run
+  `src/runtime/scripts/suite.sh` locally unless the user explicitly asks for it.
+  GitHub CI (`.github/workflows/ci.yml`) runs the full suite for every pull request
+  from this repository and every push to master whose runtime inputs changed: each
+  platform tier on its own runner, with the discs from the private fixtures release
+  (the `tests` environment's secrets). Read the suite's results there; a skipped
+  suite (no runtime inputs changed, or a fork's pull request, which gets no
+  secrets) is not a pass. Documentation, release copy and standalone tooling
+  changes need their focused checks, not the runtime suite.
+  When the user asks for a local run, `suite.sh` skips before starting Nix if no
+  runtime inputs changed against the merge base with `origin/master` (`--base REF`
+  for another comparison, `--force` to run regardless, e.g. after changing
+  private/ignored inputs); a skip is not a passing run.
   Record exact commands/results and missing private inputs honestly.
 - Keep original assets and generated disassembly local. Do not modify prompt.md.

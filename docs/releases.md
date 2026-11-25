@@ -232,16 +232,13 @@ source archive uses `packaging/source-files.txt`, with only the separately
 reviewed KEMAR data allowed as a binary input. Rust notices include the Slint
 Royalty-free 2.0 terms; the settings panel supplies its attribution widget.
 
-During development use the affected suite or focused tests. Release copy and
-publisher changes need focused release tests, not the runtime suite. Before review
-or merging runtime changes, run `src/runtime/scripts/suite.sh full` once; it skips
-when runtime inputs have no changes against the merge base with `origin/master`.
-Use `--base REF` for another comparison or deliberately use `--force` to bypass
-the guard and run every unit again. Its logs and each unit's result
-(`summary.txt`) are under `build/suite/`: a unit listed as `same` stands on the
-pass it names, its inputs unchanged since. A skip preserves previous logs and
-does not count as a passing run. Checks without private disc inputs must report
-their skips; they are not original-game playthroughs.
+During development use focused tests. Release copy and publisher changes need
+focused release tests, not the runtime suite. CI runs the runtime suite
+(`src/runtime/scripts/suite.sh`, every tier) with the discs from the private
+fixtures release for each pull request and push to master whose runtime inputs
+changed ([runtime.md](runtime.md#in-ci)); locally it runs only when asked. A
+skipped suite does not count as a passing run. Checks without private disc
+inputs must report their skips; they are not original-game playthroughs.
 
 ## v0.5 qualification record
 

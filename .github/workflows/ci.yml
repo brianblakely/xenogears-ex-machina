@@ -1,14 +1,17 @@
-name: Public build and matching tools
+name: CI
 on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: public-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  # The suite's full tier as on a clone without the discs: its public and
+  # matching units.
   public:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -24,3 +27,122 @@ jobs:
         run: nix develop path:./nix/runtime -c python3 tools/repository/check.py
       - name: Actual matching toolchain and exact synthetic image
         run: nix develop path:./nix/ghidra#matching -c make -C src/decomp smoke
+
+  # Whether the platform tiers run: the suite's own check of the runtime
+  # inputs, against the pull request's base or the commit before the push.
+  # A run started by hand always runs them.
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      suite: ${{ steps.check.outputs.suite }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Runtime inputs changed
+        id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          case $EVENT in
+            pull_request) base=origin/$BASE_REF ;;
+            push) base=$BEFORE ;;
+            *) echo 'suite=true' >> "$GITHUB_OUTPUT"; exit 0 ;;
+          esac
+          status=0
+          src/runtime/scripts/suite.sh --changed --base "$base" || status=$?
+          case $status in
+            0) echo 'suite=true' >> "$GITHUB_OUTPUT" ;;
+            1) echo 'suite=false' >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
+
+  # The platform tiers with the discs, each on a runner of its own (together
+  # with the public job, the suite's full tier). The discs are the private
+  # fixtures release's files under their names in discs/, extracted and
+  # matched as docs/matching.md has them. A pull request from a fork gets no
+  # secrets, so not these jobs.
+  suite:
+    needs: changes
+    if: >-
+      needs.changes.outputs.suite == 'true' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    strategy:
+      fail-fast: false
+      matrix:
+        tier: [desktop, web, android, xr]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    environment:
+      name: tests
+      deployment: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Make room for the pinned toolchains
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      # Each asset's label is its file's name in discs/ (GitHub rewrites the
+      # asset's own name); its digest is checked. Nothing of the discs is
+      # cached or uploaded.
+      - name: The discs from the fixtures release
+        env:
+          GH_TOKEN: ${{ secrets.FIXTURES_READ_TOKEN }}
+          FIXTURES_REPO: ${{ secrets.FIXTURES_REPO }}
+          FIXTURES_TAG: ${{ secrets.FIXTURES_TAG }}
+        run: |
+          mkdir -p discs
+          assets=$(gh api "repos/$FIXTURES_REPO/releases/tags/$FIXTURES_TAG" --jq '.assets[] | [.url, .label, .digest] | @tsv')
+          while IFS=$'\t' read -r url name digest; do
+            if [ -z "$name" ]; then echo "An asset of $FIXTURES_TAG has no label (its name in discs/)." >&2; exit 1; fi
+            curl -fsSL --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/octet-stream' -o "discs/$name" "$url"
+            echo "${digest#sha256:}  discs/$name" | sha256sum --check
+          done <<< "$assets"
+          test -f 'discs/Xenogears disc 1.chd'
+      - name: The discs extracted and the matched PS1 links (docs/matching.md)
+        run: |
+          mkdir -p .local/discs
+          for n in 1 2; do
+            nix develop path:./nix#analysis -c chdman extractcd -i "discs/Xenogears disc $n.chd" \
+              -o ".local/discs/disc$n.cue" -ob ".local/discs/disc$n.bin"
+          done
+          # shellcheck disable=SC2016 # the matching shell's bash expands them
+          nix develop path:./nix/ghidra#matching -c bash -euo pipefail -c '
+            for n in 1 2; do python3 tools/extraction/disc_files.py ".local/discs/disc$n.bin" ".local/extract/disc$n"; done
+            python3 tools/extraction/overlays.py
+            make -C src/decomp all-split
+            make -j"$(nproc)" -C src/decomp all-verify'
+      - name: The browser tests' packages
+        if: matrix.tier == 'web'
+        run: nix develop path:./nix/runtime -c bash -c 'cd src/runtime/web && npm ci --ignore-scripts'
+      - name: The emulator's access to KVM
+        if: matrix.tier == 'android'
+        run: sudo chmod a+rw /dev/kvm
+      - name: The ${{ matrix.tier }} tier
+        env:
+          TIER: ${{ matrix.tier }}
+        run: src/runtime/scripts/suite.sh "$TIER" --force --threads "$(nproc)"
+      - name: Every unit's result
+        if: always()
+        run: |
+          if [ -f build/suite/summary.txt ]; then
+            { echo '```'; cat build/suite/summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          df -h / && free -m
+      - name: The units' logs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: suite-${{ matrix.tier }}-logs
+          path: |
+            build/suite/*.log
+            build/suite/summary.txt
+          retention-days: 14
+          if-no-files-found: ignore

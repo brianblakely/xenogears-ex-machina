@@ -106,7 +106,8 @@ class SuiteGuardTests(unittest.TestCase):
 
     def test_untracked_sources_tests_and_build_inputs_are_detected(self):
         for name in ["src/runtime/crates/example/src/new.rs", "src/port/port.c",
-                     "nix/runtime/flake.lock", "tools/game_schema.py", "tests/test_port_gpu.py"]:
+                     "nix/runtime/flake.lock", "tools/game_schema.py", "tests/test_port_gpu.py",
+                     ".github/workflows/ci.yml"]:
             with self.subTest(name=name):
                 path = self.root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -127,6 +128,25 @@ class SuiteGuardTests(unittest.TestCase):
         self.assertEqual(self.calls.read_text().splitlines()[-5:], ["web", "--base", "origin/master", "--threads", "6"])
         self.assert_started("--force", "--threads", "12")
         self.assertEqual(self.calls.read_text().splitlines()[-6:], ["desktop", "--base", "origin/master", "--force", "--threads", "12"])
+
+    def test_changed_answers_the_check_without_starting_nix(self):
+        result = self.run_suite("--changed")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("No runtime inputs changed", result.stdout)
+        self.git("checkout", "--quiet", "-b", "topic")
+        self.code.write_text("pub fn updated() {}\n")
+        self.commit()
+        result = self.run_suite("--changed")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Runtime inputs changed", result.stdout)
+        result = self.run_suite("--changed", "--base", "HEAD")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(self.run_suite("--changed", "--base", "missing-ref").returncode, 2)
+        for args in [["--changed", "desktop"], ["--changed", "--force"], ["--changed", "--threads", "4"]]:
+            with self.subTest(args=args):
+                self.assertEqual(self.run_suite(*args).returncode, 2)
+        self.assertFalse(self.calls.exists(), "the check alone must not start Nix")
+        self.assertEqual(self.log.read_text(), "previous results\n")
 
     def test_missing_base_is_an_error_instead_of_a_skip(self):
         result = self.run_suite("--base", "missing-ref")

@@ -494,8 +494,11 @@ PY
 
     echo "== repeated Home during 20x fast-forward"
     # The game boot hides Settings; press the default keyboard FF binding.
+    # The app logs every 120th frame drawn, and at 20x the emulator draws few
+    # (CI's runner: 1.4 to 12 a second), so this waits as long as the check
+    # of fast-forward from the panel below.
     "${adb[@]}" shell input keyevent --longpress KEYCODE_GRAVE
-    wait_for "xem: frame rendered .*fast_forward=true" 30
+    wait_for "xem: frame rendered .*fast_forward=true" 90
     for attempt in $(seq 6); do
         sleep 0.2
         mark

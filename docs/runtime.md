@@ -5963,7 +5963,9 @@ Headset class (Low tier, depth of field off unless enabled).
   compares WebGPU's and WebGL2's pictures of the same frames (99.97-100% of
   pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
-  a slower session rate, both views showing the screen, paused head tracking,
+  a slower session rate (or, where software WebGL presents under 15 Hz, as on
+  CI's runner, near the four game frames a session frame may catch up), both
+  views showing the screen, paused head tracking,
   recentring on the screen (the head moved and turned a quarter away, both
   views' centres the room's; the player's Recenter puts the seat at the
   head, facing its way, and IWER's own recentring, its `local` space's
@@ -7041,7 +7043,8 @@ captures.
 ## The test suite
 
 `src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF] [--threads N]`
-runs the tests from anywhere in the repository, in the runtime shell. Before
+runs the tests from anywhere in the repository, in the runtime shell. CI runs
+it ([In CI](#in-ci)); locally it runs only when the user asks (AGENTS.md). Before
 starting Nix, it checks tracked changes (including staged and unstaged edits)
 and non-ignored untracked files against the merge base of HEAD and
 `origin/master`. Committed branch changes count too. If no runtime sources,
@@ -7056,19 +7059,20 @@ the most recent committed update on master. Use `--force` deliberately to bypass
 change detection and run every unit again, including when private/ignored game
 inputs, drivers or the test environment changed. It also works without a
 comparison ref. A skip leaves `build/suite/` intact and does not establish a new
-passing result. Help and flag parsing need no Nix shell. While developing, run
-only the platform whose host is changing, and `full` once at the end before
-review or a merge only when runtime inputs changed (AGENTS.md): `desktop` (the
-default, for the native and shared code) builds the game module and runs the
-port's unit tests, the Rust workspace's tests and the validation run; `web` the
-web build, the browser suites and the browser tests that measure time (WebXR's
-among them); `android` the APK with both its libraries, the emulator's smoke
-test, the smoke's game again with the APK's arm64-v8a library (which the
-emulator runs through its ARM translation) and the game's arm64 build under qemu
-(`arm64-smoke.sh`); `xr` the native build and the OpenXR smoke test. `full` runs
-them all and what CI runs (`.github/workflows/ci.yml`) as on a clone without the
-user's discs: `tools/repository/check.py`, which builds and tests the workspace
-(here without a game module), and the matching toolchain's smoke test
+passing result. Help and flag parsing need no Nix shell, and neither does
+`suite.sh --changed [--base REF]`, which only answers the check: exit 0 when
+runtime inputs changed (a run would start), 1 when none did, 2 when the base
+cannot be resolved. The tiers: `desktop` (the default, for the native and
+shared code) builds the game module and runs the port's unit tests, the Rust
+workspace's tests and the validation run; `web` the web build, the browser
+suites and the browser tests that measure time (WebXR's among them); `android`
+the APK with both its libraries, the emulator's smoke test, the smoke's game
+again with the APK's arm64-v8a library (which the emulator runs through its ARM
+translation) and the game's arm64 build under qemu (`arm64-smoke.sh`); `xr` the
+native build and the OpenXR smoke test. `full` runs
+them all and CI's public job (`.github/workflows/ci.yml`) as on a clone without
+the user's discs: `tools/repository/check.py`, which builds and tests the
+workspace (here without a game module), and the matching toolchain's smoke test
 (`make -C src/decomp smoke`).
 
 **Units.** The runner (`scripts/suite.py`) makes a run of units: a build, one
@@ -7216,6 +7220,34 @@ thread a core (half the threads) and the card: `desktop` 617 s with everything
 to run (the Rust tests 4 410 s of processor time, the run's memory 5.1 GB at
 its most), 2 s with nothing changed; `web` 928 s (1 755 s with SwiftShader for
 everything), 560 s of it the tests that measure time, one at a time.
+
+### In CI
+
+`.github/workflows/ci.yml` runs the full tier as five jobs on GitHub-hosted
+runners: `public` (the full tier's public and matching units, without discs) and
+`suite`, one job for each of `desktop`, `web`, `android` and `xr`. Its
+`changes` job runs `suite.sh --changed` against the pull request's base or the
+commit before a push to master; when no runtime inputs changed (the workflow
+itself is one), the tiers' jobs are skipped. A run started by hand (`workflow_dispatch`) always runs them.
+A tier's job takes the discs from a release of a private repository: the
+`tests` environment's secrets `FIXTURES_READ_TOKEN` (read access to it),
+`FIXTURES_REPO` (`owner/name`) and `FIXTURES_TAG` (the release's tag), the
+environment used without deployments. Each asset's label is the file's name in
+`discs/` (GitHub rewrites the asset's own name: `Xenogears.disc.1.chd`), and
+its sha256 digest is checked after the download. The job then makes
+`.local` as [matching.md](matching.md) does: `chdman extractcd` of both CHDs to
+`.local/discs`, `tools/extraction/disc_files.py` to `.local/extract`,
+`tools/extraction/overlays.py`, and `make -C src/decomp all-split` and
+`all-verify`, whose matched links the game module is built from. So every disc
+test runs as it does on the user's machine, the Japanese discs beside disc 1,
+and a decomp that no longer matches fails the job. It then runs
+`suite.sh TIER --force --threads $(nproc)` (the runner has no earlier results,
+and `changes` made the check). The private captures under `.local/scenarios`
+are not there, so the tests that compare with them skip, as on any clone.
+Every unit's result goes to the job's summary; when the job fails, the units'
+logs are uploaded (`suite-TIER-logs`, 14 days). Nothing of the discs or
+`.local` is cached or uploaded. A pull request from a fork gets no secrets, so
+its tiers' jobs are skipped; push its branch to this repository to run them.
 
 ## Saves and time controls
 

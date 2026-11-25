@@ -100,9 +100,10 @@ It does not prove:
 ### Keeping the reference while porting
 
 - `make -C src/decomp all-verify` must stay at 26/26 after any change to
-  `src/decomp/src` or `src/decomp/include`. Public CI runs the host build checks and the
-  toolchain smoke test, not `all-verify` (`.github/workflows/ci.yml`), because
-  the comparison needs the user's discs, so the gate is local.
+  `src/decomp/src` or `src/decomp/include`. CI's suite jobs run `all-split` and
+  `all-verify` on the discs from the private fixtures release before the game
+  module is built (`.github/workflows/ci.yml`), so a pull request that breaks a
+  match fails there; still run it locally after such a change.
 - A cheap guard that needs no discs: the build pipes `psx-cpp` into `psx-cc1`
   with per-unit flags recorded in `<unit>.cflags` (`cc1_of`, src/decomp/Makefile).
   No source uses `__LINE__`, `__FILE__`, `__DATE__`, `__TIME__` or
