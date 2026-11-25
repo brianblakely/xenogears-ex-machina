@@ -1044,9 +1044,8 @@ impl View {
     pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
         let (forward,rewind) = game.time_activity();
         self.frame_rate.set_activity(forward,rewind);
-        let runtime = &mut game.session.runtime;
-        let line = self.settings.borrow().settings().movie_subtitles.then(|| runtime.subtitle()).flatten();
-        self.subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| runtime.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
+        let line = self.settings.borrow().settings().movie_subtitles.then(|| game.subtitle()).flatten();
+        self.subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| game.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
         let graphics = self.settings.borrow().settings().graphics;
         if graphics.renderer == xem_settings::Renderer::Original {
             // The console's own picture, as the device shows it (nothing to

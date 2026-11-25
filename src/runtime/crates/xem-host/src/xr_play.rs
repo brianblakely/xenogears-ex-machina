@@ -913,11 +913,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             (display, scene)
         };
         let from_view = !original && (GameView::shows(&display) || view.shows_movie(&display));
-        {
-            let runtime = &mut game.session.runtime;
-            let line = current.movie_subtitles.then(|| runtime.subtitle()).flatten();
-            subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| runtime.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
-        }
+        let line = current.movie_subtitles.then(|| game.subtitle()).flatten();
+        subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| game.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         // Inspection looks from within the scene through the eyes (held
         // through frames the runtime cannot locate them in), every headset
