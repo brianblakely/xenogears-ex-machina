@@ -3,7 +3,7 @@
 //! sign-in by password and by the kept token, the game's achievements
 //! loaded by the disc's hash, unlocks from the game's memory (RAM and the
 //! scratchpad) sent as softcore, their notices with the achievements'
-//! badges, and sign-out.
+//! badges, sign-out, and a sign-in that gets no answer, or an empty one.
 //!
 //!     cargo test -p xem-achievements --test client
 
@@ -224,4 +224,65 @@ fn a_kept_token_the_server_refuses_is_forgotten() {
     assert!(client.status().error.as_deref().unwrap().contains("Invalid User/Token"), "{:?}", client.status());
     assert!(!account.exists(), "signed out until the player signs in again");
     std::fs::remove_dir_all(directory).unwrap();
+}
+
+/// A server at `http://127.0.0.1:<port>` answering every request, once it
+/// has read it, with the bytes `answer` as they are.
+fn answering(answer: &'static [u8]) -> String {
+    use std::io::{BufRead, BufReader, Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let host = format!("http://{}", listener.local_addr().unwrap());
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(stream) = stream else { continue };
+            let mut reader = BufReader::new(stream);
+            let mut length = 0;
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
+                    break;
+                }
+                if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                    length = value.trim().parse().unwrap_or(0);
+                }
+            }
+            let mut form = vec![0; length];
+            if reader.read_exact(&mut form).is_ok() {
+                let _ = reader.into_inner().write_all(answer);
+            }
+        }
+    });
+    host
+}
+
+/// Signs in with the stand-in's account at `host`: the outcome's error.
+fn sign_in_error(host: &str) -> String {
+    let mut client = Achievements::new(None, "XemTest/1.0");
+    client.set_host(host);
+    let memory = Memory::new();
+    client.sign_in("Player", "secret").unwrap();
+    pump(&mut client, &memory, |c| c.status().error.is_some());
+    assert_eq!(client.status().account, Account::SignedOut, "{host}");
+    client.status().error.unwrap()
+}
+
+#[test]
+fn a_sign_in_no_whole_answer_comes_for_says_why() {
+    // No connection (a port nothing listens on), then an answer whose body
+    // the connection loses: the request's own error, not rcheevos' number
+    // ("Sign-in failed: error -32").
+    let closed = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
+    let cut = answering(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 100\r\nConnection: close\r\n\r\n{\"Success\":");
+    for host in [format!("http://{closed}"), cut] {
+        let error = sign_in_error(&host);
+        assert!(error.starts_with("Sign-in failed: RetroAchievements could not be reached (") && error.ends_with(')'), "{host}: {error}");
+    }
+}
+
+#[test]
+fn an_answer_without_a_body_fails_the_sign_in_without_a_crash() {
+    // rcheevos reads a body's first byte whatever its length: an empty
+    // one is still a string (it was a dangling pointer, read).
+    let empty = answering(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    assert_eq!(sign_in_error(&empty), "Sign-in failed: No response");
 }
