@@ -2074,6 +2074,16 @@ fn shortcut(ui: &SettingsUi, letter: &str) {
     ui.dispatch(WindowEvent::KeyReleased { text: xem_ui::Key::Control.into() });
 }
 
+/// `letter` as the hosts give a shortcut another program sent with no
+/// Ctrl key down (Omarchy's Super+V has Hyprland send Ctrl+V): Control
+/// pressed and released around the letter's press.
+fn sent_shortcut(ui: &SettingsUi, letter: &str) {
+    ui.dispatch(WindowEvent::KeyPressed { text: xem_ui::Key::Control.into() });
+    ui.dispatch(WindowEvent::KeyPressed { text: letter.into() });
+    ui.dispatch(WindowEvent::KeyReleased { text: xem_ui::Key::Control.into() });
+    ui.dispatch(WindowEvent::KeyReleased { text: letter.into() });
+}
+
 #[test]
 fn the_achievements_fields_paste_from_the_clipboard_and_the_password_never_leaves() {
     use xem_ui::AchievementsRequest;
@@ -2089,12 +2099,15 @@ fn the_achievements_fields_paste_from_the_clipboard_and_the_password_never_leave
     ui.update().unwrap();
     section(&mut ui, "Achievements", 7);
 
-    // Ctrl+V pastes the clipboard into each field.
-    for (field, text) in [("RetroAchievements user name", "Player"), ("RetroAchievements password", "pasted secret")] {
+    // Ctrl+V pastes the clipboard into each field: typed, and sent as
+    // Omarchy's Super+V sends it.
+    let typed: fn(&SettingsUi, &str) = shortcut;
+    let sent: fn(&SettingsUi, &str) = sent_shortcut;
+    for (field, text, paste) in [("RetroAchievements user name", "Player", typed), ("RetroAchievements password", "pasted secret", sent)] {
         *clipboard.borrow_mut() = text.into();
         press(&ui, &element(&ui, field, AccessibleRole::TextInput));
         ui.update().unwrap();
-        shortcut(&ui, "v");
+        paste(&ui, "v");
     }
     assert_eq!(ui.component().get_ra_username(), "Player");
     assert_eq!(ui.component().get_ra_password(), "pasted secret");
