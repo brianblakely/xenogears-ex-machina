@@ -855,7 +855,7 @@ impl View {
                     && self.ui.listen_key(&key_code(key.scancode).unwrap_or_default(), key.down)
                 {
                     // A binding listening for an input took it.
-                } else if visible && let Some(text) = slint_key(key.key) {
+                } else if visible && let Some(text) = slint_key(key.key, key.r#mod) {
                     self.ui.dispatch(match (key.down, key.repeat) {
                         (true, false) => WindowEvent::KeyPressed { text },
                         (true, true) => WindowEvent::KeyPressRepeated { text },
@@ -1642,8 +1642,18 @@ fn panel_size((width, height): (u32, u32), scale: f32) -> (u32, u32) {
     (fit(PANEL_SIZE.0, width), fit(PANEL_SIZE.1, height))
 }
 
-/// Keys Slint treats specially; printable text arrives as SDL text input.
-fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
+/// Keys Slint treats specially; printable text arrives as SDL text input,
+/// which gives none for a letter with Ctrl (Command on macOS) held: that
+/// letter comes as its key, for Slint's shortcuts (Ctrl+V pastes, Ctrl+C
+/// copies, Ctrl+A selects all).
+fn slint_key(key: SDL_Keycode, modifiers: SDL_Keymod) -> Option<xem_ui::SharedString> {
+    let shortcut = if cfg!(target_os = "macos") { SDL_KMOD_GUI } else { SDL_KMOD_CTRL };
+    if (modifiers & shortcut) != SDL_Keymod(0) && (SDLK_A.0..=SDLK_Z.0).contains(&key.0) {
+        return char::from_u32(key.0).map(|letter| letter.to_string().into());
+    }
+    // Slint's shortcuts read its Control modifier: on macOS, Command's.
+    let (control, meta) = if cfg!(target_os = "macos") { (Key::Meta, Key::Control) } else { (Key::Control, Key::Meta) };
+    let (control_r, meta_r) = if cfg!(target_os = "macos") { (Key::MetaR, Key::ControlR) } else { (Key::ControlR, Key::MetaR) };
     let key = match key {
         SDLK_BACKSPACE => Key::Backspace,
         SDLK_TAB => Key::Tab,
@@ -1660,12 +1670,12 @@ fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
         SDLK_PAGEDOWN => Key::PageDown,
         SDLK_LSHIFT => Key::Shift,
         SDLK_RSHIFT => Key::ShiftR,
-        SDLK_LCTRL => Key::Control,
-        SDLK_RCTRL => Key::ControlR,
+        SDLK_LCTRL => control,
+        SDLK_RCTRL => control_r,
         SDLK_LALT => Key::Alt,
         SDLK_RALT => Key::AltGr,
-        SDLK_LGUI => Key::Meta,
-        SDLK_RGUI => Key::MetaR,
+        SDLK_LGUI => meta,
+        SDLK_RGUI => meta_r,
         _ => return None,
     };
     Some(key.into())
@@ -1674,6 +1684,19 @@ fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_letter_with_the_shortcut_modifier_reaches_the_panel_as_a_key_and_without_it_as_text() {
+        let (shortcut, other) = if cfg!(target_os = "macos") { (SDL_KMOD_LGUI, SDL_KMOD_LCTRL) } else { (SDL_KMOD_LCTRL, SDL_KMOD_LGUI) };
+        assert_eq!(slint_key(SDLK_V, shortcut).as_deref(), Some("v"));
+        assert_eq!(slint_key(SDLK_V, shortcut | SDL_KMOD_LSHIFT).as_deref(), Some("v"));
+        assert_eq!(slint_key(SDLK_V, SDL_KMOD_NONE), None, "typed letters come as SDL text input");
+        assert_eq!(slint_key(SDLK_V, other), None);
+        assert_eq!(slint_key(SDLK_1, shortcut), None);
+        // The shortcut modifier's own key is Slint's Control.
+        let modifier = if cfg!(target_os = "macos") { SDLK_LGUI } else { SDLK_LCTRL };
+        assert_eq!(slint_key(modifier, SDL_KMOD_NONE), Some(Key::Control.into()));
+    }
 
     #[test]
     fn show_fps_draws_over_the_game_with_settings_closed() {

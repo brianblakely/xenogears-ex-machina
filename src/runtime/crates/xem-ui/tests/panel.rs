@@ -2053,3 +2053,64 @@ fn achievements_sign_in_and_out_go_through_the_host() {
     press(&ui, &element(&ui, "Sign out", AccessibleRole::Button));
     assert_eq!(requests.borrow().last(), Some(&AchievementsRequest::SignOut));
 }
+
+/// The system clipboard as a host gives it, in memory.
+struct TestClipboard(Rc<RefCell<String>>);
+
+impl xem_ui::Clipboard for TestClipboard {
+    fn text(&self) -> Option<String> {
+        Some(self.0.borrow().clone()).filter(|text| !text.is_empty())
+    }
+    fn set_text(&self, text: &str) {
+        *self.0.borrow_mut() = text.into();
+    }
+}
+
+/// `letter` with Control held, as the hosts give a shortcut.
+fn shortcut(ui: &SettingsUi, letter: &str) {
+    ui.dispatch(WindowEvent::KeyPressed { text: xem_ui::Key::Control.into() });
+    ui.dispatch(WindowEvent::KeyPressed { text: letter.into() });
+    ui.dispatch(WindowEvent::KeyReleased { text: letter.into() });
+    ui.dispatch(WindowEvent::KeyReleased { text: xem_ui::Key::Control.into() });
+}
+
+#[test]
+fn the_achievements_fields_paste_from_the_clipboard_and_the_password_never_leaves() {
+    use xem_ui::AchievementsRequest;
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 900), 1.0).unwrap();
+    let clipboard = Rc::new(RefCell::new(String::new()));
+    xem_ui::set_clipboard(TestClipboard(clipboard.clone()));
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.set_achievements_offered(true);
+    ui.on_achievements_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    section(&mut ui, "Achievements", 7);
+
+    // Ctrl+V pastes the clipboard into each field.
+    for (field, text) in [("RetroAchievements user name", "Player"), ("RetroAchievements password", "pasted secret")] {
+        *clipboard.borrow_mut() = text.into();
+        press(&ui, &element(&ui, field, AccessibleRole::TextInput));
+        ui.update().unwrap();
+        shortcut(&ui, "v");
+    }
+    assert_eq!(ui.component().get_ra_username(), "Player");
+    assert_eq!(ui.component().get_ra_password(), "pasted secret");
+
+    // Ctrl+A and Ctrl+C copy the user name, but nothing from the password.
+    press(&ui, &element(&ui, "RetroAchievements user name", AccessibleRole::TextInput));
+    shortcut(&ui, "a");
+    shortcut(&ui, "c");
+    assert_eq!(*clipboard.borrow(), "Player");
+    press(&ui, &element(&ui, "RetroAchievements password", AccessibleRole::TextInput));
+    shortcut(&ui, "a");
+    shortcut(&ui, "c");
+    shortcut(&ui, "x");
+    assert_eq!(*clipboard.borrow(), "Player", "the password is never copied");
+    assert_eq!(ui.component().get_ra_password(), "pasted secret", "nor cut");
+
+    press(&ui, &element(&ui, "Sign in", AccessibleRole::Button));
+    assert_eq!(*requests.borrow(), [AchievementsRequest::SignIn { username: "Player".into(), password: "pasted secret".into() }]);
+}

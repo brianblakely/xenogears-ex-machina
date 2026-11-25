@@ -54,6 +54,21 @@ thread_local! {
     // Slint has created it for a new component.
     static NEXT_GPU: RefCell<Option<SharedGpu>> = const { RefCell::new(None) };
     static CREATED: RefCell<Option<Rc<PanelWindow>>> = const { RefCell::new(None) };
+    static CLIPBOARD: RefCell<Option<Box<dyn Clipboard>>> = const { RefCell::new(None) };
+}
+
+/// The system clipboard as the host reaches it: the panel's text fields
+/// paste from it (Ctrl+V) and copy and cut to it (Ctrl+C, Ctrl+X; never
+/// from the password field).
+pub trait Clipboard {
+    fn text(&self) -> Option<String>;
+    fn set_text(&self, text: &str);
+}
+
+/// The clipboard the panel's text fields use on this thread (none until
+/// a host sets one: pasting then does nothing).
+pub fn set_clipboard(clipboard: impl Clipboard + 'static) {
+    CLIPBOARD.set(Some(Box::new(clipboard)));
 }
 
 /// Slint's platform on the host thread: it only creates texture-backed windows.
@@ -81,6 +96,19 @@ impl Platform for HostPlatform {
         });
         CREATED.set(Some(window.clone()));
         Ok(window)
+    }
+
+    fn clipboard_text(&self, clipboard: slint::platform::Clipboard) -> Option<String> {
+        if clipboard != slint::platform::Clipboard::DefaultClipboard {
+            return None;
+        }
+        CLIPBOARD.with_borrow(|host| host.as_ref()?.text())
+    }
+
+    fn set_clipboard_text(&self, text: &str, clipboard: slint::platform::Clipboard) {
+        if clipboard == slint::platform::Clipboard::DefaultClipboard {
+            CLIPBOARD.with_borrow(|host| if let Some(host) = host { host.set_text(text) });
+        }
     }
 }
 
