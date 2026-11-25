@@ -5963,7 +5963,9 @@ Headset class (Low tier, depth of field off unless enabled).
   compares WebGPU's and WebGL2's pictures of the same frames (99.97-100% of
   pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
-  a slower session rate, both views showing the screen, paused head tracking,
+  a slower session rate (or, where software WebGL presents under 15 Hz, as on
+  CI's runner, near the four game frames a session frame may catch up), both
+  views showing the screen, paused head tracking,
   recentring on the screen (the head moved and turned a quarter away, both
   views' centres the room's; the player's Recenter puts the seat at the
   head, facing its way, and IWER's own recentring, its `local` space's

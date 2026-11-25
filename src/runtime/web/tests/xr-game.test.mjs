@@ -63,6 +63,10 @@ const platformingMaps = () => {
   return [...table.replace(/"[^"]*"/g, '').matchAll(/\d+/g)].map((m) => Number(m[0])).sort((a, b) => a - b);
 };
 
+// The game frames an animation frame may catch up (xem-web's MAX_FRAMES_PER_ANIMATION).
+const framesPerAnimation = () =>
+  Number(readFileSync(join(ROOT, 'src/runtime/crates/xem-web/src/lib.rs'), 'utf8').match(/const MAX_FRAMES_PER_ANIMATION: u64 = (\d+);/)[1]);
+
 describe('immersive play in a headset browser', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
   test('the game runs on a virtual screen in both views', { timeout: 600_000 }, async () => {
     const state = join(SHOTS, 'xr-field12.state');
@@ -109,7 +113,12 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'frames', count: 120 }, { cmd: 'memory_hash' }]), onward,
         'and goes on natively as in the headset');
 
-      // Running: game frames follow the clock, not the session's frame rate.
+      // Running: game frames follow the clock, not the session's frame rate:
+      // 60 a second, as long as the session presents at 15 Hz or more (a
+      // session frame catches up at most xem-web's MAX_FRAMES_PER_ANIMATION;
+      // time beyond that is dropped). On CI's runner of four threads the
+      // session's software WebGL presents at about 8 Hz, so the clock gives
+      // the game that many a session frame there.
       await page.evaluate(() => window.xem.setRunning(true));
       const before = await status(page);
       const t0 = Date.now();
@@ -119,7 +128,8 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const gameRate = (after.loop.gameFrames - before.loop.gameFrames) / seconds;
       const xrRate = (after.page.xr.frames - before.page.xr.frames) / seconds;
       console.log(`game ${gameRate.toFixed(1)} frames/s, session ${xrRate.toFixed(1)} frames/s`);
-      assert.ok(gameRate > 40 && gameRate < 66, `the game runs near 60 frames a second (${gameRate})`);
+      const clock = Math.min(60, framesPerAnimation() * xrRate);
+      assert.ok(gameRate > clock * 2 / 3 && gameRate < 66, `the game runs near ${clock.toFixed(1)} frames a second, the clock's (${gameRate})`);
       assert.ok(after.loop.xrFrames > before.loop.xrFrames, 'the session drives the frames');
       assert.equal(after.loop.animationFrames, before.loop.animationFrames, 'the canvas loop rests in the headset');
 
