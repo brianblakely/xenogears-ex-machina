@@ -2,15 +2,18 @@
 # The test suite, from anywhere in the repository:
 #
 #   src/runtime/scripts/suite.sh [desktop|web|android|xr|full] [--force] [--base REF] [--threads N]
+#   src/runtime/scripts/suite.sh --changed [--base REF]
 #
 # Skip before starting Nix when no runtime inputs differ from the merge base
 # with origin/master, including staged, unstaged and untracked files. --base
 # selects another comparison ref; --force bypasses the check and runs every
-# unit again. See AGENTS.md.
+# unit again. --changed only answers the check, starting nothing: exit 0
+# when runtime inputs changed (a run would start), 1 when none did.
 #
-# While developing, run only the platform whose host you are changing
-# (desktop for the native and shared code), and full once at the end, before
-# review or a merge, when those inputs changed (AGENTS.md):
+# CI runs it (.github/workflows/ci.yml): each platform's tier on a runner of
+# its own, with the discs from the private fixtures release, for every pull
+# request and push to master whose runtime inputs changed. Locally, run it
+# only when the user asks (AGENTS.md). The tiers:
 #
 #   desktop  (the default) the game module, the port's unit tests (with the
 #            platforming table's check on the user's extracted discs), the
@@ -23,8 +26,8 @@
 #            emulator runs through its ARM translation), and the game's
 #            arm64 build under qemu (arm64-smoke.sh)
 #   xr       the game module, the native build and the OpenXR smoke test
-#   full     all of them, and what CI runs (.github/workflows/ci.yml) as on
-#            a clone without the user's discs: tools/repository/check.py,
+#   full     all of them, and CI's public job (.github/workflows/ci.yml),
+#            as on a clone without the user's discs: tools/repository/check.py,
 #            which builds and tests the workspace (here without a game
 #            module), and the matching toolchain's smoke test
 #
@@ -86,9 +89,13 @@ runtime=$root/src/runtime
 tier=desktop
 tier_given=false
 force=false
+answer=false
 comparison=origin/master
 threads=()
-usage() { echo "usage: $0 [desktop|web|android|xr|full] [--force] [--base REF] [--threads N]"; }
+usage() {
+    echo "usage: $0 [desktop|web|android|xr|full] [--force] [--base REF] [--threads N]"
+    echo "       $0 --changed [--base REF]"
+}
 while (($#)); do
     case $1 in
     desktop | web | android | xr | full)
@@ -97,6 +104,7 @@ while (($#)); do
         tier_given=true
         shift ;;
     --force) force=true; shift ;;
+    --changed) answer=true; shift ;;
     --base)
         if (($# < 2)) || [[ $2 == -* ]]; then usage >&2; exit 2; fi
         comparison=$2
@@ -109,6 +117,8 @@ while (($#)); do
     *) usage >&2; exit 2 ;;
     esac
 done
+# The check's answer alone: no tier, run or override.
+if $answer && ($tier_given || $force || ((${#threads[@]}))); then usage >&2; exit 2; fi
 
 # This is a conservative runtime boundary, not a second test/dependency
 # registry. Any runtime change enables the chosen tier; standalone tooling
@@ -131,8 +141,16 @@ if ! $force; then
     }
     untracked=$(git -C "$root" ls-files --others --exclude-standard -- "${inputs[@]}") || exit 2
     if ! $changed && [[ -z $untracked ]]; then
+        if $answer; then
+            echo "No runtime inputs changed since $comparison's merge base ($base)."
+            exit 1
+        fi
         echo "Skipping $tier suite: no runtime inputs changed since $comparison's merge base ($base)."
         echo "Use --force to run anyway; use focused tests for changes outside the runtime."
+        exit 0
+    fi
+    if $answer; then
+        echo "Runtime inputs changed since $comparison's merge base ($base)."
         exit 0
     fi
 fi
