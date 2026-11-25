@@ -141,8 +141,11 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: suite-${{ matrix.tier }}-logs
+          # The Android smoke's logcat too, which its log quotes only in
+          # part: text, unlike the smoke's screenshots and BIOS beside it.
           path: |
             build/suite/*.log
             build/suite/summary.txt
+            build/android/smoke/logcat.txt
           retention-days: 14
           if-no-files-found: ignore

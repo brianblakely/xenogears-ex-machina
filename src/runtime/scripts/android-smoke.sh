@@ -494,11 +494,23 @@ PY
 
     echo "== repeated Home during 20x fast-forward"
     # The game boot hides Settings; press the default keyboard FF binding.
-    # The app logs every 120th frame drawn, and at 20x the emulator draws few
-    # (CI's runner: 1.4 to 12 a second), so this waits as long as the check
-    # of fast-forward from the panel below.
-    "${adb[@]}" shell input keyevent --longpress KEYCODE_GRAVE
-    wait_for "xem: frame rendered .*fast_forward=true" 90
+    # The app logs the toggle as it carries it out (each round below then
+    # sees the game drawn at 20x), not waiting for its every 120th frame
+    # drawn, which CI's emulator drew at 1.4 a second here. It reads the
+    # keyboard once a frame, so a press that short frames fall between goes
+    # unseen: press again then, three times at most, as `hold` does (a toggle
+    # whose line the busy log missed is turned off by the next press and on
+    # by the one after it).
+    ff=false
+    for _ in 1 2 3; do
+        mark
+        "${adb[@]}" shell input keyevent --longpress KEYCODE_GRAVE
+        if seen "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 15; then
+            ff=true
+            break
+        fi
+    done
+    $ff || fail "the keyboard's fast-forward key did not turn fast-forward on"
     for attempt in $(seq 6); do
         sleep 0.2
         mark
