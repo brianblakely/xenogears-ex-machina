@@ -122,13 +122,14 @@ if $answer && ($tier_given || $force || ((${#threads[@]}))); then usage >&2; exi
 
 # This is a conservative runtime boundary, not a second test/dependency
 # registry. Any runtime change enables the chosen tier; standalone tooling
-# (such as tools/release/) still gets its own focused tests.
+# (such as tools/release/) still gets its own focused tests. CI's workflow
+# counts too: it decides how the suite runs there.
 if ! $force; then
     base=$(git -C "$root" merge-base HEAD "$comparison") || {
         echo "Cannot resolve suite base '$comparison'; fetch it, choose --base REF, or use --force." >&2
         exit 2
     }
-    inputs=(src/decomp/ src/port/ src/runtime/ nix/runtime/ nix/ghidra/
+    inputs=(src/decomp/ src/port/ src/runtime/ nix/runtime/ nix/ghidra/ .github/workflows/ci.yml
         tools/game_module.py tools/game_schema.py tools/game_coverage.py tools/reference/
         tools/analysis/platforming.py 'tests/test_port_*.py' 'tests/test_game_*.py'
         tests/test_dispatch_tables.py tests/test_platforming.py tests/fixtures/

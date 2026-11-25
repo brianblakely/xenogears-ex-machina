@@ -29,9 +29,9 @@
   suite (no runtime inputs changed, or a fork's pull request, which gets no
   secrets) is not a pass. Documentation, release copy and standalone tooling
   changes need their focused checks, not the runtime suite.
-  Run locally on request, `suite.sh` skips before starting Nix if no runtime
-  inputs changed against the merge base with `origin/master` (`--base REF` for
-  another comparison, `--force` to run regardless, e.g. after changing
+  When the user asks for a local run, `suite.sh` skips before starting Nix if no
+  runtime inputs changed against the merge base with `origin/master` (`--base REF`
+  for another comparison, `--force` to run regardless, e.g. after changing
   private/ignored inputs); a skip is not a passing run.
   Record exact commands/results and missing private inputs honestly.
 - Keep original assets and generated disassembly local. Do not modify prompt.md.

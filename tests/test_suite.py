@@ -106,7 +106,8 @@ class SuiteGuardTests(unittest.TestCase):
 
     def test_untracked_sources_tests_and_build_inputs_are_detected(self):
         for name in ["src/runtime/crates/example/src/new.rs", "src/port/port.c",
-                     "nix/runtime/flake.lock", "tools/game_schema.py", "tests/test_port_gpu.py"]:
+                     "nix/runtime/flake.lock", "tools/game_schema.py", "tests/test_port_gpu.py",
+                     ".github/workflows/ci.yml"]:
             with self.subTest(name=name):
                 path = self.root / name
                 path.parent.mkdir(parents=True, exist_ok=True)

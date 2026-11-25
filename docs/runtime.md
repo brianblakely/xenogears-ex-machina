@@ -7225,8 +7225,8 @@ everything), 560 s of it the tests that measure time, one at a time.
 runners: `public` (the full tier's public and matching units, without discs) and
 `suite`, one job for each of `desktop`, `web`, `android` and `xr`. Its
 `changes` job runs `suite.sh --changed` against the pull request's base or the
-commit before a push to master; when no runtime inputs changed, the tiers'
-jobs are skipped. A run started by hand (`workflow_dispatch`) always runs them.
+commit before a push to master; when no runtime inputs changed (the workflow
+itself is one), the tiers' jobs are skipped. A run started by hand (`workflow_dispatch`) always runs them.
 A tier's job takes the discs from a release of a private repository: the
 `tests` environment's secrets `FIXTURES_READ_TOKEN` (read access to it),
 `FIXTURES_REPO` (`owner/name`) and `FIXTURES_TAG` (the release's tag), the
