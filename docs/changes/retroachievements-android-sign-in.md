@@ -1,0 +1,3 @@
+- Fixed signing in to RetroAchievements on Android and headsets, which always failed with "Sign-in failed: error -32": the app now asks for network access.
+- When RetroAchievements can't be reached, **Settings → Achievements** says why instead of showing an error number.
+- Fixed the app closing when the connection to RetroAchievements dropped in the middle of an answer.

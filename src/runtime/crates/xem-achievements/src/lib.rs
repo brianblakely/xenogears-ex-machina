@@ -431,9 +431,14 @@ impl Achievements {
                     continue;
                 }
             };
+            // rcheevos reads the body as a C string too (its first byte,
+            // whatever the length), so a zero ends it: an empty one is no
+            // dangling pointer (an empty answer ended the app).
+            let mut body = response.body;
+            body.push(0);
             let server = ffi::rc_api_server_response_t {
-                body: response.body.as_ptr().cast(),
-                body_length: response.body.len(),
+                body: body.as_ptr().cast(),
+                body_length: body.len() - 1,
                 http_status_code: response.status,
             };
             // SAFETY: rcheevos' own callback with its own data, once; the

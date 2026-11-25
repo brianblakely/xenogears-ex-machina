@@ -8,7 +8,8 @@
 # leaves it running for a later run to use, and XEM_SMOKE_STOP=1 only stops
 # one left running) kept under
 # .local/android, installs the app fresh and checks from logcat and
-# screenshots (build/android/smoke/*.png): first frame, bundled asset,
+# screenshots (build/android/smoke/*.png): the network's permission
+# (RetroAchievements), first frame, bundled asset,
 # Vulkan device, a settings change by touch, disc import through the system
 # document picker (a synthetic MODE2 image; the user's disc 1 CHD too when
 # XEM_DISC1 or discs/"Xenogears disc 1.chd" exists), background and return
@@ -154,6 +155,10 @@ done
 
 "${adb[@]}" uninstall "$package" >/dev/null 2>&1 || true
 "${adb[@]}" install --abi "$abi" "$apk" >/dev/null
+# RetroAchievements' requests: without INTERNET the system refuses the app
+# every socket and name lookup, and every sign-in fails unanswered (#109).
+[[ $("${adb[@]}" shell dumpsys package "$package") == *"android.permission.INTERNET: granted=true"* ]] ||
+    fail "the app was not granted android.permission.INTERNET"
 "${adb[@]}" push "$synthetic" /sdcard/Download/xem-synthetic.bin >/dev/null
 
 log=$out/logcat.txt

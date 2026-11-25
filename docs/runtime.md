@@ -10260,8 +10260,16 @@ progress.
   the badges, are made one after another on a thread of their own with
   `ureq` (HTTPS through rustls and ring, Mozilla's roots from webpki-roots,
   on every native host) and their answers are given to rcheevos, or kept as
-  badges, on the host's thread between frames (`Achievements::update`). The
-  requests name the app as
+  badges, on the host's thread between frames (`Achievements::update`),
+  each body ending with a zero (rcheevos reads its first byte whatever its
+  length: an empty answer was a dangling pointer, which ended the app). A
+  request no whole answer comes for (no connection, a timeout, the body
+  cut off) gives rcheevos ureq's error as its message, so the panel says
+  why ("Sign-in failed: RetroAchievements could not be reached (…)") in
+  place of rcheevos' number (-32, no response). Android's manifest asks
+  for `android.permission.INTERNET`: without it the system refuses the app
+  every socket and name lookup, and every sign-in failed unanswered
+  (issue #109, v1.19 and before). The requests name the app as
   `XenogearsExMachina/<version> (<system>) rcheevos/12.5`.
   `XEM_RETROACHIEVEMENTS_HOST` names another server (a test's stand-in).
   Until RetroAchievements' administrators register that client, its server
@@ -10286,7 +10294,9 @@ scratchpad sent as softcore, their notices waiting for their badges and
 bringing them; a state loaded starting the evaluation again, an achievement
 true from it unlocking only once seen false; a kept token signing in at
 start; an unknown disc; a badge's server unreachable, the unlock's notice
-then shown without one at once; a refused token forgotten) and the
+then shown without one at once; a refused token forgotten; a sign-in with
+no connection, or whose answer's body is cut off, failing with ureq's
+reason; an answer without a body failing it without a crash) and the
 bindings' structure layouts against the C compiler's;
 `xem-core/tests/persistence.rs`'s
 `an_observer_reads_every_completed_frame_and_hears_every_rewind_load_and_reset`;
@@ -10294,19 +10304,22 @@ bindings' structure layouts against the C compiler's;
 and `tests/hud.rs`'s `retroachievements_notices_show_their_detail_one_after_another`
 and `an_unlock_shows_its_badge_in_place_of_the_trophy_below_the_fps_and_the_activity`
 (the badge drawn where the trophy was, below the FPS counter and
-fast-forward's chip; data that is no badge showing the trophy); and
+fast-forward's chip; data that is no badge showing the trophy);
 `xem-host/tests/achievements.rs` (local: disc 1), the original game in a
 host's `Game` against the stand-in: its achievements loaded by disc 1's
 hash, one on the pad driver's vertical blank counter (0x80059488) unlocked
 from the game's RAM as softcore, and signing out leaving the game's
-achievements waiting for a sign-in.
+achievements waiting for a sign-in; and the Android smoke test's check
+that the installed app holds `android.permission.INTERNET`.
 
 Not done: leaderboard trackers and challenge indicators on the HUD (their
 attempts' start, failure and submission are noticed); a state keeps no
 achievement progress, so a load or a rewind starts the achievements'
-evaluation again; the client has signed in to the real server from no host
-here (no account): the hashes are the server's, the requests rcheevos' own,
-and everything after sign-in was tested against the stand-in.
+evaluation again; the desktop on Linux has signed in to the real server
+(2026-11-25), Android only to the stand-in, on the emulator (through the
+panel, the app's process pointed at it by `wrap.dev.xem.app`): the hashes
+are the server's, the requests rcheevos' own, and everything after sign-in
+was tested against the stand-in.
 
 ## Desktop host and settings panel
 

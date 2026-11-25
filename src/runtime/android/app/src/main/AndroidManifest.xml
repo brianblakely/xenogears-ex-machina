@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:installLocation="auto">
 
+    <!-- RetroAchievements' requests and badges (xem-achievements' http.rs).
+         Without it the system refuses the app every socket and name lookup,
+         so a sign-in fails unanswered. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-feature android:glEsVersion="0x00030000" />
     <uses-feature
         android:name="android.hardware.vulkan.version"

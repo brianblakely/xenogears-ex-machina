@@ -33,8 +33,11 @@ pub(crate) struct Answer {
 pub(crate) struct Response {
     pub reply: Reply,
     /// The HTTP status, or `RC_API_SERVER_RESPONSE_RETRYABLE_CLIENT_ERROR`
-    /// when none came (no connection, a timeout).
+    /// when no whole answer came (no connection, a timeout, the connection
+    /// lost during the body).
     pub status: i32,
+    /// The answer's body, or why none came: rcheevos gives that as the
+    /// failure's message, which the panel shows ("Sign-in failed: …").
     pub body: Vec<u8>,
 }
 
@@ -66,17 +69,18 @@ pub(crate) fn spawn(user_agent: String) -> (Sender<Request>, Receiver<Response>)
                     Some((content_type, form)) => agent.post(&request.url).header("Content-Type", content_type).send(form.as_str()),
                     None => agent.get(&request.url).call(),
                 };
-                let (status, body) = match response {
-                    Ok(mut response) => {
-                        let status = i32::from(response.status().as_u16());
-                        let body = match request.reply {
-                            Reply::Rcheevos(_) => response.body_mut().read_to_vec(),
-                            Reply::Badge(_) => response.body_mut().with_config().limit(BADGE_BYTES).read_to_vec(),
-                        };
-                        (status, body.unwrap_or_default())
-                    }
-                    Err(_) => (crate::ffi::RC_API_SERVER_RESPONSE_RETRYABLE_CLIENT_ERROR, Vec::new()),
-                };
+                let answer = response.and_then(|mut response| {
+                    let status = i32::from(response.status().as_u16());
+                    let body = match request.reply {
+                        Reply::Rcheevos(_) => response.body_mut().read_to_vec(),
+                        Reply::Badge(_) => response.body_mut().with_config().limit(BADGE_BYTES).read_to_vec(),
+                    }?;
+                    Ok((status, body))
+                });
+                let (status, body) = answer.unwrap_or_else(|error| {
+                    (crate::ffi::RC_API_SERVER_RESPONSE_RETRYABLE_CLIENT_ERROR,
+                        format!("RetroAchievements could not be reached ({error})").into_bytes())
+                });
                 if outgoing.send(Response { reply: request.reply, status, body }).is_err() {
                     break;
                 }
