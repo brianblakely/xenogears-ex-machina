@@ -12,9 +12,10 @@
 // (random battles off on the platforming maps, the others the original's),
 // as an agent's change does; leaving returns to the canvas; and the game's RAM
 // after the same frames is the same in and out of the headset, and the
-// state exported in the headset is xem-headless's after the same frames
-// byte for byte (the screen asks for no reveals), loads there to its RAM and
-// goes on there as in the headset. First-person
+// state exported in the headset loads in xem-headless to its RAM and goes on
+// there as in the headset (the screen asks for the faces its sub-pixel
+// picture needs, so the port's dead stack may differ from xem-headless's:
+// xem-host's tests/states.rs compares the whole state). First-person
 // inspection (field 30, IWER's tracked hands): the underhand grab looks from
 // within the scene through each view, a head turn changes the view while the
 // player's Pause holds the game, the controllers' click and stick toggle and
@@ -107,11 +108,6 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'memory_hash' }]), flatHash, 'the headset\'s state loads natively to its RAM');
       assert.equal(native([{ cmd: 'state_load', path: exported }, { cmd: 'frames', count: 120 }, { cmd: 'memory_hash' }]), onward,
         'and goes on natively as in the headset');
-      // The screen without wider framing asks for no reveals: the whole
-      // state is xem-headless's after the same frames.
-      const same = join(SHOTS, 'xr-field12-native.xemstate');
-      native([{ cmd: 'state_load', path: state }, { cmd: 'frames', count: 120 }, { cmd: 'state_save', path: same }]);
-      assert.ok(readFileSync(exported).equals(readFileSync(same)), 'the headset\'s state is xem-headless\'s, byte for byte');
 
       // Running: game frames follow the clock, not the session's frame rate.
       await page.evaluate(() => window.xem.setRunning(true));

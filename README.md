@@ -160,6 +160,7 @@ off plays that part as the original did.
   [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
   team's retranslation, French, Italian, Spanish and Brazilian Portuguese,
   switchable at any time with no patched discs.
+- **Movie subtitles** in the language of the game text.
 - On a computer, with your Japanese discs beside the North American ones:
   the Japanese release's text, or Japanese movies and battle voices with your
   own language.
@@ -229,10 +230,11 @@ endorsed by Square Enix. It includes none of the game's data: no disc images,
 artwork, music or BIOS.
 
 The project's source code is available under the [MIT License](LICENSE).
-The English (Perfect Works) game text is the
+The English (Perfect Works) game text and the movie subtitles are the
 [Perfect Works Build](https://github.com/PWBuild-Team/Perfect_Works_Build)
-team's (version 0.11.4), a separate work under the GNU General Public License,
-version 3 ([its files and notice](src/runtime/crates/xem-core/locale/en-x-pw/README.md)).
+team's (version 0.11.4), separate works under the GNU General Public License,
+version 3 ([the text's files and notice](src/runtime/crates/xem-core/locale/en-x-pw/README.md),
+[the subtitles'](src/runtime/crates/xem-core/subtitles/README.md)).
 
 ## For developers
 

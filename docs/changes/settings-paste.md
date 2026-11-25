@@ -1,0 +1,1 @@
+- Pasting into the settings' text fields works on desktop and Android: Ctrl+V (Command+V on a Mac) pastes, so a RetroAchievements password can come from a password manager. Ctrl+C, Ctrl+X and Ctrl+A copy, cut and select all, but the password is never copied or cut out of its field.

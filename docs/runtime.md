@@ -2605,14 +2605,13 @@ differs is dead stack alone (128 to 236 bytes here, none after the sprite
 facings' runs), between the stack's bottom and the suspended pointer,
 which no code reads: every port and game function zero-initialises its
 locals (`-ftrivial-auto-var-init=zero`, `tools/game_module.py`). With those
-bytes the same the states are the same byte for byte. A host that asks
-for no reveals (no wider framing, pull-back, inspection or diorama, and
-no terrain slivers: the world map and the Battling arena ask for theirs
-while vertex snapping is off) leaves
-no such bookkeeping in a state: the desktop window under HD-2D, Android's
-default graphics, the OpenXR and WebXR screen views each save states
-byte for byte xem-headless's at the same frame ([State
-interchange](#state-interchange)).
+bytes the same the states are the same byte for byte. Every rendering
+host asks at least for the faces its sub-pixel picture needs within the
+screen (the slivers the winding tests drop, issue #103), so even with no
+wider framing, pull-back, inspection or diorama (the desktop window under
+HD-2D, Android's default graphics, the OpenXR and WebXR screen views) its
+states can differ from xem-headless's at the same frame in that dead
+stack ([State interchange](#state-interchange)).
 
 ### Profiles and settings
 
@@ -2873,6 +2872,92 @@ desktop's window, `xem-desktop/tests/control.rs` on weston's headless
 backend, checks the settings commands): the view's flag it reports is the
 one the `xem-host` test checks. Android shows only its
 logged flag; its sizes are not checked.
+
+### Subtitles
+
+The movie subtitles setting (`Settings.movie_subtitles`,
+`SettingChange::MovieSubtitles`; off by default; Settings, Gameplay,
+Language, **Movie subtitles**, under Game text) shows what the eleven voiced
+movies say over them, in the language of the game's text
+(`Settings.language`: there is no separate subtitle language). It changes
+nothing in the game: the hosts draw it over the picture, and the session
+neither records it nor reads it.
+
+**Lines and timings.** `xem-core/subtitles/` holds Perfect Works Build
+0.11.4's subtitles (its README: their source, licence and changes).
+`timings.txt` names 128 lines by movie, the disc and the movie's file in
+directory (0x18, 1) (disc 1's files 3, 4, 7, 8, 9, 10, 11 and 15, the
+new-game movie; disc 2's 2, 6 and 10), and gives the movie frames each
+shows on, as Perfect Works' own movie player times them (the tables its
+executable keeps beside the file index). `<language>.txt` gives each line's
+text in the markup of the game's text, `{n}` ending a line. English is
+Perfect Works' text with the original's names (Krelian for Karellen);
+French, Italian, Spanish, Brazilian Portuguese and Japanese are translated
+from it for this project. Perfect Works timed the lines to the Japanese
+voices; the English voices speak over the same frames.
+
+**Which line.** `xem_core::subtitles::line` reads, between steps, the movie
+playing and the frame it shows (`xem_core::movie`),
+the file the movie player streams (`movie_file`, 801E8974) and the
+directory it started it in (`movie_saved_directory` and
+`movie_saved_index`, 801E899C and 801E89A0: (0x18, 1) for these movies,
+whether a field movie or the movie mode plays them), with the disc in the
+drive. A line shows from its first frame until its end, by the frame
+numbers of the movie's own sectors, which Perfect Works' player counts
+too. The Japanese release's movies (Movies and voices: 日本語) are the same
+frames under the same files and take the same lines. `status.subtitle`
+gives the line (`"line": "1.15.1"`) and its text in the game's language
+whether or not a host shows it; the browser's `status().renderer.subtitle`
+tells whether one shows.
+
+**Drawing.** `xem_core::subtitles::draw` draws a line as the game draws
+its text: each glyph's 11 rows from the font the game installed
+(`text_font`), a narrow glyph 8 pixels on and a wide one 12, a language's
+added letters made from it as `src/port/locale.c` makes them; in the
+game's own text colours (`text_palette`: the glyphs in its white, 0xF7BD,
+and the edge around them in its dark blue, 0xC086, on the eight pixels
+beside each as `text_draw_glyph` edges them), each line centred, 14 pixels
+below the last, in the display's own pixels. Japanese is drawn from the Japanese release's font,
+installed with the Japanese text, by the codes `subtitles/ja-font.txt`
+gives its characters (read from that font's glyphs; it has no 億 or 塩, so
+the one line that needed them writes the numbers in digits). Hosts draw a
+line again only when it or the language changes
+(`xem_render::subtitles::SubtitleLayer`) and place it as they place the
+picture: centred on the display, its bottom 20/224 of the display's height
+above the display's, each of its pixels as large as one of the display's
+(`flat` on a window or canvas, `on_quad` on a headset's screen, fading
+with the screen), drawn after the picture and before the marks, the touch
+deck, the HUD and the panel, with nearest filtering. It shows alike over a
+rebuilt movie, the device's own picture (Original) and the Original
+renderer.
+
+Tests: `xem-core` `subtitles` (every language has every line; each line's
+glyphs exist and fit the movies' 320 pixels less 8 each side; the line
+from invented memory; drawing from an invented font, an added letter as the
+port makes it), `xem-render` `subtitles` (placement on a window and on a
+headset's screen), `xem-settings`
+`movie_subtitles_are_off_by_default_and_persist`, and, local only,
+`xem-headless/tests/subtitles.rs`: on disc 1's new-game route the runtime
+reads each of the new-game movie's 36 lines from exactly the first movie
+frame Perfect Works times it on to the last before its end and no line on
+any other frame, and draws its first line in all seven languages from the
+game's own fonts (Japanese with the Japanese discs beside disc 1;
+`XEM_SUBTITLE_PNGS` writes the drawings); and each of the eleven movies,
+played on its own disc by the debug menu's movie request (the movie mode,
+whose frames the lookup reads as it does a field movie's), shows every one
+of its lines on exactly its frames (all 128). In browsers, local only,
+`web/tests/subtitles.test.mjs`: from a snapshot on the new-game movie's
+line 1.15.30 the canvas with the setting on differs from the same frames
+with it off only in the subtitle's band (17 309 pixels there, about half
+the text's white and half the edge's, none elsewhere; measured with a
+near-black edge, before the edge took the game's blue), and in a
+headset browser (IWER's Quest 3) only below the middle of both views (about
+330 points of a 4-pixel grid in each). On Monado's simulated headset the
+desktop's OpenXR session showed line 1.15.11 at the bottom of the screen
+in both eyes (a run by hand, as `scripts/xr-game-smoke.sh` runs its lanes;
+not part of it). A lookup took 313 ns a frame
+there (13 200 frames, release build, this machine); a line is drawn and
+uploaded only when it changes.
 
 ### Characters in a wider view
 
@@ -3617,9 +3702,8 @@ through each link within its 0x5A8-byte block) and the cursor
 the other), the last two only in the script's frame mode, as the turns'
 interface keeps window 0 and the cursor for its commands. The records are
 made whether or not a draw trace records, as the sprites' are, so the
-port's memory, its dead stack included, is the same either way (the
-desktop's HD-2D window still saves a plain session's state byte for byte:
-`xem-host/tests/states.rs`). A trace marks what the DMA walk draws from
+port's memory, its dead stack included, is the same either way
+(`xem-host/tests/states.rs`). A trace marks what the DMA walk draws from
 each run, from entering its newest node to leaving its oldest, as the
 dialogue's (`xem_gpu::Primitive::dialogue`): a frame's runs, recorded before
 its vertical blank, serve the walk after it, and the next frame's first
@@ -5842,10 +5926,10 @@ Headset class (Low tier, depth of field off unless enabled).
   it runs) and plays it on with no input, writing the headset's state at
   frame 1010 (`--save-state-at`) and ending at 1310: the RAM at both is
   `xem-headless`'s from the same state (`e6366cb7f5d61d8c`,
-  `a7cb468cae1e226e` in a run here), the headset's state is
-  `xem-headless`'s at 1010 byte for byte (the screen without wider
-  framing asks for no reveals), and loaded natively it goes on to the same
-  end ([State interchange](#state-interchange)). Its
+  `a7cb468cae1e226e` in a run here), and the headset's state loaded
+  natively has its RAM and goes on to the same end (not byte for byte
+  `xem-headless`'s: the screen asks for the faces its sub-pixel picture
+  needs, which leaves the port's dead stack unlike `xem-headless`'s) ([State interchange](#state-interchange)). Its
   qualification runs (either hand's grabs and two-hand scaling in field
   30, a scene tour, the world map's recentring and the battles) are in
   [Headset qualification](#headset-qualification); the `xrframe` line's
@@ -7679,9 +7763,11 @@ continuations differ where save titles are drawn). The same continuation
 needs the same of these; a recording carries the controls
 (`xem-host/tests/states.rs`'s headset test).
 
-**Whole states.** Where no presentation bookkeeping is in play (headless,
-or a host asking for no reveals) a state another host saves at a frame is
-byte for byte the state `xem-headless` saves there. A host showing faces
+**Whole states.** Where no presentation is in play (headless) a state
+another host saves at a frame is byte for byte the state `xem-headless`
+saves there. A rendering host asks at least for the faces its sub-pixel
+picture needs within the screen (issue #103), which can leave the port's
+dead stack unlike `xem-headless`'s. A host showing faces
 the game culls (wider framing, the camera pulled back, inspection, the
 diorama, the world map's and the Battling arena's terrain slivers without
 vertex snapping) keeps bookkeeping in the port's memory ([Presentation and the
@@ -7697,22 +7783,22 @@ states where they hold:
 | headless | the desktop's window in process (`Game`, `View`, HD-2D, lavapipe) | 600 frames: the original's RAM and whole state | `xem-host/tests/states.rs` |
 | headless | a headset's presentation in process (both eyes within the scene, then the diorama) | 600 frames: the RAM of a plain session given the recorded view; the whole state outside the port's memory | `xem-host/tests/states.rs` |
 | headless | `xem-desktop` (weston's headless backend, lavapipe) | `--load-state`; frames 300 and 600 under HD-2D | `xem-desktop/tests/states.rs` |
-| `xem-desktop` | headless | `--save-state-at`: byte for byte, then 300 frames | `xem-desktop/tests/states.rs` |
+| `xem-desktop` | headless | `--save-state-at`: to its RAM, then 300 frames | `xem-desktop/tests/states.rs` |
 | headless | `xem-desktop --xr` (OpenXR on Monado) | frames 300 and 600 under HD-2D | `xr-game-smoke.sh` (interchange) |
-| `xem-desktop --xr` | headless | byte for byte, then 300 frames | `xr-game-smoke.sh` (interchange) |
+| `xem-desktop --xr` | headless | to its RAM, then 300 frames | `xr-game-smoke.sh` (interchange) |
 | headless | Android (x86_64 emulator) | Load state (F8) of `files/state.xemstate`, then 600 frames | `android-smoke.sh` |
-| Android | headless | Save state (F5), pulled: byte for byte, then 600 frames | `android-smoke.sh` |
+| Android | headless | Save state (F5), pulled: to its RAM, then 600 frames | `android-smoke.sh` |
 | headless | browser (WebGL2) | imported exactly; 30 frames byte for byte (the opening movie, the world map) | `web/tests/persistence.test.mjs` |
 | browser (WebGL2) | headless | to the browser's RAM | `web/tests/persistence.test.mjs` |
 | browser (WebGPU, WebGL2), after drawing under HD-2D, wider and pulled back | headless | to the page's RAM, then 240 frames | `web/tests/render.test.mjs` |
-| browser (WebXR on IWER) | headless | byte for byte, then 120 frames | `web/tests/xr-game.test.mjs` |
+| browser (WebXR on IWER) | headless | to its RAM, then 120 frames | `web/tests/xr-game.test.mjs` |
 | browser (IndexedDB), the page reloaded | browser | the slice's save to its native hash | `web/tests/slice.test.mjs` |
 | the slice's session logs | headless on arm64 (`aarch64-linux-android` under `qemu-aarch64`) | the forest route, the save and that card's loads as card 1 and as card 2 to their recorded hashes, each ending in the native end state byte for byte | `arm64-smoke.sh` |
 | headless | headless on arm64 | the forest route's state in its battle (frame 7000) to the route's end state | `arm64-smoke.sh` |
 | headless on arm64 | headless | that state, byte for byte the native one, to the route's end state | `arm64-smoke.sh` |
 | Lahan and the world map drawn pulled back and wider (`reveal_frames`) | headless on arm64 | 600 and 300 frames: the same culled faces revealed (their number and digest; the world map's clouds among them), the RAM and the whole state as natively | `arm64-smoke.sh` |
 | headless | Android's arm64-v8a library (the x86_64 emulator's ARM translation) | Load state (F8) of `files/state.xemstate`, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
-| Android's arm64-v8a library | headless | Save state (F5), pulled: byte for byte, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
+| Android's arm64-v8a library | headless | Save state (F5), pulled: to its RAM, then 600 frames | `android-smoke.sh` (`XEM_SMOKE_ABI=arm64-v8a`) |
 | a session booted from disc 2 | a session booted from disc 1 | the same hash | `xem-headless/tests/discs.rs` |
 | the game's own save in a browser | native | card 2 byte for byte | `web/tests/slice.test.mjs` |
 | the game's own save on arm64 | native | card 2 byte for byte | `arm64-smoke.sh` |
@@ -7834,7 +7920,7 @@ and the APK's arm64-v8a library by the Android emulator's ARM translation
 (Google's libndk_translation on x86_64), and the translated app runs only
 the smoke's game section (the synthetic disc, rotation, activity
 recreation and restart run with the x86_64 library) under the default
-graphics, which ask for no reveals, so the APK's floating point has run
+graphics, which reveal nothing beyond the screen, so the APK's floating point has run
 only as the static build's, compiled to the same instructions; no Linux
 arm64 build (`aarch64-unknown-linux-gnu`, GCC and glibc, as an arm64
 desktop or OpenXR host would be built) of `xem-headless` or of the
@@ -10964,8 +11050,7 @@ In `nix develop path:./nix/runtime#android`:
   in two runs here, the game the boot started meanwhile playing toward the
   log's end at 32 to 40 frames a second), the log's `script frame F+600 memory_hash` is
   `xem-headless`'s, and Save state's (F5) state there, pulled with
-  `run-as`, is `xem-headless`'s state at that frame byte for byte (the
-  default graphics ask for no reveals), loads natively to that RAM and
+  `run-as`, loads natively to that RAM and
   goes on 600 frames to where `xem-headless`'s own goes ([State
   interchange](#state-interchange); about 40 s on the emulator). A state
   it made 120 frames into Lahan burning (field 2, before its heat haze)

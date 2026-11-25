@@ -274,6 +274,9 @@ pub struct Settings {
     /// mode's), as the game lets it end some; window movies stay the
     /// scripts'.
     pub movie_skip: bool,
+    /// The anime movies show subtitles in the language of the game's text
+    /// (`xem_core::subtitles`); the hosts draw them over the movie.
+    pub movie_subtitles: bool,
     /// The disc drive takes no time over its seeks, its pauses and the
     /// game's loads (`Session::set_fast_disc`); movies and their sound keep
     /// the disc's pace.
@@ -334,6 +337,7 @@ impl Default for Settings {
             text_speed: TextSpeed::default(),
             auto_advance: AutoAdvance::default(),
             movie_skip: false,
+            movie_subtitles: false,
             fast_disc: false,
             language: Language::English,
             voices: Voices::English,
@@ -394,6 +398,7 @@ pub enum SettingChange {
     /// The auto-advance block, whole: on or off and its dwell.
     AutoAdvance(AutoAdvance),
     MovieSkip(bool),
+    MovieSubtitles(bool),
     FastDisc(bool),
     Language(Language),
     Voices(Voices),
@@ -533,6 +538,7 @@ impl Settings {
             SettingChange::TextSpeed(speed) => next.text_speed = *speed,
             SettingChange::AutoAdvance(auto) => next.auto_advance = *auto,
             SettingChange::MovieSkip(enabled) => next.movie_skip = *enabled,
+            SettingChange::MovieSubtitles(enabled) => next.movie_subtitles = *enabled,
             SettingChange::FastDisc(enabled) => next.fast_disc = *enabled,
             SettingChange::Language(language) => next.language = *language,
             SettingChange::Voices(voices) => next.voices = *voices,
@@ -1017,6 +1023,19 @@ mod tests {
         assert_eq!((read.text_speed, read.auto_advance, read.mouse_camera), (TextSpeed::Original, AutoAdvance { enabled: true, dwell: DEFAULT_AUTO_ADVANCE_DWELL }, true));
         assert_eq!(reset, ["auto_advance.dwell", "text_speed"]);
         assert!(!Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.movie_skip);
+    }
+
+    #[test]
+    fn movie_subtitles_are_off_by_default_and_persist() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert!(!service.settings().movie_subtitles, "the original shows none");
+        let ack = service.command(&serde_json::json!({"cmd": "settings_apply", "change": {"MovieSubtitles": true}})).unwrap();
+        assert_eq!(ack["settings"]["movie_subtitles"], true);
+        assert!(SettingsService::open(store.clone()).unwrap().settings().movie_subtitles, "reopened");
+        // Saved before the option existed: off.
+        assert!(!Settings::read(&serde_json::json!({"movie_skip": true})).unwrap().0.movie_subtitles);
     }
 
     #[test]

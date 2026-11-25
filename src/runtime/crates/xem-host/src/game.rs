@@ -262,6 +262,16 @@ impl Game {
         self.session.runtime.japanese()
     }
 
+    /// The movie subtitle line the movie shows now, in the game text's language.
+    pub fn subtitle(&mut self) -> Option<(xem_core::subtitles::Line, xem_core::locale::Language)> {
+        self.session.runtime.subtitle()
+    }
+
+    /// `line` drawn in the game's font, in `language`.
+    pub fn subtitle_picture(&mut self, line: &xem_core::subtitles::Line, language: xem_core::locale::Language) -> Option<xem_core::subtitles::Picture> {
+        self.session.runtime.subtitle_picture(line, language)
+    }
+
     /// Give the drive's changer the game's other disc `number`.
     pub fn add_disc(&mut self, number: u8, disc: Box<dyn xem_disc::SectorSource>) {
         self.session.runtime.services().add_disc(number, disc);

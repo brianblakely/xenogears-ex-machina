@@ -1309,7 +1309,8 @@ export component SettingsPanel inherits Window {
     in-out property <int> encounter-rate;
     // The message windows' text speed (xem_settings::TextSpeed: 0 Original,
     // 1 Fast, 2 Instant), auto-advance dialogue and its wait on each page
-    // (vertical blanks), and whether movies can be skipped.
+    // (vertical blanks), whether movies can be skipped and whether the movies
+    // show subtitles (in the game text's language).
     in-out property <int> text-speed;
     // The language of the game's text (xem_core::locale::Language::ALL, each
     // named in itself).
@@ -1323,6 +1324,7 @@ export component SettingsPanel inherits Window {
     in-out property <bool> auto-advance;
     in-out property <int> auto-advance-dwell: 120;
     in-out property <bool> movie-skip;
+    in-out property <bool> movie-subtitles;
     // The disc drive takes no time over the game's loads
     // (xem_settings::Settings::fast_disc).
     in-out property <bool> fast-disc;
@@ -1365,7 +1367,8 @@ export component SettingsPanel inherits Window {
     callback hide-idle-cursor-edited(bool);
     callback random-battles-edited(int);
     // A gameplay option by name (encounter-rate, text-speed, auto-advance,
-    // auto-advance-dwell, movie-skip, fast-disc, language, voices) and value.
+    // auto-advance-dwell, movie-skip, movie-subtitles, fast-disc, language,
+    // voices) and value.
     callback gameplay-edited(string, int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, touch-opacity, solid, still) and value.
@@ -2194,6 +2197,13 @@ export component SettingsPanel inherits Window {
                                     // Wide enough for the longest name ("English (Perfect Works)") in the box and in its list.
                                     Choice { accessible-label: "Game text language"; min-width: 204px; model: root.languages; current-index <=> root.language; selected => { root.gameplay-edited("language", self.current-index); } }
                                 }
+                                Divider { }
+                                // The movies' subtitles, in the game text's language.
+                                ToggleRow {
+                                    label: "Movie subtitles";
+                                    checked <=> root.movie-subtitles;
+                                    toggled(on) => { root.gameplay-edited("movie-subtitles", on ? 1 : 0); }
+                                }
                                 if root.japanese-offered: Divider { }
                                 if root.japanese-offered: Row {
                                     label: "Movies and voices";
@@ -2274,13 +2284,25 @@ export component SettingsPanel inherits Window {
                                 }
                                 if root.ra-account == 0: Row {
                                     label: "Password";
-                                    LineEdit {
-                                        accessible-label: "RetroAchievements password";
-                                        min-width: 180px;
-                                        input-type: password;
-                                        text <=> root.ra-password;
-                                        changed has-focus => { root.ra-password-focused = self.has-focus; }
-                                        accepted => { root.ra-sign-in-requested(root.ra-username, root.ra-password); }
+                                    FocusScope {
+                                        focus-on-click: false;
+                                        focus-on-tab-navigation: false;
+                                        // Slint's own field copies and cuts a password
+                                        // like any text: it never leaves for the clipboard.
+                                        capture-key-pressed(event) => {
+                                            if event.modifiers.control && (event.text == "c" || event.text == "x") { return accept; }
+                                            reject
+                                        }
+                                        HorizontalLayout {
+                                            LineEdit {
+                                                accessible-label: "RetroAchievements password";
+                                                min-width: 180px;
+                                                input-type: password;
+                                                text <=> root.ra-password;
+                                                changed has-focus => { root.ra-password-focused = self.has-focus; }
+                                                accepted => { root.ra-sign-in-requested(root.ra-username, root.ra-password); }
+                                            }
+                                        }
                                     }
                                 }
                                 if root.ra-account == 0: HorizontalLayout {
@@ -2388,7 +2410,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 9: Card {
                                 title: "English (Perfect Works)";
-                                Text { text: "The game text language English (Perfect Works) is the Xenogears: Perfect Works Build team's retranslation (github.com/PWBuild-Team/Perfect_Works_Build), a separate work under the GNU General Public License, version 3, without warranty. Its text and that licence are in this release's source archive and notices."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                                Text { text: "English (Perfect Works) and the English movie subtitles are the Perfect Works Build team's work (github.com/PWBuild-Team/Perfect_Works_Build); the other subtitles are translated from them. GNU General Public License, version 3, without warranty; the text and licence are in the source archive and notices."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 Divider { }
                                 // The release its text is from (the locale's README, en-x-pw).
                                 Row {

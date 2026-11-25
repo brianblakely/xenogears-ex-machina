@@ -27,8 +27,8 @@
 # xem-headless (XEM_HEADLESS, else the suite's build) a state it made in
 # field 30 loads on the device through Load state's key (F8) and plays on
 # 600 frames to xem-headless's memory hash, and the device's Save state
-# (F5) there, pulled, is xem-headless's state at that frame byte for byte,
-# loads natively to that RAM and goes on to where xem-headless's own goes;
+# (F5) there, pulled, loads natively to that RAM and goes on to where
+# xem-headless's own goes;
 # then a state of Lahan burning (field 2) plays its heat haze to
 # xem-headless's memory hash, each frame in a few render passes.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
@@ -584,12 +584,25 @@ PY
     # the game plays as the original, no player's input or host controls),
     # Load state by its key (F8) once the game booted: the log's memory hash
     # at F+600 is xem-headless's. Save state (F5) there, the state pulled:
-    # xem-headless's own state at F+600, and played on natively, the RAM
-    # xem-headless's own reaches.
+    # natively xem-headless's RAM at F+600, and played on, the RAM
+    # xem-headless's own reaches. Not its whole state byte for byte: the
+    # default graphics ask for the faces their sub-pixel picture needs
+    # (issue #103), which leaves the port's dead stack unlike xem-headless's
+    # (xem-host's tests/states.rs compares whole states).
     headless=${XEM_HEADLESS:-$root/src/runtime/target-suite/suite/xem-headless}
     if [ -x "$headless" ]; then
         echo "== a native state loaded on the device, played on, saved there and played on natively"
-        native() { "$headless" --disc "$disc1" --control 2>/dev/null; }
+        # Disc 1 from a directory of the North American discs alone:
+        # booted beside the Japanese release's discs, xem-headless installs
+        # their text, movies and voices, which the device never has, and Load
+        # state refuses a state that holds them.
+        us=$out/discs
+        rm -rf "$us"
+        mkdir -p "$us"
+        ln -s "$(realpath "$disc1")" "$us/$(basename "$disc1")"
+        disc2=$(dirname "$disc1")/Xenogears\ disc\ 2.chd
+        [ ! -f "$disc2" ] || ln -s "$(realpath "$disc2")" "$us/$(basename "$disc2")"
+        native() { "$headless" --disc "$us/$(basename "$disc1")" --control 2>/dev/null; }
         last_string() { python3 -c 'import json,sys; print([json.loads(l) for l in sys.stdin if l.startswith(chr(34))][-1])'; }
         # 1 600 frames in: the game the boot starts plays toward the log's
         # end until the load, which must come first (about 11 s here).
@@ -628,12 +641,6 @@ PY
         [ "$(op_of <<<"$saved" | cut -d' ' -f2)" = "$played" ] || fail "Save state on the device did not hold the RAM it played to"
         [ "$continued" = "$played" ] || fail "the device's state loaded natively elsewhere"
         [ "$onward" = "$twice" ] || fail "the device's state went on natively elsewhere"
-        # The default graphics ask for no reveals (no wider framing,
-        # pull-back or inspection): the whole state is xem-headless's.
-        printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"state_save","path":"%s"}\n' \
-            "$out/native.xemstate" "$out/native-played.xemstate" | native >/dev/null
-        cmp -s "$out/device.xemstate" "$out/native-played.xemstate" || fail "the device's state is not xem-headless's at that frame, byte for byte"
-        echo "  the device's state is xem-headless's at frame $((at + 600)), byte for byte"
         "${adb[@]}" shell run-as "$package" rm -f files/script.json files/saves/state.xemstate
         "${adb[@]}" shell rm -f /data/local/tmp/xem-state.xemstate /data/local/tmp/xem-script.json
 

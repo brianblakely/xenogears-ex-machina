@@ -12,6 +12,7 @@ use xem_assist::headset::Seat;
 use xem_render::glam::{Mat4, Vec2, Vec3, Vec4};
 use xem_render::ps1::{DioramaEye, DioramaSpace, GameView, HeadsetEye, HostClass, ViewConfig, XrView as HeadsetView, headset_movie_output, xr_view};
 use xem_render::xem_gpu::{DisplayInfo, Reveals, Trace};
+use xem_render::subtitles::SubtitleLayer;
 use xem_render::{Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
@@ -66,6 +67,9 @@ pub struct WebRenderer {
     /// The game's display (texture, view, size) as the device holds it
     /// (24-bit movie frames).
     game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    /// The movie's subtitle line (the movie subtitles setting), drawn when
+    /// it changes and shown over the picture.
+    subtitles: SubtitleLayer<(xem_core::subtitles::Line, xem_core::locale::Language)>,
     /// The game drawn by the renderer from its draw trace, and the display
     /// and scene to present.
     renderer: GameView,
@@ -235,6 +239,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         config,
         game_view,
         game_image: None,
+        subtitles: SubtitleLayer::default(),
         renderer,
         game_frame: None,
         picture: None,
@@ -506,6 +511,18 @@ impl WebRenderer {
         &mut self.renderer
     }
 
+    /// Show the subtitle `line` (none for `None`): `draw` draws it when it
+    /// is not the line shown.
+    pub fn set_subtitle(&mut self, line: Option<(xem_core::subtitles::Line, xem_core::locale::Language)>,
+                        draw: impl FnOnce(&(xem_core::subtitles::Line, xem_core::locale::Language)) -> Option<(u32, u32, Vec<u8>)>) {
+        self.subtitles.update(&self.gpu.device, &self.gpu.queue, line, draw);
+    }
+
+    /// Whether a subtitle shows over the picture (`status().renderer.subtitle`).
+    pub fn subtitle_shown(&self) -> bool {
+        self.subtitles.shown().is_some()
+    }
+
     /// The display as the device holds it (the Original renderer).
     pub fn set_display_image(&mut self, (width, height, rgba): (u32, u32, Vec<u8>)) {
         self.game_frame = None;
@@ -645,6 +662,13 @@ impl WebRenderer {
             glass.push((view, None, Some(Rect { x: drawn.rect.x, y: drawn.rect.y, width: drawn.rect.width, height: drawn.rect.height }), drawn.opacity));
         }
         let mut quads = vec![game];
+        // The movie's subtitle over the picture, under everything else.
+        if let (Some(picture), Some((view, size))) = (&self.picture, self.subtitles.shown()) {
+            let mut subtitle = Quad::screen(view, xem_render::subtitles::flat(picture, size), target);
+            subtitle.srgb_encoded = true;
+            subtitle.filter = wgpu::FilterMode::Nearest;
+            quads.push(subtitle);
+        }
         for (view, affine, rect, opacity) in &glass {
             let mut quad = match (affine, rect) {
                 (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target),
@@ -859,6 +883,18 @@ impl WebRenderer {
             };
             (hud.view().clone(),position,size)
         });
+        // The movie's subtitle on the screen, where the movie shows, fading
+        // with it.
+        let subtitle_quad = self.subtitles.shown().filter(|_| screen.is_some()).and_then(|(view, size)| {
+            let side = if movie { 0.0 } else { self.renderer.config().map_or(0, |c| c.side) as f32 };
+            let (display, side) = match (&self.game_frame, &self.game_image) {
+                (Some((display, _)), _) => ((display.width as f32, display.height as f32), side),
+                (None, Some((_, _, size))) => ((size.0 as f32, size.1 as f32), 0.0),
+                (None, None) => return None,
+            };
+            let (at, extent) = xem_render::subtitles::on_quad(pose, Vec2::new(width, height), display, side, size);
+            Some((view.clone(), at, extent))
+        });
         let filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
@@ -912,6 +948,13 @@ impl WebRenderer {
                     }))
                     .chain(diorama)
                     .chain(pane_quad)
+                    .chain(subtitle_quad.iter().map(|(texture, pose, size)| {
+                        let mut quad = Quad::world(texture, view.proj * view.view, *pose, *size);
+                        quad.srgb_encoded = true;
+                        quad.filter = wgpu::FilterMode::Nearest;
+                        quad.opacity = share;
+                        quad
+                    }))
                     .chain(room.iter().chain(hud_quad.iter()).chain(panel_quad.iter()).map(|(texture, pose, size)| {
                         let mut quad = Quad::world(texture, view.proj * view.view, *pose, *size);
                         quad.srgb_encoded = true;

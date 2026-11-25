@@ -1120,6 +1120,11 @@ impl<M: GameModule> Session<M> {
         let mode = self.runtime.services().mode;
         let dialogue = crate::dialogue::prompt(self.runtime.memory(), mode);
         let movie = crate::movie::movie(self.runtime.memory(), mode);
+        // The subtitle line the movie shows now, and its text in the game's
+        // language (whether or not a host shows it).
+        let subtitle = self.runtime.subtitle().map(|(line, language)| {
+            json!({"line": line.name(), "text": crate::subtitles::text(&line, language)})
+        });
         let binaural = self.runtime.services().spu.binaural().map(|p| p.config());
         let services = self.runtime.services();
         let card_present = [services.card.present(0), services.card.present(1)];
@@ -1161,6 +1166,7 @@ impl<M: GameModule> Session<M> {
             "auto_advance_waited": self.auto_waited,
             "dialogue": dialogue,
             "movie": movie,
+            "subtitle": subtitle,
             "binaural": binaural,
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),

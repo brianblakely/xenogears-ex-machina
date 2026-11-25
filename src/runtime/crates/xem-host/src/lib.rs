@@ -31,6 +31,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
+use xem_render::subtitles::SubtitleLayer;
 use xem_render::xem_gpu::DisplayInfo;
 use xem_render::{
     Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect,
@@ -351,6 +352,9 @@ pub struct View {
     /// The game's display as the device shows it (24-bit movie frames, and
     /// hosts that set a picture directly), instead of the test scene.
     game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    /// The movie's subtitle line (the movie subtitles setting), drawn when
+    /// it changes and shown over the picture.
+    subtitles: SubtitleLayer<(xem_core::subtitles::Line, xem_core::locale::Language)>,
     /// The game drawn by the renderer: the trace is pushed into `renderer`
     /// as the game runs; `game_frame` is the display and scene to present.
     renderer: GameView,
@@ -497,6 +501,7 @@ impl View {
             quit,
             gamepads: Vec::new(),
             game_image: None,
+            subtitles: SubtitleLayer::default(),
             renderer: GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter)),
             game_frame: None,
             fresh_frame: false,
@@ -850,12 +855,10 @@ impl View {
                     && self.ui.listen_key(&key_code(key.scancode).unwrap_or_default(), key.down)
                 {
                     // A binding listening for an input took it.
-                } else if visible && let Some(text) = slint_key(key.key) {
-                    self.ui.dispatch(match (key.down, key.repeat) {
-                        (true, false) => WindowEvent::KeyPressed { text },
-                        (true, true) => WindowEvent::KeyPressRepeated { text },
-                        (false, _) => WindowEvent::KeyReleased { text },
-                    });
+                } else if visible {
+                    for event in panel_key_events(&key, shortcut_key_held()) {
+                        self.ui.dispatch(event);
+                    }
                 }
             }
             // A binding listening for an input takes the keys, not their text.
@@ -1022,6 +1025,11 @@ impl View {
         self.presented_movie
     }
 
+    /// Whether a movie's subtitle shows over the picture.
+    pub fn subtitle_shown(&self) -> bool {
+        self.subtitles.shown().is_some()
+    }
+
     /// The render passes the game's picture last took (VRAM's picture as
     /// the game drew it and the frame replayed from it), for status reports.
     pub fn render_passes(&self) -> u32 {
@@ -1034,6 +1042,8 @@ impl View {
     pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
         let (forward,rewind) = game.time_activity();
         self.frame_rate.set_activity(forward,rewind);
+        let line = self.settings.borrow().settings().movie_subtitles.then(|| game.subtitle()).flatten();
+        self.subtitles.update(&gpu.device, &gpu.queue, line, |(line, language)| game.subtitle_picture(line, *language).map(|p| (p.width, p.height, p.rgba)));
         let graphics = self.settings.borrow().settings().graphics;
         if graphics.renderer == xem_settings::Renderer::Original {
             // The console's own picture, as the device shows it (nothing to
@@ -1510,6 +1520,13 @@ impl View {
             }
         }
         let mut quads = vec![game];
+        // The movie's subtitle over the picture, under everything else.
+        if let (Some(picture), Some((view, size))) = (&self.picture, self.subtitles.shown()) {
+            let mut subtitle = Quad::screen(view, xem_render::subtitles::flat(picture, size), target_size);
+            subtitle.srgb_encoded = true;
+            subtitle.filter = wgpu::FilterMode::Nearest;
+            quads.push(subtitle);
+        }
         for (view, affine, rect, opacity) in &glass {
             let mut quad = match (affine, rect) {
                 (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target_size),
@@ -1623,8 +1640,47 @@ fn panel_size((width, height): (u32, u32), scale: f32) -> (u32, u32) {
     (fit(PANEL_SIZE.0, width), fit(PANEL_SIZE.1, height))
 }
 
-/// Keys Slint treats specially; printable text arrives as SDL text input.
+/// Whether a key of the shortcut modifier (Ctrl; Command on macOS) is
+/// down, as SDL's keyboard state has it from the keys' own events.
+fn shortcut_key_held() -> bool {
+    let keys = if cfg!(target_os = "macos") { [SDL_SCANCODE_LGUI, SDL_SCANCODE_RGUI] } else { [SDL_SCANCODE_LCTRL, SDL_SCANCODE_RCTRL] };
+    let mut count = 0;
+    // SAFETY: SDL's array of every scancode's state, valid while SDL runs.
+    let state = unsafe { SDL_GetKeyboardState(&mut count) };
+    !state.is_null() && keys.iter().any(|key| key.0 < count && unsafe { *state.add(key.0 as usize) })
+}
+
+/// What a key event gives the panel. Printable text arrives as SDL text
+/// input, which gives none for a letter with the shortcut modifier (Ctrl;
+/// Command on macOS) held: that letter comes as its key, for Slint's
+/// shortcuts (Ctrl+V pastes, Ctrl+C copies, Ctrl+A selects all). The
+/// modifier is the letter's event's own: a shortcut another program sends
+/// (Omarchy's Super+V has Hyprland send Ctrl+V) presses no Ctrl key, so
+/// while none is down (`held`) the letter comes between a press and a
+/// release of Slint's Control.
+fn panel_key_events(key: &SDL_KeyboardEvent, held: bool) -> Vec<WindowEvent> {
+    let event = |text: xem_ui::SharedString| match (key.down, key.repeat) {
+        (true, false) => WindowEvent::KeyPressed { text },
+        (true, true) => WindowEvent::KeyPressRepeated { text },
+        (false, _) => WindowEvent::KeyReleased { text },
+    };
+    let shortcut = if cfg!(target_os = "macos") { SDL_KMOD_GUI } else { SDL_KMOD_CTRL };
+    if (key.r#mod & shortcut) != SDL_Keymod(0) && (SDLK_A.0..=SDLK_Z.0).contains(&key.key.0) {
+        let letter = event(char::from_u32(key.key.0).unwrap_or_default().to_string().into());
+        return if held || !key.down {
+            vec![letter]
+        } else {
+            vec![WindowEvent::KeyPressed { text: Key::Control.into() }, letter, WindowEvent::KeyReleased { text: Key::Control.into() }]
+        };
+    }
+    slint_key(key.key).map(event).into_iter().collect()
+}
+
+/// Keys Slint treats specially.
 fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
+    // Slint's shortcuts read its Control modifier: on macOS, Command's.
+    let (control, meta) = if cfg!(target_os = "macos") { (Key::Meta, Key::Control) } else { (Key::Control, Key::Meta) };
+    let (control_r, meta_r) = if cfg!(target_os = "macos") { (Key::MetaR, Key::ControlR) } else { (Key::ControlR, Key::MetaR) };
     let key = match key {
         SDLK_BACKSPACE => Key::Backspace,
         SDLK_TAB => Key::Tab,
@@ -1641,12 +1697,12 @@ fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
         SDLK_PAGEDOWN => Key::PageDown,
         SDLK_LSHIFT => Key::Shift,
         SDLK_RSHIFT => Key::ShiftR,
-        SDLK_LCTRL => Key::Control,
-        SDLK_RCTRL => Key::ControlR,
+        SDLK_LCTRL => control,
+        SDLK_RCTRL => control_r,
         SDLK_LALT => Key::Alt,
         SDLK_RALT => Key::AltGr,
-        SDLK_LGUI => Key::Meta,
-        SDLK_RGUI => Key::MetaR,
+        SDLK_LGUI => meta,
+        SDLK_RGUI => meta_r,
         _ => return None,
     };
     Some(key.into())
@@ -1655,6 +1711,31 @@ fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_letter_with_the_shortcut_modifier_reaches_the_panel_as_a_key_with_control_held() {
+        let (shortcut, other) = if cfg!(target_os = "macos") { (SDL_KMOD_LGUI, SDL_KMOD_LCTRL) } else { (SDL_KMOD_LCTRL, SDL_KMOD_LGUI) };
+        let key = |key: SDL_Keycode, modifiers: SDL_Keymod, down: bool| SDL_KeyboardEvent { key, r#mod: modifiers, down, ..Default::default() };
+        let text = |events: Vec<WindowEvent>| events.into_iter().map(|event| match event {
+            WindowEvent::KeyPressed { text } => format!("+{text}"),
+            WindowEvent::KeyReleased { text } => format!("-{text}"),
+            other => format!("{other:?}"),
+        }).collect::<Vec<_>>();
+        let control = xem_ui::SharedString::from(Key::Control).to_string();
+        // Ctrl+V with the Ctrl key down: Slint has its Control already.
+        assert_eq!(text(panel_key_events(&key(SDLK_V, shortcut, true), true)), ["+v"]);
+        assert_eq!(text(panel_key_events(&key(SDLK_V, shortcut | SDL_KMOD_LSHIFT, true), true)), ["+v"]);
+        // Sent with the modifier and no Ctrl key (Omarchy's Super+V): Control
+        // around the letter.
+        assert_eq!(text(panel_key_events(&key(SDLK_V, shortcut | SDL_KMOD_LGUI, true), false)), [format!("+{control}"), "+v".into(), format!("-{control}")]);
+        assert_eq!(text(panel_key_events(&key(SDLK_V, shortcut, false), false)), ["-v"]);
+        // Typed letters come as SDL's text input; other keys as themselves.
+        assert!(panel_key_events(&key(SDLK_V, SDL_KMOD_NONE, true), false).is_empty());
+        assert!(panel_key_events(&key(SDLK_V, other, true), false).is_empty());
+        assert!(panel_key_events(&key(SDLK_1, shortcut, true), true).is_empty());
+        let modifier = if cfg!(target_os = "macos") { SDLK_LGUI } else { SDLK_LCTRL };
+        assert_eq!(text(panel_key_events(&key(modifier, SDL_KMOD_NONE, true), false)), [format!("+{control}")]);
+    }
 
     #[test]
     fn show_fps_draws_over_the_game_with_settings_closed() {

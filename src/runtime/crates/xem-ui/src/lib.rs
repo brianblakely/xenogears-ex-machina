@@ -54,6 +54,21 @@ thread_local! {
     // Slint has created it for a new component.
     static NEXT_GPU: RefCell<Option<SharedGpu>> = const { RefCell::new(None) };
     static CREATED: RefCell<Option<Rc<PanelWindow>>> = const { RefCell::new(None) };
+    static CLIPBOARD: RefCell<Option<Box<dyn Clipboard>>> = const { RefCell::new(None) };
+}
+
+/// The system clipboard as the host reaches it: the panel's text fields
+/// paste from it (Ctrl+V) and copy and cut to it (Ctrl+C, Ctrl+X; never
+/// from the password field).
+pub trait Clipboard {
+    fn text(&self) -> Option<String>;
+    fn set_text(&self, text: &str);
+}
+
+/// The clipboard the panel's text fields use on this thread (none until
+/// a host sets one: pasting then does nothing).
+pub fn set_clipboard(clipboard: impl Clipboard + 'static) {
+    CLIPBOARD.set(Some(Box::new(clipboard)));
 }
 
 /// Slint's platform on the host thread: it only creates texture-backed windows.
@@ -81,6 +96,19 @@ impl Platform for HostPlatform {
         });
         CREATED.set(Some(window.clone()));
         Ok(window)
+    }
+
+    fn clipboard_text(&self, clipboard: slint::platform::Clipboard) -> Option<String> {
+        if clipboard != slint::platform::Clipboard::DefaultClipboard {
+            return None;
+        }
+        CLIPBOARD.with_borrow(|host| host.as_ref()?.text())
+    }
+
+    fn set_clipboard_text(&self, text: &str, clipboard: slint::platform::Clipboard) {
+        if clipboard == slint::platform::Clipboard::DefaultClipboard {
+            CLIPBOARD.with_borrow(|host| if let Some(host) = host { host.set_text(text) });
+        }
     }
 }
 
@@ -768,6 +796,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_auto_advance(settings.auto_advance.enabled);
     panel.set_auto_advance_dwell(settings.auto_advance.dwell as i32);
     panel.set_movie_skip(settings.movie_skip);
+    panel.set_movie_subtitles(settings.movie_subtitles);
     panel.set_fast_disc(settings.fast_disc);
     // Japanese (the last language) only beside the Japanese discs; without
     // them the game shows its English.
@@ -981,6 +1010,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 }
                 "auto-advance-dwell" => u32::try_from(value).ok().map(|dwell| SettingChange::AutoAdvance(xem_settings::AutoAdvance { dwell, ..auto })),
                 "movie-skip" => Some(SettingChange::MovieSkip(value != 0)),
+                "movie-subtitles" => Some(SettingChange::MovieSubtitles(value != 0)),
                 "fast-disc" => Some(SettingChange::FastDisc(value != 0)),
                 "language" => usize::try_from(value).ok().and_then(|i| Language::ALL.get(i)).map(|language| SettingChange::Language(*language)),
                 "voices" => xem_settings::Voices::ALL.get(usize::try_from(value).unwrap_or(0)).map(|voices| SettingChange::Voices(*voices)),

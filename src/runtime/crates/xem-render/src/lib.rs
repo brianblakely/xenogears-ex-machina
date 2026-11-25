@@ -8,6 +8,7 @@ mod gpu;
 pub mod glass;
 pub mod ps1;
 mod scene;
+pub mod subtitles;
 
 pub use compositor::{Compositor, Picture, Quad, Rect, present_rect};
 #[cfg(not(target_arch = "wasm32"))]

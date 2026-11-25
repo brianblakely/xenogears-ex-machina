@@ -31,6 +31,7 @@ impl Sdl {
             SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD | SDL_INIT_AUDIO)
         };
         if ok {
+            xem_ui::set_clipboard(SdlClipboard);
             Ok(Sdl)
         } else {
             Err(format!("SDL_Init: {}", error()))
@@ -46,6 +47,33 @@ impl Sdl {
             Ok(Sdl)
         } else {
             Err(format!("SDL_Init: {}", error()))
+        }
+    }
+}
+
+/// The system clipboard through SDL's video subsystem, for the settings
+/// panel's text fields.
+struct SdlClipboard;
+
+impl xem_ui::Clipboard for SdlClipboard {
+    fn text(&self) -> Option<String> {
+        // SAFETY: SDL returns a NUL-terminated copy (empty when there is no
+        // text) that the caller frees with SDL_free.
+        unsafe {
+            let raw = SDL_GetClipboardText();
+            if raw.is_null() {
+                return None;
+            }
+            let text = CStr::from_ptr(raw).to_string_lossy().into_owned();
+            SDL_free(raw.cast());
+            (!text.is_empty()).then_some(text)
+        }
+    }
+
+    fn set_text(&self, text: &str) {
+        if let Ok(text) = CString::new(text) {
+            // SAFETY: SDL copies the NUL-terminated string.
+            unsafe { SDL_SetClipboardText(text.as_ptr()) };
         }
     }
 }

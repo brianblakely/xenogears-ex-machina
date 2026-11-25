@@ -419,6 +419,10 @@ Find these in **Settings → Gameplay**. Each choice is saved for next time.
   they are pictures, and names you type stay in English letters. The few
   lines with no Japanese counterpart, mostly in the developers' test rooms,
   stay in English.
+- **Language — Movie subtitles:** shows what is said in the movies, in the
+  language you chose for the game text. It starts off. The subtitles were
+  timed to the Japanese voices, so with the English voices a line can begin
+  a moment early or late and say the same in other words.
 - **Language — Movies and voices** (with the Japanese discs only): **English**,
   the North American release's dubbed anime movies and battle voices, or
   **日本語**, the Japanese release's. The change takes effect from the next
