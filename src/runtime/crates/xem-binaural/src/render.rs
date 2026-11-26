@@ -286,6 +286,7 @@ fn block_step(seconds: f32) -> f32 {
 pub struct Renderer {
     hrtf: &'static Hrtf,
     fft: Fft,
+    heard: Vec<usize>,
     routes: [Route; VOICES],
     /// Each voice's source, by index into `sources`.
     slots: [Option<usize>; VOICES],
@@ -343,6 +344,7 @@ impl Renderer {
         Renderer {
             hrtf,
             fft: Fft::new(FFT_SIZE),
+            heard: Vec::new(),
             routes: [Route::Original; VOICES],
             slots: [None; VOICES],
             unpanned: [([0, 0], Some(pan::Unpanned { gain: 0.0, pan: 16384.0 })); VOICES],
@@ -655,17 +657,16 @@ impl Renderer {
     /// The spectra of two real blocks `a` and `b` at once, into `first` and
     /// `second` (bins 0 to BINS - 1).
     fn spectra_of_two(fft: &Fft, buffer: &mut [Complex], a: &[f32; BLOCK], b: Option<&[f32; BLOCK]>, first: &mut [Complex; BINS], second: &mut [Complex; BINS]) {
-        for (t, slot) in buffer.iter_mut().enumerate() {
-            *slot = if t < BLOCK { Complex::new(a[t], b.map_or(0.0, |b| b[t])) } else { Complex::ZERO };
-        }
-        fft.forward(buffer);
+        fft.forward_block(a, b.map(|b| &b[..]), buffer);
         for k in 0..BINS {
             let z = buffer[k];
             let mirror = buffer[(FFT_SIZE - k) % FFT_SIZE].conj();
             first[k] = z.add(mirror).scale(0.5);
             // (z - mirror) / 2i
-            let d = z.sub(mirror);
-            second[k] = Complex::new(d.im * 0.5, -d.re * 0.5);
+            if b.is_some() {
+                let d = z.sub(mirror);
+                second[k] = Complex::new(d.im * 0.5, -d.re * 0.5);
+            }
         }
     }
 
@@ -703,7 +704,9 @@ impl Renderer {
         // them too): a filter, and its interaural delay, never changes from
         // one sample to the next.
         self.ears = [[Complex::ZERO; BINS]; 2];
-        let heard: Vec<usize> = (0..self.sources.len()).filter(|&i| self.sources[i].input.iter().any(|s| *s != 0.0)).collect();
+        let heard = &mut self.heard;
+        heard.clear();
+        heard.extend((0..self.sources.len()).filter(|&i| self.sources[i].input.iter().any(|s| *s != 0.0)));
         let fading = heard.iter().any(|&i| self.sources[i].changed);
         if fading {
             self.before = [[Complex::ZERO; BINS]; 2];

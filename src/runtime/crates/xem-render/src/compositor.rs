@@ -166,6 +166,8 @@ pub struct Compositor {
     linear: wgpu::Sampler,
     stride: u64,
     capacity: usize,
+    groups: Vec<(wgpu::TextureView, wgpu::FilterMode, wgpu::BindGroup)>,
+    bytes: Vec<u8>,
     uniforms: wgpu::Buffer,
     uniform_group: wgpu::BindGroup,
 }
@@ -259,6 +261,8 @@ impl Compositor {
             linear: sampler(wgpu::FilterMode::Linear),
             stride,
             capacity: 4,
+            groups: Vec::new(),
+            bytes: Vec::new(),
             uniforms,
             uniform_group,
         }
@@ -329,8 +333,8 @@ impl Compositor {
             );
         }
         let encode = !self.format.is_srgb();
-        let mut bytes = vec![0u8; total * self.stride as usize];
-        let mut groups = Vec::with_capacity(total);
+        self.bytes.resize(total * self.stride as usize, 0);
+        self.groups.truncate(total);
         for (index, quad) in targets.iter().flat_map(|(_, _, quads)| quads.iter()).enumerate() {
             let uniform = QuadUniform {
                 transform: quad.transform.to_cols_array_2d(),
@@ -340,12 +344,13 @@ impl Compositor {
                 opaque: quad.opaque.into(),
             };
             let at = index * self.stride as usize;
-            bytes[at..at + size_of::<QuadUniform>()].copy_from_slice(bytemuck::bytes_of(&uniform));
+            self.bytes[at..at + size_of::<QuadUniform>()].copy_from_slice(bytemuck::bytes_of(&uniform));
+            if self.groups.get(index).is_some_and(|(view, filter, _)| view == quad.texture && *filter == quad.filter) { continue; }
             let sampler = match quad.filter {
                 wgpu::FilterMode::Nearest => &self.nearest,
                 _ => &self.linear,
             };
-            groups.push(self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("quad texture"),
                 layout: &self.texture_layout,
                 entries: &[
@@ -358,10 +363,12 @@ impl Compositor {
                         resource: wgpu::BindingResource::Sampler(sampler),
                     },
                 ],
-            }));
+            });
+            let entry = (quad.texture.clone(), quad.filter, group);
+            if index == self.groups.len() { self.groups.push(entry); } else { self.groups[index] = entry; }
         }
-        if !bytes.is_empty() {
-            self.queue.write_buffer(&self.uniforms, 0, &bytes);
+        if !self.bytes.is_empty() {
+            self.queue.write_buffer(&self.uniforms, 0, &self.bytes);
         }
         let mut index = 0;
         for (target, clear, quads) in targets {
@@ -393,7 +400,7 @@ impl Compositor {
                     &self.uniform_group,
                     &[(index as u64 * self.stride) as u32],
                 );
-                pass.set_bind_group(1, &groups[index], &[]);
+                pass.set_bind_group(1, &self.groups[index].2, &[]);
                 pass.draw(0..6, 0..1);
                 index += 1;
             }

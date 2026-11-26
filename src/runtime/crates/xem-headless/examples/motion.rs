@@ -450,7 +450,7 @@ fn main() {
             device.set_trace(true);
         }
         device.set_reveals(view.reveals());
-        view.push(device.take_trace());
+        view.push(device.take_render_trace());
         let display = device.display();
         let scene = session.scene();
         match review {
@@ -519,6 +519,7 @@ fn main() {
     }
     let buttons = hold.iter().map(|b| xem_core::control::button_bit(b).unwrap_or_else(|| panic!("no button {b}"))).fold(0, |a, b| a | b);
     let mut stages = [Stage::new("game_frame"), Stage::new("trace"), Stage::new("present_cpu"), Stage::new("gpu")];
+    let mut peak_scaled_vram = 0;
     let mut sheet_frames: Vec<((u32, u32), Vec<u8>)> = Vec::new();
     let mut animation = std::collections::VecDeque::new();
     let mut changes = Vec::new();
@@ -577,7 +578,7 @@ fn main() {
             device.set_trace(true);
         }
         device.set_reveals(view.reveals());
-        view.push(device.take_trace());
+        view.push(device.take_render_trace());
         let display = device.display();
         movies.push(if display.color24 { i8::from(view.shows_movie(&display)) } else { -1 });
         revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
@@ -653,6 +654,7 @@ fn main() {
             previous = Some(rgba);
         }
         // The culled faces drawn in the frame shown.
+        peak_scaled_vram = peak_scaled_vram.max(view.scaled_vram_bytes());
         shown_revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
     }
     if let Some((x, y)) = probe {
@@ -757,6 +759,7 @@ fn main() {
         "scene": session.scene(),
         "graphics": graphics,
         "frames": frames, "present": present, "size": [size.0, size.1],
+        "scaled_vram_peak_bytes": peak_scaled_vram,
         "stages": stages.iter().map(|s| (s.name.to_string(), s.report())).collect::<serde_json::Map<_, _>>(),
         // Every sample in order (milliseconds), for what a mean hides: a
         // game frame's, a trace's, and each presentation's CPU and GPU time.

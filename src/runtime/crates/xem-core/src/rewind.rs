@@ -1,5 +1,7 @@
 //! A bounded history of game runtime states, at acknowledged frame boundaries.
+use crate::snapshot::PAGE;
 use std::collections::VecDeque;
+use std::sync::Arc;
 use std::time::Duration;
 
 /// The most the retained states may take, whatever the history length.
@@ -12,15 +14,73 @@ pub const REWIND_STEP_MS: u64 = 250;
 /// other one, up to twelve where it draws every fourth).
 pub const REWIND_PLAY_BLANKS: u64 = 12;
 
-// Give checkpoint metadata the same actual allocation layout on supported
-// 32/64-bit hosts, so one memory budget retains the same history on each.
-#[repr(C, align(32))]
+// Budget metadata at its 64-bit size on all hosts to retain the same history.
+#[repr(C)]
 struct Checkpoint {
     frame: u64,
     played: Duration,
-    // Serialized game save content. The file checksum is only needed when a
-    // state leaves this trusted queue; computing it here stalls the frame.
-    data: Vec<u8>,
+    sections: Box<[Section]>,
+}
+
+// Align pages to each device or memory region. A change in one region's
+// encoded length then leaves all later regions' pages shareable.
+
+struct Section {
+    len: u32,
+    memory: bool,
+    pages: Box<[(u32, Arc<[u8]>)]>,
+}
+
+impl Section {
+    fn capture(bytes: &[u8], previous: Option<&Section>, memory: bool) -> Self {
+        let mut before = previous.into_iter().flat_map(|s| s.pages.iter()).peekable();
+        let mut pages = Vec::with_capacity(previous.map_or(0, |s| s.pages.len()));
+        for (i, page) in bytes.chunks(PAGE).enumerate() {
+            let index = i as u32;
+            if before.peek().is_some_and(|(at, _)| *at == index) {
+                let (_, old) = before.next().unwrap();
+                if **old == *page {
+                    pages.push((index, old.clone()));
+                    continue;
+                }
+            }
+            if page != &[0; PAGE][..page.len()] { pages.push((index, Arc::from(page))); }
+        }
+        Self { len: bytes.len() as u32, memory, pages: pages.into_boxed_slice() }
+    }
+
+    fn append(&self, out: &mut Vec<u8>) {
+        let start = out.len();
+        for (index, page) in &self.pages {
+            out.resize(start + *index as usize * PAGE, 0);
+            out.extend_from_slice(page);
+        }
+        out.resize(start + self.len as usize, 0);
+    }
+}
+
+impl Checkpoint {
+    fn content(&self) -> Vec<u8> {
+        let mut out = crate::snapshot::Writer(Vec::new());
+        let mut raw = Vec::new();
+        for section in &self.sections {
+            if section.memory {
+                raw.clear();
+                section.append(&mut raw);
+                out.memory(&raw);
+            } else { section.append(&mut out.0); }
+        }
+        out.0
+    }
+
+    // What this checkpoint alone owns as it joins or leaves the queue.
+    fn exclusive_bytes(&self) -> usize {
+        self.sections.len() * 24 + self.sections.iter().map(|s| {
+            s.pages.len() * 24 + s.pages.iter().map(|(_, p)| p)
+                .filter(|p| Arc::strong_count(p) == 1)
+                .map(|p| p.len().next_multiple_of(8) + 16).sum::<usize>()
+        }).sum::<usize>()
+    }
 }
 
 #[cfg(test)]
@@ -119,63 +179,94 @@ impl Rewind {
         self.budget != 0 && self.error.is_none() && (self.entries.is_empty()
             || self.played.saturating_sub(self.last_checkpoint) >= Duration::from_secs(u64::from(self.interval_seconds)))
     }
-    pub(crate) fn push(&mut self, frame: u64, data: Vec<u8>, now: Duration) {
-        // Include both the actual state allocation and container capacity.
-        let size = data.capacity() + std::mem::size_of::<Checkpoint>();
-        if size > self.budget {
-            self.clear();
-            self.error = Some(format!("one state needs {size} bytes; rewind budget is {}", self.budget));
-            return;
-        }
-        while self.bytes + size > self.budget {
-            let old = self.entries.pop_front().unwrap();
-            self.bytes -= old.data.capacity() + std::mem::size_of::<Checkpoint>();
-        }
-        self.entries.reserve_exact(1);
-        self.entries.push_back(Checkpoint { frame, played: self.played, data });
-        self.reset_time(now);
-        self.recount();
-        while self.bytes > self.budget {
-            self.entries.pop_front();
-            self.recount();
-        }
+    #[cfg(test)]
+    fn push(&mut self, frame: u64, data: Vec<u8>, now: Duration) {
+        let previous = self.entries.back().and_then(|entry| entry.sections.first());
+        self.push_sections(frame, vec![Section::capture(&data, previous, false)].into_boxed_slice(), now);
     }
+
+    pub(crate) fn capture<M: crate::module::GameModule>(&mut self, runtime: &mut crate::Runtime<M>, frame: u64, now: Duration) -> Result<(), crate::snapshot::SnapshotError> {
+        let previous = self.entries.back();
+        let before = |n| previous.and_then(|entry| entry.sections.get(n));
+        let mut regions = Vec::with_capacity(crate::snapshot::REGIONS.len());
+        let mut ends = Vec::with_capacity(12);
+        let data = runtime.snapshot_content(&mut ends, Some(&mut |raw| {
+            regions.push(Section::capture(raw, before(1 + regions.len()), true));
+        }))?;
+        let mut sections = vec![Section::capture(&data[..ends[0]], before(0), false)];
+        sections.append(&mut regions);
+        let mut start = ends[0];
+        for end in ends[1..].iter().copied().chain([data.len()]) {
+            sections.push(Section::capture(&data[start..end], before(sections.len()), false));
+            start = end;
+        }
+        self.push_sections(frame, sections.into_boxed_slice(), now);
+        Ok(())
+    }
+
+    fn push_sections(&mut self, frame: u64, sections: Box<[Section]>, now: Duration) {
+        let entry = Checkpoint { frame, played: self.played, sections };
+        self.bytes += entry.exclusive_bytes();
+        let capacity = self.entries.capacity();
+        self.entries.push_back(entry);
+        self.bytes += (self.entries.capacity() - capacity) * 40;
+        while self.bytes > self.budget {
+            if self.entries.len() < self.entries.capacity() {
+                let capacity = self.entries.capacity();
+                self.entries.shrink_to_fit();
+                self.bytes -= (capacity - self.entries.capacity()) * 40;
+                if self.bytes <= self.budget { break; }
+            }
+            if self.entries.len() == 1 {
+                let size = self.bytes;
+                self.clear();
+                self.error = Some(format!("one state needs {size} bytes; rewind budget is {}", self.budget));
+                return;
+            }
+            self.remove(true);
+        }
+        self.reset_time(now);
+    }
+
+    fn remove(&mut self, oldest: bool) -> Option<Checkpoint> {
+        let entry = if oldest { self.entries.pop_front()? } else { self.entries.pop_back()? };
+        self.bytes -= entry.exclusive_bytes();
+        Some(entry)
+    }
+
     pub fn latest(&self) -> Option<(u64, Vec<u8>)> {
-        self.entries.back().map(|entry| (entry.frame,crate::snapshot::seal(entry.data.clone())))
+        self.entries.back().map(|entry| (entry.frame,crate::snapshot::seal(entry.content())))
     }
     pub(crate) fn previous(&self, current_frame: u64, steps: usize) -> Option<(u64, Vec<u8>)> {
         let mut index = self.entries.len().checked_sub(1)?;
         if self.entries[index].frame == current_frame { index = index.checked_sub(1)?; }
         index = index.checked_sub(steps.checked_sub(1)?)?;
         let entry = &self.entries[index];
-        Some((entry.frame,entry.data.clone()))
+        Some((entry.frame,entry.content()))
     }
     /// The newest state from before frame `before`, taken off the queue
     /// with every later one; play time goes back to the state's own.
     pub(crate) fn pop_before(&mut self, before: u64) -> Option<(u64, Vec<u8>)> {
         let index = self.entries.iter().rposition(|entry| entry.frame < before)?;
-        self.entries.truncate(index + 1);
-        let entry = self.entries.pop_back()?;
+        while self.entries.len() > index + 1 { self.remove(false); }
+        let entry = self.remove(false)?;
         self.played = entry.played;
         self.last_checkpoint = self.played;
-        self.recount();
-        Some((entry.frame, entry.data))
+        Some((entry.frame, entry.content()))
     }
     pub fn truncate(&mut self, frame: u64) {
         while self.entries.back().is_some_and(|entry| entry.frame > frame) {
-            self.entries.pop_back();
+            self.remove(false);
         }
         if let Some(entry) = self.entries.back() {
             self.played = entry.played;
             self.last_checkpoint = self.played;
         }
-        self.recount();
     }
     fn prune(&mut self) {
         let oldest = self.played.saturating_sub(Duration::from_secs(u64::from(self.history_seconds)));
         if self.entries.front().is_some_and(|entry| entry.played < oldest) {
-            while self.entries.front().is_some_and(|entry| entry.played < oldest) { self.entries.pop_front(); }
-            self.recount();
+            while self.entries.front().is_some_and(|entry| entry.played < oldest) { self.remove(true); }
         }
     }
     pub fn available_seconds(&self) -> f64 {
@@ -184,11 +275,6 @@ impl Rewind {
     /// The frame of the oldest state retained, if any.
     pub fn oldest_frame(&self) -> Option<u64> {
         self.entries.front().map(|entry| entry.frame)
-    }
-    fn recount(&mut self) {
-        self.entries.shrink_to_fit();
-        self.bytes = self.entries.iter().map(|entry| entry.data.capacity()).sum::<usize>()
-            + self.entries.capacity() * std::mem::size_of::<Checkpoint>();
     }
     pub fn clear(&mut self) {
         self.entries = VecDeque::new();

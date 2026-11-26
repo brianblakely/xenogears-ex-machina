@@ -37,7 +37,7 @@ const EMBEDDED_DIRECTORIES: usize = EMBEDDED_INDEX + INDEX_BYTES;
 const EMBEDDED_DIRECTORY_BYTES: usize = 0x7C;
 
 /// One 7-byte index record.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Record {
     /// First sector (24 bits).
     pub lba: u32,

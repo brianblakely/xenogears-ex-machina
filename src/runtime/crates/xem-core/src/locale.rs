@@ -316,7 +316,7 @@ pub fn parse_glyphs(source: &str) -> Result<Vec<Glyph>, String> {
 /// A translation's bytes as the game reads them, through its closing 00,
 /// and its window's needs: its widest line in columns and its longest page
 /// in lines.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Encoded {
     pub bytes: Vec<u8>,
     pub columns: u32,
@@ -401,7 +401,7 @@ pub fn place_key(text: &[u8], index: u16, offset: u16, count: u16) -> u64 {
 /// One language's translations: of a text wherever a window takes it, by
 /// the hash of the original, and of a text in one table entry alone, by
 /// that entry's name ([`place_key`]).
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Translations {
     pub texts: BTreeMap<u64, Encoded>,
     pub entries: BTreeMap<u64, Encoded>,

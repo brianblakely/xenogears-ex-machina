@@ -640,7 +640,7 @@ pub(crate) struct Builder<'a> {
     /// The native VRAM as the frame's writes leave it, for the texels of
     /// faces the game paints in their buffer's clear colour
     /// ([`Builder::backdrop`]).
-    pub(crate) vram: Option<&'a [u16]>,
+    vram: Option<VramWords<'a>>,
     /// The fills that cleared screen buffers, newest last, in the colour
     /// VRAM stores.
     pub(crate) clears: Vec<(VramRect, u16)>,
@@ -780,14 +780,20 @@ fn fill_color(rgb: u32, fifteen: bool) -> [f32; 4] {
 
 /// The texel at (u, v) of `p`'s texture in `vram`, as the GPU reads it
 /// (the texture window applied; 4- and 8-bit texels through the CLUT).
-fn texel(vram: &[u16], p: &Primitive, u: i16, v: i16) -> u16 {
+fn texel(vram: VramWords<'_>, p: &Primitive, u: i16, v: i16) -> u16 {
     let window = p.environment.texture_window;
     let (mask_x, mask_y, offset_x, offset_y) = (window & 31, window >> 5 & 31, window >> 10 & 31, window >> 15 & 31);
     let u = (u as u32 & 255 & !(mask_x * 8)) | (offset_x & mask_x) * 8;
     let v = (v as u32 & 255 & !(mask_y * 8)) | (offset_y & mask_y) * 8;
     let mode = p.environment.draw_mode;
     let (page_x, page_y) = ((mode & 15) * 64, (mode >> 4 & 1) * 256);
-    let at = |x: u32, y: u32| vram.get(((y & 511) * VRAM_WIDTH + (x & 1023)) as usize).copied().unwrap_or(0);
+    let at = |x: u32, y: u32| {
+        let index = ((y & 511) * VRAM_WIDTH + (x & 1023)) as usize;
+        match vram {
+            VramWords::Linear(words) => words[index],
+            VramWords::Snapshot(snapshot) => snapshot.bands[index / BAND_WORDS][index % BAND_WORDS],
+        }
+    };
     let clut = |index: u32| at(u32::from(p.clut & 63) * 16 + index, u32::from(p.clut >> 6 & 511));
     match mode >> 7 & 3 {
         0 => clut(u32::from(at(page_x + u / 4, page_y + v)) >> (u % 4 * 4) & 15),
@@ -1522,7 +1528,7 @@ impl<'a> Builder<'a> {
                 let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
                 self.upload(*rect, pixels, show);
             }
-            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::History { .. } | TraceOp::Eye(_) | TraceOp::Camera(_)
+            TraceOp::Presented { .. } | TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::History { .. } | TraceOp::Eye(_) | TraceOp::Camera(_)
             | TraceOp::Placement(_) => {}
         }
     }
@@ -1909,10 +1915,10 @@ pub(crate) fn encode(
                         let _ = std::iter::once(capture).chain(earlier)
                             .any(|capture| copy_capture(encoder, target, capture, *source, *destination, (*width, *height), false));
                     }
-                    Copies::From { color, aux, scale, capture, earlier, scratch, .. } => {
+                    Copies::From { picture, scale, capture, earlier, scratch, .. } => {
                         if let Some(side) = local {
-                            copy_region(encoder, target, scratch, *source, *destination, (*width, *height), *side);
-                        } else {
+                            copy_region(encoder, target, scratch.expect("local copy scratch"), *source, *destination, (*width, *height), *side);
+                        } else if let Some((color, aux)) = picture {
                             copy_from(encoder, target, (color, aux, scale), *source, *destination, (*width, *height));
                         }
                         if let Some(capture) = capture {
@@ -2009,7 +2015,7 @@ pub(crate) enum Copies<'a> {
     /// From the scaled VRAM picture (colour, auxiliary, scale) into the
     /// target; a copy of a screen the game took (the capture, or one taken
     /// before it), from its picture.
-    From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture>, earlier: &'a [Capture], scratch: &'a wgpu::Texture, feedback: &'a wgpu::Texture, feedback_aux: &'a wgpu::Texture },
+    From { picture: Option<(&'a wgpu::Texture, &'a wgpu::Texture)>, scale: u32, capture: Option<&'a Capture>, earlier: &'a [Capture], scratch: Option<&'a wgpu::Texture>, feedback: &'a wgpu::Texture, feedback_aux: &'a wgpu::Texture },
 }
 
 /// A copy of all of a captured screen ([`Capture`]) into `target`: its
@@ -2166,6 +2172,130 @@ pub struct DisplayArea {
     pub height: u32,
 }
 
+type Pictures = (wgpu::Texture, wgpu::Texture, wgpu::Texture, wgpu::Texture);
+
+/// Raw draws still capable of supplying a scaled copy. A later opaque clear
+/// retires the covered draws. Copies carry their source dependencies forward.
+#[derive(Clone)]
+struct RawFrame {
+    start: std::sync::Arc<VramSnapshot>,
+    end: std::sync::Arc<VramSnapshot>,
+    ops: Vec<TraceOp>,
+    live: Vec<VramRect>,
+    options: DrawOptions,
+    seal: bool,
+    sky: f32,
+    additive: bool,
+    capture: Capture,
+    earlier: Vec<Capture>,
+    place: bool,
+    clears: Vec<(VramRect, u16)>,
+}
+
+/// Scaled cache for an offscreen tile painted without projected depth
+/// (the game draws its changing character textures this way). Its depth
+/// stays at the far plane, so promotion needs only its colour and metadata.
+#[derive(Clone)]
+struct PaintTile {
+    rect: VramRect,
+    live: Vec<VramRect>,
+    /// Native uploads since this tile was painted. A later draw restores
+    /// these words from its starting VRAM, before blending over the tile.
+    native: [u64; TILE as usize],
+    color: wgpu::Texture,
+    aux: wgpu::Texture,
+}
+
+impl PaintTile {
+    fn uploaded(&mut self, rect: VramRect) {
+        let Some(cut) = self.rect.intersect(&rect) else { return };
+        let mask = (u64::MAX >> (64 - cut.width)) << (cut.x - self.rect.x);
+        let y = usize::from(cut.y - self.rect.y);
+        for row in &mut self.native[y..y + usize::from(cut.height)] { *row |= mask; }
+    }
+
+    /// Exact rectangles belonging to either the native image or this tile.
+    fn regions(&self, native: bool) -> Vec<VramRect> {
+        let mut rects = Vec::new();
+        let mut y = 0;
+        while y < self.native.len() {
+            let row = self.native[y];
+            let mut end = y + 1;
+            while end < self.native.len() && self.native[end] == row { end += 1; }
+            let mut bits = if native { row } else { !row };
+            while bits != 0 {
+                let x = bits.trailing_zeros();
+                let width = (bits >> x).trailing_ones();
+                rects.push(VramRect { x: self.rect.x + x as u16, y: self.rect.y + y as u16,
+                    width: width as u16, height: (end - y) as u16 });
+                bits &= !((u64::MAX >> (64 - width)) << x);
+            }
+            y = end;
+        }
+        rects
+    }
+}
+
+/// A bounded region of raw VRAM drawn into independent attachments.
+struct RawTarget {
+    rect: VramRect,
+    color: wgpu::Texture,
+    aux: wgpu::Texture,
+    depth: wgpu::Texture,
+    native: Vec<VramRect>,
+    reads: Sampled,
+}
+
+const TILE: u16 = 64;
+
+fn raw_bounds(p: &Primitive) -> VramRect {
+    let [mut x, mut y, mut right, mut bottom] = p.environment.area;
+    if right.saturating_sub(x) >= 512 {
+        let v = &p.vertices[..p.vertex_count()];
+        if v.iter().all(|v| v.z <= 0.0) {
+            // Snapped geometry starts at or after its smallest whole pixel.
+            // Lines include their last pixel. A filled primitive can cover
+            // part of its last pixel at a higher internal resolution.
+            x = x.max(v.iter().map(|v| v.x).min().unwrap().clamp(0, 1024) as u16);
+            y = y.max(v.iter().map(|v| v.y).min().unwrap().clamp(0, 512) as u16);
+            right = right.min(v.iter().map(|v| v.x).max().unwrap().clamp(0, 1023) as u16);
+            bottom = bottom.min(v.iter().map(|v| v.y).max().unwrap().clamp(0, 511) as u16);
+        } else {
+            let mut min = [f32::MAX; 2];
+            let mut max = [f32::MIN; 2];
+            for v in v {
+                min = [min[0].min(v.x as f32).min(v.fx), min[1].min(v.y as f32).min(v.fy)];
+                max = [max[0].max(v.x as f32).max(v.fx), max[1].max(v.y as f32).max(v.fy)];
+            }
+            x = x.max((min[0] - 2.0).floor() as u16);
+            y = y.max((min[1] - 2.0).floor() as u16);
+            right = right.min((max[0] + 2.5).ceil() as u16);
+            bottom = bottom.min((max[1] + 2.5).ceil() as u16);
+        }
+    }
+    VramRect { x, y, width: (right + 1).saturating_sub(x), height: (bottom + 1).saturating_sub(y) }
+}
+
+fn cover(live: &mut Vec<VramRect>, rect: VramRect) {
+    // Movie macroblocks and texture loads often replace a buffer in strips.
+    // Preserve the remaining pixels of a partial overwrite. For heavily
+    // fragmented drawings keep a conservative bound until a larger clear.
+    for i in (0..live.len()).rev() {
+        let area = live[i];
+        let Some(cut) = area.intersect(&rect) else { continue };
+        if cut == area {
+            live.swap_remove(i);
+        } else if live.len() < 64 {
+            live.swap_remove(i);
+            live.extend(area.outside(cut).into_iter().filter(|r| r.width != 0 && r.height != 0));
+        }
+    }
+}
+
+fn mark(live: &mut Vec<VramRect>, rect: VramRect) {
+    if rect.width != 0 && rect.height != 0 && !live.contains(&rect) { live.push(rect); }
+}
+
 /// The scaled VRAM picture and the native VRAM copy.
 pub struct Ps1Renderer {
     device: wgpu::Device,
@@ -2173,10 +2303,17 @@ pub struct Ps1Renderer {
     pub(crate) pipelines: Pipelines,
     scale: u32,
     pub(crate) vram: wgpu::Texture,
-    pub(crate) color: wgpu::Texture,
-    pub(crate) aux: wgpu::Texture,
-    depth: wgpu::Texture,
-    scratch: wgpu::Texture,
+    pictures: std::cell::OnceCell<Pictures>,
+    raw_frames: std::collections::VecDeque<RawFrame>,
+    copy_only: bool,
+    raw_depth: bool,
+    raw_live: Vec<VramRect>,
+    tiles: Vec<PaintTile>,
+    tile_depth: Option<wgpu::Texture>,
+    raw_bands: [Option<std::sync::Arc<[u16]>>; 64],
+    deferred: bool,
+    movie_bands: u64,
+    stamp: Option<u64>,
     uniform: wgpu::Buffer,
     group: wgpu::BindGroup,
     vertices: Stream,
@@ -2211,6 +2348,8 @@ pub struct Ps1Renderer {
     /// The native VRAM as the trace's writes left it (the start of each
     /// buffer's log copies it).
     native: Vec<u16>,
+    snapshot: std::sync::Arc<VramSnapshot>,
+    dirty_bands: u64,
     /// Seal the terrain's cracks ([`Builder::seal`]).
     pub(crate) seal: bool,
     /// Where the scene's sky begins ([`Builder::sky`]).
@@ -2243,6 +2382,67 @@ pub struct Ps1Renderer {
     storage: Storage,
 }
 
+const BAND_ROWS: usize = 8;
+const BAND_WORDS: usize = BAND_ROWS * VRAM_WIDTH as usize;
+
+#[derive(Clone, Copy)]
+enum VramWords<'a> {
+    Linear(&'a [u16]),
+    Snapshot(&'a VramSnapshot),
+}
+
+/// Immutable VRAM at a frame boundary. Unchanged eight-row bands are shared
+/// across both display buffers, repeated presentations and stereo eyes.
+#[derive(Clone, Debug)]
+pub struct VramSnapshot {
+    bands: [std::sync::Arc<[u16]>; VRAM_HEIGHT as usize / BAND_ROWS],
+}
+
+impl Default for VramSnapshot {
+    fn default() -> Self {
+        let zero: std::sync::Arc<[u16]> = vec![0; BAND_WORDS].into();
+        Self { bands: std::array::from_fn(|_| zero.clone()) }
+    }
+}
+
+impl VramSnapshot {
+    fn rect(&self, rect: VramRect) -> Vec<u16> {
+        let mut out = Vec::with_capacity(usize::from(rect.width) * usize::from(rect.height));
+        for y in rect.y..rect.y + rect.height {
+            let y = usize::from(y);
+            let at = y % BAND_ROWS * VRAM_WIDTH as usize + usize::from(rect.x);
+            out.extend_from_slice(&self.bands[y / BAND_ROWS][at..at + usize::from(rect.width)]);
+        }
+        out
+    }
+
+    /// Copies the native VRAM in row order for a consumer that needs a contiguous image.
+    pub fn to_vec(&self) -> Vec<u16> {
+        let mut words = Vec::with_capacity((VRAM_WIDTH * VRAM_HEIGHT) as usize);
+        for band in &self.bands { words.extend_from_slice(band); }
+        words
+    }
+
+    fn upload(&self) -> TraceOp {
+        TraceOp::Write { rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
+            pixels: self.to_vec().into(), upload: true }
+    }
+
+    fn update(current: &mut std::sync::Arc<Self>, dirty: &mut u64, native: &[u16]) -> std::sync::Arc<Self> {
+        let mut bits = std::mem::take(dirty);
+        while bits != 0 {
+            let i = bits.trailing_zeros() as usize;
+            bits &= bits - 1;
+            let words = &native[i * BAND_WORDS..(i + 1) * BAND_WORDS];
+            if &*current.bands[i] != words {
+                let band = &mut std::sync::Arc::make_mut(current).bands[i];
+                if let Some(unique) = std::sync::Arc::get_mut(band) { unique.copy_from_slice(words); } else { *band = words.into(); }
+            }
+        }
+        current.clone()
+    }
+}
+
 /// The primitives of one screen buffer: since its last clear (a fill or a
 /// copy over all of it) and the clear before.
 #[derive(Clone, Debug, Default)]
@@ -2257,7 +2457,7 @@ pub struct FrameLog {
     pub frames: u64,
     /// The native VRAM when the buffer was cleared: a replay samples VRAM
     /// as it was then, changed by the writes in `ops` as it goes.
-    pub start: std::sync::Arc<Vec<u16>>,
+    pub start: std::sync::Arc<VramSnapshot>,
     /// Where the field's controlled character stood in this frame, when
     /// the port recorded it (a view looking around: [`TraceOp::Eye`]).
     pub eye: Option<xem_gpu::Eye>,
@@ -2490,17 +2690,24 @@ impl Ps1Renderer {
         let capture = Capture::new(device, (1, 1));
         let group = bind_group(device, &pipelines.layout, &uniform, &vram, &capture, None);
         let scale = scale.clamp(1, Self::max_scale(device));
-        let (color, aux, depth, scratch) = Self::pictures(device, scale);
+
         Self {
             device: device.clone(),
             queue: queue.clone(),
             pipelines,
             scale,
             vram,
-            color,
-            aux,
-            depth,
-            scratch,
+            pictures: Default::default(),
+            raw_frames: Default::default(),
+            copy_only: false,
+            raw_depth: false,
+            raw_live: Vec::new(),
+            tiles: Vec::new(),
+            tile_depth: None,
+            raw_bands: std::array::from_fn(|_| None),
+            deferred: false,
+            movie_bands: 0,
+            stamp: None,
             uniform,
             group,
             vertices: Stream::new(device, "ps1 vertices", wgpu::BufferUsages::VERTEX),
@@ -2517,6 +2724,8 @@ impl Ps1Renderer {
             plane_layers: frame::PlaneLayers::default(),
             display: None,
             shown: Vec::new(),
+            snapshot: Default::default(),
+            dirty_bands: 0,
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             seal: false,
             sky: 0.0,
@@ -2567,13 +2776,6 @@ impl Ps1Renderer {
                 copied = None;
                 continue;
             }
-            // Reusing a source is only an alias while that source remains
-            // unchanged; mirrored writes also cover draws and copies.
-            if let TraceOp::Write { rect, .. } | TraceOp::Fill { rect, .. } = op
-                && self.capture.source.is_some_and(|source| overlap(&source, rect) > 0)
-            {
-                self.capture.source = None;
-            }
             let changed = match op {
                 TraceOp::Fill { rect, .. } | TraceOp::Write { rect, upload: true, .. } => Some(*rect),
                 TraceOp::Copy { destination, width, height, .. } => Some(VramRect { x: destination.0, y: destination.1, width: *width, height: *height }),
@@ -2583,6 +2785,15 @@ impl Ps1Renderer {
                 }
                 _ => None,
             };
+            // A source remains an alias only while its pixels are unchanged.
+            if let Some(source) = self.capture.source {
+                let written = match op {
+                    TraceOp::Draw(p) if !p.revealed => Some(raw_bounds(p)),
+                    TraceOp::Write { rect, .. } => Some(*rect),
+                    _ => changed,
+                };
+                if written.is_some_and(|r| overlap(&source, &r) > 0) { self.capture.source = None; }
+            }
             if let Some(rect) = changed
                 && copied.is_some_and(|(to, from)| overlap(&to, &rect) > 0 || overlap(&from, &rect) > 0)
             {
@@ -2750,20 +2961,20 @@ impl Ps1Renderer {
     /// The kept capture over its VRAM in the scaled picture (after the
     /// trace's own copy or write of the native screen there), without its
     /// sides.
-    fn place_capture(&self, encoder: &mut wgpu::CommandEncoder) {
-        let Some(rect) = self.capture.rect.filter(|_| self.capture.scale == self.scale) else { return };
-        let held = self.capture.texture.size();
-        let left = self.capture.side * self.scale;
-        let width = (u32::from(rect.width) * self.scale).min(held.width.saturating_sub(left));
-        let height = (u32::from(rect.height) * self.scale).min(held.height);
-        let origin = wgpu::Origin3d { x: u32::from(rect.x) * self.scale, y: u32::from(rect.y) * self.scale, z: 0 };
-        let limit = self.color.size();
+    fn place_capture(color: &wgpu::Texture, scale: u32, capture: &Capture, encoder: &mut wgpu::CommandEncoder) {
+        let Some(rect) = capture.rect.filter(|_| capture.scale == scale) else { return };
+        let held = capture.texture.size();
+        let left = capture.side * scale;
+        let width = (u32::from(rect.width) * scale).min(held.width.saturating_sub(left));
+        let height = (u32::from(rect.height) * scale).min(held.height);
+        let origin = wgpu::Origin3d { x: u32::from(rect.x) * scale, y: u32::from(rect.y) * scale, z: 0 };
+        let limit = color.size();
         if origin.x + width > limit.width || origin.y + height > limit.height {
             return;
         }
         encoder.copy_texture_to_texture(
-            wgpu::TexelCopyTextureInfo { texture: &self.capture.texture, mip_level: 0, origin: wgpu::Origin3d { x: left, y: 0, z: 0 }, aspect: wgpu::TextureAspect::All },
-            wgpu::TexelCopyTextureInfo { texture: &self.color, mip_level: 0, origin, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo { texture: &capture.texture, mip_level: 0, origin: wgpu::Origin3d { x: left, y: 0, z: 0 }, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo { texture: color, mip_level: 0, origin, aspect: wgpu::TextureAspect::All },
             wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
         );
     }
@@ -2836,7 +3047,12 @@ impl Ps1Renderer {
         let scale = if options.fidelity.native_resolution { 1 } else { scale.clamp(1, Self::max_scale(&self.device)) };
         if scale != self.scale {
             self.scale = scale;
-            (self.color, self.aux, self.depth, self.scratch) = Self::pictures(&self.device, scale);
+            self.pictures.take();
+            self.raw_frames.clear();
+            self.copy_only = false;
+            self.raw_live.clear();
+            self.tiles.clear();
+            self.tile_depth = None;
             self.synced = false;
             // Their pictures are at the old scale: none shows again.
             self.taken.clear();
@@ -2852,7 +3068,29 @@ impl Ps1Renderer {
     /// Draws `trace` into the picture. Data goes through the queue: call
     /// at most once per queue submission.
     pub fn draw(&mut self, encoder: &mut wgpu::CommandEncoder, trace: &Trace) {
-        if let Some(TraceOp::Write { rect, upload: true, .. }) = trace.ops.first()
+        self.ingest(encoder, trace.ops.clone(), false);
+        self.materialize(encoder);
+    }
+
+    fn ingest(&mut self, encoder: &mut wgpu::CommandEncoder, mut ops: Vec<TraceOp>, deferred: bool) {
+        if self.copy_only {
+            self.pictures.take();
+            self.copy_only = false;
+        }
+        self.deferred = deferred;
+        if let Some(TraceOp::Presented { stamp, .. }) = ops.last() {
+            let last = *stamp;
+            if let [TraceOp::Write { rect, pixels, upload: true }, TraceOp::Presented { resume: Some(id), .. }, ..] = &ops[..]
+                && self.stamp == Some(*id) && rect.width as u32 == VRAM_WIDTH && rect.height as u32 == VRAM_HEIGHT
+            {
+                self.native.copy_from_slice(pixels);
+                self.dirty_bands = u64::MAX;
+            }
+            self.stamp = Some(last);
+            ops.retain(|op| !matches!(op, TraceOp::Presented { .. }));
+        } else { self.stamp = None; }
+        if ops.is_empty() { return; }
+        if let Some(TraceOp::Write { rect, upload: true, .. }) = ops.first()
             && rect.width as u32 == VRAM_WIDTH
             && rect.height as u32 == VRAM_HEIGHT
         {
@@ -2865,48 +3103,361 @@ impl Ps1Renderer {
         // The full-size frames in place of the small sprites, for the logs'
         // replays too (seen from a diorama's head, the frame of the facing
         // it sees: the small sprite's facing goes with it).
-        let substituted;
-        let ops = if self.options.full_size_sprites && trace.ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.full_size.is_some())) {
-            let mut ops = trace.ops.clone();
+        if self.options.full_size_sprites && ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.full_size.is_some())) {
             frame::substitute_alternatives(&mut ops, |p| p.full_size.as_ref(), |p| (p.full_size, p.facing) = (None, None));
-            substituted = ops;
-            &substituted[..]
-        } else {
-            &trace.ops[..]
-        };
-        let captured = self.watch_captures(encoder, ops);
-        self.log(ops);
+        }
+        let start = VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native);
+        let captured = self.watch_captures(encoder, &ops);
+        self.log(&ops);
+        for op in &ops {
+            if let TraceOp::Write { rect, .. } = op && rect.height != 0 {
+                let first = usize::from(rect.y) / BAND_ROWS;
+                let last = ((usize::from(rect.y) + usize::from(rect.height) - 1) / BAND_ROWS).min(63);
+                self.movie_bands |= (u64::MAX << first) & (u64::MAX >> (63 - last));
+            }
+        }
         // A screen kept only for replays goes once no frame logged copies it.
         if self.earlier.iter().any(|capture| capture.replayed) {
             let logs = &self.logs;
             self.earlier.retain(|capture| !capture.replayed || capture.rect.is_some_and(|rect| copied_from(logs, rect)));
         }
-        // The dialogue stays in VRAM's picture: the frames presented while it
-        // is hidden are replayed without it.
-        let options = DrawOptions { hide_dialogue: false, ..self.options };
-        let mut builder = Builder::reusing(&options, ops, scene_offset(ops), &mut self.storage);
-        builder.seal = self.seal;
-        builder.sky = self.sky;
-        builder.additive_model_depth = self.additive_model_depth;
-        // (Its sides have no place in VRAM.)
-        let screen = sampled_screen(&self.capture, &self.earlier, ops);
-        builder.capture = screen.rect.map(|rect| (rect, 0));
-        builder.capture_aliases = &screen.aliases;
-        builder.vram = Some(&self.native);
-        builder.clears = self.logs.iter().filter_map(|log| match log.ops.first() {
+        let mut live = Vec::new();
+        for op in &ops {
+            let clear = match op {
+                TraceOp::Fill { rect, .. } | TraceOp::Write { rect, upload: true, .. } => Some(*rect),
+                _ => None,
+            };
+            if let Some(rect) = clear {
+                for areas in std::iter::once(&mut self.raw_live).chain(self.tiles.iter_mut().map(|t| &mut t.live)).chain(self.raw_frames.iter_mut().map(|f| &mut f.live)).chain(std::iter::once(&mut live)) {
+                    cover(areas, rect);
+                }
+            }
+            match op {
+                TraceOp::Draw(p) if !p.revealed || self.seal || p.class == Class::Model => {
+                    mark(&mut live, raw_bounds(p));
+                }
+                TraceOp::Fill { rect, .. } => mark(&mut live, *rect),
+                TraceOp::Copy { source, destination, width, height } => {
+                    let from = VramRect { x: source.0, y: source.1, width: *width, height: *height };
+                    let to = VramRect { x: destination.0, y: destination.1, ..from };
+                    for areas in std::iter::once(&mut self.raw_live).chain(self.tiles.iter_mut().map(|t| &mut t.live)).chain(self.raw_frames.iter_mut().map(|f| &mut f.live)) {
+                        if areas.iter().any(|r| overlap(r, &from) > 0) { mark(areas, to); }
+                    }
+                    mark(&mut live, to);
+                }
+                _ => {}
+            }
+        }
+        let place = captured && !self.capture.screen;
+        if let Some(rect) = self.capture.rect.filter(|_| place) { mark(&mut live, rect); }
+        self.tiles.retain(|t| !t.live.is_empty());
+        if self.tiles.is_empty() { self.tile_depth = None; }
+        if deferred && self.raw_live.is_empty() {
+            self.pictures.take();
+            if self.tiles.is_empty() {
+                while self.raw_frames.front().is_some_and(|f| f.live.is_empty()) { self.raw_frames.pop_front(); }
+            }
+        }
+        let end = VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native);
+        let clears = self.logs.iter().filter_map(|log| match log.ops.first() {
             Some(TraceOp::Fill { rect, color }) => Some((*rect, rgb15(*color))),
             _ => None,
         }).collect();
+        // A picture consisting only of native uploads can be made from the
+        // current native VRAM. Preserve writes between outstanding draws.
+        let writes = !live.is_empty() || ops.iter().any(|op| matches!(op, TraceOp::Write { .. }));
+        if writes && (!deferred || !live.is_empty() || !self.raw_frames.is_empty() || self.pictures.get().is_some() || !self.tiles.is_empty()) {
+            self.raw_frames.push_back(RawFrame { start, end, ops, live, options: self.options,
+                seal: self.seal, sky: self.sky, additive: self.additive_model_depth, capture: self.capture.clone(),
+                earlier: self.earlier.clone(), place, clears });
+        }
+        // Nothing in a fully overwritten batch can contribute scaled pixels
+        // to a later copy. Its native uploads are already in the snapshot.
+        if self.pictures.get().is_none() {
+            while self.raw_frames.front().is_some_and(|f| !f.place && f.live.is_empty()) {
+                let frame = self.raw_frames.pop_front().unwrap();
+                for op in &frame.ops {
+                    if let TraceOp::Write { rect, upload: true, .. } = op {
+                        for tile in &mut self.tiles { tile.uploaded(*rect); }
+                    }
+                }
+                self.tiles.retain(|t| t.native.iter().any(|&row| row != u64::MAX));
+            }
+        }
+        // Some programs draw over a buffer indefinitely without a fill.
+        // Bake the bounded history once and continue deferring subsequent draws.
+        let retained_bytes = |frames: &std::collections::VecDeque<RawFrame>| frames.iter()
+            .map(|f| f.ops.capacity() * std::mem::size_of::<TraceOp>()).sum::<usize>();
+        // Short fades often add only a handful of commands per vblank.
+        // Keep those cheap batches until an actual read or the byte budget.
+        while self.raw_frames.len() > 32
+            || self.raw_frames.len() >= 8 && retained_bytes(&self.raw_frames) > 2 * 1024 * 1024
+            || self.raw_frames.iter().map(|frame| frame.ops.len()).sum::<usize>() > 16384 {
+            if self.pictures.get().is_some() || !self.paint_oldest(encoder) { self.materialize(encoder); break; }
+        }
+    }
+
+    /// Advance the oldest pending batch in just the tiles where anything
+    /// survives subsequent clears. Screen draws normally expire before here.
+    fn paint_oldest(&mut self, encoder: &mut wgpu::CommandEncoder) -> bool {
+        let Some(frame) = self.raw_frames.pop_front() else { return true };
+        let mut needed = [false; 128];
+        for rect in &frame.live {
+            for row in rect.y / TILE..(rect.y + rect.height).div_ceil(TILE).min(8) {
+                for col in rect.x / TILE..(rect.x + rect.width).div_ceil(TILE).min(16) {
+                    needed[usize::from(row * 16 + col)] = true;
+                }
+            }
+        }
+        for tile in &self.tiles { needed[usize::from(tile.rect.y / TILE * 16 + tile.rect.x / TILE)] = true; }
+        // Depth-tested surfaces and inter-tile copies use the full raw path.
+        let bounds = |op: &TraceOp| match op {
+            TraceOp::Draw(p) => Some(raw_bounds(p)),
+            TraceOp::Fill { rect, .. } | TraceOp::Write { rect, upload: true, .. } => Some(*rect),
+            _ => None,
+        };
+        let active = |rect: &VramRect| {
+            (rect.y / TILE..(rect.y + rect.height).div_ceil(TILE).min(8)).any(|row|
+                (rect.x / TILE..(rect.x + rect.width).div_ceil(TILE).min(16)).any(|col| needed[usize::from(row * 16 + col)]))
+        };
+        if (frame.place && frame.capture.rect.as_ref().is_some_and(active)) || frame.ops.iter().any(|op| matches!(op,
+            TraceOp::Copy { destination, width, height, .. } if active(&VramRect { x: destination.0, y: destination.1, width: *width, height: *height }))) {
+            self.raw_frames.push_front(frame);
+            return false;
+        }
+        let mut jobs = Vec::new();
+        for (i, _) in needed.iter().enumerate().filter(|(_, needed)| **needed) {
+            let rect = VramRect { x: (i as u16 % 16) * TILE, y: (i as u16 / 16) * TILE, width: TILE, height: TILE };
+            let hits = |op: &TraceOp| bounds(op).is_some_and(|r| overlap(&r, &rect) != 0);
+            let mut reads = Sampled::default();
+            let mut touched = false;
+            for op in frame.ops.iter().filter(|op| hits(op)) {
+                touched = true;
+                if let TraceOp::Draw(p) = op {
+                    if !frame.options.fidelity.painter_ordering && p.vertices[..p.vertex_count()].iter().all(|v| v.z > 0.0) {
+                        self.raw_frames.push_front(frame);
+                        return false;
+                    }
+                    if p.textured {
+                        let mode = p.environment.draw_mode;
+                        let (x, y) = ((mode & 15) as i32 * 64, (mode >> 4 & 1) as i32 * 256);
+                        let depth = mode >> 7 & 3;
+                        reads.note((x, x + (64 << depth.min(2)) - 1), (y, y + 255));
+                        if depth < 2 {
+                            let x = i32::from(p.clut & 63) * 16;
+                            let y = i32::from(p.clut >> 6 & 511);
+                            reads.note((x, x + if depth == 0 { 15 } else { 255 }), (y, y));
+                        }
+                        if frame.capture.rect.is_some() { reads.all = true; }
+                    }
+                }
+            }
+            if touched { jobs.push((rect, reads)); }
+        }
+        for (rect, reads) in jobs {
+            let size = (u32::from(TILE) * self.scale, u32::from(TILE) * self.scale);
+            let existing = self.tiles.iter().position(|tile| tile.rect == rect);
+            let index = existing.unwrap_or_else(|| {
+                self.tiles.push(PaintTile { rect, live: Vec::new(), native: [0; TILE as usize], color: texture(&self.device, "raw tile", size, COLOR_FORMAT, picture_usage()),
+                    aux: texture(&self.device, "raw tile aux", size, AUX_FORMAT, picture_usage()) });
+                self.tiles.len() - 1
+            });
+            let tile = &mut self.tiles[index];
+            for area in frame.live.iter().filter_map(|r| r.intersect(&rect)) { mark(&mut tile.live, area); }
+            let native = if existing.is_none() { vec![rect] } else { tile.regions(true) };
+            tile.native.fill(0);
+            let (color, aux) = (tile.color.clone(), tile.aux.clone());
+            let depth = self.tile_depth.get_or_insert_with(|| texture(&self.device, "raw tile depth", size, DEPTH_FORMAT, wgpu::TextureUsages::RENDER_ATTACHMENT)).clone();
+            self.raster(encoder, &frame, Some(RawTarget { rect, color, aux, depth, native, reads }));
+        }
+        true
+    }
+
+    /// Static enhanced artwork can outlive the transition into a movie.
+    /// Preserve just its live tiles while the movie replaces its buffers.
+    fn compact_flat_picture(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        if self.raw_depth || self.copy_only || self.pictures.get().is_none() { return; }
+        let (color, aux, _, _) = self.pictures.take().unwrap();
+        let size = (u32::from(TILE) * self.scale, u32::from(TILE) * self.scale);
+        for y in (0..VRAM_HEIGHT as u16).step_by(usize::from(TILE)) {
+            for x in (0..VRAM_WIDTH as u16).step_by(usize::from(TILE)) {
+                let rect = VramRect { x, y, width: TILE, height: TILE };
+                let live: Vec<_> = self.raw_live.iter().filter_map(|r| r.intersect(&rect)).collect();
+                if live.is_empty() { continue; }
+                let tile = PaintTile { rect, live, native: [0; TILE as usize], color: texture(&self.device, "retained colour", size, COLOR_FORMAT, picture_usage()),
+                    aux: texture(&self.device, "retained aux", size, AUX_FORMAT, picture_usage()) };
+                let origin = wgpu::Origin3d { x: u32::from(x) * self.scale, y: u32::from(y) * self.scale, z: 0 };
+                for (from, to) in [(&color, &tile.color), (&aux, &tile.aux)] {
+                    encoder.copy_texture_to_texture(wgpu::TexelCopyTextureInfo { origin, ..from.as_image_copy() }, to.as_image_copy(), to.size());
+                }
+                self.tiles.push(tile);
+            }
+        }
+        self.raw_live.clear();
+    }
+
+    fn sync_movie_vram(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        self.compact_flat_picture(encoder);
+        self.raw_bands.fill(None);
+        let mut bits = std::mem::take(&mut self.movie_bands);
+        while bits != 0 {
+            let first = bits.trailing_zeros() as usize;
+            let count = (bits >> first).trailing_ones() as usize;
+            let end = first + count;
+            bits &= if end == 64 { 0 } else { u64::MAX << end };
+            self.queue.write_texture(
+                wgpu::TexelCopyTextureInfo { origin: wgpu::Origin3d { x: 0, y: (first * BAND_ROWS) as u32, z: 0 }, ..self.vram.as_image_copy() },
+                bytemuck::cast_slice(&self.native[first * BAND_WORDS..end * BAND_WORDS]),
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: None },
+                wgpu::Extent3d { width: VRAM_WIDTH, height: (count * BAND_ROWS) as u32, depth_or_array_layers: 1 });
+        }
+    }
+
+    /// A display buffer that has not yet acquired a replay log, e.g. the
+    /// title fading in. Its pending commands only need its visible pixels
+    /// unless they copy enhanced pixels across the boundary.
+    fn paint_display(&mut self, encoder: &mut wgpu::CommandEncoder, rect: VramRect,
+        color: &wgpu::Texture, aux: &wgpu::Texture, depth: &wgpu::Texture) -> bool {
+        if self.raw_frames.is_empty() || self.pictures.get().is_some()
+            || u32::from(rect.x) + u32::from(rect.width) > VRAM_WIDTH
+            || u32::from(rect.y) + u32::from(rect.height) > VRAM_HEIGHT
+            || self.tiles.iter().any(|tile| overlap(&tile.rect, &rect) != 0)
+            || self.raw_frames.iter().any(|frame| frame.place || frame.ops.iter().any(|op| matches!(op,
+                TraceOp::Copy { destination, width, height, .. } if overlap(&rect, &VramRect {
+                    x: destination.0, y: destination.1, width: *width, height: *height }) != 0))) {
+            return false;
+        }
+        frame::clear(encoder, [color, aux], Some((&depth.create_view(&Default::default()), 1.0)));
+        let frames = std::mem::take(&mut self.raw_frames);
+        for (n, frame) in frames.iter().enumerate() {
+            let textured = frame.ops.iter().any(|op| matches!(op, TraceOp::Draw(p) if p.textured && overlap(&raw_bounds(p), &rect) != 0));
+            self.raster(encoder, frame, Some(RawTarget { rect, color: color.clone(), aux: aux.clone(), depth: depth.clone(),
+                native: if n == 0 { vec![rect] } else { Vec::new() }, reads: Sampled { all: textured, ..Default::default() } }));
+        }
+        self.raw_frames = frames;
+        true
+    }
+
+    /// A transition may copy one remote screen, then play a movie for
+    /// minutes without another scaled read. Retain the bounded history
+    /// across that read so the next take can release the copy's surfaces.
+    fn resolve_copy(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        if self.copy_only { return; }
+        if !self.deferred || self.pictures.get().is_some() {
+            self.materialize(encoder);
+            return;
+        }
+        let history = self.raw_frames.clone();
+        let tiles = self.tiles.clone();
+        self.materialize(encoder);
+        self.raw_frames = history;
+        self.tiles = tiles;
+        self.raw_live.clear();
+        self.copy_only = true;
+    }
+
+    fn materialize(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        if !self.synced { return; }
+        let seed = self.pictures.get().is_none();
+        if seed { self.raw_depth = false; }
+        self.pictures.get_or_init(|| Self::pictures(&self.device, self.scale));
+        let mut drew = false;
+        if !self.tiles.is_empty() {
+            let start = self.raw_frames.front().map(|f| f.start.clone()).unwrap_or_else(|| self.snapshot.clone());
+            let base = RawFrame { ops: vec![start.upload()], start: start.clone(), end: start, live: Vec::new(),
+                options: self.options, seal: false, sky: 0.0, additive: false, capture: self.capture.clone(),
+                earlier: Vec::new(), place: false, clears: Vec::new() };
+            self.raster(encoder, &base, None);
+            let pictures = self.pictures.get().unwrap();
+            for tile in self.tiles.drain(..) {
+                for area in tile.regions(false) {
+                    let to_origin = wgpu::Origin3d { x: u32::from(area.x) * self.scale, y: u32::from(area.y) * self.scale, z: 0 };
+                    let from_origin = wgpu::Origin3d { x: u32::from(area.x - tile.rect.x) * self.scale,
+                        y: u32::from(area.y - tile.rect.y) * self.scale, z: 0 };
+                    let extent = wgpu::Extent3d { width: u32::from(area.width) * self.scale, height: u32::from(area.height) * self.scale, depth_or_array_layers: 1 };
+                    for (from, to) in [(&tile.color, &pictures.0), (&tile.aux, &pictures.1)] {
+                        encoder.copy_texture_to_texture(wgpu::TexelCopyTextureInfo { origin: from_origin, ..from.as_image_copy() },
+                            wgpu::TexelCopyTextureInfo { origin: to_origin, ..to.as_image_copy() }, extent);
+                    }
+                }
+                for area in tile.live { mark(&mut self.raw_live, area); }
+            }
+            drew = true;
+        }
+        while let Some(mut frame) = self.raw_frames.pop_front() {
+            if drew && !self.deferred {
+                // The standalone raw renderer reuses its streams across batches.
+                let next = self.device.create_command_encoder(&Default::default());
+                self.queue.submit([std::mem::replace(encoder, next).finish()]);
+            }
+            if !drew && seed && !frame.ops.first().is_some_and(|op| matches!(op, TraceOp::Write { rect, upload: true, .. } if u32::from(rect.width) == VRAM_WIDTH && u32::from(rect.height) == VRAM_HEIGHT)) {
+                frame.ops.insert(0, frame.start.upload());
+            }
+            self.raster(encoder, &frame, None);
+            for rect in frame.live { mark(&mut self.raw_live, rect); }
+            drew = true;
+        }
+        if seed && !drew {
+            // Explicit raw read of a restored or uploaded native screen.
+            let snapshot = VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native);
+            let frame = RawFrame { ops: vec![snapshot.upload()], start: snapshot.clone(), end: snapshot, live: Vec::new(),
+                options: self.options, seal: false, sky: 0.0, additive: false, capture: self.capture.clone(),
+                earlier: Vec::new(), place: false, clears: Vec::new() };
+            self.raster(encoder, &frame, None);
+        }
+    }
+
+    fn raster(&mut self, encoder: &mut wgpu::CommandEncoder, frame: &RawFrame, tile: Option<RawTarget>) {
+        let ops = &frame.ops;
+        let options = DrawOptions { hide_dialogue: false, ..frame.options };
+        let mut builder = Builder::reusing(&options, ops, scene_offset(ops), &mut self.storage);
+        builder.seal = frame.seal;
+        builder.sky = frame.sky;
+        builder.additive_model_depth = frame.additive;
+        // (Its sides have no place in VRAM.)
+        let screen = sampled_screen(&frame.capture, &frame.earlier, ops);
+        builder.capture = screen.rect.map(|rect| (rect, 0));
+        builder.capture_aliases = &screen.aliases;
+        builder.vram = Some(VramWords::Snapshot(&frame.end));
+        builder.clears.clone_from(&frame.clears);
+        let region = tile.as_ref().map(|t| t.rect);
+        if let Some(RawTarget { rect, native, reads, .. }) = &tile {
+            for (i, band) in frame.start.bands.iter().enumerate() {
+                let area = VramRect { x: 0, y: (i * BAND_ROWS) as u16, width: VRAM_WIDTH as u16, height: BAND_ROWS as u16 };
+                if reads.meets(&area) && self.raw_bands[i].as_ref().is_none_or(|old| !std::sync::Arc::ptr_eq(old, band)) {
+                    builder.upload(area, band, false);
+                    self.raw_bands[i] = Some(band.clone());
+                }
+            }
+            for patch in native {
+                let pixels = frame.start.rect(*patch);
+                builder.upload(*patch, &pixels, true);
+            }
+            builder.shown = Some(*rect);
+        } else { self.raw_bands.fill(None); }
         for op in ops {
+            if let Some(rect) = region {
+                match op {
+                    TraceOp::Draw(p) if overlap(&raw_bounds(p), &rect) == 0 => continue,
+                    TraceOp::Fill { rect: fill, .. } if overlap(fill, &rect) == 0 => continue,
+                    TraceOp::Copy { .. } => continue, // regional targets accept draws without visible copies
+                    TraceOp::Write { rect: write, upload, .. } if !tile.as_ref().unwrap().reads.meets(write)
+                        && (!upload || overlap(&rect, write) == 0) => continue,
+                    TraceOp::Write { rect, .. } if rect.height != 0 => {
+                        let first = usize::from(rect.y) / BAND_ROWS;
+                        let end = (usize::from(rect.y + rect.height)).div_ceil(BAND_ROWS).min(64);
+                        self.raw_bands[first..end].fill(None);
+                    }
+                    _ => {}
+                }
+            }
             builder.op(op);
         }
         let (capture_scale, capture_side, capture) = screen.uniform();
-        // A screen taken before binds its own picture.
-        let earlier_group = (!std::ptr::eq(screen, &self.capture))
-            .then(|| bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, screen, None));
+        let rect = region.unwrap_or(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
         let uniform = PassUniform {
-            origin: [0.0, 0.0],
-            extent: [VRAM_WIDTH as f32, VRAM_HEIGHT as f32],
+            origin: [f32::from(rect.x), f32::from(rect.y)],
+            extent: [f32::from(rect.width), f32::from(rect.height)],
             scale: self.scale as f32,
             options: pass_options(&options.fidelity),
             capture_scale,
@@ -2914,28 +3465,46 @@ impl Ps1Renderer {
             capture,
             ..Zeroable::zeroed()
         };
-        self.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
-        self.stats = DrawStats { passes: passes(&builder.commands), ..builder.stats };
-        self.vertices.write(&self.device, &self.queue, bytemuck::cast_slice(&builder.vertices));
-        self.staging.write(&self.device, &self.queue, &builder.staging);
+        if tile.is_none() {
+            self.raw_depth |= builder.commands.iter().any(|command| matches!(command,
+                Command::Draw { key, .. } if matches!(key.depth, DepthMode::Test | DepthMode::Nearer)));
+            self.stats = DrawStats { passes: passes(&builder.commands), ..builder.stats };
+        }
+        // Several historical batches can share an encoder. Their vertices,
+        // native uploads and uniforms must survive until that encoder submits.
+        let buffers;
+        let group;
+        let (vertices, staging, binding) = if self.deferred || tile.is_some() {
+            use wgpu::util::DeviceExt;
+            let buffer = |label, contents: &[u8], usage| self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some(label), contents, usage });
+            buffers = (buffer("retained vertices", bytemuck::cast_slice(&builder.vertices), wgpu::BufferUsages::VERTEX),
+                buffer("retained uploads", &builder.staging, wgpu::BufferUsages::COPY_SRC),
+                buffer("retained uniform", bytemuck::bytes_of(&uniform), wgpu::BufferUsages::UNIFORM));
+            group = bind_group(&self.device, &self.pipelines.layout, &buffers.2, &self.vram, screen, None);
+            (&buffers.0, &buffers.1, &group)
+        } else {
+            self.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
+            self.vertices.write(&self.device, &self.queue, bytemuck::cast_slice(&builder.vertices));
+            self.staging.write(&self.device, &self.queue, &builder.staging);
+            let binding = if screen.generation == self.capture.generation { &self.group } else {
+                group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, screen, None);
+                &group
+            };
+            (self.vertices.buffer(), self.staging.buffer(), binding)
+        };
         if !builder.commands.is_empty() {
-            let depth_view = self.depth.create_view(&Default::default());
-            let target = Target { color: &self.color, aux: &self.aux, depth: &depth_view, origin: (0.0, 0.0), scale: self.scale };
-            encode(
-                &self.device,
-                &mut self.pipelines,
-                encoder,
-                earlier_group.as_ref().unwrap_or(&self.group),
-                self.vertices.buffer(),
-                Some((self.staging.buffer(), &self.vram)),
-                Copies::InPlace { scratch: &self.scratch, capture: &self.capture, earlier: &self.earlier },
-                &target,
-                &builder.commands,
-            );
+            let (color, aux, depth, scratch) = match &tile {
+                Some(RawTarget { color, aux, depth, .. }) => (color, aux, depth, color),
+                None => { let (c, a, d, s) = self.pictures.get().unwrap(); (c, a, d, s) }
+            };
+            let depth_view = depth.create_view(&Default::default());
+            let target = Target { color, aux, depth: &depth_view, origin: (rect.x.into(), rect.y.into()), scale: self.scale };
+            encode(&self.device, &mut self.pipelines, encoder, binding, vertices, Some((staging, &self.vram)),
+                Copies::InPlace { scratch, capture: &frame.capture, earlier: &frame.earlier }, &target, &builder.commands);
         }
         builder.store(&mut self.storage);
-        if captured && !self.capture.screen {
-            self.place_capture(encoder);
+        if frame.place && tile.is_none() {
+            Self::place_capture(&self.pictures.get().unwrap().0, self.scale, &frame.capture, encoder);
         }
     }
 
@@ -2952,6 +3521,7 @@ impl Ps1Renderer {
             {
                 if pixels[..] != self.native[..] {
                     self.native.copy_from_slice(pixels);
+                    self.dirty_bands = u64::MAX;
                     self.logs.clear();
                 }
                 &ops[1..]
@@ -2978,7 +3548,7 @@ impl Ps1Renderer {
         // with the last frame from which the trace draws all over it, once
         // its clears are done below: with the VRAM as that frame began and
         // the records current at its first primitive there.
-        let mut unlogged: Vec<(VramRect, usize, Option<std::sync::Arc<Vec<u16>>>, Option<Records>)> = self.shown.iter().copied()
+        let mut unlogged: Vec<(VramRect, usize, Option<std::sync::Arc<VramSnapshot>>, Option<Records>)> = self.shown.iter().copied()
             .filter(|area| !self.half_logged(area))
             .filter_map(|area| Some((area, covered_from(ops, &frame_starts, area, &self.shown, &blended)?, None, None)))
             .collect();
@@ -3017,7 +3587,7 @@ impl Ps1Renderer {
                         }
                     };
                     if from == Some(n) {
-                        let start = start.get_or_insert_with(|| std::sync::Arc::new(self.native.clone())).clone();
+                        let start = start.get_or_insert_with(|| VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native)).clone();
                         self.logged += 1;
                         let log = &mut self.logs[index];
                         // A log of more than that buffer (both buffers cleared
@@ -3038,7 +3608,7 @@ impl Ps1Renderer {
                 }
                 for (_, from, taken, _) in &mut unlogged {
                     if *from == n {
-                        *taken = Some(start.get_or_insert_with(|| std::sync::Arc::new(self.native.clone())).clone());
+                        *taken = Some(start.get_or_insert_with(|| VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native)).clone());
                     }
                 }
             }
@@ -3080,6 +3650,11 @@ impl Ps1Renderer {
                     let at = (usize::from(rect.y) + row) * VRAM_WIDTH as usize + usize::from(rect.x);
                     if let Some(native) = self.native.get_mut(at..at + line.len()) {
                         native.copy_from_slice(line);
+                        if !line.is_empty() {
+                            let first = at / BAND_WORDS;
+                            let last = (at + line.len() - 1) / BAND_WORDS;
+                            self.dirty_bands |= (u64::MAX << first) & (u64::MAX >> (63 - last));
+                        }
                     }
                 }
                 if *upload && u32::from(rect.width) == VRAM_WIDTH && u32::from(rect.height) == VRAM_HEIGHT {
@@ -3128,7 +3703,7 @@ impl Ps1Renderer {
                     log.ops.push(op.clone());
                     log.rect = rect;
                     log.frames = frames;
-                    log.start = std::sync::Arc::new(self.native.clone());
+                    log.start = VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native);
                     (log.eye, log.camera, log.placements, log.drawn) = (None, None, Default::default(), false);
                     continue;
                 }
@@ -3138,7 +3713,7 @@ impl Ps1Renderer {
                     // y=216. Its clear must not retire the still displayed
                     // first buffer merely because their last eight rows meet.
                     self.logs.retain(|l| !replaced(l));
-                    let start = std::sync::Arc::new(self.native.clone());
+                    let start = VramSnapshot::update(&mut self.snapshot, &mut self.dirty_bands, &self.native);
                     self.logs.push(FrameLog { rect, ops: vec![op.clone()], frames, start, ..Default::default() });
                     if self.logs.len() > 6 {
                         self.logs.remove(0);
@@ -3282,7 +3857,8 @@ impl Ps1Renderer {
 
     /// The scaled picture of all of VRAM.
     pub fn picture(&self) -> (&wgpu::Texture, &wgpu::Texture) {
-        (&self.color, &self.aux)
+        let pictures = self.pictures.get_or_init(|| Self::pictures(&self.device, self.scale));
+        (&pictures.0, &pictures.1)
     }
 
     /// Copies `area` of the picture into `color` and `aux` (sized
@@ -3294,7 +3870,8 @@ impl Ps1Renderer {
         if width == 0 || height == 0 {
             return;
         }
-        for (source, destination) in [(&self.color, color), (&self.aux, aux)] {
+        let (raw_color, raw_aux) = self.picture();
+        for (source, destination) in [(raw_color, color), (raw_aux, aux)] {
             encoder.copy_texture_to_texture(
                 wgpu::TexelCopyTextureInfo { texture: source, mip_level: 0, origin: wgpu::Origin3d { x: area.x * s, y: area.y * s, z: 0 }, aspect: wgpu::TextureAspect::All },
                 destination.as_image_copy(),
@@ -3502,6 +4079,55 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_later_copy_preserves_scaled_offscreen_draws_without_allocating_full_vram_each_frame() {
+        let gpu = pollster::block_on(crate::Gpu::headless()).unwrap();
+        let (device, queue) = (&gpu.device, &gpu.queue);
+        let (mut eager, mut deferred) = (Ps1Renderer::new(device, queue, 2), Ps1Renderer::new(device, queue, 2));
+        let mut console = xem_gpu::Gpu::new();
+        console.set_trace(true);
+        let draw = |ops: Trace, eager: &mut Ps1Renderer, deferred: &mut Ps1Renderer| {
+            let mut encoder = device.create_command_encoder(&Default::default());
+            eager.draw(&mut encoder, &ops);
+            deferred.ingest(&mut encoder, ops.ops, true);
+            queue.submit([encoder.finish()]);
+        };
+        draw(console.take_render_trace(), &mut eager, &mut deferred);
+        console.write_gp0_words(&[0xe300_0000, 0xe400_0000 | 511 << 10 | 1023]);
+        for turn in 0..48 {
+            let i = turn % 14;
+            console.write_gp0_words(&[0x0200_0000, 0, 224 << 16 | 320]);
+            console.write_gp0_words(&[0x6000_4080, 10 << 16 | 10, 20 << 16 | 20]);
+            console.write_gp0_words(&[0x6200_0010 + (i << 8), 256 << 16 | (650 + i), 10 << 16 | 20]);
+            draw(console.take_render_trace(), &mut eager, &mut deferred);
+            assert!(deferred.pictures.get().is_none());
+        }
+        assert!(!deferred.tiles.is_empty());
+        for row in (0..10).cycle().take(40) {
+            console.write_gp0_words(&[0xa000_0000, (256 + row) << 16 | 658, 1 << 16 | 4, 0x03e0_001f, 0x7c00_4210]);
+            draw(console.take_render_trace(), &mut eager, &mut deferred);
+        }
+        console.write_gp0_words(&[0x6200_2020, 256 << 16 | 656, 10 << 16 | 12]);
+        draw(console.take_render_trace(), &mut eager, &mut deferred);
+        console.write_gp0_words(&[0x8000_0000, 256 << 16 | 648, 32 << 16 | 64, 12 << 16 | 40]);
+        draw(console.take_render_trace(), &mut eager, &mut deferred);
+        let mut encoder = device.create_command_encoder(&Default::default());
+        deferred.materialize(&mut encoder);
+        deferred.compact_flat_picture(&mut encoder);
+        assert!(deferred.pictures.get().is_none());
+        deferred.resolve_copy(&mut encoder);
+        deferred.resolve_copy(&mut encoder);
+        queue.submit([encoder.finish()]);
+        for (reference, actual) in [(eager.picture().0, deferred.picture().0), (eager.picture().1, deferred.picture().1)] {
+            let a = crate::read_rgba8(device, queue, reference);
+            let b = crate::read_rgba8(device, queue, actual);
+            for y in 64..88 {
+                let at = (y * 2048 + 128) * 4;
+                assert_eq!(&a[at..at + 320], &b[at..at + 320]);
+            }
+        }
+    }
+
+    #[test]
     fn a_worldmap_fade_samples_only_the_visible_part_of_its_saved_screen() {
         let mut gpu = xem_gpu::Gpu::new();
         gpu.set_trace(true);
@@ -3572,7 +4198,7 @@ mod tests {
         let screen = VramRect { x: 0, y: 0, width: 320, height: 224 };
         let kind = |face: &Primitive, clear: u32, vram: &[u16]| {
             let mut builder = Builder::new(&options, &[]);
-            builder.vram = Some(vram);
+            builder.vram = Some(VramWords::Linear(vram));
             builder.op(&TraceOp::Fill { rect: screen, color: clear });
             builder.primitive(face);
             builder.vertices.last().unwrap().mode[3] >> CLASS_SHIFT & 15

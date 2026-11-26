@@ -13,6 +13,8 @@ xem-core = { path = "../xem-core" }
 xem-disc = { path = "../xem-disc" }
 xem-storage = { path = "../xem-storage" }
 serde_json.workspace = true
+bincode = { version = "=2.0.1", default-features = false, features = ["std", "serde"] }
+sha2 = "=0.11.0"
 
 [build-dependencies]
 cc = { workspace = true, features = ["parallel"] }

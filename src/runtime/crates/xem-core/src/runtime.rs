@@ -489,6 +489,8 @@ pub struct Runtime<M: GameModule> {
     /// The executable's text as the BIOS copied it to its address at
     /// power-on (code and initialized data), which a reset copies again.
     executable: Option<(u32, Vec<u8>)>,
+    snapshot_size: usize,
+    japanese_loader: Option<Box<dyn FnOnce(&mut Self) -> Result<(), String>>>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -520,6 +522,8 @@ impl<M: GameModule> Runtime<M> {
             stopped_before_vblank: false,
             frames: 0,
             executable: None,
+            snapshot_size: 3 * 1024 * 1024,
+            japanese_loader: None,
         }
     }
 
@@ -539,7 +543,25 @@ impl<M: GameModule> Runtime<M> {
 
     /// Whether the Japanese release's text, movies and voices are installed.
     pub fn japanese(&mut self) -> bool {
-        crate::locale::japanese_installed(self.module.memory())
+        self.japanese_loader.is_some() || crate::locale::japanese_installed(self.module.memory())
+    }
+
+    /// The native host can prepare a new disc package while the game plays
+    /// in English. Keep the drive handles and install it at its first use.
+    pub fn prepare_japanese(&mut self, discs: Vec<(u8, Box<dyn xem_disc::SectorSource>)>,
+                            load: impl FnOnce() -> Result<crate::japanese::Japanese, String> + 'static) {
+        self.japanese_loader = Some(Box::new(move |runtime| runtime.install_japanese(&load()?, discs)));
+    }
+
+    pub(crate) fn require_japanese(&mut self) {
+        if let Some(load) = self.japanese_loader.take() {
+            if let Err(error) = load(self) {
+                self.services().locale_notice = Some(format!("Japanese discs not used: {error}"));
+            } else {
+                let language = self.services().language;
+                let _ = crate::locale::activate(self.memory(), language);
+            }
+        }
     }
 
     /// The subtitle line the movie playing shows now, and the language of
@@ -988,15 +1010,16 @@ impl<M: GameModule> Runtime<M> {
 impl<M: GameModule> Runtime<M> {
     /// Game state at a wait (between steps), independent of app pacing.
     pub fn snapshot(&mut self) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
-        Ok(crate::snapshot::seal(self.snapshot_content()?))
+        self.require_japanese();
+        Ok(crate::snapshot::seal(self.snapshot_content(&mut Vec::new(), None)?))
     }
 
-    /// The identical save-state payload for the trusted, in-memory queue.
+    /// Rewind can capture memory pages in place and encode their save-state runs on export.
     /// File integrity hashing belongs at the import/export boundary, outside
     /// the periodic game-frame checkpoint.
-    pub(crate) fn snapshot_content(&mut self) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
+    pub(crate) fn snapshot_content(&mut self, sections: &mut Vec<usize>, mut memory: Option<&mut dyn FnMut(&[u8])>) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
         use crate::snapshot::*;
-        let mut w = Writer::default();
+        let mut w = Writer(Vec::with_capacity(self.snapshot_size));
         write_header(&mut w);
         w.bytes(&serde_json::to_vec(&self.identity).expect("state identity"));
         w.u32(self.entry.0);
@@ -1022,7 +1045,14 @@ impl<M: GameModule> Runtime<M> {
         for g in globals {
             w.u32(g);
         }
-        write_memory(&mut w, self.module.memory())?;
+        sections.push(w.0.len());
+        for (start, len) in REGIONS {
+            if let Some(visit) = memory.as_deref_mut() {
+                self.module.memory().with_bytes(start, len as usize, visit)?;
+            } else {
+                self.module.memory().with_bytes(start, len as usize, &mut |data| w.memory(data))?;
+            }
+        }
         let services = unsafe { &mut *self.services };
         let mut clock = services.clock.clone();
         clock.set_audio_speed(1);
@@ -1061,10 +1091,11 @@ impl<M: GameModule> Runtime<M> {
             }
         }
         for (_, device) in services.devices() {
-            w.bytes(&device.save());
+            sections.push(w.0.len());
+            w.section(|out| device.save_into(out));
         }
         if w.0.len() + 32 > MAX_STATE { return Err(SnapshotError::Format("state exceeds 64 MiB")); }
-        w.0.shrink_to_fit();
+        if memory.is_none() { self.snapshot_size = w.0.len() + 32; }
         Ok(w.0)
     }
 
@@ -1080,6 +1111,9 @@ impl<M: GameModule> Runtime<M> {
         let mut r = Reader::new(data);
         read_header(&mut r)?;
         let identity: StateIdentity = serde_json::from_slice(r.bytes()?).map_err(|e| SnapshotError::Identity(e.to_string()))?;
+        if identity.packages.iter().any(|p| p.starts_with(crate::locale::JAPANESE_PACKAGE)) {
+            self.require_japanese();
+        }
         if let Some(difference) = self.identity.difference(&identity) {
             return Err(SnapshotError::Incompatible(difference));
         }
@@ -1156,16 +1190,31 @@ impl<M: GameModule> Runtime<M> {
             return Err(SnapshotError::Format("trailing bytes"));
         }
         let memory = self.module.memory();
-        let mut previous = Vec::new();
-        for (start, len) in REGIONS {
-            let mut bytes = vec![0; len as usize];
-            memory.read(start, &mut bytes)?;
-            previous.push(bytes);
+        // Validate every region before changing any. Preserve rollback bytes
+        // only for changed runs of pages, including the destination of a
+        // failing write on a backend that may have written part of it.
+        let mut changes = Vec::new();
+        for ((start, len), saved) in REGIONS.into_iter().zip(&regions) {
+            memory.with_bytes(start, len as usize, &mut |current| {
+                let mut first = None;
+                let mut keep = |begin: usize, end: usize| {
+                    changes.push((start + begin as u32, &saved[begin..end], current[begin..end].to_vec()));
+                };
+                for (page, (before, after)) in current.chunks(PAGE).zip(saved.chunks(PAGE)).enumerate() {
+                    let offset = page * PAGE;
+                    if before != after {
+                        first.get_or_insert(offset);
+                    } else if let Some(begin) = first.take() {
+                        keep(begin, offset);
+                    }
+                }
+                if let Some(begin) = first { keep(begin, saved.len()); }
+            })?;
         }
-        for (i, ((start, _), bytes)) in REGIONS.into_iter().zip(&regions).enumerate() {
+        for (i, &(start, bytes, _)) in changes.iter().enumerate() {
             if let Err(error) = memory.write(start, bytes) {
-                for ((address, _), original) in REGIONS.into_iter().zip(&previous).take(i + 1) {
-                    memory.write(address, original)?;
+                for (address, _, original) in &changes[..=i] {
+                    memory.write(*address, original)?;
                 }
                 return Err(error.into());
             }

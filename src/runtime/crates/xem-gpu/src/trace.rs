@@ -558,12 +558,25 @@ pub struct VramRect {
 }
 
 impl VramRect {
-    fn intersect(&self, other: &VramRect) -> Option<VramRect> {
+    pub fn intersect(&self, other: &VramRect) -> Option<VramRect> {
         let x0 = self.x.max(other.x);
         let y0 = self.y.max(other.y);
         let x1 = (self.x + self.width).min(other.x + other.width);
         let y1 = (self.y + self.height).min(other.y + other.height);
         (x0 < x1 && y0 < y1).then(|| VramRect { x: x0, y: y0, width: x1 - x0, height: y1 - y0 })
+    }
+
+    /// The non-overlapping strips outside an intersection contained in
+    /// this rectangle. Some strips may be empty.
+    pub fn outside(self, inner: VramRect) -> [VramRect; 4] {
+        let x = inner.x + inner.width;
+        let y = inner.y + inner.height;
+        [
+            VramRect { height: inner.y - self.y, ..self },
+            VramRect { y, height: self.y + self.height - y, ..self },
+            VramRect { x: self.x, y: inner.y, width: inner.x - self.x, height: inner.height },
+            VramRect { x, y: inner.y, width: self.x + self.width - x, height: inner.height },
+        ]
     }
 
     fn union(&self, other: &VramRect) -> VramRect {
@@ -575,7 +588,7 @@ impl VramRect {
     }
 
     /// The pieces of a rectangle that may run past the VRAM edges.
-    fn wrapped(x: usize, y: usize, width: usize, height: usize) -> Vec<VramRect> {
+    pub(crate) fn wrapped(x: usize, y: usize, width: usize, height: usize) -> Vec<VramRect> {
         let mut out = Vec::new();
         let (x, y) = (x & (VRAM_WIDTH - 1), y & (VRAM_HEIGHT - 1));
         let xs = [(x, (VRAM_WIDTH - x).min(width)), (0, width.saturating_sub(VRAM_WIDTH - x))];
@@ -593,6 +606,9 @@ impl VramRect {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TraceOp {
+    /// A hardware presentation consumed the preceding commands. A full VRAM
+    /// refresh may resume the same stamp when no drawing intervened.
+    Presented { stamp: u64, resume: Option<u64> },
     Draw(Primitive),
     /// GP0(02h): `color` 0xBBGGRR over the rectangle (already wrapped).
     Fill { rect: VramRect, color: u32 },
@@ -698,18 +714,19 @@ pub(crate) struct Recorder {
     /// Screen points the game stored, by word of RAM: the value and the
     /// projection that made it plus 1 (0 none). The port records stores to
     /// RAM only.
-    stored: Vec<(u32, u32)>,
+    stored: Vec<Option<Box<[(u32, u32); STORED_PAGE]>>>,
     /// Culled faces by the ordering-table entry they would have been linked
     /// at, until the DMA walk reaches it, and emptied lists kept for new
     /// entries (thousands a frame when zoomed out).
-    reveals: WordMap<Vec<Revealed>>,
+    reveals: WordMap<u32>,
     /// Which entries may hold culled faces, by their word address's low 12
     /// bits (all that do among them): the walk's thousands of other nodes
     /// pass by without a lookup.
     revealed_at: [u128; 32],
     facings: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     full_sizes: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
-    spare: Vec<Vec<Revealed>>,
+    faces: Vec<Revealed>,
+    free_faces: Vec<u32>,
     /// The address each word of the GPU's partly received command was read
     /// from (0 for words the CPU wrote), and the word being written's.
     fifo_addresses: Vec<u32>,
@@ -777,7 +794,13 @@ pub(crate) struct Recorder {
     movie_load_keys: std::collections::VecDeque<((u64, VramRect), u64)>,
     seen_movie_loads: u64,
     /// Drawn pixels not yet written to the trace.
-    dirty: Option<VramRect>,
+    dirty: Vec<([u16; 4], VramRect)>,
+    /// Drawn native words that a hardware trace has yet to publish, by
+    /// 64x32 tile. Clear only the tiles consumed by a texture read.
+    drawn_tiles: [u16; 16],
+    drawn_columns: [u16; 2],
+    hardware: bool,
+    stamp: Option<u64>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
     full_sync: bool,
     /// The DMA list node being sent (0 for words the CPU writes) and the
@@ -797,6 +820,7 @@ pub(crate) struct Recorder {
 
 #[derive(Clone, Copy, Debug)]
 struct Revealed {
+    next: u32,
     words: FaceWords,
     projections: [Option<u32>; 4],
     frame: u32,
@@ -808,6 +832,8 @@ const HISTORY: usize = 65536;
 const ADDRESS_MASK: u32 = 0xFF_FFFC;
 /// Words of RAM ([`Recorder::stored`]).
 const RAM_WORDS: usize = 0x20_0000 / 4;
+/// Most RAM never receives a projected screen point. Allocate its index by page.
+const STORED_PAGE: usize = 256;
 /// Recording frames ([`Recorder::frames`]) a culled face waits for its
 /// ordering table's walk.
 const REVEAL_FRAMES: u32 = 3;
@@ -837,12 +863,41 @@ fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
     (0..count).map(move |k| 1 + k * stride)
 }
 
+fn changes_vram(op: &TraceOp) -> bool {
+    matches!(op, TraceOp::Draw(_) | TraceOp::Copy { .. } | TraceOp::Fill { .. } | TraceOp::Write { .. })
+}
+
+fn tile_span(rect: VramRect) -> (std::ops::Range<usize>, u16) {
+    let (x, y) = (rect.x, rect.y);
+    let end = (x + rect.width).min(VRAM_WIDTH as u16);
+    let columns = (u16::MAX << (x / 64)) & (u16::MAX >> (16 - end.div_ceil(64)));
+    (usize::from(y / 32)..usize::from((y + rect.height).div_ceil(32)), columns)
+}
+
 impl Recorder {
+    fn note_dirty(&mut self, area: [u16; 4], rect: VramRect) {
+        if self.hardware {
+            let (rows, columns) = tile_span(rect);
+            self.drawn_columns[rows.start / 8] |= columns;
+            self.drawn_columns[(rows.end - 1) / 8] |= columns;
+            for row in rows { self.drawn_tiles[row] |= columns; }
+            return;
+        }
+        if let Some((_, old)) = self.dirty.iter_mut().rev().find(|(key, _)| *key == area) {
+            *old = old.union(&rect);
+        } else if self.dirty.len() < 16 {
+            self.dirty.push((area, rect));
+        } else {
+            self.dirty[0].1 = self.dirty[0].1.union(&rect);
+        }
+    }
+
     /// Drop what was traced: the next take starts with all of VRAM as it is
     /// then.
     pub(crate) fn restart(&mut self) {
         self.ops.clear();
         self.full_sync = true;
+        self.stamp = None;
     }
 
     /// Projection `index` while the history holds it.
@@ -958,12 +1013,12 @@ impl Recorder {
         covered == u32::from(rect.width) * u32::from(rect.height)
     }
 
-    fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
-        self.recorded |= !projections.is_empty() || !reveals.is_empty();
+    fn ingest(&mut self, first: u32, projections: impl Iterator<Item = Projection>, stores: impl Iterator<Item = SxyStore>, reveals: impl Iterator<Item = Reveal>) {
+        let mut projection_count = 0;
         if self.history.is_empty() {
             self.history = vec![Projection::default(); HISTORY];
             self.placed = vec![0; HISTORY];
-            self.stored = vec![(0, 0); RAM_WORDS];
+            self.stored.resize_with(RAM_WORDS / STORED_PAGE, || None);
         }
         if first != self.history_end {
             // The trace just started or the port's ring overflowed: the
@@ -972,6 +1027,8 @@ impl Recorder {
             self.history_len = 0;
         }
         for projection in projections {
+            projection_count += 1;
+            self.recorded = true;
             match projection.class {
                 GROUND => {
                     self.grounds.insert(projection.owner, self.history_end);
@@ -1055,20 +1112,27 @@ impl Recorder {
                 }
                 _ => 0,
             };
-            self.history[self.history_end as usize % HISTORY] = *projection;
+            self.history[self.history_end as usize % HISTORY] = projection;
             self.placed[self.history_end as usize % HISTORY] = placed;
             self.history_end = self.history_end.wrapping_add(1);
         }
-        self.history_len = (self.history_len as usize + projections.len()).min(HISTORY) as u32;
+        self.history_len = (self.history_len as usize + projection_count).min(HISTORY) as u32;
         for store in stores {
-            let Some(slot) = self.stored.get_mut((store.address & ADDRESS_MASK) as usize / 4) else { continue };
+            let word = (store.address & ADDRESS_MASK) as usize / 4;
+            let Some(page) = self.stored.get_mut(word / STORED_PAGE) else { continue };
             let source = store.source.filter(|&index| {
                 let age = self.history_end.wrapping_sub(index);
                 age >= 1 && age <= self.history_len && self.history[index as usize % HISTORY].sxy == store.value
             });
-            *slot = (store.value, source.map_or(0, |index| index.wrapping_add(1)));
+            if let Some(index) = source {
+                let page = page.get_or_insert_with(|| Box::new([(0, 0); STORED_PAGE]));
+                page[word % STORED_PAGE] = (store.value, index.wrapping_add(1));
+            } else if let Some(page) = page {
+                page[word % STORED_PAGE] = (0, 0);
+            }
         }
         for reveal in reveals {
+            self.recorded = true;
             let Some(&command) = reveal.words.first() else { continue };
             let vertices = usize::from(reveal.vertices);
             if !(0x20..=0x3F).contains(&(command >> 24)) || vertices > 4 || reveal.words.len() != crate::command_words(command) {
@@ -1082,13 +1146,12 @@ impl Recorder {
                 };
                 points[k] = self.projection(index).is_some_and(|p| p.sxy == reveal.words[at]).then_some(index);
             }
-            let (spare, entry) = (&mut self.spare, reveal.entry & ADDRESS_MASK);
+            let entry = reveal.entry & ADDRESS_MASK;
             note_revealed_at(&mut self.revealed_at, entry);
-            self.reveals.entry(entry).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
-                words: reveal.words,
-                projections: points,
-                frame: self.frames,
-            });
+            let at = self.free_faces.pop().unwrap_or(self.faces.len() as u32);
+            let next = self.reveals.insert(entry, at).unwrap_or(u32::MAX);
+            let face = Revealed { next, words: reveal.words, projections: points, frame: self.frames };
+            if at as usize == self.faces.len() { self.faces.push(face); } else { self.faces[at as usize] = face; }
         }
         if self.grounds.len() > 1024 {
             let (end, len) = (self.history_end, self.history_len);
@@ -1112,7 +1175,8 @@ impl Recorder {
             return revealed[vertex];
         }
         let address = *self.fifo_addresses.get(at).filter(|&&a| a != 0)?;
-        let &(value, source) = self.stored.get(address as usize / 4)?;
+        let at = address as usize / 4;
+        let (value, source) = self.stored.get(at / STORED_PAGE)?.as_ref()?[at % STORED_PAGE];
         if source == 0 || value != word {
             return None;
         }
@@ -1172,11 +1236,18 @@ impl Gpu {
     /// and the runs of a dialogue's packets recorded for the walk to come,
     /// which the game made on this timeline.
     pub fn set_trace(&mut self, enabled: bool) {
+        if !enabled { self.vram.as_slice(); }
         let pending = self.fifo.len();
         let was = self.trace.take();
+        if !enabled && let Some(recorder) = &was {
+            self.vram.paused_stamp = recorder.stamp.filter(|_| !recorder.ops.iter().any(changes_vram));
+        }
         self.trace = enabled.then(|| {
-            let mut trace = Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() });
+            let mut trace = Box::new(Recorder { full_sync: true, stamp: self.vram.paused_stamp.take(),
+                fifo_addresses: vec![0; pending], ..Default::default() });
             if let Some(mut was) = was {
+                if !was.ops.iter().any(changes_vram) { trace.stamp = was.stamp; }
+                trace.hardware = was.hardware;
                 // The port's words stay as the device last wrote them.
                 (trace.written, trace.covers) = (was.written, was.covers);
                 trace.keep_movies(&mut was, true);
@@ -1258,10 +1329,17 @@ impl Gpu {
     /// projections (the first one's index in the port's ring is `first`),
     /// the screen points stored and the faces culled at the screen's edges.
     pub fn trace_projections(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
+        self.trace_projection_iter(first, projections.iter().copied(), stores.iter().copied(), reveals.iter().copied());
+    }
+
+    /// Decodes the port's ordered ring slices directly into trace history.
+    pub fn trace_projection_iter(&mut self, first: u32, projections: impl Iterator<Item = Projection>, stores: impl Iterator<Item = SxyStore>, reveals: impl Iterator<Item = Reveal>) {
+        let mut projections = projections.peekable();
+        let mut reveals = reveals.peekable();
         if let Some(trace) = &mut self.trace {
             // What the port drew since it last read the words, it judged
             // under the reveals written then; it reads them again now.
-            if (!projections.is_empty() || !reveals.is_empty())
+            if (projections.peek().is_some() || reveals.peek().is_some())
                 && let Some(zoom) = trace.written.map(|r| r.zoom).filter(|&zoom| zoom != 0)
             {
                 trace.covers = Some(trace.covers.map_or(zoom, |covers| covers.min(zoom)));
@@ -1274,15 +1352,34 @@ impl Gpu {
     /// Everything traced since the last take, ending with the drawn pixels
     /// not yet written.
     pub fn take_trace(&mut self) -> Trace {
+        self.take(false)
+    }
+
+    /// Drawing commands already supply the displayed picture. Send their
+    /// native pixels when a later command samples them or saves the screen.
+    pub fn take_render_trace(&mut self) -> Trace { self.take(true) }
+
+    fn take(&mut self, hardware: bool) -> Trace {
+        if self.trace.as_ref().is_some_and(|t| t.hardware && !hardware && !t.full_sync) {
+            self.flush_sampled(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
+        }
         let Some(trace) = self.trace.as_mut() else {
             return Trace::default();
         };
         trace.room = trace.ops.len().max(trace.room - trace.room / 64).min(TRACE_ROOM);
         let mut ops = std::mem::replace(&mut trace.ops, Vec::with_capacity(trace.room + trace.room / 8));
         let (focus, covers) = (trace.focus.take(), trace.covers.take());
+        let resume = (trace.full_sync && !ops.iter().any(changes_vram)).then_some(trace.stamp).flatten();
+        let was_hardware = trace.hardware;
+        trace.hardware = hardware;
+        if hardware && !was_hardware && !trace.full_sync {
+            for (area, rect) in std::mem::take(&mut trace.dirty) { trace.note_dirty(area, rect); }
+        }
         if trace.full_sync {
             trace.full_sync = false;
-            trace.dirty = None;
+            trace.dirty.clear();
+            trace.drawn_tiles.fill(0);
+            trace.drawn_columns.fill(0);
             trace.refind_movie(&self.vram);
             ops.clear();
             ops.push(TraceOp::Write {
@@ -1290,10 +1387,18 @@ impl Gpu {
                 pixels: self.vram.as_slice().into(),
                 upload: true,
             });
-            return Trace { ops, focus, covers };
+        } else if !hardware {
+            for (_, rect) in trace.dirty.drain(..) {
+                ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect).into(), upload: false });
+            }
         }
-        if let Some(rect) = trace.dirty.take() {
-            ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect).into(), upload: false });
+        if hardware && !ops.is_empty() {
+            static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+            let stamp = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            trace.stamp = Some(stamp);
+            ops.push(TraceOp::Presented { stamp, resume });
+        } else if !hardware {
+            trace.stamp = None;
         }
         Trace { ops, focus, covers }
     }
@@ -1308,7 +1413,10 @@ impl Gpu {
         let pixels = self.vram.as_slice().into();
         let trace = self.trace.as_mut().expect("checked above");
         trace.full_sync = false;
-        trace.dirty = None;
+        trace.dirty.clear();
+        trace.drawn_tiles.fill(0);
+        trace.drawn_columns.fill(0);
+        trace.stamp = None;
         trace.refind_movie(&self.vram);
         trace.ops.clear();
         trace.ops.push(TraceOp::Write {
@@ -1339,17 +1447,17 @@ impl Gpu {
         if trace.reveals.is_empty() || trace.revealed_at[at >> 7] >> (at & 127) & 1 == 0 {
             return;
         }
-        let Some(mut faces) = trace.reveals.remove(&node) else { return };
-        // Linked in front of the same packet, the newest goes first, as the
-        // GPU walks an entry's packets.
-        for face in faces.iter().rev() {
-            self.trace.as_mut().expect("checked above").revealing = Some(face.projections);
+        let Some(mut at) = trace.reveals.remove(&node) else { return };
+        while at != u32::MAX {
+            let trace = self.trace.as_mut().expect("tracing");
+            let face = trace.faces[at as usize];
+            trace.free_faces.push(at);
+            at = face.next;
+            trace.revealing = Some(face.projections);
             self.trace_before_command(&face.words);
             self.trace_polygon(&face.words, true);
-            self.trace.as_mut().expect("checked above").revealing = None;
+            self.trace.as_mut().expect("tracing").revealing = None;
         }
-        faces.clear();
-        self.trace.as_mut().expect("checked above").spare.push(faces);
     }
 
     /// The address of the next GP0 word (0 for the CPU's).
@@ -1388,14 +1496,27 @@ impl Gpu {
                 trace.frames = trace.frames.wrapping_add(1);
             }
             let now = trace.frames;
-            trace.reveals.retain(|_, faces| {
-                faces.retain(|face| now.wrapping_sub(face.frame) < REVEAL_FRAMES);
-                !faces.is_empty()
+            trace.revealed_at.fill(0);
+            trace.reveals.retain(|&entry, head| {
+                // Newest first. Once a face expires the whole tail expires.
+                let mut at = *head;
+                let mut previous = None;
+                while at != u32::MAX {
+                    let face = trace.faces[at as usize];
+                    if now.wrapping_sub(face.frame) >= REVEAL_FRAMES {
+                        if let Some(i) = previous { trace.faces[i as usize].next = u32::MAX; }
+                        while at != u32::MAX {
+                            trace.free_faces.push(at);
+                            at = trace.faces[at as usize].next;
+                        }
+                        break;
+                    }
+                    previous = Some(at);
+                    at = face.next;
+                }
+                if previous.is_some() { note_revealed_at(&mut trace.revealed_at, entry); }
+                previous.is_some()
             });
-            trace.revealed_at = [0; 32];
-            for &entry in trace.reveals.keys() {
-                note_revealed_at(&mut trace.revealed_at, entry);
-            }
             trace.ops.push(TraceOp::VBlank);
             if trace.ops.len() > TRACE_LIMIT {
                 trace.restart();
@@ -1421,8 +1542,18 @@ impl Gpu {
     /// Before a textured command: drawn pixels it may sample go to the trace first.
     pub(crate) fn trace_before_command(&mut self, words: &[u32]) {
         let Some(trace) = &self.trace else { return };
-        let Some(dirty) = trace.dirty else { return };
+        if trace.hardware {
+            if trace.drawn_columns == [0; 2] { return; }
+        } else if trace.dirty.is_empty() { return; }
         let op = words[0] >> 24;
+        if (0x80..=0x9F).contains(&op) {
+            let from = crate::Image::from_words(words[1], words[3]);
+            let to = crate::Image::from_words(words[2], words[3]);
+            if from.x == to.x && from.y == to.y && self.mask & 1 == 0 { return; }
+            let parts = VramRect::wrapped(from.x.into(), from.y.into(), from.width.into(), from.height.into());
+            for part in parts { self.flush_sampled(part); }
+            return;
+        }
         let (page, clut) = match op {
             0x20..=0x3F if op & 0x04 != 0 => {
                 let stride = if op & 0x10 != 0 { 3 } else { 2 };
@@ -1444,16 +1575,113 @@ impl Gpu {
             width: if depth == 0 { 16 } else { 256 },
             height: 1,
         });
-        // What it samples, up to VRAM's right edge, among the drawn pixels.
-        let drawn = |rect: VramRect| VramRect { width: rect.width.min(VRAM_WIDTH as u16 - rect.x), ..rect }.intersect(&dirty).is_some();
-        if !drawn(page_rect) && !clut_rect.is_some_and(drawn) {
+        let sampled = |rect: VramRect, dirty: &VramRect| {
+            let end = rect.x + rect.width;
+            rect.intersect(dirty).is_some() || (end > VRAM_WIDTH as u16 &&
+                VramRect { x: 0, width: end - VRAM_WIDTH as u16, ..rect }.intersect(dirty).is_some())
+        };
+        let on_page = |dirty: &VramRect| sampled(page_rect, dirty) || clut_rect.is_some_and(|r| sampled(r, dirty));
+        if !trace.hardware {
+            self.flush_drawn(on_page);
             return;
         }
-        // Write the whole dirty rectangle once: later samples need it too.
-        let pixels = read_rect(&self.vram, dirty);
-        let trace = self.trace.as_mut().expect("checked above");
-        trace.ops.push(TraceOp::Write { rect: dirty, pixels: pixels.into(), upload: false });
-        trace.dirty = None;
+        let page_mask = ((1u16 << (page_rect.width / 64)) - 1).rotate_left(page & 15);
+        let dirty_clut = |r: VramRect| {
+            let columns = (r.x % 64 + r.width).div_ceil(64);
+            let mask = ((1u16 << columns) - 1).rotate_left(u32::from(r.x / 64));
+            trace.drawn_tiles[usize::from(r.y / 32)] & mask != 0
+        };
+        if trace.drawn_columns[usize::from(page_rect.y / 256)] & page_mask == 0 && !clut_rect.is_some_and(dirty_clut) { return; }
+        // Include the neighbours the enhanced filter can sample. In
+        // particular, a texture at the edge of a framebuffer's page
+        // does not read every primitive drawn into that framebuffer.
+        let ((u0, u1), (v0, v1)) = if op < 0x60 {
+            let mut u = (255, 0);
+            let mut v = (255, 0);
+            for i in polygon_points(op) {
+                let uv = words[i + 1];
+                let (x, y) = ((uv & 255) as i32, (uv >> 8 & 255) as i32);
+                u = (u.0.min(x), u.1.max(x));
+                v = (v.0.min(y), v.1.max(y));
+            }
+            (u, v)
+        } else {
+            let (w, h) = match op >> 3 & 3 {
+                0 => ((words[3] & 1023) as i32, (words[3] >> 16 & 511) as i32),
+                1 => (1, 1),
+                2 => (8, 8),
+                _ => (16, 16),
+            };
+            let span = |base, size, flipped| if flipped { (base - size, base) } else { (base, base + size) };
+            (span((words[2] & 255) as i32, w, self.draw_mode & 0x1000 != 0),
+             span((words[2] >> 8 & 255) as i32, h, self.draw_mode & 0x2000 != 0))
+        };
+        let spans = |lo: i32, hi: i32, mask| {
+            let (lo, hi) = (lo - 1, hi + 2);
+            if mask != 0 || hi - lo >= 255 { return [Some((0, 255)), None]; }
+            let (a, b) = (lo.rem_euclid(256) as u16, hi.rem_euclid(256) as u16);
+            if a <= b { [Some((a, b)), None] } else { [Some((a, 255)), Some((0, b))] }
+        };
+        let us = spans(u0, u1, self.texture_window & 31);
+        let vs = spans(v0, v1, self.texture_window >> 5 & 31);
+        let shift = 2 - depth.min(2);
+        let mut flush = |mut rect: VramRect| {
+            rect.x %= VRAM_WIDTH as u16;
+            let ahead = rect.width.min(VRAM_WIDTH as u16 - rect.x);
+            self.flush_sampled(VramRect { width: ahead, ..rect });
+            if ahead < rect.width { self.flush_sampled(VramRect { x: 0, width: rect.width - ahead, ..rect }); }
+        };
+        if let Some(clut) = clut_rect { flush(clut); }
+        for (u, right) in us.into_iter().flatten() {
+            for (v, bottom) in vs.into_iter().flatten() {
+                flush(VramRect { x: page_rect.x + (u >> shift), y: page_rect.y + v,
+                    width: (right >> shift) - (u >> shift) + 1, height: bottom - v + 1 });
+            }
+        }
+    }
+
+    /// Consolidate neighbouring dirty tiles into one transfer, so repeated
+    /// samples from the same texture can share a native rasterization.
+    fn flush_sampled(&mut self, sample: VramRect) {
+        let trace = self.trace.as_mut().expect("tracing");
+        if !trace.hardware {
+            self.flush_drawn(|dirty| dirty.intersect(&sample).is_some());
+            return;
+        }
+        let (rows, columns) = tile_span(sample);
+        let mut cleared = [false; 2];
+        for y in rows.clone() {
+            let mut remaining = trace.drawn_tiles[y] & columns;
+            while remaining != 0 {
+                let x = remaining.trailing_zeros();
+                let width = (remaining >> x).trailing_ones();
+                let mask = (u16::MAX >> (16 - width)) << x;
+                let mut end = y;
+                while end < rows.end && trace.drawn_tiles[end] & mask == mask {
+                    trace.drawn_tiles[end] &= !mask;
+                    cleared[end / 8] = true;
+                    end += 1;
+                }
+                let rect = VramRect { x: x as u16 * 64, y: y as u16 * 32, width: width as u16 * 64, height: (end - y) as u16 * 32 };
+                self.vram.prepare_region(rect, false);
+                trace.ops.push(TraceOp::Write { rect, pixels: read_rect(self.vram.base_mut(), rect).into(), upload: false });
+                remaining &= !mask;
+            }
+        }
+        for (half, cleared) in cleared.into_iter().enumerate() {
+            if cleared { trace.drawn_columns[half] = trace.drawn_tiles[half * 8..half * 8 + 8].iter().fold(0, |mask, row| mask | row); }
+        }
+    }
+
+    fn flush_drawn(&mut self, observed: impl Fn(&VramRect) -> bool) {
+        if let Some(trace) = &mut self.trace {
+            trace.dirty.retain(|(_, rect)| {
+                if !observed(rect) { return true; }
+                self.vram.prepare_region(*rect, false);
+                trace.ops.push(TraceOp::Write { rect: *rect, pixels: read_rect(self.vram.base_mut(), *rect).into(), upload: false });
+                false
+            });
+        }
     }
 
     /// After a command executed: what it drew or changed.
@@ -1470,10 +1698,16 @@ impl Gpu {
                 let width = (((words[2] & 0x3FF) + 0xF) & !0xF) as usize;
                 let height = (words[2] >> 16 & 0x1FF) as usize;
                 for rect in VramRect::wrapped(x, y, width, height) {
-                    let pixels = read_rect(&self.vram, rect);
+                    let pixel = ((color >> 3 & 31) | (color >> 11 & 31) << 5 | (color >> 19 & 31) << 10) as u16;
                     let trace = self.trace.as_mut().expect("checked above");
                     trace.ops.push(TraceOp::Fill { rect, color });
-                    trace.ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload: false });
+                    trace.dirty.retain(|(_, old)| old.intersect(&rect) != Some(*old));
+                    if trace.hardware {
+                        trace.note_dirty([rect.x, rect.y, rect.x + rect.width - 1, rect.y + rect.height - 1], rect);
+                    } else {
+                        let pixels = vec![pixel; usize::from(rect.width) * usize::from(rect.height)];
+                        trace.ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload: false });
+                    }
                     trace.forget_movie(rect);
                 }
             }
@@ -1507,7 +1741,8 @@ impl Gpu {
             return;
         }
         for rect in VramRect::wrapped(x.into(), y.into(), width.into(), height.into()) {
-            let pixels: std::sync::Arc<[u16]> = read_rect(&self.vram, rect).into();
+            // The completed upload or copy already resolved its destination.
+            let pixels: std::sync::Arc<[u16]> = read_rect(self.vram.base_mut(), rect).into();
             let trace = self.trace.as_mut().expect("checked above");
             trace.ops.push(TraceOp::Write { rect, pixels: pixels.clone(), upload });
             trace.forget_movie(rect);
@@ -1550,6 +1785,9 @@ impl Gpu {
     /// The session's rewind history after a game frame ([`TraceOp::History`]).
     /// Presentation only.
     pub fn trace_history(&mut self, frame: u64, state: bool, oldest: Option<u64>) {
+        if state && self.trace.is_some() {
+            self.flush_sampled(VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 });
+        }
         if let Some(trace) = &mut self.trace {
             trace.ops.push(TraceOp::History { frame, state, oldest });
         }
@@ -1676,8 +1914,8 @@ impl Gpu {
         // An alternative stands for projections of a sprite's parts alone.
         let point = trace.point_index(words[1], 1, 0).filter(|&i| trace.projection(i).is_some_and(|p| Class::from_projection(p.class) == Class::Sprite));
         let recorder = self.trace.as_mut().expect("tracing");
-        let facing = point.and_then(|point| alternative(&mut recorder.facings, point, &self.vram));
-        let full_size = point.and_then(|point| alternative(&mut recorder.full_sizes, point, &self.vram));
+        let facing = point.and_then(|point| alternative(&mut recorder.facings, point, &mut self.vram));
+        let full_size = point.and_then(|point| alternative(&mut recorder.full_sizes, point, &mut self.vram));
         let dither = self.draw_mode & 0x200 != 0 && (gouraud || (textured && !raw));
         let primitive = Primitive {
             shape: if count == 4 { Shape::Quad } else { Shape::Triangle },
@@ -1838,7 +2076,7 @@ impl Gpu {
                 width: (max_x.min(VRAM_WIDTH as i32 - 1) - min_x.max(0) + 1) as u16,
                 height: (max_y.min(VRAM_HEIGHT as i32 - 1) - min_y.max(0) + 1) as u16,
             };
-            trace.dirty = Some(trace.dirty.map_or(rect, |dirty| dirty.union(&rect)));
+            trace.note_dirty(primitive.environment.area, rect);
             trace.forget_movie(rect);
         }
         trace.ops.push(TraceOp::Draw(primitive));
@@ -1873,12 +2111,15 @@ fn read_rect(vram: &[u16], rect: VramRect) -> Vec<u16> {
 /// The newest alternative of `list` for the original projections that
 /// include `point`, with the pixels its cells cover to put back, read from
 /// `vram` when its first part is traced.
-fn alternative(list: &mut [(u32, u32, std::sync::Arc<SpriteFacing>)], point: u32, vram: &[u16]) -> Option<std::sync::Arc<SpriteFacing>> {
+fn alternative(list: &mut [(u32, u32, std::sync::Arc<SpriteFacing>)], point: u32, vram: &mut crate::raster::Pixels) -> Option<std::sync::Arc<SpriteFacing>> {
     let index = list.iter().rposition(|(first, last, _)| point.wrapping_sub(*first) < last.wrapping_sub(*first))?;
     let alternative = &mut list[index].2;
     if alternative.restore.is_empty() && !alternative.textures.is_empty() {
         let alternative = std::sync::Arc::make_mut(alternative);
-        alternative.restore = alternative.textures.iter().map(|(rect, _)| (*rect, read_rect(vram, *rect).into())).collect();
+        alternative.restore = alternative.textures.iter().map(|(rect, _)| {
+            vram.prepare_region(*rect, false);
+            (*rect, read_rect(vram.base_mut(), *rect).into())
+        }).collect();
     }
     Some(alternative.clone())
 }

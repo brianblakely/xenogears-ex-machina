@@ -54,6 +54,7 @@ pub struct Reverb {
     pub input: [[i16; RING]; 2],
     /// Zero-stuffed 22.05 kHz output history per side.
     pub output: [[i16; RING]; 2],
+    tail: u8,
 }
 
 impl Default for Reverb {
@@ -64,6 +65,7 @@ impl Default for Reverb {
             right_next: false,
             input: [[0; RING]; 2],
             output: [[0; RING]; 2],
+            tail: 0,
         }
     }
 }
@@ -105,6 +107,10 @@ fn fir(ring: &[i16; RING], pos: usize) -> i32 {
 }
 
 impl Reverb {
+    pub(crate) fn restore_tail(&mut self) {
+        self.tail = if self.output.iter().flatten().any(|&v| v != 0) { FIR.len() as u8 } else { 0 };
+    }
+
     /// Sets the buffer address, as writing mBASE does.
     pub fn set_base(&mut self, base: u16) {
         self.cur = base as u32 * 8;
@@ -125,8 +131,14 @@ impl Reverb {
         self.input[1][pos] = input[1];
 
         let side = self.right_next as usize;
-        let x = sat(fir(&self.input[side], pos) >> 15);
-        let y = self.compute(ram, regs, side, x, probe);
+        let y = if regs.write_enable {
+            let x = sat(fir(&self.input[side], pos) >> 15);
+            self.compute(ram, regs, side, x, probe)
+        } else if regs.out_volume[side] != 0 {
+            self.compute(ram, regs, side, 0, probe)
+        } else {
+            0
+        };
         self.output[side][pos] = y as i16;
         self.output[side ^ 1][pos] = 0;
         if self.right_next {
@@ -134,6 +146,14 @@ impl Reverb {
             self.cur = ((self.cur + 2) & 0x7FFFE).max(base);
         }
         self.right_next.toggle();
+
+        if y != 0 {
+            self.tail = FIR.len() as u8;
+        }
+        if self.tail == 0 {
+            return [0; 2];
+        }
+        self.tail -= 1;
 
         [
             sat(fir(&self.output[0], pos) >> 14) as i16,

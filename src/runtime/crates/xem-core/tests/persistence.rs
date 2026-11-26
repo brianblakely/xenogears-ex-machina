@@ -104,7 +104,10 @@ impl Lcg {
     fn below(&mut self, n: usize) -> usize { self.next() as usize % n }
 }
 
-struct Memory(Vec<Vec<u8>>);
+struct Memory {
+    regions: Vec<Vec<u8>>,
+    fail_once_at: Option<u32>,
+}
 impl Memory {
     fn locate(&self, address: u32, len: usize) -> Result<(usize, usize), OutOfBounds> {
         REGIONS.iter().enumerate().find_map(|(i, &(start, size))| {
@@ -116,11 +119,17 @@ impl Memory {
 impl GameMemory for Memory {
     fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds> {
         let (i, at) = self.locate(address, out.len())?;
-        out.copy_from_slice(&self.0[i][at..at + out.len()]); Ok(())
+        out.copy_from_slice(&self.regions[i][at..at + out.len()]); Ok(())
     }
     fn write(&mut self, address: u32, bytes: &[u8]) -> Result<(), OutOfBounds> {
         let (i, at) = self.locate(address, bytes.len())?;
-        self.0[i][at..at + bytes.len()].copy_from_slice(bytes); Ok(())
+        if let Some(fault) = self.fail_once_at.filter(|&f| f >= address && (f - address) < bytes.len() as u32) {
+            self.fail_once_at = None;
+            let written = (fault - address) as usize;
+            self.regions[i][at..at + written].copy_from_slice(&bytes[..written]);
+            return Err(OutOfBounds { address: fault, len: 1 });
+        }
+        self.regions[i][at..at + bytes.len()].copy_from_slice(bytes); Ok(())
     }
 }
 struct Counter {
@@ -133,7 +142,10 @@ struct Counter {
 }
 impl Counter {
     fn new() -> Self {
-        Self { memory: Memory(REGIONS.iter().map(|(_, size)| vec![0; *size as usize]).collect()),
+        Self { memory: Memory {
+                regions: REGIONS.iter().map(|(_, size)| vec![0; *size as usize]).collect(),
+                fail_once_at: None,
+            },
             handler: None, state: AsyncState::Normal, sp: 0x1010_0000, globals: Vec::new() }
     }
 
@@ -641,6 +653,21 @@ fn every_damaged_or_foreign_state_is_refused_by_name_and_changes_nothing() {
     s.restore_bytes(&with_disc_2).unwrap();
     for session in [&mut s, &mut two] { session.execute(&json!({"cmd":"frames", "count":3})); }
     assert!(s.snapshot_bytes().unwrap() == two.snapshot_bytes().unwrap());
+}
+
+#[test]
+fn a_partial_write_during_restore_rolls_back_every_changed_page() {
+    let mut s = session();
+    let saved = s.snapshot_bytes().unwrap();
+    let memory = &mut s.runtime.module().memory;
+    memory.write_u32(0x8010_1004, 0xAABB_CCDD).unwrap();
+    memory.write_u32(0x8010_4004, 0x1122_3344).unwrap();
+    let current = s.snapshot_bytes().unwrap();
+    s.runtime.module().memory.fail_once_at = Some(0x8010_4010);
+    assert!(s.restore_bytes(&saved).is_err());
+    assert!(s.snapshot_bytes().unwrap() == current);
+    s.restore_bytes(&saved).unwrap();
+    assert!(s.snapshot_bytes().unwrap() == saved);
 }
 
 #[test]

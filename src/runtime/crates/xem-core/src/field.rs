@@ -56,9 +56,12 @@ const FLAG_AIRBORNE: u32 = 0x1800;
 /// The screen's centre (GTE offset) and size.
 pub const SCREEN_CENTRE: (f32, f32) = (160.0, 112.0);
 
-fn read_bytes(memory: &dyn GameMemory, address: u32, len: usize) -> Option<Vec<u8>> {
+fn read_bytes(memory: &dyn GameMemory, address: u32, len: usize) -> Option<std::borrow::Cow<'_, [u8]>> {
+    if let Some(bytes) = memory.bytes(address, len) {
+        return Some(std::borrow::Cow::Borrowed(bytes));
+    }
     let mut bytes = vec![0; len];
-    memory.read(address, &mut bytes).ok().map(|()| bytes)
+    memory.read(address, &mut bytes).ok().map(|()| std::borrow::Cow::Owned(bytes))
 }
 fn s16(b: &[u8], at: usize) -> i16 { i16::from_le_bytes([b[at], b[at + 1]]) }
 fn u16_(b: &[u8], at: usize) -> u16 { u16::from_le_bytes([b[at], b[at + 1]]) }
@@ -315,11 +318,64 @@ impl RandomDraw {
     }
 }
 
+struct MeshCache {
+    components: Vec<u8>,
+    sources: Vec<(u32, Vec<u8>)>,
+    layers: std::sync::Arc<Vec<Layer>>,
+    max_attribute: u32,
+}
+
+/// The game can reuse the same RAM address and count after a map change or
+/// restore. Check the packed arrays before sharing the parsed geometry.
+fn mesh_layers(memory: &dyn GameMemory, comps: &[u8]) -> Option<(std::sync::Arc<Vec<Layer>>, u32)> {
+    thread_local! { static MESH: std::cell::RefCell<Option<MeshCache>> = const { std::cell::RefCell::new(None) }; }
+    MESH.with_borrow_mut(|saved| {
+        if let Some(cache) = saved && cache.components == comps[0x18..]
+            && cache.sources.iter().all(|(address, bytes)| read_bytes(memory, *address, bytes.len()).is_some_and(|raw| *raw == bytes[..]))
+        {
+            return Some((cache.layers.clone(), cache.max_attribute));
+        }
+        let layer_count = s16(&comps, 0x48).clamp(0, 4) as usize;
+        let mut layers = Vec::with_capacity(layer_count);
+        let mut sources = Vec::with_capacity(2 * layer_count);
+        let mut max_attribute = 0;
+        for layer in 0..layer_count {
+            let triangles_at = ram(u32_(&comps, 0x18 + layer * 4));
+            let vertices_at = ram(u32_(&comps, 0x28 + layer * 4));
+            let count = s32(&comps, 0x38 + layer * 4).clamp(0, 8192) as usize;
+            let (Some(triangles_at), Some(vertices_at)) = (triangles_at, vertices_at) else {
+                layers.push(Layer::default());
+                continue;
+            };
+            let raw = read_bytes(memory, triangles_at, count * 14)?;
+            let mut triangles = Vec::with_capacity(count);
+            let mut max_vertex = 0;
+            for i in 0..count {
+                let b = &raw[i * 14..i * 14 + 14];
+                let v = [0, 1, 2].map(|k| u16_(b, k * 2) as usize);
+                let n = [0, 1, 2].map(|k| i32::from(s16(b, 6 + k * 2)));
+                max_vertex = max_vertex.max(v[0]).max(v[1]).max(v[2]);
+                max_attribute = max_attribute.max(u32::from(b[12]));
+                triangles.push(Triangle { v, n, attribute: u16::from(b[12]), bump: i16::from(b[13] as i8) * 4 });
+            }
+            sources.push((triangles_at, raw.into_owned()));
+            let raw = read_bytes(memory, vertices_at, (max_vertex + 1) * 8)?;
+            let vertices = (0..=max_vertex).map(|i| V3::new(f32::from(s16(&raw, i * 8)), f32::from(s16(&raw, i * 8 + 2)), f32::from(s16(&raw, i * 8 + 4)))).collect();
+            sources.push((vertices_at, raw.into_owned()));
+            triangles.retain(|t| t.n.iter().all(|n| *n < count as i32));
+            layers.push(Layer { vertices, triangles, at: triangles_at });
+        }
+        let layers = std::sync::Arc::new(layers);
+        *saved = Some(MeshCache { components: comps[0x18..].to_vec(), sources, layers: layers.clone(), max_attribute });
+        Some((layers, max_attribute))
+    })
+}
+
 /// The field at one moment.
 #[derive(Clone, Debug)]
 pub struct Field {
     pub camera: Camera,
-    pub layers: Vec<Layer>,
+    pub layers: std::sync::Arc<Vec<Layer>>,
     pub attributes: Vec<u32>,
     pub actors: Vec<Option<Actor>>,
     pub player: Option<usize>,
@@ -341,33 +397,7 @@ impl Field {
         let descriptor_count = s32(&comps, 0).clamp(0, 256) as usize;
         let descriptors = ram(u32_(&comps, 4));
         let attributes_at = ram(u32_(&comps, 0x14));
-        let layer_count = s16(&comps, 0x48).clamp(0, 4) as usize;
-        let mut layers = Vec::new();
-        let mut max_attribute = 0;
-        for layer in 0..layer_count {
-            let triangles_at = ram(u32_(&comps, 0x18 + layer * 4));
-            let vertices_at = ram(u32_(&comps, 0x28 + layer * 4));
-            let count = s32(&comps, 0x38 + layer * 4).clamp(0, 8192) as usize;
-            let (Some(triangles_at), Some(vertices_at)) = (triangles_at, vertices_at) else {
-                layers.push(Layer::default());
-                continue;
-            };
-            let raw = read_bytes(memory, triangles_at, count * 14)?;
-            let mut triangles = Vec::with_capacity(count);
-            let mut max_vertex = 0;
-            for i in 0..count {
-                let b = &raw[i * 14..i * 14 + 14];
-                let v = [0, 1, 2].map(|k| u16_(b, k * 2) as usize);
-                let n = [0, 1, 2].map(|k| i32::from(s16(b, 6 + k * 2)));
-                max_vertex = max_vertex.max(v[0]).max(v[1]).max(v[2]);
-                max_attribute = max_attribute.max(u32::from(b[12]));
-                triangles.push(Triangle { v, n, attribute: u16::from(b[12]), bump: i16::from(b[13] as i8) * 4 });
-            }
-            let raw = read_bytes(memory, vertices_at, (max_vertex + 1) * 8)?;
-            let vertices = (0..=max_vertex).map(|i| V3::new(f32::from(s16(&raw, i * 8)), f32::from(s16(&raw, i * 8 + 2)), f32::from(s16(&raw, i * 8 + 4)))).collect();
-            triangles.retain(|t| t.n.iter().all(|n| *n < count as i32));
-            layers.push(Layer { vertices, triangles, at: triangles_at });
-        }
+        let (layers, max_attribute) = mesh_layers(memory, &comps)?;
         let attributes = match attributes_at {
             Some(at) => {
                 let raw = read_bytes(memory, at, (max_attribute as usize + 1) * 4)?;
@@ -552,18 +582,16 @@ impl Field {
         // (Each walkmesh read from the game keeps its grids while the map
         // lasts; one built for the asking has none.)
         thread_local! {
-            static GRIDS: std::cell::RefCell<Vec<((u32, usize), Grid)>> = Default::default();
+            static GRIDS: std::cell::RefCell<(std::sync::Weak<Vec<Layer>>, Vec<Grid>)> = Default::default();
         }
         let meshes = &self.layers[..self.actor_layers()];
         if meshes.iter().all(|mesh| mesh.at != 0) {
             GRIDS.with_borrow_mut(|grids| {
-                let same = grids.len() == meshes.len() && grids.iter().zip(meshes).all(|((key, _), mesh)| *key == (mesh.at, mesh.triangles.len()));
-                if !same {
-                    *grids = meshes.iter().map(|mesh| ((mesh.at, mesh.triangles.len()), Grid::of(mesh))).collect();
+                let key = std::sync::Arc::downgrade(&self.layers);
+                if !grids.0.ptr_eq(&key) {
+                    *grids = (key, meshes.iter().map(Grid::of).collect());
                 }
-                for layer in layers {
-                    look(layer, &grids[layer].1);
-                }
+                for layer in layers { look(layer, &grids.1[layer]); }
             });
         } else {
             for layer in layers {
@@ -1323,7 +1351,7 @@ impl Leaps {
         let flags = ((actor.flags >> 8) & 7, actor.layer_flags & 0x3F, field.party_processing, actor.height);
         // (A walkmesh not read from the game has no place to know it by.)
         let same = self.flags == flags && self.arc.as_ptr() == arc.0.as_ptr() && self.walkmesh.len() == field.layers.len()
-            && self.walkmesh.iter().zip(&field.layers).all(|(&(at, count), layer)| at != 0 && at == layer.at && count == layer.triangles.len())
+            && self.walkmesh.iter().zip(field.layers.iter()).all(|(&(at, count), layer)| at != 0 && at == layer.at && count == layer.triangles.len())
             && self.attributes == field.attributes;
         if !same {
             *self = Leaps {
@@ -2091,7 +2119,7 @@ mod tests {
     fn field(layer: Layer, attributes: Vec<u32>) -> Field {
         Field {
             camera: Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0, 0.0, 1000.0], h: 256.0, angle: 0 },
-            layers: vec![layer],
+            layers: vec![layer].into(),
             attributes,
             actors: vec![Some(actor(V3::new(50.0, 0.0, 50.0)))],
             player: Some(0),
@@ -2128,7 +2156,7 @@ mod tests {
                 t.bump = 100;
             }
             let mut f = field(strip(3), vec![0]);
-            f.layers.extend([floor, Layer::default()]);
+            std::sync::Arc::make_mut(&mut f.layers).extend([floor, Layer::default()]);
             f
         };
         let goal = |f: &Field| f.layers[0].locate(250.0, 50.0).unwrap();
@@ -2252,7 +2280,7 @@ mod tests {
         deck.triangles[4].attribute = 2;
         deck.triangles[5].attribute = 2;
         let mut f = field(ground, vec![0, ATTR_LIFT, ATTR_LAYER0_BLOCK]);
-        f.layers.extend([deck, Layer::default()]);
+        std::sync::Arc::make_mut(&mut f.layers).extend([deck, Layer::default()]);
         let player = *f.player().unwrap();
         // Up: to the deck's second square, by the stairs.
         let goal = f.layers[1].locate(450.0, 50.0).unwrap();
@@ -2311,7 +2339,7 @@ mod tests {
         }
         deck.triangles[5].attribute = 1;
         let mut f = field(ground, vec![0, ATTR_LAYER0_BLOCK]);
-        f.layers.extend([deck, Layer::default()]);
+        std::sync::Arc::make_mut(&mut f.layers).extend([deck, Layer::default()]);
         let player = *f.player().unwrap();
         let every = |origin: V3, direction: V3, within: f32| {
             let mut best: Option<(f32, usize, usize)> = None;

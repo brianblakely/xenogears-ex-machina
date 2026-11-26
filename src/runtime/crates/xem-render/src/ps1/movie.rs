@@ -73,7 +73,7 @@ impl MovieTiles {
                     self.forget(VramRect { x: destination.0, y: destination.1, width: *width, height: *height });
                 }
                 TraceOp::Draw(p) if !p.revealed => self.forget(drawn_rect(p)),
-                TraceOp::Draw(_) | TraceOp::History { .. } | TraceOp::Eye(_) | TraceOp::Camera(_) | TraceOp::Placement(_) => {}
+                TraceOp::Presented { .. } | TraceOp::Draw(_) | TraceOp::History { .. } | TraceOp::Eye(_) | TraceOp::Camera(_) | TraceOp::Placement(_) => {}
             }
         }
     }
@@ -252,6 +252,7 @@ struct Targets {
     luma: wgpu::Texture,
     chroma: wgpu::Texture,
     compose: wgpu::BindGroup,
+    last_group: Option<(wgpu::Texture, bool, wgpu::BindGroup)>,
     source_view: wgpu::TextureView,
     easu: wgpu::BindGroup,
     upscaled_view: wgpu::TextureView,
@@ -395,6 +396,7 @@ impl Passes {
             easu: group(&self.layout, &[&source_view]),
             luma,
             chroma,
+            last_group: None,
             source_view,
             upscaled_view,
             output_view: output.create_view(&Default::default()),
@@ -502,7 +504,7 @@ impl MovieRenderer {
             };
             queue.write_buffer(&passes.params, 0, bytemuck::bytes_of(&params));
             passes.ensure_targets(device, plane_size, source, size);
-            let targets = passes.targets.as_ref().expect("made above");
+            let targets = passes.targets.as_mut().expect("made above");
             let write = |texture: &wgpu::Texture, bytes: &[u8], (width, height): (u32, u32), texel: u32| {
                 queue.write_texture(
                     wgpu::TexelCopyTextureInfo { texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
@@ -522,16 +524,19 @@ impl MovieRenderer {
                 Passes::pass(encoder, &passes.easu, &targets.easu, &targets.upscaled_view);
                 (&passes.rcas, &targets.upscaled_view)
             };
-            let output = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("movie output"),
-                layout: &passes.rcas_layout,
-                entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: passes.params.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(enlarged) },
-                    wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&vram.create_view(&Default::default())) },
-                ],
-            });
-            Passes::pass(encoder, last, &output, &targets.output_view);
+            if targets.last_group.as_ref().is_none_or(|(texture, software, _)| texture != vram || *software != self.software) {
+                let output = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("movie output"),
+                    layout: &passes.rcas_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry { binding: 0, resource: passes.params.as_entire_binding() },
+                        wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(enlarged) },
+                        wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&vram.create_view(&Default::default())) },
+                    ],
+                });
+                targets.last_group = Some((vram.clone(), self.software, output));
+            }
+            Passes::pass(encoder, last, &targets.last_group.as_ref().unwrap().2, &targets.output_view);
             self.shown = Some(key);
         }
         let targets = passes.targets.as_ref()?;

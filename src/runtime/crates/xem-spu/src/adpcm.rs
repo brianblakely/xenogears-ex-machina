@@ -44,6 +44,11 @@ pub fn decode_block(block: &[u8; 16], history: &mut History, out: &mut [i16; BLO
     } else {
         (0, 0)
     };
+    if (f0 == 0 || *history == [0, 0]) && block[2..] == [0; 14] {
+        out.fill(0);
+        *history = [0, 0];
+        return;
+    }
     let [mut old, mut older] = *history;
     for (j, sample) in out.iter_mut().enumerate() {
         let byte = block[2 + j / 2];

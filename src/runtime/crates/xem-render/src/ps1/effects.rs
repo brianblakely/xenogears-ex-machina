@@ -87,8 +87,8 @@ impl Quality {
         match self {
             Quality::Low => (0, 8, 16, 3),
             Quality::Medium => (6, 12, 24, 4),
-            Quality::High => (10, 20, 40, 5),
-            Quality::Ultra => (16, 32, 64, 6),
+            Quality::High => (10, 20, 40, 4),
+            Quality::Ultra => (16, 32, 64, 4),
         }
     }
 }
@@ -361,6 +361,7 @@ const HDR_PREFERRED: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
 struct Targets {
     size: (u32, u32),
     lit: wgpu::Texture,
+    occlusion: wgpu::Texture,
     shadow: wgpu::Texture,
     /// Bloom levels; level 0 is the half-resolution bright pass (a: shaft sources).
     bloom: Vec<wgpu::Texture>,
@@ -388,7 +389,7 @@ pub struct EffectsRenderer {
     debug: u32,
     /// Bind groups and views of the passes, by their textures (they live
     /// as long as the textures; dropped when the targets are made again).
-    groups: HashMap<(&'static str, Vec<wgpu::Texture>), wgpu::BindGroup>,
+    groups: HashMap<(&'static str, [Option<wgpu::Texture>; 6]), wgpu::BindGroup>,
     views: HashMap<wgpu::Texture, wgpu::TextureView>,
     shadow_group: Option<(wgpu::Texture, u64, wgpu::BindGroup)>,
     /// The targets were just made: the scene average starts afresh.
@@ -544,13 +545,14 @@ impl EffectsRenderer {
             let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC;
             let half = ((size.0 / 2).max(1), (size.1 / 2).max(1));
             let bloom = (0..levels)
-                .map(|level| texture(device, "bloom", ((half.0 >> level).max(1), (half.1 >> level).max(1)), self.hdr, usage))
+                .map(|level| texture(device, "bloom", ((half.0 >> (level + 1)).max(1), (half.1 >> (level + 1)).max(1)), self.hdr, usage))
                 .collect();
             // The frame's interface is drawn over it afterwards, copies too.
             let output = texture(device, "effects output", size, wgpu::TextureFormat::Rgba8Unorm,
                 usage | wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST);
             self.targets = Some(Targets {
                 size,
+                occlusion: texture(device, "ambient occlusion and depth", half, wgpu::TextureFormat::Rgba8Unorm, usage),
                 lit: texture(device, "lit", size, self.hdr, usage),
                 shadow: texture(device, "shadow mask", size, wgpu::TextureFormat::Rgba8Unorm, usage),
                 bloom,
@@ -619,7 +621,7 @@ impl EffectsRenderer {
             self.groups.clear();
             self.views.clear();
         }
-        let key = (entry, inputs.iter().map(|t| (*t).clone()).collect::<Vec<_>>());
+        let key = (entry, std::array::from_fn(|i| inputs.get(i).map(|t| (**t).clone())));
         if !self.groups.contains_key(&key) {
             let views: Vec<wgpu::TextureView> = inputs.iter().map(|t| t.create_view(&Default::default())).collect();
             let entries: Vec<wgpu::BindGroupEntry> = (0..6)
@@ -732,11 +734,12 @@ impl EffectsRenderer {
         if effects.shadows > 0.0 {
             let targets = self.targets.as_ref().expect("created above");
             let view = self.views.entry(targets.shadow.clone()).or_insert_with(|| targets.shadow.create_view(&Default::default())).clone();
+            let texture = if ps1.deferred { &frame.vram.texture } else { &ps1.vram };
             let group = match &self.shadow_group {
-                Some((vram, generation, group)) if *vram == ps1.vram && *generation == ps1.capture.generation => group.clone(),
+                Some((vram, generation, group)) if vram == texture && *generation == ps1.capture.generation => group.clone(),
                 _ => {
-                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram, &ps1.capture, None);
-                    self.shadow_group = Some((ps1.vram.clone(), ps1.capture.generation, group.clone()));
+                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, texture, &ps1.capture, None);
+                    self.shadow_group = Some((texture.clone(), ps1.capture.generation, group.clone()));
                     group
                 }
             };
@@ -798,7 +801,7 @@ impl EffectsRenderer {
             shaft: [lighting.shaft_source[0], lighting.shaft_source[1], effects.light_shafts, lighting.shaft_threshold],
             bloom: [effects.bloom * 0.7, lighting.bloom_threshold, 0.3, effects.lighting],
             grade: [lighting.exposure, lighting.contrast, lighting.saturation, lighting.warmth],
-            grade2: [lighting.vignette, effects.color_grading, effects.depth_of_field, effects.shadows],
+            grade2: [lighting.vignette, effects.color_grading, effects.depth_of_field, if shadow_vertices.is_empty() { 0.0 } else { effects.shadows }],
             quality: [
                 if effects.ambient_occlusion > 0.0 { ao } else { 0 },
                 if effects.depth_of_field > 0.0 { dof } else { 0 },
@@ -852,7 +855,10 @@ impl EffectsRenderer {
 
         let t = self.targets.take().expect("created above");
         self.pass(device, encoder, "fs_average", &t.average, Blend::Ease, 0, &[frame.color(), frame.aux()]);
-        self.pass(device, encoder, "fs_light", &t.lit, Blend::Replace, 0, &[frame.color(), frame.aux(), &t.shadow, &t.average]);
+        if base.quality[0] > 0 {
+            self.pass(device, encoder, "fs_ao", &t.occlusion, Blend::Replace, 0, &[frame.color(), frame.aux()]);
+        }
+        self.pass(device, encoder, "fs_light", &t.lit, Blend::Replace, 0, &[frame.color(), frame.aux(), &t.shadow, &t.average, &t.occlusion]);
         if effects.bloom > 0.0 || effects.light_shafts > 0.0 {
             self.pass(device, encoder, "fs_bright", &t.bloom[0], Blend::Replace, 0, &[&t.lit, frame.aux()]);
         }

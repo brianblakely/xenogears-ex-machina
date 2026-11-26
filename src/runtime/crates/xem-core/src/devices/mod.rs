@@ -41,6 +41,9 @@ pub trait Device {
     fn save(&self) -> Vec<u8> {
         Vec::new()
     }
+    fn save_into(&self, out: &mut Vec<u8>) {
+        out.extend_from_slice(&self.save());
+    }
     fn load(&mut self, _state: &[u8]) -> Result<(), String> {
         Ok(())
     }

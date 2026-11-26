@@ -808,7 +808,7 @@ def ram_mirrors(lines, own_globals=False):
     then knows the GTE's registers (the flags every step updates) apart from
     one another and from what the game's pointers reach.
     """
-    out, local, number = [], set(), 0
+    out, local, ring_members, number = [], set(), set(), 0
 
     def own(pointer):
         # A constant expression: inbounds element addresses of a named
@@ -817,13 +817,29 @@ def ram_mirrors(lines, own_globals=False):
                 and "inttoptr" not in pointer and "ptrtoint" not in pointer
                 and pointer.count("getelementptr") == pointer.count("getelementptr inbounds"))
 
+    def ring(pointer):
+        # The port indexes fields and array members of its ring objects.
+        # Only propagate inbounds GEPs within those objects (first index 0).
+        if not own_globals:
+            return False
+        while pointer.startswith("getelementptr inbounds "):
+            start = pointer.find("(")
+            if start == -1 or not pointer.endswith(")"):
+                return False
+            args = split_top(pointer[start + 1:-1])
+            if len(args) < 3 or args[2] != "i32 0":
+                return False
+            pointer = args[1].removeprefix("ptr ")
+        match = re.fullmatch(r"inttoptr \(i32 (\d+) to ptr\)", pointer)
+        return bool(match and 0x70000000 <= int(match[1]) < 0x71000000)
+
     def address(argument):
         nonlocal number
         match = re.fullmatch(r"(ptr(?: (?:align \d+|nonnull|noundef))*) (.+)", argument)
         if not match:
             raise ValueError(f"unhandled memory operand: {argument}")
         attributes, pointer = match.groups()
-        if pointer in local or pointer.startswith("@") or own(pointer):
+        if pointer in local or pointer in ring_members or pointer.startswith("@") or own(pointer) or ring(pointer):
             return argument
         name = f"%xem.memory.{number}"
         number += 1
@@ -833,13 +849,18 @@ def ram_mirrors(lines, own_globals=False):
     for line in lines:
         if line.startswith("define "):
             local = set()
+            ring_members = set()
         assignment = re.match(r"\s*(%[-\w.]+) = (.+)", line)
         if assignment:
             name, expression = assignment.groups()
             if expression.startswith("alloca "):
                 local.add(name)
             elif expression.startswith("getelementptr "):
-                base = split_top(expression)[1].removeprefix("ptr ")
+                indices = split_top(expression)
+                base = indices[1].removeprefix("ptr ")
+                if (expression.startswith("getelementptr inbounds ") and indices[2:3] == ["i32 0"]
+                        and (base in ring_members or ring(base))):
+                    ring_members.add(name)
                 if base in local or base.startswith("@"):
                     local.add(name)
         memory = re.match(r"(\s*(?:%[-\w.]+ = )?(?:load|store) )(.+)", line)
@@ -1166,6 +1187,12 @@ def compile_ir(source, out_ll):
                               cwd=ROOT, capture_output=True, text=True)
 
     result = attempt(source)
+    if not result.returncode and Path(source).parent == PORT_DIR:
+        # Expose the ring roots held in ordinary local pointer variables
+        # before ram_mirrors translates accesses. mem2reg only promotes
+        # nonescaping stack slots and leaves the game memory accesses alone.
+        result = subprocess.run(["opt", "-S", "-passes=mem2reg", str(out_ll), "-o", str(out_ll)],
+                                cwd=ROOT, capture_output=True, text=True)
     if result.returncode and "src/decomp/src/" in str(source):
         retry = attempt(game_schema.headers_first(os.path.relpath(source, ROOT), out_ll.parent))
         if retry.returncode == 0:

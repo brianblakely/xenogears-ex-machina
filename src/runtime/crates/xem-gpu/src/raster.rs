@@ -535,6 +535,278 @@ macro_rules! by_flags {
     };
 }
 
+type Bounds = (i32, i32, i32, i32);
+
+#[derive(Clone, Copy)]
+enum PixelsOp {
+    Fill(u16),
+    Triangle { v: [Vertex; 3], area: i64 },
+    Sprite { corner: (i32, i32), uv: (u32, u32), step: (u32, u32), rgb: [i32; 3] },
+    Line { x0: i32, y0: i32, dx: i32, dy: i32, start: [i32; 3], end: [i32; 3] },
+}
+
+#[derive(Clone, Copy)]
+struct RasterDraw {
+    selected: bool,
+    texture_uv: [u8; 4],
+    reads: u64,
+    writes: u64,
+    bounds: Bounds,
+    shader: Shader,
+    op: PixelsOp,
+}
+
+impl PixelsOp {
+    // Eager callers know the opcode. Dispatch directly to the corresponding
+    // scan converter there without constructing a deferred draw record.
+    #[inline(always)]
+    fn run(&self, bounds @ (left, top, right, bottom): Bounds, shader: &Shader, vram: &mut Vram) {
+        match *self {
+            PixelsOp::Fill(pixel) => {
+                for y in top..=bottom {
+                    let row = y as usize * VRAM_WIDTH;
+                    vram[row + left as usize..=row + right as usize].fill(pixel);
+                }
+            }
+            PixelsOp::Triangle { ref v, area } => {
+                let Some(rows) = TriangleRows::new(v.map(|p| (p.x, p.y)), bounds) else { return };
+                // A texture modulated by the neutral colour without dithering is the
+                // texture as it is, and a raw one takes no colour.
+                let neutral = !shader.gouraud && !shader.dither && v[0].attributes[..3] == [0x80; 3];
+                let modulate = shader.textured && !shader.raw && !neutral;
+                let gouraud = shader.gouraud && (modulate || !shader.textured);
+                by_texture!(shader, modulate, fill_triangle, [gouraud, shader.semi.is_some()], (vram, rows, v, area, shader));
+            }
+            PixelsOp::Sprite { corner, uv, step, rgb } => {
+                // A texture modulated by the neutral colour is the texture as it is.
+                let modulate = shader.textured && !shader.raw && rgb != [0x80; 3];
+                by_texture!(shader, modulate, fill_sprite, [shader.semi.is_some()], (vram, shader, (left, right), (top, bottom), corner, uv, step, rgb));
+            }
+            PixelsOp::Line { x0, y0, dx, dy, start, end } => {
+                let steps = dx.abs().max(dy.abs());
+                let along = |from: i32, delta: i32, i: i32| {
+                    if steps == 0 {
+                        from
+                    } else {
+                        // Nearest pixel, halves rounded up.
+                        from + (2 * delta * i + steps).div_euclid(2 * steps)
+                    }
+                };
+                for i in 0..=steps {
+                    let x = along(x0, dx, i);
+                    let y = along(y0, dy, i);
+                    if x < left || x > right || y < top || y > bottom {
+                        continue;
+                    }
+                    let rgb = [0, 1, 2].map(|k| if steps == 0 { start[k] } else { start[k] + ((end[k] - start[k]) * i).div_euclid(steps) });
+                    let dither = if shader.dither { DITHER[(y & 3) as usize][(x & 3) as usize] } else { 0 };
+                    put::<true>(vram, shader, y as usize * VRAM_WIDTH + x as usize, pack(rgb, dither), 0, true);
+                }
+            }
+        }
+    }
+}
+
+impl RasterDraw {
+    fn run(&self, vram: &mut Vram) {
+        self.op.run(self.bounds, &self.shader, vram);
+    }
+
+    /// The inclusive texture coordinates this software draw can sample.
+    /// A wrapped interval or a non-contiguous texture window uses its
+    /// enclosing range. Keep this with the command for dependency queries.
+    fn sampled_uv(&self) -> [u8; 4] {
+        let bounds = self.bounds;
+        let axis = |component: usize, keep: u32, set: u32| {
+            let (lo, hi) = match &self.op {
+                PixelsOp::Triangle { v, .. } => {
+                    let attr = component + 3;
+                    let (a, b, c) = (v[0].attributes[attr], v[1].attributes[attr], v[2].attributes[attr]);
+                    // The rasterizer floors a convex combination at each covered pixel.
+                    (a.min(b).min(c), a.max(b).max(c))
+                }
+                PixelsOp::Sprite { corner, uv, step, .. } => {
+                    let (a, b, origin, uv, step) = if component == 0 { (bounds.0, bounds.2, corner.0, uv.0, step.0) }
+                        else { (bounds.1, bounds.3, corner.1, uv.1, step.1) };
+                    let first = uv as i32 + (a - origin) * step as i32;
+                    let last = uv as i32 + (b - origin) * step as i32;
+                    (first.min(last), first.max(last))
+                }
+                _ => return (0, 255),
+            };
+            if keep != 255 || lo.div_euclid(256) != hi.div_euclid(256) {
+                (set as u8, (set | keep) as u8)
+            } else {
+                (lo as u8, hi as u8)
+            }
+        };
+        let (x, r) = axis(0, self.shader.keep.0, self.shader.set.0);
+        let (y, b) = axis(1, self.shader.keep.1, self.shader.set.1);
+        [x, y, r, b]
+    }
+
+    fn textures(&self, mut visit: impl FnMut(Bounds)) {
+        let s = &self.shader;
+        if !s.textured { return; }
+        let mut rect = |x: usize, y: usize, w: usize, h: usize| {
+            visit((x as i32, y as i32, (x + w).min(VRAM_WIDTH) as i32 - 1, (y + h) as i32 - 1));
+            if x + w > VRAM_WIDTH { visit((0, y as i32, (x + w - VRAM_WIDTH) as i32 - 1, (y + h) as i32 - 1)); }
+        };
+        let [u, v, r, b] = self.texture_uv.map(usize::from);
+        let shift = 2 - s.depth.min(2);
+        let x = s.page_x + (u >> shift);
+        rect(x % VRAM_WIDTH, s.page_y + v, (r >> shift) - (u >> shift) + 1, b - v + 1);
+        if s.depth < 2 { rect(s.clut_x, s.clut_y, if s.depth == 0 { 16 } else { 256 }, 1); }
+    }
+
+    fn samples(&self, rect: Bounds) -> bool {
+        let mut sampled = false;
+        self.textures(|page| sampled |= meets(page, rect));
+        sampled
+    }
+}
+
+fn meets((x, y, r, b): Bounds, (x1, y1, r1, b1): Bounds) -> bool {
+    x <= r1 && x1 <= r && y <= b1 && y1 <= b
+}
+
+/// Conservative 128x64-word cells for dependencies between queued draws.
+fn cells((x, y, right, bottom): Bounds) -> u64 {
+    let columns = ((255u64 << (x / 128)) & (255u64 >> (7 - right / 128))) * 0x0101_0101_0101_0101;
+    let rows = (u64::MAX << (8 * (y / 64))) & (u64::MAX >> (8 * (7 - bottom / 64)));
+    columns & rows
+}
+
+/// Observers can borrow an exact snapshot through &Gpu. Move the single
+/// allocation between the unrendered base and the materialized image.
+pub(crate) struct Pixels {
+    ready: std::cell::OnceCell<Vec<u16>>,
+    base: std::cell::Cell<Vec<u16>>,
+    pending: Vec<RasterDraw>,
+    /// The last hardware take while tracing is off and VRAM is untouched.
+    pub(crate) paused_stamp: Option<u64>,
+}
+
+impl From<Vec<u16>> for Pixels {
+    fn from(vram: Vec<u16>) -> Self {
+        Self { ready: vram.into(), base: Default::default(), pending: Vec::new(), paused_stamp: None }
+    }
+}
+
+impl Clone for Pixels {
+    fn clone(&self) -> Self { self.as_slice().to_vec().into() }
+}
+
+impl std::ops::Deref for Pixels {
+    type Target = Vec<u16>;
+    fn deref(&self) -> &Vec<u16> {
+        self.ready.get_or_init(|| {
+            let mut bytes = self.base.take();
+            let vram: &mut Vram = bytes.as_mut_slice().try_into().expect("VRAM size");
+            for draw in &self.pending { draw.run(vram); }
+            bytes
+        })
+    }
+}
+
+impl std::ops::DerefMut for Pixels {
+    fn deref_mut(&mut self) -> &mut Vec<u16> {
+        self.paused_stamp = None;
+        self.as_slice();
+        self.ready.get_mut().unwrap()
+    }
+}
+
+impl Pixels {
+    pub(crate) fn base_mut(&mut self) -> &mut [u16] {
+        self.paused_stamp = None;
+        match self.ready.get_mut() { Some(vram) => vram, None => self.base.get_mut() }
+    }
+
+    pub(crate) fn prepare_image(&mut self, image: crate::Image, write: bool) {
+        if self.ready.get().is_some() { return; }
+        for rect in crate::VramRect::wrapped(image.x.into(), image.y.into(), image.width.into(), image.height.into()) {
+            self.prepare_region(rect, write);
+        }
+    }
+
+    /// Execute just the commands the observer needs. Earlier commands that
+    /// read a selected destination must also precede it, even if their own
+    /// output is elsewhere and the observer only reads.
+    pub(crate) fn prepare_region(&mut self, rect: crate::VramRect, write: bool) {
+        if self.ready.get().is_some() { return; }
+        let bounds = (rect.x.into(), rect.y.into(), i32::from(rect.x + rect.width) - 1, i32::from(rect.y + rect.height) - 1);
+        let cells = cells(bounds);
+        let Some(last) = self.pending.iter().rposition(|d| d.writes & cells != 0 && meets(d.bounds, bounds)
+            || write && d.reads & cells != 0 && d.samples(bounds)) else { return };
+        if last >= 128 && u32::from(rect.width) * u32::from(rect.height) >= 320 * 144 {
+            // A display-sized read consumes the bulk of its preceding draw
+            // list. Render the prefix in command order in one traversal.
+            let vram: &mut Vram = self.base.get_mut().as_mut_slice().try_into().expect("VRAM");
+            for draw in self.pending.drain(..=last) { draw.run(vram); }
+            return;
+        }
+        let mut reads = cells;
+        let mut writes = if write { cells } else { 0 };
+        for draw in self.pending[..=last].iter_mut().rev() {
+            if draw.writes & reads != 0 || draw.reads & writes != 0 {
+                draw.selected = true;
+                writes |= draw.writes;
+                reads |= draw.writes | draw.reads;
+            }
+        }
+        let vram: &mut Vram = self.base.get_mut().as_mut_slice().try_into().expect("VRAM");
+        self.pending.retain(|draw| {
+            if draw.selected { draw.run(vram); }
+            !draw.selected
+        });
+    }
+
+    fn pixels_mut(&mut self) -> &mut Vram {
+        self.as_mut_slice().try_into().expect("VRAM size")
+    }
+
+    fn defer(&mut self, draw: RasterDraw) {
+        // Bound the commands of games that never clear or read a buffer.
+        if self.pending.len() >= 8192 { self.as_slice(); }
+        if let Some(bytes) = self.ready.take() {
+            *self.base.get_mut() = bytes;
+            self.pending.clear();
+        }
+        self.pending.push(draw);
+    }
+
+    fn overwrite(&mut self, bounds @ (x, y, r, b): Bounds) {
+        if self.ready.get().is_some() { return; }
+        let inside = |draw: &RasterDraw| {
+            let (l, t, right, bottom) = draw.bounds;
+            x <= l && y <= t && right <= r && bottom <= b
+        };
+        // Resolve readers that survive the clear before discarding the
+        // superseded writes. A single sprite sampling the old buffer need
+        // not keep every subsequent draw there up to the next checkpoint.
+        let cleared = cells(bounds);
+        let survives = |d: &RasterDraw| d.reads & cleared != 0 && !inside(d) && d.samples(bounds);
+        if let Some(last) = self.pending.iter().rposition(survives) {
+            let (mut reads, mut writes) = (0, 0);
+            for draw in self.pending[..=last].iter_mut().rev() {
+                if draw.writes & reads != 0 || draw.reads & writes != 0 || survives(draw) {
+                    draw.selected = true;
+                    writes |= draw.writes;
+                    reads |= draw.writes | draw.reads;
+                }
+            }
+            let vram: &mut Vram = self.base.get_mut().as_mut_slice().try_into().expect("VRAM");
+            self.pending.retain(|draw| {
+                if draw.selected { draw.run(vram); }
+                !draw.selected && !inside(draw)
+            });
+        } else {
+            self.pending.retain(|draw| !inside(draw));
+        }
+    }
+}
+
 impl Gpu {
     pub(crate) fn vertex(&self, word: u32) -> (i32, i32) {
         (
@@ -581,9 +853,26 @@ impl Gpu {
         }
     }
 
-    /// VRAM for the fill loops.
-    fn pixels(&mut self) -> &mut Vram {
-        self.vram.as_mut_slice().try_into().expect("VRAM is 1024x512")
+    #[inline]
+    fn raster(&mut self, bounds: Bounds, shader: Shader, op: PixelsOp) {
+        if bounds.0 > bounds.2 || bounds.1 > bounds.3 { return; }
+        if self.trace.is_some() {
+            self.defer_raster(bounds, shader, op);
+        } else {
+            op.run(bounds, &shader, self.vram.pixels_mut());
+        }
+    }
+
+    fn defer_raster(&mut self, bounds: Bounds, shader: Shader, op: PixelsOp) {
+        let mut draw = RasterDraw { selected: false, texture_uv: [0; 4], reads: 0, writes: cells(bounds), bounds, shader, op };
+        if draw.shader.textured {
+            draw.texture_uv = draw.sampled_uv();
+            let mut reads = 0;
+            draw.textures(|page| reads |= cells(page));
+            draw.reads = reads;
+        }
+        self.read_synced = false;
+        self.vram.defer(draw);
     }
 
     /// GP0(02h): fills a rectangle with a colour, ignoring the drawing area,
@@ -597,12 +886,20 @@ impl Gpu {
         let y = (words[1] >> 16 & 0x1FF) as usize;
         let width = (((words[2] & 0x3FF) + 0xF) & !0xF) as usize;
         let height = (words[2] >> 16 & 0x1FF) as usize;
-        // The columns up to the right edge, then those that wrap to the left.
-        let ahead = width.min(VRAM_WIDTH - x);
-        for row in 0..height {
-            let base = ((y + row) & (VRAM_HEIGHT - 1)) * VRAM_WIDTH;
-            self.vram[base + x..base + x + ahead].fill(pixel);
-            self.vram[base..base + width - ahead].fill(pixel);
+        if self.trace.is_some() {
+            for rect in crate::VramRect::wrapped(x, y, width, height) {
+                let bounds = (i32::from(rect.x), i32::from(rect.y), i32::from(rect.x + rect.width) - 1, i32::from(rect.y + rect.height) - 1);
+                self.vram.overwrite(bounds);
+                self.raster(bounds, self.shader(false, false, false, false, 0), PixelsOp::Fill(pixel));
+            }
+        } else {
+            let ahead = width.min(VRAM_WIDTH - x);
+            let vram = self.vram.pixels_mut();
+            for row in 0..height {
+                let base = ((y + row) & (VRAM_HEIGHT - 1)) * VRAM_WIDTH;
+                vram[base + x..base + x + ahead].fill(pixel);
+                vram[base..base + width - ahead].fill(pixel);
+            }
         }
     }
 
@@ -611,19 +908,23 @@ impl Gpu {
     pub(crate) fn copy_rectangle(&mut self, words: &[u32]) {
         let source = crate::Image::from_words(words[1], words[3]);
         let destination = crate::Image::from_words(words[2], words[3]);
+        if source.x == destination.x && source.y == destination.y && self.mask & 1 == 0 { return; }
         let width = usize::from(source.width);
         let (force, check) = (if self.mask & 1 != 0 { 0x8000 } else { 0 }, self.mask & 2 != 0);
+        self.vram.prepare_image(source, false);
+        self.vram.prepare_image(destination, true);
+        let vram = self.vram.base_mut();
         let mut row = [0u16; VRAM_WIDTH];
         for line in 0..usize::from(source.height) {
             let from = ((usize::from(source.y) + line) & (VRAM_HEIGHT - 1)) * VRAM_WIDTH;
             let to = ((usize::from(destination.y) + line) & (VRAM_HEIGHT - 1)) * VRAM_WIDTH;
             for (column, pixel) in row[..width].iter_mut().enumerate() {
-                *pixel = self.vram[from + ((usize::from(source.x) + column) & (VRAM_WIDTH - 1))];
+                *pixel = vram[from + ((usize::from(source.x) + column) & (VRAM_WIDTH - 1))];
             }
             for (column, &pixel) in row[..width].iter().enumerate() {
                 let index = to + ((usize::from(destination.x) + column) & (VRAM_WIDTH - 1));
-                if !(check && self.vram[index] & 0x8000 != 0) {
-                    self.vram[index] = pixel | force;
+                if !(check && vram[index] & 0x8000 != 0) {
+                    vram[index] = pixel | force;
                 }
             }
         }
@@ -707,14 +1008,8 @@ impl Gpu {
             v.swap(1, 2);
             area = -area;
         }
-        let Some(rows) = TriangleRows::new(v.map(|p| (p.x, p.y)), self.drawing_area()) else { return };
-        // A texture modulated by the neutral colour without dithering is the
-        // texture as it is, and a raw one takes no colour.
-        let neutral = !shader.gouraud && !shader.dither && v[0].attributes[..3] == [0x80; 3];
-        let modulate = shader.textured && !shader.raw && !neutral;
-        let gouraud = shader.gouraud && (modulate || !shader.textured);
-        let vram = self.pixels();
-        by_texture!(shader, modulate, fill_triangle, [gouraud, shader.semi.is_some()], (vram, rows, &v, area, shader));
+        let (l, t, r, b) = self.drawing_area();
+        self.raster((l.max(min_x), t.max(min_y), r.min(max_x), b.min(max_y)), *shader, PixelsOp::Triangle { v, area });
     }
 
     /// One line segment from `vertex0` to `vertex1`; `command` selects
@@ -745,26 +1040,8 @@ impl Gpu {
             start
         };
         let (left, top, right, bottom) = self.drawing_area();
-        let steps = dx.abs().max(dy.abs());
-        let along = |from: i32, delta: i32, i: i32| {
-            if steps == 0 {
-                from
-            } else {
-                // Nearest pixel, halves rounded up.
-                from + (2 * delta * i + steps).div_euclid(2 * steps)
-            }
-        };
-        let vram = self.pixels();
-        for i in 0..=steps {
-            let x = along(x0, dx, i);
-            let y = along(y0, dy, i);
-            if x < left || x > right || y < top || y > bottom {
-                continue;
-            }
-            let rgb = [0, 1, 2].map(|k| if steps == 0 { start[k] } else { start[k] + ((end[k] - start[k]) * i).div_euclid(steps) });
-            let dither = if shader.dither { DITHER[(y & 3) as usize][(x & 3) as usize] } else { 0 };
-            put::<true>(vram, &shader, y as usize * VRAM_WIDTH + x as usize, pack(rgb, dither), 0, true);
-        }
+        let bounds = (left.max(x0.min(x1)), top.max(y0.min(y1)), right.min(x0.max(x1)), bottom.min(y0.max(y1)));
+        self.raster(bounds, shader, PixelsOp::Line { x0, y0, dx, dy, start, end });
     }
 
     /// GP0(60h)-GP0(7Fh): rectangles and sprites. They use the texture page
@@ -808,11 +1085,12 @@ impl Gpu {
         if xs.0 > xs.1 || ys.0 > ys.1 {
             return;
         }
+        if self.trace.is_some() && !textured && shader.semi.is_none() && !shader.check_mask
+            && (xs.1 - xs.0 + 1) * (ys.1 - ys.0 + 1) >= 4096 {
+            self.vram.overwrite((xs.0, ys.0, xs.1, ys.1));
+        }
         let rgb = color_attributes(words[0]);
-        // A texture modulated by the neutral colour is the texture as it is.
-        let modulate = textured && !shader.raw && rgb != [0x80; 3];
-        let vram = self.pixels();
-        by_texture!(shader, modulate, fill_sprite, [shader.semi.is_some()], (vram, &shader, xs, ys, (x, y), (u0, v0), step, rgb));
+        self.raster((xs.0, ys.0, xs.1, ys.1), shader, PixelsOp::Sprite { corner: (x, y), uv: (u0, v0), step, rgb });
     }
 }
 

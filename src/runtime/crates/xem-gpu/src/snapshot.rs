@@ -41,9 +41,9 @@ impl std::fmt::Display for SnapshotError {
 
 impl std::error::Error for SnapshotError {}
 
-struct Writer(Vec<u8>);
+struct Writer<'a>(&'a mut Vec<u8>);
 
-impl Writer {
+impl Writer<'_> {
     fn u8(&mut self, value: u8) {
         self.0.push(value);
     }
@@ -124,12 +124,20 @@ impl Gpu {
     /// Serializes the whole device state: VRAM, every register and any
     /// command, polyline or transfer in progress.
     pub fn save(&self) -> Vec<u8> {
-        let mut w = Writer(Vec::with_capacity(VRAM_WIDTH * VRAM_HEIGHT * 2 + 256));
+        let mut bytes = Vec::with_capacity(VRAM_WIDTH * VRAM_HEIGHT * 2 + 256);
+        self.save_into(&mut bytes);
+        bytes
+    }
+
+    /// Append a snapshot to the caller's buffer.
+    pub fn save_into(&self, out: &mut Vec<u8>) {
+        let mut w = Writer(out);
         w.0.extend_from_slice(MAGIC);
         w.u32(VERSION);
-        for &pixel in &self.vram {
-            w.u16(pixel);
-        }
+        #[cfg(target_endian = "little")]
+        w.0.extend_from_slice(bytemuck::cast_slice(self.vram()));
+        #[cfg(target_endian = "big")]
+        for &pixel in self.vram() { w.u16(pixel); }
         for value in [
             self.draw_mode,
             self.texture_window,
@@ -182,7 +190,6 @@ impl Gpu {
         if let Some(image) = &self.read {
             w.image(image);
         }
-        w.0
     }
 
     /// Restores a [`Gpu::save`] snapshot. On error the GPU is unchanged. The
@@ -202,7 +209,8 @@ impl Gpu {
             *pixel = r.u16()?;
         }
         let mut gpu = Gpu {
-            vram,
+            read_synced: false,
+            vram: vram.into(),
             draw_mode: r.bits(0x3FFF, "draw mode")?,
             texture_window: r.bits(0xF_FFFF, "texture window")?,
             area_top_left: r.bits(0x7_FFFF, "drawing area")?,

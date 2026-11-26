@@ -5401,6 +5401,7 @@ dependencies = [
 name = "xem-core"
 version = "0.5.0"
 dependencies = [
+ "ring",
  "serde",
  "serde_json",
  "sha2",
@@ -5433,6 +5434,7 @@ name = "xem-disc"
 version = "0.5.0"
 dependencies = [
  "chd",
+ "serde",
  "sha1",
  "sha2",
 ]
@@ -5441,6 +5443,7 @@ dependencies = [
 name = "xem-game"
 version = "0.5.0"
 dependencies = [
+ "bincode",
  "cc",
  "serde_json",
  "sha2",
@@ -5452,6 +5455,9 @@ dependencies = [
 [[package]]
 name = "xem-gpu"
 version = "0.5.0"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "xem-headless"

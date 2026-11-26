@@ -158,7 +158,7 @@ pub struct Session<M: GameModule> {
     /// The field map the field draws ([`Session::scene`], which hosts call
     /// each frame they present): the last seen while it asked for no battle
     /// or other map; none outside the field or after a restore.
-    drawn_field: Option<Value>,
+    drawn_field: Option<i32>,
     /// What follows the game's frames and timeline ([`Observer`]).
     pub observer: Option<Box<dyn Observer>>,
 }
@@ -537,6 +537,7 @@ impl<M: GameModule> Session<M> {
     }
 
     fn apply_language(&mut self, language: crate::locale::Language) {
+        if language == crate::locale::Language::Japanese { self.runtime.require_japanese(); }
         if self.runtime.services().language != language {
             self.record_control(json!({"cmd":"language","language":language.code()}));
             self.runtime.services().language = language;
@@ -563,6 +564,7 @@ impl<M: GameModule> Session<M> {
     }
 
     fn apply_voices(&mut self, japanese: bool) {
+        if japanese { self.runtime.require_japanese(); }
         if self.runtime.services().japanese_media != japanese {
             self.record_control(json!({"cmd":"voices","language":if japanese { "ja" } else { "en" }}));
             self.runtime.services().japanese_media = japanese;
@@ -1994,9 +1996,8 @@ impl<M: GameModule> Session<M> {
         let frame = self.runtime.frames();
         let now = (self.rewind_clock)();
         if !self.rewind.due(now) { return false; }
-        match self.runtime.snapshot_content() {
-            Ok(data) => self.rewind.push(frame,data,now),
-            Err(error) => self.rewind.error = Some(error.to_string()),
+        if let Err(error) = self.rewind.capture(&mut self.runtime, frame, now) {
+            self.rewind.error = Some(error.to_string());
         }
         self.rewind.error.is_none()
     }
@@ -2148,28 +2149,20 @@ impl<M: GameModule> Session<M> {
                 // the map it goes to at once, then draws its own until it
                 // leaves (field 55's last frames, which the battle's shatter
                 // takes): those frames are still its scene.
-                let requested = ["field_battle_not_requested", "field_map_change_not_requested"]
-                    .into_iter()
-                    .any(|flag| self.inspect(flag, 0).is_ok_and(|value| value == json!(0)));
-                // (A field just entered holds the last field's requests until
-                // its setup clears them: the map as it is then.)
-                let map = match self.inspect("mode_field_map_id", 0) {
-                    Ok(map) if requested => self.drawn_field.clone().unwrap_or(map),
-                    Ok(map) => {
-                        self.drawn_field = Some(map.clone());
-                        map
-                    }
-                    Err(_) => return "field".into(),
+                let memory = self.runtime.memory();
+                let requested = [0x800A_DBDC, 0x800A_DBEC].iter().any(|&flag| memory.read_u32(flag).ok() == Some(0));
+                let Ok(map) = memory.read_u32(crate::context::FIELD_MAP_ID) else { return "field".into() };
+                let map = map as i32;
+                let map = if requested { self.drawn_field.unwrap_or(map) } else {
+                    self.drawn_field = Some(map);
+                    map
                 };
-                // The opening's burning Lahan: map 2 before the story value
-                // (`game_data.vars[0]`, as the field was entered) reaches
-                // Fei's room's 6. The narration enters it at 3; Lahan's map
-                // 15 sends the player there again only from 16.
-                let opening = map == json!(2) && self.inspect("game_data.vars[0]", 0).is_ok_and(|story| story.as_u64().is_some_and(|story| story < 6));
+                // game_data.vars[0], the story when the field was entered.
+                let opening = map == 2 && memory.read_u32(0x8006_D634 + 0x1930).is_ok_and(|story| (story as u16) < 6);
                 if opening { format!("field:{map}:opening") } else { format!("field:{map}") }
             }
             Some(0) => "kernel".into(),
-            Some(2) => match self.inspect("formation_active.battle", 0) {
+            Some(2) => match self.runtime.memory().read_u32(0x8006_F9DC).map(|word| word as u8) {
                 Ok(battle) => format!("battle:{battle}"),
                 Err(_) => "battle".into(),
             },

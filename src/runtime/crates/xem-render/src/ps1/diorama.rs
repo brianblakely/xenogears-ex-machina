@@ -988,7 +988,8 @@ impl std::hash::Hasher for CellHasher {
 struct Layered {
     base: f32,
     level: f32,
-    outline: Vec<Vec2>,
+    outline: [Vec2; 4],
+    corners: u8,
 }
 
 /// Two axes across a plane with unit normal `n`.
@@ -1030,8 +1031,11 @@ impl Layers {
         let base = normal.dot(points[0]);
         let (u, v) = plane_axes(normal);
         let order: &[usize] = if points.len() == 4 { &[0, 1, 3, 2] } else { &[0, 1, 2] };
-        let outline: Vec<Vec2> = order.iter().map(|&i| Vec2::new(u.dot(points[i]), v.dot(points[i]))).collect();
-        let (lo, hi) = outline.iter().fold((Vec2::MAX, Vec2::MIN), |(lo, hi), p| (lo.min(*p), hi.max(*p)));
+        let mut outline = [Vec2::ZERO; 4];
+        for (corner, &i) in outline.iter_mut().zip(order) {
+            *corner = Vec2::new(u.dot(points[i]), v.dot(points[i]));
+        }
+        let (lo, hi) = outline[..order.len()].iter().fold((Vec2::MAX, Vec2::MIN), |(lo, hi), p| (lo.min(*p), hi.max(*p)));
         let direction = (normal * 512.0).round().as_ivec3().to_array();
         let band = (base / tolerance).floor() as i64;
         let cells = |lo: Vec2, hi: Vec2| {
@@ -1051,7 +1055,7 @@ impl Layers {
                     }
                     *seen = self.placements;
                     let face = &self.faces[index as usize];
-                    if (face.base - base).abs() <= tolerance && overlaps(&face.outline, &outline, tolerance) {
+                    if (face.base - base).abs() <= tolerance && overlaps(&face.outline[..usize::from(face.corners)], &outline[..order.len()], tolerance) {
                         level = level.max(face.level + lift);
                     }
                 }
@@ -1061,7 +1065,7 @@ impl Layers {
         for (x, y) in cells(lo, hi) {
             self.cells.entry((direction, band, x, y)).or_default().push(index);
         }
-        self.faces.push(Layered { base, level, outline });
+        self.faces.push(Layered { base, level, outline, corners: order.len() as u8 });
         self.seen.push(0);
         level - base
     }
@@ -1261,7 +1265,7 @@ struct Built {
     /// The VRAM the frame began with and its writes (each presentation's
     /// replay starts there again), the camera it was drawn with, its
     /// placement and display area.
-    start: Arc<Vec<u16>>,
+    start: Arc<super::VramSnapshot>,
     writes: Vec<TraceOp>,
     camera: Camera,
     placed: Placed,
@@ -1398,27 +1402,31 @@ fn build(builder: &mut Builder, ops: &[TraceOp], faced: &Faced, camera: &Camera,
                     let count = p.vertex_count();
                     stats.scene += 1;
                     stats.revealed += u32::from(p.revealed);
+                    let mut points = [Vec3::ZERO; 4];
+                    let points = &mut points[..count];
                     if p.class == Class::Sprite {
                         let anchor = feet.get(&p.owner).copied().unwrap_or_default();
                         let base = world.point(anchor);
                         // Standing on the floor (its lowest part there), or
                         // above it as high as the game drew it (a jump).
                         let floor = lowest.get(&anchor.map(f32::to_bits)).copied().unwrap_or(0.0).max(0.0);
-                        let points: Vec<Vec3> = (0..count).filter_map(|i| view_point(p, i)).map(|q| {
+                        for (point, q) in points.iter_mut().zip((0..count).filter_map(|i| view_point(p, i))) {
                             let (right, down) = (q[0] - anchor[0], q[1] - anchor[1]);
-                            base + placed.right * (right / world.units) + placed.up * ((floor - down) / world.units)
-                        }).collect();
+                            *point = base + placed.right * (right / world.units) + placed.up * ((floor - down) / world.units);
+                        }
                         // Lifted over the parts drawn before it in its
                         // billboard's plane, towards whichever side of it an
                         // eye sees (the game's order holds from behind too).
-                        let raised = parts.place(placed.toward, &points, tolerance, lift, CELL);
+                        let raised = parts.place(placed.toward, points, tolerance, lift, CELL);
                         stats.lifted += u32::from(raised > 0.0);
                         stats.thickest = stats.thickest.max((raised * placed.scale * 1e6).round() as u32);
-                        builder.world_primitive(p, &points, false, false, false, Some(raised));
+                        builder.world_primitive(p, points, false, false, false, Some(raised));
                         stats.sprites += 1;
                         continue;
                     }
-                    let mut points: Vec<Vec3> = (0..count).filter_map(|i| view_point(p, i)).map(|q| world.point(q)).collect();
+                    for (point, q) in points.iter_mut().zip((0..count).filter_map(|i| view_point(p, i))) {
+                        *point = world.point(q);
+                    }
                     if p.shape == Shape::Line {
                         // A line as a ribbon a native pixel wide where the
                         // game's camera saw it, across its view.
@@ -1434,7 +1442,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], faced: &Faced, camera: &Camera,
                     let normal = (points[1] - points[0]).cross(points[2] - points[0]).normalize_or_zero();
                     if normal != Vec3::ZERO {
                         let normal = if normal.dot(camera_at - points[0]) < 0.0 { -normal } else { normal };
-                        let raised = faces.place(normal, &points, tolerance, lift, CELL);
+                        let raised = faces.place(normal, points, tolerance, lift, CELL);
                         points.iter_mut().for_each(|point| *point += normal * raised);
                         stats.lifted += u32::from(raised > 0.0);
                     }
@@ -1442,7 +1450,7 @@ fn build(builder: &mut Builder, ops: &[TraceOp], faced: &Faced, camera: &Camera,
                         && matches!(p.shape, Shape::Triangle | Shape::Quad)
                         && (p.revealed || facing(p) == front);
                     stats.one_sided += u32::from(cull);
-                    builder.world_primitive(p, &points, false, cull, flip && cull, None);
+                    builder.world_primitive(p, points, false, cull, flip && cull, None);
                 } else if p.revealed {
                     // The backdrop's continuations beside the screen.
                     continue;

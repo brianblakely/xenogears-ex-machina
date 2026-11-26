@@ -14,7 +14,7 @@ use serde::Serialize;
 const FIELD_MENU_REQUEST: u32 = 0x800A_DB64;
 const FIELD_PLAYER_CONTROL_POLLED: u32 = 0x800A_DB68;
 /// The field map number (`mode_field_map_id`, low 12 bits).
-const FIELD_MAP_ID: u32 = 0x8004_F34C;
+pub(crate) const FIELD_MAP_ID: u32 = 0x8004_F34C;
 const FIELD_OPEN_WINDOWS: u32 = 0x800B_2174;
 /// `field_dialogue_windows[4]`: `busy` 0 while in use, `age` 0 for the
 /// newest (the one that takes input), the choice (`status` 0 while open,

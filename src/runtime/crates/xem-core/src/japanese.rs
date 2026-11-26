@@ -166,6 +166,37 @@ const MENU_DATA: [u32; 19] = [14, 15, 20, 21, 52, 53, 54, 55, 0x27, 0x28, 0x29, 
 /// names its entries by) and its item.
 type Table = (&'static str, u32);
 
+/// Read the header and the message stream, including any final sector padding
+/// the game's unpacker can see. The geometry and textures precede this stream.
+fn field_messages(disc: &mut Disc, file: u32) -> Option<Vec<u8>> {
+    const SECTOR: usize = 2048;
+    let record = disc.record(4, file).filter(|r| r.size >= 0x154)?;
+    let header = xem_disc::read_data(disc.source, record.lba, SECTOR).ok()?;
+    let size = u32_at(&header, 0x10C + 28)? as usize;
+    let offset = u32_at(&header, 0x130 + 28)? as usize;
+    let sector = offset / SECTOR;
+    let within = offset % SECTOR;
+    let remaining = (record.sectors() as usize).checked_sub(sector)? * SECTOR;
+    if remaining <= within { return None; }
+    let lba = record.lba.checked_add(sector as u32)?;
+    // No token uses more space per output byte than a literal (one flag per eight).
+    let first = (within + 4).next_multiple_of(SECTOR).min(remaining);
+    let mut packed = xem_disc::read_data(disc.source, lba, first).ok()?;
+    let mut length = [0u8; 4];
+    let available = (first - within).min(4);
+    length[..available].copy_from_slice(&packed[within..within + available]);
+    let decoded = u32::from_le_bytes(length) as usize;
+    if decoded > 0x20_0000 { return None; }
+    let needed = (within + 4 + decoded + decoded.div_ceil(8)).min(remaining);
+    if needed > first {
+        packed.extend(xem_disc::read_data(disc.source, lba + (first / SECTOR) as u32, needed - first).ok()?);
+    }
+    packed.extend_from_slice(&[0; 64]);
+    let mut messages = unpack(&packed[within..])?;
+    messages.truncate(size);
+    Some(messages)
+}
+
 /// Every text table the decompiled loaders read on the disc
 /// (tools/analysis/text_control.py `text_tables`), and the system data.
 fn text_tables(disc: &mut Disc) -> (BTreeMap<Table, Vec<u8>>, Vec<u8>) {
@@ -182,17 +213,7 @@ fn text_tables(disc: &mut Disc) -> (BTreeMap<Table, Vec<u8>>, Vec<u8>) {
     let maps = disc.record(4, 0xB7).and_then(|r| r.directory_len()).unwrap_or(0);
     for file in (0xB8..0xB8 + maps).step_by(2) {
         let field = (file - 0xB8) / 2;
-        if disc.record(4, file).is_none_or(|r| r.size < 0x154) {
-            continue;
-        }
-        let Some(sectors) = disc.sectors(4, file) else { continue };
-        let (Some(size), Some(offset)) = (u32_at(&sectors, 0x10C + 28), u32_at(&sectors, 0x130 + 28)) else { continue };
-        if let Some(mut messages) = sectors.get(offset as usize..).and_then(|s| {
-            let mut padded = s.to_vec();
-            padded.extend_from_slice(&[0; 64]);
-            unpack(&padded)
-        }) {
-            messages.truncate(size as usize);
+        if let Some(messages) = field_messages(disc, file) {
             tables.insert(("f", field), messages);
         }
     }
@@ -484,7 +505,7 @@ fn align(us: &[Option<usize>], jp: &[Option<usize>]) -> Vec<(usize, usize)> {
 /// (`disc`'s `lba`, `sectors` of it) and placed (`japanese`'s record:
 /// the North American file's own first sector when it fits there, else a
 /// sector after the disc's end).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Substitution {
     pub slot: usize,
     pub english: Record,
@@ -495,7 +516,7 @@ pub struct Substitution {
 }
 
 /// What [`read`] found.
-#[derive(Default)]
+#[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct Japanese {
     /// The Japanese font block (text_install_font's format).
     pub font: Vec<u8>,
@@ -643,6 +664,16 @@ pub fn read(us: [Option<&mut dyn SectorSource>; 2], jp: [Option<&mut dyn SectorS
     result.translations.texts.extend(own);
 
     // The movies and the battle voices.
+    let mut movies = BTreeMap::<u64, Vec<_>>::new();
+    for (other, disc) in jp.iter_mut().enumerate() {
+        let Some(disc) = disc else { continue };
+        for file in files(disc, MOVIES) {
+            let Some(record) = disc.record(MOVIES, file).filter(|r| r.size > 0) else { continue };
+            if let Some((hash, sectors)) = movie_signature(disc, record) {
+                movies.entry(hash).or_default().push((other as u8 + 1, record, sectors));
+            }
+        }
+    }
     for number in 0..2 {
         let Some(us_disc) = us[number].as_mut() else { continue };
         let mut end = us_disc.source.sector_count().next_multiple_of(75);
@@ -651,16 +682,10 @@ pub fn read(us: [Option<&mut dyn SectorSource>; 2], jp: [Option<&mut dyn SectorS
             let Some(slot) = us_disc.index.slot(MOVIES, file) else { continue };
             let Some(record) = us_disc.record(MOVIES, file).filter(|r| r.size > 0) else { continue };
             let Some(signature) = movie_signature(us_disc, record) else { continue };
-            'found: for (other, jp_disc) in jp.iter_mut().enumerate() {
-                let Some(jp_disc) = jp_disc.as_mut() else { continue };
-                for jp_file in files(jp_disc, MOVIES) {
-                    let Some(jp_record) = jp_disc.record(MOVIES, jp_file).filter(|r| r.size > 0) else { continue };
-                    let Some(jp_signature) = movie_signature(jp_disc, jp_record) else { continue };
-                    if jp_signature.0 == signature.0 && jp_signature.1.abs_diff(signature.1) * 50 <= signature.1 {
-                        media.push(place(slot, record, jp_record, other as u8 + 1, jp_signature.1, signature.1, &mut end));
-                        break 'found;
-                    }
-                }
+            if let Some(&(disc, jp_record, sectors)) = movies.get(&signature.0)
+                .and_then(|matches| matches.iter().find(|(_, _, sectors)| sectors.abs_diff(signature.1) * 50 <= signature.1))
+            {
+                media.push(place(slot, record, jp_record, disc, sectors, signature.1, &mut end));
             }
         }
         let Some(jp_disc) = jp[number].as_mut() else {

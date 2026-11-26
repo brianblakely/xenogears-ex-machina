@@ -262,7 +262,7 @@ mod tests {
         };
         Field {
             camera: xem_core::field::Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0, -100.0, 0.0], h: 256.0, angle: 0 },
-            layers: vec![square], attributes: vec![0], actors: vec![Some(actor(0, 20.0)), Some(actor(1, 300.0))], player: Some(0),
+            layers: vec![square].into(), attributes: vec![0], actors: vec![Some(actor(0, 20.0)), Some(actor(1, 300.0))], player: Some(0),
             alt_dpad: false, party_processing: false, dialogue_open: false,
         }
     }

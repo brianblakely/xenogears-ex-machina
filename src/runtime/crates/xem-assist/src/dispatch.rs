@@ -466,7 +466,7 @@ mod tests {
         let actor = |index: usize, z: f32| Actor { index, position: V3::new(0.0, 0.0, z), layer: 0, triangle: [0; 4], flags: 0, layer_flags: 0, radius: 16, height: 60, heading: 0, heading_goal: 0 };
         Field {
             camera: Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0, -100.0, 0.0], h: 256.0, angle: 0 },
-            layers: vec![layer], attributes: vec![0], actors: vec![Some(actor(0, 20.0)), Some(actor(1, 300.0))], player: Some(0),
+            layers: vec![layer].into(), attributes: vec![0], actors: vec![Some(actor(0, 20.0)), Some(actor(1, 300.0))], player: Some(0),
             alt_dpad: false, party_processing: false, dialogue_open: false,
         }
     }
@@ -523,7 +523,7 @@ mod tests {
         // The floor's far half is a house the player may not enter
         // (attribute 1: flags bit 8 against bit 5).
         let mut field = floor();
-        field.layers[0] = Layer {
+        std::sync::Arc::make_mut(&mut field.layers)[0] = Layer {
             vertices: vec![
                 V3::new(-200.0, 0.0, 0.0), V3::new(200.0, 0.0, 0.0), V3::new(-200.0, 0.0, 200.0),
                 V3::new(200.0, 0.0, 200.0), V3::new(-200.0, 0.0, 400.0), V3::new(200.0, 0.0, 400.0),

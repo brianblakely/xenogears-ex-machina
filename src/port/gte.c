@@ -334,39 +334,51 @@ GTE_INLINE int matrix_element(int base, int row, int column) {
     return index & 1 ? high16(word) : low16(word);
 }
 
-GTE_INLINE gte_i64 mac_check(int i, gte_i64 value) {
+GTE_INLINE gte_i64 mac_check_flags(int i, gte_i64 value, unsigned int *flags) {
     if (value > 0x7FFFFFFFFFFLL) {
-        C[FLAG] |= FLAG_MAC_POSITIVE(i);
+        *flags |= FLAG_MAC_POSITIVE(i);
     } else if (value < -0x80000000000LL) {
-        C[FLAG] |= FLAG_MAC_NEGATIVE(i);
+        *flags |= FLAG_MAC_NEGATIVE(i);
     }
     /* Keep 44 bits, sign extended. */
     value &= 0xFFFFFFFFFFFLL;
     return (value ^ 0x80000000000LL) - 0x80000000000LL;
 }
 
-GTE_INLINE gte_i64 mac0_check(gte_i64 value) {
+GTE_INLINE gte_i64 mac_check(int i, gte_i64 value) {
+    return mac_check_flags(i, value, &C[FLAG]);
+}
+
+GTE_INLINE gte_i64 mac0_check_flags(gte_i64 value, unsigned int *flags) {
     if (value > 0x7FFFFFFFLL) {
-        C[FLAG] |= FLAG_MAC0_POSITIVE;
+        *flags |= FLAG_MAC0_POSITIVE;
     } else if (value < -0x80000000LL) {
-        C[FLAG] |= FLAG_MAC0_NEGATIVE;
+        *flags |= FLAG_MAC0_NEGATIVE;
     }
     return value;
 }
 
+GTE_INLINE gte_i64 mac0_check(gte_i64 value) {
+    return mac0_check_flags(value, &C[FLAG]);
+}
+
 /* IRi from a shifted MAC value: -8000h..7FFFh, or 0..7FFFh with lm. */
-GTE_INLINE int ir_saturate(int i, gte_i64 value, int lm, int flag) {
+GTE_INLINE int ir_saturate_flags(int i, gte_i64 value, int lm, int flag, unsigned int *flags) {
     gte_i64 low = lm ? 0 : -0x8000;
 
     if (value < low) {
-        C[FLAG] |= flag ? FLAG_IR(i) : 0;
+        *flags |= flag ? FLAG_IR(i) : 0;
         return (int)low;
     }
     if (value > 0x7FFF) {
-        C[FLAG] |= flag ? FLAG_IR(i) : 0;
+        *flags |= flag ? FLAG_IR(i) : 0;
         return 0x7FFF;
     }
     return (int)value;
+}
+
+GTE_INLINE int ir_saturate(int i, gte_i64 value, int lm, int flag) {
+    return ir_saturate_flags(i, value, lm, flag, &C[FLAG]);
 }
 
 GTE_INLINE void set_ir(int i, gte_i64 value, int lm) {
@@ -503,19 +515,30 @@ static void light(int v, int shift, int lm) {
     multiply_matrix_vector(2, 3, 1, shift, lm);
 }
 
+/* Build the GTE's 257-byte reciprocal seed ROM once. Keeping it with
+ * the device's private storage preserves the port stack addresses that
+ * libgpu saves in game RAM. A restored module can first project here
+ * before it has ever run a reset. */
+static __attribute__((noinline, cold)) void init_unr_table(void) {
+    int i;
+    for (i = 0; i <= 0x100; i++) {
+        int seed = ((0x40000 / (0x100 + i) + 1) >> 1) - 0x101;
+        xem_gte_ring->unr_table[i] = (unsigned char)(seed > 0 ? seed : 0);
+    }
+}
+
 /* The UNR division of RTPS/RTPT: H / SZ3 as 1.16 fixed point, from a
  * reciprocal seed refined by two Newton-Raphson steps, or 1FFFFh with the
  * divide flag when H >= SZ3 * 2. */
-static gte_i64 divide(unsigned int h, unsigned int sz3) {
+static gte_i64 divide(unsigned int h, unsigned int sz3, unsigned int *flags) {
     int z;
     gte_i64 n;
     gte_i64 d;
     gte_i64 u;
     int index;
-    int seed;
 
     if (h >= sz3 * 2) {
-        C[FLAG] |= FLAG_DIVIDE;
+        *flags |= FLAG_DIVIDE;
         return 0x1FFFF;
     }
     /* sz3 is 1..FFFFh here: its leading zeros within 16 bits, 0..15. */
@@ -523,8 +546,12 @@ static gte_i64 divide(unsigned int h, unsigned int sz3) {
     n = (gte_i64)h << z;
     d = (gte_i64)sz3 << z;
     index = (int)((d - 0x7FC0) >> 7);
-    seed = (0x40000 / (index + 0x100) + 1) / 2 - 0x101;
-    u = (seed > 0 ? seed : 0) + 0x101;
+    u = xem_gte_ring->unr_table[index];
+    if (u == 0 && xem_gte_ring->unr_table[0] == 0) {
+        init_unr_table();
+        u = xem_gte_ring->unr_table[index];
+    }
+    u += 0x101;
     d = (0x2000080 - d * u) >> 8;
     d = (0x80 + d * u) >> 8;
     n = (n * d + 0x8000) >> 16;
@@ -560,47 +587,47 @@ static void record_projection(gte_i64 x, gte_i64 y, gte_i64 z) {
     ring->count++;
 }
 
+GTE_INLINE gte_i64 projection_row(int i, int a, int b, int c, int x, int y, int z,
+                                  unsigned int *flags) {
+    gte_i64 value = (gte_i64)(int)C[TR + i - 1] * 0x1000;
+    value = mac_check_flags(i, value + (gte_i64)a * x, flags);
+    value = mac_check_flags(i, value + (gte_i64)b * y, flags);
+    return mac_check_flags(i, value + (gte_i64)c * z, flags);
+}
+
 /* One vertex of RTPS/RTPT: V = RT * Vv + TR, the screen depth, the
  * perspective division, the screen point and, for the last vertex only,
  * the depth-cue factor IR0. */
 static void transform_perspective(int v, int shift, int lm, int last) {
-    gte_i64 sum[3];
-    gte_i64 value;
-    gte_i64 n;
-    int i;
-    int sx;
-    int sy;
-    /* RT's nine halfwords, two to a word, and the vertex. */
-    int m[9] = {low16(C[RT]), high16(C[RT]), low16(C[RT + 1]), high16(C[RT + 1]), low16(C[RT + 2]),
-                high16(C[RT + 2]), low16(C[RT + 3]), high16(C[RT + 3]), low16(C[RT + 4])};
+    unsigned int flags = 0;
+    gte_i64 value, n;
+    int i, sx, sy;
     int x = low16(D[VXY0 + v * 2]);
     int y = high16(D[VXY0 + v * 2]);
     int z = (int)D[VZ0 + v * 2];
-
-    for (i = 1; i <= 3; i++) {
-        value = mac_check(i, (gte_i64)(int)C[TR + i - 1] * 0x1000);
-        value = mac_check(i, value + (gte_i64)m[i * 3 - 3] * x);
-        value = mac_check(i, value + (gte_i64)m[i * 3 - 2] * y);
-        sum[i - 1] = mac_check(i, value + (gte_i64)m[i * 3 - 1] * z);
-        D[MAC0 + i] = (unsigned int)(sum[i - 1] >> shift);
-    }
-    set_ir(1, sum[0] >> shift, lm);
-    set_ir(2, sum[1] >> shift, lm);
+    gte_i64 vx = projection_row(1, low16(C[RT]), high16(C[RT]), low16(C[RT + 1]), x, y, z, &flags);
+    gte_i64 vy = projection_row(2, high16(C[RT + 1]), low16(C[RT + 2]), high16(C[RT + 2]), x, y, z, &flags);
+    gte_i64 vz = projection_row(3, low16(C[RT + 3]), high16(C[RT + 3]), low16(C[RT + 4]), x, y, z, &flags);
+    D[MAC1] = (unsigned int)(vx >> shift);
+    D[MAC1 + 1] = (unsigned int)(vy >> shift);
+    D[MAC1 + 2] = (unsigned int)(vz >> shift);
+    D[IR0 + 1] = (unsigned int)ir_saturate_flags(1, vx >> shift, lm, 1, &flags);
+    D[IR0 + 2] = (unsigned int)ir_saturate_flags(2, vy >> shift, lm, 1, &flags);
     /* With sf = 0, IR3's flag tests MAC3 >> 12 against -8000h..7FFFh as if
      * lm were 0; IR3 itself is clamped from MAC3 by lm. */
     if (shift) {
-        set_ir(3, sum[2] >> shift, lm);
+        D[IR0 + 3] = (unsigned int)ir_saturate_flags(3, vz >> shift, lm, 1, &flags);
     } else {
-        D[IR0 + 3] = (unsigned int)ir_saturate(3, sum[2], lm, 0);
-        ir_saturate(3, sum[2] >> 12, 0, 1);
+        D[IR0 + 3] = (unsigned int)ir_saturate_flags(3, vz, lm, 0, &flags);
+        ir_saturate_flags(3, vz >> 12, 0, 1, &flags);
     }
     /* SZ3 = MAC3 >> (1 - sf) * 12, which is the sum >> 12 either way. */
-    value = sum[2] >> 12;
+    value = vz >> 12;
     if (value < 0) {
-        C[FLAG] |= FLAG_SZ_OTZ;
+        flags |= FLAG_SZ_OTZ;
         value = 0;
     } else if (value > 0xFFFF) {
-        C[FLAG] |= FLAG_SZ_OTZ;
+        flags |= FLAG_SZ_OTZ;
         value = 0xFFFF;
     }
     for (i = SZ0; i < SZ3; i++) {
@@ -608,35 +635,36 @@ static void transform_perspective(int v, int shift, int lm, int last) {
     }
     D[SZ3] = (unsigned int)value;
 
-    n = divide(C[H] & 0xFFFF, D[SZ3]);
-    value = mac0_check(n * ir(1) + (int)C[OFX]);
+    n = divide(C[H] & 0xFFFF, D[SZ3], &flags);
+    value = mac0_check_flags(n * ir(1) + (int)C[OFX], &flags);
     D[MAC0] = (unsigned int)value;
     value >>= 16;
     sx = value < -0x400 ? -0x400 : value > 0x3FF ? 0x3FF : (int)value;
-    C[FLAG] |= sx != value ? FLAG_SX2 : 0;
-    value = mac0_check(n * ir(2) + (int)C[OFY]);
+    flags |= sx != value ? FLAG_SX2 : 0;
+    value = mac0_check_flags(n * ir(2) + (int)C[OFY], &flags);
     D[MAC0] = (unsigned int)value;
     value >>= 16;
     sy = value < -0x400 ? -0x400 : value > 0x3FF ? 0x3FF : (int)value;
-    C[FLAG] |= sy != value ? FLAG_SY2 : 0;
+    flags |= sy != value ? FLAG_SY2 : 0;
     D[SXY0] = D[SXY1];
     D[SXY1] = D[SXY2];
     D[SXY2] = ((unsigned int)sx & 0xFFFF) | (unsigned int)sy << 16;
-    record_projection(n * ir(1) + (int)C[OFX], n * ir(2) + (int)C[OFY], sum[2] >> 12);
+    record_projection(n * ir(1) + (int)C[OFX], n * ir(2) + (int)C[OFY], vz >> 12);
 
     if (last) {
-        value = mac0_check(n * sign16(C[DQA]) + (int)C[DQB]);
+        value = mac0_check_flags(n * sign16(C[DQA]) + (int)C[DQB], &flags);
         D[MAC0] = (unsigned int)value;
         value >>= 12;
         if (value < 0) {
-            C[FLAG] |= FLAG_IR0;
+            flags |= FLAG_IR0;
             value = 0;
         } else if (value > 0x1000) {
-            C[FLAG] |= FLAG_IR0;
+            flags |= FLAG_IR0;
             value = 0x1000;
         }
         D[IR0] = (unsigned int)value;
     }
+    C[FLAG] |= flags;
 }
 
 static void normal_clip(void) {

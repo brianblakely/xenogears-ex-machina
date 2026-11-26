@@ -267,10 +267,13 @@ fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
     var total = 0.0;
     var heaviest = 0.0;
     var heaviest_semi = false;
+    let closest = vec2<i32>(floor(uv + vec2<f32>(0.001))) - cell;
+    var nearest = 0u;
     for (var k = 0; k < 4; k++) {
         let d = vec2<i32>(k & 1, k >> 1);
         let t = texel(mode, inside(limits, mode.w, cell + d));
         let w = select(1.0 - f.x, f.x, d.x == 1) * select(1.0 - f.y, f.y, d.y == 1);
+        if all(d == closest) { nearest = t; }
         total += w;
         if t != 0u {
             color += rgb5(t) * w;
@@ -281,7 +284,6 @@ fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
             }
         }
     }
-    let nearest = texel(mode, inside(limits, mode.w, vec2<i32>(floor(uv + vec2<f32>(0.001)))));
     var out = Sample(vec3<f32>(0.0), 0.0, select((nearest & 0x8000u) != 0u, heaviest_semi, nearest == 0u));
     if weight > 0.0 {
         out.color = color / weight;

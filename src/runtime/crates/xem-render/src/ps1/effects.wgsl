@@ -109,6 +109,73 @@ fn hash(v: vec2<f32>) -> f32 {
     return fract(sin(dot(v, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
+// Unit golden-angle spiral, scaled by the square root of the sample index.
+const SPIRAL = array<vec2<f32>, 32>(
+    vec2<f32>(0.70710678, 0.00000000), vec2<f32>(-0.90308856, 0.82730348),
+    vec2<f32>(0.13823148, -1.57508478), vec2<f32>(1.13828590, 1.48469027),
+    vec2<f32>(-2.08889309, -0.36949380), vec2<f32>(1.97878012, -1.25874113),
+    vec2<f32>(-0.66186031, 2.46210092), vec2<f32>(-1.26224978, -2.43037559),
+    vec2<f32>(2.73857048, 1.00011584), vec2<f32>(-2.84902191, 1.17604172),
+    vec2<f32>(1.37341125, -2.93491764), vec2<f32>(1.01492914, 3.23572540),
+    vec2<f32>(-3.05898845, -1.77273507), vec2<f32>(3.58853358, -0.78894028),
+    vec2<f32>(-2.19001760, 3.11509597), vec2<f32>(-0.50596055, -3.90435704),
+    vec2<f32>(3.10602852, 2.61774460), vec2<f32>(-4.17972715, 0.17286119),
+    vec2<f32>(3.04877804, -3.03396645), vec2<f32>(-0.20395665, 4.41116784),
+    vec2<f32>(-2.90095001, -3.47627517), vec2<f32>(4.59540280, 0.61828238),
+    vec2<f32>(-3.89365928, 2.70913592), vec2<f32>(1.06395042, -4.72948301),
+    vec2<f32>(2.46094346, 4.29461958), vec2<f32>(-4.81087152, -1.53476879),
+    vec2<f32>(4.67312798, -2.15913753), vec2<f32>(-2.02449139, 4.83750293),
+    vec2<f32>(-1.80687305, -5.02346591), vec2<f32>(4.80782611, 2.52681778),
+    vec2<f32>(-5.34025670, 1.40771389), vec2<f32>(3.03541066, -4.72083490),
+);
+
+fn disc_kernel(pixel: vec2<f32>, radius: f32, samples: u32) -> mat2x2<f32> {
+    let angle = hash(pixel) * 6.2831853;
+    let axis = vec2<f32>(cos(angle), sin(angle)) * (radius * inverseSqrt(f32(samples)));
+    return mat2x2<f32>(axis, vec2<f32>(-axis.y, axis.x));
+}
+
+@fragment
+fn fs_ao(in: Out) -> @location(0) vec4<f32> {
+    let pixel = vec2<i32>(in.uv * p.size);
+    let a = aux_at(pixel);
+    var occlusion = 0.0;
+    if is_scene(a.kind) && a.kind != 4u && a.depth > 0.0 {
+        let radius = clamp(60.0 * p.focal / a.depth, 2.0, 24.0) * p.scale;
+        let kernel = disc_kernel(in.clip.xy, radius, p.quality.x);
+        for (var i = 0u; i < p.quality.x; i++) {
+            let s = aux_at(pixel + vec2<i32>(kernel * SPIRAL[i]));
+            let delta = a.depth - s.depth;
+            let range = 0.08 * a.depth;
+            if s.depth > 0.0 && is_scene(s.kind) && delta > 0.01 * a.depth && delta < range * 3.0 {
+                occlusion += 1.0 - smoothstep(range, range * 3.0, delta);
+            }
+        }
+    }
+    let z = u32(a.depth);
+    return vec4<f32>(occlusion / f32(p.quality.x), f32(z >> 8u) / 255.0, f32(z & 255u) / 255.0, 1.0);
+}
+
+// Bilinear weights attenuated across discontinuities in the scene depth.
+fn upsample_ao(uv: vec2<f32>, depth: f32) -> f32 {
+    let dims = vec2<i32>(textureDimensions(tex4));
+    let at = uv * vec2<f32>(dims) - 0.5;
+    let base = vec2<i32>(floor(at));
+    let f = fract(at);
+    var amount = 0.0;
+    var total = 0.0;
+    for (var k = 0; k < 4; k++) {
+        let d = vec2<i32>(k & 1, k >> 1);
+        let s = textureLoad(tex4, clamp(base + d, vec2<i32>(0), dims - 1), 0);
+        let z = dot(round(s.gb * 255.0), vec2<f32>(256.0, 1.0));
+        let w = select(1.0 - f, f, d == vec2<i32>(1));
+        let weight = w.x * w.y * (1.0 - smoothstep(0.01, 0.08, abs(z - depth) / depth));
+        amount += s.r * weight;
+        total += weight;
+    }
+    return amount / max(total, 0.00001);
+}
+
 // Pass 1: lighting, ambient occlusion, sprite shadows and fog, in linear light.
 // tex0 frame colour, tex1 auxiliary, tex2 shadow mask.
 @fragment
@@ -166,26 +233,8 @@ fn fs_light(in: Out) -> @location(0) vec4<f32> {
         }
         color = color * mix(vec3<f32>(1.0), light, strength);
 
-        // Ambient occlusion: nearer samples in a disc around the pixel.
-        let samples = p.quality.x;
-        if samples > 0u && p.ambient.w > 0.0 && a.kind != 4u {
-            let radius = clamp(60.0 * p.focal / a.depth, 2.0, 24.0) * p.scale;
-            var occlusion = 0.0;
-            let rotation = hash(in.clip.xy) * 6.2831853;
-            for (var i = 0u; i < samples; i++) {
-                let t = (f32(i) + 0.5) / f32(samples);
-                let angle = rotation + f32(i) * 2.399963;
-                let offset = vec2<f32>(cos(angle), sin(angle)) * radius * sqrt(t);
-                let s = aux_at(pixel + vec2<i32>(offset));
-                if s.depth > 0.0 && is_scene(s.kind) {
-                    let delta = a.depth - s.depth;
-                    let range = 0.08 * a.depth;
-                    if delta > 0.01 * a.depth && delta < range * 3.0 {
-                        occlusion += 1.0 - smoothstep(range, range * 3.0, delta);
-                    }
-                }
-            }
-            color *= 1.0 - p.ambient.w * 0.8 * occlusion / f32(samples);
+        if p.quality.x > 0u && a.kind != 4u {
+            color *= 1.0 - p.ambient.w * 0.8 * upsample_ao(in.uv, a.depth);
         }
 
         // Sprite shadows on what lies around or behind the caster's floor
@@ -377,11 +426,10 @@ fn fs_dof(in: Out) -> @location(0) vec4<f32> {
     let radius = 6.0 * p.scale * p.grade2.z;
     var sum = textureSampleLevel(tex0, linear_sampler, in.uv, 0.0).rgb;
     var weight = 1.0;
-    let rotation = hash(in.clip.xy) * 6.2831853;
+    if own == 0.0 { return vec4<f32>(sum, 0.0); }
+    let kernel = disc_kernel(in.clip.xy, radius * max(own, 0.15), samples);
     for (var i = 0u; i < samples; i++) {
-        let t = (f32(i) + 0.5) / f32(samples);
-        let angle = rotation + f32(i) * 2.399963;
-        let offset = vec2<f32>(cos(angle), sin(angle)) * radius * sqrt(t) * max(own, 0.15);
+        let offset = kernel * SPIRAL[i];
         let s_uv = in.uv + offset / full;
         let s = aux_at(vec2<i32>(s_uv * full));
         let c = coc(s.depth, s.kind);

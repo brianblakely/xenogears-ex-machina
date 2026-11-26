@@ -7,9 +7,10 @@
 //! it: game memory holds only PS1 addresses.
 
 use crate::clock::{Clock, RootCounter};
-use crate::memory::{GameMemory, OutOfBounds};
+use crate::memory::OutOfBounds;
 use crate::pad::{Pad, Pads};
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "x86_64"))]
 use sha2::{Digest, Sha256};
 
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
@@ -25,6 +26,7 @@ pub const VERSION: u32 = 9;
 pub const FORMAT_FINGERPRINT: &str = "9ddf2d36321229279f8aea05ce3bda2acbcbea0d4e14b15d59c0ce7da4a9880e";
 /// Hard bound on any decoded snapshot region/device buffer.
 pub const MAX_BUFFER: usize = 32 * 1024 * 1024;
+pub(crate) const PAGE: usize = 4096;
 pub const MAX_STATE: usize = 64 * 1024 * 1024;
 
 /// Content identities, not machine architecture or presentation settings.
@@ -61,14 +63,16 @@ impl StateIdentity {
 }
 
 pub fn digest(bytes: &[u8]) -> [u8; 32] {
-    Sha256::digest(bytes).into()
+    #[cfg(target_arch = "x86_64")]
+    { ring::digest::digest(&ring::digest::SHA256, bytes).as_ref().try_into().unwrap() }
+    #[cfg(not(target_arch = "x86_64"))]
+    { Sha256::digest(bytes).into() }
 }
 
 pub fn seal(mut bytes: Vec<u8>) -> Vec<u8> {
     let hash = digest(&bytes);
     bytes.reserve_exact(hash.len());
     bytes.extend_from_slice(&hash);
-    bytes.shrink_to_fit();
     bytes
 }
 
@@ -145,6 +149,13 @@ impl Writer {
         self.u32(data.len() as u32);
         self.0.extend_from_slice(data);
     }
+    pub fn section(&mut self, append: impl FnOnce(&mut Vec<u8>)) {
+        let at = self.0.len();
+        self.u32(0);
+        append(&mut self.0);
+        let len = (self.0.len() - at - 4) as u32;
+        self.0[at..at + 4].copy_from_slice(&len.to_le_bytes());
+    }
     /// Runs of literal bytes and of zeros (length | 0x8000_0000); zero runs
     /// shorter than 16 bytes stay literal.
     pub fn memory(&mut self, data: &[u8]) {
@@ -162,6 +173,12 @@ impl Writer {
             let mut zeros = i;
             while zeros > literal && data[zeros - 1] == 0 {
                 zeros -= 1;
+            }
+            while data.get(i..i + 4096) == Some(&[0; 4096]) {
+                i += 4096;
+            }
+            while data.get(i..i + 64) == Some(&[0; 64]) {
+                i += 64;
             }
             while word_at(data, i) == Some(0) {
                 i += 8;
@@ -307,13 +324,6 @@ pub(crate) fn read_header(r: &mut Reader<'_>) -> Result<(), SnapshotError> {
     let found = r.u32()?;
     if found != VERSION {
         return Err(SnapshotError::Version { what: "format", found, expected: VERSION });
-    }
-    Ok(())
-}
-
-pub(crate) fn write_memory(w: &mut Writer, memory: &dyn GameMemory) -> Result<(), SnapshotError> {
-    for (start, len) in REGIONS {
-        memory.with_bytes(start, len as usize, &mut |data| w.memory(data))?;
     }
     Ok(())
 }

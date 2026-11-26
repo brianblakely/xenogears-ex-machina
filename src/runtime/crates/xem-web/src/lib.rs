@@ -1120,7 +1120,7 @@ impl XemApp {
                         device.set_trace(true);
                     }
                     device.set_reveals(reveals);
-                    let trace = device.take_trace();
+                    let trace = device.take_render_trace();
                     let display = device.display();
                     renderer.set_game_frame(trace, display, scene, || gpu.display_rgba8());
                     self.display_dirty = false;

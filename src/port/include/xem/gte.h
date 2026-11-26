@@ -87,6 +87,8 @@ typedef struct {
     unsigned int recording;
     unsigned int unused;
     XemProjection entries[XEM_GTE_PROJECTIONS];
+    /* Derived device ROM, outside the port stack and snapshot regions. */
+    unsigned char unr_table[257];
 } XemProjectionRing;
 
 /* More presentation records beside it, by the same rules:

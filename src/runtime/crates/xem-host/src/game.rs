@@ -358,6 +358,16 @@ impl Game {
         self.session.runtime.targets()
     }
 
+    pub fn time_until_update(&self) -> Duration {
+        if self.rewind_held.iter().any(|held| *held) {
+            return self.rewind_next.saturating_duration_since(Instant::now());
+        }
+        if self.session.frame_factor().is_none() { return Duration::ZERO; }
+        (self.paced + FRAME).saturating_duration_since(Instant::now())
+    }
+
+    pub fn timeline_revision(&self) -> u64 { self.session.timeline_revision }
+
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding
     /// `buttons` and the game in the sound mode of `settings` (Stereo under
     /// Binaural, which presents the sound), then queues their sound at its
@@ -534,7 +544,7 @@ impl Game {
             device.set_trace(true);
         }
         device.set_reveals(reveals);
-        (device.take_trace(), device.display(), scene)
+        (device.take_render_trace(), device.display(), scene)
     }
 
     /// The view the field's characters should keep moving in from the next

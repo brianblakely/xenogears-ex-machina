@@ -192,7 +192,7 @@ enum Receive {
 ///   copies behave like a row-buffered memmove.
 #[derive(Clone)]
 pub struct Gpu {
-    vram: Vec<u16>,
+    vram: raster::Pixels,
     /// GP0(E1h) bits 0-13 (bits 0-8 and 11 also set by textured polygons).
     draw_mode: u32,
     /// GP0(E2h) bits 0-19.
@@ -224,6 +224,7 @@ pub struct Gpu {
     fifo: Vec<u32>,
     receive: Receive,
     read: Option<Image>,
+    read_synced: bool,
     stats: PrimitiveStats,
     /// The draw trace (presentation only; not saved).
     trace: Option<Box<trace::Recorder>>,
@@ -271,7 +272,7 @@ impl Gpu {
     /// The GPU after power-on: zeroed VRAM and the GP1(00h) reset state.
     pub fn new() -> Gpu {
         let mut gpu = Gpu {
-            vram: vec![0; VRAM_WIDTH * VRAM_HEIGHT],
+            vram: vec![0; VRAM_WIDTH * VRAM_HEIGHT].into(),
             draw_mode: 0,
             texture_window: 0,
             area_top_left: 0,
@@ -291,6 +292,7 @@ impl Gpu {
             fifo: Vec::with_capacity(16),
             receive: Receive::Command,
             read: None,
+            read_synced: false,
             stats: PrimitiveStats::default(),
             trace: None,
         };
@@ -404,11 +406,14 @@ impl Gpu {
             }
             0xA0..=0xBF => {
                 self.stats.add(PrimitiveKind::CpuToVram);
-                self.receive = Receive::ImageLoad(Image::from_words(words[1], words[2]));
+                let image = Image::from_words(words[1], words[2]);
+                self.vram.prepare_image(image, true);
+                self.receive = Receive::ImageLoad(image);
             }
             0xC0..=0xDF => {
                 self.stats.add(PrimitiveKind::VramToCpu);
                 self.read = Some(Image::from_words(words[1], words[2]));
+                self.read_synced = false;
             }
             0xE1..=0xE6 => {
                 self.stats.add(PrimitiveKind::Environment);
@@ -482,12 +487,13 @@ impl Gpu {
         // VRAM's edges.
         let (mut column, mut line) = (image.index % width, image.index / width);
         let mut taken = 0;
+        let vram = self.vram.base_mut();
         'words: for &word in words {
             taken += 1;
             for pixel in [word as u16, (word >> 16) as u16] {
                 let x = (u32::from(image.x) + column) as usize & (VRAM_WIDTH - 1);
                 let y = (u32::from(image.y) + line) as usize & (VRAM_HEIGHT - 1);
-                let at = &mut self.vram[y * VRAM_WIDTH + x];
+                let at = &mut vram[y * VRAM_WIDTH + x];
                 if !(check && *at & 0x8000 != 0) {
                     *at = pixel | force;
                 }
@@ -544,11 +550,16 @@ impl Gpu {
     /// latched value (the last pixels read or the last GP1(10h) answer).
     pub fn read_gpuread(&mut self) -> u32 {
         if let Some(mut image) = self.read {
+            if !self.read_synced {
+                self.vram.prepare_image(image, false);
+                self.read_synced = true;
+            }
+            let vram = self.vram.base_mut();
             let total = image.pixels();
             let mut word = 0;
             for half in 0..2 {
                 if image.index < total {
-                    let pixel = self.vram[image.vram_index(image.index)];
+                    let pixel = vram[image.vram_index(image.index)];
                     word |= u32::from(pixel) << (16 * half);
                     image.index += 1;
                 }

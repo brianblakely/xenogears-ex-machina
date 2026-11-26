@@ -436,7 +436,7 @@ pub struct GameView {
 /// that had the effects.
 struct Target {
     frame: FrameRenderer,
-    effects: EffectsRenderer,
+    effects: Option<EffectsRenderer>,
     shown: Option<Shown>,
     presented_effects: Option<bool>,
 }
@@ -453,21 +453,21 @@ struct Shown {
 }
 
 impl Target {
-    fn new(device: &wgpu::Device, adapter: Option<&wgpu::Adapter>) -> Self {
-        Self { frame: FrameRenderer::new(device), effects: EffectsRenderer::new(device, adapter), shown: None, presented_effects: None }
+    fn new(device: &wgpu::Device) -> Self {
+        Self { frame: FrameRenderer::new(device), effects: None, shown: None, presented_effects: None }
     }
 
     /// The picture last drawn: what the effects made of the frame, or the frame.
     fn texture(&self) -> Option<&wgpu::Texture> {
         match self.presented_effects? {
-            true => self.effects.output(),
+            true => self.effects.as_ref()?.output(),
             false => Some(self.frame.color()),
         }
     }
 
     fn view(&self) -> Option<&wgpu::TextureView> {
         match self.presented_effects? {
-            true => self.effects.output_view(),
+            true => self.effects.as_ref()?.output_view(),
             false => Some(self.frame.color_view()),
         }
     }
@@ -480,6 +480,7 @@ impl Target {
         &mut self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
+        adapter: Option<&wgpu::Adapter>,
         encoder: &mut wgpu::CommandEncoder,
         renderer: &mut Ps1Renderer,
         area: DisplayArea,
@@ -505,9 +506,10 @@ impl Target {
         self.presented_effects = Some(effects);
         if effects {
             let lighting = Lighting::for_scene(scene);
-            self.effects.render(device, queue, encoder, renderer, &self.frame, self.frame.primitives(), &config.effects, config.quality, &lighting);
+            let effects = self.effects.get_or_insert_with(|| EffectsRenderer::new(device, adapter));
+            effects.render(device, queue, encoder, renderer, &self.frame, self.frame.primitives(), &config.effects, config.quality, &lighting);
             // The interface the game drew after its scene, over the effects.
-            let output = self.effects.output().cloned();
+            let output = effects.output().cloned();
             self.frame.draw_overlay(device, queue, encoder, renderer, output.as_ref());
         } else {
             self.frame.draw_overlay(device, queue, encoder, renderer, None);
@@ -566,7 +568,7 @@ impl GameView {
             queue: queue.clone(),
             adapter: adapter.cloned(),
             renderer: Ps1Renderer::new(device, queue, 1),
-            main: Target::new(device, adapter),
+            main: Target::new(device),
             eyes: Vec::new(),
             headset: false,
             config: None,
@@ -603,6 +605,15 @@ impl GameView {
 
     pub fn max_scale(&self) -> u32 {
         Ps1Renderer::max_scale(&self.device)
+    }
+
+    /// Texture bytes retained for scaled VRAM outside the display targets.
+    pub fn scaled_vram_bytes(&self) -> u64 {
+        let ps1 = &self.renderer;
+        let bytes = |t: &wgpu::Texture| u64::from(t.width()) * u64::from(t.height()) * 4;
+        let picture = ps1.pictures.get().map_or(0, |(c, a, d, s)| bytes(c) + bytes(a) + bytes(d) + bytes(s));
+        picture + ps1.tiles.iter().map(|t| bytes(&t.color) + bytes(&t.aux)).sum::<u64>()
+            + ps1.tile_depth.as_ref().map_or(0, bytes)
     }
 
     pub fn config(&self) -> Option<&ViewConfig> {
@@ -1096,7 +1107,7 @@ impl GameView {
         self.show_screen(encoder, area, now, new_frame, None, Interface::Only);
         let hold = self.main.frame.eye().is_none() || projection_centre(self.main.frame.newest()).is_none();
         while self.eyes.len() < looks.len() {
-            self.eyes.push(Target::new(&self.device, self.adapter.as_ref()));
+            self.eyes.push(Target::new(&self.device));
         }
         for (target, look) in self.eyes.iter_mut().zip(&looks) {
             let framing = Framing {
@@ -1108,7 +1119,7 @@ impl GameView {
                 interface: Interface::Omitted,
                 hold,
             };
-            target.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
+            target.show(&self.device, &self.queue, self.adapter.as_ref(), encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
         }
         let eyes = self.eyes[..looks.len()].iter().map(Target::view).collect::<Option<Vec<_>>>()?;
         let screen = self.flat_view(Flat { picture: Picture::Pane, size: self.main.frame.size(), new_frame })?;
@@ -1170,7 +1181,10 @@ impl GameView {
         let lighting = Lighting::for_scene(scene);
         self.renderer.set_sky(lighting.sky_depth);
         self.renderer.set_additive_model_depth(lighting.additive_model_depth);
-        self.renderer.draw(encoder, &trace);
+        self.renderer.ingest(encoder, trace.ops, true);
+        if config.movies.is_some() && self.movie.shows(display) {
+            self.renderer.sync_movie_vram(encoder);
+        }
         // The frames this trace began are the current scene's.
         let identities: Vec<_> = self.renderer.log_identities().collect();
         self.frame_scenes.retain(|(identity, _)| identities.contains(identity));
@@ -1258,7 +1272,7 @@ impl GameView {
         // The interface moves as the game moves it: nothing to interpolate.
         let interpolate = (config.interpolation && !alone).then_some(now);
         let framing = Framing { side: self.side, interpolate, pull_back, replay: config.effects.any(), look, interface, hold: false };
-        self.main.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
+        self.main.show(&self.device, &self.queue, self.adapter.as_ref(), encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
     }
 
     /// The zoom the game's camera is shown pulled back by (`shown`, the one
@@ -1526,12 +1540,20 @@ impl GameView {
         self.renderer.stats()
     }
 
-    pub fn renderer(&self) -> &Ps1Renderer {
-        &self.renderer
+    /// The displayed buffer's trace, including frames held for replay.
+    pub fn frame_log(&self, area: DisplayArea) -> Option<&super::FrameLog> {
+        self.renderer.frame_log(area)
+    }
+
+    /// Resolve pending drawing before inspecting the full scaled VRAM.
+    /// Submit the encoder before reading its textures back.
+    pub fn raw_picture(&mut self, encoder: &mut wgpu::CommandEncoder) -> (&wgpu::Texture, &wgpu::Texture) {
+        self.renderer.resolve_copy(encoder);
+        self.renderer.picture()
     }
 
     pub fn effects_mut(&mut self) -> &mut EffectsRenderer {
-        &mut self.main.effects
+        self.main.effects.get_or_insert_with(|| EffectsRenderer::new(&self.device, self.adapter.as_ref()))
     }
 }
 

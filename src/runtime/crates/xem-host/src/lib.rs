@@ -346,6 +346,7 @@ pub struct View {
     frame_rate: FrameRateUi,
     frame_rate_started: Instant,
     panel_visible: Rc<RefCell<bool>>,
+    panel_was_visible: bool,
     /// The player confirmed the panel's Quit: the host ends its run.
     quit: Rc<Cell<bool>>,
     gamepads: Vec<*mut SDL_Gamepad>,
@@ -498,6 +499,7 @@ impl View {
             frame_rate,
             frame_rate_started: Instant::now(),
             panel_visible,
+            panel_was_visible: false,
             quit,
             gamepads: Vec::new(),
             game_image: None,
@@ -624,7 +626,8 @@ impl View {
     /// Returns false while the platform file picker has paused play.
     pub fn update_app(&mut self, window: &sdl::Window, game: &mut Option<Game>) -> bool {
         self.poll_gamepad();
-        if !self.panel_visible() { self.ui.cancel_pointer(); }
+        if self.panel_was_visible && !self.panel_visible() { self.ui.cancel_pointer(); }
+        self.panel_was_visible = self.panel_visible();
         // With the mouse camera on, the game holds the mouse (hidden,
         // unbounded motion) while it has the input.
         // It lets the mouse go while the game shows entries to point at (a
@@ -654,7 +657,9 @@ impl View {
             self.log_operation(&AppRequest::Action(action),&result,game.as_mut());
             self.show_result(result);
         }
-        let bindings = self.settings.borrow().settings().app_bindings.clone();
+        let settings_owner = Rc::clone(&self.settings);
+        let settings = settings_owner.borrow();
+        let bindings = &settings.settings().app_bindings;
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
         let typing = self.panel_visible() && self.ui.text_editor_focused();
         // A binding listening for an input takes the keys, as a text field does.
@@ -682,6 +687,7 @@ impl View {
         if !(self.panel_visible() && self.ui.listening()) {
             self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
         }
+        drop(settings);
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
             // The view's own: the next frame's toggles carry it out.
@@ -700,8 +706,6 @@ impl View {
             achievements.update(game.as_mut(), self.ran > 0, &self.ui, &mut self.frame_rate, self.frame_rate_started.elapsed());
         }
         if let Some(game) = game {
-            let (debug_busy, debug_message) = game.debug_status();
-            self.ui.set_debug_status(true, debug_busy, debug_message);
             let (forward,rewind) = game.time_activity();
             self.frame_rate.set_activity(forward,rewind);
             let settings = self.settings.borrow();
@@ -710,11 +714,15 @@ impl View {
             if let Err(error) = result { self.ui.set_operation_error(&error); }
             if !was_busy && self.operations.busy { game.pause(); }
             if was_busy && !self.operations.busy { game.resume(); }
-            let (fast_forward,status) = game.time_status();
-            self.ui.set_time_status(Some(fast_forward),&status);
-            self.ui.set_storage_status(&game.storage_status());
-            let japanese = game.japanese();
-            self.ui.set_japanese_offered(japanese, self.settings.borrow().settings());
+            if self.panel_visible() {
+                let (debug_busy, debug_message) = game.debug_status();
+                self.ui.set_debug_status(true, debug_busy, debug_message);
+                let (fast_forward,status) = game.time_status();
+                self.ui.set_time_status(Some(fast_forward),&status);
+                self.ui.set_storage_status(&game.storage_status());
+                let japanese = game.japanese();
+                self.ui.set_japanese_offered(japanese, self.settings.borrow().settings());
+            }
             // A disc the game waits for and the changer has not got: ask for it.
             let wanted = game.wanted_disc();
             if wanted != self.wanted_disc {
@@ -726,8 +734,10 @@ impl View {
             }
         } else {
             self.frame_rate.set_activity(false,false);
-            self.ui.set_debug_status(false, false, "Boot a game to use Debug.");
-            self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
+            if self.panel_visible() {
+                self.ui.set_debug_status(false, false, "Boot a game to use Debug.");
+                self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
+            }
         }
         !self.operations.busy
     }
@@ -780,6 +790,7 @@ impl View {
         }
         if self.panel_visible() && !visible {
             self.ui.cancel_pointer();
+            self.panel_was_visible = false;
             self.ui.cancel_dialog();
         }
         *self.panel_visible.borrow_mut() = visible;
@@ -1087,7 +1098,7 @@ impl View {
         !self.settings.borrow().settings().graphics.game_paced()
             || self.fresh_frame
             || self.panel_visible()
-            || self.game_frame.is_none()
+            || (self.game_frame.is_none() && self.game_image.is_none())
     }
 
     /// Show the game's display: `rgba` is `width` x `height` RGBA8 pixels
@@ -1096,6 +1107,7 @@ impl View {
         if width == 0 || height == 0 {
             return;
         }
+        self.fresh_frame = true;
         if self.game_image.as_ref().is_none_or(|(_, _, size)| *size != (width, height)) {
             let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("game display"),
@@ -1142,18 +1154,20 @@ impl View {
             return 0;
         }
         let now = self.frame_rate_started.elapsed().as_secs_f64() * 1000.0;
-        let bindings = self.settings.borrow().settings().game_bindings.clone();
-        let app_bindings = self.settings.borrow().settings().app_bindings.clone();
+        let settings_owner = Rc::clone(&self.settings);
+        let settings = settings_owner.borrow();
+        let bindings = &settings.settings().game_bindings;
+        let app_bindings = &settings.settings().app_bindings;
         let mut count = 0;
         // SAFETY: SDL owns the array and keeps it valid while SDL runs.
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
         let keys = if keys.is_null() { &[][..] } else { unsafe { std::slice::from_raw_parts(keys, count.max(0) as usize) } };
-        let held = |code: &str| !self.app_input.captures_key(code, &app_bindings) && keys.get(scancode(code).0 as usize).copied().unwrap_or(false);
+        let held = |code: &str| !self.app_input.captures_key(code, app_bindings) && keys.get(scancode(code).0 as usize).copied().unwrap_or(false);
         for code in bindings.keys() {
-            self.player.key(&bindings, code, held(code));
+            self.player.key(bindings, code, held(code));
         }
-        let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
-        self.player.gamepad(&self.app_input.gamepad_for_game(&app_bindings, invert_triggers), &self.axes);
+        let invert_triggers = settings.settings().invert_trigger_chords;
+        self.player.gamepad(&self.app_input.gamepad_for_game(app_bindings, invert_triggers), &self.axes);
         self.player.browse(self.targets.as_ref());
         // First-person inspection: toggled in a field (Ex Machina draws it)
         // by Select's keys, the touch deck's SELECT and the gamepad, and
@@ -1169,7 +1183,7 @@ impl View {
         let hidden = self.dialogue_hiding.update(select, &self.pad, context.ui, now);
         self.fresh_frame |= hidden != self.renderer.dialogue_hidden();
         self.renderer.set_dialogue_hidden(hidden);
-        let setting = self.settings.borrow().settings().graphics.renderer;
+        let setting = settings.settings().graphics.renderer;
         let drawn = setting == xem_settings::Renderer::ExMachina;
         let asked = std::mem::take(&mut self.look_asked);
         let was = self.renderer.first_person();
@@ -1188,8 +1202,8 @@ impl View {
         let zoom = self.player.zoom_steps(now, !on);
         // Running by default would leave Run pressed alone once the view
         // holds the directions back.
-        self.player.run_by_default = self.settings.borrow().settings().run_by_default && !on;
-        let buttons = self.player.buttons(&bindings, now, context);
+        self.player.run_by_default = settings.settings().run_by_default && !on;
+        let buttons = self.player.buttons(bindings, now, context);
         let now = Instant::now();
         let seconds = self.looked.map_or(0.0, |then| now.duration_since(then).as_secs_f32().min(0.1));
         self.looked = Some(now);
@@ -1208,6 +1222,7 @@ impl View {
             let (yaw, pitch) = turn.radians(seconds);
             self.renderer.look_around(yaw, pitch);
         }
+        drop(settings);
         self.zoom(zoom);
         xem_settings::look::game_buttons(buttons, on, field, &context.assignment)
     }
@@ -1561,6 +1576,15 @@ impl View {
 /// KeyboardEvent.code to SDL's physical scancode names, shared with browser
 /// bindings. Settings validation only accepts codes this mapping supports.
 fn scancode(code: &str) -> SDL_Scancode {
+    static CODES: std::sync::OnceLock<std::collections::HashMap<String, SDL_Scancode>> = std::sync::OnceLock::new();
+    let codes = CODES.get_or_init(|| xem_settings::controls::keyboard_codes().map(|code| {
+        let value = resolve_scancode(&code);
+        (code, value)
+    }).collect());
+    codes.get(code).copied().unwrap_or(SDL_SCANCODE_UNKNOWN)
+}
+
+fn resolve_scancode(code: &str) -> SDL_Scancode {
     let name = if let Some(key) = code.strip_prefix("Key") { key.to_owned() }
         else if let Some(digit) = code.strip_prefix("Digit") { digit.to_owned() }
         else if let Some(digit) = code.strip_prefix("Numpad") {

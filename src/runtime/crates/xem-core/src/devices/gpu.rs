@@ -121,9 +121,6 @@ pub struct Gpu {
     /// between transfers.
     traced: [u32; 3],
     entries: [Vec<u8>; 3],
-    projections: Vec<xem_gpu::Projection>,
-    stores: Vec<xem_gpu::SxyStore>,
-    reveals: Vec<xem_gpu::Reveal>,
 }
 
 impl Gpu {
@@ -164,9 +161,6 @@ impl Gpu {
         state.gpu.keep_presentation(&mut self.gpu);
         state.traced = self.traced;
         state.entries = std::mem::take(&mut self.entries);
-        state.projections = std::mem::take(&mut self.projections);
-        state.stores = std::mem::take(&mut self.stores);
-        state.reveals = std::mem::take(&mut self.reveals);
         *self = state;
     }
 
@@ -231,35 +225,26 @@ impl Gpu {
         fn words(entry: &[u8; 40]) -> [u32; 10] {
             std::array::from_fn(|i| u32::from_le_bytes([entry[i * 4], entry[i * 4 + 1], entry[i * 4 + 2], entry[i * 4 + 3]]))
         }
-        self.projections.clear();
-        self.projections.reserve(entries[0].iter().map(|piece| piece.len() / PROJECTION_RING.1 as usize).sum());
-        for piece in entries[0] {
-            let (entries, _) = piece.as_chunks::<40>();
-            self.projections.extend(entries.iter().map(|e| {
-                let w = words(e);
-                xem_gpu::Projection {
-                    sxy: w[0],
-                    sz: w[1] as u16,
-                    class: (w[1] >> 16) as u8,
-                    x: w[2] as i32,
-                    y: w[3] as i32,
-                    offset: (w[4] as i16, (w[4] >> 16) as i16),
-                    h: w[5] as u16,
-                    owner: w[6],
-                    view: [w[7] as i32, w[8] as i32, w[9] as i32],
-                }
-            }));
-        }
-        self.stores.clear();
-        for piece in entries[1] {
-            let (entries, _) = piece.as_chunks::<16>();
-            self.stores.extend(entries.iter().map(|e| {
-                let word = |i: usize| u32::from_le_bytes([e[i * 4], e[i * 4 + 1], e[i * 4 + 2], e[i * 4 + 3]]);
-                xem_gpu::SxyStore { address: word(0), value: word(1), source: word(3).checked_sub(1) }
-            }));
-        }
-        self.reveals.clear();
-        self.reveals.extend(each(entries[2], REVEAL_RING).map(|e| {
+        let count = entries[0].iter().map(|piece| piece.len() / 40).sum::<usize>();
+        let projections = entries[0].into_iter().flat_map(|piece| piece.as_chunks::<40>().0).map(|e| {
+            let w = words(e);
+            xem_gpu::Projection {
+                sxy: w[0],
+                sz: w[1] as u16,
+                class: (w[1] >> 16) as u8,
+                x: w[2] as i32,
+                y: w[3] as i32,
+                offset: (w[4] as i16, (w[4] >> 16) as i16),
+                h: w[5] as u16,
+                owner: w[6],
+                view: [w[7] as i32, w[8] as i32, w[9] as i32],
+            }
+        });
+        let stores = entries[1].into_iter().flat_map(|piece| piece.as_chunks::<16>().0).map(|e| {
+            let word = |i: usize| u32::from_le_bytes([e[i * 4], e[i * 4 + 1], e[i * 4 + 2], e[i * 4 + 3]]);
+            xem_gpu::SxyStore { address: word(0), value: word(1), source: word(3).checked_sub(1) }
+        });
+        let reveals = each(entries[2], REVEAL_RING).map(|e| {
             let shape = word(e, 1);
             let count = (shape & 0xFF).min(12) as usize;
             let mut words = [0u32; 12];
@@ -273,9 +258,8 @@ impl Gpu {
                 order: word(e, 3),
                 words: xem_gpu::FaceWords::from(&words[..count]),
             }
-        }));
-        let first = counts[0].wrapping_sub(self.projections.len() as u32);
-        self.gpu.trace_projections(first, &self.projections, &self.stores, &self.reveals);
+        });
+        self.gpu.trace_projection_iter(counts[0].wrapping_sub(count as u32), projections, stores, reveals);
     }
 
     /// End the transfer if the clock reached its end: the channel is free and
@@ -390,15 +374,20 @@ impl Device for Gpu {
 
     /// The device state for a snapshot: DMA2 and xem-gpu's own snapshot.
     fn save(&self) -> Vec<u8> {
-        let mut out = SNAPSHOT_MAGIC.to_vec();
+        let mut out = Vec::new();
+        self.save_into(&mut out);
+        out
+    }
+
+    fn save_into(&self, out: &mut Vec<u8>) {
+        out.extend_from_slice(SNAPSHOT_MAGIC);
         for word in [self.madr, self.bcr, self.chcr] {
             out.extend_from_slice(&word.to_le_bytes());
         }
         out.push(self.completion.is_some() as u8);
         out.extend_from_slice(&self.completion.unwrap_or(0).to_le_bytes());
         out.extend_from_slice(&self.vblanks.to_le_bytes());
-        out.extend_from_slice(&self.gpu.save());
-        out
+        self.gpu.save_into(out);
     }
 
     /// Restore a [`Gpu::save`] snapshot; on error the device is unchanged.

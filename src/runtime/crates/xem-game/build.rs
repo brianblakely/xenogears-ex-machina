@@ -232,6 +232,7 @@ static u32 xem_forward(struct w2c_xem *x, unsigned index, const u32 *args, unsig
 #if XEM_GUARDED_MEMORY
 #include <pthread.h>
 #include <signal.h>
+#include <ucontext.h>
 #include <string.h>
 
 /* What wasm-rt-mem-impl.c reserves for a guarded memory. */
@@ -252,6 +253,9 @@ static void xem_fault(int signal, siginfo_t *info, void *context) {
         uintptr_t address = (uintptr_t)info->si_addr;
         uintptr_t base = (uintptr_t)w2c_game_memory(instance)->data;
         if (address >= base && address - base < XEM_RESERVED_BYTES) {
+            // siglongjmp leaves the mask as it is. Restore the interrupted
+            // thread's mask only on this actual fault.
+            sigprocmask(SIG_SETMASK, &((ucontext_t *)context)->uc_sigmask, NULL);
             wasm_rt_trap(WASM_RT_TRAP_OOB);
         }
     }
@@ -281,6 +285,11 @@ static void xem_install_handler(void) {
 #define XEM_RUNNING(instance) (xem_running = (instance))
 #else
 #define XEM_RUNNING(instance) ((void)0)
+#endif
+
+#ifndef _WIN32
+#undef WASM_RT_SETJMP_TRAP_SETBUF
+#define WASM_RT_SETJMP_TRAP_SETBUF(buf) sigsetjmp(buf, 0)
 #endif
 
 /* Run an export under wasm2c's trap handler: 0, or the trap code (the calls

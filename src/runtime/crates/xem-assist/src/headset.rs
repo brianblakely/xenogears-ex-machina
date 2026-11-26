@@ -799,7 +799,7 @@ pub(crate) mod tests {
         };
         Field {
             camera: xem_core::field::Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0; 3], h: 256.0, angle: 0 },
-            layers: vec![], attributes: vec![], actors: vec![Some(actor(0, 10.0)), Some(actor(1, 500.0))], player: Some(0),
+            layers: vec![].into(), attributes: vec![], actors: vec![Some(actor(0, 10.0)), Some(actor(1, 500.0))], player: Some(0),
             alt_dpad: false, party_processing: false, dialogue_open: false,
         }
     }
@@ -1048,7 +1048,7 @@ pub(crate) mod tests {
         let mut field = field();
         let vertices = vec![V3::new(-1000.0, 100.0, 0.0), V3::new(1000.0, 100.0, 0.0), V3::new(-1000.0, 100.0, 2000.0), V3::new(1000.0, 100.0, 2000.0)];
         let triangles = vec![Triangle { v: [0, 1, 2], n: [-1, 1, -1], attribute: 0, bump: 0 }, Triangle { v: [1, 3, 2], n: [-1, -1, 0], attribute: 0, bump: 0 }];
-        field.layers = vec![Layer { vertices, triangles, at: 0 }];
+        field.layers = vec![Layer { vertices, triangles, at: 0 }].into();
         for actor in field.actors.iter_mut().flatten() {
             actor.position.y = 100.0;
         }

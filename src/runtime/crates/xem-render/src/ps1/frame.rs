@@ -170,12 +170,13 @@ pub struct FrameRenderer {
     /// ([`super::DepthMode::Nearer`]), for the interface drawn over it.
     reversed: bool,
     /// The native VRAM when the newest frame began (its log's start).
-    snapshot: Option<Arc<Vec<u16>>>,
+    snapshot: Option<Arc<super::VramSnapshot>>,
     /// The native VRAM a replay samples ([`ReplayVram`]) and its staged
     /// writes.
-    vram: ReplayVram,
+    pub(super) vram: ReplayVram,
     feedback: wgpu::Texture,
     feedback_aux: wgpu::Texture,
+    scratch: Option<wgpu::Texture>,
     /// Extra rows the game draws below its viewport, which a framebuffer
     /// distortion may bring into view. Cropped only after that effect.
     work: Option<(wgpu::Texture, wgpu::Texture, wgpu::Texture)>,
@@ -196,6 +197,7 @@ pub struct FrameRenderer {
 
 /// [`FrameRenderer::pane`]'s pass and picture.
 struct Pane {
+    group: Option<wgpu::BindGroup>,
     pipeline: wgpu::RenderPipeline,
     layout: wgpu::BindGroupLayout,
     texture: wgpu::Texture,
@@ -241,7 +243,7 @@ impl Pane {
             cache: None,
         });
         let texture = texture(device, "frame pane", (1, 1), COLOR_FORMAT, picture_usage());
-        Self { pipeline, layout, view: texture.create_view(&Default::default()), texture }
+        Self { group: None, pipeline, layout, view: texture.create_view(&Default::default()), texture }
     }
 }
 
@@ -257,7 +259,7 @@ pub(crate) struct ReplayVram {
     /// The snapshot the texture was last set to, and the columns of each
     /// row the writes replayed since changed (the first, and one past the
     /// last).
-    from: Option<Arc<Vec<u16>>>,
+    from: Option<Arc<super::VramSnapshot>>,
     written: Vec<Option<(u16, u16)>>,
 }
 
@@ -275,31 +277,36 @@ impl ReplayVram {
     /// from what the texture holds: runs of rows, over the columns that
     /// differ in them, through the queue), and notes what the writes among
     /// `ops` leave in it.
-    pub(crate) fn start<'a>(&mut self, queue: &wgpu::Queue, start: &Arc<Vec<u16>>, ops: impl Iterator<Item = &'a TraceOp>) {
+    pub(crate) fn start<'a>(&mut self, queue: &wgpu::Queue, start: &Arc<super::VramSnapshot>, ops: impl Iterator<Item = &'a TraceOp>) {
         self.sync(queue, start);
         self.note_writes(ops);
     }
 
     /// [`ReplayVram::start`]'s first half: the texture set to `start`.
-    pub(crate) fn sync(&mut self, queue: &wgpu::Queue, start: &Arc<Vec<u16>>) {
+    pub(crate) fn sync(&mut self, queue: &wgpu::Queue, start: &Arc<super::VramSnapshot>) {
         let width = VRAM_WIDTH as usize;
         // The same frame's snapshot again differs only where the writes
         // replayed since changed it; another's, wherever it does (to whole
         // spans of columns: a frame's writes lie mostly in its screen buffer,
         // a third of VRAM's width).
-        if !self.from.as_ref().is_some_and(|from| Arc::ptr_eq(from, start)) {
-            for (row, columns) in self.written.iter_mut().enumerate() {
-                let row = row * width..(row + 1) * width;
-                let (new, old) = (&start[row.clone()], &self.held[row]);
-                *columns = (new != old).then(|| {
-                    let mut spans = new.chunks_exact(SPAN).zip(old.chunks_exact(SPAN));
-                    let first = spans.position(|(new, old)| new != old).unwrap_or(0);
-                    let last = spans.rposition(|(new, old)| new != old).map_or(first, |after| first + 1 + after);
-                    ((first * SPAN) as u16, ((last + 1) * SPAN) as u16)
+        for (i, band) in start.bands.iter().enumerate() {
+            let changed = self.from.as_ref().is_none_or(|prev| !Arc::ptr_eq(&prev.bands[i], band));
+            for (j, new) in band.chunks_exact(width).enumerate() {
+                let y = i * super::BAND_ROWS + j;
+                if !changed && self.written[y].is_none() { continue; }
+                let old = &mut self.held[y * width..(y + 1) * width];
+                let mut spans = new.chunks_exact(SPAN).zip(old.chunks_exact(SPAN));
+                let columns = spans.position(|(a, b)| a != b).map(|first| {
+                    let last = spans.rposition(|(a, b)| a != b).map_or(first, |n| first + 1 + n);
+                    first * SPAN..(last + 1) * SPAN
+                });
+                self.written[y] = columns.map(|columns| {
+                    old[columns.clone()].copy_from_slice(&new[columns.clone()]);
+                    (columns.start as u16, columns.end as u16)
                 });
             }
-            self.from = Some(start.clone());
         }
+        self.from = Some(start.clone());
         let mut row = 0;
         while row < VRAM_HEIGHT as usize {
             let Some(columns) = self.written[row] else {
@@ -314,14 +321,11 @@ impl ReplayVram {
             // (The rows' columns lie a VRAM row apart in `start`.)
             queue.write_texture(
                 wgpu::TexelCopyTextureInfo { texture: &self.texture, mip_level: 0, origin: wgpu::Origin3d { x: x as u32, y: first as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
-                bytemuck::cast_slice(&start[first * width + x..(row - 1) * width + x + columns]),
+                bytemuck::cast_slice(&self.held[first * width + x..(row - 1) * width + x + columns]),
                 wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: None },
                 wgpu::Extent3d { width: columns as u32, height: (row - first) as u32, depth_or_array_layers: 1 },
             );
-            for line in first..row {
-                let at = line * width + x..line * width + x + columns;
-                self.held[at.clone()].copy_from_slice(&start[at]);
-            }
+
         }
         self.written.fill(None);
     }
@@ -373,20 +377,19 @@ pub(crate) fn uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
 }
 
 /// Clears a frame's colour and auxiliary targets to transparent black.
-fn clear(encoder: &mut wgpu::CommandEncoder, textures: [&wgpu::Texture; 2]) {
-    for texture in textures {
-        let view = texture.create_view(&Default::default());
-        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("frame clear"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                depth_slice: None,
-                resolve_target: None,
-                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
-            })],
-            ..Default::default()
-        });
-    }
+pub(super) fn clear(encoder: &mut wgpu::CommandEncoder, textures: [&wgpu::Texture; 2], depth: Option<(&wgpu::TextureView, f32)>) {
+    let views = textures.map(|texture| texture.create_view(&Default::default()));
+    encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some("frame clear"),
+        color_attachments: &views.each_ref().map(|view| Some(wgpu::RenderPassColorAttachment {
+            view, depth_slice: None, resolve_target: None,
+            ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+        })),
+        depth_stencil_attachment: depth.map(|(view, far)| wgpu::RenderPassDepthStencilAttachment {
+            view, depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(far), store: wgpu::StoreOp::Store }), stencil_ops: None,
+        }),
+        ..Default::default()
+    });
 }
 
 impl FrameRenderer {
@@ -430,6 +433,7 @@ impl FrameRenderer {
             vram: ReplayVram::new(device, "frame replay vram"),
             feedback: texture(device, "frame feedback", (1, 1), COLOR_FORMAT, picture_usage()),
             feedback_aux: texture(device, "frame feedback aux", (1, 1), AUX_FORMAT, picture_usage()),
+            scratch: None,
             work: None,
             staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
             group: None,
@@ -443,6 +447,7 @@ impl FrameRenderer {
 
     fn resize(&mut self, device: &wgpu::Device, size: (u32, u32)) {
         if self.size != size {
+            if let Some(pane) = &mut self.pane { pane.group = None; }
             self.color = texture(device, "frame", size, COLOR_FORMAT, picture_usage());
             self.aux = texture(device, "frame aux", size, AUX_FORMAT, picture_usage());
             self.depth = texture(device, "frame depth", size, wgpu::TextureFormat::Depth32Float, wgpu::TextureUsages::RENDER_ATTACHMENT);
@@ -546,7 +551,7 @@ impl FrameRenderer {
     }
 
     /// The native VRAM when the newest frame began (its log's start).
-    pub(crate) fn snapshot(&self) -> Option<&Arc<Vec<u16>>> {
+    pub(crate) fn snapshot(&self) -> Option<&Arc<super::VramSnapshot>> {
         self.snapshot.as_ref()
     }
 
@@ -588,14 +593,22 @@ impl FrameRenderer {
         self.passes = 0;
         self.overlay.clear();
         self.reversed = false;
-        if !replay {
-            // The display as it is; or, without the interface or with it
-            // alone, nothing while there is nothing to replay (no log of
-            // what the shown buffer holds: a state loaded, a rewind's step),
-            // since the display holds both as the game's camera saw them.
+        let shown = VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 };
+        let native = renderer.deferred && self.newest_ops.is_empty() && framing.interface == Interface::Drawn
+            && !renderer.tiles.iter().any(|tile| overlap(&tile.rect, &shown) != 0)
+            && !renderer.raw_live.iter().chain(renderer.raw_frames.iter().flat_map(|f| &f.live)).any(|r| overlap(r, &shown) != 0);
+        // A simple 4:3 frame can draw its log straight to the visible target,
+        // in the game's draw order. An unlogged enhanced screen needs the
+        // raw picture. A restored native screen needs only its display rows.
+        if !replay && !(renderer.deferred && (!self.newest_ops.is_empty() || native)) {
             match framing.interface {
-                Interface::Drawn => renderer.copy_display(encoder, area, &self.color, &self.aux),
-                Interface::Omitted | Interface::Only => clear(encoder, [&self.color, &self.aux]),
+                Interface::Drawn => {
+                    if !renderer.deferred || !renderer.paint_display(encoder, shown, &self.color, &self.aux, &self.depth) {
+                        renderer.resolve_copy(encoder);
+                        renderer.copy_display(encoder, area, &self.color, &self.aux);
+                    }
+                }
+                Interface::Omitted | Interface::Only => clear(encoder, [&self.color, &self.aux], None),
             }
             return;
         }
@@ -626,8 +639,23 @@ impl FrameRenderer {
         };
         // The last replay's buffer, refilled (moved between the frames when
         // interpolating).
-        let mut ops = std::mem::take(&mut self.replayed);
-        ops.clone_from(&self.newest_ops);
+        let direct = !replay && !native && renderer.capture.rect.is_none() && renderer.earlier.is_empty()
+            && !self.newest_ops.iter().any(|op| matches!(op, TraceOp::Copy { .. }));
+        let mut ops = if direct {
+            std::mem::take(&mut self.newest_ops)
+        } else {
+            let mut ops = std::mem::take(&mut self.replayed);
+            ops.clone_from(&self.newest_ops);
+            ops
+        };
+        if native {
+            let rect = VramRect { width: shown.width.min(VRAM_WIDTH as u16 - shown.x), height: shown.height.min(VRAM_HEIGHT as u16 - shown.y), ..shown };
+            if rect.width > 0 && rect.height > 0 {
+                let pixels = renderer.native.chunks_exact(VRAM_WIDTH as usize).skip(usize::from(rect.y)).take(usize::from(rect.height))
+                    .flat_map(|row| row[usize::from(rect.x)..usize::from(rect.x + rect.width)].iter().copied()).collect::<Vec<_>>();
+                ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload: true });
+            }
+        }
         // (Neither moving nor pulling back changes where the scene is
         // projected about; taking screens for a picture of themselves does.)
         let mut scene = self.newest_scene;
@@ -640,7 +668,28 @@ impl FrameRenderer {
         let current = !framing.hold;
         let captures: Vec<_> = std::iter::once(&renderer.capture).chain(&renderer.earlier).filter(|capture| current && capture.scale == scale)
             .flat_map(Capture::areas).collect();
-        settle_copies(&mut ops, &captures, feedback.then_some(rect));
+        if !direct { settle_copies(&mut ops, &captures, feedback.then_some(rect)); }
+        let mut scratch = (0, 0);
+        let mut needs_picture = false;
+        for op in &ops {
+            if let TraceOp::Copy { source, destination, width, height } = op {
+                let from = VramRect { x: source.0, y: source.1, width: *width, height: *height };
+                if feedback && overlap(&rect, &from) == u32::from(*width) * u32::from(*height) {
+                    scratch.0 = scratch.0.max((u32::from(*width) + 2 * side) * scale);
+                    scratch.1 = scratch.1.max(2 * u32::from(*height) * scale);
+                } else if destination.0 + width > shown.x.saturating_sub(side as u16) && destination.1 + height > shown.y
+                    && u32::from(destination.0) < area.x + area.width + side && u32::from(destination.1) < area.y + render_height {
+                    needs_picture = true;
+                }
+            }
+        }
+        if needs_picture { renderer.resolve_copy(encoder); }
+        if scratch.0 != 0 && scratch.1 != 0 {
+            let size = (scratch.0.min(render_size.0), scratch.1.min(VRAM_HEIGHT * scale));
+            if self.scratch.as_ref().is_none_or(|t| t.width() < size.0 || t.height() < size.1) {
+                self.scratch = Some(texture(device, "frame copy scratch", size, COLOR_FORMAT, wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST));
+            }
+        }
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
@@ -664,7 +713,7 @@ impl FrameRenderer {
             dropped = pull_back_in(&mut ops, framing.pull_back, scene);
         }
         self.overlay_scene = scene;
-        self.overlay = split_overlay(&mut ops, feedback.then_some(rect), scene);
+        if replay { self.overlay = split_overlay(&mut ops, feedback.then_some(rect), scene); }
         // The interface left out wherever the game drew it, or kept alone
         // (with the writes and copies its textures follow).
         let scene = self.overlay_scene;
@@ -690,12 +739,12 @@ impl FrameRenderer {
         while self.overlay.last().is_some_and(unseen) {
             self.overlay.pop();
         }
-        while self.overlay.is_empty() && ops.last().is_some_and(unseen) {
-            ops.pop();
-        }
+        let mut stored = ops;
+        let end = if self.overlay.is_empty() { stored.iter().rposition(|op| !unseen(op)).map_or(0, |last| last + 1) } else { stored.len() };
+        let ops = &stored[..end];
         // Then as the frame's writes (the replay's and the overlay's) changed
         // it, in order.
-        if self.snapshot.is_some() {
+        if self.snapshot.is_some() || native {
             self.vram.note_writes(ops.iter().chain(&self.overlay));
         }
         // A replay from the game's camera draws the decals the game lays on
@@ -704,7 +753,7 @@ impl FrameRenderer {
         // frames finds within its near plane may change), and drawn in that
         // order at each replay.
         let order = match (look, self.newest) {
-            (None, Some(frame)) => {
+            (None, Some(frame)) if replay => {
                 let key = (frame, ops.len(), framing.pull_back.to_bits(), dropped);
                 if self.decals.as_ref().is_none_or(|(known, _)| *known != key) {
                     self.decals = Some((key, decal_order(&ops, scene).unwrap_or_default()));
@@ -723,7 +772,7 @@ impl FrameRenderer {
         builder.capture = capture;
         builder.capture_aliases = if current { &screen.aliases } else { &[] };
         builder.feedback = feedback.then_some(rect);
-        builder.vram = self.snapshot.is_some().then_some(self.vram.held());
+        builder.vram = self.snapshot.is_some().then_some(super::VramWords::Linear(self.vram.held()));
         // A frame recorded looking from within or around the scene holds
         // faces from anywhere, not only beside the screen: seen from the
         // game's camera, none. Between two frames, those beside the screen
@@ -769,20 +818,20 @@ impl FrameRenderer {
         self.staging.write(device, queue, &builder.staging);
         // Start from black (the replayed clear covers what the game cleared),
         // at the far plane (0 where depth is reversed).
-        clear(encoder, [&color, &aux]);
         let far = if look.is_some() { 0.0 } else { 1.0 };
         let depth_view = depth.create_view(&Default::default());
         let visible_depth_view = extra.then(|| self.depth.create_view(&Default::default()));
-        for view in std::iter::once(&depth_view).chain(visible_depth_view.as_ref()) {
+        clear(encoder, [&color, &aux], Some((&depth_view, far)));
+        if let Some(view) = visible_depth_view.as_ref() {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("frame depth clear"),
-            color_attachments: &[],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view,
-                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(far), store: wgpu::StoreOp::Store }),
-                stencil_ops: None,
-            }),
-            ..Default::default()
+                label: Some("frame depth clear"),
+                color_attachments: &[],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view,
+                    depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(far), store: wgpu::StoreOp::Store }),
+                    stencil_ops: None,
+                }),
+                ..Default::default()
             });
         }
         let generation = screen.generation;
@@ -800,7 +849,7 @@ impl FrameRenderer {
             .1
             .clone();
         self.screen = Some(screen.clone());
-        let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
+        let picture = renderer.pictures.get().map(|p| (&p.0, &p.1));
         let target = Target { color: &color, aux: &aux, depth: &depth_view, origin, scale };
         encode(
             device,
@@ -809,18 +858,24 @@ impl FrameRenderer {
             &group,
             self.vertices.buffer(),
             Some((self.staging.buffer(), &self.vram.texture)),
-            Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux },
+            Copies::From { picture, scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: self.scratch.as_ref(), feedback: &self.feedback, feedback_aux: &self.feedback_aux },
             &target,
             &builder.commands,
         );
         self.passes = passes(&builder.commands);
+        if renderer.deferred { renderer.stats = super::DrawStats { passes: self.passes, ..builder.stats }; }
         builder.store(&mut self.storage);
         if extra {
             for (from, to) in [(&color, &self.color), (&aux, &self.aux)] {
                 encoder.copy_texture_to_texture(from.as_image_copy(), to.as_image_copy(), to.size());
             }
         }
-        self.replayed = ops;
+        if direct {
+            self.newest_ops = stored;
+        } else {
+            stored.truncate(end);
+            self.replayed = stored;
+        }
     }
 
     /// Draws the interface the game drew after its scene (held back by the
@@ -856,8 +911,8 @@ impl FrameRenderer {
         let depth_view = self.depth.create_view(&Default::default());
         let origin = (area.x as f32 - self.side as f32, area.y as f32);
         let target = Target { color: &color, aux: &self.aux, depth: &depth_view, origin, scale: self.scale };
-        let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
-        let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
+        let picture = renderer.pictures.get().map(|p| (&p.0, &p.1));
+        let copies = Copies::From { picture, scale: self.scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: self.scratch.as_ref(), feedback: &self.feedback, feedback_aux: &self.feedback_aux };
         let staging = Some((self.overlay_staging.buffer(), &self.vram.texture));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
         self.passes += passes(&builder.commands);
@@ -882,14 +937,14 @@ impl FrameRenderer {
             pane.texture = texture(device, "frame pane", size, COLOR_FORMAT, picture_usage());
             pane.view = pane.texture.create_view(&Default::default());
         }
-        let group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let group = pane.group.get_or_insert_with(|| device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("frame pane"),
             layout: &pane.layout,
             entries: &[
                 wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&self.color_view) },
                 wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&self.aux.create_view(&Default::default())) },
             ],
-        });
+        }));
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("frame pane"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -901,7 +956,7 @@ impl FrameRenderer {
             ..Default::default()
         });
         pass.set_pipeline(&pane.pipeline);
-        pass.set_bind_group(0, &group, &[]);
+        pass.set_bind_group(0, &*group, &[]);
         pass.draw(0..3, 0..1);
         drop(pass);
         &pane.view

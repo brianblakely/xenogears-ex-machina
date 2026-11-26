@@ -431,16 +431,22 @@ impl Device for Spu {
     }
 
     fn save(&self) -> Vec<u8> {
-        let mut w = Writer::default();
+        let mut out = Vec::new();
+        self.save_into(&mut out);
+        out
+    }
+
+    fn save_into(&self, out: &mut Vec<u8>) {
+        let mut w = Writer(std::mem::take(out));
         w.u32(SNAPSHOT_VERSION);
-        w.bytes(&self.chip.save());
+        w.section(|out| self.chip.save_into(out));
         w.u32(self.transfers.len() as u32);
         for &at in &self.transfers { w.u64(at); }
         w.u32(self.irq_raised as u32);
         w.u64(self.virtual_now);
         w.u64(self.audio_cycles);
         w.u64(self.audio_fraction);
-        w.0
+        *out = w.0;
     }
 
     fn load(&mut self, state: &[u8]) -> Result<(), String> {

@@ -526,7 +526,7 @@ mod tests {
     fn sectors_keep_their_direction_near_a_boundary() {
         let field = Field {
             camera: field::Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0; 3], h: 256.0, angle: 0 },
-            layers: vec![], attributes: vec![], actors: vec![], player: None, alt_dpad: false, party_processing: false, dialogue_open: false,
+            layers: vec![].into(), attributes: vec![], actors: vec![], player: None, alt_dpad: false, party_processing: false, dialogue_open: false,
         };
         let mut previous = None;
         assert_eq!(screen_sector(0x110, &field, &mut previous), 1, "0x110 is nearest the second eighth");

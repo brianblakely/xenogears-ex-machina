@@ -271,7 +271,7 @@ struct Voice {
     /// Byte address of the current block.
     address: u32,
     counter: u32,
-    /// The current block has been fetched and decoded.
+    /// The current compressed block has been fetched.
     fetched: bool,
     /// Loop flags of the current block.
     flags: u8,
@@ -279,6 +279,8 @@ struct Voice {
     /// Three samples of the previous block, then the current block's 28.
     samples: [i16; 31],
     output: i16,
+    // Compressed blocks fetched while off. RAM may change after the fetch.
+    pending: Vec<[u8; 16]>,
 }
 
 impl Default for Voice {
@@ -296,6 +298,7 @@ impl Default for Voice {
             history: [0; 2],
             samples: [0; 31],
             output: 0,
+            pending: Vec::new(),
         }
     }
 }
@@ -313,6 +316,7 @@ impl Voice {
         self.flags = 0;
         self.history = [0; 2];
         self.samples = [0; 31];
+        self.pending.clear();
     }
 
     /// Fetches and decodes the block at `address`.
@@ -333,10 +337,42 @@ impl Voice {
         if self.flags & adpcm::FLAG_LOOP_START != 0 {
             *repeat = (self.address >> 3) as u16;
         }
-        self.samples.copy_within(28..31, 0);
-        let decoded: &mut [i16; adpcm::BLOCK_SAMPLES] = (&mut self.samples[3..]).try_into().expect("a block's samples");
-        adpcm::decode_block(&block, &mut self.history, decoded);
+        if block == [0; 16] && self.history == [0; 2] && self.pending.is_empty() {
+            self.samples.copy_within(28..31, 0);
+            self.samples[3..].fill(0);
+        } else if self.phase == Phase::Off && self.level == 0 {
+            // Two predictor-free blocks determine the whole interpolation
+            // window, including its three samples from the preceding block.
+            let independent = |b: &[u8; 16]| !matches!((b[0] >> 4) & 7, 1..=4);
+            if independent(&block) && self.pending.last().is_some_and(independent) {
+                let last = *self.pending.last().unwrap();
+                self.pending.clear();
+                self.pending.push(last);
+            } else if self.pending.len() == 16 {
+                self.decode_pending();
+            }
+            self.pending.push(block);
+        } else {
+            self.decode_pending();
+            self.decode(&block);
+        }
         self.fetched = true;
+    }
+
+    fn decode(&mut self, block: &[u8; 16]) {
+        self.samples.copy_within(28..31, 0);
+        let decoded = (&mut self.samples[3..]).try_into().expect("a block's samples");
+        adpcm::decode_block(block, &mut self.history, decoded);
+    }
+
+    fn decode_pending(&mut self) {
+        if !self.pending.is_empty() {
+            let mut pending = std::mem::take(&mut self.pending);
+            for block in pending.drain(..) {
+                self.decode(&block);
+            }
+            self.pending = pending;
+        }
     }
 
     /// Leaves the current block by its loop flags and fetches the next.
@@ -819,6 +855,7 @@ impl Spu {
                 let raw = if non & bit != 0 {
                     noise
                 } else {
+                    voice.decode_pending();
                     voice.interpolate()
                 };
                 sat((raw * voice.level as i32) >> 15) as i16
@@ -967,7 +1004,14 @@ impl Spu {
 
     /// Serialises the whole SPU state (not the IRQ hook).
     pub fn save(&self) -> Vec<u8> {
-        let mut w = snapshot::Writer(Vec::with_capacity(RAM_SIZE + 0x2000));
+        let mut bytes = Vec::with_capacity(RAM_SIZE + 0x2000);
+        self.save_into(&mut bytes);
+        bytes
+    }
+
+    /// Append a snapshot to the caller's buffer.
+    pub fn save_into(&self, out: &mut Vec<u8>) {
+        let mut w = snapshot::Writer(out);
         w.bytes(SNAPSHOT_MAGIC);
         w.u32(SNAPSHOT_VERSION);
         w.bytes(&self.ram);
@@ -977,7 +1021,13 @@ impl Spu {
         for &r in &self.window_shadow {
             w.u16(r);
         }
-        for v in &self.voices {
+        for voice in &self.voices {
+            let mut decoded;
+            let v = if voice.pending.is_empty() { voice } else {
+                decoded = voice.clone();
+                decoded.decode_pending();
+                &decoded
+            };
             w.u8(v.phase as u8);
             w.i16(v.level);
             w.u16(v.env_counter);
@@ -1029,7 +1079,6 @@ impl Spu {
             w.i16(frame[0]);
             w.i16(frame[1]);
         }
-        w.0
     }
 
     /// Restores a state written by [`Spu::save`]. On error the SPU is
@@ -1099,6 +1148,7 @@ impl Spu {
                 *x = r.i16()?;
             }
         }
+        s.reverb.restore_tail();
         s.transfer_address = r.u32()?;
         if s.transfer_address > RAM_MASK {
             return Err(SnapshotError::InvalidValue("transfer address"));
@@ -1135,5 +1185,35 @@ impl Spu {
         s.irq_hook = self.irq_hook.take();
         *self = s;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod voice_tests {
+    use super::*;
+
+    #[test]
+    fn a_silent_voice_remembers_the_blocks_as_the_spu_read_them() {
+        let (mut voice, mut eager) = (Voice::default(), Voice::default());
+        let mut ram = [0; 16];
+        let mut repeat = 0;
+        let mut probe = IrqProbe { target: 0, armed: true, hit: false };
+        for i in 0..80u8 {
+            // Reuse and overwrite the same sound RAM, including predictor
+            // resets and a run long enough to drain the deferred history.
+            ram.fill(i.wrapping_mul(29));
+            ram[0] = if (i % 30) < 3 { 1 } else { 0x21 };
+            voice.fetch(&ram, &mut repeat, &mut probe);
+            eager.decode(&ram);
+            let mut saved = voice.clone();
+            saved.decode_pending();
+            assert_eq!((saved.history, saved.samples), (eager.history, eager.samples));
+        }
+        assert!(probe.hit);
+        voice.level = 1;
+        voice.fetch(&ram, &mut repeat, &mut probe);
+        eager.decode(&ram);
+        assert!(voice.pending.is_empty());
+        assert_eq!((voice.history, voice.samples), (eager.history, eager.samples));
     }
 }

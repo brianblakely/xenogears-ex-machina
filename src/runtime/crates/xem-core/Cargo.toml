@@ -16,3 +16,6 @@ xem-spu = { path = "../xem-spu" }
 xem-binaural = { path = "../xem-binaural" }
 xem-disc = { path = "../xem-disc" }
 xem-media = { path = "../xem-media" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+ring = { version = "=0.17.14", default-features = false }

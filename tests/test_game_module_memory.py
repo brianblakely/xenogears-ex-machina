@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.game_module import CFLAGS, ROOT, WASM_LAYOUT, WASM_TRIPLE, inlinable, ram_mirrors
+from tools.game_module import CFLAGS, ROOT, WASM_LAYOUT, WASM_TRIPLE, compile_ir, inlinable, ram_mirrors
 
 
 class RamMirrors(unittest.TestCase):
@@ -107,6 +107,17 @@ u32 step(u32 *game) {
 }
 u32 flags(void) { return registers.flags; }
 '''
+
+    @unittest.skipUnless(os.environ.get("XEM_CLANG") and shutil.which("opt"), "needs the pinned runtime shell")
+    def test_projected_vertices_reach_the_presentation_ring_without_ram_translation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ir = Path(directory) / "gte.ll"
+            self.assertIsNone(compile_ir(ROOT / "src/port/gte.c", ir))
+            source = ir.read_text()
+        function = re.search(r"^define [^\n]*@record_projection\([^\n]*\n.*?^}", source, re.M | re.S)
+        self.assertIsNotNone(function)
+        rewritten = ram_mirrors(function.group().splitlines(), True)
+        self.assertFalse(any("call ptr @xem.memory.address" in line for line in rewritten))
 
     @unittest.skipUnless(os.environ.get("XEM_CLANG"), "needs the pinned runtime shell")
     def test_a_port_units_own_globals_are_addressed_as_they_are_and_game_pointers_translated(self):

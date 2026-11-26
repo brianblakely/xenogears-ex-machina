@@ -33,9 +33,9 @@ impl fmt::Display for SnapshotError {
 
 impl std::error::Error for SnapshotError {}
 
-pub(crate) struct Writer(pub Vec<u8>);
+pub(crate) struct Writer<'a>(pub &'a mut Vec<u8>);
 
-impl Writer {
+impl Writer<'_> {
     pub fn bytes(&mut self, b: &[u8]) {
         self.0.extend_from_slice(b);
     }

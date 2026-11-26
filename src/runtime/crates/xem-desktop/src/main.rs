@@ -317,6 +317,7 @@ struct Host {
     fullscreen: bool,
     /// XEM_FRAME_STATS: a line a second of where the frame loop's time goes.
     stats: Option<Stats>,
+    shown_revision: Option<(u64, u64)>,
     /// The panel's Import disc…: asked for, and the file SDL's dialog chose.
     disc_asked: Rc<std::cell::Cell<bool>>,
     disc_chosen: (std::sync::mpsc::Sender<Option<String>>, std::sync::mpsc::Receiver<Option<String>>),
@@ -521,6 +522,7 @@ impl Host {
             start: Instant::now(),
             game,
             fullscreen,
+            shown_revision: None,
             stats: std::env::var_os("XEM_FRAME_STATS").map(|_| Stats::new()),
             disc_asked,
             disc_chosen: std::sync::mpsc::channel(),
@@ -534,14 +536,16 @@ impl Host {
         let mut state_saved = false;
         let control = options.control.then(xem_host::Control::spawn);
         loop {
+            let mut input = false;
             if let Some(control) = &control {
-                control.poll(|command| self.command(command));
+                control.poll(|command| { input = true; self.command(command) });
             }
             self.import_disc(window, options);
             let was_visible = self.view.panel_visible();
             let mut event = SDL_Event::default();
             // SAFETY: SDL is initialised; event is a valid out pointer.
             while unsafe { SDL_PollEvent(&mut event) } {
+                input = true;
                 // SAFETY: the union is read according to its type tag.
                 match SDL_EventType(unsafe { event.r#type }) {
                     SDL_EVENT_QUIT | SDL_EVENT_WINDOW_CLOSE_REQUESTED => return Ok(()),
@@ -586,7 +590,7 @@ impl Host {
             // The last frame is presented whatever the game drew (game-paced
             // presentation shows nothing new on most refreshes), and the run
             // ends once it is, its screenshot written.
-            let presented = self.frame(window, last, screenshot)?;
+            let presented = self.frame(window, last, input, screenshot)?;
             if presented {
                 frames += 1;
             }
@@ -743,48 +747,73 @@ impl Host {
         self.view.set_safe_area(window.safe_area());
     }
 
+    fn wait(until_update: std::time::Duration) {
+        // Input wakes the wait immediately and stays queued for the handler.
+        let ms = until_update.as_nanos().div_ceil(1_000_000).min(i32::MAX as u128) as i32;
+        if ms > 0 { unsafe { SDL_WaitEventTimeout(std::ptr::null_mut(), ms) }; }
+    }
+
     /// Renders and presents one frame when one is due (always when
     /// `present`); false if none was presented.
     fn frame(
         &mut self,
         window: &sdl::Window,
         present: bool,
+        input: bool,
         screenshot: Option<&std::path::Path>,
     ) -> Result<bool, String> {
         if self.presenter.is_suspended() {
             // The surface was lost.
             self.presenter.resume(&self.gpu, window)?;
         }
+        if !input && !present && !self.view.wants_present() && let Some(game) = &self.game {
+            let wait = game.time_until_update();
+            if !wait.is_zero() {
+                Self::wait(wait);
+                return Ok(false);
+            }
+        }
         let began = Instant::now();
         let mut ran = 0;
         let mut marks = [began; 6];
         if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
             marks[0] = Instant::now();
-            let settings = self.view.settings().borrow().settings().clone();
-            self.view.assist(game);
-            let (context, targets) = (game.pad_context(), game.targets());
-            let buttons = self.view.pad_buttons(context, targets);
-            game.want_attack_page(self.view.attack_pointed());
-            game.want_inspection(self.view.first_person());
-            match game.update(buttons, &settings, || window.focused()) {
-                Ok(frames) => {
-                    ran = frames;
-                    self.view.frames_ran(frames);
-                    game.follow_sound_mode(self.view.settings());
+            let settings = Rc::clone(self.view.settings());
+            let revision = (game.timeline_revision(), settings.borrow().revision());
+            let changed = self.shown_revision != Some(revision);
+            if changed || input || game.time_until_update().is_zero() {
+                self.view.assist(game);
+                let (context, targets) = (game.pad_context(), game.targets());
+                let buttons = self.view.pad_buttons(context, targets);
+                game.want_attack_page(self.view.attack_pointed());
+                game.want_inspection(self.view.first_person());
+                let updated = game.update(buttons, settings.borrow().settings(), || window.focused());
+                match updated {
+                    Ok(frames) => {
+                        ran = frames;
+                        self.view.frames_ran(frames);
+                        game.follow_sound_mode(self.view.settings());
+                    }
+                    Err(error) => {
+                        self.view.ui().set_operation_error(&format!("Game stopped: {error}. Load a state to recover."));
+                        self.view.set_panel_visible(true);
+                        game.pause();
+                    }
                 }
-                Err(error) => {
-                    self.view.ui().set_operation_error(&format!("Game stopped: {error}. Load a state to recover."));
-                    self.view.set_panel_visible(true);
-                    game.pause();
-                }
+            } else {
+                self.view.frames_ran(0);
             }
             marks[1] = Instant::now();
-            self.view.set_game_frame(&self.gpu, game);
+            let revision = (game.timeline_revision(), settings.borrow().revision());
+            if ran > 0 || input || present || self.shown_revision != Some(revision) {
+                self.view.set_game_frame(&self.gpu, game);
+                self.shown_revision = Some(revision);
+            }
         }
         marks[2] = Instant::now();
         if !present && !self.view.wants_present() {
             // Game-paced presentation: nothing new to show yet.
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            if let Some(game) = &self.game { Self::wait(game.time_until_update()); }
             return Ok(false);
         }
         let Some(frame) = self.presenter.acquire(&self.gpu, window)? else {

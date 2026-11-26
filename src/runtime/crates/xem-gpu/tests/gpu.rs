@@ -46,6 +46,43 @@ fn drawn(gpu: &Gpu) -> Vec<(usize, usize)> {
 }
 
 #[test]
+fn hardware_trace_observers_see_the_eager_pixels_in_command_order() {
+    let (mut software, mut hardware) = (fresh(), fresh());
+    hardware.set_trace(true);
+    hardware.take_render_trace();
+    for frame in 0..24 {
+        for gpu in [&mut software, &mut hardware] {
+            let x = 192 * (frame & 1);
+            gpu.write_gp0_words(&[0x0200_0020, xy(x, 0), xy(160, 128)]);
+            gpu.write_gp0_words(&[0x2000_00f8, xy(x, 0), xy(x + 100, 10), xy(x + 35, 80)]);
+            gpu.write_gp0_words(&[0xE100_0100 | (x / 64) as u32, 0x6580_8080, xy(720, 300), 0, xy(32, 40)]);
+            // An upload to a sampled texture must follow its deferred reader.
+            upload(gpu, x + 6, 4, 2, 2, &[1, 2, 3, 4]);
+            gpu.write_gp0_words(&[0x8000_0000, xy(720, 300), xy(1020, 510), xy(8, 4)]);
+            gpu.write_gp0_words(&[0xE600_0001, 0x6800_f800, xy(x + 5, 5), 0xE600_0000]);
+            gpu.write_gp0_words(&[0xc000_0000, xy(1020, 511), xy(8, 2)]);
+        }
+        assert_eq!(software.read_gpuread(), hardware.read_gpuread());
+        // A new draw between two GPUREAD words must become visible.
+        for gpu in [&mut software, &mut hardware] { gpu.write_gp0_words(&[0x6800_f800, xy(1022, 511)]); }
+        for _ in 1..8 { assert_eq!(software.read_gpuread(), hardware.read_gpuread()); }
+        hardware.take_render_trace();
+    }
+    // Snapshot a partly received image with drawings still outstanding.
+    for gpu in [&mut software, &mut hardware] {
+        gpu.write_gp0_words(&[0x6000_f800, xy(448, 160), xy(33, 11),
+            0xa000_0000, xy(7, 11), xy(4, 1), 0x1234_5678]);
+    }
+    let state = hardware.save();
+    assert!(software.save() == state);
+    hardware.load(&state).unwrap();
+    for gpu in [&mut software, &mut hardware] { gpu.write_gp0(0xabcd_ef01); }
+    hardware.set_trace(false);
+    assert!(software.vram() == hardware.vram());
+    assert_eq!(software.display_rgba8(), hardware.display_rgba8());
+}
+
+#[test]
 fn reset_status_and_info() {
     let mut gpu = Gpu::new();
     assert_eq!(gpu.gpustat(), 0x1480_2000);
