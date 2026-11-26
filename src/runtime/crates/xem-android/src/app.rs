@@ -183,6 +183,8 @@ struct Live {
     /// The touch deck last logged, by its controls' and their places' hash
     /// (a deck is logged as the game's context or the screen changes it).
     deck_logged: u64,
+    /// The settings panel visibility and selected section last logged.
+    panel_logged: Option<(bool, i32)>,
     log_next_frame: bool,
     /// Start of the current frame-rate span: (time, rendered frames, game
     /// vblanks), and the most render passes a frame's game picture took in
@@ -437,6 +439,7 @@ impl Host {
             background: false,
             terminating: false,
             deck_logged: 0,
+            panel_logged: None,
             log_next_frame: true,
             fps: (Instant::now(), 0, 0),
             passes: 0,
@@ -747,7 +750,12 @@ impl Host {
             }
             game.want_attack_page(self.view.attack_pointed());
             game.want_inspection(self.view.first_person());
+            let vblanks_before = game.vblanks();
+            let rewinding = game.rewind_held();
             let result = game.update(buttons, &settings, || window.focused());
+            if rewinding && game.vblanks() < vblanks_before {
+                log(&format!("rewind step game_vblank={}", game.vblanks()));
+            }
             if let Ok(frames) = result {
                 self.view.frames_ran(frames);
                 game.follow_sound_mode(self.view.settings());
@@ -768,6 +776,11 @@ impl Host {
         let Some(frame) = live.presenter.acquire(&self.gpu, window)? else {
             return Ok(());
         };
+        let panel = (self.view.panel_visible(), self.view.ui().component().get_selected_section());
+        if live.panel_logged != Some(panel) {
+            live.panel_logged = Some(panel);
+            log(&format!("panel visible={} section={}", panel.0, panel.1));
+        }
         let output = frame.texture.create_view(&Default::default());
         self.view.render(&self.gpu, &output, time.as_secs_f32())?;
         self.gpu.queue.present(frame);

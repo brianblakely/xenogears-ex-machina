@@ -56,7 +56,9 @@ done
 log=$out/gradle.log
 for attempt in 1 2 3; do
     refresh=()
-    if [ "$attempt" -gt 1 ]; then refresh=(--refresh-dependencies); fi
+    if [ "$attempt" -gt 1 ] && ! grep -q 'status code 429' "$log"; then
+        refresh=(--refresh-dependencies)
+    fi
     if gradle -p "$root/src/runtime/android" --project-cache-dir "$out/gradle-project-cache" "${refresh[@]}" "assemble$variant" 2>&1 | tee "$log"; then
         break
     fi

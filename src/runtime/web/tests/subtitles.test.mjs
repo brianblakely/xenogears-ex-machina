@@ -10,10 +10,11 @@
 // middle of both views, where the screen's bottom stands.
 
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { NO_WEBGPU, QUEST, QUEST_BROWSER, SHOTS, USER_DISC, WEB, decodePng, shot, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, QUEST, QUEST_BROWSER, SHOTS, USER_DISC, WEB, XR_CLOCK, decodePng, shot, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm'));
 mkdirSync(SHOTS, { recursive: true });
@@ -21,21 +22,52 @@ mkdirSync(SHOTS, { recursive: true });
 const painted = (page) => page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
 const ROUTE = [[901, 910, 'start'], [1300, 1310, 'start'], [1500, 1510, 'cross'], [1750, 1760, 'up'], [1810, 1820, 'cross']];
 
+let cachedBeforeLine = null;
+function prepareBeforeLine() {
+  if (cachedBeforeLine || !existsSync(HEADLESS)) return cachedBeforeLine;
+  const path = join(SHOTS, 'subtitles-before-line.xemstate');
+  const commands = [
+    { cmd: 'schedule', commands: ROUTE.map(([at, end, button]) => [at, { cmd: 'press', buttons: [button], frames: end - at }]) },
+    { cmd: 'frames', count: 10_000 },
+    { cmd: 'run_until', max_frames: 5_000, until: { path: 'field_movie_frame', equals: 2330 } },
+    { cmd: 'state_save', path },
+  ];
+  const replies = execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+    input: commands.map((c) => JSON.stringify(c)).join('\n') + '\n',
+    encoding: 'utf8',
+    maxBuffer: 1 << 26,
+  }).trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(replies[2].met, true, JSON.stringify(replies[2]).slice(0, 400));
+  cachedBeforeLine = readFileSync(path).toString('base64');
+  return cachedBeforeLine;
+}
+
 /** Disc 1 imported, subtitles on, booted, and the new-game route run to the
- *  new-game movie's frame 2340 (its line 1.15.30). `before` runs after the
- *  first frames (the page's first presentation starts the draw trace). */
+ *  new-game movie's frame 2340 (its line 1.15.30). `before` runs before the
+ *  movie frames leading into 2340 (the page's first presentation starts the
+ *  draw trace). When xem-headless is built, advance to frame 2330 natively
+ *  and replay the final 10 movie frames in the browser so SwiftShader does
+ *  not burn minutes rendering 10 000 boot/movie frames. */
 async function toTheLine(page, before = async () => {}) {
   await page.setInputFiles('#file', USER_DISC);
   await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
   assert.equal((await page.evaluate(() => window.xem.settings.apply({ MovieSubtitles: true }))).error, undefined);
   await page.evaluate(() => window.xem.boot());
-  const scheduled = await page.evaluate((route) => window.xem.command({
-    cmd: 'schedule', commands: route.map(([at, end, button]) => [at, { cmd: 'press', buttons: [button], frames: end - at }]),
-  }), ROUTE);
-  assert.equal(scheduled.error, undefined, JSON.stringify(scheduled));
-  await page.evaluate(() => window.xem.runFrames(600));
-  await before();
-  await page.evaluate(() => window.xem.runFrames(9_400));
+  const base64 = prepareBeforeLine();
+  if (base64) {
+    await page.evaluate((b64) => {
+      window.xem.importSnapshot(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+    }, base64);
+    await before();
+  } else {
+    const scheduled = await page.evaluate((route) => window.xem.command({
+      cmd: 'schedule', commands: route.map(([at, end, button]) => [at, { cmd: 'press', buttons: [button], frames: end - at }]),
+    }), ROUTE);
+    assert.equal(scheduled.error, undefined, JSON.stringify(scheduled));
+    await page.evaluate(() => window.xem.runFrames(600));
+    await before();
+    await page.evaluate(() => window.xem.runFrames(9_400));
+  }
   const reached = await page.evaluate(() => window.xem.run({ cmd: 'run_until', max_frames: 5_000, until: { path: 'field_movie_frame', equals: 2340 } }));
   assert.equal(reached.met, true, JSON.stringify(reached).slice(0, 400));
 }
@@ -95,7 +127,7 @@ describe('movie subtitles', { skip: !available && 'needs the user\'s disc 1 and 
   });
 
   test('in a headset the line stands on the virtual screen below the views\' middle', { timeout: 900_000 }, async () => {
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }, { content: XR_CLOCK }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       const frames = (n) => page.evaluate(async (n) => {

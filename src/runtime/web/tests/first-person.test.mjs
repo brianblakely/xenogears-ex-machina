@@ -27,7 +27,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, pixelStats, shot, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, RAF_CLOCK, SHOTS, USER_DISC, WEB, pixelStats, shot, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 /** The native desktop host's first-person listener: xem-headless's
@@ -53,11 +53,10 @@ async function toggle(page, on) {
   await page.keyboard.up('Backspace');
   await frames(page, 3);
 }
-/** A key held for `ms` and at least a few of the page's frames. */
+/** A key held for `ms` of virtual frame time (RAF_CLOCK at 50 ms a frame). */
 async function hold(page, key, ms) {
   await page.keyboard.down(key);
-  await page.waitForTimeout(ms);
-  await frames(page, 3);
+  await frames(page, Math.max(3, Math.ceil(ms / 50)));
   await page.keyboard.up(key);
   await frames(page, 3);
 }
@@ -73,9 +72,10 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'state_save', path: state }]
         .map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU });
+    const browser = await start({ args: NO_WEBGPU, initScripts: [{ content: RAF_CLOCK }] });
     try {
       const page = await browser.page();
+      await page.evaluate(() => { window.rafStepMs = 50; });
       await page.setInputFiles('#file', USER_DISC);
       await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
       await page.evaluate(async (base64) => {
@@ -119,7 +119,6 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       const stood = await player(page);
       await page.keyboard.down('KeyW');
       await page.keyboard.down('Space');
-      await page.waitForTimeout(300);
       await frames(page, 10);
       const held = await pads(page);
       assert.ok(!held.includes('up') && !held.includes('triangle'), JSON.stringify(held));
@@ -252,13 +251,12 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       // The page sees the pad with nothing held before its first click (a
       // button found held on a pad just connected is no click).
       await frames(page, 3);
-      /** The pad's buttons and axes as they are for `ms` and a few of the page's frames. */
-      const gamepad = (buttons = [], axes = [0, 0, 0, 0], ms = 0) => page.evaluate(async ({ buttons, axes, ms }) => {
+      /** The pad's buttons and axes held for `ms` of virtual frame time. */
+      const gamepad = (buttons = [], axes = [0, 0, 0, 0], ms = 0) => page.evaluate(async ({ buttons, axes, count }) => {
         window.testPad.buttons.forEach((button, i) => { button.pressed = buttons.includes(i); });
         window.testPad.axes = axes;
-        await new Promise((resolve) => setTimeout(resolve, ms));
-        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
-      }, { buttons, axes, ms });
+        for (let i = 0; i < count; i++) await new Promise(requestAnimationFrame);
+      }, { buttons, axes, count: Math.max(3, Math.ceil(ms / 50)) });
       const [BACK, R3] = [8, 11];
       await gamepad([R3]);
       await page.waitForFunction(() => window.xem.status().renderer.firstPerson);

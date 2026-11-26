@@ -125,6 +125,15 @@ jobs:
       - name: The emulator's access to KVM
         if: matrix.tier == 'android'
         run: sudo chmod a+rw /dev/kvm
+      - name: Gradle dependencies
+        if: matrix.tier == 'android'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            .local/android/gradle/caches/modules-2
+            .local/android/gradle/caches/transforms-4
+          key: gradle-${{ runner.os }}-${{ hashFiles('src/runtime/android/**/*.gradle', 'nix/runtime/flake.lock') }}
+          restore-keys: gradle-${{ runner.os }}-
       - name: The ${{ matrix.tier }} tier
         env:
           TIER: ${{ matrix.tier }}

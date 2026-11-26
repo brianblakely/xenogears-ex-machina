@@ -119,6 +119,35 @@ export async function start({ args = [], software = false, fixtures: withFixture
 
 export const status = (page) => page.evaluate(() => window.xem.status());
 
+/** Wait for `count` completed browser animation frames on `page`. */
+export async function animationFrames(page, count = 2) {
+  await page.evaluate(async (count) => {
+    for (let i = 0; i < count; i++) await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }, count);
+}
+
+/** An init script replacing requestAnimationFrame's timestamp with a
+ *  deterministic virtual clock (advancing `window.rafStepMs` ms per animation
+ *  frame plus any one-shot `window.rafJumpMs`, keeping `performance.now()`
+ *  real for batch budgets). */
+export const RAF_CLOCK = `
+window.rafStepMs = 1000 / 60;
+window.rafJumpMs = 0;
+window.rafNowMs = 0;
+{
+  const nativeRaf = window.requestAnimationFrame.bind(window);
+  let lastReal = null;
+  window.requestAnimationFrame = (callback) => nativeRaf((realTime) => {
+    if (lastReal !== realTime) {
+      if (lastReal === null) window.rafNowMs = Math.max(window.rafNowMs, realTime);
+      lastReal = realTime;
+      window.rafNowMs += window.rafStepMs + window.rafJumpMs;
+      window.rafJumpMs = 0;
+    }
+    callback(window.rafNowMs);
+  });
+}`;
+
 // --- Headset browsers: Quest Browser's user agent with IWER as navigator.xr --
 export const QUEST_BROWSER = 'Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) '
   + 'OculusBrowser/37.0.0.0 SamsungBrowser/4.0 Chrome/132.0.0.0 VR Safari/537.36';
@@ -127,6 +156,28 @@ export const IWER = existsSync(IWER_PATH) ? readFileSync(IWER_PATH, 'utf8') : ''
 /** An init script making IWER's Meta Quest 3 the page's navigator.xr. */
 export const QUEST = `${IWER}\n;window.xrDevice = new IWER.XRDevice(IWER.metaQuest3, { stereoEnabled: true });`
   + 'window.xrDevice.installRuntime({ forceInstall: true });';
+/** An init script (after QUEST) replacing XRSession.requestAnimationFrame's
+ *  timestamp with a deterministic virtual clock (advancing `window.xrStepMs`
+ *  ms per session frame, default 50 ms = 20 Hz, keeping `performance.now()`
+ *  real for batch budgets and advancing past any intervening canvas clock when
+ *  a new session begins). */
+export const XR_CLOCK = `
+window.xrStepMs = 50;
+window.xrNowMs = 0;
+{
+  const request = window.XRSession.prototype.requestAnimationFrame;
+  let lastSession = null;
+  window.XRSession.prototype.requestAnimationFrame = function (callback) {
+    return request.call(this, (realTime, frame) => {
+      if (lastSession !== this) {
+        lastSession = this;
+        window.xrNowMs = Math.max(window.xrNowMs, realTime);
+      }
+      window.xrNowMs += window.xrStepMs;
+      callback(window.xrNowMs, frame);
+    });
+  };
+}`;
 
 /** `v` turned by the quaternion `q` (x, y, z, w). */
 export function rotate([x, y, z, w], v) {

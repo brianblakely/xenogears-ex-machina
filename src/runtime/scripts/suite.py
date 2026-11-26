@@ -549,17 +549,12 @@ PORT_TESTS = """tests.test_port_model_draw tests.test_port_gte tests.test_port_g
     tests.test_port_encounters tests.test_port_text_speed tests.test_port_movie_skip tests.test_port_dialogue
     tests.test_port_locale tests.test_game_coverage tests.test_game_module_memory""".split()
 
-# The browser tests that measure time (the headset's frame rate, rewind frame
-# times, fast-forward's music, the stalled page, a resume read within the
-# rewind's one-second interval, the Binaural mode's cost), each a pattern of
-# its file's test names; the other tests of those files run beside others.
+# The browser tests that measure wall-clock execution performance (rewind frame
+# latency, the Binaural mode's cost), each a pattern of its file's test names;
+# the other tests run beside others (clock-dependent tests use virtual frame clocks).
 TIMED = {
-    "persistence": ["rewind frame p99", "keep music on host time", "rewind uses elapsed seconds during FF",
-                    "the configured history length expires game saves by elapsed play time", "Start pause freezes rewind history"],
-    "page": ["drops missed time"],
+    "persistence": ["rewind frame p99"],
     "binaural": ["phone-class processor"],
-    "xr-game": ["."],
-    "xr-diorama": ["."],
 }
 
 # The Rust test binaries that measure time (a frame's latency, the desktop's

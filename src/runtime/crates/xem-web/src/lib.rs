@@ -140,6 +140,11 @@ pub struct XemApp {
     /// Frames ran since the display was last shown.
     display_dirty: bool,
     running: bool,
+    /// The last animation or headset frame timestamp (`frame`/`xr_frame`, ms).
+    last_frame_ms: Option<f64>,
+    /// The active frame clock shared with the session's rewind timer while the
+    /// animation loop is running; `None` falls back to `performance.now()`.
+    frame_clock: Rc<Cell<Option<f64>>>,
     /// Page time up to which game frames have been run or dropped.
     paced: Option<f64>,
     music_paced: Option<f64>,
@@ -294,6 +299,8 @@ impl XemApp {
             host_buttons: 0,
             display_dirty: false,
             running: false,
+            last_frame_ms: None,
+            frame_clock: Rc::new(Cell::new(None)),
             paced: None,
             music_paced: None,
             pacer: Default::default(),
@@ -384,10 +391,11 @@ impl XemApp {
     /// canvas. Time a throttled or frozen page missed, or a frame spent
     /// waiting for a disc sector, is dropped, not caught up.
     pub fn frame(&mut self, now: f64) -> Result<(), JsValue> {
+        self.last_frame_ms = Some(now);
         self.stats.animation_frames += 1;
         self.step(now)?;
         let fresh = self.display_dirty || self.session.is_none();
-        self.take_game_frame(false);
+        self.take_game_frame(false, now);
         // Game-paced presentation (no interpolation) draws only when the
         // game drew (or the panel shows); the canvas keeps the last picture
         // meanwhile.
@@ -408,6 +416,7 @@ impl XemApp {
     /// floats, column major; `viewports` its layer rectangle (x, y from the
     /// bottom, width, height).
     pub fn xr_frame(&mut self, now: f64, layer: web_sys::XrWebGlLayer, matrices: &[f32], viewports: &[i32]) -> Result<(), JsValue> {
+        self.last_frame_ms = Some(now);
         // The panel's Recenter places this session's view (the page's
         // operations take the rest of the app's requests).
         let recentring = {
@@ -451,7 +460,7 @@ impl XemApp {
                 renderer.set_xr_eye(view);
             }
         }
-        self.take_game_frame(true);
+        self.take_game_frame(true, now);
         self.stats.xr_frames += 1;
         if let Some(renderer) = &mut self.renderer {
             renderer.render_xr(&layer, &views, now / 1000.0, &self.settings.borrow()).map_err(error)?;
@@ -872,6 +881,12 @@ impl XemApp {
 
     /// The game frames due since the last step (see [`XemApp::frame`]).
     fn step(&mut self, now: f64) -> Result<(), JsValue> {
+        if self.running {
+            let aligned = self.frame_clock.replace(Some(now)).is_some();
+            if !aligned && let Some(session) = self.session.as_mut() {
+                session.reset_rewind_timer();
+            }
+        }
         self.sync_time_controls()?;
         // First-person inspection is toggled and turned whether the game
         // runs or not (a headset's Pause stands apart from it).
@@ -1017,6 +1032,7 @@ impl XemApp {
             };
             if self.session.as_ref().is_none_or(|s| s.stopped.is_some()) {
                 self.running = false;
+                self.frame_clock.set(None);
             }
             if live_music && let Some(session) = self.session.as_mut() {
                 session.advance_live_music(music_cycles).map_err(error)?;
@@ -1061,7 +1077,7 @@ impl XemApp {
 
     /// Hands what the game drew to the renderer (configured for the canvas or
     /// a headset) and updates the panel's status.
-    fn take_game_frame(&mut self, headset: bool) {
+    fn take_game_frame(&mut self, headset: bool, now: f64) {
         if (!self.running || self.xr_paused()) && let Some(session) = &mut self.session {
             if session.debug.busy() {
                 if let Err(error) = session.tick_debug() {
@@ -1070,7 +1086,6 @@ impl XemApp {
                 self.display_dirty = true;
             }
         }
-        let now = now_ms();
         let held = self.rewind_held.iter().any(|held| *held);
         // What `step` runs: a held rewind through settings' pause too.
         let active = self.running && !self.xr_paused();
@@ -1263,7 +1278,8 @@ impl XemApp {
     /// Save-state feedback after the host completes storage or restoration.
     pub fn state_notice(&mut self, saved: bool, failure: Option<String>) {
         if let Some(hud) = self.renderer.as_mut().and_then(|r| r.frame_rate.as_mut()) {
-            hud.notify_state(saved,failure.as_deref(),std::time::Duration::from_secs_f64(now_ms()/1000.0));
+            let now = self.last_frame_ms.unwrap_or_else(now_ms);
+            hud.notify_state(saved,failure.as_deref(),std::time::Duration::from_secs_f64(now/1000.0));
         }
     }
     /// The panel's error bar: what a page operation's failure says, or none
@@ -1709,7 +1725,11 @@ impl XemApp {
             runtime.services().add_disc(number, source);
         }
         self.wanted_disc = None;
-        self.session = Some(Session::new(runtime,schema,|| std::time::Duration::from_secs_f64(now_ms()/1000.0)));
+        self.frame_clock.set(None);
+        let clock = self.frame_clock.clone();
+        self.session = Some(Session::new(runtime, schema, move || {
+            std::time::Duration::from_secs_f64(clock.get().unwrap_or_else(now_ms).max(0.0) / 1000.0)
+        }));
         self.applied_time_settings = None;
         self.rewind_held = [false;2];
         self.rewind_next = 0.0;
@@ -1721,10 +1741,18 @@ impl XemApp {
 
     /// Let the animation loop advance the game (in bounded batches) or stop it.
     pub fn set_running(&mut self, running: bool) {
-        if !running { self.hud_forward = None; self.hud_rewind = None; }
+        if !running {
+            self.hud_forward = None;
+            self.hud_rewind = None;
+            self.frame_clock.set(None);
+        }
         self.running = running && self.session.as_ref().is_some_and(|s| s.stopped.is_none());
+        if !self.running {
+            self.frame_clock.set(None);
+        }
         self.paced = None;
         self.music_paced = None;
+        self.batched = None;
         if let Some(session) = self.session.as_mut() {
             session.reset_rewind_timer();
         }
@@ -1771,6 +1799,7 @@ impl XemApp {
         };
         if self.session.as_ref().is_some_and(|s| s.stopped.is_some()) {
             self.running = false;
+            self.frame_clock.set(None);
         }
         to_json(&reply)
     }

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, describe, test } from 'node:test';
 import { runInNewContext } from 'node:vm';
-import { NO_WEBGPU, WEBGPU, decodePng, pixelStats, settingsSection, shot, start, status, syntheticDisc } from './support.mjs';
+import { NO_WEBGPU, RAF_CLOCK, WEBGPU, animationFrames, decodePng, pixelStats, settingsSection, shot, start, status, syntheticDisc } from './support.mjs';
 
 async function canvasShot(page, name) {
   const png = await page.locator('canvas').screenshot({ path: shot(name) });
@@ -85,7 +85,7 @@ describe('rendering', () => {
         assert.equal(renderer.panel, 'slint');
         await page.keyboard.press('Escape');
         assert.equal(await page.evaluate(() => window.xem.panel.visible()), true);
-        await page.waitForTimeout(300);
+        await animationFrames(page, 2);
         const withPanel = await canvasShot(page, `panel-${expected}.png`);
         assert.ok(withPanel.colours > 200);
         await page.keyboard.press('Escape');
@@ -99,7 +99,7 @@ describe('rendering', () => {
         await page.waitForFunction(()=>/^\d+ FPS$/.test(window.xem.status().renderer.fps));
         assert.ok(pixelStats(await counter()).lit>0.1,'the FPS counter is visible');
         await page.evaluate(()=>window.xem.settings.apply({ShowFps:false}));
-        await page.waitForTimeout(100);
+        await animationFrames(page, 2);
         assert.equal(pixelStats(await counter()).lit,0,'disabling Show FPS removes the counter');
         assert.deepEqual(page.errors, []);
       } finally {
@@ -147,12 +147,13 @@ describe('page services', () => {
   test('settings can be changed through the Slint panel', async () => {
     const page = await browser.page();
     await page.evaluate(() => window.xem.panel.show(true));
-    await page.waitForTimeout(300);
+    await animationFrames(page, 2);
     const panel=await settingsSection(page,1);
     const before = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
     // The Show FPS switch, at the end of the Picture card's last row.
     await page.mouse.click(panel.left+586,panel.top+307);
-    await page.waitForTimeout(200);
+    await page.waitForFunction((before) => window.xem.settings.get().settings.presentation.show_fps !== before, before);
+    await animationFrames(page, 2);
     await page.locator('canvas').screenshot({ path: shot('panel-click.png') });
     const after = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
     assert.equal(after, !before);
@@ -260,31 +261,35 @@ describe('automation over a game module fixture', () => {
   });
 
   test('the animation loop runs due frames in bounded batches and drops missed time', async () => {
-    const loop = await page.evaluate(async () => {
-      const status = () => window.xem.status();
-      const waitFor = (done) => new Promise((resolve) => {
-        const check = () => (done() ? resolve() : setTimeout(check, 10));
-        check();
+    const clocked = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [{ content: RAF_CLOCK }] });
+    try {
+      const stalledPage = await clocked.page('?game=/fixtures/fixture.wasm');
+      const loop = await stalledPage.evaluate(async () => {
+        const status = () => window.xem.status();
+        const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+        await window.xem.boot({ executable: false, run: true });
+        const before = status().loop;
+        while (status().session.vblanks < 10) await nextFrame();
+        // A one-second stall of the page (as a throttled or frozen tab sees).
+        const stalled = status().session.vblanks;
+        window.rafJumpMs = 1000;
+        await nextFrame();
+        await nextFrame();
+        const afterStall = status().session.vblanks - stalled;
+        while (!status().session.stopped) await nextFrame();
+        const s = status();
+        return { ...s.loop, before, afterStall, running: s.running, session: s.session };
       });
-      await window.xem.boot({ executable: false, run: true });
-      const before = status().loop;
-      await waitFor(() => status().session.vblanks >= 10);
-      // A one-second stall of the page (as a throttled or frozen tab sees).
-      const stalled = status().session.vblanks;
-      const until = performance.now() + 1000;
-      while (performance.now() < until);
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const afterStall = status().session.vblanks - stalled;
-      await waitFor(() => status().session.stopped);
-      const s = status();
-      return { ...s.loop, before, afterStall, running: s.running, session: s.session };
-    });
-    assert.ok(loop.maxBatch <= loop.maxFramesPerAnimation, `batch of ${loop.maxBatch}`);
-    assert.ok(loop.afterStall <= 2 * loop.maxFramesPerAnimation, `${loop.afterStall} frames after the stall`);
-    assert.ok(loop.dropped - loop.before.dropped >= 50, `${loop.dropped - loop.before.dropped} dropped`);
-    assert.equal(loop.gameFrames - loop.before.gameFrames, 104);
-    assert.equal(loop.running, false);
-    assert.deepEqual([loop.session.vblanks, loop.session.stopped], [103, STOP]);
+      assert.ok(loop.maxBatch <= loop.maxFramesPerAnimation, `batch of ${loop.maxBatch}`);
+      assert.ok(loop.afterStall <= 2 * loop.maxFramesPerAnimation, `${loop.afterStall} frames after the stall`);
+      assert.ok(loop.dropped - loop.before.dropped >= 50, `${loop.dropped - loop.before.dropped} dropped`);
+      assert.equal(loop.gameFrames - loop.before.gameFrames, 104);
+      assert.equal(loop.running, false);
+      assert.deepEqual([loop.session.vblanks, loop.session.stopped], [103, STOP]);
+      assert.deepEqual(stalledPage.errors, []);
+    } finally {
+      await clocked.close();
+    }
   });
 
   test('the game\'s sound reaches the AudioWorklet', async () => {
@@ -295,7 +300,11 @@ describe('automation over a game module fixture', () => {
         const check = () => (window.xem.status().session.stopped ? resolve() : setTimeout(check, 10));
         check();
       });
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => {
+        const deadline = performance.now() + 5000;
+        const check = () => (window.xem.status().page.audio.played > 4800 || performance.now() >= deadline ? resolve() : setTimeout(check, 20));
+        check();
+      });
       const s = window.xem.status();
       return { runtime: s.audio, page: s.page.audio, vblanks: s.session.vblanks };
     });
@@ -370,15 +379,15 @@ describe('automation over a game module fixture', () => {
     assert.deepEqual(pads.automation, ['triangle'], 'the player\'s idle input leaves an automation pad alone');
     await page.keyboard.down('KeyE');
     await page.keyboard.down('Enter');
-    await page.waitForTimeout(100);
+    await animationFrames(page, 2);
     const held = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
     await page.keyboard.up('KeyE');
     await page.keyboard.up('Enter');
-    await page.waitForTimeout(100);
+    await animationFrames(page, 2);
     const released = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
     await page.evaluate(() => window.xem.panel.show(true));
     await page.keyboard.down('ArrowUp');
-    await page.waitForTimeout(100);
+    await animationFrames(page, 2);
     const withPanel = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
     await page.keyboard.up('ArrowUp');
     await page.evaluate(() => window.xem.panel.show(false));

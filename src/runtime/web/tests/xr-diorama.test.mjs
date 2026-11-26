@@ -47,7 +47,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, SHOTS, USER_DISC, WEB, start, status } from './support.mjs';
+import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, SHOTS, USER_DISC, WEB, XR_CLOCK, start, status } from './support.mjs';
 
 const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -172,7 +172,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
         { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL + REQUESTS }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK + HAND_MODEL + REQUESTS }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -203,10 +203,10 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       // every face and the camera from the frame after the view changes).
       await page.evaluate(() => window.xem.setRunning(true));
       await page.waitForFunction(() => window.xem.status().xr.diorama && window.xem.status().xr.share === 0, null, { timeout: 60_000 });
-      // The session's and the game's rates over two seconds (recorded, not checked).
+      // The session's and the game's rates over 10 frames (recorded, not checked).
       const before = await status(page);
       const t0 = Date.now();
-      await page.waitForTimeout(2000);
+      await frames(10);
       const after = await status(page);
       const seconds = (Date.now() - t0) / 1000;
       console.log(`with the diorama: session ${((after.page.xr.frames - before.page.xr.frames) / seconds).toFixed(1)} frames/s, `
@@ -507,7 +507,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       });
       return [name, readFileSync(path).toString('base64')];
     }));
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -644,15 +644,11 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
         { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    // On the software renderer wherever the file's other tests draw: a
-    // graphics card presents the session's frames as fast as the game's, and
-    // the first frames a diorama cannot be built from once inspection ends
-    // are then three in a row where it holds the last one over two
-    // (xem-render's ps1/diorama.rs, MISSES), which "and on" below sees as
-    // one frame's ease towards the screen (its share 0.056) in three runs of
-    // five.
-    const browser = await start({ args: NO_WEBGPU, software: true, context: { userAgent: QUEST_BROWSER },
-      initScripts: [{ content: QUEST + HAND_MODEL + RECORDER }] });
+    // XR_CLOCK advances 50 ms (3 game frames) per session frame, so easing over
+    // the 0.3 s switch spans 5 frames even on slow software renderers and the
+    // return from inspection never hits 3 consecutive empty frames on fast GPUs.
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER },
+      initScripts: [{ content: QUEST + XR_CLOCK + HAND_MODEL + RECORDER }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -946,7 +942,7 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       input: [{ cmd: 'enter_field', map: 25 }, { cmd: 'auto_advance', dwell: 1 }, { cmd: 'frames', count: 5080 }, { cmd: 'auto_advance', dwell: 0 },
         { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + RECORDER }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK + RECORDER }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -959,15 +955,25 @@ describe('the seated diorama in a headset browser', { skip: !available && `needs
       assert.equal(applied.ok, true, JSON.stringify(applied));
       await page.click('#vr');
       await page.waitForFunction(() => window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
-      // Every session frame from the state on (RECORDER), the game running,
-      // until map 25's diorama shows alone again after the movie.
+      // Every session frame from the state on (RECORDER), the game running:
+      // play through the diorama ease-out and 110 rebuilt movie frames on the
+      // screen alone, fast-advance the middle of the 4 280-frame movie in WASM
+      // without rendering thousands of redundant stereo frames, then play the
+      // ending and ease back into map 25's diorama live.
       await page.evaluate(() => { window.xrTimeline = []; window.xrRecording = true; });
       await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xrTimeline.filter((f) => f.movie && f.share === 1 && !f.diorama).length >= 110,
+        null, { timeout: 240_000, polling: 250 });
+      await page.evaluate(async () => {
+        window.xem.setRunning(false);
+        await window.xem.runFrames(3500);
+        window.xem.setRunning(true);
+      });
       await page.waitForFunction(() => {
         const t = window.xrTimeline;
         const last = t.findLastIndex((f) => f.movie);
         return last >= 0 && t.length - last > 20 && t.slice(-10).every((f) => f.diorama && f.share === 0);
-      }, null, { timeout: 480_000, polling: 500 });
+      }, null, { timeout: 240_000, polling: 250 });
       const timeline = await page.evaluate(() => { window.xrRecording = false; return window.xrTimeline; });
       await page.evaluate(() => window.xem.setRunning(false));
       // Map 25's diorama, eased out over the movie's first rebuilt frames,

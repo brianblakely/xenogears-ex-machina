@@ -51,7 +51,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, native, rotate, start, status } from './support.mjs';
+import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, ROOT, SHOTS, USER_DISC, WEB, XR_CLOCK, animationFrames, native, rotate, start, status } from './support.mjs';
 
 const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -63,10 +63,6 @@ const platformingMaps = () => {
   return [...table.replace(/"[^"]*"/g, '').matchAll(/\d+/g)].map((m) => Number(m[0])).sort((a, b) => a - b);
 };
 
-// The game frames an animation frame may catch up (xem-web's MAX_FRAMES_PER_ANIMATION).
-const framesPerAnimation = () =>
-  Number(readFileSync(join(ROOT, 'src/runtime/crates/xem-web/src/lib.rs'), 'utf8').match(/const MAX_FRAMES_PER_ANIMATION: u64 = (\d+);/)[1]);
-
 describe('immersive play in a headset browser', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
   test('the game runs on a virtual screen in both views', { timeout: 600_000 }, async () => {
     const state = join(SHOTS, 'xr-field12.state');
@@ -77,7 +73,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
           .map((c) => JSON.stringify(c)).join('\n') + '\n',
       });
     }
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK }] });
     try {
       // A quarter-size layer: software WebGL draws it fast enough to show the
       // game's own pace.
@@ -100,6 +96,10 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await page.click('#vr');
       await page.waitForFunction(() => window.xem.status().page.xr.frames > 30, null, { timeout: 60_000 });
       assert.equal((await xr(page)).views, 2, 'two views');
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
       // The automation's frames in the headset end where the flat ones did.
       await page.evaluate(() => window.xem.runFrames(120));
       assert.equal(await page.evaluate(() => window.xem.memoryHash()), flatHash, 'the headset changes nothing in the game');
@@ -114,24 +114,24 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         'and goes on natively as in the headset');
 
       // Running: game frames follow the clock, not the session's frame rate:
-      // 60 a second, as long as the session presents at 15 Hz or more (a
-      // session frame catches up at most xem-web's MAX_FRAMES_PER_ANIMATION;
-      // time beyond that is dropped). On CI's runner of four threads the
-      // session's software WebGL presents at about 8 Hz, so the clock gives
-      // the game that many a session frame there.
+      // 60 a second across both 30 Hz and 90 Hz virtual session clocks.
       await page.evaluate(() => window.xem.setRunning(true));
-      const before = await status(page);
-      const t0 = Date.now();
-      await page.waitForTimeout(3000);
+      for (const [hz, count] of [[30, 30], [90, 45]]) {
+        await page.evaluate((step) => { window.xrStepMs = step; }, 1000 / hz);
+        await frames(3);
+        const before = await page.evaluate(() => ({ status: window.xem.status(), now: window.xrNowMs }));
+        await frames(count);
+        const after = await page.evaluate(() => ({ status: window.xem.status(), now: window.xrNowMs }));
+        const seconds = (after.now - before.now) / 1000;
+        const gameRate = (after.status.loop.gameFrames - before.status.loop.gameFrames) / seconds;
+        const xrRate = (after.status.page.xr.frames - before.status.page.xr.frames) / seconds;
+        console.log(`at ${hz} Hz: game ${gameRate.toFixed(1)} frames/s, session ${xrRate.toFixed(1)} frames/s`);
+        assert.ok(gameRate > 54 && gameRate < 66, `at ${hz} Hz the game runs near 60 frames a second (${gameRate})`);
+        assert.ok(after.status.loop.xrFrames > before.status.loop.xrFrames, 'the session drives the frames');
+        assert.equal(after.status.loop.animationFrames, before.status.loop.animationFrames, 'the canvas loop rests in the headset');
+      }
+      await page.evaluate(() => { window.xrStepMs = 50; });
       const after = await status(page);
-      const seconds = (Date.now() - t0) / 1000;
-      const gameRate = (after.loop.gameFrames - before.loop.gameFrames) / seconds;
-      const xrRate = (after.page.xr.frames - before.page.xr.frames) / seconds;
-      console.log(`game ${gameRate.toFixed(1)} frames/s, session ${xrRate.toFixed(1)} frames/s`);
-      const clock = Math.min(60, framesPerAnimation() * xrRate);
-      assert.ok(gameRate > clock * 2 / 3 && gameRate < 66, `the game runs near ${clock.toFixed(1)} frames a second, the clock's (${gameRate})`);
-      assert.ok(after.loop.xrFrames > before.loop.xrFrames, 'the session drives the frames');
-      assert.equal(after.loop.animationFrames, before.loop.animationFrames, 'the canvas loop rests in the headset');
 
       // The gameplay options in the session: the settings' defaults reach
       // the game (random battles off on xem-core's platforming maps, every
@@ -171,10 +171,10 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await page.evaluate(() => { window.xrDevice.position.set(0.2, 1.6, 0.1); });
       // A quarter turn to the right (-90 degrees about +Y).
       await page.evaluate(() => { window.xrDevice.quaternion.set(0, -Math.SQRT1_2, 0, Math.SQRT1_2); });
-      await page.waitForTimeout(500);
+      await frames(6);
       const moved = await status(page);
       assert.equal(moved.loop.gameFrames, paused.loop.gameFrames, 'the game stays paused');
-      assert.ok(moved.page.xr.frames > paused.page.xr.frames + 5, 'the session keeps rendering');
+      assert.ok(moved.page.xr.frames >= paused.page.xr.frames + 6, 'the session keeps rendering');
       assert.notDeepEqual(moved.page.xr.viewer, paused.page.xr.viewer, 'the head is tracked');
       const head = (await page.evaluate(() => window.xem.command({ cmd: 'binaural' }))).head;
       assert.ok(Math.abs(head.yaw - 90) < 2, `the listener turned with the head, the game paused: ${JSON.stringify(head)}`);
@@ -192,7 +192,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const RIGHT = [0, -Math.SQRT1_2, 0, Math.SQRT1_2];
       const look = async (quaternion) => {
         await page.evaluate((q) => window.xrDevice.quaternion.set(...q), quaternion);
-        await page.waitForTimeout(500);
+        await frames(4);
         const status = await page.evaluate(() => window.xem.command({ cmd: 'binaural' }));
         return status.sources.filter((s) => s.kind === 'music' && s.target)
           .map((s) => [`${s.song}/${s.part}`, s.target.azimuth]).sort(([a], [b]) => a.localeCompare(b));
@@ -217,10 +217,6 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       // in front of it again; the runtime's own recentring (IWER's: the
       // head levelled to the space's -Z, its reference space's `reset`)
       // puts the seat back at the space's origin, the screen in front.
-      const frames = (n) => page.evaluate(async (n) => {
-        const start = window.xem.status().page.xr.frames;
-        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
-      }, n);
       const centres = async () => {
         await frames(6);
         const p = await page.evaluate(([w, h]) => window.xem.xr.readback([[Math.floor(w / 4), Math.floor(h / 2)], [Math.floor(3 * w / 4), Math.floor(h / 2)]]), layer);
@@ -251,7 +247,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 30_000 });
       assert.equal((await page.evaluate(() => window.xem.command({ cmd: 'binaural' }))).head, null, 'no head out of the headset');
       const flat = (await status(page)).loop.animationFrames;
-      await page.waitForTimeout(300);
+      await animationFrames(page, 2);
       assert.ok((await status(page)).loop.animationFrames > flat, 'the canvas draws again');
       assert.deepEqual(page.errors, []);
     } finally {
@@ -266,7 +262,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
         { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK + HAND_MODEL }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -290,11 +286,11 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const points = [0.25, 0.75].flatMap((u) => [-0.04, 0, 0.04].flatMap((dx) => [-0.08, 0, 0.08]
         .map((dy) => [Math.floor((u + dx) * layer[0]), Math.floor((0.5 + dy) * layer[1])])));
       const read = () => page.evaluate((points) => window.xem.xr.readback(points), points);
-      // The session's and the game's rates over two seconds (recorded, not checked).
+      // The session's and the game's rates over 10 frames (recorded, not checked).
       const rates = async () => {
         const before = await status(page);
         const t0 = Date.now();
-        await page.waitForTimeout(2000);
+        await frames(10);
         const after = await status(page);
         const seconds = (Date.now() - t0) / 1000;
         return `session ${((after.page.xr.frames - before.page.xr.frames) / seconds).toFixed(1)} frames/s, `
@@ -430,7 +426,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 30_000 });
       info = await status(page);
       assert.equal(info.renderer.firstPerson, true, 'the view carries out of the headset');
-      await page.waitForTimeout(300);
+      await animationFrames(page, 2);
       assert.ok((await status(page)).loop.animationFrames > info.loop.animationFrames, 'the canvas draws it');
       // And into a new session: Enter VR again, its views look from within
       // the scene with no toggle.
@@ -472,7 +468,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       });
       return [name, readFileSync(path).toString('base64')];
     }));
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK + HAND_MODEL }] });
     try {
       const page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
@@ -656,7 +652,7 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
     });
     assert.ok(readFileSync(join(cards, 'card2.mcd')).every((b) => b === 0), 'the route writes card 2 only after frame ' + FROM);
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + XR_CLOCK + HAND_MODEL }] });
     try {
       let page = await browser.page();
       await page.evaluate(() => window.xem.cards.store(1, new Uint8Array(0x20000)));
@@ -664,7 +660,12 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       page = await browser.page('?xrScale=0.25');
       await page.setInputFiles('#file', USER_DISC);
       await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
-      // With rewind history, as the player's own play has it.
+      // With rewind history, as the player's own play has it (12 s cap keeps
+      // filling fast while holding plenty of history for all three rewinds).
+      await page.evaluate(() => {
+        const applied = window.xem.settings.apply({ RewindHistorySeconds: 12 });
+        if (!applied.ok) throw new Error(applied.reason);
+      });
       await page.evaluate(() => window.xem.boot({ rewind: true }));
       await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))),
         readFileSync(state).toString('base64'));
@@ -727,9 +728,12 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
         await frames(5);
       };
       const [SAVES, TIME, SAVE_STATE, LOAD_STATE, FAST_FORWARD] = [[82, 294], [82, 254], [296, 167], [505, 167], [547, 376]];
-      // The history full (its 30 s of play) before Settings' pause, which
-      // is no play time: the pause takes no states off it.
-      await page.waitForFunction(() => window.xem.status().session.rewind.available_seconds >= 28.5, null, { timeout: 90_000 });
+      // The history full (its 12 s of play) before Settings' pause, which
+      // is no play time: the pause takes no states off it. Step at 64 ms
+      // (4 game frames per session frame = 60 game fps) while filling.
+      await page.evaluate(() => { window.xrStepMs = 64; });
+      await page.waitForFunction(() => window.xem.status().session.rewind.available_seconds >= 11, null, { timeout: 90_000 });
+      await page.evaluate(() => { window.xrStepMs = 50; });
       const history = (await status(page)).session.rewind;
       await page.evaluate(() => window.xem.panel.show(true));
       await frames(4);
@@ -741,7 +745,10 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const record = await page.evaluate(async () => { const r = await window.xem.load('slot0'); return r && { verified: r.verified, bytes: r.bytes }; });
       assert.ok(record?.verified, `IndexedDB holds the state, its checksum verified: ${JSON.stringify(record)}`);
       assert.equal(await page.evaluate(() => window.xem.memoryHash()), saved, 'Settings held the game while it saved');
-      await page.waitForTimeout(4000);
+      // 4.0 s of virtual time paused while Settings stay open.
+      await page.evaluate(() => { window.xrStepMs = 200; });
+      await frames(20);
+      await page.evaluate(() => { window.xrStepMs = 50; });
 
       // Settings closed, the game at its own pace; then the controllers'
       // Back+RT (the right stick's click with the right grip) fast-forwards
@@ -751,18 +758,24 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const kept = (await status(page)).session.rewind;
       console.log(`Settings' pause: ${history.states} states from game frame ${history.oldest_frame} before, ${kept.states} from ${kept.oldest_frame} after`);
       assert.ok(kept.states >= history.states - 1, `Settings' pause took no play time off the history: ${history.states} states before it, ${kept.states} after`);
-      const rate = async () => {
-        const [before, t0] = [await status(page), Date.now()];
+      // Measure 1x and fast-forward against a 60 Hz virtual session clock so
+      // FastForwardPacer tracks WASM speed rather than SwiftShader frame time.
+      await page.evaluate(() => { window.xrStepMs = 1000 / 60; });
+      const rate = async (count) => {
+        const before = await page.evaluate(() => ({ status: window.xem.status(), now: window.xrNowMs }));
         const factors = [];
-        while (Date.now() - t0 < 3000) {
-          await page.waitForTimeout(250);
+        for (let ran = 0; ran < count; ran += 10) {
+          await frames(Math.min(10, count - ran));
           const s = (await status(page)).session;
           factors.push(s.fast_forward ? s.fast_forward_pace ?? s.fast_forward_rate.Fixed : 1);
         }
-        const after = await status(page);
-        return { rate: (after.loop.gameFrames - before.loop.gameFrames) / ((Date.now() - t0) / 1000), factor: factors.reduce((a, b) => a + b) / factors.length };
+        const after = await page.evaluate(() => ({ status: window.xem.status(), now: window.xrNowMs }));
+        return {
+          rate: (after.status.loop.gameFrames - before.status.loop.gameFrames) / ((after.now - before.now) / 1000),
+          factor: factors.reduce((a, b) => a + b) / factors.length,
+        };
       };
-      const normal = await rate();
+      const normal = await rate(60);
       await page.evaluate(() => { const r = window.xrDevice.controllers.right; r.updateButtonValue('thumbstick', 1); r.updateButtonValue('squeeze', 1); });
       await frames(3);
       await page.evaluate(() => { const r = window.xrDevice.controllers.right; r.updateButtonValue('thumbstick', 0); r.updateButtonValue('squeeze', 0); });
@@ -770,7 +783,10 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       info = await status(page);
       assert.equal(info.session.fast_forward, true, 'Back+RT turned fast-forward on');
       assert.equal(info.xr.inspecting, false, 'Back with RT is a chord, not inspection\'s toggle');
-      const fast = await rate();
+      // Let FastForwardPacer adapt past its 0.5 s window before measuring.
+      await frames(35);
+      const fast = await rate(60);
+      await page.evaluate(() => { window.xrStepMs = 50; });
       // The session paces a fixed rate at what the host reaches (a loaded
       // machine's software WebGL reaches less than 10x).
       const share = fast.rate / normal.rate / fast.factor;

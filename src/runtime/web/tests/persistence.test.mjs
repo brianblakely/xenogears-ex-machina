@@ -7,7 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, WEB, buildFixtures, settingsSection, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, RAF_CLOCK, ROOT, USER_DISC, WEB, animationFrames, buildFixtures, settingsSection, start, status } from './support.mjs';
 
 const fixture = '?game=/fixtures/fixture.wasm';
 const forever = async (page) => page.evaluate(async () => {
@@ -479,7 +479,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
   });
 
   test('animation frames and unrelated Settings changes preserve agent time-control commands', async () => {
-    const browser = await start({args:NO_WEBGPU,fixtures:true});
+    const browser = await start({args:NO_WEBGPU,fixtures:true,initScripts:[{content:RAF_CLOCK}]});
     try {
       const page = await browser.page(fixture); await forever(page);
       const result = await page.evaluate(async () => {
@@ -487,8 +487,10 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
         x.command({cmd:'fast_forward_configure',rate:{Fixed:5}});
         x.command({cmd:'rewind_configure',max_bytes:8*1024*1024,interval_seconds:3,history_seconds:12});
         const before = x.status().session;
+        window.rafStepMs = 200;
         x.settings.apply({MasterVolume:55}); x.setRunning(true);
-        await new Promise((resolve) => setTimeout(resolve,1250)); x.setRunning(false);
+        for (let i = 0; i < 8; i += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+        x.setRunning(false);
         return {before,after:x.status().session};
       });
       assert.deepEqual(result.after.fast_forward_rate,{Fixed:5});
@@ -516,7 +518,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('xem.settings')).random_battles), 'Original');
       // The choice lives in the panel's Gameplay section.
       await page.evaluate(() => window.xem.panel.show(true));
-      await page.waitForTimeout(300);
+      await animationFrames(page, 2);
       await settingsSection(page, 6);
       await page.evaluate(() => window.xem.setRunning(false));
       await page.reload(); await page.waitForFunction(() => document.body.dataset.ready === 'true');
@@ -623,7 +625,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       assert.deepEqual((await status(page)).session.fast_forward_rate, { Fixed: 10 });
       await page.evaluate(() => { window.padButtons[8] = true; window.padButtons[7] = true; });
       await page.waitForFunction(() => window.xem.status().session.fast_forward === false);
-      await page.waitForTimeout(100);
+      await animationFrames(page, 3);
       assert.equal((await status(page)).session.fast_forward, false, 'holding a chord never repeats it');
       await page.evaluate(() => { window.padButtons.fill(false); });
       const fpsBinding=await page.evaluate(()=>window.xem.settings.apply({BindApp:{action:'ToggleFps',binding:{keyboard:['F6'],gamepad:['Start','East']}}}));
@@ -732,7 +734,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       await page.waitForFunction((invertedReleased) => window.xem.status().session.frames > invertedReleased,invertedReleased);
       await page.evaluate(() => { window.padButtons[7]=true; });
       await page.waitForFunction(() => window.xem.status().session.fast_forward === true);
-      await page.waitForTimeout(100);
+      await animationFrames(page, 3);
       assert.equal((await status(page)).session.fast_forward,true,'holding RT does not repeat the FF toggle');
       await page.evaluate(() => { window.padButtons.fill(false); window.xem.setRunning(false); });
       await page.reload(); await page.waitForFunction(() => document.body.dataset.ready === 'true');
@@ -751,7 +753,8 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       cwd:ROOT,input:commands.map(command=>JSON.stringify(command)).join('\n')+'\n',encoding:'utf8',maxBuffer:1<<26,
     }).trim().split('\n').map(line=>JSON.parse(line));
     assert.ok(replies.every(reply=>!reply.error),JSON.stringify(replies));
-    const browser=await start({args:NO_WEBGPU,initScripts:[()=>{
+    const browser=await start({args:NO_WEBGPU,initScripts:[{content:RAF_CLOCK},()=>{
+      window.rafStepMs=50;
       window.padButtons=Array(17).fill(false);
       Object.defineProperty(navigator,'getGamepads',{value:()=>[{connected:true,id:'Focus pause controls',
         buttons:window.padButtons.map(pressed=>({pressed,value:Number(pressed)}))}]});
@@ -785,15 +788,19 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
       await page.waitForFunction(()=>window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40);
       const paused=(await status(page)).session;
-      await page.waitForTimeout(2200);
+      await animationFrames(page, 45);
       assert.deepEqual((await status(page)).session.rewind,paused.rewind,'the in-game pause freezes rewind history');
       await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
       await page.waitForFunction(frame=>window.xem.status().session.frames>frame,paused.frames);
       assert.equal(await page.evaluate(()=>window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40),0x40,
         'focus gain leaves the original pause screen open');
       await page.evaluate(()=>window.xem.fastForward(false));
-      await page.keyboard.down('Enter'); await page.waitForTimeout(80); await page.keyboard.up('Enter');
-      await page.waitForFunction(()=>!(window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40));
+      await page.keyboard.down('Enter');
+      try {
+        await page.waitForFunction(()=>!(window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40));
+      } finally {
+        await page.keyboard.up('Enter');
+      }
       // A chord no default binding uses (Back+West toggles auto-advance).
       const bound=await page.evaluate(()=>
         window.xem.settings.apply({BindApp:{action:'TogglePauseOnFocusLoss',binding:{keyboard:['KeyO'],gamepad:['Back','L1']}}}));
@@ -954,7 +961,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
   });
 
   test('rewind uses elapsed seconds during FF and its timing settings have keyboard and gamepad bindings', async () => {
-    const browser=await start({args:NO_WEBGPU,fixtures:true,initScripts:[()=>{
+    const browser=await start({args:NO_WEBGPU,fixtures:true,initScripts:[{content:RAF_CLOCK},()=>{
       window.padButtons=Array(17).fill(false);
       Object.defineProperty(navigator,'getGamepads',{value:()=>[{connected:true,id:'Interval controls',
         buttons:window.padButtons.map(pressed=>({pressed,value:Number(pressed)}))}]});
@@ -965,10 +972,10 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       assert.equal((await status(page)).session.rewind.history_seconds,30);
       const started=await page.evaluate(()=>{
         const x=window.xem; x.settings.apply({FastForwardRate:{Fixed:20}}); x.fastForward(true); x.setRunning(true);
-        return performance.now();
+        return window.rafNowMs;
       });
       await page.waitForFunction(()=>window.xem.status().session.rewind.states>=2);
-      const captured=await page.evaluate(()=>({now:performance.now(),session:window.xem.status().session}));
+      const captured=await page.evaluate(()=>({now:window.rafNowMs,session:window.xem.status().session}));
       assert.ok(captured.now-started>=900,'a 1-second real-time interval is not accelerated by FF');
       assert.ok(captured.session.rewind.newest_frame>60,'the queue is not created every fixed number of game frames');
       await page.evaluate(()=>{
@@ -985,7 +992,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       await page.evaluate(()=>{window.padButtons[3]=true});
       await page.waitForFunction(()=>window.xem.status().session.rewind.interval_seconds===2);
       await page.evaluate(()=>window.padButtons.fill(false));
-      await page.waitForTimeout(100);
+      await animationFrames(page, 2);
       await page.evaluate(()=>{window.padButtons[1]=true});
       await page.waitForFunction(()=>window.xem.status().session.rewind.interval_seconds===1);
       await page.evaluate(()=>window.padButtons.fill(false));
@@ -993,11 +1000,11 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       assert.equal((await status(page)).session.rewind.history_seconds,31);
       await page.keyboard.press('KeyP');
       assert.equal((await status(page)).session.rewind.history_seconds,30);
-      await page.waitForTimeout(100);
+      await animationFrames(page, 2);
       await page.evaluate(()=>{window.padButtons[4]=true});
       await page.waitForFunction(()=>window.xem.status().session.rewind.history_seconds===31);
       await page.evaluate(()=>window.padButtons.fill(false));
-      await page.waitForTimeout(100);
+      await animationFrames(page, 2);
       await page.evaluate(()=>{window.padButtons[5]=true});
       await page.waitForFunction(()=>window.xem.status().session.rewind.history_seconds===30);
       await page.evaluate(()=>window.padButtons.fill(false));
@@ -1019,7 +1026,8 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       await page.click('#settings');
       const typeR = async (what) => {
         const before=(await status(page)).session.frames;
-        await page.keyboard.down('KeyR'); await page.waitForTimeout(250);
+        await page.keyboard.down('KeyR');
+        await animationFrames(page, 4);
         const after=await status(page); await page.keyboard.up('KeyR');
         assert.ok(after.session.frames>before,`typing R in ${what} rewound from ${before} to ${after.session.frames}`);
         assert.notEqual(after.page.operationStatus,'Rewinding while held.');
@@ -1047,7 +1055,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
   });
 
   test('the configured history length expires game saves by elapsed play time', async () => {
-    const browser=await start({args:NO_WEBGPU,fixtures:true});
+    const browser=await start({args:NO_WEBGPU,fixtures:true,initScripts:[{content:RAF_CLOCK},()=>{window.rafStepMs=50;}]});
     try {
       const page=await browser.page(fixture); await forever(page);
       await page.evaluate(()=>{
@@ -1069,7 +1077,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
   });
 
   test('20× and uncapped fast-forward keep music on host time', async () => {
-    const browser = await start({ args: NO_WEBGPU, fixtures: true });
+    const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [{ content: RAF_CLOCK }] });
     try {
       const page = await browser.page(fixture);
       for (const rate of [{ Fixed: 20 }, 'Uncapped']) {
@@ -1083,14 +1091,16 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       }, rate);
       await page.waitForFunction(() => window.xem.status().renderer.hud.fast_forward);
       const result = await page.evaluate(async () => {
-        // Finish the first visible HUD frame before measuring: the browser
-        // may compile its GPU work after the frame callback returns.
-        await new Promise(requestAnimationFrame);
+        // Measure over 60 virtual 60 Hz animation frames (1.0 s of host time)
+        // so music pacing is independent of software-rendering frame stalls.
+        const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+        await nextFrame();
         const x = window.xem;
-        const before = x.status(); const start = performance.now();
-        await new Promise((resolve) => setTimeout(resolve, 1000)); x.setRunning(false);
+        const before = x.status(); const start = window.rafNowMs;
+        for (let i = 0; i < 60; i++) await nextFrame();
+        x.setRunning(false);
         const after = x.status();
-        return { before, after, elapsed: performance.now()-start };
+        return { before, after, elapsed: window.rafNowMs - start };
       });
       const samples = result.after.audio.frames - result.before.audio.frames;
       assert.ok(samples > 30_000, `music produced only ${samples} samples in ${result.elapsed} ms`);
@@ -1118,7 +1128,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       cwd:ROOT,input:commands.map(command=>JSON.stringify(command)).join('\n')+'\n',encoding:'utf8',maxBuffer:1<<26,
     }).trim().split('\n').map(line=>JSON.parse(line));
     assert.ok(replies.every(reply=>!reply.error),JSON.stringify(replies));
-    const browser = await start({args:NO_WEBGPU});
+    const browser = await start({args:NO_WEBGPU,initScripts:[{content:RAF_CLOCK},()=>{window.rafStepMs=50;}]});
     try {
       const page = await browser.page(); await page.setInputFiles('#file',USER_DISC);
       await page.waitForFunction(()=>window.xem.status().disc?.state==='identified');
@@ -1126,17 +1136,26 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
         const x=window.xem; await x.boot({rewind:true}); x.importSnapshot(Uint8Array.from(bytes));
         x.configureRewind(64*1024*1024,1,2); x.setRunning(true);
       },Array.from(readFileSync(state)));
-      await page.waitForFunction(()=>window.xem.status().session.rewind.states>=2);
-      await page.evaluate(()=>window.xem.command({cmd:'press',buttons:['start'],frames:4}));
-      await page.waitForFunction(()=>window.xem.command({cmd:'inspect',path:'sound_driver_flags'}) & 0x40);
-      const paused = (await status(page)).session;
-      await page.waitForTimeout(3000);
-      const later = (await status(page)).session;
+      // Capture pause/resume state synchronously inside the browser frame loop
+      // so Playwright IPC latency cannot advance past the 2 s history window.
+      const { paused, later, resumed } = await page.evaluate(async () => {
+        const x = window.xem;
+        const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+        const isPaused = () => Boolean(x.command({ cmd: 'inspect', path: 'sound_driver_flags' }) & 0x40);
+        while (x.status().session.rewind.states < 2) await nextFrame();
+        x.command({ cmd: 'press', buttons: ['start'], frames: 4 });
+        while (!isPaused()) await nextFrame();
+        const paused = x.status().session;
+        // 60 virtual 50 ms frames = 3.0 s paused (> 2 s history_seconds).
+        for (let i = 0; i < 60; i++) await nextFrame();
+        const later = x.status().session;
+        x.command({ cmd: 'press', buttons: ['start'], frames: 4 });
+        while (isPaused()) await nextFrame();
+        const resumed = x.status().session.rewind;
+        return { paused, later, resumed };
+      });
       assert.ok(later.frames>paused.frames,'the original pause screen keeps receiving game frames');
       assert.deepEqual(later.rewind,paused.rewind,'paused frames neither capture nor expire playing history');
-      await page.evaluate(()=>window.xem.command({cmd:'press',buttons:['start'],frames:4}));
-      await page.waitForFunction(()=>!(window.xem.command({cmd:'inspect',path:'sound_driver_flags'}) & 0x40));
-      const resumed = (await status(page)).session.rewind;
       for (const field of ['states','bytes','oldest_frame','newest_frame']) {
         assert.equal(resumed[field],paused.rewind[field],`resume must not capture immediately: ${field}`);
       }
@@ -1158,7 +1177,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
     }).trim().split('\n').map(JSON.parse);
     assert.ok(replies.every(reply=>!reply.error),JSON.stringify(replies));
     const address=JSON.parse(readFileSync(join(WEB,'game/schema.json'),'utf8')).globals.sound_driver_flags.address;
-    const browser=await start({args:NO_WEBGPU});
+    const browser=await start({args:NO_WEBGPU,initScripts:[{content:RAF_CLOCK},()=>{window.rafStepMs=50;}]});
     try {
       await browser.context.route('**/game/schema.json',route=>route.fulfill({status:404,body:'unavailable'}));
       const page=await browser.page();
@@ -1175,14 +1194,18 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 1 }, (
       await page.waitForFunction(()=>window.isGamePaused());
       const paused=(await status(page)).session;
       await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
-      await page.waitForTimeout(2200);
+      await animationFrames(page, 45);
       assert.ok(await page.evaluate(()=>window.isGamePaused()),'blur must not synthesize resume Start');
       const later=(await status(page)).session;
       assert.ok(later.frames>paused.frames,'the original pause screen must keep running');
       assert.deepEqual(later.rewind,paused.rewind,'no schema is needed to freeze the rewind queue');
       await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-      await page.keyboard.down('Enter'); await page.waitForTimeout(100); await page.keyboard.up('Enter');
-      await page.waitForFunction(()=>!window.isGamePaused());
+      await page.keyboard.down('Enter');
+      try {
+        await page.waitForFunction(()=>!window.isGamePaused());
+      } finally {
+        await page.keyboard.up('Enter');
+      }
       assert.deepEqual(page.errors,[]);
     } finally { await browser.close(); }
   });

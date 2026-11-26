@@ -164,6 +164,13 @@ disc=${XEM_DISC1:-$root/discs/Xenogears disc 1.chd}
 frames=${XEM_XR_GAME_FRAMES:-600}
 : "${XEM_MONADO_RUNTIME:?run inside nix develop path:./nix/runtime}"
 export VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-$XEM_LAVAPIPE_ICD}
+# Bound lane concurrency to available cores (2 lanes on a 4-vCPU CI runner, 4
+# on 8+ cores) and keep each Lavapipe process to one rasterizer thread so
+# concurrent lanes do not oversubscribe small runners and distort frame-pacing
+# checks.
+nproc_val=$(nproc 2>/dev/null || echo 4)
+max_lanes=${XEM_XR_LANES:-$(( nproc_val >= 8 ? 4 : nproc_val >= 4 ? 2 : 1 ))}
+export LP_NUM_THREADS=${LP_NUM_THREADS:-1}
 export XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME
 export SDL_AUDIO_DRIVER=dummy
 
@@ -613,9 +620,10 @@ printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2
     "$headless" --disc "$disc" --control >"$out/gear-headless.log" 2>"$out/gear-headless.err"
 # The battle on foot as a diorama, its log pressing Cross every 30 frames
 # from game frame 1500 (its attacks: the battle's camera moves), both eyes
-# captured at headset frames 600 and 700; the world map as a diorama at
+# captured at headset frames 540 and 620 (in the battle whether the headset
+# steps 3 or 4 game frames a frame); the world map as a diorama at
 # 25%, the vehicle it begins in driven on by its throttle (Triangle) from
-# game frame 800 to 1200, both eyes captured at 350 and 420; then each log
+# game frame 800 to 1200, both eyes captured at 310 and 380; then each log
 # in xem-headless.
 fight="${foot%]}"
 for f in $(seq 1500 30 2200); do
@@ -624,28 +632,37 @@ done
 fight="$fight]"
 echo "{\"commands\": $fight}" >"$out/fight.json"
 echo '{"graphics": {"xr": {"view": "Diorama"}}}' >"$settings"
-"$desktop" --xr --disc "$disc" --script "$out/fight.json" --exit-at-frame 2300 --xr-capture "$out/battle-diorama" --xr-capture-at 600,700 \
+"$desktop" --xr --disc "$disc" --script "$out/fight.json" --exit-at-frame 2300 --xr-capture "$out/battle-diorama" --xr-capture-at 540,620 \
     >"$out/battle-diorama.log" 2>"$out/battle-diorama.err"
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":2300},"max_frames":3000}\n{"cmd":"memory_hash"}\n' "$fight" |
     "$headless" --disc "$disc" --control >"$out/battle-diorama-headless.log" 2>"$out/battle-diorama-headless.err"
 drive='[[0, {"cmd": "boot_mode", "mode": 3}], [800, {"cmd": "press", "buttons": ["triangle"], "frames": 400}]]'
 echo "{\"commands\": $drive}" >"$out/worlddrive.json"
 echo '{"graphics": {"xr": {"view": "Diorama", "diorama_scale": 25}}}' >"$settings"
-"$desktop" --xr --disc "$disc" --script "$out/worlddrive.json" --exit-at-frame 1500 --xr-capture "$out/worldmap-diorama" --xr-capture-at 350,420 \
+"$desktop" --xr --disc "$disc" --script "$out/worlddrive.json" --exit-at-frame 1500 --xr-capture "$out/worldmap-diorama" --xr-capture-at 310,380 \
     >"$out/worldmap-diorama.log" 2>"$out/worldmap-diorama.err"
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1500},"max_frames":2500}\n{"cmd":"memory_hash"}\n' "$drive" |
     "$headless" --disc "$disc" --control >"$out/worldmap-diorama-headless.log" 2>"$out/worldmap-diorama-headless.err"
 }
 
 lanes=()
+stopped=
 for name in first fallbacks play scenes; do
+    while (( ${#lanes[@]} >= max_lanes )); do
+        done_pid=
+        if ! wait -n -p done_pid; then stopped=1; fi
+        remaining=()
+        for pid in "${lanes[@]}"; do
+            [[ $pid == "$done_pid" ]] || remaining+=("$pid")
+        done
+        lanes=("${remaining[@]}")
+    done
     (
         lane "$name"
         "lane_$name"
     ) &
     lanes+=($!)
 done
-stopped=
 for pid in "${lanes[@]}"; do
     wait "$pid" || stopped=1
 done
@@ -1093,10 +1110,18 @@ notices = [l for l in lines if l.startswith("hud notice=")]
 check(notices == ['hud notice="State saved"', 'hud notice="State loaded"'], f"the HUD's results: {notices}")
 rows = records("saves.log")
 by = {int(r["n"]): r for r in rows}
-# Each result shows for four seconds of headset frames.
-shown = [int(r["n"]) for r in rows if "notice" in r["hud"].split(",")]
-check(abs(len(shown) - 8e9 / period) <= 0.2 * 8e9 / period and all(60 <= n <= 300 for n in shown),
-      f"the HUD showed the results for {len(shown)} frames: {shown[:1]}..{shown[-1:]}")
+# Each result shows for four seconds (measured on the frames' wall clock
+# rather than frame count so slower software Lavapipe frames do not false-fail).
+shown = [r for r in rows if "notice" in r["hud"].split(",")]
+notice_runs = []
+for r in shown:
+    if not notice_runs or int(r["n"]) != int(notice_runs[-1][-1]["n"]) + 1:
+        notice_runs.append([r])
+    else:
+        notice_runs[-1].append(r)
+notice_seconds = [(int(run[-1]["wall_us"]) - int(run[0]["wall_us"])) / 1e6 for run in notice_runs]
+check(len(notice_runs) == 2 and all(3.2 <= d <= 4.8 for d in notice_seconds) and all(60 <= int(r["n"]) <= 300 for r in shown),
+      f"the HUD showed the results for {len(shown)} frames ({[round(d, 2) for d in notice_seconds]} s): {[int(r['n']) for r in shown[:1]]}..{[int(r['n']) for r in shown[-1:]]}")
 held = [r for r in rows if 25 <= int(r["n"]) <= 75]
 check(all(r["layers"] == "2" and r["paused"] == "1" for r in held) and len({r["game_frames"] for r in held}) == 1,
       "Settings did not hold the game while the state was saved")
@@ -1749,11 +1774,11 @@ def diorama_run(name, frames, captures):
     reference = next(v for v in (json.loads(l) for l in open(f"{out}/{name}-diorama-headless.log") if l.startswith("{") or l.startswith('"')) if isinstance(v, str))
     check(final_hash(f"{name}-diorama.log") == reference, f"{name}-diorama.log: RAM at game frame {frames} {final_hash(f'{name}-diorama.log')} != headless {reference}")
     return rows, shown, tables
-rows, shown, tables = diorama_run("battle", 2300, (600, 700))
+rows, shown, tables = diorama_run("battle", 2300, (540, 620))
 moved = {r["target"] for r in shown}
 check(len(tables) == 2 and len(moved) > 20, f"the battle's table stood at {len(tables)} places ({tables[:3]}..) while its camera's target took {len(moved)}")
 print(f"battle diorama: shown from headset frame {shown[0]['n'] if shown else '-'}; the table at {tables}; the camera's target at {len(moved)} places; RAM {final_hash('battle-diorama.log')}")
-rows, shown, tables = diorama_run("worldmap", 1500, (350, 420))
+rows, shown, tables = diorama_run("worldmap", 1500, (310, 380))
 scales = {r["world_scale"] for r in shown}
 centres = [tuple(float(v) for v in r["table"].split(",")) for r in shown]
 targets = [tuple(float(v) for v in r["target"].split(",")) for r in shown]

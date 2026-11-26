@@ -146,6 +146,11 @@ settle=$(( $(cat "$booted") + 20 - $(date +%s) ))
 # No "isn't responding" dialog over the app when the system UI is slow on a
 # loaded host (it took the taps); the app's own stalls still fail the checks.
 "${adb[@]}" shell settings put global hide_error_dialogs 1
+# Disable system transition animations so the software renderer spends its CPU
+# on the app rather than Android window transitions.
+"${adb[@]}" shell settings put global window_animation_scale 0
+"${adb[@]}" shell settings put global transition_animation_scale 0
+"${adb[@]}" shell settings put global animator_duration_scale 0
 "${adb[@]}" shell wm density reset
 for _ in $(seq 15); do
     [[ $("${adb[@]}" shell dumpsys window displays) == *"mRotation=0 "* ]] && break
@@ -206,6 +211,67 @@ shot() {
     echo "  screenshot $out/$1.png"
 }
 tap() { "${adb[@]}" shell input tap "$1" "$2"; }
+# tap_section SECTION X Y: tap a settings tab and wait for the panel to report
+# SECTION, retrying if a slow frame or post-boot activity recreation reset it.
+tap_section() {
+    local section=$1 x=$2 y=$3
+    for _ in 1 2 3; do
+        mark
+        tap "$x" "$y"
+        if seen "xem: panel visible=true section=$section$" 30; then
+            return 0
+        fi
+    done
+    fail "panel did not select section $section"
+}
+# toggle_panel WANT: press Back until the panel reports visible=WANT.
+toggle_panel() {
+    local want=$1
+    for _ in 1 2 3; do
+        mark
+        "${adb[@]}" shell input keyevent KEYCODE_BACK
+        if seen "xem: panel visible=$want section=" 30; then
+            return 0
+        fi
+    done
+    fail "panel did not become visible=$want"
+}
+# key_action KEYCODE REGEX [TIMEOUT]: press KEYCODE and wait for REGEX,
+# retrying if logcat dropped a line on a busy emulator.
+key_action() {
+    local key=$1 regex=$2 timeout=${3:-45} line
+    for _ in 1 2 3; do
+        mark
+        "${adb[@]}" shell input keyevent --longpress "$key"
+        if line=$(seen "$regex" "$timeout"); then
+            echo "$line"
+            return 0
+        fi
+    done
+    fail "no log line matching: $regex"
+}
+# touch_hold BUTTONS X Y [MOVE_X MOVE_Y]: hold a finger down (and optionally
+# drag to MOVE_X, MOVE_Y) until the pad logs BUTTONS, then lift it and wait for
+# release, avoiding fixed-duration swipe races on slow software frames.
+touch_hold() {
+    local buttons=$1 x=$2 y=$3 mx=${4:-} my=${5:-}
+    for _ in 1 2 3; do
+        mark
+        "${adb[@]}" shell input motionevent DOWN "$x" "$y"
+        if [ -n "$mx" ]; then
+            "${adb[@]}" shell input motionevent MOVE "$mx" "$my"
+        fi
+        if seen "xem: pad buttons $buttons " 20; then
+            "${adb[@]}" shell input motionevent UP "${mx:-$x}" "${my:-$y}"
+            if seen "xem: pad buttons 0x0000 " 20; then
+                return 0
+            fi
+        else
+            "${adb[@]}" shell input motionevent UP "${mx:-$x}" "${my:-$y}"
+        fi
+    done
+    fail "no log lines of touch holding $buttons and letting go"
+}
 # pick_document LABEL REGEX: chooses the document whose name matches REGEX in
 # the system document picker (DocumentsUI), via Downloads, until it closes.
 pick_document() {
@@ -263,35 +329,37 @@ if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 # strip's edge, at 997,722 from its start, then Saves at 767,722 beside
 # Time. xem-ui's panel test checks these taps at this size and scale.
 echo "== settings change by touch (Show FPS)"
-mark
-tap 370 722
-sleep 1
-shot 01-graphics
-# The compact Graphics card has no heading/help rows; its Show FPS switch,
-# below Scale, Force 4:3 and Filter, is centred here in 01-graphics.png
-# (xem-ui's panel test checks this tap too).
-tap 930 1462
-# Check the operation itself. During first-boot log traffic the setting was
-# saved and survived restart, but logcat missed its one-line acknowledgement.
+# Check the operation itself, retrying if a post-boot GMS config update
+# recreates the activity mid-tap and resets the panel to section 0.
 fps_saved=
-for _ in $(seq 30); do
-    if "${adb[@]}" exec-out run-as "$package" cat files/settings.json |
-        python3 -c 'import json, sys; sys.exit(0 if json.load(sys.stdin)["presentation"]["show_fps"] is True else 1)'; then
-        fps_saved=1
-        break
-    fi
-    sleep 1
+for _ in 1 2 3; do
+    tap_section 1 370 722
+    shot 01-graphics
+    # The compact Graphics card has no heading/help rows; its Show FPS switch,
+    # below Scale, Force 4:3 and Filter, is centred here in 01-graphics.png
+    # (xem-ui's panel test checks this tap too).
+    tap 930 1462
+    for _ in $(seq 15); do
+        if "${adb[@]}" exec-out run-as "$package" cat files/settings.json 2>/dev/null |
+            python3 -c 'import json, sys
+try:
+    sys.exit(0 if json.load(sys.stdin)["presentation"]["show_fps"] is True else 1)
+except Exception:
+    sys.exit(1)'; then
+            fps_saved=1
+            break 2
+        fi
+        sleep 1
+    done
 done
 [ -n "$fps_saved" ] || fail "Show FPS was not enabled and saved by touch"
 echo "  Show FPS enabled and saved by touch"
 
 echo "== disc import through the document picker (Import disc... button)"
-mark
-tap 997 722
-sleep 2
-tap 767 722
-sleep 1
+tap_section 4 997 722
+tap_section 5 767 722
 shot 01-saves
+mark
 # Import disc is now the first row directly below the tabs.
 tap 858 915
 wait_for "xem: disc picker opened"
@@ -300,14 +368,12 @@ wait_for "I/xem.*persisted read permission for content://"
 wait_for "xem: disc identified source=content://.*boot=SLUS_999\.99;1 sha256=$synthetic_sha disc=not a Xenogears disc" 60
 wait_for "xem: disc import remembered content://"
 wait_for "xem: frame rendered"
-sleep 2
 shot 02-imported
 
 echo "== Back hides the settings panel (scene only), Back shows it again"
-"${adb[@]}" shell input keyevent KEYCODE_BACK
-sleep 2
+toggle_panel false
 shot 03-panel-hidden
-"${adb[@]}" shell input keyevent KEYCODE_BACK
+toggle_panel true
 
 echo "== background and return"
 mark
@@ -391,13 +457,22 @@ if [ -f "$disc1" ]; then
     else
         echo '{}' >"$out/ff-settings.json"
     fi
-    python3 - "$out/ff-settings.json" <<'PY'
+    python3 - "$out/ff-settings.json" "${XEM_EMULATOR_GPU:-swiftshader_indirect}" <<'PY'
 import json
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
+gpu = sys.argv[2]
 settings = json.loads(path.read_text())
 settings["fast_forward_rate"] = {"Fixed": 20}
+# On software Vulkan (SwiftShader), Auto scale picks 4x (1280x896) and Medium
+# quality, collapsing the emulator to ~1 FPS. 1x + Low keeps ExMachina/Modern,
+# Enhanced movies, touch layout, pass counts and exact memory hashes while
+# avoiding 16x fragment overdraw on CPU-only CI runners.
+if gpu == "swiftshader_indirect":
+    graphics = settings.setdefault("graphics", {})
+    graphics["internal_scale"] = 1
+    graphics["quality"] = "Low"
 path.write_text(json.dumps(settings))
 PY
     "${adb[@]}" push "$out/ff-settings.json" /data/local/tmp/xem-ff-settings.json >/dev/null
@@ -454,14 +529,14 @@ PY
     deck=$(grep "xem: touch deck Confirm " "$log" | tail -1)
     [ -n "$deck" ] || fail "no touch deck logged"
     read -r x y w h <<<"$(sed -E 's/.*touch deck Confirm ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3 \4/' <<<"$deck")"
-    hold 0x4000 swipe $((x + w / 2)) $((y + h / 2)) $((x + w / 2)) $((y + h / 2)) 800
+    touch_hold 0x4000 $((x + w / 2)) $((y + h / 2))
     shot 08-game-touch-deck
 
     echo "== the touch stick: a finger dragged right from where it touched holds Right"
     stick=$(grep "xem: touch stick " "$log" | tail -1)
     [ -n "$stick" ] || fail "no touch stick logged"
     read -r x y reach <<<"$(sed -E 's/.*touch stick ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3/' <<<"$stick")"
-    hold 0x0020 swipe "$x" "$y" $((x + 2 * reach)) "$y" 1000
+    touch_hold 0x0020 "$x" "$y" $((x + 2 * reach)) "$y"
 
     echo "== background and return: the game's clock stops"
     mark
@@ -549,42 +624,42 @@ PY
     # checks read those lines, and Back hides the panel while the game is to
     # play on.
     op_of() { sed -E 's/.*game_vblank=([0-9]+) memory_hash ([0-9a-f]+) .*/\1 \2/'; }
-    "${adb[@]}" shell input keyevent KEYCODE_BACK
-    sleep 2
-    tap 997 722
-    sleep 2
+    toggle_panel true
+    tap_section 4 997 722
     mark
     tap 829 1644
     wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward off\." 60
     shot 10-time
-    # The finger lifts 2 s after the press is logged: the frame that takes
-    # the press steps the rewind (the app's requests run before the game's
-    # update), whereas a hold of fixed length can begin and end between two
-    # of the slowest frames (both in one at 0.6 a second), which no step
-    # follows.
+    # Keep the finger down until the host logs an actual rewind step rather than
+    # sleeping a fixed duration that races with slow software frames.
     mark
     "${adb[@]}" shell input motionevent DOWN 850 1389
     held=$(wait_for "xem: app UiRewind\(true\) game_vblank=.* ok: Rewinding while held\." 60)
-    sleep 2
+    wait_for "xem: rewind step game_vblank=" 60
     "${adb[@]}" shell input motionevent UP 850 1389
     released=$(wait_for "xem: app UiRewind\(false\) game_vblank=.* ok: Rewind released\." 60)
     before=$(echo "$held" | vblank_of)
     after=$(echo "$released" | vblank_of)
-    tap 767 722
-    sleep 2
+    tap_section 5 767 722
     mark
     tap 306 1095
     saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 60)
-    echo "  Hold to rewind: game vblank $before when pressed, $after when released, $(echo "$saved" | vblank_of) at Save state"
+    saved_vblank=$(echo "$saved" | vblank_of)
+    echo "  Hold to rewind: game vblank $before when pressed, $after when released, $saved_vblank at Save state"
     [ "$after" -lt "$before" ] || fail "Hold to rewind did not go back ($before -> $after)"
-    [ "$(echo "$saved" | vblank_of)" -gt "$after" ] || fail "the game did not play on after the rewind"
-    "${adb[@]}" shell input keyevent KEYCODE_BACK
-    sleep 6
-    mark
-    moved=$(wait_for "xem: frame rendered .*game_vblank=" 90)
-    [ "$(echo "$moved" | vblank_of)" -gt "$(echo "$saved" | vblank_of)" ] || fail "the game did not play on after the save"
-    "${adb[@]}" shell input keyevent KEYCODE_BACK
-    sleep 2
+    [ "$saved_vblank" -gt "$after" ] || fail "the game did not play on after the rewind"
+    toggle_panel false
+    moved=
+    for _ in $(seq 30); do
+        mark
+        line=$(wait_for "xem: frame rendered .*game_vblank=" 30)
+        if [ "$(echo "$line" | vblank_of)" -gt "$saved_vblank" ]; then
+            moved=$line
+            break
+        fi
+    done
+    [ -n "$moved" ] || fail "the game did not play on after the save"
+    toggle_panel true
     mark
     tap 764 1095
     loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60)
@@ -593,12 +668,11 @@ PY
     [ "$(op_of <<<"$saved")" = "$(op_of <<<"$loaded")" ] || fail "Load state did not give back the saved game"
     echo "  $("${adb[@]}" shell run-as "$package" ls -l files/saves/state.xemstate | tr -d '\r')"
     shot 10-saves
-    tap 313 722
-    sleep 2
+    tap_section 4 313 722
     mark
     tap 829 1644
     wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 60
-    "${adb[@]}" shell input keyevent KEYCODE_BACK
+    toggle_panel false
     wait_for "xem: frame rendered .*fast_forward=true" 90
 
     if tail -n "+$game_start" "$log" |
@@ -650,16 +724,13 @@ PY
         pick_document disc1 "xem-disc1\.chd"
         wait_for "xem: script .* to frame Some\($((at + 600))\)" 120
         wait_for "xem: game booted" 60
-        "${adb[@]}" shell input keyevent --longpress KEYCODE_F8
-        loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60)
+        loaded=$(key_action KEYCODE_F8 "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60)
         got=$(wait_for "xem: script frame $((at + 600)) memory_hash " 120 | sed -E 's/.*memory_hash ([0-9a-f]+).*/\1/')
         echo "  xem-headless's state at frame $at (RAM $start_hash) loaded on the device: $(op_of <<<"$loaded");" \
             "frame $((at + 600)) memory_hash $got (natively $played)"
         [ "$(op_of <<<"$loaded" | cut -d' ' -f2)" = "$start_hash" ] || fail "Load state did not give the native state's RAM"
         [ "$got" = "$played" ] || fail "the native state went on elsewhere on the device"
-        mark
-        "${adb[@]}" shell input keyevent --longpress KEYCODE_F5
-        saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 60)
+        saved=$(key_action KEYCODE_F5 "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 60)
         "${adb[@]}" exec-out run-as "$package" cat files/saves/state.xemstate >"$out/device.xemstate"
         continued=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
         onward=$(printf '{"cmd":"state_load","path":"%s"}\n{"cmd":"frames","count":600}\n{"cmd":"memory_hash"}\n' "$out/device.xemstate" | native | last_string)
@@ -696,8 +767,7 @@ PY
         pick_document disc1 "xem-disc1\.chd"
         wait_for "xem: script .* to frame Some\($((at + 300))\)" 120
         wait_for "xem: game booted" 60
-        "${adb[@]}" shell input keyevent --longpress KEYCODE_F8
-        wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60
+        key_action KEYCODE_F8 "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60 >/dev/null
         loaded=$mark
         sleep 20
         shot 11-lahan-burning

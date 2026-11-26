@@ -334,6 +334,30 @@ impl Presenter {
     }
 }
 
+/// Scancodes pressed since the last frame poll, so a key pressed and released
+/// between two slow frames (e.g. software rendering) is still observed once
+/// before release.
+#[derive(Default)]
+struct KeyLatch([u64; 8]);
+
+impl KeyLatch {
+    fn set(&mut self, scancode: u32) {
+        let i = scancode as usize;
+        if i < self.0.len() * 64 {
+            self.0[i / 64] |= 1u64 << (i % 64);
+        }
+    }
+
+    fn contains(&self, scancode: u32) -> bool {
+        let i = scancode as usize;
+        i < self.0.len() * 64 && self.0[i / 64] & (1u64 << (i % 64)) != 0
+    }
+
+    fn clear(&mut self) {
+        self.0 = [0; 8];
+    }
+}
+
 /// What a host presents: the scene as the game image, placed by the
 /// presentation settings, under the settings panel when it is visible.
 pub struct View {
@@ -429,6 +453,10 @@ pub struct View {
     /// Android's on-screen keyboard is asked for (a panel text field has
     /// the focus).
     keyboard: bool,
+    /// Key-down scancodes latched since the last app/game poll so quick taps
+    /// are not dropped between slow frames.
+    app_keys_latched: KeyLatch,
+    game_keys_latched: KeyLatch,
 }
 
 impl View {
@@ -542,6 +570,8 @@ impl View {
             achievements: None,
             ran: 0,
             keyboard: false,
+            app_keys_latched: KeyLatch::default(),
+            game_keys_latched: KeyLatch::default(),
         })
     }
 
@@ -664,7 +694,10 @@ impl View {
         let typing = self.panel_visible() && self.ui.text_editor_focused();
         // A binding listening for an input takes the keys, as a text field does.
         let editing = typing || self.panel_visible() && self.ui.listening();
-        if editing { self.app_input.release_keyboard(); }
+        if editing {
+            self.app_input.release_keyboard();
+            self.app_keys_latched.clear();
+        }
         // Android shows its on-screen keyboard while a panel text field has
         // the focus (RetroAchievements' sign-in, a number); the desktop
         // takes text whenever the panel shows (xem-desktop).
@@ -674,15 +707,21 @@ impl View {
         }
         let mut count = 0;
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
-        if !keys.is_null() {
-            let keys = unsafe { std::slice::from_raw_parts(keys,count.max(0) as usize) };
+        let keys = if keys.is_null() { &[][..] } else { unsafe { std::slice::from_raw_parts(keys, count.max(0) as usize) } };
+        if !editing {
             for binding in bindings.values() {
                 for code in &binding.keyboard {
-                    let held = !editing && keys.get(scancode(code).0 as usize).copied().unwrap_or(false);
-                    self.app_input.key(code,held);
+                    let sc = scancode(code).0 as u32;
+                    let live = keys.get(sc as usize).copied().unwrap_or(false);
+                    let latched = self.app_keys_latched.contains(sc);
+                    if latched {
+                        self.app_input.key(code, false);
+                    }
+                    self.app_input.key(code, live || latched);
                 }
             }
         }
+        self.app_keys_latched.clear();
         // A binding listening for an input: the buttons are no chord.
         if !(self.panel_visible() && self.ui.listening()) {
             self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
@@ -787,6 +826,7 @@ impl View {
     pub fn set_panel_visible(&mut self, visible: bool) {
         if visible {
             self.deck.release();
+            self.game_keys_latched.clear();
         }
         if self.panel_visible() && !visible {
             self.ui.cancel_pointer();
@@ -867,9 +907,16 @@ impl View {
                 {
                     // A binding listening for an input took it.
                 } else if visible {
+                    if key.down && !key.repeat && !self.ui.text_editor_focused() && !self.ui.listening() {
+                        self.app_keys_latched.set(key.scancode.0 as u32);
+                    }
                     for event in panel_key_events(&key, shortcut_key_held()) {
                         self.ui.dispatch(event);
                     }
+                } else if key.down && !key.repeat {
+                    let sc = key.scancode.0 as u32;
+                    self.app_keys_latched.set(sc);
+                    self.game_keys_latched.set(sc);
                 }
             }
             // A binding listening for an input takes the keys, not their text.
@@ -976,6 +1023,8 @@ impl View {
             SDL_EVENT_WINDOW_FOCUS_LOST => {
                 self.ui.cancel_pointer();
                 self.player.mouse.clear();
+                self.app_keys_latched.clear();
+                self.game_keys_latched.clear();
                 self.app_requests.borrow_mut().extend(self.app_input.set_focused(false));
             }
             SDL_EVENT_WINDOW_FOCUS_GAINED => {
@@ -1144,6 +1193,7 @@ impl View {
         self.targets = targets;
         if self.panel_visible() || !self.app_input.focused() {
             self.player.clear();
+            self.game_keys_latched.clear();
             self.look_toggle.clear();
             self.look_asked = false;
             self.look_mouse = [0.0; 2];
@@ -1162,7 +1212,12 @@ impl View {
         // SAFETY: SDL owns the array and keeps it valid while SDL runs.
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
         let keys = if keys.is_null() { &[][..] } else { unsafe { std::slice::from_raw_parts(keys, count.max(0) as usize) } };
-        let held = |code: &str| !self.app_input.captures_key(code, app_bindings) && keys.get(scancode(code).0 as usize).copied().unwrap_or(false);
+        let latched = std::mem::take(&mut self.game_keys_latched);
+        let held = |code: &str| {
+            let sc = scancode(code).0 as u32;
+            !self.app_input.captures_key(code, app_bindings)
+                && (keys.get(sc as usize).copied().unwrap_or(false) || latched.contains(sc))
+        };
         for code in bindings.keys() {
             self.player.key(bindings, code, held(code));
         }
@@ -2896,5 +2951,36 @@ mod tests {
         codes.extend((2..=24).map(|n| format!("F{n}")));
         codes.extend(["Decimal","Add","Subtract","Multiply","Divide","Enter"].map(|key| format!("Numpad{key}")));
         for code in codes { assert_ne!(scancode(&code).0,SDL_SCANCODE_UNKNOWN.0,"{code}"); }
+    }
+
+    #[test]
+    fn key_latch_preserves_taps_between_frames() {
+        let mut latch = KeyLatch::default();
+        let sc = scancode("Backquote").0 as u32;
+        assert!(!latch.contains(sc));
+        latch.set(sc);
+        assert!(latch.contains(sc));
+        // Out-of-range scancodes are ignored without panicking.
+        latch.set(9999);
+        assert!(!latch.contains(9999));
+
+        // Simulate a key pressed and released before the next frame's poll:
+        // SDL_GetKeyboardState reports false, yet the latched tap fires once.
+        let mut app_input = AppInput::default();
+        let bindings = xem_settings::Settings::default().app_bindings;
+        let latched = latch.contains(sc);
+        if latched {
+            app_input.key("Backquote", false);
+        }
+        app_input.key("Backquote", latched);
+        latch.clear();
+        assert_eq!(
+            app_input.requests(&bindings, false),
+            vec![AppRequest::Action(xem_settings::AppAction::ToggleFastForward)]
+        );
+        // Next frame without another press releases the key cleanly.
+        assert!(!latch.contains(sc));
+        app_input.key("Backquote", false);
+        assert!(app_input.requests(&bindings, false).is_empty());
     }
 }

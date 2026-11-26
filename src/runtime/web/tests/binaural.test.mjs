@@ -72,14 +72,14 @@ async function restored(browser, state, binaural) {
 }
 
 /** Runs `FRAMES` frames capturing their sound: the reply and the wall time. */
-async function capture(page) {
-  return page.evaluate(async (frames) => {
+async function capture(page, withSamples = true) {
+  return page.evaluate(async ({ frames, withSamples }) => {
     window.xem.command({ cmd: 'audio_capture', action: 'start' });
     const started = performance.now();
     const ran = await window.xem.runFrames(frames);
     const ms = performance.now() - started;
-    return { ran, ms, reply: window.xem.command({ cmd: 'audio_capture', action: 'stop', samples: true }) };
-  }, FRAMES);
+    return { ran, ms, reply: window.xem.command({ cmd: 'audio_capture', action: 'stop', samples: withSamples }) };
+  }, { frames: FRAMES, withSamples });
 }
 
 describe('the Binaural mode in browsers', { skip: !available && `needs ${USER_DISC}, the game module and ${HEADLESS}` }, () => {
@@ -116,19 +116,39 @@ describe('the Binaural mode in browsers', { skip: !available && `needs ${USER_DI
     native(state);
     const browser = await start({ args: NO_WEBGPU });
     try {
+      // Reuse one booted page and decode the snapshot once; switch the
+      // background canvas to Original so restoring the state does not trigger
+      // 3D Ex Machina SwiftShader draws under 4x CPU throttling between trials.
+      const page = await restored(browser, state, false);
+      await page.evaluate((base64) => {
+        const g = window.xem.settings.get().settings.graphics;
+        const applied = window.xem.settings.apply({ Graphics: { ...g, renderer: 'Original' } });
+        if (!applied.ok) throw new Error(applied.reason);
+        window.binauralState = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      }, readFileSync(state).toString('base64'));
+      const cdp = await page.context().newCDPSession(page);
       const measure = async (binaural, throttle) => {
-        const page = await restored(browser, state, binaural);
-        const cdp = await page.context().newCDPSession(page);
+        await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+        const reply = await page.evaluate((enabled) => window.xem.command({ cmd: 'binaural', enabled }), binaural);
+        assert.equal(reply.error, undefined, JSON.stringify(reply));
         await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
-        // The best of three runs from the state: the least disturbed.
-        let best = Infinity;
-        for (let run = 0; run < 3; run++) {
-          await page.evaluate((base64) => {
-            window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
-          }, readFileSync(state).toString('base64'));
-          best = Math.min(best, (await capture(page)).ms);
-        }
-        await page.close();
+        // The best of three runs from the state: the least disturbed, all in
+        // one evaluate so CDP round-trips do not queue behind throttled frames.
+        const best = await page.evaluate(async (frames) => {
+          let best = Infinity;
+          for (let run = 0; run < 3; run++) {
+            window.xem.importSnapshot(window.binauralState);
+            window.xem.command({ cmd: 'audio_capture', action: 'start' });
+            const started = performance.now();
+            await window.xem.runFrames(frames);
+            const ms = performance.now() - started;
+            const stop = window.xem.command({ cmd: 'audio_capture', action: 'stop', samples: false });
+            if (stop.error) throw new Error(stop.error);
+            best = Math.min(best, ms);
+          }
+          return best;
+        }, FRAMES);
+        await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
         return best;
       };
       for (const throttle of [1, 4]) {
@@ -139,6 +159,7 @@ describe('the Binaural mode in browsers', { skip: !available && `needs ${USER_DI
           + `${(share * 100).toFixed(1)}% of real time for ${SECONDS} s of sound`);
         assert.ok(share < (throttle === 1 ? 0.1 : 0.4), `Binaural takes ${(share * 100).toFixed(1)}% of real time at ×${throttle}`);
       }
+      assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();
     }
