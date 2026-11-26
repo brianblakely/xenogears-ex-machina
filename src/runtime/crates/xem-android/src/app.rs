@@ -20,7 +20,8 @@ use crate::disc::DiscImport;
 
 /// The file bundled in the APK's assets that startup reads back.
 const BUNDLED_ASSET: &CStr = c"xem-asset-check.txt";
-/// Frames between progress lines in the log.
+/// Frames between progress lines in the log (and a line each frame-rate
+/// span at least, when frames come slower).
 const LOG_EVERY: u64 = 120;
 /// The span over which the rendered and game frame rates are measured.
 const FPS_SPAN: Duration = Duration::from_secs(5);
@@ -772,14 +773,16 @@ impl Host {
         self.gpu.queue.present(frame);
         live.frames += 1;
         live.passes = live.passes.max(self.view.render_passes());
-        if live.log_next_frame || live.frames.is_multiple_of(LOG_EVERY) {
+        let elapsed = live.fps.0.elapsed();
+        // A device drawing a frame or two a second (an emulator's software
+        // Vulkan) still shows the game's state each frame-rate span.
+        if live.log_next_frame || live.frames.is_multiple_of(LOG_EVERY) || elapsed >= FPS_SPAN {
             // movie=1: the frame showed a movie frame rebuilt from what the
             // MDEC decoded (the Enhanced movies setting).
             let status = live.status();
             log(&format!("frame rendered {status} movie={}", u8::from(self.view.presented_movie())));
             live.log_next_frame = false;
         }
-        let elapsed = live.fps.0.elapsed();
         if elapsed >= FPS_SPAN {
             let seconds = elapsed.as_secs_f64();
             let rendered = (live.frames - live.fps.1) as f64 / seconds;

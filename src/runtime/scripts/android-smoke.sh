@@ -494,11 +494,22 @@ PY
 
     echo "== repeated Home during 20x fast-forward"
     # The game boot hides Settings; press the default keyboard FF binding.
-    # The app logs every 120th frame drawn, and at 20x the emulator draws few
-    # (CI's runner: 1.4 to 12 a second), so this waits as long as the check
-    # of fast-forward from the panel below.
-    "${adb[@]}" shell input keyevent --longpress KEYCODE_GRAVE
-    wait_for "xem: frame rendered .*fast_forward=true" 90
+    # The app logs the toggle as it carries it out (each round below then
+    # sees the game drawn at 20x). It reads the keyboard once a frame, and
+    # CI's emulator draws one a second here, so a press may fall between two
+    # reads unseen: press again then, three times at most, as `hold` does (a
+    # toggle whose line the busy log missed is turned off by the next press
+    # and on by the one after it).
+    ff=false
+    for _ in 1 2 3; do
+        mark
+        "${adb[@]}" shell input keyevent --longpress KEYCODE_GRAVE
+        if seen "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 15; then
+            ff=true
+            break
+        fi
+    done
+    $ff || fail "the keyboard's fast-forward key did not turn fast-forward on"
     for attempt in $(seq 6); do
         sleep 0.2
         mark
@@ -528,14 +539,15 @@ PY
     # Back shows the panel (at 8,465 as above, on Audio after the restarts):
     # Time's tab at 997,722 (half shown at the strip's edge) and its Stop
     # fast-forward at 829,1644 (fast-forward is on at 20x), Hold to rewind at
-    # 850,1389 held 2 s, Saves at 767,722 (beside Time, now in the strip's
+    # 850,1389 held, Saves at 767,722 (beside Time, now in the strip's
     # middle) with Save state and Load state at 306,1095 and 764,1095, then
     # Time at 313,722 (beside Saves) and its Start fast-forward (xem-ui's panel test checks each tap at
     # this size). Each operation
     # logs the game's vblank and memory hash just after it. The emulator's
-    # software Vulkan draws the panel at about two frames a second (and the
-    # game runs at most two frames a drawn one), so the checks read those
-    # lines, and Back hides the panel while the game is to play on.
+    # software Vulkan draws the panel at two frames a second or fewer (CI's
+    # runner: 0.6), and the game runs at most two frames a drawn one, so the
+    # checks read those lines, and Back hides the panel while the game is to
+    # play on.
     op_of() { sed -E 's/.*game_vblank=([0-9]+) memory_hash ([0-9a-f]+) .*/\1 \2/'; }
     "${adb[@]}" shell input keyevent KEYCODE_BACK
     sleep 2
@@ -545,9 +557,16 @@ PY
     tap 829 1644
     wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward off\." 60
     shot 10-time
+    # The finger lifts 2 s after the press is logged: the frame that takes
+    # the press steps the rewind (the app's requests run before the game's
+    # update), whereas a hold of fixed length can begin and end between two
+    # of the slowest frames (both in one at 0.6 a second), which no step
+    # follows.
     mark
-    "${adb[@]}" shell input swipe 850 1389 850 1389 2000
+    "${adb[@]}" shell input motionevent DOWN 850 1389
     held=$(wait_for "xem: app UiRewind\(true\) game_vblank=.* ok: Rewinding while held\." 60)
+    sleep 2
+    "${adb[@]}" shell input motionevent UP 850 1389
     released=$(wait_for "xem: app UiRewind\(false\) game_vblank=.* ok: Rewind released\." 60)
     before=$(echo "$held" | vblank_of)
     after=$(echo "$released" | vblank_of)
