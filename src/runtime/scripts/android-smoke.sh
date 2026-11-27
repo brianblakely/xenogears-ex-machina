@@ -211,14 +211,24 @@ shot() {
     echo "  screenshot $out/$1.png"
 }
 tap() { "${adb[@]}" shell input tap "$1" "$2"; }
+# panel_state: the last "visible=... section=..." reported in logcat, or empty.
+panel_state() {
+    grep -oE 'xem: panel visible=(true|false) section=[0-9]+' "$log" 2>/dev/null | tail -1 | sed 's/^xem: panel //'
+}
 # tap_section SECTION X Y: tap a settings tab and wait for the panel to report
 # SECTION, retrying if a slow frame or post-boot activity recreation reset it.
 tap_section() {
     local section=$1 x=$2 y=$3
+    if [ "$(panel_state)" = "visible=true section=$section" ]; then
+        return 0
+    fi
     for _ in 1 2 3; do
         mark
         tap "$x" "$y"
-        if seen "xem: panel visible=true section=$section$" 30; then
+        if seen "xem: panel visible=true section=$section$" 20; then
+            return 0
+        fi
+        if [ "$(panel_state)" = "visible=true section=$section" ]; then
             return 0
         fi
     done
@@ -227,14 +237,34 @@ tap_section() {
 # toggle_panel WANT: press Back until the panel reports visible=WANT.
 toggle_panel() {
     local want=$1
+    case "$(panel_state)" in
+        "visible=$want "*) return 0 ;;
+    esac
     for _ in 1 2 3; do
         mark
         "${adb[@]}" shell input keyevent KEYCODE_BACK
-        if seen "xem: panel visible=$want section=" 30; then
+        if seen "xem: panel visible=$want section=" 20; then
+            return 0
+        fi
+        case "$(panel_state)" in
+            "visible=$want "*) return 0 ;;
+        esac
+    done
+    fail "panel did not become visible=$want"
+}
+# tap_action X Y REGEX [TIMEOUT]: tap a panel button and wait for REGEX,
+# retrying if a slow software frame dropped the tap.
+tap_action() {
+    local x=$1 y=$2 regex=$3 timeout=${4:-20} line
+    for _ in 1 2 3; do
+        mark
+        tap "$x" "$y"
+        if line=$(seen "$regex" "$timeout"); then
+            echo "$line"
             return 0
         fi
     done
-    fail "panel did not become visible=$want"
+    fail "no log line matching: $regex"
 }
 # key_action KEYCODE REGEX [TIMEOUT]: press KEYCODE and wait for REGEX,
 # retrying if logcat dropped a line on a busy emulator.
@@ -356,13 +386,22 @@ done
 echo "  Show FPS enabled and saved by touch"
 
 echo "== disc import through the document picker (Import disc... button)"
-tap_section 4 997 722
-tap_section 5 767 722
-shot 01-saves
-mark
-# Import disc is now the first row directly below the tabs.
-tap 858 915
-wait_for "xem: disc picker opened"
+picker_opened=
+for _ in 1 2 3; do
+    if [ "$(panel_state)" != "visible=true section=5" ]; then
+        tap_section 4 997 722
+        tap_section 5 767 722
+    fi
+    shot 01-saves
+    mark
+    # Import disc is now the first row directly below the tabs.
+    tap 858 915
+    if seen "xem: disc picker opened" 15 >/dev/null; then
+        picker_opened=1
+        break
+    fi
+done
+[ -n "$picker_opened" ] || fail "no log line matching: xem: disc picker opened"
 pick_document synthetic "xem-synthetic\.bin"
 wait_for "I/xem.*persisted read permission for content://"
 wait_for "xem: disc identified source=content://.*boot=SLUS_999\.99;1 sha256=$synthetic_sha disc=not a Xenogears disc" 60
@@ -626,9 +665,7 @@ PY
     op_of() { sed -E 's/.*game_vblank=([0-9]+) memory_hash ([0-9a-f]+) .*/\1 \2/'; }
     toggle_panel true
     tap_section 4 997 722
-    mark
-    tap 829 1644
-    wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward off\." 60
+    tap_action 829 1644 "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward off\." 20 >/dev/null
     shot 10-time
     # Keep the finger down until the host logs an actual rewind step rather than
     # sleeping a fixed duration that races with slow software frames.
@@ -641,9 +678,7 @@ PY
     before=$(echo "$held" | vblank_of)
     after=$(echo "$released" | vblank_of)
     tap_section 5 767 722
-    mark
-    tap 306 1095
-    saved=$(wait_for "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 60)
+    saved=$(tap_action 306 1095 "xem: app Action\(SaveState\) game_vblank=.* ok: State written: .*/files/saves/state\.xemstate" 20)
     saved_vblank=$(echo "$saved" | vblank_of)
     echo "  Hold to rewind: game vblank $before when pressed, $after when released, $saved_vblank at Save state"
     [ "$after" -lt "$before" ] || fail "Hold to rewind did not go back ($before -> $after)"
@@ -660,18 +695,14 @@ PY
     done
     [ -n "$moved" ] || fail "the game did not play on after the save"
     toggle_panel true
-    mark
-    tap 764 1095
-    loaded=$(wait_for "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 60)
+    loaded=$(tap_action 764 1095 "xem: app Action\(LoadState\) game_vblank=.* ok: State restored: .*/files/saves/state\.xemstate" 20)
     echo "  Save state left vblank and memory hash $(op_of <<<"$saved"), the game played on to vblank" \
         "$(echo "$moved" | vblank_of), Load state left $(op_of <<<"$loaded")"
     [ "$(op_of <<<"$saved")" = "$(op_of <<<"$loaded")" ] || fail "Load state did not give back the saved game"
     echo "  $("${adb[@]}" shell run-as "$package" ls -l files/saves/state.xemstate | tr -d '\r')"
     shot 10-saves
     tap_section 4 313 722
-    mark
-    tap 829 1644
-    wait_for "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 60
+    tap_action 829 1644 "xem: app Action\(ToggleFastForward\) game_vblank=.* ok: Fast-forward on\." 20 >/dev/null
     toggle_panel false
     wait_for "xem: frame rendered .*fast_forward=true" 90
 

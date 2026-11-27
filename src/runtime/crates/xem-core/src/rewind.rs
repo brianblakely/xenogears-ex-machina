@@ -39,12 +39,12 @@ impl Section {
             let index = i as u32;
             if before.peek().is_some_and(|(at, _)| *at == index) {
                 let (_, old) = before.next().unwrap();
-                if **old == *page {
+                if crate::snapshot::bytes_eq(old, page) {
                     pages.push((index, old.clone()));
                     continue;
                 }
             }
-            if page != &[0; PAGE][..page.len()] { pages.push((index, Arc::from(page))); }
+            if !crate::snapshot::is_zero(page) { pages.push((index, Arc::from(page))); }
         }
         Self { len: bytes.len() as u32, memory, pages: pages.into_boxed_slice() }
     }
@@ -152,6 +152,7 @@ pub struct Rewind {
     last_checkpoint: Duration,
     played: Duration,
     clock_at: Duration,
+    scratch: Vec<u8>,
 }
 
 impl Rewind {
@@ -186,21 +187,35 @@ impl Rewind {
     }
 
     pub(crate) fn capture<M: crate::module::GameModule>(&mut self, runtime: &mut crate::Runtime<M>, frame: u64, now: Duration) -> Result<(), crate::snapshot::SnapshotError> {
-        let previous = self.entries.back();
-        let before = |n| previous.and_then(|entry| entry.sections.get(n));
         let mut regions = Vec::with_capacity(crate::snapshot::REGIONS.len());
         let mut ends = Vec::with_capacity(12);
-        let data = runtime.snapshot_content(&mut ends, Some(&mut |raw| {
-            regions.push(Section::capture(raw, before(1 + regions.len()), true));
-        }))?;
-        let mut sections = vec![Section::capture(&data[..ends[0]], before(0), false)];
-        sections.append(&mut regions);
-        let mut start = ends[0];
-        for end in ends[1..].iter().copied().chain([data.len()]) {
-            sections.push(Section::capture(&data[start..end], before(sections.len()), false));
-            start = end;
+        let mut scratch = std::mem::take(&mut self.scratch);
+        scratch.clear();
+        let result = {
+            let previous = self.entries.back();
+            let before = |n| previous.and_then(|entry| entry.sections.get(n));
+            runtime.snapshot_content_into(&mut scratch, &mut ends, Some(&mut |raw| {
+                regions.push(Section::capture(raw, before(1 + regions.len()), true));
+            }))
+        };
+        if let Err(error) = result {
+            self.scratch = scratch;
+            return Err(error);
         }
-        self.push_sections(frame, sections.into_boxed_slice(), now);
+        let sections = {
+            let previous = self.entries.back();
+            let before = |n| previous.and_then(|entry| entry.sections.get(n));
+            let mut sections = vec![Section::capture(&scratch[..ends[0]], before(0), false)];
+            sections.append(&mut regions);
+            let mut start = ends[0];
+            for end in ends[1..].iter().copied().chain([scratch.len()]) {
+                sections.push(Section::capture(&scratch[start..end], before(sections.len()), false));
+                start = end;
+            }
+            sections.into_boxed_slice()
+        };
+        self.scratch = scratch;
+        self.push_sections(frame, sections, now);
         Ok(())
     }
 
@@ -281,6 +296,7 @@ impl Rewind {
         self.bytes = 0;
         self.played = Duration::ZERO;
         self.last_checkpoint = Duration::ZERO;
+        self.scratch = Vec::new();
     }
     pub fn status(&self) -> serde_json::Value {
         serde_json::json!({ "max_bytes": self.budget, "bytes": self.bytes, "interval_seconds": self.interval_seconds,

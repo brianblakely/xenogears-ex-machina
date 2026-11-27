@@ -799,6 +799,9 @@ pub(crate) struct Recorder {
     /// 64x32 tile. Clear only the tiles consumed by a texture read.
     drawn_tiles: [u16; 16],
     drawn_columns: [u16; 2],
+    /// Exact dirty bounds `[x0, y0, x1, y1]` inside each dirty 64x32 tile
+    /// (relative to the tile's top-left corner).
+    tile_bounds: TileBounds,
     hardware: bool,
     stamp: Option<u64>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -867,6 +870,15 @@ fn changes_vram(op: &TraceOp) -> bool {
     matches!(op, TraceOp::Draw(_) | TraceOp::Copy { .. } | TraceOp::Fill { .. } | TraceOp::Write { .. })
 }
 
+#[derive(Clone, Debug)]
+struct TileBounds([[u8; 4]; 256]);
+
+impl Default for TileBounds {
+    fn default() -> Self {
+        Self([[0; 4]; 256])
+    }
+}
+
 fn tile_span(rect: VramRect) -> (std::ops::Range<usize>, u16) {
     let (x, y) = (rect.x, rect.y);
     let end = (x + rect.width).min(VRAM_WIDTH as u16);
@@ -876,11 +888,38 @@ fn tile_span(rect: VramRect) -> (std::ops::Range<usize>, u16) {
 
 impl Recorder {
     fn note_dirty(&mut self, area: [u16; 4], rect: VramRect) {
+        if rect.width == 0 || rect.height == 0 {
+            return;
+        }
         if self.hardware {
             let (rows, columns) = tile_span(rect);
             self.drawn_columns[rows.start / 8] |= columns;
             self.drawn_columns[(rows.end - 1) / 8] |= columns;
-            for row in rows { self.drawn_tiles[row] |= columns; }
+            let (rx0, ry0, rx1, ry1) = (rect.x, rect.y, rect.x + rect.width, rect.y + rect.height);
+            for row in rows {
+                let ty = row as u16 * 32;
+                let ly0 = ry0.saturating_sub(ty) as u8;
+                let ly1 = (ry1 - ty).min(32) as u8;
+                let existing = self.drawn_tiles[row];
+                let mut cols = columns;
+                while cols != 0 {
+                    let col = cols.trailing_zeros() as usize;
+                    cols &= cols - 1;
+                    let tx = col as u16 * 64;
+                    let lx0 = rx0.saturating_sub(tx) as u8;
+                    let lx1 = (rx1 - tx).min(64) as u8;
+                    let bounds = &mut self.tile_bounds.0[row * 16 + col];
+                    if existing & (1 << col) == 0 {
+                        *bounds = [lx0, ly0, lx1, ly1];
+                    } else {
+                        bounds[0] = bounds[0].min(lx0);
+                        bounds[1] = bounds[1].min(ly0);
+                        bounds[2] = bounds[2].max(lx1);
+                        bounds[3] = bounds[3].max(ly1);
+                    }
+                }
+                self.drawn_tiles[row] |= columns;
+            }
             return;
         }
         if let Some((_, old)) = self.dirty.iter_mut().rev().find(|(key, _)| *key == area) {
@@ -1650,14 +1689,41 @@ impl Gpu {
         }
         let (rows, columns) = tile_span(sample);
         let mut cleared = [false; 2];
+        let mut full_rows = [0u16; 16];
         for y in rows.clone() {
-            let mut remaining = trace.drawn_tiles[y] & columns;
+            let mut bits = trace.drawn_tiles[y] & columns;
+            while bits != 0 {
+                let x = bits.trailing_zeros() as usize;
+                bits &= bits - 1;
+                let b = trace.tile_bounds.0[y * 16 + x];
+                let rect = VramRect {
+                    x: x as u16 * 64 + u16::from(b[0]),
+                    y: y as u16 * 32 + u16::from(b[1]),
+                    width: u16::from(b[2] - b[0]),
+                    height: u16::from(b[3] - b[1]),
+                };
+                if rect.intersect(&sample).is_none() {
+                    continue;
+                }
+                if b == [0, 0, 64, 32] {
+                    full_rows[y] |= 1 << x;
+                } else {
+                    trace.drawn_tiles[y] &= !(1 << x);
+                    cleared[y / 8] = true;
+                    self.vram.prepare_region(rect, false);
+                    trace.ops.push(TraceOp::Write { rect, pixels: read_rect(self.vram.base_mut(), rect).into(), upload: false });
+                }
+            }
+        }
+        for y in rows.clone() {
+            let mut remaining = full_rows[y];
             while remaining != 0 {
                 let x = remaining.trailing_zeros();
                 let width = (remaining >> x).trailing_ones();
                 let mask = (u16::MAX >> (16 - width)) << x;
                 let mut end = y;
-                while end < rows.end && trace.drawn_tiles[end] & mask == mask {
+                while end < rows.end && full_rows[end] & mask == mask {
+                    full_rows[end] &= !mask;
                     trace.drawn_tiles[end] &= !mask;
                     cleared[end / 8] = true;
                     end += 1;

@@ -9,7 +9,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.game_module import CFLAGS, ROOT, WASM_LAYOUT, WASM_TRIPLE, compile_ir, inlinable, ram_mirrors
+from tools.game_module import (
+    CFLAGS,
+    ROOT,
+    WASM_LAYOUT,
+    WASM_TRIPLE,
+    compile_ir,
+    inlinable,
+    ram_mirrors,
+)
 
 
 class RamMirrors(unittest.TestCase):

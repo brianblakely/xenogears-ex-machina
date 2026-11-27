@@ -2311,6 +2311,7 @@ pub struct Ps1Renderer {
     tiles: Vec<PaintTile>,
     tile_depth: Option<wgpu::Texture>,
     raw_bands: [Option<std::sync::Arc<[u16]>>; 64],
+    raw_passes: u32,
     deferred: bool,
     movie_bands: u64,
     stamp: Option<u64>,
@@ -2705,6 +2706,7 @@ impl Ps1Renderer {
             tiles: Vec::new(),
             tile_depth: None,
             raw_bands: std::array::from_fn(|_| None),
+            raw_passes: 0,
             deferred: false,
             movie_bands: 0,
             stamp: None,
@@ -3078,6 +3080,8 @@ impl Ps1Renderer {
             self.copy_only = false;
         }
         self.deferred = deferred;
+        self.raw_passes = 0;
+        if ops.is_empty() { return; }
         if let Some(TraceOp::Presented { stamp, .. }) = ops.last() {
             let last = *stamp;
             if let [TraceOp::Write { rect, pixels, upload: true }, TraceOp::Presented { resume: Some(id), .. }, ..] = &ops[..]
@@ -3465,10 +3469,12 @@ impl Ps1Renderer {
             capture,
             ..Zeroable::zeroed()
         };
+        let pass_count = passes(&builder.commands);
+        self.raw_passes += pass_count;
         if tile.is_none() {
             self.raw_depth |= builder.commands.iter().any(|command| matches!(command,
                 Command::Draw { key, .. } if matches!(key.depth, DepthMode::Test | DepthMode::Nearer)));
-            self.stats = DrawStats { passes: passes(&builder.commands), ..builder.stats };
+            self.stats = DrawStats { passes: pass_count, ..builder.stats };
         }
         // Several historical batches can share an encoder. Their vertices,
         // native uploads and uniforms must survive until that encoder submits.
@@ -3853,6 +3859,12 @@ impl Ps1Renderer {
     /// What the last [`Ps1Renderer::draw`] drew and dropped.
     pub fn stats(&self) -> DrawStats {
         self.stats
+    }
+
+    /// The render passes drawn directly into VRAM's picture or its tiles
+    /// since the last [`Ps1Renderer::ingest`].
+    pub(crate) fn raw_passes(&self) -> u32 {
+        self.raw_passes
     }
 
     /// The scaled picture of all of VRAM.

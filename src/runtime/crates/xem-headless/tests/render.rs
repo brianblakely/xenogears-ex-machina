@@ -1371,6 +1371,47 @@ fn lahan_burning_draws_each_frame_in_a_few_render_passes() {
     assert!(most.0 <= 20 && most.1 <= 20, "{most:?} passes");
 }
 
+/// The hardware render-trace path (`take_render_trace`, used by native/mobile
+/// and browser hosts) must keep Lahan burning's heat haze within the same few
+/// render passes so tiled mobile GPUs do not split every haze tile into a pass.
+#[test]
+fn lahan_burning_hardware_trace_draws_each_frame_in_a_few_render_passes() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    let entered = session.execute(&json!({"cmd": "enter_field", "map": 2}));
+    assert!(entered.get("error").is_none(), "{entered}");
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { internal_scale: 1, ..Graphics::default() };
+    let (mut most_total, mut most_stats, mut most_frame) = (0u32, 0u32, 0u32);
+    for n in 0..600u32 {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Mobile, (2340, 1080), view.max_scale()));
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        let trace = device.take_render_trace();
+        view.push(trace);
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        assert!(view.present(&mut encoder, &display, &scene, f64::from(n) / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        assert_eq!(scene, "field:2:opening");
+        most_total = most_total.max(view.render_passes());
+        most_stats = most_stats.max(view.stats().passes);
+        most_frame = most_frame.max(view.frame().passes());
+    }
+    eprintln!("hardware render trace: at most {most_total} total ({most_stats} stats, {most_frame} frame)");
+    assert!(most_stats <= 20 && most_frame <= 20 && most_total <= 40,
+        "hardware render trace took {most_total} total ({most_stats} stats, {most_frame} frame)");
+}
+
 /// The opening's burning Lahan (map 2 before the story value reaches Fei's
 /// room's 6; the narration enters it at 3) keeps the game's own camera
 /// whatever the zoom out: pulled back, it would show the void around the

@@ -174,10 +174,7 @@ impl Writer {
             while zeros > literal && data[zeros - 1] == 0 {
                 zeros -= 1;
             }
-            while data.get(i..i + 4096) == Some(&[0; 4096]) {
-                i += 4096;
-            }
-            while data.get(i..i + 64) == Some(&[0; 64]) {
+            while data.get(i..i + 64).is_some_and(is_zero) {
                 i += 64;
             }
             while word_at(data, i) == Some(0) {
@@ -206,6 +203,45 @@ impl Writer {
 #[inline]
 fn word_at(data: &[u8], at: usize) -> Option<u64> {
     data.get(at..at + 8).map(|word| u64::from_le_bytes(word.try_into().unwrap()))
+}
+
+/// Word-wide zero check that avoids byte-wise `bcmp` on 32-bit WebAssembly
+/// (no SIMD) and auto-vectorizes cleanly on native targets.
+#[inline]
+pub(crate) fn is_zero(bytes: &[u8]) -> bool {
+    let mut blocks = bytes.chunks_exact(64);
+    for block in &mut blocks {
+        let mut acc = 0u64;
+        for w in block.chunks_exact(8) {
+            acc |= u64::from_ne_bytes(w.try_into().unwrap());
+        }
+        if acc != 0 {
+            return false;
+        }
+    }
+    let mut words = blocks.remainder().chunks_exact(8);
+    for w in &mut words {
+        if u64::from_ne_bytes(w.try_into().unwrap()) != 0 {
+            return false;
+        }
+    }
+    words.remainder().iter().all(|&b| b == 0)
+}
+
+/// Word-wide slice equality that avoids byte-wise `bcmp` on 32-bit WebAssembly.
+#[inline]
+pub(crate) fn bytes_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut ca = a.chunks_exact(8);
+    let mut cb = b.chunks_exact(8);
+    for (wa, wb) in ca.by_ref().zip(cb.by_ref()) {
+        if u64::from_ne_bytes(wa.try_into().unwrap()) != u64::from_ne_bytes(wb.try_into().unwrap()) {
+            return false;
+        }
+    }
+    ca.remainder() == cb.remainder()
 }
 
 #[cfg(test)]

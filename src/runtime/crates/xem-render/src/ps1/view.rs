@@ -1540,6 +1540,12 @@ impl GameView {
         self.renderer.stats()
     }
 
+    /// Total render passes the last presentation took across VRAM rasterization
+    /// and frame replay (without double-counting deferred frame passes).
+    pub fn render_passes(&self) -> u32 {
+        self.renderer.raw_passes() + self.main.frame.passes()
+    }
+
     /// The displayed buffer's trace, including frames held for replay.
     pub fn frame_log(&self, area: DisplayArea) -> Option<&super::FrameLog> {
         self.renderer.frame_log(area)

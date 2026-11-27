@@ -575,6 +575,9 @@ impl<M: GameModule> Runtime<M> {
 
     /// `line` in `language` drawn with the fonts the game holds now.
     pub fn subtitle_picture(&mut self, line: &crate::subtitles::Line, language: crate::locale::Language) -> Option<crate::subtitles::Picture> {
+        if language == crate::locale::Language::Japanese {
+            self.require_japanese();
+        }
         crate::subtitles::draw(self.module.memory(), line, language)
     }
 
@@ -1011,15 +1014,18 @@ impl<M: GameModule> Runtime<M> {
     /// Game state at a wait (between steps), independent of app pacing.
     pub fn snapshot(&mut self) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
         self.require_japanese();
-        Ok(crate::snapshot::seal(self.snapshot_content(&mut Vec::new(), None)?))
+        let mut data = Vec::with_capacity(self.snapshot_size);
+        self.snapshot_content_into(&mut data, &mut Vec::new(), None)?;
+        Ok(crate::snapshot::seal(data))
     }
 
     /// Rewind can capture memory pages in place and encode their save-state runs on export.
     /// File integrity hashing belongs at the import/export boundary, outside
     /// the periodic game-frame checkpoint.
-    pub(crate) fn snapshot_content(&mut self, sections: &mut Vec<usize>, mut memory: Option<&mut dyn FnMut(&[u8])>) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
+    pub(crate) fn snapshot_content_into(&mut self, out: &mut Vec<u8>, sections: &mut Vec<usize>, mut memory: Option<&mut dyn FnMut(&[u8])>) -> Result<(), crate::snapshot::SnapshotError> {
         use crate::snapshot::*;
-        let mut w = Writer(Vec::with_capacity(self.snapshot_size));
+        let mut w = Writer(std::mem::take(out));
+        w.0.clear();
         write_header(&mut w);
         w.bytes(&serde_json::to_vec(&self.identity).expect("state identity"));
         w.u32(self.entry.0);
@@ -1094,9 +1100,10 @@ impl<M: GameModule> Runtime<M> {
             sections.push(w.0.len());
             w.section(|out| device.save_into(out));
         }
-        if w.0.len() + 32 > MAX_STATE { return Err(SnapshotError::Format("state exceeds 64 MiB")); }
+        if w.0.len() + 32 > MAX_STATE { *out = w.0; return Err(SnapshotError::Format("state exceeds 64 MiB")); }
         if memory.is_none() { self.snapshot_size = w.0.len() + 32; }
-        Ok(w.0)
+        *out = w.0;
+        Ok(())
     }
 
     /// Restore a snapshot taken by `snapshot` from the same game module.

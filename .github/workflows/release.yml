@@ -244,6 +244,8 @@ jobs:
           path: |
             build/android/release-smoke/
             build/android/smoke/emulator.log
+            build/android/smoke/logcat.txt
+            build/android/smoke/*.png
           if-no-files-found: warn
 
   web:
