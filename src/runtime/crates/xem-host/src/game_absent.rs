@@ -48,6 +48,14 @@ impl Game {
         match *self {}
     }
 
+    pub fn time_until_update(&self) -> std::time::Duration {
+        match *self {}
+    }
+
+    pub fn timeline_revision(&self) -> u64 {
+        match *self {}
+    }
+
     pub fn deck_scene(&mut self) -> (bool, u16) {
         match *self {}
     }
