@@ -128,7 +128,7 @@ let
       chmod "$mode" "$dir"
     done < <(find root -type l -print0)
     cp ${./recomplauncher.json} root/recomplauncher.json
-    mksquashfs root $out -offset $offset -all-root -no-recovery -quiet -no-progress
+    mksquashfs root $out -offset $offset -all-root -no-xattrs -no-recovery -quiet -no-progress
     dd if=${imageRuntime} of=$out conv=notrunc status=none
     chmod 755 $out
   '';
