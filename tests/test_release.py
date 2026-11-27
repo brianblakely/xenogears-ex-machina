@@ -18,7 +18,14 @@ from tools.release.publish import (
     release_notes,
     render_notes,
 )
-from tools.release.version import android_code, native_changed, next_tag, version
+from tools.release.version import (
+    android_code,
+    native_changed,
+    next_tag,
+    require_ci_passed,
+    strip_rust_cfg_test,
+    version,
+)
 
 
 class ReleaseTests(unittest.TestCase):
@@ -30,8 +37,8 @@ class ReleaseTests(unittest.TestCase):
             [release("v0.5.5"), release("v0.5.4"), release("v0.5.3")],
             [release("v0.5.2", draft=True), release("v0.5.1", prerelease=True), release("v0.5")],
         ]
-        with patch("tools.release.publish.subprocess.check_output", return_value=json.dumps(pages)), \
-             patch("tools.release.publish.subprocess.run") as run:
+        with patch("tools.release.version.subprocess.check_output", return_value=json.dumps(pages)), \
+             patch("tools.release.version.subprocess.run") as run:
             run.side_effect = [subprocess.CompletedProcess([], 1), subprocess.CompletedProcess([], 0)]
             self.assertEqual(previous_release("owner/game", "v0.5.4", "release-commit"), "v0.5")
             self.assertEqual([call.args[0] for call in run.call_args_list], [
@@ -41,8 +48,8 @@ class ReleaseTests(unittest.TestCase):
 
     def test_missing_release_history_fails_instead_of_repeating_old_changes(self):
         pages = [[{"tag_name": "v0.5", "draft": False, "prerelease": False}]]
-        with patch("tools.release.publish.subprocess.check_output", return_value=json.dumps(pages)), \
-             patch("tools.release.publish.subprocess.run", return_value=subprocess.CompletedProcess([], 128)):
+        with patch("tools.release.version.subprocess.check_output", return_value=json.dumps(pages)), \
+             patch("tools.release.version.subprocess.run", return_value=subprocess.CompletedProcess([], 128)):
             with self.assertRaises(subprocess.CalledProcessError):
                 previous_release("owner/game", "v0.5.1", "release-commit")
 
@@ -244,7 +251,11 @@ class NativeReleaseGuardTests(unittest.TestCase):
         self.root = Path(directory.name)
         self.enterContext(chdir(self.root))
         self.git("init", "--quiet", "--initial-branch=master")
-        self.write("src/runtime/crates/xem-host/src/lib.rs", "original\n")
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "pub fn answer() -> i32 { 42 }\n")
+        self.write(
+            "src/runtime/Cargo.toml",
+            "[workspace]\nmembers = [\"crates/*\"]\n\n[profile.release]\nlto = \"thin\"\n\n[profile.suite]\ninherits = \"release\"\nlto = false\n",
+        )
         self.base = self.commit()
 
     def git(self, *args):
@@ -265,15 +276,106 @@ class NativeReleaseGuardTests(unittest.TestCase):
     def test_docs_tests_browser_and_publishing_do_not_release(self):
         self.assertFalse(native_changed(self.base, self.base))
         for path in ["MANUAL.md", "docs/changes/manual.md", ".github/workflows/release.yml",
+                     ".github/workflows/ci.yml",
                      "tools/release/notes.md", "tools/release/publish.py", "tools/release/version.py",
-                     "tools/release/smoke.py", "packaging/source-files.txt", "packaging/install.txt",
-                     "tests/test_release.py", "src/runtime/crates/xem-host/tests/states.rs",
-                     "src/runtime/crates/xem-ui/examples/panel.rs", "src/runtime/scripts/suite.sh",
+                     "tools/release/smoke.py", "tools/release/android_smoke.py",
+                     "packaging/source-files.txt", "packaging/install.txt",
+                     "tests/test_release.py", "tests/test_suite.py",
+                     "src/runtime/crates/xem-host/tests/states.rs",
+                     "src/runtime/crates/xem-host/src/game_absent.rs",
+                     "src/runtime/crates/xem-headless/tests/render.rs",
+                     "src/runtime/crates/xem-ui/examples/panel.rs",
+                     "src/runtime/android/app/src/test/java/dev/xem/app/SmokeTest.java",
+                     "src/runtime/android/app/src/androidTest/java/dev/xem/app/InstrumentedTest.java",
+                     "src/runtime/scripts/suite.sh", "src/runtime/scripts/suite.py",
+                     "src/runtime/scripts/android-smoke.sh", "src/runtime/scripts/android-ui.py",
+                     "src/runtime/scripts/xr-game-smoke.sh",
                      "src/runtime/crates/xem-core/font/README.md", "src/decomp/README.md",
                      "src/runtime/web/build.py", "src/runtime/web/index.html",
+                     "src/runtime/web/tests/page.test.mjs",
                      "src/runtime/crates/xem-web/src/lib.rs", "src/runtime/crates/xem-webxr/src/lib.rs"]:
             self.write(path)
         self.assertFalse(native_changed(self.base, self.commit()))
+
+    def test_rust_cfg_test_only_edits_do_not_release(self):
+        # Adding a #[cfg(test)] block with raw strings, raw identifiers, char literals,
+        # lifetimes, nested block comments and stacked attributes does not change the native app.
+        self.write(
+            "src/runtime/crates/xem-host/src/lib.rs",
+            "pub fn answer() -> i32 { 42 }\n"
+            "\n"
+            "#[allow(dead_code)]\n"
+            "#[cfg(test)]\n"
+            "pub(crate) mod tests {\n"
+            "    use super::*;\n"
+            "    fn lifetime<'a>(s: &'a str) -> &'a str { s }\n"
+            "    #[test]\n"
+            "    fn handles_syntax() {\n"
+            "        let r#type = '}';\n"
+            "        let s = \"escaped \\\"}\\\"\";\n"
+            "        let raw = r#\"raw } \"#;\n"
+            "        /* nested /* } */ comment */\n"
+            "        assert_eq!(answer(), 42);\n"
+            "        assert_eq!(lifetime(s), s);\n"
+            "        let _ = (r#type, raw);\n"
+            "    }\n"
+            "}\n",
+        )
+        added_tests = self.commit()
+        self.assertFalse(native_changed(self.base, added_tests))
+
+        # Editing only inside #[cfg(test)] or adding #[cfg(all(test, ...))] / const items does not release.
+        self.write(
+            "src/runtime/crates/xem-host/src/lib.rs",
+            "pub fn answer() -> i32 { 42 }\n"
+            "\n"
+            "#[cfg(all(test, unix))]\n"
+            "const EXPECTED: (i32,) = (42,);\n"
+            "\n"
+            "#[cfg(test)]\n"
+            "mod tests {\n"
+            "    #[test]\n"
+            "    fn another() { assert_eq!(super::answer(), super::EXPECTED.0); }\n"
+            "}\n",
+        )
+        edited_tests = self.commit()
+        self.assertFalse(native_changed(self.base, edited_tests))
+        self.assertFalse(native_changed(added_tests, edited_tests))
+
+        # Changing production code outside #[cfg(test)] still releases.
+        self.write(
+            "src/runtime/crates/xem-host/src/lib.rs",
+            "pub fn answer() -> i32 { 43 }\n"
+            "\n"
+            "#[cfg(test)]\n"
+            "mod tests {\n"
+            "    #[test]\n"
+            "    fn another() { assert_eq!(super::answer(), 43); }\n"
+            "}\n",
+        )
+        self.assertTrue(native_changed(edited_tests, self.commit()))
+
+    def test_non_test_cfg_and_struct_fields_still_release(self):
+        # #[cfg(not(test))] and #[cfg(any(test, ...))] compile into release builds.
+        self.assertIn("prod()", strip_rust_cfg_test("#[cfg(not(test))]\nfn prod() {}\n"))
+        self.assertIn("both()", strip_rust_cfg_test("#[cfg(any(test, debug_assertions))]\nfn both() {}\n"))
+        # #[cfg(test)] on a struct field fails safe instead of misparsing the struct.
+        struct_source = "pub struct S {\n    pub a: u32,\n    #[cfg(test)]\n    pub b: u32,\n}\n"
+        self.assertEqual(strip_rust_cfg_test(struct_source), struct_source)
+
+    def test_suite_profile_only_cargo_toml_edit_does_not_release(self):
+        self.write(
+            "src/runtime/Cargo.toml",
+            "[workspace]\nmembers = [\"crates/*\"]\n\n[profile.release]\nlto = \"thin\"\n\n[profile.suite]\ninherits = \"release\"\nlto = false\nopt-level = 2\n\n[profile.suite-debug]\ninherits = \"suite\"\ndebug = 1\n",
+        )
+        suite_only = self.commit()
+        self.assertFalse(native_changed(self.base, suite_only))
+
+        self.write(
+            "src/runtime/Cargo.toml",
+            "[workspace]\nmembers = [\"crates/*\"]\n\n[profile.release]\nlto = \"fat\"\n\n[profile.suite]\ninherits = \"release\"\nlto = false\n",
+        )
+        self.assertTrue(native_changed(suite_only, self.commit()))
 
     def test_native_sources_and_build_inputs_release(self):
         for path in ["src/decomp/src/resident/main.c", "src/decomp/include/common.h",
@@ -292,11 +394,11 @@ class NativeReleaseGuardTests(unittest.TestCase):
                 self.assertTrue(native_changed(base, self.commit()))
 
     def test_whole_push_counts_earlier_code_but_not_a_net_revert(self):
-        self.write("src/runtime/crates/xem-host/src/lib.rs", "updated\n")
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "pub fn answer() -> i32 { 99 }\n")
         self.commit()
         self.write("MANUAL.md")
         self.assertTrue(native_changed(self.base, self.commit()))
-        self.write("src/runtime/crates/xem-host/src/lib.rs", "original\n")
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "pub fn answer() -> i32 { 42 }\n")
         self.assertFalse(native_changed(self.base, self.commit()))
 
     def test_doc_only_merge_uses_master_before_the_push(self):
@@ -331,6 +433,102 @@ class NativeReleaseGuardTests(unittest.TestCase):
             check()
         gh.assert_not_called()
         self.assertEqual(output.read_text(), "changed=false\n")
+
+    def test_check_native_since_release_compares_against_latest_published_ancestor(self):
+        from tools.release.version import main as check
+
+        self.git("tag", "v1.21")
+        self.write("src/runtime/scripts/suite.py", "# suite tweak\n")
+        test_only = self.commit()
+        output = self.root / "output"
+        with patch("sys.argv", ["version", "--repository", "owner/game", "--commit", test_only,
+                                "--check-native-since-release", "--require-ci", "--ci-run-id", "10"]), \
+             patch.dict(os.environ, GITHUB_OUTPUT=str(output)), \
+             patch("tools.release.version.published_releases", return_value=[((1, 21, 0), "v1.21")]), \
+             patch("tools.release.version.require_ci_passed") as ci_check:
+            check()
+        self.assertEqual(output.read_text(), "changed=false\n")
+        ci_check.assert_not_called()
+
+        # A native change earlier in the history followed by a doc commit still releases once CI passes.
+        self.write("src/runtime/crates/xem-host/src/lib.rs", "pub fn answer() -> i32 { 100 }\n")
+        self.commit()
+        self.write("docs/changes/vram.md", "- Faster.\n")
+        head = self.commit()
+        output.unlink()
+        with patch("sys.argv", ["version", "--repository", "owner/game", "--commit", head,
+                                "--check-native-since-release", "--require-ci", "--ci-run-id", "11"]), \
+             patch.dict(os.environ, GITHUB_OUTPUT=str(output)), \
+             patch("tools.release.version.published_releases", return_value=[((1, 21, 0), "v1.21")]), \
+             patch("tools.release.version.require_ci_passed") as ci_check:
+            check()
+        self.assertEqual(output.read_text(), "changed=true\n")
+        ci_check.assert_called_once_with("owner/game", head, "11")
+
+
+class ReleaseCIGateTests(unittest.TestCase):
+    def test_passing_run_with_passing_suite_is_accepted(self):
+        def fake_api(command, **kwargs):
+            url = command[2]
+            if url.endswith("/actions/runs/42"):
+                return json.dumps({"id": 42, "conclusion": "success", "head_sha": "abc"})
+            if "/actions/runs/42/jobs" in url:
+                return json.dumps([{"jobs": [
+                    {"name": "public", "conclusion": "success"},
+                    {"name": "suite (desktop)", "conclusion": "success"},
+                    {"name": "suite (web)", "conclusion": "success"},
+                ]}])
+            raise AssertionError(f"unexpected api call: {url}")
+
+        with patch("tools.release.version.subprocess.check_output", side_effect=fake_api):
+            require_ci_passed("owner/game", "abc", ci_run_id="42")
+
+    def test_failed_or_missing_ci_run_refuses_to_publish(self):
+        with patch("tools.release.version.subprocess.check_output",
+                   return_value=json.dumps({"id": 42, "conclusion": "failure", "head_sha": "abc"})):
+            with self.assertRaisesRegex(RuntimeError, "did not pass"):
+                require_ci_passed("owner/game", "abc", ci_run_id="42")
+
+        with patch("tools.release.version.subprocess.check_output",
+                   return_value=json.dumps({"workflow_runs": [{"id": 7, "conclusion": "failure"}]})):
+            with self.assertRaisesRegex(RuntimeError, "has not passed"):
+                require_ci_passed("owner/game", "abc")
+
+    def test_skipped_suite_requires_no_runtime_changes_since_last_passing_suite(self):
+        def fake_api(command, **kwargs):
+            url = command[2]
+            if url.endswith("/actions/runs/50"):
+                return json.dumps({"id": 50, "conclusion": "success", "head_sha": "head-sha"})
+            if "/actions/runs/50/jobs" in url:
+                return json.dumps([{"jobs": [
+                    {"name": "public", "conclusion": "success"},
+                    {"name": "changes", "conclusion": "success"},
+                ]}])
+            if "workflows/ci.yml/runs?branch=master" in url:
+                return json.dumps({"workflow_runs": [
+                    {"id": 50, "conclusion": "success", "head_sha": "head-sha"},
+                    {"id": 49, "conclusion": "failure", "head_sha": "broken-sha"},
+                    {"id": 48, "conclusion": "success", "head_sha": "good-sha"},
+                ]})
+            if "/actions/runs/48/jobs" in url:
+                return json.dumps([{"jobs": [
+                    {"name": "public", "conclusion": "success"},
+                    {"name": "suite (desktop)", "conclusion": "success"},
+                    {"name": "suite (android)", "conclusion": "success"},
+                ]}])
+            raise AssertionError(f"unexpected api call: {url}")
+
+        with patch("tools.release.version.subprocess.check_output", side_effect=fake_api), \
+             patch("tools.release.version.subprocess.run", return_value=subprocess.CompletedProcess([], 0)), \
+             patch("tools.release.version._runtime_inputs_changed_since", return_value=False) as changed:
+            require_ci_passed("owner/game", "head-sha", ci_run_id="50")
+            changed.assert_called_once_with("good-sha")
+
+        with patch("tools.release.version.subprocess.check_output", side_effect=fake_api), \
+             patch("tools.release.version.subprocess.run", return_value=subprocess.CompletedProcess([], 0)), \
+             patch("tools.release.version._runtime_inputs_changed_since", return_value=True):
+            with self.assertRaisesRegex(RuntimeError, "runtime inputs changed"):
+                require_ci_passed("owner/game", "head-sha", ci_run_id="50")
 
 
 if __name__ == "__main__":

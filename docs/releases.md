@@ -1,11 +1,17 @@
 # Releases and portable installation
 
-Updates to `master` build a GitHub release only when native game, host or build
-inputs change. The workflow compares the complete push before reserving a tag
-or starting builds. Documentation, tests, release descriptions, workflow-only
-edits and browser-only changes do not cut a native release or deploy Pages.
-An unresolved comparison fails the check instead of reserving a version.
-An explicit manual workflow run can rebuild; `release/` branches still qualify.
+Updates to `master` build a GitHub release only after the `CI` workflow passes
+and only when native game, host or build inputs changed since the latest
+published release on that commit's ancestry. The workflow checks both CI status
+(including full-suite coverage for any changed runtime inputs) and the native
+diff before reserving a tag or starting builds. Test-suite-only changes
+(standalone suites, smoke scripts, CI workflows, inline `#[cfg(test)]` Rust
+blocks, `[profile.suite]` settings, and public-CI-only stubs), documentation,
+release descriptions, workflow-only edits and browser-only changes do not cut a
+native release or deploy Pages. An unresolved comparison or missing passing CI
+run fails the check instead of reserving a version. An explicit manual workflow
+run on `master` can rebuild once CI passes for that commit; `release/` branches
+still qualify without publishing.
 Each release takes the next minor version (`v1.5`, `v1.6`, `v1.7`, …;
 `tools/release/version.py`); the releases before `v1.5` advanced the patch
 version instead (`v1.0.1` … `v1.0.12`). A retry reuses the

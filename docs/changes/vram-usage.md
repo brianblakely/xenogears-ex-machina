@@ -1,0 +1,1 @@
+- Reduced GPU memory (VRAM) usage by roughly 99%, lowering graphics memory demands during play.

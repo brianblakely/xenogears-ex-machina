@@ -5,31 +5,16 @@ import json
 import subprocess
 from pathlib import Path
 
-from tools.release.version import native_changed, version
-
-
-def published_releases(repository):
-    pages = json.loads(subprocess.check_output([
-        "gh", "api", f"repos/{repository}/releases", "--paginate", "--slurp",
-    ], text=True))
-    releases = []
-    for page in pages:
-        for release in page:
-            number = version(release["tag_name"])
-            if not release["draft"] and not release["prerelease"] and number:
-                releases.append((number, release["tag_name"]))
-    return releases
+from tools.release.version import (
+    latest_published_ancestor,
+    native_changed,
+    published_releases,
+    version,
+)
 
 
 def previous_release(repository, tag, commit):
-    candidates = [(number, name) for number, name in published_releases(repository) if number < version(tag)]
-    for _, previous in sorted(candidates, reverse=True):
-        ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", previous, commit], check=False)
-        if ancestor.returncode == 0:
-            return previous
-        if ancestor.returncode != 1:
-            ancestor.check_returncode()
-    return None
+    return latest_published_ancestor(repository, commit, before_tag=tag)
 
 
 def current_native_release(repository, tag, commit):

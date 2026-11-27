@@ -1,37 +1,63 @@
 name: Portable releases
 on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
   push:
-    branches: [master, 'release/**']
+    branches: ['release/**']
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 # Never cancel a release because another commit arrived. Version reservation
 # is atomic, and reruns of a commit reuse its tag.
 concurrency:
-  group: release-${{ github.sha }}
+  group: release-${{ github.event.workflow_run.head_sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
   changes:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: ubuntu-24.04
     outputs:
       native: ${{ steps.inputs.outputs.changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
-      - name: Check native app inputs before reserving a version
+          fetch-tags: true
+      - name: Check CI status and native app inputs before reserving a version
         id: inputs
         env:
-          BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/master ]; then
-            python3 tools/release/version.py --commit "$GITHUB_SHA" --check-native-since "$BEFORE"
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+            python3 tools/release/version.py \
+              --repository "$GITHUB_REPOSITORY" \
+              --commit "$COMMIT" \
+              --check-native-since-release \
+              --require-ci \
+              --ci-run-id "$WORKFLOW_RUN_ID"
+          elif [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF" = refs/heads/master ]; then
+            python3 tools/release/version.py \
+              --repository "$GITHUB_REPOSITORY" \
+              --commit "$COMMIT" \
+              --require-ci
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
           else
-            # Explicit rebuilds and release branches still run qualification.
+            # Release branches still run qualification without publishing.
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
 
@@ -47,6 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - name: Make room for the pinned toolchains
         if: runner.os == 'Linux'
@@ -59,11 +86,12 @@ jobs:
         id: version
         env:
           GH_TOKEN: ${{ github.token }}
-          PUBLISH: ${{ github.ref == 'refs/heads/master' }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+          PUBLISH: ${{ github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') }}
         run: |
           flags=()
           if [ "$PUBLISH" != true ]; then flags+=(--preview); fi
-          python3 tools/release/version.py --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" "${flags[@]}"
+          python3 tools/release/version.py --repository "$GITHUB_REPOSITORY" --commit "$COMMIT" "${flags[@]}"
       - name: Build game from public sources, audit licenses and source archive
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -94,6 +122,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - name: Make room for the pinned toolchains
         if: runner.os == 'Linux'
@@ -129,6 +158,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - name: Make room for the pinned toolchains
         if: runner.os == 'Linux'
@@ -181,6 +211,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
@@ -198,6 +229,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - name: Make room for the pinned toolchains
         if: runner.os == 'Linux'
@@ -255,6 +287,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - name: Make room for the pinned toolchains
         if: runner.os == 'Linux'
@@ -287,7 +320,7 @@ jobs:
           path: build/release/xenogears-ex-machina-${{ needs.prepare.outputs.tag }}-web
 
   publish:
-    if: github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     needs: [prepare, checks, desktop, windows-test, android, web]
     runs-on: ubuntu-24.04
     permissions:
@@ -295,8 +328,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+          fetch-tags: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: release-*
@@ -304,8 +339,9 @@ jobs:
       - name: Publish installation guide, changelog, artifacts and checksums
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: python3 -m tools.release.publish --tag "$TAG" --commit "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
+        run: python3 -m tools.release.publish --tag "$TAG" --commit "$COMMIT" --repository "$GITHUB_REPOSITORY" --artifacts artifacts
 
   pages:
     needs: [prepare, publish]
