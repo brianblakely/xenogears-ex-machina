@@ -104,8 +104,9 @@ of `settings.json`. The image stays where the player keeps it. On Linux it
 unpacks the AppImage and starts its `AppRun` (the image's links are relative
 for this), and the game keeps the folder's files in `RECOMPLAUNCHER_DATA`
 instead. The first start with it copies in what an earlier version kept
-beside its executable, or beside the AppImage, and uses the old folder until
-the copy is complete.
+beside its executable, or beside the AppImage (not `discs/`: the launcher
+passes the player's image), and uses the old folder until the copy is
+complete.
 
 The supported images are North American `SLUS-00664` and `SLUS-00669` (original
 and Greatest Hits). Use CHD, BIN/CUE, or raw 2352-byte ISO images. A 2048-byte

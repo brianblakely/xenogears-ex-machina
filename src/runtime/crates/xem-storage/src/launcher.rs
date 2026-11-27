@@ -9,8 +9,9 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-/// Everything the game keeps in its data folder, except `cache`.
-const ITEMS: [&str; 5] = ["settings.json", "bios.bin", "cards", "saves", "discs"];
+/// What the game keeps in its data folder, except `cache` and `discs`: the
+/// launcher passes the player's disc, and the images stay where they are.
+const ITEMS: [&str; 4] = ["settings.json", "bios.bin", "cards", "saves"];
 /// RecompLauncher writes the settings before every start; on the start that
 /// copies the data in, the player's own settings replace them.
 const SETTINGS: &str = "settings.json";
@@ -190,9 +191,11 @@ mod tests {
         write(&old.join("saves/state.xemstate"), "state");
         write(&old.join("settings.json"), "player");
         write(&old.join("bios.bin"), "bios");
+        write(&old.join("discs/Disc 1.chd"), "disc");
         write(&data.join("settings.json"), "launcher");
         fs::create_dir_all(data.join("cards")).unwrap();
         assert_eq!(choose(&data, old_folders(&root).first().map(PathBuf::as_path)), data);
+        assert!(!data.join("discs").exists() && old.join("discs/Disc 1.chd").exists());
         assert_eq!(text(&data.join("cards/card1.mcd")), "card");
         assert_eq!(text(&data.join("saves/state.xemstate")), "state");
         assert_eq!(text(&data.join("settings.json")), "player");
@@ -257,6 +260,7 @@ mod tests {
         write(&store.join("bbbb-xem-v1.22/libexec/cards/card1.mcd"), "1.22");
         fs::create_dir_all(store.join("cccc-xem-v1.23/libexec/cards")).unwrap();
         fs::create_dir_all(store.join("dddd-xem-release-input")).unwrap();
+        write(&store.join("eeee-xem-v1.24/libexec/discs/Disc 1.chd"), "discs alone are not data");
         write(&root.join("settings.json"), "beside the AppImage");
         let folders = old_folders(&root);
         assert_eq!(folders, [store.join("bbbb-xem-v1.22/libexec"), store.join("aaaa-xem-v1.9/libexec"), root.clone()]);
