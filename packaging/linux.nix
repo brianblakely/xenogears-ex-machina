@@ -6,7 +6,16 @@ let
   system = builtins.currentSystem;
   pkgs = import tools.inputs.nixpkgs { inherit system; };
   imageRuntime = tools.inputs.appimage.packages.${system}.appimage-runtimes.appimage-type2-runtime;
-  imageLauncher = tools.inputs.appimage.packages.${system}.appimage-appruns.userns-chroot;
+  # nix-appimage's own AppRun (userns-chroot), built as it builds it, which
+  # also takes a relative entrypoint (the links are made relative below): a
+  # path from the image's root, whose nix is /nix once AppRun is inside it.
+  imageLauncher = pkgs.pkgsStatic.runCommandCC "AppRun" { } ''
+    mkdir -p $out/mountroot
+    cp ${tools.inputs.appimage}/appruns/userns-chroot/main.c main.c
+    chmod u+w main.c
+    substituteInPlace main.c --replace-fail "execv(exe, argv);" "execv(exe[0] == '/' ? exe : strprintf(\"/%s\", exe), argv);"
+    $CC main.c -o $out/AppRun
+  '';
   fonts = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
   # The launcher's shell and tools are static: a library path they inherit
   # loads nothing into them. Steam starts its games with one naming the
@@ -95,19 +104,32 @@ let
         EOF
       '';
   name = "xenogears-ex-machina-${version}-linux-${pkgs.stdenv.hostPlatform.uname.processor}.AppImage";
-  bundled = tools.inputs.appimage.lib.${system}.mkAppImage {
+  bundled = tools.inputs.appimage.lib.${system}.mkAppImage.override { mkappimage-apprun = imageLauncher; } {
     program = "${application}/bin/xem";
     inherit name;
     # Nix already supplies SOURCE_DATE_EPOCH; explicit time flags conflict with it.
   };
-  # RecompLauncher reads /recomplauncher.json from the image: appended to its
-  # root as mkAppImage appends AppRun, after the same runtime.
+  # RecompLauncher unpacks the AppImage into a plain folder, runs its AppRun
+  # from there and leaves out every link to an absolute path. nix-appimage's
+  # links are absolute (entrypoint, and some in the store): each one into the
+  # store becomes relative, the same file unpacked and in the AppImage's root,
+  # whose nix/store is /nix/store. Links to the host's /etc stay as they are.
+  # RecompLauncher reads /recomplauncher.json from the image's root. Packed
+  # again with mkAppImage's runtime and compression.
   image = pkgs.runCommand name { nativeBuildInputs = [ pkgs.squashfsTools ]; } ''
-    mkdir root
+    offset=$(stat -L -c%s ${imageRuntime})
+    unsquashfs -q -n -no-xattrs -o $offset -d root ${bundled}
+    while IFS= read -r -d "" link; do
+      target=$(readlink "$link")
+      [[ $target == /nix/store/* ]] || continue
+      dir=$(dirname "$link") mode=$(stat -c %a "$(dirname "$link")")
+      chmod u+w "$dir"
+      ln -sfn "$(realpath -s -m --relative-to="$dir" "root$target")" "$link"
+      chmod "$mode" "$dir"
+    done < <(find root -type l -print0)
     cp ${./recomplauncher.json} root/recomplauncher.json
-    cp ${bundled} $out
-    chmod u+w $out
-    mksquashfs root/recomplauncher.json $out -offset $(stat -L -c%s ${imageRuntime}) -all-root -no-recovery
+    mksquashfs root $out -offset $offset -all-root -no-xattrs -no-recovery -quiet -no-progress
+    dd if=${imageRuntime} of=$out conv=notrunc status=none
     chmod 755 $out
   '';
 in

@@ -1,0 +1,1 @@
+- On Linux, [RecompLauncher](https://recomplauncher.com) now starts the game, and keeps its settings, memory cards and save states in the game's data folder there, which the launcher's backups, cloud saves, Move and Uninstall look after. What an earlier version kept is copied in on the first start; the old copy stays.

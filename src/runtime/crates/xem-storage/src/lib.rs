@@ -2,14 +2,23 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+#[cfg(target_os = "linux")]
+mod launcher;
+
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 
 /// Portable application data belongs beside the downloaded executable, never
 /// inside an AppImage mount or a macOS application bundle. XEM_DATA_DIR is an
-/// explicit override for development, tests and read-only installations.
+/// explicit override for development, tests and read-only installations. On
+/// Linux, RecompLauncher's RECOMPLAUNCHER_DATA is the data folder (it runs the
+/// AppImage unpacked, so beside the executable is inside the release's files).
 pub fn application_directory() -> io::Result<PathBuf> {
     if let Some(path) = std::env::var_os("XEM_DATA_DIR").filter(|p| !p.is_empty()) {
         return std::path::absolute(PathBuf::from(path));
+    }
+    #[cfg(target_os = "linux")]
+    if let Some(path) = std::env::var_os("RECOMPLAUNCHER_DATA").filter(|p| !p.is_empty()) {
+        return Ok(launcher::directory(&std::path::absolute(PathBuf::from(path))?));
     }
     let executable = if cfg!(target_os = "linux") {
         std::env::var_os("APPIMAGE").filter(|p| !p.is_empty()).map(PathBuf::from)

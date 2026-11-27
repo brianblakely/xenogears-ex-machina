@@ -100,7 +100,13 @@ The desktop downloads also carry `recomplauncher.json`
 (`packaging/recomplauncher.json`; inside the AppImage, at its root), with which
 [RecompLauncher](https://recomplauncher.com) installs the game, checks the
 player's Disc 1 image, starts `xem-desktop --disc IMAGE` and edits a few keys
-of `settings.json`. The image stays where the player keeps it.
+of `settings.json`. The image stays where the player keeps it. On Linux it
+unpacks the AppImage and starts its `AppRun` (the image's links are relative
+for this), and the game keeps the folder's files in `RECOMPLAUNCHER_DATA`
+instead. The first start with it copies in what an earlier version kept
+beside its executable, or beside the AppImage (not `discs/`: the launcher
+passes the player's image), and uses the old folder until the copy is
+complete.
 
 The supported images are North American `SLUS-00664` and `SLUS-00669` (original
 and Greatest Hits). Use CHD, BIN/CUE, or raw 2352-byte ISO images. A 2048-byte
@@ -125,7 +131,7 @@ Xenogears folder/
 The executable's location determines the folder, independently of the launch
 working directory. AppImage storage stays outside its temporary mount, and
 macOS storage outside the application bundle. `XEM_DATA_DIR` explicitly
-selects another writable folder; `play.sh` uses the checkout's root. There is
+selects another writable folder (it wins over RecompLauncher's); `play.sh` uses the checkout's root. There is
 no automatic migration from older development configuration directories.
 
 Back up the folder before upgrading, then replace the application while
