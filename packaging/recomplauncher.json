@@ -12,15 +12,15 @@
     ]
   },
   "start": {
-    "program": ["xem-desktop.exe", "Xenogears Ex Machina.app/Contents/MacOS/xem-desktop", "xem-desktop"],
+    "program": ["xem-desktop.exe", "Xenogears Ex Machina.app/Contents/MacOS/xem-desktop", "xem-desktop", "xenogears-ex-machina.AppImage"],
     "args": ["--disc", "{game}"]
   },
-  "saves": ["{install}/cards", "{install}/saves", "{install}/settings.json"],
+  "saves": ["{install}/cards", "{install}/saves", "{install}/settings.json", "{data}/cards", "{data}/saves", "{data}/settings.json"],
   "config": [
     {
       "id": "main",
       "format": "json",
-      "file": [{ "path": "{install}/settings.json" }]
+      "file": [{ "path": "{data}/settings.json", "if": "{install}/AppRun" }, { "path": "{install}/settings.json" }]
     }
   ],
   "settings": [
@@ -88,8 +88,8 @@
     }
   ],
   "folders": {
-    "saves": [{ "path": "{install}/cards" }],
-    "states": [{ "path": "{install}/saves" }]
+    "saves": [{ "path": "{data}/cards", "if": "{install}/AppRun" }, { "path": "{install}/cards" }],
+    "states": [{ "path": "{data}/saves", "if": "{install}/AppRun" }, { "path": "{install}/saves" }]
   },
   "actions": [
     { "id": "cards", "label": "Memory cards", "help": "Your memory cards, card1.mcd and card2.mcd: the game's own saves.", "open": "saves" },
